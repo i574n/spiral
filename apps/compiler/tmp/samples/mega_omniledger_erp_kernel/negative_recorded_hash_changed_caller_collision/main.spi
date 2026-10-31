@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_recorded_hash_changed_caller_collision
+:= impossible_recorded_hash_changed_caller_collision
     (collision :
         typed_fx_hashed_statement_identity_collision
             typed_fx_statement_command_identity_primary
@@ -9,5 +9,5 @@ inl impossible_recorded_hash_changed_caller_collision
     : typed_fx_hashed_statement_closed_recorded_hash_fact =
     TypedFxHashedStatementClosedRecordedHashChanged collision
 
-inl main () =
+:= main () =
     impossible_recorded_hash_changed_caller_collision

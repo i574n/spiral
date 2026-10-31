@@ -1,23 +1,23 @@
-nominal count_zero = ()
-nominal count_succ count = count
+:! count_zero = ()
+:! count_succ count = count
 
-union rec exact_vec count =
+:| ^ exact_vec count =
     | ExactVecNil :: exact_vec count_zero
-    | ExactVecCons :: forall count.
+    | ExactVecCons :: \* count.
         i32 * exact_vec count -> exact_vec (count_succ count)
 
-nominal packed_exact_vec = exists count. exact_vec count
+:! packed_exact_vec = \? count. exact_vec count
 
-inl make_packed () : packed_exact_vec =
-    packed_exact_vec (exists (
+:= make_packed () : packed_exact_vec =
+    packed_exact_vec (\? (
         ExactVecCons (1i32, ExactVecCons (2i32, ExactVecNil))))
 
-inl validate_packed (value : packed_exact_vec) : bool =
-    match value with
+:= validate_packed (value : packed_exact_vec) : bool =
+    ?= value ?|
     | packed_exact_vec payload =>
-        inl exists count. exact = payload
-        match exact with
-        | ExactVecNil => true
-        | ExactVecCons (_, _) => true
+        := \? count. exact = payload
+        ?= exact ?|
+        | ExactVecNil => !+
+        | ExactVecCons (_, _) => !+
 
-inl main () : bool = validate_packed (make_packed ())
+:= main () : bool = validate_packed (make_packed ())

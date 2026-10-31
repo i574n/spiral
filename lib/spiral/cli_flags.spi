@@ -66,11 +66,11 @@
     | Some value => value
     | None => failwith ("--" ++# name ++# " needs an i32")
 
-:~ ^ values_after (flag : string) (rest : list string) (found : list string) : list string =
+:~ ^ values_after (flag : string) (rest : list string) (acc : list string) : list string =
     ?= rest ?|
     | head :: value :: tail =>
-        ? head = flag ?> values_after flag tail (value :: found) |: values_after flag (value :: tail) found
-    | _ => listm.rev found
+        ? head = flag ?> values_after flag tail (value :: acc) |: values_after flag (value :: tail) acc
+    | _ => listm.rev acc
 
 /// ### flag_values
 := flag_values (name : string) (args : list string) : list string = values_after ("--" ++# name) args []

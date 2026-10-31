@@ -1,36 +1,36 @@
-nominal query = ()
-nominal authorize = ()
-nominal committed = ()
+:! query = ()
+:! authorize = ()
+:! committed = ()
 
-union key operation =
+:| key operation =
     | QueryKey :: string -> key query
     | AuthorizeKey :: string -> key authorize
 
-union request operation result =
+:| request operation result =
     | QueryStatus :: request query string
     | AuthorizeDocument :: string -> request authorize string
 
-union receipt operation status result =
-    | Committed :: forall operation result.
+:| receipt operation status result =
+    | Committed :: \* operation result.
         string * result -> receipt operation committed result
 
-inl execute_once forall operation result.
+:= execute_once \* operation result.
     (key : key operation)
     (request : request operation result)
     : receipt operation committed result =
-    match key, request with
+    ?= key, request ?|
     | QueryKey id, QueryStatus =>
         Committed (id, "authorized")
     | AuthorizeKey id, AuthorizeDocument protocol =>
         Committed (id, protocol)
 
-inl consume_authorization
+:= consume_authorization
     (receipt : receipt authorize committed string)
     : string =
-    match receipt with
+    ?= receipt ?|
     | Committed _ => "operation-scoped-idempotency"
 
-inl main () : string =
+:= main () : string =
     consume_authorization (
         execute_once
             (AuthorizeKey "authorize:NFe-42")

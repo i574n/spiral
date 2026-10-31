@@ -12,21 +12,13 @@ pub fn main() {
     let v3 = v2 == 0
     let v6 =
         case v3 {
-            True -> {
-                Us0Some(v1)
-            }
-            False -> {
-                Us0None
-            }
+            True -> Us0Some(v1)
+            False -> Us0None
         }
     let v10 =
         case v6  {
-            Us0None -> {
-                panic as "Option does not have a value."
-            }
-            Us0Some(v7) -> {
-                v7
-            }
+            Us0None -> panic as "Option does not have a value."
+            Us0Some(v7) -> v7
         }
     io.println(int.to_string(v10))
     let v11 = "1011"
@@ -34,21 +26,13 @@ pub fn main() {
     let v14 = v13 == 0
     let v17 =
         case v14 {
-            True -> {
-                Us0Some(v12)
-            }
-            False -> {
-                Us0None
-            }
+            True -> Us0Some(v12)
+            False -> Us0None
         }
     let v21 =
         case v17  {
-            Us0None -> {
-                panic as "Option does not have a value."
-            }
-            Us0Some(v18) -> {
-                v18
-            }
+            Us0None -> panic as "Option does not have a value."
+            Us0Some(v18) -> v18
         }
     io.println(int.to_string(v21))
     let v22 = "-42"
@@ -56,21 +40,13 @@ pub fn main() {
     let v25 = v24 == 0
     let v28 =
         case v25 {
-            True -> {
-                Us0Some(v23)
-            }
-            False -> {
-                Us0None
-            }
+            True -> Us0Some(v23)
+            False -> Us0None
         }
     let v32 =
         case v28  {
-            Us0None -> {
-                panic as "Option does not have a value."
-            }
-            Us0Some(v29) -> {
-                v29
-            }
+            Us0None -> panic as "Option does not have a value."
+            Us0Some(v29) -> v29
         }
     io.println(int.to_string(v32))
     let v33 = " 123 "
@@ -78,12 +54,8 @@ pub fn main() {
     let v36 = v35 == 0
     let v39 =
         case v36 {
-            True -> {
-                Us0Some(v34)
-            }
-            False -> {
-                Us0None
-            }
+            True -> Us0Some(v34)
+            False -> Us0None
         }
     case v39  {
         Us0None -> {
@@ -101,12 +73,8 @@ pub fn main() {
     let v45 = v44 == 0
     let v48 =
         case v45 {
-            True -> {
-                Us0Some(v43)
-            }
-            False -> {
-                Us0None
-            }
+            True -> Us0Some(v43)
+            False -> Us0None
         }
     case v48  {
         Us0None -> {
@@ -124,12 +92,8 @@ pub fn main() {
     let v54 = v53 == 0
     let v57 =
         case v54 {
-            True -> {
-                Us0Some(v52)
-            }
-            False -> {
-                Us0None
-            }
+            True -> Us0Some(v52)
+            False -> Us0None
         }
     case v57  {
         Us0None -> {
@@ -147,12 +111,8 @@ pub fn main() {
     let v63 = v62 == 0
     let v66 =
         case v63 {
-            True -> {
-                Us0Some(v61)
-            }
-            False -> {
-                Us0None
-            }
+            True -> Us0Some(v61)
+            False -> Us0None
         }
     case v66  {
         Us0None -> {

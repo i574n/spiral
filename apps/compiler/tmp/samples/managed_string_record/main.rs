@@ -12,9 +12,9 @@ fn score_1(mut v0: i32, mut v1: Rc<str>) -> i32 {
 }
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("qwe"); } LIT.with(|lit| lit.clone()) };
-    let (mut v1, mut v2): (Rc<str>, i32) = method0(v0.clone());
+    let (mut v1, mut v2): (Rc<str>, i32) = method0(v0);
     let v3: i32 = score_1(v2, v1.clone());
-    let v4: i32 = score_1(v2, v1.clone());
+    let v4: i32 = score_1(v2, v1);
     let v5: i32 = v3.wrapping_add(v4);
     let v6: i32 = v5.wrapping_sub(12i32);
     v6

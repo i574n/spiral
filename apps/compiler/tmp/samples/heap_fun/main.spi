@@ -1,10 +1,10 @@
-inl main () : i32 =
-    inl ~k = 3i32
-    inl ~n = 4i32
-    inl add (x : i32) : i32 = x +. k
-    inl pair = add, n
-    inl box = !!!!LayoutToHeap({ value = pair })
-    inl opened = !!!!LayoutIndex(box)
-    inl ~(f, extra) = opened.value
-    inl ~g = f
-    if g 0i32 +. extra =. 7i32 then 0i32 else 1i32
+:= main () : i32 =
+    := ~k = 3i32
+    := ~n = 4i32
+    := add (x : i32) : i32 = x +. k
+    := pair = add, n
+    := box = !!!!LayoutToHeap({ value = pair })
+    := opened = !!!!LayoutIndex(box)
+    := ~(f, extra) = opened::value
+    := ~g = f
+    ? g 0i32 +. extra =. 7i32 ?> 0i32 |: 1i32

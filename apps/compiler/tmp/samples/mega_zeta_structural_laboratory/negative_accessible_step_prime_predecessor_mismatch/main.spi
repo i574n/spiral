@@ -1,11 +1,11 @@
-open main
+:< main
 
-inl impossible_accessible_step_prime_predecessor_mismatch () =
-    inl three_value = positive_positional_three_value ()
-    match classify_certified_interval_positive_positional_sealed_factor three_value with
+:= impossible_accessible_step_prime_predecessor_mismatch () =
+    := three_value = positive_positional_three_value ()
+    ?= classify_certified_interval_positive_positional_sealed_factor three_value ?|
     | CertifiedIntervalPositivePositionalSealedPrimeClass prime_payload =>
-        inl exists length. prime_material, prime_nonunit, rejected, prime_note = prime_payload
-        CertifiedIntervalPositivePositionalAccessibleStepPrimeDerivation (exists (
+        := \? length. prime_material, prime_nonunit, rejected, prime_note = prime_payload
+        CertifiedIntervalPositivePositionalAccessibleStepPrimeDerivation (\? (
             prime_material,
             prime_nonunit,
             rejected,
@@ -18,5 +18,5 @@ inl impossible_accessible_step_prime_predecessor_mismatch () =
     | _ =>
         $"mega_runtime_fail \"three-was-unexpectedly-not-classified-as-prime\""
 
-inl main () =
+:= main () =
     impossible_accessible_step_prime_predecessor_mismatch ()

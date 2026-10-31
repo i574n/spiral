@@ -28,11 +28,11 @@ func spiral_main() -> Int32 {
     var v2: Int32 = 0
     var v3: Int32 = 0
     var v4: Int32 = 0
-    let spiral_tuple158 = sp_method0(v0)
-    v1 = spiral_tuple158.0
-    v2 = spiral_tuple158.1
-    v3 = spiral_tuple158.2
-    v4 = spiral_tuple158.3
+    let spiral_tuple151 = sp_method0(v0)
+    v1 = spiral_tuple151.0
+    v2 = spiral_tuple151.1
+    v3 = spiral_tuple151.2
+    v4 = spiral_tuple151.3
     return sp_method1(v1, v2, v3, v4)
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

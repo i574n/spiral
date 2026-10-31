@@ -1,10 +1,10 @@
-open main
+:< main
 
-inl impossible_nondefeq_authority_not_scoped_pi_authority forall ctx domain.
+:= impossible_nondefeq_authority_not_scoped_pi_authority \* ctx domain.
     (authority : corrected_cic_structural_nondefeq_authority (ctx_extend ctx domain) (universe_sort universe_one))
     : corrected_cic_scoped_pi_term_authority ctx domain =
     authority
 
-inl main () = ()
+:= main () = ()
 
-inl type_applications_stay_on_one_line_or_the_parser_drops_the_definition () = ()
+:= type_applications_stay_on_one_line_or_the_parser_drops_the_definition () = ()

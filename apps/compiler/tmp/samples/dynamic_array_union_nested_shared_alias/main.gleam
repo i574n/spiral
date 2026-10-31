@@ -68,9 +68,7 @@ pub type Us0 {
 }
 pub fn bump_0(v0: Us0) -> Int {
     case v0  {
-        Us0Empty -> {
-            0
-        }
+        Us0Empty -> 0
         Us0Nested(v1) -> {
             let v2 = spiral_array_get(v1, 0)
             let v3 = spiral_array_get(v2, 0)
@@ -82,9 +80,7 @@ pub fn bump_0(v0: Us0) -> Int {
 }
 pub fn score_1(v0: Us0) -> Int {
     case v0  {
-        Us0Empty -> {
-            0
-        }
+        Us0Empty -> 0
         Us0Nested(v1) -> {
             let v2 = spiral_array_get(v1, 0)
             let v3 = spiral_array_get(v1, 1)

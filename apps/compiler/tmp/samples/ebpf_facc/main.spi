@@ -1,9 +1,9 @@
-inl rec addf ~n ~acc =
-    if n =. 0i32 then acc else
-        join addf (n -. 1i32) (acc +. 1.5f32)
+:= ^ addf ~n ~acc =
+    ? n =. 0i32 ?> acc |:
+        ~~ addf (n -. 1i32) (acc +. 1.5f32)
 
-inl main () : i32 =
-    inl ~n = 4i32
-    inl ~acc = 0.0f32
-    inl s = join addf n acc
-    if s =. 6.0f32 then 0i32 else 1i32
+:= main () : i32 =
+    := ~n = 4i32
+    := ~acc = 0.0f32
+    := s = ~~ addf n acc
+    ? s =. 6.0f32 ?> 0i32 |: 1i32

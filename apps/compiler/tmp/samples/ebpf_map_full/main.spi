@@ -1,35 +1,35 @@
-inl while' (cond : () -> bool) (body : () -> ()) : () =
-    !!!!While((join cond ()), (body ()))
+:= while' (cond : () -> bool) (body : () -> ()) : () =
+    !!!!While((~~ cond ()), (body ()))
 
-inl set' forall t. (a : t) ~(b : t) : () =
+:= set' \* t. (a : t) ~(b : t) : () =
     !!!!BackendSwitch({
-        C = fun () => $"!a = !b" : ()
-        Ebpf = fun () => $"!a = !b" : ()
-        Zig = fun () => $"!a = !b" : ()
+        C = \ () => $"!a = !b" : ()
+        Ebpf = \ () => $"!a = !b" : ()
+        Zig = \ () => $"!a = !b" : ()
     })
 
-inl map_update (key : i32) (value : i32) (expect : i32) : i32 =
+:= map_update (key : i32) (value : i32) (expect : i32) : i32 =
     !!!!BackendSwitch({
-        C = fun () => $"!expect" : i32
-        Ebpf = fun () => $"spiral_map_update(!key, !value)" : i32
-        Zig = fun () => expect
+        C = \ () => $"!expect" : i32
+        Ebpf = \ () => $"spiral_map_update(!key, !value)" : i32
+        Zig = \ () => expect
     })
 
-inl map_lookup (key : i32) (expect : i32) : i32 =
+:= map_lookup (key : i32) (expect : i32) : i32 =
     !!!!BackendSwitch({
-        C = fun () => $"!expect" : i32
-        Ebpf = fun () => $"spiral_map_lookup(!key)" : i32
-        Zig = fun () => expect
+        C = \ () => $"!expect" : i32
+        Ebpf = \ () => $"spiral_map_lookup(!key)" : i32
+        Zig = \ () => expect
     })
 
-inl main () : i32 =
-    inl ~bad = 0i32
-    inl ~i = 1i32
+:= main () : i32 =
+    := ~bad = 0i32
+    := ~i = 1i32
     set' bad (bad +. map_update (-1i32) (-5i32) 0i32)
     set' bad (bad +. (map_lookup (-1i32) (-5i32) -. (-5i32)))
     set' bad (bad +. map_update 0i32 0i32 0i32)
     set' bad (bad +. map_lookup 0i32 0i32)
-    while' (fun () => i < 63i32) fun () =>
+    while' (\ () => i < 63i32) \ () =>
         set' bad (bad +. map_update i (i +. 1i32) 0i32)
         set' i (i +. 1i32)
     set' bad (bad +. (map_update 63i32 1i32 1i32 -. 1i32))
@@ -40,7 +40,7 @@ inl main () : i32 =
     set' bad (bad +. (map_lookup 0i32 4i32 -. 4i32))
     set' bad (bad +. (map_update 100i32 1i32 1i32 -. 1i32))
     set' i 1i32
-    while' (fun () => i < 63i32) fun () =>
+    while' (\ () => i < 63i32) \ () =>
         set' bad (bad +. (map_lookup i (i +. 1i32) -. (i +. 1i32)))
         set' i (i +. 1i32)
     bad

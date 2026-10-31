@@ -1,17 +1,17 @@
-nominal admin = ()
-nominal publish_only = ()
+:! admin = ()
+:! publish_only = ()
 
-union capability scope =
+:| capability scope =
     | AdminCapability :: capability admin
     | PublishCapability :: capability publish_only
 
-inl attenuate (capability : capability admin) : capability publish_only =
-    match capability with
+:= attenuate (capability : capability admin) : capability publish_only =
+    ?= capability ?|
     | AdminCapability => PublishCapability
 
-inl rotate_keys (capability : capability admin) : string =
-    match capability with
+:= rotate_keys (capability : capability admin) : string =
+    ?= capability ?|
     | AdminCapability => "keys-rotated"
 
-inl main () : string =
+:= main () : string =
     rotate_keys (attenuate AdminCapability)

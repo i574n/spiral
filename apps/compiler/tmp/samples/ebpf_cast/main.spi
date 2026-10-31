@@ -1,11 +1,11 @@
-inl main () : i32 =
-    inl ~n = 3i32
-    inl ~neg = 0i32 -. 2i32
-    inl ~u = 7u32
-    inl ~f = 2.9f32
-    inl from_i = !!!!Conv(`f32, n)
-    inl from_neg = !!!!Conv(`f32, neg)
-    inl from_u = !!!!Conv(`f32, u)
-    inl from_f = !!!!Conv(`u32, f)
-    if from_i =. 3.0f32 && from_neg =. (0.0f32 -. 2.0f32) && from_u =. 7.0f32 && from_f =. 2u32 then 0i32
-    else 1i32
+:= main () : i32 =
+    := ~n = 3i32
+    := ~neg = 0i32 -. 2i32
+    := ~u = 7u32
+    := ~f = 2.9f32
+    := from_i = !!!!Conv(`f32, n)
+    := from_neg = !!!!Conv(`f32, neg)
+    := from_u = !!!!Conv(`f32, u)
+    := from_f = !!!!Conv(`u32, f)
+    ? from_i =. 3.0f32 && from_neg =. (0.0f32 -. 2.0f32) && from_u =. 7.0f32 && from_f =. 2u32 ?> 0i32
+    |: 1i32

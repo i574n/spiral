@@ -13,9 +13,7 @@ pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
 pub fn lcg_0(v0: Int, v1: Int, v2: Int, v3: Int) -> Int {
     let v4 = v2 == 0
     case v4 {
-        True -> {
-            v3
-        }
+        True -> v3
         False -> {
             let v5 = spiral_wrap_signed(v2 - 1, 32)
             let v6 = spiral_wrap_unsigned(v3 * v0, 64)
@@ -56,21 +54,13 @@ pub fn main() {
     let v23 = v22 <. 0.0
     let v24 =
         case v23 {
-            True -> {
-                1
-            }
-            False -> {
-                0
-            }
+            True -> 1
+            False -> 0
         }
     io.print("conv " <> int.to_string(v20) <> " " <> int.to_string(v21) <> " " <> int.to_string(v24) <> "\n")
     let v25 = v4 > v1
     case v25 {
-        True -> {
-            1
-        }
-        False -> {
-            0
-        }
+        True -> 1
+        False -> 0
     }
 }

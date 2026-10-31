@@ -1,18 +1,18 @@
-inl main () : i32 =
-    inl ~n = 7i32
-    inl ~word = "hi"
-    inl inner_pair = n, word
-    inl inner = !!!!LayoutToHeap({ value = inner_pair })
-    inl ~extra = 1i32
-    inl mid_pair = inner, extra
-    inl mid = !!!!LayoutToHeap({ value = mid_pair })
-    inl ~mark = 2i32
-    inl outer_pair = mid, mark
-    inl outer = !!!!LayoutToHeap({ value = outer_pair })
-    inl opened = !!!!LayoutIndex(outer)
-    inl ~(mid_held, flag) = opened.value
-    inl mid_opened = !!!!LayoutIndex(mid_held)
-    inl ~(inner_held, count) = mid_opened.value
-    inl inner_opened = !!!!LayoutIndex(inner_held)
-    inl ~(left, right) = inner_opened.value
-    if left =. 7i32 && !!!!EQ(right, "hi") && count =. 1i32 && flag =. 2i32 then 0i32 else 1i32
+:= main () : i32 =
+    := ~n = 7i32
+    := ~word = "hi"
+    := inner_pair = n, word
+    := inner = !!!!LayoutToHeap({ value = inner_pair })
+    := ~extra = 1i32
+    := mid_pair = inner, extra
+    := mid = !!!!LayoutToHeap({ value = mid_pair })
+    := ~mark = 2i32
+    := outer_pair = mid, mark
+    := outer = !!!!LayoutToHeap({ value = outer_pair })
+    := opened = !!!!LayoutIndex(outer)
+    := ~(mid_held, flag) = opened::value
+    := mid_opened = !!!!LayoutIndex(mid_held)
+    := ~(inner_held, count) = mid_opened::value
+    := inner_opened = !!!!LayoutIndex(inner_held)
+    := ~(left, right) = inner_opened::value
+    ? left =. 7i32 && !!!!EQ(right, "hi") && count =. 1i32 && flag =. 2i32 ?> 0i32 |: 1i32

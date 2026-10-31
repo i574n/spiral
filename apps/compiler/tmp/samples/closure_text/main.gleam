@@ -7,9 +7,7 @@ pub fn f_c0(capt: #(String)) -> fn(Int) -> String {
                 let v3 = "no"
                 v3
             }
-            False -> {
-                v0
-            }
+            False -> v0
         }
     }
 }
@@ -19,11 +17,7 @@ pub fn main() {
     let v2 = v1(1)
     let v3 = v2 == "hi"
     case v3 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

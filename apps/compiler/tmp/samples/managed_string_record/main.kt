@@ -47,9 +47,9 @@ fun spiral_main(): Int {
     val v0: String = "qwe"
     var v1: String = ""
     var v2: Int = 0
-    val spiral_tuple113 = sp_method0(v0)
-    v1 = spiral_tuple113.v0
-    v2 = spiral_tuple113.v1
+    val spiral_tuple108 = sp_method0(v0)
+    v1 = spiral_tuple108.v0
+    v2 = spiral_tuple108.v1
     var v3: Int = 0
     v3 = sp_score_1(v2, v1)
     val v4: Int = sp_score_1(v2, v1)

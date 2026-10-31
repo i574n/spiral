@@ -75,9 +75,7 @@ pub fn main() {
                 let v16 = v12 == "hi"
                 v16
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v19 =
         case v17 {
@@ -85,9 +83,7 @@ pub fn main() {
                 let v18 = v13 == 4
                 v18
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v21 =
         case v19 {
@@ -95,16 +91,10 @@ pub fn main() {
                 let v20 = v14 == "yo"
                 v20
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v21 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

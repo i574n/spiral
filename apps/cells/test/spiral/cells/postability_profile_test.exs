@@ -20,13 +20,21 @@ defmodule Spiral.Cells.PostabilityProfileTest do
     Path.join(nested, "post.spi")
   end
 
-  test "x's own profile behaves exactly like the built-in default" do
-    assert seen(XCompat.load_profile(@x_profile)) == seen(XCompat.default_profile())
-    assert seen(XCompat.profile_for(Path.join(Path.dirname(Path.dirname(@x_profile)), "apps/client/posts.spi"))) == seen(XCompat.default_profile())
+  defp without_poster(json), do: Map.delete(json, "posting")
+
+  test "x's own profile without its poster's dot defusing behaves exactly like the built-in default" do
+    assert seen(XCompat.profile_for(profile_dir(&without_poster/1))) == seen(XCompat.default_profile())
+  end
+
+  test "x's own profile drops exactly the autolinks its poster defuses" do
+    {findings, _} = x = seen(XCompat.load_profile(@x_profile))
+    {default_findings, _} = seen(XCompat.default_profile())
+    assert findings == Enum.reject(default_findings, fn {kind, _, _, _} -> kind == :autolink end)
+    assert seen(XCompat.profile_for(Path.join(Path.dirname(Path.dirname(@x_profile)), "apps/client/posts.spi"))) == x
   end
 
   test "the nearest postability profile above a file decides its findings and weights" do
-    path = profile_dir(fn json -> put_in(json, ["post", "link_weight"], 50) end)
+    path = profile_dir(fn json -> json |> without_poster() |> put_in(["post", "link_weight"], 50) end)
     {findings, weight} = seen(XCompat.profile_for(path))
     {default_findings, default_weight} = seen(XCompat.default_profile())
     assert findings == default_findings

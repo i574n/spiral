@@ -4,10 +4,10 @@ use std::rc::Rc;
 fn choose_0(mut v0: bool) -> Rc<str> {
     if v0 {
         let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("alpha"); } LIT.with(|lit| lit.clone()) };
-        v1.clone()
+        v1
     } else {
         let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("beta"); } LIT.with(|lit| lit.clone()) };
-        v2.clone()
+        v2
     }
 }
 fn measure_1(mut v0: Rc<str>) -> i32 {

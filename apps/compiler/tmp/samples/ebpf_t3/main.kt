@@ -48,10 +48,10 @@ fun sp_method0(p0: Int): Int {
     var v1: Int = 0
     var v2: Int = 0
     var v3: Int = 0
-    val spiral_tuple117 = sp_method1(v0)
-    v1 = spiral_tuple117.v0
-    v2 = spiral_tuple117.v1
-    v3 = spiral_tuple117.v2
+    val spiral_tuple112 = sp_method1(v0)
+    v1 = spiral_tuple112.v0
+    v2 = spiral_tuple112.v1
+    v3 = spiral_tuple112.v2
     var v4: Boolean = false
     v4 = (v1 == 3)
     var v6: Boolean = false

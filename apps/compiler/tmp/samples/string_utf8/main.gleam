@@ -70,9 +70,7 @@ pub fn main() {
     let v14 = spiral_string_length(v13)
     let v15 = v2 == v3
     case v15 {
-        True -> {
-            1
-        }
+        True -> 1
         False -> {
             let v16 = v1 == 2
             let v18 =
@@ -81,9 +79,7 @@ pub fn main() {
                         let v17 = v8 == "a"
                         v17
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v20 =
                 case v18 {
@@ -91,9 +87,7 @@ pub fn main() {
                         let v19 = v6 == 3
                         v19
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v22 =
                 case v20 {
@@ -101,9 +95,7 @@ pub fn main() {
                         let v21 = v10 == 1
                         v21
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v24 =
                 case v22 {
@@ -111,9 +103,7 @@ pub fn main() {
                         let v23 = v12 == 0
                         v23
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v26 =
                 case v24 {
@@ -121,17 +111,11 @@ pub fn main() {
                         let v25 = v14 == 2
                         v25
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             case v26 {
-                True -> {
-                    0
-                }
-                False -> {
-                    1
-                }
+                True -> 0
+                False -> 1
             }
         }
     }

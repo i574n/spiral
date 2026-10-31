@@ -10,12 +10,8 @@ pub fn method1(v0: Int, v1: Int) -> Int {
     let v3 = spiral_wrap_signed(v1 + v0, 32)
     let v4 = v2 == 0
     case v4 {
-        True -> {
-            v3
-        }
-        False -> {
-            method1(v2, v3)
-        }
+        True -> v3
+        False -> method1(v2, v3)
     }
 }
 pub fn method0(v0: Int) -> Int {
@@ -23,12 +19,8 @@ pub fn method0(v0: Int) -> Int {
     let v2 = v0 == 0
     let v4 =
         case v2 {
-            True -> {
-                v1
-            }
-            False -> {
-                method1(v0, v1)
-            }
+            True -> v1
+            False -> method1(v0, v1)
         }
     let v5 = spiral_wrap_signed(v4 - 55, 32)
     v5

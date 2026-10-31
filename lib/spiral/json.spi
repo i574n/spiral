@@ -16,9 +16,9 @@ test json static =
 
 test decode_reads_a_flat_record =
     := ~reply = "{\"location\":\"Cincinnati\",\"days\":3,\"metric\":true}"
-    := args : weather_query = decode reply
-    := bonus = ? args.metric ?> 100i32 |: 0i32
-    args.days + bonus + sm.length args.location
+    := q : weather_query = decode reply
+    := bonus = ? q.metric ?> 100i32 |: 0i32
+    q.days + bonus + sm.length q.location
     |> _assert_eq 113i32
 
 :== city_query = { city : string; days : option i32; units : option string }
@@ -108,24 +108,34 @@ test decode_reads_tuples_as_pairs =
 :| region = RegionCity : string | RegionPoint : f64 * f64 | RegionHere
 :== forecast_args = { where : region; days : option i32; units : units; hours : array_base i32 }
 
+:= forecast_schema_head () : string =
+    "{\"name\":\"getForecast\",\"parameters\":{\"type\":\"object\",\"properties\":{\"where\":{\"oneOf\":["
+
+:= forecast_city_schema () : string =
+    "{\"type\":\"object\",\"properties\":{\"RegionCity\":{\"type\":\"string\"}},"
+    ^^ "\"required\":[\"RegionCity\"]},"
+
+:= forecast_point_schema () : string =
+    "{\"type\":\"object\",\"properties\":{\"RegionPoint\":{\"type\":\"array\","
+    ^^ "\"prefixItems\":[{\"type\":\"number\"},{\"type\":\"number\"}]}},\"required\":[\"RegionPoint\"]},"
+
+:= forecast_days_units_schema () : string =
+    "{\"const\":\"RegionHere\"}]},\"days\":{\"type\":\"integer\"},\"units\":{\"type\":\"string\","
+    ^^ "\"oneOf\":[{\"const\":\"Metric\"},{\"const\":\"Imperial\"}]},"
+
+:= forecast_hours_schema () : string =
+    "\"hours\":{\"type\":\"array\",\"items\":{\"type\":\"integer\"}}},\"required\":[\"where\",\"units\","
+    ^^ "\"hours\"]}}"
+
+:= forecast_schema () : string =
+    := head = sm'.concat_list "" [ forecast_schema_head (); forecast_city_schema (); forecast_point_schema () ]
+    sm'.concat_list "" [ head; forecast_days_units_schema (); forecast_hours_schema () ]
+
+:= forecast_here () : forecast_args =
+    { where = RegionHere; days = None; units = Metric; hours = am'.init_base 3i32 (\ _ => 0i32) }
+
 test tool_schema_describes_records_unions_options_and_arrays =
-    := args : forecast_args =
-        {
-            where = RegionHere
-            days = None
-            units = Metric
-            hours = am'.init_base 3i32 \ _ => 0i32
-        }
-    tool_schema "getForecast" args
-    |> _assert_eq (
-           "{\"name\":\"getForecast\",\"parameters\":{\"type\":\"object\",\"properties\":{\"where\":{\"oneOf\":[{\""
-           ^^ "type\":\"object\",\"properties\":{\"RegionCity\":{\"type\":\"string\"}},\"required\":[\"RegionCity\"]},"
-           ^^ "{\"type\":\"object\",\"properties\":{\"RegionPoint\":{\"type\":\"array\",\"prefixItems\":[{\"type\":\"n"
-           ^^ "umber\"},{\"type\":\"number\"}]}},\"required\":[\"RegionPoint\"]},{\"const\":\"RegionHere\"}]},\"days\""
-           ^^ ":{\"type\":\"integer\"},\"units\":{\"type\":\"string\",\"oneOf\":[{\"const\":\"Metric\"},{\"const\":\"I"
-           ^^ "mperial\"}]},\"hours\":{\"type\":\"array\",\"items\":{\"type\":\"integer\"}}},\"required\":[\"where\",\""
-           ^^ "units\",\"hours\"]}}"
-       )
+    tool_schema "getForecast" (forecast_here ()) |> _assert_eq (forecast_schema ())
 
 :== quote_query = { said : string; path : string; days : i32 }
 

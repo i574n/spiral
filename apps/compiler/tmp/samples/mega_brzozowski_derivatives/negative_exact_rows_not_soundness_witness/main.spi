@@ -1,5 +1,5 @@
-open main
-open exact_soundness_witnesses
+:< main
+:< exact_soundness_witnesses
 
-inl main () : bool =
+:= main () : bool =
     require_exact_soundness_witness (one_bit_row_for_negative ())

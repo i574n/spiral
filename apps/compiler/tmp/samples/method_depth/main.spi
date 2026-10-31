@@ -1,14 +1,14 @@
-inl make (n : i32) : i32 -> i32 -> i32 =
-    inl g (y : i32) : i32 -> i32 =
-        inl h (x : i32) : i32 =
-            if n =. 0i32 then 0i32 else x +. n
+:= make (n : i32) : i32 -> i32 -> i32 =
+    := g (y : i32) : i32 -> i32 =
+        := h (x : i32) : i32 =
+            ? n =. 0i32 ?> 0i32 |: x +. n
         h
     g
 
-inl main () : i32 =
-    inl ~n = 7i32
-    inl mid = join make n
-    inl ~c = mid
-    inl inner = c 0i32
-    inl ~e = inner
-    if e 0i32 =. 7i32 then 0i32 else 1i32
+:= main () : i32 =
+    := ~n = 7i32
+    := mid = ~~ make n
+    := ~c = mid
+    := inner = c 0i32
+    := ~e = inner
+    ? e 0i32 =. 7i32 ?> 0i32 |: 1i32

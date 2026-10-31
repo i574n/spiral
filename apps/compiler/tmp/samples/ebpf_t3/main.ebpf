@@ -83,10 +83,10 @@ static int32_t sp_method0(int32_t p0) {
     int32_t v1 = 0;
     int32_t v2 = 0;
     int32_t v3 = 0;
-    SpiralTuple0 spiral_tuple126 = sp_method1(v0);
-    v1 = spiral_tuple126.v0;
-    v2 = spiral_tuple126.v1;
-    v3 = spiral_tuple126.v2;
+    SpiralTuple0 spiral_tuple121 = sp_method1(v0);
+    v1 = spiral_tuple121.v0;
+    v2 = spiral_tuple121.v1;
+    v3 = spiral_tuple121.v2;
     bool v4 = false;
     v4 = (v1 == 3);
     bool v6 = false;

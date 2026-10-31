@@ -1,16 +1,16 @@
-open model.state
+:< model::state
 
-prototype score s : s -> i32
+:? score s : s -> i32
 
-instance score outcome_t = fun result =>
-    match result with
+:+ score outcome_t = \ result =>
+    ?= result ?|
     | Idle => 3i32
     | Text _ => 5i32
     | Note _ => 6i32
 
-inl evaluate forall a {score}. (derive : i32 -> a) (seed : i32) : i32 =
-    score (join derive seed)
+:= evaluate \* a {score}. (derive : i32 -> a) (seed : i32) : i32 =
+    score (~~ derive seed)
 
-inl run () : i32 =
-    inl ~derive = (fun seed => if seed = 1i32 then Text "alpha" else Note "beta") : i32 -> outcome_t
+:= run () : i32 =
+    := ~derive = (\ seed => ? seed = 1i32 ?> Text "alpha" |: Note "beta") : i32 -> outcome_t
     evaluate derive 1i32 + evaluate derive 2i32 + 31i32

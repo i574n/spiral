@@ -1,0 +1,35 @@
+:= ^ spin (k : i32) : i32 =
+    ? k = 0i32 ?> 0i32
+    |: spin (k - 1i32)
+
+:= arms (x : i32) : i32 =
+    !!!!BackendSwitch({
+        Gleam = \ () => x
+        Lua = \ () => x
+        Fsharp = \ () => x
+        Python = \ () => x
+        Cpp = \ () => x
+        Rust = \ () => x
+        CppHost = \ () => x
+        Zig = \ () => x
+        Lean = \ () => x
+        TypeScript = \ () => x
+        C = \ () => x
+        Delphi = \ () => x
+        Wasm = \ () => x
+        Kotlin = \ () => x
+        Swift = \ () => x
+        Bend = \ () =>
+            := _ = spin 2000i32
+            !+
+    })
+
+:~ first (x : i32) : i32 = arms x
+
+:~ second (x : i32) : i32 = arms x
+
+:~ third (x : i32) : i32 = arms x
+
+:= main () : i32 =
+    := ~x = 1i32
+    first x + second x + third x

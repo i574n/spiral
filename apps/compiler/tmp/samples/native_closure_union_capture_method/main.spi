@@ -1,19 +1,19 @@
-union outcome =
+:| outcome =
     | Idle
     | Hit : i32
     | Flag : bool
 
-let score x : i32 =
-    match x with
+:~ score x : i32 =
+    ?= x ?|
     | Idle => 3i32
     | Hit value => value
-    | Flag value => if value then 11i32 else 5i32
+    | Flag value => ? value ?> 11i32 |: 5i32
 
-inl main () : i32 =
-    inl ~selector = 2i32
-    inl captured =
-        if selector =. 0i32 then Idle
-        elif selector =. 1i32 then Hit 7i32
-        else Flag true
-    inl ~apply = (fun addend => score captured +. addend) : i32 -> i32
-    join apply 31i32
+:= main () : i32 =
+    := ~selector = 2i32
+    := captured =
+        ? selector =. 0i32 ?> Idle
+        |? selector =. 1i32 ?> Hit 7i32
+        |: Flag !+
+    := ~apply = (\ addend => score captured +. addend) : i32 -> i32
+    ~~ apply 31i32

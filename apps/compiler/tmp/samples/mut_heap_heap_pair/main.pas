@@ -1,5 +1,6 @@
 program SpiralGenerated;
 {$mode delphi}{$H+}
+{$IFDEF CPUX86_64}{$OPTIMIZATION NOREGVAR}{$ENDIF}
 {$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
 type
@@ -127,5 +128,6 @@ end;
 var SpiralOutputBuffer: array[0..65535] of Char;
 begin
   SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
+  SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
   Halt(SpiralMain);
 end.

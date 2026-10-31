@@ -6,9 +6,9 @@
 :! attribute t =
     `(
         backend_switch `(()) `({}) {
-            Gleam = (\ () => global "import lustre/internals/vdom") : () -> ()
+            Gleam = (\ () => global "import lustre/attribute") : () -> ()
         }
-        $'' : $'vdom.Attribute(`t)'
+        $'' : $'attribute.Attribute(`t)'
     )
 
 /// ### element
@@ -34,7 +34,22 @@
 := style \* t. (styles : list (string * string)) : attribute t =
     global "import lustre/attribute"
     := styles = styles |> listm'.box
-    $'attribute.style(!styles)'
+    $'attribute.styles(!styles)'
+
+/// ### class
+:= class \* t. (name : string) : attribute t =
+    global "import lustre/attribute"
+    $'attribute.class(!name)'
+
+/// ### role
+:= role \* t. (name : string) : attribute t =
+    global "import lustre/attribute"
+    $'attribute.role(!name)'
+
+/// ### attr
+:= attr \* t. (name : string) (value : string) : attribute t =
+    global "import lustre/attribute"
+    $'attribute.attribute(!name, !value)'
 
 /// ### div
 := div \* t. (attributes : list (attribute t)) (children : list (element t)) : element t =
@@ -52,16 +67,14 @@
 
 /// ### button
 := button \* t. (attributes : list (attribute t)) (children : list (element t)) : element t =
-    global "import lustre/ui/button"
-    := attributes = attributes |> listm'.box
+    global "import lustre/element/html"
+    := attributes = (class "lustre-ui-button" :: role "button" :: attr "tabindex" "0" :: attributes) |> listm'.box
     := children = children |> listm'.box
-    $'button.button(!attributes, !children)'
+    $'html.button(!attributes, !children)'
 
 /// ### centre
 := centre \* t. (attributes : list (attribute t)) (children : element t) : element t =
-    global "import lustre/ui/centre"
-    := attributes = attributes |> listm'.box
-    $'centre.centre(!attributes, !children)'
+    div (class "lustre-ui-centre" :: attributes) [ children ]
 
 /// ### app
 :! app model msg = $'lustre.App(`model, `model, `msg)'
@@ -147,7 +160,7 @@
     ? actual <> expected
     ?> failwith ("__assert_eq { actual = " ++# actual ++# "; expected = " ++# expected ++# " }")
 
-///> gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
+///> gleam -t javascript -d lustre=\">=5.7.0\" gleam_json=\">=2.0.0\"
 test tests =
     := model = init (dyn -3i32)
     := model = update 1i32 (model, Incr)
@@ -158,12 +171,12 @@ test tests =
     |> to_html
     |> expect_html (
         "<div style=\"display:flex;\"><div style=\"display:flex;flex-direction:column;\"><button "
-        ^^ "role=\"button\" tabindex=\"0\" class=\"lustre-ui-button\">+</button><p "
-        ^^ "style=\"text-align:center;\">1</p><button role=\"button\" tabindex=\"0\" "
-        ^^ "class=\"lustre-ui-button\">-</button></div></div>"
+        ^^ "class=\"lustre-ui-button\" role=\"button\" tabindex=\"0\">+</button><p "
+        ^^ "style=\"text-align:center;\">1</p><button class=\"lustre-ui-button\" role=\"button\" "
+        ^^ "tabindex=\"0\">-</button></div></div>"
     )
 
-///> gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
+///> gleam -t javascript -d lustre=\">=5.7.0\" gleam_json=\">=2.0.0\"
 test tests_2 =
     := model = init (dyn 5i32)
     := model = update 2i32 (model, Decr)
@@ -172,7 +185,7 @@ test tests_2 =
     |> to_html
     |> expect_html (
         "<div style=\"display:flex;\"><div style=\"display:flex;flex-direction:column;\"><button "
-        ^^ "role=\"button\" tabindex=\"0\" class=\"lustre-ui-button\">+</button><p "
-        ^^ "style=\"text-align:center;\">3</p><button role=\"button\" tabindex=\"0\" "
-        ^^ "class=\"lustre-ui-button\">-</button></div></div>"
+        ^^ "class=\"lustre-ui-button\" role=\"button\" tabindex=\"0\">+</button><p "
+        ^^ "style=\"text-align:center;\">3</p><button class=\"lustre-ui-button\" role=\"button\" "
+        ^^ "tabindex=\"0\">-</button></div></div>"
     )

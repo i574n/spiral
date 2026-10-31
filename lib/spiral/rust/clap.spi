@@ -1,0 +1,288 @@
+/// # clap
+test clap static =
+    :< testing
+
+:< rust
+:< rust.rust_operators
+:< sm'_operators
+
+/// ## clap
+
+/// ### command
+:! command =
+    `(
+        rust.rust_type
+            `($'clap_Command')
+            `($'clap::Command')
+            "type clap_Command = class end"
+    )
+
+/// ### new_command
+:= new_command (s : rust.static_ref sm'.str) : command =
+    !\\(s, $'"clap::Command::new($0)"')
+
+///> rust -d clap
+test new_command =
+    ###"command"
+    |> new_command
+    |> sm'.format_pretty
+    |> _assert sm'.contains "\"command\""
+
+/// ### arg
+:! arg =
+    `(
+        rust.rust_type
+            `($'clap_Arg')
+            `($'clap::Arg')
+            "type clap_Arg = class end"
+    )
+
+/// ### new_arg
+:= new_arg (s : rust.static_ref sm'.str) : arg =
+    !\\(s, $'"clap::Arg::new($0)"')
+
+///> rust -d clap
+test new_arg =
+    ###"arg"
+    |> new_arg
+    |> sm'.format_pretty
+    |> _assert sm'.contains "\"arg\""
+
+/// ### command_arg
+:= command_arg (arg : arg) (command : command) : command =
+    !\\((command, arg), $'"clap::Command::arg($0, $1)"')
+
+/// ### arg_required
+:= arg_required (value : bool) (arg : arg) : arg =
+    !\\((arg, value), $'"$0.required($1)"')
+
+/// ### arg_require_equals
+:= arg_require_equals (value : bool) (arg : arg) : arg =
+    !\\((arg, value), $'"$0.require_equals($1)"')
+
+/// ### arg_default_value
+:= arg_default_value (value : string) (arg : arg) : arg =
+    := value = #value
+    !\\((arg, value), $'"$0.default_value(&*Box::leak(String::from($1).into_boxed_str()))"')
+
+/// ### arg_default_missing_value
+:= arg_default_missing_value (value : string) (arg : arg) : arg =
+    := value = #value
+    backend_switch {
+        Rust = fun () => !\\((arg, value), $'"$0.default_missing_value(&*Box::leak(String::from($1).into_boxed_str()))\
+            "') : arg
+    }
+
+/// ### arg_short
+:= arg_short (value : char) (arg : arg) : arg =
+    !\\((arg, value), $'"$0.short($1 as char)"')
+
+/// ### arg_long
+:= arg_long (value : rust.static_ref sm'.str) (arg : arg) : arg =
+    !\\((arg, value), $'"$0.long($1)"')
+
+/// ### arg_value_names
+:= arg_value_names (values : array_base (rust.static_ref sm'.str)) (arg : arg) : arg =
+    := values = values |> am'.to_vec
+    !\\((arg, values), $'"$0.value_names($1)"')
+
+/// ### value_range
+:! value_range =
+    `(
+        rust.rust_type
+            `($'clap_builder_ValueRange')
+            `($'clap::builder::ValueRange')
+            "type clap_builder_ValueRange = class end"
+    )
+
+/// ### new_value_range
+:= new_value_range \* t. inclusive (start : _ t) (end : _ t) : value_range =
+    := len () =
+        0i32 |> convert.convert
+    := start, end =
+        :< am'
+        ?= start, end ?|
+        | Start start, End fn =>
+            start, len |> fn
+        | End start_fn, End end_fn =>
+            start_fn len, end_fn len
+    := inclusive =
+        ? inclusive
+        ?> "="
+        |: ""
+    ?= start, end ?|
+    | start, end ?& end =. len () => !\\(start, $'"clap::builder::ValueRange::new($0..)"')
+    | start, end => !\\((start, end), $'"clap::builder::ValueRange::new($0.." + !inclusive + "$1)"')
+
+/// ### arg_num_args_range
+:= arg_num_args_range (value : value_range) (arg : arg) : arg =
+    !\\((arg, value), $'"$0.num_args($1)"')
+
+/// ### value_parser
+:! value_parser =
+    `(
+        rust.rust_type
+            `($'clap_builder_ValueParser')
+            `($'clap::builder::ValueParser')
+            "type clap_builder_ValueParser = class end"
+    )
+
+/// ### possible_value
+:! possible_value =
+    `(
+        rust.rust_type
+            `($'clap_builder_PossibleValue')
+            `($'clap::builder::PossibleValue')
+            "type clap_builder_PossibleValue = class end"
+    )
+
+/// ### new_possible_value
+:= new_possible_value \* t. (x : t) : possible_value =
+    !\\(x, $'"clap::builder::PossibleValue::new(&**$0)"')
+
+/// ### arg_value_parser
+:= arg_value_parser (values : value_parser) (arg : arg) : arg =
+    !\\((arg, values), $'"$0.value_parser($1)"')
+
+/// ### arg_action
+:! arg_action' =
+    `(
+        rust.rust_type
+            `($'clap_ArgAction')
+            `($'clap::ArgAction')
+            "type clap_ArgAction = class end"
+    )
+
+:| arg_action =
+    | Set
+    | Append
+    | SetTrue
+    | SetFalse
+    | Count
+    | Help
+    | HelpShort
+    | HelpLong
+    | Version
+
+:= arg_action = \|
+    | Set => !\($'"clap::ArgAction::Set"') : arg_action'
+    | Append => !\($'"clap::ArgAction::Append"') : arg_action'
+    | SetTrue => !\($'"clap::ArgAction::SetTrue"') : arg_action'
+    | SetFalse => !\($'"clap::ArgAction::SetFalse"') : arg_action'
+    | Count => !\($'"clap::ArgAction::Count"') : arg_action'
+    | Help => !\($'"clap::ArgAction::Help"') : arg_action'
+    | HelpShort => !\($'"clap::ArgAction::HelpShort"') : arg_action'
+    | HelpLong => !\($'"clap::ArgAction::HelpLong"') : arg_action'
+    | Version => !\($'"clap::ArgAction::Version"') : arg_action'
+
+:= arg_action (value : arg_action) (arg : arg) : arg =
+    := value = value |> arg_action
+    !\\((arg, value), $'"$0.action($1)"')
+
+/// ### arg_index
+:= arg_index (value : i32) (arg : arg) : arg =
+    := index : convert.unativeint = convert.convert value
+    !\\((arg, index), $'"$0.index($1)"')
+
+/// ### arg_matches
+:! arg_matches =
+    `(
+        rust.rust_type
+            `($'clap_ArgMatches')
+            `($'clap::ArgMatches')
+            "type clap_ArgMatches = class end"
+    )
+
+/// ### command_get_matches
+:= command_get_matches (command : command) : arg_matches =
+    !\\(command, $'"clap::Command::get_matches($0)"')
+
+/// ### command_get_matches_from
+:= command_get_matches_from (args : array_base string) (command : command) : arg_matches =
+    := args = args |> am'.to_vec |> am'.vec_map sm'.to_std_string
+    !\\(command, $'"clap::Command::get_matches_from($0, !args)"')
+
+/// ### command_args_override_self
+:= command_args_override_self (yes : bool) (command : command) : command =
+    !\\(command, $'"clap::Command::args_override_self($0, !yes)"')
+
+/// ### command_init_arg
+:= command_init_arg (long, short) fn command =
+    command
+    |> command_arg (
+        ###long
+        |> new_arg
+        |> arg_short short
+        |> arg_long ###long
+        |> fn
+    )
+
+/// ### matches_get_one
+:= matches_get_one \* t. (x : string) (matches : arg_matches) : optionm'.option' t =
+    := x = ~~ x
+    := x = x |> sm'.as_str
+    !\\((matches, x), $'"clap::ArgMatches::get_one(&$0, $1).cloned()"')
+
+/// ### matches_get_flag
+:= matches_get_flag (x : string) (matches : arg_matches) : bool =
+    := x = ~~ x
+    := x = x |> sm'.as_str
+    !\\((matches, x), $'"clap::ArgMatches::get_flag(&$0, $1)"')
+
+/// ### matches_get_many
+:= matches_get_many \* t. (x : string) (matches : arg_matches) : optionm'.option' (am'.vec t) =
+    := x = ~~ x
+    := x = x |> sm'.as_str
+    !\\((matches, x), $'"clap::ArgMatches::get_many(&$0, $1).map(|x| x.cloned().into_iter().collect())"')
+
+/// ### matches_subcommand
+:= matches_subcommand (matches : arg_matches) : optionm'.option' (sm'.std_string * arg_matches) =
+    !\\((matches, sm'.ref_to_std_string), $'"clap::ArgMatches::subcommand(Box::leak(Box::new($0))).map(|(a, b)| \
+        ($1(a), b.clone()))"')
+
+/// ### command_subcommand_required
+:= command_subcommand_required (value : bool) (command : command) : command =
+    !\\(command, $'"clap::Command::subcommand_required($0, !value)"')
+
+/// ### command_subcommand
+:= command_subcommand (subcommand : command) (command : command) : command =
+    !\\(command, $'"clap::Command::subcommand($0, !subcommand)"')
+
+/// ### value_parser_possible_values
+:= value_parser_possible_values (values : array_base string) : value_parser =
+    := values =
+        values
+        |> am'.to_vec
+        |> am'.vec_map (sm'.to_std_string >> rust.new_box >> rust.box_leak >> new_possible_value)
+    !\\(values, $'"Into::<clap::builder::ValueParser>::into(clap::builder::PossibleValuesParser::new($0))"')
+
+/// ### arg_union
+:= arg_union \* union_type. (fn : union_type -> ()) (arg : arg) : arg =
+    arg
+    |> arg_value_parser (
+        ~> reflection.get_union_fields_untag `union_type ()
+        |> \ x => x : _ (string * union_type)
+        |> listm.map (fst >> sm'.to_lower)
+        |> listm'.box
+        |> listm'.to_array'
+        |> value_parser_possible_values
+    )
+
+///> rust -d clap
+test arg_union =
+    ###"command"
+    |> new_command
+    |> command_init_arg ("trace-level", 't') (
+        ~> arg_union `trace_level ignore
+    )
+    |> command_get_matches_from (am'.base ;[ "_"; "--trace-level"; "critical" ])
+    |> matches_get_one "trace-level"
+    |> optionm'.unwrap
+    |> sm'.from_std_string
+    |> reflection.union_try_pick
+    |> optionm.value
+    |> _assert_eq Critical
+
+/// ### command_debug_assert
+:= command_debug_assert (command : command) : () =
+    !\\(command, $'"clap::Command::debug_assert($0)"')

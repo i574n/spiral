@@ -11,9 +11,9 @@ fun sp_method1(p0: Int, p1: Array<Int>, p2: Array<Int>): Array<Int> {
             return v2
         } else {
             v0 = v3
-            val t357_1: Array<Int> = v1
+            val t344_1: Array<Int> = v1
             v1 = v2
-            v2 = t357_1
+            v2 = t344_1
             continue
         }
     }

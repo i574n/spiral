@@ -67,9 +67,7 @@ pub type Us1 {
 pub type Heap4 { Heap4(l0 : Us1) }
 pub fn score_0(v0: Us1) -> Int {
     case v0  {
-        Us1Absent -> {
-            1
-        }
+        Us1Absent -> 1
         Us1Box(v1) -> {
             let v2 = v1.l0
             case v2  {
@@ -85,9 +83,7 @@ pub fn score_0(v0: Us1) -> Int {
                                 let v13 = v9 == "hi"
                                 v13
                             }
-                            False -> {
-                                False
-                            }
+                            False -> False
                         }
                     let v16 =
                         case v14 {
@@ -95,9 +91,7 @@ pub fn score_0(v0: Us1) -> Int {
                                 let v15 = v10 == 4
                                 v15
                             }
-                            False -> {
-                                False
-                            }
+                            False -> False
                         }
                     let v18 =
                         case v16 {
@@ -105,9 +99,7 @@ pub fn score_0(v0: Us1) -> Int {
                                 let v17 = v11 == "yo"
                                 v17
                             }
-                            False -> {
-                                False
-                            }
+                            False -> False
                         }
                     let v20 =
                         case v18 {
@@ -115,31 +107,21 @@ pub fn score_0(v0: Us1) -> Int {
                                 let v19 = v5 == 2
                                 v19
                             }
-                            False -> {
-                                False
-                            }
+                            False -> False
                         }
                     case v20 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 }
-                Us0None -> {
-                    1
-                }
+                Us0None -> 1
             }
         }
     }
 }
 pub fn score_b_1(v0: Us1) -> Int {
     case v0  {
-        Us1Absent -> {
-            1
-        }
+        Us1Absent -> 1
         Us1Box(v1) -> {
             let v2 = v1.l0
             case v2  {
@@ -155,9 +137,7 @@ pub fn score_b_1(v0: Us1) -> Int {
                                 let v13 = v9 == "ok"
                                 v13
                             }
-                            False -> {
-                                False
-                            }
+                            False -> False
                         }
                     let v16 =
                         case v14 {
@@ -165,9 +145,7 @@ pub fn score_b_1(v0: Us1) -> Int {
                                 let v15 = v10 == 5
                                 v15
                             }
-                            False -> {
-                                False
-                            }
+                            False -> False
                         }
                     let v18 =
                         case v16 {
@@ -175,9 +153,7 @@ pub fn score_b_1(v0: Us1) -> Int {
                                 let v17 = v11 == "no"
                                 v17
                             }
-                            False -> {
-                                False
-                            }
+                            False -> False
                         }
                     let v20 =
                         case v18 {
@@ -185,22 +161,14 @@ pub fn score_b_1(v0: Us1) -> Int {
                                 let v19 = v5 == 9
                                 v19
                             }
-                            False -> {
-                                False
-                            }
+                            False -> False
                         }
                     case v20 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 }
-                Us0None -> {
-                    1
-                }
+                Us0None -> 1
             }
         }
     }
@@ -248,16 +216,10 @@ pub fn main() {
                 let v34 = v32 == 0
                 v34
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v35 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

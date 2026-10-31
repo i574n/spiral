@@ -1,15 +1,15 @@
-inl main () : i32 =
-    inl ar : array i32 = arraym.init 3 (fun j => j * 5)
-    inl i = mut 0i32
-    inl odd = mut 0i32
-    inl acc = mut (Nil : list i32)
-    loop.while' (fun _ => *i < 4) fun _ =>
-        inl x = *i
-        if x % 2 = 1 then odd <- *odd + 1
+:= main () : i32 =
+    := ar : array i32 = arraym::init 3 (\ j => j * 5)
+    := i = mut 0i32
+    := odd = mut 0i32
+    := acc = mut (Nil : list i32)
+    loop::while' (\ _ => *i < 4) \ _ =>
+        := x = *i
+        ? x % 2 = 1 ?> odd <- *odd + 1
         acc <- Cons (x, *acc)
         i <- x + 1
-    inl r =
-        match *acc with
+    := r =
+        ?= *acc ?|
         | Cons (a, Cons (b, Cons (c, Cons (d, Nil)))) => a * 64 + b * 16 + c * 4 + d
         | _ => -1
     r + *odd + index ar 2 - index ar 1

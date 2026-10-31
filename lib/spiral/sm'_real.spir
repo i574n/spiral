@@ -968,6 +968,8 @@ test symbol_to_string =
 
 /// ### ellipsis
 
+/// ### clip
+
 /// ## fsharp
 
 /// ### gleam_dynamic
@@ -1014,11 +1016,17 @@ test symbol_to_string =
 
 /// ### char_to_upper
 
+/// ### char_code
+
+/// ### of_char
+
 /// ### builder_append
 
 /// ### builder_replace
 
 /// ### builder_clear
+
+/// ### rust_char_offset
 
 /// ### builder_insert
 
@@ -1045,6 +1053,8 @@ test symbol_to_string =
 /// ### to_string any
 
 /// ### replace
+
+/// ### split_portable
 
 /// ### split
 
@@ -1239,6 +1249,20 @@ test symbol_to_string =
 /// ### format_exception
 
 /// ### range
+
+/// ### decimal_text
+
+/// ### char_text
+
+/// ### bytes_between
+
+/// ### all_digits
+
+/// ### first_line
+
+/// ### after_first_line
+
+/// ### split_nth
 
 /// ### ellipsis_end
 

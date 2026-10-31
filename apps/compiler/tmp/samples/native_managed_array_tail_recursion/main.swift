@@ -17,9 +17,9 @@ func sp_method1(_ p0: Int32, _ p1: SpiralArray<Int32>, _ p2: SpiralArray<Int32>)
             return v2
         } else {
             v0 = v3
-            let t408_1: SpiralArray<Int32> = v1
+            let t395_1: SpiralArray<Int32> = v1
             v1 = v2
-            v2 = t408_1
+            v2 = t395_1
             continue
         }
     }

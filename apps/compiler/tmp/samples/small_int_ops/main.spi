@@ -1,30 +1,30 @@
-inl main () : i32 =
-    inl ~a = 100i8
-    inl ~three = 3i8
-    inl mul = a *. three
-    inl ~n = 0i8 -. 8i8
-    inl ~two = 2i8
-    inl dv = n /. two
-    inl md = n %. three
-    inl neg = !!!!Neg(three)
-    inl sh = !!!!ShiftLeft(a, 1i32)
-    inl ~b = 200u8
-    inl ~c = 3u8
-    inl ud = b /. c
-    inl um = b %. c
-    inl ~mask = 15u8
-    inl band = !!!!BitwiseAnd(b, mask)
-    inl bor = !!!!BitwiseOr(b, mask)
-    inl bxor = !!!!BitwiseXor(b, mask)
-    inl inv = !!!!BitwiseComplement(mask)
-    inl ~p = 20000i16
-    inl ~seven = 7i16
-    inl d16 = p /. seven
-    inl m16 = p %. seven
-    inl n16 = !!!!Neg(p)
-    inl ~q = 40000u16
-    inl sh16 = !!!!ShiftLeft(q, 1i32)
-    if
+:= main () : i32 =
+    := ~a = 100i8
+    := ~three = 3i8
+    := mul = a *. three
+    := ~n = 0i8 -. 8i8
+    := ~two = 2i8
+    := dv = n /. two
+    := md = n %. three
+    := neg = !!!!Neg(three)
+    := sh = !!!!ShiftLeft(a, 1i32)
+    := ~b = 200u8
+    := ~c = 3u8
+    := ud = b /. c
+    := um = b %. c
+    := ~mask = 15u8
+    := band = !!!!BitwiseAnd(b, mask)
+    := bor = !!!!BitwiseOr(b, mask)
+    := bxor = !!!!BitwiseXor(b, mask)
+    := inv = !!!!BitwiseComplement(mask)
+    := ~p = 20000i16
+    := ~seven = 7i16
+    := d16 = p /. seven
+    := m16 = p %. seven
+    := n16 = !!!!Neg(p)
+    := ~q = 40000u16
+    := sh16 = !!!!ShiftLeft(q, 1i32)
+    ?
         mul =. 44i8
         && dv =. (0i8 -. 4i8)
         && md =. (0i8 -. 2i8)
@@ -40,5 +40,5 @@ inl main () : i32 =
         && m16 =. 1i16
         && n16 =. (0i16 -. 20000i16)
         && sh16 =. 14464u16
-    then 0i32
-    else 1i32
+    ?> 0i32
+    |: 1i32

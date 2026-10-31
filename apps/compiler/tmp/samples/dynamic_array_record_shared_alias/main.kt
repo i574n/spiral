@@ -35,9 +35,9 @@ fun sp_method2(p0: Array<Int>, p1: Int): Int {
 fun spiral_main(): Int {
     var v0: Array<Int> = emptyArray<Int>()
     var v1: Int = 0
-    val spiral_tuple91 = sp_method0()
-    v0 = spiral_tuple91.v0
-    v1 = spiral_tuple91.v1
+    val spiral_tuple88 = sp_method0()
+    v0 = spiral_tuple88.v0
+    v1 = spiral_tuple88.v1
     var v2: Int = 0
     v2 = sp_method1(v0, v1)
     var v3: Int = 0

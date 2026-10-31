@@ -11,16 +11,10 @@ pub fn main() {
                 let v6 = v4 == 1.5
                 v6
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v7 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

@@ -22,9 +22,7 @@ pub fn main() {
                 let v9 = v8 == 8.0
                 v9
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v12 =
         case v10 {
@@ -32,9 +30,7 @@ pub fn main() {
                 let v11 = v4 >. 3.0
                 v11
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v14 =
         case v12 {
@@ -42,9 +38,7 @@ pub fn main() {
                 let v13 = v4 <. 4.0
                 v13
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v16 =
         case v14 {
@@ -52,9 +46,7 @@ pub fn main() {
                 let v15 = v5 >. 3.0
                 v15
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v18 =
         case v16 {
@@ -62,16 +54,10 @@ pub fn main() {
                 let v17 = v5 <. 4.0
                 v17
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v18 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

@@ -1,24 +1,24 @@
-nominal s0 = ()
-nominal s1 = ()
-nominal s2 = ()
-nominal s3 = ()
+:! s0 = ()
+:! s1 = ()
+:! s2 = ()
+:! s3 = ()
 
-union operation from to =
+:| operation from to =
     | Step01 :: operation s0 s1
     | Step23 :: operation s2 s3
 
-union node from to =
-    | Node :: forall from to. operation from to * string -> node from to
+:| node from to =
+    | Node :: \* from to. operation from to * string -> node from to
 
-union rec typed_plan from to =
-    | PlanLeaf :: forall from to. node from to -> typed_plan from to
-    | PlanThen :: forall from to.
-        (exists middle. typed_plan from middle * node middle to)
+:| ^ typed_plan from to =
+    | PlanLeaf :: \* from to. node from to -> typed_plan from to
+    | PlanThen :: \* from to.
+        (\? middle. typed_plan from middle * node middle to)
         -> typed_plan from to
 
-inl main () : string =
-    inl _ : typed_plan s0 s3 =
-        PlanThen (exists (
+:= main () : string =
+    := _ : typed_plan s0 s3 =
+        PlanThen (\? (
             PlanLeaf (Node (Step01, "step-1")),
             Node (Step23, "step-3")
         ))

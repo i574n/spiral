@@ -1,11 +1,11 @@
-inl pick (n : i32) : string * string =
-    if n =. 0i32 then
+:= pick (n : i32) : string * string =
+    ? n =. 0i32 ?>
         "no", "no"
-    else
+    |:
         "hi", "yo"
 
-inl main () : i32 =
-    inl ~n = 7i32
-    inl pair = join pick n
-    inl ~(left, right) = pair
-    if !!!!EQ(left, "hi") && !!!!EQ(right, "yo") then 0i32 else 1i32
+:= main () : i32 =
+    := ~n = 7i32
+    := pair = ~~ pick n
+    := ~(left, right) = pair
+    ? !!!!EQ(left, "hi") && !!!!EQ(right, "yo") ?> 0i32 |: 1i32

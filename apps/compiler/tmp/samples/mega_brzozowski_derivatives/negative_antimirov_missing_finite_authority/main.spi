@@ -1,11 +1,11 @@
-open main
+:< main
 
-union lone_symbol =
+:| lone_symbol =
     | Lone
 
-nominal lone_alphabet = lone_symbol
+:! lone_alphabet = lone_symbol
 
-instance symbol_compare lone_alphabet = fun _ _ => SymbolSame
+:+ symbol_compare lone_alphabet = \ _ _ => SymbolSame
 
-inl main () =
+:= main () =
     antimirov_certificate (RegexChar (lone_alphabet Lone))

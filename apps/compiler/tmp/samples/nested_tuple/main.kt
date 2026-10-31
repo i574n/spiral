@@ -27,11 +27,11 @@ fun spiral_main(): Int {
     var v2: Int = 0
     var v3: Int = 0
     var v4: Int = 0
-    val spiral_tuple143 = sp_method0(v0)
-    v1 = spiral_tuple143.v0
-    v2 = spiral_tuple143.v1
-    v3 = spiral_tuple143.v2
-    v4 = spiral_tuple143.v3
+    val spiral_tuple136 = sp_method0(v0)
+    v1 = spiral_tuple136.v0
+    v2 = spiral_tuple136.v1
+    v3 = spiral_tuple136.v2
+    v4 = spiral_tuple136.v3
     return sp_method1(v1, v2, v3, v4)
 }
 fun main() {

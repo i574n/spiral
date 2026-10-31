@@ -1,13 +1,13 @@
-inl make2 ~a ~b = a, b
+:= make2 ~a ~b = a, b
 
-inl make3 ~a ~b ~c = a, b, c
+:= make3 ~a ~b ~c = a, b, c
 
-inl sum2 ~(a, b) : i32 = a +. b
+:= sum2 ~(a, b) : i32 = a +. b
 
-inl sum3 ~(a, b, c) : i32 = a +. b +. c
+:= sum3 ~(a, b, c) : i32 = a +. b +. c
 
-inl main () : i32 =
-    inl ~a = 1i32
-    inl ~b = 2i32
-    inl ~c = 3i32
-    (join sum2 (join make2 a b)) +. (join sum3 (join make3 a b c)) -. 9i32
+:= main () : i32 =
+    := ~a = 1i32
+    := ~b = 2i32
+    := ~c = 3i32
+    (~~ sum2 (~~ make2 a b)) +. (~~ sum3 (~~ make3 a b c)) -. 9i32

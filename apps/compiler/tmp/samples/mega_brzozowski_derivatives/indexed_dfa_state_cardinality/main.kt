@@ -827,9 +827,9 @@ fun sp_loop_0(p0: Int, p1: UH1, p2: Int, p3: ULong, p4: Int): Int {
             v6 = UH2_InputEmpty
             var v7: UH2 = UH2_InputEmpty
             var v8: ULong = 0uL
-            val spiral_tuple426 = sp_random_bit_input_1(v3, v0, v6)
-            v7 = spiral_tuple426.v0
-            v8 = spiral_tuple426.v1
+            val spiral_tuple412 = sp_random_bit_input_1(v3, v0, v6)
+            v7 = spiral_tuple412.v0
+            v8 = spiral_tuple412.v1
             var v9: Int = 0
             v9 = 0
             var v10: Boolean = false

@@ -235,6 +235,7 @@
             )
         |? local = "sequence" ?> Some (Sequence { occurs = occurs; items = particles_of children [] })
         |? local = "choice" ?> Some (Choice { occurs = occurs; items = particles_of children [] })
+        |? local = "all" ?> Some (Sequence { occurs = occurs; items = particles_of children [] })
         |? local = "any" ?> Some (AnyContent ())
         |: None
     | XmlText _ => None
@@ -487,6 +488,18 @@ test any_wildcard_is_kept =
         ?= c.content ?|
         | Sequence s => ?= s.items ?| (AnyContent ()) :: [] => () | _ => failwith "xs:any becomes AnyContent"
         | _ => failwith "a sequence"
+    | _ => failwith "one complex type"
+
+///> rust
+test all_groups_keep_their_elements =
+    := text =
+        "<xs:schema><xs:complexType name=\"L\"><xs:all><xs:element name=\"longitude\" type=\"xs:decimal\"/>"
+        ^^ "<xs:element name=\"latitude\" type=\"xs:decimal\"/></xs:all></xs:complexType></xs:schema>"
+    ?= (read_schema text).complex_types ?|
+    | (Complex c) :: [] =>
+        ?= c.content ?|
+        | Sequence s => ?= s.items ?| (Element _) :: (Element _) :: [] => () | _ => failwith "both elements kept"
+        | _ => failwith "xs:all reads as a sequence of its elements, which readers claim by name in any order"
     | _ => failwith "one complex type"
 
 ///> rust

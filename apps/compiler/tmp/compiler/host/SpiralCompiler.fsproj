@@ -24,7 +24,8 @@
     <TieredPGO>false</TieredPGO>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Program.fs" />
+    <Compile Include="$(SpiralHostSource)" Condition="'$(SpiralHostSource)' != ''" />
+    <Compile Include="Program.fs" Condition="'$(SpiralHostSource)' == ''" />
     <!-- The C++/CUDA and Python backends' runtime (apps/compiler/runtime, upstream corelib + CPU-host deltas):
          CodegenCpp/CodegenPython read it next to the compiler binary. -->
     <None Include="..\..\..\runtime\corelib.cuh;..\..\..\runtime\corelib.py" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />

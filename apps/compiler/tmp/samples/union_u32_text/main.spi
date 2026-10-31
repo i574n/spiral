@@ -1,16 +1,16 @@
-union slot =
+:| slot =
     | None
     | Both : u32 * string
 
-let score x : i32 =
-    match x with
+:~ score x : i32 =
+    ?= x ?|
     | None => 1i32
     | Both (n, word) =>
-        if n =. 4000000000u32 && !!!!EQ(word, "hi") then 0i32 else 1i32
+        ? n =. 4000000000u32 && !!!!EQ(word, "hi") ?> 0i32 |: 1i32
 
-inl main () : i32 =
-    inl ~n = 4000000000u32
-    inl ~word = "hi"
-    inl ~flag = true
-    inl held = if flag then Both (n, word) else None
+:= main () : i32 =
+    := ~n = 4000000000u32
+    := ~word = "hi"
+    := ~flag = !+
+    := held = ? flag ?> Both (n, word) |: None
     score held

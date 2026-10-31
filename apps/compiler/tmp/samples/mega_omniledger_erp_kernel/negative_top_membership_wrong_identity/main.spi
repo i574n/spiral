@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_top_membership_wrong_identity
+:= impossible_top_membership_wrong_identity
     (recorded :
         typed_fx_hashed_statement_event_log
             typed_fx_hashed_secondary_position
@@ -12,5 +12,5 @@ inl impossible_top_membership_wrong_identity
         typed_fx_hashed_secondary_history =
     typed_fx_hashed_statement_top_membership_from_recorded_log recorded
 
-inl main () =
+:= main () =
     impossible_top_membership_wrong_identity

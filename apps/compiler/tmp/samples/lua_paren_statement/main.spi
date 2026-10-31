@@ -1,4 +1,4 @@
-inl main () : i32 =
-    inl ~x = 5i32
-    !!!!BackendSwitch({ C = fun () => $"(void)0" : (); Lua = fun () => $"(function() end)()" : (); Zig = fun () => () })
+:= main () : i32 =
+    := ~x = 5i32
+    !!!!BackendSwitch({ C = \ () => $"(void)0" : (); Lua = \ () => $"(function() end)()" : (); Zig = \ () => () })
     x + 2i32

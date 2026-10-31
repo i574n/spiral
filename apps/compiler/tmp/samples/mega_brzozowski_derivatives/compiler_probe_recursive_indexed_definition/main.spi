@@ -1,27 +1,27 @@
-nominal count_zero = ()
-nominal count_succ count = count
+:! count_zero = ()
+:! count_succ count = count
 
-union rec exact_vec count =
+:| ^ exact_vec count =
     | ExactVecNil :: exact_vec count_zero
-    | ExactVecCons :: forall count.
+    | ExactVecCons :: \* count.
         i32 * exact_vec count -> exact_vec (count_succ count)
 
-union exact_vec_validation count =
-    | ExactVecRejected :: forall count. exact_vec_validation count
-    | ExactVecCertified :: forall count.
+:| exact_vec_validation count =
+    | ExactVecRejected :: \* count. exact_vec_validation count
+    | ExactVecCertified :: \* count.
         exact_vec count -> exact_vec_validation count
 
-inl rec certify_exact_vec forall count.
+:= ^ certify_exact_vec \* count.
     (value : exact_vec count)
     : exact_vec_validation count =
-    match value with
+    ?= value ?|
     | ExactVecNil => ExactVecCertified ExactVecNil
     | ExactVecCons (head, rest) =>
-        match certify_exact_vec rest with
+        ?= certify_exact_vec rest ?|
         | ExactVecRejected => ExactVecRejected
         | ExactVecCertified rest_certified =>
-            inl rebuilt =
+            := rebuilt =
                 ExactVecCons (head, rest_certified)
             ExactVecCertified rebuilt
 
-inl main () : bool = true
+:= main () : bool = !+

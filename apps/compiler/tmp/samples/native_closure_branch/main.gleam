@@ -24,12 +24,8 @@ pub fn main() {
     let v0 = True
     let v3 =
         case v0 {
-            True -> {
-                a_c0(Nil)
-            }
-            False -> {
-                b_c1(Nil)
-            }
+            True -> a_c0(Nil)
+            False -> b_c1(Nil)
         }
     method0(v3)
 }

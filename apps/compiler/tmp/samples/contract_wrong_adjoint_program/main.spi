@@ -1,18 +1,18 @@
-nominal lineage_a = ()
-nominal program_a = ()
-nominal program_b = ()
-nominal dirty = ()
-nominal clean = ()
-nominal verified = ()
-union workspace lineage program state =
-    | Workspace :: forall lineage program state. string -> workspace lineage program state
-union adjoint_proof program state = | Adjoint :: forall program state. string -> adjoint_proof program state
-inl uncompute forall lineage program.
+:! lineage_a = ()
+:! program_a = ()
+:! program_b = ()
+:! dirty = ()
+:! clean = ()
+:! verified = ()
+:| workspace lineage program state =
+    | Workspace :: \* lineage program state. string -> workspace lineage program state
+:| adjoint_proof program state = | Adjoint :: \* program state. string -> adjoint_proof program state
+:= uncompute \* lineage program.
     (workspace : workspace lineage program dirty) (proof : adjoint_proof program verified)
     : workspace lineage program clean
     =
     Workspace "clean"
-inl main () =
-    inl workspace : workspace lineage_a program_a dirty = Workspace "dirty"
-    inl wrong : adjoint_proof program_b verified = Adjoint "wrong"
+:= main () =
+    := workspace : workspace lineage_a program_a dirty = Workspace "dirty"
+    := wrong : adjoint_proof program_b verified = Adjoint "wrong"
     uncompute workspace wrong

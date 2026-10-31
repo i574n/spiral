@@ -1,12 +1,12 @@
-open main
+:< main
 
-inl impossible_recursive_wal_recovery_receipt_version_mismatch
+:= impossible_recursive_wal_recovery_receipt_version_mismatch
     ()
     :
         erp_p2p_recursive_wal_recovery_receipt nat_four requisition_drafted goods_partially_received
     =
-    inl four_tree = erp_p2p_four_event_commit_tree ()
-    inl other_tree = erp_p2p_five_event_commit_tree ()
+    := four_tree = erp_p2p_four_event_commit_tree ()
+    := other_tree = erp_p2p_five_event_commit_tree ()
     erp_p2p_recursive_wal_recovery_receipt (
         erp_p2p_event_commit_tree_version four_tree,
         erp_p2p_event_commit_tree_authority other_tree,
@@ -14,5 +14,5 @@ inl impossible_recursive_wal_recovery_receipt_version_mismatch
         "forged-cross-version-WAL-recovery-receipt"
     )
 
-inl main () =
+:= main () =
     impossible_recursive_wal_recovery_receipt_version_mismatch ()

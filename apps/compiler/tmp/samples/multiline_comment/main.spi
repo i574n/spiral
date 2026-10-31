@@ -6,9 +6,9 @@
   comment *)
   and the multiplication operator (*) neither opens nor closes one.
 *)
-inl mul a b = (*) a b
+:= mul a b = (*) a b
 
-inl twice x =
+:= twice x =
     (* a comment in a body
 whose lines start at column 0 *)
     mul x 2i32
@@ -17,13 +17,13 @@ whose lines start at column 0 *)
 inl hidden () = this is not code
 *)
 
-inl three () = 3i32 (* trailing (* nested *) comment *)
+:= three () = 3i32 (* trailing (* nested *) comment *)
 
-inl main () : i32 =
-    inl ~x = 7i32
+:= main () : i32 =
+    := ~x = 7i32
     // a line comment: (* doesn't open one here
-    inl y = twice x (* *)
-    if y <> 14i32 then 1i32
-    elif three () <> 3i32 then 2i32
-    else 0i32
+    := y = twice x (* *)
+    ? y <> 14i32 ?> 1i32
+    |? three () <> 3i32 ?> 2i32
+    |: 0i32
 (* a comment that closes on the file's last line *)

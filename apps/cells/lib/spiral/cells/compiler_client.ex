@@ -529,7 +529,7 @@ defmodule Spiral.Cells.CompilerClient do
       $env:MIX_ENV = '#{mix_env()}'
       $env:SPIRAL_CELLS_COMPILER_PORT = '#{port}'
       $env:SPIRAL_CELLS_DAEMON_OWNER = '#{daemon_owner()}'
-      Start-Process -FilePath $env:ComSpec -WorkingDirectory '#{String.replace(project, "'", "''")}' -WindowStyle Hidden -ArgumentList '#{String.replace(daemon_command_line(elixir, log, err), "'", "''")}'
+      #{daemon_start(elixir, project, log, err, port)}
       """
 
     case System.cmd("powershell.exe", ["-NoProfile", "-Command", script], stderr_to_stdout: true) do
@@ -545,14 +545,38 @@ defmodule Spiral.Cells.CompilerClient do
   @doc false
   def daemon_owner do
     command = System.argv() |> Enum.join(" ") |> String.replace(["\t", "\r", "\n", "'", "\""], " ") |> String.slice(0, 160)
-    "os_pid #{System.pid()} argv #{command}"
+    job = System.get_env("KIT_JOB_ID") || System.get_env("EOIE_JOB_ID")
+    "#{if job, do: "job #{job} "}os_pid #{System.pid()} argv #{command}"
+  end
+
+  defp daemon_start(elixir, project, log, err, port) do
+    case shell_launcher() do
+      nil ->
+        "Start-Process -FilePath $env:ComSpec -WorkingDirectory '#{String.replace(project, "'", "''")}' -WindowStyle Hidden -ArgumentList '#{String.replace(daemon_command_line(elixir, log, err), "'", "''")}'"
+
+      launcher ->
+        start = Path.join(runtime_dir(), "cells-#{port}.start.cmd")
+        File.write!(start, "@cd /d \"#{project}\"\r\n@#{daemon_command(elixir, log, err)}\r\n")
+        "& '#{String.replace(launcher, "'", "''")}' process start-under-shell $env:ComSpec /d /c '#{String.replace(start, "'", "''")}' | Out-Null; exit $LASTEXITCODE"
+    end
   end
 
   @doc false
-  def daemon_command_line(elixir, log, err, ebins \\ compiled_ebins()) do
+  def shell_launcher do
+    case System.get_env("SPIRAL_CELLS_SHELL_LAUNCHER") do
+      value when value in [nil, "", "none"] -> nil
+      value -> value
+    end
+  end
+
+  @doc false
+  def daemon_command_line(elixir, log, err, ebins \\ compiled_ebins()), do: ~s{/d /c "#{daemon_command(elixir, log, err, ebins)}"}
+
+  @doc false
+  def daemon_command(elixir, log, err, ebins \\ compiled_ebins()) do
     case ebins do
-      nil -> ~s{/d /c ""#{elixir}" -S mix spiral.compiler_daemon 1>"#{log}" 2>"#{err}""}
-      ebins -> ~s{/d /c ""#{elixir}" -pa "#{ebins}" -e Spiral.Cells.CompilerDaemon.serve_app() 1>"#{log}" 2>"#{err}""}
+      nil -> ~s{"#{elixir}" -S mix spiral.compiler_daemon 1>"#{log}" 2>"#{err}"}
+      ebins -> ~s{"#{elixir}" -pa "#{ebins}" -e Spiral.Cells.CompilerDaemon.serve_app() 1>"#{log}" 2>"#{err}"}
     end
   end
 
@@ -682,7 +706,75 @@ defmodule Spiral.Cells.CompilerClient do
     Path.join(base, "spiral-bin")
   end
 
-  defp base_port, do: CompilerDaemon.port()
+  defp base_port do
+    case System.get_env("SPIRAL_CELLS_COMPILER_PORT") do
+      value when value in [nil, ""] -> build_slot_port()
+      _ -> CompilerDaemon.port()
+    end
+  end
+
+  defp build_slot_port do
+    first = CompilerDaemon.port()
+    mine = CompilerDaemon.served_dll_tag()
+    key = {__MODULE__, :slot_port, first, mine}
+
+    case :persistent_term.get(key, nil) do
+      nil ->
+        port = pick_slot(first, mine, 0, &banner_dll/1)
+        :persistent_term.put(key, port)
+        _ = File.write(warm_port_file(Path.expand("../../..", __DIR__), mine), Integer.to_string(port))
+        port
+
+      port ->
+        port
+    end
+  end
+
+  @doc false
+  def pick_slot(first, _mine, tries, _probe) when tries >= 12, do: first
+
+  def pick_slot(first, mine, tries, probe) do
+    port = CompilerDaemon.slot_port(first, tries)
+
+    case probe.(port) do
+      {:dll, ^mine} -> port
+      {:dll, _other} -> pick_slot(first, mine, tries + 1, probe)
+      _ -> port
+    end
+  end
+
+  @doc false
+  def root_key(root) do
+    root |> String.replace("\\", "/") |> String.trim_trailing("/") |> String.downcase() |> then(&:crypto.hash(:sha256, &1)) |> Base.encode16() |> binary_part(0, 16)
+  end
+
+  @doc false
+  def warm_port_file(root, dll_tag), do: Path.join(runtime_dir(), "cells-port-#{root_key(root)}-#{dll_tag}.txt")
+
+  defp banner_dll(port) do
+    case :gen_tcp.connect({127, 0, 0, 1}, port, socket_opts(), 500) do
+      {:ok, sock} ->
+        :gen_tcp.send(sock, "hello\n")
+
+        result =
+          case recv_line(sock, 1_000) do
+            {:ok, "spiral-cells\t1\t" <> rest} ->
+              case String.split(String.trim(rest), "\t") do
+                [_pid, _stamp, tag | _] -> {:dll, tag}
+                _ -> :legacy
+              end
+
+            _ ->
+              :other
+          end
+
+        :gen_tcp.close(sock)
+        result
+
+      {:error, _} ->
+        :down
+    end
+  end
 
   defp lock_path(port), do: Path.join(runtime_dir(), "cells-#{port}.lock")
 

@@ -1,6 +1,6 @@
 param([string] $Out = '')
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot '../scripts/env.ps1')
+. (Join-Path $PSScriptRoot '../../scripts/env.ps1')
 if (-not $env:DOTNET_GCgen0size) { $env:DOTNET_GCgen0size = '0x10000000' }
 $root = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
 if (-not $Out) { $Out = Join-Path (Get-SpiralCacheDir) 'runs/format-check.txt' }

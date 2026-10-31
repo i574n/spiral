@@ -1,14 +1,14 @@
-union slot =
+:| slot =
     | Missing
     | Held : mut { q : i32 }
 
-inl main () : i32 =
-    inl cell = !!!!LayoutToHeapMutable({ q = 1i32 })
-    inl ~flag = true
-    inl box = if flag then Held cell else Missing
-    match box with
+:= main () : i32 =
+    := cell = !!!!LayoutToHeapMutable({ q = 1i32 })
+    := ~flag = !+
+    := box = ? flag ?> Held cell |: Missing
+    ?= box ?|
     | Held held =>
         held <- { q = 7i32 }
-        inl opened = !!!!LayoutIndex(held)
-        if opened.q =. 7i32 then 0i32 else 1i32
+        := opened = !!!!LayoutIndex(held)
+        ? opened::q =. 7i32 ?> 0i32 |: 1i32
     | Missing => 1i32

@@ -1,25 +1,25 @@
-nominal robot_a = ()
-nominal map_a = ()
-nominal frame_map = ()
-nominal start_a = ()
-nominal goal_a = ()
-nominal planned = ()
-nominal certified = ()
-nominal committed = ()
+:! robot_a = ()
+:! map_a = ()
+:! frame_map = ()
+:! start_a = ()
+:! goal_a = ()
+:! planned = ()
+:! certified = ()
+:! committed = ()
 
-union trajectory robot map frame start goal state =
-    | Trajectory :: forall robot map frame start goal state. string -> trajectory robot map frame start goal state
-union safety_envelope robot map frame start goal state =
-    | Envelope :: forall robot map frame start goal state. string -> safety_envelope robot map frame start goal state
+:| trajectory robot map frame start goal state =
+    | Trajectory :: \* robot map frame start goal state. string -> trajectory robot map frame start goal state
+:| safety_envelope robot map frame start goal state =
+    | Envelope :: \* robot map frame start goal state. string -> safety_envelope robot map frame start goal state
 
-inl commit forall robot map frame start goal.
+:= commit \* robot map frame start goal.
     (path : trajectory robot map frame start goal planned)
     (safety : safety_envelope robot map frame start goal certified)
     : trajectory robot map frame start goal committed
     =
-    match path, safety with | Trajectory _, Envelope _ => Trajectory "robot-trajectory-committed"
+    ?= path, safety ?| | Trajectory _, Envelope _ => Trajectory "robot-trajectory-committed"
 
-inl main () : string =
-    inl path : trajectory robot_a map_a frame_map start_a goal_a planned = Trajectory "path"
-    inl safety : safety_envelope robot_a map_a frame_map start_a goal_a certified = Envelope "safe"
-    match commit path safety with | Trajectory label => label
+:= main () : string =
+    := path : trajectory robot_a map_a frame_map start_a goal_a planned = Trajectory "path"
+    := safety : safety_envelope robot_a map_a frame_map start_a goal_a certified = Envelope "safe"
+    ?= commit path safety ?| | Trajectory label => label

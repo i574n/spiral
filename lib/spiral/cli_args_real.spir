@@ -1,4 +1,4 @@
-/// # cli_args_real
+/// # cli_args
 ///- --real
 
 :< real_core
@@ -69,3 +69,27 @@
             (\ found key => \* payload. => picked `command `payload verb key rest found)
             (None `command)
             `cases
+
+/// ## cli_args
+
+/// ### flag_value
+
+/// ### has_switch
+
+/// ### required_text
+
+/// ### required_i32
+
+/// ### flag_values
+
+/// ### operands
+
+/// ### command_of
+
+/// ### cli_error
+
+/// ### parse_operands
+
+/// ### parse_command
+
+/// ### cli_error_text

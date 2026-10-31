@@ -1,19 +1,19 @@
-nominal fun_array = array_base (i32 -> i32)
+:! fun_array = array_base (i32 -> i32)
 
-inl create (n : i32) : fun_array = fun_array !!!!ArrayCreate(`(i32 -> i32), n)
-inl get (array : fun_array) (i : i32) : i32 -> i32 =
-    match array with
+:= create (n : i32) : fun_array = fun_array !!!!ArrayCreate(`(i32 -> i32), n)
+:= get (array : fun_array) (i : i32) : i32 -> i32 =
+    ?= array ?|
     | fun_array values => !!!!ArrayIndex(values, i)
-inl set (array : fun_array) (i : i32) (f : i32 -> i32) : () =
-    match array with
+:= set (array : fun_array) (i : i32) (f : i32 -> i32) : () =
+    ?= array ?|
     | fun_array values => !!!!ArrayIndexSet(values, i, f)
 
-inl main () : i32 =
-    inl ~n = 3i32
-    inl f (z : i32) : i32 = z +. n
-    inl ~g = f
-    inl ~len = 1i32
-    inl a = create len
+:= main () : i32 =
+    := ~n = 3i32
+    := f (z : i32) : i32 = z +. n
+    := ~g = f
+    := ~len = 1i32
+    := a = create len
     set a 0i32 g
-    inl h = get a 0i32
-    if h 4i32 =. 7i32 then 0i32 else 1i32
+    := h = get a 0i32
+    ? h 4i32 =. 7i32 ?> 0i32 |: 1i32

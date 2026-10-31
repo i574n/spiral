@@ -10,12 +10,8 @@ pub fn f_c0(capt: #(Heap2)) -> fn(Int) -> Us0 {
         let #(v0) = capt
         let v2 = v1 == 0
         case v2 {
-            True -> {
-                Us0None
-            }
-            False -> {
-                Us0Held(v0)
-            }
+            True -> Us0None
+            False -> Us0Held(v0)
         }
     }
 }
@@ -33,9 +29,7 @@ pub fn score_0(v0: Us0) -> Int {
                         let v11 = v7 == "hi"
                         v11
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v14 =
                 case v12 {
@@ -43,9 +37,7 @@ pub fn score_0(v0: Us0) -> Int {
                         let v13 = v8 == 4
                         v13
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v16 =
                 case v14 {
@@ -53,9 +45,7 @@ pub fn score_0(v0: Us0) -> Int {
                         let v15 = v9 == "yo"
                         v15
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v18 =
                 case v16 {
@@ -63,22 +53,14 @@ pub fn score_0(v0: Us0) -> Int {
                         let v17 = v3 == 2
                         v17
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             case v18 {
-                True -> {
-                    0
-                }
-                False -> {
-                    1
-                }
+                True -> 0
+                False -> 1
             }
         }
-        Us0None -> {
-            1
-        }
+        Us0None -> 1
     }
 }
 pub fn main() {

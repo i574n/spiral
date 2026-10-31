@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_corrected_cic_meta_stale_membership_reassignment () :
+:= impossible_corrected_cic_meta_stale_membership_reassignment () :
     corrected_cic_meta_environment
         (corrected_cic_meta_states_open empty_ctx bool_sort
             (corrected_cic_meta_states_open
@@ -15,5 +15,5 @@ inl impossible_corrected_cic_meta_stale_membership_reassignment () :
         (corrected_cic_oldest_bool_open_membership ())
         (CorrectedCicMetaAssignmentPlanRigid (corrected_cic_false ()))
 
-inl main () =
+:= main () =
     impossible_corrected_cic_meta_stale_membership_reassignment ()

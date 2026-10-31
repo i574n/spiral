@@ -116,9 +116,7 @@ pub fn random_bit_input_1(v0: Int, v1: Int, v2: Uh1) -> #(Uh1, Int) {
             let v14 = Uh1InputCons(v13, v2)
             random_bit_input_1(v6, v7, v14)
         }
-        False -> {
-            #(v2, v0)
-        }
+        False -> #(v2, v0)
     }
 }
 pub fn regex_compare_7(v0: Uh0, v1: Uh0) -> Us1 {
@@ -128,17 +126,11 @@ pub fn regex_compare_7(v0: Uh0, v1: Uh0) -> Us1 {
                 Uh0RegexAlt(v55, v56) -> {
                     let v57 = regex_compare_7(v53, v55)
                     case v57  {
-                        Us1SymbolSame -> {
-                            regex_compare_7(v54, v56)
-                        }
-                        _ -> {
-                            v57
-                        }
+                        Us1SymbolSame -> regex_compare_7(v54, v56)
+                        _ -> v57
                     }
                 }
-                _ -> {
-                    Us1SymbolGreater
-                }
+                _ -> Us1SymbolGreater
             }
         }
         Uh0RegexCat(v28, v29) -> {
@@ -146,26 +138,14 @@ pub fn regex_compare_7(v0: Uh0, v1: Uh0) -> Us1 {
                 Uh0RegexCat(v34, v35) -> {
                     let v36 = regex_compare_7(v28, v34)
                     case v36  {
-                        Us1SymbolSame -> {
-                            regex_compare_7(v29, v35)
-                        }
-                        _ -> {
-                            v36
-                        }
+                        Us1SymbolSame -> regex_compare_7(v29, v35)
+                        _ -> v36
                     }
                 }
-                Uh0RegexChar(v32) -> {
-                    Us1SymbolGreater
-                }
-                Uh0RegexEmpty -> {
-                    Us1SymbolGreater
-                }
-                Uh0RegexEpsilon -> {
-                    Us1SymbolGreater
-                }
-                _ -> {
-                    Us1SymbolLess
-                }
+                Uh0RegexChar(v32) -> Us1SymbolGreater
+                Uh0RegexEmpty -> Us1SymbolGreater
+                Uh0RegexEpsilon -> Us1SymbolGreater
+                _ -> Us1SymbolLess
             }
         }
         Uh0RegexChar(v10) -> {
@@ -174,71 +154,41 @@ pub fn regex_compare_7(v0: Uh0, v1: Uh0) -> Us1 {
                     case v10  {
                         Us0BitOne -> {
                             case v13  {
-                                Us0BitOne -> {
-                                    Us1SymbolSame
-                                }
-                                Us0BitZero -> {
-                                    Us1SymbolGreater
-                                }
+                                Us0BitOne -> Us1SymbolSame
+                                Us0BitZero -> Us1SymbolGreater
                             }
                         }
                         Us0BitZero -> {
                             case v13  {
-                                Us0BitOne -> {
-                                    Us1SymbolLess
-                                }
-                                Us0BitZero -> {
-                                    Us1SymbolSame
-                                }
+                                Us0BitOne -> Us1SymbolLess
+                                Us0BitZero -> Us1SymbolSame
                             }
                         }
                     }
                 }
-                Uh0RegexEmpty -> {
-                    Us1SymbolGreater
-                }
-                Uh0RegexEpsilon -> {
-                    Us1SymbolGreater
-                }
-                _ -> {
-                    Us1SymbolLess
-                }
+                Uh0RegexEmpty -> Us1SymbolGreater
+                Uh0RegexEpsilon -> Us1SymbolGreater
+                _ -> Us1SymbolLess
             }
         }
         Uh0RegexEmpty -> {
             case v1  {
-                Uh0RegexEmpty -> {
-                    Us1SymbolSame
-                }
-                _ -> {
-                    Us1SymbolLess
-                }
+                Uh0RegexEmpty -> Us1SymbolSame
+                _ -> Us1SymbolLess
             }
         }
         Uh0RegexEpsilon -> {
             case v1  {
-                Uh0RegexEmpty -> {
-                    Us1SymbolGreater
-                }
-                Uh0RegexEpsilon -> {
-                    Us1SymbolSame
-                }
-                _ -> {
-                    Us1SymbolLess
-                }
+                Uh0RegexEmpty -> Us1SymbolGreater
+                Uh0RegexEpsilon -> Us1SymbolSame
+                _ -> Us1SymbolLess
             }
         }
         Uh0RegexStar(v44) -> {
             case v1  {
-                Uh0RegexAlt(v45, v46) -> {
-                    Us1SymbolLess
-                }
-                Uh0RegexStar(v48) -> {
-                    regex_compare_7(v44, v48)
-                }
-                _ -> {
-                    Us1SymbolGreater
-                }
+                Uh0RegexAlt(v45, v46) -> Us1SymbolLess
+                Uh0RegexStar(v48) -> regex_compare_7(v44, v48)
+                _ -> Us1SymbolGreater
             }
         }
     }
@@ -252,29 +202,17 @@ pub fn alt_insert_sorted_6(v0: Uh0, v1: Uh0) -> Uh0 {
                     let v6 = alt_insert_sorted_6(v0, v3)
                     Uh0RegexAlt(v2, v6)
                 }
-                Us1SymbolLess -> {
-                    Uh0RegexAlt(v0, v1)
-                }
-                Us1SymbolSame -> {
-                    v1
-                }
+                Us1SymbolLess -> Uh0RegexAlt(v0, v1)
+                Us1SymbolSame -> v1
             }
         }
-        Uh0RegexEmpty -> {
-            v0
-        }
+        Uh0RegexEmpty -> v0
         _ -> {
             let v11 = regex_compare_7(v0, v1)
             case v11  {
-                Us1SymbolGreater -> {
-                    Uh0RegexAlt(v1, v0)
-                }
-                Us1SymbolLess -> {
-                    Uh0RegexAlt(v0, v1)
-                }
-                Us1SymbolSame -> {
-                    v1
-                }
+                Us1SymbolGreater -> Uh0RegexAlt(v1, v0)
+                Us1SymbolLess -> Uh0RegexAlt(v0, v1)
+                Us1SymbolSame -> v1
             }
         }
     }
@@ -285,12 +223,8 @@ pub fn make_alt_5(v0: Uh0, v1: Uh0) -> Uh0 {
             let v4 = alt_insert_sorted_6(v2, v1)
             make_alt_5(v3, v4)
         }
-        Uh0RegexEmpty -> {
-            v1
-        }
-        _ -> {
-            alt_insert_sorted_6(v0, v1)
-        }
+        Uh0RegexEmpty -> v1
+        _ -> alt_insert_sorted_6(v0, v1)
     }
 }
 pub fn regex_equal_9(v0: Uh0, v1: Uh0) -> Bool {
@@ -300,17 +234,11 @@ pub fn regex_equal_9(v0: Uh0, v1: Uh0) -> Bool {
                 Uh0RegexAlt(v20, v21) -> {
                     let v22 = regex_equal_9(v18, v20)
                     case v22 {
-                        True -> {
-                            regex_equal_9(v19, v21)
-                        }
-                        False -> {
-                            False
-                        }
+                        True -> regex_equal_9(v19, v21)
+                        False -> False
                     }
                 }
-                _ -> {
-                    False
-                }
+                _ -> False
             }
         }
         Uh0RegexCat(v26, v27) -> {
@@ -318,17 +246,11 @@ pub fn regex_equal_9(v0: Uh0, v1: Uh0) -> Bool {
                 Uh0RegexCat(v28, v29) -> {
                     let v30 = regex_equal_9(v26, v28)
                     case v30 {
-                        True -> {
-                            regex_equal_9(v27, v29)
-                        }
-                        False -> {
-                            False
-                        }
+                        True -> regex_equal_9(v27, v29)
+                        False -> False
                     }
                 }
-                _ -> {
-                    False
-                }
+                _ -> False
             }
         }
         Uh0RegexChar(v4) -> {
@@ -338,91 +260,57 @@ pub fn regex_equal_9(v0: Uh0, v1: Uh0) -> Bool {
                         case v4  {
                             Us0BitOne -> {
                                 case v5  {
-                                    Us0BitOne -> {
-                                        Us1SymbolSame
-                                    }
-                                    Us0BitZero -> {
-                                        Us1SymbolGreater
-                                    }
+                                    Us0BitOne -> Us1SymbolSame
+                                    Us0BitZero -> Us1SymbolGreater
                                 }
                             }
                             Us0BitZero -> {
                                 case v5  {
-                                    Us0BitOne -> {
-                                        Us1SymbolLess
-                                    }
-                                    Us0BitZero -> {
-                                        Us1SymbolSame
-                                    }
+                                    Us0BitOne -> Us1SymbolLess
+                                    Us0BitZero -> Us1SymbolSame
                                 }
                             }
                         }
                     case v15  {
-                        Us1SymbolSame -> {
-                            True
-                        }
-                        _ -> {
-                            False
-                        }
+                        Us1SymbolSame -> True
+                        _ -> False
                     }
                 }
-                _ -> {
-                    False
-                }
+                _ -> False
             }
         }
         Uh0RegexEmpty -> {
             case v1  {
-                Uh0RegexEmpty -> {
-                    True
-                }
-                _ -> {
-                    False
-                }
+                Uh0RegexEmpty -> True
+                _ -> False
             }
         }
         Uh0RegexEpsilon -> {
             case v1  {
-                Uh0RegexEpsilon -> {
-                    True
-                }
-                _ -> {
-                    False
-                }
+                Uh0RegexEpsilon -> True
+                _ -> False
             }
         }
         Uh0RegexStar(v34) -> {
             case v1  {
-                Uh0RegexStar(v35) -> {
-                    regex_equal_9(v34, v35)
-                }
-                _ -> {
-                    False
-                }
+                Uh0RegexStar(v35) -> regex_equal_9(v34, v35)
+                _ -> False
             }
         }
     }
 }
 pub fn make_cat_8(v0: Uh0, v1: Uh0) -> Uh0 {
     case v0  {
-        Uh0RegexEmpty -> {
-            Uh0RegexEmpty
-        }
+        Uh0RegexEmpty -> Uh0RegexEmpty
         _ -> {
             case v1  {
-                Uh0RegexEmpty -> {
-                    Uh0RegexEmpty
-                }
+                Uh0RegexEmpty -> Uh0RegexEmpty
                 _ -> {
                     case v0  {
-                        Uh0RegexEpsilon -> {
-                            v1
-                        }
+                        Uh0RegexEpsilon -> v1
                         _ -> {
                             case v1  {
-                                Uh0RegexEpsilon -> {
-                                    v0
-                                }
+                                Uh0RegexEpsilon -> v0
                                 _ -> {
                                     case v0  {
                                         Uh0RegexCat(v12, v13) -> {
@@ -434,22 +322,14 @@ pub fn make_cat_8(v0: Uh0, v1: Uh0) -> Uh0 {
                                                 Uh0RegexStar(v5) -> {
                                                     let v6 = regex_equal_9(v4, v5)
                                                     case v6 {
-                                                        True -> {
-                                                            Uh0RegexStar(v4)
-                                                        }
-                                                        False -> {
-                                                            Uh0RegexCat(v0, v1)
-                                                        }
+                                                        True -> Uh0RegexStar(v4)
+                                                        False -> Uh0RegexCat(v0, v1)
                                                     }
                                                 }
-                                                _ -> {
-                                                    Uh0RegexCat(v0, v1)
-                                                }
+                                                _ -> Uh0RegexCat(v0, v1)
                                             }
                                         }
-                                        _ -> {
-                                            Uh0RegexCat(v0, v1)
-                                        }
+                                        _ -> Uh0RegexCat(v0, v1)
                                     }
                                 }
                             }
@@ -462,18 +342,10 @@ pub fn make_cat_8(v0: Uh0, v1: Uh0) -> Uh0 {
 }
 pub fn make_star_10(v0: Uh0) -> Uh0 {
     case v0  {
-        Uh0RegexEmpty -> {
-            Uh0RegexEpsilon
-        }
-        Uh0RegexEpsilon -> {
-            Uh0RegexEpsilon
-        }
-        Uh0RegexStar(v3) -> {
-            Uh0RegexStar(v3)
-        }
-        _ -> {
-            Uh0RegexStar(v0)
-        }
+        Uh0RegexEmpty -> Uh0RegexEpsilon
+        Uh0RegexEpsilon -> Uh0RegexEpsilon
+        Uh0RegexStar(v3) -> Uh0RegexStar(v3)
+        _ -> Uh0RegexStar(v0)
     }
 }
 pub fn normalize_4(v0: Uh0) -> Uh0 {
@@ -488,15 +360,9 @@ pub fn normalize_4(v0: Uh0) -> Uh0 {
             let v13 = normalize_4(v11)
             make_cat_8(v12, v13)
         }
-        Uh0RegexChar(v3) -> {
-            Uh0RegexChar(v3)
-        }
-        Uh0RegexEmpty -> {
-            Uh0RegexEmpty
-        }
-        Uh0RegexEpsilon -> {
-            Uh0RegexEpsilon
-        }
+        Uh0RegexChar(v3) -> Uh0RegexChar(v3)
+        Uh0RegexEmpty -> Uh0RegexEmpty
+        Uh0RegexEpsilon -> Uh0RegexEpsilon
         Uh0RegexStar(v15) -> {
             let v16 = normalize_4(v15)
             make_star_10(v16)
@@ -509,21 +375,15 @@ pub fn nullable_12(v0: Uh0) -> Us2 {
             let v7 = nullable_12(v5)
             let v8 = nullable_12(v6)
             case v7  {
-                Us2Nullable -> {
-                    Us2Nullable
-                }
+                Us2Nullable -> Us2Nullable
                 _ -> {
                     case v8  {
-                        Us2Nullable -> {
-                            Us2Nullable
-                        }
+                        Us2Nullable -> Us2Nullable
                         _ -> {
                             case v7  {
                                 Us2NonNullable -> {
                                     case v8  {
-                                        Us2NonNullable -> {
-                                            Us2NonNullable
-                                        }
+                                        Us2NonNullable -> Us2NonNullable
                                         _ -> panic as "spiral: union case ruled out by partial evaluation"
                                     }
                                 }
@@ -540,31 +400,17 @@ pub fn nullable_12(v0: Uh0) -> Us2 {
             case v18  {
                 Us2Nullable -> {
                     case v19  {
-                        Us2Nullable -> {
-                            Us2Nullable
-                        }
-                        _ -> {
-                            Us2NonNullable
-                        }
+                        Us2Nullable -> Us2Nullable
+                        _ -> Us2NonNullable
                     }
                 }
-                _ -> {
-                    Us2NonNullable
-                }
+                _ -> Us2NonNullable
             }
         }
-        Uh0RegexChar(v3) -> {
-            Us2NonNullable
-        }
-        Uh0RegexEmpty -> {
-            Us2NonNullable
-        }
-        Uh0RegexEpsilon -> {
-            Us2Nullable
-        }
-        Uh0RegexStar(v25) -> {
-            Us2Nullable
-        }
+        Uh0RegexChar(v3) -> Us2NonNullable
+        Uh0RegexEmpty -> Us2NonNullable
+        Uh0RegexEpsilon -> Us2Nullable
+        Uh0RegexStar(v25) -> Us2Nullable
     }
 }
 pub fn derivative_11(v0: Uh0, v1: Us0) -> Uh0 {
@@ -594,49 +440,29 @@ pub fn derivative_11(v0: Uh0, v1: Us0) -> Uh0 {
                 case v4  {
                     Us0BitOne -> {
                         case v1  {
-                            Us0BitOne -> {
-                                Us1SymbolSame
-                            }
-                            Us0BitZero -> {
-                                Us1SymbolGreater
-                            }
+                            Us0BitOne -> Us1SymbolSame
+                            Us0BitZero -> Us1SymbolGreater
                         }
                     }
                     Us0BitZero -> {
                         case v1  {
-                            Us0BitOne -> {
-                                Us1SymbolLess
-                            }
-                            Us0BitZero -> {
-                                Us1SymbolSame
-                            }
+                            Us0BitOne -> Us1SymbolLess
+                            Us0BitZero -> Us1SymbolSame
                         }
                     }
                 }
             let v15 =
                 case v14  {
-                    Us1SymbolSame -> {
-                        True
-                    }
-                    _ -> {
-                        False
-                    }
+                    Us1SymbolSame -> True
+                    _ -> False
                 }
             case v15 {
-                True -> {
-                    Uh0RegexEpsilon
-                }
-                False -> {
-                    Uh0RegexEmpty
-                }
+                True -> Uh0RegexEpsilon
+                False -> Uh0RegexEmpty
             }
         }
-        Uh0RegexEmpty -> {
-            Uh0RegexEmpty
-        }
-        Uh0RegexEpsilon -> {
-            Uh0RegexEmpty
-        }
+        Uh0RegexEmpty -> Uh0RegexEmpty
+        Uh0RegexEpsilon -> Uh0RegexEmpty
         Uh0RegexStar(v35) -> {
             let v36 = derivative_11(v35, v1)
             let v37 = make_star_10(v35)
@@ -659,12 +485,8 @@ pub fn accepts_2(v0: Uh0, v1: Uh1) -> Bool {
             let v2 = normalize_4(v0)
             let v3 = nullable_12(v2)
             case v3  {
-                Us2NonNullable -> {
-                    False
-                }
-                Us2Nullable -> {
-                    True
-                }
+                Us2NonNullable -> False
+                Us2Nullable -> True
             }
         }
     }
@@ -682,16 +504,12 @@ pub fn loop_0(v0: Uh0, v1: Int, v2: Int, v3: Int, v4: Int) -> Int {
                         let v10 = spiral_wrap_signed(v4 + 1, 32)
                         v10
                     }
-                    False -> {
-                        v4
-                    }
+                    False -> v4
                 }
             let v12 = spiral_wrap_signed(v2 - 1, 32)
             loop_0(v0, v1, v12, v8, v11)
         }
-        False -> {
-            v4
-        }
+        False -> v4
     }
 }
 pub fn zeros_input_14(v0: Int, v1: Uh1) -> Uh1 {
@@ -703,17 +521,13 @@ pub fn zeros_input_14(v0: Int, v1: Uh1) -> Uh1 {
             let v5 = Uh1InputCons(v4, v1)
             zeros_input_14(v3, v5)
         }
-        False -> {
-            v1
-        }
+        False -> v1
     }
 }
 pub fn loop_13(v0: Uh0, v1: Int, v2: Int, v3: Int) -> Int {
     let v4 = v1 < v2
     case v4 {
-        True -> {
-            v3
-        }
+        True -> v3
         False -> {
             let v5 = Uh1InputEmpty
             let v6 = zeros_input_14(v2, v5)
@@ -724,9 +538,7 @@ pub fn loop_13(v0: Uh0, v1: Int, v2: Int, v3: Int) -> Int {
                         let v8 = spiral_wrap_signed(v3 + 1, 32)
                         v8
                     }
-                    False -> {
-                        v3
-                    }
+                    False -> v3
                 }
             let v10 = Us0BitOne
             let v11 = Uh1InputEmpty
@@ -739,9 +551,7 @@ pub fn loop_13(v0: Uh0, v1: Int, v2: Int, v3: Int) -> Int {
                         let v15 = spiral_wrap_signed(v9 + 1, 32)
                         v15
                     }
-                    False -> {
-                        v9
-                    }
+                    False -> v9
                 }
             let v17 = spiral_wrap_signed(v2 + 1, 32)
             loop_13(v0, v1, v17, v16)
@@ -756,9 +566,7 @@ pub fn backtrack_stack_16(v0: Uh2, v1: Uh1) -> Bool {
                     let v29 = Uh2RegexListCons(v27, v7)
                     let v30 = backtrack_stack_16(v29, v1)
                     case v30 {
-                        True -> {
-                            True
-                        }
+                        True -> True
                         False -> {
                             let v31 = Uh2RegexListCons(v28, v7)
                             backtrack_stack_16(v31, v1)
@@ -777,76 +585,46 @@ pub fn backtrack_stack_16(v0: Uh2, v1: Uh1) -> Bool {
                                 case v9  {
                                     Us0BitOne -> {
                                         case v10  {
-                                            Us0BitOne -> {
-                                                Us1SymbolSame
-                                            }
-                                            Us0BitZero -> {
-                                                Us1SymbolGreater
-                                            }
+                                            Us0BitOne -> Us1SymbolSame
+                                            Us0BitZero -> Us1SymbolGreater
                                         }
                                     }
                                     Us0BitZero -> {
                                         case v10  {
-                                            Us0BitOne -> {
-                                                Us1SymbolLess
-                                            }
-                                            Us0BitZero -> {
-                                                Us1SymbolSame
-                                            }
+                                            Us0BitOne -> Us1SymbolLess
+                                            Us0BitZero -> Us1SymbolSame
                                         }
                                     }
                                 }
                             let v22 =
                                 case v21  {
-                                    Us1SymbolSame -> {
-                                        True
-                                    }
-                                    _ -> {
-                                        False
-                                    }
+                                    Us1SymbolSame -> True
+                                    _ -> False
                                 }
                             case v22 {
-                                True -> {
-                                    backtrack_stack_16(v7, v11)
-                                }
-                                False -> {
-                                    False
-                                }
+                                True -> backtrack_stack_16(v7, v11)
+                                False -> False
                             }
                         }
-                        Uh1InputEmpty -> {
-                            False
-                        }
+                        Uh1InputEmpty -> False
                     }
                 }
-                Uh0RegexEmpty -> {
-                    False
-                }
-                Uh0RegexEpsilon -> {
-                    backtrack_stack_16(v7, v1)
-                }
+                Uh0RegexEmpty -> False
+                Uh0RegexEpsilon -> backtrack_stack_16(v7, v1)
                 Uh0RegexStar(v39) -> {
                     let v40 = Uh2RegexListCons(v39, v0)
                     let v41 = backtrack_stack_16(v40, v1)
                     case v41 {
-                        True -> {
-                            True
-                        }
-                        False -> {
-                            backtrack_stack_16(v7, v1)
-                        }
+                        True -> True
+                        False -> backtrack_stack_16(v7, v1)
                     }
                 }
             }
         }
         Uh2RegexListNil -> {
             case v1  {
-                Uh1InputCons(v2, v3) -> {
-                    False
-                }
-                Uh1InputEmpty -> {
-                    True
-                }
+                Uh1InputCons(v2, v3) -> False
+                Uh1InputEmpty -> True
             }
         }
     }
@@ -866,24 +644,18 @@ pub fn loop_15(v0: Uh0, v1: Int, v2: Int, v3: Int, v4: Int) -> Int {
                         let v12 = spiral_wrap_signed(v4 + 1, 32)
                         v12
                     }
-                    False -> {
-                        v4
-                    }
+                    False -> v4
                 }
             let v14 = spiral_wrap_signed(v2 - 1, 32)
             loop_15(v0, v1, v14, v8, v13)
         }
-        False -> {
-            v4
-        }
+        False -> v4
     }
 }
 pub fn loop_17(v0: Uh0, v1: Int, v2: Int, v3: Int) -> Int {
     let v4 = v1 < v2
     case v4 {
-        True -> {
-            v3
-        }
+        True -> v3
         False -> {
             let v5 = Uh1InputEmpty
             let v6 = zeros_input_14(v2, v5)
@@ -896,9 +668,7 @@ pub fn loop_17(v0: Uh0, v1: Int, v2: Int, v3: Int) -> Int {
                         let v10 = spiral_wrap_signed(v3 + 1, 32)
                         v10
                     }
-                    False -> {
-                        v3
-                    }
+                    False -> v3
                 }
             let v12 = Us0BitOne
             let v13 = Uh1InputEmpty
@@ -913,9 +683,7 @@ pub fn loop_17(v0: Uh0, v1: Int, v2: Int, v3: Int) -> Int {
                         let v19 = spiral_wrap_signed(v11 + 1, 32)
                         v19
                     }
-                    False -> {
-                        v11
-                    }
+                    False -> v11
                 }
             let v21 = spiral_wrap_signed(v2 + 1, 32)
             loop_17(v0, v1, v21, v20)
@@ -956,16 +724,12 @@ pub fn loop_18(v0: Int, v1: Int, v2: Int, v3: Int) -> Int {
                         let v10 = spiral_wrap_signed(v3 + 1, 32)
                         v10
                     }
-                    False -> {
-                        v3
-                    }
+                    False -> v3
                 }
             let v12 = spiral_wrap_signed(v1 - 1, 32)
             loop_18(v0, v12, v7, v11)
         }
-        False -> {
-            v3
-        }
+        False -> v3
     }
 }
 pub fn run_21(v0: Int, v1: Uh1) -> Bool {
@@ -976,96 +740,64 @@ pub fn run_21(v0: Int, v1: Uh1) -> Bool {
                     let v50 = v0 == 0
                     let v79 =
                         case v50 {
-                            True -> {
-                                1
-                            }
+                            True -> 1
                             False -> {
                                 let v51 = v0 == 1
                                 case v51 {
-                                    True -> {
-                                        6
-                                    }
+                                    True -> 6
                                     False -> {
                                         let v52 = v0 == 2
                                         case v52 {
-                                            True -> {
-                                                11
-                                            }
+                                            True -> 11
                                             False -> {
                                                 let v53 = v0 == 3
                                                 case v53 {
-                                                    True -> {
-                                                        5
-                                                    }
+                                                    True -> 5
                                                     False -> {
                                                         let v54 = v0 == 4
                                                         case v54 {
-                                                            True -> {
-                                                                1
-                                                            }
+                                                            True -> 1
                                                             False -> {
                                                                 let v55 = v0 == 5
                                                                 case v55 {
-                                                                    True -> {
-                                                                        6
-                                                                    }
+                                                                    True -> 6
                                                                     False -> {
                                                                         let v56 = v0 == 6
                                                                         case v56 {
-                                                                            True -> {
-                                                                                13
-                                                                            }
+                                                                            True -> 13
                                                                             False -> {
                                                                                 let v57 = v0 == 7
                                                                                 case v57 {
-                                                                                    True -> {
-                                                                                        9
-                                                                                    }
+                                                                                    True -> 9
                                                                                     False -> {
                                                                                         let v58 = v0 == 8
                                                                                         case v58 {
-                                                                                            True -> {
-                                                                                                5
-                                                                                            }
+                                                                                            True -> 5
                                                                                             False -> {
                                                                                                 let v59 = v0 == 9
                                                                                                 case v59 {
-                                                                                                    True -> {
-                                                                                                        12
-                                                                                                    }
+                                                                                                    True -> 12
                                                                                                     False -> {
                                                                                                         let v60 = v0 == 10
                                                                                                         case v60 {
-                                                                                                            True -> {
-                                                                                                                11
-                                                                                                            }
+                                                                                                            True -> 11
                                                                                                             False -> {
                                                                                                                 let v61 = v0 == 11
                                                                                                                 case v61 {
-                                                                                                                    True -> {
-                                                                                                                        12
-                                                                                                                    }
+                                                                                                                    True -> 12
                                                                                                                     False -> {
                                                                                                                         let v62 = v0 == 12
                                                                                                                         case v62 {
-                                                                                                                            True -> {
-                                                                                                                                13
-                                                                                                                            }
+                                                                                                                            True -> 13
                                                                                                                             False -> {
                                                                                                                                 let v63 = v0 == 13
                                                                                                                                 case v63 {
-                                                                                                                                    True -> {
-                                                                                                                                        15
-                                                                                                                                    }
+                                                                                                                                    True -> 15
                                                                                                                                     False -> {
                                                                                                                                         let v64 = v0 == 14
                                                                                                                                         case v64 {
-                                                                                                                                            True -> {
-                                                                                                                                                9
-                                                                                                                                            }
-                                                                                                                                            False -> {
-                                                                                                                                                15
-                                                                                                                                            }
+                                                                                                                                            True -> 9
+                                                                                                                                            False -> 15
                                                                                                                                         }
                                                                                                                                     }
                                                                                                                                 }
@@ -1101,96 +833,64 @@ pub fn run_21(v0: Int, v1: Uh1) -> Bool {
                     let v19 = v0 == 0
                     let v48 =
                         case v19 {
-                            True -> {
-                                0
-                            }
+                            True -> 0
                             False -> {
                                 let v20 = v0 == 1
                                 case v20 {
-                                    True -> {
-                                        2
-                                    }
+                                    True -> 2
                                     False -> {
                                         let v21 = v0 == 2
                                         case v21 {
-                                            True -> {
-                                                3
-                                            }
+                                            True -> 3
                                             False -> {
                                                 let v22 = v0 == 3
                                                 case v22 {
-                                                    True -> {
-                                                        4
-                                                    }
+                                                    True -> 4
                                                     False -> {
                                                         let v23 = v0 == 4
                                                         case v23 {
-                                                            True -> {
-                                                                0
-                                                            }
+                                                            True -> 0
                                                             False -> {
                                                                 let v24 = v0 == 5
                                                                 case v24 {
-                                                                    True -> {
-                                                                        2
-                                                                    }
+                                                                    True -> 2
                                                                     False -> {
                                                                         let v25 = v0 == 6
                                                                         case v25 {
-                                                                            True -> {
-                                                                                7
-                                                                            }
+                                                                            True -> 7
                                                                             False -> {
                                                                                 let v26 = v0 == 7
                                                                                 case v26 {
-                                                                                    True -> {
-                                                                                        8
-                                                                                    }
+                                                                                    True -> 8
                                                                                     False -> {
                                                                                         let v27 = v0 == 8
                                                                                         case v27 {
-                                                                                            True -> {
-                                                                                                4
-                                                                                            }
+                                                                                            True -> 4
                                                                                             False -> {
                                                                                                 let v28 = v0 == 9
                                                                                                 case v28 {
-                                                                                                    True -> {
-                                                                                                        10
-                                                                                                    }
+                                                                                                    True -> 10
                                                                                                     False -> {
                                                                                                         let v29 = v0 == 10
                                                                                                         case v29 {
-                                                                                                            True -> {
-                                                                                                                3
-                                                                                                            }
+                                                                                                            True -> 3
                                                                                                             False -> {
                                                                                                                 let v30 = v0 == 11
                                                                                                                 case v30 {
-                                                                                                                    True -> {
-                                                                                                                        10
-                                                                                                                    }
+                                                                                                                    True -> 10
                                                                                                                     False -> {
                                                                                                                         let v31 = v0 == 12
                                                                                                                         case v31 {
-                                                                                                                            True -> {
-                                                                                                                                7
-                                                                                                                            }
+                                                                                                                            True -> 7
                                                                                                                             False -> {
                                                                                                                                 let v32 = v0 == 13
                                                                                                                                 case v32 {
-                                                                                                                                    True -> {
-                                                                                                                                        14
-                                                                                                                                    }
+                                                                                                                                    True -> 14
                                                                                                                                     False -> {
                                                                                                                                         let v33 = v0 == 14
                                                                                                                                         case v33 {
-                                                                                                                                            True -> {
-                                                                                                                                                8
-                                                                                                                                            }
-                                                                                                                                            False -> {
-                                                                                                                                                14
-                                                                                                                                            }
+                                                                                                                                            True -> 8
+                                                                                                                                            False -> 14
                                                                                                                                         }
                                                                                                                                     }
                                                                                                                                 }
@@ -1227,45 +927,31 @@ pub fn run_21(v0: Int, v1: Uh1) -> Bool {
         Uh1InputEmpty -> {
             let v2 = v0 == 4
             case v2 {
-                True -> {
-                    True
-                }
+                True -> True
                 False -> {
                     let v3 = v0 == 5
                     case v3 {
-                        True -> {
-                            True
-                        }
+                        True -> True
                         False -> {
                             let v4 = v0 == 8
                             case v4 {
-                                True -> {
-                                    True
-                                }
+                                True -> True
                                 False -> {
                                     let v5 = v0 == 9
                                     case v5 {
-                                        True -> {
-                                            True
-                                        }
+                                        True -> True
                                         False -> {
                                             let v6 = v0 == 10
                                             case v6 {
-                                                True -> {
-                                                    True
-                                                }
+                                                True -> True
                                                 False -> {
                                                     let v7 = v0 == 12
                                                     case v7 {
-                                                        True -> {
-                                                            True
-                                                        }
+                                                        True -> True
                                                         False -> {
                                                             let v8 = v0 == 14
                                                             case v8 {
-                                                                True -> {
-                                                                    True
-                                                                }
+                                                                True -> True
                                                                 False -> {
                                                                     let v9 = v0 == 15
                                                                     v9
@@ -1300,16 +986,12 @@ pub fn loop_20(v0: Int, v1: Int, v2: Int, v3: Int) -> Int {
                         let v10 = spiral_wrap_signed(v3 + 1, 32)
                         v10
                     }
-                    False -> {
-                        v3
-                    }
+                    False -> v3
                 }
             let v12 = spiral_wrap_signed(v1 - 1, 32)
             loop_20(v0, v12, v7, v11)
         }
-        False -> {
-            v3
-        }
+        False -> v3
     }
 }
 pub fn run_23(v0: Int, v1: Uh1) -> Bool {
@@ -1320,24 +1002,16 @@ pub fn run_23(v0: Int, v1: Uh1) -> Bool {
                     let v13 = v0 == 0
                     let v19 =
                         case v13 {
-                            True -> {
-                                3
-                            }
+                            True -> 3
                             False -> {
                                 let v14 = v0 == 1
                                 case v14 {
-                                    True -> {
-                                        3
-                                    }
+                                    True -> 3
                                     False -> {
                                         let v15 = v0 == 2
                                         case v15 {
-                                            True -> {
-                                                3
-                                            }
-                                            False -> {
-                                                4
-                                            }
+                                            True -> 3
+                                            False -> 4
                                         }
                                     }
                                 }
@@ -1349,24 +1023,16 @@ pub fn run_23(v0: Int, v1: Uh1) -> Bool {
                     let v5 = v0 == 0
                     let v11 =
                         case v5 {
-                            True -> {
-                                1
-                            }
+                            True -> 1
                             False -> {
                                 let v6 = v0 == 1
                                 case v6 {
-                                    True -> {
-                                        2
-                                    }
+                                    True -> 2
                                     False -> {
                                         let v7 = v0 == 2
                                         case v7 {
-                                            True -> {
-                                                2
-                                            }
-                                            False -> {
-                                                4
-                                            }
+                                            True -> 2
+                                            False -> 4
                                         }
                                     }
                                 }
@@ -1385,9 +1051,7 @@ pub fn run_23(v0: Int, v1: Uh1) -> Bool {
 pub fn loop_22(v0: Int, v1: Int, v2: Int) -> Int {
     let v3 = v0 < v1
     case v3 {
-        True -> {
-            v2
-        }
+        True -> v2
         False -> {
             let v4 = Uh1InputEmpty
             let v5 = zeros_input_14(v1, v4)
@@ -1399,9 +1063,7 @@ pub fn loop_22(v0: Int, v1: Int, v2: Int) -> Int {
                         let v8 = spiral_wrap_signed(v2 + 1, 32)
                         v8
                     }
-                    False -> {
-                        v2
-                    }
+                    False -> v2
                 }
             let v10 = Us0BitOne
             let v11 = Uh1InputEmpty
@@ -1415,9 +1077,7 @@ pub fn loop_22(v0: Int, v1: Int, v2: Int) -> Int {
                         let v16 = spiral_wrap_signed(v9 + 1, 32)
                         v16
                     }
-                    False -> {
-                        v9
-                    }
+                    False -> v9
                 }
             let v18 = spiral_wrap_signed(v1 + 1, 32)
             loop_22(v0, v18, v17)
@@ -1432,9 +1092,7 @@ pub fn loop_24(v0: SpiralArray(Int), v1: Int) -> Nil {
             let v3 = spiral_wrap_signed(v1 + 1, 32)
             loop_24(v0, v3)
         }
-        False -> {
-        Nil
-        }
+        False -> Nil
     }
 }
 pub fn loop_25(v0: SpiralArray(Int), v1: Int) -> Nil {
@@ -1445,9 +1103,7 @@ pub fn loop_25(v0: SpiralArray(Int), v1: Int) -> Nil {
             let v3 = spiral_wrap_signed(v1 + 1, 32)
             loop_25(v0, v3)
         }
-        False -> {
-        Nil
-        }
+        False -> Nil
     }
 }
 pub fn probe_27(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int), v3: SpiralArray(Int), v4: SpiralArray(Int), v5: SpiralArray(Int), v6: SpiralArray(Int), v7: Int, v8: Int, v9: Int, v10: Int) -> Int {
@@ -1465,15 +1121,11 @@ pub fn probe_27(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int)
                     let v15 = v7 == 1
                     let v32 =
                         case v15 {
-                            True -> {
-                                True
-                            }
+                            True -> True
                             False -> {
                                 let v16 = v7 == 5
                                 case v16 {
-                                    True -> {
-                                        True
-                                    }
+                                    True -> True
                                     False -> {
                                         let v17 = v7 == 3
                                         case v17 {
@@ -1481,9 +1133,7 @@ pub fn probe_27(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int)
                                                 let v18 = spiral_array_get(v3, v8)
                                                 let v19 = v18 == 1
                                                 case v19 {
-                                                    True -> {
-                                                        True
-                                                    }
+                                                    True -> True
                                                     False -> {
                                                         let v20 = spiral_array_get(v3, v9)
                                                         let v21 = v20 == 1
@@ -1503,14 +1153,10 @@ pub fn probe_27(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int)
                                                                 let v27 = v26 == 1
                                                                 v27
                                                             }
-                                                            False -> {
-                                                                False
-                                                            }
+                                                            False -> False
                                                         }
                                                     }
-                                                    False -> {
-                                                        False
-                                                    }
+                                                    False -> False
                                                 }
                                             }
                                         }
@@ -1520,12 +1166,8 @@ pub fn probe_27(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int)
                         }
                     let v33 =
                         case v32 {
-                            True -> {
-                                1
-                            }
-                            False -> {
-                                0
-                            }
+                            True -> 1
+                            False -> 0
                         }
                     spiral_array_set(v3, v13, v33)
                     let v34 = spiral_wrap_signed(v13 + 1, 32)
@@ -1533,9 +1175,7 @@ pub fn probe_27(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int)
                     spiral_array_set(v6, 0, v34)
                     v13
                 }
-                False -> {
-                    panic as "brzozowski-interned-store-full"
-                }
+                False -> panic as "brzozowski-interned-store-full"
             }
         }
         False -> {
@@ -1549,9 +1189,7 @@ pub fn probe_27(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int)
                         let v41 = v40 == v8
                         v41
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v45 =
                 case v42 {
@@ -1560,14 +1198,10 @@ pub fn probe_27(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int)
                         let v44 = v43 == v9
                         v44
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             case v45 {
-                True -> {
-                    v37
-                }
+                True -> v37
                 False -> {
                     let v46 = spiral_wrap_signed(v10 + 1, 32)
                     let v47 = int.bitwise_and(v46, 8191)
@@ -1588,9 +1222,7 @@ pub fn interned_node_26(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralAr
 pub fn interned_alt_insert_30(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int), v3: SpiralArray(Int), v4: SpiralArray(Int), v5: SpiralArray(Int), v6: SpiralArray(Int), v7: Int, v8: Int) -> Int {
     let v9 = v8 == 0
     case v9 {
-        True -> {
-            v7
-        }
+        True -> v7
         False -> {
             let v10 = spiral_array_get(v0, v8)
             let v11 = v10 == 3
@@ -1606,9 +1238,7 @@ pub fn interned_alt_insert_30(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: Sp
                         False -> {
                             let v16 = v7 == v12
                             case v16 {
-                                True -> {
-                                    v8
-                                }
+                                True -> v8
                                 False -> {
                                     let v17 = 3
                                     let v18 = spiral_array_get(v2, v8)
@@ -1629,9 +1259,7 @@ pub fn interned_alt_insert_30(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: Sp
                         False -> {
                             let v26 = v7 == v8
                             case v26 {
-                                True -> {
-                                    v8
-                                }
+                                True -> v8
                                 False -> {
                                     let v27 = 3
                                     interned_node_26(v0, v1, v2, v3, v4, v5, v6, v27, v8, v7)
@@ -1647,9 +1275,7 @@ pub fn interned_alt_insert_30(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: Sp
 pub fn interned_make_alt_29(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int), v3: SpiralArray(Int), v4: SpiralArray(Int), v5: SpiralArray(Int), v6: SpiralArray(Int), v7: Int, v8: Int) -> Int {
     let v9 = v7 == 0
     case v9 {
-        True -> {
-            v8
-        }
+        True -> v8
         False -> {
             let v10 = spiral_array_get(v0, v7)
             let v11 = v10 == 3
@@ -1660,9 +1286,7 @@ pub fn interned_make_alt_29(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: Spir
                     let v14 = interned_alt_insert_30(v0, v1, v2, v3, v4, v5, v6, v13, v8)
                     interned_make_alt_29(v0, v1, v2, v3, v4, v5, v6, v12, v14)
                 }
-                False -> {
-                    interned_alt_insert_30(v0, v1, v2, v3, v4, v5, v6, v7, v8)
-                }
+                False -> interned_alt_insert_30(v0, v1, v2, v3, v4, v5, v6, v7, v8)
             }
         }
     }
@@ -1670,27 +1294,19 @@ pub fn interned_make_alt_29(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: Spir
 pub fn interned_make_cat_31(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int), v3: SpiralArray(Int), v4: SpiralArray(Int), v5: SpiralArray(Int), v6: SpiralArray(Int), v7: Int, v8: Int) -> Int {
     let v9 = v7 == 0
     case v9 {
-        True -> {
-            0
-        }
+        True -> 0
         False -> {
             let v10 = v8 == 0
             case v10 {
-                True -> {
-                    0
-                }
+                True -> 0
                 False -> {
                     let v11 = v7 == 1
                     case v11 {
-                        True -> {
-                            v8
-                        }
+                        True -> v8
                         False -> {
                             let v12 = v8 == 1
                             case v12 {
-                                True -> {
-                                    v7
-                                }
+                                True -> v7
                                 False -> {
                                     let v13 = spiral_array_get(v0, v7)
                                     let v14 = v13 == 5
@@ -1701,9 +1317,7 @@ pub fn interned_make_cat_31(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: Spir
                                                 let v16 = v15 == 5
                                                 v16
                                             }
-                                            False -> {
-                                                False
-                                            }
+                                            False -> False
                                         }
                                     case v17 {
                                         True -> {
@@ -1711,9 +1325,7 @@ pub fn interned_make_cat_31(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: Spir
                                             let v19 = spiral_array_get(v1, v8)
                                             let v20 = v18 == v19
                                             case v20 {
-                                                True -> {
-                                                    v7
-                                                }
+                                                True -> v7
                                                 False -> {
                                                     let v21 = 4
                                                     interned_node_26(v0, v1, v2, v3, v4, v5, v6, v21, v7, v8)
@@ -1763,36 +1375,24 @@ pub fn interned_of_regex_raw_28(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: 
             let v9 = 2
             let v11 =
                 case v8  {
-                    Us0BitOne -> {
-                        1
-                    }
-                    Us0BitZero -> {
-                        0
-                    }
+                    Us0BitOne -> 1
+                    Us0BitZero -> 0
                 }
             let v12 = 0
             interned_node_26(v0, v1, v2, v3, v4, v5, v6, v9, v11, v12)
         }
-        Uh0RegexEmpty -> {
-            0
-        }
-        Uh0RegexEpsilon -> {
-            1
-        }
+        Uh0RegexEmpty -> 0
+        Uh0RegexEpsilon -> 1
         Uh0RegexStar(v24) -> {
             let v25 = interned_of_regex_raw_28(v0, v1, v2, v3, v4, v5, v6, v24)
             let v26 = spiral_array_get(v0, v25)
             let v27 = v26 < 2
             case v27 {
-                True -> {
-                    1
-                }
+                True -> 1
                 False -> {
                     let v28 = v26 == 5
                     case v28 {
-                        True -> {
-                            v25
-                        }
+                        True -> v25
                         False -> {
                             let v29 = 5
                             let v30 = 0
@@ -1815,9 +1415,7 @@ pub fn interned_derivative_raw_35(v0: SpiralArray(Int), v1: SpiralArray(Int), v2
             let v14 = v13 < 2
             let v41 =
                 case v14 {
-                    True -> {
-                        0
-                    }
+                    True -> 0
                     False -> {
                         let v15 = v13 == 2
                         case v15 {
@@ -1825,12 +1423,8 @@ pub fn interned_derivative_raw_35(v0: SpiralArray(Int), v1: SpiralArray(Int), v2
                                 let v16 = spiral_array_get(v1, v7)
                                 let v17 = v16 == v8
                                 case v17 {
-                                    True -> {
-                                        1
-                                    }
-                                    False -> {
-                                        0
-                                    }
+                                    True -> 1
+                                    False -> 0
                                 }
                             }
                             False -> {
@@ -1858,9 +1452,7 @@ pub fn interned_derivative_raw_35(v0: SpiralArray(Int), v1: SpiralArray(Int), v2
                                                         let v32 = interned_derivative_raw_35(v0, v1, v2, v3, v4, v5, v6, v27, v8)
                                                         interned_make_alt_29(v0, v1, v2, v3, v4, v5, v6, v29, v32)
                                                     }
-                                                    False -> {
-                                                        v29
-                                                    }
+                                                    False -> v29
                                                 }
                                             }
                                             False -> {
@@ -1888,20 +1480,14 @@ pub fn interned_derivative_raw_35(v0: SpiralArray(Int), v1: SpiralArray(Int), v2
 pub fn loop_34(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int), v3: SpiralArray(Int), v4: SpiralArray(Int), v5: SpiralArray(Int), v6: SpiralArray(Int), v7: Int, v8: Uh1) -> Bool {
     let v9 = v7 == 0
     case v9 {
-        True -> {
-            False
-        }
+        True -> False
         False -> {
             case v8  {
                 Uh1InputCons(v12, v13) -> {
                     let v15 =
                         case v12  {
-                            Us0BitOne -> {
-                                1
-                            }
-                            Us0BitZero -> {
-                                0
-                            }
+                            Us0BitOne -> 1
+                            Us0BitZero -> 0
                         }
                     let v16 = interned_derivative_raw_35(v0, v1, v2, v3, v4, v5, v6, v7, v15)
                     loop_34(v0, v1, v2, v3, v4, v5, v6, v16, v13)
@@ -1931,24 +1517,18 @@ pub fn loop_32(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int),
                         let v17 = spiral_wrap_signed(v11 + 1, 32)
                         v17
                     }
-                    False -> {
-                        v11
-                    }
+                    False -> v11
                 }
             let v19 = spiral_wrap_signed(v9 - 1, 32)
             loop_32(v0, v1, v2, v3, v4, v5, v6, v7, v8, v19, v15, v18)
         }
-        False -> {
-            v11
-        }
+        False -> v11
     }
 }
 pub fn loop_36(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int), v3: SpiralArray(Int), v4: SpiralArray(Int), v5: SpiralArray(Int), v6: SpiralArray(Int), v7: Int, v8: Int, v9: Int, v10: Int) -> Int {
     let v11 = v7 < v9
     case v11 {
-        True -> {
-            v10
-        }
+        True -> v10
         False -> {
             let v12 = Uh1InputEmpty
             let v13 = zeros_input_14(v9, v12)
@@ -1959,9 +1539,7 @@ pub fn loop_36(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int),
                         let v15 = spiral_wrap_signed(v10 + 1, 32)
                         v15
                     }
-                    False -> {
-                        v10
-                    }
+                    False -> v10
                 }
             let v17 = Us0BitOne
             let v18 = Uh1InputEmpty
@@ -1974,9 +1552,7 @@ pub fn loop_36(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int),
                         let v22 = spiral_wrap_signed(v16 + 1, 32)
                         v22
                     }
-                    False -> {
-                        v16
-                    }
+                    False -> v16
                 }
             let v24 = spiral_wrap_signed(v9 + 1, 32)
             loop_36(v0, v1, v2, v3, v4, v5, v6, v7, v8, v24, v23)
@@ -2107,9 +1683,7 @@ pub fn main() {
                 let v117 = v41 == v99
                 v117
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v120 =
         case v118 {
@@ -2117,17 +1691,11 @@ pub fn main() {
                 let v119 = v57 == v115
                 v119
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v120 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "brzozowski-bench-engines-disagree"
-        }
+        True -> Nil
+        False -> panic as "brzozowski-bench-engines-disagree"
     }
     let v121 = 200
     let v122 = 32
@@ -2146,9 +1714,7 @@ pub fn main() {
                 let v132 = v41 == v126
                 v132
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v135 =
         case v133 {
@@ -2156,17 +1722,11 @@ pub fn main() {
                 let v134 = v57 == v130
                 v134
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v135 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "brzozowski-bench-engines-disagree"
-        }
+        True -> Nil
+        False -> panic as "brzozowski-bench-engines-disagree"
     }
     let v136 = 200
     let v137 = 32
@@ -2198,18 +1758,12 @@ pub fn main() {
                 let v157 = v155 == 1
                 v157
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let #(v166, v167, v168, v169, v170, v171, v172) =
         case v158 {
-            True -> {
-                #(v138, v139, v140, v141, v142, v143, v144)
-            }
-            False -> {
-                panic as "brzozowski-interned-store-init"
-            }
+            True -> #(v138, v139, v140, v141, v142, v143, v144)
+            False -> panic as "brzozowski-interned-store-init"
         }
     let v173 = Us0BitZero
     let v174 = Uh0RegexChar(v173)
@@ -2284,18 +1838,12 @@ pub fn main() {
                 let v237 = v235 == 1
                 v237
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let #(v246, v247, v248, v249, v250, v251, v252) =
         case v238 {
-            True -> {
-                #(v218, v219, v220, v221, v222, v223, v224)
-            }
-            False -> {
-                panic as "brzozowski-interned-store-init"
-            }
+            True -> #(v218, v219, v220, v221, v222, v223, v224)
+            False -> panic as "brzozowski-interned-store-init"
         }
     let v253 = Us0BitZero
     let v254 = Uh0RegexChar(v253)
@@ -2320,9 +1868,7 @@ pub fn main() {
                 let v270 = v41 == v216
                 v270
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v273 =
         case v271 {
@@ -2330,44 +1876,26 @@ pub fn main() {
                 let v272 = v57 == v268
                 v272
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v273 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "brzozowski-bench-engines-disagree"
-        }
+        True -> Nil
+        False -> panic as "brzozowski-bench-engines-disagree"
     }
     let v274 = v57 == 16
     case v274 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "brzozowski-bench-zero-runs-count"
-        }
+        True -> Nil
+        False -> panic as "brzozowski-bench-zero-runs-count"
     }
     let v275 = v40 == 93
     case v275 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "brzozowski-bench-ends-with-zero-count"
-        }
+        True -> Nil
+        False -> panic as "brzozowski-bench-ends-with-zero-count"
     }
     let v276 = v41 == 97
     case v276 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "brzozowski-bench-fourth-from-end-count"
-        }
+        True -> Nil
+        False -> panic as "brzozowski-bench-fourth-from-end-count"
     }
     0
 }

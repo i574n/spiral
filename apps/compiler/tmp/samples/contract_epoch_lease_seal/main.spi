@@ -1,14 +1,14 @@
-nominal epoch_one = ()
-nominal epoch_two = ()
-nominal unbound = ()
-nominal bound = ()
-nominal consumed = ()
+:! epoch_one = ()
+:! epoch_two = ()
+:! unbound = ()
+:! bound = ()
+:! consumed = ()
 
-union authority epoch =
+:| authority epoch =
     | AuthorityOne :: authority epoch_one
     | AuthorityTwo :: authority epoch_two
 
-union lease epoch state =
+:| lease epoch state =
     | LeaseOneFresh :: lease epoch_one unbound
     | LeaseTwoFresh :: lease epoch_two unbound
     | LeaseOneBound :: lease epoch_one bound
@@ -16,37 +16,37 @@ union lease epoch state =
     | LeaseOneConsumed :: lease epoch_one consumed
     | LeaseTwoConsumed :: lease epoch_two consumed
 
-inl bind forall epoch.
+:= bind \* epoch.
     (lease : lease epoch unbound)
     (authority : authority epoch)
     : lease epoch bound =
-    match lease with
+    ?= lease ?|
     | LeaseOneFresh =>
-        match authority with
+        ?= authority ?|
         | AuthorityOne => LeaseOneBound
     | LeaseTwoFresh =>
-        match authority with
+        ?= authority ?|
         | AuthorityTwo => LeaseTwoBound
 
-inl consume forall epoch. (lease : lease epoch bound) : lease epoch consumed =
-    match lease with
+:= consume \* epoch. (lease : lease epoch bound) : lease epoch consumed =
+    ?= lease ?|
     | LeaseOneBound => LeaseOneConsumed
     | LeaseTwoBound => LeaseTwoConsumed
 
-union terminal_seal epoch =
-    | TerminalSeal :: forall epoch. lease epoch consumed * authority epoch -> terminal_seal epoch
+:| terminal_seal epoch =
+    | TerminalSeal :: \* epoch. lease epoch consumed * authority epoch -> terminal_seal epoch
 
-inl seal forall epoch.
+:= seal \* epoch.
     (lease : lease epoch consumed)
     (authority : authority epoch)
     : terminal_seal epoch =
     TerminalSeal (lease, authority)
 
-inl render (seal : terminal_seal epoch_two) : string =
-    match seal with
+:= render (seal : terminal_seal epoch_two) : string =
+    ?= seal ?|
     | TerminalSeal _ => "epoch-lease-terminal-seal"
 
-inl main () : string =
-    inl bound = bind LeaseTwoFresh AuthorityTwo
-    inl consumed = consume bound
+:= main () : string =
+    := bound = bind LeaseTwoFresh AuthorityTwo
+    := consumed = consume bound
     render (seal consumed AuthorityTwo)

@@ -1,17 +1,17 @@
-union triple =
+:| triple =
     | One : i32
     | All : i32 * string * bool
 
-let score x : i32 =
-    match x with
+:~ score x : i32 =
+    ?= x ?|
     | One value => value
     | All (n, word, flag) =>
-        if n =. 7i32 && !!!!EQ(word, "hi") && flag then 0i32 else 1i32
+        ? n =. 7i32 && !!!!EQ(word, "hi") && flag ?> 0i32 |: 1i32
 
-inl main () : i32 =
-    inl ~flag = true
-    inl ~n = 7i32
-    inl ~word = "hi"
-    inl ~on = true
-    inl held = if flag then All (n, word, on) else One 1i32
+:= main () : i32 =
+    := ~flag = !+
+    := ~n = 7i32
+    := ~word = "hi"
+    := ~on = !+
+    := held = ? flag ?> All (n, word, on) |: One 1i32
     score held

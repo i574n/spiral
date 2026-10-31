@@ -1,77 +1,77 @@
-nominal artifact_a = ()
-nominal payload_digest_a = ()
-nominal transfer_a = ()
-nominal sender_a = ()
-nominal receiver_a = ()
-nominal route_a = ()
-nominal manifest_v1 = ()
-nominal manifest_v2 = ()
-nominal journal_a = ()
-nominal output_a = ()
-nominal chunk_0 = ()
-nominal chunk_1 = ()
-nominal chunk_2 = ()
-nominal digest_0 = ()
-nominal digest_1 = ()
-nominal digest_2 = ()
+:! artifact_a = ()
+:! payload_digest_a = ()
+:! transfer_a = ()
+:! sender_a = ()
+:! receiver_a = ()
+:! route_a = ()
+:! manifest_v1 = ()
+:! manifest_v2 = ()
+:! journal_a = ()
+:! output_a = ()
+:! chunk_0 = ()
+:! chunk_1 = ()
+:! chunk_2 = ()
+:! digest_0 = ()
+:! digest_1 = ()
+:! digest_2 = ()
 
-nominal source_ready = ()
-nominal manifest_ready = ()
-nominal interrupted = ()
-nominal resumed = ()
-nominal assembled = ()
-nominal committed = ()
-nominal verified = ()
-nominal accepted = ()
-nominal distinct = ()
-nominal idempotent = ()
-nominal non_idempotent = ()
+:! source_ready = ()
+:! manifest_ready = ()
+:! interrupted = ()
+:! resumed = ()
+:! assembled = ()
+:! committed = ()
+:! verified = ()
+:! accepted = ()
+:! distinct = ()
+:! idempotent = ()
+:! non_idempotent = ()
 
-union artifact artifact_id digest state =
-    | Artifact :: forall artifact_id digest state. string -> artifact artifact_id digest state
+:| artifact artifact_id digest state =
+    | Artifact :: \* artifact_id digest state. string -> artifact artifact_id digest state
 
-union transfer_manifest transfer artifact_id digest sender receiver route manifest state =
-    | TransferManifest :: forall transfer artifact_id digest sender receiver route manifest state.
+:| transfer_manifest transfer artifact_id digest sender receiver route manifest state =
+    | TransferManifest :: \* transfer artifact_id digest sender receiver route manifest state.
         string -> transfer_manifest transfer artifact_id digest sender receiver route manifest state
 
-union chunk_spec transfer manifest chunk digest state =
-    | ChunkSpec :: forall transfer manifest chunk digest state.
+:| chunk_spec transfer manifest chunk digest state =
+    | ChunkSpec :: \* transfer manifest chunk digest state.
         string ->
         chunk_spec transfer manifest chunk digest state
 
-union chunk_receipt transfer manifest chunk digest receiver journal state =
-    | ChunkReceipt :: forall transfer manifest chunk digest receiver journal state.
+:| chunk_receipt transfer manifest chunk digest receiver journal state =
+    | ChunkReceipt :: \* transfer manifest chunk digest receiver journal state.
         string -> chunk_receipt transfer manifest chunk digest receiver journal state
 
-union distinct_chunks left middle right state =
-    | DistinctChunks :: forall left middle right state. string -> distinct_chunks left middle right state
+:| distinct_chunks left middle right state =
+    | DistinctChunks :: \* left middle right state. string -> distinct_chunks left middle right state
 
-union partial_journal transfer manifest receiver journal last_chunk state =
-    | PartialJournal :: forall transfer manifest receiver journal last_chunk state.
+:| partial_journal transfer manifest receiver journal last_chunk state =
+    | PartialJournal :: \* transfer manifest receiver journal last_chunk state.
         string -> partial_journal transfer manifest receiver journal last_chunk state
 
-union assembly_receipt transfer manifest artifact_id digest receiver output state =
-    | AssemblyReceipt :: forall transfer manifest artifact_id digest receiver output state.
+:| assembly_receipt transfer manifest artifact_id digest receiver output state =
+    | AssemblyReceipt :: \* transfer manifest artifact_id digest receiver output state.
         string -> assembly_receipt transfer manifest artifact_id digest receiver output state
 
-union atomic_commit transfer manifest receiver output digest state =
-    | AtomicCommit :: forall transfer manifest receiver output digest state.
+:| atomic_commit transfer manifest receiver output digest state =
+    | AtomicCommit :: \* transfer manifest receiver output digest state.
         string -> atomic_commit transfer manifest receiver output digest state
 
-union end_to_end_verification transfer artifact_id manifest output digest state =
-    | EndToEndVerification :: forall transfer artifact_id manifest output digest state.
+:| end_to_end_verification transfer artifact_id manifest output digest state =
+    | EndToEndVerification :: \* transfer artifact_id manifest output digest state.
         string -> end_to_end_verification transfer artifact_id manifest output digest state
 
-union transfer_op transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
+:| transfer_op transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
     effect =
-    | PrepareManifest :: forall transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1
+    | PrepareManifest :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1
         d2.
         artifact artifact_id digest source_ready *
         transfer_manifest transfer artifact_id digest sender receiver route manifest manifest_ready ->
         transfer_op
             transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 source_ready
             manifest_ready idempotent
-    | AcceptBoundedWindow :: forall transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2
+    | AcceptBoundedWindow :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2
         d0 d1 d2.
         chunk_spec transfer manifest c0 d0 manifest_ready *
         chunk_spec transfer manifest c1 d1 manifest_ready *
@@ -81,7 +81,7 @@ union transfer_op transfer artifact_id digest sender receiver route manifest jou
         transfer_op
             transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 manifest_ready
             interrupted non_idempotent
-    | ResumeFromJournal :: forall transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0
+    | ResumeFromJournal :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0
         d1 d2.
         partial_journal transfer manifest receiver journal c1 interrupted *
         chunk_spec transfer manifest c2 d2 manifest_ready *
@@ -90,7 +90,7 @@ union transfer_op transfer artifact_id digest sender receiver route manifest jou
         transfer_op
             transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 interrupted
             resumed idempotent
-    | AssembleExactPayload :: forall transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2
+    | AssembleExactPayload :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2
         d0 d1 d2.
         transfer_manifest transfer artifact_id digest sender receiver route manifest manifest_ready *
         chunk_receipt transfer manifest c0 d0 receiver journal accepted *
@@ -101,14 +101,14 @@ union transfer_op transfer artifact_id digest sender receiver route manifest jou
         transfer_op
             transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 resumed
             assembled idempotent
-    | CommitAtomically :: forall transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0
+    | CommitAtomically :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0
         d1 d2.
         assembly_receipt transfer manifest artifact_id digest receiver output assembled *
         atomic_commit transfer manifest receiver output digest committed ->
         transfer_op
             transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 assembled
             committed non_idempotent
-    | VerifyEndToEnd :: forall transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1
+    | VerifyEndToEnd :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1
         d2.
         transfer_manifest transfer artifact_id digest sender receiver route manifest manifest_ready *
         atomic_commit transfer manifest receiver output digest committed *
@@ -117,14 +117,14 @@ union transfer_op transfer artifact_id digest sender receiver route manifest jou
             transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 committed
             verified idempotent
 
-union transfer_row transfer manifest from to effect =
-    | TransferRow :: forall transfer manifest from to effect. string -> transfer_row transfer manifest from to effect
+:| transfer_row transfer manifest from to effect =
+    | TransferRow :: \* transfer manifest from to effect. string -> transfer_row transfer manifest from to effect
 
-union transfer_node transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
+:| transfer_node transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
     =
-    | TransferNode :: forall transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
+    | TransferNode :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
         from to.
-        (exists effect.
+        (\? effect.
             transfer_op
                 transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
                 effect *
@@ -132,17 +132,17 @@ union transfer_node transfer artifact_id digest sender receiver route manifest j
         transfer_node
             transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
 
-union rec transfer_plan transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from
+:| ^ transfer_plan transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from
     to =
-    | TransferLeaf :: forall transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
+    | TransferLeaf :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
         from to.
         transfer_node
             transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to ->
         transfer_plan
             transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
-    | TransferThen :: forall transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
+    | TransferThen :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
         from to.
-        (exists middle.
+        (\? middle.
             transfer_plan
                 transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from
                 middle *
@@ -152,17 +152,17 @@ union rec transfer_plan transfer artifact_id digest sender receiver route manife
         transfer_plan
             transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
 
-union packed_transfer transfer artifact_id digest =
-    | PackedTransfer :: forall transfer artifact_id digest.
-        (exists sender receiver route manifest journal output c0 c1 c2 d0 d1 d2.
+:| packed_transfer transfer artifact_id digest =
+    | PackedTransfer :: \* transfer artifact_id digest.
+        (\? sender receiver route manifest journal output c0 c1 c2 d0 d1 d2.
             transfer_plan
                 transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
                 source_ready verified) ->
         packed_transfer transfer artifact_id digest
 
-inl with_packed_transfer forall transfer artifact_id digest result.
+:= with_packed_transfer \* transfer artifact_id digest result.
     (visit :
-        forall sender receiver route manifest journal output c0 c1 c2 d0 d1 d2.
+        \* sender receiver route manifest journal output c0 c1 c2 d0 d1 d2.
             transfer_plan
                 transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
                 source_ready verified ->
@@ -170,66 +170,66 @@ inl with_packed_transfer forall transfer artifact_id digest result.
     (packed : packed_transfer transfer artifact_id digest)
     : result
     =
-    match packed with
+    ?= packed ?|
     | PackedTransfer payload =>
-        inl exists sender receiver route manifest journal output c0 c1 c2 d0 d1 d2. plan = payload
+        := \? sender receiver route manifest journal output c0 c1 c2 d0 d1 d2. plan = payload
         visit plan
 
-inl node_label forall transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from
+:= node_label \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from
     to.
     (node :
         transfer_node
             transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to)
     : string
     =
-    match node with
+    ?= node ?|
     | TransferNode payload =>
-        inl exists effect. _, TransferRow label = payload
+        := \? effect. _, TransferRow label = payload
         label
 
-inl rec terminal_label forall transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1
+:= ^ terminal_label \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1
     d2 from to.
     (plan :
         transfer_plan
             transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to)
     : string
     =
-    match plan with
+    ?= plan ?|
     | TransferLeaf node => node_label node
     | TransferThen payload =>
-        inl exists middle. _, node = payload
+        := \? middle. _, node = payload
         node_label node
 
-inl manifest
+:= manifest
     ()
     : transfer_manifest transfer_a artifact_a payload_digest_a sender_a receiver_a route_a manifest_v2 manifest_ready
     =
     TransferManifest "manifest-v2"
 
-inl receipt0 () : chunk_receipt transfer_a manifest_v2 chunk_0 digest_0 receiver_a journal_a accepted =
+:= receipt0 () : chunk_receipt transfer_a manifest_v2 chunk_0 digest_0 receiver_a journal_a accepted =
     ChunkReceipt "chunk-0"
-inl receipt1 () : chunk_receipt transfer_a manifest_v2 chunk_1 digest_1 receiver_a journal_a accepted =
+:= receipt1 () : chunk_receipt transfer_a manifest_v2 chunk_1 digest_1 receiver_a journal_a accepted =
     ChunkReceipt "chunk-1"
-inl receipt2 () : chunk_receipt transfer_a manifest_v1 chunk_2 digest_2 receiver_a journal_a accepted =
+:= receipt2 () : chunk_receipt transfer_a manifest_v1 chunk_2 digest_2 receiver_a journal_a accepted =
     ChunkReceipt "chunk-2-from-stale-manifest"
 
-inl prepare_node
+:= prepare_node
     ()
     : transfer_node transfer_a artifact_a payload_digest_a sender_a receiver_a route_a manifest_v2 journal_a output_a
         chunk_0 chunk_1 chunk_2 digest_0 digest_1 digest_2 source_ready manifest_ready
     =
-    TransferNode (exists (
+    TransferNode (\? (
         PrepareManifest (Artifact "payload", manifest ()),
         TransferRow "prepare-content-addressed-manifest"
     ))
 
-inl partial_node
+:= partial_node
     ()
     : transfer_node transfer_a artifact_a payload_digest_a sender_a receiver_a route_a manifest_v2 journal_a output_a
         chunk_0 chunk_1 chunk_2 digest_0 digest_1 digest_2 manifest_ready interrupted
     =
     TransferNode (
-        exists (
+        \? (
             AcceptBoundedWindow (
                 ChunkSpec "chunk-0-spec",
                 ChunkSpec "chunk-1-spec",
@@ -241,13 +241,13 @@ inl partial_node
         )
     )
 
-inl resume_node
+:= resume_node
     ()
     : transfer_node transfer_a artifact_a payload_digest_a sender_a receiver_a route_a manifest_v2 journal_a output_a
         chunk_0 chunk_1 chunk_2 digest_0 digest_1 digest_2 interrupted resumed
     =
     TransferNode (
-        exists (
+        \? (
             ResumeFromJournal (
                 PartialJournal "journal-after-chunk-1",
                 ChunkSpec "chunk-2-spec",
@@ -258,13 +258,13 @@ inl resume_node
         )
     )
 
-inl assemble_node
+:= assemble_node
     ()
     : transfer_node transfer_a artifact_a payload_digest_a sender_a receiver_a route_a manifest_v2 journal_a output_a
         chunk_0 chunk_1 chunk_2 digest_0 digest_1 digest_2 resumed assembled
     =
     TransferNode (
-        exists (
+        \? (
             AssembleExactPayload (
                 manifest (),
                 receipt0 (),
@@ -277,36 +277,36 @@ inl assemble_node
         )
     )
 
-inl commit_node
+:= commit_node
     ()
     : transfer_node transfer_a artifact_a payload_digest_a sender_a receiver_a route_a manifest_v2 journal_a output_a
         chunk_0 chunk_1 chunk_2 digest_0 digest_1 digest_2 assembled committed
     =
-    TransferNode (exists (
+    TransferNode (\? (
         CommitAtomically (AssemblyReceipt "sha256-exact", AtomicCommit "rename-after-fsync"),
         TransferRow "commit-output-and-receipt-atomically"
     ))
 
-inl verify_node
+:= verify_node
     ()
     : transfer_node transfer_a artifact_a payload_digest_a sender_a receiver_a route_a manifest_v2 journal_a output_a
         chunk_0 chunk_1 chunk_2 digest_0 digest_1 digest_2 committed verified
     =
-    TransferNode (exists (
+    TransferNode (\? (
         VerifyEndToEnd (manifest (), AtomicCommit "rename-after-fsync", EndToEndVerification "manifest-equals-output"),
         TransferRow "durable-exactly-once-transfer"
     ))
 
-inl plan
+:= plan
     ()
     : transfer_plan transfer_a artifact_a payload_digest_a sender_a receiver_a route_a manifest_v2 journal_a output_a
         chunk_0 chunk_1 chunk_2 digest_0 digest_1 digest_2 source_ready verified
     =
-    TransferThen (exists (
-        TransferThen (exists (
-            TransferThen (exists (
-                TransferThen (exists (
-                    TransferThen (exists (
+    TransferThen (\? (
+        TransferThen (\? (
+            TransferThen (\? (
+                TransferThen (\? (
+                    TransferThen (\? (
                         TransferLeaf (prepare_node ()),
                         partial_node ()
                     )),
@@ -319,7 +319,7 @@ inl plan
         verify_node ()
     ))
 
-inl inspect forall sender receiver route manifest journal output c0 c1 c2 d0 d1 d2.
+:= inspect \* sender receiver route manifest journal output c0 c1 c2 d0 d1 d2.
     (plan :
         transfer_plan
             transfer_a artifact_a payload_digest_a sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
@@ -328,6 +328,6 @@ inl inspect forall sender receiver route manifest journal output c0 c1 c2 d0 d1 
     =
     terminal_label plan
 
-inl main () : string =
-    inl packed : packed_transfer transfer_a artifact_a payload_digest_a = PackedTransfer (exists (plan ()))
+:= main () : string =
+    := packed : packed_transfer transfer_a artifact_a payload_digest_a = PackedTransfer (\? (plan ()))
     with_packed_transfer `$inspect packed

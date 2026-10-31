@@ -41,9 +41,9 @@ func sp_method0(_ p0: Int32) -> Int32 {
     var v0: Int32 = p0
     var v1: Int32 = 0
     var v2: Int32 = 0
-    let spiral_tuple111 = sp_method1(v0)
-    v1 = spiral_tuple111.0
-    v2 = spiral_tuple111.1
+    let spiral_tuple107 = sp_method1(v0)
+    v1 = spiral_tuple107.0
+    v2 = spiral_tuple107.1
     var v3: Bool = false
     v3 = (v1 == 4)
     var v5: Bool = false

@@ -1,14 +1,14 @@
-union slot =
+:| slot =
     | Missing
     | Box : heap { value : i32 }
 
-inl main () : i32 =
-    inl ~n = 7i32
-    inl cell = !!!!LayoutToHeap({ value = n })
-    inl ~flag = true
-    inl box = if flag then Box cell else Missing
-    match box with
+:= main () : i32 =
+    := ~n = 7i32
+    := cell = !!!!LayoutToHeap({ value = n })
+    := ~flag = !+
+    := box = ? flag ?> Box cell |: Missing
+    ?= box ?|
     | Box held =>
-        inl opened = !!!!LayoutIndex(held)
-        if opened.value =. 7i32 then 0i32 else 1i32
+        := opened = !!!!LayoutIndex(held)
+        ? opened::value =. 7i32 ?> 0i32 |: 1i32
     | Missing => 1i32

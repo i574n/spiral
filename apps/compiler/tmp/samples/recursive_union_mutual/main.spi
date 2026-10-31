@@ -1,13 +1,13 @@
-union rec a =
+:| ^ a =
     | A : b
     | StopA
-and union b =
+:& :| b =
     | B : a
     | StopB
 
-inl main () : i32 =
-    inl ~flag = true
-    inl root = if flag then A (B StopA) else StopA
-    match root with
+:= main () : i32 =
+    := ~flag = !+
+    := root = ? flag ?> A (B StopA) |: StopA
+    ?= root ?|
     | StopA => 0i32
     | A _ => 0i32

@@ -1,20 +1,20 @@
-inl main () : i32 =
-    inl ~x = 5000000000i64
-    inl ~y = 0i64 -. 4i64
-    inl q = x /. y
-    inl ~m = 1000000i64
-    inl prod = m *. m
-    inl ~neg = 0i64 -. 8i64
-    inl shifted = !!!!ShiftRight(neg, 1i32)
-    inl ~n = 7i32
-    inl from_i = !!!!Conv(`i64, n)
-    inl ~z = 9i64
-    inl as_i = !!!!Conv(`i32, z)
-    inl ~u = 4294967296u64
-    inl u2 = u +. 1u64
-    inl ushift = !!!!ShiftRight(u, 1i32)
-    inl from_u = !!!!Conv(`u64, n)
-    if
+:= main () : i32 =
+    := ~x = 5000000000i64
+    := ~y = 0i64 -. 4i64
+    := q = x /. y
+    := ~m = 1000000i64
+    := prod = m *. m
+    := ~neg = 0i64 -. 8i64
+    := shifted = !!!!ShiftRight(neg, 1i32)
+    := ~n = 7i32
+    := from_i = !!!!Conv(`i64, n)
+    := ~z = 9i64
+    := as_i = !!!!Conv(`i32, z)
+    := ~u = 4294967296u64
+    := u2 = u +. 1u64
+    := ushift = !!!!ShiftRight(u, 1i32)
+    := from_u = !!!!Conv(`u64, n)
+    ?
         q =. (0i64 -. 1250000000i64)
         && prod =. 1000000000000i64
         && shifted =. (0i64 -. 4i64)
@@ -23,5 +23,5 @@ inl main () : i32 =
         && u2 =. 4294967297u64
         && ushift =. 2147483648u64
         && from_u =. 7u64
-    then 0i32
-    else 1i32
+    ?> 0i32
+    |: 1i32

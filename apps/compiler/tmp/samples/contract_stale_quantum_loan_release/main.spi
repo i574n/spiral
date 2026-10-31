@@ -1,21 +1,21 @@
-nominal lineage_a = ()
-nominal epoch0 = ()
-nominal epoch1 = ()
-nominal owner_a = ()
-nominal slot0 = ()
-nominal borrowed = ()
-nominal available = ()
-nominal live = ()
-nominal returned = ()
-union qregister lineage epoch state = | QRegister :: forall lineage epoch state. string -> qregister lineage epoch state
-union qloan lineage epoch owner slot state =
-    | QLoan :: forall lineage epoch owner slot state. string -> qloan lineage epoch owner slot state
-inl release forall lineage epoch owner slot.
+:! lineage_a = ()
+:! epoch0 = ()
+:! epoch1 = ()
+:! owner_a = ()
+:! slot0 = ()
+:! borrowed = ()
+:! available = ()
+:! live = ()
+:! returned = ()
+:| qregister lineage epoch state = | QRegister :: \* lineage epoch state. string -> qregister lineage epoch state
+:| qloan lineage epoch owner slot state =
+    | QLoan :: \* lineage epoch owner slot state. string -> qloan lineage epoch owner slot state
+:= release \* lineage epoch owner slot.
     (register : qregister lineage epoch borrowed) (loan : qloan lineage epoch owner slot live)
     : qregister lineage epoch available * qloan lineage epoch owner slot returned
     =
     QRegister "available", QLoan "returned"
-inl main () =
-    inl register : qregister lineage_a epoch1 borrowed = QRegister "new-epoch"
-    inl stale : qloan lineage_a epoch0 owner_a slot0 live = QLoan "stale"
+:= main () =
+    := register : qregister lineage_a epoch1 borrowed = QRegister "new-epoch"
+    := stale : qloan lineage_a epoch0 owner_a slot0 live = QLoan "stale"
     release register stale

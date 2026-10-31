@@ -287,7 +287,7 @@ defmodule Spiral.Cells.Memo do
     dir = Path.expand(dir)
 
     with false <- MapSet.member?(seen, dir),
-         {:ok, project} <- File.read(Path.join(dir, "package.spiproj")) do
+         {:ok, project} <- Spiral.Cells.Manifest.read(dir) do
       module_files(dir, project) ++ Enum.flat_map(Spiral.Cells.Mounts.declared_dependencies(dir), &tree_files(&1.target, MapSet.put(seen, dir)))
     else
       _ -> []
@@ -345,7 +345,7 @@ defmodule Spiral.Cells.Memo do
   defp package_index(dir, bounds) do
     dir = Path.expand(dir)
 
-    case File.read(Path.join(dir, "package.spiproj")) do
+    case Spiral.Cells.Manifest.read(dir) do
       {:ok, project} ->
         modules =
           for {file, opened} <- module_entries(dir, project) do
@@ -579,7 +579,7 @@ defmodule Spiral.Cells.Memo do
     else
       seen = MapSet.put(seen, dir)
 
-      case File.read(Path.join(dir, "package.spiproj")) do
+      case Spiral.Cells.Manifest.read(dir) do
         {:ok, project} ->
           files = Enum.map(module_files(dir, project), &{&1, content_print(&1, bounds)})
           deps = for dep <- Spiral.Cells.Mounts.declared_dependencies(dir), do: {dep.name, package_print(dep.target, seen, bounds)}

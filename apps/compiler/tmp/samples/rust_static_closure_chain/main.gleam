@@ -498,9 +498,7 @@ pub fn loop_0(v0: Uh0, v1: Int) -> Int {
             let v5 = spiral_wrap_unsigned(v1 + v2, 64)
             loop_0(v4, v5)
         }
-        Uh0Nil -> {
-            v1
-        }
+        Uh0Nil -> v1
     }
 }
 pub fn main() {

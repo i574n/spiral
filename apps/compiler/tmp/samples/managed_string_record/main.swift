@@ -47,9 +47,9 @@ func spiral_main() -> Int32 {
     let v0: String = "qwe"
     var v1: String = ""
     var v2: Int32 = 0
-    let spiral_tuple120 = sp_method0(v0)
-    v1 = spiral_tuple120.0
-    v2 = spiral_tuple120.1
+    let spiral_tuple115 = sp_method0(v0)
+    v1 = spiral_tuple115.0
+    v2 = spiral_tuple115.1
     var v3: Int32 = 0
     v3 = sp_score_1(v2, v1)
     let v4: Int32 = sp_score_1(v2, v1)

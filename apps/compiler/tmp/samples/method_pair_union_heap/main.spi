@@ -1,18 +1,18 @@
-union slot =
+:| slot =
     | None
     | Some : i32
 
-inl pick (n : i32) (cell : heap { value : i32 }) : slot * heap { value : i32 } =
+:= pick (n : i32) (cell : heap { value : i32 }) : slot * heap { value : i32 } =
     Some n, cell
 
-inl main () : i32 =
-    inl ~n = 3i32
-    inl ~m = 4i32
-    inl cell = !!!!LayoutToHeap({ value = m })
-    inl pair = join pick n cell
-    inl ~(left, right) = pair
-    match left with
+:= main () : i32 =
+    := ~n = 3i32
+    := ~m = 4i32
+    := cell = !!!!LayoutToHeap({ value = m })
+    := pair = ~~ pick n cell
+    := ~(left, right) = pair
+    ?= left ?|
     | Some value =>
-        inl obj = !!!!LayoutIndex(right)
-        if value +. obj.value =. 7i32 then 0i32 else 1i32
+        := obj = !!!!LayoutIndex(right)
+        ? value +. obj::value =. 7i32 ?> 0i32 |: 1i32
     | None => 1i32

@@ -1,15 +1,15 @@
-inl rec spin (k : i32) : i32 =
-    if k = 0i32 then 0i32
-    else spin (k - 1i32)
+:= ^ spin (k : i32) : i32 =
+    ? k = 0i32 ?> 0i32
+    |: spin (k - 1i32)
 
-let first () : i32 =
-    inl _ = spin 2000i32
+:~ first () : i32 =
+    := _ = spin 2000i32
     error_type "first body fails"
 
-let second () : i32 =
+:~ second () : i32 =
     error_type "second body fails"
 
-inl main () : i32 =
-    inl x = first ()
-    inl y = second ()
+:= main () : i32 =
+    := x = first ()
+    := y = second ()
     x + y

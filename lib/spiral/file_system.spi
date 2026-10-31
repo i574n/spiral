@@ -835,18 +835,6 @@ test create_temp_path =
         | Delphi => \ path => $'FileExists(!path)' : bool
         | _ => \ _ => null ()
 
-/// ### directory_delete
-:~ directory_delete recursive (path : string) : () =
-    run_target_args' (path, recursive) \|
-        | Fsharp => \ path, recursive =>
-            $'System.IO.Directory.Delete (!path, !recursive)'
-        | Rust => \ path, recursive =>
-            ? path |> directory_exists ?>
-                ? recursive
-                ?> !\\(path, $'"std::fs::remove_dir_all(&*$0).unwrap()"')
-                |: !\\(path, $'"std::fs::remove_dir(&*$0).unwrap()"')
-        | _ => \ _ => ()
-
 /// ### write_all_text
 := write_all_text (path : string) (text : string) : () =
     run_target_args' (path, text) \|
@@ -909,7 +897,45 @@ test create_temp_path =
             := text = lua_file_read_all file
             lua_file_close file
             text
+        | Delphi => \ () =>
+            := handle = $'FileOpen(!path, fmOpenRead)' : i64
+            ? handle = -1i64 ?> failwith "file_system.read_all_text / cannot open the file"
+            := size = $'FileSeek(!handle, 0, 2)' : i32
+            := start = $'FileSeek(!handle, 0, 0)' : i32
+            ? start <> 0i32 ?> failwith "file_system.read_all_text / cannot rewind the file"
+            := text = $'StringOfChar(Chr(0), !size)' : string
+            ? size > 0i32 ?>
+                := first = 1i32
+                := read = $'FileRead(!handle, (!text)[!first], !size)' : i32
+                ? read <> size ?> failwith "file_system.read_all_text / short read"
+            $'FileClose(!handle)' : ()
+            text
         | _ => \ () => null ()
+
+///> delphi
+test delphi_read_all_text_reads_back_what_was_written =
+    := path = "spiral-delphi-read-probe.txt"
+    write_all_text path "ab"
+    path |> read_all_text |> _assert_eq "ab"
+    write_all_text path ""
+    path |> read_all_text |> _assert_eq ""
+
+/// ### read_text_or_empty
+:= read_text_or_empty (path : string) : string =
+    run_target \|
+        | Rust => \ () =>
+            $'std::rc::Rc::<str>::from(std::fs::read_to_string(&*!path).unwrap_or_default().as_str())' : string
+        | Fsharp => \ () =>
+            $'(try System.IO.File.ReadAllText(!path : string) with _ -> "")' : string
+        | _ => \ () => failwith "file_system.read_text_or_empty: no arm for this backend"
+
+///> fsharp
+///> rust
+test read_text_or_empty_reads_a_file_or_gives_empty =
+    := path = get_temp_path () </> "spiral-read-text-or-empty.txt"
+    write_all_text path "kept"
+    path |> read_text_or_empty |> _assert_eq "kept"
+    (path ++# ".missing") |> read_text_or_empty |> _assert_eq ""
 
 /// ### directory_create_symbolic_link
 := directory_create_symbolic_link (target : string) (path : string) : () =
@@ -918,13 +944,24 @@ test create_temp_path =
             ($'System.IO.Directory.CreateSymbolicLink (!path, !target)' : file_system_info)
             |> ignore
         | Rust => \ () =>
-            (
-                !\\((target, path), $'"true; \#[cfg(windows)] std::os::windows::fs::symlink_dir(&*$0, &*$1).unwrap()"')
-                : bool
-            )
-            |> ignore
-            (!\\((target, path), $'"true; \#[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()"') : bool)
-            |> ignore
+            global """
+                #[cfg(windows)]
+                fn spiral_fs_symlink_dir(target: &str, path: &str) -> std::io::Result<()> {
+                    std::os::windows::fs::symlink_dir(target, path)
+                }
+                #[cfg(unix)]
+                fn spiral_fs_symlink_dir(target: &str, path: &str) -> std::io::Result<()> {
+                    std::os::unix::fs::symlink(target, path)
+                }
+                #[cfg(not(any(windows, unix)))]
+                fn spiral_fs_symlink_dir(_target: &str, _path: &str) -> std::io::Result<()> {
+                    Err(std::io::ErrorKind::Unsupported.into())
+                }
+                """
+            := linked : resultm.result' () stream.io_error = $'spiral_fs_symlink_dir(&*!target, &*!path)'
+            ?= linked |> resultm.map_error' sm'.format |> resultm.unbox ?|
+            | Ok () => ()
+            | Error why => failwith ("directory_create_symbolic_link / " ++# path ++# ": " ++# why)
         | _ => \ () => ()
 
 /// ### file_create_symbolic_link
@@ -934,14 +971,34 @@ test create_temp_path =
             ($'System.IO.File.CreateSymbolicLink (!path, !target)' : file_system_info)
             |> ignore
         | Rust => \ () =>
-            (
-                !\\((target, path), $'"true; \#[cfg(windows)] std::os::windows::fs::symlink_file(&*$0, &*$1).unwrap()"')
-                : bool
-            )
-            |> ignore
-            (!\\((target, path), $'"true; \#[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()"') : bool)
-            |> ignore
+            global """
+                #[cfg(windows)]
+                fn spiral_fs_symlink_file(target: &str, path: &str) -> std::io::Result<()> {
+                    std::os::windows::fs::symlink_file(target, path)
+                }
+                #[cfg(unix)]
+                fn spiral_fs_symlink_file(target: &str, path: &str) -> std::io::Result<()> {
+                    std::os::unix::fs::symlink(target, path)
+                }
+                #[cfg(not(any(windows, unix)))]
+                fn spiral_fs_symlink_file(_target: &str, _path: &str) -> std::io::Result<()> {
+                    Err(std::io::ErrorKind::Unsupported.into())
+                }
+                """
+            := linked : resultm.result' () stream.io_error = $'spiral_fs_symlink_file(&*!target, &*!path)'
+            ?= linked |> resultm.map_error' sm'.format |> resultm.unbox ?|
+            | Ok () => ()
+            | Error why => failwith ("file_create_symbolic_link / " ++# path ++# ": " ++# why)
         | _ => \ () => ()
+
+:= mklink_status (native_path : string) (native_target : string) : i32 =
+    global """
+        fn spiral_fs_mklink_junction(path: &str, target: &str) -> i32 {
+            let output = std::process::Command::new("cmd").args(["/d", "/c", "mklink", "/J", path, target]).output();
+            output.map(|o| o.status.code().unwrap_or(-2)).unwrap_or(-1)
+        }
+        """
+    $'spiral_fs_mklink_junction(&*!native_path, &*!native_target)' : i32
 
 /// ### directory_create_junction
 := directory_create_junction (target : string) (path : string) : result () string =
@@ -952,10 +1009,7 @@ test create_temp_path =
                 ? platform.is_windows () ?>
                     := native_path = path |> sm'.replace "/" "\\"
                     := native_target = target |> sm'.replace "/" "\\"
-                    := exit_code : i32 =
-                        $'std::process::Command::new("cmd") \
-                            .args(["/d", "/c", "mklink", "/J", &*!native_path, &*!native_target]) \
-                            .stdout(std::process::Stdio::null()).status().ok().and_then(|s| s.code()).unwrap_or(-1)'
+                    := exit_code = mklink_status native_path native_target
                     := failure = "directory_create_junction / mklink /J exit " ++# sm'.format exit_code
                     ? exit_code = 0i32 ?> Ok () |: Error failure
                 |:
@@ -971,12 +1025,24 @@ test create_temp_path =
         | Rust => \ () => $'std::fs::metadata(&*!path).map(|m| m.permissions().readonly()).unwrap_or(false)' : bool
         | _ => \ () => !-
 
+:! fs_permissions = $'std::fs::Permissions'
+
+:= rust_permissions (path : string) : optionm'.option' fs_permissions =
+    $'std::fs::metadata(&*!path).ok().map(|m| m.permissions())' : optionm'.option' fs_permissions
+
+:= rust_permissions_set (path : string) (read_only : bool) (mode : fs_permissions) : bool =
+    := mode = mode
+    mode |> rust.to_mut
+    $'!mode.set_readonly(!read_only)' : ()
+    $'std::fs::set_permissions(&*!path, !mode).is_ok()' : bool
+
 /// ### file_set_read_only
 := file_set_read_only (read_only : bool) (path : string) : bool =
     run_target \|
         | Rust => \ () =>
-            $'std::fs::metadata(&*!path).and_then(|m| { let mut p = m.permissions(); p.set_readonly(!read_only); \
-                std::fs::set_permissions(&*!path, p) }).is_ok()' : bool
+            ?= rust_permissions path |> optionm'.unbox ?|
+            | Some permissions => rust_permissions_set path read_only permissions
+            | None => !-
         | _ => \ () => !-
 
 /// ### entry_kind
@@ -1245,7 +1311,9 @@ test get_workspace_root_external =
                     | "..", _ => level + 1, acc
                     | ".", _ => level, acc
                     | _, 0 ?& x |> sm'.ends_with ":" =>
-                        0, ;[ sm'.(++#) (current_dir |> sm'.slice 0i32 0i32) ":" ] ++ acc
+                        := drive = current_dir |> sm'.slice 0i32 0i32
+                        := letter = x |> sm'.slice 0i32 0i32
+                        0, ;[ sm'.(++#) (? sm'.to_lower letter = sm'.to_lower drive ?> drive |: sm'.to_upper letter) ":" ] ++ acc
                     | _, 0 => 0, ;[ x ] ++ acc
                     | _ => level - 1, acc
             |> snd
@@ -1269,6 +1337,14 @@ test get_full_path_2 =
     "dir/.././._file"
     |> get_full_path
     |> _assert_eq (get_current_directory () </> "._file")
+
+///> rust -d regex
+test get_full_path_keeps_the_drive_of_an_absolute_path =
+    ? platform.is_windows () ?>
+        := drive = ? get_current_directory () |> sm'.starts_with "Z" ?> "Y" |: "Z"
+        sm'.(++#) drive ":/spiral_drive_probe/x"
+        |> get_full_path
+        |> _assert_eq (sm'.(++#) drive ":\\spiral_drive_probe\\x")
 
 ///> rust -d regex
 test get_full_path_3 =
@@ -1303,7 +1379,7 @@ test get_full_path_4 =
 /// ### new_file_uri
 := new_file_uri (path : string) : string =
     := path = path |> sm'.trim_start [ '/' ]
-    $'$"file:///{!path}"'
+    "file:///" ++# path
 
 ///> rust -d regex
 test new_file_uri =
@@ -1329,7 +1405,7 @@ test new_file_uri_2 =
             \ () =>
                 := assembly_name = env.get_entry_assembly_name ()
                 := guid = date_time.now () |> date_time.new_guid_from_date_time
-                := file_name = $'$"{!assembly_name}_{!guid}.txt"'
+                := file_name = assembly_name ++# "_" ++# sm'.obj_to_string guid ++# ".txt"
 
                 := workspace_root = get_workspace_root ()
                 := trace_dir = workspace_root </> "target/trace"
@@ -1362,6 +1438,116 @@ test trace_file =
     |> _assert_eq (count + 1)
 
 /// ## file_system
+
+/// ### delete_comparable_path
+:~ delete_comparable_path (path : string) : string =
+    path |> get_full_path |> sm'.replace "\\" "/" |> sm'.trim_end ['/'] |> sm'.to_lower
+
+/// ### delete_target_contains
+:= delete_target_contains (target : string) (root : string) : bool =
+    root <> "" && (target = root || sm'.starts_with (target ++# "/") root)
+
+/// ### delete_shape_protected
+:~ delete_shape_protected (target : string) : bool =
+    := parts = sm'.split "/" target |> array
+    := count = am'.length parts
+    := part (at : i32) : string = ? at < count ?> am'.index at parts |: ""
+    := rooted_home = part 0i32 = "" && (count = 2i32 || (count = 3i32 && part 1i32 = "home"))
+    := app_data = part 3i32 = "appdata" && (count <= 5i32 || (count = 6i32 && part 4i32 = "local" && part 5i32 = "temp"))
+    := users = part 1i32 = "users" && (count <= 3i32 || app_data)
+    count <= 1i32 || rooted_home || users || (count = 2i32 && part 1i32 = "windows")
+
+/// ### delete_variable_protected
+:~ ^ delete_variable_protected (target : string) (names : list string) : bool =
+    ?= names ?|
+    | [] => !-
+    | name :: rest =>
+        := value = env.get_environment_variable name
+        ? value <> "" && delete_target_contains target (delete_comparable_path value) ?> !+
+        |: delete_variable_protected target rest
+
+/// ### delete_target_is_protected
+:= delete_target_is_protected (path : string) : bool =
+    := variables = ["USERPROFILE"; "HOME"; "TEMP"; "TMP"; "TMPDIR"; "LOCALAPPDATA"; "APPDATA"; "SystemRoot"; "ProgramData"]
+    := target = delete_comparable_path path
+    path = "" || delete_shape_protected target || delete_variable_protected target variables
+
+///> rust
+test delete_target_is_protected_refuses_kits_cases_on_windows =
+    ? platform.is_windows ()
+    ?>
+        (
+            delete_target_is_protected "C:\\",
+            delete_target_is_protected "C:\\Users",
+            delete_target_is_protected "C:\\Users\\me",
+            delete_target_is_protected "c:/users/someone",
+            delete_target_is_protected "C:\\Users\\me\\AppData",
+            delete_target_is_protected "C:\\Users\\me\\AppData\\Local\\Temp",
+            delete_target_is_protected "C:\\Windows",
+            delete_target_is_protected "",
+            delete_target_is_protected "C:\\home\\git\\kit\\.cache\\x",
+            delete_target_is_protected (get_temp_path () </> "kit-run-42")
+        )
+        |> _assert_eq (!+, !+, !+, !+, !+, !+, !+, !+, !-, !-)
+
+///> rust
+test delete_target_is_protected_covers_roots_profiles_and_temp =
+    := home =
+        ? platform.is_windows ()
+        ?> env.get_environment_variable "USERPROFILE"
+        |: env.get_environment_variable "HOME"
+    := scratch = get_temp_path () </> "spiral-delete-guard-probe"
+    (
+        delete_target_is_protected home,
+        delete_target_is_protected (home </> ".."),
+        delete_target_is_protected (get_temp_path ()),
+        delete_target_is_protected (home </> "AppData" </> ".." </> ".."),
+        delete_target_is_protected scratch
+    )
+    |> _assert_eq (!+, !+, !+, !+, !-)
+
+/// ### directory_delete
+:~ directory_delete recursive (path : string) : () =
+    run_target_args' (path, recursive) \|
+        | Fsharp => \ path, recursive =>
+            ? recursive && delete_target_is_protected path
+            ?> "file_system.directory_delete: refusing a drive root, profile, temp root or system folder: " ++# path |> failwith
+            $'System.IO.Directory.Delete (!path, !recursive)'
+        | Rust => \ path, recursive =>
+            ? recursive && delete_target_is_protected path
+            ?> "file_system.directory_delete: refusing a drive root, profile, temp root or system folder: " ++# path |> failwith
+            ? path |> directory_exists ?>
+                ? recursive
+                ?> !\\(path, $'"std::fs::remove_dir_all(&*$0).unwrap()"')
+                |: !\\(path, $'"std::fs::remove_dir(&*$0).unwrap()"')
+        | _ => \ _ => ()
+
+///> rust
+test directory_delete_removes_a_scratch_tree =
+    := scratch = get_temp_path () </> "spiral-delete-guard-scratch"
+    create_dir_all (scratch </> "inner") |> ignore
+    directory_delete !+ scratch
+    scratch |> directory_exists
+    |> _assert_eq !-
+
+///> rust
+test directory_delete_refuses_a_protected_surrogate_root =
+    := surrogate = get_temp_path () </> "spiral-delete-guard-surrogate"
+    create_dir_all (surrogate </> "inner") |> ignore
+    := before = env.environment_snapshot ()
+    env.environment_restored (before ++# sm'.char_text 0u8 ++# "LOCALAPPDATA=" ++# surrogate) "SPIRAL_KEPT_"
+    := refused =
+        catch_unwind_rust
+            (\ () =>
+                directory_delete !+ surrogate
+                !-
+            )
+            (\ _ => !+)
+    env.environment_restored before "SPIRAL_KEPT_"
+    := kept = surrogate |> directory_exists
+    directory_delete !+ surrogate
+    (refused, kept)
+    |> _assert_eq (!+, !+)
 
 /// ### create_dir
 :~ create_dir dir =
@@ -1575,9 +1761,10 @@ test file_read_only_round_trips =
     := combine x = (</>) x
     $'let (</>) x = !combine x' : ()
 
-
 /// ### remove_dir_all
 := remove_dir_all (path : string) : resultm.result' () stream.io_error =
+    ? delete_target_is_protected path
+    ?> "file_system.remove_dir_all: refusing a drive root, profile, temp root or system folder: " ++# path |> failwith
     !\\(path, $'"std::fs::remove_dir_all(&*$0)"')
 
 /// ### copy_file
@@ -1701,6 +1888,7 @@ test rust_file_length_and_rust_is_symlink_read_one_path =
         := links = rust_is_symlink file, rust_is_symlink link, rust_is_symlink missing
         (lengths, links) |> _assert_eq ((3i64, 0i64), (!-, !+, !-))
         disposable |> use |> ignore
+
 := rust_append_opened (path : string) : rust_file_opened = $'std::fs::OpenOptions::new().create(true).append(true).ope\
     n(&*!path)'
 
@@ -1723,13 +1911,16 @@ test rust_file_length_and_rust_is_symlink_read_one_path =
 :~ last_write_ms (path : string) : u64 =
     run_target_args' path \|
         | Fsharp => \ path =>
-            $'(if System.IO.File.Exists !path then uint64 ((System.IO.File.GetLastWriteTimeUtc !path) - \
-                System.DateTime.UnixEpoch).TotalMilliseconds else 0UL)' : u64
+            ? $'System.IO.File.Exists !path' : bool
+            ?> $'uint64 ((System.IO.File.GetLastWriteTimeUtc !path) - System.DateTime.UnixEpoch).TotalMilliseconds' : u64
+            |: 0u64
         | Rust => \ path =>
             rust_last_write_ms path
         | TypeScript => \ path =>
             global "import * as spiral_node_fs from 'node:fs';"
-            $'(spiral_node_fs.existsSync(!path) ? Math.trunc(spiral_node_fs.statSync(!path).mtimeMs) : 0)' : u64
+            ? $'spiral_node_fs.existsSync(!path)' : bool
+            ?> $'BigInt(Math.trunc(spiral_node_fs.statSync(!path).mtimeMs))' : u64
+            |: 0u64
         | Gleam => \ path =>
             file_system_gleam_stat ()
             gleam_mtime_ms path
@@ -1761,6 +1952,7 @@ test last_write_ms_is_zero_for_a_missing_path_and_positive_for_a_written_file =
             lua_file_write file text
             lua_file_close file
         | _ => \ _ => ()
+
 ///> rust
 ///> fsharp
 test append_all_text_adds_to_the_end_of_a_file =

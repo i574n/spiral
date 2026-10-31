@@ -66,26 +66,18 @@ pub fn main() {
     spiral_array_set(v1, 1, v4)
     let v5 = spiral_array_get(v1, 0)
     case v5  {
-        Us0None -> {
-            1
-        }
+        Us0None -> 1
         Us0Some(v6) -> {
             let v7 = spiral_array_get(v1, 1)
             case v7  {
                 Us0None -> {
                     let v8 = v6 == 7
                     case v8 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 }
-                Us0Some(v10) -> {
-                    1
-                }
+                Us0Some(v10) -> 1
             }
         }
     }

@@ -18,9 +18,9 @@ fun sp_loop_0(p0: Int, p1: Int, p2: Int, p3: Int): SpiralTuple0 {
         v6 = (v2 + 1)
         var v7: Int = 0
         var v8: Int = 0
-        val spiral_tuple458 = sp_loop_0(v0, v5, v6, v3)
-        v7 = spiral_tuple458.v0
-        v8 = spiral_tuple458.v1
+        val spiral_tuple439 = sp_loop_0(v0, v5, v6, v3)
+        v7 = spiral_tuple439.v0
+        v8 = spiral_tuple439.v1
         v9 = v7
         v10 = v8
     }
@@ -33,9 +33,9 @@ fun spiral_main(): Int {
     val v3: Int = 2
     var v4: Int = 0
     var v5: Int = 0
-    val spiral_tuple200 = sp_loop_0(v0, v1, v2, v3)
-    v4 = spiral_tuple200.v0
-    v5 = spiral_tuple200.v1
+    val spiral_tuple189 = sp_loop_0(v0, v1, v2, v3)
+    v4 = spiral_tuple189.v0
+    v5 = spiral_tuple189.v1
     var v6: Int = 0
     v6 = (v4 + v5)
     return v6

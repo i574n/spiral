@@ -10,9 +10,7 @@ pub fn g_c0(capt: #(Int)) -> fn(Int) -> Int {
         let #(v0) = capt
         let v2 = v0 == 0
         case v2 {
-            True -> {
-                0
-            }
+            True -> 0
             False -> {
                 let v3 = spiral_wrap_signed(v1 + v0, 32)
                 v3
@@ -29,11 +27,7 @@ pub fn main() {
     let v2 = v1(0)
     let v3 = v2 == 7
     case v3 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

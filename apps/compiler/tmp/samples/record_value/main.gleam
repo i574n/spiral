@@ -17,9 +17,7 @@ pub fn method1(v0: Int, v1: Int, v2: Bool) -> Int {
             let v4 = spiral_wrap_signed(v3 - 4, 32)
             v4
         }
-        False -> {
-            1
-        }
+        False -> 1
     }
 }
 pub fn main() {

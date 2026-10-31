@@ -1,12 +1,12 @@
-inl pick (left : string) (right : string) : string * string =
-    if !!!!EQ(left, "") then
+:= pick (left : string) (right : string) : string * string =
+    ? !!!!EQ(left, "") ?>
         "no", "nay"
-    else
+    |:
         left, right
 
-inl main () : i32 =
-    inl ~a = "hi"
-    inl ~b = "yo"
-    inl pair = join pick a b
-    inl ~(left, right) = pair
-    if !!!!EQ(left, "hi") && !!!!EQ(right, "yo") then 0i32 else 1i32
+:= main () : i32 =
+    := ~a = "hi"
+    := ~b = "yo"
+    := pair = ~~ pick a b
+    := ~(left, right) = pair
+    ? !!!!EQ(left, "hi") && !!!!EQ(right, "yo") ?> 0i32 |: 1i32

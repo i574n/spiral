@@ -1,12 +1,12 @@
-inl main () : i32 =
-    inl old : array_base i32 = !!!!ArrayCreate(`i32, 4i32)
+:= main () : i32 =
+    := old : array_base i32 = !!!!ArrayCreate(`i32, 4i32)
     !!!!ArrayIndexSet(old, 0i32, 7i32)
     !!!!ArrayIndexSet(old, 1i32, 7i32)
     !!!!ArrayIndexSet(old, 2i32, 7i32)
     !!!!ArrayIndexSet(old, 3i32, 7i32)
-    inl seven : i32 = !!!!ArrayIndex(old, 3i32)
-    inl xs : array_base i32 = !!!!ArrayCreate(`i32, 4i32)
+    := seven : i32 = !!!!ArrayIndex(old, 3i32)
+    := xs : array_base i32 = !!!!ArrayCreate(`i32, 4i32)
     !!!!ArrayIndexSet(xs, 0i32, 5i32)
-    inl unwritten : i32 = !!!!ArrayIndex(xs, 3i32)
-    inl written : i32 = !!!!ArrayIndex(xs, 0i32)
+    := unwritten : i32 = !!!!ArrayIndex(xs, 3i32)
+    := written : i32 = !!!!ArrayIndex(xs, 0i32)
     !!!!Add(!!!!Add(!!!!Mult(unwritten, 100i32), written), !!!!Sub(seven, 7i32))

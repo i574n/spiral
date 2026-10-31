@@ -1,15 +1,15 @@
-nominal q0 = ()
-nominal q1 = ()
-nominal q2 = ()
+:! q0 = ()
+:! q1 = ()
+:! q2 = ()
 
-union quorum state =
+:| quorum state =
     | EmptyQuorum :: quorum q0
     | OneApproval :: string -> quorum q1
     | TwoApprovals :: string * string -> quorum q2
 
-inl authorize (proof : quorum q2) : string =
-    match proof with
+:= authorize (proof : quorum q2) : string =
+    ?= proof ?|
     | TwoApprovals _ => "authorized"
 
-inl main () : string =
+:= main () : string =
     authorize (OneApproval "only-one")

@@ -6,7 +6,7 @@ fn spiral_main() -> i32 {
     let v0: u32 = 4000000000u32;
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
     let v2: bool = true;
-    let v3: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1.clone(), l2: v2 });
+    let v3: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1, l2: v2 });
     let (mut v4, mut v5, mut v6): (u32, Rc<str>, bool) = (v3.l0.clone(), v3.l1.clone(), v3.l2.clone());
     let v7: bool = v4 == 4000000000u32;
     let v9: bool = if v7 {

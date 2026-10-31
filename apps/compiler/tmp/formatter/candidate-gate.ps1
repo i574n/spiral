@@ -3,11 +3,11 @@ param(
     [string] $Work = (Join-Path $env:LOCALAPPDATA 'spiral-bin\candidates\formatter-gate')
 )
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot '..\scripts\env.ps1')
+. (Join-Path $PSScriptRoot '..\..\scripts\env.ps1')
 $dotnet = Resolve-SpiralDotnet
 $installed = Get-SpiralCompilerDll single-flight
 New-Item -ItemType Directory -Force $Work | Out-Null
-Get-ChildItem $Work -Directory | Where-Object Name -match '-(installed|candidate)$' | Remove-Item -Recurse -Force
+Get-ChildItem $Work -Directory | Where-Object Name -match '-(installed|candidate)(-again)?$' | Remove-Item -Recurse -Force
 Get-ChildItem $Work -Filter 'review-*.diff' | Remove-Item -Force
 $env:SPIRAL_FORMAT_PARALLEL = '1'
 $corpora = [ordered]@{}
@@ -59,6 +59,18 @@ foreach ($name in $corpora.Keys) {
     foreach ($d in $differing) { git --no-pager diff --no-index -U1 (Join-Path $outputs.installed.Dir $d) (Join-Path $outputs.candidate.Dir $d) 2>$null | Out-File -Append -Encoding utf8 (Join-Path $Work "review-$name.diff") }
     $tokenChanges | ForEach-Object { "  TOKEN CHANGE: $_" }
     if ($tokenChanges.Count -or ($outputs.candidate.Exit -ne $outputs.installed.Exit -and $outputs.candidate.Exit -ne 0)) { $verdict = $false }
+    $unstable = @{}
+    foreach ($side in 'installed', 'candidate') {
+        $again = Join-Path $Work "$name-$side-again"
+        New-Item -ItemType Directory $again | Out-Null
+        Copy-Item -Path (Join-Path $outputs[$side].Dir '*') -Destination $again -Recurse
+        & $dotnet $(if ($side -eq 'installed') { $installed } else { $Dll }) format $again 2>&1 | Out-Null
+        $unstable[$side] = @($files | ForEach-Object { $_.FullName.Substring($outputs.installed.Dir.Length) } | Where-Object { [IO.File]::ReadAllText((Join-Path $outputs[$side].Dir $_)) -ne [IO.File]::ReadAllText((Join-Path $again $_)) })
+    }
+    $newlyUnstable = @($unstable.candidate | Where-Object { $_ -notin $unstable.installed })
+    "== $name second pass: files a second format changes, installed $($unstable.installed.Count), candidate $($unstable.candidate.Count), newly unstable $($newlyUnstable.Count)"
+    $unstable.candidate | Select-Object -First 25 | ForEach-Object { "  NOT A FIXPOINT: $_" }
+    if ($newlyUnstable.Count -or ($name -eq 'synthetic' -and $unstable.candidate.Count)) { $verdict = $false }
 }
 foreach ($name in $corpora.Keys) {
     $counts = foreach ($side in 'installed', 'candidate') {
@@ -114,4 +126,4 @@ $joined = @($flagged | Where-Object { Test-AuthoredLine $_ } | ForEach-Object { 
 "== joined authored lines that fit in 120 (then lines included): $($joined.Count)"
 $joined | Select-Object -First 25 | ForEach-Object { "  JOINED: $_" }
 if ($joined.Count) { $verdict = $false }
-"automatic part: $(if ($verdict) { 'PASS' } else { 'FAIL' }) (candidate exits equal the installed ones or are 0, no file differs beyond parentheses, whitespace and backslash continuations, no authored break that fit is joined, and the dice files have no parenthesized join head and no off-grid line); then read every hunk in $Work\review-*.diff by hand"
+"automatic part: $(if ($verdict) { 'PASS' } else { 'FAIL' }) (candidate exits equal the installed ones or are 0, no file differs beyond parentheses, whitespace and backslash continuations, no authored break that fit is joined, a second format pass changes no synthetic file and no file the installed formatter keeps stable, and the dice files have no parenthesized join head and no off-grid line); then read every hunk in $Work\review-*.diff by hand"

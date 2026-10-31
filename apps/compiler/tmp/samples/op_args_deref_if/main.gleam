@@ -68,29 +68,19 @@ pub fn main() {
                 let v6 = spiral_wrap_signed(v2 + 1, 32)
                 v6
             }
-            False -> {
-                0
-            }
+            False -> 0
         }
     io.print(v4 <> " " <> int.to_string(v7) <> "\n")
     let v8 = spiral_wrap_signed(v2 * 2, 32)
     let v9 = v2 > 0
     let v10 =
         case v9 {
-            True -> {
-                6
-            }
-            False -> {
-                0
-            }
+            True -> 6
+            False -> 0
         }
     let v11 = v8 == v10
     case v11 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

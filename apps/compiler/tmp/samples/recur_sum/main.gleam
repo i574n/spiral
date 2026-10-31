@@ -8,9 +8,7 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
 pub fn sum_0(v0: Int) -> Int {
     let v1 = v0 < 1
     case v1 {
-        True -> {
-            0
-        }
+        True -> 0
         False -> {
             let v2 = spiral_wrap_signed(v0 - 1, 32)
             let v3 = sum_0(v2)
@@ -24,11 +22,7 @@ pub fn main() {
     let v1 = sum_0(v0)
     let v2 = v1 == 10
     case v2 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

@@ -406,9 +406,9 @@ func spiral_main() -> Int32 {
     v2 = 0
     var v3: Int32 = 0
     var v4: Int32 = 0
-    let spiral_tuple182 = sp_loop_0(v0, v1, v2)
-    v3 = spiral_tuple182.0
-    v4 = spiral_tuple182.1
+    let spiral_tuple173 = sp_loop_0(v0, v1, v2)
+    v3 = spiral_tuple173.0
+    v4 = spiral_tuple173.1
     var v5: Int32 = 0
     v5 = 0
     let v6: Int32 = 0
@@ -416,9 +416,9 @@ func spiral_main() -> Int32 {
     v7 = 0
     var v8: Int32 = 0
     var v9: Int32 = 0
-    let spiral_tuple438 = sp_loop_3(v5, v6, v7)
-    v8 = spiral_tuple438.0
-    v9 = spiral_tuple438.1
+    let spiral_tuple418 = sp_loop_3(v5, v6, v7)
+    v8 = spiral_tuple418.0
+    v9 = spiral_tuple418.1
     var v10: Int32 = 0
     v10 = 5
     var v11: Int32 = 0
@@ -427,9 +427,9 @@ func spiral_main() -> Int32 {
     v12 = 0
     var v13: Int32 = 0
     var v14: Int32 = 0
-    let spiral_tuple702 = sp_loop_0(v10, v11, v12)
-    v13 = spiral_tuple702.0
-    v14 = spiral_tuple702.1
+    let spiral_tuple671 = sp_loop_0(v10, v11, v12)
+    v13 = spiral_tuple671.0
+    v14 = spiral_tuple671.1
     var v15: Bool = false
     v15 = (v3 == 5)
     if (v15) {

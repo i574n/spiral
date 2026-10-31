@@ -1,29 +1,29 @@
-union slot =
+:| slot =
     | None
     | Both : string * string
 
-nominal slot_array = array_base slot
+:! slot_array = array_base slot
 
-inl create (n : i32) : slot_array = slot_array !!!!ArrayCreate(`slot, n)
-inl get (values : slot_array) (i : i32) : slot =
-    match values with
+:= create (n : i32) : slot_array = slot_array !!!!ArrayCreate(`slot, n)
+:= get (values : slot_array) (i : i32) : slot =
+    ?= values ?|
     | slot_array raw => !!!!ArrayIndex(raw, i)
-inl set (values : slot_array) (i : i32) (value : slot) : () =
-    match values with
+:= set (values : slot_array) (i : i32) (value : slot) : () =
+    ?= values ?|
     | slot_array raw => !!!!ArrayIndexSet(raw, i, value)
 
-let score x : i32 =
-    match x with
+:~ score x : i32 =
+    ?= x ?|
     | None => 1i32
     | Both (left, right) =>
-        if !!!!EQ(left, "hi") && !!!!EQ(right, "yo") then 0i32 else 1i32
+        ? !!!!EQ(left, "hi") && !!!!EQ(right, "yo") ?> 0i32 |: 1i32
 
-inl main () : i32 =
-    inl values = create 1i32
-    inl ~a = "hi"
-    inl ~b = "yo"
-    inl ~flag = true
-    inl held = if flag then Both (a, b) else None
+:= main () : i32 =
+    := values = create 1i32
+    := ~a = "hi"
+    := ~b = "yo"
+    := ~flag = !+
+    := held = ? flag ?> Both (a, b) |: None
     set values 0i32 held
-    inl loaded = get values 0i32
+    := loaded = get values 0i32
     score loaded

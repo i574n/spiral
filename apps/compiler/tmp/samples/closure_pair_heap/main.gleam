@@ -11,12 +11,8 @@ pub fn f_c0(capt: #(Heap0, Heap0)) -> fn(Int) -> #(Heap0, Heap0) {
         let #(v0, v1) = capt
         let v3 = v2 == 0
         case v3 {
-            True -> {
-                #(v1, v0)
-            }
-            False -> {
-                #(v0, v1)
-            }
+            True -> #(v1, v0)
+            False -> #(v0, v1)
         }
     }
 }
@@ -32,11 +28,7 @@ pub fn main() {
     let v9 = spiral_wrap_signed(v7 + v8, 32)
     let v10 = v9 == 7
     case v10 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

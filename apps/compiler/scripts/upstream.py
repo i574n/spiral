@@ -27,7 +27,7 @@ import re
 import subprocess
 import sys
 
-CORE = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "spiral_compiler.fs"))
+CORE = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "spiral_compiler.fs"))
 DIRECTORY = "The Spiral Language 2"
 FILE_OF = {"SignalRSupervisor": "Supervisor.fs"}
 HEADER = re.compile(r"^\s*/// ## (.+?)\s*$")

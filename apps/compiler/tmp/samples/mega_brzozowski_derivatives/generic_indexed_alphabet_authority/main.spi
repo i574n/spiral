@@ -1,15 +1,15 @@
-open main
+:< main
 
-union authority_probe_symbol =
+:| authority_probe_symbol =
     | AuthorityProbeA
     | AuthorityProbeB
     | AuthorityProbeC
 
-nominal authority_probe_alphabet = authority_probe_symbol
+:! authority_probe_alphabet = authority_probe_symbol
 
-instance symbol_compare authority_probe_alphabet =
-    fun (authority_probe_alphabet left) (authority_probe_alphabet right) =>
-        match left, right with
+:+ symbol_compare authority_probe_alphabet =
+    \ (authority_probe_alphabet left) (authority_probe_alphabet right) =>
+        ?= left, right ?|
         | AuthorityProbeA, AuthorityProbeA => SymbolSame
         | AuthorityProbeA, _ => SymbolLess
         | _, AuthorityProbeA => SymbolGreater
@@ -18,11 +18,11 @@ instance symbol_compare authority_probe_alphabet =
         | AuthorityProbeC, AuthorityProbeB => SymbolGreater
         | AuthorityProbeC, AuthorityProbeC => SymbolSame
 
-inl authority_probe_a () = authority_probe_alphabet AuthorityProbeA
-inl authority_probe_b () = authority_probe_alphabet AuthorityProbeB
-inl authority_probe_c () = authority_probe_alphabet AuthorityProbeC
+:= authority_probe_a () = authority_probe_alphabet AuthorityProbeA
+:= authority_probe_b () = authority_probe_alphabet AuthorityProbeB
+:= authority_probe_c () = authority_probe_alphabet AuthorityProbeC
 
-instance finite_alphabet authority_probe_alphabet = fun () =>
+:+ finite_alphabet authority_probe_alphabet = \ () =>
     finite_alphabet_descriptor (
         SymbolListCons (
             authority_probe_a (),
@@ -33,20 +33,20 @@ instance finite_alphabet authority_probe_alphabet = fun () =>
             AlphabetCardinalitySucc (
                 AlphabetCardinalitySucc AlphabetCardinalityZero)))
 
-inl authority_probe_symbols_exact
+:= authority_probe_symbols_exact
     (symbols : symbol_list authority_probe_alphabet) : bool =
-    match symbols with
+    ?= symbols ?|
     | SymbolListCons (
         authority_probe_alphabet AuthorityProbeA,
         SymbolListCons (
             authority_probe_alphabet AuthorityProbeB,
-            SymbolListCons (authority_probe_alphabet AuthorityProbeC, SymbolListNil))) => true
-    | _ => false
+            SymbolListCons (authority_probe_alphabet AuthorityProbeC, SymbolListNil))) => !+
+    | _ => !-
 
-inl main () : string =
-    inl descriptor : indexed_finite_alphabet_descriptor authority_probe_alphabet =
+:= main () : string =
+    := descriptor : indexed_finite_alphabet_descriptor authority_probe_alphabet =
         indexed_finite_alphabet_descriptor_from_authority ()
-    inl capability : indexed_dfa_capability authority_probe_alphabet = make_indexed_dfa_capability ()
+    := capability : indexed_dfa_capability authority_probe_alphabet = make_indexed_dfa_capability ()
     assert_static
         (indexed_finite_alphabet_descriptor_certified capability descriptor)
         "derived indexed descriptor must certify against the local finite_alphabet authority"

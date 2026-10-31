@@ -1,22 +1,22 @@
-nominal worker_a = ()
-nominal epoch_1 = ()
-nominal epoch_2 = ()
+:! worker_a = ()
+:! epoch_1 = ()
+:! epoch_2 = ()
 
-union lease worker epoch =
+:| lease worker epoch =
     | Lease1 :: lease worker_a epoch_1
     | Lease2 :: lease worker_a epoch_2
 
-union completion worker epoch =
+:| completion worker epoch =
     | Completion1 :: string -> completion worker_a epoch_1
     | Completion2 :: string -> completion worker_a epoch_2
 
-inl accept forall worker epoch.
+:= accept \* worker epoch.
     (lease : lease worker epoch)
     (completion : completion worker epoch)
     : string =
-    match lease, completion with
+    ?= lease, completion ?|
     | Lease1, Completion1 _ => "epoch-1"
     | Lease2, Completion2 payload => payload
 
-inl main () : string =
+:= main () : string =
     accept Lease2 (Completion2 "epoch-fenced")

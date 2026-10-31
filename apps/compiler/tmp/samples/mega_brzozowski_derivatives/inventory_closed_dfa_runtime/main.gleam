@@ -78,9 +78,7 @@ pub fn input_singletons_from_symbols_0(v0: Uh0) -> Uh1 {
             let v6 = Uh2InputCons(v2, v5)
             Uh1InputListCons(v6, v4)
         }
-        Uh0SymbolListNil -> {
-            Uh1InputListNil
-        }
+        Uh0SymbolListNil -> Uh1InputListNil
     }
 }
 pub fn input_prepend_symbol_to_corpus_2(v0: Us0, v1: Uh1) -> Uh1 {
@@ -90,9 +88,7 @@ pub fn input_prepend_symbol_to_corpus_2(v0: Us0, v1: Uh1) -> Uh1 {
             let v6 = Uh2InputCons(v0, v3)
             Uh1InputListCons(v6, v5)
         }
-        Uh1InputListNil -> {
-            Uh1InputListNil
-        }
+        Uh1InputListNil -> Uh1InputListNil
     }
 }
 pub fn input_list_append_3(v0: Uh1, v1: Uh1) -> Uh1 {
@@ -101,9 +97,7 @@ pub fn input_list_append_3(v0: Uh1, v1: Uh1) -> Uh1 {
             let v4 = input_list_append_3(v3, v1)
             Uh1InputListCons(v2, v4)
         }
-        Uh1InputListNil -> {
-            v1
-        }
+        Uh1InputListNil -> v1
     }
 }
 pub fn input_prepend_symbols_to_corpus_1(v0: Uh0, v1: Uh1) -> Uh1 {
@@ -113,9 +107,7 @@ pub fn input_prepend_symbols_to_corpus_1(v0: Uh0, v1: Uh1) -> Uh1 {
             let v6 = input_prepend_symbols_to_corpus_1(v4, v1)
             input_list_append_3(v5, v6)
         }
-        Uh0SymbolListNil -> {
-            Uh1InputListNil
-        }
+        Uh0SymbolListNil -> Uh1InputListNil
     }
 }
 pub fn input_singletons_from_symbols_4(v0: Uh3) -> Uh4 {
@@ -126,9 +118,7 @@ pub fn input_singletons_from_symbols_4(v0: Uh3) -> Uh4 {
             let v6 = Uh5InputCons(v2, v5)
             Uh4InputListCons(v6, v4)
         }
-        Uh3SymbolListNil -> {
-            Uh4InputListNil
-        }
+        Uh3SymbolListNil -> Uh4InputListNil
     }
 }
 pub fn input_prepend_symbol_to_corpus_6(v0: Us1, v1: Uh4) -> Uh4 {
@@ -138,9 +128,7 @@ pub fn input_prepend_symbol_to_corpus_6(v0: Us1, v1: Uh4) -> Uh4 {
             let v6 = Uh5InputCons(v0, v3)
             Uh4InputListCons(v6, v5)
         }
-        Uh4InputListNil -> {
-            Uh4InputListNil
-        }
+        Uh4InputListNil -> Uh4InputListNil
     }
 }
 pub fn input_list_append_7(v0: Uh4, v1: Uh4) -> Uh4 {
@@ -149,9 +137,7 @@ pub fn input_list_append_7(v0: Uh4, v1: Uh4) -> Uh4 {
             let v4 = input_list_append_7(v3, v1)
             Uh4InputListCons(v2, v4)
         }
-        Uh4InputListNil -> {
-            v1
-        }
+        Uh4InputListNil -> v1
     }
 }
 pub fn input_prepend_symbols_to_corpus_5(v0: Uh3, v1: Uh4) -> Uh4 {
@@ -161,9 +147,7 @@ pub fn input_prepend_symbols_to_corpus_5(v0: Uh3, v1: Uh4) -> Uh4 {
             let v6 = input_prepend_symbols_to_corpus_5(v4, v1)
             input_list_append_7(v5, v6)
         }
-        Uh3SymbolListNil -> {
-            Uh4InputListNil
-        }
+        Uh3SymbolListNil -> Uh4InputListNil
     }
 }
 pub fn loop_9(v0: Int, v1: Uh2) -> Us3 {
@@ -171,61 +155,37 @@ pub fn loop_9(v0: Int, v1: Uh2) -> Us3 {
         Uh2InputCons(v6, v7) -> {
             let v11 =
                 case v6  {
-                    Us0BitOne -> {
-                        Us4SymbolGreater
-                    }
-                    Us0BitZero -> {
-                        Us4SymbolSame
-                    }
+                    Us0BitOne -> Us4SymbolGreater
+                    Us0BitZero -> Us4SymbolSame
                 }
             let v12 =
                 case v11  {
-                    Us4SymbolSame -> {
-                        True
-                    }
-                    _ -> {
-                        False
-                    }
+                    Us4SymbolSame -> True
+                    _ -> False
                 }
             let v19 =
                 case v12 {
-                    True -> {
-                        0
-                    }
+                    True -> 0
                     False -> {
                         let v16 =
                             case v6  {
-                                Us0BitOne -> {
-                                    Us4SymbolSame
-                                }
-                                Us0BitZero -> {
-                                    Us4SymbolLess
-                                }
+                                Us0BitOne -> Us4SymbolSame
+                                Us0BitZero -> Us4SymbolLess
                             }
                         let v17 =
                             case v16  {
-                                Us4SymbolSame -> {
-                                    True
-                                }
-                                _ -> {
-                                    False
-                                }
+                                Us4SymbolSame -> True
+                                _ -> False
                             }
                         case v17 {
-                            True -> {
-                                1
-                            }
-                            False -> {
-                                -1
-                            }
+                            True -> 1
+                            False -> -1
                         }
                     }
                 }
             let v20 = v19 < 0
             case v20 {
-                True -> {
-                    Us3InventoryDfaInputOutsideInventory
-                }
+                True -> Us3InventoryDfaInputOutsideInventory
                 False -> {
                     let v22 = v0 == 0
                     let v27 =
@@ -233,23 +193,15 @@ pub fn loop_9(v0: Int, v1: Uh2) -> Us3 {
                             True -> {
                                 let v23 = v19 == 0
                                 case v23 {
-                                    True -> {
-                                        0
-                                    }
-                                    False -> {
-                                        1
-                                    }
+                                    True -> 0
+                                    False -> 1
                                 }
                             }
                             False -> {
                                 let v25 = v19 == 0
                                 case v25 {
-                                    True -> {
-                                        0
-                                    }
-                                    False -> {
-                                        1
-                                    }
+                                    True -> 0
+                                    False -> 1
                                 }
                             }
                         }
@@ -260,12 +212,8 @@ pub fn loop_9(v0: Int, v1: Uh2) -> Us3 {
         Uh2InputEmpty -> {
             let v2 = v0 == 0
             case v2 {
-                True -> {
-                    Us3InventoryDfaAccepted
-                }
-                False -> {
-                    Us3InventoryDfaRejected
-                }
+                True -> Us3InventoryDfaAccepted
+                False -> Us3InventoryDfaRejected
             }
         }
     }
@@ -277,17 +225,11 @@ pub fn regex_compare_15(v0: Uh7, v1: Uh7) -> Us4 {
                 Uh7RegexAlt(v55, v56) -> {
                     let v57 = regex_compare_15(v53, v55)
                     case v57  {
-                        Us4SymbolSame -> {
-                            regex_compare_15(v54, v56)
-                        }
-                        _ -> {
-                            v57
-                        }
+                        Us4SymbolSame -> regex_compare_15(v54, v56)
+                        _ -> v57
                     }
                 }
-                _ -> {
-                    Us4SymbolGreater
-                }
+                _ -> Us4SymbolGreater
             }
         }
         Uh7RegexCat(v28, v29) -> {
@@ -295,26 +237,14 @@ pub fn regex_compare_15(v0: Uh7, v1: Uh7) -> Us4 {
                 Uh7RegexCat(v34, v35) -> {
                     let v36 = regex_compare_15(v28, v34)
                     case v36  {
-                        Us4SymbolSame -> {
-                            regex_compare_15(v29, v35)
-                        }
-                        _ -> {
-                            v36
-                        }
+                        Us4SymbolSame -> regex_compare_15(v29, v35)
+                        _ -> v36
                     }
                 }
-                Uh7RegexChar(v32) -> {
-                    Us4SymbolGreater
-                }
-                Uh7RegexEmpty -> {
-                    Us4SymbolGreater
-                }
-                Uh7RegexEpsilon -> {
-                    Us4SymbolGreater
-                }
-                _ -> {
-                    Us4SymbolLess
-                }
+                Uh7RegexChar(v32) -> Us4SymbolGreater
+                Uh7RegexEmpty -> Us4SymbolGreater
+                Uh7RegexEpsilon -> Us4SymbolGreater
+                _ -> Us4SymbolLess
             }
         }
         Uh7RegexChar(v10) -> {
@@ -323,71 +253,41 @@ pub fn regex_compare_15(v0: Uh7, v1: Uh7) -> Us4 {
                     case v10  {
                         Us0BitOne -> {
                             case v13  {
-                                Us0BitOne -> {
-                                    Us4SymbolSame
-                                }
-                                Us0BitZero -> {
-                                    Us4SymbolGreater
-                                }
+                                Us0BitOne -> Us4SymbolSame
+                                Us0BitZero -> Us4SymbolGreater
                             }
                         }
                         Us0BitZero -> {
                             case v13  {
-                                Us0BitOne -> {
-                                    Us4SymbolLess
-                                }
-                                Us0BitZero -> {
-                                    Us4SymbolSame
-                                }
+                                Us0BitOne -> Us4SymbolLess
+                                Us0BitZero -> Us4SymbolSame
                             }
                         }
                     }
                 }
-                Uh7RegexEmpty -> {
-                    Us4SymbolGreater
-                }
-                Uh7RegexEpsilon -> {
-                    Us4SymbolGreater
-                }
-                _ -> {
-                    Us4SymbolLess
-                }
+                Uh7RegexEmpty -> Us4SymbolGreater
+                Uh7RegexEpsilon -> Us4SymbolGreater
+                _ -> Us4SymbolLess
             }
         }
         Uh7RegexEmpty -> {
             case v1  {
-                Uh7RegexEmpty -> {
-                    Us4SymbolSame
-                }
-                _ -> {
-                    Us4SymbolLess
-                }
+                Uh7RegexEmpty -> Us4SymbolSame
+                _ -> Us4SymbolLess
             }
         }
         Uh7RegexEpsilon -> {
             case v1  {
-                Uh7RegexEmpty -> {
-                    Us4SymbolGreater
-                }
-                Uh7RegexEpsilon -> {
-                    Us4SymbolSame
-                }
-                _ -> {
-                    Us4SymbolLess
-                }
+                Uh7RegexEmpty -> Us4SymbolGreater
+                Uh7RegexEpsilon -> Us4SymbolSame
+                _ -> Us4SymbolLess
             }
         }
         Uh7RegexStar(v44) -> {
             case v1  {
-                Uh7RegexAlt(v45, v46) -> {
-                    Us4SymbolLess
-                }
-                Uh7RegexStar(v48) -> {
-                    regex_compare_15(v44, v48)
-                }
-                _ -> {
-                    Us4SymbolGreater
-                }
+                Uh7RegexAlt(v45, v46) -> Us4SymbolLess
+                Uh7RegexStar(v48) -> regex_compare_15(v44, v48)
+                _ -> Us4SymbolGreater
             }
         }
     }
@@ -401,29 +301,17 @@ pub fn alt_insert_sorted_14(v0: Uh7, v1: Uh7) -> Uh7 {
                     let v6 = alt_insert_sorted_14(v0, v3)
                     Uh7RegexAlt(v2, v6)
                 }
-                Us4SymbolLess -> {
-                    Uh7RegexAlt(v0, v1)
-                }
-                Us4SymbolSame -> {
-                    v1
-                }
+                Us4SymbolLess -> Uh7RegexAlt(v0, v1)
+                Us4SymbolSame -> v1
             }
         }
-        Uh7RegexEmpty -> {
-            v0
-        }
+        Uh7RegexEmpty -> v0
         _ -> {
             let v11 = regex_compare_15(v0, v1)
             case v11  {
-                Us4SymbolGreater -> {
-                    Uh7RegexAlt(v1, v0)
-                }
-                Us4SymbolLess -> {
-                    Uh7RegexAlt(v0, v1)
-                }
-                Us4SymbolSame -> {
-                    v1
-                }
+                Us4SymbolGreater -> Uh7RegexAlt(v1, v0)
+                Us4SymbolLess -> Uh7RegexAlt(v0, v1)
+                Us4SymbolSame -> v1
             }
         }
     }
@@ -434,12 +322,8 @@ pub fn make_alt_13(v0: Uh7, v1: Uh7) -> Uh7 {
             let v4 = alt_insert_sorted_14(v2, v1)
             make_alt_13(v3, v4)
         }
-        Uh7RegexEmpty -> {
-            v1
-        }
-        _ -> {
-            alt_insert_sorted_14(v0, v1)
-        }
+        Uh7RegexEmpty -> v1
+        _ -> alt_insert_sorted_14(v0, v1)
     }
 }
 pub fn regex_equal_17(v0: Uh7, v1: Uh7) -> Bool {
@@ -449,17 +333,11 @@ pub fn regex_equal_17(v0: Uh7, v1: Uh7) -> Bool {
                 Uh7RegexAlt(v20, v21) -> {
                     let v22 = regex_equal_17(v18, v20)
                     case v22 {
-                        True -> {
-                            regex_equal_17(v19, v21)
-                        }
-                        False -> {
-                            False
-                        }
+                        True -> regex_equal_17(v19, v21)
+                        False -> False
                     }
                 }
-                _ -> {
-                    False
-                }
+                _ -> False
             }
         }
         Uh7RegexCat(v26, v27) -> {
@@ -467,17 +345,11 @@ pub fn regex_equal_17(v0: Uh7, v1: Uh7) -> Bool {
                 Uh7RegexCat(v28, v29) -> {
                     let v30 = regex_equal_17(v26, v28)
                     case v30 {
-                        True -> {
-                            regex_equal_17(v27, v29)
-                        }
-                        False -> {
-                            False
-                        }
+                        True -> regex_equal_17(v27, v29)
+                        False -> False
                     }
                 }
-                _ -> {
-                    False
-                }
+                _ -> False
             }
         }
         Uh7RegexChar(v4) -> {
@@ -487,91 +359,57 @@ pub fn regex_equal_17(v0: Uh7, v1: Uh7) -> Bool {
                         case v4  {
                             Us0BitOne -> {
                                 case v5  {
-                                    Us0BitOne -> {
-                                        Us4SymbolSame
-                                    }
-                                    Us0BitZero -> {
-                                        Us4SymbolGreater
-                                    }
+                                    Us0BitOne -> Us4SymbolSame
+                                    Us0BitZero -> Us4SymbolGreater
                                 }
                             }
                             Us0BitZero -> {
                                 case v5  {
-                                    Us0BitOne -> {
-                                        Us4SymbolLess
-                                    }
-                                    Us0BitZero -> {
-                                        Us4SymbolSame
-                                    }
+                                    Us0BitOne -> Us4SymbolLess
+                                    Us0BitZero -> Us4SymbolSame
                                 }
                             }
                         }
                     case v15  {
-                        Us4SymbolSame -> {
-                            True
-                        }
-                        _ -> {
-                            False
-                        }
+                        Us4SymbolSame -> True
+                        _ -> False
                     }
                 }
-                _ -> {
-                    False
-                }
+                _ -> False
             }
         }
         Uh7RegexEmpty -> {
             case v1  {
-                Uh7RegexEmpty -> {
-                    True
-                }
-                _ -> {
-                    False
-                }
+                Uh7RegexEmpty -> True
+                _ -> False
             }
         }
         Uh7RegexEpsilon -> {
             case v1  {
-                Uh7RegexEpsilon -> {
-                    True
-                }
-                _ -> {
-                    False
-                }
+                Uh7RegexEpsilon -> True
+                _ -> False
             }
         }
         Uh7RegexStar(v34) -> {
             case v1  {
-                Uh7RegexStar(v35) -> {
-                    regex_equal_17(v34, v35)
-                }
-                _ -> {
-                    False
-                }
+                Uh7RegexStar(v35) -> regex_equal_17(v34, v35)
+                _ -> False
             }
         }
     }
 }
 pub fn make_cat_16(v0: Uh7, v1: Uh7) -> Uh7 {
     case v0  {
-        Uh7RegexEmpty -> {
-            Uh7RegexEmpty
-        }
+        Uh7RegexEmpty -> Uh7RegexEmpty
         _ -> {
             case v1  {
-                Uh7RegexEmpty -> {
-                    Uh7RegexEmpty
-                }
+                Uh7RegexEmpty -> Uh7RegexEmpty
                 _ -> {
                     case v0  {
-                        Uh7RegexEpsilon -> {
-                            v1
-                        }
+                        Uh7RegexEpsilon -> v1
                         _ -> {
                             case v1  {
-                                Uh7RegexEpsilon -> {
-                                    v0
-                                }
+                                Uh7RegexEpsilon -> v0
                                 _ -> {
                                     case v0  {
                                         Uh7RegexCat(v12, v13) -> {
@@ -583,22 +421,14 @@ pub fn make_cat_16(v0: Uh7, v1: Uh7) -> Uh7 {
                                                 Uh7RegexStar(v5) -> {
                                                     let v6 = regex_equal_17(v4, v5)
                                                     case v6 {
-                                                        True -> {
-                                                            Uh7RegexStar(v4)
-                                                        }
-                                                        False -> {
-                                                            Uh7RegexCat(v0, v1)
-                                                        }
+                                                        True -> Uh7RegexStar(v4)
+                                                        False -> Uh7RegexCat(v0, v1)
                                                     }
                                                 }
-                                                _ -> {
-                                                    Uh7RegexCat(v0, v1)
-                                                }
+                                                _ -> Uh7RegexCat(v0, v1)
                                             }
                                         }
-                                        _ -> {
-                                            Uh7RegexCat(v0, v1)
-                                        }
+                                        _ -> Uh7RegexCat(v0, v1)
                                     }
                                 }
                             }
@@ -611,18 +441,10 @@ pub fn make_cat_16(v0: Uh7, v1: Uh7) -> Uh7 {
 }
 pub fn make_star_18(v0: Uh7) -> Uh7 {
     case v0  {
-        Uh7RegexEmpty -> {
-            Uh7RegexEpsilon
-        }
-        Uh7RegexEpsilon -> {
-            Uh7RegexEpsilon
-        }
-        Uh7RegexStar(v3) -> {
-            Uh7RegexStar(v3)
-        }
-        _ -> {
-            Uh7RegexStar(v0)
-        }
+        Uh7RegexEmpty -> Uh7RegexEpsilon
+        Uh7RegexEpsilon -> Uh7RegexEpsilon
+        Uh7RegexStar(v3) -> Uh7RegexStar(v3)
+        _ -> Uh7RegexStar(v0)
     }
 }
 pub fn normalize_12(v0: Uh7) -> Uh7 {
@@ -637,15 +459,9 @@ pub fn normalize_12(v0: Uh7) -> Uh7 {
             let v13 = normalize_12(v11)
             make_cat_16(v12, v13)
         }
-        Uh7RegexChar(v3) -> {
-            Uh7RegexChar(v3)
-        }
-        Uh7RegexEmpty -> {
-            Uh7RegexEmpty
-        }
-        Uh7RegexEpsilon -> {
-            Uh7RegexEpsilon
-        }
+        Uh7RegexChar(v3) -> Uh7RegexChar(v3)
+        Uh7RegexEmpty -> Uh7RegexEmpty
+        Uh7RegexEpsilon -> Uh7RegexEpsilon
         Uh7RegexStar(v15) -> {
             let v16 = normalize_12(v15)
             make_star_18(v16)
@@ -658,21 +474,15 @@ pub fn nullable_20(v0: Uh7) -> Us5 {
             let v7 = nullable_20(v5)
             let v8 = nullable_20(v6)
             case v7  {
-                Us5Nullable -> {
-                    Us5Nullable
-                }
+                Us5Nullable -> Us5Nullable
                 _ -> {
                     case v8  {
-                        Us5Nullable -> {
-                            Us5Nullable
-                        }
+                        Us5Nullable -> Us5Nullable
                         _ -> {
                             case v7  {
                                 Us5NonNullable -> {
                                     case v8  {
-                                        Us5NonNullable -> {
-                                            Us5NonNullable
-                                        }
+                                        Us5NonNullable -> Us5NonNullable
                                         _ -> panic as "spiral: union case ruled out by partial evaluation"
                                     }
                                 }
@@ -689,31 +499,17 @@ pub fn nullable_20(v0: Uh7) -> Us5 {
             case v18  {
                 Us5Nullable -> {
                     case v19  {
-                        Us5Nullable -> {
-                            Us5Nullable
-                        }
-                        _ -> {
-                            Us5NonNullable
-                        }
+                        Us5Nullable -> Us5Nullable
+                        _ -> Us5NonNullable
                     }
                 }
-                _ -> {
-                    Us5NonNullable
-                }
+                _ -> Us5NonNullable
             }
         }
-        Uh7RegexChar(v3) -> {
-            Us5NonNullable
-        }
-        Uh7RegexEmpty -> {
-            Us5NonNullable
-        }
-        Uh7RegexEpsilon -> {
-            Us5Nullable
-        }
-        Uh7RegexStar(v25) -> {
-            Us5Nullable
-        }
+        Uh7RegexChar(v3) -> Us5NonNullable
+        Uh7RegexEmpty -> Us5NonNullable
+        Uh7RegexEpsilon -> Us5Nullable
+        Uh7RegexStar(v25) -> Us5Nullable
     }
 }
 pub fn derivative_19(v0: Uh7, v1: Us0) -> Uh7 {
@@ -743,49 +539,29 @@ pub fn derivative_19(v0: Uh7, v1: Us0) -> Uh7 {
                 case v4  {
                     Us0BitOne -> {
                         case v1  {
-                            Us0BitOne -> {
-                                Us4SymbolSame
-                            }
-                            Us0BitZero -> {
-                                Us4SymbolGreater
-                            }
+                            Us0BitOne -> Us4SymbolSame
+                            Us0BitZero -> Us4SymbolGreater
                         }
                     }
                     Us0BitZero -> {
                         case v1  {
-                            Us0BitOne -> {
-                                Us4SymbolLess
-                            }
-                            Us0BitZero -> {
-                                Us4SymbolSame
-                            }
+                            Us0BitOne -> Us4SymbolLess
+                            Us0BitZero -> Us4SymbolSame
                         }
                     }
                 }
             let v15 =
                 case v14  {
-                    Us4SymbolSame -> {
-                        True
-                    }
-                    _ -> {
-                        False
-                    }
+                    Us4SymbolSame -> True
+                    _ -> False
                 }
             case v15 {
-                True -> {
-                    Uh7RegexEpsilon
-                }
-                False -> {
-                    Uh7RegexEmpty
-                }
+                True -> Uh7RegexEpsilon
+                False -> Uh7RegexEmpty
             }
         }
-        Uh7RegexEmpty -> {
-            Uh7RegexEmpty
-        }
-        Uh7RegexEpsilon -> {
-            Uh7RegexEmpty
-        }
+        Uh7RegexEmpty -> Uh7RegexEmpty
+        Uh7RegexEpsilon -> Uh7RegexEmpty
         Uh7RegexStar(v35) -> {
             let v36 = derivative_19(v35, v1)
             let v37 = make_star_18(v35)
@@ -808,12 +584,8 @@ pub fn accepts_10(v0: Uh7, v1: Uh2) -> Bool {
             let v2 = normalize_12(v0)
             let v3 = nullable_20(v2)
             case v3  {
-                Us5NonNullable -> {
-                    False
-                }
-                Us5Nullable -> {
-                    True
-                }
+                Us5NonNullable -> False
+                Us5Nullable -> True
             }
         }
     }
@@ -825,12 +597,8 @@ pub fn loop_8(v0: Uh7, v1: Uh1) -> Bool {
             let v5 = loop_9(v4, v2)
             let v11 =
                 case v5  {
-                    Us3InventoryDfaAccepted -> {
-                        accepts_10(v0, v2)
-                    }
-                    Us3InventoryDfaInputOutsideInventory -> {
-                        False
-                    }
+                    Us3InventoryDfaAccepted -> accepts_10(v0, v2)
+                    Us3InventoryDfaInputOutsideInventory -> False
                     Us3InventoryDfaRejected -> {
                         let v7 = accepts_10(v0, v2)
                         let v8 = v7 == False
@@ -838,17 +606,11 @@ pub fn loop_8(v0: Uh7, v1: Uh1) -> Bool {
                     }
                 }
             case v11 {
-                True -> {
-                    loop_8(v0, v3)
-                }
-                False -> {
-                    False
-                }
+                True -> loop_8(v0, v3)
+                False -> False
             }
         }
-        Uh1InputListNil -> {
-            True
-        }
+        Uh1InputListNil -> True
     }
 }
 pub fn loop_22(v0: Int, v1: Uh5) -> Us3 {
@@ -856,82 +618,46 @@ pub fn loop_22(v0: Int, v1: Uh5) -> Us3 {
         Uh5InputCons(v8, v9) -> {
             let v12 =
                 case v8  {
-                    Us1TriA -> {
-                        Us4SymbolSame
-                    }
-                    _ -> {
-                        Us4SymbolGreater
-                    }
+                    Us1TriA -> Us4SymbolSame
+                    _ -> Us4SymbolGreater
                 }
             let v13 =
                 case v12  {
-                    Us4SymbolSame -> {
-                        True
-                    }
-                    _ -> {
-                        False
-                    }
+                    Us4SymbolSame -> True
+                    _ -> False
                 }
             let v30 =
                 case v13 {
-                    True -> {
-                        0
-                    }
+                    True -> 0
                     False -> {
                         let v19 =
                             case v8  {
-                                Us1TriA -> {
-                                    Us4SymbolLess
-                                }
-                                Us1TriB -> {
-                                    Us4SymbolSame
-                                }
-                                Us1TriC -> {
-                                    Us4SymbolGreater
-                                }
+                                Us1TriA -> Us4SymbolLess
+                                Us1TriB -> Us4SymbolSame
+                                Us1TriC -> Us4SymbolGreater
                             }
                         let v20 =
                             case v19  {
-                                Us4SymbolSame -> {
-                                    True
-                                }
-                                _ -> {
-                                    False
-                                }
+                                Us4SymbolSame -> True
+                                _ -> False
                             }
                         case v20 {
-                            True -> {
-                                1
-                            }
+                            True -> 1
                             False -> {
                                 let v26 =
                                     case v8  {
-                                        Us1TriA -> {
-                                            Us4SymbolLess
-                                        }
-                                        Us1TriB -> {
-                                            Us4SymbolLess
-                                        }
-                                        Us1TriC -> {
-                                            Us4SymbolSame
-                                        }
+                                        Us1TriA -> Us4SymbolLess
+                                        Us1TriB -> Us4SymbolLess
+                                        Us1TriC -> Us4SymbolSame
                                     }
                                 let v27 =
                                     case v26  {
-                                        Us4SymbolSame -> {
-                                            True
-                                        }
-                                        _ -> {
-                                            False
-                                        }
+                                        Us4SymbolSame -> True
+                                        _ -> False
                                     }
                                 case v27 {
-                                    True -> {
-                                        2
-                                    }
-                                    False -> {
-                                        -1
-                                    }
+                                    True -> 2
+                                    False -> -1
                                 }
                             }
                         }
@@ -939,9 +665,7 @@ pub fn loop_22(v0: Int, v1: Uh5) -> Us3 {
                 }
             let v31 = v30 < 0
             case v31 {
-                True -> {
-                    Us3InventoryDfaInputOutsideInventory
-                }
+                True -> Us3InventoryDfaInputOutsideInventory
                 False -> {
                     let v33 = v0 == 0
                     let v46 =
@@ -949,12 +673,8 @@ pub fn loop_22(v0: Int, v1: Uh5) -> Us3 {
                             True -> {
                                 let v34 = v30 == 0
                                 case v34 {
-                                    True -> {
-                                        0
-                                    }
-                                    False -> {
-                                        0
-                                    }
+                                    True -> 0
+                                    False -> 0
                                 }
                             }
                             False -> {
@@ -963,29 +683,19 @@ pub fn loop_22(v0: Int, v1: Uh5) -> Us3 {
                                     True -> {
                                         let v38 = v30 == 0
                                         case v38 {
-                                            True -> {
-                                                0
-                                            }
-                                            False -> {
-                                                0
-                                            }
+                                            True -> 0
+                                            False -> 0
                                         }
                                     }
                                     False -> {
                                         let v41 = v30 == 0
                                         case v41 {
-                                            True -> {
-                                                2
-                                            }
+                                            True -> 2
                                             False -> {
                                                 let v42 = v30 == 1
                                                 case v42 {
-                                                    True -> {
-                                                        2
-                                                    }
-                                                    False -> {
-                                                        1
-                                                    }
+                                                    True -> 2
+                                                    False -> 1
                                                 }
                                             }
                                         }
@@ -1001,21 +711,15 @@ pub fn loop_22(v0: Int, v1: Uh5) -> Us3 {
             let v2 = v0 == 0
             let v4 =
                 case v2 {
-                    True -> {
-                        False
-                    }
+                    True -> False
                     False -> {
                         let v3 = v0 == 1
                         v3
                     }
                 }
             case v4 {
-                True -> {
-                    Us3InventoryDfaAccepted
-                }
-                False -> {
-                    Us3InventoryDfaRejected
-                }
+                True -> Us3InventoryDfaAccepted
+                False -> Us3InventoryDfaRejected
             }
         }
     }
@@ -1027,17 +731,11 @@ pub fn regex_compare_28(v0: Uh8, v1: Uh8) -> Us4 {
                 Uh8RegexAlt(v61, v62) -> {
                     let v63 = regex_compare_28(v59, v61)
                     case v63  {
-                        Us4SymbolSame -> {
-                            regex_compare_28(v60, v62)
-                        }
-                        _ -> {
-                            v63
-                        }
+                        Us4SymbolSame -> regex_compare_28(v60, v62)
+                        _ -> v63
                     }
                 }
-                _ -> {
-                    Us4SymbolGreater
-                }
+                _ -> Us4SymbolGreater
             }
         }
         Uh8RegexCat(v34, v35) -> {
@@ -1045,26 +743,14 @@ pub fn regex_compare_28(v0: Uh8, v1: Uh8) -> Us4 {
                 Uh8RegexCat(v40, v41) -> {
                     let v42 = regex_compare_28(v34, v40)
                     case v42  {
-                        Us4SymbolSame -> {
-                            regex_compare_28(v35, v41)
-                        }
-                        _ -> {
-                            v42
-                        }
+                        Us4SymbolSame -> regex_compare_28(v35, v41)
+                        _ -> v42
                     }
                 }
-                Uh8RegexChar(v38) -> {
-                    Us4SymbolGreater
-                }
-                Uh8RegexEmpty -> {
-                    Us4SymbolGreater
-                }
-                Uh8RegexEpsilon -> {
-                    Us4SymbolGreater
-                }
-                _ -> {
-                    Us4SymbolLess
-                }
+                Uh8RegexChar(v38) -> Us4SymbolGreater
+                Uh8RegexEmpty -> Us4SymbolGreater
+                Uh8RegexEpsilon -> Us4SymbolGreater
+                _ -> Us4SymbolLess
             }
         }
         Uh8RegexChar(v10) -> {
@@ -1073,40 +759,26 @@ pub fn regex_compare_28(v0: Uh8, v1: Uh8) -> Us4 {
                     case v10  {
                         Us1TriA -> {
                             case v13  {
-                                Us1TriA -> {
-                                    Us4SymbolSame
-                                }
-                                _ -> {
-                                    Us4SymbolLess
-                                }
+                                Us1TriA -> Us4SymbolSame
+                                _ -> Us4SymbolLess
                             }
                         }
                         _ -> {
                             case v13  {
-                                Us1TriA -> {
-                                    Us4SymbolGreater
-                                }
+                                Us1TriA -> Us4SymbolGreater
                                 _ -> {
                                     case v10  {
                                         Us1TriB -> {
                                             case v13  {
-                                                Us1TriB -> {
-                                                    Us4SymbolSame
-                                                }
-                                                Us1TriC -> {
-                                                    Us4SymbolLess
-                                                }
+                                                Us1TriB -> Us4SymbolSame
+                                                Us1TriC -> Us4SymbolLess
                                                 _ -> panic as "spiral: union case ruled out by partial evaluation"
                                             }
                                         }
                                         Us1TriC -> {
                                             case v13  {
-                                                Us1TriB -> {
-                                                    Us4SymbolGreater
-                                                }
-                                                Us1TriC -> {
-                                                    Us4SymbolSame
-                                                }
+                                                Us1TriB -> Us4SymbolGreater
+                                                Us1TriC -> Us4SymbolSame
                                                 _ -> panic as "spiral: union case ruled out by partial evaluation"
                                             }
                                         }
@@ -1117,51 +789,29 @@ pub fn regex_compare_28(v0: Uh8, v1: Uh8) -> Us4 {
                         }
                     }
                 }
-                Uh8RegexEmpty -> {
-                    Us4SymbolGreater
-                }
-                Uh8RegexEpsilon -> {
-                    Us4SymbolGreater
-                }
-                _ -> {
-                    Us4SymbolLess
-                }
+                Uh8RegexEmpty -> Us4SymbolGreater
+                Uh8RegexEpsilon -> Us4SymbolGreater
+                _ -> Us4SymbolLess
             }
         }
         Uh8RegexEmpty -> {
             case v1  {
-                Uh8RegexEmpty -> {
-                    Us4SymbolSame
-                }
-                _ -> {
-                    Us4SymbolLess
-                }
+                Uh8RegexEmpty -> Us4SymbolSame
+                _ -> Us4SymbolLess
             }
         }
         Uh8RegexEpsilon -> {
             case v1  {
-                Uh8RegexEmpty -> {
-                    Us4SymbolGreater
-                }
-                Uh8RegexEpsilon -> {
-                    Us4SymbolSame
-                }
-                _ -> {
-                    Us4SymbolLess
-                }
+                Uh8RegexEmpty -> Us4SymbolGreater
+                Uh8RegexEpsilon -> Us4SymbolSame
+                _ -> Us4SymbolLess
             }
         }
         Uh8RegexStar(v50) -> {
             case v1  {
-                Uh8RegexAlt(v51, v52) -> {
-                    Us4SymbolLess
-                }
-                Uh8RegexStar(v54) -> {
-                    regex_compare_28(v50, v54)
-                }
-                _ -> {
-                    Us4SymbolGreater
-                }
+                Uh8RegexAlt(v51, v52) -> Us4SymbolLess
+                Uh8RegexStar(v54) -> regex_compare_28(v50, v54)
+                _ -> Us4SymbolGreater
             }
         }
     }
@@ -1175,29 +825,17 @@ pub fn alt_insert_sorted_27(v0: Uh8, v1: Uh8) -> Uh8 {
                     let v6 = alt_insert_sorted_27(v0, v3)
                     Uh8RegexAlt(v2, v6)
                 }
-                Us4SymbolLess -> {
-                    Uh8RegexAlt(v0, v1)
-                }
-                Us4SymbolSame -> {
-                    v1
-                }
+                Us4SymbolLess -> Uh8RegexAlt(v0, v1)
+                Us4SymbolSame -> v1
             }
         }
-        Uh8RegexEmpty -> {
-            v0
-        }
+        Uh8RegexEmpty -> v0
         _ -> {
             let v11 = regex_compare_28(v0, v1)
             case v11  {
-                Us4SymbolGreater -> {
-                    Uh8RegexAlt(v1, v0)
-                }
-                Us4SymbolLess -> {
-                    Uh8RegexAlt(v0, v1)
-                }
-                Us4SymbolSame -> {
-                    v1
-                }
+                Us4SymbolGreater -> Uh8RegexAlt(v1, v0)
+                Us4SymbolLess -> Uh8RegexAlt(v0, v1)
+                Us4SymbolSame -> v1
             }
         }
     }
@@ -1208,12 +846,8 @@ pub fn make_alt_26(v0: Uh8, v1: Uh8) -> Uh8 {
             let v4 = alt_insert_sorted_27(v2, v1)
             make_alt_26(v3, v4)
         }
-        Uh8RegexEmpty -> {
-            v1
-        }
-        _ -> {
-            alt_insert_sorted_27(v0, v1)
-        }
+        Uh8RegexEmpty -> v1
+        _ -> alt_insert_sorted_27(v0, v1)
     }
 }
 pub fn regex_equal_30(v0: Uh8, v1: Uh8) -> Bool {
@@ -1223,17 +857,11 @@ pub fn regex_equal_30(v0: Uh8, v1: Uh8) -> Bool {
                 Uh8RegexAlt(v26, v27) -> {
                     let v28 = regex_equal_30(v24, v26)
                     case v28 {
-                        True -> {
-                            regex_equal_30(v25, v27)
-                        }
-                        False -> {
-                            False
-                        }
+                        True -> regex_equal_30(v25, v27)
+                        False -> False
                     }
                 }
-                _ -> {
-                    False
-                }
+                _ -> False
             }
         }
         Uh8RegexCat(v32, v33) -> {
@@ -1241,17 +869,11 @@ pub fn regex_equal_30(v0: Uh8, v1: Uh8) -> Bool {
                 Uh8RegexCat(v34, v35) -> {
                     let v36 = regex_equal_30(v32, v34)
                     case v36 {
-                        True -> {
-                            regex_equal_30(v33, v35)
-                        }
-                        False -> {
-                            False
-                        }
+                        True -> regex_equal_30(v33, v35)
+                        False -> False
                     }
                 }
-                _ -> {
-                    False
-                }
+                _ -> False
             }
         }
         Uh8RegexChar(v4) -> {
@@ -1261,40 +883,26 @@ pub fn regex_equal_30(v0: Uh8, v1: Uh8) -> Bool {
                         case v4  {
                             Us1TriA -> {
                                 case v5  {
-                                    Us1TriA -> {
-                                        Us4SymbolSame
-                                    }
-                                    _ -> {
-                                        Us4SymbolLess
-                                    }
+                                    Us1TriA -> Us4SymbolSame
+                                    _ -> Us4SymbolLess
                                 }
                             }
                             _ -> {
                                 case v5  {
-                                    Us1TriA -> {
-                                        Us4SymbolGreater
-                                    }
+                                    Us1TriA -> Us4SymbolGreater
                                     _ -> {
                                         case v4  {
                                             Us1TriB -> {
                                                 case v5  {
-                                                    Us1TriB -> {
-                                                        Us4SymbolSame
-                                                    }
-                                                    Us1TriC -> {
-                                                        Us4SymbolLess
-                                                    }
+                                                    Us1TriB -> Us4SymbolSame
+                                                    Us1TriC -> Us4SymbolLess
                                                     _ -> panic as "spiral: union case ruled out by partial evaluation"
                                                 }
                                             }
                                             Us1TriC -> {
                                                 case v5  {
-                                                    Us1TriB -> {
-                                                        Us4SymbolGreater
-                                                    }
-                                                    Us1TriC -> {
-                                                        Us4SymbolSame
-                                                    }
+                                                    Us1TriB -> Us4SymbolGreater
+                                                    Us1TriC -> Us4SymbolSame
                                                     _ -> panic as "spiral: union case ruled out by partial evaluation"
                                                 }
                                             }
@@ -1305,71 +913,45 @@ pub fn regex_equal_30(v0: Uh8, v1: Uh8) -> Bool {
                             }
                         }
                     case v21  {
-                        Us4SymbolSame -> {
-                            True
-                        }
-                        _ -> {
-                            False
-                        }
+                        Us4SymbolSame -> True
+                        _ -> False
                     }
                 }
-                _ -> {
-                    False
-                }
+                _ -> False
             }
         }
         Uh8RegexEmpty -> {
             case v1  {
-                Uh8RegexEmpty -> {
-                    True
-                }
-                _ -> {
-                    False
-                }
+                Uh8RegexEmpty -> True
+                _ -> False
             }
         }
         Uh8RegexEpsilon -> {
             case v1  {
-                Uh8RegexEpsilon -> {
-                    True
-                }
-                _ -> {
-                    False
-                }
+                Uh8RegexEpsilon -> True
+                _ -> False
             }
         }
         Uh8RegexStar(v40) -> {
             case v1  {
-                Uh8RegexStar(v41) -> {
-                    regex_equal_30(v40, v41)
-                }
-                _ -> {
-                    False
-                }
+                Uh8RegexStar(v41) -> regex_equal_30(v40, v41)
+                _ -> False
             }
         }
     }
 }
 pub fn make_cat_29(v0: Uh8, v1: Uh8) -> Uh8 {
     case v0  {
-        Uh8RegexEmpty -> {
-            Uh8RegexEmpty
-        }
+        Uh8RegexEmpty -> Uh8RegexEmpty
         _ -> {
             case v1  {
-                Uh8RegexEmpty -> {
-                    Uh8RegexEmpty
-                }
+                Uh8RegexEmpty -> Uh8RegexEmpty
                 _ -> {
                     case v0  {
-                        Uh8RegexEpsilon -> {
-                            v1
-                        }
+                        Uh8RegexEpsilon -> v1
                         _ -> {
                             case v1  {
-                                Uh8RegexEpsilon -> {
-                                    v0
-                                }
+                                Uh8RegexEpsilon -> v0
                                 _ -> {
                                     case v0  {
                                         Uh8RegexCat(v12, v13) -> {
@@ -1381,22 +963,14 @@ pub fn make_cat_29(v0: Uh8, v1: Uh8) -> Uh8 {
                                                 Uh8RegexStar(v5) -> {
                                                     let v6 = regex_equal_30(v4, v5)
                                                     case v6 {
-                                                        True -> {
-                                                            Uh8RegexStar(v4)
-                                                        }
-                                                        False -> {
-                                                            Uh8RegexCat(v0, v1)
-                                                        }
+                                                        True -> Uh8RegexStar(v4)
+                                                        False -> Uh8RegexCat(v0, v1)
                                                     }
                                                 }
-                                                _ -> {
-                                                    Uh8RegexCat(v0, v1)
-                                                }
+                                                _ -> Uh8RegexCat(v0, v1)
                                             }
                                         }
-                                        _ -> {
-                                            Uh8RegexCat(v0, v1)
-                                        }
+                                        _ -> Uh8RegexCat(v0, v1)
                                     }
                                 }
                             }
@@ -1409,18 +983,10 @@ pub fn make_cat_29(v0: Uh8, v1: Uh8) -> Uh8 {
 }
 pub fn make_star_31(v0: Uh8) -> Uh8 {
     case v0  {
-        Uh8RegexEmpty -> {
-            Uh8RegexEpsilon
-        }
-        Uh8RegexEpsilon -> {
-            Uh8RegexEpsilon
-        }
-        Uh8RegexStar(v3) -> {
-            Uh8RegexStar(v3)
-        }
-        _ -> {
-            Uh8RegexStar(v0)
-        }
+        Uh8RegexEmpty -> Uh8RegexEpsilon
+        Uh8RegexEpsilon -> Uh8RegexEpsilon
+        Uh8RegexStar(v3) -> Uh8RegexStar(v3)
+        _ -> Uh8RegexStar(v0)
     }
 }
 pub fn normalize_25(v0: Uh8) -> Uh8 {
@@ -1435,15 +1001,9 @@ pub fn normalize_25(v0: Uh8) -> Uh8 {
             let v13 = normalize_25(v11)
             make_cat_29(v12, v13)
         }
-        Uh8RegexChar(v3) -> {
-            Uh8RegexChar(v3)
-        }
-        Uh8RegexEmpty -> {
-            Uh8RegexEmpty
-        }
-        Uh8RegexEpsilon -> {
-            Uh8RegexEpsilon
-        }
+        Uh8RegexChar(v3) -> Uh8RegexChar(v3)
+        Uh8RegexEmpty -> Uh8RegexEmpty
+        Uh8RegexEpsilon -> Uh8RegexEpsilon
         Uh8RegexStar(v15) -> {
             let v16 = normalize_25(v15)
             make_star_31(v16)
@@ -1456,21 +1016,15 @@ pub fn nullable_33(v0: Uh8) -> Us5 {
             let v7 = nullable_33(v5)
             let v8 = nullable_33(v6)
             case v7  {
-                Us5Nullable -> {
-                    Us5Nullable
-                }
+                Us5Nullable -> Us5Nullable
                 _ -> {
                     case v8  {
-                        Us5Nullable -> {
-                            Us5Nullable
-                        }
+                        Us5Nullable -> Us5Nullable
                         _ -> {
                             case v7  {
                                 Us5NonNullable -> {
                                     case v8  {
-                                        Us5NonNullable -> {
-                                            Us5NonNullable
-                                        }
+                                        Us5NonNullable -> Us5NonNullable
                                         _ -> panic as "spiral: union case ruled out by partial evaluation"
                                     }
                                 }
@@ -1487,31 +1041,17 @@ pub fn nullable_33(v0: Uh8) -> Us5 {
             case v18  {
                 Us5Nullable -> {
                     case v19  {
-                        Us5Nullable -> {
-                            Us5Nullable
-                        }
-                        _ -> {
-                            Us5NonNullable
-                        }
+                        Us5Nullable -> Us5Nullable
+                        _ -> Us5NonNullable
                     }
                 }
-                _ -> {
-                    Us5NonNullable
-                }
+                _ -> Us5NonNullable
             }
         }
-        Uh8RegexChar(v3) -> {
-            Us5NonNullable
-        }
-        Uh8RegexEmpty -> {
-            Us5NonNullable
-        }
-        Uh8RegexEpsilon -> {
-            Us5Nullable
-        }
-        Uh8RegexStar(v25) -> {
-            Us5Nullable
-        }
+        Uh8RegexChar(v3) -> Us5NonNullable
+        Uh8RegexEmpty -> Us5NonNullable
+        Uh8RegexEpsilon -> Us5Nullable
+        Uh8RegexStar(v25) -> Us5Nullable
     }
 }
 pub fn derivative_32(v0: Uh8, v1: Us1) -> Uh8 {
@@ -1541,40 +1081,26 @@ pub fn derivative_32(v0: Uh8, v1: Us1) -> Uh8 {
                 case v4  {
                     Us1TriA -> {
                         case v1  {
-                            Us1TriA -> {
-                                Us4SymbolSame
-                            }
-                            _ -> {
-                                Us4SymbolLess
-                            }
+                            Us1TriA -> Us4SymbolSame
+                            _ -> Us4SymbolLess
                         }
                     }
                     _ -> {
                         case v1  {
-                            Us1TriA -> {
-                                Us4SymbolGreater
-                            }
+                            Us1TriA -> Us4SymbolGreater
                             _ -> {
                                 case v4  {
                                     Us1TriB -> {
                                         case v1  {
-                                            Us1TriB -> {
-                                                Us4SymbolSame
-                                            }
-                                            Us1TriC -> {
-                                                Us4SymbolLess
-                                            }
+                                            Us1TriB -> Us4SymbolSame
+                                            Us1TriC -> Us4SymbolLess
                                             _ -> panic as "spiral: union case ruled out by partial evaluation"
                                         }
                                     }
                                     Us1TriC -> {
                                         case v1  {
-                                            Us1TriB -> {
-                                                Us4SymbolGreater
-                                            }
-                                            Us1TriC -> {
-                                                Us4SymbolSame
-                                            }
+                                            Us1TriB -> Us4SymbolGreater
+                                            Us1TriC -> Us4SymbolSame
                                             _ -> panic as "spiral: union case ruled out by partial evaluation"
                                         }
                                     }
@@ -1586,28 +1112,16 @@ pub fn derivative_32(v0: Uh8, v1: Us1) -> Uh8 {
                 }
             let v21 =
                 case v20  {
-                    Us4SymbolSame -> {
-                        True
-                    }
-                    _ -> {
-                        False
-                    }
+                    Us4SymbolSame -> True
+                    _ -> False
                 }
             case v21 {
-                True -> {
-                    Uh8RegexEpsilon
-                }
-                False -> {
-                    Uh8RegexEmpty
-                }
+                True -> Uh8RegexEpsilon
+                False -> Uh8RegexEmpty
             }
         }
-        Uh8RegexEmpty -> {
-            Uh8RegexEmpty
-        }
-        Uh8RegexEpsilon -> {
-            Uh8RegexEmpty
-        }
+        Uh8RegexEmpty -> Uh8RegexEmpty
+        Uh8RegexEpsilon -> Uh8RegexEmpty
         Uh8RegexStar(v41) -> {
             let v42 = derivative_32(v41, v1)
             let v43 = make_star_31(v41)
@@ -1630,12 +1144,8 @@ pub fn accepts_23(v0: Uh8, v1: Uh5) -> Bool {
             let v2 = normalize_25(v0)
             let v3 = nullable_33(v2)
             case v3  {
-                Us5NonNullable -> {
-                    False
-                }
-                Us5Nullable -> {
-                    True
-                }
+                Us5NonNullable -> False
+                Us5Nullable -> True
             }
         }
     }
@@ -1647,12 +1157,8 @@ pub fn loop_21(v0: Uh8, v1: Uh4) -> Bool {
             let v5 = loop_22(v4, v2)
             let v11 =
                 case v5  {
-                    Us3InventoryDfaAccepted -> {
-                        accepts_23(v0, v2)
-                    }
-                    Us3InventoryDfaInputOutsideInventory -> {
-                        False
-                    }
+                    Us3InventoryDfaAccepted -> accepts_23(v0, v2)
+                    Us3InventoryDfaInputOutsideInventory -> False
                     Us3InventoryDfaRejected -> {
                         let v7 = accepts_23(v0, v2)
                         let v8 = v7 == False
@@ -1660,17 +1166,11 @@ pub fn loop_21(v0: Uh8, v1: Uh4) -> Bool {
                     }
                 }
             case v11 {
-                True -> {
-                    loop_21(v0, v3)
-                }
-                False -> {
-                    False
-                }
+                True -> loop_21(v0, v3)
+                False -> False
             }
         }
-        Uh4InputListNil -> {
-            True
-        }
+        Uh4InputListNil -> True
     }
 }
 pub fn loop_34(v0: Int, v1: Uh6) -> Us3 {
@@ -1678,80 +1178,48 @@ pub fn loop_34(v0: Int, v1: Uh6) -> Us3 {
         Uh6InputCons(v7, v8) -> {
             let v11 =
                 case v7  {
-                    Us2ModelA -> {
-                        Us4SymbolSame
-                    }
-                    _ -> {
-                        Us4SymbolGreater
-                    }
+                    Us2ModelA -> Us4SymbolSame
+                    _ -> Us4SymbolGreater
                 }
             let v12 =
                 case v11  {
-                    Us4SymbolSame -> {
-                        True
-                    }
-                    _ -> {
-                        False
-                    }
+                    Us4SymbolSame -> True
+                    _ -> False
                 }
             let v21 =
                 case v12 {
-                    True -> {
-                        0
-                    }
+                    True -> 0
                     False -> {
                         let v18 =
                             case v7  {
-                                Us2ModelA -> {
-                                    Us4SymbolLess
-                                }
-                                Us2ModelB -> {
-                                    Us4SymbolSame
-                                }
-                                Us2ModelC -> {
-                                    Us4SymbolGreater
-                                }
+                                Us2ModelA -> Us4SymbolLess
+                                Us2ModelB -> Us4SymbolSame
+                                Us2ModelC -> Us4SymbolGreater
                             }
                         let v19 =
                             case v18  {
-                                Us4SymbolSame -> {
-                                    True
-                                }
-                                _ -> {
-                                    False
-                                }
+                                Us4SymbolSame -> True
+                                _ -> False
                             }
                         case v19 {
-                            True -> {
-                                1
-                            }
-                            False -> {
-                                -1
-                            }
+                            True -> 1
+                            False -> -1
                         }
                     }
                 }
             let v22 = v21 < 0
             case v22 {
-                True -> {
-                    Us3InventoryDfaInputOutsideInventory
-                }
+                True -> Us3InventoryDfaInputOutsideInventory
                 False -> {
                     let v24 = v0 == 0
                     let v28 =
                         case v24 {
-                            True -> {
-                                0
-                            }
+                            True -> 0
                             False -> {
                                 let v26 = v21 == 0
                                 case v26 {
-                                    True -> {
-                                        1
-                                    }
-                                    False -> {
-                                        0
-                                    }
+                                    True -> 1
+                                    False -> 0
                                 }
                             }
                         }
@@ -1763,12 +1231,8 @@ pub fn loop_34(v0: Int, v1: Uh6) -> Us3 {
             let v2 = v0 == 0
             let v3 = v2 == False
             case v3 {
-                True -> {
-                    Us3InventoryDfaAccepted
-                }
-                False -> {
-                    Us3InventoryDfaRejected
-                }
+                True -> Us3InventoryDfaAccepted
+                False -> Us3InventoryDfaRejected
             }
         }
     }
@@ -1853,29 +1317,17 @@ pub fn main() {
                         let v71 = 1
                         let v72 = loop_34(v71, v50)
                         case v72  {
-                            Us3InventoryDfaInputOutsideInventory -> {
-                                True
-                            }
-                            _ -> {
-                                False
-                            }
+                            Us3InventoryDfaInputOutsideInventory -> True
+                            _ -> False
                         }
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v75 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

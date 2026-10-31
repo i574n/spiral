@@ -1,21 +1,21 @@
-union slot =
+:| slot =
     | None
     | Some : i32
 
-inl main () : i32 =
-    inl ~n = 3i32
-    inl ~m = 4i32
-    inl cell = !!!!LayoutToHeap({ value = m })
-    inl f (z : i32) : slot * heap { value : i32 } =
-        if z =. 0i32 then
+:= main () : i32 =
+    := ~n = 3i32
+    := ~m = 4i32
+    := cell = !!!!LayoutToHeap({ value = m })
+    := f (z : i32) : slot * heap { value : i32 } =
+        ? z =. 0i32 ?>
             None, cell
-        else
+        |:
             Some n, cell
-    inl ~g = f
-    inl pair = g 1i32
-    inl ~(left, right) = pair
-    match left with
+    := ~g = f
+    := pair = g 1i32
+    := ~(left, right) = pair
+    ?= left ?|
     | Some value =>
-        inl obj = !!!!LayoutIndex(right)
-        if value +. obj.value =. 7i32 then 0i32 else 1i32
+        := obj = !!!!LayoutIndex(right)
+        ? value +. obj::value =. 7i32 ?> 0i32 |: 1i32
     | None => 1i32

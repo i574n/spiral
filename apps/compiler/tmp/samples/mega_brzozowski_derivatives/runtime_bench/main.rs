@@ -406,17 +406,17 @@ fn make_cat_8(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> Rc<UH0> {
                                         UH0::UH0_RegexCat(v12, v13) => {
                                             let v12: Rc<UH0> = v12.clone();
                                             let v13: Rc<UH0> = v13.clone();
-                                            let v14: Rc<UH0> = make_cat_8(v13.clone(), v1.clone());
-                                            Rc::new(UH0::UH0_RegexCat(v12.clone(), v14.clone()))
+                                            let v14: Rc<UH0> = make_cat_8(v13, v1.clone());
+                                            Rc::new(UH0::UH0_RegexCat(v12, v14))
                                         }
                                         UH0::UH0_RegexStar(v4) => {
                                             let v4: Rc<UH0> = v4.clone();
                                             match &*v1 {
                                                 UH0::UH0_RegexStar(v5) => {
                                                     let v5: Rc<UH0> = v5.clone();
-                                                    let v6: bool = regex_equal_9(v4.clone(), v5.clone());
+                                                    let v6: bool = regex_equal_9(v4.clone(), v5);
                                                     if v6 {
-                                                        Rc::new(UH0::UH0_RegexStar(v4.clone()))
+                                                        Rc::new(UH0::UH0_RegexStar(v4))
                                                     } else {
                                                         Rc::new(UH0::UH0_RegexCat(v0.clone(), v1.clone()))
                                                     }
@@ -427,7 +427,7 @@ fn make_cat_8(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> Rc<UH0> {
                                             }
                                         }
                                         _ => {
-                                            Rc::new(UH0::UH0_RegexCat(v0.clone(), v1.clone()))
+                                            Rc::new(UH0::UH0_RegexCat(v0, v1))
                                         }
                                     }
                                 }
@@ -449,10 +449,10 @@ fn make_star_10(mut v0: Rc<UH0>) -> Rc<UH0> {
         }
         UH0::UH0_RegexStar(v3) => {
             let v3: Rc<UH0> = v3.clone();
-            Rc::new(UH0::UH0_RegexStar(v3.clone()))
+            Rc::new(UH0::UH0_RegexStar(v3))
         }
         _ => {
-            Rc::new(UH0::UH0_RegexStar(v0.clone()))
+            Rc::new(UH0::UH0_RegexStar(v0))
         }
     }
 }
@@ -461,20 +461,20 @@ fn normalize_4(mut v0: Rc<UH0>) -> Rc<UH0> {
         UH0::UH0_RegexAlt(v5, v6) => {
             let v5: Rc<UH0> = v5.clone();
             let v6: Rc<UH0> = v6.clone();
-            let v7: Rc<UH0> = normalize_4(v5.clone());
-            let v8: Rc<UH0> = normalize_4(v6.clone());
-            make_alt_5(v7.clone(), v8.clone())
+            let v7: Rc<UH0> = normalize_4(v5);
+            let v8: Rc<UH0> = normalize_4(v6);
+            make_alt_5(v7, v8)
         }
         UH0::UH0_RegexCat(v10, v11) => {
             let v10: Rc<UH0> = v10.clone();
             let v11: Rc<UH0> = v11.clone();
-            let v12: Rc<UH0> = normalize_4(v10.clone());
-            let v13: Rc<UH0> = normalize_4(v11.clone());
-            make_cat_8(v12.clone(), v13.clone())
+            let v12: Rc<UH0> = normalize_4(v10);
+            let v13: Rc<UH0> = normalize_4(v11);
+            make_cat_8(v12, v13)
         }
         UH0::UH0_RegexChar(v3) => {
             let v3: US0 = v3.clone();
-            Rc::new(UH0::UH0_RegexChar(v3.clone()))
+            Rc::new(UH0::UH0_RegexChar(v3))
         }
         UH0::UH0_RegexEmpty => {
             { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_RegexEmpty); } CASE.with(|case| case.clone()) }
@@ -484,8 +484,8 @@ fn normalize_4(mut v0: Rc<UH0>) -> Rc<UH0> {
         }
         UH0::UH0_RegexStar(v15) => {
             let v15: Rc<UH0> = v15.clone();
-            let v16: Rc<UH0> = normalize_4(v15.clone());
-            make_star_10(v16.clone())
+            let v16: Rc<UH0> = normalize_4(v15);
+            make_star_10(v16)
         }
     }
 }
@@ -564,9 +564,9 @@ fn derivative_11(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
         UH0::UH0_RegexAlt(v19, v20) => {
             let v19: Rc<UH0> = v19.clone();
             let v20: Rc<UH0> = v20.clone();
-            let v21: Rc<UH0> = derivative_11(v19.clone(), v1.clone());
-            let v22: Rc<UH0> = derivative_11(v20.clone(), v1.clone());
-            make_alt_5(v21.clone(), v22.clone())
+            let v21: Rc<UH0> = derivative_11(v19, v1.clone());
+            let v22: Rc<UH0> = derivative_11(v20, v1.clone());
+            make_alt_5(v21, v22)
         }
         UH0::UH0_RegexCat(v24, v25) => {
             let v24: Rc<UH0> = v24.clone();
@@ -575,13 +575,13 @@ fn derivative_11(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
             match &v26 {
                 US2::US2_NonNullable => {
                     let v31: Rc<UH0> = derivative_11(v24.clone(), v1.clone());
-                    make_cat_8(v31.clone(), v25.clone())
+                    make_cat_8(v31, v25.clone())
                 }
                 US2::US2_Nullable => {
-                    let v27: Rc<UH0> = derivative_11(v24.clone(), v1.clone());
-                    let v28: Rc<UH0> = make_cat_8(v27.clone(), v25.clone());
-                    let v29: Rc<UH0> = derivative_11(v25.clone(), v1.clone());
-                    make_alt_5(v28.clone(), v29.clone())
+                    let v27: Rc<UH0> = derivative_11(v24, v1.clone());
+                    let v28: Rc<UH0> = make_cat_8(v27, v25.clone());
+                    let v29: Rc<UH0> = derivative_11(v25, v1.clone());
+                    make_alt_5(v28, v29)
                 }
             }
         }
@@ -631,9 +631,9 @@ fn derivative_11(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
         }
         UH0::UH0_RegexStar(v35) => {
             let v35: Rc<UH0> = v35.clone();
-            let v36: Rc<UH0> = derivative_11(v35.clone(), v1.clone());
-            let v37: Rc<UH0> = make_star_10(v35.clone());
-            make_cat_8(v36.clone(), v37.clone())
+            let v36: Rc<UH0> = derivative_11(v35.clone(), v1);
+            let v37: Rc<UH0> = make_star_10(v35);
+            make_cat_8(v36, v37)
         }
     }
 }
@@ -1719,119 +1719,119 @@ fn spiral_main() -> i32 {
     let v0: i32 = 200i32;
     let v1: i32 = 32i32;
     let v2: US0 = US0::US0_BitZero;
-    let v3: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v2.clone()));
+    let v3: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v2));
     let v4: US0 = US0::US0_BitOne;
-    let v5: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v4.clone()));
-    let v6: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v3.clone(), v5.clone()));
-    let v7: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v6.clone()));
+    let v5: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v4));
+    let v6: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v3, v5));
+    let v7: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v6));
     let v8: US0 = US0::US0_BitZero;
-    let v9: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v8.clone()));
-    let v10: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v7.clone(), v9.clone()));
+    let v9: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v8));
+    let v10: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v7, v9));
     let v11: US0 = US0::US0_BitZero;
-    let v12: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v11.clone()));
+    let v12: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v11));
     let v13: US0 = US0::US0_BitOne;
-    let v14: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v13.clone()));
-    let v15: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v12.clone(), v14.clone()));
-    let v16: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v15.clone()));
+    let v14: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v13));
+    let v15: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v12, v14));
+    let v16: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v15));
     let v17: US0 = US0::US0_BitOne;
-    let v18: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v17.clone()));
+    let v18: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v17));
     let v19: US0 = US0::US0_BitZero;
-    let v20: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v19.clone()));
+    let v20: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v19));
     let v21: US0 = US0::US0_BitOne;
-    let v22: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v21.clone()));
-    let v23: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v20.clone(), v22.clone()));
+    let v22: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v21));
+    let v23: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v20, v22));
     let v24: US0 = US0::US0_BitZero;
-    let v25: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v24.clone()));
+    let v25: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v24));
     let v26: US0 = US0::US0_BitOne;
-    let v27: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v26.clone()));
-    let v28: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v25.clone(), v27.clone()));
+    let v27: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v26));
+    let v28: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v25, v27));
     let v29: US0 = US0::US0_BitZero;
-    let v30: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v29.clone()));
+    let v30: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v29));
     let v31: US0 = US0::US0_BitOne;
-    let v32: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v31.clone()));
-    let v33: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v30.clone(), v32.clone()));
-    let v34: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v28.clone(), v33.clone()));
-    let v35: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v23.clone(), v34.clone()));
-    let v36: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v18.clone(), v35.clone()));
-    let v37: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v16.clone(), v36.clone()));
+    let v32: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v31));
+    let v33: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v30, v32));
+    let v34: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v28, v33));
+    let v35: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v23, v34));
+    let v36: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v18, v35));
+    let v37: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v16, v36));
     let v38: u64 = 1u64;
     let v39: i32 = 0i32;
-    let v40: i32 = loop_0(v10.clone(), v1, v0, v38, v39);
-    let v41: i32 = loop_0(v37.clone(), v1, v0, v38, v39);
+    let v40: i32 = loop_0(v10, v1, v0, v38, v39);
+    let v41: i32 = loop_0(v37, v1, v0, v38, v39);
     let v42: i32 = 16i32;
     let v43: US0 = US0::US0_BitZero;
-    let v44: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v43.clone()));
+    let v44: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v43));
     let v45: US0 = US0::US0_BitZero;
-    let v46: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v45.clone()));
+    let v46: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v45));
     let v47: US0 = US0::US0_BitZero;
-    let v48: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v47.clone()));
-    let v49: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v46.clone(), v48.clone()));
-    let v50: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v44.clone(), v49.clone()));
-    let v51: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v50.clone()));
+    let v48: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v47));
+    let v49: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v46, v48));
+    let v50: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v44, v49));
+    let v51: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v50));
     let v52: US0 = US0::US0_BitOne;
-    let v53: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v52.clone()));
-    let v54: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v51.clone(), v53.clone()));
+    let v53: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v52));
+    let v54: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v51, v53));
     let v55: i32 = 0i32;
     let v56: i32 = 1i32;
-    let v57: i32 = loop_13(v54.clone(), v42, v56, v55);
+    let v57: i32 = loop_13(v54, v42, v56, v55);
     let v58: i32 = 200i32;
     let v59: i32 = 32i32;
     let v60: US0 = US0::US0_BitZero;
-    let v61: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v60.clone()));
+    let v61: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v60));
     let v62: US0 = US0::US0_BitOne;
-    let v63: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v62.clone()));
-    let v64: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v61.clone(), v63.clone()));
-    let v65: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v64.clone()));
+    let v63: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v62));
+    let v64: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v61, v63));
+    let v65: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v64));
     let v66: US0 = US0::US0_BitZero;
-    let v67: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v66.clone()));
-    let v68: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v65.clone(), v67.clone()));
+    let v67: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v66));
+    let v68: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v65, v67));
     let v69: US0 = US0::US0_BitZero;
-    let v70: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v69.clone()));
+    let v70: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v69));
     let v71: US0 = US0::US0_BitOne;
-    let v72: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v71.clone()));
-    let v73: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v70.clone(), v72.clone()));
-    let v74: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v73.clone()));
+    let v72: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v71));
+    let v73: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v70, v72));
+    let v74: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v73));
     let v75: US0 = US0::US0_BitOne;
-    let v76: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v75.clone()));
+    let v76: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v75));
     let v77: US0 = US0::US0_BitZero;
-    let v78: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v77.clone()));
+    let v78: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v77));
     let v79: US0 = US0::US0_BitOne;
-    let v80: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v79.clone()));
-    let v81: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v78.clone(), v80.clone()));
+    let v80: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v79));
+    let v81: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v78, v80));
     let v82: US0 = US0::US0_BitZero;
-    let v83: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v82.clone()));
+    let v83: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v82));
     let v84: US0 = US0::US0_BitOne;
-    let v85: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v84.clone()));
-    let v86: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v83.clone(), v85.clone()));
+    let v85: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v84));
+    let v86: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v83, v85));
     let v87: US0 = US0::US0_BitZero;
-    let v88: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v87.clone()));
+    let v88: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v87));
     let v89: US0 = US0::US0_BitOne;
-    let v90: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v89.clone()));
-    let v91: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v88.clone(), v90.clone()));
-    let v92: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v86.clone(), v91.clone()));
-    let v93: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v81.clone(), v92.clone()));
-    let v94: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v76.clone(), v93.clone()));
-    let v95: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v74.clone(), v94.clone()));
+    let v90: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v89));
+    let v91: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v88, v90));
+    let v92: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v86, v91));
+    let v93: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v81, v92));
+    let v94: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v76, v93));
+    let v95: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v74, v94));
     let v96: u64 = 1u64;
     let v97: i32 = 0i32;
-    let v98: i32 = loop_15(v68.clone(), v59, v58, v96, v97);
-    let v99: i32 = loop_15(v95.clone(), v59, v58, v96, v97);
+    let v98: i32 = loop_15(v68, v59, v58, v96, v97);
+    let v99: i32 = loop_15(v95, v59, v58, v96, v97);
     let v100: i32 = 16i32;
     let v101: US0 = US0::US0_BitZero;
-    let v102: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v101.clone()));
+    let v102: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v101));
     let v103: US0 = US0::US0_BitZero;
-    let v104: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v103.clone()));
+    let v104: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v103));
     let v105: US0 = US0::US0_BitZero;
-    let v106: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v105.clone()));
-    let v107: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v104.clone(), v106.clone()));
-    let v108: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v102.clone(), v107.clone()));
-    let v109: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v108.clone()));
+    let v106: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v105));
+    let v107: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v104, v106));
+    let v108: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v102, v107));
+    let v109: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v108));
     let v110: US0 = US0::US0_BitOne;
-    let v111: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v110.clone()));
-    let v112: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v109.clone(), v111.clone()));
+    let v111: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v110));
+    let v112: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v109, v111));
     let v113: i32 = 0i32;
     let v114: i32 = 1i32;
-    let v115: i32 = loop_17(v112.clone(), v100, v114, v113);
+    let v115: i32 = loop_17(v112, v100, v114, v113);
     let v116: bool = v40 == v98;
     let v118: bool = if v116 {
         let v117: bool = v41 == v99;
@@ -1909,54 +1909,54 @@ fn spiral_main() -> i32 {
         false
     };
     let (mut v166, mut v167, mut v168, mut v169, mut v170, mut v171, mut v172): (Rc<RefCell<Vec<i32>>>, Rc<RefCell<Vec<i32>>>, Rc<RefCell<Vec<i32>>>, Rc<RefCell<Vec<i32>>>, Rc<RefCell<Vec<i32>>>, Rc<RefCell<Vec<i32>>>, Rc<RefCell<Vec<i32>>>) = if v158 {
-        (v138.clone(), v139.clone(), v140.clone(), v141.clone(), v142.clone(), v143.clone(), v144.clone())
+        (v138, v139, v140, v141, v142, v143, v144)
     } else {
         std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("brzozowski-interned-store-init"); } LIT.with(|lit| lit.clone()) }))
     };
     let v173: US0 = US0::US0_BitZero;
-    let v174: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v173.clone()));
+    let v174: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v173));
     let v175: US0 = US0::US0_BitOne;
-    let v176: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v175.clone()));
-    let v177: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v174.clone(), v176.clone()));
-    let v178: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v177.clone()));
+    let v176: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v175));
+    let v177: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v174, v176));
+    let v178: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v177));
     let v179: US0 = US0::US0_BitZero;
-    let v180: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v179.clone()));
-    let v181: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v178.clone(), v180.clone()));
-    let v182: i32 = interned_of_regex_raw_28(v166.clone(), v167.clone(), v168.clone(), v169.clone(), v170.clone(), v171.clone(), v172.clone(), v181.clone());
+    let v180: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v179));
+    let v181: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v178, v180));
+    let v182: i32 = interned_of_regex_raw_28(v166.clone(), v167.clone(), v168.clone(), v169.clone(), v170.clone(), v171.clone(), v172.clone(), v181);
     let v183: u64 = 1u64;
     let v184: i32 = 0i32;
     let v185: i32 = loop_32(v166.clone(), v167.clone(), v168.clone(), v169.clone(), v170.clone(), v171.clone(), v172.clone(), v137, v182, v136, v183, v184);
     let v186: US0 = US0::US0_BitZero;
-    let v187: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v186.clone()));
+    let v187: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v186));
     let v188: US0 = US0::US0_BitOne;
-    let v189: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v188.clone()));
-    let v190: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v187.clone(), v189.clone()));
-    let v191: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v190.clone()));
+    let v189: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v188));
+    let v190: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v187, v189));
+    let v191: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v190));
     let v192: US0 = US0::US0_BitOne;
-    let v193: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v192.clone()));
+    let v193: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v192));
     let v194: US0 = US0::US0_BitZero;
-    let v195: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v194.clone()));
+    let v195: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v194));
     let v196: US0 = US0::US0_BitOne;
-    let v197: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v196.clone()));
-    let v198: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v195.clone(), v197.clone()));
+    let v197: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v196));
+    let v198: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v195, v197));
     let v199: US0 = US0::US0_BitZero;
-    let v200: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v199.clone()));
+    let v200: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v199));
     let v201: US0 = US0::US0_BitOne;
-    let v202: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v201.clone()));
-    let v203: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v200.clone(), v202.clone()));
+    let v202: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v201));
+    let v203: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v200, v202));
     let v204: US0 = US0::US0_BitZero;
-    let v205: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v204.clone()));
+    let v205: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v204));
     let v206: US0 = US0::US0_BitOne;
-    let v207: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v206.clone()));
-    let v208: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v205.clone(), v207.clone()));
-    let v209: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v203.clone(), v208.clone()));
-    let v210: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v198.clone(), v209.clone()));
-    let v211: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v193.clone(), v210.clone()));
-    let v212: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v191.clone(), v211.clone()));
-    let v213: i32 = interned_of_regex_raw_28(v166.clone(), v167.clone(), v168.clone(), v169.clone(), v170.clone(), v171.clone(), v172.clone(), v212.clone());
+    let v207: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v206));
+    let v208: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v205, v207));
+    let v209: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v203, v208));
+    let v210: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v198, v209));
+    let v211: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v193, v210));
+    let v212: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v191, v211));
+    let v213: i32 = interned_of_regex_raw_28(v166.clone(), v167.clone(), v168.clone(), v169.clone(), v170.clone(), v171.clone(), v172.clone(), v212);
     let v214: u64 = 1u64;
     let v215: i32 = 0i32;
-    let v216: i32 = loop_32(v166.clone(), v167.clone(), v168.clone(), v169.clone(), v170.clone(), v171.clone(), v172.clone(), v137, v213, v136, v214, v215);
+    let v216: i32 = loop_32(v166, v167, v168, v169, v170, v171, v172, v137, v213, v136, v214, v215);
     let v217: i32 = 16i32;
     let v218: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 4096i32 as usize]));
     let v219: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 4096i32 as usize]));
@@ -1987,26 +1987,26 @@ fn spiral_main() -> i32 {
         false
     };
     let (mut v246, mut v247, mut v248, mut v249, mut v250, mut v251, mut v252): (Rc<RefCell<Vec<i32>>>, Rc<RefCell<Vec<i32>>>, Rc<RefCell<Vec<i32>>>, Rc<RefCell<Vec<i32>>>, Rc<RefCell<Vec<i32>>>, Rc<RefCell<Vec<i32>>>, Rc<RefCell<Vec<i32>>>) = if v238 {
-        (v218.clone(), v219.clone(), v220.clone(), v221.clone(), v222.clone(), v223.clone(), v224.clone())
+        (v218, v219, v220, v221, v222, v223, v224)
     } else {
         std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("brzozowski-interned-store-init"); } LIT.with(|lit| lit.clone()) }))
     };
     let v253: US0 = US0::US0_BitZero;
-    let v254: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v253.clone()));
+    let v254: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v253));
     let v255: US0 = US0::US0_BitZero;
-    let v256: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v255.clone()));
+    let v256: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v255));
     let v257: US0 = US0::US0_BitZero;
-    let v258: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v257.clone()));
-    let v259: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v256.clone(), v258.clone()));
-    let v260: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v254.clone(), v259.clone()));
-    let v261: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v260.clone()));
+    let v258: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v257));
+    let v259: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v256, v258));
+    let v260: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v254, v259));
+    let v261: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v260));
     let v262: US0 = US0::US0_BitOne;
-    let v263: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v262.clone()));
-    let v264: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v261.clone(), v263.clone()));
-    let v265: i32 = interned_of_regex_raw_28(v246.clone(), v247.clone(), v248.clone(), v249.clone(), v250.clone(), v251.clone(), v252.clone(), v264.clone());
+    let v263: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v262));
+    let v264: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v261, v263));
+    let v265: i32 = interned_of_regex_raw_28(v246.clone(), v247.clone(), v248.clone(), v249.clone(), v250.clone(), v251.clone(), v252.clone(), v264);
     let v266: i32 = 1i32;
     let v267: i32 = 0i32;
-    let v268: i32 = loop_36(v246.clone(), v247.clone(), v248.clone(), v249.clone(), v250.clone(), v251.clone(), v252.clone(), v217, v265, v266, v267);
+    let v268: i32 = loop_36(v246, v247, v248, v249, v250, v251, v252, v217, v265, v266, v267);
     let v269: bool = v40 == v185;
     let v271: bool = if v269 {
         let v270: bool = v41 == v216;

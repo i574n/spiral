@@ -1,14 +1,14 @@
-open main
+:< main
 
-inl impossible_recursive_open_typed_application_argument_domain_mismatch () :
+:= impossible_recursive_open_typed_application_argument_domain_mismatch () :
     exact_linear_indexed_recursive_open_typed_substitution
         exact_linear_indexed_open_unit_substitution_context
         exact_linear_indexed_open_unit_substitution_source_usage
         exact_linear_indexed_open_unit_substitution_target_usage
         exact_linear_unit_type exact_linear_bool_type =
-    ExactLinearIndexedRecursiveOpenTypedSubstitutionApplicationArgument (exists (
+    ExactLinearIndexedRecursiveOpenTypedSubstitutionApplicationArgument (\? (
         ExactLinearIndexedLambda (
-            ExactLinearIndexedVariable (exists (
+            ExactLinearIndexedVariable (\? (
                 ExactLinearFreeContextMembershipHere
                     "the-negative-function-binds-a-Bool",
                 ExactLinearIndexedSingleUseHere (
@@ -31,4 +31,4 @@ inl impossible_recursive_open_typed_application_argument_domain_mismatch () :
             "the-newer-Unit-is-used-only-by-the-target-argument"),
         "a-Bool-function-cannot-consume-the-Unit-substitution-argument"))
 
-inl main () = impossible_recursive_open_typed_application_argument_domain_mismatch ()
+:= main () = impossible_recursive_open_typed_application_argument_domain_mismatch ()

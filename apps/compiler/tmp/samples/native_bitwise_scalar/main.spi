@@ -1,15 +1,15 @@
-inl main () : i32 =
-    inl ~a = 43i32
-    inl ~b = 15i32
-    inl ~shift = 2i32
-    inl ~left_shift = 5i32
-    inl and_value = !!!!BitwiseAnd(a, b)
-    inl or_value = !!!!BitwiseOr(a, b)
-    inl xor_value = !!!!BitwiseXor(a, b)
-    inl complement_value = !!!!BitwiseComplement(a)
-    inl complement_byte = !!!!BitwiseAnd(complement_value, 255i32)
-    inl left_value = !!!!ShiftLeft(1i32, left_shift)
-    inl right_value = !!!!ShiftRight(168i32, shift)
+:= main () : i32 =
+    := ~a = 43i32
+    := ~b = 15i32
+    := ~shift = 2i32
+    := ~left_shift = 5i32
+    := and_value = !!!!BitwiseAnd(a, b)
+    := or_value = !!!!BitwiseOr(a, b)
+    := xor_value = !!!!BitwiseXor(a, b)
+    := complement_value = !!!!BitwiseComplement(a)
+    := complement_byte = !!!!BitwiseAnd(complement_value, 255i32)
+    := left_value = !!!!ShiftLeft(1i32, left_shift)
+    := right_value = !!!!ShiftRight(168i32, shift)
     right_value
     +. (and_value -. 11i32)
     +. (or_value -. 47i32)

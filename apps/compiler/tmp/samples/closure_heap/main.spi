@@ -1,8 +1,8 @@
-inl main () : i32 =
-    inl ~n = 7i32
-    inl box = !!!!LayoutToHeap({ value = n })
-    inl f (z : i32) : heap { value : i32 } = box
-    inl ~g = f
-    inl held = g 1i32
-    inl opened = !!!!LayoutIndex(held)
-    if opened.value =. 7i32 then 0i32 else 1i32
+:= main () : i32 =
+    := ~n = 7i32
+    := box = !!!!LayoutToHeap({ value = n })
+    := f (z : i32) : heap { value : i32 } = box
+    := ~g = f
+    := held = g 1i32
+    := opened = !!!!LayoutIndex(held)
+    ? opened::value =. 7i32 ?> 0i32 |: 1i32

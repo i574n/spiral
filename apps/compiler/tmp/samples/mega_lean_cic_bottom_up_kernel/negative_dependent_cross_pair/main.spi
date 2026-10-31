@@ -1,8 +1,8 @@
-open main
+:< main
 
-inl impossible_dependent_cross_pair () :
+:= impossible_dependent_cross_pair () :
     corrected_cic_bool_dependent_application =
-    CorrectedCicBoolDependentApplication (exists (
+    CorrectedCicBoolDependentApplication (\? (
         CorrectedCicBoolIndexTrue
             "the-witness-selects-the-true-index",
         CorrectedCicBoolDependentFalseResult (
@@ -10,4 +10,4 @@ inl impossible_dependent_cross_pair () :
             "the-result-illegally-selects-the-false-index"),
         "one-dependent-application-cannot-pair-different-indices"))
 
-inl main () = impossible_dependent_cross_pair ()
+:= main () = impossible_dependent_cross_pair ()

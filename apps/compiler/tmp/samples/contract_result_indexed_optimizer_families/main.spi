@@ -1,89 +1,89 @@
-nominal address = string
-nominal value = i32
-nominal condition = bool
-nominal branch_result = string
-nominal buffer = string
-nominal kernel = string
-nominal event = string
+:! address = string
+:! value = i32
+:! condition = bool
+:! branch_result = string
+:! buffer = string
+:! kernel = string
+:! event = string
 
-union ir_op result =
+:| ir_op result =
     | Load :: address -> ir_op value
     | Add :: value * value -> ir_op value
     | Branch :: condition -> ir_op branch_result
     | Allocate :: i32 -> ir_op buffer
     | Launch :: kernel * buffer -> ir_op event
 
-union rec program result =
-    | Operation :: forall result. ir_op result -> program result
-    | PairProgram :: forall left right. program left * program right -> program (left * right)
-    | MapProgram :: forall result. (exists input. program input * (input -> result)) -> program result
+:| ^ program result =
+    | Operation :: \* result. ir_op result -> program result
+    | PairProgram :: \* left right. program left * program right -> program (left * right)
+    | MapProgram :: \* result. (\? input. program input * (input -> result)) -> program result
 
-inl rec describe forall result. (value : program result) : string =
-    match value with
+:= ^ describe \* result. (value : program result) : string =
+    ?= value ?|
     | Operation op =>
-        match op with
+        ?= op ?|
         | Load _ => "load"
         | Add _ => "add"
         | Branch _ => "branch"
         | Allocate _ => "allocate"
         | Launch _ => "launch"
     | PairProgram (left, right) =>
-        inl _ = describe left
-        inl _ = describe right
+        := _ = describe left
+        := _ = describe right
         "pair-program"
     | MapProgram payload =>
-        inl exists input. inner, _ = payload
-        inl _ = describe inner
+        := \? input. inner, _ = payload
+        := _ = describe inner
         "map-program"
 
-nominal cpu result = program result
-nominal cuda result = program result
-nominal wasm result = program result
+:! cpu result = program result
+:! cuda result = program result
+:! wasm result = program result
 
-prototype lower target result : target result -> string
-instance lower cpu = fun (cpu value) => describe value
-instance lower cuda = fun (cuda value) => describe value
-instance lower wasm = fun (wasm value) => describe value
+:? lower target result : target result -> string
+:+ lower cpu = \ (cpu value) => describe value
+:+ lower cuda = \ (cuda value) => describe value
+:+ lower wasm = \ (wasm value) => describe value
 
-union executable =
-    | CpuExecutable :: (exists result. cpu result * result) -> executable
-    | CudaExecutable :: (exists result. cuda result * result) -> executable
-    | WasmExecutable :: (exists result. wasm result * result) -> executable
+:| executable =
+    | CpuExecutable :: (\? result. cpu result * result) -> executable
+    | CudaExecutable :: (\? result. cuda result * result) -> executable
+    | WasmExecutable :: (\? result. wasm result * result) -> executable
 
-inl with_executable forall output.
-    (visit : forall result. program result -> result -> output)
+:= with_executable \* output.
+    (visit : \* result. program result -> result -> output)
     (value : executable) : output =
-    match value with
+    ?= value ?|
     | CpuExecutable payload =>
-        inl exists result. wrapped, result_value = payload
-        match wrapped with cpu program => visit program result_value
+        := \? result. wrapped, result_value = payload
+        ?= wrapped ?| cpu program => visit program result_value
     | CudaExecutable payload =>
-        inl exists result. wrapped, result_value = payload
-        match wrapped with cuda program => visit program result_value
+        := \? result. wrapped, result_value = payload
+        ?= wrapped ?| cuda program => visit program result_value
     | WasmExecutable payload =>
-        inl exists result. wrapped, result_value = payload
-        match wrapped with wasm program => visit program result_value
+        := \? result. wrapped, result_value = payload
+        ?= wrapped ?| wasm program => visit program result_value
 
-inl conceal forall result. (_ : program result) (_ : result) : string = "result-parametric"
+:= conceal \* result. (_ : program result) (_ : result) : string = "result-parametric"
 
-inl value_program () : program value =
+:= value_program () : program value =
     MapProgram (
-        exists (
+        \? (
             PairProgram (Operation (Load (address "0x10")), Operation (Add (value 3, value 4))),
-            fun (_ : value * value) => value 7
+            \ (_ : value * value) => value 7
         )
     )
 
-inl branch_program () : program branch_result =
-    Operation (Branch (condition true))
+:= branch_program () : program branch_result =
+    Operation (Branch (condition !+))
 
-inl launch_program () : program event =
+:= launch_program () : program event =
     Operation (Launch (kernel "fused-kernel", buffer "device-buffer"))
 
-inl executable_value () : executable =
-    CudaExecutable (exists (cuda (launch_program ()), event "event-42"))
+:= executable_value () : executable =
+    CudaExecutable (\? (cuda (launch_program ()), event "event-42"))
 
-inl serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : string =
+:= serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : string =
     "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n"
     ^^ "1\tload\tLoad\taddress\tvalue\t\tidempotent\tmemory\t2\n"
     ^^ "1\tadd\tAdd\tvalues\tvalue\tload\tidempotent\tcompute\t2\n"
@@ -91,9 +91,9 @@ inl serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : st
     ^^ "1\tallocate\tAllocate\tsize\tbuffer\tbranch\tnon_idempotent\tmemory\t0\n"
     ^^ "1\tlaunch\tLaunch\tkernel-buffer\tevent\tallocate\tnon_idempotent\taccelerator\t0\n"
 
-inl main () : string =
-    inl cpu_lowered = lower (cpu (value_program ()))
-    inl cuda_lowered = lower (cuda (launch_program ()))
-    inl wasm_lowered = lower (wasm (branch_program ()))
-    inl hidden = with_executable `$conceal (executable_value ())
+:= main () : string =
+    := cpu_lowered = lower (cpu (value_program ()))
+    := cuda_lowered = lower (cuda (launch_program ()))
+    := wasm_lowered = lower (wasm (branch_program ()))
+    := hidden = with_executable `$conceal (executable_value ())
     serialize_authority cpu_lowered cuda_lowered wasm_lowered hidden

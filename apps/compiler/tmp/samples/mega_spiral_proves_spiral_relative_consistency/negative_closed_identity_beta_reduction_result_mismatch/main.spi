@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_closed_identity_beta_reduction_result_mismatch
+:= impossible_closed_identity_beta_reduction_result_mismatch
     (relation : exact_linear_indexed_closed_identity_beta_relation exact_linear_bool_type)
     : exact_linear_indexed_reduction
         exact_linear_free_context_empty
@@ -9,7 +9,7 @@ inl impossible_closed_identity_beta_reduction_result_mismatch
         exact_linear_unit_type =
     ExactLinearIndexedReductionClosedAtomic (ExactLinearIndexedClosedAtomicReductionIdentity relation)
 
-inl main () =
+:= main () =
     impossible_closed_identity_beta_reduction_result_mismatch
         (ExactLinearIndexedClosedIdentityBetaRelation (
             ExactLinearIndexedBoolTrue (

@@ -73,21 +73,13 @@ pub fn main() {
                     let v9 = spiral_string_index(v4, 5)
                     let v10 = v9 == "l"
                     case v10 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 }
-                False -> {
-                    2
-                }
+                False -> 2
             }
         }
-        False -> {
-            3
-        }
+        False -> 3
     }
 }

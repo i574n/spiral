@@ -13,18 +13,10 @@ pub type Us0 {
 }
 pub fn score_0(v0: Us0) -> Int {
     case v0  {
-        Us0Cold -> {
-            1
-        }
-        Us0Done -> {
-            4
-        }
-        Us0Hot -> {
-            3
-        }
-        Us0Warm -> {
-            2
-        }
+        Us0Cold -> 1
+        Us0Done -> 4
+        Us0Hot -> 3
+        Us0Warm -> 2
     }
 }
 pub fn main() {
@@ -32,24 +24,16 @@ pub fn main() {
     let v1 = v0 == 0
     let v10 =
         case v1 {
-            True -> {
-                Us0Cold
-            }
+            True -> Us0Cold
             False -> {
                 let v3 = v0 == 1
                 case v3 {
-                    True -> {
-                        Us0Warm
-                    }
+                    True -> Us0Warm
                     False -> {
                         let v5 = v0 == 2
                         case v5 {
-                            True -> {
-                                Us0Hot
-                            }
-                            False -> {
-                                Us0Done
-                            }
+                            True -> Us0Hot
+                            False -> Us0Done
                         }
                     }
                 }

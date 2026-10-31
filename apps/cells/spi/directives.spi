@@ -1,4 +1,4 @@
-:= (++) (left : string) (right : string) : string = !!!!StaticStringConcat(left, right)
+:= (++) (left : string) (right : string) : string = left ^^ right
 
 :| ^ tokens =
     | NoToken

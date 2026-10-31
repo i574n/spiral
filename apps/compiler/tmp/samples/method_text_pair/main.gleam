@@ -6,9 +6,7 @@ pub fn method0(v0: String, v1: String) -> #(String, String) {
             let v4 = "nay"
             #(v3, v4)
         }
-        False -> {
-            #(v0, v1)
-        }
+        False -> #(v0, v1)
     }
 }
 pub fn main() {
@@ -22,16 +20,10 @@ pub fn main() {
                 let v5 = v3 == "yo"
                 v5
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v6 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

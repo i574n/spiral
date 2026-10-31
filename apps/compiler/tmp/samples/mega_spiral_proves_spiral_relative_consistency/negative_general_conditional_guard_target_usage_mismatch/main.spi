@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_general_conditional_guard_target_usage_mismatch
+:= impossible_general_conditional_guard_target_usage_mismatch
     (guard_step :
         exact_linear_indexed_small_step
             exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty
@@ -11,7 +11,7 @@ inl impossible_general_conditional_guard_target_usage_mismatch
     : exact_linear_indexed_small_step exact_linear_free_context_empty exact_linear_indexed_usage_empty
         (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type
     =
-    ExactLinearIndexedConditionalGuardStep (exists (
+    ExactLinearIndexedConditionalGuardStep (\? (
         guard_step,
         branch,
         branch,
@@ -21,13 +21,13 @@ inl impossible_general_conditional_guard_target_usage_mismatch
             "this-empty-target-merge-must-not-inhabit-a-used-target-index",
         "the-general-Conditional-guard-congruence-must-preserve-the-exact-target-usage"))
 
-inl main () =
-    inl empty_usage = exact_linear_indexed_empty_usage ()
-    inl guard_step
+:= main () =
+    := empty_usage = exact_linear_indexed_empty_usage ()
+    := guard_step
         : exact_linear_indexed_small_step exact_linear_free_context_empty exact_linear_indexed_usage_empty
             exact_linear_indexed_usage_empty exact_linear_bool_type
         =
-        ExactLinearIndexedConditionalTrueStep (exists (
+        ExactLinearIndexedConditionalTrueStep (\? (
             empty_usage,
             ExactLinearIndexedBoolFalse (
                 empty_usage,
@@ -38,7 +38,7 @@ inl main () =
             ExactLinearIndexedUsageMergeEmpty
                 "the-negative-guard-source-is-closed",
             "the-inner-guard-step-is-well-typed"))
-    inl branch = ExactLinearIndexedUnit (
+    := branch = ExactLinearIndexedUnit (
         empty_usage,
         "the-negative-outer-branch-is-closed")
     impossible_general_conditional_guard_target_usage_mismatch

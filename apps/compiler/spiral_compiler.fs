@@ -43226,7 +43226,7 @@ module spiral_compiler =
             read (function
                 | '\\' ->
                     read (Ok << function
-                        | 'n' -> '\n' | 'r' -> '\r' | 't' -> '\t' | 'b' -> '\b'
+                        | 'n' -> '\n' | 'r' -> '\r' | 't' -> '\t' | 'b' -> '\b' | '0' -> '\000'
                         | x -> x
                         )
                 | x -> Ok x
@@ -53975,7 +53975,7 @@ module spiral_compiler =
                 contexts |> Seq.collect (fun ctx -> ctx.Crashes) |> Seq.tryHead |> Option.iter raise
             member _.Check() =
                 let conflicts, _, cycles = counts ()
-                if conflicts + cycles > 0 then raise (HopacsotaConflict (sprintf "hopacsota parallel conflict: %d foreign claims of abandoned keys, %d wait-for cycles; the canonical-order restart (D4) is not built yet, rerun with SPIRAL_HOPACSOTA_POLICY=inline" conflicts cycles))
+                if conflicts + cycles > 0 || System.Environment.GetEnvironmentVariable "SPIRAL_HOPACSOTA_FORCE_CONFLICT" = "1" then raise (HopacsotaConflict (sprintf "hopacsota parallel conflict: %d foreign claims of abandoned keys, %d wait-for cycles" conflicts cycles))
             member _.Close() =
                 let conflicts, abandoned, cycles = counts ()
                 bridge (Ch.give work Stop)
@@ -54170,6 +54170,13 @@ module spiral_compiler =
             match policy with
             | Some policy -> Session(policy, adapter)
             | None -> null
+        let start_for (inline_restart : bool) (adapter : Adapter<'env>) : Session<'env> =
+            if inline_restart then null else start adapter
+        let with_conflict_restart (f : bool -> 'a) : 'a =
+            try f false
+            with PartEvalEngine.HopacsotaConflict reason ->
+                eprintfn "hopacsota engine: %s; restarting the build in canonical single-flight order (D4)" reason
+                f true
         let defer (session : Session<'env>) (s : 'env) (relative : 'env) (deferred : 'a option) (evaluate : 'env -> 'a) : 'a =
             if isNull session then evaluate s else session.Defer(s, relative, deferred, evaluate)
         let root (session : Session<'env>) (globals : ResizeArray<string>) (f : unit -> 'a) : 'a =
@@ -54227,6 +54234,8 @@ module spiral_compiler =
             }
         type Session<'env> = | Inline
         let inline start (_ : Adapter<'env>) : Session<'env> = Inline
+        let inline start_for (_ : bool) (_ : Adapter<'env>) : Session<'env> = Inline
+        let inline with_conflict_restart (f : bool -> 'a) : 'a = f false
         let inline defer (_ : Session<'env>) (s : 'env) (_ : 'env) (_ : 'a option) (evaluate : 'env -> 'a) : 'a = evaluate s
         let inline root (_ : Session<'env>) (_ : ResizeArray<string>) (f : unit -> 'a) : 'a = f ()
         let inline key_hit (_ : Session<'env>) (_ : obj) (_ : 'env) = ()
@@ -127549,6 +127558,7 @@ module spiral_compiler =
         prototypes_instances : Dictionary<GlobalId * GlobalId, E>
         nominals : Dictionary<GlobalId, Nominal>
         backend : string
+        inline_restart : bool
         }
     
 
@@ -128609,7 +128619,8 @@ module spiral_compiler =
     let  globals_add (s : LangEnv) (x : string) =
         // Thread-safe global snippet accumulation (used during codegen).
         // Avoids global locks in the hot path by using a concurrent membership set; only new inserts take the lock.
-        if s.globals_seen.TryAdd(GlobalNameIdOps.create x, 0uy) then
+        let fragment = System.String.IsNullOrEmpty x || ((System.Char.IsWhiteSpace x.[0] || x.[0] = '}') && not (x.TrimEnd().Contains '\n'))
+        if fragment || s.globals_seen.TryAdd(GlobalNameIdOps.create x, 0uy) then
             lock s.globals_lock (fun () -> s.globals.Add x)
         x
     
@@ -159212,6 +159223,7 @@ module spiral_compiler =
         prototypes_instances : Dictionary<GlobalId * GlobalId, E>
         nominals : Dictionary<GlobalId, Nominal>
         backend : string
+        inline_restart : bool
         }
 
     /// ### PartEvalTypeError
@@ -159786,7 +159798,7 @@ module spiral_compiler =
 
     let peval (env : PartEvalTopEnv) (x : E) =
         let validation_root_globals = ref None
-        let hopacsota = PartEvalSeams.start { globals = (fun (s : LangEnv) -> s.globals); with_globals = (fun s globals -> { s with globals = globals }); dynamic_if = (fun () -> DynamicIfNesting.depth.Value); set_dynamic_if = (fun depth -> DynamicIfNesting.depth.Value <- depth); validating = (fun () -> RustGapTrace.validating.Value); set_validating = (fun depth -> RustGapTrace.validating.Value <- depth); rebuild_index = (fun root -> let index = GlobalsIndex.get root in index.Clear(); index.UnionWith root) }
+        let hopacsota = PartEvalSeams.start_for env.inline_restart { globals = (fun (s : LangEnv) -> s.globals); with_globals = (fun s globals -> { s with globals = globals }); dynamic_if = (fun () -> DynamicIfNesting.depth.Value); set_dynamic_if = (fun depth -> DynamicIfNesting.depth.Value <- depth); validating = (fun () -> RustGapTrace.validating.Value); set_validating = (fun depth -> RustGapTrace.validating.Value <- depth); rebuild_index = (fun root -> let index = GlobalsIndex.get root in index.Clear(); index.UnionWith root) }
         let join_point_method = Dictionary(HashIdentity.Structural)
         let join_point_closure = Dictionary(HashIdentity.Structural)
         let join_point_type = Dictionary(HashIdentity.Structural)
@@ -160155,8 +160167,7 @@ module spiral_compiler =
                 let has_added = GlobalsIndex.get s.globals
                 let preserves_duplicate_fragment (x : string) =
                     System.String.IsNullOrEmpty x
-                    || System.Char.IsWhiteSpace x.[0]
-                    || x.[0] = '}'
+                    || ((System.Char.IsWhiteSpace x.[0] || x.[0] = '}') && not (x.TrimEnd().Contains '\n'))
                 fun x -> if preserves_duplicate_fragment x || has_added.Add(x) then s.globals.Add x
 
             let term2 s a b = term s a, term s b
@@ -162108,7 +162119,7 @@ module spiral_compiler =
                 current)
 
     /// ### line
-    let line x (s : string) = x.text.Append(' ', x.indent).AppendLine s |> ignore
+    let line x (s : string) = x.text.Append(' ', x.indent).Append(s).Append('\n') |> ignore
 
     /// ### indent
     let indent x : CodegenEnv = {x with indent=x.indent+4}
@@ -162119,8 +162130,7 @@ module spiral_compiler =
     /// Deduplicating those deleted lines from the middle of later blocks. (Ported from the single-flight core.)
     let preservesDuplicateGlobalFragment (x : string) =
         System.String.IsNullOrEmpty x
-        || System.Char.IsWhiteSpace x.[0]
-        || x.[0] = '}'
+        || ((System.Char.IsWhiteSpace x.[0] || x.[0] = '}') && not (x.TrimEnd().Contains '\n'))
 
     type DecimalLiteralPointDispositionId =
         | DecimalLiteralHasPoint
@@ -163289,6 +163299,7 @@ module spiral_compiler =
             | '\t' -> @"\t"
             | '\r' -> @"\r"
             | '\\' -> @"\\"
+            | '\000' -> @"\000"
             | x -> string x
             |> sprintf "'%s'"
         | LitBool x -> if x then "true" else "false"
@@ -163388,8 +163399,7 @@ module spiral_compiler =
             let has_added = HashSet env.globals
             let preserves_duplicate_fragment (x : string) =
                 System.String.IsNullOrEmpty x
-                || System.Char.IsWhiteSpace x.[0]
-                || x.[0] = '}'
+                || ((System.Char.IsWhiteSpace x.[0] || x.[0] = '}') && not (x.TrimEnd().Contains '\n'))
             fun x -> if preserves_duplicate_fragment x || has_added.Add(x) then env.globals.Add x
 
         let rec macro_assigned_binds (x : TypedBind []) : Set<int> =
@@ -163720,8 +163730,8 @@ module spiral_compiler =
                 | Cos, [x] -> sprintf "cos %s" (tup x)
                 | NanIs, [x] ->
                     match x with
-                    | DLit(LitFloat32 _) | DV(L(_,YPrim Float32T)) -> sprintf "Single.IsNaN(%s)" (tup x)
-                    | DLit(LitFloat64 _) | DV(L(_,YPrim Float64T)) -> sprintf "Double.IsNaN(%s)" (tup x)
+                    | DLit(LitFloat32 _) | DV(L(_,YPrim Float32T)) -> sprintf "System.Single.IsNaN(%s)" (tup x)
+                    | DLit(LitFloat64 _) | DV(L(_,YPrim Float64T)) -> sprintf "System.Double.IsNaN(%s)" (tup x)
                     | _ -> raise_codegen_error "Compiler error: Invalid type in NanIs."
                 | UnionTag, [DV(L(i,YUnion h))] ->
                     let h = h.Item
@@ -164138,7 +164148,8 @@ module spiral_compiler =
                     start <- -1
             for (s, e) in spans do
                 let closure = System.Text.RegularExpressions.Regex(@"\|[^|\n]*\|\s*[{\w(&*!\-\[]|\|\|\s*[{\w(]")
-                let loops = seq { s .. e } |> Seq.exists (fun l -> lines.[l].Contains "loop {" || lines.[l].Contains "while " || closure.IsMatch lines.[l])
+                let captureFreeCache = System.Text.RegularExpressions.Regex(@"\b(?:LIT|CASE|CLOSURE)\.with\(\|(?:lit|case|closure)\| (?:lit|case|closure)\.clone\(\)\)")
+                let loops = seq { s .. e } |> Seq.exists (fun l -> let line = captureFreeCache.Replace(lines.[l], "") in line.Contains "loop {" || line.Contains "while " || closure.IsMatch line)
                 if not loops then
                     let positions = ResizeArray<int * int * string>()
                     for li = s to e do
@@ -164247,7 +164258,7 @@ module spiral_compiler =
     /// ### nonCloneRustType
     let nonCloneRustType =
         System.Text.RegularExpressions.Regex(
-            @"^\s*(?:SpiralNearVec|near_sdk(?:::|_)store(?:::|_)(?:[a-z_]+(?:::|_))?(?:Vector|LookupMap|LookupSet|UnorderedMap|UnorderedSet|IterableMap|IterableSet|TreeMap|LazyOption|Lazy)|(?:std(?:::|_)sync(?:::|_))?MutexGuard|(?:std(?:::|_)process(?:::|_))?(?:Command|Child|ChildStdin|ChildStdout|ChildStderr)|(?:std(?:::|_)fs(?:::|_))?File|(?:std(?:::|_)thread(?:::|_))?JoinHandle|(?:async_walkdir(?:::|_))?Filtering|std(?:::|_)io(?:::|_)Error|anyhow(?:::|_)Error|near_workspaces(?:::|_)error(?:::|_)Error|(?:std(?:::|_)pin(?:::|_))?Pin|(?:leptos(?:::|_)(?:prelude|dom)(?:::|_))?(?:AnyView|Fragment)_?|(?:reqwest(?:_wasm)?(?:::|_))?RequestBuilder|(?:rexie(?:::|_))?Rexie|Box\s*<\s*dyn)\b")
+            @"^\s*(?:SpiralNearVec|near_sdk(?:::|_)store(?:::|_)(?:[a-z_]+(?:::|_))?(?:Vector|LookupMap|LookupSet|UnorderedMap|UnorderedSet|IterableMap|IterableSet|TreeMap|LazyOption|Lazy)|(?:std(?:::|_)sync(?:::|_))?MutexGuard|(?:std(?:::|_)process(?:::|_))?(?:Command|Child|ChildStdin|ChildStdout|ChildStderr)|(?:std(?:::|_)fs(?:::|_))?File|(?:std(?:::|_)thread(?:::|_))?JoinHandle|(?:async_walkdir(?:::|_))?Filtering|std(?:::|_)io(?:::|_)Error|anyhow(?:::|_)Error|near_workspaces(?:::|_)error(?:::|_)Error|(?:std(?:::|_)pin(?:::|_))?Pin|(?:leptos(?:::|_)(?:prelude|dom)(?:::|_))?(?:AnyView|Fragment)_?|(?:(?:reqwest(?:_wasm)?|ureq)(?:::|_))?RequestBuilder|ureq(?:::|_)(?:(?:http(?:::|_))?Response|Body|Error)|(?:rexie(?:::|_))?Rexie|Box\s*<\s*dyn)\b")
     let boxRustType = System.Text.RegularExpressions.Regex(@"^\s*(?:std(?:::|_)boxed(?:::|_))?Box\s*<\s*$")
     let dynRustType = System.Text.RegularExpressions.Regex(@"^\s*(?:dyn\b|Dyn\s*<)")
     let cloneIfContentsRustType =
@@ -164263,7 +164274,11 @@ module spiral_compiler =
     /// ### codegenRust
     let unionCaseSuffix (x : UnionRecFsharp) (index : int) = (generatedCaseNames (x.free_vars |> Map.keys)).[index]
 
-    let codegenRust (env : PartEvalResult) (x : TypedBind []) =
+    let codegenRust (rust_extern : (string * string list) list) (env : PartEvalResult) (x : TypedBind []) =
+        let derive_traits = rust_extern |> List.tryPick (fun (name, traits) -> if name = "derive" then Some traits else None)
+        let derive_externs = rust_extern |> List.filter (fun (name, _) -> name <> "derive" && name <> "rc_str") |> List.map (fun (name, traits) -> name, Set.ofList traits) |> Map.ofList
+        let rc_str_exports = rust_extern |> List.tryPick (fun (name, exports) -> if name = "rc_str" then Some (Set.ofList exports) else None) |> Option.defaultValue Set.empty
+        let derive_candidates = Dictionary<string, bool * string []>()
         let method_names = Dictionary<int, string>()
         let closure_names = Dictionary<int, string>()
         let types = ResizeArray()
@@ -164789,8 +164804,9 @@ module spiral_compiler =
                             exports.Insert(0, $"pub struct {record_name} {{\n{members}\n}}\n")
                         $"v: {record_name}", (fields |> Map.toArray |> Array.map (fun ((_,k),_) -> $"v.{k}") |> String.concat ", ")
                     | None ->
-                        parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> $"v{k}: &str" | t -> $"v{k}: {tyv t}") |> String.concat ", ",
-                        parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> $"Rc::<str>::from(v{k})" | _ -> $"v{k}") |> String.concat ", "
+                        let shares_rc = rc_str_exports.Contains name
+                        parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> (if shares_rc then $"v{k}: &Rc<str>" else $"v{k}: &str") | t -> $"v{k}: {tyv t}") |> String.concat ", ",
+                        parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> (if shares_rc then $"Rc::clone(v{k})" else $"Rc::<str>::from(v{k})") | _ -> $"v{k}") |> String.concat ", "
                 let returned_record =
                     match range with
                     | YNominal n ->
@@ -164981,6 +164997,9 @@ module spiral_compiler =
             go 0 t
         and heap : _ -> LayoutRecFsharp = layout (fun s x ->
             let fields = x.free_vars |> Array.map (fun (L(i,t)) -> $"l{i}: {tyv t}") |> String.concat ", "
+            if derive_traits.IsSome then
+                derive_candidates.[$"Heap{x.tag}"] <- (false, x.free_vars |> Array.map (fun (L(_,t)) -> tyv t))
+                line s $"\u0001derive Heap{x.tag}"
             line s $"struct Heap{x.tag} {{ {fields} }}"
             match rust_layout_default "Heap" x with
             | Some body -> rust_emit_default s $"Heap{x.tag}" body
@@ -164995,7 +165014,11 @@ module spiral_compiler =
             )
         and union_type prefix (s : CodegenEnv) (x : UnionRecFsharp) =
             let name = $"{prefix}{x.tag}"
-            if not (union_has_moving_field x) then line s "#[derive(Clone)]"
+            if not (union_has_moving_field x) then
+                if derive_traits.IsSome then
+                    derive_candidates.[name] <- (true, x.free_vars |> Map.toArray |> Array.collect (fun (_, a) -> a |> Array.map (fun (L(_,t)) -> tyv t)))
+                    line s $"\u0001derive {name}"
+                else line s "#[derive(Clone)]"
             line s $"enum {name} {{"
             x.free_vars |> Map.iter (fun (i,_) a ->
                 match a with
@@ -165163,7 +165186,7 @@ module spiral_compiler =
                         System.Text.RegularExpressions.Regex.Replace(code, $@"\b{generated}(?=\b|_)", name)) code
                 let local_definitions name =
                     [
-                        $@"(?m)^#\[derive\(Clone\)\]\r?\n(?=(pub )?enum {name} \{{)"
+                        $@"(?m)^#\[derive\([^\]]*\)\]\r?\n(?=(pub )?enum {name} \{{)"
                         $@"(?ms)^(pub )?enum {name} \{{\r?\n.*?^\}}\r?\n"
                         $@"(?ms)^impl {name} \{{\r?\n.*?^\}}\r?\n"
                         $@"(?ms)^impl Default for {name} \{{\r?\n.*?^\}}\r?\n"
@@ -165183,7 +165206,49 @@ module spiral_compiler =
                     |> List.map (fun (unitName, names) -> $"""use {unitName}::{{{names |> List.map snd |> String.concat ", "}}};""" + "\n")
                     |> String.concat ""
                 System.Text.RegularExpressions.Regex("use std::rc::Rc;(\r?\n)").Replace(dropped, "use std::rc::Rc;${1}" + uses.Replace("$", "$$"), 1)
-        program.ToString() |> translateFsharpInterpolations |> foldStringBindings |> inlineRustEmits
+        let resolve_derives (code : string) =
+            match derive_traits with
+            | None -> code
+            | Some traits ->
+                let std_all = set [ "bool"; "i8"; "i16"; "i32"; "i64"; "i128"; "u8"; "u16"; "u32"; "u64"; "u128"; "usize"; "isize"; "f32"; "f64"; "char"; "String"; "str"; "Rc"; "Option"; "Vec"; "HashMap"; "BTreeMap"; "Result" ]
+                let std_traits (id : string) =
+                    if std_all.Contains id then Some (Set.ofList traits)
+                    elif id = "RefCell" then Some (set [ "Clone"; "Debug"; "serde::Serialize"; "serde::Deserialize" ])
+                    elif id = "Arc" then Some (set [ "Clone"; "Debug" ])
+                    else None
+                let identifiers = System.Text.RegularExpressions.Regex @"\b[A-Za-z_][A-Za-z0-9_]*\b(?!\s*::)"
+                let generated = System.Text.RegularExpressions.Regex @"^(Heap|US|UH|Mut)\d+$"
+                let ids = derive_candidates |> Seq.map (fun (KeyValue(name, (_, fields))) -> name, (fields |> Array.collect (fun text -> [| for m in identifiers.Matches text -> m.Value |]) |> Array.distinct)) |> dict
+                let refs = derive_candidates |> Seq.map (fun (KeyValue(name, (_, fields))) -> name, (fields |> Array.exists (fun text -> text.Contains "&"))) |> dict
+                let derived = Dictionary<string, ResizeArray<string>>()
+                for name in derive_candidates.Keys do derived.[name] <- ResizeArray()
+                for trait_name in traits do
+                    let ok = HashSet<string>(derive_candidates.Keys)
+                    let mutable changed = true
+                    while changed do
+                        changed <- false
+                        for name in List.ofSeq ok do
+                            let allowed (id : string) =
+                                if generated.IsMatch id then ok.Contains id
+                                elif trait_name = "Clone" then (match derive_externs.TryFind id with Some declared -> declared.Contains "Clone" | None -> true)
+                                elif id = "dyn" || id = "Fn" || id = "FnMut" || id = "FnOnce" || id = "impl" then false
+                                else
+                                    match derive_externs.TryFind id with
+                                    | Some declared -> declared.Contains trait_name
+                                    | None -> match std_traits id with Some known -> known.Contains trait_name | None -> false
+                            if not ((trait_name = "Clone" || not refs.[name]) && ids.[name] |> Array.forall allowed) then
+                                ok.Remove name |> ignore
+                                changed <- true
+                    for name in ok do derived.[name].Add trait_name
+                let marker = System.Text.RegularExpressions.Regex "(?m)^\u0001derive (\\w+)\r?\n"
+                marker.Replace(code, fun (m : System.Text.RegularExpressions.Match) ->
+                    let name = m.Groups.[1].Value
+                    let list = List.ofSeq derived.[name]
+                    if fst derive_candidates.[name] then
+                        if list.Length > 1 then $"""#[derive({String.concat ", " list})]""" + "\n" else "#[derive(Clone)]\n"
+                    elif list.IsEmpty then ""
+                    else $"""#[derive({String.concat ", " list})]""" + "\n")
+        program.ToString() |> resolve_derives |> translateFsharpInterpolations |> foldStringBindings |> inlineRustEmits
         |> rename_exported_unions
         |> import_rust_unions
         |> cacheRustStringLiterals
@@ -165733,7 +165798,7 @@ module spiral_compiler =
         let program = StringBuilder()
         let is_uses (x : string) = x.StartsWith("uses ", System.StringComparison.Ordinal)
         let units = env.globals |> Seq.filter is_uses |> Seq.map (fun x -> x.Substring(5).Trim().TrimEnd(';').Trim()) |> Seq.filter (fun x -> x <> "") |> Seq.distinct |> Seq.filter (fun x -> x <> "SysUtils" && x <> "Math") |> List.ofSeq
-        program.AppendLine("program SpiralGenerated;").AppendLine("{$mode delphi}{$H+}").AppendLine("{$MAXSTACKSIZE $10000000}").AppendLine("uses " + String.concat ", " ("SysUtils" :: "Math" :: units) + ";") |> ignore
+        program.AppendLine("program SpiralGenerated;").AppendLine("{$mode delphi}{$H+}").AppendLine("{$IFDEF CPUX86_64}{$OPTIMIZATION NOREGVAR}{$ENDIF}").AppendLine("{$MAXSTACKSIZE $10000000}").AppendLine("uses " + String.concat ", " ("SysUtils" :: "Math" :: units) + ";") |> ignore
         if forwards.Count > 0 || types.Count > 0 then
             program.AppendLine("type") |> ignore
             forwards |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
@@ -165742,7 +165807,7 @@ module spiral_compiler =
         globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         headers |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
         bodies |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
-        program.AppendLine("var SpiralOutputBuffer: array[0..65535] of Char;").AppendLine("begin").AppendLine("  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));").AppendLine("  Halt(SpiralMain);").AppendLine("end.").ToString()
+        program.AppendLine("var SpiralOutputBuffer: array[0..65535] of Char;").AppendLine("begin").AppendLine("  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));").AppendLine("  SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);").AppendLine("  Halt(SpiralMain);").AppendLine("end.").ToString()
 
     /// ## CodegenZig
 
@@ -168041,6 +168106,14 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                   | EQ when is_float -> bin (sprintf "F32.is_eq(%s, %s)")
                   | NEQ when is_float -> bin (sprintf "F32.is_ne(%s, %s)")
                   | Neg when is_float -> unary (sprintf "F32.neg(%s)")
+                  | Sqrt when is_float -> unary (sprintf "F32.sqrt(%s)")
+                  | Exp when is_float -> unary (sprintf "F32.exp(%s)")
+                  | Log when is_float -> unary (sprintf "F32.log(%s)")
+                  | Sin when is_float -> unary (sprintf "F32.sin(%s)")
+                  | Cos when is_float -> unary (sprintf "F32.cos(%s)")
+                  | Tanh when is_float -> unary (sprintf "F32.tanh(%s)")
+                  | Pow when is_float -> bin (sprintf "F32.pow(%s, %s)")
+                  | NanIs when is_float -> unary (fun x -> $"F32.is_ne({x}, {x})")
                   | LT when is_string -> bin (sprintf "String.is_lt(%s, %s)")
                   | LTE when is_string -> bin (sprintf "String.is_le(%s, %s)")
                   | GT when is_string -> bin (sprintf "String.is_gt(%s, %s)")
@@ -168282,6 +168355,7 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
             | '\r' -> @"\r"
             | '\\' -> @"\\"
             | '"' -> "\\\""
+            | '\000' -> @"\u{0}"
             | x -> string x
             |> sprintf "\"%s\""
         | LitBool x -> if x then "True" else "False"
@@ -168382,8 +168456,7 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
             let has_added = HashSet env.globals
             let preserves_duplicate_fragment (x : string) =
                 System.String.IsNullOrEmpty x
-                || System.Char.IsWhiteSpace x.[0]
-                || x.[0] = '}'
+                || ((System.Char.IsWhiteSpace x.[0] || x.[0] = '}') && not (x.TrimEnd().Contains '\n'))
             fun x -> if preserves_duplicate_fragment x || has_added.Add(x) then env.globals.Add x
 
         let externals = System.Collections.Generic.List<string>()
@@ -168534,6 +168607,16 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                     | WV(L(i',_)) -> sprintf "l%i: v%i" i i'
                     | WLit x -> sprintf "l%i: %s" i (litGleam x)
                 a |> data_term_vars |> Array.mapi f |> String.concat ", "
+            let arm (s : CodegenEnv) (head : string) (render : CodegenEnv -> unit) =
+                let body = indent { s with text = StringBuilder() }
+                render body
+                let rendered = body.text.ToString()
+                match rendered.Split('\n') |> Array.filter (fun row -> row.Trim() <> "") with
+                | [| single |] when not (single.TrimStart().StartsWith "let ") -> line s $"{head} -> {single.Trim()}"
+                | _ ->
+                    line s $"{head} -> {{"
+                    s.text.Append(rendered) |> ignore
+                    line s "}"
             let layout_index_from (source : string) x =
                 x |> Array.map (fun (L(i',_)) -> sprintf "%s.l%i" source i')
                 |> function [||] -> () | [|x|] -> simple x | l -> String.concat ", " l |> sprintf "#(%s)" |> simple
@@ -168560,16 +168643,11 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
             | TyIf(cond,tr,fl) ->
                 complex <| fun s ->
                 line s (sprintf "case %s {" (tup cond))
-                line (indent s) "True -> {"
-                binds (indent (indent s)) tr
-                line (indent s) "}"
-                line (indent s) "False -> {"
-                match fl with
-                | [|TyLocalReturnData(DB,_)|] ->
-                    line (indent s) "Nil"
-                | _ ->
-                    binds (indent (indent s)) fl
-                line (indent s) "}"
+                arm (indent s) "True" (fun b -> binds b tr)
+                arm (indent s) "False" (fun b ->
+                    match fl with
+                    | [|TyLocalReturnData(DB,_)|] -> line b "Nil"
+                    | _ -> binds b fl)
                 line s "}"
             | TyJoinPoint(JPClosure(a,c) as a',args) ->
                 match d with
@@ -168656,13 +168734,9 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                 complex <| fun s ->
                 line s (sprintf "case v%i {" i)
                 Array.iteri (fun i x ->
-                    line (indent s) (sprintf "%i -> {" i)
-                    binds (indent (indent s)) x
-                    line (indent s) "}"
+                    arm (indent s) (sprintf "%i" i) (fun b -> binds b x)
                     ) on_succ
-                line (indent s) "_ -> {"
-                binds (indent (indent s)) on_fail
-                line (indent s) "}"
+                arm (indent s) "_" (fun b -> binds b on_fail)
             | TyUnionUnbox(is,x,on_succs,on_fail) ->
                 complex <| fun s ->
                 let case_tags = x.Item.tags
@@ -168682,17 +168756,13 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                             |> sprintf "%s%s" (gleamCaseName prefix x.Item.cases i)
                             )
                         |> String.concat ","
-                    line (indent s) (sprintf "%s -> {" cases)
-                    binds (indent (indent s)) b
-                    line (indent s) "}"
+                    arm (indent s) cases (fun body -> binds body b)
                     ) on_succs
                 let covers_every_case = is.Length = 1 && Map.count on_succs = Map.count x.Item.cases
                 let wildcard = is |> List.map (fun _ -> "_") |> String.concat ","
                 match on_fail with
                 | Some on_fail ->
-                    line (indent s) $"{wildcard} -> {{"
-                    binds (indent (indent s)) on_fail
-                    line (indent s) "}"
+                    arm (indent s) wildcard (fun b -> binds b on_fail)
                 | None when covers_every_case -> ()
                 | None -> line (indent s) $"{wildcard} -> panic as \"spiral: union case ruled out by partial evaluation\""
                 line s "}"
@@ -169181,6 +169251,7 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
             | '\r' -> @"\r"
             | '\\' -> @"\\"
             | '"' -> "\\\""
+            | '\000' -> @"\0"
             | x -> string x
             |> sprintf "\"%s\""
         | LitBool x -> if x then "true" else "false"
@@ -169560,8 +169631,7 @@ end
             let has_added = HashSet env.globals
             let preserves_duplicate_fragment (x : string) =
                 System.String.IsNullOrEmpty x
-                || System.Char.IsWhiteSpace x.[0]
-                || x.[0] = '}'
+                || ((System.Char.IsWhiteSpace x.[0] || x.[0] = '}') && not (x.TrimEnd().Contains '\n'))
             fun x -> if preserves_duplicate_fragment x || has_added.Add(x) then env.globals.Add x
 
         let rec tyv x =
@@ -172447,11 +172517,11 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         let text = StringBuilder()
                         let kw = if lay = Heap then "val" else "var"
                         if free_vars.Length = 0 then
-                            text.AppendLine($"class {name}()") |> ignore
+                            text.Append($"class {name}()").Append('\n') |> ignore
                             layout_zeros.[name] <- $"{name}()"
                         else
                             let formals = free_vars |> Array.map (fun (L(i, ft)) -> $"{kw} l{i}: {tyv ft}") |> String.concat ", "
-                            text.AppendLine($"class {name}({formals})") |> ignore
+                            text.Append($"class {name}({formals})").Append('\n') |> ignore
                             let args = free_vars |> Array.map (fun (L(_, ft)) -> zero (tyv ft)) |> String.concat ", "
                             layout_zeros.[name] <- $"{name}({args})"
                         layout_types.Add(text.ToString())
@@ -172475,14 +172545,14 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 if cases.Length = 0 then unsupported "an empty union"
                 cases |> Array.iter (fun (_, fields) -> fields |> Array.iter (fun (L(_, t)) -> tyv t |> ignore))
                 let text = StringBuilder()
-                text.AppendLine($"sealed interface {name} {{ val tag: Int }}") |> ignore
+                text.Append($"sealed interface {name} {{ val tag: Int }}").Append('\n') |> ignore
                 cases |> Array.iter (fun ((i, _), fields) ->
                     let case_name = $"{name}_{unionCaseSuffix rec_f i}"
                     match fields with
-                    | [||] -> text.AppendLine($"object {case_name} : {name} {{ override val tag: Int = {i} }}") |> ignore
+                    | [||] -> text.Append($"object {case_name} : {name} {{ override val tag: Int = {i} }}").Append('\n') |> ignore
                     | _ ->
                         let formals = fields |> Array.mapi (fun f (L(_, t)) -> $"val f{f}: {tyv t}") |> String.concat ", "
-                        text.AppendLine($"data class {case_name}({formals}) : {name} {{ override val tag: Int = {i} }}") |> ignore)
+                        text.Append($"data class {case_name}({formals}) : {name} {{ override val tag: Int = {i} }}").Append('\n') |> ignore)
                 let (i0, _), fields0 = cases.[0]
                 let case0 = $"{name}_{unionCaseSuffix rec_f i0}"
                 let first =
@@ -172493,7 +172563,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         $"{case0}({args})"
                 union_zeros.[name] <- first
                 union_zero_pending.Remove name |> ignore
-                if union_zero_sentinels.Contains name then text.AppendLine($"object {sentinel} : {name} {{ override val tag: Int = -1 }}") |> ignore
+                if union_zero_sentinels.Contains name then text.Append($"object {sentinel} : {name} {{ override val tag: Int = -1 }}").Append('\n') |> ignore
                 union_types.Add(text.ToString())
                 name
         and zero = function
@@ -172603,7 +172673,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 let formals = parameters |> Array.map (fun (L(i,t)) -> $"p{i}: {tyv t}") |> String.concat ", "
                 let result = ret_ty range
                 let returns = if result = "" then "" else $": {result}"
-                text.AppendLine($"fun {name}({formals}){returns} {{") |> ignore
+                text.Append($"fun {name}({formals}){returns} {{").Append('\n') |> ignore
                 let s0 = { text = text; indent = 4 }
                 parameters |> Array.iter (fun (L(i,t)) -> line s0 $"var v{i}: {tyv t} = p{i}")
                 if tail then
@@ -172619,7 +172689,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                 $"{result}({zeros})"
                         line s0 $"return {dead}"
                 else binds s0 (KotlinTail range) body
-                text.AppendLine("}") |> ignore
+                text.Append("}").Append('\n') |> ignore
                 functions.Add(text.ToString())
             finally
                 self_loop.Value <- saved
@@ -173006,7 +173076,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             let domain_vs = data_free_vars domain_args
                             let text = StringBuilder()
                             let cap_formals = captured |> Array.map (fun (L(i,t)) -> $"v{i}: {tyv t}") |> String.concat ", "
-                            text.AppendLine($"fun {closure_names.[tag]}({cap_formals}): {tyv fun_ty} {{") |> ignore
+                            text.Append($"fun {closure_names.[tag]}({cap_formals}): {tyv fun_ty} {{").Append('\n') |> ignore
                             let s0 = { text = text; indent = 4 }
                             let dom_formals = domain_vs |> Array.map (fun (L(i,t)) -> $"v{i}: {tyv t}") |> String.concat ", "
                             // A nominal union's name is not a Kotlin type. The value's type is the union.
@@ -173032,7 +173102,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                     let call = vs |> Array.mapi (fun k _ -> $"p{k}") |> String.concat ", "
                                     $"{{ {formals} -> body({call}) }}"
                             line s0 $"return {forward}"
-                            text.AppendLine("}") |> ignore
+                            text.Append("}").Append('\n') |> ignore
                             functions.Add(text.ToString())
                     | _ -> unsupported "this function type"
                     tag)
@@ -173208,25 +173278,25 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             if tyv ft = name then unsupported "a recursive layout")
                         let text = StringBuilder()
                         let kw = if lay = Heap then "let" else "var"
-                        text.AppendLine("class " + name + " {") |> ignore
+                        text.Append("class " + name + " {").Append('\n') |> ignore
                         if free_vars.Length = 0 then
-                            text.AppendLine("    init() {}") |> ignore
+                            text.Append("    init() {}").Append('\n') |> ignore
                             layout_zeros.[name] <- name + "()"
                         else
                             free_vars |> Array.iter (fun (L(i, ft)) ->
-                                text.AppendLine("    " + kw + " l" + string i + ": " + tyv ft) |> ignore)
+                                text.Append("    " + kw + " l" + string i + ": " + tyv ft).Append('\n') |> ignore)
                             let formals = free_vars |> Array.map (fun (L(i, ft)) ->
                                 let ty = tyv ft
                                 // Stored closures are escaping. Other field types reject @escaping.
                                 let escaping = if ty.Contains("->") then "@escaping " else ""
                                 "l" + string i + ": " + escaping + ty) |> String.concat ", "
-                            text.AppendLine("    init(" + formals + ") {") |> ignore
+                            text.Append("    init(" + formals + ") {").Append('\n') |> ignore
                             free_vars |> Array.iter (fun (L(i, _)) ->
-                                text.AppendLine("        self.l" + string i + " = l" + string i) |> ignore)
-                            text.AppendLine("    }") |> ignore
+                                text.Append("        self.l" + string i + " = l" + string i).Append('\n') |> ignore)
+                            text.Append("    }").Append('\n') |> ignore
                             let args = free_vars |> Array.map (fun (L(i, ft)) -> "l" + string i + ": " + zero (tyv ft)) |> String.concat ", "
                             layout_zeros.[name] <- name + "(" + args + ")"
-                        text.AppendLine("}") |> ignore
+                        text.Append("}").Append('\n') |> ignore
                         layout_types.Add(text.ToString())
                         name
             | _ -> raise_codegen_error "Compiler error: Expected a layout type."
@@ -173248,14 +173318,14 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 if cases.Length = 0 then unsupported "an empty union"
                 cases |> Array.iter (fun (_, fields) -> fields |> Array.iter (fun (L(_, t)) -> tyv t |> ignore))
                 let text = StringBuilder()
-                text.AppendLine($"protocol {name} {{ var tag: Int32 {{ get }} }}") |> ignore
+                text.Append($"protocol {name} {{ var tag: Int32 {{ get }} }}").Append('\n') |> ignore
                 cases |> Array.iter (fun ((i, _), fields) ->
                     let case_name = $"{name}_{unionCaseSuffix rec_f i}"
                     match fields with
-                    | [||] -> text.AppendLine($"struct {case_name}: {name} {{ var tag: Int32 {{ {i} }} }}") |> ignore
+                    | [||] -> text.Append($"struct {case_name}: {name} {{ var tag: Int32 {{ {i} }} }}").Append('\n') |> ignore
                     | _ ->
                         let stored = fields |> Array.mapi (fun f (L(_, t)) -> $"var f{f}: {tyv t}") |> String.concat "; "
-                        text.AppendLine($"struct {case_name}: {name} {{ {stored}; var tag: Int32 {{ {i} }} }}") |> ignore)
+                        text.Append($"struct {case_name}: {name} {{ {stored}; var tag: Int32 {{ {i} }} }}").Append('\n') |> ignore)
                 let (i0, _), fields0 = cases.[0]
                 let case0 = $"{name}_{unionCaseSuffix rec_f i0}"
                 let first =
@@ -173266,7 +173336,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         $"{case0}({args})"
                 union_zeros.[name] <- first
                 union_zero_pending.Remove name |> ignore
-                if union_zero_sentinels.Contains name then text.AppendLine($"struct {sentinel}: {name} {{ var tag: Int32 {{ -1 }} }}") |> ignore
+                if union_zero_sentinels.Contains name then text.Append($"struct {sentinel}: {name} {{ var tag: Int32 {{ -1 }} }}").Append('\n') |> ignore
                 union_types.Add(text.ToString())
                 name
         and zero = function
@@ -173383,7 +173453,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 let formals = parameters |> Array.map (fun (L(i,t)) -> $"_ p{i}: {parameter_ty t}") |> String.concat ", "
                 let result = ret_ty range
                 let signature = if result = "" then $"func {name}({formals}) {{" else $"func {name}({formals}) -> {result} {{"
-                text.AppendLine(signature) |> ignore
+                text.Append(signature).Append('\n') |> ignore
                 let s0 = { text = text; indent = 4 }
                 parameters |> Array.iter (fun (L(i,t)) -> line s0 $"var v{i}: {tyv t} = p{i}")
                 if tail then
@@ -173397,7 +173467,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             | tys -> "(" + (tys |> Array.map zero |> String.concat ", ") + ")"
                         line s0 $"return {dead}"
                 else binds s0 (SwiftTail range) body
-                text.AppendLine("}") |> ignore
+                text.Append("}").Append('\n') |> ignore
                 functions.Add(text.ToString())
             finally
                 self_loop.Value <- saved
@@ -173767,7 +173837,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             let domain_vs = data_free_vars domain_args
                             let text = StringBuilder()
                             let cap_formals = captured |> Array.map (fun (L(i,t)) -> $"_ v{i}: {parameter_ty t}") |> String.concat ", "
-                            text.AppendLine($"func {closure_names.[tag]}({cap_formals}) -> {tyv fun_ty} {{") |> ignore
+                            text.Append($"func {closure_names.[tag]}({cap_formals}) -> {tyv fun_ty} {{").Append('\n') |> ignore
                             let s0 = { text = text; indent = 4 }
                             let dom =
                                 match domain_vs with
@@ -173786,7 +173856,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                 line s0 "}"
                             finally
                                 self_loop.Value <- saved
-                            text.AppendLine("}") |> ignore
+                            text.Append("}").Append('\n') |> ignore
                             functions.Add(text.ToString())
                     | _ -> unsupported "this function type"
                     tag)
@@ -173921,7 +173991,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 let formals = parameters |> Array.map (fun (L(i,t)) -> $"{tyv t} p{i}") |> String.concat ", "
                 let result = ret_ty range
                 let signature = if result = "" then $"def {name}({formals}) {{" else $"def {name}({formals}) -> {result} {{"
-                text.AppendLine(signature) |> ignore
+                text.Append(signature).Append('\n') |> ignore
                 let s0 = { text = text; indent = 4 }
                 parameters |> Array.iter (fun (L(i,t)) -> statement s0 $"{tyv t} v{i} = p{i}")
                 if tail then
@@ -173932,7 +174002,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         let dead = ret_tys range |> Array.map zero |> String.concat ", "
                         statement s0 $"return {dead}"
                 else binds s0 (OpenQasmTail range) body
-                text.AppendLine("}") |> ignore
+                text.Append("}").Append('\n') |> ignore
                 functions.Add(text.ToString())
             finally
                 self_loop.Value <- saved
@@ -174091,6 +174161,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | Log, [a] -> $"log({tup a})"
                     | Sin, [a] -> $"sin({tup a})"
                     | Cos, [a] -> $"cos({tup a})"
+                    | Tanh, [a] -> $"tanh({tup a})"
                     | Pow, [a;b] when (match prim_of a with Some (Float32T | Float64T) -> true | _ -> false) -> $"pow({tup a}, {tup b})"
                     | _ -> unsupported $"the operation {operation}"
                 return' expr
@@ -174241,7 +174312,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     if parts.Length = 0 then "void" else String.concat ", " parts
                 let result = ret_ty range
                 let signature = if result = "" then $"static void {name}({formals}) {{" else $"static {result} {name}({formals}) {{"
-                text.AppendLine(signature) |> ignore
+                text.Append(signature).Append('\n') |> ignore
                 let s0 = { text = text; indent = 4 }
                 parameters |> Array.iter (fun (L(i,t)) -> statement s0 $"{tyv t} v{i} = p{i}")
                 if tail then
@@ -174256,7 +174327,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             | other -> $"({other}){{0}}"
                         statement s0 $"return {dead}"
                 else binds s0 (EbpfTail range) body
-                text.AppendLine("}") |> ignore
+                text.Append("}").Append('\n') |> ignore
                 functions.Add(text.ToString())
             finally
                 self_loop.Value <- saved
@@ -175858,6 +175929,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | '\t' -> @"\t"
                     | '\r' -> @"\r"
                     | '\\' -> @"\\"
+                    | '\000' -> @"\0"
                     | x -> string x
                     |> sprintf "'%s'"
                 | LitBool x -> if x then "true" else "false" // true and false are defined in stddef.h
@@ -177095,6 +177167,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | '\r' -> @"\r"
                     | '\\' -> @"\\"
                     | '\'' -> @"\'" // ws: upstream printed ''' (a C++ syntax error)
+                    | '\000' -> @"\0"
                     | x -> string x
                     |> sprintf "'%s'"
                 | LitBool x -> if x then "true" else "false" // true and false are defined in stddef.h
@@ -177854,6 +177927,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 | '\r' -> @"\r"
                 | '\\' -> @"\\"
                 | '\'' -> @"\'" // ws: upstream printed ''' (a Python syntax error)
+                | '\000' -> @"\x00"
                 | x -> string x
                 |> sprintf "'%s'"
             | LitBool x -> if x then "True" else "False"
@@ -179599,6 +179673,15 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         let crate p = if i <= column p then (many1Satisfy (fun c -> c <> '\n' && c <> '\r' && c <> ' ') .>> spacesSpiProj) p else Reply(ReplyStatus.Error,expected "crate on the same or greater indentation as the first one")
         many crate p
 
+    /// ### rust_extern_lines
+    let rust_extern_lines p =
+        let i = column p
+        let entry p = if i <= column p then (many1Satisfy (fun c -> c <> '\n' && c <> '\r') .>> spacesSpiProj) p else Reply(ReplyStatus.Error,expected "rust-extern entry on the same or greater indentation as the first one")
+        (many entry |>> List.map (fun (text : string) ->
+            match text.Split('=', 2) with
+            | [| name; traits |] -> name.Trim (), (traits.Split ',' |> Array.map (fun trait_name -> trait_name.Trim ()) |> Array.filter (fun trait_name -> trait_name <> "") |> List.ofArray)
+            | _ -> text.Trim (), [])) p
+
     /// ### tab_positions
     let tab_positions (str : string): VSCRange [] =
         let mutable line = -1
@@ -179649,6 +179732,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         defaultInt : RString option
         defaultFloat : RString option
         edition : RString option
+        rustExtern : (string * string list) list
         }
 
     // Restore the FParsec operator scope after the adaptive assembly boundary.
@@ -179666,6 +179750,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         defaultInt=None
         defaultFloat=None
         edition=None
+        rustExtern=[]
         }
 
     /// ### ConfigError
@@ -179745,6 +179830,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 "default-float", directory |>> fun x s -> {s with defaultFloat=x}
                 "edition", directory |>> fun x s -> {s with edition=x}
                 "crates", crate_lines |>> fun _ s -> s
+                "rust-extern", rust_extern_lines |>> fun x s -> {s with rustExtern=x}
                 ]
             let necessary = []
 
@@ -179789,6 +179875,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         defaultInt : string option
         defaultFloat : string option
         edition : string option
+        rustExtern : (string * string list) list
         }
 
     /// ### SchemaException
@@ -179867,7 +179954,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     let dir = dir''
                     {name = name; dir = x.range, dir}
                     )
-            Ok {moduleDir = module_dir; modules = modules; packageDir = package_dir; packages = packages; defaultInt = x.defaultInt |> Option.map snd; defaultFloat = x.defaultFloat |> Option.map snd; edition = x.edition |> Option.map snd}
+            Ok {moduleDir = module_dir; modules = modules; packageDir = package_dir; packages = packages; defaultInt = x.defaultInt |> Option.map snd; defaultFloat = x.defaultFloat |> Option.map snd; edition = x.edition |> Option.map snd; rustExtern = x.rustExtern}
         with :? SchemaException as e -> Error [e.Data0]
         )
 
@@ -182693,7 +182780,11 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                 | _ -> [ { Indent = indent; Text = text } ]
                             else
                                 match layoutExpression (indent + op.Length + 1) operand with
-                                | first :: rest -> { Indent = indent; Text = op + " " + first.Text } :: rest
+                                | first :: rest ->
+                                    let aligned = indent + op.Length + 1
+                                    let closesOperand (line : LaidLine) = line.Indent = aligned && (let text = (stripMarks line.Text).TrimStart () in text.StartsWith ")" || text.StartsWith "]" || text.StartsWith "}")
+                                    let shift = if rest |> List.forall (fun line -> line.Text = "" || line.Indent >= aligned + 4 || closesOperand line) then op.Length + 1 else 0
+                                    { Indent = indent; Text = op + " " + first.Text } :: (rest |> List.map (fun line -> if line.Text = "" then line else { line with Indent = line.Indent - shift }))
                                 | [] -> [ { Indent = indent; Text = op } ]
                         commentLines @ laidOperand)
                 |> List.concat
@@ -183317,6 +183408,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                             while k < rows.Count && rows.[k].Trim () <> "" && indentOf rows.[k] = i && quoteSafe rows.[k] do k <- k + 1
                                             if [ at .. k - 1 ] |> List.forall (fun j -> fits (p + 4) (rows.[j].TrimStart ())) then
                                                 for j in at .. k - 1 do rows.[j] <- pad (p + 4) (rows.[j].TrimStart ())
+                                                let mutable close = k
+                                                while close < rows.Count && (rows.[close].Trim () = "" || indentOf rows.[close] >= i) do close <- close + 1
+                                                if close < rows.Count && indentOf rows.[close] > p && quoteSafe rows.[close] && (let text = rows.[close].TrimStart () in text.StartsWith ")" || text.StartsWith "]" || text.StartsWith "}") then
+                                                    rows.[close] <- pad p (rows.[close].TrimStart ())
                                             at <- k
                                         else at <- at + 1
                                     List.ofSeq rows
@@ -184252,7 +184347,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
 
     /// ### ss_empty
     let ss_empty = {
-        schema = {moduleDir = None, null; modules = []; packageDir = None, null; packages = []; defaultInt = None; defaultFloat = None; edition = None}
+        schema = {moduleDir = None, null; modules = []; packageDir = None, null; packages = []; defaultInt = None; defaultFloat = None; edition = None; rustExtern = []}
         errors_parse = []; errors_modules = []; errors_packages = []
         }
     
@@ -184323,6 +184418,16 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             else
                 match SchemaEnv.tryFindText (SpiralFileSystem.standardize_path dir) packages with
                 | Some schema -> package_default_env default_env schema
+                | None -> owner (System.IO.Path.GetDirectoryName dir)
+        owner (System.IO.Path.GetDirectoryName file)
+
+    /// ### file_rust_extern
+    let file_rust_extern (packages : SchemaEnv) (file : string) =
+        let rec owner (dir : string) =
+            if System.String.IsNullOrEmpty dir then []
+            else
+                match SchemaEnv.tryFindText (SpiralFileSystem.standardize_path dir) packages with
+                | Some schema -> schema.schema.rustExtern
                 | None -> owner (System.IO.Path.GetDirectoryName dir)
         owner (System.IO.Path.GetDirectoryName file)
     
@@ -186616,7 +186721,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                     let build_many codegen backend =
                                         emitBuildFileInitializationStage BuildFilePartialEvaluationStarted
                                         let rec pevalWithInlineRestart restarts =
-                                            try peval {prototypes_instances=prototypes_instances; nominals=nominals; backend=backend} main
+                                            try peval {prototypes_instances=prototypes_instances; nominals=nominals; backend=backend; inline_restart=false} main
                                             with
                                             | PevalStallProbe.PevalInlineRestart reason when restarts >= 2 ->
                                                 // Out of restarts: surface the reason as a build error. Escaping as an unknown
@@ -186651,7 +186756,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                         | BuildBackendGleam -> build codegenGleam "Gleam" ".gleam"
                                         | BuildBackendLua -> build codegenLua "Lua" ".lua"
                                         | BuildBackendFsharp -> build codegenFsharp "Fsharp" ".fsx"
-                                        | BuildBackendRust -> build codegenRust "Rust" ".rs"
+                                        | BuildBackendRust -> build (codegenRust (file_rust_extern s.packages file)) "Rust" ".rs"
                                         | BuildBackendDelphi -> build codegenDelphi "Delphi" ".pas"
                                         | BuildBackendZig -> build codegenZig "Zig" ".zig"
                                         | BuildBackendWasm -> build codegenWasm "Wasm" ".wat"
@@ -189339,7 +189444,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                 try
                                     let inline build_many codegen backend =
                                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.peval_start / backend: {backend}") _locals
-                                        let (a,_),b = peval {prototypes_instances=prototypes_instances; nominals=nominals; backend=backend} main
+                                        let (a,_),b = PartEvalSeams.with_conflict_restart (fun inline_restart -> peval {prototypes_instances=prototypes_instances; nominals=nominals; backend=backend; inline_restart=inline_restart} main)
                                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.peval_ready / backend: {backend}") _locals
                                         // LF on every OS: backends that build with StringBuilder.AppendLine (TypeScript, Python, Gleam, C++, ...) get the platform
                                         // newline from .NET, CRLF on Windows.
@@ -189354,7 +189459,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                     | "Gleam" -> build codegenGleam "Gleam" ".gleam"
                                     | "Lua" -> build codegenLua "Lua" ".lua"
                                     | "Fsharp" -> build codegenFsharp "Fsharp" ".fsx"
-                                    | "Rust" -> build codegenRust "Rust" ".rs"
+                                    | "Rust" -> build (codegenRust (file_rust_extern s.packages file)) "Rust" ".rs"
                                     | "Delphi" -> build codegenDelphi "Delphi" ".pas"
                                     | "Zig" -> build codegenZig "Zig" ".zig"
                                     | "Wasm" -> build codegenWasm "Wasm" ".wat"

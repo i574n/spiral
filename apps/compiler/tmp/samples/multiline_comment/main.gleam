@@ -10,11 +10,7 @@ pub fn main() {
     let v1 = spiral_wrap_signed(v0 * 2, 32)
     let v2 = v1 != 14
     case v2 {
-        True -> {
-            1
-        }
-        False -> {
-            0
-        }
+        True -> 1
+        False -> 0
     }
 }

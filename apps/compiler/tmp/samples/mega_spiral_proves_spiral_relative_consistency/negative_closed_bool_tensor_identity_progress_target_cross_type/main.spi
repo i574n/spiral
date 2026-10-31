@@ -1,11 +1,11 @@
-open main
+:< main
 
-inl impossible_closed_bool_tensor_identity_progress_target_cross_type () :
+:= impossible_closed_bool_tensor_identity_progress_target_cross_type () :
     exact_linear_indexed_term
         exact_linear_free_context_empty
         exact_linear_indexed_usage_empty
         exact_linear_unit_type =
-    inl bool_value :
+    := bool_value :
         exact_linear_indexed_value
             exact_linear_free_context_empty
             exact_linear_indexed_usage_empty
@@ -13,18 +13,18 @@ inl impossible_closed_bool_tensor_identity_progress_target_cross_type () :
         ExactLinearIndexedValueBoolTrue (
             exact_linear_indexed_empty_usage (),
             "the-negative-Bool-Tensor-children-are-canonical-Bool-values")
-    inl tensor_value :
+    := tensor_value :
         exact_linear_indexed_value
             exact_linear_free_context_empty
             exact_linear_indexed_usage_empty
             (exact_linear_tensor_type exact_linear_bool_type exact_linear_bool_type) =
-        ExactLinearIndexedValueTensor (exists (
+        ExactLinearIndexedValueTensor (\? (
             bool_value,
             bool_value,
             ExactLinearIndexedUsageMergeEmpty
                 "the-negative-Bool-Tensor-argument-has-empty-usage",
             "the-negative-Bool-Tensor-identity-argument-is-canonical"))
-    inl relation :
+    := relation :
         exact_linear_indexed_closed_identity_beta_relation
             (exact_linear_tensor_type exact_linear_bool_type exact_linear_bool_type) =
         ExactLinearIndexedClosedIdentityBetaRelation (
@@ -32,5 +32,5 @@ inl impossible_closed_bool_tensor_identity_progress_target_cross_type () :
             "the-negative-attempts-to-observe-a-Bool-Tensor-target-as-Unit")
     exact_linear_indexed_closed_identity_beta_target relation
 
-inl main () =
+:= main () =
     impossible_closed_bool_tensor_identity_progress_target_cross_type ()

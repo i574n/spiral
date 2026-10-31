@@ -23,9 +23,9 @@ func spiral_main() -> Int32 {
     let v6: (Int32) -> (Heap0, Heap0) = f_c0(v2, v5)
     var v7: Heap0 = Heap0(l0: 0, l1: "")
     var v8: Heap0 = Heap0(l0: 0, l1: "")
-    let spiral_tuple547 = v6(1)
-    v7 = spiral_tuple547.0
-    v8 = spiral_tuple547.1
+    let spiral_tuple530 = v6(1)
+    v7 = spiral_tuple530.0
+    v8 = spiral_tuple530.1
     var v9: Int32 = 0
     var v10: String = ""
     v9 = v7.l0

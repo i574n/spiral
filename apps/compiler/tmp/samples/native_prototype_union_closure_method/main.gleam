@@ -17,20 +17,12 @@ pub fn closure0(capt: #(Us0)) -> fn(Int) -> Int {
             case v0  {
                 Us0Flag(v3) -> {
                     case v3 {
-                        True -> {
-                            11
-                        }
-                        False -> {
-                            5
-                        }
+                        True -> 11
+                        False -> 5
                     }
                 }
-                Us0Hit(v2) -> {
-                    v2
-                }
-                Us0Idle -> {
-                    3
-                }
+                Us0Hit(v2) -> v2
+                Us0Idle -> 3
             }
         let v8 = spiral_wrap_signed(v7 + v1, 32)
         v8
@@ -44,18 +36,12 @@ pub fn main() {
     let v1 = v0 == 0
     let v7 =
         case v1 {
-            True -> {
-                Us0Idle
-            }
+            True -> Us0Idle
             False -> {
                 let v3 = v0 == 1
                 case v3 {
-                    True -> {
-                        Us0Hit(7)
-                    }
-                    False -> {
-                        Us0Flag(True)
-                    }
+                    True -> Us0Hit(7)
+                    False -> Us0Flag(True)
                 }
             }
         }

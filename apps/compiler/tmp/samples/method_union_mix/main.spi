@@ -1,17 +1,17 @@
-union pair =
+:| pair =
     | One : i32
     | Both : i32 * string
 
-inl pick (n : i32) (word : string) : pair =
-    if n =. 0i32 then
+:= pick (n : i32) (word : string) : pair =
+    ? n =. 0i32 ?>
         One 0i32
-    else
+    |:
         Both (n, word)
 
-inl main () : i32 =
-    inl ~n = 3i32
-    inl ~word = "hi"
-    inl held = join pick n word
-    match held with
+:= main () : i32 =
+    := ~n = 3i32
+    := ~word = "hi"
+    := held = ~~ pick n word
+    ?= held ?|
     | One value => 1i32
-    | Both (left, right) => if left =. 3i32 && !!!!EQ(right, "hi") then 0i32 else 1i32
+    | Both (left, right) => ? left =. 3i32 && !!!!EQ(right, "hi") ?> 0i32 |: 1i32

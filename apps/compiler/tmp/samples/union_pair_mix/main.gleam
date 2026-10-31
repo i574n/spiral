@@ -12,22 +12,14 @@ pub fn score_0(v0: Us0) -> Int {
                         let v5 = v3 == "hi"
                         v5
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             case v6 {
-                True -> {
-                    0
-                }
-                False -> {
-                    1
-                }
+                True -> 0
+                False -> 1
             }
         }
-        Us0One(v1) -> {
-            v1
-        }
+        Us0One(v1) -> v1
     }
 }
 pub fn main() {
@@ -36,12 +28,8 @@ pub fn main() {
     let v2 = "hi"
     let v5 =
         case v0 {
-            True -> {
-                Us0Both(v1, v2)
-            }
-            False -> {
-                Us0One(1)
-            }
+            True -> Us0Both(v1, v2)
+            False -> Us0One(1)
         }
     score_0(v5)
 }

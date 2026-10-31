@@ -65,9 +65,7 @@ pub type Us0 {
 }
 pub fn bump_0(v0: Us0) -> Int {
     case v0  {
-        Us0Empty -> {
-            0
-        }
+        Us0Empty -> 0
         Us0Values(v1) -> {
             let v2 = spiral_array_get(v1, 0)
             let v3 = spiral_wrap_signed(v2 + 1, 32)
@@ -78,9 +76,7 @@ pub fn bump_0(v0: Us0) -> Int {
 }
 pub fn score_1(v0: Us0) -> Int {
     case v0  {
-        Us0Empty -> {
-            0
-        }
+        Us0Empty -> 0
         Us0Values(v1) -> {
             let v2 = v1.size
             let v3 = spiral_array_get(v1, 0)

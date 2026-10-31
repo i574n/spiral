@@ -27,9 +27,9 @@ test init_series_3 =
 :== time = f64
 :== position = f64
 :== velocity = f64
-:== force = f64
+:== scalar_force = f64
 
-:== velocity_cf = mass -> velocity -> list force -> (time -> velocity)
+:== velocity_cf = mass -> velocity -> list scalar_force -> (time -> velocity)
 
 := velocity_cf m v0 fs =
     := f_net = fs |> listm'.sum
@@ -123,7 +123,7 @@ test integration_3 =
     v0 + integral' dt a 0 t
 
 /// ### velocity_ft
-:== velocity_ft = mass -> velocity -> list (time -> force) -> (time -> velocity)
+:== velocity_ft = mass -> velocity -> list (time -> scalar_force) -> (time -> velocity)
 
 := velocity_ft dt : velocity_ft =
     \ m v0 fs =>
@@ -132,14 +132,14 @@ test integration_3 =
         anti_derivative dt v0 a
 
 /// ### position_ft
-:== position_ft = mass -> position -> velocity -> list (time -> force) -> (time -> position)
+:== position_ft = mass -> position -> velocity -> list (time -> scalar_force) -> (time -> position)
 
 := position_ft dt : position_ft =
     \ m x0 v0 fs =>
         velocity_ft dt m v0 fs
         |> anti_derivative dt x0
 
-:= pedal_coast (t : time) : force =
+:= pedal_coast (t : time) : scalar_force =
     := t_cycle = 20
     := n_complete : i32 = t / t_cycle |> conv
     := remainder = t - conv n_complete * t_cycle
@@ -532,7 +532,7 @@ test vec_derivative =
     := dst : d_particle_state = deriv (particle_state st)
     cromer_moved dt (st.velocity ^+^ dst.dvdt ^* dt) (particle_state st)
 
-:+ (+++) d_particle_state = \ (a : d_particle_state) (b : d_particle_state) =>
+:+ (+++) d_particle_state = \ (a : d_particle_state) b =>
     d_particle_state {
         dmdt = a.dmdt + b.dmdt
         dqdt = a.dqdt + b.dqdt
@@ -569,10 +569,10 @@ test vec_derivative =
 
 := z_ge0 sts =
     sts
-    |> seq.take_while_ (\ (particle_state st) _ => st.pos_vec.z >= 0)
+    |> seq.take_while_ \ (particle_state st) _ => st.pos_vec.z >= 0
 
 := trajectory sts =
-    sts |> listm.map (\ (particle_state st) => st.pos_vec.y, st.pos_vec.z)
+    sts |> listm.map \ (particle_state st) => st.pos_vec.y, st.pos_vec.z
 
 := update_ps (method : numerical_method particle_state d_particle_state) =
     newton_second_ps >> method
@@ -675,8 +675,8 @@ test states_ps_4 =
 := year_points states =
     := year = seconds_per_year ()
     states >> Some
-    |> seq.take_while_ (\ (particle_state st) (_ : i32) => st.time <= year)
-    |> listm.map (\ (particle_state st) => st.time / year, st.velocity.x / 299792458)
+    |> seq.take_while_ \ (particle_state st) (_ : i32) => st.time <= year
+    |> listm.map \ (particle_state st) => st.time / year, st.velocity.x / 299792458
     |> listm'.unzip
 
 := constant_force_start () =
@@ -716,8 +716,8 @@ test relativity_ps =
 
 := orbit_points (steps : i32) states =
     states >> Some
-    |> seq.take_while_ (\ (particle_state st) i => i < steps)
-    |> listm.map (\ (particle_state st) => st.pos_vec.x, st.pos_vec.y)
+    |> seq.take_while_ \ (particle_state st) i => i < steps
+    |> listm.map \ (particle_state st) => st.pos_vec.x, st.pos_vec.y
     |> listm'.unzip
     |> curve_arrays
 
@@ -899,7 +899,7 @@ test relativity_ps_2 =
 
 := ke_curve_l n_method =
     billiard_states_finite_l n_method 30 0.03
-    |> listm.map (\ (multi_particle_state_l mpst) => ke_point_l mpst)
+    |> listm.map \ (multi_particle_state_l mpst) => ke_point_l mpst
     |> listm'.unzip
     |> curve_arrays
 
@@ -921,7 +921,7 @@ test system_kinetic_energy_versus_time_1_2 =
     linear_spring k re (particle_state { default_particle_state' ?| pos_vec = r1 })
 
 := string_springs () =
-    listm'.init_series 0 59 1 |> listm.map (\ n => InternalForce (n, n + 1, linear_spring 5384 0))
+    listm'.init_series 0 59 1 |> listm.map \ n => InternalForce (n, n + 1, linear_spring 5384 0)
 
 := forces_string_l () =
     [
@@ -945,7 +945,7 @@ test system_kinetic_energy_versus_time_1_2 =
 
 := string_initial_overtone_l n =
     listm'.init_series 0.01 0.64 0.01
-    |> listm.map (\ x => string_ball x (overtone_y n x))
+    |> listm.map \ x => string_ball x (overtone_y n x)
     |> multi_particle_state_l
 
 := pluck_y (x : f64) : f64 =
@@ -954,7 +954,7 @@ test system_kinetic_energy_versus_time_1_2 =
 
 := string_initial_pluck_l () =
     listm'.init_series 0.01 0.64 0.01
-    |> listm.map (\ x => string_ball x (pluck_y x))
+    |> listm.map \ x => string_ball x (pluck_y x)
     |> multi_particle_state_l
 
 := string_positions_l sts =
@@ -975,7 +975,6 @@ test wave_1 =
         := x, y = array (string_frames_l ()) |> am'.index n
         "wave", "position (m)", "displacement (m)", ;[ ($'$"{!n}"' : string), x, y ]
 
-
 /// #### system kinetic energy versus time 2
 :! multi_particle_state_s = stream.stream particle_state
 
@@ -987,7 +986,7 @@ test wave_1 =
     |? n = n1
     ?> s |> stream.try_item n0 |> optionm.map f_two_body
     |: None
-    |> optionm'.default_value (\ _ => zero_vec ())
+    |> optionm'.default_value \ _ => zero_vec ()
 
 := force_on_s n s force =
     ?= force ?|
@@ -1074,11 +1073,11 @@ test wave_1 =
     |> stream.fold (^+^) (zero_vec ())
 
 := ke_point_s (mpst : stream.stream particle_state) =
-    mpst |> stream.try_item 0i32 |> optionm.map (\ st => st.time, system_ke_s (multi_particle_state_s mpst))
+    mpst |> stream.try_item 0i32 |> optionm.map \ st => st.time, system_ke_s (multi_particle_state_s mpst)
 
 := ke_curve_s n_method =
     billiard_states_finite_s n_method 30 0.03
-    |> listm.map (\ (multi_particle_state_s mpst) => ke_point_s mpst)
+    |> listm.map \ (multi_particle_state_s mpst) => ke_point_s mpst
     |> listm'.choose id
     |> listm'.unzip
     |> curve_arrays
@@ -1087,7 +1086,6 @@ test system_kinetic_energy_versus_time_2_2 =
     := ec_x, ec_y = ke_curve_s euler_cromer_mps_s
     := rk4_x, rk4_y = ke_curve_s runge_kutta_4
     ke_chart ec_x ec_y rk4_x rk4_y
-
 
 /// #### wave 2
 := forces_string_s () =
@@ -1102,7 +1100,7 @@ test system_kinetic_energy_versus_time_2_2 =
 
 := string_initial_overtone_s n =
     listm'.init_series 0.01 0.64 0.01
-    |> listm.map (\ x => string_ball x (overtone_y n x))
+    |> listm.map \ x => string_ball x (overtone_y n x)
     |> stream.from_list
     |> multi_particle_state_s
 
@@ -1110,7 +1108,7 @@ test system_kinetic_energy_versus_time_2_2 =
     [ zero_vec () ]
     ++ (sts |> stream.map (\ (particle_state st) => st.pos_vec) |> stream.to_list)
     ++ [ 0.65 *^ i_hat () ]
-    |> listm.map (\ r => r.x, r.y)
+    |> listm.map \ r => r.x, r.y
 
 := stream_arrays (xs, ys) =
     (xs |> stream.to_list |> listm'.box |> listm'.to_array'), (ys |> stream.to_list |> listm'.box |> listm'.to_array')
@@ -1128,7 +1126,5 @@ test system_kinetic_energy_versus_time_2_2 =
 
 test wave_2 =
     :~ main () =
-        := plots = string_frames_s () |> stream.indexed |> stream.map (\ ((n : i32), (x, y)) => wave_plot n x y)
+        := plots = string_frames_s () |> stream.indexed |> stream.map \ ((n : i32), (x, y)) => wave_plot n x y
         plots |> stream.to_list |> listm'.box |> listm'.to_array'
-
-

@@ -304,6 +304,95 @@
 
 := json_document (root_name : string) (text : string) : list xml.xml_node = json_nodes root_name (read_json text)
 
+:= ubl_scalar_text (value : json_value) : option string =
+    ?= value ?|
+    | JsonText text => Some text
+    | JsonNumber digits => Some digits
+    | JsonBool flag => Some (? flag ?> "true" |: "false")
+    | _ => None
+
+:~ ^ ubl_json_elements (name : string) (value : json_value) : list xml.xml_node =
+    ?= value ?|
+    | JsonArray items => ubl_json_items name items []
+    | JsonObject members => ubl_json_parts name members [] [] [] :: []
+    | _ =>
+        ?= ubl_scalar_text value ?|
+        | Some text => xml.element name [] (xml.text_children text) :: []
+        | None => []
+
+:& :~ ubl_json_items (name : string) (items : list json_value) (acc : list xml.xml_node) : list xml.xml_node =
+    ?= items ?|
+    | item :: rest => ubl_json_items name rest (prepend_reversed (ubl_json_elements name item) acc)
+    | [] => reverse acc []
+
+:& :~ ubl_json_parts
+    (name : string)
+    (members : list (string * json_value))
+    (attributes : list (string * string))
+    (text : list xml.xml_node)
+    (children : list xml.xml_node)
+    : xml.xml_node
+    =
+    ?= members ?|
+    | (key, JsonArray items) :: rest =>
+        ubl_json_parts name rest attributes text (prepend_reversed (ubl_json_items key items []) children)
+    | (key, JsonObject inner) :: rest =>
+        ubl_json_parts name rest attributes text (ubl_json_parts key inner [] [] [] :: children)
+    | (key, value) :: rest =>
+        ?= ubl_scalar_text value ?|
+        | Some scalar =>
+            ? key = "_" ?> ubl_json_parts name rest attributes (xml.text_children scalar) children
+            |: ubl_json_parts name rest ((key, scalar) :: attributes) text children
+        | None => ubl_json_parts name rest attributes text children
+    | [] => xml.element name (reverse attributes []) (listm.append text (reverse children []))
+
+:= ubl_json_namespace (key : string) : string =
+    ? key = "_D" ?> "xmlns" |: "xmlns:" ++# sm'.substring 1i32 (sm'.length key - 1i32) key
+
+:= ubl_json_declared (declared : list (string * string)) (root : xml.xml_node) : xml.xml_node =
+    xml.element (xml.node_name root) (listm.append declared (xml.element_attributes root)) (xml.element_children root)
+
+:~ ^ ubl_json_roots
+    (members : list (string * json_value)) (namespaces : list (string * string)) (roots : list xml.xml_node)
+    : list xml.xml_node
+    =
+    ?= members ?|
+    | (key, value) :: rest =>
+        ?= ubl_scalar_text value ?|
+        | Some uri ?& sm'.starts_with "_" key && sm'.length key > 1i32 =>
+            ubl_json_roots rest ((ubl_json_namespace key, uri) :: namespaces) roots
+        | _ => ubl_json_roots rest namespaces (prepend_reversed (ubl_json_elements key value) roots)
+    | [] => listm.map (ubl_json_declared (reverse namespaces [])) (reverse roots [])
+
+:= ubl_json_document (text : string) : list xml.xml_node =
+    ?= read_json text ?|
+    | JsonObject members => ubl_json_roots members [] []
+    | _ => []
+
+///> rust
+test ubl_json_becomes_the_xml_its_readers_take =
+    := text =
+        "{\"_D\":\"urn:d\",\"_B\":\"urn:b\",\"Invoice\":[{\"ID\":[{\"_\":\"INV1\"}],\"InvoicedQuantity\":"
+        ^^ "[{\"_\":436.50,\"unitCode\":\"C62\"}],\"Note\":[{\"_\":\"a\"},{\"_\":\"b\"}],\"Paid\":[{\"_\":true}]}]}"
+    := expected =
+        "<Invoice><ID>INV1</ID><InvoicedQuantity unitCode=\"C62\">436.50</InvoicedQuantity>"
+        ^^ "<Note>a</Note><Note>b</Note><Paid>true</Paid></Invoice>"
+    ?= ubl_json_document text, xml.read_xml expected ?|
+    | (node :: []), (wanted :: []) =>
+        := attributes = xml.element_attributes node
+        ? xml.attribute_of "xmlns" attributes <> Some "urn:d" ?> failwith "_D becomes the default namespace"
+        ? xml.attribute_of "xmlns:B" attributes <> Some "urn:b" ?> failwith "_B becomes the B prefix"
+        ?= xml.first_difference wanted node ?|
+        | Some difference => failwith ("the transcoded element differs: " ++# difference)
+        | None => ()
+    | _ => failwith "one root element on each side"
+
+///> rust
+test ubl_json_keeps_every_top_level_member =
+    ?= ubl_json_document "{\"_D\":\"urn:d\",\"Invoice\":[{\"ID\":[{\"_\":\"1\"}]}],\"Note\":\"x\"}" ?|
+    | _ :: note :: [] => ? xml.node_name note <> "Note" ?> failwith "a top-level scalar becomes an element"
+    | _ => failwith "no top-level member is dropped"
+
 :~ ^ escaped_json_from (s : string) (pos : i32) (acc : string) : string =
     ? pos >= sm'.length s ?> acc
     |:

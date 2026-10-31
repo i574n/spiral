@@ -1,6 +1,6 @@
-inl main () : i32 = real
-    inl ~numerator = 5000000007i64
-    inl ~denominator = 1000i64
-    inl reconstructed = $"spiral_abi_libc_lldiv_pack(!numerator,!denominator)" : i64
-    inl numerator_reconstructed = $"!reconstructed == 5000000007" : bool
-    if numerator_reconstructed then 0i32 else 1i32
+:= main () : i32 = ~>
+    := ~numerator = 5000000007i64
+    := ~denominator = 1000i64
+    := reconstructed = $"spiral_abi_libc_lldiv_pack(!numerator,!denominator)" : i64
+    := numerator_reconstructed = $"!reconstructed == 5000000007" : bool
+    ? numerator_reconstructed ?> 0i32 |: 1i32

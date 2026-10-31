@@ -24,6 +24,7 @@ test iggy static =
 :== event = { seq : u64; machine : string; body : event_body }
 
 // --- byte primitives: big-endian, built as `array u8` (runtime), joined with ++ (am' append instance) ---
+
 /// ### put_u32
 :~ cat (a : array u8) (b : array u8) : array u8 = a ++ b
 
@@ -71,6 +72,7 @@ test iggy static =
 
 // Health{cpu=63,mem=7500,disk=84}, seq=1, machine="node" -> 29 bytes (hand-traced; matches kit fixtures.tsv).
 ///- --timeout 600000
+
 ///> rust
 test encode_health_fixture =
     := ~ev : event = { seq = 1u64; machine = "node"; body = Health { cpu = 63i32; free_mem_mb = 7500i32; free_disk_gb = 84i32 } }
@@ -79,6 +81,7 @@ test encode_health_fixture =
     _assert_eq expected (encode ev)
 
 // --- decode: untrusted bytes -> decode_result. Big-endian raw readers + overflow-safe bounds. ------------
+
 /// ### read_u32  (raw; call only after a bounds check)
 :~ read_u32 (a : array u8) (i : i32) : u32 =
     (conv (am'.index i a) <<< 24i32) ||| (conv (am'.index (i + 1i32) a) <<< 16i32) ||| (conv (am'.index (i + 2i32) a) <<< 8i32) ||| conv (am'.index (i + 3i32) a)
@@ -190,6 +193,7 @@ test encode_health_fixture =
 // JobDone's round-trip is covered by malformed_input_is_refused (passed), so it is omitted from block 1 to keep
 // each block at 3 events (the size that fits the 300s per-cell budget under node contention).
 ///- --timeout 600000
+
 ///> rust
 test codec_round_trip_1 =
     := rt (ev : event) = _assert_eq (Decoded ev) (decode (encode ev))
@@ -199,6 +203,7 @@ test codec_round_trip_1 =
     (rt e0, rt e1, rt e3)
 
 ///- --timeout 600000
+
 ///> rust
 test codec_round_trip_2 =
     := rt (ev : event) = _assert_eq (Decoded ev) (decode (encode ev))
@@ -208,6 +213,7 @@ test codec_round_trip_2 =
     (rt e4, rt e5, rt e6)
 
 ///- --timeout 600000
+
 ///> rust
 test codec_round_trip_3 =
     := rt (ev : event) = _assert_eq (Decoded ev) (decode (encode ev))
@@ -220,6 +226,7 @@ test codec_round_trip_3 =
 // (mirrors kit wire.rs malformed_input_is_refused): drop last -> Truncated, append -> TrailingBytes 1,
 // tag byte (idx 16) = 42 -> UnknownTag 42. The 4-tuple runs all four asserts.
 ///- --timeout 600000
+
 ///> rust
 test malformed_input_is_refused =
     := ~jd : event = { seq = 1u64; machine = "node"; body = JobDone { job = "j1"; exit = 0i32 } }

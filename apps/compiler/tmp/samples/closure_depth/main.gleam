@@ -10,9 +10,7 @@ pub fn h_c2(capt: #(Int, Int)) -> fn(Int) -> Int {
         let #(v0, v1) = capt
         let v3 = v1 == 0
         case v3 {
-            True -> {
-                0
-            }
+            True -> 0
             False -> {
                 let v4 = spiral_wrap_signed(v2 + v0, 32)
                 v4
@@ -40,11 +38,7 @@ pub fn main() {
     let v4 = v3(0)
     let v5 = v4 == 7
     case v5 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

@@ -1,11 +1,11 @@
-inl main () : i32 =
-    inl ~flag = true
-    inl f (n : i32) : bool * bool =
-        if n =. 0i32 then
-            false, false
-        else
-            flag, true
-    inl ~g = f
-    inl pair = g 1i32
-    inl ~(left, right) = pair
-    if left && right then 0i32 else 1i32
+:= main () : i32 =
+    := ~flag = !+
+    := f (n : i32) : bool * bool =
+        ? n =. 0i32 ?>
+            !-, !-
+        |:
+            flag, !+
+    := ~g = f
+    := pair = g 1i32
+    := ~(left, right) = pair
+    ? left && right ?> 0i32 |: 1i32

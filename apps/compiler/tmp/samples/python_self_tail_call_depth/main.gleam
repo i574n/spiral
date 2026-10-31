@@ -13,9 +13,7 @@ pub fn count_down_0(v0: Int, v1: Int) -> Int {
             let v4 = spiral_wrap_signed(v1 + 1, 32)
             count_down_0(v3, v4)
         }
-        False -> {
-            v1
-        }
+        False -> v1
     }
 }
 pub fn main() {
@@ -24,11 +22,7 @@ pub fn main() {
     let v2 = count_down_0(v0, v1)
     let v3 = v2 == 5000
     case v3 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

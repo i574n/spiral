@@ -1,14 +1,14 @@
-open main
+:< main
 
-inl impossible_accessible_child_step_prime_predecessor_mismatch () =
-    inl three_value = positive_positional_three_value ()
+:= impossible_accessible_child_step_prime_predecessor_mismatch () =
+    := three_value = positive_positional_three_value ()
     certified_interval_positive_positional_accessible_child_completion
         three_value
-        (PositivePositionalPredecessorAccessibilityStep (exists (
+        (PositivePositionalPredecessorAccessibilityStep (\? (
             PositivePositionalPredecessorTwo,
             PositivePositionalPredecessorAccessibilityOne
                 "forged-one-tail-accessibility",
             "forged-two-to-one-step-for-general-prime-three")))
 
-inl main () =
+:= main () =
     impossible_accessible_child_step_prime_predecessor_mismatch ()

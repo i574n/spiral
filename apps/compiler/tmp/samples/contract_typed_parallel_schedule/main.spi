@@ -1,58 +1,58 @@
-nominal nfe = { issuer : string; recipient : string; total_cents : i32 }
+:! nfe = { issuer : string; recipient : string; total_cents : i32 }
 
-union rule result =
+:| rule result =
     | IssuerRule :: rule string
     | RecipientRule :: rule string
     | TotalRule :: rule i32
 
-union rec validation result =
-    | Pure :: forall result. result -> validation result
-    | Lift :: forall result. rule result -> validation result
-    | Zip :: forall a b. validation a * validation b -> validation (a * b)
-    | Map :: forall result.
-        (exists input. (input -> result) * validation input)
+:| ^ validation result =
+    | Pure :: \* result. result -> validation result
+    | Lift :: \* result. rule result -> validation result
+    | Zip :: \* a b. validation a * validation b -> validation (a * b)
+    | Map :: \* result.
+        (\? input. (input -> result) * validation input)
         -> validation result
 
-inl run_rule forall result.
+:= run_rule \* result.
     (document : nfe)
     (rule : rule result)
     : result =
-    match rule with
-    | IssuerRule => document.issuer
-    | RecipientRule => document.recipient
-    | TotalRule => document.total_cents
+    ?= rule ?|
+    | IssuerRule => document::issuer
+    | RecipientRule => document::recipient
+    | TotalRule => document::total_cents
 
-inl rec run_validation forall result.
+:= ^ run_validation \* result.
     (document : nfe)
     (program : validation result)
     : result =
-    match program with
+    ?= program ?|
     | Pure value => value
     | Lift rule => run_rule document rule
     | Zip (left, right) =>
         run_validation document left,
         run_validation document right
     | Map packed =>
-        inl exists input. mapping, source = packed
+        := \? input. mapping, source = packed
         mapping (run_validation document source)
 
-inl describe_schedule forall result.
+:= describe_schedule \* result.
     (program : validation result)
     : string =
-    match program with
+    ?= program ?|
     | Map packed =>
-        inl exists input. _, source = packed
-        match source with
+        := \? input. _, source = packed
+        ?= source ?|
         | Zip (Zip (Lift _, Lift _), Lift _) => "parallel-plan"
         | _ => "other-map"
     | Zip _ => "parallel"
     | Lift _ => "leaf"
     | Pure _ => "pure"
 
-inl summarize (_ : (string * string) * i32) : string = "validated"
+:= summarize (_ : (string * string) * i32) : string = "validated"
 
-inl plan () : validation string =
-    Map (exists (
+:= plan () : validation string =
+    Map (\? (
         summarize,
         Zip (
             Zip (Lift IssuerRule, Lift RecipientRule),
@@ -60,12 +60,12 @@ inl plan () : validation string =
         )
     ))
 
-inl main () : string =
-    inl program = plan ()
-    inl document = nfe {
+:= main () : string =
+    := program = plan ()
+    := document = nfe {
         issuer = "ACME"
         recipient = "CLIENT"
         total_cents = 4200
     }
-    inl _ = run_validation document program
+    := _ = run_validation document program
     describe_schedule program

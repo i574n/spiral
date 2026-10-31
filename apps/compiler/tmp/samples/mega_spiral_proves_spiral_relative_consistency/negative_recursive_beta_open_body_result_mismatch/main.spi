@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_recursive_beta_open_body_result_mismatch
+:= impossible_recursive_beta_open_body_result_mismatch
     ()
     : exact_linear_indexed_term
         (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_bool_type)
@@ -19,4 +19,4 @@ inl impossible_recursive_beta_open_body_result_mismatch
         )
     )
 
-inl main () = impossible_recursive_beta_open_body_result_mismatch ()
+:= main () = impossible_recursive_beta_open_body_result_mismatch ()

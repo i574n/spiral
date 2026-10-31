@@ -1,20 +1,20 @@
-nominal scope_a = ()
-nominal scope_b = ()
+:! scope_a = ()
+:! scope_b = ()
 
-union signal scope value =
-    | Signal :: forall scope value. value -> signal scope value
+:| signal scope value =
+    | Signal :: \* scope value. value -> signal scope value
 
-union subscription scope =
-    | Subscription :: forall scope. string -> subscription scope
+:| subscription scope =
+    | Subscription :: \* scope. string -> subscription scope
 
-inl subscribe forall scope value. (source : signal scope value) : subscription scope =
-    match source with
+:= subscribe \* scope value. (source : signal scope value) : subscription scope =
+    ?= source ?|
     | Signal _ => Subscription "owned-subscription"
 
-inl dispose forall scope. (subscription : subscription scope) : string =
-    match subscription with
+:= dispose \* scope. (subscription : subscription scope) : string =
+    ?= subscription ?|
     | Subscription label => label
 
-inl main () : string =
-    inl source : signal scope_a i32 = Signal 42
+:= main () : string =
+    := source : signal scope_a i32 = Signal 42
     dispose (subscribe source)

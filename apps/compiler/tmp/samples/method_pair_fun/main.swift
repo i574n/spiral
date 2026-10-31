@@ -40,9 +40,9 @@ func spiral_main() -> Int32 {
     let v1: Int32 = 4
     var v2: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
     var v3: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
-    let spiral_tuple287 = sp_method0(v0, v1)
-    v2 = spiral_tuple287.0
-    v3 = spiral_tuple287.1
+    let spiral_tuple280 = sp_method0(v0, v1)
+    v2 = spiral_tuple280.0
+    v3 = spiral_tuple280.1
     let v4: Int32 = v2(0)
     let v5: Int32 = v3(0)
     let v6: Int32 = (v4 &+ v5)

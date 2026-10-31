@@ -1,97 +1,97 @@
-nominal patient_a = ()
-nominal sample_a = ()
-nominal build_38 = ()
-nominal contig_7 = ()
-nominal cohort_a = ()
-nominal calibration_a = ()
-nominal therapy_purpose = ()
-nominal privacy_round_9 = ()
-nominal registry_root_a = ()
-nominal observer_a = ()
-nominal observer_b = ()
-nominal batch_a = ()
-nominal route_a = ()
-nominal map_frame = ()
-nominal hospital_host = ()
-nominal epoch_12 = ()
+:! patient_a = ()
+:! sample_a = ()
+:! build_38 = ()
+:! contig_7 = ()
+:! cohort_a = ()
+:! calibration_a = ()
+:! therapy_purpose = ()
+:! privacy_round_9 = ()
+:! registry_root_a = ()
+:! observer_a = ()
+:! observer_b = ()
+:! batch_a = ()
+:! route_a = ()
+:! map_frame = ()
+:! hospital_host = ()
+:! epoch_12 = ()
 
-nominal intake = ()
-nominal normalized = ()
-nominal phased = ()
-nominal consented = ()
-nominal privacy_committed = ()
-nominal authorized = ()
-nominal packaged = ()
-nominal routed = ()
-nominal administered = ()
-nominal published = ()
-nominal raw = ()
-nominal active = ()
-nominal spent = ()
-nominal sealed = ()
-nominal live = ()
-nominal pinned = ()
-nominal observed = ()
-nominal distinct = ()
-nominal idempotent = ()
-nominal non_idempotent = ()
+:! intake = ()
+:! normalized = ()
+:! phased = ()
+:! consented = ()
+:! privacy_committed = ()
+:! authorized = ()
+:! packaged = ()
+:! routed = ()
+:! administered = ()
+:! published = ()
+:! raw = ()
+:! active = ()
+:! spent = ()
+:! sealed = ()
+:! live = ()
+:! pinned = ()
+:! observed = ()
+:! distinct = ()
+:! idempotent = ()
+:! non_idempotent = ()
 
-union genomic_evidence patient sample build contig cohort calibration state =
-    | GenomicEvidence :: forall patient sample build contig cohort calibration state.
+:| genomic_evidence patient sample build contig cohort calibration state =
+    | GenomicEvidence :: \* patient sample build contig cohort calibration state.
         string ->
         genomic_evidence patient sample build contig cohort calibration state
 
-union consent_witness patient purpose state =
-    | Consent :: forall patient purpose state. string -> consent_witness patient purpose state
+:| consent_witness patient purpose state =
+    | Consent :: \* patient purpose state. string -> consent_witness patient purpose state
 
-union privacy_budget cohort round state =
-    | PrivacyBudget :: forall cohort round state. string -> privacy_budget cohort round state
+:| privacy_budget cohort round state =
+    | PrivacyBudget :: \* cohort round state. string -> privacy_budget cohort round state
 
-union therapy_batch patient batch state =
-    | TherapyBatch :: forall patient batch state. string -> therapy_batch patient batch state
+:| therapy_batch patient batch state =
+    | TherapyBatch :: \* patient batch state. string -> therapy_batch patient batch state
 
-union route_plan route frame state =
-    | RoutePlan :: forall route frame state. string -> route_plan route frame state
+:| route_plan route frame state =
+    | RoutePlan :: \* route frame state. string -> route_plan route frame state
 
-union host_lease host epoch state =
-    | HostLease :: forall host epoch state. string -> host_lease host epoch state
+:| host_lease host epoch state =
+    | HostLease :: \* host epoch state. string -> host_lease host epoch state
 
-union registry_pin root state =
-    | RegistryPin :: forall root state. string -> registry_pin root state
+:| registry_pin root state =
+    | RegistryPin :: \* root state. string -> registry_pin root state
 
-union observer_checkpoint root observer state =
-    | ObserverCheckpoint :: forall root observer state. string -> observer_checkpoint root observer state
+:| observer_checkpoint root observer state =
+    | ObserverCheckpoint :: \* root observer state. string -> observer_checkpoint root observer state
 
-union distinct_observers left right state =
-    | DistinctObservers :: forall left right state. string -> distinct_observers left right state
+:| distinct_observers left right state =
+    | DistinctObservers :: \* left right state. string -> distinct_observers left right state
 
-union mission_op patient sample build contig cohort calibration purpose round root observer_left observer_right batch
+:| mission_op patient sample build contig cohort calibration purpose round root observer_left observer_right batch
     route frame host epoch from to effect =
-    | Normalize :: forall patient sample build contig cohort calibration purpose round root observer_left observer_right
+    | Normalize :: \* patient sample build contig cohort calibration purpose round root observer_left observer_right
         batch route frame host epoch.
         genomic_evidence patient sample build contig cohort calibration raw ->
         mission_op
             patient sample build contig cohort calibration purpose round root observer_left observer_right batch route
             frame host epoch intake normalized idempotent
-    | Phase :: forall patient sample build contig cohort calibration purpose round root observer_left observer_right
+    | Phase :: \* patient sample build contig cohort calibration purpose round root observer_left observer_right
         batch route frame host epoch.
         genomic_evidence patient sample build contig cohort calibration normalized ->
         mission_op
             patient sample build contig cohort calibration purpose round root observer_left observer_right batch route
             frame host epoch normalized phased idempotent
-    | RecordConsent :: forall patient sample build contig cohort calibration purpose round root observer_left
+    | RecordConsent :: \* patient sample build contig cohort calibration purpose round root observer_left
         observer_right batch route frame host epoch.
         consent_witness patient purpose active ->
         mission_op
             patient sample build contig cohort calibration purpose round root observer_left observer_right batch route
             frame host epoch phased consented non_idempotent
-    | CommitPrivacy :: forall patient sample build contig cohort calibration purpose round root observer_left
+    | CommitPrivacy :: \* patient sample build contig cohort calibration purpose round root observer_left
         observer_right batch route frame host epoch.
         privacy_budget cohort round active ->
         mission_op
             patient sample build contig cohort calibration purpose round root observer_left observer_right batch route
             frame host epoch consented privacy_committed non_idempotent
-    | AuthorizeTherapy :: forall patient sample build contig cohort calibration purpose round root observer_left
+    | AuthorizeTherapy :: \* patient sample build contig cohort calibration purpose round root observer_left
         observer_right batch route frame host epoch.
         genomic_evidence patient sample build contig cohort calibration phased *
         consent_witness patient purpose active *
@@ -99,25 +99,25 @@ union mission_op patient sample build contig cohort calibration purpose round ro
         mission_op
             patient sample build contig cohort calibration purpose round root observer_left observer_right batch route
             frame host epoch privacy_committed authorized non_idempotent
-    | SealBatch :: forall patient sample build contig cohort calibration purpose round root observer_left observer_right
+    | SealBatch :: \* patient sample build contig cohort calibration purpose round root observer_left observer_right
         batch route frame host epoch.
         therapy_batch patient batch sealed ->
         mission_op
             patient sample build contig cohort calibration purpose round root observer_left observer_right batch route
             frame host epoch authorized packaged non_idempotent
-    | RouteBatch :: forall patient sample build contig cohort calibration purpose round root observer_left
+    | RouteBatch :: \* patient sample build contig cohort calibration purpose round root observer_left
         observer_right batch route frame host epoch.
         therapy_batch patient batch sealed * route_plan route frame active ->
         mission_op
             patient sample build contig cohort calibration purpose round root observer_left observer_right batch route
             frame host epoch packaged routed idempotent
-    | Administer :: forall patient sample build contig cohort calibration purpose round root observer_left
+    | Administer :: \* patient sample build contig cohort calibration purpose round root observer_left
         observer_right batch route frame host epoch.
         therapy_batch patient batch sealed * route_plan route frame active * host_lease host epoch live ->
         mission_op
             patient sample build contig cohort calibration purpose round root observer_left observer_right batch route
             frame host epoch routed administered non_idempotent
-    | PublishMission :: forall patient sample build contig cohort calibration purpose round root observer_left
+    | PublishMission :: \* patient sample build contig cohort calibration purpose round root observer_left
         observer_right batch route frame host epoch.
         registry_pin root pinned *
         observer_checkpoint root observer_left observed *
@@ -127,19 +127,19 @@ union mission_op patient sample build contig cohort calibration purpose round ro
             patient sample build contig cohort calibration purpose round root observer_left observer_right batch route
             frame host epoch administered published idempotent
 
-union audit_row patient sample build contig cohort calibration purpose round root batch route host epoch from to effect
+:| audit_row patient sample build contig cohort calibration purpose round root batch route host epoch from to effect
     =
-    | AuditRow :: forall patient sample build contig cohort calibration purpose round root batch route host epoch from
+    | AuditRow :: \* patient sample build contig cohort calibration purpose round root batch route host epoch from
         to effect.
         string ->
         audit_row
             patient sample build contig cohort calibration purpose round root batch route host epoch from to effect
 
-union mission_node patient sample build contig cohort calibration purpose round root observer_left observer_right batch
+:| mission_node patient sample build contig cohort calibration purpose round root observer_left observer_right batch
     route frame host epoch from to =
-    | MissionNode :: forall patient sample build contig cohort calibration purpose round root observer_left
+    | MissionNode :: \* patient sample build contig cohort calibration purpose round root observer_left
         observer_right batch route frame host epoch from to.
-        (exists effect.
+        (\? effect.
             mission_op
                 patient sample build contig cohort calibration purpose round root observer_left observer_right batch
                 route frame host epoch from to effect *
@@ -150,9 +150,9 @@ union mission_node patient sample build contig cohort calibration purpose round 
             patient sample build contig cohort calibration purpose round root observer_left observer_right batch route
             frame host epoch from to
 
-union rec mission_plan patient sample build contig cohort calibration purpose round root observer_left observer_right
+:| ^ mission_plan patient sample build contig cohort calibration purpose round root observer_left observer_right
     batch route frame host epoch from to =
-    | MissionLeaf :: forall patient sample build contig cohort calibration purpose round root observer_left
+    | MissionLeaf :: \* patient sample build contig cohort calibration purpose round root observer_left
         observer_right batch route frame host epoch from to.
         mission_node
             patient sample build contig cohort calibration purpose round root observer_left observer_right batch
@@ -160,9 +160,9 @@ union rec mission_plan patient sample build contig cohort calibration purpose ro
         mission_plan
             patient sample build contig cohort calibration purpose round root observer_left observer_right batch route
             frame host epoch from to
-    | MissionThen :: forall patient sample build contig cohort calibration purpose round root observer_left
+    | MissionThen :: \* patient sample build contig cohort calibration purpose round root observer_left
         observer_right batch route frame host epoch from to.
-        (exists middle.
+        (\? middle.
             mission_plan
                 patient sample build contig cohort calibration purpose round root observer_left observer_right batch
                 route frame host epoch from middle *
@@ -173,36 +173,36 @@ union rec mission_plan patient sample build contig cohort calibration purpose ro
             patient sample build contig cohort calibration purpose round root observer_left observer_right batch route
             frame host epoch from to
 
-union serialized_node patient sample build contig cohort calibration purpose round root batch route host epoch from to =
-    | SerializedNode :: forall patient sample build contig cohort calibration purpose round root batch route host epoch
+:| serialized_node patient sample build contig cohort calibration purpose round root batch route host epoch from to =
+    | SerializedNode :: \* patient sample build contig cohort calibration purpose round root batch route host epoch
         from to.
-        (exists effect.
+        (\? effect.
             audit_row
                 patient sample build contig cohort calibration purpose round root batch route host epoch from to
                 effect) ->
         serialized_node patient sample build contig cohort calibration purpose round root batch route host epoch from to
 
-union rec serialized_plan patient sample build contig cohort calibration purpose round root batch route host epoch from
+:| ^ serialized_plan patient sample build contig cohort calibration purpose round root batch route host epoch from
     to =
-    | SerializedLeaf :: forall patient sample build contig cohort calibration purpose round root batch route host epoch
+    | SerializedLeaf :: \* patient sample build contig cohort calibration purpose round root batch route host epoch
         from to.
         serialized_node
             patient sample build contig cohort calibration purpose round root batch route host epoch from to ->
         serialized_plan patient sample build contig cohort calibration purpose round root batch route host epoch from to
-    | SerializedThen :: forall patient sample build contig cohort calibration purpose round root batch route host epoch
+    | SerializedThen :: \* patient sample build contig cohort calibration purpose round root batch route host epoch
         from to.
-        (exists middle.
+        (\? middle.
             serialized_plan
                 patient sample build contig cohort calibration purpose round root batch route host epoch from middle *
             serialized_node
                 patient sample build contig cohort calibration purpose round root batch route host epoch middle to) ->
         serialized_plan patient sample build contig cohort calibration purpose round root batch route host epoch from to
 
-union packed_node patient sample build contig cohort calibration purpose round root observer_left observer_right batch
+:| packed_node patient sample build contig cohort calibration purpose round root observer_left observer_right batch
     route frame host epoch =
-    | PackedNode :: forall patient sample build contig cohort calibration purpose round root observer_left
+    | PackedNode :: \* patient sample build contig cohort calibration purpose round root observer_left
         observer_right batch route frame host epoch.
-        (exists from to.
+        (\? from to.
             mission_node
                 patient sample build contig cohort calibration purpose round root observer_left observer_right batch
                 route frame host epoch from to) ->
@@ -210,7 +210,7 @@ union packed_node patient sample build contig cohort calibration purpose round r
             patient sample build contig cohort calibration purpose round root observer_left observer_right batch route
             frame host epoch
 
-inl serialize_node forall patient sample build contig cohort calibration purpose round root observer_left observer_right
+:= serialize_node \* patient sample build contig cohort calibration purpose round root observer_left observer_right
     batch route frame host epoch from to.
     (node :
         mission_node
@@ -218,12 +218,12 @@ inl serialize_node forall patient sample build contig cohort calibration purpose
             frame host epoch from to)
     : serialized_node patient sample build contig cohort calibration purpose round root batch route host epoch from to
     =
-    match node with
+    ?= node ?|
     | MissionNode payload =>
-        inl exists effect. _, row = payload
-        SerializedNode (exists row)
+        := \? effect. _, row = payload
+        SerializedNode (\? row)
 
-inl rec serialize_plan forall patient sample build contig cohort calibration purpose round root observer_left
+:= ^ serialize_plan \* patient sample build contig cohort calibration purpose round root observer_left
     observer_right batch route frame host epoch from to.
     (plan :
         mission_plan
@@ -231,13 +231,13 @@ inl rec serialize_plan forall patient sample build contig cohort calibration pur
             frame host epoch from to)
     : serialized_plan patient sample build contig cohort calibration purpose round root batch route host epoch from to
     =
-    match plan with
+    ?= plan ?|
     | MissionLeaf node => SerializedLeaf (serialize_node node)
     | MissionThen payload =>
-        inl exists middle. prefix, node = payload
-        SerializedThen (exists (serialize_plan prefix, serialize_node node))
+        := \? middle. prefix, node = payload
+        SerializedThen (\? (serialize_plan prefix, serialize_node node))
 
-inl node_label forall patient sample build contig cohort calibration purpose round root observer_left observer_right
+:= node_label \* patient sample build contig cohort calibration purpose round root observer_left observer_right
     batch route frame host epoch from to.
     (node :
         mission_node
@@ -245,15 +245,15 @@ inl node_label forall patient sample build contig cohort calibration purpose rou
             frame host epoch from to)
     : string
     =
-    match node with
+    ?= node ?|
     | MissionNode payload =>
-        inl exists effect. _, AuditRow label = payload
+        := \? effect. _, AuditRow label = payload
         label
 
-inl audit_packed forall patient sample build contig cohort calibration purpose round root observer_left observer_right
+:= audit_packed \* patient sample build contig cohort calibration purpose round root observer_left observer_right
     batch route frame host epoch result.
     (visitor :
-        forall patient sample build contig cohort calibration purpose round root observer_left observer_right batch
+        \* patient sample build contig cohort calibration purpose round root observer_left observer_right batch
             route frame host epoch from to.
             mission_node
                 patient sample build contig cohort calibration purpose round root observer_left observer_right batch
@@ -265,102 +265,102 @@ inl audit_packed forall patient sample build contig cohort calibration purpose r
             frame host epoch)
     : result
     =
-    match packed with
+    ?= packed ?|
     | PackedNode payload =>
-        inl exists from to. node = payload
+        := \? from to. node = payload
         visitor node
 
-inl rec final_row forall patient sample build contig cohort calibration purpose round root batch route host epoch from
+:= ^ final_row \* patient sample build contig cohort calibration purpose round root batch route host epoch from
     to.
     (plan :
         serialized_plan
             patient sample build contig cohort calibration purpose round root batch route host epoch from to)
     : string
     =
-    match plan with
+    ?= plan ?|
     | SerializedLeaf (SerializedNode payload) =>
-        inl exists effect. AuditRow label = payload
+        := \? effect. AuditRow label = payload
         label
     | SerializedThen payload =>
-        inl exists middle. _, SerializedNode row = payload
-        inl exists effect. AuditRow label = row
+        := \? middle. _, SerializedNode row = payload
+        := \? effect. AuditRow label = row
         label
 
-inl normalize_node
+:= normalize_node
     ()
     : mission_node patient_a sample_a build_38 contig_7 cohort_a calibration_a therapy_purpose privacy_round_9
         registry_root_a observer_a observer_b batch_a route_a map_frame hospital_host epoch_12 intake normalized
     =
-    MissionNode (exists (Normalize (GenomicEvidence "raw-reads"), AuditRow "normalize"))
+    MissionNode (\? (Normalize (GenomicEvidence "raw-reads"), AuditRow "normalize"))
 
-inl phase_node
+:= phase_node
     ()
     : mission_node patient_a sample_a build_38 contig_7 cohort_a calibration_a therapy_purpose privacy_round_9
         registry_root_a observer_a observer_b batch_a route_a map_frame hospital_host epoch_12 normalized phased
     =
-    MissionNode (exists (Phase (GenomicEvidence "phased-callset"), AuditRow "phase"))
+    MissionNode (\? (Phase (GenomicEvidence "phased-callset"), AuditRow "phase"))
 
-inl consent_node
+:= consent_node
     ()
     : mission_node patient_a sample_a build_38 contig_7 cohort_a calibration_a therapy_purpose privacy_round_9
         registry_root_a observer_a observer_b batch_a route_a map_frame hospital_host epoch_12 phased consented
     =
-    MissionNode (exists (RecordConsent (Consent "patient-consent"), AuditRow "consent"))
+    MissionNode (\? (RecordConsent (Consent "patient-consent"), AuditRow "consent"))
 
-inl privacy_node
+:= privacy_node
     ()
     : mission_node patient_a sample_a build_38 contig_7 cohort_a calibration_a therapy_purpose privacy_round_9
         registry_root_a observer_a observer_b batch_a route_a map_frame hospital_host epoch_12 consented
         privacy_committed
     =
-    MissionNode (exists (CommitPrivacy (PrivacyBudget "epsilon-spend"), AuditRow "privacy"))
+    MissionNode (\? (CommitPrivacy (PrivacyBudget "epsilon-spend"), AuditRow "privacy"))
 
-inl authorize_node
+:= authorize_node
     ()
     : mission_node patient_a sample_a build_38 contig_7 cohort_a calibration_a therapy_purpose privacy_round_9
         registry_root_a observer_a observer_b batch_a route_a map_frame hospital_host epoch_12 privacy_committed
         authorized
     =
     MissionNode (
-        exists (
+        \? (
             AuthorizeTherapy (GenomicEvidence "phased", Consent "consented", PrivacyBudget "spent"),
             AuditRow "authorize"
         )
     )
 
-inl batch_node
+:= batch_node
     ()
     : mission_node patient_a sample_a build_38 contig_7 cohort_a calibration_a therapy_purpose privacy_round_9
         registry_root_a observer_a observer_b batch_a route_a map_frame hospital_host epoch_12 authorized packaged
     =
-    MissionNode (exists (SealBatch (TherapyBatch "sealed-batch"), AuditRow "package"))
+    MissionNode (\? (SealBatch (TherapyBatch "sealed-batch"), AuditRow "package"))
 
-inl route_node
+:= route_node
     ()
     : mission_node patient_a sample_a build_38 contig_7 cohort_a calibration_a therapy_purpose privacy_round_9
         registry_root_a observer_a observer_b batch_a route_a map_frame hospital_host epoch_12 packaged routed
     =
-    MissionNode (exists (RouteBatch (TherapyBatch "sealed-batch", RoutePlan "hospital-route"), AuditRow "route"))
+    MissionNode (\? (RouteBatch (TherapyBatch "sealed-batch", RoutePlan "hospital-route"), AuditRow "route"))
 
-inl administer_node
+:= administer_node
     ()
     : mission_node patient_a sample_a build_38 contig_7 cohort_a calibration_a therapy_purpose privacy_round_9
         registry_root_a observer_a observer_b batch_a route_a map_frame hospital_host epoch_12 routed administered
     =
     MissionNode (
-        exists (
+        \? (
             Administer (TherapyBatch "sealed-batch", RoutePlan "hospital-route", HostLease "host-epoch"),
             AuditRow "administer"
         )
     )
 
-inl publish_node
+:= publish_node
     ()
     : mission_node patient_a sample_a build_38 contig_7 cohort_a calibration_a therapy_purpose privacy_round_9
         registry_root_a observer_a observer_b batch_a route_a map_frame hospital_host epoch_12 administered published
     =
     MissionNode (
-        exists (
+        \? (
             PublishMission (
                 RegistryPin "root",
                 ObserverCheckpoint "observer-a",
@@ -371,19 +371,19 @@ inl publish_node
         )
     )
 
-inl plan
+:= plan
     ()
     : mission_plan patient_a sample_a build_38 contig_7 cohort_a calibration_a therapy_purpose privacy_round_9
         registry_root_a observer_a observer_b batch_a route_a map_frame hospital_host epoch_12 intake published
     =
-    MissionThen (exists (
-        MissionThen (exists (
-            MissionThen (exists (
-                MissionThen (exists (
-                    MissionThen (exists (
-                        MissionThen (exists (
-                            MissionThen (exists (
-                                MissionThen (exists (
+    MissionThen (\? (
+        MissionThen (\? (
+            MissionThen (\? (
+                MissionThen (\? (
+                    MissionThen (\? (
+                        MissionThen (\? (
+                            MissionThen (\? (
+                                MissionThen (\? (
                                     MissionLeaf (normalize_node ()),
                                     phase_node ()
                                 )),
@@ -402,13 +402,13 @@ inl plan
         publish_node ()
     ))
 
-inl main () : string =
-    inl serialized = serialize_plan (plan ())
-    inl packed
+:= main () : string =
+    := serialized = serialize_plan (plan ())
+    := packed
         : packed_node patient_a sample_a build_38 contig_7 cohort_a calibration_a therapy_purpose privacy_round_9
             registry_root_a observer_a observer_b batch_a route_a map_frame hospital_host epoch_12
         =
-        PackedNode (exists (publish_node ()))
-    inl audited = audit_packed `$node_label packed
-    inl _ = audited
+        PackedNode (\? (publish_node ()))
+    := audited = audit_packed `$node_label packed
+    := _ = audited
     final_row serialized

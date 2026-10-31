@@ -22,9 +22,7 @@ pub fn closure0(capt: #(Int)) -> fn(Nil) -> Uh0 {
 pub fn build_0(v0: Int) -> Uh0 {
     let v1 = v0 == 0
     case v1 {
-        True -> {
-            Uh0Nil
-        }
+        True -> Uh0Nil
         False -> {
             let v3 = closure0(#(v0))
             Uh0Cons(v0, v3)
@@ -38,9 +36,7 @@ pub fn sum_1(v0: Uh0, v1: Int) -> Int {
             let v5 = spiral_wrap_unsigned(v1 + v2, 64)
             sum_1(v4, v5)
         }
-        Uh0Nil -> {
-            v1
-        }
+        Uh0Nil -> v1
     }
 }
 pub fn main() {

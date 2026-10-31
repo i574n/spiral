@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_recursive_beta_derivation_result_mismatch () :
+:= impossible_recursive_beta_derivation_result_mismatch () :
     exact_linear_indexed_closed_recursive_beta_derivation
         exact_linear_bool_type exact_linear_bool_type =
     ExactLinearIndexedClosedRecursiveBetaDerivationTensorLeftUnit (
@@ -12,4 +12,4 @@ inl impossible_recursive_beta_derivation_result_mismatch () :
             "the-negative-recursive-derivation-result-inner-is-Bound"),
         "the-Tensor-left-wrapper-forces-a-Tensor-result-index")
 
-inl main () = impossible_recursive_beta_derivation_result_mismatch ()
+:= main () = impossible_recursive_beta_derivation_result_mismatch ()

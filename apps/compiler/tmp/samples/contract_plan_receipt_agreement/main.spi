@@ -1,21 +1,21 @@
-nominal query_status = ()
-nominal publish_nfe = ()
+:! query_status = ()
+:! publish_nfe = ()
 
-union operation op result =
+:| operation op result =
     | QueryStatus :: operation query_status string
     | PublishNfe :: operation publish_nfe string
 
-union receipt op result =
+:| receipt op result =
     | QueryReceipt :: string -> receipt query_status string
     | PublishReceipt :: string -> receipt publish_nfe string
 
-inl accept forall op result.
+:= accept \* op result.
     (operation : operation op result)
     (receipt : receipt op result)
     : string =
-    match operation, receipt with
+    ?= operation, receipt ?|
     | QueryStatus, QueryReceipt value => value
     | PublishNfe, PublishReceipt value => value
 
-inl main () : string =
+:= main () : string =
     accept QueryStatus (QueryReceipt "plan-receipt-agreement")

@@ -1,30 +1,30 @@
-nominal owner_a = ()
-nominal owner_b = ()
-nominal clean = ()
-nominal dirty = ()
-nominal computed = ()
-nominal restored = ()
+:! owner_a = ()
+:! owner_b = ()
+:! clean = ()
+:! dirty = ()
+:! computed = ()
+:! restored = ()
 
-union ancilla owner state =
-    | Ancilla :: forall owner state. string -> ancilla owner state
+:| ancilla owner state =
+    | Ancilla :: \* owner state. string -> ancilla owner state
 
-union workspace owner stage =
-    | Workspace :: forall owner stage. string -> workspace owner stage
+:| workspace owner stage =
+    | Workspace :: \* owner stage. string -> workspace owner stage
 
-union garbage owner witness =
-    | Garbage :: forall owner witness. string -> garbage owner witness
+:| garbage owner witness =
+    | Garbage :: \* owner witness. string -> garbage owner witness
 
-inl uncompute forall owner.
+:= uncompute \* owner.
     (ancilla : ancilla owner dirty)
     (workspace : workspace owner computed)
     (garbage : garbage owner computed)
     : ancilla owner clean * workspace owner restored =
-    match ancilla, workspace, garbage with
+    ?= ancilla, workspace, garbage ?|
     | Ancilla _, Workspace _, Garbage _ => Ancilla "clean", Workspace "restored"
 
-inl main () : ancilla owner_a clean =
-    inl dirty : ancilla owner_a dirty = Ancilla "dirty-a"
-    inl workspace : workspace owner_a computed = Workspace "computed-a"
-    inl garbage : garbage owner_b computed = Garbage "garbage-b"
-    inl clean, _ = uncompute dirty workspace garbage
+:= main () : ancilla owner_a clean =
+    := dirty : ancilla owner_a dirty = Ancilla "dirty-a"
+    := workspace : workspace owner_a computed = Workspace "computed-a"
+    := garbage : garbage owner_b computed = Garbage "garbage-b"
+    := clean, _ = uncompute dirty workspace garbage
     clean

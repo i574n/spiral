@@ -4,19 +4,19 @@ use std::rc::Rc;
 fn choose_left_0(mut v0: bool) -> Rc<str> {
     if v0 {
         let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spi"); } LIT.with(|lit| lit.clone()) };
-        v1.clone()
+        v1
     } else {
         let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("bad"); } LIT.with(|lit| lit.clone()) };
-        v2.clone()
+        v2
     }
 }
 fn choose_right_1(mut v0: bool) -> Rc<str> {
     if v0 {
         let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("bad"); } LIT.with(|lit| lit.clone()) };
-        v1.clone()
+        v1
     } else {
         let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ral"); } LIT.with(|lit| lit.clone()) };
-        v2.clone()
+        v2
     }
 }
 fn spiral_main() -> i32 {

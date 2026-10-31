@@ -15,6 +15,16 @@ $libRoot = Get-Item (Resolve-Path $Lib).Path
 while ($libRoot -and -not (@('lib/spiral', 'deps/spiral/lib/spiral', 'deps/polyglot/deps/spiral/lib/spiral') | Where-Object { Test-Path (Join-Path $libRoot.FullName "$_/testing.spi") })) { $libRoot = $libRoot.Parent }
 if (-not $libRoot -and ((Resolve-Path $Lib).Path -replace '\\', '/') -notmatch '/lib/spiral/?$') { throw "-Lib needs lib/spiral at or above it: Cells finds the lib and its real prelude through that path (got $Lib)" }
 if (-not (Test-Path -LiteralPath (Join-Path $Lib $File))) { throw "no $File under -Lib ${Lib}: a missing file runs zero tests and reads as green" }
+function Get-CopyGateSettings([string] $CopyRoot, [string] $LiveRoot) {
+    $copy = [IO.Path]::GetFullPath($CopyRoot).TrimEnd('\', '/')
+    if ($copy -eq [IO.Path]::GetFullPath($LiveRoot).TrimEnd('\', '/')) { return $null }
+    $hash = [Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($copy.ToLowerInvariant()))
+    [pscustomobject]@{ BuildPath = Join-Path $copy 'mix-build-lib-gate'; Port = [string](14000 + [BitConverter]::ToUInt16($hash, 0) % 1000) }
+}
+$copyRoot = if ($libRoot) { $libRoot.FullName } else { Split-Path (Split-Path (Resolve-Path $Lib).Path) }
+$copyGate = Get-CopyGateSettings $copyRoot (Join-Path $PSScriptRoot '../../..')
+if ($copyGate -and -not $PSBoundParameters.ContainsKey('BuildPath')) { $BuildPath = $copyGate.BuildPath }
+if ($copyGate -and -not $env:SPIRAL_CELLS_COMPILER_PORT) { $env:SPIRAL_CELLS_COMPILER_PORT = $copyGate.Port }
 $env:PATH = "$HOME\scoop\apps\erlang\current\bin;$HOME\scoop\apps\elixir\current\bin;$env:PATH"
 $env:MIX_BUILD_PATH = $BuildPath
 if (-not $env:SPIRAL_CC) { $env:SPIRAL_CC = Join-Path $HOME 'scoop\apps\gcc\current\bin\gcc.exe' }
@@ -38,6 +48,7 @@ $out = $out -replace '(?i)[a-z]:/Users/[^/]+/AppData/Local/spiral-bin/cells-moun
 if ($RawOut) { Set-Content -LiteralPath $RawOut $out }
 $total = [regex]::Match($out, 'spiral-tests total (\{[^\n]*\})')
 if ($total.Success) { $j = $total.Groups[1].Value | ConvertFrom-Json; "tests: passed $($j.passed) failed $($j.failed) of $($j.discovered)" }
+else { "lib-gate / no spiral-tests total, so nothing ran; first lines:"; $out -split "`n" | Select-Object -First 6; exit 2 }
 $fileReport = [regex]::Match($out, 'spiral-tests file (\{[^\n]*\})')
 if ($fileReport.Success) { $names = ($fileReport.Groups[1].Value | ConvertFrom-Json).failed_tests; if ($names) { "failed: $($names -join ', ')" } }
 if ($Detail) { $out -split "`n" | Select-String -SimpleMatch $Detail -Context 0, 4 | Select-Object -First 40 | ForEach-Object { $_.Line; $_.Context.PostContext } }

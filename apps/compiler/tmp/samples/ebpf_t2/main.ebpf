@@ -44,9 +44,9 @@ static int32_t sp_method0(int32_t p0, int32_t p1) {
     int32_t v1 = p1;
     int32_t v2 = 0;
     int32_t v3 = 0;
-    SpiralTuple0 spiral_tuple139 = sp_method1(v0, v1);
-    v2 = spiral_tuple139.v0;
-    v3 = spiral_tuple139.v1;
+    SpiralTuple0 spiral_tuple134 = sp_method1(v0, v1);
+    v2 = spiral_tuple134.v0;
+    v3 = spiral_tuple134.v1;
     int32_t v4 = 0;
     v4 = (v2 + v3);
     return v4;
@@ -64,10 +64,10 @@ static int32_t sp_method2(int32_t p0, int32_t p1, int32_t p2) {
     int32_t v3 = 0;
     int32_t v4 = 0;
     int32_t v5 = 0;
-    SpiralTuple1 spiral_tuple194 = sp_method3(v0, v1, v2);
-    v3 = spiral_tuple194.v0;
-    v4 = spiral_tuple194.v1;
-    v5 = spiral_tuple194.v2;
+    SpiralTuple1 spiral_tuple187 = sp_method3(v0, v1, v2);
+    v3 = spiral_tuple187.v0;
+    v4 = spiral_tuple187.v1;
+    v5 = spiral_tuple187.v2;
     int32_t v6 = 0;
     v6 = (v3 + v4);
     int32_t v7 = 0;

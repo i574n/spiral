@@ -25,9 +25,7 @@ pub fn main() {
                 let v10 = v8 == v9
                 v10
             }
-            Us0Empty,Us0Empty -> {
-                True
-            }
+            Us0Empty,Us0Empty -> True
             Us0Rect(v11, v12),Us0Rect(v13, v14) -> {
                 let v15 = v11 == v13
                 case v15 {
@@ -35,23 +33,15 @@ pub fn main() {
                         let v16 = v12 == v14
                         v16
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             }
-            _,_ -> {
-                False
-            }
+            _,_ -> False
         }
     let v19 =
         case v18 {
-            True -> {
-                100
-            }
-            False -> {
-                0
-            }
+            True -> 100
+            False -> 0
         }
     let v28 =
         case v1  {
@@ -60,9 +50,7 @@ pub fn main() {
                 let v22 = spiral_wrap_signed(v21 * v20, 32)
                 v22
             }
-            Us0Empty -> {
-                0
-            }
+            Us0Empty -> 0
             Us0Rect(v23, v24) -> {
                 let v25 = spiral_wrap_signed(v23 * v24, 32)
                 v25
@@ -75,9 +63,7 @@ pub fn main() {
                 let v31 = spiral_wrap_signed(v30 * v29, 32)
                 v31
             }
-            Us0Empty -> {
-                0
-            }
+            Us0Empty -> 0
             Us0Rect(v32, v33) -> {
                 let v34 = spiral_wrap_signed(v32 * v33, 32)
                 v34
@@ -91,9 +77,7 @@ pub fn main() {
                 let v41 = spiral_wrap_signed(v40 * v39, 32)
                 v41
             }
-            Us0Empty -> {
-                0
-            }
+            Us0Empty -> 0
             Us0Rect(v42, v43) -> {
                 let v44 = spiral_wrap_signed(v42 * v43, 32)
                 v44

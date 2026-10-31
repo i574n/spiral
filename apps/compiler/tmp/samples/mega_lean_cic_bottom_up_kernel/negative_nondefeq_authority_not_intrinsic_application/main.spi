@@ -1,7 +1,7 @@
-open main
+:< main
 
-inl impossible_nondefeq_authority_cannot_enter_intrinsic_Application_program () =
-    inl nondefeq =
+:= impossible_nondefeq_authority_cannot_enter_intrinsic_Application_program () =
+    := nondefeq =
         corrected_cic_structural_nondefeq_authority (
             corrected_cic_true (),
             corrected_cic_false (),
@@ -11,5 +11,5 @@ inl impossible_nondefeq_authority_cannot_enter_intrinsic_Application_program () 
         CorrectedCicConversionConstraintProgramDone
         "this-must-be-rejected-because-nondefeq-and-intrinsic-defeq-are-disjoint-proof-authorities"
 
-inl main () =
+:= main () =
     impossible_nondefeq_authority_cannot_enter_intrinsic_Application_program ()

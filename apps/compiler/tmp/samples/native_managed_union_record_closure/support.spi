@@ -1,8 +1,8 @@
-union payload =
+:| payload =
     | Empty
     | Item : string * i32
 
-inl score x : i32 =
-    match x with
+:= score x : i32 =
+    ?= x ?|
     | Empty => 3i32
-    | Item (text, value) => sm.length text +. value
+    | Item (text, value) => sm::length text +. value

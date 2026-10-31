@@ -1,15 +1,15 @@
-nominal raw_phase = ()
-nominal decided_phase = ()
+:! raw_phase = ()
+:! decided_phase = ()
 
-union phase_state phase =
+:| phase_state phase =
     | RawState :: i32 -> phase_state raw_phase
     | DecidedState :: i32 * bool -> phase_state decided_phase
 
-let decide_state (state : phase_state raw_phase) : phase_state decided_phase =
-    match state with
-    | RawState value => DecidedState (value, true)
+:~ decide_state (state : phase_state raw_phase) : phase_state decided_phase =
+    ?= state ?|
+    | RawState value => DecidedState (value, !+)
 
-inl main () : bool =
-    inl state = decide_state (RawState 7i32)
-    match state with
+:= main () : bool =
+    := state = decide_state (RawState 7i32)
+    ?= state ?|
     | DecidedState (_, accepted) => accepted

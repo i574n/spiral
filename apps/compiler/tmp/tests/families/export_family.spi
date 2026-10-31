@@ -2,7 +2,7 @@
 // BACKEND-COVERAGE-GAPS Zig Export arm regression (pack 5o). codegenZig had NO Export case (fell through to the
 //     unsupported-op fallthrough); the fix mirrors codegenRust's export builder and lands via
 //     apps/compiler/packs/apply-zig-export-pack.ps1. ///> zig ONLY: Export is a library entry, so a native-RUN
-//     harness that links an exe fails on backends whose Export emits a library -- C has no Export arm at all (n54)
+//     runner that links an exe fails on backends whose Export emits a library -- C has no Export arm at all (n54)
 //     and Rust's Export emits a crate (rustc E0601 "no main"). Zig's Export emit keeps spiralMain, so the program
 //     runs standalone and the zig target agrees (export_add(40,2)=42 -> exit 0; proven on the patched DLL, n56).
 //     UNWIRED in package.spiproj; the 5o review runs it as a REQUIRED Cells gate (test-blocks.ps1 -Lib tests/families

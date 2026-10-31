@@ -1,2 +1,2 @@
-inl identity x = x
-inl main () : string = identity "sample-derived"
+:= identity x = x
+:= main () : string = identity "sample-derived"

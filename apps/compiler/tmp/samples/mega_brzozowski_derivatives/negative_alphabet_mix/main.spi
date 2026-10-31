@@ -1,4 +1,4 @@
-open main
+:< main
 
-inl main () =
+:= main () =
     accepts (ends_with_zero ()) (InputCons (tri_a (), InputEmpty))

@@ -64,28 +64,18 @@ pub fn main() {
     let v3 = True
     let v6 =
         case v3 {
-            True -> {
-                Us0Held(v1)
-            }
-            False -> {
-                Us0Missing
-            }
+            True -> Us0Held(v1)
+            False -> Us0Missing
         }
     case v6  {
         Us0Held(v7) -> {
             let v8 = spiral_array_get(v7, 0)
             let v9 = v8 == 7
             case v9 {
-                True -> {
-                    0
-                }
-                False -> {
-                    1
-                }
+                True -> 0
+                False -> 1
             }
         }
-        Us0Missing -> {
-            1
-        }
+        Us0Missing -> 1
     }
 }

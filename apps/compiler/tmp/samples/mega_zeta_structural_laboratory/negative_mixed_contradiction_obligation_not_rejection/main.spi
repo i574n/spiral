@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_mixed_contradiction_obligation_not_rejection forall root.
+:= impossible_mixed_contradiction_obligation_not_rejection \* root.
     (obligation :
         certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_second_prime_contradiction_obligation root)
     : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_second_prime_root_factor_rejected_obstruction
@@ -8,4 +8,4 @@ inl impossible_mixed_contradiction_obligation_not_rejection forall root.
     =
     obligation
 
-inl main () = ()
+:= main () = ()

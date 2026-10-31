@@ -28,13 +28,13 @@ fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ab"); } LIT.with(|lit| lit.clone()) };
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("qwe"); } LIT.with(|lit| lit.clone()) };
     let v2: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Empty); } CASE.with(|case| case.clone()) };
-    let v3: Rc<UH0> = Rc::new(UH0::UH0_Node(v1.clone(), v2.clone(), v2.clone()));
-    let v4: Rc<UH0> = Rc::new(UH0::UH0_Node(v0.clone(), v3.clone(), v3.clone()));
-    let v5: i32 = score_0(v4.clone());
+    let v3: Rc<UH0> = Rc::new(UH0::UH0_Node(v1.clone(), v2.clone(), v2));
+    let v4: Rc<UH0> = Rc::new(UH0::UH0_Node(v0.clone(), v3.clone(), v3));
+    let v5: i32 = score_0(v4);
     let v6: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Empty); } CASE.with(|case| case.clone()) };
-    let v7: Rc<UH0> = Rc::new(UH0::UH0_Node(v1.clone(), v6.clone(), v6.clone()));
-    let v8: Rc<UH0> = Rc::new(UH0::UH0_Node(v0.clone(), v7.clone(), v7.clone()));
-    let v9: i32 = score_0(v8.clone());
+    let v7: Rc<UH0> = Rc::new(UH0::UH0_Node(v1, v6.clone(), v6));
+    let v8: Rc<UH0> = Rc::new(UH0::UH0_Node(v0, v7.clone(), v7));
+    let v9: i32 = score_0(v8);
     let v10: i32 = v5.wrapping_add(v9);
     let v11: i32 = v10.wrapping_sub(16i32);
     v11

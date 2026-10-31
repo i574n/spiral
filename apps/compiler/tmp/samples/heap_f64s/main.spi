@@ -1,18 +1,18 @@
-nominal f64_array = array_base f64
+:! f64_array = array_base f64
 
-inl create (n : i32) : f64_array = f64_array !!!!ArrayCreate(`f64, n)
-inl get (array : f64_array) (i : i32) : f64 =
-    match array with
+:= create (n : i32) : f64_array = f64_array !!!!ArrayCreate(`f64, n)
+:= get (array : f64_array) (i : i32) : f64 =
+    ?= array ?|
     | f64_array values => !!!!ArrayIndex(values, i)
-inl set (array : f64_array) (i : i32) (value : f64) : () =
-    match array with
+:= set (array : f64_array) (i : i32) (value : f64) : () =
+    ?= array ?|
     | f64_array values => !!!!ArrayIndexSet(values, i, value)
 
-inl main () : i32 =
-    inl a = create 1i32
-    inl ~x = 1.5f64
+:= main () : i32 =
+    := a = create 1i32
+    := ~x = 1.5f64
     set a 0i32 x
-    inl box = !!!!LayoutToHeap({ values = a })
-    inl opened = !!!!LayoutIndex(box)
-    inl y = get opened.values 0i32
-    if !!!!EQ(y, 1.5f64) then 0i32 else 1i32
+    := box = !!!!LayoutToHeap({ values = a })
+    := opened = !!!!LayoutIndex(box)
+    := y = get opened::values 0i32
+    ? !!!!EQ(y, 1.5f64) ?> 0i32 |: 1i32

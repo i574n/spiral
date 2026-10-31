@@ -1,14 +1,14 @@
-union choice =
+:| choice =
     | Empty
     | Full : i32
 
-let pick x : i32 =
-    match x with
+:~ pick x : i32 =
+    ?= x ?|
     | Empty => 0i32
     | Full value => value
 
-inl main () : i32 =
-    inl ~flag = true
-    inl full = if flag then Full 7i32 else Empty
-    inl empty = if flag then Empty else Full 1i32
-    if pick full =. 7i32 && pick empty =. 0i32 then 0i32 else 1i32
+:= main () : i32 =
+    := ~flag = !+
+    := full = ? flag ?> Full 7i32 |: Empty
+    := empty = ? flag ?> Empty |: Full 1i32
+    ? pick full =. 7i32 && pick empty =. 0i32 ?> 0i32 |: 1i32

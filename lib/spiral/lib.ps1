@@ -10,18 +10,18 @@ function GetTargetDir {
 
 function Ensure-SpiralCompiler {
     $bundle = ResolveLink "$PSScriptRoot/../../apps/compiler/tmp"
-    if (!(Test-Path -LiteralPath (Join-Path $bundle "scripts/env.ps1"))) { throw "Spiral compiler bundle not found at $bundle" }
-    . (Join-Path $bundle "scripts/env.ps1")
+    if (!(Test-Path -LiteralPath (Join-Path $bundle "../scripts/env.ps1"))) { throw "Spiral compiler bundle not found at $bundle" }
+    . (Join-Path $bundle "../scripts/env.ps1")
     $env:SPIRAL_WORKSPACE_ROOT = $bundle
     $env:CARGO_TERM_COLOR = "never"
     $ready = try { $null = Resolve-SpiralDotnet; $true } catch { $false }
     if (!$ready) {
-        & (Join-Path $bundle "scripts/install-dotnet.ps1")
+        & (Join-Path $bundle "../scripts/install-dotnet.ps1")
         if ($LASTEXITCODE -ne 0) { throw "dotnet 11 install failed" }
     }
     $compiler = Get-SpiralCompilerDll "single-flight"
     if (!(Test-Path -LiteralPath $compiler)) {
-        & (Join-Path $bundle "scripts/build.ps1") -Mode single-flight
+        & (Join-Path $bundle "../scripts/build.ps1") -Mode single-flight
         if ($LASTEXITCODE -ne 0) { throw "SpiralCompiler build failed" }
         $compiler = Get-SpiralCompilerDll "single-flight"
     }
@@ -44,7 +44,7 @@ function BuildSpiral {
     try {
         $spiral = Ensure-SpiralCompiler | Select-Object -Last 1
         if (!$env:SPIRAL_COMPILER_PACKAGE_DIR) {
-            $env:SPIRAL_COMPILER_PACKAGE_DIR = & { . (Join-Path $spiral.Bundle 'scripts/env.ps1'); Get-SpiralPackageDir }
+            $env:SPIRAL_COMPILER_PACKAGE_DIR = & { . (Join-Path $spiral.Bundle '../scripts/env.ps1'); Get-SpiralPackageDir }
         }
         $start = Get-Date
         Write-Host "spiral/lib/spiral/lib.ps1/BuildSpiral / $Name / $($spiral.Compiler) --backend $Backend $SpiPath $RsPath"

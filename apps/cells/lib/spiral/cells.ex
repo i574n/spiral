@@ -832,7 +832,7 @@ defmodule Spiral.Cells do
 
   defp source_mtime(spi, opts) do
     dirs =
-      case File.read(Path.join(Path.dirname(spi), "package.spiproj")) do
+      case Spiral.Cells.Manifest.read(Path.dirname(spi)) do
         {:ok, text} ->
           case Regex.run(~r/^packageDir:\s*(.+)$/m, text) do
             [_, dir] ->
@@ -1108,10 +1108,10 @@ defmodule Spiral.Cells do
           {:halt,
            {:error, %ProcessError{message: "package name #{inspect(name)} clashes with the cell"}}}
 
-        Enum.any?(entries, &(&1.name == name)) ->
-          {:halt, {:error, %ProcessError{message: "package #{name} is listed twice"}}}
+        existing = Enum.find(entries, &(&1.name == name)) ->
+          {:halt, {:error, %ProcessError{message: "package #{name} is listed twice: #{existing.target} and #{target}"}}}
 
-        not File.regular?(Path.join(target, "package.spiproj")) ->
+        not Spiral.Cells.Manifest.exists?(target) ->
           {:halt, {:error, %ProcessError{message: "Spiral package was not found at #{target}"}}}
 
         true ->
@@ -1135,7 +1135,7 @@ defmodule Spiral.Cells do
   defp expand_package(path, root) when is_binary(root), do: Path.expand(path, root)
   defp expand_package(path, _root), do: Path.expand(path)
 
-  defp package_project?(path), do: File.regular?(Path.join(path, "package.spiproj"))
+  defp package_project?(path), do: Spiral.Cells.Manifest.exists?(path)
 
   defp exe_name, do: if(match?({:win32, _}, :os.type()), do: "cell.exe", else: "cell")
 

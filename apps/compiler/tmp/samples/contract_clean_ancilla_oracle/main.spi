@@ -1,23 +1,23 @@
-nominal zero = ()
-nominal succ n = n
-nominal clean = ()
-nominal dirty = ()
+:! zero = ()
+:! succ n = n
+:! clean = ()
+:! dirty = ()
 
-union rec qregister n =
+:| ^ qregister n =
     | QOne :: qregister (succ zero)
-    | QSucc :: forall n. qregister n -> qregister (succ n)
+    | QSucc :: \* n. qregister n -> qregister (succ n)
 
-union ancilla state =
+:| ancilla state =
     | CleanAncilla :: ancilla clean
     | DirtyAncilla :: ancilla dirty
 
-inl run_oracle forall n.
+:= run_oracle \* n.
     (register : qregister n)
     (ancilla : ancilla clean)
     : qregister n * ancilla clean =
     register, ancilla
 
-inl main () : string =
-    inl _, ancilla = run_oracle (QSucc QOne) CleanAncilla
-    match ancilla with
+:= main () : string =
+    := _, ancilla = run_oracle (QSucc QOne) CleanAncilla
+    ?= ancilla ?|
     | CleanAncilla => "oracle-returned-clean-ancilla"

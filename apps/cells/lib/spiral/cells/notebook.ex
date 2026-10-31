@@ -1254,18 +1254,24 @@ defmodule Spiral.Cells.Notebook do
     |> Path.dirname()
     |> ancestors()
     |> Enum.find_value(fn dir ->
+      lib_root_itself(dir) ||
       Enum.find_value(@lib_rels, fn rel ->
         candidate = Path.join(dir, rel)
-        if File.regular?(Path.join(candidate, "package.spiproj")), do: Path.expand(candidate)
+        if Spiral.Cells.Manifest.exists?(candidate), do: Path.expand(candidate)
       end)
     end) || spiral_lib_from_env(System.get_env("SPIRAL_LIB"))
+  end
+
+  defp lib_root_itself(dir) do
+    expanded = Path.expand(dir)
+    if String.ends_with?(String.replace(expanded, "\\", "/"), "/lib/spiral") and Spiral.Cells.Manifest.exists?(expanded), do: expanded
   end
 
   @doc false
   def spiral_lib_from_env(value) do
     case value do
       dir when is_binary(dir) and dir != "" ->
-        if File.regular?(Path.join(dir, "package.spiproj")), do: Path.expand(dir)
+        if Spiral.Cells.Manifest.exists?(dir), do: Path.expand(dir)
 
       _ ->
         nil

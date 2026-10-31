@@ -14,24 +14,16 @@ pub type Us0 {
 pub fn pick_0(v0: Int) -> Us0 {
     let v1 = v0 == 0
     case v1 {
-        True -> {
-            Us0Circle(5)
-        }
+        True -> Us0Circle(5)
         False -> {
             let v3 = v0 == 1
             case v3 {
-                True -> {
-                    Us0Square(4)
-                }
+                True -> Us0Square(4)
                 False -> {
                     let v5 = v0 == 2
                     case v5 {
-                        True -> {
-                            Us0Tri(7)
-                        }
-                        False -> {
-                            Us0Dot
-                        }
+                        True -> Us0Tri(7)
+                        False -> Us0Dot
                     }
                 }
             }
@@ -48,18 +40,14 @@ pub fn measure_1(v0: Us0, v1: Int) -> Int {
             let v4 = spiral_wrap_signed(v1 * v1, 32)
             let v5 = v4 > 3
             case v0  {
-                Us0Dot -> {
-                    v4
-                }
+                Us0Dot -> v4
                 Us0Square(v6) -> {
                     case v5 {
                         True -> {
                             let v7 = spiral_wrap_signed(v6 * v6, 32)
                             v7
                         }
-                        False -> {
-                            v6
-                        }
+                        False -> v6
                     }
                 }
                 Us0Tri(v9) -> {
@@ -68,9 +56,7 @@ pub fn measure_1(v0: Us0, v1: Int) -> Int {
                             let v10 = spiral_wrap_signed(v9 * 2, 32)
                             v10
                         }
-                        False -> {
-                            v9
-                        }
+                        False -> v9
                     }
                 }
                 _ -> panic as "spiral: union case ruled out by partial evaluation"
@@ -80,15 +66,9 @@ pub fn measure_1(v0: Us0, v1: Int) -> Int {
 }
 pub fn measure_tri_2(v0: Us0, v1: Int) -> Int {
     case v0  {
-        Us0Circle(v2) -> {
-            v2
-        }
-        Us0Dot -> {
-            0
-        }
-        Us0Square(v3) -> {
-            v3
-        }
+        Us0Circle(v2) -> v2
+        Us0Dot -> 0
+        Us0Square(v3) -> v3
         _ -> {
             let v4 = spiral_wrap_signed(v1 + 2, 32)
             case v0  {

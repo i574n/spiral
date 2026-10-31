@@ -16,9 +16,9 @@ fun spiral_main(): Int {
     val v1: (Int) -> SpiralTuple0 = f_c0(v0)
     var v2: Byte = (0).toByte()
     var v3: Byte = (0).toByte()
-    val spiral_tuple245 = v1(1)
-    v2 = spiral_tuple245.v0
-    v3 = spiral_tuple245.v1
+    val spiral_tuple238 = v1(1)
+    v2 = spiral_tuple238.v0
+    v3 = spiral_tuple238.v1
     val v4: Boolean = (v2 == (100).toByte())
     var v6: Boolean = false
     if (v4) {

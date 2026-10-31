@@ -1,19 +1,19 @@
-inl main () : i32 =
-    inl ~x = 1.5f64
-    inl ~y = 0.0f64 -. 2.0f64
-    inl q = x /. y
-    inl ~m = 1000000.0f64
-    inl big = m *. m *. m *. 10000.0f64
-    inl sq = big *. big
-    inl ~n = 3i32
-    inl from_i = !!!!Conv(`f64, n)
-    inl ~z = 2.9f64
-    inl ~nz = 0.0f64 -. 1.9f64
-    inl as_i = !!!!Conv(`i32, z)
-    inl as_n = !!!!Conv(`i32, nz)
-    inl ~f = 1.5f32
-    inl widened = !!!!Conv(`f64, f)
-    if
+:= main () : i32 =
+    := ~x = 1.5f64
+    := ~y = 0.0f64 -. 2.0f64
+    := q = x /. y
+    := ~m = 1000000.0f64
+    := big = m *. m *. m *. 10000.0f64
+    := sq = big *. big
+    := ~n = 3i32
+    := from_i = !!!!Conv(`f64, n)
+    := ~z = 2.9f64
+    := ~nz = 0.0f64 -. 1.9f64
+    := as_i = !!!!Conv(`i32, z)
+    := as_n = !!!!Conv(`i32, nz)
+    := ~f = 1.5f32
+    := widened = !!!!Conv(`f64, f)
+    ?
         q =. (0.0f64 -. 0.75f64)
         && sq > big
         && sq < (big *. big *. big)
@@ -21,5 +21,5 @@ inl main () : i32 =
         && as_i =. 2i32
         && as_n =. (0i32 -. 1i32)
         && widened =. 1.5f64
-    then 0i32
-    else 1i32
+    ?> 0i32
+    |: 1i32

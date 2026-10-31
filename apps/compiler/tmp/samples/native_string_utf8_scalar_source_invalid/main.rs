@@ -124,7 +124,7 @@ fn utf8_scalar_at_byte_offset_0(mut v0: Rc<str>, mut v1: i32) -> i32 {
                                     let v70: i32 = v1.wrapping_add(2i32);
                                     let v71: u8 = runtime_byte_1(v0.clone(), v70);
                                     let v72: i32 = i32::from(v71);
-                                    let v73: u8 = runtime_byte_1(v0.clone(), v64);
+                                    let v73: u8 = runtime_byte_1(v0, v64);
                                     let v74: i32 = i32::from(v73);
                                     let v75: bool = v69 < 128i32;
                                     let v77: bool = if v75 {
@@ -194,7 +194,7 @@ fn utf8_scalar_at_byte_offset_0(mut v0: Rc<str>, mut v1: i32) -> i32 {
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("é"); } LIT.with(|lit| lit.clone()) };
     let v1: i32 = 1i32;
-    utf8_scalar_at_byte_offset_0(v0.clone(), v1)
+    utf8_scalar_at_byte_offset_0(v0, v1)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

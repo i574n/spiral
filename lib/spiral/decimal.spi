@@ -48,6 +48,10 @@
     := denominator = b.units * power_of_ten a.scale 1i64
     normalized { units = numerator / denominator; scale = places }
 
+:= modulo (a : decimal) (b : decimal) : decimal =
+    := scale = larger a.scale b.scale
+    normalized { units = at_scale scale a % at_scale scale b; scale = scale }
+
 := digit_value (c : string) : i64 = conv (sm'.index_of c "0123456789") : i64
 
 :~ ^ digits_from
@@ -58,6 +62,7 @@
     |:
         := c = sm'.substring i 1i32 s
         ? c = "." ?> (? seen_point ?> None |: digits_from s (i + 1i32) acc scale !+ digits)
+        |? sm'.index_of c "0123456789" >= 0i32 && acc > (9223372036854775807i64 - digit_value c) / 10i64 ?> None
         |? sm'.index_of c "0123456789" >= 0i32 ?>
             := scale = ? seen_point ?> scale + 1i32 |: scale
             digits_from s (i + 1i32) (acc * 10i64 + digit_value c) scale seen_point (digits + 1i32)
@@ -117,3 +122,13 @@ test rejects_malformed_numbers =
     ?= parse "12a" ?| Some _ => failwith "a letter" | None => ()
     ?= parse "-" ?| Some _ => failwith "a bare sign" | None => ()
     ?= parse "" ?| Some _ => failwith "empty" | None => ()
+
+///> rust
+test modulo_and_the_i64_bound_follow_xpath =
+    := d (s : string) = ?= parse s ?| Some x => x | None => failwith ("parses " ++# s)
+    ? text (modulo (d "10") (d "3")) <> "1" ?> failwith "10 mod 3"
+    ? text (modulo (d "-10") (d "3")) <> "-1" ?> failwith "the remainder takes the dividend's sign"
+    ? text (modulo (d "5.5") (d "2")) <> "1.5" ?> failwith "a decimal remainder"
+    ? text (d "9223372036854775807") <> "9223372036854775807" ?> failwith "the largest i64 parses"
+    ?= parse "9223372036854775808" ?| Some _ => failwith "one past the largest i64 overflows" | None => ()
+    ?= parse "131400000000000000000000" ?| Some _ => failwith "a 24-digit number is not a decimal" | None => ()

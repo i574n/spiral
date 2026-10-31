@@ -1,12 +1,12 @@
-nominal box x y = x * y * string
+:! box x y = x * y * string
 
-inl first forall t u.
+:= first \* t u.
     (value : box
         t u) :
     t =
-    match value with
+    ?= value ?|
     | box (x, _, _) => x
 
-inl main () : i32 = first (box (0i32, 1i32, "box"))
+:= main () : i32 = first (box (0i32, 1i32, "box"))
 
-inl oracle_must_not_record_current_error () = ()
+:= oracle_must_not_record_current_error () = ()

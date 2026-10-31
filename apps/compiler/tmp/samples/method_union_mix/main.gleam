@@ -5,12 +5,8 @@ pub type Us0 {
 pub fn method0(v0: Int, v1: String) -> Us0 {
     let v2 = v0 == 0
     case v2 {
-        True -> {
-            Us0One(0)
-        }
-        False -> {
-            Us0Both(v0, v1)
-        }
+        True -> Us0One(0)
+        False -> Us0Both(v0, v1)
     }
 }
 pub fn main() {
@@ -26,21 +22,13 @@ pub fn main() {
                         let v7 = v5 == "hi"
                         v7
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             case v8 {
-                True -> {
-                    0
-                }
-                False -> {
-                    1
-                }
+                True -> 0
+                False -> 1
             }
         }
-        Us0One(v3) -> {
-            1
-        }
+        Us0One(v3) -> 1
     }
 }

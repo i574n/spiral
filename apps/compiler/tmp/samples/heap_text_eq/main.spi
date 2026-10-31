@@ -1,8 +1,8 @@
-inl main () : i32 =
-    inl ~a = "hi"
-    inl ~b = "hi"
-    inl pair = a, b
-    inl box = !!!!LayoutToHeap({ value = pair })
-    inl opened = !!!!LayoutIndex(box)
-    inl ~(left, right) = opened.value
-    if !!!!EQ(left, right) then 0i32 else 1i32
+:= main () : i32 =
+    := ~a = "hi"
+    := ~b = "hi"
+    := pair = a, b
+    := box = !!!!LayoutToHeap({ value = pair })
+    := opened = !!!!LayoutIndex(box)
+    := ~(left, right) = opened::value
+    ? !!!!EQ(left, right) ?> 0i32 |: 1i32

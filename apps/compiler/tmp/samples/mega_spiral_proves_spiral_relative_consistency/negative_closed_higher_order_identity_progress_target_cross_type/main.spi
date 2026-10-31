@@ -1,19 +1,19 @@
-open main
+:< main
 
-inl impossible_closed_higher_order_identity_progress_target_cross_type () :
+:= impossible_closed_higher_order_identity_progress_target_cross_type () :
     exact_linear_indexed_term
         exact_linear_free_context_empty
         exact_linear_indexed_usage_empty
         exact_linear_bool_type =
-    inl identity_value :
+    := identity_value :
         exact_linear_indexed_value
             exact_linear_free_context_empty
             exact_linear_indexed_usage_empty
             (exact_linear_arrow_type exact_linear_unit_type exact_linear_unit_type) =
-        match exact_linear_indexed_identity_term () with
+        ?= exact_linear_indexed_identity_term () ?|
         | ExactLinearIndexedLambda payload =>
             ExactLinearIndexedValueLambda payload
-    inl relation :
+    := relation :
         exact_linear_indexed_closed_identity_beta_relation
             (exact_linear_arrow_type exact_linear_unit_type exact_linear_unit_type) =
         ExactLinearIndexedClosedIdentityBetaRelation (
@@ -21,5 +21,5 @@ inl impossible_closed_higher_order_identity_progress_target_cross_type () :
             "the-negative-attempts-to-observe-a-higher-order-identity-target-as-Bool")
     exact_linear_indexed_closed_identity_beta_target relation
 
-inl main () =
+:= main () =
     impossible_closed_higher_order_identity_progress_target_cross_type ()

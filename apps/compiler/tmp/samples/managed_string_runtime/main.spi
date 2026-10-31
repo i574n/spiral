@@ -1,5 +1,5 @@
-inl main () =
-    inl ~x = "qwe"
-    inl a : i32 = sm.length x
-    inl b : i32 = sm.length x
+:= main () =
+    := ~x = "qwe"
+    := a : i32 = sm::length x
+    := b : i32 = sm::length x
     (-.) ((+.) a b) 6i32

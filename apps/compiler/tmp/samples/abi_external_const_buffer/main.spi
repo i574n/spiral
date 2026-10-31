@@ -1,7 +1,7 @@
-inl main () : i32 =
-    inl ~n = 4i32
-    inl ~lhs : array u8 = create n
-    inl ~rhs : array u8 = create n
+:= main () : i32 =
+    := ~n = 4i32
+    := ~lhs : array u8 = create n
+    := ~rhs : array u8 = create n
     set lhs 0i32 65u8
     set lhs 1i32 66u8
     set lhs 2i32 67u8
@@ -10,13 +10,13 @@ inl main () : i32 =
     set rhs 1i32 66u8
     set rhs 2i32 67u8
     set rhs 3i32 69u8
-    inl ~prefix_count = 3i32
-    inl ~full_count = 4i32
-    inl ~prefix_order = $"spiral_abi_libc_memcmp(!lhs,!rhs,!prefix_count)" : i32
-    inl ~full_order = $"spiral_abi_libc_memcmp(!lhs,!rhs,!full_count)" : i32
-    if (=.) prefix_order 0i32 then
-        if (=.) full_order 0i32 then 2i32
-        elif (=.) (index lhs 3i32) 68u8 then
-            if (=.) (index rhs 3i32) 69u8 then 0i32 else 4i32
-        else 3i32
-    else 1i32
+    := ~prefix_count = 3i32
+    := ~full_count = 4i32
+    := ~prefix_order = $"spiral_abi_libc_memcmp(!lhs,!rhs,!prefix_count)" : i32
+    := ~full_order = $"spiral_abi_libc_memcmp(!lhs,!rhs,!full_count)" : i32
+    ? (=.) prefix_order 0i32 ?>
+        ? (=.) full_order 0i32 ?> 2i32
+        |? (=.) (index lhs 3i32) 68u8 ?>
+            ? (=.) (index rhs 3i32) 69u8 ?> 0i32 |: 4i32
+        |: 3i32
+    |: 1i32

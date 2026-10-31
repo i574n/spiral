@@ -88,7 +88,7 @@ if ((Test-Path $bunBin) -and -not (($env:PATH -split [IO.Path]::PathSeparator) -
     $env:PATH = "$bunBin$([IO.Path]::PathSeparator)$env:PATH"
 }
 if (Test-Command "bunx") {
-    bunx --bun playwright@1.44.0 install
+    bunx --bun playwright@1.64.1 install
     if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / playwright browsers install failed (exit code $LASTEXITCODE)" }
 }
 

@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("qwe"); } LIT.with(|lit| lit.clone()) };
-    let v1: u8 = v0.clone().as_bytes()[1i32 as usize];
+    let v1: u8 = v0.as_bytes()[1i32 as usize];
     let v2: bool = v1 == b'w';
     if v2 {
         0i32

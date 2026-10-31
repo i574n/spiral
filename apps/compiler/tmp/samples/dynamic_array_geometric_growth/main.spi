@@ -1,11 +1,11 @@
-inl reserve ~(xs : array i32) ~(requested_capacity : i32) : () =
+:= reserve ~(xs : array i32) ~(requested_capacity : i32) : () =
     $'DynamicArrayReserve0(!xs,!requested_capacity)'
 
-inl capacity ~(xs : array i32) : i32 =
+:= capacity ~(xs : array i32) : i32 =
     $'DynamicArrayCapacity0(!xs)'
 
-inl main () : i32 =
-    inl ~xs : array i32 = create 0i32
-    join reserve xs 3i32
-    inl ~capacity_after_reserve_3 = join capacity xs
+:= main () : i32 =
+    := ~xs : array i32 = create 0i32
+    ~~ reserve xs 3i32
+    := ~capacity_after_reserve_3 = ~~ capacity xs
     capacity_after_reserve_3 -. 4i32

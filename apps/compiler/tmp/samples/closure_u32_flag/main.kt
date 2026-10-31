@@ -21,10 +21,10 @@ fun spiral_main(): Int {
     var v4: UInt = 0u
     var v5: String = ""
     var v6: Boolean = false
-    val spiral_tuple335 = v3(1)
-    v4 = spiral_tuple335.v0
-    v5 = spiral_tuple335.v1
-    v6 = spiral_tuple335.v2
+    val spiral_tuple323 = v3(1)
+    v4 = spiral_tuple323.v0
+    v5 = spiral_tuple323.v1
+    v6 = spiral_tuple323.v2
     val v7: Boolean = (v4 == 4000000000u)
     var v9: Boolean = false
     if (v7) {

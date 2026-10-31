@@ -1,17 +1,17 @@
-nominal zero = ()
-nominal succ n = n
-nominal lineage_a = ()
-nominal coherent = ()
-union rec budget n = | ZeroBudget :: budget zero | MoreBudget :: forall n. budget n -> budget (succ n)
-union qstate lineage phase = | QState :: forall lineage phase. string -> qstate lineage phase
-inl apply_gate forall lineage n.
+:! zero = ()
+:! succ n = n
+:! lineage_a = ()
+:! coherent = ()
+:| ^ budget n = | ZeroBudget :: budget zero | MoreBudget :: \* n. budget n -> budget (succ n)
+:| qstate lineage phase = | QState :: \* lineage phase. string -> qstate lineage phase
+:= apply_gate \* lineage n.
     (state : qstate lineage coherent) (budget : budget (succ n))
     : qstate lineage coherent * budget n
     =
-    match budget with
+    ?= budget ?|
     | MoreBudget rest => state, rest
-inl main () =
-    inl state : qstate lineage_a coherent = QState "psi"
-    inl one : budget (succ zero) = MoreBudget ZeroBudget
-    match apply_gate state one with
+:= main () =
+    := state : qstate lineage_a coherent = QState "psi"
+    := one : budget (succ zero) = MoreBudget ZeroBudget
+    ?= apply_gate state one ?|
     | state1, empty => apply_gate state1 empty

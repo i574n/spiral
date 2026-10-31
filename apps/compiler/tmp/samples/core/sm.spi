@@ -1,343 +1,343 @@
-inl index forall t{int}. (str : string) (i : t) : char = !!!!StringIndex(str, i)
-inl length forall t{int}. (str : string) : t = !!!!StringLength(`t, str)
-inl slice forall t{int}. (str : string) { from = (a : t) to = (b : t) } = !!!!StringSlice(str, a, b)
-inl concat (left : string) (right : string) : string = !!!!StaticStringConcat(left, right)
+:= index \* t{int}. (str : string) (i : t) : char = !!!!StringIndex(str, i)
+:= length \* t{int}. (str : string) : t = !!!!StringLength(`t, str)
+:= slice \* t{int}. (str : string) { from = (a : t) to = (b : t) } = !!!!StringSlice(str, a, b)
+:= concat (left : string) (right : string) : string = !!!!StaticStringConcat(left, right)
 
-let runtime_byte (str : string) (i : i32) : char = index str i
+:~ runtime_byte (str : string) (i : i32) : char = index str i
 
-inl is_continuation_byte (lower : char) (upper : char) (value : char) : bool =
-    if !!!!LT(value, lower) then false
-    else !!!!LT(value, upper)
+:= is_continuation_byte (lower : char) (upper : char) (value : char) : bool =
+    ? !!!!LT(value, lower) ?> !-
+    |: !!!!LT(value, upper)
 
-let rec codepoint_length_loop
+:~ ^ codepoint_length_loop
     (str : string) (lower : char) (upper : char) (byte_index : i32) (count : i32) (byte_length : i32)
     : i32
     =
-    if (=.) byte_index byte_length then count
-    else
-        inl value = index str byte_index
-        inl count = if is_continuation_byte lower upper value then count else (+.) count 1i32
+    ? (=.) byte_index byte_length ?> count
+    |:
+        := value = index str byte_index
+        := count = ? is_continuation_byte lower upper value ?> count |: (+.) count 1i32
         codepoint_length_loop str lower upper ((+.) byte_index 1i32) count byte_length
 
-inl codepoint_length (str : string) : i32 =
-    inl continuation_byte_first = runtime_byte "À" 1i32
-    inl multibyte_lead_first = runtime_byte "©" 0i32
+:= codepoint_length (str : string) : i32 =
+    := continuation_byte_first = runtime_byte "À" 1i32
+    := multibyte_lead_first = runtime_byte "©" 0i32
     codepoint_length_loop str continuation_byte_first multibyte_lead_first 0i32 0i32 (length str : i32)
 
-let rec codepoint_byte_offset_loop
+:~ ^ codepoint_byte_offset_loop
     (str : string) (lower : char) (upper : char) (target : i32) (byte_index : i32) (codepoint_index : i32)
     (byte_length : i32)
     : i32
     =
-    if (=.) byte_index byte_length
-    then byte_length
-    else
-        inl value = index str byte_index
-        if is_continuation_byte lower upper value
-        then codepoint_byte_offset_loop str lower upper target ((+.) byte_index 1i32) codepoint_index byte_length
-        elif (=.) codepoint_index target
-        then byte_index
-        else
+    ? (=.) byte_index byte_length
+    ?> byte_length
+    |:
+        := value = index str byte_index
+        ? is_continuation_byte lower upper value
+        ?> codepoint_byte_offset_loop str lower upper target ((+.) byte_index 1i32) codepoint_index byte_length
+        |? (=.) codepoint_index target
+        ?> byte_index
+        |:
             codepoint_byte_offset_loop str lower upper target
                 ((+.) byte_index 1i32)
                 ((+.) codepoint_index 1i32)
                 byte_length
 
-inl codepoint_byte_offset (str : string) (target : i32) : i32 =
-    inl lower = runtime_byte "À" 1i32
-    inl upper = runtime_byte "©" 0i32
+:= codepoint_byte_offset (str : string) (target : i32) : i32 =
+    := lower = runtime_byte "À" 1i32
+    := upper = runtime_byte "©" 0i32
     codepoint_byte_offset_loop str lower upper target 0i32 0i32 (length str : i32)
 
-inl codepoint_index (str : string) (target : i32) : string =
-    inl from = codepoint_byte_offset str target
-    inl near_to = codepoint_byte_offset str ((+.) target 1i32)
+:= codepoint_index (str : string) (target : i32) : string =
+    := from = codepoint_byte_offset str target
+    := near_to = codepoint_byte_offset str ((+.) target 1i32)
     slice str { from; to = (-.) near_to 1i32 }
 
-inl codepoint_slice (str : string) { from = (from_codepoint : i32) to = (to_codepoint : i32) } : string =
-    if !!!!LT(to_codepoint, from_codepoint) then ""
-    else
-        inl from = codepoint_byte_offset str from_codepoint
-        inl near_to = codepoint_byte_offset str ((+.) to_codepoint 1i32)
+:= codepoint_slice (str : string) { from = (from_codepoint : i32) to = (to_codepoint : i32) } : string =
+    ? !!!!LT(to_codepoint, from_codepoint) ?> ""
+    |:
+        := from = codepoint_byte_offset str from_codepoint
+        := near_to = codepoint_byte_offset str ((+.) to_codepoint 1i32)
         slice str { from; to = (-.) near_to 1i32 }
 
-inl byte_to_i32 (value : char) : i32 =
+:= byte_to_i32 (value : char) : i32 =
     !!!!BackendSwitch({
-        C = fun () => $"((uint8_t)!value)" : i32
-        Fsharp = fun () => $"((int !value) &&& 255)" : i32
-        Rust = fun () => $"i32::from(!value)" : i32
-        Zig = fun () => $"\@as(i32, !value)" : i32
-        Lean = fun () => $"(Int32.ofNat (!value).toNat)" : i32
-        Bend = fun () => $"!value" : i32
-        Lua = fun () => $"string.byte(!value)" : i32
+        C = \ () => $"((uint8_t)!value)" : i32
+        Fsharp = \ () => $"((int !value) &&& 255)" : i32
+        Rust = \ () => $"i32::from(!value)" : i32
+        Zig = \ () => $"@@as(i32, !value)" : i32
+        Lean = \ () => $"(Int32.ofNat (!value).toNat)" : i32
+        Bend = \ () => $"!value" : i32
+        Lua = \ () => $"string.byte(!value)" : i32
         Gleam = fun () => $"case string.to_utf_codepoints(!value) { [spiral_byte_codepoint] -> \
             string.utf_codepoint_to_int(spiral_byte_codepoint) _ -> 0 }" : i32
-        TypeScript = fun () => $"!value" : i32
-        Delphi = fun () => $"Ord(!value)" : i32
-        Kotlin = fun () => $"(!value and 255)" : i32
-        Swift = fun () => $"(!value & 255)" : i32
-        Python = fun () => $"ord(!value)" : i32
-        Wasm = fun () => $"(i32.and !value (i32.const 255))" : i32
+        TypeScript = \ () => $"!value" : i32
+        Delphi = \ () => $"Ord(!value)" : i32
+        Kotlin = \ () => $"(!value and 255)" : i32
+        Swift = \ () => $"(!value & 255)" : i32
+        Python = \ () => $"ord(!value)" : i32
+        Wasm = \ () => $"(i32.and !value (i32.const 255))" : i32
     })
 
-inl valid_continuation_i32 (value : i32) : bool =
-    if value < 128i32 then false
-    else value < 192i32
+:= valid_continuation_i32 (value : i32) : bool =
+    ? value < 128i32 ?> !-
+    |: value < 192i32
 
-inl utf8_fail forall t. (message : string) : t = !!!!FailWith(`t, message)
+:= utf8_fail \* t. (message : string) : t = !!!!FailWith(`t, message)
 
-let utf8_scalar_at_byte_offset (str : string) (byte_offset : i32) : i32 =
-    inl byte_length = length str : i32
-    if byte_offset < 0i32 then utf8_fail "UTF-8 byte offset is negative."
-    elif byte_offset >= byte_length then utf8_fail "UTF-8 byte offset is outside the string."
-    else
-        inl b0 = byte_to_i32 (runtime_byte str byte_offset)
-        if b0 < 128i32 then b0
-        elif b0 < 194i32 then utf8_fail "UTF-8 scalar starts with an invalid lead byte."
-        elif b0 < 224i32 then
-            if ((+.) byte_offset 1i32) >= byte_length then utf8_fail "UTF-8 sequence is truncated."
-            else
-                inl b1 = byte_to_i32 (runtime_byte str ((+.) byte_offset 1i32))
-                if valid_continuation_i32 b1 then
+:~ utf8_scalar_at_byte_offset (str : string) (byte_offset : i32) : i32 =
+    := byte_length = length str : i32
+    ? byte_offset < 0i32 ?> utf8_fail "UTF-8 byte offset is negative."
+    |? byte_offset >= byte_length ?> utf8_fail "UTF-8 byte offset is outside the string."
+    |:
+        := b0 = byte_to_i32 (runtime_byte str byte_offset)
+        ? b0 < 128i32 ?> b0
+        |? b0 < 194i32 ?> utf8_fail "UTF-8 scalar starts with an invalid lead byte."
+        |? b0 < 224i32 ?>
+            ? ((+.) byte_offset 1i32) >= byte_length ?> utf8_fail "UTF-8 sequence is truncated."
+            |:
+                := b1 = byte_to_i32 (runtime_byte str ((+.) byte_offset 1i32))
+                ? valid_continuation_i32 b1 ?>
                     (+.) ((*.) ((-.) b0 192i32) 64i32) ((-.) b1 128i32)
-                else utf8_fail "UTF-8 sequence has an invalid continuation byte."
-        elif b0 < 240i32 then
-            if ((+.) byte_offset 2i32) >= byte_length then utf8_fail "UTF-8 sequence is truncated."
-            else
-                inl b1 = byte_to_i32 (runtime_byte str ((+.) byte_offset 1i32))
-                inl b2 = byte_to_i32 (runtime_byte str ((+.) byte_offset 2i32))
-                if valid_continuation_i32 b1 then
-                    if valid_continuation_i32 b2 then
-                        inl scalar =
+                |: utf8_fail "UTF-8 sequence has an invalid continuation byte."
+        |? b0 < 240i32 ?>
+            ? ((+.) byte_offset 2i32) >= byte_length ?> utf8_fail "UTF-8 sequence is truncated."
+            |:
+                := b1 = byte_to_i32 (runtime_byte str ((+.) byte_offset 1i32))
+                := b2 = byte_to_i32 (runtime_byte str ((+.) byte_offset 2i32))
+                ? valid_continuation_i32 b1 ?>
+                    ? valid_continuation_i32 b2 ?>
+                        := scalar =
                             (+.)
                                 ((+.) ((*.) ((-.) b0 224i32) 4096i32) ((*.) ((-.) b1 128i32) 64i32))
                                 ((-.) b2 128i32)
-                        if scalar < 2048i32 then utf8_fail "UTF-8 sequence is overlong."
-                        elif scalar >= 55296i32 then
-                            if scalar <= 57343i32 then utf8_fail "UTF-8 sequence encodes a surrogate."
-                            else scalar
-                        else scalar
-                    else utf8_fail "UTF-8 sequence has an invalid continuation byte."
-                else utf8_fail "UTF-8 sequence has an invalid continuation byte."
-        elif b0 < 245i32 then
-            if ((+.) byte_offset 3i32) >= byte_length then utf8_fail "UTF-8 sequence is truncated."
-            else
-                inl b1 = byte_to_i32 (runtime_byte str ((+.) byte_offset 1i32))
-                inl b2 = byte_to_i32 (runtime_byte str ((+.) byte_offset 2i32))
-                inl b3 = byte_to_i32 (runtime_byte str ((+.) byte_offset 3i32))
-                if valid_continuation_i32 b1 then
-                    if valid_continuation_i32 b2 then
-                        if valid_continuation_i32 b3 then
-                            inl scalar =
+                        ? scalar < 2048i32 ?> utf8_fail "UTF-8 sequence is overlong."
+                        |? scalar >= 55296i32 ?>
+                            ? scalar <= 57343i32 ?> utf8_fail "UTF-8 sequence encodes a surrogate."
+                            |: scalar
+                        |: scalar
+                    |: utf8_fail "UTF-8 sequence has an invalid continuation byte."
+                |: utf8_fail "UTF-8 sequence has an invalid continuation byte."
+        |? b0 < 245i32 ?>
+            ? ((+.) byte_offset 3i32) >= byte_length ?> utf8_fail "UTF-8 sequence is truncated."
+            |:
+                := b1 = byte_to_i32 (runtime_byte str ((+.) byte_offset 1i32))
+                := b2 = byte_to_i32 (runtime_byte str ((+.) byte_offset 2i32))
+                := b3 = byte_to_i32 (runtime_byte str ((+.) byte_offset 3i32))
+                ? valid_continuation_i32 b1 ?>
+                    ? valid_continuation_i32 b2 ?>
+                        ? valid_continuation_i32 b3 ?>
+                            := scalar =
                                 (+.)
                                     ((+.)
                                         ((+.) ((*.) ((-.) b0 240i32) 262144i32) ((*.) ((-.) b1 128i32) 4096i32))
                                         ((*.) ((-.) b2 128i32) 64i32))
                                     ((-.) b3 128i32)
-                            if scalar < 65536i32 then utf8_fail "UTF-8 sequence is overlong."
-                            elif scalar > 1114111i32 then utf8_fail "UTF-8 scalar is above U+10FFFF."
-                            else scalar
-                        else utf8_fail "UTF-8 sequence has an invalid continuation byte."
-                    else utf8_fail "UTF-8 sequence has an invalid continuation byte."
-                else utf8_fail "UTF-8 sequence has an invalid continuation byte."
-        else utf8_fail "UTF-8 scalar starts with an invalid lead byte."
+                            ? scalar < 65536i32 ?> utf8_fail "UTF-8 sequence is overlong."
+                            |? scalar > 1114111i32 ?> utf8_fail "UTF-8 scalar is above U+10FFFF."
+                            |: scalar
+                        |: utf8_fail "UTF-8 sequence has an invalid continuation byte."
+                    |: utf8_fail "UTF-8 sequence has an invalid continuation byte."
+                |: utf8_fail "UTF-8 sequence has an invalid continuation byte."
+        |: utf8_fail "UTF-8 scalar starts with an invalid lead byte."
 
-inl utf8_scalar_width (scalar : i32) : i32 =
-    if scalar < 128i32 then 1i32
-    elif scalar < 2048i32 then 2i32
-    elif scalar < 65536i32 then 3i32
-    else 4i32
+:= utf8_scalar_width (scalar : i32) : i32 =
+    ? scalar < 128i32 ?> 1i32
+    |? scalar < 2048i32 ?> 2i32
+    |? scalar < 65536i32 ?> 3i32
+    |: 4i32
 
-let rec utf8_validate_loop (str : string) (byte_offset : i32) (scalar_count : i32) (byte_length : i32) : i32 =
-    if (=.) byte_offset byte_length then scalar_count
-    elif byte_offset > byte_length then utf8_fail "UTF-8 scalar width exceeds the string."
-    else
-        inl scalar = utf8_scalar_at_byte_offset str byte_offset
-        inl width = utf8_scalar_width scalar
+:~ ^ utf8_validate_loop (str : string) (byte_offset : i32) (scalar_count : i32) (byte_length : i32) : i32 =
+    ? (=.) byte_offset byte_length ?> scalar_count
+    |? byte_offset > byte_length ?> utf8_fail "UTF-8 scalar width exceeds the string."
+    |:
+        := scalar = utf8_scalar_at_byte_offset str byte_offset
+        := width = utf8_scalar_width scalar
         utf8_validate_loop str ((+.) byte_offset width) ((+.) scalar_count 1i32) byte_length
 
-inl utf8_validate_from_byte_offset (str : string) (byte_offset : i32) : i32 =
+:= utf8_validate_from_byte_offset (str : string) (byte_offset : i32) : i32 =
     utf8_validate_loop str byte_offset 0i32 (length str : i32)
 
-inl utf8_validate (str : string) : i32 =
+:= utf8_validate (str : string) : i32 =
     utf8_validate_from_byte_offset str 0i32
 
-inl utf8_fold_from_byte_offset forall s. folder (state : s) (str : string) (byte_offset : i32) : s =
-    inl byte_length = length str : i32
-    let rec loop (byte_offset : i32) (state : s) : s =
-        if (=.) byte_offset byte_length then state
-        elif byte_offset > byte_length then utf8_fail "UTF-8 scalar width exceeds the string."
-        else
-            inl scalar = utf8_scalar_at_byte_offset str byte_offset
-            inl width = utf8_scalar_width scalar
+:= utf8_fold_from_byte_offset \* s. folder (state : s) (str : string) (byte_offset : i32) : s =
+    := byte_length = length str : i32
+    :~ ^ loop (byte_offset : i32) (state : s) : s =
+        ? (=.) byte_offset byte_length ?> state
+        |? byte_offset > byte_length ?> utf8_fail "UTF-8 scalar width exceeds the string."
+        |:
+            := scalar = utf8_scalar_at_byte_offset str byte_offset
+            := width = utf8_scalar_width scalar
             loop ((+.) byte_offset width) (folder state scalar)
     loop byte_offset state
 
-inl utf8_fold forall s. folder (state : s) (str : string) : s =
+:= utf8_fold \* s. folder (state : s) (str : string) : s =
     utf8_fold_from_byte_offset folder state str 0i32
 
-inl combining_diacritical_marks_start () = 768i32
-inl combining_diacritical_marks_extended_start () = 6832i32
-inl combining_diacritical_marks_supplement_start () = 7616i32
-inl combining_diacritical_marks_for_symbols_start () = 8400i32
-inl variation_selectors_start () = 65024i32
-inl combining_half_marks_start () = 65056i32
-inl emoji_modifiers_start () = 127995i32
-inl supplementary_variation_selectors_start () = 917760i32
-inl combining_diacritical_marks_end () = 879i32
-inl combining_diacritical_marks_extended_end () = 6911i32
-inl combining_diacritical_marks_supplement_end () = 7679i32
-inl combining_diacritical_marks_for_symbols_end () = 8447i32
-inl variation_selectors_end () = 65039i32
-inl combining_half_marks_end () = 65071i32
-inl emoji_modifiers_end () = 127999i32
-inl supplementary_variation_selectors_end () = 917999i32
-inl utf8_is_grapheme_extend_bounded (scalar : i32) : bool =
-    if scalar >= combining_diacritical_marks_start ()
-    then
-        if scalar <= combining_diacritical_marks_end ()
-        then true
-        elif scalar >= combining_diacritical_marks_extended_start ()
-        then
-            if scalar <= combining_diacritical_marks_extended_end ()
-            then true
-            elif scalar >= combining_diacritical_marks_supplement_start ()
-            then
-                if scalar <= combining_diacritical_marks_supplement_end ()
-                then true
-                elif scalar >= combining_diacritical_marks_for_symbols_start ()
-                then
-                    if scalar <= combining_diacritical_marks_for_symbols_end ()
-                    then true
-                    elif scalar >= variation_selectors_start ()
-                    then
-                        if scalar <= variation_selectors_end ()
-                        then true
-                        elif scalar >= combining_half_marks_start ()
-                        then
-                            if scalar <= combining_half_marks_end ()
-                            then true
-                            elif scalar >= emoji_modifiers_start ()
-                            then
-                                if scalar <= emoji_modifiers_end ()
-                                then true
-                                elif scalar >= supplementary_variation_selectors_start ()
-                                then scalar <= supplementary_variation_selectors_end ()
-                                else false
-                            else false
-                        else false
-                    else false
-                else false
-            else false
-        else false
-    else false
+:= combining_diacritical_marks_start () = 768i32
+:= combining_diacritical_marks_extended_start () = 6832i32
+:= combining_diacritical_marks_supplement_start () = 7616i32
+:= combining_diacritical_marks_for_symbols_start () = 8400i32
+:= variation_selectors_start () = 65024i32
+:= combining_half_marks_start () = 65056i32
+:= emoji_modifiers_start () = 127995i32
+:= supplementary_variation_selectors_start () = 917760i32
+:= combining_diacritical_marks_end () = 879i32
+:= combining_diacritical_marks_extended_end () = 6911i32
+:= combining_diacritical_marks_supplement_end () = 7679i32
+:= combining_diacritical_marks_for_symbols_end () = 8447i32
+:= variation_selectors_end () = 65039i32
+:= combining_half_marks_end () = 65071i32
+:= emoji_modifiers_end () = 127999i32
+:= supplementary_variation_selectors_end () = 917999i32
+:= utf8_is_grapheme_extend_bounded (scalar : i32) : bool =
+    ? scalar >= combining_diacritical_marks_start ()
+    ?>
+        ? scalar <= combining_diacritical_marks_end ()
+        ?> !+
+        |? scalar >= combining_diacritical_marks_extended_start ()
+        ?>
+            ? scalar <= combining_diacritical_marks_extended_end ()
+            ?> !+
+            |? scalar >= combining_diacritical_marks_supplement_start ()
+            ?>
+                ? scalar <= combining_diacritical_marks_supplement_end ()
+                ?> !+
+                |? scalar >= combining_diacritical_marks_for_symbols_start ()
+                ?>
+                    ? scalar <= combining_diacritical_marks_for_symbols_end ()
+                    ?> !+
+                    |? scalar >= variation_selectors_start ()
+                    ?>
+                        ? scalar <= variation_selectors_end ()
+                        ?> !+
+                        |? scalar >= combining_half_marks_start ()
+                        ?>
+                            ? scalar <= combining_half_marks_end ()
+                            ?> !+
+                            |? scalar >= emoji_modifiers_start ()
+                            ?>
+                                ? scalar <= emoji_modifiers_end ()
+                                ?> !+
+                                |? scalar >= supplementary_variation_selectors_start ()
+                                ?> scalar <= supplementary_variation_selectors_end ()
+                                |: !-
+                            |: !-
+                        |: !-
+                    |: !-
+                |: !-
+            |: !-
+        |: !-
+    |: !-
 
-let rec utf8_grapheme_count_bounded_loop
+:~ ^ utf8_grapheme_count_bounded_loop
     (str : string) (byte_offset : i32) (cluster_count : i32) (byte_length : i32)
     : i32
     =
-    if (=.) byte_offset byte_length then cluster_count
-    elif byte_offset > byte_length then utf8_fail "UTF-8 scalar width exceeds the string."
-    else
-        inl scalar = utf8_scalar_at_byte_offset str byte_offset
-        inl width = utf8_scalar_width scalar
-        inl cluster_count =
-            if utf8_is_grapheme_extend_bounded scalar then
-                if (=.) cluster_count 0i32 then 1i32 else cluster_count
-            else (+.) cluster_count 1i32
+    ? (=.) byte_offset byte_length ?> cluster_count
+    |? byte_offset > byte_length ?> utf8_fail "UTF-8 scalar width exceeds the string."
+    |:
+        := scalar = utf8_scalar_at_byte_offset str byte_offset
+        := width = utf8_scalar_width scalar
+        := cluster_count =
+            ? utf8_is_grapheme_extend_bounded scalar ?>
+                ? (=.) cluster_count 0i32 ?> 1i32 |: cluster_count
+            |: (+.) cluster_count 1i32
         utf8_grapheme_count_bounded_loop str ((+.) byte_offset width) cluster_count byte_length
 
-inl utf8_grapheme_count_bounded_from_byte_offset (str : string) (byte_offset : i32) : i32 =
-    inl byte_length = length str : i32
-    if byte_offset < 0i32 then utf8_fail "UTF-8 grapheme byte offset is negative."
-    elif byte_offset > byte_length then utf8_fail "UTF-8 grapheme byte offset is outside the string."
-    elif (=.) byte_offset byte_length then 0i32
-    elif byte_offset > 0i32 then
-        inl first_scalar = utf8_scalar_at_byte_offset str byte_offset
-        if utf8_is_grapheme_extend_bounded first_scalar then
+:= utf8_grapheme_count_bounded_from_byte_offset (str : string) (byte_offset : i32) : i32 =
+    := byte_length = length str : i32
+    ? byte_offset < 0i32 ?> utf8_fail "UTF-8 grapheme byte offset is negative."
+    |? byte_offset > byte_length ?> utf8_fail "UTF-8 grapheme byte offset is outside the string."
+    |? (=.) byte_offset byte_length ?> 0i32
+    |? byte_offset > 0i32 ?>
+        := first_scalar = utf8_scalar_at_byte_offset str byte_offset
+        ? utf8_is_grapheme_extend_bounded first_scalar ?>
             utf8_fail "UTF-8 grapheme byte offset is inside a bounded grapheme cluster."
-        else utf8_grapheme_count_bounded_loop str byte_offset 0i32 byte_length
-    else utf8_grapheme_count_bounded_loop str byte_offset 0i32 byte_length
+        |: utf8_grapheme_count_bounded_loop str byte_offset 0i32 byte_length
+    |: utf8_grapheme_count_bounded_loop str byte_offset 0i32 byte_length
 
-inl utf8_grapheme_count_bounded (str : string) : i32 =
+:= utf8_grapheme_count_bounded (str : string) : i32 =
     utf8_grapheme_count_bounded_from_byte_offset str 0i32
 
-inl combining_grave () = 768i32
-inl combining_acute () = 769i32
-inl combining_tilde () = 771i32
-inl combining_diaeresis () = 776i32
-inl combining_cedilla () = 807i32
-inl latin_a_upper () = 65i32
-inl latin_c_upper () = 67i32
-inl latin_e_upper () = 69i32
-inl latin_o_upper () = 79i32
-inl latin_a_lower () = 97i32
-inl latin_c_lower () = 99i32
-inl latin_e_lower () = 101i32
-inl latin_o_lower () = 111i32
-inl utf8_decompose_canonical_bounded (scalar : i32) : i32 * i32 =
-    if (=.) scalar 192i32 then latin_a_upper (), combining_grave ()
-    elif (=.) scalar 193i32 then latin_a_upper (), combining_acute ()
-    elif (=.) scalar 195i32 then latin_a_upper (), combining_tilde ()
-    elif (=.) scalar 196i32 then latin_a_upper (), combining_diaeresis ()
-    elif (=.) scalar 199i32 then latin_c_upper (), combining_cedilla ()
-    elif (=.) scalar 201i32 then latin_e_upper (), combining_acute ()
-    elif (=.) scalar 211i32 then latin_o_upper (), combining_acute ()
-    elif (=.) scalar 213i32 then latin_o_upper (), combining_tilde ()
-    elif (=.) scalar 224i32 then latin_a_lower (), combining_grave ()
-    elif (=.) scalar 225i32 then latin_a_lower (), combining_acute ()
-    elif (=.) scalar 227i32 then latin_a_lower (), combining_tilde ()
-    elif (=.) scalar 228i32 then latin_a_lower (), combining_diaeresis ()
-    elif (=.) scalar 231i32 then latin_c_lower (), combining_cedilla ()
-    elif (=.) scalar 233i32 then latin_e_lower (), combining_acute ()
-    elif (=.) scalar 243i32 then latin_o_lower (), combining_acute ()
-    elif (=.) scalar 245i32 then latin_o_lower (), combining_tilde ()
-    else scalar, -1i32
+:= combining_grave () = 768i32
+:= combining_acute () = 769i32
+:= combining_tilde () = 771i32
+:= combining_diaeresis () = 776i32
+:= combining_cedilla () = 807i32
+:= latin_a_upper () = 65i32
+:= latin_c_upper () = 67i32
+:= latin_e_upper () = 69i32
+:= latin_o_upper () = 79i32
+:= latin_a_lower () = 97i32
+:= latin_c_lower () = 99i32
+:= latin_e_lower () = 101i32
+:= latin_o_lower () = 111i32
+:= utf8_decompose_canonical_bounded (scalar : i32) : i32 * i32 =
+    ? (=.) scalar 192i32 ?> latin_a_upper (), combining_grave ()
+    |? (=.) scalar 193i32 ?> latin_a_upper (), combining_acute ()
+    |? (=.) scalar 195i32 ?> latin_a_upper (), combining_tilde ()
+    |? (=.) scalar 196i32 ?> latin_a_upper (), combining_diaeresis ()
+    |? (=.) scalar 199i32 ?> latin_c_upper (), combining_cedilla ()
+    |? (=.) scalar 201i32 ?> latin_e_upper (), combining_acute ()
+    |? (=.) scalar 211i32 ?> latin_o_upper (), combining_acute ()
+    |? (=.) scalar 213i32 ?> latin_o_upper (), combining_tilde ()
+    |? (=.) scalar 224i32 ?> latin_a_lower (), combining_grave ()
+    |? (=.) scalar 225i32 ?> latin_a_lower (), combining_acute ()
+    |? (=.) scalar 227i32 ?> latin_a_lower (), combining_tilde ()
+    |? (=.) scalar 228i32 ?> latin_a_lower (), combining_diaeresis ()
+    |? (=.) scalar 231i32 ?> latin_c_lower (), combining_cedilla ()
+    |? (=.) scalar 233i32 ?> latin_e_lower (), combining_acute ()
+    |? (=.) scalar 243i32 ?> latin_o_lower (), combining_acute ()
+    |? (=.) scalar 245i32 ?> latin_o_lower (), combining_tilde ()
+    |: scalar, -1i32
 
-inl utf8_compose_canonical_bounded (starter : i32) (extend : i32) : i32 =
-    if (=.) starter (latin_a_upper ()) then
-        if (=.) extend (combining_grave ()) then 192i32
-        elif (=.) extend (combining_acute ()) then 193i32
-        elif (=.) extend (combining_tilde ()) then 195i32
-        elif (=.) extend (combining_diaeresis ()) then 196i32
-        else -1i32
-    elif (=.) starter (latin_c_upper ()) then if (=.) extend (combining_cedilla ()) then 199i32 else -1i32
-    elif (=.) starter (latin_e_upper ()) then if (=.) extend (combining_acute ()) then 201i32 else -1i32
-    elif (=.) starter (latin_o_upper ()) then
-        if (=.) extend (combining_acute ()) then 211i32
-        elif (=.) extend (combining_tilde ()) then 213i32
-        else -1i32
-    elif (=.) starter (latin_a_lower ()) then
-        if (=.) extend (combining_grave ()) then 224i32
-        elif (=.) extend (combining_acute ()) then 225i32
-        elif (=.) extend (combining_tilde ()) then 227i32
-        elif (=.) extend (combining_diaeresis ()) then 228i32
-        else -1i32
-    elif (=.) starter (latin_c_lower ()) then if (=.) extend (combining_cedilla ()) then 231i32 else -1i32
-    elif (=.) starter (latin_e_lower ()) then if (=.) extend (combining_acute ()) then 233i32 else -1i32
-    elif (=.) starter (latin_o_lower ()) then
-        if (=.) extend (combining_acute ()) then 243i32
-        elif (=.) extend (combining_tilde ()) then 245i32
-        else -1i32
-    else -1i32
+:= utf8_compose_canonical_bounded (starter : i32) (extend : i32) : i32 =
+    ? (=.) starter (latin_a_upper ()) ?>
+        ? (=.) extend (combining_grave ()) ?> 192i32
+        |? (=.) extend (combining_acute ()) ?> 193i32
+        |? (=.) extend (combining_tilde ()) ?> 195i32
+        |? (=.) extend (combining_diaeresis ()) ?> 196i32
+        |: -1i32
+    |? (=.) starter (latin_c_upper ()) ?> ? (=.) extend (combining_cedilla ()) ?> 199i32 |: -1i32
+    |? (=.) starter (latin_e_upper ()) ?> ? (=.) extend (combining_acute ()) ?> 201i32 |: -1i32
+    |? (=.) starter (latin_o_upper ()) ?>
+        ? (=.) extend (combining_acute ()) ?> 211i32
+        |? (=.) extend (combining_tilde ()) ?> 213i32
+        |: -1i32
+    |? (=.) starter (latin_a_lower ()) ?>
+        ? (=.) extend (combining_grave ()) ?> 224i32
+        |? (=.) extend (combining_acute ()) ?> 225i32
+        |? (=.) extend (combining_tilde ()) ?> 227i32
+        |? (=.) extend (combining_diaeresis ()) ?> 228i32
+        |: -1i32
+    |? (=.) starter (latin_c_lower ()) ?> ? (=.) extend (combining_cedilla ()) ?> 231i32 |: -1i32
+    |? (=.) starter (latin_e_lower ()) ?> ? (=.) extend (combining_acute ()) ?> 233i32 |: -1i32
+    |? (=.) starter (latin_o_lower ()) ?>
+        ? (=.) extend (combining_acute ()) ?> 243i32
+        |? (=.) extend (combining_tilde ()) ?> 245i32
+        |: -1i32
+    |: -1i32
 
-inl utf8_normalize_scalar_nfd_bounded (scalar : i32) : i32 * i32 =
+:= utf8_normalize_scalar_nfd_bounded (scalar : i32) : i32 * i32 =
     utf8_decompose_canonical_bounded scalar
 
-inl utf8_normalize_pair_nfc_bounded (starter : i32) (extend : i32) : i32 * i32 =
-    inl composed = utf8_compose_canonical_bounded starter extend
-    if composed < 0i32 then starter, extend else composed, -1i32
+:= utf8_normalize_pair_nfc_bounded (starter : i32) (extend : i32) : i32 * i32 =
+    := composed = utf8_compose_canonical_bounded starter extend
+    ? composed < 0i32 ?> starter, extend |: composed, -1i32
 
-inl utf8_nfd_next_bounded (str : string) (byte_offset : i32) (pending : i32) (byte_length : i32) : i32 * i32 * i32 =
-    if pending >= 0i32 then pending, byte_offset, -1i32
-    elif (=.) byte_offset byte_length then -1i32, byte_offset, -1i32
-    elif byte_offset > byte_length then utf8_fail "UTF-8 canonical stream offset exceeds the string."
-    else
-        inl scalar = utf8_scalar_at_byte_offset str byte_offset
-        inl width = utf8_scalar_width scalar
-        inl starter, extend = utf8_decompose_canonical_bounded scalar
+:= utf8_nfd_next_bounded (str : string) (byte_offset : i32) (pending : i32) (byte_length : i32) : i32 * i32 * i32 =
+    ? pending >= 0i32 ?> pending, byte_offset, -1i32
+    |? (=.) byte_offset byte_length ?> -1i32, byte_offset, -1i32
+    |? byte_offset > byte_length ?> utf8_fail "UTF-8 canonical stream offset exceeds the string."
+    |:
+        := scalar = utf8_scalar_at_byte_offset str byte_offset
+        := width = utf8_scalar_width scalar
+        := starter, extend = utf8_decompose_canonical_bounded scalar
         starter, ((+.) byte_offset width), extend
 
-let rec utf8_canonical_equal_bounded_loop
+:~ ^ utf8_canonical_equal_bounded_loop
     (left : string)
     (right : string)
     (left_offset : i32)
@@ -348,21 +348,21 @@ let rec utf8_canonical_equal_bounded_loop
     (right_length : i32)
     : bool
     =
-    inl left_scalar, left_offset, left_pending =
+    := left_scalar, left_offset, left_pending =
         utf8_nfd_next_bounded left left_offset left_pending left_length
-    inl right_scalar, right_offset, right_pending =
+    := right_scalar, right_offset, right_pending =
         utf8_nfd_next_bounded right right_offset right_pending right_length
-    if left_scalar < 0i32 then (=.) right_scalar -1i32
-    elif right_scalar < 0i32 then false
-    elif (=.) left_scalar right_scalar then
+    ? left_scalar < 0i32 ?> (=.) right_scalar -1i32
+    |? right_scalar < 0i32 ?> !-
+    |? (=.) left_scalar right_scalar ?>
         utf8_canonical_equal_bounded_loop
             left right
             left_offset right_offset
             left_pending right_pending
             left_length right_length
-    else false
+    |: !-
 
-inl utf8_canonical_equal_bounded (left : string) (right : string) : bool =
+:= utf8_canonical_equal_bounded (left : string) (right : string) : bool =
     utf8_canonical_equal_bounded_loop
         left right
         0i32 0i32

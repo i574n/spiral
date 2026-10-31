@@ -1,8 +1,8 @@
-inl main () : i32 =
-    inl ~name = "abc"
-    inl f (z : i32) : i32 = sm.length name +. z
-    inl ~g = f
-    inl ~a = g 10i32
-    inl ~b = g 20i32
-    inl ~c = g 3i32
+:= main () : i32 =
+    := ~name = "abc"
+    := f (z : i32) : i32 = sm::length name +. z
+    := ~g = f
+    := ~a = g 10i32
+    := ~b = g 20i32
+    := ~c = g 3i32
     a +. b +. c

@@ -1,9 +1,9 @@
-open main
+:< main
 
-inl impossible_predecessor_accessibility_parallel_value () :
+:= impossible_predecessor_accessibility_parallel_value () :
     positive_positional_predecessor_accessibility
         (positional_zero_bit positional_one) =
-    PositivePositionalPredecessorAccessibilityStep (exists (
+    PositivePositionalPredecessorAccessibilityStep (\? (
         PositivePositionalOne,
         PositivePositionalPredecessorTwo,
         PositivePositionalLessOneZeroBit PositivePositionalOne,
@@ -11,5 +11,5 @@ inl impossible_predecessor_accessibility_parallel_value () :
             "one-closes-the-forged-chain",
         "the-value-is-deliberately-supplied-in-parallel-with-the-predecessor-proof"))
 
-inl main () =
+:= main () =
     impossible_predecessor_accessibility_parallel_value ()

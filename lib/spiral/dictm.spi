@@ -3,11 +3,9 @@ test dictm static =
     :< testing
 
 /// # dictm
-
 :< sm'_operators
 
 /// ## dict
-
 := dict_types () =
     backend_switch {
         Gleam = \ () => global "import gleam/dict"
@@ -107,7 +105,6 @@ test dictm static =
     keys d |> listm.rev |> listm.fold (\ acc key => f acc key (present key d)) init
 
 /// ## set
-
 :! set k = dict k ()
 
 := set_empty \* k. () : set k = set (empty ())

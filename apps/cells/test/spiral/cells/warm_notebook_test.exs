@@ -40,6 +40,14 @@ defmodule Spiral.Cells.WarmNotebookTest do
     assert {["stale\tCells sources changed since the daemon started; retiring"], :retire} = CompilerDaemon.notebook_reply(request(["--path", "x.spi"]))
   end
 
+  test "a request for another compiler build is refused as stale, and the daemon's own build passes the guard" do
+    other = JSON.encode!(%{"args" => ["--path", "x.spi"], "root" => @root, "dll" => __ENV__.file})
+    assert {["stale\tthe daemon serves another compiler build: " <> _], :keep} = CompilerDaemon.notebook_reply(other)
+
+    own = JSON.encode!(%{"args" => ["--export-only"], "root" => @root, "dll" => Spiral.Cells.Toolchain.compiler_dll([])})
+    assert {["error\t" <> _, "end\t1"], :keep} = CompilerDaemon.notebook_reply(own)
+  end
+
   test "a malformed request is an error, not a crash" do
     assert {["error\t" <> _, "end\t1"], :keep} = CompilerDaemon.notebook_reply("[1, 2]")
   end

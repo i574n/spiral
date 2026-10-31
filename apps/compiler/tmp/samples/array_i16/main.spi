@@ -1,15 +1,15 @@
-nominal i16_array = array_base i16
+:! i16_array = array_base i16
 
-inl create (n : i32) : i16_array = i16_array !!!!ArrayCreate(`i16, n)
-inl get (values : i16_array) (i : i32) : i16 =
-    match values with
+:= create (n : i32) : i16_array = i16_array !!!!ArrayCreate(`i16, n)
+:= get (values : i16_array) (i : i32) : i16 =
+    ?= values ?|
     | i16_array raw => !!!!ArrayIndex(raw, i)
-inl set (values : i16_array) (i : i32) (value : i16) : () =
-    match values with
+:= set (values : i16_array) (i : i32) (value : i16) : () =
+    ?= values ?|
     | i16_array raw => !!!!ArrayIndexSet(raw, i, value)
 
-inl main () : i32 =
-    inl values = create 1i32
-    inl ~n = 20000i16
+:= main () : i32 =
+    := values = create 1i32
+    := ~n = 20000i16
     set values 0i32 n
-    if get values 0i32 =. 20000i16 then 0i32 else 1i32
+    ? get values 0i32 =. 20000i16 ?> 0i32 |: 1i32

@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_conditional_guard_step_requires_bool
+:= impossible_conditional_guard_step_requires_bool
     (guard_step :
         exact_linear_indexed_small_step
             exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty
@@ -8,7 +8,7 @@ inl impossible_conditional_guard_step_requires_bool
     : exact_linear_indexed_small_step exact_linear_free_context_empty exact_linear_indexed_usage_empty
         exact_linear_indexed_usage_empty exact_linear_unit_type
     =
-    ExactLinearIndexedConditionalGuardStep (exists (
+    ExactLinearIndexedConditionalGuardStep (\? (
         guard_step,
         ExactLinearIndexedUnit (
             exact_linear_indexed_empty_usage (),
@@ -22,6 +22,6 @@ inl impossible_conditional_guard_step_requires_bool
             "the-invalid-contextual-step-target-merge-is-empty",
         "a-Unit-step-cannot-be-used-as-the-Bool-guard-step"))
 
-inl main () =
+:= main () =
     impossible_conditional_guard_step_requires_bool
         (exact_linear_indexed_conditional_true_unit_step ())

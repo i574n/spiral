@@ -47,29 +47,21 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
     let v2 = spiral_string_length(v0)
     let v3 = v1 < 0
     case v3 {
-        True -> {
-            panic as "UTF-8 byte offset is negative."
-        }
+        True -> panic as "UTF-8 byte offset is negative."
         False -> {
             let v5 = v1 >= v2
             case v5 {
-                True -> {
-                    panic as "UTF-8 byte offset is outside the string."
-                }
+                True -> panic as "UTF-8 byte offset is outside the string."
                 False -> {
                     let v7 = runtime_byte_2(v0, v1)
                     let v8 = case string.to_utf_codepoints(v7) { [spiral_byte_codepoint] -> string.utf_codepoint_to_int(spiral_byte_codepoint) _ -> 0 }
                     let v9 = v8 < 128
                     case v9 {
-                        True -> {
-                            v8
-                        }
+                        True -> v8
                         False -> {
                             let v10 = v8 < 194
                             case v10 {
-                                True -> {
-                                    panic as "UTF-8 scalar starts with an invalid lead byte."
-                                }
+                                True -> panic as "UTF-8 scalar starts with an invalid lead byte."
                                 False -> {
                                     let v12 = v8 < 224
                                     case v12 {
@@ -77,18 +69,14 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                             let v13 = spiral_wrap_signed(v1 + 1, 32)
                                             let v14 = v13 >= v2
                                             case v14 {
-                                                True -> {
-                                                    panic as "UTF-8 sequence is truncated."
-                                                }
+                                                True -> panic as "UTF-8 sequence is truncated."
                                                 False -> {
                                                     let v16 = runtime_byte_2(v0, v13)
                                                     let v17 = case string.to_utf_codepoints(v16) { [spiral_byte_codepoint] -> string.utf_codepoint_to_int(spiral_byte_codepoint) _ -> 0 }
                                                     let v18 = v17 < 128
                                                     let v20 =
                                                         case v18 {
-                                                            True -> {
-                                                                False
-                                                            }
+                                                            True -> False
                                                             False -> {
                                                                 let v19 = v17 < 192
                                                                 v19
@@ -102,9 +90,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                             let v24 = spiral_wrap_signed(v22 + v23, 32)
                                                             v24
                                                         }
-                                                        False -> {
-                                                            panic as "UTF-8 sequence has an invalid continuation byte."
-                                                        }
+                                                        False -> panic as "UTF-8 sequence has an invalid continuation byte."
                                                     }
                                                 }
                                             }
@@ -116,9 +102,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                     let v29 = spiral_wrap_signed(v1 + 2, 32)
                                                     let v30 = v29 >= v2
                                                     case v30 {
-                                                        True -> {
-                                                            panic as "UTF-8 sequence is truncated."
-                                                        }
+                                                        True -> panic as "UTF-8 sequence is truncated."
                                                         False -> {
                                                             let v32 = spiral_wrap_signed(v1 + 1, 32)
                                                             let v33 = runtime_byte_2(v0, v32)
@@ -128,9 +112,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                             let v37 = v34 < 128
                                                             let v39 =
                                                                 case v37 {
-                                                                    True -> {
-                                                                        False
-                                                                    }
+                                                                    True -> False
                                                                     False -> {
                                                                         let v38 = v34 < 192
                                                                         v38
@@ -141,9 +123,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                     let v40 = v36 < 128
                                                                     let v42 =
                                                                         case v40 {
-                                                                            True -> {
-                                                                                False
-                                                                            }
+                                                                            True -> False
                                                                             False -> {
                                                                                 let v41 = v36 < 192
                                                                                 v41
@@ -160,38 +140,26 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                             let v49 = spiral_wrap_signed(v47 + v48, 32)
                                                                             let v50 = v49 < 2048
                                                                             case v50 {
-                                                                                True -> {
-                                                                                    panic as "UTF-8 sequence is overlong."
-                                                                                }
+                                                                                True -> panic as "UTF-8 sequence is overlong."
                                                                                 False -> {
                                                                                     let v52 = v49 >= 55296
                                                                                     case v52 {
                                                                                         True -> {
                                                                                             let v53 = v49 <= 57343
                                                                                             case v53 {
-                                                                                                True -> {
-                                                                                                    panic as "UTF-8 sequence encodes a surrogate."
-                                                                                                }
-                                                                                                False -> {
-                                                                                                    v49
-                                                                                                }
+                                                                                                True -> panic as "UTF-8 sequence encodes a surrogate."
+                                                                                                False -> v49
                                                                                             }
                                                                                         }
-                                                                                        False -> {
-                                                                                            v49
-                                                                                        }
+                                                                                        False -> v49
                                                                                     }
                                                                                 }
                                                                             }
                                                                         }
-                                                                        False -> {
-                                                                            panic as "UTF-8 sequence has an invalid continuation byte."
-                                                                        }
+                                                                        False -> panic as "UTF-8 sequence has an invalid continuation byte."
                                                                     }
                                                                 }
-                                                                False -> {
-                                                                    panic as "UTF-8 sequence has an invalid continuation byte."
-                                                                }
+                                                                False -> panic as "UTF-8 sequence has an invalid continuation byte."
                                                             }
                                                         }
                                                     }
@@ -203,9 +171,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                             let v64 = spiral_wrap_signed(v1 + 3, 32)
                                                             let v65 = v64 >= v2
                                                             case v65 {
-                                                                True -> {
-                                                                    panic as "UTF-8 sequence is truncated."
-                                                                }
+                                                                True -> panic as "UTF-8 sequence is truncated."
                                                                 False -> {
                                                                     let v67 = spiral_wrap_signed(v1 + 1, 32)
                                                                     let v68 = runtime_byte_2(v0, v67)
@@ -218,9 +184,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                     let v75 = v69 < 128
                                                                     let v77 =
                                                                         case v75 {
-                                                                            True -> {
-                                                                                False
-                                                                            }
+                                                                            True -> False
                                                                             False -> {
                                                                                 let v76 = v69 < 192
                                                                                 v76
@@ -231,9 +195,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                             let v78 = v72 < 128
                                                                             let v80 =
                                                                                 case v78 {
-                                                                                    True -> {
-                                                                                        False
-                                                                                    }
+                                                                                    True -> False
                                                                                     False -> {
                                                                                         let v79 = v72 < 192
                                                                                         v79
@@ -244,9 +206,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                                     let v81 = v74 < 128
                                                                                     let v83 =
                                                                                         case v81 {
-                                                                                            True -> {
-                                                                                                False
-                                                                                            }
+                                                                                            True -> False
                                                                                             False -> {
                                                                                                 let v82 = v74 < 192
                                                                                                 v82
@@ -266,42 +226,28 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                                             let v93 = spiral_wrap_signed(v91 + v92, 32)
                                                                                             let v94 = v93 < 65536
                                                                                             case v94 {
-                                                                                                True -> {
-                                                                                                    panic as "UTF-8 sequence is overlong."
-                                                                                                }
+                                                                                                True -> panic as "UTF-8 sequence is overlong."
                                                                                                 False -> {
                                                                                                     let v96 = v93 > 1114111
                                                                                                     case v96 {
-                                                                                                        True -> {
-                                                                                                            panic as "UTF-8 scalar is above U+10FFFF."
-                                                                                                        }
-                                                                                                        False -> {
-                                                                                                            v93
-                                                                                                        }
+                                                                                                        True -> panic as "UTF-8 scalar is above U+10FFFF."
+                                                                                                        False -> v93
                                                                                                     }
                                                                                                 }
                                                                                             }
                                                                                         }
-                                                                                        False -> {
-                                                                                            panic as "UTF-8 sequence has an invalid continuation byte."
-                                                                                        }
+                                                                                        False -> panic as "UTF-8 sequence has an invalid continuation byte."
                                                                                     }
                                                                                 }
-                                                                                False -> {
-                                                                                    panic as "UTF-8 sequence has an invalid continuation byte."
-                                                                                }
+                                                                                False -> panic as "UTF-8 sequence has an invalid continuation byte."
                                                                             }
                                                                         }
-                                                                        False -> {
-                                                                            panic as "UTF-8 sequence has an invalid continuation byte."
-                                                                        }
+                                                                        False -> panic as "UTF-8 sequence has an invalid continuation byte."
                                                                     }
                                                                 }
                                                             }
                                                         }
-                                                        False -> {
-                                                            panic as "UTF-8 scalar starts with an invalid lead byte."
-                                                        }
+                                                        False -> panic as "UTF-8 scalar starts with an invalid lead byte."
                                                     }
                                                 }
                                             }
@@ -319,39 +265,27 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
 pub fn loop_0(v0: Int, v1: Int) -> Int {
     let v2 = v0 == 2
     case v2 {
-        True -> {
-            v1
-        }
+        True -> v1
         False -> {
             let v3 = v0 > 2
             case v3 {
-                True -> {
-                    panic as "UTF-8 scalar width exceeds the string."
-                }
+                True -> panic as "UTF-8 scalar width exceeds the string."
                 False -> {
                     let v5 = "é"
                     let v6 = utf8_scalar_at_byte_offset_1(v5, v0)
                     let v7 = v6 < 128
                     let v12 =
                         case v7 {
-                            True -> {
-                                1
-                            }
+                            True -> 1
                             False -> {
                                 let v8 = v6 < 2048
                                 case v8 {
-                                    True -> {
-                                        2
-                                    }
+                                    True -> 2
                                     False -> {
                                         let v9 = v6 < 65536
                                         case v9 {
-                                            True -> {
-                                                3
-                                            }
-                                            False -> {
-                                                4
-                                            }
+                                            True -> 3
+                                            False -> 4
                                         }
                                     }
                                 }

@@ -72,7 +72,7 @@ defmodule Spiral.Cells.NotebookCli do
         main = Path.expand(main)
         source = File.read!(main)
         package = Path.dirname(main)
-        header = if File.exists?(Path.join(package, "package.spiproj")), do: "///- --package #{package}\n\n", else: ""
+        header = if Spiral.Cells.Manifest.exists?(package), do: "///- --package #{package}\n\n", else: ""
         dir = Path.join(System.tmp_dir!(), "spiral-probe-#{:erlang.phash2({main, source})}")
         File.mkdir_p!(dir)
         path = Path.join(dir, "probe.spi")

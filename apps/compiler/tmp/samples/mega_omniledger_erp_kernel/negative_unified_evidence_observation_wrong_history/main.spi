@@ -1,13 +1,13 @@
-open main
+:< main
 
-inl impossible_unified_evidence_observation_wrong_history () :
+:= impossible_unified_evidence_observation_wrong_history () :
     typed_fx_hashed_statement_closed_decision =
-    inl empty_history, _ =
+    := empty_history, _ =
         typed_fx_hashed_statement_closed_history_values ()
     decide_typed_fx_hashed_statement_closed_fact_observation
         empty_history
         (TypedFxHashedStatementClosedFactRecordedHashAtHead
             TypedFxHashedStatementClosedRecordedHashPrimary)
 
-inl main () =
+:= main () =
     impossible_unified_evidence_observation_wrong_history ()

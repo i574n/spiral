@@ -13,9 +13,9 @@ fn apply_0(mut v0: Rc<dyn Fn(i32) -> i32>, mut v1: i32) -> i32 {
 }
 fn spiral_main() -> i32 {
     let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("abc"); } LIT.with(|lit| lit.clone()) };
-    let v1: Rc<dyn Fn(i32) -> i32> = f_c0(v0.clone());
+    let v1: Rc<dyn Fn(i32) -> i32> = f_c0(v0);
     let v2: i32 = 39i32;
-    apply_0(v1.clone(), v2)
+    apply_0(v1, v2)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

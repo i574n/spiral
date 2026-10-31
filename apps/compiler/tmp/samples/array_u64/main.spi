@@ -1,15 +1,15 @@
-nominal u64_array = array_base u64
+:! u64_array = array_base u64
 
-inl create (n : i32) : u64_array = u64_array !!!!ArrayCreate(`u64, n)
-inl get (values : u64_array) (i : i32) : u64 =
-    match values with
+:= create (n : i32) : u64_array = u64_array !!!!ArrayCreate(`u64, n)
+:= get (values : u64_array) (i : i32) : u64 =
+    ?= values ?|
     | u64_array raw => !!!!ArrayIndex(raw, i)
-inl set (values : u64_array) (i : i32) (value : u64) : () =
-    match values with
+:= set (values : u64_array) (i : i32) (value : u64) : () =
+    ?= values ?|
     | u64_array raw => !!!!ArrayIndexSet(raw, i, value)
 
-inl main () : i32 =
-    inl values = create 1i32
-    inl ~n = 4294967297u64
+:= main () : i32 =
+    := values = create 1i32
+    := ~n = 4294967297u64
     set values 0i32 n
-    if get values 0i32 =. 4294967297u64 then 0i32 else 1i32
+    ? get values 0i32 =. 4294967297u64 ?> 0i32 |: 1i32

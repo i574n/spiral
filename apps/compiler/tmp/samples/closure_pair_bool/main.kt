@@ -16,9 +16,9 @@ fun spiral_main(): Int {
     val v1: (Int) -> SpiralTuple0 = f_c0(v0)
     var v2: Boolean = false
     var v3: Boolean = false
-    val spiral_tuple223 = v1(1)
-    v2 = spiral_tuple223.v0
-    v3 = spiral_tuple223.v1
+    val spiral_tuple216 = v1(1)
+    v2 = spiral_tuple216.v0
+    v3 = spiral_tuple216.v1
     val v4: Boolean = (v2 && v3)
     if (v4) {
         return 0

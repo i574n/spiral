@@ -1,23 +1,23 @@
-nominal owner_a = ()
-nominal owner_b = ()
-nominal clean = ()
-nominal borrowed = ()
+:! owner_a = ()
+:! owner_b = ()
+:! clean = ()
+:! borrowed = ()
 
-union ancilla owner state =
-    | Ancilla :: forall owner state. string -> ancilla owner state
+:| ancilla owner state =
+    | Ancilla :: \* owner state. string -> ancilla owner state
 
-union loan owner =
-    | Loan :: forall owner. string -> loan owner
+:| loan owner =
+    | Loan :: \* owner. string -> loan owner
 
-inl release forall owner.
+:= release \* owner.
     (ancilla : ancilla owner borrowed)
     (loan : loan owner)
     : ancilla owner clean =
-    match ancilla, loan with
+    ?= ancilla, loan ?|
     | Ancilla _, Loan _ => Ancilla "ancilla-clean"
 
-inl main () : string =
-    inl ancilla : ancilla owner_a borrowed = Ancilla "borrowed"
-    inl foreign : loan owner_b = Loan "foreign-loan"
-    inl _ : ancilla owner_a clean = release ancilla foreign
+:= main () : string =
+    := ancilla : ancilla owner_a borrowed = Ancilla "borrowed"
+    := foreign : loan owner_b = Loan "foreign-loan"
+    := _ : ancilla owner_a clean = release ancilla foreign
     "unreachable"

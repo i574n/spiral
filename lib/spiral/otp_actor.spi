@@ -19,20 +19,14 @@ test otp_actor static =
     otp_actor_imports ()
     $'actor.new(!state)'
 
+/// ### new_with_self
+:= new_with_self \* s m. (ms : i32) (f : erlang_process.subject m -> s) : builder s m (erlang_process.subject m) =
+    otp_actor_imports ()
+    $'actor.new_with_initialiser(!ms, fn(me) { Ok(actor.initialised(!f(me)) |> actor.returning(me)) })'
+
 /// ### new_with_init
 := new_with_init \* s m. (ms : i32) (init : () -> s) : builder s m (erlang_process.subject m) =
-    otp_actor_imports ()
-    $'actor.new_with_initialiser(!ms, fn(subject) { Ok(actor.initialised(!init(Nil)) |> \
-        actor.returning(subject)) })'
-
-/// ### new_with_self
-:= new_with_self \* s m.
-    (timeout_ms : i32) (init : erlang_process.subject m -> s)
-    : builder s m (erlang_process.subject m)
-    =
-    otp_actor_imports ()
-    $'actor.new_with_initialiser(!timeout_ms, fn(subject) { Ok(actor.initialised(!init(subject)) |> \
-        actor.returning(subject)) })'
+    new_with_self ms (\ _ => init ())
 
 /// ### on_message
 := on_message \* s m r. (handler : s -> m -> next s m) (spec : builder s m r) : builder s m r =
@@ -77,6 +71,11 @@ test otp_actor static =
 := send \* m. (to : erlang_process.subject m) (message : m) : () =
     otp_actor_imports ()
     $'actor.send(!to, !message)'
+
+/// ### named
+:= named \* s m r. (address : erlang_process.name m) (spec : builder s m r) : builder s m r =
+    otp_actor_imports ()
+    $'actor.named(!spec, !address)'
 
 :| counter_message =
     | Add : i32
@@ -141,3 +140,11 @@ test the_initialiser_receives_the_actors_own_subject =
     ?= self_actor () ?|
     | Some subject => ask_i32 subject |> _assert_eq 9i32
     | None => failwith "the actor did not start"
+
+///> gleam
+test a_named_actor_answers_through_its_name =
+    := address : erlang_process.name counter_message = erlang_process.new_name "lib_otp_actor_named_test"
+    new 0i32 |> named address |> on_message counter_step |> start |> started_data |> ignore
+    := inbox = erlang_process.named_subject address
+    send inbox (Add 5i32)
+    call inbox 10000i32 Read |> _assert_eq 5i32

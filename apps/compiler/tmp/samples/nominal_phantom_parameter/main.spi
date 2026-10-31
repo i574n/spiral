@@ -1,10 +1,10 @@
-nominal witness phantom count = count
-nominal surface phantom count = phantom * witness phantom count
+:! witness phantom count = count
+:! surface phantom count = phantom * witness phantom count
 
-inl main () : i32 =
-    inl w = witness 1i32
-    inl s = surface (true, w)
-    match s with
+:= main () : i32 =
+    := w = witness 1i32
+    := s = surface (!+, w)
+    ?= s ?|
     | surface (_, witness _) => 0i32
 
-inl oracle_must_not_record_current_error () = ()
+:= oracle_must_not_record_current_error () = ()

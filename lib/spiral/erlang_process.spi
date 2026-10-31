@@ -15,6 +15,7 @@ test erlang_process static =
 :! timer = $'process.Timer'
 :! down = $'process.Down'
 :! exit_reason = $'process.ExitReason'
+:! exit_message = $'process.ExitMessage'
 :! host_received t = $'Result(`t, Nil)'
 :! name t = $'process.Name(`t)'
 
@@ -213,6 +214,21 @@ test a_call_without_an_answer_times_out =
     erlang_process_imports ()
     $'process.select_specific_monitor(!choices, !watch, !mapping)'
 
+/// ### trap_exits
+:= trap_exits (on : bool) : () =
+    erlang_process_imports ()
+    $'process.trap_exits(!on)' : ()
+
+/// ### select_trapped_exits
+:= select_trapped_exits \* u. (mapping : exit_message -> u) (choices : selector u) : selector u =
+    erlang_process_imports ()
+    $'process.select_trapped_exits(!choices, !mapping)'
+
+/// ### exit_message_reason
+:~ exit_message_reason (event : exit_message) : exit_reason =
+    erlang_process_imports ()
+    $'!event.reason'
+
 /// ### selector_receive_within
 := selector_receive_within \* t. (choices : selector t) (timeout_ms : i32) : receipt t =
     erlang_process_imports ()
@@ -247,6 +263,62 @@ test monitor_sees_normal_exit =
     := choices : selector bool = new_selector () |> select_specific_monitor watch (down_reason >> exited_normally)
     selector_receive_forever choices
     |> _assert_eq !+
+
+:| erlang_process_inbox =
+    | InboxWork : i32
+    | InboxStop
+    | InboxDown : bool
+
+///> gleam
+test a_selector_merges_two_subjects_and_a_monitor_into_one_union =
+    := work : subject i32 = new_subject ()
+    := stop : subject () = new_subject ()
+    := ready : subject (subject ()) = new_subject ()
+    := worker =
+        spawn_unlinked \ () =>
+            := go : subject () = new_subject ()
+            send ready go
+            receive_forever go
+    := go = receive_forever ready
+    := watch = monitor worker
+    send work 7i32
+    send go ()
+    send stop ()
+    := choices : selector erlang_process_inbox =
+        new_selector ()
+        |> select_map work (\ n => InboxWork n)
+        |> select_map stop (\ () => InboxStop)
+        |> select_specific_monitor watch (\ d => InboxDown (exited_normally (down_reason d)))
+    := score (received : option erlang_process_inbox) : i32 =
+        ?= received ?|
+        | None => 0i32
+        | Some inbox =>
+            ?= inbox ?|
+            | InboxWork n => n
+            | InboxStop => 100i32
+            | InboxDown normal => ? normal ?> 1000i32 |: 0i32
+    := first = selector_receive_within choices 1000i32 |> receipt_value
+    := second = selector_receive_within choices 1000i32 |> receipt_value
+    := third = selector_receive_within choices 1000i32 |> receipt_value
+    score first + score second + score third
+    |> _assert_eq 1107i32
+
+///> gleam
+test a_trapped_exit_arrives_as_a_message =
+    trap_exits !+
+    := ready : subject (subject ()) = new_subject ()
+    spawn (\ () =>
+        := go : subject () = new_subject ()
+        send ready go
+        receive_forever go
+    )
+    |> ignore
+    := go = receive_forever ready
+    send go ()
+    := choices : selector bool = new_selector () |> select_trapped_exits (\ e => exited_normally (exit_message_reason e))
+    := got = selector_receive_within choices 1000i32 |> receipt_value
+    trap_exits !-
+    got |> _assert_eq (Some !+)
 
 /// ## timers
 

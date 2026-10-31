@@ -1,5 +1,5 @@
-inl main () : i32 =
-    inl ~rows = 3i32
-    inl words = 4i32
-    inl cells = !!!!ArrayCreate(`u32, rows *. words)
+:= main () : i32 =
+    := ~rows = 3i32
+    := words = 4i32
+    := cells = !!!!ArrayCreate(`u32, rows *. words)
     !!!!ArrayLength(`i32, cells) -. 12i32

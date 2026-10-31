@@ -1,21 +1,21 @@
-inl map_update (key : i32) (value : i32) (expect : i32) : i32 =
+:= map_update (key : i32) (value : i32) (expect : i32) : i32 =
     !!!!BackendSwitch({
-        C = fun () => $"!expect" : i32
-        Ebpf = fun () => $"spiral_map_update(!key, !value)" : i32
-        Bend = fun () => expect
-        Zig = fun () => expect
+        C = \ () => $"!expect" : i32
+        Ebpf = \ () => $"spiral_map_update(!key, !value)" : i32
+        Bend = \ () => expect
+        Zig = \ () => expect
     })
 
-inl map_lookup (key : i32) (expect : i32) : i32 =
+:= map_lookup (key : i32) (expect : i32) : i32 =
     !!!!BackendSwitch({
-        C = fun () => $"!expect" : i32
-        Ebpf = fun () => $"spiral_map_lookup(!key)" : i32
-        Bend = fun () => expect
-        Zig = fun () => expect
+        C = \ () => $"!expect" : i32
+        Ebpf = \ () => $"spiral_map_lookup(!key)" : i32
+        Bend = \ () => expect
+        Zig = \ () => expect
     })
 
-inl put () : i32 =
+:= put () : i32 =
     map_update 1i32 7i32 0i32
 
-inl main () : i32 =
-    join put () +. (map_lookup 1i32 7i32 -. 7i32)
+:= main () : i32 =
+    ~~ put () +. (map_lookup 1i32 7i32 -. 7i32)

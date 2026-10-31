@@ -11,7 +11,7 @@ fn method2(mut v0: i32) -> Rc<UH0> {
     let v2: bool = v1 == 0i32;
     if v2 {
         let v3: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Empty); } CASE.with(|case| case.clone()) };
-        Rc::new(UH0::UH0_Box(7i32, v3.clone()))
+        Rc::new(UH0::UH0_Box(7i32, v3))
     } else {
         method1(v1)
     }
@@ -21,7 +21,7 @@ fn method1(mut v0: i32) -> Rc<UH0> {
     let v2: bool = v1 == 0i32;
     if v2 {
         let v3: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Empty); } CASE.with(|case| case.clone()) };
-        Rc::new(UH0::UH0_Box(11i32, v3.clone()))
+        Rc::new(UH0::UH0_Box(11i32, v3))
     } else {
         method2(v1)
     }
@@ -31,7 +31,7 @@ fn method0() -> Rc<UH0> {
     let v1: bool = v0 == 0i32;
     if v1 {
         let v2: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Empty); } CASE.with(|case| case.clone()) };
-        Rc::new(UH0::UH0_Box(7i32, v2.clone()))
+        Rc::new(UH0::UH0_Box(7i32, v2))
     } else {
         method1(v0)
     }

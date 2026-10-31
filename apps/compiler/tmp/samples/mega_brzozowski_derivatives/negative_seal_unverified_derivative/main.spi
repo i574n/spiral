@@ -1,10 +1,10 @@
-open main
+:< main
 
-inl main () =
-    inl normalization : derivative_normalization_capability root_bit_alphabet =
+:= main () =
+    := normalization : derivative_normalization_capability root_bit_alphabet =
         derivative_normalization_capability_default
-    inl raw : derivative_pipeline root_bit_alphabet derivative_unchecked =
+    := raw : derivative_pipeline root_bit_alphabet derivative_unchecked =
         derivative_pipeline_begin (root_ends_with_zero ()) (root_zero ())
-    inl normalized : derivative_pipeline root_bit_alphabet derivative_normalized =
+    := normalized : derivative_pipeline root_bit_alphabet derivative_normalized =
         derivative_pipeline_normalize normalization raw
     seal_verified_derivative normalized

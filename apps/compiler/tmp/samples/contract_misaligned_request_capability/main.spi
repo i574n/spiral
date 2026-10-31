@@ -1,88 +1,88 @@
-nominal reader = ()
-nominal writer = ()
-nominal administrator = ()
-nominal row = string
-nominal receipt = string
-nominal version = i32
+:! reader = ()
+:! writer = ()
+:! administrator = ()
+:! row = string
+:! receipt = string
+:! version = i32
 
-union rec capability_token capability =
+:| ^ capability_token capability =
     | ReaderToken :: string -> capability_token reader
     | WriterToken :: string -> capability_token writer
     | AdministratorToken :: string -> capability_token administrator
-    | PairToken :: forall left right. capability_token left * capability_token right -> capability_token (left * right)
+    | PairToken :: \* left right. capability_token left * capability_token right -> capability_token (left * right)
 
-union rec request capability result =
+:| ^ request capability result =
     | Read :: string -> request reader row
     | Write :: row -> request writer receipt
     | CompareSwap :: row * version -> request administrator version
-    | Batch :: forall left_cap left_result right_cap right_result.
+    | Batch :: \* left_cap left_result right_cap right_result.
         request left_cap left_result * request right_cap right_result ->
         request (left_cap * right_cap) (left_result * right_result)
-    | MapRequest :: forall capability result.
-        (exists input. request capability input * (input -> result)) -> request capability result
+    | MapRequest :: \* capability result.
+        (\? input. request capability input * (input -> result)) -> request capability result
 
-inl rec describe forall capability result. (value : request capability result) : string =
-    match value with
+:= ^ describe \* capability result. (value : request capability result) : string =
+    ?= value ?|
     | Read _ => "read"
     | Write _ => "write"
     | CompareSwap _ => "compare-swap"
     | Batch (left, right) =>
-        inl _ = describe left
-        inl _ = describe right
+        := _ = describe left
+        := _ = describe right
         "batch"
     | MapRequest payload =>
-        inl exists input. inner, _ = payload
-        inl _ = describe inner
+        := \? input. inner, _ = payload
+        := _ = describe inner
         "map-request"
 
-nominal strict capability = capability_token capability
-nominal emergency capability = capability_token capability
+:! strict capability = capability_token capability
+:! emergency capability = capability_token capability
 
-prototype authorize policy capability : policy capability -> string
-instance authorize strict = fun (strict token) =>
-    match token with
+:? authorize policy capability : policy capability -> string
+:+ authorize strict = \ (strict token) =>
+    ?= token ?|
     | ReaderToken _ => "strict-reader"
     | WriterToken _ => "strict-writer"
     | AdministratorToken _ => "strict-administrator"
     | PairToken _ => "strict-pair"
-instance authorize emergency = fun (emergency token) =>
-    match token with
+:+ authorize emergency = \ (emergency token) =>
+    ?= token ?|
     | ReaderToken _ => "emergency-reader"
     | WriterToken _ => "emergency-writer"
     | AdministratorToken _ => "emergency-administrator"
     | PairToken _ => "emergency-pair"
 
-union sealed_request =
+:| sealed_request =
     | SealedRequest ::
-        (exists capability result. request capability result * capability_token capability) ->
+        (\? capability result. request capability result * capability_token capability) ->
         sealed_request
 
-inl inspect forall capability result.
+:= inspect \* capability result.
     (request : request capability result)
     (_ : capability_token capability) : string =
     describe request
 
-inl with_sealed forall output.
-    (visit : forall capability result. request capability result -> capability_token capability -> output)
+:= with_sealed \* output.
+    (visit : \* capability result. request capability result -> capability_token capability -> output)
     (value : sealed_request) : output =
-    match value with
+    ?= value ?|
     | SealedRequest payload =>
-        inl exists capability result. request, token = payload
+        := \? capability result. request, token = payload
         visit request token
 
-inl batch_request () : request (reader * writer) (row * receipt) =
+:= batch_request () : request (reader * writer) (row * receipt) =
     Batch (Read "user-7", Write (row "row-7"))
 
-inl batch_token () : capability_token (reader * writer) =
+:= batch_token () : capability_token (reader * writer) =
     PairToken (ReaderToken "reader-key", WriterToken "writer-key")
 
-inl mapped_request () : request administrator string =
-    MapRequest (exists (CompareSwap (row "row-7", version 41), fun (_ : version) => "version-advanced"))
+:= mapped_request () : request administrator string =
+    MapRequest (\? (CompareSwap (row "row-7", version 41), \ (_ : version) => "version-advanced"))
 
-inl sealed_value () : sealed_request =
-    SealedRequest (exists (batch_request (), batch_token ()))
+:= sealed_value () : sealed_request =
+    SealedRequest (\? (batch_request (), batch_token ()))
 
-inl emit (_ : string) (_ : string) (_ : string) (_ : string) : string =
+:= emit (_ : string) (_ : string) (_ : string) (_ : string) : string =
     "schema\tkind\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\tresult\tsequence\n"
     ^^ "1\tplan\tread\tRead\tkey\trow\t\tidempotent\treader\t2\t\t\n"
     ^^ "1\tplan\twrite\tWrite\trow\treceipt\tread\tnon_idempotent\twriter\t0\t\t\n"
@@ -99,5 +99,5 @@ inl emit (_ : string) (_ : string) (_ : string) (_ : string) : string =
     ^^ "1\tevent\tcompare\tCompareSwap\trow-version\tversion\t\t\t\t\tsuccess\t8\n"
     ^^ "1\tevent\tmap\tMapRequest\tversion\tmapped\t\t\t\t\tsuccess\t10\n"
 
-inl main () : string =
+:= main () : string =
     inspect (batch_request ()) (WriterToken "writer-only")

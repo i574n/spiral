@@ -1,4 +1,4 @@
-inl main () : i32 =
-    inl ~x = 6i32
-    inl ~y = 7i32
+:= main () : i32 =
+    := ~x = 6i32
+    := ~y = 7i32
     x +. y

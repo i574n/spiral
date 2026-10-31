@@ -53,9 +53,9 @@ fun spiral_main(): Int {
     val v2: (Int) -> SpiralTuple0 = f_c0(v0, v1)
     var v3: (Int) -> Int = { _: Int -> throw RuntimeException() }
     var v4: (Int) -> Int = { _: Int -> throw RuntimeException() }
-    val spiral_tuple325 = v2(1)
-    v3 = spiral_tuple325.v0
-    v4 = spiral_tuple325.v1
+    val spiral_tuple316 = v2(1)
+    v3 = spiral_tuple316.v0
+    v4 = spiral_tuple316.v1
     var v5: Int = 0
     v5 = v3(0)
     var v6: Int = 0

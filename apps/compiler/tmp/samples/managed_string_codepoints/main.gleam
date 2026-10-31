@@ -67,17 +67,13 @@ pub fn runtime_byte_0(v0: String, v1: Int) -> String {
 pub fn codepoint_length_loop_1(v0: String, v1: String, v2: String, v3: Int, v4: Int, v5: Int) -> Int {
     let v6 = v3 == v5
     case v6 {
-        True -> {
-            v4
-        }
+        True -> v4
         False -> {
             let v7 = spiral_string_index(v0, v3)
             let v8 = string.compare(v7, v1) == order.Lt
             let v10 =
                 case v8 {
-                    True -> {
-                        False
-                    }
+                    True -> False
                     False -> {
                         let v9 = string.compare(v7, v2) == order.Lt
                         v9
@@ -85,9 +81,7 @@ pub fn codepoint_length_loop_1(v0: String, v1: String, v2: String, v3: Int, v4: 
                 }
             let v12 =
                 case v10 {
-                    True -> {
-                        v4
-                    }
+                    True -> v4
                     False -> {
                         let v11 = spiral_wrap_signed(v4 + 1, 32)
                         v11
@@ -101,17 +95,13 @@ pub fn codepoint_length_loop_1(v0: String, v1: String, v2: String, v3: Int, v4: 
 pub fn codepoint_byte_offset_loop_2(v0: String, v1: String, v2: String, v3: Int, v4: Int, v5: Int, v6: Int) -> Int {
     let v7 = v4 == v6
     case v7 {
-        True -> {
-            v6
-        }
+        True -> v6
         False -> {
             let v8 = spiral_string_index(v0, v4)
             let v9 = string.compare(v8, v1) == order.Lt
             let v11 =
                 case v9 {
-                    True -> {
-                        False
-                    }
+                    True -> False
                     False -> {
                         let v10 = string.compare(v8, v2) == order.Lt
                         v10
@@ -125,9 +115,7 @@ pub fn codepoint_byte_offset_loop_2(v0: String, v1: String, v2: String, v3: Int,
                 False -> {
                     let v14 = v5 == v3
                     case v14 {
-                        True -> {
-                            v4
-                        }
+                        True -> v4
                         False -> {
                             let v15 = spiral_wrap_signed(v4 + 1, 32)
                             let v16 = spiral_wrap_signed(v5 + 1, 32)
@@ -253,41 +241,25 @@ pub fn main() {
                                                 True -> {
                                                     let v99 = v79 == 5
                                                     case v99 {
-                                                        True -> {
-                                                            0
-                                                        }
-                                                        False -> {
-                                                            1
-                                                        }
+                                                        True -> 0
+                                                        False -> 1
                                                     }
                                                 }
-                                                False -> {
-                                                    2
-                                                }
+                                                False -> 2
                                             }
                                         }
-                                        False -> {
-                                            3
-                                        }
+                                        False -> 3
                                     }
                                 }
-                                False -> {
-                                    4
-                                }
+                                False -> 4
                             }
                         }
-                        False -> {
-                            5
-                        }
+                        False -> 5
                     }
                 }
-                False -> {
-                    6
-                }
+                False -> 6
             }
         }
-        False -> {
-            7
-        }
+        False -> 7
     }
 }

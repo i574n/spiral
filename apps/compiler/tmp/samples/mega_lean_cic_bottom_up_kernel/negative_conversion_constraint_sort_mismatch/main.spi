@@ -1,15 +1,15 @@
-open main
+:< main
 
-inl impossible_corrected_cic_conversion_constraint_sort_mismatch
+:= impossible_corrected_cic_conversion_constraint_sort_mismatch
     ()
     : corrected_cic_conversion_constraint_program (cic_chain_succ cic_chain_zero)
     =
-    CorrectedCicConversionConstraintProgramIntrinsicTerms (exists (
+    CorrectedCicConversionConstraintProgramIntrinsicTerms (\? (
         corrected_cic_structural_defeq_pair_authority_make
             (corrected_cic_true ())
             (corrected_cic_sort_zero ()),
         CorrectedCicConversionConstraintProgramDone,
         "a-single-conversion-cell-cannot-pair-Bool-with-Sort-one"))
 
-inl main () =
+:= main () =
     impossible_corrected_cic_conversion_constraint_sort_mismatch ()

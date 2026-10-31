@@ -1,33 +1,33 @@
-nominal lineage_a = ()
-nominal epoch0 = ()
-nominal owner_a = ()
-nominal slot0 = ()
-nominal available = ()
-nominal borrowed = ()
-nominal live = ()
-nominal returned = ()
+:! lineage_a = ()
+:! epoch0 = ()
+:! owner_a = ()
+:! slot0 = ()
+:! available = ()
+:! borrowed = ()
+:! live = ()
+:! returned = ()
 
-union qregister lineage epoch state = | QRegister :: forall lineage epoch state. string -> qregister lineage epoch state
-union qloan lineage epoch owner slot state =
-    | QLoan :: forall lineage epoch owner slot state. string -> qloan lineage epoch owner slot state
-union borrow_request owner slot = | BorrowRequest :: forall owner slot. string -> borrow_request owner slot
+:| qregister lineage epoch state = | QRegister :: \* lineage epoch state. string -> qregister lineage epoch state
+:| qloan lineage epoch owner slot state =
+    | QLoan :: \* lineage epoch owner slot state. string -> qloan lineage epoch owner slot state
+:| borrow_request owner slot = | BorrowRequest :: \* owner slot. string -> borrow_request owner slot
 
-inl borrow forall lineage epoch owner slot.
+:= borrow \* lineage epoch owner slot.
     (register : qregister lineage epoch available) (request : borrow_request owner slot)
     : qregister lineage epoch borrowed * qloan lineage epoch owner slot live
     =
-    match request with | BorrowRequest _ => QRegister "borrowed", QLoan "loan"
+    ?= request ?| | BorrowRequest _ => QRegister "borrowed", QLoan "loan"
 
-inl release forall lineage epoch owner slot.
+:= release \* lineage epoch owner slot.
     (register : qregister lineage epoch borrowed) (loan : qloan lineage epoch owner slot live)
     : qregister lineage epoch available * qloan lineage epoch owner slot returned
     =
-    match register, loan with | QRegister _, QLoan _ => QRegister "epoch-owned-loan-returned", QLoan "returned"
+    ?= register, loan ?| | QRegister _, QLoan _ => QRegister "epoch-owned-loan-returned", QLoan "returned"
 
-inl main () : string =
-    inl register : qregister lineage_a epoch0 available = QRegister "qreg"
-    inl request : borrow_request owner_a slot0 = BorrowRequest "q0"
-    match borrow register request with
+:= main () : string =
+    := register : qregister lineage_a epoch0 available = QRegister "qreg"
+    := request : borrow_request owner_a slot0 = BorrowRequest "q0"
+    ?= borrow register request ?|
     | borrowed_register, loan =>
-        match release borrowed_register loan with
+        ?= release borrowed_register loan ?|
         | QRegister label, QLoan _ => label

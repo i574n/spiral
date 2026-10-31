@@ -23,20 +23,14 @@ pub fn main() {
             }
         }
     case v6  {
-        Us1Slain(v13) -> {
-            2
-        }
+        Us1Slain(v13) -> 2
         Us1Survived(v7) -> {
             case v7  {
                 Us0Living(v8, v9) -> {
                     let v10 = v8 == 60
                     case v10 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 }
             }

@@ -1,8 +1,8 @@
-open main
+:< main
 
-inl main () : string =
-    inl _ = corrected_cic_bool_dependent_application_program_negation_involution_terminal ()
-    inl _ = corrected_cic_indexed_unary_constructor_application_terminal ()
-    inl _ = corrected_cic_indexed_dependent_application_terminal ()
-    inl _ = corrected_cic_bool_dependent_pi_substitution_terminal ()
+:= main () : string =
+    := _ = corrected_cic_bool_dependent_application_program_negation_involution_terminal ()
+    := _ = corrected_cic_indexed_unary_constructor_application_terminal ()
+    := _ = corrected_cic_indexed_dependent_application_terminal ()
+    := _ = corrected_cic_bool_dependent_pi_substitution_terminal ()
     "all-terminals-green"

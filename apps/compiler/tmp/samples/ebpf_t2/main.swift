@@ -10,9 +10,9 @@ func sp_method0(_ p0: Int32, _ p1: Int32) -> Int32 {
     var v1: Int32 = p1
     var v2: Int32 = 0
     var v3: Int32 = 0
-    let spiral_tuple148 = sp_method1(v0, v1)
-    v2 = spiral_tuple148.0
-    v3 = spiral_tuple148.1
+    let spiral_tuple143 = sp_method1(v0, v1)
+    v2 = spiral_tuple143.0
+    v3 = spiral_tuple143.1
     var v4: Int32 = 0
     v4 = (v2 &+ v3)
     return v4
@@ -30,10 +30,10 @@ func sp_method2(_ p0: Int32, _ p1: Int32, _ p2: Int32) -> Int32 {
     var v3: Int32 = 0
     var v4: Int32 = 0
     var v5: Int32 = 0
-    let spiral_tuple208 = sp_method3(v0, v1, v2)
-    v3 = spiral_tuple208.0
-    v4 = spiral_tuple208.1
-    v5 = spiral_tuple208.2
+    let spiral_tuple201 = sp_method3(v0, v1, v2)
+    v3 = spiral_tuple201.0
+    v4 = spiral_tuple201.1
+    v5 = spiral_tuple201.2
     var v6: Int32 = 0
     v6 = (v3 &+ v4)
     let v7: Int32 = (v6 &+ v5)

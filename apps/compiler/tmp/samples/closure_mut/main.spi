@@ -1,8 +1,8 @@
-inl main () : i32 =
-    inl cell = !!!!LayoutToHeapMutable({ q = 1i32 })
-    inl f (z : i32) : mut { q : i32 } = cell
-    inl ~g = f
-    inl held = g 1i32
+:= main () : i32 =
+    := cell = !!!!LayoutToHeapMutable({ q = 1i32 })
+    := f (z : i32) : mut { q : i32 } = cell
+    := ~g = f
+    := held = g 1i32
     held <- { q = 7i32 }
-    inl opened = !!!!LayoutIndex(held)
-    if opened.q =. 7i32 then 0i32 else 1i32
+    := opened = !!!!LayoutIndex(held)
+    ? opened::q =. 7i32 ?> 0i32 |: 1i32

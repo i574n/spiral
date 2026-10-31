@@ -14,20 +14,12 @@ pub fn score_0(v0: Us0) -> Int {
     case v0  {
         Us0Flag(v2) -> {
             case v2 {
-                True -> {
-                    11
-                }
-                False -> {
-                    5
-                }
+                True -> 11
+                False -> 5
             }
         }
-        Us0Hit(v1) -> {
-            v1
-        }
-        Us0Idle -> {
-            3
-        }
+        Us0Hit(v1) -> v1
+        Us0Idle -> 3
     }
 }
 pub fn closure0(capt: #(Us0)) -> fn(Int) -> Int {
@@ -46,18 +38,12 @@ pub fn main() {
     let v1 = v0 == 0
     let v7 =
         case v1 {
-            True -> {
-                Us0Idle
-            }
+            True -> Us0Idle
             False -> {
                 let v3 = v0 == 1
                 case v3 {
-                    True -> {
-                        Us0Hit(7)
-                    }
-                    False -> {
-                        Us0Flag(True)
-                    }
+                    True -> Us0Hit(7)
+                    False -> Us0Flag(True)
                 }
             }
         }

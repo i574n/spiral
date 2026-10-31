@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_sealed_composite_children_wrong_divisor
+:= impossible_sealed_composite_children_wrong_divisor
     (children :
         certified_interval_positive_positional_sealed_composite_children
             (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
@@ -12,5 +12,5 @@ inl impossible_sealed_composite_children_wrong_divisor
         (positional_zero_bit positional_one) =
     children
 
-inl main () =
+:= main () =
     impossible_sealed_composite_children_wrong_divisor

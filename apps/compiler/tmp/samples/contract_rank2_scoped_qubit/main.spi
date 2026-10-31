@@ -1,23 +1,23 @@
-nominal region_a = ()
-nominal coherent = ()
+:! region_a = ()
+:! coherent = ()
 
-union qubit region phase =
+:| qubit region phase =
     | QubitA :: string -> qubit region_a coherent
 
-union packed_qubit =
-    | PackedQubit :: (exists region. qubit region coherent) -> packed_qubit
+:| packed_qubit =
+    | PackedQubit :: (\? region. qubit region coherent) -> packed_qubit
 
-inl measure forall region. (qubit : qubit region coherent) : string =
-    match qubit with
+:= measure \* region. (qubit : qubit region coherent) : string =
+    ?= qubit ?|
     | QubitA _ => "rank2-qubit-consumed"
 
-inl with_qubit forall result.
-    (visitor : forall region. qubit region coherent -> result)
+:= with_qubit \* result.
+    (visitor : \* region. qubit region coherent -> result)
     : result =
-    inl packed = PackedQubit (exists (QubitA "psi"))
-    match packed with
+    := packed = PackedQubit (\? (QubitA "psi"))
+    ?= packed ?|
     | PackedQubit qubit =>
-        inl exists region. qubit = qubit
+        := \? region. qubit = qubit
         visitor qubit
 
-inl main () : string = with_qubit `$measure
+:= main () : string = with_qubit `$measure

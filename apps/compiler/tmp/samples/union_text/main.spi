@@ -1,15 +1,15 @@
-union message =
+:| message =
     | Text : string
     | Code : i32
 
-let score x : i32 =
-    match x with
-    | Text value => if !!!!EQ(value, "hi") then 2i32 else 3i32
+:~ score x : i32 =
+    ?= x ?|
+    | Text value => ? !!!!EQ(value, "hi") ?> 2i32 |: 3i32
     | Code value => value
 
-inl main () : i32 =
-    inl ~flag = true
-    inl ~word = "hi"
-    inl text = if flag then Text word else Code 1i32
-    inl code = if flag then Code 5i32 else Text word
-    if score text =. 2i32 && score code =. 5i32 then 0i32 else 1i32
+:= main () : i32 =
+    := ~flag = !+
+    := ~word = "hi"
+    := text = ? flag ?> Text word |: Code 1i32
+    := code = ? flag ?> Code 5i32 |: Text word
+    ? score text =. 2i32 && score code =. 5i32 ?> 0i32 |: 1i32

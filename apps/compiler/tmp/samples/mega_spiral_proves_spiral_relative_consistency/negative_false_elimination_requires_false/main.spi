@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_false_elimination_requires_false () :
+:= impossible_false_elimination_requires_false () :
     exact_linear_indexed_false_elimination
         exact_linear_free_context_empty
         exact_linear_indexed_usage_empty
@@ -12,4 +12,4 @@ inl impossible_false_elimination_requires_false () :
             exact_linear_indexed_empty_usage (),
             "a-Unit-term-cannot-be-used-as-a-False-premise"))
 
-inl main () = impossible_false_elimination_requires_false ()
+:= main () = impossible_false_elimination_requires_false ()

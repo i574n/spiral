@@ -1,3 +1,3 @@
-union struck =
+:| struck =
     | Survived : i32
     | Slain : i32

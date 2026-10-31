@@ -1,4 +1,4 @@
-union outcome_t =
+:| outcome_t =
     | Idle
     | Text : string
     | Note : string

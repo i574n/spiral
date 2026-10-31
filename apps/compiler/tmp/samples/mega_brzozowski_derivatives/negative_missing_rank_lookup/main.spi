@@ -1,24 +1,24 @@
-open main
+:< main
 
-union paired_symbol =
+:| paired_symbol =
     | PairedLeft
     | PairedRight
 
-nominal paired_alphabet = paired_symbol
+:! paired_alphabet = paired_symbol
 
-instance symbol_compare paired_alphabet = fun (paired_alphabet left) (paired_alphabet right) =>
-    match left, right with
+:+ symbol_compare paired_alphabet = \ (paired_alphabet left) (paired_alphabet right) =>
+    ?= left, right ?|
     | PairedLeft, PairedLeft => SymbolSame
     | PairedLeft, PairedRight => SymbolLess
     | PairedRight, PairedLeft => SymbolGreater
     | PairedRight, PairedRight => SymbolSame
 
-inl paired_symbols () : symbol_list paired_alphabet =
+:= paired_symbols () : symbol_list paired_alphabet =
     SymbolListCons (
         paired_alphabet PairedLeft,
         SymbolListCons (paired_alphabet PairedRight, SymbolListNil))
 
-inl main () =
+:= main () =
     dfa_run_with_inventory
         (RegexChar (paired_alphabet PairedLeft))
         (paired_symbols ())

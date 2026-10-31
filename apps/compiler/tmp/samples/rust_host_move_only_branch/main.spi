@@ -1,0 +1,23 @@
+:= builder (url : i32) : $'ureq::RequestBuilder<i32>' =
+    !!!!Global("mod ureq { pub struct RequestBuilder<T>(pub T); }")
+    $"ureq::RequestBuilder(!url)" : $'ureq::RequestBuilder<i32>'
+
+:= unwrap (b : $'ureq::RequestBuilder<i32>') : i32 = $"!b.0" : i32
+
+:= label_length (label : string) : i32 = $"!label.len() as i32" : i32
+
+:= rust_branch () : i32 =
+    := ~label = "xc_requests"
+    := ~flag = !+
+    := b = ? flag ?> builder 40i32 |: builder 41i32
+    unwrap b +. label_length label -. 51i32
+
+:= main () : i32 =
+    !!!!BackendSwitch({
+        Rust = \ () => rust_branch ()
+        C = \ () => 0i32
+        Fsharp = \ () => 0i32
+        Zig = \ () => 0i32
+        Lean = \ () => 0i32
+        Delphi = \ () => 0i32
+    })

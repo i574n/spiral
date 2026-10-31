@@ -3,12 +3,59 @@ defmodule Spiral.Cells.CompilerDaemonTest do
 
   alias Spiral.Cells.{CompilerClient, CompilerDaemon}
 
-  test "the daemon port: 13905 by default, SPIRAL_CELLS_COMPILER_PORT otherwise" do
+  @tag :tmp_dir
+  test "the default port follows the compiler build: same build same port, a rebuilt DLL may move, a missing DLL is 13905", %{tmp_dir: dir} do
+    dll = Path.join(dir, "SpiralCompiler.dll")
+    assert CompilerDaemon.build_port(dll) == 13905
+    File.write!(dll, "a")
+    File.touch!(dll, 1_800_000_000)
+    first = CompilerDaemon.build_port(dll)
+    assert first == CompilerDaemon.build_port(dll)
+    assert first in Enum.map(0..11, &(13905 + 8 * &1))
+    ports = for t <- 1..24, do: (File.touch!(dll, 1_800_000_000 + t); CompilerDaemon.build_port(dll))
+    assert length(Enum.uniq(ports)) > 1
+    roots = for r <- 1..24, do: CompilerDaemon.build_port(dll, Path.join(dir, "mirror-#{r}"))
+    assert length(Enum.uniq(roots)) > 1
+    assert CompilerDaemon.build_port(dll, Path.join(dir, "mirror-1")) == CompilerDaemon.build_port(dll, Path.join(dir, "mirror-1"))
+  end
+
+  test "a client whose compiler differs from the daemon on its slot moves to the next slot instead of replacing it" do
+    first = 13905 + 8 * 3
+    next = CompilerDaemon.slot_port(first, 1)
+    assert next == 13905 + 8 * 4
+    assert CompilerDaemon.slot_port(13905 + 8 * 11, 1) == 13905
+
+    other_build = fn port -> if port == first, do: {:dll, "111-222"}, else: :down end
+    assert CompilerClient.pick_slot(first, "333-444", 0, other_build) == next
+
+    same_build = fn _ -> {:dll, "333-444"} end
+    assert CompilerClient.pick_slot(first, "333-444", 0, same_build) == first
+
+    legacy = fn _ -> :legacy end
+    assert CompilerClient.pick_slot(first, "333-444", 0, legacy) == first
+
+    all_taken = fn _ -> {:dll, "111-222"} end
+    assert CompilerClient.pick_slot(first, "333-444", 0, all_taken) == first
+  end
+
+  test "the warm-port file key ignores slash direction, case and a trailing slash, so run_notebook.ps1 can compute it" do
+    assert CompilerClient.root_key("C:\\Home\\Git\\Cells\\") == CompilerClient.root_key("c:/home/git/cells")
+    assert CompilerClient.root_key("c:/home/git/cells") =~ ~r/\A[0-9A-F]{16}\z/
+    refute CompilerClient.root_key("c:/home/git/cells") == CompilerClient.root_key("c:/home/git/cells2")
+    assert CompilerClient.warm_port_file("c:/home/git/cells", "1700000000-315392") =~ ~r/cells-port-[0-9A-F]{16}-1700000000-315392\.txt\z/
+  end
+
+  test "the banner carries the served compiler's tag after the code stamp" do
+    assert [_, "1", _pid, _stamp, tag] = String.split(CompilerDaemon.banner(), "\t")
+    assert tag == CompilerDaemon.served_dll_tag()
+  end
+
+  test "the daemon port: the build port by default, SPIRAL_CELLS_COMPILER_PORT otherwise" do
     previous = System.get_env("SPIRAL_CELLS_COMPILER_PORT")
 
     try do
       System.delete_env("SPIRAL_CELLS_COMPILER_PORT")
-      assert CompilerDaemon.port() == 13905
+      assert CompilerDaemon.port() == CompilerDaemon.build_port(Spiral.Cells.Toolchain.compiler_dll([]))
       System.put_env("SPIRAL_CELLS_COMPILER_PORT", "13806")
       assert CompilerDaemon.port() == 13806
       System.put_env("SPIRAL_CELLS_COMPILER_PORT", "x")
@@ -28,6 +75,23 @@ defmodule Spiral.Cells.CompilerDaemonTest do
              nil
            ) ==
              ~S{/d /c ""C:\e\elixir.bat" -S mix spiral.compiler_daemon 1>"C:\r\k.log" 2>"C:\r\k.err.log""}
+  end
+
+  test "the Windows daemon starts under the user shell only through an explicit SPIRAL_CELLS_SHELL_LAUNCHER, else hidden" do
+    previous = System.get_env("SPIRAL_CELLS_SHELL_LAUNCHER")
+
+    try do
+      System.put_env("SPIRAL_CELLS_SHELL_LAUNCHER", ~S"C:\k\kit.exe")
+      assert CompilerClient.shell_launcher() == ~S"C:\k\kit.exe"
+      System.delete_env("SPIRAL_CELLS_SHELL_LAUNCHER")
+      assert CompilerClient.shell_launcher() == nil
+      System.put_env("SPIRAL_CELLS_SHELL_LAUNCHER", "none")
+      assert CompilerClient.shell_launcher() == nil
+    after
+      if previous,
+        do: System.put_env("SPIRAL_CELLS_SHELL_LAUNCHER", previous),
+        else: System.delete_env("SPIRAL_CELLS_SHELL_LAUNCHER")
+    end
   end
 
   test "a relaunch rotates the daemon log even while the retiring daemon still holds it open" do

@@ -1,23 +1,23 @@
-union inner =
+:| inner =
     | A : i32
     | B : i32
 
-union outer =
+:| outer =
     | Wrap : inner
     | Other : i32
 
-let score_inner x : i32 =
-    match x with
+:~ score_inner x : i32 =
+    ?= x ?|
     | A value => value
     | B value => 0i32 -. value
 
-let score x : i32 =
-    match x with
+:~ score x : i32 =
+    ?= x ?|
     | Wrap value => score_inner value
     | Other value => value
 
-inl main () : i32 =
-    inl ~flag = true
-    inl wrapped = if flag then Wrap (A 7i32) else Other 1i32
-    inl other = if flag then Other 4i32 else Wrap (B 2i32)
-    if score wrapped =. 7i32 && score other =. 4i32 then 0i32 else 1i32
+:= main () : i32 =
+    := ~flag = !+
+    := wrapped = ? flag ?> Wrap (A 7i32) |: Other 1i32
+    := other = ? flag ?> Other 4i32 |: Wrap (B 2i32)
+    ? score wrapped =. 7i32 && score other =. 4i32 ?> 0i32 |: 1i32

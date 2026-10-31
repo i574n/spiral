@@ -1,26 +1,26 @@
-union slot =
+:| slot =
     | None
     | Some : i32
 
-nominal slot_array = array_base slot
+:! slot_array = array_base slot
 
-inl create (n : i32) : slot_array = slot_array !!!!ArrayCreate(`slot, n)
-inl get (array : slot_array) (i : i32) : slot =
-    match array with
+:= create (n : i32) : slot_array = slot_array !!!!ArrayCreate(`slot, n)
+:= get (array : slot_array) (i : i32) : slot =
+    ?= array ?|
     | slot_array values => !!!!ArrayIndex(values, i)
-inl set (array : slot_array) (i : i32) (value : slot) : () =
-    match array with
+:= set (array : slot_array) (i : i32) (value : slot) : () =
+    ?= array ?|
     | slot_array values => !!!!ArrayIndexSet(values, i, value)
 
-inl main () : i32 =
-    inl ~n = 2i32
-    inl a = create n
-    inl ~x = 7i32
+:= main () : i32 =
+    := ~n = 2i32
+    := a = create n
+    := ~x = 7i32
     set a 0i32 (Some x)
     set a 1i32 None
-    match get a 0i32 with
+    ?= get a 0i32 ?|
     | Some value =>
-        match get a 1i32 with
-        | None => if value =. 7i32 then 0i32 else 1i32
+        ?= get a 1i32 ?|
+        | None => ? value =. 7i32 ?> 0i32 |: 1i32
         | Some other => 1i32
     | None => 1i32

@@ -1,9 +1,9 @@
-inl main () : i32 =
-    inl r =
+:= main () : i32 =
+    := r =
         {
             items = (
                 40i32
             ) +. 1i32
             bonus = 1i32
         }
-    (r.items +. r.bonus) -. 42i32
+    (r::items +. r::bonus) -. 42i32

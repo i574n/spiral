@@ -1,23 +1,23 @@
-nominal region_a = ()
+:! region_a = ()
 
-union resource region =
+:| resource region =
     | ResourceA :: string -> resource region_a
 
-union scoped_resource =
-    | ScopedResource :: (exists region. resource region) -> scoped_resource
+:| scoped_resource =
+    | ScopedResource :: (\? region. resource region) -> scoped_resource
 
-inl use_and_render forall region. (resource : resource region) : string =
-    match resource with
+:= use_and_render \* region. (resource : resource region) : string =
+    ?= resource ?|
     | ResourceA _ => "rank2-resource-safe"
 
-inl with_resource forall result.
-    (visitor : forall region. resource region -> result)
+:= with_resource \* result.
+    (visitor : \* region. resource region -> result)
     : result =
-    inl packed = ScopedResource (exists (ResourceA "nfe.xml"))
-    match packed with
+    := packed = ScopedResource (\? (ResourceA "nfe.xml"))
+    ?= packed ?|
     | ScopedResource resource =>
-        inl exists region. resource = resource
+        := \? region. resource = resource
         visitor resource
 
-inl main () : string =
+:= main () : string =
     with_resource `$use_and_render

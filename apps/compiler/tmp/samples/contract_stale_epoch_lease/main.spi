@@ -1,30 +1,30 @@
-nominal epoch_one = ()
-nominal epoch_two = ()
-nominal unbound = ()
-nominal bound = ()
+:! epoch_one = ()
+:! epoch_two = ()
+:! unbound = ()
+:! bound = ()
 
-union authority epoch =
+:| authority epoch =
     | AuthorityOne :: authority epoch_one
     | AuthorityTwo :: authority epoch_two
 
-union lease epoch state =
+:| lease epoch state =
     | LeaseOneFresh :: lease epoch_one unbound
     | LeaseTwoFresh :: lease epoch_two unbound
     | LeaseOneBound :: lease epoch_one bound
     | LeaseTwoBound :: lease epoch_two bound
 
-inl bind forall epoch.
+:= bind \* epoch.
     (lease : lease epoch unbound)
     (authority : authority epoch)
     : lease epoch bound =
-    match lease with
+    ?= lease ?|
     | LeaseOneFresh =>
-        match authority with
+        ?= authority ?|
         | AuthorityOne => LeaseOneBound
     | LeaseTwoFresh =>
-        match authority with
+        ?= authority ?|
         | AuthorityTwo => LeaseTwoBound
 
-inl main () : string =
-    inl _ = bind LeaseOneFresh AuthorityTwo
+:= main () : string =
+    := _ = bind LeaseOneFresh AuthorityTwo
     "unreachable"

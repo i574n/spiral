@@ -20,9 +20,9 @@ fun spiral_main(): Int {
     val v1: (Int, Int) -> SpiralTuple0 = closure0(v0)
     var v2: Int = 0
     var v3: Int = 0
-    val spiral_tuple213 = sp_method0(v1)
-    v2 = spiral_tuple213.v0
-    v3 = spiral_tuple213.v1
+    val spiral_tuple206 = sp_method0(v1)
+    v2 = spiral_tuple206.v0
+    v3 = spiral_tuple206.v1
     var v4: Int = 0
     v4 = (10 + v2)
     var v5: Int = 0

@@ -8,11 +8,7 @@ pub fn main() {
     let v4 = v3.l0
     let v5 = v4 == 7
     case v5 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

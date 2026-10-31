@@ -1,6 +1,6 @@
-union shape = Box : { w : i32; h : i32 } | Dot
-inl main () : i32 =
-    inl s = Box { h = 3i32; w = 4i32 }
-    match s with
+:| shape = Box : { w : i32; h : i32 } | Dot
+:= main () : i32 =
+    := s = Box { h = 3i32; w = 4i32 }
+    ?= s ?|
     | Box { w h } => !!!!Add(!!!!Mult(w, 10i32), h)
     | Dot => 0i32

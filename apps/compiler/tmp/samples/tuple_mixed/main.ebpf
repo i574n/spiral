@@ -63,10 +63,10 @@ static int32_t spiral_main(void) {
     bool v1 = false;
     float v2 = 0.0f;
     int32_t v3 = 0;
-    SpiralTuple0 spiral_tuple139 = sp_method0(v0);
-    v1 = spiral_tuple139.v0;
-    v2 = spiral_tuple139.v1;
-    v3 = spiral_tuple139.v2;
+    SpiralTuple0 spiral_tuple133 = sp_method0(v0);
+    v1 = spiral_tuple133.v0;
+    v2 = spiral_tuple133.v1;
+    v3 = spiral_tuple133.v2;
     return sp_method1(v1, v2, v3);
 }
 #ifdef __bpf__

@@ -1,84 +1,84 @@
-open main
+:< main
 
-union adversarial_symbol =
+:| adversarial_symbol =
     | AdversarialLeft
     | AdversarialRight
 
-nominal adversarial_alphabet = adversarial_symbol
+:! adversarial_alphabet = adversarial_symbol
 
-instance symbol_compare adversarial_alphabet = fun (adversarial_alphabet left) (adversarial_alphabet right) =>
-    match left, right with
+:+ symbol_compare adversarial_alphabet = \ (adversarial_alphabet left) (adversarial_alphabet right) =>
+    ?= left, right ?|
     | AdversarialLeft, AdversarialLeft => SymbolSame
     | AdversarialLeft, AdversarialRight => SymbolLess
     | AdversarialRight, AdversarialLeft => SymbolGreater
     | AdversarialRight, AdversarialRight => SymbolSame
 
-inl adversarial_symbols () : symbol_list adversarial_alphabet =
+:= adversarial_symbols () : symbol_list adversarial_alphabet =
     SymbolListCons (
         adversarial_alphabet AdversarialLeft,
         SymbolListCons (adversarial_alphabet AdversarialRight, SymbolListNil))
 
-inl adversarial_cardinality_one () : alphabet_cardinality =
+:= adversarial_cardinality_one () : alphabet_cardinality =
     AlphabetCardinalitySucc AlphabetCardinalityZero
 
-inl adversarial_cardinality_two () : alphabet_cardinality =
+:= adversarial_cardinality_two () : alphabet_cardinality =
     AlphabetCardinalitySucc (AlphabetCardinalitySucc AlphabetCardinalityZero)
 
-inl adversarial_cardinality_three () : alphabet_cardinality =
+:= adversarial_cardinality_three () : alphabet_cardinality =
     AlphabetCardinalitySucc (
         AlphabetCardinalitySucc (
             AlphabetCardinalitySucc AlphabetCardinalityZero))
 
-inl valid_descriptor () : finite_alphabet_descriptor adversarial_alphabet =
+:= valid_descriptor () : finite_alphabet_descriptor adversarial_alphabet =
     finite_alphabet_descriptor (adversarial_symbols (), adversarial_cardinality_two ())
 
-instance finite_alphabet adversarial_alphabet = fun () => valid_descriptor ()
+:+ finite_alphabet adversarial_alphabet = \ () => valid_descriptor ()
 
-inl swapped_descriptor () : finite_alphabet_descriptor adversarial_alphabet =
-    inl symbols =
+:= swapped_descriptor () : finite_alphabet_descriptor adversarial_alphabet =
+    := symbols =
         SymbolListCons (
             adversarial_alphabet AdversarialRight,
             SymbolListCons (adversarial_alphabet AdversarialLeft, SymbolListNil))
     finite_alphabet_descriptor (symbols, adversarial_cardinality_two ())
 
-inl short_descriptor () : finite_alphabet_descriptor adversarial_alphabet =
-    inl symbols = SymbolListCons (adversarial_alphabet AdversarialLeft, SymbolListNil)
+:= short_descriptor () : finite_alphabet_descriptor adversarial_alphabet =
+    := symbols = SymbolListCons (adversarial_alphabet AdversarialLeft, SymbolListNil)
     finite_alphabet_descriptor (symbols, adversarial_cardinality_two ())
 
-inl self_consistent_short_descriptor () : finite_alphabet_descriptor adversarial_alphabet =
-    inl symbols = SymbolListCons (adversarial_alphabet AdversarialLeft, SymbolListNil)
+:= self_consistent_short_descriptor () : finite_alphabet_descriptor adversarial_alphabet =
+    := symbols = SymbolListCons (adversarial_alphabet AdversarialLeft, SymbolListNil)
     finite_alphabet_descriptor (symbols, adversarial_cardinality_one ())
 
-inl long_cardinality_descriptor () : finite_alphabet_descriptor adversarial_alphabet =
+:= long_cardinality_descriptor () : finite_alphabet_descriptor adversarial_alphabet =
     finite_alphabet_descriptor (adversarial_symbols (), adversarial_cardinality_three ())
 
-inl duplicate_descriptor () : finite_alphabet_descriptor adversarial_alphabet =
-    inl symbols =
+:= duplicate_descriptor () : finite_alphabet_descriptor adversarial_alphabet =
+    := symbols =
         SymbolListCons (
             adversarial_alphabet AdversarialLeft,
             SymbolListCons (adversarial_alphabet AdversarialLeft, SymbolListNil))
     finite_alphabet_descriptor (symbols, adversarial_cardinality_two ())
 
-inl lookup_matches_descriptor () : bool =
-    inl descriptor = valid_descriptor ()
-    match finite_alphabet_lookup descriptor AlphabetRankZero with
+:= lookup_matches_descriptor () : bool =
+    := descriptor = valid_descriptor ()
+    ?= finite_alphabet_lookup descriptor AlphabetRankZero ?|
     | AlphabetRankFound first =>
-        match symbol_compare first (adversarial_alphabet AdversarialLeft) with
+        ?= symbol_compare first (adversarial_alphabet AdversarialLeft) ?|
         | SymbolSame =>
-            match finite_alphabet_lookup descriptor (AlphabetRankSucc AlphabetRankZero) with
+            ?= finite_alphabet_lookup descriptor (AlphabetRankSucc AlphabetRankZero) ?|
             | AlphabetRankFound second =>
-                match symbol_compare second (adversarial_alphabet AdversarialRight) with
+                ?= symbol_compare second (adversarial_alphabet AdversarialRight) ?|
                 | SymbolSame =>
-                    match finite_alphabet_lookup descriptor (AlphabetRankSucc (AlphabetRankSucc AlphabetRankZero)) with
-                    | AlphabetRankEnd => true
-                    | AlphabetRankFound _ => false
-                | _ => false
-            | AlphabetRankEnd => false
-        | _ => false
-    | AlphabetRankEnd => false
+                    ?= finite_alphabet_lookup descriptor (AlphabetRankSucc (AlphabetRankSucc AlphabetRankZero)) ?|
+                    | AlphabetRankEnd => !+
+                    | AlphabetRankFound _ => !-
+                | _ => !-
+            | AlphabetRankEnd => !-
+        | _ => !-
+    | AlphabetRankEnd => !-
 
-inl main () : string =
-    inl valid = valid_descriptor ()
+:= main () : string =
+    := valid = valid_descriptor ()
     assert_static
         (finite_alphabet_descriptor_certified valid)
         "ordered inventory with matching independent cardinality must certify"
@@ -86,20 +86,20 @@ inl main () : string =
         (lookup_matches_descriptor ())
         "rank lookup must be derived deterministically from the certified inventory"
 
-    inl swapped = swapped_descriptor ()
+    := swapped = swapped_descriptor ()
     assert_static
-        (bool_same (finite_alphabet_descriptor_certified swapped) false)
+        (bool_same (finite_alphabet_descriptor_certified swapped) !-)
         "swapped descriptor inventory must fail canonical ordering"
 
-    inl short = short_descriptor ()
+    := short = short_descriptor ()
     assert_static
         (alphabet_inventory_well_formed (finite_alphabet_symbols short))
         "short inventory may be locally ordered"
     assert_static
-        (bool_same (finite_alphabet_descriptor_certified short) false)
+        (bool_same (finite_alphabet_descriptor_certified short) !-)
         "cardinality must reject an inventory that omits a domain slot"
 
-    inl self_consistent_short = self_consistent_short_descriptor ()
+    := self_consistent_short = self_consistent_short_descriptor ()
     assert_static
         (
             symbol_list_cardinality_matches
@@ -108,29 +108,29 @@ inl main () : string =
         )
         "self-consistent short descriptor should demonstrate the old circularity"
     assert_static
-        (bool_same (finite_alphabet_descriptor_certified self_consistent_short) false)
+        (bool_same (finite_alphabet_descriptor_certified self_consistent_short) !-)
         "canonical finite-domain authority must reject a self-consistent truncated descriptor"
 
-    inl long_cardinality = long_cardinality_descriptor ()
+    := long_cardinality = long_cardinality_descriptor ()
     assert_static
-        (bool_same (finite_alphabet_descriptor_certified long_cardinality) false)
+        (bool_same (finite_alphabet_descriptor_certified long_cardinality) !-)
         "cardinality must reject a descriptor claiming more slots than its inventory carries"
 
-    inl duplicate = duplicate_descriptor ()
+    := duplicate = duplicate_descriptor ()
     assert_static
-        (bool_same (finite_alphabet_descriptor_certified duplicate) false)
+        (bool_same (finite_alphabet_descriptor_certified duplicate) !-)
         "duplicate inventory values must not certify even when cardinality matches"
 
-    inl bit_descriptor : finite_alphabet_descriptor bit_alphabet = finite_alphabet ()
+    := bit_descriptor : finite_alphabet_descriptor bit_alphabet = finite_alphabet ()
     assert_static
         (finite_alphabet_descriptor_certified bit_descriptor)
         "production bit descriptor must certify through list plus cardinality only"
 
-    inl forged : certified_alphabet_inventory adversarial_alphabet = certified_alphabet_inventory short
-    inl forged_runner_rejected =
-        match dfa_run_certified RegexEpsilon forged InputEmpty with
-        | DfaEscapedClosure => true
-        | _ => false
+    := forged : certified_alphabet_inventory adversarial_alphabet = certified_alphabet_inventory short
+    := forged_runner_rejected =
+        ?= dfa_run_certified RegexEpsilon forged InputEmpty ?|
+        | DfaEscapedClosure => !+
+        | _ => !-
     assert_static forged_runner_rejected
         "a publicly forged certified descriptor nominal must be revalidated by the runner"
     "brzozowski-finite-inventory-adversarial-green"

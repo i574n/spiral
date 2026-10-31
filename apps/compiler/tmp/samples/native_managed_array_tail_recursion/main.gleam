@@ -63,24 +63,16 @@ pub fn method1(v0: Int, v1: SpiralArray(Int), v2: SpiralArray(Int)) -> SpiralArr
     let v3 = spiral_wrap_signed(v0 - 1, 32)
     let v4 = v3 == 0
     case v4 {
-        True -> {
-            v2
-        }
-        False -> {
-            method1(v3, v2, v1)
-        }
+        True -> v2
+        False -> method1(v3, v2, v1)
     }
 }
 pub fn method0(v0: SpiralArray(Int), v1: SpiralArray(Int)) -> SpiralArray(Int) {
     let v2 = 1000000
     let v3 = v2 == 0
     case v3 {
-        True -> {
-            v0
-        }
-        False -> {
-            method1(v2, v0, v1)
-        }
+        True -> v0
+        False -> method1(v2, v0, v1)
     }
 }
 pub fn main() {
@@ -98,16 +90,10 @@ pub fn main() {
             let v6 = spiral_array_get(v2, 0)
             let v7 = v6 == 11
             case v7 {
-                True -> {
-                    0
-                }
-                False -> {
-                    2
-                }
+                True -> 0
+                False -> 2
             }
         }
-        False -> {
-            1
-        }
+        False -> 1
     }
 }

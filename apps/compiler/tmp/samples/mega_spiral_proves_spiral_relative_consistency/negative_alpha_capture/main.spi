@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_discarded_linear_binder () :
+:= impossible_discarded_linear_binder () :
     exact_linear_indexed_term
         exact_linear_free_context_empty
         exact_linear_indexed_usage_empty
@@ -14,4 +14,4 @@ inl impossible_discarded_linear_binder () :
             "a-constant-body-would-discard-the-linear-binder"),
         "this-lambda-must-be-rejected-because-its-body-usage-head-is-unused")
 
-inl main () = impossible_discarded_linear_binder ()
+:= main () = impossible_discarded_linear_binder ()

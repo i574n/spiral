@@ -67,66 +67,40 @@ pub fn main() {
                                                                                             let v33 = int.bitwise_shift_right(v9, 1)
                                                                                             let v34 = v33 == -4
                                                                                             case v34 {
-                                                                                                True -> {
-                                                                                                    0
-                                                                                                }
-                                                                                                False -> {
-                                                                                                    12
-                                                                                                }
+                                                                                                True -> 0
+                                                                                                False -> 12
                                                                                             }
                                                                                         }
-                                                                                        False -> {
-                                                                                            11
-                                                                                        }
+                                                                                        False -> 11
                                                                                     }
                                                                                 }
-                                                                                False -> {
-                                                                                    10
-                                                                                }
+                                                                                False -> 10
                                                                             }
                                                                         }
-                                                                        False -> {
-                                                                            9
-                                                                        }
+                                                                        False -> 9
                                                                     }
                                                                 }
-                                                                False -> {
-                                                                    8
-                                                                }
+                                                                False -> 8
                                                             }
                                                         }
-                                                        False -> {
-                                                            7
-                                                        }
+                                                        False -> 7
                                                     }
                                                 }
-                                                False -> {
-                                                    6
-                                                }
+                                                False -> 6
                                             }
                                         }
-                                        False -> {
-                                            5
-                                        }
+                                        False -> 5
                                     }
                                 }
-                                False -> {
-                                    4
-                                }
+                                False -> 4
                             }
                         }
-                        False -> {
-                            3
-                        }
+                        False -> 3
                     }
                 }
-                False -> {
-                    2
-                }
+                False -> 2
             }
         }
-        False -> {
-            1
-        }
+        False -> 1
     }
 }

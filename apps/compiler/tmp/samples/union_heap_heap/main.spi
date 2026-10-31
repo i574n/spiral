@@ -1,25 +1,25 @@
-union slot =
+:| slot =
     | None
     | Held : (heap { value : (heap { value : i32 * string }) * i32 })
 
-let score x : i32 =
-    match x with
+:~ score x : i32 =
+    ?= x ?|
     | None => 1i32
     | Held box =>
-        inl opened = !!!!LayoutIndex(box)
-        inl ~(cell, count) = opened.value
-        inl inner_opened = !!!!LayoutIndex(cell)
-        inl ~(left, right) = inner_opened.value
-        if left =. 7i32 && !!!!EQ(right, "hi") && count =. 1i32 then 0i32 else 1i32
+        := opened = !!!!LayoutIndex(box)
+        := ~(cell, count) = opened::value
+        := inner_opened = !!!!LayoutIndex(cell)
+        := ~(left, right) = inner_opened::value
+        ? left =. 7i32 && !!!!EQ(right, "hi") && count =. 1i32 ?> 0i32 |: 1i32
 
-inl main () : i32 =
-    inl ~n = 7i32
-    inl ~word = "hi"
-    inl inner_pair = n, word
-    inl inner = !!!!LayoutToHeap({ value = inner_pair })
-    inl ~extra = 1i32
-    inl outer_pair = inner, extra
-    inl outer = !!!!LayoutToHeap({ value = outer_pair })
-    inl ~flag = true
-    inl held = if flag then Held outer else None
+:= main () : i32 =
+    := ~n = 7i32
+    := ~word = "hi"
+    := inner_pair = n, word
+    := inner = !!!!LayoutToHeap({ value = inner_pair })
+    := ~extra = 1i32
+    := outer_pair = inner, extra
+    := outer = !!!!LayoutToHeap({ value = outer_pair })
+    := ~flag = !+
+    := held = ? flag ?> Held outer |: None
     score held

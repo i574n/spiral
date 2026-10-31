@@ -101,7 +101,7 @@
 
 /// ### process_rust
 := process_rust { rs_path deps trace_level runtime cleanup } =
-    :< runtime
+    :< process
 
     := extension = "rs"
     := code = rs_path |> file_system.read_all_text
@@ -816,22 +816,22 @@
                 "GLEAM_LOG_NOCOLOUR", ""
             ]
         ? target = Erlang ?>
-            runtime.execution_options \ x => { x ?|
+            process.execution_options \ x => { x ?|
                 command = "gleam build --no-print-progress"
                 environment_variables = am'.base environment_variables
                 working_directory = package_dir |> optionm'.some'
                 stderr = !-
             }
-            |> runtime.execute_with_options
+            |> process.execute_with_options
             |> ignore
         := exit_code, run_result =
-            runtime.execution_options \ x => { x ?|
+            process.execution_options \ x => { x ?|
                 command
                 environment_variables = am'.base environment_variables
                 working_directory = package_dir |> optionm'.some'
                 stderr = !-
             }
-            |> runtime.execute_with_options
+            |> process.execute_with_options
 
         := external_command =
             := vars =
@@ -859,7 +859,7 @@
                         |> file_system.write_all_text_exists js_path
 
                     := exit_code, run_result =
-                        runtime.execution_options \ x => { x ?|
+                        process.execution_options \ x => { x ?|
                             command =
                                 $'$"bunx --bun esbuild --bundle --minify --loader:.wasm=file --outdir={!src_dir} \
                                     {!js_path}"'
@@ -869,7 +869,7 @@
                                 | None => am'.base ;[]
                             working_directory = package_dir |> optionm'.some'
                         }
-                        |> runtime.execute_with_options
+                        |> process.execute_with_options
 
                     ? exit_code <>. 0 ?>
                         trace Critical
@@ -921,7 +921,7 @@
                         manifest |> file_system.write_all_text_exists $'$"{!src_dir}/Cargo.toml"'
 
                         := exit_code, run_result =
-                            runtime.execution_options \ x => { x ?|
+                            process.execution_options \ x => { x ?|
                                 command = $'$"trunk build --release --minify --dist={!src_dir} --public-url=./ \
                                     --no-sri"'
                                 environment_variables =
@@ -930,7 +930,7 @@
                                     ]
                                 working_directory = src_dir |> optionm'.some'
                             }
-                            |> runtime.execute_with_options
+                            |> process.execute_with_options
 
                         ? exit_code = 0
                         ?> html_path |> file_system.read_all_text
@@ -1140,9 +1140,15 @@
     | Pip
     | Poetry
 
+/// ### cuda_python
+:= cuda_python () : string =
+    := python = "SPIRAL_PYTHON" |> env.get_environment_variable
+    ? python = "" ?> "python" |: python
+
 /// ### process_cuda
 := process_cuda { py_path env deps } =
     := extension = "py"
+    := python = cuda_python ()
 
     := new_code_path = py_path
     := new_code = new_code_path |> file_system.read_all_text
@@ -1196,33 +1202,33 @@
 
             manifest |> file_system.write_all_text_exists manifest_path
 
-            runtime.execution_options \ x => { x ?|
+            process.execution_options \ x => { x ?|
                 command =
                     ?= env ?|
-                    | Pip => "pip install -r requirements.txt"
+                    | Pip => $'$"\\\"{!python}\\\" -m pip install -r requirements.txt"'
                     | Poetry => "poetry install"
                 working_directory = package_dir |> optionm'.some'
             }
-            |> runtime.execute_with_options
+            |> process.execute_with_options
 
     ? exit_code <>. 0 ?>
         failwith ("spiral.process_cuda / env install error\n" ++# run_result)
     |:
         := command =
             ?= env ?|
-            | Pip => $'$"python \\\"{!new_code_path}\\\""'
+            | Pip => $'$"\\\"{!python}\\\" \\\"{!new_code_path}\\\""'
             | Poetry => $'$"poetry run python \\\"{!new_code_path}\\\""'
         := environment_variables =
             ;[
                 "TRACE_LEVEL", "Verbose"
             ]
         := exit_code, run_result =
-            runtime.execution_options \ x => { x ?|
+            process.execution_options \ x => { x ?|
                 command
                 environment_variables = am'.base environment_variables
                 working_directory = package_dir |> optionm'.some'
             }
-            |> runtime.execute_with_options
+            |> process.execute_with_options
 
         := external_command =
             := vars =
@@ -1277,22 +1283,22 @@
     := build_command =
         cxx ++# " -std=c++20 -O2 -w \"" ++# new_code_path ++# "\" -o \"" ++# exe_path ++# "\" -lm"
     := exit_code, build_result =
-        runtime.execution_options \ x => { x ?|
+        process.execution_options \ x => { x ?|
             command = build_command
             working_directory = package_dir |> optionm'.some'
         }
-        |> runtime.execute_with_options
+        |> process.execute_with_options
 
     ? exit_code <>. 0 ?>
         failwith ("spiral.process_cpp / build failed\n" ++# build_result)
     |:
         := command = "\"" ++# exe_path ++# "\""
         := exit_code, run_result =
-            runtime.execution_options \ x => { x ?|
+            process.execution_options \ x => { x ?|
                 command
                 working_directory = package_dir |> optionm'.some'
             }
-            |> runtime.execute_with_options
+            |> process.execute_with_options
 
         ? exit_code = 0 ?>
             {
@@ -1338,95 +1344,95 @@
     }
 
 /// ### get_command
-:= command_alias (alias : rust.static_ref sm'.str) (command : runtime.command) : runtime.command =
+:= command_alias (alias : rust.static_ref sm'.str) (command : clap.command) : clap.command =
     !\\((command, alias), $'"clap::Command::alias($0, $1)"')
 
 :~ get_command () =
     ###"command"
-    |> runtime.new_command
-    |> runtime.command_subcommand_required !+
-    |> runtime.command_subcommand (
+    |> clap.new_command
+    |> clap.command_subcommand_required !+
+    |> clap.command_subcommand (
         ###(get_args () .gleam |> fst)
-        |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .gleam |> snd).gleam_path) (
-            runtime.arg_required !+
+        |> clap.new_command
+        |> clap.command_init_arg ((get_args () .gleam |> snd).gleam_path) (
+            clap.arg_required !+
         )
-        |> runtime.command_init_arg ((get_args () .gleam |> snd).target) (
-            ~> runtime.arg_union `gleam_target ignore
+        |> clap.command_init_arg ((get_args () .gleam |> snd).target) (
+            ~> clap.arg_union `gleam_target ignore
         )
-        |> runtime.command_init_arg ((get_args () .gleam |> snd).deps) (
-            runtime.arg_value_names (am'.base ;[ ###"NAME"; ###"VERSION" ])
-            >> runtime.arg_num_args_range (
-                runtime.new_value_range
+        |> clap.command_init_arg ((get_args () .gleam |> snd).deps) (
+            clap.arg_value_names (am'.base ;[ ###"NAME"; ###"VERSION" ])
+            >> clap.arg_num_args_range (
+                clap.new_value_range
                     !-
                     (am'.Start (1i32 |> convert.convert : convert.unativeint))
                     (am'.End eval)
             )
-            >> runtime.arg_action runtime.Append
+            >> clap.arg_action clap.Append
         )
     )
-    |> runtime.command_subcommand (
+    |> clap.command_subcommand (
         ###(get_args () .cuda |> fst)
-        |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .cuda |> snd).py_path) (
-            runtime.arg_required !+
+        |> clap.new_command
+        |> clap.command_init_arg ((get_args () .cuda |> snd).py_path) (
+            clap.arg_required !+
         )
-        |> runtime.command_init_arg ((get_args () .cuda |> snd).env) (
-            ~> runtime.arg_union `cuda_env ignore
+        |> clap.command_init_arg ((get_args () .cuda |> snd).env) (
+            ~> clap.arg_union `cuda_env ignore
         )
-        |> runtime.command_init_arg ((get_args () .cuda |> snd).deps) (
-            runtime.arg_value_names (am'.base ;[ ###"NAME"; ###"VERSION" ])
-            >> runtime.arg_num_args_range (
-                runtime.new_value_range
+        |> clap.command_init_arg ((get_args () .cuda |> snd).deps) (
+            clap.arg_value_names (am'.base ;[ ###"NAME"; ###"VERSION" ])
+            >> clap.arg_num_args_range (
+                clap.new_value_range
                     !-
                     (am'.Start (1i32 |> convert.convert : convert.unativeint))
                     (am'.End eval)
             )
-            >> runtime.arg_action runtime.Append
+            >> clap.arg_action clap.Append
         )
     )
-    |> runtime.command_subcommand (
+    |> clap.command_subcommand (
         ###(get_args () .rust |> fst)
-        |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .rust |> snd).rs_path) (
-            runtime.arg_required !+
+        |> clap.new_command
+        |> clap.command_init_arg ((get_args () .rust |> snd).rs_path) (
+            clap.arg_required !+
         )
-        |> runtime.command_init_arg ((get_args () .rust |> snd).deps) (
-            runtime.arg_value_names (am'.base ;[ ###"NAME"; ###"VERSION" ])
-            >> runtime.arg_num_args_range (
-                runtime.new_value_range
+        |> clap.command_init_arg ((get_args () .rust |> snd).deps) (
+            clap.arg_value_names (am'.base ;[ ###"NAME"; ###"VERSION" ])
+            >> clap.arg_num_args_range (
+                clap.new_value_range
                     !-
                     (am'.Start (1i32 |> convert.convert : convert.unativeint))
                     (am'.End eval)
             )
-            >> runtime.arg_action runtime.Append
+            >> clap.arg_action clap.Append
         )
-        |> runtime.command_init_arg ((get_args () .rust |> snd).wasm) (
-            runtime.arg_num_args_range (
-                runtime.new_value_range
+        |> clap.command_init_arg ((get_args () .rust |> snd).wasm) (
+            clap.arg_num_args_range (
+                clap.new_value_range
                     !+
                     (am'.End eval)
                     (am'.End \ _ => (1i32 |> convert.convert : convert.unativeint))
             )
-            >> runtime.arg_require_equals !+
-            >> runtime.arg_default_missing_value ""
+            >> clap.arg_require_equals !+
+            >> clap.arg_default_missing_value ""
         )
-        |> runtime.command_init_arg ((get_args () .rust |> snd).contract) (
-            runtime.arg_num_args_range (
-                runtime.new_value_range
+        |> clap.command_init_arg ((get_args () .rust |> snd).contract) (
+            clap.arg_num_args_range (
+                clap.new_value_range
                     !+
                     (am'.End eval)
                     (am'.End \ _ => (1i32 |> convert.convert : convert.unativeint))
             )
-            >> runtime.arg_require_equals !+
-            >> runtime.arg_default_missing_value ""
+            >> clap.arg_require_equals !+
+            >> clap.arg_default_missing_value ""
         )
-        |> runtime.command_init_arg ((get_args () .rust |> snd).cleanup) (
-            runtime.arg_default_value "true"
-            >> runtime.arg_action runtime.SetFalse
+        |> clap.command_init_arg ((get_args () .rust |> snd).cleanup) (
+            clap.arg_default_value "true"
+            >> clap.arg_action clap.SetFalse
         )
     )
-    |> runtime.command_subcommand (
+    |> clap.command_subcommand (
         := parse (s : rust.ref sm'.str) : resultm.result' (sm'.std_string * sm'.std_string) sm'.std_string =
             trace Verbose (\ () => "spiral.get_command") (\ () => { s })
             := path = "" |> sm'.to_std_string
@@ -1434,53 +1440,53 @@
             Ok (path, ext)
             |> resultm.box
         ###(get_args () .notebook_export |> fst)
-        |> runtime.new_command
+        |> clap.new_command
         |> command_alias ###"dib-export"
-        |> runtime.command_init_arg ((get_args () .notebook_export |> snd).entries) (
-            runtime.arg_required !+
-            >> runtime.arg_index 1
-            >> runtime.arg_value_names (am'.base ;[ ###"PATH"; ###"EXT" ])
-            >> runtime.arg_num_args_range (
-                runtime.new_value_range
+        |> clap.command_init_arg ((get_args () .notebook_export |> snd).entries) (
+            clap.arg_required !+
+            >> clap.arg_index 1
+            >> clap.arg_value_names (am'.base ;[ ###"PATH"; ###"EXT" ])
+            >> clap.arg_num_args_range (
+                clap.new_value_range
                     !-
                     (am'.Start (2i32 |> convert.convert : convert.unativeint))
                     (am'.End eval)
             )
-            >> runtime.arg_action runtime.Append
+            >> clap.arg_action clap.Append
         )
     )
-    |> runtime.command_subcommand (
+    |> clap.command_subcommand (
         ###(get_args () .lua |> fst)
-        |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .lua |> snd).lua_path) (
-            runtime.arg_required !+
+        |> clap.new_command
+        |> clap.command_init_arg ((get_args () .lua |> snd).lua_path) (
+            clap.arg_required !+
         )
     )
-    |> runtime.command_subcommand (
+    |> clap.command_subcommand (
         ###(get_args () .cpp |> fst)
-        |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .cpp |> snd).cpp_path) (
-            runtime.arg_required !+
+        |> clap.new_command
+        |> clap.command_init_arg ((get_args () .cpp |> snd).cpp_path) (
+            clap.arg_required !+
         )
     )
 
 /// ### run
-:~ ^ run trace_level (matches : runtime.arg_matches) : async.future_pin (resultm.result' string string) =
+:~ ^ run trace_level (matches : clap.arg_matches) : async.future_pin (resultm.result' string string) =
     \ () =>
-        ?= matches |> runtime.matches_subcommand |> optionm'.unbox ?|
+        ?= matches |> clap.matches_subcommand |> optionm'.unbox ?|
         | Some (subcommand, arg_matches)
                 ?& (subcommand |> sm'.from_std_string) = (get_args () .gleam |> fst) =>
 
             := gleam_path =
                 arg_matches
-                |> runtime.matches_get_one ((get_args () .gleam |> snd).gleam_path |> fst)
+                |> clap.matches_get_one ((get_args () .gleam |> snd).gleam_path |> fst)
                 |> optionm'.unbox
                 |> optionm.value
                 |> sm'.from_std_string
 
             := target =
                 arg_matches
-                |> runtime.matches_get_one ((get_args () .gleam |> snd).target |> fst)
+                |> clap.matches_get_one ((get_args () .gleam |> snd).target |> fst)
                 |> optionm'.unbox
                 |> optionm.map (
                     sm'.from_std_string
@@ -1491,7 +1497,7 @@
 
             := deps : am'.vec sm'.std_string =
                 arg_matches
-                |> runtime.matches_get_many ((get_args () .gleam |> snd).deps |> fst)
+                |> clap.matches_get_many ((get_args () .gleam |> snd).deps |> fst)
                 |> optionm'.unbox
                 |> optionm'.default_value (;[] |> am'.base |> am'.to_vec)
 
@@ -1522,7 +1528,7 @@
 
             := lua_path =
                 arg_matches
-                |> runtime.matches_get_one ((get_args () .lua |> snd).lua_path |> fst)
+                |> clap.matches_get_one ((get_args () .lua |> snd).lua_path |> fst)
                 |> optionm'.unbox
                 |> optionm.value
                 |> sm'.from_std_string
@@ -1554,14 +1560,14 @@
 
             := py_path =
                 arg_matches
-                |> runtime.matches_get_one ((get_args () .cuda |> snd).py_path |> fst)
+                |> clap.matches_get_one ((get_args () .cuda |> snd).py_path |> fst)
                 |> optionm'.unbox
                 |> optionm.value
                 |> sm'.from_std_string
 
             := env =
                 arg_matches
-                |> runtime.matches_get_one ((get_args () .cuda |> snd).env |> fst)
+                |> clap.matches_get_one ((get_args () .cuda |> snd).env |> fst)
                 |> optionm'.unbox
                 |> optionm.map (
                     sm'.from_std_string
@@ -1572,7 +1578,7 @@
 
             := deps : am'.vec sm'.std_string =
                 arg_matches
-                |> runtime.matches_get_many ((get_args () .cuda |> snd).deps |> fst)
+                |> clap.matches_get_many ((get_args () .cuda |> snd).deps |> fst)
                 |> optionm'.unbox
                 |> optionm'.default_value (;[] |> am'.base |> am'.to_vec)
 
@@ -1603,7 +1609,7 @@
 
             := cpp_path =
                 arg_matches
-                |> runtime.matches_get_one ((get_args () .cpp |> snd).cpp_path |> fst)
+                |> clap.matches_get_one ((get_args () .cpp |> snd).cpp_path |> fst)
                 |> optionm'.unbox
                 |> optionm.value
                 |> sm'.from_std_string
@@ -1635,13 +1641,13 @@
 
             := deps : am'.vec (sm'.std_string * sm'.std_string) =
                 arg_matches
-                |> runtime.matches_get_many ((get_args () .cuda |> snd).deps |> fst)
+                |> clap.matches_get_many ((get_args () .cuda |> snd).deps |> fst)
                 |> optionm'.unbox
                 |> optionm'.default_value (;[] |> am'.base |> am'.to_vec)
 
             := entries =
                 arg_matches
-                |> runtime.matches_get_many ((get_args () .notebook_export |> snd).entries |> fst)
+                |> clap.matches_get_many ((get_args () .notebook_export |> snd).entries |> fst)
                 |> optionm'.unbox
                 |> optionm.map (\ (entries : am'.vec sm'.std_string) =>
                     entries
@@ -1682,30 +1688,30 @@
 
                 := rs_path =
                     arg_matches
-                    |> runtime.matches_get_one ((get_args () .rust |> snd).rs_path |> fst)
+                    |> clap.matches_get_one ((get_args () .rust |> snd).rs_path |> fst)
                     |> optionm'.unbox
                     |> optionm.value
                     |> sm'.from_std_string
 
                 := deps : am'.vec sm'.std_string =
                     arg_matches
-                    |> runtime.matches_get_many ((get_args () .rust |> snd).deps |> fst)
+                    |> clap.matches_get_many ((get_args () .rust |> snd).deps |> fst)
                     |> optionm'.unbox
                     |> optionm'.default_value (;[] |> am'.base |> am'.to_vec)
 
                 := cleanup =
                     arg_matches
-                    |> runtime.matches_get_flag ((get_args () .rust |> snd).cleanup |> fst)
+                    |> clap.matches_get_flag ((get_args () .rust |> snd).cleanup |> fst)
 
                 := wasm =
                     arg_matches
-                    |> runtime.matches_get_one ((get_args () .rust |> snd).wasm |> fst)
+                    |> clap.matches_get_one ((get_args () .rust |> snd).wasm |> fst)
                     |> optionm'.unbox
                     |> optionm.map sm'.from_std_string
 
                 := contract =
                     arg_matches
-                    |> runtime.matches_get_one ((get_args () .rust |> snd).contract |> fst)
+                    |> clap.matches_get_one ((get_args () .rust |> snd).contract |> fst)
                     |> optionm'.unbox
                     |> optionm.map sm'.from_std_string
 
@@ -1745,7 +1751,7 @@
 /// ## tests
 := tests () =
     testing.run_tests {
-        verify_app = get_command >> runtime.command_debug_assert
+        verify_app = get_command >> clap.command_debug_assert
     }
 
 /// ## main
@@ -1762,7 +1768,7 @@
         \ () => { args }
 
     := command = get_command ()
-    := arg_matches = command |> runtime.command_get_matches
+    := arg_matches = command |> clap.command_get_matches
 
     := trace_state_level = trace_state.level
 

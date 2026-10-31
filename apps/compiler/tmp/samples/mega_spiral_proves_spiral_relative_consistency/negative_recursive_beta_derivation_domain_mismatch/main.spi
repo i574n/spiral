@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_recursive_beta_derivation_domain_mismatch () :
+:= impossible_recursive_beta_derivation_domain_mismatch () :
     exact_linear_indexed_closed_recursive_beta_derivation
         exact_linear_bool_type exact_linear_bool_type =
     ExactLinearIndexedClosedRecursiveBetaDerivationBound (
@@ -10,4 +10,4 @@ inl impossible_recursive_beta_derivation_domain_mismatch () :
             "the-negative-recursive-derivation-tries-to-use-Unit-as-a-Bool-argument"),
         "the-recursive-derivation-Bound-index-must-match-the-argument-type")
 
-inl main () = impossible_recursive_beta_derivation_domain_mismatch ()
+:= main () = impossible_recursive_beta_derivation_domain_mismatch ()

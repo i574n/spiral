@@ -23,13 +23,13 @@ core itself; the host never rewrites one backend's output into another.
 ## Quickstart (Windows or Linux, PowerShell 7)
 
 ```powershell
-pwsh scripts/install-dotnet.ps1             # once: .NET 11 SDK into the cache dir (no system changes)
-pwsh scripts/build.ps1                      # single-flight            (~2 min)
-pwsh scripts/build.ps1 -Mode gpt5parallel          # gpt5parallel                    (~4-5 min for a core change, ~35 s for a host change)
-pwsh scripts/test.ps1                       # smoke suite, single-flight
-pwsh scripts/test.ps1 -Mode gpt5parallel -Suite frontier   # the gpt5parallel inner loop
-pwsh scripts/test.ps1 -Suite all -Native    # everything, with native builds and runs (C, Rust, Delphi, TypeScript, C++, Python)
-pwsh scripts/test-rust-exports.ps1          # Rust library/export ABI contracts
+pwsh ../scripts/install-dotnet.ps1             # once: .NET 11 SDK into the cache dir (no system changes)
+pwsh ../scripts/build.ps1                      # single-flight            (~2 min)
+pwsh ../scripts/build.ps1 -Mode gpt5parallel          # gpt5parallel                    (~4-5 min for a core change, ~35 s for a host change)
+pwsh ../scripts/test.ps1                       # smoke suite, single-flight
+pwsh ../scripts/test.ps1 -Mode gpt5parallel -Suite frontier   # the gpt5parallel inner loop
+pwsh ../scripts/test.ps1 -Suite all -Native    # everything, with native builds and runs (C, Rust, Delphi, TypeScript, C++, Python)
+pwsh ../scripts/test-rust-exports.ps1          # Rust library/export ABI contracts
 ```
 
 Native builds need `gcc` or `clang`, `rustc` and `fpc` (Free Pascal) on `PATH`; missing tools are
@@ -53,7 +53,7 @@ tests/                   matrix.psd1 (smoke list, known failures, megaproject ro
                          native-shims/ (C shims; run_main.mjs/run_main.py/cpp_native.py: the TypeScript/Python/C++
                          native tiers), rust-exports/
 lanes/                   per-lane docs: single-flight (backends), gpt5parallel (frontier), hopacsota (PLAN.md: the successor's contract)
-scripts/                 env, build, test, bench (pwsh, cross-platform)
+../scripts/                 env, build, test, bench (pwsh, cross-platform)
 ```
 
 Compiler outputs sit next to their sources in `samples/` and are committed (`git diff samples` shows
@@ -86,7 +86,7 @@ join points through `RustExport*` markers, e.g. `RustExportI32Binary("public_nam
 library omits the executable entry point. Each export must resolve to exactly one retained function of
 the marker's signature; missing, ambiguous, duplicate and unsupported exports fail compilation. Keep an
 explicit call to the Spiral function in `main` so specialization retains it.
-`scripts/test-rust-exports.ps1` proves the six export ABIs through a real Rust consumer.
+`../scripts/test-rust-exports.ps1` proves the six export ABIs through a real Rust consumer.
 
 Development workflow, lane rules and how progress is measured: [AGENTS.md](AGENTS.md).
 
@@ -107,13 +107,13 @@ Sync through the fork, where git merges natively:
 - **push / pull request**: write the changed sections back to the fork's files, on a branch, and open the
   PR from there.
 
-`scripts/upstream.py` does the section side (fork = a clone of the fork, refs are git refs in it):
+`../scripts/upstream.py` does the section side (fork = a clone of the fork, refs are git refs in it):
 
 ```powershell
-python scripts/upstream.py status <fork> [ref]                # per section: lines differing from the fork's file
-python scripts/upstream.py import <fork> <old-ref> <new-ref>  # carry the fork's edits old->new into the sections
-python scripts/upstream.py export <fork> <base-ref> <out-dir> # the fork's files with the sections' edits
-python scripts/upstream.py export <fork> <base-ref> <out-dir> --since <repo-ref>
+python ../scripts/upstream.py status <fork> [ref]                # per section: lines differing from the fork's file
+python ../scripts/upstream.py import <fork> <old-ref> <new-ref>  # carry the fork's edits old->new into the sections
+python ../scripts/upstream.py export <fork> <base-ref> <out-dir> # the fork's files with the sections' edits
+python ../scripts/upstream.py export <fork> <base-ref> <out-dir> --since <repo-ref>
                                   # only what changed here since <repo-ref>: a pull request's worth
 ```
 

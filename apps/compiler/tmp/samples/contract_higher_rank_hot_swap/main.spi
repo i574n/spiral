@@ -1,101 +1,101 @@
-nominal grid_a = ()
-nominal epoch_77 = ()
-nominal producer_a = ()
-nominal consumer_a = ()
-nominal meter_supply = ()
-nominal meter_demand = ()
-nominal kwh = ()
-nominal brl = ()
-nominal carbon_method_a = ()
-nominal offer_a = ()
-nominal settlement_batch_a = ()
-nominal participant_grid = ()
-nominal participant_bank = ()
-nominal registry_root_a = ()
-nominal observer_a = ()
-nominal observer_b = ()
+:! grid_a = ()
+:! epoch_77 = ()
+:! producer_a = ()
+:! consumer_a = ()
+:! meter_supply = ()
+:! meter_demand = ()
+:! kwh = ()
+:! brl = ()
+:! carbon_method_a = ()
+:! offer_a = ()
+:! settlement_batch_a = ()
+:! participant_grid = ()
+:! participant_bank = ()
+:! registry_root_a = ()
+:! observer_a = ()
+:! observer_b = ()
 
-nominal offered = ()
-nominal metered = ()
-nominal matched = ()
-nominal reserved = ()
-nominal prepared = ()
-nominal committed = ()
-nominal carbon_settled = ()
-nominal published = ()
-nominal available = ()
-nominal locked = ()
-nominal distinct = ()
-nominal observed = ()
-nominal idempotent = ()
-nominal non_idempotent = ()
+:! offered = ()
+:! metered = ()
+:! matched = ()
+:! reserved = ()
+:! prepared = ()
+:! committed = ()
+:! carbon_settled = ()
+:! published = ()
+:! available = ()
+:! locked = ()
+:! distinct = ()
+:! observed = ()
+:! idempotent = ()
+:! non_idempotent = ()
 
-union energy_offer grid epoch producer offer unit currency state =
-    | EnergyOffer :: forall grid epoch producer offer unit currency state.
+:| energy_offer grid epoch producer offer unit currency state =
+    | EnergyOffer :: \* grid epoch producer offer unit currency state.
         string ->
         energy_offer grid epoch producer offer unit currency state
 
-union energy_demand grid epoch consumer unit state =
-    | EnergyDemand :: forall grid epoch consumer unit state. string -> energy_demand grid epoch consumer unit state
+:| energy_demand grid epoch consumer unit state =
+    | EnergyDemand :: \* grid epoch consumer unit state. string -> energy_demand grid epoch consumer unit state
 
-union meter_reading grid epoch meter unit state =
-    | MeterReading :: forall grid epoch meter unit state. string -> meter_reading grid epoch meter unit state
+:| meter_reading grid epoch meter unit state =
+    | MeterReading :: \* grid epoch meter unit state. string -> meter_reading grid epoch meter unit state
 
-union carbon_proof grid epoch method state =
-    | CarbonProof :: forall grid epoch method state. string -> carbon_proof grid epoch method state
+:| carbon_proof grid epoch method state =
+    | CarbonProof :: \* grid epoch method state. string -> carbon_proof grid epoch method state
 
-union reserve_token grid epoch offer state =
-    | ReserveToken :: forall grid epoch offer state. string -> reserve_token grid epoch offer state
+:| reserve_token grid epoch offer state =
+    | ReserveToken :: \* grid epoch offer state. string -> reserve_token grid epoch offer state
 
-union prepare_vote participant batch epoch state =
-    | PrepareVote :: forall participant batch epoch state. string -> prepare_vote participant batch epoch state
+:| prepare_vote participant batch epoch state =
+    | PrepareVote :: \* participant batch epoch state. string -> prepare_vote participant batch epoch state
 
-union distinct_participants left right state =
-    | DistinctParticipants :: forall left right state. string -> distinct_participants left right state
+:| distinct_participants left right state =
+    | DistinctParticipants :: \* left right state. string -> distinct_participants left right state
 
-union commit_receipt batch epoch state =
-    | CommitReceipt :: forall batch epoch state. string -> commit_receipt batch epoch state
+:| commit_receipt batch epoch state =
+    | CommitReceipt :: \* batch epoch state. string -> commit_receipt batch epoch state
 
-union compensation_token batch epoch state =
-    | CompensationToken :: forall batch epoch state. string -> compensation_token batch epoch state
+:| compensation_token batch epoch state =
+    | CompensationToken :: \* batch epoch state. string -> compensation_token batch epoch state
 
-union registry_pin root state =
-    | RegistryPin :: forall root state. string -> registry_pin root state
+:| registry_pin root state =
+    | RegistryPin :: \* root state. string -> registry_pin root state
 
-union observer_checkpoint root observer state =
-    | ObserverCheckpoint :: forall root observer state. string -> observer_checkpoint root observer state
+:| observer_checkpoint root observer state =
+    | ObserverCheckpoint :: \* root observer state. string -> observer_checkpoint root observer state
 
-union distinct_observers left right state =
-    | DistinctObservers :: forall left right state. string -> distinct_observers left right state
+:| distinct_observers left right state =
+    | DistinctObservers :: \* left right state. string -> distinct_observers left right state
 
-union clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+:| clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
     participant_left participant_right root observer_left observer_right from to effect =
-    | OfferEnergy :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+    | OfferEnergy :: \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
         batch participant_left participant_right root observer_left observer_right.
         energy_offer grid epoch producer offer unit currency offered ->
         clearing_op
             grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
             participant_left participant_right root observer_left observer_right offered metered non_idempotent
-    | ReconcileMeters :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+    | ReconcileMeters :: \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
         batch participant_left participant_right root observer_left observer_right.
         meter_reading grid epoch supply_meter unit available * meter_reading grid epoch demand_meter unit available ->
         clearing_op
             grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
             participant_left participant_right root observer_left observer_right metered matched idempotent
-    | MatchDemand :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+    | MatchDemand :: \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
         batch participant_left participant_right root observer_left observer_right.
         energy_offer grid epoch producer offer unit currency offered *
         energy_demand grid epoch consumer unit available ->
         clearing_op
             grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
             participant_left participant_right root observer_left observer_right matched reserved idempotent
-    | ReserveOffer :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+    | ReserveOffer :: \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
         batch participant_left participant_right root observer_left observer_right.
         reserve_token grid epoch offer locked ->
         clearing_op
             grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
             participant_left participant_right root observer_left observer_right reserved prepared non_idempotent
-    | PrepareAtomic :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+    | PrepareAtomic :: \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
         batch participant_left participant_right root observer_left observer_right.
         prepare_vote participant_left batch epoch prepared *
         prepare_vote participant_right batch epoch prepared *
@@ -103,19 +103,19 @@ union clearing_op grid epoch producer consumer supply_meter demand_meter unit cu
         clearing_op
             grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
             participant_left participant_right root observer_left observer_right prepared committed non_idempotent
-    | CommitAtomic :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+    | CommitAtomic :: \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
         batch participant_left participant_right root observer_left observer_right.
         commit_receipt batch epoch committed * compensation_token batch epoch available ->
         clearing_op
             grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
             participant_left participant_right root observer_left observer_right committed carbon_settled non_idempotent
-    | SettleCarbon :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+    | SettleCarbon :: \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
         batch participant_left participant_right root observer_left observer_right.
         carbon_proof grid epoch carbon_method available * commit_receipt batch epoch committed ->
         clearing_op
             grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
             participant_left participant_right root observer_left observer_right carbon_settled published idempotent
-    | PublishClearing :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+    | PublishClearing :: \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
         batch participant_left participant_right root observer_left observer_right.
         registry_pin root available *
         observer_checkpoint root observer_left observed *
@@ -125,16 +125,16 @@ union clearing_op grid epoch producer consumer supply_meter demand_meter unit cu
             grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
             participant_left participant_right root observer_left observer_right published published idempotent
 
-union clearing_row grid epoch offer batch root from to effect =
-    | ClearingRow :: forall grid epoch offer batch root from to effect.
+:| clearing_row grid epoch offer batch root from to effect =
+    | ClearingRow :: \* grid epoch offer batch root from to effect.
         string ->
         clearing_row grid epoch offer batch root from to effect
 
-union clearing_node grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+:| clearing_node grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
     participant_left participant_right root observer_left observer_right from to =
-    | ClearingNode :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+    | ClearingNode :: \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
         batch participant_left participant_right root observer_left observer_right from to.
-        (exists effect.
+        (\? effect.
             clearing_op
                 grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
                 participant_left participant_right root observer_left observer_right from to effect *
@@ -143,9 +143,9 @@ union clearing_node grid epoch producer consumer supply_meter demand_meter unit 
             grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
             participant_left participant_right root observer_left observer_right from to
 
-union rec clearing_plan grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+:| ^ clearing_plan grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
     participant_left participant_right root observer_left observer_right from to =
-    | ClearingLeaf :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+    | ClearingLeaf :: \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
         batch participant_left participant_right root observer_left observer_right from to.
         clearing_node
             grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
@@ -153,9 +153,9 @@ union rec clearing_plan grid epoch producer consumer supply_meter demand_meter u
         clearing_plan
             grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
             participant_left participant_right root observer_left observer_right from to
-    | ClearingThen :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+    | ClearingThen :: \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
         batch participant_left participant_right root observer_left observer_right from to.
-        (exists middle.
+        (\? middle.
             clearing_plan
                 grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
                 participant_left participant_right root observer_left observer_right from middle *
@@ -166,23 +166,23 @@ union rec clearing_plan grid epoch producer consumer supply_meter demand_meter u
             grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
             participant_left participant_right root observer_left observer_right from to
 
-union packed_receipt batch epoch =
-    | PackedReceipt :: forall batch epoch.
-        (exists state. commit_receipt batch epoch state) ->
+:| packed_receipt batch epoch =
+    | PackedReceipt :: \* batch epoch.
+        (\? state. commit_receipt batch epoch state) ->
         packed_receipt batch epoch
 
-inl receipt_label forall batch epoch state. (receipt : commit_receipt batch epoch state) : string =
-    match receipt with | CommitReceipt label => label
+:= receipt_label \* batch epoch state. (receipt : commit_receipt batch epoch state) : string =
+    ?= receipt ?| | CommitReceipt label => label
 
-inl with_receipt forall batch epoch result.
-    (visitor : forall batch epoch state. commit_receipt batch epoch state -> result)
+:= with_receipt \* batch epoch result.
+    (visitor : \* batch epoch state. commit_receipt batch epoch state -> result)
     (packed : packed_receipt batch epoch) : result =
-    match packed with
+    ?= packed ?|
     | PackedReceipt payload =>
-        inl exists state. receipt = payload
+        := \? state. receipt = payload
         visitor receipt
 
-inl node_label forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+:= node_label \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
     participant_left participant_right root observer_left observer_right from to.
     (node :
         clearing_node
@@ -190,12 +190,12 @@ inl node_label forall grid epoch producer consumer supply_meter demand_meter uni
             participant_left participant_right root observer_left observer_right from to)
     : string
     =
-    match node with
+    ?= node ?|
     | ClearingNode payload =>
-        inl exists effect. _, ClearingRow label = payload
+        := \? effect. _, ClearingRow label = payload
         label
 
-inl rec terminal_label forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+:= ^ terminal_label \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
     batch participant_left participant_right root observer_left observer_right from to.
     (plan :
         clearing_plan
@@ -203,82 +203,82 @@ inl rec terminal_label forall grid epoch producer consumer supply_meter demand_m
             participant_left participant_right root observer_left observer_right from to)
     : string
     =
-    match plan with
+    ?= plan ?|
     | ClearingLeaf node => node_label node
     | ClearingThen payload =>
-        inl exists middle. _, node = payload
+        := \? middle. _, node = payload
         node_label node
 
-inl offer_node
+:= offer_node
     ()
     : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
         settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b offered metered
     =
-    ClearingNode (exists (OfferEnergy (EnergyOffer "10-kwh"), ClearingRow "offer"))
+    ClearingNode (\? (OfferEnergy (EnergyOffer "10-kwh"), ClearingRow "offer"))
 
-inl meter_node
+:= meter_node
     ()
     : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
         settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b metered matched
     =
-    ClearingNode (exists (ReconcileMeters (MeterReading "supply", MeterReading "demand"), ClearingRow "meter"))
+    ClearingNode (\? (ReconcileMeters (MeterReading "supply", MeterReading "demand"), ClearingRow "meter"))
 
-inl match_node
+:= match_node
     ()
     : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
         settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b matched reserved
     =
-    ClearingNode (exists (MatchDemand (EnergyOffer "10-kwh", EnergyDemand "10-kwh"), ClearingRow "match"))
+    ClearingNode (\? (MatchDemand (EnergyOffer "10-kwh", EnergyDemand "10-kwh"), ClearingRow "match"))
 
-inl reserve_node
+:= reserve_node
     ()
     : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
         settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b reserved prepared
     =
-    ClearingNode (exists (ReserveOffer (ReserveToken "locked"), ClearingRow "reserve"))
+    ClearingNode (\? (ReserveOffer (ReserveToken "locked"), ClearingRow "reserve"))
 
-inl prepare_node
+:= prepare_node
     ()
     : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
         settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b prepared committed
     =
     ClearingNode (
-        exists (
+        \? (
             PrepareAtomic (PrepareVote "grid", PrepareVote "bank", DistinctParticipants "grid-ne-bank"),
             ClearingRow "prepare-2pc"
         )
     )
 
-inl commit_node
+:= commit_node
     ()
     : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
         settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b committed
         carbon_settled
     =
     ClearingNode (
-        exists (
+        \? (
             CommitAtomic (CommitReceipt "committed", CompensationToken "rollback-capability"),
             ClearingRow "commit-2pc"
         )
     )
 
-inl carbon_node
+:= carbon_node
     ()
     : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
         settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b carbon_settled
         published
     =
     ClearingNode (
-        exists (SettleCarbon (CarbonProof "hourly-marginal-carbon", CommitReceipt "committed"), ClearingRow "carbon")
+        \? (SettleCarbon (CarbonProof "hourly-marginal-carbon", CommitReceipt "committed"), ClearingRow "carbon")
     )
 
-inl publish_node
+:= publish_node
     ()
     : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
         settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b published published
     =
     ClearingNode (
-        exists (
+        \? (
             PublishClearing (
                 RegistryPin "root",
                 ObserverCheckpoint "observer-a",
@@ -289,18 +289,18 @@ inl publish_node
         )
     )
 
-inl plan
+:= plan
     ()
     : clearing_plan grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
         settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b offered published
     =
-    ClearingThen (exists (
-        ClearingThen (exists (
-            ClearingThen (exists (
-                ClearingThen (exists (
-                    ClearingThen (exists (
-                        ClearingThen (exists (
-                            ClearingThen (exists (
+    ClearingThen (\? (
+        ClearingThen (\? (
+            ClearingThen (\? (
+                ClearingThen (\? (
+                    ClearingThen (\? (
+                        ClearingThen (\? (
+                            ClearingThen (\? (
                                 ClearingLeaf (offer_node ()),
                                 meter_node ()
                             )),
@@ -317,117 +317,117 @@ inl plan
         publish_node ()
     ))
 
-nominal lane_grid = ()
-nominal lane_bank = ()
-nominal lane_carbon = ()
-nominal branch_epoch_1 = ()
-nominal branch_pending = ()
-nominal branch_committed = ()
-nominal branch_failed = ()
-nominal branch_compensated = ()
-nominal parallel_joined = ()
-nominal audit_ready = ()
+:! lane_grid = ()
+:! lane_bank = ()
+:! lane_carbon = ()
+:! branch_epoch_1 = ()
+:! branch_pending = ()
+:! branch_committed = ()
+:! branch_failed = ()
+:! branch_compensated = ()
+:! parallel_joined = ()
+:! audit_ready = ()
 
-union lane_receipt lane batch epoch state =
-    | LaneReceipt :: forall lane batch epoch state. string -> lane_receipt lane batch epoch state
+:| lane_receipt lane batch epoch state =
+    | LaneReceipt :: \* lane batch epoch state. string -> lane_receipt lane batch epoch state
 
-union lane_failure lane batch epoch state =
-    | LaneFailure :: forall lane batch epoch state. string -> lane_failure lane batch epoch state
+:| lane_failure lane batch epoch state =
+    | LaneFailure :: \* lane batch epoch state. string -> lane_failure lane batch epoch state
 
-union lane_compensation lane batch epoch state =
-    | LaneCompensation :: forall lane batch epoch state. string -> lane_compensation lane batch epoch state
+:| lane_compensation lane batch epoch state =
+    | LaneCompensation :: \* lane batch epoch state. string -> lane_compensation lane batch epoch state
 
-union distinct_lanes first second third state =
-    | DistinctLanes :: forall first second third state. string -> distinct_lanes first second third state
+:| distinct_lanes first second third state =
+    | DistinctLanes :: \* first second third state. string -> distinct_lanes first second third state
 
-union parallel_outcome batch epoch =
-    | ParallelSuccess :: forall batch epoch.
+:| parallel_outcome batch epoch =
+    | ParallelSuccess :: \* batch epoch.
         lane_receipt lane_grid batch epoch branch_committed *
         lane_receipt lane_bank batch epoch branch_committed *
         lane_receipt lane_carbon batch epoch branch_committed *
         distinct_lanes lane_grid lane_bank lane_carbon distinct -> parallel_outcome batch epoch
-    | ParallelCompensated :: forall batch epoch.
-        (exists failed_lane.
+    | ParallelCompensated :: \* batch epoch.
+        (\? failed_lane.
             lane_failure failed_lane batch epoch branch_failed *
             lane_compensation failed_lane batch epoch branch_compensated)
         -> parallel_outcome batch epoch
 
-union parallel_op batch epoch from to effect =
-    | FanOut :: forall batch epoch.
+:| parallel_op batch epoch from to effect =
+    | FanOut :: \* batch epoch.
         distinct_lanes lane_grid lane_bank lane_carbon distinct ->
         parallel_op batch epoch branch_pending branch_pending idempotent
-    | JoinAll :: forall batch epoch.
+    | JoinAll :: \* batch epoch.
         lane_receipt lane_grid batch epoch branch_committed *
         lane_receipt lane_bank batch epoch branch_committed *
         lane_receipt lane_carbon batch epoch branch_committed *
         distinct_lanes lane_grid lane_bank lane_carbon distinct ->
         parallel_op batch epoch branch_pending parallel_joined non_idempotent
-    | CompensateOne :: forall batch epoch.
+    | CompensateOne :: \* batch epoch.
         lane_failure lane_bank batch epoch branch_failed *
         lane_compensation lane_bank batch epoch branch_compensated ->
         parallel_op batch epoch branch_pending branch_compensated non_idempotent
-    | PublishParallelAudit :: forall batch epoch.
+    | PublishParallelAudit :: \* batch epoch.
         registry_pin registry_root_a available *
         observer_checkpoint registry_root_a observer_a observed *
         observer_checkpoint registry_root_a observer_b observed *
         distinct_observers observer_a observer_b distinct ->
         parallel_op batch epoch branch_compensated audit_ready idempotent
 
-union parallel_row batch epoch from to effect =
-    | ParallelRow :: forall batch epoch from to effect. string -> parallel_row batch epoch from to effect
+:| parallel_row batch epoch from to effect =
+    | ParallelRow :: \* batch epoch from to effect. string -> parallel_row batch epoch from to effect
 
-union parallel_node batch epoch from to =
-    | ParallelNode :: forall batch epoch from to.
-        (exists effect. parallel_op batch epoch from to effect * parallel_row batch epoch from to effect)
+:| parallel_node batch epoch from to =
+    | ParallelNode :: \* batch epoch from to.
+        (\? effect. parallel_op batch epoch from to effect * parallel_row batch epoch from to effect)
         -> parallel_node batch epoch from to
 
-union rec parallel_plan batch epoch from to =
-    | ParallelLeaf :: forall batch epoch from to. parallel_node batch epoch from to -> parallel_plan batch epoch from to
-    | ParallelThen :: forall batch epoch from to.
-        (exists middle. parallel_plan batch epoch from middle * parallel_node batch epoch middle to)
+:| ^ parallel_plan batch epoch from to =
+    | ParallelLeaf :: \* batch epoch from to. parallel_node batch epoch from to -> parallel_plan batch epoch from to
+    | ParallelThen :: \* batch epoch from to.
+        (\? middle. parallel_plan batch epoch from middle * parallel_node batch epoch middle to)
         -> parallel_plan batch epoch from to
 
-inl parallel_node_label forall batch epoch from to. (node : parallel_node batch epoch from to) : string =
-    match node with
+:= parallel_node_label \* batch epoch from to. (node : parallel_node batch epoch from to) : string =
+    ?= node ?|
     | ParallelNode payload =>
-        inl exists effect. _, ParallelRow label = payload
+        := \? effect. _, ParallelRow label = payload
         label
 
-inl rec parallel_terminal forall batch epoch from to. (plan : parallel_plan batch epoch from to) : string =
-    match plan with
+:= ^ parallel_terminal \* batch epoch from to. (plan : parallel_plan batch epoch from to) : string =
+    ?= plan ?|
     | ParallelLeaf node => parallel_node_label node
     | ParallelThen payload =>
-        inl exists middle. _, node = payload
+        := \? middle. _, node = payload
         parallel_node_label node
 
-inl with_parallel_outcome forall batch epoch result.
+:= with_parallel_outcome \* batch epoch result.
     (on_success :
         lane_receipt lane_grid batch epoch branch_committed ->
         lane_receipt lane_bank batch epoch branch_committed ->
         lane_receipt lane_carbon batch epoch branch_committed -> result)
-    (on_compensated : forall failed_lane.
+    (on_compensated : \* failed_lane.
         lane_failure failed_lane batch epoch branch_failed ->
         lane_compensation failed_lane batch epoch branch_compensated -> result)
     (outcome : parallel_outcome batch epoch) : result =
-    match outcome with
+    ?= outcome ?|
     | ParallelSuccess (grid, bank, carbon, _) => on_success grid bank carbon
     | ParallelCompensated payload =>
-        inl exists failed_lane. failure, compensation = payload
+        := \? failed_lane. failure, compensation = payload
         on_compensated failure compensation
 
-inl compensated_parallel_plan () : parallel_plan settlement_batch_a branch_epoch_1 branch_pending audit_ready =
+:= compensated_parallel_plan () : parallel_plan settlement_batch_a branch_epoch_1 branch_pending audit_ready =
     ParallelThen (
-        exists (
+        \? (
             ParallelLeaf (
                 ParallelNode (
-                    exists (
+                    \? (
                         CompensateOne (LaneFailure "bank-timeout", LaneCompensation "release-bank-reservation"),
                         ParallelRow "compensate-bank-lane"
                     )
                 )
             ),
             ParallelNode (
-                exists (
+                \? (
                     PublishParallelAudit (
                         RegistryPin "root",
                         ObserverCheckpoint "observer-a",
@@ -440,122 +440,122 @@ inl compensated_parallel_plan () : parallel_plan settlement_batch_a branch_epoch
         )
     )
 
-inl v22_main () : string =
-    inl receipt : commit_receipt settlement_batch_a epoch_77 committed = CommitReceipt "committed"
-    inl packed : packed_receipt settlement_batch_a epoch_77 = PackedReceipt (exists receipt)
-    inl inspected = with_receipt `$receipt_label packed
-    inl _ = inspected
-    inl failure : lane_failure lane_bank settlement_batch_a branch_epoch_1 branch_failed = LaneFailure "bank-timeout"
-    inl compensation : lane_compensation lane_bank settlement_batch_a branch_epoch_1 branch_compensated =
+:= v22_main () : string =
+    := receipt : commit_receipt settlement_batch_a epoch_77 committed = CommitReceipt "committed"
+    := packed : packed_receipt settlement_batch_a epoch_77 = PackedReceipt (\? receipt)
+    := inspected = with_receipt `$receipt_label packed
+    := _ = inspected
+    := failure : lane_failure lane_bank settlement_batch_a branch_epoch_1 branch_failed = LaneFailure "bank-timeout"
+    := compensation : lane_compensation lane_bank settlement_batch_a branch_epoch_1 branch_compensated =
         LaneCompensation "release-bank-reservation"
-    inl outcome : parallel_outcome settlement_batch_a branch_epoch_1 =
-        ParallelCompensated (exists (failure, compensation))
-    inl _ = outcome
-    inl _ = terminal_label (plan ())
+    := outcome : parallel_outcome settlement_batch_a branch_epoch_1 =
+        ParallelCompensated (\? (failure, compensation))
+    := _ = outcome
+    := _ = terminal_label (plan ())
     parallel_terminal (compensated_parallel_plan ())
 
-nominal replica_host_a = ()
-nominal replica_host_b = ()
-nominal replica_host_c = ()
-nominal registry_epoch_old = ()
-nominal registry_epoch_new = ()
-nominal registry_digest_old = ()
-nominal registry_digest_new = ()
-nominal replay_batch_a = ()
-nominal recovery_wave_1 = ()
-nominal lane_inventory = ()
-nominal lane_payment = ()
-nominal lane_shipping = ()
-nominal lane_risk = ()
-nominal timeout_deadline_a = ()
-nominal cancellation_epoch_a = ()
+:! replica_host_a = ()
+:! replica_host_b = ()
+:! replica_host_c = ()
+:! registry_epoch_old = ()
+:! registry_epoch_new = ()
+:! registry_digest_old = ()
+:! registry_digest_new = ()
+:! replay_batch_a = ()
+:! recovery_wave_1 = ()
+:! lane_inventory = ()
+:! lane_payment = ()
+:! lane_shipping = ()
+:! lane_risk = ()
+:! timeout_deadline_a = ()
+:! cancellation_epoch_a = ()
 
-nominal mh_available = ()
-nominal mh_partitioned = ()
-nominal mh_registry_aligned = ()
-nominal mh_lanes_observed = ()
-nominal mh_shipping_cancelled = ()
-nominal mh_shipping_compensated = ()
-nominal mh_bank_compensated = ()
-nominal mh_quorum_ready = ()
-nominal mh_healed = ()
-nominal mh_published = ()
-nominal mh_failed = ()
-nominal mh_succeeded = ()
-nominal mh_cancelled = ()
-nominal mh_compensated = ()
-nominal mh_distinct = ()
-nominal mh_fresh = ()
-nominal mh_idempotent = ()
-nominal mh_non_idempotent = ()
+:! mh_available = ()
+:! mh_partitioned = ()
+:! mh_registry_aligned = ()
+:! mh_lanes_observed = ()
+:! mh_shipping_cancelled = ()
+:! mh_shipping_compensated = ()
+:! mh_bank_compensated = ()
+:! mh_quorum_ready = ()
+:! mh_healed = ()
+:! mh_published = ()
+:! mh_failed = ()
+:! mh_succeeded = ()
+:! mh_cancelled = ()
+:! mh_compensated = ()
+:! mh_distinct = ()
+:! mh_fresh = ()
+:! mh_idempotent = ()
+:! mh_non_idempotent = ()
 
-union replica_snapshot host registry_epoch registry_digest batch state =
-    | ReplicaSnapshot :: forall host registry_epoch registry_digest batch state.
+:| replica_snapshot host registry_epoch registry_digest batch state =
+    | ReplicaSnapshot :: \* host registry_epoch registry_digest batch state.
         string ->
         replica_snapshot host registry_epoch registry_digest batch state
 
-union registry_successor old_epoch old_digest new_epoch new_digest state =
-    | RegistrySuccessor :: forall old_epoch old_digest new_epoch new_digest state.
+:| registry_successor old_epoch old_digest new_epoch new_digest state =
+    | RegistrySuccessor :: \* old_epoch old_digest new_epoch new_digest state.
         string ->
         registry_successor old_epoch old_digest new_epoch new_digest state
 
-union partition_witness left_host right_host batch state =
-    | PartitionWitness :: forall left_host right_host batch state.
+:| partition_witness left_host right_host batch state =
+    | PartitionWitness :: \* left_host right_host batch state.
         string ->
         partition_witness left_host right_host batch state
 
-union distinct_replica_hosts first second third state =
-    | DistinctReplicaHosts :: forall first second third state. string -> distinct_replica_hosts first second third state
+:| distinct_replica_hosts first second third state =
+    | DistinctReplicaHosts :: \* first second third state. string -> distinct_replica_hosts first second third state
 
-union replay_merge_receipt left_host right_host coordinator batch registry_epoch registry_digest state =
-    | ReplayMergeReceipt :: forall left_host right_host coordinator batch registry_epoch registry_digest state.
+:| replay_merge_receipt left_host right_host coordinator batch registry_epoch registry_digest state =
+    | ReplayMergeReceipt :: \* left_host right_host coordinator batch registry_epoch registry_digest state.
         string ->
         replay_merge_receipt left_host right_host coordinator batch registry_epoch registry_digest state
 
-union mh_lane_receipt lane batch wave state =
-    | MhLaneReceipt :: forall lane batch wave state. string -> mh_lane_receipt lane batch wave state
+:| mh_lane_receipt lane batch wave state =
+    | MhLaneReceipt :: \* lane batch wave state. string -> mh_lane_receipt lane batch wave state
 
-union mh_lane_failure lane batch wave state =
-    | MhLaneFailure :: forall lane batch wave state. string -> mh_lane_failure lane batch wave state
+:| mh_lane_failure lane batch wave state =
+    | MhLaneFailure :: \* lane batch wave state. string -> mh_lane_failure lane batch wave state
 
-union mh_cancel_token lane batch wave cancellation_epoch state =
-    | MhCancelToken :: forall lane batch wave cancellation_epoch state.
+:| mh_cancel_token lane batch wave cancellation_epoch state =
+    | MhCancelToken :: \* lane batch wave cancellation_epoch state.
         string ->
         mh_cancel_token lane batch wave cancellation_epoch state
 
-union mh_compensation lane batch wave state =
-    | MhCompensation :: forall lane batch wave state. string -> mh_compensation lane batch wave state
+:| mh_compensation lane batch wave state =
+    | MhCompensation :: \* lane batch wave state. string -> mh_compensation lane batch wave state
 
-union compensation_order first_lane second_lane batch wave state =
-    | CompensationOrder :: forall first_lane second_lane batch wave state.
+:| compensation_order first_lane second_lane batch wave state =
+    | CompensationOrder :: \* first_lane second_lane batch wave state.
         string ->
         compensation_order first_lane second_lane batch wave state
 
-union timeout_witness batch wave deadline state =
-    | TimeoutWitness :: forall batch wave deadline state. string -> timeout_witness batch wave deadline state
+:| timeout_witness batch wave deadline state =
+    | TimeoutWitness :: \* batch wave deadline state. string -> timeout_witness batch wave deadline state
 
-union failure_bundle batch wave =
-    | FailureBundle :: forall batch wave.
-        (exists first_lane second_lane.
+:| failure_bundle batch wave =
+    | FailureBundle :: \* batch wave.
+        (\? first_lane second_lane.
             mh_lane_failure first_lane batch wave mh_failed *
             mh_lane_failure second_lane batch wave mh_failed *
             compensation_order first_lane second_lane batch wave mh_distinct)
         -> failure_bundle batch wave
 
-inl with_failure_bundle forall batch wave result.
-    (visit : forall first_lane second_lane.
+:= with_failure_bundle \* batch wave result.
+    (visit : \* first_lane second_lane.
         mh_lane_failure first_lane batch wave mh_failed ->
         mh_lane_failure second_lane batch wave mh_failed ->
         compensation_order first_lane second_lane batch wave mh_distinct -> result)
     (bundle : failure_bundle batch wave) : result =
-    match bundle with
+    ?= bundle ?|
     | FailureBundle payload =>
-        inl exists first_lane second_lane. first_failure, second_failure, order = payload
+        := \? first_lane second_lane. first_failure, second_failure, order = payload
         visit first_failure second_failure order
 
-union multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+:| multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
     observer_left observer_right observer_third from to effect =
-    | CapturePartition :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+    | CapturePartition :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
         observer_left observer_right observer_third.
         replica_snapshot left_host old_epoch old_digest batch mh_available *
         replica_snapshot right_host old_epoch old_digest batch mh_available *
@@ -563,13 +563,13 @@ union multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave
         multihost_recovery_op
             old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
             observer_right observer_third mh_available mh_partitioned mh_idempotent
-    | AlignRegistry :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+    | AlignRegistry :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
         observer_left observer_right observer_third.
         registry_successor old_epoch old_digest new_epoch new_digest mh_fresh ->
         multihost_recovery_op
             old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
             observer_right observer_third mh_partitioned mh_registry_aligned mh_idempotent
-    | ObserveConcurrentLanes :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+    | ObserveConcurrentLanes :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host
         coordinator observer_left observer_right observer_third.
         mh_lane_receipt lane_inventory batch wave mh_succeeded *
         mh_lane_failure lane_payment batch wave mh_failed *
@@ -578,21 +578,21 @@ union multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave
         multihost_recovery_op
             old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
             observer_right observer_third mh_registry_aligned mh_lanes_observed mh_non_idempotent
-    | ResolveShippingCancellation :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+    | ResolveShippingCancellation :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host
         coordinator observer_left observer_right observer_third.
         mh_lane_failure lane_shipping batch wave mh_failed *
         mh_cancel_token lane_shipping batch wave cancellation_epoch_a mh_cancelled ->
         multihost_recovery_op
             old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
             observer_right observer_third mh_lanes_observed mh_shipping_cancelled mh_non_idempotent
-    | CompensateShippingFirst :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+    | CompensateShippingFirst :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host
         coordinator observer_left observer_right observer_third.
         mh_lane_failure lane_shipping batch wave mh_failed *
         mh_compensation lane_shipping batch wave mh_compensated ->
         multihost_recovery_op
             old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
             observer_right observer_third mh_shipping_cancelled mh_shipping_compensated mh_non_idempotent
-    | CompensateBankAfterShipping :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+    | CompensateBankAfterShipping :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host
         coordinator observer_left observer_right observer_third.
         mh_lane_failure lane_payment batch wave mh_failed *
         mh_compensation lane_payment batch wave mh_compensated *
@@ -600,7 +600,7 @@ union multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave
         multihost_recovery_op
             old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
             observer_right observer_third mh_shipping_compensated mh_bank_compensated mh_non_idempotent
-    | FormTimedReplicaQuorum :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+    | FormTimedReplicaQuorum :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host
         coordinator observer_left observer_right observer_third.
         timeout_witness batch wave timeout_deadline_a mh_fresh *
         distinct_replica_hosts left_host right_host coordinator mh_distinct *
@@ -610,13 +610,13 @@ union multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave
         multihost_recovery_op
             old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
             observer_right observer_third mh_bank_compensated mh_quorum_ready mh_idempotent
-    | HealReplayReplica :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+    | HealReplayReplica :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
         observer_left observer_right observer_third.
         replay_merge_receipt left_host right_host coordinator batch new_epoch new_digest mh_healed ->
         multihost_recovery_op
             old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
             observer_right observer_third mh_quorum_ready mh_healed mh_non_idempotent
-    | PublishHealedAudit :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+    | PublishHealedAudit :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
         observer_left observer_right observer_third.
         registry_pin registry_root_a available *
         distinct_observers observer_left observer_right distinct *
@@ -626,16 +626,16 @@ union multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave
             old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
             observer_right observer_third mh_healed mh_published mh_idempotent
 
-union multihost_recovery_row batch wave from to effect =
-    | MultihostRecoveryRow :: forall batch wave from to effect.
+:| multihost_recovery_row batch wave from to effect =
+    | MultihostRecoveryRow :: \* batch wave from to effect.
         string ->
         multihost_recovery_row batch wave from to effect
 
-union multihost_recovery_node old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+:| multihost_recovery_node old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
     observer_left observer_right observer_third from to =
-    | MultihostRecoveryNode :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+    | MultihostRecoveryNode :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host
         coordinator observer_left observer_right observer_third from to.
-        (exists effect.
+        (\? effect.
             multihost_recovery_op
                 old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
                 observer_right observer_third from to effect *
@@ -644,9 +644,9 @@ union multihost_recovery_node old_epoch old_digest new_epoch new_digest batch wa
             old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
             observer_right observer_third from to
 
-union rec multihost_recovery_plan old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+:| ^ multihost_recovery_plan old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
     observer_left observer_right observer_third from to =
-    | MultihostRecoveryLeaf :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+    | MultihostRecoveryLeaf :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host
         coordinator observer_left observer_right observer_third from to.
         multihost_recovery_node
             old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
@@ -654,9 +654,9 @@ union rec multihost_recovery_plan old_epoch old_digest new_epoch new_digest batc
         multihost_recovery_plan
             old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
             observer_right observer_third from to
-    | MultihostRecoveryThen :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+    | MultihostRecoveryThen :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host
         coordinator observer_left observer_right observer_third from to.
-        (exists middle.
+        (\? middle.
             multihost_recovery_plan
                 old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
                 observer_right observer_third from middle *
@@ -667,7 +667,7 @@ union rec multihost_recovery_plan old_epoch old_digest new_epoch new_digest batc
             old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
             observer_right observer_third from to
 
-inl multihost_node_label forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+:= multihost_node_label \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
     observer_left observer_right observer_third from to.
     (node :
         multihost_recovery_node
@@ -675,12 +675,12 @@ inl multihost_node_label forall old_epoch old_digest new_epoch new_digest batch 
             observer_right observer_third from to)
     : string
     =
-    match node with
+    ?= node ?|
     | MultihostRecoveryNode payload =>
-        inl exists effect. _, MultihostRecoveryRow label = payload
+        := \? effect. _, MultihostRecoveryRow label = payload
         label
 
-inl rec multihost_terminal forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+:= ^ multihost_terminal \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
     observer_left observer_right observer_third from to.
     (plan :
         multihost_recovery_plan
@@ -688,42 +688,42 @@ inl rec multihost_terminal forall old_epoch old_digest new_epoch new_digest batc
             observer_right observer_third from to)
     : string
     =
-    match plan with
+    ?= plan ?|
     | MultihostRecoveryLeaf node => multihost_node_label node
     | MultihostRecoveryThen payload =>
-        inl exists middle. _, node = payload
+        := \? middle. _, node = payload
         multihost_node_label node
 
-inl partition_node
+:= partition_node
     ()
     : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_available mh_partitioned
     =
-    MultihostRecoveryNode (exists (
+    MultihostRecoveryNode (\? (
         CapturePartition (ReplicaSnapshot "host-a", ReplicaSnapshot "host-b", PartitionWitness "network-cut"),
         MultihostRecoveryRow "capture-partitioned-replicas"
     ))
 
-inl registry_node
+:= registry_node
     ()
     : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_partitioned mh_registry_aligned
     =
-    MultihostRecoveryNode (exists (
+    MultihostRecoveryNode (\? (
         AlignRegistry (RegistrySuccessor "registry-v1-to-v2"),
         MultihostRecoveryRow "align-rotated-registry"
     ))
 
-inl lanes_node
+:= lanes_node
     ()
     : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_registry_aligned mh_lanes_observed
     =
     MultihostRecoveryNode (
-        exists (
+        \? (
             ObserveConcurrentLanes (
                 MhLaneReceipt "inventory-ok",
                 MhLaneFailure "bank-timeout",
@@ -734,49 +734,49 @@ inl lanes_node
         )
     )
 
-inl cancel_node
+:= cancel_node
     ()
     : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_lanes_observed mh_shipping_cancelled
     =
-    MultihostRecoveryNode (exists (
+    MultihostRecoveryNode (\? (
         ResolveShippingCancellation (MhLaneFailure "carrier-timeout", MhCancelToken "cancel-before-dispatch"),
         MultihostRecoveryRow "resolve-shipping-cancellation-race"
     ))
 
-inl shipping_compensation_node
+:= shipping_compensation_node
     ()
     : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_shipping_cancelled mh_shipping_compensated
     =
-    MultihostRecoveryNode (exists (
+    MultihostRecoveryNode (\? (
         CompensateShippingFirst (MhLaneFailure "carrier-timeout", MhCompensation "release-shipping-slot"),
         MultihostRecoveryRow "compensate-shipping-first"
     ))
 
-inl bank_compensation_node
+:= bank_compensation_node
     ()
     : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_shipping_compensated mh_bank_compensated
     =
-    inl bank_comp : mh_compensation lane_payment replay_batch_a recovery_wave_1 mh_compensated =
+    := bank_comp : mh_compensation lane_payment replay_batch_a recovery_wave_1 mh_compensated =
         MhCompensation "refund-bank"
-    MultihostRecoveryNode (exists (
+    MultihostRecoveryNode (\? (
         CompensateBankAfterShipping (MhLaneFailure "bank-timeout", bank_comp, CompensationOrder "shipping-before-bank"),
         MultihostRecoveryRow "compensate-bank-after-shipping"
     ))
 
-inl quorum_node
+:= quorum_node
     ()
     : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_bank_compensated mh_quorum_ready
     =
     MultihostRecoveryNode (
-        exists (
+        \? (
             FormTimedReplicaQuorum (
                 TimeoutWitness "deadline-fresh",
                 DistinctReplicaHosts "a-ne-b-ne-c",
@@ -788,25 +788,25 @@ inl quorum_node
         )
     )
 
-inl heal_node
+:= heal_node
     ()
     : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_quorum_ready mh_healed
     =
-    MultihostRecoveryNode (exists (
+    MultihostRecoveryNode (\? (
         HealReplayReplica (ReplayMergeReceipt "join-semilattice-merge"),
         MultihostRecoveryRow "heal-partitioned-replay-state"
     ))
 
-inl publish_healed_node
+:= publish_healed_node
     ()
     : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_healed mh_published
     =
     MultihostRecoveryNode (
-        exists (
+        \? (
             PublishHealedAudit (
                 RegistryPin "root",
                 DistinctObservers "a-ne-b",
@@ -817,20 +817,20 @@ inl publish_healed_node
         )
     )
 
-inl multihost_plan
+:= multihost_plan
     ()
     : multihost_recovery_plan registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_available mh_published
     =
-    MultihostRecoveryThen (exists (
-        MultihostRecoveryThen (exists (
-            MultihostRecoveryThen (exists (
-                MultihostRecoveryThen (exists (
-                    MultihostRecoveryThen (exists (
-                        MultihostRecoveryThen (exists (
-                            MultihostRecoveryThen (exists (
-                                MultihostRecoveryThen (exists (
+    MultihostRecoveryThen (\? (
+        MultihostRecoveryThen (\? (
+            MultihostRecoveryThen (\? (
+                MultihostRecoveryThen (\? (
+                    MultihostRecoveryThen (\? (
+                        MultihostRecoveryThen (\? (
+                            MultihostRecoveryThen (\? (
+                                MultihostRecoveryThen (\? (
                                     MultihostRecoveryLeaf (partition_node ()),
                                     registry_node ()
                                 )),
@@ -849,238 +849,238 @@ inl multihost_plan
         publish_healed_node ()
     ))
 
-inl failure_bundle_label forall first_lane second_lane.
+:= failure_bundle_label \* first_lane second_lane.
     (_ : mh_lane_failure first_lane replay_batch_a recovery_wave_1 mh_failed)
     (_ : mh_lane_failure second_lane replay_batch_a recovery_wave_1 mh_failed)
     (_ : compensation_order first_lane second_lane replay_batch_a recovery_wave_1 mh_distinct) : string =
     "two-failures-ordered"
 
-inl base_main () : string =
-    inl first_failure : mh_lane_failure lane_shipping replay_batch_a recovery_wave_1 mh_failed =
+:= base_main () : string =
+    := first_failure : mh_lane_failure lane_shipping replay_batch_a recovery_wave_1 mh_failed =
         MhLaneFailure "carrier-timeout"
-    inl second_failure : mh_lane_failure lane_payment replay_batch_a recovery_wave_1 mh_failed =
+    := second_failure : mh_lane_failure lane_payment replay_batch_a recovery_wave_1 mh_failed =
         MhLaneFailure "bank-timeout"
-    inl order : compensation_order lane_shipping lane_payment replay_batch_a recovery_wave_1 mh_distinct =
+    := order : compensation_order lane_shipping lane_payment replay_batch_a recovery_wave_1 mh_distinct =
         CompensationOrder "shipping-before-bank"
-    inl bundle : failure_bundle replay_batch_a recovery_wave_1 =
-        FailureBundle (exists (first_failure, second_failure, order))
-    inl inspected = with_failure_bundle `$failure_bundle_label bundle
-    inl _ = inspected
+    := bundle : failure_bundle replay_batch_a recovery_wave_1 =
+        FailureBundle (\? (first_failure, second_failure, order))
+    := inspected = with_failure_bundle `$failure_bundle_label bundle
+    := _ = inspected
     multihost_terminal (multihost_plan ())
 
-nominal v36_tenant_blue = ()
-nominal v36_epoch_12 = ()
-nominal v36_epoch_13 = ()
-nominal v36_root_a = ()
-nominal v36_root_b = ()
-nominal v36_lane_alpha = ()
-nominal v36_lane_beta = ()
-nominal v36_lane_gamma = ()
-nominal v36_backend_cpu = ()
-nominal v36_backend_gpu = ()
-nominal v36_backend_wasm = ()
-nominal v36_dormant = ()
-nominal v36_revision_pinned = ()
-nominal v36_quorum_ready = ()
-nominal v36_artifact_compiled = ()
-nominal v36_artifact_attested = ()
-nominal v36_promoted = ()
-nominal v36_observed = ()
-nominal v36_idempotent = ()
-nominal v36_non_idempotent = ()
-nominal v36_registry_cap = ()
-nominal v36_quorum_cap = ()
-nominal v36_compile_cap = ()
-nominal v36_promote_cap = ()
-nominal v36_observe_cap = ()
+:! v36_tenant_blue = ()
+:! v36_epoch_12 = ()
+:! v36_epoch_13 = ()
+:! v36_root_a = ()
+:! v36_root_b = ()
+:! v36_lane_alpha = ()
+:! v36_lane_beta = ()
+:! v36_lane_gamma = ()
+:! v36_backend_cpu = ()
+:! v36_backend_gpu = ()
+:! v36_backend_wasm = ()
+:! v36_dormant = ()
+:! v36_revision_pinned = ()
+:! v36_quorum_ready = ()
+:! v36_artifact_compiled = ()
+:! v36_artifact_attested = ()
+:! v36_promoted = ()
+:! v36_observed = ()
+:! v36_idempotent = ()
+:! v36_non_idempotent = ()
+:! v36_registry_cap = ()
+:! v36_quorum_cap = ()
+:! v36_compile_cap = ()
+:! v36_promote_cap = ()
+:! v36_observe_cap = ()
 
-union v36_revision tenant epoch root state =
-    | V36Revision :: forall tenant epoch root state. string -> v36_revision tenant epoch root state
+:| v36_revision tenant epoch root state =
+    | V36Revision :: \* tenant epoch root state. string -> v36_revision tenant epoch root state
 
-union v36_successor old_epoch old_root new_epoch new_root state =
-    | V36Successor :: forall old_epoch old_root new_epoch new_root state.
+:| v36_successor old_epoch old_root new_epoch new_root state =
+    | V36Successor :: \* old_epoch old_root new_epoch new_root state.
         string ->
         v36_successor old_epoch old_root new_epoch new_root state
 
-union v36_share tenant epoch root lane state =
-    | V36Share :: forall tenant epoch root lane state. string -> v36_share tenant epoch root lane state
+:| v36_share tenant epoch root lane state =
+    | V36Share :: \* tenant epoch root lane state. string -> v36_share tenant epoch root lane state
 
-union v36_distinct first second third state =
-    | V36Distinct :: forall first second third state. string -> v36_distinct first second third state
+:| v36_distinct first second third state =
+    | V36Distinct :: \* first second third state. string -> v36_distinct first second third state
 
-union v36_compiled tenant epoch root backend state =
-    | V36Compiled :: forall tenant epoch root backend state. string -> v36_compiled tenant epoch root backend state
+:| v36_compiled tenant epoch root backend state =
+    | V36Compiled :: \* tenant epoch root backend state. string -> v36_compiled tenant epoch root backend state
 
-union v36_attestation tenant epoch root backend state =
-    | V36Attestation :: forall tenant epoch root backend state.
+:| v36_attestation tenant epoch root backend state =
+    | V36Attestation :: \* tenant epoch root backend state.
         string ->
         v36_attestation tenant epoch root backend state
 
-union v36_backend_artifact tenant epoch root =
-    | V36BackendArtifact :: forall tenant epoch root.
-        (exists backend.
+:| v36_backend_artifact tenant epoch root =
+    | V36BackendArtifact :: \* tenant epoch root.
+        (\? backend.
             v36_compiled tenant epoch root backend v36_artifact_compiled *
             v36_attestation tenant epoch root backend v36_artifact_attested)
         -> v36_backend_artifact tenant epoch root
 
-inl with_v36_artifact forall tenant epoch root result.
-    (visit : forall backend.
+:= with_v36_artifact \* tenant epoch root result.
+    (visit : \* backend.
         v36_compiled tenant epoch root backend v36_artifact_compiled ->
         v36_attestation tenant epoch root backend v36_artifact_attested -> result)
     (artifact : v36_backend_artifact tenant epoch root) : result =
-    match artifact with
+    ?= artifact ?|
     | V36BackendArtifact payload =>
-        inl exists backend. compiled, attested = payload
+        := \? backend. compiled, attested = payload
         visit compiled attested
 
-union v36_quorum tenant epoch root =
-    | V36Quorum :: forall tenant epoch root.
-        (exists first second third.
+:| v36_quorum tenant epoch root =
+    | V36Quorum :: \* tenant epoch root.
+        (\? first second third.
             v36_share tenant epoch root first v36_quorum_ready *
             v36_share tenant epoch root second v36_quorum_ready *
             v36_share tenant epoch root third v36_quorum_ready *
             v36_distinct first second third v36_quorum_ready)
         -> v36_quorum tenant epoch root
 
-inl with_v36_quorum forall tenant epoch root result.
-    (visit : forall first second third.
+:= with_v36_quorum \* tenant epoch root result.
+    (visit : \* first second third.
         v36_share tenant epoch root first v36_quorum_ready ->
         v36_share tenant epoch root second v36_quorum_ready ->
         v36_share tenant epoch root third v36_quorum_ready ->
         v36_distinct first second third v36_quorum_ready -> result)
     (quorum : v36_quorum tenant epoch root) : result =
-    match quorum with
+    ?= quorum ?|
     | V36Quorum payload =>
-        inl exists first second third. a, b, c, distinct = payload
+        := \? first second third. a, b, c, distinct = payload
         visit a b c distinct
 
-union v36_transition tenant old_epoch old_root new_epoch new_root from to effect capability =
-    | V36PinRevision :: forall tenant old_epoch old_root new_epoch new_root.
+:| v36_transition tenant old_epoch old_root new_epoch new_root from to effect capability =
+    | V36PinRevision :: \* tenant old_epoch old_root new_epoch new_root.
         v36_revision tenant old_epoch old_root v36_dormant *
         v36_successor old_epoch old_root new_epoch new_root v36_revision_pinned ->
         v36_transition
             tenant old_epoch old_root new_epoch new_root v36_dormant v36_revision_pinned v36_idempotent v36_registry_cap
-    | V36FormQuorum :: forall tenant old_epoch old_root new_epoch new_root.
+    | V36FormQuorum :: \* tenant old_epoch old_root new_epoch new_root.
         v36_quorum tenant new_epoch new_root ->
         v36_transition
             tenant old_epoch old_root new_epoch new_root v36_revision_pinned v36_quorum_ready v36_idempotent
             v36_quorum_cap
-    | V36CompileArtifact :: forall tenant old_epoch old_root new_epoch new_root.
+    | V36CompileArtifact :: \* tenant old_epoch old_root new_epoch new_root.
         v36_backend_artifact tenant new_epoch new_root ->
         v36_transition
             tenant old_epoch old_root new_epoch new_root v36_quorum_ready v36_artifact_compiled v36_non_idempotent
             v36_compile_cap
-    | V36BindAttestation :: forall tenant old_epoch old_root new_epoch new_root.
+    | V36BindAttestation :: \* tenant old_epoch old_root new_epoch new_root.
         v36_backend_artifact tenant new_epoch new_root ->
         v36_transition
             tenant old_epoch old_root new_epoch new_root v36_artifact_compiled v36_artifact_attested v36_idempotent
             v36_compile_cap
-    | V36Promote :: forall tenant old_epoch old_root new_epoch new_root.
+    | V36Promote :: \* tenant old_epoch old_root new_epoch new_root.
         v36_successor old_epoch old_root new_epoch new_root v36_revision_pinned ->
         v36_transition
             tenant old_epoch old_root new_epoch new_root v36_artifact_attested v36_promoted v36_non_idempotent
             v36_promote_cap
-    | V36Observe :: forall tenant old_epoch old_root new_epoch new_root.
+    | V36Observe :: \* tenant old_epoch old_root new_epoch new_root.
         v36_revision tenant new_epoch new_root v36_promoted ->
         v36_transition
             tenant old_epoch old_root new_epoch new_root v36_promoted v36_observed v36_idempotent v36_observe_cap
 
-union v36_row from to effect capability =
-    | V36Row :: forall from to effect capability. string -> v36_row from to effect capability
+:| v36_row from to effect capability =
+    | V36Row :: \* from to effect capability. string -> v36_row from to effect capability
 
-union v36_node tenant old_epoch old_root new_epoch new_root from to =
-    | V36Node :: forall tenant old_epoch old_root new_epoch new_root from to.
-        (exists effect capability.
+:| v36_node tenant old_epoch old_root new_epoch new_root from to =
+    | V36Node :: \* tenant old_epoch old_root new_epoch new_root from to.
+        (\? effect capability.
             v36_transition tenant old_epoch old_root new_epoch new_root from to effect capability *
             v36_row from to effect capability)
         -> v36_node tenant old_epoch old_root new_epoch new_root from to
 
-union rec v36_plan tenant old_epoch old_root new_epoch new_root from to =
-    | V36Leaf :: forall tenant old_epoch old_root new_epoch new_root from to.
+:| ^ v36_plan tenant old_epoch old_root new_epoch new_root from to =
+    | V36Leaf :: \* tenant old_epoch old_root new_epoch new_root from to.
         v36_node tenant old_epoch old_root new_epoch new_root from to ->
         v36_plan tenant old_epoch old_root new_epoch new_root from to
-    | V36Then :: forall tenant old_epoch old_root new_epoch new_root from to.
-        (exists middle.
+    | V36Then :: \* tenant old_epoch old_root new_epoch new_root from to.
+        (\? middle.
             v36_plan tenant old_epoch old_root new_epoch new_root from middle *
             v36_node tenant old_epoch old_root new_epoch new_root middle to)
         -> v36_plan tenant old_epoch old_root new_epoch new_root from to
 
-inl v36_artifact_label forall backend.
+:= v36_artifact_label \* backend.
     (_ : v36_compiled v36_tenant_blue v36_epoch_13 v36_root_b backend v36_artifact_compiled)
     (_ : v36_attestation v36_tenant_blue v36_epoch_13 v36_root_b backend v36_artifact_attested) : string =
     "backend-hidden-and-attested"
 
-inl v36_quorum_label forall first second third.
+:= v36_quorum_label \* first second third.
     (_ : v36_share v36_tenant_blue v36_epoch_13 v36_root_b first v36_quorum_ready)
     (_ : v36_share v36_tenant_blue v36_epoch_13 v36_root_b second v36_quorum_ready)
     (_ : v36_share v36_tenant_blue v36_epoch_13 v36_root_b third v36_quorum_ready)
     (_ : v36_distinct first second third v36_quorum_ready) : string =
     "three-lane-quorum"
 
-inl v36_artifact () : v36_backend_artifact v36_tenant_blue v36_epoch_13 v36_root_b =
-    inl compiled : v36_compiled v36_tenant_blue v36_epoch_13 v36_root_b v36_backend_gpu v36_artifact_compiled =
+:= v36_artifact () : v36_backend_artifact v36_tenant_blue v36_epoch_13 v36_root_b =
+    := compiled : v36_compiled v36_tenant_blue v36_epoch_13 v36_root_b v36_backend_gpu v36_artifact_compiled =
         V36Compiled "spiral-fsharp-cuda"
-    inl attested : v36_attestation v36_tenant_blue v36_epoch_13 v36_root_b v36_backend_gpu v36_artifact_attested =
+    := attested : v36_attestation v36_tenant_blue v36_epoch_13 v36_root_b v36_backend_gpu v36_artifact_attested =
         V36Attestation "compiler-session-plus-fsi-session"
-    V36BackendArtifact (exists (compiled, attested))
+    V36BackendArtifact (\? (compiled, attested))
 
-inl v36_quorum_value () : v36_quorum v36_tenant_blue v36_epoch_13 v36_root_b =
-    inl alpha : v36_share v36_tenant_blue v36_epoch_13 v36_root_b v36_lane_alpha v36_quorum_ready = V36Share "alpha"
-    inl beta : v36_share v36_tenant_blue v36_epoch_13 v36_root_b v36_lane_beta v36_quorum_ready = V36Share "beta"
-    inl gamma : v36_share v36_tenant_blue v36_epoch_13 v36_root_b v36_lane_gamma v36_quorum_ready = V36Share "gamma"
-    inl distinct : v36_distinct v36_lane_alpha v36_lane_beta v36_lane_gamma v36_quorum_ready =
+:= v36_quorum_value () : v36_quorum v36_tenant_blue v36_epoch_13 v36_root_b =
+    := alpha : v36_share v36_tenant_blue v36_epoch_13 v36_root_b v36_lane_alpha v36_quorum_ready = V36Share "alpha"
+    := beta : v36_share v36_tenant_blue v36_epoch_13 v36_root_b v36_lane_beta v36_quorum_ready = V36Share "beta"
+    := gamma : v36_share v36_tenant_blue v36_epoch_13 v36_root_b v36_lane_gamma v36_quorum_ready = V36Share "gamma"
+    := distinct : v36_distinct v36_lane_alpha v36_lane_beta v36_lane_gamma v36_quorum_ready =
         V36Distinct "alpha-ne-beta-ne-gamma"
-    V36Quorum (exists (alpha, beta, gamma, distinct))
+    V36Quorum (\? (alpha, beta, gamma, distinct))
 
-inl v36_pin_node
+:= v36_pin_node
     ()
     : v36_node v36_tenant_blue v36_epoch_12 v36_root_a v36_epoch_13 v36_root_b v36_dormant v36_revision_pinned
     =
-    V36Node (exists (
+    V36Node (\? (
         V36PinRevision (V36Revision "revision-12", V36Successor "epoch-12-root-a-to-epoch-13-root-b"),
         V36Row "pin-successor-revision"
     ))
 
-inl v36_quorum_node
+:= v36_quorum_node
     ()
     : v36_node v36_tenant_blue v36_epoch_12 v36_root_a v36_epoch_13 v36_root_b v36_revision_pinned v36_quorum_ready
     =
-    V36Node (exists (V36FormQuorum (v36_quorum_value ()), V36Row "form-existential-quorum"))
+    V36Node (\? (V36FormQuorum (v36_quorum_value ()), V36Row "form-existential-quorum"))
 
-inl v36_compile_node
+:= v36_compile_node
     ()
     : v36_node v36_tenant_blue v36_epoch_12 v36_root_a v36_epoch_13 v36_root_b v36_quorum_ready v36_artifact_compiled
     =
-    V36Node (exists (V36CompileArtifact (v36_artifact ()), V36Row "compile-hidden-backend"))
+    V36Node (\? (V36CompileArtifact (v36_artifact ()), V36Row "compile-hidden-backend"))
 
-inl v36_attest_node
+:= v36_attest_node
     ()
     : v36_node v36_tenant_blue v36_epoch_12 v36_root_a v36_epoch_13 v36_root_b v36_artifact_compiled
         v36_artifact_attested
     =
-    V36Node (exists (V36BindAttestation (v36_artifact ()), V36Row "bind-backend-attestation"))
+    V36Node (\? (V36BindAttestation (v36_artifact ()), V36Row "bind-backend-attestation"))
 
-inl v36_promote_node
+:= v36_promote_node
     ()
     : v36_node v36_tenant_blue v36_epoch_12 v36_root_a v36_epoch_13 v36_root_b v36_artifact_attested v36_promoted
     =
-    V36Node (exists (V36Promote (V36Successor "promotion-witness"), V36Row "promote-typed-artifact"))
+    V36Node (\? (V36Promote (V36Successor "promotion-witness"), V36Row "promote-typed-artifact"))
 
-inl v36_observe_node
+:= v36_observe_node
     ()
     : v36_node v36_tenant_blue v36_epoch_12 v36_root_a v36_epoch_13 v36_root_b v36_promoted v36_observed
     =
-    V36Node (exists (V36Observe (V36Revision "observed-revision-13"), V36Row "publish-observed-authority"))
+    V36Node (\? (V36Observe (V36Revision "observed-revision-13"), V36Row "publish-observed-authority"))
 
-inl v36_plan_value
+:= v36_plan_value
     ()
     : v36_plan v36_tenant_blue v36_epoch_12 v36_root_a v36_epoch_13 v36_root_b v36_dormant v36_observed
     =
-    V36Then (exists (
-        V36Then (exists (
-            V36Then (exists (
-                V36Then (exists (
-                    V36Then (exists (
+    V36Then (\? (
+        V36Then (\? (
+            V36Then (\? (
+                V36Then (\? (
+                    V36Then (\? (
                         V36Leaf (v36_pin_node ()),
                         v36_quorum_node ()
                     )),
@@ -1093,18 +1093,18 @@ inl v36_plan_value
         v36_observe_node ()
     ))
 
-inl rec v36_terminal forall tenant old_epoch old_root new_epoch new_root from to.
+:= ^ v36_terminal \* tenant old_epoch old_root new_epoch new_root from to.
     (plan : v36_plan tenant old_epoch old_root new_epoch new_root from to) : string =
-    match plan with
+    ?= plan ?|
     | V36Leaf (V36Node payload) =>
-        inl exists effect capability. _, V36Row label = payload
+        := \? effect capability. _, V36Row label = payload
         label
     | V36Then payload =>
-        inl exists middle. _, V36Node node_payload = payload
-        inl exists effect capability. _, V36Row label = node_payload
+        := \? middle. _, V36Node node_payload = payload
+        := \? effect capability. _, V36Row label = node_payload
         label
 
-inl v36_emit (_ : string) (_ : string) (_ : string) (_ : string) : string =
+:= v36_emit (_ : string) (_ : string) (_ : string) (_ : string) : string =
     "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n"
     ^^ "1\tpin\tPinRevision\tdormant\trevision-pinned\t\tidempotent\tregistry\t2\n"
     ^^ "1\tquorum\tFormQuorum\trevision-pinned\tquorum-ready\tpin\tidempotent\tquorum\t2\n"
@@ -1113,142 +1113,142 @@ inl v36_emit (_ : string) (_ : string) (_ : string) (_ : string) : string =
     ^^ "1\tpromote\tPromoteArtifact\tartifact-attested\tpromoted\tattest\tnon_idempotent\tpromoter\t0\n"
     ^^ "1\tobserve\tPublishAuthority\tpromoted\tobserved\tpromote\tidempotent\tobserver\t1\n"
 
-inl federation_main () : string =
-    inl base = base_main ()
-    inl artifact = with_v36_artifact `$v36_artifact_label (v36_artifact ())
-    inl quorum = with_v36_quorum `$v36_quorum_label (v36_quorum_value ())
-    inl terminal = v36_terminal (v36_plan_value ())
+:= federation_main () : string =
+    := base = base_main ()
+    := artifact = with_v36_artifact `$v36_artifact_label (v36_artifact ())
+    := quorum = with_v36_quorum `$v36_quorum_label (v36_quorum_value ())
+    := terminal = v36_terminal (v36_plan_value ())
     v36_emit base artifact quorum terminal
 
-nominal v36b_zone_orbit = ()
-nominal v36b_epoch_21 = ()
-nominal v36b_root_green = ()
-nominal v36b_backend_wasm = ()
-nominal v36b_backend_cuda = ()
-nominal v36b_rollback_compensating = ()
-nominal v36b_rollback_snapshot = ()
-nominal v36b_cold = ()
-nominal v36b_staged = ()
-nominal v36b_probed = ()
-nominal v36b_swapped = ()
-nominal v36b_rollback_armed = ()
-nominal v36b_committed = ()
-nominal v36b_audited = ()
-nominal v36b_pure = ()
-nominal v36b_irreversible = ()
-nominal v36b_stage_cap = ()
-nominal v36b_probe_cap = ()
-nominal v36b_swap_cap = ()
-nominal v36b_rollback_cap = ()
-nominal v36b_audit_cap = ()
+:! v36b_zone_orbit = ()
+:! v36b_epoch_21 = ()
+:! v36b_root_green = ()
+:! v36b_backend_wasm = ()
+:! v36b_backend_cuda = ()
+:! v36b_rollback_compensating = ()
+:! v36b_rollback_snapshot = ()
+:! v36b_cold = ()
+:! v36b_staged = ()
+:! v36b_probed = ()
+:! v36b_swapped = ()
+:! v36b_rollback_armed = ()
+:! v36b_committed = ()
+:! v36b_audited = ()
+:! v36b_pure = ()
+:! v36b_irreversible = ()
+:! v36b_stage_cap = ()
+:! v36b_probe_cap = ()
+:! v36b_swap_cap = ()
+:! v36b_rollback_cap = ()
+:! v36b_audit_cap = ()
 
-union v36b_image zone epoch root backend stage =
-    | V36BImage :: forall zone epoch root backend stage. string -> v36b_image zone epoch root backend stage
+:| v36b_image zone epoch root backend stage =
+    | V36BImage :: \* zone epoch root backend stage. string -> v36b_image zone epoch root backend stage
 
-union v36b_rollback zone epoch root rollback stage =
-    | V36BRollback :: forall zone epoch root rollback stage. string -> v36b_rollback zone epoch root rollback stage
+:| v36b_rollback zone epoch root rollback stage =
+    | V36BRollback :: \* zone epoch root rollback stage. string -> v36b_rollback zone epoch root rollback stage
 
-union v36b_strategy zone epoch root =
-    | V36BStrategy :: forall zone epoch root.
-        (exists backend rollback.
+:| v36b_strategy zone epoch root =
+    | V36BStrategy :: \* zone epoch root.
+        (\? backend rollback.
             v36b_image zone epoch root backend v36b_staged *
             v36b_rollback zone epoch root rollback v36b_rollback_armed)
         -> v36b_strategy zone epoch root
 
-inl with_v36b_strategy forall zone epoch root result.
-    (visit : forall backend rollback.
+:= with_v36b_strategy \* zone epoch root result.
+    (visit : \* backend rollback.
         v36b_image zone epoch root backend v36b_staged ->
         v36b_rollback zone epoch root rollback v36b_rollback_armed -> result)
     (strategy : v36b_strategy zone epoch root) : result =
-    match strategy with
+    ?= strategy ?|
     | V36BStrategy payload =>
-        inl exists backend rollback. image, rollback = payload
+        := \? backend rollback. image, rollback = payload
         visit image rollback
 
-union v36b_probe zone epoch root backend state =
-    | V36BProbe :: forall zone epoch root backend state. string -> v36b_probe zone epoch root backend state
+:| v36b_probe zone epoch root backend state =
+    | V36BProbe :: \* zone epoch root backend state. string -> v36b_probe zone epoch root backend state
 
-union v36b_commit zone epoch root state =
-    | V36BCommit :: forall zone epoch root state. string -> v36b_commit zone epoch root state
+:| v36b_commit zone epoch root state =
+    | V36BCommit :: \* zone epoch root state. string -> v36b_commit zone epoch root state
 
-union v36b_op zone epoch root from to effect capability =
-    | V36BStage :: forall zone epoch root.
+:| v36b_op zone epoch root from to effect capability =
+    | V36BStage :: \* zone epoch root.
         v36b_strategy zone epoch root ->
         v36b_op zone epoch root v36b_cold v36b_staged v36b_pure v36b_stage_cap
-    | V36BProbeImage :: forall zone epoch root.
+    | V36BProbeImage :: \* zone epoch root.
         v36b_probe zone epoch root v36b_backend_wasm v36b_probed ->
         v36b_op zone epoch root v36b_staged v36b_probed v36b_pure v36b_probe_cap
-    | V36BAtomicSwap :: forall zone epoch root.
+    | V36BAtomicSwap :: \* zone epoch root.
         v36b_strategy zone epoch root *
         v36b_probe zone epoch root v36b_backend_wasm v36b_probed ->
         v36b_op zone epoch root v36b_probed v36b_swapped v36b_irreversible v36b_swap_cap
-    | V36BArmRollback :: forall zone epoch root.
+    | V36BArmRollback :: \* zone epoch root.
         v36b_strategy zone epoch root ->
         v36b_op zone epoch root v36b_swapped v36b_rollback_armed v36b_pure v36b_rollback_cap
-    | V36BCommitSwap :: forall zone epoch root.
+    | V36BCommitSwap :: \* zone epoch root.
         v36b_commit zone epoch root v36b_committed ->
         v36b_op zone epoch root v36b_rollback_armed v36b_committed v36b_irreversible v36b_swap_cap
-    | V36BAuditSwap :: forall zone epoch root.
+    | V36BAuditSwap :: \* zone epoch root.
         v36b_commit zone epoch root v36b_committed ->
         v36b_op zone epoch root v36b_committed v36b_audited v36b_pure v36b_audit_cap
 
-union v36b_row from to effect capability =
-    | V36BRow :: forall from to effect capability. string -> v36b_row from to effect capability
+:| v36b_row from to effect capability =
+    | V36BRow :: \* from to effect capability. string -> v36b_row from to effect capability
 
-union v36b_node zone epoch root from to =
-    | V36BNode :: forall zone epoch root from to.
-        (exists effect capability.
+:| v36b_node zone epoch root from to =
+    | V36BNode :: \* zone epoch root from to.
+        (\? effect capability.
             v36b_op zone epoch root from to effect capability *
             v36b_row from to effect capability)
         -> v36b_node zone epoch root from to
 
-union rec v36b_plan zone epoch root from to =
-    | V36BLeaf :: forall zone epoch root from to.
+:| ^ v36b_plan zone epoch root from to =
+    | V36BLeaf :: \* zone epoch root from to.
         v36b_node zone epoch root from to -> v36b_plan zone epoch root from to
-    | V36BThen :: forall zone epoch root from to.
-        (exists middle.
+    | V36BThen :: \* zone epoch root from to.
+        (\? middle.
             v36b_plan zone epoch root from middle *
             v36b_node zone epoch root middle to)
         -> v36b_plan zone epoch root from to
 
-inl v36b_strategy_value () : v36b_strategy v36b_zone_orbit v36b_epoch_21 v36b_root_green =
-    inl image : v36b_image v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_backend_wasm v36b_staged =
+:= v36b_strategy_value () : v36b_strategy v36b_zone_orbit v36b_epoch_21 v36b_root_green =
+    := image : v36b_image v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_backend_wasm v36b_staged =
         V36BImage "wasm-image"
-    inl rollback
+    := rollback
         : v36b_rollback v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_rollback_compensating v36b_rollback_armed
         =
         V36BRollback "compensating-rollback"
-    V36BStrategy (exists (image, rollback))
+    V36BStrategy (\? (image, rollback))
 
-inl v36b_strategy_label forall backend rollback.
+:= v36b_strategy_label \* backend rollback.
     (_ : v36b_image v36b_zone_orbit v36b_epoch_21 v36b_root_green backend v36b_staged)
     (_ : v36b_rollback v36b_zone_orbit v36b_epoch_21 v36b_root_green rollback v36b_rollback_armed) : string =
     "backend-and-rollback-hidden"
 
-inl v36b_stage_node () : v36b_node v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_cold v36b_staged =
-    V36BNode (exists (V36BStage (v36b_strategy_value ()), V36BRow "stage-hidden-image"))
+:= v36b_stage_node () : v36b_node v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_cold v36b_staged =
+    V36BNode (\? (V36BStage (v36b_strategy_value ()), V36BRow "stage-hidden-image"))
 
-inl v36b_probe_node () : v36b_node v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_staged v36b_probed =
-    V36BNode (exists (V36BProbeImage (V36BProbe "probe-wasm"), V36BRow "probe-same-backend"))
+:= v36b_probe_node () : v36b_node v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_staged v36b_probed =
+    V36BNode (\? (V36BProbeImage (V36BProbe "probe-wasm"), V36BRow "probe-same-backend"))
 
-inl v36b_swap_node () : v36b_node v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_probed v36b_swapped =
-    V36BNode (exists (V36BAtomicSwap (v36b_strategy_value (), V36BProbe "probe-wasm"), V36BRow "atomic-hot-swap"))
+:= v36b_swap_node () : v36b_node v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_probed v36b_swapped =
+    V36BNode (\? (V36BAtomicSwap (v36b_strategy_value (), V36BProbe "probe-wasm"), V36BRow "atomic-hot-swap"))
 
-inl v36b_rollback_node () : v36b_node v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_swapped v36b_rollback_armed =
-    V36BNode (exists (V36BArmRollback (v36b_strategy_value ()), V36BRow "arm-compensating-rollback"))
+:= v36b_rollback_node () : v36b_node v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_swapped v36b_rollback_armed =
+    V36BNode (\? (V36BArmRollback (v36b_strategy_value ()), V36BRow "arm-compensating-rollback"))
 
-inl v36b_commit_node () : v36b_node v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_rollback_armed v36b_committed =
-    V36BNode (exists (V36BCommitSwap (V36BCommit "commit-hot-swap"), V36BRow "commit-after-rollback-armed"))
+:= v36b_commit_node () : v36b_node v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_rollback_armed v36b_committed =
+    V36BNode (\? (V36BCommitSwap (V36BCommit "commit-hot-swap"), V36BRow "commit-after-rollback-armed"))
 
-inl v36b_audit_node () : v36b_node v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_committed v36b_audited =
-    V36BNode (exists (V36BAuditSwap (V36BCommit "commit-hot-swap"), V36BRow "audit-hot-swap"))
+:= v36b_audit_node () : v36b_node v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_committed v36b_audited =
+    V36BNode (\? (V36BAuditSwap (V36BCommit "commit-hot-swap"), V36BRow "audit-hot-swap"))
 
-inl v36b_plan_value () : v36b_plan v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_cold v36b_audited =
-    V36BThen (exists (
-        V36BThen (exists (
-            V36BThen (exists (
-                V36BThen (exists (
-                    V36BThen (exists (
+:= v36b_plan_value () : v36b_plan v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_cold v36b_audited =
+    V36BThen (\? (
+        V36BThen (\? (
+            V36BThen (\? (
+                V36BThen (\? (
+                    V36BThen (\? (
                         V36BLeaf (v36b_stage_node ()),
                         v36b_probe_node ()
                     )),
@@ -1261,18 +1261,18 @@ inl v36b_plan_value () : v36b_plan v36b_zone_orbit v36b_epoch_21 v36b_root_green
         v36b_audit_node ()
     ))
 
-inl rec v36b_terminal forall zone epoch root from to.
+:= ^ v36b_terminal \* zone epoch root from to.
     (plan : v36b_plan zone epoch root from to) : string =
-    match plan with
+    ?= plan ?|
     | V36BLeaf (V36BNode payload) =>
-        inl exists effect capability. _, V36BRow label = payload
+        := \? effect capability. _, V36BRow label = payload
         label
     | V36BThen payload =>
-        inl exists middle. _, V36BNode node_payload = payload
-        inl exists effect capability. _, V36BRow label = node_payload
+        := \? middle. _, V36BNode node_payload = payload
+        := \? effect capability. _, V36BRow label = node_payload
         label
 
-inl v36b_emit (_ : string) (_ : string) (_ : string) : string =
+:= v36b_emit (_ : string) (_ : string) (_ : string) : string =
     "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n"
     ^^ "1\tstage\tStageHiddenImage\tcold\tstaged\t\tidempotent\tstage\t2\n"
     ^^ "1\tprobe\tProbeSameBackend\tstaged\tprobed\tstage\tidempotent\tprobe\t2\n"
@@ -1281,8 +1281,8 @@ inl v36b_emit (_ : string) (_ : string) (_ : string) : string =
     ^^ "1\tcommit\tCommitSwap\trollback-armed\tcommitted\trollback\tnon_idempotent\tswap\t0\n"
     ^^ "1\taudit\tAuditSwap\tcommitted\taudited\tcommit\tidempotent\taudit\t1\n"
 
-inl main () : string =
-    inl federation = federation_main ()
-    inl strategy = with_v36b_strategy `$v36b_strategy_label (v36b_strategy_value ())
-    inl terminal = v36b_terminal (v36b_plan_value ())
+:= main () : string =
+    := federation = federation_main ()
+    := strategy = with_v36b_strategy `$v36b_strategy_label (v36b_strategy_value ())
+    := terminal = v36b_terminal (v36b_plan_value ())
     v36b_emit federation strategy terminal

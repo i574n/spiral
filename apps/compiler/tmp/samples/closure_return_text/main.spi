@@ -1,10 +1,10 @@
-inl main () : i32 =
-    inl ~word = "hi"
-    inl f (z : i32) : i32 -> string =
-        inl g (x : i32) : string =
-            if z =. 0i32 then "no" else word
+:= main () : i32 =
+    := ~word = "hi"
+    := f (z : i32) : i32 -> string =
+        := g (x : i32) : string =
+            ? z =. 0i32 ?> "no" |: word
         g
-    inl ~h = f
-    inl inner = h 1i32
-    inl ~k = inner
-    if !!!!EQ(k 0i32, "hi") then 0i32 else 1i32
+    := ~h = f
+    := inner = h 1i32
+    := ~k = inner
+    ? !!!!EQ(k 0i32, "hi") ?> 0i32 |: 1i32

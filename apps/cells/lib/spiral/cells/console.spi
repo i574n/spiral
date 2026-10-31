@@ -1,7 +1,7 @@
 := (~!\\) \* t u. ((args : t), (code : string)) : u =
     $'__spiral_emit_rust !args !code '
 
-:= show_value \* t. (value : t) : () =
+:= show_some_value \* t. (value : t) : () =
     := rust () : () =
         := _ : () =
             !\\(value, $'"{ struct SpiralKinoShow<T>(T); trait SpiralKinoDebug { fn spiral_cells_show(&self) -> \
@@ -45,6 +45,12 @@
         Wasm = \ () => $'backend_switch_has_no_Wasm_arm_in_cells_console' : ()
         Bend = \ () => $'backend_switch_has_no_Bend_arm_in_cells_console' : ()
     })
+
+:= show_value \* t. (value : t) : () =
+    ~>
+        ?: t ?|
+        | () => ()
+        | _ => show_some_value value
 
 := write_line \* t. (text : t) : () =
     := rust () : () =

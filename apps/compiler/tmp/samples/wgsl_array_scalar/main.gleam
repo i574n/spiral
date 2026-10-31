@@ -86,17 +86,11 @@ pub fn main() {
             True -> {
                 let v13 = spiral_array_get(v4, 0)
                 case v13 {
-                    True -> {
-                        0
-                    }
-                    False -> {
-                        100
-                    }
+                    True -> 0
+                    False -> 100
                 }
             }
-            False -> {
-                0
-            }
+            False -> 0
         }
     let v16 = spiral_wrap_signed(v11 + v15, 32)
     let v17 = v1.size

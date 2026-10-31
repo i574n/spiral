@@ -19,9 +19,9 @@ fun spiral_main(): Int {
     val v1: String = "yo"
     var v2: String = ""
     var v3: String = ""
-    val spiral_tuple156 = sp_method0(v0, v1)
-    v2 = spiral_tuple156.v0
-    v3 = spiral_tuple156.v1
+    val spiral_tuple149 = sp_method0(v0, v1)
+    v2 = spiral_tuple149.v0
+    v3 = spiral_tuple149.v1
     var v4: Boolean = false
     v4 = (v2 == "hi")
     var v6: Boolean = false

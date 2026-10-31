@@ -1,2 +1,2 @@
-inl main () : i32 =
-    sm.utf8_validate_from_byte_offset "é" 1i32
+:= main () : i32 =
+    sm::utf8_validate_from_byte_offset "é" 1i32

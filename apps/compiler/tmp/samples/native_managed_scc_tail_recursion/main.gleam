@@ -19,21 +19,15 @@ pub fn method2(v0: Int, v1: String) -> Int {
             let v4 = spiral_string_length(v1)
             v4
         }
-        False -> {
-            method1(v2, v1)
-        }
+        False -> method1(v2, v1)
     }
 }
 pub fn method1(v0: Int, v1: String) -> Int {
     let v2 = spiral_wrap_signed(v0 - 1, 32)
     let v3 = v2 == 0
     case v3 {
-        True -> {
-            99
-        }
-        False -> {
-            method2(v2, v1)
-        }
+        True -> 99
+        False -> method2(v2, v1)
     }
 }
 pub fn method0(v0: Int, v1: String) -> Int {
@@ -44,9 +38,7 @@ pub fn method0(v0: Int, v1: String) -> Int {
                 let v3 = spiral_string_length(v1)
                 v3
             }
-            False -> {
-                method1(v0, v1)
-            }
+            False -> method1(v0, v1)
         }
     let v6 = spiral_wrap_signed(v5 - 2, 32)
     v6

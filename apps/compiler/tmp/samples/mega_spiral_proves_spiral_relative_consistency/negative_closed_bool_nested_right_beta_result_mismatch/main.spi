@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_closed_bool_nested_right_beta_result_mismatch () :
+:= impossible_closed_bool_nested_right_beta_result_mismatch () :
     exact_linear_indexed_recursive_open_typed_substitution
         exact_linear_indexed_open_unit_substitution_context
         exact_linear_indexed_open_unit_substitution_source_usage
@@ -9,4 +9,4 @@ inl impossible_closed_bool_nested_right_beta_result_mismatch () :
         exact_linear_bool_type =
     exact_linear_indexed_recursive_open_typed_substitution_tensor_right ()
 
-inl main () = impossible_closed_bool_nested_right_beta_result_mismatch ()
+:= main () = impossible_closed_bool_nested_right_beta_result_mismatch ()

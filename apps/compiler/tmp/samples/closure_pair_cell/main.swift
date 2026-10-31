@@ -25,9 +25,9 @@ func spiral_main() -> Int32 {
     v3 = f_c0(v1, v2)
     var v4: Heap0 = Heap0(l0: 0)
     var v5: Int32 = 0
-    let spiral_tuple350 = v3(1)
-    v4 = spiral_tuple350.0
-    v5 = spiral_tuple350.1
+    let spiral_tuple339 = v3(1)
+    v4 = spiral_tuple339.0
+    v5 = spiral_tuple339.1
     let v6: Int32 = v4.l0
     let v7: Int32 = (v6 &+ v5)
     let v8: Bool = (v7 == 7)

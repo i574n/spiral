@@ -34,12 +34,12 @@ test run_tests static =
         ? env.get_environment_variable "TEST" = "1" ?>
             ? is_rust () ?> test () |: ()
         |:
-            runtime.execution_options \ x => { x ?|
+            process.execution_options \ x => { x ?|
                 command = "cargo +nightly-2026-10-18 test --timings -- --show-output"
                 working_directory = file_system.get_source_directory () |> Some |> optionm'.box
                 environment_variables = am'.base ;[ "TEST", "1" ]
             }
-            |> runtime.execute_with_options
+            |> process.execute_with_options
             |> \ exit_code, result =>
                 exit_code |> _assert_eq 0i32
                 result |> _assert sm'.contains "test result: ok. 1 passed; 0 failed; 0 ignored;"

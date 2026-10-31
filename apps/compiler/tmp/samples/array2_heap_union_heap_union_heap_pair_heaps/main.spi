@@ -1,99 +1,99 @@
-union slot =
+:| slot =
     | None
     | Held : (heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
 
-union wrap =
+:| wrap =
     | Absent
     | Box : (heap { value : slot })
 
-nominal box_array = array_base (heap { value : wrap })
+:! box_array = array_base (heap { value : wrap })
 
-inl create (n : i32) : box_array = box_array !!!!ArrayCreate(`(heap { value : wrap }), n)
-inl get (values : box_array) (i : i32) : heap { value : wrap } =
-    match values with
+:= create (n : i32) : box_array = box_array !!!!ArrayCreate(`(heap { value : wrap }), n)
+:= get (values : box_array) (i : i32) : heap { value : wrap } =
+    ?= values ?|
     | box_array raw => !!!!ArrayIndex(raw, i)
-inl set (values : box_array) (i : i32) (value : heap { value : wrap }) : () =
-    match values with
+:= set (values : box_array) (i : i32) (value : heap { value : wrap }) : () =
+    ?= values ?|
     | box_array raw => !!!!ArrayIndexSet(raw, i, value)
 
-let score x : i32 =
-    match x with
+:~ score x : i32 =
+    ?= x ?|
     | Absent => 1i32
     | Box box =>
-        inl opened = !!!!LayoutIndex(box)
-        match opened.value with
+        := opened = !!!!LayoutIndex(box)
+        ?= opened::value ?|
         | None => 1i32
         | Held inner =>
-            inl inner_opened = !!!!LayoutIndex(inner)
-            inl ~(inner_held, flag) = inner_opened.value
-            inl deep_opened = !!!!LayoutIndex(inner_held)
-            inl ~(left, right) = deep_opened.value
-            inl left_opened = !!!!LayoutIndex(left)
-            inl ~(p, q) = left_opened.value
-            inl right_opened = !!!!LayoutIndex(right)
-            inl ~(r, s) = right_opened.value
-            if p =. 7i32 && !!!!EQ(q, "hi") && r =. 4i32 && !!!!EQ(s, "yo") && flag =. 2i32 then 0i32 else 1i32
+            := inner_opened = !!!!LayoutIndex(inner)
+            := ~(inner_held, flag) = inner_opened::value
+            := deep_opened = !!!!LayoutIndex(inner_held)
+            := ~(left, right) = deep_opened::value
+            := left_opened = !!!!LayoutIndex(left)
+            := ~(p, q) = left_opened::value
+            := right_opened = !!!!LayoutIndex(right)
+            := ~(r, s) = right_opened::value
+            ? p =. 7i32 && !!!!EQ(q, "hi") && r =. 4i32 && !!!!EQ(s, "yo") && flag =. 2i32 ?> 0i32 |: 1i32
 
-let score_b x : i32 =
-    match x with
+:~ score_b x : i32 =
+    ?= x ?|
     | Absent => 1i32
     | Box box =>
-        inl opened = !!!!LayoutIndex(box)
-        match opened.value with
+        := opened = !!!!LayoutIndex(box)
+        ?= opened::value ?|
         | None => 1i32
         | Held inner =>
-            inl inner_opened = !!!!LayoutIndex(inner)
-            inl ~(inner_held, flag) = inner_opened.value
-            inl deep_opened = !!!!LayoutIndex(inner_held)
-            inl ~(left, right) = deep_opened.value
-            inl left_opened = !!!!LayoutIndex(left)
-            inl ~(p, q) = left_opened.value
-            inl right_opened = !!!!LayoutIndex(right)
-            inl ~(r, s) = right_opened.value
-            if p =. 8i32 && !!!!EQ(q, "ok") && r =. 5i32 && !!!!EQ(s, "no") && flag =. 9i32 then 0i32 else 1i32
+            := inner_opened = !!!!LayoutIndex(inner)
+            := ~(inner_held, flag) = inner_opened::value
+            := deep_opened = !!!!LayoutIndex(inner_held)
+            := ~(left, right) = deep_opened::value
+            := left_opened = !!!!LayoutIndex(left)
+            := ~(p, q) = left_opened::value
+            := right_opened = !!!!LayoutIndex(right)
+            := ~(r, s) = right_opened::value
+            ? p =. 8i32 && !!!!EQ(q, "ok") && r =. 5i32 && !!!!EQ(s, "no") && flag =. 9i32 ?> 0i32 |: 1i32
 
-inl main () : i32 =
-    inl ~a0 = 7i32
-    inl ~b0 = "hi"
-    inl left_pair = a0, b0
-    inl left_heap = !!!!LayoutToHeap({ value = left_pair })
-    inl ~c0 = 4i32
-    inl ~d0 = "yo"
-    inl right_pair = c0, d0
-    inl right_heap = !!!!LayoutToHeap({ value = right_pair })
-    inl pair = left_heap, right_heap
-    inl inner = !!!!LayoutToHeap({ value = pair })
-    inl ~e0 = 2i32
-    inl outer_pair = inner, e0
-    inl outer = !!!!LayoutToHeap({ value = outer_pair })
-    inl held = Held outer
-    inl box = !!!!LayoutToHeap({ value = held })
-    inl wrapped = Box box
-    inl first = !!!!LayoutToHeap({ value = wrapped })
-    inl ~a1 = 8i32
-    inl ~b1 = "ok"
-    inl left_pair_b = a1, b1
-    inl left_heap_b = !!!!LayoutToHeap({ value = left_pair_b })
-    inl ~c1 = 5i32
-    inl ~d1 = "no"
-    inl right_pair_b = c1, d1
-    inl right_heap_b = !!!!LayoutToHeap({ value = right_pair_b })
-    inl pair_b = left_heap_b, right_heap_b
-    inl inner_b = !!!!LayoutToHeap({ value = pair_b })
-    inl ~e1 = 9i32
-    inl outer_pair_b = inner_b, e1
-    inl outer_b = !!!!LayoutToHeap({ value = outer_pair_b })
-    inl held_b = Held outer_b
-    inl box_b = !!!!LayoutToHeap({ value = held_b })
-    inl wrapped_b = Box box_b
-    inl second = !!!!LayoutToHeap({ value = wrapped_b })
-    inl values = create 2i32
+:= main () : i32 =
+    := ~a0 = 7i32
+    := ~b0 = "hi"
+    := left_pair = a0, b0
+    := left_heap = !!!!LayoutToHeap({ value = left_pair })
+    := ~c0 = 4i32
+    := ~d0 = "yo"
+    := right_pair = c0, d0
+    := right_heap = !!!!LayoutToHeap({ value = right_pair })
+    := pair = left_heap, right_heap
+    := inner = !!!!LayoutToHeap({ value = pair })
+    := ~e0 = 2i32
+    := outer_pair = inner, e0
+    := outer = !!!!LayoutToHeap({ value = outer_pair })
+    := held = Held outer
+    := box = !!!!LayoutToHeap({ value = held })
+    := wrapped = Box box
+    := first = !!!!LayoutToHeap({ value = wrapped })
+    := ~a1 = 8i32
+    := ~b1 = "ok"
+    := left_pair_b = a1, b1
+    := left_heap_b = !!!!LayoutToHeap({ value = left_pair_b })
+    := ~c1 = 5i32
+    := ~d1 = "no"
+    := right_pair_b = c1, d1
+    := right_heap_b = !!!!LayoutToHeap({ value = right_pair_b })
+    := pair_b = left_heap_b, right_heap_b
+    := inner_b = !!!!LayoutToHeap({ value = pair_b })
+    := ~e1 = 9i32
+    := outer_pair_b = inner_b, e1
+    := outer_b = !!!!LayoutToHeap({ value = outer_pair_b })
+    := held_b = Held outer_b
+    := box_b = !!!!LayoutToHeap({ value = held_b })
+    := wrapped_b = Box box_b
+    := second = !!!!LayoutToHeap({ value = wrapped_b })
+    := values = create 2i32
     set values 0i32 first
     set values 1i32 second
-    inl loaded0 = get values 0i32
-    inl loaded1 = get values 1i32
-    inl opened0 = !!!!LayoutIndex(loaded0)
-    inl opened1 = !!!!LayoutIndex(loaded1)
-    inl s0 = score opened0.value
-    inl s1 = score_b opened1.value
-    if s0 =. 0i32 && s1 =. 0i32 then 0i32 else 1i32
+    := loaded0 = get values 0i32
+    := loaded1 = get values 1i32
+    := opened0 = !!!!LayoutIndex(loaded0)
+    := opened1 = !!!!LayoutIndex(loaded1)
+    := s0 = score opened0::value
+    := s1 = score_b opened1::value
+    ? s0 =. 0i32 && s1 =. 0i32 ?> 0i32 |: 1i32

@@ -1,26 +1,26 @@
-nominal pending = ()
-nominal ready = ()
-nominal committed = ()
-nominal q0 = ()
-nominal q1 = ()
-nominal q2 = ()
-nominal parallel = ()
-nominal serial = ()
+:! pending = ()
+:! ready = ()
+:! committed = ()
+:! q0 = ()
+:! q1 = ()
+:! q2 = ()
+:! parallel = ()
+:! serial = ()
 
-union validation_evidence status =
+:| validation_evidence status =
     | PendingValidation :: validation_evidence pending
     | ReadyValidation :: string -> validation_evidence ready
 
-union receipt status =
+:| receipt status =
     | PendingReceipt :: receipt pending
     | CommittedReceipt :: string -> receipt committed
 
-union quorum state =
+:| quorum state =
     | EmptyQuorum :: quorum q0
     | OneApproval :: string -> quorum q1
     | TwoApprovals :: string * string -> quorum q2
 
-union task effect result =
+:| task effect result =
     | ValidateAll :: task parallel (validation_evidence ready)
     | QueryCommitted :: task parallel (receipt committed)
     | CollectQuorum :: task parallel (quorum q2)
@@ -28,47 +28,47 @@ union task effect result =
         validation_evidence ready * receipt committed * quorum q2
         -> task serial string
 
-union rec dag result =
-    | ParallelNode :: forall result. task parallel result -> dag result
-    | SerialNode :: forall result. task serial result -> dag result
-    | Zip :: forall a b. dag a * dag b -> dag (a * b)
-    | Map :: forall result.
-        (exists input. (input -> result) * dag input)
+:| ^ dag result =
+    | ParallelNode :: \* result. task parallel result -> dag result
+    | SerialNode :: \* result. task serial result -> dag result
+    | Zip :: \* a b. dag a * dag b -> dag (a * b)
+    | Map :: \* result.
+        (\? input. (input -> result) * dag input)
         -> dag result
-    | Then :: forall result.
-        (exists input. dag input * (input -> dag result))
+    | Then :: \* result.
+        (\? input. dag input * (input -> dag result))
         -> dag result
 
-inl run_task forall effect result. (task : task effect result) : result =
-    match task with
+:= run_task \* effect result. (task : task effect result) : result =
+    ?= task ?|
     | ValidateAll => ReadyValidation "validated"
     | QueryCommitted => CommittedReceipt "committed"
     | CollectQuorum => TwoApprovals ("fiscal", "security")
     | PublishAuthorized _ => "scheduled-authorized"
 
-inl rec run forall result. (program : dag result) : result =
-    match program with
+:= ^ run \* result. (program : dag result) : result =
+    ?= program ?|
     | ParallelNode task => run_task task
     | SerialNode task => run_task task
     | Zip (left, right) => run left, run right
     | Map packed =>
-        inl exists input. mapping, source = packed
+        := \? input. mapping, source = packed
         mapping (run source)
     | Then packed =>
-        inl exists input. source, next = packed
+        := \? input. source, next = packed
         run (next (run source))
 
-inl reshape
+:= reshape
     (data :
         (validation_evidence ready * receipt committed) *
         quorum q2)
     : validation_evidence ready * receipt committed * quorum q2 =
-    inl (evidence, receipt), quorum = data
+    := (evidence, receipt), quorum = data
     evidence, receipt, quorum
 
-inl plan () : dag string =
-    Then (exists (
-        Map (exists (
+:= plan () : dag string =
+    Then (\? (
+        Map (\? (
             reshape,
             Zip (
                 Zip (
@@ -78,9 +78,9 @@ inl plan () : dag string =
                 ParallelNode CollectQuorum
             )
         )),
-        fun proof =>
+        \ proof =>
             SerialNode (PublishAuthorized proof)
     ))
 
-inl main () : string =
+:= main () : string =
     run (plan ())

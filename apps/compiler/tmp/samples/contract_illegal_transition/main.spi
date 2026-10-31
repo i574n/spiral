@@ -1,20 +1,20 @@
-nominal draft = ()
-nominal authorized = ()
-nominal cancelled = ()
+:! draft = ()
+:! authorized = ()
+:! cancelled = ()
 
-nominal nfe_draft = { id : string }
-nominal nfe_authorized = { xml : string; protocol : string }
-nominal nfe_cancelled = { xml : string; reason : string }
+:! nfe_draft = { id : string }
+:! nfe_authorized = { xml : string; protocol : string }
+:! nfe_cancelled = { xml : string; reason : string }
 
-union document state =
+:| document state =
     | Draft :: nfe_draft -> document draft
     | Authorized :: nfe_authorized -> document authorized
     | Cancelled :: nfe_cancelled -> document cancelled
 
-inl cancel (document : document authorized) : document cancelled =
-    match document with
-    | Authorized payload => Cancelled (nfe_cancelled { xml = payload.xml; reason = "requested" })
+:= cancel (document : document authorized) : document cancelled =
+    ?= document ?|
+    | Authorized payload => Cancelled (nfe_cancelled { xml = payload::xml; reason = "requested" })
 
-inl main () =
-    inl draft = Draft (nfe_draft { id = "illegal" })
+:= main () =
+    := draft = Draft (nfe_draft { id = "illegal" })
     cancel draft

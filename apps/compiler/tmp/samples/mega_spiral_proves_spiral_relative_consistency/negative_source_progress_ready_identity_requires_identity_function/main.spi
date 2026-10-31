@@ -1,12 +1,12 @@
-open main
+:< main
 
-inl impossible_source_progress_ready_identity_requires_identity_function
+:= impossible_source_progress_ready_identity_requires_identity_function
     ()
     : exact_linear_indexed_closed_ready_beta_or_neutral
         (exact_linear_indexed_closed_source_application_ready_unit_tensor exact_linear_indexed_closed_source_unit)
         exact_linear_unit_type
     =
-    inl argument_source :
+    := argument_source :
         exact_linear_indexed_closed_value_source
             exact_linear_indexed_closed_source_unit
             exact_linear_unit_type =
@@ -18,5 +18,5 @@ inl impossible_source_progress_ready_identity_requires_identity_function
         ^^ "n-arbitrary-closed-Lambda"
     )
 
-inl main () =
+:= main () =
     impossible_source_progress_ready_identity_requires_identity_function ()

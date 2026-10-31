@@ -1,7 +1,7 @@
-open main
+:< main
 
-inl impossible_physical_lineage_existential_wrong_fixed_depth () : erp_p2p_fence_history nat_three =
-    inl physical_lineage =
+:= impossible_physical_lineage_existential_wrong_fixed_depth () : erp_p2p_fence_history nat_three =
+    := physical_lineage =
         ErpP2PPhysicalOwnerLineageTakeover (
             ErpP2PPhysicalOwnerLineageTakeover (
                 ErpP2PPhysicalOwnerLineageTakeover (ErpP2PPhysicalOwnerLineageGenesis "owner-a", "owner-b"),
@@ -9,10 +9,10 @@ inl impossible_physical_lineage_existential_wrong_fixed_depth () : erp_p2p_fence
             ),
             "owner-d"
         )
-    match erp_p2p_physical_owner_lineage_history_make physical_lineage with
+    ?= erp_p2p_physical_owner_lineage_history_make physical_lineage ?|
     | erp_p2p_physical_owner_lineage_history payload =>
-        inl exists fence. history = payload
+        := \? fence. history = payload
         history
 
-inl main () =
+:= main () =
     impossible_physical_lineage_existential_wrong_fixed_depth ()

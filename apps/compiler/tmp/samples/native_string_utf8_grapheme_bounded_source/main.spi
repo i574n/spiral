@@ -1,12 +1,12 @@
-inl main () : i32 =
-    inl full = sm.utf8_grapheme_count_bounded "Aéé☕️👍🏽Z"
-    inl leading = sm.utf8_grapheme_count_bounded "́̈A"
-    inl empty = sm.utf8_grapheme_count_bounded ""
-    inl resumed = sm.utf8_grapheme_count_bounded_from_byte_offset "Aé🙂Z" 4i32
-    if (=.) full 6i32 then
-        if (=.) leading 2i32 then
-            if (=.) empty 0i32 then
-                if (=.) resumed 2i32 then 0i32 else 4i32
-            else 3i32
-        else 2i32
-    else 1i32
+:= main () : i32 =
+    := full = sm::utf8_grapheme_count_bounded "Aéé☕️👍🏽Z"
+    := leading = sm::utf8_grapheme_count_bounded "́̈A"
+    := empty = sm::utf8_grapheme_count_bounded ""
+    := resumed = sm::utf8_grapheme_count_bounded_from_byte_offset "Aé🙂Z" 4i32
+    ? (=.) full 6i32 ?>
+        ? (=.) leading 2i32 ?>
+            ? (=.) empty 0i32 ?>
+                ? (=.) resumed 2i32 ?> 0i32 |: 4i32
+            |: 3i32
+        |: 2i32
+    |: 1i32

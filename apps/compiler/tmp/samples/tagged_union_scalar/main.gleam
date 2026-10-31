@@ -11,9 +11,7 @@ pub type Us0 {
 }
 pub fn score_0(v0: Us0) -> Int {
     case v0  {
-        Us0Hit(v1) -> {
-            v1
-        }
+        Us0Hit(v1) -> v1
         Us0Miss(v2) -> {
             let v3 = spiral_wrap_signed(0 - v2, 32)
             v3
@@ -24,12 +22,8 @@ pub fn main() {
     let v0 = True
     let v3 =
         case v0 {
-            True -> {
-                Us0Hit(7)
-            }
-            False -> {
-                Us0Miss(3)
-            }
+            True -> Us0Hit(7)
+            False -> Us0Miss(3)
         }
     let v4 = score_0(v3)
     let v5 = spiral_wrap_signed(v4 - 7, 32)

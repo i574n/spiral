@@ -1,38 +1,38 @@
-union payload =
+:| payload =
     | Empty
     | Values : array i32
 
-inl reserve ~(xs : array i32) ~(requested_capacity : i32) : () =
+:= reserve ~(xs : array i32) ~(requested_capacity : i32) : () =
     $'DynamicArrayReserve0(!xs,!requested_capacity)'
 
-inl capacity ~(xs : array i32) : i32 =
+:= capacity ~(xs : array i32) : i32 =
     $'DynamicArrayCapacity0(!xs)'
 
-inl refcount ~(xs : array i32) : i32 =
+:= refcount ~(xs : array i32) : i32 =
     $'DynamicArrayRefCount0(!xs)'
 
-let observe x : i32 =
-    match x with
+:~ observe x : i32 =
+    ?= x ?|
     | Empty => 70i32
-    | Values values => join capacity values +. join refcount values
+    | Values values => ~~ capacity values +. ~~ refcount values
 
-inl main () : i32 =
-    inl ~values : array i32 = create 0i32
-    join reserve values 1i32
-    inl ~c1 = join capacity values
-    join reserve values 2i32
-    inl ~c2 = join capacity values
-    join reserve values 3i32
-    inl ~c3 = join capacity values
-    join reserve values 5i32
-    inl ~c4 = join capacity values
-    join reserve values 9i32
-    inl ~c5 = join capacity values
-    inl ~refs_before = join refcount values
-    inl ~alias = values
-    inl wrapped = Values values
-    inl ~observed = observe wrapped
-    inl ~refs_after = join refcount alias
+:= main () : i32 =
+    := ~values : array i32 = create 0i32
+    ~~ reserve values 1i32
+    := ~c1 = ~~ capacity values
+    ~~ reserve values 2i32
+    := ~c2 = ~~ capacity values
+    ~~ reserve values 3i32
+    := ~c3 = ~~ capacity values
+    ~~ reserve values 5i32
+    := ~c4 = ~~ capacity values
+    ~~ reserve values 9i32
+    := ~c5 = ~~ capacity values
+    := ~refs_before = ~~ refcount values
+    := ~alias = values
+    := wrapped = Values values
+    := ~observed = observe wrapped
+    := ~refs_after = ~~ refcount alias
     (c1 -. 1i32)
     +. (c2 -. 2i32)
     +. (c3 -. 4i32)

@@ -1,15 +1,15 @@
-inl main () : i32 =
-    inl ~x = 1.5f32
-    inl ~word = "hi"
-    inl pair = x, word
-    inl box = !!!!LayoutToHeap({ value = pair })
-    inl f (z : i32) : heap { value : f32 * string } =
-        if z =. 0i32 then
+:= main () : i32 =
+    := ~x = 1.5f32
+    := ~word = "hi"
+    := pair = x, word
+    := box = !!!!LayoutToHeap({ value = pair })
+    := f (z : i32) : heap { value : f32 * string } =
+        ? z =. 0i32 ?>
             box
-        else
+        |:
             box
-    inl ~g = f
-    inl held = g 1i32
-    inl opened = !!!!LayoutIndex(held)
-    inl ~(left, right) = opened.value
-    if left =. 1.5f32 && !!!!EQ(right, "hi") then 0i32 else 1i32
+    := ~g = f
+    := held = g 1i32
+    := opened = !!!!LayoutIndex(held)
+    := ~(left, right) = opened::value
+    ? left =. 1.5f32 && !!!!EQ(right, "hi") ?> 0i32 |: 1i32

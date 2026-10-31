@@ -13,10 +13,10 @@ func sp_method0(_ p0: Int32, _ p1: UInt32, _ p2: Float) -> Int32 {
     var v3: Int32 = 0
     var v4: UInt32 = UInt32(0)
     var v5: Float = (0.0 as Float)
-    let spiral_tuple232 = sp_method1(v0, v1, v2)
-    v3 = spiral_tuple232.0
-    v4 = spiral_tuple232.1
-    v5 = spiral_tuple232.2
+    let spiral_tuple225 = sp_method1(v0, v1, v2)
+    v3 = spiral_tuple225.0
+    v4 = spiral_tuple225.1
+    v5 = spiral_tuple225.2
     let v6: Bool = (v3 == 2)
     var v8: Bool = false
     if (v6) {

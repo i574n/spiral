@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_legacy_application_function_result () : corrected_cic_term empty_ctx identity_sort =
-    CorrectedApplication (exists (corrected_cic_identity (), corrected_cic_true ()))
+:= impossible_legacy_application_function_result () : corrected_cic_term empty_ctx identity_sort =
+    CorrectedApplication (\? (corrected_cic_identity (), corrected_cic_true ()))
 
-inl main () = impossible_legacy_application_function_result ()
+:= main () = impossible_legacy_application_function_result ()

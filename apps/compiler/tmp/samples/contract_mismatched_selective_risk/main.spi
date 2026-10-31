@@ -1,18 +1,18 @@
-nominal low = ()
-nominal high = ()
+:! low = ()
+:! high = ()
 
-union risk level =
+:| risk level =
     | LowRisk :: risk low
     | HighRisk :: risk high
 
-union review level result =
+:| review level result =
     | AutoApprove :: review low string
     | ManualApprove :: string -> review high string
 
-union route result =
-    | Route :: forall result.
-        (exists level. risk level * review level result)
+:| route result =
+    | Route :: \* result.
+        (\? level. risk level * review level result)
         -> route result
 
-inl main () : route string =
-    Route (exists (LowRisk, ManualApprove "wrong-branch"))
+:= main () : route string =
+    Route (\? (LowRisk, ManualApprove "wrong-branch"))

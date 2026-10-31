@@ -1,11 +1,11 @@
-open main
+:< main
 
-inl impossible_corrected_cic_programmed_dependent_application_result_mismatch () :
+:= impossible_corrected_cic_programmed_dependent_application_result_mismatch () :
     corrected_cic_programmed_dependent_application
         (corrected_cic_substituted_codomain
             corrected_cic_identity_codomain_code
             corrected_cic_closed_type_code_sort_zero) =
     corrected_cic_programmed_unary_bool_application ()
 
-inl main () =
+:= main () =
     impossible_corrected_cic_programmed_dependent_application_result_mismatch ()

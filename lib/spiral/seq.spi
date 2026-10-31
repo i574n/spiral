@@ -235,8 +235,7 @@ test take_while_4 =
     |> stream.memoize
     |> \ list =>
         := list = list ()
-        \ n =>
-            list |> stream.try_item n
+        \ n => list |> stream.try_item n
     |> take_while_ (\ n (_ : i32) => n < 5i32)
     |> listm'.sum
     |> _assert_eq 10
@@ -246,8 +245,7 @@ test take_while_5 =
     |> stream.memoize
     |> \ list =>
         := list = list ()
-        \ n =>
-            list |> stream.try_item n
+        \ n => list |> stream.try_item n
     |> take_while_ (\ n (_ : i32) => n < 5)
     |> listm'.sum
     |> _assert_eq 10
@@ -259,16 +257,15 @@ test take_while_5 =
         ?= *state |> listm'.try_find_ (\ (n', _) => n' = n) ?|
         | Some (_, v) => v
         | None =>
-            := new_state = seq n
-            state <- (n, new_state) :: *state
-            new_state
+            := fresh = seq n
+            state <- (n, fresh) :: *state
+            fresh
 
 := memoize seq = memoize_ seq
 
 test memoize =
     := seq =
-        \ n =>
-            n |> print_and_return |> Some
+        \ n => n |> print_and_return |> Some
         |> memoize_
 
     seq

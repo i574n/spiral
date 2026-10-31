@@ -1,11 +1,11 @@
-open main
+:< main
 
-inl impossible_membership_accessibility_authority_candidate_mismatch () :
+:= impossible_membership_accessibility_authority_candidate_mismatch () :
     certified_interval_positive_positional_membership_accessibility_authority
         positional_one
         (positional_one_bit positional_one)
         (z_nat_succ z_nat_zero) =
-    inl membership :
+    := membership :
         certified_interval_positive_positional_factor_membership
             (positional_zero_bit positional_one)
             (positional_one_bit positional_one)
@@ -18,5 +18,5 @@ inl impossible_membership_accessibility_authority_candidate_mismatch () :
     derive_certified_interval_positive_positional_membership_accessibility_authority
         membership
 
-inl main () =
+:= main () =
     impossible_membership_accessibility_authority_candidate_mismatch ()

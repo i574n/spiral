@@ -1,12 +1,12 @@
-inl main () : i32 =
-    inl ~n = 7i32
-    inl cell = !!!!LayoutToHeap({ value = n })
-    inl f (z : i32) : i32 -> i32 =
-        inl g (x : i32) : i32 =
-            inl obj = !!!!LayoutIndex(cell)
-            if z =. 0i32 then 0i32 else obj.value
+:= main () : i32 =
+    := ~n = 7i32
+    := cell = !!!!LayoutToHeap({ value = n })
+    := f (z : i32) : i32 -> i32 =
+        := g (x : i32) : i32 =
+            := obj = !!!!LayoutIndex(cell)
+            ? z =. 0i32 ?> 0i32 |: obj::value
         g
-    inl ~h = f
-    inl inner = h 1i32
-    inl ~k = inner
-    if k 0i32 =. 7i32 then 0i32 else 1i32
+    := ~h = f
+    := inner = h 1i32
+    := ~k = inner
+    ? k 0i32 =. 7i32 ?> 0i32 |: 1i32

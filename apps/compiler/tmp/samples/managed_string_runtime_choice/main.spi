@@ -1,10 +1,10 @@
-let choose (flag : bool) : string =
-    if flag then "alpha" else "beta"
+:~ choose (flag : bool) : string =
+    ? flag ?> "alpha" |: "beta"
 
-let measure (x : string) : i32 = sm.length x
+:~ measure (x : string) : i32 = sm::length x
 
-inl main () =
-    inl first = choose true
-    inl second = choose false
-    inl score = measure first +. measure first +. measure second
+:= main () =
+    := first = choose !+
+    := second = choose !-
+    := score = measure first +. measure first +. measure second
     score -. 14i32

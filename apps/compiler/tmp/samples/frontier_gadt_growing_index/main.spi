@@ -1,10 +1,10 @@
-nominal zero = ()
-nominal succ n = ()
+:! zero = ()
+:! succ n = ()
 
-union rec transcript pending =
+:| ^ transcript pending =
     | Done :: transcript zero
-    | Result :: forall n. i32 * transcript (succ n) -> transcript n
+    | Result :: \* n. i32 * transcript (succ n) -> transcript n
 
-inl main () : i32 =
-    inl t : transcript zero = Done
+:= main () : i32 =
+    := t : transcript zero = Done
     7i32

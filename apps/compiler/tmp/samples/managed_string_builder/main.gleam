@@ -44,9 +44,7 @@ pub fn method2(v0: Int, v1: String, v2: String) -> String {
     let v4 = { v1 } <> { v2 }
     let v5 = v3 == 0
     case v5 {
-        True -> {
-            v4
-        }
+        True -> v4
         False -> {
             let v6 = v3 % 2
             let v7 = v6 == 0
@@ -70,9 +68,7 @@ pub fn method1(v0: Int, v1: String) -> String {
     let v3 = { "" } <> { v1 }
     let v4 = v2 == 0
     case v4 {
-        True -> {
-            v3
-        }
+        True -> v3
         False -> {
             let v5 = v2 % 2
             let v6 = v5 == 0
@@ -130,21 +126,13 @@ pub fn main() {
                     let v5 = spiral_string_index(v0, 5)
                     let v6 = v5 == "c"
                     case v6 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 }
-                False -> {
-                    2
-                }
+                False -> 2
             }
         }
-        False -> {
-            3
-        }
+        False -> 3
     }
 }

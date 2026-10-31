@@ -1,8 +1,8 @@
-inl add (a : i32) (b : i32) : i32 = a +. b
+:= add (a : i32) (b : i32) : i32 = a +. b
 
-inl main () : i32 =
-    inl ~x = 1i32
-    inl ~y = 2i32
-    inl f (z : i32) : i32 = add x y +. z
-    inl ~g = f
+:= main () : i32 =
+    := ~x = 1i32
+    := ~y = 2i32
+    := f (z : i32) : i32 = add x y +. z
+    := ~g = f
     g 39i32

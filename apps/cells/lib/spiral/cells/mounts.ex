@@ -59,7 +59,7 @@ defmodule Spiral.Cells.Mounts do
 
   @spec share_mounted_deps?(String.t(), [String.t()]) :: boolean()
   def share_mounted_deps?(target, sibling_names) do
-    text = File.read!(Path.join(target, "package.spiproj"))
+    text = Spiral.Cells.Manifest.read!(target)
 
     case Regex.run(~r/^packageDir:\s*(.+)$/m, text) do
       [_, _dir] ->
@@ -111,8 +111,8 @@ defmodule Spiral.Cells.Mounts do
       |> Enum.map_join("\n", fn entry ->
         stamp =
           case entry.kind do
-            :shadow -> "\t#{mtime(Path.join(entry.target, "package.spiproj"))}"
-            :patched -> "\t#{mtime(Path.join(entry.target, "package.spiproj"))}\t#{patches_digest({entry.package_dir, entry.patches})}"
+            :shadow -> "\t#{mtime(Spiral.Cells.Manifest.path(entry.target))}"
+            :patched -> "\t#{mtime(Spiral.Cells.Manifest.path(entry.target))}\t#{patches_digest({entry.package_dir, entry.patches})}"
             :link -> ""
           end
 
@@ -160,7 +160,7 @@ defmodule Spiral.Cells.Mounts do
 
   defp shadow(link, target, skipped \\ MapSet.new(), package_dir \\ :siblings) do
     File.mkdir_p!(link)
-    text = File.read!(Path.join(target, "package.spiproj"))
+    text = Spiral.Cells.Manifest.read!(target)
     rewritten = project_for_mount(text, target, package_dir)
     File.write!(Path.join(link, "package.spiproj"), rewritten)
     File.write!(Path.join(link, "spiral_cells_shadow"), "")
@@ -168,7 +168,7 @@ defmodule Spiral.Cells.Mounts do
     case File.ls(target) do
       {:ok, names} ->
         Enum.reduce_while(names, :ok, fn name, :ok ->
-          if name == "package.spiproj" or MapSet.member?(skipped, name) do
+          if name in Spiral.Cells.Manifest.names() or MapSet.member?(skipped, name) do
             {:cont, :ok}
           else
             case make_link(Path.join(link, name), Path.join(target, name)) do
@@ -282,7 +282,7 @@ defmodule Spiral.Cells.Mounts do
   end
 
   defp source?(name) do
-    name == "package.spiproj" or String.ends_with?(name, ".spi") or
+    name in Spiral.Cells.Manifest.names() or String.ends_with?(name, ".spi") or
       String.ends_with?(name, ".spir")
   end
 
@@ -297,7 +297,7 @@ defmodule Spiral.Cells.Mounts do
 
   @spec declared_dependencies(String.t()) :: [%{name: String.t(), target: String.t(), import: String.t()}]
   def declared_dependencies(dir) do
-    case File.read(Path.join(dir, "package.spiproj")) do
+    case Spiral.Cells.Manifest.read(dir) do
       {:ok, text} ->
         base = package_base(dir, text)
 
@@ -315,7 +315,7 @@ defmodule Spiral.Cells.Mounts do
 
   @spec declared_crates(String.t()) :: [String.t()]
   def declared_crates(dir) do
-    case File.read(Path.join(dir, "package.spiproj")) do
+    case Spiral.Cells.Manifest.read(dir) do
       {:ok, text} ->
         {crates, _mode} =
           Enum.reduce(String.split(text, ~r/\r?\n/), {[], :out}, fn line, {crates, mode} ->
@@ -363,7 +363,7 @@ defmodule Spiral.Cells.Mounts do
     {named, found, queue} =
       Enum.reduce(declared_dependencies(dir), {named, found, rest}, fn dependency, {named, found, queue} ->
         if MapSet.member?(named, dependency.name) or
-             not File.regular?(Path.join(dependency.target, "package.spiproj")) do
+             not Spiral.Cells.Manifest.exists?(dependency.target) do
           {named, found, queue}
         else
           {MapSet.put(named, dependency.name), [{dependency.target, dependency.name} | found],

@@ -10,13 +10,13 @@ fn f_c0(mut v0: Rc<RefCell<Mut0>>) -> Rc<dyn Fn(i32) -> Rc<RefCell<Mut0>>> {
 fn spiral_main() -> i32 {
     let v0: i32 = 3i32;
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
-    let v2: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v0, l1: v1.clone() }));
-    let mut v3: Rc<dyn Fn(i32) -> Rc<RefCell<Mut0>>> = f_c0(v2.clone());
+    let v2: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v0, l1: v1 }));
+    let mut v3: Rc<dyn Fn(i32) -> Rc<RefCell<Mut0>>> = f_c0(v2);
     let mut v4: Rc<RefCell<Mut0>> = v3(1i32);
     let v5: i32 = 7i32;
     let v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
     v4.borrow_mut().l0 = v5;
-    v4.borrow_mut().l1 = v6.clone();
+    v4.borrow_mut().l1 = v6;
     let (mut v7, mut v8): (i32, Rc<str>) = (v4.borrow().l0.clone(), v4.borrow().l1.clone());
     let v9: bool = v7 == 7i32;
     let v11: bool = if v9 {

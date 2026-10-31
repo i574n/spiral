@@ -10,11 +10,11 @@ fn method3(mut v0: Rc<RefCell<Mut0>>, mut v1: Rc<str>) -> () {
 }
 fn format_real_2(mut v0: i32) -> Rc<str> {
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-    let v2: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v1.clone() }));
+    let v2: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v1 }));
     let v3: Rc<str> = Rc::<str>::from(format!("{}", v0));
-    method3(v2.clone(), v3.clone());
+    method3(v2.clone(), v3);
     let v4: Rc<str> = v2.borrow().l0.clone();
-    v4.clone()
+    v4
 }
 fn method1() -> Rc<str> {
     let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Some"); } LIT.with(|lit| lit.clone()) };
@@ -25,13 +25,13 @@ fn method1() -> Rc<str> {
     let v5: Rc<str> = Rc::<str>::from(format!("{}{}", v2, v4));
     let v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(")"); } LIT.with(|lit| lit.clone()) };
     let v7: Rc<str> = Rc::<str>::from(format!("{}{}", v5, v6));
-    v7.clone()
+    v7
 }
 fn method0() -> Rc<str> {
     let mut v0: Rc<str> = method1();
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("x: "); } LIT.with(|lit| lit.clone()) };
     let v2: Rc<str> = Rc::<str>::from(format!("{}{}", v1, v0));
-    v2.clone()
+    v2
 }
 fn spiral_main() -> i32 {
     let mut v0: Rc<str> = method0();

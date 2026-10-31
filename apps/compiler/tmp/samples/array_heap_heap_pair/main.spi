@@ -1,46 +1,46 @@
-nominal cell_array =
+:! cell_array =
     array_base (heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
 
-inl create (n : i32) : cell_array =
+:= create (n : i32) : cell_array =
     cell_array
         !!!!ArrayCreate(`(heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 }), n)
-inl get
+:= get
     (array : cell_array) (i : i32)
     : heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 }
     =
-    match array with
+    ?= array ?|
     | cell_array values => !!!!ArrayIndex(values, i)
-inl set
+:= set
     (array : cell_array) (i : i32)
     (value : heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
     : ()
     =
-    match array with
+    ?= array ?|
     | cell_array values => !!!!ArrayIndexSet(values, i, value)
 
-inl main () : i32 =
-    inl ~n = 7i32
-    inl ~word = "hi"
-    inl left_pair = n, word
-    inl left_heap = !!!!LayoutToHeap({ value = left_pair })
-    inl ~m = 4i32
-    inl ~other = "yo"
-    inl right_pair = m, other
-    inl right_heap = !!!!LayoutToHeap({ value = right_pair })
-    inl pair = left_heap, right_heap
-    inl inner = !!!!LayoutToHeap({ value = pair })
-    inl ~mark = 2i32
-    inl outer_pair = inner, mark
-    inl outer = !!!!LayoutToHeap({ value = outer_pair })
-    inl a = create 1i32
+:= main () : i32 =
+    := ~n = 7i32
+    := ~word = "hi"
+    := left_pair = n, word
+    := left_heap = !!!!LayoutToHeap({ value = left_pair })
+    := ~m = 4i32
+    := ~other = "yo"
+    := right_pair = m, other
+    := right_heap = !!!!LayoutToHeap({ value = right_pair })
+    := pair = left_heap, right_heap
+    := inner = !!!!LayoutToHeap({ value = pair })
+    := ~mark = 2i32
+    := outer_pair = inner, mark
+    := outer = !!!!LayoutToHeap({ value = outer_pair })
+    := a = create 1i32
     set a 0i32 outer
-    inl held = get a 0i32
-    inl opened = !!!!LayoutIndex(held)
-    inl ~(inner_held, flag) = opened.value
-    inl inner_opened = !!!!LayoutIndex(inner_held)
-    inl ~(left, right) = inner_opened.value
-    inl left_opened = !!!!LayoutIndex(left)
-    inl ~(p, q) = left_opened.value
-    inl right_opened = !!!!LayoutIndex(right)
-    inl ~(r, s) = right_opened.value
-    if p =. 7i32 && !!!!EQ(q, "hi") && r =. 4i32 && !!!!EQ(s, "yo") && flag =. 2i32 then 0i32 else 1i32
+    := held = get a 0i32
+    := opened = !!!!LayoutIndex(held)
+    := ~(inner_held, flag) = opened::value
+    := inner_opened = !!!!LayoutIndex(inner_held)
+    := ~(left, right) = inner_opened::value
+    := left_opened = !!!!LayoutIndex(left)
+    := ~(p, q) = left_opened::value
+    := right_opened = !!!!LayoutIndex(right)
+    := ~(r, s) = right_opened::value
+    ? p =. 7i32 && !!!!EQ(q, "hi") && r =. 4i32 && !!!!EQ(s, "yo") && flag =. 2i32 ?> 0i32 |: 1i32

@@ -1,14 +1,14 @@
-union bit =
+:| bit =
     | Zero
     | One
 
-nominal wrapped = bit
+:! wrapped = bit
 
-inl classify (value : wrapped) : bool =
-    match value with
-    | wrapped Zero => true
-    | wrapped One => false
+:= classify (value : wrapped) : bool =
+    ?= value ?|
+    | wrapped Zero => !+
+    | wrapped One => !-
 
-inl main () : i32 =
-    inl ~value = wrapped Zero
-    if classify value then 0i32 else 1i32
+:= main () : i32 =
+    := ~value = wrapped Zero
+    ? classify value ?> 0i32 |: 1i32

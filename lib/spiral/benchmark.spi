@@ -17,7 +17,7 @@ test benchmark static =
 
 /// ### run'
 := run' \* t. count (fn : () -> t) =
-    runtime.gc_collect ()
+    process.gc_collect ()
     := stopwatch = date_time.stopwatch ()
     stopwatch |> date_time.stopwatch_start
     := time1 = stopwatch |> date_time.stopwatch_elapsed_milliseconds

@@ -234,14 +234,13 @@ test threading static =
     !\\((sender, line), $'"$0.send($1)"')
 
 /// ## fsharp
+:= rust_sleep_ms (ms : u64) : () = $'std::thread::sleep(std::time::Duration::from_millis(!ms))' : ()
 
 /// ### sleep
 := sleep (n : i32) : () =
     run_target \|
         | Fsharp => \ () => $'System.Threading.Thread.Sleep' n
-        | Rust => \ () =>
-            := ms : u64 = conv n
-            $'std::thread::sleep(std::time::Duration::from_millis(!ms))' : ()
+        | Rust => \ () => rust_sleep_ms (conv n)
         | _ => \ () => ()
 
 /// ### thread
@@ -304,12 +303,13 @@ test threading static =
     ?> $'!x.clone()'
     |: $'!x.Token'
 
+:= rust_cancel (x : cancellation_token_source) : () = $'!x.store(true, std::sync::atomic::Ordering::SeqCst)' : ()
+
 /// ### cancellation_source_cancel
 := cancellation_source_cancel (x : cancellation_token_source) : () =
     run_target \|
-        | Fsharp => \ () =>
-            $'!x.Cancel' ()
-        | Rust => \ () => $'!x.store(true, std::sync::atomic::Ordering::SeqCst)' : ()
+        | Fsharp => \ () => $'!x.Cancel' ()
+        | Rust => \ () => rust_cancel x
         | _ => \ () => null ()
 
 /// ### create_linked_token_source
@@ -329,6 +329,17 @@ test threading static =
     ? is_rust ()
     ?> $'!ct.load(std::sync::atomic::Ordering::SeqCst)'
     |: $'!ct.IsCancellationRequested'
+
+:= cancelled_after_a_sleep (source : cancellation_token_source) : bool =
+    cancellation_source_cancel source
+    sleep 1i32
+    cancellation_source_token source |> token_cancellation_requested
+
+///> rust
+test a_cancelled_source_marks_its_token_after_a_sleep =
+    := source = new_cancellation_token_source ()
+    := before = cancellation_source_token source |> token_cancellation_requested
+    (before, cancelled_after_a_sleep source) |> _assert_eq (!-, !+)
 
 /// ### new_disposable_token
 := new_disposable_token (merge_token : optionm'.option' cancellation_token) =

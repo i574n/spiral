@@ -484,17 +484,17 @@ fn make_cat_9(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> Rc<UH0> {
                                         UH0::UH0_RegexCat(v12, v13) => {
                                             let v12: Rc<UH0> = v12.clone();
                                             let v13: Rc<UH0> = v13.clone();
-                                            let v14: Rc<UH0> = make_cat_9(v13.clone(), v1.clone());
-                                            Rc::new(UH0::UH0_RegexCat(v12.clone(), v14.clone()))
+                                            let v14: Rc<UH0> = make_cat_9(v13, v1.clone());
+                                            Rc::new(UH0::UH0_RegexCat(v12, v14))
                                         }
                                         UH0::UH0_RegexStar(v4) => {
                                             let v4: Rc<UH0> = v4.clone();
                                             match &*v1 {
                                                 UH0::UH0_RegexStar(v5) => {
                                                     let v5: Rc<UH0> = v5.clone();
-                                                    let v6: bool = regex_equal_10(v4.clone(), v5.clone());
+                                                    let v6: bool = regex_equal_10(v4.clone(), v5);
                                                     if v6 {
-                                                        Rc::new(UH0::UH0_RegexStar(v4.clone()))
+                                                        Rc::new(UH0::UH0_RegexStar(v4))
                                                     } else {
                                                         Rc::new(UH0::UH0_RegexCat(v0.clone(), v1.clone()))
                                                     }
@@ -505,7 +505,7 @@ fn make_cat_9(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> Rc<UH0> {
                                             }
                                         }
                                         _ => {
-                                            Rc::new(UH0::UH0_RegexCat(v0.clone(), v1.clone()))
+                                            Rc::new(UH0::UH0_RegexCat(v0, v1))
                                         }
                                     }
                                 }
@@ -527,10 +527,10 @@ fn make_star_11(mut v0: Rc<UH0>) -> Rc<UH0> {
         }
         UH0::UH0_RegexStar(v3) => {
             let v3: Rc<UH0> = v3.clone();
-            Rc::new(UH0::UH0_RegexStar(v3.clone()))
+            Rc::new(UH0::UH0_RegexStar(v3))
         }
         _ => {
-            Rc::new(UH0::UH0_RegexStar(v0.clone()))
+            Rc::new(UH0::UH0_RegexStar(v0))
         }
     }
 }
@@ -539,20 +539,20 @@ fn normalize_5(mut v0: Rc<UH0>) -> Rc<UH0> {
         UH0::UH0_RegexAlt(v5, v6) => {
             let v5: Rc<UH0> = v5.clone();
             let v6: Rc<UH0> = v6.clone();
-            let v7: Rc<UH0> = normalize_5(v5.clone());
-            let v8: Rc<UH0> = normalize_5(v6.clone());
-            make_alt_6(v7.clone(), v8.clone())
+            let v7: Rc<UH0> = normalize_5(v5);
+            let v8: Rc<UH0> = normalize_5(v6);
+            make_alt_6(v7, v8)
         }
         UH0::UH0_RegexCat(v10, v11) => {
             let v10: Rc<UH0> = v10.clone();
             let v11: Rc<UH0> = v11.clone();
-            let v12: Rc<UH0> = normalize_5(v10.clone());
-            let v13: Rc<UH0> = normalize_5(v11.clone());
-            make_cat_9(v12.clone(), v13.clone())
+            let v12: Rc<UH0> = normalize_5(v10);
+            let v13: Rc<UH0> = normalize_5(v11);
+            make_cat_9(v12, v13)
         }
         UH0::UH0_RegexChar(v3) => {
             let v3: US0 = v3.clone();
-            Rc::new(UH0::UH0_RegexChar(v3.clone()))
+            Rc::new(UH0::UH0_RegexChar(v3))
         }
         UH0::UH0_RegexEmpty => {
             { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_RegexEmpty); } CASE.with(|case| case.clone()) }
@@ -562,8 +562,8 @@ fn normalize_5(mut v0: Rc<UH0>) -> Rc<UH0> {
         }
         UH0::UH0_RegexStar(v15) => {
             let v15: Rc<UH0> = v15.clone();
-            let v16: Rc<UH0> = normalize_5(v15.clone());
-            make_star_11(v16.clone())
+            let v16: Rc<UH0> = normalize_5(v15);
+            make_star_11(v16)
         }
     }
 }
@@ -642,9 +642,9 @@ fn derivative_12(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
         UH0::UH0_RegexAlt(v19, v20) => {
             let v19: Rc<UH0> = v19.clone();
             let v20: Rc<UH0> = v20.clone();
-            let v21: Rc<UH0> = derivative_12(v19.clone(), v1.clone());
-            let v22: Rc<UH0> = derivative_12(v20.clone(), v1.clone());
-            make_alt_6(v21.clone(), v22.clone())
+            let v21: Rc<UH0> = derivative_12(v19, v1.clone());
+            let v22: Rc<UH0> = derivative_12(v20, v1.clone());
+            make_alt_6(v21, v22)
         }
         UH0::UH0_RegexCat(v24, v25) => {
             let v24: Rc<UH0> = v24.clone();
@@ -653,13 +653,13 @@ fn derivative_12(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
             match &v26 {
                 US2::US2_NonNullable => {
                     let v31: Rc<UH0> = derivative_12(v24.clone(), v1.clone());
-                    make_cat_9(v31.clone(), v25.clone())
+                    make_cat_9(v31, v25.clone())
                 }
                 US2::US2_Nullable => {
-                    let v27: Rc<UH0> = derivative_12(v24.clone(), v1.clone());
-                    let v28: Rc<UH0> = make_cat_9(v27.clone(), v25.clone());
-                    let v29: Rc<UH0> = derivative_12(v25.clone(), v1.clone());
-                    make_alt_6(v28.clone(), v29.clone())
+                    let v27: Rc<UH0> = derivative_12(v24, v1.clone());
+                    let v28: Rc<UH0> = make_cat_9(v27, v25.clone());
+                    let v29: Rc<UH0> = derivative_12(v25, v1.clone());
+                    make_alt_6(v28, v29)
                 }
             }
         }
@@ -709,9 +709,9 @@ fn derivative_12(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
         }
         UH0::UH0_RegexStar(v35) => {
             let v35: Rc<UH0> = v35.clone();
-            let v36: Rc<UH0> = derivative_12(v35.clone(), v1.clone());
-            let v37: Rc<UH0> = make_star_11(v35.clone());
-            make_cat_9(v36.clone(), v37.clone())
+            let v36: Rc<UH0> = derivative_12(v35.clone(), v1);
+            let v37: Rc<UH0> = make_star_11(v35);
+            make_cat_9(v36, v37)
         }
     }
 }
@@ -1406,17 +1406,17 @@ fn make_cat_24(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
                                         UH2::UH2_RegexCat(v12, v13) => {
                                             let v12: Rc<UH2> = v12.clone();
                                             let v13: Rc<UH2> = v13.clone();
-                                            let v14: Rc<UH2> = make_cat_24(v13.clone(), v1.clone());
-                                            Rc::new(UH2::UH2_RegexCat(v12.clone(), v14.clone()))
+                                            let v14: Rc<UH2> = make_cat_24(v13, v1.clone());
+                                            Rc::new(UH2::UH2_RegexCat(v12, v14))
                                         }
                                         UH2::UH2_RegexStar(v4) => {
                                             let v4: Rc<UH2> = v4.clone();
                                             match &*v1 {
                                                 UH2::UH2_RegexStar(v5) => {
                                                     let v5: Rc<UH2> = v5.clone();
-                                                    let v6: bool = regex_equal_25(v4.clone(), v5.clone());
+                                                    let v6: bool = regex_equal_25(v4.clone(), v5);
                                                     if v6 {
-                                                        Rc::new(UH2::UH2_RegexStar(v4.clone()))
+                                                        Rc::new(UH2::UH2_RegexStar(v4))
                                                     } else {
                                                         Rc::new(UH2::UH2_RegexCat(v0.clone(), v1.clone()))
                                                     }
@@ -1427,7 +1427,7 @@ fn make_cat_24(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
                                             }
                                         }
                                         _ => {
-                                            Rc::new(UH2::UH2_RegexCat(v0.clone(), v1.clone()))
+                                            Rc::new(UH2::UH2_RegexCat(v0, v1))
                                         }
                                     }
                                 }
@@ -1449,10 +1449,10 @@ fn make_star_26(mut v0: Rc<UH2>) -> Rc<UH2> {
         }
         UH2::UH2_RegexStar(v3) => {
             let v3: Rc<UH2> = v3.clone();
-            Rc::new(UH2::UH2_RegexStar(v3.clone()))
+            Rc::new(UH2::UH2_RegexStar(v3))
         }
         _ => {
-            Rc::new(UH2::UH2_RegexStar(v0.clone()))
+            Rc::new(UH2::UH2_RegexStar(v0))
         }
     }
 }
@@ -1461,20 +1461,20 @@ fn normalize_20(mut v0: Rc<UH2>) -> Rc<UH2> {
         UH2::UH2_RegexAlt(v5, v6) => {
             let v5: Rc<UH2> = v5.clone();
             let v6: Rc<UH2> = v6.clone();
-            let v7: Rc<UH2> = normalize_20(v5.clone());
-            let v8: Rc<UH2> = normalize_20(v6.clone());
-            make_alt_21(v7.clone(), v8.clone())
+            let v7: Rc<UH2> = normalize_20(v5);
+            let v8: Rc<UH2> = normalize_20(v6);
+            make_alt_21(v7, v8)
         }
         UH2::UH2_RegexCat(v10, v11) => {
             let v10: Rc<UH2> = v10.clone();
             let v11: Rc<UH2> = v11.clone();
-            let v12: Rc<UH2> = normalize_20(v10.clone());
-            let v13: Rc<UH2> = normalize_20(v11.clone());
-            make_cat_24(v12.clone(), v13.clone())
+            let v12: Rc<UH2> = normalize_20(v10);
+            let v13: Rc<UH2> = normalize_20(v11);
+            make_cat_24(v12, v13)
         }
         UH2::UH2_RegexChar(v3) => {
             let v3: US3 = v3.clone();
-            Rc::new(UH2::UH2_RegexChar(v3.clone()))
+            Rc::new(UH2::UH2_RegexChar(v3))
         }
         UH2::UH2_RegexEmpty => {
             { thread_local!{ static CASE: Rc<UH2> = Rc::new(UH2::UH2_RegexEmpty); } CASE.with(|case| case.clone()) }
@@ -1484,8 +1484,8 @@ fn normalize_20(mut v0: Rc<UH2>) -> Rc<UH2> {
         }
         UH2::UH2_RegexStar(v15) => {
             let v15: Rc<UH2> = v15.clone();
-            let v16: Rc<UH2> = normalize_20(v15.clone());
-            make_star_26(v16.clone())
+            let v16: Rc<UH2> = normalize_20(v15);
+            make_star_26(v16)
         }
     }
 }
@@ -1564,9 +1564,9 @@ fn derivative_27(mut v0: Rc<UH2>, mut v1: US3) -> Rc<UH2> {
         UH2::UH2_RegexAlt(v25, v26) => {
             let v25: Rc<UH2> = v25.clone();
             let v26: Rc<UH2> = v26.clone();
-            let v27: Rc<UH2> = derivative_27(v25.clone(), v1.clone());
-            let v28: Rc<UH2> = derivative_27(v26.clone(), v1.clone());
-            make_alt_21(v27.clone(), v28.clone())
+            let v27: Rc<UH2> = derivative_27(v25, v1.clone());
+            let v28: Rc<UH2> = derivative_27(v26, v1.clone());
+            make_alt_21(v27, v28)
         }
         UH2::UH2_RegexCat(v30, v31) => {
             let v30: Rc<UH2> = v30.clone();
@@ -1575,13 +1575,13 @@ fn derivative_27(mut v0: Rc<UH2>, mut v1: US3) -> Rc<UH2> {
             match &v32 {
                 US2::US2_NonNullable => {
                     let v37: Rc<UH2> = derivative_27(v30.clone(), v1.clone());
-                    make_cat_24(v37.clone(), v31.clone())
+                    make_cat_24(v37, v31.clone())
                 }
                 US2::US2_Nullable => {
-                    let v33: Rc<UH2> = derivative_27(v30.clone(), v1.clone());
-                    let v34: Rc<UH2> = make_cat_24(v33.clone(), v31.clone());
-                    let v35: Rc<UH2> = derivative_27(v31.clone(), v1.clone());
-                    make_alt_21(v34.clone(), v35.clone())
+                    let v33: Rc<UH2> = derivative_27(v30, v1.clone());
+                    let v34: Rc<UH2> = make_cat_24(v33, v31.clone());
+                    let v35: Rc<UH2> = derivative_27(v31, v1.clone());
+                    make_alt_21(v34, v35)
                 }
             }
         }
@@ -1655,9 +1655,9 @@ fn derivative_27(mut v0: Rc<UH2>, mut v1: US3) -> Rc<UH2> {
         }
         UH2::UH2_RegexStar(v41) => {
             let v41: Rc<UH2> = v41.clone();
-            let v42: Rc<UH2> = derivative_27(v41.clone(), v1.clone());
-            let v43: Rc<UH2> = make_star_26(v41.clone());
-            make_cat_24(v42.clone(), v43.clone())
+            let v42: Rc<UH2> = derivative_27(v41.clone(), v1);
+            let v43: Rc<UH2> = make_star_26(v41);
+            make_cat_24(v42, v43)
         }
     }
 }
@@ -1696,17 +1696,17 @@ fn spiral_main() -> i32 {
     let v1: i32 = 32i32;
     let v2: i32 = 16i32;
     let v3: US0 = US0::US0_BitZero;
-    let v4: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v3.clone()));
+    let v4: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v3));
     let v5: US0 = US0::US0_BitOne;
-    let v6: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v5.clone()));
-    let v7: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v4.clone(), v6.clone()));
-    let v8: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v7.clone()));
+    let v6: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v5));
+    let v7: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v4, v6));
+    let v8: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v7));
     let v9: US0 = US0::US0_BitZero;
-    let v10: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v9.clone()));
-    let v11: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v8.clone(), v10.clone()));
+    let v10: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v9));
+    let v11: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v8, v10));
     let v12: u64 = 1u64;
     let v13: i32 = 0i32;
-    let v14: i32 = loop_0(v1, v11.clone(), v0, v12, v13);
+    let v14: i32 = loop_0(v1, v11, v0, v12, v13);
     let v15: bool = v14 == 93i32;
     if v15 {
         ()
@@ -1714,20 +1714,20 @@ fn spiral_main() -> i32 {
         std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("brzozowski-compiled-ends-with-zero-count"); } LIT.with(|lit| lit.clone()) }))
     };
     let v16: US0 = US0::US0_BitZero;
-    let v17: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v16.clone()));
+    let v17: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v16));
     let v18: US0 = US0::US0_BitZero;
-    let v19: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v18.clone()));
+    let v19: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v18));
     let v20: US0 = US0::US0_BitZero;
-    let v21: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v20.clone()));
-    let v22: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v19.clone(), v21.clone()));
-    let v23: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v17.clone(), v22.clone()));
-    let v24: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v23.clone()));
+    let v21: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v20));
+    let v22: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v19, v21));
+    let v23: Rc<UH0> = Rc::new(UH0::UH0_RegexAlt(v17, v22));
+    let v24: Rc<UH0> = Rc::new(UH0::UH0_RegexStar(v23));
     let v25: US0 = US0::US0_BitOne;
-    let v26: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v25.clone()));
-    let v27: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v24.clone(), v26.clone()));
+    let v26: Rc<UH0> = Rc::new(UH0::UH0_RegexChar(v25));
+    let v27: Rc<UH0> = Rc::new(UH0::UH0_RegexCat(v24, v26));
     let v28: i32 = 1i32;
     let v29: i32 = 0i32;
-    let v30: i32 = loop_14(v2, v27.clone(), v28, v29);
+    let v30: i32 = loop_14(v2, v27, v28, v29);
     let v31: bool = v30 == 16i32;
     if v31 {
         ()
@@ -1735,36 +1735,36 @@ fn spiral_main() -> i32 {
         std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("brzozowski-compiled-zero-runs-count"); } LIT.with(|lit| lit.clone()) }))
     };
     let v32: US3 = US3::US3_TriA;
-    let v33: Rc<UH2> = Rc::new(UH2::UH2_RegexChar(v32.clone()));
+    let v33: Rc<UH2> = Rc::new(UH2::UH2_RegexChar(v32));
     let v34: US3 = US3::US3_TriB;
-    let v35: Rc<UH2> = Rc::new(UH2::UH2_RegexChar(v34.clone()));
-    let v36: Rc<UH2> = Rc::new(UH2::UH2_RegexAlt(v33.clone(), v35.clone()));
-    let v37: Rc<UH2> = Rc::new(UH2::UH2_RegexStar(v36.clone()));
+    let v35: Rc<UH2> = Rc::new(UH2::UH2_RegexChar(v34));
+    let v36: Rc<UH2> = Rc::new(UH2::UH2_RegexAlt(v33, v35));
+    let v37: Rc<UH2> = Rc::new(UH2::UH2_RegexStar(v36));
     let v38: US3 = US3::US3_TriC;
-    let v39: Rc<UH2> = Rc::new(UH2::UH2_RegexChar(v38.clone()));
-    let v40: Rc<UH2> = Rc::new(UH2::UH2_RegexCat(v37.clone(), v39.clone()));
+    let v39: Rc<UH2> = Rc::new(UH2::UH2_RegexChar(v38));
+    let v40: Rc<UH2> = Rc::new(UH2::UH2_RegexCat(v37, v39));
     let v41: US3 = US3::US3_TriA;
     let v42: US3 = US3::US3_TriB;
     let v43: US3 = US3::US3_TriA;
     let v44: US3 = US3::US3_TriC;
     let v45: Rc<UH3> = { thread_local!{ static CASE: Rc<UH3> = Rc::new(UH3::UH3_InputEmpty); } CASE.with(|case| case.clone()) };
-    let v46: Rc<UH3> = Rc::new(UH3::UH3_InputCons(v44.clone(), v45.clone()));
-    let v47: Rc<UH3> = Rc::new(UH3::UH3_InputCons(v43.clone(), v46.clone()));
-    let v48: Rc<UH3> = Rc::new(UH3::UH3_InputCons(v42.clone(), v47.clone()));
-    let v49: Rc<UH3> = Rc::new(UH3::UH3_InputCons(v41.clone(), v48.clone()));
+    let v46: Rc<UH3> = Rc::new(UH3::UH3_InputCons(v44, v45));
+    let v47: Rc<UH3> = Rc::new(UH3::UH3_InputCons(v43, v46));
+    let v48: Rc<UH3> = Rc::new(UH3::UH3_InputCons(v42, v47));
+    let v49: Rc<UH3> = Rc::new(UH3::UH3_InputCons(v41, v48));
     let v50: US3 = US3::US3_TriA;
     let v51: US3 = US3::US3_TriB;
     let v52: US3 = US3::US3_TriA;
     let v53: US3 = US3::US3_TriB;
     let v54: Rc<UH3> = { thread_local!{ static CASE: Rc<UH3> = Rc::new(UH3::UH3_InputEmpty); } CASE.with(|case| case.clone()) };
-    let v55: Rc<UH3> = Rc::new(UH3::UH3_InputCons(v53.clone(), v54.clone()));
-    let v56: Rc<UH3> = Rc::new(UH3::UH3_InputCons(v52.clone(), v55.clone()));
-    let v57: Rc<UH3> = Rc::new(UH3::UH3_InputCons(v51.clone(), v56.clone()));
-    let v58: Rc<UH3> = Rc::new(UH3::UH3_InputCons(v50.clone(), v57.clone()));
+    let v55: Rc<UH3> = Rc::new(UH3::UH3_InputCons(v53, v54));
+    let v56: Rc<UH3> = Rc::new(UH3::UH3_InputCons(v52, v55));
+    let v57: Rc<UH3> = Rc::new(UH3::UH3_InputCons(v51, v56));
+    let v58: Rc<UH3> = Rc::new(UH3::UH3_InputCons(v50, v57));
     let v59: i32 = 0i32;
     let v60: bool = run_17(v59, v49.clone());
     let v62: bool = if v60 {
-        accepts_18(v40.clone(), v49.clone())
+        accepts_18(v40.clone(), v49)
     } else {
         false
     };
@@ -1774,7 +1774,7 @@ fn spiral_main() -> i32 {
         if v64 {
             false
         } else {
-            let v65: bool = accepts_18(v40.clone(), v58.clone());
+            let v65: bool = accepts_18(v40, v58);
             let v66: bool = v65 == false;
             v66
         }

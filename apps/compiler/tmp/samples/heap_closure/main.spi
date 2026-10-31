@@ -1,7 +1,7 @@
-inl main () : i32 =
-    inl ~n = 3i32
-    inl f (z : i32) : i32 = z +. n
-    inl ~g = f
-    inl box = !!!!LayoutToHeap({ call = g })
-    inl opened = !!!!LayoutIndex(box)
-    if opened.call 4i32 =. 7i32 then 0i32 else 1i32
+:= main () : i32 =
+    := ~n = 3i32
+    := f (z : i32) : i32 = z +. n
+    := ~g = f
+    := box = !!!!LayoutToHeap({ call = g })
+    := opened = !!!!LayoutIndex(box)
+    ? opened::call 4i32 =. 7i32 ?> 0i32 |: 1i32

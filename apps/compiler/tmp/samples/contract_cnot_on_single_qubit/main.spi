@@ -1,16 +1,16 @@
-nominal zero = ()
-nominal succ n = n
+:! zero = ()
+:! succ n = n
 
-union rec qregister n =
+:| ^ qregister n =
     | QOne :: qregister (succ zero)
-    | QSucc :: forall n. qregister n -> qregister (succ n)
+    | QSucc :: \* n. qregister n -> qregister (succ n)
 
-union qgate n =
+:| qgate n =
     | Hadamard :: qgate (succ zero)
     | Cnot :: qgate (succ (succ zero))
 
-inl apply_gate forall n. (_ : qgate n) (register : qregister n) : qregister n = register
+:= apply_gate \* n. (_ : qgate n) (register : qregister n) : qregister n = register
 
-inl main () : string =
-    inl _ = apply_gate Cnot QOne
+:= main () : string =
+    := _ = apply_gate Cnot QOne
     "unreachable"

@@ -1,4 +1,4 @@
-inl main () : i32 =
-    inl ~left = 20i32
-    inl ~right = 2i32
+:= main () : i32 =
+    := ~left = 20i32
+    := ~right = 2i32
     left *. right +. 3i32

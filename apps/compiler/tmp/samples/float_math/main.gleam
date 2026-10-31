@@ -9,11 +9,7 @@ pub fn main() {
     let v2 = method0(v0, v1)
     let v3 = v2 >=. 3.5
     case v3 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

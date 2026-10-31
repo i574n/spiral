@@ -1,14 +1,14 @@
-open main
+:< main
 
-inl impossible_predecessor_accessibility_parallel_less () :
+:= impossible_predecessor_accessibility_parallel_less () :
     positive_positional_predecessor_accessibility
         (positional_zero_bit positional_one) =
-    PositivePositionalPredecessorAccessibilityStep (exists (
+    PositivePositionalPredecessorAccessibilityStep (\? (
         PositivePositionalPredecessorTwo,
         PositivePositionalLessOneZeroBit PositivePositionalOne,
         PositivePositionalPredecessorAccessibilityOne
             "one-closes-the-forged-chain",
         "the-less-proof-is-deliberately-supplied-in-parallel-with-the-predecessor-proof"))
 
-inl main () =
+:= main () =
     impossible_predecessor_accessibility_parallel_less ()

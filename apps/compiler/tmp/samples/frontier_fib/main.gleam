@@ -8,9 +8,7 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
 pub fn fib_0(v0: Int) -> Int {
     let v1 = v0 <= 1
     case v1 {
-        True -> {
-            v0
-        }
+        True -> v0
         False -> {
             let v2 = spiral_wrap_signed(v0 - 1, 32)
             let v3 = fib_0(v2)

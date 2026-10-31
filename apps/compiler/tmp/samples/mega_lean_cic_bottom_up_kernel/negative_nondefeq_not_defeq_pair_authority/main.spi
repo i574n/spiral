@@ -1,7 +1,7 @@
-open main
+:< main
 
-inl impossible_nondefeq_not_defeq_pair_authority forall ctx sort.
+:= impossible_nondefeq_not_defeq_pair_authority \* ctx sort.
     (authority : corrected_cic_structural_nondefeq_authority ctx sort) =
     corrected_cic_structural_defeq_pair_authority_witness authority
 
-inl main () = ()
+:= main () = ()

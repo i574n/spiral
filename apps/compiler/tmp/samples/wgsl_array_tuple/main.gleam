@@ -72,30 +72,18 @@ pub fn main() {
     let #(v8, v9) = spiral_array_get(v1, v7)
     let v10 =
         case v4 {
-            True -> {
-                1
-            }
-            False -> {
-                0
-            }
+            True -> 1
+            False -> 0
         }
     let v11 =
         case v6 {
-            True -> {
-                10
-            }
-            False -> {
-                0
-            }
+            True -> 10
+            False -> 0
         }
     let v12 =
         case v9 {
-            True -> {
-                100
-            }
-            False -> {
-                0
-            }
+            True -> 100
+            False -> 0
         }
     let v13 = spiral_wrap_signed(v3 + v5, 32)
     let v14 = spiral_wrap_signed(v13 + v8, 32)

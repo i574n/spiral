@@ -29,9 +29,7 @@ pub fn main() {
                 let v7 = v6 == v2
                 v7
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v11 =
         case v8 {
@@ -40,9 +38,7 @@ pub fn main() {
                 let v10 = v9 == v1
                 v10
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v14 =
         case v11 {
@@ -51,9 +47,7 @@ pub fn main() {
                 let v13 = v12 == v3
                 v13
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v17 =
         case v14 {
@@ -62,9 +56,7 @@ pub fn main() {
                 let v16 = v15 == v0
                 v16
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v20 =
         case v17 {
@@ -73,9 +65,7 @@ pub fn main() {
                 let v19 = v18 == v2
                 v19
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v23 =
         case v20 {
@@ -84,9 +74,7 @@ pub fn main() {
                 let v22 = v21 == v0
                 v22
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v26 =
         case v23 {
@@ -95,9 +83,7 @@ pub fn main() {
                 let v25 = v24 == v2
                 v25
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v29 =
         case v26 {
@@ -106,9 +92,7 @@ pub fn main() {
                 let v28 = v27 == v1
                 v28
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v32 =
         case v29 {
@@ -117,16 +101,10 @@ pub fn main() {
                 let v31 = v30 == v3
                 v31
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v32 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

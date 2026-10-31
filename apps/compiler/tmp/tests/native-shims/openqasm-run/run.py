@@ -468,7 +468,7 @@ def float_ops(round_to):
 
 FLOAT_OPS = {kind: float_ops(ROUND[kind]) for kind in FLOAT_KINDS}
 
-MATH_BUILTINS = {'sqrt': math.sqrt, 'exp': math.exp, 'log': math.log, 'sin': math.sin, 'cos': math.cos, 'pow': math.pow}
+MATH_BUILTINS = {'sqrt': math.sqrt, 'exp': math.exp, 'log': math.log, 'sin': math.sin, 'cos': math.cos, 'tanh': math.tanh, 'pow': math.pow}
 
 INT_OPS = {
     '+': lambda a, b: a + b,

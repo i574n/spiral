@@ -1,30 +1,30 @@
-nominal sample_a = ()
-nominal hg38 = ()
-nominal raw = ()
-nominal aligned = ()
-nominal filtered = ()
-nominal called = ()
+:! sample_a = ()
+:! hg38 = ()
+:! raw = ()
+:! aligned = ()
+:! filtered = ()
+:! called = ()
 
-union readset sample build stage =
-    | RawReads :: forall sample build. string -> readset sample build raw
-    | AlignedReads :: forall sample build. string -> readset sample build aligned
-    | FilteredReads :: forall sample build. string -> readset sample build filtered
+:| readset sample build stage =
+    | RawReads :: \* sample build. string -> readset sample build raw
+    | AlignedReads :: \* sample build. string -> readset sample build aligned
+    | FilteredReads :: \* sample build. string -> readset sample build filtered
 
-union callset sample build stage =
-    | Callset :: forall sample build. string -> callset sample build called
+:| callset sample build stage =
+    | Callset :: \* sample build. string -> callset sample build called
 
-inl align forall sample build.
+:= align \* sample build.
     (reads : readset sample build raw)
     : readset sample build aligned =
-    match reads with
+    ?= reads ?|
     | RawReads _ => AlignedReads "aligned"
 
-inl call_variants forall sample build.
+:= call_variants \* sample build.
     (reads : readset sample build filtered)
     : callset sample build called =
-    match reads with
+    ?= reads ?|
     | FilteredReads _ => Callset "called"
 
-inl main () =
-    inl raw_reads : readset sample_a hg38 raw = RawReads "fastq"
+:= main () =
+    := raw_reads : readset sample_a hg38 raw = RawReads "fastq"
     call_variants (align raw_reads)

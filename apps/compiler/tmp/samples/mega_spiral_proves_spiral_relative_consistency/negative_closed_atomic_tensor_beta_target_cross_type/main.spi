@@ -1,11 +1,11 @@
-open main
+:< main
 
-inl impossible_closed_atomic_tensor_beta_target_cross_type () :
+:= impossible_closed_atomic_tensor_beta_target_cross_type () :
     exact_linear_indexed_term
         exact_linear_free_context_empty
         exact_linear_indexed_usage_empty
         exact_linear_bool_type =
-    inl unit_argument :
+    := unit_argument :
         exact_linear_indexed_term
             exact_linear_free_context_empty
             exact_linear_indexed_usage_empty
@@ -19,5 +19,5 @@ inl impossible_closed_atomic_tensor_beta_target_cross_type () :
                 unit_argument,
                 "the-real-direct-atomic-target-is-Tensor-Unit-Unit-not-Bool")))
 
-inl main () =
+:= main () =
     impossible_closed_atomic_tensor_beta_target_cross_type ()

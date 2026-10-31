@@ -1,15 +1,15 @@
-open main
+:< main
 
-inl impossible_erp_p2p_three_event_wrong_version
+:= impossible_erp_p2p_three_event_wrong_version
     ()
     : erp_p2p_event_store nat_two requisition_drafted purchase_order_issued
     =
-    inl reserve_event = erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ())
-    inl approvals_event = erp_p2p_unit_event_from_op (erp_p2p_collect_approvals_op ())
-    inl purchase_order_event = erp_p2p_unit_event_from_op (erp_p2p_issue_purchase_order_op ())
-    inl first_store, _ = erp_p2p_event_commit_then reserve_event approvals_event
-    inl final_store, _ = erp_p2p_event_commit_one purchase_order_event
+    := reserve_event = erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ())
+    := approvals_event = erp_p2p_unit_event_from_op (erp_p2p_collect_approvals_op ())
+    := purchase_order_event = erp_p2p_unit_event_from_op (erp_p2p_issue_purchase_order_op ())
+    := first_store, _ = erp_p2p_event_commit_then reserve_event approvals_event
+    := final_store, _ = erp_p2p_event_commit_one purchase_order_event
     erp_p2p_event_store_then first_store final_store (v65_add_two_one_three ())
 
-inl main () =
+:= main () =
     impossible_erp_p2p_three_event_wrong_version ()

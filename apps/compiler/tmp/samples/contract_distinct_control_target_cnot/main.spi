@@ -1,21 +1,21 @@
-nominal register_a = ()
-nominal slot0 = ()
-nominal slot1 = ()
-nominal coherent = ()
+:! register_a = ()
+:! slot0 = ()
+:! slot1 = ()
+:! coherent = ()
 
-union qubit register slot phase = | Qubit :: forall register slot phase. string -> qubit register slot phase
-union distinct left right = | Slot0Slot1 :: distinct slot0 slot1
+:| qubit register slot phase = | Qubit :: \* register slot phase. string -> qubit register slot phase
+:| distinct left right = | Slot0Slot1 :: distinct slot0 slot1
 
-inl cnot forall register control target.
+:= cnot \* register control target.
     (control : qubit register control coherent)
     (target : qubit register target coherent)
     (proof : distinct control target)
     : qubit register control coherent * qubit register target coherent =
-    match control, target, proof with
+    ?= control, target, proof ?|
     | Qubit _, Qubit _, Slot0Slot1 => Qubit "control", Qubit "distinct-cnot-applied"
 
-inl main () : string =
-    inl control : qubit register_a slot0 coherent = Qubit "q0"
-    inl target : qubit register_a slot1 coherent = Qubit "q1"
-    match cnot control target Slot0Slot1 with
+:= main () : string =
+    := control : qubit register_a slot0 coherent = Qubit "q0"
+    := target : qubit register_a slot1 coherent = Qubit "q1"
+    ?= cnot control target Slot0Slot1 ?|
     | Qubit _, Qubit label => label

@@ -1,6 +1,6 @@
-inl main () : i32 =
-    inl ~a = 0i32 -. 1i32
-    inl ~b = 0i32 -. 8i32
-    inl na = !!!!BitwiseComplement(a)
-    inl nb = !!!!BitwiseComplement(b)
-    if na =. 0i32 && nb =. 7i32 then 0i32 else 1i32
+:= main () : i32 =
+    := ~a = 0i32 -. 1i32
+    := ~b = 0i32 -. 8i32
+    := na = !!!!BitwiseComplement(a)
+    := nb = !!!!BitwiseComplement(b)
+    ? na =. 0i32 && nb =. 7i32 ?> 0i32 |: 1i32

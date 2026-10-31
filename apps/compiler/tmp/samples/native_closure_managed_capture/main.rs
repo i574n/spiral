@@ -10,7 +10,7 @@ fn f_c0(mut v0: Rc<str>) -> Rc<dyn Fn(i32) -> i32> {
 }
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("abc"); } LIT.with(|lit| lit.clone()) };
-    let mut v1: Rc<dyn Fn(i32) -> i32> = f_c0(v0.clone());
+    let mut v1: Rc<dyn Fn(i32) -> i32> = f_c0(v0);
     v1(39i32)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

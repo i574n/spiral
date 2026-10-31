@@ -16,30 +16,20 @@ pub fn sum_0(v0: Us0) -> Int {
             let v5 = spiral_wrap_signed(v4 + v3, 32)
             v5
         }
-        Us0One(v1) -> {
-            v1
-        }
+        Us0One(v1) -> v1
     }
 }
 pub fn main() {
     let v0 = True
     let v3 =
         case v0 {
-            True -> {
-                Us0Both(3, 4)
-            }
-            False -> {
-                Us0One(1)
-            }
+            True -> Us0Both(3, 4)
+            False -> Us0One(1)
         }
     let v6 =
         case v0 {
-            True -> {
-                Us0One(5)
-            }
-            False -> {
-                Us0Both(1, 1)
-            }
+            True -> Us0One(5)
+            False -> Us0Both(1, 1)
         }
     let v7 = sum_0(v3)
     let v8 = v7 == 34
@@ -50,16 +40,10 @@ pub fn main() {
                 let v10 = v9 == 5
                 v10
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v11 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

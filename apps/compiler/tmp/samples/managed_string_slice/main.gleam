@@ -70,21 +70,13 @@ pub fn main() {
                     let v6 = spiral_string_index(v1, 2)
                     let v7 = v6 == "h"
                     case v7 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 }
-                False -> {
-                    2
-                }
+                False -> 2
             }
         }
-        False -> {
-            3
-        }
+        False -> 3
     }
 }

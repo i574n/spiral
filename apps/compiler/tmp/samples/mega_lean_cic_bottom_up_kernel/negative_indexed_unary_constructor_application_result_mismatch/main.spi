@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_corrected_cic_indexed_unary_constructor_application_result_mismatch () :
+:= impossible_corrected_cic_indexed_unary_constructor_application_result_mismatch () :
     corrected_cic_instantiated_codomain
         (corrected_cic_substituted_codomain
             corrected_cic_unary_constructor_codomain_code
@@ -8,5 +8,5 @@ inl impossible_corrected_cic_indexed_unary_constructor_application_result_mismat
     corrected_cic_indexed_dependent_application_target
         (corrected_cic_indexed_unary_constructor_bool_application ())
 
-inl main () =
+:= main () =
     impossible_corrected_cic_indexed_unary_constructor_application_result_mismatch ()

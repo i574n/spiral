@@ -66,7 +66,7 @@ defmodule Spiral.Cells.CompilerDaemon do
   def port do
     case System.get_env("SPIRAL_CELLS_COMPILER_PORT") do
       value when value in [nil, ""] ->
-        @default_port
+        build_port(Toolchain.compiler_dll([]))
 
       text ->
         case Integer.parse(String.trim(text)) do
@@ -77,6 +77,26 @@ defmodule Spiral.Cells.CompilerDaemon do
             raise ArgumentError,
                   "SPIRAL_CELLS_COMPILER_PORT must be a TCP port, got: #{inspect(text)}"
         end
+    end
+  end
+
+  @build_slots 12
+  @build_stride 8
+
+  @doc """
+  The default port for the compiler at `dll`: #{@default_port} plus #{@build_stride} times a slot (0..#{@build_slots - 1})
+  hashed from the DLL's path, size and mtime and this Cells checkout's root, so a reinstall, a second compiler build or
+  another checkout (a node mirror) gets its own daemon instead of meeting another's on a shared port. A missing DLL
+  maps to the base port.
+  """
+  @spec build_port(String.t(), String.t()) :: 1..65535
+  def build_port(dll, cells_root \\ Path.expand("../../..", __DIR__)) do
+    case File.stat(dll, time: :posix) do
+      {:ok, %{size: size, mtime: mtime}} ->
+        @default_port + @build_stride * :erlang.phash2({Path.expand(dll), size, mtime, Path.expand(cells_root)}, @build_slots)
+
+      _ ->
+        @default_port
     end
   end
 
@@ -107,7 +127,24 @@ defmodule Spiral.Cells.CompilerDaemon do
   def code_stamp, do: boot_stamp()
 
   @spec banner() :: String.t()
-  def banner, do: "spiral-cells\t#{@version}\t#{System.pid()}\t#{boot_stamp()}"
+  def banner, do: "spiral-cells\t#{@version}\t#{System.pid()}\t#{boot_stamp()}\t#{served_dll_tag()}"
+
+  @doc false
+  def served_dll_tag, do: dll_tag(Toolchain.compiler_dll([]))
+
+  @doc false
+  def dll_tag(dll) do
+    case dll_stamp(dll) do
+      {mtime, size} -> "#{mtime}-#{size}"
+      nil -> "none"
+    end
+  end
+
+  @doc false
+  def slot_port(first, n) do
+    k = rem(div(first - @default_port, @build_stride) + n, @build_slots)
+    @default_port + @build_stride * k
+  end
 
   defp owner, do: (System.get_env("SPIRAL_CELLS_DAEMON_OWNER") || "unrecorded") |> String.replace(["\t", "\r", "\n"], " ")
 
@@ -1005,10 +1042,11 @@ defmodule Spiral.Cells.CompilerDaemon do
 
   @doc false
   def notebook_reply(request) do
-    with {:ok, %{"args" => args, "root" => root}} when is_list(args) and is_binary(root) <- JSON.decode(request),
+    with {:ok, %{"args" => args, "root" => root} = fields} when is_list(args) and is_binary(root) <- JSON.decode(request),
          true <- Enum.all?(args, &is_binary/1) do
       cond do
         same_root(root) != same_root(@cells_root) -> {["stale\tthe daemon serves another Cells checkout: #{@cells_root}"], :keep}
+        other_build?(fields["dll"]) -> {["stale\tthe daemon serves another compiler build: #{served_dll_tag()}, requested #{dll_tag(fields["dll"])}"], :keep}
         reason = stale_code() -> {["stale\t" <> reason <> "; retiring"], :retire}
         true -> {run_notebook(args), :keep}
       end
@@ -1016,6 +1054,8 @@ defmodule Spiral.Cells.CompilerDaemon do
       _ -> {["error\t" <> JSON.encode!("notebook request is not {\"args\": [...], \"root\": ...}"), "end\t1"], :keep}
     end
   end
+
+  defp other_build?(dll), do: is_binary(dll) and dll_tag(dll) != served_dll_tag()
 
   defp same_root(path) do
     expanded = path |> Path.expand() |> String.trim_trailing("/")

@@ -78,11 +78,7 @@ pub fn main() {
     let v0 = method0()
     let v1 = v0 == ""
     case v1 {
-        True -> {
-            1
-        }
-        False -> {
-            0
-        }
+        True -> 1
+        False -> 0
     }
 }

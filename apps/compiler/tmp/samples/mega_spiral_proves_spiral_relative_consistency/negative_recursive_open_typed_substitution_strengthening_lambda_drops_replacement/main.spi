@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_recursive_open_typed_substitution_strengthening_lambda_drops_replacement () :
+:= impossible_recursive_open_typed_substitution_strengthening_lambda_drops_replacement () :
     exact_linear_indexed_recursive_open_typed_substitution_strengthening
         exact_linear_indexed_open_unit_substitution_context
         exact_linear_indexed_open_unit_substitution_source_usage
@@ -12,4 +12,4 @@ inl impossible_recursive_open_typed_substitution_strengthening_lambda_drops_repl
             (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type)) =
     exact_linear_indexed_open_unit_lambda_substitution_strengthening ()
 
-inl main () = impossible_recursive_open_typed_substitution_strengthening_lambda_drops_replacement ()
+:= main () = impossible_recursive_open_typed_substitution_strengthening_lambda_drops_replacement ()

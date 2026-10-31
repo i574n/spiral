@@ -13,42 +13,28 @@ pub fn method1(v0: Int, v1: Bool) -> Bool {
                 let v3 = v0 > 0
                 v3
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v5 = v2 == 0
     case v5 {
-        True -> {
-            v4
-        }
-        False -> {
-            method1(v2, v4)
-        }
+        True -> v4
+        False -> method1(v2, v4)
     }
 }
 pub fn method0(v0: Int) -> Bool {
     let v1 = True
     let v2 = v0 == 0
     case v2 {
-        True -> {
-            v1
-        }
-        False -> {
-            method1(v0, v1)
-        }
+        True -> v1
+        False -> method1(v0, v1)
     }
 }
 pub fn method2(v0: Int) -> Bool {
     let v1 = False
     let v2 = v0 == 0
     case v2 {
-        True -> {
-            v1
-        }
-        False -> {
-            method1(v0, v1)
-        }
+        True -> v1
+        False -> method1(v0, v1)
     }
 }
 pub fn main() {
@@ -58,16 +44,10 @@ pub fn main() {
     case v1 {
         True -> {
             case v2 {
-                True -> {
-                    1
-                }
-                False -> {
-                    0
-                }
+                True -> 1
+                False -> 0
             }
         }
-        False -> {
-            2
-        }
+        False -> 2
     }
 }

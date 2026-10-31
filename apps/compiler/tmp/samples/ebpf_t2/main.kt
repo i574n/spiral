@@ -10,9 +10,9 @@ fun sp_method0(p0: Int, p1: Int): Int {
     var v1: Int = p1
     var v2: Int = 0
     var v3: Int = 0
-    val spiral_tuple127 = sp_method1(v0, v1)
-    v2 = spiral_tuple127.v0
-    v3 = spiral_tuple127.v1
+    val spiral_tuple122 = sp_method1(v0, v1)
+    v2 = spiral_tuple122.v0
+    v3 = spiral_tuple122.v1
     var v4: Int = 0
     v4 = (v2 + v3)
     return v4
@@ -30,10 +30,10 @@ fun sp_method2(p0: Int, p1: Int, p2: Int): Int {
     var v3: Int = 0
     var v4: Int = 0
     var v5: Int = 0
-    val spiral_tuple179 = sp_method3(v0, v1, v2)
-    v3 = spiral_tuple179.v0
-    v4 = spiral_tuple179.v1
-    v5 = spiral_tuple179.v2
+    val spiral_tuple172 = sp_method3(v0, v1, v2)
+    v3 = spiral_tuple172.v0
+    v4 = spiral_tuple172.v1
+    v5 = spiral_tuple172.v2
     var v6: Int = 0
     v6 = (v3 + v4)
     val v7: Int = (v6 + v5)

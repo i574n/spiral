@@ -23,9 +23,9 @@ func spiral_main() -> Int32 {
     v2 = Heap0(l0: v1)
     var v3: US0 = US0_None()
     var v4: Heap0 = Heap0(l0: 0)
-    let spiral_tuple223 = sp_method0(v0, v2)
-    v3 = spiral_tuple223.0
-    v4 = spiral_tuple223.1
+    let spiral_tuple214 = sp_method0(v0, v2)
+    v3 = spiral_tuple214.0
+    v4 = spiral_tuple214.1
     switch v3.tag {
         case 0:
             return 1

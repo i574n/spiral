@@ -1,21 +1,21 @@
-nominal zero = ()
-nominal succ a = a
+:! zero = ()
+:! succ a = a
 
-union qstate epoch =
-    | QState :: forall epoch. string -> qstate epoch
+:| qstate epoch =
+    | QState :: \* epoch. string -> qstate epoch
 
-union gate from to =
-    | H :: forall epoch. gate epoch (succ epoch)
+:| gate from to =
+    | H :: \* epoch. gate epoch (succ epoch)
 
-inl apply forall from to. (gate : gate from to) (state : qstate from) : qstate to =
-    match gate, state with
+:= apply \* from to. (gate : gate from to) (state : qstate from) : qstate to =
+    ?= gate, state ?|
     | H, QState _ => QState "h-applied"
 
-inl measure (state : qstate (succ zero)) : string =
-    match state with
+:= measure (state : qstate (succ zero)) : string =
+    ?= state ?|
     | QState label => label
 
-inl main () : string =
-    inl initial : qstate zero = QState "zero"
-    inl _ = apply H initial
+:= main () : string =
+    := initial : qstate zero = QState "zero"
+    := _ = apply H initial
     measure initial

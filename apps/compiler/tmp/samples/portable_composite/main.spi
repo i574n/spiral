@@ -1,48 +1,48 @@
-inl make_state ~x = { left = x; right = x +. 2i32; active = x > 0i32 }
+:= make_state ~x = { left = x; right = x +. 2i32; active = x > 0i32 }
 
-inl score_state ~{ left right active } : i32 =
-    if active then left +. right -. 4i32 else 1i32
+:= score_state ~{ left right active } : i32 =
+    ? active ?> left +. right -. 4i32 |: 1i32
 
-inl classify ~x = x >= 3.5f32, x, 7i32
+:= classify ~x = x >= 3.5f32, x, 7i32
 
-inl score_tuple ~(ok, value, bias) : i32 =
-    if ok then if value >= 3.5f32 then bias -. 7i32 else 1i32 else 2i32
+:= score_tuple ~(ok, value, bias) : i32 =
+    ? ok ?> ? value >= 3.5f32 ?> bias -. 7i32 |: 1i32 |: 2i32
 
-inl same ~x ~y = x =. y
+:= same ~x ~y = x =. y
 
-inl valid_unsigned ~(x : u32) = (x +. 5u32) %. 4u32 =. 0u32
+:= valid_unsigned ~(x : u32) = (x +. 5u32) %. 4u32 =. 0u32
 
-inl arithmetic ~x ~y = (x *. y +. 5i32) /. 3i32
+:= arithmetic ~x ~y = (x *. y +. 5i32) /. 3i32
 
-inl stage_arithmetic ~score : i32 =
-    inl ~x = 4i32
-    inl ~y = 4i32
-    inl arithmetic_score = join arithmetic x y
+:= stage_arithmetic ~score : i32 =
+    := ~x = 4i32
+    := ~y = 4i32
+    := arithmetic_score = ~~ arithmetic x y
     score +. arithmetic_score -. 7i32
 
-inl stage_unsigned ~score : i32 =
-    inl ~x = 7u32
-    if join valid_unsigned x then join stage_arithmetic score else 1i32
+:= stage_unsigned ~score : i32 =
+    := ~x = 7u32
+    ? ~~ valid_unsigned x ?> ~~ stage_arithmetic score |: 1i32
 
-inl stage_text ~score : i32 =
-    inl ~x = "spiral"
-    inl ~y = "spiral"
-    if join same x y then join stage_unsigned score else 1i32
+:= stage_text ~score : i32 =
+    := ~x = "spiral"
+    := ~y = "spiral"
+    ? ~~ same x y ?> ~~ stage_unsigned score |: 1i32
 
-inl stage_float ~score : i32 =
-    inl ~x = 4.0f32
-    inl state = join classify x
-    inl tuple_score = join score_tuple state
-    inl ~next_score = score +. tuple_score
-    join stage_text next_score
+:= stage_float ~score : i32 =
+    := ~x = 4.0f32
+    := state = ~~ classify x
+    := tuple_score = ~~ score_tuple state
+    := ~next_score = score +. tuple_score
+    ~~ stage_text next_score
 
-inl stage_record ~score : i32 =
-    inl ~x = 1i32
-    inl state = join make_state x
-    inl record_score = join score_state state
-    inl ~next_score = score +. record_score
-    join stage_float next_score
+:= stage_record ~score : i32 =
+    := ~x = 1i32
+    := state = ~~ make_state x
+    := record_score = ~~ score_state state
+    := ~next_score = score +. record_score
+    ~~ stage_float next_score
 
-inl main () : i32 =
-    inl ~score = 0i32
-    join stage_record score
+:= main () : i32 =
+    := ~score = 0i32
+    ~~ stage_record score

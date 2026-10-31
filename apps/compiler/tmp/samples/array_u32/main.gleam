@@ -74,16 +74,10 @@ pub fn main() {
                 let v7 = v4 == 4000000001
                 v7
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v8 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

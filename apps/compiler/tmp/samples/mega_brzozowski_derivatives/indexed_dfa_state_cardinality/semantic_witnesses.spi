@@ -1,22 +1,22 @@
-open main
+:< main
 
-nominal indexed_dfa_semantic_partition_witness alphabet closure_count representative_count =
+:! indexed_dfa_semantic_partition_witness alphabet closure_count representative_count =
     indexed_dfa_bisimulation_capability alphabet *
     indexed_dfa_quotient_coverage closure_count representative_count *
     indexed_dfa_representative_origins representative_count closure_count
 
-inl with_indexed_dfa_semantic_partition_witness forall alphabet closure_count representative_count result.
+:= with_indexed_dfa_semantic_partition_witness \* alphabet closure_count representative_count result.
     (witness : indexed_dfa_semantic_partition_witness alphabet closure_count representative_count)
     (consumer :
         indexed_dfa_quotient_coverage closure_count representative_count ->
         indexed_dfa_representative_origins representative_count closure_count ->
         result)
     : result =
-    match witness with
+    ?= witness ?|
     | indexed_dfa_semantic_partition_witness (_, coverage, origins) =>
         consumer coverage origins
 
-nominal indexed_dfa_semantic_minimized_surface alphabet symbol_count closure_count representative_count =
+:! indexed_dfa_semantic_minimized_surface alphabet symbol_count closure_count representative_count =
     regex alphabet *
     indexed_dfa_bisimulation_capability alphabet *
     finite_symbol_vector alphabet symbol_count *
@@ -25,23 +25,23 @@ nominal indexed_dfa_semantic_minimized_surface alphabet symbol_count closure_cou
     indexed_dfa_semantic_partition_witness alphabet closure_count representative_count *
     indexed_dfa_exact_transition_rows alphabet symbol_count representative_count
 
-union indexed_dfa_semantic_minimized_surface_validation =
+:| indexed_dfa_semantic_minimized_surface_validation =
     | IndexedDfaSemanticMinimizedSurfaceRejected
     | IndexedDfaSemanticMinimizedSurfaceCertified :
-        (exists alphabet symbol_count closure_count representative_count.
+        (\? alphabet symbol_count closure_count representative_count.
             indexed_dfa_semantic_minimized_surface alphabet symbol_count closure_count representative_count)
 
-inl seal_indexed_dfa_semantic_minimized_surface forall alphabet {symbol_compare; finite_alphabet}.
+:= seal_indexed_dfa_semantic_minimized_surface \* alphabet {symbol_compare; finite_alphabet}.
     (capability : indexed_dfa_capability alphabet)
     (start : regex alphabet)
     (descriptor : indexed_finite_alphabet_descriptor alphabet)
     : indexed_dfa_semantic_minimized_surface_validation =
-    match seal_indexed_dfa_minimized_surface capability start descriptor with
+    ?= seal_indexed_dfa_minimized_surface capability start descriptor ?|
     | IndexedDfaMinimizedSurfaceRejected =>
         IndexedDfaSemanticMinimizedSurfaceRejected
     | IndexedDfaMinimizedSurfaceCertified packed =>
-        inl exists alphabet' symbol_count closure_count representative_count. surface = packed
-        match surface with
+        := \? alphabet' symbol_count closure_count representative_count. surface = packed
+        ?= surface ?|
         | indexed_dfa_minimized_surface (
             sealed_start,
             bisimulation_capability,
@@ -51,8 +51,8 @@ inl seal_indexed_dfa_semantic_minimized_surface forall alphabet {symbol_compare;
             coverage,
             origins,
             rows) =>
-            inl witness = indexed_dfa_semantic_partition_witness (bisimulation_capability, coverage, origins)
-            IndexedDfaSemanticMinimizedSurfaceCertified (exists (
+            := witness = indexed_dfa_semantic_partition_witness (bisimulation_capability, coverage, origins)
+            IndexedDfaSemanticMinimizedSurfaceCertified (\? (
                 indexed_dfa_semantic_minimized_surface (
                     sealed_start,
                     bisimulation_capability,
@@ -62,50 +62,50 @@ inl seal_indexed_dfa_semantic_minimized_surface forall alphabet {symbol_compare;
                     witness,
                     rows)))
 
-inl indexed_dfa_semantic_surface_structural_contract forall alphabet symbol_count closure_count representative_count.
+:= indexed_dfa_semantic_surface_structural_contract \* alphabet symbol_count closure_count representative_count.
     (surface : indexed_dfa_semantic_minimized_surface alphabet symbol_count closure_count representative_count)
     : bool =
-    match surface with
+    ?= surface ?|
     | indexed_dfa_semantic_minimized_surface (_, _, _, _, representatives, witness, rows) =>
-        with_indexed_dfa_semantic_partition_witness witness (fun coverage origins =>
-            inl _ = coverage
-            inl _ = origins
+        with_indexed_dfa_semantic_partition_witness witness (\ coverage origins =>
+            := _ = coverage
+            := _ = origins
             indexed_dfa_state_row_shape_aligned representatives rows)
 
-inl require_semantic_partition_witness forall alphabet closure_count representative_count.
+:= require_semantic_partition_witness \* alphabet closure_count representative_count.
     (witness : indexed_dfa_semantic_partition_witness alphabet closure_count representative_count)
     : bool =
-    with_indexed_dfa_semantic_partition_witness witness (fun coverage origins =>
-        inl _ = coverage
-        inl _ = origins
-        true)
+    with_indexed_dfa_semantic_partition_witness witness (\ coverage origins =>
+        := _ = coverage
+        := _ = origins
+        !+)
 
 
-nominal indexed_dfa_semantic_case alphabet =
+:! indexed_dfa_semantic_case alphabet =
     indexed_dfa_capability alphabet *
     regex alphabet *
     indexed_finite_alphabet_descriptor alphabet
 
-nominal indexed_dfa_semantic_check alphabet = bool
+:! indexed_dfa_semantic_check alphabet = bool
 
-nominal indexed_dfa_semantic_program alphabet =
+:! indexed_dfa_semantic_program alphabet =
     capability_program indexed_dfa_semantic_case indexed_dfa_semantic_check alphabet
 
-inl capture_indexed_dfa_semantic_program forall alphabet {symbol_compare; finite_alphabet}.
+:= capture_indexed_dfa_semantic_program \* alphabet {symbol_compare; finite_alphabet}.
     (capability : indexed_dfa_capability alphabet)
     (start : regex alphabet)
     (descriptor : indexed_finite_alphabet_descriptor alphabet)
     : indexed_dfa_semantic_program alphabet =
-    inl interpret (item : indexed_dfa_semantic_case alphabet)
+    := interpret (item : indexed_dfa_semantic_case alphabet)
         : indexed_dfa_semantic_check alphabet =
-        match item with
+        ?= item ?|
         | indexed_dfa_semantic_case (program_capability, program_start, program_descriptor) =>
-            inl sealed = seal_indexed_dfa_semantic_minimized_surface program_capability program_start program_descriptor
-            match sealed with
+            := sealed = seal_indexed_dfa_semantic_minimized_surface program_capability program_start program_descriptor
+            ?= sealed ?|
             | IndexedDfaSemanticMinimizedSurfaceRejected =>
-                indexed_dfa_semantic_check false
+                indexed_dfa_semantic_check !-
             | IndexedDfaSemanticMinimizedSurfaceCertified packed =>
-                inl exists sealed_alphabet symbol_count closure_count representative_count. surface = packed
+                := \? sealed_alphabet symbol_count closure_count representative_count. surface = packed
                 indexed_dfa_semantic_check (
                     indexed_dfa_semantic_surface_structural_contract surface)
     indexed_dfa_semantic_program (
@@ -113,51 +113,51 @@ inl capture_indexed_dfa_semantic_program forall alphabet {symbol_compare; finite
             (indexed_dfa_semantic_case (capability, start, descriptor))
             interpret)
 
-inl run_indexed_dfa_semantic_program forall alphabet.
+:= run_indexed_dfa_semantic_program \* alphabet.
     (program : indexed_dfa_semantic_program alphabet)
     : indexed_dfa_semantic_check alphabet =
-    match program with
+    ?= program ?|
     | indexed_dfa_semantic_program generic_program =>
         capability_program_run generic_program
 
-inl indexed_dfa_semantic_program_passes forall alphabet.
+:= indexed_dfa_semantic_program_passes \* alphabet.
     (program : indexed_dfa_semantic_program alphabet) : bool =
-    match run_indexed_dfa_semantic_program program with
+    ?= run_indexed_dfa_semantic_program program ?|
     | indexed_dfa_semantic_check result => result
 
 
-inl indexed_dfa_semantic_witnesses_contract () : string =
-    inl bit_capability : indexed_dfa_capability bit_alphabet = make_indexed_dfa_capability ()
-    inl bit_sealed =
+:= indexed_dfa_semantic_witnesses_contract () : string =
+    := bit_capability : indexed_dfa_capability bit_alphabet = make_indexed_dfa_capability ()
+    := bit_sealed =
         seal_indexed_dfa_semantic_minimized_surface bit_capability
             (ends_with_zero ())
             (bit_indexed_finite_alphabet_descriptor ())
-    match bit_sealed with
+    ?= bit_sealed ?|
     | IndexedDfaSemanticMinimizedSurfaceRejected =>
         failwith "bit semantic minimized surface should certify"
     | IndexedDfaSemanticMinimizedSurfaceCertified packed =>
-        inl exists alphabet symbol_count closure_count representative_count. surface = packed
+        := \? alphabet symbol_count closure_count representative_count. surface = packed
         assert_static
             (indexed_dfa_semantic_surface_structural_contract surface)
             (
                 "semantic minimized surface must retain exact representative-row cardinality without replaying "
                 ^^ "quotient booleans"
             )
-    inl tri_capability : indexed_dfa_capability tri_alphabet = make_indexed_dfa_capability ()
-    inl tri_sealed =
+    := tri_capability : indexed_dfa_capability tri_alphabet = make_indexed_dfa_capability ()
+    := tri_sealed =
         seal_indexed_dfa_semantic_minimized_surface tri_capability
             (tri_ab_star_then_c ())
             (tri_indexed_finite_alphabet_descriptor ())
-    match tri_sealed with
+    ?= tri_sealed ?|
     | IndexedDfaSemanticMinimizedSurfaceRejected =>
         failwith "ternary semantic minimized surface should certify"
     | IndexedDfaSemanticMinimizedSurfaceCertified packed =>
-        inl exists alphabet symbol_count closure_count representative_count. surface = packed
+        := \? alphabet symbol_count closure_count representative_count. surface = packed
         assert_static
             (indexed_dfa_semantic_surface_structural_contract surface)
             "ternary semantic minimized surface must carry sealed quotient/origin typestate"
 
-    inl semantic_program_batch :
+    := semantic_program_batch :
         matcher_batch indexed_dfa_semantic_program (bit_alphabet * tri_alphabet) =
         MatchBatchPair (
             MatchBatchSingle (

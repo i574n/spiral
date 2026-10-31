@@ -67,9 +67,7 @@ pub fn fill_0(v0: Int, v1: SpiralArray(Int), v2: Int) -> Nil {
             let v4 = spiral_wrap_signed(v2 + 1, 32)
             fill_0(v0, v1, v4)
         }
-        False -> {
-        Nil
-        }
+        False -> Nil
     }
 }
 pub fn main() {

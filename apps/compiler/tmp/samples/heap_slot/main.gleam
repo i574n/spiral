@@ -17,19 +17,13 @@ pub fn main() {
     let v3 = Heap0(l0: v2, l1: v1)
     let #(v4, v5) = #(v3.l0, v3.l1)
     case v4  {
-        Us0None -> {
-            1
-        }
+        Us0None -> 1
         Us0Some(v6) -> {
             let v7 = spiral_wrap_signed(v6 + v5, 32)
             let v8 = v7 == 7
             case v8 {
-                True -> {
-                    0
-                }
-                False -> {
-                    1
-                }
+                True -> 0
+                False -> 1
             }
         }
     }

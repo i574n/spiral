@@ -1,5 +1,5 @@
-inl main () : i32 =
-    inl make = (fun name => (fun z => sm.length name +. z) : i32 -> i32) : string -> i32 -> i32
-    inl ~maker = make
-    inl ~g = maker "abc"
-    join g 39i32
+:= main () : i32 =
+    := make = (\ name => (\ z => sm::length name +. z) : i32 -> i32) : string -> i32 -> i32
+    := ~maker = make
+    := ~g = maker "abc"
+    ~~ g 39i32

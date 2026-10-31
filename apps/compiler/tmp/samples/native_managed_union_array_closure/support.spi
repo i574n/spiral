@@ -1,8 +1,8 @@
-union payload =
+:| payload =
     | Empty
     | Values : array i32
 
-let score x : i32 =
-    match x with
+:~ score x : i32 =
+    ?= x ?|
     | Empty => 3i32
     | Values values => length values +. index values 0i32 +. index values 1i32

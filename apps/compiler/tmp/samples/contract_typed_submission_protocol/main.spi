@@ -1,53 +1,53 @@
-nominal idle = ()
-nominal sent = ()
-nominal received = ()
-nominal closed = ()
+:! idle = ()
+:! sent = ()
+:! received = ()
+:! closed = ()
 
-union session state =
+:| session state =
     | Idle :: session idle
     | Sent :: string -> session sent
     | Received :: string -> session received
     | Closed :: string -> session closed
 
-union command from to =
+:| command from to =
     | Send :: string -> command idle sent
     | Receive :: command sent received
     | Close :: command received closed
 
-union rec protocol from to =
-    | Step :: forall from to. command from to -> protocol from to
-    | Compose :: forall from to.
-        (exists middle. protocol from middle * protocol middle to)
+:| ^ protocol from to =
+    | Step :: \* from to. command from to -> protocol from to
+    | Compose :: \* from to.
+        (\? middle. protocol from middle * protocol middle to)
         -> protocol from to
 
-inl advance forall from to.
+:= advance \* from to.
     (command : command from to)
     (session : session from)
     : session to =
-    match command, session with
+    ?= command, session ?|
     | Send xml, Idle => Sent xml
     | Receive, Sent _ => Received "135240000000063"
     | Close, Received protocol => Closed protocol
 
-inl rec run forall from to.
+:= ^ run \* from to.
     (program : protocol from to)
     (session : session from)
     : session to =
-    match program with
+    ?= program ?|
     | Step command => advance command session
     | Compose packed =>
-        inl exists middle. left, right = packed
+        := \? middle. left, right = packed
         run right (run left session)
 
-inl plan () : protocol idle closed =
-    Compose (exists (
+:= plan () : protocol idle closed =
+    Compose (\? (
         Step (Send "nfe.xml"),
-        Compose (exists (
+        Compose (\? (
             Step Receive,
             Step Close
         ))
     ))
 
-inl main () : string =
-    match run (plan ()) Idle with
+:= main () : string =
+    ?= run (plan ()) Idle ?|
     | Closed _ => "typed-session-closed"

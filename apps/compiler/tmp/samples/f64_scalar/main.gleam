@@ -24,9 +24,7 @@ pub fn main() {
                 let v17 = v7 >. v6
                 v17
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v21 =
         case v18 {
@@ -35,9 +33,7 @@ pub fn main() {
                 let v20 = v7 <. v19
                 v20
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v23 =
         case v21 {
@@ -45,9 +41,7 @@ pub fn main() {
                 let v22 = v9 == 3.0
                 v22
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v25 =
         case v23 {
@@ -55,9 +49,7 @@ pub fn main() {
                 let v24 = v12 == 2
                 v24
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v27 =
         case v25 {
@@ -65,9 +57,7 @@ pub fn main() {
                 let v26 = v13 == -1
                 v26
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v29 =
         case v27 {
@@ -75,16 +65,10 @@ pub fn main() {
                 let v28 = v15 == 1.5
                 v28
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v29 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

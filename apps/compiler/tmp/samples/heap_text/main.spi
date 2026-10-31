@@ -1,5 +1,5 @@
-inl main () : i32 =
-    inl ~word = "hi"
-    inl box = !!!!LayoutToHeap({ text = word })
-    inl opened = !!!!LayoutIndex(box)
-    if !!!!EQ(opened.text, "hi") then 0i32 else 1i32
+:= main () : i32 =
+    := ~word = "hi"
+    := box = !!!!LayoutToHeap({ text = word })
+    := opened = !!!!LayoutIndex(box)
+    ? !!!!EQ(opened::text, "hi") ?> 0i32 |: 1i32

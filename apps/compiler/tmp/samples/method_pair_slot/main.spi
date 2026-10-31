@@ -1,17 +1,17 @@
-union slot =
+:| slot =
     | None
     | Some : i32
 
-inl pick (n : i32) : slot * i32 =
-    if n =. 0i32 then
+:= pick (n : i32) : slot * i32 =
+    ? n =. 0i32 ?>
         None, 0i32
-    else
+    |:
         Some n, n
 
-inl main () : i32 =
-    inl ~n = 7i32
-    inl pair = join pick n
-    inl ~(left, right) = pair
-    match left with
-    | Some value => if value =. 7i32 && right =. 7i32 then 0i32 else 1i32
+:= main () : i32 =
+    := ~n = 7i32
+    := pair = ~~ pick n
+    := ~(left, right) = pair
+    ?= left ?|
+    | Some value => ? value =. 7i32 && right =. 7i32 ?> 0i32 |: 1i32
     | None => 1i32

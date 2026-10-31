@@ -1,32 +1,32 @@
-inl main () : i32 =
-    inl ~m = -2147483648i32
-    inl ~hi = 4294967295u32
-    inl ~neg1 = 0i32 -. 1i32
-    inl ~zero_f = 0.0f32
-    inl ~one_nine = 1.9f32
-    inl ~two_nine = 2.9f32
-    inl ~big = 4294967294u32
-    inl ~five = 5u32
-    inl ~zero_u = 0u32
-    inl f = zero_f -. one_nine
-    inl as_u = !!!!Conv(`u32, m)
-    inl back = !!!!Conv(`i32, as_u)
-    inl from_hi = !!!!Conv(`i32, hi)
-    inl from_neg = !!!!Conv(`u32, neg1)
-    inl trunc = !!!!Conv(`i32, f)
-    inl trunc_pos = !!!!Conv(`i32, two_nine)
-    inl half = as_u /. 2u32
-    inl q = big /. 2u32
-    inl r = five %. 3u32
-    inl flipped = !!!!BitwiseComplement(zero_u)
-    inl top = !!!!ShiftRight(hi, 31i32)
-    if m < -1i32 && m <= m && (m > 0i32) =. false then
-        if as_u > 1u32 && back =. m && from_hi =. neg1 && from_neg =. hi then
-            if trunc =. neg1 && trunc_pos =. 2i32 then
-                if half =. 1073741824u32 && q =. 2147483647u32 && r =. 2u32 then
-                    if flipped =. hi && top =. 1u32 then 0i32
-                    else 5i32
-                else 4i32
-            else 3i32
-        else 2i32
-    else 1i32
+:= main () : i32 =
+    := ~m = -2147483648i32
+    := ~hi = 4294967295u32
+    := ~neg1 = 0i32 -. 1i32
+    := ~zero_f = 0.0f32
+    := ~one_nine = 1.9f32
+    := ~two_nine = 2.9f32
+    := ~big = 4294967294u32
+    := ~five = 5u32
+    := ~zero_u = 0u32
+    := f = zero_f -. one_nine
+    := as_u = !!!!Conv(`u32, m)
+    := back = !!!!Conv(`i32, as_u)
+    := from_hi = !!!!Conv(`i32, hi)
+    := from_neg = !!!!Conv(`u32, neg1)
+    := trunc = !!!!Conv(`i32, f)
+    := trunc_pos = !!!!Conv(`i32, two_nine)
+    := half = as_u /. 2u32
+    := q = big /. 2u32
+    := r = five %. 3u32
+    := flipped = !!!!BitwiseComplement(zero_u)
+    := top = !!!!ShiftRight(hi, 31i32)
+    ? m < -1i32 && m <= m && (m > 0i32) =. !- ?>
+        ? as_u > 1u32 && back =. m && from_hi =. neg1 && from_neg =. hi ?>
+            ? trunc =. neg1 && trunc_pos =. 2i32 ?>
+                ? half =. 1073741824u32 && q =. 2147483647u32 && r =. 2u32 ?>
+                    ? flipped =. hi && top =. 1u32 ?> 0i32
+                    |: 5i32
+                |: 4i32
+            |: 3i32
+        |: 2i32
+    |: 1i32

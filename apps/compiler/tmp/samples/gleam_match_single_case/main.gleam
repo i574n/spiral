@@ -17,9 +17,7 @@ pub fn walk_0(v0: Int) -> Int {
                 let v3 = spiral_wrap_signed(v0 + 2, 32)
                 Us0Step(v0, v2, v3)
             }
-            False -> {
-                Us0Step(0, 1, 2)
-            }
+            False -> Us0Step(0, 1, 2)
         }
     case v6  {
         Us0Step(v7, v8, v9) -> {

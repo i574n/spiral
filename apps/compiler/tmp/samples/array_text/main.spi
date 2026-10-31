@@ -1,17 +1,17 @@
-nominal text_array = array_base string
+:! text_array = array_base string
 
-inl create (n : i32) : text_array = text_array !!!!ArrayCreate(`string, n)
-inl get (array : text_array) (i : i32) : string =
-    match array with
+:= create (n : i32) : text_array = text_array !!!!ArrayCreate(`string, n)
+:= get (array : text_array) (i : i32) : string =
+    ?= array ?|
     | text_array values => !!!!ArrayIndex(values, i)
-inl set (array : text_array) (i : i32) (value : string) : () =
-    match array with
+:= set (array : text_array) (i : i32) (value : string) : () =
+    ?= array ?|
     | text_array values => !!!!ArrayIndexSet(values, i, value)
 
-inl main () : i32 =
-    inl ~n = 2i32
-    inl a = create n
-    inl ~word = "hi"
+:= main () : i32 =
+    := ~n = 2i32
+    := a = create n
+    := ~word = "hi"
     set a 0i32 word
     set a 1i32 "yo"
-    if !!!!EQ(get a 0i32, "hi") then 0i32 else 1i32
+    ? !!!!EQ(get a 0i32, "hi") ?> 0i32 |: 1i32

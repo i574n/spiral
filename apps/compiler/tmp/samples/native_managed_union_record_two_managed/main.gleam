@@ -73,9 +73,7 @@ pub fn closure0(capt: Nil) -> fn(Int) -> Us0 {
     fn (v0) {
         let v1 = v0 == 0
         case v1 {
-            True -> {
-                Us0Empty
-            }
+            True -> Us0Empty
             False -> {
                 let v3 = spiral_array_create_filled(2, 0)
                 spiral_array_set(v3, 0, v0)
@@ -98,9 +96,7 @@ pub fn main() {
     let v1 = method0(v0)
     let v12 =
         case v1  {
-            Us0Empty -> {
-                3
-            }
+            Us0Empty -> 3
             Us0Item(v2, v3) -> {
                 let v4 = spiral_string_length(v2)
                 let v5 = v3.size
@@ -115,9 +111,7 @@ pub fn main() {
     let v13 = method1(v0)
     let v24 =
         case v13  {
-            Us0Empty -> {
-                3
-            }
+            Us0Empty -> 3
             Us0Item(v14, v15) -> {
                 let v16 = spiral_string_length(v14)
                 let v17 = v15.size

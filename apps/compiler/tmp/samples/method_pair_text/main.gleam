@@ -22,16 +22,10 @@ pub fn main() {
                 let v4 = v2 == "yo"
                 v4
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v5 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

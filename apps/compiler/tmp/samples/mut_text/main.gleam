@@ -54,11 +54,7 @@ pub fn main() {
     let v3 = spiral_ref_get(v1).l0
     let v4 = v3 == "hi"
     case v4 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

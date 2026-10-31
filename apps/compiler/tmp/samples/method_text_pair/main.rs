@@ -6,15 +6,15 @@ fn method0(mut v0: Rc<str>, mut v1: Rc<str>) -> (Rc<str>, Rc<str>) {
     if v2 {
         let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
         let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("nay"); } LIT.with(|lit| lit.clone()) };
-        (v3.clone(), v4.clone())
+        (v3, v4)
     } else {
-        (v0.clone(), v1.clone())
+        (v0, v1)
     }
 }
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
-    let (mut v2, mut v3): (Rc<str>, Rc<str>) = method0(v0.clone(), v1.clone());
+    let (mut v2, mut v3): (Rc<str>, Rc<str>) = method0(v0, v1);
     let v4: bool = &*v2 == "hi";
     let v6: bool = if v4 {
         let v5: bool = &*v3 == "yo";

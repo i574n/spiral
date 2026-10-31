@@ -220,15 +220,13 @@ defmodule Spiral.Cells.XCompat do
   def edition3?(path) do
     case nearest_project(path |> Path.expand() |> Path.dirname()) do
       nil -> false
-      project -> project |> File.read!() |> String.split(~r/\r?\n/) |> Enum.any?(&(String.trim(&1) == "edition: 3"))
+      dir -> dir |> Spiral.Cells.Manifest.read!() |> String.split(~r/\r?\n/) |> Enum.any?(&(String.trim(&1) == "edition: 3"))
     end
   end
 
   defp nearest_project(dir) do
-    project = Path.join(dir, "package.spiproj")
-
     cond do
-      File.regular?(project) -> project
+      Spiral.Cells.Manifest.exists?(dir) -> dir
       Path.dirname(dir) == dir -> nil
       true -> nearest_project(Path.dirname(dir))
     end

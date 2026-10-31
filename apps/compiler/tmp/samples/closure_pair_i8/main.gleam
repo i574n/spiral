@@ -3,12 +3,8 @@ pub fn f_c0(capt: #(Int)) -> fn(Int) -> #(Int, Int) {
         let #(v0) = capt
         let v2 = v1 == 0
         case v2 {
-            True -> {
-                #(0, 0)
-            }
-            False -> {
-                #(v0, 7)
-            }
+            True -> #(0, 0)
+            False -> #(v0, 7)
         }
     }
 }
@@ -23,16 +19,10 @@ pub fn main() {
                 let v5 = v3 == 7
                 v5
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v6 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

@@ -1,5 +1,5 @@
-type comment_params = { slug : string; id : i32 }
+:== comment_params = { slug : string; id : i32 }
 
-inl main () : i32 =
-    inl ~path = routes.route "/articles/:slug/comments/:id/:extra" ({ slug = ""; id = 0i32 } : comment_params)
-    sm.length path
+:= main () : i32 =
+    := ~path = routes::route "/articles/:slug/comments/:id/:extra" ({ slug = ""; id = 0i32 } : comment_params)
+    sm::length path

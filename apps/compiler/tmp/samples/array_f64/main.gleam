@@ -61,11 +61,7 @@ pub fn main() {
     let v3 = spiral_array_get(v1, 0)
     let v4 = v3 == 1.5
     case v4 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

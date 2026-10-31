@@ -1,26 +1,26 @@
-nominal approver_a = ()
-nominal approver_b = ()
+:! approver_a = ()
+:! approver_b = ()
 
-union approval approver =
+:| approval approver =
     | ApprovalA :: approval approver_a
     | ApprovalB :: approval approver_b
 
-union distinct left right =
+:| distinct left right =
     | DistinctAB :: distinct approver_a approver_b
     | DistinctBA :: distinct approver_b approver_a
 
-union quorum left right =
-    | Quorum :: forall left right.
+:| quorum left right =
+    | Quorum :: \* left right.
         approval left * approval right * distinct left right
         -> quorum left right
 
-inl combine forall left right.
+:= combine \* left right.
     (left : approval left)
     (right : approval right)
     (proof : distinct left right)
     : quorum left right =
     Quorum (left, right, proof)
 
-inl main () : string =
-    inl _ = combine ApprovalA ApprovalA DistinctAB
+:= main () : string =
+    := _ = combine ApprovalA ApprovalA DistinctAB
     "unreachable"

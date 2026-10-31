@@ -41,9 +41,7 @@ pub fn main() {
                 let v26 = v5 == -4
                 v26
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v29 =
         case v27 {
@@ -51,9 +49,7 @@ pub fn main() {
                 let v28 = v6 == -2
                 v28
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v31 =
         case v29 {
@@ -61,9 +57,7 @@ pub fn main() {
                 let v30 = v7 == -3
                 v30
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v33 =
         case v31 {
@@ -71,9 +65,7 @@ pub fn main() {
                 let v32 = v8 == -56
                 v32
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v35 =
         case v33 {
@@ -81,9 +73,7 @@ pub fn main() {
                 let v34 = v11 == 66
                 v34
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v37 =
         case v35 {
@@ -91,9 +81,7 @@ pub fn main() {
                 let v36 = v12 == 2
                 v36
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v39 =
         case v37 {
@@ -101,9 +89,7 @@ pub fn main() {
                 let v38 = v14 == 8
                 v38
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v41 =
         case v39 {
@@ -111,9 +97,7 @@ pub fn main() {
                 let v40 = v15 == 207
                 v40
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v43 =
         case v41 {
@@ -121,9 +105,7 @@ pub fn main() {
                 let v42 = v16 == 199
                 v42
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v45 =
         case v43 {
@@ -131,9 +113,7 @@ pub fn main() {
                 let v44 = v17 == 240
                 v44
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v47 =
         case v45 {
@@ -141,9 +121,7 @@ pub fn main() {
                 let v46 = v20 == 2857
                 v46
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v49 =
         case v47 {
@@ -151,9 +129,7 @@ pub fn main() {
                 let v48 = v21 == 1
                 v48
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v51 =
         case v49 {
@@ -161,9 +137,7 @@ pub fn main() {
                 let v50 = v22 == -20000
                 v50
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v53 =
         case v51 {
@@ -171,16 +145,10 @@ pub fn main() {
                 let v52 = v24 == 14464
                 v52
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v53 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

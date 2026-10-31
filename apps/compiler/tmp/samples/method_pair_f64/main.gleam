@@ -1,12 +1,8 @@
 pub fn method0(v0: Int) -> #(Float, Float) {
     let v1 = v0 == 0
     case v1 {
-        True -> {
-            #(0.0, 0.0)
-        }
-        False -> {
-            #(1.5, 2.5)
-        }
+        True -> #(0.0, 0.0)
+        False -> #(1.5, 2.5)
     }
 }
 pub fn main() {
@@ -19,16 +15,10 @@ pub fn main() {
                 let v4 = v2 == 2.5
                 v4
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v5 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

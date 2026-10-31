@@ -40,7 +40,7 @@ defmodule Spiral.Cells.TargetsTest do
     dcc = Path.join(dir, "dcc32.exe")
     fpc = Path.join(dir, "fpc.exe")
     File.write!(fpc, "")
-    assert {^fpc, "fpc", ["-O2", "-Mdelphi", "-l-", "-v0w"]} = Targets.delphi_compiler(dcc: dcc, fpc: fpc)
+    assert {^fpc, "fpc", ["-Px86_64", "-O2", "-Mdelphi", "-l-", "-v0w"]} = Targets.delphi_compiler(dcc: dcc, fpc: fpc)
     File.write!(dcc, "")
     assert {^dcc, "dcc32", []} = Targets.delphi_compiler(dcc: dcc, fpc: fpc)
   end
@@ -226,6 +226,27 @@ defmodule Spiral.Cells.TargetsTest do
     passing = Path.join(dir, "passing.c")
     File.write!(passing, "#include <stdio.h>\nint main(void) { printf(\"ok\\n\"); return 0; }\n")
     assert {:ok, %{stdout: "ok"}} = Targets.run(%{tool: :c}, passing, [], 60_000, deadline())
+  end
+
+  @fpc Toolchain.fpc([])
+  @tag skip: is_nil(@fpc) && "fpc is not installed"
+  test "a Delphi cell's output is the program's stdout, never the build's warnings" do
+    dir = Spiral.Cells.TestHelpers.tmp_dir!("delphi-cell")
+    path = Path.join(dir, "main.pas")
+
+    File.write!(path, """
+    program main;
+    function unused_value: integer;
+    var x: integer;
+    begin
+      unused_value := x
+    end;
+    begin
+      writeln('ok')
+    end.
+    """)
+
+    assert {:ok, %{stdout: "ok"}} = Targets.run(%{tool: :delphi}, path, [fpc: @fpc, dcc: nil], 120_000, deadline())
   end
 
   test "zig runs its program; wgsl runs the shader: exit 0 passes, 3 (no adapter) or no runner is unsupported, others fail" do

@@ -8,9 +8,7 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
 pub fn count_0(v0: Int) -> Int {
     let v1 = v0 <= 0
     case v1 {
-        True -> {
-            0
-        }
+        True -> 0
         False -> {
             let v2 = spiral_wrap_signed(v0 - 1, 32)
             count_0(v2)

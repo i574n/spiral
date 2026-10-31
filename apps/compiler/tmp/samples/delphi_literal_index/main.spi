@@ -1,4 +1,4 @@
-inl main () : i32 =
-    inl ~at = 0i32
-    inl c = !!!!StringIndex("z", at)
-    if !!!!EQ(c, 'z') then 42i32 else 1i32
+:= main () : i32 =
+    := ~at = 0i32
+    := c = !!!!StringIndex("z", at)
+    ? !!!!EQ(c, 'z') ?> 42i32 |: 1i32

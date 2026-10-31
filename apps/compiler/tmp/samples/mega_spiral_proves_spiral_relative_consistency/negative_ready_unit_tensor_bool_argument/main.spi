@@ -1,7 +1,7 @@
-open main
+:< main
 
-inl impossible_ready_unit_tensor_accepts_bool_argument () =
-    inl function_source
+:= impossible_ready_unit_tensor_accepts_bool_argument () =
+    := function_source
         : exact_linear_indexed_closed_value_source
             (
                 exact_linear_indexed_closed_source_lambda
@@ -18,7 +18,7 @@ inl impossible_ready_unit_tensor_accepts_bool_argument () =
             exact_linear_indexed_closed_lambda_value_source (
                 exact_linear_indexed_closed_tensor_tail_lambda_value,
                 "the-unit-TensorTail-Lambda-is-a-closed-value"))
-    inl argument =
+    := argument =
         ExactLinearIndexedClosedValueSourceBoolTrue
             "the-Bool-argument-is-a-closed-value-but-has-the-wrong-domain-for-this-Ready-beta"
     ExactLinearIndexedClosedReadyBetaTensorTail (
@@ -26,5 +26,5 @@ inl impossible_ready_unit_tensor_accepts_bool_argument () =
         argument,
         "this-construction-must-be-rejected-because-Ready-beta-keeps-the-function-domain-and-argument-type-aligned")
 
-inl main () =
+:= main () =
     impossible_ready_unit_tensor_accepts_bool_argument ()

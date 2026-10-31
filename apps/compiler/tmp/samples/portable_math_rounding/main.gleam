@@ -13,17 +13,13 @@ pub fn main() {
     let v8 = v7(v0)
     let v9 = v8 != 2.0
     case v9 {
-        True -> {
-            1
-        }
+        True -> 1
         False -> {
             let v10 = float.ceiling
             let v11 = v10(v0)
             let v12 = v11 != 3.0
             case v12 {
-                True -> {
-                    2
-                }
+                True -> 2
                 False -> {
                     let v13 = float.floor
                     let v14 = v13(v0)
@@ -38,9 +34,7 @@ pub fn main() {
                             False -> {
                                 let v18 = v15 <. 0.5
                                 case v18 {
-                                    True -> {
-                                        v14
-                                    }
+                                    True -> v14
                                     False -> {
                                         let v19 = v14 /. 2.0
                                         let v20 = float.floor
@@ -48,9 +42,7 @@ pub fn main() {
                                         let v22 = v21 *. 2.0
                                         let v23 = v22 == v14
                                         case v23 {
-                                            True -> {
-                                                v14
-                                            }
+                                            True -> v14
                                             False -> {
                                                 let v24 = v14 +. 1.0
                                                 v24
@@ -62,9 +54,7 @@ pub fn main() {
                         }
                     let v28 = v27 != 3.0
                     case v28 {
-                        True -> {
-                            3
-                        }
+                        True -> 3
                         False -> {
                             let v29 = float.floor
                             let v30 = v29(v1)
@@ -79,9 +69,7 @@ pub fn main() {
                                     False -> {
                                         let v34 = v31 <. 0.5
                                         case v34 {
-                                            True -> {
-                                                v30
-                                            }
+                                            True -> v30
                                             False -> {
                                                 let v35 = v30 /. 2.0
                                                 let v36 = float.floor
@@ -89,9 +77,7 @@ pub fn main() {
                                                 let v38 = v37 *. 2.0
                                                 let v39 = v38 == v30
                                                 case v39 {
-                                                    True -> {
-                                                        v30
-                                                    }
+                                                    True -> v30
                                                     False -> {
                                                         let v40 = v30 +. 1.0
                                                         v40
@@ -103,9 +89,7 @@ pub fn main() {
                                 }
                             let v44 = v43 != 3.0
                             case v44 {
-                                True -> {
-                                    4
-                                }
+                                True -> 4
                                 False -> {
                                     let v45 = float.floor
                                     let v46 = v45(v2)
@@ -120,9 +104,7 @@ pub fn main() {
                                             False -> {
                                                 let v50 = v47 <. 0.5
                                                 case v50 {
-                                                    True -> {
-                                                        v46
-                                                    }
+                                                    True -> v46
                                                     False -> {
                                                         let v51 = v46 /. 2.0
                                                         let v52 = float.floor
@@ -130,9 +112,7 @@ pub fn main() {
                                                         let v54 = v53 *. 2.0
                                                         let v55 = v54 == v46
                                                         case v55 {
-                                                            True -> {
-                                                                v46
-                                                            }
+                                                            True -> v46
                                                             False -> {
                                                                 let v56 = v46 +. 1.0
                                                                 v56
@@ -144,9 +124,7 @@ pub fn main() {
                                         }
                                     let v60 = v59 != -2.0
                                     case v60 {
-                                        True -> {
-                                            5
-                                        }
+                                        True -> 5
                                         False -> {
                                             let v61 = float.floor
                                             let v62 = v61(v3)
@@ -161,9 +139,7 @@ pub fn main() {
                                                     False -> {
                                                         let v66 = v63 <. 0.5
                                                         case v66 {
-                                                            True -> {
-                                                                v62
-                                                            }
+                                                            True -> v62
                                                             False -> {
                                                                 let v67 = v62 /. 2.0
                                                                 let v68 = float.floor
@@ -171,9 +147,7 @@ pub fn main() {
                                                                 let v70 = v69 *. 2.0
                                                                 let v71 = v70 == v62
                                                                 case v71 {
-                                                                    True -> {
-                                                                        v62
-                                                                    }
+                                                                    True -> v62
                                                                     False -> {
                                                                         let v72 = v62 +. 1.0
                                                                         v72
@@ -185,9 +159,7 @@ pub fn main() {
                                                 }
                                             let v76 = v75 != 4.0
                                             case v76 {
-                                                True -> {
-                                                    6
-                                                }
+                                                True -> 6
                                                 False -> {
                                                     let v77 = float.floor
                                                     let v78 = v77(v4)
@@ -202,9 +174,7 @@ pub fn main() {
                                                             False -> {
                                                                 let v82 = v79 <. 0.5
                                                                 case v82 {
-                                                                    True -> {
-                                                                        v78
-                                                                    }
+                                                                    True -> v78
                                                                     False -> {
                                                                         let v83 = v78 /. 2.0
                                                                         let v84 = float.floor
@@ -212,9 +182,7 @@ pub fn main() {
                                                                         let v86 = v85 *. 2.0
                                                                         let v87 = v86 == v78
                                                                         case v87 {
-                                                                            True -> {
-                                                                                v78
-                                                                            }
+                                                                            True -> v78
                                                                             False -> {
                                                                                 let v88 = v78 +. 1.0
                                                                                 v88
@@ -226,9 +194,7 @@ pub fn main() {
                                                         }
                                                     let v92 = v91 != 0.0
                                                     case v92 {
-                                                        True -> {
-                                                            7
-                                                        }
+                                                        True -> 7
                                                         False -> {
                                                             let v93 = spiral_math_atan2(v5, v5)
                                                             let v94 = v93 *. 1000.0
@@ -236,20 +202,14 @@ pub fn main() {
                                                             let v96 = v95(v94)
                                                             let v97 = v96 != 785.0
                                                             case v97 {
-                                                                True -> {
-                                                                    8
-                                                                }
+                                                                True -> 8
                                                                 False -> {
                                                                     let v98 = float.floor
                                                                     let v99 = v98(v6)
                                                                     let v100 = v99 != 2.0
                                                                     case v100 {
-                                                                        True -> {
-                                                                            9
-                                                                        }
-                                                                        False -> {
-                                                                            0
-                                                                        }
+                                                                        True -> 9
+                                                                        False -> 0
                                                                     }
                                                                 }
                                                             }

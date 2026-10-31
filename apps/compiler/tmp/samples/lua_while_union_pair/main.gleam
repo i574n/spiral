@@ -127,9 +127,7 @@ pub fn loop1 (v6: SpiralRef(Mut1), v7: SpiralRef(Mut1), v9: SpiralRef(Mut2)) {
                     spiral_ref_set(v7, Mut1(l0: v15))
                     Nil
                 }
-                False -> {
-                Nil
-                }
+                False -> Nil
             }
             let v16 = spiral_ref_get(v9).l0
             let v17 = Uh0Cons(v11, v16)
@@ -170,29 +168,19 @@ pub fn main() {
                                                 let v33 = spiral_wrap_signed(v32 + v26, 32)
                                                 v33
                                             }
-                                            _ -> {
-                                                -1
-                                            }
+                                            _ -> -1
                                         }
                                     }
-                                    _ -> {
-                                        -1
-                                    }
+                                    _ -> -1
                                 }
                             }
-                            _ -> {
-                                -1
-                            }
+                            _ -> -1
                         }
                     }
-                    _ -> {
-                        -1
-                    }
+                    _ -> -1
                 }
             }
-            _ -> {
-                -1
-            }
+            _ -> -1
         }
     let v39 = spiral_ref_get(v7).l0
     let v40 = spiral_wrap_signed(v38 + v39, 32)

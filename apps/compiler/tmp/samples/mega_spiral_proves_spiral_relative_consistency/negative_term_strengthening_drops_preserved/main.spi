@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_term_strengthening_drops_preserved () :
+:= impossible_term_strengthening_drops_preserved () :
     exact_linear_indexed_term_strengthening
         exact_linear_indexed_open_unit_substitution_context
         exact_linear_indexed_open_unit_substitution_target_usage
@@ -9,4 +9,4 @@ inl impossible_term_strengthening_drops_preserved () :
         (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) =
     exact_linear_indexed_open_unit_tensor_strengthening ()
 
-inl main () = impossible_term_strengthening_drops_preserved ()
+:= main () = impossible_term_strengthening_drops_preserved ()

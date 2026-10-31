@@ -41,16 +41,16 @@ fn score_0(mut v0: US0) -> i32 {
 fn spiral_main() -> i32 {
     let v0: i32 = 7i32;
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1.clone() });
+    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1 });
     let v3: i32 = 1i32;
-    let v4: Rc<Heap1> = Rc::new(Heap1 { l0: v2.clone(), l1: v3 });
+    let v4: Rc<Heap1> = Rc::new(Heap1 { l0: v2, l1: v3 });
     let v5: bool = true;
     let v8: US0 = if v5 {
-        US0::US0_Held(v4.clone())
+        US0::US0_Held(v4)
     } else {
         US0::US0_None
     };
-    score_0(v8.clone())
+    score_0(v8)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

@@ -1,8 +1,8 @@
-open a
-open b
+:< a
+:< b
 
-inl main () : i32 =
-    inl x = Hit
-    match x with
+:= main () : i32 =
+    := x = Hit
+    ?= x ?|
     | Hit => 1i32
     | _ => 0i32

@@ -1,13 +1,13 @@
-open main
+:< main
 
-inl impossible_recoverable_fenced_lock_receipt_owner_mismatch
+:= impossible_recoverable_fenced_lock_receipt_owner_mismatch
     ()
     : erp_p2p_recoverable_fenced_lock_receipt nat_two nat_four requisition_drafted goods_partially_received
     =
-    inl store, outbox = erp_p2p_four_event_commit ()
-    inl stale_owner : erp_p2p_fence_owner nat_one = erp_p2p_fence_owner "owner-a"
+    := store, outbox = erp_p2p_four_event_commit ()
+    := stale_owner : erp_p2p_fence_owner nat_one = erp_p2p_fence_owner "owner-a"
     erp_p2p_recoverable_fenced_lock_receipt
         (stale_owner, store, outbox, "forged-stale-owner-receipt")
 
-inl main () =
+:= main () =
     impossible_recoverable_fenced_lock_receipt_owner_mismatch ()

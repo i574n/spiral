@@ -1,10 +1,10 @@
-inl rec step ~n ~acc ~extra =
-    if n =. 0i32 then acc, extra else
-        join step (n -. 1i32) (acc +. 1i32) (extra +. 2i32)
+:= ^ step ~n ~acc ~extra =
+    ? n =. 0i32 ?> acc, extra |:
+        ~~ step (n -. 1i32) (acc +. 1i32) (extra +. 2i32)
 
-inl read ~(acc, extra) : i32 =
-    if acc =. 4i32 && extra =. 8i32 then 0i32 else 1i32
+:= read ~(acc, extra) : i32 =
+    ? acc =. 4i32 && extra =. 8i32 ?> 0i32 |: 1i32
 
-inl main () : i32 =
-    inl ~n = 4i32
-    join read (join step n 0i32 0i32)
+:= main () : i32 =
+    := ~n = 4i32
+    ~~ read (~~ step n 0i32 0i32)

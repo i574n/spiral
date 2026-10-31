@@ -17,9 +17,9 @@ func spiral_main() -> Int32 {
     let v1: Int32 = 22
     var v2: Int32 = 0
     var v3: Int32 = 0
-    let spiral_tuple149 = sp_method0(v0, v1)
-    v2 = spiral_tuple149.0
-    v3 = spiral_tuple149.1
+    let spiral_tuple142 = sp_method0(v0, v1)
+    v2 = spiral_tuple142.0
+    v3 = spiral_tuple142.1
     let v4: Int32 = sp_method1(v2, v3)
     let v5: Int32 = (v4 &- 42)
     return v5

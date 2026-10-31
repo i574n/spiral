@@ -1,0 +1,19 @@
+:= main () : i32 =
+    !!!!BackendSwitch({
+        Gleam = \ () => 0i32
+        Lua = \ () => 0i32
+        Fsharp = \ () => 0i32
+        Python = \ () => 0i32
+        Cpp = \ () => 0i32
+        Rust = \ () => 0i32
+        CppHost = \ () => 0i32
+        Zig = \ () => 0i32
+        Lean = \ () => 0i32
+        TypeScript = \ () => 0i32
+        C = \ () => 0i32
+        Delphi = \ () => 0i32
+        Wasm = \ () => 0i32
+        Kotlin = \ () => 0i32
+        Swift = \ () => 0i32
+        Bend = \ () => $'backend_switch_has_no_Bend_arm_in_lib_spiral' : i32
+    })

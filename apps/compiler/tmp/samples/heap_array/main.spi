@@ -1,18 +1,18 @@
-nominal i32_array = array_base i32
+:! i32_array = array_base i32
 
-inl create (n : i32) : i32_array = i32_array !!!!ArrayCreate(`i32, n)
-inl get (array : i32_array) (i : i32) : i32 =
-    match array with
+:= create (n : i32) : i32_array = i32_array !!!!ArrayCreate(`i32, n)
+:= get (array : i32_array) (i : i32) : i32 =
+    ?= array ?|
     | i32_array values => !!!!ArrayIndex(values, i)
-inl set (array : i32_array) (i : i32) (value : i32) : () =
-    match array with
+:= set (array : i32_array) (i : i32) (value : i32) : () =
+    ?= array ?|
     | i32_array values => !!!!ArrayIndexSet(values, i, value)
 
-inl main () : i32 =
-    inl ~n = 2i32
-    inl a = create n
-    inl ~x = 7i32
+:= main () : i32 =
+    := ~n = 2i32
+    := a = create n
+    := ~x = 7i32
     set a 0i32 x
-    inl box = !!!!LayoutToHeap({ values = a })
-    inl opened = !!!!LayoutIndex(box)
-    if get opened.values 0i32 =. 7i32 then 0i32 else 1i32
+    := box = !!!!LayoutToHeap({ values = a })
+    := opened = !!!!LayoutIndex(box)
+    ? get opened::values 0i32 =. 7i32 ?> 0i32 |: 1i32

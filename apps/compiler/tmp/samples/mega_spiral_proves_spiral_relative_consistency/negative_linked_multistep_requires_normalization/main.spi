@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_linked_multistep_requires_normalization
+:= impossible_linked_multistep_requires_normalization
     (trace : exact_linear_indexed_closed_bool_program exact_linear_closed_bool_false_normal)
     : exact_linear_indexed_closed_bool_linked_multistep exact_linear_closed_bool_false_normal
     =
@@ -8,5 +8,5 @@ inl impossible_linked_multistep_requires_normalization
         trace,
         "an-unlinked-public-trace-cannot-be-repacked-as-the-normalization-backed-authority")
 
-inl main () =
+:= main () =
     impossible_linked_multistep_requires_normalization

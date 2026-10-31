@@ -1,2 +1,2 @@
-inl main () : i32 = real
+:= main () : i32 = ~>
     $"spiral_abi_libc_div_pack(17,5)" : i32

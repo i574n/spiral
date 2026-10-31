@@ -1,21 +1,21 @@
-union phase =
+:| phase =
     | Cold
     | Warm
     | Hot
     | Done
 
-let score x : i32 =
-    match x with
+:~ score x : i32 =
+    ?= x ?|
     | Cold => 1i32
     | Warm => 2i32
     | Hot => 3i32
     | Done => 4i32
 
-inl main () =
-    inl ~selector = 3i32
-    inl value =
-        if selector =. 0i32 then Cold
-        elif selector =. 1i32 then Warm
-        elif selector =. 2i32 then Hot
-        else Done
+:= main () =
+    := ~selector = 3i32
+    := value =
+        ? selector =. 0i32 ?> Cold
+        |? selector =. 1i32 ?> Warm
+        |? selector =. 2i32 ?> Hot
+        |: Done
     score value -. 4i32

@@ -1,64 +1,64 @@
-nominal schema_v4 = ()
-nominal schema_v5 = ()
-nominal draft = ()
-nominal authorized = ()
-nominal cancelled = ()
+:! schema_v4 = ()
+:! schema_v5 = ()
+:! draft = ()
+:! authorized = ()
+:! cancelled = ()
 
-union document schema state =
+:| document schema state =
     | DraftV4 :: string -> document schema_v4 draft
     | AuthorizedV4 :: string -> document schema_v4 authorized
     | DraftV5 :: string -> document schema_v5 draft
     | AuthorizedV5 :: string -> document schema_v5 authorized
     | CancelledV5 :: string -> document schema_v5 cancelled
 
-union rec nat =
+:| ^ nat =
     | Z
     | S : nat
 
-union rec batch =
+:| ^ batch =
     | Empty
-    | Cons : (exists schema state. document schema state * batch)
+    | Cons : (\? schema state. document schema state * batch)
 
-inl rec fold_batch
-    (visitor : forall schema state. document schema state -> nat -> nat)
+:= ^ fold_batch
+    (visitor : \* schema state. document schema state -> nat -> nat)
     (count : nat)
     (batch : batch)
     : nat =
-    match batch with
+    ?= batch ?|
     | Empty => count
     | Cons pair =>
-        inl exists schema state_index. document, tail = pair
+        := \? schema state_index. document, tail = pair
         fold_batch `$visitor (visitor document count) tail
 
-inl count_authorized forall schema state.
+:= count_authorized \* schema state.
     (document : document schema state)
     (count : nat)
     : nat =
-    match document with
+    ?= document ?|
     | DraftV4 _ => count
     | AuthorizedV4 _ => S count
     | DraftV5 _ => count
     | AuthorizedV5 _ => S count
     | CancelledV5 _ => count
 
-inl main () : string =
-    inl documents =
-        Cons (exists (
+:= main () : string =
+    := documents =
+        Cons (\? (
             DraftV4 "NFE-A",
-            Cons (exists (
+            Cons (\? (
                 AuthorizedV5 "NFE-B",
-                Cons (exists (
+                Cons (\? (
                     AuthorizedV4 "NFE-C",
                     Empty
                 ))
             ))
         ))
-    inl count = fold_batch `$count_authorized Z documents
-    match count with
+    := count = fold_batch `$count_authorized Z documents
+    ?= count ?|
     | S rest =>
-        match rest with
+        ?= rest ?|
         | S final =>
-            match final with
+            ?= final ?|
             | Z => "two-authorized"
             | _ => "unexpected"
         | _ => "unexpected"

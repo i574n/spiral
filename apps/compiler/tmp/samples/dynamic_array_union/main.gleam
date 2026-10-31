@@ -65,9 +65,7 @@ pub type Us0 {
 }
 pub fn score_0(v0: Us0) -> Int {
     case v0  {
-        Us0Empty -> {
-            0
-        }
+        Us0Empty -> 0
         Us0Values(v1) -> {
             let v2 = v1.size
             let v3 = spiral_array_get(v1, 0)

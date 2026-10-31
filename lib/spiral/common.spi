@@ -160,27 +160,56 @@ test retry_fn_2 =
     native_rng_store next
     next
 
-/// ### native_random_between
-:= native_random_between (lo : i64) (hi : i64) : i64 =
-    := x = native_rng_next ()
+/// ### random_in_span
+:= random_in_span (x : u64) (lo : i64) (hi : i64) : i64 =
     := span = hi - lo
     ? span <= 0i64 ?> lo |: lo + convert.i64 (x % convert.u64 span)
+
+/// ### typescript_random_u53
+:= typescript_random_u53 () : u64 = $'BigInt(Math.floor(Math.random() * 9007199254740992))' : u64
+
+/// ### native_random_between
+:= native_random_between (lo : i64) (hi : i64) : i64 = random_in_span (native_rng_next ()) lo hi
+
+/// ### process_counter_add
+:= process_counter_add (name : string) (n : u64) : u64 =
+    run_target \|
+        | Rust => \ () =>
+            global """
+                fn spiral_process_counter_add(name: &str, n: u64) -> u64 {
+                    use std::collections::HashMap;
+                    use std::sync::Mutex;
+                    static COUNTERS: Mutex<Option<HashMap<String, u64>>> = Mutex::new(None);
+                    let mut guard = COUNTERS.lock().unwrap();
+                    let total = guard.get_or_insert_with(HashMap::new).entry(name.to_string()).or_insert(0);
+                    *total += n;
+                    *total
+                }
+                """
+            $'spiral_process_counter_add(&*!name, !n)' : u64
+        | _ => \ () => failwith "process_counter_add: Rust only; on the BEAM use an otp_actor counter"
+
+/// ### process_counter_value
+:= process_counter_value (name : string) : u64 = process_counter_add name 0u64
+
+///> rust
+test process_counters_add_up_per_name =
+    := ~a, b = "spiral-counter-test-a", "spiral-counter-test-b"
+    process_counter_add a 2u64 |> ignore
+    process_counter_add a 3u64 |> ignore
+    process_counter_add b 1u64 |> ignore
+    (process_counter_value a, process_counter_value b, process_counter_value "spiral-counter-test-none")
+    |> _assert_eq (5u64, 1u64, 0u64)
 
 /// ### random'
 := random' \* t. (min : t) (max : t) : t =
     run_target \|
-        | Zig => \ () =>
-            := x = guid.zig_random_u64 ()
-            $'(blk: { const lo: i128 = !min; const span: i128 = \@as(i128, !max) - lo; const n: i128 = if (span <= 0) \
-                0 else \@intCast(\@as(u128, !x) % \@as(u128, \@intCast(span))); break :blk \@as(`t, \@intCast(lo + \
-                n)); })' : t
+        | Zig => \ () => random_in_span (guid.zig_random_u64 ()) (convert.i64 min) (convert.i64 max) |> convert.numeric_conv
         | Rust => \ () => native_random_between (convert.i64 min) (convert.i64 max) |> convert.convert
         | Cuda _ => \ () =>
             global "import random"
             $'random.randrange(!min, !max)' : t
-        | TypeScript => \ () =>
-            $'(() => { const a = Number(!min), b = Number(!max); const r = a + Math.floor(Math.random() * Math.max(0, \
-                b - a)); return (typeof !min === "bigint" ? BigInt(r) : r); })()' : t
+        | TypeScript => \ () => random_in_span (typescript_random_u53 ()) (convert.i64 min) (convert.i64 max) |> convert.numeric_conv
         | Lua => \ () =>
             := low, high = convert.i32 min, convert.i32 max - 1i32
             convert.convert (? high < low ?> low |: lua_math_random low high)

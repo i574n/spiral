@@ -19,30 +19,20 @@ pub fn main() {
     case v16 {
         True -> {
             case v10 {
-                True -> {
-                    1
-                }
+                True -> 1
                 False -> {
                     case v12 {
-                        True -> {
-                            2
-                        }
+                        True -> 2
                         False -> {
                             case v14 {
-                                True -> {
-                                    3
-                                }
-                                False -> {
-                                    0
-                                }
+                                True -> 3
+                                False -> 0
                             }
                         }
                     }
                 }
             }
         }
-        False -> {
-            4
-        }
+        False -> 4
     }
 }

@@ -1,11 +1,11 @@
-inl rec all_pos ~n ~ok =
-    if n =. 0i32 then ok else
-        join all_pos (n -. 1i32) (ok && (n > 0i32))
+:= ^ all_pos ~n ~ok =
+    ? n =. 0i32 ?> ok |:
+        ~~ all_pos (n -. 1i32) (ok && (n > 0i32))
 
-inl main () : i32 =
-    inl ~n = 3i32
-    inl yes = join all_pos n true
-    inl no = join all_pos n false
-    if yes then
-        if no then 1i32 else 0i32
-    else 2i32
+:= main () : i32 =
+    := ~n = 3i32
+    := yes = ~~ all_pos n !+
+    := no = ~~ all_pos n !-
+    ? yes ?>
+        ? no ?> 1i32 |: 0i32
+    |: 2i32

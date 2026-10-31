@@ -405,6 +405,7 @@ function Search-DotnetSdk($version) {
 }
 
 function ClearCargoTarget($path) {
+    if ([string]::IsNullOrWhiteSpace($path)) { throw "ClearCargoTarget: an empty path would clear \target at the drive root" }
     Remove-Item "$path/target/debug/deps" -Recurse -Force -ErrorAction Ignore
     Remove-Item "$path/target/debug/incremental" -Recurse -Force -ErrorAction Ignore
     Remove-Item "$path/target/debug/build" -Recurse -Force -ErrorAction Ignore

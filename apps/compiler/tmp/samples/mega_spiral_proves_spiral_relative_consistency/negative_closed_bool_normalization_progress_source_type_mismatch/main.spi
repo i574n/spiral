@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_closed_bool_normalization_progress_source_type_mismatch ()
+:= impossible_closed_bool_normalization_progress_source_type_mismatch ()
     : exact_linear_indexed_term
         exact_linear_free_context_empty
         exact_linear_indexed_usage_empty
@@ -10,5 +10,5 @@ inl impossible_closed_bool_normalization_progress_source_type_mismatch ()
             (ExactLinearIndexedClosedBoolNormalizationFalse
                 "a-Bool-normalization-progress-source-cannot-be-reclassified-as-Unit"))
 
-inl main () =
+:= main () =
     impossible_closed_bool_normalization_progress_source_type_mismatch ()

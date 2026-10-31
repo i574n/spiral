@@ -42,7 +42,8 @@
     =
     ?= contexts ?|
     | context :: rest =>
-        check_contexts s rest lets assertions (check_assertions (bound { s ?| context = context } lets) assertions acc)
+        := at = bound { s ?| context = context; current = context } lets
+        check_contexts s rest lets assertions (check_assertions at assertions acc)
     | [] => acc
 
 :~ ^ check_rules (s : scope) (rules : list rule) (fired : list located) (acc : list failure) : list failure =
@@ -64,9 +65,27 @@
     | p :: rest => check_patterns s rest (check_rules (bound s p.lets) p.rules [] acc)
     | [] => listm.rev acc
 
+:~ ^ is_bound (name : string) (lets : list binding) : bool =
+    ?= lets ?|
+    | b :: rest => ? b.name = name ?> true |: is_bound name rest
+    | [] => false
+
+:~ ^ unseen (lets : list binding) (acc : list binding) : list binding =
+    ?= lets ?|
+    | b :: rest => unseen rest (? is_bound b.name acc ?> acc |: b :: acc)
+    | [] => acc
+
+:~ ^ shared_lets (patterns : list pattern) (acc : list binding) : list binding =
+    ?= patterns ?|
+    | p :: rest => shared_lets rest (unseen p.lets acc)
+    | [] => listm.rev acc
+
 := validate_on (today : string) (patterns : list pattern) (document : xml_node) : list failure =
     := root = document_root document
-    check_patterns { context = root; root = root; variables = []; today = today } patterns []
+    := namespaces = listm.concat (listm.map (\ (p : pattern) => p.namespaces) patterns)
+    := start = { context = root; current = root; root = root; variables = []; today = today; namespaces = namespaces }
+    := shared = bound start (shared_lets patterns [])
+    check_patterns shared patterns []
 
 := validate (patterns : list pattern) (document : xml_node) : list failure = validate_on "" patterns document
 
@@ -76,6 +95,7 @@
     | [] => acc
 
 ///- --timeout 900000
+
 ///> rust
 test fires_the_first_matching_rule_per_pattern =
     := rules =
@@ -95,6 +115,40 @@ test fires_the_first_matching_rule_per_pattern =
     | _ => failwith "one document"
 
 ///- --timeout 900000
+
+///> rust
+test current_is_each_rule_context_node =
+    := rules =
+        "<schema><pattern id=\"p\"><rule context=\"line\">"
+        ++# "<assert id=\"U\" flag=\"fatal\" test=\"not(../(* except current())[@code = current()/@code])\">"
+        ++# "unique</assert></rule></pattern></schema>"
+    := document = "<doc><line code=\"a\"/><line code=\"b\"/><line code=\"a\"/></doc>"
+    ?= read_xml document ?|
+    | root :: [] =>
+        := failures = validate (read_schematron rules) root
+        ? listm.length failures <> 2i32 ?> failwith "the two lines sharing code a fail, the line with code b holds"
+    | _ => failwith "one document"
+
+///- --timeout 900000
+
+///> rust
+test compiled_rules_match_names_by_namespace =
+    := xsl =
+        "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns:cbc=\"urn:cbc\" version=\"3.0\">"
+        ++# "<xsl:template match=\"cbc:Reference\" priority=\"1000\" mode=\"M1\">"
+        ++# "<xsl:choose><xsl:when test=\"false()\"/>"
+        ++# "<xsl:otherwise><xsl:message><xsl:text>Fatal:</xsl:text><xsl:text>seen</xsl:text></xsl:message>"
+        ++# "</xsl:otherwise></xsl:choose></xsl:template></xsl:stylesheet>"
+    := document = "<doc xmlns:cbc=\"urn:cbc\" xmlns:ds=\"urn:ds\"><cbc:Reference/><ds:Reference/><ds:Reference/></doc>"
+    ?= read_xml document ?|
+    | root :: [] =>
+        := failures = validate (read_compiled_schematron xsl) root
+        ? listm.length failures <> 1i32
+        ?> failwith "only the urn:cbc Reference is a cbc:Reference; both ds:Reference stay out"
+    | _ => failwith "one document"
+
+///- --timeout 900000
+
 ///> rust
 test lets_and_includes_assemble_the_schema =
     := rules =
@@ -130,4 +184,22 @@ test lets_and_includes_assemble_the_schema =
             ? fatal_count (validate (read_schematron_with Fatal unflagged) bare) 0i32 <> 1i32
             ?> failwith "a profile can make unflagged asserts fatal, as GIB requires"
         | _ => failwith "one bare document"
+    | _ => failwith "one document"
+
+///- --timeout 900000
+
+///> rust
+test pattern_lets_reach_every_pattern =
+    := kind_in (id : string) =
+        "<assert id=\"" ++# id ++# "\" flag=\"fatal\" test=\"contains($kinds, concat(',', @kind, ','))\">k</assert>"
+    := rules =
+        "<schema><pattern id=\"codes\"><let name=\"kinds\" value=\"',A,B,'\"/></pattern>"
+        ++# "<pattern id=\"shared\"><rule context=\"line\">" ++# kind_in "S" ++# "</rule></pattern>"
+        ++# "<pattern id=\"own\"><let name=\"kinds\" value=\"',C,'\"/><rule context=\"line\">" ++# kind_in "O"
+        ++# "</rule></pattern></schema>"
+    ?= read_xml "<doc><line kind=\"A\"/><line kind=\"C\"/></doc>" ?|
+    | root :: [] =>
+        := failures = validate (read_schematron rules) root
+        ? listm.length failures <> 2i32 ?> failwith "the shared list rejects C, the pattern's own list rejects A"
+        listm.iter (\ (f : failure) => ? f.detail <> "" ?> failwith ("no unbound variable: " ++# f.detail)) failures
     | _ => failwith "one document"

@@ -26,9 +26,7 @@ pub fn score_0(v0: Us0) -> Int {
                         let v11 = v7 == "hi"
                         v11
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v14 =
                 case v12 {
@@ -36,9 +34,7 @@ pub fn score_0(v0: Us0) -> Int {
                         let v13 = v8 == 4
                         v13
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v16 =
                 case v14 {
@@ -46,9 +42,7 @@ pub fn score_0(v0: Us0) -> Int {
                         let v15 = v9 == "yo"
                         v15
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v18 =
                 case v16 {
@@ -56,22 +50,14 @@ pub fn score_0(v0: Us0) -> Int {
                         let v17 = v3 == 2
                         v17
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             case v18 {
-                True -> {
-                    0
-                }
-                False -> {
-                    1
-                }
+                True -> 0
+                False -> 1
             }
         }
-        Us0None -> {
-            1
-        }
+        Us0None -> 1
     }
 }
 pub fn main() {
@@ -87,12 +73,8 @@ pub fn main() {
     let v9 = True
     let v12 =
         case v9 {
-            True -> {
-                Us0Held(v8)
-            }
-            False -> {
-                Us0None
-            }
+            True -> Us0Held(v8)
+            False -> Us0None
         }
     let v13 = Heap3(l0: v12)
     let v14 = f_c0(#(v13))

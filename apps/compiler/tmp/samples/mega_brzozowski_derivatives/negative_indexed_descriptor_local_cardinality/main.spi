@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl main () : indexed_finite_alphabet_descriptor bit_alphabet =
-    indexed_finite_alphabet_descriptor (exists (
+:= main () : indexed_finite_alphabet_descriptor bit_alphabet =
+    indexed_finite_alphabet_descriptor (\? (
         bit_finite_symbol_vector (),
         AlphabetCardinalitySucc (AlphabetCardinalitySucc AlphabetCardinalityZero)))

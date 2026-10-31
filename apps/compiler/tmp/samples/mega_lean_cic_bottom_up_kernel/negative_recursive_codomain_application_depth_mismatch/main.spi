@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_corrected_cic_recursive_codomain_application_depth_mismatch
+:= impossible_corrected_cic_recursive_codomain_application_depth_mismatch
     ()
     : corrected_cic_recursive_codomain_application (
         corrected_cic_substituted_codomain
@@ -13,5 +13,5 @@ inl impossible_corrected_cic_recursive_codomain_application_depth_mismatch
         CorrectedCicClosedTypeCodeBool "Bool-is-the-recursive-codomain-argument",
         "a-double-unary-program-cannot-be-typed-as-a-single-unary-application")
 
-inl main () =
+:= main () =
     impossible_corrected_cic_recursive_codomain_application_depth_mismatch ()

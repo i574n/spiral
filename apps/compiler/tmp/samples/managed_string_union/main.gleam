@@ -17,9 +17,7 @@ pub type Us0 {
 }
 pub fn score_0(v0: Us0) -> Int {
     case v0  {
-        Us0Number(v3) -> {
-            v3
-        }
+        Us0Number(v3) -> v3
         Us0Text(v1) -> {
             let v2 = spiral_string_length(v1)
             v2
@@ -30,9 +28,7 @@ pub fn main() {
     let v0 = False
     let v4 =
         case v0 {
-            True -> {
-                Us0Number(7)
-            }
+            True -> Us0Number(7)
             False -> {
                 let v2 = "qwe"
                 Us0Text(v2)

@@ -1,21 +1,21 @@
-nominal app_scope = ()
-nominal epoch1 = ()
-nominal owner_a = ()
-nominal owner_b = ()
-nominal pending = ()
-nominal cancelled = ()
-nominal fresh = ()
-nominal used = ()
-union suspense_task scope epoch owner state =
-    | Task :: forall scope epoch owner state. string -> suspense_task scope epoch owner state
-union cancel_token scope epoch owner state =
-    | CancelToken :: forall scope epoch owner state. string -> cancel_token scope epoch owner state
-inl cancel forall scope epoch owner.
+:! app_scope = ()
+:! epoch1 = ()
+:! owner_a = ()
+:! owner_b = ()
+:! pending = ()
+:! cancelled = ()
+:! fresh = ()
+:! used = ()
+:| suspense_task scope epoch owner state =
+    | Task :: \* scope epoch owner state. string -> suspense_task scope epoch owner state
+:| cancel_token scope epoch owner state =
+    | CancelToken :: \* scope epoch owner state. string -> cancel_token scope epoch owner state
+:= cancel \* scope epoch owner.
     (task : suspense_task scope epoch owner pending) (token : cancel_token scope epoch owner fresh)
     : suspense_task scope epoch owner cancelled * cancel_token scope epoch owner used
     =
     Task "cancelled", CancelToken "used"
-inl main () =
-    inl task : suspense_task app_scope epoch1 owner_a pending = Task "fetch"
-    inl foreign : cancel_token app_scope epoch1 owner_b fresh = CancelToken "foreign"
+:= main () =
+    := task : suspense_task app_scope epoch1 owner_a pending = Task "fetch"
+    := foreign : cancel_token app_scope epoch1 owner_b fresh = CancelToken "foreign"
     cancel task foreign

@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_variable_strengthening_drops_preserved () :
+:= impossible_variable_strengthening_drops_preserved () :
     exact_linear_indexed_variable_strengthening
         exact_linear_indexed_open_unit_substitution_context
         exact_linear_zero
@@ -11,4 +11,4 @@ inl impossible_variable_strengthening_drops_preserved () :
         exact_linear_unit_type =
     exact_linear_indexed_open_unit_variable_strengthening ()
 
-inl main () = impossible_variable_strengthening_drops_preserved ()
+:= main () = impossible_variable_strengthening_drops_preserved ()

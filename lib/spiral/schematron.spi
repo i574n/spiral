@@ -39,7 +39,7 @@
         assertions : list assertion
     }
 
-:== pattern = { id : pattern_id; lets : list binding; rules : list rule }
+:== pattern = { id : pattern_id; lets : list binding; rules : list rule; namespaces : list (string * string) }
 
 := attribute_or (key : string) (attributes : list (string * string)) : string =
     ?= xml.attribute_of key attributes ?|
@@ -57,14 +57,16 @@
     ?= nodes ?|
     | XmlElement (name, attributes, children) :: rest ?& is_assertion name =>
         := source = attribute_or "test" attributes
+        := message = sm'.trim (xml.text_in children)
+        := named = attribute_or "id" attributes
         := assertion =
             {
-                id = rule_id (attribute_or "id" attributes)
+                id = rule_id (? named = "" ?> message |: named)
                 severity = severity_or default (attribute_or "flag" attributes)
                 kind = ? xml.local_name name = "report" ?> Reports |: Asserts
                 test = xpath.lift_code_lists (xpath.parse source)
                 source = source
-                message = sm'.trim (xml.text_in children)
+                message = message
             }
         assertions_in default rest (assertion :: acc)
     | _ :: rest => assertions_in default rest acc
@@ -78,37 +80,74 @@
     | _ :: rest => lets_in rest acc
     | [] => listm.rev acc
 
-:~ ^ rules_in (default : severity) (nodes : list xml_node) (acc : list rule) : list rule =
+:== abstract_rule = { id : string; children : list xml_node }
+
+:= is_abstract_rule (name : string) (attributes : list (string * string)) : bool =
+    xml.local_name name = "rule" && attribute_or "abstract" attributes = "true"
+
+:= is_concrete_rule (name : string) (attributes : list (string * string)) : bool =
+    xml.local_name name = "rule" && is_abstract_rule name attributes = !-
+
+:~ ^ abstract_rules_in (nodes : list xml_node) (acc : list abstract_rule) : list abstract_rule =
     ?= nodes ?|
-    | XmlElement (name, attributes, children) :: rest ?& xml.local_name name = "rule" =>
+    | XmlElement (name, attributes, children) :: rest =>
+        ? is_abstract_rule name attributes
+        ?> abstract_rules_in rest ({ id = attribute_or "id" attributes; children = children } :: acc)
+        |? xml.local_name name = "rule" ?> abstract_rules_in rest acc
+        |: abstract_rules_in rest (abstract_rules_in children acc)
+    | _ :: rest => abstract_rules_in rest acc
+    | [] => acc
+
+:~ ^ abstract_children (id : string) (abstracts : list abstract_rule) : list xml_node =
+    ?= abstracts ?|
+    | candidate :: rest => ? candidate.id = id ?> candidate.children |: abstract_children id rest
+    | [] => []
+
+:~ ^ extended_children (abstracts : list abstract_rule) (depth : i32) (nodes : list xml_node) : list xml_node =
+    ?= nodes ?|
+    | XmlElement (name, attributes, _) :: rest ?& xml.local_name name = "extends" && depth < 16i32 =>
+        := inherited = abstract_children (attribute_or "rule" attributes) abstracts
+        listm.append (extended_children abstracts (depth + 1i32) inherited) (extended_children abstracts depth rest)
+    | node :: rest => node :: extended_children abstracts depth rest
+    | [] => []
+
+:~ ^ rules_in (default : severity) (abstracts : list abstract_rule) (nodes : list xml_node) (acc : list rule) : list rule =
+    ?= nodes ?|
+    | XmlElement (name, attributes, children) :: rest ?& is_concrete_rule name attributes =>
         := source = attribute_or "context" attributes
+        := content = extended_children abstracts 0i32 children
         := parsed =
             {
                 context = xpath.parse source
                 context_source = source
-                lets = lets_in children []
-                assertions = assertions_in default children []
+                lets = lets_in content []
+                assertions = assertions_in default content []
             }
-        rules_in default rest (parsed :: acc)
-    | _ :: rest => rules_in default rest acc
+        rules_in default abstracts rest (parsed :: acc)
+    | _ :: rest => rules_in default abstracts rest acc
     | [] => listm.rev acc
 
-:~ ^ patterns_in (default : severity) (nodes : list xml_node) (acc : list pattern) : list pattern =
+:~ ^ patterns_in
+    (default : severity) (abstracts : list abstract_rule) (nodes : list xml_node) (acc : list pattern)
+    : list pattern
+    =
     ?= nodes ?|
     | XmlElement (name, attributes, children) :: rest ?& xml.local_name name = "pattern" =>
         := parsed =
             {
                 id = pattern_id (attribute_or "id" attributes)
                 lets = lets_in children []
-                rules = rules_in default children []
+                rules = rules_in default abstracts children []
+                namespaces = []
             }
-        patterns_in default rest (parsed :: acc)
-    | _ :: rest => patterns_in default rest acc
+        patterns_in default abstracts rest (parsed :: acc)
+    | _ :: rest => patterns_in default abstracts rest acc
     | [] => listm.rev acc
 
 := patterns_of_children (default : severity) (children : list xml_node) : list pattern =
     := schema_lets = lets_in children []
-    listm.map (\ (p : pattern) => { p ?| lets = listm.append schema_lets p.lets }) (patterns_in default children [])
+    := abstracts = abstract_rules_in children []
+    listm.map (\ (p : pattern) => { p ?| lets = listm.append schema_lets p.lets }) (patterns_in default abstracts children [])
 
 := read_schematron_with (default : severity) (text : string) : list pattern =
     ?= xml.single_root (xml.read_xml text) ?|
@@ -121,17 +160,37 @@
     := slash = sm'.last_index_of "/" path
     ? slash < 0i32 ?> "" |: sm'.substring 0i32 (slash + 1i32) path
 
+:= href_parts (href : string) : string * string =
+    := hash = sm'.index_of "#" href
+    ? hash < 0i32 ?> (href, "")
+    |: (sm'.substring 0i32 hash href, sm'.substring (hash + 1i32) (sm'.length href - hash - 1i32) href)
+
+:~ ^ element_with_id (id : string) (nodes : list xml_node) : option xml_node =
+    ?= nodes ?|
+    | XmlElement (name, attributes, children) :: rest =>
+        ? attribute_or "id" attributes = id ?> Some (XmlElement (name, attributes, children))
+        |:
+            ?= element_with_id id children ?|
+            | Some found => Some found
+            | None => element_with_id id rest
+    | _ :: rest => element_with_id id rest
+    | [] => None
+
 :~ ^ expanded (load : string -> option string) (base : string) (depth : i32) (nodes : list xml_node) : list xml_node =
     ?= nodes ?|
     | XmlElement (name, attributes, _) :: rest ?& xml.local_name name = "include" && depth < 16i32 =>
-        := path = include_directory base ++# attribute_or "href" attributes
+        := file, fragment = href_parts (attribute_or "href" attributes)
+        := path = include_directory base ++# file
         := included =
             ?= load path ?|
             | Some text =>
                 ?= xml.single_root (xml.read_xml text) ?|
-                | Some root ?& xml.local_name root.name = "schema" => expanded load path (depth + 1i32) root.children
                 | Some root =>
-                    XmlElement (root.name, root.attributes, expanded load path (depth + 1i32) root.children) :: []
+                    := whole = XmlElement (root.name, root.attributes, root.children)
+                    ?= (? fragment = "" ?> Some whole |: element_with_id fragment (whole :: [])) ?|
+                    | Some (XmlElement (n, _, c)) ?& xml.local_name n = "schema" => expanded load path (depth + 1i32) c
+                    | Some (XmlElement (n, a, c)) => XmlElement (n, a, expanded load path (depth + 1i32) c) :: []
+                    | _ => []
                 | None => []
             | None => []
         listm.append included (expanded load base depth rest)
@@ -178,6 +237,113 @@
     | p :: rest => schematron_census rest (rules_census p.rules acc)
     | [] => acc
 
+:= is_compiled_rule (name : string) (attributes : list (string * string)) : bool =
+    := priority = attribute_or "priority" attributes
+    xml.local_name name = "template"
+    && sm'.index_of "M" (attribute_or "mode" attributes) = 0i32
+    && priority <> ""
+    && sm'.index_of "-" priority <> 0i32
+
+:~ ^ message_text (nodes : list xml_node) (acc : string) : string =
+    ?= nodes ?|
+    | XmlElement (name, _, children) :: rest ?& xml.local_name name = "text" =>
+        message_text rest (acc ++# xml.text_in children)
+    | XmlElement (name, attributes, _) :: rest ?& xml.local_name name = "value-of" =>
+        message_text rest (acc ++# "{" ++# attribute_or "select" attributes ++# "}")
+    | _ :: rest => message_text rest acc
+    | [] => acc
+
+:= labelled (default : severity) (text : string) : severity * string =
+    := after (label : string) = sm'.trim (sm'.substring (sm'.length label) (sm'.length text - sm'.length label) text)
+    ? sm'.index_of "Fatal:" text = 0i32 ?> (Fatal, after "Fatal:")
+    |? sm'.index_of "Warning:" text = 0i32 ?> (Warning, after "Warning:")
+    |: (default, text)
+
+:= compiled_assertion (default : severity) (branches : list xml_node) : option assertion =
+    ?= xml.first_child "when" branches ?|
+    | Some test_branch =>
+        ?= xml.first_child "otherwise" branches ?|
+        | Some otherwise =>
+            ?= xml.first_child "message" (xml.element_children otherwise) ?|
+            | Some message =>
+                := severity, text = labelled default (sm'.trim (message_text (xml.element_children message) ""))
+                := source = attribute_or "test" (xml.element_attributes test_branch)
+                Some
+                    {
+                        id = rule_id text
+                        severity = severity
+                        kind = Asserts
+                        test = xpath.lift_code_lists (xpath.parse source)
+                        source = source
+                        message = text
+                    }
+            | None => None
+        | None => None
+    | None => None
+
+:~ ^ compiled_assertions (default : severity) (nodes : list xml_node) (acc : list assertion) : list assertion =
+    ?= nodes ?|
+    | XmlElement (name, _, children) :: rest ?& xml.local_name name = "choose" =>
+        ?= compiled_assertion default children ?|
+        | Some found => compiled_assertions default rest (found :: acc)
+        | None => compiled_assertions default rest acc
+    | _ :: rest => compiled_assertions default rest acc
+    | [] => listm.rev acc
+
+:= is_select_variable (name : string) (attributes : list (string * string)) : bool =
+    xml.local_name name = "variable" && attribute_or "select" attributes <> ""
+
+:~ ^ compiled_lets (nodes : list xml_node) (acc : list binding) : list binding =
+    ?= nodes ?|
+    | XmlElement (name, attributes, _) :: rest ?& is_select_variable name attributes =>
+        := value = xpath.lift_code_lists (xpath.parse (attribute_or "select" attributes))
+        compiled_lets rest ({ name = attribute_or "name" attributes; value = value } :: acc)
+    | _ :: rest => compiled_lets rest acc
+    | [] => listm.rev acc
+
+:~ ^ with_compiled_rule (mode : string) (r : rule) (groups : list (string * list rule)) : list (string * list rule) =
+    ?= groups ?|
+    | (m, rules) :: rest ?& m = mode => (m, (r :: rules)) :: rest
+    | group :: rest => group :: with_compiled_rule mode r rest
+    | [] => [ (mode, [ r ]) ]
+
+:~ ^ compiled_rule_groups
+    (default : severity) (nodes : list xml_node) (acc : list (string * list rule))
+    : list (string * list rule)
+    =
+    ?= nodes ?|
+    | XmlElement (name, attributes, children) :: rest ?& is_compiled_rule name attributes =>
+        := source = attribute_or "match" attributes
+        := parsed =
+            {
+                context = xpath.parse source
+                context_source = source
+                lets = compiled_lets children []
+                assertions = compiled_assertions default children []
+            }
+        compiled_rule_groups default rest (with_compiled_rule (attribute_or "mode" attributes) parsed acc)
+    | _ :: rest => compiled_rule_groups default rest acc
+    | [] => acc
+
+:~ ^ declared_namespaces (attributes : list (string * string)) (acc : list (string * string)) : list (string * string) =
+    ?= attributes ?|
+    | (key, uri) :: rest ?& sm'.index_of "xmlns:" key = 0i32 =>
+        declared_namespaces rest ((sm'.substring 6i32 (sm'.length key - 6i32) key, uri) :: acc)
+    | _ :: rest => declared_namespaces rest acc
+    | [] => listm.rev acc
+
+:= read_compiled_schematron_with (default : severity) (text : string) : list pattern =
+    ?= xml.single_root (xml.read_xml text) ?|
+    | Some root =>
+        := namespaces = declared_namespaces root.attributes []
+        := pattern_of (group : string * list rule) : pattern =
+            := mode, rules = group
+            { id = pattern_id mode; lets = []; rules = listm.rev rules; namespaces = namespaces }
+        listm.map pattern_of (compiled_rule_groups default root.children [])
+    | None => []
+
+:= read_compiled_schematron (text : string) : list pattern = read_compiled_schematron_with Information text
+
 ///> rust
 test reads_rules_and_typed_assertions =
     := source =
@@ -202,3 +368,96 @@ test reads_rules_and_typed_assertions =
     := totals = schematron_census (read_schematron source) (empty_census ())
     ? totals.rules <> 1i32 || totals.assertions <> 2i32 ?> failwith "census counts"
     ? totals.fatal <> 1i32 || totals.invalid <> 0i32 ?> failwith "census fatal and invalid"
+    := unnamed =
+        "<schema><pattern><rule context=\"x\"><assert test=\"true()\"> an unnamed rule </assert></rule>"
+        ++# "</pattern></schema>"
+    := ids_of (r : rule) = listm.map (\ (a : assertion) => rule_text a.id) r.assertions
+    ?= listm.map (\ (p : pattern) => listm.map ids_of p.rules) (read_schematron unnamed) ?|
+    | ((id :: []) :: []) :: [] =>
+        ? id <> "an unnamed rule" ?> failwith "an assert without an id is named by its message, as SVRL reports it"
+    | _ => failwith "one unnamed assertion"
+
+///> rust
+test concrete_rules_inherit_the_abstract_rules_they_extend =
+    := source =
+        "<schema xmlns=\"http://purl.oclc.org/dsdl/schematron\"><pattern id=\"common\">"
+        ++# "<rule abstract=\"true\" id=\"HeaderCheck\">"
+        ++# "<assert id=\"TR-1\" flag=\"fatal\" test=\"exists(cbc:ID)\">id</assert>"
+        ++# "<extends rule=\"NoteCheck\"/></rule>"
+        ++# "<rule abstract=\"true\" id=\"NoteCheck\"><assert id=\"TR-2\" test=\"cbc:Note != ''\">note</assert></rule>"
+        ++# "</pattern><pattern id=\"main\"><rule context=\"/Invoice\"><extends rule=\"HeaderCheck\"/></rule>"
+        ++# "</pattern></schema>"
+    := patterns = read_schematron source
+    := rules = listm.concat (listm.map (\ (p : pattern) => p.rules) patterns)
+    ?= rules ?|
+    | r :: [] =>
+        ? r.context_source <> "/Invoice" ?> failwith "only the concrete rule is read as a rule"
+        := ids = sm'.concat_balanced "," (listm.map (\ (a : assertion) => rule_text a.id) r.assertions)
+        ? ids <> "TR-1,TR-2" ?> failwith ("the concrete rule inherits its abstract rules' assertions in order: " ++# ids)
+    | _ => failwith "abstract rules are not rules of their own"
+    := totals = schematron_census patterns (empty_census ())
+    ? totals.rules <> 1i32 || totals.assertions <> 2i32 ?> failwith "the census counts the concrete rule"
+    ? totals.invalid <> 0i32 ?> failwith "an abstract rule's missing context is not an invalid expression"
+
+///> rust
+test an_include_with_a_fragment_brings_in_only_that_element =
+    := main =
+        "<schema xmlns=\"http://purl.oclc.org/dsdl/schematron\"><include href=\"common.sch#abstracts\"/>"
+        ++# "<pattern id=\"main\"><rule context=\"/Invoice\"><extends rule=\"HeaderCheck\"/></rule></pattern></schema>"
+    := common =
+        "<schema xmlns=\"http://purl.oclc.org/dsdl/schematron\"><pattern id=\"other\"><rule context=\"x\">"
+        ++# "<assert id=\"OTHER\" test=\"true()\">other</assert></rule></pattern>"
+        ++# "<pattern id=\"abstracts\"><rule abstract=\"true\" id=\"HeaderCheck\">"
+        ++# "<assert id=\"TR-1\" test=\"exists(cbc:ID)\">id</assert></rule></pattern></schema>"
+    := load path = ? path = "dir/main.sch" ?> Some main |? path = "dir/common.sch" ?> Some common |: None
+    := totals = schematron_census (read_schematron_resolved load "dir/main.sch") (empty_census ())
+    ? totals.rules <> 1i32 ?> failwith "only the main rule is read: the other pattern of common.sch is not included"
+    ? totals.assertions <> 1i32 ?> failwith "the extends reaches the abstract rule inside the included fragment"
+
+///> rust
+test a_compiled_schematron_reads_back_into_its_rules =
+    := source =
+        "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns:cbc=\"urn:cbc\" version=\"3.0\">"
+        ++# "<xsl:variable name=\"document-uri\" select=\"document-uri(/)\"/>"
+        ++# "<xsl:template match=\"/\" mode=\"generate-id-2\" priority=\"101\"><xsl:text>U</xsl:text></xsl:template>"
+        ++# "<xsl:template match=\"cac:InvoiceLine\" priority=\"1001\" mode=\"M7\">"
+        ++# "<xsl:variable name=\"total\" select=\"sum(cbc:Amount)\"/>"
+        ++# "<xsl:choose><xsl:when test=\"exists(cbc:ID)\"/><xsl:otherwise><xsl:message>"
+        ++# "<xsl:text>Fatal:</xsl:text><xsl:text>[BR-21] line id</xsl:text></xsl:message>"
+        ++# "</xsl:otherwise></xsl:choose>"
+        ++# "<xsl:choose><xsl:when test=\"$total &gt;= 0\"/><xsl:otherwise><xsl:message>"
+        ++# "<xsl:text>Warning:</xsl:text><xsl:value-of select=\"'[BR-X]'\"/><xsl:text>-negative</xsl:text>"
+        ++# "</xsl:message></xsl:otherwise></xsl:choose>"
+        ++# "<xsl:apply-templates select=\"@*|node()\" mode=\"M7\"/></xsl:template>"
+        ++# "<xsl:template match=\"*\" priority=\"1000\" mode=\"M7\"><xsl:choose><xsl:when test=\"true()\"/>"
+        ++# "<xsl:otherwise><xsl:message><xsl:text>Fatal:</xsl:text><xsl:text>any</xsl:text></xsl:message>"
+        ++# "</xsl:otherwise></xsl:choose></xsl:template>"
+        ++# "<xsl:template match=\"text()\" priority=\"-1\" mode=\"M7\"/>"
+        ++# "<xsl:template match=\"cbc:Note\" priority=\"1000\" mode=\"M8\"/></xsl:stylesheet>"
+    := patterns = read_compiled_schematron source
+    := modes = sm'.concat_balanced "," (listm.map (\ (p : pattern) => pattern_text p.id) patterns)
+    ? modes <> "M7,M8" ?> failwith ("one pattern per skeleton mode, without generate-id or text(): " ++# modes)
+    ?= patterns ?|
+    | first :: _ =>
+        := declared = sm'.concat_balanced "," (listm.map (\ (p, uri) => p ++# "=" ++# uri) first.namespaces)
+        ? sm'.contains "cbc=urn:cbc" declared = !-
+        ?> failwith ("the stylesheet's xmlns map rides on each pattern: " ++# declared)
+        ?= first.rules ?|
+        | line :: any :: [] =>
+            := order = line.context_source ++# "," ++# any.context_source
+            ? order <> "cac:InvoiceLine,*" ?> failwith ("rules keep the skeleton's priority order: " ++# order)
+            := lets = sm'.concat_balanced "," (listm.map (\ (b : binding) => b.name) line.lets)
+            ? lets <> "total" ?> failwith "rule variables become its lets"
+            ?= line.assertions ?|
+            | named :: total :: [] =>
+                ? rule_text named.id <> "[BR-21] line id" ?> failwith "a static message names its assertion"
+                ?= named.severity ?| Fatal => () | _ => failwith "the Fatal: label is the severity"
+                ? xpath.xpath_text named.test <> "(exists (child::cbc:ID .))" ?> failwith "the when test is the test"
+                := shown = total.message
+                ? shown <> "{'[BR-X]'}-negative" ?> failwith ("a value-of shows its expression: " ++# shown)
+                ?= total.severity ?| Warning => () | _ => failwith "the Warning: label is the severity"
+            | _ => failwith "one assertion per choose"
+        | _ => failwith "two rules in M7"
+    | [] => failwith "patterns"
+    := totals = schematron_census patterns (empty_census ())
+    ? totals.rules <> 3i32 || totals.assertions <> 3i32 || totals.fatal <> 2i32 ?> failwith "compiled rules census"

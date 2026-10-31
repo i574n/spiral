@@ -1,26 +1,26 @@
-nominal pending = ()
-nominal ready = ()
-nominal committed = ()
-nominal q1 = ()
-nominal q2 = ()
+:! pending = ()
+:! ready = ()
+:! committed = ()
+:! q1 = ()
+:! q2 = ()
 
-union validation_evidence status =
+:| validation_evidence status =
     | ReadyValidation :: validation_evidence ready
 
-union receipt status =
+:| receipt status =
     | PendingReceipt :: receipt pending
     | CommittedReceipt :: receipt committed
 
-union quorum state =
+:| quorum state =
     | OneApproval :: quorum q1
     | TwoApprovals :: quorum q2
 
-inl publish
+:= publish
     (evidence : validation_evidence ready)
     (receipt : receipt committed)
     (quorum : quorum q2)
     : string =
     "ok"
 
-inl main () : string =
+:= main () : string =
     publish ReadyValidation PendingReceipt OneApproval

@@ -16,9 +16,9 @@ fun spiral_main(): Int {
     val v6: (Int) -> SpiralTuple0 = f_c0(v2, v5)
     var v7: Heap0 = Heap0(0, "")
     var v8: Heap0 = Heap0(0, "")
-    val spiral_tuple455 = v6(1)
-    v7 = spiral_tuple455.v0
-    v8 = spiral_tuple455.v1
+    val spiral_tuple438 = v6(1)
+    v7 = spiral_tuple438.v0
+    v8 = spiral_tuple438.v1
     var v9: Int = 0
     var v10: String = ""
     v9 = v7.l0

@@ -1,12 +1,12 @@
-union slot =
+:| slot =
     | None
     | Some : i32
 
-inl main () : i32 =
-    inl ~n = 7i32
-    inl f (z : i32) : slot =
-        if z =. 0i32 then None else Some n
-    inl ~g = f
-    match g 1i32 with
-    | Some value => if value =. 7i32 then 0i32 else 1i32
+:= main () : i32 =
+    := ~n = 7i32
+    := f (z : i32) : slot =
+        ? z =. 0i32 ?> None |: Some n
+    := ~g = f
+    ?= g 1i32 ?|
+    | Some value => ? value =. 7i32 ?> 0i32 |: 1i32
     | None => 1i32

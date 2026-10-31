@@ -1,15 +1,15 @@
-open main
+:< main
 
-inl impossible_prime_product_split_previous_nonfactor_is_base_nonfactor forall factor previous_count product external.
+:= impossible_prime_product_split_previous_nonfactor_is_base_nonfactor \* factor previous_count product external.
     (descent :
         certified_arithmetic_prime_power_external_factor_descent factor (z_nat_succ previous_count) product external)
     : positive_positional_nonfactor_certificate factor external
     =
-    match descent with
+    ?= descent ?|
     | CertifiedArithmeticPrimePowerExternalFactorPrimeProductSplitObstruction payload =>
-        inl exists previous_product. _, _, _, _, previous_nonfactor = payload
+        := \? previous_product. _, _, _, _, previous_nonfactor = payload
         previous_nonfactor
     | _ =>
         mega_runtime_fail "only-the-prime-product-split-obstruction-branch-is-relevant"
 
-inl main () = ()
+:= main () = ()

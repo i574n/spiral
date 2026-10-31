@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_factor_membership_candidate_value_mismatch () :
+:= impossible_factor_membership_candidate_value_mismatch () :
     certified_interval_positive_positional_factor_membership
         (positional_zero_bit positional_one)
         (positional_one_bit positional_one)
@@ -11,4 +11,4 @@ inl impossible_factor_membership_candidate_value_mismatch () :
         PositivePositionalPredecessorOneBit PositivePositionalOne,
         "a-membership-for-factor-two-cannot-store-three-as-the-indexed-candidate-value")
 
-inl main () = impossible_factor_membership_candidate_value_mismatch ()
+:= main () = impossible_factor_membership_candidate_value_mismatch ()

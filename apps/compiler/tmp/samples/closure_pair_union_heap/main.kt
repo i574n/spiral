@@ -27,9 +27,9 @@ fun spiral_main(): Int {
     v3 = f_c0(v0, v2)
     var v4: US0 = US0_None
     var v5: Heap0 = Heap0(0)
-    val spiral_tuple299 = v3(1)
-    v4 = spiral_tuple299.v0
-    v5 = spiral_tuple299.v1
+    val spiral_tuple288 = v3(1)
+    v4 = spiral_tuple288.v0
+    v5 = spiral_tuple288.v1
     when (v4.tag) {
         0 -> {
             return 1

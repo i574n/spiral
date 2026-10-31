@@ -22,9 +22,9 @@ fun spiral_main(): Int {
     val v0: Int = 7
     var v1: US0 = US0_None
     var v2: US0 = US0_None
-    val spiral_tuple115 = sp_method0(v0)
-    v1 = spiral_tuple115.v0
-    v2 = spiral_tuple115.v1
+    val spiral_tuple110 = sp_method0(v0)
+    v1 = spiral_tuple110.v0
+    v2 = spiral_tuple110.v1
     when (v1.tag) {
         0 -> {
             return 1

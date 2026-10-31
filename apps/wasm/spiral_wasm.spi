@@ -16,28 +16,28 @@
 /// ### get_command
 :~ get_command () =
     ###"command"
-    |> runtime.new_command
-    |> runtime.command_args_override_self !+
-    |> runtime.command_init_arg (get_args () .exception) (
-        runtime.arg_num_args_range (
-            runtime.new_value_range
+    |> clap.new_command
+    |> clap.command_args_override_self !+
+    |> clap.command_init_arg (get_args () .exception) (
+        clap.arg_num_args_range (
+            clap.new_value_range
                 !+
                 (am'.End eval)
                 (am'.End \ _ => (1i32 |> convert.convert : convert.unativeint))
         )
-        >> runtime.arg_require_equals !+
-        >> runtime.arg_default_missing_value ""
+        >> clap.arg_require_equals !+
+        >> clap.arg_default_missing_value ""
     )
-    |> runtime.command_init_arg (get_args () .trace_level) (
-        ~> runtime.arg_union `trace_level ignore
+    |> clap.command_init_arg (get_args () .trace_level) (
+        ~> clap.arg_union `trace_level ignore
     )
-    |> runtime.command_init_arg (get_args () .wasm) (
-        runtime.arg_required !+
+    |> clap.command_init_arg (get_args () .wasm) (
+        clap.arg_required !+
     )
 
 /// ### run
 :~ ^ run
-    (matches : runtime.arg_matches)
+    (matches : clap.arg_matches)
     : async.future_pin (
         resultm.result'
             u8
@@ -47,7 +47,7 @@
     \ () =>
         := wasm_path =
             matches
-            |> runtime.matches_get_one (get_args () .wasm |> fst)
+            |> clap.matches_get_one (get_args () .wasm |> fst)
             |> optionm'.unbox
             |> optionm.value
             |> sm'.from_std_string
@@ -163,11 +163,11 @@
 
 := run_main (args : array_base string) : i32 =
     := command = get_command ()
-    := arg_matches = command |> runtime.command_get_matches
+    := arg_matches = command |> clap.command_get_matches
 
     := trace_level =
         arg_matches
-        |> runtime.matches_get_one (get_args () .trace_level |> fst)
+        |> clap.matches_get_one (get_args () .trace_level |> fst)
         |> optionm'.unbox
         |> optionm.map (
             sm'.from_std_string
@@ -184,7 +184,7 @@
 
     := exception =
         arg_matches
-        |> runtime.matches_get_one (get_args () .exception |> fst)
+        |> clap.matches_get_one (get_args () .exception |> fst)
         |> optionm'.map (sm'.from_std_string >> sm'.trim_start [ '\\' ] >> sm'.trim_end [ '\\' ])
         |> optionm'.unbox
 

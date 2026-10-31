@@ -16,9 +16,7 @@ pub fn sum_0(v0: Uh0) -> Int {
             let v4 = spiral_wrap_signed(v1 + v3, 32)
             v4
         }
-        Uh0Nil -> {
-            0
-        }
+        Uh0Nil -> 0
     }
 }
 pub fn main() {

@@ -1,13 +1,13 @@
-inl rec build_abcabc ~count (value : string) : string =
-    if count =. 0i32 then value
-    else
-        inl piece = if count %. 2i32 =. 0i32 then "ab" else "c"
-        join build_abcabc (count -. 1i32) (sm.concat value piece)
+:= ^ build_abcabc ~count (value : string) : string =
+    ? count =. 0i32 ?> value
+    |:
+        := piece = ? count %. 2i32 =. 0i32 ?> "ab" |: "c"
+        ~~ build_abcabc (count -. 1i32) (sm::concat value piece)
 
-inl main () =
-    inl value = join build_abcabc 4i32 ""
-    if (=.) (sm.length value : i32) 6i32 then
-        if (=.) (sm.index value 0i32) 'a' then
-            if (=.) (sm.index value 5i32) 'c' then 0i32 else 1i32
-        else 2i32
-    else 3i32
+:= main () =
+    := value = ~~ build_abcabc 4i32 ""
+    ? (=.) (sm::length value : i32) 6i32 ?>
+        ? (=.) (sm::index value 0i32) 'a' ?>
+            ? (=.) (sm::index value 5i32) 'c' ?> 0i32 |: 1i32
+        |: 2i32
+    |: 3i32

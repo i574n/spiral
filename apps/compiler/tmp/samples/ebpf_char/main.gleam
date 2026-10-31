@@ -9,21 +9,13 @@ pub fn main() {
                 True -> {
                     let v4 = v0 == v1
                     case v4 {
-                        True -> {
-                            2
-                        }
-                        False -> {
-                            0
-                        }
+                        True -> 2
+                        False -> 0
                     }
                 }
-                False -> {
-                    3
-                }
+                False -> 3
             }
         }
-        False -> {
-            1
-        }
+        False -> 1
     }
 }

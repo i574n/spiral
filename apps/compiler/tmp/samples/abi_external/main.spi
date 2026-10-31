@@ -1,3 +1,3 @@
-inl main () : i32 = real
-    inl ~negative_input = -42i32
+:= main () : i32 = ~>
+    := ~negative_input = -42i32
     $"spiral_abi_libc_abs(!negative_input)" : i32

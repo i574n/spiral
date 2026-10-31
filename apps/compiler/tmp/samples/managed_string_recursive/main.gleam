@@ -17,9 +17,7 @@ pub type Uh0 {
 }
 pub fn score_0(v0: Uh0) -> Int {
     case v0  {
-        Uh0Empty -> {
-            0
-        }
+        Uh0Empty -> 0
         Uh0Node(v1, v2, v3) -> {
             let v4 = spiral_string_length(v1)
             let v5 = score_0(v2)

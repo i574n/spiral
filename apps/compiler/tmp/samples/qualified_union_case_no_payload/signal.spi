@@ -1,3 +1,3 @@
-union signal =
+:| signal =
     | Hit : i32
     | Hold

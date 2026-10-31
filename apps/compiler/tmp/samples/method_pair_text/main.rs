@@ -5,11 +5,11 @@ fn method0(mut v0: i32) -> (Rc<str>, Rc<str>) {
     let v1: bool = v0 == 0i32;
     if v1 {
         let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
-        (v2.clone(), v2.clone())
+        (v2.clone(), v2)
     } else {
         let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
         let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
-        (v3.clone(), v4.clone())
+        (v3, v4)
     }
 }
 fn spiral_main() -> i32 {

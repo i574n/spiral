@@ -22,28 +22,18 @@ pub fn main() {
     let v2 = True
     let v5 =
         case v2 {
-            True -> {
-                Us0Call(v1)
-            }
-            False -> {
-                Us0Missing
-            }
+            True -> Us0Call(v1)
+            False -> Us0Missing
         }
     case v5  {
         Us0Call(v6) -> {
             let v7 = v6(4)
             let v8 = v7 == 7
             case v8 {
-                True -> {
-                    0
-                }
-                False -> {
-                    1
-                }
+                True -> 0
+                False -> 1
             }
         }
-        Us0Missing -> {
-            1
-        }
+        Us0Missing -> 1
     }
 }

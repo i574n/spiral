@@ -1,16 +1,10 @@
-param([string]$Channel = '11.0', [string]$Quality = 'preview')
-. $PSScriptRoot/env.ps1
-
-$target = Join-Path (Get-SpiralCacheDir) 'toolchains/dotnet'
-New-Item -ItemType Directory -Force $target | Out-Null
-if ($IsWindows) {
-    $installer = Join-Path $target 'dotnet-install.ps1'
-    Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile $installer -UseBasicParsing
-    & $installer -Channel $Channel -Quality $Quality -InstallDir $target -NoPath
+[Console]::Error.WriteLine('apps/compiler/tmp/scripts/install-dotnet.ps1 moved to apps/compiler/scripts/install-dotnet.ps1; update this caller')
+if ($MyInvocation.InvocationName -eq '.') { . (Join-Path $PSScriptRoot '../../scripts/install-dotnet.ps1') @args; return }
+$launch = [Environment]::GetCommandLineArgs()
+$fileAt = [Array]::FindIndex($launch, [Predicate[string]] { $args[0] -match '^-(f|file)$' })
+if ($fileAt -ge 0 -and $fileAt + 1 -lt $launch.Count -and (Resolve-Path -LiteralPath $launch[$fileAt + 1] -ErrorAction Ignore).Path -eq $PSCommandPath) {
+    & (Get-Process -Id $PID).Path -NoProfile -File (Join-Path $PSScriptRoot '../../scripts/install-dotnet.ps1') @args
+    exit $LASTEXITCODE
 }
-else {
-    $installer = Join-Path $target 'dotnet-install.sh'
-    Invoke-WebRequest 'https://dot.net/v1/dotnet-install.sh' -OutFile $installer -UseBasicParsing
-    & bash $installer --channel $Channel --quality $Quality --install-dir $target --no-path
-}
-Write-Host "installed: $(Resolve-SpiralDotnet)"
+& (Join-Path $PSScriptRoot '../../scripts/install-dotnet.ps1') @args
+if (-not $?) { exit $LASTEXITCODE }

@@ -29,26 +29,16 @@ pub fn main() {
                         True -> {
                             let v12 = v8 == 4294967294
                             case v12 {
-                                True -> {
-                                    0
-                                }
-                                False -> {
-                                    4
-                                }
+                                True -> 0
+                                False -> 4
                             }
                         }
-                        False -> {
-                            3
-                        }
+                        False -> 3
                     }
                 }
-                False -> {
-                    2
-                }
+                False -> 2
             }
         }
-        False -> {
-            1
-        }
+        False -> 1
     }
 }

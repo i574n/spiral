@@ -1,10 +1,10 @@
-nominal state_t =
+:! state_t =
     {
         position : i32
         velocity : i32
     }
 
-nominal delta_t =
+:! delta_t =
     {
         position : i32
         velocity : i32

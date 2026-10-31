@@ -19,8 +19,8 @@ fn method0(mut v0: Rc<dyn Fn(i32) -> i32>) -> i32 {
 fn spiral_main() -> i32 {
     let mut v0: Rc<dyn Fn(Rc<str>) -> Rc<dyn Fn(i32) -> i32>> = make_c0();
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("abc"); } LIT.with(|lit| lit.clone()) };
-    let v2: Rc<dyn Fn(i32) -> i32> = v0(v1.clone());
-    method0(v2.clone())
+    let v2: Rc<dyn Fn(i32) -> i32> = v0(v1);
+    method0(v2)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

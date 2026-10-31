@@ -1,17 +1,17 @@
-type tactic = { weights : array_base i32; bias : i32 }
+:== tactic = { weights : array_base i32; bias : i32 }
 
-inl main () : i32 =
-    inl w : array_base i32 = !!!!ArrayCreate(`i32, 4i32)
+:= main () : i32 =
+    := w : array_base i32 = !!!!ArrayCreate(`i32, 4i32)
     !!!!ArrayIndexSet(w, 0i32, 1i32)
     !!!!ArrayIndexSet(w, 1i32, 2i32)
     !!!!ArrayIndexSet(w, 2i32, 3i32)
     !!!!ArrayIndexSet(w, 3i32, 4i32)
-    inl ~bias = 0i32
-    inl ~n = 1000000i32
-    let rec loop (t : tactic) (i : i32) (acc : i32) : i32 =
-        if !!!!GTE(i, n) then acc
-        else
-            inl slot = !!!!Mod(i, 4i32)
-            inl weight : i32 = !!!!ArrayIndex(t.weights, slot)
-            loop t !!!!Add(i, 1i32) !!!!Mod(!!!!Add(!!!!Add(!!!!Mult(acc, 7i32), weight), t.bias), 9973i32)
+    := ~bias = 0i32
+    := ~n = 1000000i32
+    :~ ^ loop (t : tactic) (i : i32) (acc : i32) : i32 =
+        ? !!!!GTE(i, n) ?> acc
+        |:
+            := slot = !!!!Mod(i, 4i32)
+            := weight : i32 = !!!!ArrayIndex(t::weights, slot)
+            loop t !!!!Add(i, 1i32) !!!!Mod(!!!!Add(!!!!Add(!!!!Mult(acc, 7i32), weight), t::bias), 9973i32)
     !!!!Mod(loop { weights = w; bias = bias } 0i32 0i32, 256i32)

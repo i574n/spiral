@@ -496,6 +496,7 @@
         | next => longest_from next s (i + cp_width s i) last
 
 := longest_match (r : rx) (s : string) (i : i32) : i32 = longest_from r s i (0i32 - 1i32)
+
 ///> rust
 test patterns_match_like_xsd =
     ? pattern_matches "[0-9]{8}" "12345678" = !- ?> failwith "eight digits"
@@ -519,6 +520,7 @@ test patterns_match_like_xsd =
     ? pattern_matches "[\\D]" "x" = !- || pattern_matches "[\\D]" "5" ?> failwith "a negated escape inside a class"
     ? pattern_matches "\\W" "!" = !- || pattern_matches "\\W" "a" ?> failwith "\\W excludes word characters"
     ? is_xsd_pattern "\\i\\c*" ?> failwith "name escapes are refused until supported"
+
 ///> rust
 test block_escapes_read_code_point_ranges =
     := latin = "[\\p{IsBasicLatin}\\p{IsLatin-1Supplement}]{1,60}"

@@ -1,4 +1,4 @@
-inl bottom forall a. () : a =
+:= bottom \* a. () : a =
     $"Unchecked.defaultof<_>"
 
-inl main () = "forall-a-a-via-host-splice-defined"
+:= main () = "forall-a-a-via-host-splice-defined"

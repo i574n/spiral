@@ -1,18 +1,18 @@
-inl main () : i32 =
-    inl ~n = 0i32 -. 8i32
-    inl ~p = 3i32
-    inl ~c = 1i32
-    inl ~u = 4294967295u32
-    inl ~k = 4i32
-    inl a = !!!!ShiftRight(n, c)
-    inl b = !!!!ShiftLeft(p, c)
-    inl d = !!!!ShiftRight(u, k)
-    inl e = !!!!ShiftLeft(u, c)
-    if a =. (0i32 -. 4i32) then
-        if b =. 6i32 then
-            if d =. 268435455u32 then
-                if e =. 4294967294u32 then 0i32
-                else 4i32
-            else 3i32
-        else 2i32
-    else 1i32
+:= main () : i32 =
+    := ~n = 0i32 -. 8i32
+    := ~p = 3i32
+    := ~c = 1i32
+    := ~u = 4294967295u32
+    := ~k = 4i32
+    := a = !!!!ShiftRight(n, c)
+    := b = !!!!ShiftLeft(p, c)
+    := d = !!!!ShiftRight(u, k)
+    := e = !!!!ShiftLeft(u, c)
+    ? a =. (0i32 -. 4i32) ?>
+        ? b =. 6i32 ?>
+            ? d =. 268435455u32 ?>
+                ? e =. 4294967294u32 ?> 0i32
+                |: 4i32
+            |: 3i32
+        |: 2i32
+    |: 1i32

@@ -19,9 +19,7 @@ pub fn main() {
     let v0 = 7
     let #(v1, v2) = method0(v0)
     case v1  {
-        Us0None -> {
-            1
-        }
+        Us0None -> 1
         Us0Some(v3) -> {
             let v4 = v3 == 7
             let v6 =
@@ -30,17 +28,11 @@ pub fn main() {
                         let v5 = v2 == 7
                         v5
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             case v6 {
-                True -> {
-                    0
-                }
-                False -> {
-                    1
-                }
+                True -> 0
+                False -> 1
             }
         }
     }

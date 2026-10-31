@@ -1,12 +1,12 @@
-open main
+:< main
 
-inl bit_only_program_predicate (program : matcher_program bit_alphabet) : bool =
+:= bit_only_program_predicate (program : matcher_program bit_alphabet) : bool =
     matcher_program_passes program
 
-inl main () =
-    inl batch : matcher_batch matcher_program (bit_alphabet * tri_alphabet) =
+:= main () =
+    := batch : matcher_batch matcher_program (bit_alphabet * tri_alphabet) =
         MatchBatchPair (
-            MatchBatchSingle (capture_acceptance_program (ends_with_zero ()) (input_110 ()) true),
-            MatchBatchSingle (capture_acceptance_program (tri_a_star ()) (input_aab ()) false)
+            MatchBatchSingle (capture_acceptance_program (ends_with_zero ()) (input_110 ()) !+),
+            MatchBatchSingle (capture_acceptance_program (tri_a_star ()) (input_aab ()) !-)
         )
     matcher_batch_forall `$bit_only_program_predicate batch

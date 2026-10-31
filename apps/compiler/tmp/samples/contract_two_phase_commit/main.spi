@@ -1,32 +1,32 @@
-nominal missing = ()
-nominal ready = ()
-nominal open_phase = ()
-nominal committed_phase = ()
+:! missing = ()
+:! ready = ()
+:! open_phase = ()
+:! committed_phase = ()
 
-union transaction participant_a participant_b phase =
+:| transaction participant_a participant_b phase =
     | OpenTx :: transaction missing missing open_phase
     | PreparedA :: transaction ready missing open_phase
     | PreparedAB :: transaction ready ready open_phase
     | Committed :: transaction ready ready committed_phase
 
-inl prepare_a (tx : transaction missing missing open_phase)
+:= prepare_a (tx : transaction missing missing open_phase)
     : transaction ready missing open_phase =
-    match tx with
+    ?= tx ?|
     | OpenTx => PreparedA
 
-inl prepare_b (tx : transaction ready missing open_phase)
+:= prepare_b (tx : transaction ready missing open_phase)
     : transaction ready ready open_phase =
-    match tx with
+    ?= tx ?|
     | PreparedA => PreparedAB
 
-inl commit (tx : transaction ready ready open_phase)
+:= commit (tx : transaction ready ready open_phase)
     : transaction ready ready committed_phase =
-    match tx with
+    ?= tx ?|
     | PreparedAB => Committed
 
-inl render (tx : transaction ready ready committed_phase) : string =
-    match tx with
+:= render (tx : transaction ready ready committed_phase) : string =
+    ?= tx ?|
     | Committed => "two-phase-committed"
 
-inl main () : string =
+:= main () : string =
     render (commit (prepare_b (prepare_a OpenTx)))

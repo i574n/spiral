@@ -17,9 +17,9 @@ fun spiral_main(): Int {
     v2 = Heap0(v1)
     var v3: US0 = US0_None
     var v4: Heap0 = Heap0(0)
-    val spiral_tuple200 = sp_method0(v0, v2)
-    v3 = spiral_tuple200.v0
-    v4 = spiral_tuple200.v1
+    val spiral_tuple191 = sp_method0(v0, v2)
+    v3 = spiral_tuple191.v0
+    v4 = spiral_tuple191.v1
     when (v3.tag) {
         0 -> {
             return 1

@@ -20,10 +20,10 @@ fun spiral_main(): Int {
     var v10: Heap0 = Heap0(0, "")
     var v11: Heap0 = Heap0(0, "")
     var v12: Heap0 = Heap0(0, "")
-    val spiral_tuple627 = v9(1)
-    v10 = spiral_tuple627.v0
-    v11 = spiral_tuple627.v1
-    v12 = spiral_tuple627.v2
+    val spiral_tuple603 = v9(1)
+    v10 = spiral_tuple603.v0
+    v11 = spiral_tuple603.v1
+    v12 = spiral_tuple603.v2
     var v13: Int = 0
     var v14: String = ""
     v13 = v10.l0

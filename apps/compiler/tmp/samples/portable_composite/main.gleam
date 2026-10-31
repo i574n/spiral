@@ -20,9 +20,7 @@ pub fn method2(v0: Int, v1: Int, v2: Bool) -> Int {
             let v4 = spiral_wrap_signed(v3 - 4, 32)
             v4
         }
-        False -> {
-            1
-        }
+        False -> 1
     }
 }
 pub fn method4(v0: Float) -> #(Bool, Float, Int) {
@@ -38,14 +36,10 @@ pub fn method5(v0: Bool, v1: Float, v2: Int) -> Int {
                     let v4 = spiral_wrap_signed(v2 - 7, 32)
                     v4
                 }
-                False -> {
-                    1
-                }
+                False -> 1
             }
         }
-        False -> {
-            2
-        }
+        False -> 2
     }
 }
 pub fn method7(v0: String, v1: String) -> Bool {
@@ -76,24 +70,16 @@ pub fn method8(v0: Int) -> Int {
     let v1 = 7
     let v2 = method9(v1)
     case v2 {
-        True -> {
-            method10(v0)
-        }
-        False -> {
-            1
-        }
+        True -> method10(v0)
+        False -> 1
     }
 }
 pub fn method6(v0: Int) -> Int {
     let v1 = "spiral"
     let v2 = method7(v1, v1)
     case v2 {
-        True -> {
-            method8(v0)
-        }
-        False -> {
-            1
-        }
+        True -> method8(v0)
+        False -> 1
     }
 }
 pub fn method3(v0: Int) -> Int {

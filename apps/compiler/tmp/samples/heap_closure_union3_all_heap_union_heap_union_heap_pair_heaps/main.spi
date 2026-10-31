@@ -1,68 +1,68 @@
-union slot =
+:| slot =
     | None
     | Held : (heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
 
-union wrap =
+:| wrap =
     | Absent
     | Box : (heap { value : slot })
     | Mark : i32
 
-let score x : i32 =
-    match x with
+:~ score x : i32 =
+    ?= x ?|
     | Absent => 1i32
-    | Mark k => if k =. 0i32 then 1i32 else 1i32
+    | Mark k => ? k =. 0i32 ?> 1i32 |: 1i32
     | Box box =>
-        inl opened = !!!!LayoutIndex(box)
-        match opened.value with
+        := opened = !!!!LayoutIndex(box)
+        ?= opened::value ?|
         | None => 1i32
         | Held inner =>
-            inl inner_opened = !!!!LayoutIndex(inner)
-            inl ~(inner_held, flag) = inner_opened.value
-            inl deep_opened = !!!!LayoutIndex(inner_held)
-            inl ~(left, right) = deep_opened.value
-            inl left_opened = !!!!LayoutIndex(left)
-            inl ~(a, b) = left_opened.value
-            inl right_opened = !!!!LayoutIndex(right)
-            inl ~(c, d) = right_opened.value
-            if a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && flag =. 2i32 then 0i32 else 1i32
+            := inner_opened = !!!!LayoutIndex(inner)
+            := ~(inner_held, flag) = inner_opened::value
+            := deep_opened = !!!!LayoutIndex(inner_held)
+            := ~(left, right) = deep_opened::value
+            := left_opened = !!!!LayoutIndex(left)
+            := ~(a, b) = left_opened::value
+            := right_opened = !!!!LayoutIndex(right)
+            := ~(c, d) = right_opened::value
+            ? a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && flag =. 2i32 ?> 0i32 |: 1i32
 
-inl main () : i32 =
-    inl ~n = 7i32
-    inl ~word = "hi"
-    inl left_pair = n, word
-    inl left_heap = !!!!LayoutToHeap({ value = left_pair })
-    inl ~m = 4i32
-    inl ~other = "yo"
-    inl right_pair = m, other
-    inl right_heap = !!!!LayoutToHeap({ value = right_pair })
-    inl pair = left_heap, right_heap
-    inl inner = !!!!LayoutToHeap({ value = pair })
-    inl ~mark = 2i32
-    inl outer_pair = inner, mark
-    inl outer = !!!!LayoutToHeap({ value = outer_pair })
-    inl ~on = true
-    inl held = if on then Held outer else None
-    inl box = !!!!LayoutToHeap({ value = held })
-    inl ~use_box = true
-    inl wrapped = if use_box then Box box else Mark 1i32
-    inl ~tag = 3i32
-    inl marked = Mark tag
-    inl absent = Absent
-    inl f (z : i32) : wrap =
-        if z =. 0i32 then
+:= main () : i32 =
+    := ~n = 7i32
+    := ~word = "hi"
+    := left_pair = n, word
+    := left_heap = !!!!LayoutToHeap({ value = left_pair })
+    := ~m = 4i32
+    := ~other = "yo"
+    := right_pair = m, other
+    := right_heap = !!!!LayoutToHeap({ value = right_pair })
+    := pair = left_heap, right_heap
+    := inner = !!!!LayoutToHeap({ value = pair })
+    := ~mark = 2i32
+    := outer_pair = inner, mark
+    := outer = !!!!LayoutToHeap({ value = outer_pair })
+    := ~on = !+
+    := held = ? on ?> Held outer |: None
+    := box = !!!!LayoutToHeap({ value = held })
+    := ~use_box = !+
+    := wrapped = ? use_box ?> Box box |: Mark 1i32
+    := ~tag = 3i32
+    := marked = Mark tag
+    := absent = Absent
+    := f (z : i32) : wrap =
+        ? z =. 0i32 ?>
             absent
-        elif z =. 1i32 then
+        |? z =. 1i32 ?>
             wrapped
-        else
+        |:
             marked
-    inl ~g = f
-    inl cover_box = !!!!LayoutToHeap({ value = g 1i32 })
-    inl cover_mark = !!!!LayoutToHeap({ value = g 2i32 })
-    inl cover_absent = !!!!LayoutToHeap({ value = g 0i32 })
-    inl opened_box = !!!!LayoutIndex(cover_box)
-    inl opened_mark = !!!!LayoutIndex(cover_mark)
-    inl opened_absent = !!!!LayoutIndex(cover_absent)
-    inl box_score = score opened_box.value
-    inl mark_score = score opened_mark.value
-    inl absent_score = score opened_absent.value
-    if box_score =. 0i32 && mark_score =. 1i32 && absent_score =. 1i32 then 0i32 else 1i32
+    := ~g = f
+    := cover_box = !!!!LayoutToHeap({ value = g 1i32 })
+    := cover_mark = !!!!LayoutToHeap({ value = g 2i32 })
+    := cover_absent = !!!!LayoutToHeap({ value = g 0i32 })
+    := opened_box = !!!!LayoutIndex(cover_box)
+    := opened_mark = !!!!LayoutIndex(cover_mark)
+    := opened_absent = !!!!LayoutIndex(cover_absent)
+    := box_score = score opened_box::value
+    := mark_score = score opened_mark::value
+    := absent_score = score opened_absent::value
+    ? box_score =. 0i32 && mark_score =. 1i32 && absent_score =. 1i32 ?> 0i32 |: 1i32

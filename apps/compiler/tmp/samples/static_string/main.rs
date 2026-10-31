@@ -6,7 +6,7 @@ fn method0(mut v0: Rc<str>) -> bool {
 }
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral"); } LIT.with(|lit| lit.clone()) };
-    let v1: bool = method0(v0.clone());
+    let v1: bool = method0(v0);
     if v1 {
         0i32
     } else {

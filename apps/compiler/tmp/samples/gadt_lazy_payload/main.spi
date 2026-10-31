@@ -1,9 +1,9 @@
-nominal case_record t = `( !!!!UnionToRecord(`t, forall r. => `r) )
-union rec pickler t =
+:! case_record t = `( !!!!UnionToRecord(`t, \* r. => `r) )
+:| ^ pickler t =
     | Unit :: pickler ()
-    | Alt :: forall t. case_record t -> pickler t
-inl main () : i32 =
-    inl p : pickler () = Unit
-    match p with
+    | Alt :: \* t. case_record t -> pickler t
+:= main () : i32 =
+    := p : pickler () = Unit
+    ?= p ?|
     | Unit => 7i32
     | _ => 0i32

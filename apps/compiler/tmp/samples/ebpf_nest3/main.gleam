@@ -10,9 +10,7 @@ pub fn method0(v0: Int, v1: Int, v2: Float) -> Int {
                 let v7 = v4 == 3
                 v7
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v10 =
         case v8 {
@@ -20,17 +18,11 @@ pub fn method0(v0: Int, v1: Int, v2: Float) -> Int {
                 let v9 = v5 == 1.5
                 v9
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v10 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }
 pub fn main() {

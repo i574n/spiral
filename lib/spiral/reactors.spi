@@ -106,22 +106,52 @@ test reactors static =
         ? time >= ticks ?> state |: loop (tick program input state time) (time + 1i64)
     loop program.init 0i64
 
+:== micro_run s i o acc =
+    {
+        program : reactor s i (signal o)
+        input : tag -> i
+        ticks : i64
+        cap : i32
+        step : acc -> o -> acc
+    }
+
+:== micro_at s acc = { state : s; time : i64; micro : i32; total : acc; steps : i64 }
+
+:= micro_start \* s acc. (state : s) (total : acc) : micro_at s acc =
+    { state = state; time = 0i64; micro = 0i32; total = total; steps = 0i64 }
+
+:= micro_tick \* s acc. (m : micro_at s acc) (state : s) : micro_at s acc =
+    { state = state; time = m.time + 1i64; micro = 0i32; total = m.total; steps = m.steps }
+
+:= micro_fired \* s acc. (m : micro_at s acc) (state : s) (total : acc) : micro_at s acc =
+    { state = state; time = m.time; micro = m.micro + 1i32; total = total; steps = m.steps + 1i64 }
+
+:= micro_react \* s i o acc. (r : micro_run s i o acc) (m : micro_at s acc) : s * signal o =
+    := now = { time = m.time; micro = m.micro }
+    r.program.react m.state now (r.input now)
+
+:= micro_reacted \* s i o acc. (r : micro_run s i o acc) (m : micro_at s acc) : micro_at s acc =
+    := state, out = micro_react r m
+    ?= out ?|
+    | Present v => micro_fired m state (r.step m.total v)
+    | Absent => micro_tick m state
+
+:= micro_next \* s i o acc. (r : micro_run s i o acc) (m : micro_at s acc) : micro_at s acc =
+    ? m.micro >= r.cap ?> micro_tick m m.state |: micro_reacted r m
+
+:~ ^ micro_loop \* s i o acc. (r : micro_run s i o acc) (m : micro_at s acc) : acc * i64 =
+    ? m.time >= r.ticks ?> m.total, m.steps |: micro_loop r (micro_next r m)
+
+:= micro_of \* s i o acc. (r : micro_run s i o acc) (initial : acc) : acc * i64 =
+    micro_loop r (micro_start r.program.init initial)
+
 /// ### run_micro
 := run_micro \* s i o acc.
     (program : reactor s i (signal o)) (input : tag -> i) (ticks : i64) (cap : i32) (step : acc -> o -> acc)
     (initial : acc)
     : acc * i64
     =
-    :~ ^ loop (state : s) (time : i64) (micro : i32) (total : acc) (microsteps : i64) : acc * i64 =
-        ? time >= ticks ?> total, microsteps
-        |? micro >= cap ?> loop state (time + 1i64) 0i32 total microsteps
-        |:
-            := now = { time = time; micro = micro }
-            := state, out = program.react state now (input now)
-            ?= out ?|
-            | Present v => loop state time (micro + 1i32) (step total v) (microsteps + 1i64)
-            | Absent => loop state (time + 1i64) 0i32 total microsteps
-    loop program.init 0i64 0i32 initial 0i64
+    micro_of { program; input; ticks; cap; step } initial
 
 := timer (period : i64) : reactor i64 () (signal i64) =
     {
@@ -248,22 +278,42 @@ test array_bank_keeps_member_state =
 test modal_reset_restarts_history_resumes =
     (modal_total Reset, modal_total History) |> _assert_eq (72i64, 81i64)
 
+:= c_windows_precise_time_import () =
+    global (
+        "#ifdef _WIN32\n__declspec(dllimport) void __stdcall GetSystemTimePreciseAsFileTime(unsigned long long *);\n"
+        ^^ "#endif"
+    )
+
+:= c_windows_physical_micros () =
+    global (
+        "#ifdef _WIN32\nstatic int64_t spiral_physical_micros(void) { unsigned long long t; "
+        ^^ "GetSystemTimePreciseAsFileTime(&t); return (int64_t)(t / 10ULL) - 11644473600000000LL; }\n#endif"
+    )
+
+:= c_posix_time_include () = global "#ifndef _WIN32\n#include <time.h>\n#endif"
+
+:= c_posix_physical_micros () =
+    global (
+        "#ifndef _WIN32\nstatic int64_t spiral_physical_micros(void) { struct timespec ts; "
+        ^^ "clock_gettime(CLOCK_REALTIME, &ts); return (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000; }\n#endif"
+    )
+
+:= c_physical_micros () : i64 =
+    global "#include <stdint.h>"
+    c_windows_precise_time_import ()
+    c_windows_physical_micros ()
+    c_posix_time_include ()
+    c_posix_physical_micros ()
+    $'spiral_physical_micros()' : i64
+
+:= rust_physical_micros () : i64 =
+    $'(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_micros() as i64)' : i64
+
 /// ### physical_micros
 := physical_micros () : i64 =
     backend_switch {
-        C = \ () =>
-            global "#include <stdint.h>"
-            global (
-                "#ifdef _WIN32\n__declspec(dllimport) void __stdcall GetSystemTimePreciseAsFileTime(unsigned long "
-                ^^ "long *);\nstatic int64_t spiral_physical_micros(void) { unsigned long long t; "
-                ^^ "GetSystemTimePreciseAsFileTime(&t); return (int64_t)(t / 10ULL) - 11644473600000000LL; }\n#else\n"
-                ^^ "#include <time.h>\nstatic int64_t spiral_physical_micros(void) { struct timespec ts; "
-                ^^ "clock_gettime(CLOCK_REALTIME, &ts); return (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000; }\n"
-                ^^ "#endif"
-            )
-            $'spiral_physical_micros()' : i64
-        Rust = \ () =>
-            $'(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_micros() as i64)' : i64
+        C = \ () => c_physical_micros ()
+        Rust = \ () => rust_physical_micros ()
         Zig = \ () => date_time.zig_micros_now ()
     }
 

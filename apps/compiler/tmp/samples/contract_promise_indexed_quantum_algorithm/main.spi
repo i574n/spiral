@@ -1,21 +1,21 @@
-nominal constant = ()
-nominal balanced = ()
+:! constant = ()
+:! balanced = ()
 
-union oracle promise =
+:| oracle promise =
     | ConstantOracle :: oracle constant
     | BalancedOracle :: oracle balanced
 
-union algorithm_result promise =
+:| algorithm_result promise =
     | ConstantWitness :: algorithm_result constant
     | BalancedWitness :: algorithm_result balanced
 
-inl classify forall promise. (oracle : oracle promise) : algorithm_result promise =
-    match oracle with
+:= classify \* promise. (oracle : oracle promise) : algorithm_result promise =
+    ?= oracle ?|
     | ConstantOracle => ConstantWitness
     | BalancedOracle => BalancedWitness
 
-inl accept_constant (result : algorithm_result constant) : string =
-    match result with
+:= accept_constant (result : algorithm_result constant) : string =
+    ?= result ?|
     | ConstantWitness => "deutsch-jozsa-constant"
 
-inl main () : string = accept_constant (classify ConstantOracle)
+:= main () : string = accept_constant (classify ConstantOracle)

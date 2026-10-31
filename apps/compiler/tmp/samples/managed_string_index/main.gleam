@@ -34,11 +34,7 @@ pub fn main() {
     let v1 = spiral_string_index(v0, 1)
     let v2 = v1 == "w"
     case v2 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

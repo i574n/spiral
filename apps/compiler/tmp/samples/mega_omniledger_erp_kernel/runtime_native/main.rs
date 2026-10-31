@@ -801,10 +801,10 @@ fn spiral_main() -> i32 {
         let v615: i64 = v592.wrapping_add(v612);
         let v616: i64 = v594.wrapping_add(v613);
         let v617: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation"); } LIT.with(|lit| lit.clone()) };
-        US0::US0_TypedFxHashedStatementChecksumValidationAccepted(1i64, 3i64, v614, v615, v616, v617.clone())
+        US0::US0_TypedFxHashedStatementChecksumValidationAccepted(1i64, 3i64, v614, v615, v616, v617)
     } else {
         let v619: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"); } LIT.with(|lit| lit.clone()) };
-        US0::US0_TypedFxHashedStatementChecksumValidationRejected(v548, v583, v619.clone())
+        US0::US0_TypedFxHashedStatementChecksumValidationRejected(v548, v583, v619)
     };
     let (mut v640, mut v641, mut v644, mut v645, mut v646, mut v647, mut v648): (i64, i64, i64, i64, i64, i64, i64) = match &v621 {
         US0::US0_TypedFxHashedStatementChecksumValidationAccepted(v625, v626, v627, v628, v629, v630) => {
@@ -1149,10 +1149,10 @@ fn spiral_main() -> i32 {
         let v898: i64 = v875.wrapping_add(v895);
         let v899: i64 = v877.wrapping_add(v896);
         let v900: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation"); } LIT.with(|lit| lit.clone()) };
-        US0::US0_TypedFxHashedStatementChecksumValidationAccepted(1i64, 3i64, v897, v898, v899, v900.clone())
+        US0::US0_TypedFxHashedStatementChecksumValidationAccepted(1i64, 3i64, v897, v898, v899, v900)
     } else {
         let v902: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"); } LIT.with(|lit| lit.clone()) };
-        US0::US0_TypedFxHashedStatementChecksumValidationRejected(v831, v866, v902.clone())
+        US0::US0_TypedFxHashedStatementChecksumValidationRejected(v831, v866, v902)
     };
     let (mut v923, mut v924, mut v927, mut v931): (i64, i64, i64, i64) = match &v904 {
         US0::US0_TypedFxHashedStatementChecksumValidationAccepted(v908, v909, v910, v911, v912, v913) => {
@@ -2484,10 +2484,10 @@ fn spiral_main() -> i32 {
         let v1966: i64 = v1943.wrapping_add(v1963);
         let v1967: i64 = v1945.wrapping_add(v1964);
         let v1968: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation"); } LIT.with(|lit| lit.clone()) };
-        US0::US0_TypedFxHashedStatementChecksumValidationAccepted(1i64, 3i64, v1965, v1966, v1967, v1968.clone())
+        US0::US0_TypedFxHashedStatementChecksumValidationAccepted(1i64, 3i64, v1965, v1966, v1967, v1968)
     } else {
         let v1970: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"); } LIT.with(|lit| lit.clone()) };
-        US0::US0_TypedFxHashedStatementChecksumValidationRejected(v1899, v1934, v1970.clone())
+        US0::US0_TypedFxHashedStatementChecksumValidationRejected(v1899, v1934, v1970)
     };
     let (mut v1991, mut v1992, mut v1995, mut v1999): (i64, i64, i64, i64) = match &v1972 {
         US0::US0_TypedFxHashedStatementChecksumValidationAccepted(v1976, v1977, v1978, v1979, v1980, v1981) => {
@@ -2986,10 +2986,10 @@ fn spiral_main() -> i32 {
         let v2371: i64 = v2348.wrapping_add(v2368);
         let v2372: i64 = v2350.wrapping_add(v2369);
         let v2373: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation"); } LIT.with(|lit| lit.clone()) };
-        US0::US0_TypedFxHashedStatementChecksumValidationAccepted(1i64, 3i64, v2370, v2371, v2372, v2373.clone())
+        US0::US0_TypedFxHashedStatementChecksumValidationAccepted(1i64, 3i64, v2370, v2371, v2372, v2373)
     } else {
         let v2375: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"); } LIT.with(|lit| lit.clone()) };
-        US0::US0_TypedFxHashedStatementChecksumValidationRejected(v2304, v2339, v2375.clone())
+        US0::US0_TypedFxHashedStatementChecksumValidationRejected(v2304, v2339, v2375)
     };
     let (mut v2396, mut v2397, mut v2404): (i64, i64, i64) = match &v2377 {
         US0::US0_TypedFxHashedStatementChecksumValidationAccepted(v2381, v2382, v2383, v2384, v2385, v2386) => {
@@ -3404,10 +3404,10 @@ fn spiral_main() -> i32 {
         let v2708: i64 = v2685.wrapping_add(v2705);
         let v2709: i64 = v2687.wrapping_add(v2706);
         let v2710: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation"); } LIT.with(|lit| lit.clone()) };
-        US0::US0_TypedFxHashedStatementChecksumValidationAccepted(1i64, 3i64, v2707, v2708, v2709, v2710.clone())
+        US0::US0_TypedFxHashedStatementChecksumValidationAccepted(1i64, 3i64, v2707, v2708, v2709, v2710)
     } else {
         let v2712: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"); } LIT.with(|lit| lit.clone()) };
-        US0::US0_TypedFxHashedStatementChecksumValidationRejected(v2641, v2676, v2712.clone())
+        US0::US0_TypedFxHashedStatementChecksumValidationRejected(v2641, v2676, v2712)
     };
     let (mut v2733, mut v2734, mut v2741): (i64, i64, i64) = match &v2714 {
         US0::US0_TypedFxHashedStatementChecksumValidationAccepted(v2718, v2719, v2720, v2721, v2722, v2723) => {

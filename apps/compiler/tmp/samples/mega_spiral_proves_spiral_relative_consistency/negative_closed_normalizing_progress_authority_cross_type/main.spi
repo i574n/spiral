@@ -1,9 +1,9 @@
-open main
+:< main
 
-inl impossible_closed_normalizing_progress_authority_cross_type () :
+:= impossible_closed_normalizing_progress_authority_cross_type () :
     exact_linear_indexed_closed_normalizing_progress_authority
         exact_linear_false_type =
-    inl unit_fragment :
+    := unit_fragment :
         exact_linear_indexed_closed_normalizing_fragment exact_linear_unit_type =
         ExactLinearIndexedClosedNormalizingFragmentValue (
             ExactLinearIndexedValueUnit (
@@ -14,5 +14,5 @@ inl impossible_closed_normalizing_progress_authority_cross_type () :
         unit_fragment,
         "a-Unit-fragment-cannot-be-relabelled-as-a-False-authority")
 
-inl main () =
+:= main () =
     impossible_closed_normalizing_progress_authority_cross_type ()

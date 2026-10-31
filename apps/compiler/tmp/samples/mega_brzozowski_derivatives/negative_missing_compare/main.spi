@@ -1,9 +1,9 @@
-open main
+:< main
 
-union orphan_symbol =
+:| orphan_symbol =
     | Orphan
 
-nominal orphan_alphabet = orphan_symbol
+:! orphan_alphabet = orphan_symbol
 
-inl main () =
+:= main () =
     derivative (RegexChar (orphan_alphabet Orphan)) (orphan_alphabet Orphan)

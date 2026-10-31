@@ -17,9 +17,7 @@ pub fn method2(v0: Int) -> Uh0 {
             let v3 = Uh0Empty
             Uh0Box(7, v3)
         }
-        False -> {
-            method1(v1)
-        }
+        False -> method1(v1)
     }
 }
 pub fn method1(v0: Int) -> Uh0 {
@@ -30,9 +28,7 @@ pub fn method1(v0: Int) -> Uh0 {
             let v3 = Uh0Empty
             Uh0Box(11, v3)
         }
-        False -> {
-            method2(v1)
-        }
+        False -> method2(v1)
     }
 }
 pub fn method0() -> Uh0 {
@@ -43,9 +39,7 @@ pub fn method0() -> Uh0 {
             let v2 = Uh0Empty
             Uh0Box(7, v2)
         }
-        False -> {
-            method1(v0)
-        }
+        False -> method1(v0)
     }
 }
 pub fn main() {
@@ -54,16 +48,10 @@ pub fn main() {
         Uh0Box(v1, v2) -> {
             let v3 = v1 == 7
             case v3 {
-                True -> {
-                    0
-                }
-                False -> {
-                    3
-                }
+                True -> 0
+                False -> 3
             }
         }
-        Uh0Empty -> {
-            1
-        }
+        Uh0Empty -> 1
     }
 }

@@ -1,15 +1,15 @@
-nominal bool_array = array_base bool
+:! bool_array = array_base bool
 
-inl create (n : i32) : bool_array = bool_array !!!!ArrayCreate(`bool, n)
-inl get (values : bool_array) (i : i32) : bool =
-    match values with
+:= create (n : i32) : bool_array = bool_array !!!!ArrayCreate(`bool, n)
+:= get (values : bool_array) (i : i32) : bool =
+    ?= values ?|
     | bool_array raw => !!!!ArrayIndex(raw, i)
-inl set (values : bool_array) (i : i32) (value : bool) : () =
-    match values with
+:= set (values : bool_array) (i : i32) (value : bool) : () =
+    ?= values ?|
     | bool_array raw => !!!!ArrayIndexSet(raw, i, value)
 
-inl main () : i32 =
-    inl values = create 1i32
-    inl ~on = true
+:= main () : i32 =
+    := values = create 1i32
+    := ~on = !+
     set values 0i32 on
-    if get values 0i32 then 0i32 else 1i32
+    ? get values 0i32 ?> 0i32 |: 1i32

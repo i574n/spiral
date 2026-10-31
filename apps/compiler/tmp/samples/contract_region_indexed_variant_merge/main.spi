@@ -1,55 +1,55 @@
-nominal donor_a = ()
-nominal hg38 = ()
-nominal chr1 = ()
-nominal raw = ()
-nominal normalized = ()
-nominal merged = ()
+:! donor_a = ()
+:! hg38 = ()
+:! chr1 = ()
+:! raw = ()
+:! normalized = ()
+:! merged = ()
 
-union callset sample build contig phase =
-    | RawCallset :: forall sample build contig. string -> callset sample build contig raw
-    | NormalizedCallset :: forall sample build contig. string -> callset sample build contig normalized
-    | MergedCallset :: forall sample build contig. string -> callset sample build contig merged
+:| callset sample build contig phase =
+    | RawCallset :: \* sample build contig. string -> callset sample build contig raw
+    | NormalizedCallset :: \* sample build contig. string -> callset sample build contig normalized
+    | MergedCallset :: \* sample build contig. string -> callset sample build contig merged
 
-union normalization sample build contig from to =
-    | NormalizeLeft :: forall sample build contig. normalization sample build contig raw normalized
-    | NormalizeRight :: forall sample build contig. normalization sample build contig raw normalized
+:| normalization sample build contig from to =
+    | NormalizeLeft :: \* sample build contig. normalization sample build contig raw normalized
+    | NormalizeRight :: \* sample build contig. normalization sample build contig raw normalized
 
-union merge_input sample build contig =
-    | MergeInput :: forall sample build contig.
+:| merge_input sample build contig =
+    | MergeInput :: \* sample build contig.
         callset sample build contig normalized * callset sample build contig normalized
         -> merge_input sample build contig
 
-union rec normalization_plan sample build contig from to =
-    | NormalizeLeaf :: forall sample build contig from to.
+:| ^ normalization_plan sample build contig from to =
+    | NormalizeLeaf :: \* sample build contig from to.
         normalization sample build contig from to
         -> normalization_plan sample build contig from to
-    | NormalizeThen :: forall sample build contig from to.
-        (exists middle.
+    | NormalizeThen :: \* sample build contig from to.
+        (\? middle.
             normalization_plan sample build contig from middle
             * normalization sample build contig middle to)
         -> normalization_plan sample build contig from to
 
-inl normalize forall sample build contig.
+:= normalize \* sample build contig.
     (step : normalization sample build contig raw normalized)
     (calls : callset sample build contig raw)
     : callset sample build contig normalized =
-    match step, calls with
+    ?= step, calls ?|
     | NormalizeLeft, RawCallset label => NormalizedCallset label
     | NormalizeRight, RawCallset label => NormalizedCallset label
 
-inl merge_calls forall sample build contig.
+:= merge_calls \* sample build contig.
     (input : merge_input sample build contig)
     : callset sample build contig merged =
-    match input with
+    ?= input ?|
     | MergeInput (NormalizedCallset _, NormalizedCallset _) => MergedCallset "merged-calls"
 
-inl label forall sample build contig. (calls : callset sample build contig merged) : string =
-    match calls with
+:= label \* sample build contig. (calls : callset sample build contig merged) : string =
+    ?= calls ?|
     | MergedCallset value => value
 
-inl main () : string =
-    inl left : callset donor_a hg38 chr1 raw = RawCallset "left"
-    inl right : callset donor_a hg38 chr1 raw = RawCallset "right"
-    inl left' = normalize NormalizeLeft left
-    inl right' = normalize NormalizeRight right
+:= main () : string =
+    := left : callset donor_a hg38 chr1 raw = RawCallset "left"
+    := right : callset donor_a hg38 chr1 raw = RawCallset "right"
+    := left' = normalize NormalizeLeft left
+    := right' = normalize NormalizeRight right
     label (merge_calls (MergeInput (left', right')))

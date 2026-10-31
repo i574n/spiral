@@ -1,22 +1,22 @@
-nominal idle = ()
-nominal sent = ()
-nominal received = ()
+:! idle = ()
+:! sent = ()
+:! received = ()
 
-union session state =
+:| session state =
     | Idle :: session idle
     | Sent :: string -> session sent
     | Received :: string -> session received
 
-union command from to =
+:| command from to =
     | Send :: string -> command idle sent
     | Receive :: command sent received
 
-inl advance forall from to.
+:= advance \* from to.
     (command : command from to)
     (session : session from)
     : session to =
-    match command, session with
+    ?= command, session ?|
     | Send xml, Idle => Sent xml
     | Receive, Sent _ => Received "protocol"
 
-inl main () = advance Receive Idle
+:= main () = advance Receive Idle

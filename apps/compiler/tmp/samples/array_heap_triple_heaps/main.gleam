@@ -79,9 +79,7 @@ pub fn main() {
                 let v22 = v16 == "hi"
                 v22
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v25 =
         case v23 {
@@ -89,9 +87,7 @@ pub fn main() {
                 let v24 = v17 == 4
                 v24
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v27 =
         case v25 {
@@ -99,9 +95,7 @@ pub fn main() {
                 let v26 = v18 == "yo"
                 v26
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v29 =
         case v27 {
@@ -109,9 +103,7 @@ pub fn main() {
                 let v28 = v19 == 9
                 v28
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v31 =
         case v29 {
@@ -119,16 +111,10 @@ pub fn main() {
                 let v30 = v20 == "ok"
                 v30
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v31 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

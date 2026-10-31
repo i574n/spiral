@@ -24,11 +24,7 @@ pub fn main() {
     let v2 = v1(4)
     let v3 = v2 == 34
     case v3 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

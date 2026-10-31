@@ -12,9 +12,9 @@ fun spiral_main(): Int {
     val v3: Heap0 = Heap0(v1)
     var v4: Heap0 = Heap0(0)
     var v5: Heap0 = Heap0(0)
-    val spiral_tuple252 = sp_method0(v2, v3)
-    v4 = spiral_tuple252.v0
-    v5 = spiral_tuple252.v1
+    val spiral_tuple241 = sp_method0(v2, v3)
+    v4 = spiral_tuple241.v0
+    v5 = spiral_tuple241.v1
     val v6: Int = v4.l0
     val v7: Int = v5.l0
     val v8: Int = (v6 + v7)

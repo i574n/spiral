@@ -1,20 +1,20 @@
-inl main () : i32 =
-    inl ~s = "é"
-    inl n = !!!!StringLength(`i32, s)
-    inl z0 = !!!!StringIndex(s, 0i32)
-    inl z1 = !!!!StringIndex(s, 1i32)
-    inl ~rest = "x"
-    inl cat = !!!!StaticStringConcat(s, rest)
-    inl cn = !!!!StringLength(`i32, cat)
-    inl ~ascii = "ab"
-    inl a0 = !!!!StringIndex(ascii, 0i32)
-    inl slice = !!!!StringSlice(ascii, 0i32, 0i32)
-    inl sn = !!!!StringLength(`i32, slice)
-    inl empty = !!!!StringSlice(ascii, 1i32, 0i32)
-    inl en = !!!!StringLength(`i32, empty)
-    inl whole = !!!!StringSlice(s, 0i32, 1i32)
-    inl wn = !!!!StringLength(`i32, whole)
-    if !!!!EQ(z0, z1) then 1i32
-    else
-        if n =. 2i32 && !!!!EQ(a0, 'a') && cn =. 3i32 && sn =. 1i32 && en =. 0i32 && wn =. 2i32 then 0i32
-        else 1i32
+:= main () : i32 =
+    := ~s = "é"
+    := n = !!!!StringLength(`i32, s)
+    := z0 = !!!!StringIndex(s, 0i32)
+    := z1 = !!!!StringIndex(s, 1i32)
+    := ~rest = "x"
+    := cat = !!!!StaticStringConcat(s, rest)
+    := cn = !!!!StringLength(`i32, cat)
+    := ~ascii = "ab"
+    := a0 = !!!!StringIndex(ascii, 0i32)
+    := slice = !!!!StringSlice(ascii, 0i32, 0i32)
+    := sn = !!!!StringLength(`i32, slice)
+    := empty = !!!!StringSlice(ascii, 1i32, 0i32)
+    := en = !!!!StringLength(`i32, empty)
+    := whole = !!!!StringSlice(s, 0i32, 1i32)
+    := wn = !!!!StringLength(`i32, whole)
+    ? !!!!EQ(z0, z1) ?> 1i32
+    |:
+        ? n =. 2i32 && !!!!EQ(a0, 'a') && cn =. 3i32 && sn =. 1i32 && en =. 0i32 && wn =. 2i32 ?> 0i32
+        |: 1i32

@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_closed_bool_progress_continuation_outcome_mismatch ()
+:= impossible_closed_bool_progress_continuation_outcome_mismatch ()
     : exact_linear_indexed_closed_bool_normalization_progress
         exact_linear_closed_bool_false_normal =
     ExactLinearIndexedClosedBoolNormalizationProgressStep (
@@ -9,5 +9,5 @@ inl impossible_closed_bool_progress_continuation_outcome_mismatch ()
             "a-progress-step-normalizing-to-False-cannot-carry-a-True-continuation",
         "the-continuation-normal-index-must-match-the-progress-result-index")
 
-inl main () =
+:= main () =
     impossible_closed_bool_progress_continuation_outcome_mismatch ()

@@ -20,9 +20,9 @@ func spiral_main() -> Int32 {
     let v1: (Int32) -> (String, String) = f_c0(v0)
     var v2: String = ""
     var v3: String = ""
-    let spiral_tuple255 = v1(1)
-    v2 = spiral_tuple255.0
-    v3 = spiral_tuple255.1
+    let spiral_tuple248 = v1(1)
+    v2 = spiral_tuple248.0
+    v3 = spiral_tuple248.1
     var v4: Bool = false
     v4 = (v2 == "hi")
     var v6: Bool = false

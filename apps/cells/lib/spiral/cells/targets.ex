@@ -214,7 +214,7 @@ defmodule Spiral.Cells.Targets do
 
     if File.regular?(exe) do
       case run_status(exe, Path.basename(exe), [], opts, timeout, deadline, false) do
-        {:ok, built} -> {:ok, cell_exit(%{output: ""}, built)}
+        {:ok, built} -> {:ok, cell_exit(built)}
         error -> error
       end
     else
@@ -294,9 +294,9 @@ defmodule Spiral.Cells.Targets do
       exe = Path.join(Path.dirname(path), exe_name())
       shown = Path.basename(cc)
 
-      with {:ok, compiled} <- run_program(cc, shown, c_args(cc, path, exe, opts[:root]), opts, timeout, deadline, false),
+      with {:ok, _compiled} <- run_program(cc, shown, c_args(cc, path, exe, opts[:root]), opts, timeout, deadline, false),
            {:ok, ran} <- run_status(exe, exe_name(), [], opts, timeout, deadline, false) do
-        {:ok, cell_exit(compiled, ran)}
+        {:ok, cell_exit(ran)}
       end
     else
       {:error, %ProcessError{message: "`gcc` was not found", reason: :tool_missing}}
@@ -318,7 +318,7 @@ defmodule Spiral.Cells.Targets do
 
     cond do
       is_binary(dcc) and File.regular?(dcc) -> {dcc, "dcc32", []}
-      is_binary(fpc) and File.regular?(fpc) -> {fpc, "fpc", ["-O2", "-Mdelphi", "-l-", "-v0w"]}
+      is_binary(fpc) and File.regular?(fpc) -> {fpc, "fpc", ["-Px86_64", "-O2", "-Mdelphi", "-l-", "-v0w"]}
       true -> nil
     end
   end
@@ -329,7 +329,7 @@ defmodule Spiral.Cells.Targets do
 
       if File.regular?(exe) do
         case run_status(exe, Path.basename(exe), [], opts, timeout, deadline, false) do
-          {:ok, ran} -> {:ok, cell_exit(compiled, ran)}
+          {:ok, ran} -> {:ok, cell_exit(ran)}
           error -> error
         end
       else
@@ -603,8 +603,8 @@ defmodule Spiral.Cells.Targets do
     end
   end
 
-  defp cell_exit(compiled, ran) do
-    %{exit_status: ran.exit_status, output: join_output(compiled, %{output: ran.output})}
+  defp cell_exit(ran) do
+    %{exit_status: ran.exit_status, output: ran.output}
   end
 
   defp normalize({:ok, %{exit_status: 0, output: output} = ran}, present?) do
@@ -770,10 +770,6 @@ defmodule Spiral.Cells.Targets do
       _ ->
         Path.dirname(exe)
     end
-  end
-
-  defp join_output(%{output: left}, %{output: right}) do
-    [left, right] |> Enum.reject(&(&1 in [nil, ""])) |> Enum.join("\n")
   end
 
   defp read_if(path) do

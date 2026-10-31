@@ -8,12 +8,8 @@ pub fn f_c0(capt: #(Heap0, Heap0, Heap0)) -> fn(Int) -> Us0 {
         let #(v0, v1, v2) = capt
         let v4 = v3 == 0
         case v4 {
-            True -> {
-                Us0None
-            }
-            False -> {
-                Us0Held(v0, v1, v2)
-            }
+            True -> Us0None
+            False -> Us0Held(v0, v1, v2)
         }
     }
 }
@@ -30,9 +26,7 @@ pub fn score_0(v0: Us0) -> Int {
                         let v11 = v5 == "hi"
                         v11
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v14 =
                 case v12 {
@@ -40,9 +34,7 @@ pub fn score_0(v0: Us0) -> Int {
                         let v13 = v6 == 4
                         v13
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v16 =
                 case v14 {
@@ -50,9 +42,7 @@ pub fn score_0(v0: Us0) -> Int {
                         let v15 = v7 == "yo"
                         v15
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v18 =
                 case v16 {
@@ -60,9 +50,7 @@ pub fn score_0(v0: Us0) -> Int {
                         let v17 = v8 == 9
                         v17
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v20 =
                 case v18 {
@@ -70,22 +58,14 @@ pub fn score_0(v0: Us0) -> Int {
                         let v19 = v9 == "ok"
                         v19
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             case v20 {
-                True -> {
-                    0
-                }
-                False -> {
-                    1
-                }
+                True -> 0
+                False -> 1
             }
         }
-        Us0None -> {
-            1
-        }
+        Us0None -> 1
     }
 }
 pub fn main() {

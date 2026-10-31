@@ -52,9 +52,9 @@ static int32_t spiral_main(void) {
     v1 = 22;
     int32_t v2 = 0;
     int32_t v3 = 0;
-    SpiralTuple0 spiral_tuple148 = sp_method0(v0, v1);
-    v2 = spiral_tuple148.v0;
-    v3 = spiral_tuple148.v1;
+    SpiralTuple0 spiral_tuple141 = sp_method0(v0, v1);
+    v2 = spiral_tuple141.v0;
+    v3 = spiral_tuple141.v1;
     int32_t v4 = 0;
     v4 = sp_method1(v2, v3);
     int32_t v5 = 0;

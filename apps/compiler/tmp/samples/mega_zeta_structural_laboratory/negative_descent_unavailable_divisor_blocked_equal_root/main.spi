@@ -1,13 +1,13 @@
-open main
+:< main
 
-inl impossible_descent_unavailable_divisor_blocked_equal_root () =
-    inl root_value = positive_positional_twelve_value ()
-    match classify_certified_interval_positive_positional_sealed_factor root_value with
+:= impossible_descent_unavailable_divisor_blocked_equal_root () =
+    := root_value = positive_positional_twelve_value ()
+    ?= classify_certified_interval_positive_positional_sealed_factor root_value ?|
     | CertifiedIntervalPositivePositionalSealedCompositeClass composite_payload =>
-        inl exists divisor quotient. children =
+        := \? divisor quotient. children =
             certified_interval_positive_positional_sealed_composite_children_from_witness
                 (CertifiedIntervalPositivePositionalSealedCompositeWitness composite_payload)
-        inl blocked
+        := blocked
             : certified_interval_positive_positional_recursive_descent_blocked
                 (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) divisor
             =
@@ -16,5 +16,5 @@ inl impossible_descent_unavailable_divisor_blocked_equal_root () =
         ()
     | _ => mega_runtime_fail "twelve-must-classify-as-composite-before-the-negative-boundary"
 
-inl main () =
+:= main () =
     impossible_descent_unavailable_divisor_blocked_equal_root ()

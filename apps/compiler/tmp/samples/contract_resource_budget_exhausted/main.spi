@@ -1,14 +1,14 @@
-nominal zero = ()
-nominal succ n = n
+:! zero = ()
+:! succ n = n
 
-union rec budget n =
+:| ^ budget n =
     | ZeroBudget :: budget zero
-    | MoreBudget :: forall n. budget n -> budget (succ n)
+    | MoreBudget :: \* n. budget n -> budget (succ n)
 
-inl spend_one forall n. (budget : budget (succ n)) : budget n =
-    match budget with
+:= spend_one \* n. (budget : budget (succ n)) : budget n =
+    ?= budget ?|
     | MoreBudget rest => rest
 
-inl main () : string =
-    inl _ = spend_one ZeroBudget
+:= main () : string =
+    := _ = spend_one ZeroBudget
     "unreachable"

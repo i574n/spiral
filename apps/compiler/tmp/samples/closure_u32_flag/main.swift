@@ -21,10 +21,10 @@ func spiral_main() -> Int32 {
     var v4: UInt32 = UInt32(0)
     var v5: String = ""
     var v6: Bool = false
-    let spiral_tuple410 = v3(1)
-    v4 = spiral_tuple410.0
-    v5 = spiral_tuple410.1
-    v6 = spiral_tuple410.2
+    let spiral_tuple398 = v3(1)
+    v4 = spiral_tuple398.0
+    v5 = spiral_tuple398.1
+    v6 = spiral_tuple398.2
     let v7: Bool = (v4 == UInt32(4000000000))
     var v9: Bool = false
     if (v7) {

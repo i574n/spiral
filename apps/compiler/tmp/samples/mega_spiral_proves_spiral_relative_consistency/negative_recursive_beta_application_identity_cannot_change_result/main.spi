@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_recursive_beta_application_identity_cannot_change_result
+:= impossible_recursive_beta_application_identity_cannot_change_result
     (derivation :
         exact_linear_indexed_closed_recursive_beta_derivation
             exact_linear_bool_type
@@ -11,6 +11,6 @@ inl impossible_recursive_beta_application_identity_cannot_change_result
         derivation,
         "ApplicationIdentity-must-preserve-the-recursive-beta-result-type")
 
-inl main () = ()
+:= main () = ()
 
-inl type_applications_stay_on_one_line_or_the_parser_drops_the_definition () = ()
+:= type_applications_stay_on_one_line_or_the_parser_drops_the_definition () = ()

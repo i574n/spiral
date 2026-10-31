@@ -1,19 +1,19 @@
-union rec stream =
+:| ^ stream =
     | Cons : u64 * (() -> stream)
     | Nil
 
-inl rec build (n : u64) : stream =
-    if n = 0 then Nil else Cons (n, fun () => build (n - 1))
+:= ^ build (n : u64) : stream =
+    ? n = 0 ?> Nil |: Cons (n, \ () => build (n - 1))
 
-inl native () : i32 =
-    inl static_closure_count = 80u64
-    inl ~s = build static_closure_count
-    inl ~acc = 0u64
-    let rec loop (s : stream) (acc : u64) : u64 =
-        match s with
+:= native () : i32 =
+    := static_closure_count = 80u64
+    := ~s = build static_closure_count
+    := ~acc = 0u64
+    :~ ^ loop (s : stream) (acc : u64) : u64 =
+        ?= s ?|
         | Cons (x, next) => loop (next ()) (acc + x)
         | Nil => acc
-    inl r = loop s acc % 200
+    := r = loop s acc % 200
     !!!!Conv(`i32, r)
 
-inl main () : i32 = native ()
+:= main () : i32 = native ()

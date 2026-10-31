@@ -1,6 +1,6 @@
-inl main () : i32 =
-    inl x = mut "deref"
-    inl ~n = 3i32
+:= main () : i32 =
+    := x = mut "deref"
+    := ~n = 3i32
     x <- "deref!"
-    !!!!Printf("%s %d\n", *x, if n = 3i32 then n + 1i32 else 0i32)
-    if !!!!EQ((n * 2i32), if n > 0i32 then 6i32 else 0i32) then 0i32 else 1i32
+    !!!!Printf("%s %d\n", *x, ? n = 3i32 ?> n + 1i32 |: 0i32)
+    ? !!!!EQ((n * 2i32), ? n > 0i32 ?> 6i32 |: 0i32) ?> 0i32 |: 1i32

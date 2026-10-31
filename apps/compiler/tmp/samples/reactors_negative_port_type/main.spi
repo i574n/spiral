@@ -1,10 +1,10 @@
-inl gauge () : reactors.reactor f64 (reactors.signal f64) (reactors.signal f64) =
+:= gauge () : reactors::reactor f64 (reactors::signal f64) (reactors::signal f64) =
     {
         init = 0f64
-        react = fun s _ x => s, x
+        react = \ s _ x => s, x
     }
 
-inl main () : i32 =
-    inl program = reactors.chain (reactors.timer 4i64) (gauge ())
-    inl count, _ = reactors.run_ticks program (fun _ => ()) 20i64
+:= main () : i32 =
+    := program = reactors::chain (reactors::timer 4i64) (gauge ())
+    := count, _ = reactors::run_ticks program (\ _ => ()) 20i64
     conv count

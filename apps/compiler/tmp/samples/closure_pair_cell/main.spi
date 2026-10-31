@@ -1,14 +1,14 @@
-inl main () : i32 =
-    inl ~a = 3i32
-    inl ~b = 4i32
-    inl cell = !!!!LayoutToHeap({ value = a })
-    inl f (n : i32) : heap { value : i32 } * i32 =
-        if n =. 0i32 then
+:= main () : i32 =
+    := ~a = 3i32
+    := ~b = 4i32
+    := cell = !!!!LayoutToHeap({ value = a })
+    := f (n : i32) : heap { value : i32 } * i32 =
+        ? n =. 0i32 ?>
             cell, 0i32
-        else
+        |:
             cell, b
-    inl ~g = f
-    inl pair = g 1i32
-    inl ~(left, right) = pair
-    inl obj = !!!!LayoutIndex(left)
-    if obj.value +. right =. 7i32 then 0i32 else 1i32
+    := ~g = f
+    := pair = g 1i32
+    := ~(left, right) = pair
+    := obj = !!!!LayoutIndex(left)
+    ? obj::value +. right =. 7i32 ?> 0i32 |: 1i32

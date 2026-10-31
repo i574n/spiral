@@ -1,5 +1,4 @@
 /// # json_scan
-
 test json_scan static =
     :< testing
 
@@ -174,12 +173,12 @@ test json_scan static =
 
 :~ item_next (q : item_scan) (at : i32) (c : char) : i32 = next_token q.s at q.n c
 
-:~ ^ item_starts (q : item_scan) (at : i32) (depth : i32) (count : i32) : i32 =
-    ? at >= q.n ?> count
+:~ ^ item_starts (q : item_scan) (at : i32) (depth : i32) (k : i32) : i32 =
+    ? at >= q.n ?> k
     |:
         := c = sm.index q.s at
-        ? closes c depth ?> count
-        |: item_starts q (item_next q at c) (bracket_depth depth c) (counted q at depth count c)
+        ? closes c depth ?> k
+        |: item_starts q (item_next q at c) (bracket_depth depth c) (counted q at depth k c)
 
 :~ ^ skip_spaces (s : string) (at : i32) : i32 = ? sm.index s at = ' ' ?> skip_spaces s (at + 1i32) |: at
 
@@ -207,11 +206,11 @@ test json_scan static =
 
 :~ parse_i32_array (s : string) (at : i32) : array_base i32 =
     := starts = item_positions s at
-    fill_array (am'.length_base starts) (\ i => parse_i32 s (skip_spaces s (am'.index_base i starts)))
+    fill_array (am'.length_base starts) \ i => parse_i32 s (skip_spaces s (am'.index_base i starts))
 
 :~ parse_string_array (s : string) (at : i32) : array_base string =
     := starts = item_positions s at
-    fill_array (am'.length_base starts) (\ i => parse_string s (skip_spaces s (am'.index_base i starts)))
+    fill_array (am'.length_base starts) \ i => parse_string s (skip_spaces s (am'.index_base i starts))
 
 :~ item_count (s : string) (at : i32) : i32 =
     := starts = item_positions s at

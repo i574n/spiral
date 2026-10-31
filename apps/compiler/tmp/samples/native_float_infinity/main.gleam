@@ -8,18 +8,14 @@ pub fn main() {
     let v6 = False
     let v8 =
         case v6 {
-            True -> {
-                True
-            }
+            True -> True
             False -> {
                 let v7 = False
                 v7
             }
         }
     case v8 {
-        True -> {
-            3
-        }
+        True -> 3
         False -> {
             let v9 = v0 >. v4
             let v11 =
@@ -28,9 +24,7 @@ pub fn main() {
                         let v10 = v1 >. v5
                         v10
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             case v11 {
                 True -> {
@@ -41,22 +35,14 @@ pub fn main() {
                                 let v13 = v3 <. 0.0
                                 v13
                             }
-                            False -> {
-                                False
-                            }
+                            False -> False
                         }
                     case v14 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            2
-                        }
+                        True -> 0
+                        False -> 2
                     }
                 }
-                False -> {
-                    1
-                }
+                False -> 1
             }
         }
     }

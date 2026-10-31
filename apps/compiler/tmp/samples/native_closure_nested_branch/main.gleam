@@ -22,9 +22,7 @@ pub fn left_c0(capt: #(String, Int)) -> fn(Int) -> Int {
                 let v6 = spiral_wrap_signed(v5 + v2, 32)
                 v6
             }
-            False -> {
-                0
-            }
+            False -> 0
         }
     }
 }
@@ -40,9 +38,7 @@ pub fn right_c1(capt: #(String, Int)) -> fn(Int) -> Int {
                 let v7 = spiral_wrap_signed(v6 - 1, 32)
                 v7
             }
-            False -> {
-                -1
-            }
+            False -> -1
         }
     }
 }
@@ -57,12 +53,8 @@ pub fn main() {
     let v4 = True
     let v7 =
         case v4 {
-            True -> {
-                left_c0(#(v0, v2))
-            }
-            False -> {
-                right_c1(#(v1, v3))
-            }
+            True -> left_c0(#(v0, v2))
+            False -> right_c1(#(v1, v3))
         }
     method0(v7)
 }

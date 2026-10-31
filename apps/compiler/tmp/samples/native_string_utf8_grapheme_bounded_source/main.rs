@@ -124,7 +124,7 @@ fn utf8_scalar_at_byte_offset_1(mut v0: Rc<str>, mut v1: i32) -> i32 {
                                     let v70: i32 = v1.wrapping_add(2i32);
                                     let v71: u8 = runtime_byte_2(v0.clone(), v70);
                                     let v72: i32 = i32::from(v71);
-                                    let v73: u8 = runtime_byte_2(v0.clone(), v64);
+                                    let v73: u8 = runtime_byte_2(v0, v64);
                                     let v74: i32 = i32::from(v73);
                                     let v75: bool = v69 < 128i32;
                                     let v77: bool = if v75 {
@@ -318,12 +318,12 @@ fn spiral_main() -> i32 {
     let v1: i32 = 0i32;
     let v2: i32 = 0i32;
     let v3: i32 = 21i32;
-    let v4: i32 = utf8_grapheme_count_bounded_loop_0(v0.clone(), v1, v2, v3);
+    let v4: i32 = utf8_grapheme_count_bounded_loop_0(v0, v1, v2, v3);
     let v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("́̈A"); } LIT.with(|lit| lit.clone()) };
     let v6: i32 = 0i32;
     let v7: i32 = 0i32;
     let v8: i32 = 5i32;
-    let v9: i32 = utf8_grapheme_count_bounded_loop_0(v5.clone(), v6, v7, v8);
+    let v9: i32 = utf8_grapheme_count_bounded_loop_0(v5, v6, v7, v8);
     let v10: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Aé🙂Z"); } LIT.with(|lit| lit.clone()) };
     let v11: i32 = 4i32;
     let v12: i32 = utf8_scalar_at_byte_offset_1(v10.clone(), v11);
@@ -410,7 +410,7 @@ fn spiral_main() -> i32 {
         let v45: i32 = 4i32;
         let v46: i32 = 0i32;
         let v47: i32 = 9i32;
-        utf8_grapheme_count_bounded_loop_0(v10.clone(), v45, v46, v47)
+        utf8_grapheme_count_bounded_loop_0(v10, v45, v46, v47)
     };
     let v50: bool = v4 == 6i32;
     if v50 {

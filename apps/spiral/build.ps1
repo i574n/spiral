@@ -60,7 +60,15 @@ try {
         $env:PATH, $pathBefore = "$mixPath$sep$env:PATH", $env:PATH
         Push-Location (GetFullPath "../cells")
         [IO.File]::WriteAllText("$checkDir/livemd.txt", (($livemds.FullName -join "`n") + "`n"))
-        try { $renderOutput = mix spiral.render_cells --out-dir $rendered --list "$checkDir/livemd.txt" 2>&1 | ForEach-Object { "$_" }; $renderExit = $LASTEXITCODE }
+        try {
+            if (-not (Test-Path "deps/kino/mix.exs")) {
+                foreach ($task in "local.hex", "local.rebar", "deps.get") {
+                    $taskArgs = $task -like "local.*" ? @("--force", "--if-missing") : @()
+                    mix $task @taskArgs 2>&1 | Select-Object -Last 1
+                }
+            }
+            $renderOutput = mix spiral.render_cells --out-dir $rendered --list "$checkDir/livemd.txt" 2>&1 | ForEach-Object { "$_" }; $renderExit = $LASTEXITCODE
+        }
         finally { Pop-Location; $env:PATH = $pathBefore }
         if ($renderExit -ne 0) { $failures += "mix spiral.render_cells exit ${renderExit}: $($renderOutput -join ' / ')" }
         $notebooks = Get-ChildItem $rendered -Recurse -Filter *.cells -ErrorAction Ignore

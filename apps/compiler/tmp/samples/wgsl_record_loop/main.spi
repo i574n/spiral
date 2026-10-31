@@ -1,7 +1,7 @@
-type state = { a : i32; b : i32 }
+:== state = { a : i32; b : i32 }
 
-inl main () : i32 =
-    inl ~n = 5i32
-    let rec loop (i : i32) (x : state) : state = if i >= n then x else loop (i + 1) { x with a = x.a + 1 }
-    inl r = loop 0 { a = 1; b = 2 }
-    r.a + r.b
+:= main () : i32 =
+    := ~n = 5i32
+    :~ ^ loop (i : i32) (x : state) : state = ? i >= n ?> x |: loop (i + 1) { x ?| a = x::a + 1 }
+    := r = loop 0 { a = 1; b = 2 }
+    r::a + r::b

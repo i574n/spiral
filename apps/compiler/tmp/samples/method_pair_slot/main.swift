@@ -20,9 +20,9 @@ func spiral_main() -> Int32 {
     let v0: Int32 = 7
     var v1: US0 = US0_None()
     var v2: Int32 = 0
-    let spiral_tuple119 = sp_method0(v0)
-    v1 = spiral_tuple119.0
-    v2 = spiral_tuple119.1
+    let spiral_tuple114 = sp_method0(v0)
+    v1 = spiral_tuple114.0
+    v2 = spiral_tuple114.1
     switch v1.tag {
         case 0:
             return 1

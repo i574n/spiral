@@ -1,11 +1,11 @@
-inl main () : i32 =
-    inl ~x = 1.5f64
-    inl f (n : i32) : f64 * f64 =
-        if n =. 0i32 then
+:= main () : i32 =
+    := ~x = 1.5f64
+    := f (n : i32) : f64 * f64 =
+        ? n =. 0i32 ?>
             0.0f64, 0.0f64
-        else
+        |:
             x, 2.5f64
-    inl ~g = f
-    inl pair = g 1i32
-    inl ~(left, right) = pair
-    if !!!!EQ(left, 1.5f64) && !!!!EQ(right, 2.5f64) then 0i32 else 1i32
+    := ~g = f
+    := pair = g 1i32
+    := ~(left, right) = pair
+    ? !!!!EQ(left, 1.5f64) && !!!!EQ(right, 2.5f64) ?> 0i32 |: 1i32

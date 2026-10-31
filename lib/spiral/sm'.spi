@@ -5,8 +5,6 @@ test sm static =
 :< rust
 :< rust_operators
 
-///- --static
-
 :< sm'_real
 
 /// ## rust
@@ -749,6 +747,37 @@ test ellipsis =
     |> ellipsis 4
     |> _assert_eq "1234..."
 
+/// ### clip
+:= clip (width : i32) (s : string) : string =
+    run_target \|
+        | Rust => \ () =>
+            $'{ let text = &*!s; if text.chars().count() <= !width as usize { std::rc::Rc::<str>::from(text) } else { std::rc::Rc::<str>::from(text.chars().take((!width as usize).saturating_sub(3)).collect::<String>() + "...") } }' : string
+        | Fsharp => \ () =>
+            := count = $'(!s).Length' : i32
+            ? count <= width ?> s
+            |:
+                := keep = ? width > 3i32 ?> width - 3i32 |: 0i32
+                := head = $'(!s).Substring(0, !keep)' : string
+                head ++# "..."
+        | _ => \ () =>
+            := s = dyn s
+            ? length s <= width ?> s |: s |> slice 0i32 (width - 4i32) |> append "..."
+
+///> fsharp
+///> rust
+test clip_keeps_short_text_and_cuts_long_text_on_char_boundaries =
+    "abc"
+    |> clip 5i32
+    |> _assert_eq "abc"
+
+    "abcdefgh"
+    |> clip 6i32
+    |> _assert_eq "abc..."
+
+    "ééééé"
+    |> clip 4i32
+    |> _assert_eq "é..."
+
 /// ## fsharp
 
 /// ### gleam_dynamic
@@ -1105,6 +1134,13 @@ test substring_cuts_by_start_and_length =
         Python = \ () => $'ord(!input)' : u32
         Rust = \ () => $'u32::from(!input)' : u32
         TypeScript = \ () => $'!input' : u32
+        Lua = \ () =>
+            := byte (at : i32) : u32 = $'string.byte(!input, !at)' : u32
+            := lead = byte 1i32
+            ? lead < 128u32 ?> lead
+            |? lead < 224u32 ?> (lead % 32u32) * 64u32 + byte 2i32 % 64u32
+            |? lead < 240u32 ?> (lead % 16u32) * 4096u32 + (byte 2i32 % 64u32) * 64u32 + byte 3i32 % 64u32
+            |: (lead % 8u32) * 262144u32 + (byte 2i32 % 64u32) * 4096u32 + (byte 3i32 % 64u32) * 64u32 + byte 4i32 % 64u32
     }
 
 /// ### of_char
@@ -1116,6 +1152,7 @@ test substring_cuts_by_start_and_length =
             := text = $'char::from(!input).to_string()' : std_string
             from_std_string text
         TypeScript = \ () => $'String.fromCharCode(!input)' : string
+        Lua = \ () => $'!input' : string
     }
 
 ///> rust
@@ -1123,6 +1160,11 @@ test char_code_and_of_char =
     char_code 'A' |> _assert_eq 65u32
     char_code 'z' |> _assert_eq 122u32
     of_char 'A' |> _assert_eq "A"
+
+///> lua
+test char_code_decodes_utf8 =
+    (char_code 'A', char_code 'é', char_code '€', of_char 'é')
+    |> _assert_eq (65u32, 233u32, 8364u32, "é")
 
 /// ### builder_append
 := builder_append (item : string) (sb : string_builder) : string_builder =
@@ -1162,7 +1204,7 @@ test builder_append =
             global "import gleam/string"
             $'!sb |> string.replace(!old, !new)' : string_builder
         Lua = \ () =>
-            $'string.gsub(!sb, !old, !new)' : string_builder
+            $'((!sb):gsub(((!old):gsub("%p", "%%%0")), ((!new):gsub("%%", "%%%%"))))' : string_builder
         Fsharp = \ () =>
             ($'!sb.Replace (!old, !new)' : string_builder) |> ignore
             sb
@@ -1172,6 +1214,11 @@ test builder_append =
         Zig = \ () =>
             $'(std.mem.replaceOwned(u8, spiral_gpa, !sb, !old, !new) catch \@panic("out of memory"))' : string_builder
     }
+
+///> lua
+///> typescript
+test builder_replace_treats_text_literally =
+    "a.b.c" |> string_builder |> builder_replace "." "%" |> obj_to_string |> _assert_eq "a%b%c"
 
 ///> gleam
 ///> fsharp
@@ -1493,6 +1540,33 @@ test search_and_replace_treat_text_literally =
     )
     |> _assert_eq (1, 3, -1, "a%b%c", !+)
 
+:~ ^ split_matches_from (str : string) (separator : string) (at : i32) (k : i32) : bool =
+    ? k >= sm.length separator ?> !+
+    |? sm.index str (at + k) = sm.index separator k ?> split_matches_from str separator at (k + 1)
+    |: !-
+
+:~ ^ split_next_from (str : string) (separator : string) (at : i32) : i32 =
+    ? at + sm.length separator > sm.length str ?> sm.length str
+    |? split_matches_from str separator at 0 ?> at
+    |: split_next_from str separator (at + 1)
+
+:~ ^ split_count (str : string) (separator : string) (at : i32) (parts : i32) : i32 =
+    := hit = split_next_from str separator at
+    ? hit >= sm.length str ?> parts |: split_count str separator (hit + sm.length separator) (parts + 1)
+
+:~ ^ split_start_of (str : string) (separator : string) (part : i32) (at : i32) : i32 =
+    ? part = 0 ?> at |: split_start_of str separator (part - 1) (split_next_from str separator at + sm.length separator)
+
+:= split_part (str : string) (separator : string) (part : i32) : string =
+    := from = split_start_of str separator part 0
+    sm.slice str { from = from; to = split_next_from str separator from - 1 }
+
+/// ### split_portable
+:= split_portable (separator : string) (str : string) : array_base string =
+    ? (sm.length separator : i32) = 0i32
+    ?> am'.init_base 1i32 \ _ => str
+    |: am'.init_base (split_count str separator 0 1) \ (part : i32) => split_part str separator part
+
 /// ### split
 := split (separator : string) (str : string) : array_base string =
     backend_switch {
@@ -1501,35 +1575,8 @@ test search_and_replace_treat_text_literally =
             ($'!str |> string.split(!separator)' : listm'.list' string)
             |> listm'.to_array'
         Fsharp = \ () => $'!str.Split !separator ' : array_base string
-        Lua = \ () =>
-            $'(function(s, sep) if sep == "" then return {s} end local parts, from = {}, 1 while true do local at = \
-            string.find(s, sep, from, true) if not at then parts[##parts + 1] = string.sub(s, from) return parts end \
-            parts[##parts + 1] = string.sub(s, from, at - 1) from = at + ##sep end end)(!str, !separator)'
-            : array_base string
-        C = \ () =>
-            := n : i32 = sm.length str
-            := m : i32 = sm.length separator
-            := matches_at (at : i32) : bool =
-                :~ ^ same (k : i32) : bool =
-                    ? k >= m ?> !+
-                    |? sm.index str (at + k) = sm.index separator k ?> same (k + 1)
-                    |: !-
-                same 0
-            :~ ^ next_from (at : i32) : i32 =
-                ? at + m > n ?> n
-                |? matches_at at ?> at
-                |: next_from (at + 1)
-            :~ ^ count (at : i32) (parts : i32) : i32 =
-                := hit = next_from at
-                ? hit >= n ?> parts |: count (hit + m) (parts + 1)
-            :~ ^ start_of (part : i32) (at : i32) : i32 =
-                ? part = 0 ?> at |: start_of (part - 1) (next_from at + m)
-            ? m = 0
-            ?> am'.init_base 1i32 \ _ => str
-            |:
-                am'.init_base (count 0 1) \ (part : i32) =>
-                    := from = start_of part 0
-                    sm.slice str { from = from; to = next_from from - 1 }
+        Lua = \ () => split_portable separator str
+        C = \ () => split_portable separator str
         Python = \ () => $'!str.split(!separator)' : array_base string
         Rust = \ () =>
             $'Rc::new(RefCell::new(!str.split(&*!separator).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'
@@ -2452,6 +2499,43 @@ test range =
         | Fsharp => \ () => $'string (char !code)' : string
         | _ => \ () => failwith "sm'.char_text: no arm for this backend"
 
+/// ### bytes_between
+:= bytes_between (start : i32) (stop : i32) (text : string) : string =
+    run_target \|
+        | Rust => \ () =>
+            $'std::rc::Rc::<str>::from((!text).get(!start as usize..!stop as usize).unwrap_or(""))' : string
+        | Fsharp => \ () =>
+            $'(let b = System.Text.Encoding.UTF8.GetBytes(!text : string) in \
+                let edge i = i = b.Length || (b.[i] &&& 0xC0uy) <> 0x80uy in \
+                if !start < 0 || !start > !stop || !stop > b.Length || not (edge !start) || not (edge !stop) then "" \
+                else System.Text.Encoding.UTF8.GetString(b, !start, !stop - !start))' : string
+        | _ => \ () => failwith "sm'.bytes_between: no arm for this backend"
+
+///> fsharp
+///> rust
+test bytes_between_slices_utf8_bytes_or_gives_empty =
+    "aéb" |> bytes_between 1i32 3i32 |> _assert_eq "é"
+    "aéb" |> bytes_between 3i32 4i32 |> _assert_eq "b"
+    "aéb" |> bytes_between 1i32 2i32 |> _assert_eq ""
+    "aéb" |> bytes_between 0i32 9i32 |> _assert_eq ""
+    "aéb" |> bytes_between (-1i32) 2i32 |> _assert_eq ""
+    "aéb" |> bytes_between 2i32 1i32 |> _assert_eq ""
+
+/// ### all_digits
+:= all_digits (text : string) : bool =
+    run_target \|
+        | Rust => \ () => $'\!!text.is_empty() && !text.bytes().all(|byte| byte.is_ascii_digit())' : bool
+        | Fsharp => \ () => $'(!text <> "" && String.forall (fun c -> c >= \'0\' && c <= \'9\') !text)' : bool
+        | _ => \ () => failwith "sm'.all_digits: no arm for this backend"
+
+///> fsharp
+///> rust
+test all_digits_accepts_only_nonempty_ascii_digit_runs =
+    "0123456789" |> all_digits |> _assert_eq true
+    "" |> all_digits |> _assert_eq false
+    "12a" |> all_digits |> _assert_eq false
+    "١٢" |> all_digits |> _assert_eq false
+
 ///> fsharp
 ///> rust
 test decimal_text_and_char_text_render_numbers_and_control_characters =
@@ -2459,6 +2543,60 @@ test decimal_text_and_char_text_render_numbers_and_control_characters =
     18446744073709551615u64 |> decimal_text |> _assert_eq "18446744073709551615"
     31u8 |> char_text |> length |> _assert_eq 1i32
     65u8 |> char_text |> _assert_eq "A"
+
+/// ### first_line
+:= first_line (text : string) : string =
+    run_target \|
+        | Rust => \ () => $'std::rc::Rc::<str>::from((!text).split(char::from(10u8)).next().unwrap_or(""))' : string
+        | Fsharp => \ () =>
+            := at = $'(!text).IndexOf(char 10)' : i32
+            ? at < 0i32 ?> text |: $'(!text).Substring(0, !at)' : string
+        | _ => \ () =>
+            := at = index_of "\n" text
+            ? at < 0 ?> text |: text |> slice 0 (at - 1)
+
+/// ### after_first_line
+:= after_first_line (text : string) : string =
+    run_target \|
+        | Rust => \ () =>
+            $'std::rc::Rc::<str>::from((!text).split_once(char::from(10u8)).map(|(_, rest)| rest).unwrap_or(""))' : string
+        | Fsharp => \ () =>
+            := at = $'(!text).IndexOf(char 10)' : i32
+            := rest = at + 1i32
+            ? at < 0i32 ?> "" |: $'(!text).Substring(!rest)' : string
+        | _ => \ () =>
+            := at = index_of "\n" text
+            ? at < 0 ?> "" |: text |> slice (at + 1) (length text - 1)
+
+///> fsharp
+///> rust
+test first_line_and_after_first_line_split_at_the_first_newline =
+    "é1\nb\nc" |> first_line |> _assert_eq "é1"
+    "é1\nb\nc" |> after_first_line |> _assert_eq "b\nc"
+    "only" |> first_line |> _assert_eq "only"
+    "only" |> after_first_line |> _assert_eq ""
+    "end\n" |> after_first_line |> _assert_eq ""
+    "\nx" |> first_line |> _assert_eq ""
+
+/// ### split_nth
+:= split_nth (separator : u8) (index : i32) (text : string) : string =
+    run_target \|
+        | Rust => \ () =>
+            $'std::rc::Rc::<str>::from(!text.split(char::from(!separator)).nth(!index as usize).unwrap_or(""))' : string
+        | Fsharp => \ () =>
+            := parts = $'(!text).Split(char !separator)' : array string
+            ? index >= 0i32 && index < am'.length parts ?> am'.index index parts |: ""
+        | _ => \ () => failwith "sm'.split_nth: no arm for this backend"
+
+///> fsharp
+///> rust
+test split_nth_picks_one_field_or_nothing =
+    := ~row = "a" ++# char_text 30u8 ++# "bé" ++# char_text 30u8 ++# "c"
+    (
+        row |> split_nth 30u8 1i32 |> _assert_eq "bé",
+        row |> split_nth 30u8 2i32 |> _assert_eq "c",
+        row |> split_nth 30u8 3i32 |> _assert_eq ""
+    )
 
 /// ### ellipsis_end
 :~ ellipsis_end (max : i64) (s : string) =
@@ -2571,11 +2709,9 @@ test replace_regex_2 =
 :+ to_string std_string = from_std_string
 
 /// ### split_list
-:~ ^ split_list (separator : string) (s : string) : list string =
-    := at : i32 = index_of separator s
-    := width : i32 = length separator
-    ? at < 0i32 || width = 0i32 ?> [ s ]
-    |: substring 0i32 at s :: split_list separator (substring (at + width) (length s - at - width) s)
+:~ split_list (separator : string) (s : string) : list string =
+    ? length separator = 0i32 ?> [ s ]
+    |: arraym.fold (\ acc (part : string) => part :: acc) [] (split separator s |> array) |> listm.rev
 
 ///> rust
 ///> gleam

@@ -104,4 +104,3 @@ test erlang_port static =
 test an_executable_port_reports_its_os_pid_and_exit =
     := p = erl_halt_port ()
     (os_pid p > 0i32, exit_text_within p 50i32) |> _assert_eq (!+, "exit 3")
-

@@ -1,19 +1,19 @@
-inl main () : i32 =
-    inl ~seed0 = 42u64
-    inl ~multiplier = 6364136223846793005u64
-    inl ~increment = 1442695040888963407u64
-    let rec lcg (n : i32) (s : u64) : u64 =
-        if n =. 0i32 then s
-        else lcg (n -. 1i32) (s *. multiplier +. increment)
-    inl ~steps = 1000i32
-    inl seed = lcg steps seed0
+:= main () : i32 =
+    := ~seed0 = 42u64
+    := ~multiplier = 6364136223846793005u64
+    := ~increment = 1442695040888963407u64
+    :~ ^ lcg (n : i32) (s : u64) : u64 =
+        ? n =. 0i32 ?> s
+        |: lcg (n -. 1i32) (s *. multiplier +. increment)
+    := ~steps = 1000i32
+    := seed = lcg steps seed0
     !!!!Printf("lcg %d\n", seed)
-    inl ~big = 9223372036854775807i64
-    inl ~small = -9223372036854775807i64
-    inl ~top = 18446744073709551615u64
+    := ~big = 9223372036854775807i64
+    := ~small = -9223372036854775807i64
+    := ~top = 18446744073709551615u64
     !!!!Printf("max %d min %d wrap %d\n", big, small -. 1i64, top +. 2u64)
-    inl ~a = -9007199254740993i64
-    inl ~b = 7i64
+    := ~a = -9007199254740993i64
+    := ~b = 7i64
     !!!!Printf("div %d mod %d\n", a /. b, a %. b)
     !!!!Printf(
         "shl %d shr %d ushr %d\n",
@@ -27,10 +27,10 @@ inl main () : i32 =
         !!!!BitwiseOr(a, 255i64),
         !!!!BitwiseXor(seed, multiplier)
     )
-    inl ~f = 1000000000000000000.0f64
-    inl g = !!!!Conv(`i64, f)
-    inl h = !!!!Conv(`u32, seed)
-    inl k = !!!!Conv(`f64, a)
-    inl negative = if k < 0.0f64 then 1i32 else 0i32
+    := ~f = 1000000000000000000.0f64
+    := g = !!!!Conv(`i64, f)
+    := h = !!!!Conv(`u32, seed)
+    := k = !!!!Conv(`f64, a)
+    := negative = ? k < 0.0f64 ?> 1i32 |: 0i32
     !!!!Printf("conv %d %d %d\n", g, h, negative)
-    if seed > multiplier then 1i32 else 0i32
+    ? seed > multiplier ?> 1i32 |: 0i32

@@ -28,14 +28,14 @@ fn score_0(mut v0: US0) -> i32 {
 fn spiral_main() -> i32 {
     let v0: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(vec![<Rc<str>>::default(); 1i32 as usize]));
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    v0.clone().borrow_mut()[0i32 as usize] = v1.clone();
+    v0.clone().borrow_mut()[0i32 as usize] = v1;
     let v2: bool = true;
     let v5: US0 = if v2 {
-        US0::US0_Held(v0.clone(), v2)
+        US0::US0_Held(v0, v2)
     } else {
         US0::US0_None
     };
-    score_0(v5.clone())
+    score_0(v5)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

@@ -1,6 +1,6 @@
-union k = A | B
-inl g = function A => 1i32 | B => 2i32
-let f (s : i32) : i32 = if !!!!EQ(s, g A) then 0i32 else 1i32
-inl main () : i32 =
-    inl ~s = 1i32
+:| k = A | B
+:= g = \| A => 1i32 | B => 2i32
+:~ f (s : i32) : i32 = ? !!!!EQ(s, g A) ?> 0i32 |: 1i32
+:= main () : i32 =
+    := ~s = 1i32
     f s

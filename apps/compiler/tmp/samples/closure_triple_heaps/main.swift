@@ -27,10 +27,10 @@ func spiral_main() -> Int32 {
     var v10: Heap0 = Heap0(l0: 0, l1: "")
     var v11: Heap0 = Heap0(l0: 0, l1: "")
     var v12: Heap0 = Heap0(l0: 0, l1: "")
-    let spiral_tuple759 = v9(1)
-    v10 = spiral_tuple759.0
-    v11 = spiral_tuple759.1
-    v12 = spiral_tuple759.2
+    let spiral_tuple735 = v9(1)
+    v10 = spiral_tuple735.0
+    v11 = spiral_tuple735.1
+    v12 = spiral_tuple735.2
     var v13: Int32 = 0
     var v14: String = ""
     v13 = v10.l0

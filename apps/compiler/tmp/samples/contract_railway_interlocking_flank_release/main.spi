@@ -1,83 +1,83 @@
-nominal idle = ()
-nominal route_requested = ()
-nominal track_proved_clear = ()
-nominal points_locked = ()
-nominal signal_cleared = ()
-nominal train_entered = ()
-nominal route_released = ()
+:! idle = ()
+:! route_requested = ()
+:! track_proved_clear = ()
+:! points_locked = ()
+:! signal_cleared = ()
+:! train_entered = ()
+:! route_released = ()
 
-nominal route_north = ()
-nominal route_south = ()
-nominal train_77 = ()
-nominal epoch_5 = ()
-nominal track_a = ()
-nominal track_b = ()
-nominal point_12 = ()
-nominal flank_9 = ()
+:! route_north = ()
+:! route_south = ()
+:! train_77 = ()
+:! epoch_5 = ()
+:! track_a = ()
+:! track_b = ()
+:! point_12 = ()
+:! flank_9 = ()
 
-union route_request route train epoch =
+:| route_request route train epoch =
     | NorthRequest77 :: string -> route_request route_north train_77 epoch_5
     | SouthRequest77 :: string -> route_request route_south train_77 epoch_5
 
-union clearance track route train epoch =
+:| clearance track route train epoch =
     | TrackANorth77Clear :: string -> clearance track_a route_north train_77 epoch_5
     | TrackBNorth77Clear :: string -> clearance track_b route_north train_77 epoch_5
 
-union point_lock point route train epoch =
+:| point_lock point route train epoch =
     | Point12North77Lock :: string -> point_lock point_12 route_north train_77 epoch_5
 
-union flank_lock flank route train epoch =
+:| flank_lock flank route train epoch =
     | Flank9North77Lock :: string -> flank_lock flank_9 route_north train_77 epoch_5
 
-union signal_token point flank route train epoch =
+:| signal_token point flank route train epoch =
     | NorthSignal77 :: string -> signal_token point_12 flank_9 route_north train_77 epoch_5
 
-union occupancy point flank train route epoch =
+:| occupancy point flank train route epoch =
     | NorthOccupancy77 :: string -> occupancy point_12 flank_9 train_77 route_north epoch_5
 
-union release_receipt point flank route train epoch =
+:| release_receipt point flank route train epoch =
     | NorthRelease77 :: string -> release_receipt point_12 flank_9 route_north train_77 epoch_5
 
-union pair a b =
-    | Pair :: forall a b. a * b -> pair a b
+:| pair a b =
+    | Pair :: \* a b. a * b -> pair a b
 
-union interlocking_op from to result =
-    | RequestRoute :: forall route train epoch.
+:| interlocking_op from to result =
+    | RequestRoute :: \* route train epoch.
         string -> interlocking_op idle route_requested (route_request route train epoch)
-    | ProveClear :: forall track route train epoch.
+    | ProveClear :: \* track route train epoch.
         route_request route train epoch * string ->
         interlocking_op route_requested track_proved_clear
             (clearance track route train epoch)
-    | LockPoints :: forall point flank route train epoch.
+    | LockPoints :: \* point flank route train epoch.
         clearance track_a route train epoch * clearance track_b route train epoch ->
         interlocking_op track_proved_clear points_locked
             (pair
                 (point_lock point route train epoch)
                 (flank_lock flank route train epoch))
-    | ClearSignal :: forall point flank route train epoch.
+    | ClearSignal :: \* point flank route train epoch.
         route_request route train epoch *
         pair
             (point_lock point route train epoch)
             (flank_lock flank route train epoch) ->
         interlocking_op points_locked signal_cleared
             (signal_token point flank route train epoch)
-    | EnterTrain :: forall point flank route train epoch.
+    | EnterTrain :: \* point flank route train epoch.
         signal_token point flank route train epoch ->
         interlocking_op signal_cleared train_entered
             (occupancy point flank train route epoch)
-    | ReleaseRoute :: forall point flank route train epoch.
+    | ReleaseRoute :: \* point flank route train epoch.
         occupancy point flank train route epoch * string ->
         interlocking_op train_entered route_released
             (release_receipt point flank route train epoch)
 
-nominal topology_interpreter from to result = interlocking_op from to result
-nominal signal_interpreter from to result = interlocking_op from to result
-nominal safety_interpreter from to result = interlocking_op from to result
+:! topology_interpreter from to result = interlocking_op from to result
+:! signal_interpreter from to result = interlocking_op from to result
+:! safety_interpreter from to result = interlocking_op from to result
 
-prototype interpret interpreter from to result : interpreter from to result -> string
+:? interpret interpreter from to result : interpreter from to result -> string
 
-instance interpret topology_interpreter = fun (topology_interpreter op) =>
-    match op with
+:+ interpret topology_interpreter = \ (topology_interpreter op) =>
+    ?= op ?|
     | RequestRoute _ => "topology-reserve-conflict-set"
     | ProveClear _ => "topology-check-axle-counters"
     | LockPoints _ => "topology-lock-route-and-flank"
@@ -85,8 +85,8 @@ instance interpret topology_interpreter = fun (topology_interpreter op) =>
     | EnterTrain _ => "topology-occupy-track-circuit"
     | ReleaseRoute _ => "topology-progressive-release"
 
-instance interpret signal_interpreter = fun (signal_interpreter op) =>
-    match op with
+:+ interpret signal_interpreter = \ (signal_interpreter op) =>
+    ?= op ?|
     | RequestRoute _ => "signal-request-dark"
     | ProveClear _ => "signal-hold-red"
     | LockPoints _ => "signal-verify-detection"
@@ -94,8 +94,8 @@ instance interpret signal_interpreter = fun (signal_interpreter op) =>
     | EnterTrain _ => "signal-lock-behind-train"
     | ReleaseRoute _ => "signal-return-red"
 
-instance interpret safety_interpreter = fun (safety_interpreter op) =>
-    match op with
+:+ interpret safety_interpreter = \ (safety_interpreter op) =>
+    ?= op ?|
     | RequestRoute _ => "safety-no-conflicting-route"
     | ProveClear _ => "safety-two-track-clearances"
     | LockPoints _ => "safety-flank-protection"
@@ -103,25 +103,25 @@ instance interpret safety_interpreter = fun (safety_interpreter op) =>
     | EnterTrain _ => "safety-token-same-train"
     | ReleaseRoute _ => "safety-tail-clear"
 
-union rec route_plan from to =
-    | RouteStep :: forall from to.
-        (exists result. interlocking_op from to result * result) -> route_plan from to
-    | RouteThen :: forall from to.
-        (exists middle. route_plan from middle * route_plan middle to) -> route_plan from to
+:| ^ route_plan from to =
+    | RouteStep :: \* from to.
+        (\? result. interlocking_op from to result * result) -> route_plan from to
+    | RouteThen :: \* from to.
+        (\? middle. route_plan from middle * route_plan middle to) -> route_plan from to
 
-inl request_north () = NorthRequest77 "north-77"
-inl clear_a () = TrackANorth77Clear "track-a-clear"
-inl clear_b () = TrackBNorth77Clear "track-b-clear"
-inl locks_north () = Pair (Point12North77Lock "point-12-normal", Flank9North77Lock "flank-9-locked")
-inl signal_north () = NorthSignal77 "north-green-77"
-inl occupancy_north () = NorthOccupancy77 "train-77-north"
-inl release_north () = NorthRelease77 "north-released"
+:= request_north () = NorthRequest77 "north-77"
+:= clear_a () = TrackANorth77Clear "track-a-clear"
+:= clear_b () = TrackBNorth77Clear "track-b-clear"
+:= locks_north () = Pair (Point12North77Lock "point-12-normal", Flank9North77Lock "flank-9-locked")
+:= signal_north () = NorthSignal77 "north-green-77"
+:= occupancy_north () = NorthOccupancy77 "train-77-north"
+:= release_north () = NorthRelease77 "north-released"
 
-inl rec terminal forall from to. (plan : route_plan from to) : string =
-    match plan with
+:= ^ terminal \* from to. (plan : route_plan from to) : string =
+    ?= plan ?|
     | RouteStep payload =>
-        inl exists result. op, _ = payload
-        match op with
+        := \? result. op, _ = payload
+        ?= op ?|
         | RequestRoute _ => "route-requested"
         | ProveClear _ => "track-proved-clear"
         | LockPoints _ => "points-locked"
@@ -129,44 +129,44 @@ inl rec terminal forall from to. (plan : route_plan from to) : string =
         | EnterTrain _ => "train-entered"
         | ReleaseRoute _ => "route-released"
     | RouteThen payload =>
-        inl exists middle. _, right = payload
+        := \? middle. _, right = payload
         terminal right
 
-inl build_plan () : route_plan idle route_released =
-    inl request_step : route_plan idle route_requested =
-        RouteStep (exists (RequestRoute "north", request_north ()))
-    inl clear_step : route_plan route_requested track_proved_clear =
-        RouteStep (exists (ProveClear (request_north (), "track-a+b"), clear_a ()))
-    inl lock_step : route_plan track_proved_clear points_locked =
-        RouteStep (exists (LockPoints (clear_a (), clear_b ()), locks_north ()))
-    inl signal_step : route_plan points_locked signal_cleared =
-        RouteStep (exists (ClearSignal (request_north (), locks_north ()), signal_north ()))
-    inl enter_step : route_plan signal_cleared train_entered =
-        RouteStep (exists (EnterTrain (signal_north ()), occupancy_north ()))
-    inl release_step : route_plan train_entered route_released =
-        RouteStep (exists (ReleaseRoute (occupancy_north (), "tail-clear"), release_north ()))
-    RouteThen (exists (request_step,
-        RouteThen (exists (clear_step,
-            RouteThen (exists (lock_step,
-                RouteThen (exists (signal_step,
-                    RouteThen (exists (enter_step, release_step))))))))))
+:= build_plan () : route_plan idle route_released =
+    := request_step : route_plan idle route_requested =
+        RouteStep (\? (RequestRoute "north", request_north ()))
+    := clear_step : route_plan route_requested track_proved_clear =
+        RouteStep (\? (ProveClear (request_north (), "track-a+b"), clear_a ()))
+    := lock_step : route_plan track_proved_clear points_locked =
+        RouteStep (\? (LockPoints (clear_a (), clear_b ()), locks_north ()))
+    := signal_step : route_plan points_locked signal_cleared =
+        RouteStep (\? (ClearSignal (request_north (), locks_north ()), signal_north ()))
+    := enter_step : route_plan signal_cleared train_entered =
+        RouteStep (\? (EnterTrain (signal_north ()), occupancy_north ()))
+    := release_step : route_plan train_entered route_released =
+        RouteStep (\? (ReleaseRoute (occupancy_north (), "tail-clear"), release_north ()))
+    RouteThen (\? (request_step,
+        RouteThen (\? (clear_step,
+            RouteThen (\? (lock_step,
+                RouteThen (\? (signal_step,
+                    RouteThen (\? (enter_step, release_step))))))))))
 
-union sealed_release =
+:| sealed_release =
     | SealedRelease ::
-        (exists point flank route train epoch. release_receipt point flank route train epoch) -> sealed_release
+        (\? point flank route train epoch. release_receipt point flank route train epoch) -> sealed_release
 
-inl inspect_release forall point flank route train epoch.
+:= inspect_release \* point flank route train epoch.
     (_ : release_receipt point flank route train epoch) : string = "route-release-bound-to-train-and-epoch"
 
-inl with_release forall output.
-    (visit : forall point flank route train epoch. release_receipt point flank route train epoch -> output)
+:= with_release \* output.
+    (visit : \* point flank route train epoch. release_receipt point flank route train epoch -> output)
     (value : sealed_release) : output =
-    match value with
+    ?= value ?|
     | SealedRelease payload =>
-        inl exists point flank route train epoch. receipt = payload
+        := \? point flank route train epoch. receipt = payload
         visit receipt
 
-inl serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : string =
+:= serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : string =
     "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n"
     ^^ "1\trequest-route\tRequestRoute\tidle\troute_requested\t\tidempotent\tdispatcher\t1\n"
     ^^ "1\tprove-clear\tProveClear\troute_requested\ttrack_proved_clear\trequest-route\tidempotent\taxle-counters\t1\n"
@@ -175,19 +175,19 @@ inl serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : st
     ^^ "1\tenter-train\tEnterTrain\tsignal_cleared\ttrain_entered\tclear-signal\tnon_idempotent\ttrain-77\t0\n"
     ^^ "1\trelease-route\tReleaseRoute\ttrain_entered\troute_released\tenter-train\tnon_idempotent\ttail-clear\t0\n"
 
-inl main () : string =
-    inl request_op : interlocking_op idle route_requested (route_request route_north train_77 epoch_5) =
+:= main () : string =
+    := request_op : interlocking_op idle route_requested (route_request route_north train_77 epoch_5) =
         RequestRoute "north"
-    inl signal_op
+    := signal_op
         : interlocking_op points_locked signal_cleared (signal_token point_12 flank_9 route_north train_77 epoch_5)
         =
         ClearSignal (request_north (), locks_north ())
-    inl release_op
+    := release_op
         : interlocking_op train_entered route_released (release_receipt point_12 flank_9 route_north train_77 epoch_5)
         =
         ReleaseRoute (occupancy_north (), "tail-clear")
-    inl topology = interpret (topology_interpreter request_op)
-    inl signal = interpret (signal_interpreter signal_op)
-    inl safety = interpret (safety_interpreter release_op)
-    inl sealed_label = with_release `$inspect_release (SealedRelease (exists (release_north ())))
+    := topology = interpret (topology_interpreter request_op)
+    := signal = interpret (signal_interpreter signal_op)
+    := safety = interpret (safety_interpreter release_op)
+    := sealed_label = with_release `$inspect_release (SealedRelease (\? (release_north ())))
     serialize_authority topology signal safety (terminal (build_plan ()))

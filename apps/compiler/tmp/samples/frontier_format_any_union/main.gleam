@@ -74,11 +74,7 @@ pub fn main() {
     let v2 = v1 <> v0 
     let v3 = v2 == ""
     case v3 {
-        True -> {
-            1
-        }
-        False -> {
-            0
-        }
+        True -> 1
+        False -> 0
     }
 }

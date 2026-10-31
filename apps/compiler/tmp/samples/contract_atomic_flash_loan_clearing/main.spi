@@ -1,93 +1,93 @@
-nominal idle = ()
-nominal borrowed = ()
-nominal routed = ()
-nominal arbitraged = ()
-nominal repaid = ()
-nominal settled = ()
+:! idle = ()
+:! borrowed = ()
+:! routed = ()
+:! arbitraged = ()
+:! repaid = ()
+:! settled = ()
 
-nominal usdc = string
-nominal weth = string
-nominal pool_alpha = string
-nominal pool_beta = string
-nominal borrower_7 = string
-nominal block_19000000 = i32
-nominal debt_note pool borrower asset block = pool * borrower * asset * block * string
-nominal route_receipt pool borrower asset block = pool * borrower * asset * block * string
-nominal profit_receipt pool borrower asset block = pool * borrower * asset * block * string
-nominal repayment_receipt pool borrower asset block = pool * borrower * asset * block * string
-nominal settlement_receipt pool borrower asset block = pool * borrower * asset * block * string
+:! usdc = string
+:! weth = string
+:! pool_alpha = string
+:! pool_beta = string
+:! borrower_7 = string
+:! block_19000000 = i32
+:! debt_note pool borrower asset block = pool * borrower * asset * block * string
+:! route_receipt pool borrower asset block = pool * borrower * asset * block * string
+:! profit_receipt pool borrower asset block = pool * borrower * asset * block * string
+:! repayment_receipt pool borrower asset block = pool * borrower * asset * block * string
+:! settlement_receipt pool borrower asset block = pool * borrower * asset * block * string
 
-union flash_op from to result =
-    | Borrow :: forall pool borrower asset block.
+:| flash_op from to result =
+    | Borrow :: \* pool borrower asset block.
         string -> flash_op idle borrowed (debt_note pool borrower asset block)
-    | Route :: forall pool borrower asset block.
+    | Route :: \* pool borrower asset block.
         debt_note pool borrower asset block * string ->
         flash_op borrowed routed (route_receipt pool borrower asset block)
-    | Arbitrage :: forall pool borrower asset block.
+    | Arbitrage :: \* pool borrower asset block.
         route_receipt pool borrower asset block * string ->
         flash_op routed arbitraged (profit_receipt pool borrower asset block)
-    | Repay :: forall pool borrower asset block.
+    | Repay :: \* pool borrower asset block.
         debt_note pool borrower asset block * profit_receipt pool borrower asset block ->
         flash_op arbitraged repaid (repayment_receipt pool borrower asset block)
-    | Settle :: forall pool borrower asset block.
+    | Settle :: \* pool borrower asset block.
         repayment_receipt pool borrower asset block ->
         flash_op repaid settled (settlement_receipt pool borrower asset block)
 
-nominal conservative_policy from to result = flash_op from to result
-nominal adversarial_policy from to result = flash_op from to result
-nominal ledger_interpreter from to result = flash_op from to result
+:! conservative_policy from to result = flash_op from to result
+:! adversarial_policy from to result = flash_op from to result
+:! ledger_interpreter from to result = flash_op from to result
 
-prototype assess policy from to result : policy from to result -> string
-prototype execute interpreter from to result : interpreter from to result -> string
+:? assess policy from to result : policy from to result -> string
+:? execute interpreter from to result : interpreter from to result -> string
 
-instance assess conservative_policy = fun (conservative_policy op) =>
-    match op with
+:+ assess conservative_policy = \ (conservative_policy op) =>
+    ?= op ?|
     | Borrow _ => "risk-borrow-capped"
     | Route _ => "risk-route-whitelisted"
     | Arbitrage _ => "risk-profit-positive"
     | Repay _ => "risk-principal-plus-fee"
     | Settle _ => "risk-atomic-close"
 
-instance assess adversarial_policy = fun (adversarial_policy op) =>
-    match op with
+:+ assess adversarial_policy = \ (adversarial_policy op) =>
+    ?= op ?|
     | Borrow _ => "probe-liquidity"
     | Route _ => "probe-price-impact"
     | Arbitrage _ => "probe-slippage"
     | Repay _ => "probe-repayment"
     | Settle _ => "probe-residual-debt"
 
-instance execute ledger_interpreter = fun (ledger_interpreter op) =>
-    match op with
+:+ execute ledger_interpreter = \ (ledger_interpreter op) =>
+    ?= op ?|
     | Borrow _ => "ledger-debit-pool"
     | Route _ => "ledger-route-assets"
     | Arbitrage _ => "ledger-capture-spread"
     | Repay _ => "ledger-credit-pool"
     | Settle _ => "ledger-seal-block"
 
-union rec flash_plan from to =
-    | FlashStep :: forall from to.
-        (exists result. flash_op from to result * result) -> flash_plan from to
-    | FlashThen :: forall from to.
-        (exists middle. flash_plan from middle * flash_plan middle to) -> flash_plan from to
+:| ^ flash_plan from to =
+    | FlashStep :: \* from to.
+        (\? result. flash_op from to result * result) -> flash_plan from to
+    | FlashThen :: \* from to.
+        (\? middle. flash_plan from middle * flash_plan middle to) -> flash_plan from to
 
-nominal packed_flash = string
+:! packed_flash = string
 
-inl rec terminal forall from to. (plan : flash_plan from to) : string =
-    match plan with
+:= ^ terminal \* from to. (plan : flash_plan from to) : string =
+    ?= plan ?|
     | FlashStep payload =>
-        inl exists result. op, _ = payload
-        match op with
+        := \? result. op, _ = payload
+        ?= op ?|
         | Borrow _ => "borrowed"
         | Route _ => "routed"
         | Arbitrage _ => "arbitraged"
         | Repay _ => "repaid"
         | Settle _ => "settled"
     | FlashThen payload =>
-        inl exists middle. _, right = payload
+        := \? middle. _, right = payload
         terminal right
 
-inl build_plan () : flash_plan idle settled =
-    inl debt : debt_note pool_alpha borrower_7 usdc block_19000000 =
+:= build_plan () : flash_plan idle settled =
+    := debt : debt_note pool_alpha borrower_7 usdc block_19000000 =
         debt_note (
             pool_alpha "alpha",
             borrower_7 "borrower-7",
@@ -95,7 +95,7 @@ inl build_plan () : flash_plan idle settled =
             block_19000000 19000000,
             "debt-alpha-7-usdc"
         )
-    inl route : route_receipt pool_alpha borrower_7 usdc block_19000000 =
+    := route : route_receipt pool_alpha borrower_7 usdc block_19000000 =
         route_receipt (
             pool_alpha "alpha",
             borrower_7 "borrower-7",
@@ -103,9 +103,9 @@ inl build_plan () : flash_plan idle settled =
             block_19000000 19000000,
             "alpha-beta-alpha"
         )
-    inl profit : profit_receipt pool_alpha borrower_7 usdc block_19000000 =
+    := profit : profit_receipt pool_alpha borrower_7 usdc block_19000000 =
         profit_receipt (pool_alpha "alpha", borrower_7 "borrower-7", usdc "usdc", block_19000000 19000000, "profit-173")
-    inl repaid' : repayment_receipt pool_alpha borrower_7 usdc block_19000000 =
+    := repaid' : repayment_receipt pool_alpha borrower_7 usdc block_19000000 =
         repayment_receipt (
             pool_alpha "alpha",
             borrower_7 "borrower-7",
@@ -113,7 +113,7 @@ inl build_plan () : flash_plan idle settled =
             block_19000000 19000000,
             "repaid-alpha"
         )
-    inl settled' : settlement_receipt pool_alpha borrower_7 usdc block_19000000 =
+    := settled' : settlement_receipt pool_alpha borrower_7 usdc block_19000000 =
         settlement_receipt (
             pool_alpha "alpha",
             borrower_7 "borrower-7",
@@ -121,19 +121,19 @@ inl build_plan () : flash_plan idle settled =
             block_19000000 19000000,
             "settled-block"
         )
-    inl borrow : flash_plan idle borrowed = FlashStep (exists (Borrow "pool-alpha", debt))
-    inl route_step : flash_plan borrowed routed = FlashStep (exists (Route (debt, "dex-beta"), route))
-    inl arbitrage : flash_plan routed arbitraged = FlashStep (exists (Arbitrage (route, "sell-weth"), profit))
-    inl repay : flash_plan arbitraged repaid = FlashStep (exists (Repay (debt, profit), repaid'))
-    inl settle : flash_plan repaid settled = FlashStep (exists (Settle repaid', settled'))
-    FlashThen (exists (borrow,
-        FlashThen (exists (route_step,
-            FlashThen (exists (arbitrage,
-                FlashThen (exists (repay, settle))))))))
+    := borrow : flash_plan idle borrowed = FlashStep (\? (Borrow "pool-alpha", debt))
+    := route_step : flash_plan borrowed routed = FlashStep (\? (Route (debt, "dex-beta"), route))
+    := arbitrage : flash_plan routed arbitraged = FlashStep (\? (Arbitrage (route, "sell-weth"), profit))
+    := repay : flash_plan arbitraged repaid = FlashStep (\? (Repay (debt, profit), repaid'))
+    := settle : flash_plan repaid settled = FlashStep (\? (Settle repaid', settled'))
+    FlashThen (\? (borrow,
+        FlashThen (\? (route_step,
+            FlashThen (\? (arbitrage,
+                FlashThen (\? (repay, settle))))))))
 
-inl inspect_packed (packed_flash value : packed_flash) : string = value
+:= inspect_packed (packed_flash value : packed_flash) : string = value
 
-inl serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : string =
+:= serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : string =
     "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n"
     ^^ "1\tborrow\tBorrow\tidle\tborrowed\t\tnon_idempotent\tpool-alpha\t0\n"
     ^^ "1\troute\tRoute\tborrowed\trouted\tborrow\tidempotent\tdex-router\t1\n"
@@ -141,11 +141,11 @@ inl serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : st
     ^^ "1\trepay\tRepay\tarbitraged\trepaid\tarbitrage\tnon_idempotent\tpool-alpha\t0\n"
     ^^ "1\tsettle\tSettle\trepaid\tsettled\trepay\tnon_idempotent\tatomic-block\t0\n"
 
-inl main () : string =
-    inl plan = build_plan ()
-    inl borrow_probe : flash_op idle borrowed (debt_note pool_alpha borrower_7 usdc block_19000000) =
+:= main () : string =
+    := plan = build_plan ()
+    := borrow_probe : flash_op idle borrowed (debt_note pool_alpha borrower_7 usdc block_19000000) =
         Borrow "pool-alpha"
-    inl debt_probe : debt_note pool_alpha borrower_7 usdc block_19000000 =
+    := debt_probe : debt_note pool_alpha borrower_7 usdc block_19000000 =
         debt_note (
             pool_alpha "alpha",
             borrower_7 "borrower-7",
@@ -153,11 +153,11 @@ inl main () : string =
             block_19000000 19000000,
             "debt-alpha-7-usdc"
         )
-    inl profit_probe : profit_receipt pool_alpha borrower_7 usdc block_19000000 =
+    := profit_probe : profit_receipt pool_alpha borrower_7 usdc block_19000000 =
         profit_receipt (pool_alpha "alpha", borrower_7 "borrower-7", usdc "usdc", block_19000000 19000000, "profit-173")
-    inl repay_probe : flash_op arbitraged repaid (repayment_receipt pool_alpha borrower_7 usdc block_19000000) =
+    := repay_probe : flash_op arbitraged repaid (repayment_receipt pool_alpha borrower_7 usdc block_19000000) =
         Repay (debt_probe, profit_probe)
-    inl repaid_probe : repayment_receipt pool_alpha borrower_7 usdc block_19000000 =
+    := repaid_probe : repayment_receipt pool_alpha borrower_7 usdc block_19000000 =
         repayment_receipt (
             pool_alpha "alpha",
             borrower_7 "borrower-7",
@@ -165,10 +165,10 @@ inl main () : string =
             block_19000000 19000000,
             "repaid-alpha"
         )
-    inl settle_probe : flash_op repaid settled (settlement_receipt pool_alpha borrower_7 usdc block_19000000) =
+    := settle_probe : flash_op repaid settled (settlement_receipt pool_alpha borrower_7 usdc block_19000000) =
         Settle repaid_probe
-    inl risk = assess (conservative_policy borrow_probe)
-    inl probe = assess (adversarial_policy repay_probe)
-    inl effect = execute (ledger_interpreter settle_probe)
-    inl packed = packed_flash (terminal plan)
+    := risk = assess (conservative_policy borrow_probe)
+    := probe = assess (adversarial_policy repay_probe)
+    := effect = execute (ledger_interpreter settle_probe)
+    := packed = packed_flash (terminal plan)
     serialize_authority risk probe effect (inspect_packed packed)

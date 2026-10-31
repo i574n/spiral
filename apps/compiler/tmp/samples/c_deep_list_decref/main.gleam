@@ -12,9 +12,7 @@ pub type Uh0 {
 pub fn build_0(v0: Int, v1: Uh0) -> Uh0 {
     let v2 = v0 == 0
     case v2 {
-        True -> {
-            v1
-        }
+        True -> v1
         False -> {
             let v3 = spiral_wrap_signed(v0 - 1, 32)
             let v4 = Uh0Link(v0, v1)
@@ -24,9 +22,7 @@ pub fn build_0(v0: Int, v1: Uh0) -> Uh0 {
 }
 pub fn sum_1(v0: Uh0, v1: Int) -> Int {
     case v0  {
-        Uh0End -> {
-            v1
-        }
+        Uh0End -> v1
         Uh0Link(v2, v3) -> {
             let v4 = spiral_wrap_signed(v1 * 31, 32)
             let v5 = spiral_wrap_signed(v4 + v2, 32)

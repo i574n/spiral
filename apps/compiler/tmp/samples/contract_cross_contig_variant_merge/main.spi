@@ -1,20 +1,20 @@
-nominal donor_a = ()
-nominal hg38 = ()
-nominal chr1 = ()
-nominal chr2 = ()
+:! donor_a = ()
+:! hg38 = ()
+:! chr1 = ()
+:! chr2 = ()
 
-union callset sample build contig =
-    | Callset :: forall sample build contig. string -> callset sample build contig
+:| callset sample build contig =
+    | Callset :: \* sample build contig. string -> callset sample build contig
 
-inl merge_calls forall sample build contig.
+:= merge_calls \* sample build contig.
     (left : callset sample build contig)
     (right : callset sample build contig)
     : callset sample build contig =
-    match left, right with
+    ?= left, right ?|
     | Callset _, Callset _ => Callset "merged-calls"
 
-inl main () : string =
-    inl left : callset donor_a hg38 chr1 = Callset "left"
-    inl right : callset donor_a hg38 chr2 = Callset "right"
-    inl _ : callset donor_a hg38 chr1 = merge_calls left right
+:= main () : string =
+    := left : callset donor_a hg38 chr1 = Callset "left"
+    := right : callset donor_a hg38 chr2 = Callset "right"
+    := _ : callset donor_a hg38 chr1 = merge_calls left right
     "unreachable"

@@ -5,12 +5,8 @@ pub fn g_c1(capt: #(Heap0, Int)) -> fn(Int) -> Int {
         let v3 = v0.l0
         let v4 = v1 == 0
         case v4 {
-            True -> {
-                0
-            }
-            False -> {
-                v3
-            }
+            True -> 0
+            False -> v3
         }
     }
 }
@@ -28,11 +24,7 @@ pub fn main() {
     let v4 = v3(0)
     let v5 = v4 == 7
     case v5 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

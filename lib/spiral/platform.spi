@@ -35,7 +35,7 @@ test platform static =
     fn Windows () |> emit_unit
     $'\#endif'
     $'|> fun x -> _run_platform_!result <- Some x'
-    $'match _run_platform_!result with Some x -> x | None -> failwith "runtime.run_platform / \
+    $'match _run_platform_!result with Some x -> x | None -> failwith "platform.run_platform / \
         _run_platform_!result=None"'
 
 /// ### is_os_platform
@@ -49,21 +49,32 @@ test platform static =
         | _ => \ () => !-
 
 /// ## platform
+:= rust_is_windows () : bool = $'cfg\!(windows)' : bool
+
+:= fsharp_is_windows () : bool = Windows |> os_platform |> is_os_platform
+
+:= gleam_os_type_external () =
+    global "import gleam/erlang/atom"
+    global "@external(erlang, \"os\", \"type\") fn platform_os_type() -> #(atom.Atom, atom.Atom)"
+
+:= gleam_is_windows () : bool =
+    backend_switch {
+        Gleam = \ () => gleam_os_type_external ()
+    }
+    $'atom.to_string(platform_os_type().0) == "win32"' : bool
+
+:= zig_is_windows () : bool = $'(\@import("builtin").os.tag == .windows)' : bool
+
+:= no_is_windows_arm () : bool = failwith "platform.is_windows / no arm for this target"
 
 /// ### is_windows
 := is_windows () : bool =
     run_target \|
-        | Rust => \ () => $'cfg\!(windows)' : bool
-        | Fsharp => \ () => Windows |> os_platform |> is_os_platform
-        | Gleam => \ () =>
-            backend_switch {
-                Gleam = \ () =>
-                    global "import gleam/erlang/atom"
-                    global "@external(erlang, \"os\", \"type\") fn platform_os_type() -> #(atom.Atom, atom.Atom)"
-            }
-            $'atom.to_string(platform_os_type().0) == "win32"' : bool
-        | Zig => \ () => $'(\@import("builtin").os.tag == .windows)' : bool
-        | _ => \ () => failwith "platform.is_windows / no arm for this target"
+        | Rust => rust_is_windows
+        | Fsharp => fsharp_is_windows
+        | Gleam => gleam_is_windows
+        | Zig => zig_is_windows
+        | _ => no_is_windows_arm
 
 /// ### get_executable_suffix
 := get_executable_suffix () =

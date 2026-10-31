@@ -58,12 +58,8 @@ pub fn main() {
     let v47 = v44 && v45
     let v48 = v47 && v46
     case v48 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-usd-eur-determined-tie-rounding-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-usd-eur-determined-tie-rounding-runtime-mismatch"
     }
     let v49 = 0 + 1
     let v50 = v49 + 1
@@ -76,24 +72,16 @@ pub fn main() {
     let v57 = v52 == v56
     let v58 =
         case v57 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v59 = 0 + 1
     let v60 = 0 + 1
     let v61 = v59 == v60
     let v62 =
         case v61 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v63 = 0 + 1
     let v64 = v63 + 1
@@ -108,12 +96,8 @@ pub fn main() {
     let v73 = v67 == v72
     let v74 =
         case v73 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v75 = spiral_wrap_signed(v59 + v67, 64)
     let v76 = spiral_wrap_signed(v60 + v72, 64)
@@ -127,12 +111,8 @@ pub fn main() {
     let v84 = v81 && v82
     let v85 = v84 && v83
     case v85 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-statement-expected-raw-append-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-statement-expected-raw-append-runtime-mismatch"
     }
     let v86 = 0 + 1
     let v87 = v86 + 1
@@ -145,24 +125,16 @@ pub fn main() {
     let v94 = v89 == v93
     let v95 =
         case v94 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v96 = 0 + 1
     let v97 = 0 + 1
     let v98 = v96 == v97
     let v99 =
         case v98 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v100 = 0 + 1
     let v101 = v100 + 1
@@ -177,12 +149,8 @@ pub fn main() {
     let v110 = v104 == v109
     let v111 =
         case v110 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v114 = spiral_wrap_signed(v99 + v111, 64)
     let v117 = spiral_wrap_signed(v95 + v114, 64)
@@ -197,24 +165,16 @@ pub fn main() {
     let v126 = v121 == v125
     let v127 =
         case v126 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v128 = 0 + 1
     let v129 = 0 + 1
     let v130 = v128 == v129
     let v131 =
         case v130 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v132 = 0 + 1
     let v133 = v132 + 1
@@ -229,24 +189,16 @@ pub fn main() {
     let v142 = v136 == v141
     let v143 =
         case v142 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v146 = spiral_wrap_signed(v131 + v143, 64)
     let v149 = spiral_wrap_signed(v127 + v146, 64)
     let v150 = spiral_wrap_signed(v117 + v149, 64)
     let v151 = v150 == 0
     case v151 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-statement-two-writer-raw-CAS-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-statement-two-writer-raw-CAS-runtime-mismatch"
     }
     let v152 = 0 + 1
     let v153 = v152 + 1
@@ -259,24 +211,16 @@ pub fn main() {
     let v160 = v155 == v159
     let v161 =
         case v160 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v162 = 0 + 1
     let v163 = 0 + 1
     let v164 = v162 == v163
     let v165 =
         case v164 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v166 = 0 + 1
     let v167 = v166 + 1
@@ -291,12 +235,8 @@ pub fn main() {
     let v176 = v170 == v175
     let v177 =
         case v176 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v180 = spiral_wrap_signed(v165 + v177, 64)
     let v183 = spiral_wrap_signed(v161 + v180, 64)
@@ -311,24 +251,16 @@ pub fn main() {
     let v192 = v187 == v191
     let v193 =
         case v192 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v194 = 0 + 1
     let v195 = 0 + 1
     let v196 = v194 == v195
     let v197 =
         case v196 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v198 = 0 + 1
     let v199 = v198 + 1
@@ -343,12 +275,8 @@ pub fn main() {
     let v208 = v202 == v207
     let v209 =
         case v208 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v212 = spiral_wrap_signed(v197 + v209, 64)
     let v215 = spiral_wrap_signed(v193 + v212, 64)
@@ -364,24 +292,16 @@ pub fn main() {
     let v225 = v220 == v224
     let v226 =
         case v225 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v227 = 0 + 1
     let v228 = 0 + 1
     let v229 = v227 == v228
     let v230 =
         case v229 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v231 = 0 + 1
     let v232 = v231 + 1
@@ -396,24 +316,16 @@ pub fn main() {
     let v241 = v235 == v240
     let v242 =
         case v241 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v245 = spiral_wrap_signed(v230 + v242, 64)
     let v248 = spiral_wrap_signed(v226 + v245, 64)
     let v249 = spiral_wrap_signed(v216 + v248, 64)
     let v250 = v249 == 0
     case v250 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-statement-three-writer-raw-CAS-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-statement-three-writer-raw-CAS-runtime-mismatch"
     }
     let v251 = 0 + 1
     let v252 = v251 + 1
@@ -426,24 +338,16 @@ pub fn main() {
     let v259 = v254 == v258
     let v260 =
         case v259 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v261 = 0 + 1
     let v262 = 0 + 1
     let v263 = v261 == v262
     let v264 =
         case v263 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v265 = 0 + 1
     let v266 = v265 + 1
@@ -458,12 +362,8 @@ pub fn main() {
     let v275 = v269 == v274
     let v276 =
         case v275 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v279 = spiral_wrap_signed(v264 + v276, 64)
     let v282 = spiral_wrap_signed(v260 + v279, 64)
@@ -478,24 +378,16 @@ pub fn main() {
     let v291 = v286 == v290
     let v292 =
         case v291 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v293 = 0 + 1
     let v294 = 0 + 1
     let v295 = v293 == v294
     let v296 =
         case v295 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v297 = 0 + 1
     let v298 = v297 + 1
@@ -510,12 +402,8 @@ pub fn main() {
     let v307 = v301 == v306
     let v308 =
         case v307 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v311 = spiral_wrap_signed(v296 + v308, 64)
     let v314 = spiral_wrap_signed(v292 + v311, 64)
@@ -531,24 +419,16 @@ pub fn main() {
     let v324 = v319 == v323
     let v325 =
         case v324 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v326 = 0 + 1
     let v327 = 0 + 1
     let v328 = v326 == v327
     let v329 =
         case v328 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v330 = 0 + 1
     let v331 = v330 + 1
@@ -563,12 +443,8 @@ pub fn main() {
     let v340 = v334 == v339
     let v341 =
         case v340 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v344 = spiral_wrap_signed(v329 + v341, 64)
     let v347 = spiral_wrap_signed(v325 + v344, 64)
@@ -583,24 +459,16 @@ pub fn main() {
     let v356 = v351 == v355
     let v357 =
         case v356 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v358 = 0 + 1
     let v359 = 0 + 1
     let v360 = v358 == v359
     let v361 =
         case v360 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v362 = 0 + 1
     let v363 = v362 + 1
@@ -615,12 +483,8 @@ pub fn main() {
     let v372 = v366 == v371
     let v373 =
         case v372 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v376 = spiral_wrap_signed(v361 + v373, 64)
     let v379 = spiral_wrap_signed(v357 + v376, 64)
@@ -628,12 +492,8 @@ pub fn main() {
     let v381 = spiral_wrap_signed(v315 + v380, 64)
     let v382 = v381 == 0
     case v382 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-statement-recursive-writer-raw-CAS-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-statement-recursive-writer-raw-CAS-runtime-mismatch"
     }
     let v383 = 0 + 1
     let v384 = v383 + 1
@@ -646,24 +506,16 @@ pub fn main() {
     let v391 = v386 == v390
     let v392 =
         case v391 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v393 = 0 + 1
     let v394 = 0 + 1
     let v395 = v393 == v394
     let v396 =
         case v395 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v397 = 0 + 1
     let v398 = v397 + 1
@@ -678,12 +530,8 @@ pub fn main() {
     let v407 = v401 == v406
     let v408 =
         case v407 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v411 = spiral_wrap_signed(v396 + v408, 64)
     let v414 = spiral_wrap_signed(v392 + v411, 64)
@@ -698,24 +546,16 @@ pub fn main() {
     let v423 = v418 == v422
     let v424 =
         case v423 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v425 = 0 + 1
     let v426 = 0 + 1
     let v427 = v425 == v426
     let v428 =
         case v427 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v429 = 0 + 1
     let v430 = v429 + 1
@@ -730,12 +570,8 @@ pub fn main() {
     let v439 = v433 == v438
     let v440 =
         case v439 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v443 = spiral_wrap_signed(v428 + v440, 64)
     let v446 = spiral_wrap_signed(v424 + v443, 64)
@@ -751,24 +587,16 @@ pub fn main() {
     let v456 = v451 == v455
     let v457 =
         case v456 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v458 = 0 + 1
     let v459 = 0 + 1
     let v460 = v458 == v459
     let v461 =
         case v460 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v462 = 0 + 1
     let v463 = v462 + 1
@@ -783,12 +611,8 @@ pub fn main() {
     let v472 = v466 == v471
     let v473 =
         case v472 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v476 = spiral_wrap_signed(v461 + v473, 64)
     let v479 = spiral_wrap_signed(v457 + v476, 64)
@@ -803,24 +627,16 @@ pub fn main() {
     let v488 = v483 == v487
     let v489 =
         case v488 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v490 = 0 + 1
     let v491 = 0 + 1
     let v492 = v490 == v491
     let v493 =
         case v492 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v494 = 0 + 1
     let v495 = v494 + 1
@@ -835,12 +651,8 @@ pub fn main() {
     let v504 = v498 == v503
     let v505 =
         case v504 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v508 = spiral_wrap_signed(v493 + v505, 64)
     let v511 = spiral_wrap_signed(v489 + v508, 64)
@@ -857,24 +669,16 @@ pub fn main() {
     let v522 = v517 == v521
     let v523 =
         case v522 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v524 = 0 + 1
     let v525 = 0 + 1
     let v526 = v524 == v525
     let v527 =
         case v526 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v528 = 0 + 1
     let v529 = v528 + 1
@@ -889,12 +693,8 @@ pub fn main() {
     let v538 = v532 == v537
     let v539 =
         case v538 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v540 = spiral_wrap_signed(v524 + v532, 64)
     let v541 = spiral_wrap_signed(v525 + v537, 64)
@@ -916,24 +716,16 @@ pub fn main() {
     let v557 = v552 == v556
     let v558 =
         case v557 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v559 = 0 + 1
     let v560 = 0 + 1
     let v561 = v559 == v560
     let v562 =
         case v561 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v563 = 0 + 1
     let v564 = v563 + 1
@@ -948,12 +740,8 @@ pub fn main() {
     let v573 = v567 == v572
     let v574 =
         case v573 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v575 = spiral_wrap_signed(v559 + v567, 64)
     let v576 = spiral_wrap_signed(v560 + v572, 64)
@@ -979,24 +767,16 @@ pub fn main() {
                 let v593 = v588 == v592
                 let v594 =
                     case v593 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 let v595 = 0 + 1
                 let v596 = 0 + 1
                 let v597 = v595 == v596
                 let v598 =
                     case v597 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 let v599 = 0 + 1
                 let v600 = v599 + 1
@@ -1011,12 +791,8 @@ pub fn main() {
                 let v609 = v603 == v608
                 let v610 =
                     case v609 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 let v611 = spiral_wrap_signed(v595 + v603, 64)
                 let v612 = spiral_wrap_signed(v596 + v608, 64)
@@ -1034,12 +810,8 @@ pub fn main() {
         }
     let #(v640, v641, v644, v645, v646, v647, v648) =
         case v621  {
-            Us0TypedFxHashedStatementChecksumValidationAccepted(v625, v626, v627, v628, v629, v630) -> {
-                #(1, 0, v625, v626, v627, v628, v629)
-            }
-            Us0TypedFxHashedStatementChecksumValidationRejected(v622, v623, v624) -> {
-                #(0, 1, 0, 0, 0, 0, 0)
-            }
+            Us0TypedFxHashedStatementChecksumValidationAccepted(v625, v626, v627, v628, v629, v630) -> #(1, 0, v625, v626, v627, v628, v629)
+            Us0TypedFxHashedStatementChecksumValidationRejected(v622, v623, v624) -> #(0, 1, 0, 0, 0, 0, 0)
         }
     let v649 = v513 == 0
     let v650 = v548 == 23
@@ -1059,12 +831,8 @@ pub fn main() {
     let v664 = v663 && v656
     let v665 = v664 && v657
     case v665 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-statement-recursive-writer-checksummed-restart-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-statement-recursive-writer-checksummed-restart-runtime-mismatch"
     }
     let v666 = 0 + 1
     let v667 = v666 + 1
@@ -1077,24 +845,16 @@ pub fn main() {
     let v674 = v669 == v673
     let v675 =
         case v674 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v676 = 0 + 1
     let v677 = 0 + 1
     let v678 = v676 == v677
     let v679 =
         case v678 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v680 = 0 + 1
     let v681 = v680 + 1
@@ -1109,12 +869,8 @@ pub fn main() {
     let v690 = v684 == v689
     let v691 =
         case v690 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v694 = spiral_wrap_signed(v679 + v691, 64)
     let v697 = spiral_wrap_signed(v675 + v694, 64)
@@ -1129,24 +885,16 @@ pub fn main() {
     let v706 = v701 == v705
     let v707 =
         case v706 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v708 = 0 + 1
     let v709 = 0 + 1
     let v710 = v708 == v709
     let v711 =
         case v710 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v712 = 0 + 1
     let v713 = v712 + 1
@@ -1161,12 +909,8 @@ pub fn main() {
     let v722 = v716 == v721
     let v723 =
         case v722 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v726 = spiral_wrap_signed(v711 + v723, 64)
     let v729 = spiral_wrap_signed(v707 + v726, 64)
@@ -1182,24 +926,16 @@ pub fn main() {
     let v739 = v734 == v738
     let v740 =
         case v739 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v741 = 0 + 1
     let v742 = 0 + 1
     let v743 = v741 == v742
     let v744 =
         case v743 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v745 = 0 + 1
     let v746 = v745 + 1
@@ -1214,12 +950,8 @@ pub fn main() {
     let v755 = v749 == v754
     let v756 =
         case v755 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v759 = spiral_wrap_signed(v744 + v756, 64)
     let v762 = spiral_wrap_signed(v740 + v759, 64)
@@ -1234,24 +966,16 @@ pub fn main() {
     let v771 = v766 == v770
     let v772 =
         case v771 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v773 = 0 + 1
     let v774 = 0 + 1
     let v775 = v773 == v774
     let v776 =
         case v775 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v777 = 0 + 1
     let v778 = v777 + 1
@@ -1266,12 +990,8 @@ pub fn main() {
     let v787 = v781 == v786
     let v788 =
         case v787 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v791 = spiral_wrap_signed(v776 + v788, 64)
     let v794 = spiral_wrap_signed(v772 + v791, 64)
@@ -1288,24 +1008,16 @@ pub fn main() {
     let v805 = v800 == v804
     let v806 =
         case v805 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v807 = 0 + 1
     let v808 = 0 + 1
     let v809 = v807 == v808
     let v810 =
         case v809 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v811 = 0 + 1
     let v812 = v811 + 1
@@ -1320,12 +1032,8 @@ pub fn main() {
     let v821 = v815 == v820
     let v822 =
         case v821 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v823 = spiral_wrap_signed(v807 + v815, 64)
     let v824 = spiral_wrap_signed(v808 + v820, 64)
@@ -1347,24 +1055,16 @@ pub fn main() {
     let v840 = v835 == v839
     let v841 =
         case v840 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v842 = 0 + 1
     let v843 = 0 + 1
     let v844 = v842 == v843
     let v845 =
         case v844 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v846 = 0 + 1
     let v847 = v846 + 1
@@ -1379,12 +1079,8 @@ pub fn main() {
     let v856 = v850 == v855
     let v857 =
         case v856 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v858 = spiral_wrap_signed(v842 + v850, 64)
     let v859 = spiral_wrap_signed(v843 + v855, 64)
@@ -1410,24 +1106,16 @@ pub fn main() {
                 let v876 = v871 == v875
                 let v877 =
                     case v876 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 let v878 = 0 + 1
                 let v879 = 0 + 1
                 let v880 = v878 == v879
                 let v881 =
                     case v880 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 let v882 = 0 + 1
                 let v883 = v882 + 1
@@ -1442,12 +1130,8 @@ pub fn main() {
                 let v892 = v886 == v891
                 let v893 =
                     case v892 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 let v894 = spiral_wrap_signed(v878 + v886, 64)
                 let v895 = spiral_wrap_signed(v879 + v891, 64)
@@ -1465,12 +1149,8 @@ pub fn main() {
         }
     let #(v923, v924, v927, v931) =
         case v904  {
-            Us0TypedFxHashedStatementChecksumValidationAccepted(v908, v909, v910, v911, v912, v913) -> {
-                #(1, 0, v908, v912)
-            }
-            Us0TypedFxHashedStatementChecksumValidationRejected(v905, v906, v907) -> {
-                #(0, 1, 0, 0)
-            }
+            Us0TypedFxHashedStatementChecksumValidationAccepted(v908, v909, v910, v911, v912, v913) -> #(1, 0, v908, v912)
+            Us0TypedFxHashedStatementChecksumValidationRejected(v905, v906, v907) -> #(0, 1, 0, 0)
         }
     let v932 = 0 + 1
     let v933 = v932 + 1
@@ -1483,24 +1163,16 @@ pub fn main() {
     let v940 = v935 == v939
     let v941 =
         case v940 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v942 = 0 + 1
     let v943 = 0 + 1
     let v944 = v942 == v943
     let v945 =
         case v944 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v946 = 0 + 1
     let v947 = v946 + 1
@@ -1515,12 +1187,8 @@ pub fn main() {
     let v956 = v950 == v955
     let v957 =
         case v956 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v960 = spiral_wrap_signed(v945 + v957, 64)
     let v963 = spiral_wrap_signed(v941 + v960, 64)
@@ -1535,24 +1203,16 @@ pub fn main() {
     let v972 = v967 == v971
     let v973 =
         case v972 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v974 = 0 + 1
     let v975 = 0 + 1
     let v976 = v974 == v975
     let v977 =
         case v976 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v978 = 0 + 1
     let v979 = v978 + 1
@@ -1567,12 +1227,8 @@ pub fn main() {
     let v988 = v982 == v987
     let v989 =
         case v988 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v992 = spiral_wrap_signed(v977 + v989, 64)
     let v995 = spiral_wrap_signed(v973 + v992, 64)
@@ -1586,12 +1242,8 @@ pub fn main() {
     let v1003 = v1000 && v1001
     let v1004 = v1003 && v1002
     case v1004 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-statement-recursive-writer-restart-invariant-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-statement-recursive-writer-restart-invariant-runtime-mismatch"
     }
     let v1005 = 0 + 1
     let v1006 = v1005 + 1
@@ -1604,24 +1256,16 @@ pub fn main() {
     let v1013 = v1008 == v1012
     let v1014 =
         case v1013 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1015 = 0 + 1
     let v1016 = 0 + 1
     let v1017 = v1015 == v1016
     let v1018 =
         case v1017 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1019 = 0 + 1
     let v1020 = v1019 + 1
@@ -1636,12 +1280,8 @@ pub fn main() {
     let v1029 = v1023 == v1028
     let v1030 =
         case v1029 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1033 = spiral_wrap_signed(v1018 + v1030, 64)
     let v1036 = spiral_wrap_signed(v1014 + v1033, 64)
@@ -1656,24 +1296,16 @@ pub fn main() {
     let v1045 = v1040 == v1044
     let v1046 =
         case v1045 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1047 = 0 + 1
     let v1048 = 0 + 1
     let v1049 = v1047 == v1048
     let v1050 =
         case v1049 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1051 = 0 + 1
     let v1052 = v1051 + 1
@@ -1688,12 +1320,8 @@ pub fn main() {
     let v1061 = v1055 == v1060
     let v1062 =
         case v1061 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1065 = spiral_wrap_signed(v1050 + v1062, 64)
     let v1068 = spiral_wrap_signed(v1046 + v1065, 64)
@@ -1709,24 +1337,16 @@ pub fn main() {
     let v1078 = v1073 == v1077
     let v1079 =
         case v1078 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1080 = 0 + 1
     let v1081 = 0 + 1
     let v1082 = v1080 == v1081
     let v1083 =
         case v1082 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1084 = 0 + 1
     let v1085 = v1084 + 1
@@ -1741,12 +1361,8 @@ pub fn main() {
     let v1094 = v1088 == v1093
     let v1095 =
         case v1094 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1098 = spiral_wrap_signed(v1083 + v1095, 64)
     let v1101 = spiral_wrap_signed(v1079 + v1098, 64)
@@ -1761,24 +1377,16 @@ pub fn main() {
     let v1110 = v1105 == v1109
     let v1111 =
         case v1110 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1112 = 0 + 1
     let v1113 = 0 + 1
     let v1114 = v1112 == v1113
     let v1115 =
         case v1114 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1116 = 0 + 1
     let v1117 = v1116 + 1
@@ -1793,12 +1401,8 @@ pub fn main() {
     let v1126 = v1120 == v1125
     let v1127 =
         case v1126 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1130 = spiral_wrap_signed(v1115 + v1127, 64)
     let v1133 = spiral_wrap_signed(v1111 + v1130, 64)
@@ -1814,24 +1418,16 @@ pub fn main() {
     let v1143 = v1138 == v1142
     let v1144 =
         case v1143 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1145 = 0 + 1
     let v1146 = 0 + 1
     let v1147 = v1145 == v1146
     let v1148 =
         case v1147 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1149 = 0 + 1
     let v1150 = v1149 + 1
@@ -1846,12 +1442,8 @@ pub fn main() {
     let v1159 = v1153 == v1158
     let v1160 =
         case v1159 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1163 = spiral_wrap_signed(v1148 + v1160, 64)
     let v1166 = spiral_wrap_signed(v1144 + v1163, 64)
@@ -1866,24 +1458,16 @@ pub fn main() {
     let v1175 = v1170 == v1174
     let v1176 =
         case v1175 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1177 = 0 + 1
     let v1178 = 0 + 1
     let v1179 = v1177 == v1178
     let v1180 =
         case v1179 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1181 = 0 + 1
     let v1182 = v1181 + 1
@@ -1898,12 +1482,8 @@ pub fn main() {
     let v1191 = v1185 == v1190
     let v1192 =
         case v1191 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1195 = spiral_wrap_signed(v1180 + v1192, 64)
     let v1198 = spiral_wrap_signed(v1176 + v1195, 64)
@@ -1918,24 +1498,16 @@ pub fn main() {
     let v1207 = v1202 == v1206
     let v1208 =
         case v1207 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1209 = 0 + 1
     let v1210 = 0 + 1
     let v1211 = v1209 == v1210
     let v1212 =
         case v1211 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1213 = 0 + 1
     let v1214 = v1213 + 1
@@ -1950,12 +1522,8 @@ pub fn main() {
     let v1223 = v1217 == v1222
     let v1224 =
         case v1223 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1227 = spiral_wrap_signed(v1212 + v1224, 64)
     let v1230 = spiral_wrap_signed(v1208 + v1227, 64)
@@ -1970,24 +1538,16 @@ pub fn main() {
     let v1239 = v1234 == v1238
     let v1240 =
         case v1239 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1241 = 0 + 1
     let v1242 = 0 + 1
     let v1243 = v1241 == v1242
     let v1244 =
         case v1243 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1245 = 0 + 1
     let v1246 = v1245 + 1
@@ -2002,12 +1562,8 @@ pub fn main() {
     let v1255 = v1249 == v1254
     let v1256 =
         case v1255 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1259 = spiral_wrap_signed(v1244 + v1256, 64)
     let v1262 = spiral_wrap_signed(v1240 + v1259, 64)
@@ -2020,12 +1576,8 @@ pub fn main() {
     let v1269 = v1266 && v1267
     let v1270 = v1269 && v1268
     case v1270 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-statement-stale-writer-conflict-program-append-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-statement-stale-writer-conflict-program-append-runtime-mismatch"
     }
     let v1271 = 0 + 1
     let v1272 = v1271 + 1
@@ -2038,24 +1590,16 @@ pub fn main() {
     let v1279 = v1274 == v1278
     let v1280 =
         case v1279 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1281 = 0 + 1
     let v1282 = 0 + 1
     let v1283 = v1281 == v1282
     let v1284 =
         case v1283 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1285 = 0 + 1
     let v1286 = v1285 + 1
@@ -2070,12 +1614,8 @@ pub fn main() {
     let v1295 = v1289 == v1294
     let v1296 =
         case v1295 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1299 = spiral_wrap_signed(v1284 + v1296, 64)
     let v1302 = spiral_wrap_signed(v1280 + v1299, 64)
@@ -2090,24 +1630,16 @@ pub fn main() {
     let v1311 = v1306 == v1310
     let v1312 =
         case v1311 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1313 = 0 + 1
     let v1314 = 0 + 1
     let v1315 = v1313 == v1314
     let v1316 =
         case v1315 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1317 = 0 + 1
     let v1318 = v1317 + 1
@@ -2122,12 +1654,8 @@ pub fn main() {
     let v1327 = v1321 == v1326
     let v1328 =
         case v1327 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1331 = spiral_wrap_signed(v1316 + v1328, 64)
     let v1334 = spiral_wrap_signed(v1312 + v1331, 64)
@@ -2142,24 +1670,16 @@ pub fn main() {
     let v1343 = v1338 == v1342
     let v1344 =
         case v1343 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1345 = 0 + 1
     let v1346 = 0 + 1
     let v1347 = v1345 == v1346
     let v1348 =
         case v1347 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1349 = 0 + 1
     let v1350 = v1349 + 1
@@ -2174,12 +1694,8 @@ pub fn main() {
     let v1359 = v1353 == v1358
     let v1360 =
         case v1359 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1363 = spiral_wrap_signed(v1348 + v1360, 64)
     let v1366 = spiral_wrap_signed(v1344 + v1363, 64)
@@ -2194,24 +1710,16 @@ pub fn main() {
     let v1375 = v1370 == v1374
     let v1376 =
         case v1375 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1377 = 0 + 1
     let v1378 = 0 + 1
     let v1379 = v1377 == v1378
     let v1380 =
         case v1379 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1381 = 0 + 1
     let v1382 = v1381 + 1
@@ -2226,12 +1734,8 @@ pub fn main() {
     let v1391 = v1385 == v1390
     let v1392 =
         case v1391 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1395 = spiral_wrap_signed(v1380 + v1392, 64)
     let v1398 = spiral_wrap_signed(v1376 + v1395, 64)
@@ -2246,24 +1750,16 @@ pub fn main() {
     let v1407 = v1402 == v1406
     let v1408 =
         case v1407 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1409 = 0 + 1
     let v1410 = 0 + 1
     let v1411 = v1409 == v1410
     let v1412 =
         case v1411 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1413 = 0 + 1
     let v1414 = v1413 + 1
@@ -2278,12 +1774,8 @@ pub fn main() {
     let v1423 = v1417 == v1422
     let v1424 =
         case v1423 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1427 = spiral_wrap_signed(v1412 + v1424, 64)
     let v1430 = spiral_wrap_signed(v1408 + v1427, 64)
@@ -2298,24 +1790,16 @@ pub fn main() {
     let v1439 = v1434 == v1438
     let v1440 =
         case v1439 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1441 = 0 + 1
     let v1442 = 0 + 1
     let v1443 = v1441 == v1442
     let v1444 =
         case v1443 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1445 = 0 + 1
     let v1446 = v1445 + 1
@@ -2330,12 +1814,8 @@ pub fn main() {
     let v1455 = v1449 == v1454
     let v1456 =
         case v1455 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1459 = spiral_wrap_signed(v1444 + v1456, 64)
     let v1462 = spiral_wrap_signed(v1440 + v1459, 64)
@@ -2355,24 +1835,16 @@ pub fn main() {
     let v1476 = v1471 == v1475
     let v1477 =
         case v1476 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1478 = 0 + 1
     let v1479 = 0 + 1
     let v1480 = v1478 == v1479
     let v1481 =
         case v1480 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1482 = 0 + 1
     let v1483 = v1482 + 1
@@ -2387,12 +1859,8 @@ pub fn main() {
     let v1492 = v1486 == v1491
     let v1493 =
         case v1492 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1496 = spiral_wrap_signed(v1481 + v1493, 64)
     let v1499 = spiral_wrap_signed(v1477 + v1496, 64)
@@ -2407,24 +1875,16 @@ pub fn main() {
     let v1508 = v1503 == v1507
     let v1509 =
         case v1508 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1510 = 0 + 1
     let v1511 = 0 + 1
     let v1512 = v1510 == v1511
     let v1513 =
         case v1512 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1514 = 0 + 1
     let v1515 = v1514 + 1
@@ -2439,12 +1899,8 @@ pub fn main() {
     let v1524 = v1518 == v1523
     let v1525 =
         case v1524 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1528 = spiral_wrap_signed(v1513 + v1525, 64)
     let v1531 = spiral_wrap_signed(v1509 + v1528, 64)
@@ -2459,24 +1915,16 @@ pub fn main() {
     let v1540 = v1535 == v1539
     let v1541 =
         case v1540 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1542 = 0 + 1
     let v1543 = 0 + 1
     let v1544 = v1542 == v1543
     let v1545 =
         case v1544 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1546 = 0 + 1
     let v1547 = v1546 + 1
@@ -2491,12 +1939,8 @@ pub fn main() {
     let v1556 = v1550 == v1555
     let v1557 =
         case v1556 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1560 = spiral_wrap_signed(v1545 + v1557, 64)
     let v1563 = spiral_wrap_signed(v1541 + v1560, 64)
@@ -2511,24 +1955,16 @@ pub fn main() {
     let v1572 = v1567 == v1571
     let v1573 =
         case v1572 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1574 = 0 + 1
     let v1575 = 0 + 1
     let v1576 = v1574 == v1575
     let v1577 =
         case v1576 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1578 = 0 + 1
     let v1579 = v1578 + 1
@@ -2543,12 +1979,8 @@ pub fn main() {
     let v1588 = v1582 == v1587
     let v1589 =
         case v1588 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1592 = spiral_wrap_signed(v1577 + v1589, 64)
     let v1595 = spiral_wrap_signed(v1573 + v1592, 64)
@@ -2563,24 +1995,16 @@ pub fn main() {
     let v1604 = v1599 == v1603
     let v1605 =
         case v1604 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1606 = 0 + 1
     let v1607 = 0 + 1
     let v1608 = v1606 == v1607
     let v1609 =
         case v1608 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1610 = 0 + 1
     let v1611 = v1610 + 1
@@ -2595,12 +2019,8 @@ pub fn main() {
     let v1620 = v1614 == v1619
     let v1621 =
         case v1620 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1624 = spiral_wrap_signed(v1609 + v1621, 64)
     let v1627 = spiral_wrap_signed(v1605 + v1624, 64)
@@ -2615,24 +2035,16 @@ pub fn main() {
     let v1636 = v1631 == v1635
     let v1637 =
         case v1636 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1638 = 0 + 1
     let v1639 = 0 + 1
     let v1640 = v1638 == v1639
     let v1641 =
         case v1640 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1642 = 0 + 1
     let v1643 = v1642 + 1
@@ -2647,12 +2059,8 @@ pub fn main() {
     let v1652 = v1646 == v1651
     let v1653 =
         case v1652 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1656 = spiral_wrap_signed(v1641 + v1653, 64)
     let v1659 = spiral_wrap_signed(v1637 + v1656, 64)
@@ -2665,12 +2073,8 @@ pub fn main() {
     let v1666 = v1664 == v1467
     let v1667 = v1665 && v1666
     case v1667 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-statement-stale-writer-conflict-program-append-associativity-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-statement-stale-writer-conflict-program-append-associativity-runtime-mismatch"
     }
     let v1668 = 0 + 1
     let v1669 = v1668 + 1
@@ -2683,24 +2087,16 @@ pub fn main() {
     let v1676 = v1671 == v1675
     let v1677 =
         case v1676 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1678 = 0 + 1
     let v1679 = 0 + 1
     let v1680 = v1678 == v1679
     let v1681 =
         case v1680 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1682 = 0 + 1
     let v1683 = v1682 + 1
@@ -2715,12 +2111,8 @@ pub fn main() {
     let v1692 = v1686 == v1691
     let v1693 =
         case v1692 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1696 = spiral_wrap_signed(v1681 + v1693, 64)
     let v1699 = spiral_wrap_signed(v1677 + v1696, 64)
@@ -2735,24 +2127,16 @@ pub fn main() {
     let v1708 = v1703 == v1707
     let v1709 =
         case v1708 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1710 = 0 + 1
     let v1711 = 0 + 1
     let v1712 = v1710 == v1711
     let v1713 =
         case v1712 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1714 = 0 + 1
     let v1715 = v1714 + 1
@@ -2767,12 +2151,8 @@ pub fn main() {
     let v1724 = v1718 == v1723
     let v1725 =
         case v1724 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1728 = spiral_wrap_signed(v1713 + v1725, 64)
     let v1731 = spiral_wrap_signed(v1709 + v1728, 64)
@@ -2788,24 +2168,16 @@ pub fn main() {
     let v1741 = v1736 == v1740
     let v1742 =
         case v1741 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1743 = 0 + 1
     let v1744 = 0 + 1
     let v1745 = v1743 == v1744
     let v1746 =
         case v1745 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1747 = 0 + 1
     let v1748 = v1747 + 1
@@ -2820,12 +2192,8 @@ pub fn main() {
     let v1757 = v1751 == v1756
     let v1758 =
         case v1757 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1761 = spiral_wrap_signed(v1746 + v1758, 64)
     let v1764 = spiral_wrap_signed(v1742 + v1761, 64)
@@ -2840,24 +2208,16 @@ pub fn main() {
     let v1773 = v1768 == v1772
     let v1774 =
         case v1773 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1775 = 0 + 1
     let v1776 = 0 + 1
     let v1777 = v1775 == v1776
     let v1778 =
         case v1777 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1779 = 0 + 1
     let v1780 = v1779 + 1
@@ -2872,12 +2232,8 @@ pub fn main() {
     let v1789 = v1783 == v1788
     let v1790 =
         case v1789 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1793 = spiral_wrap_signed(v1778 + v1790, 64)
     let v1796 = spiral_wrap_signed(v1774 + v1793, 64)
@@ -2892,24 +2248,16 @@ pub fn main() {
     let v1805 = v1800 == v1804
     let v1806 =
         case v1805 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1807 = 0 + 1
     let v1808 = 0 + 1
     let v1809 = v1807 == v1808
     let v1810 =
         case v1809 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1811 = 0 + 1
     let v1812 = v1811 + 1
@@ -2924,12 +2272,8 @@ pub fn main() {
     let v1821 = v1815 == v1820
     let v1822 =
         case v1821 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1825 = spiral_wrap_signed(v1810 + v1822, 64)
     let v1828 = spiral_wrap_signed(v1806 + v1825, 64)
@@ -2944,24 +2288,16 @@ pub fn main() {
     let v1837 = v1832 == v1836
     let v1838 =
         case v1837 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1839 = 0 + 1
     let v1840 = 0 + 1
     let v1841 = v1839 == v1840
     let v1842 =
         case v1841 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1843 = 0 + 1
     let v1844 = v1843 + 1
@@ -2976,12 +2312,8 @@ pub fn main() {
     let v1853 = v1847 == v1852
     let v1854 =
         case v1853 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1857 = spiral_wrap_signed(v1842 + v1854, 64)
     let v1860 = spiral_wrap_signed(v1838 + v1857, 64)
@@ -3000,24 +2332,16 @@ pub fn main() {
     let v1873 = v1868 == v1872
     let v1874 =
         case v1873 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1875 = 0 + 1
     let v1876 = 0 + 1
     let v1877 = v1875 == v1876
     let v1878 =
         case v1877 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1879 = 0 + 1
     let v1880 = v1879 + 1
@@ -3032,12 +2356,8 @@ pub fn main() {
     let v1889 = v1883 == v1888
     let v1890 =
         case v1889 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1891 = spiral_wrap_signed(v1875 + v1883, 64)
     let v1892 = spiral_wrap_signed(v1876 + v1888, 64)
@@ -3059,24 +2379,16 @@ pub fn main() {
     let v1908 = v1903 == v1907
     let v1909 =
         case v1908 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1910 = 0 + 1
     let v1911 = 0 + 1
     let v1912 = v1910 == v1911
     let v1913 =
         case v1912 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1914 = 0 + 1
     let v1915 = v1914 + 1
@@ -3091,12 +2403,8 @@ pub fn main() {
     let v1924 = v1918 == v1923
     let v1925 =
         case v1924 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v1926 = spiral_wrap_signed(v1910 + v1918, 64)
     let v1927 = spiral_wrap_signed(v1911 + v1923, 64)
@@ -3122,24 +2430,16 @@ pub fn main() {
                 let v1944 = v1939 == v1943
                 let v1945 =
                     case v1944 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 let v1946 = 0 + 1
                 let v1947 = 0 + 1
                 let v1948 = v1946 == v1947
                 let v1949 =
                     case v1948 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 let v1950 = 0 + 1
                 let v1951 = v1950 + 1
@@ -3154,12 +2454,8 @@ pub fn main() {
                 let v1960 = v1954 == v1959
                 let v1961 =
                     case v1960 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 let v1962 = spiral_wrap_signed(v1946 + v1954, 64)
                 let v1963 = spiral_wrap_signed(v1947 + v1959, 64)
@@ -3177,12 +2473,8 @@ pub fn main() {
         }
     let #(v1991, v1992, v1995, v1999) =
         case v1972  {
-            Us0TypedFxHashedStatementChecksumValidationAccepted(v1976, v1977, v1978, v1979, v1980, v1981) -> {
-                #(1, 0, v1976, v1980)
-            }
-            Us0TypedFxHashedStatementChecksumValidationRejected(v1973, v1974, v1975) -> {
-                #(0, 1, 0, 0)
-            }
+            Us0TypedFxHashedStatementChecksumValidationAccepted(v1976, v1977, v1978, v1979, v1980, v1981) -> #(1, 0, v1976, v1980)
+            Us0TypedFxHashedStatementChecksumValidationRejected(v1973, v1974, v1975) -> #(0, 1, 0, 0)
         }
     let v2000 = 0 + 1
     let v2001 = v2000 + 1
@@ -3195,24 +2487,16 @@ pub fn main() {
     let v2008 = v2003 == v2007
     let v2009 =
         case v2008 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2010 = 0 + 1
     let v2011 = 0 + 1
     let v2012 = v2010 == v2011
     let v2013 =
         case v2012 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2014 = 0 + 1
     let v2015 = v2014 + 1
@@ -3227,12 +2511,8 @@ pub fn main() {
     let v2024 = v2018 == v2023
     let v2025 =
         case v2024 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2028 = spiral_wrap_signed(v2013 + v2025, 64)
     let v2031 = spiral_wrap_signed(v2009 + v2028, 64)
@@ -3247,24 +2527,16 @@ pub fn main() {
     let v2040 = v2035 == v2039
     let v2041 =
         case v2040 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2042 = 0 + 1
     let v2043 = 0 + 1
     let v2044 = v2042 == v2043
     let v2045 =
         case v2044 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2046 = 0 + 1
     let v2047 = v2046 + 1
@@ -3279,12 +2551,8 @@ pub fn main() {
     let v2056 = v2050 == v2055
     let v2057 =
         case v2056 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2060 = spiral_wrap_signed(v2045 + v2057, 64)
     let v2063 = spiral_wrap_signed(v2041 + v2060, 64)
@@ -3299,24 +2567,16 @@ pub fn main() {
     let v2072 = v2067 == v2071
     let v2073 =
         case v2072 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2074 = 0 + 1
     let v2075 = 0 + 1
     let v2076 = v2074 == v2075
     let v2077 =
         case v2076 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2078 = 0 + 1
     let v2079 = v2078 + 1
@@ -3331,12 +2591,8 @@ pub fn main() {
     let v2088 = v2082 == v2087
     let v2089 =
         case v2088 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2092 = spiral_wrap_signed(v2077 + v2089, 64)
     let v2095 = spiral_wrap_signed(v2073 + v2092, 64)
@@ -3351,24 +2607,16 @@ pub fn main() {
     let v2104 = v2099 == v2103
     let v2105 =
         case v2104 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2106 = 0 + 1
     let v2107 = 0 + 1
     let v2108 = v2106 == v2107
     let v2109 =
         case v2108 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2110 = 0 + 1
     let v2111 = v2110 + 1
@@ -3383,12 +2631,8 @@ pub fn main() {
     let v2120 = v2114 == v2119
     let v2121 =
         case v2120 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2124 = spiral_wrap_signed(v2109 + v2121, 64)
     let v2127 = spiral_wrap_signed(v2105 + v2124, 64)
@@ -3404,12 +2648,8 @@ pub fn main() {
     let v2137 = v2134 && v2135
     let v2138 = v2137 && v2136
     case v2138 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-statement-recursive-writer-appended-tail-restart-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-statement-recursive-writer-appended-tail-restart-runtime-mismatch"
     }
     let v2139 = 0 + 1
     let v2140 = v2139 + 1
@@ -3422,24 +2662,16 @@ pub fn main() {
     let v2147 = v2142 == v2146
     let v2148 =
         case v2147 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2149 = 0 + 1
     let v2150 = 0 + 1
     let v2151 = v2149 == v2150
     let v2152 =
         case v2151 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2153 = 0 + 1
     let v2154 = v2153 + 1
@@ -3454,12 +2686,8 @@ pub fn main() {
     let v2163 = v2157 == v2162
     let v2164 =
         case v2163 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2167 = spiral_wrap_signed(v2152 + v2164, 64)
     let v2170 = spiral_wrap_signed(v2148 + v2167, 64)
@@ -3474,24 +2702,16 @@ pub fn main() {
     let v2179 = v2174 == v2178
     let v2180 =
         case v2179 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2181 = 0 + 1
     let v2182 = 0 + 1
     let v2183 = v2181 == v2182
     let v2184 =
         case v2183 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2185 = 0 + 1
     let v2186 = v2185 + 1
@@ -3506,12 +2726,8 @@ pub fn main() {
     let v2195 = v2189 == v2194
     let v2196 =
         case v2195 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2199 = spiral_wrap_signed(v2184 + v2196, 64)
     let v2202 = spiral_wrap_signed(v2180 + v2199, 64)
@@ -3527,24 +2743,16 @@ pub fn main() {
     let v2212 = v2207 == v2211
     let v2213 =
         case v2212 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2214 = 0 + 1
     let v2215 = 0 + 1
     let v2216 = v2214 == v2215
     let v2217 =
         case v2216 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2218 = 0 + 1
     let v2219 = v2218 + 1
@@ -3559,12 +2767,8 @@ pub fn main() {
     let v2228 = v2222 == v2227
     let v2229 =
         case v2228 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2232 = spiral_wrap_signed(v2217 + v2229, 64)
     let v2235 = spiral_wrap_signed(v2213 + v2232, 64)
@@ -3579,24 +2783,16 @@ pub fn main() {
     let v2244 = v2239 == v2243
     let v2245 =
         case v2244 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2246 = 0 + 1
     let v2247 = 0 + 1
     let v2248 = v2246 == v2247
     let v2249 =
         case v2248 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2250 = 0 + 1
     let v2251 = v2250 + 1
@@ -3611,12 +2807,8 @@ pub fn main() {
     let v2260 = v2254 == v2259
     let v2261 =
         case v2260 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2264 = spiral_wrap_signed(v2249 + v2261, 64)
     let v2267 = spiral_wrap_signed(v2245 + v2264, 64)
@@ -3633,24 +2825,16 @@ pub fn main() {
     let v2278 = v2273 == v2277
     let v2279 =
         case v2278 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2280 = 0 + 1
     let v2281 = 0 + 1
     let v2282 = v2280 == v2281
     let v2283 =
         case v2282 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2284 = 0 + 1
     let v2285 = v2284 + 1
@@ -3665,12 +2849,8 @@ pub fn main() {
     let v2294 = v2288 == v2293
     let v2295 =
         case v2294 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2296 = spiral_wrap_signed(v2280 + v2288, 64)
     let v2297 = spiral_wrap_signed(v2281 + v2293, 64)
@@ -3692,24 +2872,16 @@ pub fn main() {
     let v2313 = v2308 == v2312
     let v2314 =
         case v2313 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2315 = 0 + 1
     let v2316 = 0 + 1
     let v2317 = v2315 == v2316
     let v2318 =
         case v2317 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2319 = 0 + 1
     let v2320 = v2319 + 1
@@ -3724,12 +2896,8 @@ pub fn main() {
     let v2329 = v2323 == v2328
     let v2330 =
         case v2329 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2331 = spiral_wrap_signed(v2315 + v2323, 64)
     let v2332 = spiral_wrap_signed(v2316 + v2328, 64)
@@ -3755,24 +2923,16 @@ pub fn main() {
                 let v2349 = v2344 == v2348
                 let v2350 =
                     case v2349 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 let v2351 = 0 + 1
                 let v2352 = 0 + 1
                 let v2353 = v2351 == v2352
                 let v2354 =
                     case v2353 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 let v2355 = 0 + 1
                 let v2356 = v2355 + 1
@@ -3787,12 +2947,8 @@ pub fn main() {
                 let v2365 = v2359 == v2364
                 let v2366 =
                     case v2365 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 let v2367 = spiral_wrap_signed(v2351 + v2359, 64)
                 let v2368 = spiral_wrap_signed(v2352 + v2364, 64)
@@ -3810,12 +2966,8 @@ pub fn main() {
         }
     let #(v2396, v2397, v2404) =
         case v2377  {
-            Us0TypedFxHashedStatementChecksumValidationAccepted(v2381, v2382, v2383, v2384, v2385, v2386) -> {
-                #(1, 0, v2385)
-            }
-            Us0TypedFxHashedStatementChecksumValidationRejected(v2378, v2379, v2380) -> {
-                #(0, 1, 0)
-            }
+            Us0TypedFxHashedStatementChecksumValidationAccepted(v2381, v2382, v2383, v2384, v2385, v2386) -> #(1, 0, v2385)
+            Us0TypedFxHashedStatementChecksumValidationRejected(v2378, v2379, v2380) -> #(0, 1, 0)
         }
     let v2405 = 0 + 1
     let v2406 = v2405 + 1
@@ -3828,24 +2980,16 @@ pub fn main() {
     let v2413 = v2408 == v2412
     let v2414 =
         case v2413 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2415 = 0 + 1
     let v2416 = 0 + 1
     let v2417 = v2415 == v2416
     let v2418 =
         case v2417 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2419 = 0 + 1
     let v2420 = v2419 + 1
@@ -3860,12 +3004,8 @@ pub fn main() {
     let v2429 = v2423 == v2428
     let v2430 =
         case v2429 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2433 = spiral_wrap_signed(v2418 + v2430, 64)
     let v2436 = spiral_wrap_signed(v2414 + v2433, 64)
@@ -3880,24 +3020,16 @@ pub fn main() {
     let v2445 = v2440 == v2444
     let v2446 =
         case v2445 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2447 = 0 + 1
     let v2448 = 0 + 1
     let v2449 = v2447 == v2448
     let v2450 =
         case v2449 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2451 = 0 + 1
     let v2452 = v2451 + 1
@@ -3912,12 +3044,8 @@ pub fn main() {
     let v2461 = v2455 == v2460
     let v2462 =
         case v2461 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2465 = spiral_wrap_signed(v2450 + v2462, 64)
     let v2468 = spiral_wrap_signed(v2446 + v2465, 64)
@@ -3929,12 +3057,8 @@ pub fn main() {
     let v2474 = v2472 == 0
     let v2475 = v2473 && v2474
     case v2475 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-statement-recursive-writer-crash-phase-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-statement-recursive-writer-crash-phase-runtime-mismatch"
     }
     let v2476 = 0 + 1
     let v2477 = v2476 + 1
@@ -3947,24 +3071,16 @@ pub fn main() {
     let v2484 = v2479 == v2483
     let v2485 =
         case v2484 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2486 = 0 + 1
     let v2487 = 0 + 1
     let v2488 = v2486 == v2487
     let v2489 =
         case v2488 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2490 = 0 + 1
     let v2491 = v2490 + 1
@@ -3979,12 +3095,8 @@ pub fn main() {
     let v2500 = v2494 == v2499
     let v2501 =
         case v2500 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2504 = spiral_wrap_signed(v2489 + v2501, 64)
     let v2507 = spiral_wrap_signed(v2485 + v2504, 64)
@@ -3999,24 +3111,16 @@ pub fn main() {
     let v2516 = v2511 == v2515
     let v2517 =
         case v2516 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2518 = 0 + 1
     let v2519 = 0 + 1
     let v2520 = v2518 == v2519
     let v2521 =
         case v2520 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2522 = 0 + 1
     let v2523 = v2522 + 1
@@ -4031,12 +3135,8 @@ pub fn main() {
     let v2532 = v2526 == v2531
     let v2533 =
         case v2532 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2536 = spiral_wrap_signed(v2521 + v2533, 64)
     let v2539 = spiral_wrap_signed(v2517 + v2536, 64)
@@ -4052,24 +3152,16 @@ pub fn main() {
     let v2549 = v2544 == v2548
     let v2550 =
         case v2549 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2551 = 0 + 1
     let v2552 = 0 + 1
     let v2553 = v2551 == v2552
     let v2554 =
         case v2553 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2555 = 0 + 1
     let v2556 = v2555 + 1
@@ -4084,12 +3176,8 @@ pub fn main() {
     let v2565 = v2559 == v2564
     let v2566 =
         case v2565 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2569 = spiral_wrap_signed(v2554 + v2566, 64)
     let v2572 = spiral_wrap_signed(v2550 + v2569, 64)
@@ -4104,24 +3192,16 @@ pub fn main() {
     let v2581 = v2576 == v2580
     let v2582 =
         case v2581 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2583 = 0 + 1
     let v2584 = 0 + 1
     let v2585 = v2583 == v2584
     let v2586 =
         case v2585 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2587 = 0 + 1
     let v2588 = v2587 + 1
@@ -4136,12 +3216,8 @@ pub fn main() {
     let v2597 = v2591 == v2596
     let v2598 =
         case v2597 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2601 = spiral_wrap_signed(v2586 + v2598, 64)
     let v2604 = spiral_wrap_signed(v2582 + v2601, 64)
@@ -4158,24 +3234,16 @@ pub fn main() {
     let v2615 = v2610 == v2614
     let v2616 =
         case v2615 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2617 = 0 + 1
     let v2618 = 0 + 1
     let v2619 = v2617 == v2618
     let v2620 =
         case v2619 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2621 = 0 + 1
     let v2622 = v2621 + 1
@@ -4190,12 +3258,8 @@ pub fn main() {
     let v2631 = v2625 == v2630
     let v2632 =
         case v2631 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2633 = spiral_wrap_signed(v2617 + v2625, 64)
     let v2634 = spiral_wrap_signed(v2618 + v2630, 64)
@@ -4217,24 +3281,16 @@ pub fn main() {
     let v2650 = v2645 == v2649
     let v2651 =
         case v2650 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2652 = 0 + 1
     let v2653 = 0 + 1
     let v2654 = v2652 == v2653
     let v2655 =
         case v2654 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2656 = 0 + 1
     let v2657 = v2656 + 1
@@ -4249,12 +3305,8 @@ pub fn main() {
     let v2666 = v2660 == v2665
     let v2667 =
         case v2666 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2668 = spiral_wrap_signed(v2652 + v2660, 64)
     let v2669 = spiral_wrap_signed(v2653 + v2665, 64)
@@ -4280,24 +3332,16 @@ pub fn main() {
                 let v2686 = v2681 == v2685
                 let v2687 =
                     case v2686 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 let v2688 = 0 + 1
                 let v2689 = 0 + 1
                 let v2690 = v2688 == v2689
                 let v2691 =
                     case v2690 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 let v2692 = 0 + 1
                 let v2693 = v2692 + 1
@@ -4312,12 +3356,8 @@ pub fn main() {
                 let v2702 = v2696 == v2701
                 let v2703 =
                     case v2702 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 let v2704 = spiral_wrap_signed(v2688 + v2696, 64)
                 let v2705 = spiral_wrap_signed(v2689 + v2701, 64)
@@ -4335,12 +3375,8 @@ pub fn main() {
         }
     let #(v2733, v2734, v2741) =
         case v2714  {
-            Us0TypedFxHashedStatementChecksumValidationAccepted(v2718, v2719, v2720, v2721, v2722, v2723) -> {
-                #(1, 0, v2722)
-            }
-            Us0TypedFxHashedStatementChecksumValidationRejected(v2715, v2716, v2717) -> {
-                #(0, 1, 0)
-            }
+            Us0TypedFxHashedStatementChecksumValidationAccepted(v2718, v2719, v2720, v2721, v2722, v2723) -> #(1, 0, v2722)
+            Us0TypedFxHashedStatementChecksumValidationRejected(v2715, v2716, v2717) -> #(0, 1, 0)
         }
     let v2742 = 0 + 1
     let v2743 = v2742 + 1
@@ -4353,24 +3389,16 @@ pub fn main() {
     let v2750 = v2745 == v2749
     let v2751 =
         case v2750 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2752 = 0 + 1
     let v2753 = 0 + 1
     let v2754 = v2752 == v2753
     let v2755 =
         case v2754 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2756 = 0 + 1
     let v2757 = v2756 + 1
@@ -4385,12 +3413,8 @@ pub fn main() {
     let v2766 = v2760 == v2765
     let v2767 =
         case v2766 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2770 = spiral_wrap_signed(v2755 + v2767, 64)
     let v2773 = spiral_wrap_signed(v2751 + v2770, 64)
@@ -4405,24 +3429,16 @@ pub fn main() {
     let v2782 = v2777 == v2781
     let v2783 =
         case v2782 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2784 = 0 + 1
     let v2785 = 0 + 1
     let v2786 = v2784 == v2785
     let v2787 =
         case v2786 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2788 = 0 + 1
     let v2789 = v2788 + 1
@@ -4437,12 +3453,8 @@ pub fn main() {
     let v2798 = v2792 == v2797
     let v2799 =
         case v2798 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2802 = spiral_wrap_signed(v2787 + v2799, 64)
     let v2805 = spiral_wrap_signed(v2783 + v2802, 64)
@@ -4454,12 +3466,8 @@ pub fn main() {
     let v2811 = v2809 == 0
     let v2812 = v2810 && v2811
     case v2812 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-statement-indexed-durable-commit-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-statement-indexed-durable-commit-runtime-mismatch"
     }
     let v2813 = 0 + 1
     let v2814 = v2813 + 1
@@ -4472,24 +3480,16 @@ pub fn main() {
     let v2821 = v2816 == v2820
     let v2822 =
         case v2821 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2823 = 0 + 1
     let v2824 = 0 + 1
     let v2825 = v2823 == v2824
     let v2826 =
         case v2825 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2827 = 0 + 1
     let v2828 = v2827 + 1
@@ -4504,12 +3504,8 @@ pub fn main() {
     let v2837 = v2831 == v2836
     let v2838 =
         case v2837 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2839 = spiral_wrap_signed(v2823 + v2831, 64)
     let v2840 = spiral_wrap_signed(v2824 + v2836, 64)
@@ -4528,24 +3524,16 @@ pub fn main() {
     let v2853 = v2848 == v2852
     let v2854 =
         case v2853 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2855 = 0 + 1
     let v2856 = 0 + 1
     let v2857 = v2855 == v2856
     let v2858 =
         case v2857 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2859 = 0 + 1
     let v2860 = v2859 + 1
@@ -4560,12 +3548,8 @@ pub fn main() {
     let v2869 = v2863 == v2868
     let v2870 =
         case v2869 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2871 = spiral_wrap_signed(v2855 + v2863, 64)
     let v2872 = spiral_wrap_signed(v2856 + v2868, 64)
@@ -4584,24 +3568,16 @@ pub fn main() {
     let v2885 = v2880 == v2884
     let v2886 =
         case v2885 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2887 = 0 + 1
     let v2888 = 0 + 1
     let v2889 = v2887 == v2888
     let v2890 =
         case v2889 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2891 = 0 + 1
     let v2892 = v2891 + 1
@@ -4616,12 +3592,8 @@ pub fn main() {
     let v2901 = v2895 == v2900
     let v2902 =
         case v2901 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2903 = spiral_wrap_signed(v2887 + v2895, 64)
     let v2904 = spiral_wrap_signed(v2888 + v2900, 64)
@@ -4640,24 +3612,16 @@ pub fn main() {
     let v2917 = v2912 == v2916
     let v2918 =
         case v2917 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2919 = 0 + 1
     let v2920 = 0 + 1
     let v2921 = v2919 == v2920
     let v2922 =
         case v2921 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2923 = 0 + 1
     let v2924 = v2923 + 1
@@ -4672,12 +3636,8 @@ pub fn main() {
     let v2933 = v2927 == v2932
     let v2934 =
         case v2933 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2935 = spiral_wrap_signed(v2919 + v2927, 64)
     let v2936 = spiral_wrap_signed(v2920 + v2932, 64)
@@ -4700,12 +3660,8 @@ pub fn main() {
     let v2953 = v2950 && v2951
     let v2954 = v2953 && v2952
     case v2954 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-hashed-statement-event-store-decision-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-hashed-statement-event-store-decision-runtime-mismatch"
     }
     let v2955 = 0 + 1
     let v2956 = v2955 + 1
@@ -4718,24 +3674,16 @@ pub fn main() {
     let v2963 = v2958 == v2962
     let v2964 =
         case v2963 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2965 = 0 + 1
     let v2966 = 0 + 1
     let v2967 = v2965 == v2966
     let v2968 =
         case v2967 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2969 = 0 + 1
     let v2970 = v2969 + 1
@@ -4750,12 +3698,8 @@ pub fn main() {
     let v2979 = v2973 == v2978
     let v2980 =
         case v2979 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2983 = spiral_wrap_signed(v2968 + v2980, 64)
     let v2986 = spiral_wrap_signed(v2964 + v2983, 64)
@@ -4770,24 +3714,16 @@ pub fn main() {
     let v2995 = v2990 == v2994
     let v2996 =
         case v2995 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v2997 = 0 + 1
     let v2998 = 0 + 1
     let v2999 = v2997 == v2998
     let v3000 =
         case v2999 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3001 = 0 + 1
     let v3002 = v3001 + 1
@@ -4802,12 +3738,8 @@ pub fn main() {
     let v3011 = v3005 == v3010
     let v3012 =
         case v3011 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3015 = spiral_wrap_signed(v3000 + v3012, 64)
     let v3018 = spiral_wrap_signed(v2996 + v3015, 64)
@@ -4823,24 +3755,16 @@ pub fn main() {
     let v3030 = v3025 == v3029
     let v3031 =
         case v3030 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3032 = 0 + 1
     let v3033 = 0 + 1
     let v3034 = v3032 == v3033
     let v3035 =
         case v3034 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3036 = 0 + 1
     let v3037 = v3036 + 1
@@ -4855,12 +3779,8 @@ pub fn main() {
     let v3046 = v3040 == v3045
     let v3047 =
         case v3046 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3050 = spiral_wrap_signed(v3035 + v3047, 64)
     let v3053 = spiral_wrap_signed(v3031 + v3050, 64)
@@ -4875,24 +3795,16 @@ pub fn main() {
     let v3062 = v3057 == v3061
     let v3063 =
         case v3062 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3064 = 0 + 1
     let v3065 = 0 + 1
     let v3066 = v3064 == v3065
     let v3067 =
         case v3066 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3068 = 0 + 1
     let v3069 = v3068 + 1
@@ -4907,12 +3819,8 @@ pub fn main() {
     let v3078 = v3072 == v3077
     let v3079 =
         case v3078 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3082 = spiral_wrap_signed(v3067 + v3079, 64)
     let v3085 = spiral_wrap_signed(v3063 + v3082, 64)
@@ -4920,12 +3828,8 @@ pub fn main() {
     let v3089 = spiral_wrap_signed(v3021 + v3088, 64)
     let v3090 = v3089 == 0
     case v3090 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-hashed-statement-proven-retry-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-hashed-statement-proven-retry-runtime-mismatch"
     }
     let v3091 = 0 + 1
     let v3092 = v3091 + 1
@@ -4938,24 +3842,16 @@ pub fn main() {
     let v3099 = v3094 == v3098
     let v3100 =
         case v3099 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3101 = 0 + 1
     let v3102 = 0 + 1
     let v3103 = v3101 == v3102
     let v3104 =
         case v3103 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3105 = 0 + 1
     let v3106 = v3105 + 1
@@ -4970,12 +3866,8 @@ pub fn main() {
     let v3115 = v3109 == v3114
     let v3116 =
         case v3115 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3117 = spiral_wrap_signed(v3101 + v3109, 64)
     let v3118 = spiral_wrap_signed(v3102 + v3114, 64)
@@ -4994,24 +3886,16 @@ pub fn main() {
     let v3131 = v3126 == v3130
     let v3132 =
         case v3131 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3133 = 0 + 1
     let v3134 = 0 + 1
     let v3135 = v3133 == v3134
     let v3136 =
         case v3135 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3137 = 0 + 1
     let v3138 = v3137 + 1
@@ -5026,12 +3910,8 @@ pub fn main() {
     let v3147 = v3141 == v3146
     let v3148 =
         case v3147 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3149 = spiral_wrap_signed(v3133 + v3141, 64)
     let v3150 = spiral_wrap_signed(v3134 + v3146, 64)
@@ -5048,12 +3928,8 @@ pub fn main() {
     let v3161 = v3158 && v3159
     let v3162 = v3161 && v3160
     case v3162 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-hashed-statement-history-enumeration-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-hashed-statement-history-enumeration-runtime-mismatch"
     }
     let v3163 = 0 + 1
     let v3164 = v3163 + 1
@@ -5066,24 +3942,16 @@ pub fn main() {
     let v3171 = v3166 == v3170
     let v3172 =
         case v3171 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3173 = 0 + 1
     let v3174 = 0 + 1
     let v3175 = v3173 == v3174
     let v3176 =
         case v3175 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3177 = 0 + 1
     let v3178 = v3177 + 1
@@ -5098,12 +3966,8 @@ pub fn main() {
     let v3187 = v3181 == v3186
     let v3188 =
         case v3187 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3189 = spiral_wrap_signed(v3173 + v3181, 64)
     let v3190 = spiral_wrap_signed(v3174 + v3186, 64)
@@ -5117,12 +3981,8 @@ pub fn main() {
     let v3198 = v3195 && v3196
     let v3199 = v3198 && v3197
     case v3199 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-hashed-statement-history-index-lookup-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-hashed-statement-history-index-lookup-runtime-mismatch"
     }
     let v3200 = 0 + 1
     let v3201 = v3200 + 1
@@ -5135,24 +3995,16 @@ pub fn main() {
     let v3208 = v3203 == v3207
     let v3209 =
         case v3208 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3210 = 0 + 1
     let v3211 = 0 + 1
     let v3212 = v3210 == v3211
     let v3213 =
         case v3212 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3214 = 0 + 1
     let v3215 = v3214 + 1
@@ -5167,12 +4019,8 @@ pub fn main() {
     let v3224 = v3218 == v3223
     let v3225 =
         case v3224 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3226 = spiral_wrap_signed(v3210 + v3218, 64)
     let v3227 = spiral_wrap_signed(v3211 + v3223, 64)
@@ -5191,24 +4039,16 @@ pub fn main() {
     let v3240 = v3235 == v3239
     let v3241 =
         case v3240 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3242 = 0 + 1
     let v3243 = 0 + 1
     let v3244 = v3242 == v3243
     let v3245 =
         case v3244 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3246 = 0 + 1
     let v3247 = v3246 + 1
@@ -5223,12 +4063,8 @@ pub fn main() {
     let v3256 = v3250 == v3255
     let v3257 =
         case v3256 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3258 = spiral_wrap_signed(v3242 + v3250, 64)
     let v3259 = spiral_wrap_signed(v3243 + v3255, 64)
@@ -5248,12 +4084,8 @@ pub fn main() {
     let v3273 = v3272 && v3268
     let v3274 = v3273 && v3269
     case v3274 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-hashed-statement-identity-lookup-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-hashed-statement-identity-lookup-runtime-mismatch"
     }
     let v3275 = 0 + 1
     let v3276 = v3275 + 1
@@ -5266,24 +4098,16 @@ pub fn main() {
     let v3283 = v3278 == v3282
     let v3284 =
         case v3283 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3285 = 0 + 1
     let v3286 = 0 + 1
     let v3287 = v3285 == v3286
     let v3288 =
         case v3287 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3289 = 0 + 1
     let v3290 = v3289 + 1
@@ -5298,12 +4122,8 @@ pub fn main() {
     let v3299 = v3293 == v3298
     let v3300 =
         case v3299 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3301 = spiral_wrap_signed(v3285 + v3293, 64)
     let v3302 = spiral_wrap_signed(v3286 + v3298, 64)
@@ -5322,24 +4142,16 @@ pub fn main() {
     let v3315 = v3310 == v3314
     let v3316 =
         case v3315 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3317 = 0 + 1
     let v3318 = 0 + 1
     let v3319 = v3317 == v3318
     let v3320 =
         case v3319 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3321 = 0 + 1
     let v3322 = v3321 + 1
@@ -5354,12 +4166,8 @@ pub fn main() {
     let v3331 = v3325 == v3330
     let v3332 =
         case v3331 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3333 = spiral_wrap_signed(v3317 + v3325, 64)
     let v3334 = spiral_wrap_signed(v3318 + v3330, 64)
@@ -5376,12 +4184,8 @@ pub fn main() {
     let v3345 = v3342 && v3343
     let v3346 = v3345 && v3344
     case v3346 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-hashed-statement-membership-lookup-program-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-hashed-statement-membership-lookup-program-runtime-mismatch"
     }
     let v3347 = 0 + 1
     let v3348 = v3347 + 1
@@ -5394,24 +4198,16 @@ pub fn main() {
     let v3355 = v3350 == v3354
     let v3356 =
         case v3355 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3357 = 0 + 1
     let v3358 = 0 + 1
     let v3359 = v3357 == v3358
     let v3360 =
         case v3359 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3361 = 0 + 1
     let v3362 = v3361 + 1
@@ -5426,12 +4222,8 @@ pub fn main() {
     let v3371 = v3365 == v3370
     let v3372 =
         case v3371 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3373 = spiral_wrap_signed(v3357 + v3365, 64)
     let v3374 = spiral_wrap_signed(v3358 + v3370, 64)
@@ -5450,24 +4242,16 @@ pub fn main() {
     let v3387 = v3382 == v3386
     let v3388 =
         case v3387 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3389 = 0 + 1
     let v3390 = 0 + 1
     let v3391 = v3389 == v3390
     let v3392 =
         case v3391 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3393 = 0 + 1
     let v3394 = v3393 + 1
@@ -5482,12 +4266,8 @@ pub fn main() {
     let v3403 = v3397 == v3402
     let v3404 =
         case v3403 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3405 = spiral_wrap_signed(v3389 + v3397, 64)
     let v3406 = spiral_wrap_signed(v3390 + v3402, 64)
@@ -5509,24 +4289,16 @@ pub fn main() {
     let v3422 = v3417 == v3421
     let v3423 =
         case v3422 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3424 = 0 + 1
     let v3425 = 0 + 1
     let v3426 = v3424 == v3425
     let v3427 =
         case v3426 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3428 = 0 + 1
     let v3429 = v3428 + 1
@@ -5541,12 +4313,8 @@ pub fn main() {
     let v3438 = v3432 == v3437
     let v3439 =
         case v3438 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3440 = spiral_wrap_signed(v3424 + v3432, 64)
     let v3441 = spiral_wrap_signed(v3425 + v3437, 64)
@@ -5565,24 +4333,16 @@ pub fn main() {
     let v3454 = v3449 == v3453
     let v3455 =
         case v3454 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3456 = 0 + 1
     let v3457 = 0 + 1
     let v3458 = v3456 == v3457
     let v3459 =
         case v3458 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3460 = 0 + 1
     let v3461 = v3460 + 1
@@ -5597,12 +4357,8 @@ pub fn main() {
     let v3470 = v3464 == v3469
     let v3471 =
         case v3470 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3472 = spiral_wrap_signed(v3456 + v3464, 64)
     let v3473 = spiral_wrap_signed(v3457 + v3469, 64)
@@ -5619,12 +4375,8 @@ pub fn main() {
     let v3484 = v3479 && v3481
     let v3485 = v3484 && v3483
     case v3485 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-hashed-statement-membership-lookup-program-append-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-hashed-statement-membership-lookup-program-append-runtime-mismatch"
     }
     let v3486 = 0 + 1
     let v3487 = v3486 + 1
@@ -5637,24 +4389,16 @@ pub fn main() {
     let v3494 = v3489 == v3493
     let v3495 =
         case v3494 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3496 = 0 + 1
     let v3497 = 0 + 1
     let v3498 = v3496 == v3497
     let v3499 =
         case v3498 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3500 = 0 + 1
     let v3501 = v3500 + 1
@@ -5669,12 +4413,8 @@ pub fn main() {
     let v3510 = v3504 == v3509
     let v3511 =
         case v3510 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3512 = spiral_wrap_signed(v3496 + v3504, 64)
     let v3513 = spiral_wrap_signed(v3497 + v3509, 64)
@@ -5693,24 +4433,16 @@ pub fn main() {
     let v3526 = v3521 == v3525
     let v3527 =
         case v3526 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3528 = 0 + 1
     let v3529 = 0 + 1
     let v3530 = v3528 == v3529
     let v3531 =
         case v3530 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3532 = 0 + 1
     let v3533 = v3532 + 1
@@ -5725,12 +4457,8 @@ pub fn main() {
     let v3542 = v3536 == v3541
     let v3543 =
         case v3542 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3544 = spiral_wrap_signed(v3528 + v3536, 64)
     let v3545 = spiral_wrap_signed(v3529 + v3541, 64)
@@ -5749,24 +4477,16 @@ pub fn main() {
     let v3558 = v3553 == v3557
     let v3559 =
         case v3558 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3560 = 0 + 1
     let v3561 = 0 + 1
     let v3562 = v3560 == v3561
     let v3563 =
         case v3562 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3564 = 0 + 1
     let v3565 = v3564 + 1
@@ -5781,12 +4501,8 @@ pub fn main() {
     let v3574 = v3568 == v3573
     let v3575 =
         case v3574 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3576 = spiral_wrap_signed(v3560 + v3568, 64)
     let v3577 = spiral_wrap_signed(v3561 + v3573, 64)
@@ -5805,24 +4521,16 @@ pub fn main() {
     let v3590 = v3585 == v3589
     let v3591 =
         case v3590 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3592 = 0 + 1
     let v3593 = 0 + 1
     let v3594 = v3592 == v3593
     let v3595 =
         case v3594 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3596 = 0 + 1
     let v3597 = v3596 + 1
@@ -5837,12 +4545,8 @@ pub fn main() {
     let v3606 = v3600 == v3605
     let v3607 =
         case v3606 {
-            True -> {
-                0
-            }
-            False -> {
-                1
-            }
+            True -> 0
+            False -> 1
         }
     let v3608 = spiral_wrap_signed(v3592 + v3600, 64)
     let v3609 = spiral_wrap_signed(v3593 + v3605, 64)
@@ -5856,12 +4560,8 @@ pub fn main() {
     let v3617 = v3614 && v3615
     let v3618 = v3617 && v3616
     case v3618 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-hashed-statement-identity-retry-stability-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-hashed-statement-identity-retry-stability-runtime-mismatch"
     }
     let v3619 = v3579 == v3611
     let v3620 = v3580 == v3612
@@ -5869,12 +4569,8 @@ pub fn main() {
     let v3622 = v3619 && v3620
     let v3623 = v3622 && v3621
     case v3623 {
-        True -> {
-            Nil
-        }
-        False -> {
-            panic as "typed-FX-hashed-statement-identity-retry-stability-runtime-mismatch"
-        }
+        True -> Nil
+        False -> panic as "typed-FX-hashed-statement-identity-retry-stability-runtime-mismatch"
     }
     0
 }

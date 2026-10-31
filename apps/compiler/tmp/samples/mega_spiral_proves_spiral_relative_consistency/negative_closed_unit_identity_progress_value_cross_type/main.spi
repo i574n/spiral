@@ -1,10 +1,10 @@
-open main
+:< main
 
-inl impossible_closed_unit_identity_progress_value_cross_type
+:= impossible_closed_unit_identity_progress_value_cross_type
     ()
     : exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_bool_type
     =
-    inl step =
+    := step =
         ExactLinearIndexedClosedUnitIdentityBetaStep (
             ExactLinearIndexedUnit (
                 exact_linear_indexed_empty_usage (),
@@ -12,5 +12,5 @@ inl impossible_closed_unit_identity_progress_value_cross_type
             "the-negative-attempts-to-reclassify-the-beta-reduct")
     exact_linear_indexed_closed_unit_identity_beta_target step
 
-inl main () =
+:= main () =
     impossible_closed_unit_identity_progress_value_cross_type ()

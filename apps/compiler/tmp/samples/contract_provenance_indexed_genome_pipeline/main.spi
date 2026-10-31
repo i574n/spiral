@@ -1,24 +1,24 @@
-nominal donor_a = ()
-nominal hg38 = ()
-nominal raw = ()
-nominal aligned = ()
-nominal variants = ()
+:! donor_a = ()
+:! hg38 = ()
+:! raw = ()
+:! aligned = ()
+:! variants = ()
 
-union readset source build stage =
-    | ReadSet :: forall source build stage. string -> readset source build stage
+:| readset source build stage =
+    | ReadSet :: \* source build stage. string -> readset source build stage
 
-inl align forall source build. (reads : readset source build raw) : readset source build aligned =
-    match reads with
+:= align \* source build. (reads : readset source build raw) : readset source build aligned =
+    ?= reads ?|
     | ReadSet label => ReadSet label
 
-inl call_variants forall source build. (reads : readset source build aligned) : readset source build variants =
-    match reads with
+:= call_variants \* source build. (reads : readset source build aligned) : readset source build variants =
+    ?= reads ?|
     | ReadSet label => ReadSet label
 
-inl publish (calls : readset donor_a hg38 variants) : string =
-    match calls with
+:= publish (calls : readset donor_a hg38 variants) : string =
+    ?= calls ?|
     | ReadSet label => label
 
-inl main () : string =
-    inl reads : readset donor_a hg38 raw = ReadSet "donor-a:hg38:variants"
+:= main () : string =
+    := reads : readset donor_a hg38 raw = ReadSet "donor-a:hg38:variants"
     publish (call_variants (align reads))

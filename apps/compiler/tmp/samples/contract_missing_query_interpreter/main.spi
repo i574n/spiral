@@ -1,60 +1,60 @@
-nominal row = string
-nominal tenant_count = i32
+:! row = string
+:! tenant_count = i32
 
-union rec query result =
+:| ^ query result =
     | LookupUser :: string -> query row
     | CountTenants :: string -> query tenant_count
-    | PairQuery :: forall left right. query left * query right -> query (left * right)
-    | MapQuery :: forall result. (exists input. query input * (input -> result)) -> query result
+    | PairQuery :: \* left right. query left * query right -> query (left * right)
+    | MapQuery :: \* result. (\? input. query input * (input -> result)) -> query result
 
-inl rec describe forall result. (value : query result) : string =
-    match value with
+:= ^ describe \* result. (value : query result) : string =
+    ?= value ?|
     | LookupUser _ => "lookup-user"
     | CountTenants _ => "count-tenants"
     | PairQuery (left, right) =>
-        inl _ = describe left
-        inl _ = describe right
+        := _ = describe left
+        := _ = describe right
         "pair-query"
     | MapQuery payload =>
-        inl exists input. inner, _ = payload
-        inl _ = describe inner
+        := \? input. inner, _ = payload
+        := _ = describe inner
         "map-query"
 
-nominal sql result = query result
-nominal cache result = query result
-nominal remote result = query result
+:! sql result = query result
+:! cache result = query result
+:! remote result = query result
 
-prototype run_query interpreter result : interpreter result -> string
-instance run_query sql = fun (sql value) => describe value
-instance run_query cache = fun (cache value) => describe value
+:? run_query interpreter result : interpreter result -> string
+:+ run_query sql = \ (sql value) => describe value
+:+ run_query cache = \ (cache value) => describe value
 
-union packed_query =
-    | PackedSql :: (exists result. sql result * result) -> packed_query
-    | PackedCache :: (exists result. cache result * result) -> packed_query
+:| packed_query =
+    | PackedSql :: (\? result. sql result * result) -> packed_query
+    | PackedCache :: (\? result. cache result * result) -> packed_query
 
-inl consume forall result. (_ : query result) (_ : result) : string = "result-hidden"
+:= consume \* result. (_ : query result) (_ : result) : string = "result-hidden"
 
-inl with_packed forall output.
-    (visit : forall result. query result -> result -> output)
+:= with_packed \* output.
+    (visit : \* result. query result -> result -> output)
     (value : packed_query) : output =
-    match value with
+    ?= value ?|
     | PackedSql payload =>
-        inl exists result. wrapped, result_value = payload
-        match wrapped with sql query => visit query result_value
+        := \? result. wrapped, result_value = payload
+        ?= wrapped ?| sql query => visit query result_value
     | PackedCache payload =>
-        inl exists result. wrapped, result_value = payload
-        match wrapped with cache query => visit query result_value
+        := \? result. wrapped, result_value = payload
+        ?= wrapped ?| cache query => visit query result_value
 
-inl query_value () : query (row * tenant_count) =
+:= query_value () : query (row * tenant_count) =
     PairQuery (LookupUser "user-7", CountTenants "tenant-orbit")
 
-inl mapped_value () : query string =
-    MapQuery (exists (CountTenants "tenant-orbit", fun (_ : tenant_count) => "counted"))
+:= mapped_value () : query string =
+    MapQuery (\? (CountTenants "tenant-orbit", \ (_ : tenant_count) => "counted"))
 
-inl packed_value () : packed_query =
-    PackedSql (exists (sql (LookupUser "user-7"), row "row-7"))
+:= packed_value () : packed_query =
+    PackedSql (\? (sql (LookupUser "user-7"), row "row-7"))
 
-inl emit (_ : string) (_ : string) (_ : string) : string =
+:= emit (_ : string) (_ : string) (_ : string) : string =
     "schema\tkind\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\tresult\tsequence\n"
     ^^ "1\tplan\tlookup\tLookupUser\trequest\trow\t\tidempotent\tquery\t2\t\t\n"
     ^^ "1\tplan\tcount\tCountTenants\trequest\tcount\t\tidempotent\tquery\t2\t\t\n"
@@ -69,5 +69,5 @@ inl emit (_ : string) (_ : string) (_ : string) : string =
     ^^ "1\tevent\tpair\tPairQuery\trow-count\tpaired\t\t\t\t\tsuccess\t6\n"
     ^^ "1\tevent\tmap\tMapQuery\tcount\tmapped\t\t\t\t\tsuccess\t8\n"
 
-inl main () : string =
+:= main () : string =
     run_query (remote (LookupUser "user-7"))

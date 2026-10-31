@@ -5,11 +5,7 @@ pub fn main() {
     let #(v2, v3) = #(v1.l0, v1.l1)
     let v4 = v2 == v3
     case v4 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

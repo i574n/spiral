@@ -26,9 +26,9 @@ func sp_method1(_ p0: SpiralArray<Int32>, _ p1: Int32) -> Int32 {
 func spiral_main() -> Int32 {
     var v0: SpiralArray<Int32> = SpiralArray<Int32>([])
     var v1: Int32 = 0
-    let spiral_tuple111 = sp_method0()
-    v0 = spiral_tuple111.0
-    v1 = spiral_tuple111.1
+    let spiral_tuple108 = sp_method0()
+    v0 = spiral_tuple108.0
+    v1 = spiral_tuple108.1
     return sp_method1(v0, v1)
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

@@ -1,4 +1,4 @@
-inl closed_bottom forall a. () : a =
+:= closed_bottom \* a. () : a =
     $"failwith \"effectful-bottom\""
 
-inl main () : i64 = closed_bottom ()
+:= main () : i64 = closed_bottom ()

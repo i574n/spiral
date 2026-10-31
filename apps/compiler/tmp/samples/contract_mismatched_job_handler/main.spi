@@ -1,26 +1,26 @@
-nominal parallel = ()
-nominal validation_capability = ()
-nominal ready = ()
-nominal committed = ()
+:! parallel = ()
+:! validation_capability = ()
+:! ready = ()
+:! committed = ()
 
-union validation_evidence status =
+:| validation_evidence status =
     | ReadyEvidence :: validation_evidence ready
 
-union receipt status =
+:| receipt status =
     | CommittedReceipt :: receipt committed
 
-union job effect capability result =
+:| job effect capability result =
     | ValidateJob ::
         job parallel validation_capability (validation_evidence ready)
 
-union executable_job =
+:| executable_job =
     | ExecutableJob ::
-        (exists effect. exists capability. exists result.
+        (\? effect. \? capability. \? result.
             job effect capability result * (result -> string))
         -> executable_job
 
-inl render_receipt (receipt : receipt committed) : string =
+:= render_receipt (receipt : receipt committed) : string =
     "wrong-handler"
 
-inl main () : executable_job =
-    ExecutableJob (exists (exists (exists (ValidateJob, render_receipt))))
+:= main () : executable_job =
+    ExecutableJob (\? (\? (\? (ValidateJob, render_receipt))))

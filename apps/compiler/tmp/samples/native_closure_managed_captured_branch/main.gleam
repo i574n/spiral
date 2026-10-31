@@ -37,12 +37,8 @@ pub fn main() {
     let v2 = True
     let v5 =
         case v2 {
-            True -> {
-                left_c0(#(v0))
-            }
-            False -> {
-                right_c1(#(v1))
-            }
+            True -> left_c0(#(v0))
+            False -> right_c1(#(v1))
         }
     method0(v5)
 }

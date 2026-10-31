@@ -374,7 +374,7 @@ module Program =
                         let values = Dictionary()
                         env.nominals |> Map.iter (fun key value -> values.Add(key, nominal_add table key value))
                         values
-                    let (arguments, _), body = peval {prototypes_instances = prototypes_instances; nominals = nominals; backend = "Fsharp"} term
+                    let (arguments, _), body = PartEvalSeams.with_conflict_restart (fun inline_restart -> peval {prototypes_instances = prototypes_instances; nominals = nominals; backend = "Fsharp"; inline_restart = inline_restart} term)
                     termName, body, arguments
                 let directTerms =
                     match Environment.GetEnvironmentVariable "SPIRAL_DIRECT_TERMS" with
@@ -439,7 +439,7 @@ module Program =
                 text.ToString()
             let splitArgs (value : string) =
                 let value = value.Trim()
-                if value = "()" then []
+                if value = "()" then ["()"]
                 else
                     let body =
                         if value.Length >= 2 && value.[0] = '(' && value.[value.Length - 1] = ')' then
@@ -734,29 +734,42 @@ module Program =
             if not (package.files.files.tree |> List.exists containsInput) then
                 failwith $"Check input is not declared in package: {inputPath}"
             let hasError, _ = Hopac.run package.result
-            if hasError then
-                let rec files (tc : ProjStateTC) node acc =
-                    match node with
-                    | ProjFilesTree.File(mid,path,_) ->
-                        let slot = if mid < tc.files.uids_file.Length then tc.files.uids_file.[mid] else Unchecked.defaultof<_>
-                        if isNull (box slot) || isNull (box (fst slot)) then acc
-                        else (path, (fst slot).result) :: acc
-                    | ProjFilesTree.Directory(_,_,l) -> List.foldBack (files tc) l acc
-                let rec availableErrors acc (stream : Stream<_>) =
-                    if Promise.Now.isFulfilled stream then
-                        match Promise.Now.get stream with
-                        | Cons((_, x : InferResult, _), next) -> availableErrors (acc @ x.errors) next
-                        | Nil -> acc
-                    else acc
+            let rec files (tc : ProjStateTC) node acc =
+                match node with
+                | ProjFilesTree.File(mid,path,_) ->
+                    let slot = if mid < tc.files.uids_file.Length then tc.files.uids_file.[mid] else Unchecked.defaultof<_>
+                    if isNull (box slot) || isNull (box (fst slot)) then acc
+                    else (path, fst slot) :: acc
+                | ProjFilesTree.Directory(_,_,l) -> List.foldBack (files tc) l acc
+            let rec availableErrors acc (stream : Stream<_>) =
+                if Promise.Now.isFulfilled stream then
+                    match Promise.Now.get stream with
+                    | Cons((_, x : InferResult, _), next) -> availableErrors (acc @ x.errors) next
+                    | Nil -> acc
+                else acc
+            let rec availableParseErrors acc (stream : BlockBundleState) =
+                if Promise.Now.isFulfilled stream then
+                    match Promise.Now.get stream with
+                    | Cons((_, x : BlockBundleValue), next) -> availableParseErrors (acc @ x.errors) next
+                    | Nil -> acc
+                else acc
+            let located (path : string) (error : RString) =
+                let (a, _), message = error
+                $"{path}:{a.line + 1}:{a.character + 1}: {message}"
+            let parseErrors =
+                (try
+                    List.foldBack (files package) package.files.files.tree []
+                    |> List.collect (fun (path, file) -> let _, _, bundles = file.input in availableParseErrors [] bundles |> List.map (located path))
+                 with ex -> [$"(could not list the parser's errors: {ex.GetType().Name}: {ex.Message})"])
+            if hasError || not parseErrors.IsEmpty then
+                parseErrors |> List.iter (eprintfn "%s")
                 let states =
                     let seen = HashSet<obj>(HashIdentity.Reference)
                     package :: (Seq.append state.packages_infer.ok.Values state.packages_infer.error.Values |> List.ofSeq)
                     |> List.filter (fun tc -> seen.Add (box tc))
                 (try
                     states |> List.collect (fun tc -> List.foldBack (files tc) tc.files.files.tree [])
-                    |> List.collect (fun (path,result) ->
-                        availableErrors [] result
-                        |> List.map (fun ((a,_),message) -> $"{path}:{a.line + 1}:{a.character + 1}: {message}"))
+                    |> List.collect (fun (path, file) -> availableErrors [] file.result |> List.map (located path))
                  with ex -> [$"(could not list the typer's errors: {ex.GetType().Name}: {ex.Message})"])
                 |> List.iter (eprintfn "%s")
                 failwith $"Package typecheck rejected: {packageDir}"
@@ -1248,8 +1261,22 @@ module Program =
         printfn "x-compat report: %d finding(s) in %d file(s)%s%s" findings.Length files.Length (if byKind = "" then "" else $" ({byKind})") unchecked
         if unprofiled.Length = 0 then 0 else 2
 
-    [<EntryPoint>]
-    let main rawArgv =
+    let reexecWithGen0Budget (rawArgv : string []) =
+        let reexec = Environment.GetEnvironmentVariable "SPIRAL_GEN0_REEXEC"
+        let longLived = rawArgv |> Array.exists (fun arg -> arg = "--server" || arg = "--server-tcp" || arg = "--batch" || arg = "build-file")
+        if not longLived || not (String.IsNullOrEmpty (Environment.GetEnvironmentVariable "DOTNET_GCgen0size")) || reexec = "0" then None
+        else
+            let hostPath = Environment.ProcessPath
+            let start = Diagnostics.ProcessStartInfo(hostPath, UseShellExecute = false)
+            if Path.GetFileNameWithoutExtension(hostPath).Equals("dotnet", StringComparison.OrdinalIgnoreCase) then
+                start.ArgumentList.Add(Reflection.Assembly.GetEntryAssembly().Location)
+            for arg in rawArgv do start.ArgumentList.Add arg
+            start.Environment.["DOTNET_GCgen0size"] <- "0x4000000"
+            use child = Diagnostics.Process.Start start
+            child.WaitForExit()
+            Some child.ExitCode
+
+    let mainBody rawArgv =
         let defaultTypeFlagsResult = takeDefaultTypeFlags rawArgv
         let argv = match defaultTypeFlagsResult with Ok kept -> kept | Error _ -> rawArgv
         configureHopacFromEnvironment ()
@@ -1338,3 +1365,9 @@ module Program =
         else
             eprintfn "usage: SpiralCompiler [--default-int i8|i16|i32|i64|u8|u16|u32|u64] [--default-float f32|f64] [--backend Fsharp|C|Rust|Delphi|Zig|Wasm|Wgsl|Calyx|Kotlin|Swift|OpenQasm|Ebpf|Lean|Bend|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.zig|.wat|.wgsl|.futil|.kt|.swift|.qasm|.ebpf|.lean|.bend|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --test-blocks INPUT.spi OUTPUT.tsv|- | --source-blocks OUTPUT.tsv|- INPUT.spi [INPUT.spi ...] | --capabilities | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | --server-tcp SOCKET [--stall-seconds N] | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS] | format FILE|DIR ... [--check] [--no-split-literals] | format --stdin --path PATH | format-corpus check|space|convert|flatten|format [--list FILE] [--out DIR] CORPUS.tsv"
             2
+
+    [<EntryPoint>]
+    let main rawArgv =
+        match reexecWithGen0Budget rawArgv with
+        | Some code -> code
+        | None -> mainBody rawArgv

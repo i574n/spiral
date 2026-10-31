@@ -1,5 +1,5 @@
-inl main () : i32 =
-    inl ~a = 5i32
-    inl ~b = 8i32
-    inl ~c = 2i32
-    join math.affine a b c -. 42i32
+:= main () : i32 =
+    := ~a = 5i32
+    := ~b = 8i32
+    := ~c = 2i32
+    ~~ math::affine a b c -. 42i32

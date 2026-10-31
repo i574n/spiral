@@ -8,9 +8,9 @@
   Start with `tmp/AGENTS.md`.
 
 ```powershell
-pwsh tmp/scripts/build.ps1 -Mode single-flight            # builds this directory's spiral_compiler.fs
-pwsh tmp/scripts/test.ps1 -Mode single-flight -Suite all -Native
-pwsh tmp/scripts/build.ps1 -Mode gpt5parallel                    # the gpt5parallel lane
+pwsh scripts/build.ps1 -Mode single-flight            # builds this directory's spiral_compiler.fs
+pwsh scripts/test.ps1 -Mode single-flight -Suite all -Native
+pwsh scripts/build.ps1 -Mode gpt5parallel                    # the gpt5parallel lane
 ```
 
 `build.ps1` in this directory packages `spiral_compiler.fs` with the polyglot builder into `dist/`.

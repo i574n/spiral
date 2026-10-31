@@ -25,10 +25,10 @@ fn spiral_main() -> i32 {
         US0::US0_Number(7i32)
     } else {
         let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("qwe"); } LIT.with(|lit| lit.clone()) };
-        US0::US0_Text(v2.clone())
+        US0::US0_Text(v2)
     };
     let v5: i32 = score_0(v4.clone());
-    let v6: i32 = score_0(v4.clone());
+    let v6: i32 = score_0(v4);
     let v7: i32 = v5.wrapping_add(v6);
     let v8: i32 = v7.wrapping_sub(6i32);
     v8

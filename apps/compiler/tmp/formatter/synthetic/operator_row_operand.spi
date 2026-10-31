@@ -1,0 +1,6 @@
+inl certified_rows () =
+    certificate.CertifiedRow (false, certificate.PackedMoves (exists (certificate.MovesNext (48u32, 57u32, 1i32, certificate.MovesEnd))))
+    ::     certificate.CertifiedRow (false, certificate.PackedMoves (exists (certificate.MovesNext (48u32, 57u32, 2i32, certificate.MovesEnd))))
+    ::     certificate.CertifiedRow (false, certificate.PackedMoves (exists (certificate.MovesNext (47u32, 47u32, 3i32, certificate.MovesEnd))))
+    ::     certificate.CertifiedRow (true, certificate.PackedMoves (exists (certificate.MovesEnd)))
+    :: []

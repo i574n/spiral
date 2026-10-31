@@ -13,12 +13,8 @@ pub fn layers_0(v0: Int) -> Int {
     let v1 = v0 >= 5
     let v4 =
         case v1 {
-            True -> {
-                Us0Done(v0)
-            }
-            False -> {
-                Us0More(v0)
-            }
+            True -> Us0Done(v0)
+            False -> Us0More(v0)
         }
     case v4  {
         Us0Done(v8) -> {

@@ -1,10 +1,10 @@
-open main
+:< main
 
-inl impossible_fact_derived_observation_cross_outcome () : typed_fx_hashed_statement_closed_decision =
-    inl _, recorded_history = typed_fx_hashed_statement_closed_history_values ()
-    match recorded_history with
+:= impossible_fact_derived_observation_cross_outcome () : typed_fx_hashed_statement_closed_decision =
+    := _, recorded_history = typed_fx_hashed_statement_closed_history_values ()
+    ?= recorded_history ?|
     | TypedFxHashedStatementClosedHistoryRecorded (recorded, _) =>
-        inl collision =
+        := collision =
             typed_fx_hashed_statement_top_collision_from_recorded_log
                 recorded
                 (
@@ -17,5 +17,5 @@ inl impossible_fact_derived_observation_cross_outcome () : typed_fx_hashed_state
                 recorded,
                 "the-negative-collision-proof-is-indexed-by-the-recorded-primary-history"))
 
-inl main () =
+:= main () =
     impossible_fact_derived_observation_cross_outcome ()

@@ -710,9 +710,9 @@ func sp_loop_0(_ p0: Int32, _ p1: UH1, _ p2: Int32, _ p3: UInt64, _ p4: Int32) -
             v6 = UH2_InputEmpty()
             var v7: UH2 = UH2_InputEmpty()
             var v8: UInt64 = (0 as UInt64)
-            let spiral_tuple467 = sp_random_bit_input_1(v3, v0, v6)
-            v7 = spiral_tuple467.0
-            v8 = spiral_tuple467.1
+            let spiral_tuple453 = sp_random_bit_input_1(v3, v0, v6)
+            v7 = spiral_tuple453.0
+            v8 = spiral_tuple453.1
             var v9: Int32 = 0
             v9 = 0
             var v10: Bool = false

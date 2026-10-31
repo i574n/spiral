@@ -1,7 +1,7 @@
-open main
+:< main
 
-inl impossible_slot () : antimirov_origin_slot position_shape_empty =
+:= impossible_slot () : antimirov_origin_slot position_shape_empty =
     OriginSlotChar
 
-inl main () =
+:= main () =
     impossible_slot ()

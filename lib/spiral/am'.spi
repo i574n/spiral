@@ -523,7 +523,14 @@ test new_vec_keeps_a_list_built_at_runtime =
 
 /// ### average
 := average \* el {number}. (a : array el) : el =
-    $'!a |> Array.average'
+    run_target \|
+        | Fsharp => \ () => $'!a |> Array.average' : el
+        | _ => \ () => arraym.fold (+) 0 a / conv (length a)
+
+///> fsharp
+///> rust
+test average_divides_the_sum_by_the_count =
+    ;[ 1.0f64; 2.0f64; 4.5f64 ] |> average |> _assert_eq 2.5f64
 
 /// ### distinct
 := distinct \* el. (a : array el) : array el =
@@ -568,9 +575,15 @@ test new_vec_keeps_a_list_built_at_runtime =
 := to_list_base' \* t. (items : array_base t) : listm'.list' t =
     backend_switch {
         Gleam = \ () => $'!items |> spiral_array_to_list' : listm'.list' t
-        Lua = \ () => items |> convert.to : listm'.list' t
+        Lua = \ () =>
+            := len = $'##(!items)' : i32
+            := r : array t = arraym.init len \ i =>
+                := at = i + 1i32
+                $'!items[!at]' : t
+            := (array r) = r
+            $'!r ' : listm'.list' t
         Fsharp = \ () => $'!items |> Array.toList' : listm'.list' t
-        Python = \ () => items |> convert.to : listm'.list' t
+        Python = \ () => $'list(!items)' : listm'.list' t
         Rust = \ () => $'Rc::new((!items).borrow().clone())' : listm'.list' t
         TypeScript = \ () => $'[...!items]' : listm'.list' t
         Zig = \ () => $'!items ' : listm'.list' t
@@ -589,6 +602,16 @@ test to_list =
     |> to_list'
     |> listm'.unbox
     |> _assert_eq [ -3; 6 ]
+
+///> lua
+///> python
+///> rust
+///> typescript
+test to_list_snapshots_the_array =
+    := source = ;[ 1i32; 2i32; 3i32 ]
+    := snapshot = to_list' source
+    set source 0i32 9i32
+    snapshot |> listm'.unbox |> _assert_eq [ 1i32; 2i32; 3i32 ]
 
 /// ### vec_collect
 := vec_collect fn vec =

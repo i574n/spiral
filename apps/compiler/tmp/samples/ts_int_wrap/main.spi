@@ -1,36 +1,36 @@
-inl main () : i32 =
-    inl ~c = 250u8
-    inl ~d = 10u8
-    inl ~e = 4294967295u32
-    inl ~g = 18446744073709551615u64
-    inl ~p = 127i8
-    inl ~q = 1i8
-    inl ~h = 7i32
-    inl ~k = 2i32
-    inl ~f = 9223372036854775807i64
-    inl nh = 0i32 -. h
-    inl nf = 0i64 -. f
-    if (c +. d) =. 4u8 then
-        if (e +. 1u32) =. 0u32 then
-            if (e *. e) =. 1u32 then
-                if (g +. 1u64) =. 0u64 then
-                    if (g *. g) =. 1u64 then
-                        if (g /. 3u64) =. 6148914691236517205u64 then
-                            if (p +. q) < 0i8 then
-                                if (nh /. k) =. (0i32 -. 3i32) then
-                                    if (nh %. k) =. (0i32 -. 1i32) then
-                                        if (nf %. 10i64) =. (0i64 -. 7i64) then
-                                            if !!!!ShiftRight(e, 28i32) =. 15u32 then
-                                                if !!!!ShiftRight(nh, 1i32) =. (0i32 -. 4i32) then 0i32
-                                                else 12i32
-                                            else 11i32
-                                        else 10i32
-                                    else 9i32
-                                else 8i32
-                            else 7i32
-                        else 6i32
-                    else 5i32
-                else 4i32
-            else 3i32
-        else 2i32
-    else 1i32
+:= main () : i32 =
+    := ~c = 250u8
+    := ~d = 10u8
+    := ~e = 4294967295u32
+    := ~g = 18446744073709551615u64
+    := ~p = 127i8
+    := ~q = 1i8
+    := ~h = 7i32
+    := ~k = 2i32
+    := ~f = 9223372036854775807i64
+    := nh = 0i32 -. h
+    := nf = 0i64 -. f
+    ? (c +. d) =. 4u8 ?>
+        ? (e +. 1u32) =. 0u32 ?>
+            ? (e *. e) =. 1u32 ?>
+                ? (g +. 1u64) =. 0u64 ?>
+                    ? (g *. g) =. 1u64 ?>
+                        ? (g /. 3u64) =. 6148914691236517205u64 ?>
+                            ? (p +. q) < 0i8 ?>
+                                ? (nh /. k) =. (0i32 -. 3i32) ?>
+                                    ? (nh %. k) =. (0i32 -. 1i32) ?>
+                                        ? (nf %. 10i64) =. (0i64 -. 7i64) ?>
+                                            ? !!!!ShiftRight(e, 28i32) =. 15u32 ?>
+                                                ? !!!!ShiftRight(nh, 1i32) =. (0i32 -. 4i32) ?> 0i32
+                                                |: 12i32
+                                            |: 11i32
+                                        |: 10i32
+                                    |: 9i32
+                                |: 8i32
+                            |: 7i32
+                        |: 6i32
+                    |: 5i32
+                |: 4i32
+            |: 3i32
+        |: 2i32
+    |: 1i32

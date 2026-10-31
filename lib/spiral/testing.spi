@@ -239,19 +239,23 @@ test assert_fn =
                             | _ => $'!a.iter().any(|x| *x == !b)' : bool
                     found
                 | Zig => \ () =>
-                    := found : bool =
+                    ? (~> ?: u ?| string => !+ | _ => !-)
+                    ?>
                         ~>
-                            ?: u ?|
-                            | string =>
-                                ?: t ?|
-                                | char => $'(std.mem.indexOfScalar(u8, !a, !b) \!= null)' : bool
-                                | _ => $'(std.mem.indexOf(u8, !a, !b) \!= null)' : bool
-                            | _ =>
-                                ?: t ?|
-                                | string =>
-                                    $'(for (!a) |x| { if (std.mem.eql(u8, x, !b)) break true; } else false)' : bool
-                                | _ => $'(for (!a) |x| { if (x == !b) break true; } else false)' : bool
-                    found
+                            ?: t ?|
+                            | char => $'(std.mem.indexOfScalar(u8, !a, !b) \!= null)' : bool
+                            | _ => $'(std.mem.indexOf(u8, !a, !b) \!= null)' : bool
+                    |:
+                        := len : i32 = $'\@as(i32, \@intCast(!a.len))'
+                        := same (item : t) : bool =
+                            ? (~> ?: t ?| string => !+ | _ => !-)
+                            ?> $'std.mem.eql(u8, !item, !b)' : bool
+                            |: $'(!item == !b)' : bool
+                        :~ ^ scan (i : i32) : bool =
+                            ? i >= len ?> false
+                            |? same ($'!a[\@intCast(!i)]' : t) ?> true
+                            |: scan (i + 1i32)
+                        scan 0i32
                 | _ => \ () =>
                     a
                     |> $'List.ofSeq'

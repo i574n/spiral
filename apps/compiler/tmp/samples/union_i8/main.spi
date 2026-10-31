@@ -1,11 +1,11 @@
-union slot =
+:| slot =
     | Missing
     | Held : i8
 
-inl main () : i32 =
-    inl ~n = 100i8
-    inl ~flag = true
-    inl box = if flag then Held n else Missing
-    match box with
-    | Held value => if value =. 100i8 then 0i32 else 1i32
+:= main () : i32 =
+    := ~n = 100i8
+    := ~flag = !+
+    := box = ? flag ?> Held n |: Missing
+    ?= box ?|
+    | Held value => ? value =. 100i8 ?> 0i32 |: 1i32
     | Missing => 1i32

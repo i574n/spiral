@@ -38,9 +38,7 @@ pub fn main() {
                 let v22 = v0 <= v0
                 v22
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     let v26 =
         case v23 {
@@ -49,9 +47,7 @@ pub fn main() {
                 let v25 = v24 == False
                 v25
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v26 {
         True -> {
@@ -62,9 +58,7 @@ pub fn main() {
                         let v28 = v11 == v0
                         v28
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v31 =
                 case v29 {
@@ -72,9 +66,7 @@ pub fn main() {
                         let v30 = v12 == v2
                         v30
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v33 =
                 case v31 {
@@ -82,9 +74,7 @@ pub fn main() {
                         let v32 = v13 == v1
                         v32
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             case v33 {
                 True -> {
@@ -95,9 +85,7 @@ pub fn main() {
                                 let v35 = v15 == 2
                                 v35
                             }
-                            False -> {
-                                False
-                            }
+                            False -> False
                         }
                     case v36 {
                         True -> {
@@ -108,9 +96,7 @@ pub fn main() {
                                         let v38 = v17 == 2147483647
                                         v38
                                     }
-                                    False -> {
-                                        False
-                                    }
+                                    False -> False
                                 }
                             let v41 =
                                 case v39 {
@@ -118,9 +104,7 @@ pub fn main() {
                                         let v40 = v18 == 2
                                         v40
                                     }
-                                    False -> {
-                                        False
-                                    }
+                                    False -> False
                                 }
                             case v41 {
                                 True -> {
@@ -131,36 +115,22 @@ pub fn main() {
                                                 let v43 = v20 == 1
                                                 v43
                                             }
-                                            False -> {
-                                                False
-                                            }
+                                            False -> False
                                         }
                                     case v44 {
-                                        True -> {
-                                            0
-                                        }
-                                        False -> {
-                                            5
-                                        }
+                                        True -> 0
+                                        False -> 5
                                     }
                                 }
-                                False -> {
-                                    4
-                                }
+                                False -> 4
                             }
                         }
-                        False -> {
-                            3
-                        }
+                        False -> 3
                     }
                 }
-                False -> {
-                    2
-                }
+                False -> 2
             }
         }
-        False -> {
-            1
-        }
+        False -> 1
     }
 }

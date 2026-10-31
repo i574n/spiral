@@ -1,22 +1,22 @@
-nominal u32_array = array_base u32
+:! u32_array = array_base u32
 
-inl create (n : i32) : u32_array = u32_array !!!!ArrayCreate(`u32, n)
-inl get (array : u32_array) (i : i32) : u32 =
-    match array with
+:= create (n : i32) : u32_array = u32_array !!!!ArrayCreate(`u32, n)
+:= get (array : u32_array) (i : i32) : u32 =
+    ?= array ?|
     | u32_array values => !!!!ArrayIndex(values, i)
-inl set (array : u32_array) (i : i32) (value : u32) : () =
-    match array with
+:= set (array : u32_array) (i : i32) (value : u32) : () =
+    ?= array ?|
     | u32_array values => !!!!ArrayIndexSet(values, i, value)
-inl len (array : u32_array) : i32 =
-    match array with
+:= len (array : u32_array) : i32 =
+    ?= array ?|
     | u32_array values => !!!!ArrayLength(`i32, values)
 
-inl main () : i32 =
-    inl ~n = 3i32
-    inl a = create n
+:= main () : i32 =
+    := ~n = 3i32
+    := a = create n
     set a 0i32 4000000000u32
     set a 1i32 1u32
-    inl x = get a 0i32
-    inl y = get a 1i32
-    inl s = x +. y
-    if len a =. n && s =. 4000000001u32 then 0i32 else 1i32
+    := x = get a 0i32
+    := y = get a 1i32
+    := s = x +. y
+    ? len a =. n && s =. 4000000001u32 ?> 0i32 |: 1i32

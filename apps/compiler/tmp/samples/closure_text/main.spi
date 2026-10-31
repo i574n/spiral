@@ -1,6 +1,6 @@
-inl main () : i32 =
-    inl ~word = "hi"
-    inl f (z : i32) : string =
-        if z =. 0i32 then "no" else word
-    inl ~g = f
-    if !!!!EQ(g 1i32, "hi") then 0i32 else 1i32
+:= main () : i32 =
+    := ~word = "hi"
+    := f (z : i32) : string =
+        ? z =. 0i32 ?> "no" |: word
+    := ~g = f
+    ? !!!!EQ(g 1i32, "hi") ?> 0i32 |: 1i32

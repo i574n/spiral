@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_reapply
+:= impossible_reapply
     (applied : typed_fx_statement_command typed_fx_statement_command_applied)
     : typed_fx_statement_command_transition
         typed_fx_statement_command_fresh
@@ -9,4 +9,4 @@ inl impossible_reapply
         applied,
         "an-applied-command-cannot-enter-the-only-fresh-to-applied-transition")
 
-inl main () = impossible_reapply
+:= main () = impossible_reapply

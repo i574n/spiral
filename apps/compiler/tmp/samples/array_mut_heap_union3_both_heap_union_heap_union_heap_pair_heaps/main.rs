@@ -93,41 +93,41 @@ fn score_0(mut v0: US1) -> i32 {
 fn spiral_main() -> i32 {
     let v0: i32 = 7i32;
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1.clone() });
+    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1 });
     let v3: i32 = 4i32;
     let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
-    let v5: Rc<Heap0> = Rc::new(Heap0 { l0: v3, l1: v4.clone() });
-    let v6: Rc<Heap1> = Rc::new(Heap1 { l0: v2.clone(), l1: v5.clone() });
+    let v5: Rc<Heap0> = Rc::new(Heap0 { l0: v3, l1: v4 });
+    let v6: Rc<Heap1> = Rc::new(Heap1 { l0: v2, l1: v5 });
     let v7: i32 = 2i32;
-    let v8: Rc<Heap2> = Rc::new(Heap2 { l0: v6.clone(), l1: v7 });
+    let v8: Rc<Heap2> = Rc::new(Heap2 { l0: v6, l1: v7 });
     let v9: bool = true;
     let v12: US0 = if v9 {
-        US0::US0_Held(v8.clone())
+        US0::US0_Held(v8)
     } else {
         US0::US0_None
     };
-    let v13: Rc<Heap3> = Rc::new(Heap3 { l0: v12.clone() });
+    let v13: Rc<Heap3> = Rc::new(Heap3 { l0: v12 });
     let v14: bool = true;
     let v17: US1 = if v14 {
-        US1::US1_Box(v13.clone())
+        US1::US1_Box(v13)
     } else {
         US1::US1_Mark(1i32)
     };
     let v18: i32 = 3i32;
-    let v19: Rc<Heap4> = Rc::new(Heap4 { l0: v17.clone() });
+    let v19: Rc<Heap4> = Rc::new(Heap4 { l0: v17 });
     let v20: US1 = US1::US1_Mark(v18);
-    let v21: Rc<Heap4> = Rc::new(Heap4 { l0: v20.clone() });
-    let v22: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v19.clone() }));
+    let v21: Rc<Heap4> = Rc::new(Heap4 { l0: v20 });
+    let v22: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v19 }));
     let v23: Rc<RefCell<Vec<Rc<RefCell<Mut0>>>>> = Rc::new(RefCell::new(vec![<Rc<RefCell<Mut0>>>::default(); 1i32 as usize]));
-    v23.clone().borrow_mut()[0i32 as usize] = v22.clone();
-    let mut v24: Rc<RefCell<Mut0>> = v23.clone().borrow()[0i32 as usize].clone();
+    v23.clone().borrow_mut()[0i32 as usize] = v22;
+    let mut v24: Rc<RefCell<Mut0>> = v23.borrow()[0i32 as usize].clone();
     let v25: Rc<Heap4> = v24.borrow().l0.clone();
     let v26: US1 = v25.l0.clone();
-    let v27: i32 = score_0(v26.clone());
-    v24.borrow_mut().l0 = v21.clone();
+    let v27: i32 = score_0(v26);
+    v24.borrow_mut().l0 = v21;
     let v28: Rc<Heap4> = v24.borrow().l0.clone();
     let v29: US1 = v28.l0.clone();
-    let v30: i32 = score_0(v29.clone());
+    let v30: i32 = score_0(v29);
     let v31: bool = v27 == 0i32;
     let v33: bool = if v31 {
         let v32: bool = v30 == 1i32;

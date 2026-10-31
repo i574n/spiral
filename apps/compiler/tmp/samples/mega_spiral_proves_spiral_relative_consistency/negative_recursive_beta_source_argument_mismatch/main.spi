@@ -1,11 +1,11 @@
-open main
+:< main
 
-inl impossible_recursive_beta_source_argument_mismatch
+:= impossible_recursive_beta_source_argument_mismatch
     ()
     : exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty
         (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type)
     =
-    inl open_body =
+    := open_body =
         exact_linear_indexed_closed_recursive_beta_derivation_open_body (
             ExactLinearIndexedClosedRecursiveBetaDerivationTensorLeftUnit (
                 ExactLinearIndexedClosedRecursiveBetaDerivationBound (
@@ -19,7 +19,7 @@ inl impossible_recursive_beta_source_argument_mismatch
             )
         )
     ExactLinearIndexedApplication (
-        exists (
+        \? (
             ExactLinearIndexedLambda (
                 open_body,
                 "the-negative-source-lambda-domain-is-Bool"
@@ -34,4 +34,4 @@ inl impossible_recursive_beta_source_argument_mismatch
         )
     )
 
-inl main () = impossible_recursive_beta_source_argument_mismatch ()
+:= main () = impossible_recursive_beta_source_argument_mismatch ()

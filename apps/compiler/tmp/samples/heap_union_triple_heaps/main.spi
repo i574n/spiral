@@ -1,36 +1,36 @@
-union slot =
+:| slot =
     | None
     | Held : (heap { value : i32 * string } * heap { value : i32 * string } * heap { value : i32 * string })
 
-let score x : i32 =
-    match x with
+:~ score x : i32 =
+    ?= x ?|
     | None => 1i32
     | Held (left, mid, right) =>
-        inl left_opened = !!!!LayoutIndex(left)
-        inl ~(a, b) = left_opened.value
-        inl mid_opened = !!!!LayoutIndex(mid)
-        inl ~(c, d) = mid_opened.value
-        inl right_opened = !!!!LayoutIndex(right)
-        inl ~(e, h) = right_opened.value
-        if a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && e =. 9i32 && !!!!EQ(h, "ok")
-        then 0i32
-        else 1i32
+        := left_opened = !!!!LayoutIndex(left)
+        := ~(a, b) = left_opened::value
+        := mid_opened = !!!!LayoutIndex(mid)
+        := ~(c, d) = mid_opened::value
+        := right_opened = !!!!LayoutIndex(right)
+        := ~(e, h) = right_opened::value
+        ? a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && e =. 9i32 && !!!!EQ(h, "ok")
+        ?> 0i32
+        |: 1i32
 
-inl main () : i32 =
-    inl ~n = 7i32
-    inl ~word = "hi"
-    inl left_pair = n, word
-    inl left_heap = !!!!LayoutToHeap({ value = left_pair })
-    inl ~m = 4i32
-    inl ~other = "yo"
-    inl mid_pair = m, other
-    inl mid_heap = !!!!LayoutToHeap({ value = mid_pair })
-    inl ~k = 9i32
-    inl ~tail = "ok"
-    inl right_pair = k, tail
-    inl right_heap = !!!!LayoutToHeap({ value = right_pair })
-    inl ~flag = true
-    inl held = if flag then Held (left_heap, mid_heap, right_heap) else None
-    inl box = !!!!LayoutToHeap({ value = held })
-    inl opened = !!!!LayoutIndex(box)
-    score opened.value
+:= main () : i32 =
+    := ~n = 7i32
+    := ~word = "hi"
+    := left_pair = n, word
+    := left_heap = !!!!LayoutToHeap({ value = left_pair })
+    := ~m = 4i32
+    := ~other = "yo"
+    := mid_pair = m, other
+    := mid_heap = !!!!LayoutToHeap({ value = mid_pair })
+    := ~k = 9i32
+    := ~tail = "ok"
+    := right_pair = k, tail
+    := right_heap = !!!!LayoutToHeap({ value = right_pair })
+    := ~flag = !+
+    := held = ? flag ?> Held (left_heap, mid_heap, right_heap) |: None
+    := box = !!!!LayoutToHeap({ value = held })
+    := opened = !!!!LayoutIndex(box)
+    score opened::value

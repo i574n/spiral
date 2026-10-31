@@ -15,9 +15,7 @@ pub type Us1 {
 }
 pub fn score_inner_1(v0: Us0) -> Int {
     case v0  {
-        Us0A(v1) -> {
-            v1
-        }
+        Us0A(v1) -> v1
         Us0B(v2) -> {
             let v3 = spiral_wrap_signed(0 - v2, 32)
             v3
@@ -26,12 +24,8 @@ pub fn score_inner_1(v0: Us0) -> Int {
 }
 pub fn score_0(v0: Us1) -> Int {
     case v0  {
-        Us1Other(v3) -> {
-            v3
-        }
-        Us1Wrap(v1) -> {
-            score_inner_1(v1)
-        }
+        Us1Other(v3) -> v3
+        Us1Wrap(v1) -> score_inner_1(v1)
     }
 }
 pub fn main() {
@@ -42,15 +36,11 @@ pub fn main() {
                 let v1 = Us0A(7)
                 Us1Wrap(v1)
             }
-            False -> {
-                Us1Other(1)
-            }
+            False -> Us1Other(1)
         }
     let v8 =
         case v0 {
-            True -> {
-                Us1Other(4)
-            }
+            True -> Us1Other(4)
             False -> {
                 let v6 = Us0B(2)
                 Us1Wrap(v6)
@@ -65,16 +55,10 @@ pub fn main() {
                 let v12 = v11 == 4
                 v12
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v13 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

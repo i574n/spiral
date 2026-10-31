@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 $notebookStarted = Get-Date
-. (Join-Path $PSScriptRoot "../../compiler/tmp/scripts/heavy.ps1")
+. (Join-Path $PSScriptRoot "../../compiler/scripts/heavy.ps1")
 function Write-NotebookLedger([string] $Route, [int] $Code) {
     $notebook = $fixed[[Math]::Max(0, $fixed.IndexOf('--path') + 1)]
     $label = "kino notebook $([IO.Path]::GetFileName($notebook)) ($Route)"
@@ -41,7 +41,7 @@ foreach ($item in $args) {
         $fixed.Add($arg)
     }
 }
-function Invoke-WarmNotebook([int] $Port, [string[]] $Arguments) {
+function Invoke-WarmNotebook([int] $Port, [string[]] $Arguments, [string] $Dll) {
     $client = [System.Net.Sockets.TcpClient]::new()
     try {
         if (-not $client.ConnectAsync('127.0.0.1', $Port).Wait(300)) { return $null }
@@ -50,7 +50,7 @@ function Invoke-WarmNotebook([int] $Port, [string[]] $Arguments) {
         $writer = [System.IO.StreamWriter]::new($stream, $utf8)
         $writer.NewLine = "`n"
         $reader = [System.IO.StreamReader]::new($stream, $utf8)
-        $request = [ordered]@{ args = $Arguments; root = (Split-Path $PSScriptRoot -Parent) } | ConvertTo-Json -Compress -Depth 3
+        $request = [ordered]@{ args = $Arguments; root = (Split-Path $PSScriptRoot -Parent); dll = $Dll } | ConvertTo-Json -Compress -Depth 3
         $writer.WriteLine("notebook`t$request")
         $writer.Flush()
         while ($null -ne ($line = $reader.ReadLine())) {
@@ -69,8 +69,19 @@ function Invoke-WarmNotebook([int] $Port, [string[]] $Arguments) {
 }
 if ($env:SPIRAL_CELLS_WARM -ne '0') {
     $warmArgs = [string[]] @($fixed) + $(if ($env:SPIRAL_CELLS_MEMO -eq '0') { @('--no-memo') } else { @() })
-    $warmPort = if ($env:SPIRAL_CELLS_COMPILER_PORT) { [int] $env:SPIRAL_CELLS_COMPILER_PORT } else { 13905 }
-    $warmExit = Invoke-WarmNotebook $warmPort $warmArgs
+    $warmDll = if ($env:SPIRAL_COMPILER_DLL) { $env:SPIRAL_COMPILER_DLL } else {
+        & { . (Join-Path $PSScriptRoot '../../compiler/scripts/env.ps1'); Get-SpiralCompilerDll 'single-flight' }
+    }
+    $warmPort = if ($env:SPIRAL_CELLS_COMPILER_PORT) { [int] $env:SPIRAL_CELLS_COMPILER_PORT } else {
+        $rootText = ([IO.Path]::GetFullPath((Split-Path $PSScriptRoot -Parent))).Replace('\', '/').TrimEnd('/').ToLowerInvariant()
+        $rootKey = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($rootText))).Substring(0, 16)
+        $dllItem = Get-Item -LiteralPath $warmDll -ErrorAction Ignore
+        $dllTag = if ($dllItem) { "$([DateTimeOffset]::new($dllItem.LastWriteTimeUtc).ToUnixTimeSeconds())-$($dllItem.Length)" } else { 'none' }
+        $portFile = Join-Path ($env:LOCALAPPDATA ?? (Join-Path $HOME '.cache')) "spiral-bin/cells-port-$rootKey-$dllTag.txt"
+        $saved = if (Test-Path -LiteralPath $portFile) { (Get-Content -LiteralPath $portFile -Raw).Trim() }
+        if ($saved -match '^\d+$') { [int] $saved } else { 13905 }
+    }
+    $warmExit = Invoke-WarmNotebook $warmPort $warmArgs $warmDll
     if ($null -ne $warmExit) { Write-NotebookLedger 'warm' $warmExit; exit $warmExit }
 }
 function Resolve-RealPath([string] $Path) {
@@ -87,7 +98,7 @@ Set-Location (Resolve-RealPath (Join-Path $PSScriptRoot ".."))
 $mix = Join-Path $elixir "mix.bat"
 if (-not (Test-Path $mix)) { $mix = "mix" }
 
-$bundleScripts = Join-Path (Get-Location) "../compiler/tmp/scripts"
+$bundleScripts = Join-Path (Get-Location) "../compiler/scripts"
 $dotnetRoot = $env:DOTNET_ROOT
 $toolchain = & {
     . (Join-Path $bundleScripts "env.ps1")

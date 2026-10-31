@@ -1,5 +1,5 @@
-inl main () : i32 =
-    inl ~flag = true
-    inl box = !!!!LayoutToHeap({ value = flag })
-    inl opened = !!!!LayoutIndex(box)
-    if opened.value then 0i32 else 1i32
+:= main () : i32 =
+    := ~flag = !+
+    := box = !!!!LayoutToHeap({ value = flag })
+    := opened = !!!!LayoutIndex(box)
+    ? opened::value ?> 0i32 |: 1i32

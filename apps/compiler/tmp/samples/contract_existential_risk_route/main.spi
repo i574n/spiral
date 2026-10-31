@@ -1,35 +1,35 @@
-nominal low = ()
-nominal high = ()
+:! low = ()
+:! high = ()
 
-union risk band =
+:| risk band =
     | LowRisk :: risk low
     | HighRisk :: risk high
 
-union authorization band =
+:| authorization band =
     | Automatic :: authorization low
     | ManualReview :: authorization high
 
-union packed_assessment =
+:| packed_assessment =
     | PackAssessment ::
-        (exists band. risk band * authorization band)
+        (\? band. risk band * authorization band)
         -> packed_assessment
 
-inl inspect
-    (visitor : forall band. risk band -> authorization band -> string)
+:= inspect
+    (visitor : \* band. risk band -> authorization band -> string)
     (assessment : packed_assessment)
     : string =
-    match assessment with
+    ?= assessment ?|
     | PackAssessment packed =>
-        inl exists band. risk, authorization = packed
+        := \? band. risk, authorization = packed
         visitor risk authorization
 
-inl describe forall band.
+:= describe \* band.
     (risk : risk band)
     (authorization : authorization band)
     : string =
-    match risk, authorization with
+    ?= risk, authorization ?|
     | LowRisk, Automatic => "selective-route"
     | HighRisk, ManualReview => "manual-route"
 
-inl main () : string =
-    inspect `$describe (PackAssessment (exists (LowRisk, Automatic)))
+:= main () : string =
+    inspect `$describe (PackAssessment (\? (LowRisk, Automatic)))

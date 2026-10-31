@@ -406,9 +406,9 @@ fun spiral_main(): Int {
     v2 = 0
     var v3: Int = 0
     var v4: Int = 0
-    val spiral_tuple167 = sp_loop_0(v0, v1, v2)
-    v3 = spiral_tuple167.v0
-    v4 = spiral_tuple167.v1
+    val spiral_tuple158 = sp_loop_0(v0, v1, v2)
+    v3 = spiral_tuple158.v0
+    v4 = spiral_tuple158.v1
     var v5: Int = 0
     v5 = 0
     val v6: Int = 0
@@ -416,9 +416,9 @@ fun spiral_main(): Int {
     v7 = 0
     var v8: Int = 0
     var v9: Int = 0
-    val spiral_tuple415 = sp_loop_3(v5, v6, v7)
-    v8 = spiral_tuple415.v0
-    v9 = spiral_tuple415.v1
+    val spiral_tuple395 = sp_loop_3(v5, v6, v7)
+    v8 = spiral_tuple395.v0
+    v9 = spiral_tuple395.v1
     var v10: Int = 0
     v10 = 5
     var v11: Int = 0
@@ -427,9 +427,9 @@ fun spiral_main(): Int {
     v12 = 0
     var v13: Int = 0
     var v14: Int = 0
-    val spiral_tuple671 = sp_loop_0(v10, v11, v12)
-    v13 = spiral_tuple671.v0
-    v14 = spiral_tuple671.v1
+    val spiral_tuple640 = sp_loop_0(v10, v11, v12)
+    v13 = spiral_tuple640.v0
+    v14 = spiral_tuple640.v1
     var v15: Boolean = false
     v15 = (v3 == 5)
     if (v15) {

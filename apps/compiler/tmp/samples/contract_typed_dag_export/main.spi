@@ -1,49 +1,49 @@
-nominal parallel = ()
-nominal serial = ()
+:! parallel = ()
+:! serial = ()
 
-union task effect result =
+:| task effect result =
     | ValidateIssuer :: task parallel string
     | ValidateTotal :: task parallel i32
     | QueryStatus :: task parallel string
     | Publish :: string -> task serial string
 
-union rec dag result =
-    | ParallelNode :: forall result. task parallel result -> dag result
-    | SerialNode :: forall result. task serial result -> dag result
-    | Zip :: forall a b. dag a * dag b -> dag (a * b)
-    | Map :: forall result.
-        (exists input. (input -> result) * dag input)
+:| ^ dag result =
+    | ParallelNode :: \* result. task parallel result -> dag result
+    | SerialNode :: \* result. task serial result -> dag result
+    | Zip :: \* a b. dag a * dag b -> dag (a * b)
+    | Map :: \* result.
+        (\? input. (input -> result) * dag input)
         -> dag result
-    | Then :: forall result.
-        (exists input. dag input * (input -> dag result))
+    | Then :: \* result.
+        (\? input. dag input * (input -> dag result))
         -> dag result
 
-inl run_task forall effect result. (task : task effect result) : result =
-    match task with
+:= run_task \* effect result. (task : task effect result) : result =
+    ?= task ?|
     | ValidateIssuer => "issuer-ok"
     | ValidateTotal => 4200
     | QueryStatus => "committed"
     | Publish message => message
 
-inl rec run forall result. (program : dag result) : result =
-    match program with
+:= ^ run \* result. (program : dag result) : result =
+    ?= program ?|
     | ParallelNode task => run_task task
     | SerialNode task => run_task task
     | Zip (left, right) => run left, run right
     | Map packed =>
-        inl exists input. mapping, source = packed
+        := \? input. mapping, source = packed
         mapping (run source)
     | Then packed =>
-        inl exists input. source, next = packed
+        := \? input. source, next = packed
         run (next (run source))
 
-inl summarize (data : (string * i32) * string) : string =
-    inl (issuer, total), status = data
+:= summarize (data : (string * i32) * string) : string =
+    := (issuer, total), status = data
     "typed-dag"
 
-inl plan () : dag string =
-    Then (exists (
-        Map (exists (
+:= plan () : dag string =
+    Then (\? (
+        Map (\? (
             summarize,
             Zip (
                 Zip (
@@ -53,8 +53,8 @@ inl plan () : dag string =
                 ParallelNode QueryStatus
             )
         )),
-        fun summary => SerialNode (Publish summary)
+        \ summary => SerialNode (Publish summary)
     ))
 
-inl main () : string =
+:= main () : string =
     run (plan ())

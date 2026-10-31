@@ -7,12 +7,8 @@ pub fn f_c0(capt: #(Int, String)) -> fn(Int) -> Us0 {
         let #(v0, v1) = capt
         let v3 = v2 == 0
         case v3 {
-            True -> {
-                Us0One(0)
-            }
-            False -> {
-                Us0Both(v0, v1)
-            }
+            True -> Us0One(0)
+            False -> Us0Both(v0, v1)
         }
     }
 }
@@ -30,21 +26,13 @@ pub fn main() {
                         let v8 = v6 == "hi"
                         v8
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             case v9 {
-                True -> {
-                    0
-                }
-                False -> {
-                    1
-                }
+                True -> 0
+                False -> 1
             }
         }
-        Us0One(v4) -> {
-            1
-        }
+        Us0One(v4) -> 1
     }
 }

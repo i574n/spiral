@@ -1,25 +1,25 @@
-inl rec spin (k : i32) : i32 =
-    if k = 0i32 then 0i32
-    else spin (k - 1i32)
+:= ^ spin (k : i32) : i32 =
+    ? k = 0i32 ?> 0i32
+    |: spin (k - 1i32)
 
-let leaf_c () : i32 =
+:~ leaf_c () : i32 =
     global "// c1"
     0i32
 
-let slow_a () : i32 =
+:~ slow_a () : i32 =
     global "// a1"
-    inl _ = spin 2000i32
-    inl x = leaf_c ()
+    := _ = spin 2000i32
+    := x = leaf_c ()
     global "// a2"
     x
 
-let fast_b () : i32 =
+:~ fast_b () : i32 =
     global "// b1"
     0i32
 
-inl main () : i32 =
+:= main () : i32 =
     global "// m1"
-    inl a = slow_a ()
-    inl b = fast_b ()
+    := a = slow_a ()
+    := b = fast_b ()
     global "// m2"
     a + b

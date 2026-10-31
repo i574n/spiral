@@ -1,15 +1,15 @@
-inl main () : i32 =
-    inl ~n = 3i32
-    inl ~word = "no"
-    inl pair = n, word
-    inl cell : mut { value : i32 * string } = !!!!LayoutToHeapMutable({ value = pair })
-    inl outer = !!!!LayoutToHeap({ value = cell })
-    inl opened = !!!!LayoutIndex(outer)
-    inl held : mut { value : i32 * string } = opened.value
-    inl ~m = 7i32
-    inl ~next = "hi"
-    inl replaced = m, next
+:= main () : i32 =
+    := ~n = 3i32
+    := ~word = "no"
+    := pair = n, word
+    := cell : mut { value : i32 * string } = !!!!LayoutToHeapMutable({ value = pair })
+    := outer = !!!!LayoutToHeap({ value = cell })
+    := opened = !!!!LayoutIndex(outer)
+    := held : mut { value : i32 * string } = opened::value
+    := ~m = 7i32
+    := ~next = "hi"
+    := replaced = m, next
     held <- { value = replaced }
-    inl cell_opened = !!!!LayoutIndex(held)
-    inl ~(left, right) = cell_opened.value
-    if left =. 7i32 && !!!!EQ(right, "hi") then 0i32 else 1i32
+    := cell_opened = !!!!LayoutIndex(held)
+    := ~(left, right) = cell_opened::value
+    ? left =. 7i32 && !!!!EQ(right, "hi") ?> 0i32 |: 1i32

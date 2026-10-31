@@ -14,18 +14,14 @@ pub fn method0(v0: Int, v1: Int) -> Bool {
             let v5 = spiral_wrap_signed(v0 + v4, 32)
             let v6 = v5 >= 9
             case v6 {
-                True -> {
-                    True
-                }
+                True -> True
                 False -> {
                     let v7 = v1 == 0
                     v7
                 }
             }
         }
-        False -> {
-            False
-        }
+        False -> False
     }
 }
 pub fn main() {
@@ -33,11 +29,7 @@ pub fn main() {
     let v1 = 3
     let v2 = method0(v0, v1)
     case v2 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

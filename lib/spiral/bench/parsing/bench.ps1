@@ -52,7 +52,7 @@ function Invoke-BundleCompiler([string] $backend, [string] $in, [string] $out) {
     $dotnetRoot = $env:DOTNET_ROOT
     try { $spiral = Ensure-SpiralCompiler | Select-Object -Last 1 } finally { $env:DOTNET_ROOT = $dotnetRoot }
     if (!$env:SPIRAL_COMPILER_PACKAGE_DIR) {
-        $env:SPIRAL_COMPILER_PACKAGE_DIR = & { . (Join-Path $spiral.Bundle 'scripts/env.ps1'); Get-SpiralPackageDir }
+        $env:SPIRAL_COMPILER_PACKAGE_DIR = & { . (Join-Path $spiral.Bundle '../scripts/env.ps1'); Get-SpiralPackageDir }
     }
     Push-Location (Split-Path $in)
     try { & $spiral.Dotnet $spiral.Compiler --backend $backend (Split-Path $in -Leaf) $out 2>&1 } finally { Pop-Location }
@@ -169,7 +169,7 @@ $rows | Where-Object { $_.Backend -eq 'Fsharp' -and $_.PSObject.Properties['fpar
 $rows = $rows | ForEach-Object {
     $ref = $fsRef[$_.Case]
     if ($ref) {
-        foreach ($impl in 'pure', 'runtime') {
+        foreach ($impl in 'pure', 'process') {
             if ($_.PSObject.Properties["$($impl)_ns"]) { $_ | Add-Member "$($impl)_vs_fparsec" ([math]::Round($_."$($impl)_ns" / $ref, 2)) }
         }
     }
@@ -182,7 +182,7 @@ $results = foreach ($b in $outputs.Keys) {
     $outputs[$b] | Where-Object { $_ -like "RESULT`t*" } | ForEach-Object { $f = $_ -split "`t", 5; [pscustomobject]@{ Backend = $b; Impl = $f[1]; Case = $f[2]; Args = $f[4] } }
 }
 $results | Export-Csv -Delimiter "`t" -NoTypeInformation (Join-Path $root 'results.tsv')
-Write-Host 'cases where implementations disagree (pure vs fparsec are the same grammar; runtime has extra \" delimiters):'
+Write-Host 'cases where implementations disagree (pure vs fparsec are the same grammar; process has extra \" delimiters):'
 foreach ($g in $results | Group-Object Case) {
     $distinct = $g.Group | Group-Object { "$($_.Impl)" -replace '^(pure|fparsec)$', 'dib-grammar' } | ForEach-Object { ($_.Group | Select-Object -ExpandProperty Args -Unique).Count }
     $byImpl = $g.Group | Group-Object Impl | ForEach-Object { "$($_.Name)[$(@($_.Group | Select-Object -ExpandProperty Args -Unique).Count)]=$($_.Group[0].Args)" }
@@ -213,7 +213,7 @@ if ($Compare) {
         $o = $oldRows | Where-Object { $_.Backend -eq $r.Backend -and $_.Case -eq $r.Case }
         if ($o) {
             $x = [ordered]@{ Backend = $r.Backend; Case = $r.Case; Len = $r.Len }
-            foreach ($impl in 'fparsec', 'pure', 'runtime') {
+            foreach ($impl in 'fparsec', 'pure', 'process') {
                 if ($r.PSObject.Properties["$($impl)_ns"] -and $o.PSObject.Properties["$($impl)_ns"]) {
                     $x["$($impl)_before"] = [long]$o."$($impl)_ns"; $x["$($impl)_after"] = $r."$($impl)_ns"
                 }

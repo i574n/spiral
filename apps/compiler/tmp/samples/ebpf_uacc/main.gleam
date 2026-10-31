@@ -13,23 +13,15 @@ pub fn method1(v0: Int, v1: Int) -> Int {
     let v3 = spiral_wrap_unsigned(v1 + 3000000000, 32)
     let v4 = v2 == 0
     case v4 {
-        True -> {
-            v3
-        }
-        False -> {
-            method1(v2, v3)
-        }
+        True -> v3
+        False -> method1(v2, v3)
     }
 }
 pub fn method0(v0: Int, v1: Int) -> Int {
     let v2 = v0 == 0
     case v2 {
-        True -> {
-            v1
-        }
-        False -> {
-            method1(v0, v1)
-        }
+        True -> v1
+        False -> method1(v0, v1)
     }
 }
 pub fn main() {
@@ -38,11 +30,7 @@ pub fn main() {
     let v2 = method0(v0, v1)
     let v3 = v2 == 1705032704
     case v3 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

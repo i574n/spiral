@@ -1,23 +1,23 @@
-nominal boxed = $'Box<dyn Fn() -> i32>'
+:! boxed = $'Box<dyn Fn() -> i32>'
 
-union stack_u =
+:| stack_u =
     | SBoxed : boxed
     | SEmpty
 
-union rec heap_u =
+:| ^ heap_u =
     | HBoxed : boxed
     | HEmpty
 
-inl native (k : i32) (flag : bool) : i32 =
-    inl f : boxed = $'Box::new(move || !k * 6) as Box<dyn Fn() -> i32>'
-    inl s = if flag then SBoxed f else SEmpty
-    inl r1 = match s with SBoxed f => $'(!f)()' : i32 | SEmpty => 0i32
-    inl g : boxed = $'Box::new(|| 7i32) as Box<dyn Fn() -> i32>'
-    inl h = if flag then HBoxed g else HEmpty
-    inl r2 = match h with HBoxed g => $'(!g)()' : i32 | HEmpty => 0i32
+:= native (k : i32) (flag : bool) : i32 =
+    := f : boxed = $'Box::new(move || !k * 6) as Box<dyn Fn() -> i32>'
+    := s = ? flag ?> SBoxed f |: SEmpty
+    := r1 = ?= s ?| SBoxed f => $'(!f)()' : i32 | SEmpty => 0i32
+    := g : boxed = $'Box::new(|| 7i32) as Box<dyn Fn() -> i32>'
+    := h = ? flag ?> HBoxed g |: HEmpty
+    := r2 = ?= h ?| HBoxed g => $'(!g)()' : i32 | HEmpty => 0i32
     r1 +. r2
 
-inl main () : i32 =
-    inl ~k = 7i32
-    inl ~flag = true
-    !!!!BackendSwitch({ C = fun () => 49i32 : i32; Rust = fun () => native k flag : i32; Bend = fun () => 49i32 : i32 })
+:= main () : i32 =
+    := ~k = 7i32
+    := ~flag = !+
+    !!!!BackendSwitch({ C = \ () => 49i32 : i32; Rust = \ () => native k flag : i32; Bend = \ () => 49i32 : i32 })

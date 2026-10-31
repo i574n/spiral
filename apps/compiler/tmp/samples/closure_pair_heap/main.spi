@@ -1,16 +1,16 @@
-inl main () : i32 =
-    inl ~a = 3i32
-    inl ~b = 4i32
-    inl left = !!!!LayoutToHeap({ value = a })
-    inl right = !!!!LayoutToHeap({ value = b })
-    inl f (n : i32) : heap { value : i32 } * heap { value : i32 } =
-        if n =. 0i32 then
+:= main () : i32 =
+    := ~a = 3i32
+    := ~b = 4i32
+    := left = !!!!LayoutToHeap({ value = a })
+    := right = !!!!LayoutToHeap({ value = b })
+    := f (n : i32) : heap { value : i32 } * heap { value : i32 } =
+        ? n =. 0i32 ?>
             right, left
-        else
+        |:
             left, right
-    inl ~g = f
-    inl pair = g 1i32
-    inl ~(x, y) = pair
-    inl ox = !!!!LayoutIndex(x)
-    inl oy = !!!!LayoutIndex(y)
-    if ox.value +. oy.value =. 7i32 then 0i32 else 1i32
+    := ~g = f
+    := pair = g 1i32
+    := ~(x, y) = pair
+    := ox = !!!!LayoutIndex(x)
+    := oy = !!!!LayoutIndex(y)
+    ? ox::value +. oy::value =. 7i32 ?> 0i32 |: 1i32

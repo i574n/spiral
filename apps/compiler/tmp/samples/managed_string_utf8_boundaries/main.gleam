@@ -66,21 +66,13 @@ pub fn main() {
                     let v8 = spiral_string_length(v3)
                     let v9 = v8 == 4
                     case v9 {
-                        True -> {
-                            0
-                        }
-                        False -> {
-                            1
-                        }
+                        True -> 0
+                        False -> 1
                     }
                 }
-                False -> {
-                    2
-                }
+                False -> 2
             }
         }
-        False -> {
-            3
-        }
+        False -> 3
     }
 }

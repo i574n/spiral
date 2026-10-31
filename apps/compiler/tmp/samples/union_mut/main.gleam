@@ -55,12 +55,8 @@ pub fn main() {
     let v1 = True
     let v4 =
         case v1 {
-            True -> {
-                Us0Held(v0)
-            }
-            False -> {
-                Us0Missing
-            }
+            True -> Us0Held(v0)
+            False -> Us0Missing
         }
     case v4  {
         Us0Held(v5) -> {
@@ -68,16 +64,10 @@ pub fn main() {
             let v6 = spiral_ref_get(v5).l0
             let v7 = v6 == 7
             case v7 {
-                True -> {
-                    0
-                }
-                False -> {
-                    1
-                }
+                True -> 0
+                False -> 1
             }
         }
-        Us0Missing -> {
-            1
-        }
+        Us0Missing -> 1
     }
 }

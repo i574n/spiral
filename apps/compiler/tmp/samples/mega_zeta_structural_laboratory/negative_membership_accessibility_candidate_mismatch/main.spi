@@ -1,9 +1,9 @@
-open main
+:< main
 
-inl impossible_factor_membership_accessibility_candidate_mismatch () :
+:= impossible_factor_membership_accessibility_candidate_mismatch () :
     positive_positional_nat positional_one *
     positive_positional_predecessor_accessibility positional_one =
-    inl membership :
+    := membership :
         certified_interval_positive_positional_factor_membership
             (positional_zero_bit positional_one)
             (positional_one_bit positional_one)
@@ -16,5 +16,5 @@ inl impossible_factor_membership_accessibility_candidate_mismatch () :
     derive_certified_interval_positive_positional_factor_membership_accessibility
         membership
 
-inl main () =
+:= main () =
     impossible_factor_membership_accessibility_candidate_mismatch ()

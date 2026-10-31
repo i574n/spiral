@@ -1,54 +1,54 @@
-nominal owner_a = ()
-nominal clean = ()
-nominal dirty = ()
-nominal coherent = ()
-nominal computed = ()
-nominal restored = ()
+:! owner_a = ()
+:! clean = ()
+:! dirty = ()
+:! coherent = ()
+:! computed = ()
+:! restored = ()
 
-union ancilla owner state =
-    | Ancilla :: forall owner state. string -> ancilla owner state
+:| ancilla owner state =
+    | Ancilla :: \* owner state. string -> ancilla owner state
 
-union workspace owner stage =
-    | Workspace :: forall owner stage. string -> workspace owner stage
+:| workspace owner stage =
+    | Workspace :: \* owner stage. string -> workspace owner stage
 
-union garbage owner witness =
-    | Garbage :: forall owner witness. string -> garbage owner witness
+:| garbage owner witness =
+    | Garbage :: \* owner witness. string -> garbage owner witness
 
-union result owner stage =
-    | Result :: forall owner stage. string -> result owner stage
+:| result owner stage =
+    | Result :: \* owner stage. string -> result owner stage
 
-inl compute forall owner.
+:= compute \* owner.
     (ancilla : ancilla owner clean)
     (workspace : workspace owner coherent)
     : ancilla owner dirty * workspace owner computed * garbage owner computed =
-    match ancilla, workspace with
+    ?= ancilla, workspace ?|
     | Ancilla _, Workspace _ => Ancilla "dirty", Workspace "computed", Garbage "reversible-witness"
 
-inl observe forall owner.
+:= observe \* owner.
     (workspace : workspace owner computed)
     : result owner computed =
-    match workspace with
+    ?= workspace ?|
     | Workspace _ => Result "quantum-result"
 
-inl uncompute forall owner.
+:= uncompute \* owner.
     (ancilla : ancilla owner dirty)
     (workspace : workspace owner computed)
     (garbage : garbage owner computed)
     : ancilla owner clean * workspace owner restored =
-    match ancilla, workspace, garbage with
+    ?= ancilla, workspace, garbage ?|
     | Ancilla _, Workspace _, Garbage _ => Ancilla "clean", Workspace "restored"
 
-inl seal forall owner.
+:= seal \* owner.
     (ancilla : ancilla owner clean)
     (result : result owner computed)
     : string =
-    match ancilla, result with
+    ?= ancilla, result ?|
     | Ancilla _, Result label => label
 
-inl main () : string =
-    inl ancilla : ancilla owner_a clean = Ancilla "zero"
-    inl workspace : workspace owner_a coherent = Workspace "psi"
-    inl dirty, computed_workspace, garbage = compute ancilla workspace
-    inl result = observe computed_workspace
-    inl clean_ancilla, _ = uncompute dirty computed_workspace garbage
+:= main () : string =
+    := ancilla : ancilla owner_a clean = Ancilla "zero"
+    := workspace : workspace owner_a coherent = Workspace "psi"
+    := dirty, computed_workspace, garbage = compute ancilla workspace
+    := result = observe computed_workspace
+    := clean_ancilla, _ = uncompute dirty computed_workspace garbage
     seal clean_ancilla result

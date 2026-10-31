@@ -1,31 +1,31 @@
-open main
+:< main
 
-type one_symbol_length = finite_length_succ finite_length_zero
+:== one_symbol_length = finite_length_succ finite_length_zero
 
-inl short_bit_vector () : finite_symbol_vector bit_alphabet one_symbol_length =
+:= short_bit_vector () : finite_symbol_vector bit_alphabet one_symbol_length =
     FiniteSymbolVectorCons (zero (), FiniteSymbolVectorNil)
 
-inl short_bit_indexed_descriptor () : indexed_finite_alphabet_descriptor bit_alphabet =
-    indexed_finite_alphabet_descriptor (exists (short_bit_vector ()))
+:= short_bit_indexed_descriptor () : indexed_finite_alphabet_descriptor bit_alphabet =
+    indexed_finite_alphabet_descriptor (\? (short_bit_vector ()))
 
-inl swapped_bit_vector () : finite_symbol_vector bit_alphabet bit_finite_length =
+:= swapped_bit_vector () : finite_symbol_vector bit_alphabet bit_finite_length =
     FiniteSymbolVectorCons (
         one (),
         FiniteSymbolVectorCons (zero (), FiniteSymbolVectorNil))
 
-inl swapped_bit_indexed_descriptor () : indexed_finite_alphabet_descriptor bit_alphabet =
-    indexed_finite_alphabet_descriptor (exists (swapped_bit_vector ()))
+:= swapped_bit_indexed_descriptor () : indexed_finite_alphabet_descriptor bit_alphabet =
+    indexed_finite_alphabet_descriptor (\? (swapped_bit_vector ()))
 
-union indexed_authority_probe_symbol =
+:| indexed_authority_probe_symbol =
     | IndexedAuthorityProbeA
     | IndexedAuthorityProbeB
     | IndexedAuthorityProbeC
 
-nominal indexed_authority_probe_alphabet = indexed_authority_probe_symbol
+:! indexed_authority_probe_alphabet = indexed_authority_probe_symbol
 
-instance symbol_compare indexed_authority_probe_alphabet =
-    fun (indexed_authority_probe_alphabet left) (indexed_authority_probe_alphabet right) =>
-        match left, right with
+:+ symbol_compare indexed_authority_probe_alphabet =
+    \ (indexed_authority_probe_alphabet left) (indexed_authority_probe_alphabet right) =>
+        ?= left, right ?|
         | IndexedAuthorityProbeA, IndexedAuthorityProbeA => SymbolSame
         | IndexedAuthorityProbeA, _ => SymbolLess
         | _, IndexedAuthorityProbeA => SymbolGreater
@@ -34,7 +34,7 @@ instance symbol_compare indexed_authority_probe_alphabet =
         | IndexedAuthorityProbeC, IndexedAuthorityProbeB => SymbolGreater
         | IndexedAuthorityProbeC, IndexedAuthorityProbeC => SymbolSame
 
-inl indexed_authority_probe_expected_vector ()
+:= indexed_authority_probe_expected_vector ()
     : finite_symbol_vector indexed_authority_probe_alphabet bit_finite_length =
     FiniteSymbolVectorCons (
         indexed_authority_probe_alphabet IndexedAuthorityProbeA,
@@ -42,13 +42,13 @@ inl indexed_authority_probe_expected_vector ()
             indexed_authority_probe_alphabet IndexedAuthorityProbeB,
             FiniteSymbolVectorNil))
 
-instance finite_alphabet indexed_authority_probe_alphabet = fun () =>
-    inl vector = indexed_authority_probe_expected_vector ()
+:+ finite_alphabet indexed_authority_probe_alphabet = \ () =>
+    := vector = indexed_authority_probe_expected_vector ()
     finite_alphabet_descriptor (
         finite_symbol_vector_to_list vector,
         finite_symbol_vector_cardinality vector)
 
-inl indexed_authority_probe_substituted_vector ()
+:= indexed_authority_probe_substituted_vector ()
     : finite_symbol_vector indexed_authority_probe_alphabet bit_finite_length =
     FiniteSymbolVectorCons (
         indexed_authority_probe_alphabet IndexedAuthorityProbeA,
@@ -56,50 +56,50 @@ inl indexed_authority_probe_substituted_vector ()
             indexed_authority_probe_alphabet IndexedAuthorityProbeC,
             FiniteSymbolVectorNil))
 
-inl indexed_authority_probe_substituted_descriptor ()
+:= indexed_authority_probe_substituted_descriptor ()
     : indexed_finite_alphabet_descriptor indexed_authority_probe_alphabet =
-    indexed_finite_alphabet_descriptor (exists (indexed_authority_probe_substituted_vector ()))
+    indexed_finite_alphabet_descriptor (\? (indexed_authority_probe_substituted_vector ()))
 
-inl main () : string =
-    inl bit_capability : indexed_dfa_capability bit_alphabet = make_indexed_dfa_capability ()
-    inl bit_descriptor = bit_indexed_finite_alphabet_descriptor ()
+:= main () : string =
+    := bit_capability : indexed_dfa_capability bit_alphabet = make_indexed_dfa_capability ()
+    := bit_descriptor = bit_indexed_finite_alphabet_descriptor ()
     assert_static
         (indexed_finite_alphabet_descriptor_certified bit_capability bit_descriptor)
         "production bit indexed descriptor should certify"
-    inl bit_indexed = indexed_dfa_closure bit_capability (ends_with_zero ()) bit_descriptor
-    inl bit_legacy = dfa_closure (ends_with_zero ())
+    := bit_indexed = indexed_dfa_closure bit_capability (ends_with_zero ()) bit_descriptor
+    := bit_legacy = dfa_closure (ends_with_zero ())
     // the indexed (compile-time) closure equals the list (run-time) closure
     assert_true (regex_list_set_equal bit_indexed bit_legacy)
 
-    inl bit_row = indexed_dfa_transitions_from_state bit_capability (ends_with_zero ()) (bit_finite_symbol_vector ())
-    match indexed_dfa_transition_lookup (bit_finite_index_one ()) bit_row with
+    := bit_row = indexed_dfa_transitions_from_state bit_capability (ends_with_zero ()) (bit_finite_symbol_vector ())
+    ?= indexed_dfa_transition_lookup (bit_finite_index_one ()) bit_row ?|
     | dfa_transition (source, symbol, target) =>
         assert_static (symbol_equal symbol (one ())) "bounded row index one must select bit one"
         assert_static
             (regex_equal target (canonical_derivative source (one ())))
             "typed transition target must be the derivative for its indexed symbol"
 
-        inl short_descriptor = short_bit_indexed_descriptor ()
+        := short_descriptor = short_bit_indexed_descriptor ()
         assert_static
-            (bool_same (indexed_finite_alphabet_descriptor_certified bit_capability short_descriptor) false)
+            (bool_same (indexed_finite_alphabet_descriptor_certified bit_capability short_descriptor) !-)
             (
                 "truncated indexed inventory cannot self-certify because cardinality is no longer stored in the "
                 ^^ "indexed descriptor"
             )
-        match seal_indexed_dfa_surface bit_capability (ends_with_zero ()) short_descriptor with
+        ?= seal_indexed_dfa_surface bit_capability (ends_with_zero ()) short_descriptor ?|
         | IndexedDfaSurfaceRejected => ()
         | IndexedDfaSurfaceCertified _ => failwith "truncated-indexed-surface-must-not-seal"
 
-        inl swapped_descriptor = swapped_bit_indexed_descriptor ()
+        := swapped_descriptor = swapped_bit_indexed_descriptor ()
         assert_static
-            (bool_same (indexed_finite_alphabet_descriptor_certified bit_capability swapped_descriptor) false)
+            (bool_same (indexed_finite_alphabet_descriptor_certified bit_capability swapped_descriptor) !-)
             "swapped indexed inventory must fail ordering laws"
 
-        inl authority_probe_capability : indexed_dfa_capability indexed_authority_probe_alphabet =
+        := authority_probe_capability : indexed_dfa_capability indexed_authority_probe_alphabet =
             make_indexed_dfa_capability ()
-        inl substituted_descriptor = indexed_authority_probe_substituted_descriptor ()
-        inl substituted_symbols = indexed_finite_alphabet_symbols substituted_descriptor
-        inl authority_descriptor : finite_alphabet_descriptor indexed_authority_probe_alphabet = finite_alphabet ()
+        := substituted_descriptor = indexed_authority_probe_substituted_descriptor ()
+        := substituted_symbols = indexed_finite_alphabet_symbols substituted_descriptor
+        := authority_descriptor : finite_alphabet_descriptor indexed_authority_probe_alphabet = finite_alphabet ()
         assert_static
             (alphabet_inventory_well_formed substituted_symbols)
             "same-cardinality substitution is locally ordered and must reach the authority check"
@@ -110,23 +110,23 @@ inl main () : string =
             (
                 bool_same
                     (indexed_finite_alphabet_descriptor_certified authority_probe_capability substituted_descriptor)
-                    false
+                    !-
             )
             "indexed descriptor must match the authoritative symbols, not only their count"
 
-        match seal_indexed_dfa_surface bit_capability (ends_with_zero ()) bit_descriptor with
+        ?= seal_indexed_dfa_surface bit_capability (ends_with_zero ()) bit_descriptor ?|
         | IndexedDfaSurfaceCertified _ => ()
         | IndexedDfaSurfaceRejected => failwith "production-bit-indexed-surface-must-seal"
 
-        inl tri_capability : indexed_dfa_capability tri_alphabet = make_indexed_dfa_capability ()
-        inl tri_descriptor = tri_indexed_finite_alphabet_descriptor ()
+        := tri_capability : indexed_dfa_capability tri_alphabet = make_indexed_dfa_capability ()
+        := tri_descriptor = tri_indexed_finite_alphabet_descriptor ()
         assert_static
             (indexed_finite_alphabet_descriptor_certified tri_capability tri_descriptor)
             "production ternary indexed descriptor should certify"
-        inl tri_indexed = indexed_dfa_closure tri_capability (tri_ab_star_then_c ()) tri_descriptor
-        inl tri_legacy = dfa_closure (tri_ab_star_then_c ())
+        := tri_indexed = indexed_dfa_closure tri_capability (tri_ab_star_then_c ()) tri_descriptor
+        := tri_legacy = dfa_closure (tri_ab_star_then_c ())
         assert_true (regex_list_set_equal tri_indexed tri_legacy)
-        match seal_indexed_dfa_surface tri_capability (tri_ab_star_then_c ()) tri_descriptor with
+        ?= seal_indexed_dfa_surface tri_capability (tri_ab_star_then_c ()) tri_descriptor ?|
         | IndexedDfaSurfaceCertified _ => ()
         | IndexedDfaSurfaceRejected => failwith "production-tri-indexed-surface-must-seal"
         "brzozowski-indexed-dfa-contract-green"

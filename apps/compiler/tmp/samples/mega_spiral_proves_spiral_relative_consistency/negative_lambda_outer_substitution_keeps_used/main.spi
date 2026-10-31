@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_lambda_outer_substitution_target_keeps_used
+:= impossible_lambda_outer_substitution_target_keeps_used
     ()
     : exact_linear_indexed_recursive_open_typed_substitution
         exact_linear_indexed_open_unit_substitution_context
@@ -15,4 +15,4 @@ inl impossible_lambda_outer_substitution_target_keeps_used
     =
     exact_linear_indexed_recursive_open_typed_substitution_lambda_outer ()
 
-inl main () = impossible_lambda_outer_substitution_target_keeps_used ()
+:= main () = impossible_lambda_outer_substitution_target_keeps_used ()

@@ -11,16 +11,10 @@ pub fn main() {
         True -> {
             let v8 = v5 == v6
             case v8 {
-                True -> {
-                    0
-                }
-                False -> {
-                    2
-                }
+                True -> 0
+                False -> 2
             }
         }
-        False -> {
-            1
-        }
+        False -> 1
     }
 }

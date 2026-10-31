@@ -1,7 +1,7 @@
-open main
+:< main
 
-inl impossible_ready_tensor_tail_accepts_wrong_domain () =
-    inl function_source :
+:= impossible_ready_tensor_tail_accepts_wrong_domain () =
+    := function_source :
         exact_linear_indexed_closed_value_source
             (exact_linear_indexed_closed_source_lambda
                 exact_linear_bool_type
@@ -12,7 +12,7 @@ inl impossible_ready_tensor_tail_accepts_wrong_domain () =
             exact_linear_indexed_closed_lambda_value_source (
                 exact_linear_indexed_closed_tensor_tail_lambda_value,
                 "the-TensorTail-function-is-a-closed-Bool-to-Bool-tensor-Unit-Lambda"))
-    inl wrong_argument :
+    := wrong_argument :
         exact_linear_indexed_closed_value_source
             exact_linear_indexed_closed_source_unit
             exact_linear_unit_type =
@@ -25,5 +25,5 @@ inl impossible_ready_tensor_tail_accepts_wrong_domain () =
         ^^ "tical"
     )
 
-inl main () =
+:= main () =
     impossible_ready_tensor_tail_accepts_wrong_domain ()

@@ -1,13 +1,13 @@
-open main
-open positioned_bound
-open indexed_assignment
-open injective_bound
+:< main
+:< positioned_bound
+:< indexed_assignment
+:< injective_bound
 
-inl main () : bool =
-    inl positioned :
+:= main () : bool =
+    := positioned :
         antimirov_positioned_regex root_bit_alphabet bit_ends_with_zero_shape =
         antimirov_positioned_regex_from_tree (bit_ends_with_zero_position_tree ())
-    inl forged :
+    := forged :
         antimirov_structural_support_bound root_bit_alphabet bit_ends_with_zero_shape one_support_count =
         antimirov_structural_support_bound (
             positioned,

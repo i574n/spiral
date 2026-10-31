@@ -62,9 +62,7 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
 pub fn loop_0(v0: Int, v1: SpiralArray(Int), v2: Int, v3: Int, v4: Int) -> Int {
     let v5 = v3 >= v0
     case v5 {
-        True -> {
-            v4
-        }
+        True -> v4
         False -> {
             let v6 = v3 % 4
             let v7 = spiral_array_get(v1, v6)

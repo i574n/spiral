@@ -1,11 +1,11 @@
-open main
+:< main
 
-inl impossible_closed_bool_identity_progress_target_cross_type () :
+:= impossible_closed_bool_identity_progress_target_cross_type () :
     exact_linear_indexed_term
         exact_linear_free_context_empty
         exact_linear_indexed_usage_empty
         exact_linear_unit_type =
-    inl relation :
+    := relation :
         exact_linear_indexed_closed_identity_beta_relation exact_linear_bool_type =
         ExactLinearIndexedClosedIdentityBetaRelation (
             ExactLinearIndexedBoolTrue (
@@ -14,5 +14,5 @@ inl impossible_closed_bool_identity_progress_target_cross_type () :
             "the-negative-attempts-to-observe-a-Bool-target-as-Unit")
     exact_linear_indexed_closed_identity_beta_target relation
 
-inl main () =
+:= main () =
     impossible_closed_bool_identity_progress_target_cross_type ()

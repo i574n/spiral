@@ -1,8 +1,8 @@
-open main
+:< main
 
-inl impossible_iota_indexed_recursor_component_cross_category () :
+:= impossible_iota_indexed_recursor_component_cross_category () :
     existential_cic_verified_inductive_iota_indexed_recursor_component =
-    ExistentialCicVerifiedInductiveIotaIndexedRecursorComponent (exists (
+    ExistentialCicVerifiedInductiveIotaIndexedRecursorComponent (\? (
         CicVerifiedInductiveIotaIndexedRecursorParameterMethod (
             CicVerifiedInductiveIotaIndexedRecursiveWitness (
                 CicVerifiedInductiveIotaIndexedRecursiveConclusion (
@@ -13,4 +13,4 @@ inl impossible_iota_indexed_recursor_component_cross_category () :
                 "recursive-witness"),
             "a-recursive-witness-cannot-be-used-as-a-parameter-method")))
 
-inl main () = impossible_iota_indexed_recursor_component_cross_category ()
+:= main () = impossible_iota_indexed_recursor_component_cross_category ()

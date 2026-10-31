@@ -1,21 +1,21 @@
-union direction = North | East | South | West
+:| direction = North | East | South | West
 
-inl turn d =
-    match d with
+:= turn d =
+    ?= d ?|
     | North => East
     | East => South
     | South => West
     | West => North
 
-inl score d =
-    match d with
+:= score d =
+    ?= d ?|
     | North => 1i32
     | East => 2
     | _ => 7
 
-inl main () =
-    let d0 = dyn North
-    let d1 = turn d0
-    let d2 = turn d1
-    let same = if d2 = dyn South then 100i32 else 0
+:= main () =
+    :~ d0 = dyn North
+    :~ d1 = turn d0
+    :~ d2 = turn d1
+    :~ same = ? d2 = dyn South ?> 100i32 |: 0
     score d0 + score d1 * 3 + score d2 * 9 + same

@@ -19,9 +19,9 @@ func spiral_main() -> Int32 {
     let v2: (Int32) -> (Int64, String) = f_c0(v0, v1)
     var v3: Int64 = (0 as Int64)
     var v4: String = ""
-    let spiral_tuple332 = v2(1)
-    v3 = spiral_tuple332.0
-    v4 = spiral_tuple332.1
+    let spiral_tuple323 = v2(1)
+    v3 = spiral_tuple323.0
+    v4 = spiral_tuple323.1
     let v5: Bool = (v3 == (5000000000 as Int64))
     var v7: Bool = false
     if (v5) {

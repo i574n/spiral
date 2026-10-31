@@ -105,7 +105,11 @@ test trace static =
             $'}' : ()
         Lua = \ () =>
             global "_G.trace_state = nil"
-            $'if _G.trace_state == nil then _G.trace_state = !new_trace_state(!trace_level) end' : ()
+            \ () =>
+                ? $'_G.trace_state == nil' : bool ?>
+                    := trace_state = new_trace_state trace_level
+                    $'_G.trace_state = !trace_state ' : ()
+            |> exec_unit
         Fsharp = \ () =>
             backend_switch {
                 Fsharp = \ () =>
@@ -118,10 +122,18 @@ test trace static =
             |> exec_unit
         Python = \ () =>
             global "class TraceState: trace_state = None"
-            $'if TraceState.trace_state is None: TraceState.trace_state = !new_trace_state(!trace_level)' : ()
+            \ () =>
+                ? $'TraceState.trace_state is None' : bool ?>
+                    := trace_state = new_trace_state trace_level
+                    $'TraceState.trace_state = !trace_state ' : ()
+            |> exec_unit
         TypeScript = \ () =>
             global "let spiral_trace_state: any = undefined;"
-            $'if (spiral_trace_state === undefined) spiral_trace_state = !new_trace_state(!trace_level)' : ()
+            \ () =>
+                ? $'spiral_trace_state === undefined' : bool ?>
+                    := trace_state = new_trace_state trace_level
+                    $'spiral_trace_state = !trace_state ' : ()
+            |> exec_unit
         Rust = \ () =>
             global """
                 fn spiral_trace_hold<T: Clone>(fresh: &std::rc::Rc<dyn Fn() -> T>) -> T {
@@ -357,6 +369,12 @@ test test_trace_level =
 test local_seconds_of_day_is_within_a_day =
     (local_seconds_of_day () < 86400u64) |> _assert_eq !+
 
+/// ### clock_text_of_seconds
+:= clock_text_of_seconds (seconds : u64) : string =
+    := two_digits (n : u64) : string = (? n < 10u64 ?> "0" |: "") ++# sm'.obj_to_string n
+    := hours_minutes = two_digits ((seconds / 3600u64) % 24u64) ++# ":" ++# two_digits ((seconds / 60u64) % 60u64)
+    hours_minutes ++# ":" ++# two_digits (seconds % 60u64)
+
 /// ### trace
 := trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
     \ () =>
@@ -366,7 +384,7 @@ test local_seconds_of_day_is_within_a_day =
                 run_target \|
                     | Zig => \ () =>
                         global """extern "kernel32" fn GetLocalTime(t: *[8]u16) callconv(.winapi) void;"""
-                        global """fn spiralClock() []const u8 {
+                        global """fn spiralClockSeconds() u64 {
     var secs: u64 = 0;
     if (builtin.os.tag == .windows) {
         var t: [8]u16 = undefined;
@@ -377,17 +395,16 @@ test local_seconds_of_day_is_within_a_day =
         _ = std.os.linux.clock_gettime(.REALTIME, &ts);
         secs = @intCast(ts.sec);
     }
-    return std.fmt.allocPrint(spiral_gpa, "{d:0>2}:{d:0>2}:{d:0>2}", .{ (secs / 3600) % 24, (secs / 60) % 60, secs % 60 }) catch @panic("out of memory");
+    return secs;
 }"""
-                        $'spiralClock()' : string
+                        := seconds : u64 = $'spiralClockSeconds()'
+                        clock_text_of_seconds seconds
                     | _ => \ () =>
                         run_target \ target =>
                             ?= target ?|
                             | Rust => \ () =>
                                 :< rust.rust_operators
-                                := seconds_of_day : u64 = local_seconds_of_day ()
-                                := two_digits (n : u64) : string = (? n < 10u64 ?> "0" |: "") ++# sm'.obj_to_string n
-                                two_digits (seconds_of_day / 3600u64) ++# ":" ++# two_digits ((seconds_of_day / 60u64) % 60u64) ++# ":" ++# two_digits (seconds_of_day % 60u64)
+                                local_seconds_of_day () |> clock_text_of_seconds
                             | TypeScript => \ () =>
                                 := now = $'new Date()' : $'Date'
                                 := hours = $'!now.getHours()' : i32

@@ -11,9 +11,9 @@ fun spiral_main(): Int {
     val v2: Heap0 = Heap0(v0)
     var v3: Heap0 = Heap0(0)
     var v4: Int = 0
-    val spiral_tuple193 = sp_method0(v1, v2)
-    v3 = spiral_tuple193.v0
-    v4 = spiral_tuple193.v1
+    val spiral_tuple184 = sp_method0(v1, v2)
+    v3 = spiral_tuple184.v0
+    v4 = spiral_tuple184.v1
     val v5: Int = v3.l0
     val v6: Int = (v5 + v4)
     val v7: Boolean = (v6 == 7)

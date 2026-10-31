@@ -1,5 +1,6 @@
 program SpiralGenerated;
 {$mode delphi}{$H+}
+{$IFDEF CPUX86_64}{$OPTIMIZATION NOREGVAR}{$ENDIF}
 {$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
 function lcg_0(v0: QWord; v1: QWord; v2: LongInt; v3: QWord): QWord; forward;
@@ -99,5 +100,6 @@ end;
 var SpiralOutputBuffer: array[0..65535] of Char;
 begin
   SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
+  SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
   Halt(SpiralMain);
 end.

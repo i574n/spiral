@@ -1,18 +1,18 @@
-union rec int_tree =
+:| ^ int_tree =
     | Leaf
     | Node : i32 * int_tree * int_tree
 
-let rec sum tree : i32 =
-    match tree with
+:~ ^ sum tree : i32 =
+    ?= tree ?|
     | Leaf => 0i32
     | Node (value, left, right) => value +. (sum left +. sum right)
 
-let consume_pair left right : i32 =
+:~ consume_pair left right : i32 =
     sum left +. sum right
 
-inl main () : i32 =
-    inl leaf = Leaf
-    inl branch = Node (2i32, leaf, leaf)
-    inl root = Node (1i32, branch, branch)
-    inl alias = root
+:= main () : i32 =
+    := leaf = Leaf
+    := branch = Node (2i32, leaf, leaf)
+    := root = Node (1i32, branch, branch)
+    := alias = root
     consume_pair root alias -. 10i32

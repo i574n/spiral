@@ -2,7 +2,7 @@ import re
 import sys
 from pathlib import Path
 
-target = Path(__file__).resolve().parents[1] / "tests" / "matrix.psd1"
+target = Path(__file__).resolve().parents[1] / "tmp" / "tests" / "matrix.psd1"
 arguments = [argument for argument in sys.argv[1:] if argument != "--apply"]
 if len(arguments) < 3:
     print("usage: add-backend-to-groups.py <Backend> <After> <sample> ... [--apply]")

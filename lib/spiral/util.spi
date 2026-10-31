@@ -89,4 +89,3 @@ test ski_substitution_deep =
     App (App (App (S, K), I), K)
     |> eval
     |> _assert_eq K
-

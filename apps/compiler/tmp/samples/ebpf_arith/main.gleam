@@ -44,41 +44,25 @@ pub fn main() {
                                                     let v20 = int.bitwise_shift_right(v2, 28)
                                                     let v21 = v20 == 15
                                                     case v21 {
-                                                        True -> {
-                                                            0
-                                                        }
-                                                        False -> {
-                                                            7
-                                                        }
+                                                        True -> 0
+                                                        False -> 7
                                                     }
                                                 }
-                                                False -> {
-                                                    6
-                                                }
+                                                False -> 6
                                             }
                                         }
-                                        False -> {
-                                            5
-                                        }
+                                        False -> 5
                                     }
                                 }
-                                False -> {
-                                    4
-                                }
+                                False -> 4
                             }
                         }
-                        False -> {
-                            3
-                        }
+                        False -> 3
                     }
                 }
-                False -> {
-                    2
-                }
+                False -> 2
             }
         }
-        False -> {
-            1
-        }
+        False -> 1
     }
 }

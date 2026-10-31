@@ -1,28 +1,28 @@
-inl while' (cond : () -> bool) (body : () -> ()) : () =
-    !!!!While((join cond ()), (body ()))
+:= while' (cond : () -> bool) (body : () -> ()) : () =
+    !!!!While((~~ cond ()), (body ()))
 
-inl set' forall t. (a : t) ~(b : t) : () =
+:= set' \* t. (a : t) ~(b : t) : () =
     !!!!BackendSwitch({
-        Fsharp = fun () => $"!a <- !b" : ()
-        C = fun () => $"!a = !b" : ()
-        Rust = fun () => $"!a = !b" : ()
-        Delphi = fun () => $"!a := !b" : ()
-        TypeScript = fun () => $"!a = !b" : ()
-        CppHost = fun () => $"!a = !b" : ()
-        Python = fun () => $"!a = !b" : ()
-        Wgsl = fun () => $"!a = !b" : ()
-        Kotlin = fun () => $"!a = !b" : ()
-        Swift = fun () => $"!a = !b" : ()
-        OpenQasm = fun () => $"!a = !b" : ()
-        Ebpf = fun () => $"!a = !b" : ()
-        Zig = fun () => $"!a = !b" : ()
-        Lean = fun () => $"!a := !b" : ()
+        Fsharp = \ () => $"!a <- !b" : ()
+        C = \ () => $"!a = !b" : ()
+        Rust = \ () => $"!a = !b" : ()
+        Delphi = \ () => $"!a := !b" : ()
+        TypeScript = \ () => $"!a = !b" : ()
+        CppHost = \ () => $"!a = !b" : ()
+        Python = \ () => $"!a = !b" : ()
+        Wgsl = \ () => $"!a = !b" : ()
+        Kotlin = \ () => $"!a = !b" : ()
+        Swift = \ () => $"!a = !b" : ()
+        OpenQasm = \ () => $"!a = !b" : ()
+        Ebpf = \ () => $"!a = !b" : ()
+        Zig = \ () => $"!a = !b" : ()
+        Lean = \ () => $"!a := !b" : ()
     })
 
-inl main () : i32 =
-    inl ~i = 0i32
-    inl ~acc = 0i32
-    while' (fun () => i < 10i32) fun () =>
+:= main () : i32 =
+    := ~i = 0i32
+    := ~acc = 0i32
+    while' (\ () => i < 10i32) \ () =>
         set' acc (acc +. i)
         set' i (i +. 1i32)
     acc -. 45i32

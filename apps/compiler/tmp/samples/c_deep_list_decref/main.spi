@@ -1,9 +1,9 @@
-union rec chain = Link : i32 * chain | End
-inl main () : i32 =
-    let rec build (n : i32) (acc : chain) : chain =
-        if !!!!EQ(n, 0i32) then acc else build !!!!Sub(n, 1i32) (Link (n, acc))
-    let rec sum (c : chain) (acc : i32) : i32 =
-        match c with
+:| ^ chain = Link : i32 * chain | End
+:= main () : i32 =
+    :~ ^ build (n : i32) (acc : chain) : chain =
+        ? !!!!EQ(n, 0i32) ?> acc |: build !!!!Sub(n, 1i32) (Link (n, acc))
+    :~ ^ sum (c : chain) (acc : i32) : i32 =
+        ?= c ?|
         | Link (x, rest) => sum rest !!!!Mod(!!!!Add(!!!!Mult(acc, 31i32), x), 9973i32)
         | End => acc
     !!!!Mod(sum (build 1000000i32 End) 0i32, 256i32)

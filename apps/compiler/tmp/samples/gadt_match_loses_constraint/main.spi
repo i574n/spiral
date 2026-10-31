@@ -1,21 +1,21 @@
-union rec length_zero = | LengthZero
-nominal length_succ n = n
+:| ^ length_zero = | LengthZero
+:! length_succ n = n
 
-union rec vec a n =
-    | VecNil :: forall a. vec a length_zero
-    | VecCons :: forall a n. a * vec a n -> vec a (length_succ n)
+:| ^ vec a n =
+    | VecNil :: \* a. vec a length_zero
+    | VecCons :: \* a n. a * vec a n -> vec a (length_succ n)
 
-prototype eq_like a : a -> a -> bool
-nominal num = i32
-instance eq_like num = fun (num a) (num b) => !!!!EQ(a, b)
+:? eq_like a : a -> a -> bool
+:! num = i32
+:+ eq_like num = \ (num a) (num b) => !!!!EQ(a, b)
 
-inl rec contains forall a {eq_like} n. (value : a) (values : vec a n) : bool =
-    match values with
-    | VecNil => false
-    | VecCons (head, tail) => if eq_like value head then true else contains value tail
+:= ^ contains \* a {eq_like} n. (value : a) (values : vec a n) : bool =
+    ?= values ?|
+    | VecNil => !-
+    | VecCons (head, tail) => ? eq_like value head ?> !+ |: contains value tail
 
-inl main () : i32 =
-    inl values : vec num (length_succ length_zero) = VecCons (num 1i32, VecNil)
-    if contains (num 1i32) values then 0i32 else 1i32
+:= main () : i32 =
+    := values : vec num (length_succ length_zero) = VecCons (num 1i32, VecNil)
+    ? contains (num 1i32) values ?> 0i32 |: 1i32
 
-inl oracle_must_not_record_current_error () = ()
+:= oracle_must_not_record_current_error () = ()

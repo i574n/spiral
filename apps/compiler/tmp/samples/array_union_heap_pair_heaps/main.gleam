@@ -73,9 +73,7 @@ pub fn score_0(v0: Us0) -> Int {
                         let v11 = v7 == "hi"
                         v11
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v14 =
                 case v12 {
@@ -83,9 +81,7 @@ pub fn score_0(v0: Us0) -> Int {
                         let v13 = v8 == 4
                         v13
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v16 =
                 case v14 {
@@ -93,9 +89,7 @@ pub fn score_0(v0: Us0) -> Int {
                         let v15 = v9 == "yo"
                         v15
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             let v18 =
                 case v16 {
@@ -103,22 +97,14 @@ pub fn score_0(v0: Us0) -> Int {
                         let v17 = v3 == 2
                         v17
                     }
-                    False -> {
-                        False
-                    }
+                    False -> False
                 }
             case v18 {
-                True -> {
-                    0
-                }
-                False -> {
-                    1
-                }
+                True -> 0
+                False -> 1
             }
         }
-        Us0None -> {
-            1
-        }
+        Us0None -> 1
     }
 }
 pub fn main() {
@@ -135,12 +121,8 @@ pub fn main() {
     let v10 = True
     let v13 =
         case v10 {
-            True -> {
-                Us0Held(v8)
-            }
-            False -> {
-                Us0None
-            }
+            True -> Us0Held(v8)
+            False -> Us0None
         }
     spiral_array_set(v9, 0, v13)
     let v14 = spiral_array_get(v9, 0)

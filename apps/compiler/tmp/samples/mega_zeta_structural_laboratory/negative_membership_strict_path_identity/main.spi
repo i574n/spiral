@@ -1,13 +1,13 @@
-open main
+:< main
 
-inl impossible_membership_strict_path_identity () =
-    inl twelve =
+:= impossible_membership_strict_path_identity () =
+    := twelve =
         classify_certified_interval_positive_positional_sealed_factor
             (positive_positional_twelve_value ())
-    match twelve with
+    ?= twelve ?|
     | CertifiedIntervalPositivePositionalSealedCompositeClass payload =>
-        inl exists length divisor quotient. _, _, _, membership, _, _ = payload
-        inl impossible
+        := \? length divisor quotient. _, _, _, membership, _, _ = payload
+        := impossible
             : positive_positional_strict_predecessor_path
                 (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
                 (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
@@ -18,5 +18,5 @@ inl impossible_membership_strict_path_identity () =
     | _ =>
         mega_runtime_fail "twelve-must-be-composite-for-the-negative-boundary"
 
-inl main () =
+:= main () =
     impossible_membership_strict_path_identity ()

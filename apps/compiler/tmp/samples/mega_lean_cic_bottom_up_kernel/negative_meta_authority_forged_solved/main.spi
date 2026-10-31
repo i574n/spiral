@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_corrected_cic_meta_solved_authority_without_assignment () :
+:= impossible_corrected_cic_meta_solved_authority_without_assignment () :
     corrected_cic_meta_authority
         (corrected_cic_meta_states_solved empty_ctx bool_sort
             corrected_cic_meta_states_empty) =
@@ -8,5 +8,5 @@ inl impossible_corrected_cic_meta_solved_authority_without_assignment () :
         corrected_cic_empty_meta_authority (),
         "an-open-transition-cannot-be-reclassified-as-an-already-solved-authority")
 
-inl main () =
+:= main () =
     impossible_corrected_cic_meta_solved_authority_without_assignment ()

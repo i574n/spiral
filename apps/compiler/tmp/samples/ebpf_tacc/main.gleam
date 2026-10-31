@@ -11,12 +11,8 @@ pub fn method2(v0: Int, v1: Int, v2: Int) -> #(Int, Int) {
     let v5 = spiral_wrap_signed(v2 + 2, 32)
     let v6 = v3 == 0
     case v6 {
-        True -> {
-            #(v4, v5)
-        }
-        False -> {
-            method2(v3, v4, v5)
-        }
+        True -> #(v4, v5)
+        False -> method2(v3, v4, v5)
     }
 }
 pub fn method1(v0: Int) -> #(Int, Int) {
@@ -24,12 +20,8 @@ pub fn method1(v0: Int) -> #(Int, Int) {
     let v2 = 0
     let v3 = v0 == 0
     case v3 {
-        True -> {
-            #(v1, v2)
-        }
-        False -> {
-            method2(v0, v1, v2)
-        }
+        True -> #(v1, v2)
+        False -> method2(v0, v1, v2)
     }
 }
 pub fn method0(v0: Int) -> Int {
@@ -41,17 +33,11 @@ pub fn method0(v0: Int) -> Int {
                 let v4 = v2 == 8
                 v4
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v5 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }
 pub fn main() {

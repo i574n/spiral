@@ -198,7 +198,7 @@ daemon in the background when none listens, for the next run. `SPIRAL_CELLS_WARM
 `SPIRAL_CELLS_MEMO=0` is passed on as `--no-memo`.
 
 On a fresh machine the script first provides what the route needs, each step only when its output is missing: the
-.NET 11 SDK (`apps/compiler/tmp/scripts/install-dotnet.ps1`, into the spiral-bin cache) and the single-flight
+.NET 11 SDK (`apps/compiler/scripts/install-dotnet.ps1`, into the spiral-bin cache) and the single-flight
 `SpiralCompiler.dll` (`scripts/build.ps1 -Mode single-flight`), then `mix local.hex`/`local.rebar --if-missing` and
 `mix deps.get` when `deps/kino` is absent. It passes the resolved `SPIRAL_DOTNET`, `SPIRAL_COMPILER_DLL` and
 `SPIRAL_COMPILER_PACKAGE_DIR` on to mix.
@@ -220,7 +220,7 @@ A native target (`///> c`, `cpp`, `delphi`) passes only when its program exits 0
 so an assertion that exits 1 fails the test. `///> c` is built like the compiler matrix builds its C rows:
 `gcc -std=c11 -O2 -w -fwrapv [-include <notebook dir>/c-shim.h] -o cell main.c -lm` (`cl /O2` with MSVC). The Rust host is built like the matrix's Rust rows too: `rustc +1.99.0 -C opt-level=2 -A warnings --edition 2024`
 (`+1.99.0` only when `rustc` is rustup's proxy). `///> delphi` uses `dcc32` (`SPIRAL_DCC`) when present, else Free Pascal
-the way the matrix builds its Delphi rows: `fpc -O2 -Mdelphi` (`SPIRAL_FPC`, `fpc` on PATH, or scoop's freepascal).
+the way the matrix builds its Delphi rows: `fpc -Px86_64 -O2 -Mdelphi` (`SPIRAL_FPC`, `fpc` on PATH, or scoop's freepascal).
 `///> lean` runs the `--backend Lean` output with `lean --run` on the matrix's toolchain `leanprover/lean4:v4.35.0`:
 `SPIRAL_LEAN` (an elan proxy, given `+leanprover/lean4:v4.35.0`), else that toolchain's own `lean` under `ELAN_HOME`,
 `~/.elan` or scoop's elan, else `lean` on PATH with `+leanprover/lean4:v4.35.0`.

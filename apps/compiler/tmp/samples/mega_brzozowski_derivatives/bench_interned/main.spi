@@ -1,5 +1,5 @@
-open main
-open runtime_workload
-open runtime_interned
+:< main
+:< runtime_workload
+:< runtime_interned
 
-inl main () : i32 = expect_random_counts (run_interned_random_workloads 2000i32 32i32) 997i32 985i32
+:= main () : i32 = expect_random_counts (run_interned_random_workloads 2000i32 32i32) 997i32 985i32

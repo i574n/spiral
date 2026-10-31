@@ -1,0 +1,26 @@
+:= sqrt32 (x : f32) : f32 = !!!!Sqrt(x)
+:= exp32 (x : f32) : f32 = !!!!Exp(x)
+:= log32 (x : f32) : f32 = !!!!Log(x)
+:= sin32 (x : f32) : f32 = !!!!Sin(x)
+:= cos32 (x : f32) : f32 = !!!!Cos(x)
+:= tanh32 (x : f32) : f32 = !!!!Tanh(x)
+:= pow32 (x : f32) (y : f32) : f32 = !!!!Pow(x, y)
+:= nan32 (x : f32) : bool = !!!!NanIs(x)
+
+:= main () : i32 =
+    := ~zero = 0f32
+    := ~one = 1f32
+    := ~four = 4f32
+    := ~three = 3f32
+    := ~inf : f32 = !!!!Infinity(`f32)
+    := nan = inf -. inf
+    ? sqrt32 four =. 2f32
+        && exp32 zero =. one
+        && log32 one =. zero
+        && sin32 zero =. zero
+        && cos32 zero =. one
+        && tanh32 zero =. zero
+        && pow32 three one =. three
+        && nan32 nan
+    ?> (? nan32 one ?> 2i32 |: 0i32)
+    |: 1i32

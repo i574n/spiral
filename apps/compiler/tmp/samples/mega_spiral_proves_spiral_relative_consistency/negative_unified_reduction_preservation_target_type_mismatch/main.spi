@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_unified_reduction_preservation_target_type_mismatch
+:= impossible_unified_reduction_preservation_target_type_mismatch
     (reduction :
         exact_linear_indexed_reduction
             (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_bool_type)
@@ -13,8 +13,8 @@ inl impossible_unified_reduction_preservation_target_type_mismatch
     =
     exact_linear_indexed_reduction_preservation reduction
 
-inl main () =
-    inl step :
+:= main () =
+    := step :
         exact_linear_indexed_open_identity_beta_step exact_linear_bool_type =
         exact_linear_indexed_open_identity_beta_step_witness ()
     impossible_unified_reduction_preservation_target_type_mismatch

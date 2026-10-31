@@ -15,9 +15,9 @@ Write-Output "spiral/lib/spiral/build.ps1 / ScriptDir: $ScriptDir / ResolvedScri
 $livebook = Join-Path $ResolvedScriptDir "../../apps/cells/spi/run_notebook.ps1"
 $notebooks = @(
     "physics", "parsing", "sm'", "rust/rust", "rust/testing", "rust/near", "rust/near_workspaces", "testing", "guid",
-    "async", "runtime", "trace", "am'", "crypto", "common", "resultm", "console", "base", "convert", "date_time", "math",
+    "async", "trace", "am'", "crypto", "common", "resultm", "console", "base", "convert", "date_time", "math",
     "mapm", "optionm'", "listm'", "reflection", "iter", "wasm", "leptos/leptos", "lustre", "util", "platform", "stream",
-    "threading", "benchmark", "seq", "env", "file_system", "networking"
+    "threading", "benchmark", "seq", "env", "file_system", "networking", "rust/clap"
 )
 function Get-NotebookArgs([string] $Notebook) {
     @("--path", (Join-Path $ResolvedScriptDir "$Notebook.spi"), "--livemd")

@@ -28,20 +28,12 @@ pub fn main() {
         case v2  {
             Us0Flag(v4) -> {
                 case v4 {
-                    True -> {
-                        11
-                    }
-                    False -> {
-                        5
-                    }
+                    True -> 11
+                    False -> 5
                 }
             }
-            Us0Hit(v3) -> {
-                v3
-            }
-            Us0Idle -> {
-                3
-            }
+            Us0Hit(v3) -> v3
+            Us0Idle -> 3
         }
     let v9 = spiral_wrap_signed(v8 + 31, 32)
     v9

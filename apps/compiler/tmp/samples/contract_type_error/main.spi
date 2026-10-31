@@ -1,1 +1,1 @@
-inl main () : i32 = "not-an-integer"
+:= main () : i32 = "not-an-integer"

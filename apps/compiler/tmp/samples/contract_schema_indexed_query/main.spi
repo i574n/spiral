@@ -1,58 +1,58 @@
-nominal schema_v4 = ()
-nominal schema_v5 = ()
+:! schema_v4 = ()
+:! schema_v5 = ()
 
-nominal nfe_v4 = { issuer : string; total_cents : i64 }
-nominal nfe_v5 = { issuer : string; total_cents : i64; technical_responsible : string }
+:! nfe_v4 = { issuer : string; total_cents : i64 }
+:! nfe_v5 = { issuer : string; total_cents : i64; technical_responsible : string }
 
-union document schema =
+:| document schema =
     | V4Document :: nfe_v4 -> document schema_v4
     | V5Document :: nfe_v5 -> document schema_v5
 
-union field schema value =
-    | Issuer :: forall schema. field schema string
-    | TotalCents :: forall schema. field schema i64
+:| field schema value =
+    | Issuer :: \* schema. field schema string
+    | TotalCents :: \* schema. field schema i64
     | TechnicalResponsible :: field schema_v5 string
 
-inl read_field forall schema value.
+:= read_field \* schema value.
     (field : field schema value)
     (document : document schema)
     : value =
-    match field, document with
-    | Issuer, V4Document payload => payload.issuer
-    | Issuer, V5Document payload => payload.issuer
-    | TotalCents, V4Document payload => payload.total_cents
-    | TotalCents, V5Document payload => payload.total_cents
-    | TechnicalResponsible, V5Document payload => payload.technical_responsible
+    ?= field, document ?|
+    | Issuer, V4Document payload => payload::issuer
+    | Issuer, V5Document payload => payload::issuer
+    | TotalCents, V4Document payload => payload::total_cents
+    | TotalCents, V5Document payload => payload::total_cents
+    | TechnicalResponsible, V5Document payload => payload::technical_responsible
 
-union rec query schema result =
-    | Get :: forall schema result. field schema result -> query schema result
-    | Zip :: forall schema a b. query schema a * query schema b -> query schema (a * b)
-    | Map :: forall schema result.
-        (exists input. (input -> result) * query schema input)
+:| ^ query schema result =
+    | Get :: \* schema result. field schema result -> query schema result
+    | Zip :: \* schema a b. query schema a * query schema b -> query schema (a * b)
+    | Map :: \* schema result.
+        (\? input. (input -> result) * query schema input)
         -> query schema result
 
-inl rec eval forall schema result.
+:= ^ eval \* schema result.
     (query : query schema result)
     (document : document schema)
     : result =
-    match query with
+    ?= query ?|
     | Get field => read_field field document
     | Zip (left, right) => eval left document, eval right document
     | Map pair =>
-        inl exists input. transform, inner = pair
+        := \? input. transform, inner = pair
         transform (eval inner document)
 
-inl select_technical (pair : string * string) : string =
-    inl _, technical = pair
+:= select_technical (pair : string * string) : string =
+    := _, technical = pair
     technical
 
-inl main () : string =
-    inl document =
+:= main () : string =
+    := document =
         V5Document (nfe_v5 {
             issuer = "ACME"
             total_cents = 4200i64
             technical_responsible = "typed-query"
         })
-    inl projection : query schema_v5 string =
-        Map (exists (select_technical, Zip (Get Issuer, Get TechnicalResponsible)))
+    := projection : query schema_v5 string =
+        Map (\? (select_technical, Zip (Get Issuer, Get TechnicalResponsible)))
     eval projection document

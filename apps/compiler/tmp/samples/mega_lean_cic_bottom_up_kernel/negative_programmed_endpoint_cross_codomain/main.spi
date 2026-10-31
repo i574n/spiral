@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_programmed_identity_as_unary_result () :
+:= impossible_programmed_identity_as_unary_result () :
     corrected_cic_instantiated_codomain
         (corrected_cic_substituted_codomain
             corrected_cic_unary_constructor_codomain_code
@@ -8,4 +8,4 @@ inl impossible_programmed_identity_as_unary_result () :
     corrected_cic_programmed_dependent_application_result
         (corrected_cic_programmed_identity_sort_zero_application ())
 
-inl main () = impossible_programmed_identity_as_unary_result ()
+:= main () = impossible_programmed_identity_as_unary_result ()

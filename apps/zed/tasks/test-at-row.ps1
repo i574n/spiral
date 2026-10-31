@@ -4,7 +4,7 @@ $lines = [IO.File]::ReadAllLines($File)
 $runner = Join-Path $PSScriptRoot '../../cells/spi/run_notebook.ps1'
 $output = Join-Path ([IO.Path]::GetTempPath()) ("spiral-zed-" + [IO.Path]::GetFileNameWithoutExtension($File) + ".ipynb")
 
-. (Join-Path $PSScriptRoot '../../compiler/tmp/scripts/env.ps1')
+. (Join-Path $PSScriptRoot '../../compiler/scripts/env.ps1')
 Set-StrictMode -Off
 
 function Get-CompilerBlockRows([string] $Path) {

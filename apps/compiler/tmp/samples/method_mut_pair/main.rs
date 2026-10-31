@@ -8,11 +8,11 @@ fn method0(mut v0: i32, mut v1: Rc<str>) -> Rc<RefCell<Mut0>> {
 fn spiral_main() -> i32 {
     let v0: i32 = 3i32;
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
-    let mut v2: Rc<RefCell<Mut0>> = method0(v0, v1.clone());
+    let mut v2: Rc<RefCell<Mut0>> = method0(v0, v1);
     let v3: i32 = 7i32;
     let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
     v2.borrow_mut().l0 = v3;
-    v2.borrow_mut().l1 = v4.clone();
+    v2.borrow_mut().l1 = v4;
     let (mut v5, mut v6): (i32, Rc<str>) = (v2.borrow().l0.clone(), v2.borrow().l1.clone());
     let v7: bool = v5 == 7i32;
     let v9: bool = if v7 {

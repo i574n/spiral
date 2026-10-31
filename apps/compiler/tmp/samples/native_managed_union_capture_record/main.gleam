@@ -74,9 +74,7 @@ pub fn closure1(capt: #(Us0)) -> fn(Int) -> Int {
         let #(v0) = capt
         let v12 =
             case v0  {
-                Us0Empty -> {
-                    3
-                }
+                Us0Empty -> 3
                 Us0Item(v2, v3) -> {
                     let v4 = spiral_string_length(v2)
                     let v5 = v3.size
@@ -101,9 +99,7 @@ pub fn closure0(capt: Nil) -> fn(Int) -> fn(Int) -> Int {
         let v3 = v0 == 0
         let v7 =
             case v3 {
-                True -> {
-                    Us0Empty
-                }
+                True -> Us0Empty
                 False -> {
                     let v5 = "hi"
                     Us0Item(v5, v1)

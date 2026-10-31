@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_closed_bool_program_outcome_mismatch ()
+:= impossible_closed_bool_program_outcome_mismatch ()
     : exact_linear_indexed_closed_bool_program
         exact_linear_closed_bool_false_normal =
     ExactLinearIndexedClosedBoolProgramIfTrue (
@@ -11,5 +11,5 @@ inl impossible_closed_bool_program_outcome_mismatch ()
             "the-unselected-else-branch-does-not-change-the-selected-program-outcome"),
         "the-result-index-must-be-derived-from-the-selected-recursive-program")
 
-inl main () =
+:= main () =
     impossible_closed_bool_program_outcome_mismatch ()

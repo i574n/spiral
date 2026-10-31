@@ -20,6 +20,9 @@
     | AxisAncestor :: axis element_kind
     | AxisAncestorOrSelf :: axis element_kind
     | AxisPreceding :: axis element_kind
+    | AxisFollowing :: axis element_kind
+    | AxisFollowingSibling :: axis element_kind
+    | AxisPrecedingSibling :: axis element_kind
     | AxisAttribute :: axis attribute_kind
 
 :| ^ step_axis =
@@ -37,6 +40,9 @@
     | AxisAncestor => "ancestor"
     | AxisAncestorOrSelf => "ancestor-or-self"
     | AxisPreceding => "preceding"
+    | AxisFollowing => "following"
+    | AxisFollowingSibling => "following-sibling"
+    | AxisPrecedingSibling => "preceding-sibling"
 
 := attribute_axis_name (a : axis attribute_kind) : string =
     ?= a ?|
@@ -57,6 +63,9 @@
     |? name = "ancestor" ?> ElementAxis AxisAncestor
     |? name = "ancestor-or-self" ?> ElementAxis AxisAncestorOrSelf
     |? name = "preceding" ?> ElementAxis AxisPreceding
+    |? name = "following" ?> ElementAxis AxisFollowing
+    |? name = "following-sibling" ?> ElementAxis AxisFollowingSibling
+    |? name = "preceding-sibling" ?> ElementAxis AxisPrecedingSibling
     |? name = "attribute" ?> AttributeAxis AxisAttribute
     |: UnsupportedAxis name
 
@@ -86,6 +95,8 @@
     | OpDivide :: operator number_result
     | OpModulo :: operator number_result
     | OpUnion :: operator nodes_result
+    | OpIntersect :: operator nodes_result
+    | OpExcept :: operator nodes_result
 
 :| ^ binary_operator =
     | BoolOperator : operator bool_result
@@ -128,6 +139,8 @@
 := nodes_operator_text (o : operator nodes_result) : string =
     ?= o ?|
     | OpUnion => "|"
+    | OpIntersect => "intersect"
+    | OpExcept => "except"
 
 := operator_text (o : binary_operator) : string =
     ?= o ?|
@@ -158,7 +171,9 @@
     |? x = "*" ?> Some (NumberOperator OpMultiply)
     |? x = "div" ?> Some (NumberOperator OpDivide)
     |? x = "mod" ?> Some (NumberOperator OpModulo)
-    |? x = "|" ?> Some (NodesOperator OpUnion)
+    |? x = "|" || x = "union" ?> Some (NodesOperator OpUnion)
+    |? x = "intersect" ?> Some (NodesOperator OpIntersect)
+    |? x = "except" ?> Some (NodesOperator OpExcept)
     |:
         ?= comparison_of x ?|
         | Some (c, flavor) => Some (BoolOperator (OpCompare (c, flavor)))
@@ -198,6 +213,7 @@
     | FnSubstringBefore :: builtin value_result
     | FnConcat :: builtin value_result
     | FnRound :: builtin value_result
+    | FnFloor :: builtin value_result
     | FnAbs :: builtin value_result
     | FnDecimal :: builtin value_result
     | FnNumber :: builtin value_result
@@ -215,6 +231,9 @@
     | FnTokenize :: builtin value_result
     | FnReplace :: builtin value_result
     | FnStringJoin :: builtin value_result
+    | FnStringToCodepoints :: builtin value_result
+    | FnCurrent :: builtin value_result
+    | FnNamespaceUri :: builtin value_result
 
 :| ^ function_ref =
     | BoolFunction : builtin bool_result
@@ -257,6 +276,7 @@
     | FnSubstringBefore => "substring-before"
     | FnConcat => "concat"
     | FnRound => "round"
+    | FnFloor => "floor"
     | FnAbs => "abs"
     | FnDecimal => "xs:decimal"
     | FnNumber => "number"
@@ -274,6 +294,9 @@
     | FnTokenize => "tokenize"
     | FnReplace => "replace"
     | FnStringJoin => "string-join"
+    | FnStringToCodepoints => "string-to-codepoints"
+    | FnCurrent => "current"
+    | FnNamespaceUri => "namespace-uri"
 
 := function_text (f : function_ref) : string =
     ?= f ?|
@@ -313,6 +336,7 @@
     |? name = "substring-before" ?> ValueFunction FnSubstringBefore
     |? name = "concat" ?> ValueFunction FnConcat
     |? name = "round" ?> ValueFunction FnRound
+    |? name = "floor" ?> ValueFunction FnFloor
     |? name = "abs" ?> ValueFunction FnAbs
     |? name = "xs:decimal" ?> ValueFunction FnDecimal
     |? name = "number" ?> ValueFunction FnNumber
@@ -330,7 +354,11 @@
     |? name = "tokenize" ?> ValueFunction FnTokenize
     |? name = "replace" ?> ValueFunction FnReplace
     |? name = "string-join" ?> ValueFunction FnStringJoin
+    |? name = "string-to-codepoints" ?> ValueFunction FnStringToCodepoints
     |? name = "xs:integer" ?> ValueFunction FnDecimal
+    |? name = "xs:double" ?> ValueFunction FnDecimal
+    |? name = "current" ?> ValueFunction FnCurrent
+    |? name = "namespace-uri" ?> ValueFunction FnNamespaceUri
     |: UnknownFunction name
 
 :| ^ xpath =
@@ -350,6 +378,8 @@
     | XMember : xpath * string * list string
     | XIf : xpath * xpath * xpath
     | XSequence : list xpath
+    | XFor : string * xpath * xpath
+    | XCastable : xpath * string * bool
 
 :| ^ kinded r =
     | ByOperator :: \* r. operator r * xpath -> kinded r
@@ -414,6 +444,7 @@
     ? i >= sm'.length s ?> i
     |? is_name_char (cp_at s i) ?> name_end s (i + xml.code_point_width s i)
     |? cp_at s i = 58u32 && i + 1i32 < sm'.length s && is_name_start (cp_at s (i + 1i32)) ?> name_end s (i + 1i32)
+    |? cp_at s i = 58u32 && i + 1i32 < sm'.length s && cp_at s (i + 1i32) = 42u32 ?> i + 2i32
     |: i
 
 :~ ^ digits_end (s : string) (i : i32) : i32 =
@@ -479,7 +510,8 @@
     |? level = 2i32 ?> "= != < <= > >= eq ne lt le gt ge"
     |? level = 3i32 ?> "+ -"
     |? level = 4i32 ?> "* div mod"
-    |: "|"
+    |? level = 5i32 ?> "| union"
+    |: "intersect except"
 
 := is_level_operator (level : i32) (x : string) : bool =
     sm'.contains (" " ++# x ++# " ") (" " ++# level_operators level ++# " ")
@@ -521,9 +553,15 @@
             := body, rest = parse_expr (after_first rest)
             XQuantified (q = "every", v, domain, body), rest
         |: (XInvalid "expected satisfies", rest)
+    | TName f :: TVariable v :: TName word :: rest ?& f = "for" && word = "in" =>
+        := domain, rest = parse_level 0i32 rest
+        ? is_word "return" rest ?>
+            := body, rest = parse_expr (after_first rest)
+            XFor (v, domain, body), rest
+        |: (XInvalid "expected return", rest)
     | _ => parse_level 0i32 tokens
 :& :~ parse_level (level : i32) (tokens : list token) : xpath * list token =
-    ? level > 5i32 ?> parse_unary tokens
+    ? level > 6i32 ?> parse_castable tokens
     |:
         := left, rest = parse_level (level + 1i32) tokens
         parse_level_rest level left rest
@@ -537,6 +575,12 @@
             | None => XInvalid ("unknown operator " ++# op)
             rest
     | None => left, tokens
+:& :~ parse_castable (tokens : list token) : xpath * list token =
+    := operand, rest = parse_unary tokens
+    ?= rest ?|
+    | TName c :: TName a :: TName ty :: rest ?& c = "castable" && a = "as" =>
+        ? is_symbol "?" rest ?> (XCastable (operand, ty, !+), after_first rest) |: (XCastable (operand, ty, !-), rest)
+    | _ => operand, rest
 :& :~ parse_unary (tokens : list token) : xpath * list token =
     ? is_symbol "-" tokens ?>
         := operand, rest = parse_unary (after_first tokens)
@@ -574,6 +618,9 @@
     | TSymbol x :: TName name :: rest ?& x = "@" => with_predicates input (AttributeAxis AxisAttribute) name rest
     | TSymbol x :: TSymbol star :: rest ?& x = "@" && star = "*" =>
         with_predicates input (AttributeAxis AxisAttribute) "*" rest
+    | TName axis :: TSymbol x :: TName kind :: TSymbol y :: TSymbol z :: rest
+        ?& x = "::" && y = "(" && z = ")" && is_kind_test kind =>
+        with_predicates input (step_axis_of axis) (kind ++# "()") rest
     | TName axis :: TSymbol x :: TName name :: rest ?& x = "::" => with_predicates input (step_axis_of axis) name rest
     | TName axis :: TSymbol x :: TSymbol star :: rest ?& x = "::" && star = "*" =>
         with_predicates input (step_axis_of axis) "*" rest
@@ -660,6 +707,9 @@
     | XIf (condition, yes, no) =>
         "(if " ++# xpath_text condition ++# " " ++# xpath_text yes ++# " " ++# xpath_text no ++# ")"
     | XSequence items => "(" ++# joined ("sequence" :: texts_of items []) "" ++# ")"
+    | XFor (v, domain, body) => "(for $" ++# v ++# " " ++# xpath_text domain ++# " " ++# xpath_text body ++# ")"
+    | XCastable (operand, ty, optional) =>
+        "(castable " ++# ty ++# (? optional ?> "?" |: "") ++# " " ++# xpath_text operand ++# ")"
 :& :~ predicates_text (predicates : list xpath) : string =
     ?= predicates ?|
     | p :: rest => " [" ++# xpath_text p ++# "]" ++# predicates_text rest
@@ -682,6 +732,8 @@
     | XMember (probe, _, _) => own + node_count counted probe
     | XIf (condition, yes, no) => own + node_count counted condition + node_count counted yes + node_count counted no
     | XSequence items => own + node_counts counted items
+    | XFor (_, domain, body) => own + node_count counted domain + node_count counted body
+    | XCastable (operand, _, _) => own + node_count counted operand
     | _ => own
 :& :~ node_counts (counted : xpath -> bool) (items : list xpath) : i32 =
     ?= items ?|
@@ -721,6 +773,8 @@
     | XMember (probe, codes, words) => XMember (lift_code_lists probe, codes, words)
     | XIf (condition, yes, no) => XIf (lift_code_lists condition, lift_code_lists yes, lift_code_lists no)
     | XSequence items => XSequence (lifted items)
+    | XFor (v, domain, body) => XFor (v, lift_code_lists domain, lift_code_lists body)
+    | XCastable (operand, ty, optional) => XCastable (lift_code_lists operand, ty, optional)
     | _ => x
 :& :~ lifted (items : list xpath) : list xpath =
     ?= items ?|
@@ -744,6 +798,11 @@ test parses_the_en16931_xpath_subset =
     check "../cbc:ID | ancestor::cac:Party/@id" union_expected
     check "cac:TaxScheme/normalize-space(cbc:ID)" "(apply (child::cac:TaxScheme .) (normalize-space (child::cbc:ID .)))"
     check "//(a|b)/c" "(child::c (apply (descendant-or-self::node() /) (| (child::a .) (child::b .))))"
+    check "for $c in a return $c + 1" "(for $c (child::a .) (+ $c 1))"
+    check "string(.) castable as xs:date" "(castable xs:date (string (self::node() .)))"
+    check "a castable as xs:integer?" "(castable xs:integer? (child::a .))"
+    check "1 + a castable as xs:integer" "(+ 1 (castable xs:integer (child::a .)))"
+    check "following::node()/hr:Name" "(child::hr:Name (following::node() .))"
 
 ///> rust
 test reports_malformed_expressions =
@@ -751,6 +810,11 @@ test reports_malformed_expressions =
     ? invalid_count (parse "a[b") = 0i32 ?> failwith "an unclosed predicate is invalid"
     ? invalid_count (parse "exists(a) b") = 0i32 ?> failwith "trailing tokens are invalid"
     ? invalid_count (parse "sum(a/b) + 1") <> 0i32 ?> failwith "a well formed sum"
+    ? invalid_count (parse "string-length(text()) = 10 and (string(.) castable as xs:date)") <> 0i32
+    ?> failwith "a castable test parses"
+    ? invalid_count (parse "string-join(for $cp in string-to-codepoints(a) return string($cp - 55), '')") <> 0i32
+    ?> failwith "a for expression parses inside a call"
+    ? invalid_count (parse "for $x in a satisfies $x") = 0i32 ?> failwith "a for without return is invalid"
 
 ///> rust
 test lifts_code_lists_into_membership =

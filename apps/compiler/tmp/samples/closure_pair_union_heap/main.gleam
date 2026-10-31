@@ -33,20 +33,14 @@ pub fn main() {
     let v3 = f_c0(#(v0, v2))
     let #(v4, v5) = v3(1)
     case v4  {
-        Us0None -> {
-            1
-        }
+        Us0None -> 1
         Us0Some(v6) -> {
             let v7 = v5.l0
             let v8 = spiral_wrap_signed(v6 + v7, 32)
             let v9 = v8 == 7
             case v9 {
-                True -> {
-                    0
-                }
-                False -> {
-                    1
-                }
+                True -> 0
+                False -> 1
             }
         }
     }

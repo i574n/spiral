@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("qwe"); } LIT.with(|lit| lit.clone()) };
-    let v1: i32 = (v0.clone().len() as i32);
+    let v1: i32 = (v0.len() as i32);
     let v2: i32 = v1.wrapping_add(v1);
     let v3: i32 = v2.wrapping_sub(6i32);
     v3

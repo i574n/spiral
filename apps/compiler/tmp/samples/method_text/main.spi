@@ -1,7 +1,7 @@
-inl pick (n : i32) : string =
-    if n =. 0i32 then "no" else "hi"
+:= pick (n : i32) : string =
+    ? n =. 0i32 ?> "no" |: "hi"
 
-inl main () : i32 =
-    inl ~n = 7i32
-    inl word = join pick n
-    if !!!!EQ(word, "hi") then 0i32 else 1i32
+:= main () : i32 =
+    := ~n = 7i32
+    := word = ~~ pick n
+    ? !!!!EQ(word, "hi") ?> 0i32 |: 1i32

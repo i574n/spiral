@@ -1,1 +1,1 @@
-inl extra () : i32 = 1i32
+:= extra () : i32 = 1i32

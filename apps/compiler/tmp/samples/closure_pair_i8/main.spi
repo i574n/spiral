@@ -1,11 +1,11 @@
-inl main () : i32 =
-    inl ~x = 100i8
-    inl f (n : i32) : i8 * i8 =
-        if n =. 0i32 then
+:= main () : i32 =
+    := ~x = 100i8
+    := f (n : i32) : i8 * i8 =
+        ? n =. 0i32 ?>
             0i8, 0i8
-        else
+        |:
             x, 7i8
-    inl ~g = f
-    inl pair = g 1i32
-    inl ~(left, right) = pair
-    if left =. 100i8 && right =. 7i8 then 0i32 else 1i32
+    := ~g = f
+    := pair = g 1i32
+    := ~(left, right) = pair
+    ? left =. 100i8 && right =. 7i8 ?> 0i32 |: 1i32

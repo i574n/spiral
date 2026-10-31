@@ -3,17 +3,17 @@ top
 
 level"""
 
-inl plus_length (s : string) (n : i32) : i32 = sm.length s + n
+:= plus_length (s : string) (n : i32) : i32 = sm::length s + n
 
-inl main () : i32 =
+:= main () : i32 =
     inl ~applied = plus_length """ab
 cd
 """ 10i32
-    inl ~annotated =
+    := ~annotated =
         """x
 y""" : string
-    inl ~quote_last = """say "hi""""
-    inl ~long_quotes = """"a """ b""""
+    := ~quote_last = """say "hi""""
+    := ~long_quotes = """"a """ b""""
     inl ~dedented = """
         first
             second
@@ -23,15 +23,15 @@ y""" : string
     inl ~opener_line = """ab
         cd
         """
-    inl fields = {
+    := fields = {
         text = (fun () => """
             ab
             """) : () -> string
         next = 1i32
         }
-    inl ~quoted = """a "b" c"""
-    inl ~empty = """"""
-    inl ~raw = """a\nb"""
+    := ~quoted = """a "b" c"""
+    := ~empty = """"""
+    := ~raw = """a\nb"""
     inl ~body = """first
 (* not a comment *)
 // nor this
@@ -39,39 +39,39 @@ y""" : string
 $"not a macro" !x
 inl fake () = 1
   indented"""
-    inl ~top = banner ()
-    inl len (s : string) : i32 = sm.length s
-    if len quoted <> 7i32 then 1i32
-    elif sm.index quoted 2i32 <> '"' then 2i32
-    elif len empty <> 0i32 then 3i32
-    elif len raw <> 4i32 then 4i32
-    elif sm.index raw 1i32 <> '\\' then 5i32
-    elif len body <> 83i32 then 6i32
-    elif sm.index body 5i32 <> '\n' then 7i32
-    elif sm.index body 37i32 <> '\n' then 8i32
-    elif sm.index body 38i32 <> '\n' then 9i32
-    elif sm.index body 39i32 <> '$' then 10i32
-    elif sm.index body 57i32 <> 'i' then 11i32
-    elif sm.index body 82i32 <> 'd' then 12i32
-    elif len top <> 11i32 then 13i32
-    elif sm.index top 0i32 <> '\n' then 14i32
-    elif sm.index top 5i32 <> '\n' then 15i32
-    elif applied <> 16i32 then 16i32
-    elif len annotated <> 3i32 then 17i32
-    elif len quote_last <> 8i32 then 18i32
-    elif sm.index quote_last 7i32 <> '"' then 19i32
-    elif len long_quotes <> 7i32 then 20i32
-    elif sm.index long_quotes 4i32 <> '"' then 21i32
-    elif len dedented <> 23i32 then 22i32
-    elif sm.index dedented 6i32 <> ' ' then 23i32
-    elif sm.index dedented 10i32 <> 's' then 24i32
-    elif sm.index dedented 17i32 <> '\n' then 25i32
-    elif sm.index dedented 22i32 <> 'd' then 26i32
-    elif len opener_line <> 5i32 then 27i32
-    elif sm.index opener_line 3i32 <> 'c' then 28i32
-    elif len (fields.text ()) <> 2i32 then 29i32
-    elif fields.next <> 1i32 then 30i32
-    else 0i32
+    := ~top = banner ()
+    := len (s : string) : i32 = sm::length s
+    ? len quoted <> 7i32 ?> 1i32
+    |? sm::index quoted 2i32 <> '"' ?> 2i32
+    |? len empty <> 0i32 ?> 3i32
+    |? len raw <> 4i32 ?> 4i32
+    |? sm::index raw 1i32 <> '\\' ?> 5i32
+    |? len body <> 83i32 ?> 6i32
+    |? sm::index body 5i32 <> '\n' ?> 7i32
+    |? sm::index body 37i32 <> '\n' ?> 8i32
+    |? sm::index body 38i32 <> '\n' ?> 9i32
+    |? sm::index body 39i32 <> '$' ?> 10i32
+    |? sm::index body 57i32 <> 'i' ?> 11i32
+    |? sm::index body 82i32 <> 'd' ?> 12i32
+    |? len top <> 11i32 ?> 13i32
+    |? sm::index top 0i32 <> '\n' ?> 14i32
+    |? sm::index top 5i32 <> '\n' ?> 15i32
+    |? applied <> 16i32 ?> 16i32
+    |? len annotated <> 3i32 ?> 17i32
+    |? len quote_last <> 8i32 ?> 18i32
+    |? sm::index quote_last 7i32 <> '"' ?> 19i32
+    |? len long_quotes <> 7i32 ?> 20i32
+    |? sm::index long_quotes 4i32 <> '"' ?> 21i32
+    |? len dedented <> 23i32 ?> 22i32
+    |? sm::index dedented 6i32 <> ' ' ?> 23i32
+    |? sm::index dedented 10i32 <> 's' ?> 24i32
+    |? sm::index dedented 17i32 <> '\n' ?> 25i32
+    |? sm::index dedented 22i32 <> 'd' ?> 26i32
+    |? len opener_line <> 5i32 ?> 27i32
+    |? sm::index opener_line 3i32 <> 'c' ?> 28i32
+    |? len (fields::text ()) <> 2i32 ?> 29i32
+    |? fields::next <> 1i32 ?> 30i32
+    |: 0i32
 
 inl unused () = """unused
 text"""

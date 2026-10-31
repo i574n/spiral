@@ -7,9 +7,7 @@ pub fn g_c1(capt: #(String, Int)) -> fn(Int) -> String {
                 let v4 = "no"
                 v4
             }
-            False -> {
-                v0
-            }
+            False -> v0
         }
     }
 }
@@ -26,11 +24,7 @@ pub fn main() {
     let v3 = v2(0)
     let v4 = v3 == "hi"
     case v4 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

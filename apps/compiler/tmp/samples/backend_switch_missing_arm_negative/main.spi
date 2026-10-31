@@ -1,0 +1,2 @@
+:= main () : i32 =
+    $'backend_switch_has_no_C_arm_in_lib_spiral' : i32

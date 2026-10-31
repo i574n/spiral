@@ -17,16 +17,10 @@ pub fn main() {
                 let v6 = v4 == 2147483648
                 v6
             }
-            False -> {
-                False
-            }
+            False -> False
         }
     case v7 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }

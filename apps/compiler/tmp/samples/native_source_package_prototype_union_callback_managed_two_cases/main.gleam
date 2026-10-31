@@ -36,28 +36,16 @@ pub fn main() {
     let v1 = method0(v0)
     let v6 =
         case v1  {
-            Us0Idle -> {
-                3
-            }
-            Us0Note(v3) -> {
-                6
-            }
-            Us0Text(v2) -> {
-                5
-            }
+            Us0Idle -> 3
+            Us0Note(v3) -> 6
+            Us0Text(v2) -> 5
         }
     let v7 = method1(v0)
     let v12 =
         case v7  {
-            Us0Idle -> {
-                3
-            }
-            Us0Note(v9) -> {
-                6
-            }
-            Us0Text(v8) -> {
-                5
-            }
+            Us0Idle -> 3
+            Us0Note(v9) -> 6
+            Us0Text(v8) -> 5
         }
     let v13 = spiral_wrap_signed(v6 + v12, 32)
     let v14 = spiral_wrap_signed(v13 + 31, 32)

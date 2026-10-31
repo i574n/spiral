@@ -1,31 +1,31 @@
-nominal epoch_42 = ()
-nominal fresh = ()
-nominal expired = ()
-nominal draft = ()
-nominal authorized = ()
+:! epoch_42 = ()
+:! fresh = ()
+:! expired = ()
+:! draft = ()
+:! authorized = ()
 
-union clock epoch =
+:| clock epoch =
     | Clock42 :: clock epoch_42
 
-union deadline epoch status =
+:| deadline epoch status =
     | FreshDeadline :: deadline epoch_42 fresh
     | ExpiredDeadline :: deadline epoch_42 expired
 
-union document epoch state =
+:| document epoch state =
     | DraftDocument :: document epoch_42 draft
     | AuthorizedDocument :: document epoch_42 authorized
 
-inl authorize forall epoch.
+:= authorize \* epoch.
     (clock : clock epoch)
     (deadline : deadline epoch fresh)
     (document : document epoch draft)
     : document epoch authorized =
-    match clock, deadline, document with
+    ?= clock, deadline, document ?|
     | Clock42, FreshDeadline, DraftDocument => AuthorizedDocument
 
-inl render (document : document epoch_42 authorized) : string =
-    match document with
+:= render (document : document epoch_42 authorized) : string =
+    ?= document ?|
     | AuthorizedDocument => "deadline-witness"
 
-inl main () : string =
+:= main () : string =
     render (authorize Clock42 FreshDeadline DraftDocument)

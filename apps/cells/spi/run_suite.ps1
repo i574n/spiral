@@ -37,7 +37,7 @@ try {
     if ($client.ConnectAsync('127.0.0.1', $Port).Wait(500)) { $stream = $client.GetStream(); $bytes = [Text.Encoding]::ASCII.GetBytes("retire`n"); $stream.Write($bytes, 0, $bytes.Length) }
     $client.Dispose()
 } catch { }
-. (Join-Path $PSScriptRoot '../../compiler/tmp/scripts/heavy.ps1')
+. (Join-Path $PSScriptRoot '../../compiler/scripts/heavy.ps1')
 $suiteOutcome = if ($suite.ExitCode) { "exit $($suite.ExitCode)" } else { 'ok' }
 try { Write-RunLedger 'cells-suite' "kino suite $Label" ([scriptblock]::Create("'" + ("run_suite.ps1 -Label $Label $($Tests -join ' ')" -replace "'", "''") + "'")) $suite.StartTime $suite.StartTime '-' $suiteOutcome 0 } catch { Write-Warning "run ledger: $($_.Exception.Message)" }
 "== $Label exit $($suite.ExitCode) (log $log)"

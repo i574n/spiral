@@ -55,7 +55,8 @@ modules:
     rust/
         near_workspaces
     stream
-    runtime
+    rust/
+        clap
     file_system
     file_system_operators
     process

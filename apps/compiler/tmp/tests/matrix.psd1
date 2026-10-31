@@ -248,7 +248,9 @@
         @{ Id = 'samples/conversation_negative_unanswered_call'; Contains = 'Expected: transcript no_pending' }
         @{ Id = 'samples/reactors_negative_port_type'; Contains = 'Expected: {init : f64; react : f64 -> {time : i64; micro : i32} -> signal i64' }
         @{ Id = 'samples/frontier_hopacsota_two_errors'; Contains = 'first body fails' }
+        @{ Id = 'samples/frontier_hopacsota_deferred_validation_mismatch'; Contains = 'The backend switch needs to have the same type for all of its branches.' }
         @{ Id = 'samples/gadt_growing_index_runtime'; Contains = 'has no finite layout' }
+        @{ Id = 'samples/backend_switch_missing_arm_negative'; Contains = 'reaches a lib/spiral backend_switch that has no arm for the' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_alphabet_mix'; Contains = 'Got: (tri_alphabet : *) Expected: (bit_alphabet : *)' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_antimirov_support_assignment_count'; Contains = 'Unification failure. Got: antimirov_support_slot_assignment' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_exact_rows_not_soundness_witness'; Contains = 'Unification failure. Got: indexed_dfa_exact_transition_rows bit_alphabet' }
@@ -493,6 +495,167 @@
         @{ Id = 'samples/mega_zeta_structural_laboratory/negative_sealed_composite_children_wrong_root'; Contains = 'ETY-TermError: Unification failure. Got: certified_interval_positive_positional_sealed_composite_children (positional_zero_bit (positional_one_bit (positional_zero_bit (positional_zero_bit positional_one)))) (positional_zero_bit (positional_one_bit positional_one)) (positional_zero_bit positional_one) Expected: ' }
         @{ Id = 'samples/mega_zeta_structural_laboratory/negative_structural_division_quotient_projection_mismatch'; Contains = 'ETY-TermError: Unification failure. Got: value_synthesized_structural_division (positional_zero_bit positional_one) (positional_zero_bit positional_one) positional_one positional_zero Expected: ' }
         @{ Id = 'samples/mega_zeta_structural_laboratory/negative_zero_remainder'; Contains = 'ETY-TermError: Unification failure. Got: positive_positional_nat positional_zero Expected: ' }
+        @{ Id = 'samples/contract_ack_before_publish'; Contains = 'Unification failure. Got: event_box published Expected: event_box persisted' }
+        @{ Id = 'samples/contract_missing_endpoint_capability'; Contains = 'Unification failure. Got: session present present Expected: session present missing' }
+        @{ Id = 'samples/contract_scoped_resource_escape'; Contains = 'The main function should not have a forall' }
+        @{ Id = 'samples/empty_match_parse_error'; Contains = 'Unexpected end of block past this token' }
+        @{ Id = 'samples/contract_balanced_as_constant'; Contains = 'Unification failure. Got: oracle constant Expected: oracle balanced' }
+        @{ Id = 'samples/contract_block_inside_phrasing'; Contains = 'Unification failure. Got: child flow Expected: child phrasing' }
+        @{ Id = 'samples/contract_branch_as_value'; Contains = 'Unification failure. Got: ir_op branch_result Expected: ir_op value' }
+        @{ Id = 'samples/contract_broken_degree_associativity'; Contains = 'Unification failure. Got: n_add n_two n_two n_four Expected: n_add n_two n_two n_three' }
+        @{ Id = 'samples/contract_bypass_validation_evidence'; Contains = 'Unification failure. Got: validation_evidence ready Expected: validation_evidence pending' }
+        @{ Id = 'samples/contract_call_unfiltered_reads'; Contains = 'Unification failure. Got: readset sample_a hg38 aligned Expected: readset ''a ''b filtered' }
+        @{ Id = 'samples/contract_call_unnormalized_likelihood'; Contains = 'Unification failure. Got: likelihoods sample_a hg38 chr1 model_v2 normalized Expected: likelihoods sample_a hg38 chr1 model_v2 raw' }
+        @{ Id = 'samples/contract_call_variants_on_raw_reads'; Contains = 'Unification failure. Got: readset donor_a hg38 aligned Expected: readset donor_a hg38 raw' }
+        @{ Id = 'samples/contract_cannot_regain_admin'; Contains = 'Unification failure. Got: capability publish_only Expected: capability admin' }
+        @{ Id = 'samples/contract_cnot_on_single_qubit'; Contains = 'Unification failure. Got: qregister (succ (succ zero)) Expected: qregister (succ zero)' }
+        @{ Id = 'samples/contract_commit_before_effect_drain'; Contains = 'Unification failure. Got: effect_batch app_scope epoch1 drained Expected: effect_batch app_scope epoch1 pending' }
+        @{ Id = 'samples/contract_commit_without_all_prepared'; Contains = 'Unification failure. Got: transaction ready missing open_phase Expected: transaction ready ready open_phase' }
+        @{ Id = 'samples/contract_compensation_before_commit'; Contains = 'Unification failure. Got: receipt draft sent committed Expected: receipt _ _ pending' }
+        @{ Id = 'samples/contract_cross_abi_polyglot_lowering'; Contains = 'Unification failure. Got: backend_capability backend_fsharp abi_net11 memory_gc capability_managed available Expected: backend_capability backend_fsharp abi_cuda memory_gc capability_managed available' }
+        @{ Id = 'samples/contract_cross_auction_vickrey_winner'; Contains = 'Unification failure. Got: winner auction_501 bidder_a lot_gpu_9 currency_usdc Expected: winner auction_502 bidder_a lot_gpu_9 currency_usdc' }
+        @{ Id = 'samples/contract_cross_backend_probe'; Contains = 'Unification failure. Got: v36b_probe v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_backend_wasm v36b_probed Expected: v36b_probe v36b_zone_orbit v36b_epoch_21 v36b_root_green v36b_backend_cuda v36b_probed' }
+        @{ Id = 'samples/contract_cross_branch_quantum_correction'; Contains = 'Unification failure. Got: classical_bit program_a epoch_4 branch_zero measured Expected: classical_bit program_a epoch_4 branch_one measured' }
+        @{ Id = 'samples/contract_cross_build_trio_inheritance'; Contains = 'Unification failure. Got: haplotype father hg38 chr1 paternal_phase Expected: haplotype father hg19 chr1 paternal_phase' }
+        @{ Id = 'samples/contract_cross_contig_variant_merge'; Contains = 'Unification failure. Got: callset donor_a hg38 chr1 Expected: callset donor_a hg38 chr2' }
+        @{ Id = 'samples/contract_cross_epoch_hidden_quorum'; Contains = 'Unification failure. Got: v36_share v36_tenant_blue v36_epoch_13 v36_root_b v36_lane_gamma v36_quorum_ready Expected: v36_share v36_tenant_blue v36_epoch_12 v36_root_b v36_lane_gamma v36_quorum_ready' }
+        @{ Id = 'samples/contract_cross_epoch_peer_receipt'; Contains = 'Unification failure. Got: healed_output transfer_a manifest_a peer_b host_b epoch_0 payload_a digest_a accepted Expected: healed_output transfer_a manifest_a peer_b host_b epoch_1 payload_a digest_a accepted' }
+        @{ Id = 'samples/contract_cross_kind_handoff'; Contains = 'Unification failure. Got: promise term_kind filled Expected: promise ty_kind filled' }
+        @{ Id = 'samples/contract_cross_lane_compensation'; Contains = 'Unification failure. Got: lane_compensation lane_bank settlement_batch_a branch_epoch_1 branch_compensated Expected: lane_compensation lane_carbon settlement_batch_a branch_epoch_1 branch_compensated' }
+        @{ Id = 'samples/contract_cross_lineage_teleport_correction'; Contains = 'Unification failure. Got: classical_bits lineage_a outcome_01 Expected: classical_bits lineage_b outcome_01' }
+        @{ Id = 'samples/contract_cross_manifest_mesh_commit'; Contains = 'Unification failure. Got: peer_output transfer_a manifest_stale peer_c payload_a digest_a accepted Expected: peer_output transfer_a manifest_a peer_c payload_a digest_a accepted' }
+        @{ Id = 'samples/contract_cross_operation_idempotency_key'; Contains = 'Unification failure. Got: request authorize string Expected: request query string' }
+        @{ Id = 'samples/contract_cross_owner_ancilla_release'; Contains = 'Unification failure. Got: loan owner_a Expected: loan owner_b' }
+        @{ Id = 'samples/contract_cross_pool_flash_repayment'; Contains = 'Unification failure. Got: repayment_receipt pool_alpha borrower_7 usdc block_19000000 Expected: repayment_receipt pool_beta borrower_7 usdc block_19000000' }
+        @{ Id = 'samples/contract_cross_root_therapy_publication'; Contains = 'Unification failure. Got: observer_checkpoint registry_root_a observer_b observed Expected: observer_checkpoint registry_root_b observer_b observed' }
+        @{ Id = 'samples/contract_cross_route_flank_lock'; Contains = 'Unification failure. Got: flank_lock flank_9 route_north train_77 epoch_5 Expected: flank_lock flank_9 route_south train_77 epoch_5' }
+        @{ Id = 'samples/contract_cross_scope_subscription'; Contains = 'Unification failure. Got: signal scope_b i32 Expected: signal scope_a i32' }
+        @{ Id = 'samples/contract_cross_wave_compensation_after_partition'; Contains = 'Unification failure. Got: mh_compensation lane_payment replay_batch_a recovery_wave_1 mh_compensated Expected: mh_compensation lane_shipping replay_batch_a recovery_wave_1 mh_compensated' }
+        @{ Id = 'samples/contract_dirty_ancilla_oracle'; Contains = 'Unification failure. Got: ancilla clean Expected: ancilla dirty' }
+        @{ Id = 'samples/contract_double_owner_close'; Contains = 'Unification failure. Got: owner _ owner_open Expected: owner term_kind owner_closed' }
+        @{ Id = 'samples/contract_duplicate_approver_quorum'; Contains = 'Unification failure. Got: distinct approver_a approver_a Expected: distinct approver_a approver_b' }
+        @{ Id = 'samples/contract_duplicate_erasure_shard'; Contains = 'Unification failure. Got: distinct_witness shard_a shard_a distinct Expected: distinct_witness shard_a shard_b distinct' }
+        @{ Id = 'samples/contract_duplicate_gossip_observer'; Contains = 'Unification failure. Got: distinct_observers observer_a observer_a distinct Expected: distinct_observers observer_a observer_b distinct' }
+        @{ Id = 'samples/contract_duplicate_measurement_branch'; Contains = 'Unification failure. Got: branch_result lineage_a one Expected: branch_result lineage_a zero' }
+        @{ Id = 'samples/contract_duplicate_microgrid_participant'; Contains = 'Unification failure. Got: prepare_vote participant_bank settlement_batch_a epoch_77 prepared Expected: prepare_vote participant_grid settlement_batch_a epoch_77 prepared' }
+        @{ Id = 'samples/contract_duplicate_public_signer_quorum'; Contains = 'Unification failure. Got: distinct signer_a signer_a Expected: distinct signer_a signer_b' }
+        @{ Id = 'samples/contract_duplicate_quantum_branch'; Contains = 'Unification failure. Got: qtoken lineage_a right_branch Expected: qtoken lineage_a left_branch' }
+        @{ Id = 'samples/contract_duplicate_recursive_quorum'; Contains = 'Unification failure. Got: approval_quorum missing missing Expected: approval_quorum present missing' }
+        @{ Id = 'samples/contract_event_before_hydration'; Contains = 'Unification failure. Got: view server cold Expected: view browser hydrated' }
+        @{ Id = 'samples/contract_exhausted_privacy_budget'; Contains = 'Unification failure. Got: privacy_budget client_a budget_a available Expected: privacy_budget client_a budget_a spent' }
+        @{ Id = 'samples/contract_existential_artifact_mismatch'; Contains = 'Unification failure. Got: attestation tenant_orbit epoch_42 root_new backend_gpu schema_v4 artifact_validated Expected: attestation tenant_orbit epoch_42 root_new backend_cpu schema_v3 artifact_validated' }
+        @{ Id = 'samples/contract_expired_deadline'; Contains = 'Unification failure. Got: deadline epoch_42 fresh Expected: deadline epoch_42 expired' }
+        @{ Id = 'samples/contract_federation_mixed_epoch'; Contains = 'Unification failure. Got: v36_share v36_tenant_blue v36_epoch_13 v36_root_b v36_lane_beta v36_quorum_ready Expected: v36_share v36_tenant_blue v36_epoch_12 v36_root_b v36_lane_beta v36_quorum_ready' }
+        @{ Id = 'samples/contract_foreign_executor_receipt'; Contains = 'Unification failure. Got: drain_receipt scope_a epoch1 executor_a drained Expected: drain_receipt scope_a epoch1 executor_b drained' }
+        @{ Id = 'samples/contract_foreign_signer_genome_dashboard'; Contains = 'Unification failure. Got: resource _ _ signer_b digest_a sample_a hg38 chr1 live Expected: resource app_scope epoch1 signer_a digest_a sample_a hg38 chr1 live' }
+        @{ Id = 'samples/contract_foreign_suspense_cancel_token'; Contains = 'Unification failure. Got: cancel_token app_scope epoch1 owner_a fresh Expected: cancel_token app_scope epoch1 owner_b fresh' }
+        @{ Id = 'samples/contract_gapped_genome_interval_merge'; Contains = 'Unification failure. Got: segment hg38 chr1 i1 i3 Expected: segment hg38 chr1 i2 i3' }
+        @{ Id = 'samples/contract_hott_broken_associator_pentagon'; Contains = 'Unification failure. Got: associator_2cell space_x point_a point_e path_p path_q path_r path_s vertex_5 vertex_4 edge_54_alt Expected: associator_2cell space_x point_a point_e path_p path_q path_r path_s vertex_5 vertex_4 edge_54' }
+        @{ Id = 'samples/contract_hott_broken_braided_hexagon'; Contains = 'Unification failure. Got: braiding_2cell monoidal_x object_a object_b object_c vertex_5 vertex_6 edge_56_stale Expected: braiding_2cell monoidal_x object_a object_b object_c vertex_5 vertex_6 edge_56' }
+        @{ Id = 'samples/contract_hott_incoherent_cube_edge'; Contains = 'Unification failure. Got: dependent_square family_f space_x b d f h fb fd ff fh edge_bd edge_fh edge_bf_wrong edge_dh po_bd po_fh po_bf po_dh right Expected: dependent_square family_f space_x b d f h fb fd ff fh edge_bd edge_fh edge_bf edge_dh po_bd po_fh po_bf po_dh right' }
+        @{ Id = 'samples/contract_hott_torus_noncommuting_algebra'; Contains = 'Unification failure. Got: automorphism_composition motive_p fiber_base auto_y_wrong auto_x compose_yx Expected: automorphism_composition motive_p fiber_base auto_y auto_x compose_yx' }
+        @{ Id = 'samples/contract_hott_truncation_into_untruncated_target'; Contains = 'Unification failure. Got: sethood target_set target_level_one Expected: sethood target_set target_level_set' }
+        @{ Id = 'samples/contract_hott_univalence_wrong_transport_path'; Contains = 'Unification failure. Got: ua_transport family_p universe_u type_a type_c equiv_ac ua_ac_other fiber_a fiber_c transport_ac Expected: ua_transport family_p universe_u type_a type_c equiv_ac ua_ac fiber_a fiber_c transport_ac' }
+        @{ Id = 'samples/contract_hydrate_checksum_mismatch'; Contains = 'Unification failure. Got: client_checksum checksum_a Expected: client_checksum checksum_b' }
+        @{ Id = 'samples/contract_illegal_indexed_bind'; Contains = 'Unification failure. Got: document loaded Expected: document idle' }
+        @{ Id = 'samples/contract_illegal_parallel_effect'; Contains = 'Unification failure. Got: task serial string Expected: task parallel string' }
+        @{ Id = 'samples/contract_illegal_plan_adjacency'; Contains = 'Unification failure. Got: fiscal_op (phase production schema_v4 signed normal) (phase production schema_v4 authorized contingency) Expected: fiscal_op (phase production schema_v4 signed contingency) (phase production schema_v4 authorized contingency)' }
+        @{ Id = 'samples/contract_illegal_scheduler_admission'; Contains = 'Unification failure. Got: receipt committed Expected: receipt pending' }
+        @{ Id = 'samples/contract_illegal_schema_query'; Contains = 'Unification failure. Got: field schema_v4 string Expected: field schema_v5 string' }
+        @{ Id = 'samples/contract_illegal_transition'; Contains = 'Unification failure. Got: document authorized Expected: document draft' }
+        @{ Id = 'samples/contract_incomplete_builder'; Contains = 'Unification failure. Got: nfe_builder (builder_state present present present) Expected: nfe_builder (builder_state present missing present)' }
+        @{ Id = 'samples/contract_incomplete_disposal_batch'; Contains = 'Unification failure. Got: disposal app_scope key_c disposed Expected: disposal app_scope key_b disposed' }
+        @{ Id = 'samples/contract_incomplete_scope_tree_teardown'; Contains = 'Unification failure. Got: disposal app_scope child_b disposed Expected: disposal app_scope child_a disposed' }
+        @{ Id = 'samples/contract_incomplete_shard_barrier'; Contains = 'Unification failure. Got: barrier present present present Expected: barrier present present missing' }
+        @{ Id = 'samples/contract_insufficient_quorum'; Contains = 'Unification failure. Got: quorum q1 Expected: quorum q2' }
+        @{ Id = 'samples/contract_invalid_applicative_map'; Contains = 'Unification failure. Got: validation (string * i32) Expected: validation i32' }
+        @{ Id = 'samples/contract_invalid_dag_dependency'; Contains = 'Unification failure. Got: string Expected: i32' }
+        @{ Id = 'samples/contract_invalid_genome_overlap'; Contains = 'Unification failure. Got: kmer hg38 chr1 overlap_a finish Expected: kmer hg38 chr1 overlap_c finish' }
+        @{ Id = 'samples/contract_invalid_manifest_edge'; Contains = 'Unification failure. Got: node _ _ _ draft authorized Expected: node publish_id serial publish_cap validated authorized' }
+        @{ Id = 'samples/contract_invalid_recursive_plan_append'; Contains = 'Unification failure. Got: operation s1 s3 Expected: operation s2 s3' }
+        @{ Id = 'samples/contract_invalid_saga_compensation'; Contains = 'Unification failure. Got: backward signed draft Expected: backward authorized signed' }
+        @{ Id = 'samples/contract_invalid_schema_iso'; Contains = 'Unification failure. Got: migration v6 v5 Expected: migration v5 v6' }
+        @{ Id = 'samples/contract_invalid_total_saga'; Contains = 'Unification failure. Got: forward draft authorized Expected: forward draft signed' }
+        @{ Id = 'samples/contract_meiosis_on_haploid'; Contains = 'Unification failure. Got: genome haploid Expected: genome diploid' }
+        @{ Id = 'samples/contract_misaligned_request_capability'; Contains = 'Unification failure. Got: capability_token writer Expected: capability_token (reader * writer)' }
+        @{ Id = 'samples/contract_misaligned_rollup_root'; Contains = 'Unification failure. Got: availability_certificate batch_700 epoch_31 root_poseidon_7 Expected: availability_certificate batch_700 epoch_31 root_poseidon_8' }
+        @{ Id = 'samples/contract_misaligned_serialized_row'; Contains = 'Unification failure. Got: row draft validated idempotent Expected: row validated authorized idempotent' }
+        @{ Id = 'samples/contract_mismatched_authority_identity'; Contains = 'Unification failure. Got: receipt publish_id validated authorized Expected: receipt validate_id draft validated' }
+        @{ Id = 'samples/contract_mismatched_cohort_calibration'; Contains = 'Unification failure. Got: release_permit cohort_a calibration_a authorized Expected: release_permit cohort_b calibration_b authorized' }
+        @{ Id = 'samples/contract_mismatched_execution_certificate'; Contains = 'Unification failure. Got: receipt compiler_v2 source_hash_a publish_node validated authorized committed Expected: receipt compiler_v2 source_hash_b publish_node validated authorized committed' }
+        @{ Id = 'samples/contract_mismatched_fanout_reducer'; Contains = 'Unification failure. Got: shard total i32 Expected: shard issuer string' }
+        @{ Id = 'samples/contract_mismatched_job_handler'; Contains = 'Unification failure. Got: validation_evidence ready -> string Expected: receipt committed -> string' }
+        @{ Id = 'samples/contract_mismatched_receipt'; Contains = 'Unification failure. Got: receipt publish_nfe string Expected: receipt query_status string' }
+        @{ Id = 'samples/contract_mismatched_reference_allele'; Contains = 'Unification failure. Got: variant hg38 chr1 pos100 allele_c allele_t raw Expected: variant hg38 chr1 pos100 allele_a allele_t raw' }
+        @{ Id = 'samples/contract_mismatched_risk_route'; Contains = 'Unification failure. Got: authorization low Expected: authorization high' }
+        @{ Id = 'samples/contract_mismatched_selective_risk'; Contains = 'Unification failure. Got: review high string Expected: review low string' }
+        @{ Id = 'samples/contract_missing_deployment_interpreter'; Contains = 'The higher order type instance bill does not have the prototype interpret.' }
+        @{ Id = 'samples/contract_missing_query_interpreter'; Contains = 'The higher order type instance remote does not have the prototype run_query.' }
+        @{ Id = 'samples/contract_missing_quota_capability'; Contains = 'Unification failure. Got: session present present present Expected: session present present missing' }
+        @{ Id = 'samples/contract_missing_route_parameter'; Contains = 'Unification failure. Got: route_params user_params Expected: route_params no_params' }
+        @{ Id = 'samples/contract_mixed_epoch_root_quorum'; Contains = 'Unification failure. Got: root_vote signer_b _ root_digest epoch1 verified Expected: root_vote signer_b key_b root_digest epoch0 verified' }
+        @{ Id = 'samples/contract_mixed_phase_set'; Contains = 'Unification failure. Got: phase_block sample_a hg38 chr1 pos1 ''a phase_set_a Expected: phase_block sample_a hg38 chr1 pos1 pos2 phase_set_b' }
+        @{ Id = 'samples/contract_non_polymorphic_emitter'; Contains = 'Unification failure. Got: forall a b e. operation a b e -> row a b e Expected: operation draft validated idempotent -> row draft validated idempotent' }
+        @{ Id = 'samples/contract_old_key_after_rotation'; Contains = 'Unification failure. Got: public_key _ _ _ active Expected: public_key signer_a key_old epoch0 retired' }
+        @{ Id = 'samples/contract_out_of_order_ssr_chunk'; Contains = 'Unification failure. Got: chunk app_scope i0 i2 Expected: chunk app_scope i1 i2' }
+        @{ Id = 'samples/contract_overlapping_quantum_partition'; Contains = 'Unification failure. Got: qregister lineage_a right_slots coherent Expected: qregister lineage_a left_slots coherent' }
+        @{ Id = 'samples/contract_parser_error'; Contains = 'Expected one of: inl, let, open, unary operator' }
+        @{ Id = 'samples/contract_provenance_confusion'; Contains = 'Unification failure. Got: step source_a draft validated Expected: step source_b draft validated' }
+        @{ Id = 'samples/contract_pure_forall_uninhabited'; Contains = 'Unification failure. Got: a Expected: ()' }
+        @{ Id = 'samples/contract_quantum_budget_underflow'; Contains = 'Unification failure. Got: budget (succ ''a) Expected: budget zero' }
+        @{ Id = 'samples/contract_qubit_scope_escape'; Contains = 'Unification failure. Got: qubit region_b coherent Expected: qubit region coherent' }
+        @{ Id = 'samples/contract_receive_before_send'; Contains = 'Unification failure. Got: session sent Expected: session idle' }
+        @{ Id = 'samples/contract_recombine_unphased_genotype'; Contains = 'Unification failure. Got: genotype unphased Expected: genotype phased' }
+        @{ Id = 'samples/contract_render_after_dispose'; Contains = 'Unification failure. Got: resource component_scope disposed Expected: resource _ live' }
+        @{ Id = 'samples/contract_render_stale_reactive_memo'; Contains = 'Unification failure. Got: memo app_scope epoch1 clean i32 Expected: memo app_scope epoch0 dirty i32' }
+        @{ Id = 'samples/contract_resource_budget_exhausted'; Contains = 'Unification failure. Got: budget (succ _) Expected: budget zero' }
+        @{ Id = 'samples/contract_retired_key_in_public_quorum'; Contains = 'Unification failure. Got: public_statement transfer_a manifest_good peer_a key_a_old round_29 authenticated Expected: public_statement transfer_a manifest_good peer_a key_a_new round_29 authenticated' }
+        @{ Id = 'samples/contract_reuse_quantum_continuation'; Contains = 'Unification failure. Got: qcontinuation lineage_a epoch0 ''a ''b fresh Expected: qcontinuation lineage_a epoch0 epoch1 owner_a used' }
+        @{ Id = 'samples/contract_reversed_genome_interval'; Contains = 'Unification failure. Got: lt (succ zero) zero Expected: lt zero (succ zero)' }
+        @{ Id = 'samples/contract_rna_base_in_dna_codon'; Contains = 'Unification failure. Got: nucleotide dna Expected: nucleotide rna' }
+        @{ Id = 'samples/contract_self_targeting_cnot'; Contains = 'Unification failure. Got: distinct slot0 slot0 Expected: distinct slot0 slot1' }
+        @{ Id = 'samples/contract_shared_budget_double_allocation'; Contains = 'Unification failure. Got: nat_add nat_two nat_one nat_three Expected: nat_add nat_two nat_two nat_three' }
+        @{ Id = 'samples/contract_stale_cache_key'; Contains = 'Unification failure. Got: result Expected: string' }
+        @{ Id = 'samples/contract_stale_chain_genome_stream'; Contains = 'Unification failure. Got: resource _ _ _ _ _ digest_b live Expected: resource app_scope epoch1 sample_a hg38 chr1 digest_a live' }
+        @{ Id = 'samples/contract_stale_dom_commit_ticket'; Contains = 'Unification failure. Got: commit_ticket scope_a epoch1 host_a current Expected: commit_ticket scope_a epoch0 host_a current' }
+        @{ Id = 'samples/contract_stale_epoch_completion'; Contains = 'Unification failure. Got: completion worker_a epoch_1 Expected: completion worker_a epoch_2' }
+        @{ Id = 'samples/contract_stale_epoch_lease'; Contains = 'Unification failure. Got: authority epoch_one Expected: authority epoch_two' }
+        @{ Id = 'samples/contract_stale_host_epoch_commit'; Contains = 'Unification failure. Got: effect_drain root_scope generation_7 drained Expected: effect_drain root_scope generation_6 drained' }
+        @{ Id = 'samples/contract_stale_manifest_chunk_resume'; Contains = 'Unification failure. Got: chunk_receipt transfer_a manifest_v1 chunk_2 digest_2 receiver_a journal_a accepted Expected: chunk_receipt transfer_a manifest_v2 chunk_2 digest_2 receiver_a journal_a accepted' }
+        @{ Id = 'samples/contract_stale_membership_byzantine_commit'; Contains = 'Unification failure. Got: byzantine_commit transfer_a manifest_good round_28 epoch_0 committed Expected: byzantine_commit transfer_a manifest_good round_28 epoch_1 committed' }
+        @{ Id = 'samples/contract_stale_pbft_view_certificate'; Contains = 'Unification failure. Got: new_view_certificate view_8 epoch_11 request_42 Expected: new_view_certificate view_7 epoch_11 request_42' }
+        @{ Id = 'samples/contract_stale_quantum_epoch'; Contains = 'Unification failure. Got: qstate (succ zero) Expected: qstate zero' }
+        @{ Id = 'samples/contract_stale_quantum_loan_release'; Contains = 'Unification failure. Got: qloan lineage_a epoch1 owner_a slot0 live Expected: qloan lineage_a epoch0 owner_a slot0 live' }
+        @{ Id = 'samples/contract_stale_root_genome_dashboard'; Contains = 'Unification failure. Got: dashboard _ _ root_a mounted Expected: dashboard scope_a epoch1 root_b mounted' }
+        @{ Id = 'samples/contract_stale_ssle_epoch_ticket'; Contains = 'Unification failure. Got: ssle_ticket validator_17 committee_9 epoch_22 Expected: ssle_ticket validator_17 committee_9 epoch_21' }
+        @{ Id = 'samples/contract_stale_surgery_epoch_commit'; Contains = 'Unification failure. Got: effect_drain room_a epoch_44 drained Expected: effect_drain room_a epoch_43 drained' }
+        @{ Id = 'samples/contract_subject_reduction_wrong_target'; Contains = 'Unification failure. Got: typed_reduction_chain empty_ctx bool_sort target_false target_false Expected: typed_reduction_chain empty_ctx bool_sort target_true target_false' }
+        @{ Id = 'samples/contract_submit_handler_as_click'; Contains = 'Unification failure. Got: event_capability browser click Expected: event_capability browser submit' }
+        @{ Id = 'samples/contract_transcribe_coding_strand'; Contains = 'Unification failure. Got: dna_strand coding five_to_three Expected: dna_strand template three_to_five' }
+        @{ Id = 'samples/contract_type_error'; Contains = 'Unification failure. Got: i32 Expected: string' }
+        @{ Id = 'samples/contract_uncalibrated_genotype_likelihood'; Contains = 'Unification failure. Got: readset sample_a hg38 chr1 calibrated Expected: readset sample_a hg38 chr1 aligned' }
+        @{ Id = 'samples/contract_uncommitted_publish'; Contains = 'Unification failure. Got: status_receipt committed Expected: status_receipt pending' }
+        @{ Id = 'samples/contract_uncommitted_receipt'; Contains = 'Unification failure. Got: receipt authorization_evidence committed Expected: receipt authorization_evidence pending' }
+        @{ Id = 'samples/contract_uncompensated_non_idempotent'; Contains = 'Unification failure. Got: compensation_proof requires_compensation Expected: compensation_proof no_compensation' }
+        @{ Id = 'samples/contract_uncompute_with_foreign_garbage'; Contains = 'Unification failure. Got: garbage owner_a computed Expected: garbage owner_b computed' }
+        @{ Id = 'samples/contract_unitary_after_measurement'; Contains = 'Unification failure. Got: qstate measured (succ zero) Expected: qstate coherent (succ zero)' }
+        @{ Id = 'samples/contract_unrooted_byzantine_evidence'; Contains = 'Unification failure. Got: inclusion_proof leaf_0 snapshot_digest_fork merkle_root_30 authenticated Expected: inclusion_proof leaf_0 snapshot_digest_30 merkle_root_30 authenticated' }
+        @{ Id = 'samples/contract_unsafe_retry'; Contains = 'Unification failure. Got: request non_retryable string Expected: request retryable string' }
+        @{ Id = 'samples/contract_unsealed_genome_dashboard'; Contains = 'Unification failure. Got: callset_authority sealed sample_a hg38 chr1 Expected: callset_authority unsealed sample_a hg38 chr1' }
+        @{ Id = 'samples/contract_wrong_adjoint_program'; Contains = 'Unification failure. Got: adjoint_proof program_a verified Expected: adjoint_proof program_b verified' }
+        @{ Id = 'samples/contract_wrong_environment_capability'; Contains = 'Unification failure. Got: document (phase homologation schema_v4 signed) Expected: document (phase production schema_v4 signed)' }
+        @{ Id = 'samples/contract_wrong_key_disposal'; Contains = 'Unification failure. Got: disposal app_scope removed_b disposed Expected: disposal app_scope removed_c disposed' }
+        @{ Id = 'samples/contract_wrong_key_reconciliation'; Contains = 'Unification failure. Got: keyed_child item_key i32 Expected: keyed_child foreign_key i32' }
+        @{ Id = 'samples/contract_wrong_reference_build'; Contains = 'Unification failure. Got: variant hg19 chr1 normalized Expected: variant hg38 chr1 normalized' }
+        @{ Id = 'samples/contract_wrong_registry_predecessor'; Contains = 'Unification failure. Got: root_link root0 root1 epoch0 epoch1 verified Expected: root_link root2 root1 epoch0 epoch1 verified' }
+        @{ Id = 'samples/contract_wrong_robot_frame'; Contains = 'Unification failure. Got: safety_envelope robot_a map_a frame_map start_a goal_a certified Expected: safety_envelope robot_a map_a frame_camera start_a goal_a certified' }
+        @{ Id = 'samples/contract_wrong_role_query'; Contains = 'Unification failure. Got: query operator schema_v5 string Expected: query auditor schema_v5 string' }
+        @{ Id = 'samples/contract_wrong_runtime_event'; Contains = 'Unification failure. Got: runtime_event validate_node draft validated Expected: runtime_event publish_node validated authorized' }
+        @{ Id = 'samples/contract_wrong_schema_codec'; Contains = 'Unification failure. Got: document schema_v4 Expected: document schema_v5' }
+        @{ Id = 'samples/contract_wrong_target_codec'; Contains = 'Unification failure. Got: document v6 Expected: document v5' }
+        @{ Id = 'samples/contract_wrong_timeout_witness'; Contains = 'Unification failure. Got: timeout_witness job_a Expected: timeout_witness job_b' }
+        @{ Id = 'samples/contract_wrong_transparency_root'; Contains = 'Unification failure. Got: inclusion_witness log_a root_a leaf_a index_7 verified Expected: inclusion_witness log_a root_b leaf_a index_7 verified' }
+        @{ Id = 'samples/contract_zero_retry_budget'; Contains = 'Unification failure. Got: budget (succ _) Expected: budget zero' }
     )
 
     Backends = @{
@@ -1794,6 +1957,7 @@
         'samples/wgsl_record_loop'
         'samples/wgsl_tail_call_in_match'
         'samples/wgsl_unit_self_loop'
+        'samples/native_float_math_f32'
     )
     Lean = @(
         'samples/frontier_gadt_growing_index'
@@ -3428,6 +3592,7 @@
         'samples/small_int_ops'
         'samples/small_int_scalar'
         'samples/ts_int_wrap'
+        'samples/native_float_math_family'
     )
     Ebpf = @(
         'samples/backend_smoke'

@@ -1,12 +1,12 @@
-inl main () : i32 =
-    inl ~x = 1.5f64
-    inl ~word = "no"
-    inl pair = x, word
-    inl box : mut { value : f64 * string } = !!!!LayoutToHeapMutable({ value = pair })
-    inl ~y = 2.5f64
-    inl ~next = "hi"
-    inl replaced = y, next
+:= main () : i32 =
+    := ~x = 1.5f64
+    := ~word = "no"
+    := pair = x, word
+    := box : mut { value : f64 * string } = !!!!LayoutToHeapMutable({ value = pair })
+    := ~y = 2.5f64
+    := ~next = "hi"
+    := replaced = y, next
     box <- { value = replaced }
-    inl opened = !!!!LayoutIndex(box)
-    inl ~(left, right) = opened.value
-    if !!!!EQ(left, 2.5f64) && !!!!EQ(right, "hi") then 0i32 else 1i32
+    := opened = !!!!LayoutIndex(box)
+    := ~(left, right) = opened::value
+    ? !!!!EQ(left, 2.5f64) && !!!!EQ(right, "hi") ?> 0i32 |: 1i32

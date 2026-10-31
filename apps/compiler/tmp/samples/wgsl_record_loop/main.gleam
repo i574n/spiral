@@ -9,9 +9,7 @@ pub fn loop_0(v0: Int, v1: Int, v2: Int, v3: Int) -> #(Int, Int) {
     let v4 = v1 >= v0
     let #(v9, v10) =
         case v4 {
-            True -> {
-                #(v2, v3)
-            }
+            True -> #(v2, v3)
             False -> {
                 let v5 = spiral_wrap_signed(v1 + 1, 32)
                 let v6 = spiral_wrap_signed(v2 + 1, 32)

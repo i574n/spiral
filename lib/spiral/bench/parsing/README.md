@@ -1,7 +1,7 @@
 # split_args / parsing benchmark
 
-Measures `lib/spiral/parsing` the way its real consumer uses it: `runtime.split_args`, which the spiral CLI
-(`apps/spiral/spiral.spi`) calls for every process it starts (`runtime.execute_with_options`). It compares that against
+Measures `lib/spiral/parsing` the way its real consumer uses it: `process.split_args`, which the spiral CLI
+(`apps/spiral/spiral.spi`) calls for every process it starts (`process.execute_with_options`). It compares that against
 the FParsec-backed `split_args` at the top of `parsing.livemd` (`## fparsec`, the same combinator frontend over FParsec).
 
 Implementations (one Spiral program per backend):
@@ -10,12 +10,12 @@ Implementations (one Spiral program per backend):
 |-----------|--------------------------------------------------------------------------|----------------------|
 | `fparsec` | `fparsec.spi`: copy of parsing.livemd's `## fparsec` frontend + split_args   | F# only              |
 | `pure`    | `pure_split.spi`: the same grammar on the pure-Spiral `parsing` library  | F#, native Rust      |
-| `runtime` | `runtime.split_args` (lib/spiral/runtime.spi), the CLI's                 | F#, native Rust      |
+| `process` | `process.split_args` (lib/spiral/process.spi), the CLI's                 | F#, native Rust      |
 
 `pure` and `fparsec` are the same grammar and must give identical results (the script lists any case where they
-don't). `runtime` adds an escaped-quote delimiter branch (`\"...\"`), so some of its results differ by design.
+don't). `process` adds an escaped-quote delimiter branch (`\"...\"`), so some of its results differ by design.
 
-Inputs (`bench_kit.spi`, a runtime array so nothing is constant-folded): runtime.livemd's split_args test cases (`t01`..`t12`),
+Inputs (`bench_kit.spi`, a runtime array so nothing is constant-folded): process.spi's split_args test cases (`t01`..`t12`),
 real CLI command lines (`cli_*`), and generated scaling inputs: `cli_x1/x4/x16` (a CLI line repeated 1/4/16 times:
 many arguments) and `quoted_64/256/1024` (one quoted argument of N chars: per-character string building). ns/call that
 grows faster than the length ratio between x1/x4/x16 or 64/256/1024 means quadratic behaviour.

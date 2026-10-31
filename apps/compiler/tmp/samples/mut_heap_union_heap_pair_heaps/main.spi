@@ -1,57 +1,57 @@
-union slot =
+:| slot =
     | None
     | Held : (heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
 
-let score x : i32 =
-    match x with
+:~ score x : i32 =
+    ?= x ?|
     | None => 1i32
     | Held box =>
-        inl opened = !!!!LayoutIndex(box)
-        inl ~(inner_held, flag) = opened.value
-        inl inner_opened = !!!!LayoutIndex(inner_held)
-        inl ~(left, right) = inner_opened.value
-        inl left_opened = !!!!LayoutIndex(left)
-        inl ~(a, b) = left_opened.value
-        inl right_opened = !!!!LayoutIndex(right)
-        inl ~(c, d) = right_opened.value
-        if a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && flag =. 2i32 then 0i32 else 1i32
+        := opened = !!!!LayoutIndex(box)
+        := ~(inner_held, flag) = opened::value
+        := inner_opened = !!!!LayoutIndex(inner_held)
+        := ~(left, right) = inner_opened::value
+        := left_opened = !!!!LayoutIndex(left)
+        := ~(a, b) = left_opened::value
+        := right_opened = !!!!LayoutIndex(right)
+        := ~(c, d) = right_opened::value
+        ? a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && flag =. 2i32 ?> 0i32 |: 1i32
 
-inl main () : i32 =
-    inl ~n = 1i32
-    inl ~word = "no"
-    inl left_pair = n, word
-    inl left_heap = !!!!LayoutToHeap({ value = left_pair })
-    inl ~m = 2i32
-    inl ~other = "zz"
-    inl right_pair = m, other
-    inl right_heap = !!!!LayoutToHeap({ value = right_pair })
-    inl pair = left_heap, right_heap
-    inl inner = !!!!LayoutToHeap({ value = pair })
-    inl ~mark = 3i32
-    inl outer_pair = inner, mark
-    inl outer = !!!!LayoutToHeap({ value = outer_pair })
-    inl ~on = true
-    inl held0 = if on then Held outer else None
-    inl box0 = !!!!LayoutToHeap({ value = held0 })
-    inl cell : mut { value : heap { value : slot } } = !!!!LayoutToHeapMutable({ value = box0 })
-    inl ~a0 = 7i32
-    inl ~b0 = "hi"
-    inl next_left_pair = a0, b0
-    inl next_left = !!!!LayoutToHeap({ value = next_left_pair })
-    inl ~c0 = 4i32
-    inl ~d0 = "yo"
-    inl next_right_pair = c0, d0
-    inl next_right = !!!!LayoutToHeap({ value = next_right_pair })
-    inl next_pair = next_left, next_right
-    inl next_inner = !!!!LayoutToHeap({ value = next_pair })
-    inl ~flag = 2i32
-    inl next_outer_pair = next_inner, flag
-    inl next_outer = !!!!LayoutToHeap({ value = next_outer_pair })
-    inl ~next_on = true
-    inl held1 = if next_on then Held next_outer else None
-    inl box1 = !!!!LayoutToHeap({ value = held1 })
+:= main () : i32 =
+    := ~n = 1i32
+    := ~word = "no"
+    := left_pair = n, word
+    := left_heap = !!!!LayoutToHeap({ value = left_pair })
+    := ~m = 2i32
+    := ~other = "zz"
+    := right_pair = m, other
+    := right_heap = !!!!LayoutToHeap({ value = right_pair })
+    := pair = left_heap, right_heap
+    := inner = !!!!LayoutToHeap({ value = pair })
+    := ~mark = 3i32
+    := outer_pair = inner, mark
+    := outer = !!!!LayoutToHeap({ value = outer_pair })
+    := ~on = !+
+    := held0 = ? on ?> Held outer |: None
+    := box0 = !!!!LayoutToHeap({ value = held0 })
+    := cell : mut { value : heap { value : slot } } = !!!!LayoutToHeapMutable({ value = box0 })
+    := ~a0 = 7i32
+    := ~b0 = "hi"
+    := next_left_pair = a0, b0
+    := next_left = !!!!LayoutToHeap({ value = next_left_pair })
+    := ~c0 = 4i32
+    := ~d0 = "yo"
+    := next_right_pair = c0, d0
+    := next_right = !!!!LayoutToHeap({ value = next_right_pair })
+    := next_pair = next_left, next_right
+    := next_inner = !!!!LayoutToHeap({ value = next_pair })
+    := ~flag = 2i32
+    := next_outer_pair = next_inner, flag
+    := next_outer = !!!!LayoutToHeap({ value = next_outer_pair })
+    := ~next_on = !+
+    := held1 = ? next_on ?> Held next_outer |: None
+    := box1 = !!!!LayoutToHeap({ value = held1 })
     cell <- { value = box1 }
-    inl opened = !!!!LayoutIndex(cell)
-    inl heap_held = opened.value
-    inl heap_opened = !!!!LayoutIndex(heap_held)
-    score heap_opened.value
+    := opened = !!!!LayoutIndex(cell)
+    := heap_held = opened::value
+    := heap_opened = !!!!LayoutIndex(heap_held)
+    score heap_opened::value

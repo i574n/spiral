@@ -1,6 +1,6 @@
-open main
+:< main
 
-inl impossible_recursive_beta_result_mismatch
+:= impossible_recursive_beta_result_mismatch
     ()
     : exact_linear_indexed_closed_recursive_beta_derivation exact_linear_bool_type exact_linear_bool_type
     =
@@ -13,4 +13,4 @@ inl impossible_recursive_beta_result_mismatch
             "the-negative-inner-body-binds-Bool"),
         "the-negative-tries-to-hide-a-Tensor-result-behind-a-Bool-index")
 
-inl main () = impossible_recursive_beta_result_mismatch ()
+:= main () = impossible_recursive_beta_result_mismatch ()

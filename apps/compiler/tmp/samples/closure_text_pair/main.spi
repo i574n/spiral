@@ -1,12 +1,12 @@
-inl main () : i32 =
-    inl ~a = "hi"
-    inl ~b = "yo"
-    inl f (z : i32) : string * string =
-        if z =. 0i32 then
+:= main () : i32 =
+    := ~a = "hi"
+    := ~b = "yo"
+    := f (z : i32) : string * string =
+        ? z =. 0i32 ?>
             "no", "nay"
-        else
+        |:
             a, b
-    inl ~g = f
-    inl pair = g 1i32
-    inl ~(left, right) = pair
-    if !!!!EQ(left, "hi") && !!!!EQ(right, "yo") then 0i32 else 1i32
+    := ~g = f
+    := pair = g 1i32
+    := ~(left, right) = pair
+    ? !!!!EQ(left, "hi") && !!!!EQ(right, "yo") ?> 0i32 |: 1i32

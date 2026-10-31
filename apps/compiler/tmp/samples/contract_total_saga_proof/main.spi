@@ -1,77 +1,77 @@
-nominal draft = ()
-nominal signed = ()
-nominal authorized = ()
+:! draft = ()
+:! signed = ()
+:! authorized = ()
 
-union document state =
+:| document state =
     | Draft :: document draft
     | Signed :: document signed
     | Authorized :: document authorized
 
-union forward from to =
+:| forward from to =
     | Sign :: forward draft signed
     | Authorize :: forward signed authorized
 
-union compensate from to =
+:| compensate from to =
     | Unauthorize :: compensate authorized signed
     | Unsign :: compensate signed draft
 
-union rec chain (step : * -> * -> *) from to =
-    | ChainStep :: forall (step : * -> * -> *) from to.
+:| ^ chain (step : * -> * -> *) from to =
+    | ChainStep :: \* (step : * -> * -> *) from to.
         step from to -> chain step from to
-    | ChainCompose :: forall (step : * -> * -> *) from to.
-        (exists middle. chain step from middle * chain step middle to)
+    | ChainCompose :: \* (step : * -> * -> *) from to.
+        (\? middle. chain step from middle * chain step middle to)
         -> chain step from to
 
-nominal total_saga from to =
+:! total_saga from to =
     {
         forward_plan : chain forward from to
         rollback_plan : chain compensate to from
     }
 
-inl apply_forward forall from to.
+:= apply_forward \* from to.
     (operation : forward from to)
     (document : document from)
     : document to =
-    match operation, document with
+    ?= operation, document ?|
     | Sign, Draft => Signed
     | Authorize, Signed => Authorized
 
-inl apply_compensation forall from to.
+:= apply_compensation \* from to.
     (operation : compensate from to)
     (document : document from)
     : document to =
-    match operation, document with
+    ?= operation, document ?|
     | Unauthorize, Authorized => Signed
     | Unsign, Signed => Draft
 
-inl rec fold_chain forall (step : * -> * -> *) (carrier : * -> *) from to.
-    (handler : forall a b. step a b -> carrier a -> carrier b)
+:= ^ fold_chain \* (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : \* a b. step a b -> carrier a -> carrier b)
     (program : chain step from to)
     (input : carrier from)
     : carrier to =
-    match program with
+    ?= program ?|
     | ChainStep atom => handler atom input
     | ChainCompose packed =>
-        inl exists middle. first, second = packed
+        := \? middle. first, second = packed
         fold_chain `$handler second (fold_chain `$handler first input)
 
-inl saga () : total_saga draft authorized =
+:= saga () : total_saga draft authorized =
     total_saga {
         forward_plan =
-            ChainCompose (exists (
+            ChainCompose (\? (
                 ChainStep Sign,
                 ChainStep Authorize
             ))
         rollback_plan =
-            ChainCompose (exists (
+            ChainCompose (\? (
                 ChainStep Unauthorize,
                 ChainStep Unsign
             ))
     }
 
-inl main () : string =
-    inl plan = saga ()
-    inl authorized = fold_chain `$apply_forward plan.forward_plan Draft
-    inl rolled_back = fold_chain `$apply_compensation plan.rollback_plan authorized
-    match rolled_back with
+:= main () : string =
+    := plan = saga ()
+    := authorized = fold_chain `$apply_forward plan::forward_plan Draft
+    := rolled_back = fold_chain `$apply_compensation plan::rollback_plan authorized
+    ?= rolled_back ?|
     | Draft => "rolled-back"

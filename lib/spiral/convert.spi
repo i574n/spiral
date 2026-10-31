@@ -470,6 +470,10 @@ test try_convert_reads_narrow_integers_natively =
         Fsharp = \ () => x |> $'uint64' : u64
         Python = \ () => x |> to : u64
         Rust = \ () => $'(!x as u64)' : u64
+        TypeScript = \ () =>
+            ? (~> ?: t ?| f32 => !+ | f64 => !+ | _ => !-)
+            ?> $'BigInt.asUintN(64, BigInt(Math.trunc(!x)))' : u64
+            |: $'BigInt.asUintN(64, BigInt(!x))' : u64
         Zig = \ () => numeric_conv x : u64
         Lean = \ () => numeric_conv x : u64
     }
@@ -482,6 +486,10 @@ test try_convert_reads_narrow_integers_natively =
         Fsharp = \ () => x |> convert : i32
         Python = \ () => x |> convert : i32
         Rust = \ () => x |> to : i32
+        TypeScript = \ () =>
+            ? (~> ?: t ?| f32 => !+ | f64 => !+ | _ => !-)
+            ?> $'(Math.trunc(!x) | 0)' : i32
+            |: $'Number(BigInt.asIntN(32, BigInt(!x)))' : i32
         Zig = \ () => numeric_conv x : i32
         Lean = \ () => numeric_conv x : i32
     }
@@ -494,6 +502,10 @@ test try_convert_reads_narrow_integers_natively =
         Fsharp = \ () => x |> $'int64' : i64
         Python = \ () => x |> to : i64
         Rust = \ () => x |> to : i64
+        TypeScript = \ () =>
+            ? (~> ?: t ?| f32 => !+ | f64 => !+ | _ => !-)
+            ?> $'BigInt.asIntN(64, BigInt(Math.trunc(!x)))' : i64
+            |: $'BigInt.asIntN(64, BigInt(!x))' : i64
         Zig = \ () => numeric_conv x : i64
         Lean = \ () => numeric_conv x : i64
     }

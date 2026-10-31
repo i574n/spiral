@@ -15,9 +15,7 @@ pub fn method1(v0: Int, v1: String) -> String {
     let v2 = spiral_wrap_signed(v0 - 1, 32)
     let v3 = v2 == 0
     case v3 {
-        True -> {
-            v1
-        }
+        True -> v1
         False -> {
             let v4 = v2 % 2
             let v5 = v4 == 0
@@ -67,11 +65,7 @@ pub fn main() {
     let v1 = spiral_string_length(v0)
     let v2 = v1 == 2
     case v2 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+        True -> 0
+        False -> 1
     }
 }
