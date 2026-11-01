@@ -1,280 +1,194 @@
-/// # leptos
 :< rust.rust_operators
 :< rust
 :< sm'_operators
 
-/// ### a'
 :! a' = $'leptos::html::A'
 
-/// ### event
 :! event = $'leptos::ev::Event'
 
-/// ### mouse_event
 :! mouse_event = $'leptos::ev::MouseEvent'
 
-/// ### button
 :! button = $'leptos::html::Button'
 
-/// ### details
 :! details = $'leptos::html::Details'
 
-/// ### dd
 :! dd = $'leptos::html::Dd'
 
-/// ### div
 :! div = $'leptos::html::Div'
 
-/// ### dl
 :! dl = $'leptos::html::Dl'
 
-/// ### dt
 :! dt = $'leptos::html::Dt'
 
-/// ### footer
 :! footer = $'leptos::html::Footer'
 
-/// ### header
 :! header = $'leptos::html::Header'
 
-/// ### input
 :! input = $'leptos::html::Input'
 
-/// ### label
 :! label = $'leptos::html::Label'
 
-/// ### main
 :! main = $'leptos::html::Main'
 
-/// ### nav
 :! nav = $'leptos::html::Nav'
 
-/// ### option'
 :! option' = $'leptos::html::Option_'
 
-/// ### pre
 :! pre = $'leptos::html::Pre'
 
-/// ### select
 :! select = $'leptos::html::Select'
 
-/// ### span
 :! span = $'leptos::html::Span'
 
-/// ### summary
 :! summary = $'leptos::html::Summary'
 
-/// ### table
 :! table = $'leptos::html::Table'
 
-/// ### thead
 :! thead = $'leptos::html::Thead'
 
-/// ### tbody
 :! tbody = $'leptos::html::Tbody'
 
-/// ### tr
 :! tr = $'leptos::html::Tr'
 
-/// ### th
 :! th = $'leptos::html::Th'
 
-/// ### td
 :! td = $'leptos::html::Td'
 
-/// ### svg
 :! svg = $'leptos::svg::Svg'
 
-/// ### path
 :! path = $'leptos::svg::Path'
 
-/// ### circle
 :! circle = $'leptos::svg::Circle'
 
-/// ### rect
 :! rect = $'leptos::svg::Rect'
 
-/// ### animate
 :! animate = $'leptos::svg::Animate'
 
-/// ### action
 :! action t u = $'leptos::prelude::Action<`t, `u>'
 
-/// ### arc_action
 :! arc_action t u = $'leptos::prelude::ArcAction<`t, `u>'
 
-/// ### for
 :! for = $'leptos::prelude::For'
 
-/// ### show
 :! show = $'leptos::prelude::Show'
 
-/// ### fragment
 :! fragment = $'leptos::prelude::Fragment'
 
-/// ### text
 :! text = $'leptos::tachys::renderer::dom::Text'
 
-/// ### route
 :! route = $'leptos_router::Route'
 
-/// ### nested_route
 :! nested_route = $'leptos_router::NestedRoute<_, _, _, _>'
 
-/// ### route_definition
 :! route_definition = $'leptos_router::RouteDefinition'
 
-/// ### router
 :! router = $'leptos_router::Router'
 
-/// ### routes
 :! routes = $'leptos_router::Routes'
 
-/// ### html_element
 :! html_element t = $'leptos::html::HtmlElement<`t, _, _>'
 
-/// ### into_view
 :! into_view = $'leptos::IntoView'
 
-/// ### location
 :! location = $'leptos_router::location::Location'
 
-/// ### navigate_options
 :! navigate_options = $'leptos_router::NavigateOptions'
 
-/// ### url
 :! url = $'leptos_router::location::Url'
 
-/// ### memo
 :! memo t = $'leptos::prelude::Memo<`t>'
 
-/// ### arc_memo
 :! arc_memo t = $'leptos::prelude::ArcMemo<leptos::__reexports::send_wrapper::SendWrapper<`t>>'
 
-/// ### rw_signal
 :! rw_signal t = $'leptos::prelude::RwSignal<`t>'
 
-/// ### arc_rw_signal
 :! arc_rw_signal t = $'leptos::prelude::ArcRwSignal<`t>'
 
-/// ### signal
 :! signal t = $'leptos::prelude::Signal<`t>'
 
-/// ### arc_signal
 :! arc_signal t = $'leptos::prelude::ArcSignal<`t>'
 
-/// ### read_signal
 :! read_signal t = $'leptos::prelude::ReadSignal<`t>'
 
-/// ### arc_read_signal
 :! arc_read_signal t = $'leptos::prelude::ArcReadSignal<`t>'
 
-/// ### write_signal
 :! write_signal t = $'leptos::prelude::WriteSignal<`t>'
 
-/// ### arc_write_signal
 :! arc_write_signal t = $'leptos::prelude::ArcWriteSignal<`t>'
 
-/// ### resource
 :! resource t u = $'leptos::prelude::Resource<`t, `u>'
 
-/// ### arc_resource
 :! arc_resource t u = $'leptos::prelude::ArcResource<`t, `u>'
 
-/// ### local_resource
 :! local_resource t u = $'leptos::prelude::LocalResource<`t, `u>'
 
-/// ### arc_local_resource
 :! arc_local_resource t = $'leptos::prelude::ArcLocalResource<`t>'
 
-/// ### any_view
 :! any_view = $'leptos::prelude::AnyView'
 
-/// ### view'
 :! view' t = $'leptos::prelude::View<`t>'
 
-/// ### view
 :! view = $'leptos::prelude::AnyView'
 
-/// ### keyboard_event
 :! keyboard_event = $'web_sys::KeyboardEvent'
 
-/// ### signal_get
 :? signal_get signal t : signal t -> t
 
-/// ### signal_get_untracked
 :? signal_get_untracked signal t : signal t -> t
 
-/// ### signal_update
 :? signal_update signal t : (t -> t) -> signal t -> ()
 
-/// ### signal_set
 :? signal_set signal t : t -> signal t -> ()
 
-/// ### prelude
 := prelude () =
     global "use leptos::prelude::*;"
 
-/// ### send_wrapper
 :! send_wrapper t = $'leptos::__reexports::send_wrapper::SendWrapper<`t>'
 
-/// ### send_wrapper_new
 := send_wrapper_new \* t. (x : t) : send_wrapper t =
     !\\(x, $'"leptos::__reexports::send_wrapper::SendWrapper::new($0)"')
 
-/// ### send_wrapper_get
 := send_wrapper_get \* t. (x : send_wrapper t) : t =
     $'(*!x).clone()'
 
-/// ### log_string
 := log_string (text : string) : () =
     $'leptos::logging::log\!("{}", !text)'
 
-/// ### log
 := log (text : string) : () =
     $'leptos::logging::log\!("{}", !text)'
 
-/// ### log_debug
 := log_debug (text : string) : () =
     $'leptos::logging::log\!("{:?}", !text)'
 
-/// ### log_pretty
 := log_pretty (text : string) : () =
     $'leptos::logging::log\!("{:\#?}", !text)'
 
-/// ### log_format
 := log_format fn obj =
     := text = #?*obj |> fn |> sm'.ellipsis_end 200
     text |> log
     obj
 
-/// ### mount_to_body
 := mount_to_body (view_fn : () -> view) : () =
     $'{ leptos::prelude::mount_to_body(move || (!view_fn)()); }'
 
-/// ### view_vec_to_fragment
 := view_vec_to_fragment (view : am'.vec view) : fragment =
     !\\(view, $'"leptos::prelude::Fragment::new($0)"')
 
-/// ### view_list_to_fragment
 := view_list_to_fragment (view : list view) : fragment =
     view
     |> am'.new_vec
     |> view_vec_to_fragment
 
-/// ### element_to_view
 := element_to_view (view : view' (html_element _)) : view =
     !\\(view, $'"leptos::prelude::IntoAny::into_any($0)"')
 
-/// ### view_to_fragment
 := view_to_fragment (view : view) : fragment =
     [ view ]
     |> view_list_to_fragment
 
-/// ### fragment_to_view
 := fragment_to_view (fragment : fragment) : view =
     !\\(fragment, $'"leptos::prelude::AnyView::from($0)"')
 
-/// ### element_to_fragment
 := element_to_fragment (view : view' (html_element _)) : fragment =
     view
     |> element_to_view
@@ -303,90 +217,71 @@
         | view' (html_element _) => element_to_view x
         | _ => x
 
-/// ### vec_to_view
 := vec_to_view (views : am'.vec view) : view =
     !\\(views, $'"leptos::prelude::IntoAny::into_any($0)"')
 
-/// ### view_list_to_view
 := view_list_to_view (views : list view) : view =
     views
     |> am'.new_vec
     |> vec_to_view
 
-/// ### text_to_view
 := text_to_view (text : string) : view =
     := text = text |> sm'.to_std_string
     !\\(text, $'"leptos::prelude::IntoAny::into_any(leptos::prelude::IntoView::into_view($0))"')
 
-/// ### text_to_fragment
 := text_to_fragment (text : string) : fragment =
     text
     |> text_to_view
     |> view_to_fragment
 
-/// ### macro_to_view
 := macro_to_view (macro : string) : view =
     prelude ()
     !\($'"leptos::prelude::IntoAny::into_any(leptos::prelude::view\! { " + !macro + " })"')
 
-/// ### macro_to_element
 := macro_to_element (macro : string) : view' (html_element _) =
     prelude ()
     !\($'"leptos::prelude::view\! { " + !macro + " }"')
 
-/// ### into_any_view
 := into_any_view (view : view' _) : view =
     !\\(view, $'"leptos::prelude::IntoAny::into_any($0)"')
 
-/// ### new_text
 := new_text (text : string) : text =
     !\\(text, $'"leptos::tachys::renderer::dom::Dom::create_text_node(&*$0)"')
 
-/// ### text_view
 := text_view (text : string) : view =
     text
     |> text_to_view
 
-/// ### text_fragment
 := text_fragment (text : string) : fragment =
     text
     |> text_view
     |> view_to_fragment
 
-/// ### provide_meta_context
 := provide_meta_context () : () =
     $'leptos_meta::provide_meta_context()'
 
-/// ### provide_context
 := provide_context \* t. (x : t) : () =
     := x = x |> send_wrapper_new
     $'leptos::context::provide_context(!x)'
 
-/// ### use_context
 := use_context \* t. () : optionm'.option' t =
     $'leptos::context::use_context::<leptos::__reexports::send_wrapper::SendWrapper<`t>>().map(|x| (*x).clone())'
 
-/// ### create_signal
 := create_signal \* t. (value : t) : read_signal t * write_signal t =
     !\\(value, $'"leptos::prelude::signal($0)"')
 
-/// ### new_rw_signal
 := new_rw_signal \* t. (value : t) : rw_signal t =
     !\\(value, $'"leptos::prelude::RwSignal::new($0)"')
 
-/// ### new_arc_rw_signal
 := new_arc_rw_signal \* t. (value : t) : arc_rw_signal t =
     !\\(value, $'"leptos::prelude::ArcRwSignal::new($0)"')
 
-/// ### read_only
 := read_only \* t. (value : rw_signal t) : read_signal t =
     !\\(value, $'"leptos::prelude::RwSignal::read_only(&$0)"')
 
-/// ### write_only
 := write_only \* t. (value : rw_signal t) : write_signal t =
     !\\(value, $'"leptos::prelude::RwSignal::write_only(&$0)"')
 
-/// ### typecheck_signal
 := typecheck_signal \* (t : * -> *) u. (signal : t u) : () =
     ~>
         ?: t ?|
@@ -402,18 +297,15 @@
         | arc_memo => ()
         | _ => error_type `(()) ("invalid signal", ``(t u))
 
-/// ### is_arc_memo
 := is_arc_memo \* (t : * -> *) u. (signal : t u) : bool =
     ~>
         ?: t ?|
         | arc_memo => !+
         | _ => !-
 
-/// ### memo_get'
 := memo_get' \* t. (memo : memo t) : t =
     !\\(memo, $'"$0()"')
 
-/// ### signal_get'
 := signal_get' \* (t : * -> *) u. (signal : t u) : u =
     signal |> typecheck_signal
     prelude ()
@@ -437,7 +329,6 @@
 :+ signal_get memo = signal_get'
 :+ signal_get arc_memo = signal_get'
 
-/// ### signal_update'
 := signal_update' \* (t : * -> *) u. (fn : u -> u) (signal : t u) : () =
     signal |> typecheck_signal
     prelude ()
@@ -451,7 +342,6 @@
 :+ signal_update write_signal = signal_update'
 :+ signal_update arc_write_signal = signal_update'
 
-/// ### signal_get_untracked'
 := signal_get_untracked' \* (t : * -> *) u. (signal : t u) : u =
     signal |> typecheck_signal
     prelude ()
@@ -471,7 +361,6 @@
 :+ signal_get_untracked memo = signal_get_untracked'
 :+ signal_get_untracked arc_memo = signal_get_untracked'
 
-/// ### signal_set'
 := signal_set' \* (t : * -> *) u. (value : u) (signal : t u) : () =
     signal |> typecheck_signal
     prelude ()
@@ -485,16 +374,13 @@
 :+ signal_set write_signal = signal_set'
 :+ signal_set arc_write_signal = signal_set'
 
-/// ### untrack
 := untrack \* t. (fn : () -> t) : t =
     !\\(fn, $'"leptos::prelude::untrack(move || $0())"')
 
-/// ### new_memo
 := new_memo \* t. (fn : () -> t) : memo t =
     := fn = fn |> send_wrapper_new
     $'leptos::prelude::Memo::new(move |_| (*!fn)())'
 
-/// ### new_arc_memo
 := new_arc_memo \* t. (fn : () -> t) : arc_memo t =
     global """
         pub struct SpiralMemoChanged<'a, T>(pub Option<&'a T>, pub Option<&'a T>);
@@ -510,171 +396,135 @@
         Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>| (&SpiralMemoChanged(a.map(|x| &**x), b.map(|x| \
         &**x))).spiral_memo_changed())'
 
-/// ### new_arc_local_resource
 := new_arc_local_resource \* t.
     (fetcher : () -> async.future_pin t)
     : arc_local_resource t
     =
     !\\(fetcher, $'"leptos::prelude::ArcLocalResource::new(move || $0())"')
 
-/// ### new_action
 := new_action \* t u. (action_fn : t -> async.future_pin u) : action t u =
     !\\(action_fn, $'"leptos::prelude::Action::new_local(move |value: &`t| $0(value.clone()))"')
 
-/// ### new_arc_action
 := new_arc_action \* t u. (action_fn : t -> async.future_pin u) : arc_action t u =
     !\\(action_fn, $'"leptos::prelude::ArcAction::new_unsync(move |value: &`t| $0(value.clone()))"')
 
-/// ### action_dispatch
 := action_dispatch \* t u. (value : heap t) (action : action (heap t) u) : () =
     $'{ leptos::prelude::Action::dispatch_local(&!action, !value.clone()); }'
 
-/// ### arc_action_dispatch
 := arc_action_dispatch \* t u. (value : heap t) (action : arc_action (heap t) u) : () =
     $'{ leptos::prelude::ArcAction::dispatch_local(&!action, !value.clone()); }'
 
-/// ### action_input
 := action_input \* t u. (action : action (heap t) u) : rw_signal (optionm'.option' t) =
     !\\(action, $'"leptos::prelude::Action::input(&$0)"')
 
-/// ### action_pending
 := action_pending \* t u. (action : action (heap t) u) : memo bool =
     !\\(action, $'"leptos::prelude::Action::pending(&$0)"')
 
-/// ### arc_action_pending
 := arc_action_pending \* t u. (action : arc_action (heap t) u) : arc_memo bool =
     := pending : $'leptos::prelude::ArcMemo<bool>' = !\\(action, $'"leptos::prelude::ArcAction::pending(&$0)"')
     new_arc_memo \ () => $'leptos::prelude::Get::get(&!pending)' : bool
 
-/// ### arc_action_pending_fn
 := arc_action_pending_fn \* t u. (action : arc_action (heap t) u) : () -> bool =
     := pending = action |> arc_action_pending
     \ () => pending |> signal_get
 
-/// ### action_value
 := action_value \* t u. (action : action (heap t) u) : rw_signal (optionm'.option' u) =
     !\\(action, $'"leptos::prelude::Action::value(&$0)"')
 
-/// ### arc_action_value
 := arc_action_value \* t u. (action : arc_action (heap t) u) : arc_rw_signal (optionm'.option' u) =
     !\\(action, $'"leptos::prelude::ArcAction::value(&$0)"')
 
-/// ### arc_action_value_get
 := arc_action_value_get \* t u. (action : arc_action (heap t) u) : optionm'.option' u =
     prelude ()
     $'leptos::prelude::Get::get(&leptos::prelude::ArcAction::value(&!action))'
 
-/// ### new_arc_signal_derive
 := new_arc_signal_derive \* t. (fn : () -> t) : arc_signal t =
     := fn = fn |> send_wrapper_new
     $'leptos::prelude::ArcSignal::derive(move || (*!fn)())'
 
-/// ### arc_local_resource_loading
 := arc_local_resource_loading \* t. (resource : arc_local_resource t) : arc_signal bool =
     new_arc_signal_derive \ () =>
         $'leptos::prelude::ArcLocalResource::get(&!resource).is_none()' : bool
 
-/// ### resource_get
 := resource_get \* t u. (resource : resource t u) : optionm'.option' u =
     !\\(resource, $'"leptos::prelude::Resource::get(&$0)"')
 
-/// ### local_resource_get
 := local_resource_get \* t u. (resource : local_resource t u) : optionm'.option' u =
     !\\(resource, $'"leptos::prelude::LocalResource::get(&$0)"')
 
-/// ### arc_local_resource_get
 := arc_local_resource_get \* t. (resource : arc_local_resource t) : optionm'.option' t =
     !\\(resource, $'"Option::map(leptos::prelude::ArcLocalResource::get(&$0), |x| x.clone())"')
 
-/// ### resource_with
 := resource_with \* t u v. (resource : resource t u) (fn : optionm'.option' u -> v) : v =
     !\\((resource, fn), $'"leptos::prelude::SignalWith::with(&$0, |x| $1(x.clone()))"')
 
-/// ### new_effect
 := new_effect (fn : () -> ()) : () =
     $'{ leptos::prelude::Effect::new(move |_| (!fn)()); }'
 
-/// ### window
 :~ window () : wasm.window =
     !\($'"leptos::prelude::window()"')
 
-/// ### attr_fn
 := attr_fn \* t. (name : string) (fn : () -> t) : string =
     := fn = fn |> send_wrapper_new
     $'"" + !name + "={ move || (*!fn)() }"'
 
-/// ### class_fn
 := class_fn (classes : string) (fn : () -> string) : string =
     attr_fn "class" \ () => classes ++# fn () |> sm'.to_std_string
 
-/// ### on_event
 := on_event \* t. (name : string) (fn : t -> ()) : string =
     := fn = fn |> send_wrapper_new
     $'"on:" + !name + "={ move |event| (*!fn)(event) }"'
 
-/// ### on_click
 := on_click (fn : () -> ()) : string =
     := fn = fn |> send_wrapper_new
     $'"on:click={ move |_| (*!fn)() }"'
 
-/// ### event_target_value
 := event_target_value \* t. (event : t) : sm'.std_string =
     !\\(event, $'"leptos::prelude::event_target_value(&$0)"')
 
-/// ### concat_props
 := concat_props props =
     ("", props)
     ||> listm.fold \ acc (x : string) =>
         $'" " + !x + !acc + ""'
 
-/// ### concat_markup
 := concat_markup (items : list string) : string =
     ("", items)
     ||> listm.fold \ acc (x : string) =>
         $'"" + !acc + !x + ""'
 
-/// ### tag_text
 := tag_text (tag : string) props (children : string) : string =
     := props = props |> concat_props
     $'"<" + !tag + " " + !props + ">" + !children + "</" + !tag + ">"'
 
-/// ### tag_raw
 := tag_raw tag props children : string =
     := children = children () |> fragment_to_view
     tag_text tag props $'"{ !children }"'
 
-/// ### reactive_view
 := reactive_view (fn : () -> view) : view =
     := fn = fn |> send_wrapper_new
     $'leptos::prelude::IntoAny::into_any(move || (*!fn)())'
 
-/// ### reactive_fragment
 := reactive_fragment (fn : () -> fragment) : fragment =
     reactive_view (\ () => fn () |> fragment_to_view)
     |> view_to_fragment
 
-/// ### tag_element
 := tag_element tag props children : view' (html_element _) =
     tag_raw tag props children
     |> macro_to_element
 
-/// ### tag_closed_raw
 := tag_closed_raw tag props =
     := tag : string = tag
     := props = props |> concat_props
     $'"<" + !tag + " " + !props + " />"'
 
-/// ### tag_closed
 := tag_closed tag props : view' (html_element _) =
     tag_closed_raw tag props
     |> macro_to_element
 
-/// ### for
 := for props : view =
     tag_closed_raw "leptos::prelude::For" props
     |> macro_to_view
 
-/// ### for
 := for \* t u (signal : * -> *).
     (signal : signal (am'.vec t))
     (key_fn : t -> u)
@@ -692,12 +542,10 @@
         $'"children={ move |x: leptos::__reexports::send_wrapper::SendWrapper<_>| (*!child)(x) }"'
     ]
 
-/// ### show
 := show props : view =
     tag_closed_raw "leptos::prelude::Show" props
     |> macro_to_view
 
-/// ### show
 := show (when_fn : () -> bool) (fallback : () -> view) (children : () -> fragment) : view =
     := children = children |> send_wrapper_new
     show [
@@ -706,11 +554,9 @@
         $'"children=leptos::children::ToChildren::to_children(move || (*!children)())"'
     ]
 
-/// ### use_location
 := use_location () : location =
     !\($'"leptos_router::hooks::use_location()"')
 
-/// ### use_navigate
 := use_navigate () : string -> () =
     := navigate : threading.arc (rust.dyn' (rust.action_fn2 (rust.ref sm'.str) navigate_options)) =
         !\($'"std::sync::Arc::new(leptos_router::hooks::use_navigate())"')
@@ -718,28 +564,22 @@
         := url = url |> sm'.as_str
         !\\((navigate, url), $'"$0($1, Default::default())"')
 
-/// ### location_hash
 := location_hash (location : location) : memo sm'.std_string =
     !\\(location, $'"$0.hash"')
 
-/// ### location_pathname
 := location_pathname (location : location) : memo sm'.std_string =
     !\\(location, $'"$0.pathname"')
 
-/// ### location_search
 := location_search (location : location) : memo sm'.std_string =
     !\\(location, $'"$0.search"')
 
-/// ### url_try_from
 := url_try_from (s : rust.ref sm'.str) : resultm.result' url sm'.std_string =
     !\\(s, $'"<leptos_router::location::BrowserUrl as leptos_router::location::LocationProvider>::parse($0).map_err(|x\
         | x.as_string().unwrap_or_default())"')
 
-/// ### url_pathname
 := url_pathname (url : url) : sm'.std_string =
     !\\(url, $'"$0.path().to_string()"')
 
-/// ### use_url
 := use_url () =
     := location = use_location ()
 
@@ -753,67 +593,53 @@
         url_pathname ++# url_search
     |> new_arc_memo
 
-/// ### route
 := route (path : string) (view : () -> view) : string =
     tag_closed_raw "leptos_router::components::Route" [
         $'"path=leptos_router::path\!(\\\"" + !path + "\\\")"'
         attr_fn "view" view
     ]
 
-/// ### routes
 := routes (fallback : () -> view) (routes : list string) : string =
     tag_text "leptos_router::components::Routes" [
         attr_fn "fallback" fallback
     ] (routes |> concat_markup)
 
-/// ### router
 := router (routes : string) : view =
     tag_text "leptos_router::components::Router" [] routes
     |> macro_to_view
 
-/// ### a'
 := a' props children : _ (_ a') =
     tag_element "a" props children
 
-/// ### button
 := button props children : _ (_ button) =
     tag_element "button" props children
 
-/// ### details
 := details props children : _ (_ details) =
     tag_element "details" props children
 
-/// ### div
 := div props children : _ (_ div) =
     tag_element "div" props children
 
-/// ### footer
 := footer props children : _ (_ footer) =
     tag_element "footer" props children
 
-/// ### header
 := header props children : _ (_ header) =
     tag_element "header" props children
 
-/// ### label
 := label props children : _ (_ label) =
     tag_element "label" props children
 
-/// ### main
 := main props children : _ (_ main) =
     tag_element "main" props children
 
 := main' () = ()
 
-/// ### nav
 := nav props children : _ (_ nav) =
     tag_element "nav" props children
 
-/// ### option'
 := option' props children : _ (_ option') =
     tag_element "option" props children
 
-/// ### option'
 := option' selected children : _ (_ option') =
     := selected : () -> bool = ~~ selected
     option' [
@@ -821,78 +647,59 @@
     ] \ () =>
         children |> text_to_fragment
 
-/// ### pre
 := pre props children : _ (_ pre) =
     tag_element "pre" props children
 
-/// ### select
 := select props children : _ (_ select) =
     tag_element "select" props children
 
-/// ### span
 := span props children : _ (_ span) =
     tag_element "span" props children
 
-/// ### summary
 := summary props children : _ (_ summary) =
     tag_element "summary" props children
 
-/// ### table
 := table props children : _ (_ table) =
     tag_element "table" props children
 
-/// ### thead
 := thead props children : _ (_ thead) =
     tag_element "thead" props children
 
-/// ### tbody
 := tbody props children : _ (_ tbody) =
     tag_element "tbody" props children
 
-/// ### tr
 := tr props children : _ (_ tr) =
     tag_element "tr" props children
 
-/// ### th
 := th props children : _ (_ th) =
     tag_element "th" props children
 
-/// ### td
 := td props children : _ (_ td) =
     tag_element "td" props children
 
-/// ### svg
 := svg props children : _ (_ svg) =
     tag_element "svg" props children
 
-/// ### path
 := path props : _ (_ path) =
     tag_element "path" props (\ () => [] |> view_list_to_fragment)
 
-/// ### circle
 := circle props : _ (_ circle) =
     tag_element "circle" props (\ () => [] |> view_list_to_fragment)
 
-/// ### rect
 := rect props children : _ (_ rect) =
     tag_element "rect" props children
 
-/// ### animate
 := animate props : _ (_ animate) =
     tag_element "animate" props (\ () => [] |> view_list_to_fragment)
 
-/// ### input
 := input props : _ (_ input) =
     tag_closed "input" props
 
-/// ### dd
 := dd props children : _ (_ dd) =
     tag_element "dd" props children
 
-/// ### dl
 := dl props children : _ (_ dl) =
     tag_element "dl" props children
 
-/// ### dt
 := dt props children : _ (_ dt) =
     tag_element "dt" props children

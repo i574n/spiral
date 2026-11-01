@@ -1,17 +1,13 @@
-/// # async
 test async static =
     :< testing
 
 :< rust
 :< rust_operators
 
-/// ### base_let'
 := base_let' x =
     let' x
 
 /// ## rust
-
-/// ### future
 :! future t =
     `(
         rust.rust_type
@@ -20,23 +16,18 @@ test async static =
             "type std_future_Future<'T> = class end"
     )
 
-/// ### future_pin
 :== future_pin t = rust.pin (rust.box (rust.dyn' (future t)))
 
-/// ### future_pin_send
 :== future_pin_send t = rust.pin (rust.box (rust.send (rust.dyn' (future t))))
 
-/// ### block_on_tokio
 := block_on_tokio \* t. (fn : future_pin t) : t =
     := runtime : infer =
         !\($'$"tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap()"')
     !\\(fn, $'"!runtime.handle().block_on($0)"')
 
-/// ### block_on_futures
 := block_on_futures \* t. (fn : future_pin t) : t =
     !\\(fn, $'"futures::executor::block_on($0)"')
 
-/// ### stream_ext_tokio
 :! stream_ext_tokio =
     `(
         rust.rust_type
@@ -45,7 +36,6 @@ test async static =
             "type tokio_stream_StreamExt = class end"
     )
 
-/// ### join_handle_tokio
 :! join_handle_tokio t =
     `(
         rust.rust_type
@@ -54,14 +44,12 @@ test async static =
             "type tokio_task_JoinHandle<'T> = class end"
     )
 
-/// ### stream_collect_futures
 := stream_collect_futures \* t u.
     (stream : t)
     : future_pin (am'.vec u)
     =
     !\($'"Box::pin(futures::stream::StreamExt::collect(!stream))"')
 
-/// ### stream_filter_map_futures
 := stream_filter_map_futures \* t u v.
     (fn : u -> optionm'.option' v)
     (stream : t)
@@ -70,7 +58,6 @@ test async static =
     := fn = ~~ fn
     !\($'"futures::stream::StreamExt::filter_map(!stream, |x| async { !fn(x) })"')
 
-/// ### try_join_all
 :! try_join_all t =
     `(
         rust.rust_type
@@ -86,7 +73,6 @@ test async static =
     := x = ~~ x
     !\($'"futures::future::try_join_all(!x)"')
 
-/// ### fuse_tokio
 :! fuse_tokio t =
     `(
         rust.rust_type
@@ -95,10 +81,8 @@ test async static =
             "type tokio_prelude_stream_Fuse<'T> = class end"
     )
 
-/// ### fuse'
 :== fuse' t = fuse_tokio t
 
-/// ### join_all
 :! join_all t =
     `(
         rust.rust_type
@@ -111,43 +95,34 @@ test async static =
     := x = ~~ x
     !\($'"futures::future::join_all(!x)"')
 
-/// ### join_handle'
 :== join_handle' t = join_handle_tokio t
 
-/// ### try_await_all
 := try_await_all \* t.
     (x : try_join_all (future_pin (resultm.result' t sm'.std_string)))
     : resultm.result' (am'.vec t) sm'.std_string
     =
     !\($'"!x.await"')
 
-/// ### await
 := await \* t. (x : future_pin t) : t =
     !\($'"!x.await"')
 
-/// ### await
 := await_send \* t. (x : future_pin_send t) : t =
     !\($'"!x.await"')
 
-/// ### into_iter
 :== into_iter t = array_base t
 
-/// ### into_par_iter
 := into_par_iter \* t. (x : am'.vec t) : into_iter t =
     x |> am'.from_vec_base
 
-/// ### par_map
 := par_map \* t u. (fn : t -> u) (ar : into_iter t) : into_iter u =
     := n : i32 = $'(!ar.borrow().len() as i32)'
     :~ ^ loop (i : i32) (acc : am'.vec u) : am'.vec u =
         ? i < n ?> loop (i + 1) (acc |> am'.vec_push (fn (am'.index_base i ar))) |: acc
     loop 0 (am'.new_vec []) |> am'.from_vec_base
 
-/// ### par_collect
 := par_collect \* t. (iter : into_iter t) : am'.vec t =
     iter |> am'.to_vec
 
-/// ### future_init
 := future_init \* t. (move : bool) (x : () -> t) : infer' t =
     (!\($'"true; let __future_init = Box::pin(/*"') : bool) |> ignore
     ? move
@@ -163,29 +138,23 @@ test async static =
 
     !\($'"__future_init"')
 
-/// ### new_future
 := new_future \* t. (x : () -> t) : future_pin t =
     := result = future_init !- x
     !\($'"!result"')
 
-/// ### new_future_move
 := new_future_move \* t. (x : () -> t) : future_pin t =
     := result = future_init !+ x
     !\($'"!result"')
 
-/// ### new_future_send
 := new_future_send \* t. (x : () -> t) : future_pin_send t =
     := result = future_init !- x
     !\($'"!result"')
 
-/// ### new_future_move_send
 := new_future_move_send \* t. (x : () -> t) : future_pin_send t =
     := result = future_init !+ x
     !\($'"!result"')
 
 /// ## fsharp
-
-/// ### async
 :! async_python t =
     `(
         backend_switch `(()) `({}) {
@@ -201,7 +170,6 @@ test async static =
     }
 :! async t = $'backend_switch `(async_switch t)'
 
-/// ### task
 :! task t =
     `(
         ?: t ?|
@@ -209,7 +177,6 @@ test async static =
         | _ => $'' : $'System.Threading.Tasks.Task<`t>'
     )
 
-/// ### new_task
 := new_task \* t. (fn : () -> t) : task t =
     run_target_args' fn \|
         | Fsharp _ => \ fn =>
@@ -222,7 +189,6 @@ test async static =
             $'match _new_task_!result with Some x -> x | None -> failwith "async.new_task / _new_task_!result=None"'
         | _ => \ _ => null ()
 
-/// ### await_task
 := await_task \* t. (a : task t) : async t =
     run_target \|
         | Fsharp _
@@ -230,15 +196,12 @@ test async static =
             a |> $'Async.AwaitTask'
         | _ => \ () => null ()
 
-/// ### future_of_async
 := future_of_async \* t. (a : async t) : future_pin t =
     $'!a' : future_pin t
 
-/// ### async_of_future
 := async_of_future \* t. (f : future_pin t) : async t =
     $'!f' : async t
 
-/// ### poll
 :! poll t =
     `(
         rust.rust_type
@@ -247,7 +210,6 @@ test async static =
             "type std_task_Poll<'T> = class end"
     )
 
-/// ### context
 :! context =
     `(
         rust.rust_type
@@ -256,7 +218,6 @@ test async static =
             "type std_task_Context = class end"
     )
 
-/// ### waker
 :! waker =
     `(
         rust.rust_type
@@ -265,7 +226,6 @@ test async static =
             "type std_task_Waker = class end"
     )
 
-/// ### thread_handle
 :! thread_handle =
     `(
         rust.rust_type
@@ -274,52 +234,41 @@ test async static =
             "type std_thread_Thread = class end"
     )
 
-/// ### current_thread
 := current_thread () : thread_handle =
     $'std::thread::current()' : thread_handle
 
-/// ### thread_park
 := thread_park () : () =
     $'std::thread::park()' : ()
 
-/// ### thread_waker_types
 := thread_waker_types () =
     global "struct SpiralThreadWaker(std::thread::Thread);"
     global "impl std::task::Wake for SpiralThreadWaker { fn wake(self: std::sync::Arc<Self>) { self.0.unpark() } }"
 
-/// ### thread_waker
 := thread_waker (thread : thread_handle) : waker =
     thread_waker_types ()
     $'std::task::Waker::from(std::sync::Arc::new(SpiralThreadWaker(!thread)))' : waker
 
-/// ### context_of_waker
 := context_of_waker (w : rust.ref waker) : context =
     $'std::task::Context::from_waker(!w)' : context
 
-/// ### poll_once
 := poll_once \* t. (f : rust.ref (rust.mut' (future_pin t))) (cx : rust.ref (rust.mut' context)) : poll t =
     $'std::future::Future::poll((!f).as_mut(), !cx)' : poll t
 
-/// ### poll_ready
 := poll_ready \* t. (x : t) : poll t =
     $'std::task::Poll::Ready(!x)' : poll t
 
-/// ### poll_pending
 := poll_pending \* t. () : poll t =
     $'std::task::Poll::Pending' : poll t
 
-/// ### poll_option
 := poll_option \* t. (p : poll t) : optionm'.option' t =
     $'match !p { std::task::Poll::Ready(v) => Some(v), std::task::Poll::Pending => None }' : optionm'.option' t
 
-/// ### poll_fn
 := poll_fn \* t. (body : rust.ref (rust.mut' context) -> poll t) : future_pin t =
     (!\($'"true; let __poll_fn = Box::pin(std::future::poll_fn(move |__poll_cx: &mut std::task::Context| { //"') : bool)
     |> ignore
     (!\\(body ($'__poll_cx' : rust.ref (rust.mut' context)), $'"true; $0 }))"') : bool) |> ignore
     !\($'"__poll_fn"')
 
-/// ### catch_unwind_poll
 := catch_unwind_poll \* t.
     (f : rust.ref (rust.mut' (future_pin t)))
     (cx : rust.ref (rust.mut' context))
@@ -328,7 +277,6 @@ test async static =
     $'std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll((!f).as_mut(), !cx)))'
     : rust_caught (poll t)
 
-/// ### run_synchronously_rust
 := run_synchronously_rust \* t. (a : async t) : t =
     := waker = current_thread () |> thread_waker
     := context = waker |> rust.to_ref |> context_of_waker
@@ -349,14 +297,12 @@ test async static =
         ()
     *result |> optionm'.unwrap
 
-/// ### caught_poll
 := caught_poll \* t. (caught : rust_caught (poll t)) : poll (resultm.result' t exn) =
     ? rust_caught_ok caught ?>
         := polled = caught |> rust_caught_value |> poll_option
         ? optionm'.is_none' polled ?> poll_pending () |: polled |> optionm'.unwrap |> resultm.ok'' |> poll_ready
     |: caught |> rust_caught_payload |> rust_panic_text |> rust_exn_of_text |> resultm.err |> poll_ready
 
-/// ### ignore
 := ignore \* t. (a : async t) : async () =
     ? is_rust ()
     ?> new_future_move (\ () => a |> future_of_async |> await |> ignore) |> async_of_future
@@ -367,7 +313,6 @@ test async static =
                 a |> $'Async.Ignore'
             | _ => \ () => null ()
 
-/// ### run_synchronously
 := run_synchronously \* t. (a : async t) : t =
     run_target \|
         | Fsharp _ => \ () =>
@@ -380,10 +325,9 @@ test async static =
 := catch_rust \* t. (a : async t) : async (resultm.result' t exn) =
     := future = a |> future_of_async
     future |> rust.to_mut
-    poll_fn (\ cx => rust_quietly (\ () => catch_unwind_poll (rust.to_ref_mut future) cx |> caught_poll))
+    poll_fn \ cx => rust_quietly (\ () => catch_unwind_poll (rust.to_ref_mut future) cx |> caught_poll)
     |> async_of_future
 
-/// ### start
 := start (a : async ()) : () =
     ? is_rust ()
     ?> a |> run_synchronously
@@ -394,10 +338,8 @@ test async static =
                 a |> $'Async.Start'
             | _ => \ () => null ()
 
-/// ### task_canceled_exception
 :! task_canceled_exception = $'System.Threading.Tasks.TaskCanceledException'
 
-/// ### sleep
 := sleep (ms : i32) : async () =
     run_target \|
         | Fsharp _
@@ -409,26 +351,22 @@ test async static =
             new_future_move (\ () => threading.sleep ms) |> async_of_future
         | _ => \ () => null ()
 
-/// ### do
 := do (a : async ()) : () =
     backend_switch {
         Fsharp = \ () => $'do\! !a ' : ()
         Python = \ () => $'await !a ' : ()
     }
 
-/// ### let'
 := let' \* t. (a : async t) : t =
     $'let\! !a = !a '
     $'!a '
 
-/// ### return_await'
 := return_await' \* t. (a : async t) : t =
     backend_switch {
         Fsharp = \ () => $'return\! !a ' : ()
         Python = \ () => $'await !a()' : ()
     }
 
-/// ### catch'
 := catch' \* t e. (a : async t) : async (choice2' t e) =
     ? is_rust ()
     ?>
@@ -441,14 +379,11 @@ test async static =
                 a |> $'Async.Catch'
             | _ => \ () => null ()
 
-/// ### cancellation_token
 := cancellation_token () : async threading.cancellation_token =
     $'Async.CancellationToken'
 
-/// ### value_task
 :! value_task = $'System.Threading.Tasks.ValueTask'
 
-/// ### value_task_as_task
 := value_task_as_task (task : value_task) : task () =
     run_target \|
         | Fsharp => \ () => $'!task.AsTask' ()

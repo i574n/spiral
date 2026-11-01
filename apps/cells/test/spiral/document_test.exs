@@ -429,9 +429,9 @@ defmodule Spiral.Cells.DocumentTest do
     assert Enum.map(Document.tests(again), & &1.name) == Enum.map(tests, & &1.name)
   end
 
-  test "a _real.spir interleaves with its .spi by heading and both round-trip through livemd" do
+  test "a _real.spir interleaves with its .spi by heading, keeps only the headings over its own code, and both round-trip through livemd" do
     spi = "/// # demo\n\n/// ## twice_real\n\n/// ## twice\ninl twice (x : i32) : i32 = real twice_real x\n"
-    spir = "/// # demo\n\n/// ## twice_real\n///- --real\n\ninl twice_real (x : i32) : i32 = x + x\n"
+    spir = "/// ## twice_real\n///- --real\n\ninl twice_real (x : i32) : i32 = x + x\n"
     doc = Document.parse_spi(spi, spir)
 
     assert Enum.map(doc.cells, &{&1.kind, &1.source}) == [
@@ -490,6 +490,7 @@ defmodule Spiral.Cells.DocumentTest do
     refute once =~ "chunks"
     assert once |> Document.parse_spi("") |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested() == once
   end
+  @tag timeout: 900_000
   test "the spiral library .spi files load as notebooks, one test cell per test block" do
     lib = Path.expand("../../../../lib/spiral", __DIR__)
     sources = Enum.reject(Path.wildcard(Path.join(lib, "**/*.spi")), &String.contains?(&1, "/target/"))

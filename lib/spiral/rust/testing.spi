@@ -1,10 +1,8 @@
-/// # rust/testing
 test rust_testing static =
     :< testing
 
 :< rust.rust_operators
 
-/// ### run_tests'
 := run_tests' tests =
     := fields = reflection.get_record_fields tests
     ? is_rust () ?>
@@ -55,7 +53,6 @@ test run_tests_2 =
         }
     |> run
 
-/// ### run_tests
 := run_tests tests : () =
     ~>
         := tests =
@@ -73,7 +70,6 @@ test run_tests_3 =
         }
     |> run
 
-/// ### run_tests_log
 := run_tests_log tests : () =
     ~>
         := tests =

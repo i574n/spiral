@@ -1,17 +1,13 @@
-/// # csv
 test csv static =
     :< testing
 
 :< sm'_operators
 
-/// ### quoted_cell_text
 := quoted_cell_text (segment : string) : string =
     segment |> sm'.replace "\t" " " |> sm'.replace "\r" " " |> sm'.replace "\n" " "
 
-/// ### bare_cells_text
 := bare_cells_text (segment : string) : string = segment |> sm'.replace "\t" " " |> sm'.replace "," "\t"
 
-/// ### tsv_piece
 := tsv_piece (segment : string) (at : i32) (count : i32) : string =
     ? at % 2i32 = 1i32 ?> quoted_cell_text segment
     |? segment = "" && at > 0i32 && at < count - 1i32 ?> "\""
@@ -26,7 +22,6 @@ test csv static =
     := segments = sm'.split "\"" line |> array
     quoted_as_tsv segments 0i32 (am'.length segments) ""
 
-/// ### tsv_line
 := tsv_line (fields : list string) : string = sm'.concat_list "\t" fields
 
 ///> rust
@@ -49,7 +44,6 @@ test empty_csv_cells_stay_empty =
     csv_line_as_tsv "" |> _assert_eq ""
 
 ///> rust
-///> fsharp
 test non_ascii_and_tabs_inside_cells_keep_the_columns =
     csv_line_as_tsv "\"Ação\",x" |> _assert_eq "Ação\tx"
     csv_line_as_tsv "\"a\tb\",c" |> _assert_eq "a b\tc"

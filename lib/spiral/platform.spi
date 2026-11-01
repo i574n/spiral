@@ -1,4 +1,3 @@
-/// # platform
 test platform static =
     :< testing
 
@@ -21,7 +20,6 @@ test platform static =
     | OSX => $'`os_platform'.OSX' : os_platform'
     | Windows => $'`os_platform'.Windows' : os_platform'
 
-/// ### run_platform
 := run_platform \* t. (fn : os_platform -> (() -> t)) : t =
     := result = dyn !+
     $'let mutable _run_platform_!result : `t option = None '
@@ -38,11 +36,9 @@ test platform static =
     $'match _run_platform_!result with Some x -> x | None -> failwith "platform.run_platform / \
         _run_platform_!result=None"'
 
-/// ### is_os_platform
 := is_os_platform (x : os_platform') : bool =
     x |> $'System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform'
 
-/// ### is_windows'
 := is_windows' () : bool =
     run_platform \|
         | Windows => \ () => !+
@@ -67,7 +63,6 @@ test platform static =
 
 := no_is_windows_arm () : bool = failwith "platform.is_windows / no arm for this target"
 
-/// ### is_windows
 := is_windows () : bool =
     run_target \|
         | Rust => rust_is_windows
@@ -76,7 +71,6 @@ test platform static =
         | Zig => zig_is_windows
         | _ => no_is_windows_arm
 
-/// ### get_executable_suffix
 := get_executable_suffix () =
     ? is_windows ()
     ?> ".exe"
@@ -85,12 +79,10 @@ test platform static =
 test get_executable_suffix =
     get_executable_suffix ()
 
-/// ### gleam_os_command_output
 := gleam_os_command_output (command : string) : string =
     := output = erlang_term.apply "os" "cmd" [ erlang_term.charlist command ]
     erlang_term.apply "unicode" "characters_to_binary" [ output ] |> erlang_term.cast
 
-/// ### os_command_output
 := os_command_output (command : string) : string =
     run_target \|
         | Gleam => \ () => gleam_os_command_output command

@@ -14,7 +14,6 @@ $benchStarted = Get-Date
 $benchFreeMB = Get-HeavyFreeMB
 $dotnet = Resolve-SpiralDotnet
 $env:SPIRAL_COMPILER_PACKAGE_DIR = Get-SpiralPackageDir
-$env:SPIRAL_DIAG_QUIET = '1'
 $dir = if (Test-Path -LiteralPath $Sample -PathType Container) { $Sample } else { Join-Path $BundleRoot "samples/$Sample" }
 $entry = Get-ChildItem $dir -Filter 'main.spi*' | Select-Object -First 1 -ExpandProperty FullName
 if (-not $entry) { throw "no main.spi or main.spir in $dir" }

@@ -1,14 +1,13 @@
 param(
     [Parameter(Mandatory, Position = 0)][string]$Sample,
-    [ValidateSet('single-flight', 'sf', 'gpt5parallel', 'gp', 'hopacsota', 'hs')][string]$Mode = 'gpt5parallel',
+    [ValidateSet('single-flight', 'sf', 'hopacsota', 'hs')][string]$Mode = 'single-flight',
     [ValidateSet('Fsharp', 'C', 'Rust', 'Delphi', 'TypeScript', 'Cpp', 'Python')][string]$Backend = 'Fsharp',
     [int]$Repeat = 1,
     [int]$BudgetSec = 180,
     [int]$Stacks = 0,
     [int]$Profile = 0,
     [int]$ProfileDelay = 5,
-    [int]$Workers = 0,
-    [switch]$Loud
+    [int]$Workers = 0
 )
 . $PSScriptRoot/env.ps1
 $mode = ConvertTo-SpiralMode $Mode
@@ -38,9 +37,7 @@ function Get-DiagTool([string]$name) {
 $env:DOTNET_ROOT = Split-Path $dotnet
 $env:SPIRAL_WORKSPACE_ROOT = $BundleRoot
 $env:SPIRAL_COMPILER_PACKAGE_DIR = Get-SpiralPackageDir
-$env:SPIRAL_BUILD_BUDGET_MS = [string]($BudgetSec * 1000)
-$env:SPIRAL_DIAG_QUIET = if ($Loud) { '0' } else { '1' }
-if ($Workers -gt 0) { $env:SPIRAL_HOPAC_WORKERS = "$Workers"; $env:SPIRAL_DOP = "$Workers" }
+if ($Workers -gt 0) { $env:SPIRAL_HOPACSOTA_WORKERS = "$Workers" }
 
 $rows = for ($run = 1; $run -le $Repeat; $run++) {
     $out = Join-Path $logDir "run$run.out.txt"
@@ -80,7 +77,6 @@ if ($Repeat -gt 1) {
     "outcomes: " + (($kinds | ForEach-Object { "$($_.Name) x$($_.Count)" }) -join ', ') + $(if ($kinds.Count -gt 1) { '  <- differs between runs (race?)' } else { '' })
 }
 foreach ($row in $rows | Where-Object { $_.Note -match 'profile: (.+)$' }) {
-    $py = Get-Command python -ErrorAction SilentlyContinue
-    if ($py) { & $py.Source (Join-Path $PSScriptRoot 'profile-summary.py') ($row.Note -replace '^profile: ', '') | Select-Object -First 45 }
+    & (Join-Path $PSScriptRoot 'profile-speedscope.ps1') ($row.Note -replace '^profile: ', '') | Select-Object -First 45
 }
 "logs: $logDir"

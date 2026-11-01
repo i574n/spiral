@@ -41,11 +41,11 @@
         @{ Id = 'samples/lua_wide_integers'; Backend = 'Bend'; Reason = 'pairs i64 with f64, and Bend 2 has F32 only, so it fails on Float64T before the w64 path (BEND-BACKEND)' }
         @{ Id = 'samples/portable_console_lines'; Backend = 'Bend'; Reason = 'console.write_line lowers to a unit macro, which the Bend backend does not support yet (BEND-BACKEND)' }
         @{ Id = 'samples/union_i64_text'; Backend = 'Bend'; Reason = 'bend2 rejects the emitted union of i64 text (SOME PROOFS FAIL: expected Data, observed Type), a codegen gap (BEND-BACKEND)' }
-        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'C'; Oracle = 'Zig'; Reason = 'C indexes unchecked (reads 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
-        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Delphi'; Oracle = 'Zig'; Reason = 'Delphi indexes unchecked (reads 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
-        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Wasm'; Oracle = 'Zig'; Reason = 'the Wasm array index is unchecked (reads 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
-        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Kotlin'; Oracle = 'Zig'; Reason = 'Kotlin indexes unchecked like C (reads 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
-        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Lua'; Oracle = 'Zig'; Reason = 'the Lua array index is unchecked (reads 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
+        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'C'; Oracle = 'Zig'; Reason = 'C indexes unchecked (the read misses the sentinel, exit 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
+        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Delphi'; Oracle = 'Zig'; Reason = 'Delphi indexes unchecked (the read misses the sentinel, exit 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
+        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Wasm'; Oracle = 'Zig'; Reason = 'the Wasm array index is unchecked (the read misses the sentinel, exit 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
+        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Kotlin'; Oracle = 'Zig'; Reason = 'Kotlin indexes unchecked like C (the read misses the sentinel, exit 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
+        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Lua'; Oracle = 'Zig'; Reason = 'the Lua array index is unchecked (the read misses the sentinel, exit 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
         @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Rust'; Oracle = 'Zig'; Reason = 'Rust checks the index too but panics with exit 1 where the Zig oracle traps with exit 3; both reject the index as the fixture intends' }
         @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Wgsl'; Oracle = 'Zig'; Reason = 'WGSL robust buffer access makes the out-of-bounds read unchecked (exits 0 like C); the Zig oracle traps the index with exit 3 as the fixture intends' }
         @{ Id = 'samples/native_float_infinity'; Backend = 'Gleam'; Reason = 'BEAM floats are never infinite or NaN: a 0x7FF0000000000000 float bit-pattern match fails and binary_to_term raises badarg, so !!!!Infinity has no Gleam residual that compiles' }
@@ -249,8 +249,8 @@
         @{ Id = 'samples/reactors_negative_port_type'; Contains = 'Expected: {init : f64; react : f64 -> {time : i64; micro : i32} -> signal i64' }
         @{ Id = 'samples/frontier_hopacsota_two_errors'; Contains = 'first body fails' }
         @{ Id = 'samples/frontier_hopacsota_deferred_validation_mismatch'; Contains = 'The backend switch needs to have the same type for all of its branches.' }
-        @{ Id = 'samples/gadt_growing_index_runtime'; Contains = 'has no finite layout' }
         @{ Id = 'samples/backend_switch_missing_arm_negative'; Contains = 'reaches a lib/spiral backend_switch that has no arm for the' }
+        @{ Id = 'samples/gadt_growing_index_runtime'; Contains = 'has no finite layout' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_alphabet_mix'; Contains = 'Got: (tri_alphabet : *) Expected: (bit_alphabet : *)' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_antimirov_support_assignment_count'; Contains = 'Unification failure. Got: antimirov_support_slot_assignment' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_exact_rows_not_soundness_witness'; Contains = 'Unification failure. Got: indexed_dfa_exact_transition_rows bit_alphabet' }

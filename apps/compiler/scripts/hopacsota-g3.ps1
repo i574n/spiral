@@ -7,7 +7,7 @@ Remove-Item Env:SPIRAL_BIN_CACHE_DIR, Env:SPIRAL_COMPILER_DLL, Env:SPIRAL_HOPACS
 if (-not $SkipBuild) {
     pwsh -NoProfile -File (Join-Path $PSScriptRoot 'build.ps1') -Mode single-flight -Configuration Debug *> (Join-Path $runs 'build-single-flight-debug.log')
     "build single-flight Debug exit $LASTEXITCODE"
-    foreach ($mode in 'single-flight', 'hopacsota', 'gpt5parallel') {
+    foreach ($mode in 'single-flight', 'hopacsota') {
         $watch = [Diagnostics.Stopwatch]::StartNew()
         pwsh -NoProfile -File (Join-Path $PSScriptRoot 'build.ps1') -Mode $mode *> (Join-Path $runs "build-$mode.log")
         "build $mode exit $LASTEXITCODE in $([int]$watch.Elapsed.TotalSeconds) s"

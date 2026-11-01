@@ -1,4 +1,3 @@
-/// # threading
 test threading static =
     :< testing
 
@@ -6,8 +5,6 @@ test threading static =
 :< rust_operators
 
 /// ## rust
-
-/// ### join_handle
 :! join_handle t =
     `(
         rust.rust_type
@@ -16,7 +13,6 @@ test threading static =
             "type std_thread_JoinHandle<'T> = class end"
     )
 
-/// ### spawn
 := spawn \* t. depth flag (x : () -> t) : join_handle t =
     ? flag = 1u8
     ?> (!\($'"true; let __spawn = std::thread::spawn(move || { //"') : bool) |> ignore
@@ -29,7 +25,6 @@ test threading static =
 
     !\($'"__spawn"')
 
-/// ### join'
 := join' \* t.
     (x : join_handle t)
     : resultm.result'
@@ -51,7 +46,6 @@ test threading static =
         ) =
     !\\(x, $'"std::thread::JoinHandle::join($0)"')
 
-/// ### arc
 :! arc t =
     `(
         rust.rust_type
@@ -60,11 +54,9 @@ test threading static =
             "type std_sync_Arc<'T> = class end"
     )
 
-/// ### new_arc
 := new_arc \* t. (x : t) : arc t =
     !\($'"std::sync::Arc::new(!x)"')
 
-/// ### mutex
 :! mutex t =
     `(
         rust.rust_type
@@ -73,11 +65,9 @@ test threading static =
             "type std_sync_Mutex<'T> = class end"
     )
 
-/// ### new_mutex
 := new_mutex \* t. (x : t) : mutex t =
     !\($'"std::sync::Mutex::new(!x)"')
 
-/// ### rw_lock
 :! rw_lock t =
     `(
         rust.rust_type
@@ -86,19 +76,15 @@ test threading static =
             "type std_sync_RwLock<'T> = class end"
     )
 
-/// ### new_rw_lock
 := new_rw_lock \* t. (x : t) : rw_lock t =
     !\\(x, $'"std::sync::RwLock::new($0)"')
 
-/// ### new_arc_mutex
 := new_arc_mutex \* t. (x : t) : arc (mutex t) =
     x |> new_mutex |> new_arc
 
-/// ### arc_ptr_eq
 := arc_ptr_eq \* t. (a : rust.ref (arc t)) (b : rust.ref (arc t)) : bool =
     !\\((a, b), $'"std::sync::Arc::ptr_eq($0, $1)"')
 
-/// ### partial_eq_wrapper_arc_eq
 := partial_eq_wrapper_arc_eq \* t.
     (self : rust.ref (rust.partial_eq_wrapper (arc t)))
     (other : rust.ref (rust.partial_eq_wrapper (arc t)))
@@ -110,11 +96,9 @@ test threading static =
         |> rust.unwrap_0_ref
     )
 
-/// ### new_partial_eq_wrapper_arc
 := new_partial_eq_wrapper_arc \* t. (x : arc t) : rust.partial_eq_wrapper (arc t) =
     x |> rust.new_partial_eq_wrapper partial_eq_wrapper_arc_eq
 
-/// ### mutex_guard
 :! mutex_guard t =
     `(
         rust.rust_type
@@ -123,7 +107,6 @@ test threading static =
             "type std_sync_MutexGuard<'T> = class end"
     )
 
-/// ### rw_lock_read_guard
 :! rw_lock_read_guard t =
     `(
         rust.rust_type
@@ -132,7 +115,6 @@ test threading static =
             "type std_sync_RwLockReadGuard<'T> = class end"
     )
 
-/// ### rw_lock_write_guard
 :! rw_lock_write_guard t =
     `(
         rust.rust_type
@@ -141,7 +123,6 @@ test threading static =
             "type std_sync_RwLockWriteGuard<'T> = class end"
     )
 
-/// ### poison_error
 :! poison_error t =
     `(
         rust.rust_type
@@ -150,7 +131,6 @@ test threading static =
             "type std_sync_PoisonError<'T> = class end"
     )
 
-/// ### try_lock_error
 :! try_lock_error t =
     `(
         rust.rust_type
@@ -159,38 +139,31 @@ test threading static =
             "type std_sync_TryLockError<'T> = class end"
     )
 
-/// ### arc_mutex_lock
 := arc_mutex_lock \* t. (x : arc (mutex t)) : resultm.result' (mutex_guard t) (poison_error (mutex_guard t)) =
     := x = x |> rust.emit
     !\($'"!x.lock()"')
 
-/// ### arc_mutex_lock'
 := arc_mutex_lock' \* t. (x : arc (mutex t)) : resultm.result' (mutex_guard t) (poison_error (mutex_guard t)) =
     !\\(x, $'"$0.lock()"')
 
-/// ### mutex_guard_ref
 := mutex_guard_ref \* t. (x : mutex_guard t) : rust.ref t =
     !\\(x, $'"&$0"')
 
-/// ### mutex_guard_ref_mut
 := mutex_guard_ref_mut \* t. (x : mutex_guard t) : rust.ref (rust.mut' t) =
     := x = ~~ x
     (!\($'"true; let mut !x = !x"') : bool) |> ignore
     !\\(x, $'"&mut $0"')
 
-/// ### mutex_guard_ref_mut''
 := mutex_guard_ref_mut'' \* t. (x : mutex_guard t) : rust.ref (rust.mut' t) =
     := x = x |> rust.emit
     (!\($'"true; let mut !x = !x"') : bool) |> ignore
     !\\(x, $'"&mut $0"')
 
-/// ### mutex_guard_ref_mut'
 := mutex_guard_ref_mut' \* t. (x : mutex_guard (rust.ref (rust.mut' t))) : rust.ref (rust.mut' t) =
     := x = x |> rust.emit
     (!\($'"true; let mut !x = !x"') : bool) |> ignore
     !\\(x, $'"&mut $0"')
 
-/// ### channel_receiver
 :! channel_receiver t =
     `(
         rust.rust_type
@@ -199,7 +172,6 @@ test threading static =
             "type std_sync_mpsc_Receiver<'T> = class end"
     )
 
-/// ### channel_sender
 :! channel_sender t =
     `(
         rust.rust_type
@@ -208,16 +180,13 @@ test threading static =
             "type std_sync_mpsc_Sender<'T> = class end"
     )
 
-/// ### mpsc_channel
 := mpsc_channel () : channel_sender sm'.std_string * channel_receiver sm'.std_string =
     !\($'"std::sync::mpsc::channel()"')
 
-/// ### new_channel
 := new_channel () : channel_sender sm'.std_string * arc (channel_receiver sm'.std_string) =
     := sender, receiver = mpsc_channel ()
     sender, new_arc receiver
 
-/// ### send_error
 :! send_error t =
     `(
         rust.rust_type
@@ -226,7 +195,6 @@ test threading static =
             "type std_sync_mpsc_SendError<'T> = class end"
     )
 
-/// ### channel_send
 := channel_send \* t.
     (line : t) (sender : rust.ref (channel_sender t))
     : resultm.result' () (send_error sm'.std_string)
@@ -236,17 +204,14 @@ test threading static =
 /// ## fsharp
 := rust_sleep_ms (ms : u64) : () = $'std::thread::sleep(std::time::Duration::from_millis(!ms))' : ()
 
-/// ### sleep
 := sleep (n : i32) : () =
     run_target \|
         | Fsharp => \ () => $'System.Threading.Thread.Sleep' n
         | Rust => \ () => rust_sleep_ms (conv n)
         | _ => \ () => ()
 
-/// ### thread
 :! thread = $'System.Threading.Thread'
 
-/// ### cancellation_token
 :== cancellation_token_switch =
     {
         Gleam : $'System.Threading.CancellationToken'
@@ -263,7 +228,6 @@ test threading static =
     }
 :! cancellation_token = $'backend_switch `(cancellation_token_switch)'
 
-/// ### cancellation_token_source
 :== cancellation_token_source_switch =
     {
         Gleam : $'System.Threading.CancellationTokenSource'
@@ -280,7 +244,6 @@ test threading static =
     }
 :! cancellation_token_source = $'backend_switch `(cancellation_token_source_switch)'
 
-/// ### cancellation_token_registration
 :== cancellation_token_registration_switch =
     {
         Gleam : $'System.Threading.CancellationTokenRegistration'
@@ -297,7 +260,6 @@ test threading static =
     }
 :! cancellation_token_registration = $'backend_switch `(cancellation_token_registration_switch)'
 
-/// ### cancellation_source_token
 := cancellation_source_token (x : cancellation_token_source) : cancellation_token =
     ? is_rust ()
     ?> $'!x.clone()'
@@ -305,21 +267,17 @@ test threading static =
 
 := rust_cancel (x : cancellation_token_source) : () = $'!x.store(true, std::sync::atomic::Ordering::SeqCst)' : ()
 
-/// ### cancellation_source_cancel
 := cancellation_source_cancel (x : cancellation_token_source) : () =
     run_target \|
         | Fsharp => \ () => $'!x.Cancel' ()
         | Rust => \ () => rust_cancel x
         | _ => \ () => null ()
 
-/// ### create_linked_token_source
 := create_linked_token_source ((array x) : array cancellation_token) : cancellation_token_source =
     x |> $'System.Threading.CancellationTokenSource.CreateLinkedTokenSource'
 
-/// ### concurrent_stack
 :! concurrent_stack t = $'System.Collections.Concurrent.ConcurrentStack<`t>'
 
-/// ### new_cancellation_token_source
 := new_cancellation_token_source () : cancellation_token_source =
     ? is_rust ()
     ?> $'std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))'
@@ -341,7 +299,6 @@ test a_cancelled_source_marks_its_token_after_a_sleep =
     := before = cancellation_source_token source |> token_cancellation_requested
     (before, cancelled_after_a_sleep source) |> _assert_eq (!-, !+)
 
-/// ### new_disposable_token
 := new_disposable_token (merge_token : optionm'.option' cancellation_token) =
     run_target \|
         | Fsharp => \ () =>

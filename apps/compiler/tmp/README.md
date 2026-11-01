@@ -1,17 +1,17 @@
 # Spiral compiler workbench
 
-The build, test matrix and fixtures around the Spiral compiler, plus its two development lanes.
+The build, test matrix and fixtures around the Spiral compiler.
 
 | Mode | Core | State | Use it for |
 |---|---|---|---|
-| `single-flight` | `../spiral_compiler.fs`: shared sections + the `#else` side of each pair | stable | F#, C, **Rust** and **Delphi** output; the oracle every test is scored against |
-| `gpt5parallel` | `../spiral_compiler.fs`: shared sections + the `#if SPIRAL_CORE_GPT5PARALLEL` side of each pair | in progress | the gpt5parallel evaluator (parallel, on Hopac); advanced one frontier fixture at a time |
+| `single-flight` | `../spiral_compiler.fs` | stable | every backend's output; the oracle every test is scored against |
+| `hopacsota` | `../spiral_compiler.fs` plus its `#if SPIRAL_CORE_HOPACSOTA` blocks | candidate | the parallel evaluation layer (`lanes/hopacsota/PLAN.md`) |
 
-Both cores are one file (13.9 MB, merged 2026-09-28): its `/// ## Name` sections are shared when both cores
-agree and written as whole `#if SPIRAL_CORE_GPT5PARALLEL` / `#else` pairs when they differ (6 shared and 33 pairs
-at the merge). See `AGENTS.md` for the rules and "Upstream" below for syncing with The Spiral Language.
+The core is one file, split into `/// ## Name` sections, one per upstream module (the gpt5parallel evaluator's
+`#if SPIRAL_CORE_GPT5PARALLEL` pairs were retired on 2026-10-31). See `AGENTS.md` for the rules and "Upstream"
+below for syncing with The Spiral Language.
 
-Both modes build the **same host** (`compiler/host`) around a different core. The host talks to the core
+Both modes build the **same host** (`compiler/host`). The host talks to the core
 through `SupervisorReq` (`FileOpen`, `BuildFile`, …, built by reflection), `new_server`, `startupParse`
 and, in `warmModulePipeline`, `wdiff_module_init_all` plus its parser/bundler state. Both cores expose
 all of these, so every script, test and backend works identically in either mode; renaming any of them
@@ -25,9 +25,9 @@ core itself; the host never rewrites one backend's output into another.
 ```powershell
 pwsh ../scripts/install-dotnet.ps1             # once: .NET 11 SDK into the cache dir (no system changes)
 pwsh ../scripts/build.ps1                      # single-flight            (~2 min)
-pwsh ../scripts/build.ps1 -Mode gpt5parallel          # gpt5parallel                    (~4-5 min for a core change, ~35 s for a host change)
+pwsh ../scripts/build.ps1 -Mode hopacsota      # single-flight plus the parallel layer
 pwsh ../scripts/test.ps1                       # smoke suite, single-flight
-pwsh ../scripts/test.ps1 -Mode gpt5parallel -Suite frontier   # the gpt5parallel inner loop
+pwsh ../scripts/test.ps1 -Mode hopacsota -Suite frontier   # the candidate's inner loop
 pwsh ../scripts/test.ps1 -Suite all -Native    # everything, with native builds and runs (C, Rust, Delphi, TypeScript, C++, Python)
 pwsh ../scripts/test-rust-exports.ps1          # Rust library/export ABI contracts
 ```
@@ -45,14 +45,14 @@ compiler/
   runtime-compat/        minimal Supervisor stand-in (Lib/Common/Trace) both cores need
   lib/                   Packages.props (pinned NuGet dependencies) and Dependencies.fsproj
 samples/                 every fixture, one flat directory each:
-  <name>/                  backend fixtures and their compiled F#/C/Rust/Delphi outputs (frontier_* for gpt5parallel)
+  <name>/                  backend fixtures and their compiled F#/C/Rust/Delphi outputs (frontier_*: small reproductions)
   contract_<name>/         type-system contract cases (F#)
   mega_<name>/             the five megaprojects and their sub-packages
   core/                    the portable `core-` package the fixtures share
 tests/                   matrix.psd1 (smoke list, known failures, megaproject roots, C flags),
                          native-shims/ (C shims; run_main.mjs/run_main.py/cpp_native.py: the TypeScript/Python/C++
                          native tiers), rust-exports/
-lanes/                   per-lane docs: single-flight (backends), gpt5parallel (frontier), hopacsota (PLAN.md: the successor's contract)
+lanes/                   per-lane docs: single-flight (backends), hopacsota (PLAN.md: the parallel layer's contract)
 ../scripts/                 env, build, test, bench (pwsh, cross-platform)
 ```
 
@@ -107,33 +107,31 @@ Sync through the fork, where git merges natively:
 - **push / pull request**: write the changed sections back to the fork's files, on a branch, and open the
   PR from there.
 
-`../scripts/upstream.py` does the section side (fork = a clone of the fork, refs are git refs in it):
+`../scripts/upstream.ps1` does the section side (fork = a clone of the fork, refs are git refs in it):
 
 ```powershell
-python ../scripts/upstream.py status <fork> [ref]                # per section: lines differing from the fork's file
-python ../scripts/upstream.py import <fork> <old-ref> <new-ref>  # carry the fork's edits old->new into the sections
-python ../scripts/upstream.py export <fork> <base-ref> <out-dir> # the fork's files with the sections' edits
-python ../scripts/upstream.py export <fork> <base-ref> <out-dir> --since <repo-ref>
+pwsh ../scripts/upstream.ps1 status <fork> [ref]                # per section: lines differing from the fork's file
+pwsh ../scripts/upstream.ps1 import <fork> <old-ref> <new-ref>  # carry the fork's edits old->new into the sections
+pwsh ../scripts/upstream.ps1 export <fork> <base-ref> <out-dir> # the fork's files with the sections' edits
+pwsh ../scripts/upstream.ps1 export <fork> <base-ref> <out-dir> -Since <repo-ref> [-Until <repo-ref>]
                                   # only what changed here since <repo-ref>: a pull request's worth
 ```
 
 Plain `export` carries every difference, the compaction's renames included. For a pull request use
-`--since` with a commit of this repository from before the change: it takes the edits from that version of
+`-Since` with a commit of this repository from before the change: it takes the edits from that version of
 each section to the current one, applies them to the fork's file at `<base-ref>` and writes only the files
-that changed (for example `export <fork> a21845bb out --since cd17d19` gives the C closure fix in
+that changed (for example `export <fork> a21845bb out -Since cd17d19` gives the C closure fix in
 `CodegenC.fs`, among the other edits since then; drop the hunks that are merge plumbing, such as
 `codegenMemoTable` or `RefcDecrTable`, before opening the PR).
 
 It moves edits as normalized-line patches (a 3-way merge that ignores indentation, blank lines, the
 `/// ###` headings and module headers), so each side keeps its own formatting; an edit whose lines the
-other side also changed is reported as a conflict, not applied. Only single-flight's text is touched (a
-pair's gpt5parallel side is reported). Checked 2026-09-28: exporting against the fork's `master` reproduces every
+other side also changed is reported as a conflict, not applied. Checked 2026-09-28: exporting against the fork's `master` reproduces every
 section exactly (normalized), and a synthetic upstream edit imports into its section with the section's
 indentation and headings kept.
 
-Carrying a file into its section (and back) is mechanical as long as shared sections never contain
-`#if SPIRAL_CORE_GPT5PARALLEL` (gpt5parallel differences live in whole gpt5parallel-only sections or pairs, see `AGENTS.md`): the
-section's single-flight text is the fork file with the compaction's indent and headings. One file costs
+Carrying a file into its section (and back) is mechanical as long as upstream-mapped sections contain no `#if`:
+the section's text is the fork file with the compaction's indent and headings. One file costs
 nothing extra here; only keeping upstream's multi-file layout would make `git merge` work without that
 section-to-file step.
 

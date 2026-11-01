@@ -14,16 +14,35 @@ defmodule Spiral.Cells.Manifest do
   @spec exists?(String.t()) :: boolean()
   def exists?(dir), do: path(dir) != nil
 
-  @spec read(String.t()) :: {:ok, String.t()} | {:error, File.posix()}
-  def read(dir) do
+  @spec read(String.t(), keyword()) :: {:ok, String.t()} | {:error, File.posix()}
+  def read(dir, opts \\ []) do
     case path(dir) do
       nil ->
         {:error, :enoent}
 
       file ->
         with {:ok, text} <- File.read(file) do
-          {:ok, if(String.ends_with?(file, ".toml"), do: from_toml(text), else: text)}
+          cond do
+            not String.ends_with?(file, ".toml") -> {:ok, text}
+            declares_modules?(text) -> {:ok, from_toml(text)}
+            true -> {:ok, Keyword.get(opts, :resolve, &resolve/1).(dir) || from_toml(text)}
+          end
         end
+    end
+  end
+
+  @spec declares_modules?(String.t()) :: boolean()
+  def declares_modules?(text), do: Regex.match?(~r/^\s*modules\s*=/m, text)
+
+  defp resolve(dir) do
+    with dotnet when is_binary(dotnet) <- Spiral.Cells.Toolchain.dotnet([]),
+         dll when is_binary(dll) <- Spiral.Cells.Toolchain.compiler_dll([]),
+         true <- File.regular?(dll),
+         true <- "resolve-manifest" in Spiral.Cells.CompilerDaemon.host_capabilities(dotnet, dll),
+         {out, 0} <- System.cmd(dotnet, [dll, "--resolve-manifest", dir]) do
+      out
+    else
+      _ -> nil
     end
   end
 

@@ -5,23 +5,16 @@ test cli_args static =
 :< sm'_operators
 
 /// ## cli_args
-
-/// ### flag_value
 := flag_value (name : string) (args : list string) : option string = cli_flags.flag_value name args
 
-/// ### has_switch
 := has_switch (name : string) (args : list string) : bool = cli_flags.has_switch name args
 
-/// ### required_text
 := required_text (name : string) (args : list string) : string = cli_flags.required_text name args
 
-/// ### required_i32
 := required_i32 (name : string) (args : list string) : i32 = cli_flags.required_i32 name args
 
-/// ### flag_values
 := flag_values (name : string) (args : list string) : list string = cli_flags.flag_values name args
 
-/// ### operands
 := operands \* r. (args : list string) : r = ~> cli_args_real.operands_real `r args
 
 ///> rust
@@ -50,7 +43,6 @@ test optional_and_repeated_fields =
     := parsed : cli_args_test_publish = operands args
     (parsed.target, parsed.label, parsed.tag) |> _assert_eq ("x", None, [ "a"; "b" ])
 
-/// ### command_of
 := command_of \* command. (args : list string) : option command =
     ?= args ?|
     | verb :: rest => ~> cli_args_real.command_of_real `command verb rest
@@ -84,7 +76,6 @@ test commands_pick_their_case_and_fill_its_record =
     := ~args = [ "rename"; "--source"; "a"; "--target"; "b"; "--times"; "2"; "--dry" ]
     cli_args_test_codes args |> _assert_eq (21i32, 1i32, -1i32, -1i32)
 
-/// ### cli_error
 :| cli_error =
     | MissingFlag : string
     | BadNumber : string * string
@@ -143,7 +134,6 @@ test commands_pick_their_case_and_fill_its_record =
 := cases_usage (cases : list (string * list (string * cli_field))) : string =
     listm.fold (\ acc (name, fields) => joined "\n" acc (joined " " name (fields_usage fields))) "" cases
 
-/// ### parse_operands
 := parse_operands \* r. (args : list string) : result r cli_error =
     := fields : list (string * cli_field) = ~> cli_args_real.field_kinds `r ()
     ? has_switch "help" args
@@ -164,7 +154,6 @@ test commands_pick_their_case_and_fill_its_record =
             | Some c => Ok c
             | None => Error (UnknownVerb (verb, valid))
 
-/// ### parse_command
 := parse_command \* command. (args : list string) : result command cli_error =
     command_result args (~> cli_args_real.case_names `command ())
 
@@ -183,7 +172,6 @@ test commands_pick_their_case_and_fill_its_record =
 
 := no_verb_text (valid : list string) : string = "error: no command given\nvalid: " ++# listed_verbs valid
 
-/// ### cli_error_text
 := cli_error_text (error : cli_error) : string =
     ?= error ?|
     | MissingFlag name => missing_flag_text name

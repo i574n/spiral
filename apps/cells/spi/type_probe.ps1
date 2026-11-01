@@ -69,8 +69,18 @@ $results = foreach ($relative in $File) {
         foreach ($i in $block.Range) { Add-Line ($lines[$i] -replace '^    ', '') @{ Line = $i + 1; Test = $block.Name; Static = $true } }
         Add-Line '' $null
     }
-    $moduleOpen = Get-ModuleOpen $relative
-    if ($moduleOpen) { Add-Line $moduleOpen $null; Add-Line '' $null }
+    if (Get-ModuleOpen $relative) {
+        $testLines = [Collections.Generic.HashSet[int]]::new()
+        foreach ($block in $parsed) {
+            for ($i = $block.Header - 2; $i -ge 0 -and $lines[$i] -match '^///[>-]'; $i--) { [void]$testLines.Add($i) }
+            [void]$testLines.Add($block.Header - 1)
+            foreach ($i in $block.Range) { [void]$testLines.Add($i) }
+        }
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            if (-not $testLines.Contains($i) -and $lines[$i] -notmatch '^:< ') { Add-Line $lines[$i] @{ Line = $i + 1; Module = $true } }
+        }
+        Add-Line '' $null
+    }
     $shadowed = @{}
     foreach ($block in @($parsed | Where-Object { -not $_.Static })) {
         if ($block.NoTarget) { $skipped += $block.Name; continue }
@@ -106,6 +116,7 @@ $results = foreach ($relative in $File) {
     $real = @($errors | Where-Object { -not ($_.Path -eq $probePath -and $_.Line -ge $controlLine) } | ForEach-Object {
             if ($_.Path -eq $probePath -and $origin[$_.Line - 1]) {
                 $from = $origin[$_.Line - 1]
+                if ($from.Module) { return [pscustomobject]@{ Where = "${relative}:$($from.Line):$($_.Col)"; Kind = 'module'; Code = $_.Code; Message = $_.Message } }
                 $kind = if ($from.Static) { 'static' } elseif ($shadowed.ContainsKey($from.Test)) { 'shadowed' } else { 'test' }
                 [pscustomobject]@{ Where = "${relative}:$($from.Line):$($_.Col)"; Kind = "$kind $($from.Test)"; Code = $_.Code; Message = $_.Message }
             } else {

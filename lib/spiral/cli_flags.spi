@@ -1,7 +1,5 @@
-/// # cli_flags
 :< sm'_operators
 
-/// ### cli_field
 :| cli_field =
     | Text
     | Number
@@ -42,10 +40,8 @@
     | head :: value :: tail => ? head = flag ?> Some value |: value_after flag (value :: tail)
     | _ => None
 
-/// ### flag_value
 := flag_value (name : string) (args : list string) : option string = value_after ("--" ++# name) args
 
-/// ### has_switch
 := has_switch (name : string) (args : list string) : bool =
     := flag = "--" ++# name
     :~ ^ walk (rest : list string) : bool =
@@ -54,13 +50,11 @@
         | [] => !-
     walk args
 
-/// ### required_text
 := required_text (name : string) (args : list string) : string =
     ?= flag_value name args ?|
     | Some value => value
     | None => failwith ("missing --" ++# name)
 
-/// ### required_i32
 := required_i32 (name : string) (args : list string) : i32 =
     ?= flag_value name args |> optionm.bind (\ text => convert.try_convert text) ?|
     | Some value => value
@@ -72,7 +66,6 @@
         ? head = flag ?> values_after flag tail (value :: acc) |: values_after flag (value :: tail) acc
     | _ => listm.rev acc
 
-/// ### flag_values
 := flag_values (name : string) (args : list string) : list string = values_after ("--" ++# name) args []
 
 := pick_verb \* command. (verb : string) (name : string) (make : () -> command) (found : option command)

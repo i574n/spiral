@@ -1,12 +1,9 @@
-/// # reflection
 test reflection static =
     :< testing
 
 :< sm'_operators
 
 /// ## reflection
-
-/// ### get_union_fields
 := get_union_fields \* union_type. () : list (string * union_type) =
     ~>
         real_core.union_type_to_record
@@ -89,9 +86,8 @@ test reflection static =
                             (::) `(string * union_type) (key', item) acc
                     (Nil `(string * union_type))
                     `union_record_type
-:| reflection_test_target = Wasm | Contract
+:| reflection_test_target = Browser | Contract
 
-///> fsharp
 ///> rust
 ///> typescript
 ///> cuda
@@ -102,7 +98,7 @@ test get_union_fields =
     |> array
     |> am'.sort_by snd
     |> \ (array x : array _) => x
-    |> _assert_eq' (am'.base ;[ "Wasm", Wasm; "Contract", Contract ])
+    |> _assert_eq' (am'.base ;[ "Browser", Browser; "Contract", Contract ])
     get_union_fields ()
     |> listm'.box
     |> listm'.to_array'
@@ -111,7 +107,6 @@ test get_union_fields =
     |> \ (array x : array _) => x
     |> _assert_eq' (am'.base ;[ "Some", Some 0i32; "None", None ])
 
-/// ### get_union_fields_untag
 := get_union_fields_untag \* union_type. () : list (string * union_type) =
     ~>
         real_core.union_type_to_record
@@ -175,18 +170,16 @@ test get_union_fields =
 
 ///> gleam
 ///> lua
-///> fsharp
 ///> cuda
 ///> rust
 ///> typescript
 test get_union_fields_untag =
     get_union_fields_untag ()
-    |> _assert_eq' [ "Wasm", Wasm; "Contract", Contract ]
+    |> _assert_eq' [ "Browser", Browser; "Contract", Contract ]
 
     get_union_fields_untag ()
     |> _assert_eq' [ "Some", Some (); "None", None ]
 
-/// ### union_try_pick
 := union_try_pick \* t. (key : string) : option t =
     := fields = ~> get_union_fields_untag `t ()
     fields
@@ -205,20 +198,18 @@ test get_union_fields_untag =
 
 ///> gleam
 ///> lua
-///> fsharp
 ///> cuda
 ///> rust
 ///> typescript
 test union_try_pick =
-    "wasm"
+    "Browser"
     |> union_try_pick
-    |> _assert_eq (Some Wasm)
+    |> _assert_eq (Some Browser)
 
-    "Wasm"
+    "Browser"
     |> union_try_pick
-    |> _assert_eq (Some Wasm)
+    |> _assert_eq (Some Browser)
 
-/// ### union_try_pick'
 := union_try_pick' \* t. (key : string) : option t =
     := fields = ~> get_union_fields_untag `t ()
     fields
@@ -234,20 +225,18 @@ test union_try_pick =
 
 ///> gleam
 ///> lua
-///> fsharp
 ///> cuda
 ///> rust
 ///> typescript
 test union_try_pick_2 =
-    "wasm"
+    "Browser"
     |> union_try_pick'
-    |> _assert_eq (Some Wasm)
+    |> _assert_eq (Some Browser)
 
-    "Wasm"
+    "Browser"
     |> union_try_pick'
-    |> _assert_eq (Some Wasm)
+    |> _assert_eq (Some Browser)
 
-/// ### union_cases_fold
 := union_cases_fold \* union_type state. (step : state -> union_type -> state) (initial : state) : state =
     ~>
         real_core.union_type_to_record `union_type \* union_record_type. =>
@@ -258,7 +247,6 @@ test union_try_pick_2 =
 
 ///> gleam
 ///> lua
-///> fsharp
 ///> cuda
 ///> rust
 ///> typescript
@@ -269,7 +257,6 @@ test union_cases_fold =
     union_cases_fold (\ found (target : reflection_test_target) => ? target = Contract ?> !+ |: found) !-
     |> _assert_eq !+
 
-/// ### union_cases_find
 := union_cases_find \* union_type. (matches : union_type -> bool) : option union_type =
     :~ ^ search (cases : list union_type) : option union_type =
         ?= cases ?|
@@ -279,18 +266,16 @@ test union_cases_fold =
 
 ///> gleam
 ///> lua
-///> fsharp
 ///> cuda
 ///> rust
 ///> typescript
 test union_cases_find =
-    union_cases_find (\ (target : reflection_test_target) => target = Contract)
+    union_cases_find \ (target : reflection_test_target) => target = Contract
     |> _assert_eq (Some Contract)
 
-    union_cases_find (\ (_ : reflection_test_target) => !-)
+    union_cases_find \ (_ : reflection_test_target) => !-
     |> _assert_eq None
 
-/// ### union_to_string
 := union_to_string \* t. (x : t) : string =
     ~> get_union_fields_untag `t ()
     |> listm'.try_pick \ key, x' =>
@@ -323,7 +308,6 @@ test union_cases_find =
                 |: None
     |> optionm.value
 
-///> fsharp
 ///> cuda
 ///> rust
 ///> typescript
@@ -332,7 +316,6 @@ test union_to_string =
     |> union_to_string
     |> _assert_eq' "Some"
 
-/// ### nameof
 := nameof \* t. (x : t) : string =
     ~>
         real_core.record_type_fold_back
@@ -347,7 +330,6 @@ test nameof =
     |> nameof
     |> _assert_eq' "test1"
 
-/// ### get_record_fields
 := get_record_fields \* t u. (x : t) : list (string * u) =
     ~>
         real_core.record_type_fold_back
@@ -364,7 +346,6 @@ test get_record_fields =
     |> get_record_fields
     |> _assert_eq' [ "a", "1"; "b", "2" ]
 
-/// ### get_functions_types
 := get_functions_types \* t {record}. (fns : t) =
     ~>
         := get_function_type \* t. =

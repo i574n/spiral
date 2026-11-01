@@ -133,6 +133,21 @@
         ?> export_blocks kind rest (Cell (cell_kind, source, acc))
         |: export_blocks kind rest acc
 
+:~ ^ drop_bare_docs (xs : cells) : cells =
+    ?= xs ?|
+    | NoCell => NoCell
+    | Cell (kind, source, rest) =>
+        := bare =
+            ?= rest ?|
+            | NoCell => kind = "markdown"
+            | Cell (next_kind, _, _) => kind = "markdown" && next_kind = "markdown"
+        ? bare ?> drop_bare_docs rest |: Cell (kind, source, drop_bare_docs rest)
+
+:= export_docs (kind : export_kind) (xs : cells) : cells =
+    ?= kind ?|
+    | SpiExport => xs
+    | SpirExport => drop_bare_docs xs
+
 :~ ^ keep_docs (xs : cells) : cells =
     ?= xs ?|
     | NoCell => NoCell
@@ -510,7 +525,7 @@
     | KeepTests => name_tests xs "" NoRow NoCell
 
 := export_text (kind : export_kind) (policy : test_policy) (src : string) : string =
-    emit_spi (formatted (keep_docs (policy_blocks policy (export_blocks kind (load src) NoCell))) NoCell)
+    emit_spi (formatted (keep_docs (export_docs kind (policy_blocks policy (export_blocks kind (load src) NoCell)))) NoCell)
 
 := to_spi (src : string) : string = export_text SpiExport DropTests src
 

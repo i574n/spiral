@@ -4,7 +4,6 @@
 test routes static =
     :< testing
 
-/// ### route
 := route \* t. (path : string) (_ : t) : string =
     ~> routes_real.route path `t
 

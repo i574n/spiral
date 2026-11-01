@@ -1,10 +1,7 @@
-/// # convert
 test convert static =
     :< testing
 
 /// ## convert
-
-/// ### unativeint
 :== unativeint_switch =
     {
         Gleam : $'unativeint'
@@ -21,7 +18,6 @@ test convert static =
     }
 :! unativeint = $'backend_switch `(unativeint_switch)'
 
-/// ### to'
 := to' \* t u. (fn : t -> option u) (x : t) : option u =
     ~>
         ?: t * u ?|
@@ -41,7 +37,6 @@ test convert static =
         | bool * _ => Some `u (? x ?> 1 |: 0)
         | _ => fn x
 
-/// ### to
 := to \* t u. (x : t) : u =
     ? is_rust () ?>
         := from_string : bool =
@@ -101,7 +96,6 @@ test convert static =
           Int32.ofInt (if neg then -v else v)
         """
 
-/// ### convert_i32_base
 := convert_i32_base \* t. (base : i32) (x : t) : i32 =
     backend_switch {
         Gleam = \ () =>
@@ -421,11 +415,9 @@ test try_convert_reads_narrow_integers_natively =
     := d, e = (try_convert fraction : option i32), (try_convert byte : option u8)
     (a, b, c, d, e) |> _assert_eq (Some 3i32, Some (0i32 - 12i32), None, None, None)
 
-/// ### convert
 := convert \* t u. (x : t) : u =
     x |> try_convert |> optionm.value
 
-/// ### unbox
 := unbox \* t u. (x : t) : u =
     backend_switch {
         Gleam = \ () => x |> convert : u
@@ -436,7 +428,6 @@ test try_convert_reads_narrow_integers_natively =
         Zig = \ () => x |> to : u
     }
 
-/// ### u8
 := u8 \* t. (x : t) : u8 =
     backend_switch {
         Gleam = \ () => x |> convert : u8
@@ -449,7 +440,6 @@ test try_convert_reads_narrow_integers_natively =
         Lean = \ () => numeric_conv x : u8
     }
 
-/// ### u16
 := u16 \* t. (x : t) : u16 =
     backend_switch {
         Gleam = \ () => x |> convert : u16
@@ -462,7 +452,6 @@ test try_convert_reads_narrow_integers_natively =
         Lean = \ () => numeric_conv x : u16
     }
 
-/// ### u64
 := u64 \* t. (x : t) : u64 =
     backend_switch {
         Gleam = \ () => x |> convert : u64
@@ -478,7 +467,6 @@ test try_convert_reads_narrow_integers_natively =
         Lean = \ () => numeric_conv x : u64
     }
 
-/// ### i32
 := i32 \* t. (x : t) : i32 =
     backend_switch {
         Gleam = \ () => x |> convert : i32
@@ -494,7 +482,6 @@ test try_convert_reads_narrow_integers_natively =
         Lean = \ () => numeric_conv x : i32
     }
 
-/// ### i64
 := i64 \* t. (x : t) : i64 =
     backend_switch {
         Gleam = \ () => x |> convert : i64
@@ -510,7 +497,6 @@ test try_convert_reads_narrow_integers_natively =
         Lean = \ () => numeric_conv x : i64
     }
 
-/// ### f32
 := f32 \* t. (x : t) : f32 =
     backend_switch {
         Gleam = \ () => x |> convert : f32
@@ -522,7 +508,6 @@ test try_convert_reads_narrow_integers_natively =
         Lean = \ () => numeric_conv x : f32
     }
 
-/// ### f64
 := f64 \* t. (x : t) : f64 =
     backend_switch {
         Gleam = \ () => x |> convert : f64
@@ -534,7 +519,6 @@ test try_convert_reads_narrow_integers_natively =
         Lean = \ () => numeric_conv x : f64
     }
 
-/// ### to_any
 := to_any \* t. (obj : t) : any =
     obj |> to
 

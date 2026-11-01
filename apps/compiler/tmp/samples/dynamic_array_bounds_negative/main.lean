@@ -32,7 +32,11 @@ partial def spiralMain : IO Int32 := do
     v1.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) (13 : Int32))
     let v2 : Int32 := (2 : Int32)
     let v3 : Int32 := (← spiralIndex (← v1.get) (spiralIdx v2))
-    return v3
+    let v4 : Bool := (v3 == (1234567 : Int32))
+    if v4 then
+        return (1 : Int32)
+    else
+        return (0 : Int32)
 end
 def main : IO UInt32 := do
   let code ← spiralMain

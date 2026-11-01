@@ -564,8 +564,20 @@ defmodule Spiral.Cells.CompilerClient do
   @doc false
   def shell_launcher do
     case System.get_env("SPIRAL_CELLS_SHELL_LAUNCHER") do
-      value when value in [nil, "", "none"] -> nil
+      value when value in [nil, ""] -> default_shell_launcher()
+      "none" -> nil
       value -> value
+    end
+  end
+
+  @doc false
+  def default_shell_launcher do
+    with local when is_binary(local) <- System.get_env("LOCALAPPDATA"),
+         kit = Path.join(local, "kit/bin/kit.exe"),
+         true <- File.regular?(kit) do
+      kit
+    else
+      _ -> nil
     end
   end
 
@@ -792,7 +804,9 @@ defmodule Spiral.Cells.CompilerClient do
   end
 
   defp mix_env do
-    if Code.ensure_loaded?(Mix), do: Mix.env() |> Atom.to_string(), else: "dev"
+    if Code.ensure_loaded?(Mix) and List.keymember?(Application.started_applications(), :mix, 0),
+      do: Mix.env() |> Atom.to_string(),
+      else: "dev"
   end
 
   defp process_error(message), do: %ProcessError{message: message}

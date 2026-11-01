@@ -1,4 +1,3 @@
-/// # rust
 test rust static =
     :< testing
 
@@ -28,11 +27,8 @@ test rust static =
     $'' : $'backend_switch `(rust_type_switch fs rs)'
 
 /// ## rust
-
-/// ### any_base
 :== any_base = any
 
-/// ### any
 :! any =
     `(
         rust_type
@@ -41,7 +37,6 @@ test rust static =
             "type core_any_Any = obj"
     )
 
-/// ### try
 :! try t =
     `(
         rust_type
@@ -50,7 +45,6 @@ test rust static =
             "type core_ops_Try<'T> = class end"
     )
 
-/// ### cow
 :! cow t =
     `(
         rust_type
@@ -59,7 +53,6 @@ test rust static =
             "type std_borrow_Cow<'T> = class end"
     )
 
-/// ### ref_cell
 :! ref_cell t =
     `(
         rust_type
@@ -68,7 +61,6 @@ test rust static =
             "type std_cell_RefCell<'T> = class end"
     )
 
-/// ### cell_ref
 :! cell_ref t =
     `(
         rust_type
@@ -77,7 +69,6 @@ test rust static =
             "type std_cell_Ref<'T> = class end"
     )
 
-/// ### rc
 :! rc t =
     `(
         rust_type
@@ -86,7 +77,6 @@ test rust static =
             "type std_rc_Rc<'T> = class end"
     )
 
-/// ### lifetime_ref
 :! lifetime_ref (t : * -> *) u =
     `(
         rust_type
@@ -95,7 +85,6 @@ test rust static =
             "type LifetimeRef<'T> = class end"
     )
 
-/// ### lifetime_join
 :! lifetime_join t u =
     `(
         rust_type
@@ -104,7 +93,6 @@ test rust static =
             "type LifetimeJoin<'T, 'U> = class end"
     )
 
-/// ### lifetime
 :! lifetime t u =
     `(
         rust_type
@@ -113,7 +101,6 @@ test rust static =
             "type Lifetime<'T, 'U> = class end"
     )
 
-/// ### static_lifetime
 :! static_lifetime =
     `(
         rust_type
@@ -122,7 +109,6 @@ test rust static =
             "type StaticLifetime = class end"
     )
 
-/// ### ref
 :! ref t =
     `(
         rust_type
@@ -131,10 +117,8 @@ test rust static =
             "type Ref<'T> = 'T"
     )
 
-/// ### static_ref
 :! static_ref t = ref (lifetime static_lifetime t)
 
-/// ### weak_rc
 :! weak_rc t =
     `(
         rust_type
@@ -143,7 +127,6 @@ test rust static =
             "type std_rc_Weak<'T> = class end"
     )
 
-/// ### box
 :! box t =
     `(
         rust_type
@@ -152,7 +135,6 @@ test rust static =
             "type Box<'T> = class end"
     )
 
-/// ### mut_cell
 :! mut_cell t =
     `(
         rust_type
@@ -161,7 +143,6 @@ test rust static =
             "type MutCell<'T> = class end"
     )
 
-/// ### pin
 :! pin t =
     `(
         rust_type
@@ -170,7 +151,6 @@ test rust static =
             "type std_pin_Pin<'T> = class end"
     )
 
-/// ### dyn'
 :! dyn' t =
     `(
         rust_type
@@ -179,7 +159,6 @@ test rust static =
             "type Dyn<'T> = class end"
     )
 
-/// ### fn'
 :! fn' t =
     `(
         rust_type
@@ -188,7 +167,6 @@ test rust static =
             "type Fn<'T> = class end"
     )
 
-/// ### action_fn
 :! action_fn t =
     `(
         rust_type
@@ -197,7 +175,6 @@ test rust static =
             "type ActionFn<'T> = class end"
     )
 
-/// ### action_fn2
 :! action_fn2 t u =
     `(
         rust_type
@@ -206,7 +183,6 @@ test rust static =
             "type ActionFn2<'T, 'U> = class end"
     )
 
-/// ### fn_once
 :! fn_once t =
     `(
         rust_type
@@ -215,7 +191,6 @@ test rust static =
             "type FnOnce<'T> = class end"
     )
 
-/// ### fn_unit
 :! fn_unit =
     `(
         rust_type
@@ -224,7 +199,6 @@ test rust static =
             "type FnUnit = class end"
     )
 
-/// ### impl
 :! impl t =
     `(
         rust_type
@@ -233,7 +207,6 @@ test rust static =
             "type Impl<'T> = class end"
     )
 
-/// ### mut'
 :! mut' t =
     `(
         rust_type
@@ -242,7 +215,6 @@ test rust static =
             "type Mut<'T> = class end"
     )
 
-/// ### ref_mut
 :! ref_mut t =
     `(
         rust_type
@@ -251,22 +223,17 @@ test rust static =
             "type std_cell_RefMut<'T> = class end"
     )
 
-/// ### send
 :! send t = $'`(t)'
 
-/// ### emit_expr
 := emit_expr \* a t. (args : a) (code : string) : t =
     $'__spiral_emit_rust !args !code '
 
-/// ### (~!\\)
 := (~!\) \* t. (code : string) : t =
     emit_expr () code
 
-/// ### (~!\\\\)
 := (~!\\) \* t u. ((args : t), (code : string)) : u =
     emit_expr args code
 
-/// ### ptr
 :! ptr t =
     `(
         rust_type
@@ -275,11 +242,9 @@ test rust static =
             "type Ptr<'T> = class end"
     )
 
-/// ### ptr_read
 := ptr_read \* t. (x : ptr t) : t =
     !\\(x, $'"std::ptr::read($0)"')
 
-/// ### u128
 :! u128 =
     `(
         rust_type
@@ -291,42 +256,33 @@ test rust static =
 := u128 \* t. (x : t) : u128 =
     !\\(x, $'"$0 as u128"')
 
-/// ### f64
 := f64 \* t. (x : t) : f64 =
     !\\(x, $'"$0 as f64"')
 
-/// ### unwrap_0
 := unwrap_0 \* (t : * -> *) u. (x : t u) : u =
     !\\(x, $'"$0.0"')
 
-/// ### unwrap_0_ref
 := unwrap_0_ref \* (t : * -> *) u. (x : ref (t u)) : ref u =
     !\\(x, $'"&$0.0"')
 
-/// ### len
 := len \* t u {uint; int}. (x : t) : u =
     backend_switch {
         Rust = \ () => $'((!x).len() as `u)' : u
     }
 
-/// ### len'
 := len' \* t u {uint; int}. (x : t) : u =
     !\\(x, $'$"$0.len()"')
 
-/// ### emit
 := emit \* t. (x : t) : t =
     !\\(x, $'"$0"')
 
-/// ### emit'
 := emit' \* t. (x : t) : t =
     (!\\(x, $'$"true; let !x = $0"') : bool) |> ignore
     x
 
-/// ### clone
 := clone \* t. (x : t) : t =
     !\\(x, $'"$0.clone()"')
 
-/// ### clone_rust
 := clone_rust \* t. (x : t) : t =
     backend_switch {
         Gleam = \ () => x
@@ -341,128 +297,99 @@ test rust static =
         Rust = \ () => clone x
     }
 
-/// ### dbg
 := dbg \* t. (x : t) : t =
     !\\(x, $'"dbg\!($0)"')
 
-/// ### new_box
 := new_box \* t. (x : t) : box t =
     !\\(x, $'"Box::new($0)"')
 
-/// ### new_rc
 := new_rc \* t. (x : t) : rc t =
     !\\(x, $'"std::rc::Rc::new($0)"')
 
-/// ### rc_clone
 := rc_clone \* t. (x : rc t) : rc t =
     !\\(x, $'"std::rc::Rc::clone(&$0)"')
 
-/// ### rc_unwrap_or_clone
 := rc_unwrap_or_clone \* t. (x : rc t) : t =
     !\\(x, $'"std::rc::Rc::unwrap_or_clone($0)"')
 
-/// ### rc_downgrade
 := rc_downgrade \* t. (x : rc t) : weak_rc t =
     !\\(x, $'"std::rc::Rc::downgrade(&$0)"')
 
-/// ### new_ref_cell
 := new_ref_cell \* t. (x : t) : ref_cell t =
     !\($'"std::cell::RefCell::new(!x)"')
 
-/// ### ref_cell_borrow
 := ref_cell_borrow \* t. (x : rc (ref_cell t)) : cell_ref t =
     !\\(x, $'"std::cell::RefCell::borrow(&std::rc::Rc::clone(&$0))"')
 
-/// ### ref_cell_borrow_mut
 := ref_cell_borrow_mut \* t. (x : rc (ref_cell t)) : mut' t =
     !\\(x, $'"std::cell::RefCell::borrow_mut(&std::rc::Rc::clone(&$0))"')
 
-/// ### ref_leak
 := ref_leak \* t. (x : cell_ref t) : ref t =
     !\\(x, $'"std::cell::Ref::leak($0)"')
 
-/// ### to_mut
 := to_mut \* t. (x : t) : () =
     (!\($'"true; // 1"') : bool) |> ignore
     !\($'"let mut !x = !x"') : ()
 
-/// ### to_ref
 := to_ref \* t. (x : t) : ref t =
     !\\(x, $'"&$0"')
 
-/// ### to_ref_mut
 := to_ref_mut \* t. (x : t) : ref (mut' t) =
     backend_switch {
         Rust = \ () => !\\(x, $'"&mut $0"') : ref (mut' t)
     }
 
-/// ### to_ref_mut'
 := to_ref_mut' \* t. (x : ref_mut (ref (mut' t))) : ref (mut' t) =
     x |> to_mut
     !\\(x, $'"&mut $0"')
 
-/// ### ref_cell_borrow_mut'
 := ref_cell_borrow_mut' \* t. (x : rc (ref_cell (ref (mut' t)))) : ref (mut' t) =
     := x = x |> rc_clone
     := x : ref_mut (ref (mut' t)) = !\\(x, $'"std::cell::RefCell::borrow_mut(&$0)"')
     x |> to_ref_mut'
 
-/// ### ref_map
 := ref_map \* t u. (fn : t -> u) (x : ref t) : ref u =
     !\($'"!fn(!x)"')
 
-/// ### ref_eval
 := ref_eval \* t u. (fn : t -> u) (ref : ref t) : u =
     !\\(fn, $'"$0(!ref.clone())"')
 
-/// ### cow_as_ref
 := cow_as_ref \* t. (s : cow t) : ref t =
     !\\(s, $'"$0.as_ref()"')
 
-/// ### from_mut
 := from_mut \* t. (x : mut' t) : t =
     !\\(x, $'"$0"')
 
-/// ### box_fn
 := box_fn \* t. (x : () -> ()) : box t =
     := x = ~~ x
     !\($'"Box::new(move || !x())"')
 
-/// ### box_pin
 := box_pin \* t. (x : t) : pin (box t) =
     !\\(x, $'"Box::pin($0)"')
 
-/// ### deref
 := deref \* t. (ref : ref t) : t =
     !\\(ref, $'"*$0"')
 
-/// ### deref_mut
 := deref_mut \* t. (x : ref (mut' t)) : t =
     !\\(x, $'"*$0"')
 
-/// ### clone_deref
 := clone_deref \* t. (ref : ref t) : t =
     !\\(ref, $'"$0.clone()"')
 
-/// ### from_ref
 := from_ref \* t. (ref : ref t) : t =
     !\($'"!ref"')
 
-/// ### from_ref_mut
 := from_ref_mut \* t. (ref : ref (mut' t)) : t =
     !\($'"!ref"')
 
-/// ### reref
 := reref \* t (u : * -> *). (x : ref (u t)) : ref t =
     backend_switch {
         Rust = \ () => !\\(x, $'"&*$0"') : ref t
     }
 
-/// ### into
 := into \* t u. (x : t) : u =
     !\($'"!x.into()"')
 
-/// ### ops_deref
 := ops_deref \* t. (ref : t) : t =
     !\\(ref, $'"core::ops::Deref::deref(&$0)"')
 
@@ -473,19 +400,15 @@ test rust static =
         := x : t = $'(!x)'
         fn x
 
-/// ### box_leak
 := box_leak \* t. (x : box t) : static_ref (mut' t) =
     !\\(x, $'"Box::leak($0)"')
 
-/// ### drop
 := drop \* t. (x : t) : () =
     (!\\(x, $'"true; drop($0)"') : bool) |> ignore
 
-/// ### break
 := break x : () =
     (!\($'"true; break !x"') : bool) |> ignore
 
-/// ### fix_closure
 := fix_closure \* t. (depth : u8 * u8) (x : t) =
     backend_switch {
         Rust = \ () =>
@@ -499,7 +422,6 @@ test rust static =
             |: ($'true; (!x) }); //' : bool) |> ignore
     }
 
-/// ### loop
 := loop (depth : i32) (fn : () -> ()) : () =
     (!\($'"true; loop { // rust.loop 1"') : bool) |> ignore
     fn ()
@@ -514,19 +436,16 @@ test rust static =
     |> listm.iter \ n =>
         (!\($'"true; { // rust.loop 4 / n: {!n}"') : bool) |> ignore
 
-/// ### capture
 := capture \* t. (fn : () -> t) : t =
     (!\($'"true; let _capture = (|| { //"') : bool) |> ignore
     (!\\(fn (), $'"true; $0 })()"') : bool) |> ignore
     !\($'"_capture"')
 
-/// ### capture_move
 := capture_move \* t. (fn : () -> t) : t =
     (!\($'"true; let _capture_move = (move || { //"') : bool) |> ignore
     (!\\(fn (), $'"true; $0 })()"') : bool) |> ignore
     !\($'"_capture_move"')
 
-/// ### type_emit
 :! type_emit t =
     `(
         rust_type
@@ -535,7 +454,6 @@ test rust static =
             "type TypeEmit<'T> = class end"
     )
 
-/// ### partial_eq_wrapper
 :! partial_eq_wrapper t =
     `(
         rust_type
@@ -544,7 +462,6 @@ test rust static =
             "type PartialEqWrapper<'T> = class end"
     )
 
-/// ### new_partial_eq_wrapper
 := new_partial_eq_wrapper \* t.
     (eq_fn : ref (partial_eq_wrapper t) -> ref (partial_eq_wrapper t) -> bool)
     (x : t)
@@ -559,7 +476,6 @@ test rust static =
         """
     $'PartialEqWrapper(!x.clone())' : partial_eq_wrapper t
 
-/// ### concat
 := concat \* (t : * -> *) u. (x : t (t u)) : t u =
     backend_switch {
         Rust = \ () => $'(!x).concat()' : t u

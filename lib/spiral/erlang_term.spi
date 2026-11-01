@@ -1,4 +1,3 @@
-/// # erlang_term
 :< sm'_operators
 
 test erlang_term static =
@@ -29,60 +28,46 @@ test erlang_term static =
 :! terms = $'List(Dynamic)'
 
 /// ## terms
-
-/// ### of
 := of \* t. (value : t) : term =
     erlang_term_imports ()
     $'erlang_term_coerce(!value)'
 
-/// ### cast
 := cast \* t. (value : term) : t =
     erlang_term_imports ()
     $'erlang_term_coerce(!value)' : t
 
-/// ### atom_named
 := atom_named (name : string) : atom =
     erlang_term_imports ()
     $'atom.create(!name)'
 
-/// ### atom
 := atom (name : string) : term = atom_named name |> of
 
-/// ### no_terms
 := no_terms () : terms =
     erlang_term_imports ()
     $'[]'
 
-/// ### cons
 := cons (head : term) (tail : terms) : terms =
     erlang_term_imports ()
     $'[!head, ..!tail]'
 
-/// ### terms_of
 := terms_of (items : list term) : terms = listm.foldBack cons items (no_terms ())
 
-/// ### list_term
 := list_term (items : list term) : term = terms_of items |> of
 
-/// ### tuple
 := tuple (items : list term) : term =
     erlang_term_imports ()
     := host = terms_of items
     $'erlang_term_tuple(!host)'
 
-/// ### inspect
 := inspect (value : term) : string =
     erlang_term_imports ()
     $'string.inspect(!value)'
 
-/// ### equal
 := equal (a : term) (b : term) : bool =
     erlang_term_imports ()
     $'!a == !b' : bool
 
 /// ## calls
-
-/// ### apply
 := apply (module_name : string) (function_name : string) (args : list term) : term =
     erlang_term_imports ()
     := m = atom_named module_name
@@ -90,7 +75,6 @@ test erlang_term static =
     := host = terms_of args
     $'erlang_term_apply(!m, !f, !host)'
 
-/// ### charlist
 := charlist (text : string) : term = apply "unicode" "characters_to_list" [ of text ]
 
 ///> gleam

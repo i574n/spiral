@@ -1,10 +1,7 @@
-/// # math
 test math static =
     :< testing
 
 /// ## math
-
-/// ### e
 := e () =
     exp 1f64
 
@@ -53,8 +50,6 @@ test square_9 =
     |> _assert_approx_eq None 0.00000000000000006123233995736766f64
 
 /// ## fsharp
-
-/// ### atan2
 := atan2 (y : f64) (x : f64) : f64 =
     backend_switch {
         Gleam = \ () =>
@@ -84,9 +79,9 @@ test square_9 =
         Swift = \ () => $'atan2(!y, !x)' : float
     }
 
+///> rust
 ///> gleam
 ///> lua
-///> fsharp
 ///> cuda
 test atan2 =
     0 |> atan2 1
@@ -119,9 +114,9 @@ test atan2 =
         Swift = \ () => $'(!n).rounded(.down)' : t
     }
 
+///> rust
 ///> gleam
 ///> lua
-///> fsharp
 ///> cuda
 test floor =
     0.6 |> floor
@@ -154,9 +149,9 @@ test floor =
         Swift = \ () => $'(!n).rounded(.up)' : t
     }
 
+///> rust
 ///> gleam
 ///> lua
-///> fsharp
 ///> cuda
 test ceil =
     0.6 |> ceil
@@ -188,9 +183,9 @@ test ceil =
         Swift = \ () => $'(!x).rounded(.toNearestOrEven)' : t
     }
 
+///> rust
 ///> gleam
 ///> lua
-///> fsharp
 ///> cuda
 test round =
     0.5 |> round

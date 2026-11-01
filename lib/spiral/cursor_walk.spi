@@ -1,4 +1,3 @@
-/// # cursor_walk
 :< sm'_operators
 
 test cursor_walk static =
@@ -33,30 +32,25 @@ test cursor_walk static =
 := cursor_finished \* e. (w : cursor_trail) (p : cursor_page) : cursor_next e =
     CursorEnd (Ok (listm.rev (cursor_stepped w p).bodies))
 
-/// ### cursor_paged
 := cursor_paged \* e. (k : cursor_walker e) (w : cursor_trail) (p : cursor_page) : cursor_next e =
     ? p.next_token = "" ?> cursor_finished w p
     |? cursor_repeats w p ?> cursor_halted k (cursor_repeated w p)
     |: CursorOn p
 
-/// ### cursor_fetched
 := cursor_fetched \* e. (k : cursor_walker e) (w : cursor_trail) (r : result cursor_page e) : cursor_next e =
     ?= r ?|
     | Error e => CursorEnd (Error e)
     | Ok p => cursor_paged k w p
 
-/// ### cursor_next_of
 := cursor_next_of \* e. (k : cursor_walker e) (token : string) (w : cursor_trail) : cursor_next e =
     ? w.pages >= k.budget ?> cursor_halted k (CursorBudget { token pages = w.pages })
     |: cursor_fetched k w (k.fetch token)
 
-/// ### walked_from
 :~ ^ walked_from \* e. (k : cursor_walker e) (token : string) (w : cursor_trail) : result (list string) e =
     ?= cursor_next_of k token w ?|
     | CursorEnd r => r
     | CursorOn p => walked_from k p.next_token (cursor_stepped w p)
 
-/// ### all_pages
 := all_pages \* e. (k : cursor_walker e) : result (list string) e =
     walked_from k "" { seen = []; pages = 0i32; bodies = [] }
 

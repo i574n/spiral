@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('single-flight', 'sf', 'gpt5parallel', 'gp', 'hopacsota', 'hs')][string]$Mode = 'single-flight',
+    [ValidateSet('single-flight', 'sf', 'hopacsota', 'hs')][string]$Mode = 'single-flight',
     [string[]]$Suite = @('smoke'),
     [string]$Filter,
     [string[]]$Backend,
@@ -29,12 +29,12 @@ if ($fastSuite -and ($Accept -or $Record)) { throw '-Suite fast runs a subset pi
 foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
 $mode = ConvertTo-SpiralMode $Mode
 $suiteTimeoutSec = @{ frontier = 20; smoke = 20; examples = 20; contracts = 30; mega = 180 }
-$recycleWarmBatches = $WarmRecycle -or ($mode -eq 'gpt5parallel' -and -not $PSBoundParameters.ContainsKey('FreshProcess'))
+$recycleWarmBatches = [bool]$WarmRecycle
 $freshProcess = if ($recycleWarmBatches) { $false } else { [bool]$FreshProcess }
 if ($recycleWarmBatches) { $env:SPIRAL_BATCH_RECYCLE_AFTER_ERROR = '1' }
 if ($Parallel -le 0) {
     $cpus = [Environment]::ProcessorCount
-    $byCpu = if ($mode -eq 'gpt5parallel') { [Math]::Ceiling($cpus * 3 / 8) } else { [Math]::Ceiling($cpus / 2) }
+    $byCpu = [Math]::Ceiling($cpus / 2)
     $freeGb = try { (Get-CimInstance Win32_OperatingSystem -ErrorAction Stop).FreePhysicalMemory / 1MB } catch { 3 }
     $Parallel = [int][Math]::Max(1, [Math]::Min($byCpu, [Math]::Floor($freeGb / 1.5)))
 }
@@ -63,7 +63,6 @@ Get-ChildItem (Join-Path (Get-SpiralDetRoot) 'core-src') -Filter '*.jsonl' -Recu
     Where-Object { $_.LastWriteTime -lt $staleLogs } | Remove-Item -Force -ErrorAction SilentlyContinue
 $env:SPIRAL_WORKSPACE_ROOT = if ($WorkspaceRoot) { (Resolve-Path $WorkspaceRoot).Path } else { $BundleRoot }
 $env:SPIRAL_COMPILER_PACKAGE_DIR = Get-SpiralPackageDir
-if (-not $env:SPIRAL_DIAG_QUIET) { $env:SPIRAL_DIAG_QUIET = '1' }
 if (-not $env:DOTNET_GCgen0size) { $env:DOTNET_GCgen0size = '0x10000000' }
 $runStart = [DateTime]::UtcNow
 
@@ -397,6 +396,8 @@ if ($toolchainChanges) {
     Write-Host "toolchain differs from the baseline's:" -ForegroundColor Yellow
     $toolchainChanges | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
     if ($Accept -and -not $AcceptToolchain) { throw "-Accept refuses a run whose native toolchain differs from the baseline's: pin the baseline's tools (SPIRAL_CC and the others) or pass -AcceptToolchain to move the baseline to this toolchain" }
+    $verdictTools = @($toolchainChanges | Where-Object { $_ -match '^(CC|Fpc): ' })
+    if ($verdictTools -and -not $AcceptToolchain) { throw "test.ps1 refuses a -Native run whose C or Pascal compiler differs from the baseline's toolchain.tsv, because a different CC or FPC fakes NATIVE-DIFF rows: $($verdictTools -join '; '). Pin SPIRAL_CC / SPIRAL_FPC to the baseline's paths, or pass -AcceptToolchain to run anyway" }
 }
 if ($Native) { $toolchain | Export-Csv (Join-Path $runDir 'toolchain.tsv') -Delimiter "`t" -NoTypeInformation -UseQuotes Never }
 function Get-NativeSignature([string]$ScriptPath = $PSCommandPath) {
@@ -1096,7 +1097,7 @@ foreach ($row in $rows) {
     $e = $expected["$($row.id)|$($row.backend)"]
     if (-not $e) { $row.baseline = 'new'; continue }
     $produced = $row.compile -in 'ok', 'emitted'
-    $broken = if ($mode -in 'gpt5parallel', 'hopacsota') { 'missing' } else { 'REGRESSED' }
+    $broken = if ($mode -eq 'hopacsota') { 'missing' } else { 'REGRESSED' }
     $nativeMatch = (-not $Native) -or ($e.native -ne 'ran') -or ($row.native -eq 'no-toolchain') -or ($row.native -eq 'ran' -and $e.exit -eq $row.exit -and $e.stdout -eq $row.stdout)
     $row.baseline =
         if ($e.compile -in 'timeout', 'crash', 'not-run') { if ($produced) { 'FIXED' } else { 'no-oracle' } }
@@ -1133,7 +1134,7 @@ if ($Native) {
     Write-Host ("native: {0} ran, {1} build-fail, oracle agree {2}, DISAGREE {3}" -f (Count $nat { $_.native -eq 'ran' }), (Count $nat { $_.native -eq 'build-fail' }),
         (Count $rows { $_.oracle -eq 'agree' }), (Count $rows { $_.oracle -eq 'DISAGREE' }))
 }
-$bad = @($rows | Where-Object { $_.baseline -in 'REGRESSED', 'NATIVE-DIFF' -or ($mode -notin 'gpt5parallel', 'hopacsota' -and $_.baseline -eq 'UNEXPECTED-OUTPUT') -or $_.oracle -eq 'DISAGREE' -or $_.oracle -eq 'WRONG-ERROR' })
+$bad = @($rows | Where-Object { $_.baseline -in 'REGRESSED', 'NATIVE-DIFF' -or ($mode -ne 'hopacsota' -and $_.baseline -eq 'UNEXPECTED-OUTPUT') -or $_.oracle -eq 'DISAGREE' -or $_.oracle -eq 'WRONG-ERROR' })
 foreach ($b in $bad | Select-Object -First 20) { Write-Host "  !! $($b.id) [$($b.backend)] $($b.baseline) $($b.oracle) $($b.detail)" -ForegroundColor Red }
 Write-Host "results: $resultPath"
 Write-Host "outputs: written next to their sources; git diff samples shows what changed"

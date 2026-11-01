@@ -2,7 +2,7 @@ param([switch]$IgnoreHeaders, [switch]$Seams, [string]$Base = 'HEAD', [string]$B
 . $PSScriptRoot/env.ps1
 $dir = Join-Path ([IO.Path]::GetTempPath()) "spiral-projection-$PID"
 try {
-    foreach ($mode in 'single-flight', 'gpt5parallel', 'hopacsota') {
+    foreach ($mode in 'single-flight', 'hopacsota') {
         $file = Get-SpiralCoreProjection $mode (Join-Path $dir "$mode.fs")
         $text = [IO.File]::ReadAllText($file)
         if ($IgnoreHeaders) { $text = [regex]::Replace($text, '(?m)^/// ## [^\n]*\n', '') }

@@ -1,12 +1,9 @@
-/// # trace
 test trace static =
     :< testing
 
 :< sm'_operators
 
 /// ## trace
-
-/// ### trace_level
 :| trace_level =
     | Verbose
     | Debug
@@ -14,7 +11,6 @@ test trace static =
     | Warning
     | Critical
 
-/// ### severity
 := severity = \|
     | Verbose => 10
     | Debug => 20
@@ -22,7 +18,6 @@ test trace static =
     | Warning => 40
     | Critical => 50
 
-/// ### read_state
 := read_state () =
     run_target \|
         | Zig => \ () =>
@@ -66,7 +61,6 @@ test trace static =
                             |> Some
                 }
 
-/// ### trace_state
 :== trace_state =
     {
         count : mut i64
@@ -77,7 +71,6 @@ test trace static =
         repl_start : optionm'.option' i64
     }
 
-/// ### new_trace_state
 :~ new_trace_state trace_level' =
     := { repl_start trace_level } = read_state ()
     {
@@ -89,7 +82,6 @@ test trace static =
         repl_start = repl_start |> optionm'.box
     } : trace_state
 
-/// ### init_trace_state
 := init_trace_state trace_level : () =
     := trace_level = trace_level |> optionm'.default_value Verbose
     backend_switch {
@@ -149,7 +141,6 @@ test trace static =
         Zig = \ () => ()
     }
 
-/// ### get_trace_state_or_init
 := get_trace_state_or_init trace_level : trace_state =
     init_trace_state trace_level
     backend_switch {
@@ -188,11 +179,10 @@ test trace static =
                 }
                 """
             := level' = trace_level |> optionm'.default_value Verbose
-            := fresh = dyn (\ () => new_trace_state level')
+            := fresh = dyn \ () => new_trace_state level'
             $'spiralHold(`trace_state, !fresh)' : trace_state
     }
 
-/// ### set_trace_level
 := set_trace_level new_level =
     := ({ level } & trace_state) = get_trace_state_or_init None
     level <- new_level
@@ -206,7 +196,6 @@ test trace static =
         Zig = id : () -> ()
     }
 
-/// ### test_trace_level
 := test_trace_level level : bool =
     := state = get_trace_state_or_init None
     := level' = *state.level
@@ -218,7 +207,6 @@ test trace static =
 
 ///> lua
 ///> gleam
-///> fsharp
 ///> cuda
 ///> rust
 ///> typescript
@@ -230,7 +218,6 @@ test test_trace_level =
     Verbose |> set_trace_level
     test_trace_level Verbose |> _assert_eq !+
 
-/// ### trace_raw
 := trace_raw level fn =
     \ () =>
         := trace_state =
@@ -305,7 +292,6 @@ test test_trace_level =
         }
     |> exec_unit
 
-/// ### clock_two_digits
 := clock_two_digits (n : i32) : string =
     (? n < 10i32 ?> "0" |: "") ++# sm'.obj_to_string n
 
@@ -369,13 +355,11 @@ test test_trace_level =
 test local_seconds_of_day_is_within_a_day =
     (local_seconds_of_day () < 86400u64) |> _assert_eq !+
 
-/// ### clock_text_of_seconds
 := clock_text_of_seconds (seconds : u64) : string =
     := two_digits (n : u64) : string = (? n < 10u64 ?> "0" |: "") ++# sm'.obj_to_string n
     := hours_minutes = two_digits ((seconds / 3600u64) % 24u64) ++# ":" ++# two_digits ((seconds / 60u64) % 60u64)
     hours_minutes ++# ":" ++# two_digits (seconds % 60u64)
 
-/// ### trace
 := trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
     \ () =>
         := trace_state = get_trace_state_or_init None
@@ -472,7 +456,6 @@ test local_seconds_of_day_is_within_a_day =
 
 ///> gleam
 ///> lua
-///> fsharp
 ///> cuda
 ///> rust
 ///> typescript
@@ -483,11 +466,10 @@ test trace_2 =
     |> \ x => *x
     |> _assert_eq 3
 
-/// ### trace_format
 := trace_format level fn obj =
     := text, locals = fn obj
     := locals = #?locals |> sm'.ellipsis_end 200
-    trace level (\ () => text) (\ () => locals)
+    trace level (\ () => text) \ () => locals
     obj
 
 /// ## main

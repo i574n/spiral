@@ -23,7 +23,7 @@ defmodule Spiral.Cells.NewProject do
   @spec epic_command(String.t()) :: String.t()
   def epic_command(name) do
     id = name |> String.upcase() |> String.replace("_", "-")
-    "eoie agile add <backlog root> #{id} Epic P2 D5 \"#{name}: starter plan (units module, c/wgsl/lua targets, scripts/gate.ps1 green)\" #{name}"
+    "kit agile add <backlog root> #{id} Epic P2 D5 \"#{name}: starter plan (units module, c/wgsl/lua targets, scripts/gate.ps1 green)\" #{name}"
   end
 
   defp write_templates(path, name) do

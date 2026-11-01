@@ -16,7 +16,7 @@ function Build-Sample([string] $Sample) {
     $dir = "$targetDir/$Sample"
     Remove-Item $dir -Recurse -Force -ErrorAction Ignore
     New-Item -ItemType Directory -Force $dir | Out-Null
-    { python spl2spi.py "$Sample.spl" "$dir/main.spi" } | Invoke-Block | Out-Host
+    { pwsh -NoProfile -File spl2spi.ps1 -In "$Sample.spl" -Out "$dir/main.spi" } | Invoke-Block | Out-Host
     @('packages:', '    |core-', 'modules:', '    main') | Set-Content "$dir/package.spiproj"
     BuildSpiral "$dir/main.spi" "$dir/main.rs" "apps/lisp/$Sample"
 }

@@ -18,6 +18,7 @@
     (local $t3 i32)
     (local $v2 i32)
     (local $v3 i32)
+    (local $v4 i32)
     (local.set $v0 (i32.const 2))
     (local.set $t2 (local.get $v0))
     (local.set $t3 (call $alloc (i32.add (i32.const 8) (i32.mul (local.get $t2) (i32.const 8)))))
@@ -27,7 +28,14 @@
     (i32.store offset=8 (i32.add (local.get $v1) (i32.mul (i32.const 1) (i32.const 8))) (i32.const 13))
     (local.set $v2 (i32.const 2))
     (local.set $v3 (i32.load offset=8 (i32.add (local.get $v1) (i32.mul (local.get $v2) (i32.const 8)))))
-    (return (local.get $v3))
+    (local.set $v4 (i32.eq (local.get $v3) (i32.const 1234567)))
+    (if (local.get $v4)
+        (then
+            (return (i32.const 1))
+        )
+        (else
+            (return (i32.const 0))
+        ))
     (unreachable)
   )
   (func $_start (export "_start")

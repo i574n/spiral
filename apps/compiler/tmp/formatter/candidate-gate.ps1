@@ -72,19 +72,70 @@ foreach ($name in $corpora.Keys) {
     $unstable.candidate | Select-Object -First 25 | ForEach-Object { "  NOT A FIXPOINT: $_" }
     if ($newlyUnstable.Count -or ($name -eq 'synthetic' -and $unstable.candidate.Count)) { $verdict = $false }
 }
+function Get-FittingLinesKept([string] $sourceRoot, [string] $outputRoot) {
+    $sourceRoot = (Resolve-Path $sourceRoot).Path
+    $kinds = [ordered]@{}; $examples = @{}; $checked = 0
+    foreach ($source in @(Get-ChildItem $sourceRoot -Recurse -Filter *.spi -File | Sort-Object { $_.FullName.ToLowerInvariant() })) {
+        $relative = $source.FullName.Substring($sourceRoot.TrimEnd('\', '/').Length + 1)
+        $output = Join-Path $outputRoot $relative
+        if (-not (Test-Path -LiteralPath $output)) { continue }
+        $authored = [IO.File]::ReadAllText($source.FullName).Replace("`r`n", "`n").Split("`n")
+        $laid = [Collections.Generic.HashSet[string]]::new([string[]] @([IO.File]::ReadAllText($output).Replace("`r`n", "`n").Split("`n") | ForEach-Object { $_.Trim() }))
+        for ($i = 0; $i -lt $authored.Count; $i++) {
+            $line = $authored[$i]; $text = $line.Trim()
+            if (-not $text -or $line.Length -gt 120 -or $text.StartsWith('//')) { continue }
+            $checked++
+            if ($laid.Contains($text)) { continue }
+            $kind = if ($text.StartsWith('(') -or $text.EndsWith(')') -or $text.Contains('(join')) { 'parentheses changed' }
+                elseif ($text.StartsWith('then') -or $text.EndsWith('then')) { 'then moved' }
+                elseif ($text.EndsWith('\') -or $text.Contains("`$'") -or $text.Contains('$"')) { 'macro continuation' }
+                else { 'other' }
+            if (-not $kinds.Contains($kind)) { $kinds[$kind] = 0; $examples[$kind] = [Collections.Generic.List[string]]::new() }
+            $kinds[$kind]++
+            $examples[$kind].Add("${relative}:$($i + 1): $($text.Substring(0, [Math]::Min(100, $text.Length)))")
+        }
+    }
+    "fitting authored lines checked $checked, not kept verbatim $(($kinds.Values | Measure-Object -Sum).Sum + 0)"
+    foreach ($kind in @($kinds.Keys | Sort-Object { -$kinds[$_] } -Stable)) {
+        "  {0,5} {1}" -f $kinds[$kind], $kind
+        $examples[$kind] | Select-Object -First 3 | ForEach-Object { "        $_" }
+    }
+}
+function Get-FormatComplaints([string[]] $files) {
+    $failed = $false
+    $lines = foreach ($path in $files) {
+        $code = [Collections.Generic.List[object]]::new(); $insideMacro = $false; $number = 0
+        foreach ($line in [IO.File]::ReadAllText($path).Replace("`r`n", "`n").Split("`n")) {
+            $number++
+            $stripped = $line.Trim()
+            $quotes = if ($line.Contains("`$'") -or $insideMacro) { ($line.ToCharArray() | Where-Object { $_ -eq "'" }).Count } else { 0 }
+            if (-not $insideMacro -and $stripped -and -not $stripped.StartsWith('//')) { $code.Add([pscustomobject]@{ N = $number; L = $line }) }
+            if ($quotes % 2) { $insideMacro = -not $insideMacro }
+        }
+        $parens = [Collections.Generic.List[object]]::new()
+        foreach ($c in $code) { if ($c.L -match '^\s*\(join\b.*\)\s*$') { $parens.Add($c) } }
+        for ($i = 0; $i + 1 -lt $code.Count; $i++) { if ($code[$i].L -match '^\s*\($' -and $code[$i + 1].L -match '^\s*join\b') { $parens.Add($code[$i]) } }
+        $offGrid = @($code | Where-Object { ($_.L.Length - $_.L.TrimStart(' ').Length) % 4 })
+        $leads = @($code | Where-Object { $_.L -match '^\s*then\b' }).Count
+        $trails = @($code | Where-Object { $_.L -match '\bthen\s*$' -and -not $_.L.TrimStart().StartsWith('|') }).Count
+        "$([IO.Path]::GetFileName($path)): (join heads $($parens.Count), off-grid lines $($offGrid.Count), then leading $leads trailing $trails"
+        @($parens) + @($offGrid) | Select-Object -First 12 | ForEach-Object { $t = $_.L.TrimEnd(); "    $($_.N): $($t.Substring(0, [Math]::Min(110, $t.Length)))" }
+        if ($parens.Count -or $offGrid.Count) { $failed = $true }
+    }
+    [pscustomobject]@{ Lines = @($lines); Failed = $failed }
+}
 foreach ($name in $corpora.Keys) {
     $counts = foreach ($side in 'installed', 'candidate') {
-        $census = @(python -I (Join-Path $PSScriptRoot 'fitting_lines_kept.py') $corpora[$name] (Join-Path $Work "$name-$side"))
+        $census = @(Get-FittingLinesKept $corpora[$name] (Join-Path $Work "$name-$side"))
         $thenMoved = [regex]::Match(($census -join "`n"), '(?m)^\s+(\d+) then moved$')
         "$side $(([regex]::Match([string]$census[0], 'not kept verbatim (\d+)')).Groups[1].Value) (then moved $(if ($thenMoved.Success) { $thenMoved.Groups[1].Value } else { 0 }))"
     }
     "== fitting authored lines not kept verbatim, $name`: $($counts -join ', ') (informational: parentheses the candidate drops on purpose count too)"
 }
 $complaintFiles = @(Get-ChildItem (Join-Path $Work 'dice-candidate') -Filter *.spi | ForEach-Object FullName)
-$complaints = @(python -I (Join-Path $PSScriptRoot 'complaints_probe.py') $complaintFiles)
-$complaintsExit = $LASTEXITCODE
-$complaints | ForEach-Object { if ($_.StartsWith(' ')) { "  $_" } else { "== complaints $_" } }
-if ($complaintsExit) { $verdict = $false }
+$complaints = Get-FormatComplaints $complaintFiles
+$complaints.Lines | ForEach-Object { if ($_.StartsWith(' ')) { "  $_" } else { "== complaints $_" } }
+if ($complaints.Failed) { $verdict = $false }
 function Get-JoinedAuthoredLines([string] $diffPath) {
     $removed = @(); $added = @(); $file = ''
     $flush = {

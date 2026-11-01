@@ -1,17 +1,12 @@
-/// # seq
 test seq static =
     :< testing
 
 /// ## seq
-
-/// ### seq
 :== seq dim el = dim -> option el
 
-/// ### try_item
 := try_item n s =
     n |> s
 
-/// ### from_list
 := from_list list =
     \ n =>
         list
@@ -23,7 +18,6 @@ test from_list =
     |> try_item 5i32
     |> _assert_eq (Some 5i32)
 
-/// ### map
 := map fn s =
     \ n =>
         n
@@ -37,7 +31,6 @@ test map =
     |> try_item 5i32
     |> _assert_eq (Some 10i32)
 
-/// ### mapi
 := mapi fn s =
     \ n =>
         n
@@ -51,7 +44,6 @@ test mapi =
     |> try_item 5i32
     |> _assert_eq (Some 10i32)
 
-/// ### choose
 := choose \* dim {number} t u. (fn : t -> option u) (s : seq dim t) : seq dim u =
     \ n =>
         := ^ body fn s i i' =
@@ -74,11 +66,10 @@ test mapi =
 test choose =
     listm.init 10i32 print_and_return
     |> from_list
-    |> choose (\ x => ? x % 2 = 0 ?> Some x |: None)
+    |> choose \ x => ? x % 2 = 0 ?> Some x |: None
     |> try_item 1i32
     |> _assert_eq (Some 2i32)
 
-/// ### indexed
 := indexed s =
     s
     |> mapi \ i x =>
@@ -91,7 +82,6 @@ test indexed =
     |> try_item 5i32
     |> _assert_eq (Some (5i32, 10i32))
 
-/// ### zip
 := zip n seq1 seq2 =
     seq1 n, seq2 n
 
@@ -100,7 +90,6 @@ test zip =
     ||> zip 5i32
     |> _assert_eq (Some 5, Some 10)
 
-/// ### zip_with
 := zip_with fn seq1 seq2 =
     \ n =>
         fn (seq1 n) (seq2 n)
@@ -111,7 +100,6 @@ test zip_with =
     |> try_item 2i32
     |> _assert_eq (Some 6)
 
-/// ### fold
 := fold fn init seq =
     := ^ 루프 acc n =
         ?= seq n ?|
@@ -126,7 +114,6 @@ test zip_with =
         | None => acc
     루프 init 0
 
-/// ### sum
 := sum seq =
     seq |> fold (+) 0
 
@@ -140,7 +127,6 @@ test sum =
     |> sum
     |> _assert_eq 45
 
-/// ### to_list
 := to_list seq =
     seq
     |> fold (\ acc x => x :: acc) []
@@ -158,7 +144,6 @@ test to_list =
     |> to_list
     |> _assert_eq (listm.init 10i32 id)
 
-/// ### from_array
 := from_array \* el. (array : array el) : seq int el =
     \ n =>
         ? n >= length array
@@ -171,7 +156,6 @@ test from_array =
     |> try_item 1i32
     |> _assert_eq (Some 2i32)
 
-/// ### to_array
 := to_array seq =
     := ar = ;[] |> mut
     ((), seq)
@@ -193,7 +177,6 @@ test to_array =
     |> to_array
     |> _assert_eq (;[ 0; 1; 2; 3; 4; 5; 6; 7; 8; 9 ] : array _)
 
-/// ### take_while
 := take_while cond seq =
     := ^ 루프 acc i =
         ?= seq i ?|
@@ -204,18 +187,17 @@ test to_array =
 test take_while =
     listm.init 10i32 id
     |> from_list
-    |> take_while (\ n (_ : i32) => n < 5)
+    |> take_while \ n (_ : i32) => n < 5
     |> listm'.sum
     |> _assert_eq 10
 
 test take_while_2 =
     stream.new_finite_stream print_and_return 10i32
     |> flip stream.try_item
-    |> take_while (\ n (_ : i32) => n < 5)
+    |> take_while \ n (_ : i32) => n < 5
     |> listm'.sum
     |> _assert_eq 10
 
-/// ### take_while_
 := take_while_ cond seq =
     :~ ^ 루프 acc i =
         ?= seq i ?|
@@ -226,7 +208,7 @@ test take_while_2 =
 test take_while_3 =
     stream.new_infinite_stream_ print_and_return
     |> flip stream.try_item
-    |> take_while_ (\ n (_ : i32) => n < 5i32)
+    |> take_while_ \ n (_ : i32) => n < 5i32
     |> listm'.sum
     |> _assert_eq 10
 
@@ -236,7 +218,7 @@ test take_while_4 =
     |> \ list =>
         := list = list ()
         \ n => list |> stream.try_item n
-    |> take_while_ (\ n (_ : i32) => n < 5i32)
+    |> take_while_ \ n (_ : i32) => n < 5i32
     |> listm'.sum
     |> _assert_eq 10
 
@@ -246,11 +228,10 @@ test take_while_5 =
     |> \ list =>
         := list = list ()
         \ n => list |> stream.try_item n
-    |> take_while_ (\ n (_ : i32) => n < 5)
+    |> take_while_ \ n (_ : i32) => n < 5
     |> listm'.sum
     |> _assert_eq 10
 
-/// ### memoize
 := memoize_ seq =
     := state = mut []
     \ n =>
@@ -269,16 +250,15 @@ test memoize =
         |> memoize_
 
     seq
-    |> take_while_ (\ n (_ : i32) => n < 5)
+    |> take_while_ \ n (_ : i32) => n < 5
     |> listm'.sum
     |> _assert_eq 10
 
     seq
-    |> take_while_ (\ n _ => n < 5)
+    |> take_while_ \ n _ => n < 5
     |> listm'.sum
     |> _assert_eq 10
 
-/// ### iterate
 := iterate \* a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
     := ^ 루프 \* c {number}. (x : a) (n : c) : a =
         ? n <= 0
@@ -309,7 +289,6 @@ test iterate_3 =
     10i32 |> iterate' ((*) 2) 1i32
     |> _assert_eq 1024
 
-/// ### find_last
 := find_last \* item result. fold_fn fn target : option result =
     fold_fn (\ (item : item) (result : option result) =>
         ?= result ?|
@@ -337,7 +316,6 @@ test iterate_3 =
     }
 :! seq' t = $'backend_switch `(seq_switch' t)'
 
-/// ### length'
 := length' \* t. (items : seq' t) : int =
     backend_switch {
         Gleam = \ () =>
@@ -350,7 +328,6 @@ test iterate_3 =
         Zig = \ () => $'\@as(`int, \@intCast(!items.len))' : int
     }
 
-/// ### to_list'
 := to_list' \* t. (items : seq' t) : listm'.list' t =
     backend_switch {
         Gleam = \ () => $'!items ' : listm'.list' t
@@ -361,7 +338,6 @@ test iterate_3 =
         Zig = \ () => $'!items ' : listm'.list' t
     }
 
-/// ### new_seq
 := new_seq \* t. fn : seq' t =
     backend_switch {
         Gleam = \ () =>
@@ -388,7 +364,6 @@ test new_seq =
     |> listm'.unbox
     |> _assert_eq [ "a"; "b" ]
 
-/// ### of_array'
 := of_array' \* t. (items : array t) : seq' t =
     backend_switch {
         Gleam = \ () => $'!items |> spiral_array_to_list' : seq' t
@@ -403,7 +378,6 @@ test new_seq =
         Zig = \ () => $'!items ' : seq' t
     }
 
-///> fsharp
 ///> cuda
 ///> rust
 ///> typescript
@@ -414,7 +388,6 @@ test of_array =
     |> listm'.unbox
     |> _assert_eq [ "a"; "b" ]
 
-/// ### of_array
 := of_array \* t. (items : array t) : seq' t =
     backend_switch {
         Gleam = \ () => $'!items |> spiral_array_to_list' : seq' t
@@ -425,7 +398,6 @@ test of_array =
         Zig = \ () => $'!items ' : seq' t
     }
 
-///> fsharp
 ///> cuda
 ///> rust
 ///> typescript
@@ -436,13 +408,11 @@ test of_array_2 =
     |> listm'.unbox
     |> _assert_eq [ "a"; "b" ]
 
-/// ### of_array_base
 := of_array_base \* t. (items : array_base t) : seq' t =
     array items
     |> \ x => x : array _
     |> of_array
 
-///> fsharp
 ///> cuda
 ///> rust
 ///> typescript
@@ -453,7 +423,6 @@ test of_array_base =
     |> listm'.unbox
     |> _assert_eq [ "a"; "b" ]
 
-/// ### to_array'
 := to_array' \* t. (items : seq' t) : array t =
     backend_switch {
         Gleam = \ () => $'!items |> spiral_array_from_list' : array t
@@ -466,7 +435,6 @@ test of_array_base =
         Zig = \ () => $'(spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"))' : array t
     }
 
-///> fsharp
 ///> cuda
 ///> rust
 ///> typescript
@@ -479,7 +447,6 @@ test to_array_2 =
     |> listm'.unbox
     |> _assert_eq [ "a"; "b" ]
 
-/// ### of_list'
 := of_list' \* t. (items : listm'.list' t) : seq' t =
     backend_switch {
         Gleam = \ () => $'!items ' : seq' t
@@ -494,7 +461,6 @@ test to_array_2 =
         Zig = \ () => $'!items ' : seq' t
     }
 
-/// ### cast'
 := cast' \* t u. (items : u) : seq' t =
     backend_switch {
         Gleam = \ () => $'!items ' : seq' t
@@ -528,7 +494,6 @@ test to_array_2 =
             std.mem.reverse(`t, r); break :blk r; }' : seq' t
     }
 
-///> fsharp
 ///> cuda
 ///> rust
 ///> typescript
@@ -542,8 +507,6 @@ test rev =
     |> _assert_eq [ "b"; "a" ]
 
 /// ## rust
-
-/// ### fuse
 :! fuse t =
     `(
         rust.rust_type

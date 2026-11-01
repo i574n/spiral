@@ -149,7 +149,6 @@
             fn target args
     }
 
-/// ### is_rust
 := is_rust () : bool =
     backend_switch {
         Gleam = \ () => !-
@@ -168,7 +167,6 @@
         Rust = \ () => !+
     }
 
-/// ### is_zig
 := is_zig () : bool =
     backend_switch {
         Gleam = \ () => !-
@@ -221,5 +219,3 @@
             !!!!Indent(body ())
             ()
     }
-
-/// ### rust.rust_type

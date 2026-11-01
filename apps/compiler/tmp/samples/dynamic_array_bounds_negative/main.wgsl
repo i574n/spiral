@@ -24,7 +24,15 @@ fn spiral_main() -> i32 {
     spiral_heap[v1 + 1u + bitcast<u32>(1i) * 1u + 0u] = bitcast<u32>(13i);
     var v2: i32 = 0i;
     v2 = 2i;
-    return bitcast<i32>(spiral_heap[v1 + 1u + bitcast<u32>(v2) * 1u + 0u]);
+    var v3: i32 = 0i;
+    v3 = bitcast<i32>(spiral_heap[v1 + 1u + bitcast<u32>(v2) * 1u + 0u]);
+    var v4: bool = false;
+    v4 = (v3 == 1234567i);
+    if (v4) {
+        return 1i;
+    } else {
+        return 0i;
+    }
 }
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) invocation: vec3<u32>) {

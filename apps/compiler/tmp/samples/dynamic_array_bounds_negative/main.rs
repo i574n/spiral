@@ -8,7 +8,12 @@ fn spiral_main() -> i32 {
     v1.clone().borrow_mut()[1i32 as usize] = 13i32;
     let v2: i32 = 2i32;
     let v3: i32 = v1.borrow()[v2 as usize].clone();
-    v3
+    let v4: bool = v3 == 1234567i32;
+    if v4 {
+        1i32
+    } else {
+        0i32
+    }
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

@@ -1,8 +1,7 @@
 <Project>
   <!--
-    One host, two compiler cores in one file (../../spiral_compiler.fs). `SpiralCore` selects which is compiled into
-    the host: single-flight (stable; C/F#/Rust/Delphi) or hopac (parallel gpt5parallel evaluator, in progress; the core
-    project defines SPIRAL_CORE_GPT5PARALLEL, which picks gpt5parallel's side of the file's section pairs).
+    One host, one compiler core (../../spiral_compiler.fs). `SpiralCore` selects the build: single-flight (the
+    sequential evaluator) or hopacsota (single-flight plus the parallel layer, SPIRAL_CORE_HOPACSOTA).
     All build output goes to an external cache so the bundle never contains obj/bin trees.
   -->
   <PropertyGroup>

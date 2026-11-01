@@ -4,11 +4,9 @@
 test json static =
     :< testing
 
-/// ### decode
 := decode \* t. (text : string) : t =
     ~> json_real.decode text `t
 
-/// ### tool_schema
 := tool_schema \* t. (name : string) (_ : t) : string =
     ~> json_real.tool_schema name `t
 

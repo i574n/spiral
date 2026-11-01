@@ -1,4 +1,3 @@
-/// # near_workspaces
 test near_workspaces static =
     :< testing
 
@@ -6,8 +5,6 @@ test near_workspaces static =
 :< rust.rust_operators
 
 /// ## near
-
-/// ### near_token_workspaces
 :! near_token_workspaces =
     `(
         rust.rust_type
@@ -16,7 +13,6 @@ test near_workspaces static =
             "type near_workspaces_types_NearToken = class end"
     )
 
-/// ### gas
 :! gas =
     `(
         rust.rust_type
@@ -25,7 +21,6 @@ test near_workspaces static =
             "type near_workspaces_types_Gas = class end"
     )
 
-/// ### near_workspaces_error
 :! near_workspaces_error =
     `(
         rust.rust_type
@@ -34,7 +29,6 @@ test near_workspaces static =
             "type near_workspaces_error_Error = class end"
     )
 
-/// ### sandbox
 :! sandbox =
     `(
         rust.rust_type
@@ -43,7 +37,6 @@ test near_workspaces static =
             "type near_workspaces_network_Sandbox = class end"
     )
 
-/// ### worker
 :! worker t =
     `(
         rust.rust_type
@@ -52,7 +45,6 @@ test near_workspaces static =
             "type near_workspaces_Worker<'T> = class end"
     )
 
-/// ### contract
 :! contract =
     `(
         rust.rust_type
@@ -61,7 +53,6 @@ test near_workspaces static =
             "type near_workspaces_Contract = class end"
     )
 
-/// ### call_transaction
 :! call_transaction =
     `(
         rust.rust_type
@@ -70,7 +61,6 @@ test near_workspaces static =
             "type near_workspaces_operations_CallTransaction = class end"
     )
 
-/// ### execution_final_result
 :! execution_final_result =
     `(
         rust.rust_type
@@ -79,7 +69,6 @@ test near_workspaces static =
             "type near_workspaces_result_ExecutionFinalResult = class end"
     )
 
-/// ### execution_result
 :! execution_result t =
     `(
         rust.rust_type
@@ -88,7 +77,6 @@ test near_workspaces static =
             "type near_workspaces_result_ExecutionResult<'T> = class end"
     )
 
-/// ### execution_success
 :! execution_success =
     `(
         rust.rust_type
@@ -97,7 +85,6 @@ test near_workspaces static =
             "type near_workspaces_result_ExecutionSuccess = class end"
     )
 
-/// ### execution_failure
 :! execution_failure =
     `(
         rust.rust_type
@@ -106,7 +93,6 @@ test near_workspaces static =
             "type near_workspaces_result_ExecutionFailure = class end"
     )
 
-/// ### execution_outcome
 :! execution_outcome =
     `(
         rust.rust_type
@@ -115,11 +101,9 @@ test near_workspaces static =
             "type near_workspaces_result_ExecutionOutcome = class end"
     )
 
-/// ### sandbox_worker
 := sandbox_worker () : resultm.result' (worker sandbox) near_workspaces_error =
     !\($'"near_workspaces::sandbox().await"')
 
-/// ### dev_deploy
 := dev_deploy
     (wasm : am'.vec u8)
     (worker : worker sandbox)
@@ -128,75 +112,60 @@ test near_workspaces static =
     := worker = worker |> rust.emit
     !\\(wasm, $'"Box::pin(!worker.dev_deploy(&$0))"')
 
-/// ### call
 := call (fn_name : string) (contract : contract) : call_transaction =
     !\\((contract, fn_name), $'"$0.call(&*$1)"')
 
-/// ### logs
 := logs (result : execution_final_result) : am'.vec (rust.ref sm'.str) =
     !\($'"!result.logs()"')
 
-/// ### into_result
 := into_result
     (result : execution_final_result)
     : resultm.result' execution_success execution_failure
     =
     !\\(result, $'"$0.into_result()"')
 
-/// ### receipt_failures
 := receipt_failures (result : execution_final_result) : am'.vec (rust.ref execution_outcome) =
     := result = ~~ result
     !\($'"!result.receipt_failures()"')
 
-/// ### receipt_outcomes
 := receipt_outcomes (result : execution_final_result) : am'.vec execution_outcome =
     := result = ~~ result
     := result : rust.ref (am'.slice execution_outcome) = !\($'"!result.receipt_outcomes()"')
     result |> rust.into
 
-/// ### json
 := json (result : execution_final_result) : resultm.result' sm'.std_string near_workspaces_error =
     := result = result |> rust.clone_rust
     !\\(result, $'"$0.json()"')
 
-/// ### borsh
 := borsh (result : execution_final_result) : resultm.result' sm'.std_string near_workspaces_error =
     := result = result |> rust.clone_rust
     !\\(result, $'"$0.borsh()"')
 
-/// ### total_gas_burnt
 := total_gas_burnt (result : execution_final_result) : gas =
     !\\(result, $'"$0.total_gas_burnt"')
 
-/// ### as_gas
 := as_gas (gas : gas) : u64 =
     !\\(gas, $'"$0.as_gas()"')
 
-/// ### outcomes
 := outcomes (result : execution_final_result) : am'.vec (rust.ref execution_outcome) =
     := result = result |> rust.emit
     !\($'"!result.outcomes()"')
 
-/// ### is_success
 := is_success (outcome : execution_outcome) : bool =
     !\\(outcome, $'"$0.is_success()"')
 
-/// ### gas_burnt
 := gas_burnt (outcome : execution_outcome) : gas =
     !\\(outcome, $'"$0.gas_burnt"')
 
-/// ### tokens_burnt
 := tokens_burnt (outcome : execution_outcome) : near_token_workspaces =
     !\\(outcome, $'"$0.tokens_burnt"')
 
-/// ### transact
 := transact
     (call : call_transaction)
     : async.future_pin (resultm.result' execution_final_result near_workspaces_error)
     =
     !\($'"Box::pin(!call.transact())"')
 
-/// ### gas
 := gas
     (gas : gas)
     (call : call_transaction)
@@ -204,7 +173,6 @@ test near_workspaces static =
     =
     !\($'"!call.gas(!gas)"')
 
-/// ### from_tgas
 := from_tgas
     (tgas : i32)
     : gas
@@ -213,11 +181,9 @@ test near_workspaces static =
         Rust = \ () => !\($'"near_workspaces::types::Gas::from_tgas(!tgas as u64)"') : gas
     }
 
-/// ### as_yoctonear
 := as_yoctonear (tokens : near_token_workspaces) : rust.u128 =
     !\\(tokens, $'"$0.as_yoctonear()"')
 
-/// ### print_usd
 := print_usd retry (result : execution_final_result) =
     := total_gas_burnt = result |> total_gas_burnt |> as_gas
     := total_gas_burnt_usd = total_gas_burnt |> near.gas_to_usd

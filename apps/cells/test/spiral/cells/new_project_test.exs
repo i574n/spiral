@@ -12,7 +12,7 @@ defmodule Spiral.Cells.NewProjectTest do
     assert File.read!(Path.join(dir, "src/package.spiproj")) == "packages: |core-\nmodules:\n    ledger\n"
     assert File.read!(Path.join(dir, "src/ledger.spi")) =~ "test ledger static ="
     refute File.read!(Path.join(dir, "src/ledger.spi")) =~ "PROJECT_NAME"
-    assert NewProject.epic_command("ledger_v2") =~ "eoie agile add <backlog root> LEDGER-V2 Epic P2 D5"
+    assert NewProject.epic_command("ledger_v2") =~ "kit agile add <backlog root> LEDGER-V2 Epic P2 D5"
   end
 
   test "a directory that already holds files is refused, and so is a name that is not a module name" do

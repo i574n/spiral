@@ -384,6 +384,33 @@ defmodule Spiral.Cells.TargetsTest do
     assert message =~ "was not found"
   end
 
+  test "the time a spiral rust builder waits for the lock is its own rust_lock_wait_ms phase" do
+    dir = Spiral.Cells.TestHelpers.tmp_dir!("rust-lock-phase")
+    lock = Path.join(dir, "rust.lock")
+    File.write!(lock, System.pid())
+    missing = Path.join(dir, "no-spiral.exe")
+
+    task =
+      Task.async(fn ->
+        Process.put(:spiral_cells_phases, %{})
+
+        Targets.run(
+          %{tool: :rust, contract: nil, wasm: nil, deps: [], cleanup: nil},
+          Path.join(dir, "main.rs"),
+          [spiral: missing, rust_lock: lock],
+          30_000,
+          deadline()
+        )
+
+        Process.get(:spiral_cells_phases)
+      end)
+
+    assert Task.yield(task, 500) == nil
+    File.rm!(lock)
+    phases = Task.await(task, 10_000)
+    assert phases.rust_lock_wait_ms >= 400
+  end
+
   defp cc!(dir, name, source) do
     cc = Toolchain.cc([])
     assert is_binary(cc)

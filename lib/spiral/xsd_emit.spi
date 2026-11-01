@@ -1782,6 +1782,9 @@
 
 := is_required_once (o : occurs) : bool = ?= shape_of o ?| Required => !+ | _ => !-
 
+:= is_staged_signature (signatures : list string) (name : string) (o : occurs) : bool =
+    has_name (xml.local_name name) signatures && o.min >= 1i32
+
 :+ derived_prefix staged_reading = \ _ kinds base => derived_prefix Reading kinds base
 :+ record_texts staged_reading = \ f ty parts attribute_parts =>
     ?= f ?|
@@ -1803,7 +1806,7 @@
     ?= f ?|
     | StagedReading (staged, signatures) =>
         := field = field_name v.name
-        ? has_name (xml.local_name v.name) signatures && is_required_once v.occurs
+        ? is_staged_signature signatures v.name v.occurs
         ?>
             := read = occurs_expression v.name v.occurs (node_expression v.kind v.t)
             field_assignment field ("staged_of witness (fun () => " ++# read ++# ")")
@@ -1927,8 +1930,13 @@
 :+ element_part staged_writing = \ f kinds v =>
     ?= f ?|
     | StagedWriting (_, signatures) =>
-        ? has_name (xml.local_name v.name) signatures && is_required_once v.occurs
+        ? is_staged_signature signatures v.name v.occurs && is_required_once v.occurs
         ?> "staged_list (fun v => " ++# value_node v.kind v.t v.name "v" ++# ") x." ++# field_name v.name
+        |? is_staged_signature signatures v.name v.occurs
+        ?>
+            := node = value_node v.kind v.t v.name "v"
+            := present = "staged_list (fun vs => listm.map (fun v => " ++# node ++# ") vs) x." ++# field_name v.name
+            "listm.concat (" ++# present ++# ")"
         |: element_part Writing kinds v
 :+ any_part staged_writing = \ _ => any_part Writing
 :+ attribute_step staged_writing = \ _ acc a => attribute_step Writing acc a
@@ -2005,7 +2013,7 @@
 :+ element_part staged_exampling = \ f kinds v =>
     ?= f ?|
     | StagedExampling (_, signatures) =>
-        ? has_name (xml.local_name v.name) signatures && is_required_once v.occurs
+        ? is_staged_signature signatures v.name v.occurs
         ?> field_assignment (field_name v.name) "Pending \"an unsigned example\""
         |: element_part Exampling kinds v
 :+ any_part staged_exampling = \ _ => any_part Exampling
@@ -2045,6 +2053,22 @@
             type_ref = type_ref
         }
 
+:~ ^ attribute_names_of \* form. (attributes : list (xsd attribute_decl form)) (acc : list string) : list string =
+    ?= attributes ?|
+    | (Attribute a) :: rest => attribute_names_of rest (tag_text a.name :: acc)
+    | [] => acc
+
+:= without_redeclared \* form. (attributes : list (xsd attribute_decl form)) (prefix : walked) : walked =
+    ?= attribute_names_of attributes [] ?|
+    | [] => prefix
+    | names =>
+        := kept = join_with " && " (listm.map (\ n => "n <> \"" ++# n ++# "\"") names) ""
+        := filter (part : string) : string =
+            ? sm'.ends_with "_attributes x.base" part
+            ?> "listm'.filter (fun (n, _) => " ++# kept ++# ") (" ++# part ++# ")"
+            |: part
+        { prefix ?| attribute_parts = listm.map filter prefix.attribute_parts }
+
 :~ ^ named_type_walk
     \* form f {
         derived_prefix;
@@ -2065,7 +2089,8 @@
     (family : f) (kinds : list (string * type_kind)) (name : string) (item : xsd type_def form) : list walk_text =
     ?= item ?|
     | Complex c => record_walk family kinds name c.content c.attributes (nothing_walked ())
-    | Derived d => record_walk family kinds name d.content d.attributes (derived_prefix family kinds d.base)
+    | Derived d =>
+        record_walk family kinds name d.content d.attributes (without_redeclared d.attributes (derived_prefix family kinds d.base))
     | Simple _ => []
 
 :& :~ record_walk
@@ -3404,6 +3429,29 @@ test staged_writers_write_any_stage_and_only_a_present_signature =
     ?> failwith "the prelude reads a signed slot without an unsigned case"
 
 ///> rust
+test a_required_signature_list_is_staged_as_one_slot =
+    := schema =
+        read_schema (
+            "<xs:schema><xs:complexType name=\"TDoc\"><xs:sequence><xs:element name=\"ID\" type=\"xs:string\"/>"
+            ++# "<xs:element ref=\"ds:Signature\" minOccurs=\"1\" maxOccurs=\"5\"/></xs:sequence></xs:complexType>"
+            ++# "<xs:complexType name=\"TOne\"><xs:sequence><xs:element name=\"ID\" type=\"xs:string\"/>"
+            ++# "<xs:element ref=\"ds:Signature\"/></xs:sequence></xs:complexType></xs:schema>"
+        )
+    := staged = staged_type_names ["Signature"] schema
+    := items = staged_items staged ["Signature"] (module_parts schema).items
+    := text = join_lines (listm.map (\ (item : emitted) => item.text) items) ""
+    ? sm'.contains (field_line "Signature" "staged s (list (string))" ++# "\n") text = !-
+    ?> failwith "a required signature list is one staged slot"
+    := functions = join_lines (module_parts_staged staged ["Signature"] schema).functions ""
+    ? sm'.contains "staged_of witness (fun () => listm.map" functions = !-
+    ?> failwith "the reader stages the whole list"
+    ? sm'.contains "listm.concat (staged_list (fun vs => listm.map (fun v =>" functions = !-
+    ?> failwith "the writer writes every present signature"
+    ? sm'.contains "staged_list (fun v =>" functions = !-
+    ?> failwith "a single required signature keeps its one-value slot"
+    ? sm'.contains "signature = [" functions ?> failwith "the example leaves the whole signature list pending"
+
+///> rust
 test staged_examples_are_unsigned =
     := schema =
         read_schema (
@@ -3438,3 +3486,19 @@ test a_family_with_required_signatures_generates_staged_units =
     := unchanged, _ = generated_units_signed ["Signature"] (untyped_any_content ()) plain
     := before, _ = generated_units plain
     ? unchanged <> before ?> failwith "a family without required signatures generates exactly what it did before"
+
+///> rust
+test a_restriction_redeclaring_an_attribute_writes_it_once =
+    := schema =
+        read_schema (
+            "<xs:schema><xs:complexType name=\"TBase\"><xs:simpleContent><xs:extension base=\"xs:decimal\">"
+            ++# "<xs:attribute name=\"cur\" type=\"xs:string\" use=\"optional\"/>"
+            ++# "<xs:attribute name=\"ver\" type=\"xs:string\" use=\"optional\"/></xs:extension></xs:simpleContent>"
+            ++# "</xs:complexType><xs:complexType name=\"TAmount\"><xs:simpleContent><xs:restriction base=\"TBase\">"
+            ++# "<xs:attribute name=\"cur\" type=\"xs:string\" use=\"required\"/></xs:restriction></xs:simpleContent>"
+            ++# "</xs:complexType></xs:schema>"
+        )
+    := functions = join_lines (module_parts schema).functions ""
+    ? sm'.contains "listm'.filter (fun (n, _) => n <> \"cur\") (" functions = !-
+    ?> failwith "the base's attributes leave out the one the restriction re-declares"
+    ? sm'.contains "\"ver\"" functions = !- ?> failwith "the base's other attributes are still written"

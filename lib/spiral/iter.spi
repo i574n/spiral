@@ -1,4 +1,3 @@
-/// # iter
 :< rust
 :< rust_operators
 
@@ -6,59 +5,45 @@ test iter static =
     :< testing
 
 /// ## rust
-
-/// ### enumerate
 := enumerate \* t. (iter : into_iterator t) : into_iterator (pair convert.unativeint t) =
     !\($'"!iter.enumerate()"')
 
-/// ### into_iter
 := into_iter \* (t : * -> *) u. (x : t u) : into_iterator u =
     !\($'"!x.into_iter()"')
 
-/// ### iter
 := iter \* (t : * -> *) u. (x : t u) : into_iterator u =
     !\\(x, $'"$0.iter()"')
 
-/// ### iter_ref
 := iter_ref \* (t : * -> *) u. (x : t u) : into_iterator (rust.ref u) =
     !\\(x, $'"$0.iter()"')
 
-/// ### iter_ref'
 := iter_ref' \* (t : * -> *) u. (x : rust.ref (t u)) : into_iterator (rust.ref u) =
     !\\(x, $'"$0.iter()"')
 
-/// ### iter_ref''
 := iter_ref'' \* (t : * -> *) u (v : * -> *). (x : v (t u)) : into_iterator (rust.ref u) =
     !\\(x, $'"$0.iter()"')
 
-/// ### iter_ref'''
 := iter_ref''' \* (t : * -> *) u (v : * -> *) (w : * -> *). (x : w (v (t u))) : into_iterator (rust.ref u) =
     !\\(x, $'"$0.iter()"')
 
-/// ### map
 := map \* t u. (fn : t -> u) (iter : into_iterator t) : into_iterator u =
     !\\(fn, $'"!iter.map(|x| $0(x))"')
 
-/// ### cloned
 := cloned \* t. (iter : into_iterator (rust.ref t)) : into_iterator t =
     !\($'"!iter.cloned()"')
 
-/// ### for_each
 := for_each \* t. (fn : t -> ()) (iter : into_iterator t) : () =
     (!\\(fn, $'"true; !iter.for_each(|x| $0(x))"') : bool) |> ignore
 
-/// ### try_for_each
 := try_for_each \* t. (fn : t -> rust.try ()) x : resultm.result' () string =
     (!\($'"true; let mut !x = !x; let _iter_try_for_each = !x.try_for_each(|x| { //"') : bool) |> ignore
     (!\\(fn !\($'"x"'), $'"true; $0 }); //"') : bool) |> ignore
     !\($'"_iter_try_for_each.map_err(|x| x.into())"')
 
-/// ### all
 := all \* t. (fn : t -> bool) (x : rust.mut' (into_iterator t)) : bool =
     x |> rust.to_mut
     !\\(fn, $'$"!x.all(|x| $0(x))"')
 
-/// ### enumerate
 := enumerate \* t. (ar : array t) : array (convert.unativeint * t) =
     := (array ar) = ar
     ar

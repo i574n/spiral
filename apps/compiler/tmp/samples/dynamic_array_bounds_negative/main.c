@@ -38,5 +38,10 @@ int32_t main(){
     int32_t v2 = 2l;
     int32_t v3 = v1->ptr[v2];
     ArrayDecref0(v1);
-    return v3;
+    bool v4 = v3 == 1234567l;
+    if (v4){
+        return 1l;
+    } else {
+        return 0l;
+    }
 }

@@ -62,7 +62,12 @@ fn spiralMain() i32 {
     v1[spiralIndex(v1.len, @as(i32, 1))] = @as(i32, 13);
     const v2: i32 = @as(i32, 2);
     const v3: i32 = v1[spiralIndex(v1.len, v2)];
-    return v3;
+    const v4: bool = v3 == @as(i32, 1234567);
+    if (v4) {
+        return @as(i32, 1);
+    } else {
+        return @as(i32, 0);
+    }
 }
 var spiral_exit_code: i32 = 0;
 fn spiralMainThread() void {

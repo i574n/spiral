@@ -1,4 +1,3 @@
-/// # step_runtime
 :< sm'_operators
 
 test step_runtime static =
@@ -20,7 +19,6 @@ test step_runtime static =
 
 :== reply_cell t = mut (option t)
 
-/// ### spawn
 := spawn \* s m. (spec : actor s m) : step_handle s m =
     { state = mut (Some (spec.init ())); mailbox = mut []; draining = mut !-; handle = spec.handle }
 
@@ -45,7 +43,6 @@ test step_runtime static =
             루프 ()
     루프 ()
 
-/// ### drain
 := drain \* s m. (target : step_handle s m) : () =
     := draining = target.draining
     ? *draining |> not ?>
@@ -53,13 +50,11 @@ test step_runtime static =
         drain_mailbox target.mailbox (deliver target)
         draining <- !-
 
-/// ### send
 := send \* s m. (target : step_handle s m) (message : m) : () =
     := mailbox = target.mailbox
     mailbox <- *mailbox ++ [ message ]
     drain target
 
-/// ### reply
 := reply \* t. (cell : reply_cell t) (value : t) : () =
     cell <- Some value
 
@@ -68,7 +63,6 @@ test step_runtime static =
     | Some value => value
     | None => failwith "step_runtime.call: the actor stopped without replying"
 
-/// ### call
 := call \* s m t. (target : step_handle s m) (request : reply_cell t -> m) : t =
     := cell : reply_cell t = mut None
     send target (request cell)
@@ -148,7 +142,6 @@ test stopped_actor_ignores_later_messages =
     emit out
     Continue next
 
-/// ### reactor_actor
 := reactor_actor \* s i o. (program : reactors.reactor s i o) (clock : () -> i64) (emit : o -> ()) : actor s i =
     { init = \ () => program.init; handle = react_step program clock emit }
 

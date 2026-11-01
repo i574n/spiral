@@ -25,7 +25,16 @@
 
 := attribute_node (name : string) (value : string) : xml_node = XmlElement ("@" ++# name, [], XmlText value :: [])
 
-:= is_attribute (node : xml_node) : bool = sm'.starts_with "@" (node_name node)
+:= written_name (node : xml_node) : string =
+    ?= node ?|
+    | XmlElement (name, _, _) => name
+    | XmlText _ => ""
+
+:= is_attribute (node : xml_node) : bool = sm'.starts_with "@" (written_name node)
+
+:= qualified_name (node : xml_node) : string =
+    := name = written_name node
+    ? is_attribute node ?> sm'.substring 1i32 (sm'.length name - 1i32) name |: name
 
 :~ ^ reversed_digits (text : string) (pos : i32) (acc : list i32) : option (list i32) =
     ? pos >= sm'.length text ?> Some acc
@@ -177,8 +186,8 @@
 
 := name_matches (test : string) (node : xml_node) : bool =
     ?= node ?|
-    | XmlElement (name, _, _) =>
-        := own = ? is_attribute node ?> sm'.substring 1i32 (sm'.length name - 1i32) name |: name
+    | XmlElement _ =>
+        := own = qualified_name node
         ? is_prefix_wildcard test ?> name_prefix own = name_prefix test
         |: test = "*" || local_name test = local_name own
     | XmlText _ => !-
@@ -201,10 +210,14 @@
 
 := name_matches_in (namespaces : list (string * string)) (test : string) (item : located) : bool =
     ?= item.node ?|
-    | XmlElement (name, _, _) ?& is_attribute item.node = !- && name_prefix test <> "" =>
+    | XmlElement _ ?& name_prefix test <> "" =>
         ?= mapped_namespace (name_prefix test) namespaces ?|
         | Some uri =>
-            := own = in_scope_namespace (namespace_key (name_prefix name)) (item.node :: item.ancestors)
+            := name = qualified_name item.node
+            := prefix = name_prefix name
+            := own =
+                ? is_attribute item.node && prefix = "" ?> ""
+                |: in_scope_namespace (namespace_key prefix) (item.node :: item.ancestors)
             own = uri && (is_prefix_wildcard test || local_name test = local_name name)
         | None => name_matches test item.node
     | _ => name_matches test item.node
@@ -1155,15 +1168,17 @@
 :& :~ node_name_value (local : bool) (first : xvalue) : xvalue =
     ?= first ?|
     | VNodes ((item :: _)) =>
-        := full = node_name item.node
+        := full = qualified_name item.node
         VText (? local ?> local_name full |: full)
     | _ => VText ""
 :& :~ namespace_uri_value (first : xvalue) : xvalue =
     ?= first ?|
     | VNodes ((item :: _)) =>
         ?= item.node ?|
-        | XmlElement (name, _, _) ?& is_attribute item.node = !- =>
-            VText (in_scope_namespace (namespace_key (name_prefix name)) (item.node :: item.ancestors))
+        | XmlElement _ =>
+            := prefix = name_prefix (qualified_name item.node)
+            ? is_attribute item.node && prefix = "" ?> VText ""
+            |: VText (in_scope_namespace (namespace_key prefix) (item.node :: item.ancestors))
         | _ => VText ""
     | _ => VText ""
 :& :~ substring_value (arguments : list xvalue) : xvalue =
@@ -1512,4 +1527,26 @@ test a_predicate_error_reaches_the_caller =
         | _ => failwith "an unsupported function inside a predicate is an error, not a false predicate"
         ? effective_boolean (value "count(a[@n = '2']) = 1") = !- ?> failwith "boolean predicates still filter"
         ? effective_boolean (value "count(a[2]) = 1") = !- ?> failwith "positional predicates still filter"
+    | _ => failwith "one document"
+
+///> rust
+test name_of_an_attribute_is_its_xml_name =
+    ?= read_xml "<doc xmlns:x=\"urn:x\"><a n=\"1\" x:k=\"2\"/><x:b/></doc>" ?|
+    | document :: [] =>
+        := top = { node = document; ancestors = ((document_root document).node :: []); path = (0i32 :: []) }
+        := holds_in namespaces rule =
+            effective_boolean (evaluate_in namespaces "" document top (lift_code_lists (parse rule)))
+        := holds rule = holds_in [] rule
+        := mapped = ("y", "urn:x") :: []
+        ? holds "name(a/@n) = 'n'" = !- ?> failwith "name() of an attribute has no @"
+        ? holds "local-name(a/@n) = 'n'" = !- ?> failwith "local-name() of an attribute has no @"
+        ? holds "name(a/@x:k) = 'x:k'" = !- ?> failwith "a prefixed attribute keeps its prefix in name()"
+        ? holds "local-name(a/@x:k) = 'k'" = !- ?> failwith "local-name() drops the prefix"
+        ? holds "name(x:b) = 'x:b'" = !- ?> failwith "a prefixed element keeps its prefix in name()"
+        ? holds "local-name(x:b) = 'b'" = !- ?> failwith "local-name() of a prefixed element drops the prefix"
+        ? holds "namespace-uri(a/@x:k) = 'urn:x'" = !- ?> failwith "a prefixed attribute is in its prefix's namespace"
+        ? holds "namespace-uri(a/@n) = ''" = !- ?> failwith "an unprefixed attribute is in no namespace"
+        ? holds_in mapped "count(a/@y:k) = 1" = !- ?> failwith "a mapped prefix reaches an attribute by URI"
+        ? holds_in mapped "count(a/@y:n) = 0" = !- ?> failwith "a mapped prefix never matches an unprefixed attribute"
+        ? holds "name(a) = 'a'" = !- ?> failwith "element names are unchanged"
     | _ => failwith "one document"

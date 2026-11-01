@@ -470,8 +470,15 @@ defmodule Spiral.Cells.CompilerDaemon do
   defp stop_pool_workers do
     case :persistent_term.get({__MODULE__, :pool, self()}, nil) do
       nil -> :ok
-      pool -> pool |> Spiral.Cells.CompilerPool.stats() |> Map.get(:extra_workers, []) |> Enum.each(&GenServer.stop(&1, :normal, 30_000))
+      pool -> pool |> Spiral.Cells.CompilerPool.stats() |> Map.get(:extra_workers, []) |> Enum.each(&stop_worker/1)
     end
+  end
+
+  @doc false
+  def stop_worker(worker, timeout_ms \\ 30_000) do
+    GenServer.stop(worker, :normal, timeout_ms)
+  catch
+    :exit, _ -> Process.exit(worker, :kill)
   end
 
   defp queued do

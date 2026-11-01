@@ -12,6 +12,7 @@ var
   tmp2: TArray0;
   v2: LongInt;
   v3: LongInt;
+  v4: Boolean;
 begin
   v0 := 2;
   tmp2 := nil;
@@ -21,7 +22,12 @@ begin
   v1[1] := 13;
   v2 := 2;
   v3 := v1[v2];
-  Result := v3;
+  v4 := v3 = 1234567;
+  if v4 then begin
+      Result := 1;
+  end else begin
+      Result := 0;
+  end;
 end;
 var SpiralOutputBuffer: array[0..65535] of Char;
 begin

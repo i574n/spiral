@@ -6,17 +6,23 @@ defmodule Mix.Tasks.Compile.SpiralDomain do
     root = Path.expand("..", __DIR__)
     spi = Path.join(root, "spi")
     out = Path.join(root, "src/spiral_cells/domain.gleam")
+    stamp = Path.join(root, "build/spiral_domain.inputs")
+    digest = inputs_digest(spi)
     File.mkdir_p!(Path.dirname(out))
-    if stale?(spi, out), do: compile_spiral(Path.join(spi, "main.spi"), out, root)
+
+    unless File.regular?(out) and File.read(stamp) == {:ok, digest} do
+      compile_spiral(Path.join(spi, "main.spi"), out, root)
+      File.mkdir_p!(Path.dirname(stamp))
+      File.write!(stamp, digest)
+    end
+
     if gleam_stale?(root), do: gleam_build(root)
     {:ok, []}
   end
 
-  defp stale?(spi, out) do
-    sources = Path.wildcard(Path.join(spi, "*.spi")) ++ [Path.join(spi, "package.spiproj")]
-
-    not File.regular?(out) or
-      Enum.any?(sources, fn path -> File.stat!(path).mtime > File.stat!(out).mtime end)
+  defp inputs_digest(spi) do
+    sources = Enum.sort(Path.wildcard(Path.join(spi, "*.spi"))) ++ [Path.join(spi, "package.spiproj")]
+    :crypto.hash(:sha256, Enum.map(sources, &[Path.basename(&1), 0, File.read!(&1), 0])) |> Base.encode16()
   end
 
   defp gleam_stale?(root) do
@@ -34,7 +40,7 @@ defmodule Mix.Tasks.Compile.SpiralDomain do
   end
   defp compile_spiral(entry, out, root) do
     dotnet = dotnet()
-    dll = System.get_env("SPIRAL_COMPILER_DLL") || Path.join(cache(), "bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll")
+    dll = compiler_dll()
 
     unless dotnet, do: Mix.raise("spiral_domain: dotnet was not found (set SPIRAL_DOTNET)")
     unless File.regular?(dll), do: Mix.raise("spiral_domain: the Spiral compiler was not found at #{dll} (set SPIRAL_COMPILER_DLL)")
@@ -56,6 +62,8 @@ defmodule Mix.Tasks.Compile.SpiralDomain do
 
     if status != 0, do: Mix.raise(output)
   end
+
+  defp compiler_dll, do: System.get_env("SPIRAL_COMPILER_DLL") || Path.join(cache(), "bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll")
 
   defp core_package_dir(root), do: Path.expand("../../deps/The-Spiral-Language/VS Code Plugin", root)
 

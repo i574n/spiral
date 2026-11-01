@@ -2,17 +2,19 @@
 
 Rules for humans and LLM sessions (browser sandbox or local Windows) that change the compiler.
 
-## Two lanes, one matrix
+## One core, two builds
 
-| | single-flight | gpt5parallel |
+`apps/compiler/spiral_compiler.fs` is the only compiler core. (The gpt5parallel evaluator, a parallel Hopac core kept
+in the same file as `#if SPIRAL_CORE_GPT5PARALLEL` section pairs, was retired on 2026-10-31 by the user's decision;
+its history is in the GPT5PARALLEL-RETIRE backlog item.)
+
+| | single-flight | hopacsota |
 |---|---|---|
-| What it is | the compiler that works today: sequential evaluator, F#/C/Rust/Delphi | the gpt5parallel evaluator (parallel, on Hopac): every oracle row of `-Suite all` reproduced (2026-10-01 20:19), 10-30x slower than single-flight on the mega roots |
-| Source of truth | `apps/compiler/spiral_compiler.fs`: shared sections, and the `#else` side of each section pair | the same file: the `#if SPIRAL_CORE_GPT5PARALLEL` side of each section pair |
+| What it is | the sequential evaluator, every backend | single-flight plus the parallel evaluation layer (`SPIRAL_CORE_HOPACSOTA`) |
 | Role in tests | **oracle**: its results are `<cache>/baseline/EXPECTED.tsv` (`-Accept`) | **candidate**: scored by how much of the oracle it reproduces |
-| Known wall | `apps/spiral` overflowed the stack until 2026-09-30: commit 1eb2ecf had dropped the 1.5 GB thread `peval` runs on (restored; NEXT.md@47d1e562) | speed (~15 ms per inline application; the core library re-parsed by every fresh process) and race 34's general fix (a per-evaluation replay store). `apps/spiral` compiles since 2026-10-01 (359 s, 0 type errors, the same 874 methods/closures as single-flight; FRONTIER.md fixes 55, 58). Single-flight's features since the shared base `12f52a1` are ported. |
-| Scoreboard | `<cache>/scoreboards/single-flight.tsv` | `<cache>/scoreboards/gpt5parallel.tsv` (`-Record`) |
+| Plan | backend work: "Advancing the single-flight lane" below | phases, gates and scoreboard: `lanes/hopacsota/PLAN.md` |
 
-Switching lanes is only a build/test argument: `-Mode single-flight` or `-Mode gpt5parallel`. A third mode, `-Mode hopacsota` (2026-10-15), builds single-flight plus the hopacsota layer (`SPIRAL_CORE_HOPACSOTA`; plan in `lanes/hopacsota/PLAN.md`): `build.ps1` runs `../scripts/hopacsota-lint.ps1` (gates G1 size and G2 banned constructs) first, the matrix treats it as a candidate like gpt5parallel, and `projection-hash.ps1 -Seams` checks that single-flight changed only by `PartEvalSeams` calls. Since 2026-10-16 (pack-1v) the layer is the `PartEvalSeams` pair before PartEval: single-flight's side is inline no-ops, so its output is unchanged, and hopacsota's side defers type-known bodies (closures, annotated methods) to a single-threaded worklist chosen by `SPIRAL_HOPACSOTA_POLICY` (`inline` by default, `dfs`, `bfs`, `random:<seed>`), keeps globals and compile-time prints in per-key lists merged in single-flight's depth-first order, and raises the error single-flight would have raised first. `-Seams` takes `-BaseFile <source>` and ignores whitespace, so a body moved into a seam closure counts only its seam line. Phase 1 gate numbers are in `lanes/hopacsota/PLAN.md`. Both binaries
+Switching is only a build/test argument: `-Mode single-flight` or `-Mode hopacsota`. `-Mode hopacsota` (2026-10-15) builds single-flight plus the hopacsota layer (`SPIRAL_CORE_HOPACSOTA`; plan in `lanes/hopacsota/PLAN.md`): `build.ps1` runs `../scripts/hopacsota-lint.ps1` (gates G1 size and G2 banned constructs) first, the matrix treats it as the candidate (its unreproduced rows are `missing`), and `projection-hash.ps1 -Seams` checks that single-flight changed only by `PartEvalSeams` calls. Since 2026-10-16 (pack-1v) the layer is the `PartEvalSeams` pair before PartEval: single-flight's side is inline no-ops, so its output is unchanged, and hopacsota's side defers type-known bodies (closures, annotated methods) to a single-threaded worklist chosen by `SPIRAL_HOPACSOTA_POLICY` (`inline` by default, `dfs`, `bfs`, `random:<seed>`), keeps globals and compile-time prints in per-key lists merged in single-flight's depth-first order, and raises the error single-flight would have raised first. `-Seams` takes `-BaseFile <source>` and ignores whitespace, so a body moved into a seam closure counts only its seam line. Phase 1 gate numbers are in `lanes/hopacsota/PLAN.md`. Both binaries
 live side by side in the cache, so the same fixture can be compared across modes in seconds.
 
 ## The loop
@@ -20,16 +22,15 @@ live side by side in the cache, so the same fixture can be compared across modes
 **Iterate on a candidate copy of the core**: `build.ps1 -Configuration Debug -CoreSource <copy>` builds a
 Debug compiler from an edited copy without touching `spiral_compiler.fs` or the Release binaries other lanes
 use; probe it with `SPIRAL_COMPILER_DLL` pointing at that Debug build. Build the Release monolith for timings
-and the final suite runs. (The `spiral-split` gear splitter was removed on 2026-10-13: it existed to rebuild
-gpt5parallel's 159k lines in pieces and had been idle since early October.)
+and the final suite runs.
 
 ```powershell
-pwsh ../scripts/build.ps1 -Mode gpt5parallel -Configuration Debug -CoreSource <copy.fs>   # candidate build
-pwsh ../scripts/probe.ps1 <sample>                           # probe/test/apps runs use SPIRAL_COMPILER_DLL while it is set
-pwsh ../scripts/build.ps1 -Mode gpt5parallel                        # the Release monolith: timings, final suites (~3.5-5 min)
-pwsh ../scripts/test.ps1 -Mode gpt5parallel -Suite frontier         # seconds per fixture, low timeouts
-pwsh ../scripts/test.ps1 -Mode gpt5parallel -Suite frontier,smoke   # widen once the frontier is green
-pwsh ../scripts/test.ps1 -Mode gpt5parallel -Suite all -Record      # full scoreboard, written to lanes/gpt5parallel/
+pwsh ../scripts/build.ps1 -Configuration Debug -CoreSource <copy.fs>   # candidate build (add -Mode hopacsota for the layer)
+pwsh ../scripts/probe.ps1 <sample>                                     # probe/test/apps runs use SPIRAL_COMPILER_DLL while it is set
+pwsh ../scripts/build.ps1                                              # the Release monolith: timings, final suites
+pwsh ../scripts/test.ps1 -Suite frontier                               # seconds per fixture, low timeouts
+pwsh ../scripts/test.ps1 -Suite frontier,smoke                         # widen once the frontier is green
+pwsh ../scripts/test.ps1 -Mode hopacsota -Suite all                    # the candidate against the oracle
 ```
 
 For the edit loop, `pwsh ../scripts/test.ps1 -Suite fast -Native` runs the rows that changed most per second of their cost. `../scripts/fast-tier.ps1` mines this mode's `<cache>/runs/*/results.tsv` (older `examples/` ids fold into `samples/`; runs with more than 20% timeouts are skipped) and writes `<run dir>/fast-tier.tsv`, with nothing stored in the tree. The selection fills a budget from `tests/matrix.psd1` `Fast` (600 s of summed median row cost) in four passes: the cheapest row of every backend and sample family, every row with fewer than 5 runs, the cheapest row of every distinct outcome-flip history (the runs in which a row's compile or native outcome changed), then by signal per second. Signal is residual changes plus twice the outcome flips, and a row that only repeats a covered flip history with no residual change is skipped. The flip-history pass exists because 992 rows ever flipped but share only 157 histories: most flips are whole backend lanes changing in the same run. A non-C row brings its C oracle row with it. Rows missing from the latest full run always run, outside the budget. On 2026-10-14 that was 222 new Bend rows, so a fast run had about 893 jobs until a full run recorded them. `-Accept` and `-Record` refuse it. A fast run leaves `fast-tier.tsv` in its run directory, and such runs never add signal (they still update the last-seen state and costs), so the rows the tier picks do not score higher for being picked. Measured 2026-10-14 over 916 single-flight runs: 671 of 3,872 rows, 10.2% of the summed cost, all 130 flip histories of the current rows, 49.3% of the raw signal. At 1,200 s it is 1,237 rows and 78.1%; at 300 s, 316 rows, 129 of 130 histories and 19.8%. Without the flip-history pass, 600 s reached 55.9% of the raw signal but only 85 of the 130 histories, because the raw sum counts co-flip twins. The mining is a left fold over the runs in time order. Its state is cached in `<cache>/fast-tier-fold/` with a stamp per run (name, `results.tsv` size and mtime, the `fast-tier.tsv` marker), and later calls mine only the runs added since. If any earlier stamp changed, the whole history is recomputed. Measured 2026-10-17 over 995 runs: 54 s before, 10 s after, and the selection list is byte-identical to a full recompute after a run is appended. Signal means a row changed during development. That is a proxy: it does not prove the row catches bugs, so accept only from `-Suite all`.
@@ -52,83 +53,47 @@ compiles `samples/<sample>` directly and prints exit code, time and the first re
 - `-Repeat 5` exposes races: the outcomes line flags runs that differ.
 - `-Stacks 12` takes a `dotnet-stack` dump if the compiler is still running after 12 s: hangs.
 - `-Profile 40` records a 40 s sampled-thread profile and prints its hottest frames: slowness. For the
-  evaluator's own thread, `python ../scripts/profile-thread.py <run.speedscope.json> [threads] [rows]` prints
+  evaluator's own thread, `pwsh ../scripts/profile-speedscope.ps1 <run.speedscope.json> -View Thread [-Threads n] [-Rows n]` prints
   inclusive time per frame on the busiest thread(s).
 
-Logs go to `<cache>/probes/<sample>/`. Two DLLs on one sample: `pwsh ../scripts/bench-pair.ps1 -A <dll> -B <dll> -Sample <name> [-Backend C] [-Rounds 5]` compiles in a fresh process per run (no warm server, no compile memo) with the order alternating per round, and prints medians, B/A and each side's output size; a B/A inside about 4% is noise under suite load. `-Native` (C only) also builds each output with the matrix's C flags plus the sample's own `c-shim.h`, runs it and reports the median run time and exit codes per side, and every pair appends a `bench` row to `<cache>/ledger/runs.tsv`. `-QuietCores <n>` samples the machine's busy cores for 2 s before each compile and also prints the medians over only the rounds where every sample stayed below `n`. On 2026-10-21 a 1.46x B/A on a shared box didn't reproduce in direct runs, because other lanes' builds dominated the medians. The CI compiler job's results: `pwsh ../scripts/ci-runs.ps1 [-RunId N]` downloads its `compiler-oracle` artifact into `<cache>/runs/ci-<id>`, where `compare-runs.ps1` can diff it against a local run. A stalled gpt5parallel build now reports, in its `BuildFile stalled`
-message, the diagnostics sent and delivered during the build (`diagnostics={fatal_sent=..,delivered_..}`)
-and the entry's type-check promises (`typecheck={entry_input=.. entry_output=..}`). A stall after
-`fatal_sent`, or with type checking done, is a lost result, not slow evaluation.
+Logs go to `<cache>/probes/<sample>/`. Two DLLs on one sample: `pwsh ../scripts/bench-pair.ps1 -A <dll> -B <dll> -Sample <name> [-Backend C] [-Rounds 5]` compiles in a fresh process per run (no warm server, no compile memo) with the order alternating per round, and prints medians, B/A and each side's output size; a B/A inside about 4% is noise under suite load. `-Native` (C only) also builds each output with the matrix's C flags plus the sample's own `c-shim.h`, runs it and reports the median run time and exit codes per side, and every pair appends a `bench` row to `<cache>/ledger/runs.tsv`. `-QuietCores <n>` samples the machine's busy cores for 2 s before each compile and also prints the medians over only the rounds where every sample stayed below `n`. On 2026-10-21 a 1.46x B/A on a shared box didn't reproduce in direct runs, because other lanes' builds dominated the medians. The CI compiler job's results: `pwsh ../scripts/ci-runs.ps1 [-RunId N]` downloads its `compiler-oracle` artifact into `<cache>/runs/ci-<id>`, where `compare-runs.ps1` can diff it against a local run.
 
-`-Parallel` defaults to what the machine can take: about 3/8 of the logical CPUs in gpt5parallel mode (a gpt5parallel job
-keeps 2-3 cores busy), half in single-flight, both capped at one worker per 1.5 GB of free memory. On an
-8-CPU machine a gpt5parallel `examples,contracts -Native` run takes 3 workers; don't drop to 1 unless memory is
-short.
+`-Parallel` defaults to half the logical CPUs, capped at one worker per 1.5 GB of free memory; don't drop to 1
+unless memory is short.
 
 Compile statuses: `ok` (returned code), `emitted` (the core wrote the residual during the run but the
-compile never returned; the expected next gpt5parallel milestone after the current hangs), `error`, `timeout`,
+compile never returned), `error`, `timeout`,
 `crash`. Baseline verdicts: `parity`, `emitted-parity`, `*-residual-differs`, `FIXED` (oracle had no
-result, this run produced one), `no-oracle` (neither did), `missing` (gpt5parallel) / `REGRESSED` (single-flight)
+result, this run produced one), `no-oracle` (neither did), `missing` (hopacsota) / `REGRESSED` (single-flight)
 when an expected result or an expected rejection is not reproduced, `UNEXPECTED-OUTPUT` (code for a
 program the oracle rejects), `NATIVE-DIFF`. A hang or crash never matches an expected rejection.
 
 Timeouts are deliberately small (frontier/examples/smoke 20 s, contracts 30 s, mega 180 s): once the
 core library is warm, a small sample compiles in well under a second in single-flight, so anything slower
-is a hang. A fresh gpt5parallel process needs ~5-7 s for a frontier fixture (up to ~11 s under parallel load,
-hence 20 s rather than 15), and the host gives the core a deadline 3 s before the job timeout, after
-which the core reports `BuildFile stalled: ... last_stage=<stage>` instead of hanging. The matrix scores that
-report as a `timeout` (with the stall message as its detail), so it never matches an expected rejection.
-Override with `-TimeoutSec` only for deliberate profiling.
+is a hang; a timeout never matches an expected rejection. Override with `-TimeoutSec` only for deliberate
+profiling.
 
-gpt5parallel knobs (environment): `SPIRAL_HOPAC_WORKERS` and `SPIRAL_DOP` (set both to 1 for deterministic
-runs), `SPIRAL_BUILD_DEADLINE_MS` / `SPIRAL_BUILD_BUDGET_MS` (stall watchdog; the host sets the deadline,
-otherwise 15 min), `SPIRAL_LEGACY_JOIN_HEURISTICS=1` (old EJP0019/EJP0021 join loop),
-`SPIRAL_DEBUG_UNBOX=1` (trace union unboxes), `SPIRAL_ARTIFACT_COMMIT_GRACE_MS` (20),
-`SPIRAL_RUN_END_GRACE_MS` (20), `SPIRAL_CODEGEN_STACK_MB` (512), `SPIRAL_JP_SLICE_OPS=<max>,<interval>`
-(time-slice declared method bodies again, e.g. `256,64`; off by default because resuming a slice is
-unsound, FRONTIER.md fix 22), `SPIRAL_DIAG_QUIET=1` (skip the diagnostic JSONL rows and console projections, ~20% of a compile;
-`../scripts/test.ps1` sets it unless already set, so set `0` to keep them in a suite run; it also sets `DOTNET_GCgen0size=0x10000000`, a 256 MB gen0 budget: deep evaluation stacks make every gen0 collection costly),
-`SPIRAL_DEBUG_TYPECHECK_WAIT=<seconds>` (if type checking is still pending
-after that long, print every package's unfilled type-check promises to stderr),
-`SPIRAL_HOPAC_INLINE_JP=1` (evaluate join points inline from the start; builds apps/spiral too),
-`SPIRAL_DEBUG_PUSH=<text>` (print every statement partial evaluation appends whose rendering starts with the
-text, e.g. `TyUnionBox`, with its block and managed stack: finds which path emitted a duplicated statement). Debugging workflow: `lanes/gpt5parallel/FRONTIER.md`, "The fast loop". The core writes a `<timestamp>.jsonl` log (HUD frames, projections, captured exceptions; 4-60 MB) next to the source it compiled, which `../scripts/build.ps1` stages under `<cache>/core-src/gpt5parallel/`; per-job stderr is in `<cache>/runs/gpt5parallel-<stamp>/worker*.log`, and `Select-String '"kind":"runtime_exception_captured"' <log>.jsonl` finds the real failure.
+`../scripts/test.ps1` sets `DOTNET_GCgen0size=0x10000000` (a 256 MB gen0 budget: deep evaluation stacks make every
+gen0 collection costly); hopacsota's own knobs (`SPIRAL_HOPACSOTA_POLICY`, `_WORKERS`, `_SHARDS`, `_STATS`, `_TRACE`)
+are in `lanes/hopacsota/PLAN.md`.
 
-Both cores: `SPIRAL_REFERENCES_OUT=<file>` makes prepass append one row per top-level definition (`def`, path, line, name; `inl`, recursive `inl`, nominal and union constructors at the nominal's line, prototypes) and per use that resolves to one outside local scope or to a known definition through `open` (`use`, path, line, name, then the definition's path, line and name; module heads are not uses, their members are) when the process exits; `../scripts/lib-usage-references.ps1` turns it into a per-definition census plus the most frequent unresolved names. The matrix samples import samples/core rather than lib/spiral, so a census of lib usage needs the consumer builds (Cells over lib, apps, eoie, blog), not the sample suite. `SPIRAL_IF_NESTING_LIMIT=<n>` (default 1,000): dynamic `if` branches nested on one evaluation
+The core: `SPIRAL_REFERENCES_OUT=<file>` makes prepass append one row per top-level definition (`def`, path, line, name; `inl`, recursive `inl`, nominal and union constructors at the nominal's line, prototypes) and per use that resolves to one outside local scope or to a known definition through `open` (`use`, path, line, name, then the definition's path, line and name; module heads are not uses, their members are) when the process exits; `../scripts/lib-usage-references.ps1` turns it into a per-definition census plus the most frequent unresolved names. The matrix samples import samples/core rather than lib/spiral, so a census of lib usage needs the consumer builds (Cells over lib, apps, eoie, blog), not the sample suite. `SPIRAL_IF_NESTING_LIMIT=<n>` (default 1,000): dynamic `if` branches nested on one evaluation
 path before partial evaluation stops with `error[EJP0040]`, a rustc-style report of the runaway inline
 recursion (span, repeating cycle, entry path, the join-point fix). `SPIRAL_UNION_NESTING_LIMIT=<n>` (default 256): union types
 nested inside one union layout before partial evaluation stops with `error[EJP0041]` (a type index that grows at every
 level, as in a GADT whose case payload names the successor index; keep the recursion static or erase the index with an
-existential). A quiet build whose output the gpt5parallel write
-guard refuses says why in its `FatalError` and keeps the text in `%TEMP%/spiral-rejected/`.
+existential).
 
-In gpt5parallel mode a worker serves jobs from one warm compiler process and recycles it after a failure
-(`-WarmRecycle`, the default there since 2026-10-08). Some per-build join point state still leaks into the
-next build (FRONTIER.md fix 57), and it only ever shows up as a failure: an error or timeout in a process that
-already served a build is not recorded, the host exits 4 and the job runs again first in a fresh process, whose
-verdict counts. `-Suite all` on one DLL: 782 s vs 1,834 s with a fresh process per job, all 2,014 rows identical
-(status, residual hash, verdict); 106 of the 605 deferred failures succeeded fresh. `-FreshProcess` restores a
-process per job; `-FreshProcess:$false` keeps one process without recycling (~12x faster, ~100 contaminated rows).
+`-WarmRecycle` serves a worker's jobs from one warm compiler process and recycles it after a failure: an error or
+timeout in a process that already served a build is not recorded, the host exits 4 and the job runs again first in
+a fresh process, whose verdict counts. `-FreshProcess` runs one process per job.
 
-## Advancing the gpt5parallel lane
+## Advancing the hopacsota build
 
-Stop running the full `apps/spiral` build to measure progress: it takes dozens of minutes and reports
-one edge case at a time. Climb this ladder instead, and only move up when the rung is green:
-
-1. `samples/frontier_hello` — one runtime value. Must return (not just emit) and exit.
-2. `samples/frontier_fib` — `let rec` join point recursion.
-3. `samples/frontier_try_item` — verbatim `listm'.try_item`, the site of the `3006.jsonl` failure
-   (`PartEvalTypeError … Got: ? … Compiler: par`, `EvalReplayTyReturn (YMetavar …)`).
-4. `-Suite smoke`, then `-Suite examples` (all backend fixtures, including Rust/Delphi through C).
-5. `-Suite contracts`, then `-Suite mega`.
-6. Only then the full `apps/spiral` build (see `lanes/gpt5parallel/FRONTIER.md`).
-
-When a larger sample fails, cut the smallest reproduction into a new `samples/frontier_<name>` fixture
-(`packages: |core-` gives the standard library) and fix that. `lanes/gpt5parallel/FRONTIER.md` is the current
-status; update it with the scoreboard in the same change.
-
-Prefer fixing root causes over adding telemetry: the gpt5parallel core already emits ~20 k diagnostic rows per
-run. A change that adds projections, ledgers or HUD lanes without moving a fixture is not progress.
+`lanes/hopacsota/PLAN.md` holds the phases, gates and scoreboard. When a larger sample fails under a hopacsota
+policy, cut the smallest reproduction into a new `samples/frontier_<name>` fixture (`packages: |core-` gives the
+standard library) and fix that. Prefer fixing root causes over adding telemetry: a change that adds projections,
+ledgers or HUD lanes without moving a fixture is not progress.
 
 ## Advancing the single-flight lane
 
@@ -251,7 +216,7 @@ The eBPF backend (`codegenEbpf`, `--backend Ebpf` / `.ebpf`, 2026-10-10) is a C 
 
 - The compiler writes its output next to its source (`samples/<name>/main.c`, ...), replacing the previous
   one. There is exactly one copy of each output and it is committed: `git diff samples` after a run is
-  the check that outputs changed. Never edit outputs by hand; a gpt5parallel run rewrites them with gpt5parallel's
+  the check that outputs changed. Never edit outputs by hand; a hopacsota run rewrites them with hopacsota's
   output, so restore them (`git restore samples`) or rerun single-flight before committing. One
   `../scripts/test.ps1` run at a time (it holds a named mutex per cache dir; a dead run abandons it).
 - `-Accept` only in single-flight mode, only after reviewing every changed row of the baseline. Re-accepting
@@ -262,35 +227,25 @@ The eBPF backend (`codegenEbpf`, `--backend Ebpf` / `.ebpf`, 2026-10-10) is a C 
   matrix tables live in `tests/matrix.psd1`. `|core-` resolves to The-Spiral-Language's core in
   the fork that `../scripts/init.ps1` clones to the repo's `deps/The-Spiral-Language` (polyglot's clone is the fallback;
   `Get-SpiralPackageDir`); do not copy it here.
-- Keep both cores building against the same host. If the host needs a core-specific path, guard it with
-  `SPIRAL_CORE_SINGLE_FLIGHT` / `SPIRAL_CORE_GPT5PARALLEL` (see `directProjectCompileFsharp`).
+- Keep both builds (single-flight and hopacsota) building against the same host.
 - This directory holds sources, fixtures and docs only. Build output, toolchains, native binaries, run logs
   and the flat dependency directory stay in the cache directory; `.gitignore` catches in-tree builds.
-- Both cores are one file, `apps/compiler/spiral_compiler.fs` (merged 2026-09-28). It is split into sections
-  at its `/// ## Name` headers, one per upstream module. A section both cores share appears once; a section
-  that differs appears whole, twice:
-  `#if SPIRAL_CORE_GPT5PARALLEL` (gpt5parallel's) `#else` (single-flight's) `#endif`, markers at column 0. The core project
-  defines `SPIRAL_CORE_GPT5PARALLEL` in gpt5parallel mode; `Get-SpiralCoreProjection` (../scripts/env.ps1) writes one core
-  without the pairs (`../scripts/projection-hash.ps1` hashes both projections to prove a marker move changes neither core). Keep LF line endings (never `WriteAllLines`).
-- Edit a shared section once, for both cores. Unifying a pair (one section serving both) is the way to stop
-  copying changes between cores: make the shared text single-flight's (the upstream-facing view), and move
-  what gpt5parallel needs into hooks defined in an earlier gpt5parallel-only section. Never put `#if` inside a section
-  that maps to an upstream file: the upstream sync replaces those sections wholesale (README, "Upstream").
-- A pair whose header ends in `gpt5parallel` (`BlockParsingGpt5parallel`) is a gpt5parallel layer: its single-flight side is
-  the no-op hook, so a change can land on its gpt5parallel side alone. `../scripts/pair-drift.ps1` accepts that and
-  names the layer; every other pair changed on one side only stops the build, and so does a change to a
-  layer's single-flight side alone. Hunks whose changed lines are all comments don't count, so a doc edit on one side never blocks a build. Since 2026-10-18 neither does a side-local rename: a hunk whose removed and added lines differ only in identifiers, none of which occurs on the pair's other side (git-0e's `TerminalFlowSyntheticBuildOkHarnessReceipt` -> `...DriverReceipt` on PartEval's gpt5parallel side); the script names it on its own line. `pair-drift.ps1 -Source <copy> -Tracked apps/compiler/spiral_compiler.fs` checks a candidate copy outside the tree against the tracked file's `HEAD` blob with the same rules, so a pack can be gated, built as a Debug candidate in a private `SPIRAL_BIN_CACHE_DIR` and reviewed through `SPIRAL_COMPILER_DLL` before anything replaces the shared Release DLL. A new `RawExpr` case, for example, touches gpt5parallel's structural seed
-  (`parsedAstSeedOfRawExpr`) and nothing on single-flight's side.
-- Verify a change to a pair or a shared section with both builds (`build.ps1 -Mode single-flight` and
-  `-Mode gpt5parallel`), so both cores keep compiling, and with single-flight's tests. Since 2026-10-14 the
-  gpt5parallel suite no longer gates an accept run (its rungs took 50 min to 2.5 h and timed out under load);
-  hopacsota replaces it.
+- The core is one file, `apps/compiler/spiral_compiler.fs`, split into sections at its `/// ## Name` headers,
+  one per upstream module. The hopacsota layer is its only conditional code: `#if SPIRAL_CORE_HOPACSOTA` blocks
+  (markers at column 0) checked by `../scripts/hopacsota-lint.ps1`; `Get-SpiralCoreProjection` (../scripts/env.ps1)
+  writes either build's view and `../scripts/projection-hash.ps1` hashes both. Keep LF line endings (never
+  `WriteAllLines`). Never put `#if` inside a section that maps to an upstream file: the upstream sync replaces
+  those sections wholesale (README, "Upstream").
+- Verify a core change with both builds (`build.ps1 -Mode single-flight` and `-Mode hopacsota`) and with
+  single-flight's tests.
 
 ## Promotion criterion
 
-gpt5parallel replaces single-flight as the default when `-Suite all` shows no `missing` rows, all native
-columns agree, every row returns (`ok`, not `emitted`), and `apps/spiral` compiles. Until then
-single-flight stays the oracle and the lane that ships Rust/Delphi output.
+hopacsota replaces single-flight as the default when `-Suite all` shows no `missing` rows, all native
+columns agree, every row returns (`ok`, not `emitted`), `apps/spiral` compiles, and Gate 2 determinism holds
+(HOPACSOTA-P6, `lanes/hopacsota/PLAN.md`). Until then single-flight stays the oracle and the build that ships.
+The status notes below are gpt5parallel's, which met the suite criterion on 2026-10-01 but stayed 4-5x slower
+than single-flight on the mega roots; it was retired on 2026-10-31.
 
 Status 2026-10-01 20:19 (`runs/hopac-20261001-194016`): **met** for the first time: no `missing` row, native
 columns agree (`DISAGREE` 0), no row is `emitted`, `apps/spiral` compiles (359 s). One margin is thin: the 4

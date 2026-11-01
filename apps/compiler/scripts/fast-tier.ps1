@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('single-flight', 'sf', 'gpt5parallel', 'gp', 'hopacsota', 'hs')][string]$Mode = 'single-flight',
+    [ValidateSet('single-flight', 'sf', 'hopacsota', 'hs')][string]$Mode = 'single-flight',
     [int]$BudgetSeconds = 0,
     [string]$ListPath
 )
@@ -12,7 +12,7 @@ function Get-SpiralSampleFamily([string]$Id) {
 }
 
 function Get-SpiralRunHistoryDirs([string]$Mode) {
-    $prefixes = switch (ConvertTo-SpiralMode $Mode) { 'gpt5parallel' { 'gpt5parallel-', 'hopac-' } 'hopacsota' { , 'hopacsota-' } default { , 'single-flight-' } }
+    $prefixes = switch (ConvertTo-SpiralMode $Mode) { 'hopacsota' { , 'hopacsota-' } default { , 'single-flight-' } }
     $runsRoot = Join-Path (Get-SpiralCacheDir) 'runs'
     if (-not (Test-Path $runsRoot)) { return @() }
     @(Get-ChildItem $runsRoot -Directory | Where-Object {

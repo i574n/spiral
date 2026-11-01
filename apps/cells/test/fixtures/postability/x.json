@@ -1,0 +1,54 @@
+{
+  "profile": "x",
+  "post": {
+    "weight_limit": 280,
+    "link_weight": 23
+  },
+  "code_point_weight": {
+    "default": 2,
+    "ranges": [
+      [
+        0,
+        4351,
+        1
+      ],
+      [
+        8192,
+        8205,
+        1
+      ],
+      [
+        8208,
+        8223,
+        1
+      ],
+      [
+        8242,
+        8247,
+        1
+      ]
+    ]
+  },
+  "links": {
+    "domain_pattern": "(?<![\\p{L}\\p{N}@\\-_./])(?:[A-Za-z0-9](?:[A-Za-z0-9\\-_]*[A-Za-z0-9])?\\.)+([A-Za-z]{2,63})(?![\\p{L}\\p{N}_\\-])",
+    "top_level_domains_file": "tlds.txt",
+    "short_domains_always_linked": [
+      "t.co"
+    ],
+    "two_letter_tld_needs_second_label_longer_than": 2
+  },
+  "entities": {
+    "hashtag": "(?<![\\p{L}\\p{N}_&#＃])[#＃](?=[\\p{L}\\p{N}_]*\\p{L})[\\p{L}\\p{N}_]+",
+    "mention": "(?<![\\p{L}\\p{N}_!#$%&*@＠])[@＠][A-Za-z0-9_]{1,15}(?![A-Za-z0-9_@＠])",
+    "cashtag": "(?<![\\p{L}\\p{N}_$])\\$[A-Za-z]{1,6}(?:[._][A-Za-z]{1,2})?(?![\\p{L}\\p{N}_])"
+  },
+  "posting": {
+    "header_separator": "\n",
+    "budget_header_for_one_post": "c{block} 1/1",
+    "defused_dot": {
+      "before": "[A-Za-z0-9_-]",
+      "after": "[A-Za-z]",
+      "extra_weight": 1
+    }
+  }
+}

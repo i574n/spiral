@@ -1,12 +1,9 @@
-/// # networking
 test networking static =
     :< testing
 
 :< rust.rust_operators
 
 /// ## rust
-
-/// ### reqwest_response
 :! reqwest_response =
     `(
         rust.rust_type
@@ -15,7 +12,6 @@ test networking static =
             "type reqwest_Response = class end"
     )
 
-/// ### reqwest_error
 :! reqwest_error =
     `(
         rust.rust_type
@@ -24,7 +20,6 @@ test networking static =
             "type reqwest_Error = class end"
     )
 
-/// ### request_builder
 :== request_builder_switch =
     {
         Gleam : $'reqwest_RequestBuilder'
@@ -45,12 +40,10 @@ test networking static =
         $'' : $'backend_switch `(request_builder_switch)'
     )
 
-/// ### request_type
 :| request_type =
     | Get
     | Post
 
-/// ### request
 :== request =
     {
         url : string
@@ -60,48 +53,39 @@ test networking static =
         auto_refresh : bool
     }
 
-/// ### new_request_get
 := new_request_get (url : string) : request_builder =
     := url = ~~ url
     := url = url |> sm'.to_std_string
     := url = ~~ url
     !\($'"reqwest_wasm::Client::builder().build().map_err(|err| err.to_string())?.get(!url)"')
 
-/// ### new_request_post
 := new_request_post (url : string) : request_builder =
     := url = ~~ url
     := url = url |> sm'.to_std_string
     := url = ~~ url
     !\($'"reqwest_wasm::Client::builder().build().map_err(|err| err.to_string())?.post(!url)"')
 
-/// ### request_send
 := request_send (request : request_builder) : async.future_pin (resultm.result' reqwest_response reqwest_error) =
     := request = ~~ request
     !\($'"Box::pin(reqwest_wasm::RequestBuilder::send(!request))"')
 
-/// ### request_body
 := request_body (body : string) (request : request_builder) : request_builder =
     := body = body |> sm'.to_std_string
     !\\(body, $'"reqwest_wasm::RequestBuilder::body(!request, $0)"')
 
-/// ### request_header
 := request_header (key : string) (value : string) (request : request_builder) : request_builder =
     := request = ~~ request
     := key = key |> sm'.to_std_string
     := value = value |> sm'.to_std_string
     !\\((key, value), $'"reqwest_wasm::RequestBuilder::header(!request, $0, $1)"')
 
-/// ### request_json
 := request_json \* t. (obj : t) (request : request_builder) : request_builder =
     !\($'"reqwest_wasm::RequestBuilder::json(!request, &!obj)"')
 
-/// ### response_text
 := response_text (response : reqwest_response) : async.future_pin (resultm.result' sm'.std_string reqwest_error) =
     !\($'"Box::pin(reqwest_wasm::Response::text(!response))"')
 
 /// ## fsharp
-
-/// ### tcp_client
 :! tcp_client =
     `(
         backend_switch `(()) `({}) {
@@ -115,35 +99,27 @@ test networking static =
         $'' : $'System_Net_Sockets_TcpClient'
     )
 
-/// ### new_tcp_client
 := new_tcp_client () : tcp_client =
     run_target \|
         | Fsharp => \ () => $'new `tcp_client ()'
         | _ => \ () => null ()
 
-/// ### ip_address
 :! ip_address = $'System.Net.IPAddress'
 
-/// ### ip_address_parse
 := ip_address_parse (s : string) : ip_address =
     s |> $'`ip_address.Parse'
 
-/// ### tcp_listener
 :! tcp_listener = $'System.Net.Sockets.TcpListener'
 
-/// ### new_tcp_listener
 := new_tcp_listener (ip_address : ip_address) (port : i32) : tcp_listener =
     $'new `tcp_listener (!ip_address, !port)'
 
-/// ### listener_start
 := listener_start (listener : tcp_listener) : () =
     listener |> $'_.Start()'
 
-/// ### listener_stop
 := listener_stop (listener : tcp_listener) : () =
     listener |> $'_.Stop()'
 
-/// ### client_connect_async
 := client_connect_async
     (host : string)
     (port : i32)

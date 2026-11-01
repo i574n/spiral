@@ -4,4 +4,6 @@
     set xs 0i32 11i32
     set xs 1i32 13i32
     := ~i = 2i32
-    index xs i
+    ? index xs i =. 1234567i32
+    ?> 1i32
+    |: 0i32

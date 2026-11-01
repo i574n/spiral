@@ -45,6 +45,20 @@ defmodule Spiral.Cells.CompilerDaemonTest do
     assert CompilerClient.warm_port_file("c:/home/git/cells", "1700000000-315392") =~ ~r/cells-port-[0-9A-F]{16}-1700000000-315392\.txt\z/
   end
 
+  defmodule StuckWorker do
+    use GenServer
+    def init(:ok), do: {:ok, Process.flag(:trap_exit, true)}
+    def terminate(_, _), do: Process.sleep(:infinity)
+  end
+
+  test "a retiring daemon kills a pool worker that does not stop in time instead of crashing" do
+    Process.flag(:trap_exit, true)
+    {:ok, worker} = GenServer.start_link(StuckWorker, :ok)
+    watch = Process.monitor(worker)
+    CompilerDaemon.stop_worker(worker, 200)
+    assert_receive {:DOWN, ^watch, :process, ^worker, _}, 2_000
+  end
+
   test "the banner carries the served compiler's tag after the code stamp" do
     assert [_, "1", _pid, _stamp, tag] = String.split(CompilerDaemon.banner(), "\t")
     assert tag == CompilerDaemon.served_dll_tag()
@@ -77,14 +91,16 @@ defmodule Spiral.Cells.CompilerDaemonTest do
              ~S{/d /c ""C:\e\elixir.bat" -S mix spiral.compiler_daemon 1>"C:\r\k.log" 2>"C:\r\k.err.log""}
   end
 
-  test "the Windows daemon starts under the user shell only through an explicit SPIRAL_CELLS_SHELL_LAUNCHER, else hidden" do
+  test "the Windows daemon starts under the user shell through SPIRAL_CELLS_SHELL_LAUNCHER, the installed kit by default, or hidden with none" do
     previous = System.get_env("SPIRAL_CELLS_SHELL_LAUNCHER")
 
     try do
       System.put_env("SPIRAL_CELLS_SHELL_LAUNCHER", ~S"C:\k\kit.exe")
       assert CompilerClient.shell_launcher() == ~S"C:\k\kit.exe"
       System.delete_env("SPIRAL_CELLS_SHELL_LAUNCHER")
-      assert CompilerClient.shell_launcher() == nil
+      assert CompilerClient.shell_launcher() == CompilerClient.default_shell_launcher()
+      default = CompilerClient.default_shell_launcher()
+      assert default == nil or (File.regular?(default) and Path.basename(default) == "kit.exe")
       System.put_env("SPIRAL_CELLS_SHELL_LAUNCHER", "none")
       assert CompilerClient.shell_launcher() == nil
     after

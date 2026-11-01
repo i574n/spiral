@@ -6,7 +6,12 @@ fun spiral_main(): Int {
     v1[1] = 13
     val v2: Int = 2
     val v3: Int = v1[v2]
-    return v3
+    val v4: Boolean = (v3 == 1234567)
+    if (v4) {
+        return 1
+    } else {
+        return 0
+    }
 }
 fun main() {
     var spiral_exit_code = 0

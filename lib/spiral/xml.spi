@@ -15,18 +15,36 @@
     := at : u64 = conv i
     $'std.unicode.utf8ByteSequenceLength((!s)[!at]) catch 1' : u8
 
+:= delphi_byte_at (s : string) (i : i32) : u32 = $'Ord((!s)[!i + 1])' : u32
+
+:= delphi_sequence_width (lead : u32) : i32 =
+    ? lead < 192u32 ?> 1i32 |? lead < 224u32 ?> 2i32 |? lead < 240u32 ?> 3i32 |: 4i32
+
+:= delphi_code_point_at (s : string) (i : i32) : u32 =
+    ? i >= sm'.length s ?> 0u32
+    |:
+        := lead = delphi_byte_at s i
+        := width = ? i + delphi_sequence_width lead > sm'.length s ?> 1i32 |: delphi_sequence_width lead
+        := tail (k : i32) = delphi_byte_at s (i + k) - 128u32
+        ? width = 1i32 ?> lead
+        |? width = 2i32 ?> (lead - 192u32) * 64u32 + tail 1i32
+        |? width = 3i32 ?> (lead - 224u32) * 4096u32 + tail 1i32 * 64u32 + tail 2i32
+        |: (lead - 240u32) * 262144u32 + tail 1i32 * 4096u32 + tail 2i32 * 64u32 + tail 3i32
+
 := code_point_at (s : string) (i : i32) : u32 =
     run_target \|
         | Rust => \ () => rust_first_char s i |> optionm'.map unicode.rust_char_code |> optionm'.unwrap_or 0u32
+        | Delphi => \ () => delphi_code_point_at s i
         | _ => \ () => failwith "code_point_at: no arm for this backend"
 
 := code_point_width (s : string) (i : i32) : i32 =
     run_target \|
         | Rust => \ () =>
             rust_first_char s i
-            |> optionm'.map (\ c => convert.convert (rust_char_width c))
+            |> optionm'.map \ c => convert.convert (rust_char_width c)
             |> optionm'.unwrap_or 1i32
         | Zig => \ () => ? i < sm'.length s ?> conv (zig_sequence_width s i) |: 1i32
+        | Delphi => \ () => ? i < sm'.length s ?> delphi_sequence_width (delphi_byte_at s i) |: 1i32
         | _ => \ () => failwith "code_point_width: no arm for this backend"
 
 := code_point_count (s : string) : i32 = unicode.code_point_count s
@@ -69,21 +87,19 @@
 := is_file (path : string) : bool =
     run_target \|
         | Rust => \ () => $'std::path::Path::new(&*!path).is_file()' : bool
+        | Delphi => \ () => $'FileExists(!path)' : bool
         | _ => \ () => failwith "is_file: no arm for this backend"
+
+///> rust
+///> delphi
+test is_file_is_false_for_a_missing_path =
+    ? is_file "no-such-file-for-xml-is-file.txt" ?> failwith "a missing path is not a file"
 
 := at (s : string) (pos : i32) : string = code_point_text s pos
 
 := is_space (c : string) : bool = c = " " || c = "\n" || c = "\r" || c = "\t"
 
 := is_name_end (c : string) : bool = is_space c || c = "/" || c = ">" || c = "="
-
-:= decode_entities (text : string) : string =
-    text
-    |> sm'.replace "&lt;" "<"
-    |> sm'.replace "&gt;" ">"
-    |> sm'.replace "&quot;" "\""
-    |> sm'.replace "&apos;" "'"
-    |> sm'.replace "&amp;" "&"
 
 :~ ^ skip_spaces (s : string) (pos : i32) : i32 =
     ? pos < sm'.length s && is_space (at s pos) ?> skip_spaces s (pos + 1i32) |: pos
@@ -98,6 +114,48 @@
         | _ => \ () =>
             := found = sm'.substring pos (sm'.length s - pos) s |> sm'.index_of needle
             ? found < 0i32 ?> -1i32 |: pos + found
+
+:= hex_digit (c : string) : i32 =
+    := lower = sm'.index_of c "0123456789abcdef"
+    ? lower >= 0i32 ?> lower
+    |:
+        := upper = sm'.index_of c "ABCDEF"
+        ? upper >= 0i32 ?> upper + 10i32 |: -1i32
+
+:~ ^ reference_value (digits : string) (base : i32) (i : i32) (acc : i32) : i32 =
+    ? i >= sm'.length digits ?> acc
+    |:
+        := d = hex_digit (sm'.substring i 1i32 digits)
+        ? d < 0i32 || d >= base || acc > 1114111i32 ?> -1i32 |: reference_value digits base (i + 1i32) (acc * base + d)
+
+:~ ^ numeric_references_from (text : string) (pos : i32) (acc : string) : string =
+    := start = find_from "&#" text pos
+    ? start < 0i32
+    ?> acc ++# sm'.substring pos (sm'.length text - pos) text
+    |:
+        := before = acc ++# sm'.substring pos (start - pos) text
+        := semi = find_from ";" text start
+        ? semi < 0i32
+        ?> before ++# sm'.substring start (sm'.length text - start) text
+        |:
+            := body = sm'.substring (start + 2i32) (semi - start - 2i32) text
+            := hex =
+                sm'.length body > 1i32 && (sm'.substring 0i32 1i32 body = "x" || sm'.substring 0i32 1i32 body = "X")
+            := digits = ? hex ?> sm'.substring 1i32 (sm'.length body - 1i32) body |: body
+            := value = ? sm'.length digits = 0i32 ?> -1i32 |: reference_value digits (? hex ?> 16i32 |: 10i32) 0i32 0i32
+            ? value < 0i32 || value > 1114111i32 ?> numeric_references_from text (start + 2i32) (before ++# "&#")
+            |: numeric_references_from text (semi + 1i32) (before ++# code_point_string (conv value))
+
+:= decode_numeric_references (text : string) : string = numeric_references_from text 0i32 ""
+
+:= decode_entities (text : string) : string =
+    text
+    |> sm'.replace "&lt;" "<"
+    |> sm'.replace "&gt;" ">"
+    |> sm'.replace "&quot;" "\""
+    |> sm'.replace "&apos;" "'"
+    |> decode_numeric_references
+    |> sm'.replace "&amp;" "&"
 
 :~ ^ reverse_nodes (rest : list xml_node) (acc : list xml_node) : list xml_node =
     ?= rest ?|
@@ -206,7 +264,6 @@ test counts_prefixed_schema_elements =
     ? count_named "enumeration" nodes <> 2i32 ?> failwith "two enumerations"
     ? count_named "simpleType" nodes <> 1i32 ?> failwith "one simpleType"
 
-/// ### element_names
 :~ ^ element_names (nodes : list xml_node) (seen : list string) : list string =
     ?= nodes ?|
     | XmlElement (name, _, children) :: rest =>
@@ -216,13 +273,11 @@ test counts_prefixed_schema_elements =
     | XmlText _ :: rest => element_names rest seen
     | [] => seen
 
-/// ### attributes_named
 :~ ^ attributes_named (key : string) (attributes : list (string * string)) : i32 =
     ?= attributes ?|
     | (name, _) :: rest => (? local_name name = key ?> 1i32 |: 0i32) + attributes_named key rest
     | [] => 0i32
 
-/// ### count_attribute
 :~ ^ count_attribute (key : string) (nodes : list xml_node) : i32 =
     ?= nodes ?|
     | XmlElement (_, attributes, children) :: rest =>
@@ -230,7 +285,6 @@ test counts_prefixed_schema_elements =
     | XmlText _ :: rest => count_attribute key rest
     | [] => 0i32
 
-/// ### depth
 :~ ^ depth (nodes : list xml_node) : i32 =
     ?= nodes ?|
     | XmlElement (_, _, children) :: rest => max (1i32 + depth children) (depth rest)
@@ -587,3 +641,30 @@ test white_space_and_fixed_attributes_follow_the_xsd_rules =
     ? collapsed_space " \n\t " <> "" ?> failwith "only spaces collapse to nothing"
     ? listm.length (checked_fixed "Version" "4.0" [("Version", "4.0")]) <> 1i32 ?> failwith "the fixed value reads"
     ? listm.length (checked_fixed "Version" "4.0" []) <> 0i32 ?> failwith "an absent fixed attribute stays absent"
+
+///> rust
+test numeric_character_references_decode =
+    := delimiter = code_point_string 127u32
+    ? decode_entities "&#x7f;04&#127;" <> delimiter ++# "04" ++# delimiter
+    ?> failwith "hex and decimal references decode"
+    ? decode_entities "caf&#233;" <> "caf" ++# code_point_string 233u32
+    ?> failwith "a decimal reference becomes its code point"
+    ? decode_entities "&amp;#x41;" <> "&#x41;" ?> failwith "an escaped ampersand stays a literal reference"
+    ? decode_entities "&#xZZ; &#; &#12" <> "&#xZZ; &#; &#12" ?> failwith "malformed references stay as written"
+    ?= read_xml "<a k=\"&#x7f;05&#x7f;\">x&#62;y</a>" ?|
+    | XmlElement (_, attributes, children) :: [] =>
+        ?= attribute_of "k" attributes ?|
+        | Some v => ? v <> delimiter ++# "05" ++# delimiter ?> failwith "attribute values decode references"
+        | None => failwith "the attribute reads"
+        ? text_in children <> "x>y" ?> failwith "text decodes references"
+    | _ => failwith "one element"
+
+///> rust
+///> delphi
+test code_points_step_through_utf8 =
+    := s = "aé€"
+    ? code_point_count s <> 3i32 ?> failwith "three code points"
+    ? code_point_width s 0i32 <> 1i32 || code_point_width s 1i32 <> 2i32 || code_point_width s 3i32 <> 3i32
+    ?> failwith "UTF-8 widths 1, 2, 3"
+    ? code_point_at s 0i32 <> 97u32 || code_point_at s 1i32 <> 233u32 || code_point_at s 3i32 <> 8364u32
+    ?> failwith "code points a, e acute, euro"

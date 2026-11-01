@@ -148,11 +148,42 @@ module Program =
         | TokenizerErrors x when not (List.isEmpty x.errors) -> Some $"TokenizerErrors ({x.uri}): %A{x.errors}"
         | _ -> None
 
+    let private diagnosticUri = function
+        | TypeErrors x -> Some x.uri
+        | ParserErrors x -> Some x.uri
+        | TokenizerErrors x -> Some x.uri
+        | _ -> None
+
+    let private relatedClosure (inputPath : string) =
+        let files = HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        let seen = HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        let rec owner (dir : DirectoryInfo) =
+            if isNull dir then null
+            elif File.Exists(Path.Combine(dir.FullName, "package.spiproj")) then dir.FullName
+            else owner dir.Parent
+        let rec walk (dir : string) =
+            let project = Path.Combine(dir, "package.spiproj")
+            if seen.Add(Path.GetFullPath dir) && File.Exists project then
+                match schema (dir, File.ReadAllText project) with
+                | Ok parsed ->
+                    let rec add = function
+                        | FileHierarchy.File(_, (_, path), _) -> files.Add(normalizeUri (SpiralFileSystem.new_file_uri path)) |> ignore
+                        | FileHierarchy.Directory(_, _, _, children) -> List.iter add children
+                    List.iter add parsed.modules
+                    for package in parsed.packages do walk (snd package.dir)
+                | Error _ -> ()
+        match owner (DirectoryInfo(Path.GetDirectoryName(Path.GetFullPath inputPath))) with
+        | null -> files
+        | root -> walk root; files
+
     type private DiagnosticRouter() =
         let gate = obj()
         let mutable active : (string * Threading.Tasks.TaskCompletionSource<string>) option = None
         let mutable related : string option = None
         let mutable entryTypeErrors : string option = None
+        let mutable closure : HashSet<string> = null
+
+        member _.SetClosure(files : HashSet<string>) = lock gate (fun () -> closure <- files)
 
         member _.Begin(uri) =
             let waiter =
@@ -201,7 +232,8 @@ module Program =
                             |> ignore
                         | Some diagnostic -> waiter.TrySetResult(diagnostic) |> ignore
                         | None ->
-                            match diagnosticForOther message with
+                            let outsideClosure = match diagnosticUri message with Some other -> not (sameUri other uri) && not (isNull closure) && not (closure.Contains(normalizeUri other)) | None -> false
+                            match (if outsideClosure then None else diagnosticForOther message) with
                             | Some text ->
                                 related <- Some text
                                 match message with
@@ -318,10 +350,6 @@ module Program =
             | Cons(_, next) -> drain next
         drain state.bundler
 
-#if SPIRAL_CORE_GPT5PARALLEL
-    let private directProjectCompileFsharp (_input : string) (_output : string) : Result<int * string * string, string> =
-        Error "SPIRAL_DIRECT_PROJECT_BUILD is only available in single-flight mode"
-#else
     let private directProjectCompileFsharp input output =
         try
             let inputPath = input |> Path.GetFullPath |> SpiralFileSystem.standardize_path
@@ -410,7 +438,6 @@ module Program =
                     let binding = if compiled.Length = 1 then let _, _, value = compiled.[0] in value else "multi"
                     Ok (generatedBytes, binding, "direct-project-multi")
         with error -> Error error.Message
-#endif
 
 
     let private rewriteRustEmitExpr (generated : string) =
@@ -552,6 +579,7 @@ module Program =
                         | Some bytes -> if not (File.Exists path && File.ReadAllBytes path = bytes) then File.WriteAllBytes(path, bytes)
                         | None -> if File.Exists path then File.Delete path
                     with _ -> ()
+            router.SetClosure(relatedClosure inputPath)
             let waiter = router.Begin uri
             try
                 if cached.IsNone then
@@ -701,10 +729,6 @@ module Program =
             try if File.Exists path then File.Delete path with _ -> ()
 
     let private runCheck inputPath =
-#if SPIRAL_CORE_GPT5PARALLEL
-        eprintfn "Package attestation currently requires the single-flight compiler"
-        5
-#else
         try
             let inputPath = inputPath |> Path.GetFullPath |> SpiralFileSystem.standardize_path
             if not (File.Exists inputPath) then failwith $"Missing check input: {inputPath}"
@@ -778,7 +802,6 @@ module Program =
         with error ->
             eprintfn "%s" error.Message
             5
-#endif
 
     let private runAttestationBounded timeoutMs work =
         let mutable result = 5
@@ -843,11 +866,7 @@ module Program =
         | other -> failwith $"cannot infer a backend from output extension '{other}'; pass --backend"
 
     let private stallDetail () =
-#if SPIRAL_CORE_GPT5PARALLEL
-        try $"; stalled at stage {buildFileInitializationStageNow ()}" with _ -> ""
-#else
         ""
-#endif
 
     let private runBatch (jobsPath : string) (resultsPath : string) (timeoutMs : int) =
         let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
@@ -858,7 +877,6 @@ module Program =
             File.ReadAllLines jobsPath
             |> Array.filter (fun line -> not (String.IsNullOrWhiteSpace line) && not (line.StartsWith "#"))
         let cache = CompilationCache(jobs.Length > 1)
-        let budgetFromCaller = not (String.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable "SPIRAL_BUILD_BUDGET_MS"))
         use results = new StreamWriter(resultsPath, true, UTF8Encoding(false))
         results.AutoFlush <- true
         let recycleAfterError = String.Equals(Environment.GetEnvironmentVariable "SPIRAL_BATCH_RECYCLE_AFTER_ERROR", "1", StringComparison.Ordinal)
@@ -876,8 +894,6 @@ module Program =
                 recycle <- recycleAfterError
                 if failureMayComeFromEarlierBuild then failureDeferredToFreshProcess <- true
                 else results.WriteLine line
-            if not budgetFromCaller then
-                Environment.SetEnvironmentVariable("SPIRAL_BUILD_DEADLINE_MS", string (Environment.TickCount64 + int64 (max 1000 (jobTimeoutMs - 3000))))
             let stopwatch = Diagnostics.Stopwatch.StartNew()
             let work = Threading.Tasks.Task.Run(fun () -> compileOne server.supervisor router revisions cache server.job_val backend input output)
             try
@@ -1035,6 +1051,21 @@ module Program =
         if File.Exists socketPath then File.Delete socketPath
         socketPath, socketPath + ".pid"
 
+    let private exitWithParent (paths : string list) =
+        match Environment.GetEnvironmentVariable "SPIRAL_SERVER_PARENT_PID" with
+        | null | "" -> ()
+        | text ->
+            match Int32.TryParse text with
+            | false, _ -> eprintfn "SPIRAL_SERVER_PARENT_PID must be a process id, got %s; the server keeps running without a parent watch" text
+            | true, pid ->
+                let parent = try Some (Diagnostics.Process.GetProcessById pid) with _ -> None
+                let watch () =
+                    parent |> Option.iter (fun p -> p.WaitForExit())
+                    for path in paths do try File.Delete path with _ -> ()
+                    exit 0
+                let watcher = Threading.Thread(Threading.ThreadStart watch)
+                watcher.IsBackground <- true
+                watcher.Start()
     let private runServer socketPath _initialInput =
         let socketPath, pidPath = sessionPaths socketPath
         use listener = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified)
@@ -1043,6 +1074,7 @@ module Program =
         File.WriteAllText(pidPath, Environment.ProcessId.ToString())
         printfn "spiral-session-ready socket=%s pid=%d" socketPath Environment.ProcessId
         Console.Out.Flush()
+        exitWithParent [socketPath; pidPath]
         try serveSessions listener.Accept 0
         finally
             try File.Delete socketPath with _ -> ()
@@ -1065,6 +1097,7 @@ module Program =
         File.WriteAllText(portPath, string port)
         printfn "spiral-session-ready port=%d pid=%d" port Environment.ProcessId
         Console.Out.Flush()
+        exitWithParent [pidPath; portPath]
         try serveSessions (fun () -> let client = listener.AcceptSocket() in client.NoDelay <- true; client) stallSeconds
         finally
             try listener.Stop() with _ -> ()
@@ -1074,18 +1107,7 @@ module Program =
     let private hopacWorkerStackBytes = 256 <<< 20
 
     let private configureHopacFromEnvironment () =
-#if SPIRAL_CORE_GPT5PARALLEL
-        let positive name =
-            match Int32.TryParse(Environment.GetEnvironmentVariable name) with
-            | true, value when value > 0 -> Some value
-            | _ -> None
-        Scheduler.Global.setCreate { Scheduler.Create.Def with NumWorkers = positive "SPIRAL_HOPAC_WORKERS"; MaxStackSize = Some hopacWorkerStackBytes }
-        match positive "SPIRAL_DOP" with
-        | Some dop -> HopacExtensions.forceConcurrency dop
-        | None -> ()
-#else
         Scheduler.Global.setCreate { Scheduler.Create.Def with MaxStackSize = Some hopacWorkerStackBytes }
-#endif
 
     let private runTestBlocks (path : string) (output : string) =
         if not (File.Exists path) then
@@ -1286,7 +1308,7 @@ module Program =
             eprintfn "%s" defaultTypeFlagsError.Value
             2
         elif argv.Length = 1 && argv.[0] = "--capabilities" then
-            printfn "server-tcp test-blocks source-blocks"
+            printfn "server-tcp test-blocks source-blocks resolve-manifest"
             0
         elif argv.Length = 1 && argv.[0] = "--version" then
             printfn "SpiralCompiler alpha418"
@@ -1301,6 +1323,20 @@ module Program =
             runServer argv.[1] argv.[2]
         elif argv.Length = 3 && argv.[0] = "--test-blocks" then
             runTestBlocks argv.[1] argv.[2]
+        elif argv.Length = 2 && argv.[0] = "--resolve-manifest" then
+            let dir = Path.GetFullPath argv.[1]
+            let manifest = spiproj_suffix dir
+            if not (File.Exists manifest) then
+                eprintfn "resolve-manifest: no spiral.toml or package.spiproj in %s" dir
+                2
+            else
+                match withDerivedModules dir (File.ReadAllText manifest) with
+                | Error message ->
+                    eprintfn "resolve-manifest: %s" message
+                    1
+                | Ok resolved ->
+                    printf "%s" (if isTomlManifest resolved then tomlManifestText resolved else resolved)
+                    0
         elif argv.Length >= 3 && argv.[0] = "--source-blocks" then
             runSourceBlocks argv.[1] argv.[2..]
         elif argv.Length >= 2 && argv.[0] = "--x-compat" then

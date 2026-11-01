@@ -1,15 +1,11 @@
-/// # listm'
 test listm static =
     :< testing
 
 /// ## listm'
-
-/// ### append
 :+ append list t =
     listm.append
 
 ///> gleam
-///> fsharp
 ///> cuda
 ///> rust
 ///> typescript
@@ -17,15 +13,12 @@ test append print_code =
     [ "a"; "b" ] ++ [ "c"; "d" ]
     |> _assert_eq [ "a"; "b"; "c"; "d" ]
 
-/// ### collect
 := collect \* t r. (fn : t -> list r) (items : list t) : list r =
     listm.foldBack (\ x acc => listm.append (fn x) acc) items []
 
-/// ### replicate
 := replicate count x =
     listm.init count \ _ => x
 
-/// ### map4
 := map4 f l1 l2 l3 l4 =
     := ^ 루프 l1 l2 l3 l4 acc =
         ?= l1, l2, l3, l4 ?|
@@ -47,7 +40,6 @@ test map4_ =
     map4_ (\ a b c d => a + b + c + d) xs xs xs xs
     |> _assert_eq [ 4i32; 8; 12 ]
 
-/// ### init_series
 := init_series start end inc =
     := total : f64 = conv ((end - start) / inc) + 1
     listm.init total (conv >> (*) inc >> (+) start)
@@ -56,7 +48,6 @@ test init_series =
     init_series 0 1 0.5
     |> _assert_eq [ 0f64; 0.5; 1 ]
 
-/// ### try_item
 := ^ try_item i = \|
     | x :: _ ?& i = 0 => Some x
     | _ :: xs => try_item (i - 1) xs
@@ -72,7 +63,6 @@ test try_item_2 =
     |> try_item 10i32
     |> _assert_eq None
 
-/// ### item
 := item i =
     try_item i >> optionm.value
 
@@ -91,17 +81,14 @@ test item_2 =
     |> optionm.map sm'.format_exception
     |> _assert_eq (Some "System.Exception: Option does not have a value.")
 
-/// ### try_item_
 :~ ^ try_item_ i = \|
     | x :: _ ?& i = 0 => Some x
     | _ :: xs => try_item_ (i - 1) xs
     | [] => None
 
-/// ### item_
 := item_ i =
     try_item_ i >> optionm.value
 
-/// ### sum
 := sum list =
     list |> listm.fold (+) 0
 
@@ -110,7 +97,6 @@ test sum =
     |> sum
     |> _assert_eq 45
 
-/// ### unzip
 := unzip list =
     (([], []), list)
     ||> listm.fold \ (acc_x, acc_y) (x, y) =>
@@ -120,7 +106,7 @@ test sum =
 
 test unzip =
     listm.init 10i32 id
-    |> listm.map (\ x => x, x)
+    |> listm.map \ x => x, x
     |> unzip
     |> \ x, y =>
         x |> sum
@@ -129,7 +115,6 @@ test unzip =
         y |> sum
         |> _assert_eq 45
 
-/// ### try_index_of
 := try_index_of \* b c {number}. (item : b) (list : list b) : option c =
     := ^ 루프 \* a {number}. (i : a) : list b -> option a = \|
         | [] => None
@@ -181,7 +166,6 @@ test try_index_of_2 =
     |> try_index_of 10i32
     |> _assert_eq (None : option i32)
 
-/// ### try_find
 := try_find fn list =
     := ^ 루프 = \|
         | [] => None
@@ -205,7 +189,6 @@ test try_find =
     |> try_find ((=) 5i32)
     |> _assert_eq (Some 5i32)
 
-/// ### try_find'
 := try_find' fn list =
     := ^ body fn = \|
         | [] => None
@@ -244,7 +227,6 @@ test try_find_2 =
     |> find ((=) 5i32)
     |> _assert_eq 5i32
 
-/// ### choose
 := choose f l =
     (l, [])
     ||> listm.foldBack \ x acc =>
@@ -254,16 +236,14 @@ test try_find_2 =
 
 test choose =
     listm.init 10i32 id
-    |> choose (\ x => ? x % 2 = 0 ?> Some x |: None)
+    |> choose \ x => ? x % 2 = 0 ?> Some x |: None
     |> _assert_eq [ 0; 2; 4; 6; 8 ]
 
-/// ### filter
 := filter \* t. (fn : t -> bool) (list : list t) : list t =
     (list, [])
     ||> listm.foldBack \ x acc =>
         ? fn x ?> x :: acc |: acc
 
-/// ### zip_with
 := zip_with fn xs ys =
     := ^ 루프 acc xs ys =
         ?= xs, ys ?|
@@ -285,7 +265,6 @@ test zip_with =
     ||> zip_with (+)
     |> _assert_eq [ 5; 7; 9 ]
 
-/// ### zip
 := zip xs ys =
     zip_with pair xs ys
 
@@ -297,7 +276,6 @@ test zip =
     ||> zip
     |> _assert_eq [ 1, 4; 2, 5; 3, 6 ]
 
-/// ### indexed
 := indexed list =
     (([], 0), list)
     ||> listm.fold \ (acc, i) x =>
@@ -310,7 +288,6 @@ test indexed =
     |> indexed
     |> _assert_eq [ 0i32, 0; 1, 2; 2, 4; 3, 6; 4, 8 ]
 
-/// ### group_by
 := group_by fn list =
     (list, [])
     ||> listm.foldBack \ x acc =>
@@ -327,10 +304,9 @@ test indexed =
 
 test group_by =
     listm.init 10i32 id
-    |> group_by (\ x => x % 2 = 0)
+    |> group_by \ x => x % 2 = 0
     |> _assert_eq [ !+, [ 0; 2; 4; 6; 8 ]; !-, [ 1; 3; 5; 7; 9 ] ]
 
-/// ### forall'
 := forall' fn (head :: tail) =
     (!+, tail)
     ||> listm.fold \ acc x =>
@@ -341,7 +317,6 @@ test forall =
     |> forall' ((=) 1i32)
     |> _assert_eq !+
 
-/// ### last
 := last list =
     list
     |> listm.rev
@@ -352,7 +327,6 @@ test last =
     |> last
     |> _assert_eq 9
 
-/// ### try_pick
 := try_pick fn list =
     := ^ body fn = \|
         | [] => None
@@ -371,10 +345,9 @@ test last =
 
 test try_pick =
     listm.init 10i32 id
-    |> try_pick (\ x => ? x = 5i32 ?> Some x |: None)
+    |> try_pick \ x => ? x = 5i32 ?> Some x |: None
     |> _assert_eq (Some 5i32)
 
-/// ### exists'
 := exists' f x =
     := ^ body f = \|
         | [] => !-
@@ -391,8 +364,8 @@ test try_pick =
             ~~ body f list
     루프 x
 
+///> rust
 ///> gleam
-///> fsharp
 ///> cuda
 ///> typescript
 test exists print_code =
@@ -407,8 +380,6 @@ test exists print_code =
     [] |> exists' (\ x => x = 'a') |> _assert_eq !-
 
 /// ## fsharp
-
-/// ### list'
 := list'_types () =
     backend_switch {
         Gleam = \ () => global "import gleam/list"
@@ -426,7 +397,6 @@ test exists print_code =
     }
 :! list' t = $'backend_switch `(list'_switch t)'
 
-/// ### empty'
 := empty' \* t. () : list' t =
     backend_switch {
         Gleam = \ () => $'[]' : list' t
@@ -438,7 +408,6 @@ test exists print_code =
         Zig = \ () => $'spiralNewArray(`t, 0)' : list' t
     }
 
-/// ### cons'
 := cons' \* t. (head : t) (tail : list' t) : list' t =
     backend_switch {
         Gleam = \ () => $'[ !head, ..!tail ]' : list' t
@@ -461,7 +430,6 @@ test exists print_code =
             $'!r ' : list' t
     }
 
-/// ### box
 := box \* t. (list : list t) : list' t =
     run_target \|
         | Zig => \ () =>
@@ -474,21 +442,17 @@ test exists print_code =
             $'Rc::new(!acc.borrow().clone())' : list' t
         | _ => \ () => (list, empty' ()) ||> listm.foldBack cons'
 
-/// ### rust_list_length
 := rust_list_length \* t. (list : list' t) : i32 =
     ($'(!list).len()' : convert.unativeint) |> convert.convert
 
-/// ### rust_list_item
 := rust_list_item \* t. (i : i32) (list : list' t) : t =
     := at : convert.unativeint = convert.convert i
     $'(!list)[!at].clone()' : t
 
-/// ### lua_list_item
 := lua_list_item \* t. (i : i32) (list : list' t) : t =
     := at = i + 1i32
     $'!list[!at]' : t
 
-/// ### rev'
 := rev' \* t. (items : list' t) : list' t =
     backend_switch {
         Gleam = \ () => $'!items |> list.reverse' : list' t
@@ -510,7 +474,6 @@ test exists print_code =
             std.mem.reverse(`t, r); break :blk r; }' : list' t
     }
 
-/// ### fold'
 := fold' \* t u. (fn : t -> u) (init : list u) (list : list' t) : list u =
     backend_switch {
         Gleam = \ () =>
@@ -569,13 +532,11 @@ test exists print_code =
 
 ///> python
 ///> rust
-///> fsharp
 test fold_keeps_init_after_the_folded_items =
     box [ 3i32; 4i32; 5i32 ]
     |> fold' (\ x => x * 10i32) [ 1i32; 2i32 ]
     |> _assert_eq [ 50i32; 40i32; 30i32; 1i32; 2i32 ]
 
-/// ### fold_back'
 := fold_back' \* t u. (fn : t -> u) (list : list' t) (init : list u) : list u =
     backend_switch {
         Gleam = \ () =>
@@ -622,19 +583,20 @@ test fold_keeps_init_after_the_folded_items =
             루프 (len - 1i32) init
     }
 
+:= shared_tail_folds () =
+    := tail = box [ 2i32 ]
+    := first = cons' 1i32 tail
+    := second = cons' 9i32 tail
+    (fold_back' id first [], fold_back' id second [], fold_back' id tail [])
+
 ///> python
 ///> lua
 ///> rust
 ///> typescript
 ///> zig
 test cons_leaves_the_shared_tail_unchanged =
-    := tail = box [ 2i32 ]
-    := first = cons' 1i32 tail
-    := second = cons' 9i32 tail
-    (fold_back' id first [], fold_back' id second [], fold_back' id tail [])
-    |> _assert_eq ([ 1i32; 2i32 ], [ 9i32; 2i32 ], [ 2i32 ])
+    shared_tail_folds () |> _assert_eq ([ 1i32; 2i32 ], [ 9i32; 2i32 ], [ 2i32 ])
 
-/// ### filter'
 := filter' \* t. (fn : t -> bool) (list : list' t) : list' t =
     backend_switch {
         Gleam = \ () => $'!list |> list.filter(!fn)' : list' t
@@ -679,7 +641,6 @@ test cons_leaves_the_shared_tail_unchanged =
             루프 (len - 1i32) [] |> box
     }
 
-/// ### map
 := map \* t u. (fn : t -> u) (list : list' t) : list' u =
     list'_types ()
     backend_switch {
@@ -701,12 +662,10 @@ test cons_leaves_the_shared_tail_unchanged =
         Zig = \ () => fold_back' fn list [] |> box
     }
 
-/// ### unbox
 := unbox \* t. (list : list' t) : list t =
     (list, [])
     ||> fold_back' id
 
-/// ### distinct'
 := distinct' \* t. (list : list' t) : list' t =
     list'_types ()
     backend_switch {
@@ -759,7 +718,6 @@ test cons_leaves_the_shared_tail_unchanged =
     }
 
 ///> gleam
-///> fsharp
 ///> rust
 ///> cuda
 ///> typescript
@@ -770,23 +728,43 @@ test distinct =
     |> unbox
     |> _assert_eq [ "1"; "2"; "3" ]
 
+:= unordered_items () : list' i32 = box [ 3i32; 1i32; 3i32; 2i32; 1i32; 4i32 ]
+
 ///> lua
 ///> python
 ///> rust
 ///> typescript
-test list_operations_keep_their_order =
-    := items = box [ 3i32; 1i32; 3i32; 2i32; 1i32; 4i32 ]
-    (unbox (rev' items), unbox (filter' (\ x => x > 1i32) items), unbox (map (\ x => x * 2i32) items), unbox (distinct' items))
-    |> _assert_eq ([ 4i32; 1i32; 2i32; 3i32; 1i32; 3i32 ], [ 3i32; 3i32; 2i32; 4i32 ], [ 6i32; 2i32; 6i32; 4i32; 2i32; 8i32 ], [ 3i32; 1i32; 2i32; 4i32 ])
+test rev_reverses_the_order =
+    unordered_items () |> rev' |> unbox |> _assert_eq [ 4i32; 1i32; 2i32; 3i32; 1i32; 3i32 ]
 
-/// ### to_array'
+///> lua
+///> python
+///> rust
+///> typescript
+test filter_keeps_the_order =
+    unordered_items () |> filter' (\ x => x > 1i32) |> unbox |> _assert_eq [ 3i32; 3i32; 2i32; 4i32 ]
+
+///> lua
+///> python
+///> rust
+///> typescript
+test map_keeps_the_order =
+    unordered_items () |> map (\ x => x * 2i32) |> unbox |> _assert_eq [ 6i32; 2i32; 6i32; 4i32; 2i32; 8i32 ]
+
+///> lua
+///> python
+///> rust
+///> typescript
+test distinct_keeps_first_occurrences_in_order =
+    unordered_items () |> distinct' |> unbox |> _assert_eq [ 3i32; 1i32; 2i32; 4i32 ]
+
 := to_array' \* t. (items : list' t) : array_base t =
     backend_switch {
         Gleam = \ () => $'!items |> spiral_array_from_list' : array_base t
         Lua = \ () =>
             := len = $'##(!items)' : i32
             := d = ~> defaultof `t ()
-            := result : array t = arraym.init len (\ _ => d)
+            := result : array t = arraym.init len \ _ => d
             :~ ^ 루프 i =
                 ? i >= len ?>
                     := (array result) = result
@@ -812,21 +790,18 @@ test list_operations_keep_their_order =
         Zig = \ () => $'(spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"))' : array_base t
     }
 
-/// ### contains
 := contains \* t. (item : t) (list : list t) : bool =
     list
     |> try_index_of_ item
     |> \ x => x : _ int
     |> (<>) None
 
-/// ### pairwise
 := pairwise \* t. (list : list t) : list (t * t) =
     :~ ^ 루프 = \|
         | (x1 : t) :: x2 :: xs => (x1, x2) :: 루프 (x2 :: xs)
         | _ => []
     루프 list
 
-/// ### take_
 := take_ \* t. (n : i32) (l : list t) : list t =
     :~ ^ taken (n : i32) (l : list t) : list t =
         ?= l ?|
@@ -834,20 +809,18 @@ test list_operations_keep_their_order =
         | _ => []
     taken n l
 
-/// ### skip_
 :~ ^ skip_ \* t. (n : i32) (items : list t) : list t =
     ?= items ?|
     | _ :: rest ?& n > 0i32 => skip_ (n - 1i32) rest
     | _ => items
 
-/// ### chunks_
 :~ ^ chunks_ \* t. (n : i32) (items : list t) : list (list t) =
     ?= items ?|
     | [] => []
     | _ ?& n <= 0i32 => [ items ]
     | _ => take_ n items :: chunks_ n (skip_ n items)
 
-:= chunk_sizes (l : list (list i32)) : list i32 = l |> listm.map (\ (c : list i32) => listm.length c)
+:= chunk_sizes (l : list (list i32)) : list i32 = l |> listm.map \ (c : list i32) => listm.length c
 
 ///> rust
 ///> gleam

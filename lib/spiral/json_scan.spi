@@ -1,4 +1,3 @@
-/// # json_scan
 test json_scan static =
     :< testing
 

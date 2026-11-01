@@ -30,5 +30,3 @@
             `params
     ? all_present && fields = colon_count path 0i32 n 0i32 ?> path
     |: error_type ("the route " ++ path ++ " does not name exactly the handler's parameter fields")
-
-/// ### route

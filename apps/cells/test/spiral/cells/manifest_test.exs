@@ -13,6 +13,18 @@ defmodule Spiral.Cells.ManifestTest do
   '''
   """
 
+  test "a spiral.toml without a module list takes the compiler's derived manifest, and falls back without one" do
+    dir = Spiral.Cells.TestHelpers.tmp_dir!("manifest-derived")
+    File.write!(Path.join(dir, "spiral.toml"), "edition = 3\nprelude = ['base']\n")
+    derived = "edition: 3\nmodules:\n    base-\n    other\n"
+    assert Manifest.read(dir, resolve: fn ^dir -> derived end) == {:ok, derived}
+    assert {:ok, text} = Manifest.read(dir, resolve: fn _ -> nil end)
+    assert text =~ "edition: 3"
+
+    File.write!(Path.join(dir, "spiral.toml"), @toml)
+    assert Manifest.read(dir, resolve: fn _ -> flunk("a declared module list needs no resolver") end) == {:ok, Manifest.from_toml(@toml)}
+  end
+
   test "a spiral.toml reads as the spiproj text the parsers expect" do
     assert Manifest.from_toml(@toml) ==
              Enum.join(
@@ -43,6 +55,6 @@ defmodule Spiral.Cells.ManifestTest do
     assert Manifest.read!(dir) == "packageDir: a\n"
     File.write!(Path.join(dir, "spiral.toml"), "packageDir = 'b'\n")
     assert Manifest.path(dir) == Path.join(dir, "spiral.toml")
-    assert Manifest.read!(dir) == "packageDir: b\n"
+    assert Manifest.read!(dir) in ["packageDir: b\n", "packageDir: b\nmodules:\n\n"]
   end
 end

@@ -1,4 +1,3 @@
-/// # conversation
 ///> c
 ///> rust
 test conversation static =
@@ -8,10 +7,8 @@ test conversation static =
 :! no_pending = ()
 :! pending_call n = ()
 
-/// ### usage
 :== usage = { model : string; tokens_out : i32 }
 
-/// ### transcript
 :| ^ transcript pending =
     | Done :: transcript no_pending
     | System :: \* n. string * transcript n -> transcript n
@@ -20,7 +17,6 @@ test conversation static =
     | Call :: \* n. string * string * transcript (pending_call n) -> transcript n
     | Result :: \* n. string * string * transcript n -> transcript (pending_call n)
 
-/// ### weigh
 := ^ weigh \* n. (t : transcript n) : i32 =
     ?= t ?|
     | Done => 0i32

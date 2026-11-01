@@ -1,4 +1,3 @@
-/// # oauth
 :< sm'_operators
 
 test oauth static =
@@ -16,22 +15,18 @@ test oauth static =
     | y :: ys ?& oauth1_before y x => y :: oauth1_inserted x ys
     | _ => x :: l
 
-/// ### joined_pairs
 := joined_pairs (pairs : list oauth1_pair) : string =
     pairs |> listm.map (\ (k, v) => k ++# "=" ++# v) |> sm'.concat_list "&"
 
-/// ### parameter_string
 := parameter_string (params : list oauth1_pair) : string =
     params
-    |> listm.map (\ (k, v) => sm'.percent_encode k, sm'.percent_encode v)
+    |> listm.map \ (k, v) => sm'.percent_encode k, sm'.percent_encode v
     |> listm.fold (\ acc x => oauth1_inserted x acc) []
     |> joined_pairs
 
-/// ### signature_base
 := signature_base (method : string) (url : string) (params : list oauth1_pair) : string =
     method ++# "&" ++# sm'.percent_encode url ++# "&" ++# sm'.percent_encode (parameter_string params)
 
-/// ### signing_key
 := signing_key (c : oauth1_credentials) : string =
     sm'.percent_encode c.consumer_secret ++# "&" ++# sm'.percent_encode c.token_secret
 
@@ -45,24 +40,20 @@ test oauth static =
 := protocol_params (c : oauth1_credentials) (nonce : string) (stamp : string) : list oauth1_pair =
     listm.append (consumer_params c nonce) (token_params c stamp)
 
-/// ### signature
 := signature (c : oauth1_credentials) (method : string) (url : string) (params : list oauth1_pair) : string =
     signature_base method url params |> crypto.hmac_sha1_base64 (signing_key c)
 
 := oauth1_header_field ((k, v) : oauth1_pair) : string =
     sm'.percent_encode k ++# "=\"" ++# sm'.percent_encode v ++# "\""
 
-/// ### with_signature
 := with_signature (c : oauth1_credentials) (method : string) (url : string) (params : list oauth1_pair)
     : list oauth1_pair
     =
     listm.append params [ ("oauth_signature", signature c method url params) ]
 
-/// ### header_text
 := header_text (signed : list oauth1_pair) : string =
     "OAuth " ++# (signed |> listm.map oauth1_header_field |> sm'.concat_list ", ")
 
-/// ### authorization_header
 := authorization_header
     (c : oauth1_credentials) (method : string) (url : string) (nonce : string) (stamp : string)
     : string

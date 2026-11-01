@@ -1,15 +1,12 @@
-/// # par'
 test par' static =
     :< testing
 
 :< sm'_operators
 
-/// ### par_event
 :| par_event u =
     | ChunkDone : i32 * list u
     | WorkerEnded : erlang_process.exit_reason
 
-/// ### chunks
 := chunks \* t. (count : i32) (items : list t) : list (list t) =
     := size = (listm.length items + count - 1i32) / count
     :~ ^ split (rest : list t) (taken : i32) (chunk : list t) (acc : list (list t)) : list (list t) =
@@ -20,7 +17,6 @@ test par' static =
             |: split more (taken + 1i32) (x :: chunk) acc
     ? size < 1i32 ?> [] |: split items 0i32 [] []
 
-/// ### in_index_order
 := in_index_order \* u. (count : i32) (finished : list (i32 * list u)) : list u =
     :~ ^ find (index : i32) (rest : list (i32 * list u)) : list u =
         ?= rest ?|
@@ -28,7 +24,6 @@ test par' static =
         | (at, values) :: more => ? at = index ?> values |: find index more
     listm.init count (\ index => find index finished) |> listm'.collect id
 
-/// ### map_on_processes
 := map_on_processes \* t u. (fn : t -> u) (items : list t) : list u =
     := parts = chunks (erlang_process.schedulers_online ()) items
     := results : erlang_process.subject (i32 * list u) = erlang_process.new_subject ()
@@ -54,11 +49,9 @@ test par' static =
                 |: gather (results_left - 1i32) (ends_left - 1i32) finished !+
     gather count count [] !-
 
-/// ### rust_available_parallelism
 := rust_available_parallelism () : convert.unativeint =
     $'std::thread::available_parallelism().map_or(1, |n| n.get())' : convert.unativeint
 
-/// ### rust_scoped_map
 := rust_scoped_map \* t u. (fn : t -> u) (items : listm'.list' t) (chunk_size : convert.unativeint) : listm'.list' u =
     global """
         fn spiral_scope_map<T: Sync + Clone, U: Send>(
@@ -76,24 +69,20 @@ test par' static =
         """
     $'std::rc::Rc::new(spiral_scope_map(&*!items, !chunk_size, __spiral_closure_factory !fn))' : listm'.list' u
 
-/// ### map_on_threads
 := map_on_threads \* t u. (fn : t -> u) (items : list t) : list u =
     := workers : i32 = rust_available_parallelism () |> convert.convert
     := length = listm.length items
     := chunk_size : i32 = ? length <= workers ?> 1i32 |: (length + workers - 1i32) / workers
     rust_scoped_map fn (listm'.box items) (convert.convert chunk_size) |> listm'.unbox
 
-/// ### countdown
 :~ ^ countdown (n : i32) : list i32 = ? n <= 0i32 ?> [] |: n :: countdown (n - 1i32)
 
-/// ### map
 := map \* t u. (fn : t -> u) (items : list t) : list u =
     run_target \|
         | Gleam => \ () => map_on_processes fn items
         | Rust => \ () => map_on_threads fn items
         | _ => \ () => items |> listm.map fn
 
-/// ### each
 := each \* t. (fn : t -> ()) (items : list t) : () =
     items |> map fn |> ignore
 
@@ -114,11 +103,10 @@ test map_workers_have_room_for_deep_recursion =
     listm.init 4i32 id |> map (\ _ => listm.length (countdown 100000i32)) |> testing._assert_eq [100000i32; 100000i32; 100000i32; 100000i32]
 
 ///> gleam
-///> fsharp
 ///> rust
 test map_keeps_order =
-    listm.init 100i32 (\ i => i + 1i32)
-    |> map (\ x => x * x)
+    listm.init 100i32 \ i => i + 1i32
+    |> map \ x => x * x
     |> listm.fold (+) 0i32
     |> _assert_eq 338350i32
 
@@ -126,7 +114,7 @@ test map_keeps_order =
 ///> rust
 test map_empty =
     ([] : list i32)
-    |> map (\ x => x + 1i32)
+    |> map \ x => x + 1i32
     |> listm.length
     |> _assert_eq 0i32
 

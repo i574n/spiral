@@ -1,8 +1,6 @@
-/// # util
 test util static =
     :< testing
 
-/// ### ski
 :| ^ ski =
     | I
     | K

@@ -122,7 +122,3 @@
             \* value. =>
                 decode_at `value s (json_scan.value_at s !!!!SymbolToString(key))
         `t
-
-/// ### decode
-
-/// ### tool_schema

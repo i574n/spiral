@@ -1,15 +1,11 @@
 param(
-    [ValidateSet('single-flight', 'sf', 'gpt5parallel', 'gp', 'hopacsota', 'hs', 'both')][string]$Mode = 'single-flight',
+    [ValidateSet('single-flight', 'sf', 'hopacsota', 'hs')][string]$Mode = 'single-flight',
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
     [string]$CoreSource,
     [string]$HostSource
 )
 . $PSScriptRoot/env.ps1
 
-if (-not $CoreSource) {
-    pwsh -NoProfile -File (Join-Path $PSScriptRoot 'pair-drift.ps1')
-    if ($LASTEXITCODE -ne 0) { throw 'pair-drift: a SPIRAL_CORE_GPT5PARALLEL pair changed on one side only; change both sides or unify the pair' }
-}
 if ($Mode -in 'hopacsota', 'hs') {
     $lintArgs = if ($CoreSource) { @('-CoreSource', $CoreSource) } else { @() }
     pwsh -NoProfile -File (Join-Path $PSScriptRoot 'hopacsota-lint.ps1') @lintArgs
@@ -21,7 +17,7 @@ $cache = Get-SpiralCacheDir
 $sharedCache = if ($IsWindows) { Join-Path $env:LOCALAPPDATA 'spiral-bin' } else { Join-Path $HOME '.cache/spiral-bin' }
 $detRoot = Get-SpiralDetRoot
 $project = Join-Path $BundleRoot 'compiler/host/SpiralCompiler.fsproj'
-$modes = if ($Mode -eq 'both') { 'single-flight', 'gpt5parallel' } else { ConvertTo-SpiralMode $Mode }
+$modes = ConvertTo-SpiralMode $Mode
 $receipts = Join-Path $cache 'results/builds.tsv'
 New-Item -ItemType Directory -Force (Split-Path $receipts) | Out-Null
 if (-not (Test-Path $receipts)) { "timestamp`tmode`tconfiguration`tseconds`texit`tcore_sha256`tcore" | Set-Content $receipts }

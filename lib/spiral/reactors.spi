@@ -1,18 +1,14 @@
-/// # reactors
 ///> c
 ///> rust
 test reactors static =
     :< testing
 
-/// ### signal
 :| signal t =
     | Present : t
     | Absent
 
-/// ### tag
 :== tag = { time : i64; micro : i32 }
 
-/// ### reactor
 :== reactor s i o = { init : s; react : s -> tag -> i -> s * o }
 
 := chain_react \* sa sb i m o.
@@ -24,7 +20,6 @@ test reactors static =
     := sb, y = b.react sb now mid
     (sa, sb), y
 
-/// ### chain
 := chain \* sa sb i m o. (a : reactor sa i m) (b : reactor sb m o) : reactor (sa * sb) i o =
     { init = (a.init, b.init); react = chain_react a b }
 
@@ -37,7 +32,6 @@ test reactors static =
     := sb, yb = b.react sb now x
     (sa, sb), (ya, yb)
 
-/// ### both
 := both \* sa sb i oa ob. (a : reactor sa i oa) (b : reactor sb i ob) : reactor (sa * sb) i (oa * ob) =
     { init = (a.init, b.init); react = both_react a b }
 
@@ -47,7 +41,6 @@ test reactors static =
     =
     ? lag > deadline ?> on_violation state now |: body.react state now lag
 
-/// ### with_deadline
 := with_deadline \* s o.
     (deadline : i64) (body : reactor s i64 o) (on_violation : s -> tag -> s * o)
     : reactor s i64 o
@@ -100,7 +93,6 @@ test reactors static =
     := state, _ = program.react state now (input now)
     state
 
-/// ### run_ticks
 := run_ticks \* s i o. (program : reactor s i o) (input : tag -> i) (ticks : i64) : s =
     :~ ^ loop (state : s) (time : i64) : s =
         ? time >= ticks ?> state |: loop (tick program input state time) (time + 1i64)
@@ -145,7 +137,6 @@ test reactors static =
 := micro_of \* s i o acc. (r : micro_run s i o acc) (initial : acc) : acc * i64 =
     micro_loop r (micro_start r.program.init initial)
 
-/// ### run_micro
 := run_micro \* s i o acc.
     (program : reactor s i (signal o)) (input : tag -> i) (ticks : i64) (cap : i32) (step : acc -> o -> acc)
     (initial : acc)
@@ -241,7 +232,7 @@ test microsteps_share_the_tag_through_a_chain =
 := lag_pattern (now : tag) : i64 = ? now.time % 4i64 = 3i64 ?> 9i64 |: now.time % 3i64
 
 test deadlines_run_the_violation_handler =
-    := guarded = with_deadline 5i64 (sampling_tens ()) (\ count _ => count, Present -1i64)
+    := guarded = with_deadline 5i64 (sampling_tens ()) \ count _ => count, Present -1i64
     := _, result = run_ticks (chain guarded (violation_tally ())) lag_pattern 12i64
     result |> _assert_eq (450i64, 3i64)
 
@@ -261,7 +252,7 @@ test deadlines_run_the_violation_handler =
 
 test array_bank_keeps_member_state =
     := members = 4i32
-    := states : array i64 = arraym.init members (\ _ => 0i64)
+    := states : array i64 = arraym.init members \ _ => 0i64
     bank_total states members |> _assert_eq 350i64
 
 := every_third (y : signal i64) : bool =
@@ -309,7 +300,6 @@ test modal_reset_restarts_history_resumes =
 := rust_physical_micros () : i64 =
     $'(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_micros() as i64)' : i64
 
-/// ### physical_micros
 := physical_micros () : i64 =
     backend_switch {
         C = \ () => c_physical_micros ()

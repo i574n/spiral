@@ -1,8 +1,6 @@
-/// # physics
 test physics static =
     :< testing
 
-/// ### init_series
 test init_series =
     := x = am'.init_series -3f64 3 0.01
     := y = x |> am'.map_base math.square
@@ -49,7 +47,6 @@ test velocity_cf_2 =
     := y = x |> am'.map_base (velocity_cf 0.1f64 0.6 [ 0.04; -0.08 ])
     "car on an air track", "time (s)", "", ;[ "velocity of car (m/s)", x, y ]
 
-/// ### derivative
 :== derivative = (f64 -> f64) -> f64 -> f64
 
 := derivative dt : derivative =
@@ -81,7 +78,6 @@ test derivative_round_off =
     derivative 0.000000000000000001 (\ x => x ** 4 / 4) 1 - 1
     |> _assert_approx_eq None -1
 
-/// ### integration
 :== integration = (f64 -> f64) -> f64 -> f64 -> f64
 
 := integral dt : integration =
@@ -118,11 +114,9 @@ test integration_3 =
     integral'' 0.01 math.square 0 1
     |> _assert_approx_eq None (integral 0.01 math.square 0 1)
 
-/// ### anti_derivative
 := anti_derivative dt v0 a t =
     v0 + integral' dt a 0 t
 
-/// ### velocity_ft
 :== velocity_ft = mass -> velocity -> list (time -> scalar_force) -> (time -> velocity)
 
 := velocity_ft dt : velocity_ft =
@@ -131,7 +125,6 @@ test integration_3 =
         := a t = f_net t / m
         anti_derivative dt v0 a
 
-/// ### position_ft
 :== position_ft = mass -> position -> velocity -> list (time -> scalar_force) -> (time -> position)
 
 := position_ft dt : position_ft =
@@ -344,7 +337,6 @@ test shift_runge_kutta =
     solver (runge_kutta_4 1) (of_state_1d >> exponential >> rrr) (state_1d (0, 1, 1)) 8i32
     |> _assert_eq (state_1d (8.0, 2894.789038540849, 2894.789038540849))
 
-/// ### vec
 :== vec =
     {
         x : f64
@@ -662,7 +654,6 @@ test states_ps_4 =
     best_angle (30f64, 60f64)
     |> _assert_eq (116.77499158246208, 41)
 
-/// ### relativity_ps
 := relativity_ps fs (st : particle_state) =
     := f_net = net_force fs st
     := u = st.velocity ^/ 299792458

@@ -2,8 +2,6 @@
 test sm static =
     :< testing
 
-/// ## rust
-
 /// ### std_string_real
 ///- --real
 
@@ -15,20 +13,12 @@ test sm static =
             "type std_string_String = string"
     )
 
-/// ### std_string
-
-/// ### to_string'
-
 /// ### from_std_string_real
 ///- --real
 
 := from_std_string_real (str : std_string_real) : string =
     :< rust
     rust.emit_expr `std_string_real `string str ($'"Rc::<str>::from($0)"' : string)
-
-/// ### from_std_string
-
-/// ## sm'
 
 /// ### symbol_to_string_real
 ///- --real
@@ -48,20 +38,6 @@ test symbol_to_string =
     := x = symbol_to_string_real `(`x)
     _assert_eq `string "test" x
 
-/// ### index
-
-/// ### length
-
-/// ### (~##)
-
-/// ### to_char_list
-
-/// ### to_char_array
-
-/// ### is_empty
-
-/// ### to_option
-
 /// ### string_builder_real
 ///- --real
 
@@ -80,8 +56,6 @@ test symbol_to_string =
         Zig : string
     }
 :! string_builder_real = $'backend_switch `(string_builder_switch)'
-
-/// ### string_builder
 
 /// ### append_real
 ///- --real
@@ -103,19 +77,11 @@ test symbol_to_string =
         Bend = (\ () => !!!!StaticStringConcat(s, x)) : () -> string
     }
 
-/// ### append
-
 /// ### (++#*)
 ///- --real
 
 := (++#*) (a : string) (b : string) : string =
     append_real b a
-
-/// ### (++#)
-
-/// ### (++\\\\#)
-
-/// ### (++\\#)
 
 /// ### format_debug_real
 ///- --real
@@ -544,20 +510,6 @@ test symbol_to_string =
             obj_to_string_rust_inner_real `(`x) x
         |: format_debug_real `t x
 
-/// ### format_debug
-
-/// ### (~#?*)
-
-/// ### unwrap_format
-
-/// ### obj_to_string
-
-/// ### (~#?**)
-
-/// ### concat_list
-
-/// ### slice
-
 /// ### format_pretty_real
 ///- --real
 
@@ -599,10 +551,6 @@ test symbol_to_string =
                 := result = rust.emit_expr `t `std_string_real x ($'"format\!(\\\"{:\#?}\\\", $0)"' : string)
                 from_std_string_real result
         | _ => \ _ => format_debug_real `t x
-
-/// ### format_pretty
-
-/// ### prim
 
 /// ### printable
 ///- --real
@@ -873,16 +821,6 @@ test symbol_to_string =
     write x
     (~*) `string result
 
-/// ### format
-
-/// ### format_fixed_digits
-
-/// ### format_fixed
-
-/// ### (~#?)
-
-/// ### (++#?)
-
 /// ### show_real
 ///- --real
 
@@ -959,323 +897,3 @@ test symbol_to_string =
     | {} => !+
     | array_base _ => !+
     | _ => real_core.union_type_is `t
-
-/// ### show
-
-/// ### to_char_array
-
-/// ### concat_array
-
-/// ### ellipsis
-
-/// ### clip
-
-/// ## fsharp
-
-/// ### gleam_dynamic
-
-/// ### last_index_of_gleam
-
-/// ### gleam_byte_size
-
-/// ### gleam_find_trailing
-
-/// ### gleam_is_nomatch
-
-/// ### gleam_dynamic_text
-
-/// ### last_index_of
-
-/// ### index_of_char_from
-
-/// ### portable_matches_at
-
-/// ### portable_index_of
-
-/// ### gleam_split_once_head
-
-/// ### index_of
-
-/// ### replicate
-
-/// ### pad_left
-
-/// ### pad_right
-
-/// ### convert_to_utf32
-
-/// ### ends_with
-
-/// ### starts_with
-
-/// ### substring
-
-/// ### to_lower
-
-/// ### to_upper
-
-/// ### char_to_upper
-
-/// ### char_code
-
-/// ### of_char
-
-/// ### builder_append
-
-/// ### builder_replace
-
-/// ### builder_clear
-
-/// ### rust_char_offset
-
-/// ### builder_insert
-
-/// ### span_from
-
-/// ### char_contains
-
-/// ### trim_chars
-
-/// ### trim_start
-
-/// ### trim_end
-
-/// ### trim_with
-
-/// ### trim_end_suffix
-
-/// ### trim
-
-/// ### concat
-
-/// ### length'
-
-/// ### to_string any
-
-/// ### replace
-
-/// ### split_portable
-
-/// ### split
-
-/// ### line_parts
-
-/// ### line_part_count
-
-/// ### line_without_return
-
-/// ### nonempty_line_fold
-
-/// ### lines
-
-/// ### nonempty_lines
-
-/// ### line_count
-
-/// ### nonempty_line_count
-
-/// ### line_at
-
-/// ### nonempty_line_at
-
-/// ### listed
-
-/// ### split_string
-
-/// ### join'
-
-/// ### encoding
-
-/// ### encoding_utf8
-
-/// ### utf8_get_bytes
-
-/// ### byte_to_string
-
-/// ## rust
-
-/// ### str
-
-/// ### chars
-
-/// ### byte_slice
-
-/// ### display
-
-/// ### base64_decode_error
-
-/// ### borsh_io_error
-
-/// ### utf8_error
-
-/// ### from_utf8_error
-
-/// ### json_value
-
-/// ### json_error
-
-/// ### serde_wasm_bindgen_error
-
-/// ### js_string
-
-/// ### os_str
-
-/// ### c_str
-
-/// ### c_string
-
-/// ### os_string
-
-/// ### raw_string_literal
-
-/// ### raw_string_literal_static
-
-/// ### (~#)
-
-/// ### (~###)
-
-/// ### include_str
-
-/// ### as_str
-
-/// ### from_iter
-
-/// ### ref_to_std_string
-
-/// ### cow_to_std_string
-
-/// ### to_std_string
-
-/// ### as_str_std
-
-/// ### into_boxed_str
-
-/// ### to_os_string
-
-/// ### new_c_string
-
-/// ### os_to_str
-
-/// ### from_os_str_ref
-
-/// ### format_custom'
-
-/// ### format_debug'
-
-/// ### format'
-
-/// ### format_hex'
-
-/// ### format''
-
-/// ### regex
-
-/// ### regex_error
-
-/// ### new_regex
-
-/// ### captures
-
-/// ### regex_capture_matches
-
-/// ### regex_capture_names
-
-/// ### match'
-
-/// ### regex_captures_iter
-
-/// ### regex_captures
-
-/// ### serialize
-
-/// ### deserialize
-
-/// ### borsh_serialize
-
-/// ### borsh_deserialize
-
-/// ### deserialize_vec
-
-/// ### encode_uri_component
-
-/// ### percent_encode_gleam
-
-/// ### utf8_byte_list
-
-/// ### percent_unreserved
-
-/// ### ascii_text
-
-/// ### hex_digit
-
-/// ### percent_byte
-
-/// ### percent_encode
-
-/// ### strip_prefix
-
-/// ### str_from_utf8
-
-/// ### string_from_utf8
-
-/// ### encoding'
-
-/// ### encoding_utf8'
-
-/// ### encoding_1252
-
-/// ### encoding_encode
-
-/// ### windows
-
-/// ### any
-
-/// ### slice_contains
-
-/// ### as_bytes
-
-/// ### into_bytes
-
-/// ## python
-
-/// ### encode_utf8
-
-/// ## sm'
-
-/// ### contains
-
-/// ### to_string result t u
-
-/// ### format_exception
-
-/// ### range
-
-/// ### decimal_text
-
-/// ### char_text
-
-/// ### bytes_between
-
-/// ### all_digits
-
-/// ### first_line
-
-/// ### after_first_line
-
-/// ### split_nth
-
-/// ### ellipsis_end
-
-/// ### format_ellipsis
-
-/// ### replace_regex
-
-/// ## main
-
-/// ## rust
-
-/// ### to_string std_string
-
-/// ### split_list
-
-/// ### decimal_i32

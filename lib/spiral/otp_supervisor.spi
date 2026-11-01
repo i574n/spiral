@@ -1,4 +1,3 @@
-/// # otp_supervisor
 :< sm'_operators
 
 test otp_supervisor static =
@@ -24,7 +23,6 @@ test otp_supervisor static =
     | Transient
     | Temporary
 
-/// ### strategy_of
 := strategy_of (s : strategy) : strategy_term =
     otp_supervisor_imports ()
     ?= s ?|
@@ -32,38 +30,31 @@ test otp_supervisor static =
     | OneForAll => $'static_supervisor.OneForAll'
     | RestForOne => $'static_supervisor.RestForOne'
 
-/// ### new
 := new (choice : strategy) : supervisor_builder =
     otp_supervisor_imports ()
     := term = strategy_of choice
     $'static_supervisor.new(!term)'
 
-/// ### restart_tolerance
 := restart_tolerance (intensity : i32) (period_s : i32) (spec : supervisor_builder) : supervisor_builder =
     otp_supervisor_imports ()
     $'static_supervisor.restart_tolerance(!spec, !intensity, !period_s)'
 
-/// ### add
 := add \* d. (worker : child d) (spec : supervisor_builder) : supervisor_builder =
     otp_supervisor_imports ()
     $'static_supervisor.add(!spec, !worker)'
 
-/// ### start
 := start (spec : supervisor_builder) : otp_actor.start_result supervisor =
     otp_supervisor_imports ()
     $'static_supervisor.start(!spec)'
 
-/// ### supervised
 := supervised (spec : supervisor_builder) : child supervisor =
     otp_supervisor_imports ()
     $'static_supervisor.supervised(!spec)'
 
-/// ### worker
 := worker \* d. (run : () -> otp_actor.start_result d) : child d =
     otp_supervisor_imports ()
     $'supervision.worker(fn() { !run(Nil) })'
 
-/// ### restart_of
 := restart_of (choice : restart) : restart_term =
     otp_supervisor_imports ()
     ?= choice ?|
@@ -71,23 +62,19 @@ test otp_supervisor static =
     | Transient => $'supervision.Transient'
     | Temporary => $'supervision.Temporary'
 
-/// ### with_restart
 := with_restart \* d. (choice : restart) (spec : child d) : child d =
     otp_supervisor_imports ()
     := term = restart_of choice
     $'supervision.restart(!spec, !term)'
 
-/// ### with_shutdown
 := with_shutdown \* d. (shutdown_ms : i32) (spec : child d) : child d =
     otp_supervisor_imports ()
     $'supervision.timeout(!spec, !shutdown_ms)'
 
-/// ### counting_worker
 := counting_worker () =
     worker \ () =>
         otp_actor.new 0i32 |> otp_actor.on_message (\ total (_ : i32) => otp_actor.continue total) |> otp_actor.start
 
-/// ### restarting_worker
 := restarting_worker () = counting_worker () |> with_restart Transient
 
 ///> gleam

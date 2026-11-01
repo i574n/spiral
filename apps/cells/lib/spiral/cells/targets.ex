@@ -142,6 +142,11 @@ defmodule Spiral.Cells.Targets do
         fn ->
           waited = System.monotonic_time(:millisecond) - started
 
+          case Process.get(:spiral_cells_phases) do
+            %{} = phases -> Process.put(:spiral_cells_phases, Map.update(phases, :rust_lock_wait_ms, waited, &(&1 + waited)))
+            _ -> :ok
+          end
+
           case Process.get(:spiral_cells_deadline) do
             ms when is_integer(ms) -> Process.put(:spiral_cells_deadline, ms + waited)
             _ -> :ok

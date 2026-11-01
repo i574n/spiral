@@ -2,7 +2,6 @@
 test dictm static =
     :< testing
 
-/// # dictm
 :< sm'_operators
 
 /// ## dict

@@ -1,29 +1,22 @@
-/// # near_wallet
-
 /// ## near_wallet
 :< lustre
 
-/// ### model
 :== model = int
 
-/// ### init
 := init initial_count : model =
     ? initial_count < 0
     ?> 0
     |: initial_count
 
-/// ### msg
 :| msg =
-    | Incr
-    | Decr
+    | Increment
+    | Decrement
 
-/// ### update
 := update n (model, msg) =
     ?= msg ?|
-    | Incr => model + n
-    | Decr => model - n
+    | Increment => model + n
+    | Decrement => model - n
 
-/// ### view
 := view model =
     div [
         style [
@@ -37,7 +30,7 @@
             ]
         ] [
             button [
-                on_click Incr
+                on_click Increment
             ] [
                 text "+"
             ]
@@ -49,7 +42,7 @@
                 model |> sm'.obj_to_string |> text
             ]
             button [
-                on_click Decr
+                on_click Decrement
             ] [
                 text "-"
             ]
@@ -60,9 +53,9 @@
 ///> gleam -t javascript -d lustre=\">=5.7.0\" gleam_json=\">=2.0.0\"
 test tests =
     := model = init (dyn -3i32)
-    := model = update 1i32 (model, Incr)
-    := model = update 1i32 (model, Incr)
-    := model = update 1i32 (model, Decr)
+    := model = update 1i32 (model, Increment)
+    := model = update 1i32 (model, Increment)
+    := model = update 1i32 (model, Decrement)
     model
     |> view
     |> to_html
@@ -76,7 +69,7 @@ test tests =
 ///> gleam -t javascript -d lustre=\">=5.7.0\" gleam_json=\">=2.0.0\"
 test tests_2 =
     := model = init (dyn 5i32)
-    := model = update 2i32 (model, Decr)
+    := model = update 2i32 (model, Decrement)
     model
     |> view
     |> to_html

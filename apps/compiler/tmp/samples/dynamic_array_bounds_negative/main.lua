@@ -4,4 +4,9 @@ v1[(0)+1] = 11
 v1[(1)+1] = 13
 local v2 = 2
 local v3 = (v1)[(v2)+1]
-return v3
+local v4 = v3 == 1234567
+if v4 then
+    return 1
+else
+    return 0
+end
