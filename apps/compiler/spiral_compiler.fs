@@ -4211,6 +4211,7 @@ module spiral_compiler =
         | CInt
         | CFloat
         | CNumber
+        | COrd
         | CPrim
         | CSymbol
         | CRecord
@@ -4550,14 +4551,14 @@ module spiral_compiler =
     /// ### constraint_name
     let rec constraint_name (env : TopEnv) = function
         | CSInt -> "sint" | CUInt -> "uint" | CInt -> "int"
-        | CFloat -> "float" | CNumber -> "number" | CPrim -> "prim"
+        | CFloat -> "float" | CNumber -> "number" | COrd -> "ord" | CPrim -> "prim"
         | CSymbol -> "symbol" | CRecord -> "record"
         | CPrototype i -> env.prototypes.[i].name |> PrototypeNameIdOps.text
     
 
     /// ### constraint_kind
     let constraint_kind (env : TopEnv) = function
-        | CSInt | CUInt | CInt | CFloat | CNumber | CPrim | CSymbol | CRecord -> KindType
+        | CSInt | CUInt | CInt | CFloat | CNumber | COrd | CPrim | CSymbol | CRecord -> KindType
         | CPrototype i -> env.prototypes.[i].kind
     
 
@@ -5503,6 +5504,7 @@ module spiral_compiler =
                     | CInt, TyPrim (UInt8T | UInt16T | UInt32T | UInt64T | Int8T | Int16T | Int32T | Int64T)
                     | CFloat, TyPrim (Float32T | Float64T)
                     | CNumber, TyPrim (UInt8T | UInt16T | UInt32T | UInt64T | Int8T | Int16T | Int32T | Int64T | Float32T | Float64T)
+                    | COrd, TyPrim (UInt8T | UInt16T | UInt32T | UInt64T | Int8T | Int16T | Int32T | Int64T | Float32T | Float64T | CharT)
                     | CPrim, TyPrim _
                     | CSymbol, TySymbol _
                     | CRecord, TyRecord _ -> []
@@ -5523,7 +5525,9 @@ module spiral_compiler =
 
                 match b with
                 | TyVar (_,{contents=Some x}) -> constraint_process con x
-                | TyVar (b,_) -> if con.IsSubsetOf b.constraints = false then [ForallVarConstraintError(TypeNameIdOps.create b.name,con,b.constraints)] else []
+                | TyVar (b,_) ->
+                    let implied = if Set.exists (function CNumber | CInt | CSInt | CUInt | CFloat -> true | _ -> false) b.constraints then Set.add COrd b.constraints else b.constraints
+                    if con.IsSubsetOf implied = false then [ForallVarConstraintError(TypeNameIdOps.create b.name,con,b.constraints)] else []
                 | b ->
                     let b_kind = tt top_env b
                     Set.fold (fun ers con ->
@@ -6661,8 +6665,9 @@ module spiral_compiler =
                 annotations |> Seq.iter (fun (KeyValue(_,(_,x))) ->
                     match visit_t x with
                     | TyMetavar(m, link) when Option.isNone link.Value ->
-                        if m.constraints = Set.singleton CNumber then default_numeric "int" |> Option.iter (fun t -> link.Value <- Some t)
-                        elif m.constraints = Set.singleton CFloat then default_numeric "float" |> Option.iter (fun t -> link.Value <- Some t)
+                        let numeric = Set.remove COrd m.constraints
+                        if numeric = Set.singleton CNumber || m.constraints = Set.singleton COrd then default_numeric "int" |> Option.iter (fun t -> link.Value <- Some t)
+                        elif numeric = Set.singleton CFloat then default_numeric "float" |> Option.iter (fun t -> link.Value <- Some t)
                     | _ -> ())
                 annotations |> Seq.iter (fun (KeyValue(_,(r,x))) -> if has_metavars x then errors.Add(r, ValueRestriction x))
             RecordWithRetypeCensus.append census_rows
@@ -6721,6 +6726,7 @@ module spiral_compiler =
                 "int", CInt
                 "float", CFloat
                 "number", CNumber
+                "ord", COrd
                 "prim", CPrim
                 "record", CRecord
                 "symbol", CSymbol
@@ -13581,7 +13587,16 @@ module spiral_compiler =
                 r
 
         let mutable self_loop : (int * L<Tag,Ty> []) option = None
-        let without_self_loop f = let saved = self_loop in self_loop <- None; f (); self_loop <- saved
+        let mutable group_loop : (string * HashSet<int>) option = None
+        let method_records = Dictionary<int, MethodRecFsharp>()
+        let emitted_groups = HashSet<int>()
+        let without_self_loop f =
+            let saved, saved_group = self_loop, group_loop
+            self_loop <- None
+            group_loop <- None
+            f ()
+            self_loop <- saved
+            group_loop <- saved_group
         let is_copy = function YPrim StringT -> false | YPrim _ -> true | _ -> false
         let stack_union_moves = Dictionary<Union, bool>(HashIdentity.Reference)
         let rustSwitchArm = function
@@ -13841,7 +13856,7 @@ module spiral_compiler =
             let block s (x : TypedBind []) = binds (indent s) x
             let layout_index i (lay : Layout) x =
                 let field = match lay with HeapMutable -> $"v{i}.borrow()" | _ -> $"v{i}"
-                x |> Array.map (fun (L(i',_)) -> $"{field}.l{i'}.clone()")
+                x |> Array.map (fun (L(i',t')) -> if is_copy t' then $"{field}.l{i'}" else $"{field}.l{i'}.clone()")
                 |> function
                     | [||] -> ()
                     | [|x|] -> simple x
@@ -13885,6 +13900,12 @@ module spiral_compiler =
                     match fl with
                     | [|TyLocalReturnData(DB,_)|] -> ()
                     | _ -> line s' "} else {"; block s' fl
+            | TyJoinPoint(JPMethod(a,c),args) when d.IsNone && (match group_loop with Some (_, members) -> members.Contains (method (a,c)).tag | None -> false) ->
+                let name = fst group_loop.Value
+                let tag = (method (a,c)).tag
+                let values = Array.map var args |> String.concat ", "
+                line s (if values = "" then $"st = {name}::M{tag};" else $"st = {name}::M{tag}({values});")
+                line s "continue;"
             | TyJoinPoint(JPMethod(a,c),args) when d.IsNone && (match self_loop with Some (tag, _) -> (method (a,c)).tag = tag | None -> false) ->
                 let parameters = snd self_loop.Value
                 match parameters with
@@ -14300,23 +14321,89 @@ module spiral_compiler =
                 | a, range, name ->
                     let a = fuseConcat a
                     method_names.[i] <- generatedMethodName name i
-                    {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
+                    let record = {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
+                    method_records.[i] <- record
+                    record
                 ) (fun s x ->
+                let group = tail_group x.tag
+                let saved_group = group_loop
+                group_loop <- None
                 line s $"fn {method_names.[x.tag]}({param_list x.free_vars}) -> {tup_ty x.range} {{"
-                live_binds outer_none x.body |> ignore
-                let saved = self_loop
-                if self_tail x.tag x.body then
-                    self_loop <- Some (x.tag, x.free_vars)
-                    line (indent s) "loop {"
-                    binds (indent (indent s)) x.body
-                    if tup_ty x.range = "()" then line (indent (indent s)) "return ();"
-                    line (indent s) "}"
+                if group.Length > 1 then
+                    let values = x.free_vars |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+                    let variant = if values = "" then $"Group{group.Head}::M{x.tag}" else $"Group{group.Head}::M{x.tag}({values})"
+                    line (indent s) $"group_{group.Head}({variant})"
+                    if emitted_groups.Add group.Head then emit_group group x.range
                 else
-                    self_loop <- None
-                    binds (indent s) x.body
-                self_loop <- saved
+                    live_binds outer_none x.body |> ignore
+                    let saved = self_loop
+                    if self_tail x.tag x.body then
+                        self_loop <- Some (x.tag, x.free_vars)
+                        line (indent s) "loop {"
+                        binds (indent (indent s)) x.body
+                        if tup_ty x.range = "()" then line (indent (indent s)) "return ();"
+                        line (indent s) "}"
+                    else
+                        self_loop <- None
+                        binds (indent s) x.body
+                    self_loop <- saved
                 line s "}"
+                group_loop <- saved_group
                 )
+        and tail_callees (body : TypedBind []) : int list =
+            match Array.tryLast body with
+            | Some (TyLocalReturnOp(_, TyJoinPoint(JPMethod(a,c),_), _)) -> [(method (a,c)).tag]
+            | Some (TyLocalReturnOp(_, TyIf(_,tr,fl), _)) -> tail_callees tr @ tail_callees fl
+            | Some (TyLocalReturnOp(_, TyUnionUnbox(_,_,on_succs,on_fail), _)) -> (on_succs |> Map.toList |> List.collect (fun (_,(_,b)) -> tail_callees b)) @ (on_fail |> Option.map tail_callees |> Option.defaultValue [])
+            | Some (TyLocalReturnOp(_, TyIntSwitch(_,on_succ,on_fail), _)) -> (on_succ |> Array.toList |> List.collect tail_callees) @ tail_callees on_fail
+            | Some (TyLocalReturnOp(_, (TyDo b | TyIndent b), _)) -> tail_callees b
+            | _ -> []
+        and tail_group (tag : int) : int list =
+            let edges = Dictionary<int, int list>()
+            let edges_of t =
+                match edges.TryGetValue t with
+                | true, e -> e
+                | _ ->
+                    let e = tail_callees method_records.[t].body
+                    edges.[t] <- e
+                    e
+            let reach (start : int) =
+                let seen = HashSet<int>()
+                let rec go t = for u in edges_of t do if seen.Add u then go u
+                go start
+                seen
+            let from_tag = reach tag
+            if not (from_tag.Contains tag) then [tag]
+            else from_tag |> Seq.filter (fun u -> u = tag || (reach u).Contains tag) |> Seq.sort |> List.ofSeq
+        and emit_group (group : int list) (range : Ty) =
+            let name = $"Group{group.Head}"
+            let g = {text=StringBuilder(); indent=0}
+            line g $"enum {name} {{"
+            for t in group do
+                let types = method_records.[t].free_vars |> Array.map (fun (L(_,ty)) -> tyv ty) |> String.concat ", "
+                line (indent g) (if types = "" then $"M{t}," else $"M{t}({types}),")
+            line g "}"
+            line g $"fn group_{group.Head}(mut st: {name}) -> {tup_ty range} {{"
+            line (indent g) "loop {"
+            line (indent (indent g)) "match st {"
+            let saved_self, saved_group = self_loop, group_loop
+            group_loop <- Some (name, HashSet<int>(group))
+            for t in group do
+                let r = method_records.[t]
+                let names = r.free_vars |> Array.map (fun (L(i,_)) -> $"mut v{i}") |> String.concat ", "
+                let arm = indent (indent (indent g))
+                line arm (if names = "" then $"{name}::M{t} => {{" else $"{name}::M{t}({names}) => {{")
+                live_binds outer_none r.body |> ignore
+                self_loop <- Some (t, r.free_vars)
+                binds (indent arm) r.body
+                if tup_ty range = "()" then line (indent arm) "return ();"
+                line arm "}"
+            self_loop <- saved_self
+            group_loop <- saved_group
+            line (indent (indent g)) "}"
+            line (indent g) "}"
+            line g "}"
+            functions.Add(g.text.ToString())
         and self_tail tag (body : TypedBind []) =
             body.Length > 0 &&
             match Array.last body with
@@ -14605,6 +14692,12 @@ module spiral_compiler =
         let headers = ResizeArray()
         let bodies = ResizeArray()
         let globals = ResizeArray()
+        let rcClass (ty : string) = ty.StartsWith "TUH" || ty.StartsWith "TMut" || ty.StartsWith "TFun"
+        let dropDecl (owned : string []) = if owned.Length = 0 then "" else " procedure DropFields; override;"
+        let dropBody (name : string) (owned : string []) =
+            if owned.Length > 0 then
+                let releases = owned |> Array.map (fun field -> $"SpiralRelease({field});") |> String.concat " "
+                bodies.Add($"procedure {name}.DropFields;\nbegin\n  {releases}\nend;")
 
         let memo (f : 'k -> int -> unit) =
             let dict = Dictionary<'k, int>(HashIdentity.Structural)
@@ -14942,7 +15035,7 @@ module spiral_compiler =
             let ps = tyvs a |> Array.mapi (fun k (L(_,t)) -> $"a{k}: {tyv t}") |> String.concat "; "
             let ps = if ps = "" then "" else $"({ps})"
             let decl = match tup_ty b with "" -> $"procedure Invoke{ps}; virtual; abstract;" | r -> $"function Invoke{ps}: {r}; virtual; abstract;"
-            types.Add($"  TFun{tag} = class\n    {decl}\n  end;"))
+            types.Add($"  TFun{tag} = class(TSpiralRc)\n    {decl}\n  end;"))
         and layout_rec (x : Ty) : LayoutRecFsharp =
             match x with
             | YLayout(x,_) ->
@@ -14968,7 +15061,9 @@ module spiral_compiler =
                     bodies.Add($"function HeapCreate{r.tag}{ps}: THeap{r.tag};\nbegin\n  {assigns}\nend;")
                 else
                     forwards.Add($"  TMut{r.tag} = class;")
-                    types.Add($"  TMut{r.tag} = class {fields} end;")
+                    let owned = r.free_vars |> Array.choose (fun (L(i,t)) -> if rcClass (tyv t) then Some $"l{i}" else None)
+                    types.Add($"  TMut{r.tag} = class(TSpiralRc) {fields}{dropDecl owned} end;")
+                    dropBody $"TMut{r.tag}" owned
                     bodies.Add($"function MutCreate{r.tag}{ps}: TMut{r.tag};\nbegin\n  Result := TMut{r.tag}.Create; {assigns}\nend;")
                 r
         and heap x : LayoutRecFsharp = layout "Heap" x
@@ -14980,7 +15075,9 @@ module spiral_compiler =
             let cases = cases |> Map.toArray |> Array.map (fun (_, t) -> env.ty_to_data t |> data_free_vars)
             if heap then forwards.Add($"  {name} = class;")
             let fields = cases |> Array.mapi (fun c vars -> vars |> Array.mapi (fun f (L(_,t)) -> $"c{c}_{f}: {tyv t};")) |> Array.concat |> String.concat " "
-            types.Add(if heap then $"  {name} = class tag: LongInt; {fields} end;" else $"  {name} = record tag: LongInt; {fields} end;")
+            let owned = cases |> Array.mapi (fun c vars -> vars |> Array.mapi (fun f (L(_,t)) -> if rcClass (tyv t) then Some $"c{c}_{f}" else None)) |> Array.concat |> Array.choose id
+            types.Add(if heap then $"  {name} = class(TSpiralRc) tag: LongInt; {fields}{dropDecl owned} end;" else $"  {name} = record tag: LongInt; {fields} end;")
+            if heap then dropBody name owned
             cases |> Array.iteri (fun c vars ->
                 let ps = vars |> Array.mapi (fun f (L(_,t)) -> $"a{f}: {tyv t}") |> String.concat "; "
                 let ps = if ps = "" then "" else $"({ps})"
@@ -14988,7 +15085,7 @@ module spiral_compiler =
                 let assigns = vars |> Array.mapi (fun f _ -> $"Result.c{c}_{f} := a{f};") |> String.concat " "
                 if heap && vars.Length = 0 then
                     let shared = $"{prefix}_{suffixes.[c]}_shared"
-                    bodies.Add($"var {shared}: {name} = nil;\nfunction {prefix}_{suffixes.[c]}: {name};\nbegin\n  if {shared} = nil then begin {shared} := {name}.Create; {shared}.tag := {c}; end;\n  Result := {shared};\nend;")
+                    bodies.Add($"var {shared}: {name} = nil;\nfunction {prefix}_{suffixes.[c]}: {name};\nbegin\n  if {shared} = nil then begin {shared} := {name}.Create; {shared}.tag := {c}; {shared}.refc := High(LongInt) div 2; end;\n  Result := {shared};\nend;")
                 else
                     bodies.Add($"function {prefix}_{suffixes.[c]}{ps}: {name};\nbegin\n  {create}Result.tag := {c}; {assigns}\nend;")))
         and uheap_memo = lazy (union_type true)
@@ -15046,10 +15143,16 @@ module spiral_compiler =
         program.AppendLine("program SpiralGenerated;").AppendLine("{$mode delphi}{$H+}").AppendLine("{$IFDEF CPUX86_64}{$OPTIMIZATION NOREGVAR}{$ENDIF}").AppendLine("{$MAXSTACKSIZE $10000000}").AppendLine("uses " + String.concat ", " ("SysUtils" :: "Math" :: units) + ";") |> ignore
         if forwards.Count > 0 || types.Count > 0 then
             program.AppendLine("type") |> ignore
+            if forwards.Count > 0 then program.AppendLine("  TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;") |> ignore
             forwards |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
             types |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
         env.globals |> Seq.filter (is_uses >> not) |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
+        if forwards.Count > 0 then
+            program
+                .AppendLine("procedure TSpiralRc.DropFields;\nbegin\nend;")
+                .AppendLine("procedure SpiralRetain(o: TSpiralRc);\nbegin\n  if o <> nil then Inc(o.refc);\nend;")
+                .AppendLine("procedure SpiralRelease(o: TSpiralRc);\nbegin\n  if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;\nend;") |> ignore
         headers |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
         bodies |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
         program.AppendLine("var SpiralOutputBuffer: array[0..65535] of Char;").AppendLine("begin").AppendLine("  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));").AppendLine("  SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);").AppendLine("  Halt(SpiralMain);").AppendLine("end.").ToString()
@@ -17705,10 +17808,9 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
             fun x -> if preserves_duplicate_fragment x || has_added.Add(x) then env.globals.Add x
 
         let externals = System.Collections.Generic.List<string>()
-        let erlangMath (name : string) (arg : string) =
-            let decl = $"@external(erlang, \"math\", \"{name}\")\npub fn spiral_math_{name}(x: Float) -> Float"
-            if not (externals.Contains decl) then externals.Add decl
-            $"spiral_math_{name}({arg})"
+        let portableMath (name : string) (arg : string) =
+            global' "import gleam_community/maths"
+            $"maths.{name}({arg})"
         let floatResultMath (name : string) (stdlib : string) (arg : string) =
             global' "import gleam/float"
             let decl = $"pub fn spiral_math_{name}(x: Float) -> Float {{\n  case float.{stdlib}(x) {{\n    Ok(value) -> value\n    Error(_) -> panic as \"spiral math: {name} outside the real domain\"\n  }}\n}}"
@@ -18196,10 +18298,10 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                 | Neg, [x] -> if dot x = "." then $"0.0 -. {tup x}" else wrapInteger x $"0 - {tup x}"
                 | Log, [x] -> floatResultMath "log" "logarithm" (tup x)
                 | Exp, [x] -> floatExponential (tup x)
-                | Tanh, [x] -> erlangMath "tanh" (tup x)
+                | Tanh, [x] -> portableMath "tanh" (tup x)
                 | Sqrt, [x] -> floatResultMath "sqrt" "square_root" (tup x)
-                | Sin, [x] -> erlangMath "sin" (tup x)
-                | Cos, [x] -> erlangMath "cos" (tup x)
+                | Sin, [x] -> portableMath "sin" (tup x)
+                | Cos, [x] -> portableMath "cos" (tup x)
                 | NanIs, [x] -> "False"
                 | UnionTag, [DV(L(i,YUnion h))] ->
                     let h = h.Item
@@ -33365,11 +33467,17 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | _ -> None
                 let changed = ResizeArray<string> ()
                 let failed = ref 0
+                let optsOutOfRespell (text : string) =
+                    text.Split '\n'
+                    |> Seq.map (fun line -> line.Trim ())
+                    |> Seq.takeWhile (fun line -> line = "" || line.StartsWith "//")
+                    |> Seq.exists (fun line -> line.StartsWith "///-" && Array.contains "--no-respell" (line.Split ' '))
                 let examine (file : string) =
                     try
                         if File.Exists file then
                             let text = File.ReadAllText(file).Replace ("\r\n", "\n")
                             match spelling with
+                            | Some _ when optsOutOfRespell text -> Ok (Some (text, text))
                             | Some target ->
                                 let lines, converted, _ = FormatterConvert.convert target (lexText file (editionOf file) text)
                                 Ok (Some (text, (if converted = 0 then text else joinLines lines)))
@@ -34913,8 +35021,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         // tokenizer and parser errors are reported here (they ride on the bundles type checking consumed).
                         // The entry file's errors always end the build: a dropped block makes callers fail with a bare
                         // `Unbound variable`, or vanishes without a word when nothing calls it (the megas' negatives
-                        // "passed" that way). When the entry doesn't define `main`, the other files of its package are
-                        // reported too (`main` may come from an opened module). Dependencies' errors don't end the build
+                        // "passed" that way). The other files of the entry's own package end it too, whether or not the
+                        // entry defines `main` (CHECK-SILENT-DROP: a broken sibling module built with exit 0). Dependencies' errors don't end the build
                         // (a library's dead block shouldn't break its users). The entry's bundle stream is complete; for
                         // the other files only the part already there is read (a file the entry doesn't reach may never
                         // be bundled).
@@ -34971,7 +35079,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                 |> Seq.iter (fun (path,((p,_),message)) -> eprintfn "warning: %s:%i:%i: %O (this block is left out of its module)" path (p.line + 1) (p.character + 1) message)
                             with _ -> ()
                         entry_errors >>=* fun entry_errors ->
-                        let entry_errors = if own_main then entry_errors else entry_errors @ package_errors
+                        let entry_errors = entry_errors @ package_errors
                         if List.isEmpty entry_errors then dependency_warnings ()
                         xCompatWarnEntry file
                         let body() =

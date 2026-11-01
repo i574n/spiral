@@ -94,6 +94,50 @@
     := value, _ = json_value_at s 0i32
     value
 
+:= json_escaped (c : string) : string =
+    ? c = "\"" ?> "\\\""
+    |? c = "\\" ?> "\\\\"
+    |? c = "\n" ?> "\\n"
+    |? c = "\r" ?> "\\r"
+    |? c = "\t" ?> "\\t"
+    |: c
+
+:~ ^ json_quoted_from (s : string) (pos : i32) (acc : string) : string =
+    ? pos >= sm'.length s ?> acc |: json_quoted_from s (pos + 1i32) (acc ++# json_escaped (char_at s pos))
+
+:= json_quoted (s : string) : string = "\"" ++# json_quoted_from s 0i32 "" ++# "\""
+
+:~ ^ json_text (value : json_value) : string =
+    ?= value ?|
+    | JsonNull => "null"
+    | JsonBool b => ? b ?> "true" |: "false"
+    | JsonNumber n => n
+    | JsonText t => json_quoted t
+    | JsonArray items => "[" ++# json_items items "" ++# "]"
+    | JsonObject members => "{" ++# json_members members "" ++# "}"
+
+:& :~ json_items (items : list json_value) (acc : string) : string =
+    ?= items ?|
+    | x :: [] => acc ++# json_text x
+    | x :: rest => json_items rest (acc ++# json_text x ++# ",")
+    | [] => acc
+
+:& :~ json_members (members : list (string * json_value)) (acc : string) : string =
+    ?= members ?|
+    | (key, x) :: [] => acc ++# json_quoted key ++# ":" ++# json_text x
+    | (key, x) :: rest => json_members rest (acc ++# json_quoted key ++# ":" ++# json_text x ++# ",")
+    | [] => acc
+
+///> rust
+test json_text_writes_what_read_json_reads_back =
+    := value =
+        JsonObject [
+            ("text", JsonText "a \"quoted\" back\\slash\nnew line"); ("number", JsonNumber "12.5")
+            ("list", JsonArray [ JsonBool !+; JsonNull; JsonArray [] ]); ("empty", JsonObject [])
+        ]
+    ? read_json (json_text value) <> value ?> failwith "json_text writes what read_json reads back"
+    ? json_text (JsonArray [ JsonNumber "1"; JsonText "x" ]) <> "[1,\"x\"]" ?> failwith "a compact array"
+
 :~ ^ member (key : string) (members : list (string * json_value)) : option json_value =
     ?= members ?|
     | (name, value) :: rest => ? name = key ?> Some value |: member key rest

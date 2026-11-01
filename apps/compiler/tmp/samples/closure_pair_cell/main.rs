@@ -18,7 +18,7 @@ fn spiral_main() -> i32 {
     let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
     let mut v3: Rc<dyn Fn(i32) -> (Rc<Heap0>, i32)> = f_c0(v1, v2);
     let (mut v4, mut v5): (Rc<Heap0>, i32) = v3(1i32);
-    let v6: i32 = v4.l0.clone();
+    let v6: i32 = v4.l0;
     let v7: i32 = v6.wrapping_add(v5);
     let v8: bool = v7 == 7i32;
     if v8 {

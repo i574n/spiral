@@ -1,0 +1,14 @@
+:~ ^ count_even (n : i32) (acc : i32) : i32 =
+    ? n =. 0i32 ?> acc
+    |: count_odd (n -. 1i32) (acc +. bump n)
+
+:& :~ count_odd (n : i32) (acc : i32) : i32 =
+    ? n =. 0i32 ?> acc
+    |: count_even (n -. 1i32) acc
+
+:& :~ bump (n : i32) : i32 =
+    ? n =. 4i32 ?> count_odd 0i32 1i32 |: 0i32
+
+:= main () : i32 =
+    := ~n = 10i32
+    count_even n 0i32 -. 1i32

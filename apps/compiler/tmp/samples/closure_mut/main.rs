@@ -12,7 +12,7 @@ fn spiral_main() -> i32 {
     let mut v1: Rc<dyn Fn(i32) -> Rc<RefCell<Mut0>>> = f_c0(v0);
     let mut v2: Rc<RefCell<Mut0>> = v1(1i32);
     v2.borrow_mut().l0 = 7i32;
-    let v3: i32 = v2.borrow().l0.clone();
+    let v3: i32 = v2.borrow().l0;
     let v4: bool = v3 == 7i32;
     if v4 {
         0i32

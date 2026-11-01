@@ -4,20 +4,32 @@ program SpiralGenerated;
 {$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
 type
+  TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
   TUH0 = class;
   TUH1 = class;
   TUH2 = class;
   TUH3 = class;
   TUS0 = record tag: LongInt;  end;
-  TUH0 = class tag: LongInt; c1_0: TUS0; c1_1: TUH0; end;
+  TUH0 = class(TSpiralRc) tag: LongInt; c1_0: TUS0; c1_1: TUH0; procedure DropFields; override; end;
   TUS1 = record tag: LongInt;  end;
-  TUH1 = class tag: LongInt; c1_0: TUS1; c1_1: TUH1; end;
-  TUH2 = class tag: LongInt; c2_0: TUS0; c3_0: TUH2; c3_1: TUH2; c4_0: TUH2; c4_1: TUH2; c5_0: TUH2; end;
+  TUH1 = class(TSpiralRc) tag: LongInt; c1_0: TUS1; c1_1: TUH1; procedure DropFields; override; end;
+  TUH2 = class(TSpiralRc) tag: LongInt; c2_0: TUS0; c3_0: TUH2; c3_1: TUH2; c4_0: TUH2; c4_1: TUH2; c5_0: TUH2; procedure DropFields; override; end;
   TUS2 = record tag: LongInt;  end;
   TUS3 = record tag: LongInt;  end;
-  TUH3 = class tag: LongInt; c2_0: TUS1; c3_0: TUH3; c3_1: TUH3; c4_0: TUH3; c4_1: TUH3; c5_0: TUH3; end;
+  TUH3 = class(TSpiralRc) tag: LongInt; c2_0: TUS1; c3_0: TUH3; c3_1: TUH3; c4_0: TUH3; c4_1: TUH3; c5_0: TUH3; procedure DropFields; override; end;
   TUS4 = record tag: LongInt; c0_0: TUH2; c0_1: TUH0; end;
   TUS5 = record tag: LongInt; c0_0: TUH2; c0_1: TUH0; c0_2: Boolean; end;
+procedure TSpiralRc.DropFields;
+begin
+end;
+procedure SpiralRetain(o: TSpiralRc);
+begin
+  if o <> nil then Inc(o.refc);
+end;
+procedure SpiralRelease(o: TSpiralRc);
+begin
+  if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
+end;
 function regex_compare_5(v0: TUH2; v1: TUH2): TUS2; forward;
 function alt_insert_sorted_4(v0: TUH2; v1: TUH2): TUH2; forward;
 function make_alt_3(v0: TUH2; v1: TUH2): TUH2; forward;
@@ -50,10 +62,14 @@ function US0_BitOne: TUS0;
 begin
   Result.tag := 1; 
 end;
+procedure TUH0.DropFields;
+begin
+  SpiralRelease(c1_1);
+end;
 var UH0_InputEmpty_shared: TUH0 = nil;
 function UH0_InputEmpty: TUH0;
 begin
-  if UH0_InputEmpty_shared = nil then begin UH0_InputEmpty_shared := TUH0.Create; UH0_InputEmpty_shared.tag := 0; end;
+  if UH0_InputEmpty_shared = nil then begin UH0_InputEmpty_shared := TUH0.Create; UH0_InputEmpty_shared.tag := 0; UH0_InputEmpty_shared.refc := High(LongInt) div 2; end;
   Result := UH0_InputEmpty_shared;
 end;
 function UH0_InputCons(a0: TUS0; a1: TUH0): TUH0;
@@ -72,26 +88,34 @@ function US1_TriC: TUS1;
 begin
   Result.tag := 2; 
 end;
+procedure TUH1.DropFields;
+begin
+  SpiralRelease(c1_1);
+end;
 var UH1_InputEmpty_shared: TUH1 = nil;
 function UH1_InputEmpty: TUH1;
 begin
-  if UH1_InputEmpty_shared = nil then begin UH1_InputEmpty_shared := TUH1.Create; UH1_InputEmpty_shared.tag := 0; end;
+  if UH1_InputEmpty_shared = nil then begin UH1_InputEmpty_shared := TUH1.Create; UH1_InputEmpty_shared.tag := 0; UH1_InputEmpty_shared.refc := High(LongInt) div 2; end;
   Result := UH1_InputEmpty_shared;
 end;
 function UH1_InputCons(a0: TUS1; a1: TUH1): TUH1;
 begin
   Result := TUH1.Create; Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1;
 end;
+procedure TUH2.DropFields;
+begin
+  SpiralRelease(c3_0); SpiralRelease(c3_1); SpiralRelease(c4_0); SpiralRelease(c4_1); SpiralRelease(c5_0);
+end;
 var UH2_RegexEmpty_shared: TUH2 = nil;
 function UH2_RegexEmpty: TUH2;
 begin
-  if UH2_RegexEmpty_shared = nil then begin UH2_RegexEmpty_shared := TUH2.Create; UH2_RegexEmpty_shared.tag := 0; end;
+  if UH2_RegexEmpty_shared = nil then begin UH2_RegexEmpty_shared := TUH2.Create; UH2_RegexEmpty_shared.tag := 0; UH2_RegexEmpty_shared.refc := High(LongInt) div 2; end;
   Result := UH2_RegexEmpty_shared;
 end;
 var UH2_RegexEpsilon_shared: TUH2 = nil;
 function UH2_RegexEpsilon: TUH2;
 begin
-  if UH2_RegexEpsilon_shared = nil then begin UH2_RegexEpsilon_shared := TUH2.Create; UH2_RegexEpsilon_shared.tag := 1; end;
+  if UH2_RegexEpsilon_shared = nil then begin UH2_RegexEpsilon_shared := TUH2.Create; UH2_RegexEpsilon_shared.tag := 1; UH2_RegexEpsilon_shared.refc := High(LongInt) div 2; end;
   Result := UH2_RegexEpsilon_shared;
 end;
 function UH2_RegexChar(a0: TUS0): TUH2;
@@ -892,16 +916,20 @@ begin
       end;
   end;
 end;
+procedure TUH3.DropFields;
+begin
+  SpiralRelease(c3_0); SpiralRelease(c3_1); SpiralRelease(c4_0); SpiralRelease(c4_1); SpiralRelease(c5_0);
+end;
 var UH3_RegexEmpty_shared: TUH3 = nil;
 function UH3_RegexEmpty: TUH3;
 begin
-  if UH3_RegexEmpty_shared = nil then begin UH3_RegexEmpty_shared := TUH3.Create; UH3_RegexEmpty_shared.tag := 0; end;
+  if UH3_RegexEmpty_shared = nil then begin UH3_RegexEmpty_shared := TUH3.Create; UH3_RegexEmpty_shared.tag := 0; UH3_RegexEmpty_shared.refc := High(LongInt) div 2; end;
   Result := UH3_RegexEmpty_shared;
 end;
 var UH3_RegexEpsilon_shared: TUH3 = nil;
 function UH3_RegexEpsilon: TUH3;
 begin
-  if UH3_RegexEpsilon_shared = nil then begin UH3_RegexEpsilon_shared := TUH3.Create; UH3_RegexEpsilon_shared.tag := 1; end;
+  if UH3_RegexEpsilon_shared = nil then begin UH3_RegexEpsilon_shared := TUH3.Create; UH3_RegexEpsilon_shared.tag := 1; UH3_RegexEpsilon_shared.refc := High(LongInt) div 2; end;
   Result := UH3_RegexEpsilon_shared;
 end;
 function UH3_RegexChar(a0: TUS1): TUH3;

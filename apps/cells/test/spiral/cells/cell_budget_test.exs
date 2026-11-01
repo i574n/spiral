@@ -60,6 +60,12 @@ defmodule Spiral.Cells.CellBudgetTest do
     dir = Spiral.Cells.TestHelpers.tmp_dir!("cell_budget_over_budget")
     File.write!(Path.join(dir, "short.spi"), "inl a = 1\n")
     File.mkdir_p!(Path.join(dir, "target"))
+    linked = Path.join(dir, "linked")
+
+    case File.ln_s(dir, linked) do
+      :ok -> assert {:ok, %{type: :symlink}} = File.lstat(linked)
+      {:error, _} -> :ok
+    end
     File.write!(Path.join(dir, "target/long.spi"), long)
     Mix.shell(Mix.Shell.Process)
 

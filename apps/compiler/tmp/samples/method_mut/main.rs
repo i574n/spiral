@@ -9,7 +9,7 @@ fn spiral_main() -> i32 {
     let v0: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: 1i32 }));
     let mut v1: Rc<RefCell<Mut0>> = method0(v0);
     v1.borrow_mut().l0 = 7i32;
-    let v2: i32 = v1.borrow().l0.clone();
+    let v2: i32 = v1.borrow().l0;
     let v3: bool = v2 == 7i32;
     if v3 {
         0i32

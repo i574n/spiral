@@ -4,16 +4,32 @@ program SpiralGenerated;
 {$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
 type
+  TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
   TUH0 = class;
   TFun0 = class;
-  TFun0 = class
+  TFun0 = class(TSpiralRc)
     function Invoke: TUH0; virtual; abstract;
   end;
-  TUH0 = class tag: LongInt; c0_0: QWord; c0_1: TFun0; end;
+  TUH0 = class(TSpiralRc) tag: LongInt; c0_0: QWord; c0_1: TFun0; procedure DropFields; override; end;
   Tclosure0 = class(TFun0) v0: QWord; function Invoke: TUH0; override; end;
+procedure TSpiralRc.DropFields;
+begin
+end;
+procedure SpiralRetain(o: TSpiralRc);
+begin
+  if o <> nil then Inc(o.refc);
+end;
+procedure SpiralRelease(o: TSpiralRc);
+begin
+  if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
+end;
 function ClosureCreate0(v0: QWord): TFun0; forward;
 function build_0(v0: QWord): TUH0; forward;
 function sum_1(v0: TUH0; v1: QWord): QWord; forward;
+procedure TUH0.DropFields;
+begin
+  SpiralRelease(c0_1);
+end;
 function UH0_Cons(a0: QWord; a1: TFun0): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 0; Result.c0_0 := a0; Result.c0_1 := a1;
@@ -21,7 +37,7 @@ end;
 var UH0_Nil_shared: TUH0 = nil;
 function UH0_Nil: TUH0;
 begin
-  if UH0_Nil_shared = nil then begin UH0_Nil_shared := TUH0.Create; UH0_Nil_shared.tag := 1; end;
+  if UH0_Nil_shared = nil then begin UH0_Nil_shared := TUH0.Create; UH0_Nil_shared.tag := 1; UH0_Nil_shared.refc := High(LongInt) div 2; end;
   Result := UH0_Nil_shared;
 end;
 function Tclosure0.Invoke: TUH0;

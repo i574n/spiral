@@ -27,17 +27,24 @@ defmodule Mix.Tasks.Spiral.CellBudget do
   defp sources(path) do
     cond do
       File.dir?(path) ->
-        root = String.replace(path, "\\", "/")
-
-        root
-        |> Path.join("**/*")
-        |> Path.wildcard()
-        |> Enum.filter(&(Path.extname(&1) in @extensions))
-        |> Enum.reject(&(&1 |> Path.relative_to(root) |> Path.split() |> Enum.any?(fn part -> part in @skipped end)))
-        |> Enum.sort()
+        path |> String.replace("\\", "/") |> walk() |> Enum.sort()
 
       File.regular?(path) -> [path]
       true -> []
     end
+  end
+
+  defp walk(dir) do
+    dir
+    |> File.ls!()
+    |> Enum.flat_map(fn name ->
+      full = Path.join(dir, name)
+
+      case File.lstat(full) do
+        {:ok, %{type: :directory}} -> if name in @skipped, do: [], else: walk(full)
+        {:ok, %{type: :regular}} -> if Path.extname(name) in @extensions, do: [full], else: []
+        _ -> []
+      end
+    end)
   end
 end

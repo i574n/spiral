@@ -4,8 +4,8 @@ use std::rc::Rc;
 struct Heap0 { l0: i32, l1: i32 }
 fn spiral_main() -> i32 {
     let v0: Rc<Heap0> = Rc::new(Heap0 { l0: 9i32, l1: 10i32 });
-    let v1: i32 = v0.l0.clone();
-    let v2: i32 = v0.l1.clone();
+    let v1: i32 = v0.l0;
+    let v2: i32 = v0.l1;
     let v3: i32 = v1.wrapping_add(v2);
     v3
 }

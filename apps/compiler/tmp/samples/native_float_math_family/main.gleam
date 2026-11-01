@@ -1,19 +1,11 @@
 import gleam/float
+import gleam_community/maths
 pub fn spiral_math_log(x: Float) -> Float {
   case float.logarithm(x) {
     Ok(value) -> value
     Error(_) -> panic as "spiral math: log outside the real domain"
   }
 }
-
-@external(erlang, "math", "tanh")
-pub fn spiral_math_tanh(x: Float) -> Float
-
-@external(erlang, "math", "sin")
-pub fn spiral_math_sin(x: Float) -> Float
-
-@external(erlang, "math", "cos")
-pub fn spiral_math_cos(x: Float) -> Float
 
 pub fn main() {
     let v0 = 0.0
@@ -52,7 +44,7 @@ pub fn main() {
     let v17 =
         case v14 {
             True -> {
-                let v15 = spiral_math_tanh(v0)
+                let v15 = maths.tanh(v0)
                 let v16 = v15 == v0
                 v16
             }
@@ -61,7 +53,7 @@ pub fn main() {
     let v20 =
         case v17 {
             True -> {
-                let v18 = spiral_math_tanh(v2)
+                let v18 = maths.tanh(v2)
                 let v19 = v18 == v2
                 v19
             }
@@ -70,7 +62,7 @@ pub fn main() {
     let v23 =
         case v20 {
             True -> {
-                let v21 = spiral_math_sin(v0)
+                let v21 = maths.sin(v0)
                 let v22 = v21 == v0
                 v22
             }
@@ -79,7 +71,7 @@ pub fn main() {
     let v26 =
         case v23 {
             True -> {
-                let v24 = spiral_math_sin(v2)
+                let v24 = maths.sin(v2)
                 let v25 = v24 == v2
                 v25
             }
@@ -88,7 +80,7 @@ pub fn main() {
     let v29 =
         case v26 {
             True -> {
-                let v27 = spiral_math_cos(v0)
+                let v27 = maths.cos(v0)
                 let v28 = v27 == v1
                 v28
             }
@@ -97,7 +89,7 @@ pub fn main() {
     let v32 =
         case v29 {
             True -> {
-                let v30 = spiral_math_cos(v2)
+                let v30 = maths.cos(v2)
                 let v31 = v30 == v3
                 v31
             }

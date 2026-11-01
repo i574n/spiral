@@ -4,19 +4,35 @@ program SpiralGenerated;
 {$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
 type
+  TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
   TUH0 = class;
-  TUH0 = class tag: LongInt; c2_0: LongInt; c2_1: TUH0; c2_2: TUH0; end;
+  TUH0 = class(TSpiralRc) tag: LongInt; c2_0: LongInt; c2_1: TUH0; c2_2: TUH0; procedure DropFields; override; end;
+procedure TSpiralRc.DropFields;
+begin
+end;
+procedure SpiralRetain(o: TSpiralRc);
+begin
+  if o <> nil then Inc(o.refc);
+end;
+procedure SpiralRelease(o: TSpiralRc);
+begin
+  if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
+end;
 function sum_0(v0: TUH0): LongInt; forward;
+procedure TUH0.DropFields;
+begin
+  SpiralRelease(c2_1); SpiralRelease(c2_2);
+end;
 var UH0_Leaf_shared: TUH0 = nil;
 function UH0_Leaf: TUH0;
 begin
-  if UH0_Leaf_shared = nil then begin UH0_Leaf_shared := TUH0.Create; UH0_Leaf_shared.tag := 0; end;
+  if UH0_Leaf_shared = nil then begin UH0_Leaf_shared := TUH0.Create; UH0_Leaf_shared.tag := 0; UH0_Leaf_shared.refc := High(LongInt) div 2; end;
   Result := UH0_Leaf_shared;
 end;
 var UH0_Marker_shared: TUH0 = nil;
 function UH0_Marker: TUH0;
 begin
-  if UH0_Marker_shared = nil then begin UH0_Marker_shared := TUH0.Create; UH0_Marker_shared.tag := 1; end;
+  if UH0_Marker_shared = nil then begin UH0_Marker_shared := TUH0.Create; UH0_Marker_shared.tag := 1; UH0_Marker_shared.refc := High(LongInt) div 2; end;
   Result := UH0_Marker_shared;
 end;
 function UH0_Node(a0: LongInt; a1: TUH0; a2: TUH0): TUH0;

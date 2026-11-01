@@ -350,6 +350,7 @@ defmodule Spiral.Cells.Targets do
     {"gleam_otp", ">=1.3.0 and <2.0.0"},
     {"envoy", ">=1.2.0 and <2.0.0"},
     {"gary", ">=1.1.0 and <2.0.0"},
+    {"gleam_community_maths", ">=2.0.2 and <3.0.0"},
     {"gtempo", ">=7.4.0 and <8.0.0"}
   ]
 

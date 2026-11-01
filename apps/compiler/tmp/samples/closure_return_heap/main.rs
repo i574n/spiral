@@ -4,7 +4,7 @@ use std::rc::Rc;
 struct Heap0 { l0: i32 }
 fn g_c1(mut v0: Rc<Heap0>, mut v1: i32) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v2: i32| -> i32 {
-        let mut v3: i32 = v0.l0.clone();
+        let mut v3: i32 = v0.l0;
         let v4: bool = v1 == 0i32;
         if v4 {
             0i32

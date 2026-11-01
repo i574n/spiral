@@ -341,7 +341,9 @@ test convert static =
                     inl ok : bool = $'(if (std.fmt.parseInt(i64, std.mem.trim(u8, !x, " \\t\\r\\n"), 10)) |_| true \
                         else |_| false)'
                     parsed_integer ok ($'(std.fmt.parseInt(i64, std.mem.trim(u8, !x, " \\t\\r\\n"), 10) catch 0)' : i64)
-                |: x |> to |> Some : _ u
+                |? (~> ?: t ?| unativeint => !+ | _ => !-) || (~> ?: u ?| unativeint => !+ | _ => !-) ?>
+                    Some ($'@@intCast(!x)' : u)
+                |: x |> numeric_conv |> Some : _ u
             Lean = \ () =>
                 ? is_string_type x ?>
                     lean_parse_helpers ()
@@ -414,6 +416,13 @@ test try_convert_reads_narrow_integers_natively =
     := a, b, c = (try_convert small : option i32), (try_convert negative : option i32), (try_convert wide : option i32)
     := d, e = (try_convert fraction : option i32), (try_convert byte : option u8)
     (a, b, c, d, e) |> _assert_eq (Some 3i32, Some (0i32 - 12i32), None, None, None)
+
+///> zig
+///> rust
+test unativeint_round_trip_casts_on_native_backends =
+    := n : unativeint = 3i32 |> try_convert |> optionm.value
+    := back : i32 = n |> try_convert |> optionm.value
+    back |> _assert_eq 3i32
 
 := convert \* t u. (x : t) : u =
     x |> try_convert |> optionm.value

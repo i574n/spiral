@@ -5,15 +5,15 @@
     := ~c = Cell n
     ?= c ?|
     | Cell m =>
-        ? m = 0i32 ?> !+
-        |: is_odd (m - 1i32)
+        ? m =. 0i32 ?> !+
+        |: is_odd (m -. 1i32)
 
 :& :~ is_odd (n : i32) : bool =
     := ~c = Cell n
     ?= c ?|
     | Cell m =>
-        ? m = 0i32 ?> !-
-        |: is_even (m - 1i32)
+        ? m =. 0i32 ?> !-
+        |: is_even (m -. 1i32)
 
 := main () : i32 =
     := ~n = 1000i32

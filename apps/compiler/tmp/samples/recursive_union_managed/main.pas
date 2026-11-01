@@ -4,14 +4,30 @@ program SpiralGenerated;
 {$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
 type
+  TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
   TUH0 = class;
   TArray0 = array of LongInt;
-  TUH0 = class tag: LongInt; c1_0: TArray0; c1_1: TUH0; end;
+  TUH0 = class(TSpiralRc) tag: LongInt; c1_0: TArray0; c1_1: TUH0; procedure DropFields; override; end;
+procedure TSpiralRc.DropFields;
+begin
+end;
+procedure SpiralRetain(o: TSpiralRc);
+begin
+  if o <> nil then Inc(o.refc);
+end;
+procedure SpiralRelease(o: TSpiralRc);
+begin
+  if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
+end;
 function sum_0(v0: TUH0): LongInt; forward;
+procedure TUH0.DropFields;
+begin
+  SpiralRelease(c1_1);
+end;
 var UH0_Nil_shared: TUH0 = nil;
 function UH0_Nil: TUH0;
 begin
-  if UH0_Nil_shared = nil then begin UH0_Nil_shared := TUH0.Create; UH0_Nil_shared.tag := 0; end;
+  if UH0_Nil_shared = nil then begin UH0_Nil_shared := TUH0.Create; UH0_Nil_shared.tag := 0; UH0_Nil_shared.refc := High(LongInt) div 2; end;
   Result := UH0_Nil_shared;
 end;
 function UH0_Cons(a0: TArray0; a1: TUH0): TUH0;

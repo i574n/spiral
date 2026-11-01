@@ -18,9 +18,9 @@ fn score_0(mut v0: US0) -> i32 {
             let v1: Rc<Heap0> = v1.clone();
             let v2: Rc<Heap0> = v2.clone();
             let v3: Rc<Heap0> = v3.clone();
-            let (mut v4, mut v5): (i32, Rc<str>) = (v1.l0.clone(), v1.l1.clone());
-            let (mut v6, mut v7): (i32, Rc<str>) = (v2.l0.clone(), v2.l1.clone());
-            let (mut v8, mut v9): (i32, Rc<str>) = (v3.l0.clone(), v3.l1.clone());
+            let (mut v4, mut v5): (i32, Rc<str>) = (v1.l0, v1.l1.clone());
+            let (mut v6, mut v7): (i32, Rc<str>) = (v2.l0, v2.l1.clone());
+            let (mut v8, mut v9): (i32, Rc<str>) = (v3.l0, v3.l1.clone());
             let v10: bool = v4 == 7i32;
             let v12: bool = if v10 {
                 let v11: bool = &*v5 == "hi";

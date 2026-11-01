@@ -4,6 +4,7 @@ program SpiralGenerated;
 {$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
 type
+  TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
   TFun0 = class;
   THeap0 = record l0: LongInt; l1: AnsiString; end;
   THeap1 = record l0: THeap0; l1: THeap0; end;
@@ -11,11 +12,22 @@ type
   TUS0 = record tag: LongInt; c1_0: THeap2; end;
   THeap3 = record l0: TUS0; end;
   TUS1 = record tag: LongInt; c1_0: THeap3; c2_0: LongInt; end;
-  TFun0 = class
+  TFun0 = class(TSpiralRc)
     function Invoke(a0: LongInt): TUS1; virtual; abstract;
   end;
   Tf_c0 = class(TFun0) v0: TUS1; v1: LongInt; function Invoke(v2: LongInt): TUS1; override; end;
   TArray0 = array of TUS1;
+procedure TSpiralRc.DropFields;
+begin
+end;
+procedure SpiralRetain(o: TSpiralRc);
+begin
+  if o <> nil then Inc(o.refc);
+end;
+procedure SpiralRelease(o: TSpiralRc);
+begin
+  if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
+end;
 function ClosureCreate0(v0: TUS1; v1: LongInt): TFun0; forward;
 function score_0(v0: TUS1): LongInt; forward;
 function HeapCreate0(a0: LongInt; a1: AnsiString): THeap0;

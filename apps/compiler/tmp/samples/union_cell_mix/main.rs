@@ -12,7 +12,7 @@ fn score_0(mut v0: US0) -> i32 {
         US0::US0_Held(v1, v2) => {
             let v1: Rc<Heap0> = v1.clone();
             let v2: i32 = *v2;
-            let v3: i32 = v1.l0.clone();
+            let v3: i32 = v1.l0;
             let v4: i32 = v3.wrapping_add(v2);
             let v5: bool = v4 == 7i32;
             if v5 {

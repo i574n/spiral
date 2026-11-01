@@ -13,9 +13,9 @@ fn score_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_Held(v1) => {
             let v1: Rc<Heap2> = v1.clone();
-            let (mut v2, mut v3): (Rc<Heap1>, i32) = (v1.l0.clone(), v1.l1.clone());
-            let (mut v4, mut v5): (Rc<Heap0>, i32) = (v2.l0.clone(), v2.l1.clone());
-            let (mut v6, mut v7): (i32, Rc<str>) = (v4.l0.clone(), v4.l1.clone());
+            let (mut v2, mut v3): (Rc<Heap1>, i32) = (v1.l0.clone(), v1.l1);
+            let (mut v4, mut v5): (Rc<Heap0>, i32) = (v2.l0.clone(), v2.l1);
+            let (mut v6, mut v7): (i32, Rc<str>) = (v4.l0, v4.l1.clone());
             let v8: bool = v6 == 7i32;
             let v10: bool = if v8 {
                 let v9: bool = &*v7 == "hi";

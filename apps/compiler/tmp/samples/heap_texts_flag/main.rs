@@ -8,7 +8,7 @@ fn spiral_main() -> i32 {
     v0.clone().borrow_mut()[0i32 as usize] = v1;
     let v2: bool = true;
     let v3: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v2 });
-    let (mut v4, mut v5): (Rc<RefCell<Vec<Rc<str>>>>, bool) = (v3.l0.clone(), v3.l1.clone());
+    let (mut v4, mut v5): (Rc<RefCell<Vec<Rc<str>>>>, bool) = (v3.l0.clone(), v3.l1);
     let v6: Rc<str> = v4.borrow()[0i32 as usize].clone();
     let v7: bool = &*v6 == "hi";
     let v8: bool = v7 && v5;

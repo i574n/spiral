@@ -16,16 +16,16 @@
 := (=.) \* t. (a : t) (b : t) : bool =
     !!!!EQ(a, b)
 
-:= (<) \* t {number}. (a : t) (b : t) : bool =
+:= (<) \* t {ord}. (a : t) (b : t) : bool =
     !!!!LT(a, b)
 
-:= (<=) \* t {number}. (a : t) (b : t) : bool =
+:= (<=) \* t {ord}. (a : t) (b : t) : bool =
     !!!!LTE(a, b)
 
-:= (>) \* t {number}. (a : t) (b : t) : bool =
+:= (>) \* t {ord}. (a : t) (b : t) : bool =
     !!!!GT(a, b)
 
-:= (>=) \* t {number}. (a : t) (b : t) : bool =
+:= (>=) \* t {ord}. (a : t) (b : t) : bool =
     !!!!GTE(a, b)
 
 :! array t = array_base t

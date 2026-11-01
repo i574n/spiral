@@ -9,7 +9,7 @@ fn spiral_main() -> i32 {
     let v0: i32 = 7i32;
     let v1: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
     let v2: Rc<Heap0> = method0(v1);
-    let v3: i32 = v2.l0.clone();
+    let v3: i32 = v2.l0;
     let v4: bool = v3 == 7i32;
     if v4 {
         0i32

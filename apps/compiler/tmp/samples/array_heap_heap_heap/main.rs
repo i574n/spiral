@@ -30,9 +30,9 @@ fn spiral_main() -> i32 {
     let v7: Rc<RefCell<Vec<Rc<Heap2>>>> = Rc::new(RefCell::new(vec![<Rc<Heap2>>::default(); 1i32 as usize]));
     v7.clone().borrow_mut()[0i32 as usize] = v6;
     let v8: Rc<Heap2> = v7.borrow()[0i32 as usize].clone();
-    let (mut v9, mut v10): (Rc<Heap1>, i32) = (v8.l0.clone(), v8.l1.clone());
-    let (mut v11, mut v12): (Rc<Heap0>, i32) = (v9.l0.clone(), v9.l1.clone());
-    let (mut v13, mut v14): (i32, Rc<str>) = (v11.l0.clone(), v11.l1.clone());
+    let (mut v9, mut v10): (Rc<Heap1>, i32) = (v8.l0.clone(), v8.l1);
+    let (mut v11, mut v12): (Rc<Heap0>, i32) = (v9.l0.clone(), v9.l1);
+    let (mut v13, mut v14): (i32, Rc<str>) = (v11.l0, v11.l1.clone());
     let v15: bool = v13 == 7i32;
     let v17: bool = if v15 {
         let v16: bool = &*v14 == "hi";

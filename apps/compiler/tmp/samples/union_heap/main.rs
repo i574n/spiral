@@ -19,7 +19,7 @@ fn spiral_main() -> i32 {
     match &v5 {
         US0::US0_Box(v6) => {
             let v6: Rc<Heap0> = v6.clone();
-            let v7: i32 = v6.l0.clone();
+            let v7: i32 = v6.l0;
             let v8: bool = v7 == 7i32;
             if v8 {
                 0i32

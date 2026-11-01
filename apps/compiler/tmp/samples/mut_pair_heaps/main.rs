@@ -20,8 +20,8 @@ fn spiral_main() -> i32 {
     v6.borrow_mut().l0 = v9;
     v6.borrow_mut().l1 = v12;
     let (mut v13, mut v14): (Rc<Heap0>, Rc<Heap0>) = (v6.borrow().l0.clone(), v6.borrow().l1.clone());
-    let (mut v15, mut v16): (i32, Rc<str>) = (v13.l0.clone(), v13.l1.clone());
-    let (mut v17, mut v18): (i32, Rc<str>) = (v14.l0.clone(), v14.l1.clone());
+    let (mut v15, mut v16): (i32, Rc<str>) = (v13.l0, v13.l1.clone());
+    let (mut v17, mut v18): (i32, Rc<str>) = (v14.l0, v14.l1.clone());
     let v19: bool = v15 == 7i32;
     let v21: bool = if v19 {
         let v20: bool = &*v16 == "hi";

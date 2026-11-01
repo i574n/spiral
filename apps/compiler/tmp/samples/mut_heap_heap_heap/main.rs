@@ -23,9 +23,9 @@ fn spiral_main() -> i32 {
     let v14: Rc<Heap2> = Rc::new(Heap2 { l0: v12, l1: v13 });
     v7.borrow_mut().l0 = v14;
     let v15: Rc<Heap2> = v7.borrow().l0.clone();
-    let (mut v16, mut v17): (Rc<Heap1>, i32) = (v15.l0.clone(), v15.l1.clone());
-    let (mut v18, mut v19): (Rc<Heap0>, i32) = (v16.l0.clone(), v16.l1.clone());
-    let (mut v20, mut v21): (i32, Rc<str>) = (v18.l0.clone(), v18.l1.clone());
+    let (mut v16, mut v17): (Rc<Heap1>, i32) = (v15.l0.clone(), v15.l1);
+    let (mut v18, mut v19): (Rc<Heap0>, i32) = (v16.l0.clone(), v16.l1);
+    let (mut v20, mut v21): (i32, Rc<str>) = (v18.l0, v18.l1.clone());
     let v22: bool = v20 == 7i32;
     let v24: bool = if v22 {
         let v23: bool = &*v21 == "hi";

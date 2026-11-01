@@ -22,7 +22,7 @@ fn spiral_main() -> i32 {
         }
         US0::US0_Some(v5) => {
             let v5: i32 = *v5;
-            let v6: i32 = v4.l0.clone();
+            let v6: i32 = v4.l0;
             let v7: i32 = v5.wrapping_add(v6);
             let v8: bool = v7 == 7i32;
             if v8 {

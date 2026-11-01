@@ -4,15 +4,27 @@ program SpiralGenerated;
 {$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
 type
+  TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
   TMut0 = class;
   TMut1 = class;
   TUH0 = class;
   TMut2 = class;
   TArray0 = array of LongInt;
-  TMut0 = class l0: LongInt; end;
-  TMut1 = class l0: LongInt; end;
-  TUH0 = class tag: LongInt; c1_0: LongInt; c1_1: TUH0; end;
-  TMut2 = class l0: TUH0; end;
+  TMut0 = class(TSpiralRc) l0: LongInt; end;
+  TMut1 = class(TSpiralRc) l0: LongInt; end;
+  TUH0 = class(TSpiralRc) tag: LongInt; c1_0: LongInt; c1_1: TUH0; procedure DropFields; override; end;
+  TMut2 = class(TSpiralRc) l0: TUH0; procedure DropFields; override; end;
+procedure TSpiralRc.DropFields;
+begin
+end;
+procedure SpiralRetain(o: TSpiralRc);
+begin
+  if o <> nil then Inc(o.refc);
+end;
+procedure SpiralRelease(o: TSpiralRc);
+begin
+  if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
+end;
 function method0(v0: TMut0): Boolean; forward;
 function method1(v0: TMut1): Boolean; forward;
 function MutCreate0(a0: LongInt): TMut0;
@@ -32,15 +44,23 @@ function MutCreate1(a0: LongInt): TMut1;
 begin
   Result := TMut1.Create; Result.l0 := a0;
 end;
+procedure TUH0.DropFields;
+begin
+  SpiralRelease(c1_1);
+end;
 var UH0_Nil_shared: TUH0 = nil;
 function UH0_Nil: TUH0;
 begin
-  if UH0_Nil_shared = nil then begin UH0_Nil_shared := TUH0.Create; UH0_Nil_shared.tag := 0; end;
+  if UH0_Nil_shared = nil then begin UH0_Nil_shared := TUH0.Create; UH0_Nil_shared.tag := 0; UH0_Nil_shared.refc := High(LongInt) div 2; end;
   Result := UH0_Nil_shared;
 end;
 function UH0_Cons(a0: LongInt; a1: TUH0): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1;
+end;
+procedure TMut2.DropFields;
+begin
+  SpiralRelease(l0);
 end;
 function MutCreate2(a0: TUH0): TMut2;
 begin

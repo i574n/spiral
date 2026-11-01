@@ -4,8 +4,20 @@ program SpiralGenerated;
 {$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
 type
+  TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
   TMut0 = class;
-  TMut0 = class l0: LongInt; end;
+  TMut0 = class(TSpiralRc) l0: LongInt; end;
+procedure TSpiralRc.DropFields;
+begin
+end;
+procedure SpiralRetain(o: TSpiralRc);
+begin
+  if o <> nil then Inc(o.refc);
+end;
+procedure SpiralRelease(o: TSpiralRc);
+begin
+  if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
+end;
 function method0(v0: TMut0): TMut0; forward;
 function MutCreate0(a0: LongInt): TMut0;
 begin

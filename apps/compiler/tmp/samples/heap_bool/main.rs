@@ -5,7 +5,7 @@ struct Heap0 { l0: bool }
 fn spiral_main() -> i32 {
     let v0: bool = true;
     let v1: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
-    let v2: bool = v1.l0.clone();
+    let v2: bool = v1.l0;
     if v2 {
         0i32
     } else {

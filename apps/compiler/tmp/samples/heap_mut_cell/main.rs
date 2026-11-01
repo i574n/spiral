@@ -13,7 +13,7 @@ fn spiral_main() -> i32 {
     let v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
     v4.borrow_mut().l0 = v5;
     v4.borrow_mut().l1 = v6;
-    let (mut v7, mut v8): (i32, Rc<str>) = (v4.borrow().l0.clone(), v4.borrow().l1.clone());
+    let (mut v7, mut v8): (i32, Rc<str>) = (v4.borrow().l0, v4.borrow().l1.clone());
     let v9: bool = v7 == 7i32;
     let v11: bool = if v9 {
         let v10: bool = &*v8 == "hi";

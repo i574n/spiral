@@ -1158,7 +1158,8 @@ defmodule Spiral.Cells.CompilerDaemon do
       "DOTNET_CLI_TELEMETRY_OPTOUT" => "1",
       "SPIRAL_WORKSPACE_ROOT" => Toolchain.workspace(opts),
       "SPIRAL_COMPILER_PACKAGE_DIR" => Toolchain.package_dir(opts),
-      "SPIRAL_ATTENTION_SERVER" => "0"
+      "SPIRAL_ATTENTION_SERVER" => "0",
+      "SPIRAL_SERVER_PARENT_PID" => System.pid()
     })
     |> Enum.map(fn {key, value} ->
       {String.to_charlist(key), String.to_charlist(to_string(value))}

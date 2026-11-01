@@ -8,7 +8,7 @@ fn spiral_main() -> i32 {
     let v1: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
     let v2: Rc<Heap1> = Rc::new(Heap1 { l0: v1 });
     let v3: Rc<Heap0> = v2.l0.clone();
-    let v4: i32 = v3.l0.clone();
+    let v4: i32 = v3.l0;
     let v5: bool = v4 == 7i32;
     if v5 {
         0i32

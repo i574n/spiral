@@ -4,11 +4,23 @@ program SpiralGenerated;
 {$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
 type
+  TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
   TMut2 = class;
   THeap0 = record l0: LongInt; l1: AnsiString; end;
   THeap1 = record l0: THeap0; l1: LongInt; end;
-  TMut2 = class l0: THeap1; end;
+  TMut2 = class(TSpiralRc) l0: THeap1; end;
   TArray0 = array of TMut2;
+procedure TSpiralRc.DropFields;
+begin
+end;
+procedure SpiralRetain(o: TSpiralRc);
+begin
+  if o <> nil then Inc(o.refc);
+end;
+procedure SpiralRelease(o: TSpiralRc);
+begin
+  if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
+end;
 function HeapCreate0(a0: LongInt; a1: AnsiString): THeap0;
 begin
   Result.l0 := a0; Result.l1 := a1;

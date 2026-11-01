@@ -280,12 +280,12 @@ defmodule Spiral.Cells.TargetsTest do
     assert {:error, %ProcessError{reason: :tool_missing}} = Targets.run(%{tool: :wgsl}, shader.(0), [wgsl_run: missing, naga: nil], 30_000, deadline())
   end
   test "an erlang gleam target is run by Cells in its own package with the CLI's dependencies" do
-    [builder] = Spiral.Cells.Builders.commands("///> gleam -d gleam_community_maths=\\\">=2.0.0\\\"")
-    assert {:gleam, "x/gleam/src/main.gleam", [%{name: "gleam_community_maths"}]} = Spiral.Cells.Builders.dispatch(builder, "x/gleam/src/main.gleam")
+    [builder] = Spiral.Cells.Builders.commands("///> gleam -d gleam_json=\\\">=3.0.0\\\"")
+    assert {:gleam, "x/gleam/src/main.gleam", [%{name: "gleam_json"}]} = Spiral.Cells.Builders.dispatch(builder, "x/gleam/src/main.gleam")
     manifest = Targets.gleam_manifest("x/gleam/src/main.gleam", builder.deps)
     assert manifest =~ ~s(name = "main"\ntarget = "erlang")
     assert manifest =~ ~s(gleam_stdlib = ">=1.0.5 and <2.0.0")
-    assert manifest =~ ~s(gleam_community_maths = ">=2.0.0")
+    assert manifest =~ ~s(gleam_json = ">=3.0.0")
     [js] = Spiral.Cells.Builders.commands("///> gleam -t javascript")
     assert {:spiral, _} = Spiral.Cells.Builders.dispatch(js, "main.gleam")
   end
@@ -295,7 +295,7 @@ defmodule Spiral.Cells.TargetsTest do
     plain = Targets.gleam_manifest("x/gleam/src/main.gleam", [])
     assert lock.(plain) == lock.(Targets.gleam_manifest("y/gleam_real/src/main_real.gleam", []))
     refute lock.(plain) == lock.(Targets.gleam_manifest("x/gleam/src/main.gleam", [], "javascript"))
-    refute lock.(plain) == lock.(Targets.gleam_manifest("x/gleam/src/main.gleam", [%{name: "gleam_community_maths", version: ">=2.0.0"}]))
+    refute lock.(plain) == lock.(Targets.gleam_manifest("x/gleam/src/main.gleam", [%{name: "gleam_json", version: ">=3.0.0"}]))
     assert String.starts_with?(lock.(plain), "cache/cells-gleam-locks/")
   end
   if System.find_executable("gleam") do

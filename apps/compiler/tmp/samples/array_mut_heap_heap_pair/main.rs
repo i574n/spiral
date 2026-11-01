@@ -50,10 +50,10 @@ fn spiral_main() -> i32 {
     let mut v20: Rc<RefCell<Mut0>> = v10.borrow()[0i32 as usize].clone();
     v20.borrow_mut().l0 = v19;
     let v21: Rc<Heap2> = v20.borrow().l0.clone();
-    let (mut v22, mut v23): (Rc<Heap1>, i32) = (v21.l0.clone(), v21.l1.clone());
+    let (mut v22, mut v23): (Rc<Heap1>, i32) = (v21.l0.clone(), v21.l1);
     let (mut v24, mut v25): (Rc<Heap0>, Rc<Heap0>) = (v22.l0.clone(), v22.l1.clone());
-    let (mut v26, mut v27): (i32, Rc<str>) = (v24.l0.clone(), v24.l1.clone());
-    let (mut v28, mut v29): (i32, Rc<str>) = (v25.l0.clone(), v25.l1.clone());
+    let (mut v26, mut v27): (i32, Rc<str>) = (v24.l0, v24.l1.clone());
+    let (mut v28, mut v29): (i32, Rc<str>) = (v25.l0, v25.l1.clone());
     let v30: bool = v26 == 7i32;
     let v32: bool = if v30 {
         let v31: bool = &*v27 == "hi";

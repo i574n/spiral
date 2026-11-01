@@ -4,10 +4,26 @@ program SpiralGenerated;
 {$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
 type
+  TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
   TUH0 = class;
   TUH1 = class;
-  TUH1 = class tag: LongInt; c0_0: TUH0; end;
-  TUH0 = class tag: LongInt; c0_0: TUH1; end;
+  TUH1 = class(TSpiralRc) tag: LongInt; c0_0: TUH0; procedure DropFields; override; end;
+  TUH0 = class(TSpiralRc) tag: LongInt; c0_0: TUH1; procedure DropFields; override; end;
+procedure TSpiralRc.DropFields;
+begin
+end;
+procedure SpiralRetain(o: TSpiralRc);
+begin
+  if o <> nil then Inc(o.refc);
+end;
+procedure SpiralRelease(o: TSpiralRc);
+begin
+  if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
+end;
+procedure TUH1.DropFields;
+begin
+  SpiralRelease(c0_0);
+end;
 function UH1_B(a0: TUH0): TUH1;
 begin
   Result := TUH1.Create; Result.tag := 0; Result.c0_0 := a0;
@@ -15,8 +31,12 @@ end;
 var UH1_StopB_shared: TUH1 = nil;
 function UH1_StopB: TUH1;
 begin
-  if UH1_StopB_shared = nil then begin UH1_StopB_shared := TUH1.Create; UH1_StopB_shared.tag := 1; end;
+  if UH1_StopB_shared = nil then begin UH1_StopB_shared := TUH1.Create; UH1_StopB_shared.tag := 1; UH1_StopB_shared.refc := High(LongInt) div 2; end;
   Result := UH1_StopB_shared;
+end;
+procedure TUH0.DropFields;
+begin
+  SpiralRelease(c0_0);
 end;
 function UH0_A(a0: TUH1): TUH0;
 begin
@@ -25,7 +45,7 @@ end;
 var UH0_StopA_shared: TUH0 = nil;
 function UH0_StopA: TUH0;
 begin
-  if UH0_StopA_shared = nil then begin UH0_StopA_shared := TUH0.Create; UH0_StopA_shared.tag := 1; end;
+  if UH0_StopA_shared = nil then begin UH0_StopA_shared := TUH0.Create; UH0_StopA_shared.tag := 1; UH0_StopA_shared.refc := High(LongInt) div 2; end;
   Result := UH0_StopA_shared;
 end;
 function SpiralMain: LongInt;

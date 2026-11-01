@@ -241,6 +241,7 @@
     )
 
     ExpectedErrors = @(
+        @{ Id = 'samples/package_sibling_parse_error_negative'; Contains = 'Global inl/let statements should all return functions known at parse time' }
         @{ Id = 'samples/routes_negative_missing_param'; Contains = 'the route /articles/:slug/comments does not name exactly' }
         @{ Id = 'samples/routes_negative_extra_param'; Contains = 'the route /articles/:slug/comments/:id/:extra does not name exactly' }
         @{ Id = 'samples/routes_negative_wrong_name'; Contains = 'the route /articles/:slugx/comments/:id does not name exactly' }

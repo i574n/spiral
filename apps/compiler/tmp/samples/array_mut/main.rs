@@ -13,7 +13,7 @@ fn spiral_main() -> i32 {
     v0.clone().borrow_mut()[0i32 as usize] = v1;
     let mut v2: Rc<RefCell<Mut0>> = v0.borrow()[0i32 as usize].clone();
     v2.borrow_mut().l0 = 7i32;
-    let v3: i32 = v2.borrow().l0.clone();
+    let v3: i32 = v2.borrow().l0;
     let v4: bool = v3 == 7i32;
     if v4 {
         0i32
