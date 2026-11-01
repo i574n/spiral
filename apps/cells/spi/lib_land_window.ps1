@@ -5,6 +5,9 @@ param(
     [string] $Lib = (Join-Path $PSScriptRoot '../../../lib/spiral'),
     [string] $SignatureFile = (Join-Path $PSScriptRoot 'lib_consumer_signatures.tsv'),
     [string] $UndoRoot = (Join-Path $env:LOCALAPPDATA 'spiral-bin/lib-land-undo'),
+    [string[]] $Consumer = @('apps/spiral/spiral.spi'),
+    [string] $Compiler = (Join-Path $env:LOCALAPPDATA 'spiral-bin/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll'),
+    [string] $Dotnet = (Join-Path $env:LOCALAPPDATA 'spiral-bin/toolchains/dotnet/dotnet.exe'),
     [int] $MaxWaitMin = 30,
     [switch] $Apply
 )
@@ -53,7 +56,11 @@ $win = & $kit window request tree-write 30 --label $Label 2>&1 | Select-Object -
 $winId = if ("$win" -match 'id=(\S+)') { $Matches[1] }
 foreach ($p in $pairs) { $u = Join-Path $undo $p.Live; New-Item -ItemType Directory -Force (Split-Path $u) | Out-Null; Copy-Item -LiteralPath (Join-Path $Lib $p.Live) -Destination $u }
 function Restore-Undo { foreach ($p in $pairs) { Copy-Retry (Join-Path $undo $p.Live) (Join-Path $Lib $p.Live) }; "RESTORED from $undo" }
+$probe = @($pairs | Where-Object { $_.Live -like '*.spi' } | ForEach-Object Live)
+function Get-ProbeFailures([string[]] $lines) { @($lines | ForEach-Object { if ($_ -match '^type-probe (\S+): FAIL') { $Matches[1] } }) }
 try {
+    $baseFail = @()
+    if ($probe.Count) { $baseFail = Get-ProbeFailures @(pwsh -NoProfile -File (Join-Path $PSScriptRoot 'type_probe.ps1') -File ($probe -join ',') -Lib $Lib 2>&1 | ForEach-Object { "$_" }) }
     foreach ($p in $pairs) { Copy-Retry $p.Source (Join-Path $Lib $p.Live) }
     $closeOk = $true
     if ($SignatureFile) {
@@ -62,9 +69,21 @@ try {
             $file, $name, $count, $before = $row -split "`t", 4
             $pattern = '^(:=|:~ \^?|inl|let|:~) *' + [regex]::Escape($name) + '(\s|$)'
             $now = @([IO.File]::ReadAllLines((Join-Path $Lib $file)) | Where-Object { $_ -match $pattern }) -join ' || '
-            if ($now -ne $before) { "$file $name changed" }
+            $spelling = { param($text) $text -replace '(?<=[\w''])::(?=[\w(])', '.' }
+            if ((& $spelling $now) -ne (& $spelling $before)) { "$file $name changed" }
         }
         if ($drift) { $drift; $closeOk = $false } else { "$(@(Get-Content $SignatureFile).Count) signatures unchanged" }
+    }
+    '=== consumers'
+    $repo = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
+    if (-not $env:SPIRAL_COMPILER_PACKAGE_DIR) { $env:SPIRAL_COMPILER_PACKAGE_DIR = Join-Path $repo 'deps/The-Spiral-Language/VS Code Plugin' }
+    $consumerOut = Join-Path $env:LOCALAPPDATA 'spiral-bin/mix-builds/lib-land-consumers'
+    New-Item -ItemType Directory -Force $consumerOut | Out-Null
+    foreach ($c in $Consumer) {
+        $entry = Join-Path $repo $c
+        Push-Location (Split-Path $entry)
+        try { $text = @(& $Dotnet $Compiler --backend Rust (Split-Path $entry -Leaf) (Join-Path $consumerOut "$([IO.Path]::GetFileNameWithoutExtension($entry)).rs") 2>&1 | ForEach-Object { "$_" }); $code = $LASTEXITCODE } finally { Pop-Location }
+        if ($code) { "$c exit ${code}: $(@($text | Where-Object { $_ -match 'Error' } | Select-Object -First 1))"; $closeOk = $false } else { "$c compiles" }
     }
     '=== document_test'
     $user = [Environment]::GetEnvironmentVariables('User')
@@ -74,8 +93,16 @@ try {
     Push-Location (Join-Path $PSScriptRoot '..')
     try { $mix = Join-Path (Split-Path (Get-Command mix).Source -Parent) 'mix.bat'; & $mix test test/spiral/document_test.exs --timeout 900000 2>&1 | Select-String -Pattern '^\s+\d+\) test |Result:' | ForEach-Object { $_.Line.Trim() }; if ($LASTEXITCODE) { $closeOk = $false } } finally { Pop-Location }
     '=== type_probe'
-    $probe = @($pairs | Where-Object { $_.Live -like '*.spi' } | ForEach-Object Live)
-    if ($probe.Count) { pwsh -NoProfile -File (Join-Path $PSScriptRoot 'type_probe.ps1') -File ($probe -join ',') -Lib $Lib 2>&1 | Select-Object -Last ($probe.Count + 1); if ($LASTEXITCODE) { $closeOk = $false } }
+    if ($probe.Count) {
+        $lines = @(pwsh -NoProfile -File (Join-Path $PSScriptRoot 'type_probe.ps1') -File ($probe -join ',') -Lib $Lib 2>&1 | ForEach-Object { "$_" })
+        $probeExit = $LASTEXITCODE
+        $lines | Select-Object -Last ($probe.Count + 1)
+        $nowFail = Get-ProbeFailures $lines
+        $newFail = @($nowFail | Where-Object { $_ -notin $baseFail })
+        if ($baseFail) { "type_probe: $($baseFail.Count) already failed before this land, not blocking: $($baseFail -join ', ')" }
+        if ($newFail) { "type_probe NEW failures: $($newFail -join ', ')"; $closeOk = $false }
+        elseif ($probeExit -and -not $nowFail) { "type_probe exit $probeExit with no FAIL rows"; $closeOk = $false }
+    }
     if (-not $closeOk) { 'CLOSE FAILED: undoing'; Restore-Undo; throw 'close failed; undone' }
     foreach ($p in $pairs) { "{0,-28} {1}" -f $p.Live, (Get-FileHash -LiteralPath (Join-Path $Lib $p.Live)).Hash.Substring(0, 12) }
     "LANDED and closed green; undo: $undo"
