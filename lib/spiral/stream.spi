@@ -1,7 +1,7 @@
-test stream static =
+:# stream static =
     :< testing
 
-:< rust.rust_operators
+:< rust::rust_operators
 
 /// ## stream
 :| ^ stream t =
@@ -34,11 +34,11 @@ test stream static =
 
 := from_list list =
     (list, StreamNil)
-    ||> listm.foldBack \ x acc =>
+    ||> listm::foldBack \ x acc =>
         StreamCons (x, \ () => acc)
 
-test from_list =
-    listm.init 3i32 id
+:# from_list =
+    listm::init 3i32 id
     |> from_list
     |> rev
     |> to_list
@@ -59,10 +59,10 @@ test from_list =
     루프 i s
 
 := item i =
-    try_item i >> optionm.value
+    try_item i >> optionm::value
 
-test try_item =
-    listm.init 10i32 id
+:# try_item =
+    listm::init 10i32 id
     |> from_list
     |> item 9i32
     |> _assert_eq 9
@@ -77,7 +77,7 @@ test try_item =
         StreamCons (fn n, \ () => 루프 (n + 1))
     루프 0
 
-test new_infinite_stream =
+:# new_infinite_stream =
     new_infinite_stream print_and_return
     |> item 4i32
     |> _assert_eq 4i32
@@ -111,7 +111,7 @@ test new_infinite_stream =
         join_body_unit body s s'
     루프 \ () => s
 
-test memoize =
+:# memoize =
     := memo_stream = new_finite_stream print_and_return 10 |> memoize
 
     memo_stream ()
@@ -122,7 +122,7 @@ test memoize =
     |> item 5i32
     |> _assert_eq 5i32
 
-test memoize_2 =
+:# memoize_2 =
     := memo_stream = new_infinite_stream_ print_and_return |> memoize
 
     memo_stream ()
@@ -145,7 +145,7 @@ test memoize_2 =
     \ x => Some (x, f x)
     |> unfold
 
-test iterate =
+:# iterate =
     iterate ((*) 2) 1i32
     |> item 10i32
     |> _assert_eq 1024
@@ -154,11 +154,11 @@ test iterate =
 := iterate_map f m =
     \ x =>
         m x
-        |> optionm.map \ x =>
+        |> optionm::map \ x =>
             x, f x
     |> unfold
 
-test iterate_2 =
+:# iterate_2 =
     iterate_map ((*) 2) Some 1i32
     |> item 10i32
     |> _assert_eq 1024
@@ -173,25 +173,25 @@ test iterate_2 =
 := sum seq =
     seq |> fold (+) 0
 
-test sum =
-    listm.init 10i32 id
+:# sum =
+    listm::init 10i32 id
     |> from_list
     |> sum
     |> _assert_eq 45
 
-test sum_2 =
+:# sum_2 =
     new_finite_stream print_and_return 10i32
     |> take_while \ n (_ : i32) => n < 5
     |> sum
     |> _assert_eq 10
 
-test sum_3 =
+:# sum_3 =
     new_infinite_stream print_and_return
     |> take_while \ n (_ : i32) => n < 5i32
     |> sum
     |> _assert_eq 10
 
-test sum_4 =
+:# sum_4 =
     iterate ((*) 6) 1i32
     |> take_while \ _ i => i <= 7i32
     |> to_list
@@ -204,8 +204,8 @@ test sum_4 =
     |> fst
     |> rev
 
-test indexed =
-    listm.init 10i32 ((*) 2)
+:# indexed =
+    listm::init 10i32 ((*) 2)
     |> from_list
     |> indexed
     |> item 5i32
@@ -216,8 +216,8 @@ test indexed =
     ||> fold_back \ x acc =>
         StreamCons (fn x, \ () => acc)
 
-test map =
-    listm.init 10i32 id
+:# map =
+    listm::init 10i32 id
     |> from_list
     |> map ((*) 2)
     |> item 5i32
@@ -239,8 +239,8 @@ test map =
         | StreamNil, _ | _, StreamNil => StreamNil
     루프 s1 s2
 
-test zip_with =
-    ((listm.init 10i32 id |> from_list), (listm.init 10i32 ((*) 2) |> from_list))
+:# zip_with =
+    ((listm::init 10i32 id |> from_list), (listm::init 10i32 ((*) 2) |> from_list))
     ||> zip_with (+)
     |> item 2i32
     |> _assert_eq 6
@@ -251,8 +251,8 @@ test zip_with =
 := zip_ s1 s2 =
     zip_with_ pair s1 s2
 
-test zip =
-    ((listm.init 10i32 id |> from_list), (listm.init 10i32 ((*) 2) |> from_list))
+:# zip =
+    ((listm::init 10i32 id |> from_list), (listm::init 10i32 ((*) 2) |> from_list))
     ||> zip
     |> item 5i32
     |> _assert_eq (5, 10)
@@ -272,9 +272,9 @@ test zip =
             ~~ body x
     루프 s
 
-test unzip =
-    listm.init 10i32 id
-    |> listm.map \ x => x, x
+:# unzip =
+    listm::init 10i32 id
+    |> listm::map \ x => x, x
     |> from_list
     |> unzip
     |> \ x, y =>
@@ -287,7 +287,7 @@ test unzip =
 /// ## rust
 :! io_error =
     `(
-        rust.rust_type
+        rust::rust_type
             `($'std_io_Error')
             `($'std::io::Error')
             "type std_io_Error = string"
@@ -297,11 +297,11 @@ test unzip =
     run_target_args (\ () => text) \|
         | Rust => \ text =>
             !\\(text, $'"std::io::Error::new(std::io::ErrorKind::Other, &*$0)"')
-        | _ => \ text => text |> convert.unbox
+        | _ => \ text => text |> convert::unbox
 
 :! buf_reader t =
     `(
-        rust.rust_type
+        rust::rust_type
             `($'std_io_BufReader<`t>')
             `($'std::io::BufReader<`t>')
             "type std_io_BufReader<'T> = class end"
@@ -309,7 +309,7 @@ test unzip =
 
 :! cursor t =
     `(
-        rust.rust_type
+        rust::rust_type
             `($'std_io_Cursor<`t>')
             `($'std::io::Cursor<`t>')
             "type std_io_Cursor<'T> = class end"
@@ -317,7 +317,7 @@ test unzip =
 
 :! buf_reader_tokio t =
     `(
-        rust.rust_type
+        rust::rust_type
             `($'tokio_io_BufReader<`t>')
             `($'tokio::io::BufReader<`t>')
             "type tokio_io_BufReader<'T> = class end"
@@ -331,7 +331,7 @@ test unzip =
 
 :! lines t =
     `(
-        rust.rust_type
+        rust::rust_type
             `($'std_io_Lines<`t>')
             `($'std::io::Lines<`t>')
             "type std_io_Lines<'T> = class end"
@@ -342,17 +342,17 @@ test unzip =
 
 :! decode_reader_bytes t u =
     `(
-        rust.rust_type
+        rust::rust_type
             `($'encoding_rs_io_DecodeReaderBytes<`t, `u>')
             `($'encoding_rs_io::DecodeReaderBytes<`t, `u>')
             "type encoding_rs_io_DecodeReaderBytes<'T, 'U> = class end"
     )
 
-:= decode_reader_bytes_build \* t. (x : t) : decode_reader_bytes t (am'.vec u8) =
+:= decode_reader_bytes_build \* t. (x : t) : decode_reader_bytes t (am'::vec u8) =
     !\\(x, $'"encoding_rs_io::DecodeReaderBytesBuilder::new().utf8_passthru(true).build($0)"')
 
 := buf_reader_read \* el dim.
-    (slice : am'.slice' el dim) (buf_reader : buf_reader el) : resultm.result' convert.unativeint io_error
+    (slice : am'::slice' el dim) (buf_reader : buf_reader el) : resultm::result' convert::unativeint io_error
     =
     (!\($'"true; let mut !slice = !slice"') : bool) |> ignore
     !\($'"std::io::Read::read(&mut !buf_reader, &mut !slice)"')

@@ -803,6 +803,13 @@ module Program =
             eprintfn "%s" error.Message
             5
 
+    let private startOnCompileStack (work : unit -> 'T) : Threading.Tasks.Task<'T> =
+        let completion = Threading.Tasks.TaskCompletionSource<'T>()
+        let thread = Threading.Thread((fun () -> try completion.SetResult(work ()) with error -> completion.SetException error), 1 <<< 30)
+        thread.IsBackground <- true
+        thread.Start()
+        completion.Task
+
     let private runAttestationBounded timeoutMs work =
         let mutable result = 5
         let thread = Threading.Thread(Threading.ThreadStart(fun () ->
@@ -895,7 +902,7 @@ module Program =
                 if failureMayComeFromEarlierBuild then failureDeferredToFreshProcess <- true
                 else results.WriteLine line
             let stopwatch = Diagnostics.Stopwatch.StartNew()
-            let work = Threading.Tasks.Task.Run(fun () -> compileOne server.supervisor router revisions cache server.job_val backend input output)
+            let work = startOnCompileStack (fun () -> compileOne server.supervisor router revisions cache server.job_val backend input output)
             try
                 if work.Wait jobTimeoutMs then
                     match work.Result with
@@ -974,7 +981,7 @@ module Program =
         $"spiral-session\terror\t{Environment.ProcessId}\tcompiler stalled: {int progressMs} ms CPU in {stallSeconds} s with a compile outstanding"
 
     let private watchStall (stallSeconds : int) (writer : StreamWriter) (compile : unit -> unit) =
-        if stallSeconds <= 0 then compile ()
+        if stallSeconds <= 0 then (startOnCompileStack compile).GetAwaiter().GetResult()
         else
             let finished = new Threading.ManualResetEventSlim(false)
             let watch () =
@@ -994,7 +1001,7 @@ module Program =
             let watchdog = Threading.Thread(Threading.ThreadStart watch)
             watchdog.IsBackground <- true
             watchdog.Start()
-            try compile () finally finished.Set()
+            try (startOnCompileStack compile).GetAwaiter().GetResult() finally finished.Set()
 
     let private serveSessions (accept : unit -> Socket) (stallSeconds : int) =
         let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()

@@ -33,12 +33,12 @@
     | row :: rest => ? row_sound bound row ?> certified_rows bound rest (count + 1i32) |: count
 
 := ^ certified_table (rows : list certified_row) : i32 =
-    := bound = (listm.length rows : i32)
+    := bound = (listm::length rows : i32)
     := count = certified_rows bound rows 0i32
     ? count <> bound ?> error_type "a certificate covers fewer rows than its table" |: count
 
 ///> rust
-test sound_rows_certify =
+:# sound_rows_certify =
     := rows =
         [
             CertifiedRow (!-, PackedMoves (\? (MovesNext (48u32, 57u32, 1i32, MovesEnd))))
@@ -50,7 +50,7 @@ test sound_rows_certify =
     ? certified_table rows <> 2i32 ?> failwith "both rows are certified"
 
 ///> rust
-test overlapping_moves_are_forged fails "a forged certificate row" =
+:# overlapping_moves_are_forged fails "a forged certificate row" =
     := rows =
         [
             CertifiedRow (
@@ -61,6 +61,6 @@ test overlapping_moves_are_forged fails "a forged certificate row" =
     certified_table rows |> ignore
 
 ///> rust
-test targets_outside_the_table_are_forged fails "a forged certificate row" =
+:# targets_outside_the_table_are_forged fails "a forged certificate row" =
     := rows = [ CertifiedRow (!-, PackedMoves (\? (MovesNext (48u32, 57u32, 7i32, MovesEnd)))) ]
     certified_table rows |> ignore

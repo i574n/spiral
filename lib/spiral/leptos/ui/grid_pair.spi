@@ -40,7 +40,7 @@
             |> element_to_view
 
             dd [
-                class_fn "text-gray-700 sm:col-span-2 flex flex-1 " props.dd_class
+                class_fn "text-gray-700 sm:col-span-2 flex flex-1 " props::dd_class
             ] right
             |> element_to_view
         ]

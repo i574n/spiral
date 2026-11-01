@@ -912,6 +912,7 @@
         )
     }
     Gleam = @(
+        'samples/prim_to_string_all'
         'samples/portable_math_rounding'
         'samples/frontier_gadt_growing_index'
         'samples/macro_splice_before_quote'
@@ -1079,6 +1080,7 @@
         'samples/wgsl_gadt_payload_union'
     )
     Python = @(
+        'samples/prim_to_string_all'
         'samples/c_deep_list_decref'
         'samples/c_self_tail_loop_heap'
         'samples/frontier_gadt_growing_index'

@@ -1,4 +1,4 @@
-test rust static =
+:# rust static =
     :< testing
 
 :== rust_type_switch fs rs =
@@ -426,14 +426,14 @@ test rust static =
     (!\($'"true; loop { // rust.loop 1"') : bool) |> ignore
     fn ()
 
-    listm.init depth id
-    |> listm.iter \ n =>
+    listm::init depth id
+    |> listm::iter \ n =>
         (!\($'"true; } // rust.loop 2 / n: {!n}"') : bool) |> ignore
 
     (!\($'"true; } // rust.loop 3"') : bool) |> ignore
 
-    listm.init depth id
-    |> listm.iter \ n =>
+    listm::init depth id
+    |> listm::iter \ n =>
         (!\($'"true; { // rust.loop 4 / n: {!n}"') : bool) |> ignore
 
 := capture \* t. (fn : () -> t) : t =

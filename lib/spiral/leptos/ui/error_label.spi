@@ -2,19 +2,19 @@
 :< leptos
 
 := render error =
-    leptos.div [
+    leptos::div [
         $'"class=\\\"flex flex-1 items-center [gap:4px] [padding:5px]\\\""'
     ] \ () => :>[
-        leptos.span [
+        leptos::span [
             $'"class=\\\"[height:17px]\\\""'
         ] \ () => :>[
-            x_red.render () |> leptos.element_to_view
+            x_red::render () |> leptos::element_to_view
         ]
-        |> leptos.element_to_view
+        |> leptos::element_to_view
 
-        leptos.pre [
+        leptos::pre [
             $'"class=\\\"[overflow-y:auto] [text-wrap:wrap]\\\""'
         ] \ () =>
-            error |> leptos.text_fragment
-        |> leptos.element_to_view
+            error |> leptos::text_fragment
+        |> leptos::element_to_view
     ]

@@ -1,4 +1,4 @@
-test trace static =
+:# trace static =
     :< testing
 
 :< sm'_operators
@@ -23,17 +23,17 @@ test trace static =
         | Zig => \ () =>
             {
                 trace_level =
-                    "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick : option trace_level
+                    "TRACE_LEVEL" |> env::get_environment_variable |> reflection::union_try_pick : option trace_level
                 repl_start = None : option i64
             }
         | Rust => \ () =>
             {
-                trace_level = "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick
+                trace_level = "TRACE_LEVEL" |> env::get_environment_variable |> reflection::union_try_pick
                 repl_start = None
             }
         | TypeScript => \ () =>
             {
-                trace_level = "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick'
+                trace_level = "TRACE_LEVEL" |> env::get_environment_variable |> reflection::union_try_pick'
                 repl_start = None
             }
         | _ => \ () =>
@@ -42,8 +42,8 @@ test trace static =
                     trace_level =
                         := get_result () =
                             "TRACE_LEVEL"
-                            |> env.get_environment_variable
-                            |> reflection.union_try_pick
+                            |> env::get_environment_variable
+                            |> reflection::union_try_pick
                         backend_switch {
                             Gleam = get_result : () -> option trace_level
                             Lua = \ () => None : option trace_level
@@ -51,13 +51,13 @@ test trace static =
                             Python = get_result : () -> option trace_level
                         }
                     repl_start =
-                        := automation = env.get_environment_variable "AUTOMATION"
+                        := automation = env::get_environment_variable "AUTOMATION"
                         ? automation <>. "True"
                         ?> None
                         |:
-                            date_time.now ()
-                            |> date_time.to_timestamp
-                            |> \ (date_time.timestamp x) => x
+                            date_time::now ()
+                            |> date_time::to_timestamp
+                            |> \ (date_time::timestamp x) => x
                             |> Some
                 }
 
@@ -68,7 +68,7 @@ test trace static =
         enabled : mut bool
         acc : mut string
         level : mut trace_level
-        repl_start : optionm'.option' i64
+        repl_start : optionm'::option' i64
     }
 
 :~ new_trace_state trace_level' =
@@ -78,12 +78,12 @@ test trace static =
         trace_file = mut ignore
         enabled = mut !+
         acc = mut ""
-        level = trace_level |> optionm'.default_value trace_level' |> mut
-        repl_start = repl_start |> optionm'.box
+        level = trace_level |> optionm'::default_value trace_level' |> mut
+        repl_start = repl_start |> optionm'::box
     } : trace_state
 
 := init_trace_state trace_level : () =
-    := trace_level = trace_level |> optionm'.default_value Verbose
+    := trace_level = trace_level |> optionm'::default_value Verbose
     backend_switch {
         Gleam = \ () =>
             global "fn trace_state () { option.None }"
@@ -109,7 +109,7 @@ test trace static =
             }
             \ () =>
                 ? $'TraceState.trace_state.IsNone' ?>
-                    := trace_state = new_trace_state trace_level |> optionm'.some'
+                    := trace_state = new_trace_state trace_level |> optionm'::some'
                     $'TraceState.trace_state <- !trace_state ' : ()
             |> exec_unit
         Python = \ () =>
@@ -136,7 +136,7 @@ test trace static =
                 }
                 """
             := fresh = \ () => new_trace_state trace_level
-            :< rust.rust_operators
+            :< rust::rust_operators
             !\\(fresh, $'"{ let _ = spiral_trace_hold(&$0); }"') : ()
         Zig = \ () => ()
     }
@@ -145,7 +145,7 @@ test trace static =
     init_trace_state trace_level
     backend_switch {
         Gleam = \ () =>
-            := trace_level = trace_level |> optionm'.default_value Verbose
+            := trace_level = trace_level |> optionm'::default_value Verbose
             $'trace_state () |> option.lazy_unwrap(fn () { !new_trace_state(!trace_level) })' : trace_state
         Lua = \ () =>
             $'_G.trace_state' : trace_state
@@ -164,9 +164,9 @@ test trace static =
                     unsafe { (*(raw as *const T)).clone() }
                 }
                 """
-            := level' = trace_level |> optionm'.default_value Verbose
+            := level' = trace_level |> optionm'::default_value Verbose
             := fresh = \ () => new_trace_state level'
-            :< rust.rust_operators
+            :< rust::rust_operators
             !\\(fresh, $'"spiral_trace_hold(&$0)"') : trace_state
         Zig = \ () =>
             global """
@@ -178,7 +178,7 @@ test trace static =
                     return S.slot.?;
                 }
                 """
-            := level' = trace_level |> optionm'.default_value Verbose
+            := level' = trace_level |> optionm'::default_value Verbose
             := fresh = dyn \ () => new_trace_state level'
             $'spiralHold(`trace_state, !fresh)' : trace_state
     }
@@ -198,10 +198,10 @@ test trace static =
 
 := test_trace_level level : bool =
     := state = get_trace_state_or_init None
-    := level' = *state.level
+    := level' = *state::level
     := a : int = level |> severity
     := b : int = level' |> severity
-    ? *state.enabled |> not
+    ? *state::enabled |> not
     ?> !-
     |: a >= b
 
@@ -210,7 +210,7 @@ test trace static =
 ///> cuda
 ///> rust
 ///> typescript
-test test_trace_level =
+:# test_trace_level =
     test_trace_level Critical |> _assert_eq !+
     test_trace_level Verbose |> _assert_eq !+
     Debug |> set_trace_level
@@ -230,9 +230,9 @@ test test_trace_level =
                     count <- *count + 1
                 |> exec_unit
                 :< rust
-                :< rust.rust_operators
-                run_target_args (\ () => text, console.write_line) \|
-                    | Zig => \ _ => text |> console.write_line
+                :< rust::rust_operators
+                run_target_args (\ () => text, console::write_line) \|
+                    | Zig => \ _ => text |> console::write_line
                     | Rust => \ text, _ =>
                         global """
                             #[cfg(target_arch = "wasm32")]
@@ -269,17 +269,17 @@ test test_trace_level =
                                 |? text = ""
                                 ?> *acc
                                 |: *acc ++\# text
-                            := char_count : convert.unativeint = !\\(new_acc, $'"$0.chars().count()"')
-                            := chunks_len : i32 = ((convert.convert char_count : i32) + 14999i32) / 15000i32
+                            := char_count : convert::unativeint = !\\(new_acc, $'"$0.chars().count()"')
+                            := chunks_len : i32 = ((convert::convert char_count : i32) + 14999i32) / 15000i32
                             ? text <>. "" && chunks_len <= 1i32
                             ?> acc <- new_acc
                             |:
                                 acc <- ""
-                                !\\(new_acc, $'"{ \#[cfg(target_arch = \\\"wasm32\\\")] spiral_trace_near_log(&$0); }"')
+                                !\\(new_acc, $'"{ ##[cfg(target_arch = \\\"wasm32\\\")] spiral_trace_near_log(&$0); }"')
                         |: !\\(text, $'"println\!(\\\"{}\\\", $0)"')
                     | _ => \ text, write_line =>
                         text |> write_line
-                text |> *trace_state.trace_file
+                text |> *trace_state::trace_file
                 trace_state |> Some
         backend_switch {
             Gleam = \ () => $'let trace_state = fn () { !(trace_state |> optionm'.box) }' : ()
@@ -293,7 +293,7 @@ test test_trace_level =
     |> exec_unit
 
 := clock_two_digits (n : i32) : string =
-    (? n < 10i32 ?> "0" |: "") ++# sm'.obj_to_string n
+    (? n < 10i32 ?> "0" |: "") ++# sm'::obj_to_string n
 
 /// ### local_seconds_of_day
 :! rust_clock_fields = $'[i64; 3]'
@@ -331,9 +331,9 @@ test test_trace_level =
         }
         """
 
-:= rust_local_clock () : optionm'.option' rust_clock_fields =
+:= rust_local_clock () : optionm'::option' rust_clock_fields =
     rust_clock_shims ()
-    $'spiral_cfg_local_clock()' : optionm'.option' rust_clock_fields
+    $'spiral_cfg_local_clock()' : optionm'::option' rust_clock_fields
 
 := rust_epoch_nanos () : u64 =
     rust_clock_shims ()
@@ -346,17 +346,17 @@ test test_trace_level =
 := rust_clock_second (fields : rust_clock_fields) : i64 = $'!fields[2]' : i64
 
 := local_seconds_of_day () : u64 =
-    ?= rust_local_clock () |> optionm'.unbox ?|
+    ?= rust_local_clock () |> optionm'::unbox ?|
     | Some fields =>
         conv (rust_clock_hour fields * 3600i64 + rust_clock_minute fields * 60i64 + rust_clock_second fields)
     | None => rust_epoch_nanos () / 1000000000u64 % 86400u64
 
 ///> rust
-test local_seconds_of_day_is_within_a_day =
+:# local_seconds_of_day_is_within_a_day =
     (local_seconds_of_day () < 86400u64) |> _assert_eq !+
 
 := clock_text_of_seconds (seconds : u64) : string =
-    := two_digits (n : u64) : string = (? n < 10u64 ?> "0" |: "") ++# sm'.obj_to_string n
+    := two_digits (n : u64) : string = (? n < 10u64 ?> "0" |: "") ++# sm'::obj_to_string n
     := hours_minutes = two_digits ((seconds / 3600u64) % 24u64) ++# ":" ++# two_digits ((seconds / 60u64) % 60u64)
     hours_minutes ++# ":" ++# two_digits (seconds % 60u64)
 
@@ -387,7 +387,7 @@ test local_seconds_of_day_is_within_a_day =
                         run_target \ target =>
                             ?= target ?|
                             | Rust => \ () =>
-                                :< rust.rust_operators
+                                :< rust::rust_operators
                                 local_seconds_of_day () |> clock_text_of_seconds
                             | TypeScript => \ () =>
                                 := now = $'new Date()' : $'Date'
@@ -397,22 +397,22 @@ test local_seconds_of_day_is_within_a_day =
                                 := hours_minutes = clock_two_digits hours ++# ":" ++# clock_two_digits minutes
                                 hours_minutes ++# ":" ++# clock_two_digits seconds
                             | _ => \ () =>
-                                ?= trace_state.repl_start |> optionm'.unbox ?|
+                                ?= trace_state::repl_start |> optionm'::unbox ?|
                                 | Some repl_start =>
                                     := t =
-                                        date_time.now ()
-                                        |> date_time.to_timestamp
-                                        |> \ (date_time.timestamp x) => x
+                                        date_time::now ()
+                                        |> date_time::to_timestamp
+                                        |> \ (date_time::timestamp x) => x
                                         |> flip (-) repl_start
-                                        |> date_time.time_span_of_micros
-                                    date_time.date_time_milliseconds
+                                        |> date_time::time_span_of_micros
+                                    date_time::date_time_milliseconds
                                         1i32 1i32 1i32
-                                        (t |> date_time.hours)
-                                        (t |> date_time.minutes)
-                                        (t |> date_time.seconds)
-                                        (t |> date_time.milliseconds)
-                                | None => date_time.now ()
-                                |> date_time.format (
+                                        (t |> date_time::hours)
+                                        (t |> date_time::minutes)
+                                        (t |> date_time::seconds)
+                                        (t |> date_time::milliseconds)
+                                | None => date_time::now ()
+                                |> date_time::format (
                                     backend_switch {
                                         Gleam = \ () => "HH:mm:ss"
                                         Lua = \ () => "%H:%M:%S"
@@ -427,31 +427,31 @@ test local_seconds_of_day_is_within_a_day =
             ~~
                 := color =
                     ?= level ?|
-                    | Verbose => console.color_bright_black ()
-                    | Debug => console.color_bright_blue ()
-                    | Info => console.color_bright_green ()
-                    | Warning => console.color_yellow ()
-                    | Critical => console.color_bright_red ()
+                    | Verbose => console::color_bright_black ()
+                    | Debug => console::color_bright_blue ()
+                    | Info => console::color_bright_green ()
+                    | Warning => console::color_yellow ()
+                    | Critical => console::color_bright_red ()
                 := level_str =
                     level
-                    |> reflection.union_to_string
-                    |> sm'.to_lower
-                    |> sm'.index 0i32
-                    |> sm'.format
-                color ++# level_str ++# console.color_reset ()
+                    |> reflection::union_to_string
+                    |> sm'::to_lower
+                    |> sm'::index 0i32
+                    |> sm'::format
+                color ++# level_str ++# console::color_reset ()
         := text = text_fn ()
         ? text = ""
         ?> ""
         |:
             := locals = locals ()
             ~~
-                := count = *trace_state.count
+                := count = *trace_state::count
                 time ++# " " ++#? count ++# level_str ++# " " ++# text ++# " / " ++#? locals
                 |> \ x =>
                     ~~
                         x
-                        |> sm'.trim_start []
-                        |> sm'.trim_end [ ' '; '/' ]
+                        |> sm'::trim_start []
+                        |> sm'::trim_end [ ' '; '/' ]
     |> trace_raw level
 
 ///> gleam
@@ -459,16 +459,16 @@ test local_seconds_of_day_is_within_a_day =
 ///> cuda
 ///> rust
 ///> typescript
-test trace_2 =
+:# trace_2 =
     trace Debug (\ () => "test1") id
     trace Debug (\ () => "test2") id
-    get_trace_state_or_init None .count
+    get_trace_state_or_init None ::count
     |> \ x => *x
     |> _assert_eq 3
 
 := trace_format level fn obj =
     := text, locals = fn obj
-    := locals = #?locals |> sm'.ellipsis_end 200
+    := locals = #?locals |> sm'::ellipsis_end 200
     trace level (\ () => text) \ () => locals
     obj
 

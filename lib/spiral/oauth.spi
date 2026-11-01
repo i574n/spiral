@@ -1,6 +1,6 @@
 :< sm'_operators
 
-test oauth static =
+:# oauth static =
     :< testing
 
 :== oauth1_credentials = { consumer_key : string; consumer_secret : string; token : string; token_secret : string }
@@ -16,43 +16,43 @@ test oauth static =
     | _ => x :: l
 
 := joined_pairs (pairs : list oauth1_pair) : string =
-    pairs |> listm.map (\ (k, v) => k ++# "=" ++# v) |> sm'.concat_list "&"
+    pairs |> listm::map (\ (k, v) => k ++# "=" ++# v) |> sm'::concat_list "&"
 
 := parameter_string (params : list oauth1_pair) : string =
     params
-    |> listm.map \ (k, v) => sm'.percent_encode k, sm'.percent_encode v
-    |> listm.fold (\ acc x => oauth1_inserted x acc) []
+    |> listm::map \ (k, v) => sm'::percent_encode k, sm'::percent_encode v
+    |> listm::fold (\ acc x => oauth1_inserted x acc) []
     |> joined_pairs
 
 := signature_base (method : string) (url : string) (params : list oauth1_pair) : string =
-    method ++# "&" ++# sm'.percent_encode url ++# "&" ++# sm'.percent_encode (parameter_string params)
+    method ++# "&" ++# sm'::percent_encode url ++# "&" ++# sm'::percent_encode (parameter_string params)
 
 := signing_key (c : oauth1_credentials) : string =
-    sm'.percent_encode c.consumer_secret ++# "&" ++# sm'.percent_encode c.token_secret
+    sm'::percent_encode c::consumer_secret ++# "&" ++# sm'::percent_encode c::token_secret
 
 /// ### protocol_params
 := consumer_params (c : oauth1_credentials) (nonce : string) : list oauth1_pair =
-    [ ("oauth_consumer_key", c.consumer_key); ("oauth_nonce", nonce); ("oauth_signature_method", "HMAC-SHA1") ]
+    [ ("oauth_consumer_key", c::consumer_key); ("oauth_nonce", nonce); ("oauth_signature_method", "HMAC-SHA1") ]
 
 := token_params (c : oauth1_credentials) (stamp : string) : list oauth1_pair =
-    [ ("oauth_timestamp", stamp); ("oauth_token", c.token); ("oauth_version", "1.0") ]
+    [ ("oauth_timestamp", stamp); ("oauth_token", c::token); ("oauth_version", "1.0") ]
 
 := protocol_params (c : oauth1_credentials) (nonce : string) (stamp : string) : list oauth1_pair =
-    listm.append (consumer_params c nonce) (token_params c stamp)
+    listm::append (consumer_params c nonce) (token_params c stamp)
 
 := signature (c : oauth1_credentials) (method : string) (url : string) (params : list oauth1_pair) : string =
-    signature_base method url params |> crypto.hmac_sha1_base64 (signing_key c)
+    signature_base method url params |> crypto::hmac_sha1_base64 (signing_key c)
 
 := oauth1_header_field ((k, v) : oauth1_pair) : string =
-    sm'.percent_encode k ++# "=\"" ++# sm'.percent_encode v ++# "\""
+    sm'::percent_encode k ++# "=\"" ++# sm'::percent_encode v ++# "\""
 
 := with_signature (c : oauth1_credentials) (method : string) (url : string) (params : list oauth1_pair)
     : list oauth1_pair
     =
-    listm.append params [ ("oauth_signature", signature c method url params) ]
+    listm::append params [ ("oauth_signature", signature c method url params) ]
 
 := header_text (signed : list oauth1_pair) : string =
-    "OAuth " ++# (signed |> listm.map oauth1_header_field |> sm'.concat_list ", ")
+    "OAuth " ++# (signed |> listm::map oauth1_header_field |> sm'::concat_list ", ")
 
 := authorization_header
     (c : oauth1_credentials) (method : string) (url : string) (nonce : string) (stamp : string)
@@ -82,11 +82,11 @@ test oauth static =
 
 := oauth1_example_params () : list oauth1_pair =
     := query = [ ("include_entities", "true"); ("status", oauth1_example_status ()) ]
-    listm.append query (protocol_params (oauth1_example_credentials ()) (oauth1_example_nonce ()) "1318622958")
+    listm::append query (protocol_params (oauth1_example_credentials ()) (oauth1_example_nonce ()) "1318622958")
 
 ///> rust -d hmac sha1 base64
 ///> gleam
-test the_published_example_signs_to_its_documented_signature =
+:# the_published_example_signs_to_its_documented_signature =
     := ~url = oauth1_example_url ()
     signature (oauth1_example_credentials ()) "POST" url (oauth1_example_params ())
     |> _assert_eq "hCtSmYh+iHYCEqBWrE7C7hYmtUk="
@@ -98,8 +98,8 @@ test the_published_example_signs_to_its_documented_signature =
 
 ///> rust -d hmac sha1 base64
 ///> gleam
-test the_header_lists_the_signed_protocol_params =
+:# the_header_lists_the_signed_protocol_params =
     := ~url = oauth1_example_url ()
     oauth1_example_header url
-    |> sm'.starts_with (oauth1_example_header_prefix ())
+    |> sm'::starts_with (oauth1_example_header_prefix ())
     |> _assert_eq !+

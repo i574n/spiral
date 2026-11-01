@@ -8,6 +8,8 @@ param(
 $ErrorActionPreference = "Stop"
 . $ScriptDir/core.ps1
 
+$Include = @($Include | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+$Exclude = @($Exclude | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $Root = (Resolve-Path $Root).Path
 if ($Tool) { $Tool = (Resolve-Path $Tool).Path } else { $Tool = pwsh (Join-Path $ScriptDir "dir-tree-html.ps1") | Select-Object -Last 1 }
 $renderer = Join-Path ([IO.Path]::GetTempPath()) "publish-tree-$PID-$(Split-Path $Tool -Leaf)"

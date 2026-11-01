@@ -1,11 +1,11 @@
-:< rust.rust_operators
+:< rust::rust_operators
 :< rust
 :< sm'_operators
 :< leptos
 
 := render { href icon label select } : _ (_ a') =
     a' [
-        attr_fn "href" (href >> sm'.to_std_string)
+        attr_fn "href" (href >> sm'::to_std_string)
         class_fn
             (
                 "inline-flex shrink-0 items-center [justify-content:center] flex-1 gap-2 border-t-2 "
@@ -15,7 +15,7 @@
                 ? select ()
                 ?> "border-grey-200 text-grey-900"
                 |: "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-        attr_fn "aria-current" \ () => (? select () ?> "page" |: "") |> sm'.to_std_string
+        attr_fn "aria-current" \ () => (? select () ?> "page" |: "") |> sm'::to_std_string
     ] \ () =>
         :>[
             icon |> fragment_to_view

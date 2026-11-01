@@ -1,19 +1,19 @@
 :< leptos
 
 := render head body =
-    leptos.table [
+    leptos::table [
         $'"class=\\\"flex-1 min-w-full divide-y-2 divide-gray-200 text-sm dark:divide-gray-700\\\""'
     ] \ () =>
         :>[
-            leptos.thead [
+            leptos::thead [
                 $'"class=\\\"ltr:text-left rtl:text-right\\\""'
             ] \ () =>
                 head
-            |> leptos.element_to_view
+            |> leptos::element_to_view
 
-            leptos.tbody [
+            leptos::tbody [
                 $'"class=\\\"divide-y divide-gray-200 dark:divide-gray-700\\\""'
             ] \ () =>
                 body
-            |> leptos.element_to_view
+            |> leptos::element_to_view
         ]

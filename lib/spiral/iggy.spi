@@ -4,7 +4,7 @@
 // bytes and returns decode_result (maps to rust Result<Event, DecodeError>); the Rust arm reads real strings,
 // the Gleam arm is an M1 stub ("" / M3 lands portable bytes->string). Matches kit's wire.rs reference exactly.
 
-test iggy static =
+:# iggy static =
     :< testing
 
 :| event_body =
@@ -38,8 +38,8 @@ test iggy static =
 // utf8_byte_list (gleam+rust) |> to_array' (gleam arm spiral_array_from_list) -> portable byte array,
 // unlike sm'.utf8_get_bytes which is rust + .NET-default only.
 :~ put_str (s : string) : array u8 =
-    inl bytes : array u8 = array (sm'.utf8_byte_list s |> listm'.to_array')
-    cat (put_u32 (conv (am'.length bytes))) bytes
+    := bytes : array u8 = array (sm'::utf8_byte_list s |> listm'::to_array')
+    cat (put_u32 (conv (am'::length bytes))) bytes
 
 :~ body_tag (b : event_body) : u8 =
     ?= b ?|
@@ -49,35 +49,35 @@ test iggy static =
 
 :~ body_bytes (b : event_body) : array u8 =
     ?= b ?|
-    | JobStarted r    => cat (put_str r.job) (put_str r.label)
-    | JobStep r       => cat (put_str r.job) (cat (put_str r.step) (cat (put_i32 r.exit) (put_str r.detail)))
-    | JobDone r       => cat (put_str r.job) (put_i32 r.exit)
-    | JobStop r       => cat (put_str r.job) (put_str r.reason)
-    | LeaseAcquired r => cat (put_str r.tree) (put_str r.owner)
-    | LeaseReleased r => cat (put_str r.tree) (put_str r.owner)
-    | SlotAdmitted r  => cat (put_i32 r.slot) (put_str r.owner)
-    | SlotReleased r  => cat (put_i32 r.slot) (put_str r.owner)
-    | Health r        => cat (put_i32 r.cpu) (cat (put_i32 r.free_mem_mb) (put_i32 r.free_disk_gb))
-    | Toolchain r     => cat (put_str r.tool) (cat (put_str r.version) (cat (put_str r.path) (put_str r.mtime)))
+    | JobStarted r    => cat (put_str r::job) (put_str r::label)
+    | JobStep r       => cat (put_str r::job) (cat (put_str r::step) (cat (put_i32 r::exit) (put_str r::detail)))
+    | JobDone r       => cat (put_str r::job) (put_i32 r::exit)
+    | JobStop r       => cat (put_str r::job) (put_str r::reason)
+    | LeaseAcquired r => cat (put_str r::tree) (put_str r::owner)
+    | LeaseReleased r => cat (put_str r::tree) (put_str r::owner)
+    | SlotAdmitted r  => cat (put_i32 r::slot) (put_str r::owner)
+    | SlotReleased r  => cat (put_i32 r::slot) (put_str r::owner)
+    | Health r        => cat (put_i32 r::cpu) (cat (put_i32 r::free_mem_mb) (put_i32 r::free_disk_gb))
+    | Toolchain r     => cat (put_str r::tool) (cat (put_str r::version) (cat (put_str r::path) (put_str r::mtime)))
 
 :~ encode (e : event) : array u8 =
-    cat (put_u64 e.seq) (cat (put_str e.machine) (cat ;[ body_tag e.body ] (body_bytes e.body)))
+    cat (put_u64 e::seq) (cat (put_str e::machine) (cat ;[ body_tag e::body ] (body_bytes e::body)))
 
 /// ### hex_upper  (a[0..i] as upper-case hex, prepended to acc)
 :~ ^ hex_upper (a : array u8) (i : i32) (acc : string) : string =
     ? i < 0i32 ?> acc
     |:
-        := b : u64 = conv (am'.index i a)
-        := digit (n : u64) = sm'.substring (conv n : i32) 1i32 "0123456789ABCDEF"
-        hex_upper a (i - 1i32) (sm'.concat_list "" [ digit (b >>> 4i32); digit (b &&& 15u64); acc ])
+        := b : u64 = conv (am'::index i a)
+        := digit (n : u64) = sm'::substring (conv n : i32) 1i32 "0123456789ABCDEF"
+        hex_upper a (i - 1i32) (sm'::concat_list "" [ digit (b >>> 4i32); digit (b &&& 15u64); acc ])
 
 ///- --timeout 600000
 
 ///> rust
-test frozen_bytes_1 =
+:# frozen_bytes_1 =
     := frozen (body : event_body) (expected : string) =
         := bytes = encode { seq = 1u64; machine = "node"; body }
-        _assert_eq expected (hex_upper bytes ((conv (am'.length bytes) : i32) - 1i32) "")
+        _assert_eq expected (hex_upper bytes ((conv (am'::length bytes) : i32) - 1i32) "")
     (
         frozen (JobStarted { job = "j1"; label = "build" }) "0000000000000001000000046E6F646500000000026A31000000056275696C64",
         frozen (JobStep { job = "j1"; step = "compile"; exit = 0i32; detail = "ok" }) "0000000000000001000000046E6F646501000000026A3100000007636F6D70696C6500000000000000026F6B",
@@ -89,10 +89,10 @@ test frozen_bytes_1 =
 ///- --timeout 600000
 
 ///> rust
-test frozen_bytes_2 =
+:# frozen_bytes_2 =
     := frozen (body : event_body) (expected : string) =
         := bytes = encode { seq = 1u64; machine = "node"; body }
-        _assert_eq expected (hex_upper bytes ((conv (am'.length bytes) : i32) - 1i32) "")
+        _assert_eq expected (hex_upper bytes ((conv (am'::length bytes) : i32) - 1i32) "")
     (
         frozen (LeaseReleased { tree = "eoie"; owner = "compiler" }) "0000000000000001000000046E6F64650500000004656F696500000008636F6D70696C6572",
         frozen (SlotAdmitted { slot = 1i32; owner = "compiler" }) "0000000000000001000000046E6F6465060000000100000008636F6D70696C6572",
@@ -105,7 +105,7 @@ test frozen_bytes_2 =
 
 /// ### read_u32  (raw; call only after a bounds check)
 :~ read_u32 (a : array u8) (i : i32) : u32 =
-    (conv (am'.index i a) <<< 24i32) ||| (conv (am'.index (i + 1i32) a) <<< 16i32) ||| (conv (am'.index (i + 2i32) a) <<< 8i32) ||| conv (am'.index (i + 3i32) a)
+    (conv (am'::index i a) <<< 24i32) ||| (conv (am'::index (i + 1i32) a) <<< 16i32) ||| (conv (am'::index (i + 2i32) a) <<< 8i32) ||| conv (am'::index (i + 3i32) a)
 
 /// ### read_u64  (raw)
 :~ read_u64 (a : array u8) (i : i32) : u64 =
@@ -139,24 +139,24 @@ test frozen_bytes_2 =
     ? need i 4i32 len ?> RD (read_i32 a i, i + 4i32) |: RTrunc
 
 :~ rd_u8 (a : array u8) (i : i32) (len : i32) : rd u8 =
-    ? need i 1i32 len ?> RD (am'.index i a, i + 1i32) |: RTrunc
+    ? need i 1i32 len ?> RD (am'::index i a, i + 1i32) |: RTrunc
 
 /// ### rd_str_utf8  (n payload bytes at i+4 validated as utf8; Rust reads, Gleam stub for M3)
 // TODO: LIB-IGGY-CLIENT M3 Gleam arm of rd_str_utf8 returns "" (stub); read real utf8 (portable bytes->string)
 :~ rd_str_utf8 (a : array u8) (i : i32) (n : i32) : rd string =
     backend_switch {
         Rust = \ () =>
-            inl bytes = am'.init_base (conv n) (\ j => am'.index (conv i + 4i32 + j) a) |> am'.to_vec
-            ?= (sm'.string_from_utf8 bytes |> resultm.ok' |> optionm'.unbox) ?|
-            | Some s => RD (sm'.from_std_string s, i + 4i32 + n)
+            := bytes = am'::init_base (conv n) (\ j => am'::index (conv i + 4i32 + j) a) |> am'::to_vec
+            ?= (sm'::string_from_utf8 bytes |> resultm::ok' |> optionm'::unbox) ?|
+            | Some s => RD (sm'::from_std_string s, i + 4i32 + n)
             | None => RUtf8
         Gleam = \ () => RD ("", i + 4i32 + n)
     }
 
 /// ### rd_str  (u32 length prefix, bounds-checked both for the prefix and the payload, then utf8)
 :~ rd_str (a : array u8) (i : i32) (len : i32) : rd string =
-    inl have_len = need i 4i32 len
-    inl n = ? have_len ?> conv (read_u32 a i) |: 0i32
+    := have_len = need i 4i32 len
+    := n = ? have_len ?> conv (read_u32 a i) |: 0i32
     ? have_len && need (i + 4i32) n len ?> rd_str_utf8 a i n |: RTrunc
 
 /// ### rd_bind  (thread value+offset; short-circuit on failure. not an operator: parse-safe)
@@ -178,7 +178,7 @@ test frozen_bytes_2 =
     | RD (body, final) => finish { seq; machine; body } final len
 
 :~ decode (a : array u8) : decode_result =
-    inl len = conv (am'.length a) : i32
+    := len = conv (am'::length a) : i32
     ?= rd_u64 a 0i32 len ?|
     | RTrunc => Truncated
     | RUtf8 => NotUtf8
@@ -212,7 +212,7 @@ test frozen_bytes_2 =
 ///- --timeout 600000
 
 ///> rust
-test codec_round_trip_1 =
+:# codec_round_trip_1 =
     := rt (ev : event) = _assert_eq (Decoded ev) (decode (encode ev))
     := ~e0 : event = { seq = 1u64; machine = "node"; body = JobStarted { job = "j1"; label = "build" } }
     := ~e1 : event = { seq = 1u64; machine = "node"; body = JobStep { job = "j1"; step = "compile"; exit = 0i32; detail = "ok" } }
@@ -222,7 +222,7 @@ test codec_round_trip_1 =
 ///- --timeout 600000
 
 ///> rust
-test codec_round_trip_2 =
+:# codec_round_trip_2 =
     := rt (ev : event) = _assert_eq (Decoded ev) (decode (encode ev))
     := ~e4 : event = { seq = 1u64; machine = "node"; body = LeaseAcquired { tree = "eoie"; owner = "compiler" } }
     := ~e5 : event = { seq = 1u64; machine = "node"; body = LeaseReleased { tree = "eoie"; owner = "compiler" } }
@@ -232,7 +232,7 @@ test codec_round_trip_2 =
 ///- --timeout 600000
 
 ///> rust
-test codec_round_trip_3 =
+:# codec_round_trip_3 =
     := rt (ev : event) = _assert_eq (Decoded ev) (decode (encode ev))
     := ~e7 : event = { seq = 1u64; machine = "node"; body = SlotReleased { slot = 1i32; owner = "compiler" } }
     := ~e8 : event = { seq = 1u64; machine = "node"; body = Health { cpu = 63i32; free_mem_mb = 7500i32; free_disk_gb = 84i32 } }
@@ -245,7 +245,7 @@ test codec_round_trip_3 =
 ///- --timeout 600000
 
 ///> rust
-test malformed_input_is_refused =
+:# malformed_input_is_refused =
     := ~jd : event = { seq = 1u64; machine = "node"; body = JobDone { job = "j1"; exit = 0i32 } }
     := ~truncated : array u8 =
         ;[ 0u8; 0u8; 0u8; 0u8; 0u8; 0u8; 0u8; 1u8; 0u8; 0u8; 0u8; 4u8; 110u8; 111u8; 100u8; 101u8; 2u8; 0u8; 0u8; 0u8; 2u8; 106u8; 49u8; 0u8; 0u8; 0u8 ]

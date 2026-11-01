@@ -1,14 +1,5 @@
 := (++) (left : string) (right : string) : string = left ^^ right
 
-:| ^ tokens =
-    | NoToken
-    | Token : string * tokens
-
-:~ ^ rev_tokens (xs : tokens) (acc : tokens) : tokens =
-    ?= xs ?|
-    | NoToken => acc
-    | Token (s, rest) => rev_tokens rest (Token (s, acc))
-
 :~ ^ take_token (src : string) (i : i32) : i32 =
     ? i >= text.length src ?> i
     |:
@@ -25,90 +16,118 @@
         |? ch = '\t' ?> skip_ws src (i + 1i32)
         |: i
 
-:~ ^ tokens_from (src : string) (i : i32) (acc : tokens) : tokens =
+:~ ^ tokens_from (src : string) (i : i32) (acc : list string) : list string =
     := j = skip_ws src i
-    ? j >= text.length src ?> rev_tokens acc NoToken
+    ? j >= text.length src ?> listm.rev acc
     |:
         := k = take_token src j
-        tokens_from src k (Token (text.slice_len src j (k - j), acc))
+        tokens_from src k (text.slice_len src j (k - j) :: acc)
 
-:| parsed =
-    | Parsed : i32 * i32 * string
-    | ParseBad : string
+:| directive_error =
+    | ShebangLine
+    | UnknownDirective : string
+    | UnknownFlag : string
+    | BadTimeout : string
+    | UnknownBackend : string
 
-:~ ^ pair (xs : tokens) (print_code : i32) (timeout : i32) (packages : string) : parsed =
+:| outcome t =
+    | Ready : t
+    | Refused : directive_error
+
+:| timeout =
+    | NoTimeout
+    | TimeoutMs : i32
+
+:| backend_line =
+    | RustCell
+    | SkippedCell
+
+:== flags = { print_code : bool; timeout : timeout; packages : list string }
+
+:== prepared = { code : string; flags : flags; main : cell.main_source; skip : bool }
+
+:== scan_state = { kept : string; flags : flags; seen : bool; started : bool; skip : bool }
+
+:= no_flags () : flags = { print_code = !-; timeout = NoTimeout; packages = [] }
+
+:= positive_timeout (ms : string) : outcome timeout =
+    := n = text.parse_i32 ms
+    ? n > 0i32 ?> Ready (TimeoutMs n) |: Refused (BadTimeout ms)
+
+:~ ^ merged (xs : list string) (f : flags) : outcome flags =
     ?= xs ?|
-    | NoToken => Parsed (print_code, timeout, packages)
-    | Token ("--print-code", rest) => pair rest 1i32 timeout packages
-    | Token ("--timeout", Token (ms, rest)) =>
-        := n = text.parse_i32 ms
-        ? n > 0i32 ?> pair rest print_code n packages
-        |: ParseBad (text.err "timeout" ms)
-    | Token ("--package", Token (path, rest)) =>
-        := packages2 = ? packages = "" ?> path |: packages ++ "\t" ++ path
-        pair rest print_code timeout packages2
-    | Token ("--test", Token ("static", rest)) => pair rest print_code timeout packages
-    | Token ("--test", rest) => pair rest print_code timeout packages
-    | Token ("--symbol", rest) => pair rest print_code timeout packages
-    | Token ("--import-types", Token (_, rest)) => pair rest print_code timeout packages
-    | Token ("--name", Token (_, rest)) => pair rest print_code timeout packages
-    | Token (flag, _) => ParseBad (text.err "flag" flag)
+    | [] => Ready f
+    | "--print-code" :: rest => merged rest { f ?| print_code = !+ }
+    | "--timeout" :: ms :: rest =>
+        ?= positive_timeout ms ?|
+        | Ready t => merged rest { f ?| timeout = t }
+        | Refused e => Refused e
+    | "--package" :: path :: rest => merged rest { f ?| packages = path :: f::packages }
+    | "--test" :: "static" :: rest => merged rest f
+    | "--test" :: rest => merged rest f
+    | "--symbol" :: rest => merged rest f
+    | "--import-types" :: _ :: rest => merged rest f
+    | "--name" :: _ :: rest => merged rest f
+    | flag :: _ => Refused (UnknownFlag flag)
 
-:= merge (args : string) (print_code : i32) (timeout : i32) (packages : string) : parsed =
-    pair (tokens_from args 0i32 NoToken) print_code timeout packages
-
-:= accept_backend (rest : string) : string =
+:= backend_of (rest : string) : outcome backend_line =
     := trimmed = text.trim rest
-    ? trimmed = "_" ?> "skip"
-    |? trimmed = "rust" ?> ""
-    |? text.starts_with trimmed "rust " ?> ""
-    |: text.err "backend" trimmed
+    ? trimmed = "_" ?> Ready SkippedCell
+    |? trimmed = "rust" || text.starts_with trimmed "rust " ?> Ready RustCell
+    |: Refused (UnknownBackend trimmed)
 
-:= finish (kept : string) (print_code : i32) (timeout : i32) (packages : string) (skip : i32) : string =
-    ? text.contains kept "\n#!"
-    ?> text.err "dib" ""
-    |? text.starts_with kept "#!"
-    ?> text.err "dib" ""
+:= finished (s : scan_state) : outcome prepared =
+    ? text.contains s::kept "\n#!" || text.starts_with s::kept "#!" ?> Refused ShebangLine
     |:
-        := wrapped, generated = cell.wrap kept
-        := timeout_text = ? timeout < 0i32 ?> "-" |: text.show_i32 timeout
-        "ok\n"
-        ++ text.show_i32 print_code
-        ++ "\n"
-        ++ timeout_text
-        ++ "\n"
-        ++ text.show_i32 generated
-        ++ "\n"
-        ++ packages
-        ++ "\n"
-        ++ text.show_i32 skip
-        ++ "\n"
-        ++ wrapped
+        := wrapped, generated = cell.wrap s::kept
+        Ready { code = wrapped; flags = s::flags; main = generated; skip = s::skip }
 
-:~ ^ scan
-    (src : string) (i : i32) (kept : string) (print_code : i32) (timeout : i32) (packages : string) (seen : i32)
-    (started : i32) (skip : i32)
-    : string
-    =
+:= kept_line (s : scan_state) (line : string) : scan_state =
+    { s ?| kept = (? s::started ?> s::kept ++ "\n" ++ line |: line); started = !+ }
+
+:= flags_line (s : scan_state) (line : string) : outcome flags =
+    merged (tokens_from (text.drop line (text.length "///- ")) 0i32 []) s::flags
+
+:= backend_seen (s : scan_state) (b : backend_line) : scan_state =
+    ?= b ?| SkippedCell => { s ?| skip = !+ } | RustCell => s
+
+:~ ^ scanned (src : string) (i : i32) (s : scan_state) : outcome prepared =
     ?= text.next_line src i ?|
-    | LineDone => finish kept print_code timeout packages skip
+    | LineDone => finished s
     | LineGot (line, next) =>
-        ? text.starts_with line "////" ?> scan src next kept print_code timeout packages seen started skip
+        ? text.starts_with line "////" ?> scanned src next s
         |? text.starts_with line "///- " ?>
-            ? seen = 1i32 ?> scan src next kept print_code timeout packages 1i32 started skip
+            ? s::seen ?> scanned src next s
             |:
-                ?= merge (text.drop line (text.length "///- ")) print_code timeout packages ?|
-                | ParseBad message => message
-                | Parsed (print2, timeout2, packages2) => scan src next kept print2 timeout2 packages2 1i32 started skip
+                ?= flags_line s line ?|
+                | Ready f => scanned src next { s ?| flags = f; seen = !+ }
+                | Refused e => Refused e
         |? text.starts_with line "///> " ?>
-            := backend = accept_backend (text.drop line (text.length "///> "))
-            ? text.is_error backend ?> backend
-            |? backend = "skip" ?> scan src next kept print_code timeout packages seen started 1i32
-            |: scan src next kept print_code timeout packages seen started skip
-        |? text.starts_with line "///" ?> text.err "directive" line
-        |:
-            := kept2 = ? started = 0i32 ?> line |: kept ++ "\n" ++ line
-            scan src next kept2 print_code timeout packages seen 1i32 skip
+            ?= backend_of (text.drop line (text.length "///> ")) ?|
+            | Ready b => scanned src next (backend_seen s b)
+            | Refused e => Refused e
+        |? text.starts_with line "///" ?> Refused (UnknownDirective line)
+        |: scanned src next (kept_line s line)
 
-:= prepare (code : string) : string =
-    scan (text.replace code "\r\n" "\n") 0i32 "" 0i32 -1i32 "" 0i32 0i32 0i32
+:= flag_text (b : bool) : string = ? b ?> "1" |: "0"
+
+:= timeout_text (t : timeout) : string = ?= t ?| NoTimeout => "-" | TimeoutMs n => text.show_i32 n
+
+:= error_text (e : directive_error) : string =
+    ?= e ?|
+    | ShebangLine => text.err "dib" ""
+    | UnknownDirective line => text.err "directive" line
+    | UnknownFlag flag => text.err "flag" flag
+    | BadTimeout ms => text.err "timeout" ms
+    | UnknownBackend backend => text.err "backend" backend
+
+:= prepared_text (p : prepared) : string =
+    := f = p::flags
+    := head = "ok\n" ++ flag_text f::print_code ++ "\n" ++ timeout_text f::timeout ++ "\n" ++ cell.main_text p::main
+    head ++ "\n" ++ sm'.concat_list "\t" (listm.rev f::packages) ++ "\n" ++ flag_text p::skip ++ "\n" ++ p::code
+
+:= encoded (o : outcome prepared) : string = ?= o ?| Ready p => prepared_text p | Refused e => error_text e
+
+:= initial () : scan_state = { kept = ""; flags = no_flags (); seen = !-; started = !-; skip = !- }
+
+:= prepare (code : string) : string = encoded (scanned (text.replace code "\r\n" "\n") 0i32 (initial ()))

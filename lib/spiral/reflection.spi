@@ -1,4 +1,4 @@
-test reflection static =
+:# reflection static =
     :< testing
 
 :< sm'_operators
@@ -6,10 +6,10 @@ test reflection static =
 /// ## reflection
 := get_union_fields \* union_type. () : list (string * union_type) =
     ~>
-        real_core.union_type_to_record
+        real_core::union_type_to_record
             `union_type
             \* union_record_type. =>
-                real_core.record_type_fold
+                real_core::record_type_fold
                     \ acc key =>
                         \* value. =>
                             := value =
@@ -81,8 +81,8 @@ test reflection static =
                                                 | _ => $'undefined' : value
                                             ) : () -> value
                                     }
-                            := item = real_core.nominal_create `union_type (key, value)
-                            := key' = sm'_real.symbol_to_string_real `(`key)
+                            := item = real_core::nominal_create `union_type (key, value)
+                            := key' = sm'_real::symbol_to_string_real `(`key)
                             (::) `(string * union_type) (key', item) acc
                     (Nil `(string * union_type))
                     `union_record_type
@@ -91,35 +91,35 @@ test reflection static =
 ///> rust
 ///> typescript
 ///> cuda
-test get_union_fields =
+:# get_union_fields =
     get_union_fields ()
-    |> listm'.box
-    |> listm'.to_array'
+    |> listm'::box
+    |> listm'::to_array'
     |> array
-    |> am'.sort_by snd
+    |> am'::sort_by snd
     |> \ (array x : array _) => x
-    |> _assert_eq' (am'.base ;[ "Browser", Browser; "Contract", Contract ])
+    |> _assert_eq' (am'::base ;[ "Browser", Browser; "Contract", Contract ])
     get_union_fields ()
-    |> listm'.box
-    |> listm'.to_array'
+    |> listm'::box
+    |> listm'::to_array'
     |> array
-    |> am'.sort_by snd
+    |> am'::sort_by snd
     |> \ (array x : array _) => x
-    |> _assert_eq' (am'.base ;[ "Some", Some 0i32; "None", None ])
+    |> _assert_eq' (am'::base ;[ "Some", Some 0i32; "None", None ])
 
 := get_union_fields_untag \* union_type. () : list (string * union_type) =
     ~>
-        real_core.union_type_to_record
+        real_core::union_type_to_record
             `union_type
             \* union_record_type. =>
                 := result =
-                    real_core.record_type_fold_back
+                    real_core::record_type_fold_back
                         \ _key =>
                             \* value. (acc, (i : i32)) =>
                                 := key, item : (string * union_type) =
-                                    real_core.union_untag `union_type i
+                                    real_core::union_untag `union_type i
                                         (\ key => \* value. =>
-                                            := key' = sm'_real.symbol_to_string_real `(`key)
+                                            := key' = sm'_real::symbol_to_string_real `(`key)
                                             := value =
                                                 ?: value ?|
                                                 | () => $'' : value
@@ -154,7 +154,7 @@ test get_union_fields =
                                                                 $'std.mem.zeroes(`value)' : value
                                                             ) : () -> value
                                                     }
-                                            := item = real_core.nominal_create `union_type (key, value)
+                                            := item = real_core::nominal_create `union_type (key, value)
                                             key', item
                                         )
                                         (\ _ =>
@@ -166,14 +166,14 @@ test get_union_fields =
                         `union_record_type
                         (Nil `(string * union_type), 0i32)
                 := result = fst `(list (string * union_type)) `i32 result
-                listm.rev `(string * union_type) result
+                listm::rev `(string * union_type) result
 
 ///> gleam
 ///> lua
 ///> cuda
 ///> rust
 ///> typescript
-test get_union_fields_untag =
+:# get_union_fields_untag =
     get_union_fields_untag ()
     |> _assert_eq' [ "Browser", Browser; "Contract", Contract ]
 
@@ -185,13 +185,13 @@ test get_union_fields_untag =
     fields
     ++ (
         fields
-        |> listm.map \ key', x =>
-            key' |> sm'.to_lower, x
+        |> listm::map \ key', x =>
+            key' |> sm'::to_lower, x
     )
-    |> listm'.box
-    |> listm'.to_array'
+    |> listm'::box
+    |> listm'::to_array'
     |> \ x => array x : array _
-    |> am'.try_pick \ key', x =>
+    |> am'::try_pick \ key', x =>
         ? key' =. key
         ?> Some x
         |: None
@@ -201,7 +201,7 @@ test get_union_fields_untag =
 ///> cuda
 ///> rust
 ///> typescript
-test union_try_pick =
+:# union_try_pick =
     "Browser"
     |> union_try_pick
     |> _assert_eq (Some Browser)
@@ -215,10 +215,10 @@ test union_try_pick =
     fields
     ++ (
         fields
-        |> listm.map \ key', x =>
-            key' |> sm'.to_lower, x
+        |> listm::map \ key', x =>
+            key' |> sm'::to_lower, x
     )
-    |> listm'.try_pick \ key', x =>
+    |> listm'::try_pick \ key', x =>
         ? key' =. key
         ?> x |> Some
         |: None
@@ -228,7 +228,7 @@ test union_try_pick =
 ///> cuda
 ///> rust
 ///> typescript
-test union_try_pick_2 =
+:# union_try_pick_2 =
     "Browser"
     |> union_try_pick'
     |> _assert_eq (Some Browser)
@@ -239,9 +239,9 @@ test union_try_pick_2 =
 
 := union_cases_fold \* union_type state. (step : state -> union_type -> state) (initial : state) : state =
     ~>
-        real_core.union_type_to_record `union_type \* union_record_type. =>
-            real_core.record_type_fold
-                \ acc key => \* value. => step acc (real_core.nominal_create `union_type (key, ()))
+        real_core::union_type_to_record `union_type \* union_record_type. =>
+            real_core::record_type_fold
+                \ acc key => \* value. => step acc (real_core::nominal_create `union_type (key, ()))
                 initial
                 `union_record_type
 
@@ -250,7 +250,7 @@ test union_try_pick_2 =
 ///> cuda
 ///> rust
 ///> typescript
-test union_cases_fold =
+:# union_cases_fold =
     union_cases_fold (\ count (_ : reflection_test_target) => count + 1i32) 0i32
     |> _assert_eq 2i32
 
@@ -269,7 +269,7 @@ test union_cases_fold =
 ///> cuda
 ///> rust
 ///> typescript
-test union_cases_find =
+:# union_cases_find =
     union_cases_find \ (target : reflection_test_target) => target = Contract
     |> _assert_eq (Some Contract)
 
@@ -278,16 +278,16 @@ test union_cases_find =
 
 := union_to_string \* t. (x : t) : string =
     ~> get_union_fields_untag `t ()
-    |> listm'.try_pick \ key, x' =>
+    |> listm'::try_pick \ key, x' =>
         ? x' = x
         ?> Some key
         |:
             := has_case =
                 ~>
-                    real_core.union_type_to_record
+                    real_core::union_type_to_record
                         `t
                         \* union_record_type. =>
-                            real_core.record_type_fold_back
+                            real_core::record_type_fold_back
                                 \ _key =>
                                     \* value. acc =>
                                         ? acc
@@ -301,47 +301,47 @@ test union_cases_find =
             ? has_case |> not
             ?> None
             |:
-                := x' = #?x' |> sm'.split "(" |> am'.index_base 0
+                := x' = #?x' |> sm'::split "(" |> am'::index_base 0
 
-                ? #?x |> sm'.starts_with x'
+                ? #?x |> sm'::starts_with x'
                 ?> Some key
                 |: None
-    |> optionm.value
+    |> optionm::value
 
 ///> cuda
 ///> rust
 ///> typescript
-test union_to_string =
+:# union_to_string =
     Some !+
     |> union_to_string
     |> _assert_eq' "Some"
 
 := nameof \* t. (x : t) : string =
     ~>
-        real_core.record_type_fold_back
+        real_core::record_type_fold_back
             \ key =>
                 \* value. _ =>
-                    sm'_real.symbol_to_string_real `(`key)
+                    sm'_real::symbol_to_string_real `(`key)
             `t
             ""
 
-test nameof =
+:# nameof =
     { test1 = ""; test2 = "" }
     |> nameof
     |> _assert_eq' "test1"
 
 := get_record_fields \* t u. (x : t) : list (string * u) =
     ~>
-        real_core.record_type_fold_back
+        real_core::record_type_fold_back
             \ key =>
                 \* u'. acc =>
-                    := k = sm'_real.symbol_to_string_real `(`key)
+                    := k = sm'_real::symbol_to_string_real `(`key)
                     := v = x key
                     (::) `(string * u') (k, v) acc
             `t
             (Nil `(string * u))
 
-test get_record_fields =
+:# get_record_fields =
     { a = "1"; b = "2" }
     |> get_record_fields
     |> _assert_eq' [ "a", "1"; "b", "2" ]
@@ -350,10 +350,10 @@ test get_record_fields =
     ~>
         := get_function_type \* t. =
             := args \* t {record}. : list (string * string) =
-                real_core.record_type_fold_back
+                real_core::record_type_fold_back
                     \ key =>
                         \* v. acc =>
-                            := k = sm'_real.symbol_to_string_real `(`key)
+                            := k = sm'_real::symbol_to_string_real `(`key)
                             := v = $'"`v"' : string
                             (::) `(string * string) (k, v) acc
                     `t
@@ -362,10 +362,10 @@ test get_record_fields =
             ?: t ?|
             | ~t -> ~u => args `t, ($'"`u"' : string)
 
-        real_core.record_type_fold_back
+        real_core::record_type_fold_back
             \ key =>
                 \* v. acc =>
-                    := k = sm'_real.symbol_to_string_real `(`key)
+                    := k = sm'_real::symbol_to_string_real `(`key)
                     := args, result = get_function_type `v
                     (::) `(string * (list (string * string) * string)) (k, (args, result)) acc
             `(`fns)
@@ -373,24 +373,24 @@ test get_record_fields =
     |> \ x => x : list (string * (list (string * string) * string))
 
 ///> fsharp
-test get_functions_types =
+:# get_functions_types =
     := one ({ a } : { a : i32 }) : i32 = a + 1
     := two ({ a b } : { a : i32; b : i32 }) : i32 = a + b + 2
     := fns = { one two }
 
     fns
     |> get_functions_types
-    |> listm.map \ (name, args, result) => name, (args |> listm'.box |> listm'.to_array', result)
-    |> listm'.box
-    |> listm'.to_array'
-    |> sm'.format
+    |> listm::map \ (name, args, result) => name, (args |> listm'::box |> listm'::to_array', result)
+    |> listm'::box
+    |> listm'::to_array'
+    |> sm'::format
     |> _assert_eq' (
         [
             "one", [ "a", "int32" ], "int32"
             "two", [ "a", "int32"; "b", "int32" ], "int32"
         ]
-        |> listm.map \ (name, args, result) => name, (args |> listm'.box |> listm'.to_array', result)
-        |> listm'.box
-        |> listm'.to_array'
-        |> sm'.format
+        |> listm::map \ (name, args, result) => name, (args |> listm'::box |> listm'::to_array', result)
+        |> listm'::box
+        |> listm'::to_array'
+        |> sm'::format
     )

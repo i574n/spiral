@@ -3,8 +3,8 @@ param(
     [Parameter(Mandatory)] [string[]] $File,
     [string] $Lib = (Join-Path $PSScriptRoot '../../../lib/spiral'),
     [string] $CoreRoot = (Join-Path $PSScriptRoot '../../..'),
-    [string] $Compiler = (Join-Path $env:LOCALAPPDATA 'spiral-bin/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll'),
-    [string] $Dotnet = (Join-Path $env:LOCALAPPDATA 'spiral-bin/toolchains/dotnet/dotnet.exe'),
+    [string] $Compiler = (Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll'),
+    [string] $Dotnet = (Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) "spiral-bin/toolchains/dotnet/dotnet$(if ($IsWindows) { '.exe' })"),
     [string] $CopyRoot,
     [int] $TimeoutSeconds = 600,
     [int] $Show = 3,
@@ -19,10 +19,10 @@ if (-not (Test-Path -LiteralPath (Join-Path $CoreRoot 'deps/The-Spiral-Language/
 if (-not (Test-Path -LiteralPath (Join-Path $Lib 'package.spiproj'))) { throw "no package.spiproj in -Lib $Lib" }
 if (-not $CopyRoot) {
     $key = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($Lib.ToLowerInvariant()))).Substring(0, 12)
-    $CopyRoot = Join-Path $env:LOCALAPPDATA "spiral-bin/scratch/type-probe-$key"
+    $CopyRoot = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) "spiral-bin/scratch/type-probe-$key"
 }
 if (-not [IO.Path]::IsPathFullyQualified($CopyRoot)) { throw "-CopyRoot must be a full path, got '$CopyRoot': robocopy /MIR prunes its target" }
-$scratchRoots = @((Join-Path $env:LOCALAPPDATA 'spiral-bin/scratch'), (Join-Path ([IO.Path]::GetTempPath()) 'claude')) | ForEach-Object { [IO.Path]::GetFullPath($_).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar }
+$scratchRoots = @((Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/scratch'), (Join-Path ([IO.Path]::GetTempPath()) 'claude')) | ForEach-Object { [IO.Path]::GetFullPath($_).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar }
 $copyRootFull = [IO.Path]::GetFullPath($CopyRoot).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
 if (-not ($scratchRoots | Where-Object { $copyRootFull.StartsWith($_, [StringComparison]::OrdinalIgnoreCase) -and $copyRootFull.Length -gt $_.Length })) { throw "-CopyRoot must sit under a scratch root ($($scratchRoots -join ', ')), got '$CopyRoot': robocopy /MIR prunes its target" }
 $copy = Join-Path $CopyRoot 'lib/spiral'
@@ -53,7 +53,7 @@ $results = foreach ($relative in $File) {
     foreach ($open in @($lines | Where-Object { $_ -match '^:< ' })) { Add-Line $open $null }
     Add-Line ':< testing' $null
     Add-Line '' $null
-    $typed = 0; $lifted = @(); $skipped = @()
+    $typed = 0; $lifted = @(); $skipped = @(); $expected = @()
     $definitions = @(for ($i = 0; $i -lt $lines.Count; $i++) { if ($lines[$i] -match '^:(?:=|==|!|\||~)\s+(?:\^\s+)?([A-Za-z_][\w'']*)') { [pscustomobject]@{ Name = $Matches[1]; Line = $i + 1 } } })
     function Get-Shadowed($block) {
         $words = @(foreach ($i in $block.Range) { [regex]::Matches($lines[$i], "[A-Za-z_][\w']*") | ForEach-Object Value }) | Sort-Object -Unique
@@ -62,7 +62,7 @@ $results = foreach ($relative in $File) {
     $parsed = foreach ($row in $blocks) {
         $name, $headerLine, $first, $last, $header = $row -split "`t"
         $directives = @(for ($i = [int]$headerLine - 2; $i -ge 0 -and $lines[$i] -match '^///[>-]'; $i--) { $lines[$i] })
-        [pscustomobject]@{ Name = $name; Header = [int]$headerLine; Range = ([int]$first - 1)..([int]$last - 1); Static = $header -match '\sstatic\s*=\s*$'; NoTarget = [bool]($directives -match '^///>\s*_\s*$') }
+        [pscustomobject]@{ Name = $name; Header = [int]$headerLine; Range = ([int]$first - 1)..([int]$last - 1); Static = $header -match '\sstatic\s*=\s*$'; NoTarget = [bool]($directives -match '^///>\s*_\s*$'); Fails = $header -match '\sfails\s+"' }
     }
     foreach ($block in @($parsed | Where-Object Static)) {
         $lifted += "$($block.Name) ($($block.Range.Count) lines)"
@@ -84,6 +84,7 @@ $results = foreach ($relative in $File) {
     $shadowed = @{}
     foreach ($block in @($parsed | Where-Object { -not $_.Static })) {
         if ($block.NoTarget) { $skipped += $block.Name; continue }
+        if ($block.Fails) { $expected += $block.Name; continue }
         $typed++
         $names = @(Get-Shadowed $block)
         if ($names) { $shadowed[$block.Name] = $names }
@@ -128,11 +129,12 @@ $results = foreach ($relative in $File) {
     $verdict = if (-not $control) { 'VOID' } elseif ($counted) { 'FAIL' } else { 'PASS' }
     $detail = if (-not $control) { "control error missing (exit $LASTEXITCODE): the probe did not type its definitions; first output line: $($text | Select-Object -First 1)" } else { '' }
     $shadowText = @($shadowed.Keys | Sort-Object | ForEach-Object { "$_ ($($shadowed[$_] -join ','); $(@($real | Where-Object Kind -eq "shadowed $_").Count) errors)" })
-    [pscustomobject]@{ File = $relative; Verdict = $verdict; Typed = $typed; Lifted = $lifted; Skipped = $skipped; StaticErrors = $staticErrors; Errors = $counted; Shadowed = $shadowText; Detail = $detail }
+    [pscustomobject]@{ File = $relative; Verdict = $verdict; Typed = $typed; Lifted = $lifted; Skipped = $skipped; Expected = $expected; StaticErrors = $staticErrors; Errors = $counted; Shadowed = $shadowText; Detail = $detail }
 }
 foreach ($r in $results) {
     $liftedText = if ($r.Lifted) { "static lifted: $($r.Lifted -join ', ') with $($r.StaticErrors) errors" } else { 'static lifted: none' }
     $skippedText = if ($r.Skipped) { "; skipped ///> _: $($r.Skipped -join ', ')" } else { '' }
+    if ($r.Expected) { $skippedText += "; skipped fails (expected errors, checked by Cells): $($r.Expected -join ', ')" }
     "type-probe $($r.File): $($r.Verdict); tests typed $($r.Typed)$skippedText; $liftedText; errors $(@($r.Errors).Count) (test $(@($r.Errors | Where-Object { $_.Kind -like 'test *' }).Count), module $(@($r.Errors | Where-Object { $_.Kind -eq 'module' }).Count)); control $(if ($r.Verdict -eq 'VOID') { 'MISSING' } else { 'ok' })"
     if ($r.Detail) { "  $($r.Detail)" }
     if ($r.Shadowed) { "  shadowed (a name the module defines again below the test; the probe sees the later one, so leave these to the Cells gate): $($r.Shadowed -join '; ')" }

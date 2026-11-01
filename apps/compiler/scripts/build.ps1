@@ -25,7 +25,7 @@ $script:SpiralBuildRuntime = $null
 
 function Get-SpiralBuildDirectory([string]$Dotnet) {
     $systemDotnet = if ($IsWindows) { Join-Path $env:ProgramFiles 'dotnet/dotnet.exe' } else { '/usr/share/dotnet/dotnet' }
-    $systemRuntimes = if (Test-Path $systemDotnet) { @(& $systemDotnet --list-runtimes | Select-String '^Microsoft\.NETCore\.App (\S+)' | ForEach-Object { $_.Matches[0].Groups[1].Value }) } else { @() }
+    $systemRuntimes = @(if (Test-Path $systemDotnet) { & $systemDotnet --list-runtimes | Select-String '^Microsoft\.NETCore\.App (\S+)' | ForEach-Object { $_.Matches[0].Groups[1].Value } })
     $sdks = foreach ($sdk in Get-ChildItem (Join-Path (Split-Path $Dotnet) 'sdk') -Directory -ErrorAction SilentlyContinue) {
         $bundled = Join-Path $sdk.FullName 'Microsoft.NETCoreSdk.BundledVersions.props'
         if (-not (Test-Path $bundled)) { continue }

@@ -12,7 +12,7 @@ defmodule Mix.Tasks.Spiral.CellBudget do
     files = paths |> Enum.flat_map(&sources/1) |> Enum.uniq()
 
     findings =
-      for file <- files, {profile, source} <- [{Spiral.Cells.CellBudget.profile_for(file), File.read!(file)}],
+      for file <- files, {profile, source} <- [{Spiral.Cells.CellBudget.default_profile(), File.read!(file)}],
           finding <- Spiral.Cells.CellBudget.rewrites(source, profile) ++ Spiral.Cells.CellBudget.over_budget(source, profile) do
         Mix.shell().info(Spiral.Cells.CellBudget.format(file, finding))
         finding

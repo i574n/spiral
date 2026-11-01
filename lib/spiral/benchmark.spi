@@ -1,5 +1,5 @@
 /// ## benchmark
-test benchmark static =
+:# benchmark static =
     :< testing
 
 :< sm'_operators
@@ -14,16 +14,16 @@ test benchmark static =
     }
 
 := run' \* t. count (fn : () -> t) =
-    process.gc_collect ()
-    := stopwatch = date_time.stopwatch ()
-    stopwatch |> date_time.stopwatch_start
-    := time1 = stopwatch |> date_time.stopwatch_elapsed_milliseconds
+    process::gc_collect ()
+    := stopwatch = date_time::stopwatch ()
+    stopwatch |> date_time::stopwatch_start
+    := time1 = stopwatch |> date_time::stopwatch_elapsed_milliseconds
     := result : t =
-        am'.init_series 0 count 1i32
+        am'::init_series 0 count 1i32
         |> \ x => array x : array _
-        |> am'.parallel_map \ _n => fn ()
-        |> am'.last
-    := time2 = (stopwatch |> date_time.stopwatch_elapsed_milliseconds) - time1
+        |> am'::parallel_map \ _n => fn ()
+        |> am'::last
+    := time2 = (stopwatch |> date_time::stopwatch_elapsed_milliseconds) - time1
     result, time2
 
 := run \* input expected.
@@ -34,17 +34,17 @@ test benchmark static =
     =
     := input_str = #?*input
 
-    console.write_line ""
+    console::write_line ""
     trace Verbose
         \ () => "benchmark.run"
-        \ () => { input_str = input_str |> sm'.ellipsis_end 40 }
+        \ () => { input_str = input_str |> sm'::ellipsis_end 40 }
 
     := results_with_time : array_base _ =
         solutions
-        |> listm'.indexed
-        |> listm'.box
-        |> listm'.to_array'
-        |> am'.map_base \ ((i : int), (test_name, solution)) =>
+        |> listm'::indexed
+        |> listm'::box
+        |> listm'::to_array'
+        |> am'::map_base \ ((i : int), (test_name, solution)) =>
             := result, time =
                 \ () => solution input
                 |> run' count
@@ -53,12 +53,12 @@ test benchmark static =
                 \ () => { i = i + 1; test_name time }
             result, time
 
-    ?= results_with_time |> am'.map_base fst ?|
-    | items ?& (items |> (\ x => array x : array _) |> am'.length) <= 1 => ()
+    ?= results_with_time |> am'::map_base fst ?|
+    | items ?& (items |> (\ x => array x : array _) |> am'::length) <= 1 => ()
     | items ?&
         items
         |> (\ x => array x : array _)
-        |> arraym.forall' ((=) (items |> (\ x => array x : array _) |> am'.index 0))
+        |> arraym::forall' ((=) (items |> (\ x => array x : array _) |> am'::index 0))
         => ()
     | results => failwith ($'$"benchmark.run / error / results: {!results}"' : string)
 
@@ -67,11 +67,11 @@ test benchmark static =
         expected = #?*expected
         result =
             results_with_time
-            |> am'.map_base fst
+            |> am'::map_base fst
             |> (\ x => array x : array _)
-            |> am'.index 0
-            |> sm'.format_debug
-        time_list = results_with_time |> am'.map_base snd
+            |> am'::index 0
+            |> sm'::format_debug
+        time_list = results_with_time |> am'::map_base snd
     }
 
 := run_all \* input expected.
@@ -80,40 +80,40 @@ test benchmark static =
     (solutions : list (string * (input -> expected)))
     test_cases
     =
-    console.write_line ""
-    console.write_line "```"
+    console::write_line ""
+    console::write_line "```"
     trace Verbose
         \ () => "benchmark.run_all"
         \ () => { test_name count }
     test_cases
-    |> listm'.box
-    |> listm'.to_array'
-    |> am'.map_base (run count solutions)
+    |> listm'::box
+    |> listm'::to_array'
+    |> am'::map_base (run count solutions)
 
 := sort_result_list results =
     := table =
         := rows =
             results
-            |> am'.map_base \ (result : test_case_result) =>
+            |> am'::map_base \ (result : test_case_result) =>
                 := best =
-                    result.time_list
-                    |> am'.indexed
-                    |> am'.map_base \ (i, time) =>
+                    result::time_list
+                    |> am'::indexed
+                    |> am'::map_base \ (i, time) =>
                         i + 1i32, time
                     |> \ x => array x : array _
-                    |> am'.sort_by snd
-                    |> am'.index 0i32
-                    |> sm'.format
+                    |> am'::sort_by snd
+                    |> am'::index 0i32
+                    |> sm'::format
                 := row =
                     [
-                        result.input |> sm'.ellipsis_end 40 |> sm'.replace "|" ""
-                        result.expected
-                        result.result
+                        result::input |> sm'::ellipsis_end 40 |> sm'::replace "|" ""
+                        result::expected
+                        result::result
                         best
                     ]
-                := color : option console.console_color =
+                := color : option console::console_color =
                     :< console
-                    ?= result.expected = result.result ?|
+                    ?= result::expected = result::result ?|
                     | !+ => Some $'`console_color.DarkGreen'
                     | !- => Some $'`console_color.DarkRed'
                 row, color
@@ -133,77 +133,77 @@ test benchmark static =
                     "---"
                 ]
             ]
-            |> listm.map \ row => row, None
-            |> listm'.box
-            |> listm'.to_array'
+            |> listm::map \ row => row, None
+            |> listm'::box
+            |> listm'::to_array'
             |> \ x => array x : array _
         array rows
-        |> arraym.append header
+        |> arraym::append header
         |> \ (array x) => x
 
     := formatted_table =
-        := length_map : mapm.map i32 i64 =
+        := length_map : mapm::map i32 i64 =
             table
-            |> am'.map_base (fst >> listm'.box >> listm'.to_array')
-            |> am'.transpose
-            |> am'.map_base \ column =>
+            |> am'::map_base (fst >> listm'::box >> listm'::to_array')
+            |> am'::transpose
+            |> am'::map_base \ column =>
                 column
-                |> am'.map_base sm.length
+                |> am'::map_base sm::length
                 |> \ x => array x : array _
-                |> am'.sort_descending
-                |> am'.try_item 0i32
-                |> optionm'.default_value 0i64
-            |> am'.indexed
+                |> am'::sort_descending
+                |> am'::try_item 0i32
+                |> optionm'::default_value 0i64
+            |> am'::indexed
             |> \ x => array x : array _
-            |> mapm.of_array
+            |> mapm::of_array
         table
-        |> am'.map_base \ (row, color) =>
+        |> am'::map_base \ (row, color) =>
             := new_row =
                 row
-                |> listm'.indexed
-                |> listm.map \ (i, cell) =>
-                    cell |> sm'.pad_right (length_map |> mapm.item i |> conv) ' '
-                |> listm'.box
-                |> listm'.to_array'
+                |> listm'::indexed
+                |> listm::map \ (i, cell) =>
+                    cell |> sm'::pad_right (length_map |> mapm::item i |> conv) ' '
+                |> listm'::box
+                |> listm'::to_array'
             new_row, color
 
-    console.write_line "```"
+    console::write_line "```"
     formatted_table
     |> \ x => array x : array _
-    |> am'.to_list'
-    |> listm'.unbox
-    |> listm.iter \ (row, color) =>
+    |> am'::to_list'
+    |> listm'::unbox
+    |> listm::iter \ (row, color) =>
         ?= color ?|
-        | Some color => color |> console.set_foreground_color
-        | None => console.reset_color ()
+        | Some color => color |> console::set_foreground_color
+        | None => console::reset_color ()
 
-        array row |> sm'.join' "\t| " |> console.write_line
+        array row |> sm'::join' "\t| " |> console::write_line
 
-        console.reset_color ()
+        console::reset_color ()
 
     := averages =
         results
-        |> am'.map_base \ result =>
-            result.time_list
-            |> am'.map_base ($'float' : i64 -> f64)
-        |> am'.transpose
-        |> am'.map_base ((\ x => array x : array _) >> am'.average)
-        |> am'.map_base ($'int64' : f64 -> i64)
-        |> am'.indexed
+        |> am'::map_base \ result =>
+            result::time_list
+            |> am'::map_base ($'float' : i64 -> f64)
+        |> am'::transpose
+        |> am'::map_base ((\ x => array x : array _) >> am'::average)
+        |> am'::map_base ($'int64' : f64 -> i64)
+        |> am'::indexed
         |> \ x => array x : array _
 
-    console.write_line "```"
+    console::write_line "```"
     averages
-    |> am'.sort_by snd
-    |> am'.to_list'
-    |> listm'.unbox
-    |> listm.iter \ ((i : i32), avg) =>
+    |> am'::sort_by snd
+    |> am'::to_list'
+    |> listm'::unbox
+    |> listm::iter \ ((i : i32), avg) =>
         trace Verbose
             \ () => "benchmark.sort_result_list / averages.iter"
             \ () => { i = i + 1; avg }
-    console.write_line "```"
+    console::write_line "```"
 
-test sort_result_list static =
+:# sort_result_list static =
     := is_fast () =
         !-
 
@@ -250,7 +250,7 @@ test sort_result_list static =
 /// ```
 /// `
 ///> fsharp
-test empty2tests =
+:# empty2tests =
     := get_solutions () =
         [
             "A",
@@ -276,7 +276,7 @@ test empty2tests =
             ?> 1000i32
             |: 2000000i32
 
-        run_all (reflection.nameof { empty_2_tests }) count solutions test_cases
+        run_all (reflection::nameof { empty_2_tests }) count solutions test_cases
         |> sort_result_list
 
     empty_2_tests ()
@@ -326,7 +326,7 @@ test empty2tests =
 /// 01:21:25 [90mverbose[0m #8 benchmark.sort_result_list / averages.iter / {avg = 26; i = 0}
 /// ```
 ///> fsharp
-test emptytests =
+:# emptytests =
     := get_solutions () =
         [
             "A",
@@ -349,7 +349,7 @@ test emptytests =
             ?> 1000i32
             |: 2000000i32
 
-        run_all (reflection.nameof { empty_1_tests }) count solutions test_cases
+        run_all (reflection::nameof { empty_1_tests }) count solutions test_cases
         |> sort_result_list
 
     empty_1_tests ()

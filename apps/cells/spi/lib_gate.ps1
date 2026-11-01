@@ -7,7 +7,7 @@ param(
     [string] $RawOut,
     [ValidateSet('process', 'daemon')] [string] $Compiler = 'daemon',
     [string] $NotebookOut,
-    [string] $BuildPath = (Join-Path $env:LOCALAPPDATA 'spiral-bin/mix-builds/lib-gate'),
+    [string] $BuildPath = (Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/mix-builds/lib-gate'),
     [string[]] $Test = @()
 )
 $ErrorActionPreference = 'Continue'
@@ -25,9 +25,9 @@ $copyRoot = if ($libRoot) { $libRoot.FullName } else { Split-Path (Split-Path (R
 $copyGate = Get-CopyGateSettings $copyRoot (Join-Path $PSScriptRoot '../../..')
 if ($copyGate -and -not $PSBoundParameters.ContainsKey('BuildPath')) { $BuildPath = $copyGate.BuildPath }
 if ($copyGate -and -not $env:SPIRAL_CELLS_COMPILER_PORT) { $env:SPIRAL_CELLS_COMPILER_PORT = $copyGate.Port }
-$env:PATH = "$HOME\scoop\apps\erlang\current\bin;$HOME\scoop\apps\elixir\current\bin;$env:PATH"
+if ($IsWindows) { $env:PATH = "$HOME\scoop\apps\erlang\current\bin;$HOME\scoop\apps\elixir\current\bin;$env:PATH" }
 $env:MIX_BUILD_PATH = $BuildPath
-if (-not $env:SPIRAL_CC) { $env:SPIRAL_CC = Join-Path $HOME 'scoop\apps\gcc\current\bin\gcc.exe' }
+if ($IsWindows -and -not $env:SPIRAL_CC) { $env:SPIRAL_CC = Join-Path $HOME 'scoop\apps\gcc\current\bin\gcc.exe' }
 $env:SPIRAL_COMPILER_PACKAGE_DIR = (Resolve-Path $Candidate).Path
 $env:SPIRAL_CELLS_COMPILER = $Compiler
 $env:SPIRAL_CELLS_MEMO = '0'

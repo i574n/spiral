@@ -106,26 +106,52 @@ try {
         "print('spiral-check-lua', 6 * 7)`n" | Set-Content "$checkDir/lua/main.lua" -NoNewline
         "fn main() { println!(`"spiral-check-rust {}`", 6 * 7); }`n" | Set-Content "$checkDir/rust/main.rs" -NoNewline
         "print('spiral-check-cuda', 6 * 7)`n" | Set-Content "$checkDir/cuda/main.py" -NoNewline
-        foreach ($case in @(
-                @{ name = "rust"; args = @("rust", "--rs-path", (GetFullPath "$checkDir/rust/main.rs")); expect = "spiral-check-rust 42" },
-                @{ name = "cuda"; args = @("cuda", "--py-path", (GetFullPath "$checkDir/cuda/main.py")); expect = "spiral-check-cuda 42" },
-                @{ name = "lua"; args = @("lua", "--lua-path", (GetFullPath "$checkDir/lua/main.lua")); expect = "spiral-check-lua`t42" },
-                @{ name = "gleam"; args = @("gleam", "--gleam-path", (GetFullPath "$checkDir/gleam/main.gleam")); expect = "spiral-check-gleam 42"; exact = $true })) {
+        $protocol = GetFullPath "$checkDir/protocol ü"
+        New-Item -ItemType Directory -Force "$protocol/rust" | Out-Null
+        ('print("child output: \"quoted\"")' + "`n") | Set-Content "$protocol/child with spaces.py" -NoNewline
+        ('raise RuntimeError("protocol-child-failure")' + "`n") | Set-Content "$protocol/child raises.py" -NoNewline
+        ('raise RuntimeError("cupy_backends.cuda.api.runtime.CUDARuntimeError: cudaErrorInsufficientDriver")' + "`n") | Set-Content "$protocol/cuda driver.py" -NoNewline
+        ('fn main() { let _x: i32 = "rust-protocol-failure"; }' + "`n") | Set-Content "$protocol/rust/main.rs" -NoNewline
+        ('print("lua-print", 1)' + "`n" + 'io.write("lua-", "write")' + "`n" + 'return 6 * 7' + "`n") | Set-Content "$protocol/main with spaces.lua" -NoNewline
+        ('error("lua-protocol-failure")' + "`n") | Set-Content "$protocol/lua error.lua" -NoNewline
+        $cases = @(
+            @{ name = "rust"; args = @("rust", "--rs-path", (GetFullPath "$checkDir/rust/main.rs")); expect = "output"; text = "spiral-check-rust 42" }
+            @{ name = "cuda"; args = @("cuda", "--py-path", (GetFullPath "$checkDir/cuda/main.py")); expect = "output"; text = "spiral-check-cuda 42" }
+            @{ name = "lua"; args = @("lua", "--lua-path", (GetFullPath "$checkDir/lua/main.lua")); expect = "output"; text = "spiral-check-lua`t42" }
+            @{ name = "gleam"; args = @("gleam", "--gleam-path", (GetFullPath "$checkDir/gleam/main.gleam")); expect = "exact"; text = "spiral-check-gleam 42" }
+            foreach ($level in "", "Verbose", "Debug", "Info", "Warning", "Critical") {
+                @{ name = "protocol-level-$(if ($level) { $level } else { 'unset' })"; level = $level; args = @("cuda", "--py-path", "$protocol/child with spaces.py"); expect = "output"; text = 'child output: "quoted"' }
+            }
+            @{ name = "protocol-child-exception"; args = @("cuda", "--py-path", "$protocol/child raises.py"); expect = "failure"; text = "protocol-child-failure" }
+            @{ name = "protocol-cuda-driver"; args = @("cuda", "--py-path", "$protocol/cuda driver.py"); expect = "failure"; text = "cudaErrorInsufficientDriver" }
+            @{ name = "protocol-rust-build"; args = @("rust", "--rs-path", "$protocol/rust/main.rs"); expect = "failure"; text = "rust-protocol-failure" }
+            @{ name = "protocol-lua-output"; args = @("lua", "--lua-path", "$protocol/main with spaces.lua"); expect = "exact"; text = "lua-print`t1`nlua-write" }
+            @{ name = "protocol-lua-error"; args = @("lua", "--lua-path", "$protocol/lua error.lua"); expect = "failure"; text = "lua-protocol-failure" })
+        foreach ($case in $cases) {
+            $env:TRACE_LEVEL = $case.level
             $json = & $newExe @($case.args) 2> "$checkDir/$($case.name).err" | ForEach-Object { "$_" }
             $caseExit = $LASTEXITCODE
+            $stdout = $json -join "`n"
+            $stderr = "$(Get-Content -Raw "$checkDir/$($case.name).err" -ErrorAction Ignore)"
             $output = try {
-                $result = ($json -join "`n") | ConvertFrom-Json
+                $result = $stdout | ConvertFrom-Json
                 if ($result.command_result) { $result = $result.command_result | ConvertFrom-Json }
                 $result.output
-            } catch { "<no JSON> $json" }
-            Write-Output "spiral/apps/spiral/build.ps1 / run check / $($case.name): exit $caseExit / $("$output".Trim())"
-            if ($caseExit -ne 0 -or !("$output" -match [regex]::Escape($case.expect)) -or ($case.exact -and "$output".Trim() -ne $case.expect)) {
-                Get-Content "$checkDir/$($case.name).err" -Tail 40 -ErrorAction Ignore | ForEach-Object { Write-Output "spiral/apps/spiral/build.ps1 / run check / $($case.name) stderr / $_" }
-                $failures += "$($case.name): exit $caseExit, expected '$($case.expect)' in the output: $output"
+            } catch { "<no JSON> $stdout" }
+            $passed = switch ($case.expect) {
+                "output" { $caseExit -eq 0 -and "$output" -match [regex]::Escape($case.text) }
+                "exact" { $caseExit -eq 0 -and "$output".Trim() -ceq $case.text }
+                "failure" { $caseExit -ne 0 -and "$stdout`n$stderr".Contains($case.text) -and -not $stdout.Contains('"command_result"') }
+            }
+            Write-Output "spiral/apps/spiral/build.ps1 / run check / $($case.name): exit $caseExit / $(("$output" -replace '\s+', ' ').Trim())"
+            if (-not $passed) {
+                $stderr -split "`n" | Select-Object -Last 40 | ForEach-Object { Write-Output "spiral/apps/spiral/build.ps1 / run check / $($case.name) stderr / $_" }
+                $failures += "$($case.name): exit $caseExit, expected $($case.expect) '$($case.text)': $output"
             }
         }
     } finally {
         $env:SPIRAL_JSON = $spiralJson
+        Remove-Item Env:TRACE_LEVEL -ErrorAction Ignore
     }
 } finally {
     $env:TRACE_LEVEL = $traceLevel

@@ -1,0 +1,99 @@
+:# keyed_rng static =
+    :< testing
+
+/// ## keyed_rng
+:= mix32 (value : u32) : u32 =
+    := a = value ^^^ (value >>> 16)
+    := b = a * 2146121005u32
+    := c = b ^^^ (b >>> 15)
+    := d = c * 2221713035u32
+    d ^^^ (d >>> 16)
+
+:! seed = u32
+
+:! tick = u32
+
+:! entity = u32
+
+:? purpose_code p : p -> u32
+
+:== roll_key p = { seed : seed; tick : tick; entity : entity; purpose : p }
+
+:= roll_key \* p. (s : seed) (t : tick) (e : entity) (purpose : p) : roll_key p =
+    { seed = s; tick = t; entity = e; purpose = purpose }
+
+:= drawn (seed s) (tick t) (entity e) (code : u32) : u32 = mix32 (s + mix32 (t + mix32 (e + mix32 code)))
+
+:= draw \* p {purpose_code}. (key : roll_key p) : u32 = drawn key::seed key::tick key::entity (purpose_code key::purpose)
+
+:= roll_between \* p {purpose_code}. (low : u32) (high : u32) (key : roll_key p) : u32 =
+    low + draw key % (high - low + 1u32)
+
+:| derived =
+    | Derived : u32
+
+:+ purpose_code derived =
+    \ d =>
+        ?= d ?|
+        | Derived code => code
+
+:= sub_key \* p {purpose_code}. (key : roll_key p) (index : u32) : roll_key derived =
+    roll_key key::seed key::tick key::entity (Derived (purpose_code key::purpose * 256u32 + index))
+
+:| sample_purpose =
+    | Coded : u32
+    | Nudge : u32
+
+:+ purpose_code sample_purpose =
+    \ p =>
+        ?= p ?|
+        | Coded code => code
+        | Nudge gene => 100u32 + gene
+
+:= sample_key (t : u32) : roll_key sample_purpose = roll_key (seed 42u32) (tick t) (entity 7u32) (Coded 3u32)
+
+///> c
+///> rust
+///> lua
+:# mix32_reference_values =
+    := ~zero = 0u32
+    := ~one = 1u32
+    := ~sample = 12345u32
+    := ~top = 4294967295u32
+    (mix32 zero, mix32 one, mix32 sample, mix32 top) |> _assert_eq (0u32, 1753845952u32, 2435775735u32, 1734902346u32)
+
+///> c
+///> rust
+///> lua
+:# the_same_key_draws_the_same_u32_on_every_backend =
+    := ~t = 1000u32
+    sample_key t |> draw |> _assert_eq 3892101606u32
+
+///> c
+///> rust
+///> lua
+:# roll_reference_values =
+    := ~t = 1000u32
+    (roll_between 10 50 (sample_key t), roll_between 10 50 (sample_key (t + 1u32))) |> _assert_eq (29u32, 39u32)
+
+:= keyed_at_77 \* p. (purpose : p) : roll_key p = roll_key (seed 1u32) (tick 77u32) (entity 2u32) purpose
+
+///> c
+///> rust
+///> lua
+:# a_purpose_enters_the_draw_only_through_its_code =
+    := ~gene = 2u32
+    draw (keyed_at_77 (Nudge gene)) |> _assert_eq (draw (keyed_at_77 (Coded (100u32 + gene))))
+
+///> c
+///> rust
+///> lua
+:# a_sub_key_draws_as_its_parent_code_times_256_plus_its_index =
+    := ~index = 5u32
+    draw (sub_key (keyed_at_77 (Coded 3u32)) index) |> _assert_eq (draw (keyed_at_77 (Coded (3u32 * 256u32 + index))))
+
+///> wgsl
+:# the_same_key_draws_the_same_u32_on_the_gpu =
+    := ~t = 1000u32
+    := ~one = 1u32
+    ? draw (sample_key t) = 3892101606u32 && mix32 one = 1753845952u32 ?> 0i32 |: 1i32

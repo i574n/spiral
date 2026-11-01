@@ -26,14 +26,14 @@
 
 := no_verbs () : list string = []
 
-:= with_verb (name : string) (names : list string) : list string = sm'.to_lower name :: names
+:= with_verb (name : string) (names : list string) : list string = sm'::to_lower name :: names
 
 := no_cases () : list (string * list (string * cli_field)) = []
 
 := with_case (name : string) (fields : list (string * cli_field)) (cases : list (string * list (string * cli_field)))
     : list (string * list (string * cli_field))
     =
-    (sm'.to_lower name, fields) :: cases
+    (sm'::to_lower name, fields) :: cases
 
 :~ ^ value_after (flag : string) (rest : list string) : option string =
     ?= rest ?|
@@ -56,7 +56,7 @@
     | None => failwith ("missing --" ++# name)
 
 := required_i32 (name : string) (args : list string) : i32 =
-    ?= flag_value name args |> optionm.bind (\ text => convert.try_convert text) ?|
+    ?= flag_value name args |> optionm::bind (\ text => convert::try_convert text) ?|
     | Some value => value
     | None => failwith ("--" ++# name ++# " needs an i32")
 
@@ -64,7 +64,7 @@
     ?= rest ?|
     | head :: value :: tail =>
         ? head = flag ?> values_after flag tail (value :: acc) |: values_after flag (value :: tail) acc
-    | _ => listm.rev acc
+    | _ => listm::rev acc
 
 := flag_values (name : string) (args : list string) : list string = values_after ("--" ++# name) args []
 
@@ -73,4 +73,4 @@
     =
     ?= found ?|
     | Some _ => found
-    | None => ? sm'.to_lower name = verb ?> Some (make ()) |: None
+    | None => ? sm'::to_lower name = verb ?> Some (make ()) |: None

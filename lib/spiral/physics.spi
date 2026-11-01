@@ -1,23 +1,23 @@
-test physics static =
+:# physics static =
     :< testing
 
-test init_series =
-    := x = am'.init_series -3f64 3 0.01
-    := y = x |> am'.map_base math.square
+:# init_series =
+    := x = am'::init_series -3f64 3 0.01
+    := y = x |> am'::map_base math::square
     "square", "x", "y", ;[ "square", x, y ]
 
-test init_series_2 =
-    := x = am'.init_series -10f64 10 0.1
-    := y_sin = x |> am'.map_base sin
-    := y_cos = x |> am'.map_base cos
+:# init_series_2 =
+    := x = am'::init_series -10f64 10 0.1
+    := y_sin = x |> am'::map_base sin
+    := y_cos = x |> am'::map_base cos
     "sin cos", "x", "y", ;[ "sin", x, y_sin; "cos", x, y_cos ]
 
-test init_series_3 =
+:# init_series_3 =
     := y_pos y0 vy0 ay t =
-        y0 + vy0 * t + ay * (t |> math.square) / 2
+        y0 + vy0 * t + ay * (t |> math::square) / 2
 
-    := x = am'.init_series 0f64 5 0.01
-    := y = x |> am'.map_base (y_pos 0 20 -9.8)
+    := x = am'::init_series 0f64 5 0.01
+    := y = x |> am'::map_base (y_pos 0 20 -9.8)
     "projectile motion", "time (s)", "", ;[ "height of projectile (m)", x, y ]
 
 /// ### velocity_cf
@@ -30,21 +30,21 @@ test init_series_3 =
 :== velocity_cf = mass -> velocity -> list scalar_force -> (time -> velocity)
 
 := velocity_cf m v0 fs =
-    := f_net = fs |> listm'.sum
+    := f_net = fs |> listm'::sum
     := a0 = f_net / m
     := v t = v0 + a0 * t
     v
 
-test velocity_cf =
+:# velocity_cf =
     velocity_cf 0.1f64 0.6 [ 0.04; -0.08 ] 0
     |> _assert_eq 0.6
 
     velocity_cf 0.1f64 0.6 [ 0.04; -0.08 ] 1
     |> _assert_eq 0.2
 
-test velocity_cf_2 =
-    := x = am'.init_series 0f64 4 0.1
-    := y = x |> am'.map_base (velocity_cf 0.1f64 0.6 [ 0.04; -0.08 ])
+:# velocity_cf_2 =
+    := x = am'::init_series 0f64 4 0.1
+    := y = x |> am'::map_base (velocity_cf 0.1f64 0.6 [ 0.04; -0.08 ])
     "car on an air track", "time (s)", "", ;[ "velocity of car (m/s)", x, y ]
 
 :== derivative = (f64 -> f64) -> f64 -> f64
@@ -53,28 +53,28 @@ test velocity_cf_2 =
     \ x t =>
         (x (t + dt / 2) - x (t - dt / 2)) / dt
 
-test derivative =
+:# derivative =
     derivative 1 (\ x => x ** 4 / 4) 1 - 1
     |> _assert_approx_eq None 0.25
 
     derivative 0.001 (\ x => x ** 4 / 4) 1 - 1
     |> _assert_approx_eq None 0.0000002499998827953931
 
-test derivative_small_steps =
+:# derivative_small_steps =
     derivative 0.000001 (\ x => x ** 4 / 4) 1 - 1
     |> _assert_approx_eq None 0.000000000001000088900582341
 
     derivative 0.000000001 (\ x => x ** 4 / 4) 1 - 1
     |> _assert_approx_eq None 0.00000008274037099909037
 
-test derivative_tiny_steps =
+:# derivative_tiny_steps =
     derivative 0.000000000001 (\ x => x ** 4 / 4) 1 - 1
     |> _assert_approx_eq None 0.00008890058234101161
 
     derivative 0.000000000000001 (\ x => x ** 4 / 4) 1 - 1
     |> _assert_approx_eq None -0.0007992778373592246
 
-test derivative_round_off =
+:# derivative_round_off =
     derivative 0.000000000000000001 (\ x => x ** 4 / 4) 1 - 1
     |> _assert_approx_eq None -1
 
@@ -89,30 +89,30 @@ test derivative_round_off =
         루프 (a + dt / 2) 0
         |> snd
 
-test integration =
-    integral 0.01 math.square 0 1
+:# integration =
+    integral 0.01 math::square 0 1
     |> _assert_approx_eq None 0.33332500000000004
 
 := integral' dt : integration =
     \ f a b =>
-        listm'.init_series (a + dt / 2) (b - dt / 2) dt
-        |> listm.map (f >> (*) dt)
-        |> listm'.sum
+        listm'::init_series (a + dt / 2) (b - dt / 2) dt
+        |> listm::map (f >> (*) dt)
+        |> listm'::sum
 
-test integration_2 =
-    integral' 0.1 math.square 0 1
-    |> _assert_approx_eq None (integral 0.1 math.square 0 1)
+:# integration_2 =
+    integral' 0.1 math::square 0 1
+    |> _assert_approx_eq None (integral 0.1 math::square 0 1)
 
 := integral'' dt : integration =
     \ f x y =>
-        am'.init_series (x + dt / 2) (y - dt / 2) dt
+        am'::init_series (x + dt / 2) (y - dt / 2) dt
         |> \ x => array x : array _
-        |> arraym.map (f >> (*) dt)
-        |> am'.sum
+        |> arraym::map (f >> (*) dt)
+        |> am'::sum
 
-test integration_3 =
-    integral'' 0.01 math.square 0 1
-    |> _assert_approx_eq None (integral 0.01 math.square 0 1)
+:# integration_3 =
+    integral'' 0.01 math::square 0 1
+    |> _assert_approx_eq None (integral 0.01 math::square 0 1)
 
 := anti_derivative dt v0 a t =
     v0 + integral' dt a 0 t
@@ -121,7 +121,7 @@ test integration_3 =
 
 := velocity_ft dt : velocity_ft =
     \ m v0 fs =>
-        := f_net t = fs |> listm.map (\ f => f t) |> listm'.sum
+        := f_net t = fs |> listm::map (\ f => f t) |> listm'::sum
         := a t = f_net t / m
         anti_derivative dt v0 a
 
@@ -140,39 +140,39 @@ test integration_3 =
     ?> 10
     |: 0
 
-test position_ft_2 =
-    := x = am'.init_series -5f64 45 0.1
-    := y = x |> am'.map_base pedal_coast
+:# position_ft_2 =
+    := x = am'::init_series -5f64 45 0.1
+    := y = x |> am'::map_base pedal_coast
     "child pedaling then coasting", "time (s)", "", ;[ "force on bike (N)", x, y ]
 
-test position_ft_3 =
-    := x = am'.init_series -5 45 1
-    := y = x |> am'.map_base (position_ft 0.1f64 20 0 0 [ pedal_coast ])
+:# position_ft_3 =
+    := x = am'::init_series -5 45 1
+    := y = x |> am'::map_base (position_ft 0.1f64 20 0 0 [ pedal_coast ])
     "child pedaling then coasting", "time (s)", "", ;[ "position of bike (m)", x, y ]
 
 /// ### velocity_fv
 := newton_second_v m fs v0 =
-    fs |> listm.map (\ f => f v0) |> listm'.sum |> \ x => x / m
+    fs |> listm::map (\ f => f v0) |> listm'::sum |> \ x => x / m
 
 := update_velocity dt m fs v0 =
     v0 + newton_second_v m fs v0 * dt
 
 := velocity_fv dt m v0 fs t =
-    stream.iterate (update_velocity dt m fs) v0
-    |> stream.try_item (t / dt |> math.round |> abs)
-    |> optionm'.default_value 0
+    stream::iterate (update_velocity dt m fs) v0
+    |> stream::try_item (t / dt |> math::round |> abs)
+    |> optionm'::default_value 0
 
 := f_air drag rho area v =
     -drag * rho * area * abs v * v / 2
 
-test velocity_fv =
-    := x = am'.init_series 0 60 0.5
-    := y = x |> am'.map_base (velocity_fv 1 70 0f64 [ \ _ => 100; f_air 2 1.225 0.6 ])
+:# velocity_fv =
+    := x = am'::init_series 0 60 0.5
+    := y = x |> am'::map_base (velocity_fv 1 70 0f64 [ \ _ => 100; f_air 2 1.225 0.6 ])
     "bike velocity", "time (s)", "", ;[ "velocity of bike (m/s)", x, y ]
 
 /// ### velocity_ftv
 := newton_second_tv m fs (t, v0) =
-    := f_net = fs |> listm.map (\ f => f (t, v0)) |> listm'.sum
+    := f_net = fs |> listm::map (\ f => f (t, v0)) |> listm'::sum
     := acc = f_net / m
     1, acc
 
@@ -181,17 +181,17 @@ test velocity_fv =
     t + dtdt * dt, v0 + dvdt * dt
 
 := velocity_ftv dt m tv0 fs t =
-    stream.iterate (~~ update_tv dt m fs) tv0
-    |> stream.try_item (t / dt |> math.round |> abs)
-    |> optionm.map snd
-    |> optionm'.default_value 0
+    stream::iterate (~~ update_tv dt m fs) tv0
+    |> stream::try_item (t / dt |> math::round |> abs)
+    |> optionm::map snd
+    |> optionm'::default_value 0
 
 := pedal_coast_air_velocity () =
     velocity_ftv 0.1 20 (dyn (0, 0)) [ \ (t, _) => pedal_coast t; \ (_, v) => f_air 2 1.225 0.5 v ]
 
-test velocity_ftv =
-    := x = am'.init_series 0 100 0.1
-    := y = x |> am'.map_base (pedal_coast_air_velocity ())
+:# velocity_ftv =
+    := x = am'::init_series 0 100 0.1
+    := y = x |> am'::map_base (pedal_coast_air_velocity ())
     "pedaling and coasting with air", "time (s)", "", ;[ "velocity of bike (m/s)", x, y ]
 
 /// ### velocity_ftxv
@@ -199,7 +199,7 @@ test velocity_ftv =
 :! rrr = f64 * f64 * f64
 
 := newton_second_1d m fs (state_1d (t, x0, v0)) =
-    := f_net = fs |> listm.map (\ f => f (state_1d (t, x0, v0))) |> listm'.sum
+    := f_net = fs |> listm::map (\ f => f (state_1d (t, x0, v0))) |> listm'::sum
     := acc = f_net / m
     rrr (1f64, v0, acc)
 
@@ -214,13 +214,13 @@ test velocity_ftv =
     newton_second_1d m fs |> euler_1d dt
 
 := states_txv dt m txv0 fs =
-    seq.iterate_ (update_txv dt m fs) txv0
+    seq::iterate_ (update_txv dt m fs) txv0
 
 := velocity_1d sts t =
     := (state_1d (t0, _, _)) = sts 0
     := (state_1d (t1, _, _)) = sts 1
     := dt = t1 - t0
-    := num_steps = t / dt |> math.round |> abs
+    := num_steps = t / dt |> math::round |> abs
     := (state_1d (_, _, v0)) = sts num_steps
     v0
 
@@ -231,7 +231,7 @@ test velocity_ftv =
     := (state_1d (t0, _, _)) = sts 0
     := (state_1d (t1, _, _)) = sts 1
     := dt = t1 - t0
-    := num_steps = t / dt |> math.round |> abs
+    := num_steps = t / dt |> math::round |> abs
     := (state_1d (_, x0, _)) = sts num_steps
     x0
 
@@ -244,22 +244,22 @@ test velocity_ftv =
 := damped_ho_forces () =
     [
         spring_force 0.8
-        \ (state_1d (_, _, v0)) => f_air 2 1.225 (pi * math.square 0.02) v0
+        \ (state_1d (_, _, v0)) => f_air 2 1.225 (pi * math::square 0.02) v0
         \ _ => -0.0027 * 9.80665
     ]
 
 := pingpong_position t = position_ftxv 0.001 0.0027 (state_1d (0, 0.1, 0)) (damped_ho_forces ()) t
 
-test velocity_ftxv_2 =
-    := x = am'.init_series 0 3 0.01
-    := y = x |> am'.map_base pingpong_position
+:# velocity_ftxv_2 =
+    := x = am'::init_series 0 3 0.01
+    := y = x |> am'::map_base pingpong_position
     "ping pong ball on a slinky", "time (s)", "", ;[ "position (m)", x, y ]
 
 := pingpong_velocity t = velocity_ftxv 0.001 0.0027 (state_1d (0, 0.1, 0)) (damped_ho_forces ()) t
 
-test velocity_ftxv_3 =
-    := x = am'.init_series 0 3 0.01
-    := y = x |> am'.map_base pingpong_velocity
+:# velocity_ftxv_3 =
+    := x = am'::init_series 0 3 0.01
+    := y = x |> am'::map_base pingpong_velocity
     "ping pong ball on a slinky", "time (s)", "", ;[ "velocity (m/s)", x, y ]
 
 /// ### shift
@@ -271,13 +271,13 @@ test velocity_ftxv_3 =
 
 
 := solver method =
-    method >> seq.iterate
+    method >> seq::iterate
 
 := solver' method =
-    method >> seq.iterate'
+    method >> seq::iterate'
 
 := solver_ method =
-    method >> seq.iterate_
+    method >> seq::iterate_
 
 
 := euler_cromer_1d dt deriv (state_1d (t0, x0, v0) &= t) =
@@ -325,15 +325,15 @@ test velocity_ftxv_3 =
 := of_state_1d (state_1d (t, x, v)) =
     t, x, v
 
-test shift =
+:# shift =
     solver (euler 0.01) (of_state_1d >> exponential >> state_1d) (state_1d (0, 1, 1)) 800i32
     |> _assert_eq (state_1d (7.999999999999874, 2864.8311229272326, 2864.8311229272326))
 
-test shift_euler_cromer =
+:# shift_euler_cromer =
     solver (euler_cromer_1d 0.1) (of_state_1d >> exponential >> rrr) (state_1d (0, 1, 1)) 80i32
     |> _assert_eq (state_1d (7.999999999999988, 3043.379244966009, 2895.0121485099035))
 
-test shift_runge_kutta =
+:# shift_runge_kutta =
     solver (runge_kutta_4 1) (of_state_1d >> exponential >> rrr) (state_1d (0, 1, 1)) 8i32
     |> _assert_eq (state_1d (8.0, 2894.789038540849, 2894.789038540849))
 
@@ -347,8 +347,8 @@ test shift_runge_kutta =
 := vec x y z : vec =
     { x y z }
 
-test vec =
-    vec 1 2 3 .z
+:# vec =
+    vec 1 2 3 ::z
     |> _assert_eq 3
 
 /// #### consts
@@ -359,17 +359,17 @@ test vec =
 
 /// #### ^+^
 := (^+^) (a : vec) (b : vec) =
-    vec (a.x + b.x) (a.y + b.y) (a.z + b.z)
+    vec (a::x + b::x) (a::y + b::y) (a::z + b::z)
 
-test consts =
+:# consts =
     vec 1 2 3 ^+^ vec 4 5 6
     |> _assert_eq (vec 5 7 9)
 
 /// #### sum_vec
 := sum_vec vs =
-    vs |> listm.fold (^+^) (zero_vec ())
+    vs |> listm::fold (^+^) (zero_vec ())
 
-test sum_vec =
+:# sum_vec =
     [ vec 1 2 3; vec 4 5 6 ]
     |> sum_vec
     |> _assert_eq (vec 5 7 9)
@@ -378,11 +378,11 @@ test sum_vec =
 := (*^) c { x y z } =
     vec (c * x) (c * y) (c * z)
 
-test sum_vec_2 =
+:# sum_vec_2 =
     5 *^ vec 1 2 3
     |> _assert_eq (vec 5 10 15)
 
-test sum_vec_3 =
+:# sum_vec_3 =
     3 *^ i_hat () ^+^ 4 *^ k_hat ()
     |> _assert_eq (vec 3 0 4)
 
@@ -390,7 +390,7 @@ test sum_vec_3 =
 := (^*) v c =
     (*^) c v
 
-test sum_vec_4 =
+:# sum_vec_4 =
     vec 1 2 3 ^* 5
     |> _assert_eq (vec 5 10 15)
 
@@ -398,7 +398,7 @@ test sum_vec_4 =
 := (^/) { x y z } c =
     vec (x / c) (y / c) (z / c)
 
-test sum_vec_5 =
+:# sum_vec_5 =
     vec 1 2 3 ^/ 5
     |> _assert_eq (vec 0.2 0.4 0.6)
 
@@ -406,7 +406,7 @@ test sum_vec_5 =
 := negate_vec v =
     v ^* -1
 
-test negate_vec =
+:# negate_vec =
     vec 1 2 3
     |> negate_vec
     |> _assert_eq (vec -1 -2 -3)
@@ -415,7 +415,7 @@ test negate_vec =
 := (^-^) a b =
     a ^+^ (negate_vec b)
 
-test negate_vec_2 =
+:# negate_vec_2 =
     vec 1 2 3 ^-^ vec 4 5 6
     |> _assert_eq (vec -3 -3 -3)
 
@@ -423,18 +423,18 @@ test negate_vec_2 =
 := (<.>) { x = ax y = ay z = az } { x = bx y = by z = bz } =
     ax * bx + ay * by + az * bz
 
-test negate_vec_3 =
+:# negate_vec_3 =
     (vec 1 2 3 <.> vec 4 5 6)
     |> _assert_eq 32
 
 /// #### \>\<
 := (><) (a : vec) (b : vec) =
     vec
-        (a.y * b.z - a.z * b.y)
-        (a.z * b.x - a.x * b.z)
-        (a.x * b.y - a.y * b.x)
+        (a::y * b::z - a::z * b::y)
+        (a::z * b::x - a::x * b::z)
+        (a::x * b::y - a::y * b::x)
 
-test negate_vec_4 =
+:# negate_vec_4 =
     (vec 1 2 3 >< vec 4 5 6)
     |> _assert_eq (vec -3 6 -3)
 
@@ -442,7 +442,7 @@ test negate_vec_4 =
 := magnitude v =
     (v <.> v) |> sqrt
 
-test magnitude =
+:# magnitude =
     vec 1 2 3
     |> magnitude
     |> _assert_approx_eq None 3.7416573867739413
@@ -451,7 +451,7 @@ test magnitude =
 := v1 t =
     2 *^ (t ** 2 *^ i_hat () ^+^ 3 *^ (t ** 3 *^ j_hat () ^+^ t ** 4 *^ k_hat ()))
 
-test v1 =
+:# v1 =
     v1 1
     |> _assert_eq (vec 2 6 6)
 
@@ -462,9 +462,9 @@ test v1 =
     \ v t =>
         (v (t + dt / 2) ^-^ v (t - dt / 2)) ^/ dt
 
-test vec_derivative =
-    vec_derivative 0.01 v1 3 .x
-    |> _assert_approx_eq None (derivative 0.01 (v1 >> \ v => v.x) 3)
+:# vec_derivative =
+    vec_derivative 0.01 v1 3 ::x
+    |> _assert_approx_eq None (derivative 0.01 (v1 >> \ v => v::x) 3)
 
 /// ### states_ps
 :! particle_state =
@@ -496,57 +496,57 @@ test vec_derivative =
         dvdt : vec
     }
 
-:= net_force (fs : list one_body_force) (st : particle_state) : vec = fs |> listm.map (\ f => f st) |> sum_vec
+:= net_force (fs : list one_body_force) (st : particle_state) : vec = fs |> listm::map (\ f => f st) |> sum_vec
 
 := rate_with (st : particle_state) (dvdt : vec) : d_particle_state =
     d_particle_state {
         dmdt = 0
         dqdt = 0
         dtdt = 1
-        drdt = st.velocity
+        drdt = st::velocity
         dvdt = dvdt
     }
 
 := newton_second_ps (fs : list one_body_force) (st : particle_state) : d_particle_state =
-    rate_with st (net_force fs st ^/ st.mass)
+    rate_with st (net_force fs st ^/ st::mass)
 
 := earth_surface_gravity (st : particle_state) =
     := g = 9.80665
-    -st.mass * g *^ k_hat ()
+    -st::mass * g *^ k_hat ()
 
 := air_resistance drag rho area (st : particle_state) =
-    -0.5 * drag * rho * area * magnitude st.velocity *^ st.velocity
+    -0.5 * drag * rho * area * magnitude st::velocity *^ st::velocity
 
 := cromer_moved dt (v' : vec) (particle_state st) : particle_state =
-    particle_state { st ?| time = st.time + dt; pos_vec = st.pos_vec ^+^ v' ^* dt; velocity = v' }
+    particle_state { st ?| time = st::time + dt; pos_vec = st::pos_vec ^+^ v' ^* dt; velocity = v' }
 
 := euler_cromer_ps dt (deriv : particle_state -> d_particle_state) (particle_state st) =
     := dst : d_particle_state = deriv (particle_state st)
-    cromer_moved dt (st.velocity ^+^ dst.dvdt ^* dt) (particle_state st)
+    cromer_moved dt (st::velocity ^+^ dst::dvdt ^* dt) (particle_state st)
 
 :+ (+++) d_particle_state = \ (a : d_particle_state) b =>
     d_particle_state {
-        dmdt = a.dmdt + b.dmdt
-        dqdt = a.dqdt + b.dqdt
-        dtdt = a.dtdt + b.dtdt
-        drdt = a.drdt ^+^ b.drdt
-        dvdt = a.dvdt ^+^ b.dvdt
+        dmdt = a::dmdt + b::dmdt
+        dqdt = a::dqdt + b::dqdt
+        dtdt = a::dtdt + b::dtdt
+        drdt = a::drdt ^+^ b::drdt
+        dvdt = a::dvdt ^+^ b::dvdt
     }
 
 :+ scale d_particle_state = \ w (dps : d_particle_state) =>
     d_particle_state {
-        dmdt = w * dps.dmdt
-        dqdt = w * dps.dqdt
-        dtdt = w * dps.dtdt
-        drdt = w *^ dps.drdt
-        dvdt = w *^ dps.dvdt
+        dmdt = w * dps::dmdt
+        dqdt = w * dps::dqdt
+        dtdt = w * dps::dtdt
+        drdt = w *^ dps::drdt
+        dvdt = w *^ dps::dvdt
     }
 
 := shifted dt (dps : d_particle_state) (particle_state st) : particle_state =
     particle_state { st ?|
-        time = st.time + dps.dtdt * dt
-        pos_vec = st.pos_vec ^+^ dps.drdt ^* dt
-        velocity = st.velocity ^+^ dps.dvdt ^* dt
+        time = st::time + dps::dtdt * dt
+        pos_vec = st::pos_vec ^+^ dps::drdt ^* dt
+        velocity = st::velocity ^+^ dps::dvdt ^* dt
     }
 
 :+ shift particle_state = \ dt dps (particle_state st) =>
@@ -557,33 +557,33 @@ test vec_derivative =
     shifted dt (d_particle_state dps) (particle_state st)
 
 := states_ps (method : numerical_method particle_state d_particle_state) : _ -> _ -> i32 -> particle_state =
-    newton_second_ps >> method >> seq.iterate_
+    newton_second_ps >> method >> seq::iterate_
 
 := z_ge0 sts =
     sts
-    |> seq.take_while_ \ (particle_state st) _ => st.pos_vec.z >= 0
+    |> seq::take_while_ \ (particle_state st) _ => st::pos_vec::z >= 0
 
 := trajectory sts =
-    sts |> listm.map \ (particle_state st) => st.pos_vec.y, st.pos_vec.z
+    sts |> listm::map \ (particle_state st) => st::pos_vec::y, st::pos_vec::z
 
 := update_ps (method : numerical_method particle_state d_particle_state) =
     newton_second_ps >> method
 
 := step_count (states : i32 -> particle_state) t =
-    := dt = (states 1).time - (states 0).time
-    t / dt |> math.round |> abs
+    := dt = (states 1)::time - (states 0)::time
+    t / dt |> math::round |> abs
 
 := position_ps (method : numerical_method particle_state d_particle_state) fs st t =
     := st1 = solver' method (newton_second_ps fs) st (step_count (states_ps method fs st) t)
-    st1.pos_vec
+    st1::pos_vec
 
 := sun_gravity (st : particle_state) : vec =
     := big_g = 0.0000000000667408
     := sun_mass = 1988480000000000000000000000000
-    -big_g * sun_mass * st.mass *^ st.pos_vec ^/ magnitude st.pos_vec ** 3
+    -big_g * sun_mass * st::mass *^ st::pos_vec ^/ magnitude st::pos_vec ** 3
 
 := wind_force v_wind drag rho area (st : particle_state) =
-    := v_rel = st.velocity ^-^ v_wind
+    := v_rel = st::velocity ^-^ v_wind
     -0.5 * drag * rho * area * magnitude v_rel *^ v_rel
 
 := rock_state () =
@@ -629,11 +629,11 @@ test vec_derivative =
 
 := baseball_range dt v0 theta_deg =
     baseball_trajectory dt v0 theta_deg
-    |> listm.fold (\ _ (y, _) => y) 0
+    |> listm::fold (\ _ (y, _) => y) 0
 
-test states_ps_3 =
-    := x = am'.init_series 10 80 1
-    := y = x |> am'.map_base (baseball_range 0.01 45)
+:# states_ps_3 =
+    := x = am'::init_series 10 80 1
+    := y = x |> am'::map_base (baseball_range 0.01 45)
     "range for a baseball hit at 45 m/s",
     "angle above horizontal (degrees)",
     "",
@@ -650,25 +650,25 @@ test states_ps_3 =
         ? theta_deg > max ?> best |: 루프 (theta_deg + 1) (better_range theta_deg best)
     루프 min (0f64, min)
 
-test states_ps_4 =
+:# states_ps_4 =
     best_angle (30f64, 60f64)
     |> _assert_eq (116.77499158246208, 41)
 
 := relativity_ps fs (st : particle_state) =
     := f_net = net_force fs st
-    := u = st.velocity ^/ 299792458
-    rate_with st (sqrt (1 - (u <.> u)) *^ (f_net ^-^ (f_net <.> u) *^ u) ^/ st.mass)
+    := u = st::velocity ^/ 299792458
+    rate_with st (sqrt (1 - (u <.> u)) *^ (f_net ^-^ (f_net <.> u) *^ u) ^/ st::mass)
 
-:= curve_arrays (xs, ys) = (xs |> listm'.box |> listm'.to_array'), (ys |> listm'.box |> listm'.to_array')
+:= curve_arrays (xs, ys) = (xs |> listm'::box |> listm'::to_array'), (ys |> listm'::box |> listm'::to_array')
 
 := seconds_per_year () = 365.25 * 24 * 60 * 60
 
 := year_points states =
     := year = seconds_per_year ()
     states >> Some
-    |> seq.take_while_ \ (particle_state st) (_ : i32) => st.time <= year
-    |> listm.map \ (particle_state st) => st.time / year, st.velocity.x / 299792458
-    |> listm'.unzip
+    |> seq::take_while_ \ (particle_state st) (_ : i32) => st::time <= year
+    |> listm::map \ (particle_state st) => st::time / year, st::velocity::x / 299792458
+    |> listm'::unzip
 
 := constant_force_start () =
     := (particle_state st) = default_particle_state ()
@@ -690,12 +690,12 @@ test states_ps_4 =
     := _, relativity_y = year_curve method (relativity_ps forces)
     constant_force_chart newton_x newton_y relativity_y
 
-test relativity_ps =
+:# relativity_ps =
     := ~method = runge_kutta_4 100000
     constant_force_chart_of method [ \ _ => 10 *^ i_hat () ]
 
 := uniform_lorentz_force v_e v_b (st : particle_state) =
-    st.charge *^ (v_e ^+^ st.velocity >< v_b)
+    st::charge *^ (v_e ^+^ st::velocity >< v_b)
 
 := proton_start () =
     := (particle_state st) = default_particle_state ()
@@ -707,9 +707,9 @@ test relativity_ps =
 
 := orbit_points (steps : i32) states =
     states >> Some
-    |> seq.take_while_ \ (particle_state st) i => i < steps
-    |> listm.map \ (particle_state st) => st.pos_vec.x, st.pos_vec.y
-    |> listm'.unzip
+    |> seq::take_while_ \ (particle_state st) i => i < steps
+    |> listm::map \ (particle_state st) => st::pos_vec::x, st::pos_vec::y
+    |> listm'::unzip
     |> curve_arrays
 
 := proton_curve method deriv (steps : i32) = solver_ method deriv (proton_start ()) |> orbit_points steps
@@ -728,7 +728,7 @@ test relativity_ps =
     := relativity_x, relativity_y = proton_curve method (relativity_ps forces) 165i32
     proton_chart newton_x newton_y relativity_x relativity_y
 
-test relativity_ps_2 =
+:# relativity_ps_2 =
     := ~method = runge_kutta_4 0.000000001
     proton_chart_of method [ uniform_lorentz_force (zero_vec ()) (k_hat ()) ]
 
@@ -746,9 +746,9 @@ test relativity_ps_2 =
 
 := internal_force_on n sts n0 n1 f_two_body =
     ? n = n0
-    ?> f_two_body (sts |> listm'.item n1)
+    ?> f_two_body (sts |> listm'::item n1)
     |? n = n1
-    ?> f_two_body (sts |> listm'.item n0)
+    ?> f_two_body (sts |> listm'::item n0)
     |: \ _ => zero_vec ()
 
 := force_on n sts force =
@@ -760,29 +760,29 @@ test relativity_ps_2 =
     | InternalForce (n0, n1, f_two_body) => internal_force_on n sts n0 n1 f_two_body
 
 := forces_on n (multi_particle_state_l sts) fs =
-    fs |> listm.map (force_on n sts)
+    fs |> listm::map (force_on n sts)
 
 := newton_second_mps fs (multi_particle_state_l sts) : d_multi_particle_state_l =
     := deriv (n, st) =
         newton_second_ps (forces_on n (multi_particle_state_l sts) fs) st
-    sts |> listm'.indexed |> listm.map deriv |> d_multi_particle_state_l
+    sts |> listm'::indexed |> listm::map deriv |> d_multi_particle_state_l
 
 := update_mps_l (method : numerical_method multi_particle_state_l d_multi_particle_state_l) =
     newton_second_mps >> method
 
 :+ (+++) d_multi_particle_state_l = \ (d_multi_particle_state_l dsts1) (d_multi_particle_state_l dsts2) =>
-    d_multi_particle_state_l (listm'.zip_with_ (+++) dsts1 dsts2)
+    d_multi_particle_state_l (listm'::zip_with_ (+++) dsts1 dsts2)
 
 :+ shift multi_particle_state_l = \ dt dsts (multi_particle_state_l sts) =>
     := (d_multi_particle_state_l dsts) =
         ~>
             ?= dsts ?|
             | d_multi_particle_state_l _ => dsts
-    listm'.zip_with_ (shift dt) dsts sts |> multi_particle_state_l
+    listm'::zip_with_ (shift dt) dsts sts |> multi_particle_state_l
 
 := central_force f (particle_state st1) (particle_state st2) =
-    := r1 = st1.pos_vec
-    := r2 = st2.pos_vec
+    := r1 = st1::pos_vec
+    := r2 = st2::pos_vec
     := r21 = r2 ^-^ r1
     := r21mag = magnitude r21
     f r21mag *^ r21 ^/ r21mag
@@ -795,10 +795,10 @@ test relativity_ps_2 =
     central_force f
 
 :+ scale d_multi_particle_state_l = \ w (d_multi_particle_state_l dsts) =>
-    d_multi_particle_state_l (dsts |> listm.map (scale w))
+    d_multi_particle_state_l (dsts |> listm::map (scale w))
 
 := cromer_position dt ((particle_state st0), (particle_state st1)) =
-    particle_state { st1 ?| pos_vec = st0.pos_vec ^+^ st1.velocity ^* dt }
+    particle_state { st1 ?| pos_vec = st0::pos_vec ^+^ st1::velocity ^* dt }
 
 :== mps_method_l = numerical_method multi_particle_state_l d_multi_particle_state_l
 
@@ -806,37 +806,37 @@ test relativity_ps_2 =
     \ deriv mpst0 =>
         := (multi_particle_state_l sts0) = mpst0
         := (multi_particle_state_l sts1) = euler dt deriv mpst0
-        sts1 |> listm'.zip_ sts0 |> listm.map (cromer_position dt) |> multi_particle_state_l
+        sts1 |> listm'::zip_ sts0 |> listm::map (cromer_position dt) |> multi_particle_state_l
 
 := states_mps_l (method : numerical_method multi_particle_state_l d_multi_particle_state_l) =
-    newton_second_mps >> method >> seq.iterate_
+    newton_second_mps >> method >> seq::iterate_
 
 := kinetic_energy (particle_state st) =
-    := m = st.mass
-    := v = magnitude st.velocity
+    := m = st::mass
+    := v = magnitude st::velocity
     0.5 * m * v ** 2
 
 := system_ke_l (multi_particle_state_l sts) =
-    sts |> listm.map kinetic_energy |> listm'.sum
+    sts |> listm::map kinetic_energy |> listm'::sum
 
 := linear_spring_pe k re (particle_state st1) (particle_state st2) =
-    := r1 = st1.pos_vec
-    := r2 = st2.pos_vec
+    := r1 = st1::pos_vec
+    := r2 = st2::pos_vec
     := r21 = r2 ^-^ r1
     := r21mag = magnitude r21
     k * (r21mag - re) ** 2 / 2
 
 := earth_surface_gravity_pe (particle_state st) =
     := g = 9.80665
-    := m = st.mass
-    := z = st.pos_vec.z
+    := m = st::mass
+    := z = st::pos_vec::z
     m * g * z
 
 := spring_pair_pe st0 st1 = linear_spring_pe 100 0.5 (default_particle_state ()) st0 + linear_spring_pe 100 0.5 st0 st1
 
 := two_springs_pe (multi_particle_state_l sts) =
-    := st0 = sts |> listm'.item 0i32
-    := st1 = sts |> listm'.item 1i32
+    := st0 = sts |> listm'::item 0i32
+    := st1 = sts |> listm'::item 1i32
     spring_pair_pe st0 st1 + earth_surface_gravity_pe st0 + earth_surface_gravity_pe st1
 
 := two_springs_me mpst =
@@ -865,17 +865,17 @@ test relativity_ps_2 =
 := billiard_states_finite_l n_method k dt =
     billiard_states_l n_method k dt
     >> Some
-    |> seq.take_while_ (\ (multi_particle_state_l mpst) (_ : i32) =>
-        (mpst |> listm'.item 0i32).time <= 10
+    |> seq::take_while_ (\ (multi_particle_state_l mpst) (_ : i32) =>
+        (mpst |> listm'::item 0i32)::time <= 10
     )
 
 := momentum (particle_state st) =
-    := m = st.mass
-    := v = st.velocity
+    := m = st::mass
+    := v = st::velocity
     m *^ v
 
 := system_p_l (multi_particle_state_l sts) =
-    sts |> listm.map momentum |> sum_vec
+    sts |> listm::map momentum |> sum_vec
 
 := ke_chart ec_x ec_y rk4_x rk4_y =
     "system kinetic energy versus time",
@@ -886,23 +886,23 @@ test relativity_ps_2 =
         "runge-kutta 4", rk4_x, rk4_y
     ]
 
-:= ke_point_l (mpst : list particle_state) = (mpst |> listm'.item 0i32).time, system_ke_l (multi_particle_state_l mpst)
+:= ke_point_l (mpst : list particle_state) = (mpst |> listm'::item 0i32)::time, system_ke_l (multi_particle_state_l mpst)
 
 := ke_curve_l n_method =
     billiard_states_finite_l n_method 30 0.03
-    |> listm.map \ (multi_particle_state_l mpst) => ke_point_l mpst
-    |> listm'.unzip
+    |> listm::map \ (multi_particle_state_l mpst) => ke_point_l mpst
+    |> listm'::unzip
     |> curve_arrays
 
-test system_kinetic_energy_versus_time_1_2 =
+:# system_kinetic_energy_versus_time_1_2 =
     := ec_x, ec_y = ke_curve_l euler_cromer_mps_l
     := rk4_x, rk4_y = ke_curve_l runge_kutta_4
     ke_chart ec_x ec_y rk4_x rk4_y
 
 /// #### wave 1
 := linear_spring k re (particle_state st1) (particle_state st2) =
-    := r1 = st1.pos_vec
-    := r2 = st2.pos_vec
+    := r1 = st1::pos_vec
+    := r2 = st2::pos_vec
     := r21 = r2 ^-^ r1
     := r21mag = magnitude r21
     -k * (r21mag - re) *^ r21 ^/ r21mag
@@ -912,7 +912,7 @@ test system_kinetic_energy_versus_time_1_2 =
     linear_spring k re (particle_state { default_particle_state' ?| pos_vec = r1 })
 
 := string_springs () =
-    listm'.init_series 0 59 1 |> listm.map \ n => InternalForce (n, n + 1, linear_spring 5384 0)
+    listm'::init_series 0 59 1 |> listm::map \ n => InternalForce (n, n + 1, linear_spring 5384 0)
 
 := forces_string_l () =
     [
@@ -935,8 +935,8 @@ test system_kinetic_energy_versus_time_1_2 =
 := overtone_y (n : i32) (x : f64) : f64 = 0.005 * sin (conv n * pi * x / 0.65)
 
 := string_initial_overtone_l n =
-    listm'.init_series 0.01 0.64 0.01
-    |> listm.map \ x => string_ball x (overtone_y n x)
+    listm'::init_series 0.01 0.64 0.01
+    |> listm::map \ x => string_ball x (overtone_y n x)
     |> multi_particle_state_l
 
 := pluck_y (x : f64) : f64 =
@@ -944,40 +944,40 @@ test system_kinetic_energy_versus_time_1_2 =
     0.005 / (0.51 - n) * (x - n)
 
 := string_initial_pluck_l () =
-    listm'.init_series 0.01 0.64 0.01
-    |> listm.map \ x => string_ball x (pluck_y x)
+    listm'::init_series 0.01 0.64 0.01
+    |> listm::map \ x => string_ball x (pluck_y x)
     |> multi_particle_state_l
 
 := string_positions_l sts =
-    [ zero_vec () ] ++ (sts |> listm.map (\ (particle_state st) => st.pos_vec)) ++ [ 0.65 *^ i_hat () ]
+    [ zero_vec () ] ++ (sts |> listm::map (\ (particle_state st) => st::pos_vec)) ++ [ 0.65 *^ i_hat () ]
 
 := string_frame_l initial_state (_ : f64) =
-    := (multi_particle_state_l sts) = seq.iterate' (string_update_l 0.000025) initial_state |> \ f => f 0f64
-    string_positions_l sts |> listm.map (\ r => r.x, r.y) |> listm'.unzip |> curve_arrays
+    := (multi_particle_state_l sts) = seq::iterate' (string_update_l 0.000025) initial_state |> \ f => f 0f64
+    string_positions_l sts |> listm::map (\ r => r::x, r::y) |> listm'::unzip |> curve_arrays
 
 := string_frames_l () =
-    := ~frames = listm'.init_series 0 9 1f64
+    := ~frames = listm'::init_series 0 9 1f64
     := initial_state = string_initial_overtone_l 3i32
-    frames |> listm.map (string_frame_l initial_state) |> listm'.box |> listm'.to_array'
+    frames |> listm::map (string_frame_l initial_state) |> listm'::box |> listm'::to_array'
 
-test wave_1 =
+:# wave_1 =
     :~ main () =
         := n = 0i32
-        := x, y = array (string_frames_l ()) |> am'.index n
+        := x, y = array (string_frames_l ()) |> am'::index n
         "wave", "position (m)", "displacement (m)", ;[ ($'$"{!n}"' : string), x, y ]
 
 /// #### system kinetic energy versus time 2
-:! multi_particle_state_s = stream.stream particle_state
+:! multi_particle_state_s = stream::stream particle_state
 
-:! d_multi_particle_state_s = stream.stream d_particle_state
+:! d_multi_particle_state_s = stream::stream d_particle_state
 
 := internal_force_on_s n s n0 n1 f_two_body =
     ? n = n0
-    ?> s |> stream.try_item n1 |> optionm.map f_two_body
+    ?> s |> stream::try_item n1 |> optionm::map f_two_body
     |? n = n1
-    ?> s |> stream.try_item n0 |> optionm.map f_two_body
+    ?> s |> stream::try_item n0 |> optionm::map f_two_body
     |: None
-    |> optionm'.default_value \ _ => zero_vec ()
+    |> optionm'::default_value \ _ => zero_vec ()
 
 := force_on_s n s force =
     ?= force ?|
@@ -989,20 +989,20 @@ test wave_1 =
 
 := forces_on_s n (multi_particle_state_s sts) fs =
     fs
-    |> listm.map (force_on_s n sts)
+    |> listm::map (force_on_s n sts)
 
 := newton_second_mps_s fs ((multi_particle_state_s sts) &= mpst) =
     := deriv (n, st) =
         newton_second_ps (forces_on_s n mpst fs) st
-    sts |> stream.indexed |> stream.map deriv |> d_multi_particle_state_s
+    sts |> stream::indexed |> stream::map deriv |> d_multi_particle_state_s
 
 := update_mps_s (method : numerical_method multi_particle_state_s d_multi_particle_state_s) =
     newton_second_mps_s >> method
 
-:= stream_shifted dt (dsts : stream.stream d_particle_state) (sts : stream.stream particle_state) =
+:= stream_shifted dt (dsts : stream::stream d_particle_state) (sts : stream::stream particle_state) =
     (dsts, sts)
-    ||> stream.zip_with (shift dt)
-    |> stream.memoize
+    ||> stream::zip_with (shift dt)
+    |> stream::memoize
     |> \ x => x ()
     |> multi_particle_state_s
 
@@ -1016,12 +1016,12 @@ test wave_1 =
 :+ (+++) d_multi_particle_state_s =
     \ (d_multi_particle_state_s dsts1) (d_multi_particle_state_s dsts2) =>
         (dsts1, dsts2)
-        ||> stream.zip_with (+++)
+        ||> stream::zip_with (+++)
         |> d_multi_particle_state_s
 
 :+ scale d_multi_particle_state_s = \ w (d_multi_particle_state_s dsts) =>
     dsts
-    |> stream.map (scale w)
+    |> stream::map (scale w)
     |> d_multi_particle_state_s
 
 :== mps_method_s = numerical_method multi_particle_state_s d_multi_particle_state_s
@@ -1029,51 +1029,51 @@ test wave_1 =
 := euler_cromer_mps_s dt : mps_method_s =
     \ deriv ((multi_particle_state_s sts0) &= mpst0) =>
         := (multi_particle_state_s sts1) = euler dt deriv mpst0
-        (sts0, sts1) ||> stream.zip |> stream.map (cromer_position dt) |> multi_particle_state_s
+        (sts0, sts1) ||> stream::zip |> stream::map (cromer_position dt) |> multi_particle_state_s
 
 := memoized_into next (multi_particle_state_s y) =
-    y |> stream.memoize |> (\ thunk => thunk ()) |> multi_particle_state_s |> next
+    y |> stream::memoize |> (\ thunk => thunk ()) |> multi_particle_state_s |> next
 
 := states_mps_s (method : numerical_method multi_particle_state_s d_multi_particle_state_s) =
-    newton_second_mps_s >> method >> memoized_into >> seq.iterate'
+    newton_second_mps_s >> method >> memoized_into >> seq::iterate'
 
 := system_ke_s (multi_particle_state_s sts) =
     sts
-    |> stream.map kinetic_energy
-    |> stream.sum
+    |> stream::map kinetic_energy
+    |> stream::sum
 
 := billiard_forces_s k =
     [ InternalForce (0i32, 1, billiard_force k (2 * ball_radius ())) ]
 
-:= billiard_initial_s () = billiard_balls () |> stream.from_list |> multi_particle_state_s
+:= billiard_initial_s () = billiard_balls () |> stream::from_list |> multi_particle_state_s
 
 := billiard_states_s ~n_method k dt =
     states_mps_s (n_method dt) (billiard_forces_s k) (billiard_initial_s ())
 
 := early_billiards_s (multi_particle_state_s mpst) (_ : i32) : bool =
-    ?= mpst |> stream.try_item 0i32 ?|
-    | Some st => st.time <= 10
+    ?= mpst |> stream::try_item 0i32 ?|
+    | Some st => st::time <= 10
     | None => !-
 
 := billiard_states_finite_s n_method k dt =
-    billiard_states_s n_method k dt >> Some |> seq.take_while_ early_billiards_s
+    billiard_states_s n_method k dt >> Some |> seq::take_while_ early_billiards_s
 
 := system_p_s (multi_particle_state_s sts) =
     sts
-    |> stream.map momentum
-    |> stream.fold (^+^) (zero_vec ())
+    |> stream::map momentum
+    |> stream::fold (^+^) (zero_vec ())
 
-:= ke_point_s (mpst : stream.stream particle_state) =
-    mpst |> stream.try_item 0i32 |> optionm.map \ st => st.time, system_ke_s (multi_particle_state_s mpst)
+:= ke_point_s (mpst : stream::stream particle_state) =
+    mpst |> stream::try_item 0i32 |> optionm::map \ st => st::time, system_ke_s (multi_particle_state_s mpst)
 
 := ke_curve_s n_method =
     billiard_states_finite_s n_method 30 0.03
-    |> listm.map \ (multi_particle_state_s mpst) => ke_point_s mpst
-    |> listm'.choose id
-    |> listm'.unzip
+    |> listm::map \ (multi_particle_state_s mpst) => ke_point_s mpst
+    |> listm'::choose id
+    |> listm'::unzip
     |> curve_arrays
 
-test system_kinetic_energy_versus_time_2_2 =
+:# system_kinetic_energy_versus_time_2_2 =
     := ec_x, ec_y = ke_curve_s euler_cromer_mps_s
     := rk4_x, rk4_y = ke_curve_s runge_kutta_4
     ke_chart ec_x ec_y rk4_x rk4_y
@@ -1090,32 +1090,32 @@ test system_kinetic_energy_versus_time_2_2 =
     update_mps_s (~~ runge_kutta_4 dt) (~~ forces_string_s ())
 
 := string_initial_overtone_s n =
-    listm'.init_series 0.01 0.64 0.01
-    |> listm.map \ x => string_ball x (overtone_y n x)
-    |> stream.from_list
+    listm'::init_series 0.01 0.64 0.01
+    |> listm::map \ x => string_ball x (overtone_y n x)
+    |> stream::from_list
     |> multi_particle_state_s
 
 := string_points_s sts =
     [ zero_vec () ]
-    ++ (sts |> stream.map (\ (particle_state st) => st.pos_vec) |> stream.to_list)
+    ++ (sts |> stream::map (\ (particle_state st) => st::pos_vec) |> stream::to_list)
     ++ [ 0.65 *^ i_hat () ]
-    |> listm.map \ r => r.x, r.y
+    |> listm::map \ r => r::x, r::y
 
 := stream_arrays (xs, ys) =
-    (xs |> stream.to_list |> listm'.box |> listm'.to_array'), (ys |> stream.to_list |> listm'.box |> listm'.to_array')
+    (xs |> stream::to_list |> listm'::box |> listm'::to_array'), (ys |> stream::to_list |> listm'::box |> listm'::to_array')
 
 := string_frame_s initial_state n =
-    := (multi_particle_state_s sts) = stream.iterate (string_update_s 0.000025) initial_state |> stream.item n
-    string_points_s sts |> stream.from_list |> stream.unzip |> stream_arrays
+    := (multi_particle_state_s sts) = stream::iterate (string_update_s 0.000025) initial_state |> stream::item n
+    string_points_s sts |> stream::from_list |> stream::unzip |> stream_arrays
 
 := wave_plot (n : i32) x y = "wave", "position (m)", "displacement (m)", ;[ ($'$"{!n}"' : string), x, y ]
 
 := string_frames_s () =
-    := ~frames = listm'.init_series 0 65 1f64 |> stream.from_list
+    := ~frames = listm'::init_series 0 65 1f64 |> stream::from_list
     := ~initial_state = string_initial_overtone_s 3i32
-    frames |> stream.map (string_frame_s initial_state)
+    frames |> stream::map (string_frame_s initial_state)
 
-test wave_2 =
+:# wave_2 =
     :~ main () =
-        := plots = string_frames_s () |> stream.indexed |> stream.map \ ((n : i32), (x, y)) => wave_plot n x y
-        plots |> stream.to_list |> listm'.box |> listm'.to_array'
+        := plots = string_frames_s () |> stream::indexed |> stream::map \ ((n : i32), (x, y)) => wave_plot n x y
+        plots |> stream::to_list |> listm'::box |> listm'::to_array'

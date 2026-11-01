@@ -1,4 +1,4 @@
-test common static =
+:# common static =
     :< testing
 
 /// ## common
@@ -15,7 +15,7 @@ test common static =
                 \ () => "common.retry_fn\' / 루프"
                 \ () =>
                     :< sm'_operators
-                    { is_error retry = sm'.obj_to_string retry ++# "/" ++# sm'.obj_to_string retries; result }
+                    { is_error retry = sm'::obj_to_string retry ++# "/" ++# sm'::obj_to_string retries; result }
             루프 (retry + 1)
     루프 1
 
@@ -86,7 +86,7 @@ test common static =
 ///> cuda
 ///> rust
 ///> typescript
-test retry_fn =
+:# retry_fn =
     := retry_fn_test = mut 0i32
     \ () =>
         retry_fn_test <- *retry_fn_test + 1
@@ -97,7 +97,7 @@ test retry_fn =
 ///> rust
 ///> typescript
 ///> cuda
-test retry_fn_2 =
+:# retry_fn_2 =
     := retry_fn_test = mut 0i32
     \ () =>
         ? *retry_fn_test >= 2
@@ -126,7 +126,7 @@ test retry_fn_2 =
     x ^^^ (x <<< 17i32)
 
 := native_rng_seed () : u64 =
-    := a, _ = guid.rust_random_pair ()
+    := a, _ = guid::rust_random_pair ()
     a ||| 1u64
 
 := native_rng_next () : u64 =
@@ -137,7 +137,7 @@ test retry_fn_2 =
 
 := random_in_span (x : u64) (lo : i64) (hi : i64) : i64 =
     := span = hi - lo
-    ? span <= 0i64 ?> lo |: lo + convert.i64 (x % convert.u64 span)
+    ? span <= 0i64 ?> lo |: lo + convert::i64 (x % convert::u64 span)
 
 := typescript_random_u53 () : u64 = $'BigInt(Math.floor(Math.random() * 9007199254740992))' : u64
 
@@ -163,7 +163,7 @@ test retry_fn_2 =
 := process_counter_value (name : string) : u64 = process_counter_add name 0u64
 
 ///> rust
-test process_counters_add_up_per_name =
+:# process_counters_add_up_per_name =
     := ~a, b = "spiral-counter-test-a", "spiral-counter-test-b"
     process_counter_add a 2u64 |> ignore
     process_counter_add a 3u64 |> ignore
@@ -173,21 +173,21 @@ test process_counters_add_up_per_name =
 
 := random' \* t. (min : t) (max : t) : t =
     run_target \|
-        | Zig => \ () => random_in_span (guid.zig_random_u64 ()) (convert.i64 min) (convert.i64 max) |> convert.numeric_conv
-        | Rust => \ () => native_random_between (convert.i64 min) (convert.i64 max) |> convert.convert
+        | Zig => \ () => random_in_span (guid::zig_random_u64 ()) (convert::i64 min) (convert::i64 max) |> convert::numeric_conv
+        | Rust => \ () => native_random_between (convert::i64 min) (convert::i64 max) |> convert::convert
         | Cuda _ => \ () =>
             global "import random"
             $'random.randrange(!min, !max)' : t
-        | TypeScript => \ () => random_in_span (typescript_random_u53 ()) (convert.i64 min) (convert.i64 max) |> convert.numeric_conv
+        | TypeScript => \ () => random_in_span (typescript_random_u53 ()) (convert::i64 min) (convert::i64 max) |> convert::numeric_conv
         | Lua => \ () =>
-            := low, high = convert.i32 min, convert.i32 max - 1i32
-            convert.convert (? high < low ?> low |: lua_math_random low high)
+            := low, high = convert::i32 min, convert::i32 max - 1i32
+            convert::convert (? high < low ?> low |: lua_math_random low high)
         | _ => \ () =>
-            random () |> random_next (convert.i32 min) (convert.i32 max) |> convert.convert
+            random () |> random_next (convert::i32 min) (convert::i32 max) |> convert::convert
 
 ///> lua
 ///> rust
-test random_draws_stay_in_their_half_open_range =
+:# random_draws_stay_in_their_half_open_range =
     :~ ^ outside (draws : i32) : i32 =
         ? draws = 0i32 ?> 0i32
         |:
@@ -198,7 +198,7 @@ test random_draws_stay_in_their_half_open_range =
 := new_disposable (fn : () -> ()) : disposable _ =
     run_target \|
         | Rust => \ () =>
-            :< rust.rust_operators
+            :< rust::rust_operators
             !\\(fn, $'"$0.clone()"') : disposable _
         | TypeScript => \ () =>
             := fn = ~~ fn
@@ -219,7 +219,7 @@ test random_draws_stay_in_their_half_open_range =
 ///> cuda
 ///> rust
 ///> typescript
-test new_disposable =
+:# new_disposable =
     := new_disposable_test = mut 0i32
     new_disposable \ () => new_disposable_test <- *new_disposable_test + 1
     |> \ x => x : disposable ()
@@ -227,7 +227,7 @@ test new_disposable =
     *new_disposable_test |> _assert_eq 1
 
 ///> fsharp
-test new_disposable_2 =
+:# new_disposable_2 =
     := new_disposable_test = mut 0i32
     \ () =>
         new_disposable \ () => new_disposable_test <- *new_disposable_test + 1
@@ -235,22 +235,22 @@ test new_disposable_2 =
         |> use
         |> ignore
         |> return
-    |> async.new_task
-    |> async.await_task
-    |> async.run_synchronously
+    |> async::new_task
+    |> async::await_task
+    |> async::run_synchronously
     *new_disposable_test |> _assert_eq 1
 
 ///> fsharp
-test new_disposable_3 =
+:# new_disposable_3 =
     := new_disposable_test = mut 0i32
     \ () =>
         new_disposable \ () => new_disposable_test <- *new_disposable_test + 1
         |> \ x => x : disposable ()
         |> ignore
         |> return
-    |> async.new_task
-    |> async.await_task
-    |> async.run_synchronously
+    |> async::new_task
+    |> async::await_task
+    |> async::run_synchronously
     *new_disposable_test |> _assert_eq 0
 
 /// ## main
@@ -260,7 +260,7 @@ test new_disposable_3 =
     init_trace_state None
     := new_disposable x : _ () = new_disposable x
     $'let new_disposable x = !new_disposable x' : ()
-    := retry_fn (r : i32) (x : () -> _) : optionm'.option' () = retry_fn r x |> optionm'.box
+    := retry_fn (r : i32) (x : () -> _) : optionm'::option' () = retry_fn r x |> optionm'::box
     $'let retry_fn x = !retry_fn x' : ()
     := memoize (fn : () -> ()) : () -> () = memoize fn
     $'let memoize x = !memoize x' : ()

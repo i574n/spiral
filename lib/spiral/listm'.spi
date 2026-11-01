@@ -1,30 +1,30 @@
-test listm static =
+:# listm static =
     :< testing
 
 /// ## listm'
 :+ append list t =
-    listm.append
+    listm::append
 
 ///> gleam
 ///> cuda
 ///> rust
 ///> typescript
-test append print_code =
+:# append print_code =
     [ "a"; "b" ] ++ [ "c"; "d" ]
     |> _assert_eq [ "a"; "b"; "c"; "d" ]
 
 := collect \* t r. (fn : t -> list r) (items : list t) : list r =
-    listm.foldBack (\ x acc => listm.append (fn x) acc) items []
+    listm::foldBack (\ x acc => listm::append (fn x) acc) items []
 
 := replicate count x =
-    listm.init count \ _ => x
+    listm::init count \ _ => x
 
 := map4 f l1 l2 l3 l4 =
     := ^ 루프 l1 l2 l3 l4 acc =
         ?= l1, l2, l3, l4 ?|
         | (x1 :: xs1), (x2 :: xs2), (x3 :: xs3), (x4 :: xs4) =>
             루프 xs1 xs2 xs3 xs4 (f x1 x2 x3 x4 :: acc)
-        | _ => listm.rev acc
+        | _ => listm::rev acc
     루프 l1 l2 l3 l4 []
 
 := map4_ f l1 l2 l3 l4 =
@@ -32,19 +32,19 @@ test append print_code =
         ?= l1, l2, l3, l4 ?|
         | (x1 :: xs1), (x2 :: xs2), (x3 :: xs3), (x4 :: xs4) =>
             루프 xs1 xs2 xs3 xs4 (f x1 x2 x3 x4 :: acc)
-        | _ => acc |> listm.rev
+        | _ => acc |> listm::rev
     루프 l1 l2 l3 l4 []
 
-test map4_ =
+:# map4_ =
     := xs = [ 1i32; 2; 3 ] |> dyn
     map4_ (\ a b c d => a + b + c + d) xs xs xs xs
     |> _assert_eq [ 4i32; 8; 12 ]
 
 := init_series start end inc =
     := total : f64 = conv ((end - start) / inc) + 1
-    listm.init total (conv >> (*) inc >> (+) start)
+    listm::init total (conv >> (*) inc >> (+) start)
 
-test init_series =
+:# init_series =
     init_series 0 1 0.5
     |> _assert_eq [ 0f64; 0.5; 1 ]
 
@@ -53,32 +53,32 @@ test init_series =
     | _ :: xs => try_item (i - 1) xs
     | [] => None
 
-test try_item =
-    listm.init 10i32 id
+:# try_item =
+    listm::init 10i32 id
     |> try_item 9i32
     |> _assert_eq (Some 9)
 
-test try_item_2 =
-    listm.init 10i32 id
+:# try_item_2 =
+    listm::init 10i32 id
     |> try_item 10i32
     |> _assert_eq None
 
 := item i =
-    try_item i >> optionm.value
+    try_item i >> optionm::value
 
-test item =
-    listm.init 10i32 id
+:# item =
+    listm::init 10i32 id
     |> item 9i32
     |> _assert_eq 9
 
 ///> fsharp
-test item_2 =
+:# item_2 =
     \ () =>
-        listm.init 10i32 id
+        listm::init 10i32 id
         |> item 10i32
         |> ignore
     |> _throws
-    |> optionm.map sm'.format_exception
+    |> optionm::map sm'::format_exception
     |> _assert_eq (Some "System.Exception: Option does not have a value.")
 
 :~ ^ try_item_ i = \|
@@ -87,26 +87,26 @@ test item_2 =
     | [] => None
 
 := item_ i =
-    try_item_ i >> optionm.value
+    try_item_ i >> optionm::value
 
 := sum list =
-    list |> listm.fold (+) 0
+    list |> listm::fold (+) 0
 
-test sum =
-    listm.init 10i32 id
+:# sum =
+    listm::init 10i32 id
     |> sum
     |> _assert_eq 45
 
 := unzip list =
     (([], []), list)
-    ||> listm.fold \ (acc_x, acc_y) (x, y) =>
+    ||> listm::fold \ (acc_x, acc_y) (x, y) =>
         x :: acc_x, y :: acc_y
     |> \ x, y =>
-        x |> listm.rev, y |> listm.rev
+        x |> listm::rev, y |> listm::rev
 
-test unzip =
-    listm.init 10i32 id
-    |> listm.map \ x => x, x
+:# unzip =
+    listm::init 10i32 id
+    |> listm::map \ x => x, x
     |> unzip
     |> \ x, y =>
         x |> sum
@@ -122,7 +122,7 @@ test unzip =
     루프 0 list
 
 := index_of item =
-    try_index_of item >> optionm.value
+    try_index_of item >> optionm::value
 
 := try_index_of_ \* b c {number}. (item : b) (list : list b) : option c =
     :~ ^ 루프 \* a {number}. (i : a) : list b -> option a = \|
@@ -134,7 +134,7 @@ test unzip =
     루프 0 list
 
 := index_of_ item =
-    try_index_of_ item >> optionm.value
+    try_index_of_ item >> optionm::value
 
 := try_index_of__ item list =
     := i = mut 0
@@ -154,15 +154,15 @@ test unzip =
     *result
 
 := index_of__ item =
-    try_index_of__ item >> optionm.value
+    try_index_of__ item >> optionm::value
 
-test try_index_of =
-    listm.init 10i32 id
+:# try_index_of =
+    listm::init 10i32 id
     |> index_of 5i32
     |> _assert_eq 5i32
 
-test try_index_of_2 =
-    listm.init 10i32 id
+:# try_index_of_2 =
+    listm::init 10i32 id
     |> try_index_of 10i32
     |> _assert_eq (None : option i32)
 
@@ -184,8 +184,8 @@ test try_index_of_2 =
             |: 루프 xs
     루프 list
 
-test try_find =
-    listm.init 10i32 id
+:# try_find =
+    listm::init 10i32 id
     |> try_find ((=) 5i32)
     |> _assert_eq (Some 5i32)
 
@@ -207,41 +207,41 @@ test try_find =
 
 ///> rust
 ///> gleam
-test try_find_prime_searches_a_runtime_list_at_run_time =
+:# try_find_prime_searches_a_runtime_list_at_run_time =
     := ~l = [ 3i32; 8; 5; 10 ]
     (try_find' (\ x => x > 4i32) l, try_find' (\ x => x > 40i32) l) |> _assert_eq (Some 8i32, None)
 
 ///> rust
 ///> gleam
-test try_find_prime_folds_a_static_list =
+:# try_find_prime_folds_a_static_list =
     try_find' (\ x => x % 2i32 = 0i32) [ 1i32; 3; 4; 6 ] |> _assert_eq (Some 4i32)
 
 := find x =
-    try_find x >> optionm.value
+    try_find x >> optionm::value
 
 := find_ x =
-    try_find_ x >> optionm.value
+    try_find_ x >> optionm::value
 
-test try_find_2 =
-    listm.init 10i32 id
+:# try_find_2 =
+    listm::init 10i32 id
     |> find ((=) 5i32)
     |> _assert_eq 5i32
 
 := choose f l =
     (l, [])
-    ||> listm.foldBack \ x acc =>
+    ||> listm::foldBack \ x acc =>
         ?= f x ?|
         | Some y => y :: acc
         | None => acc
 
-test choose =
-    listm.init 10i32 id
+:# choose =
+    listm::init 10i32 id
     |> choose \ x => ? x % 2 = 0 ?> Some x |: None
     |> _assert_eq [ 0; 2; 4; 6; 8 ]
 
 := filter \* t. (fn : t -> bool) (list : list t) : list t =
     (list, [])
-    ||> listm.foldBack \ x acc =>
+    ||> listm::foldBack \ x acc =>
         ? fn x ?> x :: acc |: acc
 
 := zip_with fn xs ys =
@@ -249,7 +249,7 @@ test choose =
         ?= xs, ys ?|
         | (x :: xs), (y :: ys) =>
             루프 (fn x y :: acc) xs ys
-        | _ => listm.rev acc
+        | _ => listm::rev acc
     루프 [] xs ys
 
 := zip_with_ fn xs ys =
@@ -257,10 +257,10 @@ test choose =
         ?= xs, ys ?|
         | (x :: xs), (y :: ys) =>
             루프 (fn x y :: acc) xs ys
-        | _ => listm.rev acc
+        | _ => listm::rev acc
     루프 [] xs ys
 
-test zip_with =
+:# zip_with =
     ([ 1i32; 2; 3 ], [ 4; 5; 6 ])
     ||> zip_with (+)
     |> _assert_eq [ 5; 7; 9 ]
@@ -271,30 +271,30 @@ test zip_with =
 := zip_ xs ys =
     zip_with_ pair xs ys
 
-test zip =
+:# zip =
     ([ 1i32; 2; 3 ], [ 4i32; 5; 6 ])
     ||> zip
     |> _assert_eq [ 1, 4; 2, 5; 3, 6 ]
 
 := indexed list =
     (([], 0), list)
-    ||> listm.fold \ (acc, i) x =>
+    ||> listm::fold \ (acc, i) x =>
         (i, x) :: acc, i + 1
     |> fst
-    |> listm.rev
+    |> listm::rev
 
-test indexed =
-    listm.init 5i32 ((*) 2)
+:# indexed =
+    listm::init 5i32 ((*) 2)
     |> indexed
     |> _assert_eq [ 0i32, 0; 1, 2; 2, 4; 3, 6; 4, 8 ]
 
 := group_by fn list =
     (list, [])
-    ||> listm.foldBack \ x acc =>
+    ||> listm::foldBack \ x acc =>
         := xk = fn x
         := found, new_acc =
             ((!-, []), acc)
-            ||> listm.fold \ (found, acc') (k, xs) =>
+            ||> listm::fold \ (found, acc') (k, xs) =>
                 ? k = xk
                 ?> !+, (k, x :: xs) :: acc'
                 |: found, (k, xs) :: acc'
@@ -302,28 +302,28 @@ test indexed =
         ?> new_acc
         |: (xk, [ x ]) :: new_acc
 
-test group_by =
-    listm.init 10i32 id
+:# group_by =
+    listm::init 10i32 id
     |> group_by \ x => x % 2 = 0
     |> _assert_eq [ !+, [ 0; 2; 4; 6; 8 ]; !-, [ 1; 3; 5; 7; 9 ] ]
 
 := forall' fn (head :: tail) =
     (!+, tail)
-    ||> listm.fold \ acc x =>
+    ||> listm::fold \ acc x =>
         acc && x = head
 
-test forall =
+:# forall =
     [ 1i32; 1; 1; 1; 1 ]
     |> forall' ((=) 1i32)
     |> _assert_eq !+
 
 := last list =
     list
-    |> listm.rev
+    |> listm::rev
     |> item 0i32
 
-test last =
-    listm.init 10i32 id
+:# last =
+    listm::init 10i32 id
     |> last
     |> _assert_eq 9
 
@@ -343,8 +343,8 @@ test last =
             ~~ body fn list
     루프 list
 
-test try_pick =
-    listm.init 10i32 id
+:# try_pick =
+    listm::init 10i32 id
     |> try_pick \ x => ? x = 5i32 ?> Some x |: None
     |> _assert_eq (Some 5i32)
 
@@ -368,7 +368,7 @@ test try_pick =
 ///> gleam
 ///> cuda
 ///> typescript
-test exists print_code =
+:# exists print_code =
     [ 'a'; 'b'; 'c' ]
     |> exists' \ x => x = 'b'
     |> _assert_eq !+
@@ -413,7 +413,7 @@ test exists print_code =
         Gleam = \ () => $'[ !head, ..!tail ]' : list' t
         Lua = \ () =>
             := len = $'##(!tail)' : i32
-            := r : array t = arraym.init (len + 1i32) \ i => ? i = 0i32 ?> head |: $'!tail[!i]' : t
+            := r : array t = arraym::init (len + 1i32) \ i => ? i = 0i32 ?> head |: $'!tail[!i]' : t
             := (array r) = r
             $'!r ' : list' t
         Fsharp = \ () => $'!head :: !tail ' : list' t
@@ -421,11 +421,11 @@ test exists print_code =
         Rust = \ () => $'Rc::new({ let mut v = (!tail).as_ref().clone(); v.insert(0, !head); v })' : list' t
         TypeScript = \ () => $'[!head, ...!tail]' : list' t
         Zig = \ () =>
-            := len : i32 = $'\@as(i32, \@intCast(!tail.len))'
-            := r : array t = arraym.init (len + 1i32) \ i =>
+            := len : i32 = $'@@as(i32, @@intCast(!tail.len))'
+            := r : array t = arraym::init (len + 1i32) \ i =>
                 ? i = 0i32
                 ?> head
-                |: $'!tail[\@intCast(!i - 1)]' : t
+                |: $'!tail[@@intCast(!i - 1)]' : t
             := (array r) = r
             $'!r ' : list' t
     }
@@ -433,20 +433,20 @@ test exists print_code =
 := box \* t. (list : list t) : list' t =
     run_target \|
         | Zig => \ () =>
-            (list, empty' ()) ||> listm.foldBack cons'
+            (list, empty' ()) ||> listm::foldBack cons'
         | Rust => \ () =>
             := acc : $'Rc<RefCell<Vec<`t>>>' = $'Rc::new(RefCell::new(Vec::new()))'
-            := _ : i32 = (0i32, list) ||> listm.fold \ n (x : t) =>
+            := _ : i32 = (0i32, list) ||> listm::fold \ n (x : t) =>
                 $'!acc.borrow_mut().push(!x)' : ()
                 n + 1
             $'Rc::new(!acc.borrow().clone())' : list' t
-        | _ => \ () => (list, empty' ()) ||> listm.foldBack cons'
+        | _ => \ () => (list, empty' ()) ||> listm::foldBack cons'
 
 := rust_list_length \* t. (list : list' t) : i32 =
-    ($'(!list).len()' : convert.unativeint) |> convert.convert
+    ($'(!list).len()' : convert::unativeint) |> convert::convert
 
 := rust_list_item \* t. (i : i32) (list : list' t) : t =
-    := at : convert.unativeint = convert.convert i
+    := at : convert::unativeint = convert::convert i
     $'(!list)[!at].clone()' : t
 
 := lua_list_item \* t. (i : i32) (list : list' t) : t =
@@ -521,18 +521,18 @@ test exists print_code =
                     루프 (i + 1i32) ((fn item :: acc))
             루프 0i32 init
         Zig = \ () =>
-            := len : i32 = $'\@as(i32, \@intCast(!list.len))'
+            := len : i32 = $'@@as(i32, @@intCast(!list.len))'
             :~ ^ 루프 (i : i32) (acc : list u) : list u =
                 ? i >= len ?> acc
                 |:
-                    := item : t = $'!list[\@intCast(!i)]'
+                    := item : t = $'!list[@@intCast(!i)]'
                     루프 (i + 1i32) ((fn item :: acc))
             루프 0i32 init
     }
 
 ///> python
 ///> rust
-test fold_keeps_init_after_the_folded_items =
+:# fold_keeps_init_after_the_folded_items =
     box [ 3i32; 4i32; 5i32 ]
     |> fold' (\ x => x * 10i32) [ 1i32; 2i32 ]
     |> _assert_eq [ 50i32; 40i32; 30i32; 1i32; 2i32 ]
@@ -574,11 +574,11 @@ test fold_keeps_init_after_the_folded_items =
                     루프 (i - 1i32) ((fn item :: acc))
             루프 (len - 1i32) init
         Zig = \ () =>
-            := len : i32 = $'\@as(i32, \@intCast(!list.len))'
+            := len : i32 = $'@@as(i32, @@intCast(!list.len))'
             :~ ^ 루프 (i : i32) (acc : list u) : list u =
                 ? i < 0i32 ?> acc
                 |:
-                    := item : t = $'!list[\@intCast(!i)]'
+                    := item : t = $'!list[@@intCast(!i)]'
                     루프 (i - 1i32) ((fn item :: acc))
             루프 (len - 1i32) init
     }
@@ -594,7 +594,7 @@ test fold_keeps_init_after_the_folded_items =
 ///> rust
 ///> typescript
 ///> zig
-test cons_leaves_the_shared_tail_unchanged =
+:# cons_leaves_the_shared_tail_unchanged =
     shared_tail_folds () |> _assert_eq ([ 1i32; 2i32 ], [ 9i32; 2i32 ], [ 2i32 ])
 
 := filter' \* t. (fn : t -> bool) (list : list' t) : list' t =
@@ -632,11 +632,11 @@ test cons_leaves_the_shared_tail_unchanged =
                     루프 (i - 1i32) (? fn item ?> (item :: acc) |: acc)
             루프 (len - 1i32) [] |> box
         Zig = \ () =>
-            := len : i32 = $'\@as(i32, \@intCast(!list.len))'
+            := len : i32 = $'@@as(i32, @@intCast(!list.len))'
             :~ ^ 루프 (i : i32) (acc : list t) : list t =
                 ? i < 0i32 ?> acc
                 |:
-                    := item : t = $'!list[\@intCast(!i)]'
+                    := item : t = $'!list[@@intCast(!i)]'
                     루프 (i - 1i32) (? fn item ?> (item :: acc) |: acc)
             루프 (len - 1i32) [] |> box
     }
@@ -708,11 +708,11 @@ test cons_leaves_the_shared_tail_unchanged =
                     루프 (i + 1i32) (? exists' (\ x => x = item) seen ?> seen |: (item :: seen))
             루프 0i32 [] |> box |> rev'
         Zig = \ () =>
-            := len : i32 = $'\@as(i32, \@intCast(!list.len))'
+            := len : i32 = $'@@as(i32, @@intCast(!list.len))'
             :~ ^ 루프 (i : i32) (seen : list t) : list t =
                 ? i >= len ?> seen
                 |:
-                    := item : t = $'!list[\@intCast(!i)]'
+                    := item : t = $'!list[@@intCast(!i)]'
                     루프 (i + 1i32) (? exists' (\ x => x = item) seen ?> seen |: (item :: seen))
             루프 0i32 [] |> box |> rev'
     }
@@ -721,7 +721,7 @@ test cons_leaves_the_shared_tail_unchanged =
 ///> rust
 ///> cuda
 ///> typescript
-test distinct =
+:# distinct =
     [ "1"; "2"; "2"; "3" ]
     |> box
     |> distinct'
@@ -734,28 +734,28 @@ test distinct =
 ///> python
 ///> rust
 ///> typescript
-test rev_reverses_the_order =
+:# rev_reverses_the_order =
     unordered_items () |> rev' |> unbox |> _assert_eq [ 4i32; 1i32; 2i32; 3i32; 1i32; 3i32 ]
 
 ///> lua
 ///> python
 ///> rust
 ///> typescript
-test filter_keeps_the_order =
+:# filter_keeps_the_order =
     unordered_items () |> filter' (\ x => x > 1i32) |> unbox |> _assert_eq [ 3i32; 3i32; 2i32; 4i32 ]
 
 ///> lua
 ///> python
 ///> rust
 ///> typescript
-test map_keeps_the_order =
+:# map_keeps_the_order =
     unordered_items () |> map (\ x => x * 2i32) |> unbox |> _assert_eq [ 6i32; 2i32; 6i32; 4i32; 2i32; 8i32 ]
 
 ///> lua
 ///> python
 ///> rust
 ///> typescript
-test distinct_keeps_first_occurrences_in_order =
+:# distinct_keeps_first_occurrences_in_order =
     unordered_items () |> distinct' |> unbox |> _assert_eq [ 3i32; 1i32; 2i32; 4i32 ]
 
 := to_array' \* t. (items : list' t) : array_base t =
@@ -764,7 +764,7 @@ test distinct_keeps_first_occurrences_in_order =
         Lua = \ () =>
             := len = $'##(!items)' : i32
             := d = ~> defaultof `t ()
-            := result : array t = arraym.init len \ _ => d
+            := result : array t = arraym::init len \ _ => d
             :~ ^ 루프 i =
                 ? i >= len ?>
                     := (array result) = result
@@ -787,7 +787,7 @@ test distinct_keeps_first_occurrences_in_order =
             루프 0i32
         Rust = \ () => $'Rc::new(RefCell::new((!items).as_ref().clone()))' : array_base t
         TypeScript = \ () => $'[...!items]' : array_base t
-        Zig = \ () => $'(spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"))' : array_base t
+        Zig = \ () => $'(spiral_gpa.dupe(`t, !items) catch @@panic("out of memory"))' : array_base t
     }
 
 := contains \* t. (item : t) (list : list t) : bool =
@@ -820,31 +820,31 @@ test distinct_keeps_first_occurrences_in_order =
     | _ ?& n <= 0i32 => [ items ]
     | _ => take_ n items :: chunks_ n (skip_ n items)
 
-:= chunk_sizes (l : list (list i32)) : list i32 = l |> listm.map \ (c : list i32) => listm.length c
+:= chunk_sizes (l : list (list i32)) : list i32 = l |> listm::map \ (c : list i32) => listm::length c
 
 ///> rust
 ///> gleam
-test chunks_split_into_runs_of_at_most_n =
+:# chunks_split_into_runs_of_at_most_n =
     := ~items = [ 1i32; 2; 3; 4; 5 ]
     (chunk_sizes (chunks_ 2i32 items), chunk_sizes (chunks_ 0i32 items)) |> _assert_eq ([ 2i32; 2; 1 ], [ 5i32 ])
 
 ///> rust
 ///> gleam
-test skip_drops_the_first_n_or_everything =
+:# skip_drops_the_first_n_or_everything =
     := ~items = [ 1i32; 2; 3; 4; 5 ]
     (skip_ 3i32 items, skip_ 9i32 items) |> _assert_eq ([ 4i32; 5 ], [])
 
-:= taken_length (n : i32) (l : list i32) : i32 = listm.length (take_ n l)
+:= taken_length (n : i32) (l : list i32) : i32 = listm::length (take_ n l)
 
 ///> rust
 ///> gleam
-test take_stops_at_the_count_or_the_end =
+:# take_stops_at_the_count_or_the_end =
     := ~n = 2i32
     (taken_length n [ 1i32; 2; 3 ], taken_length 5i32 [ 1i32 ], taken_length (-1i32) [ 1i32 ])
     |> _assert_eq (2i32, 1i32, 0i32)
 
 ///> rust
 ///> gleam
-test collect_keeps_order =
+:# collect_keeps_order =
     := ~l = [ 1i32; 2; 3 ]
     collect (\ x => [ x; x * 10i32 ]) l |> _assert_eq [ 1i32; 10; 2; 20; 3; 30 ]

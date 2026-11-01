@@ -4,22 +4,23 @@ param(
     [string[]] $BaseHash = @(),
     [string] $Lib = (Join-Path $PSScriptRoot '../../../lib/spiral'),
     [string] $SignatureFile = (Join-Path $PSScriptRoot 'lib_consumer_signatures.tsv'),
-    [string] $UndoRoot = (Join-Path $env:LOCALAPPDATA 'spiral-bin/lib-land-undo'),
+    [string] $UndoRoot = (Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/lib-land-undo'),
     [string[]] $Consumer = @('apps/spiral/spiral.spi'),
-    [string] $Compiler = (Join-Path $env:LOCALAPPDATA 'spiral-bin/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll'),
-    [string] $Dotnet = (Join-Path $env:LOCALAPPDATA 'spiral-bin/toolchains/dotnet/dotnet.exe'),
+    [string] $Compiler = (Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll'),
+    [string] $Dotnet = (Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) "spiral-bin/toolchains/dotnet/dotnet$(if ($IsWindows) { '.exe' })"),
     [int] $MaxWaitMin = 30,
     [switch] $Apply
 )
 $ErrorActionPreference = 'Stop'
-$kit = Join-Path $env:LOCALAPPDATA 'kit\bin\kit.exe'
+$kit = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) "kit/bin/kit$(if ($IsWindows) { '.exe' })"
 $Lib = (Resolve-Path $Lib).Path.TrimEnd('\')
 $Draft = @($Draft | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $BaseHash = @($BaseHash | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $pairs = foreach ($d in $Draft) {
     $live, $source = $d -split '=', 2
     if (-not $source -or -not (Test-Path -LiteralPath $source)) { throw "draft '$d' must be <lib file>=<existing draft path>" }
-    [pscustomobject]@{ Live = $live.Replace('\', '/'); Source = (Resolve-Path -LiteralPath $source).Path }
+    $liveName = $live.Replace('\', '/')
+    [pscustomobject]@{ Live = $liveName; Source = (Resolve-Path -LiteralPath $source).Path; New = -not (Test-Path -LiteralPath (Join-Path $Lib $liveName)) }
 }
 if ($BaseHash.Count -and $BaseHash.Count -ne $pairs.Count) { throw '-BaseHash needs one sha256 prefix per draft, in the same order' }
 for ($i = 0; $i -lt $BaseHash.Count; $i++) {
@@ -44,23 +45,32 @@ function Copy-Retry([string] $from, [string] $to) {
     foreach ($i in 1..120) { try { Copy-Item -LiteralPath $from -Destination $to -Force -ErrorAction Stop; (Get-Item -LiteralPath $to).LastWriteTime = Get-Date; return } catch { Start-Sleep -Milliseconds 500 } }
     throw "could not copy $from -> $to (locked for 60 s)"
 }
-$pairs | ForEach-Object { "{0,-28} <= {1}" -f $_.Live, $_.Source }
+$pairs | ForEach-Object { "{0,-28} <= {1}{2}" -f $_.Live, $_.Source, $(if ($_.New) { ' (new file)' } else { '' }) }
 if (-not $Apply) { 'dry run: nothing written; rerun with -Apply'; return }
 $deadline = (Get-Date).AddMinutes($MaxWaitMin)
 while ((Get-LiveReaders).Count -and (Get-Date) -lt $deadline) { Start-Sleep 30 }
 $readers = Get-LiveReaders
 if ($readers.Count) { $readers | ForEach-Object { "LIVE READER: $($_.ProcessId) $("$($_.CommandLine)".Substring(0, [Math]::Min(140, "$($_.CommandLine)".Length)))" }; throw 'live lib readers still present: not landing' }
 $undo = Join-Path $UndoRoot (Get-Date -Format 'yyyyMMdd-HHmmss')
-$win = & $kit window request tree-write 30 --label $Label 2>&1 | Select-Object -Last 1
+$winMinutes = [Math]::Max(30, 45 + 10 * [Math]::Ceiling($pairs.Count / 10))
+$win = & $kit window request tree-write $winMinutes --label $Label 2>&1 | Select-Object -Last 1
 "$win"
 $winId = if ("$win" -match 'id=(\S+)') { $Matches[1] }
-foreach ($p in $pairs) { $u = Join-Path $undo $p.Live; New-Item -ItemType Directory -Force (Split-Path $u) | Out-Null; Copy-Item -LiteralPath (Join-Path $Lib $p.Live) -Destination $u }
-function Restore-Undo { foreach ($p in $pairs) { Copy-Retry (Join-Path $undo $p.Live) (Join-Path $Lib $p.Live) }; "RESTORED from $undo" }
+foreach ($p in $pairs | Where-Object { -not $_.New }) { $u = Join-Path $undo $p.Live; New-Item -ItemType Directory -Force (Split-Path $u) | Out-Null; Copy-Item -LiteralPath (Join-Path $Lib $p.Live) -Destination $u }
+function Restore-Undo {
+    foreach ($p in $pairs) {
+        if (-not $p.New) { Copy-Retry (Join-Path $undo $p.Live) (Join-Path $Lib $p.Live); continue }
+        $landed = Join-Path $Lib $p.Live
+        if (Test-Path -LiteralPath $landed) { $u = Join-Path $undo "$($p.Live).new"; New-Item -ItemType Directory -Force (Split-Path $u) | Out-Null; Move-Item -LiteralPath $landed -Destination $u -Force }
+    }
+    "RESTORED from $undo"
+}
 $probe = @($pairs | Where-Object { $_.Live -like '*.spi' } | ForEach-Object Live)
+$baseProbe = @($pairs | Where-Object { $_.Live -like '*.spi' -and -not $_.New } | ForEach-Object Live)
 function Get-ProbeFailures([string[]] $lines) { @($lines | ForEach-Object { if ($_ -match '^type-probe (\S+): FAIL') { $Matches[1] } }) }
 try {
     $baseFail = @()
-    if ($probe.Count) { $baseFail = Get-ProbeFailures @(pwsh -NoProfile -File (Join-Path $PSScriptRoot 'type_probe.ps1') -File ($probe -join ',') -Lib $Lib 2>&1 | ForEach-Object { "$_" }) }
+    if ($baseProbe.Count) { $baseFail = Get-ProbeFailures @(pwsh -NoProfile -File (Join-Path $PSScriptRoot 'type_probe.ps1') -File ($baseProbe -join ',') -Lib $Lib 2>&1 | ForEach-Object { "$_" }) }
     foreach ($p in $pairs) { Copy-Retry $p.Source (Join-Path $Lib $p.Live) }
     $closeOk = $true
     if ($SignatureFile) {
@@ -77,7 +87,7 @@ try {
     '=== consumers'
     $repo = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
     if (-not $env:SPIRAL_COMPILER_PACKAGE_DIR) { $env:SPIRAL_COMPILER_PACKAGE_DIR = Join-Path $repo 'deps/The-Spiral-Language/VS Code Plugin' }
-    $consumerOut = Join-Path $env:LOCALAPPDATA 'spiral-bin/mix-builds/lib-land-consumers'
+    $consumerOut = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/mix-builds/lib-land-consumers'
     New-Item -ItemType Directory -Force $consumerOut | Out-Null
     foreach ($c in $Consumer) {
         $entry = Join-Path $repo $c
@@ -89,7 +99,7 @@ try {
     $user = [Environment]::GetEnvironmentVariables('User')
     foreach ($name in $user.Keys) { if ($name -notin 'Path', 'PSModulePath', 'TEMP', 'TMP' -and $user[$name] -and -not [Environment]::GetEnvironmentVariable($name, 'Process')) { [Environment]::SetEnvironmentVariable($name, $user[$name], 'Process') } }
     $env:MIX_ENV = 'test'
-    $env:MIX_BUILD_PATH = Join-Path $env:LOCALAPPDATA 'spiral-bin/mix-builds/lib-land'
+    $env:MIX_BUILD_PATH = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/mix-builds/lib-land'
     Push-Location (Join-Path $PSScriptRoot '..')
     try { $mix = Join-Path (Split-Path (Get-Command mix).Source -Parent) 'mix.bat'; & $mix test test/spiral/document_test.exs --timeout 900000 2>&1 | Select-String -Pattern '^\s+\d+\) test |Result:' | ForEach-Object { $_.Line.Trim() }; if ($LASTEXITCODE) { $closeOk = $false } } finally { Pop-Location }
     '=== type_probe'

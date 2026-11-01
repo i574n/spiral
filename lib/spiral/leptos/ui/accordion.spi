@@ -23,11 +23,11 @@
 
 := render props_fn children : _ (_ div) =
     := props : props = props () |> props_fn
-    := right_element_none = props.right_element = None
-    := summary_class = props.summary_class
+    := right_element_none = props::right_element = None
+    := summary_class = props::summary_class
     := right_element' =
-        props.right_element
-        |> optionm'.default_value ([] |> view_list_to_view)
+        props::right_element
+        |> optionm'::default_value ([] |> view_list_to_view)
 
     div [
         $'"class=\\\"flex flex-col [position:relative]\\\""'
@@ -42,8 +42,8 @@
             details [
                 class_fn
                     "flex flex-1 [&_summary::-webkit-details-marker]:hidden [&>summary>span]:open:-rotate-180 "
-                    props.details_class
-                attr_fn "open" props.open'
+                    props::details_class
+                attr_fn "open" props::open'
             ] \ () =>
                 :>[
                     summary [
@@ -63,11 +63,11 @@
                             div [
                                 $'"class=\\\"flex items-center gap-2\\\""'
                             ] \ () =>
-                                := title = props.title
+                                := title = props::title
                                 span [
                                     $'"class=\\\"[font-size:14px] [line-height:21px] [padding-right:11px]\\\""'
                                 ] \ () =>
-                                    leptos.reactive_fragment \ () =>
+                                    leptos::reactive_fragment \ () =>
                                         title ()
                                         |> text_fragment
                                 |> element_to_fragment
@@ -76,7 +76,7 @@
                             span [
                                 $'"class=\\\"shrink-0 transition duration-300 pt-[2px]\\\""'
                             ] \ () =>
-                                arrow_down.render (\ () => "h-5 w-5") []
+                                arrow_down::render (\ () => "h-5 w-5") []
                                 |> element_to_fragment
                             |> element_to_view
                         ]

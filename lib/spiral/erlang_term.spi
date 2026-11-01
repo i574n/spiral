@@ -1,6 +1,6 @@
 :< sm'_operators
 
-test erlang_term static =
+:# erlang_term static =
     :< testing
 
 := erlang_term_gleam_imports () =
@@ -50,7 +50,7 @@ test erlang_term static =
     erlang_term_imports ()
     $'[!head, ..!tail]'
 
-:= terms_of (items : list term) : terms = listm.foldBack cons items (no_terms ())
+:= terms_of (items : list term) : terms = listm::foldBack cons items (no_terms ())
 
 := list_term (items : list term) : term = terms_of items |> of
 
@@ -78,23 +78,23 @@ test erlang_term static =
 := charlist (text : string) : term = apply "unicode" "characters_to_list" [ of text ]
 
 ///> gleam
-test apply_calls_an_erlang_function =
+:# apply_calls_an_erlang_function =
     apply "erlang" "abs" [ of -3i32 ] |> cast |> _assert_eq 3i32
 
 ///> gleam
-test a_tuple_holds_its_items_in_order =
+:# a_tuple_holds_its_items_in_order =
     := t = tuple [ atom "ok"; of 7i32 ]
     (apply "erlang" "tuple_size" [ t ] |> cast, apply "erlang" "element" [ of 2i32; t ] |> cast) |> _assert_eq (2i32, 7i32)
 
 ///> gleam
-test a_map_from_pairs_answers_its_keys =
+:# a_map_from_pairs_answers_its_keys =
     := m = apply "maps" "from_list" [ list_term [ tuple [ atom "a"; of 1i32 ] ] ]
     apply "maps" "get" [ atom "a"; m; of 0i32 ] |> cast |> _assert_eq 1i32
 
 ///> gleam
-test atoms_compare_by_name =
+:# atoms_compare_by_name =
     (equal (atom "ok") (atom "ok"), equal (atom "ok") (atom "error")) |> _assert_eq (!+, !-)
 
 ///> gleam
-test a_charlist_round_trips =
+:# a_charlist_round_trips =
     charlist "ebin" |> \ c => apply "unicode" "characters_to_binary" [ c ] |> cast |> _assert_eq "ebin"

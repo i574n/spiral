@@ -1,14 +1,14 @@
 :< rust
 :< rust_operators
 
-test optionm static =
+:# optionm static =
     :< testing
 
 /// ## optionm'
 := default_value d =
-    optionm.defaultWith d
+    optionm::defaultWith d
 
-test default_value =
+:# default_value =
     None
     |> default_value 3i32
     |> _assert_eq 3i32
@@ -16,7 +16,7 @@ test default_value =
 := (/??) a b =
     a |> default_value b
 
-test default_value_2 =
+:# default_value_2 =
     None /?? 3i32
     |> _assert_eq 3i32
 
@@ -24,7 +24,7 @@ test default_value_2 =
     | Some x => x
     | None => fn ()
 
-test default_with =
+:# default_with =
     None
     |> default_with \ () => 3i32
     |> _assert_eq 3i32
@@ -34,7 +34,7 @@ test default_with =
     | Some x, Some y => fn x y |> Some
     | _ => None
 
-test choose =
+:# choose =
     (Some 2i32, Some 3)
     ||> choose (+)
     |> _assert_eq (Some 5)
@@ -43,7 +43,7 @@ test choose =
     | Some x => fn x
     | None => ()
 
-test iter =
+:# iter =
     := n = mut 1i32
     := fn =
         \ n' =>
@@ -98,7 +98,7 @@ test iter =
         Gleam = \ () => $'!x |> option.Some' : option' t
         Lua = \ () => $'!x ' : option' t
         Fsharp = \ () => $'Some !x ' : option' t
-        Python = \ () => $'!x \# some\' ' : option' t
+        Python = \ () => $'!x ## some\' ' : option' t
         Rust = \ () => $'Some(!x.clone())' : option' t
         TypeScript = \ () => $'!x ' : option' t
         Zig = \ () => $'!x ' : option' t
@@ -123,7 +123,7 @@ test iter =
         Fsharp = \ () => $'!x |> Option.defaultValue !value ' : t
         Python = \ () => ? is_none' x ?> value |: nullable_value' x
         Rust = \ () =>
-            := value = rust.clone value
+            := value = rust::clone value
             $'!x.unwrap_or(!value)' : t
         TypeScript = \ () => ? is_none' x ?> value |: nullable_value' x
         Zig = \ () => $'(!x orelse !value)' : t
@@ -166,7 +166,7 @@ test iter =
             ?> none' ()
             |: fn $'!x ' |> \ x => $'!x ' : option' u
         Rust = \ () =>
-            := fn = rust.one_param_fn fn
+            := fn = rust::one_param_fn fn
             := x = ~~ x
             $'!x.map(|x| !fn(x))' : option' u
         TypeScript = \ () =>
@@ -193,7 +193,7 @@ test iter =
 ///> cuda
 ///> rust
 ///> typescript
-test unbox =
+:# unbox =
     := x = Some 3i32
     := y : option i32 = None
     := x' = x |> box |> unbox
@@ -219,7 +219,7 @@ test unbox =
 ///> cuda
 ///> typescript
 ///> cuda
-test of_obj =
+:# of_obj =
     null ()
     |> of_obj
     |> unbox
@@ -229,7 +229,7 @@ test of_obj =
 ///> cuda
 ///> rust
 ///> typescript
-test of_obj_2 =
+:# of_obj_2 =
     ""
     |> of_obj
     |> unbox
@@ -252,20 +252,20 @@ test of_obj_2 =
     (!\\(x, $'"true; let mut !x = !x"') : bool) |> ignore
     !\\(x, $'"Option::take(&mut $0)"')
 
-:= take_ref \* t. (x : rust.ref (option' t)) : option' t =
+:= take_ref \* t. (x : rust::ref (option' t)) : option' t =
     (!\\(x, $'"true; let mut !x = !x"') : bool) |> ignore
     !\\(x, $'"Option::take(&mut $0)"')
 
-:= take_ref_mut \* t. (x : rust.ref (rust.mut' (option' t))) : option' t =
+:= take_ref_mut \* t. (x : rust::ref (rust::mut' (option' t))) : option' t =
     !\\(x, $'"Option::take($0)"')
 
-:= cloned \* t. (x : option' (rust.ref t)) : option' t =
+:= cloned \* t. (x : option' (rust::ref t)) : option' t =
     !\\(x, $'"$0.cloned()"')
 
-:= as_ref \* t. (x : rust.ref (option' t)) : option' (rust.ref t) =
+:= as_ref \* t. (x : rust::ref (option' t)) : option' (rust::ref t) =
     !\\(x, $'"$0.as_ref()"')
 
-:= as_mut \* t. (x : rust.ref (rust.mut' (option' t))) : option' (rust.ref (rust.mut' t)) =
+:= as_mut \* t. (x : rust::ref (rust::mut' (option' t))) : option' (rust::ref (rust::mut' t)) =
     !\\(x, $'"$0.as_mut()"')
 
 := unwrap_or \* t. (def : t) (x : option' t) : t =
@@ -274,15 +274,15 @@ test of_obj_2 =
 := and_then \* t u. (fn : t -> option' u) (x : option' t) : option' u =
     !\\((x, fn), $'"$0.and_then(|x| $1(x))"')
 
-:= rc_upgrade \* t. (x : rust.weak_rc t) : option' (rust.rc t) =
+:= rc_upgrade \* t. (x : rust::weak_rc t) : option' (rust::rc t) =
     !\\(x, $'"std::rc::Weak::upgrade(&$0)"')
 
-:= rc_into_inner \* t. (x : rust.rc t) : option' t =
+:= rc_into_inner \* t. (x : rust::rc t) : option' t =
     !\\(x, $'"std::rc::Rc::into_inner($0)"')
 
 ///> rust
-test rc_into_inner =
-    rust.new_rc 0i32
+:# rc_into_inner =
+    rust::new_rc 0i32
     |> rc_into_inner
     |> unbox
     |> _assert_eq' (Some 0i32)

@@ -74,26 +74,26 @@
 
 := ^ decode_at \* value. (s : string) (at : i32) : value =
     ?: value ?|
-    | i32 => json_scan.parse_i32 s at
-    | string => json_scan.parse_string s at
-    | bool => json_scan.parse_bool s at
-    | {} => decode (json_scan.object_at s at) `value
+    | i32 => json_scan::parse_i32 s at
+    | string => json_scan::parse_string s at
+    | bool => json_scan::parse_bool s at
+    | {} => decode (json_scan::object_at s at) `value
     | array_base ~el =>
         ?: el ?|
-        | i32 => json_scan.parse_i32_array s at
-        | string => json_scan.parse_string_array s at
+        | i32 => json_scan::parse_i32_array s at
+        | string => json_scan::parse_string_array s at
         | {} =>
-            json_scan.fill_array `el (json_scan.item_count s at) \ i =>
-                decode (json_scan.object_at s (json_scan.item_start s at i)) `el
-    | ~a * ~b => decode_at `a s (json_scan.item_start s at 0i32), decode_items `b s at 1i32
+            json_scan::fill_array `el (json_scan::item_count s at) \ i =>
+                decode (json_scan::object_at s (json_scan::item_start s at i)) `el
+    | ~a * ~b => decode_at `a s (json_scan::item_start s at 0i32), decode_items `b s at 1i32
     | option ~inner =>
         ? at < 0i32
         ?> None `inner
         |: Some `inner (decode_at `inner s at)
     | _ =>
         ? union_type_is `value ?>
-            := name = json_scan.union_case_name s at
-            := payload_at = json_scan.union_payload_at s at
+            := name = json_scan::union_case_name s at
+            := payload_at = json_scan::union_payload_at s at
             := pick =
                 union_type_to_record `value \* cases. =>
                     record_type_fold
@@ -113,12 +113,12 @@
 
 :& := decode_items \* value. (s : string) (at : i32) (i : i32) : value =
     ?: value ?|
-    | ~a * ~b => decode_at `a s (json_scan.item_start s at i), decode_items `b s at (i + 1i32)
-    | _ => decode_at `value s (json_scan.item_start s at i)
+    | ~a * ~b => decode_at `a s (json_scan::item_start s at i), decode_items `b s at (i + 1i32)
+    | _ => decode_at `value s (json_scan::item_start s at i)
 
 :& := decode s = \* t. =>
     record_type_map
         \ key =>
             \* value. =>
-                decode_at `value s (json_scan.value_at s !!!!SymbolToString(key))
+                decode_at `value s (json_scan::value_at s !!!!SymbolToString(key))
         `t

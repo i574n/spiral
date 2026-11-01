@@ -1,6 +1,6 @@
 :< sm'_operators
 
-test otp_actor static =
+:# otp_actor static =
     :< testing
 
 := otp_actor_imports () =
@@ -13,15 +13,15 @@ test otp_actor static =
 :! started d = $'actor.Started(`d)'
 :! start_result d = $'Result(actor.Started(`d), actor.StartError)'
 
-:= new \* s m. (state : s) : builder s m (erlang_process.subject m) =
+:= new \* s m. (state : s) : builder s m (erlang_process::subject m) =
     otp_actor_imports ()
     $'actor.new(!state)'
 
-:= new_with_self \* s m. (ms : i32) (f : erlang_process.subject m -> s) : builder s m (erlang_process.subject m) =
+:= new_with_self \* s m. (ms : i32) (f : erlang_process::subject m -> s) : builder s m (erlang_process::subject m) =
     otp_actor_imports ()
     $'actor.new_with_initialiser(!ms, fn(me) { Ok(actor.initialised(!f(me)) |> actor.returning(me)) })'
 
-:= new_with_init \* s m. (ms : i32) (init : () -> s) : builder s m (erlang_process.subject m) =
+:= new_with_init \* s m. (ms : i32) (init : () -> s) : builder s m (erlang_process::subject m) =
     new_with_self ms \ _ => init ()
 
 := on_message \* s m r. (handler : s -> m -> next s m) (spec : builder s m r) : builder s m r =
@@ -50,39 +50,39 @@ test otp_actor static =
     |: None
 
 := call \* m reply.
-    (to : erlang_process.subject m) (timeout_ms : i32) (request : erlang_process.subject reply -> m)
+    (to : erlang_process::subject m) (timeout_ms : i32) (request : erlang_process::subject reply -> m)
     : reply
     =
     otp_actor_imports ()
     $'actor.call(!to, !timeout_ms, !request)'
 
-:= send \* m. (to : erlang_process.subject m) (message : m) : () =
+:= send \* m. (to : erlang_process::subject m) (message : m) : () =
     otp_actor_imports ()
     $'actor.send(!to, !message)'
 
-:= named \* s m r. (address : erlang_process.name m) (spec : builder s m r) : builder s m r =
+:= named \* s m r. (address : erlang_process::name m) (spec : builder s m r) : builder s m r =
     otp_actor_imports ()
     $'actor.named(!spec, !address)'
 
 :| counter_message =
     | Add : i32
-    | Read : erlang_process.subject i32
+    | Read : erlang_process::subject i32
 
-:== i32_inbox = erlang_process.subject i32
+:== i32_inbox = erlang_process::subject i32
 
-:== self_inbox = erlang_process.subject i32_inbox
+:== self_inbox = erlang_process::subject i32_inbox
 
 := counter_step (total : i32) (message : counter_message) : next i32 counter_message =
     ?= message ?|
     | Add n => continue (total + n)
     | Read reply =>
-        erlang_process.send reply total
+        erlang_process::send reply total
         continue total
 
 := counter_inbox () = new 0i32 |> on_message counter_step |> start |> started_data
 
 ///> gleam
-test counter_actor_counts =
+:# counter_actor_counts =
     ?= counter_inbox () ?|
     | Some inbox =>
         send inbox (Add 3i32)
@@ -94,41 +94,41 @@ test counter_actor_counts =
     call subject 10000i32 \ (reply_to : i32_inbox) => reply_to
 
 := length_reply (items : array i32) (reply_to : i32_inbox) : next (array i32) i32_inbox =
-    erlang_process.send reply_to (length items : i32)
+    erlang_process::send reply_to (length items : i32)
     continue items
 
 := array_actor () =
     new_with_init 10000i32 (\ () => ;[ 4i32; 5; 6 ]) |> on_message length_reply |> start |> started_data
 
 ///> gleam
-test array_state_is_built_inside_the_actor =
+:# array_state_is_built_inside_the_actor =
     ?= array_actor () ?|
     | Some subject => ask_i32 subject |> _assert_eq 3i32
     | None => failwith "the actor did not start"
 
 := self_reply (me : self_inbox) (reply_to : i32_inbox) : next self_inbox i32_inbox =
-    erlang_process.send reply_to 9i32
+    erlang_process::send reply_to 9i32
     continue me
 
 := self_actor () =
     new_with_self 10000i32 (\ (me : self_inbox) => me) |> on_message self_reply |> start |> started_data
 
 ///> gleam
-test the_initialiser_receives_the_actors_own_subject =
+:# the_initialiser_receives_the_actors_own_subject =
     ?= self_actor () ?|
     | Some subject => ask_i32 subject |> _assert_eq 9i32
     | None => failwith "the actor did not start"
 
-:= named_counter_address () : erlang_process.name counter_message =
-    erlang_process.new_name "lib_otp_actor_named_test"
+:= named_counter_address () : erlang_process::name counter_message =
+    erlang_process::new_name "lib_otp_actor_named_test"
 
 := named_counter () =
     := address = named_counter_address ()
     new 0i32 |> named address |> on_message counter_step |> start |> started_data |> ignore
-    erlang_process.named_subject address
+    erlang_process::named_subject address
 
 ///> gleam
-test a_named_actor_answers_through_its_name =
+:# a_named_actor_answers_through_its_name =
     := inbox = named_counter ()
     send inbox (Add 5i32)
     call inbox 10000i32 Read |> _assert_eq 5i32

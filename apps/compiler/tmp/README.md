@@ -50,8 +50,8 @@ samples/                 every fixture, one flat directory each:
   mega_<name>/             the five megaprojects and their sub-packages
   core/                    the portable `core-` package the fixtures share
 tests/                   matrix.psd1 (smoke list, known failures, megaproject roots, C flags),
-                         native-shims/ (C shims; run_main.mjs/run_main.py/cpp_native.py: the TypeScript/Python/C++
-                         native tiers), rust-exports/
+                         native-shims/ (C shims; run_main.mjs: the TypeScript native tier; the Python and C++
+                         tiers live in scripts/test.ps1), rust-exports/
 lanes/                   per-lane docs: single-flight (backends), hopacsota (PLAN.md: the parallel layer's contract)
 ../scripts/                 env, build, test, bench (pwsh, cross-platform)
 ```

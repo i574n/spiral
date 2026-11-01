@@ -91,15 +91,25 @@
             |: "    " ++ line
         Line (mapped, map_main rest (i + 1i32) at)
 
-:= wrap (code : string) : string * i32 =
+:| main_source =
+    | OwnMain
+    | MainFromExpression
+    | MainFromDefinitionsOnly
+
+:= from_expression (m : main_source) : bool = ?= m ?| MainFromExpression => !+ | _ => !-
+
+:= main_text (m : main_source) : string =
+    ?= m ?| OwnMain => "0" | MainFromExpression => "1" | MainFromDefinitionsOnly => "2"
+
+:= wrap (code : string) : string * main_source =
     := xs = read_lines code
     := n = count_lines xs
     := block = last_block xs (n - 1i32)
-    ? block >= 0i32 && main_line (nth_line xs block) ?> text.ensure_nl code, 0i32
+    ? block >= 0i32 && main_line (nth_line xs block) ?> text.ensure_nl code, OwnMain
     |:
         := at = search_top xs (n - 1i32) -1i32
-        ? at < 0i32 ?> text.ensure_nl code ++ "inl main () : i32 = 0i32\n", 2i32
-        |: text.ensure_nl (join_lines (map_main xs 0i32 at)), 1i32
+        ? at < 0i32 ?> text.ensure_nl code ++ "inl main () : i32 = 0i32\n", MainFromDefinitionsOnly
+        |: text.ensure_nl (join_lines (map_main xs 0i32 at)), MainFromExpression
 
 := package_project (includes : string) : string =
     if includes = "" then """

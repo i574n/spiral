@@ -1,4 +1,4 @@
-test convert static =
+:# convert static =
     :< testing
 
 /// ## convert
@@ -51,11 +51,11 @@ test convert static =
                 ?> $'(!x).parse::<`u>().unwrap()'
                 |: $'(!x as `u)'
             Some y
-        |> optionm.value
+        |> optionm::value
     |:
         x
         |> to' \ x => $'!x ' |> Some
-        |> optionm.value
+        |> optionm::value
 
 := numeric_conv \* t u. (x : t) : u =
     ?
@@ -120,7 +120,7 @@ test convert static =
             ? err = 0
             ?> n |> Some
             |: None
-            |> optionm.value
+            |> optionm::value
         Lua = \ () => $'tonumber( !x, !base )' : i32
         Fsharp = \ () => $'System.Convert.ToInt32 (!x, !base)' : i32
         Python = \ () => $'int (!x, !base)' : i32
@@ -141,7 +141,7 @@ test convert static =
             $'(spiralParseIntBase !x !base)' : i32
         Kotlin = \ () => $'((!x).trim().toIntOrNull(!base) ?: 0)' : i32
         Swift = \ () => $'(Int32(String((!x).split(separator: " ").first ?? ""), radix: Int(!base)) ?? 0)' : i32
-        Zig = \ () => $'(std.fmt.parseInt(i32, std.mem.trim(u8, !x, " \\t\\r\\n"), \@intCast(!base)) catch 0)' : i32
+        Zig = \ () => $'(std.fmt.parseInt(i32, std.mem.trim(u8, !x, " \\t\\r\\n"), @@intCast(!base)) catch 0)' : i32
     }
 
 /// ### convert_i32
@@ -306,22 +306,22 @@ test convert static =
                     |: parsed_integer ok ($'(tonumber(!x) or 0)' : i64)
                 |: x |> to |> Some : _ u
             Fsharp = \ () =>
-                resultm.from_try
+                resultm::from_try
                     \ () => $'!x |> `u '
                     eval
-                |> resultm.ok
+                |> resultm::ok
                 : _ u
             Python = \ () =>
-                resultm.from_try
+                resultm::from_try
                     \ () => $'`u(!x)'
                     eval
-                |> resultm.ok
+                |> resultm::ok
                 : _ u
             Rust = \ () =>
                 ? (~> ?: u ?| string => !+ | _ => !-)
                 ?> Some $'Rc::<str>::from(format\!("{}", !x))'
                 |? (~> ?: t ?| string => !+ | _ => !-) ?>
-                    ($'(!x).trim().parse::<`u>().ok()' : optionm'.option' u) |> optionm'.unbox
+                    ($'(!x).trim().parse::<`u>().ok()' : optionm'::option' u) |> optionm'::unbox
                 |: Some $'((!x) as `u)'
             C = \ () =>
                 ? is_string_type x ?>
@@ -382,10 +382,10 @@ test convert static =
 ///> lua
 ///> fsharp
 ///> rust
-test try_convert =
+:# try_convert =
     3i32
     |> try_convert
-    |> optionm.value
+    |> optionm::value
     |> _assert_eq' (
         backend_switch {
             Gleam = \ () => ($'3' : unativeint) : unativeint
@@ -400,7 +400,7 @@ test try_convert =
 ///> fsharp
 ///> rust
 ///> cuda
-test try_convert_2 =
+:# try_convert_2 =
     "3"
     |> try_convert
     |> _assert_eq (3i32 |> Some)
@@ -422,7 +422,7 @@ test try_convert_2 =
     |> _assert_eq (0i32 |> Some)
 
 ///> lua
-test try_convert_reads_narrow_integers_natively =
+:# try_convert_reads_narrow_integers_natively =
     := ~small = "3"
     := ~negative = " -12 "
     := ~wide = "2147483648"
@@ -434,13 +434,13 @@ test try_convert_reads_narrow_integers_natively =
 
 ///> zig
 ///> rust
-test unativeint_round_trip_casts_on_native_backends =
-    := n : unativeint = 3i32 |> try_convert |> optionm.value
-    := back : i32 = n |> try_convert |> optionm.value
+:# unativeint_round_trip_casts_on_native_backends =
+    := n : unativeint = 3i32 |> try_convert |> optionm::value
+    := back : i32 = n |> try_convert |> optionm::value
     back |> _assert_eq 3i32
 
 := convert \* t u. (x : t) : u =
-    x |> try_convert |> optionm.value
+    x |> try_convert |> optionm::value
 
 := unbox \* t u. (x : t) : u =
     backend_switch {

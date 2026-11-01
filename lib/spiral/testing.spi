@@ -18,8 +18,8 @@
     := result = fn a b
     := get_data () =
         ? result
-        ?> sm'.show { expected = b }
-        |: sm'.show { actual = a; expected = b }
+        ?> sm'::show { expected = b }
+        |: sm'::show { actual = a; expected = b }
     := get_raw_text () =
         := data = get_data ()
         name ++# " " ++# get_data ()
@@ -28,7 +28,7 @@
     ?= trace' ?|
     | Console =>
         := text = get_raw_text ()
-        text |> console.write_line
+        text |> console::write_line
         text
     | Trace =>
         trace Info (\ () => name) get_data
@@ -37,14 +37,14 @@
         := text = get_raw_text ()
         trace_raw Info \ () => text
         text
-    | Silent => reflection.nameof { __expect }
+    | Silent => reflection::nameof { __expect }
     |> assert result
 
 := ^ __assert_approx_eq trace e b a =
     __expect
-        \ a b => abs (b - a) < (e |> optionm.defaultWith 0.00000001)
+        \ a b => abs (b - a) < (e |> optionm::defaultWith 0.00000001)
         trace
-        (reflection.nameof { __assert_approx_eq })
+        (reflection::nameof { __assert_approx_eq })
         b
         a
 
@@ -55,22 +55,22 @@
 ///> cuda
 ///> rust
 ///> typescript
-test assert_approx_eq =
+:# assert_approx_eq =
     12.345f64
     |> _assert_approx_eq (Some 0.0001f64) 12.345f64
 
 ///> zig
-test assert_approx_eq_2 print_code =
+:# assert_approx_eq_2 print_code =
     1f64
     |> __assert_approx_eq Console (Some 3) 2
 
 ///> zig
-test assert_approx_eq_3 print_code =
+:# assert_approx_eq_3 print_code =
     (dyn 1f64)
     |> _assert_approx_eq (Some 3) 2
 
 := ^ __assert_eq trace b a =
-    __expect (=) trace (reflection.nameof { __assert_eq }) b a
+    __expect (=) trace (reflection::nameof { __assert_eq }) b a
 
 := _assert_eq b a =
     __assert_eq Console b a
@@ -79,7 +79,7 @@ test assert_approx_eq_3 print_code =
     __expect
         \ a b => #?a = #?b
         trace
-        (reflection.nameof { __assert_eq' = __assert_eq' : _ -> t -> t -> () })
+        (reflection::nameof { __assert_eq' = __assert_eq' : _ -> t -> t -> () })
         b
         a
 
@@ -87,43 +87,43 @@ test assert_approx_eq_3 print_code =
     __assert_eq' Console b a
 
 := ^ __assert_eq'' trace b a =
-    __expect (=.) trace (reflection.nameof { __assert_eq'' }) b a
+    __expect (=.) trace (reflection::nameof { __assert_eq'' }) b a
 
 := _assert_eq'' b a =
     __assert_eq'' Console b a
 
 := ^ __assert_ne trace b a =
-    __expect (<>.) trace (reflection.nameof { __assert_ne }) b a
+    __expect (<>.) trace (reflection::nameof { __assert_ne }) b a
 
 := _assert_ne b a =
     __assert_ne Console b a
 
 := ^ __assert_gt trace b a =
-    __expect (>) trace (reflection.nameof { __assert_gt }) b a
+    __expect (>) trace (reflection::nameof { __assert_gt }) b a
 
 := _assert_gt b a =
     __assert_gt Console b a
 
 := ^ __assert_ge trace b a =
-    __expect (>=) trace (reflection.nameof { __assert_ge }) b a
+    __expect (>=) trace (reflection::nameof { __assert_ge }) b a
 
 := _assert_ge b a =
     __assert_ge Console b a
 
 := ^ __assert_lt trace b a =
-    __expect (<) trace (reflection.nameof { __assert_lt }) b a
+    __expect (<) trace (reflection::nameof { __assert_lt }) b a
 
 := _assert_lt b a =
     __assert_lt Console b a
 
 := ^ __assert_le trace b a =
-    __expect (<=) trace (reflection.nameof { __assert_le }) b a
+    __expect (<=) trace (reflection::nameof { __assert_le }) b a
 
 := _assert_le b a =
     __assert_le Console b a
 
 := ^ __assert fn trace b a =
-    __expect fn trace (reflection.nameof { __assert }) a b
+    __expect fn trace (reflection::nameof { __assert }) a b
 
 := _assert fn b a =
     __assert fn Console b a
@@ -133,37 +133,37 @@ test assert_approx_eq_3 print_code =
         __assert_ge Silent a actual
         __assert_le Silent b actual
         !+
-    __expect assert_between trace (reflection.nameof { __assert_between }) (a, b) actual
+    __expect assert_between trace (reflection::nameof { __assert_between }) (a, b) actual
 
 := _assert_between a b actual =
     __assert_between Console a b actual
 
 := ^ _assert_fn fn list =
     list
-    |> listm.rev
-    |> listm.map \ input, expected => ~~
+    |> listm::rev
+    |> listm::map \ input, expected => ~~
         input
         |> fn
-        |> resultm.get
+        |> resultm::get
         |> \ x =>
             := expected' = ~~ expected
-            := name = reflection.nameof { _assert_fn }
+            := name = reflection::nameof { _assert_fn }
             try
                 \ () =>
-                    console.write_line ""
+                    console::write_line ""
                     trace Verbose
                         \ () => name
                         \ () => { input }
-                    sm'.show x
-                    |> _assert_eq (sm'.show expected')
+                    sm'::show x
+                    |> _assert_eq (sm'::show expected')
                     !+
                 \ ex =>
                     trace Critical
                         \ () => name ++# " / error"
                         \ () => { ex expected }
                     Some !-
-            |> optionm.value
-    |> listm'.filter not
+            |> optionm::value
+    |> listm'::filter not
     |> \|
         | [] => ()
         | x => #?*x |> failwith
@@ -172,7 +172,7 @@ test assert_approx_eq_3 print_code =
 ///> cuda
 ///> rust
 ///> typescript
-test assert_fn =
+:# assert_fn =
     [
         3i32,
         2i32
@@ -187,7 +187,7 @@ test assert_fn =
 
 := _assert_in items x =
     (None, items)
-    ||> listm.fold \ acc x' =>
+    ||> listm::fold \ acc x' =>
         ?= acc ?|
         | Some x => Some x
         | None =>
@@ -225,22 +225,22 @@ test assert_fn =
                             | char => $'(std.mem.indexOfScalar(u8, !a, !b) \!= null)' : bool
                             | _ => $'(std.mem.indexOf(u8, !a, !b) \!= null)' : bool
                     |:
-                        := len : i32 = $'\@as(i32, \@intCast(!a.len))'
+                        := len : i32 = $'@@as(i32, @@intCast(!a.len))'
                         := same (item : t) : bool =
                             ? (~> ?: t ?| string => !+ | _ => !-)
                             ?> $'std.mem.eql(u8, !item, !b)' : bool
                             |: $'(!item == !b)' : bool
                         :~ ^ scan (i : i32) : bool =
-                            ? i >= len ?> false
-                            |? same ($'!a[\@intCast(!i)]' : t) ?> true
+                            ? i >= len ?> !-
+                            |? same ($'!a[@@intCast(!i)]' : t) ?> !+
                             |: scan (i + 1i32)
                         scan 0i32
                 | _ => \ () =>
                     a
                     |> $'List.ofSeq'
-                    |> \ x => x : listm'.list' t
+                    |> \ x => x : listm'::list' t
                     |> $'List.tryFind' ((=) b)
-                    |> optionm'.unbox
+                    |> optionm'::unbox
                     |> \ (x : option t) => x <> None
         trace
         "__assert_contains"
@@ -251,13 +251,13 @@ test assert_fn =
     __assert_contains Console b a
 
 ///> zig
-test assert_contains =
+:# assert_contains =
     ;[ "a"; "b"; "c" ]
     |> _assert_contains "b"
 
 ///> zig
 ///> rust
-test assert_contains_2 =
+:# assert_contains_2 =
     "abcd"
     |> _assert_contains 'b'
 
@@ -269,12 +269,12 @@ test assert_contains_2 =
             fn ()
             none
         caught
-    |> optionm.value
+    |> optionm::value
 
 := ^ print_and_return x =
-    := name = reflection.nameof { print_and_return }
+    := name = reflection::nameof { print_and_return }
     name ++#? { x }
-    |> console.write_line
+    |> console::write_line
     x
 
 := counterexamples (limit : i32) (lo : i64) (hi : i64) (reference : i64 -> i64) (candidate : i64 -> i64) : list i64 =
@@ -283,20 +283,20 @@ test assert_contains_2 =
         |? left <= 0i32 ?> found
         |? reference x = candidate x ?> go (x + 1i64) left found
         |: go (x + 1i64) (left - 1i32) (x :: found)
-    go lo limit [] |> listm.rev
+    go lo limit [] |> listm::rev
 
 ///> zig
-test counterexamples_find_where_multiply_shift_stops_dividing_by_three =
+:# counterexamples_find_where_multiply_shift_stops_dividing_by_three =
     := divide (x : i64) : i64 = x / 3i64
     := multiply_shift (x : i64) : i64 = (x * 43691i64) >>> 17i32
-    counterexamples 3i32 0i64 65535i64 divide multiply_shift |> listm.length |> _assert_eq 0i32
+    counterexamples 3i32 0i64 65535i64 divide multiply_shift |> listm::length |> _assert_eq 0i32
     counterexamples 2i32 0i64 200000i64 divide multiply_shift
-    |> listm.fold (\ packed x => packed * 1000000i64 + x) 0i64
+    |> listm::fold (\ packed x => packed * 1000000i64 + x) 0i64
     |> \ packed => (packed = 131072131075i64) |> _assert_eq !+
 
 := expect (condition : bool) (detail : string) : () = ? condition ?> () |: failwith detail
 
 ///> rust
-test expect_is_silent_when_its_condition_holds =
+:# expect_is_silent_when_its_condition_holds =
     expect (1i32 + 1i32 = 2i32) "arithmetic"
     expect ("ab" <> "") "a non-empty string"

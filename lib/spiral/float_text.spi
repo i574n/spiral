@@ -1,12 +1,12 @@
 ///- --package .
 := concat (a : string) (b : string) : string = !!!!StaticStringConcat(a, b)
 
-:= text_length (s : string) : i32 = sm.length s
+:= text_length (s : string) : i32 = sm::length s
 
-:= char_at (s : string) (i : i32) : char = sm.index s i
+:= char_at (s : string) (i : i32) : char = sm::index s i
 
 := part (s : string) (from : i32) (count : i32) : string =
-    ? count <= 0i32 ?> "" |: sm.slice s { from to = from + count - 1i32 }
+    ? count <= 0i32 ?> "" |: sm::slice s { from to = from + count - 1i32 }
 
 :~ ^ position_of (c : char) (s : string) (i : i32) : i32 =
     ? i >= text_length s ?> -1i32 |? char_at s i = c ?> i |: position_of c s (i + 1i32)
@@ -81,7 +81,7 @@
 ///> typescript
 
 ///> gleam
-test float_text_repr_lays_out_any_shortest_text_like_python_repr =
+:# float_text_repr_lays_out_any_shortest_text_like_python_repr =
     := check (given : string) (expected : string) =
         ? float_text_repr given <> expected ?> failwith (concat given (concat " -> " (float_text_repr given)))
     check "1e+02" "100.0"

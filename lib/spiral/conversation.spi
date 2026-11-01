@@ -1,6 +1,6 @@
 ///> c
 ///> rust
-test conversation static =
+:# conversation static =
     :< testing
 
 /// ### pending
@@ -22,11 +22,11 @@ test conversation static =
     | Done => 0i32
     | System (_, rest) => 1i32 + weigh rest
     | User (_, rest) => 10i32 + weigh rest
-    | Assistant (_, spent, rest) => 100i32 + spent.tokens_out + weigh rest
+    | Assistant (_, spent, rest) => 100i32 + spent::tokens_out + weigh rest
     | Call (_, _, rest) => 1000i32 + weigh rest
     | Result (_, _, rest) => 10000i32 + weigh rest
 
-test an_answered_call_closes_the_transcript =
+:# an_answered_call_closes_the_transcript =
     := ~tokens_out = 7i32
     := t : transcript no_pending =
         System ("short answers",
@@ -48,22 +48,22 @@ test an_answered_call_closes_the_transcript =
 := json_escape_of (k : i32) : string = ? k = 0i32 ?> "\\\\" |? k = 1i32 ?> "\\\"" |: "\\n"
 
 :~ ^ json_special_index (c : char) (k : i32) : i32 =
-    ? k >= sm.length (json_specials ()) ?> -1i32
-    |? sm.index (json_specials ()) k = c ?> k
+    ? k >= sm::length (json_specials ()) ?> -1i32
+    |? sm::index (json_specials ()) k = c ?> k
     |: json_special_index c (k + 1i32)
 
 :~ ^ json_escape_from (text : string) (start : i32) (i : i32) (acc : string) : string =
-    ? i >= sm.length text
-    ?> acc ++# sm.slice text { from = start; to = i - 1i32 }
+    ? i >= sm::length text
+    ?> acc ++# sm::slice text { from = start; to = i - 1i32 }
     |:
-        := k = json_special_index (sm.index text i) 0i32
+        := k = json_special_index (sm::index text i) 0i32
         ? k < 0i32
         ?> json_escape_from text start (i + 1i32) acc
         |:
             json_escape_from text
                 (i + 1i32)
                 (i + 1i32)
-                (acc ++# sm.slice text { from = start; to = i - 1i32 } ++# json_escape_of k)
+                (acc ++# sm::slice text { from = start; to = i - 1i32 } ++# json_escape_of k)
 
 := json_string (text : string) : string =
     "\"" ++# json_escape_from text 0i32 0i32 "" ++# "\""
@@ -84,7 +84,7 @@ test an_answered_call_closes_the_transcript =
 
 ///> c
 ///> rust
-test exchanges_persist_as_json_lines =
+:# exchanges_persist_as_json_lines =
     := log =
         Exchange (
             "getLocation",

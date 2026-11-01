@@ -1,4 +1,4 @@
-test seq static =
+:# seq static =
     :< testing
 
 /// ## seq
@@ -10,10 +10,10 @@ test seq static =
 := from_list list =
     \ n =>
         list
-        |> listm'.try_item n
+        |> listm'::try_item n
 
-test from_list =
-    listm.init 10i32 print_and_return
+:# from_list =
+    listm::init 10i32 print_and_return
     |> from_list
     |> try_item 5i32
     |> _assert_eq (Some 5i32)
@@ -22,10 +22,10 @@ test from_list =
     \ n =>
         n
         |> s
-        |> optionm.map fn
+        |> optionm::map fn
 
-test map =
-    listm.init 10i32 id
+:# map =
+    listm::init 10i32 id
     |> from_list
     |> map ((*) 2)
     |> try_item 5i32
@@ -35,10 +35,10 @@ test map =
     \ n =>
         n
         |> s
-        |> optionm.map (fn n)
+        |> optionm::map (fn n)
 
-test mapi =
-    listm.init 10i32 print_and_return
+:# mapi =
+    listm::init 10i32 print_and_return
     |> from_list
     |> mapi \ i x => i + x
     |> try_item 5i32
@@ -63,8 +63,8 @@ test mapi =
                 ~~ body fn s i i'
         루프 0 0
 
-test choose =
-    listm.init 10i32 print_and_return
+:# choose =
+    listm::init 10i32 print_and_return
     |> from_list
     |> choose \ x => ? x % 2 = 0 ?> Some x |: None
     |> try_item 1i32
@@ -75,8 +75,8 @@ test choose =
     |> mapi \ i x =>
         i, x
 
-test indexed =
-    listm.init 10i32 ((*) 2)
+:# indexed =
+    listm::init 10i32 ((*) 2)
     |> from_list
     |> indexed
     |> try_item 5i32
@@ -85,8 +85,8 @@ test indexed =
 := zip n seq1 seq2 =
     seq1 n, seq2 n
 
-test zip =
-    ((listm.init 10i32 id |> from_list), (listm.init 10i32 ((*) 2) |> from_list))
+:# zip =
+    ((listm::init 10i32 id |> from_list), (listm::init 10i32 ((*) 2) |> from_list))
     ||> zip 5i32
     |> _assert_eq (Some 5, Some 10)
 
@@ -94,9 +94,9 @@ test zip =
     \ n =>
         fn (seq1 n) (seq2 n)
 
-test zip_with =
-    ((listm.init 10i32 id |> from_list), (listm.init 10i32 ((*) 2) |> from_list))
-    ||> zip_with (optionm'.choose (+))
+:# zip_with =
+    ((listm::init 10i32 id |> from_list), (listm::init 10i32 ((*) 2) |> from_list))
+    ||> zip_with (optionm'::choose (+))
     |> try_item 2i32
     |> _assert_eq (Some 6)
 
@@ -120,8 +120,8 @@ test zip_with =
 := sum_ seq =
     seq |> fold_ (+) 0
 
-test sum =
-    listm.init 10i32 id
+:# sum =
+    listm::init 10i32 id
     |> from_list
     |> \ f (n : i32) => f n
     |> sum
@@ -130,19 +130,19 @@ test sum =
 := to_list seq =
     seq
     |> fold (\ acc x => x :: acc) []
-    |> listm.rev
+    |> listm::rev
 
 := to_list_ seq =
     seq
     |> fold_ (\ acc x => x :: acc) []
-    |> listm.rev
+    |> listm::rev
 
-test to_list =
-    listm.init 10i32 id
+:# to_list =
+    listm::init 10i32 id
     |> from_list
     |> \ f (n : i32) => f n
     |> to_list
-    |> _assert_eq (listm.init 10i32 id)
+    |> _assert_eq (listm::init 10i32 id)
 
 := from_array \* el. (array : array el) : seq int el =
     \ n =>
@@ -150,7 +150,7 @@ test to_list =
         ?> None
         |: index array n |> Some
 
-test from_array =
+:# from_array =
     ;[ 1; 2; 3 ]
     |> from_array
     |> try_item 1i32
@@ -170,8 +170,8 @@ test from_array =
         ar <- *ar ++ ;[x]
     *ar
 
-test to_array =
-    listm.init 10i32 id
+:# to_array =
+    listm::init 10i32 id
     |> from_list
     |> \ (x : i32 -> _) => x
     |> to_array
@@ -181,61 +181,61 @@ test to_array =
     := ^ 루프 acc i =
         ?= seq i ?|
         | Some st ?& cond st i => 루프 (st :: acc) (i + 1)
-        | _ => acc |> listm.rev
+        | _ => acc |> listm::rev
     루프 [] 0
 
-test take_while =
-    listm.init 10i32 id
+:# take_while =
+    listm::init 10i32 id
     |> from_list
     |> take_while \ n (_ : i32) => n < 5
-    |> listm'.sum
+    |> listm'::sum
     |> _assert_eq 10
 
-test take_while_2 =
-    stream.new_finite_stream print_and_return 10i32
-    |> flip stream.try_item
+:# take_while_2 =
+    stream::new_finite_stream print_and_return 10i32
+    |> flip stream::try_item
     |> take_while \ n (_ : i32) => n < 5
-    |> listm'.sum
+    |> listm'::sum
     |> _assert_eq 10
 
 := take_while_ cond seq =
     :~ ^ 루프 acc i =
         ?= seq i ?|
         | Some st ?& cond st i => 루프 (st :: acc) (i + 1)
-        | _ => acc |> listm.rev
+        | _ => acc |> listm::rev
     루프 [] 0
 
-test take_while_3 =
-    stream.new_infinite_stream_ print_and_return
-    |> flip stream.try_item
+:# take_while_3 =
+    stream::new_infinite_stream_ print_and_return
+    |> flip stream::try_item
     |> take_while_ \ n (_ : i32) => n < 5i32
-    |> listm'.sum
+    |> listm'::sum
     |> _assert_eq 10
 
-test take_while_4 =
-    stream.new_infinite_stream_ print_and_return
-    |> stream.memoize
+:# take_while_4 =
+    stream::new_infinite_stream_ print_and_return
+    |> stream::memoize
     |> \ list =>
         := list = list ()
-        \ n => list |> stream.try_item n
+        \ n => list |> stream::try_item n
     |> take_while_ \ n (_ : i32) => n < 5i32
-    |> listm'.sum
+    |> listm'::sum
     |> _assert_eq 10
 
-test take_while_5 =
-    stream.new_finite_stream print_and_return 10i32
-    |> stream.memoize
+:# take_while_5 =
+    stream::new_finite_stream print_and_return 10i32
+    |> stream::memoize
     |> \ list =>
         := list = list ()
-        \ n => list |> stream.try_item n
+        \ n => list |> stream::try_item n
     |> take_while_ \ n (_ : i32) => n < 5
-    |> listm'.sum
+    |> listm'::sum
     |> _assert_eq 10
 
 := memoize_ seq =
     := state = mut []
     \ n =>
-        ?= *state |> listm'.try_find_ (\ (n', _) => n' = n) ?|
+        ?= *state |> listm'::try_find_ (\ (n', _) => n' = n) ?|
         | Some (_, v) => v
         | None =>
             := fresh = seq n
@@ -244,19 +244,19 @@ test take_while_5 =
 
 := memoize seq = memoize_ seq
 
-test memoize =
+:# memoize =
     := seq =
         \ n => n |> print_and_return |> Some
         |> memoize_
 
     seq
     |> take_while_ \ n (_ : i32) => n < 5
-    |> listm'.sum
+    |> listm'::sum
     |> _assert_eq 10
 
     seq
     |> take_while_ \ n _ => n < 5
-    |> listm'.sum
+    |> listm'::sum
     |> _assert_eq 10
 
 := iterate \* a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
@@ -266,7 +266,7 @@ test memoize =
         |: 루프 (f x) (n - 1)
     루프 x0 num_steps
 
-test iterate =
+:# iterate =
     10i32 |> iterate ((*) 2) 1i32
     |> _assert_eq 1024
 
@@ -277,15 +277,15 @@ test iterate =
         |: 루프 (f x) (n - 1)
     루프 x0 num_steps
 
-test iterate_2 =
+:# iterate_2 =
     10i32 |> iterate_ ((*) 2) 1i32
     |> _assert_eq 1024
 
 := iterate' f x0 num_steps =
-    listm.init num_steps id
-    |> listm.fold (\ x _ => f x) x0
+    listm::init num_steps id
+    |> listm::fold (\ x _ => f x) x0
 
-test iterate_3 =
+:# iterate_3 =
     10i32 |> iterate' ((*) 2) 1i32
     |> _assert_eq 1024
 
@@ -297,10 +297,10 @@ test iterate_3 =
     ) target (None : option result)
 
 := array_find_last \* item result. (fn : item -> option result) (target : array item) : option result =
-    find_last arraym.foldBack fn target
+    find_last arraym::foldBack fn target
 
 := list_find_last \* item result. (fn : item -> option result) (target : list item) : option result =
-    find_last listm.foldBack fn target
+    find_last listm::foldBack fn target
 
 /// ## fsharp
 
@@ -323,19 +323,19 @@ test iterate_3 =
             $'!items |> list.length' : int
         Fsharp = \ () => items |> $'Seq.length' : int
         Python = \ () => $'len(!items)' : int
-        Rust = \ () => ($'!items.len()' : convert.unativeint) |> convert.convert : int
+        Rust = \ () => ($'!items.len()' : convert::unativeint) |> convert::convert : int
         TypeScript = \ () => $'!items.length' : int
-        Zig = \ () => $'\@as(`int, \@intCast(!items.len))' : int
+        Zig = \ () => $'@@as(`int, @@intCast(!items.len))' : int
     }
 
-:= to_list' \* t. (items : seq' t) : listm'.list' t =
+:= to_list' \* t. (items : seq' t) : listm'::list' t =
     backend_switch {
-        Gleam = \ () => $'!items ' : listm'.list' t
-        Fsharp = \ () => items |> $'Seq.toList' : listm'.list' t
-        Python = \ () => $'!items ' : listm'.list' t
-        Rust = \ () => $'(!items).clone()' : listm'.list' t
-        TypeScript = \ () => $'[...!items]' : listm'.list' t
-        Zig = \ () => $'!items ' : listm'.list' t
+        Gleam = \ () => $'!items ' : listm'::list' t
+        Fsharp = \ () => items |> $'Seq.toList' : listm'::list' t
+        Python = \ () => $'!items ' : listm'::list' t
+        Rust = \ () => $'(!items).clone()' : listm'::list' t
+        TypeScript = \ () => $'[...!items]' : listm'::list' t
+        Zig = \ () => $'!items ' : listm'::list' t
     }
 
 := new_seq \* t. fn : seq' t =
@@ -355,13 +355,13 @@ test iterate_3 =
 
 ///> fsharp
 ///> cuda
-test new_seq =
+:# new_seq =
     \ () =>
         "a" |> yield
         "b" |> yield
     |> new_seq
     |> to_list'
-    |> listm'.unbox
+    |> listm'::unbox
     |> _assert_eq [ "a"; "b" ]
 
 := of_array' \* t. (items : array t) : seq' t =
@@ -381,11 +381,11 @@ test new_seq =
 ///> cuda
 ///> rust
 ///> typescript
-test of_array =
+:# of_array =
     (;[ "a"; "b" ] : array _)
     |> of_array'
     |> to_list'
-    |> listm'.unbox
+    |> listm'::unbox
     |> _assert_eq [ "a"; "b" ]
 
 := of_array \* t. (items : array t) : seq' t =
@@ -401,11 +401,11 @@ test of_array =
 ///> cuda
 ///> rust
 ///> typescript
-test of_array_2 =
+:# of_array_2 =
     (;[ "a"; "b" ] : array _)
     |> of_array
     |> to_list'
-    |> listm'.unbox
+    |> listm'::unbox
     |> _assert_eq [ "a"; "b" ]
 
 := of_array_base \* t. (items : array_base t) : seq' t =
@@ -416,11 +416,11 @@ test of_array_2 =
 ///> cuda
 ///> rust
 ///> typescript
-test of_array_base =
-    am'.base ;[ "a"; "b" ]
+:# of_array_base =
+    am'::base ;[ "a"; "b" ]
     |> of_array_base
     |> to_list'
-    |> listm'.unbox
+    |> listm'::unbox
     |> _assert_eq [ "a"; "b" ]
 
 := to_array' \* t. (items : seq' t) : array t =
@@ -428,26 +428,26 @@ test of_array_base =
         Gleam = \ () => $'!items |> spiral_array_from_list' : array t
         Fsharp = \ () => items |> $'Seq.toArray' : array t
         Python = \ () =>
-            := x = ($'!items ' : listm'.list' t) |> listm'.to_array'
+            := x = ($'!items ' : listm'::list' t) |> listm'::to_array'
             $'!x ' : array t
         Rust = \ () => $'Rc::new(RefCell::new((*!items).clone()))' : array t
         TypeScript = \ () => $'[...!items]' : array t
-        Zig = \ () => $'(spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"))' : array t
+        Zig = \ () => $'(spiral_gpa.dupe(`t, !items) catch @@panic("out of memory"))' : array t
     }
 
 ///> cuda
 ///> rust
 ///> typescript
-test to_array_2 =
-    am'.base ;[ "a"; "b" ]
+:# to_array_2 =
+    am'::base ;[ "a"; "b" ]
     |> of_array_base
     |> to_array'
     |> \ x => x : array _
-    |> am'.to_list'
-    |> listm'.unbox
+    |> am'::to_list'
+    |> listm'::unbox
     |> _assert_eq [ "a"; "b" ]
 
-:= of_list' \* t. (items : listm'.list' t) : seq' t =
+:= of_list' \* t. (items : listm'::list' t) : seq' t =
     backend_switch {
         Gleam = \ () => $'!items ' : seq' t
         Fsharp = \ () =>
@@ -471,7 +471,7 @@ test to_array_2 =
                 ~>
                     ?: u ?|
                     | seq' ~x => $'(!items).clone()' : seq' t
-                    | listm'.list' ~x => $'(!items).clone()' : seq' t
+                    | listm'::list' ~x => $'(!items).clone()' : seq' t
                     | array_base ~x => $'Rc::new(!items.borrow().clone())' : seq' t
                     | array ~x => $'Rc::new(!items.borrow().clone())' : seq' t
                     | _ => $'Rc::new(IntoIterator::into_iter(!items).collect::<Vec<`t>>())' : seq' t
@@ -497,19 +497,19 @@ test to_array_2 =
 ///> cuda
 ///> rust
 ///> typescript
-test rev =
+:# rev =
     [ "a"; "b" ]
-    |> listm'.box
+    |> listm'::box
     |> of_list'
     |> rev''
     |> to_list'
-    |> listm'.unbox
+    |> listm'::unbox
     |> _assert_eq [ "b"; "a" ]
 
 /// ## rust
 :! fuse t =
     `(
-        rust.rust_type
+        rust::rust_type
             `($'core_iter_Fuse<`t>')
             `($'core::iter::Fuse<`t>')
             "type core_iter_Fuse<'T> = class end"

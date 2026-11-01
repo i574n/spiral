@@ -1,6 +1,6 @@
 :< sm'_operators
 
-test guid static =
+:# guid static =
     :< testing
 
 /// ## guid
@@ -23,16 +23,16 @@ test guid static =
 
 := new_guid (x : string) : guid =
     run_target_args (\ () => x) \|
-        | Zig => \ _ => $'(std.ascii.allocLowerString(spiral_gpa, !x) catch \@panic("out of memory"))' : guid
+        | Zig => \ _ => $'(std.ascii.allocLowerString(spiral_gpa, !x) catch @@panic("out of memory"))' : guid
         | Gleam => \ x =>
-            := lower = sm'.to_lower x
+            := lower = sm'::to_lower x
             $'!lower '
         | Lua => \ x =>
-            := lower = sm'.to_lower x
+            := lower = sm'::to_lower x
             $'!lower '
         | Cuda => \ x =>
             global "import uuid"
-            := lower = sm'.to_lower x
+            := lower = sm'::to_lower x
             $'!lower '
         | Rust => \ x => $'Rc::<str>::from(!x.to_lowercase())'
         | TypeScript => \ x => $'!x.toLowerCase()'
@@ -76,7 +76,7 @@ test guid static =
         ? left <= 0i32 ?> acc
         |:
             := digit : i32 = conv (rest &&& 15u64)
-            go (left - 1i32) (rest >>> 4i32) (sm'.slice digit digit "0123456789abcdef" ++# acc)
+            go (left - 1i32) (rest >>> 4i32) (sm'::slice digit digit "0123456789abcdef" ++# acc)
     go width n ""
 
 := guid_v4_text (a : u64) (b : u64) : string =
@@ -88,12 +88,12 @@ test guid static =
 
 :! rust_hasher = $'std::collections::hash_map::DefaultHasher'
 
-:= rust_unix_nanos () : rust.u128 =
+:= rust_unix_nanos () : rust::u128 =
     $'std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_nanos()'
 
 := rust_random_pair () : u64 * u64 =
     := hasher = $'std::hash::BuildHasher::build_hasher(&std::collections::hash_map::RandomState::new())' : rust_hasher
-    hasher |> rust.to_mut
+    hasher |> rust::to_mut
     := nanos = rust_unix_nanos ()
     $'std::hash::Hasher::write_u128(&mut !hasher, !nanos)' : ()
     := a = $'std::hash::Hasher::finish(&!hasher)' : u64
@@ -127,12 +127,12 @@ test guid static =
     := body () =
         := dash = "-"
         ~~
-            := hash = hash |> sm'.pad_left 32i32 '0'
-            := a = hash |> sm'.range (am'.Start 0i32) (am'.End \ _ => 8)
-            := b = hash |> sm'.range (am'.Start 8i32) (am'.End \ _ => 12)
-            := c = hash |> sm'.range (am'.Start 12i32) (am'.End \ _ => 16)
-            := d = hash |> sm'.range (am'.Start 16i32) (am'.End \ _ => 20)
-            := e = hash |> sm'.range (am'.Start 20i32) (am'.End \ _ => 32)
+            := hash = hash |> sm'::pad_left 32i32 '0'
+            := a = hash |> sm'::range (am'::Start 0i32) (am'::End \ _ => 8)
+            := b = hash |> sm'::range (am'::Start 8i32) (am'::End \ _ => 12)
+            := c = hash |> sm'::range (am'::Start 12i32) (am'::End \ _ => 16)
+            := d = hash |> sm'::range (am'::Start 16i32) (am'::End \ _ => 20)
+            := e = hash |> sm'::range (am'::Start 20i32) (am'::End \ _ => 32)
             a ++# dash ++# b ++# dash ++# c ++# dash ++# d ++# dash ++# e
             |> new_guid
     run_target \|
@@ -143,7 +143,7 @@ test guid static =
 ///> cuda
 ///> rust
 ///> typescript
-test hash_guid =
+:# hash_guid =
     ""
     |> hash_guid
     |> _assert_eq' ("00000000-0000-0000-0000-000000000000" |> new_guid)
@@ -157,7 +157,7 @@ test hash_guid =
 ///> cuda
 ///> gleam
 ///> lua
-test to_string_is_lowercase_text =
+:# to_string_is_lowercase_text =
     "6543210F-EDCB-A987-6543-210FEDCBA987"
     |> new_guid
     |> to_string

@@ -4,11 +4,11 @@ param(
     [Parameter(Mandatory)] [string[]] $Tests,
     [Parameter(Mandatory)] [string] $Label,
     [string] $Cells = (Join-Path $PSScriptRoot '..'),
-    [string] $UndoRoot = (Join-Path $env:LOCALAPPDATA 'spiral-bin/lib-land-undo'),
+    [string] $UndoRoot = (Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/lib-land-undo'),
     [int] $Minutes = 30
 )
 $ErrorActionPreference = 'Stop'
-$kit = Join-Path $env:LOCALAPPDATA 'kit\bin\kit.exe'
+$kit = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) "kit/bin/kit$(if ($IsWindows) { '.exe' })"
 $Cells = (Resolve-Path $Cells).Path
 $Files = @($Files | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $Tests = @($Tests | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
@@ -27,7 +27,7 @@ try {
     foreach ($f in $Files) { (Get-Item -LiteralPath (Join-Path $Cells $f)).LastWriteTime = Get-Date }
     $env:PATH = "$HOME\scoop\apps\erlang\current\bin;$HOME\scoop\apps\elixir\current\bin;$env:PATH"
     $env:MIX_ENV = 'test'
-    $env:MIX_BUILD_PATH = Join-Path $env:LOCALAPPDATA 'spiral-bin/mix-builds/cells-land'
+    $env:MIX_BUILD_PATH = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/mix-builds/cells-land'
     Push-Location $Cells
     try {
         $mix = Join-Path (Split-Path (Get-Command mix).Source -Parent) 'mix.bat'

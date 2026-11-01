@@ -54,16 +54,16 @@
     }
 
 ///> rust
-test try_parse_f64_reads_trimmed_numbers_and_refuses_text =
+:# try_parse_f64_reads_trimmed_numbers_and_refuses_text =
     (try_parse_f64 "12.5", try_parse_f64 " 3 ", try_parse_f64 "", try_parse_f64 "abc")
-    |> testing._assert_eq (Some 12.5, Some 3.0, None, None)
+    |> testing::_assert_eq (Some 12.5, Some 3.0, None, None)
 
 ///> rust
-test try_parse_f64_keeps_infinity_a_number =
-    (?= try_parse_f64 "inf" ?| Some x => is_infinite x | None => !-) |> testing._assert_eq !+
+:# try_parse_f64_keeps_infinity_a_number =
+    (?= try_parse_f64 "inf" ?| Some x => is_infinite x | None => !-) |> testing::_assert_eq !+
 
 := precision_format (p : i32) : string =
-    float_text.concat "%." (float_text.concat (float_text.digits_text p "") "g")
+    float_text::concat "%." (float_text::concat (float_text::digits_text p "") "g")
 
 := shortest_by_precision \* t. (format_g : i32 -> string) (parse : string -> t) (v : t) : string =
     :~ ^ search (p : i32) : string =
@@ -98,12 +98,12 @@ test try_parse_f64_keeps_infinity_a_number =
     $'StrToFloat(!s)' : t
 
 := decimal_point (s : string) : string =
-    := comma = float_text.position_of ',' s 0i32
+    := comma = float_text::position_of ',' s 0i32
     ? comma < 0i32 ?> s
     |:
-        := after = float_text.text_length s - comma - 1i32
-        := before = float_text.part s 0i32 comma
-        float_text.concat before (float_text.concat "." (float_text.part s (comma + 1i32) after))
+        := after = float_text::text_length s - comma - 1i32
+        := before = float_text::part s 0i32 comma
+        float_text::concat before (float_text::concat "." (float_text::part s (comma + 1i32) after))
 
 := lean_widen \* t. (v : t) : f64 =
     ~>
@@ -153,9 +153,9 @@ test try_parse_f64_keeps_infinity_a_number =
             := n = lean_scaled a k
             := magnitude = ? k < 0i64 ?> 0i64 - k |: k
             ? p >= 17i64 || lean_same (lean_of_scientific n (k < 0i64) magnitude) v
-            ?> float_text.concat (lean_digits n) (float_text.concat "e" (lean_digits k))
+            ?> float_text::concat (lean_digits n) (float_text::concat "e" (lean_digits k))
             |: search (p + 1i64)
-        float_text.concat sign (search 1i64)
+        float_text::concat sign (search 1i64)
 
 := native_shortest \* t. (v : t) : string =
     backend_switch {

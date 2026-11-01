@@ -1,0 +1,29 @@
+:= miss (got : string) (expected : string) : i32 = ? got =. expected ?> 0i32 |: 1i32
+
+:= main () : i32 =
+    := ~a = -128i8
+    := ~b = -32768i16
+    := ~c = -5i32
+    := ~d = -1234567890123i64
+    := ~e = 255u8
+    := ~f = 65535u16
+    := ~g = 4294967295u32
+    := ~h = 18446744073709551615u64
+    := ~t = true
+    := ~n = false
+    := ~x = 'a'
+    miss !!!!PrimToString(a) "-128"
+    +. miss !!!!PrimToString(b) "-32768"
+    +. miss !!!!PrimToString(c) "-5"
+    +. miss !!!!PrimToString(d) "-1234567890123"
+    +. miss !!!!PrimToString(e) "255"
+    +. miss !!!!PrimToString(f) "65535"
+    +. miss !!!!PrimToString(g) "4294967295"
+    +. miss !!!!PrimToString(h) "18446744073709551615"
+    +. miss !!!!PrimToString(t) "true"
+    +. miss !!!!PrimToString(n) "false"
+    +. miss !!!!PrimToString(x) "a"
+    +. miss !!!!PrimToString(7u8) "7"
+    +. miss !!!!PrimToString(false) "false"
+    +. miss !!!!PrimToString('z') "z"
+    +. miss !!!!PrimToString(-3i64) "-3"

@@ -1,8 +1,8 @@
 := backend_switch \* t. x : t =
     ~>
         := backend (key : string) : t =
-            := s = real_core.string_lit_to_symbol key
-            real_core.record_type_try_find `(`x) s
+            := s = real_core::string_lit_to_symbol key
+            real_core::record_type_try_find `(`x) s
                 (\* v'. => (x s) ())
                 \ () =>
                     !!!!BackendSwitch({
@@ -26,7 +26,7 @@
                         Zig = \ () =>
                             ?: t ?|
                             | () => $'{}' : t
-                            | _ => $'\@compileError("backend_switch: this lib/spiral function has no Zig arm yet")' : t
+                            | _ => $'@@compileError("backend_switch: this lib/spiral function has no Zig arm yet")' : t
                         Lean = \ () =>
                             ?: t ?|
                             | () => $'pure ()' : t

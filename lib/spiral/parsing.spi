@@ -1,17 +1,17 @@
 :< sm'_operators
 
-test parsing static =
+:# parsing static =
     :< testing
 
 /// ## fparsec
 ///> _
-test fparsec =
+:# fparsec =
     #r "nuget: fparsec, 2.0.0-beta2"
 
 
     ()
 
-test fparsec_2 static =
+:# fparsec_2 static =
     :! position_ = $'FParsec.Position'
     :! parser_error_ = $'FParsec.Error.ParserError'
 
@@ -75,20 +75,20 @@ test fparsec_2 static =
 
     := none_of_ (x : list char) : parser_ char () =
         x
-        |> listm'.box
-        |> listm'.to_array'
+        |> listm'::box
+        |> listm'::to_array'
         |> $'FParsec.CharParsers.noneOf'
 
     := any_of_ (x : list char) : parser_ char () =
         x
-        |> listm'.box
-        |> listm'.to_array'
+        |> listm'::box
+        |> listm'::to_array'
         |> $'FParsec.CharParsers.anyOf'
 
     := skip_any_of_ (x : list char) : parser_ () () =
         x
-        |> listm'.box
-        |> listm'.to_array'
+        |> listm'::box
+        |> listm'::to_array'
         |> $'FParsec.CharParsers.skipAnyOf'
 
     := between_ \* t u v x. (a : parser_ t x) (b : parser_ u x) (c : parser_ v x) : parser_ v x =
@@ -109,13 +109,13 @@ test fparsec_2 static =
     := many1_strings_ \* t. (x : parser_ string t) : parser_ string t =
         x |> $'FParsec.CharParsers.many1Strings'
 
-    := opt_ \* t u. (a : parser_ t u) : parser_ (optionm'.option' t) u =
+    := opt_ \* t u. (a : parser_ t u) : parser_ (optionm'::option' t) u =
         a |> $'FParsec.Primitives.opt'
 
     := choice_ \* t u. (a : list (parser_ t u)) : parser_ t u =
         a
-        |> listm'.box
-        |> seq.of_list'
+        |> listm'::box
+        |> seq::of_list'
         |> $'FParsec.Primitives.choice'
 
     := delay_ \* t u. (fn : () -> parser_ t u) : parser_ t u =
@@ -127,19 +127,19 @@ test fparsec_2 static =
     := not_followed_by_ \* t u. (a : parser_ t u) : parser_ () u =
         a |> $'FParsec.Primitives.notFollowedBy'
 
-    := sep_by_ \* t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'.list' t) v =
+    := sep_by_ \* t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'::list' t) v =
         b |> $'FParsec.Primitives.sepBy' a
 
-    := sep_by1_ \* t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'.list' t) v =
+    := sep_by1_ \* t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'::list' t) v =
         b |> $'FParsec.Primitives.sepBy1' a
 
-    := sep_end_by_ \* t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'.list' t) v =
+    := sep_end_by_ \* t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'::list' t) v =
         b |> $'FParsec.Primitives.sepEndBy' a
 
-    := many_ \* t u. (a : parser_ t u) : parser_ (listm'.list' t) u =
+    := many_ \* t u. (a : parser_ t u) : parser_ (listm'::list' t) u =
         a |> $'FParsec.Primitives.many'
 
-    := many1_ \* t u. (a : parser_ t u) : parser_ (listm'.list' t) u =
+    := many1_ \* t u. (a : parser_ t u) : parser_ (listm'::list' t) u =
         a |> $'FParsec.Primitives.many1'
 
     := many1_satisfy_ \* t. (x : char -> bool) : parser_ string t =
@@ -184,31 +184,31 @@ test fparsec_2 static =
         | Failure (error_msg, b, c) => Error (error_msg, b)
 
 ///> fsharp
-test fparsec_3 =
+:# fparsec_3 =
     := split_args (args : string) : result (array_base (string * position_)) (string * parser_error_) =
         := esc = [ '\\'; '`' ]
         := quotes = [ '"' ]
         := special = esc ++ quotes
         := p_esc_char c =
             p_char_ c >>.$ any_char_ () |>>$ \ c' => $'$"{!c}{!c'}"'
-        := p_word = special |> none_of_ |>>$ sm'.obj_to_string
+        := p_word = special |> none_of_ |>>$ sm'::obj_to_string
         := p_plain = special ++ [ ' ' ] |> none_of_ |> many1_chars_
         := p_text = p_word |> many1_strings_
-        := p_esc = esc |> listm.map p_esc_char |> choice_
-        := p_quoted = (p_word <|>$ p_esc) |> many_ |>>$ (seq.of_list' >> sm'.concat "")
+        := p_esc = esc |> listm::map p_esc_char |> choice_
+        := p_quoted = (p_word <|>$ p_esc) |> many_ |>>$ (seq::of_list' >> sm'::concat "")
         := p_quoted_all = p_quoted |> between_ (p_char_ '"') (p_char_ '"')
-        := p_esc_root = (p_esc |>>$ (\ _ => "")) >>.$ (p_word |> many_) |>>$ (seq.of_list' >> sm'.concat "")
+        := p_esc_root = (p_esc |>>$ (\ _ => "")) >>.$ (p_word |> many_) |>>$ (seq::of_list' >> sm'::concat "")
         := p_content = p_plain <|>$ p_quoted_all <|>$ p_esc_root
         := p_args = spaces1_ () |> sep_by_ p_content
         args
         |> parse_ p_args
-        |> resultm.map \ (a', b') =>
+        |> resultm::map \ (a', b') =>
             (
                 (
                     a'
-                    |> listm'.to_array'
+                    |> listm'::to_array'
                     |> array
-                    |> arraym.map \ x => x, b'
+                    |> arraym::map \ x => x, b'
                     |> \ (array x : array _) => x
                 )
             )
@@ -244,29 +244,29 @@ test fparsec_3 =
         $'$"n --o --p q --r \\\"s:/t u/v.w\\\" --x \\\"y:/z.a\\\" --b c.d \\\"\\\\e{{f-g}}\\\" h.i \\\"j (k)\\\""',
         ;[ "n"; "--o"; "--p"; "q"; "--r"; "s:/t u/v.w"; "--x"; "y:/z.a"; "--b"; "c.d"; "\\e{f-g}"; "h.i"; "j (k)" ]
 
-        $'\@$"l ""m n:\\o.p"""',
+        $'@@$"l ""m n:\\o.p"""',
         ;[ "l"; "m n:\\o.p" ]
     ]
-    |> listm.rev
-    |> listm.map \ input, expected =>
+    |> listm::rev
+    |> listm::map \ input, expected =>
         input
         |> split_args
         |> \ x =>
             try
                 \ () =>
                     ($'$"\ninput: {!input}"' : string)
-                    |> console.write_line
+                    |> console::write_line
                     x
-                    |> resultm.get
-                    |> am'.map_base fst
-                    |> _assert_eq' (am'.base expected)
+                    |> resultm::get
+                    |> am'::map_base fst
+                    |> _assert_eq' (am'::base expected)
                     !-
                 \ ex =>
                     ($'$"error / expected: %A{!expected} / ex: %A{!ex}"' : string)
-                    |> console.write_line
+                    |> console::write_line
                     Some !+
-            |> optionm.value
-    |> listm'.filter id
+            |> optionm::value
+    |> listm'::filter id
     |> \|
         | [] => ()
         | x => failwith $'$"{!x}"'
@@ -313,7 +313,7 @@ test fparsec_3 =
     Error { format i s }
 
 := error_message (t : string) (e : parser_error) : string =
-    e.format (t, e.i, e.s)
+    e::format (t, e::i, e::s)
 
 := trace_entry_enabled () =
     !-
@@ -321,7 +321,7 @@ test fparsec_3 =
 := trace_entry (name : string) (locals : () -> _) : () =
     ? trace_entry_enabled () ?>
         := name = dyn name
-        := locals : () -> string = dyn \ () => locals () |> sm'.format
+        := locals : () -> string = dyn \ () => locals () |> sm'::format
         ~~ trace Verbose (\ () => name) locals
 
 := slice (start : int) (end : int) (t : string) : string =
@@ -329,7 +329,7 @@ test fparsec_3 =
     ? start >= end ?> ""
     |:
         t
-        |> sm'.range (am'.Start start) (am'.End \ _ => end)
+        |> sm'::range (am'::Start start) (am'::End \ _ => end)
 
 := parse \* t.
     (p : parser t)
@@ -338,23 +338,23 @@ test fparsec_3 =
     : result ((() -> t) * (() -> string) * parser_state) (() -> string)
     =
     p (t, 0, s)
-    |> resultm.map \ result, i, (parser_state s' &= s) =>
+    |> resultm::map \ result, i, (parser_state s' &= s) =>
         (\ () => result),
-        (\ () => t |> slice i s'.text_length),
+        (\ () => t |> slice i s'::text_length),
         s
-    |> resultm.map_error \ e =>
+    |> resultm::map_error \ e =>
         \ () => e |> error_message t
 
 := update_char (parser_state s) (c : char) : parser_state =
     ?= c ?|
     | '\n' =>
         { s ?|
-            line_start = s.line_start + s.position.col
-            position = { line = s.position.line + 1; col = 1 }
+            line_start = s::line_start + s::position::col
+            position = { line = s::position::line + 1; col = 1 }
         }
     | _ =>
         { s ?|
-            position = { line = s.position.line; col = s.position.col + 1 }
+            position = { line = s::position::line; col = s::position::col + 1 }
         }
     |> parser_state
 
@@ -364,21 +364,21 @@ test fparsec_3 =
         ? i' >= endi
         ?> last_nl, count
         |:
-            ?= t |> sm'.index i' ?|
+            ?= t |> sm'::index i' ?|
             | '\n' => 루프 (i' + 1) i' (count + 1)
             | _ => 루프 (i' + 1) last_nl count
     := last_nl, n = 루프 i -1 0
     ? n = 0
-    ?> { s' ?| position = { line = s'.position.line; col = s'.position.col + len } }
+    ?> { s' ?| position = { line = s'::position::line; col = s'::position::col + len } }
     |:
         { s' ?|
             line_start = last_nl + 1
             position =
                 {
-                    line = s'.position.line + n
+                    line = s'::position::line + n
                     col = endi - last_nl
                 }
-            text_length = s'.text_length
+            text_length = s'::text_length
         }
     |> parser_state
 
@@ -389,13 +389,13 @@ test fparsec_3 =
 := advance_while (fn : char -> bool) (t : string) (i : int) (parser_state s' &= s)
     : int * parser_state
     =
-    ? i >= s'.text_length
+    ? i >= s'::text_length
     ?> i, s
     |:
-        := i' = i |> sm'.span_from fn t
+        := i' = i |> sm'::span_from fn t
         := i' =
-            ? i' > s'.text_length
-            ?> s'.text_length
+            ? i' > s'::text_length
+            ?> s'::text_length
             |: i'
         := consumed = i' - i
         ? consumed = 0
@@ -404,28 +404,28 @@ test fparsec_3 =
 
 := run_parser p t =
     ?= p (t, 0, ##t |> new_parser_state') ?|
-    | Ok (result, i, (parser_state s' &= s)) => Ok (result, t |> slice i s'.text_length, s)
+    | Ok (result, i, (parser_state s' &= s)) => Ok (result, t |> slice i s'::text_length, s)
     | Error e => (\ () => e |> error_message t) |> Error
 
 := any_char () : parser char = \ t, i, (parser_state s' &= s) =>
-    ? i >= s'.text_length ?>
-        fail (\ _, _, s => "parsing.any_char / unexpected end of t / " ++# sm'.show { s }) i s
+    ? i >= s'::text_length ?>
+        fail (\ _, _, s => "parsing.any_char / unexpected end of t / " ++# sm'::show { s }) i s
     |:
-        := c = t |> sm'.index i
+        := c = t |> sm'::index i
         Ok (c, i + 1, c |> update_char s)
 
 ///> gleam
 ///> fsharp
 ///> cuda
 ///> typescript
-test any_char =
+:# any_char =
     "abc"
     |> run_parser (any_char ())
-    |> (resultm.get >> sm'.show)
-    |> _assert_eq (sm'.show ('a', "bc", new_parser_state 0 1 2 3))
+    |> (resultm::get >> sm'::show)
+    |> _assert_eq (sm'::show ('a', "bc", new_parser_state 0 1 2 3))
 
 ///> fsharp
-test any_char_2 =
+:# any_char_2 =
     "abc"
     |> parse_ (any_char_ ())
     |> unwrap_format
@@ -436,24 +436,24 @@ test any_char_2 =
 
 := p_char (c : char) : parser char =
     \ t, i, (parser_state ({ line_start position = { line col } } &= s') &= s) =>
-        ? i >= s'.text_length ?>
-            fail (\ _, _, (parser_state s') => "parsing.p_char / unexpected end of text / " ++# sm'.show { c s' }) i s
+        ? i >= s'::text_length ?>
+            fail (\ _, _, (parser_state s') => "parsing.p_char / unexpected end of text / " ++# sm'::show { c s' }) i s
         |:
-            := got = t |> sm'.index i
+            := got = t |> sm'::index i
             ? got = c
             ?> Ok (c, i + 1, got |> update_char s)
             |:
                 fail
                     \ t, i, (parser_state { line_start position = { line col } }) =>
-                        := line_end = i |> sm'.span_from ((<>) '\n') t
+                        := line_end = i |> sm'::span_from ((<>) '\n') t
                         := end = (i + get_max_context ()) |> min line_end
                         := line_slice = t |> slice line_start end
                         := new_line =
                             := len = ##line_slice
-                            ? len > 0 && (line_slice |> sm'.index (len - 1)) = '\n' ?> "" |: "\n"
-                        := pointer_line = (" " |> sm'.replicate (col - 1)) ++# "^"
+                            ? len > 0 && (line_slice |> sm'::index (len - 1)) = '\n' ?> "" |: "\n"
+                        := pointer_line = (" " |> sm'::replicate (col - 1)) ++# "^"
                         "parsing.p_char / "
-                        ++# sm'.show { expected = c; line col }
+                        ++# sm'::show { expected = c; line col }
                         ++# "\n" ++# line_slice
                         ++# new_line
                         ++# pointer_line ++# "\n"
@@ -463,61 +463,61 @@ test any_char_2 =
 ///> fsharp
 ///> cuda
 ///> typescript
-test p_char =
+:# p_char =
     "abc"
     |> run_parser (p_char 'a')
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ('a', "bc", new_parser_state 0 1 2 3))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ('a', "bc", new_parser_state 0 1 2 3))
 
 ///> fsharp
-test p_char_2 =
+:# p_char_2 =
     "abc"
     |> parse_ (p_char_ 'a')
     |> unwrap_format
     |> _assert_eq' #?*('a', ($'FParsec.Position (null, 0, 1, 2)' : position_))
 
 := any_string len : parser string = \ t, i, (parser_state s' &= s) =>
-    ? s'.text_length - i >= len
+    ? s'::text_length - i >= len
     ?> Ok (t |> slice i (i + len), i + len, s |> update_span t i len)
     |:
-        fail (\ _, _, s => "parsing.any_string / unexpected end of text / " ++# sm'.show { s }) i s
+        fail (\ _, _, s => "parsing.any_string / unexpected end of text / " ++# sm'::show { s }) i s
 
 ///> rust
 ///> gleam
 ///> cuda
 ///> typescript
-test any_string =
+:# any_string =
     "abcdef"
     |> run_parser (any_string 3)
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ("abc", "def", new_parser_state 0 1 4 6))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ("abc", "def", new_parser_state 0 1 4 6))
 
 ///> fsharp
-test any_string_2 =
+:# any_string_2 =
     "abcdef"
     |> parse_ (any_string__ 3)
-    |> resultm.get
-    |> sm'.obj_to_string
-    |> _assert_eq' (("abc", ($'FParsec.Position (null, 0, 1, 4)' : position_)) |> sm'.obj_to_string)
+    |> resultm::get
+    |> sm'::obj_to_string
+    |> _assert_eq' (("abc", ($'FParsec.Position (null, 0, 1, 4)' : position_)) |> sm'::obj_to_string)
 
 := skip_any_string len : parser () = \ t, i, (parser_state s' &= s) =>
-    ? s'.text_length - i >= len
+    ? s'::text_length - i >= len
     ?> Ok ((), i + len, s |> update_span t i len)
     |:
-        fail (\ _, _, s => "parsing.skip_any_string / unexpected end of text / " ++# sm'.show { s }) i s
+        fail (\ _, _, s => "parsing.skip_any_string / unexpected end of text / " ++# sm'::show { s }) i s
 
 ///> rust
 ///> gleam
 ///> cuda
 ///> typescript
-test skip_any_string =
+:# skip_any_string =
     "abcdef"
     |> run_parser (skip_any_string 3)
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ((), "def", new_parser_state 0 1 4 6))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ((), "def", new_parser_state 0 1 4 6))
 
 := skip_many \* t. (p : parser t) : parser () = \ t, i, s =>
     trace_entry "parsing.skip_many" \ () => { t_len = ##t; i s }
@@ -530,12 +530,12 @@ test skip_any_string =
             |: fail (\ _ => "parsing.skip_many / inner parser consumed no text") i' s'
     s |> 루프 i
 
-test skip_many =
+:# skip_many =
     "sskkip_many"
     |> run_parser (skip_many (p_char 's'))
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ("kkip_many", new_parser_state 0 1 3 11))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ("kkip_many", new_parser_state 0 1 3 11))
 
 := skip_many1 \* t. (a : parser t) : parser () = \ t, i, s =>
     trace_entry "parsing.skip_many1" \ () => { t_len = ##t; i s }
@@ -546,12 +546,12 @@ test skip_many =
         ?> skip_many a (t, i', s')
         |: fail (\ _ => "parsing.skip_many1 / inner parser consumed no text") i' s'
 
-test skip_many1 =
+:# skip_many1 =
     "skip_many1"
     |> run_parser (skip_many1 (p_char 's'))
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ("kip_many1", new_parser_state 0 1 2 10))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ("kip_many1", new_parser_state 0 1 2 10))
 
 := (>>.) \* t u. (a : parser t) (b : parser u) : parser u = \ t, i, s =>
     ?= a (t, i, s) ?|
@@ -562,10 +562,10 @@ test skip_many1 =
 ///> gleam
 ///> cuda
 ///> typescript
-test skip_many1_2 =
+:# skip_many1_2 =
     "abc\ndef\nghi"
     |> run_parser (skip_any_string 5 >>. p_char 'a')
-    |> resultm.map_error eval
+    |> resultm::map_error eval
     |> _assert_eq (Error "parsing.p_char / { expected = a; line = 2; col = 2 }\ndef\n ^\n")
 
 := (.>>) \* t u. (a : parser t) (b : parser u) : parser t = \ t, i, s =>
@@ -573,7 +573,7 @@ test skip_many1_2 =
     | Error e => e |> Error
     | Ok (ra, i', s') =>
         b (t, i', s')
-        |> resultm.map \ _, i'', s'' =>
+        |> resultm::map \ _, i'', s'' =>
             ra, i'', s''
 
 := (.>>.) \* t u. (a : parser t) (b : parser u) : parser ((() -> t) * (() -> u)) = \ t, i, s =>
@@ -581,65 +581,65 @@ test skip_many1_2 =
     | Error e => e |> Error
     | Ok (ra, i', s') =>
         b (t, i', s')
-        |> resultm.map \ rb, i'', s'' =>
+        |> resultm::map \ rb, i'', s'' =>
             ((\ () => ra), (\ () => rb)), i'', s''
 
 := (>>%) \* t u. (a : parser t) (b : u) : parser u =
-    a >> resultm.map \ _, i', s' =>
+    a >> resultm::map \ _, i', s' =>
         b, i', s'
 
 ///> rust
 ///> gleam
 ///> cuda
 ///> typescript
-test skip_many1_3 =
+:# skip_many1_3 =
     "abc"
     |> run_parser (p_char 'a' >>. p_char 'b')
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ('b', "c", new_parser_state 0 1 3 3))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ('b', "c", new_parser_state 0 1 3 3))
 
 ///> fsharp
-test skip_many1_4 =
+:# skip_many1_4 =
     "abc"
     |> parse_ (p_char_ 'a' >>.$ p_char_ 'b')
-    |> resultm.get
-    |> sm'.obj_to_string
+    |> resultm::get
+    |> sm'::obj_to_string
     |> _assert_eq' #?**('b', ($'FParsec.Position (null, 0, 1, 3)' : position_))
 
 ///> fsharp
-test skip_many1_5 =
+:# skip_many1_5 =
     "abc\ndef\nghi"
     |> parse_ (skip_any_string_ 5 >>.$ p_char_ 'a')
-    |> resultm.unwrap_err
-    |> sm'.obj_to_string
-    |> sm'.replace "\r\n" "\n"
+    |> resultm::unwrap_err
+    |> sm'::obj_to_string
+    |> sm'::replace "\r\n" "\n"
     |> _assert_eq "(Error in Ln: 2 Col: 2\ndef\n ^\nExpecting: 'a'\n, Error in Ln: 2 Col: 2\nExpecting: 'a'\n)"
 
 := none_of (chars : list char) : parser char = \ t, i, (parser_state s' &= s) =>
     := chars' () =
-        chars |> listm'.box |> listm'.to_array' |> sm'.show
-    ? i >= s'.text_length ?>
-        fail (\ _, _, s => "parsing.none_of / unexpected end of text / " ++# sm'.show { chars' = chars' (); s }) i s
+        chars |> listm'::box |> listm'::to_array' |> sm'::show
+    ? i >= s'::text_length ?>
+        fail (\ _, _, s => "parsing.none_of / unexpected end of text / " ++# sm'::show { chars' = chars' (); s }) i s
     |:
-        := ch = t |> sm'.index i
-        ? chars |> listm'.exists' ((=) ch) |> not
+        := ch = t |> sm'::index i
+        ? chars |> listm'::exists' ((=) ch) |> not
         ?> Ok (ch, i + 1, ch |> update_char s)
         |:
             fail
                 \ t, i, s =>
                     "parsing.none_of / unexpected char / "
-                    ++# sm'.show { first_char = t |> sm'.index i; chars' = chars' (); s }
+                    ++# sm'::show { first_char = t |> sm'::index i; chars' = chars' (); s }
                 i s
 
 ///> rust
 ///> gleam
 ///> cuda
 ///> typescript
-test none_of =
+:# none_of =
     "abc"
     |> run_parser (none_of [ 'a'; 'b'; 'c' ])
-    |> resultm.map_error eval
+    |> resultm::map_error eval
     |> _assert_eq (
         "parsing.none_of / unexpected char / "
         ++# (
@@ -651,17 +651,17 @@ test none_of =
 
     "def"
     |> run_parser (none_of [ 'a'; 'b'; 'c' ])
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ('d', "ef", new_parser_state 0 1 2 3))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ('d', "ef", new_parser_state 0 1 2 3))
 
 ///> fsharp
-test none_of_2 =
+:# none_of_2 =
     "abc"
     |> parse_ (none_of_ [ 'a'; 'b'; 'c' ])
-    |> resultm.unwrap_err
-    |> sm'.obj_to_string
-    |> sm'.replace "\r\n" "\n"
+    |> resultm::unwrap_err
+    |> sm'::obj_to_string
+    |> sm'::replace "\r\n" "\n"
     |> _assert_eq ($'"(Error in Ln: 1 Col: 1\nabc\n^\nExpecting: any char not in ‘abc’\n, Error in Ln: 1 Col: \
         1\nExpecting: any char not in ‘abc’\n)"')
 
@@ -679,32 +679,32 @@ test none_of_2 =
 ///> gleam
 ///> cuda
 ///> typescript
-test none_of_3 =
+:# none_of_3 =
     "abc"
     |> run_parser (p_char 'a' <|> p_char 'b')
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ('a', "bc", new_parser_state 0 1 2 3))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ('a', "bc", new_parser_state 0 1 2 3))
 
     "cba"
     |> run_parser (p_char 'a' <|> p_char 'b')
-    |> resultm.map_error eval
+    |> resultm::map_error eval
     |> _assert_eq (Error "parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n")
 
 := (|>>) p f : parser _ =
-    p >> resultm.map \ r, i', s' =>
+    p >> resultm::map \ r, i', s' =>
         f (\ () => r) (), i', s'
 
 ///> gleam
 ///> fsharp
 ///> cuda
 ///> typescript
-test none_of_4 =
+:# none_of_4 =
     "abc"
-    |> run_parser (p_char 'a' |>> \ c => \ () => c () |> sm'.char_to_upper)
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ('A', "bc", new_parser_state 0 1 2 3))
+    |> run_parser (p_char 'a' |>> \ c => \ () => c () |> sm'::char_to_upper)
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ('A', "bc", new_parser_state 0 1 2 3))
 
 := many \* b c.
     (p : _ * _ * _ -> _ (b * _ * _) c)
@@ -716,7 +716,7 @@ test none_of_4 =
             : result (list b * int * parser_state) _
             =
             ?= p (t, i', s') ?|
-            | Error _ => Ok (acc |> listm.rev, i', s')
+            | Error _ => Ok (acc |> listm::rev, i', s')
             | Ok (x, i'', s'') ?& i'' > i' => s'' |> 루프 (x :: acc) i''
             | Ok _ => fail (\ _ => "parsing.many / inner parser succeeded without consuming text") i' s'
         s |> 루프 [] i
@@ -725,12 +725,12 @@ test none_of_4 =
 ///> fsharp
 ///> cuda
 ///> typescript
-test many =
+:# many =
     "aaabbc"
     |> run_parser (many (p_char 'a' <|> p_char 'b'))
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ([ 'a'; 'a'; 'a'; 'b'; 'b' ], "c", new_parser_state 0 1 6 6))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ([ 'a'; 'a'; 'a'; 'b'; 'b' ], "c", new_parser_state 0 1 6 6))
 
 := many1_chars (p : parser char) : parser string = \ t, i, s =>
     trace_entry "parsing.many1_chars" \ () => { t_len = ##t; i s }
@@ -750,19 +750,19 @@ test many =
 ///> fsharp
 ///> cuda
 ///> typescript
-test many1_chars =
+:# many1_chars =
     "aaabbc"
     |> run_parser (many1_chars (p_char 'a' <|> p_char 'b'))
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ("aaabb", "c", new_parser_state 0 1 6 6))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ("aaabb", "c", new_parser_state 0 1 6 6))
 
 := many1_satisfy (fn : char -> bool) : parser string = \ t, i, (parser_state s' &= s) =>
     :~ ^ 루프 (i' : int) (s'' : parser_state) : int * parser_state =
-        ? i' >= s'.text_length
+        ? i' >= s'::text_length
         ?> i', s''
         |:
-            := c = t |> sm'.index i'
+            := c = t |> sm'::index i'
             ? fn c
             ?> 루프 (i' + 1) (c |> update_char s'')
             |: i', s''
@@ -770,10 +770,10 @@ test many1_chars =
     ? i' > i
     ?> Ok (t |> slice i i', i', s'')
     |:
-        fail (\ _, i, s => "parsing.many1_satisfy / no matching char / " ++# sm'.show { i s }) i s
+        fail (\ _, i, s => "parsing.many1_satisfy / no matching char / " ++# sm'::show { i s }) i s
 
 := many1_none_of (chars : list char) : parser string =
-    many1_satisfy \ c => chars |> listm'.exists' ((=) c) |> not
+    many1_satisfy \ c => chars |> listm'::exists' ((=) c) |> not
 
 := many_chars (p : parser char) : parser string = \ t, i, s =>
     trace_entry "parsing.many_chars" \ () => { t_len = ##t; i s }
@@ -784,32 +784,32 @@ test many1_chars =
 := advance_while_no_nl (fn : char -> bool) (t : string) (i : int) (parser_state s' &= s)
     : int * parser_state
     =
-    ? i >= s'.text_length
+    ? i >= s'::text_length
     ?> i, s
     |:
-        := i' = i |> sm'.span_from fn t
+        := i' = i |> sm'::span_from fn t
         := i' =
-            ? i' > s'.text_length
-            ?> s'.text_length
+            ? i' > s'::text_length
+            ?> s'::text_length
             |: i'
         := consumed = i' - i
         ? consumed = 0
         ?> i, s
         |:
             i',
-            { s' ?| position = { line = s'.position.line; col = s'.position.col + consumed } }
+            { s' ?| position = { line = s'::position::line; col = s'::position::col + consumed } }
             |> parser_state
 
 := advance_newlines (t : string) (i : int) (parser_state s' &= s)
     : int * parser_state
     =
-    ? i >= s'.text_length
+    ? i >= s'::text_length
     ?> i, s
     |:
-        := i' = i |> sm'.span_from ((=) '\n') t
+        := i' = i |> sm'::span_from ((=) '\n') t
         := i' =
-            ? i' > s'.text_length
-            ?> s'.text_length
+            ? i' > s'::text_length
+            ?> s'::text_length
             |: i'
         := consumed = i' - i
         ? consumed = 0
@@ -818,7 +818,7 @@ test many1_chars =
             i',
             { s' ?|
                 line_start = i'
-                position = { line = s'.position.line + consumed; col = 1 }
+                position = { line = s'::position::line + consumed; col = 1 }
             }
             |> parser_state
 
@@ -826,11 +826,11 @@ test many1_chars =
     \ t, i, (parser_state s' &= s) =>
         trace_entry "parsing.many_chars_till" \ () => { t_len = ##t; i s }
         :~ ^ 루프 (i' : int) (s'' : parser_state) : result (string * int * parser_state) parser_error =
-            ? i' >= s'.text_length
+            ? i' >= s'::text_length
             ?> Ok ((? i' > i ?> t |> slice i i' |: ""), i', s'')
             |:
                 := i'', s''' = s'' |> advance_while_no_nl (\ c => c <> '\n') t i'
-                ? i'' >= s'.text_length
+                ? i'' >= s'::text_length
                 ?> Ok ((? i'' > i ?> t |> slice i i'' |: ""), i'', s''')
                 |:
                     ?= end_p (t, i'', s''') ?|
@@ -853,7 +853,7 @@ test many1_chars =
     | Ok (first, i', s') =>
         :~ ^ 루프 acc (i'' : int) s'' : result (list _ * int * parser_state) _ =
             ?= p (t, i'', s'') ?|
-            | Error _ => Ok (acc |> listm.rev, i'', s'')
+            | Error _ => Ok (acc |> listm::rev, i'', s'')
             | Ok (x, i''', s''') ?& i''' > i'' => s''' |> 루프 (x :: acc) i'''
             | Ok _ => fail (\ _ => "parsing.many1 / inner parser succeeded without consuming text") i'' s''
         s' |> 루프 [ first ] i'
@@ -862,22 +862,22 @@ test many1_chars =
 ///> fsharp
 ///> cuda
 ///> typescript
-test many1 =
+:# many1 =
     "aaabbc"
     |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ([ 'a'; 'a'; 'a'; 'b'; 'b' ], "c", new_parser_state 0 1 6 6))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ([ 'a'; 'a'; 'a'; 'b'; 'b' ], "c", new_parser_state 0 1 6 6))
 
     "bcc"
     |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ([ 'b' ], "cc", new_parser_state 0 1 2 3))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ([ 'b' ], "cc", new_parser_state 0 1 2 3))
 
     "cba"
     |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
-    |> resultm.map_error eval
+    |> resultm::map_error eval
     |> _assert_eq (Error "parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n")
 
 := concat_rev (acc : list string) : string =
@@ -898,13 +898,13 @@ test many1 =
     ? is_rust () ?>
         ?= acc ?|
         | _ :: _ :: _ :: _ =>
-            := total : i32 = (0i32, acc) ||> listm.fold \ n (x : string) => n + ##x
-            := size : convert.unativeint = convert.convert total
+            := total : i32 = (0i32, acc) ||> listm::fold \ n (x : string) => n + ##x
+            := size : convert::unativeint = convert::convert total
             := buf : $'Rc<RefCell<Vec<u8>>>' = $'Rc::new(RefCell::new(vec\![0u8; !size]))'
-            := _ : i32 = (total, acc) ||> listm.fold \ end (x : string) =>
+            := _ : i32 = (total, acc) ||> listm::fold \ end (x : string) =>
                 := start = end - ##x
-                := from : convert.unativeint = convert.convert start
-                := upto : convert.unativeint = convert.convert end
+                := from : convert::unativeint = convert::convert start
+                := upto : convert::unativeint = convert::convert end
                 $'!buf.borrow_mut()[!from..!upto].copy_from_slice(!x.as_bytes())' : ()
                 start
             $'unsafe { Rc::<str>::from(std::str::from_utf8_unchecked(&!buf.borrow())) }' : string
@@ -912,14 +912,14 @@ test many1 =
     |: 루프 !+ acc
 
 ///> rust
-test concat_rev_keeps_byte_order_past_three_pieces =
+:# concat_rev_keeps_byte_order_past_three_pieces =
     [ "d"; "c"; "é"; "a" ] |> concat_rev |> _assert_eq "aécd"
 
 := string_of \* t. (x : t) : string =
     ~>
         ?= x ?|
         | (_ : string) => x
-        | _ => sm'_real.format_real `t x
+        | _ => sm'_real::format_real `t x
 
 := many1_strings (p : parser _) : parser string = \ t, i, s =>
     trace_entry "parsing.many1_strings" \ () => { t_len = ##t }
@@ -943,12 +943,12 @@ test concat_rev_keeps_byte_order_past_three_pieces =
 ///> gleam
 ///> cuda
 ///> typescript
-test many1_strings =
+:# many1_strings =
     "aaabbc"
     |> run_parser (many1_strings (p_char 'a' <|> p_char 'b'))
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ("aaabb", "c", new_parser_state 0 1 6 6))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ("aaabb", "c", new_parser_state 0 1 6 6))
 
 := many_strings (p : parser _) : parser string = \ t, i, s =>
     trace_entry "parsing.many_strings" \ () => { t_len = ##t }
@@ -987,24 +987,24 @@ test many1_strings =
 := choice \* t. (ps : list (parser t)) : parser t =
     := none : parser t = \ _, i, s =>
         fail (\ _ => "parsing.choice / no parsers succeeded") i s
-    (ps, none) ||> listm.foldBack (<|>)
+    (ps, none) ||> listm::foldBack (<|>)
 
 ///> rust
 ///> gleam
 ///> cuda
 ///> typescript
-test choice =
+:# choice =
     "bca"
     |> run_parser (choice [ p_char 'a'; p_char 'b'; p_char 'c' ])
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ('b', "ca", new_parser_state 0 1 2 3))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ('b', "ca", new_parser_state 0 1 2 3))
 
     "cba"
     |> run_parser (choice [ p_char 'a'; p_char 'b'; p_char 'c' ])
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ('c', "ba", new_parser_state 0 1 2 3))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ('c', "ba", new_parser_state 0 1 2 3))
 
 := between p_open p_close p_content : parser _ = \ t, i, s =>
     trace_entry "parsing.between" \ () => { t_len = ##t; i s }
@@ -1023,7 +1023,7 @@ test choice =
                         := end'' = (i'' + get_max_context ()) |> min t_len
                         := rest' = t |> slice i' end'
                         := rest'' = t |> slice i'' end''
-                        "parsing.between / expected closing delimiter / " ++# sm'.show { e t rest' rest'' }
+                        "parsing.between / expected closing delimiter / " ++# sm'::show { e t rest' rest'' }
                     i'' s''
         | Error _ =>
             ?= p_close (t, i', s') ?|
@@ -1033,37 +1033,37 @@ test choice =
                     \ t, i', _ =>
                         := end' = (i' + get_max_context ()) |> min ##t
                         := rest' = t |> slice i' end'
-                        "parsing.between / expected content or closing delimiter / " ++# sm'.show { rest' }
+                        "parsing.between / expected content or closing delimiter / " ++# sm'::show { rest' }
                     i' s'
     | Error e => e |> Error
 
 ///> fsharp
-test between =
+:# between =
     "[aaabb"
     |> parse_ (between_ (p_char_ '[') (p_char_ ']') (many1_chars_ (p_char_ 'a' <|>$ p_char_ 'b')))
-    |> resultm.unwrap_err
-    |> sm'.format_debug
+    |> resultm::unwrap_err
+    |> sm'::format_debug
 
 ///> rust
 ///> gleam
 ///> cuda
 ///> typescript
-test between_2 =
+:# between_2 =
     "[aaabb]"
     |> run_parser (between (p_char '[') (p_char ']') (many1_chars (p_char 'a' <|> p_char 'b')))
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ("aaabb", "", new_parser_state 0 1 8 7))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ("aaabb", "", new_parser_state 0 1 8 7))
 
     "[aaabb"
     |> run_parser (between (p_char '[') (p_char ']') (many1_chars (p_char 'a' <|> p_char 'b')))
-    |> resultm.map_error eval
-    |> resultm.unwrap_err
-    |> sm'.format_debug
+    |> resultm::map_error eval
+    |> resultm::unwrap_err
+    |> sm'::format_debug
     |> _assert_eq (
         "parsing.between / expected closing delimiter / "
         ++# "{ e = parsing.p_char / unexpected end of text / { c = ]; "
-        ++# "s' = " ++# sm'.show (new_parser_state 0 1 7 6) ++# " }; "
+        ++# "s' = " ++# sm'::show (new_parser_state 0 1 7 6) ++# " }; "
         ++# "t = [aaabb; rest' = aaabb; rest'' =  }"
     )
 
@@ -1074,40 +1074,40 @@ test between_2 =
     | Ok (first, i', s') =>
         :~ ^ 루프 (acc : list b) (i'' : int) s'' : result (list b * int * parser_state) _ =
             ?= sep (t, i'', s'') ?|
-            | Error _ => Ok (acc |> listm.rev, i'', s'')
+            | Error _ => Ok (acc |> listm::rev, i'', s'')
             | Ok (_, i''', s''') =>
                 ? i''' = i'' ?>
                     fail (\ _ => "parsing.sep_by / separator consumed no text") i'' s''
                 |:
                     ?= p (t, i''', s''') ?|
                     | Ok (x, i'''', s'''') => s'''' |> 루프 (x :: acc) i''''
-                    | Error _ => Ok (acc |> listm.rev, i'', s'')
+                    | Error _ => Ok (acc |> listm::rev, i'', s'')
         s' |> 루프 [ first ] i'
 
 := sep_end_by \* b. p sep : parser (list b) = \ t, i, s =>
     trace_entry "parsing.sep_end_by" \ () => { t_len = ##t; i s }
     :~ ^ 루프 acc i' s' =
         ?= p (t, i', s') ?|
-        | Error _ => Ok (acc |> listm.rev, i', s')
+        | Error _ => Ok (acc |> listm::rev, i', s')
         | Ok (x, i'', s'') =>
             ? i'' = i' ?>
                 fail (\ _ => "parsing.sep_end_by / element parser consumed no text") i' s'
             |:
                 := acc' = x :: acc
                 ?= sep (t, i'', s'') ?|
-                | Error _ => Ok (acc' |> listm.rev, i'', s'')
+                | Error _ => Ok (acc' |> listm::rev, i'', s'')
                 | Ok (_, i''', s''') =>
                     ? i''' <> i''
                     ?> s''' |> 루프 acc' i'''
                     |: fail (\ _ => "parsing.sep_end_by / separator consumed no text") i'' s''
     s |> 루프 [] i
 
-test sep_end_by =
+:# sep_end_by =
     "sep_end_by"
     |> run_parser (sep_end_by (p_char 's' <|> p_char 'e') (p_char 'e'))
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ([ 's' ], "p_end_by", new_parser_state 0 1 3 10))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ([ 's' ], "p_end_by", new_parser_state 0 1 3 10))
 
 := is_space c =
     c = ' ' || c = '\t' || c = '\r'
@@ -1119,9 +1119,9 @@ test sep_end_by =
     |:
         fail
             \ t, i, (parser_state s') =>
-                := preview_end = (i + get_max_context ()) |> min s'.text_length
+                := preview_end = (i + get_max_context ()) |> min s'::text_length
                 "parsing.spaces1 / expected at least one space / "
-                ++# sm'.show { rest = t |> slice i preview_end }
+                ++# sm'::show { rest = t |> slice i preview_end }
             i s
 
 := spaces () : parser () = \ t, i, s =>
@@ -1129,35 +1129,35 @@ test sep_end_by =
     Ok ((), i', s')
 
 := p_digit () : parser char = \ t, i, (parser_state s' &= s) =>
-    ? i >= s'.text_length ?>
-        fail (\ _, _, s => "parsing.p_digit / unexpected end of text / " ++# sm'.show { s }) i s
+    ? i >= s'::text_length ?>
+        fail (\ _, _, s => "parsing.p_digit / unexpected end of text / " ++# sm'::show { s }) i s
     |:
-        ?= t |> sm'.index i ?|
+        ?= t |> sm'::index i ?|
         | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' &= c =>
             Ok (c, i + 1, c |> update_char s)
-        | _ => fail (\ t, i, _ => "parsing.p_digit / unexpected char / " ++# sm'.show { c = t |> sm'.index i }) i s
+        | _ => fail (\ t, i, _ => "parsing.p_digit / unexpected char / " ++# sm'::show { c = t |> sm'::index i }) i s
 
 ///> rust
 ///> gleam
 ///> cuda
 ///> typescript
-test p_digit =
+:# p_digit =
     "1 2 3"
     |> run_parser (sep_by (p_digit ()) (spaces1 ()))
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ([ '1'; '2'; '3' ], "", new_parser_state 0 1 6 5))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ([ '1'; '2'; '3' ], "", new_parser_state 0 1 6 5))
 
 ///> rust
 ///> gleam
 ///> cuda
 ///> typescript
-test p_digit_2 =
+:# p_digit_2 =
     "1 a 2"
     |> run_parser (sep_by (p_digit ()) (spaces1 ()))
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ([ '1' ], " a 2", new_parser_state 0 1 2 5))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ([ '1' ], " a 2", new_parser_state 0 1 2 5))
 
 := opt p : parser (option _) = \ t, i, s =>
     ?= p (t, i, s) ?|
@@ -1169,71 +1169,71 @@ test p_digit_2 =
     Ok (t |> slice i i'', i'', s')
 
 := eof () : parser () = \ t, i, (parser_state s' &= s) =>
-    ? s'.text_length = i
+    ? s'::text_length = i
     ?> Ok ((), i, s)
     |:
         fail
             \ t, i, (parser_state s') =>
                 "parsing.eof / expected end of text / "
-                ++# sm'.show { rest = t |> slice i s'.text_length }
+                ++# sm'::show { rest = t |> slice i s'::text_length }
             i s
 
 := p_string (str : string) : parser string = \ t, i, (parser_state s' &= s) =>
     := len = ##str
-    ? s'.text_length - i < len ?>
-        fail (\ _, _, s => "parsing.p_string / unexpected end of text / " ++# sm'.show { expected = str; s }) i s
+    ? s'::text_length - i < len ?>
+        fail (\ _, _, s => "parsing.p_string / unexpected end of text / " ++# sm'::show { expected = str; s }) i s
     |:
         :~ ^ eq k =
             ? k >= len
             ?> !+
-            |: t |> sm'.index (i + k) = str |> sm'.index k && eq (k + 1)
+            |: t |> sm'::index (i + k) = str |> sm'::index k && eq (k + 1)
         ? eq 0
         ?> Ok (t |> slice i (i + len), i + len, s |> update_span t i len)
         |:
             fail
                 \ t, i, (parser_state s' &= s) =>
-                    := preview_end = (i + get_max_context ()) |> min s'.text_length
+                    := preview_end = (i + get_max_context ()) |> min s'::text_length
                     := rest = t |> slice i preview_end
                     := got = t |> slice i (i + len)
                     "parsing.p_string / unexpected string / "
-                    ++# sm'.show { expected = str; got rest s }
+                    ++# sm'::show { expected = str; got rest s }
                 i s
 
-test p_string =
+:# p_string =
     "hello world"
     |> run_parser (p_string "hello")
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ("hello", " world", new_parser_state 0 1 6 11))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ("hello", " world", new_parser_state 0 1 6 11))
 
 := new_line () : parser char = \ t, i, (parser_state s' &= s) =>
-    ? i >= s'.text_length ?>
-        fail (\ _, _, s => "parsing.new_line / unexpected end of text / " ++# sm'.show { s }) i s
+    ? i >= s'::text_length ?>
+        fail (\ _, _, s => "parsing.new_line / unexpected end of text / " ++# sm'::show { s }) i s
     |:
-        := c = t |> sm'.index i
+        := c = t |> sm'::index i
         ? c = '\n'
         ?> Ok (c, i + 1, c |> update_char s)
         |:
             fail
                 \ t, i, (parser_state s' &= s) =>
-                    := preview_end = (i + get_max_context ()) |> min s'.text_length
+                    := preview_end = (i + get_max_context ()) |> min s'::text_length
                     := rest = t |> slice i preview_end
                     "parsing.new_line / expected new line char / "
-                    ++# sm'.show { first_char = t |> sm'.index i; rest s }
+                    ++# sm'::show { first_char = t |> sm'::index i; rest s }
                 i s
 
-test new_line =
+:# new_line =
     "hello\nworld"
     |> run_parser (many_chars_till (any_char ()) (new_line ()))
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ("hello", "\nworld", new_parser_state 0 1 6 11))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ("hello", "\nworld", new_parser_state 0 1 6 11))
 
 := many_till \* b c. (p : parser b) (end_p : parser c) : parser _ = \ t, i, s =>
     trace_entry "parsing.many_till" \ () => { i t_len = ##t }
     :~ ^ 루프 (acc : list b) (i' : int) s' : result (_ * int * parser_state) _ =
         ?= end_p (t, i', s') ?|
-        | Ok (_, i'', s'') => Ok (acc |> listm.rev, i'', s'')
+        | Ok (_, i'', s'') => Ok (acc |> listm::rev, i'', s'')
         | Error _ =>
             ?= p (t, i', s') ?|
             | Ok (x, i'', s'') =>
@@ -1243,32 +1243,32 @@ test new_line =
             | Error e => e |> Error
     s |> 루프 [] i
 
-test many_till =
+:# many_till =
     "hello\nworld"
     |> run_parser (many_till (any_char ()) (new_line ()))
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ([ 'h'; 'e'; 'l'; 'l'; 'o' ], "world", new_parser_state 6 2 1 11))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ([ 'h'; 'e'; 'l'; 'l'; 'o' ], "world", new_parser_state 6 2 1 11))
 
 := p_return \* t. (x : t) : parser t = \ t, i, s =>
     Ok (x, i, s)
 
-test p_return =
+:# p_return =
     "abc"
     |> run_parser (p_return 42i32)
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show (42i32, "abc", new_parser_state 0 1 1 3))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show (42i32, "abc", new_parser_state 0 1 1 3))
 
 := attempt \* t. (p : parser t) : parser t = \ t, i, s =>
     ?= p (t, i, s) ?|
     | Ok (r, i', s') => Ok (r, i', s')
     | Error e => e |> Error
 
-test attempt =
+:# attempt =
     "aabbcc"
     |> run_parser (attempt (p_char 'a' >>. p_char 'a' >>. p_char 'b' >>. p_char 'c'))
-    |> resultm.map_error eval
+    |> resultm::map_error eval
     |> _assert_eq (Error "parsing.p_char / { expected = c; line = 1; col = 4 }\naabbcc\n   ^\n")
 
 := look_ahead (p : parser _) : parser _ = \ t, i, s =>
@@ -1276,38 +1276,38 @@ test attempt =
     | Ok (x, _, _) => Ok (x, i, s)
     | Error e => e |> Error
 
-test look_ahead =
+:# look_ahead =
     "123"
     |> run_parser (look_ahead (many1_chars (p_digit ())))
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ("123", "123", new_parser_state 0 1 1 3))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ("123", "123", new_parser_state 0 1 1 3))
 
 := pipe2 \* a b c. (p1 : parser a) (p2 : parser b) (f : ((() -> a) * (() -> b)) -> c) : parser c = \ t, i, s =>
     ?= p1 (t, i, s) ?|
     | Error e => e |> Error
     | Ok (ra, i', s') =>
         p2 (t, i', s')
-        |> resultm.map \ rb, i'', s'' =>
+        |> resultm::map \ rb, i'', s'' =>
             f ((\ () => ra), (\ () => rb)), i'', s''
 
-test pipe2 =
+:# pipe2 =
     "pipe2"
     |> run_parser (pipe2 (p_string "pipe") (spaces () >>. p_string "2") (\ a, b => a () ++# b ()))
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ("pipe2", "", new_parser_state 0 1 6 5))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ("pipe2", "", new_parser_state 0 1 6 5))
 
 := new_lines () : parser () = \ t, i, s =>
     := i', s' = s |> advance_newlines t i
     Ok ((), i', s')
 
-test new_lines =
+:# new_lines =
     "\n\nline1\nline2\n\nline4"
     |> run_parser (many_till (any_char ()) (new_lines ()))
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show (([] : _ char), "line1\nline2\n\nline4", new_parser_state 2 3 1 20))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show (([] : _ char), "line1\nline2\n\nline4", new_parser_state 2 3 1 20))
 
 := new_lines1 () : parser () = \ t, i, (parser_state s' &= s) =>
     := i', s'' = s |> advance_newlines t i
@@ -1316,14 +1316,14 @@ test new_lines =
     |:
         fail
             \ t, i, (parser_state s') =>
-                := preview_end = i + get_max_context () |> min s'.text_length
+                := preview_end = i + get_max_context () |> min s'::text_length
                 "parsing.new_lines1 / expected at least one new line / "
-                ++# sm'.show { rest = t |> slice i preview_end }
+                ++# sm'::show { rest = t |> slice i preview_end }
             i s
 
-test new_lines1 =
+:# new_lines1 =
     "\n\n\n"
     |> run_parser (new_lines1 ())
-    |> resultm.get
-    |> sm'.show
-    |> _assert_eq (sm'.show ("", new_parser_state 3 4 1 3))
+    |> resultm::get
+    |> sm'::show
+    |> _assert_eq (sm'::show ("", new_parser_state 3 4 1 3))

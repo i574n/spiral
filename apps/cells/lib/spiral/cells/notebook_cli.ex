@@ -134,7 +134,7 @@ defmodule Spiral.Cells.NotebookCli do
   def cell_budget_lines(paths, opts) do
     for path <- paths,
         opts[:cell_budget] == true or Spiral.Cells.CellBudget.edition3?(path),
-        finding <- path |> File.read!() |> Spiral.Cells.CellBudget.rewrites(Spiral.Cells.CellBudget.profile_for(path)),
+        finding <- path |> File.read!() |> Spiral.Cells.CellBudget.rewrites(Spiral.Cells.CellBudget.default_profile()),
         do: "cell-budget " <> Spiral.Cells.CellBudget.format(Path.expand(path), finding)
   end
 

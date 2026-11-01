@@ -4,12 +4,12 @@
     | XmlElement : string * list (string * string) * list xml_node
     | XmlText : string
 
-:= rust_first_char (s : string) (i : i32) : optionm'.option' unicode.rust_scalar =
-    := at : convert.unativeint = convert.convert i
-    $'(&*!s)[!at..].chars().next()' : optionm'.option' unicode.rust_scalar
+:= rust_first_char (s : string) (i : i32) : optionm'::option' unicode::rust_scalar =
+    := at : convert::unativeint = convert::convert i
+    $'(&*!s)[!at..].chars().next()' : optionm'::option' unicode::rust_scalar
 
-:= rust_char_width (c : unicode.rust_scalar) : convert.unativeint =
-    $'!c.len_utf8()' : convert.unativeint
+:= rust_char_width (c : unicode::rust_scalar) : convert::unativeint =
+    $'!c.len_utf8()' : convert::unativeint
 
 := zig_sequence_width (s : string) (i : i32) : u8 =
     := at : u64 = conv i
@@ -21,10 +21,10 @@
     ? lead < 192u32 ?> 1i32 |? lead < 224u32 ?> 2i32 |? lead < 240u32 ?> 3i32 |: 4i32
 
 := delphi_code_point_at (s : string) (i : i32) : u32 =
-    ? i >= sm'.length s ?> 0u32
+    ? i >= sm'::length s ?> 0u32
     |:
         := lead = delphi_byte_at s i
-        := width = ? i + delphi_sequence_width lead > sm'.length s ?> 1i32 |: delphi_sequence_width lead
+        := width = ? i + delphi_sequence_width lead > sm'::length s ?> 1i32 |: delphi_sequence_width lead
         := tail (k : i32) = delphi_byte_at s (i + k) - 128u32
         ? width = 1i32 ?> lead
         |? width = 2i32 ?> (lead - 192u32) * 64u32 + tail 1i32
@@ -33,7 +33,7 @@
 
 := code_point_at (s : string) (i : i32) : u32 =
     run_target \|
-        | Rust => \ () => rust_first_char s i |> optionm'.map unicode.rust_char_code |> optionm'.unwrap_or 0u32
+        | Rust => \ () => rust_first_char s i |> optionm'::map unicode::rust_char_code |> optionm'::unwrap_or 0u32
         | Delphi => \ () => delphi_code_point_at s i
         | _ => \ () => failwith "code_point_at: no arm for this backend"
 
@@ -41,24 +41,24 @@
     run_target \|
         | Rust => \ () =>
             rust_first_char s i
-            |> optionm'.map \ c => convert.convert (rust_char_width c)
-            |> optionm'.unwrap_or 1i32
-        | Zig => \ () => ? i < sm'.length s ?> conv (zig_sequence_width s i) |: 1i32
-        | Delphi => \ () => ? i < sm'.length s ?> delphi_sequence_width (delphi_byte_at s i) |: 1i32
+            |> optionm'::map \ c => convert::convert (rust_char_width c)
+            |> optionm'::unwrap_or 1i32
+        | Zig => \ () => ? i < sm'::length s ?> conv (zig_sequence_width s i) |: 1i32
+        | Delphi => \ () => ? i < sm'::length s ?> delphi_sequence_width (delphi_byte_at s i) |: 1i32
         | _ => \ () => failwith "code_point_width: no arm for this backend"
 
-:= code_point_count (s : string) : i32 = unicode.code_point_count s
+:= code_point_count (s : string) : i32 = unicode::code_point_count s
 
-:= code_point_string (c : u32) : string = unicode.char_of (conv c)
+:= code_point_string (c : u32) : string = unicode::char_of (conv c)
 
-:= code_point_text (s : string) (i : i32) : string = sm'.substring i (code_point_width s i) s
+:= code_point_text (s : string) (i : i32) : string = sm'::substring i (code_point_width s i) s
 
 := is_space_character (c : string) : bool = c = " " || c = "\t" || c = "\n" || c = "\r"
 
-:= replaced_space (s : string) : string = s |> sm'.replace "\t" " " |> sm'.replace "\n" " " |> sm'.replace "\r" " "
+:= replaced_space (s : string) : string = s |> sm'::replace "\t" " " |> sm'::replace "\n" " " |> sm'::replace "\r" " "
 
 :~ ^ collapsed_from (s : string) (i : i32) (gap : bool) (acc : string) : string =
-    ? i >= sm'.length s ?> acc
+    ? i >= sm'::length s ?> acc
     |:
         := c = code_point_text s i
         := next = i + code_point_width s i
@@ -68,9 +68,9 @@
 
 := collapsed_space (s : string) : string = collapsed_from s 0i32 !- ""
 :~ ^ text_order_from (a : string) (b : string) (i : i32) : i32 =
-    ? i >= sm'.length a && i >= sm'.length b ?> 0i32
-    |? i >= sm'.length a ?> -1i32
-    |? i >= sm'.length b ?> 1i32
+    ? i >= sm'::length a && i >= sm'::length b ?> 0i32
+    |? i >= sm'::length a ?> -1i32
+    |? i >= sm'::length b ?> 1i32
     |:
         := x = code_point_at a i
         := y = code_point_at b i
@@ -82,7 +82,7 @@
     run_target \|
         | Rust => fun () => $'std::rc::Rc::<str>::from(String::from_utf8_lossy(&std::fs::read(&*!path).unwrap()).as_re\
             f())' : string
-        | _ => \ () => file_system.read_all_text path
+        | _ => \ () => file_system::read_all_text path
 
 := is_file (path : string) : bool =
     run_target \|
@@ -92,7 +92,7 @@
 
 ///> rust
 ///> delphi
-test is_file_is_false_for_a_missing_path =
+:# is_file_is_false_for_a_missing_path =
     ? is_file "no-such-file-for-xml-is-file.txt" ?> failwith "a missing path is not a file"
 
 := at (s : string) (pos : i32) : string = code_point_text s pos
@@ -102,47 +102,47 @@ test is_file_is_false_for_a_missing_path =
 := is_name_end (c : string) : bool = is_space c || c = "/" || c = ">" || c = "="
 
 :~ ^ skip_spaces (s : string) (pos : i32) : i32 =
-    ? pos < sm'.length s && is_space (at s pos) ?> skip_spaces s (pos + 1i32) |: pos
+    ? pos < sm'::length s && is_space (at s pos) ?> skip_spaces s (pos + 1i32) |: pos
 
 :~ ^ name_end (s : string) (pos : i32) : i32 =
-    ? pos < sm'.length s && is_name_end (at s pos) = !- ?> name_end s (pos + code_point_width s pos) |: pos
+    ? pos < sm'::length s && is_name_end (at s pos) = !- ?> name_end s (pos + code_point_width s pos) |: pos
 
 := find_from (needle : string) (s : string) (pos : i32) : i32 =
     run_target \|
         | Rust => fun () => $'(&*!s)[(!pos as usize)..].find(&*!needle).map(|i| (i + !pos as usize) as \
             i32).unwrap_or(-1)' : i32
         | _ => \ () =>
-            := found = sm'.substring pos (sm'.length s - pos) s |> sm'.index_of needle
+            := found = sm'::substring pos (sm'::length s - pos) s |> sm'::index_of needle
             ? found < 0i32 ?> -1i32 |: pos + found
 
 := hex_digit (c : string) : i32 =
-    := lower = sm'.index_of c "0123456789abcdef"
+    := lower = sm'::index_of c "0123456789abcdef"
     ? lower >= 0i32 ?> lower
     |:
-        := upper = sm'.index_of c "ABCDEF"
+        := upper = sm'::index_of c "ABCDEF"
         ? upper >= 0i32 ?> upper + 10i32 |: -1i32
 
 :~ ^ reference_value (digits : string) (base : i32) (i : i32) (acc : i32) : i32 =
-    ? i >= sm'.length digits ?> acc
+    ? i >= sm'::length digits ?> acc
     |:
-        := d = hex_digit (sm'.substring i 1i32 digits)
+        := d = hex_digit (sm'::substring i 1i32 digits)
         ? d < 0i32 || d >= base || acc > 1114111i32 ?> -1i32 |: reference_value digits base (i + 1i32) (acc * base + d)
 
 :~ ^ numeric_references_from (text : string) (pos : i32) (acc : string) : string =
     := start = find_from "&#" text pos
     ? start < 0i32
-    ?> acc ++# sm'.substring pos (sm'.length text - pos) text
+    ?> acc ++# sm'::substring pos (sm'::length text - pos) text
     |:
-        := before = acc ++# sm'.substring pos (start - pos) text
+        := before = acc ++# sm'::substring pos (start - pos) text
         := semi = find_from ";" text start
         ? semi < 0i32
-        ?> before ++# sm'.substring start (sm'.length text - start) text
+        ?> before ++# sm'::substring start (sm'::length text - start) text
         |:
-            := body = sm'.substring (start + 2i32) (semi - start - 2i32) text
+            := body = sm'::substring (start + 2i32) (semi - start - 2i32) text
             := hex =
-                sm'.length body > 1i32 && (sm'.substring 0i32 1i32 body = "x" || sm'.substring 0i32 1i32 body = "X")
-            := digits = ? hex ?> sm'.substring 1i32 (sm'.length body - 1i32) body |: body
-            := value = ? sm'.length digits = 0i32 ?> -1i32 |: reference_value digits (? hex ?> 16i32 |: 10i32) 0i32 0i32
+                sm'::length body > 1i32 && (sm'::substring 0i32 1i32 body = "x" || sm'::substring 0i32 1i32 body = "X")
+            := digits = ? hex ?> sm'::substring 1i32 (sm'::length body - 1i32) body |: body
+            := value = ? sm'::length digits = 0i32 ?> -1i32 |: reference_value digits (? hex ?> 16i32 |: 10i32) 0i32 0i32
             ? value < 0i32 || value > 1114111i32 ?> numeric_references_from text (start + 2i32) (before ++# "&#")
             |: numeric_references_from text (semi + 1i32) (before ++# code_point_string (conv value))
 
@@ -150,12 +150,12 @@ test is_file_is_false_for_a_missing_path =
 
 := decode_entities (text : string) : string =
     text
-    |> sm'.replace "&lt;" "<"
-    |> sm'.replace "&gt;" ">"
-    |> sm'.replace "&quot;" "\""
-    |> sm'.replace "&apos;" "'"
+    |> sm'::replace "&lt;" "<"
+    |> sm'::replace "&gt;" ">"
+    |> sm'::replace "&quot;" "\""
+    |> sm'::replace "&apos;" "'"
     |> decode_numeric_references
-    |> sm'.replace "&amp;" "&"
+    |> sm'::replace "&amp;" "&"
 
 :~ ^ reverse_nodes (rest : list xml_node) (acc : list xml_node) : list xml_node =
     ?= rest ?|
@@ -173,28 +173,28 @@ test is_file_is_false_for_a_missing_path =
     ? c = ">" || c = "/" || c = "?" ?> reverse_attributes acc [], pos
     |:
         := name_stop = name_end s pos
-        := name = sm'.substring pos (name_stop - pos) s
+        := name = sm'::substring pos (name_stop - pos) s
         := eq = skip_spaces s name_stop
         := quote_at = skip_spaces s (eq + 1i32)
         := quote = at s quote_at
         := value_stop = find_from quote s (quote_at + 1i32)
-        := value = sm'.substring (quote_at + 1i32) (value_stop - quote_at - 1i32) s |> decode_entities
+        := value = sm'::substring (quote_at + 1i32) (value_stop - quote_at - 1i32) s |> decode_entities
         read_attributes s (value_stop + 1i32) ((name, value) :: acc)
 
 :~ ^ read_nodes (s : string) (pos : i32) (acc : list xml_node) : list xml_node * i32 =
-    ? pos >= sm'.length s ?> reverse_nodes acc [], pos
+    ? pos >= sm'::length s ?> reverse_nodes acc [], pos
     |? at s pos <> "<" ?>
         := stop = find_from "<" s pos
-        := stop = ? stop < 0i32 ?> sm'.length s |: stop
-        := text = sm'.substring pos (stop - pos) s |> sm'.trim |> decode_entities
+        := stop = ? stop < 0i32 ?> sm'::length s |: stop
+        := text = sm'::substring pos (stop - pos) s |> sm'::trim |> decode_entities
         read_nodes s stop (? text = "" ?> acc |: XmlText text :: acc)
-    |? sm'.substring pos 4i32 s = "<!--" ?> read_nodes s (find_from "-->" s pos + 3i32) acc
-    |? sm'.substring pos 2i32 s = "<?" ?> read_nodes s (find_from "?>" s pos + 2i32) acc
-    |? sm'.substring pos 2i32 s = "<!" ?> read_nodes s (find_from ">" s pos + 1i32) acc
-    |? sm'.substring pos 2i32 s = "</" ?> reverse_nodes acc [], find_from ">" s pos + 1i32
+    |? sm'::substring pos 4i32 s = "<!--" ?> read_nodes s (find_from "-->" s pos + 3i32) acc
+    |? sm'::substring pos 2i32 s = "<?" ?> read_nodes s (find_from "?>" s pos + 2i32) acc
+    |? sm'::substring pos 2i32 s = "<!" ?> read_nodes s (find_from ">" s pos + 1i32) acc
+    |? sm'::substring pos 2i32 s = "</" ?> reverse_nodes acc [], find_from ">" s pos + 1i32
     |:
         := name_stop = name_end s (pos + 1i32)
-        := name = sm'.substring (pos + 1i32) (name_stop - pos - 1i32) s
+        := name = sm'::substring (pos + 1i32) (name_stop - pos - 1i32) s
         := attributes, after = read_attributes s name_stop []
         ? at s after = "/" ?> read_nodes s (after + 2i32) (XmlElement (name, attributes, []) :: acc)
         |:
@@ -206,8 +206,8 @@ test is_file_is_false_for_a_missing_path =
     nodes
 
 := local_name (name : string) : string =
-    := colon = sm'.index_of ":" name
-    ? colon < 0i32 ?> name |: sm'.substring (colon + 1i32) (sm'.length name - colon - 1i32) name
+    := colon = sm'::index_of ":" name
+    ? colon < 0i32 ?> name |: sm'::substring (colon + 1i32) (sm'::length name - colon - 1i32) name
 
 :~ ^ count_named (target : string) (nodes : list xml_node) : i32 =
     ?= nodes ?|
@@ -239,13 +239,13 @@ test is_file_is_false_for_a_missing_path =
     | None => !-
 
 ///> rust
-test text_order_follows_code_points =
+:# text_order_follows_code_points =
     (text_order "abc" "abd", text_order "b" "ab", text_order "same" "same", text_order "" "a", text_order "é" "z")
-    |> testing._assert_eq (-1i32, 1i32, 0i32, -1i32, 1i32)
+    |> testing::_assert_eq (-1i32, 1i32, 0i32, -1i32, 1i32)
 
 ///> rust
 ///> zig
-test reads_elements_attributes_and_text =
+:# reads_elements_attributes_and_text =
     := doc = "<?xml version=\"1.0\"?><!-- c --><a x=\"1\" y='two'><b/><c>hi &amp; bye</c></a>"
     ?= single_root (read_xml doc) ?|
     | Some { name attributes children } =>
@@ -256,7 +256,7 @@ test reads_elements_attributes_and_text =
 
 ///> rust
 ///> zig
-test counts_prefixed_schema_elements =
+:# counts_prefixed_schema_elements =
     := doc =
         "<xs:schema><xs:simpleType name=\"T\"><xs:restriction base=\"xs:string\"><xs:enumeration "
         ^^ "value=\"1\"/><xs:enumeration value=\"2\"/></xs:restriction></xs:simpleType></xs:schema>"
@@ -268,7 +268,7 @@ test counts_prefixed_schema_elements =
     ?= nodes ?|
     | XmlElement (name, _, children) :: rest =>
         := name = local_name name
-        := seen = ? listm'.contains name seen ?> seen |: name :: seen
+        := seen = ? listm'::contains name seen ?> seen |: name :: seen
         element_names rest (element_names children seen)
     | XmlText _ :: rest => element_names rest seen
     | [] => seen
@@ -293,12 +293,12 @@ test counts_prefixed_schema_elements =
 
 ///> rust
 ///> zig
-test measures_the_shape_of_a_schema =
+:# measures_the_shape_of_a_schema =
     := doc =
         "<xs:schema><xs:simpleType name=\"T\"><xs:restriction base=\"xs:string\"><xs:enumeration "
         ^^ "value=\"1\"/><xs:enumeration value=\"2\"/></xs:restriction></xs:simpleType></xs:schema>"
     := nodes = read_xml doc
-    ? listm.length (element_names nodes []) <> 4i32 ?> failwith "four element kinds"
+    ? listm::length (element_names nodes []) <> 4i32 ?> failwith "four element kinds"
     ? count_attribute "value" nodes <> 2i32 ?> failwith "two value attributes"
     ? depth nodes <> 4i32 ?> failwith "depth four"
 
@@ -353,7 +353,7 @@ test measures_the_shape_of_a_schema =
 
 := checked_fixed (key : string) (fixed : string) (attributes : list (string * string)) : list (string * string) =
     ?= attribute_of key attributes ?|
-    | Some value ?& sm'.trim value <> fixed =>
+    | Some value ?& sm'::trim value <> fixed =>
         failwith ("attribute " ++# key ++# " is fixed to " ++# fixed ++# " but reads " ++# value)
     | _ => attributes
 
@@ -400,11 +400,11 @@ test measures_the_shape_of_a_schema =
 
 := escape_text_xml (s : string) : string =
     s
-    |> sm'.replace "&" "&amp;"
-    |> sm'.replace "<" "&lt;"
-    |> sm'.replace ">" "&gt;"
+    |> sm'::replace "&" "&amp;"
+    |> sm'::replace "<" "&lt;"
+    |> sm'::replace ">" "&gt;"
 
-:= escape_attribute_xml (s : string) : string = escape_text_xml s |> sm'.replace "\"" "&quot;"
+:= escape_attribute_xml (s : string) : string = escape_text_xml s |> sm'::replace "\"" "&quot;"
 
 :~ ^ attributes_text (attributes : list (string * string)) : string =
     ?= attributes ?|
@@ -442,7 +442,7 @@ test measures_the_shape_of_a_schema =
     | XmlElement (name, _, _) => local_name name
     | XmlText _ => ""
 
-:= is_namespace_declaration (key : string) : bool = key = "xmlns" || sm'.starts_with "xmlns:" key
+:= is_namespace_declaration (key : string) : bool = key = "xmlns" || sm'::starts_with "xmlns:" key
 
 :~ ^ data_attributes (attributes : list (string * string)) : list (string * string) =
     ?= attributes ?|
@@ -468,7 +468,7 @@ test measures_the_shape_of_a_schema =
 :~ ^ significant (nodes : list xml_node) : list xml_node =
     ?= nodes ?|
     | node :: rest =>
-        ? is_text_node node && sm'.trim (node_text node) = "" ?> significant rest |: node :: significant rest
+        ? is_text_node node && sm'::trim (node_text node) = "" ?> significant rest |: node :: significant rest
     | [] => []
 
 :~ ^ same_node (a : xml_node) (b : xml_node) : bool =
@@ -489,7 +489,7 @@ test measures_the_shape_of_a_schema =
     | [] => !-
 
 ///> rust
-test written_xml_reads_back_the_same =
+:# written_xml_reads_back_the_same =
     := text = "<a x=\"1\" xmlns=\"n\"><b>t &amp; u</b><c/>  </a>"
     ?= read_xml text ?|
     | original :: [] =>
@@ -512,7 +512,7 @@ test written_xml_reads_back_the_same =
     | [] => []
 
 ///> rust
-test unclaimed_children_keep_only_unknown_elements =
+:# unclaimed_children_keep_only_unknown_elements =
     := nodes = read_xml "<r><a/><modal><x/></modal><b/></r>"
     ?= nodes ?|
     | XmlElement (_, _, children) :: [] =>
@@ -522,7 +522,7 @@ test unclaimed_children_keep_only_unknown_elements =
     | _ => failwith "one root element"
 
 ///> rust
-test a_default_namespace_drops_the_element_prefix =
+:# a_default_namespace_drops_the_element_prefix =
     ?= with_namespace "Signature" "urn:dsig" (XmlElement ("ds:Signature", [], [])) ?|
     | XmlElement (name, attributes, _) =>
         ? name <> "Signature" ?> failwith "the prefix is dropped"
@@ -532,7 +532,7 @@ test a_default_namespace_drops_the_element_prefix =
     | XmlText _ => failwith "an element"
 
 ///> rust
-test a_prefixed_target_matches_the_same_local_element =
+:# a_prefixed_target_matches_the_same_local_element =
     := nodes = read_xml "<r xmlns:cbc=\"urn:cbc\"><cbc:ID>1</cbc:ID></r>"
     ?= nodes ?|
     | XmlElement (_, _, children) :: [] =>
@@ -541,7 +541,7 @@ test a_prefixed_target_matches_the_same_local_element =
     | _ => failwith "one root element"
 
 ///> rust
-test claimed_children_keep_the_named_elements_in_order =
+:# claimed_children_keep_the_named_elements_in_order =
     := nodes = read_xml "<r><b/><x/><a/><b/></r>"
     ?= nodes ?|
     | XmlElement (_, _, children) :: [] =>
@@ -556,12 +556,12 @@ test claimed_children_keep_the_named_elements_in_order =
     | XmlElement (name, attributes, children) :: rest =>
         elements_of rest (XmlElement (name, attributes, children) :: acc)
     | _ :: rest => elements_of rest acc
-    | [] => listm.rev acc
+    | [] => listm::rev acc
 
 :~ ^ content_attributes (attributes : list (string * string)) (acc : list (string * string)) : list (string * string) =
     ?= attributes ?|
     | (key, value) :: rest =>
-        ? key = "xmlns" || sm'.starts_with "xmlns:" key || sm'.starts_with "xsi:" key
+        ? key = "xmlns" || sm'::starts_with "xmlns:" key || sm'::starts_with "xsi:" key
         ?> content_attributes rest acc
         |: content_attributes rest ((local_name key, value) :: acc)
     | [] => acc
@@ -592,10 +592,10 @@ test claimed_children_keep_the_named_elements_in_order =
             | None =>
                 := expected_children = elements_of (element_children expected) []
                 := actual_children = elements_of (element_children actual) []
-                ? listm.length expected_children = 0i32 && listm.length actual_children = 0i32
+                ? listm::length expected_children = 0i32 && listm::length actual_children = 0i32
                 ?>
-                    := e = sm'.trim (text_in (element_children expected))
-                    := a = sm'.trim (text_in (element_children actual))
+                    := e = sm'::trim (text_in (element_children expected))
+                    := a = sm'::trim (text_in (element_children actual))
                     ? e = a ?> None |: Some (here ++# ": text '" ++# e ++# "' vs '" ++# a ++# "'")
                 |: first_child_difference here expected_children actual_children
 
@@ -616,7 +616,7 @@ test claimed_children_keep_the_named_elements_in_order =
 := first_difference (expected : xml_node) (actual : xml_node) : option string = first_difference_at "" expected actual
 
 ///> rust
-test first_difference_ignores_prefixes_and_names_the_first_lost_content =
+:# first_difference_ignores_prefixes_and_names_the_first_lost_content =
     := root_of (text : string) : xml_node =
         ?= read_xml text ?|
         | node :: [] => node
@@ -629,21 +629,21 @@ test first_difference_ignores_prefixes_and_names_the_first_lost_content =
     | None => ()
     ?= first_difference plain changed ?|
     | Some d =>
-        ? sm'.contains "/r/a: missing attribute k=1" d = !- ?> failwith ("the changed attribute is named: " ++# d)
+        ? sm'::contains "/r/a: missing attribute k=1" d = !- ?> failwith ("the changed attribute is named: " ++# d)
     | None => failwith "a changed attribute is a difference"
 
 ///> rust
-test white_space_and_fixed_attributes_follow_the_xsd_rules =
+:# white_space_and_fixed_attributes_follow_the_xsd_rules =
     ? replaced_space "a\tb\nc\r" <> "a b c " ?> failwith "replace turns tab, newline and return into spaces"
     ? collapsed_space "\n  12.00 \t" <> "12.00" ?> failwith "collapse trims"
     ? collapsed_space " a  \n b   c " <> "a b c" ?> failwith "collapse joins inner runs into one space"
     ? collapsed_space "  é  ü " <> "é ü" ?> failwith "collapse keeps non-ASCII code points whole"
     ? collapsed_space " \n\t " <> "" ?> failwith "only spaces collapse to nothing"
-    ? listm.length (checked_fixed "Version" "4.0" [("Version", "4.0")]) <> 1i32 ?> failwith "the fixed value reads"
-    ? listm.length (checked_fixed "Version" "4.0" []) <> 0i32 ?> failwith "an absent fixed attribute stays absent"
+    ? listm::length (checked_fixed "Version" "4.0" [("Version", "4.0")]) <> 1i32 ?> failwith "the fixed value reads"
+    ? listm::length (checked_fixed "Version" "4.0" []) <> 0i32 ?> failwith "an absent fixed attribute stays absent"
 
 ///> rust
-test numeric_character_references_decode =
+:# numeric_character_references_decode =
     := delimiter = code_point_string 127u32
     ? decode_entities "&#x7f;04&#127;" <> delimiter ++# "04" ++# delimiter
     ?> failwith "hex and decimal references decode"
@@ -661,7 +661,7 @@ test numeric_character_references_decode =
 
 ///> rust
 ///> delphi
-test code_points_step_through_utf8 =
+:# code_points_step_through_utf8 =
     := s = "aé€"
     ? code_point_count s <> 3i32 ?> failwith "three code points"
     ? code_point_width s 0i32 <> 1i32 || code_point_width s 1i32 <> 2i32 || code_point_width s 3i32 <> 3i32

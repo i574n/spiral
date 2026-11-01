@@ -1,6 +1,6 @@
 :< sm'_operators
 
-test erlang_process static =
+:# erlang_process static =
     :< testing
 
 := erlang_process_imports () =
@@ -61,7 +61,7 @@ test erlang_process static =
     $'process.receive_forever(!from)'
 
 ///> gleam
-test send_then_receive =
+:# send_then_receive =
     := inbox : subject i32 = new_subject ()
     send inbox 42i32
     receive_within inbox 1000i32
@@ -69,7 +69,7 @@ test send_then_receive =
     |> _assert_eq (Some 42i32)
 
 ///> gleam
-test receive_times_out =
+:# receive_times_out =
     := inbox : subject i32 = new_subject ()
     receive_within inbox 10i32
     |> receipt_value
@@ -84,7 +84,7 @@ test receive_times_out =
     $'process.spawn_unlinked(fn() { !work(Nil) })'
 
 ///> gleam
-test spawned_reply =
+:# spawned_reply =
     := inbox : subject i32 = new_subject ()
     spawn (\ () => send inbox 7i32) |> ignore
     receive_forever inbox
@@ -104,7 +104,7 @@ test spawned_reply =
     ($'process.register(!owner, !address)' : host_received ()) |> host_received_is_ok
 
 ///> gleam
-test a_named_subject_reaches_the_registered_process =
+:# a_named_subject_reaches_the_registered_process =
     := address : name i32 = new_name "lib_erlang_process_test"
     := registered = register (self ()) address
     send (named_subject address) 5i32
@@ -144,7 +144,7 @@ test a_named_subject_reaches_the_registered_process =
     | ErlangProcessAskLabel reply => send reply name
 
 ///> gleam
-test a_typed_query_fixes_its_reply_type =
+:# a_typed_query_fixes_its_reply_type =
     := ready : subject (subject erlang_process_ask) = new_subject ()
     spawn (\ () =>
         := inbox : subject erlang_process_ask = new_subject ()
@@ -159,7 +159,7 @@ test a_typed_query_fixes_its_reply_type =
     (n, s) |> _assert_eq (41i32, "x")
 
 ///> gleam
-test a_call_without_an_answer_times_out =
+:# a_call_without_an_answer_times_out =
     := silent : subject erlang_process_ask = new_subject ()
     call_within silent 10i32 (erlang_process_wrap (ErlangProcessCount ()))
     |> receipt_value
@@ -215,7 +215,7 @@ test a_call_without_an_answer_times_out =
     $'!reason == process.Normal'
 
 ///> gleam
-test monitor_sees_normal_exit =
+:# monitor_sees_normal_exit =
     := ready : subject (subject ()) = new_subject ()
     := worker =
         spawn_unlinked \ () =>
@@ -235,7 +235,7 @@ test monitor_sees_normal_exit =
     | InboxDown : bool
 
 ///> gleam
-test a_selector_merges_two_subjects_and_a_monitor_into_one_union =
+:# a_selector_merges_two_subjects_and_a_monitor_into_one_union =
     := work : subject i32 = new_subject ()
     := stop : subject () = new_subject ()
     := ready : subject (subject ()) = new_subject ()
@@ -269,7 +269,7 @@ test a_selector_merges_two_subjects_and_a_monitor_into_one_union =
     |> _assert_eq 1107i32
 
 ///> gleam
-test a_trapped_exit_arrives_as_a_message =
+:# a_trapped_exit_arrives_as_a_message =
     trap_exits !+
     := ready : subject (subject ()) = new_subject ()
     spawn (\ () =>
@@ -309,7 +309,7 @@ test a_trapped_exit_arrives_as_a_message =
 
 := groups_start () : () =
     erlang_process_group_imports ()
-    ($'erlang_process_pg_start(atom.create("pg"))' : erlang_term.term) |> ignore
+    ($'erlang_process_pg_start(atom.create("pg"))' : erlang_term::term) |> ignore
 
 := new_group \* t. (name : string) : group t =
     erlang_process_group_imports ()
@@ -317,7 +317,7 @@ test a_trapped_exit_arrives_as_a_message =
 
 := join_group \* t. (members : group t) : () =
     erlang_process_group_imports ()
-    ($'erlang_process_pg_join(!members.key, process.self())' : erlang_term.term) |> ignore
+    ($'erlang_process_pg_join(!members.key, process.self())' : erlang_term::term) |> ignore
 
 := group_inbox \* t. (members : group t) : subject t =
     erlang_process_group_imports ()
@@ -332,7 +332,7 @@ test a_trapped_exit_arrives_as_a_message =
     $'list.each(erlang_process_pg_members(!members.key), fn(member) { process.send(process.unsafely_create_subject(member, !members.key), !message) })'
 
 ///> gleam
-test a_broadcast_reaches_every_member_of_the_group =
+:# a_broadcast_reaches_every_member_of_the_group =
     groups_start ()
     := team : group i32 = new_group "spiral_lib_erlang_process_group_test"
     := ready : subject () = new_subject ()
@@ -368,15 +368,15 @@ test a_broadcast_reaches_every_member_of_the_group =
     global "@external(erlang, \"erlang\", \"system_info\") fn erlang_process_system_info(item: atom.Atom) -> Int"
     $'erlang_process_system_info(atom.create("schedulers_online"))'
 
-:= dictionary_get (key : erlang_term.term) : erlang_term.term = erlang_term.apply "erlang" "get" [ key ]
+:= dictionary_get (key : erlang_term::term) : erlang_term::term = erlang_term::apply "erlang" "get" [ key ]
 
-:= dictionary_put (key : erlang_term.term) (value : erlang_term.term) : erlang_term.term =
-    erlang_term.apply "erlang" "put" [ key; value ]
+:= dictionary_put (key : erlang_term::term) (value : erlang_term::term) : erlang_term::term =
+    erlang_term::apply "erlang" "put" [ key; value ]
 
 ///> gleam
-test the_process_dictionary_keeps_a_value_by_key =
-    := key = erlang_term.tuple [ erlang_term.atom "spiral_process_dictionary_probe"; erlang_term.of 7i32 ]
+:# the_process_dictionary_keeps_a_value_by_key =
+    := key = erlang_term::tuple [ erlang_term::atom "spiral_process_dictionary_probe"; erlang_term::of 7i32 ]
     := before = dictionary_get key
-    dictionary_put key (erlang_term.of 3i32) |> ignore
-    := after : i32 = dictionary_get key |> erlang_term.cast
-    (erlang_term.equal before (erlang_term.atom "undefined"), after) |> _assert_eq (!+, 3i32)
+    dictionary_put key (erlang_term::of 3i32) |> ignore
+    := after : i32 = dictionary_get key |> erlang_term::cast
+    (erlang_term::equal before (erlang_term::atom "undefined"), after) |> _assert_eq (!+, 3i32)

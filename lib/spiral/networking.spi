@@ -1,12 +1,12 @@
-test networking static =
+:# networking static =
     :< testing
 
-:< rust.rust_operators
+:< rust::rust_operators
 
 /// ## rust
 :! reqwest_response =
     `(
-        rust.rust_type
+        rust::rust_type
             `($'reqwest_Response')
             `($'reqwest_wasm::Response')
             "type reqwest_Response = class end"
@@ -14,7 +14,7 @@ test networking static =
 
 :! reqwest_error =
     `(
-        rust.rust_type
+        rust::rust_type
             `($'reqwest_Error')
             `($'reqwest_wasm::Error')
             "type reqwest_Error = class end"
@@ -36,7 +36,7 @@ test networking static =
     }
 :! request_builder =
     `(
-        rust.fsharp_global "type reqwest_RequestBuilder = class end"
+        rust::fsharp_global "type reqwest_RequestBuilder = class end"
         $'' : $'backend_switch `(request_builder_switch)'
     )
 
@@ -55,34 +55,34 @@ test networking static =
 
 := new_request_get (url : string) : request_builder =
     := url = ~~ url
-    := url = url |> sm'.to_std_string
+    := url = url |> sm'::to_std_string
     := url = ~~ url
     !\($'"reqwest_wasm::Client::builder().build().map_err(|err| err.to_string())?.get(!url)"')
 
 := new_request_post (url : string) : request_builder =
     := url = ~~ url
-    := url = url |> sm'.to_std_string
+    := url = url |> sm'::to_std_string
     := url = ~~ url
     !\($'"reqwest_wasm::Client::builder().build().map_err(|err| err.to_string())?.post(!url)"')
 
-:= request_send (request : request_builder) : async.future_pin (resultm.result' reqwest_response reqwest_error) =
+:= request_send (request : request_builder) : async::future_pin (resultm::result' reqwest_response reqwest_error) =
     := request = ~~ request
     !\($'"Box::pin(reqwest_wasm::RequestBuilder::send(!request))"')
 
 := request_body (body : string) (request : request_builder) : request_builder =
-    := body = body |> sm'.to_std_string
+    := body = body |> sm'::to_std_string
     !\\(body, $'"reqwest_wasm::RequestBuilder::body(!request, $0)"')
 
 := request_header (key : string) (value : string) (request : request_builder) : request_builder =
     := request = ~~ request
-    := key = key |> sm'.to_std_string
-    := value = value |> sm'.to_std_string
+    := key = key |> sm'::to_std_string
+    := value = value |> sm'::to_std_string
     !\\((key, value), $'"reqwest_wasm::RequestBuilder::header(!request, $0, $1)"')
 
 := request_json \* t. (obj : t) (request : request_builder) : request_builder =
     !\($'"reqwest_wasm::RequestBuilder::json(!request, &!obj)"')
 
-:= response_text (response : reqwest_response) : async.future_pin (resultm.result' sm'.std_string reqwest_error) =
+:= response_text (response : reqwest_response) : async::future_pin (resultm::result' sm'::std_string reqwest_error) =
     !\($'"Box::pin(reqwest_wasm::Response::text(!response))"')
 
 /// ## fsharp
@@ -123,9 +123,9 @@ test networking static =
 := client_connect_async
     (host : string)
     (port : i32)
-    (ct : threading.cancellation_token)
+    (ct : threading::cancellation_token)
     (client : tcp_client)
-    : async.value_task
+    : async::value_task
     =
     run_target \|
         | Fsharp => \ () => $'!client.ConnectAsync (!host, !port, !ct)'

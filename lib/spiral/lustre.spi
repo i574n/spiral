@@ -25,7 +25,7 @@
 
 := style \* t. (styles : list (string * string)) : attribute t =
     global "import lustre/attribute"
-    := styles = styles |> listm'.box
+    := styles = styles |> listm'::box
     $'attribute.styles(!styles)'
 
 := class \* t. (name : string) : attribute t =
@@ -42,20 +42,20 @@
 
 := div \* t. (attributes : list (attribute t)) (children : list (element t)) : element t =
     global "import lustre/element/html"
-    := attributes = attributes |> listm'.box
-    := children = children |> listm'.box
+    := attributes = attributes |> listm'::box
+    := children = children |> listm'::box
     $'html.div(!attributes, !children)'
 
 := p \* t. (attributes : list (attribute t)) (children : list (element t)) : element t =
     global "import lustre/element/html"
-    := attributes = attributes |> listm'.box
-    := children = children |> listm'.box
+    := attributes = attributes |> listm'::box
+    := children = children |> listm'::box
     $'html.p(!attributes, !children)'
 
 := button \* t. (attributes : list (attribute t)) (children : list (element t)) : element t =
     global "import lustre/element/html"
-    := attributes = (class "lustre-ui-button" :: role "button" :: attr "tabindex" "0" :: attributes) |> listm'.box
-    := children = children |> listm'.box
+    := attributes = (class "lustre-ui-button" :: role "button" :: attr "tabindex" "0" :: attributes) |> listm'::box
+    := children = children |> listm'::box
     $'html.button(!attributes, !children)'
 
 := centre \* t. (attributes : list (attribute t)) (children : element t) : element t =
@@ -70,7 +70,7 @@
     : app model msg
     =
     global "import lustre"
-    $'lustre.simple(!init, fn (a, b) { !update(\#(a, b)) }, !view)'
+    $'lustre.simple(!init, fn (a, b) { !update(##(a, b)) }, !view)'
 
 := to_html \* t. (element : element t) : string =
     $'element.to_string(!element)'
@@ -117,7 +117,7 @@
                     "text-align", "center"
                 ]
             ] [
-                model |> sm'.obj_to_string |> text
+                model |> sm'::obj_to_string |> text
             ]
             button [
                 on_click Decr
@@ -135,7 +135,7 @@
     ?> failwith ("__assert_eq { actual = " ++# actual ++# "; expected = " ++# expected ++# " }")
 
 ///> gleam -t javascript -d lustre=\">=5.7.0\" gleam_json=\">=2.0.0\"
-test tests =
+:# tests =
     := model = init (dyn -3i32)
     := model = update 1i32 (model, Incr)
     := model = update 1i32 (model, Incr)
@@ -151,7 +151,7 @@ test tests =
     )
 
 ///> gleam -t javascript -d lustre=\">=5.7.0\" gleam_json=\">=2.0.0\"
-test tests_2 =
+:# tests_2 =
     := model = init (dyn 5i32)
     := model = update 2i32 (model, Decr)
     model

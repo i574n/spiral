@@ -231,7 +231,7 @@
 
 := real_program (packages : nb) (reals : nb) (body : string) : string * string =
     := wrapped, generated = cell.wrap body
-    ? generated = 1i32
+    ? cell.from_expression generated
     ?>
         := entry = text.replace wrapped "inl main () : i32 =" ("inl " ++ real_entry () ++ " () =")
         program packages NoNb NoNb ("inl main () : i32 =\n    inl _ = real " ++ real_entry () ++ " ()\n    0i32"),

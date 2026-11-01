@@ -1,6 +1,6 @@
 :< sm'_operators
 
-test otp_supervisor static =
+:# otp_supervisor static =
     :< testing
 
 := otp_supervisor_imports () =
@@ -43,7 +43,7 @@ test otp_supervisor static =
     otp_supervisor_imports ()
     $'static_supervisor.add(!spec, !worker)'
 
-:= start (spec : supervisor_builder) : otp_actor.start_result supervisor =
+:= start (spec : supervisor_builder) : otp_actor::start_result supervisor =
     otp_supervisor_imports ()
     $'static_supervisor.start(!spec)'
 
@@ -51,7 +51,7 @@ test otp_supervisor static =
     otp_supervisor_imports ()
     $'static_supervisor.supervised(!spec)'
 
-:= worker \* d. (run : () -> otp_actor.start_result d) : child d =
+:= worker \* d. (run : () -> otp_actor::start_result d) : child d =
     otp_supervisor_imports ()
     $'supervision.worker(fn() { !run(Nil) })'
 
@@ -73,17 +73,17 @@ test otp_supervisor static =
 
 := counting_worker () =
     worker \ () =>
-        otp_actor.new 0i32 |> otp_actor.on_message (\ total (_ : i32) => otp_actor.continue total) |> otp_actor.start
+        otp_actor::new 0i32 |> otp_actor::on_message (\ total (_ : i32) => otp_actor::continue total) |> otp_actor::start
 
 := restarting_worker () = counting_worker () |> with_restart Transient
 
 ///> gleam
-test supervisor_starts_a_worker =
+:# supervisor_starts_a_worker =
     new OneForOne
     |> restart_tolerance 3i32 5i32
     |> add (restarting_worker ())
     |> start
-    |> otp_actor.started_data
+    |> otp_actor::started_data
     |> \|
         | Some _ => !+
         | None => !-

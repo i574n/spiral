@@ -1,5 +1,5 @@
 ///- --package .
-test dictm static =
+:# dictm static =
     :< testing
 
 :< sm'_operators
@@ -19,15 +19,15 @@ test dictm static =
 
 :! dict k v = $'backend_switch `(dict_switch k v)'
 
-:= rust_new_rc \* k v. (m : mapm.b_tree_map k v) : dict k v = $'std::rc::Rc::new(!m)'
+:= rust_new_rc \* k v. (m : mapm::b_tree_map k v) : dict k v = $'std::rc::Rc::new(!m)'
 
-:= rust_owned \* k v. (d : dict k v) : mapm.b_tree_map k v = $'std::rc::Rc::unwrap_or_clone(!d)'
+:= rust_owned \* k v. (d : dict k v) : mapm::b_tree_map k v = $'std::rc::Rc::unwrap_or_clone(!d)'
 
 := empty \* k v. () : dict k v =
     dict_types ()
     backend_switch {
         Gleam = \ () => $'dict.new()' : dict k v
-        Rust = \ () => (mapm.new_b_tree_map () : mapm.b_tree_map k v) |> rust_new_rc
+        Rust = \ () => (mapm::new_b_tree_map () : mapm::b_tree_map k v) |> rust_new_rc
     }
 
 := insert \* k v. (key : k) (value : v) (d : dict k v) : dict k v =
@@ -36,8 +36,8 @@ test dictm static =
         Gleam = \ () => $'dict.insert(!d, !key, !value)' : dict k v
         Rust = \ () =>
             := m = rust_owned d
-            rust.to_mut m
-            ($'!m.insert(!key, !value)' : optionm'.option' v) |> ignore
+            rust::to_mut m
+            ($'!m.insert(!key, !value)' : optionm'::option' v) |> ignore
             rust_new_rc m
     }
 
@@ -47,8 +47,8 @@ test dictm static =
         Gleam = \ () => $'dict.delete(!d, !key)' : dict k v
         Rust = \ () =>
             := m = rust_owned d
-            rust.to_mut m
-            ($'!m.remove(&!key)' : optionm'.option' v) |> ignore
+            rust::to_mut m
+            ($'!m.remove(&!key)' : optionm'::option' v) |> ignore
             rust_new_rc m
     }
 
@@ -63,10 +63,10 @@ test dictm static =
     dict_types ()
     backend_switch {
         Gleam = \ () =>
-            ?= ($'dict.get(!d, !key)' : resultm.result' v ()) |> resultm.unbox ?|
+            ?= ($'dict.get(!d, !key)' : resultm::result' v ()) |> resultm::unbox ?|
             | Ok x => Some x
             | Error _ => None
-        Rust = \ () => ($'!d.get(&!key).cloned()' : optionm'.option' v) |> optionm'.unbox
+        Rust = \ () => ($'!d.get(&!key).cloned()' : optionm'::option' v) |> optionm'::unbox
     }
 
 := present \* k v. (key : k) (d : dict k v) : v =
@@ -78,30 +78,30 @@ test dictm static =
     dict_types ()
     backend_switch {
         Gleam = \ () => $'dict.size(!d)' : i32
-        Rust = \ () => ($'!d.len()' : convert.unativeint) |> convert.convert : i32
+        Rust = \ () => ($'!d.len()' : convert::unativeint) |> convert::convert : i32
     }
 
 := updated \* k v. (key : k) (fallback : v) (g : v -> v) (d : dict k v) : dict k v =
     insert key (g (?= find key d ?| Some x => x | None => fallback)) d
 
-:= gleam_sorted_keys \* k v. (d : dict k v) : listm'.list' k =
+:= gleam_sorted_keys \* k v. (d : dict k v) : listm'::list' k =
     global "@ external(erlang, \"lists\", \"sort\") fn dictm_term_sorted(items: List(a)) -> List(a)"
-    := unsorted : listm'.list' k = $'dict.keys(!d)'
-    $'dictm_term_sorted(!unsorted)' : listm'.list' k
+    := unsorted : listm'::list' k = $'dict.keys(!d)'
+    $'dictm_term_sorted(!unsorted)' : listm'::list' k
 
 := keys \* k v. (d : dict k v) : list k =
     dict_types ()
     backend_switch {
         Gleam = \ () =>
             global "import gleam/list"
-            gleam_sorted_keys d |> listm'.fold' id []
+            gleam_sorted_keys d |> listm'::fold' id []
         Rust = \ () =>
-            ($'!d.keys().cloned().collect::<Vec<_>>()' : am'.vec k)
-            |> am'.vec_fold' (\ (acc : list k) (key : k) => (key :: acc)) []
+            ($'!d.keys().cloned().collect::<Vec<_>>()' : am'::vec k)
+            |> am'::vec_fold' (\ (acc : list k) (key : k) => (key :: acc)) []
     }
 
 := fold \* k v a. (f : a -> k -> v -> a) (init : a) (d : dict k v) : a =
-    keys d |> listm.rev |> listm.fold (\ acc key => f acc key (present key d)) init
+    keys d |> listm::rev |> listm::fold (\ acc key => f acc key (present key d)) init
 
 /// ## set
 :! set k = dict k ()
@@ -130,7 +130,7 @@ test dictm static =
 
 ///> rust
 ///> gleam
-test dict_insert_find_remove =
+:# dict_insert_find_remove =
     := ~k = "a"
     := d = empty () |> insert k 1i32 |> insert "b" 2i32 |> insert k 3i32
     (find k d, find "c" d, size d, size (remove k d), has "b" (remove k d))
@@ -138,22 +138,22 @@ test dict_insert_find_remove =
 
 ///> rust
 ///> gleam
-test dict_fold_is_order_free =
+:# dict_fold_is_order_free =
     := ~n = 4i32
-    := d = listm.init n id |> listm.fold (\ d i => insert i (i * 10i32) d) (empty ())
+    := d = listm::init n id |> listm::fold (\ d i => insert i (i * 10i32) d) (empty ())
     fold (\ acc _ v => acc + v) 0i32 d |> _assert_eq 60i32
 
 ///> rust
 ///> gleam
-test set_add_drop =
+:# set_add_drop =
     := ~k = "x"
     := s = set_empty () |> set_add k |> set_add k |> set_add "y"
-    (set_size s, set_has k s, set_has k (set_drop k s), (listm.length (set_items s) : i32))
+    (set_size s, set_has k s, set_has k (set_drop k s), (listm::length (set_items s) : i32))
     |> _assert_eq (2i32, !+, !-, 2i32)
 
 ///> rust
 ///> gleam
-test an_old_version_survives_an_insert =
+:# an_old_version_survives_an_insert =
     := ~k = "a"
     := before = empty () |> insert k 1i32
     := after = before |> insert k 2i32
@@ -164,11 +164,11 @@ test an_old_version_survives_an_insert =
     | k :: _ => k
     | [] => ""
 
-:= dictm_last (l : list string) : string = listm.fold (\ _ s => s) "" l
+:= dictm_last (l : list string) : string = listm::fold (\ _ s => s) "" l
 
 ///> rust
 ///> gleam
-test keys_are_sorted_past_32_entries =
-    := d = listm.init 40i32 id |> listm.fold (\ acc i => insert (sm'.obj_to_string (1000i32 + i)) i acc) (empty ())
+:# keys_are_sorted_past_32_entries =
+    := d = listm::init 40i32 id |> listm::fold (\ acc i => insert (sm'::obj_to_string (1000i32 + i)) i acc) (empty ())
     := ks = keys d
-    ((listm.length ks : i32), dictm_first ks, dictm_last ks) |> _assert_eq (40i32, "1039", "1000")
+    ((listm::length ks : i32), dictm_first ks, dictm_last ks) |> _assert_eq (40i32, "1039", "1000")

@@ -1,5 +1,5 @@
 /// ## array_dim
-test array_dim static =
+:# array_dim static =
     :< testing
 
 :! a dim el = array_base el
@@ -18,7 +18,7 @@ test array_dim static =
 
 ///> c
 ///> rust
-test a_u64_indexed_array_round_trips =
+:# a_u64_indexed_array_round_trips =
     := ar : a u64 i32 = create 3u64
     set ar 0u64 7i32
     set ar 2u64 9i32

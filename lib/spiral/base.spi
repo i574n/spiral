@@ -1,4 +1,4 @@
-test base static =
+:# base static =
     :< testing
 
 /// ## base
@@ -37,7 +37,7 @@ test base static =
 ///> cuda
 ///> rust
 ///> typescript
-test run_target =
+:# run_target =
     run_target \|
         | Gleam => \ () => $'1 + 1'
         | Lua => \ () => $'1 + 1'
@@ -100,7 +100,7 @@ test run_target =
                 result <- fn () |> Some
                 computed <- !+
                 *result
-            |> optionm.value
+            |> optionm::value
         : () -> t
     backend_switch {
         Gleam = \ () => body ()
@@ -118,7 +118,7 @@ test run_target =
 ///> cuda
 ///> rust
 ///> typescript
-test memoize =
+:# memoize =
     := count = mut 0i32
     := add =
         \ () =>
@@ -171,7 +171,7 @@ test memoize =
         := acc = dyn acc
         ~~ body acc x
 
-test join_body static =
+:# join_body static =
     := ^ fold_list f s = \|
         | x :: x' => fold_list f (f s x) x'
         | [] => s
@@ -181,7 +181,7 @@ test join_body static =
 ///> cuda
 ///> rust
 ///> typescript
-test join_body_2 print_code =
+:# join_body_2 print_code =
     [ 5i32; 4; ~~ 3; 2; 1 ]
     |> fold_list (+) 0
     |> _assert_eq 15
@@ -190,7 +190,7 @@ test join_body_2 print_code =
 ///> cuda
 ///> rust
 ///> typescript
-test join_body_3 print_code =
+:# join_body_3 print_code =
     [ 5i32; 4; ~~ 3; 2; 1 ]
     |> fold_list (join_body (+)) 0
     |> _assert_eq 15
@@ -206,7 +206,7 @@ test join_body_3 print_code =
 ///> cuda
 ///> rust
 ///> typescript
-test join_body_unit print_code =
+:# join_body_unit print_code =
     [ 5i32; 4; ~~ 3; 2; 1 ]
     |> fold_list (\ acc n => join_body_unit ((+) acc) n n) 0
     |> _assert_eq 15
@@ -218,7 +218,7 @@ test join_body_unit print_code =
 ///> cuda
 ///> rust
 ///> typescript
-test join_body_unit_2 =
+:# join_body_unit_2 =
     ($'3' : i32) +. ($'-6' : i32)
     |> _assert_eq -3i32
 
@@ -229,7 +229,7 @@ test join_body_unit_2 =
 ///> cuda
 ///> rust
 ///> typescript
-test join_body_unit_3 =
+:# join_body_unit_3 =
     ($'3' : i32) -. ($'6' : i32)
     |> _assert_eq -3i32
 
@@ -240,7 +240,7 @@ test join_body_unit_3 =
 ///> cuda
 ///> rust
 ///> typescript
-test join_body_unit_4 =
+:# join_body_unit_4 =
     ($'3' : i32) *. ($'-1' : i32)
     |> _assert_eq -3i32
 
@@ -251,7 +251,7 @@ test join_body_unit_4 =
 ///> cuda
 ///> rust
 ///> typescript
-test join_body_unit_5 =
+:# join_body_unit_5 =
     ($'-3' : i32) /. ($'1' : i32)
     |> _assert_eq -3i32
 
@@ -277,7 +277,7 @@ test join_body_unit_5 =
 ///> cuda
 ///> rust
 ///> typescript
-test join_body_unit_6 =
+:# join_body_unit_6 =
     (($'-3' : i32) =. ($'-3' : i32))
     |> _assert_eq !+
 
@@ -303,7 +303,7 @@ test join_body_unit_6 =
 ///> cuda
 ///> rust
 ///> typescript
-test join_body_unit_7 =
+:# join_body_unit_7 =
     (($'-3' : i32) <>. ($'3' : i32))
     |> _assert_eq !+
 
@@ -317,7 +317,7 @@ test join_body_unit_7 =
 ///> cuda
 ///> rust
 ///> typescript
-test join_body_unit_8 =
+:# join_body_unit_8 =
     (($'-3' : i32) <>.. ($'3' : i32))
     |> _assert_eq !+
 
@@ -328,13 +328,13 @@ test join_body_unit_8 =
 
 :== pair_switch a b =
     {
-        Gleam : $'\#(`a, `b  )'
+        Gleam : $'##(`a, `b  )'
         Lua : $'(`a, `b)'
         Fsharp : $'(`a * `b)'
         Python : $'(`a, `b)'
         Rust : $'(`a, `b)'
         TypeScript : $'[`a, `b]'
-        Zig : $'\@Tuple(&.{ `a, `b })'
+        Zig : $'@@Tuple(&.{ `a, `b })'
     }
 :! pair a b = $'backend_switch `(pair_switch a b)'
 
@@ -345,14 +345,14 @@ test join_body_unit_8 =
 ///> cuda
 ///> rust
 ///> typescript
-test pair =
+:# pair =
     pair 1i32 2i32
     |> _assert_eq (1, 2)
 
 := new_pair \* a b. (a : a) (b : b) : pair a b =
     backend_switch {
         Gleam = \ () =>
-            $'\#(!a, !b )' : pair a b
+            $'##(!a, !b )' : pair a b
         Lua = \ () =>
             $'{!a, !b}' : pair a b
         Fsharp = \ () =>
@@ -381,7 +381,7 @@ test pair =
 ///> cuda
 ///> rust
 ///> typescript
-test from_pair =
+:# from_pair =
     new_pair "a" (new_pair 1i32 "b")
     |> from_pair
     |> \ a, b => a, ~~ from_pair b
@@ -392,7 +392,7 @@ test from_pair =
 ///> cuda
 ///> rust
 ///> typescript
-test from_pair_twice =
+:# from_pair_twice =
     := x, y = new_pair (dyn 1i32) (dyn "a") |> from_pair
     := z, w = new_pair (dyn 2i32) (dyn "b") |> from_pair
     (x, y, z, w) |> _assert_eq' (1i32, "a", 2i32, "b")
@@ -405,7 +405,7 @@ test from_pair_twice =
 ///> cuda
 ///> rust
 ///> typescript
-test from_pair_2 =
+:# from_pair_2 =
     (3i32, 2i32)
     ||> \ a b => a - b
     |> _assert_eq 1
@@ -414,7 +414,7 @@ test from_pair_2 =
 ///> cuda
 ///> rust
 ///> typescript
-test from_pair_3 =
+:# from_pair_3 =
     (1i32, 2i32)
     ||> flip pair
     |> _assert_eq (2, 1)
@@ -445,9 +445,9 @@ test from_pair_3 =
             | ~a * ~b => (defaultof `a ()), (defaultof `b ())
             | option ~u => None `u
             | ~t =>
-                ? real_core.union_type_is `t ?>
-                    real_core.union_untag `t 0
-                        (\ k => \* v. => real_core.nominal_create `t (k, ()))
+                ? real_core::union_type_is `t ?>
+                    real_core::union_untag `t 0
+                        (\ k => \* v. => real_core::nominal_create `t (k, ()))
                         (\ _ => failwith `t ($'"defaultof / invalid tag"' : string))
                 |: default ()
     backend_switch {
@@ -478,7 +478,7 @@ test from_pair_3 =
 
 ///> rust
 ///> gleam
-test defaultof =
+:# defaultof =
     ~> defaultof `string ()
     |> _assert_eq ""
 
@@ -660,7 +660,7 @@ test defaultof =
 ///> cuda
 ///> rust
 ///> typescript
-test try_catches_failures_and_keeps_values =
+:# try_catches_failures_and_keeps_values =
     := ~n = 5i32
     (try (\ () => n) (\ _ => None), try (\ () => failwith "boom" : i32) (\ _ => Some 0i32))
     |> _assert_eq (Some 5i32, Some 0i32)
@@ -668,11 +668,11 @@ test try_catches_failures_and_keeps_values =
 ///> cuda
 ///> rust
 ///> typescript
-test try no_agree "exception text is backend-specific" =
+:# try no_agree "exception text is backend-specific" =
     try
-        \ () => ;[ 0i32 ] |> am'.index 1i32 |> sm'.format
-        \ ex => $'!ex ' |> sm'.format_exception |> Some
-    |> optionm.value
+        \ () => ;[ 0i32 ] |> am'::index 1i32 |> sm'::format
+        \ ex => $'!ex ' |> sm'::format_exception |> Some
+    |> optionm::value
     |> _assert_eq (run_target \|
         | Gleam => \ () => null ()
         | Lua => \ () => null ()
@@ -688,11 +688,11 @@ test try no_agree "exception text is backend-specific" =
 ///> cuda
 ///> rust
 ///> typescript
-test try_2 =
+:# try_2 =
     try
-        \ () => ;[ 0i32 ] |> am'.index 0i32 |> sm'.format
-        \ ex => $'!ex ' |> sm'.format_exception |> Some
-    |> optionm.value
+        \ () => ;[ 0i32 ] |> am'::index 0i32 |> sm'::format
+        \ ex => $'!ex ' |> sm'::format_exception |> Some
+    |> optionm::value
     |> _assert_eq "0"
 
 := try_unit_fsharp_python () : bool =
@@ -853,25 +853,25 @@ test try_2 =
 :? (~:>) r : \* t. t -> r
 
 ///> gleam -d exception=">= 2.0.0 and < 3.0.0"
-test try_unit_rescues_a_failure_on_gleam =
+:# try_unit_rescues_a_failure_on_gleam =
     := hits = mut 0i32
     try_unit (\ () => failwith "boom") \ _ => hits <- *hits + 1i32
     *hits |> _assert_eq 1i32
 
 ///> gleam -d exception=">= 2.0.0 and < 3.0.0"
-test try_finally_cleans_up_on_gleam =
+:# try_finally_cleans_up_on_gleam =
     := cleaned = mut 0i32
     try_finally (\ () => ()) \ () => cleaned <- *cleaned + 1i32
     *cleaned |> _assert_eq 1i32
 
 ///> lua
-test try_unit_rescues_a_failure_on_lua =
+:# try_unit_rescues_a_failure_on_lua =
     := hits = mut 0i32
     try_unit (\ () => failwith "boom") \ _ => hits <- *hits + 1i32
     *hits |> _assert_eq 1i32
 
 ///> lua
-test try_finally_cleans_up_on_lua =
+:# try_finally_cleans_up_on_lua =
     := cleaned = mut 0i32
     try_finally (\ () => ()) \ () => cleaned <- *cleaned + 1i32
     *cleaned |> _assert_eq 1i32

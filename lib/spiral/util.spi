@@ -1,4 +1,4 @@
-test util static =
+:# util static =
     :< testing
 
 :| ^ ski =
@@ -16,7 +16,7 @@ test util static =
     | App (f, x) => App (eval f, x) |> eval
     | _ => ski
 
-test ski =
+:# ski =
     eval I
     |> _assert_eq I
 
@@ -28,7 +28,7 @@ test ski =
     |> eval
     |> _assert_eq I
 
-test ski_identity_nested =
+:# ski_identity_nested =
     App (App (I, I), I)
     |> eval
     |> _assert_eq I
@@ -37,7 +37,7 @@ test ski_identity_nested =
     |> eval
     |> _assert_eq I
 
-test ski_constant =
+:# ski_constant =
     eval K
     |> _assert_eq K
 
@@ -49,7 +49,7 @@ test ski_constant =
     |> eval
     |> _assert_eq (App (K, K))
 
-test ski_constant_applied =
+:# ski_constant_applied =
     App (App (K, I), K)
     |> eval
     |> _assert_eq I
@@ -62,7 +62,7 @@ test ski_constant_applied =
     |> eval
     |> _assert_eq S
 
-test ski_substitution =
+:# ski_substitution =
     eval S
     |> _assert_eq S
 
@@ -74,7 +74,7 @@ test ski_substitution =
     |> eval
     |> _assert_eq I
 
-test ski_substitution_nested =
+:# ski_substitution_nested =
     App (App (App (S, K), I), (App (App (K, I), S)))
     |> eval
     |> _assert_eq I
@@ -83,7 +83,7 @@ test ski_substitution_nested =
     |> eval
     |> _assert_eq S
 
-test ski_substitution_deep =
+:# ski_substitution_deep =
     App (App (App (S, K), I), K)
     |> eval
     |> _assert_eq K

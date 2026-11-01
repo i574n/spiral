@@ -1,95 +1,95 @@
-:< rust.rust_operators
+:< rust::rust_operators
 :< rust
 :< svg
 :< leptos
 
 :== props =
     {
-        data : optionm'.option' (leptos.arc_memo (am'.vec (i32 * (leptos.read_signal sm'.std_string))))
-        item : optionm'.option' (arc_memo (option string))
+        data : optionm'::option' (leptos::arc_memo (am'::vec (i32 * (leptos::read_signal sm'::std_string))))
+        item : optionm'::option' (arc_memo (option string))
         select : i32 * string -> ()
     }
 
 := props () : props =
     {
-        data = None |> optionm'.box
-        item = None |> optionm'.box
+        data = None |> optionm'::box
+        item = None |> optionm'::box
         select = \ _ => ()
     }
 
 := render props_fn : _ _ =
     := props : props = props () |> props_fn
 
-    accordion.render
+    accordion::render
         \ props' => { props' ?|
             title = \ () =>
-                props.item
-                |> optionm'.unbox
-                |> optionm.map leptos.signal_get
-                |> optionm'.flatten
-                |> optionm'.default_value "Select..."
+                props::item
+                |> optionm'::unbox
+                |> optionm::map leptos::signal_get
+                |> optionm'::flatten
+                |> optionm'::default_value "Select..."
             details_class = \ () => "[align-self:flex-start]"
             summary_class = \ () => "py-[4px]"
             open' = \ () => !-
         }
         \ () =>
-            leptos.div [
+            leptos::div [
                 $'"class=\\\"flex flex-1 flex-col p-[10px] gap-[7px] [border-left-width:1px] \
                     [border-bottom-width:1px] border-gray-200 bg-gray-100\\\""'
             ] \ () =>
                 := data =
-                    props.data
-                    |> optionm'.unbox
-                    |> optionm.map leptos.signal_get
-                    |> optionm'.default_value (;[] |> am'.base |> am'.to_vec)
-                ?= data |> am'.from_vec ?|
+                    props::data
+                    |> optionm'::unbox
+                    |> optionm::map leptos::signal_get
+                    |> optionm'::default_value (;[] |> am'::base |> am'::to_vec)
+                ?= data |> am'::from_vec ?|
                 | (array ;[] : array _) =>
                     "No data"
-                    |> error_label.render
-                    |> leptos.element_to_fragment
+                    |> error_label::render
+                    |> leptos::element_to_fragment
                 | _ =>
-                    ?= props.data |> optionm'.unbox ?|
+                    ?= props::data |> optionm'::unbox ?|
                     | Some data =>
-                        leptos.for
+                        leptos::for
                             data
                             \ i, _ => i
                             \ i, item =>
                                 := item =
                                     item
-                                    |> leptos.signal_get
+                                    |> leptos::signal_get
                                 := item' = ~~ item
                                 := on_click = \ () =>
-                                    := item = item |> sm'.from_std_string
-                                    props.select (i, item)
+                                    := item = item |> sm'::from_std_string
+                                    props::select (i, item)
                                 :>[
-                                    leptos.button [
+                                    leptos::button [
                                         $'"class=\\\"flex flex-1 gap-[10px] [align-items:center] \
                                             [justify-content:center] inline-block rounded border border-gray-400 \
                                             hover:bg-gray-100 px-[22px] py-1 text-sm text-gray-900 bg-gray-200 \
                                             hover:text-gray-600 focus:outline-none focus:ring \
                                             active:text-gray-500\\\""'
-                                        leptos.on_click on_click
+                                        leptos::on_click on_click
                                         $'"aria-label=!item'"'
                                     ] \ () =>
-                                        := item = item |> sm'.from_std_string
+                                        := item = item |> sm'::from_std_string
                                         :>[
-                                            leptos.reactive_view \ () =>
+                                            leptos::reactive_view \ () =>
                                                 ?=
                                                     item,
-                                                    props.item
-                                                    |> optionm'.unbox
-                                                    |> optionm.map leptos.signal_get
-                                                    |> optionm'.flatten
+                                                    props::item
+                                                    |> optionm'::unbox
+                                                    |> optionm::map leptos::signal_get
+                                                    |> optionm'::flatten
                                                 ?|
                                                 | item, Some account ?& item = account =>
-                                                    check.render (\ () => "h-5 w-5") []
-                                                    |> leptos.element_to_view
-                                                | _ => [] |> leptos.view_list_to_view
+                                                    check::render (\ () => "h-5 w-5") []
+                                                    |> leptos::element_to_view
+                                                | _ => [] |> leptos::view_list_to_view
 
                                             item
-                                            |> leptos.text_view
+                                            |> leptos::text_view
                                         ]
                                 ]
-                        |> leptos.view_to_fragment
-                    | None => [] |> leptos.view_list_to_fragment
-            |> leptos.element_to_fragment
+                        |> leptos::view_to_fragment
+                    | None => [] |> leptos::view_list_to_fragment
+            |> leptos::element_to_fragment

@@ -425,7 +425,7 @@
     | ByQuantifier x => x
     | ByPath x => x
 
-:= cp_at (s : string) (i : i32) : u32 = xml.code_point_at s i
+:= cp_at (s : string) (i : i32) : u32 = xml::code_point_at s i
 
 := is_digit (c : u32) : bool = 48u32 <= c && c <= 57u32
 
@@ -441,48 +441,48 @@
     | [] => !-
 
 :~ ^ name_end (s : string) (i : i32) : i32 =
-    ? i >= sm'.length s ?> i
-    |? is_name_char (cp_at s i) ?> name_end s (i + xml.code_point_width s i)
-    |? cp_at s i = 58u32 && i + 1i32 < sm'.length s && is_name_start (cp_at s (i + 1i32)) ?> name_end s (i + 1i32)
-    |? cp_at s i = 58u32 && i + 1i32 < sm'.length s && cp_at s (i + 1i32) = 42u32 ?> i + 2i32
+    ? i >= sm'::length s ?> i
+    |? is_name_char (cp_at s i) ?> name_end s (i + xml::code_point_width s i)
+    |? cp_at s i = 58u32 && i + 1i32 < sm'::length s && is_name_start (cp_at s (i + 1i32)) ?> name_end s (i + 1i32)
+    |? cp_at s i = 58u32 && i + 1i32 < sm'::length s && cp_at s (i + 1i32) = 42u32 ?> i + 2i32
     |: i
 
 :~ ^ digits_end (s : string) (i : i32) : i32 =
-    ? i < sm'.length s && is_digit (cp_at s i) ?> digits_end s (i + 1i32) |: i
+    ? i < sm'::length s && is_digit (cp_at s i) ?> digits_end s (i + 1i32) |: i
 
 :~ ^ text_end (s : string) (quote : u32) (i : i32) : i32 =
-    ? i >= sm'.length s ?> i
+    ? i >= sm'::length s ?> i
     |? cp_at s i = quote ?>
-        ? i + 1i32 < sm'.length s && cp_at s (i + 1i32) = quote ?> text_end s quote (i + 2i32) |: i
-    |: text_end s quote (i + xml.code_point_width s i)
+        ? i + 1i32 < sm'::length s && cp_at s (i + 1i32) = quote ?> text_end s quote (i + 2i32) |: i
+    |: text_end s quote (i + xml::code_point_width s i)
 
 := paired_symbols () : list string = "!=" :: "<=" :: ">=" :: "//" :: "::" :: ".." :: []
 
 :~ ^ tokens_from (s : string) (i : i32) (acc : list token) : list token =
-    ? i >= sm'.length s ?> listm.rev acc
+    ? i >= sm'::length s ?> listm::rev acc
     |:
         := c = cp_at s i
         ? c = 32u32 || c = 9u32 || c = 10u32 || c = 13u32 ?> tokens_from s (i + 1i32) acc
         |? c = 39u32 || c = 34u32 ?>
-            := quote = sm'.substring i 1i32 s
+            := quote = sm'::substring i 1i32 s
             := stop = text_end s c (i + 1i32)
-            := text = sm'.substring (i + 1i32) (stop - i - 1i32) s |> sm'.replace (quote ++# quote) quote
+            := text = sm'::substring (i + 1i32) (stop - i - 1i32) s |> sm'::replace (quote ++# quote) quote
             tokens_from s (stop + 1i32) (TText text :: acc)
-        |? is_digit c || (c = 46u32 && i + 1i32 < sm'.length s && is_digit (cp_at s (i + 1i32))) ?>
+        |? is_digit c || (c = 46u32 && i + 1i32 < sm'::length s && is_digit (cp_at s (i + 1i32))) ?>
             := whole = digits_end s i
-            := stop = ? whole < sm'.length s && cp_at s whole = 46u32 ?> digits_end s (whole + 1i32) |: whole
-            tokens_from s stop (TNumber (sm'.substring i (stop - i) s) :: acc)
+            := stop = ? whole < sm'::length s && cp_at s whole = 46u32 ?> digits_end s (whole + 1i32) |: whole
+            tokens_from s stop (TNumber (sm'::substring i (stop - i) s) :: acc)
         |? c = 36u32 ?>
             := stop = name_end s (i + 1i32)
-            tokens_from s stop (TVariable (sm'.substring (i + 1i32) (stop - i - 1i32) s) :: acc)
+            tokens_from s stop (TVariable (sm'::substring (i + 1i32) (stop - i - 1i32) s) :: acc)
         |? is_name_start c ?>
             := stop = name_end s i
-            tokens_from s stop (TName (sm'.substring i (stop - i) s) :: acc)
+            tokens_from s stop (TName (sm'::substring i (stop - i) s) :: acc)
         |:
-            := pair = ? i + 1i32 < sm'.length s ?> sm'.substring i 2i32 s |: ""
-            := width = xml.code_point_width s i
+            := pair = ? i + 1i32 < sm'::length s ?> sm'::substring i 2i32 s |: ""
+            := width = xml::code_point_width s i
             ? has_text pair (paired_symbols ()) ?> tokens_from s (i + 2i32) (TSymbol pair :: acc)
-            |: tokens_from s (i + width) (TSymbol (sm'.substring i width s) :: acc)
+            |: tokens_from s (i + width) (TSymbol (sm'::substring i width s) :: acc)
 
 := tokenize (s : string) : list token = tokens_from s 0i32 []
 
@@ -514,7 +514,7 @@
     |: "intersect except"
 
 := is_level_operator (level : i32) (x : string) : bool =
-    sm'.contains (" " ++# x ++# " ") (" " ++# level_operators level ++# " ")
+    sm'::contains (" " ++# x ++# " ") (" " ++# level_operators level ++# " ")
 
 := operator_at (level : i32) (tokens : list token) : option string =
     ?= tokens ?|
@@ -637,7 +637,7 @@
         := predicate, rest = parse_expr (after_first tokens)
         := predicate, rest = closed "]" predicate rest
         parse_predicates rest (predicate :: acc)
-    |: (listm.rev acc, tokens)
+    |: (listm::rev acc, tokens)
 :& :~ parse_primary (tokens : list token) : xpath * list token =
     ?= tokens ?|
     | TText text :: rest => XText text, rest
@@ -666,12 +666,12 @@
         XCall (function_of name, arguments), rest
     | _ => XInvalid "expected a primary expression", tokens
 :& :~ parse_arguments (tokens : list token) (acc : list xpath) : list xpath * list token =
-    ? is_symbol ")" tokens ?> (listm.rev acc, after_first tokens)
+    ? is_symbol ")" tokens ?> (listm::rev acc, after_first tokens)
     |:
         := argument, rest = parse_expr tokens
         ? is_symbol "," rest ?> parse_arguments (after_first rest) (argument :: acc)
-        |? is_symbol ")" rest ?> (listm.rev (argument :: acc), after_first rest)
-        |: (listm.rev (XInvalid "expected , or )" :: argument :: acc), rest)
+        |? is_symbol ")" rest ?> (listm::rev (argument :: acc), after_first rest)
+        |: (listm::rev (XInvalid "expected , or )" :: argument :: acc), rest)
 
 := parse (s : string) : xpath =
     := parsed, rest = parse_expr (tokenize s)
@@ -717,7 +717,7 @@
 :& :~ texts_of (items : list xpath) (acc : list string) : list string =
     ?= items ?|
     | item :: rest => texts_of rest (xpath_text item :: acc)
-    | [] => listm.rev acc
+    | [] => listm::rev acc
 
 :~ ^ node_count (counted : xpath -> bool) (x : xpath) : i32 =
     := own = ? counted x ?> 1i32 |: 0i32
@@ -745,9 +745,9 @@
 := member_count (x : xpath) : i32 = node_count (\| XMember _ => !+ | _ => !-) x
 
 :~ ^ spaced_words (s : string) (i : i32) (start : i32) (acc : list string) : list string =
-    ? i >= sm'.length s ?> listm.rev acc
+    ? i >= sm'::length s ?> listm::rev acc
     |? cp_at s i = 32u32 ?>
-        := acc = ? i > start && start > 0i32 ?> (sm'.substring start (i - start) s :: acc) |: acc
+        := acc = ? i > start && start > 0i32 ?> (sm'::substring start (i - start) s :: acc) |: acc
         spaced_words s (i + 1i32) (i + 1i32) acc
     |: spaced_words s (i + 1i32) start acc
 
@@ -782,7 +782,7 @@
     | [] => []
 
 ///> rust
-test parses_the_en16931_xpath_subset =
+:# parses_the_en16931_xpath_subset =
     := check (source : string) (expected : string) =
         := got = xpath_text (parse source)
         ? got <> expected ?> failwith (source ++# " parsed as " ++# got)
@@ -805,7 +805,7 @@ test parses_the_en16931_xpath_subset =
     check "following::node()/hr:Name" "(child::hr:Name (following::node() .))"
 
 ///> rust
-test reports_malformed_expressions =
+:# reports_malformed_expressions =
     ? invalid_count (parse "count(a") = 0i32 ?> failwith "an unclosed call is invalid"
     ? invalid_count (parse "a[b") = 0i32 ?> failwith "an unclosed predicate is invalid"
     ? invalid_count (parse "exists(a) b") = 0i32 ?> failwith "trailing tokens are invalid"
@@ -817,7 +817,7 @@ test reports_malformed_expressions =
     ? invalid_count (parse "for $x in a satisfies $x") = 0i32 ?> failwith "a for without return is invalid"
 
 ///> rust
-test lifts_code_lists_into_membership =
+:# lifts_code_lists_into_membership =
     := source = "contains(' C62 H87 KGM', concat(' ', normalize-space(@unitCode), ' '))"
     := expected = "(member (normalize-space (attribute::unitCode .)) C62 H87)"
     ? xpath_text (lift_code_lists (parse source)) <> expected ?> failwith "a padded contains is a member test"
@@ -825,7 +825,7 @@ test lifts_code_lists_into_membership =
     ? xpath_text (lift_code_lists (parse guard)) <> xpath_text (parse guard) ?> failwith "an unpadded contains stays"
 
 ///> rust
-test classifies_static_kinds =
+:# classifies_static_kinds =
     := kind_shown (source : string) : string =
         ?= kinded_of (parse source) ?|
         | KindBool _ => "bool"

@@ -1,4 +1,4 @@
-test math static =
+:# math static =
     :< testing
 
 /// ## math
@@ -9,43 +9,43 @@ test math static =
 := square x =
     x ** 2
 
-test square =
+:# square =
     5f64
     |> sqrt
     |> square
     |> _assert_approx_eq None 5
 
-test square_2 =
+:# square_2 =
     e () |> square
     |> _assert_approx_eq None 7.3890560989306495
 
-test square_3 =
+:# square_3 =
     2 * 2 / 0.4f64 |> sqrt
     |> _assert_approx_eq None 3.1622776601683795
 
-test square_4 =
+:# square_4 =
     2f64 / 3
     |> _assert_approx_eq None 0.6666666666666666
 
-test square_5 =
+:# square_5 =
     2f64 |> log
     |> _assert_approx_eq None 0.6931471805599453
 
-test square_6 =
+:# square_6 =
     pi
     |> _assert_approx_eq None 3.141592653589793f64
 
-test square_7 =
+:# square_7 =
     pi |> cos
     |> _assert_eq -1f64
 
-test square_8 =
+:# square_8 =
     pi
     |> cos
     |> \ n => n / 2f64
     |> _assert_approx_eq None -0.5
 
-test square_9 =
+:# square_9 =
     pi / 2 |> cos
     |> _assert_approx_eq None 0.00000000000000006123233995736766f64
 
@@ -83,7 +83,7 @@ test square_9 =
 ///> gleam
 ///> lua
 ///> cuda
-test atan2 =
+:# atan2 =
     0 |> atan2 1
     |> _assert_eq 1.5707963267948966
 
@@ -99,7 +99,7 @@ test atan2 =
             global "import math"
             $'math.floor(!n)' : t
         Rust = \ () => $'!n.floor()' : t
-        Zig = \ () => $'\@floor(!n)' : t
+        Zig = \ () => $'@@floor(!n)' : t
         Lean = \ () => $'(!n).floor' : t
         C = \ () =>
             global "#include <tgmath.h>"
@@ -118,7 +118,7 @@ test atan2 =
 ///> gleam
 ///> lua
 ///> cuda
-test floor =
+:# floor =
     0.6 |> floor
     |> _assert_eq 0f64
 
@@ -134,7 +134,7 @@ test floor =
             global "import math"
             n |> $'math.ceil' : t
         Rust = \ () => $'!n.ceil()' : t
-        Zig = \ () => $'\@ceil(!n)' : t
+        Zig = \ () => $'@@ceil(!n)' : t
         Lean = \ () => $'(!n).ceil' : t
         C = \ () =>
             global "#include <tgmath.h>"
@@ -153,7 +153,7 @@ test floor =
 ///> gleam
 ///> lua
 ///> cuda
-test ceil =
+:# ceil =
     0.6 |> ceil
     |> _assert_eq 1f64
 
@@ -187,7 +187,7 @@ test ceil =
 ///> gleam
 ///> lua
 ///> cuda
-test round =
+:# round =
     0.5 |> round
     |> _assert_eq 0f64
 
@@ -218,6 +218,6 @@ test round =
         Swift = \ () => log a / log new_base
     }
 
-test log_base =
+:# log_base =
     100 |> log_base 10
     |> _assert_eq 2

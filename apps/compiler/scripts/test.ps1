@@ -451,7 +451,7 @@ function Get-NativeSignature([string]$ScriptPath = $PSCommandPath) {
     $signature
 }
 $shimsByBackend = @{
-    TypeScript = @('run_main.mjs'); Lua = @('run_main.lua'); Python = @('run_main.py'); Cpp = @('cpp_native.py')
+    TypeScript = @('run_main.mjs'); Lua = @('run_main.lua'); Python = @(); Cpp = @()
     Gleam = @('gleam'); Kotlin = @('kotlin-server'); OpenQasm = @('openqasm-run'); Wgsl = @('wgsl-run')
     C = @('*.h'); Ebpf = @('*.h')
     Rust = @(); Delphi = @(); Zig = @(); Lean = @(); Bend = @(); Wasm = @(); Swift = @(); Calyx = @()
@@ -726,6 +726,7 @@ function Build-And-Run($job) {
             Copy-Item -LiteralPath $part.FullName $partFile -Force
             (Get-Item $partFile).LastWriteTime = Get-Date
         }
+        foreach ($ffi in Get-ChildItem -LiteralPath (Split-Path $job.Output) -File -Filter "${partStem}_ffi.*") { Copy-Item -LiteralPath $ffi.FullName (Join-Path $project "src/$($ffi.Name)") -Force }
         Copy-Item $job.Output $programFile -Force
         (Get-Item $programFile).LastWriteTime = Get-Date
         $build = Invoke-Native $tools.Gleam @('build', '--no-print-progress') $project 180
@@ -742,7 +743,7 @@ function Build-And-Run($job) {
         if (-not $tools.Python) { return 'no-toolchain' }
         $env:PYTHONDONTWRITEBYTECODE = '1'
         $env:SPIRAL_CUDA = '0'
-        $run = Invoke-Native $tools.Python @((Join-Path $shimDir 'run_main.py'), $job.Output) $binDir 30
+        $run = Invoke-Native $tools.Python @('-c', "import os,runpy,sys;p=os.path.abspath(sys.argv[1]);sys.path.insert(0,os.path.dirname(p));r=runpy.run_path(p,run_name='spiral_native')['main']();sys.stdout.flush();sys.exit(r if type(r) is int else 0)", $job.Output) $binDir 30
         $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
         $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
         return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
@@ -763,14 +764,19 @@ function Build-And-Run($job) {
             $b
         }
         'Cpp' {
-            if (-not $tools.Python) { return 'no-toolchain' }
             if (-not $env:SPIRAL_CXX) {
                 $mingwxx = Join-Path $HOME 'scoop/apps/mingw/current/bin/g++.exe'
                 if (Test-Path $mingwxx) { $env:SPIRAL_CXX = $mingwxx }
             }
-            $b = Invoke-Native $tools.Python @((Join-Path $shimDir 'cpp_native.py'), $job.Output, $exe) $dir 180
-            if ("$($b.Exit)" -eq '3') { return 'no-toolchain' }
-            $b
+            $cxx = if ($env:SPIRAL_CXX) { $env:SPIRAL_CXX } else { Get-Command g++, clang++ -CommandType Application -ErrorAction Ignore | Select-Object -First 1 -ExpandProperty Source }
+            if (-not $cxx) { return 'no-toolchain' }
+            $cu = [IO.Path]::ChangeExtension($job.Output, '.cu')
+            $cuda = (Test-Path $cu) -and [bool](@(Get-Content $cu | Select-Object -Skip 1) -match '\S')
+            $nvcc = if (-not $cuda) { $null } elseif ($env:SPIRAL_NVCC) { $env:SPIRAL_NVCC } else { Get-Command nvcc -CommandType Application -ErrorAction Ignore | Select-Object -First 1 -ExpandProperty Source }
+            if ($cuda -and -not $nvcc) { return 'no-toolchain' }
+            $cuBuild = if ($cuda) { Invoke-Native $nvcc @('-std=c++20', '-O2', '-arch=native', '-c', $cu, '-o', "$exe.cu.o") $dir 180 }
+            if ($cuBuild -and "$($cuBuild.Exit)" -ne '0') { $cuBuild }
+            else { Invoke-Native $cxx (@('-std=c++20', '-O2', '-w', $job.Output) + @(if ($cuda) { "$exe.cu.o" }) + @('-o', $exe) + @(if ($cuda) { '-lcudart' }) + @('-lm')) $dir 180 }
         }
     }
     if ($build.Exit -ne 0 -or -not (Test-Path $exe)) {
@@ -933,6 +939,8 @@ if ($Native) {
             $gleamModules[$module] = $gleamJobs[$i]
             Copy-Item -LiteralPath $gleamJobs[$i].Output (Join-Path $gleamBatch "src/$module.gleam")
         }
+        $gleamFfi = @($gleamJobs | ForEach-Object { Get-ChildItem -LiteralPath (Split-Path $_.Output) -File -Filter "$([IO.Path]::GetFileNameWithoutExtension($_.Output))_ffi.*" }) | Sort-Object Name -Unique
+        foreach ($ffi in $gleamFfi) { Copy-Item -LiteralPath $ffi.FullName (Join-Path $gleamBatch "src/$($ffi.Name)") -Force }
         $gleamFailures = @{}
         for ($round = 0; $round -le $gleamJobs.Count; $round++) {
             $gleamBuild = Invoke-Native $tools.Gleam @('build', '--no-print-progress') $gleamBatch 900

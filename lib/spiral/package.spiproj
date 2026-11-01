@@ -17,6 +17,8 @@ modules:
     array_dim
     seq
     math
+    keyed_rng
+    units
     mapm
     iter
     float_text

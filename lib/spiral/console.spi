@@ -1,4 +1,4 @@
-test console static =
+:# console static =
     :< testing
 
 /// ## fsharp
@@ -103,7 +103,7 @@ test console static =
     }
 
 ///> rust
-test write_error_line_writes_without_failing =
+:# write_error_line_writes_without_failing =
     write_error_line "console.write_error_line probe"
 
 /// ### read_to_end
@@ -115,8 +115,8 @@ test write_error_line_writes_without_failing =
     backend_switch {
         Rust = \ () =>
             := handle = $'std::io::stdin()' : stdin_handle
-            := read = $'std::io::read_to_string(!handle)' : resultm.result' sm'.std_string stdin_error
-            read |> resultm.unwrap_or' (sm'.to_std_string "") |> sm'.from_std_string
+            := read = $'std::io::read_to_string(!handle)' : resultm::result' sm'::std_string stdin_error
+            read |> resultm::unwrap_or' (sm'::to_std_string "") |> sm'::from_std_string
         Fsharp = \ () => $'System.Console.In.ReadToEnd ()' : string
         Python = \ () =>
             global "import sys"
@@ -124,8 +124,8 @@ test write_error_line_writes_without_failing =
     }
 
 ///> rust
-test read_to_end_types_without_reading =
-    := far = sm'.length "x" > 1i32
+:# read_to_end_types_without_reading =
+    := far = sm'::length "x" > 1i32
     ? far ?> read_to_end () |> ignore |: ()
 
 := write_c \* t. (x : t) : () =
@@ -174,7 +174,7 @@ test read_to_end_types_without_reading =
 
 ///> rust
 ///> zig
-test write_and_write_line_print_without_failing =
+:# write_and_write_line_print_without_failing =
     write "a"
     write_line "b"
 

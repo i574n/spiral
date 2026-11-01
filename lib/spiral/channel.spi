@@ -1,6 +1,6 @@
 :< sm'_operators
 
-test channel static =
+:# channel static =
     :< testing
 
 /// ## channel
@@ -22,11 +22,11 @@ test channel static =
 
 :! rust_sent t = $'Result<(), std::sync::mpsc::SendError<`t>>'
 
-:= gleam_subject_of_sender \* t. (to : sender t) : erlang_process.subject t =
-    $'!to' : erlang_process.subject t
+:= gleam_subject_of_sender \* t. (to : sender t) : erlang_process::subject t =
+    $'!to' : erlang_process::subject t
 
-:= gleam_subject_of_receiver \* t. (from : receiver t) : erlang_process.subject t =
-    $'!from' : erlang_process.subject t
+:= gleam_subject_of_receiver \* t. (from : receiver t) : erlang_process::subject t =
+    $'!from' : erlang_process::subject t
 
 := rust_recv_timeout \* t. (from : receiver t) (ms : u64) : rust_waited t =
     $'!from.recv_timeout(std::time::Duration::from_millis(!ms))' : rust_waited t
@@ -38,7 +38,7 @@ test channel static =
     $'!waited.unwrap()' : t
 
 := gleam_channel \* t. () : sender t * receiver t =
-    := subject : erlang_process.subject t = erlang_process.new_subject ()
+    := subject : erlang_process::subject t = erlang_process::new_subject ()
     := to : sender t = $'!subject'
     := from : receiver t = $'!subject'
     to, from
@@ -51,18 +51,18 @@ test channel static =
 
 := send \* t. (to : sender t) (message : t) : () =
     backend_switch {
-        Gleam = \ () => erlang_process.send (gleam_subject_of_sender to) message
+        Gleam = \ () => erlang_process::send (gleam_subject_of_sender to) message
         Rust = \ () => ($'!to.send(!message)' : rust_sent t) |> ignore
     }
 
-:== receipt t = erlang_process.receipt t
+:== receipt t = erlang_process::receipt t
 
 := rust_receive_within \* t. (from : receiver t) (ms : i32) : receipt t =
     := waited = rust_recv_timeout from (conv ms)
-    ? rust_waited_ok waited ?> erlang_process.Got (rust_waited_value waited) |: erlang_process.TimedOut
+    ? rust_waited_ok waited ?> erlang_process::Got (rust_waited_value waited) |: erlang_process::TimedOut
 
 := gleam_receive_within \* t. (from : receiver t) (ms : i32) : receipt t =
-    erlang_process.receive_within (gleam_subject_of_receiver from) ms
+    erlang_process::receive_within (gleam_subject_of_receiver from) ms
 
 := receive_within \* t. (from : receiver t) (timeout_ms : i32) : receipt t =
     backend_switch {
@@ -71,11 +71,11 @@ test channel static =
     }
 
 := receipt_within \* t. (from : receiver t) (timeout_ms : i32) : option t =
-    receive_within from timeout_ms |> erlang_process.receipt_value
+    receive_within from timeout_ms |> erlang_process::receipt_value
 
 ///> rust
 ///> gleam
-test a_sent_message_is_received_and_an_empty_channel_times_out =
+:# a_sent_message_is_received_and_an_empty_channel_times_out =
     := to, from = channel ()
     send to 42i32
     := got = receipt_within from 1000i32
@@ -84,13 +84,13 @@ test a_sent_message_is_received_and_an_empty_channel_times_out =
 
 := spawn (work : () -> ()) : () =
     backend_switch {
-        Gleam = \ () => erlang_process.spawn work |> ignore
-        Rust = \ () => work |> threading.spawn (1, 0) 1 |> ignore
+        Gleam = \ () => erlang_process::spawn work |> ignore
+        Rust = \ () => work |> threading::spawn (1, 0) 1 |> ignore
     }
 
 ///> rust
 ///> gleam
-test a_spawned_worker_sends_across_threads =
+:# a_spawned_worker_sends_across_threads =
     := to, from = channel ()
     spawn \ () => send to 7i32
-    receive_within from 2000i32 |> erlang_process.receipt_value |> _assert_eq (Some 7i32)
+    receive_within from 2000i32 |> erlang_process::receipt_value |> _assert_eq (Some 7i32)

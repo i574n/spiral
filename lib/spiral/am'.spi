@@ -1,4 +1,4 @@
-test am static =
+:# am static =
     :< testing
 
 :< rust
@@ -32,7 +32,7 @@ test am static =
     ar |> array |> length
 
 ///> rust
-test base_wrappers_round_trip =
+:# base_wrappers_round_trip =
     := a : array_base i32 = create_base 3i32
     set_base a 1i32 7i32
     (;[ length_base a; index_base 1i32 a ]) |> _assert_eq (;[ 3i32; 7i32 ])
@@ -54,23 +54,23 @@ test base_wrappers_round_trip =
         루프 0
 
 /// ### equable
-:+ append array t = arraym.append
+:+ append array t = arraym::append
 
-test append =
+:# append =
     ()
 
 := map_base \* t u. (fn : t -> u) (x : array_base t) : array_base u =
     array x
-    |> arraym.map fn
+    |> arraym::map fn
     |> \ (array x : array _) => x
 
 := collect \* t r. (fn : t -> array r) (items : array t) : array r =
     items
-    |> arraym.map fn
-    |> arraym.fold (++) (;[])
+    |> arraym::map fn
+    |> arraym::fold (++) (;[])
 
 := init_base n fn : array_base _ =
-    arraym.init n fn
+    arraym::init n fn
     |> \ (array x : array _) => x
 
 := init n : array_base _ =
@@ -78,17 +78,17 @@ test append =
 
 := choose f l =
     (l, [])
-    ||> arraym.foldBack \ x acc =>
+    ||> arraym::foldBack \ x acc =>
         ?= f x ?|
         | Some y => y :: acc
         | None => acc
-    |> arraym.fromList
+    |> arraym::fromList
 
 ///> fsharp
 ///> cuda
 ///> typescript
 ///> cuda
-test choose =
+:# choose =
     10
     |> init
     |> \ x => array x : array _
@@ -96,12 +96,12 @@ test choose =
     |> _assert_eq (;[ 0; 2; 4; 6; 8 ])
 
 := sum a =
-    a |> arraym.fold (+) 0
+    a |> arraym::fold (+) 0
 
 ///> cuda
 ///> rust
 ///> typescript
-test sum =
+:# sum =
     10
     |> init
     |> \ x => array x : array _
@@ -110,13 +110,13 @@ test sum =
 
 := init_series start end inc : array_base _ =
     := total = conv ((end - start) / inc) + 1
-    arraym.init total (conv >> (*) inc >> (+) start)
+    arraym::init total (conv >> (*) inc >> (+) start)
     |> \ (array x : array _) => x
 
 ///> cuda
 ///> rust
 ///> typescript
-test init_series =
+:# init_series =
     init_series 0i32 6 2
     |> array
     |> \ x => x : array _
@@ -136,7 +136,7 @@ test init_series =
 ///> cuda
 ///> rust
 ///> typescript
-test last =
+:# last =
     10
     |> init
     |> \ x => array x : array _
@@ -145,7 +145,7 @@ test last =
 
 := try_pick \* t u. (fn : t -> option u) (array : array t) : option u =
     (array, None)
-    ||> arraym.foldBack \ x acc =>
+    ||> arraym::foldBack \ x acc =>
         ?= acc ?|
         | Some _ => acc
         | None => x |> fn
@@ -154,7 +154,7 @@ test last =
 ///> cuda
 ///> typescript
 ///> cuda
-test try_pick =
+:# try_pick =
     10
     |> init
     |> \ x => array x : array _
@@ -163,7 +163,7 @@ test try_pick =
 
 := indexed \* t u {number}. (ar : array_base t) : array_base (u * t) =
     ((0, ;[]), (array ar : array _))
-    ||> arraym.fold \ (i, acc) x =>
+    ||> arraym::fold \ (i, acc) x =>
         i + 1, acc ++ ;[i, x]
     |> snd
     |> \ (array x : array _) => x
@@ -171,20 +171,20 @@ test try_pick =
 ///> rust
 ///> typescript
 ///> cuda
-test indexed =
-    arraym.init 3i32 ((*) 2)
+:# indexed =
+    arraym::init 3i32 ((*) 2)
     |> \ (array x : array _) => x
     |> indexed
     |> _assert_eq' (base ;[0i32, 0; 1, 2; 2, 4])
 
 := slice \* el. from nearTo s : array el =
-    arraym.slice { from nearTo } s
+    arraym::slice { from nearTo } s
 
 ///> fsharp
 ///> cuda
 ///> rust
 ///> typescript
-test slice =
+:# slice =
     := x : array _ = ;[ 1i32; 2; 3 ]
     x |> slice 0 0 |> _assert_eq (;[])
     x |> slice 0 1 |> _assert_eq (;[ 1 ])
@@ -206,12 +206,12 @@ test slice =
             start, fn len
         | End start_fn, End end_fn =>
             start_fn len, end_fn len
-    s |> slice (start |> convert.unbox) (end |> convert.unbox)
+    s |> slice (start |> convert::unbox) (end |> convert::unbox)
 
 /// ## rust
 :! vec t =
     `(
-        rust.rust_type
+        rust::rust_type
             `($'Vec<`t>')
             `($'Vec<`t>')
             "type Vec<'T> = class end"
@@ -271,7 +271,7 @@ test slice =
 
 := vec_sort_by_key \* el t. (fn : el -> t) (vec : vec el) : vec el =
     := vec = ~~ vec
-    := fn = rust.one_param_fn fn
+    := fn = rust::one_param_fn fn
     := fn = ~~ fn
     (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
     (!\($'"true; !vec.sort_by_key(|x| !fn(x.clone()))"') : bool) |> ignore
@@ -285,17 +285,17 @@ test slice =
     !\($'"!vec"')
 
 := vec_mapi \* dim t u. (fn : dim -> t -> u) (ar : vec t) : vec u =
-    := fn i = rust.one_param_fn (fn i)
+    := fn i = rust::one_param_fn (fn i)
     := fn = ~~ fn
     := ar = ~~ ar
     !\($'"!ar.iter().enumerate().map(|(i, x)| !fn(i.try_into().unwrap())(x.clone())).collect::<Vec<_>>()"')
 
 := vec_map \* t u. (fn : t -> u) (ar : vec t) : vec u =
-    := fn = rust.one_param_fn fn
+    := fn = rust::one_param_fn fn
     !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
 
 := vec_map' \* t u. (fn : t -> u) (ar : vec t) : vec u =
-    := fn = rust.one_param_fn fn
+    := fn = rust::one_param_fn fn
     !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
 
 := vec_fold' \* t u. (fn : u -> t -> u) (init : u) (ar : vec t) : u =
@@ -322,12 +322,12 @@ test slice =
     (!\($'"true; }); //"') : bool) |> ignore
 
 := vec_filter \* t. (fn : t -> bool) (ar : vec t) : vec t =
-    := fn = rust.one_param_fn fn
+    := fn = rust::one_param_fn fn
     !\\((ar, fn), $'"$0.iter().filter(|x| $1((*x).clone())).cloned().collect::<Vec<_>>()"')
 
-:= vec_len \* t. (vec : vec t) : convert.unativeint =
+:= vec_len \* t. (vec : vec t) : convert::unativeint =
     backend_switch {
-        Rust = \ () => $'((!vec).len() as usize)' : convert.unativeint
+        Rust = \ () => $'((!vec).len() as usize)' : convert::unativeint
     }
 
 := vec_chunks \* t. (n : i32) (vec : vec t) : vec (vec t) =
@@ -335,7 +335,7 @@ test slice =
 
 :! slice t =
     `(
-        rust.rust_type
+        rust::rust_type
             `($'Slice<`t>')
             `($'[`t]')
             "type Slice<'T> = class end"
@@ -356,13 +356,13 @@ test slice =
     }
 :! slice' el dim =
     `(
-        rust.fsharp_global "type Slice'<'T> = class end"
+        rust::fsharp_global "type Slice'<'T> = class end"
         $'' : $'backend_switch `(slice'_switch el)'
     )
 
 :! slice'' el dim =
     `(
-        rust.rust_type
+        rust::rust_type
             `($'Slice\'_<`el>')
             `($'[`el; 10]')
             "type Slice'_<'T> = class end"
@@ -374,31 +374,31 @@ test slice =
     | None =>
         !\($'"[\\\"\\\".to_string()]"') : slice' el dim
 
-:= slice_length \* t dim. (x : slice' t dim) : convert.unativeint =
+:= slice_length \* t dim. (x : slice' t dim) : convert::unativeint =
     !\($'"!x.len()"')
 
 := slice_range \* t dim.
-    (start : range t) (end : range t) (s : slice' t dim) : rust.ref (slice' t dim)
+    (start : range t) (end : range t) (s : slice' t dim) : rust::ref (slice' t dim)
     =
     := len () =
         s |> slice_length
-    := start, (end : convert.unativeint) =
+    := start, (end : convert::unativeint) =
         ?= start, end ?|
-        | Start start, End fn => start, (len >> convert.convert) |> fn |> convert.convert
+        | Start start, End fn => start, (len >> convert::convert) |> fn |> convert::convert
         | End start_fn, End end_fn =>
-            (len >> convert.convert) |> start_fn, (len >> convert.convert) |> end_fn |> convert.convert
+            (len >> convert::convert) |> start_fn, (len >> convert::convert) |> end_fn |> convert::convert
     ?= start, end ?|
-    | start, end ?& end |> convert.unbox =. len () => !\($'"&!s[!start..]"')
+    | start, end ?& end |> convert::unbox =. len () => !\($'"&!s[!start..]"')
     | start, end => !\\((start, end), $'"&!s[$0..$1]"')
 
 := new_slice \* el dim. (el : el) : slice' el dim =
     !\\(el, $'"[$0; @dim as usize]"')
 
-:= as_slice \* t. (x : array_base t) : rust.ref (slice t) =
+:= as_slice \* t. (x : array_base t) : rust::ref (slice t) =
     := x = x |> to_vec
     !\($'"!x.as_slice()"')
 
-:= slice_to_vec \* t. (slice : rust.ref (slice t)) : vec t =
+:= slice_to_vec \* t. (slice : rust::ref (slice t)) : vec t =
     !\\(slice, $'"$0.iter().map(|x| *x).collect::<Vec<_>>()"')
 
 := to_le_bytes \* t. (x : t) : slice' u8 8 =
@@ -406,9 +406,9 @@ test slice =
         Rust = \ () => $'(!x).to_le_bytes().to_vec()' : slice' u8 8
     }
 
-:= as_bytes \* t. (x : t) : rust.ref (slice u8) =
+:= as_bytes \* t. (x : t) : rust::ref (slice u8) =
     backend_switch {
-        Rust = \ () => $'(!x).as_bytes()' : rust.ref (slice u8)
+        Rust = \ () => $'(!x).as_bytes()' : rust::ref (slice u8)
     }
 
 := any \* t. (fn : t -> bool) (source : array_base t) : bool =
@@ -421,7 +421,7 @@ test slice =
 
 ///> rust
 ///> typescript
-test any =
+:# any =
     := source = init 5
     (source |> any (\ x => x = 3), source |> any (\ x => x > 10)) |> _assert_eq (!+, !-)
 
@@ -434,44 +434,44 @@ test any =
 
 := new_vec \* t. (items : list t) : vec t =
     backend_switch {
-        Rust = \ () => items |> listm.fold (\ v x => vec_push x v) ($'Vec::new()' : vec t)
+        Rust = \ () => items |> listm::fold (\ v x => vec_push x v) ($'Vec::new()' : vec t)
     }
 
 ///> rust
-test new_vec =
+:# new_vec =
     [ 0i32; 1 ]
     |> new_vec
-    |> sm'.format_debug'
-    |> sm'.from_std_string
+    |> sm'::format_debug'
+    |> sm'::from_std_string
     |> _assert_eq "[0, 1]"
 
 ///> rust
-test new_vec_keeps_a_list_built_at_runtime =
+:# new_vec_keeps_a_list_built_at_runtime =
     :~ ^ build (n : i32) (acc : list i32) : list i32 = ? n <= 0i32 ?> acc |: build (n - 1i32) (n :: acc)
     := ~count = 3i32
-    build count [] |> new_vec |> vec_len |> convert.i32 |> _assert_eq 3i32
+    build count [] |> new_vec |> vec_len |> convert::i32 |> _assert_eq 3i32
 
 /// ## fsharp
 := average \* el {number}. (a : array el) : el =
     run_target \|
         | Fsharp => \ () => $'!a |> Array.average' : el
-        | _ => \ () => arraym.fold (+) 0 a / conv (length a)
+        | _ => \ () => arraym::fold (+) 0 a / conv (length a)
 
 ///> rust
-test average_divides_the_sum_by_the_count =
+:# average_divides_the_sum_by_the_count =
     ;[ 1.0f64; 2.0f64; 4.5f64 ] |> average |> _assert_eq 2.5f64
 
 := distinct \* el. (a : array el) : array el =
     ? is_rust () ?>
         := a = $'!a ' : array el
         := r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : array el
-        loop.for' { from = 0; nearTo = length a } \ i =>
+        loop::for' { from = 0; nearTo = length a } \ i =>
             := x = index i a
             := n = length r
             := s = mut { j = 0 }
-            loop.while' (\ () => s.j < n && index s.j r <> x) \ () =>
-                s <- { j = s.j + 1 }
-            ? s.j = n ?> $'!r.borrow_mut().push(!x)' : ()
+            loop::while' (\ () => s::j < n && index s::j r <> x) \ () =>
+                s <- { j = s::j + 1 }
+            ? s::j = n ?> $'!r.borrow_mut().push(!x)' : ()
         $'!r ' : array el
     |: $'!a |> Array.distinct'
 
@@ -489,7 +489,7 @@ test average_divides_the_sum_by_the_count =
     run_target \|
         | Rust => fun () => $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as \
             usize).cloned().collect::<Vec<_>>()))' : array el
-        | Zig => \ () => $'(spiral_gpa.dupe(`el, (!a)[\@intCast(!n)..]) catch \@panic("out of memory"))' : array el
+        | Zig => \ () => $'(spiral_gpa.dupe(`el, (!a)[@@intCast(!n)..]) catch @@panic("out of memory"))' : array el
         | _ => \ () => $'!a |> Array.skip !n '
 
 := skip_while \* el. (fn : el -> bool) (a : array el) : array el =
@@ -497,57 +497,57 @@ test average_divides_the_sum_by_the_count =
     ?> $'Rc::new(RefCell::new((!a).borrow().iter().skip_while(|x| (!fn)((*x).clone())).cloned().collect::<Vec<_>>()))'
     |: $'!a |> Array.skipWhile !fn '
 
-:= to_list_base' \* t. (items : array_base t) : listm'.list' t =
+:= to_list_base' \* t. (items : array_base t) : listm'::list' t =
     backend_switch {
-        Gleam = \ () => $'!items |> spiral_array_to_list' : listm'.list' t
+        Gleam = \ () => $'!items |> spiral_array_to_list' : listm'::list' t
         Lua = \ () =>
             := len = $'##(!items)' : i32
-            := r : array t = arraym.init len \ i =>
+            := r : array t = arraym::init len \ i =>
                 := at = i + 1i32
                 $'!items[!at]' : t
             := (array r) = r
-            $'!r ' : listm'.list' t
-        Fsharp = \ () => $'!items |> Array.toList' : listm'.list' t
-        Python = \ () => $'list(!items)' : listm'.list' t
-        Rust = \ () => $'Rc::new((!items).borrow().clone())' : listm'.list' t
-        TypeScript = \ () => $'[...!items]' : listm'.list' t
-        Zig = \ () => $'!items ' : listm'.list' t
+            $'!r ' : listm'::list' t
+        Fsharp = \ () => $'!items |> Array.toList' : listm'::list' t
+        Python = \ () => $'list(!items)' : listm'::list' t
+        Rust = \ () => $'Rc::new((!items).borrow().clone())' : listm'::list' t
+        TypeScript = \ () => $'[...!items]' : listm'::list' t
+        Zig = \ () => $'!items ' : listm'::list' t
     }
 
-:= to_list' \* t. (items : array t) : listm'.list' t =
+:= to_list' \* t. (items : array t) : listm'::list' t =
     items |> base |> to_list_base'
 
 ///> cuda
 ///> rust
 ///> typescript
-test to_list =
+:# to_list =
     ;[ -3i32; 6 ]
     |> to_list'
-    |> listm'.unbox
+    |> listm'::unbox
     |> _assert_eq [ -3; 6 ]
 
 ///> lua
 ///> python
 ///> rust
 ///> typescript
-test to_list_snapshots_the_array =
+:# to_list_snapshots_the_array =
     := source = ;[ 1i32; 2i32; 3i32 ]
     := snapshot = to_list' source
     set source 0i32 9i32
-    snapshot |> listm'.unbox |> _assert_eq [ 1i32; 2i32; 3i32 ]
+    snapshot |> listm'::unbox |> _assert_eq [ 1i32; 2i32; 3i32 ]
 
 := vec_collect fn vec =
-    ((;[] |> base |> to_vec), ((vec |> from_vec : array _) |> to_list' |> listm'.unbox))
-    ||> listm.fold \ acc x =>
+    ((;[] |> base |> to_vec), ((vec |> from_vec : array _) |> to_list' |> listm'::unbox))
+    ||> listm::fold \ acc x =>
         acc |> vec_extend (fn x)
 
 := vec_collect_option vec =
-    ((;[] |> base |> to_vec |> Ok), ((vec |> from_vec : array _) |> arraym.toList))
-    ||> listm.fold \ acc x =>
+    ((;[] |> base |> to_vec |> Ok), ((vec |> from_vec : array _) |> arraym::toList))
+    ||> listm::fold \ acc x =>
         x
-        |> resultm.unbox
+        |> resultm::unbox
         |> \ x =>
-            ?= acc, x |> resultm.map optionm'.unbox ?|
+            ?= acc, x |> resultm::map optionm'::unbox ?|
             | Ok acc, Ok (Some x) => acc |> vec_extend x |> Ok
             | _, Error error => error |> Error
             | _ => acc
@@ -561,40 +561,40 @@ test to_list_snapshots_the_array =
 := parallel_map \* el el'. (fn : el -> el') (a : array el) : array el' =
     run_target \|
         | Fsharp => \ () => $'!a |> Array.Parallel.map !fn ' : array el'
-        | _ => \ () => arraym.map fn a
+        | _ => \ () => arraym::map fn a
 
 := map' \* el el'. (fn : el -> el') (a : array el) : array el' =
     run_target \|
         | Fsharp => \ () => $'!a |> Array.map !fn ' : array el'
-        | _ => \ () => arraym.map fn a
+        | _ => \ () => arraym::map fn a
 
 := sort_by \* el key. (fn : el -> key) (a : array el) : array el =
     := fsharp () = $'!a |> Array.sortBy !fn ' : array el
     := insertion_sort () =
-        := r = arraym.map id ($'!a ' : array el)
-        := keys = arraym.map fn ($'!a ' : array el)
-        loop.for' { from = 1; nearTo = length r } \ i =>
+        := r = arraym::map id ($'!a ' : array el)
+        := keys = arraym::map fn ($'!a ' : array el)
+        loop::for' { from = 1; nearTo = length r } \ i =>
             := x = index i r
             := k = index i keys
             := s = mut { j = i }
-            loop.while' (\ () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) \ () =>
-                := j = s.j
+            loop::while' (\ () => s::j > 0 && gt_is (comp (index (s::j - 1) keys) k)) \ () =>
+                := j = s::j
                 set r j (index (j - 1) r)
                 set keys j (index (j - 1) keys)
                 s <- { j = j - 1 }
-            set r s.j x
-            set keys s.j k
+            set r s::j x
+            set keys s::j k
         $'!r ' : array el
     backend_switch {
         Gleam = \ () => fsharp ()
         Lua = insertion_sort
         Fsharp = \ () => fsharp ()
         Python = \ () =>
-            := keys = arraym.map fn ($'!a ' : array el)
+            := keys = arraym::map fn ($'!a ' : array el)
             $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, "tag") else \
                 __k)(!keys[__i]))]' : array el
         TypeScript = \ () =>
-            := keys = arraym.map fn ($'!a ' : array el)
+            := keys = arraym::map fn ($'!a ' : array el)
             global (
                 "function spiral_compare(a: any, b: any): number { if (typeof a === 'object' && a !== null && "
                 ^^ "typeof b === 'object' && b !== null) { if (Array.isArray(a)) { for (let i = 0; i < "
@@ -613,21 +613,21 @@ test to_list_snapshots_the_array =
         Lean = insertion_sort
         Rust = \ () =>
             := a = $'!a ' : array el
-            := key_fn = ~~ (rust.one_param_fn fn)
+            := key_fn = ~~ (rust::one_param_fn fn)
             := r = $'Rc::new(RefCell::new(!a.borrow().clone()))' : array el
             := keys =
                 $'Rc::new(RefCell::new(!a.borrow().iter().map(|x| !key_fn(x.clone())).collect::<Vec<_>>()))' : array key
-            loop.for' { from = 1; nearTo = length a } \ i =>
+            loop::for' { from = 1; nearTo = length a } \ i =>
                 := x = index i r
                 := k = index i keys
                 := s = mut { j = i }
-                loop.while' (\ () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) \ () =>
-                    := j = s.j
+                loop::while' (\ () => s::j > 0 && gt_is (comp (index (s::j - 1) keys) k)) \ () =>
+                    := j = s::j
                     set r j (index (j - 1) r)
                     set keys j (index (j - 1) keys)
                     s <- { j = j - 1 }
-                set r s.j x
-                set keys s.j k
+                set r s::j x
+                set keys s::j k
             $'!r ' : array el
     }
 
@@ -642,13 +642,13 @@ test to_list_snapshots_the_array =
         | _ => \ () =>
             := ascending = sort a
             := n = length ascending
-            arraym.init n \ i => index (n - 1 - i) ascending
+            arraym::init n \ i => index (n - 1 - i) ascending
 
 ///> rust
 ///> python
 ///> typescript
 ///> lua
-test sort_orders_on_every_backend =
+:# sort_orders_on_every_backend =
     := a = ;[ 3i32; 1i32; 2i32 ]
     := ascending = sort a
     ? index 0 ascending <> 1i32 || index 2 ascending <> 3i32 ?> failwith "ascending"
@@ -662,14 +662,14 @@ test sort_orders_on_every_backend =
             := rows : array (array_base el) = array a
             := height : int = length rows
             := width : int = ? height = 0 ?> 0 |: length (array (index 0 rows) : array el)
-            arraym.init width (\ (c : int) =>
-                arraym.init height \ (r : int) => index c (array (index r rows) : array el)
+            arraym::init width (\ (c : int) =>
+                arraym::init height \ (r : int) => index c (array (index r rows) : array el)
                 |> \ (array column : array el) => column
             )
             |> \ (array result : array (array_base el)) => result
 
 ///> rust
-test transpose_swaps_rows_and_columns =
+:# transpose_swaps_rows_and_columns =
     := row = \ (cells : array i32) => cells |> \ (array x : array i32) => x
     := rows : array (array_base i32) = ;[ row ;[ 1i32; 2i32; 3i32 ]; row ;[ 4i32; 5i32; 6i32 ] ]
     := flipped : array (array_base i32) = array (rows |> \ (array x : array (array_base i32)) => x |> transpose)
@@ -677,7 +677,7 @@ test transpose_swaps_rows_and_columns =
     (length flipped, index 0 last, index 1 last) |> _assert_eq (3, 3i32, 6i32)
 
 := try_item \* el. (i : i32) (a : array el) : option el =
-    := fsharp () : option el = $'!a |> Array.tryItem !i ' |> optionm'.unbox
+    := fsharp () : option el = $'!a |> Array.tryItem !i ' |> optionm'::unbox
     := in_bounds_item () : option el =
         := a = $'!a ' : array el
         ? i >= 0 && i < length a ?> Some (index i a) |: None
@@ -698,7 +698,7 @@ test transpose_swaps_rows_and_columns =
 
 ///> rust
 ///> zig
-test try_item_is_none_out_of_bounds =
+:# try_item_is_none_out_of_bounds =
     := a = ;[ 10i32; 20i32 ]
     := code (i : i32) : i32 = ?= try_item i a ?| | Some x => x | None => -1i32
     [ code (-1i32); code 0i32; code 1i32; code 2i32 ] |> _assert_eq [ -1i32; 10i32; 20i32; -1i32 ]

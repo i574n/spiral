@@ -1,21 +1,21 @@
-:< rust.rust_operators
+:< rust::rust_operators
 :< rust
 :< svg
 :< leptos
 
 := render label (loading' : () -> bool) (on_click : () -> ()) =
-    leptos.button [
+    leptos::button [
         $'"class=\\\"flex gap-[10px] [align-items:center] inline-block rounded border border-gray-400 \
             hover:bg-gray-400 px-4 py-1 text-sm font-medium text-gray-900 bg-transparent hover:text-gray-600 \
             focus:outline-none focus:ring active:text-gray-500\\\""'
-        leptos.attr_fn "prop:disabled" loading'
-        leptos.on_click on_click
+        leptos::attr_fn "prop:disabled" loading'
+        leptos::on_click on_click
     ] \ () =>
         :>[
-            label |> leptos.text_view
+            label |> leptos::text_view
 
-            leptos.reactive_view \ () =>
+            leptos::reactive_view \ () =>
                 ? loading' ()
-                ?> loading.render (\ () => "[width:15px] [height:14px]") |> leptos.element_to_view
-                |: [] |> leptos.view_list_to_view
+                ?> loading::render (\ () => "[width:15px] [height:14px]") |> leptos::element_to_view
+                |: [] |> leptos::view_list_to_view
         ]

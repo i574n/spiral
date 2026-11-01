@@ -59,13 +59,14 @@ function Get-InterpretedRuns([string] $sample) {
     }
     $py = Join-Path $source 'main.py'
     if ($tools.Python -and (Test-Path $py)) {
-        [pscustomobject]@{ Backend = 'Python'; Program = $tools.Python; Arguments = @((Join-Path $shimDir 'run_main.py'), $py); Directory = $source; PathPrefix = $null; Environment = @{ PYTHONDONTWRITEBYTECODE = '1'; SPIRAL_CUDA = '0' } }
+        [pscustomobject]@{ Backend = 'Python'; Program = $tools.Python; Arguments = @('-c', "import os,runpy,sys;p=os.path.abspath(sys.argv[1]);sys.path.insert(0,os.path.dirname(p));r=runpy.run_path(p,run_name='spiral_native')['main']();sys.stdout.flush();sys.exit(r if type(r) is int else 0)", $py); Directory = $source; PathPrefix = $null; Environment = @{ PYTHONDONTWRITEBYTECODE = '1'; SPIRAL_CUDA = '0' } }
     }
     $gleamSource = Join-Path $source 'main.gleam'
     if ($tools.Gleam -and $tools.Erl -and (Test-Path $gleamSource)) {
         $project = Join-Path (Get-SpiralCacheDir) 'bench-gleam'
         if (-not (Test-Path (Join-Path $project 'gleam.toml'))) { Copy-Item (Join-Path $shimDir 'gleam') $project -Recurse -Force }
         Copy-Item $gleamSource (Join-Path $project 'src/main.gleam') -Force
+        foreach ($ffi in Get-ChildItem -LiteralPath $source -File -Filter 'main_ffi.*') { Copy-Item -LiteralPath $ffi.FullName (Join-Path $project "src/$($ffi.Name)") -Force }
         $erlBin = Split-Path $tools.Erl
         $buildInfo = [Diagnostics.ProcessStartInfo]::new($tools.Gleam)
         foreach ($argument in 'build', '--no-print-progress') { $buildInfo.ArgumentList.Add($argument) }

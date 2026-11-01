@@ -1,4 +1,4 @@
-test resultm static =
+:# resultm static =
     :< testing
 
 :< rust
@@ -30,7 +30,7 @@ test resultm static =
     backend_switch {
         Lua = \ () =>
             := caught (ex : exn) : option (result t exn) = Some (Error (ex_fn \ () => ex))
-            try (\ () => Ok (fn ()) : result t exn) caught |> optionm.value
+            try (\ () => Ok (fn ()) : result t exn) caught |> optionm::value
         Fsharp = \ () =>
             ~~ $'try !fn () |> !ok with ex -> (fun () -> ex) |> !ex_fn |> !error ' : result t exn
         Python = \ () =>
@@ -50,7 +50,7 @@ test resultm static =
 ///> fsharp
 ///> cuda
 ///> typescript
-test from_try_keeps_values_and_catches_failures =
+:# from_try_keeps_values_and_catches_failures =
     := settled (r : result i32 exn) : i32 =
         ?= r ?|
         | Ok x => x
@@ -78,7 +78,7 @@ test from_try_keeps_values_and_catches_failures =
     $'Rc::<str>::from(format\!("{}{}", !prefix, (&SpiralDebug(&!x)).show()))' : string
 
 ///> rust
-test rust_debug_message_shows_debug_values =
+:# rust_debug_message_shows_debug_values =
     (rust_debug_message "x: " 5i32, rust_debug_message "s: " "a")
     |> _assert_eq ("x: 5", "s: \"a\"")
 
@@ -113,14 +113,14 @@ test rust_debug_message_shows_debug_values =
 := collect_list \* t e. (items : list (result t e)) : result (list t) e =
     :~ ^ collected (items : list (result t e)) (acc : list t) : result (list t) e =
         ?= items ?|
-        | [] => Ok (listm.rev acc)
+        | [] => Ok (listm::rev acc)
         | Error e :: _ => Error e
         | Ok x :: rest => collected rest (x :: acc)
     collected items []
 
 ///> rust
 ///> gleam
-test collect_list_keeps_order_and_stops_at_the_first_error =
+:# collect_list_keeps_order_and_stops_at_the_first_error =
     := ~bad = "bad"
     (collect_list ([ Ok 1i32; Ok 2 ] : list (result i32 string)), collect_list [ Ok 1i32; Error bad; Error "later" ])
     |> _assert_eq (Ok [ 1i32; 2 ], Error "bad")
@@ -215,7 +215,7 @@ test collect_list_keeps_order_and_stops_at_the_first_error =
     }
 
 := result'_error_text \* e. (prefix : string) (e : e) : string =
-    $'(std.fmt.allocPrint(spiral_gpa, "{s}{any}", .{ !prefix, !e }) catch \@panic("out of memory"))'
+    $'(std.fmt.allocPrint(spiral_gpa, "{s}{any}", .{ !prefix, !e }) catch @@panic("out of memory"))'
 
 := unbox \* t u. (x : result' t u) : result t u =
     ? result'_union ()
@@ -270,7 +270,7 @@ test collect_list_keeps_order_and_stops_at_the_first_error =
 ///> cuda
 ///> rust
 ///> typescript
-test map =
+:# map =
     := x : _ _ string = Ok 3i32
     := y : _ i32 _ = Error "error1"
     := x' = x |> box |> unbox
@@ -280,7 +280,7 @@ test map =
 /// ## rust
 :! anyhow_result t =
     `(
-        rust.rust_type
+        rust::rust_type
             `($'anyhow_Result<`t>')
             `($'anyhow::Result<`t>')
             "type anyhow_Result<'T> = class end"
@@ -288,7 +288,7 @@ test map =
 
 :! anyhow_error =
     `(
-        rust.rust_type
+        rust::rust_type
             `($'anyhow_Error')
             `($'anyhow::Error')
             "type anyhow_Error = class end"
@@ -320,7 +320,7 @@ test map =
     ?> (!\\(x, $'"true; $0?"') : bool) |> \ _ => $''
     |: !\\(x, $'"$0?"')
 
-:= to_try \* t u. (x : result' t u) : rust.try t =
+:= to_try \* t u. (x : result' t u) : rust::try t =
     !\\(x, $'"$0"')
 
 := unwrap' \* t u. (x : result' t u) : t =
@@ -406,9 +406,9 @@ test map =
     ?> source |> unbox |> map_error fn |> box
     |: !\\((source, fn), $'"$0.map_err(|x| $1(x))"')
 
-:= option_ok_or \* t e. (e : e) (source : optionm'.option' t) : result' t e =
+:= option_ok_or \* t e. (e : e) (source : optionm'::option' t) : result' t e =
     ? result'_union ()
-    ?> source |> optionm'.unbox |> from_option_error e |> box
+    ?> source |> optionm'::unbox |> from_option_error e |> box
     |: !\\(source, $'"$0.ok_or(!e)"')
 
 := unwrap_or_else \* t e u. (fn : e -> u) (source : result' t e) : u =
@@ -422,10 +422,10 @@ test map =
     (!\\(fn2 !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
     !\($'"_result_map_or_else"')
 
-:= as_ref \* t e. (source : result' t e) : result' (rust.ref t) (rust.ref e) =
+:= as_ref \* t e. (source : result' t e) : result' (rust::ref t) (rust::ref e) =
     !\($'"!source.as_ref()"')
 
-:= as_ref' \* t e. (source : rust.ref (result' t e)) : result' (rust.ref t) (rust.ref e) =
+:= as_ref' \* t e. (source : rust::ref (result' t e)) : result' (rust::ref t) (rust::ref e) =
     !\($'"!source.as_ref()"')
 
 := unwrap_or' \* t u. (default : t) (x : result' t u) : t =
@@ -435,7 +435,7 @@ test map =
         | Error _ => default
     |: !\\((x, default), $'"$0.unwrap_or($1)"')
 
-:= expect \* t u. (error : rust.ref string) (x : result' t u) : t =
+:= expect \* t u. (error : rust::ref string) (x : result' t u) : t =
     !\($'"!x.expect(&!error)"')
 
 := is_err \* t u. (x : result' t u) : bool =
@@ -446,10 +446,10 @@ test map =
         | Ok _ => !-
         | Error _ => !+
 
-:= ok' \* t. (x : result' t _) : optionm'.option' t =
+:= ok' \* t. (x : result' t _) : optionm'::option' t =
     ? is_rust ()
     ?> !\\(x, $'"$0.ok()"')
-    |: x |> unbox |> ok |> optionm'.box
+    |: x |> unbox |> ok |> optionm'::box
 
 := err \* t u. (x : u) : result' t u =
     ? is_rust ()
@@ -461,24 +461,24 @@ test map =
     ?> !\\(x, $'"Ok($0)"')
     |: (Ok x : result t u) |> box
 
-:= transpose \* t u. (x : optionm'.option' (result' t u)) : result' (optionm'.option' t) u =
+:= transpose \* t u. (x : optionm'::option' (result' t u)) : result' (optionm'::option' t) u =
     ? result'_union () ?>
-        := r : result (optionm'.option' t) u =
-            ?= optionm'.unbox x ?|
+        := r : result (optionm'::option' t) u =
+            ?= optionm'::unbox x ?|
             | Some x =>
                 ?= unbox x ?|
-                | Ok x => Ok (optionm'.some' x)
+                | Ok x => Ok (optionm'::some' x)
                 | Error e => Error e
-            | None => Ok (optionm'.none' ())
+            | None => Ok (optionm'::none' ())
         box r
     |: !\\(x, $'"$0.transpose()"')
 
-:= rc_try_unwrap \* t. (x : rust.rc t) : result' t (rust.rc t) =
+:= rc_try_unwrap \* t. (x : rust::rc t) : result' t (rust::rc t) =
     !\\(x, $'"std::rc::Rc::try_unwrap($0)"')
 
 ///> rust
-test rc_try_unwrap =
-    rust.new_rc !+
+:# rc_try_unwrap =
+    rust::new_rc !+
     |> rc_try_unwrap
     |> unbox
     |> _assert_eq (Ok !+)
@@ -492,7 +492,7 @@ test rc_try_unwrap =
 
 ///> rust
 ///> gleam
-test bind_chains_until_the_first_error =
+:# bind_chains_until_the_first_error =
     := ~n = 8i32
     (Ok n |> bind resultm_halved |> bind resultm_halved, Ok 6i32 |> bind resultm_halved |> bind resultm_halved)
     |> _assert_eq (Ok 2i32, Error "odd")

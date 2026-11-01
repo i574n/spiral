@@ -6,31 +6,31 @@
 
 :== failure = { id : rule_id; severity : severity; path : list i32; detail : string }
 
-:= context_query (source : string) : xpath.xpath =
-    := trimmed = sm'.trim source
-    xpath.lift_code_lists (xpath.parse (? sm'.starts_with "/" trimmed ?> trimmed |: "//(" ++# trimmed ++# ")"))
+:= context_query (source : string) : xpath::xpath =
+    := trimmed = sm'::trim source
+    xpath::lift_code_lists (xpath::parse (? sm'::starts_with "/" trimmed ?> trimmed |: "//(" ++# trimmed ++# ")"))
 
 :~ ^ without_fired (items : list located) (fired : list located) (acc : list located) : list located =
     ?= items ?|
     | item :: rest => without_fired rest fired (? has_located item fired ?> acc |: item :: acc)
-    | [] => listm.rev acc
+    | [] => listm::rev acc
 
 :~ ^ bound (s : scope) (lets : list binding) : scope =
     ?= lets ?|
-    | b :: rest => bound { s ?| variables = ((b.name, eval s b.value) :: s.variables) } rest
+    | b :: rest => bound { s ?| variables = ((b::name, eval s b::value) :: s::variables) } rest
     | [] => s
 
 :~ ^ check_assertions (s : scope) (assertions : list assertion) (acc : list failure) : list failure =
     ?= assertions ?|
     | a :: rest =>
         := acc =
-            ?= test_outcome s a.test ?|
+            ?= test_outcome s a::test ?|
             | Broken reason =>
-                { id = a.id; severity = a.severity; path = s.context.path; detail = "error: " ++# reason } :: acc
+                { id = a::id; severity = a::severity; path = s::context::path; detail = "error: " ++# reason } :: acc
             | Evaluated holds =>
-                := fires = ?= a.kind ?| Asserts => holds = !- | Reports => holds
+                := fires = ?= a::kind ?| Asserts => holds = !- | Reports => holds
                 ? fires
-                ?> { id = a.id; severity = a.severity; path = s.context.path; detail = "" } :: acc
+                ?> { id = a::id; severity = a::severity; path = s::context::path; detail = "" } :: acc
                 |: acc
         check_assertions s rest acc
     | [] => acc
@@ -49,12 +49,12 @@
 :~ ^ check_rules (s : scope) (rules : list rule) (fired : list located) (acc : list failure) : list failure =
     ?= rules ?|
     | r :: rest =>
-        ?= eval s (context_query r.context_source) ?|
+        ?= eval s (context_query r::context_source) ?|
         | VNodes found =>
             := contexts = without_fired found fired []
-            check_rules s rest (listm.append fired contexts) (check_contexts s contexts r.lets r.assertions acc)
+            check_rules s rest (listm::append fired contexts) (check_contexts s contexts r::lets r::assertions acc)
         | VError reason =>
-            := detail = r.context_source ++# ": " ++# reason
+            := detail = r::context_source ++# ": " ++# reason
             := failure = { id = rule_id "context"; severity = Fatal; path = []; detail = detail }
             check_rules s rest fired (failure :: acc)
         | _ => check_rules s rest fired acc
@@ -62,27 +62,27 @@
 
 :~ ^ check_patterns (s : scope) (patterns : list pattern) (acc : list failure) : list failure =
     ?= patterns ?|
-    | p :: rest => check_patterns s rest (check_rules (bound s p.lets) p.rules [] acc)
-    | [] => listm.rev acc
+    | p :: rest => check_patterns s rest (check_rules (bound s p::lets) p::rules [] acc)
+    | [] => listm::rev acc
 
 :~ ^ is_bound (name : string) (lets : list binding) : bool =
     ?= lets ?|
-    | b :: rest => ? b.name = name ?> true |: is_bound name rest
-    | [] => false
+    | b :: rest => ? b::name = name ?> !+ |: is_bound name rest
+    | [] => !-
 
 :~ ^ unseen (lets : list binding) (acc : list binding) : list binding =
     ?= lets ?|
-    | b :: rest => unseen rest (? is_bound b.name acc ?> acc |: b :: acc)
+    | b :: rest => unseen rest (? is_bound b::name acc ?> acc |: b :: acc)
     | [] => acc
 
 :~ ^ shared_lets (patterns : list pattern) (acc : list binding) : list binding =
     ?= patterns ?|
-    | p :: rest => shared_lets rest (unseen p.lets acc)
-    | [] => listm.rev acc
+    | p :: rest => shared_lets rest (unseen p::lets acc)
+    | [] => listm::rev acc
 
 := validate_on (today : string) (patterns : list pattern) (document : xml_node) : list failure =
     := root = document_root document
-    := namespaces = listm.concat (listm.map (\ (p : pattern) => p.namespaces) patterns)
+    := namespaces = listm::concat (listm::map (\ (p : pattern) => p::namespaces) patterns)
     := start = { context = root; current = root; root = root; variables = []; today = today; namespaces = namespaces }
     := shared = bound start (shared_lets patterns [])
     check_patterns shared patterns []
@@ -91,13 +91,13 @@
 
 :~ ^ fatal_count (failures : list failure) (acc : i32) : i32 =
     ?= failures ?|
-    | f :: rest => fatal_count rest (?= f.severity ?| Fatal => acc + 1i32 | _ => acc)
+    | f :: rest => fatal_count rest (?= f::severity ?| Fatal => acc + 1i32 | _ => acc)
     | [] => acc
 
 ///- --timeout 900000
 
 ///> rust
-test fires_the_first_matching_rule_per_pattern =
+:# fires_the_first_matching_rule_per_pattern =
     := rules =
         "<schema><pattern id=\"p\">"
         ++# (
@@ -110,14 +110,14 @@ test fires_the_first_matching_rule_per_pattern =
     ?= read_xml document ?|
     | root :: [] =>
         := failures = validate (read_schematron rules) root
-        ? listm.length failures <> 2i32 ?> failwith "the zero charge and the line without amount fail, nothing else"
+        ? listm::length failures <> 2i32 ?> failwith "the zero charge and the line without amount fail, nothing else"
         ? fatal_count failures 0i32 <> 2i32 ?> failwith "both are fatal"
     | _ => failwith "one document"
 
 ///- --timeout 900000
 
 ///> rust
-test current_is_each_rule_context_node =
+:# current_is_each_rule_context_node =
     := rules =
         "<schema><pattern id=\"p\"><rule context=\"line\">"
         ++# "<assert id=\"U\" flag=\"fatal\" test=\"not(../(* except current())[@code = current()/@code])\">"
@@ -126,13 +126,13 @@ test current_is_each_rule_context_node =
     ?= read_xml document ?|
     | root :: [] =>
         := failures = validate (read_schematron rules) root
-        ? listm.length failures <> 2i32 ?> failwith "the two lines sharing code a fail, the line with code b holds"
+        ? listm::length failures <> 2i32 ?> failwith "the two lines sharing code a fail, the line with code b holds"
     | _ => failwith "one document"
 
 ///- --timeout 900000
 
 ///> rust
-test compiled_rules_match_names_by_namespace =
+:# compiled_rules_match_names_by_namespace =
     := xsl =
         "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns:cbc=\"urn:cbc\" version=\"3.0\">"
         ++# "<xsl:template match=\"cbc:Reference\" priority=\"1000\" mode=\"M1\">"
@@ -143,14 +143,14 @@ test compiled_rules_match_names_by_namespace =
     ?= read_xml document ?|
     | root :: [] =>
         := failures = validate (read_compiled_schematron xsl) root
-        ? listm.length failures <> 1i32
+        ? listm::length failures <> 1i32
         ?> failwith "only the urn:cbc Reference is a cbc:Reference; both ds:Reference stay out"
     | _ => failwith "one document"
 
 ///- --timeout 900000
 
 ///> rust
-test lets_and_includes_assemble_the_schema =
+:# lets_and_includes_assemble_the_schema =
     := rules =
         "<schema><let name=\"limit\" value=\"3\"/><pattern id=\"p\"><let name=\"floor\" value=\"0\"/>"
         ++# "<rule context=\"line\"><let name=\"a\" value=\"number(amount)\"/>"
@@ -161,23 +161,23 @@ test lets_and_includes_assemble_the_schema =
     ?= read_xml document ?|
     | root :: [] =>
         := failures = validate (read_schematron rules) root
-        ? listm.length failures <> 2i32 ?> failwith "the amounts outside the let-bound range fail, the one inside holds"
+        ? listm::length failures <> 2i32 ?> failwith "the amounts outside the let-bound range fail, the one inside holds"
         := main = "<schema><include href=\"part/rules.sch\"/></schema>"
         := part =
             "<?xml version=\"1.0\"?><pattern id=\"q\"><rule context=\"line\">"
             ++# "<assert id=\"A\" flag=\"fatal\" test=\"exists(amount)\">amount</assert></rule></pattern>"
         := load path = ? path = "dir/main.sch" ?> Some main |? path = "dir/part/rules.sch" ?> Some part |: None
         := resolved = read_schematron_resolved load "dir/main.sch"
-        ? listm.length resolved <> 1i32 ?> failwith "the include brings in its pattern-rooted fragment"
-        ? listm.length (read_schematron main) <> 0i32 ?> failwith "the plain reader leaves the include unresolved"
-        ? listm.length (read_schematron_resolved load "dir/part/rules.sch") <> 1i32
+        ? listm::length resolved <> 1i32 ?> failwith "the include brings in its pattern-rooted fragment"
+        ? listm::length (read_schematron main) <> 0i32 ?> failwith "the plain reader leaves the include unresolved"
+        ? listm::length (read_schematron_resolved load "dir/part/rules.sch") <> 1i32
         ?> failwith "a fragment reads alone"
         := unflagged =
             "<schema><pattern><rule context=\"line\"><assert test=\"exists(amount)\">a</assert></rule>"
             ++# "</pattern></schema>"
         ?= read_xml "<doc><line/></doc>" ?|
         | bare :: [] =>
-            ? listm.length (validate resolved bare) <> 1i32
+            ? listm::length (validate resolved bare) <> 1i32
             ?> failwith "the included rule checks the line without amount"
             ? fatal_count (validate (read_schematron unflagged) bare) 0i32 <> 0i32
             ?> failwith "an unflagged assert defaults to information"
@@ -189,7 +189,7 @@ test lets_and_includes_assemble_the_schema =
 ///- --timeout 900000
 
 ///> rust
-test pattern_lets_reach_every_pattern =
+:# pattern_lets_reach_every_pattern =
     := kind_in (id : string) =
         "<assert id=\"" ++# id ++# "\" flag=\"fatal\" test=\"contains($kinds, concat(',', @kind, ','))\">k</assert>"
     := rules =
@@ -200,6 +200,6 @@ test pattern_lets_reach_every_pattern =
     ?= read_xml "<doc><line kind=\"A\"/><line kind=\"C\"/></doc>" ?|
     | root :: [] =>
         := failures = validate (read_schematron rules) root
-        ? listm.length failures <> 2i32 ?> failwith "the shared list rejects C, the pattern's own list rejects A"
-        listm.iter (\ (f : failure) => ? f.detail <> "" ?> failwith ("no unbound variable: " ++# f.detail)) failures
+        ? listm::length failures <> 2i32 ?> failwith "the shared list rejects C, the pattern's own list rejects A"
+        listm::iter (\ (f : failure) => ? f::detail <> "" ?> failwith ("no unbound variable: " ++# f::detail)) failures
     | _ => failwith "one document"

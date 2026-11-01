@@ -1,4 +1,4 @@
-:< rust.rust_operators
+:< rust::rust_operators
 :< rust
 :< sm'_operators
 
@@ -161,22 +161,22 @@
     $'leptos::logging::log\!("{:?}", !text)'
 
 := log_pretty (text : string) : () =
-    $'leptos::logging::log\!("{:\#?}", !text)'
+    $'leptos::logging::log\!("{:##?}", !text)'
 
 := log_format fn obj =
-    := text = #?*obj |> fn |> sm'.ellipsis_end 200
+    := text = #?*obj |> fn |> sm'::ellipsis_end 200
     text |> log
     obj
 
 := mount_to_body (view_fn : () -> view) : () =
     $'{ leptos::prelude::mount_to_body(move || (!view_fn)()); }'
 
-:= view_vec_to_fragment (view : am'.vec view) : fragment =
+:= view_vec_to_fragment (view : am'::vec view) : fragment =
     !\\(view, $'"leptos::prelude::Fragment::new($0)"')
 
 := view_list_to_fragment (view : list view) : fragment =
     view
-    |> am'.new_vec
+    |> am'::new_vec
     |> view_vec_to_fragment
 
 := element_to_view (view : view' (html_element _)) : view =
@@ -200,11 +200,11 @@
         ?: t ?|
         | array_base (view' (html_element ~el)) =>
             := x = array x
-            := x = arraym.toList `array `(view' (html_element el)) x
-            := x = listm.map `(view' (html_element el)) `view (element_to_view `el) x
+            := x = arraym::toList `array `(view' (html_element el)) x
+            := x = listm::map `(view' (html_element el)) `view (element_to_view `el) x
             view_list_to_fragment x
         | list (view' (html_element ~el)) =>
-            := x = listm.map `(view' (html_element el)) `view (element_to_view `el) x
+            := x = listm::map `(view' (html_element el)) `view (element_to_view `el) x
             view_list_to_fragment x
         | list view =>
             view_list_to_fragment x
@@ -217,16 +217,16 @@
         | view' (html_element _) => element_to_view x
         | _ => x
 
-:= vec_to_view (views : am'.vec view) : view =
+:= vec_to_view (views : am'::vec view) : view =
     !\\(views, $'"leptos::prelude::IntoAny::into_any($0)"')
 
 := view_list_to_view (views : list view) : view =
     views
-    |> am'.new_vec
+    |> am'::new_vec
     |> vec_to_view
 
 := text_to_view (text : string) : view =
-    := text = text |> sm'.to_std_string
+    := text = text |> sm'::to_std_string
     !\\(text, $'"leptos::prelude::IntoAny::into_any(leptos::prelude::IntoView::into_view($0))"')
 
 := text_to_fragment (text : string) : fragment =
@@ -264,7 +264,7 @@
     := x = x |> send_wrapper_new
     $'leptos::context::provide_context(!x)'
 
-:= use_context \* t. () : optionm'.option' t =
+:= use_context \* t. () : optionm'::option' t =
     $'leptos::context::use_context::<leptos::__reexports::send_wrapper::SendWrapper<`t>>().map(|x| (*x).clone())'
 
 := create_signal \* t. (value : t) : read_signal t * write_signal t =
@@ -397,15 +397,15 @@
         &**x))).spiral_memo_changed())'
 
 := new_arc_local_resource \* t.
-    (fetcher : () -> async.future_pin t)
+    (fetcher : () -> async::future_pin t)
     : arc_local_resource t
     =
     !\\(fetcher, $'"leptos::prelude::ArcLocalResource::new(move || $0())"')
 
-:= new_action \* t u. (action_fn : t -> async.future_pin u) : action t u =
+:= new_action \* t u. (action_fn : t -> async::future_pin u) : action t u =
     !\\(action_fn, $'"leptos::prelude::Action::new_local(move |value: &`t| $0(value.clone()))"')
 
-:= new_arc_action \* t u. (action_fn : t -> async.future_pin u) : arc_action t u =
+:= new_arc_action \* t u. (action_fn : t -> async::future_pin u) : arc_action t u =
     !\\(action_fn, $'"leptos::prelude::ArcAction::new_unsync(move |value: &`t| $0(value.clone()))"')
 
 := action_dispatch \* t u. (value : heap t) (action : action (heap t) u) : () =
@@ -414,7 +414,7 @@
 := arc_action_dispatch \* t u. (value : heap t) (action : arc_action (heap t) u) : () =
     $'{ leptos::prelude::ArcAction::dispatch_local(&!action, !value.clone()); }'
 
-:= action_input \* t u. (action : action (heap t) u) : rw_signal (optionm'.option' t) =
+:= action_input \* t u. (action : action (heap t) u) : rw_signal (optionm'::option' t) =
     !\\(action, $'"leptos::prelude::Action::input(&$0)"')
 
 := action_pending \* t u. (action : action (heap t) u) : memo bool =
@@ -428,13 +428,13 @@
     := pending = action |> arc_action_pending
     \ () => pending |> signal_get
 
-:= action_value \* t u. (action : action (heap t) u) : rw_signal (optionm'.option' u) =
+:= action_value \* t u. (action : action (heap t) u) : rw_signal (optionm'::option' u) =
     !\\(action, $'"leptos::prelude::Action::value(&$0)"')
 
-:= arc_action_value \* t u. (action : arc_action (heap t) u) : arc_rw_signal (optionm'.option' u) =
+:= arc_action_value \* t u. (action : arc_action (heap t) u) : arc_rw_signal (optionm'::option' u) =
     !\\(action, $'"leptos::prelude::ArcAction::value(&$0)"')
 
-:= arc_action_value_get \* t u. (action : arc_action (heap t) u) : optionm'.option' u =
+:= arc_action_value_get \* t u. (action : arc_action (heap t) u) : optionm'::option' u =
     prelude ()
     $'leptos::prelude::Get::get(&leptos::prelude::ArcAction::value(&!action))'
 
@@ -446,22 +446,22 @@
     new_arc_signal_derive \ () =>
         $'leptos::prelude::ArcLocalResource::get(&!resource).is_none()' : bool
 
-:= resource_get \* t u. (resource : resource t u) : optionm'.option' u =
+:= resource_get \* t u. (resource : resource t u) : optionm'::option' u =
     !\\(resource, $'"leptos::prelude::Resource::get(&$0)"')
 
-:= local_resource_get \* t u. (resource : local_resource t u) : optionm'.option' u =
+:= local_resource_get \* t u. (resource : local_resource t u) : optionm'::option' u =
     !\\(resource, $'"leptos::prelude::LocalResource::get(&$0)"')
 
-:= arc_local_resource_get \* t. (resource : arc_local_resource t) : optionm'.option' t =
+:= arc_local_resource_get \* t. (resource : arc_local_resource t) : optionm'::option' t =
     !\\(resource, $'"Option::map(leptos::prelude::ArcLocalResource::get(&$0), |x| x.clone())"')
 
-:= resource_with \* t u v. (resource : resource t u) (fn : optionm'.option' u -> v) : v =
+:= resource_with \* t u v. (resource : resource t u) (fn : optionm'::option' u -> v) : v =
     !\\((resource, fn), $'"leptos::prelude::SignalWith::with(&$0, |x| $1(x.clone()))"')
 
 := new_effect (fn : () -> ()) : () =
     $'{ leptos::prelude::Effect::new(move |_| (!fn)()); }'
 
-:~ window () : wasm.window =
+:~ window () : wasm::window =
     !\($'"leptos::prelude::window()"')
 
 := attr_fn \* t. (name : string) (fn : () -> t) : string =
@@ -469,7 +469,7 @@
     $'"" + !name + "={ move || (*!fn)() }"'
 
 := class_fn (classes : string) (fn : () -> string) : string =
-    attr_fn "class" \ () => classes ++# fn () |> sm'.to_std_string
+    attr_fn "class" \ () => classes ++# fn () |> sm'::to_std_string
 
 := on_event \* t. (name : string) (fn : t -> ()) : string =
     := fn = fn |> send_wrapper_new
@@ -479,17 +479,17 @@
     := fn = fn |> send_wrapper_new
     $'"on:click={ move |_| (*!fn)() }"'
 
-:= event_target_value \* t. (event : t) : sm'.std_string =
+:= event_target_value \* t. (event : t) : sm'::std_string =
     !\\(event, $'"leptos::prelude::event_target_value(&$0)"')
 
 := concat_props props =
     ("", props)
-    ||> listm.fold \ acc (x : string) =>
+    ||> listm::fold \ acc (x : string) =>
         $'" " + !x + !acc + ""'
 
 := concat_markup (items : list string) : string =
     ("", items)
-    ||> listm.fold \ acc (x : string) =>
+    ||> listm::fold \ acc (x : string) =>
         $'"" + !acc + !x + ""'
 
 := tag_text (tag : string) props (children : string) : string =
@@ -526,13 +526,13 @@
     |> macro_to_view
 
 := for \* t u (signal : * -> *).
-    (signal : signal (am'.vec t))
+    (signal : signal (am'::vec t))
     (key_fn : t -> u)
     (children' : t -> fragment)
     : view
     =
     signal |> typecheck_signal
-    := items = (\ () => signal_get' signal : am'.vec t) |> send_wrapper_new
+    := items = (\ () => signal_get' signal : am'::vec t) |> send_wrapper_new
     := key = (\ (x : send_wrapper t) => x |> send_wrapper_get |> key_fn) |> send_wrapper_new
     := child = (\ (x : send_wrapper t) => x |> send_wrapper_get |> children' |> fragment_to_view) |> send_wrapper_new
     for [
@@ -558,34 +558,34 @@
     !\($'"leptos_router::hooks::use_location()"')
 
 := use_navigate () : string -> () =
-    := navigate : threading.arc (rust.dyn' (rust.action_fn2 (rust.ref sm'.str) navigate_options)) =
+    := navigate : threading::arc (rust::dyn' (rust::action_fn2 (rust::ref sm'::str) navigate_options)) =
         !\($'"std::sync::Arc::new(leptos_router::hooks::use_navigate())"')
     \ url =>
-        := url = url |> sm'.as_str
+        := url = url |> sm'::as_str
         !\\((navigate, url), $'"$0($1, Default::default())"')
 
-:= location_hash (location : location) : memo sm'.std_string =
+:= location_hash (location : location) : memo sm'::std_string =
     !\\(location, $'"$0.hash"')
 
-:= location_pathname (location : location) : memo sm'.std_string =
+:= location_pathname (location : location) : memo sm'::std_string =
     !\\(location, $'"$0.pathname"')
 
-:= location_search (location : location) : memo sm'.std_string =
+:= location_search (location : location) : memo sm'::std_string =
     !\\(location, $'"$0.search"')
 
-:= url_try_from (s : rust.ref sm'.str) : resultm.result' url sm'.std_string =
+:= url_try_from (s : rust::ref sm'::str) : resultm::result' url sm'::std_string =
     !\\(s, $'"<leptos_router::location::BrowserUrl as leptos_router::location::LocationProvider>::parse($0).map_err(|x\
         | x.as_string().unwrap_or_default())"')
 
-:= url_pathname (url : url) : sm'.std_string =
+:= url_pathname (url : url) : sm'::std_string =
     !\\(url, $'"$0.path().to_string()"')
 
 := use_url () =
     := location = use_location ()
 
     \ () =>
-        := url_pathname = location |> location_pathname |> signal_get |> sm'.from_std_string
-        := url_search = location |> location_search |> signal_get |> sm'.from_std_string
+        := url_pathname = location |> location_pathname |> signal_get |> sm'::from_std_string
+        := url_search = location |> location_search |> signal_get |> sm'::from_std_string
         := url_search =
             ? url_search = ""
             ?> ""
