@@ -2,6 +2,8 @@ param(
     [Parameter(Mandatory)] [string[]] $Draft,
     [Parameter(Mandatory)] [string] $Label,
     [string[]] $BaseHash = @(),
+    [string[]] $Remove = @(),
+    [string[]] $RemoveHash = @(),
     [string] $Lib = (Join-Path $PSScriptRoot '../../../lib/spiral'),
     [string] $SignatureFile = (Join-Path $PSScriptRoot 'lib_consumer_signatures.tsv'),
     [string] $UndoRoot = (Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/lib-land-undo'),
@@ -23,7 +25,19 @@ $pairs = foreach ($d in $Draft) {
     [pscustomobject]@{ Live = $liveName; Source = (Resolve-Path -LiteralPath $source).Path; New = -not (Test-Path -LiteralPath (Join-Path $Lib $liveName)) }
 }
 if ($BaseHash.Count -and $BaseHash.Count -ne $pairs.Count) { throw '-BaseHash needs one sha256 prefix per draft, in the same order' }
+$Remove = @($Remove | ForEach-Object { $_ -split ',' } | Where-Object { $_ } | ForEach-Object { $_.Replace('\', '/') })
+$RemoveHash = @($RemoveHash | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+if ($Remove.Count -ne $RemoveHash.Count) { throw '-Remove needs one -RemoveHash sha256 prefix per removed file, in the same order' }
+for ($i = 0; $i -lt $Remove.Count; $i++) {
+    $gone = Join-Path $Lib $Remove[$i]
+    if (-not (Test-Path -LiteralPath $gone -PathType Leaf)) { throw "remove '$($Remove[$i])': not a lib file" }
+    if ($Remove[$i] -in $pairs.Live) { throw "remove '$($Remove[$i])' is also a draft target" }
+    $now = (Get-FileHash -LiteralPath $gone).Hash
+    if (-not $now.StartsWith($RemoveHash[$i])) { throw "$($Remove[$i]) changed since the removal was planned (now $($now.Substring(0, 12))): re-plan first" }
+}
 for ($i = 0; $i -lt $BaseHash.Count; $i++) {
+    if ($pairs[$i].New) { if ($BaseHash[$i] -ne 'new') { throw "$($pairs[$i].Live) is a new file: give 'new' as its -BaseHash" }; continue }
+    if ($BaseHash[$i] -eq 'new') { throw "$($pairs[$i].Live) exists in lib: 'new' is only for new files" }
     $now = (Get-FileHash -LiteralPath (Join-Path $Lib $pairs[$i].Live)).Hash
     if (-not $now.StartsWith($BaseHash[$i])) { throw "$($pairs[$i].Live) changed since its draft was proven (now $($now.Substring(0, 12))): re-prove first" }
 }
@@ -46,6 +60,7 @@ function Copy-Retry([string] $from, [string] $to) {
     throw "could not copy $from -> $to (locked for 60 s)"
 }
 $pairs | ForEach-Object { "{0,-28} <= {1}{2}" -f $_.Live, $_.Source, $(if ($_.New) { ' (new file)' } else { '' }) }
+$Remove | ForEach-Object { "{0,-28} => removed (kept in the undo dir)" -f $_ }
 if (-not $Apply) { 'dry run: nothing written; rerun with -Apply'; return }
 $deadline = (Get-Date).AddMinutes($MaxWaitMin)
 while ((Get-LiveReaders).Count -and (Get-Date) -lt $deadline) { Start-Sleep 30 }
@@ -56,8 +71,9 @@ $winMinutes = [Math]::Max(30, 45 + 10 * [Math]::Ceiling($pairs.Count / 10))
 $win = & $kit window request tree-write $winMinutes --label $Label 2>&1 | Select-Object -Last 1
 "$win"
 $winId = if ("$win" -match 'id=(\S+)') { $Matches[1] }
-foreach ($p in $pairs | Where-Object { -not $_.New }) { $u = Join-Path $undo $p.Live; New-Item -ItemType Directory -Force (Split-Path $u) | Out-Null; Copy-Item -LiteralPath (Join-Path $Lib $p.Live) -Destination $u }
+foreach ($live in @($pairs | Where-Object { -not $_.New } | ForEach-Object Live) + $Remove) { $u = Join-Path $undo $live; New-Item -ItemType Directory -Force (Split-Path $u) | Out-Null; Copy-Item -LiteralPath (Join-Path $Lib $live) -Destination $u }
 function Restore-Undo {
+    foreach ($gone in $Remove) { Copy-Retry (Join-Path $undo $gone) (Join-Path $Lib $gone) }
     foreach ($p in $pairs) {
         if (-not $p.New) { Copy-Retry (Join-Path $undo $p.Live) (Join-Path $Lib $p.Live); continue }
         $landed = Join-Path $Lib $p.Live
@@ -72,6 +88,7 @@ try {
     $baseFail = @()
     if ($baseProbe.Count) { $baseFail = Get-ProbeFailures @(pwsh -NoProfile -File (Join-Path $PSScriptRoot 'type_probe.ps1') -File ($baseProbe -join ',') -Lib $Lib 2>&1 | ForEach-Object { "$_" }) }
     foreach ($p in $pairs) { Copy-Retry $p.Source (Join-Path $Lib $p.Live) }
+    foreach ($gone in $Remove) { Remove-Item -LiteralPath (Join-Path $Lib $gone) -Force }
     $closeOk = $true
     if ($SignatureFile) {
         '=== signatures'

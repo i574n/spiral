@@ -60,3 +60,4 @@ $errors | Select-Object -First $Show | ForEach-Object {
     $line = "$($_.Groups[1].Value):$($_.Groups[2].Value) $($_.Groups[3].Value) $($_.Groups[4].Value)$($_.Groups[5].Value.Replace("`n", ' | '))"
     '  ' + $line.Substring(0, [Math]::Min(220, $line.Length))
 }
+if ($j.failed -gt 0) { exit 1 }

@@ -1,0 +1,112 @@
+:# wire static =
+    :< testing
+
+/// ## wire
+:== xtea_key = { k0 : u32; k1 : u32; k2 : u32; k3 : u32 }
+
+:= xtea_key k0 k1 k2 k3 : xtea_key = { k0 k1 k2 k3 }
+
+:= xtea_delta () : u32 = 2654435769
+
+:= xtea_rounds () : i32 = 32
+
+:= key_word (key : xtea_key) (index : u32) : u32 =
+    ? index = 0 ?> key::k0 |? index = 1 ?> key::k1 |? index = 2 ?> key::k2 |: key::k3
+
+:= xtea_mix (value : u32) : u32 =
+    ((value <<< 4) ^^^ (value >>> 5)) + value
+
+:= xtea_term (key : xtea_key) (value : u32) (sum : u32) (index : u32) : u32 =
+    xtea_mix value ^^^ (sum + key_word key index)
+
+:= xtea_encrypt_step (key : xtea_key) (a : u32) (b : u32) (sum : u32) : u32 * u32 * u32 =
+    := a' = a + xtea_term key b sum (sum &&& 3)
+    := sum' = sum + xtea_delta ()
+    a', b + xtea_term key a' sum' ((sum' >>> 11) &&& 3), sum'
+
+:~ ^ xtea_encrypt_rounds (key : xtea_key) (index : i32) (a : u32) (b : u32) (sum : u32) : u32 * u32 =
+    ? index >= xtea_rounds () ?> a, b
+    |:
+        := a', b', sum' = xtea_encrypt_step key a b sum
+        xtea_encrypt_rounds key (index + 1) a' b' sum'
+
+:= xtea_encrypt (key : xtea_key) (v0 : u32) (v1 : u32) : u32 * u32 = xtea_encrypt_rounds key 0 v0 v1 0
+
+:= xtea_decrypt_step (key : xtea_key) (a : u32) (b : u32) (sum : u32) : u32 * u32 * u32 =
+    := b' = b - xtea_term key a sum ((sum >>> 11) &&& 3)
+    := sum' = sum - xtea_delta ()
+    a - xtea_term key b' sum' (sum' &&& 3), b', sum'
+
+:~ ^ xtea_decrypt_rounds (key : xtea_key) (index : i32) (a : u32) (b : u32) (sum : u32) : u32 * u32 =
+    ? index >= xtea_rounds () ?> a, b
+    |:
+        := a', b', sum' = xtea_decrypt_step key a b sum
+        xtea_decrypt_rounds key (index + 1) a' b' sum'
+
+:= xtea_decrypt (key : xtea_key) (v0 : u32) (v1 : u32) : u32 * u32 =
+    xtea_decrypt_rounds key 0 v0 v1 (xtea_delta () * 32)
+
+:= adler_modulus () : u32 = 65521
+
+:== adler = { low : u32; high : u32 }
+
+:= adler_start () : adler = { low = 1; high = 0 }
+
+:= adler_step (byte : u32) (state : adler) : adler =
+    := low = (state::low + byte) % adler_modulus ()
+    { low = low; high = (state::high + low) % adler_modulus () }
+
+:= adler_value (state : adler) : u32 =
+    (state::high <<< 16) ||| state::low
+
+:= adler_of (bytes : list u32) : u32 =
+    listm::fold (\ state byte => adler_step byte state) (adler_start ()) bytes |> adler_value
+
+///> c
+///> rust
+///> lua
+:# xtea_matches_published_vector =
+    := ~v0 = 1094861636u32
+    := key = xtea_key 66051 67438087 134810123 202182159
+    := a, b = xtea_encrypt key v0 1162233672
+    a |> _assert_eq 1232991184u32
+    b |> _assert_eq 1918971061u32
+
+///> c
+///> rust
+///> lua
+:# xtea_matches_reference_on_small_key =
+    := ~zero = 0u32
+    := a, b = xtea_encrypt (xtea_key 1 2 3 4) zero zero
+    a |> _assert_eq 2778180417u32
+    b |> _assert_eq 1979796850u32
+
+///> c
+///> rust
+///> lua
+:# xtea_round_trips =
+    := ~v0 = 123456789u32
+    := key = xtea_key 11 22 33 44
+    := a, b = xtea_encrypt key v0 987654321
+    := c, d = xtea_decrypt key a b
+    c |> _assert_eq v0
+    d |> _assert_eq 987654321u32
+
+///> c
+///> rust
+///> lua
+:# adler32_of_wikipedia =
+    := ~first = 87u32
+    adler_of [ first; 105; 107; 105; 112; 101; 100; 105; 97 ] |> _assert_eq 300286872u32
+
+///> wgsl
+:# xtea_published_vector_on_gpu =
+    := ~v0 = 1094861636u32
+    := a, b = xtea_encrypt (xtea_key 66051 67438087 134810123 202182159) v0 1162233672
+    ? a = 1232991184u32 && b = 1918971061u32 ?> 0i32 |: 1i32
+
+///> zig
+:# xtea_published_vector_on_zig =
+    := ~v0 = 1094861636u32
+    := a, b = xtea_encrypt (xtea_key 66051 67438087 134810123 202182159) v0 1162233672
+    ? a = 1232991184u32 && b = 1918971061u32 ?> 0i32 |: 1i32

@@ -19,6 +19,8 @@ modules:
     math
     keyed_rng
     units
+    wire
+    fixed_views
     mapm
     iter
     float_text
@@ -33,6 +35,7 @@ modules:
     erlang_port
     console
     reflection
+    case_labels
     guid
     platform
     env
