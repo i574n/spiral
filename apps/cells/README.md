@@ -330,15 +330,17 @@ helper), an actual value that is neither a plain literal nor a flat tuple of the
 `spiral-tests file` summary line carries those reasons as `accept_refused` (test name -> reason). Without the flag a mismatch
 fails and the file is not touched.
 
-### X compatibility
+### Cell budget
 
-Edition-3 sources are meant to survive being posted on X. When the nearest `package.spiproj` above a notebook says
-`edition: 3` (or `--x-compat` is passed), a run prints one `x-compat <file>:<line>:<col>: <kind>: <text> (<hint>)` line per
-thing X would rewrite: `#` before a letter (hashtag), `@` before a name (mention), `$` before letters (cashtag) and text
-X would autolink as a domain (`cell.ai`, `listm.map`; shortened to a 23-character t.co link). These are warnings: the run's
-result does not change. `mix spiral.x_compat <file or dir>...` is the CI report over `.spi`, `.spir` and `.livemd`
-files: every finding plus a summary line, always exit 0. The checker is `Spiral.Cells.XCompat` (IANA TLD list in
-`priv/tlds.txt`, twitter-text weights); the `x` repository's `apps/sim` (formerly `apps/xsim`) uses it for its thread frames and per-post limits.
+Every top-level definition is a cell, and a cell has a budget: 280 weighted characters (CJK and emoji weigh 2, a link
+23), less its header line. When the nearest `package.spiproj` above a notebook says `edition: 3` (or `--cell-budget` is
+passed), a run prints one `cell-budget <file>:<line>:<col>: <kind>: <text> (<hint>)` line per thing a renderer would
+rewrite: `#` before a letter (hashtag), `@` before a name (mention), `$` before letters (cashtag) and text that looks like
+a domain (`cell.ai`; member access spelled `::` never does). These are warnings: the run's result does not change.
+`mix spiral.cell_budget <file or dir>...` is the CI report over `.spi`, `.spir` and `.livemd` files: every finding, every
+definition over budget (`over_budget`) and a summary line. With `--check` it exits 1 when a definition is over budget.
+It skips `target`, `deps`, `_build` and similar folders. The checker is `Spiral.Cells.CellBudget` (IANA TLD list in
+`data/tlds.txt`); the 280 limit is one constant there.
 
 ### Target audit
 

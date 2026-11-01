@@ -850,6 +850,16 @@
 := prefers_builtin_example (base : string) : bool =
     is_calendar_builtin base || (is_builtin_reference base && xml.local_name base = "positiveInteger")
 
+:~ ^ zero_padded_one (p : string) (left : i32) (text : string) : option string =
+    ? left = 0i32 ?> None
+    |? xsd_regex.pattern_matches p text ?> Some text
+    |: zero_padded_one p (left - 1i32) ("0" ++# text)
+
+:= positive_example (base : string) (p : string) (facets : list xsd_facet) : option string =
+    ? is_builtin_reference base && xml.local_name base = "positiveInteger" && has_length_facet facets = !-
+    ?> zero_padded_one p 18i32 "1"
+    |: None
+
 := simple_example (base : string) (facets : list xsd_facet) : string =
     ?= first_pattern facets ?|
     | Some p =>
@@ -857,9 +867,12 @@
         ? prefers_builtin_example base && xsd_regex.pattern_matches p calendar && has_length_facet facets = !-
         ?> calendar
         |:
-            ?= xsd_regex.compile_pattern p ?|
-            | Some r => example_search facets r 0i32
-            | None => "1"
+            ?= positive_example base p facets ?|
+            | Some text => text
+            | None =>
+                ?= xsd_regex.compile_pattern p ?|
+                | Some r => example_search facets r 0i32
+                | None => "1"
     | None =>
         ? is_builtin_reference base ?>
             := text = builtin_example base
@@ -3152,6 +3165,13 @@ test pattern_restricted_dates_keep_a_valid_date =
     ?> failwith "a date pattern keeps the builtin's valid date instead of zeros"
     ? simple_example "xs:date" (Pattern "1999-[0-9]{2}-[0-9]{2}" :: []) = "2026-01-01"
     ?> failwith "a pattern the builtin date does not match still searches"
+
+///> rust
+test pattern_restricted_positive_integers_stay_positive =
+    ? simple_example "xs:positiveInteger" (Pattern "[0-9][0-9]" :: TotalDigits 2i32 :: []) <> "01"
+    ?> failwith "a two-digit positiveInteger pattern pads 1 instead of writing 00"
+    ? simple_example "xs:positiveInteger" (Pattern "[0-9]{1,3}" :: []) <> "1"
+    ?> failwith "a positiveInteger pattern that takes 1 keeps 1"
 
 ///> rust
 test coded_types_share_the_text_prototype =

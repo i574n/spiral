@@ -16,7 +16,7 @@ defmodule Spiral.Cells.NotebookCli do
     test: :keep,
     memo: :boolean,
     accept: :boolean,
-    x_compat: :boolean,
+    cell_budget: :boolean,
     metrics: :string,
     livemd: :boolean,
     patch: :keep,
@@ -122,7 +122,7 @@ defmodule Spiral.Cells.NotebookCli do
 
     reports = for {path, _status, report} <- results, report != nil, do: {path, report}
     if opts[:metrics], do: Notebook.write_metrics(opts[:metrics], reports)
-    lines = x_compat_lines(paths, opts) ++ if(reports == [], do: [], else: Notebook.summary_lines(reports))
+    lines = cell_budget_lines(paths, opts) ++ if(reports == [], do: [], else: Notebook.summary_lines(reports))
 
     case for({path, {:error, message}, _report} <- results, do: "#{path}: #{message}") do
       [] -> {:ok, lines}
@@ -131,11 +131,11 @@ defmodule Spiral.Cells.NotebookCli do
   end
 
   @doc false
-  def x_compat_lines(paths, opts) do
+  def cell_budget_lines(paths, opts) do
     for path <- paths,
-        opts[:x_compat] == true or Spiral.Cells.XCompat.edition3?(path),
-        finding <- path |> File.read!() |> Spiral.Cells.XCompat.rewrites(Spiral.Cells.XCompat.profile_for(path)),
-        do: "x-compat " <> Spiral.Cells.XCompat.format(Path.expand(path), finding)
+        opts[:cell_budget] == true or Spiral.Cells.CellBudget.edition3?(path),
+        finding <- path |> File.read!() |> Spiral.Cells.CellBudget.rewrites(Spiral.Cells.CellBudget.profile_for(path)),
+        do: "cell-budget " <> Spiral.Cells.CellBudget.format(Path.expand(path), finding)
   end
 
   @doc false

@@ -5,7 +5,7 @@ param(
     [string] $Candidate = (Join-Path $PSScriptRoot '../../../deps/The-Spiral-Language/VS Code Plugin')
 )
 $Lib = (Resolve-Path $Lib).Path
-if (-not $Files) { $Files = Get-ChildItem $Lib -Recurse -Filter *.spi | Where-Object { $_.FullName -notmatch '[\\/]target[\\/]' -and (Select-String -Path $_.FullName -Pattern '^test ' -Quiet) } | ForEach-Object { $_.FullName.Substring($Lib.Length + 1) } | Sort-Object }
+if (-not $Files) { $Files = Get-ChildItem $Lib -Recurse -Filter *.spi | Where-Object { $_.FullName -notmatch '[\\/]target[\\/]' -and (Select-String -Path $_.FullName -Pattern '^(test|:#) ' -Quiet) } | ForEach-Object { $_.FullName.Substring($Lib.Length + 1) } | Sort-Object }
 "file`tpassed`tfailed`tdiscovered`ttype_errors`tfirst_error`tseconds" | Set-Content $Out
 foreach ($file in $Files) {
     $watch = [Diagnostics.Stopwatch]::StartNew()

@@ -13,7 +13,7 @@ foreach ($id in $cIds) {
     $tags = @()
     if ($source -match '\b[iu]64\b|\d+[iu]64') { $tags += 'i64' }
     if ($source -match '\bf64\b|\d\.\d+(f64)?\b') { $tags += 'f64' }
-    if ($source -match '(?m)^\s*union\b') { $tags += 'union' }
+    if ($source -match '(?m)^\s*(?:union\b|:\|\s)') { $tags += 'union' }
     if ($source -match ';\[|array_create|ArrayCreate|\barray\b') { $tags += 'array' }
     if ($source -match '"') { $tags += 'string' }
     if ($source -match "\$'|\$`"") { $tags += 'macro' }

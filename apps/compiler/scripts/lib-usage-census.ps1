@@ -44,8 +44,8 @@ function Get-FileIndex([string] $path) {
     $inTest = $false
     for ($i = 0; $i -lt $lines.Length; $i++) {
         $line = $lines[$i]
-        if ($line -match '^\S') { $inTest = $line -match '^test\s' }
-        if ($line -match '^\s*open\s+(\S+)') { [void]$opens.Add($Matches[1]) }
+        if ($line -match '^\S') { $inTest = $line -match '^(test|:#)\s' }
+        if ($line -match '^\s*(?:open|:<)\s+(\S+)') { [void]$opens.Add($Matches[1]) }
         $code = $line -replace '//.*$', ''
         $kind = if ($inTest) { 'test' } else { 'code' }
         foreach ($m in [regex]::Matches($code, $identifier)) {

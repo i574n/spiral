@@ -36,7 +36,7 @@ robocopy $Lib $copy /E /XD target _build .cache /NFL /NDL /NJH /NJS /NP | Out-Nu
 "lib-program-gate / $File base $(Get-Hash16 (Join-Path $copy $File)) / live $(Get-Hash16 (Join-Path $Lib $File))"
 if ($Control) {
     $baseText = [IO.File]::ReadAllText((Join-Path $copy $File))
-    $present = @($Test -split ',' | Where-Object { $_ -and $baseText -match "(?m)^test $([regex]::Escape($_)) =" })
+    $present = @($Test -split ',' | Where-Object { $_ -and $baseText -match "(?m)^(test|:#) $([regex]::Escape($_)) =" })
     "lib-program-gate / control runs $($present.Count) of $(@($Test -split ',' | Where-Object { $_ }).Count) tests (the rest are new): $($present -join ',')"
     if ($present) {
         $base = Invoke-Gate 'control' $present

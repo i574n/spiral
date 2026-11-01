@@ -1,5 +1,5 @@
 defmodule Spiral.Cells.NewProject do
-  @templates Path.expand(Path.join([__DIR__, "..", "..", "..", "priv", "new_project"]))
+  @templates Path.expand(Path.join([__DIR__, "..", "..", "..", "templates", "new_project"]))
   @placeholder "PROJECT_NAME"
   @dotfiles %{"gitignore" => ".gitignore", "gitattributes" => ".gitattributes", "editorconfig" => ".editorconfig"}
 

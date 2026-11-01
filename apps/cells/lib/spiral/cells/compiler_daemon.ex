@@ -1018,7 +1018,7 @@ defmodule Spiral.Cells.CompilerDaemon do
 
   @doc false
   def source_stamp do
-    ["lib/**/*.ex", "spi/*.spi", "spi/*.ex", "mix.exs", "priv/**/*"]
+    ["lib/**/*.ex", "spi/*.spi", "spi/*.ex", "mix.exs", "data/**/*", "templates/**/*"]
     |> Enum.flat_map(&Path.wildcard(Path.join(@cells_root, &1)))
     |> Enum.map(fn path ->
       case File.stat(path, time: :posix) do

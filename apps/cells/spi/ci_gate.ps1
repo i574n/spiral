@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop'
 $spiral = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
 $Paths = @(git -C $spiral ls-files -- 'lib/spiral/*.spi' |
         ForEach-Object { Join-Path $spiral $_ } |
-        Where-Object { (Split-Path $_ -Leaf) -match $Match -and (Select-String -LiteralPath $_ -Pattern '^test ' -Quiet) })
+        Where-Object { (Split-Path $_ -Leaf) -match $Match -and (Select-String -LiteralPath $_ -Pattern '^(test|:#) ' -Quiet) })
 if (-not $Paths) { throw "no lib .spi with test blocks matches $Match" }
 New-Item -ItemType Directory -Force $Out | Out-Null
 $env:SPIRAL_CELLS_MEMO = '0'

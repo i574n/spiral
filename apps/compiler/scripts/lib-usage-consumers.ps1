@@ -8,9 +8,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $spiral = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
 if (-not $Paths) {
-    $libWithTests = Get-ChildItem (Join-Path $spiral 'lib/spiral') -Recurse -Filter *.spi | Where-Object { Select-String -LiteralPath $_.FullName -Pattern '^test ' -Quiet }
+    $libWithTests = Get-ChildItem (Join-Path $spiral 'lib/spiral') -Recurse -Filter *.spi | Where-Object { Select-String -LiteralPath $_.FullName -Pattern '^(test|:#) ' -Quiet }
     $blogEngine = Get-ChildItem (Join-Path (Split-Path $spiral) 'blog/engine') -Filter *.spi -ErrorAction SilentlyContinue
-    $xSources = Get-ChildItem (Join-Path (Split-Path $spiral) 'x') -Recurse -Filter *.spi -ErrorAction SilentlyContinue | Where-Object { $_.FullName -notmatch '\\(target|deps|dist)\\' -and (Select-String -LiteralPath $_.FullName -Pattern '^test ' -Quiet) }
+    $xSources = Get-ChildItem (Join-Path (Split-Path $spiral) 'x') -Recurse -Filter *.spi -ErrorAction SilentlyContinue | Where-Object { $_.FullName -notmatch '\\(target|deps|dist)\\' -and (Select-String -LiteralPath $_.FullName -Pattern '^(test|:#) ' -Quiet) }
     $Paths = @($libWithTests) + @($blogEngine) + @($xSources) | ForEach-Object FullName
 }
 Remove-Item -LiteralPath $References -ErrorAction Ignore
