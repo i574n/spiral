@@ -6,6 +6,11 @@ enum US0 {
     US0_Nothing,
     US0_Just(Rc<str>),
 }
+impl Default for US0 {
+    fn default() -> Self {
+        US0::US0_Nothing
+    }
+}
 fn spiral_main() -> i32 {
     let v0: i32 = 2i32;
     let v1: Rc<RefCell<Vec<(Rc<str>, US0, bool)>>> = Rc::new(RefCell::new(vec![<(Rc<str>, US0, bool)>::default(); v0 as usize]));

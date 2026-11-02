@@ -5,7 +5,6 @@ param(
     [string[]] $Remove = @(),
     [string[]] $RemoveHash = @(),
     [string] $Lib = (Join-Path $PSScriptRoot '../../../lib/spiral'),
-    [string] $SignatureFile = (Join-Path $PSScriptRoot 'lib_consumer_signatures.tsv'),
     [string] $UndoRoot = (Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/lib-land-undo'),
     [string[]] $Consumer = @('apps/spiral/spiral.spi'),
     [string] $Compiler = (Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll'),
@@ -91,19 +90,30 @@ try {
     foreach ($p in $pairs) { Copy-Retry $p.Source (Join-Path $Lib $p.Live) }
     foreach ($gone in $Remove) { Remove-Item -LiteralPath (Join-Path $Lib $gone) -Force }
     $closeOk = $true
-    if ($SignatureFile) {
-        '=== signatures'
-        $drift = foreach ($row in Get-Content $SignatureFile) {
-            $file, $name, $count, $before = $row -split "`t", 4
-            $pattern = '^(:=|:~ \^?|inl|let|:~) *' + [regex]::Escape($name) + '(\s|$)'
-            $now = @([IO.File]::ReadAllLines((Join-Path $Lib $file)) | Where-Object { $_ -match $pattern }) -join ' || '
-            $spelling = { param($text) $text -replace '(?<=[\w''])::(?=[\w(])', '.' }
-            if ((& $spelling $now) -ne (& $spelling $before)) { "$file $name changed" }
-        }
-        if ($drift) { $drift; $closeOk = $false } else { "$(@(Get-Content $SignatureFile).Count) signatures unchanged" }
-    }
-    '=== consumers'
     $repo = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
+    '=== signatures'
+    $spelling = { param($text) $text -replace '(?<=[\w''])::(?=[\w(])', '.' }
+    $consumerText = (@($Consumer | ForEach-Object { Get-ChildItem (Split-Path (Join-Path $repo $_)) -Filter *.spi -File }) | Sort-Object FullName -Unique | ForEach-Object { [IO.File]::ReadAllText($_.FullName) }) -join "`n"
+    $checked = 0
+    $drift = foreach ($live in @($pairs | Where-Object { -not $_.New } | ForEach-Object Live) + $Remove) {
+        $stem = [IO.Path]::GetFileNameWithoutExtension($live)
+        $before = [IO.File]::ReadAllLines((Join-Path $undo $live))
+        $defined = @($before | ForEach-Object { if ($_ -match '^(?::=|:~ \^?|inl|let|:~) *(\([^)\s]+\)|[\w'']+)') { $Matches[1] } } | Sort-Object -Unique)
+        $opened = [regex]::IsMatch($consumerText, '(?m)^\s*(open|:<)\s+' + [regex]::Escape($stem) + '\s*$')
+        $used = @(@([regex]::Matches($consumerText, '(?<![\w''])' + [regex]::Escape($stem) + '(?:::|\.)([\w'']+|\([^)\s]+\))') | ForEach-Object { $_.Groups[1].Value }) + @($defined | Where-Object {
+            if ($_ -like '(*)') { $consumerText.Contains(" $($_.Trim('(', ')')) ") } else { $opened -and [regex]::IsMatch($consumerText, '(?<![\w''.:])' + [regex]::Escape($_) + '(?![\w''])') } }) | Sort-Object -Unique)
+        $after = if (Test-Path -LiteralPath (Join-Path $Lib $live)) { [IO.File]::ReadAllLines((Join-Path $Lib $live)) } else { @() }
+        foreach ($name in $used) {
+            $pattern = '^(:=|:~ \^?|inl|let|:~) *' + [regex]::Escape($name) + '(\s|$)'
+            $was = @($before | Where-Object { $_ -match $pattern }) -join ' || '
+            if (-not $was) { continue }
+            $checked++
+            $now = @($after | Where-Object { $_ -match $pattern }) -join ' || '
+            if ((& $spelling $now) -ne (& $spelling $was)) { "$live $name changed" }
+        }
+    }
+    if ($drift) { $drift; $closeOk = $false } else { "$checked consumer-used signatures unchanged" }
+    '=== consumers'
     if (-not $env:SPIRAL_COMPILER_PACKAGE_DIR) { $env:SPIRAL_COMPILER_PACKAGE_DIR = Join-Path $repo 'deps/The-Spiral-Language/VS Code Plugin' }
     $consumerOut = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/mix-builds/lib-land-consumers'
     New-Item -ItemType Directory -Force $consumerOut | Out-Null
