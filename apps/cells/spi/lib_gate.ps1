@@ -49,6 +49,9 @@ if ($RawOut) { Set-Content -LiteralPath $RawOut $out }
 $total = [regex]::Match($out, 'spiral-tests total (\{[^\n]*\})')
 if ($total.Success) { $j = $total.Groups[1].Value | ConvertFrom-Json; "tests: passed $($j.passed) failed $($j.failed) of $($j.discovered)" }
 else { "lib-gate / no spiral-tests total, so nothing ran; first lines:"; $out -split "`n" | Select-Object -First 6; exit 2 }
+if ($j.executed -eq 0 -and $j.discovered -gt 0) { "lib-gate / discovered $($j.discovered) but executed 0: the run aborted (see -RawOut)"; exit 2 }
+$mixError = [regex]::Match($out, '(?m)^\*\* \(Mix\)[^\n]*')
+if ($mixError.Success) { "lib-gate / mix aborted: $($mixError.Value)"; exit 2 }
 $fileReport = [regex]::Match($out, 'spiral-tests file (\{[^\n]*\})')
 if ($fileReport.Success) { $names = ($fileReport.Groups[1].Value | ConvertFrom-Json).failed_tests; if ($names) { "failed: $($names -join ', ')" } }
 if ($Detail) { $out -split "`n" | Select-String -SimpleMatch $Detail -Context 0, 4 | Select-Object -First 40 | ForEach-Object { $_.Line; $_.Context.PostContext } }

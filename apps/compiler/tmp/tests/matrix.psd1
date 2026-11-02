@@ -795,6 +795,7 @@
             'samples/delphi_uses_units'
         )
         'Fsharp' = @(
+            'samples/zig_export_fn'
             'samples/contract_atomic_flash_loan_clearing'
             'samples/contract_branch_indexed_quantum_merge'
             'samples/contract_capability_aligned_request_federation'
@@ -3662,6 +3663,7 @@
         'samples/small_int_scalar'
     )
     Zig = @(
+        'samples/zig_export_fn'
         'samples/prim_to_string_all'
         'samples/abi_external'
         'samples/abi_external_i64'
