@@ -1,24 +1,3 @@
-<#
-Sync apps/compiler/spiral_compiler.fs with the fork of The Spiral Language (upstream's file layout).
-
-    pwsh upstream.ps1 status <fork> [ref]                  per section: lines that differ from the fork's file
-    pwsh upstream.ps1 import <fork> <old-ref> <new-ref>     carry the fork's edits old->new into the sections
-    pwsh upstream.ps1 export <fork> <base-ref> <out-dir> [-Since <ref>] [-Until <ref>]
-                                                            write the fork's files with the sections' edits; -Since
-                                                            keeps only the edits made since that ref of this repo
-                                                            (a pull request's worth), -Until ends the range there
-
-<fork> is a clone of the fork (spiral/deps/The-Spiral-Language); refs are git refs in it. A section `/// ## Name`
-maps to `The Spiral Language 2/Name.fs` (`SignalRSupervisor` to `Supervisor.fs`); sections without a file are i574n
-additions and are skipped. Only single-flight's text is read or written: shared sections, and the `#else` side of any
-`#if SPIRAL_CORE_GPT5PARALLEL` pair still in the file (a pair's other side is reported, not touched).
-
-Edits are carried as normalized-line patches, like a 3-way merge: lines are compared stripped, ignoring blank lines,
-the compaction's `/// ###` headings and `#!import` lines and the files' `module` headers, so the section's
-indentation and headings survive. An edit whose lines the target changed on its own is a conflict: reported, not
-applied. Line matching is difflib.SequenceMatcher's (longest matching block first, no junk), ported exactly, so the
-counts equal the retired upstream.py's.
-#>
 param(
     [Parameter(Mandatory, Position = 0)] [ValidateSet('status', 'import', 'export')] [string] $Command,
     [Parameter(Mandatory, Position = 1)] [string] $Fork,

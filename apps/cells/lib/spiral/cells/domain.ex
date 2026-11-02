@@ -24,6 +24,21 @@ defmodule Spiral.Cells.Domain do
     :spiral_cells@domain.patch_rust(rust, show)
   end
 
+  def reached_program(program, rows) do
+    ensure!()
+    :spiral_cells@domain.reached_program(program, rows)
+  end
+
+  def from_toml(text) do
+    ensure!()
+    :spiral_cells@domain.from_toml(text)
+  end
+
+  def source_remap(message, program, source, path) do
+    ensure!()
+    :spiral_cells@domain.source_remap(message, program, source, path)
+  end
+
   def split_output(output) do
     ensure!()
     :spiral_cells@domain.split_output(output)

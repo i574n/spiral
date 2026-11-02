@@ -1,0 +1,15 @@
+:| box t =
+    | Box : t
+
+:| ^ nest t =
+    | Flat : t
+    | Deeper : nest (box t)
+
+:~ ^ depth \* t. (x : nest t) : i32 =
+    ?= x ?|
+    | Flat _ => 0i32
+    | Deeper inner => !!!!Add(1i32, depth inner)
+
+:= main () : i32 =
+    := ~x : nest i32 = Deeper (Flat (Box 1i32))
+    depth x

@@ -52,9 +52,10 @@ defmodule Spiral.Cells.DirectivesTest do
              Directives.prepare("///- --print-code --timeout 5000\n1i32")
   end
 
-  test "--import-types belongs to the compiler, so Cells reads past it and its value" do
-    assert %{timeout: 5_000, code: "inl main () : i32 =\n    1i32\n"} =
-             Directives.prepare("///- --import-types producer:list_event,event --timeout 5000\n1i32")
+  test "--import-types is gone from the compiler, so Cells refuses it like any unknown flag" do
+    assert_raise ArgumentError, ~r/unknown kernel flag --import-types/, fn ->
+      Directives.prepare("///- --import-types producer:list_event,event --timeout 5000\n1i32")
+    end
   end
   test "a later ///- line is dropped" do
     assert %{timeout: 5, code: code} =

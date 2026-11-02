@@ -64,20 +64,20 @@
 
 := none_of_ (x : list char) : parser_ char () =
     x
-    |> listm'.box
-    |> listm'.to_array'
+    |> listm'::box
+    |> listm'::to_array'
     |> $'FParsec.CharParsers.noneOf'
 
 := any_of_ (x : list char) : parser_ char () =
     x
-    |> listm'.box
-    |> listm'.to_array'
+    |> listm'::box
+    |> listm'::to_array'
     |> $'FParsec.CharParsers.anyOf'
 
 := skip_any_of_ (x : list char) : parser_ () () =
     x
-    |> listm'.box
-    |> listm'.to_array'
+    |> listm'::box
+    |> listm'::to_array'
     |> $'FParsec.CharParsers.skipAnyOf'
 
 := between_ \* t u v x. (a : parser_ t x) (b : parser_ u x) (c : parser_ v x) : parser_ v x =
@@ -98,13 +98,13 @@
 := many1_strings_ \* t. (x : parser_ string t) : parser_ string t =
     x |> $'FParsec.CharParsers.many1Strings'
 
-:= opt_ \* t u. (a : parser_ t u) : parser_ (optionm'.option' t) u =
+:= opt_ \* t u. (a : parser_ t u) : parser_ (optionm'::option' t) u =
     a |> $'FParsec.Primitives.opt'
 
 := choice_ \* t u. (a : list (parser_ t u)) : parser_ t u =
     a
-    |> listm'.box
-    |> seq.of_list'
+    |> listm'::box
+    |> seq::of_list'
     |> $'FParsec.Primitives.choice'
 
 := delay_ \* t u. (fn : () -> parser_ t u) : parser_ t u =
@@ -116,19 +116,19 @@
 := not_followed_by_ \* t u. (a : parser_ t u) : parser_ () u =
     a |> $'FParsec.Primitives.notFollowedBy'
 
-:= sep_by_ \* t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'.list' t) v =
+:= sep_by_ \* t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'::list' t) v =
     b |> $'FParsec.Primitives.sepBy' a
 
-:= sep_by1_ \* t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'.list' t) v =
+:= sep_by1_ \* t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'::list' t) v =
     b |> $'FParsec.Primitives.sepBy1' a
 
-:= sep_end_by_ \* t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'.list' t) v =
+:= sep_end_by_ \* t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'::list' t) v =
     b |> $'FParsec.Primitives.sepEndBy' a
 
-:= many_ \* t u. (a : parser_ t u) : parser_ (listm'.list' t) u =
+:= many_ \* t u. (a : parser_ t u) : parser_ (listm'::list' t) u =
     a |> $'FParsec.Primitives.many'
 
-:= many1_ \* t u. (a : parser_ t u) : parser_ (listm'.list' t) u =
+:= many1_ \* t u. (a : parser_ t u) : parser_ (listm'::list' t) u =
     a |> $'FParsec.Primitives.many1'
 
 := many1_satisfy_ \* t. (x : char -> bool) : parser_ string t =
@@ -178,24 +178,24 @@
     := special = esc ++ quotes
     := p_esc_char c =
         p_char_ c >>.$ any_char_ () |>>$ \ c' => $'$"{!c}{!c'}"'
-    := p_word = special |> none_of_ |>>$ sm'.obj_to_string
+    := p_word = special |> none_of_ |>>$ sm'::obj_to_string
     := p_plain = special ++ [ ' ' ] |> none_of_ |> many1_chars_
     := p_text = p_word |> many1_strings_
-    := p_esc = esc |> listm.map p_esc_char |> choice_
-    := p_quoted = (p_word <|>$ p_esc) |> many_ |>>$ (seq.of_list' >> sm'.concat "")
+    := p_esc = esc |> listm::map p_esc_char |> choice_
+    := p_quoted = (p_word <|>$ p_esc) |> many_ |>>$ (seq::of_list' >> sm'::concat "")
     := p_quoted_all = p_quoted |> between_ (p_char_ '"') (p_char_ '"')
-    := p_esc_root = (p_esc |>>$ (\ _ => "")) >>.$ (p_word |> many_) |>>$ (seq.of_list' >> sm'.concat "")
+    := p_esc_root = (p_esc |>>$ (\ _ => "")) >>.$ (p_word |> many_) |>>$ (seq::of_list' >> sm'::concat "")
     := p_content = p_plain <|>$ p_quoted_all <|>$ p_esc_root
     := p_args = spaces1_ () |> sep_by_ p_content
     args
     |> parse_ p_args
-    |> resultm.map \ (a', b') =>
+    |> resultm::map \ (a', b') =>
         (
             (
                 a'
-                |> listm'.to_array'
+                |> listm'::to_array'
                 |> array
-                |> arraym.map \ x => x, b'
+                |> arraym::map \ x => x, b'
                 |> \ (array x : array _) => x
             )
         )

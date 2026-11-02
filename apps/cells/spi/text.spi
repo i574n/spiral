@@ -271,7 +271,7 @@
         |: !-
     |: !-
 
-:~ ^ take_tilde_word (text : string) (i : i32) : i32 =
+:~ take_tilde_word (text : string) (i : i32) : i32 =
     ? i >= length text ?> -1i32
     |:
         := ch = index text i

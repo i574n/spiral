@@ -1,1 +1,1 @@
-fn main() { let w = xc::xc_width(xc::span { start: 1, stop: 5 }); std::process::exit(w); }
+fn main() { assert_eq!(xc::xc_width(xc::span { start: 1, stop: 5 }), 4); }

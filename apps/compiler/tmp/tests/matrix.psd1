@@ -63,6 +63,7 @@
     )
 
     Timeouts = @{
+        'samples/gadt_unbounded_index_negative' = 60
         'samples/runaway_inline_match_recursion' = 120
         'samples/mega_brzozowski_derivatives/runtime_bench' = 180
         'samples/mega_brzozowski_derivatives/proof_suite' = 180
@@ -241,6 +242,7 @@
     )
 
     ExpectedErrors = @(
+        @{ Id = 'samples/gadt_unbounded_index_negative'; Contains = 'error[EJP0041]' }
         @{ Id = 'samples/package_sibling_parse_error_negative'; Contains = 'Global inl/let statements should all return functions known at parse time' }
         @{ Id = 'samples/routes_negative_missing_param'; Contains = 'the route /articles/:slug/comments does not name exactly' }
         @{ Id = 'samples/routes_negative_extra_param'; Contains = 'the route /articles/:slug/comments/:id/:extra does not name exactly' }
@@ -251,7 +253,6 @@
         @{ Id = 'samples/frontier_hopacsota_two_errors'; Contains = 'first body fails' }
         @{ Id = 'samples/frontier_hopacsota_deferred_validation_mismatch'; Contains = 'The backend switch needs to have the same type for all of its branches.' }
         @{ Id = 'samples/backend_switch_missing_arm_negative'; Contains = 'reaches a lib/spiral backend_switch that has no arm for the' }
-        @{ Id = 'samples/gadt_growing_index_runtime'; Contains = 'has no finite layout' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_alphabet_mix'; Contains = 'Got: (tri_alphabet : *) Expected: (bit_alphabet : *)' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_antimirov_support_assignment_count'; Contains = 'Unification failure. Got: antimirov_support_slot_assignment' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_exact_rows_not_soundness_witness'; Contains = 'Unification failure. Got: indexed_dfa_exact_transition_rows bit_alphabet' }
@@ -914,6 +915,7 @@
         )
     }
     Gleam = @(
+        'samples/module_folder_reopen_manual_order'
         'samples/prim_to_string_all'
         'samples/portable_math_rounding'
         'samples/frontier_gadt_growing_index'

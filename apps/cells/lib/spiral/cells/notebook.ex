@@ -27,10 +27,8 @@ defmodule Spiral.Cells.Notebook do
     :render_plot
   ]
   @lib_rels [
-    "deps/polyglot/deps/spiral/lib/spiral",
     "deps/spiral/lib/spiral",
     "lib/spiral",
-    "polyglot/deps/spiral/lib/spiral",
     "spiral/lib/spiral"
   ]
 

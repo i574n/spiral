@@ -828,6 +828,43 @@
             path |> read |> resultm::unwrap'
         | _ => \ () => null ()
 
+:= c_read_file_global () : () =
+    global "#include <stdint.h>"
+    global "#include <stdio.h>"
+    global (
+        "static long spiral_read_file(const char * path, uint8_t * dst, long cap) { FILE * f = fopen(path, \"rb\"); "
+        ^^ "if (!f) return -1; if (!dst) { fseek(f, 0, SEEK_END); long n = ftell(f); fclose(f); return n; } "
+        ^^ "long n = (long)fread(dst, 1, (size_t)cap, f); fclose(f); return n; }"
+    )
+
+:= c_read_bytes (path : string) : array u8 =
+    c_read_file_global ()
+    := size : i32 = $'(int32_t)spiral_read_file(!path->ptr, NULL, 0)' : i32
+    ? size < 0 ?> failwith "file_system.read_bytes / cannot open the file"
+    := bytes : array u8 = create size
+    := read : i32 = $'(int32_t)spiral_read_file(!path->ptr, !bytes->ptr, !bytes->len)' : i32
+    ? read <> size ?> failwith "file_system.read_bytes / short read"
+    bytes
+
+:= read_bytes (path : string) : array u8 =
+    run_target \|
+        | C => \ () => c_read_bytes path
+        | _ => \ () => am'::from_vec (read_all_bytes path)
+
+///> c
+:# read_bytes_reads_a_file_on_c =
+    := ~path = "spiral_read_bytes_c.bin"
+    $'{ FILE * f = fopen(!path->ptr, "wb"); fputs("AB", f); fclose(f); }' : ()
+    := b = read_bytes path
+    (length b, index b 0, index b 1) |> _assert_eq (2i32, 65u8, 66u8)
+
+///> rust
+:# read_bytes_reads_a_file_on_rust =
+    := ~path = "spiral_read_bytes_rust.bin"
+    write_all_text path "AB"
+    := b = read_bytes path
+    (length b, index b 0, index b 1) |> _assert_eq (2i32, 65u8, 66u8)
+
 := read_all_text (path : string) : string =
     run_target \|
         | Zig => \ () =>

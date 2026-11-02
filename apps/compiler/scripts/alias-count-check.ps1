@@ -1,11 +1,7 @@
 param(
-    [Parameter(Mandatory)] [string] $A,   # a parallel-policy .fsx output (e.g. w8-cw1-r1.fsx)
-    [Parameter(Mandatory)] [string] $B    # the single-flight (or w1) reference .fsx
+    [Parameter(Mandatory)] [string] $A,
+    [Parameter(Mandatory)] [string] $B
 )
-# HOPACSOTA-P2 negative gate (main 19:3x): the FFI/external type-alias declarations must appear EXACTLY the same
-# number of times in the parallel output as in single-flight's -- so a reorder is the ONLY allowed difference, and a
-# DROP or DUPLICATE (e.g. from UnusedGlobals.prune or a broken key_body merge) fails loudly here instead of surfacing
-# only as a bare hash mismatch. GREEN = 0 multiset diffs. Run alongside alternating-ab.ps1 after the fix.
 $ErrorActionPreference = 'Stop'
 function Aliases([string] $f) {
     Get-Content -LiteralPath $f | Where-Object { $_ -match '^type \S+ = ' } | ForEach-Object { ($_ -split '\s+')[1] }

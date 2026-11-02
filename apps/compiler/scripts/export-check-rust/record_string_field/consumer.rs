@@ -1,1 +1,1 @@
-fn main() { let n = xc::xc_size(xc::label { name: "ab".into(), size: 3 }); std::process::exit(n); }
+fn main() { assert_eq!(xc::xc_size(xc::label { name: "ab".into(), size: 3 }), 3); }

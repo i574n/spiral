@@ -1,0 +1,108 @@
+///- --package .
+///> gleam
+:# manifest static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+/// ## text
+:= ends_with (s : string) (p : string) : bool =
+    text::length s >= text::length p && text::starts_at s (text::length s - text::length p) p
+
+:~ ^ trim_leading_all (s : string) (p : string) : string =
+    ? p <> "" && text::starts_with s p ?> trim_leading_all (text::drop s (text::length p)) p |: s
+
+:~ ^ trim_trailing_all (s : string) (p : string) : string =
+    ? p <> "" && ends_with s p ?> trim_trailing_all (text::take s (text::length s - text::length p)) p |: s
+
+:= trim_right (s : string) : string = text::take s (text::trim_end s (text::length s))
+
+:= unquoted (value : string) : string =
+    := v = text::trim value
+    := n = text::length v
+    := first = text::one v 0i32
+    := wrapped = (first = "\"" || first = "'") && text::one v (n - 1i32) = first
+    ? n >= 2i32 && wrapped ?> text::slice_len v 1i32 (n - 2i32) |: v
+
+:= before_quotes (line : string) : string =
+    := k = text::find_from line "'''" 0i32
+    ? k < 0i32 ?> line |: text::take line k
+
+/// ## the toml line model
+:| toml_line =
+    | Blank
+    | Raw : string
+    | Scalar : string * string
+    | Block : string * string
+    | ListStart : string * string
+
+:= line_of (line : string) : toml_line =
+    := trimmed = text::trim line
+    := eq = text::find_from trimmed "=" 0i32
+    ? trimmed = "" || text::starts_with trimmed "#" ?> Blank
+    |? eq <= 0i32 ?> Raw line
+    |:
+        := key = text::trim (text::take trimmed eq)
+        := value = text::trim (text::drop trimmed (eq + 1i32))
+        ? text::starts_with value "'''" ?> Block (key, text::drop value 3i32)
+        |? text::starts_with value "[" ?> ListStart (key, value)
+        |: Scalar (key, value)
+
+/// ## conversion to the spiproj text the readers parse
+:= indented (line : string) : string = "    " ++ line
+
+:~ ^ block_body (lines : list string) (acc : list string) : list string * list string =
+    ?= lines ?|
+    | [] => acc, []
+    | line :: rest =>
+        ? ends_with (text::trim line) "'''" ?> acc, lines
+        |: block_body rest ((? text::trim line = "" ?> "" |: indented line) :: acc)
+
+:~ ^ collect (value : string) (lines : list string) : string * list string =
+    ?= lines ?|
+    | [] => value, []
+    | next :: rest =>
+        ? ends_with (trim_right value) "]" ?> value, lines |: collect (value ++ " " ++ text::trim next) rest
+
+:~ ^ non_empty (xs : list string) : list string =
+    ?= xs ?|
+    | [] => []
+    | x :: rest => ? x = "" ?> non_empty rest |: x :: non_empty rest
+
+:= list_items (collected : string) : list string =
+    := inner = trim_trailing_all (trim_leading_all (text::trim collected) "[") "]"
+    non_empty (listm::map unquoted (sm'::split_list "," inner))
+
+:~ ^ convert (lines : list string) (acc : list string) : list string =
+    ?= lines ?|
+    | [] => acc
+    | line :: rest =>
+        ?= line_of line ?|
+        | Blank => convert rest ("" :: acc)
+        | Raw raw => convert rest (raw :: acc)
+        | Scalar (key, value) => convert rest ((key ++ ": " ++ unquoted value) :: acc)
+        | Block (key, first) =>
+            := opened = (key ++ ":") :: acc
+            := head = ? text::trim first <> "" ?> indented first :: opened |: opened
+            := body, tail_lines = block_body rest head
+            ?= tail_lines ?|
+            | [] => body
+            | last :: remaining =>
+                := before = before_quotes last
+                convert remaining (? text::trim before <> "" ?> indented before :: body |: body)
+        | ListStart (key, value) =>
+            := collected, remaining = collect value rest
+            := items = list_items collected
+            convert remaining (listm::fold (\ xs item => indented item :: xs) ((key ++ ":") :: acc) items)
+
+:= from_toml (text_in : string) : string =
+    := lines = sm'::split_list "\n" (text::replace text_in "\r\n" "\n")
+    sm'::concat_list "\n" (listm::rev (convert lines []))
+
+:# scalars_lists_and_blocks_convert_like_the_elixir_reader =
+    := toml = "edition = 3\npackageDir = '../lib'\npackages = ['|core-', \"spiral-\"]\nmodules = '''\nmain\n'''"
+    := expected = "edition: 3\npackageDir: ../lib\npackages:\n    |core-\n    spiral-\nmodules:\n    main"
+    from_toml toml |> _assert_eq expected
+
+:# a_list_may_span_lines_and_a_comment_stays_blank =
+    from_toml "# note\npackages = [\n  'a',\n  'b'\n]\nx = 1" |> _assert_eq "\npackages:\n    a\n    b\nx: 1"

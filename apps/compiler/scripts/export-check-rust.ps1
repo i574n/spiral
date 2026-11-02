@@ -8,7 +8,6 @@ $env:SPIRAL_COMPILER_PACKAGE_DIR = Get-SpiralPackageDir
 $root = Join-Path $PSScriptRoot 'export-check-rust'
 $failed = 0
 foreach ($dir in Get-ChildItem $root -Directory | Where-Object { -not $Case -or $Case -contains $_.Name }) {
-    $expected = [int](Get-Content (Join-Path $dir.FullName 'expected-exit.txt') -TotalCount 1)
     $out = Join-Path (Get-SpiralCacheDir) "runs/export-check-rust/$($dir.Name)"
     if (Test-Path $out) { Remove-Item $out -Recurse -Force }
     New-Item -ItemType Directory -Force $out | Out-Null
@@ -21,9 +20,9 @@ foreach ($dir in Get-ChildItem $root -Directory | Where-Object { -not $Case -or 
         $code = if (Test-Path consumer.exe) { & .\consumer.exe; $LASTEXITCODE } else { $null }
     }
     finally { Pop-Location }
-    $ok = $code -eq $expected
+    $ok = $code -eq 0
     if (-not $ok) { $failed++ }
-    '{0,-22} {1}  consumer exit {2} (expected {3}){4}' -f $dir.Name, $(if ($ok) { 'ok  ' } else { 'FAIL' }), $(if ($null -eq $code) { 'none' } else { $code }), $expected, $(if ($errors) { '  ' + (($errors | ForEach-Object { "$_".Trim() }) -join ' / ') } else { '' })
+    '{0,-22} {1}  consumer exit {2}{3}' -f $dir.Name, $(if ($ok) { 'ok  ' } else { 'FAIL' }), $(if ($null -eq $code) { 'none' } else { $code }), $(if ($errors) { '  ' + (($errors | ForEach-Object { "$_".Trim() }) -join ' / ') } else { '' })
 }
 "export-check-rust: $failed failed"
 exit $failed

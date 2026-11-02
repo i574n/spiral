@@ -10,4 +10,8 @@ modules:
     notebook
     targets
     daemon
+    client
+    memo
+    manifest
+    source_map
     main

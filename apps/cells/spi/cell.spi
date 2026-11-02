@@ -5,28 +5,28 @@
     | [] => ""
     | s :: rest => ? i = 0i32 ?> s |: nth_line rest (i - 1i32)
 
-:= join_lines (xs : list string) : string = sm'.concat_list "\n" xs
+:= join_lines (xs : list string) : string = sm'::concat_list "\n" xs
 
 :~ ^ collect (src : string) (i : i32) (acc : list string) : list string =
-    ?= text.next_line src i ?|
-    | LineDone => listm.rev acc
+    ?= text::next_line src i ?|
+    | LineDone => listm::rev acc
     | LineGot (line, next) => collect src next (line :: acc)
 
 := read_lines (text : string) : list string = collect text 0i32 []
 
 := declaration (line : string) : bool =
-    ? text.starts_with line "open " || text.starts_with line ":< " ?> !+
-    |? text.starts_with line "prototype " || text.starts_with line ":? " ?> !+
-    |? text.starts_with line "instance " || text.starts_with line ":+ " ?> !+
-    |? text.starts_with line "type " || text.starts_with line ":== " ?> !+
-    |? text.starts_with line "union " || text.starts_with line ":| " ?> !+
-    |? text.starts_with line "nominal " || text.starts_with line ":! " ?> !+
+    ? text::starts_with line "open " || text::starts_with line ":< " ?> !+
+    |? text::starts_with line "prototype " || text::starts_with line ":? " ?> !+
+    |? text::starts_with line "instance " || text::starts_with line ":+ " ?> !+
+    |? text::starts_with line "type " || text::starts_with line ":== " ?> !+
+    |? text::starts_with line "union " || text::starts_with line ":| " ?> !+
+    |? text::starts_with line "nominal " || text::starts_with line ":! " ?> !+
     |: !-
 
 := binding_keyword (line : string) : bool =
-    ? text.starts_with line "inl " || text.starts_with line ":= " ?> !+
-    |? text.starts_with line "and " || text.starts_with line ":& " ?> !+
-    |? text.starts_with line "let " || text.starts_with line ":~ " ?> !+
+    ? text::starts_with line "inl " || text::starts_with line ":= " ?> !+
+    |? text::starts_with line "and " || text::starts_with line ":& " ?> !+
+    |? text::starts_with line "let " || text::starts_with line ":~ " ?> !+
     |: !-
 
 :~ ^ search_top (xs : list string) (i : i32) (last : i32) : i32 =
@@ -34,11 +34,11 @@
     |:
         := line = nth_line xs i
         ? line = "" ?> search_top xs (i - 1i32) last
-        |? text.starts_with line " " ?> search_top xs (i - 1i32) last
-        |? text.starts_with line "// " ?> search_top xs (i - 1i32) last
+        |? text::starts_with line " " ?> search_top xs (i - 1i32) last
+        |? text::starts_with line "// " ?> search_top xs (i - 1i32) last
         |? declaration line ?> last
         |? binding_keyword line ?>
-            ? text.is_value_binding line ?> search_top xs (i - 1i32) i
+            ? text::is_value_binding line ?> search_top xs (i - 1i32) i
             |: last
         |: search_top xs (i - 1i32) i
 
@@ -46,14 +46,14 @@
     ? i < 0i32 ?> -1i32
     |:
         := line = nth_line xs i
-        ? line <> "" && text.starts_with line " " = !- ?> i
+        ? line <> "" && text::starts_with line " " = !- ?> i
         |: last_block xs (i - 1i32)
 
 := main_line (line : string) : bool =
-    ? text.starts_with line "inl main " || text.starts_with line ":= main " ?> !+
-    |? text.starts_with line "let main " || text.starts_with line ":~ main " ?> !+
-    |? text.starts_with line "inl main(" || text.starts_with line ":= main(" ?> !+
-    |? text.starts_with line "let main(" || text.starts_with line ":~ main(" ?> !+
+    ? text::starts_with line "inl main " || text::starts_with line ":= main " ?> !+
+    |? text::starts_with line "let main " || text::starts_with line ":~ main " ?> !+
+    |? text::starts_with line "inl main(" || text::starts_with line ":= main(" ?> !+
+    |? text::starts_with line "let main(" || text::starts_with line ":~ main(" ?> !+
     |: !-
 
 :~ ^ map_main (xs : list string) (i : i32) (at : i32) : list string =
@@ -63,9 +63,9 @@
         := mapped =
             ? i < at ?> line
             |? i = at ?>
-                := expr = ? text.trim line = "()" ?> "0i32" |: line
+                := expr = ? text::trim line = "()" ?> "0i32" |: line
                 "inl main () : i32 =\n    " ++ expr
-            |? text.blank line ?> ""
+            |? text::blank line ?> ""
             |: "    " ++ line
         mapped :: map_main rest (i + 1i32) at
 
@@ -81,13 +81,13 @@
 
 := wrap (code : string) : string * main_source =
     := xs = read_lines code
-    := n = listm.length xs
+    := n = listm::length xs
     := block = last_block xs (n - 1i32)
-    ? block >= 0i32 && main_line (nth_line xs block) ?> text.ensure_nl code, OwnMain
+    ? block >= 0i32 && main_line (nth_line xs block) ?> text::ensure_nl code, OwnMain
     |:
         := at = search_top xs (n - 1i32) -1i32
-        ? at < 0i32 ?> text.ensure_nl code ++ "inl main () : i32 = 0i32\n", MainFromDefinitionsOnly
-        |: text.ensure_nl (join_lines (map_main xs 0i32 at)), MainFromExpression
+        ? at < 0i32 ?> text::ensure_nl code ++ "inl main () : i32 = 0i32\n", MainFromDefinitionsOnly
+        |: text::ensure_nl (join_lines (map_main xs 0i32 at)), MainFromExpression
 
 := package_project (includes : string) : string =
     if includes = "" then """
@@ -111,7 +111,7 @@
         """
 
 :~ ^ skip_spaces (line : string) (i : i32) : i32 =
-    ? i < text.length line && text.index line i = ' ' ?> skip_spaces line (i + 1i32) |: i
+    ? i < text::length line && text::index line i = ' ' ?> skip_spaces line (i + 1i32) |: i
 
 inl show_exit () : string = """
     let spiral_cells_value = main.join().unwrap();
@@ -144,7 +144,7 @@ inl unit_join (panic_code : string) : string = """
 
 :~ ^ digits_between (line : string) (from : i32) (to : i32) : bool =
     ? from >= to ?> !+
-    |? text.digit_val (text.index line from) < 0i32 ?> !-
+    |? text::digit_val (text::index line from) < 0i32 ?> !-
     |: digits_between line (from + 1i32) to
 
 :| shown =
@@ -154,38 +154,38 @@ inl unit_join (panic_code : string) : string = """
 := shown_of (flag : string) : shown = ? flag = "1" ?> ShowValue |: UnitValue
 
 := patch_join_exit (rust : string) (show : shown) : string =
-    := at = text.find_from rust (join_exit_open ()) 0i32
+    := at = text::find_from rust (join_exit_open ()) 0i32
     ? at < 0i32 ?> rust
     |:
-        := code_at = at + text.length (join_exit_open ())
-        := close_at = text.find_from rust (join_exit_close ()) code_at
+        := code_at = at + text::length (join_exit_open ())
+        := close_at = text::find_from rust (join_exit_close ()) code_at
         ? close_at <= code_at ?> rust
         |? digits_between rust code_at close_at = !- ?> rust
         |:
-            := panic_code = text.slice_len rust code_at (close_at - code_at)
+            := panic_code = text::slice_len rust code_at (close_at - code_at)
             := patched = ?= show ?| ShowValue => show_join panic_code | UnitValue => unit_join panic_code
-            text.take rust at ++ patched ++ text.drop rust (close_at + text.length (join_exit_close ()))
+            text::take rust at ++ patched ++ text::drop rust (close_at + text::length (join_exit_close ()))
 
 := exit_for (show : shown) : string = ?= show ?| ShowValue => show_exit () | UnitValue => unit_exit ()
 
 := patch_rust (rust : string) (show : shown) : string =
-    := textn = text.replace rust "\r\n" "\n"
-    := collapsed = text.collapse_newlines (join_lines (read_lines textn))
+    := textn = text::replace rust "\r\n" "\n"
+    := collapsed = text::collapse_newlines (join_lines (read_lines textn))
     := unwrapped = "std::process::exit(main.join().unwrap());"
-    patch_join_exit (text.replace collapsed unwrapped (exit_for show)) show
+    patch_join_exit (text::replace collapsed unwrapped (exit_for show)) show
 
 := panic_thread_open () : string = "thread '"
 := panic_id_open () : string = "' ("
 := panic_id_close () : string = ") panicked"
 
 := without_panic_thread_id (line : string) : string =
-    ? text.starts_with line (panic_thread_open ())
+    ? text::starts_with line (panic_thread_open ())
     ?>
-        := id_open = text.find_from line (panic_id_open ()) (text.length (panic_thread_open ()))
-        := id_from = id_open + text.length (panic_id_open ())
-        := id_close = ? id_open >= 0i32 ?> text.find_from line (panic_id_close ()) id_from |: -1i32
+        := id_open = text::find_from line (panic_id_open ()) (text::length (panic_thread_open ()))
+        := id_from = id_open + text::length (panic_id_open ())
+        := id_close = ? id_open >= 0i32 ?> text::find_from line (panic_id_close ()) id_from |: -1i32
         ? id_close > id_from && digits_between line id_from id_close
-        ?> text.take line (id_open + 1i32) ++ text.drop line (id_close + 1i32)
+        ?> text::take line (id_open + 1i32) ++ text::drop line (id_close + 1i32)
         |: line
     |: line
 
@@ -195,20 +195,20 @@ inl unit_join (panic_code : string) : string = """
 
 :~ ^ last_separator_before (line : string) (i : i32) (from : i32) : i32 =
     ? i < from ?> -1i32
-    |? text.index line i = '/' || text.index line i = '\\' ?> i
+    |? text::index line i = '/' || text::index line i = '\\' ?> i
     |: last_separator_before line (i - 1i32) from
 
 := without_cell_run_dir (line : string) : string =
-    := at = text.find_from line (panic_location_open ()) 0i32
-    := path_from = at + text.length (panic_location_open ())
-    := suffix = ? at >= 0i32 ?> text.find_from line (rust_source_suffix ()) path_from |: -1i32
+    := at = text::find_from line (panic_location_open ()) 0i32
+    := path_from = at + text::length (panic_location_open ())
+    := suffix = ? at >= 0i32 ?> text::find_from line (rust_source_suffix ()) path_from |: -1i32
     ? suffix > path_from
     ?>
-        := path_to = suffix + text.length (rust_source_suffix ()) - 1i32
-        := path = text.slice_len line path_from (path_to - path_from)
+        := path_to = suffix + text::length (rust_source_suffix ()) - 1i32
+        := path = text::slice_len line path_from (path_to - path_from)
         := separator = last_separator_before line (path_to - 1i32) path_from
-        ? text.contains path (cell_run_dir ()) && separator >= path_from
-        ?> text.take line path_from ++ text.drop line (separator + 1i32)
+        ? text::contains path (cell_run_dir ()) && separator >= path_from
+        ?> text::take line path_from ++ text::drop line (separator + 1i32)
         |: line
     |: line
 
@@ -221,27 +221,27 @@ inl unit_join (panic_code : string) : string = """
 := value_marker () : string = "SPIRAL_CELLS_VALUE:"
 
 := value_found (line : string) (before : list string) (rest : list string) : run_output =
-    := value = text.trim_cr (text.drop line (text.length (value_marker ())))
-    := stdout = text.trim_trailing_newlines (join_pair (join_lines (listm.rev before)) (join_lines rest))
+    := value = text::trim_cr (text::drop line (text::length (value_marker ())))
+    := stdout = text::trim_trailing_newlines (join_pair (join_lines (listm::rev before)) (join_lines rest))
     ValueAndStdout (value, stdout)
 
 :~ ^ found_in (rows : list string) (before : list string) : run_output =
     ?= rows ?|
-    | [] => StdoutOnly (text.trim_trailing_newlines (join_lines (listm.rev before)))
+    | [] => StdoutOnly (text::trim_trailing_newlines (join_lines (listm::rev before)))
     | line :: rest =>
-        ? text.starts_with line (value_marker ()) ?> value_found line before rest
+        ? text::starts_with line (value_marker ()) ?> value_found line before rest
         |: found_in rest (line :: before)
 
 := split_output (output : string) : run_output =
-    found_in (listm.map run_stable (read_lines (text.replace output "\r\n" "\n"))) []
+    found_in (listm::map run_stable (read_lines (text::replace output "\r\n" "\n"))) []
 
 := run_output_text (r : run_output) : string =
     ?= r ?| StdoutOnly stdout => "0\n" ++ stdout | ValueAndStdout (value, stdout) => "1\n" ++ value ++ "\n" ++ stdout
 
 :~ ^ skip_ws (src : string) (i : i32) : i32 =
-    ? i >= text.length src ?> i
+    ? i >= text::length src ?> i
     |:
-        := ch = text.index src i
+        := ch = text::index src i
         ? ch = ' ' ?> skip_ws src (i + 1i32)
         |? ch = '\t' ?> skip_ws src (i + 1i32)
         |? ch = '\n' ?> skip_ws src (i + 1i32)
@@ -249,26 +249,26 @@ inl unit_join (panic_code : string) : string = """
         |: i
 
 :~ ^ line_end (src : string) (i : i32) : i32 =
-    ? i >= text.length src ?> i
+    ? i >= text::length src ?> i
     |:
-        := ch = text.index src i
+        := ch = text::index src i
         ? ch = '\n' ?> i
         |? ch = '\r' ?> i
         |: line_end src (i + 1i32)
 
 := cut_quote (ty : string) : string =
-    := q = text.find_char ty 0i32 '"'
-    ? q < 0i32 ?> ty |: text.trim (text.take ty q)
+    := q = text::find_char ty 0i32 '"'
+    ? q < 0i32 ?> ty |: text::trim (text::take ty q)
 
 := type_text (src : string) (at : i32) (label : string) : string =
-    := j = skip_ws src (at + text.length label)
+    := j = skip_ws src (at + text::length label)
     := k = line_end src j
-    cut_quote (text.trim (text.slice_len src j (k - j)))
+    cut_quote (text::trim (text::slice_len src j (k - j)))
 
 := prefix_before (ty : string) (mark : string) : option string =
-    := n = text.length mark
-    := m = text.length ty
-    ? text.starts_at ty (m - n) mark ?> Some (text.slice_len ty 0i32 (m - n)) |: None
+    := n = text::length mark
+    := m = text::length ty
+    ? text::starts_at ty (m - n) mark ?> Some (text::slice_len ty 0i32 (m - n)) |: None
 
 := same_prefix (got : option string) (expected : option string) : bool =
     ?= got, expected ?| Some g, Some e => g = e | _ => !-
@@ -280,10 +280,10 @@ inl unit_join (panic_code : string) : string = """
     |: same_prefix (prefix_before got "-> i32") (prefix_before expected "-> ()")
 
 :~ ^ unit_from (src : string) (i : i32) : bool =
-    := at = text.find_from src "Got:" i
+    := at = text::find_from src "Got:" i
     ? at < 0i32 ?> !-
     |:
-        := exp = text.find_from src "Expected:" (at + 4i32)
+        := exp = text::find_from src "Expected:" (at + 4i32)
         ? exp < 0i32 ?> !-
         |? unit_pair (type_text src at "Got:") (type_text src exp "Expected:") ?> !+
         |: unit_from src (at + 4i32)

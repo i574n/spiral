@@ -1,0 +1,1 @@
+:= middle_value () : i32 = !!!!Add(tools::first::first_value (), 4i32)

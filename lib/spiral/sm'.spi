@@ -138,52 +138,22 @@
 := obj_to_string_rust \* t. (x : t) : string =
     ~> obj_to_string_rust_real `t x
 := obj_to_string_fsharp \* t. (x : t) : string =
-    ? (~> ?: t ?| bool => !+ | _ => !-)
-    ?> $'(if !x then "true" else "false")' : string
-    |: $'!x |> _.ToString()' : string
+    $'!x |> _.ToString()' : string
 := obj_to_string_python \* t. (x : t) : string =
-    ? (~> ?: t ?| bool => !+ | _ => !-)
-    ?> $'("true" if !x else "false")' : string
-    |: $'str(!x)' : string
+    $'str(!x)' : string
 := obj_to_string_typescript \* t. (x : t) : string =
-    ? (~> ?: t ?| char => !+ | _ => !-)
-    ?> $'String.fromCharCode(!x)' : string
-    |: $'String(!x)' : string
+    $'String(!x)' : string
 := obj_to_string_wasm \* t. (x : t) : string =
     ? (~> ?: t ?| string => !+ | _ => !-) ?> $'!x ' : string
-    |? (~> ?: t ?| bool => !+ | _ => !-) ?> $'(call $bool_to_str !x)' : string
-    |? (~> ?: t ?| char => !+ | _ => !-) ?> $'(call $char_to_str !x)' : string
-    |? (~> ?: t ?| i64 => !+ | _ => !-) ?> $'(call $i64_to_str !x)' : string
-    |? (~> ?: t ?| u64 => !+ | _ => !-) ?> $'(call $u64_to_str !x)' : string
-    elif (real typecase t with i8 => true | i16 => true | i32 => true | _ => false) then $'(call $i64_to_str \
-        (i64.extend_i32_s !x))' : string
-    elif (real typecase t with u8 => true | u16 => true | u32 => true | _ => false) then $'(call $u64_to_str \
-        (i64.extend_i32_u !x))' : string
     |: $'backend_switch_has_no_Wasm_arm_in_lib_spiral' : string
 := obj_to_string_zig \* t. (x : t) : string =
     ? (~> ?: t ?| string => !+ | string_builder_real => !+ | _ => !-)
     ?> $'!x ' : string
-    |? (~> ?: t ?| char => !+ | _ => !-)
-    ?> $'(std.fmt.allocPrint(spiral_gpa, "{c}", .{ !x }) catch @@panic("out of memory"))' : string
-    |? (~> ?: t ?| bool => !+ | _ => !-)
-    ?> $'(if (!x) "true" else "false")' : string
-    |?
-        ~>
-            ?: t ?|
-            | f32 => !+
-            | f64 => !+
-            | i8 => !+
-            | i16 => !+
-            | i32 => !+
-            | i64 => !+
-            | u8 => !+
-            | u16 => !+
-            | u32 => !+
-            | u64 => !+
-            | _ => !-
+    |? (~> ?: t ?| f32 => !+ | f64 => !+ | _ => !-)
     ?> $'(std.fmt.allocPrint(spiral_gpa, "{d}", .{ !x }) catch @@panic("out of memory"))' : string
     |: $'(std.fmt.allocPrint(spiral_gpa, "{any}", .{ !x }) catch @@panic("out of memory"))' : string
-:= obj_to_string_c \* t. (x : t) : string =
+
+:= obj_to_string_prim \* t. (x : t) (otherwise : () -> string) : string =
     ?
         ~>
             ?: t ?|
@@ -199,32 +169,7 @@
             | u64 => !+
             | _ => !-
     ?> !!!!PrimToString(x)
-    |: failwith "sm'.obj_to_string / the C backend prints integers, bools and chars only"
-
-:= obj_to_string_pascal_bool \* t. (x : t) : string =
-    ?
-        ~>
-            ?: t ?|
-            | bool => !+
-            | _ => !-
-    ?> $'LowerCase(BoolToStr(!x, True))' : string
-    |: failwith "sm'.obj_to_string / the Pascal backend prints integers and bools only"
-
-:= obj_to_string_pascal \* t. (x : t) : string =
-    ?
-        ~>
-            ?: t ?|
-            | i8 => !+
-            | i16 => !+
-            | i32 => !+
-            | i64 => !+
-            | u8 => !+
-            | u16 => !+
-            | u32 => !+
-            | u64 => !+
-            | _ => !-
-    ?> $'IntToStr(!x)' : string
-    |: obj_to_string_pascal_bool x
+    |: otherwise ()
 
 := (~#?*) s =
     s |> format_debug
@@ -281,17 +226,17 @@
     ? ~> show_composite_real `t () ?> ~> show_real `t x
     |:
         backend_switch {
-            Gleam = \ () => #?*x : string
-            Lua = \ () => #?*x : string
-            Fsharp = \ () => obj_to_string_fsharp x
-            Python = \ () => obj_to_string_python x
-            Rust = \ () => obj_to_string_rust x
-            TypeScript = \ () => obj_to_string_typescript x
-            Zig = \ () => obj_to_string_zig x
-            Lean = \ () => $'toString !x ' : string
-            Wasm = \ () => obj_to_string_wasm x
-            C = \ () => obj_to_string_c x
-            Pascal = \ () => obj_to_string_pascal x
+            Gleam = \ () => obj_to_string_prim x (\ () => #?*x : string)
+            Lua = \ () => obj_to_string_prim x (\ () => #?*x : string)
+            Fsharp = \ () => obj_to_string_prim x (\ () => obj_to_string_fsharp x)
+            Python = \ () => obj_to_string_prim x (\ () => obj_to_string_python x)
+            Rust = \ () => obj_to_string_prim x (\ () => obj_to_string_rust x)
+            TypeScript = \ () => obj_to_string_prim x (\ () => obj_to_string_typescript x)
+            Zig = \ () => obj_to_string_prim x (\ () => obj_to_string_zig x)
+            Lean = \ () => obj_to_string_prim x (\ () => $'toString !x ' : string)
+            Wasm = \ () => obj_to_string_prim x (\ () => obj_to_string_wasm x)
+            C = \ () => obj_to_string_prim x (\ () => failwith "sm'.obj_to_string / the C backend prints integers, bools and chars only")
+            Pascal = \ () => obj_to_string_prim x (\ () => failwith "sm'.obj_to_string / the Pascal backend prints integers, bools and chars only")
         }
 
 ///> c
@@ -300,9 +245,16 @@
     |> _assert_eq ("42", "-7", "true", "x")
 
 ///> pascal
-:# obj_to_string_on_pascal_prints_ints_and_bools =
-    (obj_to_string 42i32, obj_to_string (0i64 - 7), obj_to_string 18446744073709551615u64, obj_to_string !-)
-    |> _assert_eq ("42", "-7", "18446744073709551615", "false")
+:# obj_to_string_on_pascal_prints_ints_bools_and_chars =
+    (obj_to_string 42i32, obj_to_string (0i64 - 7), obj_to_string 18446744073709551615u64, obj_to_string !-, obj_to_string 'x')
+    |> _assert_eq ("42", "-7", "18446744073709551615", "false", "x")
+
+///> gleam
+///> lua
+///> lean
+:# obj_to_string_prints_prims_like_c =
+    (obj_to_string (dyn !+), obj_to_string (dyn 'x'), obj_to_string (dyn (0i64 - 7)), obj_to_string (dyn 255u8))
+    |> _assert_eq ("true", "x", "-7", "255")
 
 ///> cuda
 ///> rust
@@ -906,6 +858,7 @@
 ///> rust
 ///> cuda
 ///> lua
+///> zig
 :# index_of_counts_utf8_bytes_and_whole_needles =
     ("é/x" |> index_of "/", "abcabc" |> index_of "ca", "abc" |> index_of "z")
     |> _assert_eq (2, 2, -1)

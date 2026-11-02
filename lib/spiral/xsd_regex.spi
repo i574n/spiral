@@ -577,7 +577,7 @@
     | head :: rest => ? index = 0i32 ?> head |: state_rx rest (index - 1i32)
     | [] => RxNone
 
-:~ ^ add_move (move : dfa_move) (moves : list dfa_move) : list dfa_move =
+:~ add_move (move : dfa_move) (moves : list dfa_move) : list dfa_move =
     ?= moves ?|
     | last :: rest =>
         ? last::target = move::target && last::high + 1u32 = move::low ?> { last ?| high = move::high } :: rest

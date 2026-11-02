@@ -232,6 +232,28 @@ defmodule Spiral.Cells.MemoTest do
     assert Enum.zip(before, after_edit) |> Enum.map(fn {b, a} -> b == a end) == [true, false, false, true, false]
   end
 
+  test "edition 3 spellings reach package modules too: m::x only in module m, :< opens", %{package: package} do
+    File.write!(Path.join(package, "package.spiproj"), "packages:\n    |core-\nmodules:\n    listed-\n    sub/\n        inner\n    other\n    user\n")
+    File.write!(Path.join(package, "other.spi"), ":= a () = 1i32\n:= slice () = 1i32\n")
+    File.write!(Path.join(package, "user.spi"), ":< other\n:= through () = slice ()\n")
+
+    key_of = fn body ->
+      step = %{program: "///- --package #{package}\n\n#{body}\n", real: ""}
+      fn -> Memo.key(Memo.context([memo: true, memo_dir: Path.join(package, "memo")], [step]), step, []) end
+    end
+
+    edit_other = fn value -> File.write!(Path.join(package, "other.spi"), ":= a () = #{value}i32\n:= slice () = #{value}i32\n") end
+    unqualified = key_of.(":= main () = a ()")
+    opened = key_of.(":< other\n:= main () = a ()")
+    qualified = key_of.(":= main () = other::a ()")
+    field = key_of.(":= main () = record::slice")
+    through_module = key_of.(":= main () = user::through ()")
+    before = Enum.map([unqualified, opened, qualified, field, through_module], & &1.())
+    edit_other.(7)
+    after_edit = Enum.map([unqualified, opened, qualified, field, through_module], & &1.())
+    assert Enum.zip(before, after_edit) |> Enum.map(fn {b, a} -> b == a end) == [true, false, false, true, false]
+  end
+
   test "inserting an unreached definition between reached ones in a package module keeps the key", %{package: package} do
     File.write!(Path.join(package, "listed.spi"), "inl a () = 1i32\ninl z () = a ()\n")
     step = %{program: "///- --package #{package}\n\ninl main () = z ()\n", real: ""}

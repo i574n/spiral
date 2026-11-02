@@ -1,0 +1,1 @@
+:= first_value () : i32 = !!!!Add(base::base_value (), 2i32)

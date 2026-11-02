@@ -46,27 +46,27 @@
     | Flag (s, rest) => rev_flags rest (Flag (s, acc))
 
 :~ ^ take_token (src : string) (i : i32) : i32 =
-    ? i >= text.length src ?> i
+    ? i >= text::length src ?> i
     |:
-        := ch = text.index src i
+        := ch = text::index src i
         ? ch = ' ' ?> i
         |? ch = '\t' ?> i
         |: take_token src (i + 1i32)
 
 :~ ^ skip_ws (src : string) (i : i32) : i32 =
-    ? i >= text.length src ?> i
+    ? i >= text::length src ?> i
     |:
-        := ch = text.index src i
+        := ch = text::index src i
         ? ch = ' ' ?> skip_ws src (i + 1i32)
         |? ch = '\t' ?> skip_ws src (i + 1i32)
         |: i
 
 :~ ^ flags_from (src : string) (i : i32) (acc : flags) : flags =
     := j = skip_ws src i
-    ? j >= text.length src ?> rev_flags acc NoFlag
+    ? j >= text::length src ?> rev_flags acc NoFlag
     |:
         := k = take_token src j
-        flags_from src k (Flag (text.slice_len src j (k - j), acc))
+        flags_from src k (Flag (text::slice_len src j (k - j), acc))
 
 :~ ^ read_flags
     (xs : flags) (packages : nb) (test : i32) (is_real : i32) (timeout : string)
@@ -75,7 +75,7 @@
     ?= xs ?|
     | NoFlag => packages, test, is_real, timeout
     | Flag ("--package", Flag (path, rest)) =>
-        ? text.starts_with path "--" ?> read_flags rest packages test is_real timeout
+        ? text::starts_with path "--" ?> read_flags rest packages test is_real timeout
         |: read_flags rest (add_nb packages path) test is_real timeout
     | Flag ("--package", rest) => read_flags rest packages test is_real timeout
     | Flag ("--ignore", rest) => read_flags rest packages 3i32 is_real timeout
@@ -84,7 +84,7 @@
     | Flag ("--test", rest) => read_flags rest packages (? test >= 2i32 ?> test |: 1i32) is_real timeout
     | Flag ("--real", rest) => read_flags rest packages test 1i32 timeout
     | Flag ("--timeout", Flag (ms, rest)) =>
-        := n = text.parse_i32 ms
+        := n = text::parse_i32 ms
         := timeout2 = ? n > 0i32 ?> ms |: timeout
         read_flags rest packages test is_real timeout2
     | Flag (_, rest) => read_flags rest packages test is_real timeout
@@ -94,37 +94,37 @@
     (skip : i32)
     : nb * i32 * i32 * string * string * nb * i32
     =
-    ?= text.next_line src i ?|
+    ?= text::next_line src i ?|
     | LineDone =>
-        := joined_body = text.trim_trailing_newlines (join_nb (rev_nb body NoNb))
+        := joined_body = text::trim_trailing_newlines (join_nb (rev_nb body NoNb))
         packages, test, is_real, timeout, joined_body, rev_nb opens NoNb, skip
     | LineGot (line, next) =>
-        := trimmed = text.trim line
-        ? text.starts_with trimmed "///"
+        := trimmed = text::trim line
+        ? text::starts_with trimmed "///"
         ?>
-            ? text.starts_with trimmed "///- "
+            ? text::starts_with trimmed "///- "
             ?>
                 := packages2, test2, is_real2, timeout2 =
                     read_flags
-                        (flags_from (text.drop trimmed (text.length "///- ")) 0i32 NoFlag)
+                        (flags_from (text::drop trimmed (text::length "///- ")) 0i32 NoFlag)
                         packages
                         test
                         is_real
                         timeout
                 scan_lines src next packages2 test2 is_real2 timeout2 body opens skip
-            |? text.starts_with trimmed "///>"
+            |? text::starts_with trimmed "///>"
             ?>
-                := rest = text.trim (text.drop trimmed (text.length "///>"))
+                := rest = text::trim (text::drop trimmed (text::length "///>"))
                 := skip2 = ? rest = "_" ?> 1i32 |: skip
                 scan_lines src next packages test is_real timeout body opens skip2
             |: scan_lines src next packages test is_real timeout body opens skip
         |:
             := opens2 =
-                ? text.starts_with trimmed "open " || text.starts_with trimmed ":< " ?> Nb (trimmed, opens) |: opens
+                ? text::starts_with trimmed "open " || text::starts_with trimmed ":< " ?> Nb (trimmed, opens) |: opens
             scan_lines src next packages test is_real timeout (Nb (line, body)) opens2 skip
 
 := scan (src : string) : nb * i32 * i32 * string * string * nb * i32 =
-    scan_lines (text.replace src "\r\n" "\n") 0i32 NoNb 0i32 0i32 "" NoNb NoNb 0i32
+    scan_lines (text::replace src "\r\n" "\n") 0i32 NoNb 0i32 0i32 "" NoNb NoNb 0i32
 
 :~ ^ merge (xs : nb) (more : nb) : nb =
     ?= more ?|
@@ -154,14 +154,14 @@
 :~ ^ read_sources (src : string) (i : i32) (n : i32) (acc : sources) : sources =
     ? n <= 0i32 ?> acc
     |:
-        ?= text.next_line src i ?|
+        ?= text::next_line src i ?|
         | LineDone => acc
         | LineGot (kind, j) =>
-            ?= text.next_line src j ?|
+            ?= text::next_line src j ?|
             | LineDone => acc
             | LineGot (len_text, k) =>
-                := nlen = text.parse_i32 len_text
-                read_sources src (k + nlen) (n - 1i32) (Source (kind, text.slice_len src k nlen, acc))
+                := nlen = text::parse_i32 len_text
+                read_sources src (k + nlen) (n - 1i32) (Source (kind, text::slice_len src k nlen, acc))
 
 :~ ^ rev_sources (xs : sources) (acc : sources) : sources =
     ?= xs ?|
@@ -169,47 +169,47 @@
     | Source (k, s, rest) => rev_sources rest (Source (k, s, acc))
 
 := load_sources (src : string) : sources =
-    ?= text.next_line src 0i32 ?|
+    ?= text::next_line src 0i32 ?|
     | LineDone => NoSource
-    | LineGot (count, next) => rev_sources (read_sources src next (text.parse_i32 count) NoSource) NoSource
+    | LineGot (count, next) => rev_sources (read_sources src next (text::parse_i32 count) NoSource) NoSource
 
 :~ ^ indent_body (src : string) (i : i32) (acc : string) : string =
-    ?= text.next_line src i ?|
+    ?= text::next_line src i ?|
     | LineDone => acc
     | LineGot (line, next) =>
-        := row = ? text.trim line = "" ?> "" |: "    " ++ line
+        := row = ? text::trim line = "" ?> "" |: "    " ++ line
         indent_body src next (? row = "" && acc = "" ?> acc |: acc ++ "\n" ++ row)
 
 :~ ^ split_declarations
     (src : string) (i : i32) (in_declaration : bool) (declarations : string) (rest : string)
     : string * string
     =
-    ?= text.next_line src i ?|
+    ?= text::next_line src i ?|
     | LineDone => declarations, rest
     | LineGot (line, next) =>
-        := top = line <> "" && text.starts_with line " " = !-
-        := declaration = ? top ?> cell.declaration line |: in_declaration
+        := top = line <> "" && text::starts_with line " " = !-
+        := declaration = ? top ?> cell::declaration line |: in_declaration
         ? declaration ?> split_declarations src next !+ (declarations ++ "\n" ++ line) rest
         |: split_declarations src next !- declarations (rest ++ "\n" ++ line)
 
 :~ ^ last_top_block (src : string) (i : i32) (block : string) : string =
-    ?= text.next_line src i ?|
+    ?= text::next_line src i ?|
     | LineDone => block
     | LineGot (line, next) =>
-        ? line <> "" && text.starts_with line " " = !- ?> last_top_block src next line
+        ? line <> "" && text::starts_with line " " = !- ?> last_top_block src next line
         |: last_top_block src next (block ++ "\n" ++ line)
 
 :~ ^ names_status_target (src : string) (i : i32) : bool =
-    ?= text.next_line src i ?|
+    ?= text::next_line src i ?|
     | LineDone => !-
     | LineGot (line, next) =>
-        ? text.starts_with (text.trim line) "///> wgsl" ?> !+ |: names_status_target src next
+        ? text::starts_with (text::trim line) "///> wgsl" ?> !+ |: names_status_target src next
 
 := scoped_test_body (returns_status : bool) (body : string) : string =
     := declarations, rest = split_declarations body 0i32 !- "" ""
-    ? text.trim rest = "" ?> body
+    ? text::trim rest = "" ?> body
     |:
-        := ends_in_assertion = text.contains (last_top_block rest 0i32 "") "_assert"
+        := ends_in_assertion = text::contains (last_top_block rest 0i32 "") "_assert"
         := call =
             if ends_in_assertion then """
 
@@ -225,15 +225,15 @@
                 inl _ = spiral_cells_test ()
                 0i32
                 """
-        text.trim declarations ++ "\ninl spiral_cells_test () =" ++ indent_body rest 0i32 "" ++ call
+        text::trim declarations ++ "\ninl spiral_cells_test () =" ++ indent_body rest 0i32 "" ++ call
 
 := real_entry () : string = "spiral_cells_real"
 
 := real_program (packages : nb) (reals : nb) (body : string) : string * string =
-    := wrapped, generated = cell.wrap body
-    ? cell.from_expression generated
+    := wrapped, generated = cell::wrap body
+    ? cell::from_expression generated
     ?>
-        := entry = text.replace wrapped "inl main () : i32 =" ("inl " ++ real_entry () ++ " () =")
+        := entry = text::replace wrapped "inl main () : i32 =" ("inl " ++ real_entry () ++ " () =")
         program packages NoNb NoNb ("inl main () : i32 =\n    inl _ = real " ++ real_entry () ++ " ()\n    0i32"),
         join_nb (snoc reals entry)
     |: program packages NoNb NoNb "", join_nb (snoc reals body)
@@ -309,7 +309,7 @@
                         join_nb reals
                 := timeout_text = step_budget budget2 test timeout
                 := step = ? planned scope test ?> Step (index, timeout_text, code, real_code, acc) |: acc
-                := kept = test <> 1i32 && skip = 0i32 && text.trim body <> ""
+                := kept = test <> 1i32 && skip = 0i32 && text::trim body <> ""
                 := last_def2 = ? kept && test = 0i32 ?> index |: last_def
                 ? is_real = 1i32
                 ?>
@@ -344,19 +344,19 @@
     ?= xs ?|
     | NoStep => ""
     | Step (index, timeout, code, real_code, rest) =>
-        := head = text.show_i32 index ++ "\n" ++ timeout ++ "\n" ++ text.show_i32 (text.length code) ++ "\n" ++ code
-        head ++ text.show_i32 (text.length real_code) ++ "\n" ++ real_code ++ emit_steps rest
+        := head = text::show_i32 index ++ "\n" ++ timeout ++ "\n" ++ text::show_i32 (text::length code) ++ "\n" ++ code
+        head ++ text::show_i32 (text::length real_code) ++ "\n" ++ real_code ++ emit_steps rest
 
 := plan_in (scope : plan_scope) (src : string) : string =
-    ?= text.next_line (text.replace src "\r\n" "\n") 0i32 ?|
+    ?= text::next_line (text::replace src "\r\n" "\n") 0i32 ?|
     | LineDone => "0\n"
     | LineGot (lib, next) =>
         := packages = ? lib = "-" || lib = "" ?> NoNb |: Nb (lib, NoNb)
         := found =
             rev_steps
-                (walk scope (load_sources (text.drop src next)) 0i32 -1i32 packages NoNb NoNb NoNb BudgetUnseen NoStep)
+                (walk scope (load_sources (text::drop src next)) 0i32 -1i32 packages NoNb NoNb NoNb BudgetUnseen NoStep)
                 NoStep
-        text.show_i32 (count_steps found) ++ "\n" ++ emit_steps found
+        text::show_i32 (count_steps found) ++ "\n" ++ emit_steps found
 
 := plan (src : string) : string = plan_in EveryCell src
 

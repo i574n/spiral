@@ -32,6 +32,7 @@ modules:
     erlang_text
     erlang_map
     erlang_file
+    erlang_tcp
     erlang_process
     parallel
     erlang_port

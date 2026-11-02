@@ -6,20 +6,20 @@
 := (++) (left : string) (right : string) : string = left ^^ right
 
 :~ ^ fields_from (line : string) (at : i32) (acc : list string) : list string =
-    := tab = text.find_from line "\t" at
-    ? tab < 0i32 ?> listm.rev (text.drop line at :: acc)
-    |: fields_from line (tab + 1i32) (text.slice_len line at (tab - at) :: acc)
+    := tab = text::find_from line "\t" at
+    ? tab < 0i32 ?> listm::rev (text::drop line at :: acc)
+    |: fields_from line (tab + 1i32) (text::slice_len line at (tab - at) :: acc)
 
 := fields (line : string) : list string = fields_from line 0i32 []
 
-:= tabbed (xs : list string) : string = sm'.concat_list "\t" xs
+:= tabbed (xs : list string) : string = sm'::concat_list "\t" xs
 
 :~ ^ digits_from (s : string) (i : i32) : bool =
-    ? i >= text.length s ?> !+
-    |? text.digit_val (text.index s i) < 0i32 ?> !-
+    ? i >= text::length s ?> !+
+    |? text::digit_val (text::index s i) < 0i32 ?> !-
     |: digits_from s (i + 1i32)
 
-:= queue_ms (s : string) : option i32 = ? s <> "" && digits_from s 0i32 ?> Some (text.parse_i32 s) |: None
+:= queue_ms (s : string) : option i32 = ? s <> "" && digits_from s 0i32 ?> Some (text::parse_i32 s) |: None
 
 :| compile_wait =
     | Unbounded
@@ -49,9 +49,9 @@
     | Retire :: request ()
     | Compile :: compile_ask -> request compile_reply
 
-:= wait_text (w : compile_wait) : string = ?= w ?| Unbounded => "-1" | WithinMs ms => text.show_i32 ms
+:= wait_text (w : compile_wait) : string = ?= w ?| Unbounded => "-1" | WithinMs ms => text::show_i32 ms
 
-:= wait_of (s : string) : compile_wait = ? s = "-1" ?> Unbounded |: WithinMs (text.parse_i32 s)
+:= wait_of (s : string) : compile_wait = ? s = "-1" ?> Unbounded |: WithinMs (text::parse_i32 s)
 
 := ask_fields (a : compile_ask) : list string = [ a::backend; a::spi; a::rs; wait_text a::wait; a::mtime; a::client ]
 
@@ -68,21 +68,21 @@
 := retiring_of (s : string) : retiring = ? s = "false" ?> NotRetiring |: RetiringSince s
 
 := with_queue (head : list string) (queue : option i32) : list string =
-    ?= queue ?| Some ms => listm.append head [ text.show_i32 ms ] | None => head
+    ?= queue ?| Some ms => listm::append head [ text::show_i32 ms ] | None => head
 
 := compile_text (c : compile_reply) : string =
     ?= c ?|
     | Compiled (revision, queue) => tabbed (with_queue [ "ok"; revision ] queue)
     | CompileTimedOut queue => tabbed (with_queue [ "error"; "timeout" ] queue)
-    | CompileFailed (queue, message) => tabbed (listm.append (with_queue [ "error" ] queue) [ message ])
+    | CompileFailed (queue, message) => tabbed (listm::append (with_queue [ "error" ] queue) [ message ])
 
 := status_text (s : status_reply) : string =
     tabbed [ "status"; s::pid; s::stamp; s::idle; s::queue; retiring_text s::retiring; s::owner ]
 
-:= free_text (free : option i32) : string = ?= free ?| Some mb => text.show_i32 mb | None => "-"
+:= free_text (free : option i32) : string = ?= free ?| Some mb => text::show_i32 mb | None => "-"
 
 := pool_text (p : pool_reply) : string =
-    tabbed [ "pool"; text.show_i32 p::served; text.show_i32 p::refused; text.show_i32 p::peak; free_text p::free_mb ]
+    tabbed [ "pool"; text::show_i32 p::served; text::show_i32 p::refused; text::show_i32 p::peak; free_text p::free_mb ]
 
 := reply_line \* r. (q : request r) (reply : r) : string =
     ?= q ?|
@@ -94,22 +94,26 @@
 
 := failed_of (rest : list string) : compile_reply =
     ?= rest ?|
-    | queue :: message :: [] ?& queue_ms queue <> None => CompileFailed (queue_ms queue, message)
-    | _ => CompileFailed (None, sm'.concat_list "\t" rest)
+    | queue :: message :: more ?& queue_ms queue <> None => CompileFailed (queue_ms queue, tabbed (message :: more))
+    | _ => CompileFailed (None, tabbed rest)
+
+:= unexpected (line : string) : compile_reply = CompileFailed (None, "unexpected compiler reply: " ++ line)
 
 := compile_of (line : string) : compile_reply =
     ?= fields line ?|
     | "ok" :: revision :: [] => Compiled (revision, None)
-    | "ok" :: revision :: queue :: _ => Compiled (revision, queue_ms queue)
+    | "ok" :: revision :: queue :: [] => Compiled (revision, queue_ms queue)
     | "error" :: "timeout" :: [] => CompileTimedOut None
-    | "error" :: "timeout" :: queue :: _ => CompileTimedOut (queue_ms queue)
+    | "error" :: "timeout" :: queue :: [] => CompileTimedOut (queue_ms queue)
+    | "error" :: "timeout" :: _ :: _ :: _ => CompileTimedOut None
+    | "error" :: [] => unexpected line
     | "error" :: rest => failed_of rest
-    | _ => CompileFailed (None, "unexpected compiler reply: " ++ line)
+    | _ => unexpected line
 
 := status_of (line : string) : status_reply =
     ?= fields line ?|
     | "status" :: pid :: stamp :: idle :: queue :: retiring :: owner =>
-        { pid; stamp; idle; queue; retiring = retiring_of retiring; owner = sm'.concat_list " " owner }
+        { pid; stamp; idle; queue; retiring = retiring_of retiring; owner = sm'::concat_list " " owner }
     | _ => { pid = ""; stamp = ""; idle = ""; queue = ""; retiring = NotRetiring; owner = "" }
 
 := hello_of (line : string) : hello_reply =
@@ -146,8 +150,14 @@
     := done = [ Compiled ("r1", None); Compiled ("r1", Some 7i32) ]
     := late = [ CompileTimedOut None; CompileTimedOut (Some 3i32) ]
     := more = [ CompileFailed (None, "boom"); CompileFailed (Some 5i32, "no main") ]
-    := all = listm.append done (listm.append late more)
-    listm.map (\ c => reply_of q (reply_line q c) = c) all |> _assert_eq [ !+; !+; !+; !+; !+; !+ ]
+    := all = listm::append done (listm::append late more)
+    listm::map (\ c => reply_of q (reply_line q c) = c) all |> _assert_eq [ !+; !+; !+; !+; !+; !+ ]
+
+:# compile_lines_read_like_the_elixir_client_did =
+    := lines = [ "ok\tr1\t7\textra"; "error\ttimeout\t3\tx"; "error"; "error\t5\tno\tmain"; "error\tbare text"; "error\t" ]
+    := odd = [ unexpected "ok\tr1\t7\textra"; CompileTimedOut None; unexpected "error" ]
+    := failed = [ CompileFailed (Some 5i32, "no\tmain"); CompileFailed (None, "bare text"); CompileFailed (None, "") ]
+    listm::map compile_of lines |> _assert_eq (listm::append odd failed)
 
 :# a_status_line_keeps_an_owner_with_spaces =
     := s = { pid = "9"; stamp = "1"; idle = "0"; queue = "2"; retiring = RetiringSince "123"; owner = "x lane" }

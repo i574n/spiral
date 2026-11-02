@@ -1262,21 +1262,6 @@ module Program =
                         Error $"""{project}: {field} expects one of {String.concat ", " allowed}, got '{text}'"""
                     | Ok (), Some _ -> Ok ()) (Ok ())
 
-    let private applyEntryImports (input : string) =
-        let tokens =
-            File.ReadLines input
-            |> Seq.takeWhile (fun line -> line.StartsWith "///")
-            |> Seq.filter (fun line -> line.StartsWith "///-")
-            |> Seq.collect (fun line -> line.Substring(4).Split([| ' '; '\t' |], StringSplitOptions.RemoveEmptyEntries))
-            |> List.ofSeq
-        let rec imports (rest : string list) =
-            match rest with
-            | "--import-types" :: value :: tail -> value :: imports tail
-            | _ :: tail -> imports tail
-            | [] -> []
-        match imports tokens with
-        | [] -> ()
-        | found -> Environment.SetEnvironmentVariable("SPIRAL_IMPORT_TYPES", String.concat ";" found)
     let private takeDefaultTypeFlags (argv : string []) : Result<string [], string> =
         let flagOf (text : string) = defaultTypeFlags |> List.tryFind (fun (name, _, _) -> name = text)
         let rec go (rest : string list) (kept : string list) =
@@ -1291,41 +1276,6 @@ module Program =
             | head :: tail -> go tail (head :: kept)
             | [] -> Ok (List.rev kept |> Array.ofList)
         go (List.ofArray argv) []
-
-    let private runXCompatReport (paths : string []) =
-        let extensions = set [ ".spi"; ".spir"; ".livemd" ]
-        let files =
-            paths
-            |> Array.collect (fun path ->
-                if Directory.Exists path then
-                    filesUnder path (fun name -> List.contains name [ "target"; "node_modules"; "deps"; "bin"; "obj"; "_build"; ".git"; ".history" ])
-                    |> Array.ofSeq
-                    |> Array.filter (fun file -> extensions.Contains (Path.GetExtension file))
-                    |> Array.map (fun file -> file.Replace ('\\', '/'))
-                    |> Array.sort
-                elif File.Exists path then [| path |]
-                else [||])
-            |> Array.distinct
-        let profiled = files |> Array.map (fun file -> file, postabilityProfileFor file)
-        let unprofiled = profiled |> Array.choose (fun (file, profile) -> if profile.IsNone then Some file else None)
-        let findings =
-            [ for file, profile in profiled do
-                match profile with
-                | Some profile ->
-                    for finding in xCompatFindings profile (File.ReadAllText file) do yield file, finding
-                | None -> () ]
-        for file, finding in findings do printfn "%s" (xCompatReportLine file finding)
-        for file in unprofiled do
-            printfn "%s: no postability profile (no postability/*.json in an ancestor directory and SPIRAL_POSTABILITY_PROFILE unset)" file
-        let byKind =
-            findings
-            |> List.countBy (fun (_, finding) -> xCompatKindName finding.kind)
-            |> List.sortBy fst
-            |> List.map (fun (kind, count) -> $"{kind} {count}")
-            |> String.concat ", "
-        let unchecked = if unprofiled.Length = 0 then "" else $", {unprofiled.Length} unchecked without a profile"
-        printfn "x-compat report: %d finding(s) in %d file(s)%s%s" findings.Length files.Length (if byKind = "" then "" else $" ({byKind})") unchecked
-        if unprofiled.Length = 0 then 0 else 2
 
     let reexecWithGen0Budget (rawArgv : string []) =
         let reexec = Environment.GetEnvironmentVariable "SPIRAL_GEN0_REEXEC"
@@ -1383,10 +1333,7 @@ module Program =
                     0
         elif argv.Length >= 3 && argv.[0] = "--source-blocks" then
             runSourceBlocks argv.[1] argv.[2..]
-        elif argv.Length >= 2 && argv.[0] = "--x-compat" then
-            runXCompatReport argv.[1..]
         elif argv.Length = 2 && argv.[0] = "--check" then
-            Spiral.spiral_compiler.xCompatWarnEntry argv.[1]
             exit (runAttestationBounded 30000 (fun () -> runCheck argv.[1]))
         elif (argv.Length = 3 || (argv.Length = 5 && argv.[1] = "--timeout-ms")) && argv.[0] = "--plan-ir" then
             let inputIndex = if argv.Length = 5 then 3 else 1
@@ -1420,7 +1367,6 @@ module Program =
             match applyPackageDefaults input with
             | Error message -> eprintfn "%s" message; exit 2
             | Ok () -> ()
-            applyEntryImports input
             let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
             let router = DiagnosticRouter()
             let revisions = SourceRevisionStore()

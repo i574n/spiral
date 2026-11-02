@@ -4421,6 +4421,14 @@ module spiral_compiler =
         }
     
 
+    /// ### ModuleShadow
+    /// A module merged over a type of the same name (lib's `option` module over core's `option` type) keeps the name, and
+    /// the type it shadows stays reachable under `key`, so `option i32` (a module applied to a type, not to a member symbol)
+    /// still means the type.
+    module ModuleShadow =
+        let name (m : string) = "\u0001shadowed/" + m
+        let key (k : TypeNameId) = TypeNameIdOps.create (name (TypeNameIdOps.text k))
+
     /// ### inferTop_env_empty
     let inferTop_env_empty = {
         nominals_next_tag = 0
@@ -4449,7 +4457,9 @@ module spiral_compiler =
                     match v, s |> Map.tryFind k with
                     | TyModule x, Some (TyModule x') -> Map.foldBack Map.add x x' |> TyModule
                     | _ -> v
-                s |> Map.add k v
+                match v, s |> Map.tryFind k with
+                | TyModule _, Some shadowed when (match shadowed with TyModule _ -> false | _ -> true) -> s |> Map.add (ModuleShadow.key k) shadowed |> Map.add k v
+                | _ -> s |> Map.add k v
             ) small.ty big.ty
         term =
             Map.foldBack (fun k v s ->
@@ -6194,6 +6204,8 @@ module spiral_compiler =
                 let body_var = fresh_var scope
                 ty scope {env with ty = Map.add (TypeNameIdOps.create a.name) (tyvar a) env.ty} body_var b
                 unify r s (TyForall(a, body_var))
+            | RawTApply(r,RawTVar(rv,m),b) when (match b with RawTSymbol _ -> false | _ -> true) && (match v_ty env m with Some (TyModule _) -> true | _ -> false) && Option.isSome (v_ty env (ModuleShadow.name m)) ->
+                ty' scope is_in_left_apply env s (RawTApply(r,RawTVar(rv,ModuleShadow.name m),b))
             | RawTApply(r,a',b) ->
                 let f' b k x = let v = fresh_var' scope k in ty' scope b env v x; visit_t v
                 match f' true (fresh_kind ()) a' with
@@ -7139,7 +7151,9 @@ module spiral_compiler =
                     match v, s |> Map.tryFind k with
                     | TModule x, Some (TModule x') -> Map.foldBack Map.add x x' |> TModule
                     | _ -> v
-                s |> Map.add k v
+                match v, s |> Map.tryFind k with
+                | TModule _, Some shadowed when (match shadowed with TModule _ -> false | _ -> true) -> s |> Map.add (ModuleShadow.key k) shadowed |> Map.add k v
+                | _ -> s |> Map.add k v
             ) small.ty big.ty
         }
     
@@ -7410,7 +7424,10 @@ module spiral_compiler =
     let noteUnionSourceName (node : obj) (name : string) = unionSourceNames.TryAdd(node, name) |> ignore
     // The package that declares each nominal union, so a `link:` unit is matched by owner, not by its source name.
     let unionSourcePackages = System.Runtime.CompilerServices.ConditionalWeakTable<obj, int ref>()
-    let unionOwnerUnit (linked : Map<int, string>) (node : obj) =
+    // A `link:` unit as its importer sees it: its name and, once the unit is built, the unions its exports reach, keyed by
+    // (source name, concrete shape) and mapped to the name the unit exports them under. None: no graph, the package owns all.
+    type LinkedUnit = {unit : string; exported : Map<string * string, string> option}
+    let unionOwnerUnit (linked : Map<int, LinkedUnit>) (node : obj) =
         match unionSourcePackages.TryGetValue node with
         | true, owner -> Map.tryFind owner.Value linked
         | _ -> None
@@ -7981,6 +7998,8 @@ module spiral_compiler =
                     )
                 TTypecase(p r,ty env a,b)
             | RawTSymbol(r,a) -> TSymbol(p r,a)
+            | RawTApply(r,RawTVar(rv,m),b) when (match b with RawTSymbol _ -> false | _ -> true) && (let k = TypeNameIdOps.create (ModuleShadow.name m) in Map.containsKey k env.ty.env || Map.containsKey k top_env.ty) ->
+                f (RawTApply(r,RawTVar(rv,ModuleShadow.name m),b))
             | RawTApply(r,a,b) ->
                 let raw_a = a
                 match f a, f b with
@@ -9547,10 +9566,63 @@ module spiral_compiler =
     /// ### store_ty
     let store_ty (s : LangEnv) i v = s.env_stack_type.[i-s.env_global_type.Length] <- v
 
+    /// ### PhantomIndex
+    /// An index built from unit nominals only (`:! zero = ()`, `:! succ n = ()`) is erased to `mark` where it grows. A family
+    /// grows when a case payload applies the family itself to a non-variable index (term n holds term (succ n)); it and every
+    /// family named in its payloads (var n inside term n) are laid out at the mark for every index, so their values share
+    /// one representation. A join point whose binding grows past an active ancestor specialization of the same join point is
+    /// specialized once at the mark. While a mark layout runs (`active`), a GADT case's destructor pattern unifies with the
+    /// mark, so every constructor stays. Other families keep their exact, constructor-specialized layouts.
+    module PhantomIndex =
+        let mark = YSymbol "\u0001phantom-index"
+        let active = new System.Threading.ThreadLocal<int>(fun () -> 0)
+        let rec contains (a : Ty) (t : Ty) = t = a || (match t with YApply(x, y) | YPair(x, y) -> contains a x || contains a y | _ -> false)
+        let contains_mark (t : Ty) = contains mark t
+        let grows (ancestor : Ty) (t : Ty) = ancestor <> t && contains ancestor t
+        let rec walk (visit : TPrepass -> unit) (t : TPrepass) =
+            visit t
+            let w = walk visit
+            match t with
+            | TForall'(_,_,_,b) | TForall(_,_,b) | TArrow'(_,_,b) | TArrow(_,b) | TJoinPoint'(_,_,b) | TJoinPoint(_,b) | TArray b | TLayout(b,_) -> w b
+            | TPair(_,a,b) | TFun(a,b,_) | TApply(_,a,b) -> w a; w b
+            | TRecord(_,m) -> m |> Map.iter (fun _ v -> w v)
+            | TModule m -> m |> Map.iter (fun _ v -> w v)
+            | TUnion(_,(m,_)) -> m |> Map.iter (fun _ (c, d) -> w c; Option.iter w d)
+            | TTypecase(_,a,l) -> w a; l |> List.iter (fun (x, y) -> w x; w y)
+            | TPatternRef r -> w r.Value
+            | _ -> ()
+        let payload (constructor : TPrepass) (destructor : TPrepass option) =
+            let rec domain t = match t with TForall(_,_,b) | TForall'(_,_,_,b) -> domain b | TFun(a,_,_) -> Some a | _ -> None
+            match destructor with None -> Some constructor | Some _ -> domain constructor
+        let erased_cache = System.Runtime.CompilerServices.ConditionalWeakTable<obj, HashSet<GlobalId>>()
+        let erased_families (nominals : Dictionary<GlobalId, Nominal>) =
+            erased_cache.GetValue(box nominals, fun _ ->
+                let result = HashSet<GlobalId>()
+                for KeyValue(gid, n) in nominals do
+                    let payloads = ResizeArray<TPrepass>()
+                    n.node.body |> walk (function TUnion(_,(m,_)) -> m |> Map.iter (fun _ (c, d) -> payload c d |> Option.iter payloads.Add) | _ -> ())
+                    let mutable grows = false
+                    for p in payloads do p |> walk (function TApply(_, TNominal g, TV _) -> () | TApply(_, TNominal g, _) when g = gid -> grows <- true | _ -> ())
+                    if grows then
+                        result.Add gid |> ignore
+                        for p in payloads do p |> walk (function TApply(_, TNominal g, _) -> result.Add g |> ignore | _ -> ())
+                result)
+        let stacks = new System.Threading.ThreadLocal<Dictionary<obj, Ty [] list>>(fun () -> Dictionary<obj, Ty [] list>(HashIdentity.Reference))
+        let ancestors (body : obj) = match stacks.Value.TryGetValue body with | true, l -> l | _ -> []
+        let enter (body : obj) (key : Ty []) = stacks.Value.[body] <- key :: ancestors body
+        let leave (body : obj) = match ancestors body with _ :: rest -> stacks.Value.[body] <- rest | [] -> ()
+
     /// ### is_unify
     let is_unify s x =
         let is_metavar = HashSet()
         let rec f = function
+            | (YSymbol _ as a), b when PhantomIndex.active.Value > 0 && a = PhantomIndex.mark ->
+                let rec bind t =
+                    match t with
+                    | YMetavar i -> (if is_metavar.Add i then store_ty s i a); true
+                    | YApply(x,y) | YPair(x,y) -> bind x && bind y
+                    | _ -> true
+                bind b
             | YB, YB | YExists, YExists | YForall, YForall -> true
             | YFun(a,b,t), YFun(a',b',t') -> t = t' && f (a,a') && f (b,b')
             | YApply(a,b), YApply(a',b')
@@ -9907,10 +9979,26 @@ module spiral_compiler =
                             env_stack_type = Array.zeroCreate<_> sz_ty
                             env_stack_term = Array.zeroCreate<_> sz_term
                             }
-                    s.env_stack_type.[0] <- b
-                    let applied = ty s body
+                    let family = match a with YNominal n -> Some n.node.id | _ -> None
+                    let erased = (PhantomIndex.contains_mark b || family |> Option.exists (PhantomIndex.erased_families env.nominals).Contains) && phantom_index s b
+                    s.env_stack_type.[0] <- (if erased then PhantomIndex.mark else b)
+                    let applied =
+                        if erased then
+                            PhantomIndex.active.Value <- PhantomIndex.active.Value + 1
+                            try ty s body finally PhantomIndex.active.Value <- PhantomIndex.active.Value - 1
+                        else ty s body
+                    let applied =
+                        match applied with
+                        | YUnion _ | YB -> applied
+                        | _ when erased ->
+                            s.env_stack_type.[0] <- b
+                            ty s body
+                        | _ -> applied
                     match applied with
-                    | YUnion u -> noteUnionSourceNameOnce (box u) (fun () -> structural_ty_name x)
+                    | YUnion u ->
+                        noteUnionSourceNameOnce (box u) (fun () -> structural_ty_name x)
+                        let rec head t = match t with YApply(a,_) -> head a | YNominal n -> Some n | _ -> None
+                        head x |> Option.iter (fun n -> unionSourcePackages.TryAdd(box u, ref n.node.id.package_id) |> ignore)
                     | _ -> ()
                     applied
                 | a -> raise_type_error s <| sprintf "Expected a type level function in nominal application.\nGot: %s" (show_ty a)
@@ -9933,6 +10021,20 @@ module spiral_compiler =
                 | true, name -> name
                 | _ -> "t"
             | _ -> "t"
+        and phantom_index s t =
+            let unit_nominal t = try nominal_type_apply s t = YB with PartEvalTypeError _ -> false
+            match t with
+            | YSymbol _ -> t = PhantomIndex.mark
+            | YNominal _ -> unit_nominal t
+            | YApply(_, a) -> phantom_index s a && unit_nominal t
+            | _ -> false
+        and phantom_erase s t =
+            match t with
+            | YApply(f, a) when phantom_index s a && (match nominal_type_apply s t with YUnion _ -> true | _ -> false) -> YApply(phantom_erase s f, PhantomIndex.mark)
+            | YApply(f, a) -> YApply(phantom_erase s f, phantom_erase s a)
+            | YPair(a, b) -> YPair(phantom_erase s a, phantom_erase s b)
+            | YRecord m -> YRecord(Map.map (fun _ v -> phantom_erase s v) m)
+            | t -> t
         and ty_is_uninhabited s x =
             let rec loop depth x =
                 if depth <= 0 then false
@@ -10320,8 +10422,10 @@ module spiral_compiler =
                         let v_ty = data_to_ty s v
                         match Map.tryPick (fun (_, name') v -> if k = name' then Some v else None) h.Item.cases with
                         | Some v_ty' when v_ty = v_ty' -> DNominal(DUnion(a,h),b)
+                        | Some v_ty' when phantom_erase s v_ty = phantom_erase s v_ty' -> DNominal(DUnion(a,h),b)
                         | Some v_ty' when data_to_ty s (align_record_order v v_ty') = v_ty' -> DNominal(DUnion(DPair(DSymbol k, align_record_order v v_ty'),h),b)
                         | Some v_ty' -> raise_type_error s <| sprintf "For key %s, The type of the value does not match the union case.\nGot: %s\nExpected: %s" k (show_ty v_ty) (show_ty v_ty')
+                        | None when ty_is_uninhabited s v_ty -> push_typedop_no_rewrite s (TyFailwith(b, DLit (LitString "spiral: union case ruled out by partial evaluation"))) b
                         | None -> raise_type_error s <| sprintf "The union does not have key %s.\nGot: %s" k (show_ty b)
                     | _ -> raise_type_error s <| sprintf "Expected key/value pair.\nGot: %s" (show_data a)
                 | b' ->
@@ -10388,7 +10492,14 @@ module spiral_compiler =
             | ERecBlock _ -> failwith "Compiler error: Recursive blocks should be inlined and eliminated during the prepass."
             | EJoinPoint _ -> failwith "Compiler error: Raw join points should be transformed during the prepass."
             | EJoinPoint'(r,scope,body,annot,backend,jp_name) ->
-                let env_global_type = Array.map (vt s) scope.ty.free_vars
+                let env_global_type =
+                    let bound = Array.map (vt s) scope.ty.free_vars
+                    match PhantomIndex.ancestors (box body) with
+                    | [] -> bound
+                    | stack ->
+                        bound |> Array.mapi (fun i t ->
+                            if stack |> List.exists (fun (ancestor : Ty []) -> i < ancestor.Length && PhantomIndex.grows ancestor.[i] t) && phantom_index s t then PhantomIndex.mark
+                            else t)
                 let env_global_term = Array.map (v s) scope.term.free_vars
                 if UnionNesting.tooDeep env_global_type then
                     let frames = s.trace |> List.map (fun (r: Range) -> r.path, (fst r.range).line, (fst r.range).character)
@@ -10423,7 +10534,8 @@ module spiral_compiler =
                         PartEvalSeams.announce hopacsota (Option.isSome annot) dict join_point_key (None, annot, jp_name)
                         let s = PartEvalSeams.key_body hopacsota (box (dict, join_point_key)) "method" s
                         PartEvalSeams.defer hopacsota s { s with trace = [r]; inline_depth = InlineDepthOps.root } annot (fun (s : LangEnv) ->
-                            let seq,ty = term_scope'' s body annot
+                            PhantomIndex.enter (box body) env_global_type
+                            let seq,ty = try term_scope'' s body annot finally PhantomIndex.leave (box body)
                             PartEvalSeams.fill hopacsota dict join_point_key (Some seq, Some ty, jp_name)
                             annot |> Option.iter (fun annot -> if annot <> ty then raise_type_error s <| sprintf "The annotation of the join point does not match its body's type.Got: %s\nExpected: %s" (show_ty ty) (show_ty annot))
                             ty
@@ -12456,18 +12568,6 @@ module spiral_compiler =
         let elided = System.Runtime.CompilerServices.ConditionalWeakTable<TypedBind [], TypedBind []>()
         let block (body : TypedBind []) : TypedBind [] = elided.GetValue(body, fun body -> elide body)
 
-    /// ### importedTypeUnits
-    let importedTypeUnits () : Map<string, string> =
-        match System.Environment.GetEnvironmentVariable "SPIRAL_IMPORT_TYPES" with
-        | null | "" -> Map.empty
-        | text ->
-            text.Split(';', System.StringSplitOptions.RemoveEmptyEntries)
-            |> Array.collect (fun entry ->
-                match entry.Split(':', 2) with
-                | [| unitName; names |] ->
-                    names.Split(',', System.StringSplitOptions.RemoveEmptyEntries) |> Array.map (fun name -> name.Trim(), unitName.Trim())
-                | _ -> [||])
-            |> Map.ofArray
     /// ### exportedUnionNames
     let exportedUnionNames (env : PartEvalResult) (x : TypedBind []) =
         let names = Dictionary<obj, string>(HashIdentity.Reference)
@@ -12493,6 +12593,54 @@ module spiral_compiler =
             | TyLet(_,_,TyOp(Export, [_; DV(L(_,YFun(domain,range,_)))])) | TyLocalReturnOp(_,TyOp(Export, [_; DV(L(_,YFun(domain,range,_)))]),_) -> walk domain; walk range
             | _ -> ())
         names
+
+    /// ### linkedUnionName
+    /// The unit and exported name of a union that comes from a `link:` unit. A built unit's graph owns only the unions its
+    /// exports reach, matched by source name and concrete shape; every other union of that package stays local.
+    let linkedUnionName (linked : Map<int, LinkedUnit>) (node : obj) (source : string) =
+        match unionOwnerUnit linked node with
+        | Some {unit = unit; exported = Some exported} -> exported |> Map.tryFind (source, show_ty (YUnion (unbox<Union> node))) |> Option.map (fun name -> unit, name)
+        | Some {unit = unit; exported = None} -> raise_codegen_error $"The link: unit {unit} has no unit graph ({unit}/*.unit.json). Build {unit} before the units that link it."
+        | None -> None
+
+    /// ### unitGraphJson
+    /// What a unit with exports writes beside its input as `<stem>.unit.json`: its exports with their signatures, the units
+    /// it links, and each union its exports reach (source name, concrete shape, exported name). Importers read the unions
+    /// through `link:`; kit generates Cargo dependencies from the links.
+    let unitGraphJson (links : string list) (env : PartEvalResult) (x : TypedBind []) =
+        let exports =
+            x |> Array.choose (function
+                | TyLet(_,_,TyOp(Export, [DLit (LitString name); DV(L(_,(YFun _ as t)))])) | TyLocalReturnOp(_,TyOp(Export, [DLit (LitString name); DV(L(_,(YFun _ as t)))]),_) -> Some {| name = name; signature = show_ty t |}
+                | _ -> None)
+        if exports.Length = 0 then None
+        else
+            let unions =
+                [| for KeyValue(node, name) in exportedUnionNames env x ->
+                    {| source = (match unionSourceNames.TryGetValue node with | true, source -> source | _ -> name); shape = show_ty (YUnion (unbox<Union> node)); name = name |} |]
+                |> Array.sortBy (fun u -> u.name)
+            Some (System.Text.Json.JsonSerializer.Serialize({| exports = exports; links = links; unions = unions |}, System.Text.Json.JsonSerializerOptions(WriteIndented = true)))
+
+    /// ### unitGraphDir
+    /// Where a unit's graph lives: outside the source tree, in the user cache under a key of the unit's package folder
+    /// (`SPIRAL_UNIT_GRAPH_DIR` overrides the root), so a build never writes into a repo.
+    let unitGraphDir (packageDir : string) =
+        let root =
+            match System.Environment.GetEnvironmentVariable "SPIRAL_UNIT_GRAPH_DIR" with
+            | null | "" -> System.IO.Path.Combine(System.Environment.GetFolderPath System.Environment.SpecialFolder.LocalApplicationData, "spiral-bin", "units")
+            | dir -> dir
+        let key = packageDir.Replace('\\', '/').TrimEnd('/').ToLowerInvariant()
+        let hash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes key) |> Array.take 8 |> Array.map (fun b -> b.ToString "x2") |> String.concat ""
+        System.IO.Path.Combine(root, hash)
+
+    /// ### writeUnitGraph
+    let writeUnitGraph (packageDir : string) (file : string) (linked : Map<int, LinkedUnit>) (env : PartEvalResult) (x : TypedBind []) =
+        let path = System.IO.Path.Combine(unitGraphDir packageDir, System.IO.Path.GetFileNameWithoutExtension file + ".unit.json")
+        match unitGraphJson (linked |> Map.toList |> List.map (fun (_, l) -> l.unit)) env x with
+        | Some json when not (System.IO.File.Exists path && System.IO.File.ReadAllText path = json) ->
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName path) |> ignore
+            System.IO.File.WriteAllText(path, json)
+        | Some _ -> ()
+        | None -> if System.IO.File.Exists path then System.IO.File.Delete path
 
     /// ## CodegenAdapter
     module UnionTagIdOps =
@@ -13548,7 +13696,7 @@ module spiral_compiler =
     /// ### codegenRust
     let unionCaseSuffix (x : UnionRecFsharp) (index : int) = (generatedCaseNames (x.free_vars |> Map.keys)).[index]
 
-    let codegenRust (rust_extern : (string * string list) list) (linked_units : Map<int, string>) (env : PartEvalResult) (x : TypedBind []) =
+    let codegenRust (rust_extern : (string * string list) list) (linked_units : Map<int, LinkedUnit>) (env : PartEvalResult) (x : TypedBind []) =
         let derive_traits = rust_extern |> List.tryPick (fun (name, traits) -> if name = "derive" then Some traits else None)
         let derive_externs = rust_extern |> List.filter (fun (name, _) -> name <> "derive" && name <> "rc_str") |> List.map (fun (name, traits) -> name, Set.ofList traits) |> Map.ofList
         let rc_str_exports = rust_extern |> List.tryPick (fun (name, exports) -> if name = "rc_str" then Some (Set.ofList exports) else None) |> Option.defaultValue Set.empty
@@ -13930,13 +14078,13 @@ module spiral_compiler =
                 line s (if values = "" then $"st = {name}::M{tag};" else $"st = {name}::M{tag}({values});")
                 line s "continue;"
             | TyJoinPoint(JPMethod(a,c),args) when d.IsNone && (match self_loop with Some (tag, _) -> (method (a,c)).tag = tag | None -> false) ->
-                let parameters = snd self_loop.Value
-                match parameters with
+                let changed = Array.zip (snd self_loop.Value) args |> Array.filter (fun (L(i,_), L(j,_)) -> i <> j)
+                match changed with
                 | [||] -> ()
-                | [|L(i,_)|] -> line s $"v{i} = {var args.[0]};"
+                | [|L(i,_), a|] -> line s $"v{i} = {var a};"
                 | _ ->
-                    let names = parameters |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
-                    let values = Array.map var args |> String.concat ", "
+                    let names = changed |> Array.map (fun (L(i,_), _) -> $"v{i}") |> String.concat ", "
+                    let values = changed |> Array.map (snd >> var) |> String.concat ", "
                     line s $"({names}) = ({values});"
                 line s "continue;"
             | TyJoinPoint(JPClosure(a,c) as a',args) ->
@@ -14124,8 +14272,13 @@ module spiral_compiler =
                 | StringIndex, [a;b] -> $"{tup a}.as_bytes()[{tup b} as usize]"
                 | StringSlice, [a;b;c] -> string_slice (); $"string_slice(&{tup a}, {tup b} as i64, {tup c} as i64)"
                 | StaticStringConcat, [a;b] -> $"Rc::<str>::from(format!(\"{{}}{{}}\", {tup a}, {tup b}))"
-                | ArrayIndex, [a;b] -> $"{tup a}.borrow()[{tup b} as usize].clone()"
-                | ArrayIndexSet, [a;b;c] -> $"{tup a}.borrow_mut()[{tup b} as usize] = {tup c}"
+                | ArrayIndex, [a;b] ->
+                    let handle, element = match data_term_vars a with [|WV(L(i,YArray t))|] -> $"v{i}", Some t | _ -> tup a, None
+                    let read = $"{handle}.borrow()[{tup b} as usize]"
+                    match element with Some t when is_copy t -> read | _ -> read + ".clone()"
+                | ArrayIndexSet, [a;b;c] ->
+                    let handle = match data_term_vars a with [|WV(L(i,_))|] -> $"v{i}" | _ -> tup a
+                    $"{handle}.borrow_mut()[{tup b} as usize] = {tup c}"
 
                 | (Add | Sub | Mult | Div | Mod | ShiftLeft | ShiftRight), [a;b] when rust_int a ->
                     let m = match op with Add -> "wrapping_add" | Sub -> "wrapping_sub" | Mult -> "wrapping_mul" | Div -> "wrapping_div" | Mod -> "wrapping_rem" | ShiftLeft -> "wrapping_shl" | _ -> "wrapping_shr"
@@ -14534,13 +14687,12 @@ module spiral_compiler =
                 System.Text.RegularExpressions.Regex.Replace(renamed, $@"(\nimpl {name} \{{\r?\n    )fn tag\(", "${1}pub fn tag(")
                 ) code
         let import_rust_unions (code : string) =
-            let imported = importedTypeUnits ()
-            if imported.IsEmpty && linked_units.IsEmpty then code
+            if linked_units.IsEmpty then code
             else
                 let candidates =
                     [ for KeyValue(node, source) in unionSourceNames do
-                        match (match unionOwnerUnit linked_units node with Some unitName -> Some unitName | None -> imported.TryFind source) with
-                        | Some unitName -> yield union_name (unbox<Union> node).Item, source, unitName
+                        match linkedUnionName linked_units node source with
+                        | Some (unitName, name) -> yield union_name (unbox<Union> node).Item, name, unitName
                         | None -> () ]
                 let renamed =
                     candidates |> List.fold (fun (code : string) (generated, name, _) ->
@@ -15464,6 +15616,8 @@ fn spiralCreate(comptime T: type, v: T) *T {
         let types = ResizeArray()
         let bodies = ResizeArray()
         let globals = ResizeArray()
+        let closure_of_var = Dictionary<int, int>()
+        let export_names = HashSet<string>()
 
         let memo (f : 'k -> int -> unit) =
             let dict = Dictionary<'k, int>(HashIdentity.Structural)
@@ -15642,7 +15796,11 @@ fn spiralCreate(comptime T: type, v: T) *T {
                         line s $"{temps.[slot]} = v{source};"
                     | MoveTemp (target, slot) -> line s $"v{target} = {temps.[slot]};"
                 line s "continue;"
-            | TyJoinPoint(a,args) -> return' (jp (a, args))
+            | TyJoinPoint(a,args) ->
+                match a, ret with
+                | JPClosure(a,c), ZLocal [|L(i,_)|] when args.Length = 0 -> closure_of_var.[i] <- (closure (a,c)).tag
+                | _ -> ()
+                return' (jp (a, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Zig backend does not support nesting other backends."
             | TyWhile(a,b) ->
                 line s $"while ({jp a}) {{"
@@ -15736,6 +15894,20 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | _ -> raise_codegen_error $"Compiler error: Unexpected type in Conv. Got: {show_ty a}"
             | TyApply(L(i,_),b) -> return' (match args' b with "" -> $"v{i}.call(v{i}.ctx)" | x -> $"v{i}.call(v{i}.ctx, {x})")
             | TyOp(Global, [DLit (LitString x)]) -> global' x
+            | TyOp(Export, [DLit (LitString name); DV(L(i,YFun(domain,range,_)))]) ->
+                if not (export_names.Add name) then raise_codegen_error $"Duplicate export: {name}."
+                let tag =
+                    match closure_of_var.TryGetValue i with
+                    | true, tag -> tag
+                    | _ -> raise_codegen_error $"Compiler error: the exported function {name} is not a closure without captures."
+                let parameters = env.ty_to_data domain |> data_free_vars
+                let decl = parameters |> Array.map (fun (L(k,t)) -> $"v{k}: {tyv t}") |> String.concat ", "
+                let call = parameters |> Array.map (fun (L(k,_)) -> $", v{k}") |> String.concat ""
+                types.Add($"var spiral_export_env{tag}: ClosureEnv{tag} = .{{}};")
+                bodies.Add($"pub fn {name}({decl}) {tup_ty range} {{\n    return {closure_names.[tag]}(@ptrCast(&spiral_export_env{tag}){call});\n}}\n")
+                match ret with
+                | ZLocal [||] -> ()
+                | _ -> return' ""
             | TyOp(ArrayIndexSet, [a;b;c]) ->
                 let value = match a with DV(L(_,YArray el)) -> tup_as el c | _ -> tup c
                 line s $"{tup a}[spiralIndex({tup a}.len, {tup b})] = {value};"
@@ -15923,7 +16095,15 @@ fn spiralCreate(comptime T: type, v: T) *T {
         program.AppendLine("    spiral_gpa = spiral_arena.allocator();").AppendLine("    spiral_environ = init.environ;") |> ignore
         program.AppendLine("    if (@import(\"builtin\").os.tag == .windows) {").AppendLine("        const handle = CreateThread(null, 1 << 30, spiralMainThreadReserved, null, 0x00010000, null) orelse @panic(\"spiral: could not start the main thread\");").AppendLine("        _ = WaitForSingleObject(handle, 0xFFFFFFFF);").AppendLine("    } else {").AppendLine("        const thread = std.Thread.spawn(.{ .stack_size = 1 << 30 }, spiralMainThread, .{}) catch @panic(\"spiral: could not start the main thread\");").AppendLine("        thread.join();").AppendLine("    }").AppendLine("    spiralFlush();") |> ignore
         program.AppendLine("    if (@import(\"builtin\").os.tag == .windows) ExitProcess(@bitCast(spiral_exit_code)) else std.process.exit(@truncate(@as(u32, @bitCast(spiral_exit_code))));").AppendLine("}") |> ignore
-        let body = program.ToString() |> zigConstLocals
+        let rename_exported_unions (code : string) =
+            exportedUnionNames env x |> Seq.fold (fun (code : string) (KeyValue(node, name)) ->
+                let u = (unbox<Union> node).Item
+                let generated = match u.layout with UHeap -> $"UH{uheap u.cases}" | UStack -> $"US{ustack u.cases}"
+                let renamed = System.Text.RegularExpressions.Regex.Replace(code, $@"\b{generated}(?=\b|_)", name)
+                let renamed = System.Text.RegularExpressions.Regex.Replace(renamed, $@"(?m)^const {name} = ", $"pub const {name} = ")
+                System.Text.RegularExpressions.Regex.Replace(renamed, $@"(?m)^fn {name}_", $"pub fn {name}_")
+                ) code
+        let body = program.ToString() |> zigConstLocals |> rename_exported_unions
         zigUsedPrelude body + body
 
     /// ## CodegenLean
@@ -17798,16 +17978,23 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
     /// ### GleamFfi
     /// The Erlang and JavaScript modules a Gleam program's storage externals call, written beside it as <stem>_ffi.erl and
     /// <stem>_ffi.mjs. Arrays and refs keep their state in the process dictionary on Erlang and in plain objects on JavaScript.
-    type GleamFfi = NoGleamFfi | GleamStorageFfi
+    type GleamFfi = NoGleamFfi | GleamStorageFfi of arrays : bool * refs : bool
 
-    let gleamStorageFfiErlang (ffi_module : string) =
-        $"-module({ffi_module}).\n-export([array_new/2, array_get/2, array_set/3, ref_new/1, ref_get/1, ref_set/2]).\n\narray_new(Size, Fill) ->\n    Key = make_ref(),\n    put(Key, array:new(Size, [{{fixed, true}}, {{default, Fill}}])),\n    Key.\n\narray_get(Key, I) -> array:get(I, get(Key)).\n\narray_set(Key, I, Value) ->\n    put(Key, array:set(I, Value, get(Key))),\n    nil.\n\nref_new(Value) ->\n    Key = make_ref(),\n    put(Key, Value),\n    Key.\n\nref_get(Key) -> get(Key).\n\nref_set(Key, Value) ->\n    put(Key, Value),\n    nil.\n"
+    let gleamStorageFfiErlang (ffi_module : string) (arrays : bool) (refs : bool) =
+        let exports = [ if arrays then yield! [ "array_new/2"; "array_get/2"; "array_set/3" ]
+                        if refs then yield! [ "ref_new/1"; "ref_get/1"; "ref_set/2" ] ]
+        let bodies =
+            [ if arrays then yield "array_new(Size, Fill) ->\n    Key = make_ref(),\n    put(Key, array:new(Size, [{fixed, true}, {default, Fill}])),\n    Key.\n\narray_get(Key, I) -> array:get(I, get(Key)).\n\narray_set(Key, I, Value) ->\n    put(Key, array:set(I, Value, get(Key))),\n    nil.\n"
+              if refs then yield "ref_new(Value) ->\n    Key = make_ref(),\n    put(Key, Value),\n    Key.\n\nref_get(Key) -> get(Key).\n\nref_set(Key, Value) ->\n    put(Key, Value),\n    nil.\n" ]
+        let export_list = String.concat ", " exports
+        $"-module({ffi_module}).\n-export([{export_list}]).\n\n" + String.concat "\n" bodies
 
-    let gleamStorageFfiJavaScript =
-        "export function array_new(size, fill) { return new Array(size).fill(fill); }\nexport function array_get(store, i) { return store[i]; }\nexport function array_set(store, i, value) { store[i] = value; }\nexport function ref_new(value) { return { value }; }\nexport function ref_get(ref) { return ref.value; }\nexport function ref_set(ref, value) { ref.value = value; }\n"
+    let gleamStorageFfiJavaScript (arrays : bool) (refs : bool) =
+        (if arrays then "export function array_new(size, fill) { return new Array(size).fill(fill); }\nexport function array_get(store, i) { return store[i]; }\nexport function array_set(store, i, value) { store[i] = value; }\n" else "")
+        + (if refs then "export function ref_new(value) { return { value }; }\nexport function ref_get(ref) { return ref.value; }\nexport function ref_set(ref, value) { ref.value = value; }\n" else "")
 
     /// ### codegenGleam
-    let codegenGleam (ffi_module : string) (linked_units : Map<int, string>) (env : PartEvalResult) (x : TypedBind []) =
+    let codegenGleam (ffi_module : string) (linked_units : Map<int, LinkedUnit>) (env : PartEvalResult) (x : TypedBind []) =
         let ffi = ref NoGleamFfi
         let method_names = Dictionary<int, string>()
         let closure_names = Dictionary<int, string>()
@@ -17888,14 +18075,14 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
         let mutable while_id = 0
 
         let spiralArrays () =
-            ffi.Value <- GleamStorageFfi
+            ffi.Value <- (match ffi.Value with GleamStorageFfi(_, refs) -> GleamStorageFfi(true, refs) | NoGleamFfi -> GleamStorageFfi(true, false))
             global' "import gleam/list"
             global' "import gleam/option"
             let decl = "pub type SpiralArrayStore(a)\n\npub type SpiralArray(a) {\n  SpiralArray(store: SpiralArrayStore(option.Option(a)), size: Int)\n}\n\n@external(erlang, \"SPIRAL_FFI\", \"array_new\")\n@external(javascript, \"./SPIRAL_FFI.mjs\", \"array_new\")\npub fn spiral_array_store_new(size: Int, fill: a) -> SpiralArrayStore(a)\n\n@external(erlang, \"SPIRAL_FFI\", \"array_get\")\n@external(javascript, \"./SPIRAL_FFI.mjs\", \"array_get\")\npub fn spiral_array_store_get(store: SpiralArrayStore(a), i: Int) -> a\n\n@external(erlang, \"SPIRAL_FFI\", \"array_set\")\n@external(javascript, \"./SPIRAL_FFI.mjs\", \"array_set\")\npub fn spiral_array_store_set(store: SpiralArrayStore(a), i: Int, value: a) -> Nil\n\npub fn spiral_array_create(size: Int) -> SpiralArray(a) {\n  SpiralArray(store: spiral_array_store_new(size, option.None), size: size)\n}\n\npub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {\n  SpiralArray(store: spiral_array_store_new(size, option.Some(value)), size: size)\n}\n\npub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {\n  let xs = spiral_array_create(list.length(values))\n  let _ = list.index_map(values, fn(x, i) { spiral_array_set(xs, i, x) })\n  xs\n}\n\npub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {\n  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })\n}\n\npub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {\n  case i >= 0 && i < xs.size {\n    True ->\n      case spiral_array_store_get(xs.store, i) {\n        option.Some(x) -> x\n        option.None -> panic as \"spiral array: read of an element that was never set\"\n      }\n    False -> panic as \"spiral array: index out of bounds\"\n  }\n}\n\npub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {\n  case i >= 0 && i < xs.size {\n    True -> spiral_array_store_set(xs.store, i, option.Some(value))\n    False -> panic as \"spiral array: index out of bounds\"\n  }\n}"
             let decl = decl.Replace("SPIRAL_FFI", ffi_module)
             if not (externals.Contains decl) then externals.Add decl
         let spiralRefs () =
-            ffi.Value <- GleamStorageFfi
+            ffi.Value <- (match ffi.Value with GleamStorageFfi(arrays, _) -> GleamStorageFfi(arrays, true) | NoGleamFfi -> GleamStorageFfi(false, true))
             let decl = "pub type SpiralRefCell(a)\n\npub type SpiralRef(a) {\n  SpiralRef(cell: SpiralRefCell(a))\n}\n\n@external(erlang, \"SPIRAL_FFI\", \"ref_new\")\n@external(javascript, \"./SPIRAL_FFI.mjs\", \"ref_new\")\npub fn spiral_ref_cell_new(value: a) -> SpiralRefCell(a)\n\n@external(erlang, \"SPIRAL_FFI\", \"ref_get\")\n@external(javascript, \"./SPIRAL_FFI.mjs\", \"ref_get\")\npub fn spiral_ref_cell_get(cell: SpiralRefCell(a)) -> a\n\n@external(erlang, \"SPIRAL_FFI\", \"ref_set\")\n@external(javascript, \"./SPIRAL_FFI.mjs\", \"ref_set\")\npub fn spiral_ref_cell_set(cell: SpiralRefCell(a), value: a) -> Nil\n\npub fn spiral_ref_new(value: a) -> SpiralRef(a) {\n  SpiralRef(cell: spiral_ref_cell_new(value))\n}\n\npub fn spiral_ref_get(reference: SpiralRef(a)) -> a {\n  spiral_ref_cell_get(reference.cell)\n}\n\npub fn spiral_ref_set(reference: SpiralRef(a), value: a) -> Nil {\n  spiral_ref_cell_set(reference.cell, value)\n}"
             let decl = decl.Replace("SPIRAL_FFI", ffi_module)
             if not (externals.Contains decl) then externals.Add decl
@@ -18571,16 +18758,15 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                 System.Text.RegularExpressions.Regex.Replace(code, $@"\b{generated}(?![0-9])", gleamTypeName name)
                 ) code
         let importUnions (code : string) =
-            let imported = importedTypeUnits ()
-            if imported.IsEmpty && linked_units.IsEmpty then code
+            if linked_units.IsEmpty then code
             else
                 let candidates =
                     [ for KeyValue(node, source) in unionSourceNames do
-                        match (match unionOwnerUnit linked_units node with Some unitName -> Some unitName | None -> imported.TryFind source) with
-                        | Some unitName ->
+                        match linkedUnionName linked_units node source with
+                        | Some (unitName, name) ->
                             let u = (unbox<Union> node).Item
                             let generated = match u.layout with UHeap -> $"Uh{(uheap u.cases).tag}" | UStack -> $"Us{(ustack u.cases).tag}"
-                            yield generated, gleamTypeName source, unitName
+                            yield generated, gleamTypeName name, unitName
                         | None -> () ]
                 let renamed =
                     candidates |> List.fold (fun (code : string) (generated, name, _) ->
@@ -33332,8 +33518,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         let positional (args : string list) =
             let rec collect (rest : string list) =
                 match rest with
-                | key :: _ :: tail when key.StartsWith "--" && key <> "--no-parse" && key <> "--derive" && key <> "--split-literals" && key <> "--no-split-literals" && key <> "--check" && key <> "--stdin" && key <> "--list-sugar" -> collect tail
-                | key :: tail when key = "--no-parse" || key = "--derive" || key = "--split-literals" || key = "--no-split-literals" || key = "--check" || key = "--stdin" || key = "--list-sugar" -> collect tail
+                | key :: _ :: tail when key.StartsWith "--" && key <> "--no-parse" && key <> "--derive" && key <> "--split-literals" && key <> "--no-split-literals" && key <> "--check" && key <> "--stdin" && key <> "--list-sugar" && key <> "--respell-drift" -> collect tail
+                | key :: tail when key = "--no-parse" || key = "--derive" || key = "--split-literals" || key = "--no-split-literals" || key = "--check" || key = "--stdin" || key = "--list-sugar" || key = "--respell-drift" -> collect tail
                 | value :: tail -> value :: collect tail
                 | [] -> []
             collect args
@@ -33573,6 +33759,25 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                 | TokVar ("Cons", _) when not lexeme.InsideMacro -> yield line.Number, lexeme.Span.From + 1, "list-cons (write head :: tail)"
                                 | _ -> ()
                         | _ -> () ]
+                let respellDrift = List.contains "--respell-drift" arguments
+                let respellDriftFindings = ref 0
+                let respellDriftLint (file : string) (text : string) =
+                    [ match editionOf file with
+                      | Edition3 ->
+                        let lexed = lexText file Edition3 text
+                        let converted, _, _ = FormatterConvert.convert FormatterConvert.Symbols lexed
+                        let converted = Seq.toArray converted
+                        let original = text.Split '\n'
+                        let respelled (number : int) = number >= 1 && number <= converted.Length && number <= original.Length && converted.[number - 1] <> original.[number - 1]
+                        for line in lexed.SourceLines do
+                            match line.Shape with
+                            | Code (_, lexemes, _) when respelled line.Number ->
+                                for lexeme in lexemes do
+                                    match FormatterConvert.respell FormatterConvert.Symbols lexeme with
+                                    | Some spelled -> yield line.Number, lexeme.Span.From + 1, $"respell-drift (write {spelled} for {lexeme.Text.Text})"
+                                    | None -> ()
+                            | _ -> ()
+                      | _ -> () ]
                 let spelling =
                     match option "--spelling" arguments with
                     | Some "symbols" -> Some FormatterConvert.Symbols
@@ -33611,11 +33816,15 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             for number, column, finding in listSugarLint file text do
                                 listSugarFindings.Value <- listSugarFindings.Value + 1
                                 printfn "%s:%d:%d: %s" file number column finding
+                        if respellDrift && not (optsOutOfRespell text) then
+                            for number, column, finding in respellDriftLint file text do
+                                respellDriftFindings.Value <- respellDriftFindings.Value + 1
+                                printfn "%s:%d:%d: %s" file number column finding
                     | Error message ->
                         failed.Value <- failed.Value + 1
                         eprintfn "format error: %s: %s" file message
                 formatInParallel (positional arguments |> List.collect sourceFiles |> Array.ofList) examine report
-                if failed.Value > 0 then 2 elif check && changed.Count > 0 then 1 elif listSugar && listSugarFindings.Value > 0 then 1 else 0
+                if failed.Value > 0 then 2 elif check && changed.Count > 0 then 1 elif listSugar && listSugarFindings.Value > 0 then 1 elif respellDrift && respellDriftFindings.Value > 0 then 1 else 0
 
         let run (arguments : string list) : int = onLargeStack (fun () -> runOnThisStack arguments)
 
@@ -33924,17 +34133,43 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         owner (System.IO.Path.GetDirectoryName file)
     
 
+    /// ### readUnitGraph
+    /// The unions a built unit exports, from its `<stem>.unit.json` graphs (unitGraphDir of its package folder); None until
+    /// it is built.
+    let readUnitGraph (dir : string) : Map<string * string, string> option =
+        match (try System.IO.Directory.GetFiles(unitGraphDir dir, "*.unit.json") with _ -> [||]) with
+        | [||] -> None
+        | files ->
+            files
+            |> Array.collect (fun file ->
+                use graph = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllText file)
+                [| for u in graph.RootElement.GetProperty("unions").EnumerateArray() -> (u.GetProperty("source").GetString(), u.GetProperty("shape").GetString()), u.GetProperty("name").GetString() |])
+            |> Map.ofArray
+            |> Some
+
+    /// ### file_package_dir
+    /// The folder of the package that owns the file (its nearest package.spiproj / spiral.toml in the schema env).
+    let file_package_dir (packages : SchemaEnv) (file : string) =
+        let rec owner (dir : string) =
+            if System.String.IsNullOrEmpty dir then System.IO.Path.GetDirectoryName file
+            else
+                let standardized = SpiralFileSystem.standardize_path dir
+                match SchemaEnv.tryFindText standardized packages with
+                | Some _ -> standardized
+                | None -> owner (System.IO.Path.GetDirectoryName dir)
+        owner (System.IO.Path.GetDirectoryName file)
+
     /// ### file_linked_units
-    /// The units the file's package links (`link:` in its package.spiproj), as package id -> unit name (the linked
-    /// package's folder name). Unions declared in those packages come from that unit instead of being emitted here.
-    let file_linked_units (packages : SchemaEnv) (package_ids : Map<string, int>) (file : string) : Map<int, string> =
+    /// The units the file's package links (`link:` in its package.spiproj), as package id -> unit (the linked package's
+    /// folder name, plus its unit graph once built). Unions those units export come from them instead of being emitted here.
+    let file_linked_units (packages : SchemaEnv) (package_ids : Map<string, int>) (file : string) : Map<int, LinkedUnit> =
         let rec owner (dir : string) =
             if System.String.IsNullOrEmpty dir then Map.empty
             else
                 match SchemaEnv.tryFindText (SpiralFileSystem.standardize_path dir) packages with
                 | Some schema ->
                     schema.schema.link
-                    |> List.choose (fun l -> let dir = snd l.dir in Map.tryFind dir package_ids |> Option.map (fun id -> id, System.IO.Path.GetFileName(dir.TrimEnd('/', '\\'))))
+                    |> List.choose (fun l -> let dir = snd l.dir in Map.tryFind dir package_ids |> Option.map (fun id -> id, {unit = System.IO.Path.GetFileName(dir.TrimEnd('/', '\\')); exported = readUnitGraph dir}))
                     |> Map.ofList
                 | None -> owner (System.IO.Path.GetDirectoryName dir)
         owner (System.IO.Path.GetDirectoryName file)
@@ -34308,249 +34543,6 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         List.fold (fun s x -> {ok=Map.remove x s.ok; error=Map.remove x s.error}) s l
     
 
-    /// ## XCompat
-    type XCompatKind =
-        | XCompatHashtag
-        | XCompatMention
-        | XCompatCashtag
-        | XCompatAutolink
-        | XCompatOverweight
-
-    /// ### XCompatFinding
-    type XCompatFinding = { kind : XCompatKind; line : int; column : int; text : string }
-
-    /// ### xCompatKindName
-    let xCompatKindName kind =
-        match kind with
-        | XCompatHashtag -> "hashtag"
-        | XCompatMention -> "mention"
-        | XCompatCashtag -> "cashtag"
-        | XCompatAutolink -> "autolink"
-        | XCompatOverweight -> "overweight"
-
-    /// ### xCompatCode
-    let xCompatCode kind =
-        match kind with
-        | XCompatHashtag -> "XC001"
-        | XCompatMention -> "XC002"
-        | XCompatCashtag -> "XC003"
-        | XCompatAutolink -> "XC004"
-        | XCompatOverweight -> "XC005"
-
-    /// ### xCompatHint
-    let xCompatHint kind =
-        match kind with
-        | XCompatHashtag -> "X turns '#' before a letter into a hashtag link"
-        | XCompatMention -> "X turns '@' before a name into a mention"
-        | XCompatCashtag -> "X turns '$' before letters into a cashtag link"
-        | XCompatAutolink -> "X shortens what looks like a domain to a 23-character t.co link"
-        | XCompatOverweight -> "one post holds 280 weighted characters (CJK and emoji weigh 2, links 23), less the cell's cN k/n header line and 1 per defused link dot; split this definition"
-
-    /// ### PostabilityProfile
-    type PostabilityProfile =
-        {
-            name : string
-            weightLimit : int
-            linkWeight : int
-            defaultWeight : int
-            weightRanges : (int * int * int) list
-            domainPattern : Text.RegularExpressions.Regex
-            topLevelDomains : Set<string>
-            shortDomainsLinked : Set<string>
-            twoLetterSecondLabelLongerThan : int
-            entityPatterns : (XCompatKind * Text.RegularExpressions.Regex) list
-            onePostHeader : string
-            headerSeparator : string
-            defusedBefore : Text.RegularExpressions.Regex
-            defusedAfter : Text.RegularExpressions.Regex
-            defusedExtraWeight : int
-        }
-
-    /// ### postabilityProfileOfFile
-    let postabilityProfileOfFile (path : string) : PostabilityProfile =
-        use document = Text.Json.JsonDocument.Parse (IO.File.ReadAllText path)
-        let root = document.RootElement
-        let at (element : Text.Json.JsonElement) (name : string) = element.GetProperty name
-        let text (element : Text.Json.JsonElement) (name : string) = (at element name).GetString ()
-        let number (element : Text.Json.JsonElement) (name : string) = (at element name).GetInt32 ()
-        let regex (pattern : string) = Text.RegularExpressions.Regex pattern
-        let post = at root "post"
-        let weights = at root "code_point_weight"
-        let links = at root "links"
-        let entities = at root "entities"
-        let posting = at root "posting"
-        let defused = at posting "defused_dot"
-        let domainsFile = IO.Path.Combine (IO.Path.GetDirectoryName (IO.Path.GetFullPath path), text links "top_level_domains_file")
-        {
-            name = text root "profile"
-            weightLimit = number post "weight_limit"
-            linkWeight = number post "link_weight"
-            defaultWeight = number weights "default"
-            weightRanges = [ for range in (at weights "ranges").EnumerateArray () -> range.[0].GetInt32 (), range.[1].GetInt32 (), range.[2].GetInt32 () ]
-            domainPattern = regex (text links "domain_pattern")
-            topLevelDomains = IO.File.ReadAllLines domainsFile |> Array.map (fun line -> line.Trim ()) |> Array.filter (fun line -> line <> "") |> Set.ofArray
-            shortDomainsLinked = [ for domain in (at links "short_domains_always_linked").EnumerateArray () -> domain.GetString () ] |> Set.ofList
-            twoLetterSecondLabelLongerThan = number links "two_letter_tld_needs_second_label_longer_than"
-            entityPatterns = [ XCompatHashtag, regex (text entities "hashtag"); XCompatMention, regex (text entities "mention"); XCompatCashtag, regex (text entities "cashtag") ]
-            onePostHeader = text posting "budget_header_for_one_post"
-            headerSeparator = text posting "header_separator"
-            defusedBefore = regex ("^" + text defused "before" + "$")
-            defusedAfter = regex ("^" + text defused "after" + "$")
-            defusedExtraWeight = number defused "extra_weight"
-        }
-
-    /// ### postabilityProfilePath
-    let postabilityProfilePath (file : string) : string option =
-        match Environment.GetEnvironmentVariable "SPIRAL_POSTABILITY_PROFILE" with
-        | null | "" ->
-            let rec nearest (directory : string) =
-                if isNull directory then None
-                else
-                    let folder = IO.Path.Combine (directory, "postability")
-                    let found = if IO.Directory.Exists folder then IO.Directory.GetFiles (folder, "*.json") |> Array.sort |> Array.tryHead else None
-                    match found with
-                    | Some profile -> Some profile
-                    | None -> nearest (IO.Path.GetDirectoryName directory)
-            nearest (IO.Path.GetDirectoryName (IO.Path.GetFullPath file))
-        | path -> Some path
-
-    /// ### postabilityProfiles
-    let postabilityProfiles = Collections.Concurrent.ConcurrentDictionary<string, PostabilityProfile> ()
-
-    /// ### postabilityProfileFor
-    let postabilityProfileFor (file : string) : PostabilityProfile option =
-        postabilityProfilePath file |> Option.map (fun path -> postabilityProfiles.GetOrAdd (IO.Path.GetFullPath path, postabilityProfileOfFile))
-
-    /// ### xCompatLinks
-    let xCompatLinks (profile : PostabilityProfile) (link : string) (topLevelDomain : string) =
-        if not (profile.topLevelDomains.Contains topLevelDomain) then false
-        elif profile.shortDomainsLinked.Contains (link.ToLowerInvariant ()) then true
-        elif topLevelDomain.Length = 2 then
-            let labels = link.Split '.'
-            labels.[labels.Length - 2].Length > profile.twoLetterSecondLabelLongerThan
-        else true
-
-    /// ### xCompatCodePointWeight
-    let xCompatCodePointWeight (profile : PostabilityProfile) (codePoint : int) =
-        match profile.weightRanges |> List.tryFind (fun (low, high, _) -> codePoint >= low && codePoint <= high) with
-        | Some (_, _, weight) -> weight
-        | None -> profile.defaultWeight
-
-    /// ### xCompatDefusedAt
-    let xCompatDefusedAt (profile : PostabilityProfile) (text : string) (i : int) =
-        i > 0 && i + 1 < text.Length && text.[i] = '.'
-        && profile.defusedBefore.IsMatch (string text.[i - 1]) && profile.defusedAfter.IsMatch (string text.[i + 1])
-
-    /// ### xCompatPostedLink
-    let xCompatPostedLink (profile : PostabilityProfile) (text : string) (found : Text.RegularExpressions.Match) =
-        let undefusedDot = seq { found.Index .. found.Index + found.Length - 1 } |> Seq.exists (fun i -> text.[i] = '.' && not (xCompatDefusedAt profile text i))
-        undefusedDot && xCompatLinks profile found.Value (found.Groups.[1].Value.ToLowerInvariant ())
-
-    /// ### xCompatPostWeight
-    let xCompatPostWeight (profile : PostabilityProfile) (post : string) =
-        let links = [ for found in profile.domainPattern.Matches post do if xCompatPostedLink profile post found then yield found ]
-        let unlinked = links |> List.rev |> List.fold (fun (rest : string) found -> rest.Remove (found.Index, found.Length)) post
-        let characters = unlinked.EnumerateRunes () |> Seq.sumBy (fun rune -> xCompatCodePointWeight profile rune.Value)
-        characters + profile.linkWeight * links.Length
-
-    /// ### xCompatTopLevelBlocks
-    let xCompatTopLevelBlocks (lines : string []) =
-        let lines = if lines.Length > 0 && lines.[lines.Length - 1] = "" then lines.[.. lines.Length - 2] else lines
-        let cells = Collections.Generic.List<int * string> ()
-        let current = Collections.Generic.List<string> ()
-        let mutable start = 1
-        let mutable blanks = 0
-        let mutable seen = false
-        let finish () = if current.Count > 0 then cells.Add (start, String.Join("\n", current).TrimEnd ())
-        for index in 0 .. lines.Length - 1 do
-            let line = lines.[index]
-            if line = "" then blanks <- blanks + 1
-            elif blanks > 0 && seen && not (line.StartsWith " " || line.StartsWith "\t") then
-                finish ()
-                current.Clear ()
-                for _ in 2 .. blanks do current.Add ""
-                current.Add line
-                start <- index + 1
-                blanks <- 0
-            else
-                for _ in 1 .. blanks do current.Add ""
-                current.Add line
-                if not seen then start <- index + 1
-                blanks <- 0
-                seen <- true
-        finish ()
-        List.ofSeq cells
-
-    /// ### xCompatDefusedDots
-    let xCompatDefusedDots (profile : PostabilityProfile) (block : string) =
-        seq { 1 .. block.Length - 2 } |> Seq.filter (xCompatDefusedAt profile block) |> Seq.length
-
-    /// ### xCompatPostableLimit
-    let xCompatPostableLimit (profile : PostabilityProfile) (cell : int) (block : string) =
-        profile.weightLimit - xCompatPostWeight profile (profile.onePostHeader.Replace ("{block}", string cell) + profile.headerSeparator) - profile.defusedExtraWeight * xCompatDefusedDots profile block
-
-    /// ### xCompatOverweightFindings
-    let xCompatOverweightFindings (profile : PostabilityProfile) (lines : string []) =
-        [ for position, (row, block) in List.indexed (xCompatTopLevelBlocks lines) do
-            let weight = xCompatPostWeight profile block
-            let limit = xCompatPostableLimit profile (position + 1) block
-            if weight > limit then
-                yield { kind = XCompatOverweight; line = row; column = 1; text = $"weight {weight} > {limit} ({profile.weightLimit} minus the c{position + 1} k/n header and defused dots)" } ]
-
-    /// ### xCompatLineFindings
-    let xCompatLineFindings (profile : PostabilityProfile) (line : string) (row : int) =
-        let marks = profile.entityPatterns |> List.collect (fun (kind, pattern) -> [ for found in pattern.Matches line -> kind, found.Index, found.Value ])
-        let links =
-            [ for found in profile.domainPattern.Matches line do
-                if xCompatPostedLink profile line found then yield XCompatAutolink, found.Index, found.Value ]
-        marks @ links
-        |> List.sortBy (fun (_, start, _) -> start)
-        |> List.map (fun (kind, start, text) ->
-            { kind = kind; line = row; column = Globalization.StringInfo(line.Substring (0, start)).LengthInTextElements + 1; text = text })
-
-    /// ### xCompatFindings
-    let xCompatFindings (profile : PostabilityProfile) (source : string) =
-        let lines = source.Replace("\r\n", "\n").Split '\n'
-        let marks = lines |> List.ofArray |> List.mapi (fun index line -> xCompatLineFindings profile line (index + 1)) |> List.concat
-        marks @ xCompatOverweightFindings profile lines |> List.sortBy (fun finding -> finding.line, finding.column)
-    /// ### xCompatReportLine
-    let xCompatReportLine (path : string) (finding : XCompatFinding) =
-        $"{path}:{finding.line}:{finding.column}: {xCompatKindName finding.kind}: {finding.text} ({xCompatHint finding.kind})"
-
-    /// ### xCompatWarningLine
-    let xCompatWarningLine (path : string) (finding : XCompatFinding) =
-        $"warning: {path}:{finding.line}:{finding.column}: {xCompatCode finding.kind} {xCompatKindName finding.kind}: {finding.text} ({xCompatHint finding.kind})"
-
-    /// ### xCompatPackageEditionThree
-    let xCompatPackageEditionThree (file : string) =
-        let rec nearest (directory : string) =
-            if isNull directory then None
-            else
-                let toml = IO.Path.Combine (directory, "spiral.toml")
-                let project = if IO.File.Exists toml then toml else IO.Path.Combine (directory, "package.spiproj")
-                if IO.File.Exists project then Some project else nearest (IO.Path.GetDirectoryName directory)
-        match nearest (IO.Path.GetDirectoryName (IO.Path.GetFullPath file)) with
-        | Some project -> IO.File.ReadAllLines project |> Array.exists (fun line -> let t = line.Trim().Replace(" ", "") in t = "edition:3" || t = "edition=3")
-        | None -> false
-
-    /// ### xCompatEnabled
-    let xCompatEnabled (file : string) =
-        Environment.GetEnvironmentVariable "SPIRAL_X_COMPAT" = "1" || (try xCompatPackageEditionThree file with _ -> false)
-
-    /// ### xCompatWarnedTexts
-    let xCompatWarnedTexts = Collections.Concurrent.ConcurrentDictionary<string * string, unit> ()
-
-    /// ### xCompatWarnEntry
-    let xCompatWarnEntry (file : string) =
-        try
-            if xCompatEnabled file && IO.File.Exists file then
-                match postabilityProfileFor file with
-                | Some profile ->
-                    let text = IO.File.ReadAllText file
-                    if xCompatWarnedTexts.TryAdd ((file, text), ()) then
-                        for finding in xCompatFindings profile text do eprintfn "%s" (xCompatWarningLine file finding)
-                | None -> ()
-        with _ -> ()
     /// ## SignalRSupervisor
     // open System
     open System.IO
@@ -35213,7 +35205,6 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         entry_errors >>=* fun entry_errors ->
                         let entry_errors = entry_errors @ package_errors
                         if List.isEmpty entry_errors then dependency_warnings ()
-                        xCompatWarnEntry file
                         let body() =
                             match backend, Map.tryFind "main" env.term with
                             | "Check", _ -> BuildSkip
@@ -35248,14 +35239,20 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                     | "Gleam" ->
                                         build_many (fun file b a ->
                                             let ffi_module = System.IO.Path.GetFileNameWithoutExtension file + "_ffi"
-                                            let code, ffi = codegenGleam ffi_module (file_linked_units s.packages (fst s.package_ids) file) b (DeadPureLetElision.block a)
+                                            let linked, a = file_linked_units s.packages (fst s.package_ids) file, DeadPureLetElision.block a
+                                            writeUnitGraph (file_package_dir s.packages file) file linked b a
+                                            let code, ffi = codegenGleam ffi_module linked b a
                                             generated_file (UnusedGlobals.prune b.globals code) ".gleam"
                                             :: match ffi with
                                                | NoGleamFfi -> []
-                                               | GleamStorageFfi -> [generated_file (gleamStorageFfiErlang ffi_module) "_ffi.erl"; generated_file gleamStorageFfiJavaScript "_ffi.mjs"]) "Gleam"
+                                               | GleamStorageFfi(arrays, refs) -> [generated_file (gleamStorageFfiErlang ffi_module arrays refs) "_ffi.erl"; generated_file (gleamStorageFfiJavaScript arrays refs) "_ffi.mjs"]) "Gleam"
                                     | "Lua" -> build codegenLua "Lua" ".lua"
                                     | "Fsharp" -> build codegenFsharp "Fsharp" ".fsx"
-                                    | "Rust" -> build (codegenRust (file_rust_extern s.packages file) (file_linked_units s.packages (fst s.package_ids) file)) "Rust" ".rs"
+                                    | "Rust" ->
+                                        build_many (fun file b a ->
+                                            let linked, a = file_linked_units s.packages (fst s.package_ids) file, DeadPureLetElision.block a
+                                            writeUnitGraph (file_package_dir s.packages file) file linked b a
+                                            [generated_file (codegenRust (file_rust_extern s.packages file) linked b a |> UnusedGlobals.prune b.globals) ".rs"]) "Rust"
                                     | "Pascal" | "Delphi" -> build codegenPascal "Pascal" ".pas"
                                     | "Zig" -> build codegenZig "Zig" ".zig"
                                     | "Wasm" -> build codegenWasm "Wasm" ".wat"

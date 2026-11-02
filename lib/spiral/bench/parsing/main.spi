@@ -1,14 +1,14 @@
 /// # main
 := main () =
     ? is_rust () ?>
-        bench_kit.run_all [
-            "pure", pure_split.split_args
-            "process", process.split_args
+        bench_kit::run_all [
+            "pure", pure_split::split_args
+            "process", process::split_args
         ]
     |:
-        := fparsec x = x |> fparsec.split_args |> resultm.map (am'.map_base fst) |> resultm.map_error fst
-        bench_kit.run_all [
+        := fparsec x = x |> fparsec::split_args |> resultm::map (am'::map_base fst) |> resultm::map_error fst
+        bench_kit::run_all [
             "fparsec", fparsec
-            "pure", pure_split.split_args
-            "process", process.split_args
+            "pure", pure_split::split_args
+            "process", process::split_args
         ]

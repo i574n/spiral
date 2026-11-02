@@ -1,0 +1,138 @@
+///- --package .
+///> gleam
+:# source_map static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+/// ## positions that cannot be mixed up
+:| in_generated =
+    | InGenerated
+
+:| in_source =
+    | InSource
+
+:== position p = { line : i32; column : i32 }
+
+:= generated_at (line : i32) (column : i32) : position in_generated = { line; column }
+
+:= source_at (line : i32) (column : i32) : position in_source = { line; column }
+
+/// ## lines
+:~ ^ nth (i : i32) (xs : list string) : option string =
+    ?= xs ?|
+    | [] => None
+    | x :: rest => ? i = 0i32 ?> Some x |: nth (i - 1i32) rest
+
+:= trimmed_line (found : option string) : option string =
+    ?= found ?|
+    | Some text_in => Some (text::trim text_in)
+    | None => None
+
+:= line_at (lines : list string) (index : i32) : option string =
+    ? index < 0i32 ?> None |: trimmed_line (nth index lines)
+
+:= indent (text_in : string) : i32 = text::trim_start text_in 0i32
+
+:= lines_of (text_in : string) : list string = sm'::split_list "\n" (text::replace text_in "\r\n" "\n")
+
+:~ ^ matching_from (lines : list string) (i : i32) (trimmed : string) (acc : list i32) : list i32 =
+    ?= lines ?|
+    | [] => listm::rev acc
+    | l :: rest => matching_from rest (i + 1i32) trimmed (? text::trim l = trimmed ?> i :: acc |: acc)
+
+:~ ^ offsets (n : i32) (acc : list i32) : list i32 =
+    ? n < -4i32 ?> acc |: offsets (n - 1i32) (? n = 0i32 ?> acc |: n :: acc)
+
+:= agrees (source : list string) (program : list string) (at : i32) (line : i32) (offset : i32) : bool =
+    ?= line_at source (at + offset) ?|
+    | Some near => near <> "" && line_at program (line - 1i32 + offset) = Some near
+    | None => !-
+
+:= score (source : list string) (program : list string) (line : i32) (at : i32) : i32 =
+    listm::fold (\ n offset => ? agrees source program at line offset ?> n + 1i32 |: n) 0i32 (offsets 4i32 [])
+
+:~ ^ best_score (scored : list (i32 * i32)) (best : i32) : i32 =
+    ?= scored ?|
+    | [] => best
+    | (_, s) :: rest => best_score rest (? s > best ?> s |: best)
+
+:~ ^ with_score (scored : list (i32 * i32)) (best : i32) (acc : list i32) : list i32 =
+    ?= scored ?|
+    | [] => listm::rev acc
+    | (i, s) :: rest => with_score rest best (? s = best ?> i :: acc |: acc)
+
+:= best_matches (line : i32) (program : list string) (source : list string) (trimmed : string) : list i32 =
+    := candidates = matching_from source 0i32 trimmed []
+    ?= candidates ?|
+    | [] => []
+    | _ :: [] => candidates
+    | _ =>
+        := scored = listm::map (\ at => (at, score source program line at)) candidates
+        with_score scored (best_score scored -1i32) []
+
+:= located (p : position in_generated) (text_in : string) (found : string) (index : i32) : position in_source =
+    := column = p::column - indent text_in + indent found
+    source_at (index + 1i32) (? column < 1i32 ?> 1i32 |: column)
+
+:= locate (p : position in_generated) (program : list string) (source : list string) : option (position in_source) =
+    ?= nth (p::line - 1i32) program ?|
+    | None => None
+    | Some text_in =>
+        := trimmed = text::trim text_in
+        ? trimmed = "" ?> None
+        |:
+            ?= best_matches p::line program source trimmed ?|
+            | index :: [] =>
+                ?= nth index source ?|
+                | Some found => Some (located p text_in found index)
+                | None => None
+            | _ => None
+
+/// ## rewriting a message
+:~ ^ digits_end (s : string) (i : i32) : i32 =
+    ? i < text::length s && text::digit_val (text::index s i) >= 0i32 ?> digits_end s (i + 1i32) |: i
+
+:= word_char_before (s : string) (i : i32) : bool =
+    := word = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+    ? i <= 0i32 ?> !- |: text::contains word (text::one s (i - 1i32))
+
+:== hit = { start : i32; stop : i32; at : position in_generated }
+
+:= hit_at (s : string) (i : i32) : option hit =
+    := marker = "main.spi:"
+    := a = i + text::length marker
+    := b = digits_end s a
+    := c = digits_end s (b + 1i32)
+    := shaped = b > a && text::one s b = ":" && c > b + 1i32
+    ? text::starts_at s i marker && word_char_before s i = !- && shaped
+    ?>
+        := line = text::parse_i32 (text::slice_len s a (b - a))
+        := column = text::parse_i32 (text::slice_len s (b + 1i32) (c - b - 1i32))
+        Some { start = i; stop = c; at = generated_at line column }
+    |: None
+
+:= shown (path : string) (q : position in_source) (whole : string) : string =
+    path ++ ":" ++ text::show_i32 q::line ++ ":" ++ text::show_i32 q::column ++ " (" ++ whole ++ ")"
+
+:~ ^ remap_from
+    (s : string) (i : i32) (program : list string) (source : list string) (path : string) (acc : string)
+    : string
+    =
+    ? i >= text::length s ?> acc
+    |:
+        ?= hit_at s i ?|
+        | Some h =>
+            := whole = text::slice_len s h::start (h::stop - h::start)
+            := piece = ?= locate h::at program source ?| Some q => shown path q whole | None => whole
+            remap_from s h::stop program source path (acc ++ piece)
+        | None => remap_from s (i + 1i32) program source path (acc ++ text::one s i)
+
+:= remap (message : string) (program : string) (source : string) (path : string) : string =
+    remap_from message 0i32 (lines_of program) (lines_of source) path ""
+
+:# remap_follows_the_elixir_cases =
+    := kept = remap "main.spi:2:1: oops" "x\ny\n" "y\nz\ny\n" "f.spi"
+    := none = remap "main.spi:1:5: oops" "zzz\n" "a\n" "f.spi"
+    := moved = remap "main.spi:2:5: oops" "a\n    b\nc\n" "q\na\nb\nc\nb\n" "f.spi"
+    (kept, none, moved) |> _assert_eq ("main.spi:2:1: oops", "main.spi:1:5: oops", "f.spi:3:1 (main.spi:2:5): oops")

@@ -112,7 +112,6 @@ function Get-SpiralNativeTools {
         Lean = Resolve-SpiralTool 'lean' @($env:SPIRAL_LEAN, 'lean', $(if ($env:ELAN_HOME) { Join-Path $env:ELAN_HOME 'bin/lean' }), (Join-Path $HOME '.elan/bin/lean'), (Join-Path $HOME 'scoop/persist/elan/.elan/bin/lean'))
         Gleam = Resolve-SpiralTool 'gleam' @($env:SPIRAL_GLEAM, 'gleam')
         Erl = Resolve-SpiralTool 'erl' @($env:SPIRAL_ERL, (Join-Path $HOME 'scoop/apps/erlang/current/bin/erl'), 'erl')
-        # `lua` is Scoop lua51 5.1.5 for WoW. lua54 is a side command and must not take this slot.
         Lua = Resolve-SpiralTool 'lua' @($env:SPIRAL_LUA, 'lua', 'luajit')
         Bun = Resolve-SpiralTool 'bun' @($env:SPIRAL_BUN, 'bun')
         Dotnet = $(try { Resolve-SpiralDotnet } catch { $null })
@@ -138,7 +137,6 @@ function Get-SpiralPackageDir {
     $candidates = @(
         $env:SPIRAL_COMPILER_PACKAGE_DIR,
         (Join-Path $BundleRoot '../../../deps/The-Spiral-Language/VS Code Plugin'),
-        (Join-Path $BundleRoot '../../../deps/polyglot/deps/The-Spiral-Language/VS Code Plugin'),
         (Join-Path $BundleRoot '../../../../polyglot/deps/The-Spiral-Language/VS Code Plugin')
     )
     foreach ($candidate in $candidates) {

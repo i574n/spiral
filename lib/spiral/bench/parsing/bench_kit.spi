@@ -48,15 +48,15 @@
 
 /// ### print
 := print (s : string) : () =
-    console.write_line s
+    console::write_line s
 
 /// ### join_args
 :~ join_args (arr : array_base string) : string =
-    := n : i32 = arr |> array |> am'.length
+    := n : i32 = arr |> array |> am'::length
     :~ ^ 루프 (i : i32) (acc : string) : string =
         ? i >= n
         ?> acc
-        |: 루프 (i + 1) (acc ++# (? i = 0 ?> "" |: "|") ++# (arr |> am'.index_base i))
+        |: 루프 (i + 1) (acc ++# (? i = 0 ?> "" |: "|") ++# (arr |> am'::index_base i))
     루프 0 ""
 
 /// ### repeat_join
@@ -69,7 +69,7 @@
 
 /// ### quoted_arg
 :~ quoted_arg (n : i32) : string =
-    := body = "ab c" |> sm'.replicate (n / 4)
+    := body = "ab c" |> sm'::replicate (n / 4)
     "x \"" ++# body ++# "\" y"
 
 /// ### measure
@@ -99,7 +99,7 @@
 
 /// ### run_case
 := run_case (impl_name : string) split (case_name : string) (input : string) : () =
-    := len : i32 = input |> sm'.length
+    := len : i32 = input |> sm'::length
     := joined =
         ?= split input ?|
         | Ok arr => arr |> join_args
@@ -107,7 +107,7 @@
     print ("RESULT\t" ++# impl_name ++# "\t" ++# case_name ++# "\t" ++# show_i32 len ++# "\t" ++# joined)
     := count x : i32 =
         ?= split x ?|
-        | Ok arr => arr |> array |> am'.length
+        | Ok arr => arr |> array |> am'::length
         | Error _ => -1
     := ns, iters, sink = measure count input
     print (
@@ -151,13 +151,13 @@
 /// ### run_all
 := run_all impls =
     := cases = cases ()
-    := n : i32 = cases |> am'.length
+    := n : i32 = cases |> am'::length
     impls
-    |> listm.iter \ impl_name, split =>
+    |> listm::iter \ impl_name, split =>
         :~ ^ 루프 (i : i32) : () =
             ? i >= n ?> ()
             |:
-                := case_name, input = cases |> am'.index i
+                := case_name, input = cases |> am'::index i
                 run_case impl_name split case_name input
                 루프 (i + 1)
         루프 0

@@ -1,0 +1,46 @@
+///- --package .
+:< sm'_operators
+
+:== pin = { file : string; bytes : i64; sha256 : string }
+
+:== oracle = { checkpoint : pin; tokenizer : pin; steps : i32; greedy : list string }
+
+:= llama2_c_commit () : string = "350e04fe35433e6d2941dce5a1f53308f87058eb"
+
+:= stories260k_checkpoint () : pin =
+    {
+        file = "stories260K.bin"; bytes = 1056540i64
+        sha256 = "B0A507E7AD0F626624F17112325E66691F9076D622E1D3274D103D00299F2696"
+    }
+
+:= stories260k_tokenizer () : pin =
+    {
+        file = "tok512.bin"; bytes = 6227i64
+        sha256 = "037CB335ABB25D1FA9E8ECAE30ED2A3A8ACE9302862EBCDC05D51A6BBB10C312"
+    }
+
+:= stories260k_line_1 () : string =
+    "Once upon a time, there was a little girl named Lily. She loved to play outside in the park. "
+    ++# "One day, she saw a big, red ball. She wanted to play with it, but it was too high."
+
+:= stories260k_line_2 () : string =
+    "Lily's mom said, \"Lily, let's go to the park.\" Lily was sad and didn't know what to do. "
+    ++# "She said, \"I want to play with your ball, but I can't find it.\""
+
+:= stories260k_line_3 () : string =
+    "Lily was sad and didn't know what to do. She said, \"I'm sorry, Lily. I didn't know what to do.\""
+
+:= stories260k_line_4 () : string =
+    "Lily didn't want to help her mom, so she said, \"I'm sorry, mom. I didn't know what to do.\" "
+    ++# "Her mom said, \"Don't worry, Lily. We can help you."
+
+:= stories260k () : oracle =
+    {
+        checkpoint = stories260k_checkpoint (); tokenizer = stories260k_tokenizer (); steps = 256
+        greedy = [ stories260k_line_1 (); stories260k_line_2 (); stories260k_line_3 (); stories260k_line_4 () ]
+    }
+
+:= greedy_text (o : oracle) : string = sm'::concat_list "\n" o::greedy
+
+:= model_path (p : pin) : string =
+    env::get_environment_variable "LOCALAPPDATA" ++# "/spiral-bin/models/llama2c/" ++# p::file

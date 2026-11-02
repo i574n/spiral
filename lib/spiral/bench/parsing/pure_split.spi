@@ -8,9 +8,9 @@
     := quotes = [ '"' ]
     := special = esc ++ quotes
     := p_esc_char c = p_char c >>. any_char () |>> \ c' => \ () => #?c ++#? (c' ())
-    := p_word = special |> none_of |>> \ c => \ () => c () |> sm'.obj_to_string
+    := p_word = special |> none_of |>> \ c => \ () => c () |> sm'::obj_to_string
     := p_plain = special ++ [ ' ' ] |> none_of |> many1_chars
-    := p_esc = esc |> listm.map p_esc_char |> choice
+    := p_esc = esc |> listm::map p_esc_char |> choice
     := p_quoted = (p_word <|> p_esc) |> many_strings
     := p_quoted_all = p_quoted |> between (p_char '"') (p_char '"')
     := p_esc_root = (p_esc >>% "") >>. (p_word |> many_strings)
@@ -18,5 +18,5 @@
     := p_args = spaces1 () |> sep_by p_content
     args
     |> run_parser p_args
-    |> resultm.map (fst >> listm'.box >> listm'.to_array')
-    |> resultm.map_error eval
+    |> resultm::map (fst >> listm'::box >> listm'::to_array')
+    |> resultm::map_error eval

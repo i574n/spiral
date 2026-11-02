@@ -506,8 +506,6 @@ function Invoke-Native([string]$exe, [string[]]$arguments, [string]$workDir, [in
     $global:SpiralLastNativeMs = [int]$nativeCallWatch.Elapsed.TotalMilliseconds
     $code = $p.ExitCode
     if (-not [Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($out, $err), 15000)) {
-        # The process has exited. A child can keep the redirected pipes open (mingw gcc does this).
-        # The exit code is still the result; dropping it turned a finished compile into build-fail.
         return [pscustomobject]@{ Exit = [string]$code; Out = ''; Err = 'stdout/stderr still open 15 s after exit (a child process holds them)' }
     }
     [pscustomobject]@{ Exit = $p.ExitCode; Out = $out.Result; Err = $err.Result }
@@ -539,7 +537,6 @@ function Build-And-Run($job) {
         $dump = Join-Path $binDir 'spiral-calyx.dat'
         $json = Join-Path $binDir 'spiral-calyx.json'
         Remove-Item -LiteralPath $dump, $json -ErrorAction SilentlyContinue
-        # cider's interpret path serializes the memory dump to stdout and ignores -o.
         $info = [Diagnostics.ProcessStartInfo]::new($tools.Cider)
         foreach ($a in @('-l', $tools.CalyxRoot, '-q', $job.Output)) { $info.ArgumentList.Add($a) }
         $info.WorkingDirectory = $binDir
@@ -939,7 +936,7 @@ if ($Native) {
             $gleamModules[$module] = $gleamJobs[$i]
             Copy-Item -LiteralPath $gleamJobs[$i].Output (Join-Path $gleamBatch "src/$module.gleam")
         }
-        $gleamFfi = @($gleamJobs | ForEach-Object { Get-ChildItem -LiteralPath (Split-Path $_.Output) -File -Filter "$([IO.Path]::GetFileNameWithoutExtension($_.Output))_ffi.*" }) | Sort-Object Name -Unique
+        $gleamFfi = @($gleamJobs | ForEach-Object { Get-ChildItem -LiteralPath (Split-Path $_.Output) -File -Filter "$([IO.Path]::GetFileNameWithoutExtension($_.Output))_ffi.*" }) | Group-Object Name | ForEach-Object { $_.Group | Sort-Object Length -Descending | Select-Object -First 1 }
         foreach ($ffi in $gleamFfi) { Copy-Item -LiteralPath $ffi.FullName (Join-Path $gleamBatch "src/$($ffi.Name)") -Force }
         $gleamFailures = @{}
         for ($round = 0; $round -le $gleamJobs.Count; $round++) {
@@ -974,7 +971,6 @@ if ($Native) {
 public static extern uint SetErrorMode(uint mode);
 '@
         }
-        # abort() otherwise waits on WerFault. A 30s native timeout then looks like a missed exit 3.
         [Spiral.NativeErrorMode]::SetErrorMode(0x8003) | Out-Null
     }
     $laneResults = $lanes | ForEach-Object -ThrottleLimit ([Math]::Max(1, $lanes.Count)) -Parallel {

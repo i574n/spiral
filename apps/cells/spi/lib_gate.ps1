@@ -12,7 +12,7 @@ param(
 )
 $ErrorActionPreference = 'Continue'
 $libRoot = Get-Item (Resolve-Path $Lib).Path
-while ($libRoot -and -not (@('lib/spiral', 'deps/spiral/lib/spiral', 'deps/polyglot/deps/spiral/lib/spiral') | Where-Object { Test-Path (Join-Path $libRoot.FullName "$_/testing.spi") })) { $libRoot = $libRoot.Parent }
+while ($libRoot -and -not (@('lib/spiral', 'deps/spiral/lib/spiral') | Where-Object { Test-Path (Join-Path $libRoot.FullName "$_/testing.spi") })) { $libRoot = $libRoot.Parent }
 if (-not $libRoot -and ((Resolve-Path $Lib).Path -replace '\\', '/') -notmatch '/lib/spiral/?$') { throw "-Lib needs lib/spiral at or above it: Cells finds the lib and its real prelude through that path (got $Lib)" }
 if (-not (Test-Path -LiteralPath (Join-Path $Lib $File))) { throw "no $File under -Lib ${Lib}: a missing file runs zero tests and reads as green" }
 function Get-CopyGateSettings([string] $CopyRoot, [string] $LiveRoot) {

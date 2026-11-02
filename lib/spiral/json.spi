@@ -10,9 +10,9 @@
 := tool_schema \* t. (name : string) (_ : t) : string =
     ~> json_real::tool_schema name `t
 
-:= hex_digit (d : i32) : string = sm'.slice d d "0123456789abcdef"
+:= hex_digit (d : i32) : string = sm'::slice d d "0123456789abcdef"
 
-:= unicode_escape (c : i32) : string = sm'.concat_list "" [ "\\u00"; hex_digit (c / 16i32); hex_digit (c % 16i32) ]
+:= unicode_escape (c : i32) : string = sm'::concat_list "" [ "\\u00"; hex_digit (c / 16i32); hex_digit (c % 16i32) ]
 
 := short_escape (c : i32) : option string =
     ? c = 8i32 ?> Some "\\b" |? c = 9i32 ?> Some "\\t" |? c = 10i32 ?> Some "\\n"
@@ -24,18 +24,33 @@
     | None => unicode_escape c
 
 :~ ^ controls_from (c : i32) (t : string) : string =
-    ? c >= 32i32 ?> t |: controls_from (c + 1i32) (sm'.replace (unicode.char_of c) (control_escape c) t)
+    ? c >= 32i32 ?> t |: controls_from (c + 1i32) (sm'::replace (unicode::char_of c) (control_escape c) t)
+
+:= rust_quote (s : string) : string =
+    global """
+pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
+    let (q, b) = (char::from(34u8), char::from(92u8));
+    let mut out = String::from(q);
+    for c in s.chars() {
+        match c as u32 {
+            34 | 92 => { out.push(b); out.push(c); }
+            n @ (8 | 9 | 10 | 12 | 13) => { out.push(b); out.push(char::from(b"btn_fr"[(n - 8) as usize])); }
+            n if n < 32 => out.push_str(&format!("{b}u{n:04x}")),
+            _ => out.push(c),
+        }
+    }
+    out.push(q);
+    std::rc::Rc::from(out.as_str())
+}
+"""
+    $'spiral_json_quote(&*!s)' : string
 
 := quote (s : string) : string =
     run_target \|
-        | Rust => \ () =>
-            $'std::rc::Rc::<str>::from({ let q = char::from(34u8); let b = char::from(92u8); let mut out = String::from(q); \
-                for c in (!s).chars() { let n = c as u32; match n { 34 | 92 => { out.push(b); out.push(c); } 8 | 9 | 10 | 12 | 13 => \
-                { out.push(b); out.push(char::from(b"btn_fr"[(n - 8) as usize])); } n if n < 32 => out.push_str(&format\!("{b}u{n:04x}")), \
-                _ => out.push(c) } } out.push(q); out }.as_str())' : string
+        | Rust => \ () => rust_quote s
         | _ => \ () =>
-            := escaped = s |> sm'.replace "\\" "\\\\" |> sm'.replace "\"" "\\\"" |> controls_from 0i32
-            sm'.concat_list "" [ "\""; escaped; "\"" ]
+            := escaped = s |> sm'::replace "\\" "\\\\" |> sm'::replace "\"" "\\\"" |> controls_from 0i32
+            sm'::concat_list "" [ "\""; escaped; "\"" ]
 
 ///> rust
 ///> gleam
@@ -50,12 +65,12 @@
 ///> rust
 ///> gleam
 :# quote_uses_short_forms_for_backspace_formfeed_and_return =
-    quote (sm'.concat_list "" [ unicode.char_of 8i32; unicode.char_of 12i32; unicode.char_of 13i32 ]) |> _assert_eq "\"\\b\\f\\r\""
+    quote (sm'::concat_list "" [ unicode::char_of 8i32; unicode::char_of 12i32; unicode::char_of 13i32 ]) |> _assert_eq "\"\\b\\f\\r\""
 
 ///> rust
 ///> gleam
 :# quote_escapes_every_other_control_as_u00xx =
-    quote (sm'.concat_list "" [ unicode.char_of 1i32; unicode.char_of 31i32 ]) |> _assert_eq "\"\\u0001\\u001f\""
+    quote (sm'::concat_list "" [ unicode::char_of 1i32; unicode::char_of 31i32 ]) |> _assert_eq "\"\\u0001\\u001f\""
 
 :== weather_query = { location : string; days : i32; metric : bool }
 
@@ -202,6 +217,6 @@
 
 ///> rust
 :# quote_escapes_a_json_string_literal =
-    testing.expect (quote "plain" = "\"plain\"") "plain text is only wrapped"
-    testing.expect (quote "a\"b\\c" = "\"a\\\"b\\\\c\"") "quotes and backslashes are escaped"
-    testing.expect (quote "l1\nl2\tx" = "\"l1\\nl2\\tx\"") "newlines and tabs are escaped"
+    testing::expect (quote "plain" = "\"plain\"") "plain text is only wrapped"
+    testing::expect (quote "a\"b\\c" = "\"a\\\"b\\\\c\"") "quotes and backslashes are escaped"
+    testing::expect (quote "l1\nl2\tx" = "\"l1\\nl2\\tx\"") "newlines and tabs are escaped"

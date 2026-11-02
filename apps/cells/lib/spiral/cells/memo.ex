@@ -444,10 +444,10 @@ defmodule Spiral.Cells.Memo do
   end
 
   @identifier ~r/[A-Za-z_][\w']*/u
-  @qualified_name ~r/[A-Za-z_][\w']*(?:\.[A-Za-z_][\w']*)+/u
-  @open_statement ~r/\bopen\s+([A-Za-z_][\w']*(?:\.[A-Za-z_][\w']*)*)/u
+  @qualified_name ~r/[A-Za-z_][\w']*(?:(?:\.|::)[A-Za-z_][\w']*)+/u
+  @open_statement ~r/(?:\bopen|:<)\s+([A-Za-z_][\w']*(?:(?:\.|::)[A-Za-z_][\w']*)*)/u
 
-  defp opened_names(code), do: @open_statement |> Regex.scan(code, capture: :all_but_first) |> List.flatten() |> Enum.uniq()
+  defp opened_names(code), do: @open_statement |> Regex.scan(code, capture: :all_but_first) |> List.flatten() |> Enum.map(&String.replace(&1, "::", ".")) |> Enum.uniq()
 
   defp references(code, names) do
     qualified =
@@ -456,11 +456,11 @@ defmodule Spiral.Cells.Memo do
       |> List.flatten()
       |> Enum.uniq()
       |> Enum.map(fn token ->
-        parts = String.split(token, ".")
+        parts = String.split(token, [".", "::"])
         {Enum.join(Enum.drop(parts, -1), "."), List.last(parts)}
       end)
 
-    heads = Regex.replace(@qualified_name, code, fn token -> token |> String.split(".") |> hd() end)
+    heads = Regex.replace(@qualified_name, code, fn token -> token |> String.split([".", "::"]) |> hd() end)
     unqualified = @identifier |> Regex.scan(heads) |> List.flatten() |> Enum.uniq() |> Enum.reject(&(&1 in names))
     {unqualified, qualified}
   end
@@ -479,47 +479,8 @@ defmodule Spiral.Cells.Memo do
 
   def reached_program(program, bounds) do
     case Map.fetch(bounds, program) do
-      {:ok, spans} ->
-        unreached = program |> SourceBlocks.split(spans) |> shaped_blocks() |> unreached_definitions()
-        dropped = for {%{header: header, last: last}, i} <- Enum.with_index(spans), MapSet.member?(unreached, i), row <- header..last//1, into: MapSet.new(), do: row
-
-        program
-        |> String.replace("\r\n", "\n")
-        |> String.split("\n")
-        |> Enum.with_index(1)
-        |> Enum.reject(fn {_line, row} -> MapSet.member?(dropped, row) end)
-        |> Enum.map_join("\n", &elem(&1, 0))
-
-      :error ->
-        program
-    end
-  end
-
-  defp unreached_definitions(blocks) do
-    indexed = Enum.with_index(blocks)
-
-    by_name =
-      Enum.reduce(indexed, %{}, fn {block, i}, acc ->
-        Enum.reduce(block.names, acc, &Map.update(&2, &1, [i], fn xs -> [i | xs] end))
-      end)
-
-    operators = for {block, i} <- indexed, op <- block.operators, do: {op, i}
-    roots = for {block, i} <- indexed, block.kind != :definition or block.instance or "main" in block.names, do: i
-    reached = reach_blocks(roots, blocks, by_name, operators, MapSet.new())
-
-    for {block, i} <- indexed, block.kind == :definition, not MapSet.member?(reached, i), into: MapSet.new(), do: i
-  end
-
-  defp reach_blocks([], _blocks, _by_name, _operators, reached), do: reached
-
-  defp reach_blocks([i | rest], blocks, by_name, operators, reached) do
-    if MapSet.member?(reached, i) do
-      reach_blocks(rest, blocks, by_name, operators, reached)
-    else
-      block = Enum.at(blocks, i)
-      named = Enum.flat_map(block.tokens, &Map.get(by_name, &1, []))
-      by_operator = for {op, j} <- operators, String.contains?(block.code, op), do: j
-      reach_blocks(named ++ by_operator ++ rest, blocks, by_name, operators, MapSet.put(reached, i))
+      {:ok, spans} -> Spiral.Cells.Domain.reached_program(program, Enum.map_join(spans, "\n", &"#{&1.header}\t#{&1.last}\t#{&1.header_text}"))
+      :error -> program
     end
   end
 

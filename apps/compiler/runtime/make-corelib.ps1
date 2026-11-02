@@ -1,12 +1,3 @@
-<#
-Writes runtime/corelib.cuh = upstream corelib.cuh (hcc @ 0cb0fda0) + the workspace's CPU-host deltas. Each delta is a
-pure insertion or a one-line edit, so a later upstream corelib can be re-patched with this script. The patch of the
-deltas goes to stdout (redirect it to keep it); nothing but corelib.cuh is written into runtime/, whose `corelib.*`
-files the host copies next to the compiler.
-
-    git -C <The-Spiral-Language> show "0cb0fda0:The Spiral Language 2/corelib.cuh" > <tmp>/corelib.stock.cuh
-    pwsh make-corelib.ps1 <tmp>/corelib.stock.cuh [> corelib.ws.patch]
-#>
 param(
     [Parameter(Mandatory, Position = 0)] [string] $Stock,
     [string] $Out = (Join-Path $PSScriptRoot 'corelib.cuh')
@@ -37,7 +28,6 @@ $deltas = @(
         '',
         '#ifdef __CUDACC__') }
 )
-# dynamic_array_base::operator[] checks a member it does not have; the first occurrence of this line is that one.
 $lengthBug = '        assert("The index has to be in range." && 0 <= i && i < this->length);'
 $lengthFix = @(
     '        // ws: upstream checks `i < this->length`, a member dynamic_array_base does not have (a compile error once indexed).',
@@ -56,7 +46,6 @@ if ($start -lt 0) { throw 'no struct dynamic_array_base line' }
 $bug = $lines.IndexOf($lengthBug, $start)
 if ($bug -lt 0) { throw 'no dynamic_array_base length assert after struct dynamic_array_base' }
 $lines.RemoveAt($bug); $lines.InsertRange($bug, [string[]] $lengthFix)
-# upstream's file ends without a newline; runtime/corelib.cuh ends with one (the generators embed it as is).
 $utf8 = [Text.UTF8Encoding]::new($false)
 [IO.File]::WriteAllText($Out, (($lines -join "`n") + "`n"), $utf8)
 $work = Join-Path ([IO.Path]::GetTempPath()) "make-corelib-$PID"
