@@ -18,7 +18,8 @@
     erlang_term::apply "maps" "is_key" [ erlang_term::of key; map_term m ] |> erlang_term::cast
 
 := map_get \* k v. (key : k) (m : erl_map k v) : option v =
-    ? map_has key m ?> Some (erlang_term::apply "maps" "get" [ erlang_term::of key; map_term m ] |> erlang_term::cast)
+    ? map_has key m
+    ?> Some (erlang_term::apply "maps" "get" [ erlang_term::of key; map_term m ] |> erlang_term::cast)
     |: None
 
 := map_size \* k v. (m : erl_map k v) : i32 = erlang_term::apply "maps" "size" [ map_term m ] |> erlang_term::cast

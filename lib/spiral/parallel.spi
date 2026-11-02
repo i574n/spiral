@@ -1,4 +1,4 @@
-:# par' static =
+:# parallel static =
     :< testing
 
 :< sm'_operators
@@ -40,7 +40,7 @@
     := choices = erlang_process::new_selector () |> erlang_process::select_map results ChunkDone |> start 0i32 parts
     :~ ^ gather (results_left : i32) (ends_left : i32) (finished : list (i32 * list u)) (crashed : bool) : list u =
         ? results_left + ends_left = 0i32 ?>
-            ? crashed ?> failwith "par'.map: a worker crashed" |: in_index_order count finished
+            ? crashed ?> failwith "parallel.map: a worker crashed" |: in_index_order count finished
         |:
             ?= erlang_process::selector_receive_forever choices ?|
             | ChunkDone (index, values) => gather (results_left - 1i32) ends_left ((index, values) :: finished) crashed

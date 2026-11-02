@@ -1,14 +1,14 @@
 packages:
     |core-
 modules:
-    am'_prototypes-
+    array_prototypes-
     backend-
     base-
     rust/
         rust
         rust_operators
     optionm'
-    optionm'_operators
+    option_operators
     resultm
     convert
     listm'
@@ -25,13 +25,13 @@ modules:
     iter
     float_text
     float_native
-    sm'_prototypes-
+    text_prototypes-
     sm'_real*
     sm'
     sm'_operators
     erlang_term
     erlang_process
-    par'
+    parallel
     erlang_port
     console
     reflection

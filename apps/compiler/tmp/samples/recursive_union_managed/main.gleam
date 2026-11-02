@@ -1,30 +1,21 @@
-import gary
-import gary/array
 import gleam/list
 import gleam/option
 import gleam/int
-pub type SpiralArrayKey
+pub type SpiralArrayStore(a)
 
 pub type SpiralArray(a) {
-  SpiralArray(key: SpiralArrayKey, size: Int)
+  SpiralArray(store: SpiralArrayStore(option.Option(a)), size: Int)
 }
 
-@external(erlang, "erlang", "make_ref")
-pub fn spiral_array_new_key() -> SpiralArrayKey
-
-@external(erlang, "erlang", "put")
-pub fn spiral_array_store(key: SpiralArrayKey, storage: gary.ErlangArray(option.Option(a))) -> b
+@external(erlang, "main_ffi", "array_new")
+@external(javascript, "./main_ffi.mjs", "array_new")
+pub fn spiral_array_store_new(size: Int, fill: a) -> SpiralArrayStore(a)
 
 
-pub fn spiral_array_from_storage(storage: gary.ErlangArray(option.Option(a)), size: Int) -> SpiralArray(a) {
-  let key = spiral_array_new_key()
-  let _ = spiral_array_store(key, storage)
-  SpiralArray(key: key, size: size)
-}
 
 
 pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
-  list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
+  SpiralArray(store: spiral_array_store_new(size, option.Some(value)), size: size)
 }
 
 

@@ -1,0 +1,4 @@
+inl default d x =
+    match x with
+    | Some v => v
+    | None => d

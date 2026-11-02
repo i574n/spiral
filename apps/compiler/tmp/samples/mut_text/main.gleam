@@ -1,48 +1,31 @@
-import gary
-import gary/array
-import gleam/list
-import gleam/option
-pub type SpiralArrayKey
-
-pub type SpiralArray(a) {
-  SpiralArray(key: SpiralArrayKey, size: Int)
-}
-
-@external(erlang, "erlang", "make_ref")
-pub fn spiral_array_new_key() -> SpiralArrayKey
-
-
-
-
-
-
-
-
-
+pub type SpiralRefCell(a)
 
 pub type SpiralRef(a) {
-  SpiralRef(key: SpiralArrayKey)
+  SpiralRef(cell: SpiralRefCell(a))
 }
 
-@external(erlang, "erlang", "put")
-pub fn spiral_ref_store(key: SpiralArrayKey, value: a) -> b
+@external(erlang, "main_ffi", "ref_new")
+@external(javascript, "./main_ffi.mjs", "ref_new")
+pub fn spiral_ref_cell_new(value: a) -> SpiralRefCell(a)
 
-@external(erlang, "erlang", "get")
-pub fn spiral_ref_load(key: SpiralArrayKey) -> a
+@external(erlang, "main_ffi", "ref_get")
+@external(javascript, "./main_ffi.mjs", "ref_get")
+pub fn spiral_ref_cell_get(cell: SpiralRefCell(a)) -> a
+
+@external(erlang, "main_ffi", "ref_set")
+@external(javascript, "./main_ffi.mjs", "ref_set")
+pub fn spiral_ref_cell_set(cell: SpiralRefCell(a), value: a) -> Nil
 
 pub fn spiral_ref_new(value: a) -> SpiralRef(a) {
-  let key = spiral_array_new_key()
-  let _ = spiral_ref_store(key, value)
-  SpiralRef(key: key)
+  SpiralRef(cell: spiral_ref_cell_new(value))
 }
 
 pub fn spiral_ref_get(reference: SpiralRef(a)) -> a {
-  spiral_ref_load(reference.key)
+  spiral_ref_cell_get(reference.cell)
 }
 
 pub fn spiral_ref_set(reference: SpiralRef(a), value: a) -> Nil {
-  let _ = spiral_ref_store(reference.key, value)
-  Nil
+  spiral_ref_cell_set(reference.cell, value)
 }
 
 pub type Mut0 { Mut0(l0 : String) }

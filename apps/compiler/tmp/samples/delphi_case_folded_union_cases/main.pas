@@ -5,11 +5,11 @@ program SpiralGenerated;
 uses SysUtils, Math;
 type
   TUS0 = record tag: LongInt;  end;
-function US0_Foo: TUS0;
+function US0_Foo_0: TUS0;
 begin
   Result.tag := 0; 
 end;
-function US0_FOO: TUS0;
+function US0_FOO_1: TUS0;
 begin
   Result.tag := 1; 
 end;
@@ -25,8 +25,8 @@ var
   v7: LongInt;
   v8: LongInt;
 begin
-  v0 := US0_Foo;
-  v1 := US0_FOO;
+  v0 := US0_Foo_0;
+  v1 := US0_FOO_1;
   case v0.tag of
       2: begin
           v4 := 100;

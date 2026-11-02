@@ -1,0 +1,3 @@
+inl main () =
+    let x : option i32 = Some 3i32
+    option.default 0i32 x

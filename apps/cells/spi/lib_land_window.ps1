@@ -81,8 +81,8 @@ function Restore-Undo {
     }
     "RESTORED from $undo"
 }
-$probe = @($pairs | Where-Object { $_.Live -like '*.spi' } | ForEach-Object Live)
-$baseProbe = @($pairs | Where-Object { $_.Live -like '*.spi' -and -not $_.New } | ForEach-Object Live)
+$probe = @($pairs | Where-Object { $_.Live -like '*.spi' -and $_.Live -notlike '../*' } | ForEach-Object Live)
+$baseProbe = @($pairs | Where-Object { $_.Live -like '*.spi' -and $_.Live -notlike '../*' -and -not $_.New } | ForEach-Object Live)
 function Get-ProbeFailures([string[]] $lines) { @($lines | ForEach-Object { if ($_ -match '^type-probe (\S+): FAIL') { $Matches[1] } }) }
 try {
     $baseFail = @()

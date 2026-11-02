@@ -719,7 +719,7 @@ module Program =
                    item.Groups.["effect"].Value |> resolve |> planFieldHex |]
                 |> String.concat "\t")
             |> Seq.toArray
-        String.concat Environment.NewLine (Array.append [| "EOIE-PLAN-IR\t1" |] rows) + Environment.NewLine
+        String.concat Environment.NewLine (Array.append [| "KIT-PLAN-IR\t1" |] rows) + Environment.NewLine
 
     let private temporaryAttestationPath extension =
         Path.Combine(Path.GetTempPath(), $"spiral-attestation-{Guid.NewGuid():N}{extension}")
