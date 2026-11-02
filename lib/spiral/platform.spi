@@ -1,7 +1,7 @@
 :# platform static =
     :< testing
 
-:< rust::rust_operators
+:< rust_operators
 
 /// ## fsharp
 

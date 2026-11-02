@@ -1,0 +1,161 @@
+///- --package .
+///> gleam
+:# daemon static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ ^ fields_from (line : string) (at : i32) (acc : list string) : list string =
+    := tab = text.find_from line "\t" at
+    ? tab < 0i32 ?> listm.rev (text.drop line at :: acc)
+    |: fields_from line (tab + 1i32) (text.slice_len line at (tab - at) :: acc)
+
+:= fields (line : string) : list string = fields_from line 0i32 []
+
+:= tabbed (xs : list string) : string = sm'.concat_list "\t" xs
+
+:~ ^ digits_from (s : string) (i : i32) : bool =
+    ? i >= text.length s ?> !+
+    |? text.digit_val (text.index s i) < 0i32 ?> !-
+    |: digits_from s (i + 1i32)
+
+:= queue_ms (s : string) : option i32 = ? s <> "" && digits_from s 0i32 ?> Some (text.parse_i32 s) |: None
+
+:| compile_wait =
+    | Unbounded
+    | WithinMs : i32
+
+:== compile_ask = { backend : string; spi : string; rs : string; wait : compile_wait; mtime : string; client : string }
+
+:| compile_reply =
+    | Compiled : string * option i32
+    | CompileTimedOut : option i32
+    | CompileFailed : option i32 * string
+
+:| retiring =
+    | NotRetiring
+    | RetiringSince : string
+
+:== status_reply = { pid : string; stamp : string; idle : string; queue : string; retiring : retiring; owner : string }
+
+:== hello_reply = { pid : string; stamp : string }
+
+:== pool_reply = { served : i32; refused : i32; peak : i32; free_mb : option i32 }
+
+:| request r =
+    | Hello :: request hello_reply
+    | Status :: request status_reply
+    | Pool :: request pool_reply
+    | Retire :: request ()
+    | Compile :: compile_ask -> request compile_reply
+
+:= wait_text (w : compile_wait) : string = ?= w ?| Unbounded => "-1" | WithinMs ms => text.show_i32 ms
+
+:= wait_of (s : string) : compile_wait = ? s = "-1" ?> Unbounded |: WithinMs (text.parse_i32 s)
+
+:= ask_fields (a : compile_ask) : list string = [ a::backend; a::spi; a::rs; wait_text a::wait; a::mtime; a::client ]
+
+:= request_line \* r. (q : request r) : string =
+    ?= q ?|
+    | Hello => "hello"
+    | Status => "status"
+    | Pool => "pool"
+    | Retire => "retire"
+    | Compile a => tabbed ("compile" :: ask_fields a)
+
+:= retiring_text (r : retiring) : string = ?= r ?| NotRetiring => "false" | RetiringSince ms => ms
+
+:= retiring_of (s : string) : retiring = ? s = "false" ?> NotRetiring |: RetiringSince s
+
+:= with_queue (head : list string) (queue : option i32) : list string =
+    ?= queue ?| Some ms => listm.append head [ text.show_i32 ms ] | None => head
+
+:= compile_text (c : compile_reply) : string =
+    ?= c ?|
+    | Compiled (revision, queue) => tabbed (with_queue [ "ok"; revision ] queue)
+    | CompileTimedOut queue => tabbed (with_queue [ "error"; "timeout" ] queue)
+    | CompileFailed (queue, message) => tabbed (listm.append (with_queue [ "error" ] queue) [ message ])
+
+:= status_text (s : status_reply) : string =
+    tabbed [ "status"; s::pid; s::stamp; s::idle; s::queue; retiring_text s::retiring; s::owner ]
+
+:= free_text (free : option i32) : string = ?= free ?| Some mb => text.show_i32 mb | None => "-"
+
+:= pool_text (p : pool_reply) : string =
+    tabbed [ "pool"; text.show_i32 p::served; text.show_i32 p::refused; text.show_i32 p::peak; free_text p::free_mb ]
+
+:= reply_line \* r. (q : request r) (reply : r) : string =
+    ?= q ?|
+    | Hello => tabbed [ "spiral-cells"; "1"; reply::pid; reply::stamp ]
+    | Status => status_text reply
+    | Pool => pool_text reply
+    | Retire => "retiring"
+    | Compile _ => compile_text reply
+
+:= failed_of (rest : list string) : compile_reply =
+    ?= rest ?|
+    | queue :: message :: [] ?& queue_ms queue <> None => CompileFailed (queue_ms queue, message)
+    | _ => CompileFailed (None, sm'.concat_list "\t" rest)
+
+:= compile_of (line : string) : compile_reply =
+    ?= fields line ?|
+    | "ok" :: revision :: [] => Compiled (revision, None)
+    | "ok" :: revision :: queue :: _ => Compiled (revision, queue_ms queue)
+    | "error" :: "timeout" :: [] => CompileTimedOut None
+    | "error" :: "timeout" :: queue :: _ => CompileTimedOut (queue_ms queue)
+    | "error" :: rest => failed_of rest
+    | _ => CompileFailed (None, "unexpected compiler reply: " ++ line)
+
+:= status_of (line : string) : status_reply =
+    ?= fields line ?|
+    | "status" :: pid :: stamp :: idle :: queue :: retiring :: owner =>
+        { pid; stamp; idle; queue; retiring = retiring_of retiring; owner = sm'.concat_list " " owner }
+    | _ => { pid = ""; stamp = ""; idle = ""; queue = ""; retiring = NotRetiring; owner = "" }
+
+:= hello_of (line : string) : hello_reply =
+    ?= fields line ?|
+    | "spiral-cells" :: "1" :: pid :: stamp :: _ => { pid; stamp }
+    | _ => { pid = ""; stamp = "" }
+
+:= count_of (s : string) : i32 = ?= queue_ms s ?| Some n => n | None => 0i32
+
+:= no_pool () : pool_reply = { served = 0i32; refused = 0i32; peak = 1i32; free_mb = None }
+
+:= pool_of (line : string) : pool_reply =
+    ?= fields line ?|
+    | "pool" :: served :: refused :: peak :: free :: [] =>
+        { served = count_of served; refused = count_of refused; peak = count_of peak; free_mb = queue_ms free }
+    | _ => no_pool ()
+
+:= reply_of \* r. (q : request r) (line : string) : r =
+    ?= q ?|
+    | Hello => hello_of line
+    | Status => status_of line
+    | Pool => pool_of line
+    | Retire => ()
+    | Compile _ => compile_of line
+
+:= sample_ask () : compile_ask =
+    { backend = "rust"; spi = "a.spi"; rs = "a.rs"; wait = WithinMs 900000i32; mtime = "17"; client = "42" }
+
+:# a_compile_request_is_one_tab_separated_line =
+    request_line (Compile (sample_ask ())) |> _assert_eq "compile\trust\ta.spi\ta.rs\t900000\t17\t42"
+
+:# compile_replies_round_trip_through_their_line =
+    := q = Compile (sample_ask ())
+    := done = [ Compiled ("r1", None); Compiled ("r1", Some 7i32) ]
+    := late = [ CompileTimedOut None; CompileTimedOut (Some 3i32) ]
+    := more = [ CompileFailed (None, "boom"); CompileFailed (Some 5i32, "no main") ]
+    := all = listm.append done (listm.append late more)
+    listm.map (\ c => reply_of q (reply_line q c) = c) all |> _assert_eq [ !+; !+; !+; !+; !+; !+ ]
+
+:# a_status_line_keeps_an_owner_with_spaces =
+    := s = { pid = "9"; stamp = "1"; idle = "0"; queue = "2"; retiring = RetiringSince "123"; owner = "x lane" }
+    reply_of Status (reply_line Status s) |> _assert_eq s
+
+:# a_pool_line_round_trips_and_a_dash_is_no_reading =
+    := busy = { served = 12i32; refused = 1i32; peak = 3i32; free_mb = Some 2048i32 }
+    (reply_of Pool (reply_line Pool busy), reply_of Pool "pool\t0\t0\t1\t-") |> _assert_eq (busy, no_pool ())
+
+:# hello_reads_the_banner_pid_and_stamp =
+    reply_of Hello "spiral-cells\t1\t77\t5\textra" |> _assert_eq { pid = "77"; stamp = "5" }

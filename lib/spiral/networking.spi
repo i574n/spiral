@@ -1,7 +1,7 @@
 :# networking static =
     :< testing
 
-:< rust::rust_operators
+:< rust_operators
 
 /// ## rust
 :! reqwest_response =
@@ -29,7 +29,7 @@
         TypeScript : $'reqwest_RequestBuilder'
         Cpp : $'reqwest_RequestBuilder'
         CppHost : $'reqwest_RequestBuilder'
-        Delphi : $'reqwest_RequestBuilder'
+        Pascal : $'reqwest_RequestBuilder'
         Cuda : $'reqwest_RequestBuilder'
         C : $'reqwest_RequestBuilder'
         Rust : $'reqwest_wasm::RequestBuilder'

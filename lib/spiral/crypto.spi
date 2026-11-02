@@ -2,7 +2,6 @@
     :< testing
     :< file_system_operators
 
-:< rust
 :< rust_operators
 :< sm'_operators
 

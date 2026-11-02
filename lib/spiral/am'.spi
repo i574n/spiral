@@ -1,7 +1,6 @@
 :# am static =
     :< testing
 
-:< rust
 :< rust_operators
 
 /// ## am'
@@ -350,7 +349,7 @@
         TypeScript : $'Slice\'<`el>'
         Cpp : $'Slice\'<`el>'
         CppHost : $'Slice\'<`el>'
-        Delphi : $'Slice\'<`el>'
+        Pascal : $'Slice\'<`el>'
         Cuda : $'Slice\'<`el>'
         Rust : $'_'
     }
@@ -607,7 +606,7 @@
                 !keys[j])).map((i: number) => !a[i])' : array el
         Cpp = \ () => fsharp ()
         CppHost = \ () => fsharp ()
-        Delphi = \ () => fsharp ()
+        Pascal = \ () => fsharp ()
         Cuda = \ () => fsharp ()
         Zig = insertion_sort
         Lean = insertion_sort
@@ -689,7 +688,7 @@
         TypeScript = fsharp
         Cpp = fsharp
         CppHost = fsharp
-        Delphi = fsharp
+        Pascal = fsharp
         Cuda = fsharp
         Zig = in_bounds_item
         Lean = in_bounds_item

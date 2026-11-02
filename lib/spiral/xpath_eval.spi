@@ -921,7 +921,7 @@
         ?= eval s input ?|
         | VNodes items =>
             ?= step_nodes s axis test predicates items [] ?|
-            | VNodes found => (?= items ?| (_ :: Cons _) => VNodes (unique_located found []) | _ => VNodes found)
+            | VNodes found => (?= items ?| (_ :: _ :: _) => VNodes (unique_located found []) | _ => VNodes found)
             | VText _ | VNumber _ | VBool _ => VError "a path step or map needs nodes, not an atomic value"
             | other => other
         | VError e => VError e

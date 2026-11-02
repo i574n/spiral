@@ -704,7 +704,7 @@
         TypeScript = \ () => !-
         Cpp = \ () => !-
         CppHost = \ () => !-
-        Delphi = \ () => !-
+        Pascal = \ () => !-
         Cuda = \ () => !-
         Rust = \ () => !-
     }

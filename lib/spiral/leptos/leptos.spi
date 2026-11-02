@@ -1,5 +1,4 @@
-:< rust::rust_operators
-:< rust
+:< rust_operators
 :< sm'_operators
 
 :! a' = $'leptos::html::A'

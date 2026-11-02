@@ -1,5 +1,4 @@
-:< rust::rust_operators
-:< rust
+:< rust_operators
 
 := storage_get \* t. (key : string) (storage : wasm::storage) : result (option t) wasm::js_value =
     := storage = ~~ storage

@@ -1,6 +1,5 @@
 /// # spiral_wasm
-:< rust.rust_operators
-:< rust
+:< rust_operators
 :< sm'_operators
 
 /// ## spiral_wasm

@@ -136,7 +136,7 @@
                 }
                 """
             := fresh = \ () => new_trace_state trace_level
-            :< rust::rust_operators
+            :< rust_operators
             !\\(fresh, $'"{ let _ = spiral_trace_hold(&$0); }"') : ()
         Zig = \ () => ()
     }
@@ -166,7 +166,7 @@
                 """
             := level' = trace_level |> optionm'::default_value Verbose
             := fresh = \ () => new_trace_state level'
-            :< rust::rust_operators
+            :< rust_operators
             !\\(fresh, $'"spiral_trace_hold(&$0)"') : trace_state
         Zig = \ () =>
             global """
@@ -229,8 +229,7 @@
                 \ () =>
                     count <- *count + 1
                 |> exec_unit
-                :< rust
-                :< rust::rust_operators
+                :< rust_operators
                 run_target_args (\ () => text, console::write_line) \|
                     | Zig => \ _ => text |> console::write_line
                     | Rust => \ text, _ =>
@@ -387,7 +386,7 @@
                         run_target \ target =>
                             ?= target ?|
                             | Rust => \ () =>
-                                :< rust::rust_operators
+                                :< rust_operators
                                 local_seconds_of_day () |> clock_text_of_seconds
                             | TypeScript => \ () =>
                                 := now = $'new Date()' : $'Date'

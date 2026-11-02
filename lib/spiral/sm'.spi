@@ -2,7 +2,6 @@
 :# sm static =
     :< testing
 
-:< rust
 :< rust_operators
 
 :< sm'_real
@@ -202,16 +201,16 @@
     ?> !!!!PrimToString(x)
     |: failwith "sm'.obj_to_string / the C backend prints integers, bools and chars only"
 
-:= obj_to_string_delphi_bool \* t. (x : t) : string =
+:= obj_to_string_pascal_bool \* t. (x : t) : string =
     ?
         ~>
             ?: t ?|
             | bool => !+
             | _ => !-
     ?> $'LowerCase(BoolToStr(!x, True))' : string
-    |: failwith "sm'.obj_to_string / the Delphi backend prints integers and bools only"
+    |: failwith "sm'.obj_to_string / the Pascal backend prints integers and bools only"
 
-:= obj_to_string_delphi \* t. (x : t) : string =
+:= obj_to_string_pascal \* t. (x : t) : string =
     ?
         ~>
             ?: t ?|
@@ -225,7 +224,7 @@
             | u64 => !+
             | _ => !-
     ?> $'IntToStr(!x)' : string
-    |: obj_to_string_delphi_bool x
+    |: obj_to_string_pascal_bool x
 
 := (~#?*) s =
     s |> format_debug
@@ -292,7 +291,7 @@
             Lean = \ () => $'toString !x ' : string
             Wasm = \ () => obj_to_string_wasm x
             C = \ () => obj_to_string_c x
-            Delphi = \ () => obj_to_string_delphi x
+            Pascal = \ () => obj_to_string_pascal x
         }
 
 ///> c
@@ -300,8 +299,8 @@
     (obj_to_string 42i32, obj_to_string (0i64 - 7), obj_to_string !+, obj_to_string 'x')
     |> _assert_eq ("42", "-7", "true", "x")
 
-///> delphi
-:# obj_to_string_on_delphi_prints_ints_and_bools =
+///> pascal
+:# obj_to_string_on_pascal_prints_ints_and_bools =
     (obj_to_string 42i32, obj_to_string (0i64 - 7), obj_to_string 18446744073709551615u64, obj_to_string !-)
     |> _assert_eq ("42", "-7", "18446744073709551615", "false")
 
@@ -350,7 +349,7 @@
         Zig = \ () => concat_right_fold separator input
         Lean = \ () => concat_right_fold separator input
         C = \ () => concat_right_fold separator input
-        Delphi = \ () => concat_right_fold separator input
+        Pascal = \ () => concat_right_fold separator input
         Wasm = \ () => concat_right_fold separator input
         Bend = \ () => concat_right_fold separator input
         Kotlin = \ () => concat_right_fold separator input
@@ -388,7 +387,7 @@
         TypeScript = \ () => sm::slice s { from to } : string
         Zig = \ () => sm::slice s { from to } : string
         Lean = \ () => sm::slice s { from to } : string
-        Delphi = \ () => sm::slice s { from to } : string
+        Pascal = \ () => sm::slice s { from to } : string
     }
 
 ///> rust
@@ -412,7 +411,7 @@
 ///> lua
 ///> fsharp
 ///> cuda
-///> delphi
+///> pascal
 :# slice_2 =
     "abcdef"
     |> slice 1i32 3i32
@@ -631,7 +630,7 @@
 ///> typescript
 ///> c
 ///> zig
-///> delphi
+///> pascal
 ///> lean
 :# show_floats =
     show (1.5f64, 0.1f64, 2.0f64, 1.5707963267948966f64, -0.25f64)
@@ -644,7 +643,7 @@
 ///> typescript
 ///> c
 ///> zig
-///> delphi
+///> pascal
 ///> lean
 :# show_floats_in_python_repr_layout =
     show (
@@ -880,7 +879,7 @@
             |> optionm'::map \ i => convert::convert i
             |> optionm'::unwrap_or -1
         C = \ () => conv (portable_index_of search s) : int
-        Delphi = \ () => conv (portable_index_of search s) : int
+        Pascal = \ () => conv (portable_index_of search s) : int
         TypeScript = \ () => $'!s.indexOf(!search)' : int
         Zig = \ () => $'(if (std.mem.indexOf(u8, !s, !search)) |i| @@as(`int, @@intCast(i)) else -1)' : int
         Lean = \ () =>
@@ -988,7 +987,7 @@
         Lua = \ () => $'!value == "" or !s:sub(-##!value) == !value ' : bool
         Zig = \ () => $'std.mem.endsWith(u8, !s, !value)' : bool
         C = \ () => portable_ends_with value s
-        Delphi = \ () => portable_ends_with value s
+        Pascal = \ () => portable_ends_with value s
         Lean = \ () => $'(!s).endsWith !value ' : bool
     }
 
@@ -1004,7 +1003,7 @@
         TypeScript = \ () => $'!s.startsWith(!value)' : bool
         Zig = \ () => $'std.mem.startsWith(u8, !s, !value)' : bool
         C = \ () => portable_starts_with value s
-        Delphi = \ () => portable_starts_with value s
+        Pascal = \ () => portable_starts_with value s
         Lean = \ () => $'(!s).startsWith !value ' : bool
     }
 
@@ -1022,7 +1021,7 @@
             := from = start + 1i32
             := until = start + len
             $'string.sub(!str, !from, !until)' : string
-        | Delphi => \ () =>
+        | Pascal => \ () =>
             := from = start + 1i32
             $'Copy(!str, !from, !len)' : string
         | _ => \ () => $'!str.Substring (!start, !len)'
@@ -1452,7 +1451,7 @@
             $'!s.split(!old).join(!new)' : string
         Zig = \ () =>
             $'(std.mem.replaceOwned(u8, spiral_gpa, !s, !old, !new) catch @@panic("out of memory"))' : string
-        Delphi = \ () =>
+        Pascal = \ () =>
             $'StringReplace(!s, !old, !new, [rfReplaceAll])' : string
         Lean = \ () =>
             $'(!s).replace !old !new ' : string
@@ -1924,7 +1923,7 @@
     := regex = regex |> rust::emit
     !\\(regex, $'$"$0.captures_iter(!s)"')
 
-:~ regex_captures (s : string) (regex : regex) : am'::vec (mapm::hash_map string string) =
+:~ regex_captures (s : string) (regex : regex) : am'::vec (map::hash_map string string) =
 
     := s = s |> to_std_string
     \ () =>
@@ -1936,7 +1935,7 @@
 
         := fn
             (match' : rust::static_ref (rust::mut' (regex_captures rust::static_lifetime)))
-            : mapm::hash_map string string
+            : map::hash_map string string
             =
 
             := names = regex |> regex_capture_names
@@ -1970,7 +1969,7 @@
     |> new_regex
     |> resultm::unwrap'
     |> regex_captures "fable_modules/fable-library-ts.4.17.0"
-    |> am'::vec_map (mapm::to_vec >> am'::vec_sort_by_key id)
+    |> am'::vec_map (map::to_vec >> am'::vec_sort_by_key id)
     |> format_debug
     |> _assert_eq (
         am'::base ;[
@@ -2174,7 +2173,6 @@
 /// ### to_string result t u
 :+ to_string result t u = \ x =>
     ~>
-        :< rust
         ?: (t * u) ?|
         | string * string =>
             ?= x ?|
@@ -2526,7 +2524,6 @@
 /// ## rust
 
 /// ### to_string std_string
-:< rust
 :+ to_string std_string = from_std_string
 
 :~ split_list (separator : string) (s : string) : list string =
@@ -2563,6 +2560,6 @@
     := pattern = new_regex "(?<a>x+)" |> resultm::unwrap'
     regex_captures "yxx" pattern
     |> am'::vec_fold' \ found captures =>
-            ? found <> "" ?> found |: optionm'::default_value' "" (mapm::get "a" captures)
+            ? found <> "" ?> found |: optionm'::default_value' "" (map::get "a" captures)
         ""
     |> _assert_eq "xx"

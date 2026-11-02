@@ -15,6 +15,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $kit = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) "kit/bin/kit$(if ($IsWindows) { '.exe' })"
+if (!(Test-Path $kit)) { $kit = (Get-Command kit -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source }
 $Lib = (Resolve-Path $Lib).Path.TrimEnd('\')
 $Draft = @($Draft | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $BaseHash = @($BaseHash | ForEach-Object { $_ -split ',' } | Where-Object { $_ })

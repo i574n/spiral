@@ -522,6 +522,10 @@ module Program =
         | "Python + Cuda" -> Some [ "_auto.py"; ".py" ]
         | _ -> None
 
+    let private optionalSiblingSuffixes = function
+        | "Gleam" -> [ "_ffi.erl"; "_ffi.mjs" ]
+        | _ -> []
+
     let private compileOne
         (supervisor : Ch<SupervisorReq>)
         (router : DiagnosticRouter)
@@ -540,7 +544,7 @@ module Program =
             let started = DateTime.UtcNow
             let cached =
                 match revision with
-                | SourceUnchanged when multiFile.IsNone && cache.Reuse -> cache.TryGet(uri, backend, fingerprint)
+                | SourceUnchanged when multiFile.IsNone && List.isEmpty (optionalSiblingSuffixes backend) && cache.Reuse -> cache.TryGet(uri, backend, fingerprint)
                 | _ -> None
             let revisionMode =
                 match cached, revision with
@@ -565,7 +569,7 @@ module Program =
                 let coreBase = Path.ChangeExtension(inputPath, null)
                 match multiFile with
                 | Some suffixes -> suffixes |> List.map (fun suffix -> coreBase + suffix)
-                | None -> [ Path.ChangeExtension(inputPath, Path.GetExtension outputPath) ]
+                | None -> Path.ChangeExtension(inputPath, Path.GetExtension outputPath) :: (optionalSiblingSuffixes backend |> List.map (fun suffix -> coreBase + suffix))
             let elsewhere =
                 let outBase = Path.Combine(Path.GetDirectoryName(Path.GetFullPath outputPath), Path.GetFileNameWithoutExtension outputPath)
                 not (String.Equals(Path.GetFullPath(Path.ChangeExtension(inputPath, null)), outBase, StringComparison.OrdinalIgnoreCase))
@@ -648,18 +652,32 @@ module Program =
                                     let source = coreBase + suffix
                                     if File.Exists source then File.Copy(source, outBase + suffix, true)
                         | None ->
+                            let generated =
+                                if coreWrites && not (List.isEmpty (optionalSiblingSuffixes backend)) then
+                                    let deadline = DateTime.UtcNow.AddSeconds 5.0
+                                    while not (File.Exists coreFile && File.GetLastWriteTimeUtc coreFile >= started.AddSeconds -2.0) && DateTime.UtcNow < deadline do
+                                        Threading.Thread.Sleep 20
+                                    File.ReadAllText coreFile
+                                else generated
                             if coreWrites && String.Equals(Path.GetFullPath coreFile, outputPath, StringComparison.OrdinalIgnoreCase) then
                                 if not (awaitCoreWrite outputPath generated) then writeWithRetry outputPath generated 0
                             else
                                 writeWithRetry outputPath generated 0
                                 if coreWrites && not coreSnapshots.IsEmpty then awaitCoreWrite coreFile generated |> ignore
+                            let coreBase = Path.ChangeExtension(inputPath, null)
+                            let siblingBase = Path.Combine(Path.GetDirectoryName outputPath, Path.GetFileName coreBase)
+                            if coreWrites && not (String.Equals(Path.GetFullPath coreBase, Path.GetFullPath siblingBase, StringComparison.OrdinalIgnoreCase)) then
+                                for suffix in optionalSiblingSuffixes backend do
+                                    let source = coreBase + suffix
+                                    if File.Exists source && File.GetLastWriteTimeUtc source >= started.AddSeconds -2.0 then File.Copy(source, siblingBase + suffix, true)
+                                    elif File.Exists(siblingBase + suffix) then File.Delete(siblingBase + suffix)
                         restoreCoreOutputs ()
                         let binding =
                             match cached with
                             | Some cached -> cached.binding
                             | None when String.Equals(backend, "Fsharp", StringComparison.Ordinal) -> discoverEntryBinding generated
                             | None -> "main"
-                        if multiFile.IsNone && splitParts.IsNone && cache.Reuse then cache.Put(uri, backend, fingerprint, generated, binding)
+                        if multiFile.IsNone && splitParts.IsNone && List.isEmpty (optionalSiblingSuffixes backend) && cache.Reuse then cache.Put(uri, backend, fingerprint, generated, binding)
                         writeEntryManifest outputPath binding generated.Length revisionMode backend
                         Ok (generated.Length, binding, revisionMode)
             finally
@@ -854,7 +872,7 @@ module Program =
         | ".fsx" | ".fs" -> "Fsharp"
         | ".c" -> "C"
         | ".rs" -> "Rust"
-        | ".pas" | ".dpr" -> "Delphi"
+        | ".pas" | ".dpr" -> "Pascal"
         | ".zig" -> "Zig"
         | ".wat" -> "Wasm"
         | ".wgsl" -> "Wgsl"
@@ -1003,15 +1021,30 @@ module Program =
             watchdog.Start()
             try (startOnCompileStack compile).GetAwaiter().GetResult() finally finished.Set()
 
-    let private serveSessions (accept : unit -> Socket) (stallSeconds : int) =
+    let private serveSessions (accept : unit -> Socket) (stallSeconds : int) (cleanup : string list) =
         let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
         let router = DiagnosticRouter()
         let revisions = SourceRevisionStore()
         let cache = CompilationCache(true)
         startDiagnosticPump server.errors router
+        let lastActive = ref DateTime.UtcNow
+        let busy = ref false
+        match Int32.TryParse(Environment.GetEnvironmentVariable "SPIRAL_SERVER_IDLE_EXIT_SECONDS") with
+        | true, idleSeconds when idleSeconds > 0 ->
+            let watch () =
+                while true do
+                    Threading.Thread.Sleep 5000
+                    if not busy.Value && (DateTime.UtcNow - lastActive.Value).TotalSeconds > float idleSeconds then
+                        for path in cleanup do try File.Delete path with _ -> ()
+                        exit 0
+            let watcher = Threading.Thread(Threading.ThreadStart watch)
+            watcher.IsBackground <- true
+            watcher.Start()
+        | _ -> ()
         let mutable running = true
         while running do
             use client = accept ()
+            busy.Value <- true
             use stream = new NetworkStream(client, true)
             use reader = new StreamReader(stream, UTF8Encoding(false), false, 4096, true)
             use writer = new StreamWriter(stream, UTF8Encoding(false), 4096, true)
@@ -1049,6 +1082,8 @@ module Program =
                             writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\t{cleanProtocolText message}"))
                 else
                     writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\tinvalid request")
+            lastActive.Value <- DateTime.UtcNow
+            busy.Value <- false
         0
 
     let private sessionPaths (socketPath : string) =
@@ -1058,6 +1093,8 @@ module Program =
         if File.Exists socketPath then File.Delete socketPath
         socketPath, socketPath + ".pid"
 
+    // SPIRAL_SERVER_PARENT_PID ends the server with its parent; SPIRAL_SERVER_IDLE_EXIT_SECONDS (serveSessions) ends it
+    // after that many seconds with no session, so a server whose client died without a parent watch still goes away.
     let private exitWithParent (paths : string list) =
         match Environment.GetEnvironmentVariable "SPIRAL_SERVER_PARENT_PID" with
         | null | "" -> ()
@@ -1082,7 +1119,7 @@ module Program =
         printfn "spiral-session-ready socket=%s pid=%d" socketPath Environment.ProcessId
         Console.Out.Flush()
         exitWithParent [socketPath; pidPath]
-        try serveSessions listener.Accept 0
+        try serveSessions listener.Accept 0 [socketPath; pidPath]
         finally
             try File.Delete socketPath with _ -> ()
             try File.Delete pidPath with _ -> ()
@@ -1105,7 +1142,7 @@ module Program =
         printfn "spiral-session-ready port=%d pid=%d" port Environment.ProcessId
         Console.Out.Flush()
         exitWithParent [pidPath; portPath]
-        try serveSessions (fun () -> let client = listener.AcceptSocket() in client.NoDelay <- true; client) stallSeconds
+        try serveSessions (fun () -> let client = listener.AcceptSocket() in client.NoDelay <- true; client) stallSeconds [pidPath; portPath]
         finally
             try listener.Stop() with _ -> ()
             try File.Delete pidPath with _ -> ()
@@ -1406,7 +1443,7 @@ module Program =
                 eprintfn "%s" message
                 5
         else
-            eprintfn "usage: SpiralCompiler [--default-int i8|i16|i32|i64|u8|u16|u32|u64] [--default-float f32|f64] [--backend Fsharp|C|Rust|Delphi|Zig|Wasm|Wgsl|Calyx|Kotlin|Swift|OpenQasm|Ebpf|Lean|Bend|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.zig|.wat|.wgsl|.futil|.kt|.swift|.qasm|.ebpf|.lean|.bend|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --test-blocks INPUT.spi OUTPUT.tsv|- | --source-blocks OUTPUT.tsv|- INPUT.spi [INPUT.spi ...] | --capabilities | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | --server-tcp SOCKET [--stall-seconds N] | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS] | format FILE|DIR ... [--check] [--no-split-literals] | format --stdin --path PATH | format-corpus check|space|convert|flatten|format [--list FILE] [--out DIR] CORPUS.tsv"
+            eprintfn "usage: SpiralCompiler [--default-int i8|i16|i32|i64|u8|u16|u32|u64] [--default-float f32|f64] [--backend Fsharp|C|Rust|Pascal|Zig|Wasm|Wgsl|Calyx|Kotlin|Swift|OpenQasm|Ebpf|Lean|Bend|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.zig|.wat|.wgsl|.futil|.kt|.swift|.qasm|.ebpf|.lean|.bend|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --test-blocks INPUT.spi OUTPUT.tsv|- | --source-blocks OUTPUT.tsv|- INPUT.spi [INPUT.spi ...] | --capabilities | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | --server-tcp SOCKET [--stall-seconds N] | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS] | format FILE|DIR ... [--check] [--no-split-literals] | format --stdin --path PATH | format-corpus check|space|convert|flatten|format [--list FILE] [--out DIR] CORPUS.tsv"
             2
 
     [<EntryPoint>]

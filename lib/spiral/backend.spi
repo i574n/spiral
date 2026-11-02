@@ -40,10 +40,10 @@
                             ?: t ?|
                             | () => $'((void)0)' : t
                             | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : t
-                        Delphi = \ () =>
+                        Pascal = \ () =>
                             ?: t ?|
                             | () => $'' : t
-                            | _ => $'backend_switch_has_no_Delphi_arm_in_lib_spiral' : t
+                            | _ => $'backend_switch_has_no_Pascal_arm_in_lib_spiral' : t
                         Wasm = \ () =>
                             ?: t ?|
                             | () => $'' : t
@@ -73,7 +73,7 @@
             Zig = \ () => backend "Zig"
             Lean = \ () => backend "Lean"
             C = \ () => backend "C"
-            Delphi = \ () => backend "Delphi"
+            Pascal = \ () => backend "Pascal"
             Wasm = \ () => backend "Wasm"
             Bend = \ () => backend "Bend"
             Kotlin = \ () => backend "Kotlin"
@@ -91,7 +91,7 @@
     | Zig
     | C
     | Lean
-    | Delphi
+    | Pascal
     | Wasm
     | Bend
     | Kotlin
@@ -132,8 +132,8 @@
         Lean = \ () =>
             := target = Lean
             fn target args
-        Delphi = \ () =>
-            := target = Delphi
+        Pascal = \ () =>
+            := target = Pascal
             fn target args
         Wasm = \ () =>
             := target = Wasm
@@ -158,7 +158,7 @@
         TypeScript = \ () => !-
         Cpp = \ () => !-
         CppHost = \ () => !-
-        Delphi = \ () => !-
+        Pascal = \ () => !-
         Cuda = \ () => !-
         Zig = \ () => !-
         Lean = \ () => !-
@@ -176,7 +176,7 @@
         TypeScript = \ () => !-
         Cpp = \ () => !-
         CppHost = \ () => !-
-        Delphi = \ () => !-
+        Pascal = \ () => !-
         Cuda = \ () => !-
         Zig = \ () => !+
         Lean = \ () => !-

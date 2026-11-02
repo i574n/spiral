@@ -1,6 +1,5 @@
 :< sm'_operators
 :< leptos
-:< rust
 
 := render icon (class : () -> string) props : _ (_ button) =
     button

@@ -1,7 +1,6 @@
 :# resultm static =
     :< testing
 
-:< rust
 :< rust_operators
 
 /// ## resultm
@@ -174,7 +173,7 @@
         TypeScript = \ () => !+
         Cpp = \ () => !-
         CppHost = \ () => !-
-        Delphi = \ () => !-
+        Pascal = \ () => !-
         Cuda = \ () => !-
         Rust = \ () => !-
         Zig = \ () => !+
@@ -189,7 +188,7 @@
         TypeScript = \ () => !-
         Cpp = \ () => !-
         CppHost = \ () => !-
-        Delphi = \ () => !-
+        Pascal = \ () => !-
         Cuda = \ () => !-
         Rust = \ () => !-
         Zig = \ () => !-
@@ -204,7 +203,7 @@
         TypeScript = \ () => !-
         Cpp = \ () => !-
         CppHost = \ () => !-
-        Delphi = \ () => !-
+        Pascal = \ () => !-
         Cuda = \ () => !-
         Rust = \ () => !-
         Zig = \ () => !+

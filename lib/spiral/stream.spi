@@ -1,7 +1,7 @@
 :# stream static =
     :< testing
 
-:< rust::rust_operators
+:< rust_operators
 
 /// ## stream
 :| ^ stream t =

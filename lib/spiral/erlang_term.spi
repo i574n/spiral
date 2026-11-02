@@ -77,6 +77,12 @@
 
 := charlist (text : string) : term = apply "unicode" "characters_to_list" [ of text ]
 
+:~ ^ items_from (reversed : term) (acc : list term) : list term =
+    ? equal reversed (list_term []) ?> acc
+    |: items_from (apply "erlang" "tl" [ reversed ]) (apply "erlang" "hd" [ reversed ] :: acc)
+
+:= items_of (native : term) : list term = items_from (apply "lists" "reverse" [ native ]) []
+
 ///> gleam
 :# apply_calls_an_erlang_function =
     apply "erlang" "abs" [ of -3i32 ] |> cast |> _assert_eq 3i32
@@ -90,6 +96,14 @@
 :# a_map_from_pairs_answers_its_keys =
     := m = apply "maps" "from_list" [ list_term [ tuple [ atom "a"; of 1i32 ] ] ]
     apply "maps" "get" [ atom "a"; m; of 0i32 ] |> cast |> _assert_eq 1i32
+
+///> gleam
+:# a_native_list_becomes_items_in_order =
+    (list_term [ of 1i32; of 2i32; of 3i32 ] |> items_of |> listm::map cast : list i32) |> _assert_eq [ 1i32; 2i32; 3i32 ]
+
+///> gleam
+:# an_empty_native_list_has_no_items =
+    list_term [] |> items_of |> listm::length |> _assert_eq 0i32
 
 ///> gleam
 :# atoms_compare_by_name =

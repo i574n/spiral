@@ -1,6 +1,5 @@
 :< sm'_operators
 :< leptos
-:< rust
 
 := render (class : () -> string) (props : list _) : _ (_ svg) =
     svg

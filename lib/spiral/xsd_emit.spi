@@ -1640,6 +1640,7 @@
 
 :== attribute_view form =
     {
+        owner : string
         name : string
         required : bool
         fixed : option string
@@ -1993,7 +1994,10 @@
                 ? a::inline ?> a::t ++# "_example k"
                 |:
                     ?= a::type_ref ?|
-                    | Some r => value_example a::kind a::t (reference_text r) "k"
+                    | Some r =>
+                        ? is_builtin_reference (reference_text r) && xml::local_name (reference_text r) = "ID"
+                        ?> "\"ID_" ++# type_name a::owner ++# "\""
+                        |: value_example a::kind a::t (reference_text r) "k"
                     | None => value_example a::kind a::t "" "k"
     push (field_assignment (field_name a::name) value) [] acc
 :+ element_arm exampling = \ _ kinds choice_name v =>
@@ -2283,6 +2287,7 @@
         := inline = ?= a::inline ?| Some _ => !+ | None => !-
         := view =
             {
+                owner = owner
                 name = tag_text a::name
                 required = a::required
                 fixed = a::fixed
@@ -3172,6 +3177,23 @@
     ?> failwith "a two-digit positiveInteger pattern pads 1 instead of writing 00"
     ? simple_example "xs:positiveInteger" (Pattern "[0-9]{1,3}" :: []) <> "1"
     ?> failwith "a positiveInteger pattern that takes 1 keeps 1"
+
+///> rust
+:# example_ids_are_unique_per_owner =
+    := schema =
+        read_schema (
+            "<xs:schema><xs:complexType name=\"SetDTE\"><xs:sequence/>"
+            ^^ "<xs:attribute name=\"ID\" type=\"xs:ID\" use=\"required\"/></xs:complexType>"
+            ^^ "<xs:complexType name=\"Documento\"><xs:sequence/>"
+            ^^ "<xs:attribute name=\"ID\" type=\"xs:ID\" use=\"required\"/></xs:complexType></xs:schema>"
+        )
+    := generated = generate_module (xsd_resolve::finalize_names (xsd_resolve::qualify_schema [] schema))
+    ? sm'::contains ("\"ID_" ++# type_name "SetDTE" ++# "\"") generated = !-
+    ?> failwith "the SetDTE example ID names its owner"
+    ? sm'::contains ("\"ID_" ++# type_name "Documento" ++# "\"") generated = !-
+    ?> failwith "the Documento example ID names its owner"
+    ? sm'::contains "\"ID1\"" generated
+    ?> failwith "no two xs:ID sites share the constant ID1"
 
 ///> rust
 :# coded_types_share_the_text_prototype =

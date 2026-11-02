@@ -11,7 +11,7 @@
             global "import gleam/string"
             global "import gleam/result"
         Rust = \ () => ()
-        Delphi = \ () => ()
+        Pascal = \ () => ()
     }
 
 := is_scalar_value (n : i32) : bool = n >= 0i32 && n <= 1114111i32 && (n < 55296i32 || n > 57343i32)
@@ -34,7 +34,7 @@
 := c_byte_text (b : u8) : string =
     $'StringLit(2, (char[]){ !b, 0 })' : string
 
-:= delphi_byte_text (b : u8) : string =
+:= pascal_byte_text (b : u8) : string =
     $'AnsiString(AnsiChar(!b))' : string
 
 :! rust_scalar = $'char'
@@ -58,7 +58,7 @@
             $'unicode_erlang_characters_to_binary([!n])' : string
         | Rust => \ () => (conv n : u32) |> rust_char_of_u32 |> optionm'::unwrap |> sm'::obj_to_string
         | C => \ () => utf8_text c_byte_text n
-        | Delphi => \ () => utf8_text delphi_byte_text n
+        | Pascal => \ () => utf8_text pascal_byte_text n
         | Fsharp => \ () => $'System.Char.ConvertFromUtf32 !n' : string
         | TypeScript => \ () => $'String.fromCodePoint(!n)' : string
         | _ => \ () => failwith "unicode.scalar_text: no arm for this backend"
@@ -90,11 +90,11 @@
 := first_code_point (s : string) : i32 =
     s |> first_scalar |> optionm'::map (\ c => conv c) |> optionm'::default_value' 0i32
 
-:~ ^ delphi_code_point_count_from (s : string) (i : i32) (acc : i32) : i32 =
+:~ ^ pascal_code_point_count_from (s : string) (i : i32) (acc : i32) : i32 =
     ? i >= sm'::length s ?> acc
     |:
         := byte = $'Ord((!s)[!i + 1])' : i32
-        delphi_code_point_count_from s (i + 1i32) (? byte >= 128i32 && byte < 192i32 ?> acc |: acc + 1i32)
+        pascal_code_point_count_from s (i + 1i32) (? byte >= 128i32 && byte < 192i32 ?> acc |: acc + 1i32)
 
 := code_point_count (s : string) : i32 =
     unicode_types ()
@@ -104,7 +104,7 @@
         Zig = \ () =>
             := count : u64 = $'std.unicode.utf8CountCodepoints(!s) catch 0'
             conv count : i32
-        Delphi = \ () => delphi_code_point_count_from s 0i32 0i32
+        Pascal = \ () => pascal_code_point_count_from s 0i32 0i32
     }
 
 :! gleam_codepoint = $'string.UtfCodepoint'
@@ -199,7 +199,7 @@
 ///> rust
 ///> gleam
 ///> c
-///> delphi
+///> pascal
 :# char_of_encodes_utf8_and_rejects_surrogates =
     := ~e = 233i32
     (sm::length (char_of e), sm::length (char_of 128512i32), sm::length (char_of 55296i32))

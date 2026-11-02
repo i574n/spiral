@@ -142,7 +142,7 @@
         |> \ (array x) => x
 
     := formatted_table =
-        := length_map : mapm::map i32 i64 =
+        := length_map : map::map i32 i64 =
             table
             |> am'::map_base (fst >> listm'::box >> listm'::to_array')
             |> am'::transpose
@@ -155,14 +155,14 @@
                 |> optionm'::default_value 0i64
             |> am'::indexed
             |> \ x => array x : array _
-            |> mapm::of_array
+            |> map::of_array
         table
         |> am'::map_base \ (row, color) =>
             := new_row =
                 row
                 |> listm'::indexed
                 |> listm::map \ (i, cell) =>
-                    cell |> sm'::pad_right (length_map |> mapm::item i |> conv) ' '
+                    cell |> sm'::pad_right (length_map |> map::item i |> conv) ' '
                 |> listm'::box
                 |> listm'::to_array'
             new_row, color

@@ -4,9 +4,8 @@ modules:
     array_prototypes-
     backend-
     base-
-    rust/
-        rust
-        rust_operators
+    rust
+    rust_operators
     optionm'
     option_operators
     resultm
@@ -21,7 +20,7 @@ modules:
     units
     wire
     fixed_views
-    mapm
+    map
     iter
     float_text
     float_native
@@ -30,6 +29,9 @@ modules:
     sm'
     sm'_operators
     erlang_term
+    erlang_text
+    erlang_map
+    erlang_file
     erlang_process
     parallel
     erlang_port
@@ -39,9 +41,8 @@ modules:
     guid
     platform
     env
-    rust/
-        testing
-        near
+    rust_testing
+    near
     date_time
     trace-
     parsing
@@ -57,11 +58,9 @@ modules:
     conversation
     routes_real*
     routes
-    rust/
-        near_workspaces
+    near_workspaces
     stream
-    rust/
-        clap
+    clap
     file_system
     file_system_operators
     process
@@ -125,7 +124,7 @@ modules:
     step_runtime
     cursor_walk
     oauth
-    dictm
+    dict
     cli_flags
     cli_args_real*
     cli_args

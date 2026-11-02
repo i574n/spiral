@@ -1,7 +1,6 @@
 /// # spiral
 :< file_system_operators
-:< rust.rust_operators
-:< rust
+:< rust_operators
 :< sm'_operators
 :< parsing
 
@@ -219,7 +218,7 @@
                     |> am'.from_vec
                     |> \ x => x : array _
                     |> am'.try_item 0
-                    |> optionm.map (mapm.get "a" >> optionm'.unbox)
+                    |> optionm.map (map.get "a" >> optionm'.unbox)
                     |> optionm'.flatten
                 ?= missing_toml_path ?|
                 | None => Error (exit_code, result)
@@ -759,7 +758,6 @@
             "gleam_time=\">=1.0.0 and <2.0.0\""
             "gleam_erlang=\">=0.34.0 and <1.0.0\""
             "envoy=\">=1.0.0 and <2.0.0\""
-            "gary=\">=1.1.0 and <2.0.0\""
             "gtempo=\">=7.1.0 and <8.0.0\""
         ]
         |> am'.to_vec
@@ -1517,7 +1515,7 @@
                 |> am'.to_vec
                 |> am'.vec_map' \ k, v =>
                     new_pair (sm'.to_std_string k) (sm'.to_std_string v)
-                |> mapm.b_tree_map_from_vec_pairs
+                |> map.b_tree_map_from_vec_pairs
                 |> sm'.serialize
                 |> resultm.unwrap'
                 |> sm'.from_std_string
@@ -1549,7 +1547,7 @@
                 |> am'.to_vec
                 |> am'.vec_map' \ k, v =>
                     new_pair (sm'.to_std_string k) (sm'.to_std_string v)
-                |> mapm.b_tree_map_from_vec_pairs
+                |> map.b_tree_map_from_vec_pairs
                 |> sm'.serialize
                 |> resultm.unwrap'
                 |> sm'.from_std_string
@@ -1598,7 +1596,7 @@
                 |> am'.to_vec
                 |> am'.vec_map' \ k, v =>
                     new_pair (sm'.to_std_string k) (sm'.to_std_string v)
-                |> mapm.b_tree_map_from_vec_pairs
+                |> map.b_tree_map_from_vec_pairs
                 |> sm'.serialize
                 |> resultm.unwrap'
                 |> sm'.from_std_string
@@ -1630,7 +1628,7 @@
                 |> am'.to_vec
                 |> am'.vec_map' \ k, v =>
                     new_pair (sm'.to_std_string k) (sm'.to_std_string v)
-                |> mapm.b_tree_map_from_vec_pairs
+                |> map.b_tree_map_from_vec_pairs
                 |> sm'.serialize
                 |> resultm.unwrap'
                 |> sm'.from_std_string
@@ -1742,7 +1740,7 @@
         |> am'.to_vec
         |> am'.vec_map' \ k, v =>
             new_pair (sm'.to_std_string k) (sm'.to_std_string v)
-        |> mapm.b_tree_map_from_vec_pairs
+        |> map.b_tree_map_from_vec_pairs
         |> sm'.serialize
         |> resultm.map_error' (sm'.format' >> sm'.from_std_string)
         |> resultm.map' sm'.from_std_string
@@ -1750,7 +1748,7 @@
 
 /// ## tests
 := tests () =
-    testing.run_tests {
+    rust_testing.run_tests {
         verify_app = get_command >> clap.command_debug_assert
     }
 

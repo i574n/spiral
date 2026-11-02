@@ -1,8 +1,7 @@
 :# clap static =
     :< testing
 
-:< rust
-:< rust::rust_operators
+:< rust_operators
 :< sm'_operators
 
 /// ## clap

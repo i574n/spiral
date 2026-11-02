@@ -1,8 +1,7 @@
 :# near static =
     :< testing
 
-:< rust
-:< rust::rust_operators
+:< rust_operators
 
 /// ## near
 :== vector_switch t =
@@ -14,7 +13,7 @@
         TypeScript : $'near_sdk_store_vec_Vector<`t>'
         Cpp : $'near_sdk_store_vec_Vector<`t>'
         CppHost : $'near_sdk_store_vec_Vector<`t>'
-        Delphi : $'near_sdk_store_vec_Vector<`t>'
+        Pascal : $'near_sdk_store_vec_Vector<`t>'
         Cuda : $'near_sdk_store_vec_Vector<`t>'
         Rust : $'SpiralNearVec<`t>'
     }
@@ -45,7 +44,7 @@
             TypeScript = (\ () => ()) : () -> ()
             Cpp = (\ () => ()) : () -> ()
             CppHost = (\ () => ()) : () -> ()
-            Delphi = (\ () => ()) : () -> ()
+            Pascal = (\ () => ()) : () -> ()
             Cuda = (\ () => ()) : () -> ()
         }
         $'' : $'backend_switch `(vector_switch t)'
@@ -76,7 +75,7 @@
         TypeScript : $'near_sdk_AccountId'
         Cpp : $'near_sdk_AccountId'
         CppHost : $'near_sdk_AccountId'
-        Delphi : $'near_sdk_AccountId'
+        Pascal : $'near_sdk_AccountId'
         Cuda : $'near_sdk_AccountId'
         Rust : $'String'
     }
@@ -170,7 +169,7 @@
         TypeScript : $'near_token_NearToken'
         Cpp : $'near_token_NearToken'
         CppHost : $'near_token_NearToken'
-        Delphi : $'near_token_NearToken'
+        Pascal : $'near_token_NearToken'
         Cuda : $'near_token_NearToken'
         Rust : $'u128'
     }

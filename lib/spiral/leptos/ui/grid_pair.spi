@@ -1,6 +1,5 @@
 :< sm'_operators
 :< leptos
-:< rust
 
 :== props =
     {

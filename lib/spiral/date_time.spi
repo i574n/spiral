@@ -1,7 +1,7 @@
 :# date_time static =
     :< testing
 
-:< rust::rust_operators
+:< rust_operators
 :< sm'_operators
 
 /// ## date_time
@@ -1057,7 +1057,7 @@
     )
 :== stopwatch_switch =
     {
-        Delphi : $'TStopwatch'
+        Pascal : $'TStopwatch'
         Fsharp : $'System.Diagnostics.Stopwatch'
         Python : stopwatch_python
         Rust : $'std::time::Instant'
@@ -1066,7 +1066,7 @@
 
 := stopwatch () : stopwatch =
     backend_switch {
-        Delphi = \ () =>
+        Pascal = \ () =>
             global "uses System.Diagnostics"
             $'TStopwatch.StartNew' : stopwatch
         Fsharp = \ () => $'`stopwatch ()' : stopwatch
@@ -1095,7 +1095,7 @@
 := stopwatch_start (stopwatch : stopwatch) : () =
     run_target \|
         | Rust => \ () => ()
-        | Delphi => \ () => ()
+        | Pascal => \ () => ()
         | _ => \ () => $'!stopwatch.Start' ()
 
 := monotonic_milliseconds () : i64 =
@@ -1473,7 +1473,7 @@
     unix_epoch () |> add_days -1i32 |> format_iso8601 |> _assert_eq "1969-12-31T00-00-00.000"
 
 ///> rust
-///> delphi
+///> pascal
 :# stopwatch_microseconds_agree_with_milliseconds =
     := watch = stopwatch ()
     stopwatch_start watch

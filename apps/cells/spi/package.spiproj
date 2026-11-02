@@ -9,4 +9,5 @@ modules:
     document
     notebook
     targets
+    daemon
     main

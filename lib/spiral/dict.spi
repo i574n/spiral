@@ -1,5 +1,5 @@
 ///- --package .
-:# dictm static =
+:# dict static =
     :< testing
 
 :< sm'_operators
@@ -19,15 +19,15 @@
 
 :! dict k v = $'backend_switch `(dict_switch k v)'
 
-:= rust_new_rc \* k v. (m : mapm::b_tree_map k v) : dict k v = $'std::rc::Rc::new(!m)'
+:= rust_new_rc \* k v. (m : map::b_tree_map k v) : dict k v = $'std::rc::Rc::new(!m)'
 
-:= rust_owned \* k v. (d : dict k v) : mapm::b_tree_map k v = $'std::rc::Rc::unwrap_or_clone(!d)'
+:= rust_owned \* k v. (d : dict k v) : map::b_tree_map k v = $'std::rc::Rc::unwrap_or_clone(!d)'
 
 := empty \* k v. () : dict k v =
     dict_types ()
     backend_switch {
         Gleam = \ () => $'dict.new()' : dict k v
-        Rust = \ () => (mapm::new_b_tree_map () : mapm::b_tree_map k v) |> rust_new_rc
+        Rust = \ () => (map::new_b_tree_map () : map::b_tree_map k v) |> rust_new_rc
     }
 
 := insert \* k v. (key : k) (value : v) (d : dict k v) : dict k v =
@@ -72,7 +72,7 @@
 := present \* k v. (key : k) (d : dict k v) : v =
     ?= find key d ?|
     | Some x => x
-    | None => failwith "dictm.present: the key is not in the dict"
+    | None => failwith "dict.present: the key is not in the dict"
 
 := size \* k v. (d : dict k v) : i32 =
     dict_types ()

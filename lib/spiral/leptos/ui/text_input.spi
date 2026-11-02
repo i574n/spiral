@@ -1,7 +1,6 @@
-:< rust::rust_operators
+:< rust_operators
 :< sm'_operators
 :< leptos
-:< rust
 
 := render \* t. (class : () -> string) props (getter : () -> t) (setter : sm'::std_string -> ()) : _ (_ input) =
     input

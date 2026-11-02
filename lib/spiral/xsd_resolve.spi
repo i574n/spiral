@@ -197,6 +197,92 @@
     := definitions = renamed_definition (qualified (namespace_text schema::target_namespace))
     rename_schema definitions (renamed_reference (qualify_reference namespaces)) schema
 
+:== tag_scope =
+    {
+        root_namespace : string
+        document_prefixes : list (string * string)
+        file_namespace : string
+        file_namespaces : list (string * string)
+        qualified_locals : bool
+    }
+
+:~ ^ declared_document_prefixes
+    (text : string) (attributes : list (string * string)) (acc : list (string * string))
+    : list (string * string)
+    =
+    ?= attributes ?|
+    | (key, value) :: rest =>
+        := known = value = "http://www.w3.org/2001/XMLSchema" || value = "http://www.w3.org/2000/09/xmldsig#"
+        := prefix = ? sm'::starts_with "xmlns:" key ?> sm'::substring 6i32 (sm'::length key - 6i32) key |: ""
+        ? prefix <> "" && known = !- && sm'::contains ("ref=\"" ++# prefix ++# ":") text
+        ?> declared_document_prefixes text rest ((prefix, value) :: acc)
+        |: declared_document_prefixes text rest acc
+    | [] => acc
+
+:= schema_attributes (text : string) : list (string * string) =
+    ?= first_named "schema" (xml::read_xml text) ?|
+    | Some (attributes, _) => attributes
+    | None => []
+
+:~ ^ prefix_for (uri : string) (prefixes : list (string * string)) : option string =
+    ?= prefixes ?|
+    | (prefix, value) :: rest => ? value = uri ?> Some prefix |: prefix_for uri rest
+    | [] => None
+
+:= tag_in (scope : tag_scope) (uri : string) (local : string) (fallback : string) : string =
+    ? uri = scope::root_namespace ?> local
+    |:
+        ?= prefix_for uri scope::document_prefixes ?|
+        | Some prefix => prefix ++# ":" ++# local
+        | None => fallback
+
+:= scoped_tag (scope : tag_scope) (name : string) : string =
+    ? sm'::contains ":" name ?>
+        ?= namespace_for (prefix_of name) scope::file_namespaces ?|
+        | Some uri => tag_in scope uri (xml::local_name name) name
+        | None => name
+    |? scope::qualified_locals ?> tag_in scope scope::file_namespace name name
+    |: name
+
+:~ ^ tagged \* k a. (scope : tag_scope) (item : xsd k a) : xsd k a =
+    ?= item ?|
+    | Simple s => Simple s
+    | Complex c => Complex { c ?| content = tagged scope c::content }
+    | Derived d => Derived { d ?| content = tagged scope d::content }
+    | Sequence s => Sequence { s ?| items = tagged_all scope s::items [] }
+    | Choice c => Choice { c ?| items = tagged_all scope c::items [] }
+    | Element e =>
+        Element { e ?| name = tag_name (scoped_tag scope (tag_text e::name)); inline = tagged_inline scope e::inline }
+    | AnyContent () => AnyContent ()
+    | Empty () => Empty ()
+    | Attribute a => Attribute a
+
+:& :~ tagged_all \* k a. (scope : tag_scope) (items : list (xsd k a)) (acc : list (xsd k a)) : list (xsd k a) =
+    ?= items ?|
+    | item :: rest => tagged_all scope rest (tagged scope item :: acc)
+    | [] => listm::rev acc
+
+:& :~ tagged_inline \* a. (scope : tag_scope) (inline : option (xsd type_def a)) : option (xsd type_def a) =
+    ?= inline ?|
+    | Some inner => Some (tagged scope inner)
+    | None => None
+
+:~ ^ tagged_top \* a.
+    (scope : tag_scope) (items : list (xsd particle a)) (acc : list (xsd particle a))
+    : list (xsd particle a)
+    =
+    ?= items ?|
+    | (Element e) :: rest => tagged_top scope rest (Element { e ?| inline = tagged_inline scope e::inline } :: acc)
+    | item :: rest => tagged_top scope rest (item :: acc)
+    | [] => listm::rev acc
+
+:= tag_schema \* a. (scope : tag_scope) (schema : xsd_schema a) : xsd_schema a =
+    {
+        schema ?|
+            complex_types = tagged_all scope schema::complex_types []
+            elements = tagged_top scope schema::elements []
+    }
+
 := qualified_local (name : string) : string =
     := close = sm'::index_of "}" name
     ? sm'::starts_with "{" name && close > 0i32
@@ -250,18 +336,48 @@
         | None => catalogued_namespaces catalog rest acc
     | [] => acc
 
-:~ ^ load_tree (catalog : schema_catalog) (path : string) (tree : loaded_tree qualified) : loaded_tree qualified =
+:== document_scope = { root_namespace : string; document_prefixes : list (string * string) }
+
+:= attribute_text (key : string) (attributes : list (string * string)) : string =
+    ?= xml::attribute_of key attributes ?|
+    | Some value => value
+    | None => ""
+
+:= document_scope_of (text : string) : document_scope =
+    := attributes = schema_attributes text
+    {
+        root_namespace = attribute_text "targetNamespace" attributes
+        document_prefixes = declared_document_prefixes text attributes []
+    }
+
+:= file_scope (document : document_scope) (attributes : list (string * string)) : tag_scope =
+    {
+        root_namespace = document::root_namespace
+        document_prefixes = document::document_prefixes
+        file_namespace = attribute_text "targetNamespace" attributes
+        file_namespaces = declared_namespaces attributes []
+        qualified_locals = attribute_text "elementFormDefault" attributes = "qualified"
+    }
+
+:~ ^ load_tree
+    (catalog : schema_catalog) (document : document_scope) (path : string) (tree : loaded_tree qualified)
+    : loaded_tree qualified
+    =
     ? has_string path tree::paths ?> tree
     |? xml::is_file path = !- ?> { tree ?| missing = (path :: tree::missing) }
     |:
         := text = xml::read_text_replacing_invalid_utf8 path
-        := schema = text |> read_schema |> qualify_schema (schema_namespaces text)
+        := attributes = schema_attributes text
+        := schema =
+            text |> read_schema |> tag_schema (file_scope document attributes)
+            |> qualify_schema (declared_namespaces attributes [])
         := loaded = { tree ?| paths = (path :: tree::paths); schema = merge schema tree::schema }
         := locations = listm::append schema::includes (catalogued_namespaces catalog schema::namespace_imports [])
-        load_includes catalog (directory_of path) locations loaded
+        load_includes catalog document (directory_of path) locations loaded
 
 :& :~ load_includes
     (catalog : schema_catalog)
+    (document : document_scope)
     (directory : string)
     (locations : list string)
     (tree : loaded_tree qualified)
@@ -269,8 +385,9 @@
     =
     ?= locations ?|
     | location :: rest =>
-        := tree = ? location = "" ?> tree |: load_tree catalog (resolved_location catalog directory location) tree
-        load_includes catalog directory rest tree
+        := next = resolved_location catalog directory location
+        := tree = ? location = "" ?> tree |: load_tree catalog document next tree
+        load_includes catalog document directory rest tree
     | [] => tree
 
 := load_schema_tree_with (catalog : schema_catalog) (path : string) : loaded_tree final =
@@ -283,7 +400,10 @@
             complex_types = []
             elements = []
         }
-    := tree = load_tree catalog path { paths = []; missing = []; schema = empty }
+    := document =
+        ? xml::is_file path ?> document_scope_of (xml::read_text_replacing_invalid_utf8 path)
+        |: { root_namespace = ""; document_prefixes = [] }
+    := tree = load_tree catalog document path { paths = []; missing = []; schema = empty }
     { tree ?| schema = finalize_names tree::schema }
 
 := load_schema_tree (path : string) : loaded_tree final = load_schema_tree_with [] path
@@ -314,6 +434,66 @@
     ?= inline ?|
     | Some inner => references_of inner acc
     | None => acc
+
+:~ ^ tags_of \* k form. (item : xsd k form) (acc : list string) : list string =
+    ?= item ?|
+    | Simple _ => acc
+    | Complex c => tags_of c::content acc
+    | Derived d => tags_of d::content acc
+    | Sequence s => tags_all s::items acc
+    | Choice c => tags_all c::items acc
+    | Element e => inline_tags e::inline (tag_text e::name :: acc)
+    | AnyContent () => acc
+    | Empty () => acc
+    | Attribute _ => acc
+
+:& :~ tags_all \* k form. (items : list (xsd k form)) (acc : list string) : list string =
+    ?= items ?|
+    | item :: rest => tags_all rest (tags_of item acc)
+    | [] => acc
+
+:& :~ inline_tags \* form. (inline : option (xsd type_def form)) (acc : list string) : list string =
+    ?= inline ?|
+    | Some inner => tags_of inner acc
+    | None => acc
+
+///> rust
+:# a_same_namespace_ref_writes_its_local_name =
+    := text =
+        "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:SiiDte=\"urn:sii\" targetNamespace=\"urn:sii\">"
+        ++# "<xs:element name=\"DTE\" type=\"xs:string\"/><xs:complexType name=\"SetDTE\"><xs:sequence>"
+        ++# "<xs:element ref=\"SiiDte:DTE\"/></xs:sequence></xs:complexType></xs:schema>"
+    := schema = tag_schema (file_scope (document_scope_of text) (schema_attributes text)) (read_schema text)
+    := tags = tags_all schema::complex_types []
+    ? has_string "DTE" tags = !- || has_string "SiiDte:DTE" tags
+    ?> failwith "a ref into the root namespace writes the bare local name"
+
+///> rust
+:# a_qualified_import_writes_its_prefix =
+    := xs = "xmlns:xs=\"http://www.w3.org/2001/XMLSchema\""
+    := root_text =
+        "<xs:schema " ++# xs ++# " xmlns:sfLR=\"urn:lr\" xmlns:sf=\"urn:sf\" targetNamespace=\"urn:lr\""
+        ++# " elementFormDefault=\"qualified\"><xs:element name=\"Cabecera\" type=\"sf:CabeceraType\"/>"
+        ++# "<xs:complexType name=\"R\"><xs:sequence><xs:element ref=\"sf:RegistroAlta\"/>"
+        ++# "<xs:element name=\"Own\" type=\"xs:string\"/></xs:sequence></xs:complexType></xs:schema>"
+    := imported form =
+        "<xs:schema " ++# xs ++# " xmlns:sf=\"urn:sf\" targetNamespace=\"urn:sf\"" ++# form
+        ++# "><xs:complexType name=\"CabeceraType\"><xs:sequence>"
+        ++# "<xs:element name=\"ObligadoEmision\" type=\"xs:string\"/></xs:sequence></xs:complexType></xs:schema>"
+    := document = document_scope_of root_text
+    := tags_in scope text =
+        := schema = tag_schema (file_scope scope (schema_attributes text)) (read_schema text)
+        tags_all schema::complex_types []
+    := qualified_text = imported " elementFormDefault=\"qualified\""
+    ? has_string "sf:ObligadoEmision" (tags_in document qualified_text) = !-
+    ?> failwith "a local element of a qualified imported schema takes the root's prefix"
+    := root_tags = tags_in document root_text
+    ? has_string "sf:RegistroAlta" root_tags = !- || has_string "Own" root_tags = !-
+    ?> failwith "the root keeps a foreign ref's prefix and writes its own locals bare"
+    ? has_string "ObligadoEmision" (tags_in { document ?| document_prefixes = [] } qualified_text) = !-
+    ?> failwith "without a declared document prefix the name stays bare, never an undeclared prefix"
+    ? has_string "ObligadoEmision" (tags_in document (imported "")) = !-
+    ?> failwith "an unqualified schema writes its locals bare"
 
 ///> rust
 :# colliding_local_names_keep_both_namespaces =

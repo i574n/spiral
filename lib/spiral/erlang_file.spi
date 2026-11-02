@@ -21,18 +21,11 @@
     := r = erlang_term::apply "file" "write_file" [ erlang_term::of path; erlang_term::of content ]
     erlang_term::equal r (erlang_term::atom "ok")
 
-:~ ^ items_from (native : erlang_term::term) (i : i32) (acc : list erlang_term::term) : list erlang_term::term =
-    ? i < 1i32 ?> acc
-    |: items_from native (i - 1i32) (erlang_term::apply "lists" "nth" [ erlang_term::of i; native ] :: acc)
-
-:= items_of (native : erlang_term::term) : list erlang_term::term =
-    items_from native (erlang_term::apply "erlang" "length" [ native ] |> erlang_term::cast) []
-
 := text_of (c : erlang_term::term) : string =
     erlang_term::apply "unicode" "characters_to_binary" [ c ] |> erlang_term::cast
 
 := matching_paths (pattern : string) : list string =
-    erlang_term::apply "filelib" "wildcard" [ erlang_term::charlist pattern ] |> items_of |> listm::map text_of
+    erlang_term::apply "filelib" "wildcard" [ erlang_term::charlist pattern ] |> erlang_term::items_of |> listm::map text_of
 
 := file_appended (path : string) (content : string) : bool =
     := mode = erlang_term::list_term [ erlang_term::atom "append" ]

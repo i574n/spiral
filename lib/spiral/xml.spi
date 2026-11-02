@@ -15,17 +15,17 @@
     := at : u64 = conv i
     $'std.unicode.utf8ByteSequenceLength((!s)[!at]) catch 1' : u8
 
-:= delphi_byte_at (s : string) (i : i32) : u32 = $'Ord((!s)[!i + 1])' : u32
+:= pascal_byte_at (s : string) (i : i32) : u32 = $'Ord((!s)[!i + 1])' : u32
 
-:= delphi_sequence_width (lead : u32) : i32 =
+:= pascal_sequence_width (lead : u32) : i32 =
     ? lead < 192u32 ?> 1i32 |? lead < 224u32 ?> 2i32 |? lead < 240u32 ?> 3i32 |: 4i32
 
-:= delphi_code_point_at (s : string) (i : i32) : u32 =
+:= pascal_code_point_at (s : string) (i : i32) : u32 =
     ? i >= sm'::length s ?> 0u32
     |:
-        := lead = delphi_byte_at s i
-        := width = ? i + delphi_sequence_width lead > sm'::length s ?> 1i32 |: delphi_sequence_width lead
-        := tail (k : i32) = delphi_byte_at s (i + k) - 128u32
+        := lead = pascal_byte_at s i
+        := width = ? i + pascal_sequence_width lead > sm'::length s ?> 1i32 |: pascal_sequence_width lead
+        := tail (k : i32) = pascal_byte_at s (i + k) - 128u32
         ? width = 1i32 ?> lead
         |? width = 2i32 ?> (lead - 192u32) * 64u32 + tail 1i32
         |? width = 3i32 ?> (lead - 224u32) * 4096u32 + tail 1i32 * 64u32 + tail 2i32
@@ -34,7 +34,7 @@
 := code_point_at (s : string) (i : i32) : u32 =
     run_target \|
         | Rust => \ () => rust_first_char s i |> optionm'::map unicode::rust_char_code |> optionm'::unwrap_or 0u32
-        | Delphi => \ () => delphi_code_point_at s i
+        | Pascal => \ () => pascal_code_point_at s i
         | _ => \ () => failwith "code_point_at: no arm for this backend"
 
 := code_point_width (s : string) (i : i32) : i32 =
@@ -44,7 +44,7 @@
             |> optionm'::map \ c => convert::convert (rust_char_width c)
             |> optionm'::unwrap_or 1i32
         | Zig => \ () => ? i < sm'::length s ?> conv (zig_sequence_width s i) |: 1i32
-        | Delphi => \ () => ? i < sm'::length s ?> delphi_sequence_width (delphi_byte_at s i) |: 1i32
+        | Pascal => \ () => ? i < sm'::length s ?> pascal_sequence_width (pascal_byte_at s i) |: 1i32
         | _ => \ () => failwith "code_point_width: no arm for this backend"
 
 := code_point_count (s : string) : i32 = unicode::code_point_count s
@@ -87,11 +87,11 @@
 := is_file (path : string) : bool =
     run_target \|
         | Rust => \ () => $'std::path::Path::new(&*!path).is_file()' : bool
-        | Delphi => \ () => $'FileExists(!path)' : bool
+        | Pascal => \ () => $'FileExists(!path)' : bool
         | _ => \ () => failwith "is_file: no arm for this backend"
 
 ///> rust
-///> delphi
+///> pascal
 :# is_file_is_false_for_a_missing_path =
     ? is_file "no-such-file-for-xml-is-file.txt" ?> failwith "a missing path is not a file"
 
@@ -333,7 +333,7 @@
 
 := has_child (target : string) (nodes : list xml_node) : bool =
     ?= children_named target nodes ?|
-    | Cons _ => !+
+    | _ :: _ => !+
     | [] => !-
 
 :~ ^ has_any_child (targets : list string) (nodes : list xml_node) : bool =
@@ -660,7 +660,7 @@
     | _ => failwith "one element"
 
 ///> rust
-///> delphi
+///> pascal
 :# code_points_step_through_utf8 =
     := s = "aé€"
     ? code_point_count s <> 3i32 ?> failwith "three code points"

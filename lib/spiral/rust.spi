@@ -10,7 +10,7 @@
         TypeScript : fs
         Cpp : fs
         CppHost : fs
-        Delphi : fs
+        Pascal : fs
         Cuda : fs
         Zig : fs
         Lean : fs
@@ -292,7 +292,7 @@
         TypeScript = \ () => x
         Cpp = \ () => x
         CppHost = \ () => x
-        Delphi = \ () => x
+        Pascal = \ () => x
         Cuda = \ () => x
         Rust = \ () => clone x
     }

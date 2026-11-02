@@ -316,6 +316,35 @@
     |> union_to_string
     |> _assert_eq' "Some"
 
+/// ### case_name
+:= case_name \* t. (x : t) : string =
+    ~> get_union_fields_untag `t ()
+    |> listm'::try_pick \ key, case => ? case = x ?> Some key |: None
+    |> optionm::value
+
+/// ### case_of_name
+:= case_of_name \* t. (text : string) : option t =
+    ~> get_union_fields_untag `t ()
+    |> listm'::try_pick \ key, case => ? key =. text ?> Some case |: None
+
+///> gleam
+///> lua
+///> cuda
+///> rust
+///> typescript
+:# case_name =
+    Contract
+    |> case_name
+    |> _assert_eq' "Contract"
+
+    "Browser"
+    |> case_of_name
+    |> _assert_eq (Some Browser)
+
+    "browser"
+    |> case_of_name
+    |> _assert_eq (None : option reflection_test_target)
+
 := nameof \* t. (x : t) : string =
     ~>
         real_core::record_type_fold_back

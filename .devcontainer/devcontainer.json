@@ -8,11 +8,9 @@
       "label": "spiral 2"
     }
   },
-  "build": {
-    "context": "..",
-    "dockerfile": "Dockerfile"
-  },
+  "image": "mcr.microsoft.com/devcontainers/universal:latest",
   "features": {
+    "ghcr.io/devcontainers/features/powershell:1": {}
   },
   "hostRequirements": {
     "cpus": 4,

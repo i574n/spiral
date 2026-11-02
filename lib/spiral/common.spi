@@ -198,7 +198,7 @@
 := new_disposable (fn : () -> ()) : disposable _ =
     run_target \|
         | Rust => \ () =>
-            :< rust::rust_operators
+            :< rust_operators
             !\\(fn, $'"$0.clone()"') : disposable _
         | TypeScript => \ () =>
             := fn = ~~ fn

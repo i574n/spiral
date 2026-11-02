@@ -17,7 +17,6 @@
 ///- --real
 
 := from_std_string_real (str : std_string_real) : string =
-    :< rust
     rust::emit_expr `std_string_real `string str ($'"Rc::<str>::from($0)"' : string)
 
 /// ### symbol_to_string_real
@@ -71,7 +70,7 @@
         Zig = (\ () => $'spiralConcat(!s, !x)' : string) : () -> string
         Lean = (\ () => $'(!s ++ !x)' : string) : () -> string
         C = (\ () => !!!!StaticStringConcat(s, x)) : () -> string
-        Delphi = (\ () => $'!s + !x ' : string) : () -> string
+        Pascal = (\ () => $'!s + !x ' : string) : () -> string
         Kotlin = (\ () => $'!s + !x ' : string) : () -> string
         Swift = (\ () => $'!s + !x ' : string) : () -> string
         Bend = (\ () => !!!!StaticStringConcat(s, x)) : () -> string
@@ -239,7 +238,7 @@
                         ?> $'(std.fmt.allocPrint(spiral_gpa, "{d}", .{ !x }) catch @@panic("out of memory"))' : string
                         |: $'(std.fmt.allocPrint(spiral_gpa, "{any}", .{ !x }) catch @@panic("out of memory"))' : string
                 ) : () -> string
-            Delphi =
+            Pascal =
                 (\ () =>
                     ?: t ?|
                     | bool => $'BoolToStr(!x, \'true\', \'false\')' : string
@@ -547,7 +546,6 @@
             ? structural `t ()
             ?> format_debug_real `t x
             |:
-                :< rust
                 := result = rust::emit_expr `t `std_string_real x ($'"format\!(\\\"{:##?}\\\", $0)"' : string)
                 from_std_string_real result
         | _ => \ _ => format_debug_real `t x
@@ -607,7 +605,7 @@
                 (\ () =>
                     ""
                 ) : () -> string
-            Delphi =
+            Pascal =
                 (\ () =>
                     ""
                 ) : () -> string
@@ -707,7 +705,7 @@
                                 $'StringLit(spiral_format_plain_char(!b), spiral_format_buffer)' : string
                             | _ => format_debug_real `(`b) b
                         ) : () -> string
-                    Delphi =
+                    Pascal =
                         (\ () =>
                             ?= b ?|
                             | (_ : f32) | (_ : f64) => float_native::shortest `t b
@@ -775,7 +773,7 @@
                         ~~
                             result <- append_real s ((~*) `string result)
                     ) : () -> ()
-                Delphi =
+                Pascal =
                     (\ () =>
                         ~~
                             result <- append_real s ((~*) `string result)

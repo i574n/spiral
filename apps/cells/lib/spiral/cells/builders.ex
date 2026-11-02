@@ -13,13 +13,14 @@ defmodule Spiral.Cells.Builders do
     "lua" => :lua,
     "c" => :c,
     "delphi" => :delphi,
+    "pascal" => :delphi,
     "zig" => :zig,
     "lean" => :lean,
     "wgsl" => :wgsl,
     "_" => :skip
   }
 
-  @expected "rust, fsharp, typescript, python, cuda, cpp, gleam, lua, c, delphi, zig, lean, or wgsl"
+  @expected "rust, fsharp, typescript, python, cuda, cpp, gleam, lua, c, delphi, pascal, zig, lean, or wgsl"
 
   @rust_flags %{
     long: %{

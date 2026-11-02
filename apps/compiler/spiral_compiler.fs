@@ -7408,6 +7408,12 @@ module spiral_compiler =
     let closureBindingNames = System.Runtime.CompilerServices.ConditionalWeakTable<E, string>()
     let unionSourceNames = System.Runtime.CompilerServices.ConditionalWeakTable<obj, string>()
     let noteUnionSourceName (node : obj) (name : string) = unionSourceNames.TryAdd(node, name) |> ignore
+    // The package that declares each nominal union, so a `link:` unit is matched by owner, not by its source name.
+    let unionSourcePackages = System.Runtime.CompilerServices.ConditionalWeakTable<obj, int ref>()
+    let unionOwnerUnit (linked : Map<int, string>) (node : obj) =
+        match unionSourcePackages.TryGetValue node with
+        | true, owner -> Map.tryFind owner.Value linked
+        | _ -> None
     let noteUnionSourceNameOnce (node : obj) (name : unit -> string) =
         match unionSourceNames.TryGetValue node with
         | true, _ -> ()
@@ -9643,6 +9649,8 @@ module spiral_compiler =
 
     /// Nesting of dynamic `if` branches on the evaluating thread (single-flight `if_`): an `inl` recursion guarded by
     /// a runtime condition unrolls forever and overflowed a 1.5 GB stack after 80 min on apps/spiral.
+    let backend_key_canonical (key : string) = if key = "Delphi" then "Pascal" else key
+
     module DynamicIfNesting =
         let limit =
             match System.Int32.TryParse(System.Environment.GetEnvironmentVariable "SPIRAL_IF_NESTING_LIMIT") with
@@ -9909,7 +9917,9 @@ module spiral_compiler =
             | YNominal a ->
                 let body = ty s a.node.body
                 match body with
-                | YUnion u -> noteUnionSourceName (box u) a.node.name
+                | YUnion u ->
+                    noteUnionSourceName (box u) a.node.name
+                    unionSourcePackages.TryAdd(box u, ref a.node.id.package_id) |> ignore
                 | _ -> ()
                 body
             | _ -> raise_type_error s <| sprintf "Expected a nominal or a deferred type apply.\nGot: %s" (show_ty x)
@@ -10384,7 +10394,7 @@ module spiral_compiler =
                     let frames = s.trace |> List.map (fun (r: Range) -> r.path, (fst r.range).line, (fst r.range).character)
                     raise_type_error { s with trace = [] } (RunawayUnrollDiagnostic.render "EJP0041" (UnionNesting.indexHeadline UnionNesting.limit) frames (UnionNesting.hint UnionNesting.limit))
 
-                let backend' = match backend with None -> s.backend | Some (_,backend) -> backend_strings.Add backend
+                let backend' = match backend with None -> s.backend | Some (_,backend) -> backend_strings.Add (backend_key_canonical backend)
                 let dict, hc_table = PartEvalSeams.family hopacsota join_point_method (fun _ -> Dictionary(HashIdentity.Structural), HashConsTable()) (backend', body)
                 let call_args, env_global_value = data_to_rdata s hc_table env_global_term
                 let join_point_key = hc_table.Add(env_global_value, env_global_type)
@@ -10826,7 +10836,9 @@ module spiral_compiler =
                     | None -> t <- Some t'
                 match term s a with
                 | DRecord l ->
-                    l |> Map.iter (fun (_,backend) b ->
+                    if Map.exists (fun (_,k) _ -> k = "Delphi") l && Map.exists (fun (_,k) _ -> k = "Pascal") l then raise_type_error s "The backend switch has both a Pascal and a Delphi arm; Delphi is the old name of Pascal, so keep only the Pascal one."
+                    l |> Map.iter (fun (_,key) b ->
+                        let backend = backend_key_canonical key
                         // The reason why we're evaling all the branches intead of just one and in this specific order is because otherwise
                         // compile time hashmaps could make type inference unsound.
                         if backend = s.backend.node then
@@ -10862,7 +10874,7 @@ module spiral_compiler =
                 match term s a with // Unsafe version of the backend switch. Shouldn't ever be mixed with type level computations and bottom up inference.
                 | DRecord l -> // Only use it if the code is backend agnostic.
                     // match Map.tryFind s.backend.node l with
-                    match Map.tryPick (fun (_, backend) b -> if backend = s.backend.node then Some b else None) l with
+                    match Map.tryPick (fun (_, backend) b -> if backend_key_canonical backend = s.backend.node then Some b else None) l with
                     | Some b -> apply s (b, DB)
                     | None -> raise_type_error s $"Cannot find the backend {s.backend.node} in the backend switch op."
                 | a -> raise_type_error s <| sprintf "Expected an record.\nGot: %s" (show_data a)
@@ -12230,6 +12242,13 @@ module spiral_compiler =
         |> Array.map (fun (index, safe) -> index, (if safe = "" then string index elif uses.[safe] > 1 then $"{safe}_{index}" else safe))
         |> Map.ofArray
 
+    /// ### caseFoldedSuffixes
+    /// Pascal identifiers ignore case: a suffix that equals another one of the same union under case folding gets its
+    /// position appended, so Brasil and BRASIL stay two cases. Suffixes without such a twin are unchanged.
+    let caseFoldedSuffixes (suffixes : string []) : string [] =
+        let folded = suffixes |> Array.countBy (fun s -> s.ToLowerInvariant()) |> dict
+        suffixes |> Array.mapi (fun i s -> if folded.[s.ToLowerInvariant()] > 1 then $"{s}_{i}" else s)
+
     /// ### generatedCaseSuffixes
     let generatedCaseSuffixes (cases : Map<int * string, 'a>) : string [] =
         let names = generatedCaseNames (cases |> Map.keys)
@@ -12979,6 +12998,10 @@ module spiral_compiler =
                 | Sqrt, [x] -> sprintf "sqrt %s" (tup x)
                 | Sin, [x] -> sprintf "sin %s" (tup x)
                 | Cos, [x] -> sprintf "cos %s" (tup x)
+                | PrimToString, [x] ->
+                    match x with
+                    | DLit(LitBool _) | DV(L(_,YPrim BoolT)) -> sprintf "(if %s then \"true\" else \"false\")" (tup x)
+                    | _ -> sprintf "(string (%s))" (tup x)
                 | NanIs, [x] ->
                     match x with
                     | DLit(LitFloat32 _) | DV(L(_,YPrim Float32T)) -> sprintf "System.Single.IsNaN(%s)" (tup x)
@@ -13525,7 +13548,7 @@ module spiral_compiler =
     /// ### codegenRust
     let unionCaseSuffix (x : UnionRecFsharp) (index : int) = (generatedCaseNames (x.free_vars |> Map.keys)).[index]
 
-    let codegenRust (rust_extern : (string * string list) list) (env : PartEvalResult) (x : TypedBind []) =
+    let codegenRust (rust_extern : (string * string list) list) (linked_units : Map<int, string>) (env : PartEvalResult) (x : TypedBind []) =
         let derive_traits = rust_extern |> List.tryPick (fun (name, traits) -> if name = "derive" then Some traits else None)
         let derive_externs = rust_extern |> List.filter (fun (name, _) -> name <> "derive" && name <> "rc_str") |> List.map (fun (name, traits) -> name, Set.ofList traits) |> Map.ofList
         let rc_str_exports = rust_extern |> List.tryPick (fun (name, exports) -> if name = "rc_str" then Some (Set.ofList exports) else None) |> Option.defaultValue Set.empty
@@ -14147,6 +14170,10 @@ module spiral_compiler =
                 | Sqrt, _ -> unary (sprintf "%s.sqrt()")
                 | Sin, _ -> unary (sprintf "%s.sin()")
                 | Cos, _ -> unary (sprintf "%s.cos()")
+                | PrimToString, [a] ->
+                    match a with
+                    | DLit(LitChar _) | DV(L(_,YPrim CharT)) -> $"Rc::<str>::from((({tup a}) as char).to_string())"
+                    | _ -> $"Rc::<str>::from(({tup a}).to_string())"
                 | NanIs, _ -> unary (sprintf "%s.is_nan()")
                 | StdoutFlush, [] -> "{ use std::io::Write; std::io::stdout().flush().unwrap(); }"
                 | Assign, [a;b] -> $"{tup a} = {tup b}"
@@ -14461,12 +14488,14 @@ module spiral_compiler =
         let exported_generated = exported_union_names.Keys |> Seq.map (fun node -> union_name (unbox<Union> node).Item) |> HashSet
         union_tag_impls |> Seq.iter (fun kv ->
             if union_tags_used.Contains kv.Key || exported_generated.Contains kv.Key then program.Append(kv.Value) |> ignore)
-        let default_uses = System.Text.RegularExpressions.Regex(@"(\w+)>+::default\(\)")
+        let default_uses = System.Text.RegularExpressions.Regex(@"<((?:[^<>]|<(?<d>)|>(?<-d>))*(?(d)(?!)))>::default\(\)")
+        let default_names = System.Text.RegularExpressions.Regex(@"\w+")
         let defaults_reached = HashSet<string>()
         let rec reach_defaults (text : string) =
             for found in default_uses.Matches text do
-                let name = found.Groups.[1].Value
-                if default_impls.ContainsKey name && defaults_reached.Add name then reach_defaults default_impls.[name]
+                for word in default_names.Matches found.Groups.[1].Value do
+                    let name = word.Value
+                    if default_impls.ContainsKey name && defaults_reached.Add name then reach_defaults default_impls.[name]
         functions |> Seq.iter reach_defaults
         exports |> Seq.iter reach_defaults
         types |> Seq.iter reach_defaults
@@ -14506,11 +14535,11 @@ module spiral_compiler =
                 ) code
         let import_rust_unions (code : string) =
             let imported = importedTypeUnits ()
-            if imported.IsEmpty then code
+            if imported.IsEmpty && linked_units.IsEmpty then code
             else
                 let candidates =
                     [ for KeyValue(node, source) in unionSourceNames do
-                        match imported.TryFind source with
+                        match (match unionOwnerUnit linked_units node with Some unitName -> Some unitName | None -> imported.TryFind source) with
                         | Some unitName -> yield union_name (unbox<Union> node).Item, source, unitName
                         | None -> () ]
                 let renamed =
@@ -14614,13 +14643,13 @@ module spiral_compiler =
                 slots <- slots + 1
         List.ofSeq steps
 
-    /// ## CodegenDelphi
+    /// ## CodegenPascal
 
-    /// ### backend_nameDelphi
-    let backend_nameDelphi = "Delphi"
+    /// ### backend_namePascal
+    let backend_namePascal = "Pascal"
 
-    /// ### litDelphi
-    let litDelphi = function
+    /// ### litPascal
+    let litPascal = function
         | LitInt8 x -> if x < 0y then sprintf "(%i)" x else sprintf "%i" x
         | LitInt16 x -> if x < 0s then sprintf "(%i)" x else sprintf "%i" x
         | LitInt32 x -> if x < 0 then sprintf "(%i)" x else sprintf "%i" x
@@ -14653,13 +14682,13 @@ module spiral_compiler =
             if quoted then strb.Append '\'' |> ignore
             strb.ToString()
         | LitChar x ->
-            if int x > 127 then raise_codegen_error $"The Delphi backend represents chars as bytes; '{x}' is not ASCII."
+            if int x > 127 then raise_codegen_error $"The Pascal backend represents chars as bytes; '{x}' is not ASCII."
             elif x >= ' ' && x <> '\'' && int x < 127 then sprintf "'%c'" x
             else sprintf "#%i" (int x)
         | LitBool x -> if x then "True" else "False"
 
-    /// ### primDelphi
-    let primDelphi = function
+    /// ### primPascal
+    let primPascal = function
         | Int8T -> "ShortInt"
         | Int16T -> "SmallInt"
         | Int32T -> "LongInt"
@@ -14674,17 +14703,17 @@ module spiral_compiler =
         | StringT -> "AnsiString"
         | CharT -> "AnsiChar"
 
-    /// ### type_litDelphi
-    let type_litDelphi = function
-        | YLit x -> litDelphi x
+    /// ### type_litPascal
+    let type_litPascal = function
+        | YLit x -> litPascal x
         | YSymbol x -> x
         | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
 
-    /// ### BindsReturnDelphi
-    type BindsReturnDelphi = DLocal of TyV [] | DTail of Ty
+    /// ### BindsReturnPascal
+    type BindsReturnPascal = DLocal of TyV [] | DTail of Ty
 
-    /// ### codegenDelphi
-    let codegenDelphi (env : PartEvalResult) (x : TypedBind []) =
+    /// ### codegenPascal
+    let codegenPascal (env : PartEvalResult) (x : TypedBind []) =
         let method_names = Dictionary<int, string>()
         let closure_names = Dictionary<int, string>()
         let forwards = ResizeArray()
@@ -14731,7 +14760,7 @@ module spiral_compiler =
 
         let is_float = function DV(L(_,YPrim (Float32T | Float64T))) | DLit(LitFloat32 _ | LitFloat64 _) -> true | _ -> false
         let prim_of = function DV(L(_,YPrim t)) -> Some t | DLit (LitInt8 _) -> Some Int8T | DLit (LitInt16 _) -> Some Int16T | DLit (LitInt32 _) -> Some Int32T | DLit (LitInt64 _) -> Some Int64T | _ -> None
-        let show_w = function WV (L(i,_)) -> $"v{i}" | WLit a -> litDelphi a
+        let show_w = function WV (L(i,_)) -> $"v{i}" | WLit a -> litPascal a
         let args (x : TyV []) = x |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
         let args' x = data_term_vars x |> Array.map show_w |> String.concat ", "
 
@@ -14751,14 +14780,14 @@ module spiral_compiler =
                 match lay with
                 | Heap -> sprintf "THeap%i" (heap a).tag
                 | HeapMutable -> sprintf "TMut%i" (mut a).tag
-                | StackMutable -> raise_codegen_error "Compiler error: The Delphi backend doesn't support stack mutable layout types."
+                | StackMutable -> raise_codegen_error "Compiler error: The Pascal backend doesn't support stack mutable layout types."
                 | StackRefs | HeapRefs -> raise_codegen_error "This backend doesn't support the stack and heap refs layout types."
             | YMacro [Text "backend_switch "; Type (YRecord r)] ->
-                match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameDelphi then Some v else None) with
+                match r |> Map.tryPick (fun (_, k) v -> if backend_key_canonical k = backend_namePascal then Some v else None) with
                 | Some x -> tup_ty x
-                | None -> raise_codegen_error $"In the backend_switch, expected a record with the '{backend_nameDelphi}' field."
-            | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> type_litDelphi a) |> String.concat ""
-            | YPrim a -> primDelphi a
+                | None -> raise_codegen_error $"In the backend_switch, expected a record with the '{backend_namePascal}' field."
+            | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> type_litPascal a) |> String.concat ""
+            | YPrim a -> primPascal a
             | YArray a -> sprintf "TArray%i" (array_type (tup_ty a))
             | YFun(a,b,_) -> sprintf "TFun%i" (fun_type (a, b))
             | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
@@ -14807,7 +14836,7 @@ module spiral_compiler =
             let name = $"tmp{decls.Count}"
             decls.Add($"{name}: {ty}")
             name
-        and binds locals (s : CodegenEnv) (ret : BindsReturnDelphi) (stmts : TypedBind []) =
+        and binds locals (s : CodegenEnv) (ret : BindsReturnPascal) (stmts : TypedBind []) =
             Array.iter (function
                 | TyLet(d,trace,a) ->
                     try let d = data_free_vars d
@@ -14823,7 +14852,7 @@ module spiral_compiler =
                             if self_loop.IsSome then line s "Exit;"
                     with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
                 ) stmts
-        and op locals (s : CodegenEnv) (ret : BindsReturnDelphi) a =
+        and op locals (s : CodegenEnv) (ret : BindsReturnPascal) a =
             let binds = binds locals
             let return' (x : string) =
                 match ret with
@@ -14847,7 +14876,7 @@ module spiral_compiler =
                 | JPClosure(a,c) -> $"ClosureCreate{(closure (a,c)).tag}{a'}"
             let unary f = function [x] -> f (tup x) | _ -> raise_codegen_error "Compiler error: Expected one argument."
             match a with
-            | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_ty x | CMTypeLit x -> type_litDelphi x) |> String.concat "" |> return'
+            | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_ty x | CMTypeLit x -> type_litPascal x) |> String.concat "" |> return'
             | TySizeOf t -> return' $"SizeOf({tup_ty t})"
             | TyIf(cond,tr,fl) ->
                 line s $"if {tup cond} then begin"
@@ -14868,7 +14897,7 @@ module spiral_compiler =
                     | MoveTemp (target, slot) -> line s $"v{target} := {temps.[slot]};"
                 line s "Continue;"
             | TyJoinPoint(a,args) -> return' (jp (a, args))
-            | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Delphi backend does not support nesting other backends."
+            | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Pascal backend does not support nesting other backends."
             | TyWhile(a,b) ->
                 line s $"while {jp a} do begin"
                 binds (indent s) (DLocal [||]) b
@@ -14913,27 +14942,27 @@ module spiral_compiler =
                     c.cases |> Seq.map (fun (KeyValue ((_,k),_)) -> k) |> Seq.tryFindIndex (fun k -> UnionTagIdOps.text a = k)
                     |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text a}.")
                 let vars = match args' b with "" -> "" | x -> $"({x})"
-                return' $"{prefix}{tag}_{(generatedCaseSuffixes c.cases).[i]}{vars}"
+                return' $"{prefix}{tag}_{(generatedCaseSuffixes c.cases |> caseFoldedSuffixes).[i]}{vars}"
             | TyToLayout(a,b) ->
                 let vars = match args' a with "" -> "" | x -> $"({x})"
                 match b with
                 | YLayout(_,Heap) -> $"HeapCreate{(heap b).tag}{vars}"
                 | YLayout(_,HeapMutable) -> $"MutCreate{(mut b).tag}{vars}"
-                | YLayout(_,StackMutable) -> raise_codegen_error "The Delphi backend doesn't support stack mutable layout types."
+                | YLayout(_,StackMutable) -> raise_codegen_error "The Pascal backend doesn't support stack mutable layout types."
                 | _ -> raise_codegen_error $"Compiler error: Expected a layout type (4).\nGot: %s{show_ty b}"
                 |> return'
             | TyLayoutIndexAll(L(i,YLayout(_,lay) & a)) ->
                 match lay with
                 | Heap -> (heap a).free_vars
                 | HeapMutable -> (mut a).free_vars
-                | StackMutable -> raise_codegen_error "The Delphi backend doesn't support indexing into stack mutable layout types."
+                | StackMutable -> raise_codegen_error "The Pascal backend doesn't support indexing into stack mutable layout types."
                 | StackRefs | HeapRefs -> raise_codegen_error "This backend doesn't support the stack and heap refs layout types."
                 |> layout_index i
             | TyLayoutIndexByKey(L(i,YLayout(_,lay) & a),key) ->
                 match lay with
                 | Heap -> heap a
                 | HeapMutable -> mut a
-                | StackMutable -> raise_codegen_error "The Delphi backend doesn't support indexing into stack mutable layout types."
+                | StackMutable -> raise_codegen_error "The Pascal backend doesn't support indexing into stack mutable layout types."
                 | StackRefs | HeapRefs -> raise_codegen_error "This backend doesn't support the stack and heap refs layout types."
                 |> fun (x : LayoutRecFsharp) -> x.free_vars_by_key |> Map.tryPick (fun (_, k) v -> if LayoutFieldNameIdOps.matchesText key k then Some v else None) |> Option.iter (layout_index i)
             | TyLayoutIndexAll _ | TyLayoutIndexByKey _ -> raise_codegen_error "Compiler error: Expected the TyV in layout index to be a layout type."
@@ -14961,8 +14990,8 @@ module spiral_compiler =
             | TyConv(a,b) ->
                 match a, prim_of b with
                 | YPrim (Float32T | Float64T), _ -> return' (tup b)
-                | YPrim t, Some (Float32T | Float64T) -> return' $"{primDelphi t}(Trunc({tup b}))"
-                | YPrim t, _ -> return' $"{primDelphi t}({tup b})"
+                | YPrim t, Some (Float32T | Float64T) -> return' $"{primPascal t}(Trunc({tup b}))"
+                | YPrim t, _ -> return' $"{primPascal t}({tup b})"
                 | _ -> raise_codegen_error $"Compiler error: Unexpected type in Conv. Got: {show_ty a}"
             | TyApply(L(i,_),b) -> return' (match args' b with "" -> $"v{i}.Invoke" | x -> $"v{i}.Invoke({x})")
             | TyOp(Global, [DLit (LitString x)]) -> global' x
@@ -15010,6 +15039,12 @@ module spiral_compiler =
                 | Sqrt, _ -> unary (sprintf "Sqrt(%s)") l
                 | Sin, _ -> unary (sprintf "Sin(%s)") l
                 | Cos, _ -> unary (sprintf "Cos(%s)") l
+                | PrimToString, [a] ->
+                    match a with
+                    | DLit(LitBool _) | DV(L(_,YPrim BoolT)) -> unary (sprintf "LowerCase(BoolToStr(%s, True))") l
+                    | DLit(LitUInt8 _ | LitUInt16 _ | LitUInt32 _ | LitUInt64 _) | DV(L(_,YPrim (UInt8T | UInt16T | UInt32T | UInt64T))) -> unary (sprintf "UIntToStr(QWord(%s))") l
+                    | DLit(LitChar _) | DV(L(_,YPrim CharT)) -> unary (sprintf "string(%s)") l
+                    | _ -> unary (sprintf "IntToStr(Int64(%s))") l
                 | NanIs, _ -> unary (sprintf "IsNan(%s)") l
                 | StdoutFlush, [] -> "Flush(Output)"
                 | MonotonicDelayMs, _ -> unary (sprintf "Sleep(%s)") l
@@ -15017,10 +15052,10 @@ module spiral_compiler =
                     match printf_pieces fmt (data_term_vars b) with
                     | [] -> "Write('')"
                     | pieces ->
-                        pieces |> List.map (function Choice1Of2 t -> litDelphi (LitString t) | Choice2Of2 (_, a) -> show_w a)
+                        pieces |> List.map (function Choice1Of2 t -> litPascal (LitString t) | Choice2Of2 (_, a) -> show_w a)
                         |> String.concat ", " |> sprintf "Write(%s)"
                 | UnionTag, [DV(L(i,YUnion _))] -> $"v{i}.tag"
-                | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported in the Delphi backend" op l.Length
+                | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported in the Pascal backend" op l.Length
                 |> return'
         and tuple_type : string [] -> int = memo (fun tys tag ->
             let fields = tys |> Array.mapi (fun k t -> $"f{k}: {t}")
@@ -15071,7 +15106,7 @@ module spiral_compiler =
         and union_type (heap : bool) = memo_ref (fun (cases : Map<int * string, Ty>) tag ->
             let name = if heap then $"TUH{tag}" else $"TUS{tag}"
             let prefix = if heap then $"UH{tag}" else $"US{tag}"
-            let suffixes = generatedCaseSuffixes cases
+            let suffixes = generatedCaseSuffixes cases |> caseFoldedSuffixes
             let cases = cases |> Map.toArray |> Array.map (fun (_, t) -> env.ty_to_data t |> data_free_vars)
             if heap then forwards.Add($"  {name} = class;")
             let fields = cases |> Array.mapi (fun c vars -> vars |> Array.mapi (fun f (L(_,t)) -> $"c{c}_{f}: {tyv t};")) |> Array.concat |> String.concat " "
@@ -15094,7 +15129,7 @@ module spiral_compiler =
         and ustack x = ustack_memo.Force() x
         and method_memo = lazy (memo (fun ((jp_body,key) : _ * _) tag ->
             let args = codegenMethodKeyArgs key
-            match codegenMethodBody env "Delphi" jp_body key with
+            match codegenMethodBody env "Pascal" jp_body key with
             | body, range, name ->
                 method_names.[tag] <- generatedMethodName name tag
                 emit_function' (Some tag) method_names.[tag] (rdata_free_vars args) range body true))
@@ -15102,7 +15137,7 @@ module spiral_compiler =
         and closure_memo = lazy (memo (fun ((jp_body,key & (C(args,_,fun_ty))) : _ * _) tag ->
             match fun_ty with
             | YFun(domain,range,_) ->
-                match codegenClosureBody env "Delphi" jp_body key with
+                match codegenClosureBody env "Pascal" jp_body key with
                 | domain_args, body, sourceName ->
                     closure_names.[tag] <- generatedClosureName sourceName tag
                     let free_vars = rdata_free_vars args
@@ -15133,7 +15168,7 @@ module spiral_compiler =
         | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
             match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
             | [||] | [|YPrim Int32T|] -> ()
-            | _ -> raise_codegen_error "The return type of main in the Delphi backend should be a 32-bit int (or unit)."
+            | _ -> raise_codegen_error "The return type of main in the Pascal backend should be a 32-bit int (or unit)."
         | _ -> ()
         emit_function "SpiralMain" [||] (YPrim Int32T) x false
 
@@ -15744,6 +15779,11 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | Sqrt, _ -> unary (sprintf "@sqrt(%s)") l
                 | Sin, _ -> unary (sprintf "@sin(%s)") l
                 | Cos, _ -> unary (sprintf "@cos(%s)") l
+                | PrimToString, [a] ->
+                    match a with
+                    | DLit(LitBool _) | DV(L(_,YPrim BoolT)) -> unary (sprintf "(std.fmt.allocPrint(spiral_gpa, \"{}\", .{%s}) catch @panic(\"out of memory\"))") l
+                    | DLit(LitChar _) | DV(L(_,YPrim CharT)) -> unary (sprintf "(std.fmt.allocPrint(spiral_gpa, \"{c}\", .{%s}) catch @panic(\"out of memory\"))") l
+                    | _ -> unary (sprintf "(std.fmt.allocPrint(spiral_gpa, \"{d}\", .{%s}) catch @panic(\"out of memory\"))") l
                 | NanIs, _ -> unary (sprintf "std.math.isNan(%s)") l
                 | StdoutFlush, [] -> "spiralFlush()"
                 | Printf, [DLit (LitString fmt); b] ->
@@ -16297,6 +16337,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | Sqrt, _ -> unary (sprintf "(%s.sqrt %s)" float_ns)
                 | Sin, _ -> unary (sprintf "(%s.sin %s)" float_ns)
                 | Cos, _ -> unary (sprintf "(%s.cos %s)" float_ns)
+                | PrimToString, _ -> unary (sprintf "(toString (%s))")
                 | NanIs, _ -> unary (sprintf "(%s.isNaN %s)" float_ns)
                 | StdoutFlush, [] -> "(← (← IO.getStdout).flush)"
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported in the Lean backend" op l.Length
@@ -17461,6 +17502,17 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                   | Cos when is_float -> unary (sprintf "F32.cos(%s)")
                   | Tanh when is_float -> unary (sprintf "F32.tanh(%s)")
                   | Pow when is_float -> bin (sprintf "F32.pow(%s, %s)")
+                  | PrimToString ->
+                      match l with
+                      | [x] ->
+                          match prim_of x with
+                          | Some BoolT -> $"spiral_bool_show({tup x})"
+                          | Some CharT -> $"SCon{{Char.from_u32({tup x}), SNil{{}}}}"
+                          | Some Int64T -> $"w64_show_s({tup x})"
+                          | Some UInt64T -> $"w64_show_u({tup x})"
+                          | Some (Int32T | Int8T | Int16T) -> $"spiral_i32_show({tup x})"
+                          | _ -> $"U32.show({tup x})"
+                      | _ -> raise_codegen_error "Compiler error: Expected one argument."
                   | NanIs when is_float -> unary (fun x -> $"F32.is_ne({x}, {x})")
                   | LT when is_string -> bin (sprintf "String.is_lt(%s, %s)")
                   | LTE when is_string -> bin (sprintf "String.is_le(%s, %s)")
@@ -17643,6 +17695,7 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
         if emittedDefs.Contains "w64_" then program.Append(bendW64Prelude) |> ignore
         if emittedDefs.Contains "spiral_narrow_i8(" then program.Append("def spiral_narrow_i8(+x: U32) -> U32:\n  U32.sub(U32.xor(U32.and(x, 255), 128), 128)\n\n") |> ignore
         if emittedDefs.Contains "spiral_narrow_i16(" then program.Append("def spiral_narrow_i16(+x: U32) -> U32:\n  U32.sub(U32.xor(U32.and(x, 65535), 32768), 32768)\n\n") |> ignore
+        if emittedDefs.Contains "spiral_bool_show(" then program.Append("def spiral_bool_show(+b: Bool) -> String:\n  match b:\n    case True{}:\n      \"true\"\n    case False{}:\n      \"false\"\n\n") |> ignore
         types |> Seq.iter (fun x -> program.Append(x).Append('\n') |> ignore)
         defs |> Seq.iter (fun x -> program.Append(x).Append('\n') |> ignore)
         let body = program.Append(if unitMain then "@unsafe\ndef main() -> IO(Unit):\n  do IO<Unit>:\n    spiral_main()\n    return Unit{}\n" else "@unsafe\ndef main() -> IO(Unit):\n  do IO<Unit>:\n    +code : U32 <- spiral_main()\n    IO.die(Unit, code, \"\")\n").ToString()
@@ -17742,8 +17795,20 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
     /// ### ClosureRecGleam
     type ClosureRecGleam = {tag : int; free_vars : L<Tag,Ty>[]; domain_args : TyV[]; range : Ty; body : TypedBind[]}
 
+    /// ### GleamFfi
+    /// The Erlang and JavaScript modules a Gleam program's storage externals call, written beside it as <stem>_ffi.erl and
+    /// <stem>_ffi.mjs. Arrays and refs keep their state in the process dictionary on Erlang and in plain objects on JavaScript.
+    type GleamFfi = NoGleamFfi | GleamStorageFfi
+
+    let gleamStorageFfiErlang (ffi_module : string) =
+        $"-module({ffi_module}).\n-export([array_new/2, array_get/2, array_set/3, ref_new/1, ref_get/1, ref_set/2]).\n\narray_new(Size, Fill) ->\n    Key = make_ref(),\n    put(Key, array:new(Size, [{{fixed, true}}, {{default, Fill}}])),\n    Key.\n\narray_get(Key, I) -> array:get(I, get(Key)).\n\narray_set(Key, I, Value) ->\n    put(Key, array:set(I, Value, get(Key))),\n    nil.\n\nref_new(Value) ->\n    Key = make_ref(),\n    put(Key, Value),\n    Key.\n\nref_get(Key) -> get(Key).\n\nref_set(Key, Value) ->\n    put(Key, Value),\n    nil.\n"
+
+    let gleamStorageFfiJavaScript =
+        "export function array_new(size, fill) { return new Array(size).fill(fill); }\nexport function array_get(store, i) { return store[i]; }\nexport function array_set(store, i, value) { store[i] = value; }\nexport function ref_new(value) { return { value }; }\nexport function ref_get(ref) { return ref.value; }\nexport function ref_set(ref, value) { ref.value = value; }\n"
+
     /// ### codegenGleam
-    let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
+    let codegenGleam (ffi_module : string) (linked_units : Map<int, string>) (env : PartEvalResult) (x : TypedBind []) =
+        let ffi = ref NoGleamFfi
         let method_names = Dictionary<int, string>()
         let closure_names = Dictionary<int, string>()
         let types = ResizeArray()
@@ -17823,15 +17888,16 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
         let mutable while_id = 0
 
         let spiralArrays () =
-            global' "import gary"
-            global' "import gary/array"
+            ffi.Value <- GleamStorageFfi
             global' "import gleam/list"
             global' "import gleam/option"
-            let decl = "pub type SpiralArrayKey\n\npub type SpiralArray(a) {\n  SpiralArray(key: SpiralArrayKey, size: Int)\n}\n\n@external(erlang, \"erlang\", \"make_ref\")\npub fn spiral_array_new_key() -> SpiralArrayKey\n\n@external(erlang, \"erlang\", \"put\")\npub fn spiral_array_store(key: SpiralArrayKey, storage: gary.ErlangArray(option.Option(a))) -> b\n\n@external(erlang, \"erlang\", \"get\")\npub fn spiral_array_load(key: SpiralArrayKey) -> gary.ErlangArray(option.Option(a))\n\npub fn spiral_array_from_storage(storage: gary.ErlangArray(option.Option(a)), size: Int) -> SpiralArray(a) {\n  let key = spiral_array_new_key()\n  let _ = spiral_array_store(key, storage)\n  SpiralArray(key: key, size: size)\n}\n\npub fn spiral_array_create(size: Int) -> SpiralArray(a) {\n  list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)\n}\n\npub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {\n  list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)\n}\n\npub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {\n  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))\n}\n\npub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {\n  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })\n}\n\npub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {\n  case i >= 0 && i < xs.size {\n    True ->\n      case spiral_array_load(xs.key) |> array.get(i) {\n        Ok(option.Some(x)) -> x\n        _ -> panic as \"spiral array: read of an element that was never set\"\n      }\n    False -> panic as \"spiral array: index out of bounds\"\n  }\n}\n\npub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {\n  case i >= 0 && i < xs.size {\n    True -> {\n      let assert Ok(storage) = spiral_array_load(xs.key) |> array.set(i, option.Some(value))\n      let _ = spiral_array_store(xs.key, storage)\n      Nil\n    }\n    False -> panic as \"spiral array: index out of bounds\"\n  }\n}"
+            let decl = "pub type SpiralArrayStore(a)\n\npub type SpiralArray(a) {\n  SpiralArray(store: SpiralArrayStore(option.Option(a)), size: Int)\n}\n\n@external(erlang, \"SPIRAL_FFI\", \"array_new\")\n@external(javascript, \"./SPIRAL_FFI.mjs\", \"array_new\")\npub fn spiral_array_store_new(size: Int, fill: a) -> SpiralArrayStore(a)\n\n@external(erlang, \"SPIRAL_FFI\", \"array_get\")\n@external(javascript, \"./SPIRAL_FFI.mjs\", \"array_get\")\npub fn spiral_array_store_get(store: SpiralArrayStore(a), i: Int) -> a\n\n@external(erlang, \"SPIRAL_FFI\", \"array_set\")\n@external(javascript, \"./SPIRAL_FFI.mjs\", \"array_set\")\npub fn spiral_array_store_set(store: SpiralArrayStore(a), i: Int, value: a) -> Nil\n\npub fn spiral_array_create(size: Int) -> SpiralArray(a) {\n  SpiralArray(store: spiral_array_store_new(size, option.None), size: size)\n}\n\npub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {\n  SpiralArray(store: spiral_array_store_new(size, option.Some(value)), size: size)\n}\n\npub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {\n  let xs = spiral_array_create(list.length(values))\n  let _ = list.index_map(values, fn(x, i) { spiral_array_set(xs, i, x) })\n  xs\n}\n\npub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {\n  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })\n}\n\npub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {\n  case i >= 0 && i < xs.size {\n    True ->\n      case spiral_array_store_get(xs.store, i) {\n        option.Some(x) -> x\n        option.None -> panic as \"spiral array: read of an element that was never set\"\n      }\n    False -> panic as \"spiral array: index out of bounds\"\n  }\n}\n\npub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {\n  case i >= 0 && i < xs.size {\n    True -> spiral_array_store_set(xs.store, i, option.Some(value))\n    False -> panic as \"spiral array: index out of bounds\"\n  }\n}"
+            let decl = decl.Replace("SPIRAL_FFI", ffi_module)
             if not (externals.Contains decl) then externals.Add decl
         let spiralRefs () =
-            spiralArrays ()
-            let decl = "pub type SpiralRef(a) {\n  SpiralRef(key: SpiralArrayKey)\n}\n\n@external(erlang, \"erlang\", \"put\")\npub fn spiral_ref_store(key: SpiralArrayKey, value: a) -> b\n\n@external(erlang, \"erlang\", \"get\")\npub fn spiral_ref_load(key: SpiralArrayKey) -> a\n\npub fn spiral_ref_new(value: a) -> SpiralRef(a) {\n  let key = spiral_array_new_key()\n  let _ = spiral_ref_store(key, value)\n  SpiralRef(key: key)\n}\n\npub fn spiral_ref_get(reference: SpiralRef(a)) -> a {\n  spiral_ref_load(reference.key)\n}\n\npub fn spiral_ref_set(reference: SpiralRef(a), value: a) -> Nil {\n  let _ = spiral_ref_store(reference.key, value)\n  Nil\n}"
+            ffi.Value <- GleamStorageFfi
+            let decl = "pub type SpiralRefCell(a)\n\npub type SpiralRef(a) {\n  SpiralRef(cell: SpiralRefCell(a))\n}\n\n@external(erlang, \"SPIRAL_FFI\", \"ref_new\")\n@external(javascript, \"./SPIRAL_FFI.mjs\", \"ref_new\")\npub fn spiral_ref_cell_new(value: a) -> SpiralRefCell(a)\n\n@external(erlang, \"SPIRAL_FFI\", \"ref_get\")\n@external(javascript, \"./SPIRAL_FFI.mjs\", \"ref_get\")\npub fn spiral_ref_cell_get(cell: SpiralRefCell(a)) -> a\n\n@external(erlang, \"SPIRAL_FFI\", \"ref_set\")\n@external(javascript, \"./SPIRAL_FFI.mjs\", \"ref_set\")\npub fn spiral_ref_cell_set(cell: SpiralRefCell(a), value: a) -> Nil\n\npub fn spiral_ref_new(value: a) -> SpiralRef(a) {\n  SpiralRef(cell: spiral_ref_cell_new(value))\n}\n\npub fn spiral_ref_get(reference: SpiralRef(a)) -> a {\n  spiral_ref_cell_get(reference.cell)\n}\n\npub fn spiral_ref_set(reference: SpiralRef(a), value: a) -> Nil {\n  spiral_ref_cell_set(reference.cell, value)\n}"
+            let decl = decl.Replace("SPIRAL_FFI", ffi_module)
             if not (externals.Contains decl) then externals.Add decl
         let integerWidth (d : Data) =
             let width = function
@@ -17971,19 +18037,7 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                 spiralStrings ()
                 sprintf "spiral_string_length(%s)" (tup b)
                 |> simple
-            let listToArray panic x =
-                global' "import gary/array"
-                global' "import gleam/option"
-                global' "import gleam/list"
-                $"{x} " +
-                $"|> list.map(option.Some) " +
-                $"|> array.from_list(option.None) " +
-                $"|> array.map(fn(_, x) {{ " +
-                $"     case x {{ " +
-                $"       option.Some(x) -> x " +
-                $"       _ -> panic as \"{panic}\" " +
-                $"     }} " +
-                $"   }}) "
+
             match a with
             | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_ty x | CMTypeLit x -> type_litGleam x) |> String.concat "" |> simple
             | TySizeOf t -> simple $"0"
@@ -18302,6 +18356,11 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                 | Sqrt, [x] -> floatResultMath "sqrt" "square_root" (tup x)
                 | Sin, [x] -> portableMath "sin" (tup x)
                 | Cos, [x] -> portableMath "cos" (tup x)
+                | PrimToString, [x] ->
+                    match x with
+                    | DLit(LitBool _) | DV(L(_,YPrim BoolT)) -> sprintf "case %s { True -> \"true\" False -> \"false\" }" (tup x)
+                    | DLit(LitChar _) | DV(L(_,YPrim CharT)) -> tup x
+                    | _ -> global' "import gleam/int"; sprintf "int.to_string(%s)" (tup x)
                 | NanIs, [x] -> "False"
                 | UnionTag, [DV(L(i,YUnion h))] ->
                     let h = h.Item
@@ -18513,11 +18572,11 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                 ) code
         let importUnions (code : string) =
             let imported = importedTypeUnits ()
-            if imported.IsEmpty then code
+            if imported.IsEmpty && linked_units.IsEmpty then code
             else
                 let candidates =
                     [ for KeyValue(node, source) in unionSourceNames do
-                        match imported.TryFind source with
+                        match (match unionOwnerUnit linked_units node with Some unitName -> Some unitName | None -> imported.TryFind source) with
                         | Some unitName ->
                             let u = (unbox<Union> node).Item
                             let generated = match u.layout with UHeap -> $"Uh{(uheap u.cases).tag}" | UStack -> $"Us{(ustack u.cases).tag}"
@@ -18548,7 +18607,7 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                     |> List.map (fun (unitName, groups) -> $"""import {unitName}.{{{groups |> List.collect snd |> String.concat ", "}}}""" + "\n")
                     |> String.concat ""
                 lines + dropped
-        program.Append($"pub fn main() {{\n{gleamIndentedMain (string main)}}}\n").ToString() |> silenceUnusedBindings |> gleamUsedHelpers |> renameExportedUnions |> importUnions
+        (program.Append($"pub fn main() {{\n{gleamIndentedMain (string main)}}}\n").ToString() |> silenceUnusedBindings |> gleamUsedHelpers |> renameExportedUnions |> importUnions), ffi.Value
 
     /// ## CodegenLua
 
@@ -19396,6 +19455,16 @@ end
                 | Sqrt, [x] -> sprintf "math.sqrt(%s)" (tup x)
                 | Sin, [x] -> sprintf "math.sin(%s)" (tup x)
                 | Cos, [x] -> sprintf "math.cos(%s)" (tup x)
+                | PrimToString, [x] ->
+                    match x with
+                    | DLit(LitChar _) | DV(L(_,YPrim CharT)) -> tup x
+                    | DLit(LitBool _) | DV(L(_,YPrim BoolT)) -> sprintf "tostring(%s)" (tup x)
+                    | DLit(LitInt64 _ | LitUInt64 _) | DV(L(_,YPrim (Int64T | UInt64T))) ->
+                        luaW64Use ()
+                        let signed = match x with DLit(LitInt64 _) | DV(L(_,YPrim Int64T)) -> "true" | _ -> "false"
+                        sprintf "spiral_w64.tostring(%s, %s)" (tup x) signed
+                    | DLit(LitUInt32 _) | DV(L(_,YPrim UInt32T)) -> sprintf "string.format(\"%%.0f\", %s)" (tup x)
+                    | _ -> sprintf "string.format(\"%%d\", %s)" (tup x)
                 | NanIs, [x] -> sprintf "(%s ~= %s)" (tup x) (tup x)
                 | UnionTag, [DV(L(i,YUnion h))] ->
                     let h = h.Item
@@ -19601,7 +19670,7 @@ end
     (call $write (i32.const 2) (i32.const 12) (i32.const 1)))
   (data (i32.const 48) "\04\00\00\00true")
   (data (i32.const 56) "\05\00\00\00false")
-  (data (i32.const 64) "\01\00\00\00-")
+  (data (i32.const 66) "\01\00\00\00-")
   (func $print_newline
     (i32.store8 (i32.const 12) (i32.const 10))
     (call $write (i32.const 1) (i32.const 12) (i32.const 1)))
@@ -19626,7 +19695,7 @@ end
     (local.get $r))
   (func $i64_to_str (param $x i64) (result i32)
     (if (result i32) (i64.lt_s (local.get $x) (i64.const 0))
-      (then (call $str_concat (i32.const 64) (call $u64_to_str (i64.sub (i64.const 0) (local.get $x)))))
+      (then (call $str_concat (i32.const 66) (call $u64_to_str (i64.sub (i64.const 0) (local.get $x)))))
       (else (call $u64_to_str (local.get $x)))))
   (func $print_u64 (param $x i64) (local $p i32)
     (local.set $p (i32.const 48))
@@ -20345,6 +20414,14 @@ end
                 | Pow, [a;b] ->
                     if value_type a = "f32" then sprintf "(f32.demote_f64 (call $math_pow (f64.promote_f32 %s) (f64.promote_f32 %s)))" (tup a) (tup b)
                     else sprintf "(call $math_pow %s %s)" (tup a) (tup b)
+                | PrimToString, [a] ->
+                    match prim_of a with
+                    | Some BoolT -> $"(call $bool_to_str {tup a})"
+                    | Some CharT -> $"(call $char_to_str {tup a})"
+                    | Some Int64T -> $"(call $i64_to_str {tup a})"
+                    | Some UInt64T -> $"(call $u64_to_str {tup a})"
+                    | Some (UInt8T | UInt16T | UInt32T) -> $"(call $u64_to_str (i64.extend_i32_u {tup a}))"
+                    | _ -> $"(call $i64_to_str (i64.extend_i32_s {tup a}))"
                 | NanIs, [a] -> $"({value_type a}.ne {tup a} {tup a})"
                 | StdoutFlush, [] -> ""
                 | UnionTag, [DV(L(i,_))] ->
@@ -22254,6 +22331,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | ShiftLeft, [a;b] -> shift "shl" a b
                     | ShiftRight, [a;b] -> shift "shr" a b
                     | Neg, [a] -> narrow (kotlin_of a) $"(-({tup a}))"
+                    | PrimToString, [a] ->
+                        match a with
+                        | DLit(LitChar _) | DV(L(_,YPrim CharT)) -> $"({tup a}).toChar().toString()"
+                        | _ -> $"({tup a}).toString()"
                     | NanIs, [a] -> $"({tup a} != {tup a})"
                     | StdoutFlush, [] -> ""
                     | StringIndex, [a;b] ->
@@ -23016,6 +23097,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | ShiftLeft, [a;b] -> binary "<<" a b
                     | ShiftRight, [a;b] -> binary ">>" a b
                     | Neg, [a] -> $"(-({tup a}))"
+                    | PrimToString, [a] ->
+                        match a with
+                        | DLit(LitChar _) | DV(L(_,YPrim CharT)) -> $"String(UnicodeScalar(UInt8(truncatingIfNeeded: {tup a})))"
+                        | _ -> $"String({tup a})"
                     | NanIs, [a] -> $"({tup a}.isNaN)"
                     | StdoutFlush, [] -> ""
                     | StringIndex, [a;b] ->
@@ -24517,6 +24602,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 | Sqrt, [a] -> float_fun "sqrt" a
                 | Sin, [a] -> float_fun "sin" a
                 | Cos, [a] -> float_fun "cos" a
+                | PrimToString, [a] ->
+                    match a with
+                    | DLit(LitChar _) | DV(L(_,YPrim CharT)) -> $"String.fromCodePoint({tup a})"
+                    | _ -> $"String({tup a})"
                 | NanIs, [a] -> $"Number.isNaN({tup a})"
                 | StdoutFlush, [] -> "void 0"
                 | MonotonicDelayMs, [a] -> delay_helper (); $"spiral_delay_ms({number_index a})"
@@ -27413,7 +27502,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             let cupy_ty x = part_eval_env.ty_to_data x |> data_free_vars |> cupy_ty
             // ws: set while writing a method that calls itself in tail position: Python has no tail calls (RecursionError past
             // ~1,000 frames), so the body runs in `while True:`, a tail value `return`s and the self call reassigns the
-            // parameters and `continue`s (Rust's and Delphi's self_loop; lane G's python_self_tail_call_depth).
+            // parameters and `continue`s (Rust's and Pascal's self_loop; lane G's python_self_tail_call_depth).
             let self_loop : (int * TyV []) option ref = ref None
             let rec binds_start (args : TyV []) (s : string_builder_env) (x : TypedBind []) = binds (refc_prepass Set.empty (Set args) x).g_decr s BindsTailEnd x // ws: RefCounting is not in a module here
             and binds g_decr (s : string_builder_env) (ret : BindsReturn) (stmts : TypedBind []) =
@@ -27695,6 +27784,11 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | Sqrt, [x] -> import "math"; sprintf "math.sqrt(%s)" (tup_data x)
                     | Sin, [x] -> import "math"; sprintf "math.sin(%s)" (tup_data x) // ws: upstream's C++ generator has Sin/Cos, its Python one does not
                     | Cos, [x] -> import "math"; sprintf "math.cos(%s)" (tup_data x) // ws: as above
+                    | PrimToString, [x] ->
+                        match x with
+                        | DLit(LitBool _) | DV(L(_,YPrim BoolT)) -> sprintf "(\"true\" if %s else \"false\")" (tup_data x)
+                        | DLit(LitChar _) | DV(L(_,YPrim CharT)) -> tup_data x
+                        | _ -> sprintf "str(%s)" (tup_data x)
                     | NanIs, [x] -> import "math"; sprintf "math.isnan(%s)" (tup_data x)
                     // ws: workspace-only ops (portable flush and delay, see the C backend).
                     | StdoutFlush, [] -> import "sys"; "sys.stdout.flush()"
@@ -28956,6 +29050,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         modules : RawFileHierarchy list
         packageDir : RString option
         packages : RawSchemaPackages list
+        link : RawSchemaPackages list
         defaultInt : RString option
         defaultFloat : RString option
         edition : RString option
@@ -28974,6 +29069,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         modules=[]
         packageDir=None
         packages=[]
+        link=[]
         defaultInt=None
         defaultFloat=None
         edition=None
@@ -29053,6 +29149,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 "modules", file_hierarchy |>> fun x s -> {s with modules=x}
                 "packageDir", directory |>> fun x s -> {s with packageDir=x}
                 "packages", packages |>> fun x s -> {s with packages=x}
+                "link", packages |>> fun x s -> {s with link=x}
                 "default-int", directory |>> fun x s -> {s with defaultInt=x}
                 "default-float", directory |>> fun x s -> {s with defaultFloat=x}
                 "edition", directory |>> fun x s -> {s with edition=x}
@@ -29099,6 +29196,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         modules : FileHierarchy list
         packageDir : VSCRange option * string
         packages : SchemaPackages list
+        link : SchemaPackages list
         defaultInt : string option
         defaultFloat : string option
         edition : string option
@@ -29298,7 +29396,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         let path = path'
                         File(r,(r',path),if is_include then None else Some a)
                 List.map (loop (snd module_dir)) x.modules
-            let packages =
+            let resolve_packages (l : RawSchemaPackages list) =
                 let compiler_dir = lazy (
                     let configured = Environment.GetEnvironmentVariable "SPIRAL_COMPILER_PACKAGE_DIR"
                     if String.IsNullOrWhiteSpace configured then
@@ -29307,7 +29405,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     else
                         configured |> Path.GetFullPath
                     )
-                x.packages |> List.map (fun x ->
+                l |> List.map (fun x ->
                     let relative = x.name.StartsWith "."
                     let name = if x.is_include then None elif relative then Some (Path.GetFileName (x.name.TrimEnd '/')) else Some x.name
                     let base_dir = if x.is_in_compiler_dir then compiler_dir.Value elif relative then pdir else snd package_dir
@@ -29318,7 +29416,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     let dir = dir''
                     {name = name; dir = x.range, dir}
                     )
-            Ok {moduleDir = module_dir; modules = modules; packageDir = package_dir; packages = packages; defaultInt = x.defaultInt |> Option.map snd; defaultFloat = x.defaultFloat |> Option.map snd; edition = x.edition |> Option.map snd; rustExtern = x.rustExtern}
+            let packages = resolve_packages x.packages
+            Ok {moduleDir = module_dir; modules = modules; packageDir = package_dir; packages = packages; link = resolve_packages x.link; defaultInt = x.defaultInt |> Option.map snd; defaultFloat = x.defaultFloat |> Option.map snd; edition = x.edition |> Option.map snd; rustExtern = x.rustExtern}
         with :? SchemaException as e -> Error [e.Data0]
         )
 
@@ -33233,8 +33332,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         let positional (args : string list) =
             let rec collect (rest : string list) =
                 match rest with
-                | key :: _ :: tail when key.StartsWith "--" && key <> "--no-parse" && key <> "--derive" && key <> "--split-literals" && key <> "--no-split-literals" && key <> "--check" && key <> "--stdin" -> collect tail
-                | key :: tail when key = "--no-parse" || key = "--derive" || key = "--split-literals" || key = "--no-split-literals" || key = "--check" || key = "--stdin" -> collect tail
+                | key :: _ :: tail when key.StartsWith "--" && key <> "--no-parse" && key <> "--derive" && key <> "--split-literals" && key <> "--no-split-literals" && key <> "--check" && key <> "--stdin" && key <> "--list-sugar" -> collect tail
+                | key :: tail when key = "--no-parse" || key = "--derive" || key = "--split-literals" || key = "--no-split-literals" || key = "--check" || key = "--stdin" || key = "--list-sugar" -> collect tail
                 | value :: tail -> value :: collect tail
                 | [] -> []
             collect args
@@ -33460,6 +33559,20 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 0
             else
                 let check = List.contains "--check" arguments
+                let listSugar = List.contains "--list-sugar" arguments
+                let listSugarFindings = ref 0
+                let listSugarLint (file : string) (text : string) =
+                    [ for line in (lexText file (editionOf file) text).SourceLines do
+                        match line.Shape with
+                        | Code (_, lexemes, _) ->
+                            for index in 0 .. lexemes.Length - 1 do
+                                let lexeme = lexemes.[index]
+                                let typeApplied = index + 1 < lexemes.Length && lexemes.[index + 1].Text.Text.StartsWith "`"
+                                match lexeme.Token with
+                                | TokVar ("Nil", _) when not lexeme.InsideMacro && not typeApplied -> yield line.Number, lexeme.Span.From + 1, "list-nil (write [] for the empty list)"
+                                | TokVar ("Cons", _) when not lexeme.InsideMacro -> yield line.Number, lexeme.Span.From + 1, "list-cons (write head :: tail)"
+                                | _ -> ()
+                        | _ -> () ]
                 let spelling =
                     match option "--spelling" arguments with
                     | Some "symbols" -> Some FormatterConvert.Symbols
@@ -33494,11 +33607,15 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             printfn "%s %s" (if check then "would change:" else "formatted:") file
                         if check then
                             formatted.Split '\n' |> Array.iteri (fun index line -> let width = displayWidth line in if width > 120 then printfn "%s:%d:121: over-120 (%d columns)" file (index + 1) width)
+                        if listSugar then
+                            for number, column, finding in listSugarLint file text do
+                                listSugarFindings.Value <- listSugarFindings.Value + 1
+                                printfn "%s:%d:%d: %s" file number column finding
                     | Error message ->
                         failed.Value <- failed.Value + 1
                         eprintfn "format error: %s: %s" file message
                 formatInParallel (positional arguments |> List.collect sourceFiles |> Array.ofList) examine report
-                if failed.Value > 0 then 2 elif check && changed.Count > 0 then 1 else 0
+                if failed.Value > 0 then 2 elif check && changed.Count > 0 then 1 elif listSugar && listSugarFindings.Value > 0 then 1 else 0
 
         let run (arguments : string list) : int = onLargeStack (fun () -> runOnThisStack arguments)
 
@@ -33722,7 +33839,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
 
     /// ### ss_empty
     let ss_empty = {
-        schema = {moduleDir = None, null; modules = []; packageDir = None, null; packages = []; defaultInt = None; defaultFloat = None; edition = None; rustExtern = []}
+        schema = {moduleDir = None, null; modules = []; packageDir = None, null; packages = []; link = []; defaultInt = None; defaultFloat = None; edition = None; rustExtern = []}
         errors_parse = []; errors_modules = []; errors_packages = []
         }
     
@@ -33806,6 +33923,21 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 | None -> owner (System.IO.Path.GetDirectoryName dir)
         owner (System.IO.Path.GetDirectoryName file)
     
+
+    /// ### file_linked_units
+    /// The units the file's package links (`link:` in its package.spiproj), as package id -> unit name (the linked
+    /// package's folder name). Unions declared in those packages come from that unit instead of being emitted here.
+    let file_linked_units (packages : SchemaEnv) (package_ids : Map<string, int>) (file : string) : Map<int, string> =
+        let rec owner (dir : string) =
+            if System.String.IsNullOrEmpty dir then Map.empty
+            else
+                match SchemaEnv.tryFindText (SpiralFileSystem.standardize_path dir) packages with
+                | Some schema ->
+                    schema.schema.link
+                    |> List.choose (fun l -> let dir = snd l.dir in Map.tryFind dir package_ids |> Option.map (fun id -> id, System.IO.Path.GetFileName(dir.TrimEnd('/', '\\'))))
+                    |> Map.ofList
+                | None -> owner (System.IO.Path.GetDirectoryName dir)
+        owner (System.IO.Path.GetDirectoryName file)
 
     /// ### ss_validate_packages
     let ss_validate_packages (packages : SchemaEnv) (order : string [], socs : Dictionary<SchemaPathId,int>) : SchemaEnv =
@@ -35113,11 +35245,18 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                             let code = codegen b (DeadPureLetElision.block a) |> UnusedGlobals.prune b.globals
                                             [generated_file code file_extension]) backend
                                     match backend with
-                                    | "Gleam" -> build codegenGleam "Gleam" ".gleam"
+                                    | "Gleam" ->
+                                        build_many (fun file b a ->
+                                            let ffi_module = System.IO.Path.GetFileNameWithoutExtension file + "_ffi"
+                                            let code, ffi = codegenGleam ffi_module (file_linked_units s.packages (fst s.package_ids) file) b (DeadPureLetElision.block a)
+                                            generated_file (UnusedGlobals.prune b.globals code) ".gleam"
+                                            :: match ffi with
+                                               | NoGleamFfi -> []
+                                               | GleamStorageFfi -> [generated_file (gleamStorageFfiErlang ffi_module) "_ffi.erl"; generated_file gleamStorageFfiJavaScript "_ffi.mjs"]) "Gleam"
                                     | "Lua" -> build codegenLua "Lua" ".lua"
                                     | "Fsharp" -> build codegenFsharp "Fsharp" ".fsx"
-                                    | "Rust" -> build (codegenRust (file_rust_extern s.packages file)) "Rust" ".rs"
-                                    | "Delphi" -> build codegenDelphi "Delphi" ".pas"
+                                    | "Rust" -> build (codegenRust (file_rust_extern s.packages file) (file_linked_units s.packages (fst s.package_ids) file)) "Rust" ".rs"
+                                    | "Pascal" | "Delphi" -> build codegenPascal "Pascal" ".pas"
                                     | "Zig" -> build codegenZig "Zig" ".zig"
                                     | "Wasm" -> build codegenWasm "Wasm" ".wat"
                                     | "Wgsl" -> build codegenWgsl "Wgsl" ".wgsl"

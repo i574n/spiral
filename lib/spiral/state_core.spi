@@ -1,4 +1,3 @@
-:< rust
 :< rust_operators
 :< leptos
 :< sm'_operators
@@ -108,7 +107,7 @@
 :== global_state core_state_data =
     heap {
         core_state : leptos::arc_rw_signal (core_state core_state_data)
-        loading : leptos::arc_rw_signal (mapm::hash_map sm'::std_string (leptos::arc_rw_signal bool))
+        loading : leptos::arc_rw_signal (map::hash_map sm'::std_string (leptos::arc_rw_signal bool))
     }
 
 := use_core_database \* core_state_data.
@@ -276,7 +275,7 @@
         := dark_mode_loading =
             loading
             |> leptos::signal_get
-            |> mapm::get ("dark_mode_key" |> sm'::to_std_string)
+            |> map::get ("dark_mode_key" |> sm'::to_std_string)
             |> optionm'::unbox
             |> optionm::map leptos::signal_get
             |> optionm'::default_value !-

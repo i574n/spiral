@@ -1,5 +1,4 @@
 :< sm'_operators
-:< rust
 :< rust_operators
 
 :# file_system static =
@@ -602,7 +601,7 @@
         | Gleam => \ () =>
             file_system_gleam_stat ()
             gleam_cwd ()
-        | Delphi => \ () => $'GetCurrentDir()' : string
+        | Pascal => \ () => $'GetCurrentDir()' : string
         | _ => \ () => null ()
 
 :# get_current_directory =
@@ -626,7 +625,7 @@
         | Gleam => \ path =>
             file_system_gleam_paths ()
             $'spiral_fs_is_dir(!path)' : bool
-        | Delphi => \ path => $'DirectoryExists(!path)' : bool
+        | Pascal => \ path => $'DirectoryExists(!path)' : bool
         | _ => \ _ => null ()
 
 :~ directory_get_parent (path : string) : optionm'::option' string =
@@ -653,19 +652,19 @@
 
 := directory_parent (path : string) : option string =
     run_target_args' path \|
-        | Delphi => \ path =>
+        | Pascal => \ path =>
             := parent = $'ExtractFileDir(ExcludeTrailingPathDelimiter(!path))' : string
             ? parent = path || parent = "" ?> None |: Some parent
         | _ => \ path => path |> directory_get_parent |> optionm'::unbox
 
 := directory_create_all (path : string) : result () string =
     run_target_args' path \|
-        | Delphi => \ path =>
+        | Pascal => \ path =>
             ? $'ForceDirectories(!path)' : bool ?> Ok () |: Error ("directory_create_all / cannot create " ++# path)
         | _ => \ path => path |> create_dir_all |> resultm::map_error' sm'::format |> resultm::unbox
 
 ///> rust
-///> delphi
+///> pascal
 :# directory_create_all_makes_nested_directories =
     := path = get_current_directory () </> "directory_create_all_test" </> "a" </> "b"
     ?= directory_create_all path ?|
@@ -789,7 +788,7 @@
                 lua_file_close file
                 !+
             |: !-
-        | Delphi => \ path => $'FileExists(!path)' : bool
+        | Pascal => \ path => $'FileExists(!path)' : bool
         | _ => \ _ => null ()
 
 := write_all_text (path : string) (text : string) : () =
@@ -809,7 +808,7 @@
             := file = lua_file_open path "w"
             lua_file_write file text
             lua_file_close file
-        | Delphi => \ path, text =>
+        | Pascal => \ path, text =>
             := handle = $'FileCreate(!path)' : i64
             ? handle = -1i64 ?> failwith "file_system.write_all_text / cannot create the file"
             := length = sm'::length text
@@ -851,7 +850,7 @@
             := text = lua_file_read_all file
             lua_file_close file
             text
-        | Delphi => \ () =>
+        | Pascal => \ () =>
             := handle = $'FileOpen(!path, fmOpenRead)' : i64
             ? handle = -1i64 ?> failwith "file_system.read_all_text / cannot open the file"
             := size = $'FileSeek(!handle, 0, 2)' : i32
@@ -866,9 +865,9 @@
             text
         | _ => \ () => null ()
 
-///> delphi
-:# delphi_read_all_text_reads_back_what_was_written =
-    := path = "spiral-delphi-read-probe.txt"
+///> pascal
+:# pascal_read_all_text_reads_back_what_was_written =
+    := path = "spiral-pascal-read-probe.txt"
     write_all_text path "ab"
     path |> read_all_text |> _assert_eq "ab"
     write_all_text path ""

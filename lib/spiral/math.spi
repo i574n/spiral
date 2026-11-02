@@ -72,7 +72,7 @@
         Cpp = \ () =>
             global "#include <cmath>"
             $'std::atan2(!y, !x)' : float
-        Delphi = \ () => $'ArcTan2(!y, !x)' : float
+        Pascal = \ () => $'ArcTan2(!y, !x)' : float
         Wasm = \ () => $'(call $math_atan2 !y !x)' : float
         TypeScript = \ () => $'Math.atan2(!y, !x)' : float
         Kotlin = \ () => $'kotlin.math.atan2(!y, !x)' : float
@@ -107,7 +107,7 @@
         Cpp = \ () =>
             global "#include <cmath>"
             $'std::floor(!n)' : t
-        Delphi = \ () => $'Int(!n) - Ord(Frac(!n) < 0)' : t
+        Pascal = \ () => $'Int(!n) - Ord(Frac(!n) < 0)' : t
         Wasm = \ () => $'(`t.floor !n)' : t
         TypeScript = \ () => $'Math.floor(!n)' : t
         Kotlin = \ () => $'kotlin.math.floor(!n)' : t
@@ -142,7 +142,7 @@
         Cpp = \ () =>
             global "#include <cmath>"
             $'std::ceil(!n)' : t
-        Delphi = \ () => $'Int(!n) + Ord(Frac(!n) > 0)' : t
+        Pascal = \ () => $'Int(!n) + Ord(Frac(!n) > 0)' : t
         Wasm = \ () => $'(`t.ceil !n)' : t
         TypeScript = \ () => $'Math.ceil(!n)' : t
         Kotlin = \ () => $'kotlin.math.ceil(!n)' : t
@@ -176,7 +176,7 @@
         Lean = round_half_to_even
         C = round_half_to_even
         Cpp = round_half_to_even
-        Delphi = round_half_to_even
+        Pascal = round_half_to_even
         TypeScript = round_half_to_even
         Wasm = \ () => $'(`t.nearest !x)' : t
         Kotlin = \ () => $'kotlin.math.round(!x)' : t

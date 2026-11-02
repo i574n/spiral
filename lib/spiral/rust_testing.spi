@@ -1,7 +1,7 @@
 :# rust_testing static =
     :< testing
 
-:< rust::rust_operators
+:< rust_operators
 
 := run_tests' tests =
     := fields = reflection::get_record_fields tests

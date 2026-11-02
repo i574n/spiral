@@ -24,7 +24,7 @@
         Kotlin = \ () => $'(!v).isNaN()' : bool
         Swift = \ () => $'(!v).isNaN' : bool
         C = \ () => $'isnan(!v)' : bool
-        Delphi = \ () => $'IsNan(!v)' : bool
+        Pascal = \ () => $'IsNan(!v)' : bool
     }
 
 := is_infinite \* t. (v : t) : bool =
@@ -41,7 +41,7 @@
         Kotlin = \ () => $'(!v).isInfinite()' : bool
         Swift = \ () => $'(!v).isInfinite' : bool
         C = \ () => $'isinf(!v)' : bool
-        Delphi = \ () => $'IsInfinite(!v)' : bool
+        Pascal = \ () => $'IsInfinite(!v)' : bool
     }
 
 := rust_f64_parses (s : string) : bool = $'(!s).trim().parse::<f64>().is_ok()' : bool
@@ -91,10 +91,10 @@
         | f32 => $'strtof((!s)->ptr, NULL)' : f32
         | f64 => $'strtod((!s)->ptr, NULL)' : f64
 
-:= delphi_format_g \* t. (v : t) (p : i32) : string =
+:= pascal_format_g \* t. (v : t) (p : i32) : string =
     $'FloatToStrF(!v, ffGeneral, !p, 0)' : string
 
-:= delphi_parse \* t. (s : string) : t =
+:= pascal_parse \* t. (s : string) : t =
     $'StrToFloat(!s)' : t
 
 := decimal_point (s : string) : string =
@@ -169,7 +169,7 @@
         Kotlin = \ () => $'(!v).toString()' : string
         Swift = \ () => $'(!v).description' : string
         C = \ () => shortest_by_precision (c_format_g v) c_parse v
-        Delphi = \ () => shortest_by_precision (delphi_format_g v) delphi_parse v |> decimal_point
+        Pascal = \ () => shortest_by_precision (pascal_format_g v) pascal_parse v |> decimal_point
     }
 
 := is_positive \* t {number}. (v : t) : bool = v > -v

@@ -11,7 +11,7 @@
         TypeScript : $'unativeint'
         Cpp : $'unativeint'
         CppHost : $'unativeint'
-        Delphi : $'unativeint'
+        Pascal : $'unativeint'
         Cuda : $'unativeint'
         Rust : $'usize'
         Zig : $'usize'
@@ -129,12 +129,12 @@
             $'i32::from_str_radix(&*(!x), !radix).unwrap()' : i32
         TypeScript = \ () => $'parseInt(!x, !base)' : i32
         C = \ () => $'(int32_t)strtol((!x)->ptr, NULL, !base)' : i32
-        Delphi = \ () =>
+        Pascal = \ () =>
             ? base = 16 ?> $'StrToInt(##36 + !x)' : i32
             |? base = 2 ?> $'StrToInt(##37 + !x)' : i32
             |? base = 8 ?> $'StrToInt(##38 + !x)' : i32
             |? base = 10 ?> $'StrToInt(!x)' : i32
-            |: $'backend_switch_has_no_Delphi_arm_in_lib_spiral' : i32
+            |: $'backend_switch_has_no_Pascal_arm_in_lib_spiral' : i32
         Wasm = \ () => $'(i32.wrap_i64 (call $parse_i64 !x !base))' : i32
         Lean = \ () =>
             lean_parse_helpers ()
@@ -167,7 +167,7 @@
                 global "#include <math.h>"
                 $'(int32_t)nearbyint(!x)' : int
             |: $'(int32_t)(!x)' : int
-        Delphi = \ () =>
+        Pascal = \ () =>
             ? is_string_type x
             ?> x |> convert_i32_base 10 : int
             |? is_float_type x
@@ -336,7 +336,7 @@
                     )
                     parsed_integer ($'spiral_integer_text_ok((!x)->ptr)' : bool) ($'strtoll((!x)->ptr, NULL, 10)' : i64)
                 |: x |> to |> Some : _ u
-            Delphi = \ () =>
+            Pascal = \ () =>
                 ? is_string_type x ?>
                     parsed_integer
                         ($'(StrToInt64Def(Trim(!x), 0) = StrToInt64Def(Trim(!x), 1))' : bool)

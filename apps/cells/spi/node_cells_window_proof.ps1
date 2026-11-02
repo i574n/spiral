@@ -28,7 +28,7 @@ try {
     if ($full) {
         foreach ($round in 1..2) {
             "=== rerun only the failed tests (round $round)"
-            & $mix test --failed 2>&1 | Select-String -Pattern '^\s+\d+\) test |Result:' | ForEach-Object { $_.Line.Trim() }
+            & $mix test @Tests --failed 2>&1 | Select-String -Pattern '^\s+\d+\) test |Result:' | ForEach-Object { $_.Line.Trim() }
             if (-not $LASTEXITCODE) { 'every failed test passed on its rerun alone: load reds'; break }
         }
     }

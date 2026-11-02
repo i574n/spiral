@@ -103,6 +103,12 @@ defmodule Spiral.Cells.BuildersTest do
     assert body == "1i32"
   end
 
+  test "a pascal line builds with the delphi tool" do
+    {[command], body} = Builders.split("///> pascal\n1i32")
+    assert command.tool == :delphi
+    assert body == "1i32"
+  end
+
   test "every target names its compiler backend and file extension from the Spiral domain table" do
     table = %{
       rust: {"Rust", ".rs"},

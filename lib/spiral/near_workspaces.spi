@@ -1,8 +1,7 @@
 :# near_workspaces static =
     :< testing
 
-:< rust
-:< rust::rust_operators
+:< rust_operators
 
 /// ## near
 :! near_token_workspaces =

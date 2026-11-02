@@ -1,4 +1,4 @@
-:< rust::rust_operators
+:< rust_operators
 
 /// ## rust
 :! hash_map k v =

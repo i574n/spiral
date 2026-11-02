@@ -1,7 +1,6 @@
 :# threading static =
     :< testing
 
-:< rust
 :< rust_operators
 
 /// ## rust
@@ -221,7 +220,7 @@
         TypeScript : $'System.Threading.CancellationToken'
         Cpp : $'System.Threading.CancellationToken'
         CppHost : $'System.Threading.CancellationToken'
-        Delphi : $'System.Threading.CancellationToken'
+        Pascal : $'System.Threading.CancellationToken'
         Cuda : $'System.Threading.CancellationToken'
         C : $'System.Threading.CancellationToken'
         Rust : $'std::sync::Arc<std::sync::atomic::AtomicBool>'
@@ -237,7 +236,7 @@
         TypeScript : $'System.Threading.CancellationTokenSource'
         Cpp : $'System.Threading.CancellationTokenSource'
         CppHost : $'System.Threading.CancellationTokenSource'
-        Delphi : $'System.Threading.CancellationTokenSource'
+        Pascal : $'System.Threading.CancellationTokenSource'
         Cuda : $'System.Threading.CancellationTokenSource'
         C : $'System.Threading.CancellationTokenSource'
         Rust : $'std::sync::Arc<std::sync::atomic::AtomicBool>'
@@ -253,7 +252,7 @@
         TypeScript : $'System.Threading.CancellationTokenRegistration'
         Cpp : $'System.Threading.CancellationTokenRegistration'
         CppHost : $'System.Threading.CancellationTokenRegistration'
-        Delphi : $'System.Threading.CancellationTokenRegistration'
+        Pascal : $'System.Threading.CancellationTokenRegistration'
         Cuda : $'System.Threading.CancellationTokenRegistration'
         C : $'System.Threading.CancellationTokenRegistration'
         Rust : $'()'

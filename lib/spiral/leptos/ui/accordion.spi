@@ -1,7 +1,6 @@
 :< sm'_operators
 :< svg
 :< leptos
-:< rust
 
 :== props =
     {

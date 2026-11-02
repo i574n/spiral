@@ -73,7 +73,7 @@
             $'spiralPrint(&[_]u8{10})' : ()
         Lean = \ () => $'IO.println (toString !obj)' : ()
         C = \ () => write_line_c obj
-        Delphi = \ () => $'Writeln(!obj)' : ()
+        Pascal = \ () => $'Writeln(!obj)' : ()
         Kotlin = fun () => $'run { System.out.write((!obj.toString() + "\\n").toByteArray(Charsets.UTF_8)); \
             System.out.flush() }' : ()
         Swift = \ () => $'print(!obj)' : ()
@@ -165,7 +165,7 @@
         Zig = \ () => $'spiralPrintAny(!x)' : ()
         Lean = \ () => $'IO.print (toString !x)' : ()
         C = \ () => write_c x
-        Delphi = \ () => $'Write(!x)' : ()
+        Pascal = \ () => $'Write(!x)' : ()
         Kotlin = \ () =>
             $'run { System.out.write(!x.toString().toByteArray(Charsets.UTF_8)); System.out.flush() }' : ()
         Swift = \ () => $'print(!x, terminator: "")' : ()

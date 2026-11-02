@@ -2,6 +2,7 @@ param(
     [Parameter(Mandatory)] [string] $Name,
     [string[]] $CoreAppliers = @(),
     [string[]] $HostAppliers = @(),
+    [string[]] $Programs = @(),
     [int] $MaxWaitMin = 300,
     [string] $AvoidJobPattern = 'train'
 )
@@ -10,7 +11,8 @@ $kit = Join-Path $env:LOCALAPPDATA 'kit\bin\kit.exe'
 $install = Join-Path $PSScriptRoot 'install-pack.ps1'
 $CoreAppliers = @($CoreAppliers | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $HostAppliers = @($HostAppliers | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
-$installArgs = @('-Name', $Name, '-CoreAppliers', ($CoreAppliers -join ','), '-HostAppliers', ($HostAppliers -join ','))
+$Programs = @($Programs | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+$installArgs = @('-Name', $Name, '-CoreAppliers', ($CoreAppliers -join ','), '-HostAppliers', ($HostAppliers -join ','), '-Programs', ($Programs -join ','))
 $deadline = (Get-Date).AddMinutes($MaxWaitMin)
 while ($true) {
     $blocking = @(& $kit job list 40 2>&1 | Select-String 'state=running' | Where-Object { $_ -match "label=\S*$AvoidJobPattern" })

@@ -1,7 +1,6 @@
 :# async static =
     :< testing
 
-:< rust
 :< rust_operators
 
 := base_let' x =
