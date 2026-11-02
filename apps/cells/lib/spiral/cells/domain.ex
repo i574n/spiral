@@ -39,6 +39,26 @@ defmodule Spiral.Cells.Domain do
     :spiral_cells@domain.source_remap(message, program, source, path)
   end
 
+  def markdown_html(text) do
+    ensure!()
+    :spiral_cells@domain.markdown_html(text)
+  end
+
+  def json_canonical(text) do
+    ensure!()
+    :spiral_cells@domain.json_canonical(text)
+  end
+
+  def builder_present(text) do
+    ensure!()
+    :spiral_cells@domain.builder_present(text)
+  end
+
+  def builder_failure_trace(text) do
+    ensure!()
+    :spiral_cells@domain.builder_failure_trace(text)
+  end
+
   def split_output(output) do
     ensure!()
     :spiral_cells@domain.split_output(output)

@@ -187,6 +187,8 @@ defmodule Spiral.Cells.FsiSession do
         fn {k, v} -> {to_charlist(k), if(v, do: to_charlist(v), else: false)} end
       )
 
+    {exe, args, env} = utf8_stdin(resolve(dotnet), ["fsi", "--nologo", "--quiet", "--utf8output", "--readline-", "--langversion:preview"], env)
+
     port_opts =
       [
         :binary,
@@ -194,11 +196,11 @@ defmodule Spiral.Cells.FsiSession do
         :stderr_to_stdout,
         :use_stdio,
         :hide,
-        args: ["fsi", "--nologo", "--quiet", "--utf8output", "--readline-", "--langversion:preview"],
+        args: args,
         env: env
       ] ++ if(opts[:cd], do: [cd: opts[:cd]], else: [])
 
-    port = Port.open({:spawn_executable, resolve(dotnet)}, port_opts)
+    port = Port.open({:spawn_executable, exe}, port_opts)
 
     os_pid =
       case Port.info(port, :os_pid) do
@@ -221,6 +223,19 @@ defmodule Spiral.Cells.FsiSession do
 
   defp resolve(exe) do
     if File.regular?(exe), do: exe, else: System.find_executable(exe)
+  end
+
+  @doc false
+  def utf8_stdin(dotnet, fsi_args, env) do
+    case :os.type() do
+      {:win32, _} ->
+        path = Path.dirname(dotnet) <> ";" <> (System.get_env("PATH") || "")
+        command = Enum.join(["chcp 65001 >nul && " <> Path.rootname(Path.basename(dotnet)) | fsi_args], " ")
+        {System.find_executable("cmd.exe") || "cmd.exe", ["/d", "/s", "/c", command], List.keystore(env, ~c"PATH", 0, {~c"PATH", to_charlist(path)})}
+
+      _ ->
+        {dotnet, fsi_args, env}
+    end
   end
 
   @impl true

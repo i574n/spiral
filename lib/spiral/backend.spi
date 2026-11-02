@@ -67,6 +67,18 @@
                             ?: t ?|
                             | () => $'' : t
                             | _ => $'backend_switch_has_no_Wgsl_arm_in_lib_spiral' : t
+                        Calyx = \ () =>
+                            ?: t ?|
+                            | () => () : t
+                            | _ => $'backend_switch_has_no_Calyx_arm_in_lib_spiral' : t
+                        OpenQasm = \ () =>
+                            ?: t ?|
+                            | () => () : t
+                            | _ => $'backend_switch_has_no_OpenQasm_arm_in_lib_spiral' : t
+                        Ebpf = \ () =>
+                            ?: t ?|
+                            | () => () : t
+                            | _ => $'backend_switch_has_no_Ebpf_arm_in_lib_spiral' : t
                     })
         !!!!BackendSwitch({
             Gleam = \ () => backend "Gleam"
@@ -86,6 +98,9 @@
             Kotlin = \ () => backend "Kotlin"
             Swift = \ () => backend "Swift"
             Wgsl = \ () => backend "Wgsl"
+            Calyx = \ () => backend "Calyx"
+            OpenQasm = \ () => backend "OpenQasm"
+            Ebpf = \ () => backend "Ebpf"
         })
 
 :| backend =
@@ -105,6 +120,9 @@
     | Kotlin
     | Swift
     | Wgsl
+    | Calyx
+    | OpenQasm
+    | Ebpf
 
 := run_target_args' \* t u. (args : u) (fn : backend -> (u -> t)) : t =
     backend_switch {
@@ -158,6 +176,15 @@
             fn target args
         Wgsl = \ () =>
             := target = Wgsl
+            fn target args
+        Calyx = \ () =>
+            := target = Calyx
+            fn target args
+        OpenQasm = \ () =>
+            := target = OpenQasm
+            fn target args
+        Ebpf = \ () =>
+            := target = Ebpf
             fn target args
     }
 
@@ -247,3 +274,15 @@
 :# run_target_picks_the_wgsl_arm =
     := ~expected = 7i32
     ? wgsl_probe_code () = expected ?> 0i32 |: 1i32
+
+:= circuit_probe_code () : i32 =
+    run_target \|
+        | Calyx => \ () => 11i32
+        | OpenQasm => \ () => 13i32
+        | Ebpf => \ () => 17i32
+        | _ => \ () => 5i32
+
+///> c
+:# run_target_names_calyx_openqasm_and_ebpf =
+    := ~expected = 5i32
+    circuit_probe_code () |> _assert_eq expected

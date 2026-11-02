@@ -42,5 +42,33 @@
 
 := greedy_text (o : oracle) : string = sm'::concat_list "\n" o::greedy
 
-:= model_path (p : pin) : string =
-    env::get_environment_variable "LOCALAPPDATA" ++# "/spiral-bin/models/llama2c/" ++# p::file
+:== probe = { token : i32; logit : f32 }
+
+:= stories260k_step_0 () : list probe =
+    [
+        { token = 403; logit = 17.0235157f32 }; { token = 385; logit = 15.4062128f32 }
+        { token = 410; logit = 13.108263f32 }; { token = 0; logit = -6.22291136f32 }
+        { token = 511; logit = -4.40551758f32 }
+    ]
+
+:= stories260k_step_1 () : list probe =
+    [
+        { token = 407; logit = 18.4599857f32 }; { token = 383; logit = 14.2910614f32 }
+        { token = 261; logit = 10.8979673f32 }; { token = 0; logit = -9.58945847f32 }
+        { token = 511; logit = -7.43573427f32 }
+    ]
+
+:= stories260k_step_2 () : list probe =
+    [
+        { token = 261; logit = 17.1369629f32 }; { token = 407; logit = 11.7102079f32 }
+        { token = 383; logit = 11.1694374f32 }; { token = 0; logit = -12.141099f32 }
+        { token = 511; logit = -8.97455215f32 }
+    ]
+
+:= stories260k_probes () : list (list probe) = [ stories260k_step_0 (); stories260k_step_1 (); stories260k_step_2 () ]
+
+:= spiral_bin () : string =
+    := local = env::get_environment_variable "LOCALAPPDATA"
+    ? local <> "" ?> local ++# "/spiral-bin" |: env::get_environment_variable "HOME" ++# "/.cache/spiral-bin"
+
+:= model_path (p : pin) : string = spiral_bin () ++# "/models/llama2c/" ++# p::file

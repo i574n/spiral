@@ -14,4 +14,7 @@ modules:
     memo
     manifest
     source_map
+    html_markdown
+    json_value
+    builder_output
     main

@@ -393,6 +393,23 @@
     := r = run_of m (vocab_of (file_system::read_bytes (oracle::model_path o::tokenizer)) m::c::vocab) o::steps
     generate r 1 0 "" |> _assert_eq (oracle::greedy_text o)
 
+:= probe_error (logits : floats) (probes : list oracle::probe) : f32 =
+    probes |> listm::fold (\ worst (p : oracle::probe) => max worst (abs (index logits p::token - p::logit))) 0.0f32
+
+:~ ^ worst_logit_error (r : run) (token : i32) (pos : i32) (steps : list (list oracle::probe)) (worst : f32) : f32 =
+    ?= steps ?|
+    | [] => worst
+    | probes :: rest =>
+        := next = next_token r token pos
+        worst_logit_error r next (pos + 1) rest (max worst (probe_error r::s::logits probes))
+
+///> rust
+:# logits_stories260k_stay_within_1e4_of_run_c =
+    := o = oracle::stories260k ()
+    := m = model_of (file_system::read_bytes (oracle::model_path o::checkpoint))
+    := r = run_of m (vocab_of (file_system::read_bytes (oracle::model_path o::tokenizer)) m::c::vocab) o::steps
+    (worst_logit_error r 1 0 (oracle::stories260k_probes ()) 0.0f32 < 0.0001f32) |> _assert_eq !+
+
 :~ ^ dump_from (x : floats) (i : i32) : () =
     ? i < length x ?>
         console::write_line (conv (index x i * 10000000.0f32) : i64)
