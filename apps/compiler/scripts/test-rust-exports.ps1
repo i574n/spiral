@@ -59,7 +59,7 @@ $captured = '    inl ~k = 1i32' + "`n" + '    export "export_captured" ((fun (a,
 Invoke-Cases $exports ([ordered]@{
     exports = @($source, '')
     missing = (New-ExportCase ($source.Replace('=> choose first second', '=> absent first second')) @('Unbound variable: absent.', 'has a type error somewhere in its path'))
-    wrong_signature = (New-ExportCase ($source.Replace('(fun value => opaque value) : string -> u64', '(fun value => opaque value) : i32 -> u64')) @('Expected: i32', 'has a type error somewhere in its path'))
+    wrong_signature = (New-ExportCase ($source.Replace('(\ value => opaque value) : string -> u64', '(\ value => opaque value) : i32 -> u64')) @('Expected: i32', 'has a type error somewhere in its path'))
     wrong_tuple = (New-ExportCase ($source.Replace(': string -> string * string * string * string * string)', ': string -> string * string * string * string * i32)')) @('Expected: string * string * string * string * i32', 'has a type error somewhere in its path'))
     captured = @($source.Replace('    0i32', $captured), 'runtime free variables')
     duplicate = @($source.Replace('"export_echo"', '"export_scalar"'), 'Duplicate export: export_scalar')

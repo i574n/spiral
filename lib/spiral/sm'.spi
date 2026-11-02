@@ -388,6 +388,7 @@
         Zig = \ () => sm::slice s { from to } : string
         Lean = \ () => sm::slice s { from to } : string
         Pascal = \ () => sm::slice s { from to } : string
+        Kotlin = \ () => sm::slice s { from to } : string
     }
 
 ///> rust
@@ -880,6 +881,7 @@
             |> optionm'::unwrap_or -1
         C = \ () => conv (portable_index_of search s) : int
         Pascal = \ () => conv (portable_index_of search s) : int
+        Kotlin = \ () => $'(!s).indexOf(!search).let { i -> if (i < 0) -1 else (!s).substring(0, i).toByteArray(Charsets.UTF_8).size }' : int
         TypeScript = \ () => $'!s.indexOf(!search)' : int
         Zig = \ () => $'(if (std.mem.indexOf(u8, !s, !search)) |i| @@as(`int, @@intCast(i)) else -1)' : int
         Lean = \ () =>
@@ -988,6 +990,7 @@
         Zig = \ () => $'std.mem.endsWith(u8, !s, !value)' : bool
         C = \ () => portable_ends_with value s
         Pascal = \ () => portable_ends_with value s
+        Kotlin = \ () => $'(!s).endsWith(!value)' : bool
         Lean = \ () => $'(!s).endsWith !value ' : bool
     }
 
@@ -1004,6 +1007,7 @@
         Zig = \ () => $'std.mem.startsWith(u8, !s, !value)' : bool
         C = \ () => portable_starts_with value s
         Pascal = \ () => portable_starts_with value s
+        Kotlin = \ () => $'(!s).startsWith(!value)' : bool
         Lean = \ () => $'(!s).startsWith !value ' : bool
     }
 
@@ -1443,6 +1447,8 @@
             $'((!s):gsub(((!old):gsub("%p", "%%%0")), ((!new):gsub("%%", "%%%%"))))' : string
         Fsharp = \ () =>
             $'(!s).Replace(!old, !new, System.StringComparison.Ordinal)' : string
+        Kotlin = \ () =>
+            $'(!s).replace(!old, !new)' : string
         Python = \ () =>
             $'!s.replace(!old, !new)' : string
         Rust = \ () =>
@@ -1505,6 +1511,7 @@
         Fsharp = \ () => $'!str.Split !separator ' : array_base string
         Lua = \ () => split_portable separator str
         C = \ () => split_portable separator str
+        Kotlin = \ () => $'(!str).split(!separator).toTypedArray()' : array_base string
         Python = \ () => $'!str.split(!separator)' : array_base string
         Rust = \ () =>
             $'Rc::new(RefCell::new(!str.split(&*!separator).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'
@@ -2144,6 +2151,7 @@
         TypeScript = \ () => $'!s.includes(!value)' : bool
         Zig = \ () => $'(std.mem.indexOf(u8, !s, !value) \!= null)' : bool
         C = \ () => portable_index_of value s >= 0i32
+        Kotlin = \ () => $'(!s).contains(!value)' : bool
         Lean = \ () => $'(!s).contains !value ' : bool
     }
 

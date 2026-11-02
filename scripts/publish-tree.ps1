@@ -21,8 +21,9 @@ function Test-Excluded([string] $path) { foreach ($segment in $path -split '/') 
 $tracked = @(git -c core.quotepath=off ls-files -z | ForEach-Object { $_ -split "`0" } | Where-Object { $_ -and !(Test-Excluded $_) })
 if ($LASTEXITCODE -ne 0) { throw "publish-tree.ps1 / git ls-files failed in $Root (exit code $LASTEXITCODE)" }
 $extra = @(if ($Include) {
-    git -c core.quotepath=off ls-files -z --others | ForEach-Object { $_ -split "`0" } | Where-Object { $_ -and $_ -notmatch '^dist/' -and !(Test-Excluded $_) } |
-        Where-Object { $name = Split-Path $_ -Leaf; @($Include | Where-Object { $name -like $_ }).Count }
+    @(git -c core.quotepath=off ls-files -z --others) + @(git -c core.quotepath=off ls-files -z) | ForEach-Object { $_ -split "`0" } |
+        Where-Object { $_ -and $_ -notmatch '^dist/' -and !(Test-Excluded $_) -and (Test-Path -LiteralPath $_ -PathType Leaf) } |
+        Where-Object { $name = Split-Path $_ -Leaf; @($Include | Where-Object { $name -like $_ }).Count } | Select-Object -Unique
 })
 git checkout-index -a -f --prefix=dist/
 if ($LASTEXITCODE -ne 0) { throw "publish-tree.ps1 / git checkout-index failed (exit code $LASTEXITCODE)" }
@@ -30,10 +31,10 @@ foreach ($file in @(git -c core.quotepath=off ls-files -z | ForEach-Object { $_ 
 foreach ($file in $extra) {
     $target = Join-Path 'dist' $file
     New-Item -ItemType Directory -Force (Split-Path $target) | Out-Null
-    Copy-Item -LiteralPath $file $target
+    Copy-Item -LiteralPath $file $target -Force
 }
 Get-ChildItem -LiteralPath dist -Recurse -Force | Where-Object { (Get-Item -LiteralPath $_.FullName -Force).LinkType } | Remove-Item -Force -ErrorAction Ignore
-Write-Output "publish-tree.ps1 / $($tracked.Count) tracked files$(if ($extra) { " + $($extra.Count) untracked matching $($Include -join ', ')" }) copied to dist"
+Write-Output "publish-tree.ps1 / $($tracked.Count) tracked files$(if ($extra) { " + $($extra.Count) working-tree copies (untracked or regenerated) matching $($Include -join ', ')" }) copied to dist"
 
 Get-ChildItem -Path dist -Recurse -Force | Sort-Object { $_.FullName.Length } -Descending | Where-Object { $_.Name.StartsWith(".") } | ForEach-Object {
     Rename-Item -LiteralPath $_.FullName -NewName "_$($_.Name.Substring(1))"

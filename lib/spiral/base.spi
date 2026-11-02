@@ -271,6 +271,7 @@
             ?> $'std.mem.eql(u8, !a, !b)' : bool
             |: $'(!a == !b)' : bool
         Lean = \ () => $'(!a == !b)' : bool
+        Kotlin = \ () => $'(!a == !b)' : bool
     }
 
 ///> gleam
@@ -297,6 +298,7 @@
             ?> $'(\!std.mem.eql(u8, !a, !b))' : bool
             |: $'(!a \!= !b)' : bool
         Lean = \ () => $'(!a \!= !b)' : bool
+        Kotlin = \ () => $'(!a \!= !b)' : bool
     }
 
 ///> gleam

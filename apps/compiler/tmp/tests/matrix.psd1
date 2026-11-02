@@ -886,6 +886,7 @@
         )
         'Fsharp,C,Rust,Delphi,TypeScript,Cpp,Python' = @(
             'samples/portable_math_rounding'
+            'samples/gadt_rank_matrix'
         )
         'Fsharp,C,Rust,Delphi,TypeScript,Python' = @(
             'samples/portable_convert_parse'
