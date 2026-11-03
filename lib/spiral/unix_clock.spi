@@ -1,0 +1,76 @@
+:< sm'_operators
+
+:# unix_clock static =
+    :< testing
+
+/// # unix_clock: wall-clock epoch counts as nominals, so ms, seconds and nanos can't be mixed
+:! unix_ms = u64
+
+:! unix_seconds = u64
+
+:! unix_nanos = u64
+
+:! rust_system_instant = $'std::time::SystemTime'
+
+:! rust_epoch_elapsed = $'std::time::Duration'
+
+:= rust_system_now () : rust_system_instant = $'std::time::SystemTime::now()' : rust_system_instant
+
+:= rust_since_unix_epoch (t : rust_system_instant) : rust_epoch_elapsed =
+    $'!t.duration_since(std::time::UNIX_EPOCH).unwrap_or_default()' : rust_epoch_elapsed
+
+:= rust_whole_seconds (d : rust_epoch_elapsed) : u64 = $'!d.as_secs()' : u64
+
+:= rust_sub_nanos (d : rust_epoch_elapsed) : u32 = $'!d.subsec_nanos()' : u32
+
+:= rust_whole_millis (d : rust_epoch_elapsed) : u64 = rust_whole_seconds d * 1000u64 + conv (rust_sub_nanos d) / 1000000u64
+
+:= rust_whole_nanos (d : rust_epoch_elapsed) : u64 = rust_whole_seconds d * 1000000000u64 + conv (rust_sub_nanos d)
+
+:= erlang_system_time (unit : string) : i64 = erlang_term::apply "erlang" "system_time" [ erlang_term::atom unit ] |> erlang_term::cast
+
+:= fsharp_unix_millis () : i64 = $'System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()' : i64
+
+:= fsharp_utc_ticks () : i64 = $'System.DateTime.UtcNow.Ticks' : i64
+
+:= unix_now_ms () : unix_ms =
+    := ms =
+        run_target \|
+            | Rust => \ () => rust_whole_millis (rust_since_unix_epoch (rust_system_now ()))
+            | Gleam => \ () => (conv (erlang_system_time "millisecond") : u64)
+            | Fsharp _ => \ () => (conv (fsharp_unix_millis ()) : u64)
+            | _ => \ () => failwith "unix_now_ms: no arm for this backend"
+    unix_ms ms
+
+:= unix_now_nanos () : unix_nanos =
+    := ns =
+        run_target \|
+            | Rust => \ () => rust_whole_nanos (rust_since_unix_epoch (rust_system_now ()))
+            | Gleam => \ () => (conv (erlang_system_time "nanosecond") : u64)
+            | Fsharp _ => \ () => (conv ((fsharp_utc_ticks () - 621355968000000000i64) * 100i64) : u64)
+            | _ => \ () => failwith "unix_now_nanos: no arm for this backend"
+    unix_nanos ns
+
+:= ms_count ((unix_ms n) : unix_ms) : u64 = n
+
+:= seconds_count ((unix_seconds n) : unix_seconds) : u64 = n
+
+:= nanos_count ((unix_nanos n) : unix_nanos) : u64 = n
+
+:= unix_now_seconds () : unix_seconds = unix_seconds (ms_count (unix_now_ms ()) / 1000u64)
+
+:= ms_since (start : unix_ms) : u64 =
+    := now = ms_count (unix_now_ms ())
+    := from = ms_count start
+    ? now > from ?> now - from |: 0u64
+
+///> rust
+///> fsharp
+///> gleam
+:# the_unix_clock_reads_epoch_counts_in_their_own_units =
+    := start = unix_now_ms ()
+    := ms = ms_count start
+    := s = seconds_count (unix_now_seconds ())
+    := ns = nanos_count (unix_now_nanos ())
+    := seconds_agree = s * 1000u64 + 2000u64 > ms && s * 1000u64 <= ms + 2000u64
+    (ms > 1700000000000u64, seconds_agree, ns / 1000000u64 + 2000u64 > ms, ms_since start < 1000u64) |> _assert_eq (!+, !+, !+, !+)

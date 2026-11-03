@@ -1943,5 +1943,22 @@
 
 ///> rust
 :# try_append_all_text_reports_instead_of_failing =
-    := missing = get_temp_path () </> "eoie-no-such-folder-for-append" </> "x.txt"
+    := missing = get_temp_path () </> "spiral-no-such-folder-for-append" </> "x.txt"
     (try_append_all_text missing "a" = Error "the file could not be opened") |> _assert_eq !+
+
+:= try_write_all_text (path : string) (text : string) : result () string =
+    run_target_args' (path, text) \|
+        | Rust => \ path, text =>
+            ? (!\\((path, text), $'"std::fs::write(&*$0, &*$1).is_ok()"') : bool) ?> Ok () |: Error "the write failed"
+        | _ => \ path, text =>
+            write_all_text path text
+            Ok ()
+
+///> rust
+:# try_write_all_text_reports_instead_of_failing =
+    := missing = get_temp_path () </> "spiral-no-such-folder-for-write" </> "x.txt"
+    (try_write_all_text missing "a" = Error "the write failed") |> _assert_eq !+
+    := path = get_temp_path () </> "spiral-try-write-all-text.txt"
+    (try_write_all_text path "ab" = Ok ()) |> _assert_eq !+
+    path |> read_all_text |> _assert_eq "ab"
+    file_delete path

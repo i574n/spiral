@@ -165,57 +165,7 @@ defmodule Spiral.Cells.Html do
   end
 
   @doc false
-  def markdown(text) do
-    {html, block} =
-      text
-      |> String.split("\n")
-      |> Enum.reduce({[], :none}, fn line, {html, block} -> markdown_line(line, html, block) end)
-
-    IO.iodata_to_binary([html, close(block)])
-  end
-
-  defp markdown_line(line, html, :code) do
-    if String.starts_with?(line, "```"), do: {[html, "</code></pre>\n"], :none}, else: {[html, escape(line), "\n"], :code}
-  end
-
-  defp markdown_line(line, html, block) do
-    cond do
-      String.starts_with?(line, "```") -> {[html, close(block), "<pre><code>"], :code}
-      String.trim(line) == "" -> {[html, close(block)], :none}
-      heading = Regex.run(~r/^(\#{1,6}) (.*)$/, line) -> markdown_heading(heading, html, block)
-      item = Regex.run(~r/^[-*] (.*)$/, line) -> markdown_item(item, html, block)
-      block == :paragraph -> {[html, " ", inline(line)], :paragraph}
-      true -> {[html, close(block), "<p>", inline(line)], :paragraph}
-    end
-  end
-
-  defp markdown_heading([_, hashes, title], html, block) do
-    tag = "h#{byte_size(hashes)}"
-    {[html, close(block), "<", tag, ">", inline(title), "</", tag, ">\n"], :none}
-  end
-
-  defp markdown_item([_, text], html, :list), do: {[html, "<li>", inline(text), "</li>\n"], :list}
-  defp markdown_item([_, text], html, block), do: {[html, close(block), "<ul>\n<li>", inline(text), "</li>\n"], :list}
-
-  defp close(:none), do: ""
-  defp close(:paragraph), do: "</p>\n"
-  defp close(:list), do: "</ul>\n"
-  defp close(:code), do: "</code></pre>\n"
-
-  defp inline(text) do
-    Regex.split(~r/(`[^`]*`|\[[^\]]*\]\([^)]*\))/, text, include_captures: true)
-    |> Enum.map_join(fn
-      "`" <> rest = piece when byte_size(piece) >= 2 -> "<code>" <> escape(String.trim_trailing(rest, "`")) <> "</code>"
-      "[" <> _ = piece ->
-        case Regex.run(~r/^\[([^\]]*)\]\(([^)]*)\)$/, piece) do
-          [_, label, href] -> "<a href=\"" <> escape(href) <> "\">" <> escape(label) <> "</a>"
-          _ -> escape(piece)
-        end
-
-      piece ->
-        escape(piece)
-    end)
-  end
+  def markdown(text), do: Spiral.Cells.Domain.markdown_html(text)
 
   defp join(lines) when is_list(lines), do: Enum.join(lines)
   defp join(text) when is_binary(text), do: text

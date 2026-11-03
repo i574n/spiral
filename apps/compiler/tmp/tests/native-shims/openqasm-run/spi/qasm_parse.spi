@@ -1,0 +1,484 @@
+///- --package .
+:# qasm_parse static =
+    :< testing
+    :< qasm_numeric
+    :< qasm_lex
+
+:< sm'_operators
+:< qasm_numeric
+:< qasm_lex
+
+:| binop =
+    | BOr
+    | BAnd
+    | BBitOr
+    | BXor
+    | BBitAnd
+    | BEq
+    | BNe
+    | BLt
+    | BLe
+    | BGt
+    | BGe
+    | BShl
+    | BShr
+    | BAdd
+    | BSub
+    | BMul
+    | BDiv
+    | BMod
+
+:| unop =
+    | UNot
+    | UBitNot
+    | UNeg
+    | UPos
+
+:| ^ expr =
+    | ENum : string
+    | EReal : string
+    | EBool : bool
+    | EVar : string
+    | ECall : string * list expr
+    | ECast : kind * expr
+    | EIf : expr * expr * expr
+    | EUn : unop * expr
+    | EBin : binop * expr * expr
+
+:| parse_error =
+    | Expected : i32 * string
+
+:= binop_of (t : token) : option (binop * i32) =
+    ?= t ?|
+    | Punct (OrOr) => Some (BOr, 1i32)
+    | Punct (AndAnd) => Some (BAnd, 2i32)
+    | Punct (Pipe) => Some (BBitOr, 3i32)
+    | Punct (Caret) => Some (BXor, 4i32)
+    | Punct (Amp) => Some (BBitAnd, 5i32)
+    | Punct (EqEq) => Some (BEq, 6i32)
+    | Punct (NotEq) => Some (BNe, 6i32)
+    | Punct (Lt) => Some (BLt, 7i32)
+    | Punct (Le) => Some (BLe, 7i32)
+    | Punct (Gt) => Some (BGt, 7i32)
+    | Punct (Ge) => Some (BGe, 7i32)
+    | Punct (Shl) => Some (BShl, 8i32)
+    | Punct (Shr) => Some (BShr, 8i32)
+    | Punct (Plus) => Some (BAdd, 9i32)
+    | Punct (Minus) => Some (BSub, 9i32)
+    | Punct (Star) => Some (BMul, 10i32)
+    | Punct (Slash) => Some (BDiv, 10i32)
+    | Punct (Percent) => Some (BMod, 10i32)
+    | _ => None
+
+:= head (ts : list located) : token =
+    ?= ts ?|
+    | x :: _ => x::token
+    | [] => Eof
+
+:= head_line (ts : list located) : i32 =
+    ?= ts ?|
+    | x :: _ => x::line
+    | [] => 0i32
+
+:= rest (ts : list located) : list located =
+    ?= ts ?|
+    | _ :: xs => xs
+    | [] => []
+
+:= expect (wanted : token) (what : string) (ts : list located) : result (list located) parse_error =
+    ? head ts = wanted ?> Ok (rest ts) |: Error (Expected (head_line ts, what))
+
+:= width_of (ts : list located) : result (i32 * list located) parse_error =
+    ?= expect (Punct LBracket) "[" ts ?|
+    | Error e => Error e
+    | Ok ts =>
+        ?= head ts ?|
+        | Number raw =>
+            ?= expect (Punct RBracket) "]" (rest ts) ?|
+            | Error e => Error e
+            | Ok after => Ok (convert::convert_i32 raw, after)
+        | _ => Error (Expected (head_line ts, "a width"))
+
+:= parse_type (ts : list located) : result (kind * list located) parse_error =
+    := sized (make : i32 -> option kind) (what : string) (after : list located) =
+        ?= width_of after ?|
+        | Error e => Error e
+        | Ok (w, after) =>
+            ?= make w ?|
+            | Some k => Ok (k, after)
+            | None => Error (Expected (head_line ts, what))
+    ?= head ts ?|
+    | Keyword (KwBool) => Ok (BoolKind, rest ts)
+    | Keyword (KwInt) =>
+        sized (\ w => ? w = 8i32 ?> Some (IntKind I8) |? w = 16i32 ?> Some (IntKind I16) |? w = 32i32 ?> Some (IntKind I32) |? w = 64i32 ?> Some (IntKind I64) |: None) "int[8|16|32|64]" (rest ts)
+    | Keyword (KwUint) =>
+        sized (\ w => ? w = 8i32 ?> Some (IntKind U8) |? w = 16i32 ?> Some (IntKind U16) |? w = 32i32 ?> Some (IntKind U32) |? w = 64i32 ?> Some (IntKind U64) |: None) "uint[8|16|32|64]" (rest ts)
+    | Keyword (KwFloat) =>
+        sized (\ w => ? w = 32i32 ?> Some (FloatKind F32) |? w = 64i32 ?> Some (FloatKind F64) |: None) "float[32|64]" (rest ts)
+    | _ => Error (Expected (head_line ts, "a type"))
+
+:~ ^ parse_expr (min : i32) (ts : list located) : result (expr * list located) parse_error =
+    ?= parse_unary ts ?|
+    | Error e => Error e
+    | Ok (left, after) => climb min left after
+:& :~ climb (min : i32) (left : expr) (ts : list located) : result (expr * list located) parse_error =
+    ?= binop_of (head ts) ?|
+    | Some (op, prec) =>
+        ? prec >= min ?>
+            ?= parse_expr (prec + 1i32) (rest ts) ?|
+            | Error e => Error e
+            | Ok (right, after) => climb min (EBin (op, left, right)) after
+        |: Ok (left, ts)
+    | None => Ok (left, ts)
+:& :~ parse_unary (ts : list located) : result (expr * list located) parse_error =
+    := wrap (op : unop) =
+        ?= parse_unary (rest ts) ?|
+        | Error e => Error e
+        | Ok (e, after) => Ok (EUn (op, e), after)
+    ?= head ts ?|
+    | Punct (Bang) => wrap UNot
+    | Punct (Tilde) => wrap UBitNot
+    | Punct (Minus) => wrap UNeg
+    | Punct (Plus) => wrap UPos
+    | _ => parse_primary ts
+:& :~ parse_args (acc : list expr) (ts : list located) : result (list expr * list located) parse_error =
+    ?= parse_expr 0i32 ts ?|
+    | Error e => Error e
+    | Ok (e, after) =>
+        ?= head after ?|
+        | Punct (Comma) => parse_args (e :: acc) (rest after)
+        | Punct (RParen) => Ok (listm::rev (e :: acc), rest after)
+        | _ => Error (Expected (head_line after, ", or )"))
+:& :~ parse_primary (ts : list located) : result (expr * list located) parse_error =
+    ?= head ts ?|
+    | Punct (LParen) =>
+        ?= head (rest ts) ?|
+        | Keyword (KwIf) =>
+            ?= parse_expr 0i32 (rest (rest ts)) ?|
+            | Error e => Error e
+            | Ok (c, after) =>
+                ?= expect (Punct LBrace) "{" after ?|
+                | Error e => Error e
+                | Ok after =>
+                    ?= parse_expr 0i32 after ?|
+                    | Error e => Error e
+                    | Ok (yes, after) =>
+                        ?= expect (Punct RBrace) "}" after ?|
+                        | Error e => Error e
+                        | Ok after =>
+                            ?= expect (Keyword KwElse) "else" after ?|
+                            | Error e => Error e
+                            | Ok after =>
+                                ?= expect (Punct LBrace) "{" after ?|
+                                | Error e => Error e
+                                | Ok after =>
+                                    ?= parse_expr 0i32 after ?|
+                                    | Error e => Error e
+                                    | Ok (no, after) =>
+                                        ?= expect (Punct RBrace) "}" after ?|
+                                        | Error e => Error e
+                                        | Ok after =>
+                                            ?= expect (Punct RParen) ")" after ?|
+                                            | Error e => Error e
+                                            | Ok after => Ok (EIf (c, yes, no), after)
+        | _ =>
+            ?= parse_expr 0i32 (rest ts) ?|
+            | Error e => Error e
+            | Ok (e, after) =>
+                ?= expect (Punct RParen) ")" after ?|
+                | Error e => Error e
+                | Ok after => Ok (e, after)
+    | Keyword (KwTrue) => Ok (EBool !+, rest ts)
+    | Keyword (KwFalse) => Ok (EBool !-, rest ts)
+    | Number raw => Ok (ENum raw, rest ts)
+    | Real raw => Ok (EReal raw, rest ts)
+    | Ident name =>
+        ?= head (rest ts) ?|
+        | Punct (LParen) =>
+            ?= head (rest (rest ts)) ?|
+            | Punct (RParen) => Ok (ECall (name, []), rest (rest (rest ts)))
+            | _ =>
+                ?= parse_args [] (rest (rest ts)) ?|
+                | Error e => Error e
+                | Ok (args, after) => Ok (ECall (name, args), after)
+        | _ => Ok (EVar name, rest ts)
+    | Keyword (KwInt) => parse_cast ts
+    | Keyword (KwUint) => parse_cast ts
+    | Keyword (KwFloat) => parse_cast ts
+    | _ => Error (Expected (head_line ts, "an expression"))
+:& :~ parse_cast (ts : list located) : result (expr * list located) parse_error =
+    ?= parse_type ts ?|
+    | Error e => Error e
+    | Ok (k, after) =>
+        ?= expect (Punct LParen) "(" after ?|
+        | Error e => Error e
+        | Ok after =>
+            ?= parse_expr 0i32 after ?|
+            | Error e => Error e
+            | Ok (e, after) =>
+                ?= expect (Punct RParen) ")" after ?|
+                | Error e => Error e
+                | Ok after => Ok (ECast (k, e), after)
+
+:= expression_of (text : string) : option expr =
+    ?= lex text ?|
+    | Error _ => None
+    | Ok ts =>
+        ?= parse_expr 0i32 ts ?|
+        | Ok (e, after) => ? head after = Eof ?> Some e |: None
+        | Error _ => None
+
+///> rust
+///> gleam
+:# products_bind_tighter_than_sums_and_shifts_than_compares =
+    ("1 + 2 * 3" |> expression_of, "a << 1 < b" |> expression_of)
+    |> _assert_eq (Some (EBin (BAdd, ENum "1", EBin (BMul, ENum "2", ENum "3"))), Some (EBin (BLt, EBin (BShl, EVar "a", ENum "1"), EVar "b")))
+
+///> rust
+///> gleam
+:# calls_casts_unary_and_if_expressions_parse =
+    "f(-x, int[32](y), (if c { 1 } else { 2 }))"
+    |> expression_of
+    |> _assert_eq (Some (ECall ("f", [ EUn (UNeg, EVar "x"); ECast (IntKind I32, EVar "y"); EIf (EVar "c", ENum "1", ENum "2") ])))
+
+:| ^ stmt =
+    | SIf : expr * list stmt * list stmt
+    | SWhile : expr * list stmt
+    | SReturn : list expr
+    | SBreak
+    | SContinue
+    | SLet : kind * string * expr
+    | SSetMulti : list string * expr
+    | SSet : string * expr
+    | SExpr : expr
+
+:| ret_type =
+    | RetNone
+    | RetOne : kind
+    | RetTuple : list kind
+
+:! func = { name : string; params : list (kind * string); ret : ret_type; body : list stmt }
+
+:| top =
+    | TOutput : kind * string
+    | TStmt : stmt
+
+:! program = { funcs : list func; tops : list top }
+
+:= ident_of (ts : list located) : result (string * list located) parse_error =
+    ?= head ts ?|
+    | Ident name => Ok (name, rest ts)
+    | _ => Error (Expected (head_line ts, "a name"))
+
+:= expr_then (close : token) (what : string) (ts : list located) : result (expr * list located) parse_error =
+    ?= parse_expr 0i32 ts ?|
+    | Error e => Error e
+    | Ok (e, after) =>
+        ?= expect close what after ?|
+        | Error e => Error e
+        | Ok after => Ok (e, after)
+
+:~ ^ names_until_assign (acc : list string) (ts : list located) : result (list string * list located) parse_error =
+    ?= ident_of ts ?|
+    | Error e => Error e
+    | Ok (name, after) =>
+        ?= head after ?|
+        | Punct (Comma) => names_until_assign (name :: acc) (rest after)
+        | Punct (Assign) => Ok (listm::rev (name :: acc), rest after)
+        | _ => Error (Expected (head_line after, ", or ="))
+
+:~ ^ exprs_until_semi (acc : list expr) (ts : list located) : result (list expr * list located) parse_error =
+    ?= parse_expr 0i32 ts ?|
+    | Error e => Error e
+    | Ok (e, after) =>
+        ?= head after ?|
+        | Punct (Comma) => exprs_until_semi (e :: acc) (rest after)
+        | Punct (Semi) => Ok (listm::rev (e :: acc), rest after)
+        | _ => Error (Expected (head_line after, ", or ;"))
+
+:~ ^ parse_stmt (ts : list located) : result (stmt * list located) parse_error =
+    := typed_let (ts : list located) =
+        ?= parse_type ts ?|
+        | Error e => Error e
+        | Ok (k, after) =>
+            ?= ident_of after ?|
+            | Error e => Error e
+            | Ok (name, after) =>
+                ?= expect (Punct Assign) "=" after ?|
+                | Error e => Error e
+                | Ok after =>
+                    ?= expr_then (Punct Semi) ";" after ?|
+                    | Error e => Error e
+                    | Ok (e, after) => Ok (SLet (k, name, e), after)
+    ?= head ts ?|
+    | Keyword (KwIf) =>
+        ?= expect (Punct LParen) "(" (rest ts) ?|
+        | Error e => Error e
+        | Ok after =>
+            ?= expr_then (Punct RParen) ")" after ?|
+            | Error e => Error e
+            | Ok (c, after) =>
+                ?= parse_block after ?|
+                | Error e => Error e
+                | Ok (yes, after) =>
+                    ?= head after ?|
+                    | Keyword (KwElse) =>
+                        ?= parse_block (rest after) ?|
+                        | Error e => Error e
+                        | Ok (no, after) => Ok (SIf (c, yes, no), after)
+                    | _ => Ok (SIf (c, yes, []), after)
+    | Keyword (KwWhile) =>
+        ?= expect (Punct LParen) "(" (rest ts) ?|
+        | Error e => Error e
+        | Ok after =>
+            ?= expr_then (Punct RParen) ")" after ?|
+            | Error e => Error e
+            | Ok (c, after) =>
+                ?= parse_block after ?|
+                | Error e => Error e
+                | Ok (body, after) => Ok (SWhile (c, body), after)
+    | Keyword (KwReturn) =>
+        ?= head (rest ts) ?|
+        | Punct (Semi) => Ok (SReturn [], rest (rest ts))
+        | _ =>
+            ?= exprs_until_semi [] (rest ts) ?|
+            | Error e => Error e
+            | Ok (values, after) => Ok (SReturn values, after)
+    | Keyword (KwBreak) => ?= expect (Punct Semi) ";" (rest ts) ?| | Error e => Error e | Ok after => Ok (SBreak, after)
+    | Keyword (KwContinue) => ?= expect (Punct Semi) ";" (rest ts) ?| | Error e => Error e | Ok after => Ok (SContinue, after)
+    | Keyword (KwInt) => typed_let ts
+    | Keyword (KwUint) => typed_let ts
+    | Keyword (KwBool) => typed_let ts
+    | Keyword (KwFloat) => typed_let ts
+    | Ident name =>
+        ?= head (rest ts) ?|
+        | Punct (Comma) =>
+            ?= names_until_assign [] ts ?|
+            | Error e => Error e
+            | Ok (names, after) =>
+                ?= expr_then (Punct Semi) ";" after ?|
+                | Error e => Error e
+                | Ok (e, after) => Ok (SSetMulti (names, e), after)
+        | Punct (Assign) =>
+            ?= expr_then (Punct Semi) ";" (rest (rest ts)) ?|
+            | Error e => Error e
+            | Ok (e, after) => Ok (SSet (name, e), after)
+        | _ => ?= expr_then (Punct Semi) ";" ts ?| | Error e => Error e | Ok (e, after) => Ok (SExpr e, after)
+    | _ => ?= expr_then (Punct Semi) ";" ts ?| | Error e => Error e | Ok (e, after) => Ok (SExpr e, after)
+:& :~ parse_block (ts : list located) : result (list stmt * list located) parse_error =
+    ?= expect (Punct LBrace) "{" ts ?|
+    | Error e => Error e
+    | Ok after => block_items [] after
+:& :~ block_items (acc : list stmt) (ts : list located) : result (list stmt * list located) parse_error =
+    ?= head ts ?|
+    | Punct (RBrace) => Ok (listm::rev acc, rest ts)
+    | Eof => Error (Expected (head_line ts, "} to close the block"))
+    | _ =>
+        ?= parse_stmt ts ?|
+        | Error e => Error e
+        | Ok (s, after) => block_items (s :: acc) after
+
+:~ ^ params_until_close (acc : list (kind * string)) (ts : list located) : result (list (kind * string) * list located) parse_error =
+    ?= parse_type ts ?|
+    | Error e => Error e
+    | Ok (k, after) =>
+        ?= ident_of after ?|
+        | Error e => Error e
+        | Ok (name, after) =>
+            ?= head after ?|
+            | Punct (Comma) => params_until_close ((k, name) :: acc) (rest after)
+            | Punct (RParen) => Ok (listm::rev ((k, name) :: acc), rest after)
+            | _ => Error (Expected (head_line after, ", or )"))
+
+:~ ^ types_until_close (acc : list kind) (ts : list located) : result (list kind * list located) parse_error =
+    ?= parse_type ts ?|
+    | Error e => Error e
+    | Ok (k, after) =>
+        ?= head after ?|
+        | Punct (Comma) => types_until_close (k :: acc) (rest after)
+        | Punct (RParen) => Ok (listm::rev (k :: acc), rest after)
+        | _ => Error (Expected (head_line after, ", or )"))
+
+:= parse_ret (ts : list located) : result (ret_type * list located) parse_error =
+    ?= head ts ?|
+    | Punct (LParen) =>
+        ?= types_until_close [] (rest ts) ?|
+        | Error e => Error e
+        | Ok (kinds, after) => ? listm::length kinds < 2i32 ?> Error (Expected (head_line ts, "two or more return values")) |: Ok (RetTuple kinds, after)
+    | _ =>
+        ?= parse_type ts ?|
+        | Error e => Error e
+        | Ok (k, after) => Ok (RetOne k, after)
+
+:= parse_func (ts : list located) : result (func * list located) parse_error =
+    ?= ident_of ts ?|
+    | Error e => Error e
+    | Ok (name, after) =>
+        ?= expect (Punct LParen) "(" after ?|
+        | Error e => Error e
+        | Ok after =>
+            := params =
+                ?= head after ?|
+                | Punct (RParen) => Ok ([], rest after)
+                | _ => params_until_close [] after
+            ?= params ?|
+            | Error e => Error e
+            | Ok (params, after) =>
+                := ret =
+                    ?= head after ?|
+                    | Punct (Arrow) => parse_ret (rest after)
+                    | _ => Ok (RetNone, after)
+                ?= ret ?|
+                | Error e => Error e
+                | Ok (ret, after) =>
+                    ?= parse_block after ?|
+                    | Error e => Error e
+                    | Ok (body, after) => Ok ({ name; params; ret; body } |> func, after)
+
+:~ ^ program_items (funcs : list func) (tops : list top) (ts : list located) : result program parse_error =
+    ?= head ts ?|
+    | Eof => Ok ({ funcs = listm::rev funcs; tops = listm::rev tops } |> program)
+    | Ident ("OPENQASM") =>
+        := after = ?= head (rest ts) ?| | Number _ => rest (rest ts) | Real _ => rest (rest ts) | _ => rest ts
+        ?= expect (Punct Semi) ";" after ?|
+        | Error e => Error e
+        | Ok after => program_items funcs tops after
+    | Keyword (KwDef) =>
+        ?= parse_func (rest ts) ?|
+        | Error e => Error e
+        | Ok (f, after) => program_items (f :: funcs) tops after
+    | Keyword (KwOutput) =>
+        ?= parse_type (rest ts) ?|
+        | Error e => Error e
+        | Ok (k, after) =>
+            ?= ident_of after ?|
+            | Error e => Error e
+            | Ok (name, after) =>
+                ?= expect (Punct Semi) ";" after ?|
+                | Error e => Error e
+                | Ok after => program_items funcs (TOutput (k, name) :: tops) after
+    | _ =>
+        ?= parse_stmt ts ?|
+        | Error e => Error e
+        | Ok (s, after) => program_items funcs (TStmt s :: tops) after
+
+:= program_of (text : string) : result program parse_error =
+    ?= lex text ?|
+    | Error (UnexpectedChar (line, c)) => Error (Expected (line, "no character " ++# c))
+    | Ok ts => program_items [] [] ts
+
+///> rust
+///> gleam
+:# a_whole_program_parses_into_functions_and_top_level_items =
+    ?= program_of "OPENQASM 3.0;\noutput int[32] spiral_io;\ndef sp_method0(uint[32] p0) -> bool {\n  return p0 > 3;\n}\ndef make(int[32] p0, int[32] p1) -> (int[32], int[32]) {\n  return p0, p1;\n}\ndef spiral_main() -> int[32] {\n  int[32] v0 = 1;\n  while (true) { if (v0 > 5) { break; } else { v0 = v0 + 1; } }\n  a, b = make(v0, 2);\n  return v0;\n}\nspiral_io = spiral_main();\n" ?|
+    | Ok p => (listm::length p::funcs, listm::length p::tops, p::funcs |> listm::map (\ (f : func) => f::name))
+    | Error (Expected (line, _)) => (-1i32, line, [])
+    |> _assert_eq (3i32, 2i32, [ "sp_method0"; "make"; "spiral_main" ])
+
+///> rust
+///> gleam
+:# a_missing_semicolon_names_its_line =
+    ?= program_of "def f() {\n  return 1\n}\n" ?|
+    | Ok _ => 0i32
+    | Error (Expected (line, _)) => line
+    |> _assert_eq 3i32

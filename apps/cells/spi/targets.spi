@@ -12,25 +12,24 @@
     | ZigTarget
     | LeanTarget
     | WgslTarget
-    | UnknownTarget
 
-:= target_of (tool : string) : target =
-    ? tool = "rust" ?> RustTarget
-    |? tool = "fsharp" ?> FsharpTarget
-    |? tool = "typescript" ?> TypescriptTarget
-    |? tool = "python" ?> PythonTarget
-    |? tool = "cuda" ?> CudaTarget
-    |? tool = "cpp" ?> CppTarget
-    |? tool = "gleam" ?> GleamTarget
-    |? tool = "lua" ?> LuaTarget
-    |? tool = "c" ?> CTarget
-    |? tool = "delphi" ?> DelphiTarget
-    |? tool = "zig" ?> ZigTarget
-    |? tool = "lean" ?> LeanTarget
-    |? tool = "wgsl" ?> WgslTarget
-    |: UnknownTarget
+:= target_of (tool : string) : option target =
+    ? tool = "rust" ?> Some RustTarget
+    |? tool = "fsharp" ?> Some FsharpTarget
+    |? tool = "typescript" ?> Some TypescriptTarget
+    |? tool = "python" ?> Some PythonTarget
+    |? tool = "cuda" ?> Some CudaTarget
+    |? tool = "cpp" ?> Some CppTarget
+    |? tool = "gleam" ?> Some GleamTarget
+    |? tool = "lua" ?> Some LuaTarget
+    |? tool = "c" ?> Some CTarget
+    |? tool = "delphi" ?> Some DelphiTarget
+    |? tool = "zig" ?> Some ZigTarget
+    |? tool = "lean" ?> Some LeanTarget
+    |? tool = "wgsl" ?> Some WgslTarget
+    |: None
 
-:= backend (t : target) : string =
+:= backend_name (t : target) : string =
     ?= t ?|
     | RustTarget => "Rust"
     | FsharpTarget => "Fsharp"
@@ -45,9 +44,8 @@
     | ZigTarget => "Zig"
     | LeanTarget => "Lean"
     | WgslTarget => "Wgsl"
-    | UnknownTarget => ""
 
-:= extension (t : target) : string =
+:= extension_name (t : target) : string =
     ?= t ?|
     | RustTarget => ".rs"
     | FsharpTarget => ".fsx"
@@ -62,4 +60,60 @@
     | ZigTarget => ".zig"
     | LeanTarget => ".lean"
     | WgslTarget => ".wgsl"
-    | UnknownTarget => ""
+
+:= backend (t : option target) : string =
+    ?= t ?|
+    | Some t => backend_name t
+    | None => ""
+
+:= extension (t : option target) : string =
+    ?= t ?|
+    | Some t => extension_name t
+    | None => ""
+
+/// ## host cells: languages Cells runs directly, without a Spiral build
+:| host =
+    | FsiHost
+    | PythonHost
+    | LuaHost
+    | JavascriptHost
+    | PowershellHost
+
+:= host_of (language : string) : option host =
+    ? language = "fsharp" || language = "fs" ?> Some FsiHost
+    |? language = "python" || language = "py" ?> Some PythonHost
+    |? language = "lua" ?> Some LuaHost
+    |? language = "javascript" || language = "js" ?> Some JavascriptHost
+    |? language = "powershell" || language = "pwsh" ?> Some PowershellHost
+    |: None
+
+:= host_name (h : host) : string =
+    ?= h ?|
+    | FsiHost => "fsharp"
+    | PythonHost => "python"
+    | LuaHost => "lua"
+    | JavascriptHost => "javascript"
+    | PowershellHost => "powershell"
+
+:= host_file_extension (h : host) : string =
+    ?= h ?|
+    | FsiHost => ".fsx"
+    | PythonHost => ".py"
+    | LuaHost => ".lua"
+    | JavascriptHost => ".js"
+    | PowershellHost => ".ps1"
+
+:= host_language (language : string) : string =
+    ?= host_of (text::lowercase language) ?|
+    | Some h => host_name h
+    | None => ""
+
+:= host_extension (name : string) : string =
+    ?= host_of name ?|
+    | Some h => host_file_extension h
+    | None => ""
+
+:~ ^ without_exe (s : string) : string =
+    ? text::length s >= 4i32 && text::starts_at s (text::length s - 4i32) ".exe" ?> without_exe (text::take s (text::length s - 4i32)) |: s
+
+:= is_cl (basename : string) : bool = without_exe (text::lowercase basename) = "cl"

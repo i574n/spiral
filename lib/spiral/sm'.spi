@@ -1062,6 +1062,7 @@
             from_std_string text
         TypeScript = \ () => $'String.fromCharCode(!input)' : string
         Lua = \ () => $'!input' : string
+        Gleam = \ () => $'!input' : string
     }
 
 ///> rust
@@ -1069,6 +1070,10 @@
     char_code 'A' |> _assert_eq 65u32
     char_code 'z' |> _assert_eq 122u32
     of_char 'A' |> _assert_eq "A"
+
+///> gleam
+:# of_char_is_the_one_character_string_on_gleam =
+    (of_char 'A', of_char '(' = "(") |> _assert_eq ("A", !+)
 
 ///> lua
 :# char_code_decodes_utf8 =
@@ -1520,15 +1525,22 @@
     run_target \|
         | Rust => \ () =>
             $'Rc::new(RefCell::new(!text.lines().map(Rc::<str>::from).collect::<Vec<Rc<str>>>()))' : array string
-        | _ => \ () => failwith "lines: no arm for this backend"
+        | _ => \ () =>
+            := parts = line_parts text
+            (arraym::init (line_part_count parts) (\ i => parts |> am'::index_base i |> line_without_return) : array string)
 
 := nonempty_lines (text : string) : array string =
     run_target \|
         | Rust => \ () =>
             nonempty_line_fold (\ acc line => acc |> am'::vec_push line) (am'::new_vec []) text |> am'::from_vec
-        | _ => \ () => failwith "nonempty_lines: no arm for this backend"
+        | _ => \ () =>
+            := parts = line_parts text
+            (arraym::init (line_part_count parts) (\ i => parts |> am'::index_base i |> line_without_return) : array string)
+            |> arraym::filter (\ line => line <> "")
 
 ///> rust
+///> gleam
+///> c
 :# lines_follow_rust_line_rules =
     := text = "a\r\n\nb\n"
     (am'::length (lines text) : int) |> _assert_eq 3

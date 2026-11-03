@@ -7426,7 +7426,7 @@ module spiral_compiler =
     let unionSourcePackages = System.Runtime.CompilerServices.ConditionalWeakTable<obj, int ref>()
     // A `link:` unit as its importer sees it: its name and, once the unit is built, the unions its exports reach, keyed by
     // (source name, concrete shape) and mapped to the name the unit exports them under. None: no graph, the package owns all.
-    type LinkedUnit = {unit : string; exported : Map<string * string, string> option}
+    type LinkedUnit = {unit : string; exported : Map<string * string, string> option; calls : Map<string * string, string>}
     let unionOwnerUnit (linked : Map<int, LinkedUnit>) (node : obj) =
         match unionSourcePackages.TryGetValue node with
         | true, owner -> Map.tryFind owner.Value linked
@@ -7435,6 +7435,16 @@ module spiral_compiler =
         match unionSourceNames.TryGetValue node with
         | true, _ -> ()
         | _ -> noteUnionSourceName node (name ())
+    let definitionSources = System.Runtime.CompilerServices.ConditionalWeakTable<E, string * string>()
+    let noteDefinitionSource (path : string) (name : string) (e : E) =
+        let rec walk e =
+            match e with
+            | EForall'(_,_,_,b) | EAnnot(_,b,_) -> walk b
+            | EFun'(_,_,_,body,_) as f when (match body with EFun' _ -> false | _ -> true) ->
+                definitionSources.TryAdd(f, (path, name)) |> ignore
+                definitionSources.TryAdd(body, (path, name)) |> ignore
+            | _ -> ()
+        walk e
     let noteClosureName (node : E) (name : string) =
         match closureBindingNames.TryGetValue node with
         | true, _ -> ()
@@ -8214,6 +8224,7 @@ module spiral_compiler =
             | FInl(_,(name_range,name),body) ->
                 let e = term env body |> process_term
                 PrepassReferences.define path name_range name e
+                noteDefinitionSource path name e
                 AInclude {prepassTop_env_empty with term = Map.add (TermNameIdOps.create name) e Map.empty}
             | FRecInl l ->
                 let l, env =
@@ -8225,6 +8236,7 @@ module spiral_compiler =
                     List.fold (fun top_env_term ((_,(name_range,name),body),(r : ref<E>)) ->
                         r.Value <- term env body |> process_term
                         PrepassReferences.define path name_range name r.Value
+                        noteDefinitionSource path name r.Value
                         Map.add (TermNameIdOps.create name) r.Value top_env_term
                         ) Map.empty l
                 AInclude {prepassTop_env_empty with term = term}
@@ -9566,9 +9578,37 @@ module spiral_compiler =
     /// ### store_ty
     let store_ty (s : LangEnv) i v = s.env_stack_type.[i-s.env_global_type.Length] <- v
 
+    /// ### ExternCalls
+    /// The exported definitions of the `link:` units of the file being built, as (file, name) -> `unit::export`. A call to
+    /// one of them with a plain argument (no string or function inside) becomes a typed call into the unit instead of an
+    /// inlined body. Set per build, and empty outside Rust.
+    module ExternCalls =
+        type Call = {call : string; import_text : string option; borrow_strings : bool; unit_path : string; struct_records : bool}
+        let current = new System.Threading.ThreadLocal<Map<string * string, Call>>(fun () -> Map.empty)
+        let lookup (body : E) =
+            if current.Value.IsEmpty then None
+            else match definitionSources.TryGetValue body with | true, key -> Map.tryFind key current.Value | _ -> None
+        let rec plain (resolve : Ty -> Ty) (t : Ty) =
+            match t with
+            | YFun _ | YMacro _ | YRecord _ -> false
+            | YPair(a, b) -> plain resolve a && plain resolve b
+            | YNominal _ | YApply _ -> (match resolve t with YRecord _ -> false | _ -> true)
+            | _ -> true
+        let struct_fields (enabled : bool) (resolve : Ty -> Ty) (t : Ty) =
+            match t with
+            | YNominal n when enabled ->
+                match resolve t with
+                | YRecord fields when not fields.IsEmpty && fields |> Map.forall (fun _ t -> match t with YPrim _ -> true | _ -> false) ->
+                    Some (n.node.name |> String.map (fun c -> if System.Char.IsLetterOrDigit c || c = '_' then c else '_'), fields)
+                | _ -> None
+            | _ -> None
+        let callable (enabled : bool) (resolve : Ty -> Ty) (domain : Ty) (range : Ty) =
+            (plain resolve domain || (struct_fields enabled resolve domain).IsSome) && (plain resolve range || (struct_fields enabled resolve range).IsSome)
+
     /// ### PhantomIndex
     /// An index built from unit nominals only (`:! zero = ()`, `:! succ n = ()`) is erased to `mark` where it grows. A family
-    /// grows when a case payload applies the family itself to a non-variable index (term n holds term (succ n)); it and every
+    /// grows when a case payload applies the family itself to a non-variable index built from a variable (term n holds
+    /// term (succ n); a closed index such as evidence accepts_empty cannot grow); it and every
     /// family named in its payloads (var n inside term n) are laid out at the mark for every index, so their values share
     /// one representation. A join point whose binding grows past an active ancestor specialization of the same join point is
     /// specialized once at the mark. While a mark layout runs (`active`), a GADT case's destructor pattern unifies with the
@@ -9602,7 +9642,11 @@ module spiral_compiler =
                     let payloads = ResizeArray<TPrepass>()
                     n.node.body |> walk (function TUnion(_,(m,_)) -> m |> Map.iter (fun _ (c, d) -> payload c d |> Option.iter payloads.Add) | _ -> ())
                     let mutable grows = false
-                    for p in payloads do p |> walk (function TApply(_, TNominal g, TV _) -> () | TApply(_, TNominal g, _) when g = gid -> grows <- true | _ -> ())
+                    let mentions_variable (index : TPrepass) =
+                        let found = ref false
+                        index |> walk (function TV _ -> found.Value <- true | _ -> ())
+                        found.Value
+                    for p in payloads do p |> walk (function TApply(_, TNominal g, TV _) -> () | TApply(_, TNominal g, index) when g = gid && mentions_variable index -> grows <- true | _ -> ())
                     if grows then
                         result.Add gid |> ignore
                         for p in payloads do p |> walk (function TApply(_, TNominal g, _) -> result.Add g |> ignore | _ -> ())
@@ -10183,9 +10227,28 @@ module spiral_compiler =
                 // call was quadratic in the number of globals: lib/spiral's native Rust alias globals made app compiles
                 // several times slower).
                 let has_added = GlobalsIndex.get s.globals
+                let balanced (x : string) =
+                    let mutable depth = 0
+                    let mutable ok = true
+                    let mutable quoted = false
+                    let mutable i = 0
+                    while ok && i < x.Length do
+                        let c = x.[i]
+                        if quoted then
+                            if c = '\\' then i <- i + 1
+                            elif c = '"' then quoted <- false
+                        else
+                            match c with
+                            | '"' -> quoted <- true
+                            | '(' | '[' | '{' -> depth <- depth + 1
+                            | ')' | ']' | '}' -> depth <- depth - 1; if depth < 0 then ok <- false
+                            | _ -> ()
+                        i <- i + 1
+                    ok && depth = 0 && not quoted
                 let preserves_duplicate_fragment (x : string) =
                     System.String.IsNullOrEmpty x
                     || ((System.Char.IsWhiteSpace x.[0] || x.[0] = '}') && not (x.TrimEnd().Contains '\n'))
+                    || not (balanced x)
                 fun x -> if preserves_duplicate_fragment x || has_added.Add(x) then s.globals.Add x
 
             let term2 s a b = term s a, term s b
@@ -10212,7 +10275,7 @@ module spiral_compiler =
                     match a |> Map.tryPick (fun (_, k) v -> if k = b then Some v else None) with
                     | Some a -> a
                     | None -> raise_type_error s <| sprintf "Cannot find the key %s inside the record. Its keys: %s." b (a |> Map.toList |> List.map (fst >> snd) |> String.concat ", ")
-                | DFunction(body,_,gl_term,gl_ty,sz_term,sz_ty), b ->
+                | DFunction(body,annot,gl_term,gl_ty,sz_term,sz_ty), b ->
                     let inline_depth = match InlineDepthOps.enter StopBeforeStackExhaustion s.inline_depth with Ok depth -> depth | Error message -> raise_type_error s message
                     let s : LangEnv =
                         {s with
@@ -10223,13 +10286,44 @@ module spiral_compiler =
                             env_stack_term = Array.zeroCreate<_> sz_term
                             }
                     s.env_stack_term.[0] <- b
-                    term s body
+                    (match ExternCalls.lookup body, annot with
+                     | Some linked, Some (TFun(_, range, _)) when (let resolve t = try nominal_type_apply s t with _ -> t in ExternCalls.callable linked.struct_records resolve (data_to_ty s b) (ty s range)) ->
+                        let resolve t = try nominal_type_apply s t with _ -> t
+                        let b = dyn false s b
+                        linked.import_text |> Option.iter (fun text -> global' text; push_op_no_rewrite s Global (DLit (LitString text)) YB |> ignore)
+                        let pieces d =
+                            data_term_vars d
+                            |> Array.toList
+                            |> List.mapi (fun j a ->
+                                let separator = if j > 0 then [CMText ", "] else []
+                                match a with
+                                | WV(L(_, YPrim StringT) as v) when linked.borrow_strings -> separator @ [CMText "&"; CMTerm(DV v, true)]
+                                | WV v -> separator @ [CMTerm(DV v, true)]
+                                | WLit l -> separator @ [CMTerm(DLit l, true)])
+                            |> List.concat
+                        let args =
+                            match ExternCalls.struct_fields linked.struct_records resolve (data_to_ty s b), b with
+                            | Some (name, _), (DNominal(DRecord m, _) | DRecord m) ->
+                                let fields = m |> Map.toList |> List.mapi (fun j ((_, k), v) -> (if j > 0 then [CMText ", "] else []) @ [CMText $"{k}: "] @ pieces v) |> List.concat
+                                [CMText $"{linked.unit_path}{name} {{ "] @ fields @ [CMText " }"]
+                            | _ -> pieces b
+                        let range_ty = ty s range
+                        let call = [CMText (linked.call + "(")] @ args @ [CMText ")"]
+                        let text =
+                            match ExternCalls.struct_fields linked.struct_records resolve range_ty with
+                            | Some (_, fields) ->
+                                let parts = fields |> Map.toList |> List.map (fun ((_, k), _) -> $"r.{k}")
+                                let read = match parts with [one] -> one | many -> many |> String.concat ", " |> sprintf "(%s)"
+                                [CMText "{ let r = "] @ call @ [CMText $"; {read} }}"]
+                            | None -> call
+                        push_typedop_no_rewrite s (TyMacro text) range_ty
+                     | _ -> term s body)
                 | DV(L(_,YForall)), _ -> raise_type_error s "Cannot apply a runtime forall, and not with a term. Foralls have to be known at compile time and applied with a type."
                 | DForall _, _ -> raise_type_error s "Cannot apply a forall with a term."
                 | DV(L(_,YFun(domain,range,t) & a_ty) & a), b ->
                     let b = dyn false s b
                     let b_ty = data_to_ty s b
-                    if domain = b_ty then push_typedop_no_rewrite s (TyApply(a,b)) range
+                    if domain = b_ty || phantom_erase s domain = phantom_erase s b_ty then push_typedop_no_rewrite s (TyApply(a,b)) range
                     else raise_type_error s <| sprintf "Cannot apply an argument of type %s to a function of type: %s" (show_ty b_ty) (show_ty a_ty)
                 | DV(L(i,YLayout(ty,layout)) as tyv) as a, DSymbol b ->
                     let key = TyLayoutIndexByKey(tyv, b)
@@ -12608,9 +12702,17 @@ module spiral_compiler =
     /// it links, and each union its exports reach (source name, concrete shape, exported name). Importers read the unions
     /// through `link:`; kit generates Cargo dependencies from the links.
     let unitGraphJson (links : string list) (env : PartEvalResult) (x : TypedBind []) =
+        let closure_bodies = Dictionary<int, E>()
+        x |> Array.iter (function TyLet(DV(L(i,_)),_,TyJoinPoint(JPClosure((_,e),_),_)) -> closure_bodies.[i] <- e | _ -> ())
+        let target i =
+            match closure_bodies.TryGetValue i with
+            | true, e -> (match definitionSources.TryGetValue e with | true, t -> t | _ -> ("", ""))
+            | _ -> ("", "")
         let exports =
             x |> Array.choose (function
-                | TyLet(_,_,TyOp(Export, [DLit (LitString name); DV(L(_,(YFun _ as t)))])) | TyLocalReturnOp(_,TyOp(Export, [DLit (LitString name); DV(L(_,(YFun _ as t)))]),_) -> Some {| name = name; signature = show_ty t |}
+                | TyLet(_,_,TyOp(Export, [DLit (LitString name); DV(L(i,(YFun _ as t)))])) | TyLocalReturnOp(_,TyOp(Export, [DLit (LitString name); DV(L(i,(YFun _ as t)))]),_) ->
+                    let path, source = target i
+                    Some {| name = name; signature = show_ty t; target_path = path; target_name = source |}
                 | _ -> None)
         if exports.Length = 0 then None
         else
@@ -18420,7 +18522,10 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                 spiralArrays ()
                 $"{tup b}.size" |> simple
             | TyStringLength(a,b) -> length (a,b)
-            | TyFailwith(a,b) -> simple (sprintf "panic as %s" (tup b))
+            | TyFailwith(a,b) ->
+                match d with
+                | Some d when (free_vars false d |> SpiralSm.trim) <> "Nil" -> line s $"let {free_vars false d |> SpiralSm.trim}: {tup_ty a} = panic as {tup b}"
+                | _ -> simple (sprintf "panic as %s" (tup b))
             | TyConv(a,b) ->
                 let t = tyv a |> SpiralSm.to_lower
                 let d = tup b
@@ -18514,7 +18619,11 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                 | Sub, [a;b] -> wrapInteger a $"{a |> tup} -{a |> dot} {b |> tup}"
                 | Mult, [a;b] -> wrapInteger a $"{a |> tup} *{a |> dot} {b |> tup}"
                 | Div, [a;b] -> $"{a |> tup} /{a |> dot} {b |> tup}"
-                | Mod, [a;b] -> $"{a |> tup} %%{a |> dot} {b |> tup}"
+                | Mod, [a;b] when dot a = "." ->
+                    global' "import gleam/float"
+                    global' "fn spiral_fmod(a: Float, b: Float) -> Float {\n  let q = a /. b\n  let t = case q >=. 0.0 {\n    True -> float.floor(q)\n    False -> float.ceiling(q)\n  }\n  a -. t *. b\n}"
+                    $"spiral_fmod({tup a}, {tup b})"
+                | Mod, [a;b] -> $"{a |> tup} %% {b |> tup}"
                 | Pow, [a;b] -> if dot a = "." then (spiralFloatPower (); $"spiral_math_pow({tup a}, {tup b})") else (spiralIntPower (); wrapInteger a $"spiral_int_power({tup a}, {tup b})")
                 | LT, [(DV(L(_,YPrim (StringT | CharT))) | DLit(LitString _ | LitChar _)) as a;b] -> global' "import gleam/string"; global' "import gleam/order"; $"string.compare({tup a}, {tup b}) == order.Lt"
                 | LTE, [(DV(L(_,YPrim (StringT | CharT))) | DLit(LitString _ | LitChar _)) as a;b] -> global' "import gleam/string"; global' "import gleam/order"; $"string.compare({tup a}, {tup b}) != order.Gt"
@@ -18792,6 +18901,9 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                     |> List.groupBy fst
                     |> List.map (fun (unitName, groups) -> $"""import {unitName}.{{{groups |> List.collect snd |> String.concat ", "}}}""" + "\n")
                     |> String.concat ""
+                let dropped =
+                    imports |> List.map fst |> List.distinct |> List.fold (fun (code : string) unitName ->
+                        System.Text.RegularExpressions.Regex.Replace(code, $@"(?m)^import {System.Text.RegularExpressions.Regex.Escape unitName}\r?\n", "")) dropped
                 lines + dropped
         (program.Append($"pub fn main() {{\n{gleamIndentedMain (string main)}}}\n").ToString() |> silenceUnusedBindings |> gleamUsedHelpers |> renameExportedUnions |> importUnions), ffi.Value
 
@@ -19611,10 +19723,8 @@ end
                     | _ -> luaWrap a (sprintf "(%s * %s)" (tup a) (tup b))
                 | Div, [a;b] when (match data_term_vars a with [|WV(L(_,YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T)))|] | [|WLit (LitInt8 _ | LitInt16 _ | LitInt32 _ | LitInt64 _ | LitUInt8 _ | LitUInt16 _ | LitUInt32 _ | LitUInt64 _)|] -> true | _ -> false) ->
                     sprintf "(math.modf(%s / %s))" (tup a) (tup b)
-                | Mod, [a;b] when (match data_term_vars a with [|WV(L(_,YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T)))|] | [|WLit (LitInt8 _ | LitInt16 _ | LitInt32 _ | LitInt64 _ | LitUInt8 _ | LitUInt16 _ | LitUInt32 _ | LitUInt64 _)|] -> true | _ -> false) ->
-                    sprintf "math.fmod(%s, %s)" (tup a) (tup b)
                 | Div, [a;b] -> sprintf "%s / %s" (tup a) (tup b)
-                | Mod, [a;b] -> sprintf "%s %% %s" (tup a) (tup b)
+                | Mod, [a;b] -> sprintf "math.fmod(%s, %s)" (tup a) (tup b)
                 | Pow, [a;b] -> sprintf "%s ^ %s" (tup a) (tup b)
                 | LT, [a;b] -> sprintf "%s < %s" (tup a) (tup b)
                 | LTE, [a;b] -> sprintf "%s <= %s" (tup a) (tup b)
@@ -21357,6 +21467,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         program.AppendLine("  lanes: u32,") |> ignore
         program.AppendLine("  heap_words_per_lane: u32,") |> ignore
         program.AppendLine("  lane_base: u32,") |> ignore
+        program.AppendLine("  heap_overflow: atomic<u32>,") |> ignore
         program.AppendLine("}") |> ignore
         program.AppendLine("@group(0) @binding(0) var<storage, read_write> spiral_io: SpiralIo;") |> ignore
         program.AppendLine("@group(0) @binding(2) var<storage, read_write> spiral_results: array<i32>;") |> ignore
@@ -21364,10 +21475,13 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         if uses_heap.Value then
             program.AppendLine("@group(0) @binding(1) var<storage, read_write> spiral_heap: array<u32>;") |> ignore
             program.AppendLine("var<private> spiral_heap_top: u32 = 0u;") |> ignore
+            program.AppendLine("var<private> spiral_heap_end: u32 = 0u;") |> ignore
             program.AppendLine("fn spiral_array_create(length: i32, stride: u32) -> u32 {") |> ignore
             program.AppendLine("  let base = spiral_heap_top;") |> ignore
-            program.AppendLine("  spiral_heap[base] = bitcast<u32>(length);") |> ignore
-            program.AppendLine("  spiral_heap_top = base + 1u + bitcast<u32>(length) * stride;") |> ignore
+            program.AppendLine("  let next = base + 1u + bitcast<u32>(length) * stride;") |> ignore
+            program.AppendLine("  if (next > spiral_heap_end || next < base) { atomicAdd(&spiral_io.heap_overflow, 1u); }") |> ignore
+            program.AppendLine("  if (base < spiral_heap_end) { spiral_heap[base] = bitcast<u32>(length); }") |> ignore
+            program.AppendLine("  spiral_heap_top = next;") |> ignore
             program.AppendLine("  return base;") |> ignore
             program.AppendLine("}") |> ignore
         if uses_w64.Value then program.Append(spiralWgslW64Helpers) |> ignore
@@ -21382,6 +21496,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         if uses_heap.Value then
             program.AppendLine("  let heap_words = select(arrayLength(&spiral_heap) / lane_count, spiral_io.heap_words_per_lane, spiral_io.heap_words_per_lane > 0u);") |> ignore
             program.AppendLine("  spiral_heap_top = invocation.x * heap_words;") |> ignore
+            program.AppendLine("  spiral_heap_end = spiral_heap_top + heap_words;") |> ignore
         if unit_main then
             program.AppendLine("  spiral_main();") |> ignore
             program.AppendLine("  let result = 0i;") |> ignore
@@ -24993,7 +25108,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
     type RefcVars = {g_incr : Dictionary<TypedBind,TyV Set>; g_decr : RefcDecrTable; g_op : Dictionary<TypedBind,Map<TyV, int>>; g_op_decr : Dictionary<TypedBind,TyV Set>}
 
     /// ### refc_prepass
-    let refc_prepass (new_vars : TyV Set) (increfed_vars : TyV Set) (x : TypedBind []) =
+    let refc_prepass' (borrowed : JoinPointKey -> int -> bool) (new_vars : TyV Set) (increfed_vars : TyV Set) (x : TypedBind []) =
         let used_vars = refc_used_vars x
         let g_incr : Dictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
         let g_decr : RefcDecrTable = refcDecrTable ()
@@ -25033,7 +25148,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             let fun_call q = add' g_op k q; add g_op_decr k increfed_vars
             match x with
             | TyApply(a,b) -> varc_add a 1 (varc_data b) |> fun_call
-            | TyJoinPoint(_,x) -> Array.fold (fun s x -> varc_add x 1 s) Map.empty x |> fun_call
+            | TyJoinPoint(key,x) ->
+                x |> Array.indexed |> Array.fold (fun s (i, x) -> if borrowed key i then s else varc_add x 1 s) Map.empty |> fun_call
             | TyArrayLiteral(_,x) -> List.fold (fun s x -> varc_union s (varc_data x)) Map.empty x |> fun_call
             | TyUnionBox(_,x,_) | TyToLayout(x,_) -> varc_data x |> fun_call
             | TySizeOf _ | TyLayoutIndexAll _ | TyLayoutIndexByKey _ | TyMacro _ | TyOp _ | TyFailwith _ | TyConv _
@@ -25052,6 +25168,91 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         binds new_vars increfed_vars x
 
         {g_incr=g_incr; g_op=g_op; g_decr=g_decr; g_op_decr=g_op_decr}
+
+    let refc_prepass (new_vars : TyV Set) (increfed_vars : TyV Set) (x : TypedBind []) = refc_prepass' (fun _ _ -> false) new_vars increfed_vars x
+
+    /// ### ParamEscape
+    type ParamUse = Borrowed | Escapes
+
+    let paramEscapeTracked (L(_,t) : TyV) = match t with YArray _ | YPrim StringT -> true | _ -> false
+
+    let paramEscapeScan (uses : Dictionary<JoinPointKey, ParamUse []>) (self : JoinPointKey option) (borrowedHere : TyV Set) (body : TypedBind []) =
+        let escaped = HashSet<TyV>()
+        let demoted = ResizeArray<JoinPointKey * int>()
+        let esc (vs : TyV seq) = for v in vs do if borrowedHere.Contains v then escaped.Add v |> ignore
+        let fv d = data_free_vars d
+        let call tail ((key, args) : JoinPointCall) =
+            match key, uses.TryGetValue key with
+            | JPMethod _, (true, u) ->
+                args |> Array.iteri (fun i a ->
+                    if i < u.Length && u.[i] = Borrowed then
+                        if (tail || self = Some key) && not (borrowedHere.Contains a) then demoted.Add((key, i))
+                    else esc [a])
+            | _ -> esc args
+        let rec binds (x : TypedBind []) = for b in x do bind b
+        and bind = function
+            | TyLet(_,_,o) -> op false o
+            | TyLocalReturnOp(_,o,_) -> op true o
+            | TyLocalReturnData(d,_) -> esc (fv d)
+        and op tail = function
+            | TyJoinPoint c -> call tail c
+            | TyOp(ArrayIndex, _) | TyArrayLength _ | TyStringLength _ | TySizeOf _ | TyBackend _ -> ()
+            | TyLayoutIndexAll _ | TyLayoutIndexByKey _ -> ()
+            | TyOp(ArrayIndexSet, [_; _; c]) -> esc (fv c)
+            | TyOp(_, l) | TyArrayLiteral(_, l) -> for d in l do esc (fv d)
+            | TyMacro l -> for m in l do (match m with CMTerm(d,_) -> esc (fv d) | _ -> ())
+            | TyUnionBox(_,x,_) | TyToLayout(x,_) | TyFailwith(_,x) | TyConv(_,x) | TyArrayCreate(_,x) -> esc (fv x)
+            | TyApply(i,d) -> esc [i]; esc (fv d)
+            | TyLayoutMutableSet(_,_,d) -> esc (fv d)
+            | TyWhile(_,body) | TyDo body | TyIndent body -> binds body
+            | TyIf(_,a,b) -> binds a; binds b
+            | TyUnionUnbox(_,_,cases,fail) ->
+                for kv in cases do binds (snd kv.Value)
+                Option.iter binds fail
+            | TyIntSwitch(_,cases,fail) ->
+                Array.iter binds cases
+                binds fail
+        binds body
+        escaped, demoted
+
+    let paramEscape (env : PartEvalResult) (main : TypedBind []) : JoinPointKey -> int -> bool =
+        let methods = ResizeArray<JoinPointKey * TyV [] * TypedBind []>()
+        for kv in env.join_point_method do
+            for m in fst kv.Value do
+                match m.Value with
+                | Some body, _, _ -> methods.Add((JPMethod(kv.Key, m.Key), rdata_free_vars (codegenMethodKeyArgs m.Key), DeadPureLetElision.block body))
+                | _ -> ()
+        let closures = ResizeArray<TypedBind []>()
+        for kv in env.join_point_closure do
+            for c in fst kv.Value do
+                match c.Value with
+                | Some(_, body) -> closures.Add(DeadPureLetElision.block body)
+                | None -> ()
+        let uses = Dictionary<JoinPointKey, ParamUse []>(HashIdentity.Structural)
+        for key, ps, _ in methods do uses.[key] <- ps |> Array.map (fun p -> if paramEscapeTracked p then Borrowed else Escapes)
+        let mutable changed = true
+        let demote key i =
+            let u = uses.[key]
+            if u.[i] = Borrowed then
+                u.[i] <- Escapes
+                changed <- true
+        let scan self borrowed body =
+            let escaped, demoted = paramEscapeScan uses self borrowed body
+            for key, i in demoted do demote key i
+            escaped
+        while changed do
+            changed <- false
+            for key, ps, body in methods do
+                let u = uses.[key]
+                let borrowed = ps |> Array.indexed |> Array.choose (fun (i, p) -> if u.[i] = Borrowed then Some p else None) |> Set
+                let escaped = scan (Some key) borrowed body
+                ps |> Array.iteri (fun i p -> if escaped.Contains p then demote key i)
+            for body in closures do scan None Set.empty body |> ignore
+            scan None Set.empty main |> ignore
+        fun key i ->
+            match uses.TryGetValue key with
+            | true, u -> i < u.Length && u.[i] = Borrowed
+            | _ -> false
 
     /// ## CodegenC
     module CodegenC =
@@ -25180,12 +25381,19 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     functions.Add(StringBuilder().AppendLine(proto () + ";").ToString())
 
             let malloc, free = "malloc", "free"
+            let threaded = env.globals.Contains "#define SPIRAL_THREADS 1"
+            let refc_add (counter : string) (count : int) =
+                if threaded then $"__atomic_fetch_add(&{counter}, {count}, __ATOMIC_RELAXED);"
+                elif count = 1 then $"{counter}++;"
+                else $"{counter} += {count};"
+            let refc_drop (counter : string) =
+                if threaded then $"__atomic_sub_fetch(&{counter}, 1, __ATOMIC_ACQ_REL) == 0" else $"--({counter}) == 0"
 
             let print_decref s_fun name_fun type_arg name_decref =
                 line s_fun (sprintf "void %s(%s * x){" name_fun type_arg)
                 let _ =
                     let s_fun = indent s_fun
-                    line s_fun (sprintf "if (x != NULL && --(x->refc) == 0) { %s(x); %s(x); }" name_decref free)
+                    line s_fun (sprintf "if (x != NULL && %s) { %s(x); %s(x); }" (refc_drop "x->refc") name_decref free)
                 line s_fun "}"
 
             let print show r =
@@ -25327,7 +25535,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             let self_continue_release : (CodegenEnv -> unit) ref = ref ignore
             let self_let_tail_target : (TyV [] * (CodegenEnv -> unit)) option ref = ref None
             let method_key_of_tag = Dictionary<int, obj>()
-            let rec binds_start (args : TyV []) (s : CodegenEnv) (x : TypedBind []) = binds (refc_prepass Set.empty (Set args) x) s BindsTailEnd x
+            let borrowed_param = paramEscape env x
+            let rec binds_start (args : TyV []) (s : CodegenEnv) (x : TypedBind []) = binds (refc_prepass' borrowed_param Set.empty (Set args) x) s BindsTailEnd x
             and self_continue (s : CodegenEnv) (parameters : TyV []) (args : TyV []) =
                 if parameters.Length > 0 then
                     line s "{"
@@ -25447,8 +25656,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 let v = i,t'
                 let inline g decref =
                     if count = -1 then Some (decref())
-                    elif count = 1 then Some $"({f v})->refc++;"
-                    elif 1 < count then Some $"({f v})->refc += {count};"
+                    elif 0 < count then Some (refc_add $"({f v})->refc" count)
                     else raise_codegen_error $"Compiler error: Invalid count in refc_change''. Got: {count}"
                 match t' with
                 | YUnion t ->
@@ -25769,6 +25977,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | Sub, [a;b] -> sprintf "%s - %s" (tup_data a) (tup_data b)
                     | Mult, [a;b] -> sprintf "%s * %s" (tup_data a) (tup_data b)
                     | Div, [a;b] -> sprintf "%s / %s" (tup_data a) (tup_data b)
+                    | Mod, [(DV(L(_,YPrim (Float32T | Float64T))) | DLit(LitFloat32 _ | LitFloat64 _)) & a;b] -> import "math.h"; sprintf "fmod%s(%s, %s)" (float_suffix a) (tup_data a) (tup_data b)
                     | Mod, [a;b] -> sprintf "%s %% %s" (tup_data a) (tup_data b)
                     | Pow, [a;b] -> import "math.h"; sprintf "pow%s(%s,%s)" (float_suffix a) (tup_data a) (tup_data b)
                     | LT, [a;b] when is_stringC a -> import "string.h"; sprintf "strcmp(%s, %s) < 0" (string_in_op a) (string_in_op b)
@@ -25835,6 +26044,9 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     |> return'
             and print_ordered_args s v = // Unlike C# for example, C keeps the struct fields in input order. To reduce padding, it is best to order the fields from largest to smallest.
                 order_argsC v |> Array.iter (fun (L(i,x)) -> line s $"{tyv x} v{i};")
+            and owned_params (x : MethodRecC) =
+                let jp_body, key = method_key_of_tag.[x.tag] :?> (string ConsedNode * E) * ConsedNode<RData [] * Ty []>
+                x.free_vars |> Array.indexed |> Array.filter (fun (i, _) -> not (borrowed_param (JPMethod(jp_body, key)) i)) |> Array.map snd
             and method_templ is_while fun_name : _ -> MethodRecC =
                 jp (fun ((jp_body,key),i) ->
                     let args = codegenMethodKeyArgs key
@@ -25843,7 +26055,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | a, range, name -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a; name=name}
                     ) (fun _ s_typ s_fun x ->
                     let fun_name = Option.defaultValue fun_name x.name
-                    line s_fun (method_sig fun_name x + "{")
+                    let borrowed_loop = not is_while && self_tail x.tag x.body && (owned_params x).Length < x.free_vars.Length
+                    line s_fun ((if borrowed_loop then "__attribute__((noinline)) " else "") + method_sig fun_name x + "{")
                     fns_printing.Add $"{fun_name}{x.tag}"
                     let saved = self_loop.Value
                     let saved_release = self_continue_release.Value
@@ -25853,11 +26066,11 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     if not is_while && self_tail x.tag x.body then
                         self_loop.Value <- Some (x.tag, x.free_vars, fns_printing.Count)
                         line (indent s_fun) "while (1) {"
-                        binds_start x.free_vars (indent (indent s_fun)) x.body
+                        binds_start (owned_params x) (indent (indent s_fun)) x.body
                         line (indent s_fun) "}"
                     else
                         self_loop.Value <- None
-                        binds_start (if is_while then [||] else x.free_vars) (indent s_fun) x.body
+                        binds_start (if is_while then [||] else owned_params x) (indent s_fun) x.body
                     self_loop.Value <- saved
                     self_continue_release.Value <- saved_release
                     self_let_tail_target.Value <- saved_target
@@ -25931,7 +26144,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     let _ =
                         let s_fun = indent s_fun
                         line s_fun $"Closure{i} * x = (Closure{i} *) self;"
-                        line s_fun $"if (x != NULL && --(x->base.refc) == 0) {{ ClosureDecrefBody{i}(x); {free}(x); }}"
+                        line s_fun (sprintf "if (x != NULL && %s) { ClosureDecrefBody%i(x); %s(x); }" (refc_drop "x->base.refc") i free)
                     line s_fun "}"
 
                     match x.domain_args |> Array.map (fun (L(i,t)) -> $"{tyv t} v{i}") |> String.concat ", " with
@@ -26136,7 +26349,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             line s_fun (sprintf "void UHDecref%i(UH%i * x){" i i)
                             let _ =
                                 let s_fun = indent s_fun
-                                line s_fun "while (x != NULL && --(x->refc) == 0) {"
+                                line s_fun (sprintf "while (x != NULL && %s) {" (refc_drop "x->refc"))
                                 let _ =
                                     let s_fun = indent s_fun
                                     line s_fun (sprintf "UH%i * next = NULL;" i)
@@ -26986,6 +27199,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | Sub, [a;b] -> sprintf "%s - %s" (tup_data a) (tup_data b)
                     | Mult, [a;b] -> sprintf "%s * %s" (tup_data a) (tup_data b)
                     | Div, [a;b] -> sprintf "%s / %s" (tup_data a) (tup_data b)
+                    | Mod, [(DV(L(_,YPrim (Float32T | Float64T))) | DLit(LitFloat32 _ | LitFloat64 _)) & a;b] -> import "cmath"; sprintf "fmod(%s, %s)" (tup_data a) (tup_data b)
                     | Mod, [a;b] -> sprintf "%s %% %s" (tup_data a) (tup_data b)
                     | Pow, [a;b] -> sprintf "pow(%s,%s)" (tup_data a) (tup_data b)
                     | LT, [a;b] -> sprintf "%s < %s" (tup_data a) (tup_data b)
@@ -27945,6 +28159,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | Div, [a;b] when (pythonIntWidth a).IsSome -> global' "def spiral_div_trunc(a, b):\n    q = abs(a) // abs(b)\n    return q if (a < 0) == (b < 0) else -q"; pythonWrapped a (sprintf "spiral_div_trunc(%s, %s)" (tup_data a) (tup_data b))
                     | Div, [a;b] -> sprintf "%s // %s" (tup_data a) (tup_data b)
                     | Mod, [a;b] when (pythonIntWidth a).IsSome -> global' "def spiral_mod_trunc(a, b):\n    r = abs(a) % abs(b)\n    return -r if a < 0 else r"; sprintf "spiral_mod_trunc(%s, %s)" (tup_data a) (tup_data b)
+                    | Mod, [(DV(L(_,YPrim (Float32T | Float64T))) | DLit(LitFloat32 _ | LitFloat64 _)) & a;b] -> import "math"; sprintf "math.fmod(%s, %s)" (tup_data a) (tup_data b)
                     | Mod, [a;b] -> sprintf "%s %% %s" (tup_data a) (tup_data b)
                     | Pow, [a;b] -> sprintf "pow(%s,%s)" (tup_data a) (tup_data b)
                     | LT, [a;b] -> sprintf "%s < %s" (tup_data a) (tup_data b)
@@ -29585,16 +29800,32 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             let resolve_packages (l : RawSchemaPackages list) =
                 let compiler_dir = lazy (
                     let configured = Environment.GetEnvironmentVariable "SPIRAL_COMPILER_PACKAGE_DIR"
+                    let plugin = "deps/The-Spiral-Language/VS Code Plugin"
                     if String.IsNullOrWhiteSpace configured then
-                        Path.Combine (SpiralFileSystem.get_workspace_root (), "deps/The-Spiral-Language/VS Code Plugin")
-                        |> Path.GetFullPath
+                        let rec ancestors (d : DirectoryInfo) = seq { if not (isNull d) then yield d.FullName; yield! ancestors d.Parent }
+                        let candidates (start : string) =
+                            ancestors (DirectoryInfo start) |> Seq.collect (fun d -> [ Path.Combine(d, plugin); Path.Combine(d, "deps/spiral", plugin); Path.Combine(d, "../spiral", plugin) ])
+                        Seq.append (candidates (SpiralFileSystem.get_workspace_root ())) (candidates pdir)
+                        |> Seq.map Path.GetFullPath
+                        |> Seq.tryFind Directory.Exists
+                        |> Option.defaultWith (fun () -> Path.Combine (SpiralFileSystem.get_workspace_root (), plugin) |> Path.GetFullPath)
                     else
                         configured |> Path.GetFullPath
+                    )
+                let lib_root = lazy (
+                    let configured = Environment.GetEnvironmentVariable "SPIRAL_LIB_ROOT"
+                    if String.IsNullOrWhiteSpace configured then None else Some (Path.GetFullPath configured)
                     )
                 l |> List.map (fun x ->
                     let relative = x.name.StartsWith "."
                     let name = if x.is_include then None elif relative then Some (Path.GetFileName (x.name.TrimEnd '/')) else Some x.name
-                    let base_dir = if x.is_in_compiler_dir then compiler_dir.Value elif relative then pdir else snd package_dir
+                    let base_dir =
+                        if x.is_in_compiler_dir then compiler_dir.Value
+                        elif relative then pdir
+                        else
+                            match lib_root.Value with
+                            | Some root when Directory.Exists (Path.Combine(root, x.name)) -> root
+                            | _ -> snd package_dir
                     let dir = Path.Combine(base_dir,x.name)
                     let dir' = dir |> SpiralFileSystem.standardize_path
                     let dir'' = dir' |> SpiralFileSystem.standardize_path
@@ -34147,6 +34378,18 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             |> Map.ofArray
             |> Some
 
+    /// ### readUnitCalls
+    /// The exported definitions of a built unit, (file, name) -> export name, from its unit graphs; empty until it is built.
+    let readUnitCalls (dir : string) : Map<string * string, string> =
+        (try System.IO.Directory.GetFiles(unitGraphDir dir, "*.unit.json") with _ -> [||])
+        |> Array.collect (fun file ->
+            use graph = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllText file)
+            [| for e in graph.RootElement.GetProperty("exports").EnumerateArray() do
+                match e.TryGetProperty "target_path", e.TryGetProperty "target_name" with
+                | (true, p), (true, n) when p.GetString() <> "" && n.GetString() <> "" -> yield (p.GetString(), n.GetString()), e.GetProperty("name").GetString()
+                | _ -> () |])
+        |> Map.ofArray
+
     /// ### file_package_dir
     /// The folder of the package that owns the file (its nearest package.spiproj / spiral.toml in the schema env).
     let file_package_dir (packages : SchemaEnv) (file : string) =
@@ -34169,7 +34412,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 match SchemaEnv.tryFindText (SpiralFileSystem.standardize_path dir) packages with
                 | Some schema ->
                     schema.schema.link
-                    |> List.choose (fun l -> let dir = snd l.dir in Map.tryFind dir package_ids |> Option.map (fun id -> id, {unit = System.IO.Path.GetFileName(dir.TrimEnd('/', '\\')); exported = readUnitGraph dir}))
+                    |> List.choose (fun l -> let dir = snd l.dir in Map.tryFind dir package_ids |> Option.map (fun id -> id, {unit = System.IO.Path.GetFileName(dir.TrimEnd('/', '\\')); exported = readUnitGraph dir; calls = readUnitCalls dir}))
                     |> Map.ofList
                 | None -> owner (System.IO.Path.GetDirectoryName dir)
         owner (System.IO.Path.GetDirectoryName file)
@@ -35222,6 +35465,13 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                     let inline build_many codegen backend =
                                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.peval_start / backend: {backend}") _locals
                                         RustGapTrace.clear_missing_arm ()
+                                        ExternCalls.current.Value <-
+                                            let calls (call : LinkedUnit -> string -> ExternCalls.Call) =
+                                                file_linked_units s.packages (fst s.package_ids) file
+                                                |> Map.fold (fun m _ (l : LinkedUnit) -> l.calls |> Map.fold (fun m k e -> Map.add k (call l e) m) m) Map.empty
+                                            if backend = "Rust" then calls (fun l e -> {call = $"{l.unit}::{e}"; import_text = None; borrow_strings = true; unit_path = $"{l.unit}::"; struct_records = true})
+                                            elif backend = "Gleam" then calls (fun l e -> {call = $"{l.unit}.{e}"; import_text = Some $"import {l.unit}"; borrow_strings = false; unit_path = $"{l.unit}."; struct_records = false})
+                                            else Map.empty
                                         let (a,_),b = PartEvalSeams.with_conflict_restart (fun inline_restart -> peval {prototypes_instances=prototypes_instances; nominals=nominals; backend=backend; inline_restart=inline_restart} main)
                                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.peval_ready / backend: {backend}") _locals
                                         // LF on every OS: backends that build with StringBuilder.AppendLine (TypeScript, Python, Gleam, C++, ...) get the platform

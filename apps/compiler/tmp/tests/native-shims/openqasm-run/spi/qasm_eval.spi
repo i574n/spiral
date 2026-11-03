@@ -1,0 +1,453 @@
+///- --package .
+:# qasm_eval static =
+    :< testing
+    :< qasm_numeric
+    :< qasm_lex
+    :< qasm_parse
+
+:< sm'_operators
+:< qasm_numeric
+:< qasm_lex
+:< qasm_parse
+
+:| ^ value =
+    | VInt : int_kind * u64
+    | VRaw : i64
+    | VBool : bool
+    | VFloat : float_kind * f64
+    | VTuple : list value
+    | VUnit
+
+:| signal =
+    | Next
+    | Broke
+    | Continued
+    | Returned : value
+
+:| eval_error =
+    | Fail : string
+
+:= raw_bits (r : i64) : u64 = conv r
+
+:= round_to (k : float_kind) (x : f64) : f64 =
+    ?= k ?|
+    | F32 => conv (conv x : f32)
+    | _ => x
+
+:= int_float (k : int_kind) (bits : u64) : f64 = ? is_signed k ?> conv (signed_value k bits) |: conv bits
+
+:= finite (x : f64) : bool = x = x && x - x = 0.0f64
+
+:= coerce (target : kind) (v : value) : result value eval_error =
+    ?= target ?|
+    | IntKind k =>
+        ?= v ?|
+        | VInt (source, bits) => Ok (VInt (k, wrap k (raw_bits (signed_value source bits))))
+        | VRaw r => Ok (VInt (k, wrap k (raw_bits r)))
+        | VFloat (_, x) => ? finite x ?> Ok (VInt (k, wrap k (raw_bits (conv x)))) |: Error (Fail "non-finite float to int")
+        | VBool _ => Error (Fail "cannot convert bool to an integer")
+        | VTuple _ => Error (Fail "a tuple is not a scalar")
+        | VUnit => Error (Fail "missing value")
+    | BoolKind =>
+        ?= v ?|
+        | VBool _ => Ok v
+        | _ => Error (Fail "cannot convert to bool")
+    | FloatKind fk =>
+        ?= v ?|
+        | VFloat (_, x) => Ok (VFloat (fk, round_to fk x))
+        | VInt (k, bits) => Ok (VFloat (fk, round_to fk (int_float k bits)))
+        | VRaw r => Ok (VFloat (fk, round_to fk (conv r)))
+        | VBool _ => Error (Fail "cannot convert bool to float")
+        | _ => Error (Fail "missing value")
+
+:= zero_of (k : kind) : value =
+    ?= k ?|
+    | IntKind i => VInt (i, 0u64)
+    | BoolKind => VBool !-
+    | FloatKind fk => VFloat (fk, 0.0f64)
+
+:= float_kind_of (a : value) (b : value) : option float_kind =
+    := of (v : value) = ?= v ?| | VFloat (k, _) => Some k | _ => None
+    ?= of a, of b ?|
+    | Some (F64), _ => Some F64
+    | _, Some (F64) => Some F64
+    | Some (F32), _ => Some F32
+    | _, Some (F32) => Some F32
+    | Some k, _ => Some k
+    | _, Some k => Some k
+    | _ => None
+
+:= float_arith (op : binop) (k : float_kind) (x : f64) (y : f64) : result value eval_error =
+    := float (r : f64) : result value eval_error = Ok (VFloat (k, round_to k r))
+    ?= op ?|
+    | BAdd => float (x + y)
+    | BSub => float (x - y)
+    | BMul => float (x * y)
+    | BDiv => ? y = 0.0f64 ?> Error (Fail "division by zero") |: float (x / y)
+    | BMod => ? y = 0.0f64 ?> Error (Fail "division by zero") |: float (x % y)
+    | BEq => Ok (VBool (x = y))
+    | BNe => Ok (VBool (x <> y))
+    | BLt => Ok (VBool (x < y))
+    | BLe => Ok (VBool (x <= y))
+    | BGt => Ok (VBool (x > y))
+    | BGe => Ok (VBool (x >= y))
+    | _ => Error (Fail "bitwise operator on float")
+
+:= wide_or_sub (k : int_kind) : bool = (k <> I32) && (k <> U32)
+
+:= int_kind_of (a : value) (b : value) : result int_kind eval_error =
+    ?= a, b ?|
+    | VInt (ka, _), VInt (kb, _) =>
+        ? ka = kb ?> Ok ka
+        |? wide_or_sub ka || wide_or_sub kb ?> Error (Fail "mixed integer widths")
+        |: Error (Fail "mixed signedness")
+    | VInt (ka, _), VRaw _ => Ok ka
+    | VRaw _, VInt (kb, _) => Ok kb
+    | VRaw _, VRaw _ => Ok I32
+    | _ => Error (Fail "bool mixed with a number")
+
+:= bits_of (k : int_kind) (v : value) : u64 =
+    ?= coerce (IntKind k) v ?|
+    | Ok (VInt (_, bits)) => bits
+    | _ => 0u64
+
+:= compare (op : binop) (k : int_kind) (x : u64) (y : u64) : bool =
+    := signed = is_signed k
+    := sx = signed_value k x
+    := sy = signed_value k y
+    := lt = ? signed ?> sx < sy |: x < y
+    := gt = ? signed ?> sx > sy |: x > y
+    ?= op ?|
+    | BEq => x = y
+    | BNe => x <> y
+    | BLt => lt
+    | BLe => lt || x = y
+    | BGt => gt
+    | BGe => gt || x = y
+    | _ => !-
+
+:= arith (op : binop) (k : int_kind) (x : u64) (y : u64) : result value eval_error =
+    := signed = is_signed k
+    := mask = ? width k = 64i32 ?> 63u64 |: 31u64
+    := count : i32 = conv (y &&& mask)
+    := int (bits : u64) : result value eval_error = Ok (VInt (k, wrap k bits))
+    := from_signed (r : result i64 arith_error) : result value eval_error =
+        ?= r ?|
+        | Ok q => int (raw_bits q)
+        | Error _ => Error (Fail "division by zero")
+    ?= op ?|
+    | BAdd => int (x + y)
+    | BSub => int (x - y)
+    | BMul => int (x * y)
+    | BBitAnd => int (x &&& y)
+    | BBitOr => int (x ||| y)
+    | BXor => int (x ^^^ y)
+    | BShl => int (x <<< count)
+    | BShr => ? signed ?> int (raw_bits ((signed_value k x) >>> count)) |: int (x >>> count)
+    | BDiv =>
+        ? signed ?> from_signed (truncated_div (signed_value k x) (signed_value k y))
+        |? y = 0u64 ?> Error (Fail "division by zero")
+        |: int (x / y)
+    | BMod =>
+        ? signed ?> from_signed (truncated_mod (signed_value k x) (signed_value k y))
+        |? y = 0u64 ?> Error (Fail "division by zero")
+        |: int (x - (x / y) * y)
+    | _ => Ok (VBool (compare op k x y))
+
+:= binary (op : binop) (a : value) (b : value) : result value eval_error =
+    := shift = ?= op ?| | BShl => !+ | BShr => !+ | _ => !-
+    := shifted =
+        ?= a, b ?|
+        | VInt (ka, x), VInt (kb, y) => ? shift && wide_or_sub ka && ka <> kb ?> Some (arith op ka x (raw_bits (signed_value kb y))) |: None
+        | VInt (ka, x), VRaw r => ? shift && wide_or_sub ka ?> Some (arith op ka x (raw_bits r)) |: None
+        | _ => None
+    ?= a, b ?|
+    | VBool x, VBool y =>
+        ?= op ?|
+        | BEq => Ok (VBool (x = y))
+        | BNe => Ok (VBool (x <> y))
+        | _ => Error (Fail "operator on bool")
+    | VBool _, _ => Error (Fail "bool mixed with a number")
+    | _, VBool _ => Error (Fail "bool mixed with a number")
+    | _ =>
+        ?= float_kind_of a b, shifted ?|
+        | Some fk, _ =>
+            ?= coerce (FloatKind fk) a, coerce (FloatKind fk) b ?|
+            | Ok (VFloat (_, x)), Ok (VFloat (_, y)) => float_arith op fk x y
+            | Error e, _ => Error e
+            | _, Error e => Error e
+            | _ => Error (Fail "float unification failed")
+        | None, Some r => r
+        | None, None =>
+            ?= int_kind_of a b ?|
+            | Error e => Error e
+            | Ok k => arith op k (bits_of k a) (bits_of k b)
+
+:= unary (op : unop) (v : value) : result value eval_error =
+    := bad = Error (Fail "bad operand for a unary operator")
+    ?= op ?|
+    | UNot => ?= v ?| | VBool b => Ok (VBool (not b)) | _ => Error (Fail "expected bool")
+    | UNeg => ?= v ?| | VRaw r => Ok (VRaw (0i64 - r)) | VInt (k, x) => Ok (VInt (k, wrap k (0u64 - x))) | VFloat (k, x) => Ok (VFloat (k, round_to k (0.0f64 - x))) | _ => bad
+    | UBitNot => ?= v ?| | VRaw r => Ok (VInt (I32, wrap I32 (raw_bits r ^^^ 18446744073709551615u64))) | VInt (k, x) => Ok (VInt (k, wrap k (x ^^^ 18446744073709551615u64))) | _ => bad
+    | UPos => ?= v ?| | VInt _ => Ok v | VRaw _ => Ok v | VFloat _ => Ok v | _ => bad
+
+:= math_builtin (name : string) (args : list value) : option (result value eval_error) =
+    := domain (k : float_kind) (inputs : list f64) (r : f64) : result value eval_error =
+        ? finite r || not (inputs |> listm::fold (\ ok x => ok && finite x) !+) ?> Ok (VFloat (k, round_to k r))
+        |: Error (Fail (name ++# " outside its domain"))
+    := one (fn : f64 -> f64) : option (result value eval_error) =
+        ?= args ?|
+        | [VFloat (k, x)] => Some (domain k [x] (fn x))
+        | [_] => Some (Error (Fail (name ++# " needs float arguments")))
+        | _ => Some (Error (Fail (name ++# " expected 1 arguments")))
+    ?= name ?|
+    | "sqrt" => one (\ x => !!!!Sqrt(x))
+    | "exp" => one (\ x => !!!!Exp(x))
+    | "log" => one (\ x => !!!!Log(x))
+    | "sin" => one (\ x => !!!!Sin(x))
+    | "cos" => one (\ x => !!!!Cos(x))
+    | "tanh" => one (\ x => !!!!Tanh(x))
+    | "pow" =>
+        ?= args ?|
+        | [a; b] =>
+            ?= float_kind_of a b ?|
+            | Some k =>
+                ?= a, b ?|
+                | VFloat (_, x), VFloat (_, y) => Some (domain k [x; y] (!!!!Pow(round_to k x, round_to k y)))
+                | _ => Some (Error (Fail "pow needs float arguments"))
+            | None => Some (Error (Fail "pow needs float arguments"))
+        | _ => Some (Error (Fail "pow expected 2 arguments"))
+    | _ => None
+
+:~ ^ lookup (name : string) (env : list (string * (kind * value))) : option (kind * value) =
+    ?= env ?|
+    | [] => None
+    | (n, b) :: rest_env => ? n = name ?> Some b |: lookup name rest_env
+
+:= assign (name : string) (b : kind * value) (env : list (string * (kind * value))) : list (string * (kind * value)) =
+    (name, b) :: env
+
+:~ ^ find_func (name : string) (funcs : list func) : option func =
+    ?= funcs ?|
+    | [] => None
+    | f :: rest_funcs => ? f::name = name ?> Some f |: find_func name rest_funcs
+
+:= digit_of (c : char) : u64 =
+    ? c = '1' ?> 1u64 |? c = '2' ?> 2u64 |? c = '3' ?> 3u64 |? c = '4' ?> 4u64 |? c = '5' ?> 5u64
+    |? c = '6' ?> 6u64 |? c = '7' ?> 7u64 |? c = '8' ?> 8u64 |? c = '9' ?> 9u64 |: 0u64
+
+:= decimal_raw (text : string) : i64 =
+    := n : i32 = sm'::length text
+    :~ ^ go (i : i32) (acc : u64) : u64 = ? i >= n ?> acc |: go (i + 1i32) (acc * 10u64 + digit_of (sm'::index i text))
+    conv (go 0i32 0u64)
+
+:~ ^ eval_expr (funcs : list func) (env : list (string * (kind * value))) (e : expr) : result value eval_error =
+    ?= e ?|
+    | ENum raw => Ok (VRaw (decimal_raw raw))
+    | EReal raw => ?= convert::parse_f64 raw ?| | Some x => Ok (VFloat (FReal, x)) | None => Error (Fail ("bad float " ++# raw))
+    | EBool b => Ok (VBool b)
+    | EVar name =>
+        ?= lookup name env ?|
+        | Some (_, v) => Ok v
+        | None => Error (Fail ("unbound " ++# name))
+    | ECast (k, inner) =>
+        ?= eval_expr funcs env inner ?|
+        | Error x => Error x
+        | Ok v => coerce k v
+    | EIf (c, yes, no) =>
+        ?= eval_expr funcs env c ?|
+        | Ok (VBool b) => eval_expr funcs env (? b ?> yes |: no)
+        | Ok _ => Error (Fail "expected bool")
+        | Error x => Error x
+    | EUn (op, inner) =>
+        ?= eval_expr funcs env inner ?|
+        | Error x => Error x
+        | Ok v => unary op v
+    | EBin (op, l, r) =>
+        := logical = ?= op ?| | BAnd => Some !- | BOr => Some !+ | _ => None
+        ?= logical ?|
+        | Some stop_on =>
+            ?= eval_expr funcs env l ?|
+            | Ok (VBool b) => ? b = stop_on ?> Ok (VBool b) |: eval_expr funcs env r
+            | Ok _ => Error (Fail "expected bool")
+            | Error x => Error x
+        | None =>
+            ?= eval_expr funcs env l ?|
+            | Error x => Error x
+            | Ok a =>
+                ?= eval_expr funcs env r ?|
+                | Error x => Error x
+                | Ok b => binary op a b
+    | ECall (name, args) =>
+        ?= find_func name funcs ?|
+        | None =>
+            ?= eval_all funcs env args [] ?|
+            | Error x => Error x
+            | Ok values => ?= math_builtin name values ?| | Some r => r | None => Error (Fail ("unknown function " ++# name))
+        | Some f =>
+            ? (listm::length args : i32) <> (listm::length f::params : i32) ?> Error (Fail (name ++# " got the wrong number of arguments"))
+            |:
+                ?= bind_args funcs env f::params args [] ?|
+                | Error x => Error x
+                | Ok frame =>
+                    ?= exec_block funcs frame f::ret f::body ?|
+                    | Error x => Error x
+                    | Ok (sig, _) =>
+                        ?= sig ?|
+                        | Returned v => Ok v
+                        | Next => ?= f::ret ?| | RetNone => Ok VUnit | _ => Error (Fail (name ++# " ended without a return"))
+                        | _ => Error (Fail (name ++# " used break or continue outside a loop"))
+:& :~ bind_args (funcs : list func) (env : list (string * (kind * value))) (params : list (kind * string)) (args : list expr) (frame : list (string * (kind * value))) : result (list (string * (kind * value))) eval_error =
+    ?= params ?|
+    | [] => Ok frame
+    | (k, name) :: ps =>
+        ?= args ?|
+        | [] => Ok frame
+        | a :: rest_args =>
+            ?= eval_expr funcs env a ?|
+            | Error x => Error x
+            | Ok v =>
+                ?= coerce k v ?|
+                | Error x => Error x
+                | Ok v => bind_args funcs env ps rest_args (assign name (k, v) frame)
+:& :~ exec_block (funcs : list func) (env : list (string * (kind * value))) (ret : ret_type) (stmts : list stmt) : result (signal * list (string * (kind * value))) eval_error =
+    ?= stmts ?|
+    | [] => Ok (Next, env)
+    | s :: rest_stmts =>
+        ?= exec_stmt funcs env ret s ?|
+        | Error x => Error x
+        | Ok (sig, env) => ?= sig ?| | Next => exec_block funcs env ret rest_stmts | _ => Ok (sig, env)
+:& :~ exec_while (funcs : list func) (env : list (string * (kind * value))) (ret : ret_type) (c : expr) (body : list stmt) : result (signal * list (string * (kind * value))) eval_error =
+    ?= eval_expr funcs env c ?|
+    | Error x => Error x
+    | Ok (VBool b) =>
+        ? not b ?> Ok (Next, env)
+        |:
+            ?= exec_block funcs env ret body ?|
+            | Error x => Error x
+            | Ok (sig, env) =>
+                ?= sig ?|
+                | Broke => Ok (Next, env)
+                | Returned v => Ok (Returned v, env)
+                | _ => exec_while funcs env ret c body
+    | Ok _ => Error (Fail "expected bool")
+:& :~ exec_stmt (funcs : list func) (env : list (string * (kind * value))) (ret : ret_type) (s : stmt) : result (signal * list (string * (kind * value))) eval_error =
+    ?= s ?|
+    | SLet (k, name, e) =>
+        ?= eval_expr funcs env e ?|
+        | Error x => Error x
+        | Ok v => ?= coerce k v ?| | Error x => Error x | Ok v => Ok (Next, assign name (k, v) env)
+    | SSet (name, e) =>
+        ?= lookup name env ?|
+        | None => Error (Fail ("assignment to undeclared " ++# name))
+        | Some (k, _) =>
+            ?= eval_expr funcs env e ?|
+            | Error x => Error x
+            | Ok v => ?= coerce k v ?| | Error x => Error x | Ok v => Ok (Next, assign name (k, v) env)
+    | SSetMulti (names, e) =>
+        ?= eval_expr funcs env e ?|
+        | Error x => Error x
+        | Ok (VTuple items) =>
+            ? (listm::length items : i32) <> (listm::length names : i32) ?> Error (Fail "tuple arity mismatch")
+            |: set_items funcs env names items
+        | Ok _ => Error (Fail "a destructuring assignment needs a tuple")
+    | SExpr e => ?= eval_expr funcs env e ?| | Error x => Error x | Ok _ => Ok (Next, env)
+    | SIf (c, yes, no) =>
+        ?= eval_expr funcs env c ?|
+        | Ok (VBool b) => exec_block funcs env ret (? b ?> yes |: no)
+        | Ok _ => Error (Fail "expected bool")
+        | Error x => Error x
+    | SWhile (c, body) => exec_while funcs env ret c body
+    | SBreak => Ok (Broke, env)
+    | SContinue => Ok (Continued, env)
+    | SReturn values =>
+        := mismatch = Error (Fail "the return does not match the function type")
+        ?= ret ?|
+        | RetNone => ?= values ?| | [] => Ok (Returned VUnit, env) | _ => mismatch
+        | RetOne k =>
+            ?= values ?|
+            | [e] => ?= eval_expr funcs env e ?| | Error x => Error x | Ok v => ?= coerce k v ?| | Error x => Error x | Ok v => Ok (Returned v, env)
+            | _ => mismatch
+        | RetTuple kinds =>
+            := single = ?= values ?| | [e] => Some e | _ => None
+            := items =
+                ?= single ?|
+                | Some e => ?= eval_expr funcs env e ?| | Ok (VTuple items) => Ok items | Ok _ => Error (Fail "tuple return arity mismatch") | Error x => Error x
+                | None => eval_all funcs env values []
+            ?= items ?|
+            | Error x => Error x
+            | Ok items => ?= coerce_all kinds items [] ?| | Error x => Error x | Ok vs => Ok (Returned (VTuple vs), env)
+:& :~ set_items (funcs : list func) (env : list (string * (kind * value))) (names : list string) (items : list value) : result (signal * list (string * (kind * value))) eval_error =
+    ?= names ?|
+    | [] => Ok (Next, env)
+    | name :: ns =>
+        ?= items ?|
+        | [] => Ok (Next, env)
+        | v :: vs =>
+            ?= lookup name env ?|
+            | None => Error (Fail ("assignment to undeclared " ++# name))
+            | Some (k, _) => ?= coerce k v ?| | Error x => Error x | Ok v => set_items funcs (assign name (k, v) env) ns vs
+:& :~ eval_all (funcs : list func) (env : list (string * (kind * value))) (es : list expr) (acc : list value) : result (list value) eval_error =
+    ?= es ?|
+    | [] => Ok (listm::rev acc)
+    | e :: rest_es => ?= eval_expr funcs env e ?| | Error x => Error x | Ok v => eval_all funcs env rest_es (v :: acc)
+:& :~ coerce_all (kinds : list kind) (items : list value) (acc : list value) : result (list value) eval_error =
+    := arity = Error (Fail "tuple return arity mismatch")
+    ?= kinds ?|
+    | [] => ?= items ?| | [] => Ok (listm::rev acc) | _ => arity
+    | k :: ks =>
+        ?= items ?|
+        | [] => arity
+        | v :: vs => ?= coerce k v ?| | Error x => Error x | Ok v => coerce_all ks vs (v :: acc)
+
+:~ ^ run_tops (funcs : list func) (env : list (string * (kind * value))) (tops : list top) : result (list (string * (kind * value))) eval_error =
+    ?= tops ?|
+    | [] => Ok env
+    | item :: rest_tops =>
+        ?= item ?|
+        | TOutput (k, name) => run_tops funcs (assign name (k, zero_of k) env) rest_tops
+        | TStmt s =>
+            ?= exec_stmt funcs env RetNone s ?|
+            | Error x => Error x
+            | Ok (sig, env) => ?= sig ?| | Next => run_tops funcs env rest_tops | _ => Error (Fail "control transfer at the top level")
+
+:= run_source (text : string) : result i32 eval_error =
+    ?= program_of text ?|
+    | Error (Expected (line, what)) => Error (Fail ("line " ++# sm'::obj_to_string line ++# ": expected " ++# what))
+    | Ok p =>
+        ?= run_tops p::funcs [] p::tops ?|
+        | Error x => Error x
+        | Ok env =>
+            ?= lookup "spiral_io" env ?|
+            | None => Error (Fail "missing spiral_io")
+            | Some (_, v) =>
+                ?= coerce (IntKind I32) v ?|
+                | Ok (VInt (_, bits)) => Ok (conv (signed_value I32 bits))
+                | Ok _ => Error (Fail "spiral_io is not an integer")
+                | Error x => Error x
+
+///> rust
+///> gleam
+:# a_loop_with_break_and_a_tuple_return_runs =
+    "OPENQASM 3.0;\noutput int[32] spiral_io;\ndef make(int[32] p0, int[32] p1) -> (int[32], int[32]) {\n  return p0, p1;\n}\ndef spiral_main() -> int[32] {\n  int[32] v0 = 1;\n  int[32] a = 0;\n  int[32] b = 0;\n  while (true) { if (v0 > 5) { break; } else { v0 = v0 + 1; } }\n  a, b = make(v0, 2);\n  return a * 10 + b;\n}\nspiral_io = spiral_main();\n"
+    |> run_source
+    |> _assert_eq (Ok 62i32)
+
+///> rust
+///> gleam
+:# integer_widths_wrap_and_divide_toward_zero =
+    "output int[32] spiral_io;\ndef spiral_main() -> int[32] {\n  uint[8] u = 250;\n  u = u + 10;\n  int[8] s = 127;\n  s = s + 1;\n  int[32] q = -7 / 2;\n  int[32] r = -7 % 2;\n  return int[32](u) * 1000 + int[32](s) + q * 10 + r;\n}\nspiral_io = spiral_main();\n"
+    |> run_source
+    |> _assert_eq (Ok (4000i32 - 128i32 - 30i32 - 1i32))
+
+///> rust
+///> gleam
+:# mixed_signedness_is_an_error =
+    "output int[32] spiral_io;\ndef spiral_main() -> int[32] {\n  int[32] a = 1;\n  uint[32] b = 2;\n  return int[32](a + b);\n}\nspiral_io = spiral_main();\n"
+    |> run_source
+    |> _assert_eq (Error (Fail "mixed signedness"))
+
+///> rust
+:# floats_round_per_width_and_math_has_domains =
+    (run_source "output int[32] spiral_io;\ndef spiral_main() -> int[32] {\n  float[32] t = 16777216.0;\n  t = t + 1.0;\n  float[64] u = 16777216.0;\n  u = u + 1.0;\n  return int[32](t - 16777216.0) * 10 + int[32](u - 16777216.0) + int[32](sqrt(16.0)) * 100 + int[32](7.5 / 2.0) * 1000;\n}\nspiral_io = spiral_main();\n", run_source "output int[32] spiral_io;\nspiral_io = int[32](sqrt(-1.0));\n")
+    |> _assert_eq (Ok 3401i32, Error (Fail "sqrt outside its domain"))

@@ -16,7 +16,9 @@ $File = @($File + $MoreFiles | ForEach-Object { $_ -split ',' } | ForEach-Object
 $Lib =(Resolve-Path -LiteralPath $Lib).Path
 $CoreRoot = (Resolve-Path -LiteralPath $CoreRoot).Path
 if (-not (Test-Path -LiteralPath (Join-Path $CoreRoot 'deps/The-Spiral-Language/VS Code Plugin/core'))) { throw "-CoreRoot needs deps/The-Spiral-Language/VS Code Plugin/core under it: |core- resolves against the working directory (got $CoreRoot)" }
-if (-not (Test-Path -LiteralPath (Join-Path $Lib 'package.spiproj'))) { throw "no package.spiproj in -Lib $Lib" }
+$manifestName = @('spiral.toml', 'package.spiproj' | Where-Object { Test-Path -LiteralPath (Join-Path $Lib $_) }) | Select-Object -First 1
+if (-not $manifestName) { throw "no spiral.toml or package.spiproj in -Lib $Lib" }
+$toml = $manifestName -eq 'spiral.toml'
 if (-not $CopyRoot) {
     $key = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($Lib.ToLowerInvariant()))).Substring(0, 12)
     $CopyRoot = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) "spiral-bin/scratch/type-probe-$key"
@@ -26,16 +28,17 @@ $scratchRoots = @((Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-
 $copyRootFull = [IO.Path]::GetFullPath($CopyRoot).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
 if (-not ($scratchRoots | Where-Object { $copyRootFull.StartsWith($_, [StringComparison]::OrdinalIgnoreCase) -and $copyRootFull.Length -gt $_.Length })) { throw "-CopyRoot must sit under a scratch root ($($scratchRoots -join ', ')), got '$CopyRoot': robocopy /MIR prunes its target" }
 $copy = Join-Path $CopyRoot 'lib/spiral'
-if ([IO.Path]::GetFullPath($copy).TrimEnd('\', '/') -eq $Lib.TrimEnd('\', '/')) { throw 'the copy must not be the lib itself: the probe edits package.spiproj' }
+if ([IO.Path]::GetFullPath($copy).TrimEnd('\', '/') -eq $Lib.TrimEnd('\', '/')) { throw "the copy must not be the lib itself: the probe edits $manifestName and adds modules" }
 robocopy $Lib $copy /MIR /XD target _build .cache node_modules build /XF *.fsx /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy of $Lib failed with $LASTEXITCODE" }
 
-$proj = Join-Path $copy 'package.spiproj'
+$proj = Join-Path $copy $manifestName
 $projText = [IO.File]::ReadAllText($proj).TrimEnd("`n")
 function Get-ProbeName([string] $relative) { 'type_probe_' + ($relative -replace '\.spi$', '' -replace '[\\/]', '_' -replace "'", '_q') }
 function Get-ModuleOpen([string] $relative) {
     $leaf = [IO.Path]::GetFileNameWithoutExtension($relative)
-    if ($projText -match "(?m)^\s*$([regex]::Escape($leaf))-\s*$") { return $null }
+    $included = if ($toml) { $projText -match "(?m)^\s*prelude\s*=.*[\[,]\s*[""']$([regex]::Escape($leaf))[""']" } else { $projText -match "(?m)^\s*$([regex]::Escape($leaf))-\s*$" }
+    if ($included) { return $null }
     ':< ' + ($relative -replace '\.spi$', '' -replace '[\\/]', '.')
 }
 
@@ -99,9 +102,9 @@ $results = foreach ($relative in $File) {
     Add-Line ':= main () : i32 = 0i32' $null
     $probe = Join-Path $copy "$probeName.spi"
     [IO.File]::WriteAllText($probe, ($out -join "`n") + "`n")
-    [IO.File]::WriteAllText($proj, $projText + "`n    $probeName`n")
+    if (-not $toml) { [IO.File]::WriteAllText($proj, $projText + "`n    $probeName`n") }
     Push-Location $CoreRoot
-    try { $text = @(& $Dotnet $Compiler fsharp $probe --timeout ($TimeoutSeconds * 1000) 2>&1 | ForEach-Object { "$_" }) } finally { Pop-Location }
+    try { $text = @(& $Dotnet $Compiler fsharp $probe --timeout ($TimeoutSeconds * 1000) 2>&1 | ForEach-Object { "$_" }) } finally { Pop-Location; if ($toml) { [IO.File]::Delete($probe) } }
     if ($RawOut) { [IO.File]::WriteAllLines("$RawOut.$probeName.txt", $text) }
     $errors = [Collections.Generic.List[object]]::new()
     $current = $null

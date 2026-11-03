@@ -85,7 +85,7 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
     }
     let compile_started = Instant::now();
     let (device, queue) = adapter
-        .request_device(&wgpu::DeviceDescriptor::default())
+        .request_device(&wgpu::DeviceDescriptor { required_limits: adapter.limits(), ..Default::default() })
         .await
         .map_err(|error| Fail::Runtime(error.to_string()))?;
     let lost = Arc::new(AtomicBool::new(false));
@@ -149,7 +149,7 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
     });
     let chunk_lanes = lanes.min(chunk);
     let heap_megabytes = env_u32("SPIRAL_WGSL_HEAP_MB", 64) as u64;
-    let heap_bytes = (heap_megabytes * 1024 * 1024).min(device.limits().max_storage_buffer_binding_size);
+    let heap_bytes = (heap_megabytes * 1024 * 1024).min(device.limits().max_storage_buffer_binding_size).min(device.limits().max_buffer_size);
     let heap_words_per_lane = (heap_bytes / 4 / chunk_lanes as u64) as u32;
     queue.write_buffer(&storage, 0, &vec![0u8; size as usize]);
     let heap = device.create_buffer(&wgpu::BufferDescriptor {
@@ -233,8 +233,12 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
     }
     let bytes = slice.get_mapped_range().map_err(|error| Fail::Runtime(error.to_string()))?;
     let code = i32::from_le_bytes(bytes[0..4].try_into().unwrap());
+    let heap_overflow = u32::from_le_bytes(bytes[16..20].try_into().unwrap());
     drop(bytes);
     readback.unmap();
+    if heap_overflow > 0 {
+        return Err(Fail::Runtime(format!("{heap_overflow} array allocations overflowed the lane heap of {heap_words_per_lane} words (raise SPIRAL_WGSL_HEAP_MB or lower SPIRAL_WGSL_CHUNK)")));
+    }
     if lanes == 1 {
         return Ok(vec![code]);
     }

@@ -1333,8 +1333,13 @@ module Program =
                     0
         elif argv.Length >= 3 && argv.[0] = "--source-blocks" then
             runSourceBlocks argv.[1] argv.[2..]
-        elif argv.Length = 2 && argv.[0] = "--check" then
-            exit (runAttestationBounded 30000 (fun () -> runCheck argv.[1]))
+        elif (argv.Length = 2 || (argv.Length = 4 && argv.[1] = "--timeout-ms")) && argv.[0] = "--check" then
+            let parsed, timeoutMs = if argv.Length = 4 then Int32.TryParse argv.[2] else true, 30000
+            if not parsed || timeoutMs <= 0 then
+                eprintfn "--timeout-ms must be a positive 32-bit integer"
+                2
+            else
+                exit (runAttestationBounded timeoutMs (fun () -> runCheck argv.[argv.Length - 1]))
         elif (argv.Length = 3 || (argv.Length = 5 && argv.[1] = "--timeout-ms")) && argv.[0] = "--plan-ir" then
             let inputIndex = if argv.Length = 5 then 3 else 1
             let outputIndex = if argv.Length = 5 then 4 else 2

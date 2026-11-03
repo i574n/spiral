@@ -297,8 +297,7 @@
     c_posix_physical_micros ()
     $'spiral_physical_micros()' : i64
 
-:= rust_physical_micros () : i64 =
-    $'(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_micros() as i64)' : i64
+:= rust_physical_micros () : i64 = conv (unix_clock::nanos_count (unix_clock::unix_now_nanos ()) / 1000u64)
 
 := physical_micros () : i64 =
     backend_switch {

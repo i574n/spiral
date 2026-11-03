@@ -130,7 +130,18 @@ jobs:
 
       - run: pwsh scripts/workflow.ps1 -Compiler
 
-      - run: pwsh apps/cells/spi/ci_gate.ps1 -Out "${{ runner.temp }}/cells-gate"
+      - name: transformer model cache (pins in apps/transformer/oracle.spi)
+        run: |
+          models="$HOME/.cache/spiral-bin/models/llama2c"
+          mkdir -p "$models"
+          base=https://huggingface.co/karpathy/tinyllamas/resolve/main/stories260K
+          curl -fsSL --retry 3 -o "$models/stories260K.bin" "$base/stories260K.bin"
+          curl -fsSL --retry 3 -o "$models/tok512.bin" "$base/tok512.bin"
+          printf '%s  %s\n' \
+            b0a507e7ad0f626624f17112325e66691f9076d622e1d3274d103d00299f2696 "$models/stories260K.bin" \
+            037cb335abb25d1fa9e8ecae30ed2a3a8ace9302862ebcdc05d51a6bbb10c312 "$models/tok512.bin" | sha256sum -c
+
+      - run: pwsh apps/cells/spi/ci_gate.ps1 -Out "${{ runner.temp }}/cells-gate" -Roots lib/spiral,apps/transformer
 
       - uses: actions/upload-artifact@v7.0.2
         if: always()

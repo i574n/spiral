@@ -10,7 +10,7 @@
     | Lam :: \* n. term (succ n) -> term n
     | App :: \* n. term n * term n -> term n
 
-:= ^ rename \* n m. (ren : var n -> var m) (t : term n) : term m =
+:~ ^ rename \* n m. (ren : var n -> var m) (t : term n) : term m =
     ?= t ?|
     | Var v => Var (ren v)
     | Lam body => Lam (rename (lift ren) body)

@@ -5,17 +5,9 @@ defmodule Spiral.Cells.Targets do
   def host_key(%{kind: :fsharp}), do: {:fsharp, "fsharp"}
 
   def host_key(%{kind: :code, language: language}) when is_binary(language) do
-    case String.downcase(language) do
-      "fsharp" -> {:fsharp, "fsharp"}
-      "fs" -> {:fsharp, "fsharp"}
-      "python" -> {:python, "python"}
-      "py" -> {:python, "python"}
-      "lua" -> {:lua, "lua"}
-      "javascript" -> {:javascript, "javascript"}
-      "js" -> {:javascript, "javascript"}
-      "powershell" -> {:powershell, "powershell"}
-      "pwsh" -> {:powershell, "powershell"}
-      _ -> nil
+    case Spiral.Cells.Domain.host_language(language) do
+      "" -> nil
+      name -> {String.to_atom(name), name}
     end
   end
 
@@ -241,20 +233,10 @@ defmodule Spiral.Cells.Targets do
   defp promote_trace(other), do: other
 
   defp failure_trace(output) do
-    field = output_field(output)
-    trace = trace_text(output)
-
-    cond do
-      is_binary(field) and String.trim(field) != "" -> nil
-      trace == "" -> nil
-      failure?(trace) -> trace
-      true -> nil
+    case Spiral.Cells.Domain.builder_failure_trace(output) do
+      "" -> nil
+      trace -> trace
     end
-  end
-
-  defp failure?(trace) do
-    down = String.downcase(trace)
-    String.contains?(down, "error") or String.contains?(down, "failed")
   end
 
   defp cpp_exe(path) do
@@ -343,28 +325,8 @@ defmodule Spiral.Cells.Targets do
     end
   end
 
-  @gleam_deps [
-    {"gleam_stdlib", ">=1.0.5 and <2.0.0"},
-    {"gleam_time", ">=1.0.0 and <2.0.0"},
-    {"gleam_erlang", ">=1.3.0 and <2.0.0"},
-    {"gleam_otp", ">=1.3.0 and <2.0.0"},
-    {"envoy", ">=1.2.0 and <2.0.0"},
-    {"gleam_community_maths", ">=2.0.2 and <3.0.0"},
-    {"gtempo", ">=7.4.0 and <8.0.0"}
-  ]
-
   @doc false
-  def gleam_manifest(path, deps, target \\ "erlang") do
-    name = if String.contains?(Path.basename(path), "_real"), do: "main_real", else: "main"
-
-    extra =
-      for %{name: dep, version: version} <- deps, not List.keymember?(@gleam_deps, dep, 0) do
-        {dep, (version || "*") |> String.replace("\\", "") |> String.trim("\"")}
-      end
-
-    lines = Enum.map(@gleam_deps ++ extra, fn {dep, version} -> "#{dep} = #{inspect(version)}" end)
-    Enum.join(["name = #{inspect(name)}", "target = #{inspect(target)}", "", "[dependencies]" | lines], "\n") <> "\n"
-  end
+  def gleam_manifest(path, deps, target \\ "erlang"), do: Spiral.Cells.Domain.gleam_manifest(path, deps, target)
 
   @gleam_warm_slots 4
 
@@ -471,25 +433,8 @@ defmodule Spiral.Cells.Targets do
     run_program(Toolchain.erl(opts), "erl", ["-noshell", "-pa" | paths] ++ ["-eval", entry], quiet, timeout, deadline, false)
   end
   @doc false
-  def strip_gleam_warnings(text) do
-    text
-    |> String.replace("\r\n", "\n")
-    |> String.split("\n")
-    |> Enum.reduce({[], false}, fn line, {kept, skipping} ->
-      cond do
-        String.starts_with?(line, "warning: ") -> {kept, true}
-        skipping and gleam_warning_line?(line) -> {kept, true}
-        true -> {[line | kept], false}
-      end
-    end)
-    |> elem(0)
-    |> Enum.reverse()
-    |> Enum.join("\n")
-  end
+  def strip_gleam_warnings(text), do: Spiral.Cells.Domain.gleam_strip_warnings(text)
 
-  defp gleam_warning_line?(line) do
-    line == "" or String.starts_with?(line, [" ", "\t", "Hint:", "│", "┌"]) or Regex.match?(~r/^\d+ │/, line)
-  end
   @spec tool_stamp(map(), keyword()) :: [term()] | nil
   def tool_stamp(%{tool: :wgsl}, opts), do: [{:wgsl_tools, Enum.map([Toolchain.wgsl_run(opts), Toolchain.naga(opts)], &file_stamp/1)}]
   def tool_stamp(_builder, _opts), do: nil
@@ -642,96 +587,7 @@ defmodule Spiral.Cells.Targets do
     {:error, %ProcessError{message: "could not run the builder: #{inspect(reason)}"}}
   end
 
-  defp present(output) do
-    trimmed = String.trim(output)
-    field = output_field(trimmed)
-    trace = trace_text(trimmed)
-
-    cond do
-      is_binary(field) and String.trim(field) != "" -> String.trim(field)
-      trace != "" -> trace
-      is_binary(field) -> ""
-      true -> trimmed
-    end
-  end
-
-  defp output_field(text) do
-    case result_map(text) || result_map_line(text) do
-      nil -> nil
-      map -> shown_output(map)
-    end
-  end
-
-  defp trace_text(text) do
-    text
-    |> String.replace(~r/\e\[[0-9;]*m/, "")
-    |> String.split(~r/\r?\n/)
-    |> Enum.reject(fn line ->
-      trimmed = String.trim(line)
-      trimmed == "" or result_map(trimmed) != nil
-    end)
-    |> Enum.join("\n")
-    |> String.trim()
-  end
-
-  defp result_map(text) when is_binary(text) do
-    case decode_result(text) do
-      nil ->
-        case Regex.run(~r/(\{.*\})\s*$/, text) do
-          [_, candidate] -> decode_result(candidate)
-          _ -> nil
-        end
-
-      map ->
-        map
-    end
-  end
-
-  defp result_map(_), do: nil
-
-  defp result_map_line(text) do
-    text
-    |> String.split(~r/\r?\n/)
-    |> Enum.reverse()
-    |> Enum.find_value(&result_map/1)
-  end
-
-  defp decode_result(text) do
-    case json_map(text) do
-      nil -> nil
-      map -> if result?(map), do: map
-    end
-  end
-
-  defp result?(map) do
-    Map.has_key?(map, "output") or Map.has_key?(map, "command_result")
-  end
-
-  defp shown_output(map) do
-    inner = command_result(map)
-
-    cond do
-      is_binary(inner["output"]) -> inner["output"]
-      is_binary(map["output"]) -> map["output"]
-      true -> nil
-    end
-  end
-
-  defp command_result(%{"command_result" => text}) when is_binary(text) do
-    json_map(text) || %{}
-  end
-
-  defp command_result(%{"command_result" => map}) when is_map(map), do: map
-  defp command_result(_), do: %{}
-
-  defp json_map(text) when is_binary(text) and text != "" do
-    case JSON.decode(text) do
-      {:ok, map} when is_map(map) -> map
-      _ -> nil
-    end
-  end
-
-  defp json_map(_), do: nil
+  defp present(output), do: Spiral.Cells.Domain.builder_present(output)
 
   @cupy_missing_cuda_path_warning "ignore:CUDA path could not be detected:UserWarning"
 
@@ -805,15 +661,9 @@ defmodule Spiral.Cells.Targets do
     if File.regular?(shim), do: ["-include", shim], else: []
   end
 
-  defp cl?(path) do
-    path |> Path.basename() |> String.downcase() |> String.trim_trailing(".exe") == "cl"
-  end
+  defp cl?(path), do: Spiral.Cells.Domain.is_cl_compiler(Path.basename(path)) == "true"
 
-  defp host_extension("fsharp"), do: ".fsx"
-  defp host_extension("python"), do: ".py"
-  defp host_extension("lua"), do: ".lua"
-  defp host_extension("javascript"), do: ".js"
-  defp host_extension("powershell"), do: ".ps1"
+  defp host_extension(language), do: Spiral.Cells.Domain.host_extension(language)
 
   defp exe_name, do: if(match?({:win32, _}, :os.type()), do: "cell.exe", else: "cell")
 

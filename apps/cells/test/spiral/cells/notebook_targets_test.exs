@@ -53,6 +53,18 @@ defmodule Spiral.Cells.NotebookTargetsTest do
     end
   end
 
+  test "an unknown ///> backend fails only its own step, and the other steps keep their builders" do
+    steps = [
+      %{index: 0, cell_source: "///- --test\n///> nope\ntest bad =\n    1i32 |> _assert_eq 1i32"},
+      %{index: 1, cell_source: "///- --test\n///> c\ntest good =\n    1i32 |> _assert_eq 1i32"}
+    ]
+
+    [bad, good] = Notebook.with_builders(steps, [], false, %{0 => "bad", 1 => "good"})
+    assert bad.builder_error =~ ~s(unknown Spiral backend "nope")
+    refute Map.has_key?(good, :builder_error)
+    assert Enum.map(good.builders, & &1.tool) == [:c]
+  end
+
   test "a test's own target inherits the static prelude's crates for the same tool" do
     defaults = Spiral.Cells.Builders.commands("///> rust -d serde_json -d chrono")
     [rust] = Notebook.inherit_deps(Spiral.Cells.Builders.commands("///> rust -d serde_json"), defaults)

@@ -99,6 +99,20 @@
     := lines = sm'::split_list "\n" (text::replace text_in "\r\n" "\n")
     sm'::concat_list "\n" (listm::rev (convert lines []))
 
+/// ## declares_modules: a line whose leading ASCII whitespace is followed by modules, whitespace, =
+:= ascii_space (b : i32) : bool = b = 32i32 || (b >= 9i32 && b <= 13i32)
+
+:~ ^ spaces_end (s : string) (i : i32) : i32 = ? i < text::length s && ascii_space (text::byte_at s i) ?> spaces_end s (i + 1i32) |: i
+
+:= declares_at (s : string) (line : i32) : bool =
+    := k = spaces_end s line
+    text::starts_at s k "modules" && text::one s (spaces_end s (k + 7i32)) = "="
+
+:~ ^ declares_from (s : string) (line : i32) : bool =
+    := nl = text::find_from s "\n" line
+    ? declares_at s line ?> !+ |? nl < 0i32 ?> !- |: declares_from s (nl + 1i32)
+
+:= declares_modules (s : string) : bool = declares_from s 0i32
 :# scalars_lists_and_blocks_convert_like_the_elixir_reader =
     := toml = "edition = 3\npackageDir = '../lib'\npackages = ['|core-', \"spiral-\"]\nmodules = '''\nmain\n'''"
     := expected = "edition: 3\npackageDir: ../lib\npackages:\n    |core-\n    spiral-\nmodules:\n    main"
@@ -106,3 +120,8 @@
 
 :# a_list_may_span_lines_and_a_comment_stays_blank =
     from_toml "# note\npackages = [\n  'a',\n  'b'\n]\nx = 1" |> _assert_eq "\npackages:\n    a\n    b\nx: 1"
+
+:# modules_is_declared_only_as_a_line_leading_key =
+    declares_modules "edition = 3\n  modules =\n'''main'''" |> _assert_eq !+
+    declares_modules "x = 1\nmodules\n  = 'a'" |> _assert_eq !+
+    declares_modules "submodules = 1\n# modules = 2\nmodules_x = 3" |> _assert_eq !-

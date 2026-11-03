@@ -17,4 +17,6 @@ modules:
     html_markdown
     json_value
     builder_output
+    builders
+    gleam_project
     main

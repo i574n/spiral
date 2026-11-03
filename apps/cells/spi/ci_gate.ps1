@@ -1,11 +1,13 @@
 param(
     [string] $Match = '.',
     [string] $Out = (Join-Path ($env:SPIRAL_BIN_CACHE_DIR ?? (Join-Path $env:LOCALAPPDATA 'spiral-bin')) "runs/cells-gate-ci-$(Get-Date -Format 'yyyyMMdd-HHmmss')"),
-    [int] $PathsPerRun = 20
+    [int] $PathsPerRun = 20,
+    [string[]] $Roots = @('lib/spiral')
 )
 $ErrorActionPreference = 'Stop'
 $spiral = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
-$Paths = @(git -C $spiral ls-files -- 'lib/spiral/*.spi' |
+$Roots = @($Roots | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+$Paths = @(git -C $spiral ls-files -- ($Roots | ForEach-Object { "$_/*.spi" }) |
         ForEach-Object { Join-Path $spiral $_ } |
         Where-Object { (Split-Path $_ -Leaf) -match $Match -and (Select-String -LiteralPath $_ -Pattern '^(test|:#) ' -Quiet) })
 if (-not $Paths) { throw "no lib .spi with test blocks matches $Match" }

@@ -32,7 +32,7 @@ defmodule Spiral.Cells.Manifest do
   end
 
   @spec declares_modules?(String.t()) :: boolean()
-  def declares_modules?(text), do: Regex.match?(~r/^\s*modules\s*=/m, text)
+  def declares_modules?(text), do: Spiral.Cells.Domain.declares_modules(text)
 
   defp resolve(dir) do
     with dotnet when is_binary(dotnet) <- Spiral.Cells.Toolchain.dotnet([]),

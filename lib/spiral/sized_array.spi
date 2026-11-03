@@ -1,0 +1,146 @@
+:# sized_array static =
+    :< testing
+
+:! sized n el = array el
+
+:= size_of \* n el. (_ : sized n el) : i32 = ~> real_core::type_lit_to_lit `n
+
+:~ ^ init_from \* el. (x : array el) (f : i32 -> el) (i : i32) : () =
+    ? i < length x ?>
+        set x i (f i)
+        init_from x f (i + 1)
+
+:= init \* n el. (f : i32 -> el) : sized n el =
+    := x : array el = create (~> real_core::type_lit_to_lit `n)
+    init_from x f 0
+    sized x
+
+:~ ^ fill_from \* el. (x : array el) (value : el) (i : i32) : () =
+    ? i < length x ?>
+        set x i value
+        fill_from x value (i + 1)
+
+:= filled \* n el. (value : el) : sized n el =
+    := x : array el = create (~> real_core::type_lit_to_lit `n)
+    fill_from x value 0
+    sized x
+
+:= item \* n el. ((sized x) : sized n el) (i : i32) : el = index x i
+
+:~ ^ put_from \* el. (o : array el) (at : i32) (x : array el) (k : i32) : () =
+    ? k < length x ?>
+        set o (at + k) (index x k)
+        put_from o at x (k + 1)
+
+:= merge \* a b el. ((sized x) : sized a el) ((sized y) : sized b el) : sized (type_arith::add a b) el =
+    := o : array el = create (length x + length y)
+    put_from o 0 x 0
+    put_from o (length x) y 0
+    sized o
+
+:= resized \* m n el. ((sized x) : sized n el) : sized m el =
+    := have : i32 = ~> real_core::type_lit_to_lit `n
+    := want : i32 = ~> real_core::type_lit_to_lit `m
+    ? have = want ?> sized x |: error_type "resized: the sizes differ"
+
+:~ ^ fold_from \* el s. (f : s -> el -> s) (x : array el) (k : i32) (acc : s) : s =
+    ? k >= length x ?> acc |: fold_from f x (k + 1) (f acc (index x k))
+
+:= fold \* n el s. (f : s -> el -> s) (start : s) ((sized x) : sized n el) : s = fold_from f x 0 start
+
+:= map \* n a b. (f : a -> b) ((sized x) : sized n a) : sized n b = init \ i => f (index x i)
+
+:= take \* a b el. ((sized x) : sized (type_arith::add a b) el) : sized a el = init \ i => index x i
+
+:= skip \* a b el. ((sized x) : sized (type_arith::add a b) el) : sized b el =
+    := start : i32 = ~> real_core::type_lit_to_lit `a
+    init \ i => index x (start + i)
+
+:~ ^ dot_at \* n. (w : array f32) (at : i32) ((sized x) : sized n f32) (j : i32) (acc : f32) : f32 =
+    := count : i32 = ~> real_core::type_lit_to_lit `n
+    ? j >= count ?> acc |: dot_at w at (sized x : sized n f32) (j + 1) (acc + index w (at + j) * index x j)
+
+:= dot \* n. ((sized w) : sized n f32) (x : sized n f32) : f32 = dot_at w 0 x 0 0.0f32
+
+:~ ^ rows_from \* n d. ((sized o) : sized d f32) (x : sized n f32) (w : array f32) (i : i32) : () =
+    := out : sized d f32 = sized o
+    ? i < size_of out ?>
+        set o i (dot_at w (i * size_of x) x 0 0.0f32)
+        rows_from out x w (i + 1)
+
+:= matmul \* n d. (o : sized d f32) (x : sized n f32) ((sized w) : sized (type_arith::mult d n) f32) : () =
+    rows_from o x w 0
+
+:= halved \* n el. (f : el -> el -> el) ((sized x) : sized n el) : sized (type_arith::divup n 2) el =
+    init \ i => ? 2 * i + 1 < length x ?> f (index x (2 * i)) (index x (2 * i + 1)) |: index x (2 * i)
+
+:= ^ reduced \* n el. (f : el -> el -> el) (x : sized n el) : el =
+    ? size_of x <= 1 ?> item x 0 |: reduced f (halved f x)
+
+///> c
+///> rust
+:# merge_then_resized_keeps_order_and_size =
+    := v : sized 2 i32 = init \ i => i + 1
+    := w : sized 3 i32 = init \ i => 10 * (i + 1)
+    := u : sized 5 i32 = resized (merge v w)
+    (size_of u, item u 1, item u 4) |> _assert_eq (5i32, 2i32, 30i32)
+
+///> c
+///> rust
+:# fold_sums_a_merged_array =
+    := v : sized 2 i32 = init \ i => i + 1
+    := w : sized 3 i32 = init \ i => 10 * (i + 1)
+    fold (+) 0i32 (merge v w) |> _assert_eq 63i32
+
+///> c
+///> rust
+:# map_keeps_the_size =
+    := v : sized 3 i32 = init \ i => i
+    := w : sized 3 i32 = map (\ x => x * x) v
+    (size_of w, fold (+) 0i32 w) |> _assert_eq (3i32, 5i32)
+
+///> c
+///> rust
+:# take_and_skip_invert_merge =
+    := v : sized 2 i32 = init \ i => i + 1
+    := w : sized 3 i32 = init \ i => 10 * (i + 1)
+    := u = merge v w
+    (fold (+) 0i32 (take u : sized 2 i32), fold (+) 0i32 (skip u : sized 3 i32)) |> _assert_eq (3i32, 60i32)
+
+///> c
+///> rust
+:# a_literal_size_splits_after_a_checked_relabel =
+    := u : sized 5 i32 = init \ i => i
+    := parts : sized (type_arith::add 2 3) i32 = resized u
+    := rest : sized 3 i32 = skip parts
+    (size_of rest, item rest 0) |> _assert_eq (3i32, 2i32)
+
+///> c
+///> rust
+:# matmul_dots_each_row =
+    := x : sized 4 f32 = init \ i => conv (i + 1)
+    := w : sized (type_arith::mult 3 4) f32 = init \ i => conv (i % 4)
+    := o : sized 3 f32 = init \ _ => 0.0f32
+    matmul o x w
+    item o 2 |> _assert_eq 20.0f32
+
+///> c
+///> rust
+:# filled_matmul_needs_no_closures =
+    := x : sized 4 f32 = filled 1.0f32
+    := w : sized (type_arith::mult 3 4) f32 = filled 2.0f32
+    := o : sized 3 f32 = filled 0.0f32
+    matmul o x w
+    (size_of o, item o 1) |> _assert_eq (3i32, 8.0f32)
+
+///> c
+///> rust
+:# dot_sums_the_products =
+    := x : sized 4 f32 = init \ i => conv (i + 1)
+    dot x x |> _assert_eq 30.0f32
+
+///> c
+:# resized_rejects_a_different_size fails "resized: the sizes differ" =
+    := v : sized 2 i32 = init \ i => i
+    := u : sized 3 i32 = resized v
+    size_of u |> _assert_eq 3i32

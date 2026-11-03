@@ -643,6 +643,7 @@ defmodule Spiral.Cells.Notebook do
   end
 
   defp memo_key(_memo, %{untargeted: _}), do: nil
+  defp memo_key(_memo, %{builder_error: _}), do: nil
 
   defp memo_key(memo, step) do
     lines =
@@ -702,14 +703,23 @@ defmodule Spiral.Cells.Notebook do
   @doc false
   def with_builders(steps, defaults, implicit?, test_names) do
     Enum.map(steps, fn step ->
-      case Builders.commands(step.cell_source) do
-        [] ->
+      case step_commands(step.cell_source) do
+        {:error, message} ->
+          step |> Map.put(:builders, defaults) |> put_test_name(test_names) |> Map.put(:builder_error, message)
+
+        {:ok, []} ->
           step |> Map.put(:builders, defaults) |> put_test_name(test_names) |> mark_untargeted(implicit?)
 
-        own ->
+        {:ok, own} ->
           step |> Map.put(:builders, inherit_deps(own, defaults)) |> put_test_name(test_names)
       end
     end)
+  end
+
+  defp step_commands(source) do
+    {:ok, Builders.commands(source)}
+  rescue
+    error in ArgumentError -> {:error, Exception.message(error)}
   end
 
   @doc false
@@ -883,6 +893,11 @@ defmodule Spiral.Cells.Notebook do
 
   defp run_step(%{untargeted: name} = step, _opts, _root) do
     message = untargeted_message(name)
+    [{step.index, {:error, error_output(message), message}, nil}]
+  end
+
+  defp run_step(%{builder_error: reason} = step, _opts, _root) do
+    message = "test #{step[:test_name] || "cell #{step.index}"}: #{reason}"
     [{step.index, {:error, error_output(message), message}, nil}]
   end
 

@@ -619,10 +619,8 @@ function Build-And-Run($job) {
         return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
     }
     if ($job.Backend -eq 'OpenQasm') {
-        if (-not $tools.Python) { return 'no-toolchain' }
-        $shim = Join-Path $shimDir 'openqasm-run/run.py'
-        if (-not (Test-Path -LiteralPath $shim)) { return 'no-toolchain' }
-        $run = Invoke-Native $tools.Python @($shim, $job.Output) $binDir 60
+        if (-not $tools.QasmRun) { return 'no-toolchain' }
+        $run = Invoke-Native $tools.QasmRun @($job.Output) $binDir 60
         if ($run.Err -match 'qasm error:') {
             $msg = (($run.Err -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 3) -join ' / ') -replace '\s+', ' '
             return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }

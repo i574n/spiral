@@ -34,6 +34,11 @@ defmodule Spiral.Cells.Domain do
     :spiral_cells@domain.from_toml(text)
   end
 
+  def declares_modules(text) do
+    ensure!()
+    :spiral_cells@domain.declares_modules(text) == "true"
+  end
+
   def source_remap(message, program, source, path) do
     ensure!()
     :spiral_cells@domain.source_remap(message, program, source, path)
@@ -57,6 +62,43 @@ defmodule Spiral.Cells.Domain do
   def builder_failure_trace(text) do
     ensure!()
     :spiral_cells@domain.builder_failure_trace(text)
+  end
+
+  def builder_split(text) do
+    ensure!()
+    :spiral_cells@domain.builder_split(text)
+  end
+
+  def builder_deps(text) do
+    ensure!()
+    :spiral_cells@domain.builder_deps(text)
+  end
+
+  def host_language(text) do
+    ensure!()
+    :spiral_cells@domain.host_language(text)
+  end
+
+  def host_extension(text) do
+    ensure!()
+    :spiral_cells@domain.host_extension(text)
+  end
+
+  def is_cl_compiler(text) do
+    ensure!()
+    :spiral_cells@domain.is_cl_compiler(text)
+  end
+
+  def gleam_strip_warnings(text) do
+    ensure!()
+    :spiral_cells@domain.gleam_strip_warnings(text)
+  end
+
+  def gleam_manifest(path, deps, target) do
+    ensure!()
+    main = if String.contains?(Path.basename(path), "_real"), do: "main_real", else: "main"
+    fields = [main, target | Enum.flat_map(deps, fn %{name: name, version: version} -> [name, if(is_nil(version), do: "-", else: "+" <> version)] end)]
+    :spiral_cells@domain.gleam_manifest(Enum.map_join(fields, &"#{byte_size(&1)}:#{&1}"))
   end
 
   def split_output(output) do

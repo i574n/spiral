@@ -31,6 +31,7 @@
         "reached_program"
         ((\ (program : string), (rows : string) => memo::reached_program_wire program rows) : string * string -> string)
     export "from_toml" ((\ text => manifest::from_toml text) : string -> string)
+    export "declares_modules" ((\ text => ? manifest::declares_modules text ?> "true" |: "false") : string -> string)
     export
         "source_remap"
         (
@@ -42,4 +43,11 @@
     export "json_canonical" ((\ text => json_value::canonical text) : string -> string)
     export "builder_present" ((\ text => builder_output::present text) : string -> string)
     export "builder_failure_trace" ((\ text => builder_output::failure_trace text) : string -> string)
+    export "builder_split" ((\ text => builders::split_wire text) : string -> string)
+    export "builder_deps" ((\ text => builders::deps_wire text) : string -> string)
+    export "host_language" ((\ text => targets::host_language text) : string -> string)
+    export "host_extension" ((\ text => targets::host_extension text) : string -> string)
+    export "is_cl_compiler" ((\ text => ? targets::is_cl text ?> "true" |: "false") : string -> string)
+    export "gleam_strip_warnings" ((\ text => gleam_project::strip_warnings text) : string -> string)
+    export "gleam_manifest" ((\ wire => gleam_project::manifest_wire wire) : string -> string)
     0i32

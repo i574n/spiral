@@ -32,6 +32,9 @@
 := map_keys \* k v. (m : erl_map k v) : list k =
     erlang_term::apply "maps" "keys" [ map_term m ] |> erlang_term::items_of |> listm::map erlang_term::cast
 
+:= map_values \* k v. (m : erl_map k v) : list v =
+    erlang_term::apply "maps" "values" [ map_term m ] |> erlang_term::items_of |> listm::map erlang_term::cast
+
 := pair_term \* k v. (pair : k * v) : erlang_term::term =
     := key, value = pair
     erlang_term::tuple [ erlang_term::of key; erlang_term::of value ]
@@ -66,3 +69,9 @@
     := m = map_of_pairs [ ("b", 2i32); ("a", 1i32); ("c", 4i32) ]
     := keys = map_keys m
     (listm::length keys, keys |> listm::fold (\ n k => n + map_get_or k 0i32 m) 0i32) |> _assert_eq (3i32, 7i32)
+
+///> gleam
+:# values_are_every_value_once =
+    := m = map_of_pairs [ ("b", 2i32); ("a", 1i32); ("c", 4i32) ]
+    := vs = map_values m
+    (listm::length vs, vs |> listm::fold (\ n v => n + v) 0i32) |> _assert_eq (3i32, 7i32)

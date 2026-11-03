@@ -1275,41 +1275,53 @@
         | None => text
     | None => text
 
-:~ ^ dereferenced \* k form. (roots : list (xsd particle form)) (item : xsd k form) : xsd k form =
+:~ ^ dereferenced_in \* k form.
+    (seen : list string) (roots : list (xsd particle form)) (item : xsd k form)
+    : xsd k form
+    =
     ?= item ?|
-    | Complex c => Complex { c ?| content = dereferenced roots c::content }
-    | Derived d => Derived { d ?| content = dereferenced roots d::content }
+    | Complex c => Complex { c ?| content = dereferenced_in seen roots c::content }
+    | Derived d => Derived { d ?| content = dereferenced_in seen roots d::content }
     | Simple _ => item
     | Element e =>
         ?= e::inline ?|
-        | Some inner => Element { e ?| inline = Some (dereferenced roots inner) }
+        | Some inner => Element { e ?| inline = Some (dereferenced_in seen roots inner) }
         | None =>
             ?= e::type_ref ?|
             | Some _ => item
             | None =>
-                ?= root_element (xml::local_name (tag_text e::name)) roots ?|
-                | Some (Element root) => Element { root ?| occurs = e::occurs; name = e::name }
+                := local = xml::local_name (tag_text e::name)
+                ?= root_element local roots ?|
+                | Some (Element root) =>
+                    := copy = Element { root ?| occurs = e::occurs; name = e::name }
+                    ? has_name local seen ?> copy |: dereferenced_in (local :: seen) roots copy
                 | _ => item
     | Sequence s =>
-        := items = dereferenced_all roots s::items []
+        := items = dereferenced_all_in seen roots s::items []
         ?= items ?|
         | (Choice c) :: [] ?& is_repeated s::occurs && is_repeated c::occurs = !- =>
             Choice { c ?| occurs = { min = s::occurs::min * c::occurs::min; max = s::occurs::max } }
         | _ => Sequence { s ?| items = items }
     | Choice c =>
-        := items = dereferenced_all roots c::items []
+        := items = dereferenced_all_in seen roots c::items []
         ? wildcard_choice items !- ?> AnyContent () |: Choice { c ?| items = items }
     | AnyContent () => item
     | Empty () => item
     | Attribute _ => item
 
-:& :~ dereferenced_all \* k form.
-    (roots : list (xsd particle form)) (items : list (xsd k form)) (acc : list (xsd k form))
+:& :~ dereferenced_all_in \* k form.
+    (seen : list string) (roots : list (xsd particle form)) (items : list (xsd k form)) (acc : list (xsd k form))
     : list (xsd k form)
     =
     ?= items ?|
-    | item :: rest => dereferenced_all roots rest (dereferenced roots item :: acc)
+    | item :: rest => dereferenced_all_in seen roots rest (dereferenced_in seen roots item :: acc)
     | [] => reverse acc []
+
+:= dereferenced_all \* k form.
+    (roots : list (xsd particle form)) (items : list (xsd k form)) (acc : list (xsd k form))
+    : list (xsd k form)
+    =
+    dereferenced_all_in [] roots items acc
 
 := staged_type_names \* form. (staged : list string) (schema : xsd_schema form) : list string =
     := complex_types = dereferenced_all schema::elements schema::complex_types []
@@ -3544,3 +3556,19 @@
     ? sm'::contains "listm'.filter (fun (n, _) => n <> \"cur\") (" functions = !-
     ?> failwith "the base's attributes leave out the one the restriction re-declares"
     ? sm'::contains "\"ver\"" functions = !- ?> failwith "the base's other attributes are still written"
+
+///> rust
+:# a_ref_inside_a_referenced_element_keeps_its_type =
+    := schema =
+        read_schema (
+            "<xs:schema><xs:element name=\"AuditFile\"><xs:complexType><xs:sequence><xs:element ref=\"Header\"/>"
+            ++# "</xs:sequence></xs:complexType></xs:element><xs:element name=\"Header\"><xs:complexType><xs:sequence>"
+            ++# "<xs:element ref=\"CompanyAddress\"/></xs:sequence></xs:complexType></xs:element>"
+            ++# "<xs:element name=\"CompanyAddress\" type=\"AddressStructure\"/><xs:complexType name=\"AddressStructure\">"
+            ++# "<xs:sequence><xs:element name=\"AddressDetail\" type=\"xs:string\"/></xs:sequence></xs:complexType></xs:schema>"
+        )
+    := text = generate_module (xsd_resolve::finalize_names (xsd_resolve::qualify_schema [] schema))
+    ? sm'::contains "company_address : string" text
+    ?> failwith "a ref inside an element reached by ref is not flattened to text"
+    ? sm'::contains "company_address : x_address_structure" text = !-
+    ?> failwith "the nested ref keeps its global element's type"

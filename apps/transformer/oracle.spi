@@ -42,6 +42,42 @@
 
 := greedy_text (o : oracle) : string = sm'::concat_list "\n" o::greedy
 
+:= dragon_prompt () : list u8 =
+    [
+        84u8; 111u8; 109u8; 32u8; 109u8; 101u8; 116u8; 32u8; 97u8; 32u8; 103u8
+        114u8; 101u8; 101u8; 110u8; 32u8; 100u8; 114u8; 97u8; 103u8; 111u8; 110u8
+    ]
+
+:= dragon_line_1 () : string =
+    "Tom met a green dragon. He likes to play with his toys. He likes to play with his toys. He likes to "
+    ++# "play with his toys. He likes to play with his toys. He likes to play with his toys."
+
+:= dragon_line_2 () : string =
+    "One day, Tom and his toy car rolled in the park. They see a big box. They see a big box. They see a "
+    ++# "big box. They see a big box. They see a big box. They see a big box."
+
+:= dragon_line_3 () : string =
+    "\"Wow, Tom!\" Tom says. \"You are not a boy. It is a boy. It is not a box. It is not a box. It is "
+    ++# "not a box. It is not a box. It is not a box. It is not a"
+
+:= dragon_text () : string = sm'::concat_list "\n" [ dragon_line_1 (); dragon_line_2 (); dragon_line_3 () ]
+
+:= sampled_line_1 () : string =
+    "Once upon a time, there was a little girl named Lily. She loved to play outside in the sun. One day, "
+    ++# "her mom asked her to teach him a nice way to play in the sun. Lily was so excited to go outside and "
+    ++# "jump in the sky. "
+
+:= sampled_line_2 () : string =
+    "As she walked, she saw a tall toy car that was much carrots. The toys asked her to buy some cars and "
+    ++# "Lily all nicely. The car was curious and said, \"What's wrong?\" Lily said, \"I am sorry, I want to "
+    ++# "help you.\" "
+
+:= sampled_line_3 () : string =
+    "They both ate the cards and toys and had a brilliant, bunnys. They put the car and ate the ball "
+    ++# "together. Lily was happy that the ball could read"
+
+:= sampled_text () : string = sm'::concat_list "\n" [ sampled_line_1 (); sampled_line_2 (); sampled_line_3 () ]
+
 :== probe = { token : i32; logit : f32 }
 
 := stories260k_step_0 () : list probe =

@@ -88,14 +88,11 @@
 
 :! rust_hasher = $'std::collections::hash_map::DefaultHasher'
 
-:= rust_unix_nanos () : rust::u128 =
-    $'std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_nanos()'
-
 := rust_random_pair () : u64 * u64 =
     := hasher = $'std::hash::BuildHasher::build_hasher(&std::collections::hash_map::RandomState::new())' : rust_hasher
     hasher |> rust::to_mut
-    := nanos = rust_unix_nanos ()
-    $'std::hash::Hasher::write_u128(&mut !hasher, !nanos)' : ()
+    := nanos = unix_clock::nanos_count (unix_clock::unix_now_nanos ())
+    $'std::hash::Hasher::write_u64(&mut !hasher, !nanos)' : ()
     := a = $'std::hash::Hasher::finish(&!hasher)' : u64
     $'std::hash::Hasher::write_u64(&mut !hasher, !a)' : ()
     := b = $'std::hash::Hasher::finish(&!hasher)' : u64

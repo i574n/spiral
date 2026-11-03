@@ -14,6 +14,9 @@ modules:
     iter_prototypes-
     am'
     array_dim
+    sized_array
+    heap_scope
+    f32_kernels
     seq
     math
     keyed_rng
@@ -29,6 +32,7 @@ modules:
     sm'
     sm'_operators
     erlang_term
+    unix_clock
     erlang_text
     erlang_map
     erlang_file
@@ -130,3 +134,4 @@ modules:
     cli_args_real*
     cli_args
     iggy
+    metrics

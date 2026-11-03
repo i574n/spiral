@@ -7,6 +7,16 @@ $ErrorActionPreference = 'Stop'
 $identifier = "(?<![\w'])([A-Za-z_][\w']*)(?:\.([A-Za-z_][\w']*))?"
 
 function Get-LibModules([string] $root) {
+    $toml = Join-Path $root 'spiral.toml'
+    if (Test-Path $toml) {
+        $text = [IO.File]::ReadAllText($toml)
+        $prelude = if ($text -match '(?ms)^\s*prelude\s*=\s*\[(.*?)\]') { @([regex]::Matches($Matches[1], '"([^"]+)"') | ForEach-Object { $_.Groups[1].Value }) } else { @() }
+        foreach ($file in Get-ChildItem $root -Recurse -File | Where-Object { $_.Extension -in '.spi', '.spir' -and $_.FullName -notmatch '[\\/](target|_build|node_modules)[\\/]' }) {
+            $stem = [IO.Path]::GetFileNameWithoutExtension($file.Name)
+            [pscustomobject]@{ Module = $stem; Path = $file.FullName; Flat = $stem -in $prelude }
+        }
+        return
+    }
     $lines = [IO.File]::ReadAllLines((Join-Path $root 'package.spiproj'))
     $inModules = $false
     $stack = [System.Collections.Generic.List[object]]::new()

@@ -3,6 +3,7 @@
     :< testing
 
 :< sm'_operators
+:< f32_kernels
 
 :== bytes = array u8
 
@@ -94,43 +95,6 @@
     := l = layout_of c (shared_classifier b)
     { c = c; l = l; w = floats_from b 28 (weight_count l) }
 
-:~ ^ sum_squares (x : floats) (n : i32) (i : i32) (acc : f32) : f32 =
-    ? i >= n ?> acc |: sum_squares x n (i + 1) (acc + index x i * index x i)
-
-:~ ^ scale_into (o : floats) (x : floats) (w : floats) (off : i32) (n : i32) (s : f32) (i : i32) : () =
-    ? i < n ?>
-        set o i (index w (off + i) * (s * index x i))
-        scale_into o x w off n s (i + 1)
-
-:= rmsnorm (o : floats) (x : floats) (w : floats) (off : i32) (n : i32) : () =
-    := ss = sum_squares x n 0 0.0f32 / conv n + 0.00001f32
-    scale_into o x w off n (1.0f32 / sqrt ss) 0
-
-:~ ^ dot (a : floats) (ao : i32) (b : floats) (bo : i32) (n : i32) (j : i32) (acc : f32) : f32 =
-    ? j >= n ?> acc |: dot a ao b bo n (j + 1) (acc + index a (ao + j) * index b (bo + j))
-
-:~ ^ matmul_rows (o : floats) (x : floats) (w : floats) (off : i32) (n : i32) (d : i32) (i : i32) : () =
-    ? i < d ?>
-        set o i (dot w (off + i * n) x 0 n 0 0.0f32)
-        matmul_rows o x w off n d (i + 1)
-
-:= matmul (o : floats) (x : floats) (w : floats) (off : i32) (n : i32) (d : i32) : () = matmul_rows o x w off n d 0
-
-:~ ^ copy_into (o : floats) (oo : i32) (x : floats) (xo : i32) (n : i32) (i : i32) : () =
-    ? i < n ?>
-        set o (oo + i) (index x (xo + i))
-        copy_into o oo x xo n (i + 1)
-
-:~ ^ add_into (o : floats) (x : floats) (n : i32) (i : i32) : () =
-    ? i < n ?>
-        set o i (index o i + index x i)
-        add_into o x n (i + 1)
-
-:~ ^ axpy (o : floats) (oo : i32) (a : f32) (x : floats) (xo : i32) (n : i32) (i : i32) : () =
-    ? i < n ?>
-        set o (oo + i) (index o (oo + i) + a * index x (xo + i))
-        axpy o oo a x xo n (i + 1)
-
 :== buffers = { x : floats; xb : floats; xb2 : floats; hb : floats; hb2 : floats; q : floats; k : floats; v : floats }
 
 :== caches = { att : floats; logits : floats; keys : floats; values : floats }
@@ -169,25 +133,6 @@
 
 := kv_head (c : config) (h : i32) : i32 = h / (c::heads / c::kv_heads) * head_size c
 
-:~ ^ max_from (x : floats) (off : i32) (n : i32) (i : i32) (m : f32) : f32 =
-    ? i >= n ?> m |: max_from x off n (i + 1) (max m (index x (off + i)))
-
-:~ ^ exp_from (x : floats) (off : i32) (n : i32) (m : f32) (i : i32) (acc : f32) : f32 =
-    ? i >= n ?> acc
-    |:
-        := e = exp (index x (off + i) - m)
-        set x (off + i) e
-        exp_from x off n m (i + 1) (acc + e)
-
-:~ ^ divide_from (x : floats) (off : i32) (n : i32) (s : f32) (i : i32) : () =
-    ? i < n ?>
-        set x (off + i) (index x (off + i) / s)
-        divide_from x off n s (i + 1)
-
-:= softmax (x : floats) (off : i32) (n : i32) : () =
-    := m = max_from x off n 1 (index x off)
-    divide_from x off n (exp_from x off n m 0 0.0f32) 0
-
 := score_at (c : config) (b : buffers) (s : caches) (layer : i32) (h : i32) (t : i32) : f32 =
     := hs = head_size c
     dot s::keys (cache_row c layer t + kv_head c h) b::q (h * hs) hs 0 0.0f32 / sqrt (conv hs)
@@ -205,11 +150,6 @@
     ? t <= pos ?>
         mix_at c b s layer h t
         mix_from c b s layer h pos (t + 1)
-
-:~ ^ zero_from (x : floats) (off : i32) (n : i32) (i : i32) : () =
-    ? i < n ?>
-        set x (off + i) 0.0f32
-        zero_from x off n (i + 1)
 
 := attend_head (c : config) (b : buffers) (s : caches) (layer : i32) (pos : i32) (h : i32) : () =
     scores_from c b s layer h pos 0
@@ -326,6 +266,89 @@
         := start = ? prev = 1 && length p > 0 && index p 0 = 32u8 ?> 1 |: 0
         ascii_from p start start ""
 
+:~ ^ read_scores (t : bytes) (scores : floats) (i : i32) (at : i32) : () =
+    ? i < length scores ?>
+        set scores i (f32_at t at)
+        read_scores t scores (i + 1) (at + 8 + i32_at t (at + 4))
+
+:= scores_of (t : bytes) (count : i32) : floats =
+    := scores : floats = create count
+    read_scores t scores 0 4
+    scores
+
+:~ ^ same_from (a : bytes) (b : bytes) (k : i32) : bool =
+    ? k >= length a ?> !+ |: ? index a k <> index b k ?> !- |: same_from a b (k + 1)
+
+:= same_bytes (a : bytes) (b : bytes) : bool = ? length a <> length b ?> !- |: same_from a b 0
+
+:~ ^ find_piece (pieces : array bytes) (p : bytes) (i : i32) : i32 =
+    ? i >= length pieces ?> -1 |: ? same_bytes (index pieces i) p ?> i |: find_piece pieces p (i + 1)
+
+:~ ^ put_bytes (o : bytes) (at : i32) (x : bytes) (k : i32) : () =
+    ? k < length x ?>
+        set o (at + k) (index x k)
+        put_bytes o at x (k + 1)
+
+:= joined (a : bytes) (b : bytes) : bytes =
+    := o : bytes = create (length a + length b)
+    put_bytes o 0 a 0
+    put_bytes o (length a) b 0
+    o
+
+:= slice_bytes (t : bytes) (from : i32) (n : i32) : bytes =
+    := o : bytes = create n
+    copy_bytes o t from 0
+    o
+
+:~ ^ codepoint_end (t : bytes) (i : i32) : i32 =
+    ? i >= length t ?> i |: ? (index t i &&& 192u8) = 128u8 ?> codepoint_end t (i + 1) |: i
+
+:~ ^ fallback_bytes (t : bytes) (i : i32) (stop : i32) (acc : list i32) : list i32 =
+    ? i >= stop ?> acc |: fallback_bytes t (i + 1) stop ((conv (index t i) : i32) + 3 :: acc)
+
+:~ ^ initial_from (pieces : array bytes) (t : bytes) (i : i32) (acc : list i32) : list i32 =
+    ? i >= length t ?> acc
+    |:
+        := stop = codepoint_end t (i + 1)
+        := id = find_piece pieces (slice_bytes t i (stop - i)) 0
+        initial_from pieces t stop (? id >= 0 ?> id :: acc |: fallback_bytes t i stop acc)
+
+:== best = { score : f32; at : i32; id : i32 }
+
+:= better (pieces : array bytes) (scores : floats) (x : i32) (y : i32) (at : i32) (b : best) : best =
+    := id = find_piece pieces (joined (index pieces x) (index pieces y)) 0
+    ? id < 0 ?> b |: ? index scores id > b::score ?> { score = index scores id; at = at; id = id } |: b
+
+:~ ^ best_pair (pieces : array bytes) (scores : floats) (ids : list i32) (at : i32) (b : best) : best =
+    ?= ids ?|
+    | [] => b
+    | x :: rest =>
+        ?= rest ?|
+        | [] => b
+        | y :: _ => best_pair pieces scores rest (at + 1) (better pieces scores x y at b)
+
+:~ ^ merged_at (ids : list i32) (at : i32) (id : i32) : list i32 =
+    ?= ids ?|
+    | [] => []
+    | x :: rest =>
+        ? at > 0 ?> x :: merged_at rest (at - 1) id
+        |: ?= rest ?| | _ :: tail => id :: tail | [] => [ id ]
+
+:~ ^ merge_all (pieces : array bytes) (scores : floats) (ids : list i32) : list i32 =
+    := b = best_pair pieces scores ids 0 { score = -10000000000.0f32; at = -1; id = -1 }
+    ? b::at < 0 ?> ids |: merge_all pieces scores (merged_at ids b::at b::id)
+
+:= space_piece () : bytes =
+    := p : bytes = create 1
+    set p 0 32u8
+    p
+
+:= encode (pieces : array bytes) (scores : floats) (text : bytes) : list i32 =
+    ? length text = 0 ?> [ 1 ]
+    |:
+        := prefix = find_piece pieces (space_piece ()) 0
+        1 :: merge_all pieces scores (prefix :: listm::rev (initial_from pieces text 0 []))
+
 :== run = { m : model; b : buffers; s : caches; pieces : array bytes; steps : i32 }
 
 := next_token (r : run) (token : i32) (pos : i32) : i32 =
@@ -338,36 +361,95 @@
         := next = next_token r token pos
         ? next = 1 ?> out |: generate r next (pos + 1) (out ++# piece_text token (index r::pieces next))
 
+:~ ^ generate_from (r : run) (forced : list i32) (token : i32) (pos : i32) (out : string) : string =
+    ? pos >= r::steps ?> out
+    |:
+        := sampled = next_token r token pos
+        := next, rest = ?= forced ?| | p :: more => p, more | [] => sampled, []
+        ? next = 1 ?> out |: generate_from r rest next (pos + 1) (out ++# piece_text token (index r::pieces next))
+
+:= random_u32 (rng : array u64) : u32 =
+    := a = index rng 0
+    := b = a ^^^ (a >>> 12)
+    := c = b ^^^ (b <<< 25)
+    := d = c ^^^ (c >>> 27)
+    set rng 0 d
+    conv ((d * 2685821657736338717u64) >>> 32)
+
+:= random_f32 (rng : array u64) : f32 = conv (random_u32 rng >>> 8) / 16777216.0f32
+
+:== sampler = { temperature : f32; topp : f32; rng : array u64 }
+
+:= sampler_of (temperature : f32) (topp : f32) (seed : u64) : sampler =
+    := rng : array u64 = create 1
+    set rng 0 seed
+    { temperature = temperature; topp = topp; rng = rng }
+
+:~ ^ mult_from (probs : floats) (coin : f32) (i : i32) (cdf : f32) : i32 =
+    ? i >= length probs ?> length probs - 1
+    |:
+        := cdf = cdf + index probs i
+        ? coin < cdf ?> i |: mult_from probs coin (i + 1) cdf
+
+:= beats (probs : floats) (cutoff : f32) (i : i32) (best : i32) : bool =
+    ? index probs i < cutoff ?> !- |: ? best < 0 ?> !+ |: index probs i > index probs best
+
+:~ ^ pick_max (probs : floats) (taken : array bool) (cutoff : f32) (i : i32) (best : i32) : i32 =
+    ? i >= length probs ?> best
+    |: pick_max probs taken cutoff (i + 1) (? index taken i ?> best |: ? beats probs cutoff i best ?> i |: best)
+
+:~ ^ nucleus (p : floats) (taken : array bool) (cut : f32) (top : f32) (acc : f32) (picks : list i32) : f32 * list i32 =
+    := i = pick_max p taken cut 0 (-1)
+    ? i < 0 ?> acc, picks
+    |:
+        set taken i !+
+        := acc = acc + index p i
+        ? acc > top ?> acc, i :: picks |: nucleus p taken cut top acc (i :: picks)
+
+:~ ^ draw (probs : floats) (r : f32) (cdf : f32) (order : list i32) (last : i32) : i32 =
+    ?= order ?|
+    | [] => last
+    | i :: rest =>
+        := cdf = cdf + index probs i
+        ? r < cdf ?> i |: draw probs r cdf rest last
+
+:= sample_topp (probs : floats) (topp : f32) (coin : f32) : i32 =
+    := cutoff = (1.0f32 - topp) / conv (length probs - 1)
+    := taken : array bool = create (length probs)
+    := total, chosen = nucleus probs taken cutoff topp 0.0f32 []
+    ?= chosen ?|
+    | last :: _ => draw probs (coin * total) 0.0f32 (listm::rev chosen) last
+    | [] => 0
+
+:~ ^ scale_from (x : floats) (t : f32) (i : i32) : () =
+    ? i < length x ?>
+        set x i (index x i / t)
+        scale_from x t (i + 1)
+
+:= sample (s : sampler) (logits : floats) : i32 =
+    ? s::temperature = 0.0f32 ?> argmax logits
+    |:
+        scale_from logits s::temperature 0
+        softmax logits 0 (length logits)
+        := coin = random_f32 s::rng
+        ? s::topp <= 0.0f32 || s::topp >= 1.0f32 ?> mult_from logits coin 0 0.0f32 |: sample_topp logits s::topp coin
+
+:~ ^ generate_sampled (r : run) (s : sampler) (forced : list i32) (token : i32) (pos : i32) (out : string) : string =
+    ? pos >= r::steps ?> out
+    |:
+        forward r::m r::b r::s token pos
+        := next, rest = ?= forced ?| | p :: more => p, more | [] => sample s r::s::logits, []
+        ? next = 1 ?> out |: generate_sampled r s rest next (pos + 1) (out ++# piece_text token (index r::pieces next))
+
+:= generate_prompted (r : run) (tokens : list i32) : string =
+    ?= tokens ?|
+    | first :: rest => generate_from r rest first 0 ""
+    | [] => generate_from r [] 1 0 ""
+
 := file_bytes (variable : string) : bytes = file_system::read_bytes (env::get_environment_variable variable)
 
 := run_of (m : model) (pieces : array bytes) (steps : i32) : run =
     { m = m; b = buffers_of m::c; s = caches_of m::c; pieces = pieces; steps = steps }
-
-:~ ^ fill_floats (x : floats) (values : list f32) (i : i32) : () =
-    ?= values ?|
-    | head :: rest =>
-        set x i head
-        fill_floats x rest (i + 1)
-    | [] => ()
-
-:= floats_of (values : list f32) : floats =
-    := x : floats = create (listm::length values)
-    fill_floats x values 0
-    x
-
-///> rust
-:# matmul_multiplies_rows_by_the_vector =
-    := ~two = 2.0f32
-    := o = zeros 2
-    matmul o (floats_of [ 1.0f32; two ]) (floats_of [ 1.0f32; 0.0f32; 3.0f32; 4.0f32 ]) 0 2 2
-    (index o 0, index o 1) |> _assert_eq (1.0f32, 11.0f32)
-
-///> rust
-:# softmax_keeps_the_order_and_sums_to_one =
-    := ~top = 3.0f32
-    := x = floats_of [ 1.0f32; 2.0f32; top ]
-    softmax x 0 3
-    (argmax x, abs (index x 0 + index x 1 + index x 2 - 1.0f32) < 0.000001f32) |> _assert_eq (2i32, !+)
 
 := piece_of (codes : list u8) : bytes =
     := p : bytes = create (listm::length codes)
@@ -379,6 +461,22 @@
         | [] => ()
     put codes 0
     p
+
+///> rust
+:# prompt_encodes_and_generates_like_run_c_on_stories260k =
+    := o = oracle::stories260k ()
+    := m = model_of (file_system::read_bytes (oracle::model_path o::checkpoint))
+    := t = file_system::read_bytes (oracle::model_path o::tokenizer)
+    := r = run_of m (vocab_of t m::c::vocab) o::steps
+    := tokens = encode r::pieces (scores_of t m::c::vocab) (piece_of (oracle::dragon_prompt ()))
+    generate_prompted r tokens |> _assert_eq (oracle::dragon_text ())
+
+///> rust
+:# topp_sampling_matches_run_c_on_stories260k =
+    := o = oracle::stories260k ()
+    := m = model_of (file_system::read_bytes (oracle::model_path o::checkpoint))
+    := r = run_of m (vocab_of (file_system::read_bytes (oracle::model_path o::tokenizer)) m::c::vocab) o::steps
+    generate_sampled r (sampler_of 1.0f32 0.9f32 42u64) [] 1 0 "" |> _assert_eq (oracle::sampled_text ())
 
 ///> rust
 :# raw_byte_pieces_decode_and_bos_strips_the_space =
@@ -423,11 +521,24 @@
 
 := dump_count () : option i32 = convert::try_convert (env::get_environment_variable "TRANSFORMER_DUMP_STEPS")
 
+:= seed_of () : option i32 = convert::try_convert (env::get_environment_variable "TRANSFORMER_SEED")
+
+:= prompt_tokens (r : run) (t : bytes) : list i32 =
+    := path = env::get_environment_variable "TRANSFORMER_PROMPT_FILE"
+    ? path = "" ?> [ 1 ] |: encode r::pieces (scores_of t r::m::c::vocab) (file_system::read_bytes path)
+
+:= generate_with (r : run) (tokens : list i32) : string =
+    := first, rest = ?= tokens ?| | x :: more => x, more | [] => 1, []
+    ?= seed_of () ?|
+    | Some seed => generate_sampled r (sampler_of 1.0f32 0.9f32 (conv seed)) rest first 0 ""
+    | None => generate_from r rest first 0 ""
+
 ///> _
 := main () : i32 =
     := m = model_of (file_bytes "TRANSFORMER_CHECKPOINT")
-    := r = run_of m (vocab_of (file_bytes "TRANSFORMER_TOKENIZER") m::c::vocab) 256
+    := t = file_bytes "TRANSFORMER_TOKENIZER"
+    := r = run_of m (vocab_of t m::c::vocab) 256
     ?= dump_count () ?|
     | Some n => dump_steps r 1 0 n
-    | None => console::write_line (generate r 1 0 "")
+    | None => console::write_line (generate_with r (prompt_tokens r t))
     0
