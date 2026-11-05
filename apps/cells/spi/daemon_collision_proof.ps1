@@ -34,7 +34,8 @@ try {
 $after = @(Get-Content $daemonLog | Select-Object -Skip $before | Where-Object { $_ -match ' compile ' })
 $stillHeld = (Get-NetTCPConnection -State Listen -LocalPort $livePort -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess
 $copyItem = Get-Item $copy
-$copyTag = "$([DateTimeOffset]::new($copyItem.LastWriteTimeUtc).ToUnixTimeSeconds())-$($copyItem.Length)"
+$copyCore = Get-Item (Join-Path $copyItem.DirectoryName 'SpiralCompilerCore.dll') -ErrorAction Ignore
+$copyTag = "$([DateTimeOffset]::new($copyItem.LastWriteTimeUtc).ToUnixTimeSeconds())-$($copyItem.Length)" + $(if ($copyCore) { "-$([DateTimeOffset]::new($copyCore.LastWriteTimeUtc).ToUnixTimeSeconds())-$($copyCore.Length)" } else { '' })
 $copyPortFile = Join-Path $env:LOCALAPPDATA "spiral-bin\cells-port-215003CF759F40A9-$copyTag.txt"
 $copySlot = if (Test-Path $copyPortFile) { (Get-Content $copyPortFile -Raw).Trim() } else { 'none' }
 "copy build's warm-port file names slot $copySlot (expected $nextSlot)"

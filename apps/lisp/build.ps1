@@ -12,11 +12,18 @@ $projectName = "lisp"
 
 $targetDir = GetTargetDir $projectName
 
+New-Item -ItemType Directory -Force "$targetDir/spl2spi" | Out-Null
+if (!(BuildSpiral "spl2spi.spi" "$targetDir/spl2spi/spl2spi.rs" "apps/lisp/spl2spi")) {
+    throw "RUST-FAILED apps/lisp / spl2spi.spi / compile"
+}
+$spl2spi = "$targetDir/spl2spi/spl2spi$(_exe)"
+{ rustc +nightly-2026-10-18 -O --edition 2021 "$targetDir/spl2spi/spl2spi.rs" -o $spl2spi } | Invoke-Block
+
 function Build-Sample([string] $Sample) {
     $dir = "$targetDir/$Sample"
     Remove-Item $dir -Recurse -Force -ErrorAction Ignore
     New-Item -ItemType Directory -Force $dir | Out-Null
-    { pwsh -NoProfile -File spl2spi.ps1 -In "$Sample.spl" -Out "$dir/main.spi" } | Invoke-Block | Out-Host
+    { & $spl2spi "$Sample.spl" "$dir/main.spi" } | Invoke-Block | Out-Host
     @('packages:', '    |core-', 'modules:', '    main') | Set-Content "$dir/package.spiproj"
     BuildSpiral "$dir/main.spi" "$dir/main.rs" "apps/lisp/$Sample"
 }

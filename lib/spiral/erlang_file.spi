@@ -6,7 +6,6 @@
 := text_of_call (m : string) (f : string) (args : list erlang_term::term) : string =
     erlang_term::apply "unicode" "characters_to_binary" [ erlang_term::apply m f args ] |> erlang_term::cast
 
-/// ## paths
 := dir_name (path : string) : string = text_of_call "filename" "dirname" [ erlang_term::of path ]
 
 := base_name (path : string) : string = text_of_call "filename" "basename" [ erlang_term::of path ]
@@ -16,7 +15,6 @@
 := joined_path (dir : string) (name : string) : string =
     text_of_call "filename" "join" [ erlang_term::of dir; erlang_term::of name ]
 
-/// ## files
 := file_written (path : string) (content : string) : bool =
     := r = erlang_term::apply "file" "write_file" [ erlang_term::of path; erlang_term::of content ]
     erlang_term::equal r (erlang_term::atom "ok")
@@ -25,18 +23,23 @@
     erlang_term::apply "unicode" "characters_to_binary" [ c ] |> erlang_term::cast
 
 := matching_paths (pattern : string) : list string =
-    erlang_term::apply "filelib" "wildcard" [ erlang_term::charlist pattern ] |> erlang_term::items_of |> listm::map text_of
+    erlang_term::apply "filelib" "wildcard" [ erlang_term::charlist pattern ]
+    |> erlang_term::items_of
+    |> listm::map text_of
+
+:= append_mode () : erlang_term::term = erlang_term::list_term [ erlang_term::atom "append" ]
 
 := file_appended (path : string) (content : string) : bool =
-    := mode = erlang_term::list_term [ erlang_term::atom "append" ]
-    := r = erlang_term::apply "file" "write_file" [ erlang_term::of path; erlang_term::of content; mode ]
+    := r = erlang_term::apply "file" "write_file" [ erlang_term::of path; erlang_term::of content; append_mode () ]
     erlang_term::equal r (erlang_term::atom "ok")
 
 := file_text (path : string) : string =
     := r = erlang_term::apply "file" "read_file" [ erlang_term::of path ]
     erlang_term::apply "erlang" "element" [ erlang_term::of 2i32; r ] |> erlang_term::cast
 
-/// ## output
+:= regular_file (path : string) : bool =
+    erlang_term::equal (erlang_term::apply "filelib" "is_regular" [ erlang_term::of path ]) (erlang_term::atom "true")
+
 := put_text (s : string) : () = erlang_term::apply "io" "put_chars" [ erlang_term::of s ] |> ignore
 
 := put_error_text (s : string) : () =
@@ -54,15 +57,26 @@
 :# a_wildcard_lists_matching_files_as_strings =
     matching_paths "erlang_file.spi" |> _assert_eq [ "erlang_file.spi" ]
 
+:= test_cache_dir () : string =
+    text_of (
+        erlang_term::apply "filename" "basedir" [ erlang_term::atom "user_cache"; erlang_term::of "erlang-file-test" ]
+    )
+
+:= test_cache_file (name : string) : string =
+    := path = joined_path (test_cache_dir ()) name
+    erlang_term::apply "filelib" "ensure_dir" [ erlang_term::of path ] |> ignore
+    path
+
 ///> gleam
 :# appending_adds_after_what_was_written =
-    := cache_args = [ erlang_term::atom "user_cache"; erlang_term::of "erlang-file-test" ]
-    := cache = erlang_term::apply "filename" "basedir" cache_args
-    := path = joined_path (text_of cache) "append.txt"
-    erlang_term::apply "filelib" "ensure_dir" [ erlang_term::of path ] |> ignore
+    := path = test_cache_file "append.txt"
     := wrote = file_written path "a"
     := appended = file_appended path "b"
     (wrote, appended, file_text path) |> _assert_eq (!+, !+, "ab")
+
+///> gleam
+:# only_an_existing_file_is_regular =
+    (regular_file "erlang_file.spi", regular_file "no_such_file.spi", regular_file ".") |> _assert_eq (!+, !-, !-)
 
 ///> gleam
 :# an_absolute_path_keeps_its_base_name =

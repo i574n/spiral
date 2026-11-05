@@ -31,3 +31,9 @@ if ($IsWindows -and !(Get-Command rsync -ErrorAction Ignore)) {
         if ($LASTEXITCODE -ne 0) { Write-Output "init-app-build.ps1 / choco install rsync failed (exit code $LASTEXITCODE)" }
     } else { Write-Output "init-app-build.ps1 / no rsync and no choco: scripts/publish-tree.ps1 needs rsync" }
 }
+
+$cli = Join-Path $ScriptDir "../workspace/target/release/spiral$(if ($IsWindows) { '.exe' })"
+if (!(Test-Path $cli)) {
+    pwsh (Join-Path $ScriptDir "../apps/spiral/build.ps1") -fast 1
+    if ($LASTEXITCODE -ne 0) { throw "init-app-build.ps1 / apps/spiral/build.ps1 failed (exit code $LASTEXITCODE)" }
+}

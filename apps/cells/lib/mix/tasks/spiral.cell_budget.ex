@@ -8,12 +8,12 @@ defmodule Mix.Tasks.Spiral.CellBudget do
 
   @impl true
   def run(args) do
-    {options, paths} = OptionParser.parse!(args, strict: [check: :boolean])
+    {options, paths} = OptionParser.parse!(args, strict: [check: :boolean, granular: :boolean])
     files = paths |> Enum.flat_map(&sources/1) |> Enum.uniq()
 
     findings =
       for file <- files, {profile, source} <- [{Spiral.Cells.CellBudget.default_profile(), File.read!(file)}],
-          finding <- Spiral.Cells.CellBudget.rewrites(source, profile) ++ Spiral.Cells.CellBudget.over_budget(source, profile) do
+          finding <- findings_of(source, profile, options[:granular] == true) do
         Mix.shell().info(Spiral.Cells.CellBudget.format(file, finding))
         finding
       end
@@ -23,6 +23,12 @@ defmodule Mix.Tasks.Spiral.CellBudget do
     over_budget = Enum.count(findings, &(&1.kind == :over_budget))
     if options[:check] && over_budget > 0, do: Mix.raise("cell-budget: #{over_budget} definition(s) over the cell budget; split them")
   end
+
+  defp findings_of(source, profile, true),
+    do: Spiral.Cells.CellBudget.rewrites(source, profile) ++ Spiral.Cells.CellBudgetRuled.over_budget(source, profile)
+
+  defp findings_of(source, profile, false),
+    do: Spiral.Cells.CellBudget.rewrites(source, profile) ++ Spiral.Cells.CellBudget.over_budget(source, profile)
 
   defp sources(path) do
     cond do

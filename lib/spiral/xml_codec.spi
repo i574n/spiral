@@ -1,0 +1,24 @@
+///- --package . --timeout 900000
+:< sm'_operators
+:< xml
+
+:? of_xml t : xml_node -> t
+
+:? to_xml t : string -> t -> xml_node
+
+:= round_trip_difference \* t {of_xml; to_xml}. (name : string) (x : t) : option string =
+    := written = to_xml name x
+    := again : t = of_xml written
+    first_difference written (to_xml name again)
+
+:! amount_text = string
+
+:+ of_xml amount_text = \ node => amount_text (text_in (element_children node))
+
+:+ to_xml amount_text = \ name (amount_text text) => element name [] (text_children text)
+
+///> rust
+:# a_value_round_trips_through_its_codec_instances =
+    ?= round_trip_difference "Amount" (amount_text (dyn "12.50")) ?|
+    | Some d => failwith ("a value written, read and written again is unchanged: " ++# d)
+    | None => ()

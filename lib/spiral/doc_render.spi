@@ -1,0 +1,155 @@
+///- --package .
+:< sm'_operators
+
+:# doc_render static =
+    :< testing
+
+:< markup
+:< doc_blocks
+
+:= (++) (a : markup) (b : markup) : markup = joined a b
+
+:~ quoted (value : string) : markup = trusted "\"" ++ escape value ++ trusted "\""
+
+:~ wrap (tag : string) (body : markup) : markup = element tag [] body
+
+:~ anchor (href : string) (body : markup) : markup = element "a" [ ("href", href) ] body
+:~ digit (n : i64) : string =
+    := i : i32 = conv n
+    run_of "0123456789" i (i + 1i32)
+
+:~ ^ show_i64 (n : i64) : string = ? n < 10i64 ?> digit n |: show_i64 (n / 10i64) ++# digit (n % 10i64)
+
+:~ image (alt : string) (src : string) : markup =
+    trusted "<img src=" ++ quoted src ++ trusted " alt=" ++ quoted alt ++ trusted ">"
+
+:~ linked (label : string) (href : string) : markup = anchor href (escape label)
+
+:~ badge ((alt, src, href) : string * string * string) : markup = anchor href (image alt src)
+
+:~ code_of (s : string) : markup = wrap "code" (escape s)
+
+:~ strong (m : markup) : markup = wrap "strong" m
+
+:~ pic ((a, s) : string * string) : markup = image a s
+
+:~ link_html ((l, h) : string * string) : markup = linked l h
+
+:~ inline_by (r : list inline -> markup) (x : inline) : markup =
+    ?= x ?|
+    | Text s => escape s
+    | Code s => code_of s
+    | Strong y => strong (r y)
+    | Link l => link_html l
+    | Image i => pic i
+    | AutoLink u => linked u u
+    | LinkedImage b => badge b
+
+:~ ^ inlines_html (xs : list inline) : markup =
+    ?= xs ?|
+    | x :: rest => inline_by inlines_html x ++ inlines_html rest
+    | [] => trusted ""
+
+:~ inline_html (x : inline) : markup = inline_by inlines_html x
+
+:~ align_attr (a : align) : string =
+    ?= a ?|
+    | AlignNone => ""
+    | AlignLeft => " style=\"text-align: left\""
+    | AlignCenter => " style=\"text-align: center\""
+    | AlignRight => " style=\"text-align: right\""
+
+:~ cell_html (tag : string) (a : align) (cell : list inline) : markup =
+    trusted ("<" ++# tag ++# align_attr a ++# ">") ++ inlines_html cell ++ trusted ("</" ++# tag ++# ">")
+
+:~ align_head (aligns : list align) : align * list align =
+    ?= aligns ?|
+    | a :: more => a, more
+    | [] => AlignNone, []
+
+:~ ^ cells_html (tag : string) (aligns : list align) (cells : list (list inline)) : markup =
+    ?= cells ?|
+    | [] => trusted ""
+    | cell :: rest =>
+        := a, more = align_head aligns
+        cell_html tag a cell ++ cells_html tag more rest
+
+:~ row_html (tag : string) (aligns : list align) (cells : list (list inline)) : markup =
+    trusted "<tr>" ++ cells_html tag aligns cells ++ trusted "</tr>\n"
+
+:~ ^ rows_html (aligns : list align) (rows : list (list (list inline))) : markup =
+    ?= rows ?|
+    | row :: rest => row_html "td" aligns row ++ rows_html aligns rest
+    | [] => trusted ""
+
+:~ ^ items_html (items : list (list inline)) : markup =
+    ?= items ?|
+    | item :: rest => trusted "<li>" ++ inlines_html item ++ trusted "</li>\n" ++ items_html rest
+    | [] => trusted ""
+
+:~ ^ code_html (lines : list string) : markup =
+    ?= lines ?|
+    | s :: rest => escape s ++ trusted "\n" ++ code_html rest
+    | [] => trusted ""
+
+:~ ordered_open (start : i64) : string = ? start = 1i64 ?> "<ol>\n" |: "<ol start=\"" ++# show_i64 start ++# "\">\n"
+
+:~ table_html (aligns : list align) (head : list (list inline)) (rows : list (list (list inline))) : markup =
+    trusted "<table>\n<thead>\n" ++ row_html "th" aligns head ++ trusted "</thead>\n<tbody>\n"
+    ++ rows_html aligns rows ++ trusted "</tbody>\n</table>\n"
+
+:~ heading_html ((l, xs) : level * list inline) : markup = wrap (level_tag l) (inlines_html xs) ++ trusted "\n"
+
+:~ para_html (xs : list inline) : markup = trusted "<p>" ++ inlines_html xs ++ trusted "</p>\n"
+
+:~ bullets_html (items : list (list inline)) : markup = trusted "<ul>\n" ++ items_html items ++ trusted "</ul>\n"
+
+:~ numbered_html ((start, items) : i64 * list (list inline)) : markup =
+    trusted (ordered_open start) ++ items_html items ++ trusted "</ol>\n"
+
+:~ pre_html (lines : list string) : markup = trusted "<pre><code>" ++ code_html lines ++ trusted "</code></pre>\n"
+
+:~ hr () : markup = trusted "<hr>\n"
+
+:~ table_of ((a, h, r) : list align * list (list inline) * list (list (list inline))) : markup = table_html a h r
+
+:~ block_html (b : block) : markup =
+    ?= b ?|
+    | Heading h => heading_html h
+    | Paragraph x => para_html x
+    | Bullets x => bullets_html x
+    | Numbered n => numbered_html n
+    | CodeBlock x => pre_html x
+    | Rule => hr ()
+    | Table t => table_of t
+
+:~ ^ blocks_html (bs : list block) : markup =
+    ?= bs ?|
+    | b :: rest => block_html b ++ blocks_html rest
+    | [] => trusted ""
+
+:? to_html t : t -> markup
+:+ to_html inline = \ x => inline_html x
+:+ to_html block = \ b => block_html b
+
+:= inline_fixture () : string =
+    "a&amp;<code>&lt;</code><strong>b</strong><a href=\"x.html\">l</a>"
+    ++# "<a href=\"https://x.org\">https://x.org</a>"
+
+///> rust
+///> gleam
+:# every_inline_constructor_renders =
+    inlines_html [ Text "a&"; Code "<"; Strong [ Text "b" ]; Link ("l", "x.html"); AutoLink "https://x.org" ]
+    |> markup_text
+    |> _assert_eq (inline_fixture ())
+
+///> rust
+///> gleam
+:# images_and_badges_render =
+    inlines_html [ Image ("logo", "logo.png"); LinkedImage ("CI", "b.svg", "ci.html") ] |> markup_text
+    |> _assert_eq "<img src=\"logo.png\" alt=\"logo\"><a href=\"ci.html\"><img src=\"b.svg\" alt=\"CI\"></a>"
+
+///> rust
+///> gleam
+:# the_prototype_dispatches_per_type =
+    (to_html (Code "c") |> markup_text, to_html Rule |> markup_text) |> _assert_eq ("<code>c</code>", "<hr>\n")

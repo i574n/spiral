@@ -12,7 +12,10 @@
     global "@external(erlang, \"gleam_stdlib\", \"identity\") fn erlang_term_coerce(value: a) -> b"
 
 := erlang_term_apply_external () =
-    global "@external(erlang, \"erlang\", \"apply\") fn erlang_term_apply(m: atom.Atom, f: atom.Atom, args: List(Dynamic)) -> Dynamic"
+    global (
+        "@external(erlang, \"erlang\", \"apply\") fn erlang_term_apply(m: atom.Atom, f: atom.Atom, args: "
+        ^^ "List(Dynamic)) -> Dynamic"
+    )
 
 := erlang_term_tuple_external () =
     global "@external(erlang, \"erlang\", \"list_to_tuple\") fn erlang_term_tuple(items: List(Dynamic)) -> Dynamic"
@@ -27,7 +30,6 @@
 :! atom = $'atom.Atom'
 :! terms = $'List(Dynamic)'
 
-/// ## terms
 := of \* t. (value : t) : term =
     erlang_term_imports ()
     $'erlang_term_coerce(!value)'
@@ -67,7 +69,6 @@
     erlang_term_imports ()
     $'!a == !b' : bool
 
-/// ## calls
 := apply (module_name : string) (function_name : string) (args : list term) : term =
     erlang_term_imports ()
     := m = atom_named module_name
@@ -83,6 +84,39 @@
 
 := items_of (native : term) : list term = items_from (apply "lists" "reverse" [ native ]) []
 
+:= is_map (t : term) : bool = apply "erlang" "is_map" [ t ] |> cast
+
+:= is_tuple (t : term) : bool = apply "erlang" "is_tuple" [ t ] |> cast
+
+:= element_at (n : i32) (t : term) : term = apply "erlang" "element" [ of n; t ]
+
+:= length_of (native : term) : i32 = apply "erlang" "length" [ native ] |> cast
+
+:= item_at (i : i32) (native : term) : term = apply "lists" "nth" [ of (i + 1i32); native ]
+
+:= last_of (native : term) : term = apply "lists" "last" [ native ]
+
+:= appended (a : term) (b : term) : term = apply "lists" "append" [ a; b ]
+
+:= is_binary (t : term) : bool = apply "erlang" "is_binary" [ t ] |> cast
+
+:= byte_size_of (s : string) : i32 = apply "erlang" "byte_size" [ of s ] |> cast
+
+:= json_decoded (text : string) : term = apply "json" "decode" [ of text ]
+
+:= json_encoded (value : term) : string = apply "erlang" "iolist_to_binary" [ apply "json" "encode" [ value ] ] |> cast
+
+:= integer_text (t : term) : string = apply "erlang" "integer_to_binary" [ t ] |> cast
+
+:= text_at_least (a : string) (b : string) : bool = apply "erlang" ">=" [ of a; of b ] |> cast
+
+:= rfc3339_seconds (stamp : string) : i64 = apply "calendar" "rfc3339_to_system_time" [ charlist stamp ] |> cast
+
+:= zulu () : term = list_term [ tuple [ atom "offset"; charlist "Z" ] ]
+
+:= rfc3339_text (seconds : i64) : string =
+    apply "unicode" "characters_to_binary" [ apply "calendar" "system_time_to_rfc3339" [ of seconds; zulu () ] ] |> cast
+
 ///> gleam
 :# apply_calls_an_erlang_function =
     apply "erlang" "abs" [ of -3i32 ] |> cast |> _assert_eq 3i32
@@ -90,7 +124,8 @@
 ///> gleam
 :# a_tuple_holds_its_items_in_order =
     := t = tuple [ atom "ok"; of 7i32 ]
-    (apply "erlang" "tuple_size" [ t ] |> cast, apply "erlang" "element" [ of 2i32; t ] |> cast) |> _assert_eq (2i32, 7i32)
+    (apply "erlang" "tuple_size" [ t ] |> cast, apply "erlang" "element" [ of 2i32; t ] |> cast)
+    |> _assert_eq (2i32, 7i32)
 
 ///> gleam
 :# a_map_from_pairs_answers_its_keys =
@@ -99,11 +134,37 @@
 
 ///> gleam
 :# a_native_list_becomes_items_in_order =
-    (list_term [ of 1i32; of 2i32; of 3i32 ] |> items_of |> listm::map cast : list i32) |> _assert_eq [ 1i32; 2i32; 3i32 ]
+    (list_term [ of 1i32; of 2i32; of 3i32 ] |> items_of |> listm::map cast : list i32)
+    |> _assert_eq [ 1i32; 2i32; 3i32 ]
 
 ///> gleam
 :# an_empty_native_list_has_no_items =
     list_term [] |> items_of |> listm::length |> _assert_eq 0i32
+
+///> gleam
+:# shapes_read_native_terms =
+    := t = tuple [ atom "ok"; of 7i32 ]
+    (is_map (list_term [ of 1i32 ]), is_tuple t, (cast (element_at 2i32 t) : i32)) |> _assert_eq (!-, !+, 7i32)
+
+///> gleam
+:# list_access_reads_native_lists =
+    := l = list_term [ of 1i32; of 2i32; of 3i32 ]
+    (length_of (appended l l), (cast (item_at 1i32 l) : i32), (cast (last_of l) : i32)) |> _assert_eq (6i32, 2i32, 3i32)
+
+///> gleam
+:# binaries_answer_their_byte_size =
+    (is_binary (of "é"), is_binary (of 1i32), byte_size_of "é", byte_size_of "") |> _assert_eq (!+, !-, 2i32, 0i32)
+
+///> gleam
+:# json_text_round_trips_through_a_term =
+    := doc = json_decoded "{\"a\":[1,true,\"é\"]}"
+    (json_encoded doc, is_map doc) |> _assert_eq ("{\"a\":[1,true,\"é\"]}", !+)
+
+///> gleam
+:# time_and_text_helpers_round_trip =
+    := s = rfc3339_seconds "2026-11-03T10:00:00Z"
+    (rfc3339_text s, rfc3339_seconds "1970-01-01T00:00:00Z", integer_text (of 42i32), text_at_least "b" "a")
+    |> _assert_eq ("2026-11-03T10:00:00Z", 0i64, "42", !+)
 
 ///> gleam
 :# atoms_compare_by_name =

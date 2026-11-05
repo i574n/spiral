@@ -93,7 +93,7 @@ Development workflow, lane rules and how progress is measured: [AGENTS.md](AGENT
 ## Upstream
 
 `spiral_compiler.fs` descends from The Spiral Language (mrakgr/The-Spiral-Language, `The Spiral Language 2/`,
-about two dozen files) through the i574n fork (`polyglot/deps/The-Spiral-Language`, branch `master`), which
+about two dozen files) through the i574n fork (spiral's `deps/The-Spiral-Language`, branch `master`), which
 keeps upstream's file layout: each section here is one of its files (`PartEval` is `PartEval.fs`,
 `SignalRSupervisor` is `Supervisor.fs`; a few sections are i574n additions: Rust, Delphi, Gleam, Lua,
 the SignalR host). Measured 2026-09-28 with the compaction's mechanical changes undone (4-space indent,

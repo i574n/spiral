@@ -13,7 +13,6 @@
 
 :! received = $'Result(Dynamic, Nil)'
 
-/// ## ports
 := spawn_executable_name (executable : erlang_term::term) : erlang_term::term =
     erlang_term::tuple [ erlang_term::atom "spawn_executable"; executable ]
 
@@ -31,7 +30,6 @@
 
 := unlink (p : port) : bool = erlang_term::apply "erlang" "unlink" [ term_of p ] |> erlang_term::cast
 
-/// ## messages
 := selector_of (p : port) : selector =
     erlang_port_imports ()
     := keep = \ (message : erlang_term::term) => message
@@ -85,3 +83,54 @@
 :# an_executable_port_reports_its_os_pid_and_exit =
     := p = erl_halt_port ()
     (os_pid p > 0i32, exit_text_within p 50i32) |> _assert_eq (!+, "exit 3")
+
+:| port_event =
+    | Output : string
+    | Exited : i32
+    | Quiet
+
+:| run_outcome =
+    | Finished : i32 * string
+    | TimedOut : string
+
+:= event_named (event : erlang_term::term) : port_event =
+    := kind = event_kind event
+    ? kind = "exit_status" ?> Exited (event_value event |> erlang_term::cast)
+    |? kind = "data" ?> Output (event_value event |> erlang_term::cast)
+    |: Quiet
+
+:= event_of (outcome : received) : port_event =
+    ? received_some outcome
+    ?> event_named (message_event (received_message outcome (erlang_term::atom "none")))
+    |: Quiet
+
+:= joined_output (parts : list string) : string = sm'::concat_list "" (listm::rev parts)
+
+:= next_event (p : port) : port_event = event_of (receive_within (selector_of p) 1000i32)
+
+:~ ^ run_collect (p : port) (quiet : i32) (parts : list string) : run_outcome =
+    ?= next_event p ?|
+    | Output text => run_collect p quiet (text :: parts)
+    | Exited code => Finished (code, joined_output parts)
+    | Quiet => after_quiet p quiet parts
+
+:& :~ after_quiet (p : port) (quiet : i32) (parts : list string) : run_outcome =
+    ? quiet <= 0i32 ?> TimedOut (joined_output parts) |: run_collect p (quiet - 1i32) parts
+
+:= erl_eval_args (expression : string) : erlang_term::term =
+    [ "-noshell"; "-eval"; expression ] |> listm::map erlang_term::charlist |> erlang_term::list_term
+
+:= erl_eval_options (expression : string) : list erlang_term::term =
+    [
+        erlang_term::atom "binary"
+        erlang_term::atom "exit_status"
+        erlang_term::tuple [ erlang_term::atom "args"; erl_eval_args expression ]
+    ]
+
+:= erl_eval_port (expression : string) : port =
+    := found = erlang_term::apply "os" "find_executable" [ erlang_term::charlist "erl" ]
+    open_executable found (erl_eval_options expression)
+
+///> gleam
+:# a_run_collects_its_output_until_the_exit =
+    run_collect (erl_eval_port "io:put_chars(\"hi\"), halt(3).") 60i32 [] |> _assert_eq (Finished (3i32, "hi"))

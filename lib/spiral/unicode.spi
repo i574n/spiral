@@ -1,4 +1,5 @@
 :< sm'_operators
+:< unsupported
 
 :# unicode static =
     :< testing
@@ -37,6 +38,9 @@
 := pascal_byte_text (b : u8) : string =
     $'AnsiString(AnsiChar(!b))' : string
 
+:= zig_byte_text (b : u8) : string =
+    $'(spiral_gpa.dupe(u8, &[_]u8{ !b }) catch @@panic("out of memory"))' : string
+
 :! rust_scalar = $'char'
 
 := rust_char_of_u32 (c : u32) : optionm'::option' rust_scalar =
@@ -59,9 +63,10 @@
         | Rust => \ () => (conv n : u32) |> rust_char_of_u32 |> optionm'::unwrap |> sm'::obj_to_string
         | C => \ () => utf8_text c_byte_text n
         | Pascal => \ () => utf8_text pascal_byte_text n
+        | Zig => \ () => utf8_text zig_byte_text n
         | Fsharp => \ () => $'System.Char.ConvertFromUtf32 !n' : string
         | TypeScript => \ () => $'String.fromCodePoint(!n)' : string
-        | _ => \ () => failwith "unicode.scalar_text: no arm for this backend"
+        | _ => \ () => no_arm "unicode.scalar_text"
 
 := char_of (n : i32) : string =
     ? is_scalar_value n ?> scalar_text n |: ""
@@ -146,7 +151,7 @@
     run_target \|
         | Rust => \ () =>
             (conv c : u32) |> rust_char_of_u32 |> optionm'::map rust_scalar_is_alphanumeric |> optionm'::default_value' !-
-        | _ => \ () => failwith "unicode.is_alphanumeric: no arm for this backend"
+        | _ => \ () => no_arm "unicode.is_alphanumeric"
 
 ///> rust
 :# is_alphanumeric_is_the_unicode_property_of_code_points =
@@ -200,6 +205,7 @@
 ///> gleam
 ///> c
 ///> pascal
+///> zig
 :# char_of_encodes_utf8_and_rejects_surrogates =
     := ~e = 233i32
     (sm::length (char_of e), sm::length (char_of 128512i32), sm::length (char_of 55296i32))
@@ -208,6 +214,7 @@
 ///> rust
 ///> gleam
 ///> c
+///> zig
 :# char_of_covers_every_utf8_width =
     := ~a = 65i32
     (sm::length (char_of a), sm::length (char_of 2047i32), sm::length (char_of 65535i32), sm::length (char_of 1114111i32))

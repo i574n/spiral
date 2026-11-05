@@ -108,3 +108,7 @@
     ? local <> "" ?> local ++# "/spiral-bin" |: env::get_environment_variable "HOME" ++# "/.cache/spiral-bin"
 
 := model_path (p : pin) : string = spiral_bin () ++# "/models/llama2c/" ++# p::file
+
+:= stories260k_q8_text () : string =
+    :~ ^ upon (n : i32) (acc : string) : string = ? n = 0 ?> acc |: upon (n - 1) (acc ++# " upon")
+    upon 255 "Once"

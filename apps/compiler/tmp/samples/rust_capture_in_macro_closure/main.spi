@@ -1,0 +1,11 @@
+:~ keep (s : string) : string = s
+
+:= main () : i32 =
+    := ~g = "ab"
+    := xs : array_base i32 = am'::init 3i32
+    := v = am'::to_vec xs
+    := step (acc : i32) (x : i32) : i32 =
+        := l : i32 = sm'::length (keep g)
+        !!!!Add(!!!!Add(acc, l), x)
+    := n = v |> am'::vec_fold' step 0i32
+    !!!!Sub(n, 9i32)

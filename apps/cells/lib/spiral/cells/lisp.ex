@@ -1,14 +1,14 @@
 defmodule Spiral.Cells.Lisp do
   @moduledoc """
   A cell whose first line is `///! lisp` holds Lisp forms (spiral/apps/lisp: S-expressions for Spiral, one top-level form
-  per 280-character message). `expand/2` turns them into Spiral with apps/lisp/spl2spi.py: what precedes the marker line
-  (the notebook runner's program puts earlier cells first) stays as it is, the `///` directive lines that follow it stay
-  on top, so `///> rust`, `///- --timeout` etc. work as in any Spiral cell, and the rest is transpiled.
+  per 280-character message). `expand/2` turns them into Spiral with the spl2spi binary that apps/lisp/build.ps1 builds
+  from apps/lisp/spl2spi.spi: what precedes the marker line (the notebook runner's program puts earlier cells first) stays
+  as it is, the `///` directive lines that follow it stay on top, so `///> rust`, `///- --timeout` etc. work as in any
+  Spiral cell, and the rest is transpiled.
   """
-  alias Spiral.Cells.Toolchain
 
   @marker "///! lisp"
-  @spl2spi Path.expand("../../../../lisp/spl2spi.py", __DIR__)
+  @spl2spi Path.expand("../../../../../target/build/lisp/spl2spi/spl2spi", __DIR__)
 
   @spec lisp?(String.t()) :: boolean()
   def lisp?(code), do: code |> String.replace("\r\n", "\n") |> String.split("\n") |> Enum.any?(&(String.trim(&1) == @marker))
@@ -28,14 +28,17 @@ defmodule Spiral.Cells.Lisp do
       spl = Path.join(dir, "cell.spl")
       spi = Path.join(dir, "cell.spi")
       File.write!(spl, Enum.join(forms, "\n"))
-      python = Toolchain.python(opts) || raise "Spiral.Cells.Lisp: python was not found"
-
-      case System.cmd(python, [opts[:spl2spi] || @spl2spi, spl, spi], stderr_to_stdout: true) do
+      case System.cmd(spl2spi(opts), [spl, spi], stderr_to_stdout: true) do
         {_, 0} -> Enum.join(before ++ directives ++ [File.read!(spi)], "\n")
-        {output, status} -> raise "Spiral.Cells.Lisp: spl2spi.py failed (exit #{status}): #{output}"
+        {output, status} -> raise "Spiral.Cells.Lisp: spl2spi failed (exit #{status}): #{output}"
       end
     after
       File.rm_rf(dir)
     end
+  end
+
+  defp spl2spi(opts) do
+    path = opts[:spl2spi] || if(match?({:win32, _}, :os.type()), do: @spl2spi <> ".exe", else: @spl2spi)
+    if File.exists?(path), do: path, else: raise("Spiral.Cells.Lisp: #{path} is missing; build it with apps/lisp/build.ps1")
   end
 end

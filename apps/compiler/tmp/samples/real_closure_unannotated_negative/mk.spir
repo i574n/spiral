@@ -1,0 +1,1 @@
+:= ^ make () = holders::hold `bool (\ x => 7i32) (\ i => !+)

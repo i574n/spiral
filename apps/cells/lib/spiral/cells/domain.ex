@@ -3,7 +3,7 @@ defmodule Spiral.Cells.Domain do
   @beams Path.expand("../../../build/dev/erlang", __DIR__)
 
   def ensure! do
-    for name <- ["spiral_cells", "gleam_stdlib"] do
+    for name <- ["spiral_cells", "gleam_stdlib", "gleam_erlang"] do
       Code.append_path(Path.join([@beams, name, "ebin"]))
     end
 
@@ -37,6 +37,15 @@ defmodule Spiral.Cells.Domain do
   def declares_modules(text) do
     ensure!()
     :spiral_cells@domain.declares_modules(text) == "true"
+  end
+
+  def manifest_path(dir) do
+    ensure!()
+
+    case :spiral_cells@domain.manifest_path(dir) do
+      "" -> nil
+      file -> file
+    end
   end
 
   def source_remap(message, program, source, path) do

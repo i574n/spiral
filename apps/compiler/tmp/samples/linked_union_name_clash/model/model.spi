@@ -1,0 +1,8 @@
+:= conv (x : ca::color) : cb::color =
+    ?= x ?|
+    | ca::Red => cb::Gray 1i32
+    | ca::Green => cb::Blue
+
+:= main () : i32 =
+    !!!!Export("model_conv", conv)
+    0i32

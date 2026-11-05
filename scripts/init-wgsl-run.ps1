@@ -32,7 +32,12 @@ if ($IsWindows) {
 
 if ($IsWindows -and $env:CI) {
     $downloads = (New-Item -ItemType Directory -Force (Join-Path ([IO.Path]::GetTempPath()) "spiral-gpu-downloads-$PID")).FullName
-    Invoke-WebRequest "https://sdk.lunarg.com/sdk/download/latest/windows/vulkan-runtime-components.zip" -OutFile "$downloads/vulkan-runtime.zip"
+    $vulkanVersions = @('latest') + (Invoke-RestMethod "https://vulkan.lunarg.com/sdk/versions/windows.json")
+    $vulkanVersion = $vulkanVersions | Where-Object {
+        try { Invoke-WebRequest "https://sdk.lunarg.com/sdk/download/$_/windows/vulkan-runtime-components.zip" -OutFile "$downloads/vulkan-runtime.zip"; $true } catch { $false }
+    } | Select-Object -First 1
+    if (!$vulkanVersion) { throw "init-wgsl-run.ps1 / no published Vulkan runtime download among: $($vulkanVersions -join ', ')" }
+    Write-Output "init-wgsl-run.ps1 / vulkan runtime components: $vulkanVersion"
     { 7z e "$downloads/vulkan-runtime.zip" "-o$runnerDir" "*/x64/vulkan-1.dll" -y } | Invoke-Block
     $mesaRelease = Invoke-RestMethod "https://api.github.com/repos/pal1000/mesa-dist-win/releases/latest"
     $mesaAsset = $mesaRelease.assets | Where-Object { $_.name -match '^mesa3d-.*-release-msvc\.7z$' } | Select-Object -First 1

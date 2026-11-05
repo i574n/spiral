@@ -1,0 +1,269 @@
+:# occupancy static =
+    :< testing
+
+:< sm'_operators
+
+/// ## occupancy
+:== per_sm = { threads : i32; blocks : i32; regs : i32; smem : i32 }
+
+:== device = { sms : i32; per_sm : per_sm; smem_per_block : i32; smem_reserved : i32 }
+
+:== kernel = { threads : i32; regs : i32; smem : i32 }
+
+:= cc_89 () : per_sm = { threads = 1536; blocks = 24; regs = 65536; smem = 102400 }
+
+:= cc_90 () : per_sm = { threads = 2048; blocks = 32; regs = 65536; smem = 233472 }
+
+:= rtx4060 () : device = { sms = 24; per_sm = cc_89 (); smem_per_block = 101376; smem_reserved = 1024 }
+
+:= l40s () : device = { sms = 142; per_sm = cc_89 (); smem_per_block = 101376; smem_reserved = 1024 }
+
+:= h100_sxm () : device = { sms = 132; per_sm = cc_90 (); smem_per_block = 232448; smem_reserved = 1024 }
+
+:| attribute =
+    | Sms
+    | ThreadsPerSm
+    | BlocksPerSm
+    | RegsPerSm
+    | SmemPerSm
+    | SmemPerBlock
+    | SmemReserved
+    | CcMajor
+    | CcMinor
+
+:= cuda_code (a : attribute) : i32 =
+    ?= a ?|
+    | Sms => 16
+    | ThreadsPerSm => 39
+    | BlocksPerSm => 106
+    | RegsPerSm => 82
+    | SmemPerSm => 81
+    | SmemPerBlock => 97
+    | SmemReserved => 111
+    | CcMajor => 75
+    | CcMinor => 76
+
+:= per_sm_from (query : attribute -> i32) : per_sm =
+    { threads = query ThreadsPerSm; blocks = query BlocksPerSm; regs = query RegsPerSm; smem = query SmemPerSm }
+
+:= device_from (query : attribute -> i32) : device =
+    := s = per_sm_from query
+    { sms = query Sms; per_sm = s; smem_per_block = query SmemPerBlock; smem_reserved = query SmemReserved }
+
+:= c_cu_win_lib () : () =
+    global (
+        "#ifdef _WIN32\n#include <windows.h>\n"
+        ^^ "static void * spiral_cu_lib(void) { return (void *)LoadLibraryA(\"nvcuda.dll\"); }\n#endif"
+    )
+
+:= c_cu_win_sym () : () =
+    c_cu_win_lib ()
+    global (
+        "#ifdef _WIN32\nstatic void * spiral_cu_sym(void * h, const char * n) "
+        ^^ "{ return (void *)GetProcAddress((HMODULE)h, n); }\n#endif"
+    )
+
+:= c_cu_posix_lib () : () =
+    global (
+        "#ifndef _WIN32\n#include <dlfcn.h>\n"
+        ^^ "static void * spiral_cu_lib(void) { return dlopen(\"libcuda.so.1\", RTLD_NOW); }\n#endif"
+    )
+
+:= c_cu_posix_sym () : () =
+    c_cu_posix_lib ()
+    global "#ifndef _WIN32\nstatic void * spiral_cu_sym(void * h, const char * n) { return dlsym(h, n); }\n#endif"
+
+:= c_cu_types () : () =
+    c_cu_win_sym ()
+    c_cu_posix_sym ()
+    global "typedef int (*spiral_cu_init)(unsigned); typedef int (*spiral_cu_get)(int *, int);"
+    global "typedef int (*spiral_cu_attr)(int *, int, int);"
+
+:= c_cu_ready () : () =
+    c_cu_types ()
+    global (
+        "static int spiral_cu_ready(void * h) { spiral_cu_init i = (spiral_cu_init)spiral_cu_sym(h, \"cuInit\"); "
+        ^^ "return i && !i(0); }"
+    )
+
+:= c_cu_device () : () =
+    c_cu_ready ()
+    global (
+        "static int spiral_cu_device(void * h, int o) { spiral_cu_get g = (spiral_cu_get)spiral_cu_sym(h, "
+        ^^ "\"cuDeviceGet\"); int d = -1; return spiral_cu_ready(h) && g && !g(&d, o) ? d : -1; }"
+    )
+
+:= c_cu_attr_fn () : () =
+    c_cu_device ()
+    global (
+        "static spiral_cu_attr spiral_cu_attr_fn(void * h) "
+        ^^ "{ return (spiral_cu_attr)spiral_cu_sym(h, \"cuDeviceGetAttribute\"); }"
+    )
+
+:= c_cu_find () : () =
+    c_cu_attr_fn ()
+    global (
+        "static int spiral_cu_find(void ** h, int o) { *h = spiral_cu_lib(); return *h ? spiral_cu_device(*h, o) : "
+        ^^ "-1; }"
+    )
+
+:= c_cu_ask () : () =
+    c_cu_find ()
+    global "static int spiral_cu_ask(spiral_cu_attr f, int a, int d) { int v = -1; return f && !f(&v, a, d) ? v : -1; }"
+
+:= c_cu_attribute () : () =
+    c_cu_ask ()
+    global (
+        "static int spiral_cu_attribute(int o, int a) { void * h = 0; int d = spiral_cu_find(&h, o); "
+        ^^ "return spiral_cu_ask(d < 0 ? 0 : spiral_cu_attr_fn(h), a, d); }"
+    )
+
+:= c_cuda_attribute (ordinal : i32) (code : i32) : i32 =
+    c_cu_attribute ()
+    $'spiral_cu_attribute(!ordinal, !code)' : i32
+
+:= cuda_query (ordinal : i32) (a : attribute) : i32 =
+    run_target \|
+        | C => \ () => c_cuda_attribute ordinal (cuda_code a)
+        | _ => \ () => -1
+
+:= blocks_by_cc (major : i32) (minor : i32) : i32 =
+    ? major = 3 ?> 16
+    |? major = 7 ?> ? minor = 5 ?> 16 |: 32
+    |? major = 8 ?> ? minor = 0 ?> 32 |: ? minor = 9 ?> 24 |: 16
+    |: 32
+
+:= reserved_by_cc (major : i32) : i32 = ? major >= 8 ?> 1024 |: 0
+
+:= filled (query : attribute -> i32) (a : attribute) : i32 =
+    := v = query a
+    ? v >= 0 ?> v
+    |? a = BlocksPerSm ?> blocks_by_cc (query CcMajor) (query CcMinor)
+    |? a = SmemReserved ?> reserved_by_cc (query CcMajor)
+    |: v
+
+:= probed (ordinal : i32) : option device =
+    := q = cuda_query ordinal
+    ? q Sms > 0 ?> Some (device_from (filled q)) |: None
+
+:= least (a : i32) (b : i32) : i32 = ? a < b ?> a |: b
+
+:= round_up (unit : i32) (n : i32) : i32 = (n + unit - 1) / unit * unit
+
+:= warps (k : kernel) : i32 = round_up 32 k::threads / 32
+
+:= by_use (cap : i32) (use : i32) (none : i32) : i32 = ? use <= 0 ?> none |: cap / use
+
+:= by_threads (s : per_sm) (k : kernel) : i32 = by_use s::threads (warps k * 32) s::blocks
+
+:= by_regs (s : per_sm) (k : kernel) : i32 = by_use s::regs (round_up 256 (k::regs * 32) * warps k) s::blocks
+
+:= by_smem (d : device) (k : kernel) : i32 =
+    by_use d::per_sm::smem (round_up 128 k::smem + d::smem_reserved) d::per_sm::blocks
+
+:= fits (d : device) (k : kernel) : bool =
+    k::threads > 0 && k::threads <= 1024 && k::regs <= 255 && k::smem <= d::smem_per_block
+
+:= blocks_per_sm (d : device) (k : kernel) : i32 =
+    := s = d::per_sm
+    ? fits d k ?> least s::blocks (least (by_threads s k) (least (by_regs s k) (by_smem d k))) |: 0
+
+:= occupancy_percent (d : device) (k : kernel) : i32 =
+    blocks_per_sm d k * warps k * 32 * 100 / d::per_sm::threads
+
+:= grid (d : device) (k : kernel) : i32 = d::sms * blocks_per_sm d k
+
+:== launch = { blocks_per_sm : i32; grid : i32; occupancy : i32 }
+
+:= launch (d : device) (k : kernel) : launch =
+    { blocks_per_sm = blocks_per_sm d k; grid = grid d k; occupancy = occupancy_percent d k }
+
+:= meets (target : i32) (l : launch) : bool = l::blocks_per_sm > 0 && l::occupancy >= target
+
+:= planned (target : i32) (d : device) (k : kernel) : launch =
+    := l = launch d k
+    ? meets target l ?> l |: failwith "occupancy: the kernel cannot launch or sits below the target"
+
+:= described (l : launch) : string =
+    "blocks/sm " ++#? l::blocks_per_sm ++# ", grid " ++#? l::grid ++# ", occupancy " ++#? l::occupancy ++# "%"
+
+///> c
+:# h100_with_48_kb_of_shared_memory_keeps_4_blocks_and_half_occupancy =
+    := k = { threads = 256; regs = 64; smem = 49152 }
+    (blocks_per_sm (h100_sxm ()) k, occupancy_percent (h100_sxm ()) k) |> _assert_eq (4i32, 50i32)
+
+///> c
+:# registers_are_allocated_per_warp_in_units_of_256 =
+    blocks_per_sm (rtx4060 ()) { threads = 128; regs = 42; smem = 0 } |> _assert_eq 10i32
+
+///> c
+:# a_block_over_the_shared_memory_limit_cannot_launch =
+    blocks_per_sm (rtx4060 ()) { threads = 128; regs = 32; smem = 102400 } |> _assert_eq 0i32
+
+///> c
+:# a_persistent_grid_fills_every_sm =
+    grid (l40s ()) { threads = 256; regs = 32; smem = 0 } |> _assert_eq 852i32
+
+///> c
+:# a_plan_at_its_target_carries_blocks_grid_and_occupancy =
+    := l = planned 50i32 (h100_sxm ()) { threads = 256; regs = 64; smem = 49152 }
+    (l::blocks_per_sm, l::grid, l::occupancy) |> _assert_eq (4i32, 528i32, 50i32)
+
+///> c
+:# a_plan_below_its_target_does_not_meet_it =
+    meets 75i32 (launch (h100_sxm ()) { threads = 256; regs = 64; smem = 49152 }) |> _assert_eq !-
+
+///> c
+///> rust
+:# a_plan_prints_as_one_line =
+    described (launch (h100_sxm ()) { threads = 256; regs = 64; smem = 49152 })
+    |> _assert_eq "blocks/sm 4, grid 528, occupancy 50%"
+
+:= rtx4060_answers (a : attribute) : i32 =
+    ?= a ?|
+    | Sms => 24
+    | ThreadsPerSm => 1536
+    | BlocksPerSm => 24
+    | RegsPerSm => 65536
+    | SmemPerSm => 102400
+    | SmemPerBlock => 101376
+    | SmemReserved => 1024
+    | CcMajor => 8
+    | CcMinor => 9
+
+///> c
+///> rust
+:# a_probed_device_is_built_from_its_attribute_answers =
+    := d = device_from rtx4060_answers
+    (d = rtx4060 (), described (launch d { threads = 128; regs = 42; smem = 0 }))
+    |> _assert_eq (!+, "blocks/sm 10, grid 240, occupancy 83%")
+
+///> c
+:# a_probe_finds_no_device_without_a_driver_and_whole_sms_with_one =
+    := ok =
+        ?= probed 0 ?|
+        | None => !+
+        | Some d => d::sms > 0 && d::per_sm::threads >= 32 && d::per_sm::regs > 0
+    ok |> _assert_eq !+
+
+///> c
+:# each_attribute_asks_its_own_cuda_code =
+    (cuda_code Sms, cuda_code BlocksPerSm, cuda_code SmemReserved) |> _assert_eq (16i32, 106i32, 111i32)
+
+:= k1100m_answers (a : attribute) : i32 =
+    ?= a ?|
+    | Sms => 2
+    | ThreadsPerSm => 2048
+    | RegsPerSm => 65536
+    | SmemPerSm => 49152
+    | SmemPerBlock => 49152
+    | CcMajor => 3
+    | CcMinor => 0
+    | _ => -1
+
+///> c
+///> rust
+:# an_old_driver_falls_back_to_the_compute_capability =
+    := d = device_from (filled k1100m_answers)
+    (d::per_sm::blocks, d::smem_reserved, blocks_per_sm d { threads = 128; regs = 42; smem = 0 })
+    |> _assert_eq (16i32, 0i32, 10i32)

@@ -1,0 +1,686 @@
+///- --package .
+:# oracle static =
+    :< testing
+
+:< sm'_operators
+:< syntax
+:< env
+:< typing
+:< inductive
+:< nested
+:< lean
+
+:| entry =
+    | Declare : decl
+    | Judge : term * term
+    | Family : inductive
+    | Prelude : inductive
+    | Builtin : decl
+    | Mutual : list inductive
+    | Nested : inductive
+    | Poly : list name * term * term
+    | Quotients
+
+:| verdict =
+    | Accepts
+    | Refuses : refusal
+
+:~ judged (ty : term) (value : term) : decl = Def (name "oracle_example", [], ty, value)
+
+:~ poly_verdict (env : list decl) (ps : list name) (ty : term) (value : term) : verdict =
+    ?= admit env (Def (name "oracle_example", ps, ty, value)) ?|
+    | Admitted _ => Accepts
+    | Refused why => Refuses why
+
+:~ ^ verdicts (env : list decl) (entries : list entry) : list verdict =
+    ?= entries ?|
+    | e :: rest =>
+        ?= e ?|
+        | Declare d =>
+            ?= admit env d ?|
+            | Admitted grown => Accepts :: verdicts grown rest
+            | Refused why => Refuses why :: verdicts env rest
+        | Judge (ty, value) =>
+            ?= admit env (judged ty value) ?|
+            | Admitted _ => Accepts :: verdicts env rest
+            | Refused why => Refuses why :: verdicts env rest
+        | Family ind => grown_by (admit_inductive env ind) env rest
+        | Prelude ind => grown_by (admit_inductive env ind) env rest
+        | Builtin d => grown_by (admit env d) env rest
+        | Quotients => grown_by (admit_quotients env) env rest
+        | Mutual inds => grown_by (admit_mutual env inds) env rest
+        | Nested ind => grown_by (admit_nested env [ ind ]) env rest
+        | Poly (ps, ty, value) => poly_verdict env ps ty value :: verdicts env rest
+    | [] => []
+:& :~ grown_by (a : admitted) (env : list decl) (rest : list entry) : list verdict =
+    ?= a ?|
+    | Admitted grown => Accepts :: verdicts grown rest
+    | Refused why => Refuses why :: verdicts env rest
+
+:~ accepts (v : verdict) : bool =
+    ?= v ?|
+    | Accepts => !+
+    | Refuses _ => !-
+
+:~ lean_entry (e : entry) : string =
+    ?= e ?|
+    | Declare d => lean_decl d
+    | Judge (ty, value) => "example : " ++# lean_term ty ++# " := " ++# lean_term value
+    | Family ind => lean_inductive ind
+    | Prelude (Inductive (n, _, _, _, _)) => "-- built into Lean: " ++# name_text n
+    | Quotients => "-- built into Lean: Quot"
+    | Builtin d => "-- built into Lean: " ++# decl_name d
+    | Mutual inds => lean_mutual inds
+    | Nested ind => lean_inductive ind
+    | Poly (ps, ty, value) => "section universe " ++# joined_with " " (listm::map (\ p => name_text p) ps) ++# " example : " ++# lean_term ty ++# " := " ++# lean_term value ++# " end"
+
+:~ ^ annotated (k : i32) (entries : list entry) (vs : list verdict) : list string =
+    ?= entries ?|
+    | e :: rest =>
+        ?= vs ?|
+        | v :: more =>
+            := tag = " -- oracle " ++# sm'::obj_to_string k ++# " kernel_accepts=" ++# sm'::obj_to_string (accepts v)
+            (lean_entry e ++# tag) :: annotated (k + 1i32) rest more
+        | [] => []
+    | [] => []
+
+:~ ^ joined_lines (a : list string) (b : list string) : list string =
+    ?= a ?|
+    | x :: rest => x :: joined_lines rest b
+    | [] => b
+
+:~ lean_file (entries : list entry) : string =
+    := lines = annotated 1i32 entries (verdicts [] entries)
+    := header = [ "set_option autoImplicit false"; "noncomputable section" ]
+    joined_with "\n" (joined_lines header lines) ++# "\n"
+
+:~ oracle_path () : string = file_system::get_temp_path () ++# "/kernel-lean-oracle.lean"
+
+:~ pi_of (n : string) (dom : term) (body : term) : term = Pi (name n, Default, dom, body)
+
+:~ lam_of (n : string) (dom : term) (body : term) : term = Lam (name n, Default, dom, body)
+
+:~ prop_sort () : term = Sort Zero
+
+:~ k_type () : term = Const (name "K.T", [])
+
+:~ k_value () : term = Const (name "K.t", [])
+
+:~ k_id (l : level) : term = Const (name "K.id", [ l ])
+
+:~ ^ applied (f : term) (args : list term) : term =
+    ?= args ?|
+    | a :: rest => applied (App (f, a)) rest
+    | [] => f
+
+:~ k_nat () : term = Const (name "K.Nat", [])
+
+:~ k_zero () : term = Const (name "K.Nat.zero", [])
+
+:~ k_succ (t : term) : term = App (Const (name "K.Nat.succ", []), t)
+
+:~ nat_family () : inductive =
+    := succ = pi_of "n" (k_nat ()) (k_nat ())
+    Inductive (name "K.Nat", [], 0i32, type_sort (), [ name "K.Nat.zero", k_nat (); name "K.Nat.succ", succ ])
+
+:~ true_family () : inductive =
+    := truth = Const (name "K.True", [])
+    Inductive (name "K.True", [], 0i32, prop_sort (), [ name "K.True.intro", truth ])
+
+:~ nat_rec (l : level) (motive_body : term) (base : term) (step_body : term) (major : term) : term =
+    := motive = lam_of "n" (k_nat ()) motive_body
+    := step = lam_of "n" (k_nat ()) (lam_of "ih" motive_body step_body)
+    applied (Const (name "K.Nat.rec", [ l ])) [ motive; base; step; major ]
+
+:~ k_list (a : term) : term = App (Const (name "K.List", []), a)
+
+:~ list_family () : inductive =
+    := nil = pi_of "A" (type_sort ()) (k_list (BVar 0i32))
+    := cons = pi_of "A" (type_sort ()) (pi_of "a" (BVar 0i32) (pi_of "tl" (k_list (BVar 1i32)) (k_list (BVar 2i32))))
+    Inductive (name "K.List", [], 1i32, pi_of "A" (type_sort ()) (type_sort ()), [ name "K.List.nil", nil; name "K.List.cons", cons ])
+
+:~ k_eq (l : level) (a : term) (x : term) (y : term) : term = applied (Const (name "K.Eq", [ l ])) [ a; x; y ]
+
+:~ eq_family () : inductive =
+    := u = Param (name "u")
+    := former = pi_of "A" (Sort u) (pi_of "a" (BVar 0i32) (pi_of "b" (BVar 1i32) (prop_sort ())))
+    := refl = pi_of "A" (Sort u) (pi_of "a" (BVar 0i32) (k_eq u (BVar 1i32) (BVar 0i32) (BVar 0i32)))
+    Inductive (name "K.Eq", [ name "u" ], 2i32, former, [ name "K.Eq.refl", refl ])
+
+:~ k_tree () : term = Const (name "K.Tree", [])
+
+:~ tree_family () : inductive =
+    := node = pi_of "f" (pi_of "n" (k_nat ()) (k_tree ())) (k_tree ())
+    Inductive (name "K.Tree", [], 0i32, type_sort (), [ name "K.Tree.leaf", k_tree (); name "K.Tree.node", node ])
+
+:~ family_corpus () : list entry =
+    := two = Succ (Succ Zero)
+    := xs = applied (Const (name "K.List.cons", [])) [ k_type (); k_value (); App (Const (name "K.List.nil", []), k_type ()) ]
+    := head_step = lam_of "a" (k_type ()) (lam_of "tl" (k_list (k_type ())) (lam_of "ih" (k_type ()) (BVar 2i32)))
+    := head = applied (Const (name "K.List.rec", [ Succ Zero ])) [ k_type (); lam_of "l" (k_list (k_type ())) (k_type ()); k_value (); head_step; xs ]
+    := refl = applied (Const (name "K.Eq.refl", [ two ])) [ type_sort (); k_type () ]
+    := transport_motive = lam_of "b" (type_sort ()) (lam_of "h" (k_eq two (type_sort ()) (k_type ()) (BVar 0i32)) (BVar 1i32))
+    := transport =
+        applied (Const (name "K.Eq.rec", [ Succ Zero; two ])) [ type_sort (); k_type (); transport_motive; k_value (); k_type (); refl ]
+    := tree_step =
+        lam_of "f" (pi_of "n" (k_nat ()) (k_tree ())) (lam_of "ih" (pi_of "n" (k_nat ()) (k_type ())) (App (BVar 0i32, k_zero ())))
+    := tree_value = App (Const (name "K.Tree.node", []), lam_of "n" (k_nat ()) (Const (name "K.Tree.leaf", [])))
+    := tree_rec = applied (Const (name "K.Tree.rec", [ Succ Zero ])) [ lam_of "t" (k_tree ()) (k_type ()); k_value (); tree_step; tree_value ]
+    [
+        Family (list_family ())
+        Judge (k_type (), head)
+        Family (eq_family ())
+        Judge (k_eq two (type_sort ()) (k_type ()) (k_type ()), refl)
+        Judge (k_type (), transport)
+        Family (tree_family ())
+        Judge (k_type (), tree_rec)
+    ]
+
+:~ refl_at (l : level) (a : term) (x : term) : term = applied (Const (name "K.Eq.refl", [ l ])) [ a; x ]
+
+:~ conversion_corpus () : list entry =
+    := one = Succ Zero
+    := endo = pi_of "x" (k_type ()) (k_type ())
+    := f = Const (name "K.f", [])
+    := p = Const (name "K.P", [])
+    := p1 = Const (name "K.p1", [])
+    [
+        Declare (Axiom (name "K.f", [], endo))
+        Declare (Axiom (name "K.P", [], prop_sort ()))
+        Declare (Axiom (name "K.p1", [], p))
+        Declare (Axiom (name "K.p2", [], p))
+        Declare (Axiom (name "K.t2", [], k_type ()))
+        Judge (k_eq one endo (lam_of "x" (k_type ()) (App (f, BVar 0i32))) f, refl_at one endo f)
+        Judge (k_eq Zero p p1 (Const (name "K.p2", [])), refl_at Zero p p1)
+        Judge (k_eq one (k_type ()) (k_value ()) (Const (name "K.t2", [])), refl_at one (k_type ()) (k_value ()))
+    ]
+
+:~ prelude_eq () : inductive =
+    := u = Param (name "u")
+    := former = pi_of "A" (Sort u) (pi_of "a" (BVar 0i32) (pi_of "b" (BVar 1i32) (prop_sort ())))
+    := refl = pi_of "A" (Sort u) (pi_of "a" (BVar 0i32) (eq_of u (BVar 1i32) (BVar 0i32) (BVar 0i32)))
+    Inductive (name "Eq", [ name "u" ], 2i32, former, [ name "Eq.refl", refl ])
+
+:~ quotient_corpus () : list entry =
+    := one = Succ Zero
+    := r = Const (name "K.R", [])
+    := relation_type = pi_of "a" (k_type ()) (pi_of "b" (k_type ()) (prop_sort ()))
+    := related = App (App (r, BVar 1i32), BVar 0i32)
+    := conclusion = pi_of "p" related (eq_of one (k_type ()) (BVar 2i32) (BVar 1i32))
+    := respects = pi_of "a" (k_type ()) (pi_of "b" (k_type ()) conclusion)
+    := made = applied (Const (name "Quot.mk", [ one ])) [ k_type (); r; k_value () ]
+    := identity_on = lam_of "x" (k_type ()) (BVar 0i32)
+    := lifted = applied (Const (name "Quot.lift", [ one; one ])) [ k_type (); r; k_type (); identity_on; Const (name "K.h", []); made ]
+    := refl_t = applied (Const (name "Eq.refl", [ one ])) [ k_type (); k_value () ]
+    := classes = quot_of one (k_type ()) r
+    := sound = applied (Const (name "Quot.sound", [ one ])) [ k_type (); r; k_value (); k_value (); Const (name "K.rtt", []) ]
+    := truth = Const (name "K.True", [])
+    := every = lam_of "a" (k_type ()) (Const (name "K.True.intro", []))
+    := inducted = applied (Const (name "Quot.ind", [ one ])) [ k_type (); r; lam_of "q" classes truth; every; made ]
+    [
+        Prelude (prelude_eq ())
+        Quotients
+        Declare (Axiom (name "K.R", [], relation_type))
+        Declare (Axiom (name "K.h", [], respects))
+        Judge (k_type (), lifted)
+        Judge (eq_of one (k_type ()) lifted (k_value ()), refl_t)
+        Judge (eq_of one (k_type ()) lifted (Const (name "K.t2", [])), refl_t)
+        Declare (Axiom (name "K.rtt", [], App (App (r, k_value ()), k_value ())))
+        Judge (eq_of one classes made made, sound)
+        Judge (truth, inducted)
+    ]
+
+:~ k_pair () : term = App (App (Const (name "K.Pair", []), k_type ()), k_type ())
+
+:~ exists_family () : inductive =
+    := ex = Const (name "K.Ex", [])
+    := pred = pi_of "a" (BVar 0i32) (prop_sort ())
+    := witnessed = pi_of "h" (App (BVar 1i32, BVar 0i32)) (App (App (ex, BVar 3i32), BVar 2i32))
+    := intro = pi_of "A" (type_sort ()) (pi_of "P" pred (pi_of "w" (BVar 1i32) witnessed))
+    Inductive (name "K.Ex", [], 2i32, pi_of "A" (type_sort ()) (pi_of "P" pred (prop_sort ())), [ name "K.Ex.intro", intro ])
+
+:~ both_family () : inductive =
+    := truth = Const (name "K.True", [])
+    := intro = pi_of "l" truth (pi_of "r" truth (Const (name "K.Both", [])))
+    Inductive (name "K.Both", [], 0i32, prop_sort (), [ name "K.Both.intro", intro ])
+
+:~ k_exists () : term = App (App (Const (name "K.Ex", []), k_type ()), lam_of "x" (k_type ()) (Const (name "K.True", [])))
+
+:~ structure_corpus () : list entry =
+    := one = Succ Zero
+    := made = App (App (Const (name "K.Pair", []), BVar 3i32), BVar 2i32)
+    := mk = pi_of "A" (type_sort ()) (pi_of "B" (type_sort ()) (pi_of "a" (BVar 1i32) (pi_of "b" (BVar 1i32) made)))
+    := family = Inductive (name "K.Pair", [], 2i32, pi_of "A" (type_sort ()) (pi_of "B" (type_sort ()) (type_sort ())), [ name "K.Pair.mk", mk ])
+    := built = applied (Const (name "K.Pair.mk", [])) [ k_type (); k_type (); k_value (); Const (name "K.t2", []) ]
+    := p = BVar 0i32
+    := rebuilt = applied (Const (name "K.Pair.mk", [])) [ k_type (); k_type (); Proj (name "K.Pair", 0i32, p); Proj (name "K.Pair", 1i32, p) ]
+    := eta_type = pi_of "p" (k_pair ()) (eq_of one (k_pair ()) p rebuilt)
+    := eta_proof = lam_of "p" (k_pair ()) (applied (Const (name "Eq.refl", [ one ])) [ k_pair (); p ])
+    [
+        Family family
+        Judge (k_type (), Proj (name "K.Pair", 0i32, built))
+        Judge (eq_of one (k_type ()) (Proj (name "K.Pair", 1i32, built)) (Const (name "K.t2", [])), applied (Const (name "Eq.refl", [ one ])) [ k_type (); Const (name "K.t2", []) ])
+        Judge (eta_type, eta_proof)
+        Judge (k_type (), Proj (name "K.Pair", 2i32, built))
+        Family (exists_family ())
+        Declare (Axiom (name "K.e", [], k_exists ()))
+        Judge (Const (name "K.True", []), Proj (name "K.Ex", 1i32, Const (name "K.e", [])))
+        Judge (k_type (), Proj (name "K.Ex", 0i32, Const (name "K.e", [])))
+        Family (both_family ())
+        Declare (Axiom (name "K.b", [], Const (name "K.Both", [])))
+        Judge (Const (name "K.True", []), Proj (name "K.Both", 1i32, Const (name "K.b", [])))
+    ]
+
+:~ ^ followed_terms (a : list term) (b : list term) : list term =
+    ?= a ?|
+    | x :: rest => x :: followed_terms rest b
+    | [] => b
+
+:~ mutual_corpus () : list entry =
+    := one = Succ Zero
+    := tree = Const (name "K.MTree", [])
+    := forest = Const (name "K.MForest", [])
+    := node = Inductive (name "K.MTree", [], 0i32, type_sort (), [ name "K.MTree.node", pi_of "f" forest tree ])
+    := cons = pi_of "t" tree (pi_of "f" forest forest)
+    := grove_family = Inductive (name "K.MForest", [], 0i32, type_sort (), [ name "K.MForest.nil", forest; name "K.MForest.cons", cons ])
+    := bad_tree = Const (name "K.BTree", [])
+    := bad_forest = Const (name "K.BForest", [])
+    := bad_node = Inductive (name "K.BTree", [], 0i32, type_sort (), [ name "K.BTree.node", pi_of "f" bad_forest bad_tree ])
+    := bad = Inductive (name "K.BForest", [], 0i32, type_sort (), [ name "K.BForest.bad", pi_of "k" (pi_of "x" bad_tree bad_tree) bad_forest ])
+    := nil = Const (name "K.MForest.nil", [])
+    := leaf = App (Const (name "K.MTree.node", []), nil)
+    := grove = App (Const (name "K.MTree.node", []), applied (Const (name "K.MForest.cons", [])) [ leaf; nil ])
+    := on_node = lam_of "f" forest (lam_of "ih" (k_nat ()) (BVar 0i32))
+    := on_cons = lam_of "t" tree (lam_of "f" forest (lam_of "it" (k_nat ()) (lam_of "if" (k_nat ()) (k_succ (BVar 0i32)))))
+    := motives = [ lam_of "t" tree (k_nat ()); lam_of "f" forest (k_nat ()) ]
+    := count = applied (Const (name "K.MTree.rec", [ one ])) (followed_terms motives [ on_node; k_zero (); on_cons; grove ])
+    := counted = eq_of one (k_nat ()) count (k_succ (k_zero ()))
+    [
+        Mutual [ bad_node; bad ]
+        Mutual [ node; grove_family ]
+        Judge (k_nat (), count)
+        Judge (counted, applied (Const (name "Eq.refl", [ one ])) [ k_nat (); k_succ (k_zero ()) ])
+    ]
+
+:~ nested_corpus () : list entry =
+    := one = Succ Zero
+    := ntree = Const (name "K.NTree", [])
+    := ntrees = k_list ntree
+    := nil = App (Const (name "K.List.nil", []), ntree)
+    := cons = \ (h : term) (tl : term) => applied (Const (name "K.List.cons", [])) [ ntree; h; tl ]
+    := leaf = App (Const (name "K.NTree.node", []), nil)
+    := pair = cons leaf (cons leaf nil)
+    := family = Inductive (name "K.NTree", [], 0i32, type_sort (), [ name "K.NTree.node", pi_of "cs" ntrees ntree ])
+    := neg_of = \ (a : term) => App (Const (name "K.Neg", []), a)
+    := neg_mk = pi_of "A" (type_sort ()) (pi_of "f" (pi_of "x" (BVar 0i32) (k_nat ())) (neg_of (BVar 1i32)))
+    := neg = Inductive (name "K.Neg", [], 1i32, pi_of "A" (type_sort ()) (type_sort ()), [ name "K.Neg.mk", neg_mk ])
+    := negt = Const (name "K.NegT", [])
+    := bad = Inductive (name "K.NegT", [], 0i32, type_sort (), [ name "K.NegT.t", pi_of "n" (neg_of negt) negt ])
+    := on_node = lam_of "cs" ntrees (lam_of "ih" (k_nat ()) (BVar 0i32))
+    := on_cons = lam_of "h" ntree (lam_of "tl" ntrees (lam_of "ih_h" (k_nat ()) (lam_of "ih_tl" (k_nat ()) (k_succ (BVar 0i32)))))
+    := motives = [ lam_of "t" ntree (k_nat ()); lam_of "l" ntrees (k_nat ()) ]
+    := over = \ (r : string) (major : term) => applied (Const (name r, [ one ])) (followed_terms motives [ on_node; k_zero (); on_cons; major ])
+    := two = k_succ (k_succ (k_zero ()))
+    := counted = eq_of one (k_nat ()) (over "K.NTree.rec_1" pair) two
+    [
+        Family neg
+        Nested bad
+        Nested family
+        Judge (k_nat (), over "K.NTree.rec" (App (Const (name "K.NTree.node", []), pair)))
+        Judge (k_nat (), over "K.NTree.rec_1" pair)
+        Judge (counted, applied (Const (name "Eq.refl", [ one ])) [ k_nat (); two ])
+    ]
+
+:~ universe_corpus () : list entry =
+    := u = Param (name "u")
+    := v = Param (name "v")
+    := ps = [ name "u"; name "v" ]
+    := pp_type = Axiom (name "K.Pp", [ name "a" ], Sort (Succ (Param (name "a"))))
+    := pp = Axiom (name "K.pp", [ name "a" ], Const (name "K.Pp", [ Param (name "a") ]))
+    := at = \ (n : string) (l : level) => Const (name n, [ l ])
+    [
+        Declare pp_type
+        Declare pp
+        Poly (ps, at "K.Pp" (Max (u, v)), at "K.pp" (Max (v, u)))
+        Poly (ps, at "K.Pp" u, at "K.pp" v)
+    ]
+
+:~ k_like_corpus () : list entry =
+    := one = Succ Zero
+    := two = Succ (Succ Zero)
+    := h_ty = k_eq two (type_sort ()) (k_type ()) (k_type ())
+    := motive = lam_of "b" (type_sort ()) (lam_of "h" (k_eq two (type_sort ()) (k_type ()) (BVar 0i32)) (BVar 1i32))
+    := moved = applied (Const (name "K.Eq.rec", [ one; two ])) [ type_sort (); k_type (); motive; k_value (); k_type (); BVar 0i32 ]
+    := ty = pi_of "h" h_ty (k_eq one (k_type ()) moved (k_value ()))
+    := refl_v = applied (Const (name "K.Eq.refl", [ one ])) [ k_type (); k_value () ]
+    := h_by_delta = k_eq two (type_sort ()) (k_type ()) (applied (k_id two) [ type_sort (); k_type () ])
+    := moved_delta = applied (Const (name "K.Eq.rec", [ one; two ])) [ type_sort (); k_type (); motive; k_value (); applied (k_id two) [ type_sort (); k_type () ]; BVar 0i32 ]
+    := ty_delta = pi_of "h" h_by_delta (k_eq one (k_type ()) moved_delta (k_value ()))
+    := unit = Const (name "K.Unit", [])
+    := unit_family = Inductive (name "K.Unit", [], 0i32, type_sort (), [ name "K.Unit.unit", unit ])
+    := proofs_ty = pi_of "P" (prop_sort ()) (pi_of "p" (BVar 0i32) (pi_of "q" (BVar 1i32) (k_eq Zero (BVar 2i32) (BVar 1i32) (BVar 0i32))))
+    := proofs_v = lam_of "P" (prop_sort ()) (lam_of "p" (BVar 0i32) (lam_of "q" (BVar 1i32) (applied (Const (name "K.Eq.refl", [ Zero ])) [ BVar 2i32; BVar 1i32 ])))
+    := units_ty = pi_of "x" unit (pi_of "y" unit (k_eq one unit (BVar 1i32) (BVar 0i32)))
+    := units_v = lam_of "x" unit (lam_of "y" unit (applied (Const (name "K.Eq.refl", [ one ])) [ unit; BVar 1i32 ]))
+    [
+        Judge (ty, lam_of "h" h_ty refl_v)
+        Judge (ty_delta, lam_of "h" h_by_delta refl_v)
+        Family unit_family
+        Judge (proofs_ty, proofs_v)
+        Judge (units_ty, units_v)
+    ]
+
+:~ prelude_nat () : inductive =
+    := nat = Const (name "Nat", [])
+    Inductive (name "Nat", [], 0i32, type_sort (), [ name "Nat.zero", nat; name "Nat.succ", pi_of "n" nat nat ])
+
+:~ literal_corpus () : list entry =
+    := nat = Const (name "Nat", [])
+    := one = Succ Zero
+    := zero_c = Const (name "Nat.zero", [])
+    := two_chain = App (Const (name "Nat.succ", []), App (Const (name "Nat.succ", []), zero_c))
+    := refl_two = applied (Const (name "Eq.refl", [ one ])) [ nat; NatLit 2u64 ]
+    := step = lam_of "n" nat (lam_of "ih" nat (BVar 1i32))
+    := pred_three = applied (Const (name "Nat.rec", [ one ])) [ lam_of "n" nat nat; zero_c; step; NatLit 3u64 ]
+    := binary = pi_of "n" nat (pi_of "m" nat nat)
+    := recurse_on_m = \ (base : term) (next : term) => lam_of "n" nat (lam_of "m" nat (applied (Const (name "Nat.rec", [ one ])) [ lam_of "k" nat nat; base; next; BVar 0i32 ]))
+    := add_body = recurse_on_m (BVar 1i32) (lam_of "k" nat (lam_of "ih" nat (App (Const (name "Nat.succ", []), BVar 0i32))))
+    := mul_body = recurse_on_m zero_c (lam_of "k" nat (lam_of "ih" nat (applied (Const (name "Nat.add", [])) [ BVar 0i32; BVar 3i32 ])))
+    := op = \ (o : string) (a : term) (b : term) => applied (Const (name o, [])) [ a; b ]
+    := refl_at = \ (k : u64) => applied (Const (name "Eq.refl", [ one ])) [ nat; NatLit k ]
+    := bool = Const (name "Bool", [])
+    := true_c = Const (name "Bool.true", [])
+    := refl_true = applied (Const (name "Eq.refl", [ one ])) [ bool; true_c ]
+    := to_bool = pi_of "n" nat (pi_of "m" nat bool)
+    [
+        Prelude (prelude_nat ())
+        Builtin (Def (name "Nat.add", [], binary, add_body))
+        Builtin (Def (name "Nat.mul", [], binary, mul_body))
+        Judge (eq_of one nat (op "Nat.add" (NatLit 2u64) (NatLit 3u64)) (NatLit 5u64), refl_at 5u64)
+        Judge (eq_of one nat (op "Nat.add" (NatLit 2u64) (App (Const (name "Nat.succ", []), zero_c))) (NatLit 3u64), refl_at 3u64)
+        Judge (eq_of one nat (op "Nat.mul" (NatLit 6u64) (NatLit 7u64)) (NatLit 42u64), refl_at 42u64)
+        Judge (eq_of one nat (op "Nat.mul" (NatLit 2u64) (NatLit 3u64)) (NatLit 5u64), refl_at 5u64)
+        Prelude (Inductive (name "Bool", [], 0i32, type_sort (), [ name "Bool.false", bool; name "Bool.true", bool ]))
+        Builtin (Axiom (name "Nat.beq", [], to_bool))
+        Builtin (Axiom (name "Nat.ble", [], to_bool))
+        Builtin (Axiom (name "Nat.gcd", [], binary))
+        Builtin (Axiom (name "Nat.land", [], binary))
+        Builtin (Axiom (name "Nat.xor", [], binary))
+        Builtin (Axiom (name "Nat.shiftLeft", [], binary))
+        Builtin (Axiom (name "Nat.pow", [], binary))
+        Judge (eq_of one bool (op "Nat.beq" (NatLit 3u64) (NatLit 3u64)) true_c, refl_true)
+        Judge (eq_of one bool (op "Nat.ble" (NatLit 4u64) (NatLit 3u64)) true_c, refl_true)
+        Judge (eq_of one nat (op "Nat.gcd" (NatLit 12u64) (NatLit 18u64)) (NatLit 6u64), refl_at 6u64)
+        Judge (eq_of one nat (op "Nat.land" (NatLit 12u64) (NatLit 10u64)) (NatLit 8u64), refl_at 8u64)
+        Judge (eq_of one nat (op "Nat.shiftLeft" (NatLit 1u64) (NatLit 10u64)) (NatLit 1024u64), refl_at 1024u64)
+        Judge (eq_of one nat (op "Nat.pow" (NatLit 2u64) (NatLit 10u64)) (NatLit 1024u64), refl_at 1024u64)
+        Judge (eq_of one nat (op "Nat.xor" (NatLit 5u64) (NatLit 3u64)) (NatLit 7u64), refl_at 7u64)
+        Builtin (Axiom (name "Nat.log2", [], pi_of "n" nat nat))
+        Judge (eq_of one nat (App (Const (name "Nat.log2", []), NatLit 1024u64)) (NatLit 10u64), refl_at 10u64)
+        Judge (eq_of one nat (App (Const (name "Nat.log2", []), NatLit 0u64)) (NatLit 0u64), refl_at 0u64)
+        Judge (nat, NatLit 5u64)
+        Judge (eq_of one nat (NatLit 2u64) two_chain, refl_two)
+        Judge (eq_of one nat pred_three (NatLit 2u64), refl_two)
+        Judge (eq_of one nat (NatLit 2u64) (NatLit 3u64), refl_two)
+    ]
+
+:~ prelude_list () : inductive =
+    := u = Param (name "u")
+    := list_of = \ (a : term) => App (Const (name "List", [ u ]), a)
+    := nil = pi_of "α" (Sort (Succ u)) (list_of (BVar 0i32))
+    := cons = pi_of "α" (Sort (Succ u)) (pi_of "head" (BVar 0i32) (pi_of "tail" (list_of (BVar 1i32)) (list_of (BVar 2i32))))
+    Inductive (name "List", [ name "u" ], 1i32, pi_of "α" (Sort (Succ u)) (Sort (Succ u)), [ name "List.nil", nil; name "List.cons", cons ])
+
+:~ string_corpus () : list entry =
+    := nat = Const (name "Nat", [])
+    := char = Const (name "Char", [])
+    := string = Const (name "String", [])
+    := one = Succ Zero
+    := ch = \ (k : u64) => App (Const (name "Char.ofNat", []), NatLit k)
+    := cons = \ (h : term) (tl : term) => applied (Const (name "List.cons", [ Zero ])) [ char; h; tl ]
+    := nil = App (Const (name "List.nil", [ Zero ]), char)
+    := of_list = \ (l : term) => App (Const (name "String.ofList", []), l)
+    := refl_of = \ (s : string) => applied (Const (name "Eq.refl", [ one ])) [ string; StrLit s ]
+    [
+        Builtin (Axiom (name "Char", [], type_sort ()))
+        Builtin (Axiom (name "Char.ofNat", [], pi_of "n" nat char))
+        Prelude (prelude_list ())
+        Builtin (Axiom (name "String", [], type_sort ()))
+        Builtin (Axiom (name "String.ofList", [], pi_of "l" (App (Const (name "List", [ Zero ]), char)) string))
+        Judge (string, StrLit "ab")
+        Judge (eq_of one string (StrLit "ab") (of_list (cons (ch 97u64) (cons (ch 98u64) nil))), refl_of "ab")
+        Judge (eq_of one string (StrLit "ab") (StrLit "ba"), refl_of "ab")
+        Judge (eq_of one string (StrLit "ab") (of_list (cons (ch 97u64) (cons (ch 99u64) nil))), refl_of "ab")
+        Judge (eq_of one string (StrLit "") (of_list nil), refl_of "")
+        Judge (eq_of one (Const (name "Bool", [])) (applied (Const (name "Nat.ble", [])) [ NatLit 1u64; BigNat "18446744073709551616" ]) (Const (name "Bool.true", [])), applied (Const (name "Eq.refl", [ one ])) [ Const (name "Bool", []); Const (name "Bool.true", []) ])
+        Judge (eq_of one nat (BigNat "18446744073709551616") (App (Const (name "Nat.succ", []), NatLit 18446744073709551615u64)), applied (Const (name "Eq.refl", [ one ])) [ nat; BigNat "18446744073709551616" ])
+        Judge (eq_of one (Const (name "Bool", [])) (applied (Const (name "Nat.beq", [])) [ BigNat "18446744073709551616"; NatLit 18446744073709551615u64 ]) (Const (name "Bool.true", [])), applied (Const (name "Eq.refl", [ one ])) [ Const (name "Bool", []); Const (name "Bool.true", []) ])
+        Judge (eq_of one (Const (name "Bool", [])) (applied (Const (name "Nat.ble", [])) [ App (Const (name "Nat.succ", []), NatLit 55296u64); NatLit 4294967296u64 ]) (Const (name "Bool.true", [])), applied (Const (name "Eq.refl", [ one ])) [ Const (name "Bool", []); Const (name "Bool.true", []) ])
+        Builtin (Axiom (name "Nat.sub", [], pi_of "n" nat (pi_of "m" nat nat)))
+        Judge (eq_of one nat (applied (Const (name "Nat.pow", [])) [ NatLit 2u64; NatLit 64u64 ]) (BigNat "18446744073709551616"), applied (Const (name "Eq.refl", [ one ])) [ nat; BigNat "18446744073709551616" ])
+        Judge (eq_of one nat (applied (Const (name "Nat.sub", [])) [ BigNat "18446744073709551616"; NatLit 1u64 ]) (NatLit 18446744073709551615u64), applied (Const (name "Eq.refl", [ one ])) [ nat; NatLit 18446744073709551615u64 ])
+    ]
+
+:~ ^ bumped (t : term) : term =
+    ?= t ?|
+    | Sort l => Sort (Succ l)
+    | App (f, a) => App (bumped f, bumped a)
+    | Lam (n, b, ty, body) => Lam (n, b, bumped ty, bumped body)
+    | Pi (n, b, ty, body) => Pi (n, b, bumped ty, bumped body)
+    | Let (n, ty, v, body) => Let (n, bumped ty, bumped v, bumped body)
+    | Proj (s, i, x) => Proj (s, i, bumped x)
+    | _ => t
+
+:~ ^ with_mutants (entries : list entry) : list entry =
+    ?= entries ?|
+    | e :: rest =>
+        ?= e ?|
+        | Judge (ty, value) =>
+            e :: Judge (ty, ty) :: Judge (bumped ty, value) :: Judge (ty, bumped value) :: with_mutants rest
+        | _ => e :: with_mutants rest
+    | [] => []
+
+:~ ^ followed_by (a : list entry) (b : list entry) : list entry =
+    ?= a ?|
+    | x :: rest => x :: followed_by rest b
+    | [] => b
+
+:~ inductive_corpus () : list entry =
+    := two = Succ (Succ Zero)
+    := truth = Const (name "K.True", [])
+    := intro = Const (name "K.True.intro", [])
+    := large = applied (Const (name "K.True.rec", [ two ])) [ lam_of "t" truth (type_sort ()); k_type (); intro ]
+    := either = Const (name "K.Either", [])
+    := either_family = Inductive (name "K.Either", [], 0i32, prop_sort (), [ name "K.Either.left", either; name "K.Either.right", either ])
+    := either_large =
+        applied (Const (name "K.Either.rec", [])) [ lam_of "t" either (type_sort ()); k_type (); k_type (); Const (name "K.Either.left", []) ]
+    [
+        Family (nat_family ())
+        Judge (k_type (), nat_rec (Succ Zero) (k_type ()) (k_value ()) (BVar 0i32) (k_zero ()))
+        Judge (nat_rec two (type_sort ()) (k_type ()) (BVar 0i32) (k_zero ()), k_value ())
+        Judge (nat_rec two (type_sort ()) (k_type ()) (pi_of "x" (k_type ()) (k_type ())) (k_succ (k_zero ())), k_value ())
+        Family (true_family ())
+        Judge (type_sort (), large)
+        Family either_family
+        Judge (type_sort (), either_large)
+    ]
+
+:~ corpus () : list entry =
+    := u_sort = Sort (Param (name "u"))
+    := id_type = pi_of "A" (type_sort ()) (pi_of "a" (BVar 0i32) (BVar 1i32))
+    := id_at = \ (l : level) => App (App (k_id l, k_type ()), k_value ())
+    [
+        Declare (Axiom (name "K.T", [], type_sort ()))
+        Declare (Axiom (name "K.t", [], k_type ()))
+        Declare (
+            Def (
+                name "K.id",
+                [ name "u" ],
+                pi_of "A" u_sort (pi_of "a" (BVar 0i32) (BVar 1i32)),
+                lam_of "A" u_sort (lam_of "a" (BVar 0i32) (BVar 0i32))
+            )
+        )
+        Judge (id_type, poly_id ())
+        Judge (id_type, lam_of "A" (type_sort ()) (lam_of "a" (BVar 0i32) (BVar 1i32)))
+        Judge (prop_sort (), pi_of "P" (prop_sort ()) (BVar 0i32))
+        Judge (type_sort (), pi_of "P" (prop_sort ()) (BVar 0i32))
+        Judge (Sort (Succ (Succ Zero)), type_sort ())
+        Judge (type_sort (), type_sort ())
+        Judge (k_type (), k_value ())
+        Judge (k_type (), k_type ())
+        Judge (type_sort (), pi_of "x" (k_type ()) (prop_sort ()))
+        Judge (prop_sort (), pi_of "x" (k_type ()) (prop_sort ()))
+        Judge (k_type (), Let (name "x", k_type (), k_value (), BVar 0i32))
+        Judge (k_type (), App (lam_of "x" (k_type ()) (BVar 0i32), k_type ()))
+        Judge (App (lam_of "X" (Sort (Succ (Succ Zero))) (BVar 0i32), type_sort ()), k_type ())
+        Judge (App (lam_of "X" (Sort (Succ (Succ Zero))) (BVar 0i32), type_sort ()), k_value ())
+        Judge (k_type (), id_at (Succ Zero))
+        Judge (k_type (), id_at Zero)
+        Judge (
+            pi_of "P" (prop_sort ()) (pi_of "p" (BVar 0i32) (BVar 1i32)),
+            lam_of "P" (prop_sort ()) (lam_of "p" (BVar 0i32) (BVar 0i32))
+        )
+    ]
+
+///- --timeout 900000
+///> rust
+:# kernel_verdicts_are_written_beside_their_lean_source =
+    := later = followed_by (conversion_corpus ()) (followed_by (quotient_corpus ()) (followed_by (structure_corpus ()) (followed_by (mutual_corpus ()) (followed_by (nested_corpus ()) (followed_by (universe_corpus ()) (followed_by (k_like_corpus ()) (followed_by (literal_corpus ()) (string_corpus ()))))))))
+    := families = followed_by (inductive_corpus ()) (followed_by (family_corpus ()) later)
+    := entries = followed_by (corpus ()) families
+    := _ = file_system::write_all_text (oracle_path ()) (lean_file (with_mutants entries))
+    verdicts [] entries
+    |> listm::map (\ v => accepts v)
+    |> _assert_eq
+        [
+            !+
+            !+
+            !+
+            !+
+            !-
+            !+
+            !-
+            !+
+            !-
+            !+
+            !-
+            !+
+            !-
+            !+
+            !-
+            !+
+            !-
+            !+
+            !-
+            !+
+            !+
+            !+
+            !+
+            !-
+            !+
+            !+
+            !+
+            !-
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !-
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !-
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !-
+            !+
+            !+
+            !-
+            !-
+            !+
+            !+
+            !+
+            !-
+            !+
+            !+
+            !+
+            !+
+            !-
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !-
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !-
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !-
+            !+
+            !+
+            !+
+            !+
+            !-
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !-
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !+
+            !-
+            !-
+            !+
+            !+
+            !+
+            !-
+            !+
+            !+
+            !+
+            !+
+        ]

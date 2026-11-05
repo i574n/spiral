@@ -1,0 +1,118 @@
+:< sm'_operators
+
+:# erlang_http_server static =
+    :< testing
+
+:== request = { method : string; path : string; query : string; head : string; raw : string }
+
+:= pieces (sep : string) (s : string) : list string = ? s = "" ?> [] |: sm'::split_list sep s
+
+:= cut (start : i32) (len : i32) (s : string) : string = sm'::substring start len s
+
+:= head_end (s : string) : i32 = sm'::index_of "\r\n\r\n" s
+
+:= after_prefix (prefix : string) (line : string) : string =
+    sm'::trim (sm'::substring (sm'::length prefix) (sm'::length line - sm'::length prefix) line)
+
+:~ header_value (name : string) (head : string) : string =
+    := prefix = sm'::to_lower name ++# ":"
+    := named = pieces "\r\n" head |> listm'::filter (\ l => sm'::starts_with prefix (sm'::to_lower l))
+    ?= named ?| l :: _ => after_prefix prefix l | [] => ""
+
+:= count_or_zero (s : string) : i32 =
+    ?= (convert::try_convert s : option i32) ?|
+    | Some n => ? n < 0i32 ?> 0i32 |: n
+    | None => 0i32
+
+:= content_length (head : string) : i32 = count_or_zero (header_value "content-length" head)
+
+:= complete (acc : string) : bool =
+    := at = head_end acc
+    at >= 0i32 && erlang_term::byte_size_of acc >= at + 4i32 + content_length (cut 0i32 at acc)
+
+:= split_once (sep : string) (s : string) : string * string =
+    := i = sm'::index_of sep s
+    := rest = i + sm'::length sep
+    ? i < 0i32 ?> s, "" |: cut 0i32 i s, sm'::substring rest (sm'::length s - rest) s
+
+:= first_line (head : string) : string = cut 0i32 (sm'::index_of "\r\n" head) head
+
+:= target_of (head : string) : string = ?= pieces " " (first_line head) ?| _ :: t :: _ => t | _ => "/"
+
+:= method_of (head : string) : string = ?= pieces " " head ?| m :: _ => m | [] => ""
+
+:~ request_of (raw : string) : request =
+    := head = cut 0i32 (head_end raw) raw
+    := target, _ = split_once "#" (target_of head)
+    := path, query = split_once "?" target
+    { method = method_of head; path; query; head; raw }
+
+:= body_of (r : request) : string =
+    := start = head_end r::raw + 4i32
+    ? head_end r::raw < 0i32 ?> "" |: sm'::substring start (sm'::length r::raw - start) r::raw
+
+:= url_decoded (s : string) : string = erlang_text::percent_decoded (sm'::replace "+" " " s)
+
+:= pair_value (name : string) (item : string) : option string =
+    := k, v = split_once "=" item
+    ? v <> "" && url_decoded k = name ?> Some (url_decoded v) |: None
+
+:~ ^ first_value (name : string) (items : list string) : string =
+    ?= items ?|
+    | item :: rest => ?= pair_value name item ?| Some v => v | None => first_value name rest
+    | [] => ""
+
+:= query_value (name : string) (query : string) : string = first_value name (pieces "&" query)
+
+:= query_list (name : string) (query : string) : list string =
+    query_value name query |> pieces "," |> listm'::filter (\ s => s <> "")
+
+:= client_reasons () : list (i32 * string) =
+    [ (200i32, "OK"); (201i32, "Created"); (400i32, "Bad Request"); (401i32, "Unauthorized");
+        (402i32, "Payment Required"); (403i32, "Forbidden"); (404i32, "Not Found") ]
+
+:= server_reasons () : list (i32 * string) =
+    [ (422i32, "Unprocessable Entity"); (429i32, "Too Many Requests"); (500i32, "Internal Server Error");
+        (502i32, "Bad Gateway"); (503i32, "Service Unavailable") ]
+
+:= reason (status : i32) : string =
+    := known = listm::append (client_reasons ()) (server_reasons ())
+    ?= known |> listm'::filter (\ (s, _) => s = status) ?| (_, r) :: _ => r | [] => "Status"
+
+:= status_line (status : i32) : string = "HTTP/1.1 " ++# sm'::obj_to_string status ++# " " ++# reason status
+
+:= headers_text (kind : string) (body : string) : string =
+    := length = "\r\nContent-Length: " ++# sm'::obj_to_string (erlang_term::byte_size_of body)
+    "\r\nContent-Type: " ++# kind ++# length ++# "\r\nConnection: close\r\n\r\n"
+
+:= response_text (status : i32) (kind : string) (body : string) : string =
+    status_line status ++# headers_text kind body ++# body
+
+:= json_response (status : i32) (body : string) : string =
+    response_text status "application/json; charset=utf-8" body
+
+///> gleam
+:# a_request_splits_method_path_and_query =
+    := r = request_of "GET /u?usernames=a%2Cb&x=1#f HTTP/1.1\r\nHost: h\r\n\r\n"
+    (r::method, r::path, r::query, header_value "HOST" r::head)
+    |> _assert_eq ("GET", "/u", "usernames=a%2Cb&x=1", "h")
+
+///> gleam
+:# a_body_is_complete_at_its_content_length =
+    := head = "POST /p HTTP/1.1\r\ncontent-length: 2\r\n\r\n"
+    (complete (head ++# "a"), complete (head ++# "ab"), complete "POST /p", body_of (request_of (head ++# "ab")))
+    |> _assert_eq (!-, !+, !-, "ab")
+
+///> gleam
+:# query_values_decode_and_split =
+    := q = "usernames=a%2Cb&text=x+y&empty="
+    (query_list "usernames" q, query_value "text" q, query_value "empty" q, query_value "none" q)
+    |> _assert_eq ([ "a"; "b" ], "x y", "", "")
+
+///> gleam
+:# a_response_counts_body_bytes =
+    json_response 201i32 "é"
+    |> _assert_eq (
+        "HTTP/1.1 201 Created\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: 2\r\n"
+        ^^ "Connection: close\r\n\r\né"
+    )

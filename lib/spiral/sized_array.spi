@@ -5,14 +5,13 @@
 
 := size_of \* n el. (_ : sized n el) : i32 = ~> real_core::type_lit_to_lit `n
 
-:~ ^ init_from \* el. (x : array el) (f : i32 -> el) (i : i32) : () =
-    ? i < length x ?>
-        set x i (f i)
-        init_from x f (i + 1)
-
 := init \* n el. (f : i32 -> el) : sized n el =
     := x : array el = create (~> real_core::type_lit_to_lit `n)
-    init_from x f 0
+    :~ ^ go (i : i32) : () =
+        ? i < length x ?>
+            set x i (f i)
+            go (i + 1)
+    go 0
     sized x
 
 :~ ^ fill_from \* el. (x : array el) (value : el) (i : i32) : () =
@@ -27,6 +26,14 @@
 
 := item \* n el. ((sized x) : sized n el) (i : i32) : el = index x i
 
+:! bounded n = i32
+
+:= bounded_of \* n. (i : i32) : option (bounded n) =
+    ? i >= 0 && i < (~> real_core::type_lit_to_lit `n) ?> Some (bounded i) |: None
+
+:= bounded_value \* n. ((bounded i) : bounded n) : i32 = i
+
+:= at \* n el. ((bounded i) : bounded n) ((sized x) : sized n el) : el = index x i
 :~ ^ put_from \* el. (o : array el) (at : i32) (x : array el) (k : i32) : () =
     ? k < length x ?>
         set o (at + k) (index x k)
@@ -77,23 +84,39 @@
 := ^ reduced \* n el. (f : el -> el -> el) (x : sized n el) : el =
     ? size_of x <= 1 ?> item x 0 |: reduced f (halved f x)
 
+:| ^ dim_of t =
+    | DimSized :: \* n el. i32 -> dim_of (sized n el)
+    | DimPair :: \* a b. dim_of a * dim_of b -> dim_of (a * b)
+
+:= dim_sized \* n el. (() : ()) : dim_of (sized n el) = DimSized (~> real_core::type_lit_to_lit `n)
+
+:= dim_pair \* a b. (x : dim_of a) (y : dim_of b) : dim_of (a * b) = DimPair (x, y)
+
+:= ^ elements \* t. (d : dim_of t) : i32 =
+    ?= d ?|
+    | DimSized n => n
+    | DimPair (a, b) => elements a + elements b
+
+:= small () : sized 2 i32 = init \ i => i + 1
+
+:= tens () : sized 3 i32 = init \ i => 10 * (i + 1)
+
 ///> c
 ///> rust
+///> lua
 :# merge_then_resized_keeps_order_and_size =
-    := v : sized 2 i32 = init \ i => i + 1
-    := w : sized 3 i32 = init \ i => 10 * (i + 1)
-    := u : sized 5 i32 = resized (merge v w)
+    := u : sized 5 i32 = resized (merge (small ()) (tens ()))
     (size_of u, item u 1, item u 4) |> _assert_eq (5i32, 2i32, 30i32)
 
 ///> c
 ///> rust
+///> lua
 :# fold_sums_a_merged_array =
-    := v : sized 2 i32 = init \ i => i + 1
-    := w : sized 3 i32 = init \ i => 10 * (i + 1)
-    fold (+) 0i32 (merge v w) |> _assert_eq 63i32
+    fold (+) 0i32 (merge (small ()) (tens ())) |> _assert_eq 63i32
 
 ///> c
 ///> rust
+///> lua
 :# map_keeps_the_size =
     := v : sized 3 i32 = init \ i => i
     := w : sized 3 i32 = map (\ x => x * x) v
@@ -101,14 +124,14 @@
 
 ///> c
 ///> rust
+///> lua
 :# take_and_skip_invert_merge =
-    := v : sized 2 i32 = init \ i => i + 1
-    := w : sized 3 i32 = init \ i => 10 * (i + 1)
-    := u = merge v w
+    := u = merge (small ()) (tens ())
     (fold (+) 0i32 (take u : sized 2 i32), fold (+) 0i32 (skip u : sized 3 i32)) |> _assert_eq (3i32, 60i32)
 
 ///> c
 ///> rust
+///> lua
 :# a_literal_size_splits_after_a_checked_relabel =
     := u : sized 5 i32 = init \ i => i
     := parts : sized (type_arith::add 2 3) i32 = resized u
@@ -117,6 +140,7 @@
 
 ///> c
 ///> rust
+///> lua
 :# matmul_dots_each_row =
     := x : sized 4 f32 = init \ i => conv (i + 1)
     := w : sized (type_arith::mult 3 4) f32 = init \ i => conv (i % 4)
@@ -126,6 +150,7 @@
 
 ///> c
 ///> rust
+///> lua
 :# filled_matmul_needs_no_closures =
     := x : sized 4 f32 = filled 1.0f32
     := w : sized (type_arith::mult 3 4) f32 = filled 2.0f32
@@ -135,9 +160,57 @@
 
 ///> c
 ///> rust
+///> lua
 :# dot_sums_the_products =
     := x : sized 4 f32 = init \ i => conv (i + 1)
     dot x x |> _assert_eq 30.0f32
+
+///> c
+///> rust
+///> lua
+:# halved_pairs_neighbours_and_keeps_an_odd_tail =
+    := v : sized 5 i32 = init \ i => i + 1
+    := h : sized 3 i32 = resized (halved (+) v)
+    (item h 0, item h 1, item h 2) |> _assert_eq (3i32, 7i32, 5i32)
+
+///> c
+///> rust
+///> lua
+:# reduced_sums_by_a_tree_of_halvings =
+    := v : sized 5 i32 = init \ i => i + 1
+    reduced (+) v |> _assert_eq 15i32
+
+:= nested () : dim_of (sized 3 f32 * (sized 4 f32 * sized 2 i32)) =
+    dim_pair (dim_sized ()) (dim_pair (dim_sized ()) (dim_sized ()))
+
+///> c
+///> rust
+///> lua
+:# a_shape_witness_counts_the_elements_of_nested_pairs =
+    elements (nested ()) |> _assert_eq 9i32
+
+///> wgsl
+:# reduced_runs_on_the_gpu =
+    := v : sized 5 i32 = init \ i => i + 1
+    ? reduced (+) v = 15i32 ?> 0i32 |: 1i32
+
+:= read_or_zero (v : sized 3 i32) (b : option (bounded 3)) : i32 =
+    ?= b ?|
+    | Some i => at i v
+    | None => 0
+
+///> c
+///> rust
+///> lua
+:# a_bounded_index_is_checked_once_and_then_reads_without_a_check =
+    := v = tens ()
+    (read_or_zero v (bounded_of 0), read_or_zero v (bounded_of 2), read_or_zero v (bounded_of 3), read_or_zero v (bounded_of (0 - 1)))
+    |> _assert_eq (10i32, 30i32, 0i32, 0i32)
+
+///> wgsl
+:# a_bounded_index_reads_on_the_gpu =
+    := v = tens ()
+    ? read_or_zero v (bounded_of 2) = 30i32 && read_or_zero v (bounded_of 3) = 0i32 ?> 0i32 |: 1i32
 
 ///> c
 :# resized_rejects_a_different_size fails "resized: the sizes differ" =

@@ -12,5 +12,5 @@ languages = ["Spiral"]
 
 [grammars.spiral]
 repository = "https://github.com/i574n/spiral"
-rev = "3c76d3ed10cf9ac37576acc401e3ed190a520f08"
+rev = "98e51d32fa4daffe0a3fed5a6e25ee8552518ca1"
 path = "apps/zed/tree-sitter-spiral"

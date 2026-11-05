@@ -462,6 +462,8 @@
         TypeScript = \ () => $'Number(BigInt.asUintN(8, BigInt(!x)))' : u8
         Zig = \ () => numeric_conv x : u8
         Lean = \ () => numeric_conv x : u8
+        C = \ () => $'((uint8_t)(!x))' : u8
+        Pascal = \ () => $'Byte(!x)' : u8
     }
 
 := u16 \* t. (x : t) : u16 =
@@ -474,6 +476,8 @@
         TypeScript = \ () => $'Number(BigInt.asUintN(16, BigInt(!x)))' : u16
         Zig = \ () => numeric_conv x : u16
         Lean = \ () => numeric_conv x : u16
+        C = \ () => numeric_conv x : u16
+        Pascal = \ () => numeric_conv x : u16
     }
 
 := u64 \* t. (x : t) : u64 =
@@ -489,6 +493,8 @@
             |: $'BigInt.asUintN(64, BigInt(!x))' : u64
         Zig = \ () => numeric_conv x : u64
         Lean = \ () => numeric_conv x : u64
+        C = \ () => numeric_conv x : u64
+        Pascal = \ () => numeric_conv x : u64
     }
 
 := i32 \* t. (x : t) : i32 =
@@ -504,6 +510,8 @@
             |: $'Number(BigInt.asIntN(32, BigInt(!x)))' : i32
         Zig = \ () => numeric_conv x : i32
         Lean = \ () => numeric_conv x : i32
+        C = \ () => numeric_conv x : i32
+        Pascal = \ () => numeric_conv x : i32
     }
 
 := i64 \* t. (x : t) : i64 =
@@ -519,6 +527,8 @@
             |: $'BigInt.asIntN(64, BigInt(!x))' : i64
         Zig = \ () => numeric_conv x : i64
         Lean = \ () => numeric_conv x : i64
+        C = \ () => numeric_conv x : i64
+        Pascal = \ () => numeric_conv x : i64
     }
 
 := f32 \* t. (x : t) : f32 =
@@ -530,6 +540,8 @@
         Rust = \ () => $'(!x as f32)' : f32
         Zig = \ () => numeric_conv x : f32
         Lean = \ () => numeric_conv x : f32
+        C = \ () => numeric_conv x : f32
+        Pascal = \ () => numeric_conv x : f32
     }
 
 := f64 \* t. (x : t) : f64 =
@@ -541,7 +553,17 @@
         Rust = \ () => $'(!x as f64)' : f64
         Zig = \ () => numeric_conv x : f64
         Lean = \ () => numeric_conv x : f64
+        C = \ () => numeric_conv x : f64
+        Pascal = \ () => numeric_conv x : f64
     }
+
+///> rust
+///> zig
+///> c
+///> pascal
+:# widening_conversions_agree_across_native_backends =
+    := n : i32 = 300
+    (u16 n, i64 n, u64 n, f64 n, f32 n) |> _assert_eq (300u16, 300i64, 300u64, 300.0, 300.0f32)
 
 := to_any \* t. (obj : t) : any =
     obj |> to
@@ -561,7 +583,23 @@
             )
             $'spiral_f32_of_bits(!bits)' : f32
         | Wgsl => \ () => $'bitcast<f32>(!bits)' : f32
+        | Zig => \ () => $'@@as(f32, @@bitCast(!bits))' : f32
         | _ => \ () => failwith "convert.f32_of_bits / no arm for this backend"
+
+:= c_bits_of_f32 () : () =
+    global "#include <stdint.h>"
+    global "#include <string.h>"
+    global "static uint32_t spiral_bits_of_f32(float f) { uint32_t u; memcpy(&u, &f, sizeof u); return u; }"
+
+:= bits_of_f32 (x : f32) : u32 =
+    run_target \|
+        | Rust => \ () => $'(!x).to_bits()' : u32
+        | C => \ () =>
+            c_bits_of_f32 ()
+            $'spiral_bits_of_f32(!x)' : u32
+        | Wgsl => \ () => $'bitcast<u32>(!x)' : u32
+        | Zig => \ () => $'@@as(u32, @@bitCast(!x))' : u32
+        | _ => \ () => failwith "convert.bits_of_f32 / no arm for this backend"
 
 := parse_f64 (text : string) : option f64 =
     := value, parsed =
@@ -585,9 +623,18 @@
 
 ///> c
 ///> rust
+///> zig
 :# f32_of_bits_decodes_ieee_754 =
     := ~one = 1065353216u32
     (f32_of_bits one, f32_of_bits 3223322624u32) |> _assert_eq (1.0f32, -2.5f32)
+
+///> c
+///> rust
+///> zig
+:# bits_of_f32_inverts_f32_of_bits =
+    := ~one = 1.0f32
+    (bits_of_f32 one, bits_of_f32 -2.5f32, f32_of_bits (bits_of_f32 0.1f32) = 0.1f32)
+    |> _assert_eq (1065353216u32, 3223322624u32, !+)
 
 ///> wgsl
 :# f32_of_bits_decodes_on_gpu =

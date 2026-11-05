@@ -1,0 +1,2 @@
+packages = ['|core-']
+prelude = ["array_prototypes", "backend", "base", "iter_prototypes", "text_prototypes", "trace", "common"]

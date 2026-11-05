@@ -1,0 +1,10 @@
+:< model
+
+:= main () : i32 =
+    := ~n = 4i32
+    := a = create n
+    ?= a ?|
+    | i32_array values =>
+        !!!!ArrayIndexSet(values, 0i32, 6i32)
+        !!!!ArrayIndexSet(values, 3i32, 7i32)
+        !!!!Add(!!!!ArrayIndex(values, 0i32), !!!!ArrayIndex(values, 3i32))

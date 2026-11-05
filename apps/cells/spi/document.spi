@@ -124,12 +124,14 @@
         | None => walk src next xs kind (add_line buffer line)
         | Some (name, rest) =>
             := xs2 = push xs kind buffer
-            ? name = "import" ?> walk src next ((ImportCell, text::trim rest) :: xs2) kind ""
-            |? name = "meta" ?> walk src next xs2 None ""
-            |? name = "markdown" ?> walk src next xs2 (Some Markdown) ""
-            |? name = "spiral" ?> walk src next xs2 (Some SpiralCode) ""
-            |? name = "fsharp" ?> walk src next xs2 (Some FsharpCode) ""
-            |: walk src next xs2 (Some (CodeIn name)) ""
+            ? name = "meta" ?> walk src next xs2 None ""
+            |:
+                ?= kind_of name ?|
+                | ImportCell => walk src next ((ImportCell, text::trim rest) :: xs2) kind ""
+                | Markdown => walk src next xs2 (Some Markdown) ""
+                | SpiralCode => walk src next xs2 (Some SpiralCode) ""
+                | FsharpCode => walk src next xs2 (Some FsharpCode) ""
+                | _ => walk src next xs2 (Some (CodeIn name)) ""
 
 := parse_dib (src : string) : string =
     wire (walk (text::replace src "\r\n" "\n") 0i32 [] None "")
@@ -452,6 +454,10 @@
     := agree = some_text f::no_agree " no_agree" ++ some_text f::refers " reference "
     opener ++ name ++ plain ++ agree ++ flag_text s::build_only "build_only" ++ some_text f::fails " fails " ++ " ="
 
+:= user_flag_row (line : string) : bool =
+    := flags = text::trim (text::drop line 4i32)
+    text::starts_with line "///- " && not (text::starts_with flags "--test" || text::starts_with flags "--ignore" || text::starts_with flags "--real")
+
 :~ ^ test_block_go
     (src : string) (i : i32) (targets : rows) (options : string) (body : rows) (name : string)
     : string
@@ -462,8 +468,10 @@
         := lines = rev_rows (drop_blank_rows body) []
         join_rows (append_rows (rev_rows targets []) (header :: lines))
     | LineGot (line, next) =>
-        ? text::starts_with line "///-"
+        ? text::starts_with line "///-" && not (user_flag_row line)
         ?> test_block_go src next targets (options ++ " " ++ text::trim (text::drop line 4i32)) body name
+        |? user_flag_row line
+        ?> test_block_go src next (line :: targets) options body name
         |? text::starts_with line "///>"
         ?> test_block_go src next (line :: targets) options body name
         |:
@@ -476,16 +484,21 @@
 
 := test_block (source : string) (name : string) : string = test_block_go source 0i32 [] "" [] name
 
-:~ ^ name_tests (xs : cells) (last : string) (used : rows) (acc : cells) : cells =
+:= nonempty (s : string) : option string = ? s = "" ?> None |: Some s
+
+:= or_name (fallback : string) (x : option string) : string = ?= x ?| Some s => s | None => fallback
+
+:= heading_name (source : string) : option string = nonempty (heading_test_name source)
+
+:~ ^ name_tests (xs : cells) (last : option string) (used : rows) (acc : cells) : cells =
     ?= xs ?|
     | [] => rev_cells acc []
     | (kind, source) :: rest =>
         ? kind = Markdown ?>
-            := heading = heading_test_name source
-            := last2 = ? heading = "" ?> last |: heading
+            := last2 = ?= heading_name source ?| Some heading => Some heading | None => last
             name_tests rest last2 used ((kind, source) :: acc)
         |? test_cell (text::trim source) ?>
-            := base = ? last = "" ?> "cell" |: last
+            := base = or_name "cell" last
             := n = count_row used base
             := name = ? n = 0i32 ?> base |: base ++ "_" ++ text::show_i32 (n + 1i32)
             := named = explicit_name (text::trim source) name
@@ -549,7 +562,8 @@
     text::trim (text::replace (text::drop line (heading_marks_end line 0i32)) " (test)" "")
 
 :~ ^ index_tests
-    (real_wanted : bool) (xs : cells) (i : i32) (last : string) (title : string) (used : rows) (acc : list test_row)
+    (real_wanted : bool) (xs : cells) (i : i32) (last : option string) (title : option string) (used : rows)
+    (acc : list test_row)
     : list test_row
     =
     ?= xs ?|
@@ -558,29 +572,29 @@
         := t = text::trim source
         ? kind = Markdown
         ?>
-            := heading = heading_test_name source
-            ? heading = "" ?> index_tests real_wanted rest (i + 1i32) last title used acc
-            |: index_tests real_wanted rest (i + 1i32) heading (heading_title source) used acc
+            ?= heading_name source ?|
+            | None => index_tests real_wanted rest (i + 1i32) last title used acc
+            | Some heading => index_tests real_wanted rest (i + 1i32) (Some heading) (nonempty (heading_title source)) used acc
         |? kind = SpiralCode && test_cell t && spir_cell t = real_wanted
         ?>
-            := base = ? last = "" ?> "cell" |: last
+            := base = or_name "cell" last
             := n = count_row used base
             := name = explicit_name t (? n = 0i32 ?> base |: base ++ "_" ++ text::show_i32 (n + 1i32))
             := realm = ? real_wanted ?> RealRealm |: SpiRealm
-            := shown = ? title = "" ?> name |: title
+            := shown = or_name name title
             := row = { at = i; name; mode = test_mode_of t; realm; symbol = test_symbol name; shown }
             index_tests real_wanted rest (i + 1i32) last title (base :: used) (row :: acc)
         |: index_tests real_wanted rest (i + 1i32) last title used acc
 
 := test_index (src : string) : string =
     := xs = load src
-    := rows_found = index_tests !+ xs 0i32 "" "" [] (index_tests !- xs 0i32 "" "" [] [])
+    := rows_found = index_tests !+ xs 0i32 None None [] (index_tests !- xs 0i32 None None [] [])
     sm'::concat_list "\n" (listm::map row_text (listm::rev rows_found))
 
 := policy_blocks (policy : test_policy) (xs : cells) : cells =
     ?= policy ?|
     | DropTests => xs
-    | KeepTests => name_tests xs "" [] []
+    | KeepTests => name_tests xs None [] []
 
 := export_text (kind : export_kind) (policy : test_policy) (src : string) : string =
     emit_spi (formatted (keep_docs (export_docs kind (policy_blocks policy (export_blocks kind (load src) [])))) [])
@@ -738,6 +752,15 @@
 := close_open (code : rows) (targets : rows) (real_mode : bool) (acc : cells) : cells =
     ? no_rows code ?> code_cell targets real_mode acc |: code_cell (append_rows targets code) real_mode acc
 
+:= test_flag_row (line : string) : bool = text::starts_with line "///- " && not (text::contains line "--package")
+
+:= directive_row (line : string) : bool = text::starts_with line "///>" || test_flag_row line
+
+:~ ^ split_directives (xs : rows) (acc : rows) : rows * rows =
+    ?= xs ?|
+    | x :: rest ?& directive_row x => split_directives rest (x :: acc)
+    | _ => rev_rows acc [], xs
+
 :~ open_step
     (line : string) (code : rows) (targets : rows) (real_mode : bool) (acc : cells)
     : spi_mode * rows * cells
@@ -748,8 +771,9 @@
     |:
         ?= header_of line ?|
         | Some (name, modes) =>
-            := opened = { name; modes; targets; body = []; form = WellFormed; last = -1i32 }
-            InTest opened, [], close_open code [] real_mode acc
+            := directives, rest_code = split_directives code []
+            := opened = { name; modes; targets = append_rows targets directives; body = []; form = WellFormed; last = -1i32 }
+            InTest opened, [], close_open rest_code [] real_mode acc
         | None =>
             ? test_like line
             ?>
@@ -864,20 +888,20 @@
 
 := kind_test_name (kind : cell_kind) : string = ?= kind ?| NamedTest (_, name) => name | _ => ""
 
-:~ ^ name_tested (xs : cells) (last : string) (spi_used : rows) (real_used : rows) (acc : cells) : cells =
+:~ ^ name_tested (xs : cells) (last : option string) (spi_used : rows) (real_used : rows) (acc : cells) : cells =
     ?= xs ?|
     | [] => acc
     | (kind, source) :: rest =>
         ? kind = Markdown
         ?>
-            := heading = heading_test_name source
-            name_tested rest (? heading = "" ?> last |: heading) spi_used real_used ((kind, source) :: acc)
+            := last2 = ?= heading_name source ?| Some heading => Some heading | None => last
+            name_tested rest last2 spi_used real_used ((kind, source) :: acc)
         |? test_named_kind kind
         ?>
             := realm = realm_of kind
             := used = realm_rows realm spi_used real_used
             := name = kind_test_name kind
-            := base = ? last = "" ?> "cell" |: last
+            := base = or_name "cell" last
             := n = count_row used base
             := derived = ? n = 0i32 ?> base |: base ++ "_" ++ text::show_i32 (n + 1i32)
             := spi_more = spi_row realm base spi_used
@@ -890,7 +914,7 @@
                 := shown = ? heading = name ?> source |: with_name source name
                 := spi_named = spi_row realm heading spi_used
                 := real_named = real_row realm heading real_used
-                name_tested rest heading spi_named real_named (
+                name_tested rest (nonempty heading) spi_named real_named (
                     (SpiralCode, shown) :: ((Markdown, heading_source) :: acc)
                 )
         |: name_tested rest last spi_used real_used ((kind, source) :: acc)
@@ -914,6 +938,6 @@
 := from_spi_bounded (spi : string) (spir : string) (spi_bounds : string) (spir_bounds : string) : string =
     := spi_doc = rev_cells (spi_cells spi spi_bounds !- []) []
     := real_doc = rev_cells (spi_cells spir spir_bounds !+ []) []
-    wire (name_tested (interleave spi_doc real_doc []) "" [] [] [])
+    wire (name_tested (interleave spi_doc real_doc []) None [] [] [])
 
 := from_spi (spi : string) (spir : string) : string = from_spi_bounded spi spir "" ""

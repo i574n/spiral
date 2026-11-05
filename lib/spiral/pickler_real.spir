@@ -1,0 +1,41 @@
+/// # pickler_real
+///- --real
+
+:< real_core
+:< pickler
+
+:= union_pick \* t. () = ? union_type_is `t ?> pickler::pick_cases `t () |: error_type "pickler: no derivation for this type"
+
+:= ^ pick_of \* t. () =
+    ?: t ?|
+    | bool => pickler::pick_bool ()
+    | option ~el => pickler::POpt `el (pick_of `el ())
+    | ~a * ~b => pickler::PPair `a `b (pick_of `a (), pick_of `b ())
+    | {} => record_pick `t ()
+    | _ => union_pick `t ()
+
+:& := size_of_type \* v. () : i32 = pickler::size `v (pick_of `v ())
+
+:& := field_index acc value =
+    := p = pick_of `(`value) ()
+    real_core::(+) (real_core::(*) acc (size_of_type `(`value) ())) (pickler::pickle `(`value) p value)
+
+:& := record_size \* t. () : i32 = record_type_fold (\ acc key => \* v. => real_core::(*) acc (size_of_type `v ())) 1i32 `t
+
+:& := same_key a b = real_core::(=) (sm'_real::symbol_to_string_real `(`a)) (sm'_real::symbol_to_string_real `(`b))
+
+:& := divisor_after \* t. key =
+    := step (seen, prod) k = \* v. => ? seen ?> (seen, real_core::(*) prod (size_of_type `v ())) |: (same_key k key, prod)
+    := _, d = record_type_fold step (!-, 1i32) `t
+    d
+
+:& := field_value \* t v. key i =
+    := at = real_core::(%) (real_core::(/) i (divisor_after `t key)) (size_of_type `v ())
+    pickler::unpickle `v (pick_of `v ()) at
+
+:& := record_encoder \* t. () = ((\ x => record_fold (\ {state key value} => field_index state value) 0i32 x) : t -> i32)
+
+:& := record_decoder \* t. () = ((\ i => record_type_map (\ key => \* v. => field_value `t `v key i) `t) : i32 -> t)
+
+:& := record_pick \* t. () =
+    pickler::wrap `t `i32 (record_encoder `t ()) (record_decoder `t ()) (pickler::pick_below (record_size `t ()))

@@ -1,0 +1,149 @@
+:< testing
+:< sm'_operators
+
+:| token_class =
+    | Keyword
+    | Variable
+    | Operator
+    | Str
+    | Paren
+    | OtherClass
+
+:! token = { line : i32; text : string; role : token_class }
+
+:| arm_kind =
+    | ToName
+    | OfName
+
+:! arm = { kind : arm_kind; line : i32; case_name : string; literal : string }
+
+:! finding = { kind : arm_kind; first_line : i32; arms : i32; cases : list string }
+
+:= class_of (name : string) : token_class =
+    ?= name ?|
+    | "keyword" => Keyword
+    | "variable" => Variable
+    | "operator" => Operator
+    | "string" => Str
+    | "parenthesis" => Paren
+    | _ => OtherClass
+
+:= token_of (source_lines : array string) (row : string) : option token =
+    := fields = sm'::split "\t" row |> array
+    ? am'::length fields < 4i32 ?> None
+    |:
+        := line = am'::index 0i32 fields |> convert::convert_i32
+        := from = am'::index 1i32 fields |> convert::convert_i32
+        := near = am'::index 2i32 fields |> convert::convert_i32
+        ? line >= am'::length source_lines ?> None
+        |: Some ({ line = line; text = sm'::substring from (near - from) (am'::index line source_lines); role = class_of (am'::index 3i32 fields) } |> token)
+
+:= normalized (s : string) : string =
+    sm'::to_lower s |> sm'::replace "_" "" |> sm'::replace "-" ""
+
+:= is_operator (text : string) ((token t) : token) : bool =
+    ?= t::role ?|
+    | Operator => t::text = text
+    | _ => !-
+
+:= is_str ((token t) : token) : bool =
+    ?= t::role ?|
+    | Str => !+
+    | _ => !-
+
+:= case_word ((token t) : token) : option string =
+    ?= t::role ?|
+    | Variable =>
+        := c = sm'::index 0i32 t::text
+        ? c >= 'A' && c <= 'Z' ?> Some t::text |: None
+    | _ => None
+
+:= text_of ((token t) : token) : string = t::text
+
+:~ named (kind : arm_kind) (line : i32) (name : option string) (literal : token) : option arm =
+    ?= name ?|
+    | Some name =>
+        := literal = text_of literal
+        ? normalized name = normalized literal ?> Some ({ kind = kind; line = line; case_name = name; literal = literal } |> arm) |: None
+    | None => None
+
+:~ to_name_arm (line : i32) (bar : token) (name : token) (arrow : token) (q1 : token) (literal : token) (q2 : token) : option arm =
+    ? is_operator "|" bar && is_operator "=>" arrow && is_str q1 && is_str literal && is_str q2 ?> named ToName line (case_word name) literal |: None
+
+:~ of_name_arm (line : i32) (bar : token) (q1 : token) (literal : token) (q2 : token) (arrow : token) (name : token) : option arm =
+    ? is_operator "|" bar && is_operator "=>" arrow && is_str q1 && is_str literal && is_str q2 ?> named OfName line (case_word name) literal |: None
+
+:~ arm_of (line : i32) (ts : list token) : option arm =
+    ?= ts ?|
+    | a :: b :: c :: d :: e :: f :: [] =>
+        ?= to_name_arm line a b c d e f ?|
+        | Some found => Some found
+        | None => of_name_arm line a b c d e f
+    | a :: b :: c :: d :: e :: f :: g :: [] =>
+        ?= to_name_arm line a b d e f g ?|
+        | Some found => Some found
+        | None => of_name_arm line a b c d e g
+    | _ => None
+
+:~ push_arm (line : i32) (current : list token) (arms : list arm) : list arm =
+    ?= arm_of line (listm::rev current) ?|
+    | Some a => a :: arms
+    | None => arms
+
+:~ ^ arms_from (tokens : array token) (i : i32) (line : i32) (current : list token) (arms : list arm) : list arm =
+    ? i >= am'::length tokens ?> listm::rev (push_arm line current arms)
+    |:
+        := tk : token = am'::index i tokens
+        ? tk::line = line ?> arms_from tokens (i + 1i32) line (tk :: current) arms
+        |: arms_from tokens (i + 1i32) tk::line [tk] (push_arm line current arms)
+
+:= same_kind (a : arm_kind) (b : arm_kind) : bool =
+    ?= a, b ?|
+    | ToName, ToName => !+
+    | OfName, OfName => !+
+    | _ => !-
+
+:= close_run (run : list arm) (found : list finding) : list finding =
+    ?= listm::rev run ?|
+    | (arm first) :: _ =>
+        := count : i32 = listm::length run
+        ? count >= 3i32 ?> ({ kind = first::kind; first_line = first::line; arms = count; cases = listm::rev run |> listm::map (\ (a : arm) => a::case_name) } |> finding) :: found |: found
+    | [] => found
+
+:~ ^ runs_from (arms : list arm) (run : list arm) (found : list finding) : list finding =
+    ?= arms ?|
+    | [] => listm::rev (close_run run found)
+    | (arm a) :: rest =>
+        ?= run ?|
+        | (arm last) :: _ =>
+            ? same_kind last::kind a::kind && a::line = last::line + 1i32 ?> runs_from rest ((arm a) :: run) found
+            |: runs_from rest [(arm a)] (close_run run found)
+        | [] => runs_from rest [(arm a)] found
+
+:= findings (source : string) (tokens_text : string) : list finding =
+    := source_lines = sm'::lines source
+    := tokens : array token = sm'::lines tokens_text |> am'::choose (token_of source_lines)
+    runs_from (arms_from tokens 0i32 (-1i32) [] []) [] []
+
+:= finding_cases ((finding f) : finding) : string =
+    f::cases |> listm::fold (\ (acc : string) (c : string) => ? acc = "" ?> c |: acc ++# "," ++# c) ""
+
+:= heal_fixture_source () : string =
+    sm'::concat_array "\n" (;[":| k ="; "    | GadtCase"; "    | HostMacro"; "    | RcWrap"; ""; ":= word (x : k) : string ="; "    ?= x ?|"; "    | GadtCase => \"gadt-case\""; "    | HostMacro => \"host-macro\""; "    | RcWrap => \"rc_wrap\""; ""; ":= of_word (s : string) : option k ="; "    ?= s ?|"; "    | \"gadt-case\" => Some GadtCase"; "    | \"host-macro\" => Some HostMacro"; "    | \"rcwrap\" => Some RcWrap"; "    | _ => None"; ""; ":= short (x : k) : string ="; "    ?= x ?|"; "    | GadtCase => \"g\""; "    | HostMacro => \"host-macro\""; "    | RcWrap => \"r\""])
+
+:= heal_fixture_tokens () : string =
+    sm'::concat_array "\n" (;["7\t4\t5\toperator"; "7\t6\t14\tvariable"; "7\t15\t17\toperator"; "7\t18\t19\tstring"; "7\t19\t28\tstring"; "7\t28\t29\tstring"; "8\t4\t5\toperator"; "8\t6\t15\tvariable"; "8\t16\t18\toperator"; "8\t19\t20\tstring"; "8\t20\t30\tstring"; "8\t30\t31\tstring"; "9\t4\t5\toperator"; "9\t6\t12\tvariable"; "9\t13\t15\toperator"; "9\t16\t17\tstring"; "9\t17\t24\tstring"; "9\t24\t25\tstring"; "13\t4\t5\toperator"; "13\t6\t7\tstring"; "13\t7\t16\tstring"; "13\t16\t17\tstring"; "13\t18\t20\toperator"; "13\t21\t25\tvariable"; "13\t26\t34\tvariable"; "14\t4\t5\toperator"; "14\t6\t7\tstring"; "14\t7\t17\tstring"; "14\t17\t18\tstring"; "14\t19\t21\toperator"; "14\t22\t26\tvariable"; "14\t27\t36\tvariable"; "15\t4\t5\toperator"; "15\t6\t7\tstring"; "15\t7\t13\tstring"; "15\t13\t14\tstring"; "15\t15\t17\toperator"; "15\t18\t22\tvariable"; "15\t23\t29\tvariable"; "20\t4\t5\toperator"; "20\t6\t14\tvariable"; "20\t15\t17\toperator"; "20\t18\t19\tstring"; "20\t19\t20\tstring"; "20\t20\t21\tstring"; "21\t4\t5\toperator"; "21\t6\t15\tvariable"; "21\t16\t18\toperator"; "21\t19\t20\tstring"; "21\t20\t30\tstring"; "21\t30\t31\tstring"])
+
+///> rust
+///> gleam
+:# findings_report_name_and_reverse_mappings_only =
+    := found = findings (heal_fixture_source ()) (heal_fixture_tokens ())
+    listm::length found |> _assert_eq 2i32
+    ?= found ?|
+    | (finding a) :: (finding b) :: [] =>
+        a::first_line |> _assert_eq 7i32
+        a::arms |> _assert_eq 3i32
+        finding_cases (finding a) |> _assert_eq "GadtCase,HostMacro,RcWrap"
+        b::first_line |> _assert_eq 13i32
+        b::arms |> _assert_eq 3i32
+    | _ => _assert_eq 0i32 1i32

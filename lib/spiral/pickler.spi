@@ -1,0 +1,365 @@
+:# pickler static =
+    :< testing
+
+/// ## pickler
+:| leaf t =
+    | LeafBool :: () -> leaf bool
+    | LeafBelow :: i32 -> leaf i32
+    | LeafEnum :: \* a. (a -> i32) * (i32 -> a) * i32 -> leaf a
+
+:== sized n a = sized_array::sized n a
+
+:== visit a = a -> (i32 -> ()) -> ()
+
+:== sink = i32 -> u8 -> ()
+
+:== source = i32 -> u8
+
+:== writer a = a -> sink -> ()
+
+:== reader a = source -> a
+
+:== codec a =
+    {
+        size : i32
+        index : a -> i32
+        value : i32 -> a
+        width : i32
+        hot : visit a
+    }
+
+:== layout a = { bytes : i32; put : writer a; get : reader a }
+
+:== ops a = codec a * layout a
+
+:| ^ pick t =
+    | PLeaf :: \* t. leaf t -> pick t
+    | POpt :: \* a. pick a -> pick (option a)
+    | PPair :: \* a b. pick a * pick b -> pick (a * b)
+    | PSized :: \* n a. i32 * pick a -> pick (sized n a)
+    | PWrap :: \* a. ops a -> pick a
+
+:= pick_bool () : pick bool = PLeaf (LeafBool ())
+
+:= pick_below (n : i32) : pick i32 = PLeaf (LeafBelow n)
+
+:= pick_sized \* n a. (p : pick a) : pick (sized n a) = PSized (~> real_core::type_lit_to_lit `n, p)
+
+:= in_range (n : i32) (x : i32) : bool = x >= 0 && x < n
+
+:= below_index (n : i32) (x : i32) : i32 = ? in_range n x ?> x |: failwith "pickler: value out of range"
+
+:= pick_enum \* a. (n : i32) (to : a -> i32) (from : i32 -> a) : pick a = PLeaf (LeafEnum (to, from, n))
+
+:= case_index \* t. (x : t) : i32 = ~> real_core::union_tag x
+
+:= case_at \* t. (i : i32) : t =
+    ~>
+        real_core::union_untag `t i
+            (\ k => \* v. => real_core::nominal_create `t (k, ()))
+            (\ _ => failwith `t "pickler: no case at that index")
+
+:= pick_cases \* t. (() : ()) : pick t = pick_enum (~> real_core::union_type_length `t) case_index case_at
+
+:= leaf_size \* t. (l : leaf t) : i32 =
+    ?= l ?|
+    | LeafBool () => 2
+    | LeafBelow n => n
+    | LeafEnum (_, _, n) => n
+
+:= leaf_index \* t. (l : leaf t) (x : t) : i32 =
+    ?= l ?|
+    | LeafBool () => ? x ?> 1 |: 0
+    | LeafBelow n => below_index n x
+    | LeafEnum (to, _, n) => below_index n (to x)
+
+:= leaf_value \* t. (l : leaf t) (i : i32) : t =
+    ?= l ?|
+    | LeafBool () => i = 1
+    | LeafBelow n => below_index n i
+    | LeafEnum (_, from, n) => from (below_index n i)
+
+:= power (b : i32) (e : i32) : i32 =
+    :~ ^ go (i : i32) (acc : i32) : i32 = ? i < e ?> go (i + 1) (acc * b) |: acc
+    go 0 1
+
+:= ^ size \* t. (p : pick t) : i32 =
+    ?= p ?|
+    | PLeaf l => leaf_size l
+    | POpt a => 1 + size a
+    | PPair (a, b) => size a * size b
+    | PSized (n, a) => power (size a) n
+    | PWrap (c, _) => c::size
+
+:= opt_index \* a. (f : a -> i32) (x : option a) : i32 =
+    ?= x ?|
+    | None => 0
+    | Some v => 1 + f v
+
+:= pair_index \* a b. (pb : pick b) (fa : a -> i32) (fb : b -> i32) ((u, v) : a * b) : i32 = fa u * size pb + fb v
+
+:= sized_index \* n a. (pa : pick a) (f : a -> i32) (x : sized n a) : i32 =
+    := r = size pa
+    :~ ^ go (j : i32) (acc : i32) : i32 =
+        ? j < sized_array::size_of x ?> go (j + 1) (acc * r + f (sized_array::item x j)) |: acc
+    go 0 0
+
+:= ^ pickle \* t. (p : pick t) (x : t) : i32 =
+    ?= p ?|
+    | PLeaf l => leaf_index l x
+    | POpt a => opt_index (pickle a) x
+    | PPair (a, b) => pair_index b (pickle a) (pickle b) x
+    | PSized (n, a) => sized_index a (pickle a) x
+    | PWrap (c, _) => c::index x
+
+:= opt_of \* a. (f : i32 -> a) (i : i32) : option a = ? i = 0 ?> None |: Some (f (i - 1))
+
+:= pair_of \* a b. (pb : pick b) (fa : i32 -> a) (fb : i32 -> b) (i : i32) : a * b = fa (i / size pb), fb (i % size pb)
+
+:= sized_of \* n a. (pa : pick a) (f : i32 -> a) (i : i32) : sized n a =
+    := r = size pa
+    := len = ~> real_core::type_lit_to_lit `n
+    sized_array::init \ j => f (i / power r (len - 1 - j) % r)
+
+:= ^ unpickle \* t. (p : pick t) (i : i32) : t =
+    ?= p ?|
+    | PLeaf l => leaf_value l i
+    | POpt a => opt_of (unpickle a) i
+    | PPair (a, b) => pair_of b (unpickle a) (unpickle b) i
+    | PSized (n, a) => sized_of a (unpickle a) i
+    | PWrap (c, _) => c::value i
+
+:= round_trips \* t. (p : pick t) : bool =
+    :~ ^ go (i : i32) : bool =
+        ? i >= size p ?> !+ |: pickle p (unpickle p i) = i && go (i + 1)
+    go 0
+
+:= ^ width \* t. (p : pick t) : i32 =
+    ?= p ?|
+    | PLeaf l => leaf_size l
+    | POpt a => 2 + width a
+    | PPair (a, b) => width a + width b
+    | PSized (n, a) => n * width a
+    | PWrap (c, _) => c::width
+
+:= opt_hot \* a. (h : visit a) (x : option a) (f : i32 -> ()) : () =
+    ?= x ?|
+    | None => f 0
+    | Some v =>
+        f 1
+        h v (\ j => f (j + 2))
+
+:= pair_hot \* a b. (pa : pick a) (ha : visit a) (hb : visit b) ((u, v) : a * b) (f : i32 -> ()) : () =
+    ha u f
+    hb v (\ j => f (j + width pa))
+
+:= sized_hot \* n a. (pa : pick a) (h : visit a) (x : sized n a) (f : i32 -> ()) : () =
+    := w = width pa
+    :~ ^ go (j : i32) : () =
+        ? j < sized_array::size_of x ?>
+            h (sized_array::item x j) (\ k => f (j * w + k))
+            go (j + 1)
+    go 0
+
+:= leaf_hot \* t. (l : leaf t) (x : t) (f : i32 -> ()) : () = f (leaf_index l x)
+
+:= ^ hot \* t. (p : pick t) (x : t) (f : i32 -> ()) : () =
+    ?= p ?|
+    | PLeaf l => leaf_hot l x f
+    | POpt a => opt_hot (hot a) x f
+    | PPair (a, b) => pair_hot a (hot a) (hot b) x f
+    | PSized (n, a) => sized_hot a (hot a) x f
+    | PWrap (c, _) => c::hot x f
+
+:= falses (n : i32) : array bool =
+    := out : array bool = create n
+    :~ ^ go (i : i32) : () =
+        ? i < n ?>
+            set out i !-
+            go (i + 1)
+    go 0
+    out
+
+:= one_hot \* t. (p : pick t) (x : t) : array bool =
+    := out = falses (width p + 1)
+    set out 0 !+
+    hot p x (\ j => set out (j + 1) !+)
+    out
+
+:= hot_count (h : array bool) : i32 =
+    :~ ^ go (i : i32) (n : i32) : i32 = ? i < length h ?> go (i + 1) (? index h i ?> n + 1 |: n) |: n
+    go 0 0
+
+:= bytes_for (n : i32) : i32 = ? n <= 256 ?> 1 |: ? n <= 65536 ?> 2 |: 4
+
+:= ^ bytes \* t. (p : pick t) : i32 =
+    ?= p ?|
+    | PLeaf l => bytes_for (leaf_size l)
+    | POpt a => 1 + bytes a
+    | PPair (a, b) => bytes a + bytes b
+    | PSized (n, a) => n * bytes a
+    | PWrap (_, l) => l::bytes
+
+:= put_le (width : i32) (value : i32) (f : sink) : () =
+    :~ ^ go (k : i32) : () =
+        ? k < width ?>
+            f k (conv ((value >>> (8 * k)) &&& 255))
+            go (k + 1)
+    go 0
+
+:= get_le (width : i32) (g : source) : i32 =
+    :~ ^ go (k : i32) (acc : i32) : i32 = ? k < width ?> go (k + 1) (acc ||| (conv (g k) <<< (8 * k))) |: acc
+    go 0 0
+
+:= leaf_put \* t. (l : leaf t) (x : t) (f : sink) : () = put_le (bytes_for (leaf_size l)) (leaf_index l x) f
+
+:= leaf_get \* t. (l : leaf t) (g : source) : t = leaf_value l (get_le (bytes_for (leaf_size l)) g)
+
+:= put_opt \* a. (w : writer a) (x : option a) (f : sink) : () =
+    ?= x ?|
+    | None => f 0 0u8
+    | Some v =>
+        f 0 1u8
+        w v (\ k => f (k + 1))
+
+:= put_pair \* a b. (sa : pick a) (pa : writer a) (pb : writer b) ((u, v) : a * b) (f : sink) : () =
+    pa u f
+    pb v (\ k => f (k + bytes sa))
+
+:= put_sized \* n a. (sa : pick a) (pa : writer a) (x : sized n a) (f : sink) : () =
+    := w = bytes sa
+    :~ ^ go (j : i32) : () =
+        ? j < sized_array::size_of x ?>
+            pa (sized_array::item x j) (\ k => f (j * w + k))
+            go (j + 1)
+    go 0
+
+:= ^ put \* t. (p : pick t) (x : t) (f : sink) : () =
+    ?= p ?|
+    | PLeaf l => leaf_put l x f
+    | POpt a => put_opt (put a) x f
+    | PPair (a, b) => put_pair a (put a) (put b) x f
+    | PSized (n, a) => put_sized a (put a) x f
+    | PWrap (_, l) => l::put x f
+
+:= get_opt \* a. (r : reader a) (g : source) : option a = ? g 0 = 0u8 ?> None |: Some (r (\ k => g (k + 1)))
+
+:= get_pair \* a b. (sa : pick a) (ra : reader a) (rb : reader b) (g : source) : a * b =
+    ra g, rb \ k => g (k + bytes sa)
+
+:= get_sized \* n a. (sa : pick a) (r : reader a) (g : source) : sized n a =
+    := w = bytes sa
+    sized_array::init \ j => r (\ k => g (j * w + k))
+
+:= ^ get \* t. (p : pick t) (g : source) : t =
+    ?= p ?|
+    | PLeaf l => leaf_get l g
+    | POpt a => get_opt (get a) g
+    | PPair (a, c) => get_pair a (get a) (get c) g
+    | PSized (n, a) => get_sized a (get a) g
+    | PWrap (_, l) => l::get g
+
+:= codec_of \* a b. (to : a -> b) (from : b -> a) (p : pick b) : codec a =
+    { size = size p; index = to >> pickle p; value = unpickle p >> from; width = width p; hot = to >> hot p }
+
+:= layout_of \* a b. (to : a -> b) (from : b -> a) (p : pick b) : layout a =
+    { bytes = bytes p; put = to >> put p; get = get p >> from }
+
+:= wrap \* a b. (to : a -> b) (from : b -> a) (p : pick b) : pick a = PWrap (codec_of to from p, layout_of to from p)
+
+:= zeros (n : i32) : array u8 =
+    := out : array u8 = create n
+    :~ ^ go (i : i32) : () =
+        ? i < n ?>
+            set out i 0u8
+            go (i + 1)
+    go 0
+    out
+
+:= encode \* t. (p : pick t) (x : t) : array u8 =
+    := out = zeros (bytes p)
+    put p x (\ k v => set out k v)
+    out
+
+:= decode \* t. (p : pick t) (b : array u8) : t = get p (\ k => index b k)
+
+:= sample () : pick (option i32 * bool) = PPair (POpt (pick_below 3), pick_bool ())
+
+:= bits3 () : pick (sized 3 bool) = pick_sized (pick_bool ())
+
+///> c
+:# a_pair_of_an_option_and_a_bool_has_8_values =
+    size (sample ()) |> _assert_eq 8i32
+
+///> c
+:# every_index_unpickles_and_pickles_back_to_itself =
+    (round_trips (sample ()), round_trips (bits3 ())) |> _assert_eq (!+, !+)
+
+///> c
+:# the_index_is_mixed_radix =
+    (pickle (sample ()) (Some 2i32, !+), pickle (sample ()) (None, !-)) |> _assert_eq (7i32, 0i32)
+
+///> c
+:# a_sized_array_of_3_bools_is_a_3_digit_binary_index =
+    := x : sized 3 bool = sized_array::init \ j => j <> 1
+    (size (bits3 ()), pickle (bits3 ()) x, width (bits3 ())) |> _assert_eq (8i32, 5i32, 6i32)
+
+///> c
+:# one_hot_sets_the_bias_bit_and_one_bit_per_choice =
+    := h = one_hot (sample ()) (Some 2i32, !+)
+    (length h, hot_count h, index h 0, index h 2, index h 5, index h 7)
+    |> _assert_eq (8i32, 4i32, !+, !+, !+, !+)
+
+:| heading =
+    | North
+    | East
+    | South
+    | West
+
+:= heading_index (h : heading) : i32 =
+    ?= h ?|
+    | North => 0
+    | East => 1
+    | South => 2
+    | West => 3
+
+:= heading_of (i : i32) : heading = ? i = 0 ?> North |: ? i = 1 ?> East |: ? i = 2 ?> South |: West
+
+:= headings () : pick (heading * bool) = PPair (pick_enum 4 heading_index heading_of, pick_bool ())
+
+///> c
+:# an_enum_is_a_bounded_index_with_its_inverse =
+    (size (headings ()), pickle (headings ()) (South, !+), unpickle (headings ()) 7i32, round_trips (headings ()))
+    |> _assert_eq (8i32, 5i32, (West, !+), !+)
+
+///> c
+///> rust
+///> lua
+:# a_payload_free_union_derives_the_same_enum_pickler =
+    := p : pick (heading * bool) = PPair (pick_cases (), pick_bool ())
+    := ~i = 7i32
+    (pickle p (South, !+), unpickle p i, round_trips p) |> _assert_eq (5i32, (West, !+), !+)
+
+///> c
+///> rust
+:# a_fixed_layout_writes_tag_bytes_and_little_endian_leaves =
+    := p = PPair (POpt (pick_below 300), pick_bool ())
+    := b = encode p (Some 258i32, !+)
+    (length b, index b 1, index b 2, decode p b) |> _assert_eq (4i32, 2u8, 1u8, (Some 258i32, !+))
+
+:== status = { hp : i32; alive : bool }
+
+:= pick_status () : pick status =
+    wrap (\ (s : status) => s::hp, s::alive) (\ (h, a) => { hp = h; alive = a }) (PPair (pick_below 4, pick_bool ()))
+
+///> c
+///> rust
+:# a_record_wraps_a_pair_of_its_fields =
+    := p = pick_status ()
+    := ~s = { hp = 3i32; alive = !+ }
+    (size p, pickle p s, unpickle p 7i32 = s, decode p (encode p s) = s, hot_count (one_hot p s))
+    |> _assert_eq (8i32, 7i32, !+, !+, 3i32)
+
+///> c
+:# only_values_below_the_bound_have_an_index =
+    (in_range 3i32 2i32, in_range 3i32 3i32, in_range 3i32 -1i32) |> _assert_eq (!+, !-, !-)

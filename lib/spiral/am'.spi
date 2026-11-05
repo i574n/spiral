@@ -18,6 +18,8 @@
         Zig = \ () => index a i
         Lean = \ () => index a i
         C = \ () => index a i
+        Pascal = \ () => index a i
+        Wgsl = \ () => index a i
     }
 
 := index_base \* el. (i : int) (ar : array_base el) : el =

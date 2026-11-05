@@ -1,0 +1,174 @@
+///- --package .
+:< sm'_operators
+
+:| side =
+    | Debit
+    | Credit
+
+:! line e p c = string * side * money::amount c
+
+:= debit \* e p c. (account : string) (x : money::amount c) : line e p c = line (account, Debit, x)
+
+:= credit \* e p c. (account : string) (x : money::amount c) : line e p c = line (account, Credit, x)
+
+:= line_side \* e p c. ((line (_, s, _)) : line e p c) : side = s
+
+:= line_value \* e p c. ((line (_, _, x)) : line e p c) : decimal::decimal = money::value_of x
+
+:= line_account \* e p c. ((line (account, _, _)) : line e p c) : string = account
+
+:= line_amount \* e p c. ((line (_, _, x)) : line e p c) : money::amount c = x
+
+:= side_total \* e p c. (wanted : side) (lines : list (line e p c)) : decimal::decimal =
+    listm::fold
+        \ total l => ? line_side l = wanted ?> decimal::add total (line_value l) |: total
+        (decimal::of_int 0i64)
+        lines
+
+:! journal e p c = list (line e p c)
+
+:= balanced \* e p c. (lines : list (line e p c)) : option (journal e p c) =
+    ? decimal::compare (side_total Debit lines) (side_total Credit lines) = 0i32 ?> Some (journal lines) |: None
+
+:= lines_of \* e p c. ((journal lines) : journal e p c) : list (line e p c) = lines
+
+:= balances \* e p c. (lines : list (line e p c)) : bool =
+    ?= balanced lines ?|
+    | Some _ => !+
+    | None => !-
+
+:= turnover \* e p c. (j : journal e p c) : decimal::decimal = side_total Debit (lines_of j)
+
+:= intercompany \* a b p c.
+    (revenue : string) (expense : string) (x : money::amount c)
+    : journal a p c * journal b p c
+    =
+    journal [ debit "due from" x; credit revenue x ], journal [ debit expense x; credit "due to" x ]
+
+:! quote a b p = money::rate a b
+
+:= quoted \* a b p. (r : money::rate a b) : quote a b p = quote r
+
+:= revalued \* e p a b.
+    (mode : money::rounding) (places : i32) ((quote r) : quote a b p) (j : journal e p a)
+    : option (journal e p b)
+    =
+    := convert (l : line e p a) : line e p b =
+        line (line_account l, line_side l, money::converted mode places (money::Direct r) (line_amount l))
+    balanced (listm::map convert (lines_of j))
+
+:! open_period e p c = list (journal e p c)
+:! closed_period e p c = list (journal e p c) * decimal::decimal
+
+:= opened \* e p c. () : open_period e p c = open_period []
+
+:= post \* e p c. (j : journal e p c) ((open_period journals) : open_period e p c) : open_period e p c =
+    open_period (j :: journals)
+
+:= close \* e p c. ((open_period journals) : open_period e p c) : closed_period e p c =
+    closed_period (
+        journals,
+        listm::fold (\ total j => decimal::add total (turnover j)) (decimal::of_int 0i64) journals
+    )
+
+:= period_turnover \* e p c. ((closed_period (_, total)) : closed_period e p c) : decimal::decimal = total
+
+:! ifrs = ()
+:! us_gaap = ()
+:! br_gaap = ()
+
+:| standard s =
+    | Ifrs :: standard ifrs
+    | UsGaap :: standard us_gaap
+    | BrGaap :: standard br_gaap
+
+:! certificate s e p c = closed_period e p c
+
+:= certified \* s e p c. (_ : standard s) (period : closed_period e p c) : certificate s e p c = certificate period
+
+:= certified_turnover \* s e p c. ((certificate period) : certificate s e p c) : decimal::decimal =
+    period_turnover period
+
+:! seller = ()
+:! buyer = ()
+:! july_2026 = ()
+:! august_2026 = ()
+
+:= same (x : decimal::decimal) (y : decimal::decimal) : bool = decimal::compare x y = 0i32
+
+:= brl (units : i64) : money::amount money::brl = money::amount_of money::Brl (decimal::of_int units)
+
+///> rust
+:# a_journal_is_built_only_when_its_sides_balance =
+    := lines : list (line seller july_2026 money::brl) =
+        [ debit "cash" (brl 100i64); credit "sales" (brl 90i64); credit "tax payable" (brl 10i64) ]
+    ?= balanced lines ?|
+    | Some j => ? same (turnover j) (decimal::of_int 100i64) = !- ?> failwith "a 100 BRL sale turns over 100 BRL"
+    | None => failwith "100 debit against 90 + 10 credit balances"
+    ? balances ([ debit "cash" (brl 100i64); credit "sales" (brl 90i64) ] : list (line seller july_2026 money::brl))
+    ?> failwith "100 debit against 90 credit does not balance"
+
+///> rust
+:# an_intercompany_sale_books_two_balanced_mirror_journals =
+    := left, right =
+        intercompany "sales" "purchases" (brl 40i64)
+        : journal seller july_2026 money::brl * journal buyer july_2026 money::brl
+    ? balances (lines_of left) = !- ?> failwith "the seller's side balances"
+    ? balances (lines_of right) = !- ?> failwith "the buyer's side balances"
+    ? same (turnover left) (turnover right) = !- ?> failwith "both sides carry the same 40 BRL"
+
+///> rust
+:# a_closed_period_certifies_the_turnover_of_its_journals =
+    := left, right =
+        intercompany "sales" "purchases" (brl 40i64)
+        : journal seller july_2026 money::brl * journal seller july_2026 money::brl
+    := book = post right (post left (opened ()))
+    ? same (period_turnover (close book)) (decimal::of_int 80i64) = !- ?> failwith "two 40 BRL journals close at 80 BRL"
+    ? same (certified_turnover (certified Ifrs (close book))) (decimal::of_int 80i64) = !-
+    ?> failwith "an IFRS certificate carries the closed period's turnover"
+
+///> rust
+:# a_journal_is_revalued_with_a_quote_of_its_own_period =
+    := sale =
+        balanced ([ debit "cash" (brl 100i64); credit "sales" (brl 100i64) ] : list (line seller july_2026 money::brl))
+    := july : quote money::brl money::eur july_2026 =
+        quoted (money::rate_of money::Brl money::Eur { units = 17i64; scale = 2i32 })
+    ?= sale ?|
+    | Some j =>
+        ?= revalued money::HalfUp 2i32 july j ?|
+        | Some eur =>
+            ? same (turnover eur) (decimal::of_int 17i64) = !- ?> failwith "100 BRL at 0.17 is 17 EUR on both sides"
+        | None => failwith "a two-line journal stays balanced after conversion"
+    | None => failwith "100 against 100 balances"
+
+///> rust
+:# a_eur_line_does_not_join_a_brl_journal fails "Unification" =
+    balanced [ debit "cash" (brl 1i64); credit "sales" (money::amount_of money::Eur (decimal::of_int 1i64)) ] |> ignore
+
+///> rust
+:# a_buyer_journal_is_not_a_seller_journal fails "Unification" =
+    := left, right =
+        intercompany "sales" "purchases" (brl 40i64)
+        : journal seller july_2026 money::brl * journal buyer july_2026 money::brl
+    [ left; right ] |> ignore
+
+///> rust
+:# a_closed_period_takes_no_more_journals fails "Unification" =
+    := left, _ =
+        intercompany "sales" "purchases" (brl 40i64)
+        : journal seller july_2026 money::brl * journal buyer july_2026 money::brl
+    post left (close (post left (opened ()))) |> ignore
+
+///> rust
+:# an_ifrs_certificate_is_not_a_us_gaap_certificate fails "Unification" =
+    := book : open_period seller july_2026 money::brl = opened ()
+    (certified Ifrs (close book) : certificate us_gaap seller july_2026 money::brl) |> ignore
+
+///> rust
+:# a_july_journal_takes_no_august_quote fails "Unification" =
+    := left, _ =
+        intercompany "sales" "purchases" (brl 40i64)
+        : journal seller july_2026 money::brl * journal buyer july_2026 money::brl
+    := august : quote money::brl money::eur august_2026 =
+        quoted (money::rate_of money::Brl money::Eur { units = 17i64; scale = 2i32 })
+    revalued money::HalfUp 2i32 august left |> ignore

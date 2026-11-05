@@ -1,0 +1,260 @@
+///- --package .
+:# export static =
+    :< testing
+
+:< sm'_operators
+:< syntax
+:< env
+:< inductive
+:< reduce
+
+:== str_part = { pre : i32; str : string }
+:== num_part = { i : i32; pre : i32 }
+:== const_part = { name : i32; us : array_base i32 }
+:== app_part = { arg : i32; fn : i32 }
+:== binder_part = { binderInfo : string; body : i32; name : i32; type_ : i32 }
+:== let_part = { body : i32; name : i32; type_ : i32; value : i32 }
+:== proj_part = { idx : i32; struct : i32; typeName : i32 }
+:== mdata_part = { expr : i32 }
+:== axiom_part = { levelParams : array_base i32; name : i32; type_ : i32 }
+:== def_part = { levelParams : array_base i32; name : i32; safety : string; type_ : i32; value : i32 }
+:== value_part = { levelParams : array_base i32; name : i32; type_ : i32; value : i32 }
+:== quot_part = { kind : string; levelParams : array_base i32; name : i32; type_ : i32 }
+:== type_part = { ctors : array_base i32; levelParams : array_base i32; name : i32; numNested : i32; numParams : i32; type_ : i32 }
+:== ctor_part = { name : i32; type_ : i32 }
+:== rec_part = { levelParams : array_base i32; name : i32; type_ : i32 }
+:== group_part = { ctors : array_base ctor_part; recs : array_base rec_part; types : array_base type_part }
+
+:== row =
+    {
+        in_ : option i32
+        il : option i32
+        ie : option i32
+        str : option str_part
+        num : option num_part
+        succ : option i32
+        max : option (array_base i32)
+        imax : option (array_base i32)
+        param : option i32
+        bvar : option i32
+        sort : option i32
+        const : option const_part
+        app : option app_part
+        lam : option binder_part
+        forallE : option binder_part
+        letE : option let_part
+        proj : option proj_part
+        natVal : option string
+        strVal : option string
+        mdata : option mdata_part
+        axiom : option axiom_part
+        def : option def_part
+        thm : option value_part
+        opaque : option value_part
+        quot : option quot_part
+        inductive : option group_part
+    }
+
+:| item =
+    | Single : decl
+    | Opaque : decl * decl
+    | Group : list inductive * bool * list (name * list name * term)
+    | QuotPackage
+    | Skipped : string
+
+:= renamed (line : string) : string = line |> sm'::replace "\"in\":" "\"in_\":" |> sm'::replace "\"type\":" "\"type_\":"
+
+:= read_row (line : string) : row = json.decode (renamed line)
+
+:~ ^ listed_from (xs : array_base i32) (i : i32) (n : i32) : list i32 = ? i >= n ?> [] |: index (array xs) i :: listed_from xs (i + 1i32) n
+
+:~ listed (xs : array_base i32) : list i32 = listed_from xs 0i32 (length (array xs))
+
+:~ joined (names : array string) (pre : i32) (part : string) : string =
+    := head = index names pre
+    ? head = "" ?> part |: head ++# "." ++# part
+
+:~ name_at (names : array string) (k : i32) : name = name (index names k)
+
+:~ names_at (names : array string) (ks : array_base i32) : list name = listm::map (\ k => name_at names k) (listed ks)
+
+:~ binder_of (info : string) : binder =
+    ?= info ?|
+    | "implicit" => Implicit
+    | "strictImplicit" => StrictImplicit
+    | "instImplicit" => InstImplicit
+    | _ => Default
+
+:~ level_of (names : array string) (levels : array level) (r : row) : level =
+    ?= r::succ, r::max, r::imax, r::param ?|
+    | Some k, _, _, _ => Succ (index levels k)
+    | _, Some pair, _, _ => Max (index levels (index (array pair) 0i32), index levels (index (array pair) 1i32))
+    | _, _, Some pair, _ => IMax (index levels (index (array pair) 0i32), index levels (index (array pair) 1i32))
+    | _, _, _, Some k => Param (name_at names k)
+    | _ => Zero
+
+:~ literal_of (text : string) : term =
+    ?= natural_of text ?|
+    | Some k => NatLit k
+    | None => BigNat text
+
+:~ binder_term (names : array string) (terms : array term) (p : binder_part) (is_pi : bool) : term =
+    := n = name_at names p::name
+    := b = binder_of p::binderInfo
+    ? is_pi ?> Pi (n, b, index terms p::type_, index terms p::body) |: Lam (n, b, index terms p::type_, index terms p::body)
+
+:~ shaped_term (names : array string) (terms : array term) (r : row) : option term =
+    ?= r::app, r::lam, r::forallE, r::letE ?|
+    | Some p, _, _, _ => Some (App (index terms p::fn, index terms p::arg))
+    | _, Some p, _, _ => Some (binder_term names terms p !-)
+    | _, _, Some p, _ => Some (binder_term names terms p !+)
+    | _, _, _, Some p => Some (Let (name_at names p::name, index terms p::type_, index terms p::value, index terms p::body))
+    | _ => None
+
+:~ leaf_term (names : array string) (levels : array level) (terms : array term) (r : row) : term =
+    ?= r::bvar, r::sort, r::const, r::proj ?|
+    | Some k, _, _, _ => BVar k
+    | _, Some k, _, _ => Sort (index levels k)
+    | _, _, Some p, _ => Const (name_at names p::name, listm::map (\ k => index levels k) (listed p::us))
+    | _, _, _, Some p => Proj (name_at names p::typeName, p::idx, index terms p::struct)
+    | _ =>
+        ?= r::natVal, r::strVal, r::mdata ?|
+        | Some s, _, _ => literal_of s
+        | _, Some s, _ => StrLit s
+        | _, _, Some p => index terms p::expr
+        | _ => Const (name "unknown-expression", [])
+
+:~ term_of (names : array string) (levels : array level) (terms : array term) (r : row) : term =
+    ?= shaped_term names terms r ?|
+    | Some t => t
+    | None => leaf_term names levels terms r
+
+:~ name_row (names : array string) (k : i32) (r : row) : () =
+    ?= r::str, r::num ?|
+    | Some s, _ => set names k (joined names s::pre s::str)
+    | _, Some m => set names k (joined names m::pre (sm'::obj_to_string m::i))
+    | _ => ()
+
+:~ stored (names : array string) (levels : array level) (terms : array term) (r : row) : () =
+    ?= r::in_, r::il, r::ie ?|
+    | Some k, _, _ => name_row names k r
+    | _, Some k, _ => set levels k (level_of names levels r)
+    | _, _, Some k => set terms k (term_of names levels terms r)
+    | _ => ()
+
+:~ ^ ctor_named (ctors : list ctor_part) (k : i32) : option ctor_part =
+    ?= ctors ?|
+    | c :: rest => ? c::name = k ?> Some c |: ctor_named rest k
+    | [] => None
+
+:~ ^ ctor_list (xs : array_base ctor_part) (i : i32) (n : i32) : list ctor_part = ? i >= n ?> [] |: index (array xs) i :: ctor_list xs (i + 1i32) n
+
+:~ ^ rec_list (xs : array_base rec_part) (i : i32) (n : i32) : list rec_part = ? i >= n ?> [] |: index (array xs) i :: rec_list xs (i + 1i32) n
+
+:~ ^ type_list (xs : array_base type_part) (i : i32) (n : i32) : list type_part = ? i >= n ?> [] |: index (array xs) i :: type_list xs (i + 1i32) n
+
+:~ ^ ctors_of (names : array string) (terms : array term) (all : list ctor_part) (ks : list i32) : list (name * term) =
+    ?= ks ?|
+    | k :: rest =>
+        ?= ctor_named all k ?|
+        | Some c => (name_at names c::name, index terms c::type_) :: ctors_of names terms all rest
+        | None => ctors_of names terms all rest
+    | [] => []
+
+:~ family_of (names : array string) (terms : array term) (all : list ctor_part) (t : type_part) : inductive =
+    Inductive (name_at names t::name, names_at names t::levelParams, t::numParams, index terms t::type_, ctors_of names terms all (listed t::ctors))
+
+:~ ^ any_nested (ts : list type_part) : bool =
+    ?= ts ?|
+    | t :: rest => t::numNested > 0i32 || any_nested rest
+    | [] => !-
+
+:~ group_item (names : array string) (terms : array term) (g : group_part) : item =
+    := all = ctor_list g::ctors 0i32 (length (array g::ctors))
+    := types = type_list g::types 0i32 (length (array g::types))
+    := nested = any_nested types
+    := recs = listm::map (\ (r : rec_part) => (name_at names r::name, names_at names r::levelParams, index terms r::type_)) (rec_list g::recs 0i32 (length (array g::recs)))
+    Group (listm::map (\ t => family_of names terms all t) types, nested, recs)
+
+:~ def_item (names : array string) (terms : array term) (p : def_part) : item =
+    := n = name_at names p::name
+    := ls = names_at names p::levelParams
+    ?= p::safety ?|
+    | "safe" => Single (Def (n, ls, index terms p::type_, index terms p::value))
+    | "partial" => Single (Axiom (n, ls, index terms p::type_))
+    | other => Skipped (name_text n ++# " (" ++# other ++# ")")
+
+:~ value_item (names : array string) (terms : array term) (p : value_part) (opaque : bool) : item =
+    := n = name_at names p::name
+    := ls = names_at names p::levelParams
+    := as_def = Def (n, ls, index terms p::type_, index terms p::value)
+    ? opaque ?> Opaque (Axiom (n, ls, index terms p::type_), as_def) |: Single as_def
+
+:~ item_of (names : array string) (terms : array term) (r : row) : option item =
+    ?= r::axiom, r::def, r::thm, r::opaque ?|
+    | Some p, _, _, _ => Some (Single (Axiom (name_at names p::name, names_at names p::levelParams, index terms p::type_)))
+    | _, Some p, _, _ => Some (def_item names terms p)
+    | _, _, Some p, _ => Some (value_item names terms p !-)
+    | _, _, _, Some p => Some (value_item names terms p !+)
+    | _ =>
+        ?= r::quot, r::inductive ?|
+        | Some p, _ => ? p::kind = "type" ?> Some QuotPackage |: None
+        | _, Some g => Some (group_item names terms g)
+        | _ => None
+
+:~ ^ items_from (names : array string) (levels : array level) (terms : array term) (lines : list string) (acc : list item) : list item =
+    ?= lines ?|
+    | line :: rest =>
+        := r = read_row line
+        := () = stored names levels terms r
+        ?= item_of names terms r ?|
+        | Some it => items_from names levels terms rest (it :: acc)
+        | None => items_from names levels terms rest acc
+    | [] => listm::rev acc
+
+:~ items_of (lines : list string) : list item =
+    := n : i32 = listm::length lines + 1i32
+    := names : array string = create n
+    := levels : array level = create n
+    := terms : array term = create n
+    := () = set names 0i32 ""
+    := () = set levels 0i32 Zero
+    items_from names levels terms lines []
+
+:~ item_text (it : item) : string =
+    ?= it ?|
+    | Single d => "decl " ++# decl_name d
+    | Opaque (d, _) => "opaque " ++# decl_name d
+    | Group (inds, nested, _) => (? nested ?> "nested " |: "group ") ++# sm'::obj_to_string (listm::length inds : i32)
+    | QuotPackage => "quot"
+    | Skipped why => "skipped " ++# why
+
+///> rust
+:# the_opening_lines_of_the_prelude_export_decode_to_kernel_terms =
+    := lines =
+        [
+            "{\"in\":1,\"str\":{\"pre\":0,\"str\":\"Bool\"}}"
+            "{\"il\":1,\"succ\":0}"
+            "{\"ie\":0,\"sort\":1}"
+            "{\"in\":2,\"str\":{\"pre\":1,\"str\":\"false\"}}"
+            "{\"in\":3,\"str\":{\"pre\":1,\"str\":\"true\"}}"
+            "{\"const\":{\"name\":1,\"us\":[]},\"ie\":1}"
+            "{\"in\":5,\"str\":{\"pre\":0,\"str\":\"u\"}}"
+            "{\"il\":2,\"param\":5}"
+            "{\"in\":7,\"str\":{\"pre\":0,\"str\":\"t\"}}"
+            "{\"ie\":2,\"sort\":2}"
+            "{\"forallE\":{\"binderInfo\":\"default\",\"body\":2,\"name\":7,\"type\":1},\"ie\":3}"
+            "{\"axiom\":{\"isUnsafe\":false,\"levelParams\":[5],\"name\":3,\"type\":3}}"
+            "{\"ie\":4,\"natVal\":\"18446744073709551616\"}"
+            "{\"ie\":5,\"natVal\":\"42\"}"
+            "{\"def\":{\"all\":[2],\"hints\":\"abbrev\",\"levelParams\":[],\"name\":2,\"safety\":\"safe\",\"type\":1,\"value\":5}}"
+            "{\"ie\":6,\"strVal\":\"ab\"}"
+            "{\"def\":{\"all\":[7],\"hints\":{\"regular\":3},\"levelParams\":[],\"name\":7,\"safety\":\"unsafe\",\"type\":1,\"value\":6}}"
+        ]
+    lines |> items_of |> listm::map item_text
+    |> _assert_eq [ "decl Bool.true"; "decl Bool.false"; "skipped t (unsafe)" ]
+
+///> rust
+:# a_natural_beyond_u64_is_kept_apart_not_wrapped =
+    (natural_of "18446744073709551615", natural_of "18446744073709551616", natural_of "12x")
+    |> _assert_eq (Some 18446744073709551615u64, None, None)

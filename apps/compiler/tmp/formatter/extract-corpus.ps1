@@ -4,9 +4,10 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $repo, $rev, $filter = switch ($Which) {
-    'user' { 'C:\home\git\polyglot', 'bb856d13', '\.(spi|spir)$' }
+    'user' { (Join-Path ($env:LOCALAPPDATA ?? (Join-Path $HOME '.cache')) 'spiral-bin/corpus-src/polyglot.git'), 'bb856d13', '\.(spi|spir)$' }
     'lib-head' { 'C:\home\git\spiral', 'HEAD', '^lib/.*\.(spi|spir)$' }
 }
+if ($Which -eq 'user' -and -not (Test-Path $repo)) { git clone --bare --quiet --filter=blob:none https://github.com/fc1943s/polyglot $repo; if ($LASTEXITCODE) { throw "clone of fc1943s/polyglot into $repo failed" } }
 if (Test-Path $Out) { Remove-Item -LiteralPath $Out -Recurse -Force }
 $files = git -C $repo ls-tree -r --name-only $rev | Where-Object { $_ -match $filter }
 foreach ($f in $files) {

@@ -22,7 +22,21 @@ defmodule Mix.Tasks.Compile.SpiralDomain do
 
   defp inputs_digest(spi) do
     sources = Enum.sort(Path.wildcard(Path.join(spi, "*.spi"))) ++ [Path.join(spi, "package.spiproj")]
-    :crypto.hash(:sha256, Enum.map(sources, &[Path.basename(&1), 0, File.read!(&1), 0])) |> Base.encode16()
+    own = Enum.map(sources, &[Path.basename(&1), 0, File.read!(&1), 0])
+    packages = Enum.map(package_sources(spi), &[&1, 0, File.read!(&1), 0])
+    :crypto.hash(:sha256, [own, packages]) |> Base.encode16()
+  end
+
+  defp package_sources(spi) do
+    linked =
+      for line <- String.split(File.read!(Path.join(spi, "package.spiproj")), "\n"),
+          dir = line |> String.trim() |> String.trim_trailing("-"),
+          String.starts_with?(dir, ".."),
+          do: Path.expand(dir, spi)
+
+    Enum.flat_map([Path.expand("../../../lib/spiral", spi) | linked], fn dir ->
+      Enum.sort(Path.wildcard(Path.join(dir, "*.spi")) ++ Path.wildcard(Path.join(dir, "*.spiproj")))
+    end)
   end
 
   defp gleam_stale?(root) do

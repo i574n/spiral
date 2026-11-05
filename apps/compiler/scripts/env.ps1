@@ -137,8 +137,7 @@ function Get-SpiralScoreboardPath([string]$Mode) { Join-Path (Get-SpiralCacheDir
 function Get-SpiralPackageDir {
     $candidates = @(
         $env:SPIRAL_COMPILER_PACKAGE_DIR,
-        (Join-Path $BundleRoot '../../../deps/The-Spiral-Language/VS Code Plugin'),
-        (Join-Path $BundleRoot '../../../../polyglot/deps/The-Spiral-Language/VS Code Plugin')
+        (Join-Path $BundleRoot '../../../deps/The-Spiral-Language/VS Code Plugin')
     )
     foreach ($candidate in $candidates) {
         if ($candidate -and (Test-Path (Join-Path $candidate 'core/package.spiproj'))) { return (Resolve-Path $candidate).Path }

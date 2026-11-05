@@ -85,17 +85,17 @@ defmodule Spiral.Cells.CompilerDaemon do
 
   @doc """
   The default port for the compiler at `dll`: #{@default_port} plus #{@build_stride} times a slot (0..#{@build_slots - 1})
-  hashed from the DLL's path, size and mtime and this Cells checkout's root, so a reinstall, a second compiler build or
-  another checkout (a node mirror) gets its own daemon instead of meeting another's on a shared port. A missing DLL
-  maps to the base port.
+  hashed from the DLL's path, its stamp (dll_stamp: the DLL and its sibling SpiralCompilerCore.dll) and this Cells
+  checkout's root, so a reinstall, a core-only swap, a second compiler build or another checkout (a node mirror) gets
+  its own daemon instead of meeting another's on a shared port. A missing DLL maps to the base port.
   """
   @spec build_port(String.t(), String.t()) :: 1..65535
   def build_port(dll, cells_root \\ Path.expand("../../..", __DIR__)) do
-    case File.stat(dll, time: :posix) do
-      {:ok, %{size: size, mtime: mtime}} ->
-        @default_port + @build_stride * :erlang.phash2({Path.expand(dll), size, mtime, Path.expand(cells_root)}, @build_slots)
+    case dll_stamp(dll) do
+      {mtime, stamp} ->
+        @default_port + @build_stride * :erlang.phash2({Path.expand(dll), stamp, mtime, Path.expand(cells_root)}, @build_slots)
 
-      _ ->
+      nil ->
         @default_port
     end
   end
@@ -134,9 +134,15 @@ defmodule Spiral.Cells.CompilerDaemon do
 
   @doc false
   def dll_tag(dll) do
-    case dll_stamp(dll) do
-      {mtime, size} -> "#{mtime}-#{size}"
-      nil -> "none"
+    case File.stat(dll, time: :posix) do
+      {:ok, %{mtime: mtime, size: size}} ->
+        case File.stat(Path.join(Path.dirname(dll), "SpiralCompilerCore.dll"), time: :posix) do
+          {:ok, %{mtime: core_mtime, size: core_size}} -> "#{mtime}-#{size}-#{core_mtime}-#{core_size}"
+          _ -> "#{mtime}-#{size}"
+        end
+
+      _ ->
+        "none"
     end
   end
 
@@ -676,8 +682,17 @@ defmodule Spiral.Cells.CompilerDaemon do
   @doc false
   def dll_stamp(dll) do
     case File.stat(dll, time: :posix) do
-      {:ok, %{mtime: mtime, size: size}} -> {mtime, size}
-      _ -> nil
+      {:ok, %{mtime: mtime, size: size}} ->
+        case File.stat(Path.join(Path.dirname(dll), "SpiralCompilerCore.dll"), time: :posix) do
+          {:ok, %{mtime: core_mtime, size: core_size}} ->
+            {max(mtime, core_mtime), :erlang.phash2({size, mtime, core_size, core_mtime})}
+
+          _ ->
+            {mtime, size}
+        end
+
+      _ ->
+        nil
     end
   end
 

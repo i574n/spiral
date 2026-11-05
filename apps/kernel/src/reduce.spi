@@ -1,0 +1,575 @@
+///- --package .
+:# reduce static =
+    :< testing
+
+:< sm'_operators
+:< syntax
+:< scope
+:< env
+
+:| step =
+    | Beta
+    | Zeta
+    | Delta : string
+    | Iota : string
+    | Project : string
+
+:| whnf_result =
+    | Whnf : term * list step
+    | OutOfFuel : term * list step
+
+:~ ^ spine (t : term) (args : list term) : term * list term =
+    ?= t ?|
+    | App (f, a) => spine f (a :: args)
+    | _ => t, args
+
+:~ ^ apply_all (head : term) (args : list term) : term =
+    ?= args ?|
+    | a :: rest => apply_all (App (head, a)) rest
+    | [] => head
+
+:~ ^ nth (xs : list term) (i : i32) : option term =
+    ?= xs ?|
+    | x :: rest => ? i = 0i32 ?> Some x |: nth rest (i - 1i32)
+    | [] => None
+
+:~ ^ take (xs : list term) (i : i32) : list term =
+    ?= xs ?|
+    | x :: rest => ? i <= 0i32 ?> [] |: x :: take rest (i - 1i32)
+    | [] => []
+
+:~ ^ drop (xs : list term) (i : i32) : list term =
+    ?= xs ?|
+    | _ :: rest => ? i <= 0i32 ?> xs |: drop rest (i - 1i32)
+    | [] => []
+
+:~ ^ joined (a : list term) (b : list term) : list term =
+    ?= a ?|
+    | x :: rest => x :: joined rest b
+    | [] => b
+
+:~ ^ rev_onto (xs : list step) (acc : list step) : list step =
+    ?= xs ?|
+    | x :: rest => rev_onto rest (x :: acc)
+    | [] => acc
+
+:~ ^ rule_for (rules : list (name * term)) (c : string) : option term =
+    ?= rules ?|
+    | ((name r), rhs) :: rest => ? r = c ?> Some rhs |: rule_for rest c
+    | [] => None
+
+:~ rule_rhs (rules : list (name * term)) : term =
+    ?= rules ?|
+    | (_, rhs) :: _ => rhs
+    | [] => Sort Zero
+
+:~ ^ beta_all (t : term) (args : list term) : term =
+    ?= args ?|
+    | a :: rest =>
+        ?= t ?|
+        | Lam (_, _, _, body) => beta_all (instantiate body a) rest
+        | _ => apply_all t args
+    | [] => t
+
+:~ is_quot_mk (env : list decl) (head : term) : bool =
+    ?= head ?|
+    | Const ((name c), _) =>
+        ?= quot_kind_of env c ?|
+        | Some k =>
+            ?= k ?|
+            | QuotMk => !+
+            | _ => !-
+        | None => !-
+    | _ => !-
+
+:~ ^ is_zero_level (l : level) : bool =
+    ?= l ?|
+    | Zero => !+
+    | Max (a, b) => is_zero_level a && is_zero_level b
+    | IMax (_, b) => is_zero_level b
+    | _ => !-
+
+:~ ^ ends_in_prop (t : term) : bool =
+    ?= t ?|
+    | Pi (_, _, _, body) => ends_in_prop body
+    | Sort l => is_zero_level l
+    | _ => !-
+
+:~ ^ last_levels (us : list level) (k : i32) : list level =
+    ?= us ?|
+    | _ :: rest => ? (listm::length us : i32) <= k ?> us |: last_levels rest k
+    | [] => []
+
+:~ ^ through_params (t : term) (params : list term) : term =
+    ?= params ?|
+    | p :: rest =>
+        ?= t ?|
+        | Pi (_, _, _, body) => through_params (instantiate body p) rest
+        | _ => t
+    | [] => t
+
+
+:~ family_of_recursor (n : string) : string = sm'::slice 0i32 (sm'::length n - 5i32) n
+
+:~ axiom_of (env : list decl) (n : string) : option (list name * term) =
+    ?= find_decl env n ?|
+    | Some d =>
+        ?= d ?|
+        | Axiom (_, ps, ty) => Some (ps, ty)
+        | _ => None
+    | None => None
+
+:~ k_family (env : list decl) (n : string) : option (list name) =
+    ?= axiom_of env (family_of_recursor n) ?|
+    | Some (fps, fty) => ? ends_in_prop fty ?> Some fps |: None
+    | None => None
+
+:~ single_rule (rules : list (name * term)) : option string =
+    ?= rules ?|
+    | ((name c), _) :: rest =>
+        ?= rest ?|
+        | [] => Some c
+        | _ => None
+    | [] => None
+
+:~ is_pi (t : term) : bool =
+    ?= t ?|
+    | Pi (_, _, _, _) => !+
+    | _ => !-
+
+:~ k_ctor (np : i32) (args : list term) (cty : term) : option (list term) =
+    := conclusion = through_params cty (take args np)
+    := _, cargs = spine conclusion []
+    ? is_pi conclusion ?> None |: Some (drop cargs np)
+
+:~ k_major
+    (env : list decl) (n : string) (us : list level) (np : i32) (ni : i32) (rules : list (name * term)) (front : i32)
+    (args : list term)
+    : option (list term)
+    =
+    ?= single_rule rules, k_family env n ?|
+    | Some c, Some fps =>
+        := cls = last_levels us (listm::length fps : i32)
+        ?= axiom_of env c ?|
+        | Some (cps, cty) => k_ctor np args (instantiate_levels cty cps cls)
+        | None => None
+    | _ => None
+:~ nat_result (r : u64) : option term = Some (NatLit r)
+
+:~ bool_result (b : bool) : option term = Some (Const (name (? b ?> "Bool.true" |: "Bool.false"), []))
+
+:~ ^ gcd_of (a : u64) (b : u64) : u64 = ? b = 0u64 ?> a |: gcd_of b (a % b)
+
+:~ ^ power (a : u64) (b : u64) (acc : u64) : option term =
+    ? b = 0u64 ?> nat_result acc |: (? acc > 18446744073709551615u64 / a ?> None |: power a (b - 1u64) (acc * a))
+
+:~ powered (a : u64) (b : u64) : option term =
+    ? a <= 1u64 ?> nat_result (? b = 0u64 ?> 1u64 |: a)
+    |: power a b 1u64
+
+:~ shifted_left (a : u64) (b : u64) : option term =
+    := k : i32 = conv (? b >= 64u64 ?> 63u64 |: b)
+    ? a = 0u64 || b = 0u64 ?> nat_result a |: (? b >= 64u64 || (a >>> (64i32 - k)) > 0u64 ?> None |: nat_result (a <<< k))
+
+:~ shifted_right (a : u64) (b : u64) : option term =
+    := k : i32 = conv (? b >= 64u64 ?> 0u64 |: b)
+    nat_result (? b >= 64u64 ?> 0u64 |: a >>> k)
+
+:~ literal_value (op : string) (a : u64) (b : u64) : option term =
+    := top = 18446744073709551615u64
+    ?= op ?|
+    | "Nat.add" => ? a > top - b ?> None |: nat_result (a + b)
+    | "Nat.sub" => nat_result (? a < b ?> 0u64 |: a - b)
+    | "Nat.mul" => ? a > 0u64 && b > top / a ?> None |: nat_result (a * b)
+    | "Nat.div" => nat_result (? b = 0u64 ?> 0u64 |: a / b)
+    | "Nat.mod" => nat_result (? b = 0u64 ?> a |: a % b)
+    | "Nat.gcd" => nat_result (gcd_of a b)
+    | "Nat.pow" => powered a b
+    | "Nat.beq" => bool_result (a = b)
+    | "Nat.ble" => bool_result (a <= b)
+    | "Nat.land" => nat_result (a &&& b)
+    | "Nat.lor" => nat_result (a ||| b)
+    | "Nat.xor" => nat_result (a ^^^ b)
+    | "Nat.shiftLeft" => shifted_left a b
+    | "Nat.shiftRight" => shifted_right a b
+    | _ => None
+:~ ^ log2_of (a : u64) (acc : u64) : u64 = ? a <= 1u64 ?> acc |: log2_of (a >>> 1i32) (acc + 1u64)
+
+:~ literal_unary (op : string) (a : u64) : option term =
+    ?= op ?|
+    | "Nat.log2" => nat_result (log2_of a 0u64)
+    | _ => None
+
+:~ reduced_by (n : string) (trace : list step) (r : option term) : option whnf_result =
+    ?= r ?|
+    | Some v => Some (Whnf (v, listm::rev (Delta n :: trace)))
+    | None => None
+:~ ^ rule_name_at (rules : list (name * term)) (k : i32) : option name =
+    ?= rules ?|
+    | (c, _) :: rest => ? k <= 0i32 ?> Some c |: rule_name_at rest (k - 1i32)
+    | [] => None
+
+:~ ^ digits_from (cs : list char) (acc : u64) : option u64 =
+    ?= cs ?|
+    | c :: rest =>
+        := d : u64 = conv (sm'::char_code c) - 48u64
+        ? d > 9u64 || acc > (18446744073709551615u64 - d) / 10u64 ?> None |: digits_from rest (acc * 10u64 + d)
+    | [] => Some acc
+
+:~ natural_of (text : string) : option u64 = digits_from (sm'::to_char_list text) 0u64
+
+:~ digit_of (c : char) : i32 =
+    := k : i32 = conv (sm'::char_code c)
+    k - 48i32
+
+:~ ^ decremented (ds : list i32) : list i32 =
+    ?= ds ?|
+    | d :: rest => ? d = 0i32 ?> 9i32 :: decremented rest |: (d - 1i32) :: rest
+    | [] => []
+
+:~ ^ without_zeros (ds : list i32) : list i32 =
+    ?= ds ?|
+    | d :: rest => ? d = 0i32 ?> without_zeros rest |: ds
+    | [] => []
+
+:~ ^ digits_text (ds : list i32) : string =
+    ?= ds ?|
+    | d :: rest => sm'::obj_to_string d ++# digits_text rest
+    | [] => ""
+
+:~ predecessor_text (s : string) : string =
+    := little = listm::rev (listm::map digit_of (sm'::to_char_list s))
+    := big = without_zeros (listm::rev (decremented little))
+    ?= big ?|
+    | [] => "0"
+    | _ => digits_text big
+
+:~ literal_of_text (s : string) : term =
+    ?= natural_of s ?|
+    | Some k => NatLit k
+    | None => BigNat s
+
+:~ ^ digits_le (xs : list char) (ys : list char) : bool =
+    ?= xs, ys ?|
+    | (x :: xr), (y :: yr) => ? sm'::char_code x = sm'::char_code y ?> digits_le xr yr |: sm'::char_code x < sm'::char_code y
+    | _ => !+
+
+:~ decimal_le (x : string) (y : string) : bool =
+    := lx : i32 = sm'::length x
+    := ly : i32 = sm'::length y
+    lx < ly || (lx = ly && digits_le (sm'::to_char_list x) (sm'::to_char_list y))
+
+:~ digits_of (t : term) : option string =
+    ?= t ?|
+    | NatLit k => Some (sm'::obj_to_string k)
+    | BigNat s => Some s
+    | _ => None
+
+:~ little_digits (s : string) : list i32 = listm::rev (listm::map digit_of (sm'::to_char_list s))
+
+:~ little_text (ds : list i32) : string =
+    ?= without_zeros (listm::rev ds) ?|
+    | [] => "0"
+    | big => digits_text big
+
+:~ ^ added (a : list i32) (b : list i32) (carry : i32) : list i32 =
+    ?= a, b ?|
+    | (x :: xs), (y :: ys) => (x + y + carry) % 10i32 :: added xs ys ((x + y + carry) / 10i32)
+    | (x :: xs), [] => (x + carry) % 10i32 :: added xs [] ((x + carry) / 10i32)
+    | [], (y :: ys) => (y + carry) % 10i32 :: added [] ys ((y + carry) / 10i32)
+    | [], [] => ? carry > 0i32 ?> [ carry ] |: []
+
+:~ ^ subtracted (a : list i32) (b : list i32) (borrow : i32) : list i32 =
+    ?= a, b ?|
+    | (x :: xs), (y :: ys) => ? x - y - borrow < 0i32 ?> (x - y - borrow + 10i32) :: subtracted xs ys 1i32 |: (x - y - borrow) :: subtracted xs ys 0i32
+    | (x :: xs), [] => ? x - borrow < 0i32 ?> (x - borrow + 10i32) :: subtracted xs [] 1i32 |: (x - borrow) :: subtracted xs [] 0i32
+    | _ => []
+
+:~ ^ scaled (a : list i32) (d : i32) (carry : i32) : list i32 =
+    ?= a ?|
+    | x :: xs => (x * d + carry) % 10i32 :: scaled xs d ((x * d + carry) / 10i32)
+    | [] => ? carry > 0i32 ?> [ carry ] |: []
+
+:~ ^ multiplied (a : list i32) (b : list i32) : list i32 =
+    ?= b ?|
+    | d :: rest => added (scaled a d 0i32) (0i32 :: multiplied a rest) 0i32
+    | [] => []
+
+:~ ^ powered_digits (a : list i32) (k : u64) (acc : list i32) : list i32 = ? k = 0u64 ?> acc |: powered_digits a (k - 1u64) (multiplied acc a)
+
+:~ big_arith (op : string) (x : string) (y : string) : option term =
+    := a = little_digits x
+    := b = little_digits y
+    ?= op ?|
+    | "Nat.add" => Some (literal_of_text (little_text (added a b 0i32)))
+    | "Nat.mul" => Some (literal_of_text (little_text (multiplied a b)))
+    | "Nat.sub" => Some (literal_of_text (? decimal_le x y ?> "0" |: little_text (subtracted a b 0i32)))
+    | "Nat.pow" =>
+        ?= natural_of y ?|
+        | Some k => ? k > 4096u64 ?> None |: Some (literal_of_text (little_text (powered_digits a k [ 1i32 ])))
+        | None => None
+    | _ => None
+
+:~ big_value (op : string) (a : term) (b : term) : option term =
+    ?= digits_of a, digits_of b ?|
+    | Some x, Some y =>
+        ?= op ?|
+        | "Nat.beq" => bool_result (x = y)
+        | "Nat.ble" => bool_result (decimal_le x y)
+        | _ => big_arith op x y
+    | _ => None
+:~ small_or_big (op : string) (a : u64) (b : u64) : option term =
+    ?= literal_value op a b ?|
+    | Some r => Some r
+    | None => big_value op (NatLit a) (NatLit b)
+
+:~ literal_step (k : u64) (zero : name) (succ : name) : term =
+    ? k = 0u64 ?> Const (zero, []) |: App (Const (succ, []), NatLit (k - 1u64))
+
+:~ literal_ctor (n : string) (rules : list (name * term)) (m : term) : term =
+    ?= m ?|
+    | BigNat s =>
+        ?= rule_name_at rules 1i32 ?|
+        | Some succ => ? family_of_recursor n = "Nat" ?> App (Const (succ, []), literal_of_text (predecessor_text s)) |: m
+        | None => m
+    | NatLit k =>
+        ?= rule_name_at rules 0i32, rule_name_at rules 1i32 ?|
+        | Some zero, Some succ => ? family_of_recursor n = "Nat" ?> literal_step k zero succ |: m
+        | _ => m
+    | _ => m
+:~ ^ pi_count (t : term) : i32 =
+    ?= t ?|
+    | Pi (_, _, _, body) => 1i32 + pi_count body
+    | _ => 0i32
+
+:~ ^ projections (s : name) (major : term) (i : i32) (k : i32) : list term = ? i >= k ?> [] |: Proj (s, i, major) :: projections s major (i + 1i32) k
+
+:~ ctor_fields (env : list decl) (c : string) (np : i32) : option i32 =
+    ?= axiom_of env c ?|
+    | Some (_, cty) => Some (pi_count cty - np)
+    | None => None
+
+:~ structure_fields (env : list decl) (n : string) (np : i32) (ni : i32) (rules : list (name * term)) : option i32 =
+    ?= single_rule rules, axiom_of env (family_of_recursor n) ?|
+    | Some c, Some (_, fty) => ? ni > 0i32 || ends_in_prop fty ?> None |: ctor_fields env c np
+    | _ => None
+:~ constant_named (f : term) (c : string) : bool =
+    ?= f ?|
+    | Const ((name n), _) => n = c
+    | _ => !-
+
+:~ succ_literal (o : option term) : option term =
+    ?= o ?|
+    | Some (NatLit k) => ? k = 18446744073709551615u64 ?> Some (BigNat "18446744073709551616") |: Some (NatLit (k + 1u64))
+    | _ => None
+:~ ^ whnf_with (env : list decl) (t : term) (fuel : i32) (trace : list step) : whnf_result =
+    := head, args = spine t []
+    ?= head ?|
+    | Lam (_, _, _, body) =>
+        ?= args ?|
+        | a :: rest =>
+            ? fuel <= 0i32 ?> OutOfFuel (t, listm::rev trace)
+            |: whnf_with env (apply_all (instantiate body a) rest) (fuel - 1i32) (Beta :: trace)
+        | [] => Whnf (t, listm::rev trace)
+    | Let (_, _, v, body) =>
+        ? fuel <= 0i32 ?> OutOfFuel (t, listm::rev trace)
+        |: whnf_with env (apply_all (instantiate body v) args) (fuel - 1i32) (Zeta :: trace)
+    | Const ((name n), us) =>
+        ?= quot_kind_of env n ?|
+        | Some k => quot_step env t n k args fuel trace
+        | None => constant_step env t n us args fuel trace
+    | Proj (s, i, x) => proj_step env t s i x args fuel trace
+    | _ => Whnf (t, listm::rev trace)
+:& :~ proj_step
+    (env : list decl) (t : term) (s : name) (i : i32) (x : term) (args : list term) (fuel : i32) (trace : list step)
+    : whnf_result
+    =
+    ?= recursor_rules env (name_text s ++# ".rec") ?|
+    | None => Whnf (t, listm::rev trace)
+    | Some (_, np, _, rules, _) =>
+        ?= whnf_with env x fuel [] ?|
+        | OutOfFuel _ => OutOfFuel (t, listm::rev trace)
+        | Whnf (m, steps) =>
+            := c_head, cargs = spine m []
+            := left = fuel - (listm::length steps : i32)
+            := so_far = rev_onto steps trace
+            ?= c_head ?|
+            | Const ((name c), _) =>
+                ?= rule_for rules c, nth cargs (np + i) ?|
+                | Some _, Some field =>
+                    ? left <= 0i32
+                    ?> OutOfFuel (t, listm::rev so_far)
+                    |: whnf_with env (apply_all field args) (left - 1i32) (Project (name_text s) :: so_far)
+                | _ => Whnf (t, listm::rev trace)
+            | _ => Whnf (t, listm::rev trace)
+:& :~ constant_step
+    (env : list decl) (t : term) (n : string) (us : list level) (args : list term) (fuel : i32) (trace : list step)
+    : whnf_result
+    =
+    ?= recursor_rules env n ?|
+    | Some (rec_ps, np, ni, rules, nfront) => iota env t n rec_ps us np ni rules nfront args fuel trace
+    | None =>
+        ?= literal_op env n args fuel trace ?|
+        | Some reduced => reduced
+        | None =>
+            ?= unfold_at env n us ?|
+            | Some value =>
+                ? fuel <= 0i32 ?> OutOfFuel (t, listm::rev trace)
+                |: whnf_with env (apply_all value args) (fuel - 1i32) (Delta n :: trace)
+            | None => Whnf (t, listm::rev trace)
+:& :~ literal_arg (env : list decl) (t : term) (fuel : i32) : option term =
+    ?= whnf_with env t fuel [] ?|
+    | Whnf (w, _) => literal_view env w fuel
+    | OutOfFuel _ => None
+:& :~ literal_view (env : list decl) (w : term) (fuel : i32) : option term =
+    ?= w ?|
+    | NatLit _ => Some w
+    | BigNat _ => Some w
+    | Const ((name c), _) => ? c = "Nat.zero" ?> Some (NatLit 0u64) |: None
+    | App (f, a) => ? constant_named f "Nat.succ" ?> succ_literal (literal_arg env a fuel) |: None
+    | _ => None
+:& :~ literal_op (env : list decl) (n : string) (args : list term) (fuel : i32) (trace : list step) : option whnf_result =
+    ?= args ?|
+    | x :: y :: [] =>
+        ?= literal_value n 0u64 1u64 ?|
+        | Some _ =>
+            ?= literal_arg env x fuel, literal_arg env y fuel ?|
+            | Some (NatLit a), Some (NatLit b) => reduced_by n trace (small_or_big n a b)
+            | Some a, Some b => reduced_by n trace (big_value n a b)
+            | _ => None
+        | None => None
+    | x :: [] =>
+        ?= literal_unary n 0u64 ?|
+        | Some _ =>
+            ?= literal_arg env x fuel ?|
+            | Some (NatLit a) => reduced_by n trace (literal_unary n a)
+            | _ => None
+        | None => None
+    | _ => None
+:& :~ quot_step
+    (env : list decl) (t : term) (n : string) (k : quot_kind) (args : list term) (fuel : i32) (trace : list step)
+    : whnf_result
+    =
+    ?= k ?|
+    | QuotLift => quot_reduce env t n 5i32 args fuel trace
+    | QuotInd => quot_reduce env t n 4i32 args fuel trace
+    | _ => Whnf (t, listm::rev trace)
+:& :~ quot_reduce
+    (env : list decl) (t : term) (n : string) (major_at : i32) (args : list term) (fuel : i32) (trace : list step)
+    : whnf_result
+    =
+    ?= nth args major_at ?|
+    | None => Whnf (t, listm::rev trace)
+    | Some major =>
+        ?= whnf_with env major fuel [] ?|
+        | OutOfFuel _ => OutOfFuel (t, listm::rev trace)
+        | Whnf (m, steps) =>
+            := mk_head, mk_args = spine m []
+            ?= nth mk_args 2i32 ?|
+            | Some a =>
+                ?= nth args 3i32 ?|
+                | Some f =>
+                    := left = fuel - (listm::length steps : i32)
+                    := so_far = rev_onto steps trace
+                    ? not (is_quot_mk env mk_head)
+                    ?> Whnf (t, listm::rev trace)
+                    |? left <= 0i32
+                    ?> OutOfFuel (t, listm::rev so_far)
+                    |: whnf_with env (apply_all (App (f, a)) (drop args (major_at + 1i32))) (left - 1i32) (Iota n :: so_far)
+                | None => Whnf (t, listm::rev trace)
+            | None => Whnf (t, listm::rev trace)
+:& :~ iota
+    (env : list decl) (t : term) (n : string) (rec_ps : list name) (us : list level) (np : i32) (ni : i32)
+    (rules : list (name * term)) (front : i32) (args : list term) (fuel : i32) (trace : list step)
+    : whnf_result
+    =
+   ?= nth args (front + ni) ?|
+    | None => Whnf (t, listm::rev trace)
+    | Some major =>
+        ?= whnf_with env major fuel [] ?|
+        | OutOfFuel _ => OutOfFuel (t, listm::rev trace)
+        | Whnf (m, steps) =>
+            := c_head, cargs = spine (literal_ctor n rules m) []
+            := left = fuel - (listm::length steps : i32)
+            := so_far = rev_onto steps trace
+            ?= c_head ?|
+            | Const ((name c), _) =>
+                ?= rule_for rules c ?|
+                | Some rhs =>
+                    := reduct = beta_all (instantiate_levels rhs rec_ps us) (joined (take args front) (drop cargs np))
+                    := rest = drop args (front + ni + 1i32)
+                    ? left <= 0i32 ?> OutOfFuel (t, listm::rev so_far)
+                    |: whnf_with env (apply_all reduct rest) (left - 1i32) (Iota n :: so_far)
+                | None => k_iota env t n rec_ps us np ni rules front args left so_far trace
+            | _ => k_iota env t n rec_ps us np ni rules front args left so_far trace
+:& :~ k_iota
+    (env : list decl) (t : term) (n : string) (rec_ps : list name) (us : list level) (np : i32) (ni : i32)
+    (rules : list (name * term)) (front : i32) (args : list term) (left : i32) (so_far : list step) (trace : list step)
+    : whnf_result
+    =
+    ?= k_major env n us np ni rules front args ?|
+    | Some idx ?& indices_agree env idx (take (drop args front) ni) left =>
+        := reduct = beta_all (instantiate_levels (rule_rhs rules) rec_ps us) (take args front)
+        ? left <= 0i32 ?> OutOfFuel (t, listm::rev so_far)
+        |: whnf_with env (apply_all reduct (drop args (front + ni + 1i32))) (left - 1i32) (Iota n :: so_far)
+    | _ => struct_iota env t n rec_ps us np ni rules front args left so_far trace
+:& :~ struct_iota
+    (env : list decl) (t : term) (n : string) (rec_ps : list name) (us : list level) (np : i32) (ni : i32)
+    (rules : list (name * term)) (front : i32) (args : list term) (left : i32) (so_far : list step) (trace : list step)
+    : whnf_result
+    =
+    ?= structure_fields env n np ni rules, nth args (front + ni) ?|
+    | Some k, Some major =>
+        := fields = projections (name (family_of_recursor n)) major 0i32 k
+        := reduct = beta_all (instantiate_levels (rule_rhs rules) rec_ps us) (joined (take args front) fields)
+        ? left <= 0i32 ?> OutOfFuel (t, listm::rev so_far)
+        |: whnf_with env (apply_all reduct (drop args (front + ni + 1i32))) (left - 1i32) (Iota n :: so_far)
+    | _ => Whnf (t, listm::rev trace)
+:& :~ indices_agree (env : list decl) (xs : list term) (ys : list term) (fuel : i32) : bool =
+    ?= xs ?|
+    | x :: rest =>
+        ?= ys ?|
+        | y :: more => same_whnf env x y fuel && indices_agree env rest more fuel
+        | [] => !-
+    | [] =>
+        ?= ys ?|
+        | [] => !+
+        | _ => !-
+:& :~ same_whnf (env : list decl) (x : term) (y : term) (fuel : i32) : bool = ? same_as x y ?> !+ |: whnf_same env x y fuel
+:& :~ whnf_same (env : list decl) (x : term) (y : term) (fuel : i32) : bool =
+    ?= whnf_with env x fuel [], whnf_with env y fuel [] ?|
+    | Whnf (a, _), Whnf (b, _) => same_as a b
+    | _ => !-
+
+:~ whnf (env : list decl) (t : term) (fuel : i32) : whnf_result = whnf_with env t fuel []
+
+:~ result_text (r : whnf_result) : string =
+    ?= r ?|
+    | Whnf (t, steps) => "whnf " ++# term_text t ++# " in " ++# sm'::obj_to_string (listm::length steps : i32)
+    | OutOfFuel (t, steps) => "out of fuel after " ++# sm'::obj_to_string (listm::length steps : i32)
+
+:~ identity () : term = Lam (name "x", Default, Sort Zero, BVar 0i32)
+
+:~ self_apply () : term = Lam (name "x", Default, Sort Zero, App (BVar 0i32, BVar 0i32))
+
+///> rust
+:# beta_reduces_an_applied_identity_and_records_the_step =
+    := r = whnf [] (App (identity (), FVar (name "a"))) 10i32
+    (result_text r, r) |> _assert_eq ("whnf a in 1", Whnf (FVar (name "a"), [ Beta ]))
+
+///> rust
+:# zeta_unfolds_a_let_before_beta_applies_its_value =
+    := body = Let (name "f", Sort Zero, identity (), App (BVar 0i32, FVar (name "b")))
+    whnf [] body 10i32 |> result_text |> _assert_eq "whnf b in 2"
+
+///> rust
+:# omega_runs_out_of_fuel_instead_of_looping =
+    := omega = App (self_apply (), self_apply ())
+    (whnf [] omega 5i32 |> result_text, whnf [] (FVar (name "c")) 0i32 |> result_text)
+    |> _assert_eq ("out of fuel after 5", "whnf c in 0")
+
+///> rust
+:# delta_unfolds_a_defined_constant_before_beta =
+    := env = [ Def (name "id", [], Pi (name "x", Default, Sort Zero, Sort Zero), identity ()) ]
+    whnf env (App (Const (name "id", []), FVar (name "a"))) 10i32
+    |> _assert_eq (Whnf (FVar (name "a"), [ Delta "id"; Beta ]))

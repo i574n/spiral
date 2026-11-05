@@ -1,0 +1,7 @@
+packageDir: ../../../lib
+packages:
+    |core-
+    spiral-
+    ../src-
+modules:
+    replay

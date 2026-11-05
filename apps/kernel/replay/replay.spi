@@ -1,0 +1,146 @@
+///- --package .
+:# replay static =
+    :< testing
+
+:< sm'_operators
+:< syntax
+:< env
+:< typing
+:< inductive
+:< nested
+:< reduce
+:< conversion
+:< export
+
+:== tally = { accepted : i32; refused : i32; skipped : i32; first : list string }
+
+:~ ^ same_names (a : list name) (b : list name) : bool =
+    ?= a, b ?|
+    | ((name x) :: xs), ((name y) :: ys) => x = y && same_names xs ys
+    | [], [] => !+
+    | _ => !-
+
+:~ built_in_match (env : list decl) (d : decl) : bool =
+    ?= d ?|
+    | Axiom ((name n), ps, ty) =>
+        ?= find_decl env n ?|
+        | Some (Axiom (_, qs, ty2)) => same_names ps qs && same_as ty ty2
+        | _ => !-
+    | _ => !-
+
+:~ opaque_checked (env : list decl) (axiom : decl) (checked : admitted) : admitted =
+    ?= checked ?|
+    | Admitted _ => admit env axiom
+    | Refused why => Refused why
+
+:~ admitted_by (env : list decl) (it : item) : admitted =
+    ?= it ?|
+    | Single d => ? built_in_match env d ?> Admitted env |: admit env d
+    | Opaque (axiom, as_def) => opaque_checked env axiom (admit env as_def)
+    | Group (inds, nested, _) => ? nested ?> admit_nested env inds |: admit_mutual env inds
+    | QuotPackage => admit_quotients env
+    | Skipped why => Refused (UnknownVar why)
+
+:~ noted (first : list string) (line : string) : list string = ? (listm::length first : i32) >= 20i32 ?> first |: line :: first
+
+:~ ^ recs_missing (env : list decl) (inds : list inductive) (first : list string) : list string =
+    ?= inds ?|
+    | (Inductive (n, _, _, _, _)) :: rest =>
+        ?= find_decl env (name_text n ++# ".rec") ?|
+        | Some _ => recs_missing env rest first
+        | None => recs_missing env rest (noted first ("admitted without a recursor: " ++# name_text n))
+    | [] => first
+
+:~ defeq_agrees (env : list decl) (a : term) (b : term) : bool =
+    ?= defeq_with env a b (fuel ()) ?|
+    | Same _ => !+
+    | _ => !-
+
+:~ rec_agrees (env : list decl) (d : decl) (lean_ps : list name) (lean_type : term) : bool =
+    := ours = decl_params d
+    := same_count = (listm::length ours : i32) = (listm::length lean_ps : i32)
+    same_count && defeq_agrees env (decl_type d) (instantiate_levels lean_type lean_ps (listm::map (\ p => Param p) ours))
+
+:~ ^ recs_differ (env : list decl) (recs : list (name * list name * term)) (first : list string) : list string =
+    ?= recs ?|
+    | ((name n), lean_ps, lean_type) :: rest =>
+        ?= find_decl env n ?|
+        | Some d => ? rec_agrees env d lean_ps lean_type ?> recs_differ env rest first |: recs_differ env rest (noted first ("recursor type differs from Lean's: " ++# n))
+        | None => recs_differ env rest first
+    | [] => first
+
+:~ missing_recs (env : list decl) (it : item) (first : list string) : list string =
+    ?= it ?|
+    | Group (inds, _, recs) => recs_differ env recs (recs_missing env inds first)
+    | _ => first
+
+:~ ^ replayed (env : list decl) (items : list item) (t : tally) : tally =
+    ?= items ?|
+    | it :: rest =>
+        ?= it ?|
+        | Skipped _ => replayed env rest { t ?| skipped = t::skipped + 1i32 }
+        | _ =>
+            ?= admitted_by env it ?|
+            | Admitted grown => replayed grown rest { t ?| accepted = t::accepted + 1i32; first = missing_recs grown it t::first }
+            | Refused why =>
+                := line = item_text it ++# ": " ++# sm'::obj_to_string why
+                replayed env rest { t ?| refused = t::refused + 1i32; first = noted t::first line }
+    | [] => t
+
+:~ ^ listed_lines (xs : array string) (i : i32) (n : i32) : list string = ? i >= n ?> [] |: index xs i :: listed_lines xs (i + 1i32) n
+
+:~ ^ nonempty (ls : list string) : list string =
+    ?= ls ?|
+    | l :: rest => ? l = "" ?> nonempty rest |: l :: nonempty rest
+    | [] => []
+
+:~ export_lines (path : string) : list string =
+    := xs = file_system::read_all_text path |> sm'::lines
+    ?= listed_lines xs 0i32 (length xs) ?|
+    | _ :: body => nonempty body
+    | [] => []
+
+///> rust
+:# init_prelude_replays_through_the_kernel_with_no_refusal =
+    := path = file_system::get_temp_path () ++# "/init-prelude.ndjson"
+    := t = replayed [] (items_of (export_lines path)) { accepted = 0i32; refused = 0i32; skipped = 0i32; first = [] }
+    := report = sm'::obj_to_string (t::accepted, t::refused, t::skipped) ++# "\n" ++# listm::fold (\ acc line => acc ++# line ++# "\n") "" (listm::rev t::first)
+    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-tally.txt") report
+    (t::accepted, t::refused, t::skipped, listm::rev t::first)
+    |> _assert_eq (1837i32, 0i32, 0i32, [])
+
+///> rust
+:# init_core_replays_through_the_kernel_with_no_refusal =
+    := path = file_system::get_temp_path () ++# "/init-core.ndjson"
+    := t = replayed [] (items_of (export_lines path)) { accepted = 0i32; refused = 0i32; skipped = 0i32; first = [] }
+    := report = sm'::obj_to_string (t::accepted, t::refused, t::skipped) ++# "\n" ++# listm::fold (\ acc line => acc ++# line ++# "\n") "" (listm::rev t::first)
+    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-core-tally.txt") report
+    (t::refused, t::skipped, listm::rev t::first)
+    |> _assert_eq (0i32, 0i32, [])
+
+///> rust
+:# init_data_nat_basic_replays_through_the_kernel_with_no_refusal =
+    := path = file_system::get_temp_path () ++# "/init-nat.ndjson"
+    := t = replayed [] (items_of (export_lines path)) { accepted = 0i32; refused = 0i32; skipped = 0i32; first = [] }
+    := report = sm'::obj_to_string (t::accepted, t::refused, t::skipped) ++# "\n" ++# listm::fold (\ acc line => acc ++# line ++# "\n") "" (listm::rev t::first)
+    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-nat-tally.txt") report
+    (t::refused, t::skipped, listm::rev t::first)
+    |> _assert_eq (0i32, 0i32, [])
+
+///> rust
+:# init_data_list_basic_replays_through_the_kernel_with_no_refusal =
+    := path = file_system::get_temp_path () ++# "/init-list.ndjson"
+    := t = replayed [] (items_of (export_lines path)) { accepted = 0i32; refused = 0i32; skipped = 0i32; first = [] }
+    := report = sm'::obj_to_string (t::accepted, t::refused, t::skipped) ++# "\n" ++# listm::fold (\ acc line => acc ++# line ++# "\n") "" (listm::rev t::first)
+    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-list-tally.txt") report
+    (t::refused, t::skipped, listm::rev t::first)
+    |> _assert_eq (0i32, 0i32, [])
+
+///> rust
+:# init_wf_replays_through_the_kernel_with_no_refusal =
+    := path = file_system::get_temp_path () ++# "/init-wf.ndjson"
+    := t = replayed [] (items_of (export_lines path)) { accepted = 0i32; refused = 0i32; skipped = 0i32; first = [] }
+    := report = sm'::obj_to_string (t::accepted, t::refused, t::skipped) ++# "\n" ++# listm::fold (\ acc line => acc ++# line ++# "\n") "" (listm::rev t::first)
+    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-wf-tally.txt") report
+    (t::refused, t::skipped, listm::rev t::first)
+    |> _assert_eq (0i32, 0i32, [])

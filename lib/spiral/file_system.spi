@@ -1,5 +1,6 @@
 :< sm'_operators
 :< rust_operators
+:< unsupported
 
 :# file_system static =
     :< testing
@@ -846,9 +847,17 @@
     ? read <> size ?> failwith "file_system.read_bytes / short read"
     bytes
 
+:= zig_io () : () = global "var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"
+
+:= zig_read_bytes (path : string) : array u8 =
+    zig_io ()
+    $'(std.Io.Dir.cwd().readFileAlloc(spiral_io_threaded.io(), !path, spiral_gpa, .unlimited) catch \
+        \@panic("file_system.read_bytes failed"))' : array u8
+
 := read_bytes (path : string) : array u8 =
     run_target \|
         | C => \ () => c_read_bytes path
+        | Zig => \ () => zig_read_bytes path
         | _ => \ () => am'::from_vec (read_all_bytes path)
 
 ///> c
@@ -859,11 +868,244 @@
     (length b, index b 0, index b 1) |> _assert_eq (2i32, 65u8, 66u8)
 
 ///> rust
-:# read_bytes_reads_a_file_on_rust =
-    := ~path = "spiral_read_bytes_rust.bin"
+///> zig
+:# read_bytes_reads_a_written_text_file =
+    := ~path = "spiral_read_bytes_text.bin"
     write_all_text path "AB"
     := b = read_bytes path
     (length b, index b 0, index b 1) |> _assert_eq (2i32, 65u8, 66u8)
+
+:= c_stdio () : () = global "#include <stdio.h>"
+
+:= c_open_at () : () =
+    c_stdio ()
+    global (
+        "static FILE * spiral_open_at(const char * p, long at) { FILE * f = fopen(p, \"rb\"); "
+        ^^ "if (f && fseek(f, at, SEEK_SET)) { fclose(f); f = NULL; } return f; }"
+    )
+
+:= c_read_open () : () =
+    c_stdio ()
+    global (
+        "static long spiral_read_open(FILE * f, void * d, long n) { "
+        ^^ "long r = f ? (long)fread(d, 1, (size_t)n, f) : -1; if (f) fclose(f); return r; }"
+    )
+
+:= c_read_region_global () : () =
+    c_open_at ()
+    c_read_open ()
+    global (
+        "static long spiral_read_region(const char * p, long at, void * d, long n) { "
+        ^^ "return spiral_read_open(spiral_open_at(p, at), d, n); }"
+    )
+
+:= c_read_region \* el. (path : string) (at : i32) (out : array el) (bytes : i32) : i32 =
+    c_read_region_global ()
+    $'(int32_t)spiral_read_region(!path->ptr, !at, !out->ptr, !bytes)' : i32
+
+:= c_read_into \* el. (path : string) (at : i32) (out : array el) (size : i32) : array el =
+    := bytes = size * length out
+    ? c_read_region path at out bytes <> bytes ?> failwith "file_system.read_region / short read"
+    out
+
+:~ ^ copy_prefix_from (b : array u8) (out : array u8) (i : i32) : () =
+    ? i < length out ?>
+        set out i (index b i)
+        copy_prefix_from b out (i + 1)
+
+:= read_prefix (path : string) (count : i32) : array u8 =
+    := out : array u8 = create count
+    run_target \|
+        | C => \ () => c_read_into path 0 out 1
+        | _ => \ () =>
+            copy_prefix_from (read_bytes path) out 0
+            out
+
+:= u32_le_at (b : array u8) (at : i32) : u32 =
+    := byte (k : i32) : u32 = conv (index b (at + k))
+    byte 0 ||| (byte 1 <<< 8) ||| (byte 2 <<< 16) ||| (byte 3 <<< 24)
+
+:~ ^ f32s_from (b : array u8) (out : array f32) (offset : i32) (i : i32) : () =
+    ? i < length out ?>
+        set out i (convert::f32_of_bits (u32_le_at b (offset + 4 * i)))
+        f32s_from b out offset (i + 1)
+
+:= read_f32s (path : string) (at : i32) (count : i32) : array f32 =
+    := out : array f32 = create count
+    run_target \|
+        | C => \ () => c_read_into path at out 4
+        | _ => \ () =>
+            f32s_from (read_bytes path) out at 0
+            out
+
+:= c_map_includes () : () =
+    global "#include <stdint.h>"
+    global (
+        "#ifdef _WIN32\n#include <windows.h>\n#else\n#include <sys/mman.h>\n"
+        ^^ "#include <fcntl.h>\n#include <unistd.h>\n#endif"
+    )
+
+:= c_open_win () : () =
+    global (
+        "#ifdef _WIN32\nstatic HANDLE spiral_open_win(const char * p) { "
+        ^^ "return CreateFileA(p, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL); }\n#endif"
+    )
+
+:= c_sized_win () : () =
+    global (
+        "#ifdef _WIN32\nstatic HANDLE spiral_sized_win(const char * p, long * n) { HANDLE f = spiral_open_win(p); "
+        ^^ "LARGE_INTEGER s; *n = GetFileSizeEx(f, &s) ? (long)s.QuadPart : -1; return f; }\n#endif"
+    )
+
+:= c_mapping_win () : () =
+    global (
+        "#ifdef _WIN32\nstatic HANDLE spiral_mapping_win(HANDLE f, long n) { HANDLE m = n < 0 ? NULL : "
+        ^^ "CreateFileMappingA(f, NULL, PAGE_WRITECOPY, 0, 0, NULL); CloseHandle(f); return m; }\n#endif"
+    )
+
+:= c_view_win () : () =
+    global (
+        "#ifdef _WIN32\nstatic char * spiral_view_win(HANDLE m) { "
+        ^^ "char * r = m ? (char *)MapViewOfFile(m, FILE_MAP_COPY, 0, 0, 0) : NULL; "
+        ^^ "if (m) CloseHandle(m); return r; }\n#endif"
+    )
+
+:= c_map_private_win () : () =
+    global (
+        "#ifdef _WIN32\nstatic char * spiral_map_private(const char * p, long * n) { "
+        ^^ "HANDLE f = spiral_sized_win(p, n); return spiral_view_win(spiral_mapping_win(f, *n)); }\n#endif"
+    )
+
+:= c_open_sized () : () =
+    global (
+        "#ifndef _WIN32\nstatic int spiral_open_sized(const char * p, long * n) { int fd = open(p, O_RDONLY); "
+        ^^ "if (fd >= 0) *n = (long)lseek(fd, 0, SEEK_END); return fd; }\n#endif"
+    )
+
+:= c_mmap () : () =
+    global (
+        "#ifndef _WIN32\nstatic char * spiral_mmap(int fd, long n) { void * r = mmap(NULL, n, PROT_READ | PROT_WRITE, "
+        ^^ "MAP_PRIVATE, fd, 0); close(fd); return r == MAP_FAILED ? NULL : (char *)r; }\n#endif"
+    )
+
+:= c_map_private_posix () : () =
+    global (
+        "#ifndef _WIN32\nstatic char * spiral_map_private(const char * p, long * n) { "
+        ^^ "int fd = spiral_open_sized(p, n); return fd < 0 ? NULL : spiral_mmap(fd, *n); }\n#endif"
+    )
+
+:= c_map_private_global () : () =
+    c_map_includes ()
+    c_open_win ()
+    c_sized_win ()
+    c_mapping_win ()
+    c_view_win ()
+    c_map_private_win ()
+    c_open_sized ()
+    c_mmap ()
+    c_map_private_posix ()
+
+:= c_pin_header () : () =
+    global (
+        "static void * spiral_pin_header(char * h, long count) { "
+        ^^ "((int32_t *)h)[0] = 1 << 30; ((uint32_t *)h)[1] = (uint32_t)count; return h; }"
+    )
+
+:= c_view_f32s () : () =
+    c_pin_header ()
+    global (
+        "static void * spiral_view_f32s(char * m, long n, long at, long count) { "
+        ^^ "return !m || at < 8 || (at - 8) % 4 || at + 4 * count > n ? NULL : spiral_pin_header(m + at - 8, count); }"
+    )
+
+:= c_map_f32s_global () : () =
+    global (
+        "__attribute__((noinline)) static void * spiral_map_f32s(const char * p, long at, long count) { "
+        ^^ "long n = 0; char * m = spiral_map_private(p, &n); return spiral_view_f32s(m, n, at, count); }"
+    )
+
+:= c_map_global () : () =
+    c_map_private_global ()
+    c_view_f32s ()
+    c_map_f32s_global ()
+
+:= c_map_header (path : string) (at : i32) (count : i32) : u64 =
+    c_map_global ()
+    := h : u64 = $'(uint64_t)(uintptr_t)spiral_map_f32s(!path->ptr, !at, !count)' : u64
+    ? h = 0u64 ?> failwith "file_system.map_f32s / cannot map that range"
+    h
+
+:= c_map_f32s (path : string) (at : i32) (count : i32) : array f32 =
+    := shape : array f32 = create 0
+    := h = c_map_header path at count
+    $'(__typeof__(!shape))(uintptr_t)!h' : array f32
+
+:= map_f32s (path : string) (offset : i32) (count : i32) : array f32 =
+    run_target \|
+        | C => \ () => c_map_f32s path offset count
+        | _ => \ () => read_f32s path offset count
+
+:= c_write_bytes_global () : () =
+    c_stdio ()
+    global (
+        "static void spiral_write_bytes(const char * p, const void * b, long n) { "
+        ^^ "FILE * f = fopen(p, \"wb\"); fwrite(b, 1, (size_t)n, f); fclose(f); }"
+    )
+
+:= c_write_bytes (path : string) (b : array u8) : () =
+    c_write_bytes_global ()
+    $'spiral_write_bytes(!path->ptr, !b->ptr, !b->len)' : ()
+
+:= rust_write_bytes (path : string) (b : array u8) : () =
+    := v = b |> am'::base |> am'::to_vec
+    $'std::fs::write(&*!path, &*!v).unwrap()' : ()
+
+:= zig_write_bytes (path : string) (b : array u8) : () =
+    zig_io ()
+    $'std.Io.Dir.cwd().writeFile(spiral_io_threaded.io(), .{ .sub_path = !path, .data = !b }) catch \
+        \@panic("file_system.write_bytes failed")' : ()
+
+:= fallback_write_bytes (path : string) (b : array u8) : () =
+    run_target \|
+        | Zig => \ () => zig_write_bytes path b
+        | _ => \ () => failwith "file_system.write_bytes / no arm for this backend"
+
+:= write_bytes (path : string) (b : array u8) : () =
+    run_target \|
+        | C => \ () => c_write_bytes path b
+        | Rust => \ () => rust_write_bytes path b
+        | _ => \ () => fallback_write_bytes path b
+
+:= f32_bytes () : array u8 = ;[9u8; 9u8; 9u8; 9u8; 1u8; 0u8; 128u8; 63u8; 0u8; 0u8; 0u8; 192u8]
+
+:= map_bytes () : array u8 = ;[9u8; 9u8; 9u8; 9u8; 9u8; 9u8; 9u8; 9u8; 1u8; 0u8; 128u8; 63u8; 0u8; 0u8; 0u8; 192u8]
+
+///> c
+///> rust
+///> zig
+:# map_f32s_views_floats_after_an_8_byte_header =
+    := ~path = "spiral_map_f32s.bin"
+    write_bytes path (map_bytes ())
+    := x = map_f32s path 8 2
+    (length x, index x 0, index x 1) |> _assert_eq (2i32, 1.0000001f32, -2.0f32)
+
+///> c
+///> rust
+///> zig
+:# read_f32s_reads_little_endian_floats_at_an_offset =
+    := ~path = "spiral_read_f32s.bin"
+    write_bytes path (f32_bytes ())
+    := x = read_f32s path 4 2
+    (length x, index x 0, index x 1) |> _assert_eq (2i32, 1.0000001f32, -2.0f32)
+
+///> c
+///> rust
+///> zig
+:# read_prefix_reads_the_first_bytes =
+    := ~path = "spiral_read_prefix.bin"
+    write_bytes path (f32_bytes ())
+    := head = read_prefix path 5
+    (length head, index head 3, index head 4) |> _assert_eq (5i32, 9u8, 1u8)
 
 := read_all_text (path : string) : string =
     run_target \|
@@ -916,7 +1158,7 @@
             $'std::rc::Rc::<str>::from(std::fs::read_to_string(&*!path).unwrap_or_default().as_str())' : string
         | Fsharp => \ () =>
             $'(try System.IO.File.ReadAllText(!path : string) with _ -> "")' : string
-        | _ => \ () => failwith "file_system.read_text_or_empty: no arm for this backend"
+        | _ => \ () => no_arm "file_system.read_text_or_empty"
 
 := read_text_or_empty_probe () : string =
     := path = get_temp_path () </> "spiral-read-text-or-empty.txt"

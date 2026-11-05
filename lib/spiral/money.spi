@@ -1,0 +1,89 @@
+///- --package .
+:< sm'_operators
+
+:! brl = ()
+:! eur = ()
+:! usd = ()
+:! mxn = ()
+
+:| currency c =
+    | Brl :: currency brl
+    | Eur :: currency eur
+    | Usd :: currency usd
+    | Mxn :: currency mxn
+
+:! amount c = decimal::decimal
+
+:= amount_of \* c. (_ : currency c) (value : decimal::decimal) : amount c = amount value
+
+:= value_of \* c. ((amount v) : amount c) : decimal::decimal = v
+
+:= plus \* c. ((amount a) : amount c) ((amount b) : amount c) : amount c = amount (decimal::add a b)
+
+:! rate a b = decimal::decimal
+
+:= rate_of \* a b. (_ : currency a) (_ : currency b) (value : decimal::decimal) : rate a b = rate value
+
+:= rate_value \* a b. ((rate v) : rate a b) : decimal::decimal = v
+
+:| fx_route a b =
+    | Direct :: \* a b. rate a b -> fx_route a b
+    | Via :: \* a b. (\? m. rate a m * rate m b) -> fx_route a b
+
+:| rounding =
+    | HalfUp
+    | HalfEven
+    | Floor
+
+:= rounded (mode : rounding) (places : i32) (d : decimal::decimal) : decimal::decimal =
+    ? d::scale <= places ?> d
+    |:
+        := step = decimal::power_of_ten (d::scale - places) 1i64
+        := q = decimal::floor_division d::units step
+        := twice = (d::units - q * step) * 2i64
+        := units =
+            ?= mode ?|
+            | Floor => q
+            | HalfUp => ? twice >= step ?> q + 1i64 |: q
+            | HalfEven => ? twice > step ?> q + 1i64 |? twice < step ?> q |? q % 2i64 = 0i64 ?> q |: q + 1i64
+        decimal::normalized { units = units; scale = places }
+
+:= converted \* a b. (mode : rounding) (places : i32) (route : fx_route a b) (x : amount a) : amount b =
+    := value = value_of x
+    ?= route ?|
+    | Direct r => amount (rounded mode places (decimal::multiply value (rate_value r)))
+    | Via packed =>
+        := \? m. first, second = packed
+        amount (
+            rounded mode places (decimal::multiply (decimal::multiply value (rate_value first)) (rate_value second))
+        )
+
+:= same (x : decimal::decimal) (y : decimal::decimal) : bool = decimal::compare x y = 0i32
+
+:= cents (units : i64) : decimal::decimal = { units = units; scale = 2i32 }
+
+///> rust
+:# amounts_add_in_one_currency_and_convert_through_a_route =
+    := ten = amount_of Brl (decimal::of_int 10i64)
+    ? same (value_of (plus ten (amount_of Brl (cents 250i64)))) (cents 1250i64) = !-
+    ?> failwith "10 + 2.50 BRL is 12.50 BRL"
+    := direct = Direct (rate_of Brl Eur (cents 17i64))
+    ? same (value_of (converted HalfUp 2i32 direct ten)) (cents 170i64) = !- ?> failwith "10 BRL at 0.17 is 1.70 EUR"
+    := via = Via (\? (rate_of Brl Usd (cents 18i64), rate_of Usd Eur (cents 92i64)))
+    ? same (value_of (converted HalfUp 2i32 via ten)) (cents 166i64) = !-
+    ?> failwith "10 BRL via USD (0.18 then 0.92) is 1.656, so 1.66 EUR"
+
+///> rust
+:# each_rounding_mode_breaks_ties_its_own_way =
+    := tenths (units : i64) : decimal::decimal = { units = units; scale = 1i32 }
+    ? same (rounded HalfUp 0i32 (tenths 25i64)) (decimal::of_int 3i64) = !- ?> failwith "half up: 2.5 -> 3"
+    ? same (rounded HalfEven 0i32 (tenths 25i64)) (decimal::of_int 2i64) = !- ?> failwith "half even: 2.5 -> 2"
+    ? same (rounded HalfEven 0i32 (tenths 35i64)) (decimal::of_int 4i64) = !- ?> failwith "half even: 3.5 -> 4"
+    ? same (rounded Floor 0i32 (tenths (0i64 - 25i64))) (decimal::of_int (0i64 - 3i64)) = !-
+    ?> failwith "floor: -2.5 -> -3"
+    ? same (rounded HalfUp 0i32 (tenths (0i64 - 25i64))) (decimal::of_int (0i64 - 2i64)) = !-
+    ?> failwith "half up matches decimal.round_to: -2.5 -> -2"
+
+///> rust
+:# brl_plus_eur_does_not_type fails "Unification" =
+    plus (amount_of Brl (decimal::of_int 1i64)) (amount_of Eur (decimal::of_int 1i64)) |> ignore

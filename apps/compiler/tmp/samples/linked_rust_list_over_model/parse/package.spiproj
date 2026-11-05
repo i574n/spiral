@@ -1,0 +1,7 @@
+packages:
+    |core-
+    model-
+link:
+    model-
+modules:
+    parse

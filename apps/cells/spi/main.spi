@@ -32,6 +32,7 @@
         ((\ (program : string), (rows : string) => memo::reached_program_wire program rows) : string * string -> string)
     export "from_toml" ((\ text => manifest::from_toml text) : string -> string)
     export "declares_modules" ((\ text => ? manifest::declares_modules text ?> "true" |: "false") : string -> string)
+    export "manifest_path" ((\ dir => manifest::manifest_path_text dir) : string -> string)
     export
         "source_remap"
         (

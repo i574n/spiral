@@ -86,6 +86,21 @@
 := each \* t. (fn : t -> ()) (items : list t) : () =
     items |> map fn |> ignore
 
+:~ ^ each_index (count : i32) (body : i32 -> ()) (i : i32) : () =
+    ? i < count ?>
+        body i
+        each_index count body (i + 1i32)
+
+:= c_for_index (n : i32) (f : i32 -> ()) : () =
+    global "#define SPIRAL_THREADS 1"
+    $'_Pragma("omp parallel for schedule(static)") for (int32_t i = 0; i < !n; i++){\
+        __atomic_fetch_add(&(!f)->refc, 1, __ATOMIC_RELAXED); (!f)->fptr(!f, i); }' : ()
+
+:= for_index (count : i32) (body : i32 -> ()) : () =
+    run_target \|
+        | C => \ () => c_for_index count body
+        | _ => \ () => each_index count body 0i32
+
 :# chunks_split_evenly =
     listm::init 10i32 id
     |> chunks 4i32
@@ -97,6 +112,14 @@
     |> chunks 4i32
     |> listm::length
     |> _assert_eq 0i32
+
+///> c
+///> rust
+:# for_index_visits_every_index_once =
+    := s : array i32 = create 100i32
+    for_index 100i32 \ i => set s i (i * i)
+    :~ ^ sum (i : i32) (a : i32) : i32 = ? i >= 100i32 ?> a |: sum (i + 1i32) (a + index s i)
+    sum 0i32 0i32 |> _assert_eq 328350i32
 
 ///> rust
 :# map_workers_have_room_for_deep_recursion =

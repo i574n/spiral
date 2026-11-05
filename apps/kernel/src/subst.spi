@@ -1,0 +1,47 @@
+///- --package .
+:# subst static =
+    :< testing
+
+:< sm'_operators
+:< syntax
+:< scope
+
+:~ samples () : list term =
+    [
+        BVar 0i32
+        BVar 2i32
+        FVar (name "y")
+        App (BVar 0i32, BVar 1i32)
+        Lam (name "x", Default, BVar 0i32, App (BVar 0i32, BVar 1i32))
+        Pi (name "a", Implicit, Sort Zero, Pi (name "b", Default, BVar 0i32, BVar 2i32))
+        Let (name "z", Sort Zero, BVar 0i32, App (BVar 0i32, BVar 1i32))
+    ]
+
+:~ ^ every (ts : list term) (law : term -> bool) : bool =
+    ?= ts ?|
+    | t :: rest => law t && every rest law
+    | [] => !+
+
+:~ value () : term = App (FVar (name "v"), BVar 0i32)
+
+///> rust
+:# instantiating_a_lifted_term_gives_it_back =
+    every (samples ()) (\ t => same_as (instantiate (lift t 1i32) (value ())) t) |> _assert_eq !+
+
+///> rust
+:# lifts_compose_by_adding_their_amounts =
+    every (samples ()) (\ t => same_as (lift (lift t 2i32) 3i32) (lift t 5i32)) |> _assert_eq !+
+
+///> rust
+:# substitution_commutes_with_lifting_past_the_substituted_variable =
+    := law =
+        \ t =>
+            same_as (lift (instantiate t (value ())) 1i32) (instantiate (shift_from t 1i32 1i32) (lift (value ()) 1i32))
+    every (samples ()) law |> _assert_eq !+
+
+///> rust
+:# substituting_twice_follows_the_substitution_lemma =
+    := u = App (FVar (name "u"), BVar 0i32)
+    := v = App (FVar (name "w"), BVar 1i32)
+    := law = \ t => same_as (instantiate (instantiate t u) v) (instantiate (instantiate_at t 1i32 v) (instantiate u v))
+    every (samples ()) law |> _assert_eq !+

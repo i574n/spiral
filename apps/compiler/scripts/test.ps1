@@ -2,6 +2,8 @@ param(
     [ValidateSet('single-flight', 'sf', 'hopacsota', 'hs')][string]$Mode = 'single-flight',
     [string[]]$Suite = @('smoke'),
     [string]$Filter,
+    [string[]]$ChangedBetween,
+    [string[]]$BackendsFrom,
     [string[]]$Backend,
     [int]$TimeoutSec = 0,
     [int]$Parallel = 0,
@@ -22,7 +24,42 @@ param(
 $matrix = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/matrix.psd1') -SkipLimitCheck
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $Backend = @($Backend | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
-foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all', 'fast') { throw "unknown suite '$s'" } }
+if ($BackendsFrom -and -not $Backend) {
+    $pair = @($BackendsFrom | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+    if ($pair.Count -ne 2) { throw '-BackendsFrom takes two compiler sources: before, then after' }
+    $sectionBackend = @{ Fsharp = 'Fsharp'; Rust = 'Rust'; Pascal = 'Delphi'; Zig = 'Zig'; Lean = 'Lean'; Bend = 'Bend'; Gleam = 'Gleam'; Lua = 'Lua'; Wasm = 'Wasm'; Wgsl = 'Wgsl'; Calyx = 'Calyx'; Kotlin = 'Kotlin'; Swift = 'Swift'; OpenQasm = 'OpenQasm'; Ebpf = 'Ebpf'; TypeScript = 'TypeScript'; C = 'C'; RefCounting = 'C'; Cpp = 'Cpp'; Python = 'Python' }
+    $owners = [Collections.Generic.HashSet[string]]::new()
+    $shared = $false
+    $files = $pair | ForEach-Object { , [IO.File]::ReadAllLines($_) }
+    $ownerOf = foreach ($lines in $files) {
+        $map = [string[]]::new($lines.Length); $owner = $null
+        for ($i = 0; $i -lt $lines.Length; $i++) {
+            if ($lines[$i] -match '^\s*/// ## (\w+)') { $owner = if ($Matches[1] -match '^Codegen(\w+)$') { $Matches[1] } elseif ($Matches[1] -eq 'RefCounting') { 'RefCounting' } else { $null } }
+            elseif ($lines[$i] -match '^\s*/// ### codegen(\w+)$' -and $owner) { $owner = $Matches[1] }
+            $map[$i] = $owner
+        }
+        , $map
+    }
+    $mark = { param($side, $index) $o = $ownerOf[$side][$index]; if ($o -and $sectionBackend.ContainsKey($o)) { [void]$owners.Add($sectionBackend[$o]) } else { $script:shared = $true } }
+    $a = $files[0]; $b = $files[1]; $i = 0; $j = 0
+    $same = { param($x, $y) $x + 2 -lt $a.Length -and $y + 2 -lt $b.Length -and $a[$x] -ceq $b[$y] -and $a[$x + 1] -ceq $b[$y + 1] -and $a[$x + 2] -ceq $b[$y + 2] }
+    while ($i -lt $a.Length -and $j -lt $b.Length) {
+        if ($a[$i] -ceq $b[$j]) { $i++; $j++; continue }
+        $synced = $false
+        for ($d = 1; $d -le 400 -and -not $synced; $d++) {
+            if (& $same $i ($j + $d)) { for ($k = 0; $k -lt $d; $k++) { & $mark 1 ($j + $k) }; $j += $d; $synced = $true }
+            elseif (& $same ($i + $d) $j) { for ($k = 0; $k -lt $d; $k++) { & $mark 0 ($i + $k) }; $i += $d; $synced = $true }
+        }
+        if (-not $synced) { & $mark 0 $i; & $mark 1 $j; $i++; $j++ }
+    }
+    for (; $i -lt $a.Length; $i++) { & $mark 0 $i }
+    for (; $j -lt $b.Length; $j++) { & $mark 1 $j }    if (-not $shared -and $owners.Count) { $Backend = @($owners | Sort-Object) }
+    Write-Host "-BackendsFrom: $(if ($shared) { 'a change outside the codegen sections, so every backend' } elseif ($owners.Count) { "codegen sections changed: $($Backend -join ',')" } else { 'no change found' })"
+}
+foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all', 'fast', 'linked', 'families', 'split') { throw "unknown suite '$s'" } }
+if ($Suite -contains 'linked' -and $Suite.Count -gt 1) { throw "-Suite linked builds multi-unit cases and does not combine with '$($Suite -join ',')'" }
+if ($Suite -contains 'split' -and $Suite.Count -gt 1) { throw "-Suite split cuts samples into linked units and does not combine with '$($Suite -join ',')'" }
+if ($Suite -contains 'families' -and $Suite.Count -gt 1) { throw "-Suite families runs the test-block families through Cells and does not combine with '$($Suite -join ',')'" }
 $fastSuite = $Suite -contains 'fast'
 if ($fastSuite -and $Suite.Count -gt 1) { throw "-Suite fast picks its rows from every suite and does not combine with '$($Suite -join ',')'" }
 if ($fastSuite -and ($Accept -or $Record)) { throw '-Suite fast runs a subset picked from run history: -Accept and -Record need the full suite' }
@@ -39,6 +76,7 @@ if ($Parallel -le 0) {
     $Parallel = [int][Math]::Max(1, [Math]::Min($byCpu, [Math]::Floor($freeGb / 1.5)))
 }
 if ($Accept -and $Probe) { throw '-Probe runs are never accepted: they only measure a backend against the C rows' }
+if ($ChangedBetween -and ($Accept -or $Record)) { throw '-ChangedBetween runs a subset: -Accept and -Record need the full suite' }
 if ($ReuseCompile -and ($Accept -or $Record)) { throw '-ReuseCompile replays stored compile results: -Accept and -Record compile every row' }
 if ($ReuseNative -and ($Accept -or $Record)) { throw '-ReuseNative replays stored native outcomes: -Accept and -Record run every native row' }
 if ($Accept -and $mode -ne 'single-flight') { throw '-Accept records the oracle baseline and is only valid in single-flight mode' }
@@ -65,6 +103,169 @@ $env:SPIRAL_WORKSPACE_ROOT = if ($WorkspaceRoot) { (Resolve-Path $WorkspaceRoot)
 $env:SPIRAL_COMPILER_PACKAGE_DIR = Get-SpiralPackageDir
 if (-not $env:DOTNET_GCgen0size) { $env:DOTNET_GCgen0size = '0x10000000' }
 $runStart = [DateTime]::UtcNow
+
+if ($Suite -contains 'families') {
+    $families = Join-Path $BundleRoot 'tests/families'
+    $modules = @((Get-Content -Raw (Join-Path $families 'package.spiproj')) -split "`n" | Where-Object { $_ -match '^\s+(\w+_family)\s*$' } | ForEach-Object { "$($Matches[1]).spi" })
+    $env:SPIRAL_COMPILER_DLL = $compiler
+    try { pwsh -NoProfile -File (Join-Path $PSScriptRoot 'test-blocks.ps1') -Lib $families -Files ($modules -join ',') -Out $runDir -Compiler process; $failed = $LASTEXITCODE }
+    finally { Remove-Item Env:SPIRAL_COMPILER_DLL -ErrorAction SilentlyContinue }
+    Write-Host "families $($modules.Count) files; results: $(Join-Path $runDir 'results.tsv')"
+    if ($lockHeld) { $lock.ReleaseMutex() }
+    exit ([int]($failed -ne 0))
+}
+
+if ($Suite -contains 'linked') {
+    $tools = Get-SpiralNativeTools
+    $unitExtension = @{ Rust = 'rs'; Zig = 'zig'; Gleam = 'gleam' }
+    $rows = foreach ($case in @($matrix.Linked.Keys | Sort-Object)) {
+        $spec = $matrix.Linked[$case]
+        $caseDir = Join-Path $BundleRoot $case
+        $units = @{}
+        foreach ($dir in Get-ChildItem $caseDir -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'package.spiproj') }) {
+            $proj = Get-Content -Raw (Join-Path $dir.FullName 'package.spiproj')
+            $section = { param($name) if ($proj -match "(?ms)^$($name):\s*\n((?:[ \t]+\S.*\n?)*)") { @($Matches[1] -split '\n' | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^[\w.]+-$' } | ForEach-Object { $_.TrimEnd('-') }) } else { @() } }
+            $units[$dir.Name] = @{ Dir = $dir.FullName; Packages = & $section 'packages'; Links = & $section 'link' }
+        }
+        $root = @($units.Keys | Where-Object { $name = $_; -not ($units.Values | Where-Object { $_.Packages -contains $name }) }) | Select-Object -First 1
+        $order = [System.Collections.Generic.List[string]]::new()
+        $visit = { param($u) foreach ($l in $units[$u].Links) { if (-not $order.Contains($l)) { & $visit $l } }; if (-not $order.Contains($u)) { $order.Add($u) } }
+        & $visit $root
+        foreach ($b in @($spec['Backends'] -split ',')) {
+            if ($Backend -and $b -notin $Backend) { continue }
+            $out = Join-Path $runDir "linked/$($case -replace '^samples/', '')/$b"
+            New-Item -ItemType Directory -Force $out | Out-Null
+            $row = [ordered]@{ id = $case; backend = $b; compile = 'ok'; linked = ''; native = ''; exit = ''; want = $(if ($spec['Error']) { "error: $($spec['Error'])" } else { $spec['Exit'] }); verdict = 'pass'; detail = '' }
+            foreach ($u in $order) {
+                $entry = @('main.spi', "$u.spi") | ForEach-Object { Join-Path $units[$u].Dir $_ } | Where-Object { Test-Path $_ } | Select-Object -First 1
+                Push-Location $units[$u].Dir
+                $text = (& $dotnet $compiler --backend $b (Split-Path $entry -Leaf) (Join-Path $out "$u.$($unitExtension[$b])") 2>&1 | ForEach-Object { "$_" }) -join "`n"
+                Pop-Location
+                if ($LASTEXITCODE) { $row.compile = 'error'; $row.detail = "${u}: " + ($text -replace '\s+', ' ').Substring(0, [Math]::Min(300, ($text -replace '\s+', ' ').Length)); break }
+            }
+            if ($spec['Error']) {
+                if ($row.compile -ne 'error' -or $row.detail -notmatch [regex]::Escape($spec['Error'])) { $row.verdict = 'FAIL' }
+            } elseif ($row.compile -ne 'ok') { $row.verdict = 'FAIL' }
+            else {
+                $rootText = Get-Content -Raw (Join-Path $out "$root.$($unitExtension[$b])")
+                $missing = @($units[$root].Links | Where-Object { $rootText -notmatch "\b$_(::|\.)[\w{]" })
+                if ($spec.ContainsKey('Calls')) { $missing += @($spec['Calls'] -split ',' | Where-Object { $rootText -notmatch "(::|\.)$_\(" }) }
+                $row.linked = if ($missing) { "inlined: $($missing -join ',')" } else { 'yes' }
+                if ($missing) { $row.verdict = 'FAIL' }
+                Push-Location $out
+                $built = switch ($b) {
+                    'Rust' {
+                        $externs = [System.Collections.Generic.List[string]]::new()
+                        foreach ($u in $order | Where-Object { $_ -ne $root }) {
+                            & rustc --edition 2024 --crate-type rlib --crate-name $u "$u.rs" @externs -L $out -o "lib$u.rlib" -A warnings 2>&1 | Where-Object { "$_" -match '^error' } | Select-Object -First 1 | ForEach-Object { $row.detail = "rustc ${u}: $_" }
+                            $externs.Add('--extern'); $externs.Add("$u=$out\lib$u.rlib")
+                        }
+                        & rustc --edition 2024 --crate-name $root "$root.rs" @externs -L $out -o "$root.exe" -A warnings 2>&1 | Where-Object { "$_" -match '^error' } | Select-Object -First 1 | ForEach-Object { $row.detail = "rustc ${root}: $_" }
+                        Test-Path "$root.exe"
+                    }
+                    'Zig' { & $tools.Zig build-exe -O ReleaseFast --name $root "$root.zig" 2>&1 | Select-Object -First 1 | ForEach-Object { $row.detail = "zig: $_" }; Test-Path "$root.exe" }
+                    'Gleam' {
+                        $erlBin = Split-Path $tools.Erl
+                        if (-not (($env:PATH -split [IO.Path]::PathSeparator) -contains $erlBin)) { $env:PATH = "$erlBin$([IO.Path]::PathSeparator)$env:PATH" }
+                        $proj = Join-Path $scratch 'gleam-linked'
+                        $shim = Join-Path $BundleRoot 'tests/native-shims/gleam'
+                        if (-not (Test-Path (Join-Path $proj 'gleam.toml'))) { Copy-Item $shim $proj -Recurse -Force }
+                        $keep = @(Get-ChildItem (Join-Path $shim 'src') -File | ForEach-Object Name)
+                        Get-ChildItem (Join-Path $proj 'src') -File | Where-Object { $_.Name -notin $keep } | Remove-Item -Force
+                        foreach ($u in $order) { Copy-Item "$u.gleam" (Join-Path $proj "src/$(if ($u -eq $root) { 'main' } else { $u }).gleam") -Force }
+                        Get-ChildItem -File -Filter '*_ffi.*' | Copy-Item -Destination (Join-Path $proj 'src') -Force
+                        Push-Location $proj
+                        $gleamOut = @(& $tools.Gleam build --no-print-progress 2>&1 | ForEach-Object { "$_" })
+                        $gleamOk = $LASTEXITCODE -eq 0
+                        Pop-Location
+                        if (-not $gleamOk) { $row.detail = "gleam: $(@($gleamOut | Where-Object { $_ -match 'error' }) | Select-Object -First 1)" }
+                        $gleamOk
+                    }
+                    default { $row.detail = "no native runner for linked $b"; $false }
+                }
+                if ($built) {
+                    if ($b -eq 'Gleam') { Push-Location $proj; & $tools.Gleam run --no-print-progress -m spiral_run | Out-Null; $code = $LASTEXITCODE; Pop-Location }
+                    else { & ".\$root.exe" | Out-Null; $code = $LASTEXITCODE }
+                    $row.native = 'ran'; $row.exit = "$code"; if ("$code" -ne "$($spec['Exit'])") { $row.verdict = 'FAIL' }
+                }
+                else { $row.native = 'build-fail'; $row.verdict = 'FAIL' }
+                Pop-Location
+            }
+            [pscustomobject]$row
+        }
+    }
+    $rows = @($rows)
+    $rows | Export-Csv -Delimiter "`t" -NoTypeInformation -UseQuotes Never (Join-Path $runDir 'results.tsv')
+    $rows | Format-Table id, backend, compile, linked, native, exit, want, verdict -AutoSize | Out-String -Width 200 | Write-Host
+    $failed = @($rows | Where-Object verdict -ne 'pass')
+    $failed | ForEach-Object { Write-Host "FAIL $($_.id) $($_.backend): $($_.detail)" }
+    Write-Host "linked $($rows.Count) rows, $($rows.Count - $failed.Count) pass, $($failed.Count) fail; results: $(Join-Path $runDir 'results.tsv')"
+    if ($lockHeld) { $lock.ReleaseMutex() }
+    exit ([int]($failed.Count -gt 0))
+}
+
+if ($Suite -contains 'split') {
+    $tools = Get-SpiralNativeTools
+    $build = {
+        param($b, $dir, $linked)
+        Push-Location $dir
+        $err = @()
+        if ($b -eq 'Zig') { $err = @(& $tools.Zig build-exe -O ReleaseFast --name main main.zig 2>&1 | ForEach-Object { "$_" }) }
+        elseif ($linked) {
+            $err = @(& rustc --edition 2024 --crate-type rlib --crate-name model model.rs -o libmodel.rlib -A warnings 2>&1 | ForEach-Object { "$_" } | Where-Object { $_ -match '^error' })
+            $err += @(& rustc --edition 2024 --crate-name main main.rs --extern "model=$dir\libmodel.rlib" -L $dir -o main.exe -A warnings 2>&1 | ForEach-Object { "$_" } | Where-Object { $_ -match '^error' })
+        }
+        else { $err = @(& rustc --edition 2024 --crate-name main main.rs -o main.exe -A warnings 2>&1 | ForEach-Object { "$_" } | Where-Object { $_ -match '^error' }) }
+        $code = if (Test-Path main.exe) { & .\main.exe | Out-Null; "$LASTEXITCODE" } else { 'build-fail' }
+        Pop-Location
+        $code, (@($err) | Select-Object -First 1)
+    }
+    $rows = foreach ($case in @($matrix.Split | Where-Object { -not $Filter -or $_ -match $Filter } | Sort-Object)) {
+        $sdir = Join-Path $BundleRoot $case
+        $name = Split-Path $case -Leaf
+        foreach ($b in @('Zig', 'Rust')) {
+            if ($Backend -and $b -notin $Backend) { continue }
+            $ext = @{ Zig = 'zig'; Rust = 'rs' }[$b]
+            $base = Join-Path $runDir "split/$name/$b"
+            $one = Join-Path $base 'single'; New-Item -ItemType Directory -Force $one | Out-Null
+            Push-Location $sdir; $null = & $dotnet $compiler --backend $b main.spi (Join-Path $one "main.$ext") 2>&1; Pop-Location
+            $want = (& $build $b $one $false)[0]
+            $list = @(& $dotnet $compiler split-units (Join-Path $sdir 'main.spi') --list 2>&1 | ForEach-Object { "$_" })
+            $stride = [Math]::Max(1, [Math]::Floor($list.Count / 20))
+            for ($k = $stride; $k -lt $list.Count; $k += $stride) {
+                $cut = Join-Path $base "cut$k"
+                New-Item -ItemType Directory -Force $cut | Out-Null
+                if (-not (Test-Path (Join-Path $cut 'core'))) { New-Item -ItemType Junction -Path (Join-Path $cut 'core') -Target (Join-Path $BundleRoot 'samples/core') | Out-Null }
+                $split = @(& $dotnet $compiler split-units (Join-Path $sdir 'main.spi') --cut $k --out $cut 2>&1 | ForEach-Object { "$_" })
+                if ($LASTEXITCODE) { continue }
+                $row = [ordered]@{ id = $case; backend = $b; cut = $k; want = $want; verdict = 'pass'; result = ''; detail = (($split | Select-Object -Last 1) -split 'generics by source ')[-1] }
+                $refused = $null
+                foreach ($u in @(@('model', 'model.spi', 'model'), @('app', 'main.spi', 'main'))) {
+                    Push-Location (Join-Path $cut $u[0]); $text = @(& $dotnet $compiler --backend $b $u[1] (Join-Path $cut "app/$($u[2]).$ext") 2>&1 | ForEach-Object { "$_" }); $e = $LASTEXITCODE; Pop-Location
+                    if ($e -and -not $refused) { $refused = "refused ($($u[0])): $(@($text | Where-Object { $_ -match 'ETY-\w+|TracedError|FatalError' }) | Select-Object -First 1)" }
+                }
+                if ($refused) { $row.result = $refused.Substring(0, [Math]::Min(160, $refused.Length)) }
+                else {
+                    $appDir = Join-Path $cut 'app'
+                    $linked = (Get-Content -Raw (Join-Path $appDir "main.$ext")) -match 'model(::|\.)'
+                    $got, $why = & $build $b $appDir $linked
+                    if ($got -eq 'build-fail') { $row.result = "native build-fail: $why"; $row.verdict = 'FAIL' }
+                    elseif ($got -eq $want) { $row.result = 'LEGAL' }
+                    else { $row.result = "DIFFERS exit $got"; $row.verdict = 'FAIL' }
+                }
+                [pscustomobject]$row
+            }
+        }
+    }
+    $rows = @($rows)
+    $rows | Export-Csv -Delimiter "`t" -NoTypeInformation -UseQuotes Never (Join-Path $runDir 'results.tsv')
+    $legal = @($rows | Where-Object result -eq 'LEGAL').Count
+    $failed = @($rows | Where-Object verdict -ne 'pass')
+    $failed | ForEach-Object { Write-Host "FAIL $($_.id) $($_.backend) cut $($_.cut): $($_.result)" }
+    Write-Host "split $($rows.Count) cuts, REACH $legal legal, $($failed.Count) fail (DIFFERS or native build-fail); results: $(Join-Path $runDir 'results.tsv')"
+    if ($lockHeld) { $lock.ReleaseMutex() }
+    exit ([int]($failed.Count -gt 0))
+}
 
 $extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Delphi = 'pas'; Zig = 'zig'; Wasm = 'wat'; Wgsl = 'wgsl'; Calyx = 'futil'; Kotlin = 'kt'; Swift = 'swift'; OpenQasm = 'qasm'; Ebpf = 'ebpf'; Lean = 'lean'; Bend = 'bend'; Gleam = 'gleam'; Lua = 'lua'; TypeScript = 'ts'; Cpp = 'cpp'; Python = 'py' }
 $coreBackend = @{ Cpp = 'Cpp + Cuda'; Python = 'Python + Cuda' }
@@ -152,6 +353,15 @@ if ($fastSuite) {
     }
 }
 $samples = $suites | ForEach-Object { Get-Samples $_ } | Sort-Object Id -Unique
+if ($ChangedBetween) {
+    $pair = @($ChangedBetween | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+    if ($pair.Count -ne 2) { throw '-ChangedBetween takes two results.tsv paths: the control run, then the candidate run' }
+    $left = @{}; foreach ($row in Import-Csv -Delimiter "`t" $pair[0]) { $left["$($row.id)|$($row.backend)"] = $row.residual }
+    $changedIds = @(Import-Csv -Delimiter "`t" $pair[1] | Where-Object { $_.residual -and $left["$($_.id)|$($_.backend)"] -and $_.residual -ne $left["$($_.id)|$($_.backend)"] } | ForEach-Object id | Sort-Object -Unique)
+    Write-Host "-ChangedBetween: $($changedIds.Count) samples whose residual differs"
+    if (-not $changedIds) { Write-Host 'nothing changed between the two runs'; if ($lockHeld) { $lock.ReleaseMutex() }; exit 0 }
+    $samples = $samples | Where-Object { $_.Id -in $changedIds }
+}
 if ($Filter) { $samples = $samples | Where-Object { $_.Id -match $Filter } }
 
 $jobs = foreach ($sample in $samples) {
@@ -1150,8 +1360,8 @@ if ($Accept) {
     $fresh = @{}
     foreach ($row in $acceptRows) { $fresh["$($row.id)|$($row.backend)"] = $row }
     $scheduled = @{}
-    if ($Suite -contains 'all' -and -not $Filter) { foreach ($sample in $samples) { $scheduled[$sample.Id] = @($scheduled[$sample.Id]) + @($sample.Backends) | Where-Object { $_ } | Select-Object -Unique } }
-    $fullSchedule = $Suite -contains 'all' -and -not $Filter
+    if ($Suite -contains 'all' -and -not $Filter -and -not $ChangedBetween) { foreach ($sample in $samples) { $scheduled[$sample.Id] = @($scheduled[$sample.Id]) + @($sample.Backends) | Where-Object { $_ } | Select-Object -Unique } }
+    $fullSchedule = $Suite -contains 'all' -and -not $Filter -and -not $ChangedBetween
     $unscheduled = @($existing | Where-Object { ($scheduled.ContainsKey($_.id) -and $scheduled[$_.id] -notcontains $_.backend) -or ($fullSchedule -and -not $scheduled.ContainsKey($_.id)) })
     if ($unscheduled) {
         Write-Host "dropped $($unscheduled.Count) oracle row(s) whose sample or backend the matrix no longer schedules:" -ForegroundColor Yellow

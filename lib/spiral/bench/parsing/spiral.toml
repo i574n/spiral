@@ -1,0 +1,2 @@
+packageDir = '../../..'
+packages = ['|core-', 'spiral-']

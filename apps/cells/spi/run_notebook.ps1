@@ -68,7 +68,12 @@ function Invoke-WarmNotebook([int] $Port, [string[]] $Arguments, [string] $Dll) 
     finally { $client.Dispose() }
 }
 if ($env:SPIRAL_CELLS_WARM -ne '0') {
-    $warmArgs = [string[]] @($fixed) + $(if ($env:SPIRAL_CELLS_MEMO -eq '0') { @('--no-memo') } else { @() })
+    $gateRun = $fixed -contains '--gate'
+    $warmArgs = [string[]] @($fixed | Where-Object { $_ -ne '--gate' })
+    if ($gateRun) { $warmArgs += '--no-html' }
+    if (($gateRun -or $env:SPIRAL_CELLS_MEMO -eq '0') -and $warmArgs -notcontains '--no-memo') { $warmArgs += '--no-memo' }
+    $gateDir = if ($gateRun -and $warmArgs -notcontains '--output-dir' -and $warmArgs -notcontains '--output-path') { Join-Path ([IO.Path]::GetTempPath()) "spiral-cells-gate-$PID-$(Get-Random)" }
+    if ($gateDir) { $warmArgs += '--output-dir', $gateDir }
     $warmDll = if ($env:SPIRAL_COMPILER_DLL) { $env:SPIRAL_COMPILER_DLL } else {
         & { . (Join-Path $PSScriptRoot '../../compiler/scripts/env.ps1'); Get-SpiralCompilerDll 'single-flight' }
     }
@@ -76,12 +81,17 @@ if ($env:SPIRAL_CELLS_WARM -ne '0') {
         $rootText = ([IO.Path]::GetFullPath((Split-Path $PSScriptRoot -Parent))).Replace('\', '/').TrimEnd('/').ToLowerInvariant()
         $rootKey = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($rootText))).Substring(0, 16)
         $dllItem = Get-Item -LiteralPath $warmDll -ErrorAction Ignore
-        $dllTag = if ($dllItem) { "$([DateTimeOffset]::new($dllItem.LastWriteTimeUtc).ToUnixTimeSeconds())-$($dllItem.Length)" } else { 'none' }
+        $coreItem = if ($dllItem) { Get-Item -LiteralPath (Join-Path $dllItem.DirectoryName 'SpiralCompilerCore.dll') -ErrorAction Ignore }
+        $dllTag = if (-not $dllItem) { 'none' } else {
+            $hostTag = "$([DateTimeOffset]::new($dllItem.LastWriteTimeUtc).ToUnixTimeSeconds())-$($dllItem.Length)"
+            if ($coreItem) { "$hostTag-$([DateTimeOffset]::new($coreItem.LastWriteTimeUtc).ToUnixTimeSeconds())-$($coreItem.Length)" } else { $hostTag }
+        }
         $portFile = Join-Path ($env:LOCALAPPDATA ?? (Join-Path $HOME '.cache')) "spiral-bin/cells-port-$rootKey-$dllTag.txt"
         $saved = if (Test-Path -LiteralPath $portFile) { (Get-Content -LiteralPath $portFile -Raw).Trim() }
         if ($saved -match '^\d+$') { [int] $saved } else { 13905 }
     }
     $warmExit = Invoke-WarmNotebook $warmPort $warmArgs $warmDll
+    if ($gateDir -and (Test-Path -LiteralPath $gateDir)) { [IO.Directory]::Delete($gateDir, $true) }
     if ($null -ne $warmExit) { Write-NotebookLedger 'warm' $warmExit; exit $warmExit }
 }
 function Resolve-RealPath([string] $Path) {

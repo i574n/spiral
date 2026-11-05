@@ -1,0 +1,7 @@
+:! i32_array = array_base i32
+
+:= create (n : i32) : i32_array = i32_array !!!!ArrayCreate(`i32, n)
+
+:= main () : i32 =
+    !!!!Export("model_create", create)
+    0i32

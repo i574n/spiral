@@ -1,6 +1,6 @@
 param(
     [string] $Lib = 'C:\home\git\spiral\lib\spiral',
-    [string[]] $Repos = @('C:\home\git\spiral', 'C:\home\git\eoie', 'C:\home\git\polyglot', 'C:\home\git\dice', 'C:\home\git\alphabet', 'C:\home\git\x', 'C:\home\git\tibia'),
+    [string[]] $Repos = @('C:\home\git\spiral', 'C:\home\git\kit', 'C:\home\git\dice', 'C:\home\git\alphabet', 'C:\home\git\x', 'C:\home\git\tibia'),
     [string] $Out = (Join-Path ([IO.Path]::GetTempPath()) 'lib-usage-census.tsv')
 )
 $ErrorActionPreference = 'Stop'

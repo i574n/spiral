@@ -1,0 +1,19 @@
+:! point = { x : i32; y : i32 }
+:! named = { name : string; n : i32 }
+
+:= norm (p : point) : i32 = !!!!Add(p::x, p::y)
+
+:= make (n : i32) : point = point { x = n; y = 2i32 }
+
+:= pair (n : i32) : i32 * i32 = n, !!!!Add(n, 1i32)
+
+:= label_len (r : named) : i32 =
+    := l : i32 = sm::length r::name
+    !!!!Add(l, r::n)
+
+:= main () : i32 =
+    !!!!Export("model_norm", norm)
+    !!!!Export("model_make", make)
+    !!!!Export("model_pair", pair)
+    !!!!Export("model_label_len", label_len)
+    0i32

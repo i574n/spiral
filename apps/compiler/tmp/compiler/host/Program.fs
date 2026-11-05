@@ -761,13 +761,16 @@ module Program =
                   packages_prepass = {ok = Map.empty; error = Map.empty}
                   graph = mirrored_graph_empty; package_ids = Map.empty, Map.empty }
             let _, state = proj_open (startupParse [|"--port"; "0"|]) emptyState (packageDir, None)
+            let packageReasons =
+                state.packages |> Map.toList |> List.collect (fun (dir, v) -> List.concat [v.errors_parse; v.errors_modules; v.errors_packages] |> List.map (fun (_, message) -> $"{dir}: {message}"))
+            let reasonText = match packageReasons with [] -> "" | xs -> " Reasons: " + String.concat " | " xs
             if not state.packages_infer.error.IsEmpty then
                 let failedPackages =
                     state.packages_infer.error
                     |> Map.toList
                     |> List.map (fun (pid, _) -> snd state.package_ids |> Map.tryFind pid |> Option.map string |> Option.defaultWith (fun () -> string pid))
                     |> String.concat ", "
-                failwith $"Package graph rejected: {packageDir}; packages that failed to type check: {failedPackages}. A packages: entry that does not resolve (|core- needs SPIRAL_COMPILER_PACKAGE_DIR or a deps/The-Spiral-Language clone) leaves the packages importing it unchecked."
+                failwith $"Package graph rejected: {packageDir}; packages that failed to type check: {failedPackages}. {reasonText} A packages: entry that does not resolve (|core- needs SPIRAL_COMPILER_PACKAGE_DIR or a deps/The-Spiral-Language clone) leaves the packages importing it unchecked."
             let pid = (fst state.package_ids).[packageDir]
             let package = state.packages_infer.ok.[pid]
             let rec containsInput = function
@@ -1356,6 +1359,8 @@ module Program =
             Spiral.spiral_compiler.FormatterCli.run (List.ofArray argv.[1..])
         elif argv.Length >= 1 && argv.[0] = "tokens" then
             Spiral.spiral_compiler.TokensCli.run (List.ofArray argv.[1..])
+        elif argv.Length >= 1 && argv.[0] = "split-units" then
+            Spiral.spiral_compiler.SplitUnitsCli.run (List.ofArray argv.[1..])
         elif argv.Length >= 1 && argv.[0] = "format-corpus" then
             Spiral.spiral_compiler.FormatterCli.corpus (List.ofArray argv.[1..])
         elif argv.Length >= 1 && (argv.[0] = "build-file" || argv.[0] = "--build-file" || argv.[0] = "fsharp") then

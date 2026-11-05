@@ -88,6 +88,8 @@
                     `union_record_type
 :| reflection_test_target = Browser | Contract
 
+///- --timeout 900000
+
 ///> rust
 ///> typescript
 ///> cuda
@@ -168,6 +170,8 @@
                 := result = fst `(list (string * union_type)) `i32 result
                 listm::rev `(string * union_type) result
 
+///- --timeout 900000
+
 ///> gleam
 ///> lua
 ///> cuda
@@ -196,6 +200,8 @@
         ?> Some x
         |: None
 
+///- --timeout 900000
+
 ///> gleam
 ///> lua
 ///> cuda
@@ -223,6 +229,8 @@
         ?> x |> Some
         |: None
 
+///- --timeout 900000
+
 ///> gleam
 ///> lua
 ///> cuda
@@ -245,6 +253,8 @@
                 initial
                 `union_record_type
 
+///- --timeout 900000
+
 ///> gleam
 ///> lua
 ///> cuda
@@ -263,6 +273,8 @@
         | case :: rest => ? matches case ?> Some case |: search rest
         | [] => None
     search (union_cases_fold (\ acc (case : union_type) => case :: acc) [] |> dyn)
+
+///- --timeout 900000
 
 ///> gleam
 ///> lua
@@ -308,6 +320,8 @@
                 |: None
     |> optionm::value
 
+///- --timeout 900000
+
 ///> cuda
 ///> rust
 ///> typescript
@@ -326,6 +340,32 @@
 := case_of_name \* t. (text : string) : option t =
     ~> get_union_fields_untag `t ()
     |> listm'::try_pick \ key, case => ? key =. text ?> Some case |: None
+
+/// ### typed_name
+:! typed_name t = string
+
+:= typed_case_name \* t. (x : t) : typed_name t = typed_name (case_name x)
+:= case_qualified_name \* t. (x : t) : string = !!!!NominalName(`t) ++# "::" ++# case_name x
+
+:= typed_name_text \* t. ((typed_name text) : typed_name t) : string = text
+
+:= case_of_typed_name \* t. ((typed_name text) : typed_name t) : option t = case_of_name text
+
+:= styled_step (separator : string) (acc : list string) (c : char) : list string =
+    := s = sm'::of_char c
+    := lower = sm'::to_lower s
+    ? lower <> s && listm::length acc > 0i32 ?> lower :: separator :: acc |: lower :: acc
+
+:= styled_name (separator : string) (text : string) : string =
+    sm'::to_char_list text |> listm::fold (styled_step separator) [] |> listm::rev |> sm'::concat_list ""
+
+:= typed_name_snake \* t. ((typed_name text) : typed_name t) : string = styled_name "_" text
+
+:= typed_name_kebab \* t. ((typed_name text) : typed_name t) : string = styled_name "-" text
+
+:= typed_name_lower \* t. ((typed_name text) : typed_name t) : string = sm'::to_lower text
+
+///- --timeout 900000
 
 ///> gleam
 ///> lua
@@ -423,3 +463,56 @@
         |> listm'::to_array'
         |> sm'::format
     )
+
+:| nameof_probe =
+    | Alpha
+    | Beta
+    | Gamma
+    | Delta
+    | Epsilon
+
+///- --timeout 900000
+
+///> rust
+///> gleam
+///> lua
+///> typescript
+///> fsharp
+:# nameof_cases_round_trip =
+    Alpha |> case_name |> case_of_name |> _assert_eq (Some Alpha)
+    Beta |> case_name |> case_of_name |> _assert_eq (Some Beta)
+    Gamma |> case_name |> case_of_name |> _assert_eq (Some Gamma)
+    Delta |> case_name |> _assert_eq' "Delta"
+    Epsilon |> case_name |> case_of_name |> _assert_eq (Some Epsilon)
+    "epsilon" |> case_of_name |> _assert_eq (None : option nameof_probe)
+
+///- --timeout 900000
+
+///> gleam
+///> lua
+///> rust
+///> typescript
+:# typed_case_name_round_trips =
+    := name = typed_case_name Contract
+    typed_name_text name |> _assert_eq' "Contract"
+    case_of_typed_name name |> _assert_eq (Some Contract)
+
+///- --timeout 900000
+
+///> gleam
+///> rust
+:# typed_name_styles =
+    styled_name "_" "HostMacro" |> _assert_eq' "host_macro"
+    styled_name "-" "GadtCase" |> _assert_eq' "gadt-case"
+    styled_name "_" "Contract" |> _assert_eq' "contract"
+    := name = typed_case_name Browser
+    typed_name_kebab name |> _assert_eq' "browser"
+    typed_name_lower name |> _assert_eq' "browser"
+
+///- --timeout 900000
+
+///> gleam
+///> rust
+:# case_qualified_name =
+    case_qualified_name Contract |> _assert_eq' "reflection_test_target::Contract"
+    case_qualified_name Browser |> _assert_eq' "reflection_test_target::Browser"

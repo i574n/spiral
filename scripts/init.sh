@@ -10,5 +10,5 @@ else
     if [ ! -x "$rustup_path" ]; then
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none
     fi
-    "$rustup_path" toolchain install nightly-2025-11-01 --profile minimal
+    "$rustup_path" toolchain install nightly-2026-10-18 --profile minimal
 fi

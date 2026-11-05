@@ -1,9 +1,0 @@
-packageDir: ../../..
-packages:
-    |core-
-    spiral-
-modules:
-    bench_kit
-    fparsec
-    pure_split
-    main

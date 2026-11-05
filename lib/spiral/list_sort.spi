@@ -1,0 +1,40 @@
+///- --package .
+:< sm'_operators
+
+:# list_sort static =
+    :< testing
+
+:~ ^ taken \* t. (n : i32) (l : list t) (acc : list t) : list t * list t =
+    ?= l ?|
+    | x :: rest ?& n > 0i32 => taken (n - 1i32) rest (x :: acc)
+    | _ => listm::rev acc, l
+
+:= closed \* t. (out : list t) (rest : list t) : list t = listm::append (listm::rev out) rest
+
+:~ ^ merged \* t. (f : t -> t -> bool) (a : list t) (b : list t) (o : list t) : list t =
+    ?= a ?|
+    | [] => closed o b
+    | x :: xs =>
+        ?= b ?|
+        | [] => closed o a
+        | y :: ys => ? f y x ?> merged f a ys (y :: o) |: merged f xs b (x :: o)
+
+:~ ^ sorted_by \* t. (first : t -> t -> bool) (l : list t) : list t =
+    := n = (listm::length l : i32)
+    ? n < 2i32 ?> l
+    |:
+        := a, b = taken (n / 2i32) l []
+        merged first (sorted_by first a) (sorted_by first b) []
+
+:= by_number (a : i32 * string) (b : i32 * string) : bool = fst a < fst b
+
+///> rust
+///> gleam
+:# sorts_and_keeps_equal_keys_in_order =
+    sorted_by by_number [ (3i32, "a"); (1i32, "b"); (3i32, "c"); (2i32, "d") ] |> listm::map snd
+    |> _assert_eq [ "b"; "d"; "a"; "c" ]
+
+///> rust
+///> gleam
+:# empty_and_single_lists_are_already_sorted =
+    (sorted_by by_number [], sorted_by by_number [ (5i32, "x") ] |> listm::map snd) |> _assert_eq ([], [ "x" ])

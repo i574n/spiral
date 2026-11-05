@@ -1104,6 +1104,19 @@
             erlang_term::apply "erlang" "monotonic_time" [ erlang_term::atom "millisecond" ] |> erlang_term::cast
         | _ => \ () => failwith "monotonic_milliseconds: no arm for this backend"
 
+:~ monotonic_nanoseconds () : u64 =
+    run_target \|
+        | Rust => \ () =>
+            $'{ static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new(); \
+                START.get_or_init(std::time::Instant::now).elapsed().as_nanos() as u64 }' : u64
+        | _ => \ () => failwith "monotonic_nanoseconds: no arm for this backend"
+
+///> rust
+:# the_monotonic_nanosecond_clock_does_not_go_back =
+    := a = monotonic_nanoseconds ()
+    := b = monotonic_nanoseconds ()
+    (b >= a) |> _assert_eq !+
+
 ///> gleam
 :# the_monotonic_clock_does_not_go_back =
     := a = monotonic_milliseconds ()

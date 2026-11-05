@@ -5,6 +5,7 @@
 :< rust_operators
 
 :< sm'_real
+:< unsupported
 
 /// ## rust
 
@@ -178,6 +179,7 @@
 ///> lua
 ///> fsharp
 ///> cuda
+///> rust
 :# format_debug no_agree "tests each backend's native rendering" =
     #?*("1", "2", "3")
     |> _assert_eq (
@@ -186,6 +188,7 @@
             Lua = \ () => "1, 2, 3" : string
             Fsharp = \ () => "struct (\"1\", \"2\", \"3\")" : string
             Python = \ () => "('1', '2', '3')" : string
+            Rust = \ () => "1, 2, 3" : string
         }
     )
 
@@ -201,6 +204,7 @@
 ///> lua
 ///> fsharp
 ///> cuda
+///> rust
 :# format_debug_2 no_agree "tests each backend's native rendering" =
     #?*{ c = "1"; a = "2"; b = "3" }
     |> _assert_eq (
@@ -209,6 +213,7 @@
             Lua = \ () => "1, 2, 3" : string
             Fsharp = \ () => "struct (\"1\", \"2\", \"3\")" : string
             Python = \ () => "('1', '2', '3')" : string
+            Rust = \ () => "{ c = 1; a = 2; b = 3 }" : string
         }
     )
 
@@ -806,6 +811,19 @@
         |: scan (at + 1)
     scan 0
 
+:~ ^ portable_replace_runs (old : string) (new : string) (s : string) (n : i32) (m : i32) (start : i32) (at : i32) (acc : list string) : list string =
+    ? at + m > n ?> (? start < n ?> slice start (n - 1i32) s :: acc |: acc)
+    |? portable_matches_at old s at ?>
+        := run = ? start < at ?> slice start (at - 1i32) s :: acc |: acc
+        portable_replace_runs old new s n m (at + m) (at + m) (new :: run)
+    |: portable_replace_runs old new s n m start (at + 1i32) acc
+
+:= portable_replace (old : string) (new : string) (s : string) : string =
+    := n : i32 = sm::length s
+    := m : i32 = sm::length old
+    ? m = 0i32 ?> s
+    |: portable_replace_runs old new s n m 0i32 0i32 [] |> listm::rev |> concat_list ""
+
 := gleam_split_once_head (search : string) (s : string) : optionm'::option' string =
     global "import gleam/pair"
     global "import gleam/result"
@@ -996,6 +1014,22 @@
     )
     |> _assert_eq ("pir", "", "", "é", "a’😀")
 
+:~ ^ ascii_case_runs (upper : bool) (s : string) (n : i32) (start : i32) (i : i32) (acc : list string) : list string =
+    ? i >= n ?> (? start < n ?> slice start (n - 1i32) s :: acc |: acc)
+    |:
+        := b : u8 = convert::u8 (index i s)
+        := hit = ? upper ?> 97u8 <= b && b <= 122u8 |: 65u8 <= b && b <= 90u8
+        ? hit ?>
+            := run = ? start < i ?> slice start (i - 1i32) s :: acc |: acc
+            := at : i32 = convert::i32 (? upper ?> b - 97u8 |: b - 65u8)
+            := letter = ? upper ?> slice at at "ABCDEFGHIJKLMNOPQRSTUVWXYZ" |: slice at at "abcdefghijklmnopqrstuvwxyz"
+            ascii_case_runs upper s n (i + 1i32) (i + 1i32) (letter :: run)
+        |: ascii_case_runs upper s n start (i + 1i32) acc
+
+:= ascii_case (upper : bool) (s : string) : string =
+    := n : i32 = length s
+    ascii_case_runs upper s n 0i32 0i32 [] |> listm::rev |> concat_list ""
+
 := to_lower (input : string) : string =
     backend_switch {
         Gleam = \ () =>
@@ -1008,7 +1042,24 @@
         TypeScript = \ () => $'!input.toLowerCase()' : string
         Zig = \ () => $'(std.ascii.allocLowerString(spiral_gpa, !input) catch @@panic("out of memory"))' : string
         Lean = \ () => $'(!input).toLower' : string
+        Pascal = \ () => $'LowerCase(!input)' : string
+        C = \ () => ascii_case !- input
     }
+
+:~ ^ kebab_from (text : string) (size : i32) (at : i32) (out : string) : string =
+    ? at >= size ?> out
+    |:
+        := letter = substring at 1i32 text
+        := lower = to_lower letter
+        := dash = ? at > 0i32 && letter <> lower ?> "-" |: ""
+        kebab_from text size (at + 1i32) (out ++# dash ++# lower)
+
+:= kebab_of (text : string) : string = kebab_from text (length text) 0i32 ""
+
+///> rust
+:# kebab_of_splits_pascal_case_words =
+    (kebab_of "WaitClear", kebab_of "Gadt", kebab_of "ABC", kebab_of "")
+    |> _assert_eq ("wait-clear", "gadt", "a-b-c", "")
 
 := to_upper (input : string) : string =
     backend_switch {
@@ -1022,6 +1073,8 @@
         TypeScript = \ () => $'!input.toUpperCase()' : string
         Zig = \ () => $'(std.ascii.allocUpperString(spiral_gpa, !input) catch @@panic("out of memory"))' : string
         Lean = \ () => $'(!input).toUpper' : string
+        Pascal = \ () => $'UpperCase(!input)' : string
+        C = \ () => ascii_case !+ input
     }
 
 := char_to_upper (input : char) : char =
@@ -1036,7 +1089,23 @@
         TypeScript = \ () => $'String.fromCharCode(!input).toUpperCase().charCodeAt(0)' : char
         Zig = \ () => $'std.ascii.toUpper(!input)' : char
         Lean = \ () => $'(!input).toUpper' : char
+        C = \ () => $'((!input >= 97 && !input <= 122) ? (char)(!input - 32) : !input)' : char
+        Pascal = \ () => $'UpCase(!input)' : char
     }
+
+///> rust
+///> zig
+///> c
+///> pascal
+:# char_to_upper_maps_ascii_letters =
+    (char_to_upper 'q', char_to_upper 'Q', char_to_upper '5') |> _assert_eq ('Q', 'Q', '5')
+
+///> rust
+///> zig
+///> pascal
+///> c
+:# to_upper_and_to_lower_change_ascii_case =
+    (to_upper "abC1", to_lower "ABc1") |> _assert_eq ("ABC1", "abc1")
 
 := char_code (input : char) : u32 =
     backend_switch {
@@ -1051,7 +1120,32 @@
             |? lead < 224u32 ?> (lead % 32u32) * 64u32 + byte 2i32 % 64u32
             |? lead < 240u32 ?> (lead % 16u32) * 4096u32 + (byte 2i32 % 64u32) * 64u32 + byte 3i32 % 64u32
             |: (lead % 8u32) * 262144u32 + (byte 2i32 % 64u32) * 4096u32 + (byte 3i32 % 64u32) * 64u32 + byte 4i32 % 64u32
+        C = \ () => $'((uint32_t)(unsigned char)!input)' : u32
+        Zig = \ () => $'@@as(u32, !input)' : u32
+        Pascal = \ () => $'LongWord(Ord(!input))' : u32
+        Gleam = \ () =>
+            global "import gleam/string"
+            $'case string.to_utf_codepoints(!input) { [c, ..] -> string.utf_codepoint_to_int(c) _ -> 0 }' : u32
     }
+
+:| ascii_class =
+    | AsciiLetter
+    | AsciiDigit
+    | AsciiSpace
+    | AsciiOther
+
+:= ascii_class_of (input : char) : ascii_class =
+    := c : u32 = char_code input
+    ? (65u32 <= c && c <= 90u32) || (97u32 <= c && c <= 122u32) ?> AsciiLetter
+    |? 48u32 <= c && c <= 57u32 ?> AsciiDigit
+    |? c = 32u32 || (9u32 <= c && c <= 13u32) ?> AsciiSpace
+    |: AsciiOther
+
+:= is_ascii_letter (input : char) : bool = ?= ascii_class_of input ?| AsciiLetter => !+ | _ => !-
+
+:= is_ascii_digit (input : char) : bool = ?= ascii_class_of input ?| AsciiDigit => !+ | _ => !-
+
+:= is_ascii_space (input : char) : bool = ?= ascii_class_of input ?| AsciiSpace => !+ | _ => !-
 
 := of_char (input : char) : string =
     backend_switch {
@@ -1066,6 +1160,25 @@
     }
 
 ///> rust
+///> c
+///> zig
+///> pascal
+:# char_code_reads_bytes =
+    char_code 'A' |> _assert_eq 65u32
+    char_code 'z' |> _assert_eq 122u32
+
+///> rust
+///> c
+///> zig
+///> pascal
+///> python
+///> typescript
+:# ascii_class_of_is_one_total_classifier =
+    (is_ascii_letter 'q', is_ascii_letter 'Q', is_ascii_letter '5') |> _assert_eq (!+, !+, !-)
+    (is_ascii_digit '0', is_ascii_digit '9', is_ascii_digit 'a') |> _assert_eq (!+, !+, !-)
+    (is_ascii_space ' ', is_ascii_space '\t', is_ascii_space '_') |> _assert_eq (!+, !+, !-)
+
+///> rust
 :# char_code_and_of_char =
     char_code 'A' |> _assert_eq 65u32
     char_code 'z' |> _assert_eq 122u32
@@ -1074,6 +1187,10 @@
 ///> gleam
 :# of_char_is_the_one_character_string_on_gleam =
     (of_char 'A', of_char '(' = "(") |> _assert_eq ("A", !+)
+
+///> gleam
+:# char_code_is_the_code_point_on_gleam =
+    (char_code 'A', char_code '7', char_code 'é', char_code '€') |> _assert_eq (65u32, 55u32, 233u32, 8364u32)
 
 ///> lua
 :# char_code_decodes_utf8 =
@@ -1419,7 +1536,15 @@
             $'StringReplace(!s, !old, !new, [rfReplaceAll])' : string
         Lean = \ () =>
             $'(!s).replace !old !new ' : string
+        C = \ () => portable_replace old new s
     }
+
+///> c
+///> rust
+///> zig
+///> pascal
+:# replace_agrees_on_c =
+    ("a.b.c" |> replace "." "--", "aaa" |> replace "aa" "b", "x" |> replace "y" "z", "" |> replace "a" "b", "é.é" |> replace "." "") |> _assert_eq ("a--b--c", "ba", "x", "", "éé")
 
 ///> lua
 ///> rust
@@ -1469,6 +1594,7 @@
         Fsharp = \ () => $'!str.Split !separator ' : array_base string
         Lua = \ () => split_portable separator str
         C = \ () => split_portable separator str
+        Pascal = \ () => split_portable separator str
         Kotlin = \ () => $'(!str).split(!separator).toTypedArray()' : array_base string
         Python = \ () => $'!str.split(!separator)' : array_base string
         Rust = \ () =>
@@ -1483,6 +1609,7 @@
 ///> rust
 ///> lua
 ///> c
+///> pascal
 :# split_keeps_empty_and_edge_parts =
     := parts = "a,,c" |> split "," |> array
     := edges = ",a," |> split "," |> array
@@ -1618,7 +1745,24 @@
 := utf8_get_bytes (s : string) : array u8 =
     run_target \|
         | Rust => \ () => $'Rc::new(RefCell::new(!s.as_bytes().to_vec()))' : array u8
+        | Zig => \ () => arraym::init (length s : i32) (\ (i : i32) => convert::u8 (char_code (index i s)))
+        | C => \ () => arraym::init (length s : i32) (\ (i : i32) => convert::u8 (char_code (index i s)))
+        | Pascal => \ () => arraym::init (length s : i32) (\ (i : i32) => convert::u8 (char_code (index i s)))
+        | Cuda => \ () => $'cp.array(list(!s.encode("utf-8")), dtype=cp.uint8)' : array u8
+        | TypeScript => \ () => $'Array.from(new TextEncoder().encode(!s))' : array u8
         | _ => \ () => s |> (encoding_utf8 () |> $'_.GetBytes') : array u8
+
+///> rust
+///> zig
+///> c
+///> pascal
+///> python
+///> typescript
+:# utf8_get_bytes_reads_ascii_bytes =
+    := bytes = utf8_get_bytes "Az"
+    am'::length bytes |> _assert_eq 2i32
+    am'::index 0i32 bytes |> _assert_eq 65u8
+    am'::index 1i32 bytes |> _assert_eq 122u8
 
 := byte_to_string (format : string) (x : u8) : string =
     $'!x.ToString' format
@@ -2116,6 +2260,7 @@
         TypeScript = \ () => $'!s.includes(!value)' : bool
         Zig = \ () => $'(std.mem.indexOf(u8, !s, !value) \!= null)' : bool
         C = \ () => portable_index_of value s >= 0i32
+        Pascal = \ () => portable_index_of value s >= 0i32
         Kotlin = \ () => $'(!s).contains(!value)' : bool
         Lean = \ () => $'(!s).contains !value ' : bool
     }
@@ -2123,6 +2268,8 @@
 ///> c
 ///> gleam
 ///> rust
+///> pascal
+///> zig
 :# searches_agree_on_c =
     (
         "a.b%c" |> index_of ".",
@@ -2300,7 +2447,7 @@
     run_target \|
         | Rust => \ () => $'std::rc::Rc::<str>::from(char::from(!code).to_string())' : string
         | Fsharp => \ () => $'string (char !code)' : string
-        | _ => \ () => failwith "sm'.char_text: no arm for this backend"
+        | _ => \ () => no_arm "sm'.char_text"
 
 := bytes_between (start : i32) (stop : i32) (text : string) : string =
     run_target \|
@@ -2311,7 +2458,7 @@
                 let edge i = i = b.Length || (b.[i] &&& 0xC0uy) <> 0x80uy in \
                 if !start < 0 || !start > !stop || !stop > b.Length || not (edge !start) || not (edge !stop) then "" \
                 else System.Text.Encoding.UTF8.GetString(b, !start, !stop - !start))' : string
-        | _ => \ () => failwith "sm'.bytes_between: no arm for this backend"
+        | _ => \ () => no_arm "sm'.bytes_between"
 
 ///> fsharp
 ///> rust
@@ -2327,7 +2474,7 @@
     run_target \|
         | Rust => \ () => $'\!!text.is_empty() && !text.bytes().all(|byte| byte.is_ascii_digit())' : bool
         | Fsharp => \ () => $'(!text <> "" && String.forall (fun c -> c >= \'0\' && c <= \'9\') !text)' : bool
-        | _ => \ () => failwith "sm'.all_digits: no arm for this backend"
+        | _ => \ () => no_arm "sm'.all_digits"
 
 ///> fsharp
 ///> rust
@@ -2383,7 +2530,7 @@
         | Fsharp => \ () =>
             := parts = $'(!text).Split(char !separator)' : array string
             ? index >= 0i32 && index < am'::length parts ?> am'::index index parts |: ""
-        | _ => \ () => failwith "sm'.split_nth: no arm for this backend"
+        | _ => \ () => no_arm "sm'.split_nth"
 
 ///> rust
 :# split_nth_picks_one_field_or_nothing =

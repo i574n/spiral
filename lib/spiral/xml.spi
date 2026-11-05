@@ -1,4 +1,5 @@
 :< sm'_operators
+:< unsupported
 
 :| ^ xml_node =
     | XmlElement : string * list (string * string) * list xml_node
@@ -35,7 +36,7 @@
     run_target \|
         | Rust => \ () => rust_first_char s i |> optionm'::map unicode::rust_char_code |> optionm'::unwrap_or 0u32
         | Pascal => \ () => pascal_code_point_at s i
-        | _ => \ () => failwith "code_point_at: no arm for this backend"
+        | _ => \ () => no_arm "code_point_at"
 
 := code_point_width (s : string) (i : i32) : i32 =
     run_target \|
@@ -45,7 +46,7 @@
             |> optionm'::unwrap_or 1i32
         | Zig => \ () => ? i < sm'::length s ?> conv (zig_sequence_width s i) |: 1i32
         | Pascal => \ () => ? i < sm'::length s ?> pascal_sequence_width (pascal_byte_at s i) |: 1i32
-        | _ => \ () => failwith "code_point_width: no arm for this backend"
+        | _ => \ () => no_arm "code_point_width"
 
 := code_point_count (s : string) : i32 = unicode::code_point_count s
 
@@ -88,7 +89,7 @@
     run_target \|
         | Rust => \ () => $'std::path::Path::new(&*!path).is_file()' : bool
         | Pascal => \ () => $'FileExists(!path)' : bool
-        | _ => \ () => failwith "is_file: no arm for this backend"
+        | _ => \ () => no_arm "is_file"
 
 ///> rust
 ///> pascal
@@ -326,6 +327,33 @@
     | _ :: rest => children_named target rest
     | [] => []
 
+:~ ^ member_position (name : string) (members : list string) (at : i32) : option i32 =
+    ?= members ?|
+    | m :: rest => ? local_name m = name ?> Some at |: member_position name rest (at + 1i32)
+    | [] => None
+
+:= closed_run (current : list xml_node) (acc : list (list xml_node)) : list (list xml_node) =
+    ?= current ?|
+    | [] => acc
+    | _ => listm::rev current :: acc
+
+:~ ^ member_runs
+    (members : list string) (nodes : list xml_node) (last : i32) (current : list xml_node) (acc : list (list xml_node))
+    : list (list xml_node)
+    =
+    ?= nodes ?|
+    | XmlElement (name, attributes, children) :: rest =>
+        := node = XmlElement (name, attributes, children)
+        ?= member_position (local_name name) members 0i32 ?|
+        | Some at =>
+            ? at > last ?> member_runs members rest at (node :: current) acc
+            |: member_runs members rest at (node :: []) (closed_run current acc)
+        | None => member_runs members rest last current acc
+    | _ :: rest => member_runs members rest last current acc
+    | [] => listm::rev (closed_run current acc)
+
+:= group_runs (members : list string) (nodes : list xml_node) : list (list xml_node) =
+    member_runs members nodes (0i32 - 1i32) [] []
 := first_child (target : string) (nodes : list xml_node) : option xml_node =
     ?= children_named target nodes ?|
     | node :: _ => Some node
@@ -668,3 +696,14 @@
     ?> failwith "UTF-8 widths 1, 2, 3"
     ? code_point_at s 0i32 <> 97u32 || code_point_at s 1i32 <> 233u32 || code_point_at s 3i32 <> 8364u32
     ?> failwith "code points a, e acute, euro"
+
+///> rust
+:# group_runs_split_repeated_groups_in_document_order =
+    ?= read_xml "<S><D>d</D><W>w1</W><L>l1</L><W>w2</W><L>l2</L><L>l3</L><A>a</A></S>" ?|
+    | node :: [] =>
+        := runs = group_runs [ "W"; "L" ] (element_children node)
+        ? (listm::length runs : i32) <> 3i32 ?> failwith "three groups: (w1, l1), (w2, l2) and (l3)"
+        ?= runs ?|
+        | first :: _ => ? (listm::length first : i32) <> 2i32 ?> failwith "the first group keeps both members"
+        | [] => failwith "a run exists"
+    | _ => failwith "one root element"

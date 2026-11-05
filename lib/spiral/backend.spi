@@ -10,15 +10,25 @@
                 \ () =>
                     !!!!BackendSwitch({
                         Gleam = \ () =>
-                            $'Nil // backend.backend_switch / record_type_try_find / key: !key ' : t
+                            ?: t ?|
+                            | () => $'Nil // backend.backend_switch / record_type_try_find / key: !key ' : t
+                            | _ => $'backend_switch_has_no_Gleam_arm_in_lib_spiral' : t
                         Lua = \ () =>
-                            $'print("backend.backend_switch / record_type_try_find")' : t
+                            ?: t ?|
+                            | () => $'print("backend.backend_switch / record_type_try_find")' : t
+                            | _ => $'backend_switch_has_no_Lua_arm_in_lib_spiral' : t
                         Fsharp = \ () =>
-                            $'() // backend.backend_switch / record_type_try_find / key: !key ' : t
+                            ?: t ?|
+                            | () => $'() // backend.backend_switch / record_type_try_find / key: !key ' : t
+                            | _ => $'backend_switch_has_no_Fsharp_arm_in_lib_spiral' : t
                         Python = \ () =>
-                            $'None ## backend.backend_switch / record_type_try_find / key: !key ' : t
+                            ?: t ?|
+                            | () => $'None ## backend.backend_switch / record_type_try_find / key: !key ' : t
+                            | _ => $'backend_switch_has_no_Python_arm_in_lib_spiral' : t
                         Cpp = \ () =>
-                            $'nullptr // backend.backend_switch / record_type_try_find / key: !key ' : t
+                            ?: t ?|
+                            | () => $'((void)0)' : t
+                            | _ => $'backend_switch_has_no_Cpp_arm_in_lib_spiral' : t
                         Rust = \ () =>
                             ?: t ?|
                             | () => $'() /* backend_switch: no Rust arm (lib/spiral) */' : t

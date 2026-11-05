@@ -10,7 +10,7 @@ enum US0 {
 fn spiral_main() -> i32 {
     let v0: US0 = US0::US0_Foo;
     let v1: US0 = US0::US0_FOO;
-    let v4: i32 = match &v0 {
+    let v4: i32 = match v0 {
         US0::US0_Bar => {
             100i32
         }
@@ -21,7 +21,7 @@ fn spiral_main() -> i32 {
             1i32
         }
     };
-    let v7: i32 = match &v1 {
+    let v7: i32 = match v1 {
         US0::US0_Bar => {
             100i32
         }

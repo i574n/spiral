@@ -59,6 +59,20 @@ defmodule Spiral.Cells.CompilerDaemonTest do
     assert_receive {:DOWN, ^watch, :process, ^worker, _}, 2_000
   end
 
+  test "the warm-port tag names the host and core DLL stamps, so run_notebook.ps1 can compute it" do
+    dir = Spiral.Cells.TestHelpers.tmp_dir!("dll-tag")
+    dll = Path.join(dir, "SpiralCompiler.dll")
+    core = Path.join(dir, "SpiralCompilerCore.dll")
+    File.write!(dll, "host")
+    File.write!(core, "core v1")
+    File.touch!(dll, 1_700_000_000)
+    File.touch!(core, 1_700_000_100)
+    assert CompilerDaemon.dll_tag(dll) == "1700000000-4-1700000100-7"
+    File.write!(core, "core v2 swapped")
+    File.touch!(core, 1_700_000_100)
+    assert CompilerDaemon.dll_tag(dll) == "1700000000-4-1700000100-15"
+  end
+
   test "the banner carries the served compiler's tag after the code stamp" do
     assert [_, "1", _pid, _stamp, tag] = String.split(CompilerDaemon.banner(), "\t")
     assert tag == CompilerDaemon.served_dll_tag()
@@ -354,6 +368,32 @@ defmodule Spiral.Cells.CompilerDaemonTest do
     assert CompilerDaemon.shadow_dll(Path.join(dir, "missing.dll"), root) == Path.join(dir, "missing.dll")
     assert CompilerDaemon.shadow_dll(dll, Path.join(dir, "shadows") <> "\u0000") == dll
   end
+  test "a core-only swap (SpiralCompilerCore.dll replaced in place, host DLL untouched) gets a fresh shadow copy and restarts it" do
+    dir = Spiral.Cells.TestHelpers.tmp_dir!("shadow-core")
+    build = Path.join(dir, "net11.0")
+    File.mkdir_p!(build)
+    dll = Path.join(build, "SpiralCompiler.dll")
+    core = Path.join(build, "SpiralCompilerCore.dll")
+    File.write!(dll, "host")
+    File.write!(core, "core v1")
+    root = Path.join(dir, "shadows")
+
+    first = CompilerDaemon.shadow_dll(dll, root)
+    assert File.read!(Path.join(Path.dirname(first), "SpiralCompilerCore.dll")) == "core v1"
+    stamp = CompilerDaemon.dll_stamp(dll)
+    host_before = File.stat!(dll, time: :posix)
+
+    File.write!(core, "core v2 swapped")
+    File.touch!(core, host_before.mtime - 60)
+    host_after = File.stat!(dll, time: :posix)
+    assert {host_after.mtime, host_after.size} == {host_before.mtime, host_before.size}
+    refute CompilerDaemon.compiler_current?(%{dll_stamp: stamp}, CompilerDaemon.dll_stamp(dll))
+
+    second = CompilerDaemon.shadow_dll(dll, root)
+    refute second == first
+    assert File.read!(Path.join(Path.dirname(second), "SpiralCompilerCore.dll")) == "core v2 swapped"
+  end
+
   test "an exit signal from a linked process does not stop the daemon" do
     dir = Spiral.Cells.TestHelpers.tmp_dir!("daemon-exit")
 

@@ -61,6 +61,12 @@ Logs go to `<cache>/probes/<sample>/`. Two DLLs on one sample: `pwsh ../scripts/
 `-Parallel` defaults to half the logical CPUs, capped at one worker per 1.5 GB of free memory; don't drop to 1
 unless memory is short.
 
+`-ChangedBetween <control results.tsv>,<candidate results.tsv>` (2026-11-03) keeps only the samples whose residual differs between two runs, matched by id and backend, for the native half of a pack review: run both arms without `-Native`, then rerun both arms with `-Native -ChangedBetween` on those two files. It exits 0 at once when nothing changed. `-Accept` and `-Record` refuse it. `-BackendsFrom <before.fs>,<after.fs>` sets `-Backend` (when none is given) to the backends whose codegen the change touches. Changed lines are aligned positionally, resyncing on 3 equal lines within 400. Each one maps to its file's nearest `/// ## Codegen<X>` header, or `/// ### codegen<X>` inside a shared section. A change anywhere else (PartEval, CodegenUtils, Infer) keeps every backend. Checked against this session's packs: pack31 maps to Lua, pack28 and pack30 to Rust, pack29 to every backend (it changed PartEval's ExternCalls).
+
+`-Suite linked` (2026-11-03) runs the multi-unit cases in `tests/matrix.psd1` `Linked`, each a `samples/linked_<name>/` folder with one package per subfolder. The root unit is the one no other unit lists under `packages:`. It and the transitive closure of `link:` are compiled in post-order into `<cache>/runs/<run>/linked/<case>/<backend>/`. Rust units become rlibs, each given `--extern` for every unit built before it. Zig files sit side by side. Gleam units go into the persistent `<cache>/scratch/<mode>/gleam-linked` project, with the root as `src/main.gleam` and run through `spiral_run`. A case expects `Exit` (the root's exit code) or `Error` (text the compile must fail with). `Calls` names exports the root must call through the unit, so a call that silently inlines fails the `linked` column. The suite runs outside the worker pool and does not combine with other suites.
+
+`-Suite families` (2026-11-04) runs the Cells test-block families: every `*_family` module listed in `tests/families/package.spiproj` (export_family is Cells-only and not listed). It sets `SPIRAL_COMPILER_DLL` to the compiler under test and runs `scripts/test-blocks.ps1 -Compiler process` into the run dir, and it fails on any DISAGREE. On pack34 it gives 150 rows, all agreeing. Like `linked`, it does not combine with other suites.
+
 Compile statuses: `ok` (returned code), `emitted` (the core wrote the residual during the run but the
 compile never returned), `error`, `timeout`,
 `crash`. Baseline verdicts: `parity`, `emitted-parity`, `*-residual-differs`, `FIXED` (oracle had no
@@ -225,8 +231,8 @@ The eBPF backend (`codegenEbpf`, `--backend Ebpf` / `.ebpf`, 2026-10-10) is a C 
   row (same verdicts and residual hashes). The oracle lives in the cache, never in the tree.
 - Other generated results never go into the tree (the oracle, scoreboards, receipts, snapshots); hand-written
   matrix tables live in `tests/matrix.psd1`. `|core-` resolves to The-Spiral-Language's core in
-  the fork that `../scripts/init.ps1` clones to the repo's `deps/The-Spiral-Language` (polyglot's clone is the fallback;
-  `Get-SpiralPackageDir`); do not copy it here.
+  the fork that `../scripts/init.ps1` clones to the repo's `deps/The-Spiral-Language` (`Get-SpiralPackageDir`, or
+  `SPIRAL_COMPILER_PACKAGE_DIR`); do not copy it here.
 - Keep both builds (single-flight and hopacsota) building against the same host.
 - This directory holds sources, fixtures and docs only. Build output, toolchains, native binaries, run logs
   and the flat dependency directory stay in the cache directory; `.gitignore` catches in-tree builds.

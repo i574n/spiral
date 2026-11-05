@@ -12,13 +12,13 @@
 :! monitor = $'process.Monitor'
 :! selector t = $'process.Selector(`t)'
 :! timer = $'process.Timer'
+
 :! down = $'process.Down'
 :! exit_reason = $'process.ExitReason'
 :! exit_message = $'process.ExitMessage'
 :! host_received t = $'Result(`t, Nil)'
 :! name t = $'process.Name(`t)'
 
-/// ## receipt
 :| receipt t =
     | Got : t
     | TimedOut
@@ -39,7 +39,6 @@
     | Got value => Some value
     | TimedOut => None
 
-/// ## processes
 := self () : pid =
     erlang_process_imports ()
     $'process.self()'
@@ -90,7 +89,6 @@
     receive_forever inbox
     |> _assert_eq 7i32
 
-/// ## names
 := new_name \* t. (prefix : string) : name t =
     erlang_process_imports ()
     $'process.new_name(!prefix)'
@@ -103,15 +101,15 @@
     erlang_process_imports ()
     ($'process.register(!owner, !address)' : host_received ()) |> host_received_is_ok
 
+:= named_round_trip (address : name i32) (message : i32) : bool * option i32 =
+    := registered = register (self ()) address
+    send (named_subject address) message
+    registered, receive_within (named_subject address) 1000i32 |> receipt_value
+
 ///> gleam
 :# a_named_subject_reaches_the_registered_process =
-    := address : name i32 = new_name "lib_erlang_process_test"
-    := registered = register (self ()) address
-    send (named_subject address) 5i32
-    (registered, receive_within (named_subject address) 1000i32 |> receipt_value)
-    |> _assert_eq (!+, Some 5i32)
+    named_round_trip (new_name "lib_erlang_process_test") 5i32 |> _assert_eq (!+, Some 5i32)
 
-/// ## calls
 := call_forever \* m reply. (to : subject m) (request : subject reply -> m) : reply =
     := reply_to : subject reply = new_subject ()
     send to (request reply_to)
@@ -143,20 +141,29 @@
     | ErlangProcessAskCount reply => send reply count
     | ErlangProcessAskLabel reply => send reply name
 
+:= answer_once (inbox : subject erlang_process_ask) : () = inbox |> receive_forever |> erlang_process_answer 41i32 "x"
+
+:= query_server (ready : subject (subject erlang_process_ask)) : () =
+    := inbox : subject erlang_process_ask = new_subject ()
+    send ready inbox
+    answer_once inbox
+    answer_once inbox
+
+:= spawned_query_server () : subject erlang_process_ask =
+    := ready : subject (subject erlang_process_ask) = new_subject ()
+    spawn (\ () => query_server ready) |> ignore
+    receive_forever ready
+
+:= asked_count (server : subject erlang_process_ask) : i32 =
+    call_forever server (erlang_process_wrap (ErlangProcessCount ()))
+
+:= asked_label (server : subject erlang_process_ask) : string =
+    call_forever server (erlang_process_wrap (ErlangProcessLabel ()))
+
 ///> gleam
 :# a_typed_query_fixes_its_reply_type =
-    := ready : subject (subject erlang_process_ask) = new_subject ()
-    spawn (\ () =>
-        := inbox : subject erlang_process_ask = new_subject ()
-        send ready inbox
-        inbox |> receive_forever |> erlang_process_answer 41i32 "x"
-        inbox |> receive_forever |> erlang_process_answer 41i32 "x"
-    )
-    |> ignore
-    := server = receive_forever ready
-    := n : i32 = call_forever server (erlang_process_wrap (ErlangProcessCount ()))
-    := s : string = call_forever server (erlang_process_wrap (ErlangProcessLabel ()))
-    (n, s) |> _assert_eq (41i32, "x")
+    := server = spawned_query_server ()
+    (asked_count server, asked_label server) |> _assert_eq (41i32, "x")
 
 ///> gleam
 :# a_call_without_an_answer_times_out =
@@ -165,7 +172,6 @@
     |> receipt_value
     |> _assert_eq None
 
-/// ## monitors
 := monitor (watched : pid) : monitor =
     erlang_process_imports ()
     $'process.monitor(!watched)'
@@ -214,78 +220,74 @@
     erlang_process_imports ()
     $'!reason == process.Normal'
 
+:= hand_back_go (ready : subject (subject ())) : () =
+    := go : subject () = new_subject ()
+    send ready go
+    receive_forever go
+
+:= finished_watch () : monitor =
+    := ready : subject (subject ()) = new_subject ()
+    := watch = monitor (spawn_unlinked (\ () => hand_back_go ready))
+    send (receive_forever ready) ()
+    watch
+
 ///> gleam
 :# monitor_sees_normal_exit =
-    := ready : subject (subject ()) = new_subject ()
-    := worker =
-        spawn_unlinked \ () =>
-            := go : subject () = new_subject ()
-            send ready go
-            receive_forever go
-    := go = receive_forever ready
-    := watch = monitor worker
-    send go ()
-    := choices : selector bool = new_selector () |> select_specific_monitor watch (down_reason >> exited_normally)
-    selector_receive_forever choices
-    |> _assert_eq !+
+    := choices : selector bool =
+        new_selector () |> select_specific_monitor (finished_watch ()) (down_reason >> exited_normally)
+    selector_receive_forever choices |> _assert_eq !+
 
 :| erlang_process_inbox =
     | InboxWork : i32
     | InboxStop
     | InboxDown : bool
 
-///> gleam
-:# a_selector_merges_two_subjects_and_a_monitor_into_one_union =
+:= inbox_down (d : down) : erlang_process_inbox = InboxDown (exited_normally (down_reason d))
+
+:= inbox_choices (work : subject i32) (stop : subject ()) (watch : monitor) : selector erlang_process_inbox =
+    new_selector ()
+    |> select_map work (\ n => InboxWork n)
+    |> select_map stop (\ () => InboxStop)
+    |> select_specific_monitor watch inbox_down
+
+:= merged_choices () : selector erlang_process_inbox =
     := work : subject i32 = new_subject ()
     := stop : subject () = new_subject ()
-    := ready : subject (subject ()) = new_subject ()
-    := worker =
-        spawn_unlinked \ () =>
-            := go : subject () = new_subject ()
-            send ready go
-            receive_forever go
-    := go = receive_forever ready
-    := watch = monitor worker
     send work 7i32
-    send go ()
     send stop ()
-    := choices : selector erlang_process_inbox =
-        new_selector ()
-        |> select_map work (\ n => InboxWork n)
-        |> select_map stop (\ () => InboxStop)
-        |> select_specific_monitor watch (\ d => InboxDown (exited_normally (down_reason d)))
-    := score (received : option erlang_process_inbox) : i32 =
-        ?= received ?|
-        | None => 0i32
-        | Some inbox =>
-            ?= inbox ?|
-            | InboxWork n => n
-            | InboxStop => 100i32
-            | InboxDown normal => ? normal ?> 1000i32 |: 0i32
-    := first = selector_receive_within choices 1000i32 |> receipt_value
-    := second = selector_receive_within choices 1000i32 |> receipt_value
-    := third = selector_receive_within choices 1000i32 |> receipt_value
-    score first + score second + score third
+    inbox_choices work stop (finished_watch ())
+
+:= inbox_points (inbox : erlang_process_inbox) : i32 =
+    ?= inbox ?|
+    | InboxWork n => n
+    | InboxStop => 100i32
+    | InboxDown normal => ? normal ?> 1000i32 |: 0i32
+
+:= next_points (choices : selector erlang_process_inbox) : i32 =
+    ?= selector_receive_within choices 1000i32 |> receipt_value ?| None => 0i32 | Some inbox => inbox_points inbox
+
+///> gleam
+:# a_selector_merges_two_subjects_and_a_monitor_into_one_union =
+    := choices = merged_choices ()
+    next_points choices + next_points choices + next_points choices
     |> _assert_eq 1107i32
+
+:= normal_exits () : selector bool =
+    new_selector () |> select_trapped_exits \ e => exited_normally (exit_message_reason e)
+
+:= linked_exit () : () =
+    := ready : subject (subject ()) = new_subject ()
+    spawn (\ () => hand_back_go ready) |> ignore
+    send (receive_forever ready) ()
 
 ///> gleam
 :# a_trapped_exit_arrives_as_a_message =
     trap_exits !+
-    := ready : subject (subject ()) = new_subject ()
-    spawn (\ () =>
-        := go : subject () = new_subject ()
-        send ready go
-        receive_forever go
-    )
-    |> ignore
-    := go = receive_forever ready
-    send go ()
-    := choices : selector bool = new_selector () |> select_trapped_exits (\ e => exited_normally (exit_message_reason e))
-    := got = selector_receive_within choices 1000i32 |> receipt_value
+    linked_exit ()
+    := got = selector_receive_within (normal_exits ()) 1000i32 |> receipt_value
     trap_exits !-
     got |> _assert_eq (Some !+)
 
-/// ## timers
 := send_after \* t. (to : subject t) (delay_ms : i32) (message : t) : timer =
     erlang_process_imports ()
     $'process.send_after(!to, !delay_ms, !message)'
@@ -294,16 +296,27 @@
     erlang_process_imports ()
     $'process.cancel_timer(!pending)' : ()
 
-/// ## groups
+:= erlang_process_pg_start_import () =
+    global "@external(erlang, \"pg\", \"start\") fn erlang_process_pg_start(scope: atom.Atom) -> dynamic.Dynamic"
+
+:= erlang_process_pg_join_import () =
+    global "@external(erlang, \"pg\", \"join\") fn erlang_process_pg_join(group: dynamic.Dynamic, member: process.Pid) -> dynamic.Dynamic"
+
+:= erlang_process_pg_members_import () =
+    global "@external(erlang, \"pg\", \"get_members\") fn erlang_process_pg_members(group: dynamic.Dynamic) -> List(process.Pid)"
+
+:= erlang_process_pg_externals () =
+    global "pub type ErlangProcessGroup(message) { ErlangProcessGroup(key: dynamic.Dynamic) }"
+    erlang_process_pg_start_import ()
+    erlang_process_pg_join_import ()
+    erlang_process_pg_members_import ()
+
 := erlang_process_group_imports () =
     erlang_process_imports ()
     global "import gleam/dynamic"
     global "import gleam/erlang/atom"
     global "import gleam/list"
-    global "pub type ErlangProcessGroup(message) { ErlangProcessGroup(key: dynamic.Dynamic) }"
-    global "@external(erlang, \"pg\", \"start\") fn erlang_process_pg_start(scope: atom.Atom) -> dynamic.Dynamic"
-    global "@external(erlang, \"pg\", \"join\") fn erlang_process_pg_join(group: dynamic.Dynamic, member: process.Pid) -> dynamic.Dynamic"
-    global "@external(erlang, \"pg\", \"get_members\") fn erlang_process_pg_members(group: dynamic.Dynamic) -> List(process.Pid)"
+    erlang_process_pg_externals ()
 
 :! group t = $'ErlangProcessGroup(`t)'
 
@@ -331,30 +344,33 @@
     erlang_process_group_imports ()
     $'list.each(erlang_process_pg_members(!members.key), fn(member) { process.send(process.unsafely_create_subject(member, !members.key), !message) })'
 
+:= echo_member (team : group i32) (ready : subject ()) (echoes : subject i32) : () =
+    join_group team
+    send ready ()
+    send echoes (receive_forever (group_inbox team) * 10i32)
+
+:= joined_member (team : group i32) (echoes : subject i32) : () =
+    := ready : subject () = new_subject ()
+    spawn (\ () => echo_member team ready echoes) |> ignore
+    receive_forever ready
+
+:= echo_team () : group i32 * subject i32 =
+    := echoes : subject i32 = new_subject ()
+    := team : group i32 = new_group "spiral_lib_erlang_process_group_test"
+    joined_member team echoes
+    joined_member team echoes
+    team, echoes
+
+:= echo_within (echoes : subject i32) : option i32 = receive_within echoes 2000i32 |> receipt_value
+
 ///> gleam
 :# a_broadcast_reaches_every_member_of_the_group =
     groups_start ()
-    := team : group i32 = new_group "spiral_lib_erlang_process_group_test"
-    := ready : subject () = new_subject ()
-    := echoes : subject i32 = new_subject ()
-    := member () =
-        spawn \ () =>
-            join_group team
-            send ready ()
-            := got = receive_forever (group_inbox team)
-            send echoes (got * 10i32)
-        |> ignore
-    member ()
-    member ()
-    receive_forever ready
-    receive_forever ready
+    := team, echoes = echo_team ()
     := size = group_size team
     broadcast team 4i32
-    := a = receive_within echoes 2000i32 |> receipt_value
-    := b = receive_within echoes 2000i32 |> receipt_value
-    (size, a, b) |> _assert_eq (2i32, Some 40i32, Some 40i32)
+    (size, echo_within echoes, echo_within echoes) |> _assert_eq (2i32, Some 40i32, Some 40i32)
 
-/// ## runtime
 := kill (target : pid) : () =
     erlang_process_imports ()
     $'process.kill(!target)'
@@ -368,15 +384,40 @@
     global "@external(erlang, \"erlang\", \"system_info\") fn erlang_process_system_info(item: atom.Atom) -> Int"
     $'erlang_process_system_info(atom.create("schedulers_online"))'
 
+:= beam_memory_mb () : i32 =
+    := total = erlang_term::apply "erlang" "memory" [ erlang_term::atom "total" ]
+    erlang_term::apply "erlang" "div" [ total; erlang_term::of 1048576i32 ] |> erlang_term::cast
+
+///> gleam
+:# the_beam_reports_some_memory =
+    (beam_memory_mb () > 0i32, beam_memory_mb () < 1048576i32) |> _assert_eq (!+, !+)
+
+:= charlist_text (c : erlang_term::term) : string =
+    erlang_term::apply "unicode" "characters_to_binary" [ c ] |> erlang_term::cast
+
+:= plain_arguments () : list string =
+    erlang_term::apply "init" "get_plain_arguments" [] |> erlang_term::items_of |> listm::map charlist_text
+
+///> gleam
+:# plain_arguments_are_texts =
+    plain_arguments () |> listm::map sm'::length |> listm::fold (\ ok n => ok && n >= 0i32) !+ |> _assert_eq !+
+
 := dictionary_get (key : erlang_term::term) : erlang_term::term = erlang_term::apply "erlang" "get" [ key ]
 
 := dictionary_put (key : erlang_term::term) (value : erlang_term::term) : erlang_term::term =
     erlang_term::apply "erlang" "put" [ key; value ]
 
+:= probe_key () : erlang_term::term =
+    erlang_term::tuple [ erlang_term::atom "spiral_process_dictionary_probe"; erlang_term::of 7i32 ]
+
+:= is_undefined (t : erlang_term::term) : bool = erlang_term::equal t (erlang_term::atom "undefined")
+
+:= stored_after (key : erlang_term::term) (value : i32) : i32 =
+    dictionary_put key (erlang_term::of value) |> ignore
+    dictionary_get key |> erlang_term::cast
+
 ///> gleam
 :# the_process_dictionary_keeps_a_value_by_key =
-    := key = erlang_term::tuple [ erlang_term::atom "spiral_process_dictionary_probe"; erlang_term::of 7i32 ]
+    := key = probe_key ()
     := before = dictionary_get key
-    dictionary_put key (erlang_term::of 3i32) |> ignore
-    := after : i32 = dictionary_get key |> erlang_term::cast
-    (erlang_term::equal before (erlang_term::atom "undefined"), after) |> _assert_eq (!+, 3i32)
+    (is_undefined before, stored_after key 3i32) |> _assert_eq (!+, 3i32)

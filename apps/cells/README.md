@@ -411,8 +411,8 @@ the F# chain.
 ## CI
 
 dice's and alphabet's gh-pages workflows run every notebook through this route: their `build.ps1` notebook steps call
-`spi/run_notebook.ps1 --path <nb>.livemd` (`--spi-path <nb>.spi`, or `--no-spi` for
-the F# notebooks dice_fsharp and hangul). What a runner needs:
+`spi/run_notebook.ps1 --path <nb>.spi` (dice with `--output-path` for the rendered notebook, alphabet's hangul with
+`--gate`, which fails the build on a failed test). What a runner needs:
 
 - Elixir >= 1.18 with a matching OTP (`erlef/setup-beam` with `elixir-version` set; `otp-version` + `gleam-version`
   alone install no Elixir), and Gleam >= 1.14: `mix compile` regenerates `src/spiral_cells/domain.gleam` from

@@ -1,5 +1,6 @@
 :< rust_operators
 :< sm'_operators
+:< unsupported
 
 :# process static =
     :< testing
@@ -493,219 +494,6 @@
         | _ => \ () => ()
 
 /// ## execution
-:= execute_with_options_fsharp (options : execution_options) : i32 * string =
-    := command = ~~ options::command
-    := file_name, arguments = command |> split_command |> resultm::get
-    := arguments =
-        arguments
-        |> optionm'::default_value ""
-        |> split_args
-        |> resultm::get
-        |> am'::to_vec
-        |> am'::vec_map sm'::to_std_string
-    trace Debug
-        \ () => "process.execute_with_options"
-        \ () => { file_name arguments = #?*arguments; options }
-    \ () =>
-        \ () =>
-            file_name
-            |> new_process_command
-            |> process_command_args arguments
-            |> process_command_stdout (process_stdio_piped ())
-            |> process_command_stderr (process_stdio_piped ())
-            |> process_command_stdin (process_stdio_piped ())
-            |> \ command =>
-                ?= options::working_directory |> optionm'::unbox ?|
-                | Some working_directory => command |> process_command_current_dir working_directory
-                | None => !\($'$"!command"') |> rust::emit
-            |> \ command =>
-                ?= options::environment_variables ?|
-                | ;[] => command
-                | vars =>
-                    (command, vars |> am'::to_vec)
-                    ||> am'::vec_fold' \ command (key, value) =>
-                        command |> process_command_env key value
-            |> process_command_spawn
-            |> resultm::map_error'' sm'::format'
-            |> resultm::map' (rust::emit >> optionm'::some' >> rust::emit >> threading::new_arc_mutex)
-            |> resultm::unbox'
-            |> \|
-                | Ok child =>
-                    := stdout =
-                        \ () =>
-                            child
-                            |> threading::arc_mutex_lock
-                            |> resultm::unwrap'
-                            |> threading::mutex_guard_ref_mut''
-                            |> optionm'::as_mut
-                            |> optionm'::unwrap
-                            |> process_child_stdout
-                            |> optionm'::take_ref_mut
-                            |> optionm'::unwrap
-                        |> rust::capture
-                    := stderr =
-                        \ () =>
-                            child
-                            |> threading::arc_mutex_lock
-                            |> resultm::unwrap'
-                            |> threading::mutex_guard_ref_mut''
-                            |> optionm'::as_mut
-                            |> optionm'::unwrap
-                            |> process_child_stderr
-                            |> optionm'::take_ref_mut
-                            |> optionm'::unwrap
-                        |> rust::capture
-                    := stdin =
-                        \ () =>
-                            child
-                            |> threading::arc_mutex_lock
-                            |> resultm::unwrap'
-                            |> threading::mutex_guard_ref_mut''
-                            |> optionm'::as_mut
-                            |> optionm'::unwrap
-                            |> process_child_stdin
-                            |> optionm'::take_ref_mut
-                            |> optionm'::unwrap
-                            |> optionm'::some'
-                            |> rust::emit
-                            |> threading::new_arc_mutex
-                        |> rust::capture
-                    := channel_sender, channel_receiver = threading::new_channel ()
-                    := channel_sender'' = channel_sender |> rust::emit |> threading::new_arc_mutex
-                    := channel_sender' = channel_sender |> rust::emit |> threading::new_arc_mutex
-                    := channel_receiver' = channel_receiver |> rust::emit |> threading::new_arc_mutex
-                    := stdout_handle =
-                        \ () =>
-                            stdout
-                            |> stream::decode_reader_bytes_build
-                            |> stream::new_buf_reader
-                            |> stream::buf_read_lines
-                            |> iter::try_for_each \ lines =>
-                                := channel_sender'' = channel_sender'' |> rust::clone
-                                lines
-                                |> stdio_line (Ok ()) options::trace channel_sender''
-                                |> resultm::to_try
-                        |> threading::spawn (1, 0) 1
-                    := stderr_handle =
-                        \ () =>
-                            stderr
-                            |> stream::decode_reader_bytes_build
-                            |> stream::new_buf_reader
-                            |> stream::buf_read_lines
-                            |> iter::try_for_each \ lines =>
-                                ? options::stderr |> not
-                                ?> Ok () |> resultm::box
-                                |:
-                                    := channel_sender' = channel_sender' |> rust::clone
-                                    lines
-                                    |> stdio_line (Error ()) options::trace channel_sender'
-                                |> resultm::to_try
-                        |> threading::spawn (1, 0) 1
-                    ?= options::stdin |> optionm'::unbox ?|
-                    | Some stdin' =>
-                        stdin
-                        |> threading::arc_mutex_lock
-                        |> resultm::unwrap'
-                        |> threading::mutex_guard_ref_mut''
-                        |> optionm'::take_ref_mut
-                        |> optionm'::map' threading::new_arc_mutex
-                        |> optionm'::unbox
-                        |> \|
-                            | Some stdin =>
-                                stdin |> stdin'
-                                stdin
-                                |> threading::arc_mutex_lock'
-                                |> resultm::unwrap'
-                                |> stdin_flush
-                            | None => ()
-                    | None => ()
-                    := output =
-                        child
-                        |> threading::arc_mutex_lock'
-                        |> resultm::unwrap'
-                        |> threading::mutex_guard_ref_mut''
-                        |> optionm'::take_ref_mut
-                        |> optionm'::unwrap
-                        |> child_wait_with_output
-                        |> resultm::map_error'' sm'::format'
-                    [ stdout_handle; stderr_handle ]
-                    |> am'::new_vec
-                    |> am'::vec_for_each' (threading::join' >> resultm::unwrap' >> resultm::unwrap')
-                    ?= output |> resultm::unbox ?|
-                    | Ok output =>
-                        := exit_code =
-                            output
-                            |> process_output_status
-                            |> process_exit_status_code
-                            |> optionm'::unbox
-                        ?= exit_code ?|
-                        | Some exit_code =>
-                            := stdout =
-                                output
-                                |> process_output_stdout
-                                |> sm'::string_from_utf8
-                                |> resultm::unwrap'
-                            := stderr =
-                                output
-                                |> process_output_stderr
-                                |> sm'::string_from_utf8
-                                |> resultm::unwrap'
-                            := output =
-                                [ stdout; stderr ]
-                                |> listm::map (sm'::from_std_string >> sm'::trim)
-                                |> listm'::filter (sm'::is_empty >> not)
-                                |> sm'::concat_list "\n"
-                                |> sm'::to_std_string
-                                |> Some
-                            exit_code, output, Some channel_receiver'
-                        | None =>
-                            -1,
-                            ("process.execute_with_options / exit_code=None"
-                                |> sm'::to_std_string
-                                |> Some),
-                            Some channel_receiver'
-                    | Error error =>
-                        trace Critical
-                            \ () => "process.execute_with_options / output error"
-                            \ () => { error file_name arguments = #?*arguments; options }
-                        -2i32, error |> Some, None
-                | Error error =>
-                    trace Critical
-                        \ () => "process.execute_with_options / child error"
-                        \ () => { error file_name arguments = #?*arguments; options }
-                    -1i32, error |> Some, None
-            |> \|
-                | exit_code, std_trace, channel_receiver =>
-                    := std_trace =
-                        channel_receiver
-                        |> optionm'::box
-                        |> optionm'::map' \ channel_receiver =>
-                            channel_receiver
-                            |> threading::arc_mutex_lock'
-                            |> resultm::unwrap'
-                            |> iter::iter
-                            |> iter_collect''
-                            |> am'::vec_map sm'::from_std_string
-                            |> am'::from_vec
-                            |> \ x => x : array _
-                            |> seq::of_array
-                            |> sm'::concat "\n"
-                        |> optionm'::unbox
-                        |> optionm::map (sm'::trim >> sm'::to_option)
-                        |> optionm'::flatten
-                        |> optionm'::default_value (
-                            std_trace
-                            |> optionm::map sm'::from_std_string
-                            |> optionm'::default_value ""
-                        )
-                    trace Verbose
-                        \ () => "process.execute_with_options / result"
-                        \ () => { file_name exit_code std_trace_len = ##std_trace }
-                    new_pair exit_code std_trace
-        |> capture
-    |> \ x => x ()
-    |> from_pair
-
 := execute_with_options_rust (options : execution_options) : i32 * string =
     := command = ~~ options::command
     := file_name, arguments = command |> split_command |> resultm::get
@@ -796,7 +584,6 @@
 
 :~ execute_with_options (options : execution_options) : i32 * string =
     backend_switch {
-        Fsharp = \ () => execute_with_options_fsharp options
         Rust = \ () => execute_with_options_rust options
     }
 
@@ -969,7 +756,7 @@
             shared_command_arg command ("" ++#? pid)
             shared_command_output command |> ignore
         | Gleam => \ () => platform::os_command_output (kill_command pid) |> ignore
-        | _ => \ () => failwith "kill_tree_of_pid: no arm for this backend"
+        | _ => \ () => no_arm "kill_tree_of_pid"
 
 /// ## started
 :== started_switch =
@@ -1004,9 +791,11 @@
         |: gleam_waited choices log deadline
     |: None
 
+:= timed_out (since : date_time::stopwatch) (ms : i32) : bool = date_time::stopwatch_elapsed_milliseconds since >= conv ms
+
 :~ ^ rust_waited (child : shared_child) (since : date_time::stopwatch) (ms : i32) : option i32 =
     ? shared_child_exited child ?> Some (shared_child_code child)
-    |? date_time::stopwatch_elapsed_milliseconds since >= conv ms ?> None
+    |? timed_out since ms ?> None
     |:
         threading::sleep 5i32
         rust_waited child since ms
@@ -1035,7 +824,7 @@
                 erlang_port::close p |> ignore
                 kill_tree_of_pid pid
                 -1i32
-        | _ => \ () => failwith "capture_status_within: no arm for this backend"
+        | _ => \ () => no_arm "capture_status_within"
 
 := start_logging (directory : string) (program : string) (args : list string) (log : string) : started =
     run_target \|
@@ -1052,13 +841,13 @@
             := merged = erlang_term::atom "stderr_to_stdout"
             := options = [ erlang_term::atom "binary"; erlang_term::atom "exit_status"; argv; merged; cd ]
             gleam_started (port_for program options) log
-        | _ => \ () => failwith "start_logging: no arm for this backend"
+        | _ => \ () => no_arm "start_logging"
 
 := started_pid (s : started) : i32 =
     run_target \|
         | Rust => \ () => conv (shared_child_id (rust_child s))
         | Gleam => \ () => erlang_port::os_pid (gleam_started_port s)
-        | _ => \ () => failwith "started_pid: no arm for this backend"
+        | _ => \ () => no_arm "started_pid"
 
 := await_exit_within (s : started) (ms : i32) : option i32 =
     run_target \|
@@ -1076,14 +865,14 @@
                     outcome
                 | None => None
             |: Some (kept |> erlang_term::cast)
-        | _ => \ () => failwith "await_exit_within: no arm for this backend"
+        | _ => \ () => no_arm "await_exit_within"
 
 /// ## capture
 := exit_with (code : i32) : () =
     run_target \|
         | Rust => \ () => $'std::process::exit(!code)' : ()
         | Gleam => \ () => erlang_term::apply "erlang" "halt" [ erlang_term::of code ] |> ignore
-        | _ => \ () => failwith "exit_with: no arm for this backend"
+        | _ => \ () => no_arm "exit_with"
 
 :== captured = { ran : bool; code : i32; stdout : string }
 
@@ -1119,7 +908,7 @@
     run_target \|
         | Rust => \ () => rust_captured program args merged
         | Gleam => \ () => gleam_captured program args merged
-        | _ => \ () => failwith "captured_by: no arm for this backend"
+        | _ => \ () => no_arm "captured_by"
 
 := succeeded (c : captured) : bool = c::ran && c::code = 0i32
 
@@ -1245,19 +1034,3 @@
     marker_writer_exit dir |> _assert_eq (Some 0i32)
     marker_places dir |> _assert_eq (!+, !-)
     file_system::file_delete (dir ++# "/" ++# directory_marker ())
-
-/// ## main
-///> fsharp
-
-:= main () =
-    init_trace_state None
-    $'let current_process_kill () = !current_process_kill ()' : ()
-    := execution_options fn =
-        execution_options \ x =>
-            x
-            |> heap
-            |> fn
-            |> \ x => !x
-    $'let execution_options x = !execution_options x' : ()
-    := split_args x = x |> split_args |> resultm::box
-    $'let split_args x = !split_args x' : ()

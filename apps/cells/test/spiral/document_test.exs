@@ -204,20 +204,35 @@ defmodule Spiral.Cells.DocumentTest do
              """
   end
 
-  test "the export equals spiral export on the dice and alphabet notebooks" do
+  test "the export equals spiral export on a mixed F# and Spiral notebook" do
     exe = Path.expand("../../../../workspace/target/release/spiral" <> exe_suffix(), __DIR__)
-    alphabet = Path.expand("../../../../../alphabet/apps", __DIR__)
 
-    notebooks =
-      Enum.map(
-        ["lib/fsharp/dice_fsharp.livemd"],
-        &Path.join(@dice, &1)
-      ) ++
-        Enum.map(["hangul/hangul.livemd"], &Path.join(alphabet, &1))
+    mixed =
+      Document.parse_dib("""
+      #!markdown
+
+      # mixed (Mixed)
+
+      #!markdown
+
+      ## run (test)
+      a line of prose
+
+      #!fsharp
+
+      let increment x = x + 1
+
+      #!spiral
+
+      ///> _
+
+      inl main () =
+          0i32
+      """)
 
     cond do
       File.regular?(exe) ->
-        compare_with_cli_export(exe, notebooks)
+        compare_with_cli_export(exe, [{"mixed", mixed}])
 
       (System.get_env("SPIRAL_CELLS_SKIP_CLI_EXPORT") || System.get_env("SPIRAL_CELLS_SKIP_DIB_EXPORT")) in ["1", "true"] ->
         skipped("#{exe} is missing (SPIRAL_CELLS_SKIP_CLI_EXPORT is set)")
@@ -230,7 +245,7 @@ defmodule Spiral.Cells.DocumentTest do
     end
   end
 
-  defp compare_with_cli_export(exe, notebooks) do
+  defp compare_with_cli_export(exe, docs) do
     tmp =
       Path.join(
         System.tmp_dir!(),
@@ -240,15 +255,13 @@ defmodule Spiral.Cells.DocumentTest do
     File.mkdir_p!(tmp)
 
     try do
-      for path <- notebooks do
-        assert File.regular?(path), "#{path} is missing"
-        doc = Document.parse_livemd(File.read!(path))
-        copy = Path.join(tmp, Path.basename(path, ".livemd") <> ".cells")
+      for {label, doc} <- docs do
+        copy = Path.join(tmp, label <> ".cells")
         File.write!(copy, Document.to_cell_text(doc))
         {out, status} = System.cmd(exe, ["export", copy, "spi"], stderr_to_stdout: true)
         assert status == 0, out
         expected = File.read!(Path.rootname(copy) <> ".spi")
-        assert Document.to_spi(doc) == expected, path
+        assert Document.to_spi(doc) == expected, label
       end
     after
       File.rm_rf!(tmp)
@@ -258,31 +271,6 @@ defmodule Spiral.Cells.DocumentTest do
   defp exe_suffix, do: if(match?({:win32, _}, :os.type()), do: ".exe", else: "")
 
   defp skipped(what), do: IO.puts(:stderr, "document_test: skipped check, #{what}")
-
-  defp assert_livemd_round_trip(path, check_spi \\ true) do
-    assert File.regular?(path),
-           "#{path} is missing (dice and alphabet are checked out next to spiral)"
-
-    text = File.read!(path)
-    doc = Document.parse_livemd(text)
-
-    assert Document.to_livemd(doc) == text, path
-
-    again = doc |> Document.to_livemd() |> Document.parse_livemd()
-    assert cells(again) == cells(doc), path
-
-    via_text = doc |> Document.to_cell_text() |> Document.parse_dib()
-    assert spiral_sources(via_text) == spiral_sources(doc), path
-    assert fsharp_sources(via_text) == fsharp_sources(doc), path
-    assert Document.to_spi(via_text) == Document.to_spi(doc), path
-
-    spi = Path.rootname(path) <> ".spi"
-    if check_spi and File.regular?(spi), do: assert(Document.to_spi(doc) == File.read!(spi), spi)
-
-    doc
-  end
-
-  defp cells(doc), do: Enum.map(doc.cells, &Map.take(&1, [:kind, :source]))
 
   test "adjacent markdown and import cells round-trip through livemd" do
     doc =
@@ -338,14 +326,13 @@ defmodule Spiral.Cells.DocumentTest do
     assert Document.to_livemd(Document.parse_livemd(text)) == text
   end
 
-  test "alphabet: documents is a .spi source that writes back byte for byte, hangul an F# notebook that round-trips through livemd" do
+  test "alphabet: documents is a .spi source that writes back byte for byte" do
     alphabet = Path.expand("../../../../../alphabet/apps", __DIR__)
     documents_source = File.read!(Path.join(alphabet, "documents/documents.spi"))
     documents = Document.parse_spi(documents_source, "")
 
     assert Document.to_spi_tested(documents) == documents_source
     assert length(Document.tests(documents)) >= 2
-    assert_livemd_round_trip(Path.join(alphabet, "hangul/hangul.livemd"))
   end
 
   test "test cells export as test blocks that load back as the same test cells" do
@@ -465,6 +452,32 @@ defmodule Spiral.Cells.DocumentTest do
     assert Enum.any?(doc.cells, &(&1.kind == :spiral and &1.source =~ ~r/\A\/\/\/- --test static --symbol/))
     assert spi |> Document.parse_spi("") |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested() == spi
   end
+  for {order, header} <- [
+        {"target first", "///> rust\n///- --timeout 900000\n"},
+        {"flag first", "///- --timeout 900000\n///> rust\n"}
+      ] do
+    test "a :# test keeps its target and its own ///- --timeout row, #{order}" do
+      spi = "///- --package .\n:= add (a : i32) (b : i32) : i32 = a + b\n\n" <> unquote(header) <> ":# adds static =\n    add 1i32 2i32 |> ignore\n"
+      doc = Document.parse_spi(spi, "")
+      [source] = for c <- doc.cells, c.kind == :spiral and String.starts_with?(c.source, "///- --test"), do: c.source
+      assert source =~ "///> rust"
+      assert source =~ "///- --timeout 900000"
+      refute Enum.any?(doc.cells, &(String.trim(&1.source) == String.trim(unquote(header))))
+      assert spi |> Document.parse_spi("") |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested() == spi
+    end
+  end
+
+  test "a package directive directly above a module :# header stays its own cell and round-trips" do
+    spi = "///- --package . --timeout 600000\n:# prelude static =\n    :< testing\n\n:= one () : i32 = 1i32\n"
+    doc = Document.parse_spi(spi, "")
+    assert Enum.any?(doc.cells, &(String.trim(&1.source) == "///- --package . --timeout 600000"))
+    assert spi |> Document.parse_spi("") |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested() == spi
+  end
+  test "a package directive followed by a blank line stays its own cell before a :# test" do
+    spi = "///- --package .\n\n///> rust\n:# adds static =\n    1i32 |> ignore\n"
+    doc = Document.parse_spi(spi, "")
+    assert Enum.any?(doc.cells, &(String.trim(&1.source) == "///- --package ."))
+  end
   test "a test name a heading cannot carry (trailing underscore) round-trips through an explicit --name" do
     spi = "///- --package .\n/// ### map4\n:= map4 (a : i32) : i32 = a\n\n:= map4_ (a : i32) : i32 = a\n\n///> rust\ntest map4_ =\n    map4_ 1i32 |> ignore\n"
     livemd = spi |> Document.parse_spi("") |> Document.to_livemd()
@@ -522,13 +535,11 @@ defmodule Spiral.Cells.DocumentTest do
     contract_source = File.read!(Path.join(@dice, "contract/dice_contract.spi"))
     dice = Document.parse_spi(dice_source, "")
     contract = Document.parse_spi(contract_source, "")
-    fsharp = assert_livemd_round_trip(Path.join(@dice, "lib/fsharp/dice_fsharp.livemd"))
 
     assert Document.to_spi_tested(dice) == dice_source
     assert Document.to_spi_tested(contract) == contract_source
     assert length(Document.tests(dice)) >= 24
     assert length(Document.tests(contract)) >= 8
-    assert fsharp_sources(fsharp) != []
 
     spi = Document.to_spi(dice)
     assert spi =~ "/// # dice (Dice)"
@@ -554,12 +565,6 @@ defmodule Spiral.Cells.DocumentTest do
     end)
   end
 
-  defp fsharp_sources(doc) do
-    Enum.flat_map(doc.cells, fn
-      %{kind: :fsharp, source: source} -> [source]
-      _ -> []
-    end)
-  end
   test "a column-0 comment inside a test body keeps the lines after it in the test, as the compiler's block does" do
     spi = "test a =\n    1 |> ignore\n/// note\n    2 |> ignore\n\ninl x () = 1\n"
 

@@ -14,4 +14,8 @@ $ErrorActionPreference = "Stop"
 
 { pwsh ../apps/plot/build.ps1 } | Invoke-Block
 
+{ pwsh ../apps/lisp/build.ps1 } | Invoke-Block
+
+{ pwsh ../apps/kernel/build.ps1 } | Invoke-Block
+
 { pwsh ../lib/spiral/build.ps1 -sequential 1 } | Invoke-Block

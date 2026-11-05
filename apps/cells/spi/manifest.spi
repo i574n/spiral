@@ -99,6 +99,25 @@
     := lines = sm'::split_list "\n" (text::replace text_in "\r\n" "\n")
     sm'::concat_list "\n" (listm::rev (convert lines []))
 
+/// ## the manifest a dir holds: spiral.toml first, joined like Elixir's Path.join
+:= manifest_names () : list string = [ "spiral.toml"; "package.spiproj" ]
+
+:= joined (dir : string) (name : string) : string =
+    := cut = ends_with dir "/" || ends_with dir "\\"
+    ? dir = "" ?> name |? dir = "/" ?> "/" ++ name |? cut ?> text::take dir (text::length dir - 1i32) ++ "/" ++ name |: dir ++ "/" ++ name
+
+:~ ^ first_regular (paths : list string) : option string =
+    ?= paths ?|
+    | [] => None
+    | path :: rest => ? erlang_file::regular_file path ?> Some path |: first_regular rest
+
+:= manifest_path (dir : string) : option string = first_regular (listm::map (joined dir) (manifest_names ()))
+
+:= manifest_path_text (dir : string) : string =
+    ?= manifest_path dir ?|
+    | Some path => path
+    | None => ""
+
 /// ## declares_modules: a line whose leading ASCII whitespace is followed by modules, whitespace, =
 := ascii_space (b : i32) : bool = b = 32i32 || (b >= 9i32 && b <= 13i32)
 
@@ -125,3 +144,10 @@
     declares_modules "edition = 3\n  modules =\n'''main'''" |> _assert_eq !+
     declares_modules "x = 1\nmodules\n  = 'a'" |> _assert_eq !+
     declares_modules "submodules = 1\n# modules = 2\nmodules_x = 3" |> _assert_eq !-
+
+:# a_name_joins_a_dir_like_elixir_path_join =
+    (joined "" "a", joined "/" "a", joined "d/" "a", joined "d\\" "a", joined "d" "a") |> _assert_eq ("a", "/a", "d/a", "d/a", "d/a")
+
+///> gleam
+:# a_dir_s_manifest_is_its_first_regular_name =
+    (manifest_path_text ".", manifest_path_text "no_such_dir") |> _assert_eq ("./package.spiproj", "")

@@ -7,9 +7,7 @@ defmodule Spiral.Cells.Manifest do
   def names, do: @names
 
   @spec path(String.t()) :: String.t() | nil
-  def path(dir) do
-    @names |> Enum.map(&Path.join(dir, &1)) |> Enum.find(&File.regular?/1)
-  end
+  def path(dir), do: Spiral.Cells.Domain.manifest_path(dir)
 
   @spec exists?(String.t()) :: boolean()
   def exists?(dir), do: path(dir) != nil

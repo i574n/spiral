@@ -11,5 +11,3 @@ pwsh scripts/build.ps1 -Mode single-flight            # builds this directory's 
 pwsh scripts/test.ps1 -Mode single-flight -Suite all -Native
 pwsh scripts/build.ps1 -Mode hopacsota                       # single-flight plus the parallel layer
 ```
-
-`build.ps1` in this directory packages `spiral_compiler.fs` with the polyglot builder into `dist/`.

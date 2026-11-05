@@ -49,7 +49,8 @@
 := loopback () : erlang_term::term = [ 127i32; 0i32; 0i32; 1i32 ] |> listm::map erlang_term::of |> erlang_term::tuple
 
 := connect_local (port : i32) (timeout_ms : i32) : result socket tcp_failure =
-    := args = [ loopback (); erlang_term::of port; erlang_term::list_term (line_options ()); erlang_term::of timeout_ms ]
+    := args =
+        [ loopback (); erlang_term::of port; erlang_term::list_term (line_options ()); erlang_term::of timeout_ms ]
     erlang_term::apply "gen_tcp" "connect" args |> outcome_of |> resultm::map socket
 
 := raw (s : socket) : erlang_term::term = ?= s ?| socket t => t
@@ -60,7 +61,11 @@
 := trimmed (t : erlang_term::term) : string = erlang_term::apply "string" "trim" [ t ] |> erlang_term::cast
 
 := receive_line (s : socket) (w : tcp_wait) : result string tcp_failure =
-    erlang_term::apply "gen_tcp" "recv" [ raw s; erlang_term::of 0i32; wait_term w ] |> outcome_of |> resultm::map trimmed
+    erlang_term::apply "gen_tcp" "recv" [ raw s; erlang_term::of 0i32; wait_term w ]
+    |> outcome_of
+    |> resultm::map trimmed
+
+:= receive_line_within (s : socket) (ms : i32) : result string tcp_failure = receive_line s (WithinMs ms)
 
 := close (s : socket) : () =
     := closed = erlang_term::apply "gen_tcp" "close" [ raw s ]
@@ -128,3 +133,12 @@
     stop_listening l
     := f = connect_local port 2000i32 |> failure
     (f = Some Refused || f = Some TimedOut) |> _assert_eq !+
+
+///> gleam
+:# a_ms_wait_times_out =
+    := l = listen_local () |> sure
+    := client = connect_local (listener_port l) 2000i32 |> sure
+    := idle = receive_line_within client 50i32 |> failure
+    close client
+    stop_listening l
+    idle |> _assert_eq (Some TimedOut)

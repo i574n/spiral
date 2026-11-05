@@ -1,0 +1,5 @@
+:= value () : i32 = 1i32
+
+:= unused () : i32 =
+    $'0 \
+        alpha.never'
