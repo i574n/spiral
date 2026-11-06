@@ -572,7 +572,7 @@
     ? namespace_text model::target_namespace <> "urn:gst:einvoice" ?> failwith "$id is the namespace"
     ? listm::length model::complex_types <> 3i32 ?> failwith "doc, item and the root are complex types"
     := text = xsd_emit::generate_module (xsd_resolve::finalize_names (xsd_resolve::qualify_schema [] model))
-    ? sm'::contains "type x_invoice" text = !- ?> failwith "the root type is emitted"
+    ? sm'::contains "nominal x_invoice =" text = !- ?> failwith "the root type is emitted as a nominal record"
     ? sm'::contains "x_doc" text = !- || sm'::contains "x_item" text = !- ?> failwith "definitions are emitted"
     ? sm'::contains "INV" text = !- ?> failwith "an enum becomes a coded type"
 

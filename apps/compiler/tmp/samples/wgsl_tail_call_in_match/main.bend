@@ -61,8 +61,7 @@ type U0 is Data:
   U0_Done{f0: U32}
   U0_More{f0: U32}
 
-@unsafe
-def layers_0_if1(+c: Bool, +v0: U32) -> IO(U0):
+def layers_0_if1(c: Bool, +v0: U32) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
@@ -72,15 +71,15 @@ def layers_0_if1(+c: Bool, +v0: U32) -> IO(U0):
         IO.pure(U0, U0_More{v0})
 
 @unsafe
-def layers_0_unbox2(+u: U0, +v0: U32, +v1: Bool, +v4: U0) -> IO(U32):
+def layers_0_unbox2(u: U0, +v0: U32, +v1: Bool, +v4: U0) -> IO(U32):
   match u:
-    case U0_Done{+v8}:
+    case U0_Done{v8}:
       do IO<U32>:
-        +v9 : U32 <- IO.pure(U32, U32.mul(v8, {2 : U32}))
+        v9 : U32 <- IO.pure(U32, U32.mul(v8, {2 : U32}))
         return v9
-    case U0_More{+v5}:
+    case U0_More{v5}:
       do IO<U32>:
-        +v6 : U32 <- IO.pure(U32, U32.add(v5, {1 : U32}))
+        v6 : U32 <- IO.pure(U32, U32.add(v5, {1 : U32}))
         layers_0(v6)
 
 @unsafe
@@ -90,13 +89,11 @@ def layers_0(+v0: U32) -> IO(U32):
     +v4 : U0 <- layers_0_if1(v1, v0)
     layers_0_unbox2(v4, v0, v1, v4)
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : U32 <- IO.pure(U32, {0 : U32})
+    v0 : U32 <- IO.pure(U32, {0 : U32})
     layers_0(v0)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

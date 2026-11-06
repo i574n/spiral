@@ -28,6 +28,10 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 function ClosureCreate1(v0: TUS0): TFun1; forward;
 function ClosureCreate0: TFun0; forward;
 function method0(v0: TFun0): TFun1; forward;
@@ -76,6 +80,7 @@ begin
   end;
   v13 := v12 + v1;
   Result := v13;
+  SpiralRelease(Self);
 end;
 function ClosureCreate1(v0: TUS0): TFun1;
 var c: Tclosure1;
@@ -106,6 +111,7 @@ begin
       v7 := US0_Item(v5, v1);
   end;
   Result := ClosureCreate1(v7);
+  SpiralRelease(Self);
 end;
 function ClosureCreate0: TFun0;
 var c: Tclosure0;
@@ -126,7 +132,9 @@ var
   v1: LongInt;
   v2: LongInt;
 begin
+  SpiralRetain(v0);
   v1 := v0.Invoke(2);
+  SpiralRelease(v0);
   v2 := v1 + 5;
   Result := v2;
 end;
@@ -136,8 +144,11 @@ var
   v2: LongInt;
   v3: LongInt;
 begin
+  SpiralRetain(v0);
   v1 := v0.Invoke(1);
+  SpiralRetain(v0);
   v2 := method4(v0);
+  SpiralRelease(v0);
   v3 := v1 + v2;
   Result := v3;
 end;
@@ -147,8 +158,12 @@ var
   v3: LongInt;
   v4: LongInt;
 begin
+  SpiralRetain(v0);
   v2 := v0.Invoke(5);
+  SpiralRetain(v1);
+  SpiralRelease(v0);
   v3 := method3(v1);
+  SpiralRelease(v1);
   v4 := v2 + v3;
   Result := v4;
 end;
@@ -159,8 +174,11 @@ var
   v2: TFun1;
 begin
   v0 := ClosureCreate0;
+  SpiralRetain(v0);
   v1 := method0(v0);
+  SpiralRetain(v0);
   v2 := method1(v0);
+  SpiralRelease(v0);
   Result := method2(v1, v2);
 end;
 var SpiralOutputBuffer: array[0..65535] of Char;

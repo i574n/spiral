@@ -10,12 +10,14 @@ param(
     [string] $Compiler = (Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll'),
     [string] $Dotnet = (Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) "spiral-bin/toolchains/dotnet/dotnet$(if ($IsWindows) { '.exe' })"),
     [int] $MaxWaitMin = 30,
+    [int] $MinFreeMb = 1200,
     [string] $ProvenLog,
     [switch] $PrivateLib,
     [switch] $Apply
 )
 $ErrorActionPreference = 'Stop'
 $kit = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) "kit/bin/kit$(if ($IsWindows) { '.exe' })"
+if (-not (Test-Path -LiteralPath $kit)) { $kit = (Get-Command kit -ErrorAction Stop).Source }
 if (!(Test-Path $kit)) { $kit = (Get-Command kit -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source }
 $Lib = (Resolve-Path $Lib).Path.TrimEnd('\')
 $Draft = @($Draft | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
@@ -88,6 +90,50 @@ function Copy-Retry([string] $from, [string] $to) {
 }
 $pairs | ForEach-Object { "{0,-28} <= {1}{2}" -f $_.Live, $_.Source, $(if ($_.New) { ' (new file)' } else { '' }) }
 $Remove | ForEach-Object { "{0,-28} => removed (kept in the undo dir)" -f $_ }
+function Set-MixEnv {
+    $user = [Environment]::GetEnvironmentVariables('User')
+    foreach ($name in $user.Keys) { if ($name -notin 'Path', 'PSModulePath', 'TEMP', 'TMP' -and $user[$name] -and -not [Environment]::GetEnvironmentVariable($name, 'Process')) { [Environment]::SetEnvironmentVariable($name, $user[$name], 'Process') } }
+    $env:MIX_ENV = 'test'
+    $env:MIX_BUILD_PATH = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/mix-builds/lib-land'
+    if ($IsWindows) { Join-Path (Split-Path (Get-Command mix).Source -Parent) 'mix.bat' } else { (Get-Command mix).Source }
+}
+function Show-FirstDiff([string] $label, [string] $want, [string] $got) {
+    $a = $want -split "`n"; $b = $got -split "`n"
+    for ($i = 0; $i -lt [Math]::Max($a.Count, $b.Count); $i++) {
+        $x = if ($i -lt $a.Count) { $a[$i] } else { '<end of file>' }
+        $y = if ($i -lt $b.Count) { $b[$i] } else { '<end of file>' }
+        if ($x -cne $y) { "  ${label}:$($i + 1) draft      $(ConvertTo-Json $x -Compress)"; "  ${label}:$($i + 1) round trip $(ConvertTo-Json $y -Compress)"; return }
+    }
+}
+$roundTrip = @($pairs | Where-Object { $_.Live -like '*.spi' -and $_.Live -notlike '../*' })
+if ($roundTrip.Count) {
+    '=== round trip (drafts, before landing)'
+    $rt = Join-Path ([IO.Path]::GetTempPath()) "lib-land-roundtrip-$PID"
+    Remove-Item -Recurse -Force $rt -ErrorAction Ignore
+    foreach ($p in $roundTrip) {
+        $in = Join-Path "$rt/in" $p.Live; New-Item -ItemType Directory -Force (Split-Path $in) | Out-Null; Copy-Item -LiteralPath $p.Source $in
+        $spirLive = $p.Live -replace '\.spi$', '_real.spir'
+        $spirDraft = @($pairs | Where-Object { $_.Live -eq $spirLive } | ForEach-Object Source)
+        $spir = if ($spirDraft.Count) { $spirDraft[0] } elseif (Test-Path -LiteralPath (Join-Path $Lib $spirLive)) { Join-Path $Lib $spirLive }
+        if ($spir) { Copy-Item -LiteralPath $spir (Join-Path "$rt/in" $spirLive) }
+    }
+    $mix = Set-MixEnv
+    Push-Location (Join-Path $PSScriptRoot '..')
+    try { $rtOut = @(& $mix run --no-start spi/lib_roundtrip.exs "$rt/in" "$rt/out" @($roundTrip | ForEach-Object Live) 2>&1 | ForEach-Object { "$_" }) } finally { Pop-Location }
+    $rtBad = @(foreach ($p in $roundTrip) {
+        $row = @($rtOut | Where-Object { $_ -like "ROUNDTRIP $($p.Live): *" }) | Select-Object -First 1
+        $draftText = [IO.File]::ReadAllText((Join-Path "$rt/in" $p.Live))
+        $tests = [regex]::Matches($draftText, '(?m)^(?:test|:#) \w+').Count
+        if (-not $row) { "$($p.Live): no ROUNDTRIP row (VOID)"; continue }
+        $fixpoint = $row -match 'fixpoint true'; $canonical = $row -match 'canonical true'
+        if ($fixpoint -and ($canonical -or $tests -eq 0)) { continue }
+        "$($p.Live): $(if (-not $fixpoint) { 'not a fixpoint' } else { "not byte-exact ($tests test blocks)" })"
+        Show-FirstDiff $p.Live $draftText ([IO.File]::ReadAllText((Join-Path "$rt/out" $p.Live)))
+    })
+    if ($rtBad) { $rtBad; if (-not @($rtOut -match '^ROUNDTRIP ').Count) { $rtOut | Select-Object -Last 12 }; Remove-Item -Recurse -Force $rt -ErrorAction Ignore; throw 'a draft does not round-trip through the notebook (document_test would fail after landing): fix it first; nothing was written' }
+    "$($roundTrip.Count) drafts round-trip as document_test requires"
+    Remove-Item -Recurse -Force $rt -ErrorAction Ignore
+}
 if (-not $Apply) { 'dry run: nothing written; rerun with -Apply'; return }
 $deadline = (Get-Date).AddMinutes($MaxWaitMin)
 while (-not $PrivateLib -and (Get-LiveReaders).Count -and (Get-Date) -lt $deadline) { Start-Sleep 30 }
@@ -96,7 +142,7 @@ if ($readers.Count) { $readers | ForEach-Object { "LIVE READER: $($_.ProcessId) 
 $undo = Join-Path $UndoRoot (Get-Date -Format 'yyyyMMdd-HHmmss')
 $winMinutes = [Math]::Max(30, 45 + 10 * [Math]::Ceiling($pairs.Count / 10))
 "land $Label"
-$win = & $kit window request tree-write $winMinutes --label ($Lib.Replace('\', '/')) --wait $MaxWaitMin 2>&1 | Select-Object -Last 1
+$win = & $kit window request tree-write $winMinutes --label ($Lib.Replace('\', '/')) --wait $MaxWaitMin --min-free-mb $MinFreeMb 2>&1 | Select-Object -Last 1
 "$win"
 $winId = if ("$win" -match 'id=(\S+)') { $Matches[1] }
 if (-not $winId) { throw "no tree-write window on $Lib within $MaxWaitMin min: not landing" }
@@ -166,12 +212,18 @@ try {
     }
     '=== document_test'
     if ($ProvenLog) { "taken from $ProvenLog : $(@($proof | Where-Object { $_ -match '^Result:' }) -join ' ')" } else {
-    $user = [Environment]::GetEnvironmentVariables('User')
-    foreach ($name in $user.Keys) { if ($name -notin 'Path', 'PSModulePath', 'TEMP', 'TMP' -and $user[$name] -and -not [Environment]::GetEnvironmentVariable($name, 'Process')) { [Environment]::SetEnvironmentVariable($name, $user[$name], 'Process') } }
-    $env:MIX_ENV = 'test'
-    $env:MIX_BUILD_PATH = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/mix-builds/lib-land'
+    $mix = Set-MixEnv
+    $docLog = Join-Path $undo 'document_test.log'
+    New-Item -ItemType Directory -Force $undo | Out-Null
     Push-Location (Join-Path $PSScriptRoot '..')
-    try { $mix = Join-Path (Split-Path (Get-Command mix).Source -Parent) 'mix.bat'; & $mix test test/spiral/document_test.exs --timeout 900000 2>&1 | Select-String -Pattern '^\s+\d+\) test |Result:' | ForEach-Object { $_.Line.Trim() }; if ($LASTEXITCODE) { $closeOk = $false } } finally { Pop-Location }
+    try { $docOut = @(& $mix test test/spiral/document_test.exs --timeout 900000 2>&1 | ForEach-Object { "$_" }); $docExit = $LASTEXITCODE } finally { Pop-Location }
+    $docOut | Set-Content -LiteralPath $docLog
+    $docOut | Where-Object { $_ -match '^\s+\d+\) test |Result:' } | ForEach-Object { $_.Trim() }
+    if ($docExit) {
+        $closeOk = $false
+        @($docOut | ForEach-Object { if ($_ -match '(\S*lib[\\/]spiral[\\/]\S+\.(?:spi|spir))') { $Matches[1] } } | Select-Object -Unique -First 10) | ForEach-Object { "document_test names $_" }
+        "document_test exit ${docExit}; full log: $docLog"
+    }
     }
     '=== type_probe'
     if ($probe.Count) {

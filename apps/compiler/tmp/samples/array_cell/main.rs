@@ -9,14 +9,14 @@ impl Default for Heap0 {
 }
 fn spiral_main() -> i32 {
     let v0: i32 = 2i32;
-    let v1: Rc<RefCell<Vec<Rc<Heap0>>>> = Rc::new(RefCell::new(vec![<Rc<Heap0>>::default(); v0 as usize]));
+    let mut v1: Rc<RefCell<Vec<Rc<Heap0>>>> = Rc::new(RefCell::new(vec![<Rc<Heap0>>::default(); v0 as usize]));
     let v2: i32 = 4i32;
     let v3: i32 = 6i32;
     let v4: Rc<Heap0> = Rc::new(Heap0 { l0: v2 });
-    v1.clone().borrow_mut()[0i32 as usize] = v4;
+    v1.borrow_mut()[0i32 as usize] = v4;
     let v5: Rc<Heap0> = Rc::new(Heap0 { l0: v3 });
-    v1.clone().borrow_mut()[1i32 as usize] = v5;
-    let v6: Rc<Heap0> = v1.clone().borrow()[0i32 as usize].clone();
+    v1.borrow_mut()[1i32 as usize] = v5;
+    let v6: Rc<Heap0> = v1.borrow()[0i32 as usize].clone();
     let v7: i32 = v6.l0;
     let v8: Rc<Heap0> = v1.borrow()[1i32 as usize].clone();
     let v9: i32 = v8.l0;

@@ -3,14 +3,14 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn method0() -> (Rc<RefCell<Vec<i32>>>, i32) {
     let v0: i32 = 2i32;
-    let v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
-    v1.clone().borrow_mut()[0i32 as usize] = 4i32;
-    v1.clone().borrow_mut()[1i32 as usize] = 5i32;
+    let mut v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
+    v1.borrow_mut()[0i32 as usize] = 4i32;
+    v1.borrow_mut()[1i32 as usize] = 5i32;
     (v1, 1i32)
 }
 fn method1(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: i32) -> i32 {
-    let v2: i32 = v0.clone().borrow()[0i32 as usize].clone();
-    let v3: i32 = v0.borrow()[1i32 as usize].clone();
+    let v2: i32 = v0.borrow()[0i32 as usize];
+    let v3: i32 = v0.borrow()[1i32 as usize];
     let v4: i32 = v2.wrapping_add(v3);
     let v5: i32 = v4.wrapping_add(v1);
     let v6: i32 = v5.wrapping_sub(10i32);

@@ -16,14 +16,16 @@ defmodule Spiral.Cells.Targets do
   @spec run(map(), String.t(), keyword(), timeout(), integer() | :infinity) ::
           {:ok, %{stdout: String.t()}} | {:error, Exception.t()}
   def run(builder, output_path, opts, timeout, deadline) do
-    invoke(
-      opts[:target],
-      %{builder: builder, source: read_if(output_path), output_path: output_path, flags: builder},
-      fn ->
-        run_default(builder, output_path, opts, timeout, deadline)
-      end
-    )
-    |> normalize(true)
+    if opts[:build_receipt] && builder[:tool] != :gleam do
+      {:ok, %{stdout: ""}}
+    else
+      invoke(
+        opts[:target],
+        %{builder: builder, source: read_if(output_path), output_path: output_path, flags: builder},
+        fn -> run_default(builder, output_path, opts, timeout, deadline) end
+      )
+      |> normalize(true)
+    end
   end
 
   @spec build(map(), String.t(), keyword(), timeout(), integer() | :infinity) ::
@@ -43,6 +45,10 @@ defmodule Spiral.Cells.Targets do
   @spec host(String.t(), String.t(), keyword(), timeout(), integer() | :infinity) ::
           {:ok, %{stdout: String.t()}} | {:error, Exception.t()}
   def host(language, source, opts, timeout, deadline) do
+    if opts[:build_receipt], do: {:ok, %{stdout: ""}}, else: host_run(language, source, opts, timeout, deadline)
+  end
+
+  defp host_run(language, source, opts, timeout, deadline) do
     invoke(opts[:host], %{language: language, source: source}, fn ->
       dir = tmp_dir()
 
@@ -291,15 +297,15 @@ defmodule Spiral.Cells.Targets do
   end
 
   defp run_dcc(path, opts, timeout, deadline) do
-    case delphi_compiler(opts) do
-      {compiler, shown, args} -> run_delphi(compiler, shown, args ++ [path], path, opts, timeout, deadline)
+    case pascal_compiler(opts) do
+      {compiler, shown, args} -> run_pascal(compiler, shown, args ++ [path], path, opts, timeout, deadline)
       nil -> {:error, %ProcessError{message: "`dcc32` was not found (nor fpc)", reason: :tool_missing}}
     end
   end
 
   @doc false
-  @spec delphi_compiler(keyword()) :: {String.t(), String.t(), [String.t()]} | nil
-  def delphi_compiler(opts) do
+  @spec pascal_compiler(keyword()) :: {String.t(), String.t(), [String.t()]} | nil
+  def pascal_compiler(opts) do
     dcc = Toolchain.dcc(opts)
     fpc = Toolchain.fpc(opts)
 
@@ -310,7 +316,7 @@ defmodule Spiral.Cells.Targets do
     end
   end
 
-  defp run_delphi(compiler, shown, args, path, opts, timeout, deadline) do
+  defp run_pascal(compiler, shown, args, path, opts, timeout, deadline) do
     with {:ok, compiled} <- run_program(compiler, shown, args, opts, timeout, deadline, false) do
       exe = Path.join(Path.dirname(path), Path.basename(path, Path.extname(path)) <> ".exe")
 
@@ -335,7 +341,7 @@ defmodule Spiral.Cells.Targets do
     manifest = gleam_manifest(path, deps, target)
     build_and_run = fn dir -> build_and_run_gleam(dir, manifest, target, opts, timeout, deadline) end
 
-    case in_warm_gleam_package(package, manifest, opts, build_and_run) do
+    case if(opts[:build_receipt], do: :all_slots_busy, else: in_warm_gleam_package(package, manifest, opts, build_and_run)) do
       :all_slots_busy -> build_and_run.(package)
       result -> result
     end
@@ -343,8 +349,21 @@ defmodule Spiral.Cells.Targets do
 
   defp build_and_run_gleam(package, manifest, target, opts, timeout, deadline) do
     with {:ok, _built} <- gleam_build(package, manifest, opts, timeout, deadline) do
-      run_gleam_program(package, target, opts, Keyword.put(opts, :cwd, opts[:root] || package), timeout, deadline)
+      if opts[:build_receipt],
+        do: build_only_receipt(package, target, opts[:build_receipt]),
+        else: run_gleam_program(package, target, opts, Keyword.put(opts, :cwd, opts[:root] || package), timeout, deadline)
     end
+  end
+
+  @doc false
+  def build_only_receipt(package, target, receipt) do
+    built = package |> Path.join("build/dev/#{target}/*/#{if target == "javascript", do: "", else: "ebin"}")
+    paths = built |> String.replace("\\", "/") |> Path.wildcard() |> Enum.sort()
+    entry = if target == "javascript", do: "main/main.mjs", else: "main"
+    package_line = "cells-build-only package=" <> String.replace(package, "\\", "/")
+    lines = [package_line | Enum.map(paths, &"cells-build-only ebin=#{&1}")] ++ ["cells-build-only entry=#{entry}"]
+    File.write!(receipt, Enum.join(lines, "\n") <> "\n", [:append])
+    {:ok, %{exit_status: 0, output: ""}}
   end
 
   @doc false

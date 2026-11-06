@@ -11,8 +11,7 @@ pub type Us0 {
 }
 pub fn closure0(capt: Nil) -> fn(Int) -> Us0 {
     fn (v0) {
-        let v1 = "managed"
-        Us0Text(v1)
+        Us0Text("managed")
     }
 }
 pub fn method0(v0: fn(Int) -> Us0) -> Us0 {
@@ -26,6 +25,5 @@ pub fn main() {
             Us0Idle -> 3
             Us0Text(v2) -> 11
         }
-    let v5 = spiral_wrap_signed(v4 + 31, 32)
-    v5
+    spiral_wrap_signed(v4 + 31, 32)
 }

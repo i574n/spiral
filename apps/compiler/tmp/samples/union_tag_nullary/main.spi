@@ -1,0 +1,8 @@
+union light =
+    | Red
+    | Amber
+    | Green
+
+:= main () : i32 =
+    := ~l = Amber
+    !!!!UnionTag(l)

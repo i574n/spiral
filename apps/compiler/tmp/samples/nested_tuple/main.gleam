@@ -15,11 +15,9 @@ pub fn method1(v0: Int, v1: Int, v2: Int, v3: Int) -> Int {
     let v4 = spiral_wrap_signed(v0 + v1, 32)
     let v5 = spiral_wrap_signed(v4 + v2, 32)
     let v6 = spiral_wrap_signed(v5 + v3, 32)
-    let v7 = spiral_wrap_signed(v6 - 10, 32)
-    v7
+    spiral_wrap_signed(v6 - 10, 32)
 }
 pub fn main() {
-    let v0 = 1
-    let #(v1, v2, v3, v4) = method0(v0)
+    let #(v1, v2, v3, v4) = method0(1)
     method1(v1, v2, v3, v4)
 }

@@ -25,7 +25,7 @@ try {
         $pas = Join-Path $case 'main.pas'
         if ($UseCommitted) { Copy-Item (Join-Path $dir 'main.pas') $pas }
         else {
-            $p = Start-Process -FilePath $dotnet -ArgumentList @($Dll, '--backend', 'Delphi', $(if (Test-Path (Join-Path $dir 'main.spi')) { Join-Path $dir 'main.spi' } else { Join-Path $dir 'main.spir' }), $pas) -WindowStyle Hidden -PassThru -RedirectStandardOutput "$case\compile.out" -RedirectStandardError "$case\compile.err"
+            $p = Start-Process -FilePath $dotnet -ArgumentList @($Dll, '--backend', 'Pascal', $(if (Test-Path (Join-Path $dir 'main.spi')) { Join-Path $dir 'main.spi' } else { Join-Path $dir 'main.spir' }), $pas) -WindowStyle Hidden -PassThru -RedirectStandardOutput "$case\compile.out" -RedirectStandardError "$case\compile.err"
             if (-not $p.WaitForExit($TimeoutSec * 1000)) { $p.Kill($true); "$name`ttimeout`t-`t-`t-`t-" | Add-Content $Out; continue }
             if ($p.ExitCode -ne 0 -or -not (Test-Path $pas)) { "$name`terror`t-`t-`t-`t-" | Add-Content $Out; continue }
         }

@@ -31,25 +31,13 @@ pub fn spiral_ref_set(reference: SpiralRef(a), value: a) -> Nil {
 pub type Heap0 { Heap0(l0 : Int, l1 : String) }
 pub type Mut0 { Mut0(l0 : Heap0, l1 : Heap0, l2 : Heap0) }
 pub fn main() {
-    let v0 = 1
-    let v1 = "no"
-    let v2 = Heap0(l0: v0, l1: v1)
-    let v3 = 2
-    let v4 = "zz"
-    let v5 = Heap0(l0: v3, l1: v4)
-    let v6 = 3
-    let v7 = "aa"
-    let v8 = Heap0(l0: v6, l1: v7)
+    let v2 = Heap0(l0: 1, l1: "no")
+    let v5 = Heap0(l0: 2, l1: "zz")
+    let v8 = Heap0(l0: 3, l1: "aa")
     let v9 = spiral_ref_new(Mut0(l0: v2, l1: v5, l2: v8))
-    let v10 = 7
-    let v11 = "hi"
-    let v12 = Heap0(l0: v10, l1: v11)
-    let v13 = 4
-    let v14 = "yo"
-    let v15 = Heap0(l0: v13, l1: v14)
-    let v16 = 9
-    let v17 = "ok"
-    let v18 = Heap0(l0: v16, l1: v17)
+    let v12 = Heap0(l0: 7, l1: "hi")
+    let v15 = Heap0(l0: 4, l1: "yo")
+    let v18 = Heap0(l0: 9, l1: "ok")
     spiral_ref_set(v9, Mut0(l0: v12, l1: v15, l2: v18))
     let #(v19, v20, v21) = #(spiral_ref_get(v9).l0, spiral_ref_get(v9).l1, spiral_ref_get(v9).l2)
     let #(v22, v23) = #(v19.l0, v19.l1)
@@ -59,40 +47,35 @@ pub fn main() {
     let v30 =
         case v28 {
             True -> {
-                let v29 = v23 == "hi"
-                v29
+                v23 == "hi"
             }
             False -> False
         }
     let v32 =
         case v30 {
             True -> {
-                let v31 = v24 == 4
-                v31
+                v24 == 4
             }
             False -> False
         }
     let v34 =
         case v32 {
             True -> {
-                let v33 = v25 == "yo"
-                v33
+                v25 == "yo"
             }
             False -> False
         }
     let v36 =
         case v34 {
             True -> {
-                let v35 = v26 == 9
-                v35
+                v26 == 9
             }
             False -> False
         }
     let v38 =
         case v36 {
             True -> {
-                let v37 = v27 == "ok"
-                v37
+                v27 == "ok"
             }
             False -> False
         }

@@ -175,7 +175,7 @@ def spiral_array_set_a0(+arr: Chan(Array<(U32 & Bool)>) & U32, +i: U32, +v: (U32
   spiral_array_set_checked_a0(c, i, v, U32.is_lt(i, n))
 
 @unsafe
-def spiral_main_k1_k2_k3_if4(+c: Bool) -> IO(U32):
+def spiral_main_k1_k2_k3_if4(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -185,7 +185,7 @@ def spiral_main_k1_k2_k3_if4(+c: Bool) -> IO(U32):
         return {0 : U32}
 
 @unsafe
-def spiral_main_k1_k2_k3_if5(+c: Bool) -> IO(U32):
+def spiral_main_k1_k2_k3_if5(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -195,7 +195,7 @@ def spiral_main_k1_k2_k3_if5(+c: Bool) -> IO(U32):
         return {0 : U32}
 
 @unsafe
-def spiral_main_k1_k2_k3_if6(+c: Bool) -> IO(U32):
+def spiral_main_k1_k2_k3_if6(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -210,25 +210,25 @@ def spiral_main_k1_k2_k3(+p: U32 & Bool, +v0: U32, +v1: (Chan(Array<(U32 & Bool)
   do IO<U32>:
     +v10 : U32 <- spiral_main_k1_k2_k3_if4(v4)
     +v11 : U32 <- spiral_main_k1_k2_k3_if5(v6)
-    +v12 : U32 <- spiral_main_k1_k2_k3_if6(v9)
-    +v13 : U32 <- IO.pure(U32, U32.add(v3, v5))
-    +v14 : U32 <- IO.pure(U32, U32.add(v13, v8))
-    +v15 : U32 <- IO.pure(U32, U32.add(v14, v10))
-    +v16 : U32 <- IO.pure(U32, U32.add(v15, v11))
-    +v17 : U32 <- IO.pure(U32, U32.add(v16, v12))
+    v12 : U32 <- spiral_main_k1_k2_k3_if6(v9)
+    v13 : U32 <- IO.pure(U32, U32.add(v3, v5))
+    v14 : U32 <- IO.pure(U32, U32.add(v13, v8))
+    v15 : U32 <- IO.pure(U32, U32.add(v14, v10))
+    v16 : U32 <- IO.pure(U32, U32.add(v15, v11))
+    v17 : U32 <- IO.pure(U32, U32.add(v16, v12))
     return v17
 
 @unsafe
-def spiral_main_k1_k2(+p: U32 & Bool, +v0: U32, +v1: (Chan(Array<(U32 & Bool)>) & U32), +v2: U32, +v3: U32, +v4: Bool) -> IO(U32):
-  (+v5, +v6) = p
+def spiral_main_k1_k2(+p: U32 & Bool, v0: U32, +v1: (Chan(Array<(U32 & Bool)>) & U32), v2: U32, v3: U32, v4: Bool) -> IO(U32):
+  (v5, v6) = p
   do IO<U32>:
     +v7 : U32 <- IO.pure(U32, {2 : U32})
     +p : U32 & Bool <- spiral_array_get_a0(v1, v7)
     spiral_main_k1_k2_k3(p, v0, v1, v2, v3, v4, v5, v6, v7)
 
 @unsafe
-def spiral_main_k1(+p: U32 & Bool, +v0: U32, +v1: (Chan(Array<(U32 & Bool)>) & U32), +v2: U32) -> IO(U32):
-  (+v3, +v4) = p
+def spiral_main_k1(+p: U32 & Bool, v0: U32, +v1: (Chan(Array<(U32 & Bool)>) & U32), v2: U32) -> IO(U32):
+  (v3, v4) = p
   do IO<U32>:
     +p : U32 & Bool <- spiral_array_get_a0(v1, {1 : U32})
     spiral_main_k1_k2(p, v0, v1, v2, v3, v4)
@@ -242,10 +242,9 @@ def spiral_main() -> IO(U32):
     spiral_array_set_a0(v1, {0 : U32}, (v2, True{}))
     spiral_array_set_a0(v1, {1 : U32}, ({7 : U32}, False{}))
     spiral_array_set_a0(v1, {2 : U32}, ({9 : U32}, True{}))
-    +p : U32 & Bool <- spiral_array_get_a0(v1, {0 : U32})
+    p : U32 & Bool <- spiral_array_get_a0(v1, {0 : U32})
     spiral_main_k1(p, v0, v1, v2)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

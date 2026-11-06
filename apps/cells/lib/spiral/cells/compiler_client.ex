@@ -665,7 +665,12 @@ defmodule Spiral.Cells.CompilerClient do
   end
 
   defp request_line(req) do
-    "compile\t#{req.backend}\t#{req.spi}\t#{req.rs}\t#{timeout_field(req.timeout)}\t#{req.mtime}\t#{System.pid()}"
+    line = "compile\t#{req.backend}\t#{req.spi}\t#{req.rs}\t#{timeout_field(req.timeout)}\t#{req.mtime}\t#{System.pid()}"
+
+    case Map.get(req, :pin) do
+      pin when is_binary(pin) and pin != "" -> line <> "\t" <> pin
+      _ -> line
+    end
   end
 
   defp timeout_field(:infinity), do: "-1"

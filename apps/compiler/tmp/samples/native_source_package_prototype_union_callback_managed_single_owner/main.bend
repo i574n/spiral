@@ -55,19 +55,17 @@ type U0 is Data:
   U0_Idle{}
   U0_Text{f0: String}
 
-@unsafe
 def closure0(+v0: U32) -> IO(U0):
   do IO<U0>:
-    +v1 : String <- IO.pure(String, "managed")
+    v1 : String <- IO.pure(String, "managed")
     IO.pure(U0, U0_Text{v1})
 
-@unsafe
-def method0(+v0: ((U32) -> IO(U0))) -> IO(U0):
+def method0(v0: ((U32) -> IO(U0))) -> IO(U0):
   do IO<U0>:
     v0({2 : U32})
 
 @unsafe
-def spiral_main_unbox1(+u: U0, +v0: ((U32) -> IO(U0)), +v1: U0) -> IO(U32):
+def spiral_main_unbox1(u: U0, +v0: ((U32) -> IO(U0)), +v1: U0) -> IO(U32):
   match u:
     case U0_Idle{}:
       do IO<U32>:
@@ -81,11 +79,10 @@ def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : ((U32) -> IO(U0)) <- IO.pure(((U32) -> IO(U0)), d => closure0(d))
     +v1 : U0 <- method0(v0)
-    +v4 : U32 <- spiral_main_unbox1(v1, v0, v1)
-    +v5 : U32 <- IO.pure(U32, U32.add(v4, {31 : U32}))
+    v4 : U32 <- spiral_main_unbox1(v1, v0, v1)
+    v5 : U32 <- IO.pure(U32, U32.add(v4, {31 : U32}))
     return v5
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

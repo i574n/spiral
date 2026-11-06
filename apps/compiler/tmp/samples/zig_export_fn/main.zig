@@ -98,3 +98,8 @@ pub fn main(init: std.process.Init.Minimal) void {
     spiralFlush();
     if (@import("builtin").os.tag == .windows) ExitProcess(@bitCast(spiral_exit_code)) else std.process.exit(@truncate(@as(u32, @bitCast(spiral_exit_code))));
 }
+pub fn spiralShareAllocator(a: std.mem.Allocator) void {
+    spiral_gpa = a;
+}
+pub const SpiralShape_96a5594a10c3 = Fun0;
+pub const SpiralShape_b939f4aab78d = ClosureEnv0;

@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory, Position = 0)][string]$Sample,
     [ValidateSet('single-flight', 'sf', 'hopacsota', 'hs')][string]$Mode = 'single-flight',
-    [ValidateSet('Fsharp', 'C', 'Rust', 'Delphi', 'TypeScript', 'Cpp', 'Python')][string]$Backend = 'Fsharp',
+    [ValidateSet('Fsharp', 'C', 'Rust', 'Pascal', 'Delphi', 'TypeScript', 'Cpp', 'Python')][string]$Backend = 'Fsharp',
     [int]$Repeat = 1,
     [int]$BudgetSec = 180,
     [int]$Stacks = 0,
@@ -18,7 +18,8 @@ $cache = Get-SpiralCacheDir
 $dir = Join-Path $BundleRoot "samples/$Sample"
 $entry = @('main.spi', 'main.spir') | ForEach-Object { Join-Path $dir $_ } | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $entry) { throw "no main.spi or main.spir in $dir" }
-$ext = @{ Fsharp = '.fsx'; C = '.c'; Rust = '.rs'; Delphi = '.pas'; TypeScript = '.ts'; Cpp = '.cpp'; Python = '.py' }[$Backend]
+if ($Backend -eq 'Delphi') { $Backend = 'Pascal' }
+$ext = @{ Fsharp = '.fsx'; C = '.c'; Rust = '.rs'; Pascal = '.pas'; TypeScript = '.ts'; Cpp = '.cpp'; Python = '.py' }[$Backend]
 $backendId = @{ Cpp = 'Cpp + Cuda'; Python = 'Python + Cuda' }[$Backend] ?? $Backend
 $output = [IO.Path]::ChangeExtension($entry, $ext)
 $logDir = Join-Path $cache ("probes/" + ($Sample -replace '[\\/]', '__'))

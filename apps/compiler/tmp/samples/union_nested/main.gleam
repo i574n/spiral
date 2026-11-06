@@ -17,8 +17,7 @@ pub fn score_inner_1(v0: Us0) -> Int {
     case v0  {
         Us0A(v1) -> v1
         Us0B(v2) -> {
-            let v3 = spiral_wrap_signed(0 - v2, 32)
-            v3
+            spiral_wrap_signed(0 - v2, 32)
         }
     }
 }
@@ -52,8 +51,7 @@ pub fn main() {
         case v10 {
             True -> {
                 let v11 = score_0(v8)
-                let v12 = v11 == 4
-                v12
+                v11 == 4
             }
             False -> False
         }

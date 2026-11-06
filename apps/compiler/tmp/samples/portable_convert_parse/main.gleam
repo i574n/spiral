@@ -7,8 +7,7 @@ pub type Us0 {
     Us0None
 }
 pub fn main() {
-    let v0 = "ff"
-    let #(v1, v2) = case int.base_parse(v0, 16) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
+    let #(v1, v2) = case int.base_parse("ff", 16) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
     let v3 = v2 == 0
     let v6 =
         case v3 {
@@ -21,8 +20,7 @@ pub fn main() {
             Us0Some(v7) -> v7
         }
     io.println(int.to_string(v10))
-    let v11 = "1011"
-    let #(v12, v13) = case int.base_parse(v11, 2) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
+    let #(v12, v13) = case int.base_parse("1011", 2) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
     let v14 = v13 == 0
     let v17 =
         case v14 {
@@ -35,8 +33,7 @@ pub fn main() {
             Us0Some(v18) -> v18
         }
     io.println(int.to_string(v21))
-    let v22 = "-42"
-    let #(v23, v24) = case int.base_parse(v22, 10) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
+    let #(v23, v24) = case int.base_parse("-42", 10) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
     let v25 = v24 == 0
     let v28 =
         case v25 {
@@ -49,8 +46,7 @@ pub fn main() {
             Us0Some(v29) -> v29
         }
     io.println(int.to_string(v32))
-    let v33 = " 123 "
-    let #(v34, v35) = case int.parse(string.trim(v33)) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
+    let #(v34, v35) = case int.parse(string.trim(" 123 ")) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
     let v36 = v35 == 0
     let v39 =
         case v36 {
@@ -59,8 +55,7 @@ pub fn main() {
         }
     case v39  {
         Us0None -> {
-            let v41 = "none"
-            io.println(v41)
+            io.println("none")
             Nil
         }
         Us0Some(v40) -> {
@@ -68,8 +63,7 @@ pub fn main() {
             Nil
         }
     }
-    let v42 = "12x"
-    let #(v43, v44) = case int.parse(string.trim(v42)) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
+    let #(v43, v44) = case int.parse(string.trim("12x")) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
     let v45 = v44 == 0
     let v48 =
         case v45 {
@@ -78,8 +72,7 @@ pub fn main() {
         }
     case v48  {
         Us0None -> {
-            let v50 = "none"
-            io.println(v50)
+            io.println("none")
             Nil
         }
         Us0Some(v49) -> {
@@ -87,8 +80,7 @@ pub fn main() {
             Nil
         }
     }
-    let v51 = ""
-    let #(v52, v53) = case int.parse(string.trim(v51)) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
+    let #(v52, v53) = case int.parse(string.trim("")) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
     let v54 = v53 == 0
     let v57 =
         case v54 {
@@ -97,8 +89,7 @@ pub fn main() {
         }
     case v57  {
         Us0None -> {
-            let v59 = "none"
-            io.println(v59)
+            io.println("none")
             Nil
         }
         Us0Some(v58) -> {
@@ -106,8 +97,7 @@ pub fn main() {
             Nil
         }
     }
-    let v60 = "+7"
-    let #(v61, v62) = case int.parse(string.trim(v60)) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
+    let #(v61, v62) = case int.parse(string.trim("+7")) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
     let v63 = v62 == 0
     let v66 =
         case v63 {
@@ -116,8 +106,7 @@ pub fn main() {
         }
     case v66  {
         Us0None -> {
-            let v68 = "none"
-            io.println(v68)
+            io.println("none")
             Nil
         }
         Us0Some(v67) -> {

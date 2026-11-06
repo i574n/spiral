@@ -43,16 +43,16 @@ fn f_c0(mut v0: US1, mut v1: i32) -> Rc<dyn Fn(i32) -> US1> {
     })
 }
 fn score_0(mut v0: US1) -> i32 {
-    match &v0 {
+    match v0 {
         US1::US1_Absent => {
             1i32
         }
         US1::US1_Box(v3) => {
-            let v3: Rc<Heap3> = v3.clone();
+            let v3: Rc<Heap3> = v3;
             let v4: US0 = v3.l0.clone();
-            match &v4 {
+            match v4 {
                 US0::US0_Held(v5) => {
-                    let v5: Rc<Heap2> = v5.clone();
+                    let v5: Rc<Heap2> = v5;
                     let (mut v6, mut v7): (Rc<Heap1>, i32) = (v5.l0.clone(), v5.l1);
                     let (mut v8, mut v9): (Rc<Heap0>, Rc<Heap0>) = (v6.l0.clone(), v6.l1.clone());
                     let (mut v10, mut v11): (i32, Rc<str>) = (v8.l0, v8.l1.clone());
@@ -94,7 +94,7 @@ fn score_0(mut v0: US1) -> i32 {
             }
         }
         US1::US1_Mark(v1) => {
-            let v1: i32 = *v1;
+            let v1: i32 = v1;
             1i32
         }
     }
@@ -130,13 +130,13 @@ fn spiral_main() -> i32 {
     let v23: Rc<Heap4> = Rc::new(Heap4 { l0: v22 });
     let v24: US1 = v19(0i32);
     let v25: Rc<Heap4> = Rc::new(Heap4 { l0: v24 });
-    let v26: Rc<RefCell<Vec<Rc<Heap4>>>> = Rc::new(RefCell::new(vec![<Rc<Heap4>>::default(); 3i32 as usize]));
-    v26.clone().borrow_mut()[0i32 as usize] = v21;
-    v26.clone().borrow_mut()[1i32 as usize] = v23;
-    v26.clone().borrow_mut()[2i32 as usize] = v25;
-    let v27: Rc<Heap4> = v26.clone().borrow()[0i32 as usize].clone();
+    let mut v26: Rc<RefCell<Vec<Rc<Heap4>>>> = Rc::new(RefCell::new(vec![<Rc<Heap4>>::default(); 3i32 as usize]));
+    v26.borrow_mut()[0i32 as usize] = v21;
+    v26.borrow_mut()[1i32 as usize] = v23;
+    v26.borrow_mut()[2i32 as usize] = v25;
+    let v27: Rc<Heap4> = v26.borrow()[0i32 as usize].clone();
     let v28: US1 = v27.l0.clone();
-    let v29: Rc<Heap4> = v26.clone().borrow()[1i32 as usize].clone();
+    let v29: Rc<Heap4> = v26.borrow()[1i32 as usize].clone();
     let v30: US1 = v29.l0.clone();
     let v31: Rc<Heap4> = v26.borrow()[2i32 as usize].clone();
     let v32: US1 = v31.l0.clone();

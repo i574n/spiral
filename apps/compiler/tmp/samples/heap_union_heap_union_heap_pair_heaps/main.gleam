@@ -26,32 +26,28 @@ pub fn score_0(v0: Us1) -> Int {
                     let v14 =
                         case v12 {
                             True -> {
-                                let v13 = v9 == "hi"
-                                v13
+                                v9 == "hi"
                             }
                             False -> False
                         }
                     let v16 =
                         case v14 {
                             True -> {
-                                let v15 = v10 == 4
-                                v15
+                                v10 == 4
                             }
                             False -> False
                         }
                     let v18 =
                         case v16 {
                             True -> {
-                                let v17 = v11 == "yo"
-                                v17
+                                v11 == "yo"
                             }
                             False -> False
                         }
                     let v20 =
                         case v18 {
                             True -> {
-                                let v19 = v5 == 2
-                                v19
+                                v5 == 2
                             }
                             False -> False
                         }
@@ -66,25 +62,18 @@ pub fn score_0(v0: Us1) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 7
-    let v1 = "hi"
-    let v2 = Heap0(l0: v0, l1: v1)
-    let v3 = 4
-    let v4 = "yo"
-    let v5 = Heap0(l0: v3, l1: v4)
+    let v2 = Heap0(l0: 7, l1: "hi")
+    let v5 = Heap0(l0: 4, l1: "yo")
     let v6 = Heap1(l0: v2, l1: v5)
-    let v7 = 2
-    let v8 = Heap2(l0: v6, l1: v7)
-    let v9 = True
+    let v8 = Heap2(l0: v6, l1: 2)
     let v12 =
-        case v9 {
+        case True {
             True -> Us0Held(v8)
             False -> Us0None
         }
     let v13 = Heap3(l0: v12)
-    let v14 = True
     let v17 =
-        case v14 {
+        case True {
             True -> Us1Box(v13)
             False -> Us1Absent
         }

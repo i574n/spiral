@@ -3,9 +3,9 @@ use std::cell::RefCell;
 use std::rc::Rc;
 struct Heap0 { l0: Rc<RefCell<Vec<Rc<str>>>>, l1: bool }
 fn spiral_main() -> i32 {
-    let v0: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(vec![<Rc<str>>::default(); 1i32 as usize]));
+    let mut v0: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(vec![<Rc<str>>::default(); 1i32 as usize]));
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    v0.clone().borrow_mut()[0i32 as usize] = v1;
+    v0.borrow_mut()[0i32 as usize] = v1;
     let v2: bool = true;
     let v3: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v2 });
     let (mut v4, mut v5): (Rc<RefCell<Vec<Rc<str>>>>, bool) = (v3.l0.clone(), v3.l1);

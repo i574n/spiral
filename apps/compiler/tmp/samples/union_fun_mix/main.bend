@@ -55,25 +55,23 @@ type U0 is Type:
   U0_None{}
   U0_Call{f0: ((U32) -> IO(U32)), f1: U32}
 
-@unsafe
-def add_c0(+v0: U32, +v1: U32) -> IO(U32):
+def add_c0(v0: U32, v1: U32) -> IO(U32):
   do IO<U32>:
-    +v2 : U32 <- IO.pure(U32, U32.add(v1, v0))
+    v2 : U32 <- IO.pure(U32, U32.add(v1, v0))
     return v2
 
-@unsafe
-def spiral_main_if1(+c: Bool, +v0: U32, +v1: U32) -> IO(U0):
+def spiral_main_if1(c: Bool, v0: U32, v1: U32) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
-        +v3 : ((U32) -> IO(U32)) <- IO.pure(((U32) -> IO(U32)), d => add_c0(v0, d))
+        v3 : ((U32) -> IO(U32)) <- IO.pure(((U32) -> IO(U32)), d => add_c0(v0, d))
         IO.pure(U0, U0_Call{v3, v1})
     case False{}:
       do IO<U0>:
         IO.pure(U0, U0_None{})
 
 @unsafe
-def score_0_unbox2_if3(+c: Bool) -> IO(U32):
+def score_0_unbox2_if3(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -83,7 +81,7 @@ def score_0_unbox2_if3(+c: Bool) -> IO(U32):
         return {1 : U32}
 
 @unsafe
-def score_0_unbox2(+u: U0, +v0: U0) -> IO(U32):
+def score_0_unbox2(u: U0, v0: U0) -> IO(U32):
   match u:
     case U0_None{}:
       do IO<U32>:
@@ -100,16 +98,14 @@ def score_0(+v0: U0) -> IO(U32):
   do IO<U32>:
     score_0_unbox2(v0, v0)
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : U32 <- IO.pure(U32, {3 : U32})
-    +v1 : U32 <- IO.pure(U32, {4 : U32})
+    v0 : U32 <- IO.pure(U32, {3 : U32})
+    v1 : U32 <- IO.pure(U32, {4 : U32})
     +v2 : Bool <- IO.pure(Bool, True{})
-    +v6 : U0 <- spiral_main_if1(v2, v0, v1)
+    v6 : U0 <- spiral_main_if1(v2, v0, v1)
     score_0(v6)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

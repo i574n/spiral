@@ -17,7 +17,7 @@ if ($Files.Count) {
     }
 }
 if (-not $Reports.Count) { throw 'nothing to convert: pass -Lib with -Files, or -Reports <*.tests.tsv>' }
-$backendOf = @{ c = 'C'; zig = 'Zig'; rust = 'Rust'; fsharp = 'Fsharp'; gleam = 'Gleam'; typescript = 'TypeScript'; python = 'Python'; lua = 'Lua'; lean = 'Lean'; delphi = 'Delphi'; cuda = 'Cuda'; kotlin = 'Kotlin'; swift = 'Swift'; wasm = 'Wasm'; bend = 'Bend'; wgsl = 'Wgsl' }
+$backendOf = @{ c = 'C'; zig = 'Zig'; rust = 'Rust'; fsharp = 'Fsharp'; gleam = 'Gleam'; typescript = 'TypeScript'; python = 'Python'; lua = 'Lua'; lean = 'Lean'; delphi = 'Pascal'; pascal = 'Pascal'; cuda = 'Cuda'; kotlin = 'Kotlin'; swift = 'Swift'; wasm = 'Wasm'; bend = 'Bend'; wgsl = 'Wgsl' }
 $columns = 'id', 'backend', 'suite', 'compile', 'compile_ms', 'residual', 'native', 'native_ms', 'exit', 'stdout', 'oracle', 'baseline', 'detail', 'run_ms'
 $rows = foreach ($report in $Reports) {
     if (-not (Test-Path $report)) { Write-Host "missing report, its file yields no rows: $report"; continue }

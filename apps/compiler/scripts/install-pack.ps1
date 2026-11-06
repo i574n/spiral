@@ -44,7 +44,8 @@ if ((Get-Short $stageCore) -ne (Get-Short $candidateCore) -or (Get-Short $stageH
 
 $installed = Join-Path $env:LOCALAPPDATA 'spiral-bin\bin'
 $users = @(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -and $_.CommandLine -match [regex]::Escape($installed) -and $_.ProcessId -ne $PID })
-$daemons = @(Get-CimInstance Win32_Process -Filter "Name='erl.exe'" | Where-Object { $_.CommandLine -match 'CompilerDaemon|spiral\.notebook' })
+$pinCode = (Get-Item -LiteralPath (Join-Path $compiler '../cells/lib/spiral/cells/compiler_daemon.ex')).LastWriteTime
+$daemons = @(Get-CimInstance Win32_Process -Filter "Name='erl.exe'" | Where-Object { ($_.CommandLine -match 'spiral\.notebook' -and $_.CommandLine -notmatch '--gate\b') -or ($_.CommandLine -match 'CompilerDaemon' -and $_.CreationDate -lt $pinCode) })
 if ($users -or $daemons) { @($users) + @($daemons) | ForEach-Object { "IN USE pid=$($_.ProcessId) $($_.Name)" }; throw 'the installed compiler is in use; not installing' }
 if (-not $Apply) { Remove-Item -Recurse -Force $stage; 'dry run ok: the candidate reproduces from today''s live source and nothing uses the installed compiler; rerun with -Apply'; return }
 

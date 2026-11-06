@@ -4,7 +4,7 @@ use std::rc::Rc;
 fn run_0(mut v0: i32, mut v1: Rc<str>, mut v2: Rc<str>, mut v3: i32) -> (Rc<str>, Rc<str>, i32) {
     let v4: bool = v0 <= 0i32;
     let (mut v11, mut v12, mut v13): (Rc<str>, Rc<str>, i32) = if v4 {
-        (v1, v2.clone(), v3)
+        (v1, v2, v3)
     } else {
         let v5: i32 = v0.wrapping_sub(1i32);
         let v6: i32 = v3.wrapping_add(1i32);

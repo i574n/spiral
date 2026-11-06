@@ -59,20 +59,19 @@ type U0 is Data:
   U0_A{f0: U1}
   U0_StopA{}
 
-@unsafe
-def spiral_main_if1(+c: Bool) -> IO(U0):
+def spiral_main_if1(c: Bool) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
-        +v1 : U0 <- IO.pure(U0, U0_StopA{})
-        +v2 : U1 <- IO.pure(U1, U1_B{v1})
+        v1 : U0 <- IO.pure(U0, U0_StopA{})
+        v2 : U1 <- IO.pure(U1, U1_B{v1})
         IO.pure(U0, U0_A{v2})
     case False{}:
       do IO<U0>:
         IO.pure(U0, U0_StopA{})
 
 @unsafe
-def spiral_main_unbox2(+u: U0, +v0: Bool, +v5: U0) -> IO(U32):
+def spiral_main_unbox2(u: U0, +v0: Bool, +v5: U0) -> IO(U32):
   match u:
     case U0_A{+v6}:
       do IO<U32>:
@@ -81,14 +80,12 @@ def spiral_main_unbox2(+u: U0, +v0: Bool, +v5: U0) -> IO(U32):
       do IO<U32>:
         return {0 : U32}
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : Bool <- IO.pure(Bool, True{})
     +v5 : U0 <- spiral_main_if1(v0)
     spiral_main_unbox2(v5, v0, v5)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

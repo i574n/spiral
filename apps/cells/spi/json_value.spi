@@ -19,7 +19,6 @@
 
 :~ ^ skip_ws (s : string) (i : i32) : i32 = ? ws_byte (at s i) ?> skip_ws s (i + 1i32) |: i
 
-/// ## numbers: -? (0 | [1-9][0-9]*) (. [0-9]+)? ([eE] [+-]? [0-9]+)?, kept as their source text
 := is_digit (b : i32) : bool = b >= 48i32 && b <= 57i32
 
 :~ ^ digits_end (s : string) (i : i32) : i32 = ? is_digit (at s i) ?> digits_end s (i + 1i32) |: i
@@ -41,7 +40,6 @@
 
 := number_end (s : string) (i : i32) : i32 = exp_end s (frac_end s (int_end s (? at s i = 45i32 ?> i + 1i32 |: i)))
 
-/// ## strings: no raw control bytes, only the JSON escapes, paired surrogates and well-formed UTF-8
 := hex_val (b : i32) : i32 =
     ? is_digit b ?> b - 48i32 |? b >= 65i32 && b <= 70i32 ?> b - 55i32 |? b >= 97i32 && b <= 102i32 ?> b - 87i32 |: -1i32
 
@@ -120,7 +118,6 @@
 
 := string_at (s : string) (q_at : i32) : option (string * i32) = string_from s (q_at + 1i32) (q_at + 1i32) ""
 
-/// ## values: one total recursive descent, None on the first byte RFC 8259 rejects
 := word (s : string) (i : i32) (w : string) (v : json) : option (json * i32) =
     ? text::starts_at s i w ?> Some (v, i + text::length w) |: None
 
@@ -188,7 +185,6 @@
     | Some (v, next) => ? skip_ws s next = text::length s ?> Some v |: None
     | None => None
 
-/// ## lookups: the first member wins, as Elixir's JSON.decode keeps it
 :~ ^ member (key : string) (members : list (string * json)) : option json =
     ?= members ?|
     | (name, v) :: rest => ? name = key ?> Some v |: member key rest
@@ -199,7 +195,6 @@
     | JObj members => member key members
     | _ => None
 
-/// ## canonical text: compact, raw numbers, members in source order
 :~ ^ quoted_from (s : string) (i : i32) (start : i32) (acc : string) : string =
     := c = at s i
     := chunk = text::slice_len s start (i - start)

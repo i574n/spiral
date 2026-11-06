@@ -46,8 +46,7 @@ pub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {
 pub type Heap0 { Heap0(l0 : SpiralArray(Float)) }
 pub fn main() {
     let v0 = spiral_array_create_filled(1, 0.0)
-    let v1 = 1.5
-    spiral_array_set(v0, 0, v1)
+    spiral_array_set(v0, 0, 1.5)
     let v2 = Heap0(l0: v0)
     let v3 = v2.l0
     let v4 = spiral_array_get(v3, 0)

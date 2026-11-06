@@ -91,6 +91,9 @@ jobs:
       - if: always()
         run: git diff --no-color -- apps/compiler/tmp/samples > "$SPIRAL_BIN_CACHE_DIR/samples-output.diff"
 
+      - if: always()
+        run: sudo apt-get update -q && sudo apt-get install -y -q linux-tools-common "linux-tools-$(uname -r)" && pwsh apps/compiler/scripts/ebpf-kernel-load.ps1 > "$SPIRAL_BIN_CACHE_DIR/ebpf-kernel-load.txt" 2>&1 || true
+
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
@@ -99,6 +102,7 @@ jobs:
             ${{ env.SPIRAL_BIN_CACHE_DIR }}/baseline/EXPECTED.tsv
             ${{ env.SPIRAL_BIN_CACHE_DIR }}/runs
             ${{ env.SPIRAL_BIN_CACHE_DIR }}/samples-output.diff
+            ${{ env.SPIRAL_BIN_CACHE_DIR }}/ebpf-kernel-load.txt
           retention-days: 14
 
   cells-gate:

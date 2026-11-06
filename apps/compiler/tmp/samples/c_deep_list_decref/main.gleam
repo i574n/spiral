@@ -32,11 +32,7 @@ pub fn sum_1(v0: Uh0, v1: Int) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 1000000
-    let v1 = Uh0End
-    let v2 = build_0(v0, v1)
-    let v3 = 0
-    let v4 = sum_1(v2, v3)
-    let v5 = v4 % 256
-    v5
+    let v2 = build_0(1000000, Uh0End)
+    let v4 = sum_1(v2, 0)
+    v4 % 256
 }

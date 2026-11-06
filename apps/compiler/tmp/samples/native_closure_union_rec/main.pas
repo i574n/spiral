@@ -23,6 +23,10 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 function ClosureCreate0(v0: QWord): TFun0; forward;
 function build_0(v0: QWord): TUH0; forward;
 function sum_1(v0: TUH0; v1: QWord): QWord; forward;
@@ -46,6 +50,7 @@ var
 begin
   v1 := v0 - 1;
   Result := build_0(v1);
+  SpiralRelease(Self);
 end;
 function ClosureCreate0(v0: QWord): TFun0;
 var c: Tclosure0;
@@ -78,13 +83,18 @@ begin
           0: begin
               v2 := v0.c0_0;
               v3 := v0.c0_1;
+              SpiralRetain(v3);
+              SpiralRetain(v3);
+              SpiralRelease(v0);
               v4 := v3.Invoke;
+              SpiralRelease(v3);
               v5 := v1 + v2;
               v0 := v4;
               v1 := v5;
               Continue;
           end;
           1: begin
+              SpiralRelease(v0);
               Result := v1;
               Exit;
           end;
@@ -106,7 +116,9 @@ begin
   v0 := 10;
   v1 := build_0(v0);
   v2 := 0;
+  SpiralRetain(v1);
   v3 := sum_1(v1, v2);
+  SpiralRelease(v1);
   v4 := 5;
   v5 := LongInt(v3);
   v6 := v4 * 2;
@@ -115,8 +127,11 @@ begin
   Result := v8;
 end;
 var SpiralOutputBuffer: array[0..65535] of Char;
+var SpiralExitCode: LongInt;
 begin
   SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
-  Halt(SpiralMain);
+  SpiralExitCode := SpiralMain;
+  if UH0_Nil_shared <> nil then UH0_Nil_shared.Free;
+  Halt(SpiralExitCode);
 end.

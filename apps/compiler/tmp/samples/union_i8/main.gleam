@@ -3,11 +3,9 @@ pub type Us0 {
     Us0Held(f1i0 : Int)
 }
 pub fn main() {
-    let v0 = 100
-    let v1 = True
     let v4 =
-        case v1 {
-            True -> Us0Held(v0)
+        case True {
+            True -> Us0Held(100)
             False -> Us0Missing
         }
     case v4  {

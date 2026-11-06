@@ -8,7 +8,6 @@ pub fn main() {
     let v3 = 3.5
     let v4 = 0.5
     let v5 = 1.0
-    let v6 = 2.7
     let v7 = float.floor
     let v8 = v7(v0)
     let v9 = v8 != 2.0
@@ -28,8 +27,7 @@ pub fn main() {
                     let v27 =
                         case v16 {
                             True -> {
-                                let v17 = v14 +. 1.0
-                                v17
+                                v14 +. 1.0
                             }
                             False -> {
                                 let v18 = v15 <. 0.5
@@ -44,8 +42,7 @@ pub fn main() {
                                         case v23 {
                                             True -> v14
                                             False -> {
-                                                let v24 = v14 +. 1.0
-                                                v24
+                                                v14 +. 1.0
                                             }
                                         }
                                     }
@@ -63,8 +60,7 @@ pub fn main() {
                             let v43 =
                                 case v32 {
                                     True -> {
-                                        let v33 = v30 +. 1.0
-                                        v33
+                                        v30 +. 1.0
                                     }
                                     False -> {
                                         let v34 = v31 <. 0.5
@@ -79,8 +75,7 @@ pub fn main() {
                                                 case v39 {
                                                     True -> v30
                                                     False -> {
-                                                        let v40 = v30 +. 1.0
-                                                        v40
+                                                        v30 +. 1.0
                                                     }
                                                 }
                                             }
@@ -98,8 +93,7 @@ pub fn main() {
                                     let v59 =
                                         case v48 {
                                             True -> {
-                                                let v49 = v46 +. 1.0
-                                                v49
+                                                v46 +. 1.0
                                             }
                                             False -> {
                                                 let v50 = v47 <. 0.5
@@ -114,8 +108,7 @@ pub fn main() {
                                                         case v55 {
                                                             True -> v46
                                                             False -> {
-                                                                let v56 = v46 +. 1.0
-                                                                v56
+                                                                v46 +. 1.0
                                                             }
                                                         }
                                                     }
@@ -133,8 +126,7 @@ pub fn main() {
                                             let v75 =
                                                 case v64 {
                                                     True -> {
-                                                        let v65 = v62 +. 1.0
-                                                        v65
+                                                        v62 +. 1.0
                                                     }
                                                     False -> {
                                                         let v66 = v63 <. 0.5
@@ -149,8 +141,7 @@ pub fn main() {
                                                                 case v71 {
                                                                     True -> v62
                                                                     False -> {
-                                                                        let v72 = v62 +. 1.0
-                                                                        v72
+                                                                        v62 +. 1.0
                                                                     }
                                                                 }
                                                             }
@@ -168,8 +159,7 @@ pub fn main() {
                                                     let v91 =
                                                         case v80 {
                                                             True -> {
-                                                                let v81 = v78 +. 1.0
-                                                                v81
+                                                                v78 +. 1.0
                                                             }
                                                             False -> {
                                                                 let v82 = v79 <. 0.5
@@ -184,8 +174,7 @@ pub fn main() {
                                                                         case v87 {
                                                                             True -> v78
                                                                             False -> {
-                                                                                let v88 = v78 +. 1.0
-                                                                                v88
+                                                                                v78 +. 1.0
                                                                             }
                                                                         }
                                                                     }
@@ -205,7 +194,7 @@ pub fn main() {
                                                                 True -> 8
                                                                 False -> {
                                                                     let v98 = float.floor
-                                                                    let v99 = v98(v6)
+                                                                    let v99 = v98(2.7)
                                                                     let v100 = v99 != 2.0
                                                                     case v100 {
                                                                         True -> 9

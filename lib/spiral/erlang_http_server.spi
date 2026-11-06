@@ -35,14 +35,18 @@
     := rest = i + sm'::length sep
     ? i < 0i32 ?> s, "" |: cut 0i32 i s, sm'::substring rest (sm'::length s - rest) s
 
-:= first_line (head : string) : string = cut 0i32 (sm'::index_of "\r\n" head) head
+:= upto (sep : string) (s : string) : string =
+    := at = sm'::index_of sep s
+    ? at < 0i32 ?> s |: cut 0i32 at s
+
+:= first_line (head : string) : string = upto "\r\n" head
 
 := target_of (head : string) : string = ?= pieces " " (first_line head) ?| _ :: t :: _ => t | _ => "/"
 
 := method_of (head : string) : string = ?= pieces " " head ?| m :: _ => m | [] => ""
 
 :~ request_of (raw : string) : request =
-    := head = cut 0i32 (head_end raw) raw
+    := head = upto "\r\n\r\n" raw
     := target, _ = split_once "#" (target_of head)
     := path, query = split_once "?" target
     { method = method_of head; path; query; head; raw }
@@ -116,3 +120,13 @@
         "HTTP/1.1 201 Created\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: 2\r\n"
         ^^ "Connection: close\r\n\r\né"
     )
+
+///> gleam
+:# an_empty_or_partial_request_still_parses =
+    := empty, partial = request_of "", request_of "GET /timeline HTTP/1.1\r\nHost: h"
+    (empty::path, partial::path) |> _assert_eq ("/", "/timeline")
+
+///> gleam
+:# a_headerless_request_still_parses =
+    := bare = request_of "GET /a?b=1 HTTP/1.1\r\n\r\n"
+    (bare::path, bare::query) |> _assert_eq ("/a", "b=1")

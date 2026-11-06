@@ -268,12 +268,11 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
   (+ah, +al) = a
   (+bh, +bl) = b
   (U32.xor(ah, bh), U32.xor(al, bl))
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : U32 <- IO.pure(U32, {60 : U32})
-    +v1 : (U32 & U32) <- IO.pure((U32 & U32), ({4294967293 : U32}, {3884901888 : U32}))
-    +v2 : U32 <- IO.pure(U32, {200 : U32})
+    v0 : U32 <- IO.pure(U32, {60 : U32})
+    v1 : (U32 & U32) <- IO.pure((U32 & U32), ({4294967293 : U32}, {3884901888 : U32}))
+    v2 : U32 <- IO.pure(U32, {200 : U32})
     +v3 : String <- IO.pure(String, "cube")
     IO.write(v3 ++ ": " ++ spiral_i32_show(v0) ++ " frames, checksum " ++ spiral_i32_show({970392 : U32}) ++ "\n")
     IO.write("big " ++ w64_show_s(v1) ++ ", small " ++ spiral_i32_show({4294967291 : U32}) ++ ", byte " ++ U32.show(v2) ++ "\n")
@@ -283,7 +282,6 @@ def spiral_main() -> IO(U32):
     IO.write("\n")
     return {0 : U32}
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

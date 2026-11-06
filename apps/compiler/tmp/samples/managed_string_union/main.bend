@@ -63,45 +63,40 @@ type U0 is Data:
   U0_Text{f0: String}
   U0_Number{f0: U32}
 
-@unsafe
-def spiral_main_if1(+c: Bool) -> IO(U0):
+def spiral_main_if1(c: Bool) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
         IO.pure(U0, U0_Number{{7 : U32}})
     case False{}:
       do IO<U0>:
-        +v2 : String <- IO.pure(String, "qwe")
+        v2 : String <- IO.pure(String, "qwe")
         IO.pure(U0, U0_Text{v2})
 
-@unsafe
-def score_0_unbox2(+u: U0, +v0: U0) -> IO(U32):
+def score_0_unbox2(u: U0, +v0: U0) -> IO(U32):
   match u:
-    case U0_Text{+v1}:
+    case U0_Text{v1}:
       do IO<U32>:
-        +v2 : U32 <- IO.pure(U32, spiral_string_bytes(v1))
+        v2 : U32 <- IO.pure(U32, spiral_string_bytes(v1))
         return v2
-    case U0_Number{+v3}:
+    case U0_Number{v3}:
       do IO<U32>:
         return v3
 
-@unsafe
 def score_0(+v0: U0) -> IO(U32):
   do IO<U32>:
     score_0_unbox2(v0, v0)
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : Bool <- IO.pure(Bool, False{})
     +v4 : U0 <- spiral_main_if1(v0)
-    +v5 : U32 <- score_0(v4)
-    +v6 : U32 <- score_0(v4)
-    +v7 : U32 <- IO.pure(U32, U32.add(v5, v6))
-    +v8 : U32 <- IO.pure(U32, U32.sub(v7, {6 : U32}))
+    v5 : U32 <- score_0(v4)
+    v6 : U32 <- score_0(v4)
+    v7 : U32 <- IO.pure(U32, U32.add(v5, v6))
+    v8 : U32 <- IO.pure(U32, U32.sub(v7, {6 : U32}))
     return v8
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

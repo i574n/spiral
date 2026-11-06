@@ -1,10 +1,8 @@
-/// # cli_args
 :# cli_args static =
     :< testing
 
 :< sm'_operators
 
-/// ## cli_args
 := flag_value (name : string) (args : list string) : option string = cli_flags::flag_value name args
 
 := has_switch (name : string) (args : list string) : bool = cli_flags::has_switch name args

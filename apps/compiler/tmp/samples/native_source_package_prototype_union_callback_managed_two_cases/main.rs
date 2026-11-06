@@ -12,10 +12,10 @@ fn closure0() -> Rc<dyn Fn(i32) -> US0> {
         let v1: bool = v0 == 1i32;
         if v1 {
             let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("alpha"); } LIT.with(|lit| lit.clone()) };
-            US0::US0_Text(v2.clone())
+            US0::US0_Text(v2)
         } else {
             let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("beta"); } LIT.with(|lit| lit.clone()) };
-            US0::US0_Note(v4.clone())
+            US0::US0_Note(v4)
         }
     }); } CLOSURE.with(|closure| closure.clone())
 }
@@ -28,30 +28,30 @@ fn method1(mut v0: Rc<dyn Fn(i32) -> US0>) -> US0 {
 fn spiral_main() -> i32 {
     let mut v0: Rc<dyn Fn(i32) -> US0> = closure0();
     let v1: US0 = method0(v0.clone());
-    let v6: i32 = match &v1 {
+    let v6: i32 = match v1 {
         US0::US0_Idle => {
             3i32
         }
         US0::US0_Note(v3) => {
-            let v3: Rc<str> = v3.clone();
+            let v3: Rc<str> = v3;
             6i32
         }
         US0::US0_Text(v2) => {
-            let v2: Rc<str> = v2.clone();
+            let v2: Rc<str> = v2;
             5i32
         }
     };
     let v7: US0 = method1(v0);
-    let v12: i32 = match &v7 {
+    let v12: i32 = match v7 {
         US0::US0_Idle => {
             3i32
         }
         US0::US0_Note(v9) => {
-            let v9: Rc<str> = v9.clone();
+            let v9: Rc<str> = v9;
             6i32
         }
         US0::US0_Text(v8) => {
-            let v8: Rc<str> = v8.clone();
+            let v8: Rc<str> = v8;
             5i32
         }
     };

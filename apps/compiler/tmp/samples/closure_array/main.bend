@@ -175,14 +175,14 @@ def spiral_array_set_a0(+arr: Chan(Array<U32>) & U32, +i: U32, +v: U32) -> IO(Un
   spiral_array_set_checked_a0(c, i, v, U32.is_lt(i, n))
 
 @unsafe
-def f_c0(+v0: U32, +v1: U32) -> IO((Chan(Array<U32>) & U32)):
+def f_c0(v0: U32, +v1: U32) -> IO((Chan(Array<U32>) & U32)):
   do IO<(Chan(Array<U32>) & U32)>:
     +v2 : (Chan(Array<U32>) & U32) <- spiral_array_new_a0({1 : U32}, {0 : U32})
     spiral_array_set_a0(v2, {0 : U32}, v0)
     return v2
 
 @unsafe
-def spiral_main_if1(+c: Bool) -> IO(U32):
+def spiral_main_if1(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -201,7 +201,6 @@ def spiral_main() -> IO(U32):
     +v4 : Bool <- IO.pure(Bool, U32.is_eq(v3, {7 : U32}))
     spiral_main_if1(v4)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

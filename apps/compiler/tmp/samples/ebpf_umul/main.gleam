@@ -5,18 +5,13 @@ pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
 }
 
 pub fn main() {
-    let v0 = 65536
-    let v1 = 65536
-    let v2 = 4294967295
-    let v3 = 3
-    let v4 = spiral_wrap_unsigned(v0 * v1, 32)
-    let v5 = spiral_wrap_unsigned(v2 * v3, 32)
+    let v4 = spiral_wrap_unsigned(65536 * 65536, 32)
+    let v5 = spiral_wrap_unsigned(4294967295 * 3, 32)
     let v6 = v4 == 0
     let v8 =
         case v6 {
             True -> {
-                let v7 = v5 == 4294967293
-                v7
+                v5 == 4294967293
             }
             False -> False
         }

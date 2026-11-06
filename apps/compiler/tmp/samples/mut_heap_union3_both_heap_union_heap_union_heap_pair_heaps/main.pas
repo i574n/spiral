@@ -25,6 +25,10 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 function score_0(v0: TUS1): LongInt; forward;
 function HeapCreate0(a0: LongInt; a1: AnsiString): THeap0;
 begin
@@ -217,6 +221,7 @@ begin
   v25 := score_0(v24);
   v22.l0 := v21;
   v26 := v22.l0;
+  SpiralRelease(v22);
   v27 := v26.l0;
   v28 := score_0(v27);
   v29 := v25 = 0;

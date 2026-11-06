@@ -20,11 +20,6 @@ pub fn loop_0(v0: Int, v1: Int, v2: Int, v3: Int) -> #(Int, Int) {
     #(v9, v10)
 }
 pub fn main() {
-    let v0 = 5
-    let v1 = 0
-    let v2 = 1
-    let v3 = 2
-    let #(v4, v5) = loop_0(v0, v1, v2, v3)
-    let v6 = spiral_wrap_signed(v4 + v5, 32)
-    v6
+    let #(v4, v5) = loop_0(5, 0, 1, 2)
+    spiral_wrap_signed(v4 + v5, 32)
 }

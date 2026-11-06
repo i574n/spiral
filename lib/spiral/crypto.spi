@@ -5,7 +5,6 @@
 :< rust_operators
 :< sm'_operators
 
-/// ## fsharp
 :! sha256 = $'System.Security.Cryptography.SHA256'
 
 := sha256 () : sha256 =
@@ -14,7 +13,6 @@
 := sha256_compute_hash (x : sha256) (data : array u8) : array u8 =
     data |> $'!x.ComputeHash'
 
-/// ## rust
 :! sha256' =
     `(
         rust::rust_type
@@ -114,7 +112,6 @@
     |> resultm::unwrap'
     |> _assert_eq "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
-/// ## typescript
 := create_hash (x : string) : any =
     global "import * as spiral_node_crypto from 'node:crypto';"
     $'spiral_node_crypto.createHash(!x)' : any
@@ -125,7 +122,6 @@
 := hash_digest (s : string) (x : any) : string =
     $'!x.digest(!s)' : string
 
-/// ## python
 :! py_sha256 = any
 
 := hashlib_sha256 () : py_sha256 =
@@ -148,7 +144,6 @@
             $'!sha256.hexdigest()' : string
     }
 
-/// ## crypto
 := zig_sha256_hex (input : string) : string =
     global """
         fn spiral_out_sha256_hex(input: []const u8) []const u8 {
@@ -283,7 +278,6 @@
     (sha1_hex text, hmac_sha1_base64 "key" "The quick brown fox jumps over the lazy dog")
     |> _assert_eq ("a9993e364706816aba3e25717850c26c9cd0d89d", "3nybhbi3iqa8ino29wqQcBydtNk=")
 
-/// ### decode_hex
 := hex_nibble (c : string) : i32 = sm'::index_of c "0123456789abcdef"
 
 :~ ^ reverse_bytes (xs : list u8) (acc : list u8) : list u8 =
@@ -305,7 +299,6 @@
     := size : i32 = sm'::length text
     ? size % 2i32 <> 0i32 ?> None |: hex_bytes text size 0i32 []
 
-/// ### ed25519_verify
 := rust_ed25519_verify (key : array_base u8) (message : string) (signature : array_base u8) : bool =
     $'ed25519_dalek::VerifyingKey::from_bytes(&<[u8; 32]>::try_from(&(*!key.borrow())[..]).unwrap()) \
         .map(|k| k.verify_strict(!message.as_bytes(), &ed25519_dalek::Signature::from_bytes( \
@@ -355,7 +348,6 @@
     |> hash_to_port
     |> _assert_eq 19273
 
-/// ## main
 ///> fsharp
 
 := main () =

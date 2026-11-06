@@ -7,16 +7,16 @@ enum US0 {
     US0_Both(i32, i32),
 }
 fn sum_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_Both(v2, v3) => {
-            let v2: i32 = *v2;
-            let v3: i32 = *v3;
+            let v2: i32 = v2;
+            let v3: i32 = v3;
             let v4: i32 = v2.wrapping_mul(10i32);
             let v5: i32 = v4.wrapping_add(v3);
             v5
         }
         US0::US0_One(v1) => {
-            let v1: i32 = *v1;
+            let v1: i32 = v1;
             v1
         }
     }

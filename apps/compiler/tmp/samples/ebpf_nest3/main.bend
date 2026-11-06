@@ -51,35 +51,31 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
     case SCon{+h, +t}:
       spiral_string_byte_at_from(U32.is_lt(i, spiral_utf8_width(Char.to_u32(h))), Char.to_u32(h), spiral_utf8_width(Char.to_u32(h)), i, t)
 
-@unsafe
-def method1(+v0: U32, +v1: U32, +v2: F32) -> IO(U32 & U32 & F32):
+def method1(v0: U32, v1: U32, v2: F32) -> IO(U32 & U32 & F32):
   do IO<U32 & U32 & F32>:
     return (v0, v1, v2)
 
-@unsafe
-def method0_k1_if2(+c: Bool, +v4: U32) -> IO(Bool):
+def method0_k1_if2(c: Bool, v4: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v7 : Bool <- IO.pure(Bool, U32.is_eq(v4, {3 : U32}))
+        v7 : Bool <- IO.pure(Bool, U32.is_eq(v4, {3 : U32}))
         return v7
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def method0_k1_if3(+c: Bool, +v5: F32) -> IO(Bool):
+def method0_k1_if3(c: Bool, v5: F32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v9 : Bool <- IO.pure(Bool, F32.is_eq(v5, 1.5))
+        v9 : Bool <- IO.pure(Bool, F32.is_eq(v5, 1.5))
         return v9
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def method0_k1_if4(+c: Bool) -> IO(U32):
+def method0_k1_if4(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -97,21 +93,18 @@ def method0_k1(+p: U32 & U32 & F32, +v0: U32, +v1: U32, +v2: F32) -> IO(U32):
     +v10 : Bool <- method0_k1_if3(v8, v5)
     method0_k1_if4(v10)
 
-@unsafe
 def method0(+v0: U32, +v1: U32, +v2: F32) -> IO(U32):
   do IO<U32>:
-    +p : U32 & U32 & F32 <- method1(v0, v1, v2)
+    p : U32 & U32 & F32 <- method1(v0, v1, v2)
     method0_k1(p, v0, v1, v2)
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : U32 <- IO.pure(U32, {2 : U32})
-    +v1 : U32 <- IO.pure(U32, {3 : U32})
-    +v2 : F32 <- IO.pure(F32, 1.5)
+    v0 : U32 <- IO.pure(U32, {2 : U32})
+    v1 : U32 <- IO.pure(U32, {3 : U32})
+    v2 : F32 <- IO.pure(F32, 1.5)
     method0(v0, v1, v2)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

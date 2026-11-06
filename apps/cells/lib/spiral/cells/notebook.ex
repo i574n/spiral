@@ -24,7 +24,9 @@ defmodule Spiral.Cells.Notebook do
     :env,
     :print_code,
     :plot,
-    :render_plot
+    :render_plot,
+    :build_receipt,
+    :compiler_pin
   ]
   @lib_rels [
     "deps/spiral/lib/spiral",
@@ -111,9 +113,15 @@ defmodule Spiral.Cells.Notebook do
       unavailable: ran.unavailable,
       memo: ran.memo,
       targets: ran.targets,
-      report: report(tests, selected, ran) |> with_no_agree_reasons(cells)
+      report: report(tests, selected, ran) |> with_no_agree_reasons(cells) |> with_compiler_pin(opts[:compiler_pin])
     }
   end
+
+  @doc false
+  def with_compiler_pin(report, pin) when is_binary(pin) and pin != "",
+    do: Map.put(report, "compiler", %{"pin" => pin, "stamp" => Path.basename(Path.dirname(pin))})
+
+  def with_compiler_pin(report, _pin), do: report
 
   @no_agree_reason ~r/^\/\/\/- [^\n]*--no-agree\s+"([^"]*)"/m
   @bare_no_agree ~r/^\/\/\/- [^\n]*--no-agree(?!\s+")/m

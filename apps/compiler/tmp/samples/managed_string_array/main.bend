@@ -186,19 +186,18 @@ def spiral_array_set_a0(+arr: Chan(Array<String>) & U32, +i: U32, +v: String) ->
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : (Chan(Array<String>) & U32) <- spiral_array_new_a0({2 : U32}, "")
-    +v1 : String <- IO.pure(String, "ab")
+    v1 : String <- IO.pure(String, "ab")
     spiral_array_set_a0(v0, {0 : U32}, v1)
-    +v2 : String <- IO.pure(String, "cde")
+    v2 : String <- IO.pure(String, "cde")
     spiral_array_set_a0(v0, {1 : U32}, v2)
-    +v3 : String <- spiral_array_get_a0(v0, {0 : U32})
-    +v4 : String <- spiral_array_get_a0(v0, {1 : U32})
-    +v5 : U32 <- IO.pure(U32, spiral_string_bytes(v3))
-    +v6 : U32 <- IO.pure(U32, spiral_string_bytes(v4))
-    +v7 : U32 <- IO.pure(U32, U32.add(v5, v6))
-    +v8 : U32 <- IO.pure(U32, U32.sub(v7, {5 : U32}))
+    v3 : String <- spiral_array_get_a0(v0, {0 : U32})
+    v4 : String <- spiral_array_get_a0(v0, {1 : U32})
+    v5 : U32 <- IO.pure(U32, spiral_string_bytes(v3))
+    v6 : U32 <- IO.pure(U32, spiral_string_bytes(v4))
+    v7 : U32 <- IO.pure(U32, U32.add(v5, v6))
+    v8 : U32 <- IO.pure(U32, U32.sub(v7, {5 : U32}))
     return v8
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

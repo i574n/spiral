@@ -42,12 +42,17 @@
             $'x' : result t exn
         TypeScript = \ () =>
             $'(() => { try { return !ok(!fn()); } catch (ex) { return !error(!ex_fn(() => ex)); } })()' : result t exn
+        Rust = \ () =>
+            := caught (ex : exn) : option (result t exn) = Some (Error (ex_fn \ () => ex))
+            try (\ () => Ok (fn ()) : result t exn) caught |> optionm::value
         Zig = \ () => fn () |> ok
+        C = \ () => fn () |> ok
     }
 
 ///> lua
 ///> fsharp
 ///> cuda
+///> rust
 ///> typescript
 :# from_try_keeps_values_and_catches_failures =
     := settled (r : result i32 exn) : i32 =
@@ -57,6 +62,35 @@
     := ~n = 5i32
     (from_try (\ () => n) eval |> settled, from_try (\ () => failwith "boom" : i32) eval |> settled)
     |> _assert_eq (5i32, 0i32)
+
+///> c
+:# from_try_keeps_values =
+    := settled (r : result i32 exn) : i32 =
+        ?= r ?|
+        | Ok x => x
+        | Error _ => 0i32
+    := ~n = 5i32
+    from_try (\ () => n) eval |> settled
+    |> _assert_eq 5i32
+
+:= caught \* t. (fn : () -> t) : result t string =
+    := ok (x : t) : result t string = Ok x
+    := error (e : string) : result t string = Error e
+    backend_switch {
+        Gleam = \ () =>
+            global "@external(erlang, \"SPIRAL_FFI\", \"try_call\")\nfn spiral_try_call(f: fn(Nil) -> a) -> Result(a, String)"
+            $'case spiral_try_call(!fn) { Ok(v) -> !ok(v) Error(e) -> !error(e) }' : result t string
+    }
+
+///> gleam
+:# caught_keeps_values_and_contains_crashes =
+    := settled (r : result i32 string) : i32 =
+        ?= r ?|
+        | Ok x => x
+        | Error _ => 0i32
+    := ~n = 5i32
+    (caught (\ () => n) |> settled, caught (\ () => failwith "boom" : i32) |> settled, caught (\ () => n + 1i32) |> settled)
+    |> _assert_eq (5i32, 0i32, 6i32)
 
 := rust_debug_message \* t. (prefix : string) (x : t) : string =
     global """

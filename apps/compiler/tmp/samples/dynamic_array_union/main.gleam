@@ -62,18 +62,15 @@ pub fn score_0(v0: Us0) -> Int {
             let v3 = spiral_array_get(v1, 0)
             let v4 = spiral_wrap_signed(v2 + v3, 32)
             let v5 = spiral_array_get(v1, 1)
-            let v6 = spiral_wrap_signed(v4 + v5, 32)
-            v6
+            spiral_wrap_signed(v4 + v5, 32)
         }
     }
 }
 pub fn main() {
-    let v0 = 2
-    let v1 = spiral_array_create_filled(v0, 0)
+    let v1 = spiral_array_create_filled(2, 0)
     spiral_array_set(v1, 0, 4)
     spiral_array_set(v1, 1, 5)
     let v2 = Us0Values(v1)
     let v3 = score_0(v2)
-    let v4 = spiral_wrap_signed(v3 - 11, 32)
-    v4
+    spiral_wrap_signed(v3 - 11, 32)
 }

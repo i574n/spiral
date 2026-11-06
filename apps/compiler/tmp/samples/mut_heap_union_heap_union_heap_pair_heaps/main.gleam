@@ -57,32 +57,28 @@ pub fn score_0(v0: Us1) -> Int {
                     let v14 =
                         case v12 {
                             True -> {
-                                let v13 = v9 == "hi"
-                                v13
+                                v9 == "hi"
                             }
                             False -> False
                         }
                     let v16 =
                         case v14 {
                             True -> {
-                                let v15 = v10 == 4
-                                v15
+                                v10 == 4
                             }
                             False -> False
                         }
                     let v18 =
                         case v16 {
                             True -> {
-                                let v17 = v11 == "yo"
-                                v17
+                                v11 == "yo"
                             }
                             False -> False
                         }
                     let v20 =
                         case v18 {
                             True -> {
-                                let v19 = v5 == 2
-                                v19
+                                v5 == 2
                             }
                             False -> False
                         }
@@ -97,49 +93,35 @@ pub fn score_0(v0: Us1) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 1
-    let v1 = "no"
-    let v2 = Heap0(l0: v0, l1: v1)
-    let v3 = 2
-    let v4 = "zz"
-    let v5 = Heap0(l0: v3, l1: v4)
+    let v2 = Heap0(l0: 1, l1: "no")
+    let v5 = Heap0(l0: 2, l1: "zz")
     let v6 = Heap1(l0: v2, l1: v5)
-    let v7 = 3
-    let v8 = Heap2(l0: v6, l1: v7)
-    let v9 = True
+    let v8 = Heap2(l0: v6, l1: 3)
     let v12 =
-        case v9 {
+        case True {
             True -> Us0Held(v8)
             False -> Us0None
         }
     let v13 = Heap3(l0: v12)
-    let v14 = True
     let v17 =
-        case v14 {
+        case True {
             True -> Us1Box(v13)
             False -> Us1Absent
         }
     let v18 = Heap4(l0: v17)
     let v19 = spiral_ref_new(Mut0(l0: v18))
-    let v20 = 7
-    let v21 = "hi"
-    let v22 = Heap0(l0: v20, l1: v21)
-    let v23 = 4
-    let v24 = "yo"
-    let v25 = Heap0(l0: v23, l1: v24)
+    let v22 = Heap0(l0: 7, l1: "hi")
+    let v25 = Heap0(l0: 4, l1: "yo")
     let v26 = Heap1(l0: v22, l1: v25)
-    let v27 = 2
-    let v28 = Heap2(l0: v26, l1: v27)
-    let v29 = True
+    let v28 = Heap2(l0: v26, l1: 2)
     let v32 =
-        case v29 {
+        case True {
             True -> Us0Held(v28)
             False -> Us0None
         }
     let v33 = Heap3(l0: v32)
-    let v34 = True
     let v37 =
-        case v34 {
+        case True {
             True -> Us1Box(v33)
             False -> Us1Absent
         }

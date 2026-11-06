@@ -7,10 +7,10 @@ enum US0 {
     US0_Both(Rc<str>, Rc<str>),
 }
 fn score_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_Both(v1, v2) => {
-            let v1: Rc<str> = v1.clone();
-            let v2: Rc<str> = v2.clone();
+            let v1: Rc<str> = v1;
+            let v2: Rc<str> = v2;
             let v3: bool = &*v1 == "hi";
             let v5: bool = if v3 {
                 let v4: bool = &*v2 == "yo";

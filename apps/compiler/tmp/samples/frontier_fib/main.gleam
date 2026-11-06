@@ -14,14 +14,11 @@ pub fn fib_0(v0: Int) -> Int {
             let v3 = fib_0(v2)
             let v4 = spiral_wrap_signed(v0 - 2, 32)
             let v5 = fib_0(v4)
-            let v6 = spiral_wrap_signed(v3 + v5, 32)
-            v6
+            spiral_wrap_signed(v3 + v5, 32)
         }
     }
 }
 pub fn main() {
-    let v0 = 10
-    let v1 = fib_0(v0)
-    let v2 = spiral_wrap_signed(v1 - 55, 32)
-    v2
+    let v1 = fib_0(10)
+    spiral_wrap_signed(v1 - 55, 32)
 }

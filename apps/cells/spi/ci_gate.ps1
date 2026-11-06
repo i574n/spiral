@@ -43,6 +43,16 @@ try {
 }
 [IO.File]::WriteAllText((Join-Path $Out 'cells-gate.tsv'), (($summary -join "`n") + "`n"))
 $executed = 0
-foreach ($row in $summary | Select-Object -Skip 1) { $executed += [int]($row -split "`t")[2] }
-"cells gate: $($Paths.Count) files, $($summary.Count - 1) reports, $executed tests executed in $([int]$watch.Elapsed.TotalSeconds) s; artifact folder $Out (cells-gate.tsv, metrics-*/, gate.log)"
+$failed = 0
+$red = [Collections.Generic.List[string]]::new()
+foreach ($row in $summary | Select-Object -Skip 1) {
+    $cells = $row -split "`t"
+    $executed += [int]$cells[2]
+    if ([int]$cells[4] -gt 0) { $failed += [int]$cells[4]; $red.Add("  $($cells[0]): $($cells[5])") }
+}
+"cells gate: $($Paths.Count) files, $($summary.Count - 1) reports, $executed tests executed, $failed failed in $([int]$watch.Elapsed.TotalSeconds) s; artifact folder $Out (cells-gate.tsv, metrics-*/, gate.log)"
 if ($executed -eq 0) { throw "cells gate is VOID: $($Paths.Count) lib files with test blocks, but no test executed (see the mix output above and gate.log)" }
+if ($failed -gt 0) {
+    $red
+    throw "cells gate is RED: $failed of $executed executed tests failed (test=targets per file above; details in cells-gate.tsv and metrics-*/tests.tsv)"
+}

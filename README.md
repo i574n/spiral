@@ -91,10 +91,13 @@ Social
 
 ## Contributing
 
-Contributions are welcome! Please see the [CONTRIBUTING.md](https://github.com/i574n/.github/blob/main/CONTRIBUTING.md) for guidelines.
+Contributions are welcome! Please see the [CONTRIBUTING.md](https://github.com/i574n/.github/blob/main/CONTRIBUTING.md)
+for guidelines.
 
 ## License
 
-This project is licensed under the AGPLv3 License. See the [LICENSE](https://github.com/i574n/spiral/blob/main/LICENSE) file for details.
+This project is licensed under the AGPLv3 License. See the [LICENSE](https://github.com/i574n/spiral/blob/main/LICENSE)
+file for details.
 
-`apps/compiler/spiral_compiler.fs` derives from [The Spiral Language](https://github.com/mrakgr/The-Spiral-Language) and is also available under its Mozilla Public License 2.0 (see `deps/The-Spiral-Language/LICENSE`).
+`apps/compiler/spiral_compiler.fs` derives from [The Spiral Language](https://github.com/mrakgr/The-Spiral-Language) and
+is also available under its Mozilla Public License 2.0 (see `deps/The-Spiral-Language/LICENSE`).

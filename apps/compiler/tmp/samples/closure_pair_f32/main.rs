@@ -6,7 +6,7 @@ fn f_c0(mut v0: f32, mut v1: Rc<str>) -> Rc<dyn Fn(i32) -> (f32, Rc<str>)> {
         let v3: bool = v2 == 0i32;
         if v3 {
             let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
-            (0.0f32, v4.clone())
+            (0.0f32, v4)
         } else {
             (v0, v1.clone())
         }

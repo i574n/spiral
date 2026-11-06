@@ -48,9 +48,9 @@ fn spiral_main() -> i32 {
     } else {
         0i32
     };
-    let v28: i32 = match &v1 {
+    let v28: i32 = match v1 {
         US0::US0_Circle(v20) => {
-            let v20: i32 = *v20;
+            let v20: i32 = v20;
             let v21: i32 = 3i32.wrapping_mul(v20);
             let v22: i32 = v21.wrapping_mul(v20);
             v22
@@ -59,15 +59,15 @@ fn spiral_main() -> i32 {
             0i32
         }
         US0::US0_Rect(v23, v24) => {
-            let v23: i32 = *v23;
-            let v24: i32 = *v24;
+            let v23: i32 = v23;
+            let v24: i32 = v24;
             let v25: i32 = v23.wrapping_mul(v24);
             v25
         }
     };
-    let v37: i32 = match &v4 {
+    let v37: i32 = match v4 {
         US0::US0_Circle(v29) => {
-            let v29: i32 = *v29;
+            let v29: i32 = v29;
             let v30: i32 = 3i32.wrapping_mul(v29);
             let v31: i32 = v30.wrapping_mul(v29);
             v31
@@ -76,16 +76,16 @@ fn spiral_main() -> i32 {
             0i32
         }
         US0::US0_Rect(v32, v33) => {
-            let v32: i32 = *v32;
-            let v33: i32 = *v33;
+            let v32: i32 = v32;
+            let v33: i32 = v33;
             let v34: i32 = v32.wrapping_mul(v33);
             v34
         }
     };
     let v38: i32 = v28.wrapping_add(v37);
-    let v47: i32 = match &v5 {
+    let v47: i32 = match v5 {
         US0::US0_Circle(v39) => {
-            let v39: i32 = *v39;
+            let v39: i32 = v39;
             let v40: i32 = 3i32.wrapping_mul(v39);
             let v41: i32 = v40.wrapping_mul(v39);
             v41
@@ -94,8 +94,8 @@ fn spiral_main() -> i32 {
             0i32
         }
         US0::US0_Rect(v42, v43) => {
-            let v42: i32 = *v42;
-            let v43: i32 = *v43;
+            let v42: i32 = v42;
+            let v43: i32 = v43;
             let v44: i32 = v42.wrapping_mul(v43);
             v44
         }

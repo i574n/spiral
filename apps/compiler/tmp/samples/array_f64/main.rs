@@ -3,11 +3,11 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
     let v0: i32 = 2i32;
-    let v1: Rc<RefCell<Vec<f64>>> = Rc::new(RefCell::new(vec![<f64>::default(); v0 as usize]));
+    let mut v1: Rc<RefCell<Vec<f64>>> = Rc::new(RefCell::new(vec![<f64>::default(); v0 as usize]));
     let v2: f64 = 1.5f64;
-    v1.clone().borrow_mut()[0i32 as usize] = v2;
-    v1.clone().borrow_mut()[1i32 as usize] = 2.5f64;
-    let v3: f64 = v1.borrow()[0i32 as usize].clone();
+    v1.borrow_mut()[0i32 as usize] = v2;
+    v1.borrow_mut()[1i32 as usize] = 2.5f64;
+    let v3: f64 = v1.borrow()[0i32 as usize];
     let v4: bool = v3 == 1.5f64;
     if v4 {
         0i32

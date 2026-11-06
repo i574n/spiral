@@ -10,13 +10,11 @@ pub fn method2() -> Int {
 }
 pub fn method1() -> Int {
     let v0 = method2()
-    let v1 = spiral_wrap_signed(14 + v0, 32)
-    v1
+    spiral_wrap_signed(14 + v0, 32)
 }
 pub fn method0() -> Int {
     let v0 = method1()
-    let v1 = spiral_wrap_signed(14 + v0, 32)
-    v1
+    spiral_wrap_signed(14 + v0, 32)
 }
 pub fn main() {
     method0()

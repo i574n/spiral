@@ -16,8 +16,7 @@ pub fn method0(v0: Int, v1: Int) -> Bool {
             case v6 {
                 True -> True
                 False -> {
-                    let v7 = v1 == 0
-                    v7
+                    v1 == 0
                 }
             }
         }
@@ -25,9 +24,7 @@ pub fn method0(v0: Int, v1: Int) -> Bool {
     }
 }
 pub fn main() {
-    let v0 = 3
-    let v1 = 3
-    let v2 = method0(v0, v1)
+    let v2 = method0(3, 3)
     case v2 {
         True -> 0
         False -> 1

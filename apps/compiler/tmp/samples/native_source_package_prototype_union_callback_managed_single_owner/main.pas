@@ -22,6 +22,10 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 function ClosureCreate0: TFun0; forward;
 function method0(v0: TFun0): TUS0; forward;
 function US0_Idle: TUS0;
@@ -38,6 +42,7 @@ var
 begin
   v1 := 'managed';
   Result := US0_Text(v1);
+  SpiralRelease(Self);
 end;
 function ClosureCreate0: TFun0;
 var c: Tclosure0;
@@ -58,7 +63,9 @@ var
   v5: LongInt;
 begin
   v0 := ClosureCreate0;
+  SpiralRetain(v0);
   v1 := method0(v0);
+  SpiralRelease(v0);
   case v1.tag of
       0: begin
           v4 := 3;

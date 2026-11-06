@@ -10,10 +10,8 @@ pub fn method0(v0: Heap0, v1: Heap0) -> #(Heap0, Heap0) {
     #(v0, v1)
 }
 pub fn main() {
-    let v0 = 3
-    let v1 = 4
-    let v2 = Heap0(l0: v0)
-    let v3 = Heap0(l0: v1)
+    let v2 = Heap0(l0: 3)
+    let v3 = Heap0(l0: 4)
     let #(v4, v5) = method0(v2, v3)
     let v6 = v4.l0
     let v7 = v5.l0

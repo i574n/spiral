@@ -68,8 +68,7 @@ pub fn main() {
     let v11 =
         case v9 {
             True -> {
-                let v10 = v7 == 60
-                v10
+                v7 == 60
             }
             False -> False
         }

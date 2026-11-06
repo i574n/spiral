@@ -36,12 +36,12 @@ fn measure_1(mut v0: US0, mut v1: i32) -> i32 {
         _ => {
             let v4: i32 = v1.wrapping_mul(v1);
             let v5: bool = v4 > 3i32;
-            match &v0 {
+            match v0 {
                 US0::US0_Dot => {
                     v4
                 }
                 US0::US0_Square(v6) => {
-                    let v6: i32 = *v6;
+                    let v6: i32 = v6;
                     if v5 {
                         let v7: i32 = v6.wrapping_mul(v6);
                         v7
@@ -50,7 +50,7 @@ fn measure_1(mut v0: US0, mut v1: i32) -> i32 {
                     }
                 }
                 US0::US0_Tri(v9) => {
-                    let v9: i32 = *v9;
+                    let v9: i32 = v9;
                     if v5 {
                         let v10: i32 = v9.wrapping_mul(2i32);
                         v10
@@ -78,9 +78,9 @@ fn measure_tri_2(mut v0: US0, mut v1: i32) -> i32 {
         }
         _ => {
             let v4: i32 = v1.wrapping_add(2i32);
-            match &v0 {
+            match v0 {
                 US0::US0_Tri(v5) => {
-                    let v5: i32 = *v5;
+                    let v5: i32 = v5;
                     let v6: i32 = v5.wrapping_mul(v4);
                     v6
                 }

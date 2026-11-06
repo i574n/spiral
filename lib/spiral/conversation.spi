@@ -3,7 +3,6 @@
 :# conversation static =
     :< testing
 
-/// ### pending
 :! no_pending = ()
 :! pending_call n = ()
 
@@ -36,7 +35,6 @@
         Assistant ("Sunny, open the windows.", { model = "local"; tokens_out = tokens_out }, Done)))))
     weigh t |> _assert_eq 11118i32
 
-/// ### persist
 :< sm'_operators
 
 :| ^ exchanges =

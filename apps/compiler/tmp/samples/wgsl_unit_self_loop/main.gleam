@@ -62,11 +62,8 @@ pub fn fill_0(v0: Int, v1: SpiralArray(Int), v2: Int) -> Nil {
     }
 }
 pub fn main() {
-    let v0 = 6
     let v1 = spiral_array_create_filled(6, 0)
-    let v2 = 0
-    fill_0(v0, v1, v2)
+    fill_0(6, v1, 0)
     let v3 = spiral_array_get(v1, 5)
-    let v4 = spiral_wrap_signed(v3 + 2, 32)
-    v4
+    spiral_wrap_signed(v3 + 2, 32)
 }

@@ -10,7 +10,7 @@ fn lcg_0(mut v0: u64, mut v1: u64, mut v2: i32, mut v3: u64) -> u64 {
             let v5: i32 = v2.wrapping_sub(1i32);
             let v6: u64 = v3.wrapping_mul(v0);
             let v7: u64 = v6.wrapping_add(v1);
-            (v0, v1, v2, v3) = (v0, v1, v5, v7);
+            (v2, v3) = (v5, v7);
             continue;
         }
     }

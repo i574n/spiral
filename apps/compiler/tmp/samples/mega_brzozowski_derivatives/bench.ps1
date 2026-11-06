@@ -1,6 +1,6 @@
 # Times the Brzozowski workloads of runtime_workload.spi (derivative matcher, naive backtracking matcher, staged DFA) and of
 # runtime_interned.spi (interned regex nodes with memoized derivatives) on
-# the native backends. Each bench_* package is compiled (single-flight) to C, Rust, Delphi and F# and built with the
+# the native backends. Each bench_* package is compiled (single-flight) to C, Rust, Pascal and F# and built with the
 # suite's flags (gcc -O2, rustc opt-level=2, fpc -O2, dotnet Release); then every target runs once per round for -Repeat
 # rounds (round-robin, so load changes on a busy machine hit all targets alike). The table shows the median and minimum
 # wall time of the whole process; runtime_native (a dozen matches) is the process-start baseline. With -RegexCrate, the
@@ -13,7 +13,7 @@
 # next to each main.spi, as in every suite run).
 param(
     [int]$Repeat = 7,
-    [string[]]$Backend = @('C', 'Rust', 'Delphi', 'Fsharp'),
+    [string[]]$Backend = @('C', 'Rust', 'Pascal', 'Fsharp'),
     [string[]]$Program = @('runtime_native', 'bench_derivative', 'bench_backtrack', 'bench_staged', 'bench_interned', 'bench_zero_runs_derivative', 'bench_zero_runs_backtrack', 'bench_zero_runs_staged', 'bench_zero_runs_interned'),
     [switch]$SkipCompile,
     [switch]$RegexCrate
@@ -21,12 +21,12 @@ param(
 $ErrorActionPreference = 'Stop'
 $tmpRoot = Resolve-Path (Join-Path $PSScriptRoot '../..')
 . (Join-Path $tmpRoot 'scripts/env.ps1')
-$Backend = @($Backend | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+$Backend = @($Backend | ForEach-Object { $_ -split ',' } | Where-Object { $_ } | ForEach-Object { if ($_ -eq 'Delphi') { 'Pascal' } else { $_ } })
 $Program = @($Program | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $tools = Get-SpiralNativeTools
 $out = Join-Path (Get-SpiralCacheDir) 'bench/brzozowski'
 New-Item -ItemType Directory -Force $out | Out-Null
-$ext = @{ C = 'c'; Rust = 'rs'; Delphi = 'pas'; Fsharp = 'fsx' }
+$ext = @{ C = 'c'; Rust = 'rs'; Pascal = 'pas'; Fsharp = 'fsx' }
 
 function Invoke-Checked([string]$what, [scriptblock]$block) {
     $text = & $block 2>&1 | Out-String
@@ -42,7 +42,7 @@ function Build-Program([string]$name, [string]$backend) {
     }
     $dir = Join-Path $out "$name/$backend"
     New-Item -ItemType Directory -Force $dir | Out-Null
-    # Build from a copy in the cache. The suite compiles the bench_* packages to F# only, so their C/Rust/Delphi
+    # Build from a copy in the cache. The suite compiles the bench_* packages to F# only, so their C/Rust/Pascal
     # outputs would go stale in the tree: those leave it (-SkipCompile then reuses the cached copy).
     $cached = Join-Path $dir "main.$($ext[$backend])"
     if (Test-Path $source) {
@@ -55,7 +55,7 @@ function Build-Program([string]$name, [string]$backend) {
     switch ($backend) {
         'C' { Invoke-Checked "gcc $name" { & $tools.CC -std=c11 -O2 -w -o $exe $source -lm } }
         'Rust' { Invoke-Checked "rustc $name" { & $tools.Rustc -C opt-level=2 -A warnings --edition 2024 -o $exe $source } }
-        'Delphi' { Invoke-Checked "fpc $name" { & $tools.Fpc -O2 -Mdelphi "-FE$dir" "-FU$dir" "-o$exe" $source } }
+        'Pascal' { Invoke-Checked "fpc $name" { & $tools.Fpc -O2 -Mdelphi "-FE$dir" "-FU$dir" "-o$exe" $source } }
         'Fsharp' {
             # The F# output is a script whose top level runs the program: compiled as the last file of a Release exe.
             Copy-Item $source (Join-Path $dir 'Program.fs') -Force

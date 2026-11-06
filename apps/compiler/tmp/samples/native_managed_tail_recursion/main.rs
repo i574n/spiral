@@ -6,18 +6,18 @@ fn method1(mut v0: i32, mut v1: Rc<str>) -> Rc<str> {
         let v2: i32 = v0.wrapping_sub(1i32);
         let v3: bool = v2 == 0i32;
         if v3 {
-            return v1.clone();
+            return v1;
         } else {
             let v4: i32 = v2.wrapping_rem(2i32);
             let v5: bool = v4 == 0i32;
             let v8: Rc<str> = if v5 {
                 let v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ok"); } LIT.with(|lit| lit.clone()) };
-                v6.clone()
+                v6
             } else {
                 let v7: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("go"); } LIT.with(|lit| lit.clone()) };
-                v7.clone()
+                v7
             };
-            (v0, v1) = (v2, v8.clone());
+            (v0, v1) = (v2, v8);
             continue;
         }
     }

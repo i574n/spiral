@@ -5,8 +5,7 @@ pub fn main() {
         case v1 {
             True -> True
             False -> {
-                let v2 = v0 == "/"
-                v2
+                v0 == "/"
             }
         }
     case v3 {

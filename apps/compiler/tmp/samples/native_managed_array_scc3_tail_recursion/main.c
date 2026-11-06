@@ -42,7 +42,6 @@ static int32_t method4(int32_t v0, Array0 * v1){
     bool v3 = v2 == 0l;
     if (v3){
         int32_t v4 = v1->ptr[0l];
-        ArrayDecref0(v1);
         return v4;
     } else {
         return method2(v2, v1);
@@ -52,7 +51,6 @@ static int32_t method3(int32_t v0, Array0 * v1){
     int32_t v2 = v0 - 1l;
     bool v3 = v2 == 0l;
     if (v3){
-        ArrayDecref0(v1);
         return 99l;
     } else {
         return method4(v2, v1);
@@ -62,7 +60,6 @@ static int32_t method2(int32_t v0, Array0 * v1){
     int32_t v2 = v0 - 1l;
     bool v3 = v2 == 0l;
     if (v3){
-        ArrayDecref0(v1);
         return 99l;
     } else {
         return method3(v2, v1);
@@ -73,7 +70,6 @@ static int32_t method1(Array0 * v0){
     bool v2 = v1 == 0l;
     if (v2){
         int32_t v3 = v0->ptr[0l];
-        ArrayDecref0(v0);
         return v3;
     } else {
         return method2(v1, v0);
@@ -85,7 +81,6 @@ int32_t main(){
     AssignArray0(&(v1->ptr[0l]), 7l);
     (v1)->refc++;
     method0(v1);
-    (v1)->refc++;
     int32_t v2 = method1(v1);
     AssignArray0(&(v1->ptr[0l]), 17l);
     bool v3 = v2 == 7l;

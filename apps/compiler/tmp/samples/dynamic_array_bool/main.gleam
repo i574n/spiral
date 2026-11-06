@@ -44,12 +44,10 @@ pub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {
 }
 
 pub fn main() {
-    let v0 = 2
-    let v1 = spiral_array_create_filled(v0, False)
+    let v1 = spiral_array_create_filled(2, False)
     spiral_array_set(v1, 0, True)
     spiral_array_set(v1, 1, False)
-    let v2 = 0
-    let v3 = spiral_array_get(v1, v2)
+    let v3 = spiral_array_get(v1, 0)
     case v3 {
         True -> 0
         False -> 1

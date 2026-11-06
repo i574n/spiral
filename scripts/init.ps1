@@ -61,23 +61,12 @@ foreach ($tool in "elixir", "gleam") {
 }
 
 if (Test-Command "cargo") {
-    if (!(Test-Command "cargo-binstall")) {
-        if ($IsWindows) {
-            Invoke-Expression (Invoke-WebRequest "https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.ps1").Content
-        } else {
-            curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-        }
-    }
     if (!(Test-Command "trunk")) {
         cargo binstall -y --locked trunk@0.21.14
         if ($LASTEXITCODE -ne 0) {
             cargo +nightly-2026-10-18 install trunk --version 0.21.14 --locked
             if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / cargo install trunk failed (exit code $LASTEXITCODE)" }
         }
-    }
-    if (!(Test-Command "sccache")) {
-        cargo binstall -y sccache
-        if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / cargo binstall sccache failed (exit code $LASTEXITCODE)" }
     }
     try { & "$PSScriptRoot/patched-crates/install.ps1" cargo-outdated }
     catch { Write-Output "init.ps1 / patched cargo-outdated failed: $($_.Exception.Message)" }

@@ -20,9 +20,9 @@ fn spiral_main() -> i32 {
     } else {
         { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_StopA); } CASE.with(|case| case.clone()) }
     };
-    match &*v5 {
+    match Rc::unwrap_or_clone(v5) {
         UH0::UH0_A(v6) => {
-            let v6: Rc<UH1> = v6.clone();
+            let v6: Rc<UH1> = v6;
             0i32
         }
         UH0::UH0_StopA => {

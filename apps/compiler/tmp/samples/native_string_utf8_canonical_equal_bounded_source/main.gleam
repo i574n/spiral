@@ -40,8 +40,7 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
 
 
 pub fn runtime_byte_2(v0: String, v1: Int) -> String {
-    let v2 = spiral_string_index(v0, v1)
-    v2
+    spiral_string_index(v0, v1)
 }
 pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
     let v2 = spiral_string_length(v0)
@@ -78,8 +77,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                         case v18 {
                                                             True -> False
                                                             False -> {
-                                                                let v19 = v17 < 192
-                                                                v19
+                                                                v17 < 192
                                                             }
                                                         }
                                                     case v20 {
@@ -87,8 +85,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                             let v21 = spiral_wrap_signed(v8 - 192, 32)
                                                             let v22 = spiral_wrap_signed(v21 * 64, 32)
                                                             let v23 = spiral_wrap_signed(v17 - 128, 32)
-                                                            let v24 = spiral_wrap_signed(v22 + v23, 32)
-                                                            v24
+                                                            spiral_wrap_signed(v22 + v23, 32)
                                                         }
                                                         False -> panic as "UTF-8 sequence has an invalid continuation byte."
                                                     }
@@ -114,8 +111,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                 case v37 {
                                                                     True -> False
                                                                     False -> {
-                                                                        let v38 = v34 < 192
-                                                                        v38
+                                                                        v34 < 192
                                                                     }
                                                                 }
                                                             case v39 {
@@ -125,8 +121,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                         case v40 {
                                                                             True -> False
                                                                             False -> {
-                                                                                let v41 = v36 < 192
-                                                                                v41
+                                                                                v36 < 192
                                                                             }
                                                                         }
                                                                     case v42 {
@@ -186,8 +181,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                         case v75 {
                                                                             True -> False
                                                                             False -> {
-                                                                                let v76 = v69 < 192
-                                                                                v76
+                                                                                v69 < 192
                                                                             }
                                                                         }
                                                                     case v77 {
@@ -197,8 +191,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                                 case v78 {
                                                                                     True -> False
                                                                                     False -> {
-                                                                                        let v79 = v72 < 192
-                                                                                        v79
+                                                                                        v72 < 192
                                                                                     }
                                                                                 }
                                                                             case v80 {
@@ -208,8 +201,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                                         case v81 {
                                                                                             True -> False
                                                                                             False -> {
-                                                                                                let v82 = v74 < 192
-                                                                                                v82
+                                                                                                v74 < 192
                                                                                             }
                                                                                         }
                                                                                     case v83 {
@@ -538,8 +530,7 @@ pub fn utf8_canonical_equal_bounded_loop_0(v0: String, v1: String, v2: Int, v3: 
     let v150 = v76 < 0
     case v150 {
         True -> {
-            let v151 = v147 == -1
-            v151
+            v147 == -1
         }
         False -> {
             let v152 = v147 < 0
@@ -558,89 +549,20 @@ pub fn utf8_canonical_equal_bounded_loop_0(v0: String, v1: String, v2: Int, v3: 
 }
 pub fn main() {
     let v0 = "plain"
-    let v1 = 0
-    let v2 = 0
-    let v3 = -1
-    let v4 = -1
-    let v5 = 5
-    let v6 = 5
-    let v7 = utf8_canonical_equal_bounded_loop_0(v0, v0, v1, v2, v3, v4, v5, v6)
+    let v7 = utf8_canonical_equal_bounded_loop_0(v0, v0, 0, 0, -1, -1, 5, 5)
     let v8 = ""
-    let v9 = 0
-    let v10 = 0
-    let v11 = -1
-    let v12 = -1
-    let v13 = 0
-    let v14 = 0
-    let v15 = utf8_canonical_equal_bounded_loop_0(v8, v8, v9, v10, v11, v12, v13, v14)
-    let v16 = "éõç"
-    let v17 = "éõç"
-    let v18 = 0
-    let v19 = 0
-    let v20 = -1
-    let v21 = -1
-    let v22 = 6
-    let v23 = 9
-    let v24 = utf8_canonical_equal_bounded_loop_0(v16, v17, v18, v19, v20, v21, v22, v23)
-    let v25 = "é̃"
+    let v15 = utf8_canonical_equal_bounded_loop_0(v8, v8, 0, 0, -1, -1, 0, 0)
+    let v24 = utf8_canonical_equal_bounded_loop_0("éõç", "éõç", 0, 0, -1, -1, 6, 9)
     let v26 = "é̃"
-    let v27 = 0
-    let v28 = 0
-    let v29 = -1
-    let v30 = -1
-    let v31 = 4
-    let v32 = 5
-    let v33 = utf8_canonical_equal_bounded_loop_0(v25, v26, v27, v28, v29, v30, v31, v32)
-    let v34 = "À"
-    let v35 = "À"
-    let v36 = 0
-    let v37 = 0
-    let v38 = -1
-    let v39 = -1
-    let v40 = 2
-    let v41 = 3
-    let v42 = utf8_canonical_equal_bounded_loop_0(v34, v35, v36, v37, v38, v39, v40, v41)
+    let v33 = utf8_canonical_equal_bounded_loop_0("é̃", v26, 0, 0, -1, -1, 4, 5)
+    let v42 = utf8_canonical_equal_bounded_loop_0("À", "À", 0, 0, -1, -1, 2, 3)
     let v43 = "Ω"
-    let v44 = 0
-    let v45 = 0
-    let v46 = -1
-    let v47 = -1
-    let v48 = 2
-    let v49 = 2
-    let v50 = utf8_canonical_equal_bounded_loop_0(v43, v43, v44, v45, v46, v47, v48, v49)
-    let v51 = "ẽ́"
-    let v52 = 0
-    let v53 = 0
-    let v54 = -1
-    let v55 = -1
-    let v56 = 5
-    let v57 = 5
-    let v58 = utf8_canonical_equal_bounded_loop_0(v26, v51, v52, v53, v54, v55, v56, v57)
+    let v50 = utf8_canonical_equal_bounded_loop_0(v43, v43, 0, 0, -1, -1, 2, 2)
+    let v58 = utf8_canonical_equal_bounded_loop_0(v26, "ẽ́", 0, 0, -1, -1, 5, 5)
     let v59 = "é"
-    let v60 = "á"
-    let v61 = 0
-    let v62 = 0
-    let v63 = -1
-    let v64 = -1
-    let v65 = 2
-    let v66 = 2
-    let v67 = utf8_canonical_equal_bounded_loop_0(v59, v60, v61, v62, v63, v64, v65, v66)
-    let v68 = "ω"
-    let v69 = 0
-    let v70 = 0
-    let v71 = -1
-    let v72 = -1
-    let v73 = 2
-    let v74 = 2
-    let v75 = utf8_canonical_equal_bounded_loop_0(v43, v68, v69, v70, v71, v72, v73, v74)
-    let v76 = "e"
-    let v77 = 0
-    let v78 = 0
-    let v79 = -1
-    let v80 = -1
-    let v81 = 2
-    let v82 = 1
-    let v83 = utf8_canonical_equal_bounded_loop_0(v59, v76, v77, v78, v79, v80, v81, v82)
+    let v67 = utf8_canonical_equal_bounded_loop_0(v59, "á", 0, 0, -1, -1, 2, 2)
+    let v75 = utf8_canonical_equal_bounded_loop_0(v43, "ω", 0, 0, -1, -1, 2, 2)
+    let v83 = utf8_canonical_equal_bounded_loop_0(v59, "e", 0, 0, -1, -1, 2, 1)
     case v7 {
         True -> {
             case v15 {

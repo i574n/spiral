@@ -15,8 +15,7 @@ pub fn leaf_c_1() -> Int {
     0
 }
 pub fn slow_a_0() -> Int {
-    let v0 = leaf_c_1()
-    v0
+    leaf_c_1()
 }
 pub fn fast_b_2() -> Int {
     0
@@ -24,6 +23,5 @@ pub fn fast_b_2() -> Int {
 pub fn main() {
     let v0 = slow_a_0()
     let v1 = fast_b_2()
-    let v2 = spiral_wrap_signed(v0 + v1, 32)
-    v2
+    spiral_wrap_signed(v0 + v1, 32)
 }

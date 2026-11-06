@@ -6,8 +6,7 @@ pub fn method0(v0: Int) -> #(Us0, Int) {
     let v1 = v0 == 0
     case v1 {
         True -> {
-            let v2 = Us0None
-            #(v2, 0)
+            #(Us0None, 0)
         }
         False -> {
             let v3 = Us0Some(v0)
@@ -16,8 +15,7 @@ pub fn method0(v0: Int) -> #(Us0, Int) {
     }
 }
 pub fn main() {
-    let v0 = 7
-    let #(v1, v2) = method0(v0)
+    let #(v1, v2) = method0(7)
     case v1  {
         Us0None -> 1
         Us0Some(v3) -> {
@@ -25,8 +23,7 @@ pub fn main() {
             let v6 =
                 case v4 {
                     True -> {
-                        let v5 = v2 == 7
-                        v5
+                        v2 == 7
                     }
                     False -> False
                 }

@@ -51,8 +51,7 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
     case SCon{+h, +t}:
       spiral_string_byte_at_from(U32.is_lt(i, spiral_utf8_width(Char.to_u32(h))), Char.to_u32(h), spiral_utf8_width(Char.to_u32(h)), i, t)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4(+c: Bool) -> IO(U32):
+def spiral_main_if1_if2_if3_if4(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -61,8 +60,7 @@ def spiral_main_if1_if2_if3_if4(+c: Bool) -> IO(U32):
       do IO<U32>:
         return {0 : U32}
 
-@unsafe
-def spiral_main_if1_if2_if3(+c: Bool, +v14: Bool) -> IO(U32):
+def spiral_main_if1_if2_if3(c: Bool, +v14: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -71,8 +69,7 @@ def spiral_main_if1_if2_if3(+c: Bool, +v14: Bool) -> IO(U32):
       do IO<U32>:
         spiral_main_if1_if2_if3_if4(v14)
 
-@unsafe
-def spiral_main_if1_if2(+c: Bool, +v12: Bool, +v14: Bool) -> IO(U32):
+def spiral_main_if1_if2(c: Bool, +v12: Bool, v14: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -81,8 +78,7 @@ def spiral_main_if1_if2(+c: Bool, +v12: Bool, +v14: Bool) -> IO(U32):
       do IO<U32>:
         spiral_main_if1_if2_if3(v12, v14)
 
-@unsafe
-def spiral_main_if1(+c: Bool, +v10: Bool, +v12: Bool, +v14: Bool) -> IO(U32):
+def spiral_main_if1(c: Bool, +v10: Bool, v12: Bool, v14: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -91,7 +87,6 @@ def spiral_main_if1(+c: Bool, +v10: Bool, +v12: Bool, +v14: Bool) -> IO(U32):
       do IO<U32>:
         return {4 : U32}
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : U32 <- IO.pure(U32, {4294967293 : U32})
@@ -104,16 +99,15 @@ def spiral_main() -> IO(U32):
     +v7 : F32 <- IO.pure(F32, F32.neg(0.5))
     +v8 : F32 <- IO.pure(F32, F32.neg(1.5))
     +v9 : Bool <- IO.pure(Bool, U32.is_ne(v0, v1))
-    +v10 : Bool <- IO.pure(Bool, U32.is_ne(v0, v2))
+    v10 : Bool <- IO.pure(Bool, U32.is_ne(v0, v2))
     +v11 : Bool <- IO.pure(Bool, U32.is_ne(v3, v4))
-    +v12 : Bool <- IO.pure(Bool, U32.is_ne(v3, v5))
+    v12 : Bool <- IO.pure(Bool, U32.is_ne(v3, v5))
     +v13 : Bool <- IO.pure(Bool, F32.is_ne(v6, v7))
-    +v14 : Bool <- IO.pure(Bool, F32.is_ne(v6, v8))
+    v14 : Bool <- IO.pure(Bool, F32.is_ne(v6, v8))
     +v15 : Bool <- IO.pure(Bool, Bool.and(v9, v11))
     +v16 : Bool <- IO.pure(Bool, Bool.and(v15, v13))
     spiral_main_if1(v16, v10, v12, v14)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

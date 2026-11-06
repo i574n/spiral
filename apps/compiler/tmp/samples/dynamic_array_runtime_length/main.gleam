@@ -56,14 +56,11 @@ pub fn method0(v0: Int) -> Int {
     spiral_array_set(v1, 1, 3)
     spiral_array_set(v1, 2, 5)
     spiral_array_set(v1, 3, 7)
-    let v2 = 2
-    let v3 = spiral_array_get(v1, v2)
+    let v3 = spiral_array_get(v1, 2)
     let v4 = v1.size
     let v5 = spiral_wrap_signed(v3 + v4, 32)
-    let v6 = spiral_wrap_signed(v5 - 9, 32)
-    v6
+    spiral_wrap_signed(v5 - 9, 32)
 }
 pub fn main() {
-    let v0 = 4
-    method0(v0)
+    method0(4)
 }

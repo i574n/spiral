@@ -6,9 +6,10 @@ uses SysUtils, Math;
 type
   TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
   TMut1 = class;
+  TBoxArray0 = class;
   THeap0 = record l0: LongInt; l1: AnsiString; end;
   TMut1 = class(TSpiralRc) l0: THeap0; l1: THeap0; end;
-  TArray0 = array of TMut1;
+  TBoxArray0 = class(TSpiralRc) items: array of TMut1; procedure DropFields; override; end;
 procedure TSpiralRc.DropFields;
 begin
 end;
@@ -20,6 +21,10 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 function HeapCreate0(a0: LongInt; a1: AnsiString): THeap0;
 begin
   Result.l0 := a0; Result.l1 := a1;
@@ -27,6 +32,11 @@ end;
 function MutCreate1(a0: THeap0; a1: THeap0): TMut1;
 begin
   Result := TMut1.Create; Result.l0 := a0; Result.l1 := a1;
+end;
+procedure TBoxArray0.DropFields;
+var i: Int64;
+begin
+  for i := 0 to High(items) do begin SpiralRelease(items[i]); end;
 end;
 function SpiralMain: LongInt;
 var
@@ -37,8 +47,8 @@ var
   v4: AnsiString;
   v5: THeap0;
   v6: TMut1;
-  v7: TArray0;
-  tmp8: TArray0;
+  v7: TBoxArray0;
+  tmp8: TBoxArray0;
   v8: LongInt;
   v9: AnsiString;
   v10: THeap0;
@@ -67,21 +77,25 @@ begin
   v4 := 'zz';
   v5 := HeapCreate0(v3, v4);
   v6 := MutCreate1(v2, v5);
-  tmp8 := nil;
-  SetLength(tmp8, 1);
+  tmp8 := TBoxArray0.Create;
+  SetLength(tmp8.items, 1);
   v7 := tmp8;
-  v7[0] := v6;
+  SpiralRetain(v6); SpiralRelease(v7.items[0]); v7.items[0] := v6;
+  SpiralRelease(v6);
   v8 := 7;
   v9 := 'hi';
   v10 := HeapCreate0(v8, v9);
   v11 := 4;
   v12 := 'yo';
   v13 := HeapCreate0(v11, v12);
-  v14 := v7[0];
+  v14 := v7.items[0];
+  SpiralRetain(v14);
+  SpiralRelease(v7);
   v14.l0 := v10;
   v14.l1 := v13;
   v15 := v14.l0;
   v16 := v14.l1;
+  SpiralRelease(v14);
   v17 := v15.l0;
   v18 := v15.l1;
   v19 := v16.l0;

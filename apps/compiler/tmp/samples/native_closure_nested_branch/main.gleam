@@ -19,8 +19,7 @@ pub fn left_c0(capt: #(String, Int)) -> fn(Int) -> Int {
             True -> {
                 let v4 = spiral_string_length(v0)
                 let v5 = spiral_wrap_signed(v4 + v1, 32)
-                let v6 = spiral_wrap_signed(v5 + v2, 32)
-                v6
+                spiral_wrap_signed(v5 + v2, 32)
             }
             False -> 0
         }
@@ -35,8 +34,7 @@ pub fn right_c1(capt: #(String, Int)) -> fn(Int) -> Int {
                 let v4 = spiral_string_length(v0)
                 let v5 = spiral_wrap_signed(v4 + v1, 32)
                 let v6 = spiral_wrap_signed(v5 + v2, 32)
-                let v7 = spiral_wrap_signed(v6 - 1, 32)
-                v7
+                spiral_wrap_signed(v6 - 1, 32)
             }
             False -> -1
         }
@@ -46,15 +44,10 @@ pub fn method0(v0: fn(Int) -> Int) -> Int {
     v0(37)
 }
 pub fn main() {
-    let v0 = "abc"
-    let v1 = "wxyz"
-    let v2 = 2
-    let v3 = 2
-    let v4 = True
     let v7 =
-        case v4 {
-            True -> left_c0(#(v0, v2))
-            False -> right_c1(#(v1, v3))
+        case True {
+            True -> left_c0(#("abc", 2))
+            False -> right_c1(#("wxyz", 2))
         }
     method0(v7)
 }

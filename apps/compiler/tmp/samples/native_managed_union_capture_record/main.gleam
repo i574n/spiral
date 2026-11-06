@@ -73,12 +73,10 @@ pub fn closure1(capt: #(Us0)) -> fn(Int) -> Int {
                     let v7 = spiral_array_get(v3, 0)
                     let v8 = spiral_wrap_signed(v6 + v7, 32)
                     let v9 = spiral_array_get(v3, 1)
-                    let v10 = spiral_wrap_signed(v8 + v9, 32)
-                    v10
+                    spiral_wrap_signed(v8 + v9, 32)
                 }
             }
-        let v13 = spiral_wrap_signed(v12 + v1, 32)
-        v13
+        spiral_wrap_signed(v12 + v1, 32)
     }
 }
 pub fn closure0(capt: Nil) -> fn(Int) -> fn(Int) -> Int {
@@ -92,8 +90,7 @@ pub fn closure0(capt: Nil) -> fn(Int) -> fn(Int) -> Int {
             case v3 {
                 True -> Us0Empty
                 False -> {
-                    let v5 = "hi"
-                    Us0Item(v5, v1)
+                    Us0Item("hi", v1)
                 }
             }
         closure1(#(v7))
@@ -107,20 +104,17 @@ pub fn method1(v0: fn(Int) -> fn(Int) -> Int) -> fn(Int) -> Int {
 }
 pub fn method4(v0: fn(Int) -> Int) -> Int {
     let v1 = v0(2)
-    let v2 = spiral_wrap_signed(v1 + 5, 32)
-    v2
+    spiral_wrap_signed(v1 + 5, 32)
 }
 pub fn method3(v0: fn(Int) -> Int) -> Int {
     let v1 = v0(1)
     let v2 = method4(v0)
-    let v3 = spiral_wrap_signed(v1 + v2, 32)
-    v3
+    spiral_wrap_signed(v1 + v2, 32)
 }
 pub fn method2(v0: fn(Int) -> Int, v1: fn(Int) -> Int) -> Int {
     let v2 = v0(5)
     let v3 = method3(v1)
-    let v4 = spiral_wrap_signed(v2 + v3, 32)
-    v4
+    spiral_wrap_signed(v2 + v3, 32)
 }
 pub fn main() {
     let v0 = closure0(Nil)

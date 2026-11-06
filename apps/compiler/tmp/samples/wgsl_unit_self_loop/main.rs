@@ -1,13 +1,13 @@
 #![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
-fn fill_0(mut v0: i32, mut v1: Rc<RefCell<Vec<i32>>>, mut v2: i32) -> () {
+fn fill_0(mut v0: i32, mut v1: &Rc<RefCell<Vec<i32>>>, mut v2: i32) -> () {
     loop {
         let v3: bool = v2 < v0;
         if v3 {
-            v1.clone().borrow_mut()[v2 as usize] = v2;
+            v1.borrow_mut()[v2 as usize] = v2;
             let v4: i32 = v2.wrapping_add(1i32);
-            (v0, v1, v2) = (v0, v1.clone(), v4);
+            v2 = v4;
             continue;
         }
         return ();
@@ -15,10 +15,10 @@ fn fill_0(mut v0: i32, mut v1: Rc<RefCell<Vec<i32>>>, mut v2: i32) -> () {
 }
 fn spiral_main() -> i32 {
     let v0: i32 = 6i32;
-    let v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 6i32 as usize]));
-    let v2: i32 = 0i32;
-    fill_0(v0, v1.clone(), v2);
-    let v3: i32 = v1.borrow()[5i32 as usize].clone();
+    let mut v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 6i32 as usize]));
+    let mut v2: i32 = 0i32;
+    fill_0(v0, &v1, v2);
+    let v3: i32 = v1.borrow()[5i32 as usize];
     let v4: i32 = v3.wrapping_add(2i32);
     v4
 }

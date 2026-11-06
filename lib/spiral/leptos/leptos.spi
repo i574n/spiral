@@ -193,7 +193,6 @@
     |> element_to_view
     |> view_to_fragment
 
-/// ### (~:>) fragment
 :+ (~:>) fragment = \ x =>
     ~>
         ?: t ?|
@@ -209,7 +208,6 @@
             view_list_to_fragment x
         | _ => x
 
-/// ### (~:>) view
 :+ (~:>) view = \ x =>
     ~>
         ?: t ?|
@@ -312,19 +310,15 @@
     ?> $'leptos::prelude::Get::get(&!signal).take()' : u
     |: $'leptos::prelude::Get::get(&!signal)' : u
 
-/// ### signal_get signal
 :+ signal_get signal = signal_get'
 :+ signal_get arc_signal = signal_get'
 
-/// ### signal_get rw_signal
 :+ signal_get rw_signal = signal_get'
 :+ signal_get arc_rw_signal = signal_get'
 
-/// ### signal_get read_signal
 :+ signal_get read_signal = signal_get'
 :+ signal_get arc_read_signal = signal_get'
 
-/// ### signal_get memo
 :+ signal_get memo = signal_get'
 :+ signal_get arc_memo = signal_get'
 
@@ -333,11 +327,9 @@
     prelude ()
     $'leptos::prelude::Update::update(&!signal, |x: &mut `u| { *x = (!fn)(x.clone()) })'
 
-/// ### signal_update rw_signal
 :+ signal_update rw_signal = signal_update'
 :+ signal_update arc_rw_signal = signal_update'
 
-/// ### signal_update write_signal
 :+ signal_update write_signal = signal_update'
 :+ signal_update arc_write_signal = signal_update'
 
@@ -348,15 +340,12 @@
     ?> $'leptos::prelude::GetUntracked::get_untracked(&!signal).take()' : u
     |: $'leptos::prelude::GetUntracked::get_untracked(&!signal)' : u
 
-/// ### signal_get_untracked rw_signal
 :+ signal_get_untracked rw_signal = signal_get_untracked'
 :+ signal_get_untracked arc_rw_signal = signal_get_untracked'
 
-/// ### signal_get_untracked read_signal
 :+ signal_get_untracked read_signal = signal_get_untracked'
 :+ signal_get_untracked arc_read_signal = signal_get_untracked'
 
-/// ### signal_get_untracked memo
 :+ signal_get_untracked memo = signal_get_untracked'
 :+ signal_get_untracked arc_memo = signal_get_untracked'
 
@@ -365,11 +354,9 @@
     prelude ()
     $'leptos::prelude::Set::set(&!signal, !value)'
 
-/// ### signal_set rw_signal
 :+ signal_set rw_signal = signal_set'
 :+ signal_set arc_rw_signal = signal_set'
 
-/// ### signal_set write_signal
 :+ signal_set write_signal = signal_set'
 :+ signal_set arc_write_signal = signal_set'
 

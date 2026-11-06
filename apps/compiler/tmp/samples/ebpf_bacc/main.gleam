@@ -10,8 +10,7 @@ pub fn method1(v0: Int, v1: Bool) -> Bool {
     let v4 =
         case v1 {
             True -> {
-                let v3 = v0 > 0
-                v3
+                v0 > 0
             }
             False -> False
         }

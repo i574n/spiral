@@ -37,19 +37,15 @@ pub fn sum_0(v0: Uh0) -> Int {
         Uh0Cons(v1, v2) -> {
             let v3 = v1.size
             let v4 = sum_0(v2)
-            let v5 = spiral_wrap_signed(v3 + v4, 32)
-            v5
+            spiral_wrap_signed(v3 + v4, 32)
         }
         Uh0Nil -> 0
     }
 }
 pub fn main() {
-    let v0 = 2
-    let v1 = spiral_array_create_filled(v0, 0)
-    let v2 = Uh0Nil
-    let v3 = Uh0Cons(v1, v2)
+    let v1 = spiral_array_create_filled(2, 0)
+    let v3 = Uh0Cons(v1, Uh0Nil)
     let v4 = Uh0Cons(v1, v3)
     let v5 = sum_0(v4)
-    let v6 = spiral_wrap_signed(v5 - 4, 32)
-    v6
+    spiral_wrap_signed(v5 - 4, 32)
 }

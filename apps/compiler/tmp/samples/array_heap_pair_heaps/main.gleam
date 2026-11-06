@@ -46,12 +46,8 @@ pub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {
 pub type Heap0 { Heap0(l0 : Int, l1 : String) }
 pub type Heap1 { Heap1(l0 : Heap0, l1 : Heap0) }
 pub fn main() {
-    let v0 = 7
-    let v1 = "hi"
-    let v2 = Heap0(l0: v0, l1: v1)
-    let v3 = 4
-    let v4 = "yo"
-    let v5 = Heap0(l0: v3, l1: v4)
+    let v2 = Heap0(l0: 7, l1: "hi")
+    let v5 = Heap0(l0: 4, l1: "yo")
     let v6 = Heap1(l0: v2, l1: v5)
     let v7 = spiral_array_create(1)
     spiral_array_set(v7, 0, v6)
@@ -63,24 +59,21 @@ pub fn main() {
     let v17 =
         case v15 {
             True -> {
-                let v16 = v12 == "hi"
-                v16
+                v12 == "hi"
             }
             False -> False
         }
     let v19 =
         case v17 {
             True -> {
-                let v18 = v13 == 4
-                v18
+                v13 == 4
             }
             False -> False
         }
     let v21 =
         case v19 {
             True -> {
-                let v20 = v14 == "yo"
-                v20
+                v14 == "yo"
             }
             False -> False
         }

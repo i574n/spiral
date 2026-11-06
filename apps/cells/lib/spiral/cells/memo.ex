@@ -5,7 +5,7 @@ defmodule Spiral.Cells.Memo do
   @keep_entries 5_000
   @prune_every_ms 600_000
   @tool_opts [:print_code, :plot, :render_plot, :spiral, :python, :lua, :pwsh, :cc, :dcc, :rustc_bin, :patches]
-  @stub_opts [:compile, :rustc, :execute, :target, :host]
+  @stub_opts [:compile, :rustc, :execute, :target, :host, :build_receipt]
 
   @spec context(keyword(), [map()]) :: map() | nil
   def context(opts, steps) do

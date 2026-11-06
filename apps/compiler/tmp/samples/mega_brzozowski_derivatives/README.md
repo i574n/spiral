@@ -1,7 +1,7 @@
 # Spiral Brzozowski derivatives mega-sample
 
 Regular expressions over nominal finite alphabets, matched by Brzozowski derivatives. The interesting parts are proved
-by Spiral's type checker instead of tested, and the same source compiles to C, Rust, Delphi and F# and runs on all
+by Spiral's type checker instead of tested, and the same source compiles to C, Rust, Pascal and F# and runs on all
 four. It is core-free (no standard library): `main.spi` is 2,801 non-blank lines with 36 unions, 34 nominals, 263
 `forall` and 34 `exists`; with `runtime_workload.spi`, `runtime_interned.spi` and the 66 sub-packages it is 8,837
 non-blank lines of Spiral in 77 files.
@@ -79,7 +79,7 @@ programs at run time.
 
 `runtime_bench` runs all four on 200 random 32-bit inputs per regex plus `0^n` / `0^n 1` for n = 1..16 and exits 0
 only if they return the same counts and those match what Rust's `regex` crate returns on the same inputs (93, 97, 16).
-It is in the suite's native tier on C, Rust and Delphi (C is the oracle; Rust and Delphi must agree), with
+It is in the suite's native tier on C, Rust and Pascal (C is the oracle; Rust and Pascal must agree), with
 `runtime_native` (the GADT typestate on the native backends: `decide_bit_match`, then `bit_match_value`),
 `indexed_dfa_state_cardinality` and `inventory_closed_dfa_runtime`.
 
@@ -95,7 +95,7 @@ start included. Two workloads, the same inputs for every engine:
   and 985);
 - *zero runs*: `0^n` and `0^n 1` for n = 1..26 against `(0|00)*1` (accepted: 26).
 
-| program | C | Rust | Delphi | F# |
+| program | C | Rust | Pascal | F# |
 | --- | --- | --- | --- | --- |
 | process start (`runtime_native`: six matches) | 11 / 8 | 13 / 8 | 27 / 21 | 135 / 99 |
 | random, derivative matcher | 1,350 / 1,040 | 1,472 / 1,154 | 1,056 / 687 | 584 / 496 |
@@ -154,7 +154,7 @@ after the interned engine got its nominals, which changed only `runtime_bench`'s
 - 7 of the 8 `compiler_probe_*` sub-packages compile; `compiler_probe_gadt_uninhabited_payload_runtime` still stops at a
   compile-time pattern miss on a GADT branch whose payload is uninhabited (FOR-D).
 - Native tier: `runtime_native`, `runtime_bench`, `indexed_dfa_state_cardinality` and `inventory_closed_dfa_runtime`
-  built and run on C, Rust and Delphi, all exit 0; Rust and Delphi agree with C (12 runs, DISAGREE 0).
+  built and run on C, Rust and Pascal, all exit 0; Rust and Pascal agree with C (12 runs, DISAGREE 0).
 - Changed rows against the 12:52 oracle, all explained: `runtime_bench` residuals (the interned engine joined it),
   `proof_suite` (it gates the inventory contract again; its string is the contract's), `indexed_dfa_state_cardinality`
   (compiles), 10 new rows (the new packages and the cardinality program's native rows).
@@ -178,7 +178,7 @@ cases by position while every use went by tag (fixed 2026-10-06). The Rust backe
 From `apps/compiler/tmp`:
 
 ```powershell
-# the sample's rows in the suite: every sub-package compiled to F#, runtime_native/runtime_bench also built and run on C, Rust, Delphi
+# the sample's rows in the suite: every sub-package compiled to F#, runtime_native/runtime_bench also built and run on C, Rust, Pascal
 pwsh scripts/test.ps1 -Mode single-flight -Suite contracts,mega -Filter mega_brzozowski_derivatives -Native
 # one program on one backend (writes main.rs next to main.spi)
 pwsh scripts/probe.ps1 mega_brzozowski_derivatives/runtime_bench -Mode single-flight -Backend Rust

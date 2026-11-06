@@ -25,6 +25,21 @@ defmodule Spiral.CellBudgetRuledTest do
     assert ruled(":= name (c : color) : string =\n" <> body) == w(body)
   end
 
+  test "rule 1: a flat backend_switch counts its switch line plus its longest arm" do
+    block =
+      ":= format (d : date) : string =\n    backend_switch {\n        Gleam = \\ () => format_gleam d\n" <>
+        "        Rust = \\ () => format_rust d\n        Python = \\ () => format_python_long_name d\n    }"
+
+    assert ruled(block) == w("backend_switch {") + w("Python = \\ () => format_python_long_name d")
+  end
+
+  test "rule 1 counter-example: a backend_switch with a multi-line arm counts the whole body" do
+    body = "    backend_switch {\n        Gleam = \\ () =>\n            format_gleam d\n        Rust = \\ () => format_rust d\n    }"
+    assert ruled(":= format (d : date) : string =\n" <> body) == w(body)
+    nested = "    backend_switch {\n        Gleam = \\ () => ? d ?> a |: b\n        Rust = \\ () => format_rust d\n    }"
+    assert ruled(":= format (d : date) : string =\n" <> nested) == w(nested)
+  end
+
   test "data: a type declaration and a constant record literal are exempt" do
     assert ruled(":| color =\n    | Red\n    | Green") == 0
     record = ":= family_root () : row =\n    { name = \"invoice\"; lines = [ Line 1i32; Line 2i32 ]; total = 10i32 }"
@@ -39,6 +54,19 @@ defmodule Spiral.CellBudgetRuledTest do
   test "data counter-example: a paren-adjacent call is measured too" do
     body = "    { name = \"invoice\"; total = sum_of(lines) }"
     assert ruled(":= family_root () : row =\n" <> body) == w(body)
+  end
+
+  test "data: nominal constructors declared with :! build data, other calls stay code" do
+    body = "    { module = module_id \"generated_x\"; tag = tag_name \"Invoice\"; kind = Signed }"
+    block = ":= family_root () : row =\n" <> body
+    assert CellBudgetRuled.ruled_weight(block, CellBudget.default_profile(), ["module_id", "tag_name"]) == 0
+    assert ruled(block) == w(body)
+    assert CellBudgetRuled.ruled_weight(block, CellBudget.default_profile(), ["module_id"]) == w(body)
+  end
+
+  test "declared nominals are the :! names of a source" do
+    source = ":! module_id = string\n:! amount_data = ()\n:! definition_name form = string\n:| kind =\n    | A\n:= f () = 1\n"
+    assert CellBudgetRuled.declared_nominals(source) == ["module_id", "amount_data", "definition_name"]
   end
 
   test "a documented definition gets the rules, its doc lines are not measured" do

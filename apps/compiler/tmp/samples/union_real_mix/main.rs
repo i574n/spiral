@@ -7,10 +7,10 @@ enum US0 {
     US0_Both(f64, i32),
 }
 fn score_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_Both(v1, v2) => {
-            let v1: f64 = *v1;
-            let v2: i32 = *v2;
+            let v1: f64 = v1;
+            let v2: i32 = v2;
             let v3: bool = v1 == 1.5f64;
             let v5: bool = if v3 {
                 let v4: bool = v2 == 7i32;

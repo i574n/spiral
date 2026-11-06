@@ -7,14 +7,14 @@ enum US0 {
     US0_Visible(f64, f64, f64),
 }
 fn method0(mut v0: i32) -> bool {
-    let v1: bool = v0 < 3i32;
+    let mut v1: bool = v0 < 3i32;
     v1
 }
 fn method1(mut v0: i32) -> bool {
-    let v1: bool = v0 < 7040i32;
+    let mut v1: bool = v0 < 7040i32;
     v1
 }
-fn method2(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: f64, mut v2: f64, mut v3: f64) -> i32 {
+fn method2(mut v0: &Rc<RefCell<Vec<i32>>>, mut v1: f64, mut v2: f64, mut v3: f64) -> i32 {
     let v4: f64 = (v1).sin();
     let v5: f64 = 20.0f64 * v4;
     let v6: f64 = (v2).sin();
@@ -83,11 +83,11 @@ fn method2(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: f64, mut v2: f64, mut v3: f64)
     } else {
         US0::US0_Hidden
     };
-    match &v57 {
+    match v57 {
         US0::US0_Visible(v58, v59, v60) => {
-            let v58: f64 = *v58;
-            let v59: f64 = *v59;
-            let v60: f64 = *v60;
+            let v58: f64 = v58;
+            let v59: f64 = v59;
+            let v60: f64 = v60;
             let v61: bool = v58 >= 0.0f64;
             let v63: bool = if v61 {
                 let v62: bool = v59 >= 0.0f64;
@@ -117,7 +117,7 @@ fn method2(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: f64, mut v2: f64, mut v3: f64)
         }
     }
 }
-fn method3(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: f64, mut v2: f64, mut v3: f64) -> i32 {
+fn method3(mut v0: &Rc<RefCell<Vec<i32>>>, mut v1: f64, mut v2: f64, mut v3: f64) -> i32 {
     let v4: f64 = (v1).sin();
     let v5: f64 = 10.0f64 * v4;
     let v6: f64 = (v2).sin();
@@ -186,11 +186,11 @@ fn method3(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: f64, mut v2: f64, mut v3: f64)
     } else {
         US0::US0_Hidden
     };
-    match &v57 {
+    match v57 {
         US0::US0_Visible(v58, v59, v60) => {
-            let v58: f64 = *v58;
-            let v59: f64 = *v59;
-            let v60: f64 = *v60;
+            let v58: f64 = v58;
+            let v59: f64 = v59;
+            let v60: f64 = v60;
             let v61: bool = v58 >= 0.0f64;
             let v63: bool = if v61 {
                 let v62: bool = v59 >= 0.0f64;
@@ -220,7 +220,7 @@ fn method3(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: f64, mut v2: f64, mut v3: f64)
         }
     }
 }
-fn method4(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: f64, mut v2: f64, mut v3: f64) -> i32 {
+fn method4(mut v0: &Rc<RefCell<Vec<i32>>>, mut v1: f64, mut v2: f64, mut v3: f64) -> i32 {
     let v4: f64 = (v1).sin();
     let v5: f64 = 5.0f64 * v4;
     let v6: f64 = (v2).sin();
@@ -289,11 +289,11 @@ fn method4(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: f64, mut v2: f64, mut v3: f64)
     } else {
         US0::US0_Hidden
     };
-    match &v57 {
+    match v57 {
         US0::US0_Visible(v58, v59, v60) => {
-            let v58: f64 = *v58;
-            let v59: f64 = *v59;
-            let v60: f64 = *v60;
+            let v58: f64 = v58;
+            let v59: f64 = v59;
+            let v60: f64 = v60;
             let v61: bool = v58 >= 0.0f64;
             let v63: bool = if v61 {
                 let v62: bool = v59 >= 0.0f64;
@@ -323,34 +323,34 @@ fn method4(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: f64, mut v2: f64, mut v3: f64)
         }
     }
 }
-fn frame_text_loop_5(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: i32, mut v2: i32, mut v3: i32, mut v4: Rc<str>) -> Rc<str> {
+fn frame_text_loop_5(mut v0: &Rc<RefCell<Vec<i32>>>, mut v1: i32, mut v2: i32, mut v3: i32, mut v4: Rc<str>) -> Rc<str> {
     loop {
         let v5: bool = v3 == v2;
         if v5 {
-            return v4.clone();
+            return v4;
         } else {
-            let v6: i32 = v0.clone().borrow()[v3 as usize].clone();
+            let v6: i32 = v0.borrow()[v3 as usize];
             let v7: bool = v6 == 35i32;
             let v16: Rc<str> = if v7 {
                 let v8: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("#"); } LIT.with(|lit| lit.clone()) };
-                v8.clone()
+                v8
             } else {
                 let v9: bool = v6 == 43i32;
                 if v9 {
                     let v10: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("+"); } LIT.with(|lit| lit.clone()) };
-                    v10.clone()
+                    v10
                 } else {
                     let v11: bool = v6 == 64i32;
                     if v11 {
                         let mut v12: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("@"); } LIT.with(|lit| lit.clone()) };
-                        v12.clone()
+                        v12
                     } else {
                         let v13: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("."); } LIT.with(|lit| lit.clone()) };
-                        v13.clone()
+                        v13
                     }
                 }
             };
-            let v17: Rc<str> = Rc::<str>::from(format!("{}{}", v4.clone(), v16.clone()));
+            let v17: Rc<str> = Rc::<str>::from(format!("{}{}", v4, v16));
             let v18: i32 = v3.wrapping_add(1i32);
             let v19: i32 = v3.wrapping_rem(v1);
             let v20: i32 = v1.wrapping_sub(1i32);
@@ -362,11 +362,11 @@ fn frame_text_loop_5(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: i32, mut v2: i32, mu
                 false
             };
             if v23 {
-                let v24: Rc<str> = Rc::<str>::from(format!("{}{}", v17.clone(), { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("\n"); } LIT.with(|lit| lit.clone()) }));
-                (v0, v1, v2, v3, v4) = (v0.clone(), v1, v2, v18, v24.clone());
+                let v24: Rc<str> = Rc::<str>::from(format!("{}{}", v17, { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("\n"); } LIT.with(|lit| lit.clone()) }));
+                (v3, v4) = (v18, v24);
                 continue;
             } else {
-                (v0, v1, v2, v3, v4) = (v0.clone(), v1, v2, v18, v17.clone());
+                (v3, v4) = (v18, v17);
                 continue;
             }
         }
@@ -403,7 +403,7 @@ fn utf8_scalar_at_byte_offset_7(mut v0: Rc<str>, mut v1: i32) -> i32 {
                         if v14 {
                             std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("UTF-8 sequence is truncated."); } LIT.with(|lit| lit.clone()) }))
                         } else {
-                            let v16: u8 = runtime_byte_8(v0.clone(), v13);
+                            let v16: u8 = runtime_byte_8(v0, v13);
                             let v17: i32 = i32::from(v16);
                             let v18: bool = v17 < 128i32;
                             let v20: bool = if v18 {
@@ -433,7 +433,7 @@ fn utf8_scalar_at_byte_offset_7(mut v0: Rc<str>, mut v1: i32) -> i32 {
                                 let v32: i32 = v1.wrapping_add(1i32);
                                 let v33: u8 = runtime_byte_8(v0.clone(), v32);
                                 let v34: i32 = i32::from(v33);
-                                let v35: u8 = runtime_byte_8(v0.clone(), v29);
+                                let v35: u8 = runtime_byte_8(v0, v29);
                                 let v36: i32 = i32::from(v35);
                                 let v37: bool = v34 < 128i32;
                                 let v39: bool = if v37 {
@@ -591,15 +591,15 @@ fn loop_6(mut v0: Rc<str>, mut v1: i32, mut v2: i32, mut v3: i32) -> i32 {
                 };
                 let v14: i32 = v2.wrapping_add(v13);
                 let v15: i32 = v3.wrapping_add(v7);
-                (v0, v1, v2, v3) = (v0.clone(), v1, v14, v15);
+                (v2, v3) = (v14, v15);
                 continue;
             }
         }
     }
 }
 fn spiral_main() -> i32 {
-    let v0: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 7040i32 as usize]));
-    let v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 3i32 as usize]));
+    let mut v0: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 7040i32 as usize]));
+    let mut v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 3i32 as usize]));
     let mut v2: i32 = 0i32;
     while method0(v2) {
         let v4: bool = v2 == 0i32;
@@ -615,23 +615,23 @@ fn spiral_main() -> i32 {
         };
         let mut v12: i32 = 0i32;
         while method1(v12) {
-            v0.clone().borrow_mut()[v12 as usize] = 46i32;
+            v0.borrow_mut()[v12 as usize] = 46i32;
             let v14: i32 = v12.wrapping_add(1i32);
             v12 = v14;
             ()
         };
-        let v15: i32 = method2(v0.clone(), v9, v10, v11);
-        let v16: i32 = method3(v0.clone(), v9, v10, v11);
-        let v17: i32 = method4(v0.clone(), v9, v10, v11);
+        let v15: i32 = method2(&v0, v9, v10, v11);
+        let v16: i32 = method3(&v0, v9, v10, v11);
+        let v17: i32 = method4(&v0, v9, v10, v11);
         let v18: i32 = 160i32;
         let v19: i32 = 7040i32;
         let v20: i32 = 0i32;
         let v21: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-        let v22: Rc<str> = frame_text_loop_5(v0.clone(), v18, v19, v20, v21.clone());
+        let v22: Rc<str> = frame_text_loop_5(&v0, v18, v19, v20, v21);
         let v23: i32 = (v22.clone().len() as i32);
         let v24: i32 = 0i32;
         let v25: i32 = 0i32;
-        let v26: i32 = loop_6(v22.clone(), v23, v24, v25);
+        let v26: i32 = loop_6(v22, v23, v24, v25);
         let v27: i32 = v16.wrapping_mul(3i32);
         let v28: i32 = v15.wrapping_add(v27);
         let v29: i32 = v17.wrapping_mul(7i32);
@@ -648,14 +648,14 @@ fn spiral_main() -> i32 {
         } else {
             0i32
         };
-        v1.clone().borrow_mut()[v2 as usize] = v34;
+        v1.borrow_mut()[v2 as usize] = v34;
         let v35: i32 = v2.wrapping_add(1i32);
         v2 = v35;
         ()
     };
-    let v36: i32 = v1.clone().borrow()[0i32 as usize].clone();
-    let v37: i32 = v1.clone().borrow()[1i32 as usize].clone();
-    let v38: i32 = v1.clone().borrow()[2i32 as usize].clone();
+    let v36: i32 = v1.borrow()[0i32 as usize];
+    let v37: i32 = v1.borrow()[1i32 as usize];
+    let v38: i32 = v1.borrow()[2i32 as usize];
     let v39: bool = v36 == 45702i32;
     let v41: bool = if v39 {
         let v40: bool = v37 == 43786i32;

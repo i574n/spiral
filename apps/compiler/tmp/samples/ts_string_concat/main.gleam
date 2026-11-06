@@ -35,32 +35,26 @@ fn spiral_string_starts_character(bytes: BitArray, at: Int) -> Bool {
 pub fn choose_left_0(v0: Bool) -> String {
     case v0 {
         True -> {
-            let v1 = "spi"
-            v1
+            "spi"
         }
         False -> {
-            let v2 = "bad"
-            v2
+            "bad"
         }
     }
 }
 pub fn choose_right_1(v0: Bool) -> String {
     case v0 {
         True -> {
-            let v1 = "bad"
-            v1
+            "bad"
         }
         False -> {
-            let v2 = "ral"
-            v2
+            "ral"
         }
     }
 }
 pub fn main() {
-    let v0 = True
-    let v1 = choose_left_0(v0)
-    let v2 = False
-    let v3 = choose_right_1(v2)
+    let v1 = choose_left_0(True)
+    let v3 = choose_right_1(False)
     let v4 = { v1 } <> { v3 }
     let v5 = spiral_string_length(v4)
     let v6 = v5 == 6

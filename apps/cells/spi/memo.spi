@@ -5,7 +5,6 @@
 
 := (++) (left : string) (right : string) : string = left ^^ right
 
-/// ## lists
 :~ ^ keep \* t. (ok : t -> bool) (xs : list t) : list t =
     ?= xs ?|
     | [] => []
@@ -28,7 +27,6 @@
 
 := has_i32 (xs : list i32) (n : i32) : bool = any (\ x => x = n) xs
 
-/// ## source text
 :~ ^ strip_from (line : string) (i : i32) (in_string : bool) (acc : string) : string =
     ? i >= text::length line ?> acc
     |:
@@ -78,7 +76,6 @@
 
 := identifiers (s : string) : list string = identifiers_from s 0i32 []
 
-/// ## block shapes
 :| block_kind =
     | Definition
     | OtherBlock
@@ -168,7 +165,6 @@
     |? inst >= 0i32 ?> instance_shape header inst
     |: other_shape ()
 
-/// ## reach
 :== span = { header : i32; last : i32; header_text : string }
 
 :== src_block = { code : string; shape : shape; tokens : list string; is_inst : bool }
@@ -278,7 +274,6 @@
     := dropped = dropped_rows spans 0i32 (unreached blocks) (dict::empty ())
     sm'::concat_list "\n" (kept_lines lines 1i32 dropped [])
 
-/// ## wire
 := span_of (line : string) : span =
     := a = text::find_char line 0i32 '\t'
     := b = text::find_char line (a + 1i32) '\t'

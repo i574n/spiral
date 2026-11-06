@@ -7,16 +7,13 @@ pub fn spiral_math_sqrt(x: Float) -> Float {
 }
 
 pub fn main() {
-    let v0 = 144.0
-    let v1 = 81.0
-    let v2 = spiral_math_sqrt(v0)
-    let v3 = spiral_math_sqrt(v1)
+    let v2 = spiral_math_sqrt(144.0)
+    let v3 = spiral_math_sqrt(81.0)
     let v4 = v2 == 12.0
     let v6 =
         case v4 {
             True -> {
-                let v5 = v3 == 9.0
-                v5
+                v3 == 9.0
             }
             False -> False
         }

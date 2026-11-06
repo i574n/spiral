@@ -12,7 +12,7 @@ func sp_method3(_ p0: Mut0, _ p1: String) {
     var v2: String = ""
     v2 = v0.l0
     var v3: String = ""
-    v3 = v2 + v1 
+    v3 = (v2 + v1)
     v0.l0 = v3
 }
 func sp_format_real_2(_ p0: Int32) -> String {
@@ -24,34 +24,26 @@ func sp_format_real_2(_ p0: Int32) -> String {
     var v3: String = ""
     v3 = String(describing: v0)
     sp_method3(v2, v3)
-    var v4: String = ""
-    v4 = v2.l0
+    let v4: String = v2.l0
     return v4
 }
 func sp_method1() -> String {
-    var v0: String = ""
-    v0 = "Some"
+    var v0: Int32 = 0
+    v0 = 1
     var v1: String = ""
-    v1 = "("
+    v1 = sp_format_real_2(v0)
     var v2: String = ""
-    v2 = v0 + v1 
-    var v3: Int32 = 0
-    v3 = 1
-    var v4: String = ""
-    v4 = sp_format_real_2(v3)
-    let v5: String = v2 + v4 
-    let v6: String = ")"
-    let v7: String = v5 + v6 
-    return v7
+    v2 = ("Some(" + v1)
+    var v3: String = ""
+    v3 = (v2 + ")")
+    return v3
 }
 func sp_method0() -> String {
     var v0: String = ""
     v0 = sp_method1()
     var v1: String = ""
-    v1 = "x: "
-    var v2: String = ""
-    v2 = v1 + v0 
-    return v2
+    v1 = ("x: " + v0)
+    return v1
 }
 func spiral_main() -> Int32 {
     var v0: String = ""

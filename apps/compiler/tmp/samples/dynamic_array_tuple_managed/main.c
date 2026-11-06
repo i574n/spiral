@@ -57,7 +57,6 @@ static Tuple0 method2(Array0 * v0){
 static int32_t method5(Array0 * v0, Array0 * v1){
     int32_t v2 = DynamicArrayRefCount0(v0);
     int32_t v3 = v1->ptr[0l];
-    ArrayDecref0(v1);
     int32_t v4 = v2 + v3;
     int32_t v5 = v0->ptr[0l];
     ArrayDecref0(v0);
@@ -66,7 +65,7 @@ static int32_t method5(Array0 * v0, Array0 * v1){
 }
 static int32_t method4(Array0 * v0, Array0 * v1){
     int32_t v2 = DynamicArrayCapacity0(v1);
-    (v0)->refc++; (v1)->refc++;
+    (v0)->refc++;
     int32_t v3 = method5(v0, v1);
     ArrayDecref0(v0); ArrayDecref0(v1);
     int32_t v4 = v2 + v3;

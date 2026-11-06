@@ -67,20 +67,18 @@ type U0 is Data:
   U0_Survived{f0: U1}
   U0_Slain{f0: U2}
 
-@unsafe
-def spiral_main_if1(+c: Bool, +v0: U32) -> IO(U0):
+def spiral_main_if1(c: Bool, v0: U32) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
-        +v2 : U1 <- IO.pure(U1, U1_Living{v0, {100 : U32}})
+        v2 : U1 <- IO.pure(U1, U1_Living{v0, {100 : U32}})
         IO.pure(U0, U0_Survived{v2})
     case False{}:
       do IO<U0>:
-        +v4 : U2 <- IO.pure(U2, U2_Fallen{{100 : U32}})
+        v4 : U2 <- IO.pure(U2, U2_Fallen{{100 : U32}})
         IO.pure(U0, U0_Slain{v4})
 
-@unsafe
-def spiral_main_unbox2_unbox3_if4(+c: Bool) -> IO(U32):
+def spiral_main_unbox2_unbox3_if4(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -90,15 +88,15 @@ def spiral_main_unbox2_unbox3_if4(+c: Bool) -> IO(U32):
         return {1 : U32}
 
 @unsafe
-def spiral_main_unbox2_unbox3(+u: U1, +v0: U32, +v1: Bool, +v6: U0, +v7: U1) -> IO(U32):
+def spiral_main_unbox2_unbox3(u: U1, v0: U32, v1: Bool, v6: U0, v7: U1) -> IO(U32):
   match u:
-    case U1_Living{+v8, +v9}:
+    case U1_Living{+v8, v9}:
       do IO<U32>:
         +v10 : Bool <- IO.pure(Bool, U32.is_eq(v8, {60 : U32}))
         spiral_main_unbox2_unbox3_if4(v10)
 
 @unsafe
-def spiral_main_unbox2(+u: U0, +v0: U32, +v1: Bool, +v6: U0) -> IO(U32):
+def spiral_main_unbox2(u: U0, v0: U32, v1: Bool, v6: U0) -> IO(U32):
   match u:
     case U0_Survived{+v7}:
       do IO<U32>:
@@ -107,7 +105,6 @@ def spiral_main_unbox2(+u: U0, +v0: U32, +v1: Bool, +v6: U0) -> IO(U32):
       do IO<U32>:
         return {2 : U32}
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : U32 <- IO.pure(U32, {60 : U32})
@@ -115,7 +112,6 @@ def spiral_main() -> IO(U32):
     +v6 : U0 <- spiral_main_if1(v1, v0)
     spiral_main_unbox2(v6, v0, v1, v6)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

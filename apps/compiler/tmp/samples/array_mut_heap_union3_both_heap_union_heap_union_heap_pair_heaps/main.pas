@@ -6,6 +6,7 @@ uses SysUtils, Math;
 type
   TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
   TMut5 = class;
+  TBoxArray0 = class;
   THeap0 = record l0: LongInt; l1: AnsiString; end;
   THeap1 = record l0: THeap0; l1: THeap0; end;
   THeap2 = record l0: THeap1; l1: LongInt; end;
@@ -14,7 +15,7 @@ type
   TUS1 = record tag: LongInt; c1_0: THeap3; c2_0: LongInt; end;
   THeap4 = record l0: TUS1; end;
   TMut5 = class(TSpiralRc) l0: THeap4; end;
-  TArray0 = array of TMut5;
+  TBoxArray0 = class(TSpiralRc) items: array of TMut5; procedure DropFields; override; end;
 procedure TSpiralRc.DropFields;
 begin
 end;
@@ -25,6 +26,10 @@ end;
 procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
+end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
 end;
 function score_0(v0: TUS1): LongInt; forward;
 function HeapCreate0(a0: LongInt; a1: AnsiString): THeap0;
@@ -70,6 +75,11 @@ end;
 function MutCreate5(a0: THeap4): TMut5;
 begin
   Result := TMut5.Create; Result.l0 := a0;
+end;
+procedure TBoxArray0.DropFields;
+var i: Int64;
+begin
+  for i := 0 to High(items) do begin SpiralRelease(items[i]); end;
 end;
 function score_0(v0: TUS1): LongInt;
 var
@@ -176,8 +186,8 @@ var
   v20: TUS1;
   v21: THeap4;
   v22: TMut5;
-  v23: TArray0;
-  tmp20: TArray0;
+  v23: TBoxArray0;
+  tmp20: TBoxArray0;
   v24: TMut5;
   v25: THeap4;
   v26: TUS1;
@@ -216,16 +226,20 @@ begin
   v20 := US1_Mark(v18);
   v21 := HeapCreate4(v20);
   v22 := MutCreate5(v19);
-  tmp20 := nil;
-  SetLength(tmp20, 1);
+  tmp20 := TBoxArray0.Create;
+  SetLength(tmp20.items, 1);
   v23 := tmp20;
-  v23[0] := v22;
-  v24 := v23[0];
+  SpiralRetain(v22); SpiralRelease(v23.items[0]); v23.items[0] := v22;
+  SpiralRelease(v22);
+  v24 := v23.items[0];
+  SpiralRetain(v24);
+  SpiralRelease(v23);
   v25 := v24.l0;
   v26 := v25.l0;
   v27 := score_0(v26);
   v24.l0 := v21;
   v28 := v24.l0;
+  SpiralRelease(v24);
   v29 := v28.l0;
   v30 := score_0(v29);
   v31 := v27 = 0;

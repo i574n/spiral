@@ -33,8 +33,7 @@ pub fn pick_0(v0: Int) -> Us0 {
 pub fn measure_1(v0: Us0, v1: Int) -> Int {
     case v0  {
         Us0Circle(v2) -> {
-            let v3 = spiral_wrap_signed(v2 * 3, 32)
-            v3
+            spiral_wrap_signed(v2 * 3, 32)
         }
         _ -> {
             let v4 = spiral_wrap_signed(v1 * v1, 32)
@@ -44,8 +43,7 @@ pub fn measure_1(v0: Us0, v1: Int) -> Int {
                 Us0Square(v6) -> {
                     case v5 {
                         True -> {
-                            let v7 = spiral_wrap_signed(v6 * v6, 32)
-                            v7
+                            spiral_wrap_signed(v6 * v6, 32)
                         }
                         False -> v6
                     }
@@ -53,8 +51,7 @@ pub fn measure_1(v0: Us0, v1: Int) -> Int {
                 Us0Tri(v9) -> {
                     case v5 {
                         True -> {
-                            let v10 = spiral_wrap_signed(v9 * 2, 32)
-                            v10
+                            spiral_wrap_signed(v9 * 2, 32)
                         }
                         False -> v9
                     }
@@ -73,8 +70,7 @@ pub fn measure_tri_2(v0: Us0, v1: Int) -> Int {
             let v4 = spiral_wrap_signed(v1 + 2, 32)
             case v0  {
                 Us0Tri(v5) -> {
-                    let v6 = spiral_wrap_signed(v5 * v4, 32)
-                    v6
+                    spiral_wrap_signed(v5 * v4, 32)
                 }
                 _ -> panic as "spiral: union case ruled out by partial evaluation"
             }
@@ -102,6 +98,5 @@ pub fn main() {
     let v17 = spiral_wrap_signed(v14 + v16, 32)
     let v18 = pick_0(v0)
     let v19 = measure_tri_2(v18, v0)
-    let v20 = spiral_wrap_signed(v17 + v19, 32)
-    v20
+    spiral_wrap_signed(v17 + v19, 32)
 }

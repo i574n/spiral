@@ -1,0 +1,11 @@
+:| pick r =
+    | Text :: pick string
+    | First :: pick i32
+    | Second :: pick i32
+
+:= tag_of \* r. (p : pick r) : i32 = !!!!UnionTag(p)
+
+:= main () : i32 =
+    := ~second : pick i32 = Second
+    := known : pick i32 = Second
+    !!!!Add(!!!!Mult(tag_of second, 10i32), !!!!UnionTag(known))

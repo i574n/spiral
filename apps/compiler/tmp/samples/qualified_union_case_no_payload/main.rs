@@ -10,18 +10,18 @@ fn spiral_main() -> i32 {
     let v0: i32 = 3i32;
     let v1: US0 = US0::US0_Hit(v0);
     let v2: US0 = US0::US0_Hold;
-    let v5: i32 = match &v1 {
+    let v5: i32 = match v1 {
         US0::US0_Hit(v3) => {
-            let v3: i32 = *v3;
+            let v3: i32 = v3;
             v3
         }
         US0::US0_Hold => {
             40i32
         }
     };
-    let v8: i32 = match &v2 {
+    let v8: i32 = match v2 {
         US0::US0_Hit(v6) => {
-            let v6: i32 = *v6;
+            let v6: i32 = v6;
             v6
         }
         US0::US0_Hold => {

@@ -4,7 +4,6 @@
 
 :< sm'_operators
 
-/// ## dict
 := dict_types () =
     backend_switch {
         Gleam = \ () => global "import gleam/dict"
@@ -103,7 +102,6 @@
 := fold \* k v a. (f : a -> k -> v -> a) (init : a) (d : dict k v) : a =
     keys d |> listm::rev |> listm::fold (\ acc key => f acc key (present key d)) init
 
-/// ## set
 :! set k = dict k ()
 
 := set_empty \* k. () : set k = set (empty ())

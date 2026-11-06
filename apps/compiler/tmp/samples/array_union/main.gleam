@@ -48,13 +48,10 @@ pub type Us0 {
     Us0Some(f1i0 : Int)
 }
 pub fn main() {
-    let v0 = 2
-    let v1 = spiral_array_create(v0)
-    let v2 = 7
-    let v3 = Us0Some(v2)
+    let v1 = spiral_array_create(2)
+    let v3 = Us0Some(7)
     spiral_array_set(v1, 0, v3)
-    let v4 = Us0None
-    spiral_array_set(v1, 1, v4)
+    spiral_array_set(v1, 1, Us0None)
     let v5 = spiral_array_get(v1, 0)
     case v5  {
         Us0None -> 1

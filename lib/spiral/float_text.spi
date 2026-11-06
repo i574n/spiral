@@ -39,40 +39,79 @@
     := lower = position_of 'e' s 0i32
     ? lower >= 0i32 ?> lower |: position_of 'E' s 0i32
 
-:= laid_out (sign : string) (digits : string) (point : i32) : string =
-    := count = text_length digits
-    := decimal_exponent = point - 1i32
-    ? -4i32 <= decimal_exponent && decimal_exponent < 16i32 ?>
-        ? point <= 0i32 ?> concat sign (concat "0." (concat (repeated_zeros (0i32 - point) "") digits))
-        |? count <= point ?> concat sign (concat digits (concat (repeated_zeros (point - count) "") ".0"))
-        |: concat sign (concat (part digits 0i32 point) (concat "." (part digits point (count - point))))
-    |:
-        := tail = ? count > 1i32 ?> concat "." (part digits 1i32 (count - 1i32)) |: ""
-        := magnitude = ? decimal_exponent < 0i32 ?> 0i32 - decimal_exponent |: decimal_exponent
-        := padded = ? magnitude < 10i32 ?> concat "0" (digits_text magnitude "") |: digits_text magnitude ""
-        := exponent_sign = ? decimal_exponent < 0i32 ?> "e-" |: "e+"
-        concat sign (concat (part digits 0i32 1i32) (concat tail (concat exponent_sign padded)))
+:= leading_point (digits : string) (point : i32) : string =
+    concat "0." (concat (repeated_zeros (0i32 - point) "") digits)
 
-:= float_text_repr (text : string) : string =
-    ? text = "NaN" || text = "Infinity" || text = "-Infinity" ?> text
-    |:
-        := negative = text_length text > 0i32 && char_at text 0i32 = '-'
-        := sign = ? negative ?> "-" |: ""
-        := unsigned = ? negative ?> part text 1i32 (text_length text - 1i32) |: text
-        := marker = exponent_marker unsigned
-        := mantissa = ? marker < 0i32 ?> unsigned |: part unsigned 0i32 marker
-        := exponent =
-            ? marker < 0i32 ?> 0i32
-            |: signed_value (part unsigned (marker + 1i32) (text_length unsigned - marker - 1i32))
-        := point_at = position_of '.' mantissa 0i32
-        := whole = ? point_at < 0i32 ?> mantissa |: part mantissa 0i32 point_at
-        := fraction =
-            ? point_at < 0i32 ?> "" |: part mantissa (point_at + 1i32) (text_length mantissa - point_at - 1i32)
-        := all_digits = concat whole fraction
-        := first = zeros_from all_digits 0i32
-        := last = zeros_before all_digits (text_length all_digits)
-        ? first >= last ?> concat sign "0.0"
-        |: laid_out sign (part all_digits first (last - first)) (text_length whole + exponent - first)
+:= trailing_zeros (digits : string) (count : i32) (point : i32) : string =
+    concat digits (concat (repeated_zeros (point - count) "") ".0")
+
+:= inner_point (digits : string) (count : i32) (point : i32) : string =
+    concat (part digits 0i32 point) (concat "." (part digits point (count - point)))
+
+:= fixed_digits (digits : string) (point : i32) : string =
+    := count = text_length digits
+    ? point <= 0i32 ?> leading_point digits point
+    |? count <= point ?> trailing_zeros digits count point
+    |: inner_point digits count point
+
+:= padded_exponent (n : i32) : string = ? n < 10i32 ?> concat "0" (digits_text n "") |: digits_text n ""
+
+:= exponent_text (exponent : i32) : string =
+    := sign = ? exponent < 0i32 ?> "e-" |: "e+"
+    concat sign (padded_exponent (? exponent < 0i32 ?> 0i32 - exponent |: exponent))
+
+:= scientific_digits (digits : string) (exponent : i32) : string =
+    := count = text_length digits
+    := tail = ? count > 1i32 ?> concat "." (part digits 1i32 (count - 1i32)) |: ""
+    concat (part digits 0i32 1i32) (concat tail (exponent_text exponent))
+
+:= laid_out (sign : string) (digits : string) (point : i32) : string =
+    := exponent = point - 1i32
+    ? -4i32 <= exponent && exponent < 16i32 ?> concat sign (fixed_digits digits point)
+    |: concat sign (scientific_digits digits exponent)
+
+:= is_special (text : string) : bool = text = "NaN" || text = "Infinity" || text = "-Infinity"
+
+:= mantissa_of (unsigned : string) (marker : i32) : string =
+    ? marker < 0i32 ?> unsigned |: part unsigned 0i32 marker
+
+:= exponent_of (unsigned : string) (marker : i32) : i32 =
+    ? marker < 0i32 ?> 0i32
+    |: signed_value (part unsigned (marker + 1i32) (text_length unsigned - marker - 1i32))
+
+:= whole_of (mantissa : string) (point_at : i32) : string =
+    ? point_at < 0i32 ?> mantissa |: part mantissa 0i32 point_at
+
+:= fraction_of (mantissa : string) (point_at : i32) : string =
+    ? point_at < 0i32 ?> "" |: part mantissa (point_at + 1i32) (text_length mantissa - point_at - 1i32)
+
+:= mantissa_digits (mantissa : string) : string * i32 =
+    := point_at = position_of '.' mantissa 0i32
+    := whole = whole_of mantissa point_at
+    concat whole (fraction_of mantissa point_at), text_length whole
+
+:= nonzero_span (digits : string) : i32 * i32 = zeros_from digits 0i32, zeros_before digits (text_length digits)
+
+:= trimmed_text (sign : string) (digits : string) (shift : i32) : string =
+    := first, last = nonzero_span digits
+    ? first >= last ?> concat sign "0.0"
+    |: laid_out sign (part digits first (last - first)) (shift - first)
+
+:= unsigned_repr (sign : string) (unsigned : string) : string =
+    := marker = exponent_marker unsigned
+    := digits, whole_length = mantissa_digits (mantissa_of unsigned marker)
+    trimmed_text sign digits (whole_length + exponent_of unsigned marker)
+
+:= signed_repr (text : string) : string =
+    := negative = text_length text > 0i32 && char_at text 0i32 = '-'
+    := unsigned = ? negative ?> part text 1i32 (text_length text - 1i32) |: text
+    unsigned_repr (? negative ?> "-" |: "") unsigned
+
+:= float_text_repr (text : string) : string = ? is_special text ?> text |: signed_repr text
+
+:= repr_check (given : string) (expected : string) : () =
+    := got = float_text_repr given
+    ? got <> expected ?> failwith (concat given (concat " -> " got))
 
 ///> rust
 
@@ -81,29 +120,72 @@
 ///> typescript
 
 ///> gleam
-:# float_text_repr_lays_out_any_shortest_text_like_python_repr =
-    := check (given : string) (expected : string) =
-        ? float_text_repr given <> expected ?> failwith (concat given (concat " -> " (float_text_repr given)))
-    check "1e+02" "100.0"
-    check "100.0" "100.0"
-    check "1e2" "100.0"
-    check "1e16" "1e+16"
-    check "10000000000000000.0" "1e+16"
-    check "1E+17" "1e+17"
-    check "1.5e22" "1.5e+22"
-    check "1e-7" "1e-07"
-    check "0.0001" "0.0001"
-    check "1e-04" "0.0001"
-    check "0.00001" "1e-05"
-    check "1E-05" "1e-05"
-    check "123.45" "123.45"
-    check "1e15" "1000000000000000.0"
-    check "-2.5" "-2.5"
-    check "0.1" "0.1"
-    check "0.0" "0.0"
-    check "-0.0" "-0.0"
-    check "NaN" "NaN"
-    check "-Infinity" "-Infinity"
-    check "1.25e-05" "1.25e-05"
-    check "6.02214076e23" "6.02214076e+23"
-    check "1e100" "1e+100"
+:# fixed_point_texts_lay_out_like_python_repr =
+    repr_check "1e+02" "100.0"
+    repr_check "100.0" "100.0"
+    repr_check "1e2" "100.0"
+    repr_check "0.0001" "0.0001"
+    repr_check "1e-04" "0.0001"
+
+///> rust
+
+///> fsharp
+
+///> typescript
+
+///> gleam
+:# long_fixed_point_texts_keep_every_digit =
+    repr_check "123.45" "123.45"
+    repr_check "1e15" "1000000000000000.0"
+    repr_check "0.1" "0.1"
+
+///> rust
+
+///> fsharp
+
+///> typescript
+
+///> gleam
+:# exponent_texts_lay_out_like_python_repr =
+    repr_check "1e16" "1e+16"
+    repr_check "10000000000000000.0" "1e+16"
+    repr_check "1E+17" "1e+17"
+    repr_check "1.5e22" "1.5e+22"
+
+///> rust
+
+///> fsharp
+
+///> typescript
+
+///> gleam
+:# small_exponents_pad_to_two_digits =
+    repr_check "1e-7" "1e-07"
+    repr_check "0.00001" "1e-05"
+    repr_check "1E-05" "1e-05"
+    repr_check "1.25e-05" "1.25e-05"
+
+///> rust
+
+///> fsharp
+
+///> typescript
+
+///> gleam
+:# long_exponents_keep_their_digits =
+    repr_check "6.02214076e23" "6.02214076e+23"
+    repr_check "1e100" "1e+100"
+
+///> rust
+
+///> fsharp
+
+///> typescript
+
+///> gleam
+:# signs_zeros_and_specials_keep_their_text =
+    repr_check "-2.5" "-2.5"
+    repr_check "0.0" "0.0"
+    repr_check "-0.0" "-0.0"
+    repr_check "NaN" "NaN"
+    repr_check "-Infinity" "-Infinity"

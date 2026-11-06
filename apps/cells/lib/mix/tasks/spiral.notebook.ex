@@ -10,7 +10,7 @@ defmodule Mix.Tasks.Spiral.Notebook do
     Spiral.Cells.Domain.ensure!()
     gate? = "--gate" in args
     gate_report_dir = Path.join(System.tmp_dir!(), "spiral-cells-gate-#{System.unique_integer([:positive])}")
-    args = if gate?, do: gate_args(args, gate_report_dir), else: args
+    args = if gate?, do: gate_args(args, gate_report_dir) ++ pin_args(), else: args
     {status, lines} =
       case Spiral.Cells.Server.try_execute(args) do
         {:served, reply} -> reply
@@ -33,6 +33,18 @@ defmodule Mix.Tasks.Spiral.Notebook do
     case status do
       :ok -> :ok
       {:error, message} -> Mix.raise(message)
+    end
+  end
+
+  @doc false
+  def pin_args do
+    if System.get_env("SPIRAL_CELLS_COMPILER") == "process" do
+      []
+    else
+      case Spiral.Cells.CompilerDaemon.gate_pin(Spiral.Cells.Toolchain.compiler_dll([])) do
+        pin when is_binary(pin) -> ["--compiler-pin", pin]
+        _ -> []
+      end
     end
   end
 

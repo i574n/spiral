@@ -15,9 +15,9 @@ fn spiral_main() -> i32 {
     } else {
         US0::US0_Missing
     };
-    match &v4 {
+    match v4 {
         US0::US0_Held(v5) => {
-            let mut v5: Rc<RefCell<Mut0>> = v5.clone();
+            let mut v5: Rc<RefCell<Mut0>> = v5;
             v5.borrow_mut().l0 = 7i32;
             let v6: i32 = v5.borrow().l0;
             let v7: bool = v6 == 7i32;

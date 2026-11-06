@@ -33,8 +33,7 @@ pub fn main() {
         case v9 {
             True -> {
                 let v10 = score_0(v7)
-                let v11 = v10 == 5
-                v11
+                v10 == 5
             }
             False -> False
         }

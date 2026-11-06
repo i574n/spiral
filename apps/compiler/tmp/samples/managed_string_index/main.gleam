@@ -30,8 +30,7 @@ fn spiral_string_starts_character(bytes: BitArray, at: Int) -> Bool {
 
 
 pub fn main() {
-    let v0 = "qwe"
-    let v1 = spiral_string_index(v0, 1)
+    let v1 = spiral_string_index("qwe", 1)
     let v2 = v1 == "w"
     case v2 {
         True -> 0

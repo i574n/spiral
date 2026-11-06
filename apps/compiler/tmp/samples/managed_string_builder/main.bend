@@ -75,44 +75,41 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
     case SCon{+h, +t}:
       spiral_string_byte_at_from(U32.is_lt(i, spiral_utf8_width(Char.to_u32(h))), Char.to_u32(h), spiral_utf8_width(Char.to_u32(h)), i, t)
 
-@unsafe
 def method0_if1_if2(+c: Bool) -> IO(String):
   match c:
     case True{}:
       do IO<String>:
-        +v5 : String <- IO.pure(String, "ab")
+        v5 : String <- IO.pure(String, "ab")
         return v5
     case False{}:
       do IO<String>:
-        +v6 : String <- IO.pure(String, "c")
+        v6 : String <- IO.pure(String, "c")
         return v6
 
-@unsafe
 def method1_if3_if4(+c: Bool) -> IO(String):
   match c:
     case True{}:
       do IO<String>:
-        +v7 : String <- IO.pure(String, "ab")
+        v7 : String <- IO.pure(String, "ab")
         return v7
     case False{}:
       do IO<String>:
-        +v8 : String <- IO.pure(String, "c")
+        v8 : String <- IO.pure(String, "c")
         return v8
 
-@unsafe
 def method2_if5_if6(+c: Bool) -> IO(String):
   match c:
     case True{}:
       do IO<String>:
-        +v8 : String <- IO.pure(String, "ab")
+        v8 : String <- IO.pure(String, "ab")
         return v8
     case False{}:
       do IO<String>:
-        +v9 : String <- IO.pure(String, "c")
+        v9 : String <- IO.pure(String, "c")
         return v9
 
 @unsafe
-def method2_if5(+c: Bool, +v3: U32, +v4: String) -> IO(String):
+def method2_if5(c: Bool, +v3: U32, +v4: String) -> IO(String):
   match c:
     case True{}:
       do IO<String>:
@@ -121,19 +118,18 @@ def method2_if5(+c: Bool, +v3: U32, +v4: String) -> IO(String):
       do IO<String>:
         +v6 : U32 <- IO.pure(U32, spiral_i32_mod(v3, {2 : U32}))
         +v7 : Bool <- IO.pure(Bool, U32.is_eq(v6, {0 : U32}))
-        +v10 : String <- method2_if5_if6(v7)
+        v10 : String <- method2_if5_if6(v7)
         method2(v3, v4, v10)
 
 @unsafe
 def method2(+v0: U32, +v1: String, +v2: String) -> IO(String):
   do IO<String>:
     +v3 : U32 <- IO.pure(U32, U32.sub(v0, {1 : U32}))
-    +v4 : String <- IO.pure(String, String.append(v1, v2))
+    v4 : String <- IO.pure(String, String.append(v1, v2))
     +v5 : Bool <- IO.pure(Bool, U32.is_eq(v3, {0 : U32}))
     method2_if5(v5, v3, v4)
 
-@unsafe
-def method1_if3(+c: Bool, +v2: U32, +v3: String) -> IO(String):
+def method1_if3(c: Bool, +v2: U32, +v3: String) -> IO(String):
   match c:
     case True{}:
       do IO<String>:
@@ -142,40 +138,36 @@ def method1_if3(+c: Bool, +v2: U32, +v3: String) -> IO(String):
       do IO<String>:
         +v5 : U32 <- IO.pure(U32, spiral_i32_mod(v2, {2 : U32}))
         +v6 : Bool <- IO.pure(Bool, U32.is_eq(v5, {0 : U32}))
-        +v9 : String <- method1_if3_if4(v6)
+        v9 : String <- method1_if3_if4(v6)
         method2(v2, v3, v9)
 
-@unsafe
 def method1(+v0: U32, +v1: String) -> IO(String):
   do IO<String>:
     +v2 : U32 <- IO.pure(U32, U32.sub(v0, {1 : U32}))
-    +v3 : String <- IO.pure(String, String.append("", v1))
+    v3 : String <- IO.pure(String, String.append("", v1))
     +v4 : Bool <- IO.pure(Bool, U32.is_eq(v2, {0 : U32}))
     method1_if3(v4, v2, v3)
 
-@unsafe
-def method0_if1(+c: Bool, +v0: U32) -> IO(String):
+def method0_if1(c: Bool, +v0: U32) -> IO(String):
   match c:
     case True{}:
       do IO<String>:
-        +v2 : String <- IO.pure(String, "")
+        v2 : String <- IO.pure(String, "")
         return v2
     case False{}:
       do IO<String>:
         +v3 : U32 <- IO.pure(U32, spiral_i32_mod(v0, {2 : U32}))
         +v4 : Bool <- IO.pure(Bool, U32.is_eq(v3, {0 : U32}))
-        +v7 : String <- method0_if1_if2(v4)
+        v7 : String <- method0_if1_if2(v4)
         method1(v0, v7)
 
-@unsafe
 def method0() -> IO(String):
   do IO<String>:
     +v0 : U32 <- IO.pure(U32, {4 : U32})
     +v1 : Bool <- IO.pure(Bool, U32.is_eq(v0, {0 : U32}))
     method0_if1(v1, v0)
 
-@unsafe
-def spiral_main_if7_if8_if9(+c: Bool) -> IO(U32):
+def spiral_main_if7_if8_if9(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -184,8 +176,7 @@ def spiral_main_if7_if8_if9(+c: Bool) -> IO(U32):
       do IO<U32>:
         return {1 : U32}
 
-@unsafe
-def spiral_main_if7_if8(+c: Bool, +v0: String) -> IO(U32):
+def spiral_main_if7_if8(c: Bool, +v0: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -196,8 +187,7 @@ def spiral_main_if7_if8(+c: Bool, +v0: String) -> IO(U32):
       do IO<U32>:
         return {2 : U32}
 
-@unsafe
-def spiral_main_if7(+c: Bool, +v0: String) -> IO(U32):
+def spiral_main_if7(c: Bool, +v0: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -208,7 +198,6 @@ def spiral_main_if7(+c: Bool, +v0: String) -> IO(U32):
       do IO<U32>:
         return {3 : U32}
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : String <- method0()
@@ -216,7 +205,6 @@ def spiral_main() -> IO(U32):
     +v2 : Bool <- IO.pure(Bool, U32.is_eq(v1, {6 : U32}))
     spiral_main_if7(v2, v0)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

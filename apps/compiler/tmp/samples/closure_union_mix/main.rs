@@ -21,10 +21,10 @@ fn spiral_main() -> i32 {
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
     let mut v2: Rc<dyn Fn(i32) -> US0> = f_c0(v0, v1);
     let v3: US0 = v2(1i32);
-    match &v3 {
+    match v3 {
         US0::US0_Both(v5, v6) => {
-            let v5: i32 = *v5;
-            let v6: Rc<str> = v6.clone();
+            let v5: i32 = v5;
+            let v6: Rc<str> = v6;
             let v7: bool = v5 == 3i32;
             let v9: bool = if v7 {
                 let v8: bool = &*v6 == "hi";
@@ -39,7 +39,7 @@ fn spiral_main() -> i32 {
             }
         }
         US0::US0_One(v4) => {
-            let v4: i32 = *v4;
+            let v4: i32 = v4;
             1i32
         }
     }

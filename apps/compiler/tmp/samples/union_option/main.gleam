@@ -26,8 +26,7 @@ pub fn main() {
         case v8 {
             True -> {
                 let v9 = pick_0(v6)
-                let v10 = v9 == 0
-                v10
+                v9 == 0
             }
             False -> False
         }

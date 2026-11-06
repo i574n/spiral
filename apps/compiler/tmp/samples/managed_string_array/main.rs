@@ -2,12 +2,12 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
-    let v0: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(vec![<Rc<str>>::default(); 2i32 as usize]));
+    let mut v0: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(vec![<Rc<str>>::default(); 2i32 as usize]));
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ab"); } LIT.with(|lit| lit.clone()) };
-    v0.clone().borrow_mut()[0i32 as usize] = v1;
+    v0.borrow_mut()[0i32 as usize] = v1;
     let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("cde"); } LIT.with(|lit| lit.clone()) };
-    v0.clone().borrow_mut()[1i32 as usize] = v2;
-    let v3: Rc<str> = v0.clone().borrow()[0i32 as usize].clone();
+    v0.borrow_mut()[1i32 as usize] = v2;
+    let v3: Rc<str> = v0.borrow()[0i32 as usize].clone();
     let v4: Rc<str> = v0.borrow()[1i32 as usize].clone();
     let v5: i32 = (v3.len() as i32);
     let v6: i32 = (v4.len() as i32);

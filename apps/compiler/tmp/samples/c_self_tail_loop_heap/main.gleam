@@ -72,11 +72,6 @@ pub fn main() {
     spiral_array_set(v0, 1, 2)
     spiral_array_set(v0, 2, 3)
     spiral_array_set(v0, 3, 4)
-    let v1 = 0
-    let v2 = 1000000
-    let v3 = 0
-    let v4 = 0
-    let v5 = loop_0(v2, v0, v1, v3, v4)
-    let v6 = v5 % 256
-    v6
+    let v5 = loop_0(1000000, v0, 0, 0, 0)
+    v5 % 256
 }

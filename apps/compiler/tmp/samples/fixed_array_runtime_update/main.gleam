@@ -56,8 +56,7 @@ pub fn main() {
     spiral_array_set(v0, 1, 3)
     spiral_array_set(v0, 2, 5)
     spiral_array_set(v0, 3, 7)
-    let v1 = 1
-    spiral_array_set(v0, v1, 11)
+    spiral_array_set(v0, 1, 11)
     let v2 = spiral_array_get(v0, 0)
     let v3 = spiral_array_get(v0, 1)
     let v4 = spiral_array_get(v0, 2)
@@ -65,6 +64,5 @@ pub fn main() {
     let v6 = spiral_wrap_signed(v2 + v3, 32)
     let v7 = spiral_wrap_signed(v6 + v4, 32)
     let v8 = spiral_wrap_signed(v7 + v5, 32)
-    let v9 = spiral_wrap_signed(v8 - 25, 32)
-    v9
+    spiral_wrap_signed(v8 - 25, 32)
 }

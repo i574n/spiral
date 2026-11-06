@@ -11,9 +11,9 @@ fn spiral_main() -> i32 {
     let v0: i32 = 3i32;
     let v1: Rc<dyn Fn(i32) -> i32> = f_c0(v0);
     let v2: i32 = 1i32;
-    let v3: Rc<RefCell<Vec<Rc<dyn Fn(i32) -> i32>>>> = Rc::new(RefCell::new(vec![{ let f: Rc<dyn Fn(i32) -> i32> = Rc::new(|mut v0: i32| -> i32 { <i32>::default() }); f }; v2 as usize]));
-    v3.clone().borrow_mut()[0i32 as usize] = v1.clone();
-    let mut v4: Rc<dyn Fn(i32) -> i32> = v3.clone().borrow()[0i32 as usize].clone();
+    let mut v3: Rc<RefCell<Vec<Rc<dyn Fn(i32) -> i32>>>> = Rc::new(RefCell::new(vec![{ let f: Rc<dyn Fn(i32) -> i32> = Rc::new(|mut v0: i32| -> i32 { <i32>::default() }); f }; v2 as usize]));
+    v3.borrow_mut()[0i32 as usize] = v1;
+    let mut v4: Rc<dyn Fn(i32) -> i32> = v3.borrow()[0i32 as usize].clone();
     let v5: i32 = v4(4i32);
     let v6: bool = v5 == 7i32;
     if v6 {

@@ -32,12 +32,10 @@ static inline void AssignArray0(int32_t * a, int32_t b){
 }
 static int32_t method0(Array0 * v0){
     int32_t v1 = v0->ptr[0l];
-    ArrayDecref0(v0);
     return v1;
 }
 static int32_t method1(Array0 * v0){
     int32_t v1 = v0->ptr[0l];
-    ArrayDecref0(v0);
     return v1;
 }
 int32_t main(){
@@ -45,9 +43,7 @@ int32_t main(){
     Array0 * v1 = ArrayCreate0(v0, true);
     AssignArray0(&(v1->ptr[0l]), 3l);
     AssignArray0(&(v1->ptr[1l]), 4l);
-    (v1)->refc++;
     int32_t v2 = method0(v1);
-    (v1)->refc++;
     int32_t v3 = method1(v1);
     ArrayDecref0(v1);
     int32_t v4 = v2 + v3;

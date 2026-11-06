@@ -57,6 +57,5 @@ pub fn main() {
     method1(v0)
     method2(v0)
     let v1 = spiral_ref_get(v0).l0
-    let v2 = spiral_wrap_signed(v1 - 12, 32)
-    v2
+    spiral_wrap_signed(v1 - 12, 32)
 }

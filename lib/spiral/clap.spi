@@ -4,7 +4,6 @@
 :< rust_operators
 :< sm'_operators
 
-/// ## clap
 :! command =
     `(
         rust::rust_type
@@ -122,7 +121,6 @@
 := arg_value_parser (values : value_parser) (arg : arg) : arg =
     !\\((arg, values), $'"$0.value_parser($1)"')
 
-/// ### arg_action
 :! arg_action' =
     `(
         rust::rust_type

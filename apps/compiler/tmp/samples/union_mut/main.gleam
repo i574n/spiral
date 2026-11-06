@@ -35,9 +35,8 @@ pub type Us0 {
 }
 pub fn main() {
     let v0 = spiral_ref_new(Mut0(l0: 1))
-    let v1 = True
     let v4 =
-        case v1 {
+        case True {
             True -> Us0Held(v0)
             False -> Us0Missing
         }

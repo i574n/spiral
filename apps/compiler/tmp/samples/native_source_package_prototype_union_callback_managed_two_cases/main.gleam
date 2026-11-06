@@ -15,12 +15,10 @@ pub fn closure0(capt: Nil) -> fn(Int) -> Us0 {
         let v1 = v0 == 1
         case v1 {
             True -> {
-                let v2 = "alpha"
-                Us0Text(v2)
+                Us0Text("alpha")
             }
             False -> {
-                let v4 = "beta"
-                Us0Note(v4)
+                Us0Note("beta")
             }
         }
     }
@@ -48,6 +46,5 @@ pub fn main() {
             Us0Text(v8) -> 5
         }
     let v13 = spiral_wrap_signed(v6 + v12, 32)
-    let v14 = spiral_wrap_signed(v13 + 31, 32)
-    v14
+    spiral_wrap_signed(v13 + 31, 32)
 }

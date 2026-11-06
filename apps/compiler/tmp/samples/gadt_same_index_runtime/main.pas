@@ -18,6 +18,10 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 function count_0(v0: TUH0): LongInt; forward;
 procedure TUH0.DropFields;
 begin
@@ -43,13 +47,21 @@ var
 begin
   case v0.tag of
       0: begin
+          SpiralRelease(v0);
           Result := 1;
       end;
       1: begin
           v1 := v0.c1_0;
           v2 := v0.c1_1;
+          SpiralRetain(v1);
+          SpiralRetain(v1);
+          SpiralRetain(v2);
+          SpiralRelease(v0);
           v3 := count_0(v1);
+          SpiralRetain(v2);
+          SpiralRelease(v1);
           v4 := count_0(v2);
+          SpiralRelease(v2);
           v5 := v3 + v4;
           Result := v5;
       end;
@@ -66,13 +78,24 @@ begin
   v0 := UH0_Leaf;
   v1 := UH0_Leaf;
   v2 := UH0_Leaf;
+  SpiralRetain(v1);
+  SpiralRetain(v2);
   v3 := UH0_Node(v1, v2);
+  SpiralRetain(v0);
+  SpiralRetain(v3);
+  SpiralRelease(v1);
+  SpiralRelease(v2);
   v4 := UH0_Node(v0, v3);
+  SpiralRelease(v0);
+  SpiralRelease(v3);
   Result := count_0(v4);
 end;
 var SpiralOutputBuffer: array[0..65535] of Char;
+var SpiralExitCode: LongInt;
 begin
   SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
-  Halt(SpiralMain);
+  SpiralExitCode := SpiralMain;
+  if UH0_Leaf_shared <> nil then UH0_Leaf_shared.Free;
+  Halt(SpiralExitCode);
 end.

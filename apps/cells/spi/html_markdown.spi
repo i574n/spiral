@@ -17,7 +17,6 @@
 :~ ^ trim_trailing_ticks (s : string) : string =
     ? ends_with s "`" ?> trim_trailing_ticks (text::take s (text::length s - 1i32)) |: s
 
-/// ## inline spans: `code` and [label](href), found leftmost first like the Elixir regex
 := after_close (s : string) (from : i32) (close : string) : i32 =
     := k = text::find_from s close from
     ? k < 0i32 ?> -1i32 |: k + 1i32
@@ -61,7 +60,6 @@
 
 := inline (line : string) : string = sm'::concat_list "" (listm::map piece_html (pieces_from line 0i32 0i32 []))
 
-/// ## blocks
 :| md_block =
     | NoBlock
     | Paragraph

@@ -6,7 +6,5 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
 
 
 pub fn main() {
-    let v1 = 42
-    let v3 = spiral_wrap_signed(v1 - 42, 32)
-    v3
+    spiral_wrap_signed(42 - 42, 32)
 }

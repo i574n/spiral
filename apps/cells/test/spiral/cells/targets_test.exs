@@ -35,14 +35,14 @@ defmodule Spiral.Cells.TargetsTest do
              ["-std=c11", "-O2", "-w", "-fwrapv", "-o", "cell.exe", "main.c", "-lm"]
   end
 
-  test "Delphi cells build with dcc32 when present, else with fpc in Delphi mode like the compiler matrix" do
-    dir = Spiral.Cells.TestHelpers.tmp_dir!("delphi-compiler")
+  test "Pascal cells build with dcc32 when present, else with fpc in Delphi mode like the compiler matrix" do
+    dir = Spiral.Cells.TestHelpers.tmp_dir!("pascal-compiler")
     dcc = Path.join(dir, "dcc32.exe")
     fpc = Path.join(dir, "fpc.exe")
     File.write!(fpc, "")
-    assert {^fpc, "fpc", ["-Px86_64", "-O2", "-Mdelphi", "-l-", "-v0w"]} = Targets.delphi_compiler(dcc: dcc, fpc: fpc)
+    assert {^fpc, "fpc", ["-Px86_64", "-O2", "-Mdelphi", "-l-", "-v0w"]} = Targets.pascal_compiler(dcc: dcc, fpc: fpc)
     File.write!(dcc, "")
-    assert {^dcc, "dcc32", []} = Targets.delphi_compiler(dcc: dcc, fpc: fpc)
+    assert {^dcc, "dcc32", []} = Targets.pascal_compiler(dcc: dcc, fpc: fpc)
   end
 
   test "a c-shim.h next to the notebook is force-included like the matrix's own shim" do
@@ -230,8 +230,8 @@ defmodule Spiral.Cells.TargetsTest do
 
   @fpc Toolchain.fpc([])
   @tag skip: is_nil(@fpc) && "fpc is not installed"
-  test "a Delphi cell's output is the program's stdout, never the build's warnings" do
-    dir = Spiral.Cells.TestHelpers.tmp_dir!("delphi-cell")
+  test "a Pascal cell's output is the program's stdout, never the build's warnings" do
+    dir = Spiral.Cells.TestHelpers.tmp_dir!("pascal-cell")
     path = Path.join(dir, "main.pas")
 
     File.write!(path, """
@@ -246,7 +246,7 @@ defmodule Spiral.Cells.TargetsTest do
     end.
     """)
 
-    assert {:ok, %{stdout: "ok"}} = Targets.run(%{tool: :delphi}, path, [fpc: @fpc, dcc: nil], 120_000, deadline())
+    assert {:ok, %{stdout: "ok"}} = Targets.run(%{tool: :pascal}, path, [fpc: @fpc, dcc: nil], 120_000, deadline())
   end
 
   test "zig runs its program; wgsl runs the shader: exit 0 passes, 3 (no adapter) or no runner is unsupported, others fail" do

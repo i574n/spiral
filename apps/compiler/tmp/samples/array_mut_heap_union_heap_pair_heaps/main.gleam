@@ -93,32 +93,28 @@ pub fn score_0(v0: Us0) -> Int {
             let v12 =
                 case v10 {
                     True -> {
-                        let v11 = v7 == "hi"
-                        v11
+                        v7 == "hi"
                     }
                     False -> False
                 }
             let v14 =
                 case v12 {
                     True -> {
-                        let v13 = v8 == 4
-                        v13
+                        v8 == 4
                     }
                     False -> False
                 }
             let v16 =
                 case v14 {
                     True -> {
-                        let v15 = v9 == "yo"
-                        v15
+                        v9 == "yo"
                     }
                     False -> False
                 }
             let v18 =
                 case v16 {
                     True -> {
-                        let v17 = v3 == 2
-                        v17
+                        v3 == 2
                     }
                     False -> False
                 }
@@ -131,18 +127,12 @@ pub fn score_0(v0: Us0) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 1
-    let v1 = "no"
-    let v2 = Heap0(l0: v0, l1: v1)
-    let v3 = 2
-    let v4 = "zz"
-    let v5 = Heap0(l0: v3, l1: v4)
+    let v2 = Heap0(l0: 1, l1: "no")
+    let v5 = Heap0(l0: 2, l1: "zz")
     let v6 = Heap1(l0: v2, l1: v5)
-    let v7 = 3
-    let v8 = Heap2(l0: v6, l1: v7)
-    let v9 = True
+    let v8 = Heap2(l0: v6, l1: 3)
     let v12 =
-        case v9 {
+        case True {
             True -> Us0Held(v8)
             False -> Us0None
         }
@@ -150,18 +140,12 @@ pub fn main() {
     let v14 = spiral_ref_new(Mut0(l0: v13))
     let v15 = spiral_array_create(1)
     spiral_array_set(v15, 0, v14)
-    let v16 = 7
-    let v17 = "hi"
-    let v18 = Heap0(l0: v16, l1: v17)
-    let v19 = 4
-    let v20 = "yo"
-    let v21 = Heap0(l0: v19, l1: v20)
+    let v18 = Heap0(l0: 7, l1: "hi")
+    let v21 = Heap0(l0: 4, l1: "yo")
     let v22 = Heap1(l0: v18, l1: v21)
-    let v23 = 2
-    let v24 = Heap2(l0: v22, l1: v23)
-    let v25 = True
+    let v24 = Heap2(l0: v22, l1: 2)
     let v28 =
-        case v25 {
+        case True {
             True -> Us0Held(v24)
             False -> Us0None
         }

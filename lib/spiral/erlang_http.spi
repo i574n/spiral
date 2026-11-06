@@ -3,7 +3,6 @@
 :# erlang_http static =
     :< testing
 
-/// ## outcomes: a reply with its status and body, or no reply at all
 :| http_outcome =
     | Replied : i32 * string
     | Unreachable : string
@@ -17,16 +16,17 @@
 := header (name : string) (value : string) : erlang_term::term =
     pair_of (erlang_term::charlist name) (erlang_term::charlist value)
 
-/// ## ssl trusts exactly the given CA file; an empty path means plain http
+:= atom_pair (key : string) (value : erlang_term::term) : erlang_term::term = pair_of (erlang_term::atom key) value
+
 := ssl_options (ca_file : string) : erlang_term::term =
     := verify = pair_of (erlang_term::atom "verify") (erlang_term::atom "verify_peer")
     erlang_term::list_term [ verify; pair_of (erlang_term::atom "cacertfile") (erlang_term::charlist ca_file) ]
 
 := http_options (ca_file : string) : erlang_term::term =
-    := timeout = pair_of (erlang_term::atom "timeout") (erlang_term::of 10000i32)
+    := timeout = atom_pair "timeout" (erlang_term::of 10000i32)
     ? ca_file = ""
     ?> erlang_term::list_term [ timeout ]
-    |: erlang_term::list_term [ timeout; pair_of (erlang_term::atom "ssl") (ssl_options ca_file) ]
+    |: erlang_term::list_term [ timeout; atom_pair "ssl" (ssl_options ca_file) ]
 
 := binary_body () : erlang_term::term =
     erlang_term::list_term [ pair_of (erlang_term::atom "body_format") (erlang_term::atom "binary") ]
@@ -35,7 +35,6 @@
     := kind = erlang_term::charlist "application/json"
     erlang_term::tuple [ erlang_term::charlist url; erlang_term::list_term headers; kind; erlang_term::of body ]
 
-/// ## {ok, {{_, Status, _}, _, Body}} is a reply; anything else is unreachable
 := ok_tagged (r : erlang_term::term) : bool =
     erlang_term::is_tuple r && erlang_term::equal (erlang_term::element_at 1i32 r) (erlang_term::atom "ok")
 
@@ -49,11 +48,13 @@
 := outcome_of (r : erlang_term::term) : http_outcome =
     ? ok_tagged r ?> replied_of r |: Unreachable (erlang_term::inspect r)
 
+:= http_request_args (request : erlang_term::term) (ca_file : string) : list erlang_term::term =
+    [ erlang_term::atom "post"; request; http_options ca_file; binary_body () ]
+
 := posted_json (url : string) (headers : list erlang_term::term) (body : string) (ca_file : string) : http_outcome =
     started ()
     := request = json_request url headers body
-    erlang_term::apply "httpc" "request" [ erlang_term::atom "post"; request; http_options ca_file; binary_body () ]
-    |> outcome_of
+    erlang_term::apply "httpc" "request" (http_request_args request ca_file) |> outcome_of
 
 := is_unreachable (o : http_outcome) : bool = ?= o ?| Unreachable _ => !+ | Replied _ => !-
 

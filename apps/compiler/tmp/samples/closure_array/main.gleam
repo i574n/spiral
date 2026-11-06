@@ -52,8 +52,7 @@ pub fn f_c0(capt: #(Int)) -> fn(Int) -> SpiralArray(Int) {
     }
 }
 pub fn main() {
-    let v0 = 7
-    let v1 = f_c0(#(v0))
+    let v1 = f_c0(#(7))
     let v2 = v1(1)
     let v3 = spiral_array_get(v2, 0)
     let v4 = v3 == 7

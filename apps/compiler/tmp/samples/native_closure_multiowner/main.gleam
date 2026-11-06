@@ -15,8 +15,7 @@ pub fn f_c0(capt: #(String)) -> fn(Int) -> Int {
     fn (v1) {
         let #(v0) = capt
         let v2 = spiral_string_length(v0)
-        let v3 = spiral_wrap_signed(v2 + v1, 32)
-        v3
+        spiral_wrap_signed(v2 + v1, 32)
     }
 }
 pub fn apply_1(v0: fn(Int) -> Int, v1: Int) -> Int {
@@ -24,12 +23,9 @@ pub fn apply_1(v0: fn(Int) -> Int, v1: Int) -> Int {
 }
 pub fn method0(v0: fn(Int) -> Int, v1: Int) -> Int {
     let v2 = apply_1(v0, v1)
-    let v3 = spiral_wrap_signed(v2 + 1, 32)
-    v3
+    spiral_wrap_signed(v2 + 1, 32)
 }
 pub fn main() {
-    let v0 = "abc"
-    let v1 = f_c0(#(v0))
-    let v2 = 38
-    method0(v1, v2)
+    let v1 = f_c0(#("abc"))
+    method0(v1, 38)
 }

@@ -30,34 +30,34 @@ enum US6 {
     US6_FinalC(bool),
 }
 fn decide_a_0(mut v0: US0) -> US1 {
-    match &v0 {
+    match v0 {
         US0::US0_RawA(v1) => {
-            let v1: i32 = *v1;
+            let v1: i32 = v1;
             US1::US1_DecidedA(v1, true)
         }
     }
 }
 fn decide_b_1(mut v0: US2) -> US3 {
-    match &v0 {
+    match v0 {
         US2::US2_RawB(v1) => {
-            let v1: i32 = *v1;
+            let v1: i32 = v1;
             US3::US3_DecidedB(true, v1)
         }
     }
 }
 fn decide_c_2(mut v0: US4) -> US5 {
-    match &v0 {
+    match v0 {
         US4::US4_RawC(v1) => {
-            let v1: i32 = *v1;
+            let v1: i32 = v1;
             US5::US5_DecidedC(v1, true)
         }
     }
 }
 fn finalize_c_3(mut v0: US5) -> US6 {
-    match &v0 {
+    match v0 {
         US5::US5_DecidedC(v1, v2) => {
-            let v1: i32 = *v1;
-            let v2: bool = *v2;
+            let v1: i32 = v1;
+            let v2: bool = v2;
             US6::US6_FinalC(v2)
         }
     }
@@ -73,23 +73,23 @@ fn spiral_main() -> i32 {
     let v7: US4 = US4::US4_RawC(v6);
     let v8: US5 = decide_c_2(v7);
     let v9: US6 = finalize_c_3(v8);
-    let v12: bool = match &v2 {
+    let v12: bool = match v2 {
         US1::US1_DecidedA(v10, v11) => {
-            let v10: i32 = *v10;
-            let v11: bool = *v11;
+            let v10: i32 = v10;
+            let v11: bool = v11;
             v11
         }
     };
-    let v15: bool = match &v5 {
+    let v15: bool = match v5 {
         US3::US3_DecidedB(v13, v14) => {
-            let v13: bool = *v13;
-            let v14: i32 = *v14;
+            let v13: bool = v13;
+            let v14: i32 = v14;
             v13
         }
     };
-    let v17: bool = match &v9 {
+    let v17: bool = match v9 {
         US6::US6_FinalC(v16) => {
-            let v16: bool = *v16;
+            let v16: bool = v16;
             v16
         }
     };

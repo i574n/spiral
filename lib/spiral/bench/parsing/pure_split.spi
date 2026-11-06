@@ -1,7 +1,5 @@
-/// # pure_split
 :< sm'_operators
 
-/// ### split_args
 :~ split_args (args : string) : result (array_base string) string =
     :< parsing
     := esc = [ '\\'; '`' ]

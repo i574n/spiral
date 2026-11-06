@@ -182,12 +182,11 @@ def spiral_main() -> IO(U32):
     spiral_array_set_a0(v0, {1 : U32}, {3 : U32})
     spiral_array_set_a0(v0, {2 : U32}, {5 : U32})
     spiral_array_set_a0(v0, {3 : U32}, {7 : U32})
-    +v1 : U32 <- IO.pure(U32, {2 : U32})
-    +v2 : U32 <- spiral_array_get_a0(v0, v1)
-    +v3 : U32 <- IO.pure(U32, U32.sub(v2, {5 : U32}))
+    v1 : U32 <- IO.pure(U32, {2 : U32})
+    v2 : U32 <- spiral_array_get_a0(v0, v1)
+    v3 : U32 <- IO.pure(U32, U32.sub(v2, {5 : U32}))
     return v3
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

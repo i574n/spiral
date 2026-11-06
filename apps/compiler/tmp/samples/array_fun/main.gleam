@@ -53,15 +53,12 @@ pub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {
 pub fn f_c0(capt: #(Int)) -> fn(Int) -> Int {
     fn (v1) {
         let #(v0) = capt
-        let v2 = spiral_wrap_signed(v1 + v0, 32)
-        v2
+        spiral_wrap_signed(v1 + v0, 32)
     }
 }
 pub fn main() {
-    let v0 = 3
-    let v1 = f_c0(#(v0))
-    let v2 = 1
-    let v3 = spiral_array_create(v2)
+    let v1 = f_c0(#(3))
+    let v3 = spiral_array_create(1)
     spiral_array_set(v3, 0, v1)
     let v4 = spiral_array_get(v3, 0)
     let v5 = v4(4)

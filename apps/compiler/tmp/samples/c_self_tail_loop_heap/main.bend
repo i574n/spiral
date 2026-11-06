@@ -197,24 +197,24 @@ def spiral_array_set_a0(+arr: Chan(Array<U32>) & U32, +i: U32, +v: U32) -> IO(Un
   spiral_array_set_checked_a0(c, i, v, U32.is_lt(i, n))
 
 @unsafe
-def loop_0_if1(+c: Bool, +v0: U32, +v1: (Chan(Array<U32>) & U32), +v2: U32, +v3: U32, +v4: U32) -> IO(U32):
+def loop_0_if1(c: Bool, v0: U32, +v1: (Chan(Array<U32>) & U32), +v2: U32, +v3: U32, +v4: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
         return v4
     case False{}:
       do IO<U32>:
-        +v6 : U32 <- IO.pure(U32, spiral_i32_mod(v3, {4 : U32}))
-        +v7 : U32 <- spiral_array_get_a0(v1, v6)
-        +v8 : U32 <- IO.pure(U32, U32.add(v3, {1 : U32}))
-        +v9 : U32 <- IO.pure(U32, U32.mul(v4, {7 : U32}))
-        +v10 : U32 <- IO.pure(U32, U32.add(v9, v7))
-        +v11 : U32 <- IO.pure(U32, U32.add(v10, v2))
-        +v12 : U32 <- IO.pure(U32, spiral_i32_mod(v11, {9973 : U32}))
+        v6 : U32 <- IO.pure(U32, spiral_i32_mod(v3, {4 : U32}))
+        v7 : U32 <- spiral_array_get_a0(v1, v6)
+        v8 : U32 <- IO.pure(U32, U32.add(v3, {1 : U32}))
+        v9 : U32 <- IO.pure(U32, U32.mul(v4, {7 : U32}))
+        v10 : U32 <- IO.pure(U32, U32.add(v9, v7))
+        v11 : U32 <- IO.pure(U32, U32.add(v10, v2))
+        v12 : U32 <- IO.pure(U32, spiral_i32_mod(v11, {9973 : U32}))
         loop_0(v0, v1, v2, v8, v12)
 
 @unsafe
-def loop_0(+v0: U32, +v1: (Chan(Array<U32>) & U32), +v2: U32, +v3: U32, +v4: U32) -> IO(U32):
+def loop_0(+v0: U32, v1: (Chan(Array<U32>) & U32), v2: U32, +v3: U32, v4: U32) -> IO(U32):
   do IO<U32>:
     +v5 : Bool <- IO.pure(Bool, spiral_i32_ge(v3, v0))
     loop_0_if1(v5, v0, v1, v2, v3, v4)
@@ -227,15 +227,14 @@ def spiral_main() -> IO(U32):
     spiral_array_set_a0(v0, {1 : U32}, {2 : U32})
     spiral_array_set_a0(v0, {2 : U32}, {3 : U32})
     spiral_array_set_a0(v0, {3 : U32}, {4 : U32})
-    +v1 : U32 <- IO.pure(U32, {0 : U32})
-    +v2 : U32 <- IO.pure(U32, {1000000 : U32})
-    +v3 : U32 <- IO.pure(U32, {0 : U32})
-    +v4 : U32 <- IO.pure(U32, {0 : U32})
-    +v5 : U32 <- loop_0(v2, v0, v1, v3, v4)
-    +v6 : U32 <- IO.pure(U32, spiral_i32_mod(v5, {256 : U32}))
+    v1 : U32 <- IO.pure(U32, {0 : U32})
+    v2 : U32 <- IO.pure(U32, {1000000 : U32})
+    v3 : U32 <- IO.pure(U32, {0 : U32})
+    v4 : U32 <- IO.pure(U32, {0 : U32})
+    v5 : U32 <- loop_0(v2, v0, v1, v3, v4)
+    v6 : U32 <- IO.pure(U32, spiral_i32_mod(v5, {256 : U32}))
     return v6
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

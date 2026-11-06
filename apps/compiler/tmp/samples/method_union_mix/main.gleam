@@ -10,17 +10,14 @@ pub fn method0(v0: Int, v1: String) -> Us0 {
     }
 }
 pub fn main() {
-    let v0 = 3
-    let v1 = "hi"
-    let v2 = method0(v0, v1)
+    let v2 = method0(3, "hi")
     case v2  {
         Us0Both(v4, v5) -> {
             let v6 = v4 == 3
             let v8 =
                 case v6 {
                     True -> {
-                        let v7 = v5 == "hi"
-                        v7
+                        v5 == "hi"
                     }
                     False -> False
                 }

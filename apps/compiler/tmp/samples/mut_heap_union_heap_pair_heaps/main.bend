@@ -67,7 +67,7 @@ type U0 is Type:
   U0_Held{f0: (((U32 & String) & (U32 & String)) & U32)}
 
 @unsafe
-def spiral_main_if1(+c: Bool, +v8: (((U32 & String) & (U32 & String)) & U32)) -> IO(U0):
+def spiral_main_if1(c: Bool, v8: (((U32 & String) & (U32 & String)) & U32)) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
@@ -189,7 +189,7 @@ def spiral_array_set_a0(+arr: Chan(Array<(U0)>) & U32, +i: U32, +v: (U0)) -> IO(
   spiral_array_set_checked_a0(c, i, v, U32.is_lt(i, n))
 
 @unsafe
-def spiral_main_if2(+c: Bool, +v23: (((U32 & String) & (U32 & String)) & U32)) -> IO(U0):
+def spiral_main_if2(c: Bool, v23: (((U32 & String) & (U32 & String)) & U32)) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
@@ -199,85 +199,84 @@ def spiral_main_if2(+c: Bool, +v23: (((U32 & String) & (U32 & String)) & U32)) -
         IO.pure(U0, U0_None{})
 
 @unsafe
-def spiral_main_set3_put(+c: (Chan(Array<(U0)>) & U32), +p: (U0), +n: (U0)) -> IO(Unit):
+def spiral_main_set3_put(c: (Chan(Array<(U0)>) & U32), +p: (U0), n: (U0)) -> IO(Unit):
   spiral_array_set_a0(c, {0 : U32}, n)
 
 @unsafe
-def spiral_main_set3(+c: (Chan(Array<(U0)>) & U32), +n: (U0)) -> IO(Unit):
+def spiral_main_set3(+c: (Chan(Array<(U0)>) & U32), n: (U0)) -> IO(Unit):
   do IO<Unit>:
-    +p : (U0) <- spiral_array_get_a0(c, {0 : U32})
+    p : (U0) <- spiral_array_get_a0(c, {0 : U32})
     spiral_main_set3_put(c, p, n)
 
-@unsafe
-def spiral_main_field4(+p: U0) -> IO(U0):
+def spiral_main_field4(p: U0) -> IO(U0):
   IO.pure(U0, p)
 
 @unsafe
 def score_0_unbox5_field6(+p: ((U32 & String) & (U32 & String)) & U32) -> IO(((U32 & String) & (U32 & String)) & U32):
-  (+w0, +w1) = p
+  (w0, w1) = p
   IO.pure(((U32 & String) & (U32 & String)) & U32, (w0, w1))
 
 @unsafe
 def score_0_unbox5_k7_field8(+p: (U32 & String) & (U32 & String)) -> IO((U32 & String) & (U32 & String)):
-  (+w0, +w1) = p
+  (w0, w1) = p
   IO.pure((U32 & String) & (U32 & String), (w0, w1))
 
 @unsafe
 def score_0_unbox5_k7_k9_field10(+p: U32 & String) -> IO(U32 & String):
-  (+w0, +w1) = p
+  (w0, w1) = p
   IO.pure(U32 & String, (w0, w1))
 
 @unsafe
 def score_0_unbox5_k7_k9_k11_field12(+p: U32 & String) -> IO(U32 & String):
-  (+w0, +w1) = p
+  (w0, w1) = p
   IO.pure(U32 & String, (w0, w1))
 
 @unsafe
-def score_0_unbox5_k7_k9_k11_k13_if14(+c: Bool, +v7: String) -> IO(Bool):
+def score_0_unbox5_k7_k9_k11_k13_if14(c: Bool, v7: String) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v11 : Bool <- IO.pure(Bool, String.eq(v7, "hi"))
+        v11 : Bool <- IO.pure(Bool, String.eq(v7, "hi"))
         return v11
     case False{}:
       do IO<Bool>:
         return False{}
 
 @unsafe
-def score_0_unbox5_k7_k9_k11_k13_if15(+c: Bool, +v8: U32) -> IO(Bool):
+def score_0_unbox5_k7_k9_k11_k13_if15(c: Bool, v8: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v13 : Bool <- IO.pure(Bool, U32.is_eq(v8, {4 : U32}))
+        v13 : Bool <- IO.pure(Bool, U32.is_eq(v8, {4 : U32}))
         return v13
     case False{}:
       do IO<Bool>:
         return False{}
 
 @unsafe
-def score_0_unbox5_k7_k9_k11_k13_if16(+c: Bool, +v9: String) -> IO(Bool):
+def score_0_unbox5_k7_k9_k11_k13_if16(c: Bool, v9: String) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v15 : Bool <- IO.pure(Bool, String.eq(v9, "yo"))
+        v15 : Bool <- IO.pure(Bool, String.eq(v9, "yo"))
         return v15
     case False{}:
       do IO<Bool>:
         return False{}
 
 @unsafe
-def score_0_unbox5_k7_k9_k11_k13_if17(+c: Bool, +v3: U32) -> IO(Bool):
+def score_0_unbox5_k7_k9_k11_k13_if17(c: Bool, v3: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v17 : Bool <- IO.pure(Bool, U32.is_eq(v3, {2 : U32}))
+        v17 : Bool <- IO.pure(Bool, U32.is_eq(v3, {2 : U32}))
         return v17
     case False{}:
       do IO<Bool>:
         return False{}
 
 @unsafe
-def score_0_unbox5_k7_k9_k11_k13_if18(+c: Bool) -> IO(U32):
+def score_0_unbox5_k7_k9_k11_k13_if18(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -298,35 +297,35 @@ def score_0_unbox5_k7_k9_k11_k13(+p: U32 & String, +v0: U0, +v1: (((U32 & String
     score_0_unbox5_k7_k9_k11_k13_if18(v18)
 
 @unsafe
-def score_0_unbox5_k7_k9_k11(+p: U32 & String, +v0: U0, +v1: (((U32 & String) & (U32 & String)) & U32), +v2: ((U32 & String) & (U32 & String)), +v3: U32, +v4: (U32 & String), +v5: (U32 & String)) -> IO(U32):
-  (+v6, +v7) = p
+def score_0_unbox5_k7_k9_k11(+p: U32 & String, v0: U0, v1: (((U32 & String) & (U32 & String)) & U32), v2: ((U32 & String) & (U32 & String)), v3: U32, v4: (U32 & String), +v5: (U32 & String)) -> IO(U32):
+  (v6, v7) = p
   do IO<U32>:
     +p : U32 & String <- score_0_unbox5_k7_k9_k11_field12(v5)
     score_0_unbox5_k7_k9_k11_k13(p, v0, v1, v2, v3, v4, v5, v6, v7)
 
 @unsafe
-def score_0_unbox5_k7_k9(+p: (U32 & String) & (U32 & String), +v0: U0, +v1: (((U32 & String) & (U32 & String)) & U32), +v2: ((U32 & String) & (U32 & String)), +v3: U32) -> IO(U32):
-  (+v4, +v5) = p
+def score_0_unbox5_k7_k9(+p: (U32 & String) & (U32 & String), v0: U0, v1: (((U32 & String) & (U32 & String)) & U32), v2: ((U32 & String) & (U32 & String)), v3: U32) -> IO(U32):
+  (+v4, v5) = p
   do IO<U32>:
     +p : U32 & String <- score_0_unbox5_k7_k9_field10(v4)
     score_0_unbox5_k7_k9_k11(p, v0, v1, v2, v3, v4, v5)
 
 @unsafe
-def score_0_unbox5_k7(+p: ((U32 & String) & (U32 & String)) & U32, +v0: U0, +v1: (((U32 & String) & (U32 & String)) & U32)) -> IO(U32):
-  (+v2, +v3) = p
+def score_0_unbox5_k7(+p: ((U32 & String) & (U32 & String)) & U32, v0: U0, v1: (((U32 & String) & (U32 & String)) & U32)) -> IO(U32):
+  (+v2, v3) = p
   do IO<U32>:
     +p : (U32 & String) & (U32 & String) <- score_0_unbox5_k7_field8(v2)
     score_0_unbox5_k7_k9(p, v0, v1, v2, v3)
 
 @unsafe
-def score_0_unbox5(+u: U0, +v0: U0) -> IO(U32):
+def score_0_unbox5(u: U0, v0: U0) -> IO(U32):
   match u:
     case U0_None{}:
       do IO<U32>:
         return {1 : U32}
     case U0_Held{+v1}:
       do IO<U32>:
-        +p : ((U32 & String) & (U32 & String)) & U32 <- score_0_unbox5_field6(v1)
+        p : ((U32 & String) & (U32 & String)) & U32 <- score_0_unbox5_field6(v1)
         score_0_unbox5_k7(p, v0, v1)
 
 @unsafe
@@ -358,16 +357,15 @@ def spiral_main() -> IO(U32):
     +v20 : (U32 & String) <- IO.pure((U32 & String), (v18, v19))
     +v21 : ((U32 & String) & (U32 & String)) <- IO.pure(((U32 & String) & (U32 & String)), (v17, v20))
     +v22 : U32 <- IO.pure(U32, {2 : U32})
-    +v23 : (((U32 & String) & (U32 & String)) & U32) <- IO.pure((((U32 & String) & (U32 & String)) & U32), (v21, v22))
+    v23 : (((U32 & String) & (U32 & String)) & U32) <- IO.pure((((U32 & String) & (U32 & String)) & U32), (v21, v22))
     +v24 : Bool <- IO.pure(Bool, True{})
-    +v27 : U0 <- spiral_main_if2(v24, v23)
-    +v28 : (U0) <- IO.pure((U0), v27)
+    v27 : U0 <- spiral_main_if2(v24, v23)
+    v28 : (U0) <- IO.pure((U0), v27)
     spiral_main_set3(v14, v28)
-    +v29 : (U0) <- spiral_array_get_a0(v14, {0 : U32})
-    +v30 : U0 <- spiral_main_field4(v29)
+    v29 : (U0) <- spiral_array_get_a0(v14, {0 : U32})
+    v30 : U0 <- spiral_main_field4(v29)
     score_0(v30)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

@@ -310,3 +310,18 @@
         defeq_text (defeq_with env (at u) (at v) 10i32) |> sm'::starts_with "different"
     )
     |> _assert_eq ("same in 0", "same in 0", !+)
+///> rust
+:# a_beta_zeta_diamond_joins_in_one_normal_form =
+    := a = FVar (name "a")
+    := redex = App (identity (), Let (name "y", Sort Zero, a, BVar 0i32))
+    := outer_first = Let (name "y", Sort Zero, a, BVar 0i32)
+    := inner_first = App (identity (), a)
+    := normal = \ t =>
+        ?= whnf [] t 20i32 ?|
+        | Whnf (n, _) => term_text n
+        | OutOfFuel _ => "out of fuel"
+    := joined =
+        ?= defeq_with [] outer_first inner_first 20i32 ?|
+        | Same _ => !+
+        | _ => !-
+    (normal redex, normal outer_first, normal inner_first, joined) |> _assert_eq ("a", "a", "a", !+)

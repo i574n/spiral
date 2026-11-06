@@ -45,7 +45,6 @@ static String * choose0(bool v0){
 }
 static int32_t measure1(String * v0){
     int32_t v1 = v0->len-1;
-    StringDecref(v0);
     return v1;
 }
 int32_t main(){
@@ -53,13 +52,10 @@ int32_t main(){
     String * v1 = choose0(v0);
     bool v2 = false;
     String * v3 = choose0(v2);
-    (v1)->refc++;
     int32_t v4 = measure1(v1);
-    (v1)->refc++;
     int32_t v5 = measure1(v1);
     StringDecref(v1);
     int32_t v6 = v4 + v5;
-    (v3)->refc++;
     int32_t v7 = measure1(v3);
     StringDecref(v3);
     int32_t v8 = v6 + v7;

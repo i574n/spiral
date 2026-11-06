@@ -7,13 +7,13 @@ enum UH0 {
     UH0_Node(Rc<UH0>, Rc<UH0>),
 }
 fn count_0(mut v0: Rc<UH0>) -> i32 {
-    match &*v0 {
+    match Rc::unwrap_or_clone(v0) {
         UH0::UH0_Leaf => {
             1i32
         }
         UH0::UH0_Node(v1, v2) => {
-            let v1: Rc<UH0> = v1.clone();
-            let v2: Rc<UH0> = v2.clone();
+            let v1: Rc<UH0> = v1;
+            let v2: Rc<UH0> = v2;
             let v3: i32 = count_0(v1);
             let v4: i32 = count_0(v2);
             let v5: i32 = v3.wrapping_add(v4);

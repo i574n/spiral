@@ -27,9 +27,8 @@ pub fn main() {
             Us0South -> Us0West
             Us0West -> Us0North
         }
-    let v17 = Us0South
     let v18 =
-        case v16,v17  {
+        case v16,Us0South  {
             Us0East,Us0East -> True
             Us0North,Us0North -> True
             Us0South,Us0South -> True
@@ -63,6 +62,5 @@ pub fn main() {
         }
     let v28 = spiral_wrap_signed(v27 * 9, 32)
     let v29 = spiral_wrap_signed(v25 + v28, 32)
-    let v30 = spiral_wrap_signed(v29 + v19, 32)
-    v30
+    spiral_wrap_signed(v29 + v19, 32)
 }

@@ -32,7 +32,7 @@ fn utf8_scalar_at_byte_offset_1(mut v0: Rc<str>, mut v1: i32) -> i32 {
                         if v14 {
                             std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("UTF-8 sequence is truncated."); } LIT.with(|lit| lit.clone()) }))
                         } else {
-                            let v16: u8 = runtime_byte_2(v0.clone(), v13);
+                            let v16: u8 = runtime_byte_2(v0, v13);
                             let v17: i32 = i32::from(v16);
                             let v18: bool = v17 < 128i32;
                             let v20: bool = if v18 {
@@ -62,7 +62,7 @@ fn utf8_scalar_at_byte_offset_1(mut v0: Rc<str>, mut v1: i32) -> i32 {
                                 let v32: i32 = v1.wrapping_add(1i32);
                                 let v33: u8 = runtime_byte_2(v0.clone(), v32);
                                 let v34: i32 = i32::from(v33);
-                                let v35: u8 = runtime_byte_2(v0.clone(), v29);
+                                let v35: u8 = runtime_byte_2(v0, v29);
                                 let v36: i32 = i32::from(v35);
                                 let v37: bool = v34 < 128i32;
                                 let v39: bool = if v37 {
@@ -202,7 +202,7 @@ fn loop_0(mut v0: i32, mut v1: i32) -> i32 {
                 return std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("UTF-8 scalar width exceeds the string."); } LIT.with(|lit| lit.clone()) }));
             } else {
                 let v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("é"); } LIT.with(|lit| lit.clone()) };
-                let v6: i32 = utf8_scalar_at_byte_offset_1(v5.clone(), v0);
+                let v6: i32 = utf8_scalar_at_byte_offset_1(v5, v0);
                 let v7: bool = v6 < 128i32;
                 let v12: i32 = if v7 {
                     1i32

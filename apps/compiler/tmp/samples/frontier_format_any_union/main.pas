@@ -18,6 +18,10 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 procedure method2(v0: TMut0; v1: AnsiString); forward;
 function format_real_1(v0: LongInt): AnsiString; forward;
 function method0: AnsiString; forward;
@@ -31,8 +35,9 @@ var
   v3: AnsiString;
 begin
   v2 := v0.l0;
-  v3 := v2 + v1 ;
+  v3 := v2 + v1;
   v0.l0 := v3;
+  SpiralRelease(v0);
 end;
 function format_real_1(v0: LongInt): AnsiString;
 var
@@ -44,43 +49,35 @@ begin
   v1 := '';
   v2 := MutCreate0(v1);
   v3 := IntToStr(v0);
+  SpiralRetain(v2);
   method2(v2, v3);
   v4 := v2.l0;
+  SpiralRelease(v2);
   Result := v4;
 end;
 function method0: AnsiString;
 var
-  v0: AnsiString;
+  v0: LongInt;
   v1: AnsiString;
   v2: AnsiString;
-  v3: LongInt;
-  v4: AnsiString;
-  v5: AnsiString;
-  v6: AnsiString;
-  v7: AnsiString;
+  v3: AnsiString;
 begin
-  v0 := 'Some';
-  v1 := '(';
-  v2 := v0 + v1 ;
-  v3 := 1;
-  v4 := format_real_1(v3);
-  v5 := v2 + v4 ;
-  v6 := ')';
-  v7 := v5 + v6 ;
-  Result := v7;
+  v0 := 1;
+  v1 := format_real_1(v0);
+  v2 := 'Some(' + v1;
+  v3 := v2 + ')';
+  Result := v3;
 end;
 function SpiralMain: LongInt;
 var
   v0: AnsiString;
   v1: AnsiString;
-  v2: AnsiString;
-  v3: Boolean;
+  v2: Boolean;
 begin
   v0 := method0;
-  v1 := 'x: ';
-  v2 := v1 + v0 ;
-  v3 := v2 = '';
-  if v3 then begin
+  v1 := 'x: ' + v0;
+  v2 := v1 = '';
+  if v2 then begin
       Result := 1;
   end else begin
       Result := 0;

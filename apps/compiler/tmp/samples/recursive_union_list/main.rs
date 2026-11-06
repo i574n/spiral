@@ -7,10 +7,10 @@ enum UH0 {
     UH0_Cons(i32, Rc<UH0>),
 }
 fn sum_0(mut v0: Rc<UH0>) -> i32 {
-    match &*v0 {
+    match Rc::unwrap_or_clone(v0) {
         UH0::UH0_Cons(v1, v2) => {
-            let v1: i32 = *v1;
-            let v2: Rc<UH0> = v2.clone();
+            let v1: i32 = v1;
+            let v2: Rc<UH0> = v2;
             let v3: i32 = sum_0(v2);
             let v4: i32 = v1.wrapping_add(v3);
             v4

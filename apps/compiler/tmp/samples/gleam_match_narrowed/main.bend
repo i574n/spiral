@@ -63,8 +63,7 @@ type U0 is Data:
   U0_Tri{f0: U32}
   U0_Dot{}
 
-@unsafe
-def pick_0_if1_if2_if3(+c: Bool) -> IO(U0):
+def pick_0_if1_if2_if3(c: Bool) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
@@ -73,8 +72,7 @@ def pick_0_if1_if2_if3(+c: Bool) -> IO(U0):
       do IO<U0>:
         IO.pure(U0, U0_Dot{})
 
-@unsafe
-def pick_0_if1_if2(+c: Bool, +v0: U32) -> IO(U0):
+def pick_0_if1_if2(c: Bool, +v0: U32) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
@@ -84,8 +82,7 @@ def pick_0_if1_if2(+c: Bool, +v0: U32) -> IO(U0):
         +v5 : Bool <- IO.pure(Bool, U32.is_eq(v0, {2 : U32}))
         pick_0_if1_if2_if3(v5)
 
-@unsafe
-def pick_0_if1(+c: Bool, +v0: U32) -> IO(U0):
+def pick_0_if1(c: Bool, +v0: U32) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
@@ -95,132 +92,121 @@ def pick_0_if1(+c: Bool, +v0: U32) -> IO(U0):
         +v3 : Bool <- IO.pure(Bool, U32.is_eq(v0, {1 : U32}))
         pick_0_if1_if2(v3, v0)
 
-@unsafe
 def pick_0(+v0: U32) -> IO(U0):
   do IO<U0>:
     +v1 : Bool <- IO.pure(Bool, U32.is_eq(v0, {0 : U32}))
     pick_0_if1(v1, v0)
 
-@unsafe
-def measure_1_unbox4_unbox5_if6(+c: Bool, +v6: U32) -> IO(U32):
+def measure_1_unbox4_unbox5_if6(c: Bool, +v6: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
-        +v7 : U32 <- IO.pure(U32, U32.mul(v6, v6))
+        v7 : U32 <- IO.pure(U32, U32.mul(v6, v6))
         return v7
     case False{}:
       do IO<U32>:
         return v6
 
-@unsafe
-def measure_1_unbox4_unbox5_if7(+c: Bool, +v9: U32) -> IO(U32):
+def measure_1_unbox4_unbox5_if7(c: Bool, +v9: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
-        +v10 : U32 <- IO.pure(U32, U32.mul(v9, {2 : U32}))
+        v10 : U32 <- IO.pure(U32, U32.mul(v9, {2 : U32}))
         return v10
     case False{}:
       do IO<U32>:
         return v9
 
-@unsafe
-def measure_1_unbox4_unbox5(+u: U0, +v0: U0, +v1: U32, +v4: U32, +v5: Bool) -> IO(U32):
+def measure_1_unbox4_unbox5(u: U0, +v0: U0, +v1: U32, +v4: U32, +v5: Bool) -> IO(U32):
   match u:
     case U0_Circle{unused0}:
       do IO<U32>:
         IO.die(U32, 3, "")
-    case U0_Square{+v6}:
+    case U0_Square{v6}:
       do IO<U32>:
         measure_1_unbox4_unbox5_if6(v5, v6)
-    case U0_Tri{+v9}:
+    case U0_Tri{v9}:
       do IO<U32>:
         measure_1_unbox4_unbox5_if7(v5, v9)
     case U0_Dot{}:
       do IO<U32>:
         return v4
 
-@unsafe
-def measure_1_unbox4_unbox8_if9(+c: Bool, +v6: U32) -> IO(U32):
+def measure_1_unbox4_unbox8_if9(c: Bool, +v6: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
-        +v7 : U32 <- IO.pure(U32, U32.mul(v6, v6))
+        v7 : U32 <- IO.pure(U32, U32.mul(v6, v6))
         return v7
     case False{}:
       do IO<U32>:
         return v6
 
-@unsafe
-def measure_1_unbox4_unbox8_if10(+c: Bool, +v9: U32) -> IO(U32):
+def measure_1_unbox4_unbox8_if10(c: Bool, +v9: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
-        +v10 : U32 <- IO.pure(U32, U32.mul(v9, {2 : U32}))
+        v10 : U32 <- IO.pure(U32, U32.mul(v9, {2 : U32}))
         return v10
     case False{}:
       do IO<U32>:
         return v9
 
-@unsafe
-def measure_1_unbox4_unbox8(+u: U0, +v0: U0, +v1: U32, +v4: U32, +v5: Bool) -> IO(U32):
+def measure_1_unbox4_unbox8(u: U0, +v0: U0, +v1: U32, +v4: U32, +v5: Bool) -> IO(U32):
   match u:
     case U0_Circle{unused0}:
       do IO<U32>:
         IO.die(U32, 3, "")
-    case U0_Square{+v6}:
+    case U0_Square{v6}:
       do IO<U32>:
         measure_1_unbox4_unbox8_if9(v5, v6)
-    case U0_Tri{+v9}:
+    case U0_Tri{v9}:
       do IO<U32>:
         measure_1_unbox4_unbox8_if10(v5, v9)
     case U0_Dot{}:
       do IO<U32>:
         return v4
 
-@unsafe
-def measure_1_unbox4_unbox11_if12(+c: Bool, +v6: U32) -> IO(U32):
+def measure_1_unbox4_unbox11_if12(c: Bool, +v6: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
-        +v7 : U32 <- IO.pure(U32, U32.mul(v6, v6))
+        v7 : U32 <- IO.pure(U32, U32.mul(v6, v6))
         return v7
     case False{}:
       do IO<U32>:
         return v6
 
-@unsafe
-def measure_1_unbox4_unbox11_if13(+c: Bool, +v9: U32) -> IO(U32):
+def measure_1_unbox4_unbox11_if13(c: Bool, +v9: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
-        +v10 : U32 <- IO.pure(U32, U32.mul(v9, {2 : U32}))
+        v10 : U32 <- IO.pure(U32, U32.mul(v9, {2 : U32}))
         return v10
     case False{}:
       do IO<U32>:
         return v9
 
-@unsafe
-def measure_1_unbox4_unbox11(+u: U0, +v0: U0, +v1: U32, +v4: U32, +v5: Bool) -> IO(U32):
+def measure_1_unbox4_unbox11(u: U0, +v0: U0, +v1: U32, +v4: U32, +v5: Bool) -> IO(U32):
   match u:
     case U0_Circle{unused0}:
       do IO<U32>:
         IO.die(U32, 3, "")
-    case U0_Square{+v6}:
+    case U0_Square{v6}:
       do IO<U32>:
         measure_1_unbox4_unbox11_if12(v5, v6)
-    case U0_Tri{+v9}:
+    case U0_Tri{v9}:
       do IO<U32>:
         measure_1_unbox4_unbox11_if13(v5, v9)
     case U0_Dot{}:
       do IO<U32>:
         return v4
 
-@unsafe
-def measure_1_unbox4(+u: U0, +v0: U0, +v1: U32) -> IO(U32):
+def measure_1_unbox4(u: U0, +v0: U0, +v1: U32) -> IO(U32):
   match u:
-    case U0_Circle{+v2}:
+    case U0_Circle{v2}:
       do IO<U32>:
-        +v3 : U32 <- IO.pure(U32, U32.mul(v2, {3 : U32}))
+        v3 : U32 <- IO.pure(U32, U32.mul(v2, {3 : U32}))
         return v3
     case U0_Square{unused0}:
       do IO<U32>:
@@ -238,13 +224,11 @@ def measure_1_unbox4(+u: U0, +v0: U0, +v1: U32) -> IO(U32):
         +v5 : Bool <- IO.pure(Bool, spiral_i32_gt(v4, {3 : U32}))
         measure_1_unbox4_unbox11(v0, v0, v1, v4, v5)
 
-@unsafe
-def measure_1(+v0: U0, +v1: U32) -> IO(U32):
+def measure_1(+v0: U0, v1: U32) -> IO(U32):
   do IO<U32>:
     measure_1_unbox4(v0, v0, v1)
 
-@unsafe
-def measure_tri_2_unbox14_unbox15(+u: U0, +v0: U0, +v1: U32, +v4: U32) -> IO(U32):
+def measure_tri_2_unbox14_unbox15(u: U0, +v0: U0, +v1: U32, v4: U32) -> IO(U32):
   match u:
     case U0_Circle{unused0}:
       do IO<U32>:
@@ -252,63 +236,59 @@ def measure_tri_2_unbox14_unbox15(+u: U0, +v0: U0, +v1: U32, +v4: U32) -> IO(U32
     case U0_Square{unused0}:
       do IO<U32>:
         IO.die(U32, 3, "")
-    case U0_Tri{+v5}:
+    case U0_Tri{v5}:
       do IO<U32>:
-        +v6 : U32 <- IO.pure(U32, U32.mul(v5, v4))
+        v6 : U32 <- IO.pure(U32, U32.mul(v5, v4))
         return v6
     case U0_Dot{}:
       do IO<U32>:
         IO.die(U32, 3, "")
 
-@unsafe
-def measure_tri_2_unbox14(+u: U0, +v0: U0, +v1: U32) -> IO(U32):
+def measure_tri_2_unbox14(u: U0, +v0: U0, +v1: U32) -> IO(U32):
   match u:
-    case U0_Circle{+v2}:
+    case U0_Circle{v2}:
       do IO<U32>:
         return v2
-    case U0_Square{+v3}:
+    case U0_Square{v3}:
       do IO<U32>:
         return v3
     case U0_Tri{unused0}:
       do IO<U32>:
-        +v4 : U32 <- IO.pure(U32, U32.add(v1, {2 : U32}))
+        v4 : U32 <- IO.pure(U32, U32.add(v1, {2 : U32}))
         measure_tri_2_unbox14_unbox15(v0, v0, v1, v4)
     case U0_Dot{}:
       do IO<U32>:
         return {0 : U32}
 
-@unsafe
-def measure_tri_2(+v0: U0, +v1: U32) -> IO(U32):
+def measure_tri_2(+v0: U0, v1: U32) -> IO(U32):
   do IO<U32>:
     measure_tri_2_unbox14(v0, v0, v1)
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : U32 <- IO.pure(U32, {0 : U32})
-    +v1 : U0 <- pick_0(v0)
-    +v2 : U32 <- measure_1(v1, v0)
+    v1 : U0 <- pick_0(v0)
+    v2 : U32 <- measure_1(v1, v0)
     +v3 : U32 <- IO.pure(U32, U32.add(v0, {1 : U32}))
-    +v4 : U0 <- pick_0(v3)
-    +v5 : U32 <- measure_1(v4, v3)
-    +v6 : U32 <- IO.pure(U32, U32.add(v2, v5))
+    v4 : U0 <- pick_0(v3)
+    v5 : U32 <- measure_1(v4, v3)
+    v6 : U32 <- IO.pure(U32, U32.add(v2, v5))
     +v7 : U32 <- IO.pure(U32, U32.add(v0, {2 : U32}))
-    +v8 : U0 <- pick_0(v7)
-    +v9 : U32 <- measure_1(v8, v7)
-    +v10 : U32 <- IO.pure(U32, U32.add(v6, v9))
+    v8 : U0 <- pick_0(v7)
+    v9 : U32 <- measure_1(v8, v7)
+    v10 : U32 <- IO.pure(U32, U32.add(v6, v9))
     +v11 : U32 <- IO.pure(U32, U32.add(v0, {3 : U32}))
-    +v12 : U0 <- pick_0(v11)
-    +v13 : U32 <- measure_1(v12, v11)
-    +v14 : U32 <- IO.pure(U32, U32.add(v10, v13))
-    +v15 : U0 <- pick_0(v7)
-    +v16 : U32 <- measure_tri_2(v15, v0)
-    +v17 : U32 <- IO.pure(U32, U32.add(v14, v16))
-    +v18 : U0 <- pick_0(v0)
-    +v19 : U32 <- measure_tri_2(v18, v0)
-    +v20 : U32 <- IO.pure(U32, U32.add(v17, v19))
+    v12 : U0 <- pick_0(v11)
+    v13 : U32 <- measure_1(v12, v11)
+    v14 : U32 <- IO.pure(U32, U32.add(v10, v13))
+    v15 : U0 <- pick_0(v7)
+    v16 : U32 <- measure_tri_2(v15, v0)
+    v17 : U32 <- IO.pure(U32, U32.add(v14, v16))
+    v18 : U0 <- pick_0(v0)
+    v19 : U32 <- measure_tri_2(v18, v0)
+    v20 : U32 <- IO.pure(U32, U32.add(v17, v19))
     return v20
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

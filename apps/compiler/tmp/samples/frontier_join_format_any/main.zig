@@ -70,21 +70,16 @@ fn format_real_2(p0: i32) []const u8 {
     return v4;
 }
 fn method1() []const u8 {
-    const v0: []const u8 = "Some";
-    const v1: []const u8 = "(";
-    const v2: []const u8 = spiralConcat(v0, v1);
-    const v3: i32 = @as(i32, 1);
-    const v4: []const u8 = format_real_2(v3);
-    const v5: []const u8 = spiralConcat(v2, v4);
-    const v6: []const u8 = ")";
-    const v7: []const u8 = spiralConcat(v5, v6);
-    return v7;
+    const v0: i32 = @as(i32, 1);
+    const v1: []const u8 = format_real_2(v0);
+    const v2: []const u8 = spiralConcat("Some(", v1);
+    const v3: []const u8 = spiralConcat(v2, ")");
+    return v3;
 }
 fn method0() []const u8 {
     const v0: []const u8 = method1();
-    const v1: []const u8 = "x: ";
-    const v2: []const u8 = spiralConcat(v1, v0);
-    return v2;
+    const v1: []const u8 = spiralConcat("x: ", v0);
+    return v1;
 }
 fn spiralMain() i32 {
     const v0: []const u8 = method0();

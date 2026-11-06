@@ -3,7 +3,6 @@
 
 :< rust_operators
 
-/// ## rust
 :! reqwest_response =
     `(
         rust::rust_type
@@ -85,7 +84,6 @@
 := response_text (response : reqwest_response) : async::future_pin (resultm::result' sm'::std_string reqwest_error) =
     !\($'"Box::pin(reqwest_wasm::Response::text(!response))"')
 
-/// ## fsharp
 :! tcp_client =
     `(
         backend_switch `(()) `({}) {
@@ -131,6 +129,5 @@
         | Fsharp => \ () => $'!client.ConnectAsync (!host, !port, !ct)'
         | _ => \ () => null ()
 
-/// ## main
 := main () =
     init_trace_state None

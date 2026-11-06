@@ -175,30 +175,30 @@ def spiral_array_set_a0(+arr: Chan(Array<(String & String)>) & U32, +i: U32, +v:
   spiral_array_set_checked_a0(c, i, v, U32.is_lt(i, n))
 
 @unsafe
-def spiral_main_set1_put(+c: (Chan(Array<(String & String)>) & U32), +p: String & String, +n: String & String) -> IO(Unit):
+def spiral_main_set1_put(c: (Chan(Array<(String & String)>) & U32), +p: String & String, +n: String & String) -> IO(Unit):
   (+w0, +w1) = p
-  (+x0, +x1) = n
+  (x0, x1) = n
   spiral_array_set_a0(c, {0 : U32}, (x0, x1))
 
 @unsafe
-def spiral_main_set1(+c: (Chan(Array<(String & String)>) & U32), +n: String & String) -> IO(Unit):
+def spiral_main_set1(+c: (Chan(Array<(String & String)>) & U32), n: String & String) -> IO(Unit):
   do IO<Unit>:
-    +p : String & String <- spiral_array_get_a0(c, {0 : U32})
+    p : String & String <- spiral_array_get_a0(c, {0 : U32})
     spiral_main_set1_put(c, p, n)
 
 @unsafe
-def spiral_main_k2_if3(+c: Bool, +v6: String) -> IO(Bool):
+def spiral_main_k2_if3(c: Bool, v6: String) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v8 : Bool <- IO.pure(Bool, String.eq(v6, "yo"))
+        v8 : Bool <- IO.pure(Bool, String.eq(v6, "yo"))
         return v8
     case False{}:
       do IO<Bool>:
         return False{}
 
 @unsafe
-def spiral_main_k2_if4(+c: Bool) -> IO(U32):
+def spiral_main_k2_if4(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -224,10 +224,9 @@ def spiral_main() -> IO(U32):
     +v3 : String <- IO.pure(String, "hi")
     +v4 : String <- IO.pure(String, "yo")
     spiral_main_set1(v2, (v3, v4))
-    +p : String & String <- spiral_array_get_a0(v2, {0 : U32})
+    p : String & String <- spiral_array_get_a0(v2, {0 : U32})
     spiral_main_k2(p, v0, v1, v2, v3, v4)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

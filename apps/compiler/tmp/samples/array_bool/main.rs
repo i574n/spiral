@@ -2,10 +2,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
-    let v0: Rc<RefCell<Vec<bool>>> = Rc::new(RefCell::new(vec![<bool>::default(); 1i32 as usize]));
+    let mut v0: Rc<RefCell<Vec<bool>>> = Rc::new(RefCell::new(vec![<bool>::default(); 1i32 as usize]));
     let v1: bool = true;
-    v0.clone().borrow_mut()[0i32 as usize] = v1;
-    let v2: bool = v0.borrow()[0i32 as usize].clone();
+    v0.borrow_mut()[0i32 as usize] = v1;
+    let v2: bool = v0.borrow()[0i32 as usize];
     if v2 {
         0i32
     } else {

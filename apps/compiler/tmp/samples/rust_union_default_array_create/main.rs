@@ -13,18 +13,18 @@ impl Default for US0 {
 }
 fn spiral_main() -> i32 {
     let v0: i32 = 2i32;
-    let v1: Rc<RefCell<Vec<(Rc<str>, US0, bool)>>> = Rc::new(RefCell::new(vec![<(Rc<str>, US0, bool)>::default(); v0 as usize]));
+    let mut v1: Rc<RefCell<Vec<(Rc<str>, US0, bool)>>> = Rc::new(RefCell::new(vec![<(Rc<str>, US0, bool)>::default(); v0 as usize]));
     let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("a"); } LIT.with(|lit| lit.clone()) };
     let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("x"); } LIT.with(|lit| lit.clone()) };
     let v4: US0 = US0::US0_Just(v3);
-    v1.clone().borrow_mut()[0i32 as usize] = (v2, v4, true);
+    v1.borrow_mut()[0i32 as usize] = (v2, v4, true);
     let v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("b"); } LIT.with(|lit| lit.clone()) };
     let v6: US0 = US0::US0_Nothing;
-    v1.clone().borrow_mut()[1i32 as usize] = (v5, v6, false);
+    v1.borrow_mut()[1i32 as usize] = (v5, v6, false);
     let (mut v7, mut v8, mut v9): (Rc<str>, US0, bool) = v1.borrow()[0i32 as usize].clone();
-    match &v8 {
+    match v8 {
         US0::US0_Just(v10) => {
-            let v10: Rc<str> = v10.clone();
+            let v10: Rc<str> = v10;
             let v11: bool = &*v10 == "x";
             if v11 {
                 7i32

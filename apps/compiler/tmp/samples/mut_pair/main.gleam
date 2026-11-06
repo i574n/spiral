@@ -30,19 +30,14 @@ pub fn spiral_ref_set(reference: SpiralRef(a), value: a) -> Nil {
 
 pub type Mut0 { Mut0(l0 : Int, l1 : String) }
 pub fn main() {
-    let v0 = 3
-    let v1 = "no"
-    let v2 = spiral_ref_new(Mut0(l0: v0, l1: v1))
-    let v3 = 7
-    let v4 = "hi"
-    spiral_ref_set(v2, Mut0(l0: v3, l1: v4))
+    let v2 = spiral_ref_new(Mut0(l0: 3, l1: "no"))
+    spiral_ref_set(v2, Mut0(l0: 7, l1: "hi"))
     let #(v5, v6) = #(spiral_ref_get(v2).l0, spiral_ref_get(v2).l1)
     let v7 = v5 == 7
     let v9 =
         case v7 {
             True -> {
-                let v8 = v6 == "hi"
-                v8
+                v6 == "hi"
             }
             False -> False
         }

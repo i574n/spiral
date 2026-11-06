@@ -9,7 +9,7 @@ enum US0 {
 fn closure0() -> Rc<dyn Fn(i32) -> US0> {
     thread_local!{ static CLOSURE: Rc<dyn Fn(i32) -> US0> = Rc::new(move |mut v0: i32| -> US0 {
         let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("managed"); } LIT.with(|lit| lit.clone()) };
-        US0::US0_Text(v1.clone())
+        US0::US0_Text(v1)
     }); } CLOSURE.with(|closure| closure.clone())
 }
 fn method0(mut v0: Rc<dyn Fn(i32) -> US0>) -> US0 {
@@ -18,12 +18,12 @@ fn method0(mut v0: Rc<dyn Fn(i32) -> US0>) -> US0 {
 fn spiral_main() -> i32 {
     let mut v0: Rc<dyn Fn(i32) -> US0> = closure0();
     let v1: US0 = method0(v0);
-    let v4: i32 = match &v1 {
+    let v4: i32 = match v1 {
         US0::US0_Idle => {
             3i32
         }
         US0::US0_Text(v2) => {
-            let v2: Rc<str> = v2.clone();
+            let v2: Rc<str> = v2;
             11i32
         }
     };

@@ -1,7 +1,6 @@
 :# seq static =
     :< testing
 
-/// ## seq
 :== seq dim el = dim -> option el
 
 := try_item n s =
@@ -302,9 +301,6 @@
 := list_find_last \* item result. (fn : item -> option result) (target : list item) : option result =
     find_last listm::foldBack fn target
 
-/// ## fsharp
-
-/// ### seq'
 :== seq_switch' t =
     {
         Gleam : $'List(`t)'
@@ -480,7 +476,6 @@
         Zig = \ () => $'!items ' : seq' t
     }
 
-/// ### rev'
 := rev'' \* t. (items : seq' t) : seq' t =
     backend_switch {
         Gleam = \ () =>
@@ -506,7 +501,6 @@
     |> listm'::unbox
     |> _assert_eq [ "b"; "a" ]
 
-/// ## rust
 :! fuse t =
     `(
         rust::rust_type

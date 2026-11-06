@@ -12,14 +12,12 @@ pub fn sum_0(v0: Int) -> Int {
         False -> {
             let v2 = spiral_wrap_signed(v0 - 1, 32)
             let v3 = sum_0(v2)
-            let v4 = spiral_wrap_signed(v0 + v3, 32)
-            v4
+            spiral_wrap_signed(v0 + v3, 32)
         }
     }
 }
 pub fn main() {
-    let v0 = 4
-    let v1 = sum_0(v0)
+    let v1 = sum_0(4)
     let v2 = v1 == 10
     case v2 {
         True -> 0

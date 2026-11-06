@@ -140,7 +140,7 @@ function Get-SpiralPackageDir {
         (Join-Path $BundleRoot '../../../deps/The-Spiral-Language/VS Code Plugin')
     )
     foreach ($candidate in $candidates) {
-        if ($candidate -and (Test-Path (Join-Path $candidate 'core/package.spiproj'))) { return (Resolve-Path $candidate).Path }
+        if ($candidate -and (Test-SpiralManifest (Join-Path $candidate 'core'))) { return (Resolve-Path $candidate).Path }
     }
     throw 'The-Spiral-Language core package not found: run scripts/init.ps1 (clones it to deps/The-Spiral-Language) or set SPIRAL_COMPILER_PACKAGE_DIR.'
 }
@@ -154,6 +154,17 @@ function Get-SpiralLibDir {
         if ($LASTEXITCODE -ne 0) { throw 'building the dependency directory failed' }
     }
     (Resolve-Path $lib).Path
+}
+
+function Test-SpiralManifest([string]$Dir) {
+    (Test-Path -LiteralPath (Join-Path $Dir 'spiral.toml')) -or (Test-Path -LiteralPath (Join-Path $Dir 'package.spiproj'))
+}
+
+function Get-SpiralManifestText([string]$Dir) {
+    if (-not (Test-Path -LiteralPath (Join-Path $Dir 'spiral.toml'))) { return Get-Content -Raw -LiteralPath (Join-Path $Dir 'package.spiproj') }
+    $text = & (Resolve-SpiralDotnet) (Get-SpiralCompilerDll 'single-flight') --resolve-manifest $Dir 2>$null | Out-String
+    if ($LASTEXITCODE) { throw "--resolve-manifest failed for $Dir" }
+    $text
 }
 
 function Get-FileSha256([string]$Path) {

@@ -6,8 +6,7 @@ pub fn main() {
     let v5 =
         case v3 {
             True -> {
-                let v4 = v1 <. v2
-                v4
+                v1 <. v2
             }
             False -> False
         }
@@ -15,8 +14,7 @@ pub fn main() {
         case v5 {
             True -> {
                 let v6 = v0 >. v1
-                let v7 = v6 == False
-                v7
+                v6 == False
             }
             False -> False
         }
@@ -24,16 +22,14 @@ pub fn main() {
         case v8 {
             True -> {
                 let v9 = v0 >=. v1
-                let v10 = v9 == False
-                v10
+                v9 == False
             }
             False -> False
         }
     let v13 =
         case v11 {
             True -> {
-                let v12 = v1 <=. v2
-                v12
+                v1 <=. v2
             }
             False -> False
         }

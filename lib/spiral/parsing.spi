@@ -3,11 +3,9 @@
 :# parsing static =
     :< testing
 
-/// ## fparsec
 ///> _
 :# fparsec =
     #r "nuget: fparsec, 2.0.0-beta2"
-
 
     ()
 
@@ -271,9 +269,6 @@
         | [] => ()
         | x => failwith $'$"{!x}"'
 
-/// ## parsing
-
-/// ### position
 :== range =
     {
         from : int
@@ -296,7 +291,6 @@
 := new_parser_state (line_start : i32) (line : i32) (col : i32) (text_length : i32) =
     { line_start position = { line col }; text_length }
 
-/// ### new_parser_state\''
 := new_parser_state' text_length =
     new_parser_state 0 1 1 text_length |> parser_state
 

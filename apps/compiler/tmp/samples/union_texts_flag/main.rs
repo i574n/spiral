@@ -7,10 +7,10 @@ enum US0 {
     US0_Held(Rc<RefCell<Vec<Rc<str>>>>, bool),
 }
 fn score_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_Held(v1, v2) => {
-            let v1: Rc<RefCell<Vec<Rc<str>>>> = v1.clone();
-            let v2: bool = *v2;
+            let v1: Rc<RefCell<Vec<Rc<str>>>> = v1;
+            let v2: bool = v2;
             let v3: Rc<str> = v1.borrow()[0i32 as usize].clone();
             let v4: bool = &*v3 == "hi";
             let v5: bool = v4 && v2;
@@ -26,9 +26,9 @@ fn score_0(mut v0: US0) -> i32 {
     }
 }
 fn spiral_main() -> i32 {
-    let v0: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(vec![<Rc<str>>::default(); 1i32 as usize]));
+    let mut v0: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(vec![<Rc<str>>::default(); 1i32 as usize]));
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    v0.clone().borrow_mut()[0i32 as usize] = v1;
+    v0.borrow_mut()[0i32 as usize] = v1;
     let v2: bool = true;
     let v5: US0 = if v2 {
         US0::US0_Held(v0, v2)

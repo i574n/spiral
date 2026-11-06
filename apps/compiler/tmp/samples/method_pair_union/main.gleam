@@ -6,20 +6,16 @@ pub fn method0(v0: Int) -> #(Us0, Us0) {
     let v1 = v0 == 0
     case v1 {
         True -> {
-            let v2 = Us0None
-            let v3 = Us0None
-            #(v2, v3)
+            #(Us0None, Us0None)
         }
         False -> {
             let v4 = Us0Some(v0)
-            let v5 = Us0None
-            #(v4, v5)
+            #(v4, Us0None)
         }
     }
 }
 pub fn main() {
-    let v0 = 7
-    let #(v1, v2) = method0(v0)
+    let #(v1, v2) = method0(7)
     case v1  {
         Us0None -> 1
         Us0Some(v3) -> {

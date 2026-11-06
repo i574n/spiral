@@ -12,26 +12,26 @@ enum US0 {
     US0_Other(i32),
 }
 fn score_inner_1(mut v0: US1) -> i32 {
-    match &v0 {
+    match v0 {
         US1::US1_A(v1) => {
-            let v1: i32 = *v1;
+            let v1: i32 = v1;
             v1
         }
         US1::US1_B(v2) => {
-            let v2: i32 = *v2;
+            let v2: i32 = v2;
             let v3: i32 = v2.wrapping_neg();
             v3
         }
     }
 }
 fn score_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_Other(v3) => {
-            let v3: i32 = *v3;
+            let v3: i32 = v3;
             v3
         }
         US0::US0_Wrap(v1) => {
-            let v1: US1 = v1.clone();
+            let v1: US1 = v1;
             score_inner_1(v1)
         }
     }

@@ -1467,6 +1467,23 @@
     := ~path = "\\\\?\\C:\\x"
     path |> normalize_path |> _assert_eq "c:/x"
 
+:= deps_workspace_root (root : string) : string =
+    ?= root |> get_file_name ?|
+    | "deps" =>
+        ?= root |> directory_parent ?|
+        | Some parent =>
+            ?= parent |> find_parent Directory ("spiral" </> "workspace") ?|
+            | Ok outer => outer |> normalize_path
+            | Error _ => root
+        | None => root
+    | _ => root
+
+///> rust
+:# a_deps_root_without_an_outer_checkout_keeps_its_own_spiral =
+    := deps = get_temp_path () </> "deps_workspace_root_test" </> "deps"
+    := plain = get_temp_path () </> "deps_workspace_root_test"
+    (deps_workspace_root deps = deps, deps_workspace_root plain = plain) |> _assert_eq (!+, !+)
+
 := get_workspace_root () =
     := repo_root = env::get_environment_variable "SPIRAL_REPO_ROOT"
     ? repo_root <> ""
@@ -1491,16 +1508,7 @@
                 | Some dir => Some dir
                 | None => dir () |> run
             |> optionm::value
-        := root =
-            ?= root |> get_file_name ?|
-            | "deps" =>
-                root
-                |> directory_get_parent
-                |> optionm'::get'
-                |> run
-                |> optionm::value
-            | _ => root
-        root </> "spiral"
+        deps_workspace_root root </> "spiral"
 
 := get_workspace_root_external () =
     := workspace_root = get_workspace_root ()

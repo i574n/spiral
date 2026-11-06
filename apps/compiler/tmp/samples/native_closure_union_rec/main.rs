@@ -23,13 +23,13 @@ fn build_0(mut v0: u64) -> Rc<UH0> {
 }
 fn sum_1(mut v0: Rc<UH0>, mut v1: u64) -> u64 {
     loop {
-        match &*v0 {
+        match Rc::unwrap_or_clone(v0) {
             UH0::UH0_Cons(v2, v3) => {
-                let v2: u64 = *v2;
-                let mut v3: Rc<dyn Fn() -> Rc<UH0>> = v3.clone();
+                let v2: u64 = v2;
+                let mut v3: Rc<dyn Fn() -> Rc<UH0>> = v3;
                 let v4: Rc<UH0> = v3();
                 let v5: u64 = v1.wrapping_add(v2);
-                (v0, v1) = (v4.clone(), v5);
+                (v0, v1) = (v4, v5);
                 continue;
             }
             UH0::UH0_Nil => {

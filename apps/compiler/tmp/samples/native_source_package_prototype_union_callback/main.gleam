@@ -35,6 +35,5 @@ pub fn main() {
             Us0Hit(v3) -> v3
             Us0Idle -> 3
         }
-    let v9 = spiral_wrap_signed(v8 + 31, 32)
-    v9
+    spiral_wrap_signed(v8 + 31, 32)
 }

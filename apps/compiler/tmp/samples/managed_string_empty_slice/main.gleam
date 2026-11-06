@@ -53,23 +53,19 @@ pub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {
 }
 
 pub fn empty_middle_0(v0: String) -> String {
-    let v1 = spiral_string_slice(v0, 2, 1)
-    v1
+    spiral_string_slice(v0, 2, 1)
 }
 pub fn empty_end_1(v0: String) -> String {
-    let v1 = spiral_string_slice(v0, 5, 4)
-    v1
+    spiral_string_slice(v0, 5, 4)
 }
 pub fn empty_source_2(v0: String) -> String {
-    let v1 = spiral_string_slice(v0, 0, -1)
-    v1
+    spiral_string_slice(v0, 0, -1)
 }
 pub fn main() {
     let v0 = "alpha"
     let v1 = empty_middle_0(v0)
     let v2 = empty_end_1(v0)
-    let v3 = ""
-    let v4 = empty_source_2(v3)
+    let v4 = empty_source_2("")
     let v5 = { v1 } <> { v2 }
     let v6 = { v4 } <> { "ok" }
     let v7 = { v5 } <> { v6 }

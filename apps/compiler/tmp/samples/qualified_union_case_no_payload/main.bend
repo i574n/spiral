@@ -55,38 +55,34 @@ type U0 is Data:
   U0_Hit{f0: U32}
   U0_Hold{}
 
-@unsafe
-def spiral_main_unbox1(+u: U0, +v0: U32, +v1: U0, +v2: U0) -> IO(U32):
+def spiral_main_unbox1(u: U0, +v0: U32, +v1: U0, +v2: U0) -> IO(U32):
   match u:
-    case U0_Hit{+v3}:
+    case U0_Hit{v3}:
       do IO<U32>:
         return v3
     case U0_Hold{}:
       do IO<U32>:
         return {40 : U32}
 
-@unsafe
-def spiral_main_unbox2(+u: U0, +v0: U32, +v1: U0, +v2: U0, +v5: U32) -> IO(U32):
+def spiral_main_unbox2(u: U0, +v0: U32, +v1: U0, +v2: U0, +v5: U32) -> IO(U32):
   match u:
-    case U0_Hit{+v6}:
+    case U0_Hit{v6}:
       do IO<U32>:
         return v6
     case U0_Hold{}:
       do IO<U32>:
         return {40 : U32}
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : U32 <- IO.pure(U32, {3 : U32})
     +v1 : U0 <- IO.pure(U0, U0_Hit{v0})
     +v2 : U0 <- IO.pure(U0, U0_Hold{})
     +v5 : U32 <- spiral_main_unbox1(v1, v0, v1, v2)
-    +v8 : U32 <- spiral_main_unbox2(v2, v0, v1, v2, v5)
-    +v9 : U32 <- IO.pure(U32, U32.add(v5, v8))
+    v8 : U32 <- spiral_main_unbox2(v2, v0, v1, v2, v5)
+    v9 : U32 <- IO.pure(U32, U32.add(v5, v8))
     return v9
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

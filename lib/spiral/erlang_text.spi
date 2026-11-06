@@ -3,23 +3,22 @@
 :# erlang_text static =
     :< testing
 
-/// ## uri
 := percent_encoded (s : string) : string =
     erlang_term::apply "uri_string" "quote" [ erlang_term::of s; erlang_term::charlist "" ] |> erlang_term::cast
 
 := percent_decoded (s : string) : string =
     erlang_term::apply "uri_string" "percent_decode" [ erlang_term::of s ] |> erlang_term::cast
 
-/// ## text
+:= pad_args (width : i32) (fill : string) (s : string) : list erlang_term::term =
+    [ erlang_term::of s; erlang_term::of width; erlang_term::atom "leading"; erlang_term::charlist fill ]
+
 := padded_leading (width : i32) (fill : string) (s : string) : string =
-    := pad_args = [ erlang_term::of s; erlang_term::of width; erlang_term::atom "leading"; erlang_term::charlist fill ]
-    := padded = erlang_term::apply "string" "pad" pad_args
+    := padded = erlang_term::apply "string" "pad" (pad_args width fill s)
     erlang_term::apply "erlang" "iolist_to_binary" [ padded ] |> erlang_term::cast
 
 := trimmed_trailing (s : string) : string =
     erlang_term::apply "string" "trim" [ erlang_term::of s; erlang_term::atom "trailing" ] |> erlang_term::cast
 
-/// ## base64
 := base64_encoded (s : string) : string =
     erlang_term::apply "base64" "encode" [ erlang_term::of s ] |> erlang_term::cast
 

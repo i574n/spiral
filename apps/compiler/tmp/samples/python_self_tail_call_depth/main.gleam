@@ -17,9 +17,7 @@ pub fn count_down_0(v0: Int, v1: Int) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 5000
-    let v1 = 0
-    let v2 = count_down_0(v0, v1)
+    let v2 = count_down_0(5000, 0)
     let v3 = v2 == 5000
     case v3 {
         True -> 0

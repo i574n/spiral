@@ -216,11 +216,11 @@ safe for any backend or shell: the identity when that is ASCII, otherwise `test_
 A test's verdict is its cell's own evaluation result: it passed when every target it ran succeeded (compile, build, exit 0),
 failed on a compile error, a non-zero exit or a timeout, and is unsupported when none of its `///>` targets has its tool on
 this machine (`` `lua` was not found``, `gleam`, `gcc`, ...; a missing compiler, `dotnet` or core package is a failure).
-A native target (`///> c`, `cpp`, `delphi`) passes only when its program exits 0: the exit code is no value channel,
+A native target (`///> c`, `cpp`, `pascal`) passes only when its program exits 0: the exit code is no value channel,
 so an assertion that exits 1 fails the test. `///> c` is built like the compiler matrix builds its C rows:
 `gcc -std=c11 -O2 -w -fwrapv [-include <notebook dir>/c-shim.h] -o cell main.c -lm` (`cl /O2` with MSVC). The Rust host is built like the matrix's Rust rows too: `rustc +1.99.0 -C opt-level=2 -A warnings --edition 2024`
-(`+1.99.0` only when `rustc` is rustup's proxy). `///> delphi` uses `dcc32` (`SPIRAL_DCC`) when present, else Free Pascal
-the way the matrix builds its Delphi rows: `fpc -Px86_64 -O2 -Mdelphi` (`SPIRAL_FPC`, `fpc` on PATH, or scoop's freepascal).
+(`+1.99.0` only when `rustc` is rustup's proxy). `///> pascal` (`///> delphi` is an alias) uses `dcc32` (`SPIRAL_DCC`) when present, else Free Pascal
+the way the matrix builds its Pascal rows: `fpc -Px86_64 -O2 -Mdelphi` (`SPIRAL_FPC`, `fpc` on PATH, or scoop's freepascal).
 `///> lean` runs the `--backend Lean` output with `lean --run` on the matrix's toolchain `leanprover/lean4:v4.35.0`:
 `SPIRAL_LEAN` (an elan proxy, given `+leanprover/lean4:v4.35.0`), else that toolchain's own `lean` under `ELAN_HOME`,
 `~/.elan` or scoop's elan, else `lean` on PATH with `+leanprover/lean4:v4.35.0`.
@@ -345,7 +345,7 @@ It skips `target`, `deps`, `_build` and similar folders. The checker is `Spiral.
 ### Target audit
 
 `mix test --only target_audit` (left out of the default run; it compiles and runs for real, so run it inside the heavy
-gate) gives every runner a deliberately failing test and a passing twin: the Rust host, `c`, `cpp`, `delphi`, `fsharp`,
+gate) gives every runner a deliberately failing test and a passing twin: the Rust host, `c`, `cpp`, `pascal`, `fsharp`,
 `python`, `cuda`, `typescript`, `lua`, `gleam`, `gleam -t javascript`, `zig` and `wgsl`. The failing one must fail with
 its assertion text and the twin pass, or both be unsupported (a missing tool); a failing test that passes fails the audit.
 Erlang Gleam targets are built and run by Cells itself: `gleam build` in the cell's own `gleam/` package with the CLI's

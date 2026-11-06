@@ -1,12 +1,12 @@
 #![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
-fn method0(mut v0: Rc<str>) -> bool {
+fn method0(mut v0: &Rc<str>) -> bool {
     true
 }
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral"); } LIT.with(|lit| lit.clone()) };
-    let v1: bool = method0(v0);
+    let v1: bool = method0(&v0);
     if v1 {
         0i32
     } else {

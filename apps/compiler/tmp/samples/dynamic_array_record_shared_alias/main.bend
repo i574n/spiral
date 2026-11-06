@@ -177,46 +177,43 @@ def spiral_array_set_a0(+arr: Chan(Array<U32>) & U32, +i: U32, +v: U32) -> IO(Un
 @unsafe
 def method0() -> IO((Chan(Array<U32>) & U32) & U32):
   do IO<(Chan(Array<U32>) & U32) & U32>:
-    +v0 : U32 <- IO.pure(U32, {2 : U32})
+    v0 : U32 <- IO.pure(U32, {2 : U32})
     +v1 : (Chan(Array<U32>) & U32) <- spiral_array_new_a0(v0, {0 : U32})
     spiral_array_set_a0(v1, {0 : U32}, {3 : U32})
     spiral_array_set_a0(v1, {1 : U32}, {4 : U32})
     return (v1, {1 : U32})
 
-@unsafe
-def method1(+v0: (Chan(Array<U32>) & U32), +v1: U32) -> IO(U32):
+def method1(v0: (Chan(Array<U32>) & U32), v1: U32) -> IO(U32):
   do IO<U32>:
-    +v2 : U32 <- spiral_array_get_a0(v0, {0 : U32})
-    +v3 : U32 <- IO.pure(U32, U32.add(v2, v1))
-    +v4 : U32 <- IO.pure(U32, U32.sub(v3, {1 : U32}))
+    v2 : U32 <- spiral_array_get_a0(v0, {0 : U32})
+    v3 : U32 <- IO.pure(U32, U32.add(v2, v1))
+    v4 : U32 <- IO.pure(U32, U32.sub(v3, {1 : U32}))
     return v4
 
 @unsafe
-def method2(+v0: (Chan(Array<U32>) & U32), +v1: U32) -> IO(U32):
+def method2(+v0: (Chan(Array<U32>) & U32), v1: U32) -> IO(U32):
   do IO<U32>:
-    +v2 : U32 <- spiral_array_get_a0(v0, {0 : U32})
-    +v3 : U32 <- spiral_array_get_a0(v0, {1 : U32})
-    +v4 : U32 <- IO.pure(U32, U32.add(v2, v3))
-    +v5 : U32 <- IO.pure(U32, U32.add(v4, v1))
+    v2 : U32 <- spiral_array_get_a0(v0, {0 : U32})
+    v3 : U32 <- spiral_array_get_a0(v0, {1 : U32})
+    v4 : U32 <- IO.pure(U32, U32.add(v2, v3))
+    v5 : U32 <- IO.pure(U32, U32.add(v4, v1))
     return v5
 
 @unsafe
 def spiral_main_k1(+p: (Chan(Array<U32>) & U32) & U32) -> IO(U32):
   (+v0, +v1) = p
   do IO<U32>:
-    +v2 : U32 <- method1(v0, v1)
-    +v3 : U32 <- method2(v0, v1)
-    +v4 : U32 <- IO.pure(U32, U32.add(v2, v3))
-    +v5 : U32 <- IO.pure(U32, U32.sub(v4, {11 : U32}))
+    v2 : U32 <- method1(v0, v1)
+    v3 : U32 <- method2(v0, v1)
+    v4 : U32 <- IO.pure(U32, U32.add(v2, v3))
+    v5 : U32 <- IO.pure(U32, U32.sub(v4, {11 : U32}))
     return v5
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +p : (Chan(Array<U32>) & U32) & U32 <- method0()
+    p : (Chan(Array<U32>) & U32) & U32 <- method0()
     spiral_main_k1(p)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

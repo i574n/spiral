@@ -12,15 +12,13 @@ pub fn f_c0(capt: Nil) -> fn(Int) -> #(Int, Int) {
     }
 }
 pub fn main() {
-    let v0 = 3
     let v1 = f_c0(Nil)
-    let #(v2, v3) = v1(v0)
+    let #(v2, v3) = v1(3)
     let v4 = v2 == 3
     let v6 =
         case v4 {
             True -> {
-                let v5 = v3 == 4
-                v5
+                v3 == 4
             }
             False -> False
         }

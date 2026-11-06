@@ -71,8 +71,7 @@ pub fn score_0(v0: Us0) -> Int {
             let v9 = spiral_array_get(v3, 0)
             let v10 = spiral_wrap_signed(v8 + v9, 32)
             let v11 = spiral_array_get(v3, 1)
-            let v12 = spiral_wrap_signed(v10 + v11, 32)
-            v12
+            spiral_wrap_signed(v10 + v11, 32)
         }
     }
 }
@@ -89,6 +88,5 @@ pub fn main() {
     spiral_array_set(v1, 1, v3)
     let v4 = Us0Nested(v1)
     let v5 = score_0(v4)
-    let v6 = spiral_wrap_signed(v5 - 20, 32)
-    v6
+    spiral_wrap_signed(v5 - 20, 32)
 }

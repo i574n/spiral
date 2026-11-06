@@ -27,8 +27,8 @@ fn spiral_main() -> i32 {
     let v4: Rc<Heap1> = Rc::new(Heap1 { l0: v2, l1: v3 });
     let v5: i32 = 2i32;
     let v6: Rc<Heap2> = Rc::new(Heap2 { l0: v4, l1: v5 });
-    let v7: Rc<RefCell<Vec<Rc<Heap2>>>> = Rc::new(RefCell::new(vec![<Rc<Heap2>>::default(); 1i32 as usize]));
-    v7.clone().borrow_mut()[0i32 as usize] = v6;
+    let mut v7: Rc<RefCell<Vec<Rc<Heap2>>>> = Rc::new(RefCell::new(vec![<Rc<Heap2>>::default(); 1i32 as usize]));
+    v7.borrow_mut()[0i32 as usize] = v6;
     let v8: Rc<Heap2> = v7.borrow()[0i32 as usize].clone();
     let (mut v9, mut v10): (Rc<Heap1>, i32) = (v8.l0.clone(), v8.l1);
     let (mut v11, mut v12): (Rc<Heap0>, i32) = (v9.l0.clone(), v9.l1);

@@ -80,8 +80,7 @@ pub fn score_1(v0: Us0) -> Int {
             let v3 = spiral_array_get(v1, 0)
             let v4 = spiral_wrap_signed(v2 + v3, 32)
             let v5 = spiral_array_get(v1, 1)
-            let v6 = spiral_wrap_signed(v4 + v5, 32)
-            v6
+            spiral_wrap_signed(v4 + v5, 32)
         }
     }
 }
@@ -95,6 +94,5 @@ pub fn main() {
     let v3 = method2(v0)
     let v4 = score_1(v3)
     let v5 = spiral_wrap_signed(v2 + v4, 32)
-    let v6 = spiral_wrap_signed(v5 + 28, 32)
-    v6
+    spiral_wrap_signed(v5 + 28, 32)
 }

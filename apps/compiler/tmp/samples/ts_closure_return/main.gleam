@@ -15,8 +15,7 @@ pub fn closure1(capt: #(String)) -> fn(Int) -> Int {
     fn (v1) {
         let #(v0) = capt
         let v2 = spiral_string_length(v0)
-        let v3 = spiral_wrap_signed(v2 + v1, 32)
-        v3
+        spiral_wrap_signed(v2 + v1, 32)
     }
 }
 pub fn make_c0(capt: Nil) -> fn(String) -> fn(Int) -> Int {
@@ -29,7 +28,6 @@ pub fn method0(v0: fn(Int) -> Int) -> Int {
 }
 pub fn main() {
     let v0 = make_c0(Nil)
-    let v1 = "abc"
-    let v2 = v0(v1)
+    let v2 = v0("abc")
     method0(v2)
 }

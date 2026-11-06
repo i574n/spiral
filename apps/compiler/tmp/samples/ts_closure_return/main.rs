@@ -10,7 +10,7 @@ fn closure1(mut v0: Rc<str>) -> Rc<dyn Fn(i32) -> i32> {
 }
 fn make_c0() -> Rc<dyn Fn(Rc<str>) -> Rc<dyn Fn(i32) -> i32>> {
     thread_local!{ static CLOSURE: Rc<dyn Fn(Rc<str>) -> Rc<dyn Fn(i32) -> i32>> = Rc::new(move |mut v0: Rc<str>| -> Rc<dyn Fn(i32) -> i32> {
-        closure1(v0.clone())
+        closure1(v0)
     }); } CLOSURE.with(|closure| closure.clone())
 }
 fn method0(mut v0: Rc<dyn Fn(i32) -> i32>) -> i32 {

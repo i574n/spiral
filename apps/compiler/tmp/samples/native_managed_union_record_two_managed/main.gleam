@@ -70,8 +70,7 @@ pub fn closure0(capt: Nil) -> fn(Int) -> Us0 {
                 spiral_array_set(v3, 0, v0)
                 let v4 = spiral_wrap_signed(v0 + 1, 32)
                 spiral_array_set(v3, 1, v4)
-                let v5 = "hi"
-                Us0Item(v5, v3)
+                Us0Item("hi", v3)
             }
         }
     }
@@ -95,8 +94,7 @@ pub fn main() {
                 let v7 = spiral_array_get(v3, 0)
                 let v8 = spiral_wrap_signed(v6 + v7, 32)
                 let v9 = spiral_array_get(v3, 1)
-                let v10 = spiral_wrap_signed(v8 + v9, 32)
-                v10
+                spiral_wrap_signed(v8 + v9, 32)
             }
         }
     let v13 = method1(v0)
@@ -110,11 +108,9 @@ pub fn main() {
                 let v19 = spiral_array_get(v15, 0)
                 let v20 = spiral_wrap_signed(v18 + v19, 32)
                 let v21 = spiral_array_get(v15, 1)
-                let v22 = spiral_wrap_signed(v20 + v21, 32)
-                v22
+                spiral_wrap_signed(v20 + v21, 32)
             }
         }
     let v25 = spiral_wrap_signed(v12 + v24, 32)
-    let v26 = spiral_wrap_signed(v25 + 26, 32)
-    v26
+    spiral_wrap_signed(v25 + 26, 32)
 }

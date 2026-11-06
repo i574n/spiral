@@ -38,18 +38,15 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
 
 pub type Mut0 { Mut0(l0 : String) }
 pub fn main() {
-    let v0 = "deref"
-    let v1 = spiral_ref_new(Mut0(l0: v0))
+    let v1 = spiral_ref_new(Mut0(l0: "deref"))
     let v2 = 3
-    let v3 = "deref!"
-    spiral_ref_set(v1, Mut0(l0: v3))
+    spiral_ref_set(v1, Mut0(l0: "deref!"))
     let v4 = spiral_ref_get(v1).l0
     let v5 = v2 == 3
     let v7 =
         case v5 {
             True -> {
-                let v6 = spiral_wrap_signed(v2 + 1, 32)
-                v6
+                spiral_wrap_signed(v2 + 1, 32)
             }
             False -> 0
         }

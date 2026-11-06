@@ -57,8 +57,7 @@ type U0 is Data:
   U0_Hot{}
   U0_Done{}
 
-@unsafe
-def spiral_main_if1_if2_if3(+c: Bool) -> IO(U0):
+def spiral_main_if1_if2_if3(c: Bool) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
@@ -67,8 +66,7 @@ def spiral_main_if1_if2_if3(+c: Bool) -> IO(U0):
       do IO<U0>:
         IO.pure(U0, U0_Done{})
 
-@unsafe
-def spiral_main_if1_if2(+c: Bool, +v0: U32) -> IO(U0):
+def spiral_main_if1_if2(c: Bool, +v0: U32) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
@@ -78,8 +76,7 @@ def spiral_main_if1_if2(+c: Bool, +v0: U32) -> IO(U0):
         +v5 : Bool <- IO.pure(Bool, U32.is_eq(v0, {2 : U32}))
         spiral_main_if1_if2_if3(v5)
 
-@unsafe
-def spiral_main_if1(+c: Bool, +v0: U32) -> IO(U0):
+def spiral_main_if1(c: Bool, +v0: U32) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
@@ -89,8 +86,7 @@ def spiral_main_if1(+c: Bool, +v0: U32) -> IO(U0):
         +v3 : Bool <- IO.pure(Bool, U32.is_eq(v0, {1 : U32}))
         spiral_main_if1_if2(v3, v0)
 
-@unsafe
-def score_0_unbox4(+u: U0, +v0: U0) -> IO(U32):
+def score_0_unbox4(u: U0, +v0: U0) -> IO(U32):
   match u:
     case U0_Cold{}:
       do IO<U32>:
@@ -105,22 +101,19 @@ def score_0_unbox4(+u: U0, +v0: U0) -> IO(U32):
       do IO<U32>:
         return {4 : U32}
 
-@unsafe
 def score_0(+v0: U0) -> IO(U32):
   do IO<U32>:
     score_0_unbox4(v0, v0)
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : U32 <- IO.pure(U32, {3 : U32})
     +v1 : Bool <- IO.pure(Bool, U32.is_eq(v0, {0 : U32}))
-    +v10 : U0 <- spiral_main_if1(v1, v0)
-    +v11 : U32 <- score_0(v10)
-    +v12 : U32 <- IO.pure(U32, U32.sub(v11, {4 : U32}))
+    v10 : U0 <- spiral_main_if1(v1, v0)
+    v11 : U32 <- score_0(v10)
+    v12 : U32 <- IO.pure(U32, U32.sub(v11, {4 : U32}))
     return v12
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

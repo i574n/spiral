@@ -7,9 +7,9 @@ enum US0 {
     US0_Yes(i32),
 }
 fn score_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_No(v1) => {
-            let v1: bool = *v1;
+            let v1: bool = v1;
             if v1 {
                 1i32
             } else {
@@ -17,7 +17,7 @@ fn score_0(mut v0: US0) -> i32 {
             }
         }
         US0::US0_Yes(v3) => {
-            let v3: i32 = *v3;
+            let v3: i32 = v3;
             v3
         }
     }

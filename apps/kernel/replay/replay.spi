@@ -109,6 +109,7 @@
     (t::accepted, t::refused, t::skipped, listm::rev t::first)
     |> _assert_eq (1837i32, 0i32, 0i32, [])
 
+///- --timeout 1200000
 ///> rust
 :# init_core_replays_through_the_kernel_with_no_refusal =
     := path = file_system::get_temp_path () ++# "/init-core.ndjson"
@@ -118,6 +119,7 @@
     (t::refused, t::skipped, listm::rev t::first)
     |> _assert_eq (0i32, 0i32, [])
 
+///- --timeout 1200000
 ///> rust
 :# init_data_nat_basic_replays_through_the_kernel_with_no_refusal =
     := path = file_system::get_temp_path () ++# "/init-nat.ndjson"
@@ -127,6 +129,7 @@
     (t::refused, t::skipped, listm::rev t::first)
     |> _assert_eq (0i32, 0i32, [])
 
+///- --timeout 1200000
 ///> rust
 :# init_data_list_basic_replays_through_the_kernel_with_no_refusal =
     := path = file_system::get_temp_path () ++# "/init-list.ndjson"
@@ -136,11 +139,22 @@
     (t::refused, t::skipped, listm::rev t::first)
     |> _assert_eq (0i32, 0i32, [])
 
+///- --timeout 1200000
 ///> rust
 :# init_wf_replays_through_the_kernel_with_no_refusal =
     := path = file_system::get_temp_path () ++# "/init-wf.ndjson"
     := t = replayed [] (items_of (export_lines path)) { accepted = 0i32; refused = 0i32; skipped = 0i32; first = [] }
     := report = sm'::obj_to_string (t::accepted, t::refused, t::skipped) ++# "\n" ++# listm::fold (\ acc line => acc ++# line ++# "\n") "" (listm::rev t::first)
     := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-wf-tally.txt") report
+    (t::refused, t::skipped, listm::rev t::first)
+    |> _assert_eq (0i32, 0i32, [])
+
+///- --timeout 3600000
+///> rust
+:# init_data_array_basic_replays_through_the_kernel_with_no_refusal =
+    := path = file_system::get_temp_path () ++# "/init-array.ndjson"
+    := t = replayed [] (items_of (export_lines path)) { accepted = 0i32; refused = 0i32; skipped = 0i32; first = [] }
+    := report = sm'::obj_to_string (t::accepted, t::refused, t::skipped) ++# "\n" ++# listm::fold (\ acc line => acc ++# line ++# "\n") "" (listm::rev t::first)
+    := _ = file_system::write_all_text (file_system::get_temp_path () ++# "/replay-array-tally.txt") report
     (t::refused, t::skipped, listm::rev t::first)
     |> _assert_eq (0i32, 0i32, [])

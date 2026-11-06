@@ -1,7 +1,6 @@
 :# common static =
     :< testing
 
-/// ## common
 := retry_fn' retries fn =
     :~ ^ 루프 retry =
         := is_error, result =
@@ -19,7 +18,6 @@
             루프 (retry + 1)
     루프 1
 
-/// ## fsharp
 := upcast \* t u. (x : t) : u =
     $'!x :> `u '
 
@@ -108,7 +106,6 @@
     |> retry_fn 3i32
     |> _assert_eq' (Some 2i32)
 
-/// ## common
 := lua_math_random (low : i32) (high : i32) : i32 = $'math.random(!low, !high)' : i32
 
 := native_rng_state () : () =
@@ -253,7 +250,6 @@
     |> async::run_synchronously
     *new_disposable_test |> _assert_eq 0
 
-/// ## main
 ///> fsharp
 
 := main () =

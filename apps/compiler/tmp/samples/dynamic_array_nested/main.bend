@@ -286,10 +286,9 @@ def spiral_array_set_a1(+arr: Chan(Array<U32>) & U32, +i: U32, +v: U32) -> IO(Un
   (+c, +n) = arr
   spiral_array_set_checked_a1(c, i, v, U32.is_lt(i, n))
 
-@unsafe
-def spiral_array_new_nested_a0(+length: U32) -> IO((Chan(Array<((Chan(Array<U32>) & U32))>) & U32)):
+def spiral_array_new_nested_a0(length: U32) -> IO((Chan(Array<((Chan(Array<U32>) & U32))>) & U32)):
   do IO<(Chan(Array<((Chan(Array<U32>) & U32))>) & U32)>:
-    +empty : (Chan(Array<U32>) & U32) <- spiral_array_new_a1(0, {0 : U32})
+    empty : (Chan(Array<U32>) & U32) <- spiral_array_new_a1(0, {0 : U32})
     spiral_array_new_a0(length, empty)
 
 @unsafe
@@ -307,17 +306,16 @@ def spiral_main() -> IO(U32):
     spiral_array_set_a0(v1, {1 : U32}, v3)
     +v4 : (Chan(Array<U32>) & U32) <- spiral_array_get_a0(v1, {0 : U32})
     +v5 : (Chan(Array<U32>) & U32) <- spiral_array_get_a0(v1, {1 : U32})
-    +v6 : U32 <- spiral_array_get_a1(v4, {0 : U32})
-    +v7 : U32 <- spiral_array_get_a1(v4, {1 : U32})
-    +v8 : U32 <- IO.pure(U32, U32.add(v6, v7))
-    +v9 : U32 <- spiral_array_get_a1(v5, {0 : U32})
-    +v10 : U32 <- IO.pure(U32, U32.add(v8, v9))
-    +v11 : U32 <- spiral_array_get_a1(v5, {1 : U32})
-    +v12 : U32 <- IO.pure(U32, U32.add(v10, v11))
-    +v13 : U32 <- IO.pure(U32, U32.sub(v12, {18 : U32}))
+    v6 : U32 <- spiral_array_get_a1(v4, {0 : U32})
+    v7 : U32 <- spiral_array_get_a1(v4, {1 : U32})
+    v8 : U32 <- IO.pure(U32, U32.add(v6, v7))
+    v9 : U32 <- spiral_array_get_a1(v5, {0 : U32})
+    v10 : U32 <- IO.pure(U32, U32.add(v8, v9))
+    v11 : U32 <- spiral_array_get_a1(v5, {1 : U32})
+    v12 : U32 <- IO.pure(U32, U32.add(v10, v11))
+    v13 : U32 <- IO.pure(U32, U32.sub(v12, {18 : U32}))
     return v13
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

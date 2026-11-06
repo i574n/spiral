@@ -1,4 +1,4 @@
-///- --package . --timeout 900000
+///- --package . --timeout 1800000
 :< sm'_operators
 :< xsd
 
@@ -14,17 +14,22 @@
 
 := is_alnum (c : string) : bool = sm'::index_of c (alnum ()) >= 0i32
 
+:= snake_piece (c : string) (previous_lower : bool) (previous_upper : bool) (next_lower : bool) : string =
+    ? is_upper c ?> (? previous_lower || (previous_upper && next_lower) ?> "_" |: "") ++# sm'::to_lower c
+    |? is_alnum c ?> c
+    |: "_"
+
+:= lower_at (s : string) (at : i32) : bool = at < sm'::length s && is_lower (xml::code_point_text s at)
+
+:= lower_or_digit (c : string) : bool = is_lower c || (sm'::index_of c "0123456789" >= 0i32)
+
 :~ ^ snake_from (s : string) (pos : i32) (previous_lower : bool) (previous_upper : bool) (acc : string) : string =
     ? pos >= sm'::length s ?> acc
     |:
         := c = xml::code_point_text s pos
         := after = pos + sm'::length c
-        := next_lower = after < sm'::length s && is_lower (xml::code_point_text s after)
-        := piece =
-            ? is_upper c ?> (? previous_lower || (previous_upper && next_lower) ?> "_" |: "") ++# sm'::to_lower c
-            |? is_alnum c ?> c
-            |: "_"
-        snake_from s after (is_lower c || (sm'::index_of c "0123456789" >= 0i32)) (is_upper c) (acc ++# piece)
+        := piece = snake_piece c previous_lower previous_upper (lower_at s after)
+        snake_from s after (lower_or_digit c) (is_upper c) (acc ++# piece)
 
 := type_name (xsd_name : string) : string = "x_" ++# snake_from xsd_name 0i32 !- !- ""
 
@@ -77,15 +82,16 @@
 := capitalized (s : string) : string =
     ? sm'::length s > 0i32 && is_upper (xml::code_point_text s 0i32) ?> s |: "X" ++# s
 
+:= after_last_slash (value : string) (length : i32) : string =
+    := trimmed = ? sm'::ends_with "/" value ?> sm'::substring 0i32 (length - 1i32) value |: value
+    := trimmed_length : i32 = sm'::length trimmed
+    := slash = sm'::last_index_of "/" trimmed
+    sm'::substring (slash + 1i32) (trimmed_length - slash - 1i32) trimmed
+
 := uri_tail (value : string) : string =
     := length : i32 = sm'::length value
     := hash = sm'::last_index_of "#" value
-    ? hash >= 0i32 ?> sm'::substring (hash + 1i32) (length - hash - 1i32) value
-    |:
-        := trimmed = ? sm'::ends_with "/" value ?> sm'::substring 0i32 (length - 1i32) value |: value
-        := trimmed_length : i32 = sm'::length trimmed
-        := slash = sm'::last_index_of "/" trimmed
-        sm'::substring (slash + 1i32) (trimmed_length - slash - 1i32) trimmed
+    ? hash >= 0i32 ?> sm'::substring (hash + 1i32) (length - hash - 1i32) value |: after_last_slash value length
 
 := case_value (value : string) : string = ? sm'::contains "://" value ?> uri_tail value |: value
 
@@ -149,14 +155,17 @@
     | x :: rest => ? count <= 0i32 ?> [] |: x :: take_items (count - 1i32) rest
     | [] => []
 
+:= last_variant_line (index : i32) (last_case : string) : string =
+    (? index = 0i32 ?> "    " |: "    else ") ++# last_case ++# "\n"
+
+:= variant_line (index : i32) (variant_case : string) : string =
+    := keyword = ? index = 0i32 ?> "    if" |: "    elif"
+    keyword ++# " index = " ++# int_text index ++# "i32 then " ++# variant_case ++# "\n"
+
 :~ ^ variant_arms (pairs : list (string * string)) (count : i32) (index : i32) (acc : string) : string =
     ?= pairs ?|
-    | (_, last_case) :: [] => acc ++# (? index = 0i32 ?> "    " |: "    else ") ++# last_case ++# "\n"
-    | (_, variant_case) :: rest =>
-        := keyword = ? index = 0i32 ?> "    if" |: "    elif"
-        variant_arms rest count
-            (index + 1i32)
-            (acc ++# keyword ++# " index = " ++# int_text index ++# "i32 then " ++# variant_case ++# "\n")
+    | (_, last_case) :: [] => acc ++# last_variant_line index last_case
+    | (_, variant_case) :: rest => variant_arms rest count (index + 1i32) (acc ++# variant_line index variant_case)
     | [] => acc
 
 := text_instance (ty : string) : string = "instance to_text " ++# ty ++# " = fun x => " ++# ty ++# "_to_string x\n"
@@ -173,57 +182,57 @@
 
 := normalized_input (normalizer : string) : string = ? normalizer = "" ?> "" |: "    inl s = " ++# normalizer ++# " s\n"
 
+:= union_example_text (ty : string) (pairs : list (string * string)) : string =
+    ?= pairs ?|
+    | _ :: _ =>
+        := variants = take_items 8i32 pairs
+        := count = int_text (count_list variants)
+        "\ninl "
+        ++# ty
+        ++# "_example (k : i32) : "
+        ++# ty
+        ++# " =\n    inl index = ((k % "
+        ++# count
+        ++# "i32) + "
+        ++# count
+        ++# "i32) % "
+        ++# count
+        ++# "i32\n"
+        ++# variant_arms variants (count_list variants) 0i32 ""
+        ++# "\ninl "
+        ++# ty
+        ++# "_example_text (k : i32) : string = "
+        ++# ty
+        ++# "_to_string ("
+        ++# ty
+        ++# "_example k)\n"
+    | [] => ""
+
+:= union_parse_arms (pairs : list (string * string)) : list string =
+    case_lines pairs (\ v case => "    | \"" ++# escape_text v ++# "\" => Some " ++# case) []
+
+:= union_parse_text (ty : string) (normalizer : string) (pairs : list (string * string)) : string =
+    := head = "inl " ++# ty ++# "_of_string (s : string) : option " ++# ty ++# " ="
+    join_lines (head :: normalized_input normalizer ++# "    match s with" :: union_parse_arms pairs) ""
+
+:= union_print_text (ty : string) (pairs : list (string * string)) : string =
+    := print_arms = case_lines pairs (\ v case => "    | " ++# case ++# " => \"" ++# escape_text v ++# "\"") []
+    join_lines ("inl " ++# ty ++# "_to_string (x : " ++# ty ++# ") : string =" :: "    match x with" :: print_arms) ""
+
+:= union_declaration (ty : string) (pairs : list (string * string)) : string =
+    join_lines ("union " ++# ty ++# " =" :: case_lines pairs (\ _ case => "    | " ++# case) []) ""
+
+:= union_rest_text (ty : string) (pairs : list (string * string)) : string =
+    union_print_text ty pairs ++# "\n" ++# text_instance ty ++# union_example_text ty pairs
+
 := union_text (name : string) (values : list string) (normalizer : string) : string =
     := ty = type_name name
     := pairs = value_cases name values [] []
-    := cases = case_lines pairs (\ _ case => "    | " ++# case) []
-    := parse_arms =
-        case_lines pairs (\ v case => "    | \"" ++# escape_text v ++# "\" => Some " ++# case) []
-    := print_arms = case_lines pairs (\ v case => "    | " ++# case ++# " => \"" ++# escape_text v ++# "\"") []
-    := union_part = join_lines ("union " ++# ty ++# " =" :: cases) ""
-    := parse_part =
-        join_lines
-            (
-                "inl " ++# ty ++# "_of_string (s : string) : option " ++# ty ++# " ="
-                :: normalized_input normalizer
-                ++# "    match s with"
-                :: parse_arms
-            )
-            ""
-    := print_part =
-        join_lines
-            ("inl " ++# ty ++# "_to_string (x : " ++# ty ++# ") : string =" :: "    match x with" :: print_arms)
-            ""
-    := example_part =
-        ?= pairs ?|
-        | _ :: _ =>
-            := variants = take_items 8i32 pairs
-            := count = count_list variants
-            := arms = variant_arms variants count 0i32 ""
-            "\ninl "
-            ++# ty
-            ++# "_example (k : i32) : "
-            ++# ty
-            ++# " =\n    inl index = ((k % "
-            ++# int_text count
-            ++# "i32) + "
-            ++# int_text count
-            ++# "i32) % "
-            ++# int_text count
-            ++# "i32\n"
-            ++# arms
-            ++# "\ninl "
-            ++# ty
-            ++# "_example_text (k : i32) : string = "
-            ++# ty
-            ++# "_to_string ("
-            ++# ty
-            ++# "_example k)\n"
-        | [] => ""
-    union_part ++# "\n" ++# parse_part ++# "    | _ => None\n\n" ++# print_part
+    union_declaration ty pairs
     ++# "\n"
-    ++# text_instance ty
-    ++# example_part
+    ++# union_parse_text ty normalizer pairs
+    ++# "    | _ => None\n\n"
+    ++# union_rest_text ty pairs
 
 := union_value_limit () : i32 = 256i32
 
@@ -234,19 +243,11 @@
         example_pairs ty rest ((v, case) :: acc)
     | [] => reverse acc []
 
-:= coded_text (name : string) (table : string) (values : list string) (normalizer : string) : string =
-    := ty = type_name name
-    := examples = example_pairs ty (take_items 8i32 values) []
-    := count = count_list examples
-    "nominal private "
-    ++# ty
-    ++# " = string\n\n"
-    ++# "inl "
-    ++# ty
-    ++# "_table () : string = \""
-    ++# (escape_text table |> sm'::replace "\n" "\\n")
-    ++# "\"\n\n"
-    ++# "inl "
+:= coded_table_text (ty : string) (table : string) : string =
+    "inl " ++# ty ++# "_table () : string = \"" ++# (escape_text table |> sm'::replace "\n" "\\n") ++# "\"\n\n"
+
+:= coded_parse_text (ty : string) (normalizer : string) : string =
+    "inl "
     ++# ty
     ++# "_of_string (s : string) : option "
     ++# ty
@@ -257,7 +258,9 @@
     ++# "_table ()) s then Some ("
     ++# ty
     ++# " s) else None\n\n"
-    ++# "inl "
+
+:= coded_print_text (ty : string) : string =
+    "inl "
     ++# ty
     ++# "_to_string (x : "
     ++# ty
@@ -266,7 +269,9 @@
     ++# " s => s\n"
     ++# text_instance ty
     ++# "\n"
-    ++# "inl "
+
+:= coded_example_head (ty : string) (count : i32) : string =
+    "inl "
     ++# ty
     ++# "_example (k : i32) : "
     ++# ty
@@ -277,14 +282,26 @@
     ++# "i32) % "
     ++# int_text count
     ++# "i32\n"
-    ++# variant_arms examples count 0i32 ""
-    ++# "\ninl "
-    ++# ty
-    ++# "_example_text (k : i32) : string = "
-    ++# ty
-    ++# "_to_string ("
-    ++# ty
-    ++# "_example k)\n"
+
+:= example_text_line (ty : string) : string =
+    "\ninl " ++# ty ++# "_example_text (k : i32) : string = " ++# ty ++# "_to_string (" ++# ty ++# "_example k)\n"
+
+:= coded_example_text (ty : string) (examples : list (string * string)) (count : i32) : string =
+    coded_example_head ty count ++# variant_arms examples count 0i32 "" ++# example_text_line ty
+
+:= coded_examples (ty : string) (values : list string) : string =
+    := examples = example_pairs ty (take_items 8i32 values) []
+    coded_example_text ty examples (count_list examples)
+
+:= coded_head_text (ty : string) : string = "nominal private " ++# ty ++# " = string\n\n"
+
+:= coded_text (name : string) (table : string) (values : list string) (normalizer : string) : string =
+    := ty = type_name name
+    coded_head_text ty
+    ++# coded_table_text ty table
+    ++# coded_parse_text ty normalizer
+    ++# coded_print_text ty
+    ++# coded_examples ty values
 
 :~ ^ join_with (separator : string) (items : list string) (acc : string) : string =
     ?= items ?|
@@ -315,28 +332,30 @@
         range_tests rest function_name "elif" (acc ++# arm)
     | [] => ? acc = "" ?> "            false\n" |: acc ++# "            else false\n"
 
+:= state_arm (row : xsd_regex::dfa_state) (function_name : string) (index : i32) : string =
+    := keyword = ? index = 0i32 ?> "        if" |: "        elif"
+    keyword ++# " state = " ++# int_text index ++# "i32 then\n" ++# range_tests row::moves function_name "if" ""
+
 :~ ^ state_arms (rows : list xsd_regex::dfa_state) (function_name : string) (index : i32) (acc : string) : string =
     ?= rows ?|
-    | row :: rest =>
-        := keyword = ? index = 0i32 ?> "        if" |: "        elif"
-        := arm =
-            keyword ++# " state = " ++# int_text index ++# "i32 then\n" ++# range_tests row::moves function_name "if" ""
-        state_arms rest function_name (index + 1i32) (acc ++# arm)
+    | row :: rest => state_arms rest function_name (index + 1i32) (acc ++# state_arm row function_name index)
     | [] => acc ++# "        else false\n"
+
+:= accepting_acc (row : xsd_regex::dfa_state) (index : i32) (acc : string) : string =
+    ? row::accepting ?> (? acc = "" ?> "" |: acc ++# " || ") ++# "state = " ++# int_text index ++# "i32" |: acc
 
 :~ ^ accepting_states (rows : list xsd_regex::dfa_state) (index : i32) (acc : string) : string =
     ?= rows ?|
-    | row :: rest =>
-        := acc =
-            ? row::accepting ?> (? acc = "" ?> "" |: acc ++# " || ") ++# "state = " ++# int_text index ++# "i32"
-            |: acc
-        accepting_states rest (index + 1i32) acc
+    | row :: rest => accepting_states rest (index + 1i32) (accepting_acc row index acc)
     | [] => ? acc = "" ?> "false" |: acc
 
-:= dfa_function_text (function_name : string) (rows : list xsd_regex::dfa_state) : string =
+:= dfa_function_head (function_name : string) (rows : list xsd_regex::dfa_state) : string =
     "let rec " ++# function_name ++# " (state : i32) (s : string) (i : i32) : bool =\n"
     ++# "    if i >= sm'.length s then " ++# accepting_states rows 0i32 "" ++# "\n"
     ++# "    else\n"
+
+:= dfa_function_text (function_name : string) (rows : list xsd_regex::dfa_state) : string =
+    dfa_function_head function_name rows
     ++# "        inl c = xml.code_point_at s i\n"
     ++# "        inl next = i + xml.code_point_width s i\n"
     ++# state_arms rows function_name 0i32 ""
@@ -391,32 +410,35 @@
 
 :== pattern_code = { functions : list emitted; checks : list string; references : list string }
 
+:= move_head (move : xsd_regex::dfa_move) : string =
+    "xsd_certificate.MovesNext ("
+    ++# int_text (conv move::low : i32)
+    ++# "u32, "
+    ++# int_text (conv move::high : i32)
+    ++# "u32, "
+    ++# int_text move::target
+    ++# "i32, "
+
 :~ ^ moves_certificate_text (moves : list xsd_regex::dfa_move) : string =
     ?= moves ?|
-    | move :: rest =>
-        "xsd_certificate.MovesNext ("
-        ++# int_text (conv move::low : i32)
-        ++# "u32, "
-        ++# int_text (conv move::high : i32)
-        ++# "u32, "
-        ++# int_text move::target
-        ++# "i32, "
-        ++# moves_certificate_text rest
-        ++# ")"
+    | move :: rest => move_head move ++# moves_certificate_text rest ++# ")"
     | [] => "xsd_certificate.MovesEnd"
+
+:= certificate_row_line (row : xsd_regex::dfa_state) : string =
+    := accepting = ? row::accepting ?> "true" |: "false"
+    "    xsd_certificate.CertifiedRow ("
+    ++# accepting
+    ++# ", xsd_certificate.PackedMoves (exists ("
+    ++# moves_certificate_text row::moves
+    ++# ")))\n    :: "
 
 :~ ^ rows_certificate_text (rows : list xsd_regex::dfa_state) (acc : string) : string =
     ?= rows ?|
-    | row :: rest =>
-        := accepting = ? row::accepting ?> "true" |: "false"
-        := line =
-            "    xsd_certificate.CertifiedRow ("
-            ++# accepting
-            ++# ", xsd_certificate.PackedMoves (exists ("
-            ++# moves_certificate_text row::moves
-            ++# ")))\n    :: "
-        rows_certificate_text rest (acc ++# line)
+    | row :: rest => rows_certificate_text rest (acc ++# certificate_row_line row)
     | [] => acc ++# "[]\n"
+
+:= plain_item (name : string) (references : list string) (text : string) : emitted =
+    { name = name; references = references; text = text; value_set = NoValueSet; role = PlainItem }
 
 := certificate_item (name : string) (rows : list xsd_regex::dfa_state) : emitted =
     {
@@ -438,79 +460,86 @@
 := certificates_checked_text (items : list emitted) : string =
     "\ninl certificates_checked () : i32 = 0i32" ++# certificate_calls items "" ++# "\n"
 
+:= dfa_item (name : string) (table : string) (values : list string) (normalizer : string) : emitted =
+    {
+        name = type_name name
+        references = []
+        text = coded_text name table values normalizer
+        value_set = DfaValueSet table
+        role = PlainItem
+    }
+
+:= coded_enumeration (name : string) (values : list string) (normalizer : string) : list emitted =
+    := rows = xsd_regex::dfa_of_values values
+    dfa_item name (xsd_regex::dfa_table_text rows) values normalizer
+    :: certificate_item (type_name name ++# "_table") rows
+    :: []
+
+:= union_enumeration (name : string) (values : list string) (normalizer : string) : list emitted =
+    := distinct = distinct_values values [] []
+    {
+        name = type_name name
+        references = []
+        text = union_text name distinct normalizer
+        value_set = UnionValueSet distinct
+        role = PlainItem
+    }
+    :: []
+
 := emit_enumeration (name : string) (values : list string) (normalizer : string) : list emitted =
-    ? count_list values > union_value_limit () ?>
-        := rows = xsd_regex::dfa_of_values values
-        := table = xsd_regex::dfa_table_text rows
-        {
-            name = type_name name
-            references = []
-            text = coded_text name table values normalizer
-            value_set = DfaValueSet table
-            role = PlainItem
-        }
-        :: certificate_item (type_name name ++# "_table") rows
-        :: []
-    |:
-        := values = distinct_values values [] []
-        {
-            name = type_name name
-            references = []
-            text = union_text name values normalizer
-            value_set = UnionValueSet values
-            role = PlainItem
-        }
-        :: []
+    ? count_list values > union_value_limit ()
+    ?> coded_enumeration name values normalizer
+    |: union_enumeration name values normalizer
+
+:= with_pattern
+    (item : emitted) (certificate : emitted) (check : string) (reference : string) (acc : pattern_code)
+    : pattern_code
+    =
+    {
+        functions = (item :: certificate :: acc::functions)
+        checks = (check :: acc::checks)
+        references = (reference :: acc::references)
+    }
+
+:= coded_check (function_name : string) : string = function_name ++# " 0i32 s 0i32"
+
+:= coded_pattern (p : string) (rows : list xsd_regex::dfa_state) (acc : pattern_code) : pattern_code =
+    := function_name = pattern_function_name p
+    := state_function = plain_item function_name [] (dfa_function_text function_name rows)
+    with_pattern state_function (certificate_item function_name rows) (coded_check function_name) function_name acc
+
+:= dfa_table_function_text (table_name : string) (rows : list xsd_regex::dfa_state) : string =
+    "inl "
+    ++# table_name
+    ++# " () : string = \""
+    ++# (escape_text (xsd_regex::dfa_table_text rows) |> sm'::replace "\n" "\\n")
+    ++# "\"\n"
+
+:= table_check (table_name : string) : string = "xsd_regex.table_matches (" ++# table_name ++# " ()) s"
+
+:= table_pattern (p : string) (rows : list xsd_regex::dfa_state) (acc : pattern_code) : pattern_code =
+    := table_name = pattern_function_name p ++# "_table"
+    := table_function = plain_item table_name [] (dfa_table_function_text table_name rows)
+    with_pattern table_function (certificate_item table_name rows) (table_check table_name) table_name acc
+
+:= regex_pattern (p : string) (acc : pattern_code) : pattern_code =
+    ? xsd_regex::is_xsd_pattern p = !-
+    ?> failwith ("an xs:pattern XSD forbids (lookaround, or a quantifier with nothing to repeat): " ++# p)
+    |: { acc ?| checks = (("xsd_regex.pattern_matches \"" ++# escape_text p ++# "\" s") :: acc::checks) }
+
+:= uncoded_pattern (p : string) (acc : pattern_code) : pattern_code =
+    ?= xsd_regex::dfa_of_pattern p ?|
+    | Some rows => table_pattern p rows acc
+    | None => regex_pattern p acc
+
+:= pattern_check (p : string) (acc : pattern_code) : pattern_code =
+    ?= direct_coded_dfa p ?|
+    | Some rows => coded_pattern p rows acc
+    | None => uncoded_pattern p acc
 
 :~ ^ pattern_checks (facets : list xsd_facet) (acc : pattern_code) : pattern_code =
     ?= facets ?|
-    | Pattern p :: rest =>
-        ?= direct_coded_dfa p ?|
-        | Some rows =>
-            := function_name = pattern_function_name p
-            := state_function =
-                {
-                    name = function_name
-                    references = []
-                    text = dfa_function_text function_name rows
-                    value_set = NoValueSet
-                    role = PlainItem
-                }
-            pattern_checks rest {
-                functions = (state_function :: certificate_item function_name rows :: acc::functions)
-                checks = ((function_name ++# " 0i32 s 0i32") :: acc::checks)
-                references = (function_name :: acc::references)
-            }
-        | None =>
-            ?= xsd_regex::dfa_of_pattern p ?|
-            | Some rows =>
-                := table_name = pattern_function_name p ++# "_table"
-                := table_text =
-                    "inl "
-                    ++# table_name
-                    ++# " () : string = \""
-                    ++# (escape_text (xsd_regex::dfa_table_text rows) |> sm'::replace "\n" "\\n")
-                    ++# "\"\n"
-                := table_function =
-                    {
-                        name = table_name
-                        references = []
-                        text = table_text
-                        value_set = NoValueSet
-                        role = PlainItem
-                    }
-                pattern_checks rest {
-                    functions = (table_function :: certificate_item table_name rows :: acc::functions)
-                    checks = (("xsd_regex.table_matches (" ++# table_name ++# " ()) s") :: acc::checks)
-                    references = (table_name :: acc::references)
-                }
-            | None =>
-                ? xsd_regex::is_xsd_pattern p = !-
-                ?> failwith ("an xs:pattern XSD forbids (lookaround, or a quantifier with nothing to repeat): " ++# p)
-                |:
-                    pattern_checks rest { acc ?|
-                        checks = (("xsd_regex.pattern_matches \"" ++# escape_text p ++# "\" s") :: acc::checks)
-                    }
+    | Pattern p :: rest => pattern_checks rest (pattern_check p acc)
     | _ :: rest => pattern_checks rest acc
     | [] => { acc ?| checks = reverse acc::checks [] }
 
@@ -522,24 +551,152 @@
     | _ :: rest => length_checks rest acc
     | [] => reverse acc []
 
+:= pattern_conjuncts (checks : list string) : list string =
+    ?= checks ?|
+    | [] => []
+    | _ => ("(" ++# join_with " || " checks "" ++# ")") :: []
+
+:= conjunction_text (conjuncts : list string) : string =
+    ?= conjuncts ?|
+    | [] => "true"
+    | _ => join_with " && " conjuncts ""
+
 := validator_text (name : string) (code : pattern_code) (facets : list xsd_facet) : string =
-    := patterns =
-        ?= code::checks ?|
-        | [] => []
-        | checks => ("(" ++# join_with " || " checks "" ++# ")") :: []
-    := conjuncts = listm::append patterns (length_checks facets [])
-    := body =
-        ?= conjuncts ?|
-        | [] => "true"
-        | _ => join_with " && " conjuncts ""
-    "inl " ++# type_name name ++# "_is_valid (s : string) : bool = " ++# body ++# "\n"
+    := conjuncts = listm::append (pattern_conjuncts code::checks) (length_checks facets [])
+    "inl " ++# type_name name ++# "_is_valid (s : string) : bool = " ++# conjunction_text conjuncts ++# "\n"
 
 :== collected = { fields : list string; references : list string; extra : list emitted }
 
 := is_builtin_reference (reference : string) : bool = reference = "" || xsd_resolve::is_builtin reference
 
+:| builtin_kind =
+    | Base64Builtin
+    | UriBuiltin
+    | IdBuiltin
+    | DateTimeBuiltin
+    | DateBuiltin
+    | BooleanBuiltin
+    | PositiveIntegerBuiltin
+    | DecimalBuiltin
+    | IntegerBuiltin
+    | NonNegativeIntegerBuiltin
+    | StringBuiltin
+    | NormalizedStringBuiltin
+    | OtherBuiltin
+
+:= builtin_kinds () : list (string * builtin_kind) =
+    [
+        ("base64Binary", Base64Builtin); ("string", StringBuiltin); ("normalizedString", NormalizedStringBuiltin);
+        ("anyURI", UriBuiltin); ("ID", IdBuiltin); ("dateTime", DateTimeBuiltin); ("date", DateBuiltin);
+        ("boolean", BooleanBuiltin); ("positiveInteger", PositiveIntegerBuiltin); ("decimal", DecimalBuiltin);
+        ("integer", IntegerBuiltin); ("long", IntegerBuiltin); ("int", IntegerBuiltin); ("short", IntegerBuiltin);
+        ("byte", IntegerBuiltin); ("nonNegativeInteger", NonNegativeIntegerBuiltin);
+        ("unsignedInt", NonNegativeIntegerBuiltin); ("unsignedShort", NonNegativeIntegerBuiltin);
+        ("unsignedByte", NonNegativeIntegerBuiltin)
+    ]
+
+:~ ^ builtin_kind_in (local : string) (table : list (string * builtin_kind)) : builtin_kind =
+    ?= table ?|
+    | (name, kind) :: rest => ? name = local ?> kind |: builtin_kind_in local rest
+    | [] => OtherBuiltin
+
+:= builtin_kind_of (reference : string) : builtin_kind = builtin_kind_in (xml::local_name reference) (builtin_kinds ())
+
+:== carrier = { kind : builtin_kind; name : string; value_type : string; parse : string; example : string * string }
+
+:= carriers () : list carrier =
+    [
+        {
+            kind = DecimalBuiltin
+            name = "xsd_decimal"
+            value_type = "decimal.decimal"
+            parse = "decimal.parse"
+            example = ("decimal.of_int 1i64", "1")
+        }
+        { kind = IntegerBuiltin; name = "xsd_integer"; value_type = "i64"; parse = "whole_of"; example = ("1i64", "1") }
+        {
+            kind = NonNegativeIntegerBuiltin
+            name = "xsd_non_negative_integer"
+            value_type = "i64"
+            parse = "whole_at_least 0i64"
+            example = ("1i64", "1")
+        }
+        {
+            kind = PositiveIntegerBuiltin
+            name = "xsd_positive_integer"
+            value_type = "i64"
+            parse = "whole_at_least 1i64"
+            example = ("1i64", "1")
+        }
+        {
+            kind = BooleanBuiltin
+            name = "xsd_boolean"
+            value_type = "bool"
+            parse = "boolean_of"
+            example = ("true", "true")
+        }
+    ]
+
+:~ ^ carrier_in (kind : builtin_kind) (items : list carrier) : option string =
+    ?= items ?|
+    | c :: rest => ? c::kind = kind ?> Some c::name |: carrier_in kind rest
+    | [] => None
+
+:= kind_carrier (kind : builtin_kind) : option string = carrier_in kind (carriers ())
+
+:= builtin_carrier (reference : string) : option string =
+    ? reference = "" || is_builtin_reference reference = !- ?> None |: kind_carrier (builtin_kind_of reference)
+
 := reference_type (type_reference reference) : string =
-    ? is_builtin_reference reference ?> "string" |: type_name (xml::local_name reference)
+    ?= builtin_carrier reference ?|
+    | Some name => name
+    | None => ? is_builtin_reference reference ?> "string" |: type_name (xml::local_name reference)
+
+:= lexical_prelude () : string =
+    "nominal lexical t = { value : t; text : string }\n\n"
+    ++# "instance to_text lexical t = fun x => x.text\n\n"
+    ++# "inl lexical_of forall t. (text : string) (value : option t) : option (lexical t) =\n"
+    ++# "    optionm.map (fun v => lexical { value = v; text = text }) value\n\n"
+
+:= whole_number_prelude () : string =
+    "inl whole_of (text : string) : option i64 =\n"
+    ++# "    if sm'.index_of \".\" text >= 0i32 then None\n"
+    ++# "    else optionm.map (fun (d : decimal.decimal) => d.units) (decimal.parse text)\n\n"
+    ++# "inl whole_at_least (least : i64) (text : string) : option i64 =\n"
+    ++# "    match whole_of text with\n"
+    ++# "    | Some n => if n >= least then Some n else None\n"
+    ++# "    | None => None\n\n"
+
+:= boolean_prelude () : string =
+    "inl boolean_of (text : string) : option bool =\n"
+    ++# "    match xml.collapsed_space text with\n"
+    ++# "    | \"true\" => Some true\n"
+    ++# "    | \"1\" => Some true\n"
+    ++# "    | \"false\" => Some false\n"
+    ++# "    | \"0\" => Some false\n"
+    ++# "    | _ => None\n\n"
+
+:= carrier_type_text (c : carrier) : string =
+    "type " ++# c::name ++# " = lexical " ++# c::value_type ++# "\n\n"
+    ++# "inl " ++# c::name ++# "_of_string (s : string) : option " ++# c::name
+    ++# " = lexical_of s (" ++# c::parse ++# " s)\n\n"
+
+:= carrier_example_text (c : carrier) : string =
+    := value, text = c::example
+    "inl " ++# c::name ++# "_example (_ : i32) : " ++# c::name
+    ++# " = lexical { value = " ++# value ++# "; text = \"" ++# text ++# "\" }\n\n"
+    ++# "inl " ++# c::name ++# "_example_text (_ : i32) : string = \"" ++# text ++# "\"\n\n"
+
+:~ ^ used_carrier_texts (body : string) (items : list carrier) (acc : string) : string =
+    ?= items ?|
+    | c :: rest =>
+        := text = ? sm'::contains c::name body ?> carrier_type_text c ++# carrier_example_text c |: ""
+        used_carrier_texts body rest (acc ++# text)
+    | [] => acc
+
+:= carrier_prelude (body : string) : string =
+    := used = used_carrier_texts body (carriers ()) ""
+    ? used = "" ?> "" |: lexical_prelude () ++# whole_number_prelude () ++# boolean_prelude () ++# used
 
 := reference_dependency (type_reference reference) : list string =
     ? is_builtin_reference reference ?> [] |: type_name (xml::local_name reference) :: []
@@ -620,16 +777,22 @@
 
 :~ ^ particle_mentions \* form. (names : list string) (owner : string) (particle : xsd particle form) : bool =
     ?= particle ?|
-    | Element e =>
-        ?= e::inline, e::type_ref ?|
-        | Some inner, _ =>
-            := raw = inner_owner owner (tag_text e::name)
-            has_name (type_name raw) names || type_mentions names raw inner
-        | None, Some reference => has_name (reference_type reference) names
-        | None, None => !-
+    | Element e => element_mentions names owner e::name e::inline e::type_ref
     | Sequence s => any_particle_mentions names owner s::items
     | Choice c => any_particle_mentions names (choice_owner owner c::items) c::items
     | _ => !-
+
+:& :~ element_mentions \* form.
+    (names : list string) (owner : string) (name : tag_name) (inline : option (xsd type_def form))
+    (type_ref : option (type_reference form))
+    : bool
+    =
+    ?= inline, type_ref ?|
+    | Some inner, _ =>
+        := raw = inner_owner owner (tag_text name)
+        has_name (type_name raw) names || type_mentions names raw inner
+    | None, Some reference => has_name (reference_type reference) names
+    | None, None => !-
 
 :& :~ any_particle_mentions \* form. (names : list string) (owner : string) (items : list (xsd particle form)) : bool =
     ?= items ?|
@@ -674,17 +837,21 @@
     | Derived d => inline_candidates owner d::content acc
     | _ => acc
 
+:= definition_candidates \* form.
+    (name : definition_name form) (definition : xsd type_def form) (content : xsd particle form)
+    (acc : list (string * xsd type_def form))
+    : list (string * xsd type_def form)
+    =
+    := raw = definition_text name
+    inline_candidates raw content ((raw, definition) :: acc)
+
 :~ ^ named_candidates \* form.
     (definitions : list (xsd type_def form)) (acc : list (string * xsd type_def form))
     : list (string * xsd type_def form)
     =
     ?= definitions ?|
-    | (Complex c) :: rest =>
-        := raw = definition_text c::name
-        named_candidates rest (inline_candidates raw c::content ((raw, Complex c) :: acc))
-    | (Derived d) :: rest =>
-        := raw = definition_text d::name
-        named_candidates rest (inline_candidates raw d::content ((raw, Derived d) :: acc))
+    | (Complex c) :: rest => named_candidates rest (definition_candidates c::name (Complex c) c::content acc)
+    | (Derived d) :: rest => named_candidates rest (definition_candidates d::name (Derived d) d::content acc)
     | _ :: rest => named_candidates rest acc
     | [] => acc
 
@@ -716,7 +883,7 @@
 
 := field_line (name : string) (t : string) : string = "        " ++# field_name name ++# " : " ++# t
 
-:= staging_prelude () : string =
+:= staging_types_text () : string =
     "nominal unsigned = ()\nnominal signed = ()\n\n"
     ++# "union staged s a =\n"
     ++# "    | Pending :: forall a. string -> staged unsigned a\n"
@@ -727,11 +894,21 @@
     ++# "prototype stage_of s : () -> stage s\n"
     ++# "instance stage_of unsigned = fun () => Unsigned\n"
     ++# "instance stage_of signed = fun () => Signed\n\n"
-    ++# "inl staged_of forall s a. (witness : stage s) (read : () -> a) : staged s a =\n"
+
+:= staged_read_text () : string =
+    "inl staged_read forall s a.\n"
+    ++# "    (witness : stage s) (read : list xml_codec.decode_error -> option a * list xml_codec.decode_error)\n"
+    ++# "    (errors : list xml_codec.decode_error)\n"
+    ++# "    : option (staged s a) * list xml_codec.decode_error\n"
+    ++# "    =\n"
     ++# "    match witness with\n"
-    ++# "    | Unsigned => Pending \"unsigned\"\n"
-    ++# "    | Signed => Present (read ())\n\n"
-    ++# "inl signed_value forall a. (x : staged signed a) : a =\n"
+    ++# "    | Unsigned => Some (Pending \"unsigned\"), errors\n"
+    ++# "    | Signed =>\n"
+    ++# "        inl value, errors = read errors\n"
+    ++# "        optionm.map (fun v => Present v) value, errors\n\n"
+
+:= staged_access_text () : string =
+    "inl signed_value forall a. (x : staged signed a) : a =\n"
     ++# "    match x with\n"
     ++# "    | Present v => v\n\n"
     ++# "inl staged_list forall s a b. (f : a -> b) (x : staged s a) : list b =\n"
@@ -739,40 +916,53 @@
     ++# "    | Pending _ => []\n"
     ++# "    | Present v => [f v]\n\n"
 
+:= staging_prelude () : string = staging_types_text () ++# staged_read_text () ++# staged_access_text ()
+
+:= staged_field_types (t : string) (text : string) : string =
+    sm'::replace (" : " ++# t ++# "\n") (" : " ++# t ++# " s\n") text
+    |> sm'::replace ("option (" ++# t ++# ")") ("option (" ++# t ++# " s)")
+    |> sm'::replace ("list (" ++# t ++# ")") ("list (" ++# t ++# " s)")
+
 :~ ^ staged_references (staged : list string) (text : string) : string =
     ?= staged ?|
-    | t :: rest =>
-        := text = sm'::replace (" : " ++# t ++# "\n") (" : " ++# t ++# " s\n") text
-        := text = sm'::replace ("option (" ++# t ++# ")") ("option (" ++# t ++# " s)") text
-        staged_references rest (sm'::replace ("list (" ++# t ++# ")") ("list (" ++# t ++# " s)") text)
+    | t :: rest => staged_references rest (staged_field_types t text)
     | [] => text
+
+:= first_line (tail : string) : string =
+    := stop = sm'::index_of "\n" tail
+    sm'::substring 0i32 (? stop < 0i32 ?> sm'::length tail |: stop) tail
 
 := line_after (marker : string) (text : string) : option string =
     := at = sm'::index_of marker text
     ? at < 0i32 ?> None
     |:
         := from = at + sm'::length marker
-        := tail = sm'::substring from (sm'::length text - from) text
-        := stop = sm'::index_of "\n" tail
-        Some (sm'::substring 0i32 (? stop < 0i32 ?> sm'::length tail |: stop) tail)
+        Some (first_line (sm'::substring from (sm'::length text - from) text))
 
 := staged_type (t : string) : string = "staged s " ++# (? sm'::contains " " t ?> "(" ++# t ++# ")" |: t)
 
+:= staged_line_replaced (line : string) (t : string) (text : string) : string =
+    sm'::replace (line ++# t ++# "\n") (line ++# staged_type t ++# "\n") text
+
+:= staged_signature (name : string) (text : string) : string =
+    := line = "\n" ++# field_line name ""
+    ?= line_after line text ?|
+    | Some t ?& sm'::starts_with "staged " t = !- => staged_line_replaced line t text
+    | _ => text
+
 :~ ^ staged_signatures (signatures : list string) (text : string) : string =
     ?= signatures ?|
-    | name :: rest =>
-        := line = "\n" ++# field_line name ""
-        ?= line_after line text ?|
-        | Some t ?& sm'::starts_with "staged " t = !- =>
-            staged_signatures rest (sm'::replace (line ++# t ++# "\n") (line ++# staged_type t ++# "\n") text)
-        | _ => staged_signatures rest text
+    | name :: rest => staged_signatures rest (staged_signature name text)
     | [] => text
+
+:= staged_declaration_text (name : string) (text : string) : string =
+    sm'::replace ("type " ++# name ++# " =") ("type " ++# name ++# " s =") text
+    |> sm'::replace ("nominal " ++# name ++# " =") ("nominal " ++# name ++# " s =")
 
 := staged_item (staged : list string) (signatures : list string) (item : emitted) : emitted =
     ? has_name item::name staged = !- ?> item
     |:
-        := aliased = sm'::replace ("type " ++# item::name ++# " =") ("type " ++# item::name ++# " s =") item::text
-        := text = sm'::replace ("nominal " ++# item::name ++# " =") ("nominal " ++# item::name ++# " s =") aliased
+        := text = staged_declaration_text item::name item::text
         { item ?| text = staged_signatures signatures (staged_references staged text) }
 
 := staged_items (staged : list string) (signatures : list string) (items : list emitted) : list emitted =
@@ -839,21 +1029,25 @@
         |: example_search facets r (stars + 1i32)
 
 := builtin_example (reference : string) : string =
-    := local = xml::local_name reference
-    ? local = "base64Binary" ?> "AAAA"
-    |? local = "anyURI" ?> "http://example.com"
-    |? local = "ID" ?> "ID1"
-    |? local = "dateTime" ?> "2026-01-01T00:00:00"
-    |? local = "date" ?> "2026-01-01"
-    |? local = "boolean" ?> "true"
-    |: "1"
+    ?= builtin_kind_of reference ?|
+    | Base64Builtin => "AAAA"
+    | UriBuiltin => "http://example.com"
+    | IdBuiltin => "ID1"
+    | DateTimeBuiltin => "2026-01-01T00:00:00"
+    | DateBuiltin => "2026-01-01"
+    | BooleanBuiltin => "true"
+    | PositiveIntegerBuiltin | DecimalBuiltin | IntegerBuiltin | NonNegativeIntegerBuiltin => "1"
+    | StringBuiltin | NormalizedStringBuiltin | OtherBuiltin => "1"
 
 := is_calendar_builtin (base : string) : bool =
-    := local = xml::local_name base
-    base <> "" && is_builtin_reference base && (local = "date" || local = "dateTime")
+    ?= builtin_kind_of base ?|
+    | DateBuiltin | DateTimeBuiltin => base <> "" && is_builtin_reference base
+    | _ => !-
 
-:= prefers_builtin_example (base : string) : bool =
-    is_calendar_builtin base || (is_builtin_reference base && xml::local_name base = "positiveInteger")
+:= is_positive_integer_builtin (base : string) : bool =
+    is_builtin_reference base && builtin_kind_of base = PositiveIntegerBuiltin
+
+:= prefers_builtin_example (base : string) : bool = is_calendar_builtin base || is_positive_integer_builtin base
 
 :~ ^ zero_padded_one (p : string) (left : i32) (text : string) : option string =
     ? left = 0i32 ?> None
@@ -861,28 +1055,38 @@
     |: zero_padded_one p (left - 1i32) ("0" ++# text)
 
 := positive_example (base : string) (p : string) (facets : list xsd_facet) : option string =
-    ? is_builtin_reference base && xml::local_name base = "positiveInteger" && has_length_facet facets = !-
+    ? is_positive_integer_builtin base && has_length_facet facets = !-
     ?> zero_padded_one p 18i32 "1"
     |: None
 
+:= searched_example (p : string) (facets : list xsd_facet) : string =
+    ?= xsd_regex::compile_pattern p ?|
+    | Some r => example_search facets r 0i32
+    | None => "1"
+
+:= positive_or_searched (base : string) (p : string) (facets : list xsd_facet) : string =
+    ?= positive_example base p facets ?|
+    | Some text => text
+    | None => searched_example p facets
+
+:= patterned_example (base : string) (p : string) (facets : list xsd_facet) : string =
+    := calendar = builtin_example base
+    ? prefers_builtin_example base && xsd_regex::pattern_matches p calendar && has_length_facet facets = !-
+    ?> calendar
+    |: positive_or_searched base p facets
+
+:= builtin_or_repeated (base : string) (facets : list xsd_facet) : string =
+    := text = builtin_example base
+    ? xml::code_point_count text >= min_length facets ?> text |: xsd_regex::repeated "1" (min_length facets)
+
+:= unpatterned_example (base : string) (facets : list xsd_facet) : string =
+    ? is_builtin_reference base ?> builtin_or_repeated base facets
+    |: xsd_regex::repeated "1" (? min_length facets < 1i32 ?> 1i32 |: min_length facets)
+
 := simple_example (base : string) (facets : list xsd_facet) : string =
     ?= first_pattern facets ?|
-    | Some p =>
-        := calendar = builtin_example base
-        ? prefers_builtin_example base && xsd_regex::pattern_matches p calendar && has_length_facet facets = !-
-        ?> calendar
-        |:
-            ?= positive_example base p facets ?|
-            | Some text => text
-            | None =>
-                ?= xsd_regex::compile_pattern p ?|
-                | Some r => example_search facets r 0i32
-                | None => "1"
-    | None =>
-        ? is_builtin_reference base ?>
-            := text = builtin_example base
-            ? xml::code_point_count text >= min_length facets ?> text |: xsd_regex::repeated "1" (min_length facets)
-        |: xsd_regex::repeated "1" (? min_length facets < 1i32 ?> 1i32 |: min_length facets)
+    | Some p => patterned_example base p facets
+    | None => unpatterned_example base facets
 
 := is_constrained (facets : list xsd_facet) : bool =
     (?= first_pattern facets ?| Some _ => !+ | None => !-) || has_length_facet facets
@@ -894,10 +1098,12 @@
     | [] => None
 
 := builtin_white_space (base : string) : string =
-    := local = xml::local_name base
-    ? base = "" || is_builtin_reference base = !- || local = "string" ?> "preserve"
-    |? local = "normalizedString" ?> "replace"
-    |: "collapse"
+    ? base = "" || is_builtin_reference base = !- ?> "preserve"
+    |:
+        ?= builtin_kind_of base ?|
+        | StringBuiltin => "preserve"
+        | NormalizedStringBuiltin => "replace"
+        | _ => "collapse"
 
 := white_space_normalizer (base : string) (facets : list xsd_facet) : string =
     := mode = ?= explicit_white_space facets ?| Some mode => mode | None => builtin_white_space base
@@ -938,49 +1144,97 @@
     ++# "\n"
     ++# example_text
 
+:= occurs_once () : occurs = { min = 1i32; max = Bounded 1i32 }
+
+:= group_identity \* form. (owner : string) (items : list (xsd particle form)) : string * string =
+    := first = first_element_name items
+    owner ++# "_group_" ++# first, field_name ("group_" ++# xml::local_name first)
+
+:= collected_with (field : string) (references : list string) (extra : list emitted) (acc : collected) : collected =
+    {
+        fields = field :: acc::fields
+        references = listm::append references acc::references
+        extra = listm::append extra acc::extra
+    }
+
+:= inherited_example_text \* form. (ty : string) (base : type_reference form) : string =
+    "inl " ++# ty ++# "_example (k : i32) : string = " ++# reference_type base ++# "_example_text k\n"
+
+:= literal_example_text \* form. (ty : string) (base : type_reference form) (facets : list xsd_facet) : string =
+    "inl "
+    ++# ty
+    ++# "_example (_ : i32) : string = \""
+    ++# escape_text (simple_example (reference_text base) facets)
+    ++# "\"\n"
+
+:= simple_text_example \* form. (ty : string) (inherits : bool) (base : type_reference form) (facets : list xsd_facet)
+    : string
+    =
+    ? inherits ?> inherited_example_text ty base |: literal_example_text ty base facets
+
+:= inherits_base \* form. (base : type_reference form) (facets : list xsd_facet) : bool =
+    is_builtin_reference (reference_text base) = !-
+    && (?= first_pattern facets ?| Some _ => !- | None => !+)
+    && has_length_facet facets = !-
+
+:= simple_type_text \* form.
+    (ty : string) (name : string) (base : type_reference form) (facets : list xsd_facet) (code : pattern_code)
+    (inherits : bool)
+    : string
+    =
+    ? is_constrained facets
+    ?>
+        := normalizer = white_space_normalizer (reference_text base) facets
+        validated_text ty name code facets normalizer (simple_example (reference_text base) facets)
+    |:
+        := example_text = "\ninl " ++# ty ++# "_example_text (k : i32) : string = " ++# ty ++# "_example k\n"
+        "type "
+        ++# ty
+        ++# " = string\n\n"
+        ++# validator_text name code facets
+        ++# "\n"
+        ++# simple_text_example ty inherits base facets
+        ++# example_text
+
+:= simple_references \* form. (inherits : bool) (base : type_reference form) (code : pattern_code) : list string =
+    listm::append (? inherits ?> reference_dependency base |: []) code::references
+
+:= facet_code (facets : list xsd_facet) : pattern_code =
+    pattern_checks facets { functions = []; checks = []; references = [] }
+
+:= emit_simple_text \* form. (name : string) (base : type_reference form) (facets : list xsd_facet) : list emitted =
+    := ty = type_name name
+    := inherits = inherits_base base facets
+    := code = facet_code facets
+    plain_item ty (simple_references inherits base code) (simple_type_text ty name base facets code inherits)
+    :: code::functions
+
+:= sequence_of \* form. (o : occurs) (items : list (xsd particle form)) : xsd particle form =
+    Sequence { occurs = o; items = items }
+
+:= once_sequence \* form. (items : list (xsd particle form)) : xsd particle form =
+    Sequence { occurs = { min = 1i32; max = Bounded 1i32 }; items = items }
+
+:= repeated_group_field (first : string) (o : occurs) (group_name : string) : string =
+    field_line ("group_" ++# xml::local_name first) (with_occurs o (type_name group_name))
+
+:= choice_field_line (first : string) (o : occurs) (choice_name : string) : string =
+    "        " ++# choice_field_of first ++# " : " ++# with_occurs o (type_name choice_name)
+
+:= group_case_field (choice_name : string) (first : string) (group_name : string) : string =
+    "    | " ++# case_name choice_name ("group_" ++# first) ++# " : " ++# type_name group_name
+
+:= choice_union_text (ty : string) (fields : list string) : string =
+    join_lines ("union " ++# ty ++# " =" :: reverse fields []) ""
+
+:= referenced_field \* form. (name : string) (o : occurs) (type_ref : option (type_reference form)) : string =
+    field_line name (with_occurs o (reference_type_of type_ref))
+
 :~ ^ emit_named_type \* form. (name : string) (item : xsd type_def form) : list emitted =
     ?= item ?|
     | Simple s =>
         ?= enumeration_values s::facets [] ?|
-        | [] =>
-            := ty = type_name name
-            := inherits =
-                is_builtin_reference (reference_text s::base) = !-
-                && (?= first_pattern s::facets ?| Some _ => !- | None => !+)
-                && has_length_facet s::facets = !-
-            := example =
-                ? inherits
-                ?> "inl " ++# ty ++# "_example (k : i32) : string = " ++# reference_type s::base ++# "_example_text k\n"
-                |:
-                    "inl "
-                    ++# ty
-                    ++# "_example (_ : i32) : string = \""
-                    ++# escape_text (simple_example (reference_text s::base) s::facets)
-                    ++# "\"\n"
-            := example_text = "\ninl " ++# ty ++# "_example_text (k : i32) : string = " ++# ty ++# "_example k\n"
-            := code = pattern_checks s::facets { functions = []; checks = []; references = [] }
-            := references = listm::append (? inherits ?> reference_dependency s::base |: []) code::references
-            {
-                name = ty
-                references = references
-                text =
-                    ? is_constrained s::facets
-                    ?>
-                        := normalizer = white_space_normalizer (reference_text s::base) s::facets
-                        := example = simple_example (reference_text s::base) s::facets
-                        validated_text ty name code s::facets normalizer example
-                    |:
-                        "type "
-                        ++# ty
-                        ++# " = string\n\n"
-                        ++# validator_text name code s::facets
-                        ++# "\n"
-                        ++# example
-                        ++# example_text
-                value_set = NoValueSet
-                role = PlainItem
-            }
-            :: code::functions
+        | [] => emit_simple_text name s::base s::facets
         | values => emit_enumeration name values (white_space_normalizer (reference_text s::base) s::facets)
     | Complex c => emit_record name c::content c::attributes [] []
     | Derived d =>
@@ -1007,56 +1261,51 @@
         ?= fields ?|
         | [] => "type " ++# ty ++# " = ()\n"
         | _ => "nominal " ++# ty ++# " =\n    {\n" ++# join_lines fields "" ++# "    }\n"
-    {
-        name = ty
-        references = listm::append prefix_references gathered::references
-        text = text
-        value_set = NoValueSet
-        role = PlainItem
-    }
+    plain_item ty (listm::append prefix_references gathered::references) text
     :: gathered::extra
 
 :& :~ collect_content \* form. (owner : string) (item : xsd particle form) (acc : collected) : collected =
     ?= item ?|
-    | Sequence s ?& is_repeated s::occurs =>
-        := first = first_element_name s::items
-        := group_name = owner ++# "_group_" ++# first
-        := once = { min = 1i32; max = Bounded 1i32 }
-        { fields = field_line ("group_" ++# xml::local_name first) (with_occurs s::occurs (type_name group_name)) :: acc::fields; references = type_name group_name :: acc::references; extra = listm::append (emit_named_group group_name (Sequence { occurs = once; items = s::items })) acc::extra } | Sequence s => collect_items owner s::items acc
-    | Choice c =>
-        := choice_name = owner ++# "_choice_" ++# first_element_name c::items
-        := union_emitted = emit_choice choice_name c::items
-        := field = choice_field_of (first_element_name c::items)
-        {
-            fields =
-                "        " ++# field ++# " : " ++# with_occurs c::occurs (type_name choice_name)
-                :: acc::fields
-            references = type_name choice_name :: acc::references
-            extra = listm::append union_emitted acc::extra
-        }
-    | Element e =>
-        := name = tag_text e::name
-        ?= e::inline ?|
-        | Some inner =>
-            := inner_name = owner ++# "_" ++# name
-            {
-                fields = field_line name (with_occurs e::occurs (type_name inner_name)) :: acc::fields
-                references = type_name inner_name :: acc::references
-                extra = listm::append (emit_named_type inner_name inner) acc::extra
-            }
-        | None =>
-            {
-                fields = field_line name (with_occurs e::occurs (reference_type_of e::type_ref)) :: acc::fields
-                references = listm::append (reference_dependency_of e::type_ref) acc::references
-                extra = acc::extra
-            }
-    | AnyContent () =>
-        {
-            fields = field_line "any" "any_content" :: acc::fields
-            references = acc::references
-            extra = acc::extra
-        }
+    | Sequence s ?& is_repeated s::occurs => collect_repeated_group owner s::occurs s::items acc
+    | Sequence s => collect_items owner s::items acc
+    | Choice c => collect_choice owner c::occurs c::items acc
+    | Element e => collect_element owner (tag_text e::name) e::occurs e::type_ref e::inline acc
+    | AnyContent () => collected_with (field_line "any" "any_content") [] [] acc
     | Empty () => acc
+
+:& :~ collect_repeated_group \* form.
+    (owner : string) (o : occurs) (items : list (xsd particle form)) (acc : collected)
+    : collected
+    =
+    := first = first_element_name items
+    := group_name = owner ++# "_group_" ++# first
+    := group = emit_named_group group_name (once_sequence items)
+    collected_with (repeated_group_field first o group_name) [ type_name group_name ] group acc
+
+:& :~ collect_choice \* form.
+    (owner : string) (o : occurs) (items : list (xsd particle form)) (acc : collected)
+    : collected
+    =
+    := choice_name = owner ++# "_choice_" ++# first_element_name items
+    := field = choice_field_line (first_element_name items) o choice_name
+    collected_with field [ type_name choice_name ] (emit_choice choice_name items) acc
+
+:& :~ collect_element \* form.
+    (owner : string) (name : string) (o : occurs) (type_ref : option (type_reference form))
+    (inner_type : option (xsd type_def form)) (acc : collected)
+    : collected
+    =
+    ?= inner_type ?|
+    | Some inner => collect_inline_element owner name o inner acc
+    | None => collected_with (referenced_field name o type_ref) (reference_dependency_of type_ref) [] acc
+
+:& :~ collect_inline_element \* form.
+    (owner : string) (name : string) (o : occurs) (inner : xsd type_def form) (acc : collected)
+    : collected
+    =
+    := inner_name = owner ++# "_" ++# name
+    := field = field_line name (with_occurs o (type_name inner_name))
+    collected_with field [ type_name inner_name ] (emit_named_type inner_name inner) acc
 
 :& :~ collect_items \* form. (owner : string) (items : list (xsd particle form)) (acc : collected) : collected =
     ?= items ?|
@@ -1066,44 +1315,48 @@
 :& :~ emit_choice \* form. (choice_name : string) (items : list (xsd particle form)) : list emitted =
     := (cases : collected) = choice_cases choice_name items { fields = []; references = []; extra = [] }
     := ty = type_name choice_name
-    := text = join_lines ("union " ++# ty ++# " =" :: reverse cases::fields []) ""
-    { name = ty; references = cases::references; text = text; value_set = NoValueSet; role = PlainItem } :: cases::extra
+    plain_item ty cases::references (choice_union_text ty cases::fields) :: cases::extra
 
 :& :~ choice_cases \* form. (choice_name : string) (items : list (xsd particle form)) (acc : collected) : collected =
     ?= items ?|
-    | (Element e) :: rest =>
-        := name = tag_text e::name
-        := case_label = "    | " ++# case_name choice_name name ++# " : "
-        ?= e::inline ?|
-        | Some inner =>
-            := inner_name = choice_name ++# "_" ++# name
-            choice_cases choice_name rest
-                {
-                    fields = case_label ++# with_occurs e::occurs (type_name inner_name) :: acc::fields
-                    references = type_name inner_name :: acc::references
-                    extra = listm::append (emit_named_type inner_name inner) acc::extra
-                }
-        | None =>
-            choice_cases choice_name rest
-                {
-                    fields = case_label ++# with_occurs e::occurs (reference_type_of e::type_ref) :: acc::fields
-                    references = listm::append (reference_dependency_of e::type_ref) acc::references
-                    extra = acc::extra
-                }
-    | (Sequence s) :: rest =>
-        := group_name = choice_name ++# "_group_" ++# first_element_name s::items
-        choice_cases choice_name rest {
-            fields =
-                "    | "
-                ++# case_name choice_name ("group_" ++# first_element_name s::items)
-                ++# " : "
-                ++# type_name group_name
-                :: acc::fields
-            references = type_name group_name :: acc::references
-            extra = listm::append (emit_named_group group_name (Sequence s)) acc::extra
-        }
-    | _ :: rest => choice_cases choice_name rest acc
+    | item :: rest => choice_cases choice_name rest (choice_case choice_name item acc)
     | [] => acc
+
+:& :~ choice_case \* form. (choice_name : string) (item : xsd particle form) (acc : collected) : collected =
+    ?= item ?|
+    | Element e => element_case choice_name (tag_text e::name) e::occurs e::type_ref e::inline acc
+    | Sequence s => group_case choice_name s::occurs s::items acc
+    | _ => acc
+
+:& :~ element_case \* form.
+    (choice_name : string) (name : string) (o : occurs) (type_ref : option (type_reference form))
+    (inline : option (xsd type_def form)) (acc : collected)
+    : collected
+    =
+    := case_label = "    | " ++# case_name choice_name name ++# " : "
+    ?= inline ?|
+    | Some inner => inline_case choice_name name o inner case_label acc
+    | None =>
+        := field = case_label ++# with_occurs o (reference_type_of type_ref)
+        collected_with field (reference_dependency_of type_ref) [] acc
+
+:& :~ inline_case \* form.
+    (choice_name : string) (name : string) (o : occurs) (inner : xsd type_def form) (case_label : string)
+    (acc : collected)
+    : collected
+    =
+    := inner_name = choice_name ++# "_" ++# name
+    := field = case_label ++# with_occurs o (type_name inner_name)
+    collected_with field [ type_name inner_name ] (emit_named_type inner_name inner) acc
+
+:& :~ group_case \* form.
+    (choice_name : string) (o : occurs) (items : list (xsd particle form)) (acc : collected)
+    : collected
+    =
+    := first = first_element_name items
+    := group_name = choice_name ++# "_group_" ++# first
+    := group = emit_named_group group_name (sequence_of o items)
+    collected_with (group_case_field choice_name first group_name) [ type_name group_name ] group acc
 
 :& :~ collect_attributes \* form.
     (owner : string) (attributes : list (xsd attribute_decl form)) (acc : collected)
@@ -1187,14 +1440,13 @@
     ? fields = "" ?> ""
     |: "    " ++# sm'::replace "\n" "\n    " (sm'::substring 0i32 (sm'::length fields - 1i32) fields) ++# "\n"
 
-:= wrapped_record (head : string) (item : emitted) : string =
+:= record_fields_of (item : emitted) : string =
     := opening = "nominal " ++# item::name ++# " =\n    {\n"
     := closing = "    }\n"
-    := fields =
-        sm'::substring
-            (sm'::length opening)
-            (sm'::length item::text - sm'::length opening - sm'::length closing)
-            item::text
+    sm'::substring (sm'::length opening) (sm'::length item::text - sm'::length opening - sm'::length closing) item::text
+
+:= wrapped_record (head : string) (item : emitted) : string =
+    := fields = record_fields_of item
     head
     ++# item::name
     ++# " =\n    | Record_"
@@ -1203,6 +1455,12 @@
     ++# reindented_fields fields
     ++# "        }\n"
 
+:= is_nominal_record (item : emitted) : bool = sm'::starts_with ("nominal " ++# item::name ++# " =\n    {\n") item::text
+
+:= is_union_item (item : emitted) : bool = sm'::starts_with ("union " ++# item::name ++# " =") item::text
+
+:= union_tail (item : emitted) : string = sm'::substring 6i32 (sm'::length item::text - 6i32) item::text
+
 :~ ^ group_members
     (items : list emitted) (first : bool) (members : list emitted) (others : list emitted) (wrapped : list string)
     : list emitted * list string
@@ -1210,14 +1468,16 @@
     ?= items ?|
     | item :: rest =>
         := head = ? first ?> "union rec " |: "and union "
-        ? sm'::starts_with ("nominal " ++# item::name ++# " =\n    {\n") item::text
+        ? is_nominal_record item
         ?> group_members rest !- ({ item ?| text = wrapped_record head item } :: members) others (item::name :: wrapped)
-        |? sm'::starts_with ("union " ++# item::name ++# " =") item::text
-        ?>
-            := tail = sm'::substring 6i32 (sm'::length item::text - 6i32) item::text
-            group_members rest !- ({ item ?| text = head ++# tail } :: members) others wrapped
+        |? is_union_item item
+        ?> group_members rest !- ({ item ?| text = head ++# union_tail item } :: members) others wrapped
         |: group_members rest first members (item :: others) wrapped
     | [] => listm::append (reverse members []) (reverse others []), wrapped
+
+:= grouped_order (deferred : list emitted) (ordered : list emitted) : list emitted * list string =
+    := group, wrapped = group_members deferred !+ [] [] []
+    listm::append (reverse ordered []) group, wrapped
 
 :~ ^ order_emitted
     (pending : list emitted) (known : list string) (done_names : list string) (ordered : list emitted)
@@ -1225,14 +1485,16 @@
     =
     ?= pending ?|
     | [] => reverse ordered [], []
-    | _ =>
-        := done_names', ordered', deferred = order_pass pending known done_names ordered []
-        ? count_list deferred = count_list pending
-        ?>
-            := group, wrapped = group_members deferred !+ [] [] []
-            listm::append (reverse ordered' []) group, wrapped
-        |: order_emitted deferred known done_names' ordered'
+    | _ => next_order pending known done_names ordered
 
+:& :~ next_order
+    (pending : list emitted) (known : list string) (done_names : list string) (ordered : list emitted)
+    : list emitted * list string
+    =
+    := done_names', ordered', deferred = order_pass pending known done_names ordered []
+    ? count_list deferred = count_list pending
+    ?> grouped_order deferred ordered'
+    |: order_emitted deferred known done_names' ordered'
 
 :~ ^ item_texts (items : list emitted) (acc : list string) : list string =
     ?= items ?|
@@ -1262,12 +1524,19 @@
     | _ :: _ => !-
     | [] => !+
 
+:= is_emptiable_sequence \* form. (o : occurs) (items : list (xsd particle form)) : bool =
+    o::min = 0i32 || all_optional items
+
+:= emptiable_element (name : tag_name) (o : occurs) (acc : list string) : list string =
+    ? o::min = 0i32 ?> tag_text name :: acc |: acc
+
+:= emptiable_group \* form. (o : occurs) (items : list (xsd particle form)) (acc : list string) : list string =
+    ? is_emptiable_sequence o items ?> first_element_name items :: acc |: acc
+
 :~ ^ emptiable_heads \* form. (items : list (xsd particle form)) (acc : list string) : list string =
     ?= items ?|
-    | (Element e) :: rest => emptiable_heads rest (? e::occurs::min = 0i32 ?> tag_text e::name :: acc |: acc)
-    | (Sequence s) :: rest =>
-        := emptiable = s::occurs::min = 0i32 || all_optional s::items
-        emptiable_heads rest (? emptiable ?> first_element_name s::items :: acc |: acc)
+    | (Element e) :: rest => emptiable_heads rest (emptiable_element e::name e::occurs acc)
+    | (Sequence s) :: rest => emptiable_heads rest (emptiable_group s::occurs s::items acc)
     | _ :: rest => emptiable_heads rest acc
     | [] => reverse acc []
 
@@ -1279,13 +1548,25 @@
         | None => fallback_arm rest text
     | [] => None
 
-:= with_empty_fallback (heads : list string) (text : string) : string =
-    ?= line_after "    else failwith \"" text ?|
-    | Some failing =>
-        ?= fallback_arm heads text ?|
-        | Some expression => sm'::replace ("    else failwith \"" ++# failing) ("    else " ++# expression) text
-        | None => text
+:= fallback_replaced (heads : list string) (text : string) (failing_line : string) : string =
+    ?= fallback_arm heads text ?|
+    | Some expression => sm'::replace failing_line ("    else " ++# expression) text
     | None => text
+
+:= with_empty_fallback (heads : list string) (text : string) : string =
+    := otherwise = "    else xml_codec.no_alternative \""
+    ?= line_after otherwise text ?|
+    | Some failing => fallback_replaced heads text (otherwise ++# failing)
+    | None => text
+
+:= collapsed_sequence \* form. (o : occurs) (items : list (xsd particle form)) : xsd particle form =
+    ?= items ?|
+    | (Choice c) :: [] ?& is_repeated o && is_repeated c::occurs = !- =>
+        Choice { c ?| occurs = { min = o::min * c::occurs::min; max = o::max } }
+    | _ => ? wildcard_choice items !- ?> AnyContent () |: sequence_of o items
+
+:= collapsed_choice \* form. (o : occurs) (items : list (xsd particle form)) : xsd particle form =
+    ? wildcard_choice items !- ?> AnyContent () |: Choice { occurs = o; items = items }
 
 :~ ^ dereferenced_in \* k form.
     (seen : list string) (roots : list (xsd particle form)) (item : xsd k form)
@@ -1301,25 +1582,23 @@
         | None =>
             ?= e::type_ref ?|
             | Some _ => item
-            | None =>
-                := local = xml::local_name (tag_text e::name)
-                ?= root_element local roots ?|
-                | Some (Element root) =>
-                    := copy = Element { root ?| occurs = e::occurs; name = e::name }
-                    ? has_name local seen ?> copy |: dereferenced_in (local :: seen) roots copy
-                | _ => item
-    | Sequence s =>
-        := items = dereferenced_all_in seen roots s::items []
-        ?= items ?|
-        | (Choice c) :: [] ?& is_repeated s::occurs && is_repeated c::occurs = !- =>
-            Choice { c ?| occurs = { min = s::occurs::min * c::occurs::min; max = s::occurs::max } }
-        | _ => Sequence { s ?| items = items }
-    | Choice c =>
-        := items = dereferenced_all_in seen roots c::items []
-        ? wildcard_choice items !- ?> AnyContent () |: Choice { c ?| items = items }
+            | None => referenced_root seen roots (xml::local_name (tag_text e::name)) e::name e::occurs (Element e)
+    | Sequence s => collapsed_sequence s::occurs (dereferenced_all_in seen roots s::items [])
+    | Choice c => collapsed_choice c::occurs (dereferenced_all_in seen roots c::items [])
     | AnyContent () => item
     | Empty () => item
     | Attribute _ => item
+
+:& :~ referenced_root \* form.
+    (seen : list string) (roots : list (xsd particle form)) (local : string) (name : tag_name) (o : occurs)
+    (fallback : xsd particle form)
+    : xsd particle form
+    =
+    ?= root_element local roots ?|
+    | Some (Element root) =>
+        := copy = Element { root ?| occurs = o; name = name }
+        ? has_name local seen ?> copy |: dereferenced_in (local :: seen) roots copy
+    | _ => fallback
 
 :& :~ dereferenced_all_in \* k form.
     (seen : list string) (roots : list (xsd particle form)) (items : list (xsd k form)) (acc : list (xsd k form))
@@ -1335,9 +1614,11 @@
     =
     dereferenced_all_in [] roots items acc
 
+:= dereferenced_parts \* form. (schema : xsd_schema form) : list (xsd type_def form) * list (xsd particle form) =
+    dereferenced_all schema::elements schema::complex_types [], dereferenced_all schema::elements schema::elements []
+
 := staged_type_names \* form. (staged : list string) (schema : xsd_schema form) : list string =
-    := complex_types = dereferenced_all schema::elements schema::complex_types []
-    := elements = dereferenced_all schema::elements schema::elements []
+    := complex_types, elements = dereferenced_parts schema
     := candidates = inline_all_candidates "" elements (named_candidates complex_types [])
     reverse (grow_staged candidates (directly_staged staged candidates [])) []
 
@@ -1346,12 +1627,18 @@
     | item :: rest => ? same_value_set item::value_set key ?> Some item::name |: first_with_key key rest
     | [] => None
 
+:= shared_union_conversions (name : string) (first : string) : string =
+    "inl " ++# name ++# "_of_string (s : string) : option " ++# name ++# " = " ++# first ++# "_of_string s\n\n"
+    ++# "inl " ++# name ++# "_to_string (x : " ++# name ++# ") : string = " ++# first ++# "_to_string x\n\n"
+
+:= shared_union_examples (name : string) (first : string) : string =
+    "inl " ++# name ++# "_example (k : i32) : " ++# name ++# " = " ++# first ++# "_example k\n\n"
+    ++# "inl " ++# name ++# "_example_text (k : i32) : string = " ++# first ++# "_example_text k\n"
+
 := shared_union_text (name : string) (first : string) : string =
     "type " ++# name ++# " = " ++# first ++# "\n\n"
-    ++# "inl " ++# name ++# "_of_string (s : string) : option " ++# name ++# " = " ++# first ++# "_of_string s\n\n"
-    ++# "inl " ++# name ++# "_to_string (x : " ++# name ++# ") : string = " ++# first ++# "_to_string x\n\n"
-    ++# "inl " ++# name ++# "_example (k : i32) : " ++# name ++# " = " ++# first ++# "_example k\n\n"
-    ++# "inl " ++# name ++# "_example_text (k : i32) : string = " ++# first ++# "_example_text k\n"
+    ++# shared_union_conversions name first
+    ++# shared_union_examples name first
 
 :~ ^ share_unions (items : list emitted) (kept : list emitted) (acc : list emitted) : list emitted =
     ?= items ?|
@@ -1361,14 +1648,7 @@
         | value_set =>
             ?= first_with_key value_set kept ?|
             | Some first =>
-                := shared =
-                    {
-                        name = item::name
-                        references = (first :: [])
-                        text = shared_union_text item::name first
-                        value_set = NoValueSet
-                        role = PlainItem
-                    }
+                := shared = plain_item item::name (first :: []) (shared_union_text item::name first)
                 share_unions rest kept (shared :: acc)
             | None => share_unions rest (item :: kept) (item :: acc)
     | [] => reverse acc []
@@ -1418,24 +1698,37 @@
         recursive_kinds rest wrapped ((name, ? has_name name wrapped ?> KindRecursive |: kind) :: acc)
     | [] => reverse acc []
 
+:= primed_head (ty : string) (head : string) : string =
+    sm'::replace ("(x : " ++# ty ++# ")") ("(x' : " ++# ty ++# ")") head
+
+:= unwrapped_body (rest : string) : string =
+    ? sm'::starts_with "\n" rest ?> rest |: "\n    " ++# sm'::substring 1i32 (sm'::length rest - 1i32) rest
+
+:= unwrap_text (ty : string) : string = "\n    inl x = match x' with | Record_" ++# ty ++# " r => r"
+
 := unwrapped_parameter (ty : string) (head : string) (text : string) : string =
     := rest = sm'::substring (sm'::length head) (sm'::length text - sm'::length head) text
-    := head' = sm'::replace ("(x : " ++# ty ++# ")") ("(x' : " ++# ty ++# ")") head
-    := unwrap = "\n    inl x = match x' with | Record_" ++# ty ++# " r => r"
-    := body = ? sm'::starts_with "\n" rest ?> rest |: "\n    " ++# sm'::substring 1i32 (sm'::length rest - 1i32) rest
-    sm'::replace (ty ++# "_get f x)") (ty ++# "_get f x')") (head' ++# unwrap ++# body)
+    sm'::replace
+        (ty ++# "_get f x)")
+        (ty ++# "_get f x')")
+        (primed_head ty head ++# unwrap_text ty ++# unwrapped_body rest)
+
+:= builds_record (ty : string) (text : string) : bool =
+    sm'::starts_with ("and let " ++# ty ++# "_of_children") text
+    || sm'::starts_with ("and let " ++# ty ++# "_example ") text
+
+:= record_constructors (ty : string) (text : string) : string =
+    sm'::replace ("\n    " ++# ty ++# " {\n") ("\n    Record_" ++# ty ++# " {\n") text
+    |> sm'::replace ("(fun () => " ++# ty ++# " { ") ("(fun () => Record_" ++# ty ++# " { ")
 
 := recursive_text (ty : string) (text : string) : string =
     := children = "and let " ++# ty ++# "_children (x : " ++# ty ++# ") : list xml.xml_node ="
     := attributes = "and let " ++# ty ++# "_attributes (x : " ++# ty ++# ") : list (string * string) ="
     := getter = "inl " ++# ty ++# "_get forall r. (f : " ++# ty ++# "_field r) (x : " ++# ty ++# ") : r ="
-    := builds =
-        sm'::starts_with ("and let " ++# ty ++# "_of_children") text
-        || sm'::starts_with ("and let " ++# ty ++# "_example ") text
     ? sm'::starts_with children text ?> unwrapped_parameter ty children text
     |? sm'::starts_with attributes text ?> unwrapped_parameter ty attributes text
     |? sm'::starts_with getter text ?> unwrapped_parameter ty getter text
-    |? builds ?> sm'::replace ("\n    " ++# ty ++# " {\n") ("\n    Record_" ++# ty ++# " {\n") text
+    |? builds_record ty text ?> record_constructors ty text
     |: text
 
 :~ ^ claimed_names \* form. (items : list (xsd particle form)) (acc : list string) : list string =
@@ -1446,18 +1739,88 @@
     | _ :: rest => claimed_names rest acc
     | [] => reverse acc []
 
-:= with_any_claims \* form. (content : xsd particle form) (texts : list string) : list string =
+:= is_required_once (o : occurs) : bool = ?= shape_of o ?| Required => !+ | _ => !-
+
+:= reader_of (kind : type_kind) (t : string) : string =
+    ?= kind ?|
+    | KindText => "xml_codec.read_text"
+    | KindEnum | KindValidated => "(xml_codec.read_value " ++# t ++# "_of_string)"
+    | KindRecord | KindRecursive => t ++# "_of_xml"
+
+:= read_call (name : string) (o : occurs) (reader : string) : string =
+    := tail = "\"" ++# name ++# "\" " ++# reader ++# " children errors"
+    ?= shape_of o ?|
+    | Optional => "xml_codec.read_optional " ++# tail
+    | Required => "xml_codec.read_required " ++# tail
+    | Repeated => "xml_codec.read_repeated " ++# tail
+
+:= arm_tail (name : string) (reader : string) : string = "\"" ++# name ++# "\" " ++# reader ++# " children"
+
+:= arm_read (name : string) (o : occurs) (reader : string) : string =
+    ?= shape_of o ?|
+    | Required => "xml_codec.read_child " ++# arm_tail name reader
+    | Optional => "xml_codec.pair_decoded (xml_codec.read_optional " ++# arm_tail name reader ++# " [])"
+    | Repeated => "xml_codec.pair_decoded (xml_codec.read_repeated " ++# arm_tail name reader ++# " [])"
+
+:= binding (field : string) (expression : string) : string = "    inl v_" ++# field ++# ", errors = " ++# expression
+
+:= option_binding (field : string) (expression : string) : string =
+    "    inl o_" ++# field ++# ", errors = " ++# expression
+
+:= field_binding (field : string) (o : occurs) (expression : string) : string =
+    ? is_required_once o ?> option_binding field expression |: binding field expression
+
+:= bound_name (head : string) : string = sm'::substring 10i32 (sm'::length head - 10i32) head
+
+:= present_binding (head : string) : string = bound_name head ++# " = xml_codec.present o_" ++# bound_name head
+
+:= bound_field (line : string) : option string =
+    ?= sm'::split_list ", errors =" line ?|
+    | head :: _ ?& sm'::starts_with "    inl v_" head => Some (bound_name head ++# " = v_" ++# bound_name head)
+    | head :: _ ?& sm'::starts_with "    inl o_" head => Some (present_binding head)
+    | _ => None
+
+:~ ^ record_fields (lines : list string) (acc : list string) : list string =
+    ?= lines ?|
+    | line :: rest =>
+        ?= bound_field line ?|
+        | Some field => record_fields rest (field :: acc)
+        | None => record_fields rest acc
+    | [] => reverse acc []
+
+:= built_record (ty : string) (fields : list string) : string =
+    ? fields = [] ?> "()" |: ty ++# " { " ++# join_with "; " fields "" ++# " }"
+
+:= decoded_body (ty : string) (lines : list string) : string =
+    := built = built_record ty (record_fields lines [])
+    := result = "    xml_codec.decoded_by errors (fun () => " ++# built ++# ")\n"
+    "    inl errors = []\n" ++# join_lines lines "" ++# result
+
+:= decode_result (ty : string) : string = "result (" ++# ty ++# ") (list xml_codec.decode_error)"
+
+:= any_claim_text \* form. (content : xsd particle form) : string =
     := quoted = listm::map (\ n => "\"" ++# n ++# "\"") (claimed_names (content :: []) [])
-    := claim = "        any = any_content_of (xml.unclaimed_children [" ++# join_with "; " quoted "" ++# "] children)\n"
-    listm::map (sm'::replace "        any = []\n" claim) texts
+    "any_content_of (xml.unclaimed_children [" ++# join_with "; " quoted "" ++# "] children), errors"
+
+:= with_any_claims \* form. (content : xsd particle form) (texts : list string) : list string =
+    listm::map
+        (sm'::replace (binding "any" "[], errors" ++# "\n") (binding "any" (any_claim_text content) ++# "\n"))
+        texts
 
 := recursive_texts (kinds : list (string * type_kind)) (ty : string) (texts : list string) : list string =
     ?= kind_lookup ty kinds ?|
     | KindRecursive => listm::map (recursive_text ty) texts
     | _ => texts
 
+:= builtin_value_kind (reference : string) : type_kind =
+    ?= builtin_carrier reference ?|
+    | Some _ => KindValidated
+    | None => KindText
+
 := reference_kind (reference : string) (kinds : list (string * type_kind)) : type_kind =
-    ? is_builtin_reference reference ?> KindText |: kind_lookup (type_name (xml::local_name reference)) kinds
+    ? is_builtin_reference reference
+    ?> builtin_value_kind reference
+    |: kind_lookup (type_name (xml::local_name reference)) kinds
 
 := reference_kind_of \* form.
     (reference : option (type_reference form)) (kinds : list (string * type_kind))
@@ -1471,20 +1834,6 @@
     ?= inner ?|
     | Simple s => simple_kind s::facets
     | _ => KindRecord
-
-:= node_expression (kind : type_kind) (t : string) : string =
-    ?= kind ?|
-    | KindText => "xml.text_in (xml.element_children c)"
-    | KindEnum | KindValidated =>
-        "xml.required_value \"" ++# t ++# "\" (" ++# t ++# "_of_string (xml.text_in (xml.element_children c)))"
-    | KindRecord | KindRecursive => t ++# "_of_xml c"
-
-:= occurs_expression (name : string) (o : occurs) (body : string) : string =
-    := lambda = "(fun c => " ++# body ++# ")"
-    ?= shape_of o ?|
-    | Optional => "optionm.map " ++# lambda ++# " (xml.first_child \"" ++# name ++# "\" children)"
-    | Required => lambda ++# " (xml.required_child \"" ++# name ++# "\" children)"
-    | Repeated => "listm.map " ++# lambda ++# " (xml.children_named \"" ++# name ++# "\" children)"
 
 := quoted_name (acc : string) (name : string) : string =
     ? acc = "" ?> "\"" ++# name ++# "\"" |: acc ++# "; \"" ++# name ++# "\""
@@ -1503,13 +1852,19 @@
     | _ :: rest => choice_names rest acc
     | [] => acc
 
+:= record_base_binding (t : string) : string =
+    option_binding "base" ("xml_codec.taken (" ++# t ++# "_of_children attributes children) errors")
+
+:= coded_base_binding (t : string) : string =
+    option_binding
+        "base"
+        ("xml_codec.taken (xml_codec.parsed_text " ++# t ++# "_of_string (xml.text_in children)) errors")
+
 := base_field \* form. (kinds : list (string * type_kind)) (base : type_reference form) : string =
-    := t = reference_type base
     ?= reference_kind (reference_text base) kinds ?|
-    | KindRecord | KindRecursive => "        base = " ++# t ++# "_of_children attributes children"
-    | KindEnum | KindValidated =>
-        "        base = xml.required_value \"" ++# t ++# "\" (" ++# t ++# "_of_string (xml.text_in children))"
-    | KindText => "        base = xml.text_in children"
+    | KindRecord | KindRecursive => record_base_binding (reference_type base)
+    | KindEnum | KindValidated => coded_base_binding (reference_type base)
+    | KindText => binding "base" "xml.text_in children, errors"
 
 := attribute_type \* form.
     (kinds : list (string * type_kind)) (owner : string) (name : string) (type_reference : option (type_reference form))
@@ -1526,14 +1881,18 @@
     | KindEnum | KindValidated => "text_node \"" ++# name ++# "\" " ++# v
     | KindRecord | KindRecursive => t ++# "_to_xml \"" ++# name ++# "\" " ++# v
 
+:= is_coded_kind (kind : type_kind) : bool = ?= kind ?| KindEnum | KindValidated => !+ | _ => !-
+
+:= mapped_value_text (kind : type_kind) (t : string) (name : string) : string =
+    "(fun v => " ++# value_node kind t name "v" ++# ")"
+
 := occurs_part (name : string) (o : occurs) (kind : type_kind) (t : string) (source : string) : string =
-    := coded = ?= kind ?| KindEnum | KindValidated => !+ | _ => !-
     ?= shape_of o ?|
-    | Optional ?& coded => "optional_text_nodes \"" ++# name ++# "\" " ++# source
-    | Repeated ?& coded => "repeated_text_nodes \"" ++# name ++# "\" " ++# source
-    | Optional => "xml.option_list (optionm.map (fun v => " ++# value_node kind t name "v" ++# ") " ++# source ++# ")"
+    | Optional ?& is_coded_kind kind => "optional_text_nodes \"" ++# name ++# "\" " ++# source
+    | Repeated ?& is_coded_kind kind => "repeated_text_nodes \"" ++# name ++# "\" " ++# source
+    | Optional => "xml.option_list (optionm.map " ++# mapped_value_text kind t name ++# " " ++# source ++# ")"
     | Required => "[" ++# value_node kind t name source ++# "]"
-    | Repeated => "listm.map (fun v => " ++# value_node kind t name "v" ++# ") " ++# source
+    | Repeated => "listm.map " ++# mapped_value_text kind t name ++# " " ++# source
 
 := concat_parts (parts : list string) : string =
     ?= parts ?|
@@ -1547,9 +1906,8 @@
     | _ => v
 
 := base_children \* form. (kinds : list (string * type_kind)) (base : type_reference form) : list string =
-    := t = reference_type base
     ?= reference_kind (reference_text base) kinds ?|
-    | KindRecord | KindRecursive => t ++# "_children x.base" :: []
+    | KindRecord | KindRecursive => reference_type base ++# "_children x.base" :: []
     | KindEnum | KindValidated => "xml.text_children (to_text x.base)" :: []
     | KindText => "xml.text_children x.base" :: []
 
@@ -1631,23 +1989,25 @@
     := head = "inl " ++# ty ++# "_get forall r. (f : " ++# ty ++# "_field r) (x : " ++# ty ++# ") : r ="
     join_lines (head :: "    match f with" :: listm::map arm witnesses) ""
 
-:= witness_children (ty : string) (witnesses : list witness) : string =
-    := arm (w : witness) = "        | " ++# w::case ++# " => " ++# w::fragment
+:= witness_walk_lines (ty : string) (witnesses : list witness) : list string =
     := packed (w : witness) = "exists " ++# w::case
+    ("    inl rec walk (fields : list (exists r. " ++# ty ++# "_field r)) : list xml.xml_node =")
+    :: "        match fields with"
+    :: "        | packed :: rest =>"
+    :: "            inl exists r. f = packed"
+    :: ("            listm.append (nodes f (" ++# ty ++# "_get f x)) (walk rest)")
+    :: "        | [] => []"
+    :: ("    walk [" ++# join_with "; " (listm::map packed witnesses) "" ++# "]")
+    :: []
+
+:= witness_arm (w : witness) : string = "        | " ++# w::case ++# " => " ++# w::fragment
+
+:= witness_children (ty : string) (witnesses : list witness) : string =
     := lines =
         ("and let " ++# ty ++# "_children (x : " ++# ty ++# ") : list xml.xml_node =")
         :: ("    inl nodes forall r. (f : " ++# ty ++# "_field r) (v : r) : list xml.xml_node =")
         :: "        match f with"
-        :: listm::append (listm::map arm witnesses) (
-            ("    inl rec walk (fields : list (exists r. " ++# ty ++# "_field r)) : list xml.xml_node =")
-            :: "        match fields with"
-            :: "        | packed :: rest =>"
-            :: "            inl exists r. f = packed"
-            :: ("            listm.append (nodes f (" ++# ty ++# "_get f x)) (walk rest)")
-            :: "        | [] => []"
-            :: ("    walk [" ++# join_with "; " (listm::map packed witnesses) "" ++# "]")
-            :: []
-        )
+        :: listm::append (listm::map witness_arm witnesses) (witness_walk_lines ty witnesses)
     join_lines lines ""
 
 :== walked = { parts : list part; attribute_parts : list string; functions : list walk_text }
@@ -1711,40 +2071,35 @@
 :? choice_witness f : f -> string -> occurs -> string -> string -> option witness
 :? any_witness f : f -> string -> option witness
 
-:= reader_attribute_value
-    (name : string) (required : bool) (fixed : option string) (kind : type_kind) (t : string)
+:= coded_attribute_read (field : string) (required : bool) (t : string) (key : string) : string =
+    ? required ?> option_binding field ("xml_codec.attribute_parsed " ++# t ++# "_of_string " ++# key)
+    |: binding field ("xml_codec.attribute_optional_parsed " ++# t ++# "_of_string " ++# key)
+
+:= plain_attribute_read (field : string) (name : string) (required : bool) (key : string) : string =
+    ? required ?> binding field ("xml_codec.attribute_required " ++# key)
+    |: binding field ("xml.attribute_of \"" ++# name ++# "\" attributes, errors")
+
+:= fixed_check_text (name : string) (value : string) : string =
+    "\n    inl errors = xml_codec.fixed_checked \""
+    ++# name
+    ++# "\" \""
+    ++# escape_text value
+    ++# "\" attributes errors"
+
+:= attribute_read
+    (field : string) (name : string) (required : bool) (kind : type_kind) (t : string) (key : string)
     : string
     =
-    := attributes =
-        ?= fixed ?|
-        | Some value => "(xml.checked_fixed \"" ++# name ++# "\" \"" ++# escape_text value ++# "\" attributes)"
-        | None => "attributes"
-    ?= kind ?|
-    | KindEnum | KindValidated =>
-        ? required
-        ?>
-            "xml.required_value \""
-            ++# t
-            ++# "\" ("
-            ++# t
-            ++# "_of_string (xml.required_attribute \""
-            ++# name
-            ++# "\" "
-            ++# attributes
-            ++# "))"
-        |:
-            "optionm.map (fun v => xml.required_value \""
-            ++# t
-            ++# "\" ("
-            ++# t
-            ++# "_of_string v)) (xml.attribute_of \""
-            ++# name
-            ++# "\" "
-            ++# attributes
-            ++# ")"
-    | _ =>
-        ? required ?> "xml.required_attribute \"" ++# name ++# "\" " ++# attributes
-        |: "xml.attribute_of \"" ++# name ++# "\" " ++# attributes
+    ? is_coded_kind kind ?> coded_attribute_read field required t key |: plain_attribute_read field name required key
+
+:= attribute_binding
+    (field : string) (name : string) (required : bool) (fixed : option string) (kind : type_kind) (t : string)
+    : string
+    =
+    := read = attribute_read field name required kind t ("\"" ++# name ++# "\" attributes errors")
+    ?= fixed ?|
+    | Some value => read ++# fixed_check_text name value
+    | None => read
 
 :+ derived_prefix reading =
     \ _ kinds base => { parts = plain (base_field kinds base) :: []; attribute_parts = []; functions = [] }
@@ -1754,67 +2109,65 @@
         fitted_header
             ("and let " ++# ty ++# "_of_children")
             "(attributes : list (string * string)) (children : list xml.xml_node)"
-            ty
-        ++# record_body ty lines
+            (decode_result ty)
+        ++# decoded_body ty lines
     := of_xml =
         fitted_definition
-            ("and let " ++# ty ++# "_of_xml (c : xml.xml_node) : " ++# ty ++# " =")
+            ("and let " ++# ty ++# "_of_xml (c : xml.xml_node) : " ++# decode_result ty ++# " =")
             (ty ++# "_of_children (xml.element_attributes c) (xml.element_children c)")
     of_children :: of_xml :: []
 :+ choice_part reading =
     \ _ o items ty field =>
         := read = ty ++# "_of_children attributes children"
-        := expression =
-            ?= shape_of o ?|
-            | Optional =>
-                "if xml.has_any_child ["
+        ?= shape_of o ?|
+        | Optional =>
+            binding field (
+                "xml_codec.optional_taken (if xml.has_any_child ["
                 ++# choice_names items ""
                 ++# "] children then Some ("
                 ++# read
-                ++# ") else None"
-            | Required => read
-            | Repeated =>
-                ? single_element_arms items
-                ?>
-                    "listm.map (fun c => "
+                ++# ") else None) errors"
+            )
+        | Required => option_binding field ("xml_codec.taken (" ++# read ++# ") errors")
+        | Repeated =>
+            ? single_element_arms items
+            ?>
+                binding field (
+                    "xml_codec.all_taken (listm.map (fun c => "
                     ++# ty
                     ++# "_of_children attributes [c]) (xml.claimed_children ["
                     ++# choice_names items ""
-                    ++# "] children)"
-                |: "[" ++# read ++# "]"
-        field_assignment field expression
+                    ++# "] children)) errors"
+                )
+            |: binding field ("xml_codec.all_taken [" ++# read ++# "] errors")
 :+ group_part reading =
     \ _ _ items ty field =>
-        field_assignment field (
-            "listm.map (fun run => "
+        binding field (
+            "xml_codec.all_taken (listm.map (fun run => "
             ++# ty
             ++# "_of_children [] run) (xml.group_runs ["
             ++# choice_names items ""
-            ++# "] children)"
+            ++# "] children)) errors"
         )
 :+ element_part reading = \ _ _ v =>
-    field_assignment (field_name v::name) (occurs_expression v::name v::occurs (node_expression v::kind v::t))
-:+ any_part reading = \ _ => "        any = []"
+    field_binding (field_name v::name) v::occurs (read_call v::name v::occurs (reader_of v::kind v::t))
+:+ any_part reading = \ _ => binding "any" "[], errors"
 :+ attribute_step reading =
-    \ _ acc a =>
-        push
-            (field_assignment (field_name a::name) (reader_attribute_value a::name a::required a::fixed a::kind a::t))
-            []
-            acc
+    \ _ acc a => push (attribute_binding (field_name a::name) a::name a::required a::fixed a::kind a::t) [] acc
 :+ element_arm reading = \ _ _ choice_name v =>
     "    elif xml.has_child \""
     ++# v::name
-    ++# "\" children then "
+    ++# "\" children then xml_codec.mapped (fun v => "
     ++# case_name choice_name v::name
-    ++# " ("
-    ++# occurs_expression v::name v::occurs (node_expression v::kind v::t)
+    ++# " v) ("
+    ++# arm_read v::name v::occurs (reader_of v::kind v::t)
     ++# ")"
 :+ group_arm reading = \ _ choice_name first group_name =>
     "    elif xml.has_child \""
     ++# first
-    ++# "\" children then "
+    ++# "\" children then xml_codec.mapped (fun v => "
     ++# case_name choice_name ("group_" ++# first)
-    ++# " ("
+    ++# " v) ("
     ++# type_name group_name
     ++# "_of_children attributes children)"
 :+ choice_text reading = \ _ choice_name arms =>
@@ -1822,12 +2175,14 @@
     "and let "
     ++# ty
     ++# "_of_children (attributes : list (string * string)) (children : list xml.xml_node) : "
+    ++# decode_result ty
+    ++# " =\n    if false then xml_codec.no_alternative \""
     ++# ty
-    ++# " =\n    if false then failwith \"unreachable\"\n"
+    ++# "\"\n"
     ++# join_lines arms ""
-    ++# "    else failwith \""
+    ++# "    else xml_codec.no_alternative \""
     ++# ty
-    ++# ": no alternative present\"\n"
+    ++# "\"\n"
 :+ first_arm_only reading = \ _ => !-
 :+ witness_items reading = \ _ _ _ => []
 :+ element_witness reading = \ _ _ _ => None
@@ -1835,8 +2190,6 @@
 :+ any_witness reading = \ _ _ => None
 
 :| staged_reading = | StagedReading : list string * list string
-
-:= is_required_once (o : occurs) : bool = ?= shape_of o ?| Required => !+ | _ => !-
 
 := is_staged_signature (signatures : list string) (name : string) (o : occurs) : bool =
     has_name (xml::local_name name) signatures && o::min >= 1i32
@@ -1853,14 +2206,14 @@
                     fitted_header
                         ("and let " ++# ty ++# "_of_children forall s.")
                         "(witness : stage s) (attributes : list (string * string)) (children : list xml.xml_node)"
-                        (ty ++# " s")
-                    ++# record_body ty (listm::map part_text parts)
+                        (decode_result (ty ++# " s"))
+                    ++# decoded_body ty (listm::map part_text parts)
                 := head =
                     "and let "
                     ++# ty
                     ++# "_of_xml forall s. (witness : stage s) (c : xml.xml_node) : "
-                    ++# ty
-                    ++# " s ="
+                    ++# decode_result (ty ++# " s")
+                    ++# " ="
                 := of_xml =
                     fitted_definition head (
                         ty ++# "_of_children witness (xml.element_attributes c) (xml.element_children c)"
@@ -1875,10 +2228,11 @@
             := field = field_name v::name
             ? is_staged_signature signatures v::name v::occurs
             ?>
-                := read = occurs_expression v::name v::occurs (node_expression v::kind v::t)
-                field_assignment field ("staged_of witness (fun () => " ++# read ++# ")")
+                := call = read_call v::name v::occurs (reader_of v::kind v::t)
+                := read = ? is_required_once v::occurs ?> call |: "xml_codec.as_some (" ++# call ++# ")"
+                option_binding field ("staged_read witness (fun errors => " ++# read ++# ") errors")
             |? has_name v::t staged
-            ?> field_assignment field (occurs_expression v::name v::occurs (v::t ++# "_of_xml witness c"))
+            ?> field_binding field v::occurs (read_call v::name v::occurs ("(" ++# v::t ++# "_of_xml witness)"))
             |: element_part Reading kinds v
 :+ any_part staged_reading = \ _ => any_part Reading
 :+ attribute_step staged_reading = \ _ acc a => attribute_step Reading acc a
@@ -2052,7 +2406,7 @@
                 |:
                     ?= a::type_ref ?|
                     | Some r =>
-                        ? is_builtin_reference (reference_text r) && xml::local_name (reference_text r) = "ID"
+                        ? is_builtin_reference (reference_text r) && builtin_kind_of (reference_text r) = IdBuiltin
                         ?> "\"ID_" ++# type_name a::owner ++# "\""
                         |: value_example a::kind a::t (reference_text r) "k"
                     | None => value_example a::kind a::t "" "k"
@@ -2102,6 +2456,32 @@
 :+ choice_witness staged_exampling = \ _ owner o ty field => choice_witness Exampling owner o ty field
 :+ any_witness staged_exampling = \ _ owner => any_witness Exampling owner
 
+:= inline_view \* form.
+    (owner : string) (name : string) (o : occurs) (type_ref : option (type_reference form)) (inner : xsd type_def form)
+    : element_view form
+    =
+    {
+        name = name
+        occurs = o
+        kind = inline_kind inner
+        t = type_name (owner ++# "_" ++# name)
+        inline = !+
+        type_ref = type_ref
+    }
+
+:= referenced_view \* form.
+    (kinds : list (string * type_kind)) (name : string) (o : occurs) (type_ref : option (type_reference form))
+    : element_view form
+    =
+    {
+        name = name
+        occurs = o
+        kind = reference_kind_of type_ref kinds
+        t = reference_type_of type_ref
+        inline = !-
+        type_ref = type_ref
+    }
+
 := element_view_of \* form.
     (kinds : list (string * type_kind)) (owner : string) (name : string) (o : occurs)
     (type_ref : option (type_reference form))
@@ -2109,40 +2489,27 @@
     : element_view form
     =
     ?= inline ?|
-    | Some inner =>
-        {
-            name = name
-            occurs = o
-            kind = inline_kind inner
-            t = type_name (owner ++# "_" ++# name)
-            inline = !+
-            type_ref = type_ref
-        }
-    | None =>
-        {
-            name = name
-            occurs = o
-            kind = reference_kind_of type_ref kinds
-            t = reference_type_of type_ref
-            inline = !-
-            type_ref = type_ref
-        }
+    | Some inner => inline_view owner name o type_ref inner
+    | None => referenced_view kinds name o type_ref
 
 :~ ^ attribute_names_of \* form. (attributes : list (xsd attribute_decl form)) (acc : list string) : list string =
     ?= attributes ?|
     | (Attribute a) :: rest => attribute_names_of rest (tag_text a::name :: acc)
     | [] => acc
 
+:= kept_condition (names : list string) : string =
+    join_with " && " (listm::map (\ n => "n <> \"" ++# n ++# "\"") names) ""
+
+:= attribute_filter (kept : string) (part : string) : string =
+    ? sm'::ends_with "_attributes x.base" part
+    ?> "listm'.filter (fun (n, _) => " ++# kept ++# ") (" ++# part ++# ")"
+    |: part
+
 := without_redeclared \* form. (attributes : list (xsd attribute_decl form)) (prefix : walked) : walked =
     ?= attribute_names_of attributes [] ?|
     | [] => prefix
     | names =>
-        := kept = join_with " && " (listm::map (\ n => "n <> \"" ++# n ++# "\"") names) ""
-        := filter (part : string) : string =
-            ? sm'::ends_with "_attributes x.base" part
-            ?> "listm'.filter (fun (n, _) => " ++# kept ++# ") (" ++# part ++# ")"
-            |: part
-        { prefix ?| attribute_parts = listm::map filter prefix::attribute_parts }
+        { prefix ?| attribute_parts = listm::map (attribute_filter (kept_condition names)) prefix::attribute_parts }
 
 :~ ^ named_type_walk
     \* form f {
@@ -2208,31 +2575,50 @@
     : walked
     =
     ?= item ?|
-    | Sequence s ?& is_repeated s::occurs =>
-        := first = first_element_name s::items
-        := group_name = owner ++# "_group_" ++# first
-        := field = field_name ("group_" ++# xml::local_name first)
-        := part = group_part family s::occurs s::items (type_name group_name) field
-        := witness = choice_witness family owner s::occurs (type_name group_name) field
-        := once = { min = 1i32; max = Bounded 1i32 }
-        := group =
-            record_walk family kinds group_name (Sequence { occurs = once; items = s::items }) [] (nothing_walked ())
-        push_part { text = part; witness = witness } group acc | Sequence s =>
-            items_walk family kinds owner s::items acc
-    | Choice c =>
-        := first = first_element_name c::items
-        := choice_name = owner ++# "_choice_" ++# first
-        := choice_field = choice_field_of first
-        := part = choice_part family c::occurs c::items (type_name choice_name) choice_field
-        := witness = choice_witness family owner c::occurs (type_name choice_name) choice_field
-        push_part { text = part; witness = witness } (choice_walk family kinds choice_name c::items) acc
-    | Element e =>
-        := name = tag_text e::name
-        := v = element_view_of kinds owner name e::occurs e::type_ref e::inline
-        := p = { text = element_part family kinds v; witness = element_witness family owner v }
-        push_part p (inline_walk family kinds owner name e::inline) acc
+    | Sequence s ?& is_repeated s::occurs => repeated_group_walk family kinds owner s::occurs s::items acc
+    | Sequence s => items_walk family kinds owner s::items acc
+    | Choice c => choice_content_walk family kinds owner c::occurs c::items acc
+    | Element e => element_content_walk family kinds owner (tag_text e::name) e::occurs e::type_ref e::inline acc
     | AnyContent () => push_part { text = any_part family; witness = any_witness family owner } [] acc
     | Empty () => acc
+
+:& :~ repeated_group_walk
+    \* form f
+    { derived_prefix; record_texts; choice_part; group_part; element_part; any_part; attribute_step; element_arm; group_arm; choice_text; first_arm_only; witness_items; element_witness; choice_witness; any_witness }.
+    (family : f) (kinds : list (string * type_kind)) (owner : string) (o : occurs) (items : list (xsd particle form))
+    (acc : walked)
+    : walked
+    =
+    := group_name, field = group_identity owner items
+    := ty = type_name group_name
+    := part = { text = group_part family o items ty field; witness = choice_witness family owner o ty field }
+    := inner = Sequence { occurs = occurs_once (); items = items }
+    push_part part (record_walk family kinds group_name inner [] (nothing_walked ())) acc
+
+:& :~ choice_content_walk
+    \* form f
+    { derived_prefix; record_texts; choice_part; group_part; element_part; any_part; attribute_step; element_arm; group_arm; choice_text; first_arm_only; witness_items; element_witness; choice_witness; any_witness }.
+    (family : f) (kinds : list (string * type_kind)) (owner : string) (o : occurs) (items : list (xsd particle form))
+    (acc : walked)
+    : walked
+    =
+    := first = first_element_name items
+    := choice_name = owner ++# "_choice_" ++# first
+    := ty = type_name choice_name
+    := field = choice_field_of first
+    := part = { text = choice_part family o items ty field; witness = choice_witness family owner o ty field }
+    push_part part (choice_walk family kinds choice_name items) acc
+
+:& :~ element_content_walk
+    \* form f
+    { derived_prefix; record_texts; choice_part; group_part; element_part; any_part; attribute_step; element_arm; group_arm; choice_text; first_arm_only; witness_items; element_witness; choice_witness; any_witness }.
+    (family : f) (kinds : list (string * type_kind)) (owner : string) (name : string) (o : occurs)
+    (type_ref : option (type_reference form)) (inline : option (xsd type_def form)) (acc : walked)
+    : walked
+    =
+    := v = element_view_of kinds owner name o type_ref inline
+    := p = { text = element_part family kinds v; witness = element_witness family owner v }
+    push_part p (inline_walk family kinds owner name inline) acc
 
 :& :~ inline_walk
     \* form f
@@ -2382,6 +2768,30 @@
         )
     | [] => acc
 
+:= root_own
+    \* form f {
+        derived_prefix;
+        record_texts;
+        choice_part; group_part;
+        element_part;
+        any_part;
+        attribute_step;
+        element_arm;
+        group_arm;
+        choice_text;
+        first_arm_only;
+        witness_items;
+        element_witness;
+        choice_witness;
+        any_witness
+    }.
+    (family : f) (kinds : list (string * type_kind)) (name : tag_name) (inline : option (xsd type_def form))
+    : list walk_text
+    =
+    ?= inline ?|
+    | Some inner => named_type_walk family kinds (tag_text name) inner
+    | None => []
+
 :~ ^ roots_walk
     \* form f {
         derived_prefix;
@@ -2403,9 +2813,7 @@
     : list walk_text
     =
     ?= items ?|
-    | (Element e) :: rest =>
-        := own = ?= e::inline ?| Some inner => named_type_walk family kinds (tag_text e::name) inner | None => []
-        roots_walk family kinds rest (listm::append own acc)
+    | (Element e) :: rest => roots_walk family kinds rest (listm::append (root_own family kinds e::name e::inline) acc)
     | _ :: rest => roots_walk family kinds rest acc
     | [] => acc
 
@@ -2419,6 +2827,13 @@
         := key = function_key item
         ? has_name key seen ?> unique_texts rest seen acc |: unique_texts rest (key :: seen) (item :: acc)
     | [] => reverse acc []
+
+:= written_and_exampled \* form.
+    (kinds : list (string * type_kind)) (complex_types : list (xsd type_def form)) (elements : list (xsd particle form))
+    : list walk_text
+    =
+    := writers = roots_walk Writing kinds elements (types_walk Writing kinds complex_types [])
+    listm::append writers (roots_walk Exampling kinds elements (types_walk Exampling kinds complex_types []))
 
 := walk_texts_with
     \* form f {
@@ -2442,9 +2857,7 @@
     : list walk_text
     =
     := readers = roots_walk reader kinds elements (types_walk reader kinds complex_types [])
-    := writers = roots_walk Writing kinds elements (types_walk Writing kinds complex_types [])
-    := examples = roots_walk Exampling kinds elements (types_walk Exampling kinds complex_types [])
-    listm::append readers (listm::append writers examples)
+    listm::append readers (written_and_exampled kinds complex_types elements)
 
 := walk_texts \* form.
     (kinds : list (string * type_kind)) (complex_types : list (xsd type_def form)) (elements : list (xsd particle form))
@@ -2457,9 +2870,7 @@
     : list string
     =
     := readers = roots_walk Reading kinds elements (types_walk Reading kinds complex_types [])
-    := writers = roots_walk Writing kinds elements (types_walk Writing kinds complex_types [])
-    := examples = roots_walk Exampling kinds elements (types_walk Exampling kinds complex_types [])
-    unique_texts (function_parts (listm::append readers (listm::append writers examples)) []) [] []
+    unique_texts (function_parts (listm::append readers (written_and_exampled kinds complex_types elements)) []) [] []
 
 := functions_group (functions : list string) : string =
     ?= functions ?|
@@ -2510,18 +2921,21 @@
     | Some parent => ? depth > 64i32 ?> KindText |: resolved_kind aliases kinds parent (depth + 1i32)
     | None => kind_lookup name kinds
 
+:= inherited_kind
+    (aliases : list (string * string)) (all : list (string * type_kind)) (name : string) (kind : type_kind)
+    : type_kind
+    =
+    ?= alias_parent name aliases ?|
+    | Some _ => resolved_kind aliases all name 0i32
+    | None => kind
+
 :~ ^ inherited_kinds
     (aliases : list (string * string)) (all : list (string * type_kind)) (kinds : list (string * type_kind))
     (acc : list (string * type_kind))
     : list (string * type_kind)
     =
     ?= kinds ?|
-    | (name, kind) :: rest =>
-        := inherited =
-            ?= alias_parent name aliases ?|
-            | Some _ => resolved_kind aliases all name 0i32
-            | None => kind
-        inherited_kinds aliases all rest ((name, inherited) :: acc)
+    | (name, kind) :: rest => inherited_kinds aliases all rest ((name, inherited_kind aliases all name kind) :: acc)
     | [] => reverse acc []
 
 := alias_text (ty : string) (parent : string) (kind : type_kind) : string =
@@ -2557,43 +2971,73 @@
     ++# "_example_text k\n"
     ++# codec
 
+:= aliased_item (item : emitted) (parent : string) (kinds : list (string * type_kind)) : emitted =
+    { item ?| text = alias_text item::name parent (kind_lookup item::name kinds); references = parent :: [] }
+
+:= aliased_or_plain (item : emitted) (aliases : list (string * string)) (kinds : list (string * type_kind)) : emitted =
+    ?= alias_parent item::name aliases ?|
+    | Some parent => aliased_item item parent kinds
+    | None => item
+
 :~ ^ aliased_items
     (aliases : list (string * string)) (kinds : list (string * type_kind)) (items : list emitted)
     (acc : list emitted)
     : list emitted
     =
     ?= items ?|
-    | item :: rest =>
-        ?= alias_parent item::name aliases ?|
-        | Some parent =>
-            := text = alias_text item::name parent (kind_lookup item::name kinds)
-            aliased_items aliases kinds rest ({ item ?| text = text; references = parent :: [] } :: acc)
-        | None => aliased_items aliases kinds rest (item :: acc)
+    | item :: rest => aliased_items aliases kinds rest (aliased_or_plain item aliases kinds :: acc)
     | [] => reverse acc []
 
 :== module_parts = { items : list emitted; functions : list string; witness_items : list string }
+
+:= shared_items \* form.
+    (schema : xsd_schema form) (complex_types : list (xsd type_def form)) (elements : list (xsd particle form))
+    : list emitted
+    =
+    := all = reverse (emit_roots elements (emit_types complex_types (emit_types schema::simple_types []))) []
+    share_unions (unique_emitted all [] []) [] []
+
+:= simple_kinds \* form.
+    (schema : xsd_schema form) (complex_types : list (xsd type_def form))
+    : list (string * type_kind)
+    =
+    kinds_of schema::simple_types (kinds_of complex_types [])
+
+:= aliased_kinds_items \* form.
+    (schema : xsd_schema form) (complex_types : list (xsd type_def form)) (shared : list emitted)
+    : list (string * type_kind) * list emitted
+    =
+    := aliases = simple_aliases schema::simple_types (emitted_names shared []) []
+    := base_kinds = simple_kinds schema complex_types
+    := kinds = inherited_kinds aliases base_kinds base_kinds []
+    kinds, aliased_items aliases kinds shared []
+
+:= module_parts_of (items : list emitted) (walked_texts : list walk_text) : module_parts =
+    {
+        items = items
+        functions = unique_texts (function_parts walked_texts []) [] []
+        witness_items = distinct_values (item_parts walked_texts []) [] []
+    }
+
+:= module_kinds_items \* form.
+    (schema : xsd_schema form) (complex_types : list (xsd type_def form)) (elements : list (xsd particle form))
+    : list (string * type_kind) * list emitted
+    =
+    aliased_kinds_items schema complex_types (shared_items schema complex_types elements)
+
+:= ordered_items (unique : list emitted) : list emitted * list string =
+    := known = emitted_names unique []
+    order_emitted (with_known_references unique known []) known [] []
 
 := module_parts_by \* form.
     (walk : list (string * type_kind) -> list (xsd type_def form) -> list (xsd particle form) -> list walk_text)
     (schema : xsd_schema form)
     : module_parts
     =
-    := complex_types = dereferenced_all schema::elements schema::complex_types []
-    := elements = dereferenced_all schema::elements schema::elements []
-    := all = reverse (emit_roots elements (emit_types complex_types (emit_types schema::simple_types []))) []
-    := shared = share_unions (unique_emitted all [] []) [] []
-    := aliases = simple_aliases schema::simple_types (emitted_names shared []) []
-    := base_kinds = kinds_of schema::simple_types (kinds_of complex_types [])
-    := kinds = inherited_kinds aliases base_kinds base_kinds []
-    := unique = aliased_items aliases kinds shared []
-    := known = emitted_names unique []
-    := items, wrapped = order_emitted (with_known_references unique known []) known [] []
-    := walked_texts = walk (recursive_kinds kinds wrapped []) complex_types elements
-    {
-        items = items
-        functions = unique_texts (function_parts walked_texts []) [] []
-        witness_items = distinct_values (item_parts walked_texts []) [] []
-    }
+    := complex_types, elements = dereferenced_parts schema
+    := kinds, unique = module_kinds_items schema complex_types elements
+    := items, wrapped = ordered_items unique
+    module_parts_of items (walk (recursive_kinds kinds wrapped []) complex_types elements)
 
 := module_parts_with
     \* form f {
@@ -2685,66 +3129,83 @@
     |? sm'::ends_with "_of_xml" key ?> plain_codec functions aliases (codec_name key "_of_xml")
     |: None
 
+:= plain_codec_text (ty : string) : string =
+    "instance of_xml " ++# ty ++# " = " ++# ty ++# "_of_xml\ninstance to_xml " ++# ty ++# " = " ++# ty ++# "_to_xml\n"
+
+:= staged_codec_text (ty : string) : string =
+    "instance of_xml " ++# ty ++# " s {stage_of} = fun c => " ++# ty ++# "_of_xml (stage_of ()) c\n"
+    ++# "instance to_xml " ++# ty ++# " s = " ++# ty ++# "_to_xml\n"
+
 := codec_instance_text (shape : codec_shape) : string =
     ?= shape ?|
-    | PlainCodec ty =>
-        "instance of_xml "
-        ++# ty
-        ++# " = "
-        ++# ty
-        ++# "_of_xml\ninstance to_xml "
-        ++# ty
-        ++# " = "
-        ++# ty
-        ++# "_to_xml\n"
-    | StagedCodec ty =>
-        "instance of_xml " ++# ty ++# " s {stage_of} = fun c => " ++# ty ++# "_of_xml (stage_of ()) c\n"
-        ++# "instance to_xml " ++# ty ++# " s = " ++# ty ++# "_to_xml\n"
+    | PlainCodec ty => plain_codec_text ty
+    | StagedCodec ty => staged_codec_text ty
+
+:= with_codec_instance
+    (functions : list string) (aliases : list string) (f : string) (acc : list string)
+    : list string
+    =
+    ?= codec_shape_of functions aliases f ?|
+    | Some shape => codec_instance_text shape :: acc
+    | None => acc
 
 :~ ^ codec_instance_texts
     (functions : list string) (aliases : list string) (items : list string) (acc : list string)
     : list string
     =
     ?= items ?|
-    | f :: rest =>
-        ?= codec_shape_of functions aliases f ?|
-        | Some shape => codec_instance_texts functions aliases rest (codec_instance_text shape :: acc)
-        | None => codec_instance_texts functions aliases rest acc
+    | f :: rest => codec_instance_texts functions aliases rest (with_codec_instance functions aliases f acc)
     | [] => reverse acc []
 
 := codec_instances (functions : list string) (aliases : list string) : string =
     ?= codec_instance_texts functions aliases functions [] ?|
     | [] => ""
     | texts => "\n" ++# join_lines texts ""
-:= units_of_parts (any_content : string) (prelude : string) (parts : module_parts) : string * string =
-    := certificates = kept_items is_certificate parts::items []
+
+:= module_body (parts : module_parts) : string =
     := witnesses = join_lines parts::witness_items ""
     := plain_items = texts_of (kept_items is_plain parts::items [])
-    := body =
-        plain_items
-        ++# witnesses
-        ++# functions_group parts::functions
-        ++# codec_instances parts::functions (alias_names parts::items [])
-    := main = codec_prelude () ++# prelude ++# (? sm'::contains "any_content" body ?> any_content |: "") ++# body
-    ?= certificates ?|
-    | [] => main, ""
-    | _ => main, texts_of certificates ++# certificates_checked_text certificates
+    plain_items
+    ++# witnesses
+    ++# functions_group parts::functions
+    ++# codec_instances parts::functions (alias_names parts::items [])
 
-:= generated_units_with \* form. (any_content : string) (schema : xsd_schema form) : string * string =
+:= main_unit_text (any_content : string) (prelude : string) (body : string) : string =
+    codec_prelude ()
+    ++# carrier_prelude body
+    ++# prelude
+    ++# (? sm'::contains "any_content" body ?> any_content |: "")
+    ++# body
+
+:= certificate_unit_text (certificates : list emitted) : option string =
+    ?= certificates ?|
+    | [] => None
+    | _ => Some (texts_of certificates ++# certificates_checked_text certificates)
+
+:= units_of_parts (any_content : string) (prelude : string) (parts : module_parts) : string * option string =
+    main_unit_text any_content prelude (module_body parts),
+    certificate_unit_text (kept_items is_certificate parts::items [])
+
+:= generated_units_with \* form. (any_content : string) (schema : xsd_schema form) : string * option string =
     units_of_parts any_content "" (module_parts schema)
+
+:= staged_units \* form.
+    (staged : list string) (signatures : list string) (any_content : string) (schema : xsd_schema form)
+    : string * option string
+    =
+    := parts = module_parts_staged staged signatures schema
+    units_of_parts any_content (staging_prelude ()) { parts ?| items = staged_items staged signatures parts::items }
 
 := generated_units_signed \* form.
     (signatures : list string) (any_content : string) (schema : xsd_schema form)
-    : string * string
+    : string * option string
     =
     := staged = staged_type_names signatures schema
     ?= staged ?|
     | [] => generated_units_with any_content schema
-    | _ =>
-        := parts = module_parts_staged staged signatures schema
-        units_of_parts any_content (staging_prelude ()) { parts ?| items = staged_items staged signatures parts::items }
+    | _ => staged_units staged signatures any_content schema
 
-:= generated_units \* form. (schema : xsd_schema form) : string * string =
+:= generated_units \* form. (schema : xsd_schema form) : string * option string =
     generated_units_with (untyped_any_content ()) schema
 
 := generate_module (schema : xsd_schema final) : string =
@@ -2812,6 +3273,10 @@
         |: split_items rest shared core (item :: own)
     | [] => reverse core [], reverse own []
 
+:= is_core_function (f : string) (names : list string) (shared : list string) (versions : list module_parts) : bool =
+    := owner = owner_of (function_key f) names ""
+    owner <> "" && has_name owner shared && function_in_all f versions
+
 :~ ^ split_functions
     (functions : list string) (names : list string) (shared : list string) (versions : list module_parts)
     (core : list string) (own : list string)
@@ -2819,8 +3284,7 @@
     =
     ?= functions ?|
     | f :: rest =>
-        := owner = owner_of (function_key f) names ""
-        ? owner <> "" && has_name owner shared && function_in_all f versions
+        ? is_core_function f names shared versions
         ?> split_functions rest names shared versions (f :: core) own
         |: split_functions rest names shared versions core (f :: own)
     | [] => reverse core [], reverse own []
@@ -2854,6 +3318,14 @@
     := next = self_contained core outside []
     ? count_list next = count_list core ?> core |: closed_functions next all
 
+:= version_text
+    (parts : module_parts) (shared : list string) (core_functions : list string) (core_module : string)
+    : string
+    =
+    := _, own_items = split_items parts::items shared [] []
+    := own_functions = functions_outside parts::functions core_functions []
+    "open " ++# core_module ++# "\n\n" ++# texts_of own_items ++# functions_group own_functions
+
 :~ ^ version_texts
     (versions : list module_parts) (shared : list string) (core_functions : list string) (core_module : string)
     (acc : list string)
@@ -2861,29 +3333,31 @@
     =
     ?= versions ?|
     | parts :: rest =>
-        := _, own_items = split_items parts::items shared [] []
-        := own_functions = functions_outside parts::functions core_functions []
-        := text = "open " ++# core_module ++# "\n\n" ++# texts_of own_items ++# functions_group own_functions
-        version_texts rest shared core_functions core_module (text :: acc)
+        version_texts rest shared core_functions core_module (
+            version_text parts shared core_functions core_module :: acc
+        )
     | [] => reverse acc []
 
 :== family_split = { shared : list string; core_text : string; version_texts : list string }
+
+:= core_functions_of (first : module_parts) (shared : list string) (versions : list module_parts) : list string =
+    := candidates, _ = split_functions first::functions (emitted_names first::items []) shared versions [] []
+    closed_functions candidates first::functions
+
+:= family_core_text (core_body : string) (texts : list string) : string =
+    := all_text = core_body ++# sm'::concat_balanced "" texts
+    := uses_any = sm'::contains "any_content" all_text
+    codec_prelude () ++# carrier_prelude all_text ++# (? uses_any ?> untyped_any_content () |: "") ++# core_body
 
 := split_family (versions : list module_parts) (core_module : string) : family_split =
     ?= versions ?|
     | first :: _ =>
         := shared = closed_shared first::items (identical_names first::items versions [])
         := core_items, _ = split_items first::items shared [] []
-        := candidates, _ = split_functions first::functions (emitted_names first::items []) shared versions [] []
-        := core_functions = closed_functions candidates first::functions
+        := core_functions = core_functions_of first shared versions
         := texts = version_texts versions shared core_functions core_module []
         := core_body = texts_of core_items ++# functions_group core_functions
-        := uses_any = sm'::contains "any_content" (core_body ++# sm'::concat_balanced "" texts)
-        {
-            shared = shared
-            core_text = codec_prelude () ++# (? uses_any ?> untyped_any_content () |: "") ++# core_body
-            version_texts = texts
-        }
+        { shared = shared; core_text = family_core_text core_body texts; version_texts = texts }
     | [] => { shared = []; core_text = ""; version_texts = [] }
 
 := generate_family \* form. (schemas : list (xsd_schema form)) (core_module : string) : string * list string =
@@ -2952,45 +3426,33 @@
         version_lines rest prefix_length line (line module_name (version_tag prefix_length module_name) :: acc)
     | [] => reverse acc []
 
-:= versioned_type_text (modules : list string) (prefix_length : i32) (name : string) : string =
-    := cases =
-        version_lines modules prefix_length
-            \ module_name tag =>
-                "    | "
-                ++# versioned_case name tag
-                ++# " :: "
-                ++# module_name
-                ++# "."
-                ++# name
-                ++# " -> "
-                ++# name
-                ++# " "
-                ++# tag
-            []
-    := reads =
-        version_lines modules prefix_length
-            \ module_name tag =>
-                "    | "
-                ++# upper_first tag
-                ++# " _ => "
-                ++# versioned_case name tag
-                ++# " ("
-                ++# module_name
-                ++# "."
-                ++# name
-                ++# "_of_xml c)"
-            []
-    "union "
+:= versioned_case_line (name : string) (module_name : string) (tag : string) : string =
+    "    | " ++# versioned_case name tag ++# " :: " ++# module_name ++# "." ++# name ++# " -> " ++# name ++# " " ++# tag
+
+:= versioned_read_line (name : string) (module_name : string) (tag : string) : string =
+    "    | "
+    ++# upper_first tag
+    ++# " _ => xml_codec.mapped (fun x => "
+    ++# versioned_case name tag
+    ++# " x) ("
+    ++# module_name
+    ++# "."
     ++# name
-    ++# " v =\n"
-    ++# join_lines cases ""
-    ++# "\ninl "
+    ++# "_of_xml c)"
+
+:= versioned_reader_head (name : string) : string =
+    "\ninl "
     ++# name
     ++# "_of_xml forall v. (witness : version_witness v) (c : xml.xml_node) : "
-    ++# name
-    ++# " v =\n    match witness with\n"
-    ++# join_lines reads ""
-    ++# "\n"
+    ++# decode_result (name ++# " v")
+    ++# " =\n    match witness with\n"
+
+:= versioned_cases_text (modules : list string) (prefix_length : i32) (name : string) : string =
+    "union " ++# name ++# " v =\n" ++# join_lines (version_lines modules prefix_length (versioned_case_line name) []) ""
+
+:= versioned_type_text (modules : list string) (prefix_length : i32) (name : string) : string =
+    := reads = version_lines modules prefix_length (versioned_read_line name) []
+    versioned_cases_text modules prefix_length name ++# versioned_reader_head name ++# join_lines reads "" ++# "\n"
 
 :~ ^ versioned_type_texts
     (modules : list string) (prefix_length : i32) (names : list string) (acc : list string)
@@ -3024,18 +3486,28 @@
     | (_, schema) :: rest => member_parts rest (module_parts schema :: acc)
     | [] => reverse acc []
 
+:= versioned_family_text \* form.
+    (members : list (string * xsd_schema form)) (first : module_parts) (split : family_split)
+    (versions : list module_parts)
+    : string
+    =
+    family_text (member_modules members []) (versioned_names first::items split::shared versions [])
+
+:= family_third \* form.
+    (members : list (string * xsd_schema form)) (versions : list module_parts) (split : family_split)
+    : string
+    =
+    ?= versions ?|
+    | first :: _ => versioned_family_text members first split versions
+    | [] => ""
+
 := generate_versioned_family \* form.
     (members : list (string * xsd_schema form)) (core_module : string)
     : string * list string * string
     =
     := versions = member_parts members []
     := split = split_family versions core_module
-    ?= versions ?|
-    | first :: _ =>
-        split::core_text,
-        split::version_texts,
-        family_text (member_modules members []) (versioned_names first::items split::shared versions [])
-    | [] => split::core_text, split::version_texts, ""
+    split::core_text, split::version_texts, family_third members versions split
 
 := generate_enumerations \* form. (schema : xsd_schema form) : string =
     texts_of (reverse (emit_types schema::simple_types []) [])
@@ -3123,21 +3595,26 @@
     ?> failwith "the witness indexes each version"
     ? sm'::contains "    | Leaf_v2 :: generated_demo_v2.x_leaf -> x_leaf v2\n" family = !-
     ?> failwith "a changed type becomes a version-indexed union"
-    ? sm'::contains "    | V1 _ => Leaf_v1 (generated_demo_v1.x_leaf_of_xml c)\n" family = !-
+    := v1 = "    | V1 _ => xml_codec.mapped (fun x => Leaf_v1 x) (generated_demo_v1.x_leaf_of_xml c)\n"
+    ? sm'::contains v1 family = !-
     ?> failwith "the reader matches the witness once"
     ? sm'::contains "union x_root v =" family = !- ?> failwith "a type over a changed type is versioned too"
     ? sm'::contains "x_code" family ?> failwith "core types are not versioned"
 
 :== complement_member form = { case_name : string; module_name : string; schema : xsd_schema form }
 
+:= element_root_type \* form.
+    (name : tag_name) (inline : option (xsd type_def form)) (type_ref : option (type_reference form))
+    : string
+    =
+    ?= inline, type_ref ?|
+    | Some _, _ => type_name (tag_text name)
+    | None, Some reference => type_name (xml::local_name (reference_text reference))
+    | None, None => type_name ""
+
 := root_reader \* form. (member : complement_member form) : string * string =
     ?= member::schema::elements ?|
-    | (Element e) :: _ =>
-        := local = xml::local_name (tag_text e::name)
-        ?= e::inline, e::type_ref ?|
-        | Some _, _ => local, type_name (tag_text e::name)
-        | None, Some reference => local, type_name (xml::local_name (reference_text reference))
-        | None, None => local, type_name ""
+    | (Element e) :: _ => xml::local_name (tag_text e::name), element_root_type e::name e::inline e::type_ref
     | _ => "", ""
 
 :~ ^ complement_case_lines \* form. (members : list (complement_member form)) (acc : list string) : list string =
@@ -3163,9 +3640,9 @@
             acc
             ++# "if "
             ++# test
-            ++# " then "
+            ++# " then xml_codec.decoded_or (fun v => "
             ++# member::case_name
-            ++# " ("
+            ++# " v) (Unknown node) ("
             ++# member::module_name
             ++# "."
             ++# ty
@@ -3183,33 +3660,40 @@
         complement_case_writes rest ("    | " ++# member::case_name ++# " v => " ++# body :: acc)
     | [] => reverse acc []
 
+:= complement_namespace_text () : string =
+    "\ninl complement_namespace (node : xml.xml_node) : string =\n"
+    ++# "    inl name = xml.node_name node\n"
+    ++# "    inl colon = sm'.index_of \":\" name\n"
+    ++# "    inl key = if colon >= 0i32 then sm'.(++#) \"xmlns:\" (sm'.substring 0i32 colon name) else \"xmlns\"\n"
+    ++# "    match xml.attribute_of key (xml.element_attributes node) with\n"
+    ++# "    | Some uri => uri\n"
+    ++# "    | None => \"\"\n"
+
+:= complement_in_text () : string =
+    "\ninl complement_in (space : string) (node : xml.xml_node) : xml.xml_node =\n"
+    ++# "    xml.element (xml.node_name node) ((\"xmlns\", space) :: xml.element_attributes node)"
+    ++# " (xml.element_children node)\n"
+
+:= complement_reader_text \* form. (members : list (complement_member form)) : string =
+    "\ninl complement_of_xml (node : xml.xml_node) : complement =\n"
+    ++# "    inl local = xml.local_name (xml.node_name node)\n"
+    ++# "    inl space = complement_namespace node\n"
+    ++# "    "
+    ++# complement_case_dispatch members ""
+
+:= complement_writer_text \* form. (members : list (complement_member form)) : string =
+    complement_in_text ()
+    ++# "\ninl complement_to_xml (x : complement) : xml.xml_node =\n"
+    ++# "    match x with\n"
+    ++# join_lines (complement_case_writes members []) ""
+    ++# "    | Unknown node => node\n"
+
 := generate_complements \* form. (members : list (complement_member form)) : string =
     := head =
         "union complement =\n"
         ++# join_lines (complement_case_lines members []) ""
         ++# "    | Unknown : xml.xml_node\n"
-    := space =
-        "\ninl complement_namespace (node : xml.xml_node) : string =\n"
-        ++# "    inl name = xml.node_name node\n"
-        ++# "    inl colon = sm'.index_of \":\" name\n"
-        ++# "    inl key = if colon >= 0i32 then sm'.(++#) \"xmlns:\" (sm'.substring 0i32 colon name) else \"xmlns\"\n"
-        ++# "    match xml.attribute_of key (xml.element_attributes node) with\n"
-        ++# "    | Some uri => uri\n"
-        ++# "    | None => \"\"\n"
-    := reader =
-        "\ninl complement_of_xml (node : xml.xml_node) : complement =\n"
-        ++# "    inl local = xml.local_name (xml.node_name node)\n"
-        ++# "    inl space = complement_namespace node\n"
-        ++# "    " ++# complement_case_dispatch members ""
-    := writer =
-        "\ninl complement_in (space : string) (node : xml.xml_node) : xml.xml_node =\n"
-        ++# "    xml.element (xml.node_name node) ((\"xmlns\", space) :: xml.element_attributes node)"
-        ++# " (xml.element_children node)\n"
-        ++# "\ninl complement_to_xml (x : complement) : xml.xml_node =\n"
-        ++# "    match x with\n"
-        ++# join_lines (complement_case_writes members []) ""
-        ++# "    | Unknown node => node\n"
-    head ++# space ++# reader ++# writer
+    head ++# complement_namespace_text () ++# complement_reader_text members ++# complement_writer_text members
 
 := complement_any_content () : string =
     "type any_content = list complement\n\n"
@@ -3235,7 +3719,9 @@
             text
         = !-
     ?> failwith "one typed case per complement plus Unknown"
-    ? sm'::contains "then Pagos20 (generated_cfdi_pagos20.x_pagos_of_xml node)" text = !-
+    := typed =
+        "then xml_codec.decoded_or (fun v => Pagos20 v) (Unknown node) (generated_cfdi_pagos20.x_pagos_of_xml node)"
+    ? sm'::contains typed text = !-
     ?> failwith "the reader builds the typed case"
     ? sm'::contains "else Unknown node\n" text = !- ?> failwith "an unknown complement keeps its whole element"
     ?
@@ -3285,13 +3771,16 @@
             "<xs:schema><xs:simpleType name=\"TDigits\"><xs:restriction base=\"xs:string\"><xs:pattern "
             ++# "value=\"[0-9]{2}\"/></xs:restriction></xs:simpleType></xs:schema>"
         )
-    := main, text = generated_units schema
+    := main, unit = generated_units schema
     ? sm'::contains "_certificate () =" main ?> failwith "certificates leave the main unit"
-    ? sm'::contains "_certificate () =" text = !- ?> failwith "a pattern's DFA is emitted with its certificate"
-    ? sm'::contains "xsd_certificate.PackedMoves (exists (xsd_certificate.MovesNext (" text = !-
-    ?> failwith "each row's moves are packed as a length-indexed witness"
-    ? sm'::contains "inl certificates_checked () : i32 = 0i32 + xsd_certificate.certified_table (" text = !-
-    ?> failwith "the module sums its certified tables"
+    ?= unit ?|
+    | Some text =>
+        ? sm'::contains "_certificate () =" text = !- ?> failwith "a pattern's DFA is emitted with its certificate"
+        ? sm'::contains "xsd_certificate.PackedMoves (exists (xsd_certificate.MovesNext (" text = !-
+        ?> failwith "each row's moves are packed as a length-indexed witness"
+        ? sm'::contains "inl certificates_checked () : i32 = 0i32 + xsd_certificate.certified_table (" text = !-
+        ?> failwith "the module sums its certified tables"
+    | None => failwith "a pattern makes a certificates unit"
 
 ///> rust
 :# pattern_restricted_dates_keep_a_valid_date =
@@ -3351,8 +3840,10 @@
     := main, certificates = generated_units schema
     ? sm'::contains "union x_certificate_values_type_choice_encapsulated_x509_certificate =" main = !-
     ?> failwith "a type whose name ends in _certificate stays in the main unit"
-    ? sm'::contains "xsd_certificate.certified_table (x_certificate_values_type" certificates
-    ?> failwith "only certificate items are certified"
+    ?= certificates ?|
+    | Some text ?& sm'::contains "xsd_certificate.certified_table (x_certificate_values_type" text =>
+        failwith "only certificate items are certified"
+    | _ => ()
 
 ///> rust
 :# a_choice_of_only_wildcards_is_any_content =
@@ -3368,6 +3859,22 @@
     ?> failwith "a wildcard-only choice keeps its content as any_content"
     ? sm'::contains "type any_content = list xml.xml_node\n" main = !-
     ?> failwith "by default any_content is the raw nodes"
+
+///> rust
+:# a_sequence_of_only_wildcards_is_any_content =
+    := schema =
+        read_schema (
+            "<xs:schema><xs:complexType name=\"ObjectType\" mixed=\"true\">"
+            ++# "<xs:sequence minOccurs=\"0\" maxOccurs=\"unbounded\">"
+            ++# "<xs:any namespace=\"##any\" processContents=\"lax\"/>"
+            ++# "</xs:sequence><xs:attribute name=\"Id\" type=\"xs:ID\" use=\"optional\"/></xs:complexType></xs:schema>"
+        )
+    := main, _ = generated_units schema
+    ? sm'::contains "group_empty" main ?> failwith "a wildcard-only sequence emits no empty group"
+    ? sm'::contains (field_line "any" "any_content") main = !-
+    ?> failwith "a wildcard-only sequence keeps its content as any_content"
+    ? sm'::contains "v_any, errors = any_content_of (xml.unclaimed_children" main = !-
+    ?> failwith "the reader keeps every unclaimed child of a wildcard-only sequence"
 
 ///> rust
 :# cyclic_types_become_one_recursive_group =
@@ -3397,7 +3904,7 @@
             ++# "</xs:sequence></xs:complexType></xs:schema>"
         )
     := main, _ = generated_units schema
-    ? sm'::contains "any = any_content_of (xml.unclaimed_children [\"Version\"] children)" main = !-
+    ? sm'::contains "v_any, errors = any_content_of (xml.unclaimed_children [\"Version\"] children), errors" main = !-
     ?> failwith "the reader keeps the wildcard's children instead of dropping them"
     ? sm'::contains "        any = []\n" main ?> failwith "no reader discards wildcard content"
     := typed, _ = generated_units_with (complement_any_content ()) schema
@@ -3420,9 +3927,9 @@
             ++# "<xs:element name=\"B\" type=\"xs:string\"/></xs:choice></xs:complexType></xs:schema>"
         )
     := main, _ = generated_units schema
-    ? sm'::contains "x_transport_type_choice_vehicle: no alternative present" main
+    ? sm'::contains "    else xml_codec.no_alternative \"x_transport_type_choice_vehicle\"" main
     ?> failwith "a choice whose alternatives can be empty reads its empty content"
-    ? sm'::contains "x_pick_type_choice_a: no alternative present" main = !-
+    ? sm'::contains "    else xml_codec.no_alternative \"x_pick_type_choice_a\"" main = !-
     ?> failwith "a choice of required alternatives still rejects missing content"
 
 ///> rust
@@ -3446,7 +3953,9 @@
     ?> failwith "a repeated sequence around one choice repeats the choice (xmldsig X509Data)"
     ? sm'::contains "        choice_registro_alta : x_registro_factura_type_choice" main = !-
     ?> failwith "a prefixed choice keeps its choice_ field name in the type (VeriFactu sf:RegistroAlta)"
-    ? sm'::contains "        choice_registro_alta = x_registro_factura_type_choice" main = !-
+    := reader_field =
+        "o_choice_registro_alta, errors = xml_codec.taken (x_registro_factura_type_choice_sf_registro_alta"
+    ? sm'::contains reader_field main = !-
     ?> failwith "the reader fills the same field the type declares"
 
 ///> rust
@@ -3472,7 +3981,9 @@
     ?> failwith "an explicit whiteSpace facet wins over the base"
     ? sm'::contains "match xml.collapsed_space s with s => if x_t_string_is_valid" main
     ?> failwith "an xs:string restriction preserves its text"
-    ? sm'::contains "xml.required_attribute \"Version\" (xml.checked_fixed \"Version\" \"4.0\" attributes)" main = !-
+    ?
+        sm'::contains "xml_codec.attribute_required \"Version\" attributes errors" main = !-
+        || sm'::contains "inl errors = xml_codec.fixed_checked \"Version\" \"4.0\" attributes errors" main = !-
     ?> failwith "a fixed attribute reads through its check"
 
 ///> rust
@@ -3569,9 +4080,9 @@
     ? sm'::contains ("and let " ++# doc ++# "_of_children forall s.") functions = !-
     ?> failwith "a staged type's reader takes the stage"
     ? sm'::contains "(witness : stage s)" functions = !- ?> failwith "and the stage's witness"
-    ? sm'::contains "staged_of witness (fun () =>" functions = !-
+    ? sm'::contains "staged_read witness (fun errors =>" functions = !-
     ?> failwith "the signature is read through the witness"
-    ? sm'::contains (doc ++# "_of_xml witness c") functions = !- ?> failwith "a container passes the witness on"
+    ? sm'::contains ("(" ++# doc ++# "_of_xml witness)") functions = !- ?> failwith "a container passes the witness on"
     ? sm'::contains ("and let " ++# plain ++# "_of_children") functions = !-
     ?> failwith "an unsigned type still has a reader"
     ? sm'::contains (plain ++# "_of_children forall") functions ?> failwith "an unsigned type's reader takes no stage"
@@ -3617,7 +4128,7 @@
     ? sm'::contains (field_line "Signature" "staged s (list (string))" ++# "\n") text = !-
     ?> failwith "a required signature list is one staged slot"
     := functions = join_lines (module_parts_staged staged [ "Signature" ] schema)::functions ""
-    ? sm'::contains "staged_of witness (fun () => listm.map" functions = !-
+    ? sm'::contains "staged_read witness (fun errors => xml_codec.as_some (xml_codec.read_repeated" functions = !-
     ?> failwith "the reader stages the whole list"
     ? sm'::contains "listm.concat (staged_list (fun vs => listm.map (fun v =>" functions = !-
     ?> failwith "the writer writes every present signature"
@@ -3676,6 +4187,57 @@
     ? sm'::contains "listm'.filter (fun (n, _) => n <> \"cur\") (" functions = !-
     ?> failwith "the base's attributes leave out the one the restriction re-declares"
     ? sm'::contains "\"ver\"" functions = !- ?> failwith "the base's other attributes are still written"
+
+///> rust
+:# builtins_become_lexical_carriers =
+    := schema =
+        read_schema (
+            "<xs:schema><xs:element name=\"Order\"><xs:complexType><xs:sequence>"
+            ++# (
+                "<xs:element name=\"Total\" type=\"xs:decimal\"/><xs:element name=\"Lines\" "
+                ^^ "type=\"xs:positiveInteger\"/>"
+            )
+            ++# (
+                "<xs:element name=\"Paid\" type=\"xs:boolean\" minOccurs=\"0\"/><xs:element name=\"Price\" "
+                ^^ "type=\"TAmount\"/>"
+            )
+            ++# (
+                "</xs:sequence><xs:attribute name=\"seq\" type=\"xs:int\" "
+                ^^ "use=\"required\"/></xs:complexType></xs:element>"
+            )
+            ++# "<xs:complexType name=\"TAmount\"><xs:simpleContent><xs:extension base=\"xs:decimal\">"
+            ++# (
+                "<xs:attribute name=\"cur\" type=\"xs:string\"/></xs:extension></xs:simpleContent></xs:complexType>"
+                ^^ "</xs:schema>"
+            )
+        )
+    := main, _ = generated_units schema
+    ? sm'::contains (field_line "total" "xsd_decimal") main = !- ?> failwith "xs:decimal is carried as xsd_decimal"
+    ? sm'::contains (field_line "lines" "xsd_positive_integer") main = !-
+    ?> failwith "xs:positiveInteger has its carrier"
+    ? sm'::contains (field_line "paid" "option (xsd_boolean)") main = !- ?> failwith "an optional xs:boolean"
+    ? sm'::contains (field_line "seq" "xsd_integer") main = !-
+    ?> failwith "an xs:int attribute is carried as an integer"
+    ? sm'::contains (field_line "base" "xsd_decimal") main = !- ?> failwith "a simpleContent decimal base is carried"
+    ? sm'::contains "(xml_codec.read_value xsd_decimal_of_string)" main = !-
+    ?> failwith "decimals read through their parser"
+    ? sm'::contains "type xsd_decimal = lexical decimal.decimal\n" main = !-
+    ?> failwith "the decimal carrier is declared"
+    ? sm'::contains "instance to_text lexical t = fun x => x.text\n" main = !- ?> failwith "carriers print their text"
+    ? sm'::contains "type xsd_non_negative_integer" main ?> failwith "a carrier the schema never uses is not declared"
+
+///> rust
+:# text_only_schemas_declare_no_carrier =
+    := main, _ = generated_units (read_schema "<xs:schema><xs:element name=\"Note\" type=\"xs:string\"/></xs:schema>")
+    ? sm'::contains "lexical" main
+    ?> failwith "a schema without numeric or boolean builtins keeps its text-only prelude"
+
+///> rust
+:# a_schema_without_patterns_has_no_certificates_unit =
+    := _, unit = generated_units (read_schema "<xs:schema><xs:element name=\"Note\" type=\"xs:string\"/></xs:schema>")
+    ?= unit ?|
+    | Some _ => failwith "nothing to certify means no certificates unit"
+    | None => ()
 
 ///> rust
 :# a_ref_inside_a_referenced_element_keeps_its_type =

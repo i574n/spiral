@@ -57,8 +57,7 @@ pub fn main() {
     let v1 = spiral_string_length(v0)
     let v2 = spiral_string_index(v0, 0)
     let v3 = spiral_string_index(v0, 1)
-    let v4 = "x"
-    let v5 = { v0 } <> { v4 }
+    let v5 = { v0 } <> { "x" }
     let v6 = spiral_string_length(v5)
     let v7 = "ab"
     let v8 = spiral_string_index(v7, 0)
@@ -76,40 +75,35 @@ pub fn main() {
             let v18 =
                 case v16 {
                     True -> {
-                        let v17 = v8 == "a"
-                        v17
+                        v8 == "a"
                     }
                     False -> False
                 }
             let v20 =
                 case v18 {
                     True -> {
-                        let v19 = v6 == 3
-                        v19
+                        v6 == 3
                     }
                     False -> False
                 }
             let v22 =
                 case v20 {
                     True -> {
-                        let v21 = v10 == 1
-                        v21
+                        v10 == 1
                     }
                     False -> False
                 }
             let v24 =
                 case v22 {
                     True -> {
-                        let v23 = v12 == 0
-                        v23
+                        v12 == 0
                     }
                     False -> False
                 }
             let v26 =
                 case v24 {
                     True -> {
-                        let v25 = v14 == 2
-                        v25
+                        v14 == 2
                     }
                     False -> False
                 }

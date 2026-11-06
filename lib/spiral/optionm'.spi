@@ -3,7 +3,6 @@
 :# optionm static =
     :< testing
 
-/// ## optionm'
 := default_value d =
     optionm::defaultWith d
 
@@ -57,7 +56,6 @@
     | Some (Some x) => Some x
     | _ => None
 
-/// ## fsharp
 := option'_types () : () =
     backend_switch {
         Gleam = \ () => global "import gleam/option"
@@ -234,7 +232,6 @@
     |> unbox
     |> _assert_eq' (Some "")
 
-/// ## rust
 := try' \* t. (x : option' t) : t =
     !\\(x, $'"$0?"')
 

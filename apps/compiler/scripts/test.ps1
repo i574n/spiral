@@ -17,17 +17,19 @@ param(
     [switch]$ReuseCompile,
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
     [string]$WorkspaceRoot,
-    [ValidateSet('Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Delphi', 'Cpp', 'Kotlin', 'Swift', 'Wgsl', 'Calyx', 'OpenQasm', 'Ebpf')][string]$Probe,
+    [ValidateSet('Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Pascal', 'Delphi', 'Cpp', 'Kotlin', 'Swift', 'Wgsl', 'Calyx', 'OpenQasm', 'Ebpf')][string]$Probe,
     [string[]]$Oracle = @('Zig', 'C')
 )
 . $PSScriptRoot/env.ps1
 $matrix = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/matrix.psd1') -SkipLimitCheck
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
-$Backend = @($Backend | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+function ConvertTo-BackendName([string]$name) { if ($name -eq 'Delphi') { 'Pascal' } else { $name } }
+$Backend = @($Backend | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ } | ForEach-Object { ConvertTo-BackendName $_ })
+if ($Probe) { $Probe = ConvertTo-BackendName $Probe }
 if ($BackendsFrom -and -not $Backend) {
     $pair = @($BackendsFrom | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
     if ($pair.Count -ne 2) { throw '-BackendsFrom takes two compiler sources: before, then after' }
-    $sectionBackend = @{ Fsharp = 'Fsharp'; Rust = 'Rust'; Pascal = 'Delphi'; Zig = 'Zig'; Lean = 'Lean'; Bend = 'Bend'; Gleam = 'Gleam'; Lua = 'Lua'; Wasm = 'Wasm'; Wgsl = 'Wgsl'; Calyx = 'Calyx'; Kotlin = 'Kotlin'; Swift = 'Swift'; OpenQasm = 'OpenQasm'; Ebpf = 'Ebpf'; TypeScript = 'TypeScript'; C = 'C'; RefCounting = 'C'; Cpp = 'Cpp'; Python = 'Python' }
+    $sectionBackend = @{ Fsharp = 'Fsharp'; Rust = 'Rust'; Pascal = 'Pascal'; Zig = 'Zig'; Lean = 'Lean'; Bend = 'Bend'; Gleam = 'Gleam'; Lua = 'Lua'; Wasm = 'Wasm'; Wgsl = 'Wgsl'; Calyx = 'Calyx'; Kotlin = 'Kotlin'; Swift = 'Swift'; OpenQasm = 'OpenQasm'; Ebpf = 'Ebpf'; TypeScript = 'TypeScript'; C = 'C'; RefCounting = 'C'; Cpp = 'Cpp'; Python = 'Python' }
     $owners = [Collections.Generic.HashSet[string]]::new()
     $shared = $false
     $files = $pair | ForEach-Object { , [IO.File]::ReadAllLines($_) }
@@ -63,7 +65,7 @@ if ($Suite -contains 'families' -and $Suite.Count -gt 1) { throw "-Suite familie
 $fastSuite = $Suite -contains 'fast'
 if ($fastSuite -and $Suite.Count -gt 1) { throw "-Suite fast picks its rows from every suite and does not combine with '$($Suite -join ',')'" }
 if ($fastSuite -and ($Accept -or $Record)) { throw '-Suite fast runs a subset picked from run history: -Accept and -Record need the full suite' }
-foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
+foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Pascal', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
 $mode = ConvertTo-SpiralMode $Mode
 $suiteTimeoutSec = @{ frontier = 20; smoke = 20; examples = 20; contracts = 30; mega = 180 }
 $recycleWarmBatches = [bool]$WarmRecycle
@@ -106,7 +108,7 @@ $runStart = [DateTime]::UtcNow
 
 if ($Suite -contains 'families') {
     $families = Join-Path $BundleRoot 'tests/families'
-    $modules = @((Get-Content -Raw (Join-Path $families 'package.spiproj')) -split "`n" | Where-Object { $_ -match '^\s+(\w+_family)\s*$' } | ForEach-Object { "$($Matches[1]).spi" })
+    $modules = @((Get-SpiralManifestText $families) -split "`n" | Where-Object { $_ -match '^\s+(\w+_family)\s*$' } | ForEach-Object { "$($Matches[1]).spi" })
     $env:SPIRAL_COMPILER_DLL = $compiler
     try { pwsh -NoProfile -File (Join-Path $PSScriptRoot 'test-blocks.ps1') -Lib $families -Files ($modules -join ',') -Out $runDir -Compiler process; $failed = $LASTEXITCODE }
     finally { Remove-Item Env:SPIRAL_COMPILER_DLL -ErrorAction SilentlyContinue }
@@ -122,8 +124,8 @@ if ($Suite -contains 'linked') {
         $spec = $matrix.Linked[$case]
         $caseDir = Join-Path $BundleRoot $case
         $units = @{}
-        foreach ($dir in Get-ChildItem $caseDir -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'package.spiproj') }) {
-            $proj = Get-Content -Raw (Join-Path $dir.FullName 'package.spiproj')
+        foreach ($dir in Get-ChildItem $caseDir -Directory | Where-Object { Test-SpiralManifest $_.FullName }) {
+            $proj = Get-SpiralManifestText $dir.FullName
             $section = { param($name) if ($proj -match "(?ms)^$($name):\s*\n((?:[ \t]+\S.*\n?)*)") { @($Matches[1] -split '\n' | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^[\w.]+-$' } | ForEach-Object { $_.TrimEnd('-') }) } else { @() } }
             $units[$dir.Name] = @{ Dir = $dir.FullName; Packages = & $section 'packages'; Links = & $section 'link' }
         }
@@ -131,7 +133,7 @@ if ($Suite -contains 'linked') {
         $order = [System.Collections.Generic.List[string]]::new()
         $visit = { param($u) foreach ($l in $units[$u].Links) { if (-not $order.Contains($l)) { & $visit $l } }; if (-not $order.Contains($u)) { $order.Add($u) } }
         & $visit $root
-        foreach ($b in @($spec['Backends'] -split ',')) {
+        foreach ($b in @($spec['Backends'] -split ',' | ForEach-Object { ConvertTo-BackendName $_ })) {
             if ($Backend -and $b -notin $Backend) { continue }
             $out = Join-Path $runDir "linked/$($case -replace '^samples/', '')/$b"
             New-Item -ItemType Directory -Force $out | Out-Null
@@ -267,7 +269,7 @@ if ($Suite -contains 'split') {
     exit ([int]($failed.Count -gt 0))
 }
 
-$extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Delphi = 'pas'; Zig = 'zig'; Wasm = 'wat'; Wgsl = 'wgsl'; Calyx = 'futil'; Kotlin = 'kt'; Swift = 'swift'; OpenQasm = 'qasm'; Ebpf = 'ebpf'; Lean = 'lean'; Bend = 'bend'; Gleam = 'gleam'; Lua = 'lua'; TypeScript = 'ts'; Cpp = 'cpp'; Python = 'py' }
+$extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Pascal = 'pas'; Zig = 'zig'; Wasm = 'wat'; Wgsl = 'wgsl'; Calyx = 'futil'; Kotlin = 'kt'; Swift = 'swift'; OpenQasm = 'qasm'; Ebpf = 'ebpf'; Lean = 'lean'; Bend = 'bend'; Gleam = 'gleam'; Lua = 'lua'; TypeScript = 'ts'; Cpp = 'cpp'; Python = 'py' }
 $coreBackend = @{ Cpp = 'Cpp + Cuda'; Python = 'Python + Cuda' }
 function Get-Rel([string]$path) { [IO.Path]::GetRelativePath($BundleRoot, $path).Replace('\', '/') }
 
@@ -288,7 +290,7 @@ function Get-Entry([string]$dir) {
 function Test-ContractSample([string]$relative) { $relative -like 'samples/contract_*' -or $relative -like 'samples/mega_*' }
 
 $sampleBackends = @{}
-foreach ($set in $matrix.Backends.Keys) { foreach ($sample in $matrix.Backends[$set]) { $sampleBackends[$sample] = @($set -split ',') } }
+foreach ($set in $matrix.Backends.Keys) { foreach ($sample in $matrix.Backends[$set]) { $sampleBackends[$sample] = @($set -split ',' | ForEach-Object { ConvertTo-BackendName $_ }) } }
 $listedSamples = @{}
 foreach ($listed in 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'Python') { $listedSamples[$listed] = @{}; foreach ($sample in @($matrix[$listed])) { if ($sample) { $listedSamples[$listed][$sample] = $true } } }
 function Add-ListedBackends([string]$relative, [string[]]$backends) {
@@ -299,7 +301,7 @@ function Add-ListedBackends([string]$relative, [string[]]$backends) {
 }
 function Get-ExampleBackends([string]$dir) {
     $relative = 'samples/' + (Split-Path $dir -Leaf)
-    $backends = if ($sampleBackends.ContainsKey($relative)) { $sampleBackends[$relative] } else { @('Fsharp', 'C', 'Rust', 'Delphi') }
+    $backends = if ($sampleBackends.ContainsKey($relative)) { $sampleBackends[$relative] } else { @('Fsharp', 'C', 'Rust', 'Pascal') }
     Add-ListedBackends $relative $backends
 }
 
@@ -311,7 +313,7 @@ function Get-Samples([string]$suite) {
     switch ($suite) {
         'frontier' {
             Get-ChildItem (Join-Path $BundleRoot 'samples') -Directory -Filter 'frontier_*' | ForEach-Object {
-                New-Sample 'frontier' (Get-Entry $_.FullName) (Add-ListedBackends "samples/$($_.Name)" @('Fsharp', 'C', 'Rust', 'Delphi')) }
+                New-Sample 'frontier' (Get-Entry $_.FullName) (Add-ListedBackends "samples/$($_.Name)" @('Fsharp', 'C', 'Rust', 'Pascal')) }
         }
         'smoke' {
             $matrix.Smoke | ForEach-Object {
@@ -328,7 +330,7 @@ function Get-Samples([string]$suite) {
             Get-ChildItem (Join-Path $BundleRoot 'samples') -Directory -Filter 'contract_*' | Where-Object { Get-Entry $_.FullName } | ForEach-Object {
                 New-Sample 'contracts' (Get-Entry $_.FullName) (Get-ContractBackends "samples/$($_.Name)") }
             Get-ChildItem (Join-Path $BundleRoot 'samples') -Directory -Filter 'mega_*' | ForEach-Object {
-                Get-ChildItem $_.FullName -Directory | Where-Object { (Test-Path (Join-Path $_.FullName 'package.spiproj')) -and (Get-Entry $_.FullName) } | ForEach-Object {
+                Get-ChildItem $_.FullName -Directory | Where-Object { (Test-SpiralManifest $_.FullName) -and (Get-Entry $_.FullName) } | ForEach-Object {
                     $relative = Get-Rel $_.FullName
                     $backends = if ($sampleBackends.ContainsKey($relative)) { $sampleBackends[$relative] } else { Get-ContractBackends $relative }
                     New-Sample 'contracts' (Get-Entry $_.FullName) (Add-ListedBackends $relative $backends) } }
@@ -348,7 +350,7 @@ if ($fastSuite) {
     $fastKeys = [Collections.Generic.HashSet[string]]::new()
     $restKeys = [Collections.Generic.HashSet[string]]::new()
     foreach ($row in Import-Csv $fastList -Delimiter "`t") {
-        $key = "$($row.id)|$($row.backend)"
+        $key = "$($row.id)|$(ConvertTo-BackendName $row.backend)"
         if ($row.tier -eq 'fast') { [void]$fastKeys.Add($key) } else { [void]$restKeys.Add($key) }
     }
 }
@@ -356,8 +358,8 @@ $samples = $suites | ForEach-Object { Get-Samples $_ } | Sort-Object Id -Unique
 if ($ChangedBetween) {
     $pair = @($ChangedBetween | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
     if ($pair.Count -ne 2) { throw '-ChangedBetween takes two results.tsv paths: the control run, then the candidate run' }
-    $left = @{}; foreach ($row in Import-Csv -Delimiter "`t" $pair[0]) { $left["$($row.id)|$($row.backend)"] = $row.residual }
-    $changedIds = @(Import-Csv -Delimiter "`t" $pair[1] | Where-Object { $_.residual -and $left["$($_.id)|$($_.backend)"] -and $_.residual -ne $left["$($_.id)|$($_.backend)"] } | ForEach-Object id | Sort-Object -Unique)
+    $left = @{}; foreach ($row in Import-Csv -Delimiter "`t" $pair[0]) { $left["$($row.id)|$(ConvertTo-BackendName $row.backend)"] = $row.residual }
+    $changedIds = @(Import-Csv -Delimiter "`t" $pair[1] | Where-Object { $_.residual -and $left["$($_.id)|$(ConvertTo-BackendName $_.backend)"] -and $_.residual -ne $left["$($_.id)|$(ConvertTo-BackendName $_.backend)"] } | ForEach-Object id | Sort-Object -Unique)
     Write-Host "-ChangedBetween: $($changedIds.Count) samples whose residual differs"
     if (-not $changedIds) { Write-Host 'nothing changed between the two runs'; if ($lockHeld) { $lock.ReleaseMutex() }; exit 0 }
     $samples = $samples | Where-Object { $_.Id -in $changedIds }
@@ -531,7 +533,7 @@ Write-Host ("== compiled in {0:N1}s" -f $sw.Elapsed.TotalSeconds)
 
 foreach ($job in $jobs) {
     $c = $compiled[$job.Key]
-    if (-not $c -or $c.Status -notin 'timeout', 'crash' -or $job.Backend -in 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { continue }
+    if (-not $c -or $c.Status -notin 'timeout', 'crash' -or $job.Backend -in 'Rust', 'Pascal', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { continue }
     $core = Get-Item -LiteralPath $job.Output -ErrorAction SilentlyContinue
     if (-not $core -or $core.LastWriteTimeUtc -lt $runStart) { continue }
     $c.Status = 'emitted'
@@ -664,7 +666,7 @@ $shimsByBackend = @{
     TypeScript = @('run_main.mjs'); Lua = @('run_main.lua'); Python = @(); Cpp = @()
     Gleam = @('gleam'); Kotlin = @('kotlin-server'); OpenQasm = @('openqasm-run'); Wgsl = @('wgsl-run')
     C = @('*.h'); Ebpf = @('*.h')
-    Rust = @(); Delphi = @(); Zig = @(); Lean = @(); Bend = @(); Wasm = @(); Swift = @(); Calyx = @()
+    Rust = @(); Pascal = @(); Zig = @(); Lean = @(); Bend = @(); Wasm = @(); Swift = @(); Calyx = @()
     Fsharp = @('fsharp-warm')
 }
 $shimKeys = @{}
@@ -958,7 +960,7 @@ function Build-And-Run($job) {
         'C' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-fwrapv', '-w') + (Get-CFlags $job) + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
         'Ebpf' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-fwrapv', '-w', '-x', 'c') + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
         'Rust' { if (-not $tools.Rustc) { return 'no-toolchain' }; Invoke-Native $tools.Rustc @('+nightly-2026-10-18', '-C', 'opt-level=2', '-A', 'warnings', '--edition', '2024', '-o', $exe, $job.Output) $dir 180 }
-        'Delphi' { if (-not $tools.Fpc) { return 'no-toolchain' }; Invoke-Native $tools.Fpc @('-O2', '-Mdelphi', '-Px86_64', "-FE$binDir", "-FU$binDir", "-o$exe", $job.Output) $dir 180 }
+        'Pascal' { if (-not $tools.Fpc) { return 'no-toolchain' }; Invoke-Native $tools.Fpc @('-O2', '-Mdelphi', '-Px86_64', "-FE$binDir", "-FU$binDir", "-o$exe", $job.Output) $dir 180 }
         'Zig' {
             if (-not $zigExe) { return 'no-toolchain' }
             $zigSource = $job.Output
@@ -1224,7 +1226,7 @@ if ($Native -and $ReuseNative) {
 }
 $expectedPath = Get-SpiralBaselinePath
 $expected = @{}
-if (Test-Path $expectedPath) { Import-Csv $expectedPath -Delimiter "`t" | ForEach-Object { $expected["$($_.id)|$($_.backend)"] = $_ } }
+if (Test-Path $expectedPath) { Import-Csv $expectedPath -Delimiter "`t" | ForEach-Object { $_.backend = ConvertTo-BackendName $_.backend; $expected["$($_.id)|$($_.backend)"] = $_ } }
 
 $rows = foreach ($job in $jobs) {
     $c = $compiled[$job.Key]
@@ -1247,7 +1249,7 @@ function Test-FailureExit([string]$backend, [string]$exit) {
     if ($code -lt 0 -or $code -ge 3221225472L) { return $true }
     if ($code -in 1, 3, 134) { return $true }
     if ($backend -eq 'Rust' -and $code -eq 101) { return $true }
-    if ($backend -eq 'Delphi' -and $code -in @(200..219) + @(227, 229, 231, 232)) { return $true }
+    if ($backend -eq 'Pascal' -and $code -in @(200..219) + @(227, 229, 231, 232)) { return $true }
     $false
 }
 function Test-SharedFailure($c, $row) {
@@ -1256,18 +1258,18 @@ function Test-SharedFailure($c, $row) {
 }
 $byId = $rows | Group-Object id -AsHashTable
 $known = @{}
-$oracles = @($Oracle | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
-foreach ($name in $oracles) { if ($name -notin 'C', 'Zig', 'Rust', 'Delphi', 'Wasm', 'Lean', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Kotlin', 'Swift') { throw "unknown oracle '$name'" } }
+$oracles = @($Oracle | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ } | ForEach-Object { ConvertTo-BackendName $_ })
+foreach ($name in $oracles) { if ($name -notin 'C', 'Zig', 'Rust', 'Pascal', 'Wasm', 'Lean', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Kotlin', 'Swift') { throw "unknown oracle '$name'" } }
 $Oracle = $oracles[0]
 function Get-ScopedKnown([string]$OracleName) {
     $scoped = @{}
     $platform = if ($IsWindows) { 'Windows' } else { 'Linux' }
-    $matrix.Known | Where-Object { (-not $_.ContainsKey('Oracle') -or $_['Oracle'] -eq $OracleName) -and (-not $_.ContainsKey('Platform') -or $_['Platform'] -eq $platform) } | ForEach-Object { $scoped["$($_.Id)|$($_.Backend)"] = $_.Reason }
+    $matrix.Known | Where-Object { (-not $_.ContainsKey('Oracle') -or $_['Oracle'] -eq $OracleName) -and (-not $_.ContainsKey('Platform') -or $_['Platform'] -eq $platform) } | ForEach-Object { $scoped["$($_.Id)|$(ConvertTo-BackendName $_.Backend)"] = $_.Reason }
     $scoped
 }
 $known = Get-ScopedKnown $Oracle
 $noOracle = if ($Oracle -eq 'C') { 'no-c' } else { "no-$($Oracle.ToLowerInvariant())" }
-foreach ($row in $rows | Where-Object { $_.backend -in 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python' -and $_.backend -ne $Oracle -and $_.native -eq 'ran' }) {
+foreach ($row in $rows | Where-Object { $_.backend -in 'Fsharp', 'C', 'Rust', 'Pascal', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python' -and $_.backend -ne $Oracle -and $_.native -eq 'ran' }) {
     $c = $byId[$row.id] | Where-Object { $_.backend -eq $Oracle -and $_.native -eq 'ran' } | Select-Object -First 1
     if (-not $c -and $Oracle -ne 'C' -and $row.backend -ne 'C') {
         $c = $byId[$row.id] | Where-Object { $_.backend -eq 'C' -and $_.native -eq 'ran' } | Select-Object -First 1
@@ -1353,7 +1355,7 @@ Write-Host "outputs: written next to their sources; git diff samples shows what 
 if ($Probe) { Write-Host "probe outputs ($Probe): $(Join-Path $scratch 'probe')" }
 
 if ($Accept) {
-    $existing = if (Test-Path $expectedPath) { @(Import-Csv $expectedPath -Delimiter "`t") } else { @() }
+    $existing = if (Test-Path $expectedPath) { @(Import-Csv $expectedPath -Delimiter "`t" | ForEach-Object { $_.backend = ConvertTo-BackendName $_.backend; $_ }) } else { @() }
     $acceptRows = @($rows | Where-Object { $_.compile -ne 'timeout' })
     $skipped = $rows.Count - $acceptRows.Count
     if ($skipped) { Write-Host "not accepted: $skipped timeout row(s), they keep their previous oracle entry" -ForegroundColor Yellow }

@@ -9,8 +9,7 @@ pub fn score_0(v0: Us0) -> Int {
             let v7 =
                 case v5 {
                     True -> {
-                        let v6 = v3 == "hi"
-                        v6
+                        v3 == "hi"
                     }
                     False -> False
                 }
@@ -24,13 +23,9 @@ pub fn score_0(v0: Us0) -> Int {
     }
 }
 pub fn main() {
-    let v0 = True
-    let v1 = 7
-    let v2 = "hi"
-    let v3 = True
     let v6 =
-        case v0 {
-            True -> Us0All(v1, v2, v3)
+        case True {
+            True -> Us0All(7, "hi", True)
             False -> Us0One(1)
         }
     score_0(v6)

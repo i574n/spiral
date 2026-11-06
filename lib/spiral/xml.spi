@@ -605,7 +605,10 @@
         ? has_attribute_pair key value into ?> missing_attribute rest into |: Some (key ++# "=" ++# value)
     | [] => None
 
-:~ ^ first_difference_at (path : string) (expected : xml_node) (actual : xml_node) : option string =
+:~ ^ first_difference_at
+    (same : string -> string -> bool) (path : string) (expected : xml_node) (actual : xml_node)
+    : option string
+    =
     := name = local_name (node_name expected)
     := here = path ++# "/" ++# name
     ? name <> local_name (node_name actual) ?> Some (here ++# ": element " ++# local_name (node_name actual))
@@ -624,24 +627,31 @@
                 ?>
                     := e = sm'::trim (text_in (element_children expected))
                     := a = sm'::trim (text_in (element_children actual))
-                    ? e = a ?> None |: Some (here ++# ": text '" ++# e ++# "' vs '" ++# a ++# "'")
-                |: first_child_difference here expected_children actual_children
+                    ? same e a ?> None |: Some (here ++# ": text '" ++# e ++# "' vs '" ++# a ++# "'")
+                |: first_child_difference same here expected_children actual_children
 
-:& :~ first_child_difference (path : string) (expected : list xml_node) (actual : list xml_node) : option string =
+:& :~ first_child_difference
+    (same : string -> string -> bool) (path : string) (expected : list xml_node) (actual : list xml_node)
+    : option string
+    =
     ?= expected ?|
     | e :: rest_expected =>
         ?= actual ?|
         | a :: rest_actual =>
-            ?= first_difference_at path e a ?|
+            ?= first_difference_at same path e a ?|
             | Some d => Some d
-            | None => first_child_difference path rest_expected rest_actual
+            | None => first_child_difference same path rest_expected rest_actual
         | [] => Some (path ++# ": missing " ++# local_name (node_name e))
     | [] =>
         ?= actual ?|
         | a :: _ => Some (path ++# ": extra " ++# local_name (node_name a))
         | [] => None
 
-:= first_difference (expected : xml_node) (actual : xml_node) : option string = first_difference_at "" expected actual
+:= first_difference_by (same : string -> string -> bool) (expected : xml_node) (actual : xml_node) : option string =
+    first_difference_at same "" expected actual
+
+:= first_difference (expected : xml_node) (actual : xml_node) : option string =
+    first_difference_by (\ (e : string) (a : string) => e = a) expected actual
 
 ///> rust
 :# first_difference_ignores_prefixes_and_names_the_first_lost_content =
@@ -659,6 +669,18 @@
     | Some d =>
         ? sm'::contains "/r/a: missing attribute k=1" d = !- ?> failwith ("the changed attribute is named: " ++# d)
     | None => failwith "a changed attribute is a difference"
+
+///> rust
+:# first_difference_by_lets_the_caller_decide_text_equality =
+    := root_of (text : string) : xml_node =
+        ?= read_xml text ?|
+        | node :: [] => node
+        | _ => failwith "one root element"
+    := upper = root_of "<r><a>ABC</a></r>"
+    := lower = root_of "<r><a>abc</a></r>"
+    := caseless (e : string) (a : string) : bool = sm'::to_lower e = sm'::to_lower a
+    ? first_difference upper lower = None ?> failwith "plain equality tells ABC from abc"
+    ? first_difference_by caseless upper lower <> None ?> failwith "the given equality decides the texts"
 
 ///> rust
 :# white_space_and_fixed_attributes_follow_the_xsd_rules =

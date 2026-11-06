@@ -5,7 +5,6 @@
 
 := (++) (left : string) (right : string) : string = left ^^ right
 
-/// ## gleam output: compiler warning blocks dropped, program output kept
 :~ ^ digits_end (s : string) (i : i32) : i32 = ? i < text::length s && json_value::is_digit (text::byte_at s i) ?> digits_end s (i + 1i32) |: i
 
 := numbered_gutter (line : string) : bool =
@@ -27,7 +26,6 @@
 := strip_warnings (text_in : string) : string =
     sm'::concat_list "\n" (kept_lines (sm'::split_list "\n" (text::replace text_in "\r\n" "\n")) !- [])
 
-/// ## gleam.toml: the fixed dependency set plus a cell's own deps, versions cleaned of quotes and backslashes
 :== gleam_dep = { name : string; version : option string }
 
 := default_deps () : list (string * string) =
@@ -59,7 +57,6 @@
     := head = ["name = " ++ builders::inspect main; "target = " ++ builders::inspect target; ""; "[dependencies]"]
     sm'::concat_list "\n" (listm::append head (listm::append fixed (listm::rev extra))) ++ "\n"
 
-/// ## wire in: length-prefixed fields: main, target, then name and version (- or +value) per dep
 :~ ^ fields_from (s : string) (i : i32) (acc : list string) : list string =
     := colon = text::find_from s ":" i
     ? i >= text::length s || colon < 0i32 ?> listm::rev acc

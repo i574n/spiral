@@ -1,4 +1,3 @@
-/// ## lustre
 :! attribute t =
     `(
         backend_switch `(()) `({}) {
@@ -78,7 +77,6 @@
 := start id app =
     $'let assert Ok(_) = lustre.start(!app, !id, 0)' : ()
 
-/// ## counter
 :== model = int
 
 := init initial_count : model =
@@ -127,7 +125,6 @@
         ]
     ]
 
-/// ## tests
 :< sm'_operators
 
 := expect_html (expected : string) (actual : string) : () =

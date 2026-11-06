@@ -8,7 +8,7 @@
     | GleamTarget
     | LuaTarget
     | CTarget
-    | DelphiTarget
+    | PascalTarget
     | ZigTarget
     | LeanTarget
     | WgslTarget
@@ -23,7 +23,7 @@
     |? tool = "gleam" ?> Some GleamTarget
     |? tool = "lua" ?> Some LuaTarget
     |? tool = "c" ?> Some CTarget
-    |? tool = "delphi" ?> Some DelphiTarget
+    |? tool = "pascal" || tool = "delphi" ?> Some PascalTarget
     |? tool = "zig" ?> Some ZigTarget
     |? tool = "lean" ?> Some LeanTarget
     |? tool = "wgsl" ?> Some WgslTarget
@@ -40,7 +40,7 @@
     | GleamTarget => "Gleam"
     | LuaTarget => "Lua"
     | CTarget => "C"
-    | DelphiTarget => "Delphi"
+    | PascalTarget => "Pascal"
     | ZigTarget => "Zig"
     | LeanTarget => "Lean"
     | WgslTarget => "Wgsl"
@@ -56,7 +56,7 @@
     | GleamTarget => ".gleam"
     | LuaTarget => ".lua"
     | CTarget => ".c"
-    | DelphiTarget => ".pas"
+    | PascalTarget => ".pas"
     | ZigTarget => ".zig"
     | LeanTarget => ".lean"
     | WgslTarget => ".wgsl"
@@ -71,7 +71,6 @@
     | Some t => extension_name t
     | None => ""
 
-/// ## host cells: languages Cells runs directly, without a Spiral build
 :| host =
     | FsiHost
     | PythonHost

@@ -19,12 +19,10 @@ pub fn method0(v0: fn(#(Int, Int)) -> #(Int, Int)) -> #(Int, Int) {
     v0(#(10, 20))
 }
 pub fn main() {
-    let v0 = 1
-    let v1 = closure0(#(v0))
+    let v1 = closure0(#(1))
     let #(v2, v3) = method0(v1)
     let v4 = spiral_wrap_signed(10 + v2, 32)
     let v5 = spiral_wrap_signed(20 + v3, 32)
     let v6 = spiral_wrap_signed(v4 + v5, 32)
-    let v7 = spiral_wrap_signed(v6 + 7, 32)
-    v7
+    spiral_wrap_signed(v6 + 7, 32)
 }

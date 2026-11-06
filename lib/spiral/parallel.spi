@@ -101,6 +101,11 @@
         | C => \ () => c_for_index count body
         | _ => \ () => each_index count body 0i32
 
+:= map_index \* a. (count : i32) (fn : i32 -> a) : array a =
+    := out : array a = create count
+    for_index count \ i => set out i (fn i)
+    out
+
 :# chunks_split_evenly =
     listm::init 10i32 id
     |> chunks 4i32
@@ -120,6 +125,15 @@
     for_index 100i32 \ i => set s i (i * i)
     :~ ^ sum (i : i32) (a : i32) : i32 = ? i >= 100i32 ?> a |: sum (i + 1i32) (a + index s i)
     sum 0i32 0i32 |> _assert_eq 328350i32
+
+///> c
+///> rust
+:# map_index_puts_each_result_at_its_index =
+    := ~n = 100i32
+    := squares : array i32 = map_index n \ i => i * i
+    := weighted (i : i32) : i32 = index squares i * (i + 1i32)
+    :~ ^ sum (i : i32) (a : i32) : i32 = ? i >= n ?> a |: sum (i + 1i32) (a + weighted i)
+    sum 0i32 0i32 |> _assert_eq 24830850i32
 
 ///> rust
 :# map_workers_have_room_for_deep_recursion =

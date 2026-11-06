@@ -1,5 +1,6 @@
 (module
   (import "wasi_snapshot_preview1" "proc_exit" (func $proc_exit (param i32)))
+  (data (i32.const 66) "\01\00\00\00-")
   (memory (export "memory") 2)
   (global $hp (mut i32) (i32.const 72))
   (func $spiralMain (result i32)

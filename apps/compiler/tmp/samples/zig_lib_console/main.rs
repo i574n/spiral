@@ -3,12 +3,12 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
     let v0: i32 = 41i32;
-    let v1: Rc<str> = Rc::<str>::from(format!("{:?}", v0));
+    let v1: Rc<str> = Rc::<str>::from((v0).to_string());
     println!("{}", v1);
     let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
     println!("{}", v2);
     let v3: bool = true;
-    let v4: Rc<str> = Rc::<str>::from(format!("{:?}", v3));
+    let v4: Rc<str> = Rc::<str>::from((v3).to_string());
     println!("{}", v4);
     let v5: i32 = v0.wrapping_add(1i32);
     let v6: bool = v5 == 42i32;

@@ -24,17 +24,17 @@ fn spiral_main() -> i32 {
         let v4: US2 = US2::US2_Fallen(100i32);
         US0::US0_Slain(v4)
     };
-    match &v6 {
+    match v6 {
         US0::US0_Slain(v13) => {
-            let v13: US2 = v13.clone();
+            let v13: US2 = v13;
             2i32
         }
         US0::US0_Survived(v7) => {
-            let v7: US1 = v7.clone();
-            match &v7 {
+            let v7: US1 = v7;
+            match v7 {
                 US1::US1_Living(v8, v9) => {
-                    let v8: i32 = *v8;
-                    let v9: i32 = *v9;
+                    let v8: i32 = v8;
+                    let v9: i32 = v9;
                     let v10: bool = v8 == 60i32;
                     if v10 {
                         0i32

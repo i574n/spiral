@@ -13,7 +13,7 @@ defmodule Mix.Tasks.Spiral.CellBudget do
 
     findings =
       for file <- files, {profile, source} <- [{Spiral.Cells.CellBudget.default_profile(), File.read!(file)}],
-          finding <- findings_of(source, profile, options[:granular] == true) do
+          finding <- findings_of(source, profile, options[:granular] == true, file) do
         Mix.shell().info(Spiral.Cells.CellBudget.format(file, finding))
         finding
       end
@@ -24,11 +24,27 @@ defmodule Mix.Tasks.Spiral.CellBudget do
     if options[:check] && over_budget > 0, do: Mix.raise("cell-budget: #{over_budget} definition(s) over the cell budget; split them")
   end
 
-  defp findings_of(source, profile, true),
-    do: Spiral.Cells.CellBudget.rewrites(source, profile) ++ Spiral.Cells.CellBudgetRuled.over_budget(source, profile)
+  defp findings_of(source, profile, true, file),
+    do:
+      Spiral.Cells.CellBudget.rewrites(source, profile) ++
+        Spiral.Cells.CellBudgetRuled.over_budget(source, profile, nominals_in_scope(source, file))
 
-  defp findings_of(source, profile, false),
+  defp findings_of(source, profile, false, _file),
     do: Spiral.Cells.CellBudget.rewrites(source, profile) ++ Spiral.Cells.CellBudget.over_budget(source, profile)
+
+  @doc false
+  def nominals_in_scope(source, file) do
+    lib = System.get_env("SPIRAL_LIB") || Path.expand("../../../../../lib/spiral", __DIR__)
+
+    imported =
+      for [_, name] <- Regex.scan(~r/^:<\s+([a-z_][\w']*)/m, source),
+          candidate <- [Path.join(Path.dirname(file), name <> ".spi"), Path.join(lib, name <> ".spi")],
+          File.regular?(candidate),
+          nominal <- Spiral.Cells.CellBudgetRuled.declared_nominals(File.read!(candidate)),
+          do: nominal
+
+    Enum.uniq(Spiral.Cells.CellBudgetRuled.declared_nominals(source) ++ imported)
+  end
 
   defp sources(path) do
     cond do

@@ -5,7 +5,6 @@
 
 := (++) (left : string) (right : string) : string = left ^^ right
 
-/// ## positions that cannot be mixed up
 :| in_generated =
     | InGenerated
 
@@ -18,7 +17,6 @@
 
 := source_at (line : i32) (column : i32) : position in_source = { line; column }
 
-/// ## lines
 :~ ^ nth (i : i32) (xs : list string) : option string =
     ?= xs ?|
     | [] => None
@@ -89,7 +87,6 @@
                 | None => None
             | _ => None
 
-/// ## rewriting a message
 :~ ^ digits_end (s : string) (i : i32) : i32 =
     ? i < text::length s && text::digit_val (text::index s i) >= 0i32 ?> digits_end s (i + 1i32) |: i
 

@@ -7,13 +7,13 @@ enum US0 {
     US0_Number(i32),
 }
 fn score_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_Number(v3) => {
-            let v3: i32 = *v3;
+            let v3: i32 = v3;
             v3
         }
         US0::US0_Text(v1) => {
-            let v1: Rc<str> = v1.clone();
+            let v1: Rc<str> = v1;
             let v2: i32 = (v1.len() as i32);
             v2
         }

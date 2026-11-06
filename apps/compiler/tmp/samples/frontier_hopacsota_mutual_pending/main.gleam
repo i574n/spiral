@@ -26,8 +26,7 @@ pub fn is_even_0(v0: Int) -> Bool {
     }
 }
 pub fn main() {
-    let v0 = 10
-    let v1 = is_even_0(v0)
+    let v1 = is_even_0(10)
     case v1 {
         True -> 0
         False -> 1

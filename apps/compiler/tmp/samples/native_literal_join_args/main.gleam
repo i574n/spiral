@@ -13,11 +13,8 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
 
 pub fn f_0(v0: String, v1: Int) -> Int {
     let v2 = spiral_string_length(v0)
-    let v3 = spiral_wrap_signed(v2 + v1, 32)
-    v3
+    spiral_wrap_signed(v2 + v1, 32)
 }
 pub fn main() {
-    let v0 = "abc"
-    let v1 = 1
-    f_0(v0, v1)
+    f_0("abc", 1)
 }

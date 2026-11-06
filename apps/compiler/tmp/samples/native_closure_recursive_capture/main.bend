@@ -56,17 +56,17 @@ type U0 is Data:
   U0_Node{f0: U32, f1: U0, f2: U0}
 
 @unsafe
-def sum_0_unbox1(+u: U0, +v0: U0) -> IO(U32):
+def sum_0_unbox1(u: U0, +v0: U0) -> IO(U32):
   match u:
     case U0_Leaf{}:
       do IO<U32>:
         return {0 : U32}
-    case U0_Node{+v1, +v2, +v3}:
+    case U0_Node{v1, v2, v3}:
       do IO<U32>:
-        +v4 : U32 <- sum_0(v2)
-        +v5 : U32 <- sum_0(v3)
-        +v6 : U32 <- IO.pure(U32, U32.add(v4, v5))
-        +v7 : U32 <- IO.pure(U32, U32.add(v1, v6))
+        v4 : U32 <- sum_0(v2)
+        v5 : U32 <- sum_0(v3)
+        v6 : U32 <- IO.pure(U32, U32.add(v4, v5))
+        v7 : U32 <- IO.pure(U32, U32.add(v1, v6))
         return v7
 
 @unsafe
@@ -74,26 +74,24 @@ def sum_0(+v0: U0) -> IO(U32):
   do IO<U32>:
     sum_0_unbox1(v0, v0)
 
-@unsafe
-def f_c0(+v0: U0, +v1: U32) -> IO(U32):
+def f_c0(v0: U0, v1: U32) -> IO(U32):
   do IO<U32>:
-    +v2 : U32 <- sum_0(v0)
-    +v3 : U32 <- IO.pure(U32, U32.add(v2, v1))
+    v2 : U32 <- sum_0(v0)
+    v3 : U32 <- IO.pure(U32, U32.add(v2, v1))
     return v3
 
 @unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : U0 <- IO.pure(U0, U0_Leaf{})
-    +v1 : U32 <- IO.pure(U32, {2 : U32})
-    +v2 : U0 <- IO.pure(U0, U0_Node{v1, v0, v0})
+    v1 : U32 <- IO.pure(U32, {2 : U32})
+    v2 : U0 <- IO.pure(U0, U0_Node{v1, v0, v0})
     +v3 : ((U32) -> IO(U32)) <- IO.pure(((U32) -> IO(U32)), d => f_c0(v2, d))
-    +v4 : U32 <- v3({19 : U32})
-    +v5 : U32 <- v3({19 : U32})
-    +v6 : U32 <- IO.pure(U32, U32.add(v4, v5))
+    v4 : U32 <- v3({19 : U32})
+    v5 : U32 <- v3({19 : U32})
+    v6 : U32 <- IO.pure(U32, U32.add(v4, v5))
     return v6
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

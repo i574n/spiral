@@ -26,8 +26,7 @@ pub fn closure0(capt: #(Us0)) -> fn(Int) -> Int {
     fn (v1) {
         let #(v0) = capt
         let v2 = score_0(v0)
-        let v3 = spiral_wrap_signed(v2 + v1, 32)
-        v3
+        spiral_wrap_signed(v2 + v1, 32)
     }
 }
 pub fn method1(v0: fn(Int) -> Int) -> Int {

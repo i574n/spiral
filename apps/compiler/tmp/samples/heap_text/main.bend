@@ -51,12 +51,10 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
     case SCon{+h, +t}:
       spiral_string_byte_at_from(U32.is_lt(i, spiral_utf8_width(Char.to_u32(h))), Char.to_u32(h), spiral_utf8_width(Char.to_u32(h)), i, t)
 
-@unsafe
-def spiral_main_field1(+p: String) -> IO(String):
+def spiral_main_field1(p: String) -> IO(String):
   IO.pure(String, p)
 
-@unsafe
-def spiral_main_if2(+c: Bool) -> IO(U32):
+def spiral_main_if2(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -65,7 +63,6 @@ def spiral_main_if2(+c: Bool) -> IO(U32):
       do IO<U32>:
         return {1 : U32}
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : String <- IO.pure(String, "hi")
@@ -74,7 +71,6 @@ def spiral_main() -> IO(U32):
     +v3 : Bool <- IO.pure(Bool, String.eq(v2, "hi"))
     spiral_main_if2(v3)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

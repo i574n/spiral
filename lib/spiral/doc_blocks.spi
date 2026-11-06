@@ -45,14 +45,7 @@
     |? n = 6i32 ?> Some H6
     |: None
 
-:~ level_tag (l : level) : string =
-    ?= l ?|
-    | H1 => "h1"
-    | H2 => "h2"
-    | H3 => "h3"
-    | H4 => "h4"
-    | H5 => "h5"
-    | H6 => "h6"
+:~ level_tag (l : level) : string = sm'::to_lower (reflection::case_name l)
 
 ///> rust
 ///> gleam

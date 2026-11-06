@@ -72,53 +72,51 @@ type U0 is Data:
   U0_End{}
 
 @unsafe
-def build_0_if1(+c: Bool, +v0: U32, +v1: U0) -> IO(U0):
+def build_0_if1(c: Bool, +v0: U32, +v1: U0) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
         return v1
     case False{}:
       do IO<U0>:
-        +v3 : U32 <- IO.pure(U32, U32.sub(v0, {1 : U32}))
-        +v4 : U0 <- IO.pure(U0, U0_Link{v0, v1})
+        v3 : U32 <- IO.pure(U32, U32.sub(v0, {1 : U32}))
+        v4 : U0 <- IO.pure(U0, U0_Link{v0, v1})
         build_0(v3, v4)
 
 @unsafe
-def build_0(+v0: U32, +v1: U0) -> IO(U0):
+def build_0(+v0: U32, v1: U0) -> IO(U0):
   do IO<U0>:
     +v2 : Bool <- IO.pure(Bool, U32.is_eq(v0, {0 : U32}))
     build_0_if1(v2, v0, v1)
 
 @unsafe
-def sum_1_unbox2(+u: U0, +v0: U0, +v1: U32) -> IO(U32):
+def sum_1_unbox2(u: U0, +v0: U0, +v1: U32) -> IO(U32):
   match u:
-    case U0_Link{+v2, +v3}:
+    case U0_Link{v2, v3}:
       do IO<U32>:
-        +v4 : U32 <- IO.pure(U32, U32.mul(v1, {31 : U32}))
-        +v5 : U32 <- IO.pure(U32, U32.add(v4, v2))
-        +v6 : U32 <- IO.pure(U32, spiral_i32_mod(v5, {9973 : U32}))
+        v4 : U32 <- IO.pure(U32, U32.mul(v1, {31 : U32}))
+        v5 : U32 <- IO.pure(U32, U32.add(v4, v2))
+        v6 : U32 <- IO.pure(U32, spiral_i32_mod(v5, {9973 : U32}))
         sum_1(v3, v6)
     case U0_End{}:
       do IO<U32>:
         return v1
 
 @unsafe
-def sum_1(+v0: U0, +v1: U32) -> IO(U32):
+def sum_1(+v0: U0, v1: U32) -> IO(U32):
   do IO<U32>:
     sum_1_unbox2(v0, v0, v1)
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : U32 <- IO.pure(U32, {1000000 : U32})
-    +v1 : U0 <- IO.pure(U0, U0_End{})
-    +v2 : U0 <- build_0(v0, v1)
-    +v3 : U32 <- IO.pure(U32, {0 : U32})
-    +v4 : U32 <- sum_1(v2, v3)
-    +v5 : U32 <- IO.pure(U32, spiral_i32_mod(v4, {256 : U32}))
+    v0 : U32 <- IO.pure(U32, {1000000 : U32})
+    v1 : U0 <- IO.pure(U0, U0_End{})
+    v2 : U0 <- build_0(v0, v1)
+    v3 : U32 <- IO.pure(U32, {0 : U32})
+    v4 : U32 <- sum_1(v2, v3)
+    v5 : U32 <- IO.pure(U32, spiral_i32_mod(v4, {256 : U32}))
     return v5
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

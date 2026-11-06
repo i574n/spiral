@@ -6,7 +6,6 @@
 := base_let' x =
     let' x
 
-/// ## rust
 :! future t =
     `(
         rust::rust_type
@@ -153,7 +152,6 @@
     := result = future_init !+ x
     !\($'"!result"')
 
-/// ## fsharp
 :! async_python t =
     `(
         backend_switch `(()) `({}) {
@@ -388,7 +386,6 @@
         | Fsharp => \ () => $'!task.AsTask' ()
         | _ => \ () => null ()
 
-/// ## main
 := main () =
     ()
 

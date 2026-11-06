@@ -9,15 +9,13 @@ pub fn f_c0(capt: #(Int)) -> fn(Int) -> #(Int, Int) {
     }
 }
 pub fn main() {
-    let v0 = 100
-    let v1 = f_c0(#(v0))
+    let v1 = f_c0(#(100))
     let #(v2, v3) = v1(1)
     let v4 = v2 == 100
     let v6 =
         case v4 {
             True -> {
-                let v5 = v3 == 7
-                v5
+                v3 == 7
             }
             False -> False
         }

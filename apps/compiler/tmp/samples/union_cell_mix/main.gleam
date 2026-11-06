@@ -25,13 +25,10 @@ pub fn score_0(v0: Us0) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 3
-    let v1 = 4
-    let v2 = Heap0(l0: v0)
-    let v3 = True
+    let v2 = Heap0(l0: 3)
     let v6 =
-        case v3 {
-            True -> Us0Held(v2, v1)
+        case True {
+            True -> Us0Held(v2, 4)
             False -> Us0None
         }
     score_0(v6)

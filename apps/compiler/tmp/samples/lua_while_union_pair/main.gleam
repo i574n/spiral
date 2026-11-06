@@ -89,8 +89,7 @@ pub type Uh0 {
 pub type Mut2 { Mut2(l0 : Uh0) }
 pub fn method0(v0: SpiralRef(Mut0)) -> Bool {
     let v1 = spiral_ref_get(v0).l0
-    let v2 = v1 < 3
-    v2
+    v1 < 3
 }
 pub fn loop0 (v0: SpiralArray(Int), v1: SpiralRef(Mut0)) {
     case method0(v1) {
@@ -107,8 +106,7 @@ pub fn loop0 (v0: SpiralArray(Int), v1: SpiralRef(Mut0)) {
 }
 pub fn method1(v0: SpiralRef(Mut1)) -> Bool {
     let v1 = spiral_ref_get(v0).l0
-    let v2 = v1 < 4
-    v2
+    v1 < 4
 }
 pub fn loop1 (v6: SpiralRef(Mut1), v7: SpiralRef(Mut1), v9: SpiralRef(Mut2)) {
     case method1(v6) {
@@ -141,8 +139,7 @@ pub fn main() {
     let #(v0, v1) = loop0(v0, v1)
     let v6 = spiral_ref_new(Mut1(l0: 0))
     let v7 = spiral_ref_new(Mut1(l0: 0))
-    let v8 = Uh0Nil
-    let v9 = spiral_ref_new(Mut2(l0: v8))
+    let v9 = spiral_ref_new(Mut2(l0: Uh0Nil))
     let #(v6, v7, v9) = loop1(v6, v7, v9)
     let v19 = spiral_ref_get(v9).l0
     let v38 =
@@ -161,8 +158,7 @@ pub fn main() {
                                                 let v30 = spiral_wrap_signed(v28 + v29, 32)
                                                 let v31 = spiral_wrap_signed(v24 * 4, 32)
                                                 let v32 = spiral_wrap_signed(v30 + v31, 32)
-                                                let v33 = spiral_wrap_signed(v32 + v26, 32)
-                                                v33
+                                                spiral_wrap_signed(v32 + v26, 32)
                                             }
                                             _ -> -1
                                         }
@@ -183,6 +179,5 @@ pub fn main() {
     let v41 = spiral_array_get(v0, 2)
     let v42 = spiral_wrap_signed(v40 + v41, 32)
     let v43 = spiral_array_get(v0, 1)
-    let v44 = spiral_wrap_signed(v42 - v43, 32)
-    v44
+    spiral_wrap_signed(v42 - v43, 32)
 }

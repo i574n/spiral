@@ -48,7 +48,6 @@ static Tuple0 method0(){
 }
 static int32_t method1(Array0 * v0, int32_t v1){
     int32_t v2 = v0->ptr[0l];
-    ArrayDecref0(v0);
     int32_t v3 = v2 + v1;
     int32_t v4 = v3 - 1l;
     return v4;
@@ -56,7 +55,6 @@ static int32_t method1(Array0 * v0, int32_t v1){
 static int32_t method2(Array0 * v0, int32_t v1){
     int32_t v2 = v0->ptr[0l];
     int32_t v3 = v0->ptr[1l];
-    ArrayDecref0(v0);
     int32_t v4 = v2 + v3;
     int32_t v5 = v4 + v1;
     return v5;
@@ -65,9 +63,7 @@ int32_t main(){
     Array0 * v0; int32_t v1;
     Tuple0 tmp0 = method0();
     v0 = tmp0.v0; v1 = tmp0.v1;
-    (v0)->refc++;
     int32_t v2 = method1(v0, v1);
-    (v0)->refc++;
     int32_t v3 = method2(v0, v1);
     ArrayDecref0(v0);
     int32_t v4 = v2 + v3;

@@ -22,7 +22,8 @@ crate, version, archive hash and patch hash. A matching stamp skips the whole th
   of Cargo). Upstream fails with "failed to load manifest for workspace member": it mirrors manifests into a temp
   project by slicing paths at the workspace root and only collects packages under it. The patch adds
   `ElaborateWorkspace::tree_root` (the deepest directory holding the workspace root and every member) and mirrors
-  relative to it, so `workspace/` and `apps/x` keep their relative paths. With members inside the root, `tree_root` is the
+  relative to it, so `workspace/` and `apps/x` keep their relative paths. With members inside the root, `tree_root` is
+  the
   workspace root and behavior is upstream's. Replaces the old i574n fork, whose cargo 0.82 can no longer parse
   `edition2024` members and whose stub-crate approach reported mostly `Removed` rows.
 

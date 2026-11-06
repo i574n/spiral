@@ -7,16 +7,14 @@ pub fn method0(v0: Int, v1: Int, v2: Float) -> Int {
     let v8 =
         case v6 {
             True -> {
-                let v7 = v4 == 3
-                v7
+                v4 == 3
             }
             False -> False
         }
     let v10 =
         case v8 {
             True -> {
-                let v9 = v5 == 1.5
-                v9
+                v5 == 1.5
             }
             False -> False
         }
@@ -26,8 +24,5 @@ pub fn method0(v0: Int, v1: Int, v2: Float) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 2
-    let v1 = 3
-    let v2 = 1.5
-    method0(v0, v1, v2)
+    method0(2, 3, 1.5)
 }

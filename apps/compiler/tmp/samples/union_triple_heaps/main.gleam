@@ -13,40 +13,35 @@ pub fn score_0(v0: Us0) -> Int {
             let v12 =
                 case v10 {
                     True -> {
-                        let v11 = v5 == "hi"
-                        v11
+                        v5 == "hi"
                     }
                     False -> False
                 }
             let v14 =
                 case v12 {
                     True -> {
-                        let v13 = v6 == 4
-                        v13
+                        v6 == 4
                     }
                     False -> False
                 }
             let v16 =
                 case v14 {
                     True -> {
-                        let v15 = v7 == "yo"
-                        v15
+                        v7 == "yo"
                     }
                     False -> False
                 }
             let v18 =
                 case v16 {
                     True -> {
-                        let v17 = v8 == 9
-                        v17
+                        v8 == 9
                     }
                     False -> False
                 }
             let v20 =
                 case v18 {
                     True -> {
-                        let v19 = v9 == "ok"
-                        v19
+                        v9 == "ok"
                     }
                     False -> False
                 }
@@ -59,18 +54,11 @@ pub fn score_0(v0: Us0) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 7
-    let v1 = "hi"
-    let v2 = Heap0(l0: v0, l1: v1)
-    let v3 = 4
-    let v4 = "yo"
-    let v5 = Heap0(l0: v3, l1: v4)
-    let v6 = 9
-    let v7 = "ok"
-    let v8 = Heap0(l0: v6, l1: v7)
-    let v9 = True
+    let v2 = Heap0(l0: 7, l1: "hi")
+    let v5 = Heap0(l0: 4, l1: "yo")
+    let v8 = Heap0(l0: 9, l1: "ok")
     let v12 =
-        case v9 {
+        case True {
             True -> Us0Held(v2, v5, v8)
             False -> Us0None
         }

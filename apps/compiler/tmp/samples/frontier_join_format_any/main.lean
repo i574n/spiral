@@ -46,20 +46,15 @@ partial def format_real_2 (p0 : Int32) : IO String := do
     let v4 : String := (← v2.get).l0
     return v4
 partial def method1 : IO String := do
-    let v0 : String := "Some"
-    let v1 : String := "("
-    let v2 : String := (v0 ++ v1)
-    let v3 : Int32 := (1 : Int32)
-    let v4 : String := (← format_real_2 v3)
-    let v5 : String := (v2 ++ v4)
-    let v6 : String := ")"
-    let v7 : String := (v5 ++ v6)
-    return v7
+    let v0 : Int32 := (1 : Int32)
+    let v1 : String := (← format_real_2 v0)
+    let v2 : String := ("Some(" ++ v1)
+    let v3 : String := (v2 ++ ")")
+    return v3
 partial def method0 : IO String := do
     let v0 : String := (← method1)
-    let v1 : String := "x: "
-    let v2 : String := (v1 ++ v0)
-    return v2
+    let v1 : String := ("x: " ++ v0)
+    return v1
 partial def spiralMain : IO Int32 := do
     let v0 : String := (← method0)
     let v1 : Bool := (v0 == "")

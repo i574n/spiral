@@ -518,7 +518,7 @@ defmodule Spiral.Cells.CompilerDaemon do
   defp normalize(other), do: {:error, "unexpected compile result: #{inspect(other)}"}
 
   defp real_compile(state, req) do
-    case prepare_compiler(state, req.mtime) do
+    case prepare_compiler(state, req) do
       {:ok, state} ->
         case session(state, req) do
           {:ok, _revision} = reply ->
@@ -545,7 +545,7 @@ defmodule Spiral.Cells.CompilerDaemon do
   end
 
   defp retry_compile(state, req) do
-    case start_compiler(state) do
+    case start_compiler(state, compiler_source(state, req)) do
       {:ok, state} ->
         case session(state, req) do
           {:ok, _revision} = reply ->
@@ -567,25 +567,37 @@ defmodule Spiral.Cells.CompilerDaemon do
     %{state | compiler: compiler |> Map.put(:warm, true) |> Map.update(:compiles, 1, &(&1 + 1))}
   end
 
-  defp prepare_compiler(state, mtime) do
+  defp prepare_compiler(state, req) do
+    source = compiler_source(state, req)
+
     case state.compiler do
-      %{booted: booted} = compiler when mtime <= booted ->
-        if compiler_current?(compiler, dll_stamp(Toolchain.compiler_dll(state.toolchain))),
+      %{booted: booted} = compiler when req.mtime <= booted ->
+        if compiler_current?(compiler, dll_stamp(source)) and Map.get(compiler, :source) == source,
           do: {:ok, state},
-          else: start_compiler(stop_compiler(state))
+          else: start_compiler(stop_compiler(state), source)
 
       nil ->
-        start_compiler(state)
+        start_compiler(state, source)
 
       _compiler ->
-        start_compiler(stop_compiler(state))
+        start_compiler(stop_compiler(state), source)
     end
   end
 
-  defp start_compiler(state) do
+  @doc false
+  def compiler_source(state, req) do
+    case Map.get(req, :pin) do
+      pin when is_binary(pin) and pin != "" ->
+        if File.regular?(pin), do: pin, else: Toolchain.compiler_dll(state.toolchain)
+
+      _ ->
+        Toolchain.compiler_dll(state.toolchain)
+    end
+  end
+
+  defp start_compiler(state, source_dll) do
     dotnet = Toolchain.dotnet(state.toolchain)
-    source_dll = Toolchain.compiler_dll(state.toolchain)
-    dll = shadow_dll(source_dll)
+    dll = if source_dll == Toolchain.compiler_dll(state.toolchain), do: shadow_dll(source_dll), else: source_dll
     socket = socket_path()
 
     cond do
@@ -666,7 +678,8 @@ defmodule Spiral.Cells.CompilerDaemon do
           os_pid: os_pid,
           token: token,
           booted: System.os_time(:second),
-          dll_stamp: dll_stamp(source_dll)
+          dll_stamp: dll_stamp(source_dll),
+          source: source_dll
         }
 
         IO.puts("#{clock()} compiler pid=#{os_pid} port=#{compiler_port}")
@@ -700,6 +713,50 @@ defmodule Spiral.Cells.CompilerDaemon do
   def compiler_current?(compiler, source_stamp), do: Map.get(compiler, :dll_stamp) == source_stamp
 
   defp shadow_root, do: Path.join(System.tmp_dir!(), "spiral-cells-compiler")
+
+  defp gate_pin_root, do: Path.join(System.tmp_dir!(), "spiral-cells-gate-pins")
+
+  @gate_pin_max_age_s 86_400
+
+  @doc false
+  def gate_pin(dll, root \\ gate_pin_root(), now \\ System.os_time(:second)) do
+    case dll_stamp(dll) do
+      nil ->
+        nil
+
+      {mtime, size} ->
+        dir = Path.join(root, "#{mtime}-#{size}")
+        target = Path.join(dir, Path.basename(dll))
+        unless File.regular?(Path.join(dir, ".complete")), do: copy_shadow(dll, root, dir, {mtime, size})
+
+        if File.regular?(Path.join(dir, ".complete")) do
+          _ = File.touch(Path.join(dir, ".complete"))
+          prune_gate_pins(root, dir, now)
+          target
+        end
+    end
+  rescue
+    _ -> nil
+  end
+
+  defp prune_gate_pins(root, keep, now) do
+    for old <- Path.wildcard(Path.join(String.replace(root, "\\", "/"), "*")),
+        Path.basename(old) != Path.basename(keep),
+        Regex.match?(~r/^\d+-\d+$/, Path.basename(old)),
+        stale_pin?(old, now) do
+      trash = old <> ".trash#{System.unique_integer([:positive])}"
+      if File.rename(old, trash) == :ok, do: File.rm_rf(trash)
+    end
+
+    :ok
+  end
+
+  defp stale_pin?(dir, now) do
+    case File.stat(Path.join(dir, ".complete"), time: :posix) do
+      {:ok, %{mtime: mtime}} -> now - mtime > @gate_pin_max_age_s
+      _ -> true
+    end
+  end
 
   @doc false
   def shadow_dll(dll, root \\ shadow_root()) do
@@ -1098,7 +1155,7 @@ defmodule Spiral.Cells.CompilerDaemon do
   end
 
   defp parse_request(rest) do
-    [backend, input, output, timeout, mtime | client] = String.split(String.trim(rest), "\t")
+    [backend, input, output, timeout, mtime | extra] = String.split(String.trim(rest), "\t")
 
     %{
       backend: backend,
@@ -1106,7 +1163,8 @@ defmodule Spiral.Cells.CompilerDaemon do
       output: output,
       timeout: parse_timeout(timeout),
       mtime: String.to_integer(mtime),
-      client: List.first(client) || "anonymous"
+      client: Enum.at(extra, 0) || "anonymous",
+      pin: Enum.at(extra, 1)
     }
   end
 

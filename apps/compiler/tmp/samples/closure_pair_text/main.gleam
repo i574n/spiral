@@ -8,22 +8,19 @@ pub fn f_c0(capt: #(String)) -> fn(Int) -> #(String, String) {
                 #(v3, v3)
             }
             False -> {
-                let v4 = "yo"
-                #(v0, v4)
+                #(v0, "yo")
             }
         }
     }
 }
 pub fn main() {
-    let v0 = "hi"
-    let v1 = f_c0(#(v0))
+    let v1 = f_c0(#("hi"))
     let #(v2, v3) = v1(1)
     let v4 = v2 == "hi"
     let v6 =
         case v4 {
             True -> {
-                let v5 = v3 == "yo"
-                v5
+                v3 == "yo"
             }
             False -> False
         }

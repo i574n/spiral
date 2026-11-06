@@ -32,16 +32,14 @@ pub fn method0(v0: Int) -> Int {
     let v6 =
         case v4 {
             True -> {
-                let v5 = v2 == 6
-                v5
+                v2 == 6
             }
             False -> False
         }
     let v8 =
         case v6 {
             True -> {
-                let v7 = v3 == 9
-                v7
+                v3 == 9
             }
             False -> False
         }
@@ -51,6 +49,5 @@ pub fn method0(v0: Int) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 3
-    method0(v0)
+    method0(3)
 }

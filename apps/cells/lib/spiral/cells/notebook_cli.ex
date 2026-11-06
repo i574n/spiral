@@ -21,7 +21,9 @@ defmodule Spiral.Cells.NotebookCli do
     livemd: :boolean,
     patch: :keep,
     probe: :string,
-    target: :keep
+    target: :keep,
+    build_only: :boolean,
+    compiler_pin: :string
   ]
 
   @single_path_options [:output_path, :spi_path, :spir_path, :fs_path, :livemd_path]
@@ -96,6 +98,8 @@ defmodule Spiral.Cells.NotebookCli do
   end
 
   defp run_paths(paths, tests, filters, opts) do
+    receipt = if opts[:build_only], do: Path.join(System.tmp_dir!(), "spiral-cells-build-only-#{System.unique_integer([:positive])}.txt")
+
     results =
       paths
       |> Enum.reject(&(tests != [] and filters[&1] == []))
@@ -112,14 +116,31 @@ defmodule Spiral.Cells.NotebookCli do
             html: opts[:html] != false,
             spi: opts[:spi] != false,
             tests: filters[path],
-            memo: opts[:memo],
+            memo: if(receipt, do: false, else: opts[:memo]),
             accept: opts[:accept] == true,
-            patches: patches(opts)
+            patches: patches(opts),
+            build_receipt: receipt,
+            keep_files: receipt != nil,
+            compiler_pin: opts[:compiler_pin]
           )
 
         {Path.expand(path), status, report}
       end)
 
+    if receipt, do: build_only_result(receipt), else: report_result(paths, results, opts)
+  end
+
+  @doc false
+  def build_only_result(receipt) do
+    lines = if File.regular?(receipt), do: receipt |> File.read!() |> String.split("\n", trim: true), else: []
+    File.rm(receipt)
+
+    if Enum.any?(lines, &String.starts_with?(&1, "cells-build-only ebin=")),
+      do: {:ok, lines},
+      else: {{:error, "--build-only built no gleam cell (cells-build-only ebin= missing)"}, lines}
+  end
+
+  defp report_result(paths, results, opts) do
     reports = for {path, _status, report} <- results, report != nil, do: {path, report}
     if opts[:metrics], do: Notebook.write_metrics(opts[:metrics], reports)
     lines = cell_budget_lines(paths, opts) ++ if(reports == [], do: [], else: Notebook.summary_lines(reports))

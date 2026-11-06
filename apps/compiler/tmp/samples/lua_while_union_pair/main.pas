@@ -25,6 +25,10 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 function method0(v0: TMut0): Boolean; forward;
 function method1(v0: TMut1): Boolean; forward;
 function MutCreate0(a0: LongInt): TMut0;
@@ -37,6 +41,7 @@ var
   v2: Boolean;
 begin
   v1 := v0.l0;
+  SpiralRelease(v0);
   v2 := v1 < 3;
   Result := v2;
 end;
@@ -72,6 +77,7 @@ var
   v2: Boolean;
 begin
   v1 := v0.l0;
+  SpiralRelease(v0);
   v2 := v1 < 4;
   Result := v2;
 end;
@@ -122,18 +128,21 @@ begin
   SetLength(tmp1, 3);
   v0 := tmp1;
   v1 := MutCreate0(0);
-  while method0(v1) do begin
+  while method0(TMut0(SpiralKeep(v1))) do begin
       v3 := v1.l0;
       v4 := v3 * 5;
       v0[v3] := v4;
       v5 := v3 + 1;
       v1.l0 := v5;
   end;
+  SpiralRelease(v1);
   v6 := MutCreate1(0);
   v7 := MutCreate1(0);
   v8 := UH0_Nil;
+  SpiralRetain(v8);
   v9 := MutCreate2(v8);
-  while method1(v6) do begin
+  SpiralRelease(v8);
+  while method1(TMut1(SpiralKeep(v6))) do begin
       v11 := v6.l0;
       v12 := v11 mod 2;
       v13 := v12 = 1;
@@ -144,30 +153,45 @@ begin
       end else begin
       end;
       v16 := v9.l0;
+      SpiralRetain(v16);
+      SpiralRetain(v16);
       v17 := UH0_Cons(v11, v16);
-      v9.l0 := v17;
+      SpiralRelease(v16);
+      SpiralRetain(v17); SpiralRelease(v9.l0); v9.l0 := v17;
+      SpiralRelease(v17);
       v18 := v11 + 1;
       v6.l0 := v18;
   end;
+  SpiralRelease(v6);
   v19 := v9.l0;
+  SpiralRetain(v19);
+  SpiralRelease(v9);
   case v19.tag of
       1: begin
           v20 := v19.c1_0;
           v21 := v19.c1_1;
+          SpiralRetain(v21);
           case v21.tag of
               1: begin
                   v22 := v21.c1_0;
                   v23 := v21.c1_1;
+                  SpiralRetain(v23);
+                  SpiralRelease(v21);
                   case v23.tag of
                       1: begin
                           v24 := v23.c1_0;
                           v25 := v23.c1_1;
+                          SpiralRetain(v25);
+                          SpiralRelease(v23);
                           case v25.tag of
                               1: begin
                                   v26 := v25.c1_0;
                                   v27 := v25.c1_1;
+                                  SpiralRetain(v27);
+                                  SpiralRelease(v25);
                                   case v27.tag of
                                       0: begin
+                                          SpiralRelease(v27);
                                           v28 := v20 * 64;
                                           v29 := v22 * 16;
                                           v30 := v28 + v29;
@@ -177,21 +201,25 @@ begin
                                           v38 := v33;
                                       end;
                                       else begin
+                                          SpiralRelease(v27);
                                           v38 := (-1);
                                       end;
                                   end;
                               end;
                               else begin
+                                  SpiralRelease(v25);
                                   v38 := (-1);
                               end;
                           end;
                       end;
                       else begin
+                          SpiralRelease(v23);
                           v38 := (-1);
                       end;
                   end;
               end;
               else begin
+                  SpiralRelease(v21);
                   v38 := (-1);
               end;
           end;
@@ -200,7 +228,9 @@ begin
           v38 := (-1);
       end;
   end;
+  SpiralRelease(v19);
   v39 := v7.l0;
+  SpiralRelease(v7);
   v40 := v38 + v39;
   v41 := v0[2];
   v42 := v40 + v41;
@@ -209,8 +239,11 @@ begin
   Result := v44;
 end;
 var SpiralOutputBuffer: array[0..65535] of Char;
+var SpiralExitCode: LongInt;
 begin
   SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
-  Halt(SpiralMain);
+  SpiralExitCode := SpiralMain;
+  if UH0_Nil_shared <> nil then UH0_Nil_shared.Free;
+  Halt(SpiralExitCode);
 end.

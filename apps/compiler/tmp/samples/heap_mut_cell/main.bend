@@ -174,35 +174,34 @@ def spiral_array_set_a0(+arr: Chan(Array<(U32 & String)>) & U32, +i: U32, +v: (U
   (+c, +n) = arr
   spiral_array_set_checked_a0(c, i, v, U32.is_lt(i, n))
 
-@unsafe
-def spiral_main_field1(+p: (Chan(Array<(U32 & String)>) & U32)) -> IO((Chan(Array<(U32 & String)>) & U32)):
+def spiral_main_field1(p: (Chan(Array<(U32 & String)>) & U32)) -> IO((Chan(Array<(U32 & String)>) & U32)):
   IO.pure((Chan(Array<(U32 & String)>) & U32), p)
 
 @unsafe
-def spiral_main_set2_put(+c: (Chan(Array<(U32 & String)>) & U32), +p: U32 & String, +n: U32 & String) -> IO(Unit):
+def spiral_main_set2_put(c: (Chan(Array<(U32 & String)>) & U32), +p: U32 & String, +n: U32 & String) -> IO(Unit):
   (+w0, +w1) = p
-  (+x0, +x1) = n
+  (x0, x1) = n
   spiral_array_set_a0(c, {0 : U32}, (x0, x1))
 
 @unsafe
-def spiral_main_set2(+c: (Chan(Array<(U32 & String)>) & U32), +n: U32 & String) -> IO(Unit):
+def spiral_main_set2(+c: (Chan(Array<(U32 & String)>) & U32), n: U32 & String) -> IO(Unit):
   do IO<Unit>:
-    +p : U32 & String <- spiral_array_get_a0(c, {0 : U32})
+    p : U32 & String <- spiral_array_get_a0(c, {0 : U32})
     spiral_main_set2_put(c, p, n)
 
 @unsafe
-def spiral_main_k3_if4(+c: Bool, +v8: String) -> IO(Bool):
+def spiral_main_k3_if4(c: Bool, v8: String) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v10 : Bool <- IO.pure(Bool, String.eq(v8, "hi"))
+        v10 : Bool <- IO.pure(Bool, String.eq(v8, "hi"))
         return v10
     case False{}:
       do IO<Bool>:
         return False{}
 
 @unsafe
-def spiral_main_k3_if5(+c: Bool) -> IO(U32):
+def spiral_main_k3_if5(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -230,10 +229,9 @@ def spiral_main() -> IO(U32):
     +v5 : U32 <- IO.pure(U32, {7 : U32})
     +v6 : String <- IO.pure(String, "hi")
     spiral_main_set2(v4, (v5, v6))
-    +p : U32 & String <- spiral_array_get_a0(v4, {0 : U32})
+    p : U32 & String <- spiral_array_get_a0(v4, {0 : U32})
     spiral_main_k3(p, v0, v1, v2, v3, v4, v5, v6)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

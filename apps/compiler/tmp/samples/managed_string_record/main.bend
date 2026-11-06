@@ -59,37 +59,33 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
     case SCon{+h, +t}:
       spiral_string_byte_at_from(U32.is_lt(i, spiral_utf8_width(Char.to_u32(h))), Char.to_u32(h), spiral_utf8_width(Char.to_u32(h)), i, t)
 
-@unsafe
 def method0(+v0: String) -> IO(String & U32):
   do IO<String & U32>:
-    +v1 : U32 <- IO.pure(U32, spiral_string_bytes(v0))
+    v1 : U32 <- IO.pure(U32, spiral_string_bytes(v0))
     return (v0, v1)
 
-@unsafe
-def score_1(+v0: U32, +v1: String) -> IO(U32):
+def score_1(v0: U32, v1: String) -> IO(U32):
   do IO<U32>:
-    +v2 : U32 <- IO.pure(U32, spiral_string_bytes(v1))
-    +v3 : U32 <- IO.pure(U32, U32.add(v2, v0))
+    v2 : U32 <- IO.pure(U32, spiral_string_bytes(v1))
+    v3 : U32 <- IO.pure(U32, U32.add(v2, v0))
     return v3
 
 @unsafe
 def spiral_main_k1(+p: String & U32, +v0: String) -> IO(U32):
   (+v1, +v2) = p
   do IO<U32>:
-    +v3 : U32 <- score_1(v2, v1)
-    +v4 : U32 <- score_1(v2, v1)
-    +v5 : U32 <- IO.pure(U32, U32.add(v3, v4))
-    +v6 : U32 <- IO.pure(U32, U32.sub(v5, {12 : U32}))
+    v3 : U32 <- score_1(v2, v1)
+    v4 : U32 <- score_1(v2, v1)
+    v5 : U32 <- IO.pure(U32, U32.add(v3, v4))
+    v6 : U32 <- IO.pure(U32, U32.sub(v5, {12 : U32}))
     return v6
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : String <- IO.pure(String, "qwe")
-    +p : String & U32 <- method0(v0)
+    p : String & U32 <- method0(v0)
     spiral_main_k1(p, v0)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

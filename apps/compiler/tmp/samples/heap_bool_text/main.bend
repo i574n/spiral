@@ -53,22 +53,22 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
 
 @unsafe
 def spiral_main_field1(+p: Bool & String) -> IO(Bool & String):
-  (+w0, +w1) = p
+  (w0, w1) = p
   IO.pure(Bool & String, (w0, w1))
 
 @unsafe
-def spiral_main_k2_if3(+c: Bool, +v4: String) -> IO(Bool):
+def spiral_main_k2_if3(c: Bool, v4: String) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v5 : Bool <- IO.pure(Bool, String.eq(v4, "hi"))
+        v5 : Bool <- IO.pure(Bool, String.eq(v4, "hi"))
         return v5
     case False{}:
       do IO<Bool>:
         return False{}
 
 @unsafe
-def spiral_main_k2_if4(+c: Bool) -> IO(U32):
+def spiral_main_k2_if4(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -90,10 +90,9 @@ def spiral_main() -> IO(U32):
     +v0 : Bool <- IO.pure(Bool, True{})
     +v1 : String <- IO.pure(String, "hi")
     +v2 : (Bool & String) <- IO.pure((Bool & String), (v0, v1))
-    +p : Bool & String <- spiral_main_field1(v2)
+    p : Bool & String <- spiral_main_field1(v2)
     spiral_main_k2(p, v0, v1, v2)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

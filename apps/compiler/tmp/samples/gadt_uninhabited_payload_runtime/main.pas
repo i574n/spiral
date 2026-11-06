@@ -22,6 +22,10 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 var UH0_PayloadZero_shared: TUH0 = nil;
 function UH0_PayloadZero: TUH0;
 begin
@@ -56,23 +60,31 @@ begin
   v0 := UH0_PayloadZero;
   v1 := UH0_PayloadZero;
   v2 := UH1_PayloadRowNil;
+  SpiralRetain(v1);
+  SpiralRetain(v2);
   v3 := UH2_PayloadRowCons(v1, v2);
+  SpiralRelease(v1);
+  SpiralRelease(v2);
   case v0.tag of
       0: begin
           case v3.tag of
               0: begin
                   v4 := v3.c0_0;
                   v5 := v3.c0_1;
+                  SpiralRetain(v4);
                   v7 := v4;
               end;
           end;
       end;
   end;
+  SpiralRelease(v0);
+  SpiralRelease(v3);
   case v7.tag of
       0: begin
           v8 := True;
       end;
   end;
+  SpiralRelease(v7);
   if v8 then begin
       Result := 0;
   end else begin
@@ -80,8 +92,12 @@ begin
   end;
 end;
 var SpiralOutputBuffer: array[0..65535] of Char;
+var SpiralExitCode: LongInt;
 begin
   SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
-  Halt(SpiralMain);
+  SpiralExitCode := SpiralMain;
+  if UH0_PayloadZero_shared <> nil then UH0_PayloadZero_shared.Free;
+  if UH1_PayloadRowNil_shared <> nil then UH1_PayloadRowNil_shared.Free;
+  Halt(SpiralExitCode);
 end.

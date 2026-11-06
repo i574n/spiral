@@ -30,7 +30,6 @@
 := signing_key (c : oauth1_credentials) : string =
     sm'::percent_encode c::consumer_secret ++# "&" ++# sm'::percent_encode c::token_secret
 
-/// ### protocol_params
 := consumer_params (c : oauth1_credentials) (nonce : string) : list oauth1_pair =
     [ ("oauth_consumer_key", c::consumer_key); ("oauth_nonce", nonce); ("oauth_signature_method", "HMAC-SHA1") ]
 

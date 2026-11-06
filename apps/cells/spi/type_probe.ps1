@@ -100,7 +100,7 @@ $results = foreach ($relative in $File) {
     Add-Line '    "the probe typed nothing if this line passes"' $null
     Add-Line '' $null
     Add-Line ':= main () : i32 = 0i32' $null
-    $probe = Join-Path $copy "$probeName.spi"
+    $probe = if ($toml) { Join-Path (Split-Path $source) "$probeName.spi" } else { Join-Path $copy "$probeName.spi" }
     [IO.File]::WriteAllText($probe, ($out -join "`n") + "`n")
     if (-not $toml) { [IO.File]::WriteAllText($proj, $projText + "`n    $probeName`n") }
     Push-Location $CoreRoot

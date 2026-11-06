@@ -6,8 +6,7 @@ pub fn method0(v0: Int) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 100
-    let v1 = method0(v0)
+    let v1 = method0(100)
     let v2 = v1 == 100
     case v2 {
         True -> 0

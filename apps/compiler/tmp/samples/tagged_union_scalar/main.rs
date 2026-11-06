@@ -7,13 +7,13 @@ enum US0 {
     US0_Miss(i32),
 }
 fn score_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_Hit(v1) => {
-            let v1: i32 = *v1;
+            let v1: i32 = v1;
             v1
         }
         US0::US0_Miss(v2) => {
-            let v2: i32 = *v2;
+            let v2: i32 = v2;
             let v3: i32 = v2.wrapping_neg();
             v3
         }

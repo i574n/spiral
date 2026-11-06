@@ -179,18 +179,18 @@ def spiral_array_set_a0(+arr: Chan(Array<U32>) & U32, +i: U32, +v: U32) -> IO(Un
   spiral_array_set_checked_a0(c, i, v, U32.is_lt(i, n))
 
 @unsafe
-def score_0_unbox1(+u: U0, +v0: U0) -> IO(U32):
+def score_0_unbox1(u: U0, +v0: U0) -> IO(U32):
   match u:
     case U0_Empty{}:
       do IO<U32>:
         return {0 : U32}
     case U0_Values{+v1}:
       do IO<U32>:
-        +v2 : U32 <- IO.pure(U32, spiral_array_length_a0(v1))
-        +v3 : U32 <- spiral_array_get_a0(v1, {0 : U32})
-        +v4 : U32 <- IO.pure(U32, U32.add(v2, v3))
-        +v5 : U32 <- spiral_array_get_a0(v1, {1 : U32})
-        +v6 : U32 <- IO.pure(U32, U32.add(v4, v5))
+        v2 : U32 <- IO.pure(U32, spiral_array_length_a0(v1))
+        v3 : U32 <- spiral_array_get_a0(v1, {0 : U32})
+        v4 : U32 <- IO.pure(U32, U32.add(v2, v3))
+        v5 : U32 <- spiral_array_get_a0(v1, {1 : U32})
+        v6 : U32 <- IO.pure(U32, U32.add(v4, v5))
         return v6
 
 @unsafe
@@ -201,16 +201,15 @@ def score_0(+v0: U0) -> IO(U32):
 @unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : U32 <- IO.pure(U32, {2 : U32})
+    v0 : U32 <- IO.pure(U32, {2 : U32})
     +v1 : (Chan(Array<U32>) & U32) <- spiral_array_new_a0(v0, {0 : U32})
     spiral_array_set_a0(v1, {0 : U32}, {4 : U32})
     spiral_array_set_a0(v1, {1 : U32}, {5 : U32})
-    +v2 : U0 <- IO.pure(U0, U0_Values{v1})
-    +v3 : U32 <- score_0(v2)
-    +v4 : U32 <- IO.pure(U32, U32.sub(v3, {11 : U32}))
+    v2 : U0 <- IO.pure(U0, U0_Values{v1})
+    v3 : U32 <- score_0(v2)
+    v4 : U32 <- IO.pure(U32, U32.sub(v3, {11 : U32}))
     return v4
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

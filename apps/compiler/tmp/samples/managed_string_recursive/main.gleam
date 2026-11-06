@@ -23,8 +23,7 @@ pub fn score_0(v0: Uh0) -> Int {
             let v5 = score_0(v2)
             let v6 = spiral_wrap_signed(v4 + v5, 32)
             let v7 = score_0(v3)
-            let v8 = spiral_wrap_signed(v6 + v7, 32)
-            v8
+            spiral_wrap_signed(v6 + v7, 32)
         }
     }
 }
@@ -40,6 +39,5 @@ pub fn main() {
     let v8 = Uh0Node(v0, v7, v7)
     let v9 = score_0(v8)
     let v10 = spiral_wrap_signed(v5 + v9, 32)
-    let v11 = spiral_wrap_signed(v10 - 16, 32)
-    v11
+    spiral_wrap_signed(v10 - 16, 32)
 }

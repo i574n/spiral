@@ -75,22 +75,17 @@ pub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {
 
 pub type Mut0 { Mut0(l0 : Float, l1 : String) }
 pub fn main() {
-    let v0 = 1.5
-    let v1 = "no"
-    let v2 = spiral_ref_new(Mut0(l0: v0, l1: v1))
+    let v2 = spiral_ref_new(Mut0(l0: 1.5, l1: "no"))
     let v3 = spiral_array_create(1)
     spiral_array_set(v3, 0, v2)
     let v4 = spiral_array_get(v3, 0)
-    let v5 = 2.5
-    let v6 = "hi"
-    spiral_ref_set(v4, Mut0(l0: v5, l1: v6))
+    spiral_ref_set(v4, Mut0(l0: 2.5, l1: "hi"))
     let #(v7, v8) = #(spiral_ref_get(v4).l0, spiral_ref_get(v4).l1)
     let v9 = v7 == 2.5
     let v11 =
         case v9 {
             True -> {
-                let v10 = v8 == "hi"
-                v10
+                v8 == "hi"
             }
             False -> False
         }

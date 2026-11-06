@@ -9,7 +9,7 @@ enum US0 {
     US0_Done,
 }
 fn score_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_Cold => {
             1i32
         }

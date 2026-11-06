@@ -53,24 +53,23 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
 
 @unsafe
 def spiral_main_field1(+p: U32 & U32) -> IO(U32):
-  (+w0, +w1) = p
+  (w0, +w1) = p
   IO.pure(U32, w0)
 
 @unsafe
 def spiral_main_field2(+p: U32 & U32) -> IO(U32):
-  (+w0, +w1) = p
+  (+w0, w1) = p
   IO.pure(U32, w1)
 
 @unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : (U32 & U32) <- IO.pure((U32 & U32), ({9 : U32}, {10 : U32}))
-    +v1 : U32 <- spiral_main_field1(v0)
-    +v2 : U32 <- spiral_main_field2(v0)
-    +v3 : U32 <- IO.pure(U32, U32.add(v1, v2))
+    v1 : U32 <- spiral_main_field1(v0)
+    v2 : U32 <- spiral_main_field2(v0)
+    v3 : U32 <- IO.pure(U32, U32.add(v1, v2))
     return v3
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

@@ -6,13 +6,14 @@ uses SysUtils, Math;
 type
   TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
   TMut4 = class;
+  TBoxArray0 = class;
   THeap0 = record l0: LongInt; l1: AnsiString; end;
   THeap1 = record l0: THeap0; l1: THeap0; end;
   THeap2 = record l0: THeap1; l1: LongInt; end;
   TUS0 = record tag: LongInt; c1_0: THeap2; end;
   THeap3 = record l0: TUS0; end;
   TMut4 = class(TSpiralRc) l0: THeap3; end;
-  TArray0 = array of TMut4;
+  TBoxArray0 = class(TSpiralRc) items: array of TMut4; procedure DropFields; override; end;
 procedure TSpiralRc.DropFields;
 begin
 end;
@@ -23,6 +24,10 @@ end;
 procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
+end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
 end;
 function score_0(v0: TUS0): LongInt; forward;
 function HeapCreate0(a0: LongInt; a1: AnsiString): THeap0;
@@ -52,6 +57,11 @@ end;
 function MutCreate4(a0: THeap3): TMut4;
 begin
   Result := TMut4.Create; Result.l0 := a0;
+end;
+procedure TBoxArray0.DropFields;
+var i: Int64;
+begin
+  for i := 0 to High(items) do begin SpiralRelease(items[i]); end;
 end;
 function score_0(v0: TUS0): LongInt;
 var
@@ -136,8 +146,8 @@ var
   v12: TUS0;
   v13: THeap3;
   v14: TMut4;
-  v15: TArray0;
-  tmp14: TArray0;
+  v15: TBoxArray0;
+  tmp14: TBoxArray0;
   v16: LongInt;
   v17: AnsiString;
   v18: THeap0;
@@ -171,10 +181,11 @@ begin
   end;
   v13 := HeapCreate3(v12);
   v14 := MutCreate4(v13);
-  tmp14 := nil;
-  SetLength(tmp14, 1);
+  tmp14 := TBoxArray0.Create;
+  SetLength(tmp14.items, 1);
   v15 := tmp14;
-  v15[0] := v14;
+  SpiralRetain(v14); SpiralRelease(v15.items[0]); v15.items[0] := v14;
+  SpiralRelease(v14);
   v16 := 7;
   v17 := 'hi';
   v18 := HeapCreate0(v16, v17);
@@ -191,9 +202,12 @@ begin
       v28 := US0_None;
   end;
   v29 := HeapCreate3(v28);
-  v30 := v15[0];
+  v30 := v15.items[0];
+  SpiralRetain(v30);
+  SpiralRelease(v15);
   v30.l0 := v29;
   v31 := v30.l0;
+  SpiralRelease(v30);
   v32 := v31.l0;
   Result := score_0(v32);
 end;

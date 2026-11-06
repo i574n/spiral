@@ -8,28 +8,23 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
 pub fn a_c0(capt: #(Int)) -> fn(Int) -> Int {
     fn (v1) {
         let #(v0) = capt
-        let v2 = spiral_wrap_signed(v1 + v0, 32)
-        v2
+        spiral_wrap_signed(v1 + v0, 32)
     }
 }
 pub fn b_c1(capt: #(Int)) -> fn(Int) -> Int {
     fn (v1) {
         let #(v0) = capt
-        let v2 = spiral_wrap_signed(v1 + v0, 32)
-        v2
+        spiral_wrap_signed(v1 + v0, 32)
     }
 }
 pub fn method0(v0: fn(Int) -> Int) -> Int {
     v0(40)
 }
 pub fn main() {
-    let v0 = 2
-    let v1 = 3
-    let v2 = True
     let v5 =
-        case v2 {
-            True -> a_c0(#(v0))
-            False -> b_c1(#(v1))
+        case True {
+            True -> a_c0(#(2))
+            False -> b_c1(#(3))
         }
     method0(v5)
 }

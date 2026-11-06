@@ -103,9 +103,15 @@ defmodule Spiral.Cells.BuildersTest do
     assert body == "1i32"
   end
 
-  test "a pascal line builds with the delphi tool" do
+  test "a pascal line builds with the pascal tool" do
     {[command], body} = Builders.split("///> pascal\n1i32")
-    assert command.tool == :delphi
+    assert command.tool == :pascal
+    assert body == "1i32"
+  end
+
+  test "a delphi line is an alias of the pascal tool, so old notebooks still build" do
+    {[command], body} = Builders.split("///> delphi\n1i32")
+    assert command.tool == :pascal
     assert body == "1i32"
   end
 
@@ -120,7 +126,7 @@ defmodule Spiral.Cells.BuildersTest do
       gleam: {"Gleam", ".gleam"},
       lua: {"Lua", ".lua"},
       c: {"C", ".c"},
-      delphi: {"Delphi", ".pas"},
+      pascal: {"Pascal", ".pas"},
       zig: {"Zig", ".zig"},
       lean: {"Lean", ".lean"},
       wgsl: {"Wgsl", ".wgsl"}

@@ -3,14 +3,15 @@ defmodule Spiral.Cells.CellBudgetRuled do
   alias Spiral.Cells.CellBudget
 
   @hint "measured with the GRANULAR rules (a one-line-arm match counts its longest arm, the header is excluded, a " <>
-          "literal-only template counts its heaviest piece); split this body"
+          "literal-only template counts its heaviest piece, type declarations and pure literals weigh 0, declared " <>
+          ":! nominals count as constructors); split this body"
 
-  def over_budget(source, profile \\ CellBudget.default_profile()) do
+  def over_budget(source, profile \\ CellBudget.default_profile(), nominals \\ []) do
     source
     |> CellBudget.top_level_blocks()
     |> Enum.with_index(1)
     |> Enum.flat_map(fn {{row, block}, cell} ->
-      weight = ruled_weight(block, profile)
+      weight = ruled_weight(block, profile, nominals)
       limit = limit(cell, profile)
       if weight > limit, do: [%{kind: :over_budget, line: row, column: 1, text: "weight #{weight} > #{limit}", hint: @hint}], else: []
     end)
@@ -20,7 +21,7 @@ defmodule Spiral.Cells.CellBudgetRuled do
   @string_literal ~r/"(?:[^"\\]|\\.)*"/
   @logic ["?= ", " ? ", "?> ", ":= ", "\\ ", "fun ", "|>", "<|"]
 
-  def ruled_weight(block, profile) do
+  def ruled_weight(block, profile, nominals \\ []) do
     lines = block |> String.split("\n") |> undocumented()
     code = Enum.join(lines, "\n")
 
@@ -30,10 +31,14 @@ defmodule Spiral.Cells.CellBudgetRuled do
 
       true ->
         case split_header(lines) do
-          {:ok, body} -> body_weight(body, profile)
+          {:ok, body} -> body_weight(body, profile, nominals)
           :error -> CellBudget.cell_weight(block, profile)
         end
     end
+  end
+
+  def declared_nominals(source) do
+    ~r/^:!\s+([a-z_][\w']*)\b/m |> Regex.scan(source) |> Enum.map(fn [_, name] -> name end)
   end
 
   defp undocumented(lines) do
@@ -43,11 +48,11 @@ defmodule Spiral.Cells.CellBudgetRuled do
     end
   end
 
-  defp body_weight(body, profile) do
+  defp body_weight(body, profile, nominals) do
     text = Enum.join(body, "\n")
 
     cond do
-      data_literal?(text) ->
+      data_literal?(text, nominals) ->
         0
 
       template?(text) ->
@@ -56,13 +61,21 @@ defmodule Spiral.Cells.CellBudgetRuled do
       true ->
         case flat_dispatch(body) do
           {:ok, match_line, arms} -> CellBudget.cell_weight(match_line, profile) + Enum.max(Enum.map(arms, &CellBudget.cell_weight(&1, profile)))
-          :error -> CellBudget.cell_weight(text, profile)
+          :error ->
+            case flat_switch(body) do
+              {:ok, switch_line, arms} -> CellBudget.cell_weight(switch_line, profile) + Enum.max(Enum.map(arms, &CellBudget.cell_weight(&1, profile)))
+              :error -> CellBudget.cell_weight(text, profile)
+            end
         end
     end
   end
 
-  def data_literal?(text) do
-    bare = Regex.replace(@string_literal, text, "\"\"") |> String.trim()
+  def data_literal?(text, nominals \\ []) do
+    quoted = Regex.replace(@string_literal, text, "\"\"") |> String.trim()
+    bare =
+      nominals
+      |> Enum.reduce(quoted, &Regex.replace(~r/(?<![\w.'"])#{Regex.escape(&1)}(?=[ \t(])/, &2, ""))
+      |> String.trim()
 
     String.starts_with?(bare, ["{", "[", "(", ";["]) and not String.contains?(bare, @logic) and
       not Regex.match?(~r/(?<![\w.'"])[a-z_][\w']*[ \t]+(?![=:;,\]\})|\s])/, bare) and
@@ -106,4 +119,26 @@ defmodule Spiral.Cells.CellBudgetRuled do
   end
 
   defp flat_dispatch(_), do: :error
+
+  @switch_arm ~r/^[A-Z][A-Za-z]* = \\ \(\) => (?<call>\S.*)$/
+
+  defp flat_switch([open | rest]) do
+    trimmed = String.trim(open)
+    lines = Enum.reject(rest, &(String.trim(&1) == ""))
+    {arms, closing} = Enum.split(lines, -1)
+
+    if String.starts_with?(trimmed, "backend_switch") and String.ends_with?(trimmed, "{") and
+         Enum.map(closing, &String.trim/1) == ["}"] and arms != [] and Enum.all?(arms, &flat_switch_arm?/1),
+       do: {:ok, trimmed, Enum.map(arms, &String.trim/1)},
+       else: :error
+  end
+
+  defp flat_switch(_), do: :error
+
+  defp flat_switch_arm?(raw) do
+    case Regex.named_captures(@switch_arm, String.trim(raw)) do
+      %{"call" => call} -> String.length(raw) <= 120 and not String.contains?(call, ["?= ", " ? ", "?> ", ":= ", "\\ ", "fun "])
+      nil -> false
+    end
+  end
 end

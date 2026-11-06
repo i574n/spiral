@@ -49,11 +49,9 @@ pub type Us0 {
 }
 pub fn main() {
     let v0 = spiral_array_create_filled(1, 0.0)
-    let v1 = 1.5
-    spiral_array_set(v0, 0, v1)
-    let v2 = True
+    spiral_array_set(v0, 0, 1.5)
     let v5 =
-        case v2 {
+        case True {
             True -> Us0Held(v0)
             False -> Us0Missing
         }

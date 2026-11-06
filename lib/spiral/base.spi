@@ -474,6 +474,8 @@
                 : t
             ) : t
         Rust = \ () => run (\ () => $'Default::default()' : t) : t
+        C = \ () => run (\ () => $'(`t){0}' : t) : t
+        Pascal = \ () => run (\ () => $'Default(`t)' : t) : t
         Zig = \ () => run (\ () => $'std.mem.zeroes(`t)' : t) : t
         Lean = \ () => run (\ () => $'(default : `t)' : t) : t
     }
@@ -486,6 +488,28 @@
 
     ~> defaultof `i32 ()
     |> _assert_eq 0i32
+
+    ~> defaultof `(option string) ()
+    |> _assert_eq (None : option string)
+
+///> rust
+///> c
+///> pascal
+:# defaultof_scalars =
+    ~> defaultof `string ()
+    |> _assert_eq ""
+
+    ~> defaultof `i32 ()
+    |> _assert_eq 0i32
+
+    ~> defaultof `i64 ()
+    |> _assert_eq 0i64
+
+    ~> defaultof `f64 ()
+    |> _assert_eq 0.0f64
+
+    ~> defaultof `bool ()
+    |> _assert_eq !-
 
     ~> defaultof `(option string) ()
     |> _assert_eq (None : option string)
@@ -538,6 +562,7 @@
         Rust : $'Rc<str>'
         TypeScript : $'any'
         Zig : $'[]const u8'
+        C : $'const char *'
     }
 :! exn = $'backend_switch `(exn_switch)'
 
@@ -656,6 +681,8 @@
             $'(() => { try { return !some(!fn()); } catch (ex) { return !ex_fn(ex); } })()' : option t
         Zig = \ () =>
             fn () |> some
+        C = \ () =>
+            fn () |> some
     }
 
 ///> lua
@@ -666,6 +693,12 @@
     := ~n = 5i32
     (try (\ () => n) (\ _ => None), try (\ () => failwith "boom" : i32) (\ _ => Some 0i32))
     |> _assert_eq (Some 5i32, Some 0i32)
+
+///> c
+:# try_keeps_values =
+    := ~n = 5i32
+    try (\ () => n) (\ _ => None)
+    |> _assert_eq (Some 5i32)
 
 ///> cuda
 ///> rust

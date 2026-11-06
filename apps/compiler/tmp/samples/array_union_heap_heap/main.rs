@@ -14,9 +14,9 @@ impl Default for US0 {
     }
 }
 fn score_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_Held(v1) => {
-            let v1: Rc<Heap1> = v1.clone();
+            let v1: Rc<Heap1> = v1;
             let (mut v2, mut v3): (Rc<Heap0>, i32) = (v1.l0.clone(), v1.l1);
             let (mut v4, mut v5): (i32, Rc<str>) = (v2.l0, v2.l1.clone());
             let v6: bool = v4 == 7i32;
@@ -49,14 +49,14 @@ fn spiral_main() -> i32 {
     let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1 });
     let v3: i32 = 1i32;
     let v4: Rc<Heap1> = Rc::new(Heap1 { l0: v2, l1: v3 });
-    let v5: Rc<RefCell<Vec<US0>>> = Rc::new(RefCell::new(vec![<US0>::default(); 1i32 as usize]));
+    let mut v5: Rc<RefCell<Vec<US0>>> = Rc::new(RefCell::new(vec![<US0>::default(); 1i32 as usize]));
     let v6: bool = true;
     let v9: US0 = if v6 {
         US0::US0_Held(v4)
     } else {
         US0::US0_None
     };
-    v5.clone().borrow_mut()[0i32 as usize] = v9;
+    v5.borrow_mut()[0i32 as usize] = v9;
     let v10: US0 = v5.borrow()[0i32 as usize].clone();
     score_0(v10)
 }

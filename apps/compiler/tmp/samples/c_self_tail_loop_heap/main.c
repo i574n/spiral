@@ -30,11 +30,10 @@ static Array0 * ArrayLit0(uint32_t len, int32_t * ptr){
 static inline void AssignArray0(int32_t * a, int32_t b){
     *a = b;
 }
-static int32_t loop0(int32_t v0, Array0 * v1, int32_t v2, int32_t v3, int32_t v4){
+static inline int32_t loop0(int32_t v0, Array0 * v1, int32_t v2, int32_t v3, int32_t v4){
     while (1) {
         bool v5 = v3 >= v0;
         if (v5){
-            ArrayDecref0(v1);
             return v4;
         } else {
             int32_t v6 = v3 % 4l;
@@ -70,7 +69,6 @@ int32_t main(){
     int32_t v2 = 1000000l;
     int32_t v3 = 0l;
     int32_t v4 = 0l;
-    (v0)->refc++;
     int32_t v5 = loop0(v2, v0, v1, v3, v4);
     ArrayDecref0(v0);
     int32_t v6 = v5 % 256l;

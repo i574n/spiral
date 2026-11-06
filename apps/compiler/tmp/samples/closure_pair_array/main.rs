@@ -3,17 +3,17 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn f_c0(mut v0: i32, mut v1: i32) -> Rc<dyn Fn(i32) -> (Rc<RefCell<Vec<i32>>>, Rc<RefCell<Vec<i32>>>)> {
     Rc::new(move |mut v2: i32| -> (Rc<RefCell<Vec<i32>>>, Rc<RefCell<Vec<i32>>>) {
-        let v3: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 1i32 as usize]));
-        let v4: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 1i32 as usize]));
+        let mut v3: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 1i32 as usize]));
+        let mut v4: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 1i32 as usize]));
         let v5: bool = v2 == 0i32;
         if v5 {
-            v3.clone().borrow_mut()[0i32 as usize] = 0i32;
-            v4.clone().borrow_mut()[0i32 as usize] = 0i32;
-            (v3.clone(), v4.clone())
+            v3.borrow_mut()[0i32 as usize] = 0i32;
+            v4.borrow_mut()[0i32 as usize] = 0i32;
+            (v3, v4)
         } else {
-            v3.clone().borrow_mut()[0i32 as usize] = v0;
-            v4.clone().borrow_mut()[0i32 as usize] = v1;
-            (v3.clone(), v4.clone())
+            v3.borrow_mut()[0i32 as usize] = v0;
+            v4.borrow_mut()[0i32 as usize] = v1;
+            (v3, v4)
         }
     })
 }
@@ -22,8 +22,8 @@ fn spiral_main() -> i32 {
     let v1: i32 = 4i32;
     let mut v2: Rc<dyn Fn(i32) -> (Rc<RefCell<Vec<i32>>>, Rc<RefCell<Vec<i32>>>)> = f_c0(v0, v1);
     let (mut v3, mut v4): (Rc<RefCell<Vec<i32>>>, Rc<RefCell<Vec<i32>>>) = v2(1i32);
-    let v5: i32 = v3.borrow()[0i32 as usize].clone();
-    let v6: i32 = v4.borrow()[0i32 as usize].clone();
+    let v5: i32 = v3.borrow()[0i32 as usize];
+    let v6: i32 = v4.borrow()[0i32 as usize];
     let v7: i32 = v5.wrapping_add(v6);
     let v8: bool = v7 == 7i32;
     if v8 {

@@ -22,12 +22,10 @@ pub fn method1(v0: Int, v1: String) -> String {
             let v8 =
                 case v5 {
                     True -> {
-                        let v6 = "ok"
-                        v6
+                        "ok"
                     }
                     False -> {
-                        let v7 = "go"
-                        v7
+                        "go"
                     }
                 }
             method1(v2, v8)
@@ -39,8 +37,7 @@ pub fn method0() -> String {
     let v1 = v0 == 0
     case v1 {
         True -> {
-            let v2 = "seed"
-            v2
+            "seed"
         }
         False -> {
             let v3 = v0 % 2
@@ -48,12 +45,10 @@ pub fn method0() -> String {
             let v7 =
                 case v4 {
                     True -> {
-                        let v5 = "ok"
-                        v5
+                        "ok"
                     }
                     False -> {
-                        let v6 = "go"
-                        v6
+                        "go"
                     }
                 }
             method1(v0, v7)

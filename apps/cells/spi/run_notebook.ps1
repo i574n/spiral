@@ -41,6 +41,25 @@ foreach ($item in $args) {
         $fixed.Add($arg)
     }
 }
+$gateWindow = $null
+$windowKit = $null
+if ($fixed -contains '--gate' -and $env:SPIRAL_CELLS_GATE_WINDOW -ne '0') {
+    $windowKit = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) "kit/bin/kit$(if ($IsWindows) { '.exe' })"
+    if (-not (Test-Path -LiteralPath $windowKit)) { $windowKit = (Get-Command kit -CommandType Application -ErrorAction Ignore | Select-Object -First 1).Source }
+    if ($windowKit) {
+        $gated = @(for ($i = 0; $i -lt $fixed.Count - 1; $i++) { if ($fixed[$i] -eq '--path') { [IO.Path]::GetFileName($fixed[$i + 1]) } }) -join ','
+        $waitMin = if ($env:SPIRAL_CELLS_GATE_WAIT_MIN -match '^\d+$') { $env:SPIRAL_CELLS_GATE_WAIT_MIN } else { '30' }
+        $leaseMin = if ($env:SPIRAL_CELLS_GATE_WINDOW_MIN -match '^\d+$') { $env:SPIRAL_CELLS_GATE_WINDOW_MIN } else { '180' }
+        $granted = "$(& $windowKit window request test-suite $leaseMin --label "cells gate $gated" --wait $waitMin --min-free-mb 0 2>&1 | Select-Object -Last 1)"
+        if ($granted -match 'id=(\S+)') { $gateWindow = $Matches[1] }
+        else { [Console]::Error.WriteLine("run_notebook.ps1 / no test-suite window after $waitMin min ($granted): running the gate anyway") }
+    }
+}
+trap { if ($gateWindow) { & $windowKit window release $gateWindow *> $null }; break }
+function Exit-Notebook([int] $Code) {
+    if ($gateWindow) { & $windowKit window release $gateWindow *> $null }
+    exit $Code
+}
 function Invoke-WarmNotebook([int] $Port, [string[]] $Arguments, [string] $Dll) {
     $client = [System.Net.Sockets.TcpClient]::new()
     try {
@@ -92,7 +111,7 @@ if ($env:SPIRAL_CELLS_WARM -ne '0') {
     }
     $warmExit = Invoke-WarmNotebook $warmPort $warmArgs $warmDll
     if ($gateDir -and (Test-Path -LiteralPath $gateDir)) { [IO.Directory]::Delete($gateDir, $true) }
-    if ($null -ne $warmExit) { Write-NotebookLedger 'warm' $warmExit; exit $warmExit }
+    if ($null -ne $warmExit) { Write-NotebookLedger 'warm' $warmExit; Exit-Notebook $warmExit }
 }
 function Resolve-RealPath([string] $Path) {
     $full = [IO.Path]::GetFullPath($Path)
@@ -143,4 +162,4 @@ if (-not (Test-Path "deps/kino/mix.exs")) {
 & $mix spiral.notebook @fixed
 $notebookExit = if ($null -eq $LASTEXITCODE) { 1 } else { $LASTEXITCODE }
 Write-NotebookLedger 'mix' $notebookExit
-exit $notebookExit
+Exit-Notebook $notebookExit

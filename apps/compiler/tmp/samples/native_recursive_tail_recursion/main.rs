@@ -18,7 +18,7 @@ fn group_1(mut st: Group1) -> Rc<UH0> {
                 let v2: bool = v1 == 0i32;
                 if v2 {
                     let v3: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Empty); } CASE.with(|case| case.clone()) };
-                    return Rc::new(UH0::UH0_Box(11i32, v3.clone()));
+                    return Rc::new(UH0::UH0_Box(11i32, v3));
                 } else {
                     st = Group1::M2(v1);
                     continue;
@@ -29,7 +29,7 @@ fn group_1(mut st: Group1) -> Rc<UH0> {
                 let v2: bool = v1 == 0i32;
                 if v2 {
                     let v3: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Empty); } CASE.with(|case| case.clone()) };
-                    return Rc::new(UH0::UH0_Box(7i32, v3.clone()));
+                    return Rc::new(UH0::UH0_Box(7i32, v3));
                 } else {
                     st = Group1::M1(v1);
                     continue;
@@ -56,10 +56,10 @@ fn method0() -> Rc<UH0> {
 }
 fn spiral_main() -> i32 {
     let v0: Rc<UH0> = method0();
-    match &*v0 {
+    match Rc::unwrap_or_clone(v0) {
         UH0::UH0_Box(v1, v2) => {
-            let v1: i32 = *v1;
-            let v2: Rc<UH0> = v2.clone();
+            let v1: i32 = v1;
+            let v2: Rc<UH0> = v2;
             let v3: bool = v1 == 7i32;
             if v3 {
                 0i32

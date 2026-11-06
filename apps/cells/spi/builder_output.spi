@@ -6,7 +6,6 @@
 
 :< json_value
 
-/// ## String.trim: Unicode White_Space at both ends
 := space3 (b1 : i32) (b2 : i32) : bool =
     (b1 = 128i32 && ((b2 >= 128i32 && b2 <= 138i32) || b2 = 168i32 || b2 = 169i32 || b2 = 175i32)) || (b1 = 129i32 && b2 = 159i32)
 
@@ -37,7 +36,6 @@
     := a = content_start s 0i32
     text::slice_len s a (content_end s a a - a)
 
-/// ## result maps: a JSON object holding output or command_result, whole or as the line's trailing {...}
 := has (key : string) (v : json) : bool =
     ?= field key v ?|
     | Some _ => !+
@@ -67,7 +65,6 @@
         | Some candidate => result_of candidate
         | None => None
 
-/// ## lines: split on \r?\n, ANSI colour codes dropped
 := drop_cr (line : string) : string = ? text::length line > 0i32 && at line (text::length line - 1i32) = 13i32 ?> text::take line (text::length line - 1i32) |: line
 
 :~ ^ crlf_lines (pieces : list string) (acc : list string) : list string =
@@ -103,7 +100,6 @@
 
 := trace_text (s : string) : string = utrim (sm'::concat_list "\n" (kept (lines_of (strip_ansi s)) []))
 
-/// ## the shown output: command_result's output first, then the map's own
 := text_of (v : option json) : option string =
     ?= v ?|
     | Some (JStr t) => Some t

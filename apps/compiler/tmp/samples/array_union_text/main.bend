@@ -179,7 +179,7 @@ def spiral_array_set_a0(+arr: Chan(Array<U0>) & U32, +i: U32, +v: U0) -> IO(Unit
   spiral_array_set_checked_a0(c, i, v, U32.is_lt(i, n))
 
 @unsafe
-def spiral_main_if1(+c: Bool, +v1: String, +v2: String) -> IO(U0):
+def spiral_main_if1(c: Bool, v1: String, v2: String) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
@@ -188,19 +188,17 @@ def spiral_main_if1(+c: Bool, +v1: String, +v2: String) -> IO(U0):
       do IO<U0>:
         IO.pure(U0, U0_None{})
 
-@unsafe
-def score_0_unbox2_if3(+c: Bool, +v2: String) -> IO(Bool):
+def score_0_unbox2_if3(c: Bool, v2: String) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v4 : Bool <- IO.pure(Bool, String.eq(v2, "yo"))
+        v4 : Bool <- IO.pure(Bool, String.eq(v2, "yo"))
         return v4
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def score_0_unbox2_if4(+c: Bool) -> IO(U32):
+def score_0_unbox2_if4(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -210,7 +208,7 @@ def score_0_unbox2_if4(+c: Bool) -> IO(U32):
         return {1 : U32}
 
 @unsafe
-def score_0_unbox2(+u: U0, +v0: U0) -> IO(U32):
+def score_0_unbox2(u: U0, +v0: U0) -> IO(U32):
   match u:
     case U0_None{}:
       do IO<U32>:
@@ -221,7 +219,6 @@ def score_0_unbox2(+u: U0, +v0: U0) -> IO(U32):
         +v5 : Bool <- score_0_unbox2_if3(v3, v2)
         score_0_unbox2_if4(v5)
 
-@unsafe
 def score_0(+v0: U0) -> IO(U32):
   do IO<U32>:
     score_0_unbox2(v0, v0)
@@ -230,15 +227,14 @@ def score_0(+v0: U0) -> IO(U32):
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : (Chan(Array<U0>) & U32) <- spiral_array_new_a0({1 : U32}, U0_None{})
-    +v1 : String <- IO.pure(String, "hi")
-    +v2 : String <- IO.pure(String, "yo")
+    v1 : String <- IO.pure(String, "hi")
+    v2 : String <- IO.pure(String, "yo")
     +v3 : Bool <- IO.pure(Bool, True{})
-    +v6 : U0 <- spiral_main_if1(v3, v1, v2)
+    v6 : U0 <- spiral_main_if1(v3, v1, v2)
     spiral_array_set_a0(v0, {0 : U32}, v6)
-    +v7 : U0 <- spiral_array_get_a0(v0, {0 : U32})
+    v7 : U0 <- spiral_array_get_a0(v0, {0 : U32})
     score_0(v7)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

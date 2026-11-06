@@ -21,13 +21,13 @@ fn method0(mut v0: i32) -> (US0, US0) {
 fn spiral_main() -> i32 {
     let v0: i32 = 7i32;
     let (mut v1, mut v2): (US0, US0) = method0(v0);
-    match &v1 {
+    match v1 {
         US0::US0_None => {
             1i32
         }
         US0::US0_Some(v3) => {
-            let v3: i32 = *v3;
-            match &v2 {
+            let v3: i32 = v3;
+            match v2 {
                 US0::US0_None => {
                     let v4: bool = v3 == 7i32;
                     if v4 {
@@ -37,7 +37,7 @@ fn spiral_main() -> i32 {
                     }
                 }
                 US0::US0_Some(v6) => {
-                    let v6: i32 = *v6;
+                    let v6: i32 = v6;
                     1i32
                 }
             }

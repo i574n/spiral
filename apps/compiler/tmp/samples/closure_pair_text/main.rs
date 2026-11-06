@@ -9,7 +9,7 @@ fn f_c0(mut v0: Rc<str>) -> Rc<dyn Fn(i32) -> (Rc<str>, Rc<str>)> {
             (v3.clone(), v3.clone())
         } else {
             let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
-            (v0.clone(), v4.clone())
+            (v0.clone(), v4)
         }
     })
 }

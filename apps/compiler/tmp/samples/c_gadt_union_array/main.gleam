@@ -22,7 +22,6 @@ pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
 
 
 pub fn main() {
-    let v0 = 3
-    let _v1 = spiral_array_create(v0)
+    let _v1 = spiral_array_create(3)
     0
 }

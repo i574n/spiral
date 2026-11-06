@@ -12,16 +12,13 @@ pub type Us0 {
 pub fn f_c0(capt: #(Int)) -> fn(Int) -> Int {
     fn (v1) {
         let #(v0) = capt
-        let v2 = spiral_wrap_signed(v1 + v0, 32)
-        v2
+        spiral_wrap_signed(v1 + v0, 32)
     }
 }
 pub fn main() {
-    let v0 = 3
-    let v1 = f_c0(#(v0))
-    let v2 = True
+    let v1 = f_c0(#(3))
     let v5 =
-        case v2 {
+        case True {
             True -> Us0Call(v1)
             False -> Us0Missing
         }

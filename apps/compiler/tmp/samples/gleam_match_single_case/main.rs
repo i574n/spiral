@@ -14,11 +14,11 @@ fn walk_0(mut v0: i32) -> i32 {
     } else {
         US0::US0_Step(0i32, 1i32, 2i32)
     };
-    match &v6 {
+    match v6 {
         US0::US0_Step(v7, v8, v9) => {
-            let v7: i32 = *v7;
-            let v8: i32 = *v8;
-            let v9: i32 = *v9;
+            let v7: i32 = v7;
+            let v8: i32 = v8;
+            let v9: i32 = v9;
             let v10: i32 = v8.wrapping_mul(v9);
             let v11: i32 = v7.wrapping_add(v10);
             v11

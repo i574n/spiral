@@ -1,7 +1,5 @@
-/// # bench_kit
 :< sm'_operators
 
-/// ### now_s
 := now_s () : f64 =
     backend_switch {
         Fsharp = \ () =>
@@ -10,7 +8,6 @@
             $'std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs_f64()' : f64
     }
 
-/// ### show_i64
 := show_i64 (n : i64) : string =
     backend_switch {
         Fsharp = \ () =>
@@ -19,7 +16,6 @@
             $'Rc::<str>::from(!n.to_string())' : string
     }
 
-/// ### show_i32
 := show_i32 (n : i32) : string =
     backend_switch {
         Fsharp = \ () =>
@@ -28,7 +24,6 @@
             $'Rc::<str>::from(!n.to_string())' : string
     }
 
-/// ### f64_of_i32
 := f64_of_i32 (n : i32) : f64 =
     backend_switch {
         Fsharp = \ () =>
@@ -37,7 +32,6 @@
             $'(!n as f64)' : f64
     }
 
-/// ### i64_of_f64
 := i64_of_f64 (x : f64) : i64 =
     backend_switch {
         Fsharp = \ () =>
@@ -46,11 +40,9 @@
             $'(!x as i64)' : i64
     }
 
-/// ### print
 := print (s : string) : () =
     console::write_line s
 
-/// ### join_args
 :~ join_args (arr : array_base string) : string =
     := n : i32 = arr |> array |> am'::length
     :~ ^ 루프 (i : i32) (acc : string) : string =
@@ -59,7 +51,6 @@
         |: 루프 (i + 1) (acc ++# (? i = 0 ?> "" |: "|") ++# (arr |> am'::index_base i))
     루프 0 ""
 
-/// ### repeat_join
 :~ repeat_join (s : string) (n : i32) : string =
     :~ ^ 루프 (i : i32) (acc : string) : string =
         ? i >= n
@@ -67,12 +58,10 @@
         |: 루프 (i + 1) (? i = 0 ?> s |: acc ++# " " ++# s)
     루프 0 ""
 
-/// ### quoted_arg
 :~ quoted_arg (n : i32) : string =
     := body = "ab c" |> sm'::replicate (n / 4)
     "x \"" ++# body ++# "\" y"
 
-/// ### measure
 := measure (count : string -> i32) (input : string) : f64 * i32 * i32 =
     := batch (iters : i32) : f64 * i32 =
         := t0 = now_s ()
@@ -97,7 +86,6 @@
     := dt, sink = best 0 1000000.0 0
     dt / f64_of_i32 iters * 1000000000.0, iters, sink
 
-/// ### run_case
 := run_case (impl_name : string) split (case_name : string) (input : string) : () =
     := len : i32 = input |> sm'::length
     := joined =
@@ -115,7 +103,6 @@
         ++# "\t" ++# show_i32 iters ++# "\t" ++# show_i64 (ns |> i64_of_f64) ++# "\t" ++# show_i32 sink
     )
 
-/// ### cases
 :~ cases () : array (string * string) =
     := cli =
         "dotnet repl --exit-after-run --run \"c:/repo/spiral/lib/spiral/parsing.dib\" --output-path "
@@ -148,7 +135,6 @@
         "quoted_1024", quoted_arg 1024
     ]
 
-/// ### run_all
 := run_all impls =
     := cases = cases ()
     := n : i32 = cases |> am'::length

@@ -51,25 +51,24 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
     case SCon{+h, +t}:
       spiral_string_byte_at_from(U32.is_lt(i, spiral_utf8_width(Char.to_u32(h))), Char.to_u32(h), spiral_utf8_width(Char.to_u32(h)), i, t)
 
-@unsafe
 def f_c0(+v0: U32) -> IO(U32 & U32):
   do IO<U32 & U32>:
-    +v1 : U32 <- IO.pure(U32, U32.add(v0, {1 : U32}))
+    v1 : U32 <- IO.pure(U32, U32.add(v0, {1 : U32}))
     return (v0, v1)
 
 @unsafe
-def spiral_main_k1_if2(+c: Bool, +v3: U32) -> IO(Bool):
+def spiral_main_k1_if2(c: Bool, v3: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v5 : Bool <- IO.pure(Bool, U32.is_eq(v3, {4 : U32}))
+        v5 : Bool <- IO.pure(Bool, U32.is_eq(v3, {4 : U32}))
         return v5
     case False{}:
       do IO<Bool>:
         return False{}
 
 @unsafe
-def spiral_main_k1_if3(+c: Bool) -> IO(U32):
+def spiral_main_k1_if3(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -91,10 +90,9 @@ def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : U32 <- IO.pure(U32, {3 : U32})
     +v1 : ((U32) -> IO(U32 & U32)) <- IO.pure(((U32) -> IO(U32 & U32)), d => f_c0(d))
-    +p : U32 & U32 <- v1(v0)
+    p : U32 & U32 <- v1(v0)
     spiral_main_k1(p, v0, v1)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

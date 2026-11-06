@@ -33,14 +33,11 @@ fn spiral_string_starts_character(bytes: BitArray, at: Int) -> Bool {
 
 
 pub fn main() {
-    let v0 = 16
-    let v1 = "x\ny"
     let v2 = "say \"hi\""
     let v3 = "a \"\"\" b"
     let v4 = "first\n    second\n\nthird"
     let v5 = "ab\ncd"
     let v6 = "a \"b\" c"
-    let v7 = ""
     let v8 = "a\\nb"
     let v9 = "first\n(* not a comment *)\n// nor this\n\n$\"not a macro\" !x\ninl fake () = 1\n  indented"
     let v10 = "\ntop\n\nlevel"
@@ -54,7 +51,7 @@ pub fn main() {
             case v14 {
                 True -> 2
                 False -> {
-                    let v15 = spiral_string_length(v7)
+                    let v15 = spiral_string_length("")
                     let v16 = v15 != 0
                     case v16 {
                         True -> 3
@@ -119,11 +116,11 @@ pub fn main() {
                                                                                                                     case v40 {
                                                                                                                         True -> 15
                                                                                                                         False -> {
-                                                                                                                            let v41 = v0 != 16
+                                                                                                                            let v41 = 16 != 16
                                                                                                                             case v41 {
                                                                                                                                 True -> 16
                                                                                                                                 False -> {
-                                                                                                                                    let v42 = spiral_string_length(v1)
+                                                                                                                                    let v42 = spiral_string_length("x\ny")
                                                                                                                                     let v43 = v42 != 3
                                                                                                                                     case v43 {
                                                                                                                                         True -> 17

@@ -7,11 +7,11 @@ enum US0 {
     US0_All(u32, Rc<str>, bool),
 }
 fn score_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_All(v1, v2, v3) => {
-            let v1: u32 = *v1;
-            let v2: Rc<str> = v2.clone();
-            let v3: bool = *v3;
+            let v1: u32 = v1;
+            let v2: Rc<str> = v2;
+            let v3: bool = v3;
             let v4: bool = v1 == 4000000000u32;
             let v6: bool = if v4 {
                 let v5: bool = &*v2 == "hi";

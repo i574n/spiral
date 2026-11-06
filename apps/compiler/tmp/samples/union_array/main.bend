@@ -178,8 +178,7 @@ def spiral_array_set_a0(+arr: Chan(Array<U32>) & U32, +i: U32, +v: U32) -> IO(Un
   (+c, +n) = arr
   spiral_array_set_checked_a0(c, i, v, U32.is_lt(i, n))
 
-@unsafe
-def spiral_main_if1(+c: Bool, +v1: (Chan(Array<U32>) & U32)) -> IO(U0):
+def spiral_main_if1(c: Bool, v1: (Chan(Array<U32>) & U32)) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
@@ -189,7 +188,7 @@ def spiral_main_if1(+c: Bool, +v1: (Chan(Array<U32>) & U32)) -> IO(U0):
         IO.pure(U0, U0_Missing{})
 
 @unsafe
-def spiral_main_unbox2_if3(+c: Bool) -> IO(U32):
+def spiral_main_unbox2_if3(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -199,7 +198,7 @@ def spiral_main_unbox2_if3(+c: Bool) -> IO(U32):
         return {1 : U32}
 
 @unsafe
-def spiral_main_unbox2(+u: U0, +v0: U32, +v1: (Chan(Array<U32>) & U32), +v2: U32, +v3: Bool, +v6: U0) -> IO(U32):
+def spiral_main_unbox2(u: U0, v0: U32, v1: (Chan(Array<U32>) & U32), v2: U32, v3: Bool, v6: U0) -> IO(U32):
   match u:
     case U0_Missing{}:
       do IO<U32>:
@@ -221,7 +220,6 @@ def spiral_main() -> IO(U32):
     +v6 : U0 <- spiral_main_if1(v3, v1)
     spiral_main_unbox2(v6, v0, v1, v2, v3, v6)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

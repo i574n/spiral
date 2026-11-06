@@ -21,13 +21,11 @@ pub fn score_0(v0: Us0) -> Int {
     }
 }
 pub fn main() {
-    let v0 = False
     let v3 =
-        case v0 {
+        case False {
             True -> Us0Hit(7)
             False -> Us0Flag(True)
         }
     let v4 = score_0(v3)
-    let v5 = spiral_wrap_signed(v4 - 9, 32)
-    v5
+    spiral_wrap_signed(v4 - 9, 32)
 }

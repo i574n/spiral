@@ -18,6 +18,10 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 function is_odd_1(v0: LongInt): Boolean; forward;
 function is_even_0(v0: LongInt): Boolean; forward;
 function UH0_Cell(a0: LongInt): TUH0;
@@ -35,6 +39,7 @@ begin
   case v1.tag of
       0: begin
           v2 := v1.c0_0;
+          SpiralRelease(v1);
           v3 := v2 = 0;
           if v3 then begin
               Result := False;
@@ -56,6 +61,7 @@ begin
   case v1.tag of
       0: begin
           v2 := v1.c0_0;
+          SpiralRelease(v1);
           v3 := v2 = 0;
           if v3 then begin
               Result := True;

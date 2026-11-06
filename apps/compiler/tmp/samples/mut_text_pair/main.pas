@@ -18,6 +18,10 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 function MutCreate0(a0: AnsiString; a1: AnsiString): TMut0;
 begin
   Result := TMut0.Create; Result.l0 := a0; Result.l1 := a1;
@@ -44,6 +48,7 @@ begin
   v2.l1 := v4;
   v5 := v2.l0;
   v6 := v2.l1;
+  SpiralRelease(v2);
   v7 := v5 = 'hi';
   if v7 then begin
       v8 := v6 = 'yo';

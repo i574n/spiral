@@ -51,22 +51,19 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
     case SCon{+h, +t}:
       spiral_string_byte_at_from(U32.is_lt(i, spiral_utf8_width(Char.to_u32(h))), Char.to_u32(h), spiral_utf8_width(Char.to_u32(h)), i, t)
 
-@unsafe
-def f_c0(+v0: U32, +v1: U32, +v2: U32) -> IO(U32):
+def f_c0(v0: U32, v1: U32, v2: U32) -> IO(U32):
   do IO<U32>:
-    +v3 : U32 <- IO.pure(U32, U32.add(v0, v1))
-    +v4 : U32 <- IO.pure(U32, U32.add(v3, v2))
+    v3 : U32 <- IO.pure(U32, U32.add(v0, v1))
+    v4 : U32 <- IO.pure(U32, U32.add(v3, v2))
     return v4
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : U32 <- IO.pure(U32, {1 : U32})
-    +v1 : U32 <- IO.pure(U32, {2 : U32})
-    +v2 : ((U32) -> IO(U32)) <- IO.pure(((U32) -> IO(U32)), d => f_c0(v0, v1, d))
+    v0 : U32 <- IO.pure(U32, {1 : U32})
+    v1 : U32 <- IO.pure(U32, {2 : U32})
+    v2 : ((U32) -> IO(U32)) <- IO.pure(((U32) -> IO(U32)), d => f_c0(v0, v1, d))
     v2({39 : U32})
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

@@ -331,10 +331,12 @@
     |> _assert_eq' "Some"
 
 /// ### case_name
-:= case_name \* t. (x : t) : string =
-    ~> get_union_fields_untag `t ()
-    |> listm'::try_pick \ key, case => ? case = x ?> Some key |: None
-    |> optionm::value
+:= case_name \* t. (x : t) : string = !!!!UnionCaseName(x)
+
+/// ### case_name_styles
+:= case_name_lower \* t. (x : t) : string = !!!!UnionCaseName(x, "lower")
+:= case_name_snake \* t. (x : t) : string = !!!!UnionCaseName(x, "snake")
+:= case_name_kebab \* t. (x : t) : string = !!!!UnionCaseName(x, "kebab")
 
 /// ### case_of_name
 := case_of_name \* t. (text : string) : option t =
@@ -376,6 +378,15 @@
     Contract
     |> case_name
     |> _assert_eq' "Contract"
+
+    Some 3i32
+    |> case_name
+    |> _assert_eq' "Some"
+
+    := ~payload : option i32 = None
+    payload
+    |> case_name
+    |> _assert_eq' "None"
 
     "Browser"
     |> case_of_name
@@ -442,10 +453,12 @@
     |> \ x => x : list (string * (list (string * string) * string))
 
 ///> fsharp
-:# get_functions_types =
+///> rust
+:# get_functions_types no_agree "type names are backend-specific" =
     := one ({ a } : { a : i32 }) : i32 = a + 1
     := two ({ a b } : { a : i32; b : i32 }) : i32 = a + b + 2
     := fns = { one two }
+    := i32_name = run_target \| | Fsharp _ => \ () => ~~ "int32" | _ => \ () => "i32"
 
     fns
     |> get_functions_types
@@ -455,8 +468,8 @@
     |> sm'::format
     |> _assert_eq' (
         [
-            "one", [ "a", "int32" ], "int32"
-            "two", [ "a", "int32"; "b", "int32" ], "int32"
+            "one", [ "a", i32_name ], i32_name
+            "two", [ "a", i32_name; "b", i32_name ], i32_name
         ]
         |> listm::map \ (name, args, result) => name, (args |> listm'::box |> listm'::to_array', result)
         |> listm'::box
@@ -508,6 +521,23 @@
     := name = typed_case_name Browser
     typed_name_kebab name |> _assert_eq' "browser"
     typed_name_lower name |> _assert_eq' "browser"
+
+:| case_style_probe =
+    | HostMacro
+    | GadtCase
+
+///- --timeout 900000
+
+///> gleam
+///> lua
+///> rust
+///> typescript
+:# case_name_styles =
+    := ~macro : case_style_probe = HostMacro
+    macro |> case_name_snake |> _assert_eq' "host_macro"
+    macro |> case_name_lower |> _assert_eq' "hostmacro"
+    GadtCase |> case_name_kebab |> _assert_eq' "gadt-case"
+    GadtCase |> case_name_snake |> _assert_eq' "gadt_case"
 
 ///- --timeout 900000
 

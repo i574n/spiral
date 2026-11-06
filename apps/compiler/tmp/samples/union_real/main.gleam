@@ -5,8 +5,7 @@ pub type Us0 {
 }
 pub fn twice_1(v0: Float) -> Int {
     let v1 = v0 *. 2.0
-    let v2 = float.truncate(v1)
-    v2
+    float.truncate(v1)
 }
 pub fn score_0(v0: Us0) -> Int {
     case v0  {
@@ -33,8 +32,7 @@ pub fn main() {
         case v9 {
             True -> {
                 let v10 = score_0(v7)
-                let v11 = v10 == 5
-                v11
+                v10 == 5
             }
             False -> False
         }

@@ -3,7 +3,6 @@
 :# channel static =
     :< testing
 
-/// ## channel
 :== sender_switch t =
     {
         Gleam : $'process.Subject(`t)'

@@ -56,31 +56,28 @@ type U0 is Data:
   U0_Text{f0: String}
   U0_Note{f0: String}
 
-@unsafe
-def closure0_if1(+c: Bool) -> IO(U0):
+def closure0_if1(c: Bool) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
-        +v2 : String <- IO.pure(String, "alpha")
+        v2 : String <- IO.pure(String, "alpha")
         IO.pure(U0, U0_Text{v2})
     case False{}:
       do IO<U0>:
-        +v4 : String <- IO.pure(String, "beta")
+        v4 : String <- IO.pure(String, "beta")
         IO.pure(U0, U0_Note{v4})
 
-@unsafe
 def closure0(+v0: U32) -> IO(U0):
   do IO<U0>:
     +v1 : Bool <- IO.pure(Bool, U32.is_eq(v0, {1 : U32}))
     closure0_if1(v1)
 
-@unsafe
-def method0(+v0: ((U32) -> IO(U0))) -> IO(U0):
+def method0(v0: ((U32) -> IO(U0))) -> IO(U0):
   do IO<U0>:
     v0({1 : U32})
 
 @unsafe
-def spiral_main_unbox2(+u: U0, +v0: ((U32) -> IO(U0)), +v1: U0) -> IO(U32):
+def spiral_main_unbox2(u: U0, +v0: ((U32) -> IO(U0)), +v1: U0) -> IO(U32):
   match u:
     case U0_Idle{}:
       do IO<U32>:
@@ -92,13 +89,12 @@ def spiral_main_unbox2(+u: U0, +v0: ((U32) -> IO(U0)), +v1: U0) -> IO(U32):
       do IO<U32>:
         return {6 : U32}
 
-@unsafe
-def method1(+v0: ((U32) -> IO(U0))) -> IO(U0):
+def method1(v0: ((U32) -> IO(U0))) -> IO(U0):
   do IO<U0>:
     v0({2 : U32})
 
 @unsafe
-def spiral_main_unbox3(+u: U0, +v0: ((U32) -> IO(U0)), +v1: U0, +v6: U32, +v7: U0) -> IO(U32):
+def spiral_main_unbox3(u: U0, +v0: ((U32) -> IO(U0)), +v1: U0, +v6: U32, +v7: U0) -> IO(U32):
   match u:
     case U0_Idle{}:
       do IO<U32>:
@@ -117,12 +113,11 @@ def spiral_main() -> IO(U32):
     +v1 : U0 <- method0(v0)
     +v6 : U32 <- spiral_main_unbox2(v1, v0, v1)
     +v7 : U0 <- method1(v0)
-    +v12 : U32 <- spiral_main_unbox3(v7, v0, v1, v6, v7)
-    +v13 : U32 <- IO.pure(U32, U32.add(v6, v12))
-    +v14 : U32 <- IO.pure(U32, U32.add(v13, {31 : U32}))
+    v12 : U32 <- spiral_main_unbox3(v7, v0, v1, v6, v7)
+    v13 : U32 <- IO.pure(U32, U32.add(v6, v12))
+    v14 : U32 <- IO.pure(U32, U32.add(v13, {31 : U32}))
     return v14
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

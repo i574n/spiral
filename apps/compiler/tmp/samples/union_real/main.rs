@@ -12,13 +12,13 @@ fn twice_1(mut v0: f64) -> i32 {
     v2
 }
 fn score_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_Real(v1) => {
-            let v1: f64 = *v1;
+            let v1: f64 = v1;
             twice_1(v1)
         }
         US0::US0_Whole(v3) => {
-            let v3: i32 = *v3;
+            let v3: i32 = v3;
             v3
         }
     }

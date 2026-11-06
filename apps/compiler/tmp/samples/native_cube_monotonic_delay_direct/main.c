@@ -174,16 +174,13 @@ static int32_t method0(Array0 * v0, double v1, double v2, double v3){
                 int32_t v68 = v67 * 160l;
                 int32_t v69 = v66 + v68;
                 AssignArray0(&(v0->ptr[v69]), 35l);
-                ArrayDecref0(v0);
                 return v69;
             } else {
-                ArrayDecref0(v0);
                 return 0l;
             }
             break;
         }
         default: {
-            ArrayDecref0(v0);
             return 0l;
         }
     }
@@ -285,16 +282,13 @@ static int32_t method1(Array0 * v0, double v1, double v2, double v3){
                 int32_t v68 = v67 * 160l;
                 int32_t v69 = v66 + v68;
                 AssignArray0(&(v0->ptr[v69]), 64l);
-                ArrayDecref0(v0);
                 return v69;
             } else {
-                ArrayDecref0(v0);
                 return 0l;
             }
             break;
         }
         default: {
-            ArrayDecref0(v0);
             return 0l;
         }
     }
@@ -396,16 +390,13 @@ static int32_t method2(Array0 * v0, double v1, double v2, double v3){
                 int32_t v68 = v67 * 160l;
                 int32_t v69 = v66 + v68;
                 AssignArray0(&(v0->ptr[v69]), 43l);
-                ArrayDecref0(v0);
                 return v69;
             } else {
-                ArrayDecref0(v0);
                 return 0l;
             }
             break;
         }
         default: {
-            ArrayDecref0(v0);
             return 0l;
         }
     }
@@ -443,11 +434,10 @@ static inline String * StringConcat(String * left, String * right){
     memcpy(result->ptr + left_len, right->ptr, right_len + 1);
     return result;
 }
-static String * frame_text_loop3(Array0 * v0, int32_t v1, int32_t v2, int32_t v3, String * v4){
+static inline String * frame_text_loop3(Array0 * v0, int32_t v1, int32_t v2, int32_t v3, String * v4){
     while (1) {
         bool v5 = v3 == v2;
         if (v5){
-            ArrayDecref0(v0);
             return v4;
         } else {
             int32_t v6 = v0->ptr[v3];
@@ -828,17 +818,14 @@ int32_t main(){
             int32_t v15 = v13 + 1l;
             v13 = v15;
         }
-        (v0)->refc++;
         int32_t v16 = method0(v0, v10, v11, v12);
-        (v0)->refc++;
         int32_t v17 = method1(v0, v10, v11, v12);
-        (v0)->refc++;
         int32_t v18 = method2(v0, v10, v11, v12);
         int32_t v19 = 160l;
         int32_t v20 = 7040l;
         int32_t v21 = 0l;
         String * v22 = StringLit(1, "");
-        (v0)->refc++; (v22)->refc++;
+        (v22)->refc++;
         String * v23 = frame_text_loop3(v0, v19, v20, v21, v22);
         StringDecref(v22);
         int32_t v24 = v23->len-1;

@@ -14,40 +14,35 @@ pub fn main() {
     let v13 =
         case v11 {
             True -> {
-                let v12 = v6 == 1
-                v12
+                v6 == 1
             }
             False -> False
         }
     let v15 =
         case v13 {
             True -> {
-                let v14 = v7 == 3
-                v14
+                v7 == 3
             }
             False -> False
         }
     let v17 =
         case v15 {
             True -> {
-                let v16 = v8 == -1
-                v16
+                v8 == -1
             }
             False -> False
         }
     let v19 =
         case v17 {
             True -> {
-                let v18 = v9 == 14
-                v18
+                v9 == 14
             }
             False -> False
         }
     let v21 =
         case v19 {
             True -> {
-                let v20 = v10 == 2
-                v20
+                v10 == 2
             }
             False -> False
         }

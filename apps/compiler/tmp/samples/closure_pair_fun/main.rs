@@ -29,11 +29,11 @@ fn f_c0(mut v0: i32, mut v1: i32) -> Rc<dyn Fn(i32) -> (Rc<dyn Fn(i32) -> i32>, 
         if v3 {
             let mut v4: Rc<dyn Fn(i32) -> i32> = right_c1(v1, v2);
             let v5: Rc<dyn Fn(i32) -> i32> = left_c2(v0, v2);
-            (v4.clone(), v5.clone())
+            (v4, v5)
         } else {
             let v6: Rc<dyn Fn(i32) -> i32> = left_c2(v0, v2);
             let v7: Rc<dyn Fn(i32) -> i32> = right_c1(v1, v2);
-            (v6.clone(), v7.clone())
+            (v6, v7)
         }
     })
 }

@@ -7,14 +7,14 @@ enum US0 {
     US0_Nested(Rc<RefCell<Vec<Rc<RefCell<Vec<i32>>>>>>),
 }
 fn bump_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_Empty => {
             0i32
         }
         US0::US0_Nested(v1) => {
-            let v1: Rc<RefCell<Vec<Rc<RefCell<Vec<i32>>>>>> = v1.clone();
-            let v2: Rc<RefCell<Vec<i32>>> = v1.borrow()[0i32 as usize].clone();
-            let v3: i32 = v2.clone().borrow()[0i32 as usize].clone();
+            let mut v1: Rc<RefCell<Vec<Rc<RefCell<Vec<i32>>>>>> = v1;
+            let mut v2: Rc<RefCell<Vec<i32>>> = v1.borrow()[0i32 as usize].clone();
+            let mut v3: i32 = v2.borrow()[0i32 as usize];
             let v4: i32 = v3.wrapping_add(1i32);
             v2.borrow_mut()[0i32 as usize] = v4;
             0i32
@@ -22,20 +22,20 @@ fn bump_0(mut v0: US0) -> i32 {
     }
 }
 fn score_1(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_Empty => {
             0i32
         }
         US0::US0_Nested(v1) => {
-            let v1: Rc<RefCell<Vec<Rc<RefCell<Vec<i32>>>>>> = v1.clone();
-            let v2: Rc<RefCell<Vec<i32>>> = v1.clone().borrow()[0i32 as usize].clone();
-            let v3: Rc<RefCell<Vec<i32>>> = v1.borrow()[1i32 as usize].clone();
-            let v4: i32 = v2.clone().borrow()[0i32 as usize].clone();
-            let v5: i32 = v2.borrow()[1i32 as usize].clone();
+            let mut v1: Rc<RefCell<Vec<Rc<RefCell<Vec<i32>>>>>> = v1;
+            let mut v2: Rc<RefCell<Vec<i32>>> = v1.borrow()[0i32 as usize].clone();
+            let mut v3: Rc<RefCell<Vec<i32>>> = v1.borrow()[1i32 as usize].clone();
+            let v4: i32 = v2.borrow()[0i32 as usize];
+            let v5: i32 = v2.borrow()[1i32 as usize];
             let v6: i32 = v4.wrapping_add(v5);
-            let v7: i32 = v3.clone().borrow()[0i32 as usize].clone();
+            let v7: i32 = v3.borrow()[0i32 as usize];
             let v8: i32 = v6.wrapping_add(v7);
-            let v9: i32 = v3.borrow()[1i32 as usize].clone();
+            let v9: i32 = v3.borrow()[1i32 as usize];
             let v10: i32 = v8.wrapping_add(v9);
             v10
         }
@@ -43,15 +43,15 @@ fn score_1(mut v0: US0) -> i32 {
 }
 fn spiral_main() -> i32 {
     let v0: i32 = 2i32;
-    let v1: Rc<RefCell<Vec<Rc<RefCell<Vec<i32>>>>>> = Rc::new(RefCell::new(vec![<Rc<RefCell<Vec<i32>>>>::default(); v0 as usize]));
-    let v2: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
-    let v3: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
-    v2.clone().borrow_mut()[0i32 as usize] = 3i32;
-    v2.clone().borrow_mut()[1i32 as usize] = 4i32;
-    v3.clone().borrow_mut()[0i32 as usize] = 5i32;
-    v3.clone().borrow_mut()[1i32 as usize] = 6i32;
-    v1.clone().borrow_mut()[0i32 as usize] = v2;
-    v1.clone().borrow_mut()[1i32 as usize] = v3;
+    let mut v1: Rc<RefCell<Vec<Rc<RefCell<Vec<i32>>>>>> = Rc::new(RefCell::new(vec![<Rc<RefCell<Vec<i32>>>>::default(); v0 as usize]));
+    let mut v2: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
+    let mut v3: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
+    v2.borrow_mut()[0i32 as usize] = 3i32;
+    v2.borrow_mut()[1i32 as usize] = 4i32;
+    v3.borrow_mut()[0i32 as usize] = 5i32;
+    v3.borrow_mut()[1i32 as usize] = 6i32;
+    v1.borrow_mut()[0i32 as usize] = v2;
+    v1.borrow_mut()[1i32 as usize] = v3;
     let v4: US0 = US0::US0_Nested(v1.clone());
     let v5: i32 = bump_0(v4);
     let v6: US0 = US0::US0_Nested(v1);

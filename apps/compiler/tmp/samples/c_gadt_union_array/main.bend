@@ -180,11 +180,10 @@ def spiral_array_set_a0(+arr: Chan(Array<U0>) & U32, +i: U32, +v: U0) -> IO(Unit
 @unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : U32 <- IO.pure(U32, {3 : U32})
+    v0 : U32 <- IO.pure(U32, {3 : U32})
     +v1 : (Chan(Array<U0>) & U32) <- spiral_array_new_a0(v0, U0_Living{{0 : U32}, {0 : U32}})
     return {0 : U32}
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

@@ -48,13 +48,10 @@ pub type Us0 {
     Us0Held(f1i0 : SpiralArray(Int))
 }
 pub fn main() {
-    let v0 = 2
-    let v1 = spiral_array_create_filled(v0, 0)
-    let v2 = 7
-    spiral_array_set(v1, 0, v2)
-    let v3 = True
+    let v1 = spiral_array_create_filled(2, 0)
+    spiral_array_set(v1, 0, 7)
     let v6 =
-        case v3 {
+        case True {
             True -> Us0Held(v1)
             False -> Us0Missing
         }

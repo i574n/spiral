@@ -8,15 +8,10 @@ pub fn f_c0(capt: #(Heap2)) -> fn(Int) -> Heap2 {
     }
 }
 pub fn main() {
-    let v0 = 7
-    let v1 = "hi"
-    let v2 = Heap0(l0: v0, l1: v1)
-    let v3 = 4
-    let v4 = "yo"
-    let v5 = Heap0(l0: v3, l1: v4)
+    let v2 = Heap0(l0: 7, l1: "hi")
+    let v5 = Heap0(l0: 4, l1: "yo")
     let v6 = Heap1(l0: v2, l1: v5)
-    let v7 = 2
-    let v8 = Heap2(l0: v6, l1: v7)
+    let v8 = Heap2(l0: v6, l1: 2)
     let v9 = f_c0(#(v8))
     let v10 = v9(1)
     let #(v11, v12) = #(v10.l0, v10.l1)
@@ -27,32 +22,28 @@ pub fn main() {
     let v21 =
         case v19 {
             True -> {
-                let v20 = v16 == "hi"
-                v20
+                v16 == "hi"
             }
             False -> False
         }
     let v23 =
         case v21 {
             True -> {
-                let v22 = v17 == 4
-                v22
+                v17 == 4
             }
             False -> False
         }
     let v25 =
         case v23 {
             True -> {
-                let v24 = v18 == "yo"
-                v24
+                v18 == "yo"
             }
             False -> False
         }
     let v27 =
         case v25 {
             True -> {
-                let v26 = v12 == 2
-                v26
+                v12 == 2
             }
             False -> False
         }

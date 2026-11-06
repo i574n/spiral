@@ -7,14 +7,14 @@ enum UH0 {
     UH0_Node(Rc<str>, Rc<UH0>, Rc<UH0>),
 }
 fn score_0(mut v0: Rc<UH0>) -> i32 {
-    match &*v0 {
+    match Rc::unwrap_or_clone(v0) {
         UH0::UH0_Empty => {
             0i32
         }
         UH0::UH0_Node(v1, v2, v3) => {
-            let v1: Rc<str> = v1.clone();
-            let v2: Rc<UH0> = v2.clone();
-            let v3: Rc<UH0> = v3.clone();
+            let v1: Rc<str> = v1;
+            let v2: Rc<UH0> = v2;
+            let v3: Rc<UH0> = v3;
             let v4: i32 = (v1.len() as i32);
             let v5: i32 = score_0(v2);
             let v6: i32 = v4.wrapping_add(v5);

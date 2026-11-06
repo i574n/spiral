@@ -3,7 +3,6 @@
 
 :< rust_operators
 
-/// ## near
 :== vector_switch t =
     {
         Gleam : $'near_sdk_store_vec_Vector<`t>'

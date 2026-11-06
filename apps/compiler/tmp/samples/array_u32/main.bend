@@ -175,18 +175,18 @@ def spiral_array_set_a0(+arr: Chan(Array<U32>) & U32, +i: U32, +v: U32) -> IO(Un
   spiral_array_set_checked_a0(c, i, v, U32.is_lt(i, n))
 
 @unsafe
-def spiral_main_if1(+c: Bool, +v4: U32) -> IO(Bool):
+def spiral_main_if1(c: Bool, v4: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v7 : Bool <- IO.pure(Bool, U32.is_eq(v4, {4000000001 : U32}))
+        v7 : Bool <- IO.pure(Bool, U32.is_eq(v4, {4000000001 : U32}))
         return v7
     case False{}:
       do IO<Bool>:
         return False{}
 
 @unsafe
-def spiral_main_if2(+c: Bool) -> IO(U32):
+def spiral_main_if2(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -210,7 +210,6 @@ def spiral_main() -> IO(U32):
     +v8 : Bool <- spiral_main_if1(v6, v4)
     spiral_main_if2(v8)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

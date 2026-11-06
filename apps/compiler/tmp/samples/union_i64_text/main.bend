@@ -261,7 +261,7 @@ type U0 is Data:
   U0_Both{f0_hi: U32, f0_lo: U32, f1: String}
 
 @unsafe
-def spiral_main_if1(+c: Bool, +v0: (U32 & U32), +v1: String) -> IO(U0):
+def spiral_main_if1(c: Bool, +v0: (U32 & U32), v1: String) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
@@ -271,18 +271,18 @@ def spiral_main_if1(+c: Bool, +v0: (U32 & U32), +v1: String) -> IO(U0):
         IO.pure(U0, U0_None{})
 
 @unsafe
-def score_0_unbox2_if3(+c: Bool, +v2: String) -> IO(Bool):
+def score_0_unbox2_if3(c: Bool, v2: String) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v4 : Bool <- IO.pure(Bool, String.eq(v2, "hi"))
+        v4 : Bool <- IO.pure(Bool, String.eq(v2, "hi"))
         return v4
     case False{}:
       do IO<Bool>:
         return False{}
 
 @unsafe
-def score_0_unbox2_if4(+c: Bool) -> IO(U32):
+def score_0_unbox2_if4(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -292,33 +292,30 @@ def score_0_unbox2_if4(+c: Bool) -> IO(U32):
         return {1 : U32}
 
 @unsafe
-def score_0_unbox2(+u: U0, +v0: U0) -> IO(U32):
+def score_0_unbox2(u: U0, +v0: U0) -> IO(U32):
   match u:
     case U0_None{}:
       do IO<U32>:
         return {1 : U32}
-    case U0_Both{+v1_hi, +v1_lo, +v2}:
+    case U0_Both{v1_hi, v1_lo, +v2}:
       do IO<U32>:
         +v1 : (U32 & U32) <- IO.pure((U32 & U32), (v1_hi, v1_lo))
         +v3 : Bool <- IO.pure(Bool, w64_equal(v1, ({1 : U32}, {705032704 : U32})))
         +v5 : Bool <- score_0_unbox2_if3(v3, v2)
         score_0_unbox2_if4(v5)
 
-@unsafe
 def score_0(+v0: U0) -> IO(U32):
   do IO<U32>:
     score_0_unbox2(v0, v0)
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : (U32 & U32) <- IO.pure((U32 & U32), ({1 : U32}, {705032704 : U32}))
-    +v1 : String <- IO.pure(String, "hi")
+    v0 : (U32 & U32) <- IO.pure((U32 & U32), ({1 : U32}, {705032704 : U32}))
+    v1 : String <- IO.pure(String, "hi")
     +v2 : Bool <- IO.pure(Bool, True{})
-    +v5 : U0 <- spiral_main_if1(v2, v0, v1)
+    v5 : U0 <- spiral_main_if1(v2, v0, v1)
     score_0(v5)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

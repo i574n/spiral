@@ -64,33 +64,31 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
     case SCon{+h, +t}:
       spiral_string_byte_at_from(U32.is_lt(i, spiral_utf8_width(Char.to_u32(h))), Char.to_u32(h), spiral_utf8_width(Char.to_u32(h)), i, t)
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : U32 <- IO.pure(U32, {43 : U32})
     +v1 : U32 <- IO.pure(U32, {15 : U32})
-    +v2 : U32 <- IO.pure(U32, {2 : U32})
-    +v3 : U32 <- IO.pure(U32, {5 : U32})
-    +v4 : U32 <- IO.pure(U32, U32.and(v0, v1))
-    +v5 : U32 <- IO.pure(U32, U32.or(v0, v1))
-    +v6 : U32 <- IO.pure(U32, U32.xor(v0, v1))
-    +v7 : U32 <- IO.pure(U32, U32.not(v0))
-    +v8 : U32 <- IO.pure(U32, U32.and(v7, {255 : U32}))
-    +v9 : U32 <- IO.pure(U32, U32.shln({1 : U32}, U32.to_nat(v3)))
-    +v10 : U32 <- IO.pure(U32, spiral_i32_shift_right({168 : U32}, v2))
-    +v11 : U32 <- IO.pure(U32, U32.sub(v4, {11 : U32}))
-    +v12 : U32 <- IO.pure(U32, U32.add(v10, v11))
-    +v13 : U32 <- IO.pure(U32, U32.sub(v5, {47 : U32}))
-    +v14 : U32 <- IO.pure(U32, U32.add(v12, v13))
-    +v15 : U32 <- IO.pure(U32, U32.sub(v6, {36 : U32}))
-    +v16 : U32 <- IO.pure(U32, U32.add(v14, v15))
-    +v17 : U32 <- IO.pure(U32, U32.sub(v8, {212 : U32}))
-    +v18 : U32 <- IO.pure(U32, U32.add(v16, v17))
-    +v19 : U32 <- IO.pure(U32, U32.sub(v9, {32 : U32}))
-    +v20 : U32 <- IO.pure(U32, U32.add(v18, v19))
+    v2 : U32 <- IO.pure(U32, {2 : U32})
+    v3 : U32 <- IO.pure(U32, {5 : U32})
+    v4 : U32 <- IO.pure(U32, U32.and(v0, v1))
+    v5 : U32 <- IO.pure(U32, U32.or(v0, v1))
+    v6 : U32 <- IO.pure(U32, U32.xor(v0, v1))
+    v7 : U32 <- IO.pure(U32, U32.not(v0))
+    v8 : U32 <- IO.pure(U32, U32.and(v7, {255 : U32}))
+    v9 : U32 <- IO.pure(U32, U32.shln({1 : U32}, U32.to_nat(v3)))
+    v10 : U32 <- IO.pure(U32, spiral_i32_shift_right({168 : U32}, v2))
+    v11 : U32 <- IO.pure(U32, U32.sub(v4, {11 : U32}))
+    v12 : U32 <- IO.pure(U32, U32.add(v10, v11))
+    v13 : U32 <- IO.pure(U32, U32.sub(v5, {47 : U32}))
+    v14 : U32 <- IO.pure(U32, U32.add(v12, v13))
+    v15 : U32 <- IO.pure(U32, U32.sub(v6, {36 : U32}))
+    v16 : U32 <- IO.pure(U32, U32.add(v14, v15))
+    v17 : U32 <- IO.pure(U32, U32.sub(v8, {212 : U32}))
+    v18 : U32 <- IO.pure(U32, U32.add(v16, v17))
+    v19 : U32 <- IO.pure(U32, U32.sub(v9, {32 : U32}))
+    v20 : U32 <- IO.pure(U32, U32.add(v18, v19))
     return v20
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

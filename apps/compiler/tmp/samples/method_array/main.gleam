@@ -49,8 +49,7 @@ pub fn method0(v0: Int) -> SpiralArray(Int) {
     v1
 }
 pub fn main() {
-    let v0 = 7
-    let v1 = method0(v0)
+    let v1 = method0(7)
     let v2 = spiral_array_get(v1, 0)
     let v3 = v2 == 7
     case v3 {

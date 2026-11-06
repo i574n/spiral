@@ -3,7 +3,6 @@
 
 :< rust_operators
 
-/// ## rust
 :! join_handle t =
     `(
         rust::rust_type
@@ -200,7 +199,6 @@
     =
     !\\((sender, line), $'"$0.send($1)"')
 
-/// ## fsharp
 := rust_sleep_ms (ms : u64) : () = $'std::thread::sleep(std::time::Duration::from_millis(!ms))' : ()
 
 := sleep (n : i32) : () =
@@ -339,7 +337,6 @@
     |> async::run_synchronously
     |> _assert_eq 11i32
 
-/// ## main
 ///> fsharp
 
 := main () =

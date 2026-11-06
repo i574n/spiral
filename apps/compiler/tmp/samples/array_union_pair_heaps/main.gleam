@@ -57,24 +57,21 @@ pub fn score_0(v0: Us0) -> Int {
             let v9 =
                 case v7 {
                     True -> {
-                        let v8 = v4 == "hi"
-                        v8
+                        v4 == "hi"
                     }
                     False -> False
                 }
             let v11 =
                 case v9 {
                     True -> {
-                        let v10 = v5 == 4
-                        v10
+                        v5 == 4
                     }
                     False -> False
                 }
             let v13 =
                 case v11 {
                     True -> {
-                        let v12 = v6 == "yo"
-                        v12
+                        v6 == "yo"
                     }
                     False -> False
                 }
@@ -87,16 +84,11 @@ pub fn score_0(v0: Us0) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 7
-    let v1 = "hi"
-    let v2 = Heap0(l0: v0, l1: v1)
-    let v3 = 4
-    let v4 = "yo"
-    let v5 = Heap0(l0: v3, l1: v4)
+    let v2 = Heap0(l0: 7, l1: "hi")
+    let v5 = Heap0(l0: 4, l1: "yo")
     let v6 = spiral_array_create(1)
-    let v7 = True
     let v10 =
-        case v7 {
+        case True {
             True -> Us0Held(v2, v5)
             False -> Us0None
         }

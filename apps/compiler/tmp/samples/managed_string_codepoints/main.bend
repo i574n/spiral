@@ -93,36 +93,33 @@ def spiral_string_slice_checked(+valid: Bool, +s: String, +from: U32, +until: U3
 def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
   spiral_string_slice_checked(Bool.and(Bool.and(Bool.not(U32.is_ge(from, 2147483648)), U32.is_le(U32.add(to, 1), spiral_string_bytes(s))), Bool.and(U32.is_le(from, U32.add(to, 1)), Bool.or(U32.is_eq(from, U32.add(to, 1)), Bool.and(spiral_string_is_boundary(s, {0 : U32}, from), spiral_string_is_boundary(s, {0 : U32}, U32.add(to, 1)))))), s, from, U32.add(to, 1))
 
-@unsafe
-def runtime_byte_0(+v0: String, +v1: U32) -> IO(U32):
+def runtime_byte_0(v0: String, v1: U32) -> IO(U32):
   do IO<U32>:
-    +v2 : U32 <- IO.pure(U32, spiral_string_byte_at(v0, v1))
+    v2 : U32 <- IO.pure(U32, spiral_string_byte_at(v0, v1))
     return v2
 
-@unsafe
-def codepoint_length_loop_1_if1_if2(+c: Bool, +v2: U32, +v7: U32) -> IO(Bool):
+def codepoint_length_loop_1_if1_if2(c: Bool, v2: U32, v7: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
         return False{}
     case False{}:
       do IO<Bool>:
-        +v9 : Bool <- IO.pure(Bool, U32.is_lt(v7, v2))
+        v9 : Bool <- IO.pure(Bool, U32.is_lt(v7, v2))
         return v9
 
-@unsafe
-def codepoint_length_loop_1_if1_if3(+c: Bool, +v4: U32) -> IO(U32):
+def codepoint_length_loop_1_if1_if3(c: Bool, +v4: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
         return v4
     case False{}:
       do IO<U32>:
-        +v11 : U32 <- IO.pure(U32, U32.add(v4, {1 : U32}))
+        v11 : U32 <- IO.pure(U32, U32.add(v4, {1 : U32}))
         return v11
 
 @unsafe
-def codepoint_length_loop_1_if1(+c: Bool, +v0: String, +v1: U32, +v2: U32, +v3: U32, +v4: U32, +v5: U32) -> IO(U32):
+def codepoint_length_loop_1_if1(c: Bool, +v0: String, +v1: U32, +v2: U32, +v3: U32, +v4: U32, +v5: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -132,45 +129,44 @@ def codepoint_length_loop_1_if1(+c: Bool, +v0: String, +v1: U32, +v2: U32, +v3: 
         +v7 : U32 <- IO.pure(U32, spiral_string_byte_at(v0, v3))
         +v8 : Bool <- IO.pure(Bool, U32.is_lt(v7, v1))
         +v10 : Bool <- codepoint_length_loop_1_if1_if2(v8, v2, v7)
-        +v12 : U32 <- codepoint_length_loop_1_if1_if3(v10, v4)
-        +v13 : U32 <- IO.pure(U32, U32.add(v3, {1 : U32}))
+        v12 : U32 <- codepoint_length_loop_1_if1_if3(v10, v4)
+        v13 : U32 <- IO.pure(U32, U32.add(v3, {1 : U32}))
         codepoint_length_loop_1(v0, v1, v2, v13, v12, v5)
 
 @unsafe
-def codepoint_length_loop_1(+v0: String, +v1: U32, +v2: U32, +v3: U32, +v4: U32, +v5: U32) -> IO(U32):
+def codepoint_length_loop_1(v0: String, v1: U32, v2: U32, +v3: U32, v4: U32, +v5: U32) -> IO(U32):
   do IO<U32>:
     +v6 : Bool <- IO.pure(Bool, U32.is_eq(v3, v5))
     codepoint_length_loop_1_if1(v6, v0, v1, v2, v3, v4, v5)
 
-@unsafe
-def codepoint_byte_offset_loop_2_if4_if5(+c: Bool, +v2: U32, +v8: U32) -> IO(Bool):
+def codepoint_byte_offset_loop_2_if4_if5(c: Bool, v2: U32, v8: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
         return False{}
     case False{}:
       do IO<Bool>:
-        +v10 : Bool <- IO.pure(Bool, U32.is_lt(v8, v2))
+        v10 : Bool <- IO.pure(Bool, U32.is_lt(v8, v2))
         return v10
 
 @unsafe
-def codepoint_byte_offset_loop_2_if4_if6_if7(+c: Bool, +v0: String, +v1: U32, +v2: U32, +v3: U32, +v4: U32, +v5: U32, +v6: U32) -> IO(U32):
+def codepoint_byte_offset_loop_2_if4_if6_if7(c: Bool, v0: String, v1: U32, v2: U32, v3: U32, +v4: U32, v5: U32, v6: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
         return v4
     case False{}:
       do IO<U32>:
-        +v15 : U32 <- IO.pure(U32, U32.add(v4, {1 : U32}))
-        +v16 : U32 <- IO.pure(U32, U32.add(v5, {1 : U32}))
+        v15 : U32 <- IO.pure(U32, U32.add(v4, {1 : U32}))
+        v16 : U32 <- IO.pure(U32, U32.add(v5, {1 : U32}))
         codepoint_byte_offset_loop_2(v0, v1, v2, v3, v15, v16, v6)
 
 @unsafe
-def codepoint_byte_offset_loop_2_if4_if6(+c: Bool, +v0: String, +v1: U32, +v2: U32, +v3: U32, +v4: U32, +v5: U32, +v6: U32) -> IO(U32):
+def codepoint_byte_offset_loop_2_if4_if6(c: Bool, +v0: String, +v1: U32, +v2: U32, +v3: U32, +v4: U32, +v5: U32, +v6: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
-        +v12 : U32 <- IO.pure(U32, U32.add(v4, {1 : U32}))
+        v12 : U32 <- IO.pure(U32, U32.add(v4, {1 : U32}))
         codepoint_byte_offset_loop_2(v0, v1, v2, v3, v12, v5, v6)
     case False{}:
       do IO<U32>:
@@ -178,7 +174,7 @@ def codepoint_byte_offset_loop_2_if4_if6(+c: Bool, +v0: String, +v1: U32, +v2: U
         codepoint_byte_offset_loop_2_if4_if6_if7(v14, v0, v1, v2, v3, v4, v5, v6)
 
 @unsafe
-def codepoint_byte_offset_loop_2_if4(+c: Bool, +v0: String, +v1: U32, +v2: U32, +v3: U32, +v4: U32, +v5: U32, +v6: U32) -> IO(U32):
+def codepoint_byte_offset_loop_2_if4(c: Bool, +v0: String, +v1: U32, +v2: U32, +v3: U32, +v4: U32, +v5: U32, +v6: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -191,13 +187,12 @@ def codepoint_byte_offset_loop_2_if4(+c: Bool, +v0: String, +v1: U32, +v2: U32, 
         codepoint_byte_offset_loop_2_if4_if6(v11, v0, v1, v2, v3, v4, v5, v6)
 
 @unsafe
-def codepoint_byte_offset_loop_2(+v0: String, +v1: U32, +v2: U32, +v3: U32, +v4: U32, +v5: U32, +v6: U32) -> IO(U32):
+def codepoint_byte_offset_loop_2(v0: String, v1: U32, v2: U32, v3: U32, +v4: U32, v5: U32, +v6: U32) -> IO(U32):
   do IO<U32>:
     +v7 : Bool <- IO.pure(Bool, U32.is_eq(v4, v6))
     codepoint_byte_offset_loop_2_if4(v7, v0, v1, v2, v3, v4, v5, v6)
 
-@unsafe
-def spiral_main_if8_if9_if10_if11_if12_if13_if14(+c: Bool) -> IO(U32):
+def spiral_main_if8_if9_if10_if11_if12_if13_if14(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -206,8 +201,7 @@ def spiral_main_if8_if9_if10_if11_if12_if13_if14(+c: Bool) -> IO(U32):
       do IO<U32>:
         return {1 : U32}
 
-@unsafe
-def spiral_main_if8_if9_if10_if11_if12_if13(+c: Bool, +v79: U32) -> IO(U32):
+def spiral_main_if8_if9_if10_if11_if12_if13(c: Bool, +v79: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -217,8 +211,7 @@ def spiral_main_if8_if9_if10_if11_if12_if13(+c: Bool, +v79: U32) -> IO(U32):
       do IO<U32>:
         return {2 : U32}
 
-@unsafe
-def spiral_main_if8_if9_if10_if11_if12(+c: Bool, +v70: String, +v79: U32) -> IO(U32):
+def spiral_main_if8_if9_if10_if11_if12(c: Bool, +v70: String, v79: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -229,8 +222,7 @@ def spiral_main_if8_if9_if10_if11_if12(+c: Bool, +v70: String, +v79: U32) -> IO(
       do IO<U32>:
         return {3 : U32}
 
-@unsafe
-def spiral_main_if8_if9_if10_if11(+c: Bool, +v70: String, +v79: U32, +v86: U32, +v89: U32) -> IO(U32):
+def spiral_main_if8_if9_if10_if11(c: Bool, v70: String, v79: U32, +v86: U32, +v89: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -240,8 +232,7 @@ def spiral_main_if8_if9_if10_if11(+c: Bool, +v70: String, +v79: U32, +v86: U32, 
       do IO<U32>:
         return {4 : U32}
 
-@unsafe
-def spiral_main_if8_if9_if10(+c: Bool, +v50: String, +v70: String, +v79: U32, +v86: U32, +v89: U32) -> IO(U32):
+def spiral_main_if8_if9_if10(c: Bool, +v50: String, v70: String, v79: U32, v86: U32, v89: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -252,8 +243,7 @@ def spiral_main_if8_if9_if10(+c: Bool, +v50: String, +v70: String, +v79: U32, +v
       do IO<U32>:
         return {5 : U32}
 
-@unsafe
-def spiral_main_if8_if9(+c: Bool, +v50: String, +v70: String, +v79: U32, +v81: U32, +v84: U32, +v86: U32, +v89: U32) -> IO(U32):
+def spiral_main_if8_if9(c: Bool, v50: String, v70: String, v79: U32, +v81: U32, +v84: U32, v86: U32, v89: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -263,8 +253,7 @@ def spiral_main_if8_if9(+c: Bool, +v50: String, +v70: String, +v79: U32, +v81: U
       do IO<U32>:
         return {6 : U32}
 
-@unsafe
-def spiral_main_if8(+c: Bool, +v30: String, +v50: String, +v70: String, +v79: U32, +v81: U32, +v84: U32, +v86: U32, +v89: U32) -> IO(U32):
+def spiral_main_if8(c: Bool, +v30: String, v50: String, v70: String, v79: U32, v81: U32, v84: U32, v86: U32, v89: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -275,7 +264,6 @@ def spiral_main_if8(+c: Bool, +v30: String, +v50: String, +v70: String, +v79: U3
       do IO<U32>:
         return {7 : U32}
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : String <- IO.pure(String, "À")
@@ -348,7 +336,7 @@ def spiral_main() -> IO(U32):
     +v67 : U32 <- IO.pure(U32, {10 : U32})
     +v68 : U32 <- codepoint_byte_offset_loop_2(v6, v61, v63, v64, v65, v66, v67)
     +v69 : U32 <- IO.pure(U32, U32.sub(v68, {1 : U32}))
-    +v70 : String <- spiral_string_slice("Aéλ🙂Z", v59, v69)
+    v70 : String <- spiral_string_slice("Aéλ🙂Z", v59, v69)
     +v71 : U32 <- IO.pure(U32, {1 : U32})
     +v72 : U32 <- runtime_byte_0(v0, v71)
     +v73 : U32 <- IO.pure(U32, {0 : U32})
@@ -357,21 +345,20 @@ def spiral_main() -> IO(U32):
     +v76 : U32 <- IO.pure(U32, {0 : U32})
     +v77 : U32 <- IO.pure(U32, {0 : U32})
     +v78 : U32 <- IO.pure(U32, {10 : U32})
-    +v79 : U32 <- codepoint_byte_offset_loop_2(v6, v72, v74, v75, v76, v77, v78)
+    v79 : U32 <- codepoint_byte_offset_loop_2(v6, v72, v74, v75, v76, v77, v78)
     +v80 : U32 <- IO.pure(U32, {0 : U32})
-    +v81 : U32 <- runtime_byte_0(v30, v80)
+    v81 : U32 <- runtime_byte_0(v30, v80)
     +v82 : String <- IO.pure(String, "é")
     +v83 : U32 <- IO.pure(U32, {0 : U32})
-    +v84 : U32 <- runtime_byte_0(v82, v83)
+    v84 : U32 <- runtime_byte_0(v82, v83)
     +v85 : U32 <- IO.pure(U32, {3 : U32})
-    +v86 : U32 <- runtime_byte_0(v50, v85)
+    v86 : U32 <- runtime_byte_0(v50, v85)
     +v87 : String <- IO.pure(String, "🙂")
     +v88 : U32 <- IO.pure(U32, {3 : U32})
-    +v89 : U32 <- runtime_byte_0(v87, v88)
+    v89 : U32 <- runtime_byte_0(v87, v88)
     +v90 : Bool <- IO.pure(Bool, U32.is_eq(v10, {5 : U32}))
     spiral_main_if8(v90, v30, v50, v70, v79, v81, v84, v86, v89)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

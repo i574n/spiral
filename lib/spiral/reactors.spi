@@ -47,7 +47,6 @@
     =
     { init = body::init; react = deadline_react deadline body on_violation }
 
-/// ### modal
 :| mode_entry =
     | Reset
     | History
@@ -286,7 +285,7 @@
 := c_posix_physical_micros () =
     global (
         "#ifndef _WIN32\nstatic int64_t spiral_physical_micros(void) { struct timespec ts; "
-        ^^ "clock_gettime(CLOCK_REALTIME, &ts); return (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000; }\n#endif"
+        ^^ "timespec_get(&ts, TIME_UTC); return (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000; }\n#endif"
     )
 
 := c_physical_micros () : i64 =

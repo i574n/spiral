@@ -55,30 +55,27 @@ type U0 is Data:
   U0_None{}
   U0_Some{f0: U32}
 
-@unsafe
-def f_c0_if1(+c: Bool, +v0: U32, +v1: (U32)) -> IO(U0 & (U32)):
+def f_c0_if1(c: Bool, v0: U32, +v1: (U32)) -> IO(U0 & (U32)):
   match c:
     case True{}:
       do IO<U0 & (U32)>:
-        +v4 : U0 <- IO.pure(U0, U0_None{})
+        v4 : U0 <- IO.pure(U0, U0_None{})
         return (v4, v1)
     case False{}:
       do IO<U0 & (U32)>:
-        +v5 : U0 <- IO.pure(U0, U0_Some{v0})
+        v5 : U0 <- IO.pure(U0, U0_Some{v0})
         return (v5, v1)
 
-@unsafe
-def f_c0(+v0: U32, +v1: (U32), +v2: U32) -> IO(U0 & (U32)):
+def f_c0(v0: U32, v1: (U32), +v2: U32) -> IO(U0 & (U32)):
   do IO<U0 & (U32)>:
     +v3 : Bool <- IO.pure(Bool, U32.is_eq(v2, {0 : U32}))
     f_c0_if1(v3, v0, v1)
 
-@unsafe
-def spiral_main_k2_unbox3_field4(+p: U32) -> IO(U32):
+def spiral_main_k2_unbox3_field4(p: U32) -> IO(U32):
   IO.pure(U32, p)
 
 @unsafe
-def spiral_main_k2_unbox3_if5(+c: Bool) -> IO(U32):
+def spiral_main_k2_unbox3_if5(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -88,7 +85,7 @@ def spiral_main_k2_unbox3_if5(+c: Bool) -> IO(U32):
         return {1 : U32}
 
 @unsafe
-def spiral_main_k2_unbox3(+u: U0, +v0: U32, +v1: U32, +v2: (U32), +v3: ((U32) -> IO(U0 & (U32))), +v4: U0, +v5: (U32)) -> IO(U32):
+def spiral_main_k2_unbox3(u: U0, v0: U32, v1: U32, v2: (U32), v3: ((U32) -> IO(U0 & (U32))), v4: U0, +v5: (U32)) -> IO(U32):
   match u:
     case U0_None{}:
       do IO<U32>:
@@ -101,8 +98,8 @@ def spiral_main_k2_unbox3(+u: U0, +v0: U32, +v1: U32, +v2: (U32), +v3: ((U32) ->
         spiral_main_k2_unbox3_if5(v9)
 
 @unsafe
-def spiral_main_k2(+p: U0 & (U32), +v0: U32, +v1: U32, +v2: (U32), +v3: ((U32) -> IO(U0 & (U32)))) -> IO(U32):
-  (+v4, +v5) = p
+def spiral_main_k2(+p: U0 & (U32), v0: U32, v1: U32, v2: (U32), v3: ((U32) -> IO(U0 & (U32)))) -> IO(U32):
+  (+v4, v5) = p
   do IO<U32>:
     spiral_main_k2_unbox3(v4, v0, v1, v2, v3, v4, v5)
 
@@ -113,10 +110,9 @@ def spiral_main() -> IO(U32):
     +v1 : U32 <- IO.pure(U32, {4 : U32})
     +v2 : (U32) <- IO.pure((U32), v1)
     +v3 : ((U32) -> IO(U0 & (U32))) <- IO.pure(((U32) -> IO(U0 & (U32))), d => f_c0(v0, v2, d))
-    +p : U0 & (U32) <- v3({1 : U32})
+    p : U0 & (U32) <- v3({1 : U32})
     spiral_main_k2(p, v0, v1, v2, v3)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

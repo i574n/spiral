@@ -13,10 +13,10 @@ impl Default for US0 {
     }
 }
 fn score_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_Held(v1, v2) => {
-            let v1: Rc<Heap0> = v1.clone();
-            let v2: Rc<Heap0> = v2.clone();
+            let v1: Rc<Heap0> = v1;
+            let v2: Rc<Heap0> = v2;
             let (mut v3, mut v4): (i32, Rc<str>) = (v1.l0, v1.l1.clone());
             let (mut v5, mut v6): (i32, Rc<str>) = (v2.l0, v2.l1.clone());
             let v7: bool = v3 == 7i32;
@@ -56,14 +56,14 @@ fn spiral_main() -> i32 {
     let v3: i32 = 4i32;
     let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
     let v5: Rc<Heap0> = Rc::new(Heap0 { l0: v3, l1: v4 });
-    let v6: Rc<RefCell<Vec<US0>>> = Rc::new(RefCell::new(vec![<US0>::default(); 1i32 as usize]));
+    let mut v6: Rc<RefCell<Vec<US0>>> = Rc::new(RefCell::new(vec![<US0>::default(); 1i32 as usize]));
     let v7: bool = true;
     let v10: US0 = if v7 {
         US0::US0_Held(v2, v5)
     } else {
         US0::US0_None
     };
-    v6.clone().borrow_mut()[0i32 as usize] = v10;
+    v6.borrow_mut()[0i32 as usize] = v10;
     let v11: US0 = v6.borrow()[0i32 as usize].clone();
     score_0(v11)
 }

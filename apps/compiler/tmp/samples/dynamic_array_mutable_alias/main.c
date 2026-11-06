@@ -34,19 +34,16 @@ static void method0(Array0 * v0){
     int32_t v1 = 1l;
     int32_t v2 = 9l;
     AssignArray0(&(v0->ptr[v1]), v2);
-    ArrayDecref0(v0);
     return ;
 }
 static int32_t method1(Array0 * v0){
     int32_t v1 = 0l;
     int32_t v2 = v0->ptr[v1];
-    ArrayDecref0(v0);
     return v2;
 }
 static int32_t method2(Array0 * v0){
     int32_t v1 = 1l;
     int32_t v2 = v0->ptr[v1];
-    ArrayDecref0(v0);
     return v2;
 }
 int32_t main(){
@@ -54,11 +51,8 @@ int32_t main(){
     Array0 * v1 = ArrayCreate0(v0, true);
     AssignArray0(&(v1->ptr[0l]), 1l);
     AssignArray0(&(v1->ptr[1l]), 2l);
-    (v1)->refc++;
     method0(v1);
-    (v1)->refc++;
     int32_t v2 = method1(v1);
-    (v1)->refc++;
     int32_t v3 = method2(v1);
     ArrayDecref0(v1);
     int32_t v4 = v2 + v3;

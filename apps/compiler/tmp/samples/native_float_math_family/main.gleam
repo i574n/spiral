@@ -18,8 +18,7 @@ pub fn main() {
         case v5 {
             True -> {
                 let v6 = spiral_math_log(v3)
-                let v7 = v6 == v2
-                v7
+                v6 == v2
             }
             False -> False
         }
@@ -27,8 +26,7 @@ pub fn main() {
         case v8 {
             True -> {
                 let v9 = float.exponential(v0)
-                let v10 = v9 == v1
-                v10
+                v9 == v1
             }
             False -> False
         }
@@ -36,8 +34,7 @@ pub fn main() {
         case v11 {
             True -> {
                 let v12 = float.exponential(v2)
-                let v13 = v12 == v3
-                v13
+                v12 == v3
             }
             False -> False
         }
@@ -45,8 +42,7 @@ pub fn main() {
         case v14 {
             True -> {
                 let v15 = maths.tanh(v0)
-                let v16 = v15 == v0
-                v16
+                v15 == v0
             }
             False -> False
         }
@@ -54,8 +50,7 @@ pub fn main() {
         case v17 {
             True -> {
                 let v18 = maths.tanh(v2)
-                let v19 = v18 == v2
-                v19
+                v18 == v2
             }
             False -> False
         }
@@ -63,8 +58,7 @@ pub fn main() {
         case v20 {
             True -> {
                 let v21 = maths.sin(v0)
-                let v22 = v21 == v0
-                v22
+                v21 == v0
             }
             False -> False
         }
@@ -72,8 +66,7 @@ pub fn main() {
         case v23 {
             True -> {
                 let v24 = maths.sin(v2)
-                let v25 = v24 == v2
-                v25
+                v24 == v2
             }
             False -> False
         }
@@ -81,8 +74,7 @@ pub fn main() {
         case v26 {
             True -> {
                 let v27 = maths.cos(v0)
-                let v28 = v27 == v1
-                v28
+                v27 == v1
             }
             False -> False
         }
@@ -90,8 +82,7 @@ pub fn main() {
         case v29 {
             True -> {
                 let v30 = maths.cos(v2)
-                let v31 = v30 == v3
-                v31
+                v30 == v3
             }
             False -> False
         }

@@ -40,6 +40,5 @@ pub fn main() {
     let v0 = spiral_ref_new(Mut0(l0: 1, l1: 2))
     spiral_ref_set(v0, Mut0(l0: 3, l1: 4))
     let #(v1, v2) = #(spiral_ref_get(v0).l0, spiral_ref_get(v0).l1)
-    let v3 = spiral_wrap_signed(v1 + v2, 32)
-    v3
+    spiral_wrap_signed(v1 + v2, 32)
 }

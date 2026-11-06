@@ -16,6 +16,5 @@ pub fn count_0(v0: Int) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 5
-    count_0(v0)
+    count_0(5)
 }

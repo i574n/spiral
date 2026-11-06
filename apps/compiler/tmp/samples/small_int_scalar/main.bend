@@ -70,85 +70,77 @@ def spiral_narrow_i8(+x: U32) -> U32:
 def spiral_narrow_i16(+x: U32) -> U32:
   U32.sub(U32.xor(U32.and(x, 65535), 32768), 32768)
 
-@unsafe
-def spiral_main_if1(+c: Bool, +v4: U32) -> IO(Bool):
+def spiral_main_if1(c: Bool, v4: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v17 : Bool <- IO.pure(Bool, U32.is_eq(v4, {44 : U32}))
+        v17 : Bool <- IO.pure(Bool, U32.is_eq(v4, {44 : U32}))
         return v17
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def spiral_main_if2(+c: Bool, +v6: U32) -> IO(Bool):
+def spiral_main_if2(c: Bool, v6: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v19 : Bool <- IO.pure(Bool, U32.is_eq(v6, {4294967292 : U32}))
+        v19 : Bool <- IO.pure(Bool, U32.is_eq(v6, {4294967292 : U32}))
         return v19
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def spiral_main_if3(+c: Bool, +v7: U32) -> IO(Bool):
+def spiral_main_if3(c: Bool, v7: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v21 : Bool <- IO.pure(Bool, U32.is_eq(v7, {100 : U32}))
+        v21 : Bool <- IO.pure(Bool, U32.is_eq(v7, {100 : U32}))
         return v21
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def spiral_main_if4(+c: Bool, +v9: U32) -> IO(Bool):
+def spiral_main_if4(c: Bool, v9: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v23 : Bool <- IO.pure(Bool, U32.is_eq(v9, {4294941760 : U32}))
+        v23 : Bool <- IO.pure(Bool, U32.is_eq(v9, {4294941760 : U32}))
         return v23
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def spiral_main_if5(+c: Bool, +v11: U32) -> IO(Bool):
+def spiral_main_if5(c: Bool, v11: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v25 : Bool <- IO.pure(Bool, U32.is_eq(v11, {14464 : U32}))
+        v25 : Bool <- IO.pure(Bool, U32.is_eq(v11, {14464 : U32}))
         return v25
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def spiral_main_if6(+c: Bool, +v13: U32) -> IO(Bool):
+def spiral_main_if6(c: Bool, v13: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v27 : Bool <- IO.pure(Bool, U32.is_eq(v13, {7 : U32}))
+        v27 : Bool <- IO.pure(Bool, U32.is_eq(v13, {7 : U32}))
         return v27
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def spiral_main_if7(+c: Bool, +v15: U32) -> IO(Bool):
+def spiral_main_if7(c: Bool, v15: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v29 : Bool <- IO.pure(Bool, U32.is_eq(v15, {9 : U32}))
+        v29 : Bool <- IO.pure(Bool, U32.is_eq(v15, {9 : U32}))
         return v29
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def spiral_main_if8(+c: Bool) -> IO(U32):
+def spiral_main_if8(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -157,7 +149,6 @@ def spiral_main_if8(+c: Bool) -> IO(U32):
       do IO<U32>:
         return {1 : U32}
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : U32 <- IO.pure(U32, {100 : U32})
@@ -186,7 +177,6 @@ def spiral_main() -> IO(U32):
     +v30 : Bool <- spiral_main_if7(v28, v15)
     spiral_main_if8(v30)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

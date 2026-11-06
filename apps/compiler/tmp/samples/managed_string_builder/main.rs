@@ -4,21 +4,21 @@ use std::rc::Rc;
 fn method2(mut v0: i32, mut v1: Rc<str>, mut v2: Rc<str>) -> Rc<str> {
     loop {
         let v3: i32 = v0.wrapping_sub(1i32);
-        let v4: Rc<str> = Rc::<str>::from(format!("{}{}", v1.clone(), v2.clone()));
+        let v4: Rc<str> = Rc::<str>::from(format!("{}{}", v1, v2));
         let v5: bool = v3 == 0i32;
         if v5 {
-            return v4.clone();
+            return v4;
         } else {
             let v6: i32 = v3.wrapping_rem(2i32);
             let v7: bool = v6 == 0i32;
             let v10: Rc<str> = if v7 {
                 let v8: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ab"); } LIT.with(|lit| lit.clone()) };
-                v8.clone()
+                v8
             } else {
                 let v9: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("c"); } LIT.with(|lit| lit.clone()) };
-                v9.clone()
+                v9
             };
-            (v0, v1, v2) = (v3, v4.clone(), v10.clone());
+            (v0, v1, v2) = (v3, v4, v10);
             continue;
         }
     }
@@ -28,7 +28,7 @@ fn method1(mut v0: i32, mut v1: Rc<str>) -> Rc<str> {
     let v3: Rc<str> = Rc::<str>::from(format!("{}{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) }, v1));
     let v4: bool = v2 == 0i32;
     if v4 {
-        v3.clone()
+        v3
     } else {
         let v5: i32 = v2.wrapping_rem(2i32);
         let v6: bool = v5 == 0i32;

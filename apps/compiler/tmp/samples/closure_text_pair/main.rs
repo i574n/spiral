@@ -7,7 +7,7 @@ fn f_c0(mut v0: Rc<str>, mut v1: Rc<str>) -> Rc<dyn Fn(i32) -> (Rc<str>, Rc<str>
         if v3 {
             let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
             let v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("nay"); } LIT.with(|lit| lit.clone()) };
-            (v4.clone(), v5.clone())
+            (v4, v5)
         } else {
             (v0.clone(), v1.clone())
         }

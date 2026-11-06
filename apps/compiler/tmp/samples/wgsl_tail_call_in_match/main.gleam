@@ -18,8 +18,7 @@ pub fn layers_0(v0: Int) -> Int {
         }
     case v4  {
         Us0Done(v8) -> {
-            let v9 = spiral_wrap_signed(v8 * 2, 32)
-            v9
+            spiral_wrap_signed(v8 * 2, 32)
         }
         Us0More(v5) -> {
             let v6 = spiral_wrap_signed(v5 + 1, 32)
@@ -28,6 +27,5 @@ pub fn layers_0(v0: Int) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 0
-    layers_0(v0)
+    layers_0(0)
 }

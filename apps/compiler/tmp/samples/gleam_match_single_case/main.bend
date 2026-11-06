@@ -60,45 +60,40 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
 type U0 is Data:
   U0_Step{f0: U32, f1: U32, f2: U32}
 
-@unsafe
-def walk_0_if1(+c: Bool, +v0: U32) -> IO(U0):
+def walk_0_if1(c: Bool, +v0: U32) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
-        +v2 : U32 <- IO.pure(U32, U32.add(v0, {1 : U32}))
-        +v3 : U32 <- IO.pure(U32, U32.add(v0, {2 : U32}))
+        v2 : U32 <- IO.pure(U32, U32.add(v0, {1 : U32}))
+        v3 : U32 <- IO.pure(U32, U32.add(v0, {2 : U32}))
         IO.pure(U0, U0_Step{v0, v2, v3})
     case False{}:
       do IO<U0>:
         IO.pure(U0, U0_Step{{0 : U32}, {1 : U32}, {2 : U32}})
 
-@unsafe
-def walk_0_unbox2(+u: U0, +v0: U32, +v1: Bool, +v6: U0) -> IO(U32):
+def walk_0_unbox2(u: U0, +v0: U32, +v1: Bool, +v6: U0) -> IO(U32):
   match u:
-    case U0_Step{+v7, +v8, +v9}:
+    case U0_Step{v7, v8, v9}:
       do IO<U32>:
-        +v10 : U32 <- IO.pure(U32, U32.mul(v8, v9))
-        +v11 : U32 <- IO.pure(U32, U32.add(v7, v10))
+        v10 : U32 <- IO.pure(U32, U32.mul(v8, v9))
+        v11 : U32 <- IO.pure(U32, U32.add(v7, v10))
         return v11
 
-@unsafe
 def walk_0(+v0: U32) -> IO(U32):
   do IO<U32>:
     +v1 : Bool <- IO.pure(Bool, spiral_i32_gt(v0, {2 : U32}))
     +v6 : U0 <- walk_0_if1(v1, v0)
     walk_0_unbox2(v6, v0, v1, v6)
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : U32 <- IO.pure(U32, {5 : U32})
-    +v1 : U32 <- walk_0(v0)
-    +v2 : U32 <- IO.pure(U32, U32.sub(v0, {4 : U32}))
-    +v3 : U32 <- walk_0(v2)
-    +v4 : U32 <- IO.pure(U32, U32.add(v1, v3))
+    v1 : U32 <- walk_0(v0)
+    v2 : U32 <- IO.pure(U32, U32.sub(v0, {4 : U32}))
+    v3 : U32 <- walk_0(v2)
+    v4 : U32 <- IO.pure(U32, U32.add(v1, v3))
     return v4
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

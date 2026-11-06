@@ -20,7 +20,6 @@
     := y = x |> am'::map_base (y_pos 0 20 -9.8)
     "projectile motion", "time (s)", "", ;[ "height of projectile (m)", x, y ]
 
-/// ### velocity_cf
 :== mass = f64
 :== time = f64
 :== position = f64
@@ -150,7 +149,6 @@
     := y = x |> am'::map_base (position_ft 0.1f64 20 0 0 [ pedal_coast ])
     "child pedaling then coasting", "time (s)", "", ;[ "position of bike (m)", x, y ]
 
-/// ### velocity_fv
 := newton_second_v m fs v0 =
     fs |> listm::map (\ f => f v0) |> listm'::sum |> \ x => x / m
 
@@ -170,7 +168,6 @@
     := y = x |> am'::map_base (velocity_fv 1 70 0f64 [ \ _ => 100; f_air 2 1.225 0.6 ])
     "bike velocity", "time (s)", "", ;[ "velocity of bike (m/s)", x, y ]
 
-/// ### velocity_ftv
 := newton_second_tv m fs (t, v0) =
     := f_net = fs |> listm::map (\ f => f (t, v0)) |> listm'::sum
     := acc = f_net / m
@@ -194,7 +191,6 @@
     := y = x |> am'::map_base (pedal_coast_air_velocity ())
     "pedaling and coasting with air", "time (s)", "", ;[ "velocity of bike (m/s)", x, y ]
 
-/// ### velocity_ftxv
 :! state_1d = time * position * velocity
 :! rrr = f64 * f64 * f64
 
@@ -262,13 +258,11 @@
     := y = x |> am'::map_base pingpong_velocity
     "ping pong ball on a slinky", "time (s)", "", ;[ "velocity (m/s)", x, y ]
 
-/// ### shift
 :== update_function s = s -> s
 
 :== differential_equation s ds = s -> ds
 
 :== numerical_method s ds = differential_equation s ds -> update_function s
-
 
 := solver method =
     method >> seq::iterate
@@ -278,7 +272,6 @@
 
 := solver_ method =
     method >> seq::iterate_
-
 
 := euler_cromer_1d dt deriv (state_1d (t0, x0, v0) &= t) =
     := (rrr (_, _, dvdt)) = deriv t
@@ -351,13 +344,11 @@
     vec 1 2 3 ::z
     |> _assert_eq 3
 
-/// #### consts
 := i_hat () = vec 1 0 0
 := j_hat () = vec 0 1 0
 := k_hat () = vec 0 0 1
 := zero_vec () = vec 0 0 0
 
-/// #### ^+^
 := (^+^) (a : vec) (b : vec) =
     vec (a::x + b::x) (a::y + b::y) (a::z + b::z)
 
@@ -365,7 +356,6 @@
     vec 1 2 3 ^+^ vec 4 5 6
     |> _assert_eq (vec 5 7 9)
 
-/// #### sum_vec
 := sum_vec vs =
     vs |> listm::fold (^+^) (zero_vec ())
 
@@ -374,7 +364,6 @@
     |> sum_vec
     |> _assert_eq (vec 5 7 9)
 
-/// #### *^
 := (*^) c { x y z } =
     vec (c * x) (c * y) (c * z)
 
@@ -386,7 +375,6 @@
     3 *^ i_hat () ^+^ 4 *^ k_hat ()
     |> _assert_eq (vec 3 0 4)
 
-/// #### ^*
 := (^*) v c =
     (*^) c v
 
@@ -394,7 +382,6 @@
     vec 1 2 3 ^* 5
     |> _assert_eq (vec 5 10 15)
 
-/// #### ^/
 := (^/) { x y z } c =
     vec (x / c) (y / c) (z / c)
 
@@ -402,7 +389,6 @@
     vec 1 2 3 ^/ 5
     |> _assert_eq (vec 0.2 0.4 0.6)
 
-/// #### negate_vec
 := negate_vec v =
     v ^* -1
 
@@ -411,7 +397,6 @@
     |> negate_vec
     |> _assert_eq (vec -1 -2 -3)
 
-/// #### ^-^
 := (^-^) a b =
     a ^+^ (negate_vec b)
 
@@ -419,7 +404,6 @@
     vec 1 2 3 ^-^ vec 4 5 6
     |> _assert_eq (vec -3 -3 -3)
 
-/// #### <.>
 := (<.>) { x = ax y = ay z = az } { x = bx y = by z = bz } =
     ax * bx + ay * by + az * bz
 
@@ -427,7 +411,6 @@
     (vec 1 2 3 <.> vec 4 5 6)
     |> _assert_eq 32
 
-/// #### \>\<
 := (><) (a : vec) (b : vec) =
     vec
         (a::y * b::z - a::z * b::y)
@@ -438,7 +421,6 @@
     (vec 1 2 3 >< vec 4 5 6)
     |> _assert_eq (vec -3 6 -3)
 
-/// #### magnitude
 := magnitude v =
     (v <.> v) |> sqrt
 
@@ -447,7 +429,6 @@
     |> magnitude
     |> _assert_approx_eq None 3.7416573867739413
 
-/// #### v1
 := v1 t =
     2 *^ (t ** 2 *^ i_hat () ^+^ 3 *^ (t ** 3 *^ j_hat () ^+^ t ** 4 *^ k_hat ()))
 
@@ -455,7 +436,6 @@
     v1 1
     |> _assert_eq (vec 2 6 6)
 
-/// #### vec_derivative
 :== vec_derivative = (f64 -> vec) -> f64 -> vec
 
 := vec_derivative dt : vec_derivative =
@@ -466,7 +446,6 @@
     vec_derivative 0.01 v1 3 ::x
     |> _assert_approx_eq None (derivative 0.01 (v1 >> \ v => v::x) 3)
 
-/// ### states_ps
 :! particle_state =
     {
         mass : f64
@@ -732,7 +711,6 @@
     := ~method = runge_kutta_4 0.000000001
     proton_chart_of method [ uniform_lorentz_force (zero_vec ()) (k_hat ()) ]
 
-/// #### system kinetic energy versus time 1
 :== force_vector = vec
 :== two_body_force = particle_state -> particle_state -> force_vector
 
@@ -899,7 +877,6 @@
     := rk4_x, rk4_y = ke_curve_l runge_kutta_4
     ke_chart ec_x ec_y rk4_x rk4_y
 
-/// #### wave 1
 := linear_spring k re (particle_state st1) (particle_state st2) =
     := r1 = st1::pos_vec
     := r2 = st2::pos_vec
@@ -966,7 +943,6 @@
         := x, y = array (string_frames_l ()) |> am'::index n
         "wave", "position (m)", "displacement (m)", ;[ ($'$"{!n}"' : string), x, y ]
 
-/// #### system kinetic energy versus time 2
 :! multi_particle_state_s = stream::stream particle_state
 
 :! d_multi_particle_state_s = stream::stream d_particle_state
@@ -1078,7 +1054,6 @@
     := rk4_x, rk4_y = ke_curve_s runge_kutta_4
     ke_chart ec_x ec_y rk4_x rk4_y
 
-/// #### wave 2
 := forces_string_s () =
     [
         ExternalForce (0i32, fixed_linear_spring 5384 0 (zero_vec ()))

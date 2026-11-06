@@ -6,56 +6,56 @@ fn method1(mut v0: i32) -> bool {
     v1
 }
 fn method0() -> Rc<RefCell<Vec<i32>>> {
-    let v0: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 7040i32 as usize]));
+    let mut v0: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 7040i32 as usize]));
     let mut v1: i32 = 0i32;
     while method1(v1) {
-        v0.clone().borrow_mut()[v1 as usize] = 46i32;
+        v0.borrow_mut()[v1 as usize] = 46i32;
         let v3: i32 = v1.wrapping_add(1i32);
         v1 = v3;
         ()
     };
-    v0.clone()
+    v0
 }
-fn method2(mut v0: Rc<RefCell<Vec<i32>>>) -> i32 {
+fn method2(mut v0: &Rc<RefCell<Vec<i32>>>) -> i32 {
     v0.borrow_mut()[5180i32 as usize] = 35i32;
     5180i32
 }
-fn method3(mut v0: Rc<RefCell<Vec<i32>>>) -> i32 {
+fn method3(mut v0: &Rc<RefCell<Vec<i32>>>) -> i32 {
     v0.borrow_mut()[4258i32 as usize] = 64i32;
     4258i32
 }
-fn method4(mut v0: Rc<RefCell<Vec<i32>>>) -> i32 {
+fn method4(mut v0: &Rc<RefCell<Vec<i32>>>) -> i32 {
     v0.borrow_mut()[3964i32 as usize] = 43i32;
     3964i32
 }
-fn frame_text_loop_5(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: i32, mut v2: i32, mut v3: i32, mut v4: Rc<str>) -> Rc<str> {
+fn frame_text_loop_5(mut v0: &Rc<RefCell<Vec<i32>>>, mut v1: i32, mut v2: i32, mut v3: i32, mut v4: Rc<str>) -> Rc<str> {
     loop {
         let v5: bool = v3 == v2;
         if v5 {
-            return v4.clone();
+            return v4;
         } else {
-            let v6: i32 = v0.clone().borrow()[v3 as usize].clone();
+            let v6: i32 = v0.borrow()[v3 as usize];
             let v7: bool = v6 == 35i32;
             let v16: Rc<str> = if v7 {
                 let v8: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("#"); } LIT.with(|lit| lit.clone()) };
-                v8.clone()
+                v8
             } else {
                 let v9: bool = v6 == 43i32;
                 if v9 {
                     let v10: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("+"); } LIT.with(|lit| lit.clone()) };
-                    v10.clone()
+                    v10
                 } else {
                     let v11: bool = v6 == 64i32;
                     if v11 {
                         let v12: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("@"); } LIT.with(|lit| lit.clone()) };
-                        v12.clone()
+                        v12
                     } else {
                         let v13: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("."); } LIT.with(|lit| lit.clone()) };
-                        v13.clone()
+                        v13
                     }
                 }
             };
-            let v17: Rc<str> = Rc::<str>::from(format!("{}{}", v4.clone(), v16.clone()));
+            let v17: Rc<str> = Rc::<str>::from(format!("{}{}", v4, v16));
             let v18: i32 = v3.wrapping_add(1i32);
             let v19: i32 = v3.wrapping_rem(v1);
             let v20: i32 = v1.wrapping_sub(1i32);
@@ -67,11 +67,11 @@ fn frame_text_loop_5(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: i32, mut v2: i32, mu
                 false
             };
             if v23 {
-                let v24: Rc<str> = Rc::<str>::from(format!("{}{}", v17.clone(), { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("\n"); } LIT.with(|lit| lit.clone()) }));
-                (v0, v1, v2, v3, v4) = (v0.clone(), v1, v2, v18, v24.clone());
+                let v24: Rc<str> = Rc::<str>::from(format!("{}{}", v17, { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("\n"); } LIT.with(|lit| lit.clone()) }));
+                (v3, v4) = (v18, v24);
                 continue;
             } else {
-                (v0, v1, v2, v3, v4) = (v0.clone(), v1, v2, v18, v17.clone());
+                (v3, v4) = (v18, v17);
                 continue;
             }
         }
@@ -108,7 +108,7 @@ fn utf8_scalar_at_byte_offset_7(mut v0: Rc<str>, mut v1: i32) -> i32 {
                         if v14 {
                             std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("UTF-8 sequence is truncated."); } LIT.with(|lit| lit.clone()) }))
                         } else {
-                            let v16: u8 = runtime_byte_8(v0.clone(), v13);
+                            let v16: u8 = runtime_byte_8(v0, v13);
                             let v17: i32 = i32::from(v16);
                             let v18: bool = v17 < 128i32;
                             let v20: bool = if v18 {
@@ -138,7 +138,7 @@ fn utf8_scalar_at_byte_offset_7(mut v0: Rc<str>, mut v1: i32) -> i32 {
                                 let v32: i32 = v1.wrapping_add(1i32);
                                 let v33: u8 = runtime_byte_8(v0.clone(), v32);
                                 let v34: i32 = i32::from(v33);
-                                let v35: u8 = runtime_byte_8(v0.clone(), v29);
+                                let v35: u8 = runtime_byte_8(v0, v29);
                                 let v36: i32 = i32::from(v35);
                                 let v37: bool = v34 < 128i32;
                                 let v39: bool = if v37 {
@@ -296,26 +296,26 @@ fn loop_6(mut v0: Rc<str>, mut v1: i32, mut v2: i32, mut v3: i32) -> i32 {
                 };
                 let v14: i32 = v2.wrapping_add(v13);
                 let v15: i32 = v3.wrapping_add(v7);
-                (v0, v1, v2, v3) = (v0.clone(), v1, v14, v15);
+                (v2, v3) = (v14, v15);
                 continue;
             }
         }
     }
 }
 fn spiral_main() -> i32 {
-    let v0: Rc<RefCell<Vec<i32>>> = method0();
-    let mut v1: i32 = method2(v0.clone());
-    let v2: i32 = method3(v0.clone());
-    let v3: i32 = method4(v0.clone());
-    let v4: i32 = v0.clone().borrow()[0i32 as usize].clone();
-    let v5: i32 = v0.clone().borrow()[5180i32 as usize].clone();
-    let v6: i32 = v0.clone().borrow()[4258i32 as usize].clone();
-    let v7: i32 = v0.clone().borrow()[3964i32 as usize].clone();
+    let mut v0: Rc<RefCell<Vec<i32>>> = method0();
+    let mut v1: i32 = method2(&v0);
+    let v2: i32 = method3(&v0);
+    let v3: i32 = method4(&v0);
+    let v4: i32 = v0.borrow()[0i32 as usize];
+    let v5: i32 = v0.borrow()[5180i32 as usize];
+    let v6: i32 = v0.borrow()[4258i32 as usize];
+    let v7: i32 = v0.borrow()[3964i32 as usize];
     let v8: i32 = 160i32;
     let v9: i32 = 7040i32;
     let v10: i32 = 0i32;
     let v11: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-    let v12: Rc<str> = frame_text_loop_5(v0, v8, v9, v10, v11);
+    let v12: Rc<str> = frame_text_loop_5(&v0, v8, v9, v10, v11);
     let v13: i32 = (v12.clone().len() as i32);
     let v14: i32 = 0i32;
     let v15: i32 = 0i32;

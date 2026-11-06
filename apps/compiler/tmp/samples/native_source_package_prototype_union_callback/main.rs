@@ -20,9 +20,9 @@ fn spiral_main() -> i32 {
     let mut v0: i32 = 2i32;
     let v1: Rc<dyn Fn(i32) -> US0> = closure0(v0);
     let v2: US0 = method0(v1, v0);
-    let v8: i32 = match &v2 {
+    let v8: i32 = match v2 {
         US0::US0_Flag(v4) => {
-            let v4: bool = *v4;
+            let v4: bool = v4;
             if v4 {
                 11i32
             } else {
@@ -30,7 +30,7 @@ fn spiral_main() -> i32 {
             }
         }
         US0::US0_Hit(v3) => {
-            let v3: i32 = *v3;
+            let v3: i32 = v3;
             v3
         }
         US0::US0_Idle => {

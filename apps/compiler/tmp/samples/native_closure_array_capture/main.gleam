@@ -32,8 +32,7 @@ pub fn f_c0(capt: #(SpiralArray(Int))) -> fn(Int) -> Int {
     fn (v1) {
         let #(v0) = capt
         let v2 = v0.size
-        let v3 = spiral_wrap_signed(v2 + v1, 32)
-        v3
+        spiral_wrap_signed(v2 + v1, 32)
     }
 }
 pub fn main() {

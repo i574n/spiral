@@ -1157,6 +1157,7 @@
         TypeScript = \ () => $'String.fromCharCode(!input)' : string
         Lua = \ () => $'!input' : string
         Gleam = \ () => $'!input' : string
+        C = \ () => !!!!PrimToString(input) : string
     }
 
 ///> rust
@@ -1187,6 +1188,11 @@
 ///> gleam
 :# of_char_is_the_one_character_string_on_gleam =
     (of_char 'A', of_char '(' = "(") |> _assert_eq ("A", !+)
+
+///> c
+:# of_char_is_the_one_character_string_on_c =
+    := ~c = 'A'
+    (of_char c, of_char '(' = "(") |> _assert_eq ("A", !+)
 
 ///> gleam
 :# char_code_is_the_code_point_on_gleam =

@@ -6,9 +6,10 @@ uses SysUtils, Math;
 type
   TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
   TMut1 = class;
+  TBoxArray0 = class;
   THeap0 = record l0: LongInt; l1: AnsiString; end;
   TMut1 = class(TSpiralRc) l0: THeap0; l1: THeap0; l2: THeap0; end;
-  TArray0 = array of TMut1;
+  TBoxArray0 = class(TSpiralRc) items: array of TMut1; procedure DropFields; override; end;
 procedure TSpiralRc.DropFields;
 begin
 end;
@@ -20,6 +21,10 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 function HeapCreate0(a0: LongInt; a1: AnsiString): THeap0;
 begin
   Result.l0 := a0; Result.l1 := a1;
@@ -27,6 +32,11 @@ end;
 function MutCreate1(a0: THeap0; a1: THeap0; a2: THeap0): TMut1;
 begin
   Result := TMut1.Create; Result.l0 := a0; Result.l1 := a1; Result.l2 := a2;
+end;
+procedure TBoxArray0.DropFields;
+var i: Int64;
+begin
+  for i := 0 to High(items) do begin SpiralRelease(items[i]); end;
 end;
 function SpiralMain: LongInt;
 var
@@ -40,8 +50,8 @@ var
   v7: AnsiString;
   v8: THeap0;
   v9: TMut1;
-  v10: TArray0;
-  tmp11: TArray0;
+  v10: TBoxArray0;
+  tmp11: TBoxArray0;
   v11: LongInt;
   v12: AnsiString;
   v13: THeap0;
@@ -83,10 +93,11 @@ begin
   v7 := 'aa';
   v8 := HeapCreate0(v6, v7);
   v9 := MutCreate1(v2, v5, v8);
-  tmp11 := nil;
-  SetLength(tmp11, 1);
+  tmp11 := TBoxArray0.Create;
+  SetLength(tmp11.items, 1);
   v10 := tmp11;
-  v10[0] := v9;
+  SpiralRetain(v9); SpiralRelease(v10.items[0]); v10.items[0] := v9;
+  SpiralRelease(v9);
   v11 := 7;
   v12 := 'hi';
   v13 := HeapCreate0(v11, v12);
@@ -96,13 +107,16 @@ begin
   v17 := 9;
   v18 := 'ok';
   v19 := HeapCreate0(v17, v18);
-  v20 := v10[0];
+  v20 := v10.items[0];
+  SpiralRetain(v20);
+  SpiralRelease(v10);
   v20.l0 := v13;
   v20.l1 := v16;
   v20.l2 := v19;
   v21 := v20.l0;
   v22 := v20.l1;
   v23 := v20.l2;
+  SpiralRelease(v20);
   v24 := v21.l0;
   v25 := v21.l1;
   v26 := v22.l0;

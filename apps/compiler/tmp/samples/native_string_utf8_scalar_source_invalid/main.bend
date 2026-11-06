@@ -74,39 +74,35 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
     case SCon{+h, +t}:
       spiral_string_byte_at_from(U32.is_lt(i, spiral_utf8_width(Char.to_u32(h))), Char.to_u32(h), spiral_utf8_width(Char.to_u32(h)), i, t)
 
-@unsafe
-def runtime_byte_1(+v0: String, +v1: U32) -> IO(U32):
+def runtime_byte_1(v0: String, v1: U32) -> IO(U32):
   do IO<U32>:
-    +v2 : U32 <- IO.pure(U32, spiral_string_byte_at(v0, v1))
+    v2 : U32 <- IO.pure(U32, spiral_string_byte_at(v0, v1))
     return v2
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6_if7(+c: Bool, +v17: U32) -> IO(Bool):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6_if7(c: Bool, v17: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
         return False{}
     case False{}:
       do IO<Bool>:
-        +v19 : Bool <- IO.pure(Bool, spiral_i32_lt(v17, {192 : U32}))
+        v19 : Bool <- IO.pure(Bool, spiral_i32_lt(v17, {192 : U32}))
         return v19
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6_if8(+c: Bool, +v8: U32, +v17: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6_if8(c: Bool, v8: U32, v17: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
-        +v21 : U32 <- IO.pure(U32, U32.sub(v8, {192 : U32}))
-        +v22 : U32 <- IO.pure(U32, U32.mul(v21, {64 : U32}))
-        +v23 : U32 <- IO.pure(U32, U32.sub(v17, {128 : U32}))
-        +v24 : U32 <- IO.pure(U32, U32.add(v22, v23))
+        v21 : U32 <- IO.pure(U32, U32.sub(v8, {192 : U32}))
+        v22 : U32 <- IO.pure(U32, U32.mul(v21, {64 : U32}))
+        v23 : U32 <- IO.pure(U32, U32.sub(v17, {128 : U32}))
+        v24 : U32 <- IO.pure(U32, U32.add(v22, v23))
         return v24
     case False{}:
       do IO<U32>:
         IO.die(U32, 1, "UTF-8 sequence has an invalid continuation byte.")
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6(+c: Bool, +v0: String, +v8: U32, +v13: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6(c: Bool, +v0: String, +v8: U32, +v13: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -119,30 +115,27 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6(+c: Bool, +v0: String, 
         +v20 : Bool <- utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6_if7(v18, v17)
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6_if8(v20, v8, v17)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if11(+c: Bool, +v34: U32) -> IO(Bool):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if11(c: Bool, v34: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
         return False{}
     case False{}:
       do IO<Bool>:
-        +v38 : Bool <- IO.pure(Bool, spiral_i32_lt(v34, {192 : U32}))
+        v38 : Bool <- IO.pure(Bool, spiral_i32_lt(v34, {192 : U32}))
         return v38
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if13(+c: Bool, +v36: U32) -> IO(Bool):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if13(c: Bool, v36: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
         return False{}
     case False{}:
       do IO<Bool>:
-        +v41 : Bool <- IO.pure(Bool, spiral_i32_lt(v36, {192 : U32}))
+        v41 : Bool <- IO.pure(Bool, spiral_i32_lt(v36, {192 : U32}))
         return v41
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15_if16_if17(+c: Bool, +v49: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15_if16_if17(c: Bool, v49: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -151,8 +144,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15_if1
       do IO<U32>:
         return v49
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15_if16(+c: Bool, +v49: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15_if16(c: Bool, +v49: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -162,8 +154,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15_if1
       do IO<U32>:
         return v49
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15(+c: Bool, +v49: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15(c: Bool, +v49: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -173,8 +164,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15(+c:
         +v52 : Bool <- IO.pure(Bool, spiral_i32_ge(v49, {55296 : U32}))
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15_if16(v52, v49)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14(+c: Bool, +v8: U32, +v34: U32, +v36: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14(c: Bool, +v8: U32, +v34: U32, +v36: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -191,8 +181,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14(+c: Bool
       do IO<U32>:
         IO.die(U32, 1, "UTF-8 sequence has an invalid continuation byte.")
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12(+c: Bool, +v8: U32, +v34: U32, +v36: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12(c: Bool, +v8: U32, +v34: U32, +v36: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -203,8 +192,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12(+c: Bool, +v8
       do IO<U32>:
         IO.die(U32, 1, "UTF-8 sequence has an invalid continuation byte.")
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10(+c: Bool, +v0: String, +v1: U32, +v8: U32, +v29: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10(c: Bool, +v0: String, +v1: U32, +v8: U32, +v29: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -220,41 +208,37 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10(+c: Bool, +v0: Str
         +v39 : Bool <- utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if11(v37, v34)
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12(v39, v8, v34, v36)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if20(+c: Bool, +v69: U32) -> IO(Bool):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if20(c: Bool, v69: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
         return False{}
     case False{}:
       do IO<Bool>:
-        +v76 : Bool <- IO.pure(Bool, spiral_i32_lt(v69, {192 : U32}))
+        v76 : Bool <- IO.pure(Bool, spiral_i32_lt(v69, {192 : U32}))
         return v76
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if22(+c: Bool, +v72: U32) -> IO(Bool):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if22(c: Bool, v72: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
         return False{}
     case False{}:
       do IO<Bool>:
-        +v79 : Bool <- IO.pure(Bool, spiral_i32_lt(v72, {192 : U32}))
+        v79 : Bool <- IO.pure(Bool, spiral_i32_lt(v72, {192 : U32}))
         return v79
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if24(+c: Bool, +v74: U32) -> IO(Bool):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if24(c: Bool, v74: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
         return False{}
     case False{}:
       do IO<Bool>:
-        +v82 : Bool <- IO.pure(Bool, spiral_i32_lt(v74, {192 : U32}))
+        v82 : Bool <- IO.pure(Bool, spiral_i32_lt(v74, {192 : U32}))
         return v82
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if25_if26_if27(+c: Bool, +v93: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if25_if26_if27(c: Bool, v93: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -263,8 +247,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if2
       do IO<U32>:
         return v93
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if25_if26(+c: Bool, +v93: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if25_if26(c: Bool, +v93: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -274,8 +257,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if2
         +v96 : Bool <- IO.pure(Bool, spiral_i32_gt(v93, {1114111 : U32}))
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if25_if26_if27(v96, v93)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if25(+c: Bool, +v8: U32, +v69: U32, +v72: U32, +v74: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if25(c: Bool, +v8: U32, +v69: U32, +v72: U32, +v74: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -295,8 +277,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if2
       do IO<U32>:
         IO.die(U32, 1, "UTF-8 sequence has an invalid continuation byte.")
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23(+c: Bool, +v8: U32, +v69: U32, +v72: U32, +v74: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23(c: Bool, +v8: U32, +v69: U32, +v72: U32, +v74: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -307,8 +288,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23(+c:
       do IO<U32>:
         IO.die(U32, 1, "UTF-8 sequence has an invalid continuation byte.")
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21(+c: Bool, +v8: U32, +v69: U32, +v72: U32, +v74: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21(c: Bool, +v8: U32, +v69: U32, +v72: U32, +v74: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -319,8 +299,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21(+c: Bool
       do IO<U32>:
         IO.die(U32, 1, "UTF-8 sequence has an invalid continuation byte.")
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19(+c: Bool, +v0: String, +v1: U32, +v8: U32, +v64: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19(c: Bool, +v0: String, +v1: U32, +v8: U32, +v64: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -339,8 +318,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19(+c: Bool, +v0
         +v77 : Bool <- utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if20(v75, v69)
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21(v77, v8, v69, v72, v74)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18(+c: Bool, +v0: String, +v1: U32, +v2: U32, +v8: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18(c: Bool, v0: String, +v1: U32, +v2: U32, v8: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -351,8 +329,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18(+c: Bool, +v0: Str
       do IO<U32>:
         IO.die(U32, 1, "UTF-8 scalar starts with an invalid lead byte.")
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9(+c: Bool, +v0: String, +v1: U32, +v2: U32, +v8: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9(c: Bool, +v0: String, +v1: U32, +v2: U32, +v8: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -364,8 +341,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9(+c: Bool, +v0: String, 
         +v63 : Bool <- IO.pure(Bool, spiral_i32_lt(v8, {245 : U32}))
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18(v63, v0, v1, v2, v8)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5(+c: Bool, +v0: String, +v1: U32, +v2: U32, +v8: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5(c: Bool, +v0: String, +v1: U32, +v2: U32, +v8: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -377,8 +353,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5(+c: Bool, +v0: String, +v1:
         +v28 : Bool <- IO.pure(Bool, spiral_i32_lt(v8, {240 : U32}))
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9(v28, v0, v1, v2, v8)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4(+c: Bool, +v0: String, +v1: U32, +v2: U32, +v8: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4(c: Bool, v0: String, v1: U32, v2: U32, +v8: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -388,8 +363,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4(+c: Bool, +v0: String, +v1: U32
         +v12 : Bool <- IO.pure(Bool, spiral_i32_lt(v8, {224 : U32}))
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5(v12, v0, v1, v2, v8)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3(+c: Bool, +v0: String, +v1: U32, +v2: U32, +v8: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3(c: Bool, v0: String, v1: U32, v2: U32, +v8: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -399,8 +373,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3(+c: Bool, +v0: String, +v1: U32, +v
         +v10 : Bool <- IO.pure(Bool, spiral_i32_lt(v8, {194 : U32}))
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4(v10, v0, v1, v2, v8)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2(+c: Bool, +v0: String, +v1: U32, +v2: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2(c: Bool, +v0: String, +v1: U32, v2: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -412,8 +385,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2(+c: Bool, +v0: String, +v1: U32, +v2: U
         +v9 : Bool <- IO.pure(Bool, spiral_i32_lt(v8, {128 : U32}))
         utf8_scalar_at_byte_offset_0_if1_if2_if3(v9, v0, v1, v2, v8)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1(+c: Bool, +v0: String, +v1: U32, +v2: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1(c: Bool, v0: String, +v1: U32, +v2: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -423,21 +395,18 @@ def utf8_scalar_at_byte_offset_0_if1(+c: Bool, +v0: String, +v1: U32, +v2: U32) 
         +v5 : Bool <- IO.pure(Bool, spiral_i32_ge(v1, v2))
         utf8_scalar_at_byte_offset_0_if1_if2(v5, v0, v1, v2)
 
-@unsafe
 def utf8_scalar_at_byte_offset_0(+v0: String, +v1: U32) -> IO(U32):
   do IO<U32>:
-    +v2 : U32 <- IO.pure(U32, spiral_string_bytes(v0))
+    v2 : U32 <- IO.pure(U32, spiral_string_bytes(v0))
     +v3 : Bool <- IO.pure(Bool, spiral_i32_lt(v1, {0 : U32}))
     utf8_scalar_at_byte_offset_0_if1(v3, v0, v1, v2)
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : String <- IO.pure(String, "é")
-    +v1 : U32 <- IO.pure(U32, {1 : U32})
+    v0 : String <- IO.pure(String, "é")
+    v1 : U32 <- IO.pure(U32, {1 : U32})
     utf8_scalar_at_byte_offset_0(v0, v1)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

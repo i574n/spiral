@@ -22,10 +22,8 @@ pub fn method0(v0: Int) -> Int {
             True -> v1
             False -> method1(v0, v1)
         }
-    let v5 = spiral_wrap_signed(v4 - 55, 32)
-    v5
+    spiral_wrap_signed(v4 - 55, 32)
 }
 pub fn main() {
-    let v0 = 10
-    method0(v0)
+    method0(10)
 }

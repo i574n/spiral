@@ -61,7 +61,7 @@ fn spiral_main() -> i32 {
     } else {
         0i32
     };
-    let v21: i32 = match &v0 {
+    let v21: i32 = match v0 {
         US0::US0_East => {
             2i32
         }
@@ -72,7 +72,7 @@ fn spiral_main() -> i32 {
             7i32
         }
     };
-    let v23: i32 = match &v8 {
+    let v23: i32 = match v8 {
         US0::US0_East => {
             2i32
         }
@@ -85,7 +85,7 @@ fn spiral_main() -> i32 {
     };
     let v24: i32 = v23.wrapping_mul(3i32);
     let v25: i32 = v21.wrapping_add(v24);
-    let v27: i32 = match &v16 {
+    let v27: i32 = match v16 {
         US0::US0_East => {
             2i32
         }

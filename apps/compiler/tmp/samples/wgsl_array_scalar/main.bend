@@ -287,7 +287,7 @@ def spiral_array_set_a1(+arr: Chan(Array<Bool>) & U32, +i: U32, +v: Bool) -> IO(
   spiral_array_set_checked_a1(c, i, v, U32.is_lt(i, n))
 
 @unsafe
-def spiral_main_if1_if2(+c: Bool) -> IO(U32):
+def spiral_main_if1_if2(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -297,7 +297,7 @@ def spiral_main_if1_if2(+c: Bool) -> IO(U32):
         return {100 : U32}
 
 @unsafe
-def spiral_main_if1(+c: Bool, +v4: (Chan(Array<Bool>) & U32)) -> IO(U32):
+def spiral_main_if1(c: Bool, +v4: (Chan(Array<Bool>) & U32)) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -331,13 +331,12 @@ def spiral_main() -> IO(U32):
     +v10 : U32 <- spiral_array_get_a0(v1, {4 : U32})
     +v11 : U32 <- IO.pure(U32, U32.add(v9, v10))
     +v12 : Bool <- spiral_array_get_a1(v4, {1 : U32})
-    +v15 : U32 <- spiral_main_if1(v12, v4)
-    +v16 : U32 <- IO.pure(U32, U32.add(v11, v15))
-    +v17 : U32 <- IO.pure(U32, spiral_array_length_a0(v1))
-    +v18 : U32 <- IO.pure(U32, U32.add(v16, v17))
+    v15 : U32 <- spiral_main_if1(v12, v4)
+    v16 : U32 <- IO.pure(U32, U32.add(v11, v15))
+    v17 : U32 <- IO.pure(U32, spiral_array_length_a0(v1))
+    v18 : U32 <- IO.pure(U32, U32.add(v16, v17))
     return v18
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

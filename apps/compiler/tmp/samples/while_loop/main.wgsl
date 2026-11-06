@@ -3,6 +3,7 @@ struct SpiralIo {
   lanes: u32,
   heap_words_per_lane: u32,
   lane_base: u32,
+  heap_overflow: atomic<u32>,
 }
 @group(0) @binding(0) var<storage, read_write> spiral_io: SpiralIo;
 @group(0) @binding(2) var<storage, read_write> spiral_results: array<i32>;

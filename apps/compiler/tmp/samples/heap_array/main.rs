@@ -4,12 +4,12 @@ use std::rc::Rc;
 struct Heap0 { l0: Rc<RefCell<Vec<i32>>> }
 fn spiral_main() -> i32 {
     let v0: i32 = 2i32;
-    let v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
+    let mut v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
     let v2: i32 = 7i32;
-    v1.clone().borrow_mut()[0i32 as usize] = v2;
+    v1.borrow_mut()[0i32 as usize] = v2;
     let v3: Rc<Heap0> = Rc::new(Heap0 { l0: v1 });
     let v4: Rc<RefCell<Vec<i32>>> = v3.l0.clone();
-    let v5: i32 = v4.borrow()[0i32 as usize].clone();
+    let v5: i32 = v4.borrow()[0i32 as usize];
     let v6: bool = v5 == 7i32;
     if v6 {
         0i32

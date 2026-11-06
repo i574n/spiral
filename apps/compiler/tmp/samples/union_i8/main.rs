@@ -14,9 +14,9 @@ fn spiral_main() -> i32 {
     } else {
         US0::US0_Missing
     };
-    match &v4 {
+    match v4 {
         US0::US0_Held(v5) => {
-            let v5: i8 = *v5;
+            let v5: i8 = v5;
             let v6: bool = v5 == 100i8;
             if v6 {
                 0i32

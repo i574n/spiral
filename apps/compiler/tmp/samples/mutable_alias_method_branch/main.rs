@@ -2,16 +2,16 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 struct Mut0 { l0: i32 }
-fn method0(mut v0: Rc<RefCell<Mut0>>) -> () {
+fn method0(mut v0: &Rc<RefCell<Mut0>>) -> () {
     let v1: i32 = v0.borrow().l0;
     let v2: i32 = v1.wrapping_add(5i32);
     v0.borrow_mut().l0 = v2;
     ()
 }
-fn method1(mut v0: Rc<RefCell<Mut0>>) -> () {
+fn method1(mut v0: &Rc<RefCell<Mut0>>) -> () {
     ()
 }
-fn method2(mut v0: Rc<RefCell<Mut0>>) -> () {
+fn method2(mut v0: &Rc<RefCell<Mut0>>) -> () {
     let v1: i32 = v0.borrow().l0;
     let v2: i32 = v1.wrapping_add(7i32);
     v0.borrow_mut().l0 = v2;
@@ -19,9 +19,9 @@ fn method2(mut v0: Rc<RefCell<Mut0>>) -> () {
 }
 fn spiral_main() -> i32 {
     let mut v0: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: 0i32 }));
-    method0(v0.clone());
-    method1(v0.clone());
-    method2(v0.clone());
+    method0(&v0);
+    method1(&v0);
+    method2(&v0);
     let v1: i32 = v0.borrow().l0;
     let v2: i32 = v1.wrapping_sub(12i32);
     v2

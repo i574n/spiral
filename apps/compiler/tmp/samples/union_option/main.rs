@@ -7,12 +7,12 @@ enum US0 {
     US0_Full(i32),
 }
 fn pick_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_Empty => {
             0i32
         }
         US0::US0_Full(v1) => {
-            let v1: i32 = *v1;
+            let v1: i32 = v1;
             v1
         }
     }

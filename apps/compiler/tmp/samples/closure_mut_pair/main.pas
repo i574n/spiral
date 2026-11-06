@@ -11,7 +11,7 @@ type
   TFun0 = class(TSpiralRc)
     function Invoke(a0: LongInt): TMut0; virtual; abstract;
   end;
-  Tf_c0 = class(TFun0) v0: TMut0; function Invoke(v1: LongInt): TMut0; override; end;
+  Tf_c0 = class(TFun0) v0: TMut0; function Invoke(v1: LongInt): TMut0; override; procedure DropFields; override; end;
 procedure TSpiralRc.DropFields;
 begin
 end;
@@ -23,14 +23,24 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 function ClosureCreate0(v0: TMut0): TFun0; forward;
 function MutCreate0(a0: LongInt; a1: AnsiString): TMut0;
 begin
   Result := TMut0.Create; Result.l0 := a0; Result.l1 := a1;
 end;
+procedure Tf_c0.DropFields;
+begin
+  SpiralRelease(v0);
+end;
 function Tf_c0.Invoke(v1: LongInt): TMut0;
 begin
+  SpiralRetain(v0);
   Result := v0;
+  SpiralRelease(Self);
 end;
 function ClosureCreate0(v0: TMut0): TFun0;
 var c: Tf_c0;
@@ -56,14 +66,19 @@ begin
   v0 := 3;
   v1 := 'no';
   v2 := MutCreate0(v0, v1);
+  SpiralRetain(v2);
   v3 := ClosureCreate0(v2);
+  SpiralRetain(v3);
+  SpiralRelease(v2);
   v4 := v3.Invoke(1);
+  SpiralRelease(v3);
   v5 := 7;
   v6 := 'hi';
   v4.l0 := v5;
   v4.l1 := v6;
   v7 := v4.l0;
   v8 := v4.l1;
+  SpiralRelease(v4);
   v9 := v7 = 7;
   if v9 then begin
       v10 := v8 = 'hi';

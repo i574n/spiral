@@ -13,9 +13,7 @@ pub fn f_c0(capt: #(Int, String)) -> fn(Int) -> Us0 {
     }
 }
 pub fn main() {
-    let v0 = 3
-    let v1 = "hi"
-    let v2 = f_c0(#(v0, v1))
+    let v2 = f_c0(#(3, "hi"))
     let v3 = v2(1)
     case v3  {
         Us0Both(v5, v6) -> {
@@ -23,8 +21,7 @@ pub fn main() {
             let v9 =
                 case v7 {
                     True -> {
-                        let v8 = v6 == "hi"
-                        v8
+                        v6 == "hi"
                     }
                     False -> False
                 }

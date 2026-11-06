@@ -63,8 +63,7 @@ pub fn score_0(v0: Us0) -> Int {
 }
 pub fn main() {
     let v0 = spiral_array_create_filled(1, "")
-    let v1 = "hi"
-    spiral_array_set(v0, 0, v1)
+    spiral_array_set(v0, 0, "hi")
     let v2 = True
     let v5 =
         case v2 {

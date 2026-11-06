@@ -261,20 +261,20 @@ type U0 is Type:
   U0_Nil{}
 
 @unsafe
-def closure0(+v0: (U32 & U32), +d: Unit) -> IO(U0):
+def closure0(v0: (U32 & U32), +d: Unit) -> IO(U0):
   do IO<U0>:
-    +v1 : (U32 & U32) <- IO.pure((U32 & U32), w64_sub(v0, ({0 : U32}, {1 : U32})))
+    v1 : (U32 & U32) <- IO.pure((U32 & U32), w64_sub(v0, ({0 : U32}, {1 : U32})))
     build_0(v1)
 
 @unsafe
-def build_0_if1(+c: Bool, +v0: (U32 & U32)) -> IO(U0):
+def build_0_if1(c: Bool, +v0: (U32 & U32)) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
         IO.pure(U0, U0_Nil{})
     case False{}:
       do IO<U0>:
-        +v3 : ((Unit) -> IO(U0)) <- IO.pure(((Unit) -> IO(U0)), d => closure0(v0, d))
+        v3 : ((Unit) -> IO(U0)) <- IO.pure(((Unit) -> IO(U0)), d => closure0(v0, d))
         IO.pure(U0, U0_Cons{w64_hi(v0), w64_lo(v0), v3})
 
 @unsafe
@@ -284,38 +284,36 @@ def build_0(+v0: (U32 & U32)) -> IO(U0):
     build_0_if1(v1, v0)
 
 @unsafe
-def sum_1_unbox2(+u: U0, +v0: U0, +v1: (U32 & U32)) -> IO((U32 & U32)):
+def sum_1_unbox2(u: U0, +v0: U0, +v1: (U32 & U32)) -> IO((U32 & U32)):
   match u:
-    case U0_Cons{+v2_hi, +v2_lo, +v3}:
+    case U0_Cons{v2_hi, v2_lo, v3}:
       do IO<(U32 & U32)>:
-        +v2 : (U32 & U32) <- IO.pure((U32 & U32), (v2_hi, v2_lo))
-        +v4 : U0 <- v3(Unit{})
-        +v5 : (U32 & U32) <- IO.pure((U32 & U32), w64_add(v1, v2))
+        v2 : (U32 & U32) <- IO.pure((U32 & U32), (v2_hi, v2_lo))
+        v4 : U0 <- v3(Unit{})
+        v5 : (U32 & U32) <- IO.pure((U32 & U32), w64_add(v1, v2))
         sum_1(v4, v5)
     case U0_Nil{}:
       do IO<(U32 & U32)>:
         return v1
 
 @unsafe
-def sum_1(+v0: U0, +v1: (U32 & U32)) -> IO((U32 & U32)):
+def sum_1(+v0: U0, v1: (U32 & U32)) -> IO((U32 & U32)):
   do IO<(U32 & U32)>:
     sum_1_unbox2(v0, v0, v1)
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : (U32 & U32) <- IO.pure((U32 & U32), ({0 : U32}, {10 : U32}))
-    +v1 : U0 <- build_0(v0)
-    +v2 : (U32 & U32) <- IO.pure((U32 & U32), ({0 : U32}, {0 : U32}))
-    +v3 : (U32 & U32) <- sum_1(v1, v2)
+    v0 : (U32 & U32) <- IO.pure((U32 & U32), ({0 : U32}, {10 : U32}))
+    v1 : U0 <- build_0(v0)
+    v2 : (U32 & U32) <- IO.pure((U32 & U32), ({0 : U32}, {0 : U32}))
+    v3 : (U32 & U32) <- sum_1(v1, v2)
     +v4 : U32 <- IO.pure(U32, {5 : U32})
-    +v5 : U32 <- IO.pure(U32, w64_lo(v3))
-    +v6 : U32 <- IO.pure(U32, U32.mul(v4, {2 : U32}))
-    +v7 : U32 <- IO.pure(U32, U32.add(v4, v6))
-    +v8 : U32 <- IO.pure(U32, U32.add(v5, v7))
+    v5 : U32 <- IO.pure(U32, w64_lo(v3))
+    v6 : U32 <- IO.pure(U32, U32.mul(v4, {2 : U32}))
+    v7 : U32 <- IO.pure(U32, U32.add(v4, v6))
+    v8 : U32 <- IO.pure(U32, U32.add(v5, v7))
     return v8
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

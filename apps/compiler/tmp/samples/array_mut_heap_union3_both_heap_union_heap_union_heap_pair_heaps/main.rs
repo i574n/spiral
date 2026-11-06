@@ -34,16 +34,16 @@ impl Default for Mut0 {
     }
 }
 fn score_0(mut v0: US1) -> i32 {
-    match &v0 {
+    match v0 {
         US1::US1_Absent => {
             1i32
         }
         US1::US1_Box(v3) => {
-            let v3: Rc<Heap3> = v3.clone();
+            let v3: Rc<Heap3> = v3;
             let v4: US0 = v3.l0.clone();
-            match &v4 {
+            match v4 {
                 US0::US0_Held(v5) => {
-                    let v5: Rc<Heap2> = v5.clone();
+                    let v5: Rc<Heap2> = v5;
                     let (mut v6, mut v7): (Rc<Heap1>, i32) = (v5.l0.clone(), v5.l1);
                     let (mut v8, mut v9): (Rc<Heap0>, Rc<Heap0>) = (v6.l0.clone(), v6.l1.clone());
                     let (mut v10, mut v11): (i32, Rc<str>) = (v8.l0, v8.l1.clone());
@@ -85,7 +85,7 @@ fn score_0(mut v0: US1) -> i32 {
             }
         }
         US1::US1_Mark(v1) => {
-            let v1: i32 = *v1;
+            let v1: i32 = v1;
             1i32
         }
     }
@@ -118,8 +118,8 @@ fn spiral_main() -> i32 {
     let v20: US1 = US1::US1_Mark(v18);
     let v21: Rc<Heap4> = Rc::new(Heap4 { l0: v20 });
     let v22: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v19 }));
-    let v23: Rc<RefCell<Vec<Rc<RefCell<Mut0>>>>> = Rc::new(RefCell::new(vec![<Rc<RefCell<Mut0>>>::default(); 1i32 as usize]));
-    v23.clone().borrow_mut()[0i32 as usize] = v22;
+    let mut v23: Rc<RefCell<Vec<Rc<RefCell<Mut0>>>>> = Rc::new(RefCell::new(vec![<Rc<RefCell<Mut0>>>::default(); 1i32 as usize]));
+    v23.borrow_mut()[0i32 as usize] = v22;
     let mut v24: Rc<RefCell<Mut0>> = v23.borrow()[0i32 as usize].clone();
     let v25: Rc<Heap4> = v24.borrow().l0.clone();
     let v26: US1 = v25.l0.clone();

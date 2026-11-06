@@ -13,10 +13,10 @@ fn add_c0(mut v0: i32) -> Rc<dyn Fn(i32) -> i32> {
     })
 }
 fn score_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_Call(v1, v2) => {
-            let mut v1: Rc<dyn Fn(i32) -> i32> = v1.clone();
-            let v2: i32 = *v2;
+            let mut v1: Rc<dyn Fn(i32) -> i32> = v1;
+            let v2: i32 = v2;
             let v3: i32 = v1(0i32);
             let v4: i32 = v3.wrapping_add(v2);
             let v5: bool = v4 == 7i32;

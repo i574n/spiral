@@ -55,8 +55,7 @@ type U0 is Data:
   U0_Zero{}
   U0_One{}
 
-@unsafe
-def spiral_main_unbox1(+u: U0, +v0: U0) -> IO(Bool):
+def spiral_main_unbox1(u: U0, +v0: U0) -> IO(Bool):
   match u:
     case U0_Zero{}:
       do IO<Bool>:
@@ -65,8 +64,7 @@ def spiral_main_unbox1(+u: U0, +v0: U0) -> IO(Bool):
       do IO<Bool>:
         return False{}
 
-@unsafe
-def spiral_main_if2(+c: Bool) -> IO(U32):
+def spiral_main_if2(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -75,14 +73,12 @@ def spiral_main_if2(+c: Bool) -> IO(U32):
       do IO<U32>:
         return {1 : U32}
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : U0 <- IO.pure(U0, U0_Zero{})
     +v2 : Bool <- spiral_main_unbox1(v0, v0)
     spiral_main_if2(v2)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

@@ -53,38 +53,38 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
 
 @unsafe
 def spiral_main_field1(+p: (U32 & String) & U32) -> IO((U32 & String) & U32):
-  (+w0, +w1) = p
+  (w0, w1) = p
   IO.pure((U32 & String) & U32, (w0, w1))
 
 @unsafe
 def spiral_main_k2_field3(+p: U32 & String) -> IO(U32 & String):
-  (+w0, +w1) = p
+  (w0, w1) = p
   IO.pure(U32 & String, (w0, w1))
 
 @unsafe
-def spiral_main_k2_k4_if5(+c: Bool, +v8: String) -> IO(Bool):
+def spiral_main_k2_k4_if5(c: Bool, v8: String) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v10 : Bool <- IO.pure(Bool, String.eq(v8, "hi"))
+        v10 : Bool <- IO.pure(Bool, String.eq(v8, "hi"))
         return v10
     case False{}:
       do IO<Bool>:
         return False{}
 
 @unsafe
-def spiral_main_k2_k4_if6(+c: Bool, +v6: U32) -> IO(Bool):
+def spiral_main_k2_k4_if6(c: Bool, v6: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v12 : Bool <- IO.pure(Bool, U32.is_eq(v6, {1 : U32}))
+        v12 : Bool <- IO.pure(Bool, U32.is_eq(v6, {1 : U32}))
         return v12
     case False{}:
       do IO<Bool>:
         return False{}
 
 @unsafe
-def spiral_main_k2_k4_if7(+c: Bool) -> IO(U32):
+def spiral_main_k2_k4_if7(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -103,8 +103,8 @@ def spiral_main_k2_k4(+p: U32 & String, +v0: U32, +v1: String, +v2: (U32 & Strin
     spiral_main_k2_k4_if7(v13)
 
 @unsafe
-def spiral_main_k2(+p: (U32 & String) & U32, +v0: U32, +v1: String, +v2: (U32 & String), +v3: U32, +v4: ((U32 & String) & U32)) -> IO(U32):
-  (+v5, +v6) = p
+def spiral_main_k2(+p: (U32 & String) & U32, v0: U32, v1: String, v2: (U32 & String), v3: U32, v4: ((U32 & String) & U32)) -> IO(U32):
+  (+v5, v6) = p
   do IO<U32>:
     +p : U32 & String <- spiral_main_k2_field3(v5)
     spiral_main_k2_k4(p, v0, v1, v2, v3, v4, v5, v6)
@@ -117,10 +117,9 @@ def spiral_main() -> IO(U32):
     +v2 : (U32 & String) <- IO.pure((U32 & String), (v0, v1))
     +v3 : U32 <- IO.pure(U32, {1 : U32})
     +v4 : ((U32 & String) & U32) <- IO.pure(((U32 & String) & U32), (v2, v3))
-    +p : (U32 & String) & U32 <- spiral_main_field1(v4)
+    p : (U32 & String) & U32 <- spiral_main_field1(v4)
     spiral_main_k2(p, v0, v1, v2, v3, v4)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

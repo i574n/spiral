@@ -10,6 +10,5 @@ pub fn main() {
     let v0 = Heap0(l0: 9, l1: 10)
     let v1 = v0.l0
     let v2 = v0.l1
-    let v3 = spiral_wrap_signed(v1 + v2, 32)
-    v3
+    spiral_wrap_signed(v1 + v2, 32)
 }

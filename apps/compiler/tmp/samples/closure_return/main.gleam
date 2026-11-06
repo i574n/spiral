@@ -12,8 +12,7 @@ pub fn g_c1(capt: #(Int, Int)) -> fn(Int) -> Int {
         case v3 {
             True -> 0
             False -> {
-                let v4 = spiral_wrap_signed(v2 + v0, 32)
-                v4
+                spiral_wrap_signed(v2 + v0, 32)
             }
         }
     }
@@ -25,8 +24,7 @@ pub fn f_c0(capt: #(Int)) -> fn(Int) -> fn(Int) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 7
-    let v1 = f_c0(#(v0))
+    let v1 = f_c0(#(7))
     let v2 = v1(1)
     let v3 = v2(0)
     let v4 = v3 == 7

@@ -57,11 +57,8 @@
 
 := request_line \* r. (q : request r) : string =
     ?= q ?|
-    | Hello => "hello"
-    | Status => "status"
-    | Pool => "pool"
-    | Retire => "retire"
-    | Compile a => tabbed ("compile" :: ask_fields a)
+    | Compile a => tabbed (sm'::to_lower (reflection::case_name q) :: ask_fields a)
+    | _ => sm'::to_lower (reflection::case_name q)
 
 := retiring_text (r : retiring) : string = ?= r ?| NotRetiring => "false" | RetiringSince ms => ms
 

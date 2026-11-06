@@ -21,6 +21,5 @@ pub fn method0(v0: Int) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 1000000
-    method0(v0)
+    method0(1000000)
 }

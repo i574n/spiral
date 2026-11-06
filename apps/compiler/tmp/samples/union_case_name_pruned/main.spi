@@ -1,0 +1,12 @@
+:| pick r =
+    | Third :: pick string
+    | First :: pick i32
+    | Second :: pick i32
+
+:= pick_name \* r. (p : pick r) : string = !!!!UnionCaseName(p)
+
+:= main () : i32 =
+    := ~first : pick i32 = First
+    := ~second : pick i32 = Second
+    := ~third : pick string = Third
+    ? !!!!EQ(pick_name first, "First") && !!!!EQ(pick_name second, "Second") && !!!!EQ(pick_name third, "Third") ?> 42i32 |: 1i32

@@ -22,9 +22,7 @@ pub fn method0(v0: Int, v1: Float) -> Float {
     }
 }
 pub fn main() {
-    let v0 = 4
-    let v1 = 0.0
-    let v2 = method0(v0, v1)
+    let v2 = method0(4, 0.0)
     let v3 = v2 == 6.0
     case v3 {
         True -> 0

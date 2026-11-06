@@ -13,8 +13,7 @@ pub fn sum_0(v0: Us0) -> Int {
     case v0  {
         Us0Both(v2, v3) -> {
             let v4 = spiral_wrap_signed(v2 * 10, 32)
-            let v5 = spiral_wrap_signed(v4 + v3, 32)
-            v5
+            spiral_wrap_signed(v4 + v3, 32)
         }
         Us0One(v1) -> v1
     }
@@ -37,8 +36,7 @@ pub fn main() {
         case v8 {
             True -> {
                 let v9 = sum_0(v6)
-                let v10 = v9 == 5
-                v10
+                v9 == 5
             }
             False -> False
         }

@@ -7,8 +7,7 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
 
 pub fn f_c0(capt: Nil) -> fn(Int) -> Int {
     fn (v0) {
-        let v1 = spiral_wrap_signed(v0 + 1, 32)
-        v1
+        spiral_wrap_signed(v0 + 1, 32)
     }
 }
 pub fn main() {

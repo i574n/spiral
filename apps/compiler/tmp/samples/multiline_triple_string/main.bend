@@ -59,8 +59,7 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
     case SCon{+h, +t}:
       spiral_string_byte_at_from(U32.is_lt(i, spiral_utf8_width(Char.to_u32(h))), Char.to_u32(h), spiral_utf8_width(Char.to_u32(h)), i, t)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23_if24_if25_if26_if27_if28(+c: Bool) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23_if24_if25_if26_if27_if28(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -69,8 +68,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if1
       do IO<U32>:
         return {0 : U32}
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23_if24_if25_if26_if27(+c: Bool, +v5: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23_if24_if25_if26_if27(c: Bool, +v5: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -81,8 +79,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if1
         +v65 : Bool <- IO.pure(Bool, U32.is_ne(v64, {99 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23_if24_if25_if26_if27_if28(v65)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23_if24_if25_if26(+c: Bool, +v5: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23_if24_if25_if26(c: Bool, +v5: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -93,8 +90,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if1
         +v63 : Bool <- IO.pure(Bool, U32.is_ne(v62, {5 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23_if24_if25_if26_if27(v63, v5)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23_if24_if25(+c: Bool, +v4: String, +v5: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23_if24_if25(c: Bool, +v4: String, v5: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -105,8 +101,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if1
         +v61 : Bool <- IO.pure(Bool, U32.is_ne(v60, {100 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23_if24_if25_if26(v61, v5)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23_if24(+c: Bool, +v4: String, +v5: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23_if24(c: Bool, +v4: String, v5: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -117,8 +112,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if1
         +v59 : Bool <- IO.pure(Bool, U32.is_ne(v58, {10 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23_if24_if25(v59, v4, v5)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23(+c: Bool, +v4: String, +v5: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23(c: Bool, +v4: String, v5: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -129,8 +123,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if1
         +v57 : Bool <- IO.pure(Bool, U32.is_ne(v56, {115 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23_if24(v57, v4, v5)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22(+c: Bool, +v4: String, +v5: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22(c: Bool, +v4: String, v5: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -141,8 +134,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if1
         +v55 : Bool <- IO.pure(Bool, U32.is_ne(v54, {32 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22_if23(v55, v4, v5)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21(+c: Bool, +v4: String, +v5: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21(c: Bool, +v4: String, v5: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -153,8 +145,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if1
         +v53 : Bool <- IO.pure(Bool, U32.is_ne(v52, {23 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21_if22(v53, v4, v5)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20(+c: Bool, +v3: String, +v4: String, +v5: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20(c: Bool, +v3: String, v4: String, v5: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -165,8 +156,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if1
         +v51 : Bool <- IO.pure(Bool, U32.is_ne(v50, {34 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20_if21(v51, v4, v5)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19(+c: Bool, +v3: String, +v4: String, +v5: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19(c: Bool, +v3: String, v4: String, v5: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -177,8 +167,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if1
         +v49 : Bool <- IO.pure(Bool, U32.is_ne(v48, {7 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19_if20(v49, v3, v4, v5)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18(+c: Bool, +v2: String, +v3: String, +v4: String, +v5: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18(c: Bool, +v2: String, v3: String, v4: String, v5: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -189,8 +178,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if1
         +v47 : Bool <- IO.pure(Bool, U32.is_ne(v46, {34 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18_if19(v47, v3, v4, v5)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17(+c: Bool, +v2: String, +v3: String, +v4: String, +v5: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17(c: Bool, +v2: String, v3: String, v4: String, v5: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -201,8 +189,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if1
         +v45 : Bool <- IO.pure(Bool, U32.is_ne(v44, {8 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17_if18(v45, v2, v3, v4, v5)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16(+c: Bool, +v1: String, +v2: String, +v3: String, +v4: String, +v5: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16(c: Bool, +v1: String, v2: String, v3: String, v4: String, v5: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -213,8 +200,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if1
         +v43 : Bool <- IO.pure(Bool, U32.is_ne(v42, {3 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16_if17(v43, v2, v3, v4, v5)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: String, +v4: String, +v5: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15(c: Bool, +v0: U32, v1: String, v2: String, v3: String, v4: String, v5: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -224,8 +210,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if1
         +v41 : Bool <- IO.pure(Bool, U32.is_ne(v0, {16 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15_if16(v41, v1, v2, v3, v4, v5)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: String, +v4: String, +v5: String, +v10: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14(c: Bool, v0: U32, v1: String, v2: String, v3: String, v4: String, v5: String, +v10: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -236,8 +221,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14(+c:
         +v40 : Bool <- IO.pure(Bool, U32.is_ne(v39, {10 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15(v40, v0, v1, v2, v3, v4, v5)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: String, +v4: String, +v5: String, +v10: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13(c: Bool, v0: U32, v1: String, v2: String, v3: String, v4: String, v5: String, +v10: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -248,8 +232,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13(+c: Bool
         +v38 : Bool <- IO.pure(Bool, U32.is_ne(v37, {10 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14(v38, v0, v1, v2, v3, v4, v5, v10)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: String, +v4: String, +v5: String, +v10: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12(c: Bool, v0: U32, v1: String, v2: String, v3: String, v4: String, v5: String, +v10: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -260,8 +243,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12(+c: Bool, +v0
         +v36 : Bool <- IO.pure(Bool, U32.is_ne(v35, {11 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13(v36, v0, v1, v2, v3, v4, v5, v10)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: String, +v4: String, +v5: String, +v9: String, +v10: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11(c: Bool, v0: U32, v1: String, v2: String, v3: String, v4: String, v5: String, +v9: String, v10: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -272,8 +254,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11(+c: Bool, +v0: U32
         +v34 : Bool <- IO.pure(Bool, U32.is_ne(v33, {100 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12(v34, v0, v1, v2, v3, v4, v5, v10)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: String, +v4: String, +v5: String, +v9: String, +v10: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10(c: Bool, v0: U32, v1: String, v2: String, v3: String, v4: String, v5: String, +v9: String, v10: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -284,8 +265,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10(+c: Bool, +v0: U32, +v1
         +v32 : Bool <- IO.pure(Bool, U32.is_ne(v31, {105 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11(v32, v0, v1, v2, v3, v4, v5, v9, v10)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: String, +v4: String, +v5: String, +v9: String, +v10: String) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9(c: Bool, v0: U32, v1: String, v2: String, v3: String, v4: String, v5: String, +v9: String, v10: String) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -296,8 +276,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9(+c: Bool, +v0: U32, +v1: Str
         +v30 : Bool <- IO.pure(Bool, U32.is_ne(v29, {36 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10(v30, v0, v1, v2, v3, v4, v5, v9, v10)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: String, +v4: String, +v5: String, +v6: String, +v7: String, +v8: String, +v9: String, +v10: String, +v11: U32, +v12: Bool, +v13: U32, +v14: Bool, +v15: U32, +v16: Bool, +v17: U32, +v18: Bool, +v19: U32, +v20: Bool, +v21: U32, +v22: Bool, +v23: U32, +v24: Bool, +v25: U32, +v26: Bool) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8(c: Bool, v0: U32, v1: String, v2: String, v3: String, v4: String, v5: String, v6: String, v7: String, v8: String, +v9: String, v10: String, v11: U32, v12: Bool, v13: U32, v14: Bool, v15: U32, v16: Bool, v17: U32, v18: Bool, v19: U32, v20: Bool, v21: U32, v22: Bool, v23: U32, v24: Bool, v25: U32, v26: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -308,8 +287,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8(+c: Bool, +v0: U32, +v1: String,
         +v28 : Bool <- IO.pure(Bool, U32.is_ne(v27, {10 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9(v28, v0, v1, v2, v3, v4, v5, v9, v10)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6_if7(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: String, +v4: String, +v5: String, +v6: String, +v7: String, +v8: String, +v9: String, +v10: String, +v11: U32, +v12: Bool, +v13: U32, +v14: Bool, +v15: U32, +v16: Bool, +v17: U32, +v18: Bool, +v19: U32, +v20: Bool, +v21: U32, +v22: Bool, +v23: U32, +v24: Bool) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6_if7(c: Bool, v0: U32, v1: String, v2: String, v3: String, v4: String, v5: String, v6: String, v7: String, v8: String, +v9: String, v10: String, v11: U32, v12: Bool, v13: U32, v14: Bool, v15: U32, v16: Bool, v17: U32, v18: Bool, v19: U32, v20: Bool, v21: U32, v22: Bool, v23: U32, v24: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -320,8 +298,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6_if7(+c: Bool, +v0: U32, +v1: String, +v2
         +v26 : Bool <- IO.pure(Bool, U32.is_ne(v25, {10 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7_if8(v26, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5_if6(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: String, +v4: String, +v5: String, +v6: String, +v7: String, +v8: String, +v9: String, +v10: String, +v11: U32, +v12: Bool, +v13: U32, +v14: Bool, +v15: U32, +v16: Bool, +v17: U32, +v18: Bool, +v19: U32, +v20: Bool, +v21: U32, +v22: Bool) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5_if6(c: Bool, v0: U32, v1: String, v2: String, v3: String, v4: String, v5: String, v6: String, v7: String, v8: String, +v9: String, v10: String, v11: U32, v12: Bool, v13: U32, v14: Bool, v15: U32, v16: Bool, v17: U32, v18: Bool, v19: U32, v20: Bool, v21: U32, v22: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -332,8 +309,7 @@ def spiral_main_if1_if2_if3_if4_if5_if6(+c: Bool, +v0: U32, +v1: String, +v2: St
         +v24 : Bool <- IO.pure(Bool, U32.is_ne(v23, {10 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6_if7(v24, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4_if5(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: String, +v4: String, +v5: String, +v6: String, +v7: String, +v8: String, +v9: String, +v10: String, +v11: U32, +v12: Bool, +v13: U32, +v14: Bool, +v15: U32, +v16: Bool, +v17: U32, +v18: Bool, +v19: U32, +v20: Bool) -> IO(U32):
+def spiral_main_if1_if2_if3_if4_if5(c: Bool, v0: U32, v1: String, v2: String, v3: String, v4: String, v5: String, v6: String, v7: String, v8: String, +v9: String, v10: String, v11: U32, v12: Bool, v13: U32, v14: Bool, v15: U32, v16: Bool, v17: U32, v18: Bool, v19: U32, v20: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -344,8 +320,7 @@ def spiral_main_if1_if2_if3_if4_if5(+c: Bool, +v0: U32, +v1: String, +v2: String
         +v22 : Bool <- IO.pure(Bool, U32.is_ne(v21, {83 : U32}))
         spiral_main_if1_if2_if3_if4_if5_if6(v22, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22)
 
-@unsafe
-def spiral_main_if1_if2_if3_if4(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: String, +v4: String, +v5: String, +v6: String, +v7: String, +v8: String, +v9: String, +v10: String, +v11: U32, +v12: Bool, +v13: U32, +v14: Bool, +v15: U32, +v16: Bool, +v17: U32, +v18: Bool) -> IO(U32):
+def spiral_main_if1_if2_if3_if4(c: Bool, v0: U32, v1: String, v2: String, v3: String, v4: String, v5: String, v6: String, v7: String, +v8: String, v9: String, v10: String, v11: U32, v12: Bool, v13: U32, v14: Bool, v15: U32, v16: Bool, v17: U32, v18: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -356,8 +331,7 @@ def spiral_main_if1_if2_if3_if4(+c: Bool, +v0: U32, +v1: String, +v2: String, +v
         +v20 : Bool <- IO.pure(Bool, U32.is_ne(v19, {92 : U32}))
         spiral_main_if1_if2_if3_if4_if5(v20, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20)
 
-@unsafe
-def spiral_main_if1_if2_if3(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: String, +v4: String, +v5: String, +v6: String, +v7: String, +v8: String, +v9: String, +v10: String, +v11: U32, +v12: Bool, +v13: U32, +v14: Bool, +v15: U32, +v16: Bool) -> IO(U32):
+def spiral_main_if1_if2_if3(c: Bool, v0: U32, v1: String, v2: String, v3: String, v4: String, v5: String, v6: String, v7: String, +v8: String, v9: String, v10: String, v11: U32, v12: Bool, v13: U32, v14: Bool, v15: U32, v16: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -368,8 +342,7 @@ def spiral_main_if1_if2_if3(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: S
         +v18 : Bool <- IO.pure(Bool, U32.is_ne(v17, {4 : U32}))
         spiral_main_if1_if2_if3_if4(v18, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18)
 
-@unsafe
-def spiral_main_if1_if2(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: String, +v4: String, +v5: String, +v6: String, +v7: String, +v8: String, +v9: String, +v10: String, +v11: U32, +v12: Bool, +v13: U32, +v14: Bool) -> IO(U32):
+def spiral_main_if1_if2(c: Bool, v0: U32, v1: String, v2: String, v3: String, v4: String, v5: String, v6: String, +v7: String, v8: String, v9: String, v10: String, v11: U32, v12: Bool, v13: U32, v14: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -380,8 +353,7 @@ def spiral_main_if1_if2(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: Strin
         +v16 : Bool <- IO.pure(Bool, U32.is_ne(v15, {0 : U32}))
         spiral_main_if1_if2_if3(v16, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16)
 
-@unsafe
-def spiral_main_if1(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: String, +v4: String, +v5: String, +v6: String, +v7: String, +v8: String, +v9: String, +v10: String, +v11: U32, +v12: Bool) -> IO(U32):
+def spiral_main_if1(c: Bool, v0: U32, v1: String, v2: String, v3: String, v4: String, v5: String, +v6: String, v7: String, v8: String, v9: String, v10: String, v11: U32, v12: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -392,25 +364,23 @@ def spiral_main_if1(+c: Bool, +v0: U32, +v1: String, +v2: String, +v3: String, +
         +v14 : Bool <- IO.pure(Bool, U32.is_ne(v13, {34 : U32}))
         spiral_main_if1_if2(v14, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14)
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : U32 <- IO.pure(U32, {16 : U32})
-    +v1 : String <- IO.pure(String, "x\ny")
-    +v2 : String <- IO.pure(String, "say \"hi\"")
-    +v3 : String <- IO.pure(String, "a \"\"\" b")
-    +v4 : String <- IO.pure(String, "first\n    second\n\nthird")
-    +v5 : String <- IO.pure(String, "ab\ncd")
+    v0 : U32 <- IO.pure(U32, {16 : U32})
+    v1 : String <- IO.pure(String, "x\ny")
+    v2 : String <- IO.pure(String, "say \"hi\"")
+    v3 : String <- IO.pure(String, "a \"\"\" b")
+    v4 : String <- IO.pure(String, "first\n    second\n\nthird")
+    v5 : String <- IO.pure(String, "ab\ncd")
     +v6 : String <- IO.pure(String, "a \"b\" c")
-    +v7 : String <- IO.pure(String, "")
-    +v8 : String <- IO.pure(String, "a\\nb")
-    +v9 : String <- IO.pure(String, "first\n(* not a comment *)\n// nor this\n\n$\"not a macro\" !x\ninl fake () = 1\n  indented")
-    +v10 : String <- IO.pure(String, "\ntop\n\nlevel")
+    v7 : String <- IO.pure(String, "")
+    v8 : String <- IO.pure(String, "a\\nb")
+    v9 : String <- IO.pure(String, "first\n(* not a comment *)\n// nor this\n\n$\"not a macro\" !x\ninl fake () = 1\n  indented")
+    v10 : String <- IO.pure(String, "\ntop\n\nlevel")
     +v11 : U32 <- IO.pure(U32, spiral_string_bytes(v6))
     +v12 : Bool <- IO.pure(Bool, U32.is_ne(v11, {7 : U32}))
     spiral_main_if1(v12, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

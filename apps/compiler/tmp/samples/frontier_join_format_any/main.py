@@ -13,7 +13,7 @@ class Mut0:
     v0 : string
 def method3(v0 : Mut0, v1 : string) -> None:
     v2 = v0.v0
-    v3 = v2 + v1 
+    v3 = v2 + v1
     v0.v0 = v3
     return 
 def format_real_2(v0 : i32) -> string:
@@ -24,20 +24,15 @@ def format_real_2(v0 : i32) -> string:
     v4 = v2.v0
     return v4
 def method1() -> string:
-    v0 = "Some"
-    v1 = "("
-    v2 = v0 + v1 
-    v3 = 1
-    v4 = format_real_2(v3)
-    v5 = v2 + v4 
-    v6 = ")"
-    v7 = v5 + v6 
-    return v7
+    v0 = 1
+    v1 = format_real_2(v0)
+    v2 = "Some(" + v1
+    v3 = v2 + ")"
+    return v3
 def method0() -> string:
     v0 = method1()
-    v1 = "x: "
-    v2 = v1 + v0 
-    return v2
+    v1 = "x: " + v0
+    return v1
 def main():
     v0 = method0()
     v1 = v0 == ""

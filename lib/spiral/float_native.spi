@@ -1,4 +1,3 @@
-/// ## float_native
 := float_native_types () =
     backend_switch {
         Lua = \ () => ()
@@ -111,7 +110,6 @@
         | f32 => $'Float32.toFloat !v' : f64
         | f64 => v
 
-/// ### lean_same
 := lean_narrowed \* t. (candidate : f64) (precision : t) : f64 =
     ~>
         ?: t ?|

@@ -5,7 +5,6 @@
 
 := (++) (left : string) (right : string) : string = left ^^ right
 
-/// ## text
 := ends_with (s : string) (p : string) : bool =
     text::length s >= text::length p && text::starts_at s (text::length s - text::length p) p
 
@@ -28,7 +27,6 @@
     := k = text::find_from line "'''" 0i32
     ? k < 0i32 ?> line |: text::take line k
 
-/// ## the toml line model
 :| toml_line =
     | Blank
     | Raw : string
@@ -48,7 +46,6 @@
         |? text::starts_with value "[" ?> ListStart (key, value)
         |: Scalar (key, value)
 
-/// ## conversion to the spiproj text the readers parse
 := indented (line : string) : string = "    " ++ line
 
 :~ ^ block_body (lines : list string) (acc : list string) : list string * list string =
@@ -99,7 +96,6 @@
     := lines = sm'::split_list "\n" (text::replace text_in "\r\n" "\n")
     sm'::concat_list "\n" (listm::rev (convert lines []))
 
-/// ## the manifest a dir holds: spiral.toml first, joined like Elixir's Path.join
 := manifest_names () : list string = [ "spiral.toml"; "package.spiproj" ]
 
 := joined (dir : string) (name : string) : string =
@@ -118,7 +114,6 @@
     | Some path => path
     | None => ""
 
-/// ## declares_modules: a line whose leading ASCII whitespace is followed by modules, whitespace, =
 := ascii_space (b : i32) : bool = b = 32i32 || (b >= 9i32 && b <= 13i32)
 
 :~ ^ spaces_end (s : string) (i : i32) : i32 = ? i < text::length s && ascii_space (text::byte_at s i) ?> spaces_end s (i + 1i32) |: i
@@ -132,6 +127,7 @@
     ? declares_at s line ?> !+ |? nl < 0i32 ?> !- |: declares_from s (nl + 1i32)
 
 := declares_modules (s : string) : bool = declares_from s 0i32
+
 :# scalars_lists_and_blocks_convert_like_the_elixir_reader =
     := toml = "edition = 3\npackageDir = '../lib'\npackages = ['|core-', \"spiral-\"]\nmodules = '''\nmain\n'''"
     := expected = "edition: 3\npackageDir: ../lib\npackages:\n    |core-\n    spiral-\nmodules:\n    main"

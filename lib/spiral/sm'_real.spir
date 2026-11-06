@@ -60,21 +60,7 @@
 ///- --real
 
 := append_real (x : string) (s : string) : string =
-    backend_switch `string `({}) {
-        Gleam = (\ () => $'!s <> !x ' : string) : () -> string
-        Lua = (\ () => $'!s .. !x ' : string) : () -> string
-        Fsharp = (\ () => $'!s + !x ' : string) : () -> string
-        Python = (\ () => $'!s + !x ' : string) : () -> string
-        Rust = (\ () => $'Rc::<str>::from(format\!("{}{}", !s, !x))' : string) : () -> string
-        TypeScript = (\ () => $'!s + !x ' : string) : () -> string
-        Zig = (\ () => $'spiralConcat(!s, !x)' : string) : () -> string
-        Lean = (\ () => $'(!s ++ !x)' : string) : () -> string
-        C = (\ () => !!!!StaticStringConcat(s, x)) : () -> string
-        Pascal = (\ () => $'!s + !x ' : string) : () -> string
-        Kotlin = (\ () => $'!s + !x ' : string) : () -> string
-        Swift = (\ () => $'!s + !x ' : string) : () -> string
-        Bend = (\ () => !!!!StaticStringConcat(s, x)) : () -> string
-    }
+    !!!!StaticStringConcat(s, x)
 
 /// ### (++#*)
 ///- --real

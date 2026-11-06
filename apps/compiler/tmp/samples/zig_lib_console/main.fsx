@@ -1,5 +1,5 @@
 let v0 : int32 = 41
-let v1 : string = v0 |> _.ToString()
+let v1 : string = (string (v0))
 let v2 : (string -> unit) = System.Console.WriteLine
 v2 v1
 let v3 : (string -> unit) = System.Console.WriteLine

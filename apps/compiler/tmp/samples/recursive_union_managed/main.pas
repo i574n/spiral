@@ -19,6 +19,10 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 function sum_0(v0: TUH0): LongInt; forward;
 procedure TUH0.DropFields;
 begin
@@ -46,12 +50,17 @@ begin
       1: begin
           v1 := v0.c1_0;
           v2 := v0.c1_1;
+          SpiralRetain(v2);
+          SpiralRelease(v0);
           v3 := LongInt(Length(v1));
+          SpiralRetain(v2);
           v4 := sum_0(v2);
+          SpiralRelease(v2);
           v5 := v3 + v4;
           Result := v5;
       end;
       0: begin
+          SpiralRelease(v0);
           Result := 0;
       end;
   end;
@@ -72,15 +81,24 @@ begin
   SetLength(tmp2, v0);
   v1 := tmp2;
   v2 := UH0_Nil;
+  SpiralRetain(v2);
   v3 := UH0_Cons(v1, v2);
+  SpiralRetain(v3);
+  SpiralRelease(v2);
   v4 := UH0_Cons(v1, v3);
+  SpiralRetain(v4);
+  SpiralRelease(v3);
   v5 := sum_0(v4);
+  SpiralRelease(v4);
   v6 := v5 - 4;
   Result := v6;
 end;
 var SpiralOutputBuffer: array[0..65535] of Char;
+var SpiralExitCode: LongInt;
 begin
   SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
-  Halt(SpiralMain);
+  SpiralExitCode := SpiralMain;
+  if UH0_Nil_shared <> nil then UH0_Nil_shared.Free;
+  Halt(SpiralExitCode);
 end.

@@ -45,8 +45,7 @@ pub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {
 
 pub fn main() {
     let v0 = spiral_array_create_filled(1, 0)
-    let v1 = 4294967297
-    spiral_array_set(v0, 0, v1)
+    spiral_array_set(v0, 0, 4294967297)
     let v2 = spiral_array_get(v0, 0)
     let v3 = v2 == 4294967297
     case v3 {

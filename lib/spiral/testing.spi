@@ -1,4 +1,3 @@
-/// ## testing
 :< sm'_operators
 
 :| testing_trace =
@@ -201,7 +200,6 @@
         | None =>
             "_assert_in / " ++#? { x items } |> failwith
 
-/// ## fsharp
 := ^ __assert_contains \* t u. (trace : testing_trace) (b : t) (a : u) : () =
     __expect
         \ a b =>

@@ -37,6 +37,5 @@ pub fn main() {
             }
         }
     let v8 = score_0(v7)
-    let v9 = spiral_wrap_signed(v8 - 11, 32)
-    v9
+    spiral_wrap_signed(v8 - 11, 32)
 }

@@ -349,3 +349,25 @@
     := bound = Axiom (name "bound", [ name "u" ], Sort (Param (name "u")))
     (admitted_text (admit [] loose), admitted_text (admit [] bound))
     |> _assert_eq ("undeclared universe level u", "admitted 1")
+
+///> rust
+:# the_legacy_negative_families_are_refused_at_runtime =
+    := ctx = [ ("h", FVar (name "p")); ("p", Sort Zero) ]
+    := to_type = App (Lam (name "A", Default, Sort (Succ (Succ Zero)), BVar 0i32), type_sort ())
+    := to_prop = App (Lam (name "A", Default, type_sort (), BVar 0i32), Sort Zero)
+    := refused = \ prefix r => type_text r |> sm'::starts_with prefix
+    := verdicts =
+        refused "not a type: " (infer [] ctx (Pi (name "x", Default, FVar (name "h"), Sort Zero))),
+        refused "mismatch: " (infer [] [] (Let (name "x", Sort Zero, Sort Zero, BVar 0i32))),
+        refused "loose bound" (infer [] [] (Lam (name "x", Default, Sort Zero, BVar 1i32))),
+        refused "mismatch: " (check [] ctx (App (App (poly_id (), Sort Zero), FVar (name "p"))) (type_sort ())),
+        refused "mismatch: " (check [] [] (Sort Zero) to_type),
+        refused "mismatch: " (check [] [] (Sort Zero) to_prop)
+    verdicts |> _assert_eq (!+, !+, !+, !+, !-, !+)
+
+///> rust
+:# swapping_independent_context_entries_keeps_the_type =
+    := t = Lam (name "h", Default, FVar (name "q"), FVar (name "hp"))
+    := before = type_text (infer [] [ ("p", Sort Zero); ("q", Sort Zero); ("hp", FVar (name "p")) ] t)
+    := after = type_text (infer [] [ ("q", Sort Zero); ("p", Sort Zero); ("hp", FVar (name "p")) ] t)
+    (before = after, after) |> _assert_eq (!+, "(h : q) -> p")

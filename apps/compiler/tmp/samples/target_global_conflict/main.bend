@@ -51,25 +51,22 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
     case SCon{+h, +t}:
       spiral_string_byte_at_from(U32.is_lt(i, spiral_utf8_width(Char.to_u32(h))), Char.to_u32(h), spiral_utf8_width(Char.to_u32(h)), i, t)
 
-@unsafe
 def target_global_0(+v0: String) -> IO(Unit):
   do IO<Unit>:
     return Unit{}
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : String <- IO.pure(String, "SPIRAL_TARGET_GLOBAL_RUST_PRELUDE_same_B64:Ly9Q")
+    v0 : String <- IO.pure(String, "SPIRAL_TARGET_GLOBAL_RUST_PRELUDE_same_B64:Ly9Q")
     target_global_0(v0)
-    +v1 : String <- IO.pure(String, "SPIRAL_TARGET_GLOBAL_RUST_BEFORE_MAIN_same_B64:Ly9C")
+    v1 : String <- IO.pure(String, "SPIRAL_TARGET_GLOBAL_RUST_BEFORE_MAIN_same_B64:Ly9C")
     target_global_0(v1)
-    +v2 : String <- IO.pure(String, "SPIRAL_TARGET_GLOBAL_DELPHI_PRELUDE_same_B64:Ly9Q")
+    v2 : String <- IO.pure(String, "SPIRAL_TARGET_GLOBAL_DELPHI_PRELUDE_same_B64:Ly9Q")
     target_global_0(v2)
-    +v3 : String <- IO.pure(String, "SPIRAL_TARGET_GLOBAL_DELPHI_BEFORE_MAIN_same_B64:Ly9C")
+    v3 : String <- IO.pure(String, "SPIRAL_TARGET_GLOBAL_DELPHI_BEFORE_MAIN_same_B64:Ly9C")
     target_global_0(v3)
     return {0 : U32}
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

@@ -15,8 +15,7 @@ pub fn method1(v0: Bool, v1: Float, v2: Int) -> Int {
             let v3 = v1 >=. 3.5
             case v3 {
                 True -> {
-                    let v4 = spiral_wrap_signed(v2 - 7, 32)
-                    v4
+                    spiral_wrap_signed(v2 - 7, 32)
                 }
                 False -> 1
             }
@@ -25,7 +24,6 @@ pub fn method1(v0: Bool, v1: Float, v2: Int) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 4.0
-    let #(v1, v2, v3) = method0(v0)
+    let #(v1, v2, v3) = method0(4.0)
     method1(v1, v2, v3)
 }

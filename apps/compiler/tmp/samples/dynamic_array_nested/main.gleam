@@ -73,6 +73,5 @@ pub fn main() {
     let v10 = spiral_wrap_signed(v8 + v9, 32)
     let v11 = spiral_array_get(v5, 1)
     let v12 = spiral_wrap_signed(v10 + v11, 32)
-    let v13 = spiral_wrap_signed(v12 - 18, 32)
-    v13
+    spiral_wrap_signed(v12 - 18, 32)
 }

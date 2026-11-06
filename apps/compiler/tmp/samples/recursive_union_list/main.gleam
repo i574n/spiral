@@ -13,21 +13,15 @@ pub fn sum_0(v0: Uh0) -> Int {
     case v0  {
         Uh0Cons(v1, v2) -> {
             let v3 = sum_0(v2)
-            let v4 = spiral_wrap_signed(v1 + v3, 32)
-            v4
+            spiral_wrap_signed(v1 + v3, 32)
         }
         Uh0Nil -> 0
     }
 }
 pub fn main() {
-    let v0 = 1
-    let v1 = 2
-    let v2 = 3
-    let v3 = Uh0Nil
-    let v4 = Uh0Cons(v2, v3)
-    let v5 = Uh0Cons(v1, v4)
-    let v6 = Uh0Cons(v0, v5)
+    let v4 = Uh0Cons(3, Uh0Nil)
+    let v5 = Uh0Cons(2, v4)
+    let v6 = Uh0Cons(1, v5)
     let v7 = sum_0(v6)
-    let v8 = spiral_wrap_signed(v7 - 6, 32)
-    v8
+    spiral_wrap_signed(v7 - 6, 32)
 }

@@ -9,18 +9,12 @@ pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
 }
 
 pub fn main() {
-    let v0 = 250
-    let v1 = 10
     let v2 = 4294967295
     let v3 = 18446744073709551615
-    let v4 = 127
-    let v5 = 1
-    let v6 = 7
     let v7 = 2
-    let v8 = 9223372036854775807
-    let v9 = spiral_wrap_signed(0 - v6, 32)
-    let v10 = spiral_wrap_signed(0 - v8, 64)
-    let v11 = spiral_wrap_unsigned(v0 + v1, 8)
+    let v9 = spiral_wrap_signed(0 - 7, 32)
+    let v10 = spiral_wrap_signed(0 - 9223372036854775807, 64)
+    let v11 = spiral_wrap_unsigned(250 + 10, 8)
     let v12 = v11 == 4
     case v12 {
         True -> {
@@ -44,7 +38,7 @@ pub fn main() {
                                             let v22 = v21 == 6148914691236517205
                                             case v22 {
                                                 True -> {
-                                                    let v23 = spiral_wrap_signed(v4 + v5, 8)
+                                                    let v23 = spiral_wrap_signed(127 + 1, 8)
                                                     let v24 = v23 < 0
                                                     case v24 {
                                                         True -> {

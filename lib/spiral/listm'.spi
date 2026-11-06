@@ -72,14 +72,18 @@
     |> _assert_eq 9
 
 ///> fsharp
-:# item_2 =
+///> rust
+:# item_2 no_agree "exception text is backend-specific" =
     \ () =>
         listm::init 10i32 id
         |> item 10i32
         |> ignore
     |> _throws
     |> optionm::map sm'::format_exception
-    |> _assert_eq (Some "System.Exception: Option does not have a value.")
+    |> _assert_eq (run_target \|
+        | Fsharp _ => \ () => ~~ Some "System.Exception: Option does not have a value."
+        | _ => \ () => Some "Option does not have a value."
+    )
 
 :~ ^ try_item_ i = \|
     | x :: _ ?& i = 0 => Some x

@@ -19,6 +19,13 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
+procedure SpiralRetain_TUS0(const x: TUS0); forward;
+procedure SpiralRelease_TUS0(const x: TUS0); forward;
+function SpiralKeep_TUS0(const x: TUS0): TUS0; forward;
 function MutCreate0(a0: LongInt): TMut0;
 begin
   Result := TMut0.Create; Result.l0 := a0;
@@ -30,6 +37,22 @@ end;
 function US0_Held(a0: TMut0): TUS0;
 begin
   Result.tag := 1; Result.c1_0 := a0;
+end;
+procedure SpiralRetain_TUS0(const x: TUS0);
+begin
+  case x.tag of
+    1: begin SpiralRetain(x.c1_0); end;
+  end;
+end;
+procedure SpiralRelease_TUS0(const x: TUS0);
+begin
+  case x.tag of
+    1: begin SpiralRelease(x.c1_0); end;
+  end;
+end;
+function SpiralKeep_TUS0(const x: TUS0): TUS0;
+begin
+  SpiralRetain_TUS0(x); Result := x;
 end;
 function SpiralMain: LongInt;
 var
@@ -43,15 +66,20 @@ begin
   v0 := MutCreate0(1);
   v1 := True;
   if v1 then begin
+      SpiralRetain(v0);
       v4 := US0_Held(v0);
   end else begin
       v4 := US0_Missing;
   end;
+  SpiralRelease(v0);
   case v4.tag of
       1: begin
           v5 := v4.c1_0;
+          SpiralRetain(v5);
+          SpiralRelease_TUS0(v4);
           v5.l0 := 7;
           v6 := v5.l0;
+          SpiralRelease(v5);
           v7 := v6 = 7;
           if v7 then begin
               Result := 0;
@@ -60,6 +88,7 @@ begin
           end;
       end;
       0: begin
+          SpiralRelease_TUS0(v4);
           Result := 1;
       end;
   end;

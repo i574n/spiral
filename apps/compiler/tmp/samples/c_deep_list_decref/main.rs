@@ -10,28 +10,28 @@ fn build_0(mut v0: i32, mut v1: Rc<UH0>) -> Rc<UH0> {
     loop {
         let v2: bool = v0 == 0i32;
         if v2 {
-            return v1.clone();
+            return v1;
         } else {
             let v3: i32 = v0.wrapping_sub(1i32);
-            let v4: Rc<UH0> = Rc::new(UH0::UH0_Link(v0, v1.clone()));
-            (v0, v1) = (v3, v4.clone());
+            let v4: Rc<UH0> = Rc::new(UH0::UH0_Link(v0, v1));
+            (v0, v1) = (v3, v4);
             continue;
         }
     }
 }
 fn sum_1(mut v0: Rc<UH0>, mut v1: i32) -> i32 {
     loop {
-        match &*v0 {
+        match Rc::unwrap_or_clone(v0) {
             UH0::UH0_End => {
                 return v1;
             }
             UH0::UH0_Link(v2, v3) => {
-                let v2: i32 = *v2;
-                let v3: Rc<UH0> = v3.clone();
+                let v2: i32 = v2;
+                let v3: Rc<UH0> = v3;
                 let v4: i32 = v1.wrapping_mul(31i32);
                 let v5: i32 = v4.wrapping_add(v2);
                 let v6: i32 = v5.wrapping_rem(9973i32);
-                (v0, v1) = (v3.clone(), v6);
+                (v0, v1) = (v3, v6);
                 continue;
             }
         }

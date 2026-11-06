@@ -32,6 +32,21 @@ if ($IsWindows -and !(Get-Command rsync -ErrorAction Ignore)) {
     } else { Write-Output "init-app-build.ps1 / no rsync and no choco: scripts/publish-tree.ps1 needs rsync" }
 }
 
+if (Get-Command cargo -ErrorAction Ignore) {
+    if (!(Get-Command cargo-binstall -ErrorAction Ignore)) {
+        if ($IsWindows) {
+            Invoke-Expression (Invoke-WebRequest "https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.ps1").Content
+        } else {
+            curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+        }
+    }
+    if (!(Get-Command sccache -ErrorAction Ignore)) {
+        cargo binstall -y sccache
+        if ($LASTEXITCODE -ne 0) { Write-Output "init-app-build.ps1 / cargo binstall sccache failed (exit code $LASTEXITCODE): spiral rust runs set RUSTC_WRAPPER=sccache" }
+    }
+}
+
+if (!$env:SPIRAL_REPO_ROOT) { $env:SPIRAL_REPO_ROOT = (Resolve-Path (Join-Path $ScriptDir '..')).Path }
 $cli = Join-Path $ScriptDir "../workspace/target/release/spiral$(if ($IsWindows) { '.exe' })"
 if (!(Test-Path $cli)) {
     pwsh (Join-Path $ScriptDir "../apps/spiral/build.ps1") -fast 1

@@ -23,18 +23,12 @@ pub fn lcg_0(v0: Int, v1: Int, v2: Int, v3: Int) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 42
     let v1 = 6364136223846793005
-    let v2 = 1442695040888963407
-    let v3 = 1000
-    let v4 = lcg_0(v1, v2, v3, v0)
+    let v4 = lcg_0(v1, 1442695040888963407, 1000, 42)
     io.print("lcg " <> int.to_string(v4) <> "\n")
-    let v5 = 9223372036854775807
-    let v6 = -9223372036854775807
-    let v7 = 18446744073709551615
-    let v8 = spiral_wrap_signed(v6 - 1, 64)
-    let v9 = spiral_wrap_unsigned(v7 + 2, 64)
-    io.print("max " <> int.to_string(v5) <> " min " <> int.to_string(v8) <> " wrap " <> int.to_string(v9) <> "\n")
+    let v8 = spiral_wrap_signed(-9223372036854775807 - 1, 64)
+    let v9 = spiral_wrap_unsigned(18446744073709551615 + 2, 64)
+    io.print("max " <> int.to_string(9223372036854775807) <> " min " <> int.to_string(v8) <> " wrap " <> int.to_string(v9) <> "\n")
     let v10 = -9007199254740993
     let v11 = 7
     let v12 = v10 / v11

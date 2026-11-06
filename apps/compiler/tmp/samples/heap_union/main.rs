@@ -17,12 +17,12 @@ fn spiral_main() -> i32 {
     };
     let v5: Rc<Heap0> = Rc::new(Heap0 { l0: v4 });
     let v6: US0 = v5.l0.clone();
-    match &v6 {
+    match v6 {
         US0::US0_None => {
             1i32
         }
         US0::US0_Some(v7) => {
-            let v7: i32 = *v7;
+            let v7: i32 = v7;
             let v8: bool = v7 == 7i32;
             if v8 {
                 0i32

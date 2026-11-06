@@ -35,7 +35,7 @@ fn codepoint_length_loop_1(mut v0: Rc<str>, mut v1: u8, mut v2: u8, mut v3: i32,
                 v11
             };
             let v13: i32 = v3.wrapping_add(1i32);
-            (v0, v1, v2, v3, v4, v5) = (v0.clone(), v1, v2, v13, v12, v5);
+            (v3, v4) = (v13, v12);
             continue;
         }
     }
@@ -56,7 +56,7 @@ fn codepoint_byte_offset_loop_2(mut v0: Rc<str>, mut v1: u8, mut v2: u8, mut v3:
             };
             if v11 {
                 let v12: i32 = v4.wrapping_add(1i32);
-                (v0, v1, v2, v3, v4, v5, v6) = (v0.clone(), v1, v2, v3, v12, v5, v6);
+                v4 = v12;
                 continue;
             } else {
                 let v14: bool = v5 == v3;
@@ -65,7 +65,7 @@ fn codepoint_byte_offset_loop_2(mut v0: Rc<str>, mut v1: u8, mut v2: u8, mut v3:
                 } else {
                     let v15: i32 = v4.wrapping_add(1i32);
                     let v16: i32 = v5.wrapping_add(1i32);
-                    (v0, v1, v2, v3, v4, v5, v6) = (v0.clone(), v1, v2, v3, v15, v16, v6);
+                    (v4, v5) = (v15, v16);
                     continue;
                 }
             }
@@ -77,7 +77,7 @@ fn spiral_main() -> i32 {
     let v1: i32 = 1i32;
     let v2: u8 = runtime_byte_0(v0.clone(), v1);
     let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("©"); } LIT.with(|lit| lit.clone()) };
-    let v4: i32 = 0i32;
+    let mut v4: i32 = 0i32;
     let v5: u8 = runtime_byte_0(v3.clone(), v4);
     let v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Aéλ🙂Z"); } LIT.with(|lit| lit.clone()) };
     let v7: i32 = 0i32;

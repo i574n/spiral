@@ -9,8 +9,7 @@ pub fn closure1(capt: #(Int)) -> fn(Int) -> Int {
     fn (v1) {
         let #(v0) = capt
         let v2 = spiral_wrap_signed(v0 * 10, 32)
-        let v3 = spiral_wrap_signed(v2 + v1, 32)
-        v3
+        spiral_wrap_signed(v2 + v1, 32)
     }
 }
 pub fn f_c0(capt: Nil) -> fn(Int) -> fn(Int) -> Int {

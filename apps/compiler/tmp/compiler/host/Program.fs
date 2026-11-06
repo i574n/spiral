@@ -51,7 +51,7 @@ module Program =
         let rec find (directory : DirectoryInfo) =
             if isNull directory then None
             else
-                let candidate = Path.Combine(directory.FullName, "package.spiproj")
+                let candidate = spiproj_suffix directory.FullName
                 if File.Exists candidate then Some candidate else find directory.Parent
         let enabled = String.Equals(Environment.GetEnvironmentVariable "SPIRAL_HOST_OPEN_PROJECT", "1", StringComparison.Ordinal)
         match (if enabled then find (Directory.GetParent inputPath) else None) with
@@ -59,6 +59,18 @@ module Program =
             let uri = spiproj |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
             Hopac.run (supervisor *<+ projectFileOpenRequest uri (File.ReadAllText spiproj))
         | _ -> ()
+
+    let private projectFileChangeRequest uri text =
+        let case = unionCase "ProjectFileChange"
+        let payloadType = case.GetFields().[0].PropertyType
+        let payload = anonymousRecord payloadType ["uri", box uri; "spiprojText", box text]
+        FSharpValue.MakeUnion(case, [|payload|]) :?> SupervisorReq
+
+    let private fileDeleteRequest (uris : string []) =
+        let case = unionCase "FileDelete"
+        let payloadType = case.GetFields().[0].PropertyType
+        let payload = anonymousRecord payloadType ["uris", box uris]
+        FSharpValue.MakeUnion(case, [|payload|]) :?> SupervisorReq
 
     let private buildFileRequest uri backend (result : IVar<string option>) =
         let case = unionCase "BuildFile"
@@ -159,10 +171,10 @@ module Program =
         let seen = HashSet<string>(StringComparer.OrdinalIgnoreCase)
         let rec owner (dir : DirectoryInfo) =
             if isNull dir then null
-            elif File.Exists(Path.Combine(dir.FullName, "package.spiproj")) then dir.FullName
+            elif File.Exists(spiproj_suffix dir.FullName) then dir.FullName
             else owner dir.Parent
         let rec walk (dir : string) =
-            let project = Path.Combine(dir, "package.spiproj")
+            let project = spiproj_suffix dir
             if seen.Add(Path.GetFullPath dir) && File.Exists project then
                 match schema (dir, File.ReadAllText project) with
                 | Ok parsed ->
@@ -182,6 +194,12 @@ module Program =
         let mutable related : string option = None
         let mutable entryTypeErrors : string option = None
         let mutable closure : HashSet<string> = null
+        let mutable accepted = 0
+        let mutable lastKind = "none"
+        let mutable lastAt = DateTime.UtcNow
+        let mutable pumping = false
+        let mutable pendingFatal = false
+        let mutable begun = DateTime.UtcNow
 
         member _.SetClosure(files : HashSet<string>) = lock gate (fun () -> closure <- files)
 
@@ -189,7 +207,14 @@ module Program =
             let waiter =
                 new Threading.Tasks.TaskCompletionSource<string>(
                     Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously)
-            lock gate (fun () -> active <- Some (uri, waiter); related <- None; entryTypeErrors <- None)
+            lock gate (fun () ->
+                active <- Some (uri, waiter)
+                related <- None
+                entryTypeErrors <- None
+                accepted <- 0
+                lastKind <- "none"
+                pendingFatal <- false
+                begun <- DateTime.UtcNow)
             waiter
 
         member _.Clear(waiter : Threading.Tasks.TaskCompletionSource<string>) =
@@ -198,7 +223,27 @@ module Program =
                 | Some (_, current) when Object.ReferenceEquals(current, waiter) -> active <- None
                 | _ -> ())
 
-        member _.Accept(message : ClientErrorsRes) =
+        member _.Pumping = lock gate (fun () -> pumping || pendingFatal)
+
+        member _.Explain() =
+            lock gate (fun () ->
+                let seconds (moment : DateTime) = (DateTime.UtcNow - moment).TotalSeconds.ToString "F1"
+                let last = if accepted = 0 then "none" else lastKind + " " + seconds lastAt + " s ago"
+                let held = match related with Some text -> "; held back: " + text.Split('\n').[0] | None -> ""
+                $"router: {accepted} diagnostics since the request, last {last}; pump busy {pumping}; fatal in its grace delay {pendingFatal}; waited {seconds begun} s{held}")
+
+        member this.Accept(message : ClientErrorsRes) =
+            lock gate (fun () -> pumping <- true)
+            try this.Route message
+            finally
+                let kind = (fst (FSharpValue.GetUnionFields(message, typeof<ClientErrorsRes>))).Name
+                lock gate (fun () ->
+                    pumping <- false
+                    accepted <- accepted + 1
+                    lastKind <- kind
+                    lastAt <- DateTime.UtcNow)
+
+        member private _.Route(message : ClientErrorsRes) =
             if traceDiagnostics then eprintfn "[diagnostic] %A" message
             match message with
             | FatalError fatal when lock gate (fun () -> entryTypeErrors.IsSome) ->
@@ -210,12 +255,13 @@ module Program =
                 let pending = lock gate (fun () -> active)
                 match pending with
                 | Some (_, waiter) ->
+                    lock gate (fun () -> pendingFatal <- true)
                     Threading.Tasks.Task.Delay(fatalGraceMs).ContinueWith(fun (_ : Threading.Tasks.Task) ->
                         lock gate (fun () ->
+                            pendingFatal <- false
                             match active with
                             | Some (_, current) when Object.ReferenceEquals(current, waiter) ->
-                                let detail = match related with Some text -> $"\n{text}" | None -> ""
-                                current.TrySetResult($"FatalError: {fatal}{detail}") |> ignore
+                                current.TrySetResult($"FatalError: {fatal}") |> ignore
                             | _ -> ()))
                     |> ignore
                 | None -> ()
@@ -264,6 +310,34 @@ module Program =
         member _.Commit(uri, source) =
             sources.[uri] <- source
 
+        member _.ForgetUnder(prefix : string) =
+            sources.Keys |> Seq.filter (fun uri -> uri.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) |> Array.ofSeq |> Array.iter (fun uri -> sources.Remove uri |> ignore)
+
+    let private sessionManifests = Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    let private reopenChangedManifest (supervisor : Ch<SupervisorReq>) (revisions : SourceRevisionStore) (inputPath : string) =
+        let rec find (directory : DirectoryInfo) =
+            if isNull directory then None
+            else
+                let candidate = spiproj_suffix directory.FullName
+                if File.Exists candidate then Some candidate else find directory.Parent
+        match find (Directory.GetParent inputPath) with
+        | None -> ()
+        | Some manifest ->
+            let text = File.ReadAllText manifest
+            let changed =
+                lock sessionManifests (fun () ->
+                    match sessionManifests.TryGetValue manifest with
+                    | true, previous when String.Equals(previous, text, StringComparison.Ordinal) -> false
+                    | seen, _ ->
+                        sessionManifests.[manifest] <- text
+                        seen)
+            if changed then
+                let packageUri = Path.GetDirectoryName manifest |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
+                Hopac.run (supervisor *<+ fileDeleteRequest [| packageUri |])
+                revisions.ForgetUnder packageUri
+                let manifestUri = manifest |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
+                Hopac.run (supervisor *<+ projectFileChangeRequest manifestUri text)
+
     type private CachedCompilation =
         {
         fingerprint : string
@@ -308,6 +382,7 @@ module Program =
             let name = Path.GetFileName(path)
             let extension = Path.GetExtension(path)
             String.Equals(name, "package.spiproj", StringComparison.OrdinalIgnoreCase)
+            || String.Equals(name, "spiral.toml", StringComparison.OrdinalIgnoreCase)
             || String.Equals(extension, ".spi", StringComparison.OrdinalIgnoreCase)
             || String.Equals(extension, ".spir", StringComparison.OrdinalIgnoreCase)
         let roots = ResizeArray<string>()
@@ -363,7 +438,7 @@ module Program =
                   graph = mirrored_graph_empty
                   package_ids = Map.empty, Map.empty }
             let rec findOwner (directory : DirectoryInfo) =
-                if isNull directory then failwith $"Cannot find package.spiproj for {inputPath}"
+                if isNull directory then failwith $"Cannot find spiral.toml or package.spiproj for {inputPath}"
                 let candidate = directory.FullName |> SpiralFileSystem.standardize_path
                 if File.Exists(spiproj_suffix candidate) then candidate else findOwner directory.Parent
             let packageDir = findOwner (Directory.GetParent inputPath)
@@ -538,6 +613,7 @@ module Program =
             let outputPath = output |> Path.GetFullPath
             let code = File.ReadAllText inputPath
             let uri = inputPath |> SpiralFileSystem.new_file_uri
+            reopenChangedManifest supervisor revisions inputPath
             let revision = revisions.Plan(uri, code)
             let fingerprint = if cache.Reuse then sourceGraphFingerprint inputPath else ""
             let multiFile = multiFileSuffixes backend
@@ -615,8 +691,12 @@ module Program =
                 else
                     let generated = buildTask.GetAwaiter().GetResult()
                     if isNull generated then
-                        if waiter.Task.Wait(TimeSpan.FromMilliseconds(float (fatalGraceMs + 10000))) then Error (waiter.Task.GetAwaiter().GetResult())
-                        else Error "BuildFile returned no code and no diagnostic arrived"
+                        let rec awaitBusyPump (until : DateTime) =
+                            if waiter.Task.Wait(TimeSpan.FromMilliseconds 500.0) then true
+                            elif router.Pumping && DateTime.UtcNow < until then awaitBusyPump until
+                            else false
+                        if waiter.Task.Wait(TimeSpan.FromMilliseconds(float (fatalGraceMs + 10000))) || awaitBusyPump (DateTime.UtcNow.AddSeconds 120.0) then Error (waiter.Task.GetAwaiter().GetResult())
+                        else Error $"BuildFile returned no code and no diagnostic arrived ({router.Explain()})"
                     else
                         let coreWrites = cached.IsNone
                         let generated = if coreWrites && backend = "Rust" then rewriteRustEmitExpr generated else generated
@@ -751,7 +831,7 @@ module Program =
             let inputPath = inputPath |> Path.GetFullPath |> SpiralFileSystem.standardize_path
             if not (File.Exists inputPath) then failwith $"Missing check input: {inputPath}"
             let rec findOwner (directory : DirectoryInfo) =
-                if isNull directory then failwith $"Cannot find package.spiproj for {inputPath}"
+                if isNull directory then failwith $"Cannot find spiral.toml or package.spiproj for {inputPath}"
                 let candidate = directory.FullName |> SpiralFileSystem.standardize_path
                 if File.Exists(spiproj_suffix candidate) then candidate else findOwner directory.Parent
             let packageDir = findOwner (Directory.GetParent inputPath)
@@ -1248,7 +1328,7 @@ module Program =
         let rec nearest (dir : DirectoryInfo) =
             if isNull dir then None
             else
-                let candidate = Path.Combine (dir.FullName, "package.spiproj")
+                let candidate = spiproj_suffix dir.FullName
                 if File.Exists candidate then Some candidate else nearest dir.Parent
         match nearest (DirectoryInfo (Path.GetDirectoryName (Path.GetFullPath input))) with
         | None -> Ok ()

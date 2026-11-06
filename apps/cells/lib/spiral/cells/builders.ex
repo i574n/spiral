@@ -85,7 +85,7 @@ defmodule Spiral.Cells.Builders do
 
   def dispatch(%{tool: :c}, path), do: {:cc, path}
 
-  def dispatch(%{tool: :delphi}, path), do: {:dcc, path}
+  def dispatch(%{tool: :pascal}, path), do: {:dcc, path}
 
   def dispatch(%{tool: :gleam, target: target} = builder, path) when target in [nil, "erlang"],
     do: {:gleam, path, builder.deps}

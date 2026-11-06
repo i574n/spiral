@@ -59,45 +59,40 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
     case SCon{+h, +t}:
       spiral_string_byte_at_from(U32.is_lt(i, spiral_utf8_width(Char.to_u32(h))), Char.to_u32(h), spiral_utf8_width(Char.to_u32(h)), i, t)
 
-@unsafe
-def choose_0_if1(+c: Bool) -> IO(String):
+def choose_0_if1(c: Bool) -> IO(String):
   match c:
     case True{}:
       do IO<String>:
-        +v1 : String <- IO.pure(String, "alpha")
+        v1 : String <- IO.pure(String, "alpha")
         return v1
     case False{}:
       do IO<String>:
-        +v2 : String <- IO.pure(String, "beta")
+        v2 : String <- IO.pure(String, "beta")
         return v2
 
-@unsafe
 def choose_0(+v0: Bool) -> IO(String):
   do IO<String>:
     choose_0_if1(v0)
 
-@unsafe
-def measure_1(+v0: String) -> IO(U32):
+def measure_1(v0: String) -> IO(U32):
   do IO<U32>:
-    +v1 : U32 <- IO.pure(U32, spiral_string_bytes(v0))
+    v1 : U32 <- IO.pure(U32, spiral_string_bytes(v0))
     return v1
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : Bool <- IO.pure(Bool, True{})
+    v0 : Bool <- IO.pure(Bool, True{})
     +v1 : String <- choose_0(v0)
-    +v2 : Bool <- IO.pure(Bool, False{})
-    +v3 : String <- choose_0(v2)
-    +v4 : U32 <- measure_1(v1)
-    +v5 : U32 <- measure_1(v1)
-    +v6 : U32 <- IO.pure(U32, U32.add(v4, v5))
-    +v7 : U32 <- measure_1(v3)
-    +v8 : U32 <- IO.pure(U32, U32.add(v6, v7))
-    +v9 : U32 <- IO.pure(U32, U32.sub(v8, {14 : U32}))
+    v2 : Bool <- IO.pure(Bool, False{})
+    v3 : String <- choose_0(v2)
+    v4 : U32 <- measure_1(v1)
+    v5 : U32 <- measure_1(v1)
+    v6 : U32 <- IO.pure(U32, U32.add(v4, v5))
+    v7 : U32 <- measure_1(v3)
+    v8 : U32 <- IO.pure(U32, U32.add(v6, v7))
+    v9 : U32 <- IO.pure(U32, U32.sub(v8, {14 : U32}))
     return v9
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

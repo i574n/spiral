@@ -14,9 +14,9 @@ fn group_0(mut st: Group0) -> bool {
         match st {
             Group0::M0(mut v0) => {
                 let v1: Rc<UH0> = Rc::new(UH0::UH0_Cell(v0));
-                match &*v1 {
+                match Rc::unwrap_or_clone(v1) {
                     UH0::UH0_Cell(v2) => {
-                        let v2: i32 = *v2;
+                        let v2: i32 = v2;
                         let v3: bool = v2 == 0i32;
                         if v3 {
                             return true;
@@ -30,9 +30,9 @@ fn group_0(mut st: Group0) -> bool {
             }
             Group0::M1(mut v0) => {
                 let v1: Rc<UH0> = Rc::new(UH0::UH0_Cell(v0));
-                match &*v1 {
+                match Rc::unwrap_or_clone(v1) {
                     UH0::UH0_Cell(v2) => {
-                        let v2: i32 = *v2;
+                        let v2: i32 = v2;
                         let v3: bool = v2 == 0i32;
                         if v3 {
                             return false;

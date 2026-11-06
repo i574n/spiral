@@ -43,12 +43,10 @@ pub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {
 }
 
 pub fn first_codepoint_0(v0: String) -> String {
-    let v1 = spiral_string_slice(v0, 0, 1)
-    v1
+    spiral_string_slice(v0, 0, 1)
 }
 pub fn second_codepoint_1(v0: String) -> String {
-    let v1 = spiral_string_slice(v0, 2, 3)
-    v1
+    spiral_string_slice(v0, 2, 3)
 }
 pub fn main() {
     let v0 = "éλ"

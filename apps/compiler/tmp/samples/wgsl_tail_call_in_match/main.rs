@@ -14,14 +14,14 @@ fn layers_0(mut v0: i32) -> i32 {
         } else {
             US0::US0_More(v0)
         };
-        match &v4 {
+        match v4 {
             US0::US0_Done(v8) => {
-                let v8: i32 = *v8;
+                let v8: i32 = v8;
                 let v9: i32 = v8.wrapping_mul(2i32);
                 return v9;
             }
             US0::US0_More(v5) => {
-                let v5: i32 = *v5;
+                let v5: i32 = v5;
                 let v6: i32 = v5.wrapping_add(1i32);
                 v0 = v6;
                 continue;

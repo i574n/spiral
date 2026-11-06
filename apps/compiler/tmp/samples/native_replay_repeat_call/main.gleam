@@ -40,8 +40,7 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
 
 
 pub fn runtime_byte_2(v0: String, v1: Int) -> String {
-    let v2 = spiral_string_index(v0, v1)
-    v2
+    spiral_string_index(v0, v1)
 }
 pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
     let v2 = spiral_string_length(v0)
@@ -78,8 +77,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                         case v18 {
                                                             True -> False
                                                             False -> {
-                                                                let v19 = v17 < 192
-                                                                v19
+                                                                v17 < 192
                                                             }
                                                         }
                                                     case v20 {
@@ -87,8 +85,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                             let v21 = spiral_wrap_signed(v8 - 192, 32)
                                                             let v22 = spiral_wrap_signed(v21 * 64, 32)
                                                             let v23 = spiral_wrap_signed(v17 - 128, 32)
-                                                            let v24 = spiral_wrap_signed(v22 + v23, 32)
-                                                            v24
+                                                            spiral_wrap_signed(v22 + v23, 32)
                                                         }
                                                         False -> panic as "UTF-8 sequence has an invalid continuation byte."
                                                     }
@@ -114,8 +111,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                 case v37 {
                                                                     True -> False
                                                                     False -> {
-                                                                        let v38 = v34 < 192
-                                                                        v38
+                                                                        v34 < 192
                                                                     }
                                                                 }
                                                             case v39 {
@@ -125,8 +121,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                         case v40 {
                                                                             True -> False
                                                                             False -> {
-                                                                                let v41 = v36 < 192
-                                                                                v41
+                                                                                v36 < 192
                                                                             }
                                                                         }
                                                                     case v42 {
@@ -186,8 +181,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                         case v75 {
                                                                             True -> False
                                                                             False -> {
-                                                                                let v76 = v69 < 192
-                                                                                v76
+                                                                                v69 < 192
                                                                             }
                                                                         }
                                                                     case v77 {
@@ -197,8 +191,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                                 case v78 {
                                                                                     True -> False
                                                                                     False -> {
-                                                                                        let v79 = v72 < 192
-                                                                                        v79
+                                                                                        v72 < 192
                                                                                     }
                                                                                 }
                                                                             case v80 {
@@ -208,8 +201,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
                                                                                         case v81 {
                                                                                             True -> False
                                                                                             False -> {
-                                                                                                let v82 = v74 < 192
-                                                                                                v82
+                                                                                                v74 < 192
                                                                                             }
                                                                                         }
                                                                                     case v83 {
@@ -299,11 +291,7 @@ pub fn utf8_validate_loop_0(v0: String, v1: Int, v2: Int, v3: Int) -> Int {
     }
 }
 pub fn main() {
-    let v0 = "abc"
-    let v1 = 0
-    let v2 = 0
-    let v3 = 3
-    let v4 = utf8_validate_loop_0(v0, v1, v2, v3)
+    let v4 = utf8_validate_loop_0("abc", 0, 0, 3)
     let v5 = v4 == 3
     case v5 {
         True -> 0

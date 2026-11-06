@@ -12,14 +12,12 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
 
 
 pub fn measure_0(v0: String) -> Int {
-    let v1 = spiral_string_length(v0)
-    v1
+    spiral_string_length(v0)
 }
 pub fn main() {
     let v0 = "qwe"
     let v1 = measure_0(v0)
     let v2 = measure_0(v0)
     let v3 = spiral_wrap_signed(v1 + v2, 32)
-    let v4 = spiral_wrap_signed(v3 - 6, 32)
-    v4
+    spiral_wrap_signed(v3 - 6, 32)
 }

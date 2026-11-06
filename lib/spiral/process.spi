@@ -979,7 +979,7 @@
 ///> rust
 ///> gleam
 :# a_program_past_its_deadline_is_killed =
-    capture_status_within "ping" [ "-n"; "30"; "127.0.0.1" ] 400i32 |> _assert_eq (-1i32)
+    capture_status_within "python" [ "-c"; "import time; time.sleep(30)" ] 400i32 |> _assert_eq (-1i32)
 
 := started_log (name : string) : string =
     file_system::get_temp_path () ++# "/spiral-process-started-" ++# name ++# ".log"

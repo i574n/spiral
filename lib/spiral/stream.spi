@@ -3,7 +3,6 @@
 
 :< rust_operators
 
-/// ## stream
 :| ^ stream t =
     | StreamCons : t * (() -> stream t)
     | StreamNil
@@ -89,7 +88,6 @@
         |: StreamCons (fn n, \ () => 루프 (n + 1))
     루프 0
 
-/// ### memoize
 :| memoized_stream t =
     | NotComputed : () -> stream t
     | Computed : stream t
@@ -150,7 +148,6 @@
     |> item 10i32
     |> _assert_eq 1024
 
-/// ### iterate'
 := iterate_map f m =
     \ x =>
         m x
@@ -284,7 +281,6 @@
         y |> sum
         |> _assert_eq 45
 
-/// ## rust
 :! io_error =
     `(
         rust::rust_type

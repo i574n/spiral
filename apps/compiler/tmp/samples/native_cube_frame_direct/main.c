@@ -52,17 +52,14 @@ static Array0 * method0(){
 }
 static int32_t method1(Array0 * v0){
     AssignArray0(&(v0->ptr[5180l]), 35l);
-    ArrayDecref0(v0);
     return 5180l;
 }
 static int32_t method2(Array0 * v0){
     AssignArray0(&(v0->ptr[4258l]), 64l);
-    ArrayDecref0(v0);
     return 4258l;
 }
 static int32_t method3(Array0 * v0){
     AssignArray0(&(v0->ptr[3964l]), 43l);
-    ArrayDecref0(v0);
     return 3964l;
 }
 static inline void ArrayDecrefBody1(Array1 * x){
@@ -98,11 +95,10 @@ static inline String * StringConcat(String * left, String * right){
     memcpy(result->ptr + left_len, right->ptr, right_len + 1);
     return result;
 }
-static String * frame_text_loop4(Array0 * v0, int32_t v1, int32_t v2, int32_t v3, String * v4){
+static inline String * frame_text_loop4(Array0 * v0, int32_t v1, int32_t v2, int32_t v3, String * v4){
     while (1) {
         bool v5 = v3 == v2;
         if (v5){
-            ArrayDecref0(v0);
             return v4;
         } else {
             int32_t v6 = v0->ptr[v3];
@@ -457,11 +453,8 @@ static int32_t loop5(String * v0, int32_t v1, int32_t v2, int32_t v3){
 }
 int32_t main(){
     Array0 * v0 = method0();
-    (v0)->refc++;
     int32_t v1 = method1(v0);
-    (v0)->refc++;
     int32_t v2 = method2(v0);
-    (v0)->refc++;
     int32_t v3 = method3(v0);
     int32_t v4 = v0->ptr[0l];
     int32_t v5 = v0->ptr[5180l];
@@ -471,7 +464,7 @@ int32_t main(){
     int32_t v9 = 7040l;
     int32_t v10 = 0l;
     String * v11 = StringLit(1, "");
-    (v0)->refc++; (v11)->refc++;
+    (v11)->refc++;
     String * v12 = frame_text_loop4(v0, v8, v9, v10, v11);
     ArrayDecref0(v0); StringDecref(v11);
     int32_t v13 = v12->len-1;

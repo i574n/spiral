@@ -1,0 +1,9 @@
+:! row = $'Row'
+
+:= make (x : i32) : row =
+    global "pub struct Row { pub op: i32, pub target: i32 }"
+    $'Row { op: !x, target: 10 }' : row
+
+:= main () : i32 =
+    !!!!Export("model_make", make)
+    0i32

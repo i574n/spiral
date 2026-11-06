@@ -52,13 +52,10 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
 
 pub type Heap0 { Heap0(l0 : Int) }
 pub fn main() {
-    let v0 = 2
-    let v1 = spiral_array_create(v0)
-    let v2 = 4
-    let v3 = 6
-    let v4 = Heap0(l0: v2)
+    let v1 = spiral_array_create(2)
+    let v4 = Heap0(l0: 4)
     spiral_array_set(v1, 0, v4)
-    let v5 = Heap0(l0: v3)
+    let v5 = Heap0(l0: 6)
     spiral_array_set(v1, 1, v5)
     let v6 = spiral_array_get(v1, 0)
     let v7 = v6.l0

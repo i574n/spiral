@@ -57,8 +57,7 @@ type U0 is Data:
   U0_South{}
   U0_West{}
 
-@unsafe
-def spiral_main_unbox1(+u: U0, +v0: U0) -> IO(U0):
+def spiral_main_unbox1(u: U0, +v0: U0) -> IO(U0):
   match u:
     case U0_North{}:
       do IO<U0>:
@@ -73,8 +72,7 @@ def spiral_main_unbox1(+u: U0, +v0: U0) -> IO(U0):
       do IO<U0>:
         IO.pure(U0, U0_North{})
 
-@unsafe
-def spiral_main_unbox2(+u: U0, +v0: U0, +v8: U0) -> IO(U0):
+def spiral_main_unbox2(u: U0, +v0: U0, +v8: U0) -> IO(U0):
   match u:
     case U0_North{}:
       do IO<U0>:
@@ -89,8 +87,7 @@ def spiral_main_unbox2(+u: U0, +v0: U0, +v8: U0) -> IO(U0):
       do IO<U0>:
         IO.pure(U0, U0_North{})
 
-@unsafe
-def spiral_main_unbox3(+u: U0, +u1: U0, +v0: U0, +v8: U0, +v16: U0, +v17: U0) -> IO(Bool):
+def spiral_main_unbox3(u: U0, +u1: U0, +v0: U0, +v8: U0, +v16: U0, +v17: U0) -> IO(Bool):
   match u:
     case U0_North{}:
       match u1:
@@ -149,8 +146,7 @@ def spiral_main_unbox3(+u: U0, +u1: U0, +v0: U0, +v8: U0, +v16: U0, +v17: U0) ->
           do IO<Bool>:
             return True{}
 
-@unsafe
-def spiral_main_if4(+c: Bool) -> IO(U32):
+def spiral_main_if4(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -159,8 +155,7 @@ def spiral_main_if4(+c: Bool) -> IO(U32):
       do IO<U32>:
         return {0 : U32}
 
-@unsafe
-def spiral_main_unbox5(+u: U0, +v0: U0, +v8: U0, +v16: U0, +v17: U0, +v18: Bool, +v19: U32) -> IO(U32):
+def spiral_main_unbox5(u: U0, +v0: U0, +v8: U0, +v16: U0, +v17: U0, +v18: Bool, +v19: U32) -> IO(U32):
   match u:
     case U0_North{}:
       do IO<U32>:
@@ -175,8 +170,7 @@ def spiral_main_unbox5(+u: U0, +v0: U0, +v8: U0, +v16: U0, +v17: U0, +v18: Bool,
       do IO<U32>:
         return {7 : U32}
 
-@unsafe
-def spiral_main_unbox6(+u: U0, +v0: U0, +v8: U0, +v16: U0, +v17: U0, +v18: Bool, +v19: U32, +v21: U32) -> IO(U32):
+def spiral_main_unbox6(u: U0, +v0: U0, +v8: U0, +v16: U0, +v17: U0, +v18: Bool, +v19: U32, +v21: U32) -> IO(U32):
   match u:
     case U0_North{}:
       do IO<U32>:
@@ -191,8 +185,7 @@ def spiral_main_unbox6(+u: U0, +v0: U0, +v8: U0, +v16: U0, +v17: U0, +v18: Bool,
       do IO<U32>:
         return {7 : U32}
 
-@unsafe
-def spiral_main_unbox7(+u: U0, +v0: U0, +v8: U0, +v16: U0, +v17: U0, +v18: Bool, +v19: U32, +v21: U32, +v23: U32, +v24: U32, +v25: U32) -> IO(U32):
+def spiral_main_unbox7(u: U0, +v0: U0, +v8: U0, +v16: U0, +v17: U0, +v18: Bool, +v19: U32, +v21: U32, +v23: U32, +v24: U32, +v25: U32) -> IO(U32):
   match u:
     case U0_North{}:
       do IO<U32>:
@@ -207,7 +200,6 @@ def spiral_main_unbox7(+u: U0, +v0: U0, +v8: U0, +v16: U0, +v17: U0, +v18: Bool,
       do IO<U32>:
         return {7 : U32}
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : U0 <- IO.pure(U0, U0_North{})
@@ -220,13 +212,12 @@ def spiral_main() -> IO(U32):
     +v23 : U32 <- spiral_main_unbox6(v8, v0, v8, v16, v17, v18, v19, v21)
     +v24 : U32 <- IO.pure(U32, U32.mul(v23, {3 : U32}))
     +v25 : U32 <- IO.pure(U32, U32.add(v21, v24))
-    +v27 : U32 <- spiral_main_unbox7(v16, v0, v8, v16, v17, v18, v19, v21, v23, v24, v25)
-    +v28 : U32 <- IO.pure(U32, U32.mul(v27, {9 : U32}))
-    +v29 : U32 <- IO.pure(U32, U32.add(v25, v28))
-    +v30 : U32 <- IO.pure(U32, U32.add(v29, v19))
+    v27 : U32 <- spiral_main_unbox7(v16, v0, v8, v16, v17, v18, v19, v21, v23, v24, v25)
+    v28 : U32 <- IO.pure(U32, U32.mul(v27, {9 : U32}))
+    v29 : U32 <- IO.pure(U32, U32.add(v25, v28))
+    v30 : U32 <- IO.pure(U32, U32.add(v29, v19))
     return v30
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

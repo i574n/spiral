@@ -41,42 +41,36 @@ pub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {
 
 pub fn main() {
     let v0 = "é"
-    let v1 = "x"
-    let v2 = { v0 } <> { v1 }
+    let v2 = { v0 } <> { "x" }
     let v3 = "éx"
-    let v4 = "éy"
     let v5 = ""
     let v6 = spiral_string_slice(v3, 1, 0)
     let v7 = v2 == v3
     let v9 =
         case v7 {
             True -> {
-                let v8 = v2 != v4
-                v8
+                v2 != "éy"
             }
             False -> False
         }
     let v11 =
         case v9 {
             True -> {
-                let v10 = v0 != v3
-                v10
+                v0 != v3
             }
             False -> False
         }
     let v13 =
         case v11 {
             True -> {
-                let v12 = v5 == v6
-                v12
+                v5 == v6
             }
             False -> False
         }
     let v15 =
         case v13 {
             True -> {
-                let v14 = v5 != v0
-                v14
+                v5 != v0
             }
             False -> False
         }

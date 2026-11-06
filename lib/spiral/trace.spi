@@ -3,7 +3,6 @@
 
 :< sm'_operators
 
-/// ## trace
 :| trace_level =
     | Verbose
     | Debug
@@ -294,7 +293,6 @@
 := clock_two_digits (n : i32) : string =
     (? n < 10i32 ?> "0" |: "") ++# sm'::obj_to_string n
 
-/// ### local_seconds_of_day
 :! rust_clock_fields = $'[i64; 3]'
 
 := rust_clock_shims () : () =
@@ -471,7 +469,6 @@
     trace level (\ () => text) \ () => locals
     obj
 
-/// ## main
 ///> fsharp
 
 := main () =

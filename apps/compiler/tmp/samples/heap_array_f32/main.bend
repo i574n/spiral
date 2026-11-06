@@ -176,22 +176,22 @@ def spiral_array_set_a0(+arr: Chan(Array<F32>) & U32, +i: U32, +v: F32) -> IO(Un
 
 @unsafe
 def spiral_main_field1(+p: (Chan(Array<F32>) & U32) & U32) -> IO((Chan(Array<F32>) & U32) & U32):
-  (+w0, +w1) = p
+  (w0, w1) = p
   IO.pure((Chan(Array<F32>) & U32) & U32, (w0, w1))
 
 @unsafe
-def spiral_main_k2_if3(+c: Bool, +v5: U32) -> IO(Bool):
+def spiral_main_k2_if3(c: Bool, v5: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v8 : Bool <- IO.pure(Bool, U32.is_eq(v5, {7 : U32}))
+        v8 : Bool <- IO.pure(Bool, U32.is_eq(v5, {7 : U32}))
         return v8
     case False{}:
       do IO<Bool>:
         return False{}
 
 @unsafe
-def spiral_main_k2_if4(+c: Bool) -> IO(U32):
+def spiral_main_k2_if4(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -217,10 +217,9 @@ def spiral_main() -> IO(U32):
     spiral_array_set_a0(v0, {0 : U32}, v1)
     +v2 : U32 <- IO.pure(U32, {7 : U32})
     +v3 : ((Chan(Array<F32>) & U32) & U32) <- IO.pure(((Chan(Array<F32>) & U32) & U32), (v0, v2))
-    +p : (Chan(Array<F32>) & U32) & U32 <- spiral_main_field1(v3)
+    p : (Chan(Array<F32>) & U32) & U32 <- spiral_main_field1(v3)
     spiral_main_k2(p, v0, v1, v2, v3)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

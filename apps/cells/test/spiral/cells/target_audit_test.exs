@@ -12,7 +12,7 @@ defmodule Spiral.Cells.TargetAuditTest do
     {"rust_host", nil},
     {"c", "c"},
     {"cpp", "cpp"},
-    {"delphi", "delphi"},
+    {"pascal", "pascal"},
     {"fsharp", "fsharp"},
     {"python", "python"},
     {"cuda", "cuda"},

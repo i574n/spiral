@@ -186,39 +186,38 @@ def spiral_array_set_a0(+arr: Chan(Array<U32>) & U32, +i: U32, +v: U32) -> IO(Un
   (+c, +n) = arr
   spiral_array_set_checked_a0(c, i, v, U32.is_lt(i, n))
 
-@unsafe
-def closure0_if1(+c: Bool, +v1: (Chan(Array<U32>) & U32)) -> IO(U0):
+def closure0_if1(c: Bool, v1: (Chan(Array<U32>) & U32)) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
         IO.pure(U0, U0_Empty{})
     case False{}:
       do IO<U0>:
-        +v5 : String <- IO.pure(String, "hi")
+        v5 : String <- IO.pure(String, "hi")
         IO.pure(U0, U0_Item{v5, v1})
 
 @unsafe
-def closure1_unbox2(+u: U0, +v0: U0, +v1: U32) -> IO(U32):
+def closure1_unbox2(u: U0, +v0: U0, +v1: U32) -> IO(U32):
   match u:
     case U0_Empty{}:
       do IO<U32>:
         return {3 : U32}
-    case U0_Item{+v2, +v3}:
+    case U0_Item{v2, +v3}:
       do IO<U32>:
-        +v4 : U32 <- IO.pure(U32, spiral_string_bytes(v2))
-        +v5 : U32 <- IO.pure(U32, spiral_array_length_a0(v3))
-        +v6 : U32 <- IO.pure(U32, U32.add(v4, v5))
-        +v7 : U32 <- spiral_array_get_a0(v3, {0 : U32})
-        +v8 : U32 <- IO.pure(U32, U32.add(v6, v7))
-        +v9 : U32 <- spiral_array_get_a0(v3, {1 : U32})
-        +v10 : U32 <- IO.pure(U32, U32.add(v8, v9))
+        v4 : U32 <- IO.pure(U32, spiral_string_bytes(v2))
+        v5 : U32 <- IO.pure(U32, spiral_array_length_a0(v3))
+        v6 : U32 <- IO.pure(U32, U32.add(v4, v5))
+        v7 : U32 <- spiral_array_get_a0(v3, {0 : U32})
+        v8 : U32 <- IO.pure(U32, U32.add(v6, v7))
+        v9 : U32 <- spiral_array_get_a0(v3, {1 : U32})
+        v10 : U32 <- IO.pure(U32, U32.add(v8, v9))
         return v10
 
 @unsafe
 def closure1(+v0: U0, +v1: U32) -> IO(U32):
   do IO<U32>:
-    +v12 : U32 <- closure1_unbox2(v0, v0, v1)
-    +v13 : U32 <- IO.pure(U32, U32.add(v12, v1))
+    v12 : U32 <- closure1_unbox2(v0, v0, v1)
+    v13 : U32 <- IO.pure(U32, U32.add(v12, v1))
     return v13
 
 @unsafe
@@ -229,51 +228,46 @@ def closure0(+v0: U32) -> IO(((U32) -> IO(U32))):
     +v2 : U32 <- IO.pure(U32, U32.add(v0, {1 : U32}))
     spiral_array_set_a0(v1, {1 : U32}, v2)
     +v3 : Bool <- IO.pure(Bool, U32.is_eq(v0, {0 : U32}))
-    +v7 : U0 <- closure0_if1(v3, v1)
+    v7 : U0 <- closure0_if1(v3, v1)
     IO.pure(((U32) -> IO(U32)), d => closure1(v7, d))
 
-@unsafe
-def method0(+v0: ((U32) -> IO(((U32) -> IO(U32))))) -> IO(((U32) -> IO(U32))):
+def method0(v0: ((U32) -> IO(((U32) -> IO(U32))))) -> IO(((U32) -> IO(U32))):
   do IO<((U32) -> IO(U32))>:
     v0({0 : U32})
 
-@unsafe
-def method1(+v0: ((U32) -> IO(((U32) -> IO(U32))))) -> IO(((U32) -> IO(U32))):
+def method1(v0: ((U32) -> IO(((U32) -> IO(U32))))) -> IO(((U32) -> IO(U32))):
   do IO<((U32) -> IO(U32))>:
     v0({4 : U32})
 
-@unsafe
-def method4(+v0: ((U32) -> IO(U32))) -> IO(U32):
+def method4(v0: ((U32) -> IO(U32))) -> IO(U32):
   do IO<U32>:
-    +v1 : U32 <- v0({2 : U32})
-    +v2 : U32 <- IO.pure(U32, U32.add(v1, {5 : U32}))
+    v1 : U32 <- v0({2 : U32})
+    v2 : U32 <- IO.pure(U32, U32.add(v1, {5 : U32}))
     return v2
 
 @unsafe
 def method3(+v0: ((U32) -> IO(U32))) -> IO(U32):
   do IO<U32>:
-    +v1 : U32 <- v0({1 : U32})
-    +v2 : U32 <- method4(v0)
-    +v3 : U32 <- IO.pure(U32, U32.add(v1, v2))
+    v1 : U32 <- v0({1 : U32})
+    v2 : U32 <- method4(v0)
+    v3 : U32 <- IO.pure(U32, U32.add(v1, v2))
     return v3
 
-@unsafe
-def method2(+v0: ((U32) -> IO(U32)), +v1: ((U32) -> IO(U32))) -> IO(U32):
+def method2(v0: ((U32) -> IO(U32)), v1: ((U32) -> IO(U32))) -> IO(U32):
   do IO<U32>:
-    +v2 : U32 <- v0({5 : U32})
-    +v3 : U32 <- method3(v1)
-    +v4 : U32 <- IO.pure(U32, U32.add(v2, v3))
+    v2 : U32 <- v0({5 : U32})
+    v3 : U32 <- method3(v1)
+    v4 : U32 <- IO.pure(U32, U32.add(v2, v3))
     return v4
 
 @unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : ((U32) -> IO(((U32) -> IO(U32)))) <- IO.pure(((U32) -> IO(((U32) -> IO(U32)))), d => closure0(d))
-    +v1 : ((U32) -> IO(U32)) <- method0(v0)
-    +v2 : ((U32) -> IO(U32)) <- method1(v0)
+    v1 : ((U32) -> IO(U32)) <- method0(v0)
+    v2 : ((U32) -> IO(U32)) <- method1(v0)
     method2(v1, v2)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

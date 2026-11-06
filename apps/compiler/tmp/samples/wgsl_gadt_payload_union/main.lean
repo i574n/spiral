@@ -42,7 +42,7 @@ deriving instance Inhabited for U0
 def U1.spiralTag : U1 → Int32
   | .Living .. => 0
 def U2.spiralTag : U2 → Int32
-  | .Fallen .. => 0
+  | .Fallen .. => 1
 def U0.spiralTag : U0 → Int32
   | .Survived .. => 0
   | .Slain .. => 1

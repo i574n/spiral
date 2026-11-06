@@ -59,12 +59,18 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
 
 @unsafe
 def loop_0_if1_k2(+p: U32 & U32, +v0: U32, +v1: U32, +v2: U32, +v3: U32, +v4: Bool, +v5: U32, +v6: U32) -> IO(U32 & U32):
-  (+v7, +v8) = p
+  (v7, v8) = p
   do IO<U32 & U32>:
     return (v7, v8)
 
 @unsafe
-def loop_0_if1(+c: Bool, +v0: U32, +v1: U32, +v2: U32, +v3: U32, +v4: Bool) -> IO(U32 & U32):
+def loop_0_k3(+p: U32 & U32, +v0: U32, +v1: U32, +v2: U32, +v3: U32, +v4: Bool) -> IO(U32 & U32):
+  (v9, v10) = p
+  do IO<U32 & U32>:
+    return (v9, v10)
+
+@unsafe
+def loop_0_if1(c: Bool, +v0: U32, +v1: U32, +v2: U32, +v3: U32, v4: Bool) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -73,40 +79,32 @@ def loop_0_if1(+c: Bool, +v0: U32, +v1: U32, +v2: U32, +v3: U32, +v4: Bool) -> I
       do IO<U32 & U32>:
         +v5 : U32 <- IO.pure(U32, U32.add(v1, {1 : U32}))
         +v6 : U32 <- IO.pure(U32, U32.add(v2, {1 : U32}))
-        +p : U32 & U32 <- loop_0(v0, v5, v6, v3)
+        p : U32 & U32 <- loop_0(v0, v5, v6, v3)
         loop_0_if1_k2(p, v0, v1, v2, v3, v4, v5, v6)
-
-@unsafe
-def loop_0_k3(+p: U32 & U32, +v0: U32, +v1: U32, +v2: U32, +v3: U32, +v4: Bool) -> IO(U32 & U32):
-  (+v9, +v10) = p
-  do IO<U32 & U32>:
-    return (v9, v10)
 
 @unsafe
 def loop_0(+v0: U32, +v1: U32, +v2: U32, +v3: U32) -> IO(U32 & U32):
   do IO<U32 & U32>:
     +v4 : Bool <- IO.pure(Bool, spiral_i32_ge(v1, v0))
-    +p : U32 & U32 <- loop_0_if1(v4, v0, v1, v2, v3, v4)
+    p : U32 & U32 <- loop_0_if1(v4, v0, v1, v2, v3, v4)
     loop_0_k3(p, v0, v1, v2, v3, v4)
 
 @unsafe
 def spiral_main_k4(+p: U32 & U32, +v0: U32, +v1: U32, +v2: U32, +v3: U32) -> IO(U32):
-  (+v4, +v5) = p
+  (v4, v5) = p
   do IO<U32>:
-    +v6 : U32 <- IO.pure(U32, U32.add(v4, v5))
+    v6 : U32 <- IO.pure(U32, U32.add(v4, v5))
     return v6
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : U32 <- IO.pure(U32, {5 : U32})
     +v1 : U32 <- IO.pure(U32, {0 : U32})
     +v2 : U32 <- IO.pure(U32, {1 : U32})
     +v3 : U32 <- IO.pure(U32, {2 : U32})
-    +p : U32 & U32 <- loop_0(v0, v1, v2, v3)
+    p : U32 & U32 <- loop_0(v0, v1, v2, v3)
     spiral_main_k4(p, v0, v1, v2, v3)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

@@ -18,6 +18,10 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 function method2(v0: LongInt): TUH0; forward;
 function method1(v0: LongInt): TUH0; forward;
 function method0: TUH0; forward;
@@ -92,6 +96,7 @@ begin
       1: begin
           v1 := v0.c1_0;
           v2 := v0.c1_1;
+          SpiralRelease(v0);
           v3 := v1 = 7;
           if v3 then begin
               Result := 0;
@@ -100,13 +105,17 @@ begin
           end;
       end;
       0: begin
+          SpiralRelease(v0);
           Result := 1;
       end;
   end;
 end;
 var SpiralOutputBuffer: array[0..65535] of Char;
+var SpiralExitCode: LongInt;
 begin
   SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
-  Halt(SpiralMain);
+  SpiralExitCode := SpiralMain;
+  if UH0_Empty_shared <> nil then UH0_Empty_shared.Free;
+  Halt(SpiralExitCode);
 end.

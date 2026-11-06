@@ -18,18 +18,18 @@ fn spiral_main() -> i32 {
     let v1: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_PayloadZero); } CASE.with(|case| case.clone()) };
     let v2: Rc<UH1> = { thread_local!{ static CASE: Rc<UH1> = Rc::new(UH1::UH1_PayloadRowNil); } CASE.with(|case| case.clone()) };
     let v3: Rc<UH2> = Rc::new(UH2::UH2_PayloadRowCons(v1, v2));
-    let v7: Rc<UH0> = match &*v0 {
+    let v7: Rc<UH0> = match Rc::unwrap_or_clone(v0) {
         UH0::UH0_PayloadZero => {
-            match &*v3 {
+            match Rc::unwrap_or_clone(v3) {
                 UH2::UH2_PayloadRowCons(v4, v5) => {
-                    let v4: Rc<UH0> = v4.clone();
-                    let v5: Rc<UH1> = v5.clone();
+                    let v4: Rc<UH0> = v4;
+                    let v5: Rc<UH1> = v5;
                     v4
                 }
             }
         }
     };
-    let v8: bool = match &*v7 {
+    let v8: bool = match Rc::unwrap_or_clone(v7) {
         UH0::UH0_PayloadZero => {
             true
         }

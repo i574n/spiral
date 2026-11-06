@@ -14,7 +14,7 @@ fn count_loop_0(mut v0: i32, mut v1: i32, mut v2: Vec<i32>) -> i32 {
             let v4: i32 = v0.wrapping_add(1i32);
             let v5: i32 = v2.clone().into_iter().count() as i32;
             let v6: i32 = v1.wrapping_add(v5);
-            (v0, v1, v2) = (v4, v6, v2.clone());
+            (v0, v1) = (v4, v6);
             continue;
         } else {
             return v1;

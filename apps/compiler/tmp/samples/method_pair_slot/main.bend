@@ -55,37 +55,33 @@ type U0 is Data:
   U0_None{}
   U0_Some{f0: U32}
 
-@unsafe
-def method0_if1(+c: Bool, +v0: U32) -> IO(U0 & U32):
+def method0_if1(c: Bool, +v0: U32) -> IO(U0 & U32):
   match c:
     case True{}:
       do IO<U0 & U32>:
-        +v2 : U0 <- IO.pure(U0, U0_None{})
+        v2 : U0 <- IO.pure(U0, U0_None{})
         return (v2, {0 : U32})
     case False{}:
       do IO<U0 & U32>:
-        +v3 : U0 <- IO.pure(U0, U0_Some{v0})
+        v3 : U0 <- IO.pure(U0, U0_Some{v0})
         return (v3, v0)
 
-@unsafe
 def method0(+v0: U32) -> IO(U0 & U32):
   do IO<U0 & U32>:
     +v1 : Bool <- IO.pure(Bool, U32.is_eq(v0, {0 : U32}))
     method0_if1(v1, v0)
 
-@unsafe
-def spiral_main_k2_unbox3_if4(+c: Bool, +v2: U32) -> IO(Bool):
+def spiral_main_k2_unbox3_if4(c: Bool, v2: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v5 : Bool <- IO.pure(Bool, U32.is_eq(v2, {7 : U32}))
+        v5 : Bool <- IO.pure(Bool, U32.is_eq(v2, {7 : U32}))
         return v5
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def spiral_main_k2_unbox3_if5(+c: Bool) -> IO(U32):
+def spiral_main_k2_unbox3_if5(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -95,7 +91,7 @@ def spiral_main_k2_unbox3_if5(+c: Bool) -> IO(U32):
         return {1 : U32}
 
 @unsafe
-def spiral_main_k2_unbox3(+u: U0, +v0: U32, +v1: U0, +v2: U32) -> IO(U32):
+def spiral_main_k2_unbox3(u: U0, +v0: U32, +v1: U0, +v2: U32) -> IO(U32):
   match u:
     case U0_None{}:
       do IO<U32>:
@@ -107,19 +103,17 @@ def spiral_main_k2_unbox3(+u: U0, +v0: U32, +v1: U0, +v2: U32) -> IO(U32):
         spiral_main_k2_unbox3_if5(v6)
 
 @unsafe
-def spiral_main_k2(+p: U0 & U32, +v0: U32) -> IO(U32):
-  (+v1, +v2) = p
+def spiral_main_k2(+p: U0 & U32, v0: U32) -> IO(U32):
+  (+v1, v2) = p
   do IO<U32>:
     spiral_main_k2_unbox3(v1, v0, v1, v2)
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : U32 <- IO.pure(U32, {7 : U32})
-    +p : U0 & U32 <- method0(v0)
+    p : U0 & U32 <- method0(v0)
     spiral_main_k2(p, v0)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

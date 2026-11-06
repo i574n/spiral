@@ -13,8 +13,7 @@ pub fn f_c0(capt: #(Int)) -> fn(Int) -> Us0 {
     }
 }
 pub fn main() {
-    let v0 = 7
-    let v1 = f_c0(#(v0))
+    let v1 = f_c0(#(7))
     let v2 = v1(1)
     case v2  {
         Us0None -> 1

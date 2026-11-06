@@ -2,23 +2,395 @@
 :< sm'_operators
 :< xml
 
-:? of_xml t : xml_node -> t
+:! decode_path = list string
+
+:| decode_error =
+    | Missing : decode_path
+    | Invalid : decode_path * string
+    | Unexpected : decode_path * string
+
+:= at_root (name : string) : decode_path = decode_path (name :: [])
+
+:= pushed (name : string) (decode_path p) : decode_path = decode_path (name :: p)
+
+:= within (name : string) (e : decode_error) : decode_error =
+    ?= e ?|
+    | Missing p => Missing (pushed name p)
+    | Invalid (p, text) => Invalid (pushed name p, text)
+    | Unexpected (p, text) => Unexpected (pushed name p, text)
+
+:~ ^ joined (separator : string) (parts : list string) : string =
+    ?= parts ?|
+    | part :: [] => part
+    | part :: rest => part ++# separator ++# joined separator rest
+    | [] => ""
+
+:= path_text (decode_path p) : string = joined "/" p
+
+:= error_text (e : decode_error) : string =
+    ?= e ?|
+    | Missing p => "missing " ++# path_text p
+    | Invalid (p, text) => "invalid " ++# path_text p ++# ": " ++# text
+    | Unexpected (p, text) => "unexpected " ++# path_text p ++# ": " ++# text
+
+:? of_xml t : xml_node -> result t (list decode_error)
 
 :? to_xml t : string -> t -> xml_node
 
 := round_trip_difference \* t {of_xml; to_xml}. (name : string) (x : t) : option string =
     := written = to_xml name x
-    := again : t = of_xml written
-    first_difference written (to_xml name again)
+    ?= (of_xml written : result t (list decode_error)) ?|
+    | Ok again => first_difference written (to_xml name again)
+    | Error errors => Some ("reads back with errors: " ++# joined "; " (listm::map error_text errors))
+
+:= read_back_difference \* t.
+    (read : xml_node -> result t (list decode_error)) (write : t -> xml_node) (node : xml_node)
+    : option string
+    =
+    ?= read node ?|
+    | Ok v => first_difference node (write v)
+    | Error errors => Some ("does not decode: " ++# joined "; " (listm::map error_text errors))
+
+:= same_value (expected : string) (actual : string) : bool =
+    ? expected = actual ?> !+
+    |:
+        ?= (decimal::parse expected, decimal::parse actual) ?|
+        | (Some e, Some a) => decimal::compare e a = 0i32
+        | _ => !-
+
+:= value_difference (expected : xml_node) (actual : xml_node) : option string =
+    first_difference_by same_value expected actual
+
+:= undecoded (which : string) (errors : list decode_error) : option string =
+    Some (which ++# " does not decode: " ++# joined "; " (listm::map error_text errors))
+
+:= twin_difference \* t.
+    (read : xml_node -> result t (list decode_error)) (write : t -> xml_node) (first : xml_node) (second : xml_node)
+    : option string
+    =
+    ?= (read first, read second) ?|
+    | (Ok a, Ok b) => value_difference (write a) (write b)
+    | (Error errors, _) => undecoded "the first" errors
+    | (_, Error errors) => undecoded "the second" errors
+
+:~ ^ pruned (name : string) (node : xml_node) : xml_node =
+    ?= node ?|
+    | XmlElement (element, attributes, children) => XmlElement (element, attributes, pruned_all name children [])
+    | _ => node
+
+:& :~ pruned_all (name : string) (nodes : list xml_node) (acc : list xml_node) : list xml_node =
+    ?= nodes ?|
+    | (XmlElement (element, _, _)) :: rest ?& local_name element = name => pruned_all name rest acc
+    | node :: rest => pruned_all name rest (pruned name node :: acc)
+    | [] => listm::rev acc
+
+:~ ^ has_text (text : string) (texts : list string) : bool =
+    ?= texts ?|
+    | head :: rest => head = text || has_text text rest
+    | [] => !-
+
+:= expect_decoded \* t. (r : result t (list decode_error)) : t =
+    ?= r ?|
+    | Ok v => v
+    | Error errors => failwith ("does not decode: " ++# joined "; " (listm::map error_text errors))
 
 :! amount_text = string
 
-:+ of_xml amount_text = \ node => amount_text (text_in (element_children node))
+:+ of_xml amount_text = \ node => Ok (amount_text (text_in (element_children node)))
 
 :+ to_xml amount_text = \ name (amount_text text) => element name [] (text_children text)
+
+:= decoded \* t. (errors : list decode_error) (value : t) : result t (list decode_error) =
+    ?= errors ?|
+    | [] => Ok value
+    | _ => Error (listm::rev errors)
+
+:= decoded_by \* t. (errors : list decode_error) (build : () -> t) : result t (list decode_error) =
+    ?= errors ?|
+    | [] => Ok (build ())
+    | _ => Error (listm::rev errors)
+
+:= present \* t. (field : option t) : t =
+    ?= field ?|
+    | Some v => v
+    | None => failwith "unreachable: decoded_by builds only when no error was recorded, and every None records one"
+
+:~ ^ prepended (name : string) (inner : list decode_error) (errors : list decode_error) : list decode_error =
+    ?= inner ?|
+    | e :: rest => prepended name rest (within name e :: errors)
+    | [] => errors
+
+:= read_text (c : xml_node) : result string (list decode_error) = Ok (text_in (element_children c))
+
+:= parsed_text \* t. (parse : string -> option t) (text : string) : result t (list decode_error) =
+    ?= parse text ?|
+    | Some v => Ok v
+    | None => Error (Invalid (decode_path [], text) :: [])
+
+:= read_value \* t. (parse : string -> option t) (c : xml_node) : result t (list decode_error) =
+    parsed_text parse (text_in (element_children c))
+
+:= decoded_or \* a b. (f : a -> b) (fallback : b) (r : result a (list decode_error)) : b =
+    ?= r ?|
+    | Ok v => f v
+    | Error _ => fallback
+
+:= as_some \* t. (pair : t * list decode_error) : option t * list decode_error =
+    := value, errors = pair
+    Some value, errors
+
+:= read_required \* t.
+    (name : string) (read : xml_node -> result t (list decode_error)) (children : list xml_node)
+    (errors : list decode_error)
+    : option t * list decode_error
+    =
+    ?= first_child name children ?|
+    | Some c =>
+        ?= read c ?|
+        | Ok v => Some v, errors
+        | Error inner => None, prepended name inner errors
+    | None => None, Missing (at_root name) :: errors
+
+:= read_optional \* t.
+    (name : string) (read : xml_node -> result t (list decode_error)) (children : list xml_node)
+    (errors : list decode_error)
+    : option t * list decode_error
+    =
+    ?= first_child name children ?|
+    | Some c =>
+        ?= read c ?|
+        | Ok v => Some v, errors
+        | Error inner => None, prepended name inner errors
+    | None => None, errors
+
+:~ ^ read_each \* t.
+    (name : string) (read : xml_node -> result t (list decode_error)) (nodes : list xml_node) (acc : list t)
+    (errors : list decode_error)
+    : list t * list decode_error
+    =
+    ?= nodes ?|
+    | c :: rest =>
+        ?= read c ?|
+        | Ok v => read_each name read rest (v :: acc) errors
+        | Error inner => read_each name read rest acc (prepended name inner errors)
+    | [] => listm::rev acc, errors
+
+:= read_repeated \* t.
+    (name : string) (read : xml_node -> result t (list decode_error)) (children : list xml_node)
+    (errors : list decode_error)
+    : list t * list decode_error
+    =
+    read_each name read (children_named name children) [] errors
+
+:= attribute_required (key : string) (attributes : list (string * string)) (errors : list decode_error)
+    : string * list decode_error
+    =
+    ?= attribute_of key attributes ?|
+    | Some value => value, errors
+    | None => "", Missing (at_root ("@" ++# key)) :: errors
+
+:= attribute_parsed \* t.
+    (parse : string -> option t) (key : string) (attributes : list (string * string)) (errors : list decode_error)
+    : option t * list decode_error
+    =
+    ?= attribute_of key attributes ?|
+    | Some text =>
+        ?= parse text ?|
+        | Some v => Some v, errors
+        | None => None, Invalid (at_root ("@" ++# key), text) :: errors
+    | None => None, Missing (at_root ("@" ++# key)) :: errors
+
+:= attribute_optional_parsed \* t.
+    (parse : string -> option t) (key : string) (attributes : list (string * string)) (errors : list decode_error)
+    : option t * list decode_error
+    =
+    ?= attribute_of key attributes ?|
+    | Some text =>
+        ?= parse text ?|
+        | Some v => Some v, errors
+        | None => None, Invalid (at_root ("@" ++# key), text) :: errors
+    | None => None, errors
+
+:= fixed_checked (key : string) (fixed : string) (attributes : list (string * string)) (errors : list decode_error)
+    : list decode_error
+    =
+    ?= attribute_of key attributes ?|
+    | Some value ?& sm'::trim value <> fixed => Invalid (at_root ("@" ++# key), value) :: errors
+    | _ => errors
+
+:= read_child \* t.
+    (name : string) (read : xml_node -> result t (list decode_error)) (children : list xml_node)
+    : result t (list decode_error)
+    =
+    ?= first_child name children ?|
+    | Some c =>
+        ?= read c ?|
+        | Ok v => Ok v
+        | Error inner => Error (listm::map (within name) inner)
+    | None => Error (Missing (at_root name) :: [])
+
+:= mapped \* a b. (f : a -> b) (r : result a (list decode_error)) : result b (list decode_error) =
+    ?= r ?|
+    | Ok v => Ok (f v)
+    | Error errors => Error errors
+
+:~ ^ appended (inner : list decode_error) (errors : list decode_error) : list decode_error =
+    ?= inner ?|
+    | e :: rest => appended rest (e :: errors)
+    | [] => errors
+
+:= taken \* t. (r : result t (list decode_error)) (errors : list decode_error) : option t * list decode_error =
+    ?= r ?|
+    | Ok v => Some v, errors
+    | Error inner => None, appended inner errors
+
+:= pair_decoded \* t. (pair : t * list decode_error) : result t (list decode_error) =
+    := value, errors = pair
+    decoded errors value
+
+:= optional_taken \* t. (r : option (result t (list decode_error))) (errors : list decode_error)
+    : option t * list decode_error
+    =
+    ?= r ?|
+    | Some (Ok v) => Some v, errors
+    | Some (Error inner) => None, appended inner errors
+    | None => None, errors
+
+:~ ^ all_taken_into \* t.
+    (rs : list (result t (list decode_error))) (acc : list t) (errors : list decode_error)
+    : list t * list decode_error
+    =
+    ?= rs ?|
+    | (Ok v) :: rest => all_taken_into rest (v :: acc) errors
+    | (Error inner) :: rest => all_taken_into rest acc (appended inner errors)
+    | [] => listm::rev acc, errors
+
+:= all_taken \* t. (rs : list (result t (list decode_error))) (errors : list decode_error)
+    : list t * list decode_error
+    =
+    all_taken_into rs [] errors
+
+:= no_alternative \* t. (ty : string) : result t (list decode_error) =
+    Error (Unexpected (decode_path [], ty ++# ": no alternative present") :: [])
+
+:= error_texts \* t. (r : result t (list decode_error)) : list string =
+    ?= r ?|
+    | Ok _ => []
+    | Error errors => listm::map error_text errors
+
+:= reports \* t. (text : string) (r : result t (list decode_error)) : bool = has_text text (error_texts r)
 
 ///> rust
 :# a_value_round_trips_through_its_codec_instances =
     ?= round_trip_difference "Amount" (amount_text (dyn "12.50")) ?|
     | Some d => failwith ("a value written, read and written again is unchanged: " ++# d)
     | None => ()
+
+:= header_id (c : xml_node) : result string (list decode_error) =
+    := id, errors = read_required "ID" read_text (element_children c) []
+    decoded_by errors (\ () => present id)
+
+:= parsed_count (text : string) : option i32 = (convert::try_convert (sm'::trim text) : option i32)
+
+:= invoice_id_and_total (c : xml_node) : result (string * i32) (list decode_error) =
+    := children = element_children c
+    := id, errors = read_required "Header" header_id children []
+    := total, errors = read_required "Total" (read_value parsed_count) children errors
+    decoded_by errors (\ () => present id, present total)
+
+:= invoice (header : list xml_node) (total : string) : xml_node =
+    element "Invoice" [] (element "Header" [] header :: element "Total" [] (text_children total) :: [])
+
+///> rust
+:# a_missing_required_element_is_reported_with_its_path =
+    := document = element "Invoice" [] (element "Header" [] [] :: [])
+    := id, errors = read_required "Header" header_id (element_children document) []
+    ? id <> None || error_texts (decoded errors ()) <> [ "missing Header/ID" ]
+    ?> failwith "a missing child is named by its path below the element that requires it"
+    ? error_texts (header_id (element "Header" [] [])) <> [ "missing ID" ]
+    ?> failwith "a missing required child is reported, not raised"
+
+///> rust
+:# a_document_with_two_problems_reports_both_in_order =
+    ? error_texts (invoice_id_and_total (invoice [] "x12")) <> [ "missing Header/ID"; "invalid Total: x12" ]
+    ?> failwith "every problem is reported, in document order, each with its path"
+    ? error_texts (invoice_id_and_total (invoice (element "ID" [] (text_children "A1") :: []) "12")) <> []
+    ?> failwith "a valid document decodes"
+    ?= invoice_id_and_total (invoice (element "ID" [] (text_children "A1") :: []) "12") ?|
+    | Ok (id, total) ?& id <> "A1" || total <> 12i32 => failwith "a valid document keeps its values"
+    | Ok _ => ()
+    | Error _ => failwith "a valid document decodes"
+
+///> rust
+:# optional_and_repeated_fields_keep_what_decodes =
+    := n = \ text => element "N" [] (text_children text)
+    := children = n "1" :: n "x" :: n "3" :: []
+    := values, errors = read_repeated "N" (read_value parsed_count) children []
+    ? values <> [ 1i32; 3i32 ] ?> failwith "the items that decode are kept"
+    ? listm::map error_text (listm::rev errors) <> [ "invalid N: x" ] ?> failwith "the bad item is reported"
+    := absent, errors = read_optional "M" read_text children []
+    ? absent <> None || errors <> [] ?> failwith "an absent optional child is None and no error"
+
+///> rust
+:# nested_results_fold_into_the_flat_accumulation =
+    := n = \ text => element "N" [] (text_children text)
+    ? error_texts (read_child "N" (read_value parsed_count) (n "x" :: [])) <> [ "invalid N: x" ]
+    ?> failwith "a required child read as a result carries its path"
+    ? error_texts (read_child "M" read_text (n "1" :: [])) <> [ "missing M" ]
+    ?> failwith "an absent required child is Missing"
+    ?= mapped (\ v => v + 1i32) (read_child "N" (read_value parsed_count) (n "4" :: [])) ?|
+    | Ok v ?& v <> 5i32 => failwith "mapped applies its function to a decoded value"
+    | Ok _ => ()
+    | Error _ => failwith "a valid child decodes"
+    := values, errors = all_taken (read_value parsed_count (n "2") :: read_value parsed_count (n "y") :: []) []
+    ? values <> [ 2i32 ] || listm::map error_text errors <> [ "invalid : y" ]
+    ?> failwith "all_taken keeps what decodes and collects the rest without a path push"
+    := choice : result i32 (list decode_error) = no_alternative "x_choice"
+    := v, errors = taken choice errors
+    ? v <> None || (listm::length errors : i32) <> 2i32
+    ?> failwith "a failed nested result binds None and keeps both errors"
+    := nothing : option (result i32 (list decode_error)) = None
+    := absent, errors = optional_taken nothing errors
+    ? absent <> None || (listm::length errors : i32) <> 2i32 ?> failwith "an absent optional result adds nothing"
+    ? error_texts (decoded errors 0i32) <> [ "invalid : y"; "unexpected : x_choice: no alternative present" ]
+    ?> failwith "decoded returns every collected error in order"
+
+///> rust
+:# a_document_broken_on_purpose_reports_the_removed_element =
+    := document = pruned "ID" (invoice (element "ID" [] (text_children "A1") :: []) "12")
+    ? first_difference document (invoice [] "12") <> None ?> failwith "pruned drops the named element at any depth"
+    ? reports "missing Header/ID" (invoice_id_and_total document) = !-
+    ?> failwith "the removed required element is reported with its path"
+    ? reports "missing Total" (invoice_id_and_total document) ?> failwith "only the removed element is reported"
+
+///> rust
+:# attributes_report_missing_invalid_and_unfixed_values =
+    := attributes = ("Algorithm", "rsa-sha256") :: ("Count", "x") :: []
+    := _, errors = attribute_required "Id" attributes []
+    := _, errors = attribute_parsed parsed_count "Count" attributes errors
+    := absent, errors = attribute_optional_parsed parsed_count "Missing" attributes errors
+    ? absent <> None ?> failwith "an absent optional attribute is None and no error"
+    := errors = fixed_checked "Algorithm" "rsa-sha1" attributes errors
+    := errors = fixed_checked "Algorithm" "rsa-sha256" attributes errors
+    ?
+        listm::map error_text (listm::rev errors)
+        <> [ "missing @Id"; "invalid @Count: x"; "invalid @Algorithm: rsa-sha256" ]
+    ?> failwith "attribute problems are reported with the attribute as the path"
+
+///> rust
+:# twins_in_two_syntaxes_compare_by_value =
+    := root_of (text : string) : xml_node =
+        ?= read_xml text ?|
+        | node :: [] => node
+        | _ => failwith "one root element"
+    := wide = root_of "<r cur=\"MYR\"><a>1436.50</a><b>A1</b></r>"
+    := narrow = root_of "<r cur=\"MYR\"><a>1436.5</a><b>A1</b></r>"
+    := other = root_of "<r cur=\"MYR\"><a>1436.6</a><b>A1</b></r>"
+    ? (same_value "1.0" "1", same_value "abc" "abc", same_value "abc" "1") <> (!+, !+, !-)
+    ?> failwith "texts are equal as strings or as decimals"
+    ? first_difference wide narrow = None ?> failwith "the lexical forms differ"
+    ? value_difference wide narrow <> None ?> failwith "1436.50 and 1436.5 are the same value"
+    ? value_difference wide other = None ?> failwith "1436.50 and 1436.6 are different values"
+    := read (n : xml_node) : result xml_node (list decode_error) = Ok n
+    := write (n : xml_node) : xml_node = n
+    ? twin_difference read write wide narrow <> None ?> failwith "twins that decode compare by value"

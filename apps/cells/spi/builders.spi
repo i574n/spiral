@@ -50,7 +50,6 @@
     ffi ()
     $'builders_slice(!s, !at, !n)' : string
 
-/// ## the typed builder: a tool, its optional values, its deps and its cleanup switch
 :| tool =
     | ForRust
     | ForFsharp
@@ -61,7 +60,7 @@
     | ForGleam
     | ForLua
     | ForC
-    | ForDelphi
+    | ForPascal
     | ForZig
     | ForLean
     | ForWgsl
@@ -111,7 +110,7 @@
     |? name = "gleam" ?> Some (Tool ForGleam)
     |? name = "lua" ?> Some (Tool ForLua)
     |? name = "c" ?> Some (Tool ForC)
-    |? name = "delphi" || name = "pascal" ?> Some (Tool ForDelphi)
+    |? name = "pascal" || name = "delphi" ?> Some (Tool ForPascal)
     |? name = "zig" ?> Some (Tool ForZig)
     |? name = "lean" ?> Some (Tool ForLean)
     |? name = "wgsl" ?> Some (Tool ForWgsl)
@@ -129,12 +128,12 @@
     | ForGleam => "gleam"
     | ForLua => "lua"
     | ForC => "c"
-    | ForDelphi => "delphi"
+    | ForPascal => "pascal"
     | ForZig => "zig"
     | ForLean => "lean"
     | ForWgsl => "wgsl"
 
-:= expected () : string = "rust, fsharp, typescript, python, cuda, cpp, gleam, lua, c, delphi, pascal, zig, lean, or wgsl"
+:= expected () : string = "rust, fsharp, typescript, python, cuda, cpp, gleam, lua, c, pascal, delphi, zig, lean, or wgsl"
 
 := deps_long (name : string) : option flag_kind = ? name = "deps" ?> Some TakesDeps |: None
 
@@ -182,7 +181,6 @@
 
 := with_value (f : field) (v : string) (b : builder) : builder = { b ?| values = set_value f v b::values }
 
-/// ## inspect: Elixir's string inspect, so error messages match byte for byte
 := upper_hex (n : i32) : string = text::one "0123456789ABCDEF" n
 
 := hex4_upper (c : i32) : string = upper_hex (c / 4096i32 % 16i32) ++ upper_hex (c / 256i32 % 16i32) ++ upper_hex (c / 16i32 % 16i32) ++ upper_hex (c % 16i32)
@@ -235,7 +233,6 @@
 := inspect (s : string) : string =
     ? printable_from s 0i32 ?> "\"" ++ quoted_from s 0i32 "" ++ "\"" |: "<<" ++ bytes_from s 0i32 "" ++ ">>"
 
-/// ## tokens: graphemes split on space and tab, with ' and " quotes and \-escaped quotes
 := is_quote (g : string) : bool = g = "\"" || g = "'"
 
 :~ ^ tokens_from (s : string) (current : string) (q : option string) (acc : list string) : result (list string) string =
@@ -258,7 +255,6 @@
             |? g = open_q ?> tokens_from rest current None acc
             |: tokens_from rest (current ++ g) q acc
 
-/// ## deps
 := ends_with (s : string) (p : string) : bool =
     text::length s >= text::length p && text::starts_at s (text::length s - text::length p) p
 
@@ -274,7 +270,6 @@
     |? ends_with token "]" ?> { name = token; version = NoVersion; raw = token }
     |: { name = token; version = AnyVersion; raw = token }
 
-/// ## flags
 := is_flag_token (t : string) : bool = text::starts_with t "-" && t <> "-"
 
 := bool_of (v : string) (flag : string) : result bool string =
@@ -429,7 +424,6 @@
         | Ok tokens => command_of tokens rest
         | Error e => Error e
 
-/// ## lines: ///> lines are commands, //// and everything else stay in the body
 := command_text (line : string) : option string =
     := lead = builder_output::content_start line 0i32
     := trimmed = text::drop line lead
@@ -450,7 +444,6 @@
 
 := split (code : string) : result (list command * string) string = split_lines (sm'::split_list "\n" (text::replace code "\r\n" "\n")) [] []
 
-/// ## wire: length-prefixed fields after K, or E and the ArgumentError message
 := field_text (s : string) : string = text::show_i32 (text::length s) ++ ":" ++ s
 
 := option_text (v : option string) : string =

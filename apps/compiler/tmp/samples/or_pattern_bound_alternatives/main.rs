@@ -16,20 +16,20 @@ fn method1(mut v0: i32) -> i32 {
     v4
 }
 fn area_0(mut v0: US0) -> i32 {
-    match &v0 {
+    match v0 {
         US0::US0_Circle(v1) => {
-            let v1: i32 = *v1;
+            let v1: i32 = v1;
             method1(v1)
         }
         US0::US0_Dot => {
             0i32
         }
         US0::US0_Square(v3) => {
-            let v3: i32 = *v3;
+            let v3: i32 = v3;
             method1(v3)
         }
         US0::US0_Triangle(v5) => {
-            let v5: i32 = *v5;
+            let v5: i32 = v5;
             method1(v5)
         }
     }

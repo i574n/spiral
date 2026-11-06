@@ -77,19 +77,13 @@ pub type Heap0 { Heap0(l0 : Int, l1 : String) }
 pub type Heap1 { Heap1(l0 : Heap0, l1 : Int) }
 pub type Mut0 { Mut0(l0 : Heap1) }
 pub fn main() {
-    let v0 = 3
-    let v1 = "no"
-    let v2 = Heap0(l0: v0, l1: v1)
-    let v3 = 1
-    let v4 = Heap1(l0: v2, l1: v3)
+    let v2 = Heap0(l0: 3, l1: "no")
+    let v4 = Heap1(l0: v2, l1: 1)
     let v5 = spiral_ref_new(Mut0(l0: v4))
     let v6 = spiral_array_create(1)
     spiral_array_set(v6, 0, v5)
-    let v7 = 7
-    let v8 = "hi"
-    let v9 = Heap0(l0: v7, l1: v8)
-    let v10 = 4
-    let v11 = Heap1(l0: v9, l1: v10)
+    let v9 = Heap0(l0: 7, l1: "hi")
+    let v11 = Heap1(l0: v9, l1: 4)
     let v12 = spiral_array_get(v6, 0)
     spiral_ref_set(v12, Mut0(l0: v11))
     let v13 = spiral_ref_get(v12).l0
@@ -99,16 +93,14 @@ pub fn main() {
     let v20 =
         case v18 {
             True -> {
-                let v19 = v17 == "hi"
-                v19
+                v17 == "hi"
             }
             False -> False
         }
     let v22 =
         case v20 {
             True -> {
-                let v21 = v15 == 4
-                v21
+                v15 == 4
             }
             False -> False
         }

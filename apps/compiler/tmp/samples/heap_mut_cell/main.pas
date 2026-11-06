@@ -19,6 +19,13 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
+procedure SpiralRetain_THeap1(const x: THeap1); forward;
+procedure SpiralRelease_THeap1(const x: THeap1); forward;
+function SpiralKeep_THeap1(const x: THeap1): THeap1; forward;
 function MutCreate0(a0: LongInt; a1: AnsiString): TMut0;
 begin
   Result := TMut0.Create; Result.l0 := a0; Result.l1 := a1;
@@ -26,6 +33,18 @@ end;
 function HeapCreate1(a0: TMut0): THeap1;
 begin
   Result.l0 := a0;
+end;
+procedure SpiralRetain_THeap1(const x: THeap1);
+begin
+  SpiralRetain(x.l0);
+end;
+procedure SpiralRelease_THeap1(const x: THeap1);
+begin
+  SpiralRelease(x.l0);
+end;
+function SpiralKeep_THeap1(const x: THeap1): THeap1;
+begin
+  SpiralRetain_THeap1(x); Result := x;
 end;
 function SpiralMain: LongInt;
 var
@@ -45,14 +64,19 @@ begin
   v0 := 3;
   v1 := 'no';
   v2 := MutCreate0(v0, v1);
+  SpiralRetain(v2);
   v3 := HeapCreate1(v2);
+  SpiralRelease(v2);
   v4 := v3.l0;
+  SpiralRetain(v4);
+  SpiralRelease_THeap1(v3);
   v5 := 7;
   v6 := 'hi';
   v4.l0 := v5;
   v4.l1 := v6;
   v7 := v4.l0;
   v8 := v4.l1;
+  SpiralRelease(v4);
   v9 := v7 = 7;
   if v9 then begin
       v10 := v8 = 'hi';

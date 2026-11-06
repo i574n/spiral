@@ -100,18 +100,39 @@
     ?= lefts ?|
     | a :: rest => agree_with a bs && agree_all rest bs
     | [] => !+
+:~ ^ has_level (ls : list level) (l : level) : bool =
+    ?= ls ?|
+    | x :: rest => same_level x l || has_level rest l
+    | [] => !-
+
+:~ ^ max_operands (l : level) (acc : list level) : list level =
+    ?= l ?|
+    | Max (a, b) => max_operands b (max_operands a acc)
+    | Zero => acc
+    | other => ? has_level acc other ?> acc |: other :: acc
+
+:~ ^ max_of (ls : list level) : level =
+    ?= ls ?|
+    | [] => Zero
+    | [ x ] => x
+    | x :: rest => Max (x, max_of rest)
+
+:~ joined (a : level) (b : level) : level = max_of (listm::rev (max_operands b (max_operands a [])))
+
 :~ ^ simplify (l : level) : level =
     ?= l ?|
     | Succ x => Succ (simplify x)
-    | Max (a, b) => Max (simplify a, simplify b)
+    | Max (a, b) => joined (simplify a) (simplify b)
     | IMax (a, b) =>
-        := left = simplify a
-        ?= simplify b ?|
-        | Zero => Zero
-        | Succ x => Max (left, Succ x)
-        | Max (x, y) => simplify (Max (IMax (left, x), IMax (left, y)))
-        | IMax (c, d) => simplify (Max (IMax (left, d), IMax (c, d)))
-        | right => IMax (left, right)
+        ?= simplify a ?|
+        | Zero => simplify b
+        | left =>
+            ?= simplify b ?|
+            | Zero => Zero
+            | Succ x => joined left (Succ x)
+            | Max (x, y) => joined (simplify (IMax (left, x))) (simplify (IMax (left, y)))
+            | IMax (c, d) => joined (simplify (IMax (left, d))) (IMax (c, d))
+            | right => IMax (left, right)
     | other => other
 
 :~ ^ imax_param (l : level) : option string =
@@ -154,6 +175,19 @@
     ?= lefts ?|
     | a :: rest => agree_full_with a bs && agree_full rest bs
     | [] => !+
+
+:~ ^ imax_over (ds : list level) (last : level) : level =
+    ?= ds ?|
+    | d :: rest => IMax (d, imax_over rest last)
+    | [] => last
+
+:~ ^ prepend (xs : list level) (acc : list level) : list level =
+    ?= xs ?|
+    | x :: rest => x :: prepend rest acc
+    | [] => acc
+
+:~ ^ repeated (n : i32) (block : list level) (acc : list level) : list level =
+    ? n <= 0i32 ?> acc |: repeated (n - 1i32) block (prepend block acc)
 ///> rust
 :# a_pi_into_prop_lives_in_prop_whatever_its_domain =
     (eq_upto (pi_level (u ()) Zero) Zero 4i32, eq_upto (pi_level (u ()) (Succ Zero)) (Max (u (), Succ Zero)) 4i32)
@@ -182,3 +216,15 @@
     := family =
         grow [ IMax (u (), v ()); IMax (v (), u ()); IMax (u (), Zero); IMax (Succ (u ()), Max (u (), v ())); u () ] []
     (listm::length family : i32, agree_full family family) |> _assert_eq (15i32, !+)
+
+///> rust
+:# deep_imax_chains_stay_small_and_agree_with_the_semantics =
+    := props = imax_over (repeated 60i32 [ Zero ] []) (u ())
+    := mixed = imax_over (repeated 20i32 [ v (); Succ Zero ] []) (u ())
+    := facts =
+        leq_full props (u ()) && leq_full (u ()) props,
+        leq_full props Zero,
+        leq_full mixed (IMax (v (), u ())) && leq_full (IMax (v (), u ())) mixed,
+        leq_full mixed (u ()),
+        leq_upto mixed (u ()) 3i32
+    facts |> _assert_eq (!+, !-, !+, !-, !-)

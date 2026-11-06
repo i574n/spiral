@@ -13,7 +13,7 @@ fn closure0() -> Rc<dyn Fn(i32) -> US0> {
             US0::US0_Empty
         } else {
             let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("managed"); } LIT.with(|lit| lit.clone()) };
-            US0::US0_Item(v3.clone(), 32i32)
+            US0::US0_Item(v3, 32i32)
         }
     }); } CLOSURE.with(|closure| closure.clone())
 }
@@ -26,26 +26,26 @@ fn method1(mut v0: Rc<dyn Fn(i32) -> US0>) -> US0 {
 fn spiral_main() -> i32 {
     let mut v0: Rc<dyn Fn(i32) -> US0> = closure0();
     let v1: US0 = method0(v0.clone());
-    let v7: i32 = match &v1 {
+    let v7: i32 = match v1 {
         US0::US0_Empty => {
             3i32
         }
         US0::US0_Item(v2, v3) => {
-            let v2: Rc<str> = v2.clone();
-            let v3: i32 = *v3;
+            let v2: Rc<str> = v2;
+            let v3: i32 = v3;
             let v4: i32 = (v2.len() as i32);
             let v5: i32 = v4.wrapping_add(v3);
             v5
         }
     };
     let v8: US0 = method1(v0);
-    let v14: i32 = match &v8 {
+    let v14: i32 = match v8 {
         US0::US0_Empty => {
             3i32
         }
         US0::US0_Item(v9, v10) => {
-            let v9: Rc<str> = v9.clone();
-            let v10: i32 = *v10;
+            let v9: Rc<str> = v9;
+            let v10: i32 = v10;
             let v11: i32 = (v9.len() as i32);
             let v12: i32 = v11.wrapping_add(v10);
             v12

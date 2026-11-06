@@ -256,36 +256,34 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
   (+ah, +al) = a
   (+bh, +bl) = b
   (U32.xor(ah, bh), U32.xor(al, bl))
-@unsafe
-def f_c0_if1(+c: Bool, +v0: (U32 & U32), +v1: String) -> IO((U32 & U32) & String):
+def f_c0_if1(c: Bool, v0: (U32 & U32), v1: String) -> IO((U32 & U32) & String):
   match c:
     case True{}:
       do IO<(U32 & U32) & String>:
-        +v4 : String <- IO.pure(String, "no")
+        v4 : String <- IO.pure(String, "no")
         return (({0 : U32}, {0 : U32}), v4)
     case False{}:
       do IO<(U32 & U32) & String>:
         return (v0, v1)
 
-@unsafe
-def f_c0(+v0: (U32 & U32), +v1: String, +v2: U32) -> IO((U32 & U32) & String):
+def f_c0(v0: (U32 & U32), v1: String, +v2: U32) -> IO((U32 & U32) & String):
   do IO<(U32 & U32) & String>:
     +v3 : Bool <- IO.pure(Bool, U32.is_eq(v2, {0 : U32}))
     f_c0_if1(v3, v0, v1)
 
 @unsafe
-def spiral_main_k2_if3(+c: Bool, +v4: String) -> IO(Bool):
+def spiral_main_k2_if3(c: Bool, v4: String) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v6 : Bool <- IO.pure(Bool, String.eq(v4, "hi"))
+        v6 : Bool <- IO.pure(Bool, String.eq(v4, "hi"))
         return v6
     case False{}:
       do IO<Bool>:
         return False{}
 
 @unsafe
-def spiral_main_k2_if4(+c: Bool) -> IO(U32):
+def spiral_main_k2_if4(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -308,10 +306,9 @@ def spiral_main() -> IO(U32):
     +v0 : (U32 & U32) <- IO.pure((U32 & U32), ({1 : U32}, {705032704 : U32}))
     +v1 : String <- IO.pure(String, "hi")
     +v2 : ((U32) -> IO((U32 & U32) & String)) <- IO.pure(((U32) -> IO((U32 & U32) & String)), d => f_c0(v0, v1, d))
-    +p : (U32 & U32) & String <- v2({1 : U32})
+    p : (U32 & U32) & String <- v2({1 : U32})
     spiral_main_k2(p, v0, v1, v2)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

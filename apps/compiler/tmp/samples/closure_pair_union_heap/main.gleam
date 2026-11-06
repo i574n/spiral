@@ -16,8 +16,7 @@ pub fn f_c0(capt: #(Int, Heap0)) -> fn(Int) -> #(Us0, Heap0) {
         let v3 = v2 == 0
         case v3 {
             True -> {
-                let v4 = Us0None
-                #(v4, v1)
+                #(Us0None, v1)
             }
             False -> {
                 let v5 = Us0Some(v0)
@@ -27,10 +26,8 @@ pub fn f_c0(capt: #(Int, Heap0)) -> fn(Int) -> #(Us0, Heap0) {
     }
 }
 pub fn main() {
-    let v0 = 3
-    let v1 = 4
-    let v2 = Heap0(l0: v1)
-    let v3 = f_c0(#(v0, v2))
+    let v2 = Heap0(l0: 4)
+    let v3 = f_c0(#(3, v2))
     let #(v4, v5) = v3(1)
     case v4  {
         Us0None -> 1

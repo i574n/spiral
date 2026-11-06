@@ -1,7 +1,6 @@
 :# console static =
     :< testing
 
-/// ## fsharp
 :! console_color = $'System.ConsoleColor'
 
 := reset_color () : () =
@@ -14,7 +13,6 @@
         | Fsharp => \ () => $'System.Console.ForegroundColor <- !color '
         | _ => \ () => ()
 
-/// ## console
 := write_line_c \* t. (obj : t) : () =
     ~>
         ?: t ?|
@@ -106,7 +104,6 @@
 :# write_error_line_writes_without_failing =
     write_error_line "console.write_error_line probe"
 
-/// ### read_to_end
 :! stdin_handle = $'std::io::Stdin'
 
 :! stdin_error = $'std::io::Error'

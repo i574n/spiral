@@ -181,19 +181,19 @@ def spiral_array_set_a0(+arr: Chan(Array<U32>) & U32, +i: U32, +v: U32) -> IO(Un
   spiral_array_set_checked_a0(c, i, v, U32.is_lt(i, n))
 
 @unsafe
-def fill_0_if1(+c: Bool, +v0: U32, +v1: (Chan(Array<U32>) & U32), +v2: U32) -> IO(Unit):
+def fill_0_if1(c: Bool, v0: U32, +v1: (Chan(Array<U32>) & U32), +v2: U32) -> IO(Unit):
   match c:
     case True{}:
       do IO<Unit>:
         spiral_array_set_a0(v1, v2, v2)
-        +v4 : U32 <- IO.pure(U32, U32.add(v2, {1 : U32}))
+        v4 : U32 <- IO.pure(U32, U32.add(v2, {1 : U32}))
         fill_0(v0, v1, v4)
     case False{}:
       do IO<Unit>:
         return Unit{}
 
 @unsafe
-def fill_0(+v0: U32, +v1: (Chan(Array<U32>) & U32), +v2: U32) -> IO(Unit):
+def fill_0(+v0: U32, v1: (Chan(Array<U32>) & U32), +v2: U32) -> IO(Unit):
   do IO<Unit>:
     +v3 : Bool <- IO.pure(Bool, spiral_i32_lt(v2, v0))
     fill_0_if1(v3, v0, v1, v2)
@@ -201,15 +201,14 @@ def fill_0(+v0: U32, +v1: (Chan(Array<U32>) & U32), +v2: U32) -> IO(Unit):
 @unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : U32 <- IO.pure(U32, {6 : U32})
+    v0 : U32 <- IO.pure(U32, {6 : U32})
     +v1 : (Chan(Array<U32>) & U32) <- spiral_array_new_a0({6 : U32}, {0 : U32})
-    +v2 : U32 <- IO.pure(U32, {0 : U32})
+    v2 : U32 <- IO.pure(U32, {0 : U32})
     fill_0(v0, v1, v2)
-    +v3 : U32 <- spiral_array_get_a0(v1, {5 : U32})
-    +v4 : U32 <- IO.pure(U32, U32.add(v3, {2 : U32}))
+    v3 : U32 <- spiral_array_get_a0(v1, {5 : U32})
+    v4 : U32 <- IO.pure(U32, U32.add(v3, {2 : U32}))
     return v4
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

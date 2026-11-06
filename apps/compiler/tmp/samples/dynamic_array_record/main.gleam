@@ -51,8 +51,7 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
 
 
 pub fn method0() -> #(SpiralArray(Int), Int) {
-    let v0 = 2
-    let v1 = spiral_array_create_filled(v0, 0)
+    let v1 = spiral_array_create_filled(2, 0)
     spiral_array_set(v1, 0, 4)
     spiral_array_set(v1, 1, 5)
     #(v1, 1)
@@ -62,8 +61,7 @@ pub fn method1(v0: SpiralArray(Int), v1: Int) -> Int {
     let v3 = spiral_array_get(v0, 1)
     let v4 = spiral_wrap_signed(v2 + v3, 32)
     let v5 = spiral_wrap_signed(v4 + v1, 32)
-    let v6 = spiral_wrap_signed(v5 - 10, 32)
-    v6
+    spiral_wrap_signed(v5 - 10, 32)
 }
 pub fn main() {
     let #(v0, v1) = method0()

@@ -6,16 +6,13 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
 
 
 pub fn main() {
-    let v0 = -1
-    let v1 = -8
-    let v2 = spiral_wrap_signed(int.bitwise_not(v0), 32)
-    let v3 = spiral_wrap_signed(int.bitwise_not(v1), 32)
+    let v2 = spiral_wrap_signed(int.bitwise_not(-1), 32)
+    let v3 = spiral_wrap_signed(int.bitwise_not(-8), 32)
     let v4 = v2 == 0
     let v6 =
         case v4 {
             True -> {
-                let v5 = v3 == 7
-                v5
+                v3 == 7
             }
             False -> False
         }

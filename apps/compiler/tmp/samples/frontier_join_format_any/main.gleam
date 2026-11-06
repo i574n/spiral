@@ -31,31 +31,23 @@ pub fn spiral_ref_set(reference: SpiralRef(a), value: a) -> Nil {
 
 pub type Mut0 { Mut0(l0 : String) }
 pub fn format_real_2(v0: Int) -> String {
-    let v1 = ""
-    let v2 = spiral_ref_new(Mut0(l0: v1))
+    let v2 = spiral_ref_new(Mut0(l0: ""))
     let v3 = string.inspect(v0)
     let v4 = spiral_ref_get(v2).l0
-    let v5 = v4 <> v3 
+    let v5 = { v4 } <> { v3 }
     spiral_ref_set(v2, Mut0(l0: v5))
-    let v6 = spiral_ref_get(v2).l0
-    v6
+    spiral_ref_get(v2).l0
 }
 pub fn method1() -> String {
-    let v0 = "Some"
-    let v1 = "("
-    let v2 = v0 <> v1 
-    let v3 = 1
-    let v4 = format_real_2(v3)
-    let v5 = v2 <> v4 
-    let v6 = ")"
-    let v7 = v5 <> v6 
-    v7
+    let v1 = format_real_2(1)
+    let v2 = { "Some(" } <> { v1 }
+    let v3 = { v2 } <> { ")" }
+    v3
 }
 pub fn method0() -> String {
     let v0 = method1()
-    let v1 = "x: "
-    let v2 = v1 <> v0 
-    v2
+    let v1 = { "x: " } <> { v0 }
+    v1
 }
 pub fn main() {
     let v0 = method0()

@@ -4,11 +4,9 @@ pub type Us0 {
     Us0Box(f1i0 : Heap0)
 }
 pub fn main() {
-    let v0 = 7
-    let v1 = Heap0(l0: v0)
-    let v2 = True
+    let v1 = Heap0(l0: 7)
     let v5 =
-        case v2 {
+        case True {
             True -> Us0Box(v1)
             False -> Us0Missing
         }

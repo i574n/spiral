@@ -18,10 +18,10 @@ fn spiral_main() -> i32 {
     let v0: i32 = 3i32;
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
     let v2: US0 = method0(v0, v1);
-    match &v2 {
+    match v2 {
         US0::US0_Both(v4, v5) => {
-            let v4: i32 = *v4;
-            let v5: Rc<str> = v5.clone();
+            let v4: i32 = v4;
+            let v5: Rc<str> = v5;
             let v6: bool = v4 == 3i32;
             let v8: bool = if v6 {
                 let v7: bool = &*v5 == "hi";
@@ -36,7 +36,7 @@ fn spiral_main() -> i32 {
             }
         }
         US0::US0_One(v3) => {
-            let v3: i32 = *v3;
+            let v3: i32 = v3;
             1i32
         }
     }

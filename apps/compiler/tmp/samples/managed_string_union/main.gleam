@@ -19,24 +19,20 @@ pub fn score_0(v0: Us0) -> Int {
     case v0  {
         Us0Number(v3) -> v3
         Us0Text(v1) -> {
-            let v2 = spiral_string_length(v1)
-            v2
+            spiral_string_length(v1)
         }
     }
 }
 pub fn main() {
-    let v0 = False
     let v4 =
-        case v0 {
+        case False {
             True -> Us0Number(7)
             False -> {
-                let v2 = "qwe"
-                Us0Text(v2)
+                Us0Text("qwe")
             }
         }
     let v5 = score_0(v4)
     let v6 = score_0(v4)
     let v7 = spiral_wrap_signed(v5 + v6, 32)
-    let v8 = spiral_wrap_signed(v7 - 6, 32)
-    v8
+    spiral_wrap_signed(v7 - 6, 32)
 }

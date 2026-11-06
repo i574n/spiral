@@ -16,8 +16,7 @@ pub fn method2(v0: Int, v1: String) -> Int {
     let v3 = v2 == 0
     case v3 {
         True -> {
-            let v4 = spiral_string_length(v1)
-            v4
+            spiral_string_length(v1)
         }
         False -> method1(v2, v1)
     }
@@ -35,13 +34,11 @@ pub fn method0(v0: Int, v1: String) -> Int {
     let v5 =
         case v2 {
             True -> {
-                let v3 = spiral_string_length(v1)
-                v3
+                spiral_string_length(v1)
             }
             False -> method1(v0, v1)
         }
-    let v6 = spiral_wrap_signed(v5 - 2, 32)
-    v6
+    spiral_wrap_signed(v5 - 2, 32)
 }
 pub fn main() {
     let v0 = 1000000
@@ -50,12 +47,10 @@ pub fn main() {
     let v5 =
         case v2 {
             True -> {
-                let v3 = "ok"
-                v3
+                "ok"
             }
             False -> {
-                let v4 = "go"
-                v4
+                "go"
             }
         }
     method0(v0, v5)

@@ -17,8 +17,7 @@ pub fn method2(v0: Int, v1: Int, v2: Bool) -> Int {
     case v2 {
         True -> {
             let v3 = spiral_wrap_signed(v0 + v1, 32)
-            let v4 = spiral_wrap_signed(v3 - 4, 32)
-            v4
+            spiral_wrap_signed(v3 - 4, 32)
         }
         False -> 1
     }
@@ -33,8 +32,7 @@ pub fn method5(v0: Bool, v1: Float, v2: Int) -> Int {
             let v3 = v1 >=. 3.5
             case v3 {
                 True -> {
-                    let v4 = spiral_wrap_signed(v2 - 7, 32)
-                    v4
+                    spiral_wrap_signed(v2 - 7, 32)
                 }
                 False -> 1
             }
@@ -43,32 +41,25 @@ pub fn method5(v0: Bool, v1: Float, v2: Int) -> Int {
     }
 }
 pub fn method7(v0: String, v1: String) -> Bool {
-    let v2 = v0 == v1
-    v2
+    v0 == v1
 }
 pub fn method9(v0: Int) -> Bool {
     let v1 = spiral_wrap_unsigned(v0 + 5, 32)
     let v2 = v1 % 4
-    let v3 = v2 == 0
-    v3
+    v2 == 0
 }
 pub fn method11(v0: Int, v1: Int) -> Int {
     let v2 = spiral_wrap_signed(v0 * v1, 32)
     let v3 = spiral_wrap_signed(v2 + 5, 32)
-    let v4 = v3 / 3
-    v4
+    v3 / 3
 }
 pub fn method10(v0: Int) -> Int {
-    let v1 = 4
-    let v2 = 4
-    let v3 = method11(v1, v2)
+    let v3 = method11(4, 4)
     let v4 = spiral_wrap_signed(v0 + v3, 32)
-    let v5 = spiral_wrap_signed(v4 - 7, 32)
-    v5
+    spiral_wrap_signed(v4 - 7, 32)
 }
 pub fn method8(v0: Int) -> Int {
-    let v1 = 7
-    let v2 = method9(v1)
+    let v2 = method9(7)
     case v2 {
         True -> method10(v0)
         False -> 1
@@ -83,20 +74,17 @@ pub fn method6(v0: Int) -> Int {
     }
 }
 pub fn method3(v0: Int) -> Int {
-    let v1 = 4.0
-    let #(v2, v3, v4) = method4(v1)
+    let #(v2, v3, v4) = method4(4.0)
     let v5 = method5(v2, v3, v4)
     let v6 = spiral_wrap_signed(v0 + v5, 32)
     method6(v6)
 }
 pub fn method0(v0: Int) -> Int {
-    let v1 = 1
-    let #(v2, v3, v4) = method1(v1)
+    let #(v2, v3, v4) = method1(1)
     let v5 = method2(v2, v3, v4)
     let v6 = spiral_wrap_signed(v0 + v5, 32)
     method3(v6)
 }
 pub fn main() {
-    let v0 = 0
-    method0(v0)
+    method0(0)
 }

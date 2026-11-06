@@ -22,16 +22,16 @@ impl Default for US1 {
     }
 }
 fn score_0(mut v0: US1) -> i32 {
-    match &v0 {
+    match v0 {
         US1::US1_Absent => {
             1i32
         }
         US1::US1_Box(v3) => {
-            let v3: Rc<Heap3> = v3.clone();
+            let v3: Rc<Heap3> = v3;
             let v4: US0 = v3.l0.clone();
-            match &v4 {
+            match v4 {
                 US0::US0_Held(v5) => {
-                    let v5: Rc<Heap2> = v5.clone();
+                    let v5: Rc<Heap2> = v5;
                     let (mut v6, mut v7): (Rc<Heap1>, i32) = (v5.l0.clone(), v5.l1);
                     let (mut v8, mut v9): (Rc<Heap0>, Rc<Heap0>) = (v6.l0.clone(), v6.l1.clone());
                     let (mut v10, mut v11): (i32, Rc<str>) = (v8.l0, v8.l1.clone());
@@ -50,7 +50,7 @@ fn score_0(mut v0: US1) -> i32 {
                         false
                     };
                     let v20: bool = if v18 {
-                        let v19: bool = &*v13 == "yo";
+                        let mut v19: bool = &*v13 == "yo";
                         v19
                     } else {
                         false
@@ -73,7 +73,7 @@ fn score_0(mut v0: US1) -> i32 {
             }
         }
         US1::US1_Mark(v1) => {
-            let v1: i32 = *v1;
+            let v1: i32 = v1;
             1i32
         }
     }
@@ -102,15 +102,15 @@ fn spiral_main() -> i32 {
         US1::US1_Mark(1i32)
     };
     let v18: i32 = 3i32;
-    let v19: Rc<RefCell<Vec<US1>>> = Rc::new(RefCell::new(vec![<US1>::default(); 3i32 as usize]));
-    v19.clone().borrow_mut()[0i32 as usize] = v17;
+    let mut v19: Rc<RefCell<Vec<US1>>> = Rc::new(RefCell::new(vec![<US1>::default(); 3i32 as usize]));
+    v19.borrow_mut()[0i32 as usize] = v17;
     let v20: US1 = US1::US1_Mark(v18);
-    v19.clone().borrow_mut()[1i32 as usize] = v20;
+    v19.borrow_mut()[1i32 as usize] = v20;
     let v21: US1 = US1::US1_Absent;
-    v19.clone().borrow_mut()[2i32 as usize] = v21;
-    let v22: US1 = v19.clone().borrow()[0i32 as usize].clone();
+    v19.borrow_mut()[2i32 as usize] = v21;
+    let v22: US1 = v19.borrow()[0i32 as usize].clone();
     let v23: i32 = score_0(v22);
-    let v24: US1 = v19.clone().borrow()[1i32 as usize].clone();
+    let v24: US1 = v19.borrow()[1i32 as usize].clone();
     let v25: i32 = score_0(v24);
     let v26: US1 = v19.borrow()[2i32 as usize].clone();
     let v27: i32 = score_0(v26);

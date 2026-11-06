@@ -74,39 +74,35 @@ def spiral_string_byte_at(+s: String, +i: U32) -> U32:
     case SCon{+h, +t}:
       spiral_string_byte_at_from(U32.is_lt(i, spiral_utf8_width(Char.to_u32(h))), Char.to_u32(h), spiral_utf8_width(Char.to_u32(h)), i, t)
 
-@unsafe
-def runtime_byte_1(+v0: String, +v1: U32) -> IO(U32):
+def runtime_byte_1(v0: String, v1: U32) -> IO(U32):
   do IO<U32>:
-    +v2 : U32 <- IO.pure(U32, spiral_string_byte_at(v0, v1))
+    v2 : U32 <- IO.pure(U32, spiral_string_byte_at(v0, v1))
     return v2
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6_if7(+c: Bool, +v17: U32) -> IO(Bool):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6_if7(c: Bool, v17: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
         return False{}
     case False{}:
       do IO<Bool>:
-        +v19 : Bool <- IO.pure(Bool, spiral_i32_lt(v17, {192 : U32}))
+        v19 : Bool <- IO.pure(Bool, spiral_i32_lt(v17, {192 : U32}))
         return v19
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6_if8(+c: Bool, +v8: U32, +v17: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6_if8(c: Bool, v8: U32, v17: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
-        +v21 : U32 <- IO.pure(U32, U32.sub(v8, {192 : U32}))
-        +v22 : U32 <- IO.pure(U32, U32.mul(v21, {64 : U32}))
-        +v23 : U32 <- IO.pure(U32, U32.sub(v17, {128 : U32}))
-        +v24 : U32 <- IO.pure(U32, U32.add(v22, v23))
+        v21 : U32 <- IO.pure(U32, U32.sub(v8, {192 : U32}))
+        v22 : U32 <- IO.pure(U32, U32.mul(v21, {64 : U32}))
+        v23 : U32 <- IO.pure(U32, U32.sub(v17, {128 : U32}))
+        v24 : U32 <- IO.pure(U32, U32.add(v22, v23))
         return v24
     case False{}:
       do IO<U32>:
         IO.die(U32, 1, "UTF-8 sequence has an invalid continuation byte.")
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6(+c: Bool, +v0: String, +v8: U32, +v13: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6(c: Bool, +v0: String, +v8: U32, +v13: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -119,30 +115,27 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6(+c: Bool, +v0: String, 
         +v20 : Bool <- utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6_if7(v18, v17)
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if6_if8(v20, v8, v17)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if11(+c: Bool, +v34: U32) -> IO(Bool):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if11(c: Bool, v34: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
         return False{}
     case False{}:
       do IO<Bool>:
-        +v38 : Bool <- IO.pure(Bool, spiral_i32_lt(v34, {192 : U32}))
+        v38 : Bool <- IO.pure(Bool, spiral_i32_lt(v34, {192 : U32}))
         return v38
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if13(+c: Bool, +v36: U32) -> IO(Bool):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if13(c: Bool, v36: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
         return False{}
     case False{}:
       do IO<Bool>:
-        +v41 : Bool <- IO.pure(Bool, spiral_i32_lt(v36, {192 : U32}))
+        v41 : Bool <- IO.pure(Bool, spiral_i32_lt(v36, {192 : U32}))
         return v41
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15_if16_if17(+c: Bool, +v49: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15_if16_if17(c: Bool, v49: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -151,8 +144,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15_if1
       do IO<U32>:
         return v49
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15_if16(+c: Bool, +v49: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15_if16(c: Bool, +v49: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -162,8 +154,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15_if1
       do IO<U32>:
         return v49
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15(+c: Bool, +v49: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15(c: Bool, +v49: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -173,8 +164,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15(+c:
         +v52 : Bool <- IO.pure(Bool, spiral_i32_ge(v49, {55296 : U32}))
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14_if15_if16(v52, v49)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14(+c: Bool, +v8: U32, +v34: U32, +v36: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14(c: Bool, +v8: U32, +v34: U32, +v36: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -191,8 +181,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12_if14(+c: Bool
       do IO<U32>:
         IO.die(U32, 1, "UTF-8 sequence has an invalid continuation byte.")
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12(+c: Bool, +v8: U32, +v34: U32, +v36: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12(c: Bool, +v8: U32, +v34: U32, +v36: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -203,8 +192,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12(+c: Bool, +v8
       do IO<U32>:
         IO.die(U32, 1, "UTF-8 sequence has an invalid continuation byte.")
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10(+c: Bool, +v0: String, +v1: U32, +v8: U32, +v29: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10(c: Bool, +v0: String, +v1: U32, +v8: U32, +v29: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -220,41 +208,37 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10(+c: Bool, +v0: Str
         +v39 : Bool <- utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if11(v37, v34)
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if10_if12(v39, v8, v34, v36)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if20(+c: Bool, +v69: U32) -> IO(Bool):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if20(c: Bool, v69: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
         return False{}
     case False{}:
       do IO<Bool>:
-        +v76 : Bool <- IO.pure(Bool, spiral_i32_lt(v69, {192 : U32}))
+        v76 : Bool <- IO.pure(Bool, spiral_i32_lt(v69, {192 : U32}))
         return v76
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if22(+c: Bool, +v72: U32) -> IO(Bool):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if22(c: Bool, v72: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
         return False{}
     case False{}:
       do IO<Bool>:
-        +v79 : Bool <- IO.pure(Bool, spiral_i32_lt(v72, {192 : U32}))
+        v79 : Bool <- IO.pure(Bool, spiral_i32_lt(v72, {192 : U32}))
         return v79
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if24(+c: Bool, +v74: U32) -> IO(Bool):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if24(c: Bool, v74: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
         return False{}
     case False{}:
       do IO<Bool>:
-        +v82 : Bool <- IO.pure(Bool, spiral_i32_lt(v74, {192 : U32}))
+        v82 : Bool <- IO.pure(Bool, spiral_i32_lt(v74, {192 : U32}))
         return v82
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if25_if26_if27(+c: Bool, +v93: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if25_if26_if27(c: Bool, v93: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -263,8 +247,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if2
       do IO<U32>:
         return v93
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if25_if26(+c: Bool, +v93: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if25_if26(c: Bool, +v93: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -274,8 +257,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if2
         +v96 : Bool <- IO.pure(Bool, spiral_i32_gt(v93, {1114111 : U32}))
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if25_if26_if27(v96, v93)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if25(+c: Bool, +v8: U32, +v69: U32, +v72: U32, +v74: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if25(c: Bool, +v8: U32, +v69: U32, +v72: U32, +v74: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -295,8 +277,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23_if2
       do IO<U32>:
         IO.die(U32, 1, "UTF-8 sequence has an invalid continuation byte.")
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23(+c: Bool, +v8: U32, +v69: U32, +v72: U32, +v74: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23(c: Bool, +v8: U32, +v69: U32, +v72: U32, +v74: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -307,8 +288,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21_if23(+c:
       do IO<U32>:
         IO.die(U32, 1, "UTF-8 sequence has an invalid continuation byte.")
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21(+c: Bool, +v8: U32, +v69: U32, +v72: U32, +v74: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21(c: Bool, +v8: U32, +v69: U32, +v72: U32, +v74: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -319,8 +299,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21(+c: Bool
       do IO<U32>:
         IO.die(U32, 1, "UTF-8 sequence has an invalid continuation byte.")
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19(+c: Bool, +v0: String, +v1: U32, +v8: U32, +v64: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19(c: Bool, +v0: String, +v1: U32, +v8: U32, +v64: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -339,8 +318,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19(+c: Bool, +v0
         +v77 : Bool <- utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if20(v75, v69)
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18_if19_if21(v77, v8, v69, v72, v74)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18(+c: Bool, +v0: String, +v1: U32, +v2: U32, +v8: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18(c: Bool, v0: String, +v1: U32, +v2: U32, v8: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -351,8 +329,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18(+c: Bool, +v0: Str
       do IO<U32>:
         IO.die(U32, 1, "UTF-8 scalar starts with an invalid lead byte.")
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9(+c: Bool, +v0: String, +v1: U32, +v2: U32, +v8: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9(c: Bool, +v0: String, +v1: U32, +v2: U32, +v8: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -364,8 +341,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9(+c: Bool, +v0: String, 
         +v63 : Bool <- IO.pure(Bool, spiral_i32_lt(v8, {245 : U32}))
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9_if18(v63, v0, v1, v2, v8)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5(+c: Bool, +v0: String, +v1: U32, +v2: U32, +v8: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5(c: Bool, +v0: String, +v1: U32, +v2: U32, +v8: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -377,8 +353,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5(+c: Bool, +v0: String, +v1:
         +v28 : Bool <- IO.pure(Bool, spiral_i32_lt(v8, {240 : U32}))
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5_if9(v28, v0, v1, v2, v8)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4(+c: Bool, +v0: String, +v1: U32, +v2: U32, +v8: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4(c: Bool, v0: String, v1: U32, v2: U32, +v8: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -388,8 +363,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3_if4(+c: Bool, +v0: String, +v1: U32
         +v12 : Bool <- IO.pure(Bool, spiral_i32_lt(v8, {224 : U32}))
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4_if5(v12, v0, v1, v2, v8)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2_if3(+c: Bool, +v0: String, +v1: U32, +v2: U32, +v8: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2_if3(c: Bool, v0: String, v1: U32, v2: U32, +v8: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -399,8 +373,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2_if3(+c: Bool, +v0: String, +v1: U32, +v
         +v10 : Bool <- IO.pure(Bool, spiral_i32_lt(v8, {194 : U32}))
         utf8_scalar_at_byte_offset_0_if1_if2_if3_if4(v10, v0, v1, v2, v8)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1_if2(+c: Bool, +v0: String, +v1: U32, +v2: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1_if2(c: Bool, +v0: String, +v1: U32, v2: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -412,8 +385,7 @@ def utf8_scalar_at_byte_offset_0_if1_if2(+c: Bool, +v0: String, +v1: U32, +v2: U
         +v9 : Bool <- IO.pure(Bool, spiral_i32_lt(v8, {128 : U32}))
         utf8_scalar_at_byte_offset_0_if1_if2_if3(v9, v0, v1, v2, v8)
 
-@unsafe
-def utf8_scalar_at_byte_offset_0_if1(+c: Bool, +v0: String, +v1: U32, +v2: U32) -> IO(U32):
+def utf8_scalar_at_byte_offset_0_if1(c: Bool, v0: String, +v1: U32, +v2: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -423,15 +395,13 @@ def utf8_scalar_at_byte_offset_0_if1(+c: Bool, +v0: String, +v1: U32, +v2: U32) 
         +v5 : Bool <- IO.pure(Bool, spiral_i32_ge(v1, v2))
         utf8_scalar_at_byte_offset_0_if1_if2(v5, v0, v1, v2)
 
-@unsafe
 def utf8_scalar_at_byte_offset_0(+v0: String, +v1: U32) -> IO(U32):
   do IO<U32>:
-    +v2 : U32 <- IO.pure(U32, spiral_string_bytes(v0))
+    v2 : U32 <- IO.pure(U32, spiral_string_bytes(v0))
     +v3 : Bool <- IO.pure(Bool, spiral_i32_lt(v1, {0 : U32}))
     utf8_scalar_at_byte_offset_0_if1(v3, v0, v1, v2)
 
-@unsafe
-def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39_if40_if41_if42_if43(+c: Bool, +v2: U32) -> IO(U32 & U32):
+def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39_if40_if41_if42_if43(c: Bool, v2: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -440,8 +410,7 @@ def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39_if40
       do IO<U32 & U32>:
         return (v2, {4294967295 : U32})
 
-@unsafe
-def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39_if40_if41_if42(+c: Bool, +v2: U32) -> IO(U32 & U32):
+def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39_if40_if41_if42(c: Bool, +v2: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -451,8 +420,7 @@ def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39_if40
         +v33 : Bool <- IO.pure(Bool, U32.is_eq(v2, {245 : U32}))
         spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39_if40_if41_if42_if43(v33, v2)
 
-@unsafe
-def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39_if40_if41(+c: Bool, +v2: U32) -> IO(U32 & U32):
+def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39_if40_if41(c: Bool, +v2: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -462,8 +430,7 @@ def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39_if40
         +v32 : Bool <- IO.pure(Bool, U32.is_eq(v2, {243 : U32}))
         spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39_if40_if41_if42(v32, v2)
 
-@unsafe
-def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39_if40(+c: Bool, +v2: U32) -> IO(U32 & U32):
+def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39_if40(c: Bool, +v2: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -473,8 +440,7 @@ def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39_if40
         +v31 : Bool <- IO.pure(Bool, U32.is_eq(v2, {233 : U32}))
         spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39_if40_if41(v31, v2)
 
-@unsafe
-def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39(+c: Bool, +v2: U32) -> IO(U32 & U32):
+def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39(c: Bool, +v2: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -484,8 +450,7 @@ def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39(+c: 
         +v30 : Bool <- IO.pure(Bool, U32.is_eq(v2, {231 : U32}))
         spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39_if40(v30, v2)
 
-@unsafe
-def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38(+c: Bool, +v2: U32) -> IO(U32 & U32):
+def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38(c: Bool, +v2: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -495,8 +460,7 @@ def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38(+c: Bool,
         +v29 : Bool <- IO.pure(Bool, U32.is_eq(v2, {228 : U32}))
         spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38_if39(v29, v2)
 
-@unsafe
-def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37(+c: Bool, +v2: U32) -> IO(U32 & U32):
+def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37(c: Bool, +v2: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -506,8 +470,7 @@ def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37(+c: Bool, +v2:
         +v28 : Bool <- IO.pure(Bool, U32.is_eq(v2, {227 : U32}))
         spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37_if38(v28, v2)
 
-@unsafe
-def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36(+c: Bool, +v2: U32) -> IO(U32 & U32):
+def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36(c: Bool, +v2: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -517,8 +480,7 @@ def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36(+c: Bool, +v2: U32)
         +v27 : Bool <- IO.pure(Bool, U32.is_eq(v2, {225 : U32}))
         spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36_if37(v27, v2)
 
-@unsafe
-def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35(+c: Bool, +v2: U32) -> IO(U32 & U32):
+def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35(c: Bool, +v2: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -528,8 +490,7 @@ def spiral_main_if28_if29_if30_if31_if32_if33_if34_if35(+c: Bool, +v2: U32) -> I
         +v26 : Bool <- IO.pure(Bool, U32.is_eq(v2, {224 : U32}))
         spiral_main_if28_if29_if30_if31_if32_if33_if34_if35_if36(v26, v2)
 
-@unsafe
-def spiral_main_if28_if29_if30_if31_if32_if33_if34(+c: Bool, +v2: U32) -> IO(U32 & U32):
+def spiral_main_if28_if29_if30_if31_if32_if33_if34(c: Bool, +v2: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -539,8 +500,7 @@ def spiral_main_if28_if29_if30_if31_if32_if33_if34(+c: Bool, +v2: U32) -> IO(U32
         +v25 : Bool <- IO.pure(Bool, U32.is_eq(v2, {213 : U32}))
         spiral_main_if28_if29_if30_if31_if32_if33_if34_if35(v25, v2)
 
-@unsafe
-def spiral_main_if28_if29_if30_if31_if32_if33(+c: Bool, +v2: U32) -> IO(U32 & U32):
+def spiral_main_if28_if29_if30_if31_if32_if33(c: Bool, +v2: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -550,8 +510,7 @@ def spiral_main_if28_if29_if30_if31_if32_if33(+c: Bool, +v2: U32) -> IO(U32 & U3
         +v24 : Bool <- IO.pure(Bool, U32.is_eq(v2, {211 : U32}))
         spiral_main_if28_if29_if30_if31_if32_if33_if34(v24, v2)
 
-@unsafe
-def spiral_main_if28_if29_if30_if31_if32(+c: Bool, +v2: U32) -> IO(U32 & U32):
+def spiral_main_if28_if29_if30_if31_if32(c: Bool, +v2: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -561,8 +520,7 @@ def spiral_main_if28_if29_if30_if31_if32(+c: Bool, +v2: U32) -> IO(U32 & U32):
         +v23 : Bool <- IO.pure(Bool, U32.is_eq(v2, {201 : U32}))
         spiral_main_if28_if29_if30_if31_if32_if33(v23, v2)
 
-@unsafe
-def spiral_main_if28_if29_if30_if31(+c: Bool, +v2: U32) -> IO(U32 & U32):
+def spiral_main_if28_if29_if30_if31(c: Bool, +v2: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -572,8 +530,7 @@ def spiral_main_if28_if29_if30_if31(+c: Bool, +v2: U32) -> IO(U32 & U32):
         +v22 : Bool <- IO.pure(Bool, U32.is_eq(v2, {199 : U32}))
         spiral_main_if28_if29_if30_if31_if32(v22, v2)
 
-@unsafe
-def spiral_main_if28_if29_if30(+c: Bool, +v2: U32) -> IO(U32 & U32):
+def spiral_main_if28_if29_if30(c: Bool, +v2: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -583,8 +540,7 @@ def spiral_main_if28_if29_if30(+c: Bool, +v2: U32) -> IO(U32 & U32):
         +v21 : Bool <- IO.pure(Bool, U32.is_eq(v2, {196 : U32}))
         spiral_main_if28_if29_if30_if31(v21, v2)
 
-@unsafe
-def spiral_main_if28_if29(+c: Bool, +v2: U32) -> IO(U32 & U32):
+def spiral_main_if28_if29(c: Bool, +v2: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -594,8 +550,7 @@ def spiral_main_if28_if29(+c: Bool, +v2: U32) -> IO(U32 & U32):
         +v20 : Bool <- IO.pure(Bool, U32.is_eq(v2, {195 : U32}))
         spiral_main_if28_if29_if30(v20, v2)
 
-@unsafe
-def spiral_main_if28(+c: Bool, +v2: U32) -> IO(U32 & U32):
+def spiral_main_if28(c: Bool, +v2: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -605,8 +560,7 @@ def spiral_main_if28(+c: Bool, +v2: U32) -> IO(U32 & U32):
         +v19 : Bool <- IO.pure(Bool, U32.is_eq(v2, {193 : U32}))
         spiral_main_if28_if29(v19, v2)
 
-@unsafe
-def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56_if57_if58_if59_if60(+c: Bool, +v5: U32) -> IO(U32 & U32):
+def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56_if57_if58_if59_if60(c: Bool, v5: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -615,8 +569,7 @@ def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56_
       do IO<U32 & U32>:
         return (v5, {4294967295 : U32})
 
-@unsafe
-def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56_if57_if58_if59(+c: Bool, +v5: U32) -> IO(U32 & U32):
+def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56_if57_if58_if59(c: Bool, +v5: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -626,8 +579,7 @@ def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56_
         +v81 : Bool <- IO.pure(Bool, U32.is_eq(v5, {245 : U32}))
         spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56_if57_if58_if59_if60(v81, v5)
 
-@unsafe
-def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56_if57_if58(+c: Bool, +v5: U32) -> IO(U32 & U32):
+def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56_if57_if58(c: Bool, +v5: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -637,8 +589,7 @@ def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56_
         +v80 : Bool <- IO.pure(Bool, U32.is_eq(v5, {243 : U32}))
         spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56_if57_if58_if59(v80, v5)
 
-@unsafe
-def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56_if57(+c: Bool, +v5: U32) -> IO(U32 & U32):
+def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56_if57(c: Bool, +v5: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -648,8 +599,7 @@ def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56_
         +v79 : Bool <- IO.pure(Bool, U32.is_eq(v5, {233 : U32}))
         spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56_if57_if58(v79, v5)
 
-@unsafe
-def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56(+c: Bool, +v5: U32) -> IO(U32 & U32):
+def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56(c: Bool, +v5: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -659,8 +609,7 @@ def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56(
         +v78 : Bool <- IO.pure(Bool, U32.is_eq(v5, {231 : U32}))
         spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56_if57(v78, v5)
 
-@unsafe
-def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55(+c: Bool, +v5: U32) -> IO(U32 & U32):
+def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55(c: Bool, +v5: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -670,8 +619,7 @@ def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55(+c: B
         +v77 : Bool <- IO.pure(Bool, U32.is_eq(v5, {228 : U32}))
         spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55_if56(v77, v5)
 
-@unsafe
-def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54(+c: Bool, +v5: U32) -> IO(U32 & U32):
+def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54(c: Bool, +v5: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -681,8 +629,7 @@ def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54(+c: Bool, 
         +v76 : Bool <- IO.pure(Bool, U32.is_eq(v5, {227 : U32}))
         spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54_if55(v76, v5)
 
-@unsafe
-def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53(+c: Bool, +v5: U32) -> IO(U32 & U32):
+def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53(c: Bool, +v5: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -692,8 +639,7 @@ def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53(+c: Bool, +v5: 
         +v75 : Bool <- IO.pure(Bool, U32.is_eq(v5, {225 : U32}))
         spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53_if54(v75, v5)
 
-@unsafe
-def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52(+c: Bool, +v5: U32) -> IO(U32 & U32):
+def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52(c: Bool, +v5: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -703,8 +649,7 @@ def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52(+c: Bool, +v5: U32) 
         +v74 : Bool <- IO.pure(Bool, U32.is_eq(v5, {224 : U32}))
         spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52_if53(v74, v5)
 
-@unsafe
-def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51(+c: Bool, +v5: U32) -> IO(U32 & U32):
+def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51(c: Bool, +v5: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -714,8 +659,7 @@ def spiral_main_k44_if45_if46_if47_if48_if49_if50_if51(+c: Bool, +v5: U32) -> IO
         +v73 : Bool <- IO.pure(Bool, U32.is_eq(v5, {213 : U32}))
         spiral_main_k44_if45_if46_if47_if48_if49_if50_if51_if52(v73, v5)
 
-@unsafe
-def spiral_main_k44_if45_if46_if47_if48_if49_if50(+c: Bool, +v5: U32) -> IO(U32 & U32):
+def spiral_main_k44_if45_if46_if47_if48_if49_if50(c: Bool, +v5: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -725,8 +669,7 @@ def spiral_main_k44_if45_if46_if47_if48_if49_if50(+c: Bool, +v5: U32) -> IO(U32 
         +v72 : Bool <- IO.pure(Bool, U32.is_eq(v5, {211 : U32}))
         spiral_main_k44_if45_if46_if47_if48_if49_if50_if51(v72, v5)
 
-@unsafe
-def spiral_main_k44_if45_if46_if47_if48_if49(+c: Bool, +v5: U32) -> IO(U32 & U32):
+def spiral_main_k44_if45_if46_if47_if48_if49(c: Bool, +v5: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -736,8 +679,7 @@ def spiral_main_k44_if45_if46_if47_if48_if49(+c: Bool, +v5: U32) -> IO(U32 & U32
         +v71 : Bool <- IO.pure(Bool, U32.is_eq(v5, {201 : U32}))
         spiral_main_k44_if45_if46_if47_if48_if49_if50(v71, v5)
 
-@unsafe
-def spiral_main_k44_if45_if46_if47_if48(+c: Bool, +v5: U32) -> IO(U32 & U32):
+def spiral_main_k44_if45_if46_if47_if48(c: Bool, +v5: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -747,8 +689,7 @@ def spiral_main_k44_if45_if46_if47_if48(+c: Bool, +v5: U32) -> IO(U32 & U32):
         +v70 : Bool <- IO.pure(Bool, U32.is_eq(v5, {199 : U32}))
         spiral_main_k44_if45_if46_if47_if48_if49(v70, v5)
 
-@unsafe
-def spiral_main_k44_if45_if46_if47(+c: Bool, +v5: U32) -> IO(U32 & U32):
+def spiral_main_k44_if45_if46_if47(c: Bool, +v5: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -758,8 +699,7 @@ def spiral_main_k44_if45_if46_if47(+c: Bool, +v5: U32) -> IO(U32 & U32):
         +v69 : Bool <- IO.pure(Bool, U32.is_eq(v5, {196 : U32}))
         spiral_main_k44_if45_if46_if47_if48(v69, v5)
 
-@unsafe
-def spiral_main_k44_if45_if46(+c: Bool, +v5: U32) -> IO(U32 & U32):
+def spiral_main_k44_if45_if46(c: Bool, +v5: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -769,8 +709,7 @@ def spiral_main_k44_if45_if46(+c: Bool, +v5: U32) -> IO(U32 & U32):
         +v68 : Bool <- IO.pure(Bool, U32.is_eq(v5, {195 : U32}))
         spiral_main_k44_if45_if46_if47(v68, v5)
 
-@unsafe
-def spiral_main_k44_if45(+c: Bool, +v5: U32) -> IO(U32 & U32):
+def spiral_main_k44_if45(c: Bool, +v5: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -780,8 +719,7 @@ def spiral_main_k44_if45(+c: Bool, +v5: U32) -> IO(U32 & U32):
         +v67 : Bool <- IO.pure(Bool, U32.is_eq(v5, {193 : U32}))
         spiral_main_k44_if45_if46(v67, v5)
 
-@unsafe
-def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_if73_if74_if75_if76_if77(+c: Bool, +v8: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_if73_if74_if75_if76_if77(c: Bool, v8: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -790,8 +728,7 @@ def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_i
       do IO<U32 & U32>:
         return (v8, {4294967295 : U32})
 
-@unsafe
-def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_if73_if74_if75_if76(+c: Bool, +v8: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_if73_if74_if75_if76(c: Bool, +v8: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -801,8 +738,7 @@ def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_i
         +v129 : Bool <- IO.pure(Bool, U32.is_eq(v8, {245 : U32}))
         spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_if73_if74_if75_if76_if77(v129, v8)
 
-@unsafe
-def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_if73_if74_if75(+c: Bool, +v8: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_if73_if74_if75(c: Bool, +v8: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -812,8 +748,7 @@ def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_i
         +v128 : Bool <- IO.pure(Bool, U32.is_eq(v8, {243 : U32}))
         spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_if73_if74_if75_if76(v128, v8)
 
-@unsafe
-def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_if73_if74(+c: Bool, +v8: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_if73_if74(c: Bool, +v8: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -823,8 +758,7 @@ def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_i
         +v127 : Bool <- IO.pure(Bool, U32.is_eq(v8, {233 : U32}))
         spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_if73_if74_if75(v127, v8)
 
-@unsafe
-def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_if73(+c: Bool, +v8: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_if73(c: Bool, +v8: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -834,8 +768,7 @@ def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_i
         +v126 : Bool <- IO.pure(Bool, U32.is_eq(v8, {231 : U32}))
         spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_if73_if74(v126, v8)
 
-@unsafe
-def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72(+c: Bool, +v8: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72(c: Bool, +v8: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -845,8 +778,7 @@ def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72(+
         +v125 : Bool <- IO.pure(Bool, U32.is_eq(v8, {228 : U32}))
         spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72_if73(v125, v8)
 
-@unsafe
-def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71(+c: Bool, +v8: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71(c: Bool, +v8: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -856,8 +788,7 @@ def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71(+c: Bo
         +v124 : Bool <- IO.pure(Bool, U32.is_eq(v8, {227 : U32}))
         spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71_if72(v124, v8)
 
-@unsafe
-def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70(+c: Bool, +v8: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70(c: Bool, +v8: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -867,8 +798,7 @@ def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70(+c: Bool, +
         +v123 : Bool <- IO.pure(Bool, U32.is_eq(v8, {225 : U32}))
         spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70_if71(v123, v8)
 
-@unsafe
-def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69(+c: Bool, +v8: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69(c: Bool, +v8: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -878,8 +808,7 @@ def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69(+c: Bool, +v8: U
         +v122 : Bool <- IO.pure(Bool, U32.is_eq(v8, {224 : U32}))
         spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69_if70(v122, v8)
 
-@unsafe
-def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68(+c: Bool, +v8: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68(c: Bool, +v8: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -889,8 +818,7 @@ def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68(+c: Bool, +v8: U32) -
         +v121 : Bool <- IO.pure(Bool, U32.is_eq(v8, {213 : U32}))
         spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68_if69(v121, v8)
 
-@unsafe
-def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67(+c: Bool, +v8: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67(c: Bool, +v8: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -900,8 +828,7 @@ def spiral_main_k44_k61_if62_if63_if64_if65_if66_if67(+c: Bool, +v8: U32) -> IO(
         +v120 : Bool <- IO.pure(Bool, U32.is_eq(v8, {211 : U32}))
         spiral_main_k44_k61_if62_if63_if64_if65_if66_if67_if68(v120, v8)
 
-@unsafe
-def spiral_main_k44_k61_if62_if63_if64_if65_if66(+c: Bool, +v8: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_if62_if63_if64_if65_if66(c: Bool, +v8: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -911,8 +838,7 @@ def spiral_main_k44_k61_if62_if63_if64_if65_if66(+c: Bool, +v8: U32) -> IO(U32 &
         +v119 : Bool <- IO.pure(Bool, U32.is_eq(v8, {201 : U32}))
         spiral_main_k44_k61_if62_if63_if64_if65_if66_if67(v119, v8)
 
-@unsafe
-def spiral_main_k44_k61_if62_if63_if64_if65(+c: Bool, +v8: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_if62_if63_if64_if65(c: Bool, +v8: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -922,8 +848,7 @@ def spiral_main_k44_k61_if62_if63_if64_if65(+c: Bool, +v8: U32) -> IO(U32 & U32)
         +v118 : Bool <- IO.pure(Bool, U32.is_eq(v8, {199 : U32}))
         spiral_main_k44_k61_if62_if63_if64_if65_if66(v118, v8)
 
-@unsafe
-def spiral_main_k44_k61_if62_if63_if64(+c: Bool, +v8: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_if62_if63_if64(c: Bool, +v8: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -933,8 +858,7 @@ def spiral_main_k44_k61_if62_if63_if64(+c: Bool, +v8: U32) -> IO(U32 & U32):
         +v117 : Bool <- IO.pure(Bool, U32.is_eq(v8, {196 : U32}))
         spiral_main_k44_k61_if62_if63_if64_if65(v117, v8)
 
-@unsafe
-def spiral_main_k44_k61_if62_if63(+c: Bool, +v8: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_if62_if63(c: Bool, +v8: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -944,8 +868,7 @@ def spiral_main_k44_k61_if62_if63(+c: Bool, +v8: U32) -> IO(U32 & U32):
         +v116 : Bool <- IO.pure(Bool, U32.is_eq(v8, {195 : U32}))
         spiral_main_k44_k61_if62_if63_if64(v116, v8)
 
-@unsafe
-def spiral_main_k44_k61_if62(+c: Bool, +v8: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_if62(c: Bool, +v8: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -955,8 +878,7 @@ def spiral_main_k44_k61_if62(+c: Bool, +v8: U32) -> IO(U32 & U32):
         +v115 : Bool <- IO.pure(Bool, U32.is_eq(v8, {193 : U32}))
         spiral_main_k44_k61_if62_if63(v115, v8)
 
-@unsafe
-def spiral_main_k44_k61_k78_if79(+c: Bool) -> IO(U32):
+def spiral_main_k44_k61_k78_if79(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -965,8 +887,7 @@ def spiral_main_k44_k61_k78_if79(+c: Bool) -> IO(U32):
       do IO<U32>:
         return {4294967295 : U32}
 
-@unsafe
-def spiral_main_k44_k61_k78_if80(+c: Bool, +v11: U32, +v163: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_k78_if80(c: Bool, v11: U32, v163: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -975,8 +896,7 @@ def spiral_main_k44_k61_k78_if80(+c: Bool, +v11: U32, +v163: U32) -> IO(U32 & U3
       do IO<U32 & U32>:
         return (v163, {4294967295 : U32})
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_if82_if83(+c: Bool) -> IO(U32):
+def spiral_main_k44_k61_k78_k81_if82_if83(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -985,8 +905,7 @@ def spiral_main_k44_k61_k78_k81_if82_if83(+c: Bool) -> IO(U32):
       do IO<U32>:
         return {4294967295 : U32}
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_if82(+c: Bool, +v14: U32) -> IO(U32):
+def spiral_main_k44_k61_k78_k81_if82(c: Bool, +v14: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -996,8 +915,7 @@ def spiral_main_k44_k61_k78_k81_if82(+c: Bool, +v14: U32) -> IO(U32):
         +v168 : Bool <- IO.pure(Bool, U32.is_eq(v14, {771 : U32}))
         spiral_main_k44_k61_k78_k81_if82_if83(v168)
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_if84(+c: Bool, +v14: U32, +v170: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_k78_k81_if84(c: Bool, v14: U32, v170: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -1006,8 +924,7 @@ def spiral_main_k44_k61_k78_k81_if84(+c: Bool, +v14: U32, +v170: U32) -> IO(U32 
       do IO<U32 & U32>:
         return (v170, {4294967295 : U32})
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_k85_if86(+c: Bool) -> IO(U32):
+def spiral_main_k44_k61_k78_k81_k85_if86(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -1016,8 +933,7 @@ def spiral_main_k44_k61_k78_k81_k85_if86(+c: Bool) -> IO(U32):
       do IO<U32>:
         return {4294967295 : U32}
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_k85_if87(+c: Bool, +v17: U32, +v175: U32) -> IO(U32 & U32):
+def spiral_main_k44_k61_k78_k81_k85_if87(c: Bool, v17: U32, v175: U32) -> IO(U32 & U32):
   match c:
     case True{}:
       do IO<U32 & U32>:
@@ -1026,74 +942,67 @@ def spiral_main_k44_k61_k78_k81_k85_if87(+c: Bool, +v17: U32, +v175: U32) -> IO(
       do IO<U32 & U32>:
         return (v175, {4294967295 : U32})
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_k85_k88_if89(+c: Bool, +v11: U32, +v65: U32) -> IO(Bool):
+def spiral_main_k44_k61_k78_k81_k85_k88_if89(c: Bool, v11: U32, v65: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v180 : Bool <- IO.pure(Bool, U32.is_eq(v65, v11))
+        v180 : Bool <- IO.pure(Bool, U32.is_eq(v65, v11))
         return v180
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_k85_k88_if90_if91(+c: Bool, +v14: U32, +v113: U32) -> IO(Bool):
+def spiral_main_k44_k61_k78_k81_k85_k88_if90_if91(c: Bool, v14: U32, v113: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v183 : Bool <- IO.pure(Bool, U32.is_eq(v113, v14))
+        v183 : Bool <- IO.pure(Bool, U32.is_eq(v113, v14))
         return v183
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if93(+c: Bool, +v17: U32, +v161: U32) -> IO(Bool):
+def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if93(c: Bool, v17: U32, v161: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v186 : Bool <- IO.pure(Bool, U32.is_eq(v161, v17))
+        v186 : Bool <- IO.pure(Bool, U32.is_eq(v161, v17))
         return v186
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94_if95(+c: Bool, +v166: U32) -> IO(Bool):
+def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94_if95(c: Bool, v166: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v189 : Bool <- IO.pure(Bool, U32.is_eq(v166, {4294967295 : U32}))
+        v189 : Bool <- IO.pure(Bool, U32.is_eq(v166, {4294967295 : U32}))
         return v189
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94_if96_if97(+c: Bool, +v173: U32) -> IO(Bool):
+def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94_if96_if97(c: Bool, v173: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v192 : Bool <- IO.pure(Bool, U32.is_eq(v173, {4294967295 : U32}))
+        v192 : Bool <- IO.pure(Bool, U32.is_eq(v173, {4294967295 : U32}))
         return v192
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94_if96_if98_if99(+c: Bool, +v178: U32) -> IO(Bool):
+def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94_if96_if98_if99(c: Bool, v178: U32) -> IO(Bool):
   match c:
     case True{}:
       do IO<Bool>:
-        +v195 : Bool <- IO.pure(Bool, U32.is_eq(v178, {4294967295 : U32}))
+        v195 : Bool <- IO.pure(Bool, U32.is_eq(v178, {4294967295 : U32}))
         return v195
     case False{}:
       do IO<Bool>:
         return False{}
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94_if96_if98_if100(+c: Bool) -> IO(U32):
+def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94_if96_if98_if100(c: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -1102,8 +1011,7 @@ def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94_if96_if98_if100(+c: Bool)
       do IO<U32>:
         return {6 : U32}
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94_if96_if98(+c: Bool, +v8: U32, +v177: U32, +v178: U32) -> IO(U32):
+def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94_if96_if98(c: Bool, +v8: U32, +v177: U32, +v178: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -1114,8 +1022,7 @@ def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94_if96_if98(+c: Bool, +v8: 
       do IO<U32>:
         return {5 : U32}
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94_if96(+c: Bool, +v5: U32, +v8: U32, +v172: U32, +v173: U32, +v177: U32, +v178: U32) -> IO(U32):
+def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94_if96(c: Bool, +v5: U32, +v8: U32, +v172: U32, +v173: U32, +v177: U32, +v178: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -1126,8 +1033,7 @@ def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94_if96(+c: Bool, +v5: U32, 
       do IO<U32>:
         return {4 : U32}
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94(+c: Bool, +v2: U32, +v5: U32, +v8: U32, +v165: U32, +v166: U32, +v172: U32, +v173: U32, +v177: U32, +v178: U32) -> IO(U32):
+def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94(c: Bool, +v2: U32, +v5: U32, +v8: U32, +v165: U32, +v166: U32, +v172: U32, +v173: U32, +v177: U32, +v178: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -1138,8 +1044,7 @@ def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92_if94(+c: Bool, +v2: U32, +v5: 
       do IO<U32>:
         return {3 : U32}
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92(+c: Bool, +v2: U32, +v5: U32, +v8: U32, +v17: U32, +v160: U32, +v161: U32, +v165: U32, +v166: U32, +v172: U32, +v173: U32, +v177: U32, +v178: U32) -> IO(U32):
+def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92(c: Bool, +v2: U32, +v5: U32, +v8: U32, +v17: U32, +v160: U32, +v161: U32, +v165: U32, +v166: U32, +v172: U32, +v173: U32, +v177: U32, +v178: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -1150,8 +1055,7 @@ def spiral_main_k44_k61_k78_k81_k85_k88_if90_if92(+c: Bool, +v2: U32, +v5: U32, 
       do IO<U32>:
         return {2 : U32}
 
-@unsafe
-def spiral_main_k44_k61_k78_k81_k85_k88_if90(+c: Bool, +v2: U32, +v5: U32, +v8: U32, +v14: U32, +v17: U32, +v112: U32, +v113: U32, +v160: U32, +v161: U32, +v165: U32, +v166: U32, +v172: U32, +v173: U32, +v177: U32, +v178: U32) -> IO(U32):
+def spiral_main_k44_k61_k78_k81_k85_k88_if90(c: Bool, +v2: U32, +v5: U32, +v8: U32, +v14: U32, +v17: U32, +v112: U32, +v113: U32, +v160: U32, +v161: U32, +v165: U32, +v166: U32, +v172: U32, +v173: U32, +v177: U32, +v178: U32) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
@@ -1216,7 +1120,6 @@ def spiral_main_k44(+p: U32 & U32, +v0: String, +v1: U32, +v2: U32, +v3: String,
     +p : U32 & U32 <- spiral_main_k44_if45(v66, v5)
     spiral_main_k44_k61(p, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v64, v65, v66)
 
-@unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : String <- IO.pure(String, "é")
@@ -1238,10 +1141,9 @@ def spiral_main() -> IO(U32):
     +v16 : U32 <- IO.pure(U32, {0 : U32})
     +v17 : U32 <- utf8_scalar_at_byte_offset_0(v15, v16)
     +v18 : Bool <- IO.pure(Bool, U32.is_eq(v2, {192 : U32}))
-    +p : U32 & U32 <- spiral_main_if28(v18, v2)
+    p : U32 & U32 <- spiral_main_if28(v18, v2)
     spiral_main_k44(p, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18)
 
-@unsafe
 def main() -> IO(Unit):
   do IO<Unit>:
     +code : U32 <- spiral_main()

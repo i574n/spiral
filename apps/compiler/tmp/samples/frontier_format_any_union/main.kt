@@ -5,7 +5,7 @@ fun sp_method2(p0: Mut0, p1: String) {
     var v2: String = ""
     v2 = v0.l0
     var v3: String = ""
-    v3 = v2 + v1 
+    v3 = (v2 + v1)
     v0.l0 = v3
 }
 fun sp_format_real_1(p0: Int): String {
@@ -17,36 +17,28 @@ fun sp_format_real_1(p0: Int): String {
     var v3: String = ""
     v3 = (v0).toString()
     sp_method2(v2, v3)
-    var v4: String = ""
-    v4 = v2.l0
+    val v4: String = v2.l0
     return v4
 }
 fun sp_method0(): String {
-    var v0: String = ""
-    v0 = "Some"
+    var v0: Int = 0
+    v0 = 1
     var v1: String = ""
-    v1 = "("
+    v1 = sp_format_real_1(v0)
     var v2: String = ""
-    v2 = v0 + v1 
-    var v3: Int = 0
-    v3 = 1
-    var v4: String = ""
-    v4 = sp_format_real_1(v3)
-    val v5: String = v2 + v4 
-    val v6: String = ")"
-    val v7: String = v5 + v6 
-    return v7
+    v2 = ("Some(" + v1)
+    var v3: String = ""
+    v3 = (v2 + ")")
+    return v3
 }
 fun spiral_main(): Int {
     var v0: String = ""
     v0 = sp_method0()
     var v1: String = ""
-    v1 = "x: "
-    var v2: String = ""
-    v2 = v1 + v0 
-    var v3: Boolean = false
-    v3 = (v2 == "")
-    if (v3) {
+    v1 = ("x: " + v0)
+    var v2: Boolean = false
+    v2 = (v1 == "")
+    if (v2) {
         return 1
     } else {
         return 0

@@ -6,29 +6,24 @@ function format_real_2(v0)
     local v2 = { __tag = "Mut0", l0 = v1 }
     local v3 = tostring(v0)       
     local v4 = v2 ~= nil and v2.l0
-    local v5 = v4 .. v3 
+    local v5 = (v4 .. v3)
     v2.l0 = v5
     local v6 = v2 ~= nil and v2.l0
     return v6
 end
 
 function method1()
-    local v0 = "Some"
-    local v1 = "("
-    local v2 = v0 .. v1 
-    local v3 = 1
-    local v4 = format_real_2(v3)
-    local v5 = v2 .. v4 
-    local v6 = ")"
-    local v7 = v5 .. v6 
-    return v7
+    local v0 = 1
+    local v1 = format_real_2(v0)
+    local v2 = ("Some(" .. v1)
+    local v3 = (v2 .. ")")
+    return v3
 end
 
 function method0()
     local v0 = method1()
-    local v1 = "x: "
-    local v2 = v1 .. v0 
-    return v2
+    local v1 = ("x: " .. v0)
+    return v1
 end
 
 local v0 = method0()

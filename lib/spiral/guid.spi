@@ -3,7 +3,6 @@
 :# guid static =
     :< testing
 
-/// ## guid
 :! guid_python =
     `(
         global "import uuid"
@@ -160,7 +159,6 @@
     |> to_string
     |> _assert_eq "6543210f-edcb-a987-6543-210fedcba987"
 
-/// ## main
 ///> fsharp
 
 := main () =

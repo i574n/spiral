@@ -24,8 +24,7 @@ pub fn closure0(capt: #(Us0)) -> fn(Int) -> Int {
                 Us0Hit(v2) -> v2
                 Us0Idle -> 3
             }
-        let v8 = spiral_wrap_signed(v7 + v1, 32)
-        v8
+        spiral_wrap_signed(v7 + v1, 32)
     }
 }
 pub fn method0(v0: fn(Int) -> Int) -> Int {

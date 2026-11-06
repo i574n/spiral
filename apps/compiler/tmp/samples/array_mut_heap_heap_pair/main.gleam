@@ -78,27 +78,17 @@ pub type Heap1 { Heap1(l0 : Heap0, l1 : Heap0) }
 pub type Heap2 { Heap2(l0 : Heap1, l1 : Int) }
 pub type Mut0 { Mut0(l0 : Heap2) }
 pub fn main() {
-    let v0 = 1
-    let v1 = "no"
-    let v2 = Heap0(l0: v0, l1: v1)
-    let v3 = 2
-    let v4 = "zz"
-    let v5 = Heap0(l0: v3, l1: v4)
+    let v2 = Heap0(l0: 1, l1: "no")
+    let v5 = Heap0(l0: 2, l1: "zz")
     let v6 = Heap1(l0: v2, l1: v5)
-    let v7 = 3
-    let v8 = Heap2(l0: v6, l1: v7)
+    let v8 = Heap2(l0: v6, l1: 3)
     let v9 = spiral_ref_new(Mut0(l0: v8))
     let v10 = spiral_array_create(1)
     spiral_array_set(v10, 0, v9)
-    let v11 = 7
-    let v12 = "hi"
-    let v13 = Heap0(l0: v11, l1: v12)
-    let v14 = 4
-    let v15 = "yo"
-    let v16 = Heap0(l0: v14, l1: v15)
+    let v13 = Heap0(l0: 7, l1: "hi")
+    let v16 = Heap0(l0: 4, l1: "yo")
     let v17 = Heap1(l0: v13, l1: v16)
-    let v18 = 2
-    let v19 = Heap2(l0: v17, l1: v18)
+    let v19 = Heap2(l0: v17, l1: 2)
     let v20 = spiral_array_get(v10, 0)
     spiral_ref_set(v20, Mut0(l0: v19))
     let v21 = spiral_ref_get(v20).l0
@@ -110,32 +100,28 @@ pub fn main() {
     let v32 =
         case v30 {
             True -> {
-                let v31 = v27 == "hi"
-                v31
+                v27 == "hi"
             }
             False -> False
         }
     let v34 =
         case v32 {
             True -> {
-                let v33 = v28 == 4
-                v33
+                v28 == 4
             }
             False -> False
         }
     let v36 =
         case v34 {
             True -> {
-                let v35 = v29 == "yo"
-                v35
+                v29 == "yo"
             }
             False -> False
         }
     let v38 =
         case v36 {
             True -> {
-                let v37 = v23 == 2
-                v37
+                v23 == 2
             }
             False -> False
         }

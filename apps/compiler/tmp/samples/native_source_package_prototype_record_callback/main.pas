@@ -22,6 +22,10 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 function ClosureCreate0(v0: LongInt): TFun0; forward;
 function method0(v0: TFun0): TTuple0; forward;
 function TupleCreate0(f0: LongInt; f1: LongInt): TTuple0;
@@ -38,6 +42,7 @@ begin
   v4 := v3 + v0;
   v5 := v2 - 18;
   Result := TupleCreate0(v4, v5);
+  SpiralRelease(Self);
 end;
 function ClosureCreate0(v0: LongInt): TFun0;
 var c: Tclosure0;
@@ -63,9 +68,11 @@ var
 begin
   v0 := 1;
   v1 := ClosureCreate0(v0);
+  SpiralRetain(v1);
   tmp4 := method0(v1);
   v2 := tmp4.f0;
   v3 := tmp4.f1;
+  SpiralRelease(v1);
   v4 := 10 + v2;
   v5 := 20 + v3;
   v6 := v4 + v5;

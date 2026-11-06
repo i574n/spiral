@@ -773,7 +773,8 @@ defmodule Spiral.Cells do
            rs: output,
            timeout: budget(deadline),
            mtime: source_mtime(spi, opts),
-           backend: backend
+           backend: backend,
+           pin: opts[:compiler_pin]
          }) do
       {:ok, _revision} ->
         charge_queue()
@@ -1047,22 +1048,26 @@ defmodule Spiral.Cells do
     |> String.trim()
   end
 
-  defp write_package(dir, names, imports, package_dir, real) do
+  @doc false
+  def notebook_package_text(names, imports, package_dir) do
     text = Cell.package_project(names)
 
     text =
       if imports == [] do
         text
       else
-        String.replace(text, "modules:\n", Enum.map_join(imports, "", &("    " <> &1 <> "\n")) <> "modules:\n", global: false)
+        String.replace(text, "    |core-\n", "    |core-\n" <> Enum.map_join(imports, "", &("    " <> &1 <> "\n")), global: false)
       end
 
-    text =
-      if package_dir do
-        String.replace(text, "packageDir: .", "packageDir: " <> package_dir, global: false)
-      else
-        text
-      end
+    if package_dir do
+      String.replace(text, "packageDir: .", "packageDir: " <> package_dir, global: false)
+    else
+      text
+    end
+  end
+
+  defp write_package(dir, names, imports, package_dir, real) do
+    text = notebook_package_text(names, imports, package_dir)
 
     text =
       if real in [nil, ""] do

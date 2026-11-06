@@ -8,19 +8,19 @@ enum US0 {
 }
 fn spiral_main() -> i32 {
     let v0: i32 = 2i32;
-    let v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
+    let mut v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
     let v2: i32 = 7i32;
-    v1.clone().borrow_mut()[0i32 as usize] = v2;
+    v1.borrow_mut()[0i32 as usize] = v2;
     let v3: bool = true;
     let v6: US0 = if v3 {
         US0::US0_Held(v1)
     } else {
         US0::US0_Missing
     };
-    match &v6 {
+    match v6 {
         US0::US0_Held(v7) => {
-            let v7: Rc<RefCell<Vec<i32>>> = v7.clone();
-            let v8: i32 = v7.borrow()[0i32 as usize].clone();
+            let v7: Rc<RefCell<Vec<i32>>> = v7;
+            let v8: i32 = v7.borrow()[0i32 as usize];
             let v9: bool = v8 == 7i32;
             if v9 {
                 0i32
