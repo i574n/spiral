@@ -217,10 +217,21 @@
     Verbose |> set_trace_level
     test_trace_level Verbose |> _assert_eq !+
 
+:= compiled_out (level : trace_level) : bool =
+    run_target \|
+        | Rust => \ () =>
+            ?= level ?|
+            | Verbose => $'matches\!(option_env\!("SPIRAL_TRACE_FLOOR"), Some("Debug" | "Info" | "Warning" | "Critical"))' : bool
+            | Debug => $'matches\!(option_env\!("SPIRAL_TRACE_FLOOR"), Some("Info" | "Warning" | "Critical"))' : bool
+            | Info => $'matches\!(option_env\!("SPIRAL_TRACE_FLOOR"), Some("Warning" | "Critical"))' : bool
+            | Warning => $'matches\!(option_env\!("SPIRAL_TRACE_FLOOR"), Some("Critical"))' : bool
+            | Critical => !-
+        | _ => \ () => !-
+
 := trace_raw level fn =
     \ () =>
         := trace_state =
-            ? level |> test_trace_level |> not
+            ? compiled_out level || (level |> test_trace_level |> not)
             ?> None
             |:
                 := text = fn ()
@@ -237,25 +248,32 @@
                             fn spiral_trace_near_log(text: &str) {
                                 use std::sync::atomic::{AtomicUsize, Ordering};
                                 static LOGGED: AtomicUsize = AtomicUsize::new(0);
-                                let cs: Vec<char> = text.chars().collect();
-                                for c in cs.chunks(15000) {
-                                    let s: String = c.iter().collect();
+                                let mut rest = text;
+                                while !rest.is_empty() {
                                     let used = LOGGED.load(Ordering::Relaxed);
                                     let budget = 16000usize.saturating_sub(used);
                                     if budget < 13 {
                                         break;
                                     }
-                                    let s = if s.len() <= budget {
-                                        s
+                                    let mut end = rest.len().min(15000);
+                                    while !rest.is_char_boundary(end) {
+                                        end -= 1;
+                                    }
+                                    let (chunk, tail) = rest.split_at(end);
+                                    if chunk.len() <= budget {
+                                        LOGGED.store(used + chunk.len(), Ordering::Relaxed);
+                                        near_sdk::env::log_str(chunk);
+                                        rest = tail;
                                     } else {
-                                        let mut end = budget - 12;
-                                        while !s.is_char_boundary(end) {
-                                            end -= 1;
+                                        let mut cut = budget - 12;
+                                        while !chunk.is_char_boundary(cut) {
+                                            cut -= 1;
                                         }
-                                        format!("{} [truncated]", &s[..end])
-                                    };
-                                    LOGGED.store(used + s.len(), Ordering::Relaxed);
-                                    near_sdk::env::log_str(&s);
+                                        let s = format!("{} [truncated]", &chunk[..cut]);
+                                        LOGGED.store(used + s.len(), Ordering::Relaxed);
+                                        near_sdk::env::log_str(&s);
+                                        break;
+                                    }
                                 }
                             }
                             """
@@ -267,8 +285,8 @@
                                 |? text = ""
                                 ?> *acc
                                 |: *acc ++\# text
-                            := char_count : convert::unativeint = !\\(new_acc, $'"$0.chars().count()"')
-                            := chunks_len : i32 = ((convert::convert char_count : i32) + 14999i32) / 15000i32
+                            := byte_count : convert::unativeint = !\\(new_acc, $'"$0.len()"')
+                            := chunks_len : i32 = ((convert::convert byte_count : i32) + 14999i32) / 15000i32
                             ? text <>. "" && chunks_len <= 1i32
                             ?> acc <- new_acc
                             |:
