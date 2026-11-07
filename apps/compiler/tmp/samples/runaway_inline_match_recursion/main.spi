@@ -1,0 +1,15 @@
+:| ^ nat =
+    | Zero
+    | Succ : nat
+
+:= ^ depth (value : nat) (acc : i32) : i32 =
+    ?= value ?|
+    | Zero => acc
+    | Succ rest => depth rest acc
+
+:= main () : i32 =
+    := ~value = Succ (Succ Zero)
+    depth value 0i32
+
+:= expected_error_ejp0011_reentry_limit () = ()
+:= oracle_must_not_record_current_error () = ()

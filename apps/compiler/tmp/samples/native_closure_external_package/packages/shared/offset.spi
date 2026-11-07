@@ -1,0 +1,1 @@
+:= add_one ~g ~x : i32 = ~~ (\ x => transport::apply g x + 1i32) x

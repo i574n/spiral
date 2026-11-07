@@ -1,0 +1,172 @@
+///- --package .
+:! array_bool_bool_array = array_base bool
+
+:= array_bool_create (n : i32) : array_bool_bool_array = array_bool_bool_array !!!!ArrayCreate(`bool, n)
+:= array_bool_get (values : array_bool_bool_array) (i : i32) : bool =
+    ?= values ?|
+    | array_bool_bool_array raw => !!!!ArrayIndex(raw, i)
+:= array_bool_set (values : array_bool_bool_array) (i : i32) (value : bool) : () =
+    ?= values ?|
+    | array_bool_bool_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+///> c
+///> zig
+test array_bool_returns_zero =
+    := program () : i32 =
+        := values = array_bool_create 1i32
+        := ~on = !+
+        array_bool_set values 0i32 on
+        ? array_bool_get values 0i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "array_bool"
+
+:! array_cell_cell_array = array_base (heap { value : i32 })
+
+:= array_cell_create (n : i32) : array_cell_cell_array =
+    array_cell_cell_array !!!!ArrayCreate(`(heap { value : i32 }), n)
+:= array_cell_get (array : array_cell_cell_array) (i : i32) : heap { value : i32 } =
+    ?= array ?|
+    | array_cell_cell_array values => !!!!ArrayIndex(values, i)
+:= array_cell_set (array : array_cell_cell_array) (i : i32) (value : heap { value : i32 }) : () =
+    ?= array ?|
+    | array_cell_cell_array values => !!!!ArrayIndexSet(values, i, value)
+
+///> c
+///> zig
+test array_cell_returns_zero =
+    := program () : i32 =
+        := ~n = 2i32
+        := a = array_cell_create n
+        := ~x = 4i32
+        := ~y = 6i32
+        array_cell_set a 0i32 !!!!LayoutToHeap({ value = x })
+        array_cell_set a 1i32 !!!!LayoutToHeap({ value = y })
+        := left = !!!!LayoutIndex(array_cell_get a 0i32)
+        := right = !!!!LayoutIndex(array_cell_get a 1i32)
+        ? left.value +. right.value =. 10i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "array_cell"
+
+///> c
+///> zig
+test array_create_reads_zero_returns_zero =
+    := program () : i32 =
+        := old : array_base i32 = !!!!ArrayCreate(`i32, 4i32)
+        !!!!ArrayIndexSet(old, 0i32, 7i32)
+        !!!!ArrayIndexSet(old, 1i32, 7i32)
+        !!!!ArrayIndexSet(old, 2i32, 7i32)
+        !!!!ArrayIndexSet(old, 3i32, 7i32)
+        := seven : i32 = !!!!ArrayIndex(old, 3i32)
+        := xs : array_base i32 = !!!!ArrayCreate(`i32, 4i32)
+        !!!!ArrayIndexSet(xs, 0i32, 5i32)
+        := unwritten : i32 = !!!!ArrayIndex(xs, 3i32)
+        := written : i32 = !!!!ArrayIndex(xs, 0i32)
+        !!!!Add(!!!!Add(!!!!Mult(unwritten, 100i32), written), !!!!Sub(seven, 7i32))
+    ? program () <> 5i32 ?> failwith "array_create_reads_zero"
+
+:! array_f32_f32_array = array_base f32
+
+:= array_f32_create (n : i32) : array_f32_f32_array = array_f32_f32_array !!!!ArrayCreate(`f32, n)
+:= array_f32_get (values : array_f32_f32_array) (i : i32) : f32 =
+    ?= values ?|
+    | array_f32_f32_array raw => !!!!ArrayIndex(raw, i)
+:= array_f32_set (values : array_f32_f32_array) (i : i32) (value : f32) : () =
+    ?= values ?|
+    | array_f32_f32_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+///> c
+///> zig
+test array_f32_returns_zero =
+    := program () : i32 =
+        := values = array_f32_create 1i32
+        := ~x = 1.5f32
+        array_f32_set values 0i32 x
+        ? array_f32_get values 0i32 =. 1.5f32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "array_f32"
+
+:! array_fun_fun_array = array_base (i32 -> i32)
+
+:= array_fun_create (n : i32) : array_fun_fun_array = array_fun_fun_array !!!!ArrayCreate(`(i32 -> i32), n)
+:= array_fun_get (array : array_fun_fun_array) (i : i32) : i32 -> i32 =
+    ?= array ?|
+    | array_fun_fun_array values => !!!!ArrayIndex(values, i)
+:= array_fun_set (array : array_fun_fun_array) (i : i32) (f : i32 -> i32) : () =
+    ?= array ?|
+    | array_fun_fun_array values => !!!!ArrayIndexSet(values, i, f)
+
+///> c
+///> zig
+test array_fun_returns_zero =
+    := program () : i32 =
+        := ~n = 3i32
+        := f (z : i32) : i32 = z +. n
+        := ~g = f
+        := ~len = 1i32
+        := a = array_fun_create len
+        array_fun_set a 0i32 g
+        := h = array_fun_get a 0i32
+        ? h 4i32 =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "array_fun"
+
+:! array_heap_f32_cell_array = array_base (heap { value : f32 * string })
+
+:= array_heap_f32_create (n : i32) : array_heap_f32_cell_array =
+    array_heap_f32_cell_array !!!!ArrayCreate(`(heap { value : f32 * string }), n)
+:= array_heap_f32_get (array : array_heap_f32_cell_array) (i : i32) : heap { value : f32 * string } =
+    ?= array ?|
+    | array_heap_f32_cell_array values => !!!!ArrayIndex(values, i)
+:= array_heap_f32_set (array : array_heap_f32_cell_array) (i : i32) (value : heap { value : f32 * string }) : () =
+    ?= array ?|
+    | array_heap_f32_cell_array values => !!!!ArrayIndexSet(values, i, value)
+
+///> c
+///> zig
+test array_heap_f32_returns_zero =
+    := program () : i32 =
+        := ~x = 1.5f32
+        := ~word = "hi"
+        := pair = x, word
+        := cell = !!!!LayoutToHeap({ value = pair })
+        := a = array_heap_f32_create 1i32
+        array_heap_f32_set a 0i32 cell
+        := held = array_heap_f32_get a 0i32
+        := opened = !!!!LayoutIndex(held)
+        := ~(left, right) = opened.value
+        ? left =. 1.5f32 && !!!!EQ(right, "hi") ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "array_heap_f32"
+
+:! array_heap_heap_cell_array = array_base (heap { value : (heap { value : i32 * string }) * i32 })
+
+:= array_heap_heap_create (n : i32) : array_heap_heap_cell_array =
+    array_heap_heap_cell_array !!!!ArrayCreate(`(heap { value : (heap { value : i32 * string }) * i32 }), n)
+:= array_heap_heap_get
+    (array : array_heap_heap_cell_array) (i : i32)
+    : heap { value : (heap { value : i32 * string }) * i32 }
+    =
+    ?= array ?|
+    | array_heap_heap_cell_array values => !!!!ArrayIndex(values, i)
+:= array_heap_heap_set
+    (array : array_heap_heap_cell_array) (i : i32) (value : heap { value : (heap { value : i32 * string }) * i32 })
+    : ()
+    =
+    ?= array ?|
+    | array_heap_heap_cell_array values => !!!!ArrayIndexSet(values, i, value)
+
+///> c
+///> zig
+test array_heap_heap_returns_zero =
+    := program () : i32 =
+        := ~n = 7i32
+        := ~word = "hi"
+        := inner_pair = n, word
+        := inner = !!!!LayoutToHeap({ value = inner_pair })
+        := ~extra = 1i32
+        := outer_pair = inner, extra
+        := outer = !!!!LayoutToHeap({ value = outer_pair })
+        := a = array_heap_heap_create 1i32
+        array_heap_heap_set a 0i32 outer
+        := held = array_heap_heap_get a 0i32
+        := opened = !!!!LayoutIndex(held)
+        := ~(cell, count) = opened.value
+        := inner_opened = !!!!LayoutIndex(cell)
+        := ~(left, right) = inner_opened.value
+        ? left =. 7i32 && !!!!EQ(right, "hi") && count =. 1i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "array_heap_heap"

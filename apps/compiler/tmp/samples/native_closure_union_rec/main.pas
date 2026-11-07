@@ -1,0 +1,137 @@
+program SpiralGenerated;
+{$mode delphi}{$H+}
+{$IFDEF CPUX86_64}{$OPTIMIZATION NOREGVAR}{$ENDIF}
+{$MAXSTACKSIZE $10000000}
+uses SysUtils, Math;
+type
+  TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
+  TUH0 = class;
+  TFun0 = class;
+  TFun0 = class(TSpiralRc)
+    function Invoke: TUH0; virtual; abstract;
+  end;
+  TUH0 = class(TSpiralRc) tag: LongInt; c0_0: QWord; c0_1: TFun0; procedure DropFields; override; end;
+  Tclosure0 = class(TFun0) v0: QWord; function Invoke: TUH0; override; end;
+procedure TSpiralRc.DropFields;
+begin
+end;
+procedure SpiralRetain(o: TSpiralRc);
+begin
+  if o <> nil then Inc(o.refc);
+end;
+procedure SpiralRelease(o: TSpiralRc);
+begin
+  if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
+end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
+function ClosureCreate0(v0: QWord): TFun0; forward;
+function build_0(v0: QWord): TUH0; forward;
+function sum_1(v0: TUH0; v1: QWord): QWord; forward;
+procedure TUH0.DropFields;
+begin
+  SpiralRelease(c0_1);
+end;
+function UH0_Cons(a0: QWord; a1: TFun0): TUH0;
+begin
+  Result := TUH0.Create; Result.tag := 0; Result.c0_0 := a0; Result.c0_1 := a1;
+end;
+var UH0_Nil_shared: TUH0 = nil;
+function UH0_Nil: TUH0;
+begin
+  if UH0_Nil_shared = nil then begin UH0_Nil_shared := TUH0.Create; UH0_Nil_shared.tag := 1; UH0_Nil_shared.refc := High(LongInt) div 2; end;
+  Result := UH0_Nil_shared;
+end;
+function Tclosure0.Invoke: TUH0;
+var
+  v1: QWord;
+begin
+  v1 := v0 - 1;
+  Result := build_0(v1);
+  SpiralRelease(Self);
+end;
+function ClosureCreate0(v0: QWord): TFun0;
+var c: Tclosure0;
+begin
+  c := Tclosure0.Create; c.v0 := v0;
+  Result := c;
+end;
+function build_0(v0: QWord): TUH0;
+var
+  v1: Boolean;
+  v3: TFun0;
+begin
+  v1 := v0 = 0;
+  if v1 then begin
+      Result := UH0_Nil;
+  end else begin
+      v3 := ClosureCreate0(v0);
+      Result := UH0_Cons(v0, v3);
+  end;
+end;
+function sum_1(v0: TUH0; v1: QWord): QWord;
+var
+  v2: QWord;
+  v3: TFun0;
+  v4: TUH0;
+  v5: QWord;
+begin
+  while True do begin
+      case v0.tag of
+          0: begin
+              v2 := v0.c0_0;
+              v3 := v0.c0_1;
+              SpiralRetain(v3);
+              SpiralRetain(v3);
+              SpiralRelease(v0);
+              v4 := v3.Invoke;
+              SpiralRelease(v3);
+              v5 := v1 + v2;
+              v0 := v4;
+              v1 := v5;
+              Continue;
+          end;
+          1: begin
+              SpiralRelease(v0);
+              Result := v1;
+              Exit;
+          end;
+      end;
+  end;
+end;
+function SpiralMain: LongInt;
+var
+  v0: QWord;
+  v1: TUH0;
+  v2: QWord;
+  v3: QWord;
+  v4: LongInt;
+  v5: LongInt;
+  v6: LongInt;
+  v7: LongInt;
+  v8: LongInt;
+begin
+  v0 := 10;
+  v1 := build_0(v0);
+  v2 := 0;
+  SpiralRetain(v1);
+  v3 := sum_1(v1, v2);
+  SpiralRelease(v1);
+  v4 := 5;
+  v5 := LongInt(v3);
+  v6 := v4 * 2;
+  v7 := v4 + v6;
+  v8 := v5 + v7;
+  Result := v8;
+end;
+var SpiralOutputBuffer: array[0..65535] of Char;
+var SpiralExitCode: LongInt;
+begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
+  SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
+  SpiralExitCode := SpiralMain;
+  if UH0_Nil_shared <> nil then UH0_Nil_shared.Free;
+  Halt(SpiralExitCode);
+end.

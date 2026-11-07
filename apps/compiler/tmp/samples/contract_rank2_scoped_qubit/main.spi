@@ -1,0 +1,23 @@
+:! region_a = ()
+:! coherent = ()
+
+:| qubit region phase =
+    | QubitA :: string -> qubit region_a coherent
+
+:| packed_qubit =
+    | PackedQubit :: (\? region. qubit region coherent) -> packed_qubit
+
+:= measure \* region. (qubit : qubit region coherent) : string =
+    ?= qubit ?|
+    | QubitA _ => "rank2-qubit-consumed"
+
+:= with_qubit \* result.
+    (visitor : \* region. qubit region coherent -> result)
+    : result =
+    := packed = PackedQubit (\? (QubitA "psi"))
+    ?= packed ?|
+    | PackedQubit qubit =>
+        := \? region. qubit = qubit
+        visitor qubit
+
+:= main () : string = with_qubit `$measure

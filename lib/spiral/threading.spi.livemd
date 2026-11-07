@@ -1,0 +1,406 @@
+#### threading (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test static --symbol\n\n:< testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test static --symbol
+
+  :< testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":< rust_operators\n\n:! join_handle t =\n    `(\n        rust::rust_type\n            `($'std_thread_JoinHandle<`t>')\n            `($'std::thread::JoinHandle<`t>')\n            \"type std_thread_JoinHandle<'T> = class end\"\n    )\n\n:= spawn \\* t. depth flag (x : () -> t) : join_handle t =\n    ? flag = 1u8\n    ?> (!\\($'\"true; let __spawn = std::thread::spawn(move || { //\"') : bool) |> ignore\n    |: (!\\($'\"true; let __spawn = std::thread::spawn(|| { //\"') : bool) |> ignore\n\n    :~ x' = x ()\n    := x' = ~~ x'\n\n    x' |> rust::fix_closure depth\n\n    !\\($'\"__spawn\"')\n\n:= join' \\* t.\n    (x : join_handle t)\n    : resultm::result'\n        t\n        (\n            rust::box (\n                rust::lifetime_ref\n                    rust::dyn'\n                    (\n                        rust::lifetime_join\n                            rust::any\n                            (\n                                rust::lifetime_ref\n                                    rust::send\n                                    rust::static_lifetime\n                            )\n                    )\n            )\n        ) =\n    !\\\\(x, $'\"std::thread::JoinHandle::join($0)\"')\n\n:! arc t =\n    `(\n        rust::rust_type\n            `($'std_sync_Arc<`t>')\n            `($'std::sync::Arc<`t>')\n            \"type std_sync_Arc<'T> = class end\"\n    )\n\n:= new_arc \\* t. (x : t) : arc t =\n    !\\($'\"std::sync::Arc::new(!x)\"')\n\n:! mutex t =\n    `(\n        rust::rust_type\n            `($'std_sync_Mutex<`t>')\n            `($'std::sync::Mutex<`t>')\n            \"type std_sync_Mutex<'T> = class end\"\n    )\n\n:= new_mutex \\* t. (x : t) : mutex t =\n    !\\($'\"std::sync::Mutex::new(!x)\"')\n\n:! rw_lock t =\n    `(\n        rust::rust_type\n            `($'std_sync_RwLock<`t>')\n            `($'std::sync::RwLock<`t>')\n            \"type std_sync_RwLock<'T> = class end\"\n    )\n\n:= new_rw_lock \\* t. (x : t) : rw_lock t =\n    !\\\\(x, $'\"std::sync::RwLock::new($0)\"')\n\n:= new_arc_mutex \\* t. (x : t) : arc (mutex t) =\n    x |> new_mutex |> new_arc\n\n:= arc_ptr_eq \\* t. (a : rust::ref (arc t)) (b : rust::ref (arc t)) : bool =\n    !\\\\((a, b), $'\"std::sync::Arc::ptr_eq($0, $1)\"')\n\n:= partial_eq_wrapper_arc_eq \\* t.\n    (self : rust::ref (rust::partial_eq_wrapper (arc t)))\n    (other : rust::ref (rust::partial_eq_wrapper (arc t)))\n    =\n    self\n    |> rust::unwrap_0_ref\n    |> arc_ptr_eq (\n        other\n        |> rust::unwrap_0_ref\n    )\n\n:= new_partial_eq_wrapper_arc \\* t. (x : arc t) : rust::partial_eq_wrapper (arc t) =\n    x |> rust::new_partial_eq_wrapper partial_eq_wrapper_arc_eq\n\n:! mutex_guard t =\n    `(\n        rust::rust_type\n            `($'std_sync_MutexGuard<`t>')\n            `($'std::sync::MutexGuard<`t>')\n            \"type std_sync_MutexGuard<'T> = class end\"\n    )\n\n:! rw_lock_read_guard t =\n    `(\n        rust::rust_type\n            `($'std_sync_RwLockReadGuard<`t>')\n            `($'std::sync::RwLockReadGuard<`t>')\n            \"type std_sync_RwLockReadGuard<'T> = class end\"\n    )\n\n:! rw_lock_write_guard t =\n    `(\n        rust::rust_type\n            `($'std_sync_RwLockWriteGuard<`t>')\n            `($'std::sync::RwLockWriteGuard<`t>')\n            \"type std_sync_RwLockWriteGuard<'T> = class end\"\n    )\n\n:! poison_error t =\n    `(\n        rust::rust_type\n            `($'std_sync_PoisonError<`t>')\n            `($'std::sync::PoisonError<`t>')\n            \"type std_sync_PoisonError<'T> = class end\"\n    )\n\n:! try_lock_error t =\n    `(\n        rust::rust_type\n            `($'std_sync_TryLockError<`t>')\n            `($'std::sync::TryLockError<`t>')\n            \"type std_sync_TryLockError<'T> = class end\"\n    )\n\n:= arc_mutex_lock \\* t. (x : arc (mutex t)) : resultm::result' (mutex_guard t) (poison_error (mutex_guard t)) =\n    := x = x |> rust::emit\n    !\\($'\"!x.lock()\"')\n\n:= arc_mutex_lock' \\* t. (x : arc (mutex t)) : resultm::result' (mutex_guard t) (poison_error (mutex_guard t)) =\n    !\\\\(x, $'\"$0.lock()\"')\n\n:= mutex_guard_ref \\* t. (x : mutex_guard t) : rust::ref t =\n    !\\\\(x, $'\"&$0\"')\n\n:= mutex_guard_ref_mut \\* t. (x : mutex_guard t) : rust::ref (rust::mut' t) =\n    := x = ~~ x\n    (!\\($'\"true; let mut !x = !x\"') : bool) |> ignore\n    !\\\\(x, $'\"&mut $0\"')\n\n:= mutex_guard_ref_mut'' \\* t. (x : mutex_guard t) : rust::ref (rust::mut' t) =\n    := x = x |> rust::emit\n    (!\\($'\"true; let mut !x = !x\"') : bool) |> ignore\n    !\\\\(x, $'\"&mut $0\"')\n\n:= mutex_guard_ref_mut' \\* t. (x : mutex_guard (rust::ref (rust::mut' t))) : rust::ref (rust::mut' t) =\n    := x = x |> rust::emit\n    (!\\($'\"true; let mut !x = !x\"') : bool) |> ignore\n    !\\\\(x, $'\"&mut $0\"')\n\n:! channel_receiver t =\n    `(\n        rust::rust_type\n            `($'std_sync_mpsc_Receiver<`t>')\n            `($'std::sync::mpsc::Receiver<`t>')\n            \"type std_sync_mpsc_Receiver<'T> = class end\"\n    )\n\n:! channel_sender t =\n    `(\n        rust::rust_type\n            `($'std_sync_mpsc_Sender<`t>')\n            `($'std::sync::mpsc::Sender<`t>')\n            \"type std_sync_mpsc_Sender<'T> = class end\"\n    )\n\n:= mpsc_channel () : channel_sender sm'::std_string * channel_receiver sm'::std_string =\n    !\\($'\"std::sync::mpsc::channel()\"')\n\n:= new_channel () : channel_sender sm'::std_string * arc (channel_receiver sm'::std_string) =\n    := sender, receiver = mpsc_channel ()\n    sender, new_arc receiver\n\n:! send_error t =\n    `(\n        rust::rust_type\n            `($'std_sync_mpsc_SendError<`t>')\n            `($'std::sync::mpsc::SendError<`t>')\n            \"type std_sync_mpsc_SendError<'T> = class end\"\n    )\n\n:= channel_send \\* t.\n    (line : t) (sender : rust::ref (channel_sender t))\n    : resultm::result' () (send_error sm'::std_string)\n    =\n    !\\\\((sender, line), $'\"$0.send($1)\"')\n\n:= rust_sleep_ms (ms : u64) : () = $'std::thread::sleep(std::time::Duration::from_millis(!ms))' : ()\n\n:= sleep (n : i32) : () =\n    run_target \\|\n        | Fsharp => \\ () => $'System.Threading.Thread.Sleep' n\n        | Rust => \\ () => rust_sleep_ms (conv n)\n        | _ => \\ () => ()\n\n:! thread = $'System.Threading.Thread'\n\n:== cancellation_token_switch =\n    {\n        Gleam : $'System.Threading.CancellationToken'\n        Lua : $'System.Threading.CancellationToken'\n        Fsharp : $'System.Threading.CancellationToken'\n        Python : $'System.Threading.CancellationToken'\n        TypeScript : $'System.Threading.CancellationToken'\n        Cpp : $'System.Threading.CancellationToken'\n        CppHost : $'System.Threading.CancellationToken'\n        Pascal : $'System.Threading.CancellationToken'\n        Cuda : $'System.Threading.CancellationToken'\n        C : $'System.Threading.CancellationToken'\n        Rust : $'std::sync::Arc<std::sync::atomic::AtomicBool>'\n    }\n:! cancellation_token = $'backend_switch `(cancellation_token_switch)'\n\n:== cancellation_token_source_switch =\n    {\n        Gleam : $'System.Threading.CancellationTokenSource'\n        Lua : $'System.Threading.CancellationTokenSource'\n        Fsharp : $'System.Threading.CancellationTokenSource'\n        Python : $'System.Threading.CancellationTokenSource'\n        TypeScript : $'System.Threading.CancellationTokenSource'\n        Cpp : $'System.Threading.CancellationTokenSource'\n        CppHost : $'System.Threading.CancellationTokenSource'\n        Pascal : $'System.Threading.CancellationTokenSource'\n        Cuda : $'System.Threading.CancellationTokenSource'\n        C : $'System.Threading.CancellationTokenSource'\n        Rust : $'std::sync::Arc<std::sync::atomic::AtomicBool>'\n    }\n:! cancellation_token_source = $'backend_switch `(cancellation_token_source_switch)'\n\n:== cancellation_token_registration_switch =\n    {\n        Gleam : $'System.Threading.CancellationTokenRegistration'\n        Lua : $'System.Threading.CancellationTokenRegistration'\n        Fsharp : $'System.Threading.CancellationTokenRegistration'\n        Python : $'System.Threading.CancellationTokenRegistration'\n        TypeScript : $'System.Threading.CancellationTokenRegistration'\n        Cpp : $'System.Threading.CancellationTokenRegistration'\n        CppHost : $'System.Threading.CancellationTokenRegistration'\n        Pascal : $'System.Threading.CancellationTokenRegistration'\n        Cuda : $'System.Threading.CancellationTokenRegistration'\n        C : $'System.Threading.CancellationTokenRegistration'\n        Rust : $'()'\n    }\n:! cancellation_token_registration = $'backend_switch `(cancellation_token_registration_switch)'\n\n:= cancellation_source_token (x : cancellation_token_source) : cancellation_token =\n    ? is_rust ()\n    ?> $'!x.clone()'\n    |: $'!x.Token'\n\n:= rust_cancel (x : cancellation_token_source) : () = $'!x.store(true, std::sync::atomic::Ordering::SeqCst)' : ()\n\n:= cancellation_source_cancel (x : cancellation_token_source) : () =\n    run_target \\|\n        | Fsharp => \\ () => $'!x.Cancel' ()\n        | Rust => \\ () => rust_cancel x\n        | _ => \\ () => null ()\n\n:= create_linked_token_source ((array x) : array cancellation_token) : cancellation_token_source =\n    x |> $'System.Threading.CancellationTokenSource.CreateLinkedTokenSource'\n\n:! concurrent_stack t = $'System.Collections.Concurrent.ConcurrentStack<`t>'\n\n:= new_cancellation_token_source () : cancellation_token_source =\n    ? is_rust ()\n    ?> $'std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))'\n    |: $'new `cancellation_token_source ()'\n\n:= token_cancellation_requested (ct : cancellation_token) : bool =\n    ? is_rust ()\n    ?> $'!ct.load(std::sync::atomic::Ordering::SeqCst)'\n    |: $'!ct.IsCancellationRequested'\n\n:= cancelled_after_a_sleep (source : cancellation_token_source) : bool =\n    cancellation_source_cancel source\n    sleep 1i32\n    cancellation_source_token source |> token_cancellation_requested","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :< rust_operators
+
+  :! join_handle t =
+      `(
+          rust::rust_type
+              `($'std_thread_JoinHandle<`t>')
+              `($'std::thread::JoinHandle<`t>')
+              "type std_thread_JoinHandle<'T> = class end"
+      )
+
+  := spawn \* t. depth flag (x : () -> t) : join_handle t =
+      ? flag = 1u8
+      ?> (!\($'"true; let __spawn = std::thread::spawn(move || { //"') : bool) |> ignore
+      |: (!\($'"true; let __spawn = std::thread::spawn(|| { //"') : bool) |> ignore
+
+      :~ x' = x ()
+      := x' = ~~ x'
+
+      x' |> rust::fix_closure depth
+
+      !\($'"__spawn"')
+
+  := join' \* t.
+      (x : join_handle t)
+      : resultm::result'
+          t
+          (
+              rust::box (
+                  rust::lifetime_ref
+                      rust::dyn'
+                      (
+                          rust::lifetime_join
+                              rust::any
+                              (
+                                  rust::lifetime_ref
+                                      rust::send
+                                      rust::static_lifetime
+                              )
+                      )
+              )
+          ) =
+      !\\(x, $'"std::thread::JoinHandle::join($0)"')
+
+  :! arc t =
+      `(
+          rust::rust_type
+              `($'std_sync_Arc<`t>')
+              `($'std::sync::Arc<`t>')
+              "type std_sync_Arc<'T> = class end"
+      )
+
+  := new_arc \* t. (x : t) : arc t =
+      !\($'"std::sync::Arc::new(!x)"')
+
+  :! mutex t =
+      `(
+          rust::rust_type
+              `($'std_sync_Mutex<`t>')
+              `($'std::sync::Mutex<`t>')
+              "type std_sync_Mutex<'T> = class end"
+      )
+
+  := new_mutex \* t. (x : t) : mutex t =
+      !\($'"std::sync::Mutex::new(!x)"')
+
+  :! rw_lock t =
+      `(
+          rust::rust_type
+              `($'std_sync_RwLock<`t>')
+              `($'std::sync::RwLock<`t>')
+              "type std_sync_RwLock<'T> = class end"
+      )
+
+  := new_rw_lock \* t. (x : t) : rw_lock t =
+      !\\(x, $'"std::sync::RwLock::new($0)"')
+
+  := new_arc_mutex \* t. (x : t) : arc (mutex t) =
+      x |> new_mutex |> new_arc
+
+  := arc_ptr_eq \* t. (a : rust::ref (arc t)) (b : rust::ref (arc t)) : bool =
+      !\\((a, b), $'"std::sync::Arc::ptr_eq($0, $1)"')
+
+  := partial_eq_wrapper_arc_eq \* t.
+      (self : rust::ref (rust::partial_eq_wrapper (arc t)))
+      (other : rust::ref (rust::partial_eq_wrapper (arc t)))
+      =
+      self
+      |> rust::unwrap_0_ref
+      |> arc_ptr_eq (
+          other
+          |> rust::unwrap_0_ref
+      )
+
+  := new_partial_eq_wrapper_arc \* t. (x : arc t) : rust::partial_eq_wrapper (arc t) =
+      x |> rust::new_partial_eq_wrapper partial_eq_wrapper_arc_eq
+
+  :! mutex_guard t =
+      `(
+          rust::rust_type
+              `($'std_sync_MutexGuard<`t>')
+              `($'std::sync::MutexGuard<`t>')
+              "type std_sync_MutexGuard<'T> = class end"
+      )
+
+  :! rw_lock_read_guard t =
+      `(
+          rust::rust_type
+              `($'std_sync_RwLockReadGuard<`t>')
+              `($'std::sync::RwLockReadGuard<`t>')
+              "type std_sync_RwLockReadGuard<'T> = class end"
+      )
+
+  :! rw_lock_write_guard t =
+      `(
+          rust::rust_type
+              `($'std_sync_RwLockWriteGuard<`t>')
+              `($'std::sync::RwLockWriteGuard<`t>')
+              "type std_sync_RwLockWriteGuard<'T> = class end"
+      )
+
+  :! poison_error t =
+      `(
+          rust::rust_type
+              `($'std_sync_PoisonError<`t>')
+              `($'std::sync::PoisonError<`t>')
+              "type std_sync_PoisonError<'T> = class end"
+      )
+
+  :! try_lock_error t =
+      `(
+          rust::rust_type
+              `($'std_sync_TryLockError<`t>')
+              `($'std::sync::TryLockError<`t>')
+              "type std_sync_TryLockError<'T> = class end"
+      )
+
+  := arc_mutex_lock \* t. (x : arc (mutex t)) : resultm::result' (mutex_guard t) (poison_error (mutex_guard t)) =
+      := x = x |> rust::emit
+      !\($'"!x.lock()"')
+
+  := arc_mutex_lock' \* t. (x : arc (mutex t)) : resultm::result' (mutex_guard t) (poison_error (mutex_guard t)) =
+      !\\(x, $'"$0.lock()"')
+
+  := mutex_guard_ref \* t. (x : mutex_guard t) : rust::ref t =
+      !\\(x, $'"&$0"')
+
+  := mutex_guard_ref_mut \* t. (x : mutex_guard t) : rust::ref (rust::mut' t) =
+      := x = ~~ x
+      (!\($'"true; let mut !x = !x"') : bool) |> ignore
+      !\\(x, $'"&mut $0"')
+
+  := mutex_guard_ref_mut'' \* t. (x : mutex_guard t) : rust::ref (rust::mut' t) =
+      := x = x |> rust::emit
+      (!\($'"true; let mut !x = !x"') : bool) |> ignore
+      !\\(x, $'"&mut $0"')
+
+  := mutex_guard_ref_mut' \* t. (x : mutex_guard (rust::ref (rust::mut' t))) : rust::ref (rust::mut' t) =
+      := x = x |> rust::emit
+      (!\($'"true; let mut !x = !x"') : bool) |> ignore
+      !\\(x, $'"&mut $0"')
+
+  :! channel_receiver t =
+      `(
+          rust::rust_type
+              `($'std_sync_mpsc_Receiver<`t>')
+              `($'std::sync::mpsc::Receiver<`t>')
+              "type std_sync_mpsc_Receiver<'T> = class end"
+      )
+
+  :! channel_sender t =
+      `(
+          rust::rust_type
+              `($'std_sync_mpsc_Sender<`t>')
+              `($'std::sync::mpsc::Sender<`t>')
+              "type std_sync_mpsc_Sender<'T> = class end"
+      )
+
+  := mpsc_channel () : channel_sender sm'::std_string * channel_receiver sm'::std_string =
+      !\($'"std::sync::mpsc::channel()"')
+
+  := new_channel () : channel_sender sm'::std_string * arc (channel_receiver sm'::std_string) =
+      := sender, receiver = mpsc_channel ()
+      sender, new_arc receiver
+
+  :! send_error t =
+      `(
+          rust::rust_type
+              `($'std_sync_mpsc_SendError<`t>')
+              `($'std::sync::mpsc::SendError<`t>')
+              "type std_sync_mpsc_SendError<'T> = class end"
+      )
+
+  := channel_send \* t.
+      (line : t) (sender : rust::ref (channel_sender t))
+      : resultm::result' () (send_error sm'::std_string)
+      =
+      !\\((sender, line), $'"$0.send($1)"')
+
+  := rust_sleep_ms (ms : u64) : () = $'std::thread::sleep(std::time::Duration::from_millis(!ms))' : ()
+
+  := sleep (n : i32) : () =
+      run_target \|
+          | Fsharp => \ () => $'System.Threading.Thread.Sleep' n
+          | Rust => \ () => rust_sleep_ms (conv n)
+          | _ => \ () => ()
+
+  :! thread = $'System.Threading.Thread'
+
+  :== cancellation_token_switch =
+      {
+          Gleam : $'System.Threading.CancellationToken'
+          Lua : $'System.Threading.CancellationToken'
+          Fsharp : $'System.Threading.CancellationToken'
+          Python : $'System.Threading.CancellationToken'
+          TypeScript : $'System.Threading.CancellationToken'
+          Cpp : $'System.Threading.CancellationToken'
+          CppHost : $'System.Threading.CancellationToken'
+          Pascal : $'System.Threading.CancellationToken'
+          Cuda : $'System.Threading.CancellationToken'
+          C : $'System.Threading.CancellationToken'
+          Rust : $'std::sync::Arc<std::sync::atomic::AtomicBool>'
+      }
+  :! cancellation_token = $'backend_switch `(cancellation_token_switch)'
+
+  :== cancellation_token_source_switch =
+      {
+          Gleam : $'System.Threading.CancellationTokenSource'
+          Lua : $'System.Threading.CancellationTokenSource'
+          Fsharp : $'System.Threading.CancellationTokenSource'
+          Python : $'System.Threading.CancellationTokenSource'
+          TypeScript : $'System.Threading.CancellationTokenSource'
+          Cpp : $'System.Threading.CancellationTokenSource'
+          CppHost : $'System.Threading.CancellationTokenSource'
+          Pascal : $'System.Threading.CancellationTokenSource'
+          Cuda : $'System.Threading.CancellationTokenSource'
+          C : $'System.Threading.CancellationTokenSource'
+          Rust : $'std::sync::Arc<std::sync::atomic::AtomicBool>'
+      }
+  :! cancellation_token_source = $'backend_switch `(cancellation_token_source_switch)'
+
+  :== cancellation_token_registration_switch =
+      {
+          Gleam : $'System.Threading.CancellationTokenRegistration'
+          Lua : $'System.Threading.CancellationTokenRegistration'
+          Fsharp : $'System.Threading.CancellationTokenRegistration'
+          Python : $'System.Threading.CancellationTokenRegistration'
+          TypeScript : $'System.Threading.CancellationTokenRegistration'
+          Cpp : $'System.Threading.CancellationTokenRegistration'
+          CppHost : $'System.Threading.CancellationTokenRegistration'
+          Pascal : $'System.Threading.CancellationTokenRegistration'
+          Cuda : $'System.Threading.CancellationTokenRegistration'
+          C : $'System.Threading.CancellationTokenRegistration'
+          Rust : $'()'
+      }
+  :! cancellation_token_registration = $'backend_switch `(cancellation_token_registration_switch)'
+
+  := cancellation_source_token (x : cancellation_token_source) : cancellation_token =
+      ? is_rust ()
+      ?> $'!x.clone()'
+      |: $'!x.Token'
+
+  := rust_cancel (x : cancellation_token_source) : () = $'!x.store(true, std::sync::atomic::Ordering::SeqCst)' : ()
+
+  := cancellation_source_cancel (x : cancellation_token_source) : () =
+      run_target \|
+          | Fsharp => \ () => $'!x.Cancel' ()
+          | Rust => \ () => rust_cancel x
+          | _ => \ () => null ()
+
+  := create_linked_token_source ((array x) : array cancellation_token) : cancellation_token_source =
+      x |> $'System.Threading.CancellationTokenSource.CreateLinkedTokenSource'
+
+  :! concurrent_stack t = $'System.Collections.Concurrent.ConcurrentStack<`t>'
+
+  := new_cancellation_token_source () : cancellation_token_source =
+      ? is_rust ()
+      ?> $'std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))'
+      |: $'new `cancellation_token_source ()'
+
+  := token_cancellation_requested (ct : cancellation_token) : bool =
+      ? is_rust ()
+      ?> $'!ct.load(std::sync::atomic::Ordering::SeqCst)'
+      |: $'!ct.IsCancellationRequested'
+
+  := cancelled_after_a_sleep (source : cancellation_token_source) : bool =
+      cancellation_source_cancel source
+      sleep 1i32
+      cancellation_source_token source |> token_cancellation_requested
+  """,
+  timeout: 300_000
+)
+```
+
+#### a_cancelled_source_marks_its_token_after_a_sleep (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n:= source = new_cancellation_token_source ()\n:= before = cancellation_source_token source |> token_cancellation_requested\n(before, cancelled_after_a_sleep source) |> _assert_eq (!-, !+)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  := source = new_cancellation_token_source ()
+  := before = cancellation_source_token source |> token_cancellation_requested
+  (before, cancelled_after_a_sleep source) |> _assert_eq (!-, !+)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= new_disposable_token (merge_token : optionm'::option' cancellation_token) =\n    run_target \\|\n        | Fsharp => \\ () =>\n            := cts = new_cancellation_token_source ()\n            := cts =\n                ?= merge_token |> optionm'::unbox ?|\n                | None => cts\n                | Some merge_token =>\n                    create_linked_token_source ;[ cts |> cancellation_source_token; merge_token ]\n            := disposable : _ () = new_disposable \\ () =>\n                cts |> cancellation_source_cancel\n            cts |> cancellation_source_token, disposable\n        | _ => \\ () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := new_disposable_token (merge_token : optionm'::option' cancellation_token) =
+      run_target \|
+          | Fsharp => \ () =>
+              := cts = new_cancellation_token_source ()
+              := cts =
+                  ?= merge_token |> optionm'::unbox ?|
+                  | None => cts
+                  | Some merge_token =>
+                      create_linked_token_source ;[ cts |> cancellation_source_token; merge_token ]
+              := disposable : _ () = new_disposable \ () =>
+                  cts |> cancellation_source_cancel
+              cts |> cancellation_source_token, disposable
+          | _ => \ () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+#### new_disposable_token (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> fsharp\n\n:= run fn =\n    := token, disposable = new_disposable_token (None |> optionm'::box)\n    fn token\n    $'!disposable.Dispose()'\n    \\ () =>\n        fn token\n    |> async::new_task\n    |> async::await_task\n    |> async::start\n\n\\ () =>\n    := counter = mut 0i32\n\n    := fn (token : cancellation_token) =\n        counter <- *counter + (? token |> token_cancellation_requested ?> 10 |: 1)\n\n    ~~ run fn\n    async::sleep 10 |> async::do\n    return_in *counter\n|> async::new_task\n|> \\ x => x : _ int\n|> async::await_task\n|> async::run_synchronously\n|> _assert_eq 11i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> fsharp
+
+  := run fn =
+      := token, disposable = new_disposable_token (None |> optionm'::box)
+      fn token
+      $'!disposable.Dispose()'
+      \ () =>
+          fn token
+      |> async::new_task
+      |> async::await_task
+      |> async::start
+
+  \ () =>
+      := counter = mut 0i32
+
+      := fn (token : cancellation_token) =
+          counter <- *counter + (? token |> token_cancellation_requested ?> 10 |: 1)
+
+      ~~ run fn
+      async::sleep 10 |> async::do
+      return_in *counter
+  |> async::new_task
+  |> \ x => x : _ int
+  |> async::await_task
+  |> async::run_synchronously
+  |> _assert_eq 11i32
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///> fsharp\n\n:= main () =\n    $'let new_disposable_token x = !new_disposable_token x' : ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///> fsharp
+
+  := main () =
+      $'let new_disposable_token x = !new_disposable_token x' : ()
+  """,
+  timeout: 300_000
+)
+```

@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>reflection.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<h4>reflection (test)</h4>
+
+<span class="badge other">test reflection: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:&lt;</span> <span class="tok-variable">sm'_operators</span></code></pre>
+
+<h2>reflection</h2>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">get_union_fields</span> <span class="tok-keyword">\*</span> <span class="tok-variable">union_type</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">union_type</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">~&gt;</span>
+        <span class="tok-variable">real_core</span><span class="tok-symbol">::union_type_to_record</span>
+            <span class="tok-unary_operator">`</span><span class="tok-variable">union_type</span>
+            <span class="tok-keyword">\*</span> <span class="tok-variable">union_record_type</span><span class="tok-operator">.</span> <span class="tok-operator">=&gt;</span>
+                <span class="tok-variable">real_core</span><span class="tok-symbol">::record_type_fold</span>
+                    <span class="tok-keyword">\</span> <span class="tok-variable">acc</span> <span class="tok-variable">key</span> <span class="tok-operator">=&gt;</span>
+                        <span class="tok-keyword">\*</span> <span class="tok-variable">value</span><span class="tok-operator">.</span> <span class="tok-operator">=&gt;</span>
+                            <span class="tok-keyword">:=</span> <span class="tok-variable">value</span> <span class="tok-operator">=</span>
+                                <span class="tok-keyword">?:</span> <span class="tok-variable">value</span> <span class="tok-keyword">?|</span>
+                                <span class="tok-operator">|</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span>
+                                    <span class="tok-variable">backend_switch</span> <span class="tok-unary_operator">`</span><span class="tok-variable">value</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-parenthesis">{</span><span class="tok-parenthesis">}</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">{</span>
+                                        <span class="tok-variable">Gleam</span> <span class="tok-operator">=</span>
+                                            <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                                                <span class="tok-string">$'</span><span class="tok-string">Nil</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                            <span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">value</span>
+                                        <span class="tok-variable">Lua</span> <span class="tok-operator">=</span>
+                                            <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                                                <span class="tok-string">$'</span><span class="tok-string">nil</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                            <span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">value</span>
+                                        <span class="tok-variable">Fsharp</span> <span class="tok-operator">=</span>
+                                            <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                                                <span class="tok-string">$'</span><span class="tok-string">Unchecked.defaultof&lt;_&gt;</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                            <span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">value</span>
+                                        <span class="tok-variable">Python</span> <span class="tok-operator">=</span>
+                                            <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                                                <span class="tok-keyword">:=</span> <span class="tok-variable">is_python</span> <span class="tok-operator">=</span>
+                                                    <span class="tok-variable">backend_switch</span> <span class="tok-unary_operator">`</span><span class="tok-variable">bool</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-parenthesis">{</span><span class="tok-parenthesis">}</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">{</span>
+                                                        <span class="tok-variable">Gleam</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!-</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">bool</span>
+                                                        <span class="tok-variable">Lua</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!-</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">bool</span>
+                                                        <span class="tok-variable">Fsharp</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!-</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">bool</span>
+                                                        <span class="tok-variable">Python</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!+</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">bool</span>
+                                                    <span class="tok-parenthesis">}</span>
+                                                <span class="tok-keyword">?</span> <span class="tok-variable">is_python</span> <span class="tok-keyword">?&gt;</span>
+                                                    <span class="tok-keyword">?:</span> <span class="tok-variable">value</span> <span class="tok-keyword">?|</span>
+                                                    <span class="tok-operator">|</span> <span class="tok-variable">i8</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i8</span>
+                                                    <span class="tok-operator">|</span> <span class="tok-variable">i16</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i16</span>
+                                                    <span class="tok-operator">|</span> <span class="tok-variable">i32</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+                                                    <span class="tok-operator">|</span> <span class="tok-variable">i64</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i64</span>
+                                                    <span class="tok-operator">|</span> <span class="tok-variable">u8</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">u8</span>
+                                                    <span class="tok-operator">|</span> <span class="tok-variable">u16</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">u16</span>
+                                                    <span class="tok-operator">|</span> <span class="tok-variable">u32</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">u32</span>
+                                                    <span class="tok-operator">|</span> <span class="tok-variable">u64</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">u64</span>
+                                                    <span class="tok-operator">|</span> <span class="tok-variable">f32</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0.0</span><span class="tok-number_suffix">f32</span>
+                                                    <span class="tok-operator">|</span> <span class="tok-variable">f64</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0.0</span><span class="tok-number_suffix">f64</span>
+                                                    <span class="tok-operator">|</span> <span class="tok-variable">bool</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!-</span>
+                                                    <span class="tok-operator">|</span> <span class="tok-variable">char</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">'\0'</span>
+                                                    <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">None</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                                <span class="tok-keyword">|:</span> <span class="tok-string">$'</span><span class="tok-string">None</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                            <span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">value</span>
+                                        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span>
+                                            <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                                                <span class="tok-string">$'</span><span class="tok-string">Default::default()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                            <span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">value</span>
+                                        <span class="tok-variable">Zig</span> <span class="tok-operator">=</span>
+                                            <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                                                <span class="tok-string">$'</span><span class="tok-string">std.mem.zeroes(</span><span class="tok-type_variable">`value</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                            <span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">value</span>
+                                        <span class="tok-variable">TypeScript</span> <span class="tok-operator">=</span>
+                                            <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                                                <span class="tok-keyword">?:</span> <span class="tok-variable">value</span> <span class="tok-keyword">?|</span>
+                                                <span class="tok-operator">|</span> <span class="tok-variable">i8</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i8</span>
+                                                <span class="tok-operator">|</span> <span class="tok-variable">i16</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i16</span>
+                                                <span class="tok-operator">|</span> <span class="tok-variable">i32</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+                                                <span class="tok-operator">|</span> <span class="tok-variable">i64</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i64</span>
+                                                <span class="tok-operator">|</span> <span class="tok-variable">u8</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">u8</span>
+                                                <span class="tok-operator">|</span> <span class="tok-variable">u16</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">u16</span>
+                                                <span class="tok-operator">|</span> <span class="tok-variable">u32</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">u32</span>
+                                                <span class="tok-operator">|</span> <span class="tok-variable">u64</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">u64</span>
+                                                <span class="tok-operator">|</span> <span class="tok-variable">f32</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0.0</span><span class="tok-number_suffix">f32</span>
+                                                <span class="tok-operator">|</span> <span class="tok-variable">f64</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">0.0</span><span class="tok-number_suffix">f64</span>
+                                                <span class="tok-operator">|</span> <span class="tok-variable">bool</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!-</span>
+                                                <span class="tok-operator">|</span> <span class="tok-variable">char</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">'\0'</span>
+                                                <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">undefined</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                            <span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">value</span>
+                                    <span class="tok-parenthesis">}</span>
+                            <span class="tok-keyword">:=</span> <span class="tok-variable">item</span> <span class="tok-operator">=</span> <span class="tok-variable">real_core</span><span class="tok-symbol">::nominal_create</span> <span class="tok-unary_operator">`</span><span class="tok-variable">union_type</span> <span class="tok-parenthesis">(</span><span class="tok-variable">key</span><span class="tok-operator">,</span> <span class="tok-variable">value</span><span class="tok-parenthesis">)</span>
+                            <span class="tok-keyword">:=</span> <span class="tok-variable">key'</span> <span class="tok-operator">=</span> <span class="tok-variable">sm'_real</span><span class="tok-symbol">::symbol_to_string_real</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-unary_operator">`</span><span class="tok-variable">key</span><span class="tok-parenthesis">)</span>
+                            <span class="tok-parenthesis">(</span><span class="tok-operator">::</span><span class="tok-parenthesis">)</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">union_type</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">key'</span><span class="tok-operator">,</span> <span class="tok-variable">item</span><span class="tok-parenthesis">)</span> <span class="tok-variable">acc</span>
+                    <span class="tok-parenthesis">(</span><span class="tok-variable">Nil</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">union_type</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+                    <span class="tok-unary_operator">`</span><span class="tok-variable">union_record_type</span>
+<span class="tok-keyword">:|</span> <span class="tok-variable">reflection_test_target</span> <span class="tok-operator">=</span> <span class="tok-variable">Browser</span> <span class="tok-operator">|</span> <span class="tok-variable">Contract</span>
+
+///- --timeout 900000</code></pre>
+
+<h4>get_union_fields (test)</h4>
+
+<span class="badge passed">test get_union_fields: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; rust
+///&gt; typescript
+///&gt; cuda
+
+<span class="tok-variable">get_union_fields</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::box</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::to_array'</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">array</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">am'</span><span class="tok-symbol">::sort_by</span> <span class="tok-variable">snd</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-variable">array</span> <span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">array</span> <span class="tok-keyword">_</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">x</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-parenthesis">(</span><span class="tok-variable">am'</span><span class="tok-symbol">::base</span> <span class="tok-unary_operator">;</span><span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">Browser</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">Browser</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">Contract</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">Contract</span> <span class="tok-parenthesis">]</span><span class="tok-parenthesis">)</span>
+<span class="tok-variable">get_union_fields</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::box</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::to_array'</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">array</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">am'</span><span class="tok-symbol">::sort_by</span> <span class="tok-variable">snd</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-variable">array</span> <span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">array</span> <span class="tok-keyword">_</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">x</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-parenthesis">(</span><span class="tok-variable">am'</span><span class="tok-symbol">::base</span> <span class="tok-unary_operator">;</span><span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">Some</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">Some</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">None</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">None</span> <span class="tok-parenthesis">]</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.rs (rust)
+__assert_eq' { expected = [(Browser, Browser), (Contract, Contract)] }
+__assert_eq' { expected = [(Some, Some(0)), (None, None)] }
+.ts (typescript)
+__assert_eq' { expected = [(Browser, Browser), (Contract, Contract)] }
+__assert_eq' { expected = [(Some, Some(0)), (None, None)] }
+.py (cuda)
+__assert_eq' { expected = [(Browser, Browser), (Contract, Contract)] }
+__assert_eq' { expected = [(Some, Some(0)), (None, None)] }</pre>
+<pre class="output">0</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">get_union_fields_untag</span> <span class="tok-keyword">\*</span> <span class="tok-variable">union_type</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">union_type</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">~&gt;</span>
+        <span class="tok-variable">real_core</span><span class="tok-symbol">::union_type_to_record</span>
+            <span class="tok-unary_operator">`</span><span class="tok-variable">union_type</span>
+            <span class="tok-keyword">\*</span> <span class="tok-variable">union_record_type</span><span class="tok-operator">.</span> <span class="tok-operator">=&gt;</span>
+                <span class="tok-keyword">:=</span> <span class="tok-variable">result</span> <span class="tok-operator">=</span>
+                    <span class="tok-variable">real_core</span><span class="tok-symbol">::record_type_fold_back</span>
+                        <span class="tok-keyword">\</span> <span class="tok-variable">_key</span> <span class="tok-operator">=&gt;</span>
+                            <span class="tok-keyword">\*</span> <span class="tok-variable">value</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">acc</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-variable">i</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                                <span class="tok-keyword">:=</span> <span class="tok-variable">key</span><span class="tok-operator">,</span> <span class="tok-variable">item</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">union_type</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+                                    <span class="tok-variable">real_core</span><span class="tok-symbol">::union_untag</span> <span class="tok-unary_operator">`</span><span class="tok-variable">union_type</span> <span class="tok-variable">i</span>
+                                        <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-variable">key</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">\*</span> <span class="tok-variable">value</span><span class="tok-operator">.</span> <span class="tok-operator">=&gt;</span>
+                                            <span class="tok-keyword">:=</span> <span class="tok-variable">key'</span> <span class="tok-operator">=</span> <span class="tok-variable">sm'_real</span><span class="tok-symbol">::symbol_to_string_real</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-unary_operator">`</span><span class="tok-variable">key</span><span class="tok-parenthesis">)</span>
+                                            <span class="tok-keyword">:=</span> <span class="tok-variable">value</span> <span class="tok-operator">=</span>
+                                                <span class="tok-keyword">?:</span> <span class="tok-variable">value</span> <span class="tok-keyword">?|</span>
+                                                <span class="tok-operator">|</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                                <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span>
+                                                    <span class="tok-variable">backend_switch</span> <span class="tok-unary_operator">`</span><span class="tok-variable">value</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-parenthesis">{</span><span class="tok-parenthesis">}</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">{</span>
+                                                        <span class="tok-variable">Gleam</span> <span class="tok-operator">=</span>
+                                                            <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                                                                <span class="tok-string">$'</span><span class="tok-string">Nil</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                                            <span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">value</span>
+                                                        <span class="tok-variable">Lua</span> <span class="tok-operator">=</span>
+                                                            <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                                                                <span class="tok-string">$'</span><span class="tok-string">nil</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                                            <span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">value</span>
+                                                        <span class="tok-variable">Fsharp</span> <span class="tok-operator">=</span>
+                                                            <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                                                                <span class="tok-string">$'</span><span class="tok-string">Unchecked.defaultof&lt;_&gt;</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                                            <span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">value</span>
+                                                        <span class="tok-variable">Python</span> <span class="tok-operator">=</span>
+                                                            <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                                                                <span class="tok-string">$'</span><span class="tok-string">None</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                                            <span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">value</span>
+                                                        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span>
+                                                            <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                                                                <span class="tok-string">$'</span><span class="tok-string">Default::default()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                                            <span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">value</span>
+                                                        <span class="tok-variable">TypeScript</span> <span class="tok-operator">=</span>
+                                                            <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                                                                <span class="tok-string">$'</span><span class="tok-string">undefined</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                                            <span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">value</span>
+                                                        <span class="tok-variable">Zig</span> <span class="tok-operator">=</span>
+                                                            <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                                                                <span class="tok-string">$'</span><span class="tok-string">std.mem.zeroes(</span><span class="tok-type_variable">`value</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">value</span>
+                                                            <span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">value</span>
+                                                    <span class="tok-parenthesis">}</span>
+                                            <span class="tok-keyword">:=</span> <span class="tok-variable">item</span> <span class="tok-operator">=</span> <span class="tok-variable">real_core</span><span class="tok-symbol">::nominal_create</span> <span class="tok-unary_operator">`</span><span class="tok-variable">union_type</span> <span class="tok-parenthesis">(</span><span class="tok-variable">key</span><span class="tok-operator">,</span> <span class="tok-variable">value</span><span class="tok-parenthesis">)</span>
+                                            <span class="tok-variable">key'</span><span class="tok-operator">,</span> <span class="tok-variable">item</span>
+                                        <span class="tok-parenthesis">)</span>
+                                        <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span>
+                                            <span class="tok-variable">failwith</span>
+                                                <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">union_type</span><span class="tok-parenthesis">)</span>
+                                                <span class="tok-string">&quot;</span><span class="tok-string">reflection.get_union_fields_untag / invalid tag</span><span class="tok-string">&quot;</span>
+                                        <span class="tok-parenthesis">)</span>
+                                <span class="tok-parenthesis">(</span><span class="tok-operator">::</span><span class="tok-parenthesis">)</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">union_type</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">key</span><span class="tok-operator">,</span> <span class="tok-variable">item</span><span class="tok-parenthesis">)</span> <span class="tok-variable">acc</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-operator">+</span><span class="tok-parenthesis">)</span> <span class="tok-unary_operator">`</span><span class="tok-variable">i32</span> <span class="tok-variable">i</span> <span class="tok-number">1</span>
+                        <span class="tok-unary_operator">`</span><span class="tok-variable">union_record_type</span>
+                        <span class="tok-parenthesis">(</span><span class="tok-variable">Nil</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">union_type</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span>
+                <span class="tok-keyword">:=</span> <span class="tok-variable">result</span> <span class="tok-operator">=</span> <span class="tok-variable">fst</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-variable">list</span> <span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">union_type</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-unary_operator">`</span><span class="tok-variable">i32</span> <span class="tok-variable">result</span>
+                <span class="tok-variable">listm</span><span class="tok-symbol">::rev</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">union_type</span><span class="tok-parenthesis">)</span> <span class="tok-variable">result</span>
+
+///- --timeout 900000</code></pre>
+
+<h4>get_union_fields_untag (test)</h4>
+
+<span class="badge passed">test get_union_fields_untag: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; gleam
+///&gt; lua
+///&gt; cuda
+///&gt; rust
+///&gt; typescript
+
+<span class="tok-variable">get_union_fields_untag</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">Browser</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">Browser</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">Contract</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">Contract</span> <span class="tok-parenthesis">]</span>
+
+<span class="tok-variable">get_union_fields_untag</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">Some</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">Some</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">None</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">None</span> <span class="tok-parenthesis">]</span></code></pre>
+<pre class="output">.gleam (gleam)
+__assert_eq' { expected = Cons((Browser, Browser), Cons((Contract, Contract), Nil)) }
+__assert_eq' { expected = Cons((Some, Some), Cons((None, None), Nil)) }
+.lua (lua)
+__assert_eq' { expected = Cons((Browser, Browser), Cons((Contract, Contract), Nil)) }
+__assert_eq' { expected = Cons((Some, Some), Cons((None, None), Nil)) }
+.py (cuda)
+__assert_eq' { expected = Cons((Browser, Browser), Cons((Contract, Contract), Nil)) }
+__assert_eq' { expected = Cons((Some, Some), Cons((None, None), Nil)) }
+.rs (rust)
+__assert_eq' { expected = Cons((Browser, Browser), Cons((Contract, Contract), Nil)) }
+__assert_eq' { expected = Cons((Some, Some), Cons((None, None), Nil)) }
+.ts (typescript)
+__assert_eq' { expected = Cons((Browser, Browser), Cons((Contract, Contract), Nil)) }
+__assert_eq' { expected = Cons((Some, Some), Cons((None, None), Nil)) }</pre>
+<pre class="output">0</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">union_try_pick</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">key</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">fields</span> <span class="tok-operator">=</span> <span class="tok-keyword">~&gt;</span> <span class="tok-variable">get_union_fields_untag</span> <span class="tok-unary_operator">`</span><span class="tok-variable">t</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">fields</span>
+    <span class="tok-operator">++</span> <span class="tok-parenthesis">(</span>
+        <span class="tok-variable">fields</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm</span><span class="tok-symbol">::map</span> <span class="tok-keyword">\</span> <span class="tok-variable">key'</span><span class="tok-operator">,</span> <span class="tok-variable">x</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-variable">key'</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::to_lower</span><span class="tok-operator">,</span> <span class="tok-variable">x</span>
+    <span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::box</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::to_array'</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-keyword">\</span> <span class="tok-variable">x</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">array</span> <span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">array</span> <span class="tok-keyword">_</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">am'</span><span class="tok-symbol">::try_pick</span> <span class="tok-keyword">\</span> <span class="tok-variable">key'</span><span class="tok-operator">,</span> <span class="tok-variable">x</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-keyword">?</span> <span class="tok-variable">key'</span> <span class="tok-operator">=.</span> <span class="tok-variable">key</span>
+        <span class="tok-keyword">?&gt;</span> <span class="tok-variable">Some</span> <span class="tok-variable">x</span>
+        <span class="tok-keyword">|:</span> <span class="tok-variable">None</span>
+
+///- --timeout 900000</code></pre>
+
+<h4>union_try_pick (test)</h4>
+
+<span class="badge passed">test union_try_pick: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; gleam
+///&gt; lua
+///&gt; cuda
+///&gt; rust
+///&gt; typescript
+
+<span class="tok-string">&quot;</span><span class="tok-string">Browser</span><span class="tok-string">&quot;</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">union_try_pick</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">Browser</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-string">&quot;</span><span class="tok-string">Browser</span><span class="tok-string">&quot;</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">union_try_pick</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">Browser</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.gleam (gleam)
+__assert_eq { expected = Some(Browser) }
+__assert_eq { expected = Some(Browser) }
+.lua (lua)
+__assert_eq { expected = Some(Browser) }
+__assert_eq { expected = Some(Browser) }
+.py (cuda)
+__assert_eq { expected = Some(Browser) }
+__assert_eq { expected = Some(Browser) }
+.rs (rust)
+__assert_eq { expected = Some(Browser) }
+__assert_eq { expected = Some(Browser) }
+.ts (typescript)
+__assert_eq { expected = Some(Browser) }
+__assert_eq { expected = Some(Browser) }</pre>
+<pre class="output">0</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">union_try_pick'</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">key</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">fields</span> <span class="tok-operator">=</span> <span class="tok-keyword">~&gt;</span> <span class="tok-variable">get_union_fields_untag</span> <span class="tok-unary_operator">`</span><span class="tok-variable">t</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">fields</span>
+    <span class="tok-operator">++</span> <span class="tok-parenthesis">(</span>
+        <span class="tok-variable">fields</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm</span><span class="tok-symbol">::map</span> <span class="tok-keyword">\</span> <span class="tok-variable">key'</span><span class="tok-operator">,</span> <span class="tok-variable">x</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-variable">key'</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::to_lower</span><span class="tok-operator">,</span> <span class="tok-variable">x</span>
+    <span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::try_pick</span> <span class="tok-keyword">\</span> <span class="tok-variable">key'</span><span class="tok-operator">,</span> <span class="tok-variable">x</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-keyword">?</span> <span class="tok-variable">key'</span> <span class="tok-operator">=.</span> <span class="tok-variable">key</span>
+        <span class="tok-keyword">?&gt;</span> <span class="tok-variable">x</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">Some</span>
+        <span class="tok-keyword">|:</span> <span class="tok-variable">None</span>
+
+///- --timeout 900000</code></pre>
+
+<span class="badge passed">test union_try_pick_2: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; gleam
+///&gt; lua
+///&gt; cuda
+///&gt; rust
+///&gt; typescript
+
+<span class="tok-string">&quot;</span><span class="tok-string">Browser</span><span class="tok-string">&quot;</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">union_try_pick'</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">Browser</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-string">&quot;</span><span class="tok-string">Browser</span><span class="tok-string">&quot;</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">union_try_pick'</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">Browser</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.gleam (gleam)
+__assert_eq { expected = Some(Browser) }
+__assert_eq { expected = Some(Browser) }
+.lua (lua)
+__assert_eq { expected = Some(Browser) }
+__assert_eq { expected = Some(Browser) }
+.py (cuda)
+__assert_eq { expected = Some(Browser) }
+__assert_eq { expected = Some(Browser) }
+.rs (rust)
+__assert_eq { expected = Some(Browser) }
+__assert_eq { expected = Some(Browser) }
+.ts (typescript)
+__assert_eq { expected = Some(Browser) }
+__assert_eq { expected = Some(Browser) }</pre>
+<pre class="output">0</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">union_cases_fold</span> <span class="tok-keyword">\*</span> <span class="tok-variable">union_type</span> <span class="tok-variable">state</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">step</span> <span class="tok-operator">:</span> <span class="tok-variable">state</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">union_type</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">state</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">initial</span> <span class="tok-operator">:</span> <span class="tok-variable">state</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">state</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">~&gt;</span>
+        <span class="tok-variable">real_core</span><span class="tok-symbol">::union_type_to_record</span> <span class="tok-unary_operator">`</span><span class="tok-variable">union_type</span> <span class="tok-keyword">\*</span> <span class="tok-variable">union_record_type</span><span class="tok-operator">.</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-variable">real_core</span><span class="tok-symbol">::record_type_fold</span>
+                <span class="tok-keyword">\</span> <span class="tok-variable">acc</span> <span class="tok-variable">key</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">\*</span> <span class="tok-variable">value</span><span class="tok-operator">.</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">step</span> <span class="tok-variable">acc</span> <span class="tok-parenthesis">(</span><span class="tok-variable">real_core</span><span class="tok-symbol">::nominal_create</span> <span class="tok-unary_operator">`</span><span class="tok-variable">union_type</span> <span class="tok-parenthesis">(</span><span class="tok-variable">key</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+                <span class="tok-variable">initial</span>
+                <span class="tok-unary_operator">`</span><span class="tok-variable">union_record_type</span>
+
+///- --timeout 900000</code></pre>
+
+<h4>union_cases_fold (test)</h4>
+
+<span class="badge passed">test union_cases_fold: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; gleam
+///&gt; lua
+///&gt; cuda
+///&gt; rust
+///&gt; typescript
+
+<span class="tok-variable">union_cases_fold</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-variable">count</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">_</span> <span class="tok-operator">:</span> <span class="tok-variable">reflection_test_target</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">count</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">2</span><span class="tok-number_suffix">i32</span>
+
+<span class="tok-variable">union_cases_fold</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-variable">found</span> <span class="tok-parenthesis">(</span><span class="tok-variable">target</span> <span class="tok-operator">:</span> <span class="tok-variable">reflection_test_target</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">?</span> <span class="tok-variable">target</span> <span class="tok-operator">=</span> <span class="tok-variable">Contract</span> <span class="tok-keyword">?&gt;</span> <span class="tok-number">!+</span> <span class="tok-keyword">|:</span> <span class="tok-variable">found</span><span class="tok-parenthesis">)</span> <span class="tok-number">!-</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!+</span></code></pre>
+<pre class="output">.gleam (gleam)
+__assert_eq { expected = 2 }
+__assert_eq { expected = true }
+.lua (lua)
+__assert_eq { expected = 2 }
+__assert_eq { expected = true }
+.py (cuda)
+__assert_eq { expected = 2 }
+__assert_eq { expected = true }
+.rs (rust)
+__assert_eq { expected = 2 }
+__assert_eq { expected = true }
+.ts (typescript)
+__assert_eq { expected = 2 }
+__assert_eq { expected = true }</pre>
+<pre class="output">0</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">union_cases_find</span> <span class="tok-keyword">\*</span> <span class="tok-variable">union_type</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">matches</span> <span class="tok-operator">:</span> <span class="tok-variable">union_type</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">union_type</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:~</span> <span class="tok-keyword">^</span> <span class="tok-variable">search</span> <span class="tok-parenthesis">(</span><span class="tok-variable">cases</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">union_type</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">union_type</span> <span class="tok-operator">=</span>
+        <span class="tok-keyword">?=</span> <span class="tok-variable">cases</span> <span class="tok-keyword">?|</span>
+        <span class="tok-operator">|</span> <span class="tok-variable">case</span> <span class="tok-operator">::</span> <span class="tok-variable">rest</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">?</span> <span class="tok-variable">matches</span> <span class="tok-variable">case</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">Some</span> <span class="tok-variable">case</span> <span class="tok-keyword">|:</span> <span class="tok-variable">search</span> <span class="tok-variable">rest</span>
+        <span class="tok-operator">|</span> <span class="tok-parenthesis">[</span><span class="tok-parenthesis">]</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">None</span>
+    <span class="tok-variable">search</span> <span class="tok-parenthesis">(</span><span class="tok-variable">union_cases_fold</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-variable">acc</span> <span class="tok-parenthesis">(</span><span class="tok-variable">case</span> <span class="tok-operator">:</span> <span class="tok-variable">union_type</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">case</span> <span class="tok-operator">::</span> <span class="tok-variable">acc</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">[</span><span class="tok-parenthesis">]</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">dyn</span><span class="tok-parenthesis">)</span>
+
+///- --timeout 900000</code></pre>
+
+<h4>union_cases_find (test)</h4>
+
+<span class="badge passed">test union_cases_find: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; gleam
+///&gt; lua
+///&gt; cuda
+///&gt; rust
+///&gt; typescript
+
+<span class="tok-variable">union_cases_find</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-variable">target</span> <span class="tok-operator">:</span> <span class="tok-variable">reflection_test_target</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">target</span> <span class="tok-operator">=</span> <span class="tok-variable">Contract</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">Contract</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-variable">union_cases_find</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">_</span> <span class="tok-operator">:</span> <span class="tok-variable">reflection_test_target</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!-</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">None</span></code></pre>
+<pre class="output">.gleam (gleam)
+__assert_eq { expected = Some(Contract) }
+__assert_eq { expected = None }
+.lua (lua)
+__assert_eq { expected = Some(Contract) }
+__assert_eq { expected = None }
+.py (cuda)
+__assert_eq { expected = Some(Contract) }
+__assert_eq { expected = None }
+.rs (rust)
+__assert_eq { expected = Some(Contract) }
+__assert_eq { expected = None }
+.ts (typescript)
+__assert_eq { expected = Some(Contract) }
+__assert_eq { expected = None }</pre>
+<pre class="output">0</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">union_to_string</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">~&gt;</span> <span class="tok-variable">get_union_fields_untag</span> <span class="tok-unary_operator">`</span><span class="tok-variable">t</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::try_pick</span> <span class="tok-keyword">\</span> <span class="tok-variable">key</span><span class="tok-operator">,</span> <span class="tok-variable">x'</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-keyword">?</span> <span class="tok-variable">x'</span> <span class="tok-operator">=</span> <span class="tok-variable">x</span>
+        <span class="tok-keyword">?&gt;</span> <span class="tok-variable">Some</span> <span class="tok-variable">key</span>
+        <span class="tok-keyword">|:</span>
+            <span class="tok-keyword">:=</span> <span class="tok-variable">has_case</span> <span class="tok-operator">=</span>
+                <span class="tok-keyword">~&gt;</span>
+                    <span class="tok-variable">real_core</span><span class="tok-symbol">::union_type_to_record</span>
+                        <span class="tok-unary_operator">`</span><span class="tok-variable">t</span>
+                        <span class="tok-keyword">\*</span> <span class="tok-variable">union_record_type</span><span class="tok-operator">.</span> <span class="tok-operator">=&gt;</span>
+                            <span class="tok-variable">real_core</span><span class="tok-symbol">::record_type_fold_back</span>
+                                <span class="tok-keyword">\</span> <span class="tok-variable">_key</span> <span class="tok-operator">=&gt;</span>
+                                    <span class="tok-keyword">\*</span> <span class="tok-variable">value</span><span class="tok-operator">.</span> <span class="tok-variable">acc</span> <span class="tok-operator">=&gt;</span>
+                                        <span class="tok-keyword">?</span> <span class="tok-variable">acc</span>
+                                        <span class="tok-keyword">?&gt;</span> <span class="tok-variable">acc</span>
+                                        <span class="tok-keyword">|:</span>
+                                            <span class="tok-keyword">?:</span> <span class="tok-variable">value</span> <span class="tok-keyword">?|</span>
+                                            <span class="tok-operator">|</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!-</span>
+                                            <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!+</span>
+                                <span class="tok-unary_operator">`</span><span class="tok-variable">union_record_type</span>
+                                <span class="tok-number">!-</span>
+            <span class="tok-keyword">?</span> <span class="tok-variable">has_case</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">not</span>
+            <span class="tok-keyword">?&gt;</span> <span class="tok-variable">None</span>
+            <span class="tok-keyword">|:</span>
+                <span class="tok-keyword">:=</span> <span class="tok-variable">x'</span> <span class="tok-operator">=</span> <span class="tok-unary_operator">#?</span><span class="tok-variable">x'</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::split</span> <span class="tok-string">&quot;</span><span class="tok-string">(</span><span class="tok-string">&quot;</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">am'</span><span class="tok-symbol">::index_base</span> <span class="tok-number">0</span>
+
+                <span class="tok-keyword">?</span> <span class="tok-unary_operator">#?</span><span class="tok-variable">x</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::starts_with</span> <span class="tok-variable">x'</span>
+                <span class="tok-keyword">?&gt;</span> <span class="tok-variable">Some</span> <span class="tok-variable">key</span>
+                <span class="tok-keyword">|:</span> <span class="tok-variable">None</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">optionm</span><span class="tok-symbol">::value</span>
+
+///- --timeout 900000</code></pre>
+
+<h4>union_to_string (test)</h4>
+
+<span class="badge passed">test union_to_string: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; cuda
+///&gt; rust
+///&gt; typescript
+
+<span class="tok-variable">Some</span> <span class="tok-number">!+</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">union_to_string</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">Some</span><span class="tok-string">&quot;</span></code></pre>
+<pre class="output">.py (cuda)
+__assert_eq' { expected = Some }
+.rs (rust)
+__assert_eq' { expected = Some }
+.ts (typescript)
+__assert_eq' { expected = Some }</pre>
+<pre class="output">0</pre>
+
+<h3>case_name</h3>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">case_name</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-unary_operator">!!!!</span><span class="tok-variable">UnionCaseName</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-parenthesis">)</span></code></pre>
+
+<h3>case_name_styles</h3>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">case_name_lower</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-unary_operator">!!!!</span><span class="tok-variable">UnionCaseName</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">&quot;</span><span class="tok-string">lower</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">case_name_snake</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-unary_operator">!!!!</span><span class="tok-variable">UnionCaseName</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">&quot;</span><span class="tok-string">snake</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">case_name_kebab</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-unary_operator">!!!!</span><span class="tok-variable">UnionCaseName</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">&quot;</span><span class="tok-string">kebab</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">case_initial</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-unary_operator">!!!!</span><span class="tok-variable">UnionCaseName</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">&quot;</span><span class="tok-string">initial</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span></code></pre>
+
+<h3>case_of_name</h3>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">case_of_name</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">~&gt;</span> <span class="tok-variable">get_union_fields_untag</span> <span class="tok-unary_operator">`</span><span class="tok-variable">t</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::try_pick</span> <span class="tok-keyword">\</span> <span class="tok-variable">key</span><span class="tok-operator">,</span> <span class="tok-variable">case</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">?</span> <span class="tok-variable">key</span> <span class="tok-operator">=.</span> <span class="tok-variable">text</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">Some</span> <span class="tok-variable">case</span> <span class="tok-keyword">|:</span> <span class="tok-variable">None</span></code></pre>
+
+<h3>typed_name</h3>
+
+<pre class="code"><code><span class="tok-keyword">:!</span> <span class="tok-variable">typed_name</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span> <span class="tok-variable">string</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">typed_case_name</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">typed_name</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span> <span class="tok-variable">typed_name</span> <span class="tok-parenthesis">(</span><span class="tok-variable">case_name</span> <span class="tok-variable">x</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">case_qualified_name</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-unary_operator">!!!!</span><span class="tok-variable">NominalName</span><span class="tok-parenthesis">(</span><span class="tok-unary_operator">`</span><span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">::</span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">case_name</span> <span class="tok-variable">x</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">typed_name_text</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">(</span><span class="tok-variable">typed_name</span> <span class="tok-variable">text</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">typed_name</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-variable">text</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">case_of_typed_name</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">(</span><span class="tok-variable">typed_name</span> <span class="tok-variable">text</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">typed_name</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span> <span class="tok-variable">case_of_name</span> <span class="tok-variable">text</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">styled_step</span> <span class="tok-parenthesis">(</span><span class="tok-variable">separator</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">acc</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">c</span> <span class="tok-operator">:</span> <span class="tok-variable">char</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">s</span> <span class="tok-operator">=</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::of_char</span> <span class="tok-variable">c</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">lower</span> <span class="tok-operator">=</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::to_lower</span> <span class="tok-variable">s</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">lower</span> <span class="tok-operator">&lt;&gt;</span> <span class="tok-variable">s</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-variable">listm</span><span class="tok-symbol">::length</span> <span class="tok-variable">acc</span> <span class="tok-operator">&gt;</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">lower</span> <span class="tok-operator">::</span> <span class="tok-variable">separator</span> <span class="tok-operator">::</span> <span class="tok-variable">acc</span> <span class="tok-keyword">|:</span> <span class="tok-variable">lower</span> <span class="tok-operator">::</span> <span class="tok-variable">acc</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">styled_name</span> <span class="tok-parenthesis">(</span><span class="tok-variable">separator</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">sm'</span><span class="tok-symbol">::to_char_list</span> <span class="tok-variable">text</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm</span><span class="tok-symbol">::fold</span> <span class="tok-parenthesis">(</span><span class="tok-variable">styled_step</span> <span class="tok-variable">separator</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">[</span><span class="tok-parenthesis">]</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm</span><span class="tok-symbol">::rev</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::concat_list</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">typed_name_snake</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">(</span><span class="tok-variable">typed_name</span> <span class="tok-variable">text</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">typed_name</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-variable">styled_name</span> <span class="tok-string">&quot;</span><span class="tok-string">_</span><span class="tok-string">&quot;</span> <span class="tok-variable">text</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">typed_name_kebab</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">(</span><span class="tok-variable">typed_name</span> <span class="tok-variable">text</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">typed_name</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-variable">styled_name</span> <span class="tok-string">&quot;</span><span class="tok-string">-</span><span class="tok-string">&quot;</span> <span class="tok-variable">text</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">typed_name_lower</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">(</span><span class="tok-variable">typed_name</span> <span class="tok-variable">text</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">typed_name</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::to_lower</span> <span class="tok-variable">text</span>
+
+///- --timeout 900000</code></pre>
+
+<h4>case_name (test)</h4>
+
+<span class="badge passed">test case_name: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; gleam
+///&gt; lua
+///&gt; cuda
+///&gt; rust
+///&gt; typescript
+
+<span class="tok-variable">Contract</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">case_name</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">Contract</span><span class="tok-string">&quot;</span>
+
+<span class="tok-variable">Some</span> <span class="tok-number">3</span><span class="tok-number_suffix">i32</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">case_name</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">Some</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">payload</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span> <span class="tok-variable">None</span>
+<span class="tok-variable">payload</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">case_name</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">None</span><span class="tok-string">&quot;</span>
+
+<span class="tok-string">&quot;</span><span class="tok-string">Browser</span><span class="tok-string">&quot;</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">case_of_name</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">Browser</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-string">&quot;</span><span class="tok-string">browser</span><span class="tok-string">&quot;</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">case_of_name</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">None</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">reflection_test_target</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.gleam (gleam)
+__assert_eq' { expected = Contract }
+__assert_eq' { expected = Some }
+__assert_eq' { expected = None }
+__assert_eq { expected = Some(Browser) }
+__assert_eq { expected = None }
+.lua (lua)
+__assert_eq' { expected = Contract }
+__assert_eq' { expected = Some }
+__assert_eq' { expected = None }
+__assert_eq { expected = Some(Browser) }
+__assert_eq { expected = None }
+.py (cuda)
+__assert_eq' { expected = Contract }
+__assert_eq' { expected = Some }
+__assert_eq' { expected = None }
+__assert_eq { expected = Some(Browser) }
+__assert_eq { expected = None }
+.rs (rust)
+__assert_eq' { expected = Contract }
+__assert_eq' { expected = Some }
+__assert_eq' { expected = None }
+__assert_eq { expected = Some(Browser) }
+__assert_eq { expected = None }
+.ts (typescript)
+__assert_eq' { expected = Contract }
+__assert_eq' { expected = Some }
+__assert_eq' { expected = None }
+__assert_eq { expected = Some(Browser) }
+__assert_eq { expected = None }</pre>
+<pre class="output">0</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">nameof</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">~&gt;</span>
+        <span class="tok-variable">real_core</span><span class="tok-symbol">::record_type_fold_back</span>
+            <span class="tok-keyword">\</span> <span class="tok-variable">key</span> <span class="tok-operator">=&gt;</span>
+                <span class="tok-keyword">\*</span> <span class="tok-variable">value</span><span class="tok-operator">.</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span>
+                    <span class="tok-variable">sm'_real</span><span class="tok-symbol">::symbol_to_string_real</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-unary_operator">`</span><span class="tok-variable">key</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-variable">t</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span></code></pre>
+
+<h4>nameof (test)</h4>
+
+<span class="badge passed">test nameof: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-parenthesis">{</span> <span class="tok-variable">test1</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-variable">test2</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">}</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">nameof</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">test1</span><span class="tok-string">&quot;</span></code></pre>
+<pre class="output">__assert_eq' { expected = test1 }</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">get_record_fields</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span> <span class="tok-variable">u</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">u</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">~&gt;</span>
+        <span class="tok-variable">real_core</span><span class="tok-symbol">::record_type_fold_back</span>
+            <span class="tok-keyword">\</span> <span class="tok-variable">key</span> <span class="tok-operator">=&gt;</span>
+                <span class="tok-keyword">\*</span> <span class="tok-variable">u'</span><span class="tok-operator">.</span> <span class="tok-variable">acc</span> <span class="tok-operator">=&gt;</span>
+                    <span class="tok-keyword">:=</span> <span class="tok-variable">k</span> <span class="tok-operator">=</span> <span class="tok-variable">sm'_real</span><span class="tok-symbol">::symbol_to_string_real</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-unary_operator">`</span><span class="tok-variable">key</span><span class="tok-parenthesis">)</span>
+                    <span class="tok-keyword">:=</span> <span class="tok-variable">v</span> <span class="tok-operator">=</span> <span class="tok-variable">x</span> <span class="tok-variable">key</span>
+                    <span class="tok-parenthesis">(</span><span class="tok-operator">::</span><span class="tok-parenthesis">)</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">u'</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">k</span><span class="tok-operator">,</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span> <span class="tok-variable">acc</span>
+            <span class="tok-unary_operator">`</span><span class="tok-variable">t</span>
+            <span class="tok-parenthesis">(</span><span class="tok-variable">Nil</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">u</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span></code></pre>
+
+<h4>get_record_fields (test)</h4>
+
+<span class="badge passed">test get_record_fields: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-parenthesis">{</span> <span class="tok-variable">a</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">1</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-variable">b</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">2</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">}</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">get_record_fields</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">a</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-string">&quot;</span><span class="tok-string">1</span><span class="tok-string">&quot;</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">b</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-string">&quot;</span><span class="tok-string">2</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">]</span></code></pre>
+<pre class="output">__assert_eq' { expected = Cons((a, 1), Cons((b, 2), Nil)) }</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">get_functions_types</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span> <span class="tok-parenthesis">{</span><span class="tok-variable">record</span><span class="tok-parenthesis">}</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fns</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">~&gt;</span>
+        <span class="tok-keyword">:=</span> <span class="tok-variable">get_function_type</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-operator">=</span>
+            <span class="tok-keyword">:=</span> <span class="tok-variable">args</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span> <span class="tok-parenthesis">{</span><span class="tok-variable">record</span><span class="tok-parenthesis">}</span><span class="tok-operator">.</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+                <span class="tok-variable">real_core</span><span class="tok-symbol">::record_type_fold_back</span>
+                    <span class="tok-keyword">\</span> <span class="tok-variable">key</span> <span class="tok-operator">=&gt;</span>
+                        <span class="tok-keyword">\*</span> <span class="tok-variable">v</span><span class="tok-operator">.</span> <span class="tok-variable">acc</span> <span class="tok-operator">=&gt;</span>
+                            <span class="tok-keyword">:=</span> <span class="tok-variable">k</span> <span class="tok-operator">=</span> <span class="tok-variable">sm'_real</span><span class="tok-symbol">::symbol_to_string_real</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-unary_operator">`</span><span class="tok-variable">key</span><span class="tok-parenthesis">)</span>
+                            <span class="tok-keyword">:=</span> <span class="tok-variable">v</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">&quot;</span><span class="tok-type_variable">`v</span><span class="tok-string">&quot;</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span>
+                            <span class="tok-parenthesis">(</span><span class="tok-operator">::</span><span class="tok-parenthesis">)</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">k</span><span class="tok-operator">,</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span> <span class="tok-variable">acc</span>
+                    <span class="tok-unary_operator">`</span><span class="tok-variable">t</span>
+                    <span class="tok-parenthesis">(</span><span class="tok-variable">Nil</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+
+            <span class="tok-keyword">?:</span> <span class="tok-variable">t</span> <span class="tok-keyword">?|</span>
+            <span class="tok-operator">|</span> <span class="tok-unary_operator">~</span><span class="tok-variable">t</span> <span class="tok-operator">-&gt;</span> <span class="tok-unary_operator">~</span><span class="tok-variable">u</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">args</span> <span class="tok-unary_operator">`</span><span class="tok-variable">t</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;</span><span class="tok-type_variable">`u</span><span class="tok-string">&quot;</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span>
+
+        <span class="tok-variable">real_core</span><span class="tok-symbol">::record_type_fold_back</span>
+            <span class="tok-keyword">\</span> <span class="tok-variable">key</span> <span class="tok-operator">=&gt;</span>
+                <span class="tok-keyword">\*</span> <span class="tok-variable">v</span><span class="tok-operator">.</span> <span class="tok-variable">acc</span> <span class="tok-operator">=&gt;</span>
+                    <span class="tok-keyword">:=</span> <span class="tok-variable">k</span> <span class="tok-operator">=</span> <span class="tok-variable">sm'_real</span><span class="tok-symbol">::symbol_to_string_real</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-unary_operator">`</span><span class="tok-variable">key</span><span class="tok-parenthesis">)</span>
+                    <span class="tok-keyword">:=</span> <span class="tok-variable">args</span><span class="tok-operator">,</span> <span class="tok-variable">result</span> <span class="tok-operator">=</span> <span class="tok-variable">get_function_type</span> <span class="tok-unary_operator">`</span><span class="tok-variable">v</span>
+                    <span class="tok-parenthesis">(</span><span class="tok-operator">::</span><span class="tok-parenthesis">)</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-parenthesis">(</span><span class="tok-variable">list</span> <span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">*</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">k</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-variable">args</span><span class="tok-operator">,</span> <span class="tok-variable">result</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">acc</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-unary_operator">`</span><span class="tok-variable">fns</span><span class="tok-parenthesis">)</span>
+            <span class="tok-parenthesis">(</span><span class="tok-variable">Nil</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-parenthesis">(</span><span class="tok-variable">list</span> <span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">*</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-keyword">\</span> <span class="tok-variable">x</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-parenthesis">(</span><span class="tok-variable">list</span> <span class="tok-parenthesis">(</span><span class="tok-variable">string</span> <span class="tok-operator">*</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">*</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span></code></pre>
+
+<h4>get_functions_types (test)</h4>
+
+<span class="badge passed">test get_functions_types: passed</span>
+<pre class="code"><code>///- --test --no-agree &quot;type names are backend-specific&quot; --symbol
+///&gt; fsharp
+///&gt; rust
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">one</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">{</span> <span class="tok-variable">a</span> <span class="tok-parenthesis">}</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">a</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-parenthesis">}</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span> <span class="tok-variable">a</span> <span class="tok-operator">+</span> <span class="tok-number">1</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">two</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">{</span> <span class="tok-variable">a</span> <span class="tok-variable">b</span> <span class="tok-parenthesis">}</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">a</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-operator">;</span> <span class="tok-variable">b</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-parenthesis">}</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span> <span class="tok-variable">a</span> <span class="tok-operator">+</span> <span class="tok-variable">b</span> <span class="tok-operator">+</span> <span class="tok-number">2</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">fns</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">one</span> <span class="tok-variable">two</span> <span class="tok-parenthesis">}</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">i32_name</span> <span class="tok-operator">=</span> <span class="tok-variable">run_target</span> <span class="tok-keyword">\|</span> <span class="tok-operator">|</span> <span class="tok-variable">Fsharp</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">~~</span> <span class="tok-string">&quot;</span><span class="tok-string">int32</span><span class="tok-string">&quot;</span> <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">i32</span><span class="tok-string">&quot;</span>
+
+<span class="tok-variable">fns</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">get_functions_types</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">listm</span><span class="tok-symbol">::map</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-variable">name</span><span class="tok-operator">,</span> <span class="tok-variable">args</span><span class="tok-operator">,</span> <span class="tok-variable">result</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">name</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-variable">args</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::box</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::to_array'</span><span class="tok-operator">,</span> <span class="tok-variable">result</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::box</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::to_array'</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::format</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-parenthesis">(</span>
+    <span class="tok-parenthesis">[</span>
+        <span class="tok-string">&quot;</span><span class="tok-string">one</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">a</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">i32_name</span> <span class="tok-parenthesis">]</span><span class="tok-operator">,</span> <span class="tok-variable">i32_name</span>
+        <span class="tok-string">&quot;</span><span class="tok-string">two</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">a</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">i32_name</span><span class="tok-operator">;</span> <span class="tok-string">&quot;</span><span class="tok-string">b</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-variable">i32_name</span> <span class="tok-parenthesis">]</span><span class="tok-operator">,</span> <span class="tok-variable">i32_name</span>
+    <span class="tok-parenthesis">]</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm</span><span class="tok-symbol">::map</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-variable">name</span><span class="tok-operator">,</span> <span class="tok-variable">args</span><span class="tok-operator">,</span> <span class="tok-variable">result</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">name</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-variable">args</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::box</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::to_array'</span><span class="tok-operator">,</span> <span class="tok-variable">result</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::box</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm'</span><span class="tok-symbol">::to_array'</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::format</span>
+<span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.fsx (fsharp)
+__assert_eq' { expected = [(one, [(a, int32)], int32), (two, [(a, int32), (b, int32)], int32)] }
+.rs (rust)
+__assert_eq' { expected = [(one, [(a, i32)], i32), (two, [(a, i32), (b, i32)], i32)] }</pre>
+<pre class="output">0</pre>
+
+<pre class="code"><code><span class="tok-keyword">:|</span> <span class="tok-variable">nameof_probe</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Alpha</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Beta</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Gamma</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Delta</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Epsilon</span>
+
+///- --timeout 900000</code></pre>
+
+<h4>nameof_cases_round_trip (test)</h4>
+
+<span class="badge passed">test nameof_cases_round_trip: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; rust
+///&gt; gleam
+///&gt; lua
+///&gt; typescript
+///&gt; fsharp
+
+<span class="tok-variable">Alpha</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">case_name</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">case_of_name</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">Alpha</span><span class="tok-parenthesis">)</span>
+<span class="tok-variable">Beta</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">case_name</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">case_of_name</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">Beta</span><span class="tok-parenthesis">)</span>
+<span class="tok-variable">Gamma</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">case_name</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">case_of_name</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">Gamma</span><span class="tok-parenthesis">)</span>
+<span class="tok-variable">Delta</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">case_name</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">Delta</span><span class="tok-string">&quot;</span>
+<span class="tok-variable">Epsilon</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">case_name</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">case_of_name</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">Epsilon</span><span class="tok-parenthesis">)</span>
+<span class="tok-string">&quot;</span><span class="tok-string">epsilon</span><span class="tok-string">&quot;</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">case_of_name</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">None</span> <span class="tok-operator">:</span> <span class="tok-variable">option</span> <span class="tok-variable">nameof_probe</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.rs (rust)
+__assert_eq { expected = Some(Alpha) }
+__assert_eq { expected = Some(Beta) }
+__assert_eq { expected = Some(Gamma) }
+__assert_eq' { expected = Delta }
+__assert_eq { expected = Some(Epsilon) }
+__assert_eq { expected = None }
+.gleam (gleam)
+__assert_eq { expected = Some(Alpha) }
+__assert_eq { expected = Some(Beta) }
+__assert_eq { expected = Some(Gamma) }
+__assert_eq' { expected = Delta }
+__assert_eq { expected = Some(Epsilon) }
+__assert_eq { expected = None }
+.lua (lua)
+__assert_eq { expected = Some(Alpha) }
+__assert_eq { expected = Some(Beta) }
+__assert_eq { expected = Some(Gamma) }
+__assert_eq' { expected = Delta }
+__assert_eq { expected = Some(Epsilon) }
+__assert_eq { expected = None }
+.ts (typescript)
+__assert_eq { expected = Some(Alpha) }
+__assert_eq { expected = Some(Beta) }
+__assert_eq { expected = Some(Gamma) }
+__assert_eq' { expected = Delta }
+__assert_eq { expected = Some(Epsilon) }
+__assert_eq { expected = None }
+.fsx (fsharp)
+__assert_eq { expected = Some(Alpha) }
+__assert_eq { expected = Some(Beta) }
+__assert_eq { expected = Some(Gamma) }
+__assert_eq' { expected = Delta }
+__assert_eq { expected = Some(Epsilon) }
+__assert_eq { expected = None }</pre>
+<pre class="output">0</pre>
+
+<pre class="code"><code>///- --timeout 900000</code></pre>
+
+<h4>typed_case_name_round_trips (test)</h4>
+
+<span class="badge passed">test typed_case_name_round_trips: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; gleam
+///&gt; lua
+///&gt; rust
+///&gt; typescript
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">name</span> <span class="tok-operator">=</span> <span class="tok-variable">typed_case_name</span> <span class="tok-variable">Contract</span>
+<span class="tok-variable">typed_name_text</span> <span class="tok-variable">name</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">Contract</span><span class="tok-string">&quot;</span>
+<span class="tok-variable">case_of_typed_name</span> <span class="tok-variable">name</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">Contract</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">.gleam (gleam)
+__assert_eq' { expected = Contract }
+__assert_eq { expected = Some(Contract) }
+.lua (lua)
+__assert_eq' { expected = Contract }
+__assert_eq { expected = Some(Contract) }
+.rs (rust)
+__assert_eq' { expected = Contract }
+__assert_eq { expected = Some(Contract) }
+.ts (typescript)
+__assert_eq' { expected = Contract }
+__assert_eq { expected = Some(Contract) }</pre>
+<pre class="output">0</pre>
+
+<pre class="code"><code>///- --timeout 900000</code></pre>
+
+<h4>typed_name_styles (test)</h4>
+
+<span class="badge passed">test typed_name_styles: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; gleam
+///&gt; rust
+
+<span class="tok-variable">styled_name</span> <span class="tok-string">&quot;</span><span class="tok-string">_</span><span class="tok-string">&quot;</span> <span class="tok-string">&quot;</span><span class="tok-string">HostMacro</span><span class="tok-string">&quot;</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">host_macro</span><span class="tok-string">&quot;</span>
+<span class="tok-variable">styled_name</span> <span class="tok-string">&quot;</span><span class="tok-string">-</span><span class="tok-string">&quot;</span> <span class="tok-string">&quot;</span><span class="tok-string">GadtCase</span><span class="tok-string">&quot;</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">gadt-case</span><span class="tok-string">&quot;</span>
+<span class="tok-variable">styled_name</span> <span class="tok-string">&quot;</span><span class="tok-string">_</span><span class="tok-string">&quot;</span> <span class="tok-string">&quot;</span><span class="tok-string">Contract</span><span class="tok-string">&quot;</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">contract</span><span class="tok-string">&quot;</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">name</span> <span class="tok-operator">=</span> <span class="tok-variable">typed_case_name</span> <span class="tok-variable">Browser</span>
+<span class="tok-variable">typed_name_kebab</span> <span class="tok-variable">name</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">browser</span><span class="tok-string">&quot;</span>
+<span class="tok-variable">typed_name_lower</span> <span class="tok-variable">name</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">browser</span><span class="tok-string">&quot;</span></code></pre>
+<pre class="output">.gleam (gleam)
+__assert_eq' { expected = host_macro }
+__assert_eq' { expected = gadt-case }
+__assert_eq' { expected = contract }
+__assert_eq' { expected = browser }
+__assert_eq' { expected = browser }
+.rs (rust)
+__assert_eq' { expected = host_macro }
+__assert_eq' { expected = gadt-case }
+__assert_eq' { expected = contract }
+__assert_eq' { expected = browser }
+__assert_eq' { expected = browser }</pre>
+<pre class="output">0</pre>
+
+<pre class="code"><code><span class="tok-keyword">:|</span> <span class="tok-variable">case_style_probe</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">HostMacro</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">GadtCase</span>
+
+///- --timeout 900000</code></pre>
+
+<h4>case_name_styles (test)</h4>
+
+<span class="badge passed">test case_name_styles: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; gleam
+///&gt; lua
+///&gt; rust
+///&gt; typescript
+
+<span class="tok-keyword">:=</span> <span class="tok-unary_operator">~</span><span class="tok-variable">macro</span> <span class="tok-operator">:</span> <span class="tok-variable">case_style_probe</span> <span class="tok-operator">=</span> <span class="tok-variable">HostMacro</span>
+<span class="tok-variable">macro</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">case_name_snake</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">host_macro</span><span class="tok-string">&quot;</span>
+<span class="tok-variable">macro</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">case_name_lower</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">hostmacro</span><span class="tok-string">&quot;</span>
+<span class="tok-variable">GadtCase</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">case_name_kebab</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">gadt-case</span><span class="tok-string">&quot;</span>
+<span class="tok-variable">GadtCase</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">case_name_snake</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">gadt_case</span><span class="tok-string">&quot;</span>
+<span class="tok-variable">macro</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">case_initial</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">h</span><span class="tok-string">&quot;</span>
+<span class="tok-variable">GadtCase</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">case_initial</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">g</span><span class="tok-string">&quot;</span></code></pre>
+<pre class="output">.gleam (gleam)
+__assert_eq' { expected = host_macro }
+__assert_eq' { expected = hostmacro }
+__assert_eq' { expected = gadt-case }
+__assert_eq' { expected = gadt_case }
+__assert_eq' { expected = h }
+__assert_eq' { expected = g }
+.lua (lua)
+__assert_eq' { expected = host_macro }
+__assert_eq' { expected = hostmacro }
+__assert_eq' { expected = gadt-case }
+__assert_eq' { expected = gadt_case }
+__assert_eq' { expected = h }
+__assert_eq' { expected = g }
+.rs (rust)
+__assert_eq' { expected = host_macro }
+__assert_eq' { expected = hostmacro }
+__assert_eq' { expected = gadt-case }
+__assert_eq' { expected = gadt_case }
+__assert_eq' { expected = h }
+__assert_eq' { expected = g }
+.ts (typescript)
+__assert_eq' { expected = host_macro }
+__assert_eq' { expected = hostmacro }
+__assert_eq' { expected = gadt-case }
+__assert_eq' { expected = gadt_case }
+__assert_eq' { expected = h }
+__assert_eq' { expected = g }</pre>
+<pre class="output">0</pre>
+
+<pre class="code"><code>///- --timeout 900000</code></pre>
+
+<h4>case_qualified_name (test)</h4>
+
+<span class="badge passed">test case_qualified_name: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; gleam
+///&gt; rust
+
+<span class="tok-variable">case_qualified_name</span> <span class="tok-variable">Contract</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">reflection_test_target::Contract</span><span class="tok-string">&quot;</span>
+<span class="tok-variable">case_qualified_name</span> <span class="tok-variable">Browser</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq'</span> <span class="tok-string">&quot;</span><span class="tok-string">reflection_test_target::Browser</span><span class="tok-string">&quot;</span></code></pre>
+<pre class="output">.gleam (gleam)
+__assert_eq' { expected = reflection_test_target::Contract }
+__assert_eq' { expected = reflection_test_target::Browser }
+.rs (rust)
+__assert_eq' { expected = reflection_test_target::Contract }
+__assert_eq' { expected = reflection_test_target::Browser }</pre>
+<pre class="output">0</pre>
+
+</main>
+</body>
+</html>

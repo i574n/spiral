@@ -1,0 +1,14 @@
+:< main
+
+:= impossible_physical_selection_cannot_force_fixed_depth () : erp_p2p_fence_history nat_two =
+    := selection =
+        erp_p2p_physical_fence_history_selection_from_lineage
+            2i64
+            (ErpP2PPhysicalOwnerLineageTakeover (ErpP2PPhysicalOwnerLineageGenesis "owner-a", "owner-b"))
+    ?= selection ?|
+    | erp_p2p_physical_fence_history_selection payload =>
+        := \? fence. _, history, _ = payload
+        history
+
+:= main () =
+    impossible_physical_selection_cannot_force_fixed_depth ()

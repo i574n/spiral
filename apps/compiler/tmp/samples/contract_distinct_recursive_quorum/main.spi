@@ -1,0 +1,28 @@
+:! approver_a = ()
+:! approver_b = ()
+:! missing = ()
+:! present = ()
+
+:| approval who =
+    | ApprovalA :: approval approver_a
+    | ApprovalB :: approval approver_b
+
+:| ^ approval_quorum a b =
+    | EmptyQuorum :: approval_quorum missing missing
+    | AddA :: \* b. approval_quorum missing b * approval approver_a -> approval_quorum present b
+    | AddB :: \* a. approval_quorum a missing * approval approver_b -> approval_quorum a present
+
+:| authorization =
+    | Authorized :: approval_quorum present present -> authorization
+
+:= authorize (quorum : approval_quorum present present) : authorization =
+    Authorized quorum
+
+:= render (authorization : authorization) : string =
+    ?= authorization ?|
+    | Authorized _ => "distinct-recursive-quorum"
+
+:= main () : string =
+    := with_a = AddA (EmptyQuorum, ApprovalA)
+    := with_b = AddB (with_a, ApprovalB)
+    render (authorize with_b)

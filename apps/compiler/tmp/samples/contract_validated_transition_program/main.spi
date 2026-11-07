@@ -1,0 +1,120 @@
+:! production = ()
+:! schema_v4 = ()
+:! draft_state = ()
+:! validated_state = ()
+:! authorized_state = ()
+:! pending = ()
+:! ready = ()
+
+:! nfe = { issuer : string; recipient : string; total_cents : i32 }
+
+:| rule result =
+    | IssuerRule :: rule string
+    | RecipientRule :: rule string
+    | TotalRule :: rule i32
+
+:| ^ validation result =
+    | Lift :: \* result. rule result -> validation result
+    | Zip :: \* a b. validation a * validation b -> validation (a * b)
+    | Map :: \* result.
+        (\? input. (input -> result) * validation input)
+        -> validation result
+
+:| validation_evidence status =
+    | PendingEvidence :: string -> validation_evidence pending
+    | ReadyEvidence :: string -> validation_evidence ready
+
+:= run_rule \* result.
+    (document : nfe)
+    (rule : rule result)
+    : result =
+    ?= rule ?|
+    | IssuerRule => document::issuer
+    | RecipientRule => document::recipient
+    | TotalRule => document::total_cents
+
+:= ^ run_validation \* result.
+    (document : nfe)
+    (program : validation result)
+    : result =
+    ?= program ?|
+    | Lift rule => run_rule document rule
+    | Zip (left, right) =>
+        run_validation document left,
+        run_validation document right
+    | Map packed =>
+        := \? input. mapping, source = packed
+        mapping (run_validation document source)
+
+:= evidence_from_fields (_ : (string * string) * i32) : validation_evidence ready =
+    ReadyEvidence "three-independent-checks"
+
+:= validation_plan () : validation (validation_evidence ready) =
+    Map (\? (
+        evidence_from_fields,
+        Zip (
+            Zip (Lift IssuerRule, Lift RecipientRule),
+            Lift TotalRule
+        )
+    ))
+
+:| endpoint env schema =
+    | ProductionV4Endpoint :: endpoint production schema_v4
+
+:| document state =
+    | DraftDocument :: nfe -> document draft_state
+    | ValidatedDocument :: nfe -> document validated_state
+    | AuthorizedDocument :: string -> document authorized_state
+
+:| fiscal_op from to =
+    | Validate :: validation_evidence ready -> fiscal_op draft_state validated_state
+    | Authorize :: endpoint production schema_v4 -> fiscal_op validated_state authorized_state
+
+:= execute \* from to.
+    (operation : fiscal_op from to)
+    (document : document from)
+    : document to =
+    ?= operation, document ?|
+    | Validate (ReadyEvidence _), DraftDocument payload =>
+        ValidatedDocument payload
+    | Authorize _, ValidatedDocument _ =>
+        AuthorizedDocument "validated-then-authorized"
+
+:| ^ chain (step : * -> * -> *) from to =
+    | ChainStep :: \* (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: \* (step : * -> * -> *) from to.
+        (\? middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+:= ^ fold_chain
+    \* (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : \* a b. step a b -> carrier a -> carrier b)
+    (program : chain step from to)
+    (input : carrier from)
+    : carrier to =
+    ?= program ?|
+    | ChainStep atom => handler atom input
+    | ChainCompose pair =>
+        := \? middle. first, second = pair
+        fold_chain `$handler second (fold_chain `$handler first input)
+
+:= transition_plan
+    (evidence : validation_evidence ready)
+    : chain fiscal_op draft_state authorized_state =
+    ChainCompose (\? (
+        ChainStep (Validate evidence),
+        ChainStep (Authorize ProductionV4Endpoint)
+    ))
+
+:= main () : string =
+    := payload = nfe {
+        issuer = "ACME"
+        recipient = "CLIENT"
+        total_cents = 4200
+    }
+    := evidence = run_validation payload (validation_plan ())
+    := program = transition_plan evidence
+    := result = fold_chain `$execute program (DraftDocument payload)
+    ?= result ?|
+    | AuthorizedDocument protocol => protocol

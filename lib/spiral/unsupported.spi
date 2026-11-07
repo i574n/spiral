@@ -1,0 +1,13 @@
+:# unsupported static =
+    :< testing
+
+:= no_arm_message (name : string) : string = ~> sm'_real::(++#*) name ": no arm for this backend"
+
+:= no_arm \* t. (name : string) : t = failwith (no_arm_message name)
+
+///> c
+///> rust
+///> gleam
+:# a_missing_arm_names_its_function =
+    no_arm_message "captured_by"
+    |> _assert_eq "captured_by: no arm for this backend"

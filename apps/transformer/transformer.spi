@@ -1,0 +1,950 @@
+///- --package .
+:# transformer static =
+    :< testing
+
+:< sm'_operators
+:< f32_kernels
+
+:== bytes = array u8
+
+:== floats = array f32
+
+:= u32_at (b : bytes) (at : i32) : u32 =
+    := byte (k : i32) : u32 = conv (index b (at + k))
+    byte 0 ||| (byte 1 <<< 8) ||| (byte 2 <<< 16) ||| (byte 3 <<< 24)
+
+:= i32_at (b : bytes) (at : i32) : i32 = conv (u32_at b at)
+
+:= f32_at (b : bytes) (at : i32) : f32 = convert::f32_of_bits (u32_at b at)
+
+:== config = { dim : i32; hidden : i32; layers : i32; heads : i32; kv_heads : i32; vocab : i32; seq : i32 }
+
+:= config_of (b : bytes) : config =
+    := field (k : i32) : i32 = i32_at b (4 * k)
+    {
+        dim = field 0; hidden = field 1; layers = field 2; heads = field 3
+        kv_heads = field 4; vocab = abs (field 5); seq = field 6
+    }
+
+:= shared_classifier (b : bytes) : bool = i32_at b 20 > 0
+
+:= head_size (c : config) : i32 = c::dim / c::heads
+
+:= kv_dim (c : config) : i32 = c::dim * c::kv_heads / c::heads
+
+:= zeros (count : i32) : floats = create count
+
+:== slab = { at : i32; size : i32 }
+
+:= after (s : slab) (size : i32) : slab = { at = s::at + s::size; size = size }
+
+:== attention_w = { rms : slab; wq : slab; wk : slab; wv : slab; wo : slab }
+
+:== ffn_w = { rms : slab; w1 : slab; w2 : slab; w3 : slab }
+
+:== layout = { embed : slab; att : attention_w; ffn : ffn_w; final : slab; cls : slab }
+
+:= qkv_slabs (c : config) (r : slab) : slab * slab * slab =
+    := per = c::layers * c::dim
+    := q = after r (per * c::dim)
+    := k = after q (per * kv_dim c)
+    q, k, after k (per * kv_dim c)
+
+:= attention_of (c : config) (embed : slab) : attention_w =
+    := r = after embed (c::layers * c::dim)
+    := q, k, v = qkv_slabs c r
+    { rms = r; wq = q; wk = k; wv = v; wo = after v (c::layers * c::dim * c::dim) }
+
+:= ffn_of (c : config) (wo : slab) : ffn_w =
+    := per = c::layers * c::dim * c::hidden
+    := rms = after wo (c::layers * c::dim)
+    := w1 = after rms per
+    := w2 = after w1 per
+    { rms = rms; w1 = w1; w2 = w2; w3 = after w2 per }
+
+:= classifier (c : config) (shared : bool) (embed : slab) (final : slab) : slab =
+    ? shared ?> embed |: after (after final (c::seq * head_size c)) (c::vocab * c::dim)
+
+:= layout_with (c : config) (shared : bool) (e : slab) (a : attention_w) : layout =
+    := f = ffn_of c a::wo
+    := z = after f::w3 c::dim
+    { embed = e; att = a; ffn = f; final = z; cls = classifier c shared e z }
+
+:= layout_of (c : config) (shared : bool) : layout =
+    := embed = { at = 0; size = c::vocab * c::dim }
+    layout_with c shared embed (attention_of c embed)
+
+:! len n = i32
+
+:= width \* n. (_ : len n) : i32 = ~> real_core::type_lit_to_lit `n
+
+:~ ^ dot_l \* n. (k : len n) (a : floats) (ao : i32) (b : floats) (j : i32) (acc : f32) : f32 =
+    ? j >= width k ?> acc |: dot_l k a ao b (j + 1) (acc + index a (ao + j) * index b j)
+
+:~ ^ rows_l \* n d. (kn : len n) (kd : len d) (o : floats) (x : floats) (w : floats) (off : i32) (i : i32) (end : i32) : () =
+    ? i < end ?>
+        set o i (dot_l kn w (off + i * width kn) x 0 0.0f32)
+        rows_l kn kd o x w off (i + 1) end
+
+:= rows_par \* n d. (kn : len n) (kd : len d) (o : floats) (x : floats) (w : floats) (off : i32) : () =
+    := chunk, rows = 16, width kd
+    parallel::for_index ((rows + chunk - 1) / chunk) \ c => rows_l kn kd o x w off (c * chunk) (min rows ((c + 1) * chunk))
+
+:= rows_if \* n d. (kn : len n) (kd : len d) (o : floats) (x : floats) (w : floats) (off : i32) (p : i32 * i32) : bool =
+    := n2, d2 = p
+    ? n2 = width kn && d2 = width kd ?>
+        rows_par kn kd o x w off
+        !+
+    |: !-
+
+:= shaped_wide \* a b c.
+    (ka : len a) (kb : len b) (kc : len c) (o : floats) (x : floats) (w : floats) (off : i32) (p : i32 * i32)
+    : bool
+    =
+    ? rows_if ka kb o x w off p ?> !+
+    |? rows_if kb ka o x w off p ?> !+
+    |: rows_if ka kc o x w off p
+
+:= shaped_square \* a v.
+    (ka : len a) (kv : len v) (o : floats) (x : floats) (w : floats) (off : i32) (p : i32 * i32)
+    : bool
+    =
+    ? rows_if ka ka o x w off p ?> !+ |: rows_if ka kv o x w off p
+
+:= shaped \* a b c v.
+    (ka : len a) (kb : len b) (kc : len c) (kv : len v)
+    (o : floats) (x : floats) (w : floats) (off : i32) (p : i32 * i32)
+    : bool
+    =
+    ? shaped_square ka kv o x w off p ?> !+ |: shaped_wide ka kb kc o x w off p
+
+:| known =
+    | Stories15M
+    | Stories42M
+    | Stories110M
+    | Stories260K
+    | Unknown
+
+:= dims_15m () = (len 0 : len 288), (len 0 : len 768), (len 0 : len 32000), (len 0 : len 288)
+
+:= dims_42m () = (len 0 : len 512), (len 0 : len 1376), (len 0 : len 32000), (len 0 : len 512)
+
+:= dims_110m () = (len 0 : len 768), (len 0 : len 2048), (len 0 : len 32000), (len 0 : len 768)
+
+:= dims_260k () = (len 0 : len 64), (len 0 : len 172), (len 0 : len 512), (len 0 : len 32)
+
+:= fits \* a b c v. ((ka, kb, kc, kv) : len a * len b * len c * len v) (cfg : config) : bool =
+    cfg::dim = width ka && cfg::hidden = width kb && cfg::vocab = width kc && kv_dim cfg = width kv
+
+:= known_of (cfg : config) : known =
+    ? fits (dims_15m ()) cfg ?> Stories15M
+    |? fits (dims_42m ()) cfg ?> Stories42M
+    |? fits (dims_110m ()) cfg ?> Stories110M
+    |? fits (dims_260k ()) cfg ?> Stories260K
+    |: Unknown
+
+:= shaped_by \* a b c v.
+    ((ka, kb, kc, kv) : len a * len b * len c * len v)
+    (o : floats) (x : floats) (w : floats) (off : i32) (p : i32 * i32)
+    : bool
+    =
+    shaped ka kb kc kv o x w off p
+
+:= hit_large (k : known) (o : floats) (x : floats) (w : floats) (off : i32) (p : i32 * i32) : bool =
+    ?= k ?|
+    | Stories110M => shaped_by (dims_110m ()) o x w off p
+    | Stories260K => shaped_by (dims_260k ()) o x w off p
+    | _ => !-
+
+:= hit_known (k : known) (o : floats) (x : floats) (w : floats) (off : i32) (p : i32 * i32) : bool =
+    ?= k ?|
+    | Stories15M => shaped_by (dims_15m ()) o x w off p
+    | Stories42M => shaped_by (dims_42m ()) o x w off p
+    | _ => hit_large k o x w off p
+
+:== rows_group = { o : floats; off : i32; d : i32 }
+
+:= row_l_into \* n. (kn : len n) (x : floats) (w : floats) (g : rows_group) (i : i32) : () =
+    set g::o i (dot_l kn w (g::off + i * width kn) x 0 0.0f32)
+
+:~ ^ rows_l_fused \* n. (kn : len n) (x : floats) (w : floats) (a : rows_group) (b : rows_group) (c : rows_group) (r : i32) (end : i32) : () =
+    ? r < end ?>
+        ? r < a::d ?> row_l_into kn x w a r
+        |? r < a::d + b::d ?> row_l_into kn x w b (r - a::d)
+        |: row_l_into kn x w c (r - a::d - b::d)
+        rows_l_fused kn x w a b c (r + 1) end
+
+:= rows_par_fused \* n. (kn : len n) (x : floats) (w : floats) (a : rows_group) (b : rows_group) (c : rows_group) : () =
+    := chunk, rows = 16, a::d + b::d + c::d
+    parallel::for_index ((rows + chunk - 1) / chunk) \ k => rows_l_fused kn x w a b c (k * chunk) (min rows ((k + 1) * chunk))
+
+:= fused_with \* n. (kn : len n) (x : floats) (w : floats) (width_in : i32) (a : rows_group) (b : rows_group) (c : rows_group) : bool =
+    ? width_in = width kn ?>
+        rows_par_fused kn x w a b c
+        !+
+    |: !-
+
+:= fused_known (k : known) (x : floats) (w : floats) (n : i32) (a : rows_group) (b : rows_group) (c : rows_group) : bool =
+    ?= k ?|
+    | Stories15M =>
+        := ka, _, _, _ = dims_15m ()
+        fused_with ka x w n a b c
+    | Stories42M =>
+        := ka, _, _, _ = dims_42m ()
+        fused_with ka x w n a b c
+    | Stories110M =>
+        := ka, _, _, _ = dims_110m ()
+        fused_with ka x w n a b c
+    | _ => !-
+
+:= matmul_known (k : known) (o : floats) (x : floats) (w : floats) (off : i32) (n : i32) (d : i32) : () =
+    ? hit_known k o x w off (n, d) = !- ?> f32_kernels::matmul o x w off n d
+
+:== q8 = { q : array i8; s : floats; gs : i32 }
+
+:== model = { c : config; l : layout; w : floats; k : known; q8 : option q8 }
+
+:= weight_count (l : layout) : i32 =
+    := last = ? l::cls::at = l::embed::at ?> l::final |: l::cls
+    last::at + last::size
+
+:= fp32_model_at (path : string) : model =
+    := head = file_system::read_prefix path 28
+    := c = config_of head
+    := l = layout_of c (shared_classifier head)
+    { c = c; l = l; w = file_system::map_f32s path 28 (weight_count l); k = known_of c; q8 = None }
+
+:= q8_magic () : u32 = 1634415666u32
+
+:= config_v2 (b : bytes) : config =
+    := field (k : i32) : i32 = i32_at b (8 + 4 * k)
+    {
+        dim = field 0; hidden = field 1; layers = field 2; heads = field 3
+        kv_heads = field 4; vocab = field 5; seq = field 6
+    }
+
+:~ ^ copy_f32s (b : bytes) (from : i32) (o : floats) (at : i32) (n : i32) (i : i32) : () =
+    ? i < n ?>
+        set o (at + i) (f32_at b (from + 4 * i))
+        copy_f32s b from o at n (i + 1)
+
+:~ ^ copy_i8s (b : bytes) (from : i32) (q : array i8) (at : i32) (n : i32) (i : i32) : () =
+    ? i < n ?>
+        set q (at + i) (conv (index b (from + i)))
+        copy_i8s b from q at n (i + 1)
+
+:= norm_parts (c : config) (l : layout) : list (slab * i32) =
+    := per = c::layers * c::dim
+    [ l::att::rms, per; l::ffn::rms, per; l::final, c::dim ]
+
+:= norms_into (b : bytes) (c : config) (l : layout) (w : floats) : i32 =
+    := copy cur ((sl, n) : slab * i32) =
+        copy_f32s b cur w sl::at n 0
+        cur + 4 * n
+    norm_parts c l |> listm::fold copy 256
+
+:= read_layer (b : bytes) (w : q8) (sl : slab) (per : i32) (layer : i32) (c : i32) : i32 =
+    := at = sl::at + layer * per
+    copy_i8s b c w::q at per 0
+    copy_f32s b (c + per) w::s (at / w::gs) (per / w::gs) 0
+    c + per + 4 * (per / w::gs)
+
+:~ ^ read_tensor (b : bytes) (w : q8) (sl : slab) (per : i32) (layers : i32) (layer : i32) (c : i32) : i32 =
+    ? layer < layers ?> read_tensor b w sl per layers (layer + 1) (read_layer b w sl per layer c) |: c
+
+:= core_tensors (c : config) (l : layout) : list (slab * i32 * i32) =
+    := a, n, d = l::att, c::layers, c::dim
+    := kv = d * kv_dim c
+    [ l::embed, c::vocab * d, 1; a::wq, d * d, n; a::wk, kv, n; a::wv, kv, n; a::wo, d * d, n ]
+
+:= mlp_tensors (c : config) (l : layout) : list (slab * i32 * i32) =
+    := f, n, d, h = l::ffn, c::layers, c::dim, c::hidden
+    [ f::w1, d * h, n; f::w2, h * d, n; f::w3, d * h, n ]
+
+:= tensors (c : config) (l : layout) : list (slab * i32 * i32) =
+    := cls = ? l::cls::at = l::embed::at ?> [] |: [ l::cls, c::dim * c::vocab, 1 ]
+    listm::append (core_tensors c l) (listm::append (mlp_tensors c l) cls)
+
+:= q8_blank (n : i32) (gs : i32) : q8 = { q = create n; s = create (n / gs); gs = gs }
+
+:= read_tensors (b : bytes) (c : config) (l : layout) (w : q8) (cursor : i32) : () =
+    := read cur (sl, per, layers) = read_tensor b w sl per layers 0 cur
+    tensors c l |> listm::fold read cursor |> ignore
+
+:= read_q8_parts (b : bytes) (c : config) (l : layout) : floats * q8 =
+    := w = q8_blank (weight_count l) (i32_at b 37)
+    := norms : floats = create (weight_count l)
+    read_tensors b c l w (norms_into b c l norms)
+    norms, w
+
+:= model_q8_at (path : string) : model =
+    := b = file_system::read_bytes path
+    := c = config_v2 b
+    := l = layout_of c (index b 36 <> 0u8)
+    := norms, w = read_q8_parts b c l
+    { c = c; l = l; w = norms; k = known_of c; q8 = Some w }
+
+:= model_at (path : string) : model =
+    ? u32_at (file_system::read_prefix path 4) 0 = q8_magic () ?> model_q8_at path |: fp32_model_at path
+
+:= group_size (c : config) : i32 =
+    :~ ^ halve (g : i32) : i32 = ? c::dim % g = 0 ?> g |: halve (g / 2)
+    halve 64
+
+:= rounded (even : bool) (x : f32) : i32 =
+    := t : i32 = conv x
+    := f = x - conv t
+    := a = ? f < 0.0f32 ?> 0.0f32 - f |: f
+    := step = ? x < 0.0f32 ?> -1 |: 1
+    ? a > 0.5f32 || a = 0.5f32 && (even = !- || t % 2 <> 0) ?> t + step |: t
+
+:~ ^ group_max (x : floats) (at : i32) (n : i32) (i : i32) (m : f32) : f32 =
+    ? i < n ?>
+        := v = index x (at + i)
+        group_max x at n (i + 1) (? v < 0.0f32 && 0.0f32 - v > m ?> 0.0f32 - v |: ? v > m ?> v |: m)
+    |: m
+
+:~ ^ quantize_from (even : bool) (x : floats) (q : array i8) (at : i32) (sc : f32) (n : i32) (i : i32) : () =
+    ? i < n ?>
+        set q (at + i) (conv (? sc > 0.0f32 ?> rounded even (index x (at + i) / sc) |: 0))
+        quantize_from even x q at sc n (i + 1)
+
+:= quantize_group (even : bool) (x : floats) (q : array i8) (s : floats) (gs : i32) (base : i32) : () =
+    := scale = group_max x base gs 0 0.0f32 / 127.0f32
+    set s (base / gs) scale
+    quantize_from even x q base scale gs 0
+
+:~ ^ quantize_groups (even : bool) (x : floats) (q : array i8) (s : floats) (gs : i32) (base : i32) (end : i32) : () =
+    ? base < end ?>
+        quantize_group even x q s gs base
+        quantize_groups even x q s gs (base + gs) end
+
+:= quantize_slab (w : floats) (q : array i8) (s : floats) (gs : i32) (sl : slab) : () =
+    quantize_groups !+ w q s gs sl::at (sl::at + sl::size)
+
+:= weight_slabs (l : layout) : list slab =
+    := a, f = l::att, l::ffn
+    := shared = [ l::embed; a::wq; a::wk; a::wv; a::wo; f::w1; f::w2; f::w3 ]
+    ? l::cls::at = l::embed::at ?> shared |: l::cls :: shared
+
+:= q8_of (m : model) : q8 =
+    := gs = group_size m::c
+    := n = weight_count m::l
+    := q : array i8 = create n
+    := s : floats = create (n / gs)
+    listm::iter (quantize_slab m::w q s gs) (weight_slabs m::l)
+    { q = q; s = s; gs = gs }
+
+:= with_q8 (m : model) : model =
+    ?= m::q8 ?|
+    | Some _ => m
+    | None => { m ?| q8 = Some (q8_of m) }
+
+:= put_u32 (o : bytes) (at : i32) (v : u32) : () =
+    set o at (conv (v &&& 255u32))
+    set o (at + 1) (conv ((v >>> 8) &&& 255u32))
+    set o (at + 2) (conv ((v >>> 16) &&& 255u32))
+    set o (at + 3) (conv (v >>> 24))
+
+:~ ^ put_f32s (o : bytes) (at : i32) (x : floats) (from : i32) (n : i32) (i : i32) : () =
+    ? i < n ?>
+        put_u32 o (at + 4 * i) (convert::bits_of_f32 (index x (from + i)))
+        put_f32s o at x from n (i + 1)
+
+:~ ^ put_i8s (o : bytes) (at : i32) (q : array i8) (from : i32) (n : i32) (i : i32) : () =
+    ? i < n ?>
+        set o (at + i) (conv (index q (from + i)))
+        put_i8s o at q from n (i + 1)
+
+:= config_into (o : bytes) (c : config) : () =
+    := fields = [ c::dim; c::hidden; c::layers; c::heads; c::kv_heads; c::vocab; c::seq ]
+    := put at v =
+        put_u32 o at (conv v)
+        at + 4
+    fields |> listm::fold put 8 |> ignore
+
+:= header_v2 (o : bytes) (c : config) (shared : bool) (gs : i32) : () =
+    put_u32 o 0 (q8_magic ())
+    put_u32 o 4 2u32
+    config_into o c
+    set o 36 (? shared ?> 1u8 |: 0u8)
+    put_u32 o 37 (conv gs)
+
+:= write_layer (o : bytes) (w : q8) (sl : slab) (per : i32) (layer : i32) (c : i32) : i32 =
+    := at = sl::at + layer * per
+    put_i8s o c w::q at per 0
+    put_f32s o (c + per) w::s (at / w::gs) (per / w::gs) 0
+    c + per + 4 * (per / w::gs)
+
+:~ ^ write_tensor (o : bytes) (w : q8) (sl : slab) (per : i32) (layers : i32) (layer : i32) (c : i32) : i32 =
+    ? layer < layers ?> write_tensor o w sl per layers (layer + 1) (write_layer o w sl per layer c) |: c
+
+:= norms_from (o : bytes) (m : model) : i32 =
+    := put cur ((sl, n) : slab * i32) =
+        put_f32s o cur m::w sl::at n 0
+        cur + 4 * n
+    norm_parts m::c m::l |> listm::fold put 256
+
+:= q8_file_size (m : model) (gs : i32) : i32 =
+    := norms = 256 + 4 * (2 * m::c::layers * m::c::dim + m::c::dim)
+    tensors m::c m::l |> listm::fold (\ s (_, per, layers) => s + layers * (per + 4 * (per / gs))) norms
+
+:= write_tensors (o : bytes) (m : model) (w : q8) : () =
+    := write cur (sl, per, layers) = write_tensor o w sl per layers 0 cur
+    tensors m::c m::l |> listm::fold write (norms_from o m) |> ignore
+
+:= q8_file_bytes (m : model) (w : q8) : bytes =
+    := o : bytes = create (q8_file_size m w::gs)
+    header_v2 o m::c (m::l::cls::at = m::l::embed::at) w::gs
+    write_tensors o m w
+    o
+
+:= write_q8_file (m : model) (path : string) : () =
+    ?= (with_q8 m)::q8 ?|
+    | Some w => file_system::write_bytes path (q8_file_bytes m w)
+    | None => ()
+
+:~ ^ dot_i8 (a : array i8) (ao : i32) (b : array i8) (bo : i32) (n : i32) (k : i32) (acc : i32) : i32 =
+    ? k < n ?> dot_i8 a ao b bo n (k + 1) (acc + (conv (index a (ao + k)) : i32) * conv (index b (bo + k))) |: acc
+
+:= group_term (xq : array i8) (xs : floats) (w : q8) (row : i32) (j : i32) : f32 =
+    conv (dot_i8 xq j w::q (row + j) w::gs 0 0) * index w::s ((row + j) / w::gs) * index xs (j / w::gs)
+
+:~ ^ row_q8 (xq : array i8) (xs : floats) (w : q8) (row : i32) (n : i32) (j : i32) (val : f32) : f32 =
+    ? j <= n - w::gs ?> row_q8 xq xs w row n (j + w::gs) (val + group_term xq xs w row j) |: val
+
+:~ ^ rows_q8 (o : floats) (xq : array i8) (xs : floats) (w : q8) (off : i32) (n : i32) (d : i32) (i : i32) : () =
+    ? i < d ?>
+        set o i (row_q8 xq xs w (off + i * n) n 0 0.0f32)
+        rows_q8 o xq xs w off n d (i + 1)
+
+:= matmul_q8 (w : q8) (o : floats) (x : floats) (off : i32) (n : i32) (d : i32) : () =
+    := xq : array i8 = create n
+    := xs : floats = create (n / w::gs)
+    quantize_groups !- x xq xs w::gs 0 (n / w::gs * w::gs)
+    := chunk = 16
+    parallel::for_index ((d + chunk - 1) / chunk) \ c => rows_q8 o xq xs w off n (min d ((c + 1) * chunk)) (c * chunk)
+
+:= row_into (xq : array i8) (xs : floats) (w : q8) (n : i32) (g : rows_group) (i : i32) : () =
+    set g::o i (row_q8 xq xs w (g::off + i * n) n 0 0.0f32)
+
+:~ ^ rows_fused (xq : array i8) (xs : floats) (w : q8) (n : i32) (a : rows_group) (b : rows_group) (c : rows_group) (hi : i32) (r : i32) : () =
+    ? r < hi ?>
+        ? r < a::d ?> row_into xq xs w n a r
+        |? r < a::d + b::d ?> row_into xq xs w n b (r - a::d)
+        |: row_into xq xs w n c (r - a::d - b::d)
+        rows_fused xq xs w n a b c hi (r + 1)
+
+:= matmul_q8_fused (w : q8) (x : floats) (n : i32) (a : rows_group) (b : rows_group) (c : rows_group) : () =
+    := xq : array i8 = create n
+    := xs : floats = create (n / w::gs)
+    quantize_groups !- x xq xs w::gs 0 (n / w::gs * w::gs)
+    := rows = a::d + b::d + c::d
+    := chunk = 16
+    parallel::for_index ((rows + chunk - 1) / chunk) \ k => rows_fused xq xs w n a b c (min rows ((k + 1) * chunk)) (k * chunk)
+
+:= matmul_model (m : model) (o : floats) (x : floats) (off : i32) (n : i32) (d : i32) : () =
+    ?= m::q8 ?|
+    | Some w => matmul_q8 w o x off n d
+    | None => matmul_known m::k o x m::w off n d
+
+:~ ^ embed_q8 (o : floats) (w : q8) (at : i32) (n : i32) (i : i32) : () =
+    ? i < n ?>
+        set o i (conv (index w::q (at + i)) * index w::s ((at + i) / w::gs))
+        embed_q8 o w at n (i + 1)
+
+:= embed (m : model) (o : floats) (token : i32) : () =
+    := at = m::l::embed::at + token * m::c::dim
+    ?= m::q8 ?|
+    | Some w => embed_q8 o w at m::c::dim 0
+    | None => copy_into o 0 m::w at m::c::dim 0
+
+:== buffers = { x : floats; xb : floats; xb2 : floats; hb : floats; hb2 : floats; q : floats; k : floats; v : floats }
+
+:== caches = { att : floats; logits : floats; keys : floats; values : floats }
+
+:= buffers_of (c : config) : buffers =
+    := d = zeros
+    {
+        x = d c::dim; xb = d c::dim; xb2 = d c::dim; hb = d c::hidden
+        hb2 = d c::hidden; q = d c::dim; k = d (kv_dim c); v = d (kv_dim c)
+    }
+
+:= caches_of (c : config) : caches =
+    := cache = c::layers * c::seq * kv_dim c
+    { att = zeros (c::heads * c::seq); logits = zeros c::vocab; keys = zeros cache; values = zeros cache }
+
+:= rotate (v : floats) (i : i32) (fcr : f32) (fci : f32) : () =
+    := v0 = index v i
+    := v1 = index v (i + 1)
+    set v i (v0 * fcr - v1 * fci)
+    set v (i + 1) (v0 * fci + v1 * fcr)
+
+:= rope_angle (c : config) (pos : i32) (i : i32) : f32 =
+    := hs = head_size c
+    conv pos * (1.0f32 / (10000.0f32 ** (conv (i % hs) / conv hs)))
+
+:= rope_pair (c : config) (b : buffers) (i : i32) (angle : f32) : () =
+    rotate b::q i (cos angle) (sin angle)
+    ? i < kv_dim c ?> rotate b::k i (cos angle) (sin angle)
+
+:~ ^ rope_from (c : config) (b : buffers) (pos : i32) (i : i32) : () =
+    ? i < c::dim ?>
+        rope_pair c b i (rope_angle c pos i)
+        rope_from c b pos (i + 2)
+
+:= cache_row (c : config) (layer : i32) (t : i32) : i32 = (layer * c::seq + t) * kv_dim c
+
+:= kv_head (c : config) (h : i32) : i32 = h / (c::heads / c::kv_heads) * head_size c
+
+:= score_at (c : config) (b : buffers) (s : caches) (layer : i32) (h : i32) (t : i32) : f32 =
+    := hs = head_size c
+    dot s::keys (cache_row c layer t + kv_head c h) b::q (h * hs) hs 0 0.0f32 / sqrt (conv hs)
+
+:~ ^ scores_from (c : config) (b : buffers) (s : caches) (layer : i32) (h : i32) (pos : i32) (t : i32) : () =
+    ? t <= pos ?>
+        set s::att (h * c::seq + t) (score_at c b s layer h t)
+        scores_from c b s layer h pos (t + 1)
+
+:= mix_at (c : config) (b : buffers) (s : caches) (layer : i32) (h : i32) (t : i32) : () =
+    := hs = head_size c
+    axpy b::xb (h * hs) (index s::att (h * c::seq + t)) s::values (cache_row c layer t + kv_head c h) hs 0
+
+:~ ^ mix_from (c : config) (b : buffers) (s : caches) (layer : i32) (h : i32) (pos : i32) (t : i32) : () =
+    ? t <= pos ?>
+        mix_at c b s layer h t
+        mix_from c b s layer h pos (t + 1)
+
+:= attend_head (c : config) (b : buffers) (s : caches) (layer : i32) (pos : i32) (h : i32) : () =
+    scores_from c b s layer h pos 0
+    softmax s::att (h * c::seq) (pos + 1)
+    zero_from b::xb (h * head_size c) (head_size c) 0
+    mix_from c b s layer h pos 0
+
+:~ ^ heads_from (c : config) (b : buffers) (s : caches) (layer : i32) (pos : i32) (h : i32) : () =
+    ? h < c::heads ?>
+        attend_head c b s layer pos h
+        heads_from c b s layer pos (h + 1)
+
+:= layer_at (s : slab) (layer : i32) (per : i32) : i32 = s::at + layer * per
+
+:= project (m : model) (o : floats) (x : floats) (s : slab) (layer : i32) (n : i32) (d : i32) : () =
+    matmul_model m o x (layer_at s layer (n * d)) n d
+
+:= normed (m : model) (b : buffers) (s : slab) (layer : i32) : () =
+    rmsnorm b::xb b::x m::w (layer_at s layer m::c::dim) m::c::dim
+
+:= qkv (m : model) (b : buffers) (layer : i32) : () =
+    := a = m::l::att
+    := d = m::c::dim
+    := kv = kv_dim m::c
+    normed m b a::rms layer
+    := gq : rows_group = { o = b::q; off = layer_at a::wq layer (d * d); d = d }
+    := gk : rows_group = { o = b::k; off = layer_at a::wk layer (d * kv); d = kv }
+    := gv : rows_group = { o = b::v; off = layer_at a::wv layer (d * kv); d = kv }
+    ?= m::q8 ?|
+    | Some w => matmul_q8_fused w b::xb d gq gk gv
+    | None =>
+        ? fused_known m::k b::xb m::w d gq gk gv = !- ?>
+            project m b::q b::xb a::wq layer d d
+            project m b::k b::xb a::wk layer d kv
+            project m b::v b::xb a::wv layer d kv
+
+:= cache_kv (c : config) (b : buffers) (s : caches) (layer : i32) (pos : i32) : () =
+    rope_from c b pos 0
+    copy_into s::keys (cache_row c layer pos) b::k 0 (kv_dim c) 0
+    copy_into s::values (cache_row c layer pos) b::v 0 (kv_dim c) 0
+
+:= attention (m : model) (b : buffers) (s : caches) (layer : i32) (pos : i32) : () =
+    := d = m::c::dim
+    qkv m b layer
+    cache_kv m::c b s layer pos
+    heads_from m::c b s layer pos 0
+    project m b::xb2 b::xb m::l::att::wo layer d d
+    add_into b::x b::xb2 d 0
+
+:~ ^ swiglu_from (hb : floats) (hb2 : floats) (n : i32) (i : i32) : () =
+    ? i < n ?>
+        := v = index hb i
+        set hb i (v * (1.0f32 / (1.0f32 + exp (0.0f32 - v))) * index hb2 i)
+        swiglu_from hb hb2 n (i + 1)
+
+:= ffn_hidden (m : model) (b : buffers) (layer : i32) : () =
+    := f = m::l::ffn
+    := d = m::c::dim
+    := h = m::c::hidden
+    normed m b f::rms layer
+    := g1 : rows_group = { o = b::hb; off = layer_at f::w1 layer (d * h); d = h }
+    := g3 : rows_group = { o = b::hb2; off = layer_at f::w3 layer (d * h); d = h }
+    := none : rows_group = { o = b::hb2; off = 0; d = 0 }
+    ?= m::q8 ?|
+    | Some w => matmul_q8_fused w b::xb d g1 g3 none
+    | None =>
+        ? fused_known m::k b::xb m::w d g1 g3 none = !- ?>
+            project m b::hb b::xb f::w1 layer d h
+            project m b::hb2 b::xb f::w3 layer d h
+
+:= feed_forward (m : model) (b : buffers) (layer : i32) : () =
+    ffn_hidden m b layer
+    swiglu_from b::hb b::hb2 m::c::hidden 0
+    project m b::xb b::hb m::l::ffn::w2 layer m::c::hidden m::c::dim
+    add_into b::x b::xb m::c::dim 0
+
+:~ ^ layers_from (m : model) (b : buffers) (s : caches) (pos : i32) (layer : i32) : () =
+    ? layer < m::c::layers ?>
+        attention m b s layer pos
+        feed_forward m b layer
+        layers_from m b s pos (layer + 1)
+
+:= logits_of (m : model) (b : buffers) (s : caches) : () =
+    rmsnorm b::x b::x m::w m::l::final::at m::c::dim
+    matmul_model m s::logits b::x m::l::cls::at m::c::dim m::c::vocab
+
+:= forward (m : model) (b : buffers) (s : caches) (token : i32) (pos : i32) : () =
+    embed m b::x token
+    layers_from m b s pos 0
+    logits_of m b s
+
+:~ ^ argmax_from (x : floats) (n : i32) (i : i32) (best : i32) : i32 =
+    ? i >= n ?> best |: argmax_from x n (i + 1) (? index x i > index x best ?> i |: best)
+
+:= argmax (x : floats) : i32 = argmax_from x (length x) 1 0
+
+:~ ^ copy_bytes (o : bytes) (t : bytes) (from : i32) (k : i32) : () =
+    ? k < length o ?>
+        set o k (index t (from + k))
+        copy_bytes o t from (k + 1)
+
+:= piece_at (t : bytes) (at : i32) : bytes =
+    := piece : bytes = create (i32_at t (at + 4))
+    copy_bytes piece t (at + 8) 0
+    piece
+
+:~ ^ read_pieces (t : bytes) (pieces : array bytes) (i : i32) (at : i32) : () =
+    ? i < length pieces ?>
+        := piece = piece_at t at
+        set pieces i piece
+        read_pieces t pieces (i + 1) (at + 8 + length piece)
+
+:= vocab_of (t : bytes) (count : i32) : array bytes =
+    := pieces : array bytes = create count
+    read_pieces t pieces 0 4
+    pieces
+
+:= hex_digit (b : u8) : i32 = ? b >= 65u8 ?> conv b - 55 |: conv b - 48
+
+:= raw_byte (p : bytes) : option i32 =
+    ? length p = 6 && index p 0 = 60u8 && index p 1 = 48u8 && index p 2 = 120u8
+    ?> Some (hex_digit (index p 3) * 16 + hex_digit (index p 4))
+    |: None
+
+:~ ^ ascii_from (p : bytes) (start : i32) (i : i32) (acc : string) : string =
+    ? i >= length p ?> acc |: ascii_from p start (i + 1) (acc ++# unicode::char_of (conv (index p i)))
+
+:= piece_text (prev : i32) (p : bytes) : string =
+    ?= raw_byte p ?|
+    | Some b => unicode::char_of b
+    | None =>
+        := start = ? prev = 1 && length p > 0 && index p 0 = 32u8 ?> 1 |: 0
+        ascii_from p start start ""
+
+:~ ^ read_scores (t : bytes) (scores : floats) (i : i32) (at : i32) : () =
+    ? i < length scores ?>
+        set scores i (f32_at t at)
+        read_scores t scores (i + 1) (at + 8 + i32_at t (at + 4))
+
+:= scores_of (t : bytes) (count : i32) : floats =
+    := scores : floats = create count
+    read_scores t scores 0 4
+    scores
+
+:~ ^ same_from (a : bytes) (b : bytes) (k : i32) : bool =
+    ? k >= length a ?> !+ |: ? index a k <> index b k ?> !- |: same_from a b (k + 1)
+
+:= same_bytes (a : bytes) (b : bytes) : bool = ? length a <> length b ?> !- |: same_from a b 0
+
+:~ ^ find_piece (pieces : array bytes) (p : bytes) (i : i32) : i32 =
+    ? i >= length pieces ?> -1 |: ? same_bytes (index pieces i) p ?> i |: find_piece pieces p (i + 1)
+
+:~ ^ put_bytes (o : bytes) (at : i32) (x : bytes) (k : i32) : () =
+    ? k < length x ?>
+        set o (at + k) (index x k)
+        put_bytes o at x (k + 1)
+
+:= joined (a : bytes) (b : bytes) : bytes =
+    := o : bytes = create (length a + length b)
+    put_bytes o 0 a 0
+    put_bytes o (length a) b 0
+    o
+
+:= slice_bytes (t : bytes) (from : i32) (n : i32) : bytes =
+    := o : bytes = create n
+    copy_bytes o t from 0
+    o
+
+:~ ^ codepoint_end (t : bytes) (i : i32) : i32 =
+    ? i >= length t ?> i |: ? (index t i &&& 192u8) = 128u8 ?> codepoint_end t (i + 1) |: i
+
+:~ ^ fallback_bytes (t : bytes) (i : i32) (stop : i32) (acc : list i32) : list i32 =
+    ? i >= stop ?> acc |: fallback_bytes t (i + 1) stop ((conv (index t i) : i32) + 3 :: acc)
+
+:~ ^ initial_from (pieces : array bytes) (t : bytes) (i : i32) (acc : list i32) : list i32 =
+    ? i >= length t ?> acc
+    |:
+        := stop = codepoint_end t (i + 1)
+        := id = find_piece pieces (slice_bytes t i (stop - i)) 0
+        initial_from pieces t stop (? id >= 0 ?> id :: acc |: fallback_bytes t i stop acc)
+
+:== best = { score : f32; at : i32; id : i32 }
+
+:= better (pieces : array bytes) (scores : floats) (x : i32) (y : i32) (at : i32) (b : best) : best =
+    := id = find_piece pieces (joined (index pieces x) (index pieces y)) 0
+    ? id < 0 ?> b |: ? index scores id > b::score ?> { score = index scores id; at = at; id = id } |: b
+
+:~ ^ best_pair (pieces : array bytes) (scores : floats) (ids : list i32) (at : i32) (b : best) : best =
+    ?= ids ?|
+    | [] => b
+    | x :: rest =>
+        ?= rest ?|
+        | [] => b
+        | y :: _ => best_pair pieces scores rest (at + 1) (better pieces scores x y at b)
+
+:~ ^ merged_at (ids : list i32) (at : i32) (id : i32) : list i32 =
+    ?= ids ?|
+    | [] => []
+    | x :: rest =>
+        ? at > 0 ?> x :: merged_at rest (at - 1) id
+        |: ?= rest ?| | _ :: tail => id :: tail | [] => [ id ]
+
+:~ ^ merge_all (pieces : array bytes) (scores : floats) (ids : list i32) : list i32 =
+    := b = best_pair pieces scores ids 0 { score = -10000000000.0f32; at = -1; id = -1 }
+    ? b::at < 0 ?> ids |: merge_all pieces scores (merged_at ids b::at b::id)
+
+:= space_piece () : bytes =
+    := p : bytes = create 1
+    set p 0 32u8
+    p
+
+:= encode (pieces : array bytes) (scores : floats) (text : bytes) : list i32 =
+    ? length text = 0 ?> [ 1 ]
+    |:
+        := prefix = find_piece pieces (space_piece ()) 0
+        1 :: merge_all pieces scores (prefix :: listm::rev (initial_from pieces text 0 []))
+
+:== run = { m : model; b : buffers; s : caches; pieces : array bytes; steps : i32 }
+
+:= next_token (r : run) (token : i32) (pos : i32) : i32 =
+    forward r::m r::b r::s token pos
+    argmax r::s::logits
+
+:~ ^ generate (r : run) (token : i32) (pos : i32) (out : string) : string =
+    ? pos >= r::steps ?> out
+    |:
+        := next = next_token r token pos
+        ? next = 1 ?> out |: generate r next (pos + 1) (out ++# piece_text token (index r::pieces next))
+
+:~ ^ generate_from (r : run) (forced : list i32) (token : i32) (pos : i32) (out : string) : string =
+    ? pos >= r::steps ?> out
+    |:
+        := sampled = next_token r token pos
+        := next, rest = ?= forced ?| | p :: more => p, more | [] => sampled, []
+        ? next = 1 ?> out |: generate_from r rest next (pos + 1) (out ++# piece_text token (index r::pieces next))
+
+:= random_u32 (rng : array u64) : u32 =
+    := a = index rng 0
+    := b = a ^^^ (a >>> 12)
+    := c = b ^^^ (b <<< 25)
+    := d = c ^^^ (c >>> 27)
+    set rng 0 d
+    conv ((d * 2685821657736338717u64) >>> 32)
+
+:= random_f32 (rng : array u64) : f32 = conv (random_u32 rng >>> 8) / 16777216.0f32
+
+:== sampler = { temperature : f32; topp : f32; rng : array u64 }
+
+:= sampler_of (temperature : f32) (topp : f32) (seed : u64) : sampler =
+    := rng : array u64 = create 1
+    set rng 0 seed
+    { temperature = temperature; topp = topp; rng = rng }
+
+:~ ^ mult_from (probs : floats) (coin : f32) (i : i32) (cdf : f32) : i32 =
+    ? i >= length probs ?> length probs - 1
+    |:
+        := cdf = cdf + index probs i
+        ? coin < cdf ?> i |: mult_from probs coin (i + 1) cdf
+
+:= beats (probs : floats) (cutoff : f32) (i : i32) (best : i32) : bool =
+    ? index probs i < cutoff ?> !- |: ? best < 0 ?> !+ |: index probs i > index probs best
+
+:~ ^ pick_max (probs : floats) (taken : array bool) (cutoff : f32) (i : i32) (best : i32) : i32 =
+    ? i >= length probs ?> best
+    |: pick_max probs taken cutoff (i + 1) (? index taken i ?> best |: ? beats probs cutoff i best ?> i |: best)
+
+:~ ^ nucleus (p : floats) (taken : array bool) (cut : f32) (top : f32) (acc : f32) (picks : list i32) : f32 * list i32 =
+    := i = pick_max p taken cut 0 (-1)
+    ? i < 0 ?> acc, picks
+    |:
+        set taken i !+
+        := acc = acc + index p i
+        ? acc > top ?> acc, i :: picks |: nucleus p taken cut top acc (i :: picks)
+
+:~ ^ draw (probs : floats) (r : f32) (cdf : f32) (order : list i32) (last : i32) : i32 =
+    ?= order ?|
+    | [] => last
+    | i :: rest =>
+        := cdf = cdf + index probs i
+        ? r < cdf ?> i |: draw probs r cdf rest last
+
+:= sample_topp (probs : floats) (topp : f32) (coin : f32) : i32 =
+    := cutoff = (1.0f32 - topp) / conv (length probs - 1)
+    := taken : array bool = create (length probs)
+    := total, chosen = nucleus probs taken cutoff topp 0.0f32 []
+    ?= chosen ?|
+    | last :: _ => draw probs (coin * total) 0.0f32 (listm::rev chosen) last
+    | [] => 0
+
+:~ ^ scale_from (x : floats) (t : f32) (i : i32) : () =
+    ? i < length x ?>
+        set x i (index x i / t)
+        scale_from x t (i + 1)
+
+:= sample (s : sampler) (logits : floats) : i32 =
+    ? s::temperature = 0.0f32 ?> argmax logits
+    |:
+        scale_from logits s::temperature 0
+        softmax logits 0 (length logits)
+        := coin = random_f32 s::rng
+        ? s::topp <= 0.0f32 || s::topp >= 1.0f32 ?> mult_from logits coin 0 0.0f32 |: sample_topp logits s::topp coin
+
+:~ ^ generate_sampled (r : run) (s : sampler) (forced : list i32) (token : i32) (pos : i32) (out : string) : string =
+    ? pos >= r::steps ?> out
+    |:
+        forward r::m r::b r::s token pos
+        := next, rest = ?= forced ?| | p :: more => p, more | [] => sample s r::s::logits, []
+        ? next = 1 ?> out |: generate_sampled r s rest next (pos + 1) (out ++# piece_text token (index r::pieces next))
+
+:= generate_prompted (r : run) (tokens : list i32) : string =
+    ?= tokens ?|
+    | first :: rest => generate_from r rest first 0 ""
+    | [] => generate_from r [] 1 0 ""
+
+:= file_bytes (variable : string) : bytes = file_system::read_bytes (env::get_environment_variable variable)
+
+:= run_of (m : model) (pieces : array bytes) (steps : i32) : run =
+    { m = m; b = buffers_of m::c; s = caches_of m::c; pieces = pieces; steps = steps }
+
+:= piece_of (codes : list u8) : bytes =
+    := p : bytes = create (listm::length codes)
+    :~ ^ put (rest : list u8) (i : i32) : () =
+        ?= rest ?|
+        | head :: tail =>
+            set p i head
+            put tail (i + 1)
+        | [] => ()
+    put codes 0
+    p
+
+///> rust
+:# prompt_encodes_and_generates_like_run_c_on_stories260k =
+    := o = oracle::stories260k ()
+    := m = model_at (oracle::model_path o::checkpoint)
+    := t = file_system::read_bytes (oracle::model_path o::tokenizer)
+    := r = run_of m (vocab_of t m::c::vocab) o::steps
+    := tokens = encode r::pieces (scores_of t m::c::vocab) (piece_of (oracle::dragon_prompt ()))
+    generate_prompted r tokens |> _assert_eq (oracle::dragon_text ())
+
+///> rust
+:# topp_sampling_matches_run_c_on_stories260k =
+    := o = oracle::stories260k ()
+    := m = model_at (oracle::model_path o::checkpoint)
+    := r = run_of m (vocab_of (file_system::read_bytes (oracle::model_path o::tokenizer)) m::c::vocab) o::steps
+    generate_sampled r (sampler_of 1.0f32 0.9f32 42u64) [] 1 0 "" |> _assert_eq (oracle::sampled_text ())
+
+///> rust
+:# raw_byte_pieces_decode_and_bos_strips_the_space =
+    := ~prev = 1i32
+    := raw = piece_text 5 (piece_of [ 60u8; 48u8; 120u8; 52u8; 49u8; 62u8 ])
+    (raw, piece_text prev (piece_of [ 32u8; 104u8; 105u8 ])) |> _assert_eq ("A", "hi")
+
+///> rust
+:# greedy_stories260k_matches_run_c =
+    := o = oracle::stories260k ()
+    := m = model_at (oracle::model_path o::checkpoint)
+    := r = run_of m (vocab_of (file_system::read_bytes (oracle::model_path o::tokenizer)) m::c::vocab) o::steps
+    generate r 1 0 "" |> _assert_eq (oracle::greedy_text o)
+
+///> c
+///> rust
+:# rounding_breaks_ties_to_even_for_weights_and_away_for_activations =
+    := ~half = 2.5f32
+    (rounded !+ half, rounded !- half, rounded !+ -3.5f32, rounded !- -2.5f32, rounded !+ 2.4999998f32)
+    |> _assert_eq (2i32, 3i32, -4i32, -3i32, 2i32)
+
+///> rust
+:# q8_greedy_stories260k_matches_runq =
+    := o = oracle::stories260k ()
+    := m = with_q8 (model_at (oracle::model_path o::checkpoint))
+    := r = run_of m (vocab_of (file_system::read_bytes (oracle::model_path o::tokenizer)) m::c::vocab) o::steps
+    generate r 1 0 "" |> _assert_eq (oracle::stories260k_q8_text ())
+
+///> rust
+:# q8_checkpoint_written_in_the_runq_format_reads_back_to_the_same_text =
+    := o = oracle::stories260k ()
+    := path = file_system::get_temp_path () ++# "/spiral_stories260k_q80.bin"
+    write_q8_file (model_at (oracle::model_path o::checkpoint)) path
+    := m = model_at path
+    := r = run_of m (vocab_of (file_system::read_bytes (oracle::model_path o::tokenizer)) m::c::vocab) o::steps
+    generate r 1 0 "" |> _assert_eq (oracle::stories260k_q8_text ())
+
+:= probe_error (logits : floats) (probes : list oracle::probe) : f32 =
+    probes |> listm::fold (\ worst (p : oracle::probe) => max worst (abs (index logits p::token - p::logit))) 0.0f32
+
+:~ ^ worst_logit_error (r : run) (token : i32) (pos : i32) (steps : list (list oracle::probe)) (worst : f32) : f32 =
+    ?= steps ?|
+    | [] => worst
+    | probes :: rest =>
+        := next = next_token r token pos
+        worst_logit_error r next (pos + 1) rest (max worst (probe_error r::s::logits probes))
+
+///> rust
+:# logits_stories260k_stay_within_1e4_of_run_c =
+    := o = oracle::stories260k ()
+    := m = model_at (oracle::model_path o::checkpoint)
+    := r = run_of m (vocab_of (file_system::read_bytes (oracle::model_path o::tokenizer)) m::c::vocab) o::steps
+    (worst_logit_error r 1 0 (oracle::stories260k_probes ()) 0.0f32 < 0.0001f32) |> _assert_eq !+
+
+:~ ^ dump_from (x : floats) (i : i32) : () =
+    ? i < length x ?>
+        console::write_line (conv (index x i * 10000000.0f32) : i64)
+        dump_from x (i + 1)
+
+:~ ^ dump_steps (r : run) (token : i32) (pos : i32) (n : i32) : () =
+    ? pos < n ?>
+        := next = next_token r token pos
+        dump_from r::s::logits 0
+        dump_steps r next (pos + 1) n
+
+:= dump_count () : option i32 = convert::try_convert (env::get_environment_variable "TRANSFORMER_DUMP_STEPS")
+
+:= seed_of () : option i32 = convert::try_convert (env::get_environment_variable "TRANSFORMER_SEED")
+
+:= prompt_tokens (r : run) (t : bytes) : list i32 =
+    := path = env::get_environment_variable "TRANSFORMER_PROMPT_FILE"
+    ? path = "" ?> [ 1 ] |: encode r::pieces (scores_of t r::m::c::vocab) (file_system::read_bytes path)
+
+:= generate_with (r : run) (tokens : list i32) : string =
+    := first, rest = ?= tokens ?| | x :: more => x, more | [] => 1, []
+    ?= seed_of () ?|
+    | Some seed => generate_sampled r (sampler_of 1.0f32 0.9f32 (conv seed)) rest first 0 ""
+    | None => generate_from r rest first 0 ""
+
+///> _
+:= main () : i32 =
+    := f = model_at (env::get_environment_variable "TRANSFORMER_CHECKPOINT")
+    := m = ? env::get_environment_variable "TRANSFORMER_Q8" = "1" ?> with_q8 f |: f
+    := t = file_bytes "TRANSFORMER_TOKENIZER"
+    := r = run_of m (vocab_of t m::c::vocab) 256
+    ?= dump_count () ?|
+    | Some n => dump_steps r 1 0 n
+    | None => console::write_line (generate_with r (prompt_tokens r t))
+    0

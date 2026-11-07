@@ -1,0 +1,81 @@
+///- --package . --timeout 900000
+:< sm'_operators
+:< xsd
+
+:| xsd_construct =
+    | ComplexTypeConstruct
+    | SimpleTypeConstruct
+    | ElementConstruct
+    | AttributeConstruct
+    | GroupConstruct
+    | WildcardConstruct
+
+:== construct_census = { constructs : i32; modeled : i32; wildcards : i32 }
+
+:| completeness =
+    | Complete
+    | Partial : i32
+
+:= empty_census () : construct_census = { constructs = 0i32; modeled = 0i32; wildcards = 0i32 }
+
+:= counted (construct : xsd_construct) (census : construct_census) : construct_census =
+    ?= construct ?|
+    | WildcardConstruct => { census ?| constructs = census::constructs + 1i32; wildcards = census::wildcards + 1i32 }
+    | _ => { census ?| constructs = census::constructs + 1i32; modeled = census::modeled + 1i32 }
+
+:~ ^ construct_walk \* k form. (item : xsd k form) (census : construct_census) : construct_census =
+    ?= item ?|
+    | Simple _ => counted SimpleTypeConstruct census
+    | Complex c => typed_census c::attributes c::content census
+    | Derived d => typed_census d::attributes d::content census
+    | Sequence s => items_census s::items (counted GroupConstruct census)
+    | Choice c => items_census c::items (counted GroupConstruct census)
+    | Element e => inline_census e::inline ElementConstruct census
+    | AnyContent () => counted WildcardConstruct census
+    | Empty () => census
+    | Attribute a => inline_census a::inline AttributeConstruct census
+
+:& :~ items_census \* k form. (items : list (xsd k form)) (census : construct_census) : construct_census =
+    ?= items ?|
+    | item :: rest => items_census rest (construct_walk item census)
+    | [] => census
+
+:& :~ inline_census \* j form.
+    (inner : option (xsd j form)) (construct : xsd_construct) (census : construct_census)
+    : construct_census
+    =
+    ?= inner ?|
+    | Some i => construct_walk i (counted construct census)
+    | None => counted construct census
+
+:& :~ typed_census \* a c form.
+    (attributes : list (xsd a form)) (content : xsd c form) (census : construct_census)
+    : construct_census
+    =
+    items_census attributes (construct_walk content (counted ComplexTypeConstruct census))
+
+:= schema_census \* form. (schema : xsd_schema form) : construct_census =
+    items_census schema::elements (items_census schema::complex_types (items_census schema::simple_types (
+        empty_census ())))
+
+:= completeness_of (census : construct_census) : completeness =
+    ? census::wildcards = 0i32 ?> Complete |: Partial census::wildcards
+
+///> rust
+:# every_construct_is_counted_and_a_wildcard_is_not_modeled =
+    := typed =
+        "<xs:schema><xs:simpleType name=\"TCode\"><xs:restriction base=\"xs:string\"/></xs:simpleType>"
+        ++# "<xs:complexType name=\"TOrder\"><xs:sequence><xs:element name=\"Line\"><xs:complexType><xs:sequence>"
+        ++# "<xs:element name=\"Code\" type=\"TCode\"/></xs:sequence></xs:complexType></xs:element></xs:sequence>"
+        ++# "<xs:attribute name=\"id\" type=\"xs:string\"/></xs:complexType></xs:schema>"
+    := wildcard =
+        "<xs:schema><xs:complexType name=\"TOpen\"><xs:sequence><xs:element name=\"Code\" type=\"xs:string\"/>"
+        ++# "<xs:any/></xs:sequence></xs:complexType></xs:schema>"
+    := c = schema_census (read_schema typed)
+    ? c::constructs <> c::modeled || c::wildcards <> 0i32 ?> failwith "a schema without xs:any is fully modeled"
+    ? completeness_of c <> Complete ?> failwith "a fully modeled schema is complete"
+    ? c::constructs < 7i32
+    ?> failwith "the simple type, both complex types, both groups, both elements and the attribute are counted"
+    := o = schema_census (read_schema wildcard)
+    ? completeness_of o <> Partial 1i32 ?> failwith "one xs:any leaves the schema partial by one"
+    ? o::modeled <> o::constructs - 1i32 ?> failwith "only the wildcard is not modeled"

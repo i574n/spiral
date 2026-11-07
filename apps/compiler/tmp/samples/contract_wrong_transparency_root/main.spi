@@ -1,0 +1,23 @@
+:! log_a = ()
+:! root_a = ()
+:! root_b = ()
+:! leaf_a = ()
+:! index_7 = ()
+:! committed = ()
+:! verified = ()
+:| transparency_root log root state = | Root :: \* log root state. string -> transparency_root log root state
+:| inclusion_witness log root leaf index state =
+    | Inclusion :: \* log root leaf index state. string -> inclusion_witness log root leaf index state
+:| registry_leaf log leaf index state =
+    | Leaf :: \* log leaf index state. string -> registry_leaf log leaf index state
+:= admit \* log root leaf index.
+    (root : transparency_root log root committed) (leaf : registry_leaf log leaf index committed)
+    (proof : inclusion_witness log root leaf index verified)
+    : string
+    =
+    "ok"
+:= main () =
+    := root : transparency_root log_a root_a committed = Root "root"
+    := leaf : registry_leaf log_a leaf_a index_7 committed = Leaf "leaf"
+    := wrong : inclusion_witness log_a root_b leaf_a index_7 verified = Inclusion "wrong"
+    admit root leaf wrong

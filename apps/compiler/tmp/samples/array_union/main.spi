@@ -1,0 +1,26 @@
+:| slot =
+    | None
+    | Some : i32
+
+:! slot_array = array_base slot
+
+:= create (n : i32) : slot_array = slot_array !!!!ArrayCreate(`slot, n)
+:= get (array : slot_array) (i : i32) : slot =
+    ?= array ?|
+    | slot_array values => !!!!ArrayIndex(values, i)
+:= set (array : slot_array) (i : i32) (value : slot) : () =
+    ?= array ?|
+    | slot_array values => !!!!ArrayIndexSet(values, i, value)
+
+:= main () : i32 =
+    := ~n = 2i32
+    := a = create n
+    := ~x = 7i32
+    set a 0i32 (Some x)
+    set a 1i32 None
+    ?= get a 0i32 ?|
+    | Some value =>
+        ?= get a 1i32 ?|
+        | None => ? value =. 7i32 ?> 0i32 |: 1i32
+        | Some other => 1i32
+    | None => 1i32

@@ -1,0 +1,230 @@
+///- --package .
+:# universes static =
+    :< testing
+
+:< sm'_operators
+:< syntax
+
+:~ ^ value_in (env : list (string * i32)) (n : string) : i32 =
+    ?= env ?|
+    | (k, v) :: rest => ? k = n ?> v |: value_in rest n
+    | [] => 0i32
+
+:~ ^ level_value (l : level) (env : list (string * i32)) : i32 =
+    ?= l ?|
+    | Zero => 0i32
+    | Succ x => level_value x env + 1i32
+    | Max (a, b) => larger (level_value a env) (level_value b env)
+    | IMax (a, b) =>
+        := right = level_value b env
+        ? right = 0i32 ?> 0i32 |: larger (level_value a env) right
+    | Param (name n) => value_in env n
+
+:~ ^ has_name (xs : list string) (n : string) : bool =
+    ?= xs ?|
+    | x :: rest => x = n || has_name rest n
+    | [] => !-
+
+:~ ^ params_into (l : level) (acc : list string) : list string =
+    ?= l ?|
+    | Succ x => params_into x acc
+    | Max (a, b) => params_into b (params_into a acc)
+    | IMax (a, b) => params_into b (params_into a acc)
+    | Param (name n) => ? has_name acc n ?> acc |: n :: acc
+    | Zero => acc
+
+:~ ^ every_assignment
+    (ps : list string) (bound : i32) (env : list (string * i32)) (check : list (string * i32) -> bool)
+    : bool
+    =
+    ?= ps ?|
+    | [] => check env
+    | p :: rest => every_value p rest bound 0i32 env check
+:& :~ every_value (p : string) (rest : list string) (bound : i32) (v : i32) (env : list (string * i32))
+    (check : list (string * i32) -> bool)
+    : bool
+    =
+    ? v > bound ?> !+
+    |: every_assignment rest bound ((p, v) :: env) check && every_value p rest bound (v + 1i32) env check
+
+:~ leq_upto (a : level) (b : level) (bound : i32) : bool =
+    every_assignment (params_into b (params_into a [])) bound [] (\ env => level_value a env <= level_value b env)
+
+:~ eq_upto (a : level) (b : level) (bound : i32) : bool = leq_upto a b bound && leq_upto b a bound
+
+:~ pi_level (domain : level) (codomain : level) : level = IMax (domain, codomain)
+
+:~ u () : level = Param (name "u")
+
+:~ v () : level = Param (name "v")
+
+:~ ^ has_imax (l : level) : bool =
+    ?= l ?|
+    | Succ x => has_imax x
+    | Max (a, b) => has_imax a || has_imax b
+    | IMax _ => !+
+    | _ => !-
+
+:~ ^ atoms_of (l : level) (offset : i32) (acc : list (string * i32)) : list (string * i32) =
+    ?= l ?|
+    | Zero => ("", offset) :: acc
+    | Succ x => atoms_of x (offset + 1i32) acc
+    | Max (a, b) => atoms_of b offset (atoms_of a offset acc)
+    | IMax (a, b) => atoms_of b offset (atoms_of a offset acc)
+    | Param (name n) => (n, offset) :: acc
+
+:~ ^ dominated ((base, k) : string * i32) (bs : list (string * i32)) : bool =
+    ?= bs ?|
+    | (b, m) :: rest => ((b = base || base = "") && m >= k) || dominated (base, k) rest
+    | [] => !-
+
+:~ ^ all_dominated (xs : list (string * i32)) (bs : list (string * i32)) : bool =
+    ?= xs ?|
+    | x :: rest => dominated x bs && all_dominated rest bs
+    | [] => !+
+
+:~ leq_decide (a : level) (b : level) : option bool =
+    ? has_imax a || has_imax b ?> None |: Some (all_dominated (atoms_of a 0i32 []) (atoms_of b 0i32 []))
+
+:~ ^ grow (ls : list level) (acc : list level) : list level =
+    ?= ls ?|
+    | l :: rest => grow rest (l :: Succ l :: Max (l, v ()) :: acc)
+    | [] => acc
+
+:~ ^ agree_with (a : level) (bs : list level) : bool =
+    ?= bs ?|
+    | b :: rest => leq_decide a b = Some (leq_upto a b 3i32) && agree_with a rest
+    | [] => !+
+
+:~ ^ agree_all (lefts : list level) (bs : list level) : bool =
+    ?= lefts ?|
+    | a :: rest => agree_with a bs && agree_all rest bs
+    | [] => !+
+:~ ^ has_level (ls : list level) (l : level) : bool =
+    ?= ls ?|
+    | x :: rest => same_level x l || has_level rest l
+    | [] => !-
+
+:~ ^ max_operands (l : level) (acc : list level) : list level =
+    ?= l ?|
+    | Max (a, b) => max_operands b (max_operands a acc)
+    | Zero => acc
+    | other => ? has_level acc other ?> acc |: other :: acc
+
+:~ ^ max_of (ls : list level) : level =
+    ?= ls ?|
+    | [] => Zero
+    | [ x ] => x
+    | x :: rest => Max (x, max_of rest)
+
+:~ joined (a : level) (b : level) : level = max_of (listm::rev (max_operands b (max_operands a [])))
+
+:~ ^ simplify (l : level) : level =
+    ?= l ?|
+    | Succ x => Succ (simplify x)
+    | Max (a, b) => joined (simplify a) (simplify b)
+    | IMax (a, b) =>
+        ?= simplify a ?|
+        | Zero => simplify b
+        | left =>
+            ?= simplify b ?|
+            | Zero => Zero
+            | Succ x => joined left (Succ x)
+            | Max (x, y) => joined (simplify (IMax (left, x))) (simplify (IMax (left, y)))
+            | IMax (c, d) => joined (simplify (IMax (left, d))) (IMax (c, d))
+            | right => IMax (left, right)
+    | other => other
+
+:~ ^ imax_param (l : level) : option string =
+    ?= l ?|
+    | Succ x => imax_param x
+    | Max (a, b) => ?= imax_param a ?| Some p => Some p | None => imax_param b
+    | IMax (a, b) =>
+        ?= b ?|
+        | Param (name n) => Some n
+        | _ => ?= imax_param a ?| Some p => Some p | None => imax_param b
+    | _ => None
+
+:~ ^ substitute (l : level) (p : string) (by : level) : level =
+    ?= l ?|
+    | Succ x => Succ (substitute x p by)
+    | Max (a, b) => Max (substitute a p by, substitute b p by)
+    | IMax (a, b) => IMax (substitute a p by, substitute b p by)
+    | Param (name n) => ? n = p ?> by |: l
+    | Zero => Zero
+
+:~ ^ leq_full (a : level) (b : level) : bool =
+    := sa = simplify a
+    := sb = simplify b
+    ?= imax_param (Max (sa, sb)) ?|
+    | Some p =>
+        := zero_case = leq_full (substitute sa p Zero) (substitute sb p Zero)
+        := succ_case = leq_full (substitute sa p (Succ (Param (name p)))) (substitute sb p (Succ (Param (name p))))
+        zero_case && succ_case
+    | None =>
+        ?= leq_decide sa sb ?|
+        | Some answer => answer
+        | None => !-
+
+:~ ^ agree_full_with (a : level) (bs : list level) : bool =
+    ?= bs ?|
+    | b :: rest => leq_full a b = leq_upto a b 3i32 && agree_full_with a rest
+    | [] => !+
+
+:~ ^ agree_full (lefts : list level) (bs : list level) : bool =
+    ?= lefts ?|
+    | a :: rest => agree_full_with a bs && agree_full rest bs
+    | [] => !+
+
+:~ ^ imax_over (ds : list level) (last : level) : level =
+    ?= ds ?|
+    | d :: rest => IMax (d, imax_over rest last)
+    | [] => last
+
+:~ ^ prepend (xs : list level) (acc : list level) : list level =
+    ?= xs ?|
+    | x :: rest => x :: prepend rest acc
+    | [] => acc
+
+:~ ^ repeated (n : i32) (block : list level) (acc : list level) : list level =
+    ? n <= 0i32 ?> acc |: repeated (n - 1i32) block (prepend block acc)
+///> rust
+:# a_pi_into_prop_lives_in_prop_whatever_its_domain =
+    (eq_upto (pi_level (u ()) Zero) Zero 4i32, eq_upto (pi_level (u ()) (Succ Zero)) (Max (u (), Succ Zero)) 4i32)
+    |> _assert_eq (!+, !+)
+
+///> rust
+:# leq_and_eq_hold_or_fail_over_every_small_assignment =
+    := facts =
+        leq_upto (u ()) (Max (u (), v ())) 3i32,
+        leq_upto (Succ (u ())) (u ()) 3i32,
+        eq_upto (Max (u (), Succ (u ()))) (Succ (u ())) 3i32
+    facts |> _assert_eq (!+, !-, !+)
+
+///> rust
+:# closed_levels_evaluate_with_imax_dropping_to_zero =
+    (level_value (Max (Succ Zero, IMax (Succ (Succ Zero), Zero))) [], level_value (IMax (Zero, Succ Zero)) [])
+    |> _assert_eq (1i32, 1i32)
+
+///> rust
+:# the_normal_form_decision_agrees_with_the_semantics_on_every_pair =
+    := family = grow [ Zero; Succ Zero; u (); v (); Max (u (), Succ Zero) ] []
+    (listm::length family : i32, agree_all family family) |> _assert_eq (15i32, !+)
+
+///> rust
+:# the_imax_decision_agrees_with_the_semantics_on_every_pair =
+    := family =
+        grow [ IMax (u (), v ()); IMax (v (), u ()); IMax (u (), Zero); IMax (Succ (u ()), Max (u (), v ())); u () ] []
+    (listm::length family : i32, agree_full family family) |> _assert_eq (15i32, !+)
+
+///> rust
+:# deep_imax_chains_stay_small_and_agree_with_the_semantics =
+    := props = imax_over (repeated 60i32 [ Zero ] []) (u ())
+    := mixed = imax_over (repeated 20i32 [ v (); Succ Zero ] []) (u ())
+    := facts =
+        leq_full props (u ()) && leq_full (u ()) props,
+        leq_full props Zero,
+        leq_full mixed (IMax (v (), u ())) && leq_full (IMax (v (), u ())) mixed,
+        leq_full mixed (u ()),
+        leq_upto mixed (u ()) 3i32
+    facts |> _assert_eq (!+, !-, !+, !-, !-)

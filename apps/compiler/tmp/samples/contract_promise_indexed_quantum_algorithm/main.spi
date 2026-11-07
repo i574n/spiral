@@ -1,0 +1,21 @@
+:! constant = ()
+:! balanced = ()
+
+:| oracle promise =
+    | ConstantOracle :: oracle constant
+    | BalancedOracle :: oracle balanced
+
+:| algorithm_result promise =
+    | ConstantWitness :: algorithm_result constant
+    | BalancedWitness :: algorithm_result balanced
+
+:= classify \* promise. (oracle : oracle promise) : algorithm_result promise =
+    ?= oracle ?|
+    | ConstantOracle => ConstantWitness
+    | BalancedOracle => BalancedWitness
+
+:= accept_constant (result : algorithm_result constant) : string =
+    ?= result ?|
+    | ConstantWitness => "deutsch-jozsa-constant"
+
+:= main () : string = accept_constant (classify ConstantOracle)

@@ -1,0 +1,9 @@
+:~ pick (a : string) (b : string) : string =
+    := n : i32 = sm::length a
+    ? n > 2i32 ?> b |: ""
+
+:= main () : i32 =
+    := ~s = "abc"
+    := r = pick s s
+    := n : i32 = sm::length r
+    !!!!Sub(n, 3i32)

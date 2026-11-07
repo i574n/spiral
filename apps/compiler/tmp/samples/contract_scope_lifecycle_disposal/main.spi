@@ -1,0 +1,47 @@
+:! component_scope = ()
+:! live = ()
+:! draining = ()
+:! disposed = ()
+
+:| resource scope state =
+    | LiveResource :: \* scope. string -> resource scope live
+    | DrainingResource :: \* scope. string -> resource scope draining
+    | DisposedResource :: \* scope. string -> resource scope disposed
+
+:| cleanup_action scope from to =
+    | BeginDispose :: \* scope. string -> cleanup_action scope live draining
+    | SealDispose :: \* scope. string -> cleanup_action scope draining disposed
+
+:| ^ cleanup_plan scope from to =
+    | CleanupLeaf :: \* scope from to. cleanup_action scope from to -> cleanup_plan scope from to
+    | CleanupThen :: \* scope from to.
+        (\? middle. cleanup_plan scope from middle * cleanup_action scope middle to)
+        -> cleanup_plan scope from to
+
+:= apply_action \* scope from to.
+    (action : cleanup_action scope from to)
+    (resource : resource scope from)
+    : resource scope to =
+    ?= action, resource ?|
+    | BeginDispose label, LiveResource _ => DrainingResource label
+    | SealDispose label, DrainingResource _ => DisposedResource label
+
+:= ^ execute \* scope from to.
+    (plan : cleanup_plan scope from to)
+    (resource : resource scope from)
+    : resource scope to =
+    ?= plan ?|
+    | CleanupLeaf action => apply_action action resource
+    | CleanupThen payload =>
+        := \? middle. prefix, action = payload
+        apply_action action (execute prefix resource)
+
+:= disposed_label \* scope. (resource : resource scope disposed) : string =
+    ?= resource ?|
+    | DisposedResource value => value
+
+:= main () : string =
+    := resource : resource component_scope live = LiveResource "live"
+    := plan : cleanup_plan component_scope live disposed =
+        CleanupThen (\? (CleanupLeaf (BeginDispose "draining"), SealDispose "disposed"))
+    disposed_label (execute plan resource)

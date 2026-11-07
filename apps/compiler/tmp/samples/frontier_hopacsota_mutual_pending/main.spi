@@ -1,0 +1,10 @@
+:~ ^ is_even (n : i32) : bool =
+    ? n = 0i32 ?> !+
+    |: is_odd (n - 1i32)
+:& :~ is_odd (n : i32) : bool =
+    ? n = 0i32 ?> !-
+    |: is_even (n - 1i32)
+
+:= main () : i32 =
+    := ~n = 10i32
+    ? is_even n ?> 0i32 |: 1i32

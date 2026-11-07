@@ -1,0 +1,10 @@
+:< main
+
+:= impossible_two_takeover_program_wrong_endpoint () : erp_p2p_fence_takeover_program nat_one nat_four =
+    ErpP2PFenceTakeoverProgramThen
+        (\?
+            (ErpP2PFenceTakeoverProgramOne "owner-b",
+                ErpP2PFenceTakeoverProgramOne "owner-c"))
+
+:= main () =
+    impossible_two_takeover_program_wrong_endpoint ()

@@ -1,0 +1,705 @@
+#### resultm (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test static --symbol\n\n:< testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test static --symbol
+
+  :< testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":< rust_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :< rust_operators
+  """,
+  timeout: 300_000
+)
+```
+
+## resultm
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= from_option_error error opt =\n    ?= opt ?|\n    | Some x => Ok x\n    | None => Error error\n\n:= from_option opt =\n    opt |> from_option_error \"resultm.from_option / Option does not have a value.\"\n\n:= flatten_option \\* t u. (x : option (result (option t) u)) : result (option t) u =\n    ?= x ?|\n    | Some (Error x) => Error x\n    | Some (Ok (Some x)) => Ok (Some x)\n    | _ => Ok None\n\n:= flatten \\* t u. (x : result (result t u) u) : result t u =\n    ?= x ?|\n    | Ok x => x\n    | Error x => Error x\n\n:= from_try \\* t. (fn : () -> t) (ex_fn : (() -> exn) -> exn) : result t exn =\n    := ok x = x |> Ok : result t exn\n    := error (e : exn) = e |> Error : result t exn\n    backend_switch {\n        Lua = \\ () =>\n            := caught (ex : exn) : option (result t exn) = Some (Error (ex_fn \\ () => ex))\n            try (\\ () => Ok (fn ()) : result t exn) caught |> optionm::value\n        Fsharp = \\ () =>\n            ~~ $'try !fn () |> !ok with ex -> (fun () -> ex) |> !ex_fn |> !error ' : result t exn\n        Python = \\ () =>\n            $'fn = !fn '\n            $'ok = !ok '\n            $'error = !error '\n            $'ex_fn = !ex_fn '\n            $'try: x = ok(fn()) '\n            $'except Exception as ex: x = error(ex_fn(lambda: ex))'\n            $'x' : result t exn\n        TypeScript = \\ () =>\n            $'(() => { try { return !ok(!fn()); } catch (ex) { return !error(!ex_fn(() => ex)); } })()' : result t exn\n        Rust = \\ () =>\n            := caught (ex : exn) : option (result t exn) = Some (Error (ex_fn \\ () => ex))\n            try (\\ () => Ok (fn ()) : result t exn) caught |> optionm::value\n        Zig = \\ () => fn () |> ok\n        C = \\ () => fn () |> ok\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := from_option_error error opt =
+      ?= opt ?|
+      | Some x => Ok x
+      | None => Error error
+
+  := from_option opt =
+      opt |> from_option_error "resultm.from_option / Option does not have a value."
+
+  := flatten_option \* t u. (x : option (result (option t) u)) : result (option t) u =
+      ?= x ?|
+      | Some (Error x) => Error x
+      | Some (Ok (Some x)) => Ok (Some x)
+      | _ => Ok None
+
+  := flatten \* t u. (x : result (result t u) u) : result t u =
+      ?= x ?|
+      | Ok x => x
+      | Error x => Error x
+
+  := from_try \* t. (fn : () -> t) (ex_fn : (() -> exn) -> exn) : result t exn =
+      := ok x = x |> Ok : result t exn
+      := error (e : exn) = e |> Error : result t exn
+      backend_switch {
+          Lua = \ () =>
+              := caught (ex : exn) : option (result t exn) = Some (Error (ex_fn \ () => ex))
+              try (\ () => Ok (fn ()) : result t exn) caught |> optionm::value
+          Fsharp = \ () =>
+              ~~ $'try !fn () |> !ok with ex -> (fun () -> ex) |> !ex_fn |> !error ' : result t exn
+          Python = \ () =>
+              $'fn = !fn '
+              $'ok = !ok '
+              $'error = !error '
+              $'ex_fn = !ex_fn '
+              $'try: x = ok(fn()) '
+              $'except Exception as ex: x = error(ex_fn(lambda: ex))'
+              $'x' : result t exn
+          TypeScript = \ () =>
+              $'(() => { try { return !ok(!fn()); } catch (ex) { return !error(!ex_fn(() => ex)); } })()' : result t exn
+          Rust = \ () =>
+              := caught (ex : exn) : option (result t exn) = Some (Error (ex_fn \ () => ex))
+              try (\ () => Ok (fn ()) : result t exn) caught |> optionm::value
+          Zig = \ () => fn () |> ok
+          C = \ () => fn () |> ok
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### from_try_keeps_values_and_catches_failures (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> lua\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n:= settled (r : result i32 exn) : i32 =\n    ?= r ?|\n    | Ok x => x\n    | Error _ => 0i32\n:= ~n = 5i32\n(from_try (\\ () => n) eval |> settled, from_try (\\ () => failwith \"boom\" : i32) eval |> settled)\n|> _assert_eq (5i32, 0i32)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> lua
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  := settled (r : result i32 exn) : i32 =
+      ?= r ?|
+      | Ok x => x
+      | Error _ => 0i32
+  := ~n = 5i32
+  (from_try (\ () => n) eval |> settled, from_try (\ () => failwith "boom" : i32) eval |> settled)
+  |> _assert_eq (5i32, 0i32)
+  """,
+  timeout: 300_000
+)
+```
+
+#### from_try_keeps_values (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> c\n\n:= settled (r : result i32 exn) : i32 =\n    ?= r ?|\n    | Ok x => x\n    | Error _ => 0i32\n:= ~n = 5i32\nfrom_try (\\ () => n) eval |> settled\n|> _assert_eq 5i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> c
+
+  := settled (r : result i32 exn) : i32 =
+      ?= r ?|
+      | Ok x => x
+      | Error _ => 0i32
+  := ~n = 5i32
+  from_try (\ () => n) eval |> settled
+  |> _assert_eq 5i32
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= caught \\* t. (fn : () -> t) : result t string =\n    := ok (x : t) : result t string = Ok x\n    := error (e : string) : result t string = Error e\n    backend_switch {\n        Gleam = \\ () =>\n            global \"@external(erlang, \\\"SPIRAL_FFI\\\", \\\"try_call\\\")\\nfn spiral_try_call(f: fn(Nil) -> a) -> Result(a, String)\"\n            $'case spiral_try_call(!fn) { Ok(v) -> !ok(v) Error(e) -> !error(e) }' : result t string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := caught \* t. (fn : () -> t) : result t string =
+      := ok (x : t) : result t string = Ok x
+      := error (e : string) : result t string = Error e
+      backend_switch {
+          Gleam = \ () =>
+              global "@external(erlang, \"SPIRAL_FFI\", \"try_call\")\nfn spiral_try_call(f: fn(Nil) -> a) -> Result(a, String)"
+              $'case spiral_try_call(!fn) { Ok(v) -> !ok(v) Error(e) -> !error(e) }' : result t string
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### caught_keeps_values_and_contains_crashes (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n\n:= settled (r : result i32 string) : i32 =\n    ?= r ?|\n    | Ok x => x\n    | Error _ => 0i32\n:= ~n = 5i32\n(caught (\\ () => n) |> settled, caught (\\ () => failwith \"boom\" : i32) |> settled, caught (\\ () => n + 1i32) |> settled)\n|> _assert_eq (5i32, 0i32, 6i32)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+
+  := settled (r : result i32 string) : i32 =
+      ?= r ?|
+      | Ok x => x
+      | Error _ => 0i32
+  := ~n = 5i32
+  (caught (\ () => n) |> settled, caught (\ () => failwith "boom" : i32) |> settled, caught (\ () => n + 1i32) |> settled)
+  |> _assert_eq (5i32, 0i32, 6i32)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= rust_debug_message \\* t. (prefix : string) (x : t) : string =\n    global \"\"\"\n        struct SpiralDebug<T>(T);\n        trait SpiralDebugShow {\n            fn show(&self) -> String;\n        }\n        impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> {\n            fn show(&self) -> String { format!(\"{:?}\", self.0) }\n        }\n        trait SpiralTypeShow {\n            fn show(&self) -> String;\n        }\n        impl<T> SpiralTypeShow for &SpiralDebug<T> {\n            fn show(&self) -> String { String::from(std::any::type_name::<T>()) }\n        }\n        \"\"\"\n    $'Rc::<str>::from(format\\!(\"{}{}\", !prefix, (&SpiralDebug(&!x)).show()))' : string","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ":= rust_debug_message \\* t. (prefix : string) (x : t) : string =\n    global \"\"\"\n        struct SpiralDebug<T>(T);\n        trait SpiralDebugShow {\n            fn show(&self) -> String;\n        }\n        impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> {\n            fn show(&self) -> String { format!(\"{:?}\", self.0) }\n        }\n        trait SpiralTypeShow {\n            fn show(&self) -> String;\n        }\n        impl<T> SpiralTypeShow for &SpiralDebug<T> {\n            fn show(&self) -> String { String::from(std::any::type_name::<T>()) }\n        }\n        \"\"\"\n    $'Rc::<str>::from(format\\!(\"{}{}\", !prefix, (&SpiralDebug(&!x)).show()))' : string",
+  timeout: 300_000
+)
+```
+
+#### rust_debug_message_shows_debug_values (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n(rust_debug_message \"x: \" 5i32, rust_debug_message \"s: \" \"a\")\n|> _assert_eq (\"x: 5\", \"s: \\\"a\\\"\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  (rust_debug_message "x: " 5i32, rust_debug_message "s: " "a")
+  |> _assert_eq ("x: 5", "s: \"a\"")
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= get \\* t e. (source : result t e) : t =\n    ?= source ?|\n    | Ok x => x\n    | Error x =>\n        backend_switch {\n            Gleam = \\ () =>\n                global \"import gleam/string\"\n                $'\"resultm.get / Error x: \" <> string.inspect(!x)' : string\n            Lua = \\ () => $'\"resultm.get / Error x: \" .. tostring(!x)' : string\n            Fsharp = \\ () => $'$\"resultm.get / Error x: {!x}\"' : string\n            Python = \\ () => $'f\"resultm.get / Error x: {!x}\"' : string\n            TypeScript = \\ () => $'\"resultm.get / Error x: \" + String(!x)' : string\n            Rust = \\ () => rust_debug_message \"resultm.get / Error x: \" x\n            Zig = fun () => $'(std.fmt.allocPrint(spiral_gpa, \"resultm.get / Error x: {any}\", .{ !x }) catch \\\n                \\@panic(\"out of memory\"))' : string\n        }\n        |> failwith\n\n:= map \\* t e u. (fn : t -> u) (source : result t e) : result u e =\n    ?= source ?|\n    | Ok x => x |> fn |> Ok\n    | Error x => Error x\n\n:= map_error \\* t e u. (fn : e -> u) (source : result t e) : result t u =\n    ?= source ?|\n    | Ok x => Ok x\n    | Error x => x |> fn |> Error\n\n:= collect_list \\* t e. (items : list (result t e)) : result (list t) e =\n    :~ ^ collected (items : list (result t e)) (acc : list t) : result (list t) e =\n        ?= items ?|\n        | [] => Ok (listm::rev acc)\n        | Error e :: _ => Error e\n        | Ok x :: rest => collected rest (x :: acc)\n    collected items []","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := get \* t e. (source : result t e) : t =
+      ?= source ?|
+      | Ok x => x
+      | Error x =>
+          backend_switch {
+              Gleam = \ () =>
+                  global "import gleam/string"
+                  $'"resultm.get / Error x: " <> string.inspect(!x)' : string
+              Lua = \ () => $'"resultm.get / Error x: " .. tostring(!x)' : string
+              Fsharp = \ () => $'$"resultm.get / Error x: {!x}"' : string
+              Python = \ () => $'f"resultm.get / Error x: {!x}"' : string
+              TypeScript = \ () => $'"resultm.get / Error x: " + String(!x)' : string
+              Rust = \ () => rust_debug_message "resultm.get / Error x: " x
+              Zig = fun () => $'(std.fmt.allocPrint(spiral_gpa, "resultm.get / Error x: {any}", .{ !x }) catch \
+                  \@panic("out of memory"))' : string
+          }
+          |> failwith
+
+  := map \* t e u. (fn : t -> u) (source : result t e) : result u e =
+      ?= source ?|
+      | Ok x => x |> fn |> Ok
+      | Error x => Error x
+
+  := map_error \* t e u. (fn : e -> u) (source : result t e) : result t u =
+      ?= source ?|
+      | Ok x => Ok x
+      | Error x => x |> fn |> Error
+
+  := collect_list \* t e. (items : list (result t e)) : result (list t) e =
+      :~ ^ collected (items : list (result t e)) (acc : list t) : result (list t) e =
+          ?= items ?|
+          | [] => Ok (listm::rev acc)
+          | Error e :: _ => Error e
+          | Ok x :: rest => collected rest (x :: acc)
+      collected items []
+  """,
+  timeout: 300_000
+)
+```
+
+#### collect_list_keeps_order_and_stops_at_the_first_error (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> gleam\n\n:= ~bad = \"bad\"\n(collect_list ([ Ok 1i32; Ok 2 ] : list (result i32 string)), collect_list [ Ok 1i32; Error bad; Error \"later\" ])\n|> _assert_eq (Ok [ 1i32; 2 ], Error \"bad\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> gleam
+
+  := ~bad = "bad"
+  (collect_list ([ Ok 1i32; Ok 2 ] : list (result i32 string)), collect_list [ Ok 1i32; Error bad; Error "later" ])
+  |> _assert_eq (Ok [ 1i32; 2 ], Error "bad")
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= unwrap_err \\* t u. (x : result t u) : u =\n    ?= x ?|\n    | Ok x =>\n        backend_switch {\n            Gleam = \\ () =>\n                global \"import gleam/string\"\n                $'\"resultm.unwrap_err / Ok x: \" <> string.inspect(!x)' : string\n            Lua = \\ () => $'\"resultm.unwrap_err / Ok x: \" .. tostring(!x)' : string\n            Fsharp = \\ () => $'$\"resultm.unwrap_err / Ok x: {!x}\"' : string\n            Python = \\ () => $'f\"resultm.unwrap_err / Ok x: {!x}\"' : string\n            TypeScript = \\ () => $'\"resultm.unwrap_err / Ok x: \" + String(!x)' : string\n            Rust = \\ () => rust_debug_message \"resultm.unwrap_err / Ok x: \" x\n            Zig = fun () => $'(std.fmt.allocPrint(spiral_gpa, \"resultm.unwrap_err / Ok x: {any}\", .{ !x }) catch \\\n                \\@panic(\"out of memory\"))' : string\n        }\n        |> failwith\n    | Error x => x\n\n:= ok \\* t. (x : result t _) : option t =\n    ?= x ?|\n    | Ok x => Some x\n    | Error _ => None","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := unwrap_err \* t u. (x : result t u) : u =
+      ?= x ?|
+      | Ok x =>
+          backend_switch {
+              Gleam = \ () =>
+                  global "import gleam/string"
+                  $'"resultm.unwrap_err / Ok x: " <> string.inspect(!x)' : string
+              Lua = \ () => $'"resultm.unwrap_err / Ok x: " .. tostring(!x)' : string
+              Fsharp = \ () => $'$"resultm.unwrap_err / Ok x: {!x}"' : string
+              Python = \ () => $'f"resultm.unwrap_err / Ok x: {!x}"' : string
+              TypeScript = \ () => $'"resultm.unwrap_err / Ok x: " + String(!x)' : string
+              Rust = \ () => rust_debug_message "resultm.unwrap_err / Ok x: " x
+              Zig = fun () => $'(std.fmt.allocPrint(spiral_gpa, "resultm.unwrap_err / Ok x: {any}", .{ !x }) catch \
+                  \@panic("out of memory"))' : string
+          }
+          |> failwith
+      | Error x => x
+
+  := ok \* t. (x : result t _) : option t =
+      ?= x ?|
+      | Ok x => Some x
+      | Error _ => None
+  """,
+  timeout: 300_000
+)
+```
+
+## fsharp
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= result'_types () =\n    backend_switch {\n        Gleam = \\ () => global \"import gleam/result\"\n    }\n:== result'_switch t u =\n    {\n        Gleam : $'Result(`t, `u)'\n        Lua : result t u\n        Fsharp : $'Result<`t, `u>'\n        Python : result t u\n        Rust : $'Result<`t, `u>'\n        TypeScript : result t u\n        Zig : result t u\n    }\n:! result' t u = $'backend_switch `(result'_switch t u)'\n\n:= result'_union () : bool =\n    backend_switch {\n        Gleam = \\ () => !-\n        Lua = \\ () => !+\n        Fsharp = \\ () => !-\n        Python = \\ () => !+\n        TypeScript = \\ () => !+\n        Cpp = \\ () => !-\n        CppHost = \\ () => !-\n        Pascal = \\ () => !-\n        Cuda = \\ () => !-\n        Rust = \\ () => !-\n        Zig = \\ () => !+\n    }\n\n:= result'_python () : bool =\n    backend_switch {\n        Gleam = \\ () => !-\n        Lua = \\ () => !-\n        Fsharp = \\ () => !-\n        Python = \\ () => !+\n        TypeScript = \\ () => !-\n        Cpp = \\ () => !-\n        CppHost = \\ () => !-\n        Pascal = \\ () => !-\n        Cuda = \\ () => !-\n        Rust = \\ () => !-\n        Zig = \\ () => !-\n    }\n\n:= result'_zig () : bool =\n    backend_switch {\n        Gleam = \\ () => !-\n        Lua = \\ () => !-\n        Fsharp = \\ () => !-\n        Python = \\ () => !-\n        TypeScript = \\ () => !-\n        Cpp = \\ () => !-\n        CppHost = \\ () => !-\n        Pascal = \\ () => !-\n        Cuda = \\ () => !-\n        Rust = \\ () => !-\n        Zig = \\ () => !+\n        Lean = \\ () => !-\n        C = \\ () => !-\n        Wasm = \\ () => !-\n        Bend = \\ () => !-\n    }\n\n:= result'_error_text \\* e. (prefix : string) (e : e) : string =\n    $'(std.fmt.allocPrint(spiral_gpa, \"{s}{any}\", .{ !prefix, !e }) catch @@panic(\"out of memory\"))'\n\n:= unbox \\* t u. (x : result' t u) : result t u =\n    ? result'_union ()\n    ?> $'!x ' : result t u\n    |:\n        := ok x : result t u = Ok x\n        := error x : result t u = Error x\n        := ok = ~~ ok\n        := error = ~~ error\n        backend_switch {\n            Gleam = \\ () =>\n                $'case !x { Ok(x) -> !ok(x) Error(x) -> !error(x) }' : result t u\n\n            Fsharp = \\ () =>\n                ~>\n                    ?: t ?|\n                    | () => $'match !x with Ok () -> !ok () | Error x -> !error x' : result t u\n                    | _ => $'match !x with Ok x -> !ok x | Error x -> !error x' : result t u\n                : result t u\n\n            Rust = \\ () =>\n                ~>\n                    ?: t ?|\n                    | () => $'match !x { Ok(()) => !ok(), Err(e) => !error(e) }' : result t u\n                    | _ => $'match !x { Ok(x) => !ok(x), Err(e) => !error(e) }' : result t u\n                : result t u\n        }\n\n:= box \\* t u. (x : result t u) : result' t u =\n    ? result'_union ()\n    ?> x |> dyn |> \\ x => $'!x ' : result' t u\n    |:\n        ?= x ?|\n        | Ok x =>\n            backend_switch {\n                Gleam = \\ () => $'Ok(!x)' : result' t u\n                Fsharp = \\ () => $'Ok !x ' : result' t u\n                Rust = \\ () => $'Ok::<`t, `u>(!x)' : result' t u\n            }\n        | Error err =>\n            backend_switch {\n                Gleam = \\ () => $'Error(!err)' : result' t u\n                Fsharp = \\ () => $'Error !err ' : result' t u\n                Rust = \\ () => $'Err::<`t, `u>(!err)' : result' t u\n            }\n\n:= map''' \\* t u e. (fn : t -> u) (x : result' t e) : result' u e =\n    x |> unbox |> map fn |> box","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := result'_types () =
+      backend_switch {
+          Gleam = \ () => global "import gleam/result"
+      }
+  :== result'_switch t u =
+      {
+          Gleam : $'Result(`t, `u)'
+          Lua : result t u
+          Fsharp : $'Result<`t, `u>'
+          Python : result t u
+          Rust : $'Result<`t, `u>'
+          TypeScript : result t u
+          Zig : result t u
+      }
+  :! result' t u = $'backend_switch `(result'_switch t u)'
+
+  := result'_union () : bool =
+      backend_switch {
+          Gleam = \ () => !-
+          Lua = \ () => !+
+          Fsharp = \ () => !-
+          Python = \ () => !+
+          TypeScript = \ () => !+
+          Cpp = \ () => !-
+          CppHost = \ () => !-
+          Pascal = \ () => !-
+          Cuda = \ () => !-
+          Rust = \ () => !-
+          Zig = \ () => !+
+      }
+
+  := result'_python () : bool =
+      backend_switch {
+          Gleam = \ () => !-
+          Lua = \ () => !-
+          Fsharp = \ () => !-
+          Python = \ () => !+
+          TypeScript = \ () => !-
+          Cpp = \ () => !-
+          CppHost = \ () => !-
+          Pascal = \ () => !-
+          Cuda = \ () => !-
+          Rust = \ () => !-
+          Zig = \ () => !-
+      }
+
+  := result'_zig () : bool =
+      backend_switch {
+          Gleam = \ () => !-
+          Lua = \ () => !-
+          Fsharp = \ () => !-
+          Python = \ () => !-
+          TypeScript = \ () => !-
+          Cpp = \ () => !-
+          CppHost = \ () => !-
+          Pascal = \ () => !-
+          Cuda = \ () => !-
+          Rust = \ () => !-
+          Zig = \ () => !+
+          Lean = \ () => !-
+          C = \ () => !-
+          Wasm = \ () => !-
+          Bend = \ () => !-
+      }
+
+  := result'_error_text \* e. (prefix : string) (e : e) : string =
+      $'(std.fmt.allocPrint(spiral_gpa, "{s}{any}", .{ !prefix, !e }) catch @@panic("out of memory"))'
+
+  := unbox \* t u. (x : result' t u) : result t u =
+      ? result'_union ()
+      ?> $'!x ' : result t u
+      |:
+          := ok x : result t u = Ok x
+          := error x : result t u = Error x
+          := ok = ~~ ok
+          := error = ~~ error
+          backend_switch {
+              Gleam = \ () =>
+                  $'case !x { Ok(x) -> !ok(x) Error(x) -> !error(x) }' : result t u
+
+              Fsharp = \ () =>
+                  ~>
+                      ?: t ?|
+                      | () => $'match !x with Ok () -> !ok () | Error x -> !error x' : result t u
+                      | _ => $'match !x with Ok x -> !ok x | Error x -> !error x' : result t u
+                  : result t u
+
+              Rust = \ () =>
+                  ~>
+                      ?: t ?|
+                      | () => $'match !x { Ok(()) => !ok(), Err(e) => !error(e) }' : result t u
+                      | _ => $'match !x { Ok(x) => !ok(x), Err(e) => !error(e) }' : result t u
+                  : result t u
+          }
+
+  := box \* t u. (x : result t u) : result' t u =
+      ? result'_union ()
+      ?> x |> dyn |> \ x => $'!x ' : result' t u
+      |:
+          ?= x ?|
+          | Ok x =>
+              backend_switch {
+                  Gleam = \ () => $'Ok(!x)' : result' t u
+                  Fsharp = \ () => $'Ok !x ' : result' t u
+                  Rust = \ () => $'Ok::<`t, `u>(!x)' : result' t u
+              }
+          | Error err =>
+              backend_switch {
+                  Gleam = \ () => $'Error(!err)' : result' t u
+                  Fsharp = \ () => $'Error !err ' : result' t u
+                  Rust = \ () => $'Err::<`t, `u>(!err)' : result' t u
+              }
+
+  := map''' \* t u e. (fn : t -> u) (x : result' t e) : result' u e =
+      x |> unbox |> map fn |> box
+  """,
+  timeout: 300_000
+)
+```
+
+#### map (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> lua\n///> cuda\n///> rust\n///> typescript\n\n:= x : _ _ string = Ok 3i32\n:= y : _ i32 _ = Error \"error1\"\n:= x' = x |> box |> unbox\n:= y' = y |> box |> map''' id |> unbox\n(x', y') |> _assert_eq' (x, y)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> lua
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  := x : _ _ string = Ok 3i32
+  := y : _ i32 _ = Error "error1"
+  := x' = x |> box |> unbox
+  := y' = y |> box |> map''' id |> unbox
+  (x', y') |> _assert_eq' (x, y)
+  """,
+  timeout: 300_000
+)
+```
+
+## rust
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! anyhow_result t =\n    `(\n        rust::rust_type\n            `($'anyhow_Result<`t>')\n            `($'anyhow::Result<`t>')\n            \"type anyhow_Result<'T> = class end\"\n    )\n\n:! anyhow_error =\n    `(\n        rust::rust_type\n            `($'anyhow_Error')\n            `($'anyhow::Error')\n            \"type anyhow_Error = class end\"\n    )\n\n:= anyhow_error error : anyhow_error =\n    backend_switch {\n        Rust = \\ () => !\\\\(error, $'\"anyhow::anyhow\\!(\\\\\\\"{}\\\\\\\", $0)\"') : anyhow_error\n    }\n\n:= try' \\* t u. (x : result' t u) : t =\n    := is_unit =\n        ~>\n            ?: t ?|\n            | () => !+\n            | _ => !-\n    ? result'_union () ?>\n        ?= unbox x ?|\n        | Ok x => x\n        | Error e =>\n            := msg : string =\n                ? result'_zig ()\n                ?> result'_error_text \"resultm.try' / e: \" e\n                |? result'_python ()\n                ?> $'f\"resultm.try\\' / e: {!e}\"'\n                |: $'\"resultm.try\\' / e: \" .. tostring(!e)'\n            failwith msg\n    |? is_unit\n    ?> (!\\\\(x, $'\"true; $0?\"') : bool) |> \\ _ => $''\n    |: !\\\\(x, $'\"$0?\"')\n\n:= to_try \\* t u. (x : result' t u) : rust::try t =\n    !\\\\(x, $'\"$0\"')\n\n:= unwrap' \\* t u. (x : result' t u) : t =\n    ? result'_union () ?>\n        ?= unbox x ?|\n        | Ok x => x\n        | Error e =>\n            := msg : string =\n                ? result'_zig ()\n                ?> result'_error_text \"resultm.unwrap' / e: \" e\n                |? result'_python ()\n                ?> $'f\"resultm.unwrap\\' / e: {!e}\"'\n                |: $'\"resultm.unwrap\\' / e: \" .. tostring(!e)'\n            failwith msg\n    |: !\\\\(x, $'\"$0.unwrap()\"')\n\n:= unwrap'' \\* t u. (x : result' t u) : t =\n    ? result'_union () ?>\n        ?= unbox x ?|\n        | Ok x => x\n        | Error e =>\n            := msg : string =\n                ? result'_zig ()\n                ?> result'_error_text \"resultm.unwrap'' / e: \" e\n                |? result'_python ()\n                ?> $'f\"resultm.unwrap\\'\\' / e: {!e}\"'\n                |: $'\"resultm.unwrap\\'\\' / e: \" .. tostring(!e)'\n            failwith msg\n    |:\n        run_target \\|\n            | Rust => \\ () => x |> unwrap'\n            | _ => \\ () => $'match !x with Ok x -> x | Error e -> failwith $\"resultm.unwrap\\'\\' / e: {e}\"'\n\n:= unwrap_err' \\* t u. (x : result' t u) : u =\n    ? result'_union () ?>\n        ?= unbox x ?|\n        | Ok x =>\n            := msg : string =\n                ? result'_zig ()\n                ?> result'_error_text \"resultm.unwrap_err' / x: \" x\n                |? result'_python ()\n                ?> $'f\"resultm.unwrap_err\\' / x: {!x}\"'\n                |: $'\"resultm.unwrap_err\\' / x: \" .. tostring(!x)'\n            failwith msg\n        | Error x => x\n    |: $'match !x with Ok x -> failwith $\"resultm.unwrap_err\\' / x: %A{x}\" | Error x -> x'\n\n:= unbox' \\* t u. (x : result' t u) : result t u =\n    unbox x\n\n:= map' \\* t e u. (fn : t -> u) (source : result' t e) : result' u e =\n    ? result'_union ()\n    ?> source |> unbox |> map fn |> box\n    |:\n        (!\\\\(source, $'\"true; let _result_map_ = $0.map(|x| { //\"') : bool) |> ignore\n        (!\\\\(fn !\\($'\"x\"'), $'\"true; $0 })\"') : bool) |> ignore\n        !\\($'\"_result_map_\"')\n\n:= map'' \\* t e u. (fn : t -> u) (source : result' t e) : result' u e =\n    ? result'_union ()\n    ?> source |> unbox |> map fn |> box\n    |:\n        := fn = ~~ fn\n        := source = ~~ source\n        !\\($'\"!source.map(|x| !fn(x))\"')\n\n:= map_error' \\* t e u. (fn : e -> u) (source : result' t e) : result' t u =\n    ? is_rust () ?>\n        := fn = ~~ fn\n        !\\\\((source, fn), $'\"$0.map_err(|x| $1(x))\"')\n    |: source |> unbox |> map_error fn |> box\n\n:= map_error'' \\* t e u. (fn : e -> u) (source : result' t e) : result' t u =\n    ? result'_union ()\n    ?> source |> unbox |> map_error fn |> box\n    |:\n        (!\\\\(source, $'\"true; let _result_map_error__ = $0.map_err(|x| { //\"') : bool) |> ignore\n        (!\\\\(fn !\\($'\"x\"'), $'\"true; $0 })\"') : bool) |> ignore\n        !\\($'\"_result_map_error__\"')\n\n:= map_error''' \\* t e u. (fn : e -> u) (source : result' t e) : result' t u =\n    ? result'_union ()\n    ?> source |> unbox |> map_error fn |> box\n    |: !\\\\((source, fn), $'\"$0.map_err(|x| $1(x))\"')\n\n:= option_ok_or \\* t e. (e : e) (source : optionm'::option' t) : result' t e =\n    ? result'_union ()\n    ?> source |> optionm'::unbox |> from_option_error e |> box\n    |: !\\\\(source, $'\"$0.ok_or(!e)\"')\n\n:= unwrap_or_else \\* t e u. (fn : e -> u) (source : result' t e) : u =\n    (!\\\\(source, $'\"true; let _result_unwrap_or_else = $0.unwrap_or_else(|x| { //\"') : bool) |> ignore\n    (!\\\\(fn !\\($'\"x\"'), $'\"true; $0 })\"') : bool) |> ignore\n    !\\($'\"_result_unwrap_or_else\"')\n\n:= map_or_else \\* t e u v. (fn : e -> v) (fn2 : u -> v) (source : result' t e) : v =\n    (!\\\\(source, $'\"true; let _result_map_or_else = $0.map_or_else(|x| { //\"') : bool) |> ignore\n    (!\\\\(fn !\\($'\"x\"'), $'\"true; $0 }, |x| { //\"') : bool) |> ignore\n    (!\\\\(fn2 !\\($'\"x\"'), $'\"true; $0 })\"') : bool) |> ignore\n    !\\($'\"_result_map_or_else\"')\n\n:= as_ref \\* t e. (source : result' t e) : result' (rust::ref t) (rust::ref e) =\n    !\\($'\"!source.as_ref()\"')\n\n:= as_ref' \\* t e. (source : rust::ref (result' t e)) : result' (rust::ref t) (rust::ref e) =\n    !\\($'\"!source.as_ref()\"')\n\n:= unwrap_or' \\* t u. (default : t) (x : result' t u) : t =\n    ? result'_union () ?>\n        ?= unbox x ?|\n        | Ok x => x\n        | Error _ => default\n    |: !\\\\((x, default), $'\"$0.unwrap_or($1)\"')\n\n:= expect \\* t u. (error : rust::ref string) (x : result' t u) : t =\n    !\\($'\"!x.expect(&!error)\"')\n\n:= is_err \\* t u. (x : result' t u) : bool =\n    ? is_rust ()\n    ?> !\\\\(x, $'\"$0.is_err()\"')\n    |:\n        ?= unbox x ?|\n        | Ok _ => !-\n        | Error _ => !+\n\n:= ok' \\* t. (x : result' t _) : optionm'::option' t =\n    ? is_rust ()\n    ?> !\\\\(x, $'\"$0.ok()\"')\n    |: x |> unbox |> ok |> optionm'::box\n\n:= err \\* t u. (x : u) : result' t u =\n    ? is_rust ()\n    ?> !\\\\(x, $'\"Err($0)\"')\n    |: (Error x : result t u) |> box\n\n:= ok'' \\* t u. (x : t) : result' t u =\n    ? is_rust ()\n    ?> !\\\\(x, $'\"Ok($0)\"')\n    |: (Ok x : result t u) |> box\n\n:= transpose \\* t u. (x : optionm'::option' (result' t u)) : result' (optionm'::option' t) u =\n    ? result'_union () ?>\n        := r : result (optionm'::option' t) u =\n            ?= optionm'::unbox x ?|\n            | Some x =>\n                ?= unbox x ?|\n                | Ok x => Ok (optionm'::some' x)\n                | Error e => Error e\n            | None => Ok (optionm'::none' ())\n        box r\n    |: !\\\\(x, $'\"$0.transpose()\"')\n\n:= rc_try_unwrap \\* t. (x : rust::rc t) : result' t (rust::rc t) =\n    !\\\\(x, $'\"std::rc::Rc::try_unwrap($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :! anyhow_result t =
+      `(
+          rust::rust_type
+              `($'anyhow_Result<`t>')
+              `($'anyhow::Result<`t>')
+              "type anyhow_Result<'T> = class end"
+      )
+
+  :! anyhow_error =
+      `(
+          rust::rust_type
+              `($'anyhow_Error')
+              `($'anyhow::Error')
+              "type anyhow_Error = class end"
+      )
+
+  := anyhow_error error : anyhow_error =
+      backend_switch {
+          Rust = \ () => !\\(error, $'"anyhow::anyhow\!(\\\"{}\\\", $0)"') : anyhow_error
+      }
+
+  := try' \* t u. (x : result' t u) : t =
+      := is_unit =
+          ~>
+              ?: t ?|
+              | () => !+
+              | _ => !-
+      ? result'_union () ?>
+          ?= unbox x ?|
+          | Ok x => x
+          | Error e =>
+              := msg : string =
+                  ? result'_zig ()
+                  ?> result'_error_text "resultm.try' / e: " e
+                  |? result'_python ()
+                  ?> $'f"resultm.try\' / e: {!e}"'
+                  |: $'"resultm.try\' / e: " .. tostring(!e)'
+              failwith msg
+      |? is_unit
+      ?> (!\\(x, $'"true; $0?"') : bool) |> \ _ => $''
+      |: !\\(x, $'"$0?"')
+
+  := to_try \* t u. (x : result' t u) : rust::try t =
+      !\\(x, $'"$0"')
+
+  := unwrap' \* t u. (x : result' t u) : t =
+      ? result'_union () ?>
+          ?= unbox x ?|
+          | Ok x => x
+          | Error e =>
+              := msg : string =
+                  ? result'_zig ()
+                  ?> result'_error_text "resultm.unwrap' / e: " e
+                  |? result'_python ()
+                  ?> $'f"resultm.unwrap\' / e: {!e}"'
+                  |: $'"resultm.unwrap\' / e: " .. tostring(!e)'
+              failwith msg
+      |: !\\(x, $'"$0.unwrap()"')
+
+  := unwrap'' \* t u. (x : result' t u) : t =
+      ? result'_union () ?>
+          ?= unbox x ?|
+          | Ok x => x
+          | Error e =>
+              := msg : string =
+                  ? result'_zig ()
+                  ?> result'_error_text "resultm.unwrap'' / e: " e
+                  |? result'_python ()
+                  ?> $'f"resultm.unwrap\'\' / e: {!e}"'
+                  |: $'"resultm.unwrap\'\' / e: " .. tostring(!e)'
+              failwith msg
+      |:
+          run_target \|
+              | Rust => \ () => x |> unwrap'
+              | _ => \ () => $'match !x with Ok x -> x | Error e -> failwith $"resultm.unwrap\'\' / e: {e}"'
+
+  := unwrap_err' \* t u. (x : result' t u) : u =
+      ? result'_union () ?>
+          ?= unbox x ?|
+          | Ok x =>
+              := msg : string =
+                  ? result'_zig ()
+                  ?> result'_error_text "resultm.unwrap_err' / x: " x
+                  |? result'_python ()
+                  ?> $'f"resultm.unwrap_err\' / x: {!x}"'
+                  |: $'"resultm.unwrap_err\' / x: " .. tostring(!x)'
+              failwith msg
+          | Error x => x
+      |: $'match !x with Ok x -> failwith $"resultm.unwrap_err\' / x: %A{x}" | Error x -> x'
+
+  := unbox' \* t u. (x : result' t u) : result t u =
+      unbox x
+
+  := map' \* t e u. (fn : t -> u) (source : result' t e) : result' u e =
+      ? result'_union ()
+      ?> source |> unbox |> map fn |> box
+      |:
+          (!\\(source, $'"true; let _result_map_ = $0.map(|x| { //"') : bool) |> ignore
+          (!\\(fn !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
+          !\($'"_result_map_"')
+
+  := map'' \* t e u. (fn : t -> u) (source : result' t e) : result' u e =
+      ? result'_union ()
+      ?> source |> unbox |> map fn |> box
+      |:
+          := fn = ~~ fn
+          := source = ~~ source
+          !\($'"!source.map(|x| !fn(x))"')
+
+  := map_error' \* t e u. (fn : e -> u) (source : result' t e) : result' t u =
+      ? is_rust () ?>
+          := fn = ~~ fn
+          !\\((source, fn), $'"$0.map_err(|x| $1(x))"')
+      |: source |> unbox |> map_error fn |> box
+
+  := map_error'' \* t e u. (fn : e -> u) (source : result' t e) : result' t u =
+      ? result'_union ()
+      ?> source |> unbox |> map_error fn |> box
+      |:
+          (!\\(source, $'"true; let _result_map_error__ = $0.map_err(|x| { //"') : bool) |> ignore
+          (!\\(fn !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
+          !\($'"_result_map_error__"')
+
+  := map_error''' \* t e u. (fn : e -> u) (source : result' t e) : result' t u =
+      ? result'_union ()
+      ?> source |> unbox |> map_error fn |> box
+      |: !\\((source, fn), $'"$0.map_err(|x| $1(x))"')
+
+  := option_ok_or \* t e. (e : e) (source : optionm'::option' t) : result' t e =
+      ? result'_union ()
+      ?> source |> optionm'::unbox |> from_option_error e |> box
+      |: !\\(source, $'"$0.ok_or(!e)"')
+
+  := unwrap_or_else \* t e u. (fn : e -> u) (source : result' t e) : u =
+      (!\\(source, $'"true; let _result_unwrap_or_else = $0.unwrap_or_else(|x| { //"') : bool) |> ignore
+      (!\\(fn !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
+      !\($'"_result_unwrap_or_else"')
+
+  := map_or_else \* t e u v. (fn : e -> v) (fn2 : u -> v) (source : result' t e) : v =
+      (!\\(source, $'"true; let _result_map_or_else = $0.map_or_else(|x| { //"') : bool) |> ignore
+      (!\\(fn !\($'"x"'), $'"true; $0 }, |x| { //"') : bool) |> ignore
+      (!\\(fn2 !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
+      !\($'"_result_map_or_else"')
+
+  := as_ref \* t e. (source : result' t e) : result' (rust::ref t) (rust::ref e) =
+      !\($'"!source.as_ref()"')
+
+  := as_ref' \* t e. (source : rust::ref (result' t e)) : result' (rust::ref t) (rust::ref e) =
+      !\($'"!source.as_ref()"')
+
+  := unwrap_or' \* t u. (default : t) (x : result' t u) : t =
+      ? result'_union () ?>
+          ?= unbox x ?|
+          | Ok x => x
+          | Error _ => default
+      |: !\\((x, default), $'"$0.unwrap_or($1)"')
+
+  := expect \* t u. (error : rust::ref string) (x : result' t u) : t =
+      !\($'"!x.expect(&!error)"')
+
+  := is_err \* t u. (x : result' t u) : bool =
+      ? is_rust ()
+      ?> !\\(x, $'"$0.is_err()"')
+      |:
+          ?= unbox x ?|
+          | Ok _ => !-
+          | Error _ => !+
+
+  := ok' \* t. (x : result' t _) : optionm'::option' t =
+      ? is_rust ()
+      ?> !\\(x, $'"$0.ok()"')
+      |: x |> unbox |> ok |> optionm'::box
+
+  := err \* t u. (x : u) : result' t u =
+      ? is_rust ()
+      ?> !\\(x, $'"Err($0)"')
+      |: (Error x : result t u) |> box
+
+  := ok'' \* t u. (x : t) : result' t u =
+      ? is_rust ()
+      ?> !\\(x, $'"Ok($0)"')
+      |: (Ok x : result t u) |> box
+
+  := transpose \* t u. (x : optionm'::option' (result' t u)) : result' (optionm'::option' t) u =
+      ? result'_union () ?>
+          := r : result (optionm'::option' t) u =
+              ?= optionm'::unbox x ?|
+              | Some x =>
+                  ?= unbox x ?|
+                  | Ok x => Ok (optionm'::some' x)
+                  | Error e => Error e
+              | None => Ok (optionm'::none' ())
+          box r
+      |: !\\(x, $'"$0.transpose()"')
+
+  := rc_try_unwrap \* t. (x : rust::rc t) : result' t (rust::rc t) =
+      !\\(x, $'"std::rc::Rc::try_unwrap($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+#### rc_try_unwrap (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\nrust::new_rc !+\n|> rc_try_unwrap\n|> unbox\n|> _assert_eq (Ok !+)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  rust::new_rc !+
+  |> rc_try_unwrap
+  |> unbox
+  |> _assert_eq (Ok !+)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= bind \\* a b e. (f : a -> result b e) (r : result a e) : result b e =\n    ?= r ?|\n    | Ok x => f x\n    | Error e => Error e\n\n:= resultm_halved (n : i32) : result i32 string = ? n % 2i32 = 0i32 ?> Ok (n / 2i32) |: Error \"odd\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := bind \* a b e. (f : a -> result b e) (r : result a e) : result b e =
+      ?= r ?|
+      | Ok x => f x
+      | Error e => Error e
+
+  := resultm_halved (n : i32) : result i32 string = ? n % 2i32 = 0i32 ?> Ok (n / 2i32) |: Error "odd"
+  """,
+  timeout: 300_000
+)
+```
+
+#### bind_chains_until_the_first_error (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> gleam\n\n:= ~n = 8i32\n(Ok n |> bind resultm_halved |> bind resultm_halved, Ok 6i32 |> bind resultm_halved |> bind resultm_halved)\n|> _assert_eq (Ok 2i32, Error \"odd\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> gleam
+
+  := ~n = 8i32
+  (Ok n |> bind resultm_halved |> bind resultm_halved, Ok 6i32 |> bind resultm_halved |> bind resultm_halved)
+  |> _assert_eq (Ok 2i32, Error "odd")
+  """,
+  timeout: 300_000
+)
+```

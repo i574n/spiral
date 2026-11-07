@@ -1,0 +1,29 @@
+:! signer_a = ()
+:! signer_b = ()
+:! key_a = ()
+:! digest_a = ()
+:! verified = ()
+:! sample_a = ()
+:! hg38 = ()
+:! chr1 = ()
+:! app_scope = ()
+:! epoch1 = ()
+:! live = ()
+:| signed_authority signer key digest state =
+    | SignedAuthority :: \* signer key digest state. string -> signed_authority signer key digest state
+:| genome_batch signer digest sample build contig =
+    | GenomeBatch :: \* signer digest sample build contig. string -> genome_batch signer digest sample build contig
+:| resource scope epoch signer digest sample build contig state =
+    | Resource :: \* scope epoch signer digest sample build contig state.
+        string ->
+        resource scope epoch signer digest sample build contig state
+:= publish \* scope epoch signer key digest sample build contig.
+    (authority : signed_authority signer key digest verified) (batch : genome_batch signer digest sample build contig)
+    : resource scope epoch signer digest sample build contig live
+    =
+    Resource "published"
+:= main () =
+    := foreign : signed_authority signer_b key_a digest_a verified = SignedAuthority "foreign"
+    := batch : genome_batch signer_a digest_a sample_a hg38 chr1 = GenomeBatch "variants"
+    := resource : resource app_scope epoch1 signer_a digest_a sample_a hg38 chr1 live = publish foreign batch
+    resource

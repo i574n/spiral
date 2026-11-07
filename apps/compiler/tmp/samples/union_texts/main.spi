@@ -1,0 +1,23 @@
+:! text_array = array_base string
+
+:= create (n : i32) : text_array = text_array !!!!ArrayCreate(`string, n)
+:= get (array : text_array) (i : i32) : string =
+    ?= array ?|
+    | text_array values => !!!!ArrayIndex(values, i)
+:= set (array : text_array) (i : i32) (value : string) : () =
+    ?= array ?|
+    | text_array values => !!!!ArrayIndexSet(values, i, value)
+
+:| slot =
+    | Missing
+    | Held : text_array
+
+:= main () : i32 =
+    := a = create 1i32
+    := ~word = "hi"
+    set a 0i32 word
+    := ~flag = !+
+    := box = ? flag ?> Held a |: Missing
+    ?= box ?|
+    | Held values => ? !!!!EQ(get values 0i32, "hi") ?> 0i32 |: 1i32
+    | Missing => 1i32

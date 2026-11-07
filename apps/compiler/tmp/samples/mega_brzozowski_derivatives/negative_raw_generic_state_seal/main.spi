@@ -1,0 +1,7 @@
+:< main
+
+:= main () =
+    := raw : matcher_state bit_alphabet matcher_raw =
+        MatcherRaw (ends_with_zero (), input_110 ())
+    := forged : decided_matcher bit_alphabet = decided_matcher raw
+    seal_decided_matcher forged

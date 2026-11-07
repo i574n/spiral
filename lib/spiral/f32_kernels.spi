@@ -1,0 +1,116 @@
+:# f32_kernels static =
+    :< testing
+
+:== floats = array f32
+
+:~ ^ sum_squares (x : floats) (n : i32) (i : i32) (acc : f32) : f32 =
+    ? i >= n ?> acc |: sum_squares x n (i + 1) (acc + index x i * index x i)
+
+:~ ^ scale_into (o : floats) (x : floats) (w : floats) (off : i32) (n : i32) (s : f32) (i : i32) : () =
+    ? i < n ?>
+        set o i (index w (off + i) * (s * index x i))
+        scale_into o x w off n s (i + 1)
+
+:= rmsnorm (o : floats) (x : floats) (w : floats) (off : i32) (n : i32) : () =
+    := ss = sum_squares x n 0 0.0f32 / conv n + 0.00001f32
+    scale_into o x w off n (1.0f32 / sqrt ss) 0
+
+:~ ^ dot (a : floats) (ao : i32) (b : floats) (bo : i32) (n : i32) (j : i32) (acc : f32) : f32 =
+    ? j >= n ?> acc |: dot a ao b bo n (j + 1) (acc + index a (ao + j) * index b (bo + j))
+
+:~ ^ matmul_rows (o : floats) (x : floats) (w : floats) (off : i32) (n : i32) (d : i32) (i : i32) : () =
+    ? i < d ?>
+        set o i (dot w (off + i * n) x 0 n 0 0.0f32)
+        matmul_rows o x w off n d (i + 1)
+
+:= matmul (o : floats) (x : floats) (w : floats) (off : i32) (n : i32) (d : i32) : () = matmul_rows o x w off n d 0
+
+:~ ^ copy_into (o : floats) (oo : i32) (x : floats) (xo : i32) (n : i32) (i : i32) : () =
+    ? i < n ?>
+        set o (oo + i) (index x (xo + i))
+        copy_into o oo x xo n (i + 1)
+
+:~ ^ add_into (o : floats) (x : floats) (n : i32) (i : i32) : () =
+    ? i < n ?>
+        set o i (index o i + index x i)
+        add_into o x n (i + 1)
+
+:~ ^ axpy (o : floats) (oo : i32) (a : f32) (x : floats) (xo : i32) (n : i32) (i : i32) : () =
+    ? i < n ?>
+        set o (oo + i) (index o (oo + i) + a * index x (xo + i))
+        axpy o oo a x xo n (i + 1)
+
+:~ ^ max_from (x : floats) (off : i32) (n : i32) (i : i32) (m : f32) : f32 =
+    ? i >= n ?> m |: max_from x off n (i + 1) (max m (index x (off + i)))
+
+:~ ^ exp_from (x : floats) (off : i32) (n : i32) (m : f32) (i : i32) (acc : f32) : f32 =
+    ? i >= n ?> acc
+    |:
+        := e = exp (index x (off + i) - m)
+        set x (off + i) e
+        exp_from x off n m (i + 1) (acc + e)
+
+:~ ^ divide_from (x : floats) (off : i32) (n : i32) (s : f32) (i : i32) : () =
+    ? i < n ?>
+        set x (off + i) (index x (off + i) / s)
+        divide_from x off n s (i + 1)
+
+:= softmax (x : floats) (off : i32) (n : i32) : () =
+    := m = max_from x off n 1 (index x off)
+    divide_from x off n (exp_from x off n m 0 0.0f32) 0
+
+:~ ^ zero_from (x : floats) (off : i32) (n : i32) (i : i32) : () =
+    ? i < n ?>
+        set x (off + i) 0.0f32
+        zero_from x off n (i + 1)
+
+:~ ^ fill_floats (x : floats) (values : list f32) (i : i32) : () =
+    ?= values ?|
+    | head :: rest =>
+        set x i head
+        fill_floats x rest (i + 1)
+    | [] => ()
+
+:= floats_of (values : list f32) : floats =
+    := x : floats = create (listm::length values)
+    fill_floats x values 0
+    x
+
+:= near (x : f32) (want : f32) : bool = abs (x - want) < 0.0001f32
+
+:= near_pair (o : floats) (a : f32) (b : f32) : bool * bool = near (index o 0) a, near (index o 1) b
+
+:= ordered_unit (x : floats) : bool * bool =
+    index x 2 > index x 1 && index x 1 > index x 0, near (index x 0 + index x 1 + index x 2) 1.0f32
+
+///> c
+///> rust
+:# matmul_multiplies_rows_by_the_vector =
+    := ~two = 2.0f32
+    := o : floats = create 2
+    matmul o (floats_of [ 1.0f32; two ]) (floats_of [ 1.0f32; 0.0f32; 3.0f32; 4.0f32 ]) 0 2 2
+    (index o 0, index o 1) |> _assert_eq (1.0f32, 11.0f32)
+
+///> c
+///> rust
+:# softmax_keeps_the_order_and_sums_to_one =
+    := ~top = 3.0f32
+    := x = floats_of [ 1.0f32; 2.0f32; top ]
+    softmax x 0 3
+    ordered_unit x |> _assert_eq (!+, !+)
+
+///> c
+///> rust
+:# rmsnorm_scales_to_unit_root_mean_square =
+    := ~three = 3.0f32
+    := o : floats = create 2
+    rmsnorm o (floats_of [ three; 4.0f32 ]) (floats_of [ 1.0f32; 2.0f32 ]) 0 2
+    near_pair o 0.84852f32 2.26274f32 |> _assert_eq (!+, !+)
+
+///> c
+///> rust
+:# axpy_adds_a_scaled_slice_at_offsets =
+    := ~a = 2.0f32
+    := o = floats_of [ 1.0f32; 1.0f32; 1.0f32 ]
+    axpy o 1 a (floats_of [ 9.0f32; 3.0f32; 4.0f32 ]) 1 2 0
+    (index o 0, index o 1, index o 2) |> _assert_eq (1.0f32, 7.0f32, 9.0f32)

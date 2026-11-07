@@ -1,0 +1,15 @@
+:= make_dynamic ~n =
+    := ~xs : array i32 = create n
+    set xs 0i32 3i32
+    set xs 1i32 4i32
+    set xs 2i32 8i32
+    xs
+
+:= consume_dynamic ~xs ~i =
+    index xs i +. length xs
+
+:= main () : i32 =
+    := ~n = 3i32
+    := ~xs = ~~ make_dynamic n
+    := ~i = 2i32
+    ~~ consume_dynamic xs i -. 11i32

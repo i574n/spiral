@@ -1,0 +1,14 @@
+[package]
+name = "near_wallet"
+workspace = "../../../../workspace"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+path = "near_wallet.rs"
+
+[dependencies]
+

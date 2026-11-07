@@ -1,0 +1,7 @@
+:= main () : i32 =
+    := counter = mut 0i32
+    := add (x : i32) : () = ? x > 0 ?> counter <- *counter + x
+    ~~ add 5
+    ~~ add 0
+    ~~ add 7
+    *counter - 12

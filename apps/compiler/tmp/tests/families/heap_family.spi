@@ -1,0 +1,226 @@
+///- --package .
+:! heap_array_i32_array = array_base i32
+
+:= heap_array_create (n : i32) : heap_array_i32_array = heap_array_i32_array !!!!ArrayCreate(`i32, n)
+:= heap_array_get (array : heap_array_i32_array) (i : i32) : i32 =
+    ?= array ?|
+    | heap_array_i32_array values => !!!!ArrayIndex(values, i)
+:= heap_array_set (array : heap_array_i32_array) (i : i32) (value : i32) : () =
+    ?= array ?|
+    | heap_array_i32_array values => !!!!ArrayIndexSet(values, i, value)
+
+///> c
+///> zig
+test heap_array_returns_zero =
+    := program () : i32 =
+        := ~n = 2i32
+        := a = heap_array_create n
+        := ~x = 7i32
+        heap_array_set a 0i32 x
+        := box = !!!!LayoutToHeap({ values = a })
+        := opened = !!!!LayoutIndex(box)
+        ? heap_array_get opened.values 0i32 =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "heap_array"
+
+:! heap_array_f32_f32_array = array_base f32
+
+:= heap_array_f32_create (n : i32) : heap_array_f32_f32_array = heap_array_f32_f32_array !!!!ArrayCreate(`f32, n)
+:= heap_array_f32_get (values : heap_array_f32_f32_array) (i : i32) : f32 =
+    ?= values ?|
+    | heap_array_f32_f32_array raw => !!!!ArrayIndex(raw, i)
+:= heap_array_f32_set (values : heap_array_f32_f32_array) (i : i32) (value : f32) : () =
+    ?= values ?|
+    | heap_array_f32_f32_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+///> c
+///> zig
+test heap_array_f32_returns_zero =
+    := program () : i32 =
+        := values = heap_array_f32_create 1i32
+        := ~x = 1.5f32
+        heap_array_f32_set values 0i32 x
+        := ~n = 7i32
+        := pair = values, n
+        := box = !!!!LayoutToHeap({ value = pair })
+        := opened = !!!!LayoutIndex(box)
+        := ~(held, extra) = opened.value
+        ? heap_array_f32_get held 0i32 =. 1.5f32 && extra =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "heap_array_f32"
+
+:! heap_array_n_i32_array = array_base i32
+
+:= heap_array_n_create (n : i32) : heap_array_n_i32_array = heap_array_n_i32_array !!!!ArrayCreate(`i32, n)
+:= heap_array_n_get (values : heap_array_n_i32_array) (i : i32) : i32 =
+    ?= values ?|
+    | heap_array_n_i32_array raw => !!!!ArrayIndex(raw, i)
+:= heap_array_n_set (values : heap_array_n_i32_array) (i : i32) (value : i32) : () =
+    ?= values ?|
+    | heap_array_n_i32_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+///> c
+///> zig
+test heap_array_n_returns_zero =
+    := program () : i32 =
+        := ~n = 3i32
+        := ~m = 4i32
+        := values = heap_array_n_create 1i32
+        heap_array_n_set values 0i32 n
+        := pair = values, m
+        := box = !!!!LayoutToHeap({ value = pair })
+        := opened = !!!!LayoutIndex(box)
+        := ~(held, extra) = opened.value
+        ? heap_array_n_get held 0i32 +. extra =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "heap_array_n"
+
+///> c
+///> zig
+test heap_bool_returns_zero =
+    := program () : i32 =
+        := ~flag = !+
+        := box = !!!!LayoutToHeap({ value = flag })
+        := opened = !!!!LayoutIndex(box)
+        ? opened.value ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "heap_bool"
+
+///> c
+///> zig
+test heap_bool_text_returns_zero =
+    := program () : i32 =
+        := ~on = !+
+        := ~word = "hi"
+        := pair = on, word
+        := box = !!!!LayoutToHeap({ value = pair })
+        := opened = !!!!LayoutIndex(box)
+        := ~(flag, right) = opened.value
+        ? flag && !!!!EQ(right, "hi") ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "heap_bool_text"
+
+///> c
+///> zig
+test heap_closure_returns_zero =
+    := program () : i32 =
+        := ~n = 3i32
+        := f (z : i32) : i32 = z +. n
+        := ~g = f
+        := box = !!!!LayoutToHeap({ call = g })
+        := opened = !!!!LayoutIndex(box)
+        ? opened.call 4i32 =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "heap_closure"
+
+:| heap_closure_union3_all_heap_union_heap_union_heap_pair_heaps_slot =
+    | HeapClosureUnion3AllHeapUnionHeapUnionHeapPairHeapsNone
+    | HeapClosureUnion3AllHeapUnionHeapUnionHeapPairHeapsHeld :
+        (heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
+
+:| heap_closure_union3_all_heap_union_heap_union_heap_pair_heaps_wrap =
+    | HeapClosureUnion3AllHeapUnionHeapUnionHeapPairHeapsAbsent
+    | HeapClosureUnion3AllHeapUnionHeapUnionHeapPairHeapsBox :
+        (heap { value : heap_closure_union3_all_heap_union_heap_union_heap_pair_heaps_slot })
+    | HeapClosureUnion3AllHeapUnionHeapUnionHeapPairHeapsMark : i32
+
+:~ heap_closure_union3_all_heap_union_heap_union_heap_pair_heaps_score x : i32 =
+    ?= x ?|
+    | HeapClosureUnion3AllHeapUnionHeapUnionHeapPairHeapsAbsent => 1i32
+    | HeapClosureUnion3AllHeapUnionHeapUnionHeapPairHeapsMark k => ? k =. 0i32 ?> 1i32 |: 1i32
+    | HeapClosureUnion3AllHeapUnionHeapUnionHeapPairHeapsBox box =>
+        := opened = !!!!LayoutIndex(box)
+        ?= opened.value ?|
+        | HeapClosureUnion3AllHeapUnionHeapUnionHeapPairHeapsNone => 1i32
+        | HeapClosureUnion3AllHeapUnionHeapUnionHeapPairHeapsHeld inner =>
+            := inner_opened = !!!!LayoutIndex(inner)
+            := ~(inner_held, flag) = inner_opened.value
+            := deep_opened = !!!!LayoutIndex(inner_held)
+            := ~(left, right) = deep_opened.value
+            := left_opened = !!!!LayoutIndex(left)
+            := ~(a, b) = left_opened.value
+            := right_opened = !!!!LayoutIndex(right)
+            := ~(c, d) = right_opened.value
+            ? a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && flag =. 2i32 ?> 0i32 |: 1i32
+
+///> c
+///> zig
+test heap_closure_union3_all_heap_union_heap_union_heap_pair_heaps_returns_zero =
+    := program () : i32 =
+        := ~n = 7i32
+        := ~word = "hi"
+        := left_pair = n, word
+        := left_heap = !!!!LayoutToHeap({ value = left_pair })
+        := ~m = 4i32
+        := ~other = "yo"
+        := right_pair = m, other
+        := right_heap = !!!!LayoutToHeap({ value = right_pair })
+        := pair = left_heap, right_heap
+        := inner = !!!!LayoutToHeap({ value = pair })
+        := ~mark = 2i32
+        := outer_pair = inner, mark
+        := outer = !!!!LayoutToHeap({ value = outer_pair })
+        := ~on = !+
+        := held =
+            ? on ?> HeapClosureUnion3AllHeapUnionHeapUnionHeapPairHeapsHeld outer
+            |: HeapClosureUnion3AllHeapUnionHeapUnionHeapPairHeapsNone
+        := box = !!!!LayoutToHeap({ value = held })
+        := ~use_box = !+
+        := wrapped =
+            ? use_box ?> HeapClosureUnion3AllHeapUnionHeapUnionHeapPairHeapsBox box
+            |: HeapClosureUnion3AllHeapUnionHeapUnionHeapPairHeapsMark 1i32
+        := ~tag = 3i32
+        := marked = HeapClosureUnion3AllHeapUnionHeapUnionHeapPairHeapsMark tag
+        := absent = HeapClosureUnion3AllHeapUnionHeapUnionHeapPairHeapsAbsent
+        := f (z : i32) : heap_closure_union3_all_heap_union_heap_union_heap_pair_heaps_wrap =
+            ? z =. 0i32 ?>
+                absent
+            |? z =. 1i32 ?>
+                wrapped
+            |:
+                marked
+        := ~g = f
+        := cover_box = !!!!LayoutToHeap({ value = g 1i32 })
+        := cover_mark = !!!!LayoutToHeap({ value = g 2i32 })
+        := cover_absent = !!!!LayoutToHeap({ value = g 0i32 })
+        := opened_box = !!!!LayoutIndex(cover_box)
+        := opened_mark = !!!!LayoutIndex(cover_mark)
+        := opened_absent = !!!!LayoutIndex(cover_absent)
+        := box_score = heap_closure_union3_all_heap_union_heap_union_heap_pair_heaps_score opened_box.value
+        := mark_score = heap_closure_union3_all_heap_union_heap_union_heap_pair_heaps_score opened_mark.value
+        := absent_score = heap_closure_union3_all_heap_union_heap_union_heap_pair_heaps_score opened_absent.value
+        ? box_score =. 0i32 && mark_score =. 1i32 && absent_score =. 1i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "heap_closure_union3_all_heap_union_heap_union_heap_pair_heaps"
+
+///> c
+///> zig
+test heap_f32_n_returns_zero =
+    := program () : i32 =
+        := ~x = 1.5f32
+        := ~n = 7i32
+        := pair = x, n
+        := box = !!!!LayoutToHeap({ value = pair })
+        := opened = !!!!LayoutIndex(box)
+        := ~(left, right) = opened.value
+        ? left =. 1.5f32 && right =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "heap_f32_n"
+
+///> c
+///> zig
+test heap_f32_text_returns_zero =
+    := program () : i32 =
+        := ~x = 1.5f32
+        := ~word = "hi"
+        := pair = x, word
+        := box = !!!!LayoutToHeap({ value = pair })
+        := opened = !!!!LayoutIndex(box)
+        := ~(left, right) = opened.value
+        ? left =. 1.5f32 && !!!!EQ(right, "hi") ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "heap_f32_text"
+
+///> c
+///> zig
+test heap_f32_u32_returns_zero =
+    := program () : i32 =
+        := ~x = 1.5f32
+        := ~n = 4000000000u32
+        := pair = x, n
+        := box = !!!!LayoutToHeap({ value = pair })
+        := opened = !!!!LayoutIndex(box)
+        := ~(left, right) = opened.value
+        ? left =. 1.5f32 && right =. 4000000000u32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "heap_f32_u32"

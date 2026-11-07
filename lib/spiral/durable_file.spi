@@ -1,0 +1,63 @@
+///- --package .
+:< sm'_operators
+:< rust_operators
+
+:= rust_synced (f : file_system::rust_open_file) : file_system::rust_io_done = $'(!f).sync_all()'
+
+:= rust_created (path : string) : file_system::rust_file_opened = $'std::fs::File::create(&*!path)'
+
+:= rust_renamed (to : string) (from : string) : bool = $'std::fs::rename(&*!from, &*!to).is_ok()'
+
+:= rust_written_and_synced (opened : file_system::rust_file_opened) (text : string) : result () string =
+    ? file_system::rust_file_opened_ok opened |> not ?> Error "the file could not be opened"
+    |:
+        := file = file_system::rust_file_of opened
+        ? file_system::rust_written_all file text |> file_system::rust_io_ok |> not ?> Error "the write failed"
+        |: ? rust_synced file |> file_system::rust_io_ok ?> Ok () |: Error "the sync failed"
+
+:= durable_append (path : string) (text : string) : result () string =
+    run_target_args' (path, text) \|
+        | Rust => \ path, text => rust_written_and_synced (file_system::rust_append_opened path) text
+        | _ => \ _ => failwith "durable_file.durable_append: only the Rust backend syncs today"
+
+:= rust_replace (path : string) (text : string) : result () string =
+    := temp = path ++# ".tmp"
+    ?= rust_written_and_synced (rust_created temp) text ?|
+    | Ok () =>
+        ? rust_renamed path temp ?> Ok ()
+        |:
+            file_system::file_delete temp
+            Error "the rename failed"
+    | Error message =>
+        file_system::file_delete temp
+        Error message
+
+:= replace_atomic (path : string) (text : string) : result () string =
+    run_target_args' (path, text) \|
+        | Rust => \ path, text => rust_replace path text
+        | _ => \ _ => failwith "durable_file.replace_atomic: only the Rust backend syncs today"
+
+:= probe_path (name : string) : string = file_system::get_temp_path () ++# "/" ++# name
+
+///> rust
+:# durable_append_appends_twice_and_reads_back =
+    := probe = probe_path "spiral-durable-append-probe.txt"
+    file_system::file_delete probe
+    ? durable_append probe "a" <> Ok () || durable_append probe "b" <> Ok () ?> failwith "both appends are synced"
+    ? file_system::read_all_text probe <> "ab" ?> failwith "the appends read back in order"
+    file_system::file_delete probe
+
+///> rust
+:# replace_atomic_replaces_and_leaves_no_temp_file =
+    := probe = probe_path "spiral-durable-replace-probe.txt"
+    file_system::write_all_text probe "old"
+    ? replace_atomic probe "new" <> Ok () ?> failwith "the replacement is synced and renamed"
+    ? file_system::read_all_text probe <> "new" ?> failwith "the file holds the new text"
+    ? file_system::file_exists (probe ++# ".tmp") ?> failwith "no temp file is left behind"
+    file_system::file_delete probe
+
+///> rust
+:# durable_writes_report_a_missing_folder =
+    := missing = probe_path "spiral-no-such-folder-for-durable" ++# "/x.txt"
+    ? durable_append missing "a" <> Error "the file could not be opened" ?> failwith "append reports the open failure"
+    ? replace_atomic missing "a" <> Error "the file could not be opened" ?> failwith "replace reports the open failure"

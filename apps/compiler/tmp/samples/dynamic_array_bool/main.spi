@@ -1,0 +1,7 @@
+:= main () : i32 =
+    := ~n = 2i32
+    := ~xs : array bool = create n
+    set xs 0i32 !+
+    set xs 1i32 !-
+    := ~i = 0i32
+    ? index xs i ?> 0i32 |: 1i32

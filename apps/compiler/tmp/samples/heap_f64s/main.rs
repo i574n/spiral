@@ -1,0 +1,22 @@
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
+use std::cell::RefCell;
+use std::rc::Rc;
+struct Heap0 { l0: Rc<RefCell<Vec<f64>>> }
+fn spiral_main() -> i32 {
+    let mut v0: Rc<RefCell<Vec<f64>>> = Rc::new(RefCell::new(vec![<f64>::default(); 1i32 as usize]));
+    let v1: f64 = 1.5f64;
+    v0.borrow_mut()[0i32 as usize] = v1;
+    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
+    let v3: Rc<RefCell<Vec<f64>>> = v2.l0.clone();
+    let v4: f64 = v3.borrow()[0i32 as usize];
+    let v5: bool = v4 == 1.5f64;
+    if v5 {
+        0i32
+    } else {
+        1i32
+    }
+}
+fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
+    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
+}

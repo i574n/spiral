@@ -1,0 +1,98 @@
+import gleam/list
+import gleam/option
+pub type SpiralArrayStore(a)
+
+pub type SpiralArray(a) {
+  SpiralArray(store: SpiralArrayStore(option.Option(a)), size: Int)
+}
+
+@external(erlang, "main_ffi", "array_new")
+@external(javascript, "./main_ffi.mjs", "array_new")
+pub fn spiral_array_store_new(size: Int, fill: a) -> SpiralArrayStore(a)
+
+@external(erlang, "main_ffi", "array_get")
+@external(javascript, "./main_ffi.mjs", "array_get")
+pub fn spiral_array_store_get(store: SpiralArrayStore(a), i: Int) -> a
+
+@external(erlang, "main_ffi", "array_set")
+@external(javascript, "./main_ffi.mjs", "array_set")
+pub fn spiral_array_store_set(store: SpiralArrayStore(a), i: Int, value: a) -> Nil
+
+pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
+  SpiralArray(store: spiral_array_store_new(size, option.None), size: size)
+}
+
+
+
+
+pub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {
+  case i >= 0 && i < xs.size {
+    True ->
+      case spiral_array_store_get(xs.store, i) {
+        option.Some(x) -> x
+        option.None -> panic as "spiral array: read of an element that was never set"
+      }
+    False -> panic as "spiral array: index out of bounds"
+  }
+}
+
+pub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {
+  case i >= 0 && i < xs.size {
+    True -> spiral_array_store_set(xs.store, i, option.Some(value))
+    False -> panic as "spiral array: index out of bounds"
+  }
+}
+
+pub type Heap0 { Heap0(l0 : Int, l1 : String) }
+pub type Us0 {
+    Us0None
+    Us0Held(f1i0 : Heap0, f1i1 : Heap0)
+}
+pub fn score_0(v0: Us0) -> Int {
+    case v0  {
+        Us0Held(v1, v2) -> {
+            let #(v3, v4) = #(v1.l0, v1.l1)
+            let #(v5, v6) = #(v2.l0, v2.l1)
+            let v7 = v3 == 7
+            let v9 =
+                case v7 {
+                    True -> {
+                        v4 == "hi"
+                    }
+                    False -> False
+                }
+            let v11 =
+                case v9 {
+                    True -> {
+                        v5 == 4
+                    }
+                    False -> False
+                }
+            let v13 =
+                case v11 {
+                    True -> {
+                        v6 == "yo"
+                    }
+                    False -> False
+                }
+            case v13 {
+                True -> 0
+                False -> 1
+            }
+        }
+        Us0None -> 1
+    }
+}
+pub fn main() {
+    let v2 = Heap0(l0: 7, l1: "hi")
+    let v5 = Heap0(l0: 4, l1: "yo")
+    let v6 = spiral_array_create(1)
+    let v10 =
+        case True {
+            True -> Us0Held(v2, v5)
+            False -> Us0None
+        }
+    spiral_array_set(v6, 0, v10)
+    let v11 = spiral_array_get(v6, 0)
+    score_0(v11)
+}

@@ -1,0 +1,2 @@
+:= identity x = x
+:= main () : string = identity "sample-derived"

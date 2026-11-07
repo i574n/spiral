@@ -1,0 +1,20 @@
+:| ^ inline =
+    | Text : string
+    | Strong : list inline
+    | Link : string * list inline
+
+:| block =
+    | Para : list inline
+    | Bullets : list (list inline)
+    | Table : list (list string)
+
+:= cat (a : string) (b : string) : string = !!!!StaticStringConcat(a, b)
+
+:= para (s : string) : block = Para [Text s]
+
+:= wrap (b : block) : list block = [b]
+
+:= main () : i32 =
+    !!!!Export("model_para", para)
+    !!!!Export("model_wrap", wrap)
+    0i32

@@ -1,0 +1,12 @@
+:= main () : i32 =
+    := ~n = 3i64
+    := ~word = "no"
+    := pair = n, word
+    := box : mut { value : i64 * string } = !!!!LayoutToHeapMutable({ value = pair })
+    := ~m = 5000000000i64
+    := ~next = "hi"
+    := replaced = m, next
+    box <- { value = replaced }
+    := opened = !!!!LayoutIndex(box)
+    := ~(left, right) = opened::value
+    ? left =. 5000000000i64 && !!!!EQ(right, "hi") ?> 0i32 |: 1i32

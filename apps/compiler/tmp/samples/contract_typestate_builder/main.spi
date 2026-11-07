@@ -1,0 +1,92 @@
+:! missing = ()
+:! present = ()
+:! builder_state issuer recipient total = issuer * recipient * total
+:! builder_payload = { issuer : string; recipient : string; total_cents : i64 }
+
+:| nfe_builder index =
+    | Builder :: \* issuer recipient total.
+        builder_payload -> nfe_builder (builder_state issuer recipient total)
+
+:| builder_op from to =
+    | SetIssuer :: \* recipient total.
+        string ->
+        builder_op
+            (builder_state missing recipient total)
+            (builder_state present recipient total)
+    | SetRecipient :: \* issuer total.
+        string ->
+        builder_op
+            (builder_state issuer missing total)
+            (builder_state issuer present total)
+    | SetTotal :: \* issuer recipient.
+        i64 ->
+        builder_op
+            (builder_state issuer recipient missing)
+            (builder_state issuer recipient present)
+
+:= apply_builder_op \* from to.
+    (operation : builder_op from to)
+    (builder : nfe_builder from)
+    : nfe_builder to =
+    ?= operation, builder ?|
+    | SetIssuer issuer, Builder payload =>
+        Builder (builder_payload {
+            issuer = issuer
+            recipient = payload::recipient
+            total_cents = payload::total_cents
+        })
+    | SetRecipient recipient, Builder payload =>
+        Builder (builder_payload {
+            issuer = payload::issuer
+            recipient = recipient
+            total_cents = payload::total_cents
+        })
+    | SetTotal total_cents, Builder payload =>
+        Builder (builder_payload {
+            issuer = payload::issuer
+            recipient = payload::recipient
+            total_cents = total_cents
+        })
+
+:| ^ chain (step : * -> * -> *) from to =
+    | ChainStep :: \* (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: \* (step : * -> * -> *) from to.
+        (\? middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+:= ^ fold_chain
+    \* (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : \* a b. step a b -> carrier a -> carrier b)
+    (program : chain step from to)
+    (input : carrier from)
+    : carrier to =
+    ?= program ?|
+    | ChainStep atom => handler atom input
+    | ChainCompose pair =>
+        := \? middle. first, second = pair
+        fold_chain `$handler second (fold_chain `$handler first input)
+
+:= finalize
+    (builder : nfe_builder (builder_state present present present))
+    : string =
+    ?= builder ?|
+    | Builder _ => "builder-complete"
+
+:= builder_program () :
+    chain builder_op
+        (builder_state missing missing missing)
+        (builder_state present present present) =
+    ChainCompose (\? (
+        ChainStep (SetIssuer "ACME"),
+        ChainCompose (\? (
+            ChainStep (SetRecipient "CLIENT"),
+            ChainStep (SetTotal 4200i64)
+        ))
+    ))
+
+:= main () : string =
+    := empty : nfe_builder (builder_state missing missing missing) =
+        Builder (builder_payload { issuer = ""; recipient = ""; total_cents = 0i64 })
+    := complete = fold_chain `$apply_builder_op (builder_program ()) empty
+    finalize complete

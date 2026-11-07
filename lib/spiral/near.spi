@@ -1,0 +1,316 @@
+:# near static =
+    :< testing
+
+:< rust_operators
+
+:== vector_switch t =
+    {
+        Gleam : $'near_sdk_store_vec_Vector<`t>'
+        Lua : $'near_sdk_store_vec_Vector<`t>'
+        Fsharp : $'near_sdk_store_vec_Vector<`t>'
+        Python : $'near_sdk_store_vec_Vector<`t>'
+        TypeScript : $'near_sdk_store_vec_Vector<`t>'
+        Cpp : $'near_sdk_store_vec_Vector<`t>'
+        CppHost : $'near_sdk_store_vec_Vector<`t>'
+        Pascal : $'near_sdk_store_vec_Vector<`t>'
+        Cuda : $'near_sdk_store_vec_Vector<`t>'
+        Rust : $'SpiralNearVec<`t>'
+    }
+:! vector t =
+    `(
+        rust::fsharp_global "type near_sdk_store_vec_Vector<'T> = class end"
+        backend_switch `(()) `({}) {
+            Rust = (fun () => global """
+                #[cfg(target_arch = "wasm32")]
+                type SpiralNearVec<T> = near_sdk::store::vec::Vector<T>;
+                #[cfg(not(target_arch = "wasm32"))]
+                struct SpiralNearVec<T>(std::vec::Vec<T>);
+                #[cfg(not(target_arch = "wasm32"))]
+                impl<T> SpiralNearVec<T> {
+                    fn len(&self) -> usize { self.0.len() }
+                    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) { self.0.extend(iter); }
+                    fn drain(&mut self, range: std::ops::Range<u32>) -> std::vec::Drain<'_, T> {
+                        self.0.drain((range.start as usize)..(range.end as usize))
+                    }
+                    fn iter(&self) -> std::slice::Iter<'_, T> { self.0.iter() }
+                }
+
+                """) : () -> ()
+            Gleam = (\ () => ()) : () -> ()
+            Lua = (\ () => ()) : () -> ()
+            Fsharp = (\ () => ()) : () -> ()
+            Python = (\ () => ()) : () -> ()
+            TypeScript = (\ () => ()) : () -> ()
+            Cpp = (\ () => ()) : () -> ()
+            CppHost = (\ () => ()) : () -> ()
+            Pascal = (\ () => ()) : () -> ()
+            Cuda = (\ () => ()) : () -> ()
+        }
+        $'' : $'backend_switch `(vector_switch t)'
+    )
+
+:! lookup_map k v =
+    `(
+        rust::rust_type
+            `($'near_sdk_store_LookupMap<`k, `v>')
+            `($'near_sdk::store::LookupMap<`k, `v>')
+            "type near_sdk_store_LookupMap<'K, 'V> = class end"
+    )
+
+:! iterable_set t =
+    `(
+        rust::rust_type
+            `($'near_sdk_store_IterableSet<`t>')
+            `($'near_sdk::store::IterableSet<`t>')
+            "type near_sdk_store_IterableSet<'T> = class end"
+    )
+
+:== account_id_switch =
+    {
+        Gleam : $'near_sdk_AccountId'
+        Lua : $'near_sdk_AccountId'
+        Fsharp : $'near_sdk_AccountId'
+        Python : $'near_sdk_AccountId'
+        TypeScript : $'near_sdk_AccountId'
+        Cpp : $'near_sdk_AccountId'
+        CppHost : $'near_sdk_AccountId'
+        Pascal : $'near_sdk_AccountId'
+        Cuda : $'near_sdk_AccountId'
+        Rust : $'String'
+    }
+:! account_id =
+    `(
+        rust::fsharp_global "type near_sdk_AccountId = class end"
+        $'' : $'backend_switch `(account_id_switch)'
+    )
+
+:= new_lookup_map prefix =
+    !\($'"near_sdk::store::LookupMap::new(!prefix)"')
+
+:= new_iterable_set prefix =
+    !\($'"near_sdk::store::IterableSet::new(!prefix)"')
+
+:= new_vector (prefix : rust::ref (am'::slice u8)) : vector u8 =
+    backend_switch {
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::store::vec::Vector::new(!prefix); \
+            \#[cfg(not(target_arch = "wasm32"))] let v = SpiralNearVec(<std::vec::Vec<u8>>::new()); v }' : vector u8
+    }
+
+:= vector_extend \* t. (vec : am'::vec t) (vector : rust::ref (rust::mut' (vector t))) : () =
+    backend_switch {
+        Rust = \ () => $'{ (!vector).extend((!vec).clone()); }' : ()
+    }
+
+:= vector_drain_front \* t. (count : u32) (vector : rust::ref (rust::mut' (vector t))) : am'::vec t =
+    backend_switch {
+        Rust = \ () => $'(!vector).drain(0..!count).collect::<std::vec::Vec<_>>()' : am'::vec t
+    }
+
+:= vector_to_vec \* (t : * -> *) u. (vector : t (vector u)) : am'::vec u =
+    backend_switch {
+        Rust = \ () => $'(!vector).iter().cloned().collect::<std::vec::Vec<_>>()' : am'::vec u
+    }
+
+:= keccak512 (entropy : am'::vec u8) : am'::vec u8 =
+    backend_switch {
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::keccak512(&(!entropy)); \
+            \#[cfg(not(target_arch = "wasm32"))] let v = <std::vec::Vec<u8>>::from([1u8, 5, 4, 4, 5]); v }' : am'.vec u8
+    }
+
+:= log text : () =
+    (!\\(text, $'$"true; near_sdk::log\!(\\\"{{}}\\\", $0)"') : bool) |> ignore
+
+:= bump_allocator () : () =
+    global """
+        #[cfg(target_arch = "wasm32")]
+        struct SpiralBumpAlloc;
+        #[cfg(target_arch = "wasm32")]
+        static SPIRAL_BUMP_NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        #[cfg(target_arch = "wasm32")]
+        unsafe impl std::alloc::GlobalAlloc for SpiralBumpAlloc {
+            unsafe fn alloc(&self, layout: std::alloc::Layout) -> *mut u8 {
+                use std::sync::atomic::Ordering::Relaxed;
+                let have = core::arch::wasm32::memory_size(0) * 65536;
+                let next = match SPIRAL_BUMP_NEXT.load(Relaxed) { 0 => have, next => next };
+                let start = (next + layout.align() - 1) & !(layout.align() - 1);
+                let end = start + layout.size();
+                if end > have && core::arch::wasm32::memory_grow(0, (end - have).div_ceil(65536)) == usize::MAX {
+                    return std::ptr::null_mut();
+                }
+                SPIRAL_BUMP_NEXT.store(end, Relaxed);
+                start as *mut u8
+            }
+            unsafe fn dealloc(&self, _: *mut u8, _: std::alloc::Layout) {}
+        }
+        #[cfg(target_arch = "wasm32")]
+        #[global_allocator]
+        static SPIRAL_BUMP: SpiralBumpAlloc = SpiralBumpAlloc;
+        """
+
+:= host_random_seed () : array u8 =
+    backend_switch {
+        Rust = \ () => $'Rc::new(RefCell::new(near_sdk::env::random_seed()))' : array u8
+    }
+
+:= host_keccak512 (bytes : array u8) : array u8 =
+    backend_switch {
+        Rust = \ () => $'Rc::new(RefCell::new(near_sdk::env::keccak512((!bytes).borrow().as_slice())))' : array u8
+    }
+
+:= host_block_height () : u64 =
+    backend_switch {
+        Rust = \ () => $'near_sdk::env::block_height()' : u64
+    }
+
+:= host_block_timestamp () : u64 =
+    backend_switch {
+        Rust = \ () => $'near_sdk::env::block_timestamp()' : u64
+    }
+
+:= host_epoch_height () : u64 =
+    backend_switch {
+        Rust = \ () => $'near_sdk::env::epoch_height()' : u64
+    }
+
+:= host_account_balance_words () : u64 * u64 =
+    backend_switch {
+        Rust = \ () =>
+            $'{ let balance = near_sdk::env::account_balance().as_yoctonear(); (balance as u64, (balance >> 64) as u64) }' : u64 * u64
+    }
+
+:= host_signer () : string =
+    backend_switch {
+        Rust = \ () => $'Rc::<str>::from(near_sdk::env::signer_account_id().as_str())' : string
+    }
+
+:= host_predecessor () : string =
+    backend_switch {
+        Rust = \ () => $'Rc::<str>::from(near_sdk::env::predecessor_account_id().as_str())' : string
+    }
+
+:= panic \* t. (text : string) : t =
+    backend_switch {
+        Rust = \ () => $'near_sdk::env::panic_str(&*!text)' : t
+    }
+
+:= panic_str (text : string) : () =
+    (!\\(text, $'$"true; near_sdk::env::panic_str(&*$0); //"') : bool) |> ignore
+
+:= lookup_get \* k v.
+    (key : k)
+    (map : rust::ref (rust::mut' (lookup_map k v)))
+    : optionm'::option' (rust::ref v)
+    =
+    !\\(key, $'$"!map.get(&$0)"')
+
+:= lookup_insert \* k v.
+    (key : k)
+    (value : v)
+    (map : rust::ref (rust::mut' (lookup_map k v)))
+    : ()
+    =
+    (!\\((key, value), $'$"true; !map.insert(&$0, $1); //"') : bool) |> ignore
+
+:= iterable_set_insert \* t.
+    (x : t)
+    (set : rust::ref (rust::mut' (iterable_set t)))
+    : bool
+    =
+    !\\(x, $'$"!set.insert($0)"')
+
+:= iterable_set_remove \* t.
+    (x : rust::ref t)
+    (set : rust::ref (rust::mut' (iterable_set t)))
+    : bool
+    =
+    !\\(x, $'$"!set.remove($0)"')
+
+:= iterable_set_contains \* t.
+    (x : rust::ref t)
+    (set : rust::ref (rust::mut' (iterable_set t)))
+    : bool
+    =
+    !\\(x, $'$"!set.contains($0)"')
+
+:== near_token_switch =
+    {
+        Gleam : $'near_token_NearToken'
+        Lua : $'near_token_NearToken'
+        Fsharp : $'near_token_NearToken'
+        Python : $'near_token_NearToken'
+        TypeScript : $'near_token_NearToken'
+        Cpp : $'near_token_NearToken'
+        CppHost : $'near_token_NearToken'
+        Pascal : $'near_token_NearToken'
+        Cuda : $'near_token_NearToken'
+        Rust : $'u128'
+    }
+:! near_token =
+    `(
+        rust::fsharp_global "type near_token_NearToken = class end"
+        $'' : $'backend_switch `(near_token_switch)'
+    )
+
+:! near_token_sdk =
+    `(
+        rust::rust_type
+            `($'near_sdk_NearToken')
+            `($'near_sdk::NearToken')
+            "type near_sdk_NearToken = class end"
+    )
+
+:= random_seed () : am'::vec u8 =
+    backend_switch {
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::random_seed(); \
+            \#[cfg(not(target_arch = "wasm32"))] let v = <std::vec::Vec<u8>>::from([1u8, 5, 4, 4, 5]); v }' : am'.vec u8
+    }
+
+:= block_timestamp () : u64 =
+    backend_switch {
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::block_timestamp(); \
+            \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
+    }
+
+:= block_height () : u64 =
+    backend_switch {
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::block_height(); \
+            \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
+    }
+
+:= epoch_height () : u64 =
+    backend_switch {
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::epoch_height(); \
+            \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
+    }
+
+:= account_balance () : near_token =
+    backend_switch {
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::account_balance().as_yoctonear(); \
+            \#[cfg(not(target_arch = "wasm32"))] let v = 1u128; v }' : near_token
+    }
+
+:= predecessor_account_id () : account_id =
+    backend_switch {
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::predecessor_account_id().to_string\
+            (); \#[cfg(not(target_arch = "wasm32"))] let v = String::from("a"); v }' : account_id
+    }
+
+:= signer_account_id () : account_id =
+    backend_switch {
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::signer_account_id().to_string(); \
+            \#[cfg(not(target_arch = "wasm32"))] let v = String::from("a"); v }' : account_id
+    }
+
+:= as_yoctonear \* t. (gas : t) : rust::u128 =
+    backend_switch {
+        Rust = \ () => $'(!gas)' : rust::u128
+    }
+
+:= near_price_in_usd () =
+    6.68f64
+
+:= gas_to_usd (gas : u64) =
+    (gas |> convert::f64) / 10_000_000_000_000_000 * near_price_in_usd ()
+
+:= tokens_to_usd (tokens : rust::u128) =
+    (tokens |> rust::f64) / 1_000_000_000_000_000_000_000_000 * near_price_in_usd ()

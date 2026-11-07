@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>rust_testing.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<h4>rust_testing (test)</h4>
+
+<span class="badge other">test rust_testing: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:&lt;</span> <span class="tok-variable">rust_operators</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">run_tests'</span> <span class="tok-variable">tests</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">fields</span> <span class="tok-operator">=</span> <span class="tok-variable">reflection</span><span class="tok-symbol">::get_record_fields</span> <span class="tok-variable">tests</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">is_rust</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">?&gt;</span>
+        <span class="tok-variable">global</span> <span class="tok-parenthesis">(</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">thread_local! { static SPIRAL_TEST: std::cell::RefCell&lt;Option&lt;&amp;'static str&gt;&gt; = const { </span><span class="tok-string">&quot;</span>
+            <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">std::cell::RefCell::new(None) }; }</span><span class="tok-string">&quot;</span>
+        <span class="tok-parenthesis">)</span>
+    <span class="tok-variable">fields</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm</span><span class="tok-symbol">::iter</span> <span class="tok-keyword">\</span> <span class="tok-variable">name</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fn</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">-&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-keyword">:=</span> <span class="tok-parenthesis">(</span><span class="tok-operator">++</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">a</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">b</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-variable">a</span> <span class="tok-operator">^^</span> <span class="tok-variable">b</span>
+        <span class="tok-keyword">?</span> <span class="tok-variable">is_rust</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">?&gt;</span>
+            <span class="tok-variable">global</span> <span class="tok-parenthesis">(</span>
+                <span class="tok-string">&quot;</span><span class="tok-string">#[test] fn </span><span class="tok-string">&quot;</span>
+                <span class="tok-operator">++</span> <span class="tok-variable">name</span>
+                <span class="tok-operator">++</span> <span class="tok-parenthesis">(</span>
+                    <span class="tok-string">&quot;</span><span class="tok-string">() { std::thread::Builder::new().stack_size(1 &lt;&lt; 30).spawn(|| { SPIRAL_TEST.with(|t| </span><span class="tok-string">&quot;</span>
+                    <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">*t.borrow_mut() = Some(</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">&quot;</span>
+                <span class="tok-parenthesis">)</span>
+                <span class="tok-operator">++</span> <span class="tok-variable">name</span>
+                <span class="tok-operator">++</span> <span class="tok-string">&quot;</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">)); spiral_main() }).unwrap().join().unwrap(); }</span><span class="tok-string">&quot;</span>
+            <span class="tok-parenthesis">)</span>
+        <span class="tok-keyword">?</span> <span class="tok-string">$'</span><span class="tok-string">SPIRAL_TEST.with(|t| t.borrow().map_or(false, |s| s == (&amp;*</span><span class="tok-variable">!name</span><span class="tok-string">)))</span><span class="tok-string">'</span> <span class="tok-keyword">?&gt;</span>
+            <span class="tok-variable">fn</span> <span class="tok-variable">name</span></code></pre>
+
+<h4>run_tests (test)</h4>
+
+<span class="badge other">test run_tests: static</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">run</span> <span class="tok-variable">test</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">env</span><span class="tok-symbol">::get_environment_variable</span> <span class="tok-string">&quot;</span><span class="tok-string">TEST</span><span class="tok-string">&quot;</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">1</span><span class="tok-string">&quot;</span> <span class="tok-keyword">?&gt;</span>
+        <span class="tok-keyword">?</span> <span class="tok-variable">is_rust</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">test</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">|:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-keyword">|:</span>
+        <span class="tok-variable">process</span><span class="tok-symbol">::execution_options</span> <span class="tok-keyword">\</span> <span class="tok-variable">x</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">x</span> <span class="tok-keyword">?|</span>
+            <span class="tok-variable">command</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">cargo +nightly-2026-10-18 test --timings -- --show-output</span><span class="tok-string">&quot;</span>
+            <span class="tok-variable">working_directory</span> <span class="tok-operator">=</span> <span class="tok-variable">file_system</span><span class="tok-symbol">::get_source_directory</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">Some</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">optionm'</span><span class="tok-symbol">::box</span>
+            <span class="tok-variable">environment_variables</span> <span class="tok-operator">=</span> <span class="tok-variable">am'</span><span class="tok-symbol">::base</span> <span class="tok-unary_operator">;</span><span class="tok-parenthesis">[</span> <span class="tok-string">&quot;</span><span class="tok-string">TEST</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-string">&quot;</span><span class="tok-string">1</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">]</span>
+        <span class="tok-parenthesis">}</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-variable">process</span><span class="tok-symbol">::execute_with_options</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-keyword">\</span> <span class="tok-variable">exit_code</span><span class="tok-operator">,</span> <span class="tok-variable">result</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-variable">exit_code</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">0</span><span class="tok-number_suffix">i32</span>
+            <span class="tok-variable">result</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::contains</span> <span class="tok-string">&quot;</span><span class="tok-string">test result: ok. 1 passed; 0 failed; 0 ignored;</span><span class="tok-string">&quot;</span>
+
+    <span class="tok-keyword">?</span> <span class="tok-variable">is_rust</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">not</span> <span class="tok-keyword">?&gt;</span>
+        <span class="tok-string">$'</span><span class="tok-string">let tests () = </span><span class="tok-variable">!test</span><span class="tok-string"> ()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span></code></pre>
+
+<span class="badge passed">test run_tests_2: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; rust -d encoding_rs encoding_rs_io
+
+<span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+    <span class="tok-variable">run_tests'</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">a</span> <span class="tok-operator">=</span> <span class="tok-variable">_assert_eq</span> <span class="tok-string">&quot;</span><span class="tok-string">a</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">}</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">run</span></code></pre>
+<pre class="output">17:27:45 1[94md[0m process.execute_with_options / { file_name = cargo; arguments = [&quot;+nightly-2026-10-18&quot;, &quot;test&quot;, &quot;--timings&quot;, &quot;--&quot;, &quot;--show-output&quot;] }
+17:27:45 2[90mv[0m ! [1m[33mwarning[0m: packages/Rust/4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
+17:27:45 3[90mv[0m !   See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.
+17:27:45 4[90mv[0m ! [1m[33mwarning[0m: `spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340` (manifest) generated 1 warning
+17:27:45 5[90mv[0m ! [1m[92m   Compiling[0m spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340 v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340)
+17:27:46 6[90mv[0m ! [1m[33mwarning[0m[1m: unused dependency `inline_colorization`[0m
+17:27:46 7[90mv[0m !  [1m[94m--&gt; [0mpackages/Rust/4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340/Cargo.toml:9:1
+17:27:46 8[90mv[0m !   [1m[94m|[0m
+17:27:46 9[90mv[0m ! [1m[94m9[0m [1m[94m|[0m inline_colorization = { workspace = true }
+17:27:46 10[90mv[0m !   [1m[94m|[0m [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+17:27:46 11[90mv[0m !   [1m[94m|[0m
+17:27:46 12[90mv[0m !   [1m[94m= [0m[1mnote[0m: `cargo::unused_dependencies` is set to `warn` by default
+17:27:46 13[90mv[0m ! [1m[96mhelp[0m: consider removing the dependency on `inline_colorization`
+17:27:46 14[90mv[0m ! [1m[33mwarning[0m: `spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340` (manifest) generated 1 warning
+17:27:46 15[90mv[0m ! [1m[92m      Timing[0m report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261107T172745157Z-422d64907f994051.html
+17:27:46 16[90mv[0m ! [1m[92m    Finished[0m `test` profile [unoptimized + debuginfo] target(s) in 1.58s
+17:27:46 17[90mv[0m ! [1m[92m     Running[0m unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/build/spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340/ff9d9e97145b18fa/out/spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340-ff9d9e97145b18fa)
+17:27:46 18[90mv[0m &gt;
+17:27:46 19[90mv[0m &gt; running 1 test
+17:27:46 20[90mv[0m &gt; test a ... ok
+17:27:46 21[90mv[0m &gt;
+17:27:46 22[90mv[0m &gt; successes:
+17:27:46 23[90mv[0m &gt;
+17:27:46 24[90mv[0m &gt; ---- a stdout ----
+17:27:46 25[90mv[0m &gt; __assert_eq { expected = a }
+17:27:46 26[90mv[0m &gt;
+17:27:46 27[90mv[0m &gt;
+17:27:46 28[90mv[0m &gt; successes:
+17:27:46 29[90mv[0m &gt;     a
+17:27:46 30[90mv[0m &gt;
+17:27:46 31[90mv[0m &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+17:27:46 32[90mv[0m &gt;
+17:27:46 33[90mv[0m process.execute_with_options / result / { file_name = cargo; exit_code = 0; std_trace_len = 2319 }
+__assert_eq { expected = 0 }
+__assert { expected = [4;7m[1m[33mwarning[0m: packages/Rust/4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest[0m
+[4;7m  See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.[0m
+[4;7m[1m[33mwarning[0m: `spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340` (manifest) generated 1 warning[0m
+[4;7m[1m[92m   Compiling[0m spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340 v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340)[0m
+[4;7m[1m[33mwarning[0m[1m: unused dependency `inline_colorization`[0m[0m
+[4;7m [1m[94m--&gt; [0mpackages/Rust/4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340/Cargo.toml:9:1[0m
+[4;7m  [1m[94m|[0m[0m
+[4;7m[1m[94m9[0m [1m[94m|[0m inline_colorization = { workspace = true }[0m
+[4;7m  [1m[94m|[0m [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[4;7m  [1m[94m|[0m[0m
+[4;7m  [1m[94m= [0m[1mnote[0m: `cargo::unused_dependencies` is set to `warn` by default[0m
+[4;7m[1m[96mhelp[0m: consider removing the dependency on `inline_colorization`[0m
+[4;7m[1m[33mwarning[0m: `spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340` (manifest) generated 1 warning[0m
+[4;7m[1m[92m      Timing[0m report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261107T172745157Z-422d64907f994051.html[0m
+[4;7m[1m[92m    Finished[0m `test` profile [unoptimized + debuginfo] target(s) in 1.58s[0m
+[4;7m[1m[92m     Running[0m unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/build/spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340/ff9d9e97145b18fa/out/spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340-ff9d9e97145b18fa)[0m
+
+running 1 test
+test a ... ok
+
+successes:
+
+---- a stdout ----
+__assert_eq { expected = a }
+
+
+successes:
+    a
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s }</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">run_tests</span> <span class="tok-variable">tests</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">~&gt;</span>
+        <span class="tok-keyword">:=</span> <span class="tok-variable">tests</span> <span class="tok-operator">=</span>
+            <span class="tok-variable">real_core</span><span class="tok-symbol">::record_map</span>
+                <span class="tok-keyword">\</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">key</span> <span class="tok-variable">value</span> <span class="tok-parenthesis">}</span> <span class="tok-operator">=&gt;</span>
+                    <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">value</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">-&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+                <span class="tok-variable">tests</span>
+        <span class="tok-variable">run_tests'</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-unary_operator">`</span><span class="tok-variable">tests</span><span class="tok-parenthesis">)</span> <span class="tok-variable">tests</span></code></pre>
+
+<span class="badge passed">test run_tests_3: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; rust -d encoding_rs encoding_rs_io
+
+<span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+    <span class="tok-variable">run_tests</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">a</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">a</span><span class="tok-string">&quot;</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-string">&quot;</span><span class="tok-string">a</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">}</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">run</span></code></pre>
+<pre class="output">17:27:36 1[94md[0m process.execute_with_options / { file_name = cargo; arguments = [&quot;+nightly-2026-10-18&quot;, &quot;test&quot;, &quot;--timings&quot;, &quot;--&quot;, &quot;--show-output&quot;] }
+17:27:36 2[90mv[0m ! [1m[33mwarning[0m: packages/Rust/4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
+17:27:36 3[90mv[0m !   See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.
+17:27:36 4[90mv[0m ! [1m[33mwarning[0m: `spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340` (manifest) generated 1 warning
+17:27:36 5[90mv[0m ! [1m[92m   Compiling[0m spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340 v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340)
+17:27:37 6[90mv[0m ! [1m[33mwarning[0m[1m: unused dependency `inline_colorization`[0m
+17:27:37 7[90mv[0m !  [1m[94m--&gt; [0mpackages/Rust/4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340/Cargo.toml:9:1
+17:27:37 8[90mv[0m !   [1m[94m|[0m
+17:27:37 9[90mv[0m ! [1m[94m9[0m [1m[94m|[0m inline_colorization = { workspace = true }
+17:27:37 10[90mv[0m !   [1m[94m|[0m [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+17:27:37 11[90mv[0m !   [1m[94m|[0m
+17:27:37 12[90mv[0m !   [1m[94m= [0m[1mnote[0m: `cargo::unused_dependencies` is set to `warn` by default
+17:27:37 13[90mv[0m ! [1m[96mhelp[0m: consider removing the dependency on `inline_colorization`
+17:27:37 14[90mv[0m ! [1m[33mwarning[0m: `spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340` (manifest) generated 1 warning
+17:27:37 15[90mv[0m ! [1m[92m      Timing[0m report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261107T172736014Z-422d64907f994051.html
+17:27:37 16[90mv[0m ! [1m[92m    Finished[0m `test` profile [unoptimized + debuginfo] target(s) in 1.85s
+17:27:37 17[90mv[0m ! [1m[92m     Running[0m unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/build/spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340/ff9d9e97145b18fa/out/spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340-ff9d9e97145b18fa)
+17:27:37 18[90mv[0m &gt;
+17:27:37 19[90mv[0m &gt; running 1 test
+17:27:37 20[90mv[0m &gt; test a ... ok
+17:27:37 21[90mv[0m &gt;
+17:27:37 22[90mv[0m &gt; successes:
+17:27:37 23[90mv[0m &gt;
+17:27:37 24[90mv[0m &gt; ---- a stdout ----
+17:27:37 25[90mv[0m &gt; __assert_eq { expected = a }
+17:27:37 26[90mv[0m &gt;
+17:27:37 27[90mv[0m &gt;
+17:27:37 28[90mv[0m &gt; successes:
+17:27:37 29[90mv[0m &gt;     a
+17:27:37 30[90mv[0m &gt;
+17:27:37 31[90mv[0m &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+17:27:37 32[90mv[0m &gt;
+17:27:37 33[90mv[0m process.execute_with_options / result / { file_name = cargo; exit_code = 0; std_trace_len = 2319 }
+__assert_eq { expected = 0 }
+__assert { expected = [4;7m[1m[33mwarning[0m: packages/Rust/4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest[0m
+[4;7m  See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.[0m
+[4;7m[1m[33mwarning[0m: `spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340` (manifest) generated 1 warning[0m
+[4;7m[1m[92m   Compiling[0m spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340 v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340)[0m
+[4;7m[1m[33mwarning[0m[1m: unused dependency `inline_colorization`[0m[0m
+[4;7m [1m[94m--&gt; [0mpackages/Rust/4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340/Cargo.toml:9:1[0m
+[4;7m  [1m[94m|[0m[0m
+[4;7m[1m[94m9[0m [1m[94m|[0m inline_colorization = { workspace = true }[0m
+[4;7m  [1m[94m|[0m [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[4;7m  [1m[94m|[0m[0m
+[4;7m  [1m[94m= [0m[1mnote[0m: `cargo::unused_dependencies` is set to `warn` by default[0m
+[4;7m[1m[96mhelp[0m: consider removing the dependency on `inline_colorization`[0m
+[4;7m[1m[33mwarning[0m: `spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340` (manifest) generated 1 warning[0m
+[4;7m[1m[92m      Timing[0m report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261107T172736014Z-422d64907f994051.html[0m
+[4;7m[1m[92m    Finished[0m `test` profile [unoptimized + debuginfo] target(s) in 1.85s[0m
+[4;7m[1m[92m     Running[0m unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/build/spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340/ff9d9e97145b18fa/out/spiral_4a09f6824d830a83213afcb1b7fb7b79493cca408067ffc997e78cf734e35340-ff9d9e97145b18fa)[0m
+
+running 1 test
+test a ... ok
+
+successes:
+
+---- a stdout ----
+__assert_eq { expected = a }
+
+
+successes:
+    a
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s }</pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">run_tests_log</span> <span class="tok-variable">tests</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">~&gt;</span>
+        <span class="tok-keyword">:=</span> <span class="tok-variable">tests</span> <span class="tok-operator">=</span>
+            <span class="tok-variable">real_core</span><span class="tok-symbol">::record_map</span>
+                <span class="tok-keyword">\</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">key</span> <span class="tok-variable">value</span> <span class="tok-parenthesis">}</span> <span class="tok-operator">=&gt;</span>
+                    <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">value</span> <span class="tok-number">!-</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+                <span class="tok-variable">tests</span>
+        <span class="tok-variable">run_tests</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-unary_operator">`</span><span class="tok-variable">tests</span><span class="tok-parenthesis">)</span> <span class="tok-variable">tests</span></code></pre>
+
+<h4>run_tests_log (test)</h4>
+
+<span class="badge passed">test run_tests_log: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; rust -d encoding_rs encoding_rs_io
+
+<span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+    <span class="tok-variable">run_tests_log</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">a</span> <span class="tok-operator">=</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">!-</span>
+    <span class="tok-parenthesis">}</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">run</span></code></pre>
+<pre class="output">17:27:40 1[94md[0m process.execute_with_options / { file_name = cargo; arguments = [&quot;+nightly-2026-10-18&quot;, &quot;test&quot;, &quot;--timings&quot;, &quot;--&quot;, &quot;--show-output&quot;] }
+17:27:40 2[90mv[0m ! [1m[33mwarning[0m: packages/Rust/cbf3e7ca6caeb5c8f822b3c6fe80d6265f66fd9dea7188cac738cacf878d42e7/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
+17:27:40 3[90mv[0m !   See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.
+17:27:40 4[90mv[0m ! [1m[33mwarning[0m: `spiral_cbf3e7ca6caeb5c8f822b3c6fe80d6265f66fd9dea7188cac738cacf878d42e7` (manifest) generated 1 warning
+17:27:40 5[90mv[0m ! [1m[92m   Compiling[0m spiral_cbf3e7ca6caeb5c8f822b3c6fe80d6265f66fd9dea7188cac738cacf878d42e7 v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/cbf3e7ca6caeb5c8f822b3c6fe80d6265f66fd9dea7188cac738cacf878d42e7)
+17:27:42 6[90mv[0m ! [1m[33mwarning[0m[1m: unused dependency `inline_colorization`[0m
+17:27:42 7[90mv[0m !  [1m[94m--&gt; [0mpackages/Rust/cbf3e7ca6caeb5c8f822b3c6fe80d6265f66fd9dea7188cac738cacf878d42e7/Cargo.toml:9:1
+17:27:42 8[90mv[0m !   [1m[94m|[0m
+17:27:42 9[90mv[0m ! [1m[94m9[0m [1m[94m|[0m inline_colorization = { workspace = true }
+17:27:42 10[90mv[0m !   [1m[94m|[0m [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+17:27:42 11[90mv[0m !   [1m[94m|[0m
+17:27:42 12[90mv[0m !   [1m[94m= [0m[1mnote[0m: `cargo::unused_dependencies` is set to `warn` by default
+17:27:42 13[90mv[0m ! [1m[96mhelp[0m: consider removing the dependency on `inline_colorization`
+17:27:42 14[90mv[0m ! [1m[33mwarning[0m: `spiral_cbf3e7ca6caeb5c8f822b3c6fe80d6265f66fd9dea7188cac738cacf878d42e7` (manifest) generated 1 warning
+17:27:42 15[90mv[0m ! [1m[92m      Timing[0m report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261107T172740737Z-422d64907f994051.html
+17:27:42 16[90mv[0m ! [1m[92m    Finished[0m `test` profile [unoptimized + debuginfo] target(s) in 1.56s
+17:27:42 17[90mv[0m ! [1m[92m     Running[0m unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/build/spiral_cbf3e7ca6caeb5c8f822b3c6fe80d6265f66fd9dea7188cac738cacf878d42e7/63932c46ad69dfd3/out/spiral_cbf3e7ca6caeb5c8f822b3c6fe80d6265f66fd9dea7188cac738cacf878d42e7-63932c46ad69dfd3)
+17:27:42 18[90mv[0m &gt;
+17:27:42 19[90mv[0m &gt; running 1 test
+17:27:42 20[90mv[0m &gt; test a ... ok
+17:27:42 21[90mv[0m &gt;
+17:27:42 22[90mv[0m &gt; successes:
+17:27:42 23[90mv[0m &gt;
+17:27:42 24[90mv[0m &gt; ---- a stdout ----
+17:27:42 25[90mv[0m &gt; __assert_eq { expected = false }
+17:27:42 26[90mv[0m &gt;
+17:27:42 27[90mv[0m &gt;
+17:27:42 28[90mv[0m &gt; successes:
+17:27:42 29[90mv[0m &gt;     a
+17:27:42 30[90mv[0m &gt;
+17:27:42 31[90mv[0m &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+17:27:42 32[90mv[0m &gt;
+17:27:42 33[90mv[0m process.execute_with_options / result / { file_name = cargo; exit_code = 0; std_trace_len = 2323 }
+__assert_eq { expected = 0 }
+__assert { expected = [4;7m[1m[33mwarning[0m: packages/Rust/cbf3e7ca6caeb5c8f822b3c6fe80d6265f66fd9dea7188cac738cacf878d42e7/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest[0m
+[4;7m  See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.[0m
+[4;7m[1m[33mwarning[0m: `spiral_cbf3e7ca6caeb5c8f822b3c6fe80d6265f66fd9dea7188cac738cacf878d42e7` (manifest) generated 1 warning[0m
+[4;7m[1m[92m   Compiling[0m spiral_cbf3e7ca6caeb5c8f822b3c6fe80d6265f66fd9dea7188cac738cacf878d42e7 v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/cbf3e7ca6caeb5c8f822b3c6fe80d6265f66fd9dea7188cac738cacf878d42e7)[0m
+[4;7m[1m[33mwarning[0m[1m: unused dependency `inline_colorization`[0m[0m
+[4;7m [1m[94m--&gt; [0mpackages/Rust/cbf3e7ca6caeb5c8f822b3c6fe80d6265f66fd9dea7188cac738cacf878d42e7/Cargo.toml:9:1[0m
+[4;7m  [1m[94m|[0m[0m
+[4;7m[1m[94m9[0m [1m[94m|[0m inline_colorization = { workspace = true }[0m
+[4;7m  [1m[94m|[0m [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[4;7m  [1m[94m|[0m[0m
+[4;7m  [1m[94m= [0m[1mnote[0m: `cargo::unused_dependencies` is set to `warn` by default[0m
+[4;7m[1m[96mhelp[0m: consider removing the dependency on `inline_colorization`[0m
+[4;7m[1m[33mwarning[0m: `spiral_cbf3e7ca6caeb5c8f822b3c6fe80d6265f66fd9dea7188cac738cacf878d42e7` (manifest) generated 1 warning[0m
+[4;7m[1m[92m      Timing[0m report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261107T172740737Z-422d64907f994051.html[0m
+[4;7m[1m[92m    Finished[0m `test` profile [unoptimized + debuginfo] target(s) in 1.56s[0m
+[4;7m[1m[92m     Running[0m unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/build/spiral_cbf3e7ca6caeb5c8f822b3c6fe80d6265f66fd9dea7188cac738cacf878d42e7/63932c46ad69dfd3/out/spiral_cbf3e7ca6caeb5c8f822b3c6fe80d6265f66fd9dea7188cac738cacf878d42e7-63932c46ad69dfd3)[0m
+
+running 1 test
+test a ... ok
+
+successes:
+
+---- a stdout ----
+__assert_eq { expected = false }
+
+
+successes:
+    a
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s }</pre>
+
+</main>
+</body>
+</html>

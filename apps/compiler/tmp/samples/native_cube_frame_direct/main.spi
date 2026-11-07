@@ -1,0 +1,143 @@
+:! rotation =
+    {
+        a : f64
+        b : f64
+        c : f64
+    }
+
+:! cube =
+    {
+        cube_width : f64
+        horizontal_offset : f64
+        marker : i32
+    }
+
+:| projected =
+    | Hidden
+    | Visible : f64 * f64 * f64
+
+:= get_width () = 160i32
+:= get_height () = 44i32
+:= get_distance_from_cam () = 100f64
+:= get_k1 () = 40f64
+
+:= while' (cond : () -> bool) (body : () -> ()) : () =
+    !!!!While((~~ cond ()), (body ()))
+
+:= set' \* t. (a : t) ~(b : t) : () =
+    !!!!BackendSwitch({
+        Fsharp = \ () => $"!a <- !b" : ()
+        C = \ () => $"!a = !b" : ()
+        Zig = \ () => $"!a = !b" : ()
+        Lean = \ () => $"!a := !b" : ()
+        Rust = \ () => $"!a = !b" : ()
+        Pascal = \ () => $"!a := !b" : ()
+    })
+
+:= sin64 (x : f64) : f64 = !!!!Sin(x)
+:= cos64 (x : f64) : f64 = !!!!Cos(x)
+:= to_i32 (x : f64) : i32 = !!!!Conv(`i32, x)
+
+:= calculate_x (i : f64) (j : f64) (k : f64) (rotation rot) : f64 =
+    := a, b, c = rot::a, rot::b, rot::c
+    j *. sin64 a *. sin64 b *. cos64 c -. k *. cos64 a *. sin64 b *. cos64 c +.
+    j *. cos64 a *. sin64 c +. k *. sin64 a *. sin64 c +. i *. cos64 b *. cos64 c
+
+:= calculate_y (i : f64) (j : f64) (k : f64) (rotation rot) : f64 =
+    := a, b, c = rot::a, rot::b, rot::c
+    j *. cos64 a *. cos64 c +. k *. sin64 a *. cos64 c -.
+    j *. sin64 a *. sin64 b *. sin64 c +. k *. cos64 a *. sin64 b *. sin64 c -.
+    i *. cos64 b *. sin64 c
+
+:= calculate_z (i : f64) (j : f64) (k : f64) (rotation rot) : f64 =
+    := a, b = rot::a, rot::b
+    k *. cos64 a *. cos64 b -. j *. sin64 a *. cos64 b +. i *. sin64 b
+
+:= calculate_for_surface cube_x cube_y cube_z rot horizontal_offset =
+    := x = calculate_x cube_x cube_y cube_z rot
+    := y = calculate_y cube_x cube_y cube_z rot
+    := z = calculate_z cube_x cube_y cube_z rot +. get_distance_from_cam ()
+    := ooz = 1f64 /. z
+    := xp = 80f64 +. horizontal_offset +. get_k1 () *. ooz *. x *. 2f64
+    := yp = 22f64 +. get_k1 () *. ooz *. y
+    ? xp >= 0f64 && xp < 160f64 && yp >= 0f64 && yp < 44f64
+    ?> Visible (xp, yp, ooz)
+    |: Hidden
+
+:= make_frame (size : i32) : array i32 =
+    := ~frame : array i32 = create size
+    := ~i = 0i32
+    while' (\ () => i < size) \ () =>
+        set frame i 46i32
+        set' i (i +. 1i32)
+    frame
+
+:= draw_cube (frame : array i32) rot (cube value) : i32 =
+    := cw = value::cube_width
+    ?= calculate_for_surface cw cw (0f64 -. cw) rot value::horizontal_offset ?|
+    | Visible (xp, yp, depth) ?& xp >= 0f64 && yp >= 0f64 && depth > 0f64 =>
+        := ix = to_i32 xp
+        := iy = to_i32 yp
+        := idx = ix +. iy *. get_width ()
+        set frame idx value::marker
+        idx
+    | _ => 0i32
+
+:= frame_cell_text (value : i32) : string =
+    ? value =. 35i32 ?> "#"
+    |? value =. 43i32 ?> "+"
+    |? value =. 64i32 ?> "@"
+    |: "."
+
+:~ ^ frame_text_loop (frame : array i32) (width : i32) (size : i32) (i : i32) (text : string) : string =
+    ? i =. size ?> text
+    |:
+        := text = sm::concat text (frame_cell_text (index frame i))
+        := next = i +. 1i32
+        ? i %. width =. width -. 1i32 && next < size
+        ?> frame_text_loop frame width size next (sm::concat text "\n")
+        |: frame_text_loop frame width size next text
+
+:= frame_text (frame : array i32) : string =
+    := width = get_width ()
+    frame_text_loop frame width (width *. get_height ()) 0i32 ""
+
+:= main () : i32 =
+    := rot = rotation { a = 0f64; b = 0f64; c = 0f64 }
+    := frame_size = get_width () *. get_height ()
+    := ~frame = ~~ make_frame frame_size
+    := draw = (\ value => draw_cube frame rot value) : cube -> i32
+    := i0 = ~~ draw (cube { cube_width = 20f64; horizontal_offset = 0f64 -. 40f64; marker = 35i32 })
+    := i1 = ~~ draw (cube { cube_width = 10f64; horizontal_offset = 10f64; marker = 64i32 })
+    := i2 = ~~ draw (cube { cube_width = 5f64; horizontal_offset = 40f64; marker = 43i32 })
+    := p0 = index frame 0i32
+    := p1 = index frame 5180i32
+    := p2 = index frame 4258i32
+    := p3 = index frame 3964i32
+    := text = frame_text frame
+    := text_length = sm::length text : i32
+    := checksum = sm::utf8_fold (\ state scalar => state +. scalar) 0i32 text
+    := t0 = sm::utf8_scalar_at_byte_offset text 0i32
+    := t1 = sm::utf8_scalar_at_byte_offset text 160i32
+    := t2 = sm::utf8_scalar_at_byte_offset text 3988i32
+    := t3 = sm::utf8_scalar_at_byte_offset text 4284i32
+    := t4 = sm::utf8_scalar_at_byte_offset text 5212i32
+    := t5 = sm::utf8_scalar_at_byte_offset text 7082i32
+    ?
+        i0 =. 5180i32
+        && i1 =. 4258i32
+        && i2 =. 3964i32
+        && p0 =. 46i32
+        && p1 =. 35i32
+        && p2 =. 64i32
+        && p3 =. 43i32
+        && text_length =. 7083i32
+        && checksum =. 324274i32
+        && t0 =. 46i32
+        && t1 =. 10i32
+        && t2 =. 43i32
+        && t3 =. 64i32
+        && t4 =. 35i32
+        && t5 =. 46i32
+    ?> 42i32
+    |: 1i32

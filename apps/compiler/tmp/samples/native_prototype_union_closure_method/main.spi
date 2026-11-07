@@ -1,0 +1,21 @@
+:| outcome =
+    | Idle
+    | Hit : i32
+    | Flag : bool
+
+:? score a : a -> i32
+
+:+ score outcome = \ x =>
+    ?= x ?|
+    | Idle => 3i32
+    | Hit value => value
+    | Flag value => ? value ?> 11i32 |: 5i32
+
+:= main () : i32 =
+    := ~selector = 2i32
+    := captured =
+        ? selector =. 0i32 ?> Idle
+        |? selector =. 1i32 ?> Hit 7i32
+        |: Flag !+
+    := ~apply = (\ addend => score captured +. addend) : i32 -> i32
+    ~~ apply 31i32

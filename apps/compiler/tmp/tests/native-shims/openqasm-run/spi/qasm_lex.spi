@@ -1,0 +1,195 @@
+///- --package .
+:# qasm_lex static =
+    :< testing
+
+:< sm'_operators
+
+:| keyword =
+    | KwDef
+    | KwIf
+    | KwElse
+    | KwWhile
+    | KwReturn
+    | KwBreak
+    | KwContinue
+    | KwOutput
+    | KwTrue
+    | KwFalse
+    | KwInt
+    | KwUint
+    | KwBool
+    | KwFloat
+
+:| punct =
+    | LParen
+    | RParen
+    | LBrace
+    | RBrace
+    | LBracket
+    | RBracket
+    | Semi
+    | Comma
+    | Assign
+    | Bang
+    | Tilde
+    | Plus
+    | Minus
+    | Star
+    | Slash
+    | Percent
+    | Lt
+    | Gt
+    | Amp
+    | Pipe
+    | Caret
+    | Arrow
+    | Le
+    | Shl
+    | Ge
+    | Shr
+    | EqEq
+    | NotEq
+    | AndAnd
+    | OrOr
+
+:| token =
+    | Keyword : keyword
+    | Ident : string
+    | Number : string
+    | Real : string
+    | Punct : punct
+    | Eof
+
+:! located = { token : token; line : i32 }
+
+:| lex_error =
+    | UnexpectedChar : i32 * string
+
+:= keyword_of (word : string) : option keyword =
+    ?= word ?|
+    | "def" => Some KwDef
+    | "if" => Some KwIf
+    | "else" => Some KwElse
+    | "while" => Some KwWhile
+    | "return" => Some KwReturn
+    | "break" => Some KwBreak
+    | "continue" => Some KwContinue
+    | "output" => Some KwOutput
+    | "true" => Some KwTrue
+    | "false" => Some KwFalse
+    | "int" => Some KwInt
+    | "uint" => Some KwUint
+    | "bool" => Some KwBool
+    | "float" => Some KwFloat
+    | _ => None
+
+:= single_of (c : string) : option punct =
+    ?= c ?|
+    | "(" => Some LParen
+    | ")" => Some RParen
+    | "{" => Some LBrace
+    | "}" => Some RBrace
+    | "[" => Some LBracket
+    | "]" => Some RBracket
+    | ";" => Some Semi
+    | "," => Some Comma
+    | "=" => Some Assign
+    | "!" => Some Bang
+    | "~" => Some Tilde
+    | "+" => Some Plus
+    | "-" => Some Minus
+    | "*" => Some Star
+    | "/" => Some Slash
+    | "%" => Some Percent
+    | "<" => Some Lt
+    | ">" => Some Gt
+    | "&" => Some Amp
+    | "|" => Some Pipe
+    | "^" => Some Caret
+    | _ => None
+
+:= pair_of (two : string) : option punct =
+    ?= two ?|
+    | "->" => Some Arrow
+    | "<=" => Some Le
+    | "<<" => Some Shl
+    | ">=" => Some Ge
+    | ">>" => Some Shr
+    | "==" => Some EqEq
+    | "!=" => Some NotEq
+    | "&&" => Some AndAnd
+    | "||" => Some OrOr
+    | _ => None
+
+:= at_line (t : token) (line : i32) : located = { token = t; line } |> located
+
+:= is_digit (c : char) : bool = c >= '0' && c <= '9'
+
+:= is_alpha (c : char) : bool = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c = '_'
+
+:= lex (text : string) : result (list located) lex_error =
+    := n : i32 = sm'::length text
+    := at (i : i32) : char = sm'::index i text
+    := part (from : i32) (near_to : i32) : string = sm'::slice from (near_to - 1i32) text
+    :~ ^ word_end (j : i32) : i32 = ? j < n && (is_alpha (at j) || is_digit (at j)) ?> word_end (j + 1i32) |: j
+    :~ ^ digits_end (j : i32) : i32 = ? j < n && is_digit (at j) ?> digits_end (j + 1i32) |: j
+    :~ ^ go (i : i32) (line : i32) (acc : list located) : result (list located) lex_error =
+        ? i >= n ?> Ok (listm::rev (at_line Eof line :: acc))
+        |:
+            := c = at i
+            ? c = ' ' || c = '\t' || c = '\r' ?> go (i + 1i32) line acc
+            |? c = '\n' ?> go (i + 1i32) (line + 1i32) acc
+            |? c = '/' && i + 1i32 < n && at (i + 1i32) = '/' ?>
+                :~ ^ skip (j : i32) : i32 = ? j < n && at j <> '\n' ?> skip (j + 1i32) |: j
+                go (skip (i + 2i32)) line acc
+            |? is_alpha c ?>
+                := j = word_end (i + 1i32)
+                := word = part i j
+                := tok = ?= keyword_of word ?| | Some k => Keyword k | None => Ident word
+                go j line (at_line tok line :: acc)
+            |? is_digit c ?>
+                := j = digits_end (i + 1i32)
+                := fraction = j < n && at j = '.' && j + 1i32 < n && is_digit (at (j + 1i32))
+                := j = ? fraction ?> digits_end (j + 1i32) |: j
+                := exponent_at = ? j < n && (at j = 'e' || at j = 'E') ?> (? j + 1i32 < n && (at (j + 1i32) = '+' || at (j + 1i32) = '-') ?> j + 2i32 |: j + 1i32) |: n + 1i32
+                := exponent = exponent_at < n && is_digit (at exponent_at)
+                := j = ? exponent ?> digits_end exponent_at |: j
+                := raw = part i j
+                go j line (at_line (? fraction || exponent ?> Real raw |: Number raw) line :: acc)
+            |:
+                := two = ? i + 1i32 < n ?> pair_of (part i (i + 2i32)) |: None
+                ?= two ?|
+                | Some p => go (i + 2i32) line (at_line (Punct p) line :: acc)
+                | None =>
+                    ?= single_of (part i (i + 1i32)) ?|
+                    | Some p => go (i + 1i32) line (at_line (Punct p) line :: acc)
+                    | None => Error (UnexpectedChar (line, part i (i + 1i32)))
+    go 0i32 1i32 []
+
+:= tokens_of (text : string) : list token =
+    ?= lex text ?|
+    | Ok l => l |> listm::map (\ (x : located) => x::token)
+    | Error _ => []
+
+///> rust
+///> gleam
+:# lex_reads_a_function_header =
+    "def f(int[32] p0) -> int[32] { return p0 << 2; }"
+    |> tokens_of
+    |> _assert_eq [ Keyword KwDef; Ident "f"; Punct LParen; Keyword KwInt; Punct LBracket; Number "32"; Punct RBracket; Ident "p0"; Punct RParen; Punct Arrow; Keyword KwInt; Punct LBracket; Number "32"; Punct RBracket; Punct LBrace; Keyword KwReturn; Ident "p0"; Punct Shl; Number "2"; Punct Semi; Punct RBrace; Eof ]
+
+///> rust
+///> gleam
+:# lex_reads_reals_comments_and_lines =
+    ?= lex "x = 1.5e3; // note\ny = 2e-1;" ?|
+    | Ok l => (l |> listm::map (\ (x : located) => x::token), l |> listm::map (\ (x : located) => x::line))
+    | Error _ => ([], [])
+    |> _assert_eq ([ Ident "x"; Punct Assign; Real "1.5e3"; Punct Semi; Ident "y"; Punct Assign; Real "2e-1"; Punct Semi; Eof ], [ 1i32; 1i32; 1i32; 1i32; 2i32; 2i32; 2i32; 2i32; 2i32 ])
+
+///> rust
+///> gleam
+:# lex_rejects_an_unknown_character =
+    ?= lex "a\n@" ?|
+    | Ok _ => 0i32
+    | Error (UnexpectedChar (line, _)) => line
+    |> _assert_eq 2i32

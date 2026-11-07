@@ -1,0 +1,77 @@
+:< sm'_operators
+
+:# erlang_map static =
+    :< testing
+
+:! erl_map k v = erlang_term::term
+
+:= map_term \* k v. (m : erl_map k v) : erlang_term::term = ?= m ?| erl_map t => t
+
+:= map_view \* k v. (t : erlang_term::term) : erl_map k v = erl_map t
+
+:= map_call \* k v. (f : string) (args : list erlang_term::term) : erl_map k v = erl_map (erlang_term::apply "maps" f args)
+
+:= map_new \* k v. () : erl_map k v = map_call "new" []
+
+:= map_put \* k v. (key : k) (value : v) (m : erl_map k v) : erl_map k v =
+    map_call "put" [ erlang_term::of key; erlang_term::of value; map_term m ]
+
+:= map_has \* k v. (key : k) (m : erl_map k v) : bool =
+    erlang_term::apply "maps" "is_key" [ erlang_term::of key; map_term m ] |> erlang_term::cast
+
+:= map_get \* k v. (key : k) (m : erl_map k v) : option v =
+    ? map_has key m
+    ?> Some (erlang_term::apply "maps" "get" [ erlang_term::of key; map_term m ] |> erlang_term::cast)
+    |: None
+
+:= map_get_or \* k v. (key : k) (fallback : v) (m : erl_map k v) : v =
+    erlang_term::apply "maps" "get" [ erlang_term::of key; map_term m; erlang_term::of fallback ] |> erlang_term::cast
+
+:= map_size \* k v. (m : erl_map k v) : i32 = erlang_term::apply "maps" "size" [ map_term m ] |> erlang_term::cast
+
+:= map_keys \* k v. (m : erl_map k v) : list k =
+    erlang_term::apply "maps" "keys" [ map_term m ] |> erlang_term::items_of |> listm::map erlang_term::cast
+
+:= map_values \* k v. (m : erl_map k v) : list v =
+    erlang_term::apply "maps" "values" [ map_term m ] |> erlang_term::items_of |> listm::map erlang_term::cast
+
+:= pair_term \* k v. (pair : k * v) : erlang_term::term =
+    := key, value = pair
+    erlang_term::tuple [ erlang_term::of key; erlang_term::of value ]
+
+:= map_of_pairs \* k v. (pairs : list (k * v)) : erl_map k v =
+    map_call "from_list" [ erlang_term::list_term (listm::map pair_term pairs) ]
+
+///> gleam
+:# a_typed_map_answers_what_it_was_given =
+    map_new () |> map_put "a" 1i32 |> map_get "a" |> _assert_eq (Some 1i32)
+
+///> gleam
+:# a_missing_key_is_none =
+    (map_new () |> map_put "a" 1i32 |> map_get "b" : option i32) |> _assert_eq None
+
+///> gleam
+:# pairs_become_one_entry_per_key =
+    := m = map_of_pairs [ ("b", 2i32); ("a", 1i32); ("b", 3i32) ]
+    (map_size m, map_get "b" m) |> _assert_eq (2i32, Some 3i32)
+
+///> gleam
+:# a_missing_key_falls_back =
+    map_new () |> map_put "a" 1i32 |> map_get_or "b" 7i32 |> _assert_eq 7i32
+
+///> gleam
+:# a_view_reads_a_map_built_elsewhere =
+    := t = map_new () |> map_put "a" 1i32 |> map_term
+    (map_view t : erl_map string i32) |> map_get_or "a" 0i32 |> _assert_eq 1i32
+
+///> gleam
+:# keys_reach_every_value_once =
+    := m = map_of_pairs [ ("b", 2i32); ("a", 1i32); ("c", 4i32) ]
+    := keys = map_keys m
+    (listm::length keys, keys |> listm::fold (\ n k => n + map_get_or k 0i32 m) 0i32) |> _assert_eq (3i32, 7i32)
+
+///> gleam
+:# values_are_every_value_once =
+    := m = map_of_pairs [ ("b", 2i32); ("a", 1i32); ("c", 4i32) ]
+    := vs = map_values m
+    (listm::length vs, vs |> listm::fold (\ n v => n + v) 0i32) |> _assert_eq (3i32, 7i32)

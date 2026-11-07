@@ -1,0 +1,11 @@
+:< main
+
+:| lone_symbol =
+    | Lone
+
+:! lone_alphabet = lone_symbol
+
+:+ symbol_compare lone_alphabet = \ _ _ => SymbolSame
+
+:= main () =
+    seal_dfa_surface (RegexChar (lone_alphabet Lone))

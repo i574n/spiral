@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>near_wallet.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code><span class="tok-keyword">:&lt;</span> <span class="tok-variable">lustre</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">model</span> <span class="tok-operator">=</span> <span class="tok-variable">int</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">init</span> <span class="tok-variable">initial_count</span> <span class="tok-operator">:</span> <span class="tok-variable">model</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">initial_count</span> <span class="tok-operator">&lt;</span> <span class="tok-number">0</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-number">0</span>
+    <span class="tok-keyword">|:</span> <span class="tok-variable">initial_count</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">msg</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Increment</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Decrement</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">update</span> <span class="tok-variable">n</span> <span class="tok-parenthesis">(</span><span class="tok-variable">model</span><span class="tok-operator">,</span> <span class="tok-variable">msg</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">msg</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Increment</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">model</span> <span class="tok-operator">+</span> <span class="tok-variable">n</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Decrement</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">model</span> <span class="tok-operator">-</span> <span class="tok-variable">n</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">view</span> <span class="tok-variable">model</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">div</span> <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">style</span> <span class="tok-parenthesis">[</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">display</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-string">&quot;</span><span class="tok-string">flex</span><span class="tok-string">&quot;</span>
+        <span class="tok-parenthesis">]</span>
+    <span class="tok-parenthesis">]</span> <span class="tok-parenthesis">[</span>
+        <span class="tok-variable">div</span> <span class="tok-parenthesis">[</span>
+            <span class="tok-variable">style</span> <span class="tok-parenthesis">[</span>
+                <span class="tok-string">&quot;</span><span class="tok-string">display</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-string">&quot;</span><span class="tok-string">flex</span><span class="tok-string">&quot;</span>
+                <span class="tok-string">&quot;</span><span class="tok-string">flex-direction</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-string">&quot;</span><span class="tok-string">column</span><span class="tok-string">&quot;</span>
+            <span class="tok-parenthesis">]</span>
+        <span class="tok-parenthesis">]</span> <span class="tok-parenthesis">[</span>
+            <span class="tok-variable">button</span> <span class="tok-parenthesis">[</span>
+                <span class="tok-variable">on_click</span> <span class="tok-variable">Increment</span>
+            <span class="tok-parenthesis">]</span> <span class="tok-parenthesis">[</span>
+                <span class="tok-variable">text</span> <span class="tok-string">&quot;</span><span class="tok-string">+</span><span class="tok-string">&quot;</span>
+            <span class="tok-parenthesis">]</span>
+            <span class="tok-variable">p</span> <span class="tok-parenthesis">[</span>
+                <span class="tok-variable">style</span> <span class="tok-parenthesis">[</span>
+                    <span class="tok-string">&quot;</span><span class="tok-string">text-align</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-string">&quot;</span><span class="tok-string">center</span><span class="tok-string">&quot;</span>
+                <span class="tok-parenthesis">]</span>
+            <span class="tok-parenthesis">]</span> <span class="tok-parenthesis">[</span>
+                <span class="tok-variable">model</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::obj_to_string</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">text</span>
+            <span class="tok-parenthesis">]</span>
+            <span class="tok-variable">button</span> <span class="tok-parenthesis">[</span>
+                <span class="tok-variable">on_click</span> <span class="tok-variable">Decrement</span>
+            <span class="tok-parenthesis">]</span> <span class="tok-parenthesis">[</span>
+                <span class="tok-variable">text</span> <span class="tok-string">&quot;</span><span class="tok-string">-</span><span class="tok-string">&quot;</span>
+            <span class="tok-parenthesis">]</span>
+        <span class="tok-parenthesis">]</span>
+    <span class="tok-parenthesis">]</span></code></pre>
+
+<h4>tests (test)</h4>
+
+<span class="badge passed">test tests: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; gleam -t javascript -d lustre=\&quot;&gt;=5.7.0\&quot; gleam_json=\&quot;&gt;=2.0.0\&quot;
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">model</span> <span class="tok-operator">=</span> <span class="tok-variable">init</span> <span class="tok-parenthesis">(</span><span class="tok-variable">dyn</span> <span class="tok-number">-3</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">model</span> <span class="tok-operator">=</span> <span class="tok-variable">update</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span> <span class="tok-parenthesis">(</span><span class="tok-variable">model</span><span class="tok-operator">,</span> <span class="tok-variable">Increment</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">model</span> <span class="tok-operator">=</span> <span class="tok-variable">update</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span> <span class="tok-parenthesis">(</span><span class="tok-variable">model</span><span class="tok-operator">,</span> <span class="tok-variable">Increment</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">model</span> <span class="tok-operator">=</span> <span class="tok-variable">update</span> <span class="tok-number">1</span><span class="tok-number_suffix">i32</span> <span class="tok-parenthesis">(</span><span class="tok-variable">model</span><span class="tok-operator">,</span> <span class="tok-variable">Decrement</span><span class="tok-parenthesis">)</span>
+<span class="tok-variable">model</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">view</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">to_html</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">expect_html</span> <span class="tok-parenthesis">(</span>
+    <span class="tok-string">&quot;</span><span class="tok-string">&lt;div style=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">display:flex;</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">&gt;&lt;div style=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">display:flex;flex-direction:column;</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">&gt;&lt;button </span><span class="tok-string">&quot;</span>
+    <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">class=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">lustre-ui-button</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> role=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">button</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> tabindex=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">0</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">&gt;+&lt;/button&gt;&lt;p </span><span class="tok-string">&quot;</span>
+    <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">style=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">text-align:center;</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">&gt;1&lt;/p&gt;&lt;button class=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">lustre-ui-button</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> role=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">button</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> </span><span class="tok-string">&quot;</span>
+    <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">tabindex=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">0</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">&gt;-&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;</span><span class="tok-string">&quot;</span>
+<span class="tok-parenthesis">)</span></code></pre>
+
+<span class="badge passed">test tests_2: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; gleam -t javascript -d lustre=\&quot;&gt;=5.7.0\&quot; gleam_json=\&quot;&gt;=2.0.0\&quot;
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">model</span> <span class="tok-operator">=</span> <span class="tok-variable">init</span> <span class="tok-parenthesis">(</span><span class="tok-variable">dyn</span> <span class="tok-number">5</span><span class="tok-number_suffix">i32</span><span class="tok-parenthesis">)</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">model</span> <span class="tok-operator">=</span> <span class="tok-variable">update</span> <span class="tok-number">2</span><span class="tok-number_suffix">i32</span> <span class="tok-parenthesis">(</span><span class="tok-variable">model</span><span class="tok-operator">,</span> <span class="tok-variable">Decrement</span><span class="tok-parenthesis">)</span>
+<span class="tok-variable">model</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">view</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">to_html</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">expect_html</span> <span class="tok-parenthesis">(</span>
+    <span class="tok-string">&quot;</span><span class="tok-string">&lt;div style=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">display:flex;</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">&gt;&lt;div style=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">display:flex;flex-direction:column;</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">&gt;&lt;button </span><span class="tok-string">&quot;</span>
+    <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">class=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">lustre-ui-button</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> role=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">button</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> tabindex=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">0</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">&gt;+&lt;/button&gt;&lt;p </span><span class="tok-string">&quot;</span>
+    <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">style=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">text-align:center;</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">&gt;3&lt;/p&gt;&lt;button class=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">lustre-ui-button</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> role=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">button</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string"> </span><span class="tok-string">&quot;</span>
+    <span class="tok-operator">^^</span> <span class="tok-string">&quot;</span><span class="tok-string">tabindex=</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">0</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">&gt;-&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;</span><span class="tok-string">&quot;</span>
+<span class="tok-parenthesis">)</span></code></pre>
+
+<pre class="code"><code>///&gt; _
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">main'</span> <span class="tok-parenthesis">(</span><span class="tok-variable">n</span> <span class="tok-operator">:</span> <span class="tok-variable">int</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">simple</span> <span class="tok-variable">init</span> <span class="tok-parenthesis">(</span><span class="tok-variable">update</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-variable">view</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">start</span> <span class="tok-string">&quot;</span><span class="tok-string">#app_</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">main</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-string">$'</span><span class="tok-variable">!main'</span><span class="tok-string"> (0)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span></code></pre>
+
+</main>
+</body>
+</html>

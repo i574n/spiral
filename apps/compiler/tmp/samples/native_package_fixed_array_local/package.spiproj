@@ -1,0 +1,5 @@
+packageDir: packages
+packages:
+    worker
+modules:
+    main

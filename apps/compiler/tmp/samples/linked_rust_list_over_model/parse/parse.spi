@@ -1,0 +1,8 @@
+:< model
+
+:= parse (text : string) : list block =
+    [Para [Text text; Strong [Text "b"]; Link ("u", [Text "l"])]; Bullets [[Text "x"]; [Text "y"]]; Table [["a"; "b"]]]
+
+:= main () : i32 =
+    !!!!Export("parse_parse", parse)
+    0i32

@@ -1,0 +1,36 @@
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
+use std::cell::RefCell;
+use std::rc::Rc;
+#[derive(Clone)]
+enum UH1 {
+    UH1_B(Rc<UH0>),
+    UH1_StopB,
+}
+#[derive(Clone)]
+enum UH0 {
+    UH0_A(Rc<UH1>),
+    UH0_StopA,
+}
+fn spiral_main() -> i32 {
+    let v0: bool = true;
+    let v5: Rc<UH0> = if v0 {
+        let v1: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_StopA); } CASE.with(|case| case.clone()) };
+        let v2: Rc<UH1> = Rc::new(UH1::UH1_B(v1));
+        Rc::new(UH0::UH0_A(v2))
+    } else {
+        { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_StopA); } CASE.with(|case| case.clone()) }
+    };
+    match Rc::unwrap_or_clone(v5) {
+        UH0::UH0_A(v6) => {
+            let v6: Rc<UH1> = v6;
+            0i32
+        }
+        UH0::UH0_StopA => {
+            0i32
+        }
+    }
+}
+fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
+    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
+}

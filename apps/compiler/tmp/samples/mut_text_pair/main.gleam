@@ -1,0 +1,48 @@
+pub type SpiralRefCell(a)
+
+pub type SpiralRef(a) {
+  SpiralRef(cell: SpiralRefCell(a))
+}
+
+@external(erlang, "main_ffi", "ref_new")
+@external(javascript, "./main_ffi.mjs", "ref_new")
+pub fn spiral_ref_cell_new(value: a) -> SpiralRefCell(a)
+
+@external(erlang, "main_ffi", "ref_get")
+@external(javascript, "./main_ffi.mjs", "ref_get")
+pub fn spiral_ref_cell_get(cell: SpiralRefCell(a)) -> a
+
+@external(erlang, "main_ffi", "ref_set")
+@external(javascript, "./main_ffi.mjs", "ref_set")
+pub fn spiral_ref_cell_set(cell: SpiralRefCell(a), value: a) -> Nil
+
+pub fn spiral_ref_new(value: a) -> SpiralRef(a) {
+  SpiralRef(cell: spiral_ref_cell_new(value))
+}
+
+pub fn spiral_ref_get(reference: SpiralRef(a)) -> a {
+  spiral_ref_cell_get(reference.cell)
+}
+
+pub fn spiral_ref_set(reference: SpiralRef(a), value: a) -> Nil {
+  spiral_ref_cell_set(reference.cell, value)
+}
+
+pub type Mut0 { Mut0(l0 : String, l1 : String) }
+pub fn main() {
+    let v2 = spiral_ref_new(Mut0(l0: "no", l1: "nay"))
+    spiral_ref_set(v2, Mut0(l0: "hi", l1: "yo"))
+    let #(v5, v6) = #(spiral_ref_get(v2).l0, spiral_ref_get(v2).l1)
+    let v7 = v5 == "hi"
+    let v9 =
+        case v7 {
+            True -> {
+                v6 == "yo"
+            }
+            False -> False
+        }
+    case v9 {
+        True -> 0
+        False -> 1
+    }
+}

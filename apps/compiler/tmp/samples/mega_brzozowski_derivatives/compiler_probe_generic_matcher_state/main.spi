@@ -1,0 +1,63 @@
+:< main
+
+:! generic_matcher_decision_capability alphabet = regex alphabet -> linear_input alphabet -> bool
+
+:| generic_matcher_state alphabet phase =
+    | GenericMatcherRaw :: \* alphabet.
+        regex alphabet * linear_input alphabet ->
+        generic_matcher_state alphabet matcher_raw
+    | GenericMatcherDecided :: \* alphabet.
+        regex alphabet * linear_input alphabet * bool ->
+        generic_matcher_state alphabet matcher_decided
+
+:= generic_matcher_decision_capability_default \* alphabet {symbol_compare}.
+    : generic_matcher_decision_capability alphabet =
+    generic_matcher_decision_capability (\ value input => accepts value input)
+
+:= decide_generic_match \* alphabet.
+    (capability : generic_matcher_decision_capability alphabet)
+    (state : generic_matcher_state alphabet matcher_raw)
+    : generic_matcher_state alphabet matcher_decided =
+    ?= capability, state ?|
+    | generic_matcher_decision_capability decide, GenericMatcherRaw (value, input) =>
+        GenericMatcherDecided (value, input, decide value input)
+
+:! generic_decided_match alphabet = generic_matcher_state alphabet matcher_decided
+
+:= generic_decided_match_value \* alphabet.
+    (state : generic_decided_match alphabet) : bool =
+    ?= state ?|
+    | generic_decided_match (GenericMatcherDecided (_, _, accepted)) => accepted
+
+:| sealed_generic_decided_match =
+    | SealedGenericDecidedMatch : (\? alphabet. generic_decided_match alphabet)
+
+:= seal_generic_decided_match \* alphabet.
+    (state : generic_decided_match alphabet) : sealed_generic_decided_match =
+    SealedGenericDecidedMatch (\? state)
+
+:= sealed_generic_decided_match_value (state : sealed_generic_decided_match) : bool =
+    ?= state ?|
+    | SealedGenericDecidedMatch payload =>
+        := \? alphabet. decided = payload
+        generic_decided_match_value decided
+
+:= main () : bool =
+    := bit_decided : generic_decided_match bit_alphabet =
+        generic_decided_match (
+            decide_generic_match
+                (generic_matcher_decision_capability_default)
+                (GenericMatcherRaw (ends_with_zero (), input_110 ()))
+        )
+    := tri_decided : generic_decided_match tri_alphabet =
+        generic_decided_match (
+            decide_generic_match
+                (generic_matcher_decision_capability_default)
+                (GenericMatcherRaw (tri_a_star (), input_aaa ()))
+        )
+    := batch : matcher_batch generic_decided_match (bit_alphabet * tri_alphabet) =
+        MatchBatchPair (MatchBatchSingle bit_decided, MatchBatchSingle tri_decided)
+    := batch_ok = matcher_batch_forall `$generic_decided_match_value batch
+    := sealed_bit = seal_generic_decided_match bit_decided
+    := sealed_tri = seal_generic_decided_match tri_decided
+    batch_ok && sealed_generic_decided_match_value sealed_bit && sealed_generic_decided_match_value sealed_tri

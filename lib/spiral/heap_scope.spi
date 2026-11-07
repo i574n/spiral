@@ -1,0 +1,54 @@
+:# heap_scope static =
+    :< testing
+
+:! heap_mark = u32
+
+:= top_of ((heap_mark top) : heap_mark) : u32 = top
+
+:= mark () : heap_mark =
+    run_target \|
+        | Wgsl => \ () => heap_mark ($'spiral_heap_top' : u32)
+        | _ => \ () => heap_mark 0u32
+
+:= release ((heap_mark top) : heap_mark) : () =
+    run_target \|
+        | Wgsl => \ () => $'spiral_heap_top = !top' : ()
+        | _ => \ () => ()
+
+:= scoped \* a. (body : () -> a) : a =
+    := scalar : bool = ~> real_core::prim_type_is `a
+    ? scalar ?>
+        := m = mark ()
+        := r = body ()
+        release m
+        r
+    |: error_type "scoped: the result must be a primitive"
+
+:= first_of_fresh (n : i32) : i32 =
+    := x : array i32 = create n
+    set x 0 7i32
+    index x 0
+
+///> c
+///> rust
+:# scoped_returns_the_body_value =
+    := ~n = 4i32
+    (scoped (\ () => first_of_fresh n), top_of (mark ())) |> _assert_eq (7i32, 0u32)
+
+///> c
+:# scoped_rejects_a_heap_result fails "scoped: the result must be a primitive" =
+    := ~n = 4i32
+    := x : array i32 = scoped (\ () => create n)
+    length x |> _assert_eq 4i32
+
+:= heap_returns (n : i32) : bool =
+    := before = top_of (mark ())
+    := kept = scoped (\ () => first_of_fresh n)
+    := after = top_of (mark ())
+    := bare = first_of_fresh n
+    kept = 7i32 && after = before && bare = 7i32 && top_of (mark ()) > before
+
+///> wgsl
+:# scoped_returns_the_heap_to_its_mark_on_the_gpu =
+    := ~n = 4i32
+    ? heap_returns n ?> 0i32 |: 1i32

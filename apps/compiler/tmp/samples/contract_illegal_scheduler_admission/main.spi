@@ -1,0 +1,26 @@
+:! pending = ()
+:! ready = ()
+:! committed = ()
+:! q1 = ()
+:! q2 = ()
+
+:| validation_evidence status =
+    | ReadyValidation :: validation_evidence ready
+
+:| receipt status =
+    | PendingReceipt :: receipt pending
+    | CommittedReceipt :: receipt committed
+
+:| quorum state =
+    | OneApproval :: quorum q1
+    | TwoApprovals :: quorum q2
+
+:= publish
+    (evidence : validation_evidence ready)
+    (receipt : receipt committed)
+    (quorum : quorum q2)
+    : string =
+    "ok"
+
+:= main () : string =
+    publish ReadyValidation PendingReceipt OneApproval

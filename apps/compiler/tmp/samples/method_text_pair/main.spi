@@ -1,0 +1,12 @@
+:= pick (left : string) (right : string) : string * string =
+    ? !!!!EQ(left, "") ?>
+        "no", "nay"
+    |:
+        left, right
+
+:= main () : i32 =
+    := ~a = "hi"
+    := ~b = "yo"
+    := pair = ~~ pick a b
+    := ~(left, right) = pair
+    ? !!!!EQ(left, "hi") && !!!!EQ(right, "yo") ?> 0i32 |: 1i32

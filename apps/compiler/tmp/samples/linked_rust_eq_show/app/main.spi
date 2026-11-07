@@ -1,0 +1,9 @@
+:< model
+
+:= main () : i32 =
+    := ~n = 4i32
+    := p = make n
+    := q = make n
+    := r = make 5i32
+    := l : i32 = sm::length (show p)
+    ? same p q ?> (? same p r ?> 0i32 |: l) |: 0i32

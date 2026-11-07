@@ -1,0 +1,13 @@
+:| outcome =
+    | Hit : i32
+    | Flag : bool
+
+:~ score x : i32 =
+    ?= x ?|
+    | Hit value => value
+    | Flag value => ? value ?> 9i32 |: 4i32
+
+:= main () =
+    := ~choose_hit = !-
+    := value = ? choose_hit ?> Hit 7i32 |: Flag !+
+    score value -. 9i32

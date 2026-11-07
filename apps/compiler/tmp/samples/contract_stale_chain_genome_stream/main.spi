@@ -1,0 +1,33 @@
+:! sample_a = ()
+:! hg38 = ()
+:! chr1 = ()
+:! digest_a = ()
+:! digest_b = ()
+:! app_scope = ()
+:! epoch1 = ()
+:! sealed = ()
+:! live = ()
+
+:| chain_authority digest state =
+    | ChainAuthority :: \* digest state. string -> chain_authority digest state
+
+:| genome_batch sample build contig digest =
+    | GenomeBatch :: \* sample build contig digest. string -> genome_batch sample build contig digest
+
+:| resource scope epoch sample build contig digest state =
+    | Resource :: \* scope epoch sample build contig digest state.
+        string ->
+        resource scope epoch sample build contig digest state
+
+:= publish \* scope epoch sample build contig digest.
+    (authority : chain_authority digest sealed)
+    (batch : genome_batch sample build contig digest)
+    : resource scope epoch sample build contig digest live =
+    ?= authority, batch ?|
+    | ChainAuthority _, GenomeBatch label => Resource label
+
+:= main () =
+    := stale : chain_authority digest_b sealed = ChainAuthority "stale"
+    := batch : genome_batch sample_a hg38 chr1 digest_a = GenomeBatch "variants"
+    := resource : resource app_scope epoch1 sample_a hg38 chr1 digest_a live = publish stale batch
+    resource

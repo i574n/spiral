@@ -1,0 +1,19 @@
+:! parallel = ()
+:! serial = ()
+
+:| task effect result =
+    | ValidateIssuer :: task parallel string
+    | Publish :: string -> task serial string
+
+:| ^ dag result =
+    | ParallelNode :: \* result. task parallel result -> dag result
+    | SerialNode :: \* result. task serial result -> dag result
+    | Then :: \* result.
+        (\? input. dag input * (input -> dag result))
+        -> dag result
+
+:= main () : dag string =
+    Then (\? (
+        ParallelNode ValidateIssuer,
+        \ (total : i32) => SerialNode (Publish "invalid")
+    ))

@@ -1,0 +1,88 @@
+:== singleton t = t
+
+:! draft = ()
+:! signed = ()
+:! authorized = ()
+:! cancelled = ()
+
+:! nfe_draft = { id : string; issuer : string; recipient : string }
+:! nfe_signed = { xml : string; digest : string }
+:! nfe_authorized = { xml : string; protocol : string }
+:! nfe_cancelled = { xml : string; reason : string }
+
+:| document state =
+    | Draft :: nfe_draft -> document draft
+    | Signed :: nfe_signed -> document signed
+    | Authorized :: nfe_authorized -> document authorized
+    | Cancelled :: nfe_cancelled -> document cancelled
+
+:| transition from to =
+    | SignTransition :: transition draft signed
+    | AuthorizeTransition :: transition signed authorized
+    | CancelTransition :: transition authorized cancelled
+
+:= execute \* from to. (transition : transition from to) (document : document from) : document to =
+    ?= transition, document ?|
+    | SignTransition, Draft _ => Signed (nfe_signed { xml = "nfe.xml"; digest = "sha256" })
+    | AuthorizeTransition, Signed payload =>
+        Authorized (nfe_authorized { xml = payload::xml; protocol = "135240000000005" })
+    | CancelTransition, Authorized payload => Cancelled (nfe_cancelled { xml = payload::xml; reason = "requested" })
+
+:| ^ workflow a c =
+    | Step :: \* a c. (a -> c) -> workflow a c
+    | Compose :: \* a c. (\? b. workflow a b * workflow b c) -> workflow a c
+
+:= ^ run \* a c. (workflow : workflow a c) (input : a) : c =
+    ?= workflow ?|
+    | Step transform => transform input
+    | Compose pair =>
+        := \? middle. first, second = pair
+        run second (run first input)
+
+:= issue () : workflow (document draft) (document authorized) =
+    := sign_step (document : document draft) : document signed = execute SignTransition document
+    := authorize_step (document : document signed) : document authorized = execute AuthorizeTransition document
+    Compose (\? (Step sign_step, Step authorize_step))
+
+:= with_policy \* state. (policy : \* t. t -> t) (document : document state) : document state =
+    ?= document ?|
+    | Draft payload => Draft (policy payload)
+    | Signed payload => Signed (policy payload)
+    | Authorized payload => Authorized (policy payload)
+    | Cancelled payload => Cancelled (policy payload)
+
+:= identity \* t. (value : t) : t = value
+
+:! audited state = { payload : document state; trace : string }
+
+:= audit \* state. (document : document state) : audited state =
+    audited { payload = document; trace = "audit-ok" }
+
+:| ^ compound (f : * -> *) t =
+    | Singleton :: \* (f : * -> *) t. f t -> compound f (singleton t)
+    | Pair :: \* (f : * -> *) a b. compound f a * compound f b -> compound f (a * b)
+
+:= ^ compound_map \* (f : * -> *) (g : * -> *) t.
+    (transform : \* state. f state -> g state)
+    (value : compound f t)
+    : compound g t =
+    ?= value ?|
+    | Singleton item => Singleton (transform item)
+    | Pair (left, right) => Pair (compound_map `$transform left, compound_map `$transform right)
+
+:! proof state = { document : document state; label : string }
+
+:= pack_authorized (document : document authorized) : \? state. proof state =
+    \? (proof { document = document; label = "authorized-proof" })
+
+:= main () : string =
+    := raw = Draft (nfe_draft { id = "5"; issuer = "A"; recipient = "B" })
+    := governed = with_policy `$identity raw
+    := authorized = run (issue ()) governed
+    := documents = Pair (Singleton governed, Singleton authorized)
+    := _ = compound_map `$audit documents
+    := packed = pack_authorized authorized
+    := \? state. witness = packed
+    := (proof body) = witness
+    := _ = body
+    "recovered"

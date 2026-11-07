@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>util.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<h4>util (test)</h4>
+
+<span class="badge other">test util: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:|</span> <span class="tok-keyword">^</span> <span class="tok-variable">ski</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">I</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">K</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">S</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">App</span> <span class="tok-operator">:</span> <span class="tok-variable">ski</span> <span class="tok-operator">*</span> <span class="tok-variable">ski</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-keyword">^</span> <span class="tok-variable">eval</span> <span class="tok-variable">ski</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?=</span> <span class="tok-variable">ski</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">K</span><span class="tok-operator">,</span> <span class="tok-variable">x</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">y</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">x</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">S</span><span class="tok-operator">,</span> <span class="tok-variable">x</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">y</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">z</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-variable">z</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">y</span><span class="tok-operator">,</span> <span class="tok-variable">z</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">I</span><span class="tok-operator">,</span> <span class="tok-variable">x</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">x</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">K</span><span class="tok-operator">,</span> <span class="tok-variable">x</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">K</span><span class="tok-operator">,</span> <span class="tok-variable">eval</span> <span class="tok-variable">x</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">f</span><span class="tok-operator">,</span> <span class="tok-variable">x</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">eval</span> <span class="tok-variable">f</span><span class="tok-operator">,</span> <span class="tok-variable">x</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+    <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">ski</span></code></pre>
+
+<h4>ski (test)</h4>
+
+<span class="badge passed">test ski: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-variable">eval</span> <span class="tok-variable">I</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">I</span>
+
+<span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">I</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">I</span>
+
+<span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">I</span><span class="tok-operator">,</span> <span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">I</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">I</span></code></pre>
+<pre class="output">__assert_eq { expected = I }
+__assert_eq { expected = I }
+__assert_eq { expected = I }</pre>
+
+<h4>ski_identity_nested (test)</h4>
+
+<span class="badge passed">test ski_identity_nested: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">I</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">I</span>
+
+<span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">I</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">I</span></code></pre>
+<pre class="output">__assert_eq { expected = I }
+__assert_eq { expected = I }</pre>
+
+<h4>ski_constant (test)</h4>
+
+<span class="badge passed">test ski_constant: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-variable">eval</span> <span class="tok-variable">K</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">K</span>
+
+<span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">K</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">K</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">K</span><span class="tok-operator">,</span> <span class="tok-variable">K</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">K</span><span class="tok-operator">,</span> <span class="tok-variable">K</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span></code></pre>
+<pre class="output">__assert_eq { expected = K }
+__assert_eq { expected = App(K, I) }
+__assert_eq { expected = App(K, K) }</pre>
+
+<h4>ski_constant_applied (test)</h4>
+
+<span class="badge passed">test ski_constant_applied: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">K</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">K</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">I</span>
+
+<span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">K</span><span class="tok-operator">,</span> <span class="tok-variable">K</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">K</span>
+
+<span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">K</span><span class="tok-operator">,</span> <span class="tok-variable">K</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">S</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">K</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">S</span></code></pre>
+<pre class="output">__assert_eq { expected = I }
+__assert_eq { expected = K }
+__assert_eq { expected = S }</pre>
+
+<h4>ski_substitution (test)</h4>
+
+<span class="badge passed">test ski_substitution: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-variable">eval</span> <span class="tok-variable">S</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">S</span>
+
+<span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">S</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">I</span>
+
+<span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">S</span><span class="tok-operator">,</span> <span class="tok-variable">K</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">K</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">I</span></code></pre>
+<pre class="output">__assert_eq { expected = S }
+__assert_eq { expected = I }
+__assert_eq { expected = I }</pre>
+
+<h4>ski_substitution_nested (test)</h4>
+
+<span class="badge passed">test ski_substitution_nested: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">S</span><span class="tok-operator">,</span> <span class="tok-variable">K</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">K</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">S</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">I</span>
+
+<span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">K</span><span class="tok-operator">,</span> <span class="tok-variable">S</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">I</span><span class="tok-operator">,</span> <span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">S</span><span class="tok-operator">,</span> <span class="tok-variable">K</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">S</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">S</span></code></pre>
+<pre class="output">__assert_eq { expected = I }
+__assert_eq { expected = S }</pre>
+
+<h4>ski_substitution_deep (test)</h4>
+
+<span class="badge passed">test ski_substitution_deep: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">App</span> <span class="tok-parenthesis">(</span><span class="tok-variable">S</span><span class="tok-operator">,</span> <span class="tok-variable">K</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">I</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-variable">K</span><span class="tok-parenthesis">)</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">eval</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-variable">K</span></code></pre>
+<pre class="output">__assert_eq { expected = K }</pre>
+
+</main>
+</body>
+</html>

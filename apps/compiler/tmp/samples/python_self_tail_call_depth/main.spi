@@ -1,0 +1,11 @@
+:~ ^ count_down (n : i32) (acc : i32) : i32 =
+    ? !!!!LT(0i32, n) ?>
+        := n' = !!!!Sub(n, 1i32)
+        := acc' = !!!!Add(acc, 1i32)
+        count_down n' acc'
+    |: acc
+
+:= main () : i32 =
+    := ~n = 5000i32
+    := total = count_down n 0i32
+    ? !!!!EQ(total, 5000i32) ?> 0i32 |: 1i32

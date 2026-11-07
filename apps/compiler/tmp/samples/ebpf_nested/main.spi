@@ -1,0 +1,21 @@
+:= while' (cond : () -> bool) (body : () -> ()) : () =
+    !!!!While((~~ cond ()), (body ()))
+
+:= set' \* t. (a : t) ~(b : t) : () =
+    !!!!BackendSwitch({
+        C = \ () => $"!a = !b" : ()
+        Ebpf = \ () => $"!a = !b" : ()
+        Zig = \ () => $"!a = !b" : ()
+    })
+
+:= ^ walk ~n ~acc =
+    ? n =. 0i32 ?> acc |:
+        := ~k = 0i32
+        := ~extra = 0i32
+        while' (\ () => k < 3i32) \ () =>
+            set' extra (extra +. 1i32)
+            set' k (k +. 1i32)
+        ~~ walk (n -. 1i32) (acc +. extra)
+
+:= main () : i32 =
+    ~~ walk 5i32 0i32 -. 15i32

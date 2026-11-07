@@ -1,0 +1,15 @@
+:= ^ spin (k : i32) : i32 =
+    ? k = 0i32 ?> 0i32
+    |: spin (k - 1i32)
+
+:~ first () : i32 =
+    := _ = spin 2000i32
+    error_type "first body fails"
+
+:~ second () : i32 =
+    error_type "second body fails"
+
+:= main () : i32 =
+    := x = first ()
+    := y = second ()
+    x + y

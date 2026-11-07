@@ -1,0 +1,9 @@
+:< main
+
+:| orphan_symbol =
+    | Orphan
+
+:! orphan_alphabet = orphan_symbol
+
+:= main () =
+    derivative (RegexChar (orphan_alphabet Orphan)) (orphan_alphabet Orphan)

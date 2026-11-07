@@ -1,0 +1,19 @@
+:! zero = ()
+:! succ n = n
+
+:| ^ qregister n =
+    | QOne :: qregister (succ zero)
+    | QSucc :: \* n. qregister n -> qregister (succ n)
+
+:| qgate n =
+    | Hadamard :: qgate (succ zero)
+    | Cnot :: qgate (succ (succ zero))
+
+:= apply_gate \* n. (_ : qgate n) (register : qregister n) : qregister n = register
+
+:= render_two (register : qregister (succ (succ zero))) : string =
+    ?= register ?|
+    | QSucc _ => "quantum-two-qubit-gate"
+
+:= main () : string =
+    render_two (apply_gate Cnot (QSucc QOne))

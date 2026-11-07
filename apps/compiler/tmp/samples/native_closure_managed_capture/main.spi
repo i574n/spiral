@@ -1,0 +1,5 @@
+:= main () : i32 =
+    := ~name = "abc"
+    := f (z : i32) : i32 = sm::length name +. z
+    := ~g = f
+    g 39i32

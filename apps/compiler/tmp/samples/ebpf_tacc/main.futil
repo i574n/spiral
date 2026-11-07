@@ -1,0 +1,380 @@
+import "primitives/core.futil";
+import "primitives/binary_operators.futil";
+import "primitives/memories/comb.futil";
+component sp_method2(in0: 32, in1: 32, in2: 32) -> (out0: 32, out1: 32) {
+  cells {
+    spiral_tick = std_reg(1);
+    spiral_ret0 = std_reg(32);
+    spiral_ret1 = std_reg(32);
+    v0 = std_reg(32);
+    v1 = std_reg(32);
+    v2 = std_reg(32);
+    spiral_go = std_reg(1);
+    v3 = std_reg(32);
+    op3 = std_sub(32);
+    v4 = std_reg(32);
+    op5 = std_add(32);
+    v5 = std_reg(32);
+    op7 = std_add(32);
+    v6 = std_reg(1);
+    op9 = std_eq(32);
+    b11 = std_reg(1);
+    t15 = std_reg(32);
+    t17 = std_reg(32);
+    t19 = std_reg(32);
+  }
+  wires {
+    group g1 {
+      v0.in = in0;
+      v0.write_en = 1'd1;
+      v1.in = in1;
+      v1.write_en = 1'd1;
+      v2.in = in2;
+      v2.write_en = 1'd1;
+      g1[done] = v0.done & v1.done & v2.done ? 1'd1;
+    }
+    group g2 {
+      spiral_go.in = 1'd1;
+      spiral_go.write_en = 1'd1;
+      g2[done] = spiral_go.done;
+    }
+    group g4 {
+      op3.left = v0.out;
+      op3.right = 32'd1;
+      v3.in = op3.out;
+      v3.write_en = 1'd1;
+      g4[done] = v3.done;
+    }
+    group g6 {
+      op5.left = v1.out;
+      op5.right = 32'd1;
+      v4.in = op5.out;
+      v4.write_en = 1'd1;
+      g6[done] = v4.done;
+    }
+    group g8 {
+      op7.left = v2.out;
+      op7.right = 32'd2;
+      v5.in = op7.out;
+      v5.write_en = 1'd1;
+      g8[done] = v5.done;
+    }
+    group g10 {
+      op9.left = v3.out;
+      op9.right = 32'd0;
+      v6.in = op9.out;
+      v6.write_en = 1'd1;
+      g10[done] = v6.done;
+    }
+    group g12 {
+      b11.in = v6.out;
+      b11.write_en = 1'd1;
+      g12[done] = b11.done;
+    }
+    group g13 {
+      spiral_ret0.in = v4.out;
+      spiral_ret0.write_en = 1'd1;
+      spiral_ret1.in = v5.out;
+      spiral_ret1.write_en = 1'd1;
+      g13[done] = spiral_ret0.done & spiral_ret1.done ? 1'd1;
+    }
+    group g14 {
+      spiral_go.in = 1'd0;
+      spiral_go.write_en = 1'd1;
+      g14[done] = spiral_go.done;
+    }
+    group g16 {
+      t15.in = v3.out;
+      t15.write_en = 1'd1;
+      g16[done] = t15.done;
+    }
+    group g18 {
+      t17.in = v4.out;
+      t17.write_en = 1'd1;
+      g18[done] = t17.done;
+    }
+    group g20 {
+      t19.in = v5.out;
+      t19.write_en = 1'd1;
+      g20[done] = t19.done;
+    }
+    group g21 {
+      v0.in = t15.out;
+      v0.write_en = 1'd1;
+      g21[done] = v0.done;
+    }
+    group g22 {
+      v1.in = t17.out;
+      v1.write_en = 1'd1;
+      g22[done] = v1.done;
+    }
+    group g23 {
+      v2.in = t19.out;
+      v2.write_en = 1'd1;
+      g23[done] = v2.done;
+    }
+    out0 = spiral_ret0.out;
+    out1 = spiral_ret1.out;
+  }
+  control {
+    seq {
+      g1;
+      g2;
+      while spiral_go.out {
+        seq {
+          g4;
+          g6;
+          g8;
+          g10;
+          g12;
+          if b11.out {
+            seq {
+              g13;
+              g14;
+            }
+          } else {
+            seq {
+              g16;
+              g18;
+              g20;
+              g21;
+              g22;
+              g23;
+            }
+          };
+        }
+      };
+    }
+  }
+}
+component sp_method1(in0: 32) -> (out0: 32, out1: 32) {
+  cells {
+    spiral_tick = std_reg(1);
+    spiral_ret0 = std_reg(32);
+    spiral_ret1 = std_reg(32);
+    v0 = std_reg(32);
+    v1 = std_reg(32);
+    v2 = std_reg(32);
+    v3 = std_reg(1);
+    op4 = std_eq(32);
+    b6 = std_reg(1);
+    c9 = sp_method2();
+  }
+  wires {
+    group g1 {
+      v0.in = in0;
+      v0.write_en = 1'd1;
+      g1[done] = v0.done;
+    }
+    group g2 {
+      v1.in = 32'd0;
+      v1.write_en = 1'd1;
+      g2[done] = v1.done;
+    }
+    group g3 {
+      v2.in = 32'd0;
+      v2.write_en = 1'd1;
+      g3[done] = v2.done;
+    }
+    group g5 {
+      op4.left = v0.out;
+      op4.right = 32'd0;
+      v3.in = op4.out;
+      v3.write_en = 1'd1;
+      g5[done] = v3.done;
+    }
+    group g7 {
+      b6.in = v3.out;
+      b6.write_en = 1'd1;
+      g7[done] = b6.done;
+    }
+    group g8 {
+      spiral_ret0.in = v1.out;
+      spiral_ret0.write_en = 1'd1;
+      spiral_ret1.in = v2.out;
+      spiral_ret1.write_en = 1'd1;
+      g8[done] = spiral_ret0.done & spiral_ret1.done ? 1'd1;
+    }
+    group g10 {
+      spiral_ret0.in = c9.out0;
+      spiral_ret0.write_en = 1'd1;
+      spiral_ret1.in = c9.out1;
+      spiral_ret1.write_en = 1'd1;
+      g10[done] = spiral_ret0.done & spiral_ret1.done ? 1'd1;
+    }
+    out0 = spiral_ret0.out;
+    out1 = spiral_ret1.out;
+  }
+  control {
+    seq {
+      g1;
+      g2;
+      g3;
+      g5;
+      g7;
+      if b6.out {
+        seq {
+          g8;
+        }
+      } else {
+        seq {
+          invoke c9(in0 = v0.out, in1 = v1.out, in2 = v2.out)();
+          g10;
+        }
+      };
+    }
+  }
+}
+component sp_method0(in0: 32) -> (out: 32) {
+  cells {
+    spiral_tick = std_reg(1);
+    spiral_ret = std_reg(32);
+    v0 = std_reg(32);
+    v1 = std_reg(32);
+    v2 = std_reg(32);
+    c2 = sp_method1();
+    v3 = std_reg(1);
+    op4 = std_eq(32);
+    v5 = std_reg(1);
+    b6 = std_reg(1);
+    v4 = std_reg(1);
+    op8 = std_eq(32);
+    b12 = std_reg(1);
+  }
+  wires {
+    group g1 {
+      v0.in = in0;
+      v0.write_en = 1'd1;
+      g1[done] = v0.done;
+    }
+    group g3 {
+      v1.in = c2.out0;
+      v1.write_en = 1'd1;
+      v2.in = c2.out1;
+      v2.write_en = 1'd1;
+      g3[done] = v1.done & v2.done ? 1'd1;
+    }
+    group g5 {
+      op4.left = v1.out;
+      op4.right = 32'd4;
+      v3.in = op4.out;
+      v3.write_en = 1'd1;
+      g5[done] = v3.done;
+    }
+    group g7 {
+      b6.in = v3.out;
+      b6.write_en = 1'd1;
+      g7[done] = b6.done;
+    }
+    group g9 {
+      op8.left = v2.out;
+      op8.right = 32'd8;
+      v4.in = op8.out;
+      v4.write_en = 1'd1;
+      g9[done] = v4.done;
+    }
+    group g10 {
+      v5.in = v4.out;
+      v5.write_en = 1'd1;
+      g10[done] = v5.done;
+    }
+    group g11 {
+      v5.in = 1'd0;
+      v5.write_en = 1'd1;
+      g11[done] = v5.done;
+    }
+    group g13 {
+      b12.in = v5.out;
+      b12.write_en = 1'd1;
+      g13[done] = b12.done;
+    }
+    group g14 {
+      spiral_ret.in = 32'd0;
+      spiral_ret.write_en = 1'd1;
+      g14[done] = spiral_ret.done;
+    }
+    group g15 {
+      spiral_ret.in = 32'd1;
+      spiral_ret.write_en = 1'd1;
+      g15[done] = spiral_ret.done;
+    }
+    out = spiral_ret.out;
+  }
+  control {
+    seq {
+      g1;
+      invoke c2(in0 = v0.out)();
+      g3;
+      g5;
+      g7;
+      if b6.out {
+        seq {
+          g9;
+          g10;
+        }
+      } else {
+        seq {
+          g11;
+        }
+      };
+      g13;
+      if b12.out {
+        seq {
+          g14;
+        }
+      } else {
+        seq {
+          g15;
+        }
+      };
+    }
+  }
+}
+component spiral_main() -> (out: 32) {
+  cells {
+    spiral_tick = std_reg(1);
+    spiral_ret = std_reg(32);
+    v0 = std_reg(32);
+    c2 = sp_method0();
+  }
+  wires {
+    group g1 {
+      v0.in = 32'd4;
+      v0.write_en = 1'd1;
+      g1[done] = v0.done;
+    }
+    group g3 {
+      spiral_ret.in = c2.out;
+      spiral_ret.write_en = 1'd1;
+      g3[done] = spiral_ret.done;
+    }
+    out = spiral_ret.out;
+  }
+  control {
+    seq {
+      g1;
+      invoke c2(in0 = v0.out)();
+      g3;
+    }
+  }
+}
+component main() -> () {
+  cells {
+    @external spiral_io = comb_mem_d1(32, 1, 1);
+    entry = spiral_main();
+  }
+  wires {
+    group spiral_store {
+      spiral_io.addr0 = 1'd0;
+      spiral_io.write_en = 1'd1;
+      spiral_io.write_data = entry.out;
+      spiral_store[done] = spiral_io.done;
+    }
+  }
+  control {
+    seq {
+      invoke entry()();
+      spiral_store;
+    }
+  }
+}

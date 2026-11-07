@@ -1,0 +1,97 @@
+:# fixed_views static =
+    :< testing
+
+/// ## fixed_views
+:! one a = a
+:! lanes a = a * a * a * a
+:! duo a = a * a
+:! trio a = a * a * a
+:! band a = a * a * a * a * a * a
+:! unmapped a = a
+
+:? mapped f a : \* b. (a -> b) -> f a -> f b
+
+:+ mapped one = \ g (one x) => one (g x)
+:+ mapped lanes = \ g (lanes (a, b, c, d)) => lanes (g a, g b, g c, g d)
+:+ mapped duo = \ g (duo (a, b)) => duo (g a, g b)
+
+:+ mapped trio = \ g (trio (a, b, c)) => trio (g a, g b, g c)
+:+ mapped band = \ g (band (a, b, c, d, e, f)) => band (g a, g b, g c, g d, g e, g f)
+
+:= tally (holds : bool) : i32 = ? holds ?> 1 |: 0
+
+:? counted f a : (a -> bool) -> f a -> i32
+
+:+ counted one = \ p (one x) => tally (p x)
+:+ counted lanes = \ p (lanes (a, b, c, d)) => tally (p a) + tally (p b) + tally (p c) + tally (p d)
+
+:+ counted duo = \ p (duo (a, b)) => tally (p a) + tally (p b)
+:+ counted trio = \ p (trio (a, b, c)) => tally (p a) + tally (p b) + tally (p c)
+
+:+ counted band =
+    \ p (band (a, b, c, d, e, f)) => tally (p a) + tally (p b) + tally (p c) + tally (p d) + tally (p e) + tally (p f)
+
+:= band_of \* a. (x : a) : band a = band (x, x, x, x, x, x)
+
+:= duo_at \* a. (i : i32) (duo (a, b) : duo a) : a = ? i = 0 ?> a |: b
+
+:= duo_with \* a. (i : i32) (x : a) (duo (a, b) : duo a) : duo a =
+    duo ((? i = 0 ?> x |: a), (? i = 1 ?> x |: b))
+
+:= band_at \* a. (i : i32) (band (a, b, c, d, e, f) : band a) : a =
+    ? i = 0 ?> a |? i = 1 ?> b |? i = 2 ?> c |? i = 3 ?> d |? i = 4 ?> e |: f
+
+:= band_with \* a. (i : i32) (x : a) (band (a, b, c, d, e, f) : band a) : band a =
+    band (
+        (? i = 0 ?> x |: a),
+        (? i = 1 ?> x |: b),
+        (? i = 2 ?> x |: c),
+        (? i = 3 ?> x |: d),
+        (? i = 4 ?> x |: e),
+        (? i = 5 ?> x |: f)
+    )
+
+///> c
+///> rust
+///> lua
+:# counted_folds_every_view_the_same_way =
+    := ~x = 80i32
+    := low (h : i32) = h < 100
+    := counts = counted low (one x), counted low (lanes (x, 120, 90, 300)), counted low (trio (150, x, 99))
+    counts |> _assert_eq (1i32, 2i32, 2i32)
+
+///> c
+///> rust
+///> lua
+:# a_trio_maps_like_the_other_views =
+    := ~x = 80i32
+    ?= mapped (\ h => h + 1) (trio (x, 1, 2)) ?|
+    | trio (a, b, c) => (a, b, c) |> _assert_eq (81i32, 2i32, 3i32)
+
+:= band_with_two (x : i32) : band i32 = band_of 0i32 |> band_with 2 x |> band_with 5 7
+
+///> c
+///> rust
+///> lua
+:# a_band_reads_writes_maps_and_counts =
+    := ~x = 5i32
+    := b = band_with_two x
+    ?= mapped (\ v => v * 2) b ?|
+    | band (p, q, r, s, u, v) => (band_at 2 b, band_at 5 b, r, v) |> _assert_eq (5i32, 7i32, 10i32, 14i32)
+
+///> c
+///> rust
+///> lua
+:# a_band_counts_its_matches =
+    := ~x = 5i32
+    counted (\ v => v > 0) (band_with_two x) |> _assert_eq 2i32
+
+///> c
+:# a_view_without_mapped_is_rejected fails "mapped" =
+    mapped (\ v => v + 1) (unmapped 1i32)
+
+///> wgsl
+:# lanes_on_gpu =
+    := ~x = 80i32
+    ?= mapped (\ h => h - 1) (lanes (x, 1, 2, 3)) ?|
+    | lanes (a, b, c, d) => ? a = 79i32 && b = 0i32 && c = 1i32 && d = 2i32 ?> 0i32 |: 1i32

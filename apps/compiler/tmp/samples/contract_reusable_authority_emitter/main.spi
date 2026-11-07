@@ -1,0 +1,30 @@
+:! draft = ()
+:! validated = ()
+:! authorized = ()
+:! idempotent = ()
+:! non_idempotent = ()
+
+:| operation from to effect =
+    | Validate :: operation draft validated idempotent
+    | Publish :: operation validated authorized non_idempotent
+
+:| row from to effect =
+    | Row :: \* from to effect. string -> row from to effect
+
+:= codec \* from to effect.
+    (operation : operation from to effect)
+    : row from to effect =
+    ?= operation ?|
+    | Validate => Row "validate-row"
+    | Publish => Row "generic-authority-emitter"
+
+:= emit \* from to effect.
+    (serializer : \* a b e. operation a b e -> row a b e)
+    (operation : operation from to effect)
+    : row from to effect =
+    serializer operation
+
+:= main () : string =
+    := emitted : row validated authorized non_idempotent = emit `$codec Publish
+    ?= emitted ?|
+    | Row label => label

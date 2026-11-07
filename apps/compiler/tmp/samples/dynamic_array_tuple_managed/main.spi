@@ -1,0 +1,24 @@
+:= reserve ~(xs : array i32) ~(requested_capacity : i32) : () =
+    $'DynamicArrayReserve0(!xs,!requested_capacity)'
+
+:= capacity ~(xs : array i32) : i32 =
+    $'DynamicArrayCapacity0(!xs)'
+
+:= refcount ~(xs : array i32) : i32 =
+    $'DynamicArrayRefCount0(!xs)'
+
+:= make_pair ~(xs : array i32) = xs, xs
+
+:= inspect ~(left, right) : i32 =
+    ~~ capacity left +. ~~ refcount right +. index left 0i32 +. index right 0i32
+
+:= main () : i32 =
+    := ~n = 1i32
+    := ~xs : array i32 = create n
+    set xs 0i32 7i32
+    ~~ reserve xs 3i32
+    := ~refs_before = ~~ refcount xs
+    := pair = ~~ make_pair xs
+    := ~observed = ~~ inspect pair
+    := ~refs_after = ~~ refcount xs
+    observed +. refs_before +. refs_after -. 29i32

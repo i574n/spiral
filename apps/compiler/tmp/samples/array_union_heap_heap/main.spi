@@ -1,0 +1,38 @@
+:| slot =
+    | None
+    | Held : (heap { value : (heap { value : i32 * string }) * i32 })
+
+:! slot_array = array_base slot
+
+:= create (n : i32) : slot_array = slot_array !!!!ArrayCreate(`slot, n)
+:= get (values : slot_array) (i : i32) : slot =
+    ?= values ?|
+    | slot_array raw => !!!!ArrayIndex(raw, i)
+:= set (values : slot_array) (i : i32) (value : slot) : () =
+    ?= values ?|
+    | slot_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+:~ score x : i32 =
+    ?= x ?|
+    | None => 1i32
+    | Held box =>
+        := opened = !!!!LayoutIndex(box)
+        := ~(cell, count) = opened::value
+        := inner_opened = !!!!LayoutIndex(cell)
+        := ~(left, right) = inner_opened::value
+        ? left =. 7i32 && !!!!EQ(right, "hi") && count =. 1i32 ?> 0i32 |: 1i32
+
+:= main () : i32 =
+    := ~n = 7i32
+    := ~word = "hi"
+    := inner_pair = n, word
+    := inner = !!!!LayoutToHeap({ value = inner_pair })
+    := ~extra = 1i32
+    := outer_pair = inner, extra
+    := outer = !!!!LayoutToHeap({ value = outer_pair })
+    := values = create 1i32
+    := ~flag = !+
+    := held = ? flag ?> Held outer |: None
+    set values 0i32 held
+    := loaded = get values 0i32
+    score loaded

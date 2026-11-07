@@ -1,0 +1,23 @@
+:= decoy () : i32 =
+    !!!!BackendSwitch({
+        Gleam = \ () => 1i32
+        Lua = \ () => 1i32
+        Fsharp = \ () => 1i32
+        Python = \ () => 1i32
+        Cpp = \ () => 1i32
+        Rust = \ () => 1i32
+        CppHost = \ () => 1i32
+        Zig = \ () => 1i32
+        Lean = \ () => 1i32
+        TypeScript = \ () => 1i32
+        C = \ () => 1i32
+        Pascal = \ () => 1i32
+        Wasm = \ () => 1i32
+        Kotlin = \ () => 1i32
+        Swift = \ () => 1i32
+        Bend = \ () => $'backend_switch_has_no_C_arm_in_lib_spiral' : i32
+    })
+
+:= real_gap () : i32 = $'backend_switch_has_no_C_arm_in_lib_spiral' : i32
+
+:= main () : i32 = decoy () + real_gap ()

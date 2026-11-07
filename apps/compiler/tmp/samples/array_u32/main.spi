@@ -1,0 +1,22 @@
+:! u32_array = array_base u32
+
+:= create (n : i32) : u32_array = u32_array !!!!ArrayCreate(`u32, n)
+:= get (array : u32_array) (i : i32) : u32 =
+    ?= array ?|
+    | u32_array values => !!!!ArrayIndex(values, i)
+:= set (array : u32_array) (i : i32) (value : u32) : () =
+    ?= array ?|
+    | u32_array values => !!!!ArrayIndexSet(values, i, value)
+:= len (array : u32_array) : i32 =
+    ?= array ?|
+    | u32_array values => !!!!ArrayLength(`i32, values)
+
+:= main () : i32 =
+    := ~n = 3i32
+    := a = create n
+    set a 0i32 4000000000u32
+    set a 1i32 1u32
+    := x = get a 0i32
+    := y = get a 1i32
+    := s = x +. y
+    ? len a =. n && s =. 4000000001u32 ?> 0i32 |: 1i32

@@ -1,0 +1,25 @@
+class Mut0(var l0: Int)
+fun sp_method0(p0: Mut0): Mut0 {
+    var v0: Mut0 = p0
+    return v0
+}
+fun spiral_main(): Int {
+    val v0: Mut0 = Mut0(1)
+    var v1: Mut0 = Mut0(0)
+    v1 = sp_method0(v0)
+    v1.l0 = 7
+    val v2: Int = v1.l0
+    val v3: Boolean = (v2 == 7)
+    if (v3) {
+        return 0
+    } else {
+        return 1
+    }
+}
+fun main() {
+    var spiral_exit_code = 0
+    val spiral_thread = Thread(null, { spiral_exit_code = spiral_main() }, "spiral_main", 1L shl 30)
+    spiral_thread.start()
+    spiral_thread.join()
+    System.exit(spiral_exit_code)
+}

@@ -1,0 +1,29 @@
+(*
+  (* comments *) nest, span lines, and hide everything in them: inl broken = (
+  "an unclosed quote, an unclosed """ triple quote
+  (* a nested
+     (* twice nested *)
+  comment *)
+  and the multiplication operator (*) neither opens nor closes one.
+*)
+:= mul a b = (*) a b
+
+:= twice x =
+    (* a comment in a body
+whose lines start at column 0 *)
+    mul x 2i32
+
+(*
+inl hidden () = this is not code
+*)
+
+:= three () = 3i32 (* trailing (* nested *) comment *)
+
+:= main () : i32 =
+    := ~x = 7i32
+    // a line comment: (* doesn't open one here
+    := y = twice x (* *)
+    ? y <> 14i32 ?> 1i32
+    |? three () <> 3i32 ?> 2i32
+    |: 0i32
+(* a comment that closes on the file's last line *)

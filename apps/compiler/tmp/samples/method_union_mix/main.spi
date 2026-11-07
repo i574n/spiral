@@ -1,0 +1,17 @@
+:| pair =
+    | One : i32
+    | Both : i32 * string
+
+:= pick (n : i32) (word : string) : pair =
+    ? n =. 0i32 ?>
+        One 0i32
+    |:
+        Both (n, word)
+
+:= main () : i32 =
+    := ~n = 3i32
+    := ~word = "hi"
+    := held = ~~ pick n word
+    ?= held ?|
+    | One value => 1i32
+    | Both (left, right) => ? left =. 3i32 && !!!!EQ(right, "hi") ?> 0i32 |: 1i32

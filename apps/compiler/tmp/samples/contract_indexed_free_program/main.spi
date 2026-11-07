@@ -1,0 +1,66 @@
+:! idle = ()
+:! loaded = ()
+:! validated = ()
+:! authorized = ()
+
+:| document state =
+    | EmptyDocument :: document idle
+    | LoadedDocument :: string -> document loaded
+    | ValidatedDocument :: string -> document validated
+    | AuthorizedDocument :: string -> document authorized
+
+:| command from to result =
+    | Load :: string -> command idle loaded string
+    | Validate :: command loaded validated i32
+    | Authorize :: command validated authorized string
+
+:| ^ program from to result =
+    | Done :: \* state result.
+        result -> program state state result
+    | Bind :: \* from to result.
+        (\? middle. \? input.
+            command from middle input *
+            (input -> program middle to result))
+        -> program from to result
+
+:= run_command \* from to result.
+    (command : command from to result)
+    (document : document from)
+    : document to * result =
+    ?= command, document ?|
+    | Load xml, EmptyDocument =>
+        LoadedDocument xml, xml
+    | Validate, LoadedDocument xml =>
+        ValidatedDocument xml, 3
+    | Authorize, ValidatedDocument _ =>
+        AuthorizedDocument "indexed-program", "indexed-program"
+
+:= ^ run_program \* from to result.
+    (program : program from to result)
+    (document : document from)
+    : document to * result =
+    ?= program ?|
+    | Done result => document, result
+    | Bind packed =>
+        := \? middle. packed = packed
+        := \? input. command, next = packed
+        := document, value = run_command command document
+        run_program (next value) document
+
+:= workflow () : program idle authorized string =
+    Bind (\? (\? (
+        Load "nfe.xml",
+        \ _ =>
+            Bind (\? (\? (
+                Validate,
+                \ _ =>
+                    Bind (\? (\? (
+                        Authorize,
+                        \ protocol => Done protocol
+                    )))
+            )))
+    )))
+
+:= main () : string =
+    := _, result = run_program (workflow ()) EmptyDocument
+    result

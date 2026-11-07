@@ -1,0 +1,193 @@
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! attribute t =\n    `(\n        backend_switch `(()) `({}) {\n            Gleam = (\\ () => global \"import lustre/attribute\") : () -> ()\n        }\n        $'' : $'attribute.Attribute(`t)'\n    )\n\n:! element t =\n    `(\n        backend_switch `(()) `({}) {\n            Gleam = (\\ () => global \"import lustre/element\") : () -> ()\n        }\n        $'' : $'element.Element(`t)'\n    )\n\n:= text \\* t. (text : string) : element t =\n    global \"import lustre/element/html\"\n    $'element.text(!text)'\n\n:= on_click \\* t. (msg : t) : attribute t =\n    global \"import lustre/event\"\n    $'event.on_click(!msg)'\n\n:= style \\* t. (styles : list (string * string)) : attribute t =\n    global \"import lustre/attribute\"\n    := styles = styles |> listm'::box\n    $'attribute.styles(!styles)'\n\n:= class \\* t. (name : string) : attribute t =\n    global \"import lustre/attribute\"\n    $'attribute.class(!name)'\n\n:= role \\* t. (name : string) : attribute t =\n    global \"import lustre/attribute\"\n    $'attribute.role(!name)'\n\n:= attr \\* t. (name : string) (value : string) : attribute t =\n    global \"import lustre/attribute\"\n    $'attribute.attribute(!name, !value)'\n\n:= div \\* t. (attributes : list (attribute t)) (children : list (element t)) : element t =\n    global \"import lustre/element/html\"\n    := attributes = attributes |> listm'::box\n    := children = children |> listm'::box\n    $'html.div(!attributes, !children)'\n\n:= p \\* t. (attributes : list (attribute t)) (children : list (element t)) : element t =\n    global \"import lustre/element/html\"\n    := attributes = attributes |> listm'::box\n    := children = children |> listm'::box\n    $'html.p(!attributes, !children)'\n\n:= button \\* t. (attributes : list (attribute t)) (children : list (element t)) : element t =\n    global \"import lustre/element/html\"\n    := attributes = (class \"lustre-ui-button\" :: role \"button\" :: attr \"tabindex\" \"0\" :: attributes) |> listm'::box\n    := children = children |> listm'::box\n    $'html.button(!attributes, !children)'\n\n:= centre \\* t. (attributes : list (attribute t)) (children : element t) : element t =\n    div (class \"lustre-ui-centre\" :: attributes) [ children ]\n\n:! app model msg = $'lustre.App(`model, `model, `msg)'\n\n:= simple \\* model msg.\n    (init : model -> model)\n    (update : model * msg -> model)\n    (view : model -> element msg)\n    : app model msg\n    =\n    global \"import lustre\"\n    $'lustre.simple(!init, fn (a, b) { !update(##(a, b)) }, !view)'\n\n:= to_html \\* t. (element : element t) : string =\n    $'element.to_string(!element)'\n\n:= start id app =\n    $'let assert Ok(_) = lustre.start(!app, !id, 0)' : ()\n\n:== model = int\n\n:= init initial_count : model =\n    ? initial_count < 0\n    ?> 0\n    |: initial_count\n\n:| msg =\n    | Incr\n    | Decr\n\n:= update n (model, msg) =\n    ?= msg ?|\n    | Incr => model + n\n    | Decr => model - n\n\n:= view model =\n    div [\n        style [\n            \"display\", \"flex\"\n        ]\n    ] [\n        div [\n            style [\n                \"display\", \"flex\"\n                \"flex-direction\", \"column\"\n            ]\n        ] [\n            button [\n                on_click Incr\n            ] [\n                text \"+\"\n            ]\n            p [\n                style [\n                    \"text-align\", \"center\"\n                ]\n            ] [\n                model |> sm'::obj_to_string |> text\n            ]\n            button [\n                on_click Decr\n            ] [\n                text \"-\"\n            ]\n        ]\n    ]\n\n:< sm'_operators\n\n:= expect_html (expected : string) (actual : string) : () =\n    ? actual <> expected\n    ?> failwith (\"__assert_eq { actual = \" ++# actual ++# \"; expected = \" ++# expected ++# \" }\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :! attribute t =
+      `(
+          backend_switch `(()) `({}) {
+              Gleam = (\ () => global "import lustre/attribute") : () -> ()
+          }
+          $'' : $'attribute.Attribute(`t)'
+      )
+
+  :! element t =
+      `(
+          backend_switch `(()) `({}) {
+              Gleam = (\ () => global "import lustre/element") : () -> ()
+          }
+          $'' : $'element.Element(`t)'
+      )
+
+  := text \* t. (text : string) : element t =
+      global "import lustre/element/html"
+      $'element.text(!text)'
+
+  := on_click \* t. (msg : t) : attribute t =
+      global "import lustre/event"
+      $'event.on_click(!msg)'
+
+  := style \* t. (styles : list (string * string)) : attribute t =
+      global "import lustre/attribute"
+      := styles = styles |> listm'::box
+      $'attribute.styles(!styles)'
+
+  := class \* t. (name : string) : attribute t =
+      global "import lustre/attribute"
+      $'attribute.class(!name)'
+
+  := role \* t. (name : string) : attribute t =
+      global "import lustre/attribute"
+      $'attribute.role(!name)'
+
+  := attr \* t. (name : string) (value : string) : attribute t =
+      global "import lustre/attribute"
+      $'attribute.attribute(!name, !value)'
+
+  := div \* t. (attributes : list (attribute t)) (children : list (element t)) : element t =
+      global "import lustre/element/html"
+      := attributes = attributes |> listm'::box
+      := children = children |> listm'::box
+      $'html.div(!attributes, !children)'
+
+  := p \* t. (attributes : list (attribute t)) (children : list (element t)) : element t =
+      global "import lustre/element/html"
+      := attributes = attributes |> listm'::box
+      := children = children |> listm'::box
+      $'html.p(!attributes, !children)'
+
+  := button \* t. (attributes : list (attribute t)) (children : list (element t)) : element t =
+      global "import lustre/element/html"
+      := attributes = (class "lustre-ui-button" :: role "button" :: attr "tabindex" "0" :: attributes) |> listm'::box
+      := children = children |> listm'::box
+      $'html.button(!attributes, !children)'
+
+  := centre \* t. (attributes : list (attribute t)) (children : element t) : element t =
+      div (class "lustre-ui-centre" :: attributes) [ children ]
+
+  :! app model msg = $'lustre.App(`model, `model, `msg)'
+
+  := simple \* model msg.
+      (init : model -> model)
+      (update : model * msg -> model)
+      (view : model -> element msg)
+      : app model msg
+      =
+      global "import lustre"
+      $'lustre.simple(!init, fn (a, b) { !update(##(a, b)) }, !view)'
+
+  := to_html \* t. (element : element t) : string =
+      $'element.to_string(!element)'
+
+  := start id app =
+      $'let assert Ok(_) = lustre.start(!app, !id, 0)' : ()
+
+  :== model = int
+
+  := init initial_count : model =
+      ? initial_count < 0
+      ?> 0
+      |: initial_count
+
+  :| msg =
+      | Incr
+      | Decr
+
+  := update n (model, msg) =
+      ?= msg ?|
+      | Incr => model + n
+      | Decr => model - n
+
+  := view model =
+      div [
+          style [
+              "display", "flex"
+          ]
+      ] [
+          div [
+              style [
+                  "display", "flex"
+                  "flex-direction", "column"
+              ]
+          ] [
+              button [
+                  on_click Incr
+              ] [
+                  text "+"
+              ]
+              p [
+                  style [
+                      "text-align", "center"
+                  ]
+              ] [
+                  model |> sm'::obj_to_string |> text
+              ]
+              button [
+                  on_click Decr
+              ] [
+                  text "-"
+              ]
+          ]
+      ]
+
+  :< sm'_operators
+
+  := expect_html (expected : string) (actual : string) : () =
+      ? actual <> expected
+      ?> failwith ("__assert_eq { actual = " ++# actual ++# "; expected = " ++# expected ++# " }")
+  """,
+  timeout: 300_000
+)
+```
+
+#### tests (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam -t javascript -d lustre=\\\">=5.7.0\\\" gleam_json=\\\">=2.0.0\\\"\n\n:= model = init (dyn -3i32)\n:= model = update 1i32 (model, Incr)\n:= model = update 1i32 (model, Incr)\n:= model = update 1i32 (model, Decr)\nmodel\n|> view\n|> to_html\n|> expect_html (\n    \"<div style=\\\"display:flex;\\\"><div style=\\\"display:flex;flex-direction:column;\\\"><button \"\n    ^^ \"class=\\\"lustre-ui-button\\\" role=\\\"button\\\" tabindex=\\\"0\\\">+</button><p \"\n    ^^ \"style=\\\"text-align:center;\\\">1</p><button class=\\\"lustre-ui-button\\\" role=\\\"button\\\" \"\n    ^^ \"tabindex=\\\"0\\\">-</button></div></div>\"\n)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam -t javascript -d lustre=\">=5.7.0\" gleam_json=\">=2.0.0\"
+
+  := model = init (dyn -3i32)
+  := model = update 1i32 (model, Incr)
+  := model = update 1i32 (model, Incr)
+  := model = update 1i32 (model, Decr)
+  model
+  |> view
+  |> to_html
+  |> expect_html (
+      "<div style=\"display:flex;\"><div style=\"display:flex;flex-direction:column;\"><button "
+      ^^ "class=\"lustre-ui-button\" role=\"button\" tabindex=\"0\">+</button><p "
+      ^^ "style=\"text-align:center;\">1</p><button class=\"lustre-ui-button\" role=\"button\" "
+      ^^ "tabindex=\"0\">-</button></div></div>"
+  )
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam -t javascript -d lustre=\\\">=5.7.0\\\" gleam_json=\\\">=2.0.0\\\"\n\n:= model = init (dyn 5i32)\n:= model = update 2i32 (model, Decr)\nmodel\n|> view\n|> to_html\n|> expect_html (\n    \"<div style=\\\"display:flex;\\\"><div style=\\\"display:flex;flex-direction:column;\\\"><button \"\n    ^^ \"class=\\\"lustre-ui-button\\\" role=\\\"button\\\" tabindex=\\\"0\\\">+</button><p \"\n    ^^ \"style=\\\"text-align:center;\\\">3</p><button class=\\\"lustre-ui-button\\\" role=\\\"button\\\" \"\n    ^^ \"tabindex=\\\"0\\\">-</button></div></div>\"\n)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam -t javascript -d lustre=\">=5.7.0\" gleam_json=\">=2.0.0\"
+
+  := model = init (dyn 5i32)
+  := model = update 2i32 (model, Decr)
+  model
+  |> view
+  |> to_html
+  |> expect_html (
+      "<div style=\"display:flex;\"><div style=\"display:flex;flex-direction:column;\"><button "
+      ^^ "class=\"lustre-ui-button\" role=\"button\" tabindex=\"0\">+</button><p "
+      ^^ "style=\"text-align:center;\">3</p><button class=\"lustre-ui-button\" role=\"button\" "
+      ^^ "tabindex=\"0\">-</button></div></div>"
+  )
+  """,
+  timeout: 300_000
+)
+```

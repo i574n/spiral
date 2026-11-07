@@ -1,0 +1,4 @@
+inl f (x : i32) : i32 =
+	inl a = x	-1i32
+	inl b = x	- x
+	a +	-b

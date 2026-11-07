@@ -1,0 +1,6 @@
+:< main
+
+:= impossible_legacy_application_function_result () : corrected_cic_term empty_ctx identity_sort =
+    CorrectedApplication (\? (corrected_cic_identity (), corrected_cic_true ()))
+
+:= main () = impossible_legacy_application_function_result ()

@@ -1,0 +1,22 @@
+:! compiler_v1 = ()
+:! compiler_v2 = ()
+:! source_main = ()
+
+:| compilation compiler source result =
+    | CompileV1 :: compilation compiler_v1 source_main string
+    | CompileV2 :: compilation compiler_v2 source_main string
+
+:| cache_key compiler source result =
+    | KeyV1 :: string -> cache_key compiler_v1 source_main string
+    | KeyV2 :: string -> cache_key compiler_v2 source_main string
+
+:= restore \* compiler source result.
+    (compilation : compilation compiler source result)
+    (key : cache_key compiler source result)
+    : result =
+    ?= compilation, key ?|
+    | CompileV1, KeyV1 _ => "cache-v1"
+    | CompileV2, KeyV2 _ => "versioned-cache-key"
+
+:= main () : string =
+    restore CompileV2 (KeyV2 "sha256:main")

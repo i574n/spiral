@@ -1,0 +1,113 @@
+import gleam/bit_array
+import gleam/string
+pub fn spiral_string_length(text: String) -> Int {
+  bit_array.byte_size(bit_array.from_string(text))
+}
+
+
+pub fn spiral_string_index(text: String, index: Int) -> String {
+  case bit_array.slice(bit_array.from_string(text), index, 1) {
+    Ok(<<byte>>) ->
+      case string.utf_codepoint(byte) {
+        Ok(codepoint) -> string.from_utf_codepoints([codepoint])
+        Error(_) -> panic as "spiral string index: not a single-byte character"
+      }
+    _ -> panic as "spiral string index: out of range"
+  }
+}
+
+@external(erlang, "gleam_stdlib", "identity")
+fn spiral_string_of_checked_bytes(bytes: BitArray) -> String {
+  case bit_array.to_string(bytes) {
+    Ok(text) -> text
+    Error(_) -> panic as "spiral string slice: splits a character"
+  }
+}
+
+fn spiral_string_starts_character(bytes: BitArray, at: Int) -> Bool {
+  case bit_array.slice(bytes, at, 1) {
+    Ok(<<lead>>) -> lead < 128 || lead >= 192
+    _ -> True
+  }
+}
+
+pub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {
+  let bytes = bit_array.from_string(text)
+  let length = bit_array.byte_size(bytes)
+  case from < 0 || from > length || to < from - 1 || to >= length {
+    True -> panic as "spiral string slice: out of range"
+    False ->
+      case to < from {
+        True -> ""
+        False ->
+          case spiral_string_starts_character(bytes, from) && spiral_string_starts_character(bytes, to + 1) {
+            False -> panic as "spiral string slice: splits a character"
+            True ->
+              case bit_array.slice(bytes, from, to - from + 1) {
+                Ok(part) -> spiral_string_of_checked_bytes(part)
+                Error(_) -> panic as "spiral string slice: out of range"
+              }
+          }
+      }
+  }
+}
+
+pub fn empty_middle_0(v0: String) -> String {
+    spiral_string_slice(v0, 2, 1)
+}
+pub fn empty_end_1(v0: String) -> String {
+    spiral_string_slice(v0, 5, 4)
+}
+pub fn empty_source_2(v0: String) -> String {
+    spiral_string_slice(v0, 0, -1)
+}
+pub fn main() {
+    let v0 = "alpha"
+    let v1 = empty_middle_0(v0)
+    let v2 = empty_end_1(v0)
+    let v4 = empty_source_2("")
+    let v5 = { v1 } <> { v2 }
+    let v6 = { v4 } <> { "ok" }
+    let v7 = { v5 } <> { v6 }
+    let v8 = spiral_string_length(v1)
+    let v9 = v8 == 0
+    case v9 {
+        True -> {
+            let v10 = spiral_string_length(v2)
+            let v11 = v10 == 0
+            case v11 {
+                True -> {
+                    let v12 = spiral_string_length(v4)
+                    let v13 = v12 == 0
+                    case v13 {
+                        True -> {
+                            let v14 = spiral_string_length(v7)
+                            let v15 = v14 == 2
+                            case v15 {
+                                True -> {
+                                    let v16 = spiral_string_index(v7, 0)
+                                    let v17 = v16 == "o"
+                                    case v17 {
+                                        True -> {
+                                            let v18 = spiral_string_index(v7, 1)
+                                            let v19 = v18 == "k"
+                                            case v19 {
+                                                True -> 0
+                                                False -> 1
+                                            }
+                                        }
+                                        False -> 2
+                                    }
+                                }
+                                False -> 3
+                            }
+                        }
+                        False -> 4
+                    }
+                }
+                False -> 5
+            }
+        }
+        False -> 6
+    }
+}

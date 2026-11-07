@@ -1,0 +1,13 @@
+:= make2 ~a ~b = a, b
+
+:= make3 ~a ~b ~c = a, b, c
+
+:= sum2 ~(a, b) : i32 = a +. b
+
+:= sum3 ~(a, b, c) : i32 = a +. b +. c
+
+:= main () : i32 =
+    := ~a = 1i32
+    := ~b = 2i32
+    := ~c = 3i32
+    (~~ sum2 (~~ make2 a b)) +. (~~ sum3 (~~ make3 a b c)) -. 9i32

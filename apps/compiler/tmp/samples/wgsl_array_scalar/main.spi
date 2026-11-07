@@ -1,0 +1,18 @@
+:= main () : i32 =
+    := ~n = 5i32
+    := xs = !!!!ArrayCreate(`i32, n)
+    !!!!ArrayIndexSet(xs, 0i32, 0i32)
+    !!!!ArrayIndexSet(xs, 1i32, 1i32)
+    !!!!ArrayIndexSet(xs, 2i32, 4i32)
+    := ~i = 3i32
+    !!!!ArrayIndexSet(xs, i, 9i32)
+    := ~j = i +. 1i32
+    !!!!ArrayIndexSet(xs, j, 16i32)
+    := flags = !!!!ArrayCreate(`bool, 3i32)
+    !!!!ArrayIndexSet(flags, 0i32, !-)
+    !!!!ArrayIndexSet(flags, 1i32, !+)
+    !!!!ArrayIndexSet(flags, 2i32, !-)
+    := total =
+        !!!!ArrayIndex(xs, 1i32) +. !!!!ArrayIndex(xs, 2i32) +. !!!!ArrayIndex(xs, 3i32) +. !!!!ArrayIndex(xs, 4i32)
+    := bonus = ? !!!!ArrayIndex(flags, 1i32) ?> (? !!!!ArrayIndex(flags, 0i32) ?> 0i32 |: 100i32) |: 0i32
+    total +. bonus +. !!!!ArrayLength(`i32, xs)

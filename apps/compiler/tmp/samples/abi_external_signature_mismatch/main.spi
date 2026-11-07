@@ -1,0 +1,3 @@
+:= main () : i32 = ~>
+    := ~not_a_string = 7i32
+    $"spiral_abi_libc_strlen(!not_a_string)" : i32

@@ -1,0 +1,13 @@
+:| slot =
+    | Missing
+    | Call : (i32 -> i32)
+
+:= main () : i32 =
+    := ~n = 3i32
+    := f (z : i32) : i32 = z +. n
+    := ~g = f
+    := ~flag = !+
+    := box = ? flag ?> Call g |: Missing
+    ?= box ?|
+    | Call call => ? call 4i32 =. 7i32 ?> 0i32 |: 1i32
+    | Missing => 1i32

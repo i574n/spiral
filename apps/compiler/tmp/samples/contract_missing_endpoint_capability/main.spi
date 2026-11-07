@@ -1,0 +1,19 @@
+:! missing = ()
+:! present = ()
+
+:| session certificate endpoint =
+    | Session :: \* certificate endpoint. string -> session certificate endpoint
+
+:| action from to =
+    | Authorize :: action (session present present) (session present present)
+
+:= execute \* from to.
+    (action : action from to)
+    (session : from)
+    : to =
+    ?= action, session ?|
+    | Authorize, Session _ => Session "authorized"
+
+:= main () : string =
+    := (Session result) = execute Authorize (Session "missing-endpoint" : session present missing)
+    result

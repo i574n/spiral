@@ -1,0 +1,41 @@
+:| shape =
+    | Circle : i32
+    | Square : i32
+    | Tri : i32
+    | Dot
+
+:~ measure (s : shape) (k : i32) : i32 =
+    ?= s ?|
+    | Circle r => r * 3
+    | _ =>
+        := bonus = k * k
+        := ~flag = bonus > 3
+        ?= s ?|
+        | Square a => ? flag ?> a * a |: a
+        | Tri b => ? flag ?> b * 2 |: b
+        | Dot => bonus
+
+:~ measure_tri (s : shape) (k : i32) : i32 =
+    ?= s ?|
+    | Circle r => r
+    | Square a => a
+    | Dot => 0
+    | _ =>
+        := ~shift = k + 2
+        ?= s ?|
+        | Tri b => b * shift
+
+:~ pick (k : i32) : shape =
+    ? k = 0 ?> Circle 5
+    |? k = 1 ?> Square 4
+    |? k = 2 ?> Tri 7
+    |: Dot
+
+:= main () : i32 =
+    := ~a = 0i32
+    := narrowed =
+        measure (pick a) a
+        + measure (pick (a + 1)) (a + 1)
+        + measure (pick (a + 2)) (a + 2)
+        + measure (pick (a + 3)) (a + 3)
+    narrowed + measure_tri (pick (a + 2)) a + measure_tri (pick a) a

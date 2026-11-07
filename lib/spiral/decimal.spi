@@ -1,0 +1,134 @@
+///- --package .
+:< sm'_operators
+
+:== decimal = { units : i64; scale : i32 }
+
+:~ ^ power_of_ten (n : i32) (acc : i64) : i64 = ? n <= 0i32 ?> acc |: power_of_ten (n - 1i32) (acc * 10i64)
+
+:= larger (a : i32) (b : i32) : i32 = ? a > b ?> a |: b
+
+:= at_scale (scale : i32) (d : decimal) : i64 = d::units * power_of_ten (scale - d::scale) 1i64
+
+:~ ^ normalized (d : decimal) : decimal =
+    ? d::scale > 0i32 && d::units % 10i64 = 0i64 ?> normalized { units = d::units / 10i64; scale = d::scale - 1i32 }
+    |: d
+
+:= of_int (n : i64) : decimal = { units = n; scale = 0i32 }
+
+:= add (a : decimal) (b : decimal) : decimal =
+    := scale = larger a::scale b::scale
+    normalized { units = at_scale scale a + at_scale scale b; scale = scale }
+
+:= negate (a : decimal) : decimal = { a ?| units = 0i64 - a::units }
+
+:= subtract (a : decimal) (b : decimal) : decimal = add a (negate b)
+
+:= multiply (a : decimal) (b : decimal) : decimal = normalized { units = a::units * b::units; scale = a::scale + b::scale }
+
+:= compare (a : decimal) (b : decimal) : i32 =
+    := scale = larger a::scale b::scale
+    := x = at_scale scale a
+    := y = at_scale scale b
+    ? x < y ?> -1i32 |? x > y ?> 1i32 |: 0i32
+
+:= floor_division (n : i64) (d : i64) : i64 =
+    := q = n / d
+    ? n % d <> 0i64 && (n < 0i64) <> (d < 0i64) ?> q - 1i64 |: q
+
+:= round_to (places : i32) (a : decimal) : decimal =
+    ? a::scale <= places ?> a
+    |:
+        := step = power_of_ten (a::scale - places) 1i64
+        normalized { units = floor_division (a::units * 2i64 + step) (step * 2i64); scale = places }
+
+:= round (a : decimal) : decimal = round_to 0i32 a
+
+:= divide (places : i32) (a : decimal) (b : decimal) : decimal =
+    := numerator = a::units * power_of_ten (places + b::scale) 1i64
+    := denominator = b::units * power_of_ten a::scale 1i64
+    normalized { units = numerator / denominator; scale = places }
+
+:= modulo (a : decimal) (b : decimal) : decimal =
+    := scale = larger a::scale b::scale
+    normalized { units = at_scale scale a % at_scale scale b; scale = scale }
+
+:= digit_value (c : string) : i64 = conv (sm'::index_of c "0123456789") : i64
+
+:~ ^ digits_from
+    (s : string) (i : i32) (acc : i64) (scale : i32) (seen_point : bool) (digits : i32)
+    : option decimal
+    =
+    ? i >= sm'::length s ?> (? digits = 0i32 ?> None |: Some { units = acc; scale = scale })
+    |:
+        := c = sm'::substring i 1i32 s
+        ? c = "." ?> (? seen_point ?> None |: digits_from s (i + 1i32) acc scale !+ digits)
+        |? sm'::index_of c "0123456789" >= 0i32 && acc > (9223372036854775807i64 - digit_value c) / 10i64 ?> None
+        |? sm'::index_of c "0123456789" >= 0i32 ?>
+            := scale = ? seen_point ?> scale + 1i32 |: scale
+            digits_from s (i + 1i32) (acc * 10i64 + digit_value c) scale seen_point (digits + 1i32)
+        |: None
+
+:= parse (text : string) : option decimal =
+    := s = sm'::trim text
+    ? s = "" ?> None
+    |:
+        := sign = sm'::substring 0i32 1i32 s
+        := body = ? sign = "-" || sign = "+" ?> sm'::substring 1i32 (sm'::length s - 1i32) s |: s
+        ?= digits_from body 0i32 0i64 0i32 !- 0i32 ?|
+        | Some d => Some (normalized (? sign = "-" ?> negate d |: d))
+        | None => None
+
+:~ ^ digits_text (n : i64) (acc : string) : string =
+    := digit = sm'::substring (conv (n % 10i64) : i32) 1i32 "0123456789"
+    ? n < 10i64 ?> digit ++# acc |: digits_text (n / 10i64) (digit ++# acc)
+
+:~ ^ zero_padded (text : string) (width : i32) : string =
+    ? sm'::length text >= width ?> text |: zero_padded ("0" ++# text) width
+
+:= text (a : decimal) : string =
+    := negative = a::units < 0i64
+    := magnitude = ? negative ?> 0i64 - a::units |: a::units
+    := sign = ? negative ?> "-" |: ""
+    ? a::scale <= 0i32 ?> sign ++# digits_text magnitude ""
+    |:
+        := digits = zero_padded (digits_text magnitude "") (a::scale + 1i32)
+        := whole = sm'::length digits - a::scale
+        sign ++# sm'::substring 0i32 whole digits ++# "." ++# sm'::substring whole a::scale digits
+
+///> rust
+:# decimals_are_exact =
+    := d (s : string) = ?= parse s ?| Some x => x | None => failwith ("parses " ++# s)
+    ? text (add (d "0.1") (d "0.2")) <> "0.3" ?> failwith "0.1 + 0.2 = 0.3"
+    ? text (subtract (d "10") (d "0.01")) <> "9.99" ?> failwith "10 - 0.01"
+    ? text (multiply (d "1.5") (d "-2.25")) <> "-3.375" ?> failwith "1.5 * -2.25"
+    ? text (d "+007.500") <> "7.5" ?> failwith "sign, leading and trailing zeros"
+    ? compare (d "2.50") (d "2.5") <> 0i32 || compare (d "-1") (d "0.5") <> -1i32 ?> failwith "compare"
+    ? text (divide 4i32 (d "1") (d "3")) <> "0.3333" ?> failwith "1 div 3 at 4 places"
+    ? text (divide 0i32 (d "1.25") (d "1")) <> "1" ?> failwith "a finer dividend truncates to the places"
+
+///> rust
+:# round_follows_xpath =
+    := d (s : string) = ?= parse s ?| Some x => x | None => failwith ("parses " ++# s)
+    ? text (round (d "2.5")) <> "3" ?> failwith "2.5 rounds up"
+    ? text (round (d "-2.5")) <> "-2" ?> failwith "-2.5 rounds toward positive infinity"
+    ? text (round (d "-2.51")) <> "-3" ?> failwith "-2.51 rounds down"
+    ? text (round_to 2i32 (d "1.005")) <> "1.01" ?> failwith "half up at two places"
+    := cents = round (multiply (d "12.345") (d "100"))
+    ? text (divide 2i32 cents (d "100")) <> "12.35" ?> failwith "the EN 16931 two-place idiom"
+
+///> rust
+:# rejects_malformed_numbers =
+    ?= parse "1.2.3" ?| Some _ => failwith "two points" | None => ()
+    ?= parse "12a" ?| Some _ => failwith "a letter" | None => ()
+    ?= parse "-" ?| Some _ => failwith "a bare sign" | None => ()
+    ?= parse "" ?| Some _ => failwith "empty" | None => ()
+
+///> rust
+:# modulo_and_the_i64_bound_follow_xpath =
+    := d (s : string) = ?= parse s ?| Some x => x | None => failwith ("parses " ++# s)
+    ? text (modulo (d "10") (d "3")) <> "1" ?> failwith "10 mod 3"
+    ? text (modulo (d "-10") (d "3")) <> "-1" ?> failwith "the remainder takes the dividend's sign"
+    ? text (modulo (d "5.5") (d "2")) <> "1.5" ?> failwith "a decimal remainder"
+    ? text (d "9223372036854775807") <> "9223372036854775807" ?> failwith "the largest i64 parses"
+    ?= parse "9223372036854775808" ?| Some _ => failwith "one past the largest i64 overflows" | None => ()
+    ?= parse "131400000000000000000000" ?| Some _ => failwith "a 24-digit number is not a decimal" | None => ()

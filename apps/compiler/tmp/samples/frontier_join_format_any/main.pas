@@ -1,0 +1,99 @@
+program SpiralGenerated;
+{$mode delphi}{$H+}
+{$IFDEF CPUX86_64}{$OPTIMIZATION NOREGVAR}{$ENDIF}
+{$MAXSTACKSIZE $10000000}
+uses SysUtils, Math;
+type
+  TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;
+  TMut0 = class;
+  TMut0 = class(TSpiralRc) l0: AnsiString; end;
+procedure TSpiralRc.DropFields;
+begin
+end;
+procedure SpiralRetain(o: TSpiralRc);
+begin
+  if o <> nil then Inc(o.refc);
+end;
+procedure SpiralRelease(o: TSpiralRc);
+begin
+  if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
+end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
+procedure method3(v0: TMut0; v1: AnsiString); forward;
+function format_real_2(v0: LongInt): AnsiString; forward;
+function method1: AnsiString; forward;
+function method0: AnsiString; forward;
+function MutCreate0(a0: AnsiString): TMut0;
+begin
+  Result := TMut0.Create; Result.l0 := a0;
+end;
+procedure method3(v0: TMut0; v1: AnsiString);
+var
+  v2: AnsiString;
+  v3: AnsiString;
+begin
+  v2 := v0.l0;
+  v3 := v2 + v1;
+  v0.l0 := v3;
+  SpiralRelease(v0);
+end;
+function format_real_2(v0: LongInt): AnsiString;
+var
+  v1: AnsiString;
+  v2: TMut0;
+  v3: AnsiString;
+  v4: AnsiString;
+begin
+  v1 := '';
+  v2 := MutCreate0(v1);
+  v3 := IntToStr(v0);
+  SpiralRetain(v2);
+  method3(v2, v3);
+  v4 := v2.l0;
+  SpiralRelease(v2);
+  Result := v4;
+end;
+function method1: AnsiString;
+var
+  v0: LongInt;
+  v1: AnsiString;
+  v2: AnsiString;
+  v3: AnsiString;
+begin
+  v0 := 1;
+  v1 := format_real_2(v0);
+  v2 := 'Some(' + v1;
+  v3 := v2 + ')';
+  Result := v3;
+end;
+function method0: AnsiString;
+var
+  v0: AnsiString;
+  v1: AnsiString;
+begin
+  v0 := method1;
+  v1 := 'x: ' + v0;
+  Result := v1;
+end;
+function SpiralMain: LongInt;
+var
+  v0: AnsiString;
+  v1: Boolean;
+begin
+  v0 := method0;
+  v1 := v0 = '';
+  if v1 then begin
+      Result := 1;
+  end else begin
+      Result := 0;
+  end;
+end;
+var SpiralOutputBuffer: array[0..65535] of Char;
+begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
+  SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
+  Halt(SpiralMain);
+end.

@@ -1,0 +1,13 @@
+:= pick (left : heap { value : i32 }) (right : heap { value : i32 }) : heap { value : i32 } * heap { value : i32 } =
+    left, right
+
+:= main () : i32 =
+    := ~a = 3i32
+    := ~b = 4i32
+    := left = !!!!LayoutToHeap({ value = a })
+    := right = !!!!LayoutToHeap({ value = b })
+    := pair = ~~ pick left right
+    := ~(x, y) = pair
+    := ox = !!!!LayoutIndex(x)
+    := oy = !!!!LayoutIndex(y)
+    ? ox::value +. oy::value =. 7i32 ?> 0i32 |: 1i32

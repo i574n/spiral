@@ -1,0 +1,13 @@
+:= main () : i32 =
+    := ~n = 7i32
+    := ~word = "hi"
+    := ~flag = !+
+    := f (z : i32) : i32 * string * bool =
+        ? z =. 0i32 ?>
+            0i32, "no", !-
+        |:
+            n, word, flag
+    := ~g = f
+    := trip = g 1i32
+    := ~(left, mid, right) = trip
+    ? left =. 7i32 && !!!!EQ(mid, "hi") && right ?> 0i32 |: 1i32

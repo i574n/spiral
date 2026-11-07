@@ -1,0 +1,12 @@
+:| slot =
+    | None
+    | Some : i32
+
+:= main () : i32 =
+    := ~n = 7i32
+    := f (z : i32) : slot =
+        ? z =. 0i32 ?> None |: Some n
+    := ~g = f
+    ?= g 1i32 ?|
+    | Some value => ? value =. 7i32 ?> 0i32 |: 1i32
+    | None => 1i32

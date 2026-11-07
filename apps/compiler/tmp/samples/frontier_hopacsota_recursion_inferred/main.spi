@@ -1,0 +1,5 @@
+:~ ^ count (n : i32) =
+    ? n <= 0i32 ?> 0i32
+    |: count (n - 1i32)
+
+:= main () : i32 = count (dyn 5i32)

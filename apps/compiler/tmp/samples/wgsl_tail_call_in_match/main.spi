@@ -1,0 +1,14 @@
+:| step =
+    | Done : i32
+    | More : i32
+
+:= classify (k : i32) : step = ? k >= 5i32 ?> Done k |: More k
+
+:~ ^ layers (k : i32) : i32 =
+    ?= classify k ?|
+    | More n => layers (n +. 1i32)
+    | Done n => n *. 2i32
+
+:= main () : i32 =
+    := ~start = 0i32
+    layers start

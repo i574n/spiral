@@ -1,0 +1,26 @@
+:! app_scope = ()
+:! epoch7 = ()
+:! sample_a = ()
+:! hg38 = ()
+:! chr1 = ()
+:! sealed = ()
+:! unsealed = ()
+:! live = ()
+
+:| callset_authority state sample build contig =
+    | CallsetAuthority :: \* state sample build contig. string -> callset_authority state sample build contig
+
+:| resource scope epoch lifecycle sample build contig =
+    | Resource :: \* scope epoch lifecycle sample build contig.
+        string ->
+        resource scope epoch lifecycle sample build contig
+
+:= publish \* scope epoch sample build contig.
+    (proof : callset_authority sealed sample build contig)
+    : resource scope epoch live sample build contig =
+    ?= proof ?|
+    | CallsetAuthority calls => Resource calls
+
+:= main () : resource app_scope epoch7 live sample_a hg38 chr1 =
+    := proof : callset_authority unsealed sample_a hg38 chr1 = CallsetAuthority "42-variants"
+    publish proof

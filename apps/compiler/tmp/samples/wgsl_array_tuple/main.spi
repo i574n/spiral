@@ -1,0 +1,15 @@
+:= main () : i32 =
+    := ~n = 3i32
+    := points = !!!!ArrayCreate(`(i32 * bool), n)
+    := ~a = 4i32
+    !!!!ArrayIndexSet(points, 0i32, (a, !+))
+    !!!!ArrayIndexSet(points, 1i32, (7i32, !-))
+    !!!!ArrayIndexSet(points, 2i32, (9i32, !+))
+    := x0, f0 = !!!!ArrayIndex(points, 0i32)
+    := x1, f1 = !!!!ArrayIndex(points, 1i32)
+    := ~k = 2i32
+    := x2, f2 = !!!!ArrayIndex(points, k)
+    := b0 = ? f0 ?> 1i32 |: 0i32
+    := b1 = ? f1 ?> 10i32 |: 0i32
+    := b2 = ? f2 ?> 100i32 |: 0i32
+    x0 +. x1 +. x2 +. b0 +. b1 +. b2

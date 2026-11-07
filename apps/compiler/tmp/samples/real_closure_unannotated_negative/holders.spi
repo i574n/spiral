@@ -1,0 +1,8 @@
+:| holder a =
+    | Held : (a -> i32) * (i32 -> a)
+
+:= hold \* a. (to : a -> i32) (from : i32 -> a) : holder a = Held (to, from)
+
+:= apply_to \* a. (h : holder a) (x : a) : i32 =
+    ?= h ?|
+    | Held (to, _) => to x

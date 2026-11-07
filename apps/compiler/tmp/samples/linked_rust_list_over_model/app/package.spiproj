@@ -1,0 +1,11 @@
+packages:
+    |core-
+    model-
+    parse-
+    render-
+link:
+    model-
+    parse-
+    render-
+modules:
+    main

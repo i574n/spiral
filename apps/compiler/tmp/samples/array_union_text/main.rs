@@ -1,0 +1,54 @@
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
+use std::cell::RefCell;
+use std::rc::Rc;
+#[derive(Clone)]
+enum US0 {
+    US0_None,
+    US0_Both(Rc<str>, Rc<str>),
+}
+impl Default for US0 {
+    fn default() -> Self {
+        US0::US0_None
+    }
+}
+fn score_0(mut v0: US0) -> i32 {
+    match v0 {
+        US0::US0_Both(v1, v2) => {
+            let v1: Rc<str> = v1;
+            let v2: Rc<str> = v2;
+            let v3: bool = &*v1 == "hi";
+            let v5: bool = if v3 {
+                let v4: bool = &*v2 == "yo";
+                v4
+            } else {
+                false
+            };
+            if v5 {
+                0i32
+            } else {
+                1i32
+            }
+        }
+        US0::US0_None => {
+            1i32
+        }
+    }
+}
+fn spiral_main() -> i32 {
+    let mut v0: Rc<RefCell<Vec<US0>>> = Rc::new(RefCell::new(vec![<US0>::default(); 1i32 as usize]));
+    let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
+    let v3: bool = true;
+    let v6: US0 = if v3 {
+        US0::US0_Both(v1, v2)
+    } else {
+        US0::US0_None
+    };
+    v0.borrow_mut()[0i32 as usize] = v6;
+    let v7: US0 = v0.borrow()[0i32 as usize].clone();
+    score_0(v7)
+}
+fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
+    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
+}

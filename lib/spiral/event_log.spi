@@ -1,0 +1,164 @@
+///- --package .
+:< sm'_operators
+
+:! command_id = string
+:! payload_hash = string
+:! entry ev = i64 * string * string * ev
+:! event_log ev = i64 * list (entry ev)
+
+:= empty_log \* ev. () : event_log ev = event_log (0i64, [])
+
+:= head_of \* ev. ((event_log (head, _)) : event_log ev) : i64 = head
+
+:= entries_of \* ev. ((event_log (_, entries)) : event_log ev) : list (entry ev) = entries
+
+:= entry_position \* ev. ((entry (at, _, _, _)) : entry ev) : i64 = at
+
+:= entry_id \* ev. ((entry (_, id, _, _)) : entry ev) : string = id
+
+:= entry_hash \* ev. ((entry (_, _, hash, _)) : entry ev) : string = hash
+
+:| append_outcome ev =
+    | Appended :: \* ev. event_log ev -> append_outcome ev
+    | Replayed :: \* ev. i64 -> append_outcome ev
+    | Collided :: \* ev. i64 -> append_outcome ev
+    | Stale :: \* ev. i64 -> append_outcome ev
+
+:= earlier \* ev. (id : string) (entries : list (entry ev)) : option (entry ev) =
+    listm::fold
+        \ found e =>
+            ?= found ?|
+            | Some _ => found
+            | None => ? entry_id e = id ?> Some e |: None
+        None
+        entries
+
+:= append \* ev.
+    (expected : i64) ((command_id id) : command_id) ((payload_hash hash) : payload_hash) (event : ev)
+    (log : event_log ev)
+    : append_outcome ev
+    =
+    ?= earlier id (entries_of log) ?|
+    | Some e => ? entry_hash e = hash ?> Replayed (entry_position e) |: Collided (entry_position e)
+    | None =>
+        := head = head_of log
+        ? expected = head
+        ?> Appended (event_log (head + 1i64, entry (head + 1i64, id, hash, event) :: entries_of log))
+        |: Stale head
+
+:= outcome_code \* ev. (outcome : append_outcome ev) : i64 * i64 =
+    ?= outcome ?|
+    | Appended log => 0i64, head_of log
+    | Replayed at => 1i64, at
+    | Collided at => 2i64, at
+    | Stale at => 3i64, at
+
+:= entry_line \* ev. (text_of : ev -> string) ((entry (at, id, hash, event)) : entry ev) : string =
+    sm'::obj_to_string at ++# "\t" ++# id ++# "\t" ++# hash ++# "\t" ++# text_of event ++# "\n"
+
+:= append_durably \* ev.
+    (text_of : ev -> string) (path : string) (expected : i64) (id : command_id) (hash : payload_hash) (event : ev)
+    (log : event_log ev)
+    : result (append_outcome ev) string
+    =
+    := outcome = append expected id hash event log
+    ?= outcome ?|
+    | Appended next =>
+        ?= entries_of next ?|
+        | newest :: _ =>
+            ?= durable_file::durable_append path (entry_line text_of newest) ?|
+            | Ok () => Ok outcome
+            | Error message => Error message
+        | [] => Error "an append always adds an entry"
+    | _ => Ok outcome
+
+:= written \* ev. (result : result (append_outcome ev) string) : append_outcome ev =
+    ?= result ?|
+    | Ok outcome => outcome
+    | Error message => failwith message
+
+:! queued = ()
+:! transmitted = ()
+:! receipted = ()
+
+:| submission s =
+    | Queued :: string -> submission queued
+    | Transmitted :: string * i64 -> submission transmitted
+    | Receipted :: string * string -> submission receipted
+
+:= transmit (q : submission queued) : submission transmitted =
+    ?= q ?|
+    | Queued id => Transmitted (id, 1i64)
+
+:= retransmit (t : submission transmitted) : submission transmitted =
+    ?= t ?|
+    | Transmitted (id, attempt) => Transmitted (id, attempt + 1i64)
+
+:= acknowledge (t : submission transmitted) (receipt : string) : submission receipted =
+    ?= t ?|
+    | Transmitted (id, _) => Receipted (id, receipt)
+
+:= receipt_of (r : submission receipted) : string =
+    ?= r ?|
+    | Receipted (_, receipt) => receipt
+
+:= appended_log \* ev. (outcome : append_outcome ev) : event_log ev =
+    ?= outcome ?|
+    | Appended log => log
+    | _ => failwith "expected an append"
+
+///> rust
+:# an_append_at_the_expected_position_advances_the_log =
+    := first = appended_log (append 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" (empty_log ()))
+    := second = append 1i64 (command_id "nfe-2") (payload_hash "h2") "authorized" first
+    ? outcome_code second = (0i64, 2i64) = !- ?> failwith "two appends at their expected positions reach position 2"
+
+///> rust
+:# a_repeated_command_replays_and_a_changed_payload_collides =
+    := log = appended_log (append 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" (empty_log ()))
+    ? outcome_code (append 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" log) = (1i64, 1i64) = !-
+    ?> failwith "a retry of nfe-1 with its old expected position replays position 1"
+    ? outcome_code (append 1i64 (command_id "nfe-1") (payload_hash "h9") "cancelled" log) = (2i64, 1i64) = !-
+    ?> failwith "nfe-1 with another payload collides with position 1"
+    ? outcome_code (append 0i64 (command_id "nfe-2") (payload_hash "h2") "authorized" log) = (3i64, 1i64) = !-
+    ?> failwith "a new command at a moved position is stale at 1"
+
+///> rust
+:# only_a_real_append_reaches_the_file =
+    := path = durable_file::probe_path "spiral-event-log-probe.txt"
+    file_system::file_delete path
+    := text (e : string) : string = e
+    := empty : event_log string = empty_log ()
+    := log =
+        appended_log (
+            written (append_durably text path 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" empty)
+        )
+    := retried = written (append_durably text path 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" log)
+    := clashing = written (append_durably text path 1i64 (command_id "nfe-1") (payload_hash "h9") "cancelled" log)
+    := second = written (append_durably text path 1i64 (command_id "nfe-2") (payload_hash "h2") "authorized" log)
+    ? (outcome_code retried, outcome_code clashing, outcome_code second) <> ((1i64, 1i64), (2i64, 1i64), (0i64, 2i64))
+    ?> failwith "the retry replays, the changed payload collides, the new command appends"
+    ? file_system::read_all_text path <> "1\tnfe-1\th1\tauthorized\n2\tnfe-2\th2\tauthorized\n"
+    ?> failwith "only the two real appends are on disk, in order"
+    file_system::file_delete path
+
+///> rust
+:# a_submission_is_receipted_only_after_transmission =
+    := sent = retransmit (transmit (Queued "nfe-1"))
+    ?= sent ?|
+    | Transmitted (_, attempt) => ? attempt = 2i64 = !- ?> failwith "a retransmission is attempt 2"
+    ? receipt_of (acknowledge sent "135260000000001") = "135260000000001" = !-
+    ?> failwith "the authority's protocol number is the receipt"
+
+///> rust
+:# a_queued_submission_cannot_be_acknowledged fails "Unification" =
+    acknowledge (Queued "nfe-1") "135260000000001" |> ignore
+
+///> rust
+:# a_payload_hash_is_not_a_command_id fails "Unification" =
+    append 0i64 (payload_hash "h1") (command_id "nfe-1") "authorized" (empty_log ()) |> ignore
+
+///> rust
+:# a_log_of_one_event_type_takes_no_other fails "Unification" =
+    := log : event_log string = empty_log ()
+    append 0i64 (command_id "nfe-1") (payload_hash "h1") 7i32 log |> ignore

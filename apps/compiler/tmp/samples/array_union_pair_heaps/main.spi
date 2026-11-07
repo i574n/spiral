@@ -1,0 +1,39 @@
+:| slot =
+    | None
+    | Held : (heap { value : i32 * string } * heap { value : i32 * string })
+
+:! slot_array = array_base slot
+
+:= create (n : i32) : slot_array = slot_array !!!!ArrayCreate(`slot, n)
+:= get (values : slot_array) (i : i32) : slot =
+    ?= values ?|
+    | slot_array raw => !!!!ArrayIndex(raw, i)
+:= set (values : slot_array) (i : i32) (value : slot) : () =
+    ?= values ?|
+    | slot_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+:~ score x : i32 =
+    ?= x ?|
+    | None => 1i32
+    | Held (left, right) =>
+        := left_opened = !!!!LayoutIndex(left)
+        := ~(a, b) = left_opened::value
+        := right_opened = !!!!LayoutIndex(right)
+        := ~(c, d) = right_opened::value
+        ? a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") ?> 0i32 |: 1i32
+
+:= main () : i32 =
+    := ~n = 7i32
+    := ~word = "hi"
+    := left_pair = n, word
+    := left_heap = !!!!LayoutToHeap({ value = left_pair })
+    := ~m = 4i32
+    := ~other = "yo"
+    := right_pair = m, other
+    := right_heap = !!!!LayoutToHeap({ value = right_pair })
+    := values = create 1i32
+    := ~flag = !+
+    := held = ? flag ?> Held (left_heap, right_heap) |: None
+    set values 0i32 held
+    := loaded = get values 0i32
+    score loaded

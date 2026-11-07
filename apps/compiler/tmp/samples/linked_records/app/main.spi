@@ -1,0 +1,8 @@
+:< model
+
+:= main () : i32 =
+    := ~n = 4i32
+    := p = make n
+    := a, b = pair n
+    := ~who = "abc"
+    !!!!Add(!!!!Add(norm p, label_len (named { name = who; n = n })), !!!!Sub(!!!!Sub(b, a), 1i32))

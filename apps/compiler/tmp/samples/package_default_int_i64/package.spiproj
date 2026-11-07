@@ -1,0 +1,5 @@
+packages: |core-
+default-int: i64
+
+modules:
+    main

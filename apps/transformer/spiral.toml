@@ -1,0 +1,7 @@
+edition = 3
+packageDir = '../../lib'
+packages = ['|core-', 'spiral-']
+modules = '''
+oracle
+transformer
+'''

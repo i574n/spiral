@@ -1,0 +1,3 @@
+:= seven () : i32 = 7i32
+:! wrapped = i32
+:= make_wrapped \* t. (x : t) : t = x

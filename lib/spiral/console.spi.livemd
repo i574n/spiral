@@ -1,0 +1,354 @@
+#### console (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test static --symbol\n\n:< testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test static --symbol
+
+  :< testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! console_color = $'System.ConsoleColor'\n\n:= reset_color () : () =\n    run_target \\|\n        | Fsharp => \\ () => $'System.Console.ResetColor ()'\n        | _ => \\ () => ()\n\n:= set_foreground_color (color : console_color) : () =\n    run_target \\|\n        | Fsharp => \\ () => $'System.Console.ForegroundColor <- !color '\n        | _ => \\ () => ()\n\n:= write_line_c \\* t. (obj : t) : () =\n    ~>\n        ?: t ?|\n        | string => $'printf(\"%s\\\\n\", (!obj)->ptr)' : ()\n        | i32 => $'printf(\"%d\\\\n\", !obj)' : ()\n        | i64 => $'printf(\"%lld\\\\n\", (long long)(!obj))' : ()\n        | u32 => $'printf(\"%u\\\\n\", !obj)' : ()\n        | u64 => $'printf(\"%llu\\\\n\", (unsigned long long)(!obj))' : ()\n        | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : ()\n\n:= write_line_gleam \\* t. (obj : t) : () =\n    global \"import gleam/io\"\n    ? (~> ?: t ?| string => !+ | _ => !-) ?> $'io.println(!obj)' : ()\n    |? (~> ?: t ?| () => !+ | _ => !-) ?> $'io.println(\"\")' : ()\n    |:\n        global \"import gleam/int\"\n        $'io.println(int.to_string(!obj))' : ()\n\n:= write_wasm \\* t. (obj : t) : () =\n    ~>\n        ?: t ?|\n        | string => $'(call $print_str !obj)' : ()\n        | i32 => $'(call $print_i64 (i64.extend_i32_s !obj))' : ()\n        | i64 => $'(call $print_i64 !obj)' : ()\n        | u32 => $'(call $print_u64 (i64.extend_i32_u !obj))' : ()\n        | u64 => $'(call $print_u64 !obj)' : ()\n        | () => $'' : ()\n        | _ => $'backend_switch_has_no_Wasm_arm_in_lib_spiral' : ()\n\n:= write_line_bend \\* t. (x : t) : () =\n    ~>\n        ?: t ?|\n        | string => !!!!Printf(\"%s\\n\", x)\n        | i32 => !!!!Printf(\"%d\\n\", x)\n        | _ => $'backend_switch_has_no_Bend_arm_in_lib_spiral' : ()\n\n:= write_line_lua \\* t. (obj : t) : () =\n    ~>\n        ?: t ?|\n        | i64 => $'print(spiral_w64.tostring(!obj, true))' : ()\n        | u64 => $'print(spiral_w64.tostring(!obj, false))' : ()\n        | _ => $'print(!obj)' : ()\n\n:= write_line \\* t. (obj : t) : () =\n    backend_switch {\n        Gleam = \\ () => write_line_gleam obj\n        Lua = \\ () => write_line_lua obj\n        Fsharp = \\ () =>\n            \\ () => obj |> $'System.Console.WriteLine'\n            |> exec_unit\n        Python = \\ () => $'print(!obj)' : ()\n        Rust = \\ () => $'println\\!(\"{}\", !obj)' : ()\n        TypeScript = \\ () => $'process.stdout.write(String(!obj) + \"\\\\n\")' : ()\n        Zig = \\ () =>\n            $'spiralPrintAny(!obj)' : ()\n            $'spiralPrint(&[_]u8{10})' : ()\n        Lean = \\ () => $'IO.println (toString !obj)' : ()\n        C = \\ () => write_line_c obj\n        Pascal = \\ () => $'Writeln(!obj)' : ()\n        Kotlin = fun () => $'run { System.out.write((!obj.toString() + \"\\\\n\").toByteArray(Charsets.UTF_8)); \\\n            System.out.flush() }' : ()\n        Swift = \\ () => $'print(!obj)' : ()\n        Bend = \\ () => write_line_bend obj\n        Wasm = \\ () =>\n            write_wasm obj\n            $'(call $print_newline)' : ()\n    }\n\n:= write_error_line \\* t. (obj : t) : () =\n    backend_switch {\n        Gleam = \\ () =>\n            global \"import gleam/io\"\n            $'io.println_error(!obj)' : ()\n        Lua = \\ () => $'io.stderr:write(tostring(!obj) .. \"\\\\n\")' : ()\n        Fsharp = \\ () =>\n            \\ () => obj |> $'System.Console.Error.WriteLine'\n            |> exec_unit\n        Python = \\ () =>\n            global \"import sys\"\n            $'print(!obj, file=sys.stderr)' : ()\n        Rust = \\ () => $'eprintln\\!(\"{}\", !obj)' : ()\n        TypeScript = \\ () => $'process.stderr.write(String(!obj) + \"\\\\n\")' : ()\n        Lean = \\ () => $'IO.eprintln (toString !obj)' : ()\n        Kotlin = fun () => $'run { System.err.write((!obj.toString() + \"\\\\n\").toByteArray(Charsets.UTF_8)); \\\n            System.err.flush() }' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :! console_color = $'System.ConsoleColor'
+
+  := reset_color () : () =
+      run_target \|
+          | Fsharp => \ () => $'System.Console.ResetColor ()'
+          | _ => \ () => ()
+
+  := set_foreground_color (color : console_color) : () =
+      run_target \|
+          | Fsharp => \ () => $'System.Console.ForegroundColor <- !color '
+          | _ => \ () => ()
+
+  := write_line_c \* t. (obj : t) : () =
+      ~>
+          ?: t ?|
+          | string => $'printf("%s\\n", (!obj)->ptr)' : ()
+          | i32 => $'printf("%d\\n", !obj)' : ()
+          | i64 => $'printf("%lld\\n", (long long)(!obj))' : ()
+          | u32 => $'printf("%u\\n", !obj)' : ()
+          | u64 => $'printf("%llu\\n", (unsigned long long)(!obj))' : ()
+          | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : ()
+
+  := write_line_gleam \* t. (obj : t) : () =
+      global "import gleam/io"
+      ? (~> ?: t ?| string => !+ | _ => !-) ?> $'io.println(!obj)' : ()
+      |? (~> ?: t ?| () => !+ | _ => !-) ?> $'io.println("")' : ()
+      |:
+          global "import gleam/int"
+          $'io.println(int.to_string(!obj))' : ()
+
+  := write_wasm \* t. (obj : t) : () =
+      ~>
+          ?: t ?|
+          | string => $'(call $print_str !obj)' : ()
+          | i32 => $'(call $print_i64 (i64.extend_i32_s !obj))' : ()
+          | i64 => $'(call $print_i64 !obj)' : ()
+          | u32 => $'(call $print_u64 (i64.extend_i32_u !obj))' : ()
+          | u64 => $'(call $print_u64 !obj)' : ()
+          | () => $'' : ()
+          | _ => $'backend_switch_has_no_Wasm_arm_in_lib_spiral' : ()
+
+  := write_line_bend \* t. (x : t) : () =
+      ~>
+          ?: t ?|
+          | string => !!!!Printf("%s\n", x)
+          | i32 => !!!!Printf("%d\n", x)
+          | _ => $'backend_switch_has_no_Bend_arm_in_lib_spiral' : ()
+
+  := write_line_lua \* t. (obj : t) : () =
+      ~>
+          ?: t ?|
+          | i64 => $'print(spiral_w64.tostring(!obj, true))' : ()
+          | u64 => $'print(spiral_w64.tostring(!obj, false))' : ()
+          | _ => $'print(!obj)' : ()
+
+  := write_line \* t. (obj : t) : () =
+      backend_switch {
+          Gleam = \ () => write_line_gleam obj
+          Lua = \ () => write_line_lua obj
+          Fsharp = \ () =>
+              \ () => obj |> $'System.Console.WriteLine'
+              |> exec_unit
+          Python = \ () => $'print(!obj)' : ()
+          Rust = \ () => $'println\!("{}", !obj)' : ()
+          TypeScript = \ () => $'process.stdout.write(String(!obj) + "\\n")' : ()
+          Zig = \ () =>
+              $'spiralPrintAny(!obj)' : ()
+              $'spiralPrint(&[_]u8{10})' : ()
+          Lean = \ () => $'IO.println (toString !obj)' : ()
+          C = \ () => write_line_c obj
+          Pascal = \ () => $'Writeln(!obj)' : ()
+          Kotlin = fun () => $'run { System.out.write((!obj.toString() + "\\n").toByteArray(Charsets.UTF_8)); \
+              System.out.flush() }' : ()
+          Swift = \ () => $'print(!obj)' : ()
+          Bend = \ () => write_line_bend obj
+          Wasm = \ () =>
+              write_wasm obj
+              $'(call $print_newline)' : ()
+      }
+
+  := write_error_line \* t. (obj : t) : () =
+      backend_switch {
+          Gleam = \ () =>
+              global "import gleam/io"
+              $'io.println_error(!obj)' : ()
+          Lua = \ () => $'io.stderr:write(tostring(!obj) .. "\\n")' : ()
+          Fsharp = \ () =>
+              \ () => obj |> $'System.Console.Error.WriteLine'
+              |> exec_unit
+          Python = \ () =>
+              global "import sys"
+              $'print(!obj, file=sys.stderr)' : ()
+          Rust = \ () => $'eprintln\!("{}", !obj)' : ()
+          TypeScript = \ () => $'process.stderr.write(String(!obj) + "\\n")' : ()
+          Lean = \ () => $'IO.eprintln (toString !obj)' : ()
+          Kotlin = fun () => $'run { System.err.write((!obj.toString() + "\\n").toByteArray(Charsets.UTF_8)); \
+              System.err.flush() }' : ()
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### write_error_line_writes_without_failing (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\nwrite_error_line \"console.write_error_line probe\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  write_error_line "console.write_error_line probe"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! stdin_handle = $'std::io::Stdin'\n\n:! stdin_error = $'std::io::Error'\n\n:= read_to_end () : string =\n    backend_switch {\n        Rust = \\ () =>\n            := handle = $'std::io::stdin()' : stdin_handle\n            := read = $'std::io::read_to_string(!handle)' : resultm::result' sm'::std_string stdin_error\n            read |> resultm::unwrap_or' (sm'::to_std_string \"\") |> sm'::from_std_string\n        Fsharp = \\ () => $'System.Console.In.ReadToEnd ()' : string\n        Python = \\ () =>\n            global \"import sys\"\n            $'sys.stdin.read()' : string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :! stdin_handle = $'std::io::Stdin'
+
+  :! stdin_error = $'std::io::Error'
+
+  := read_to_end () : string =
+      backend_switch {
+          Rust = \ () =>
+              := handle = $'std::io::stdin()' : stdin_handle
+              := read = $'std::io::read_to_string(!handle)' : resultm::result' sm'::std_string stdin_error
+              read |> resultm::unwrap_or' (sm'::to_std_string "") |> sm'::from_std_string
+          Fsharp = \ () => $'System.Console.In.ReadToEnd ()' : string
+          Python = \ () =>
+              global "import sys"
+              $'sys.stdin.read()' : string
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### read_to_end_types_without_reading (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n:= far = sm'::length \"x\" > 1i32\n? far ?> read_to_end () |> ignore |: ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  := far = sm'::length "x" > 1i32
+  ? far ?> read_to_end () |> ignore |: ()
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= write_c \\* t. (x : t) : () =\n    ~>\n        ?: t ?|\n        | string => $'printf(\"%s\", (!x)->ptr)' : ()\n        | i32 => $'printf(\"%d\", !x)' : ()\n        | i64 => $'printf(\"%lld\", (long long)(!x))' : ()\n        | u32 => $'printf(\"%u\", !x)' : ()\n        | u64 => $'printf(\"%llu\", (unsigned long long)(!x))' : ()\n        | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : ()\n\n:= write_gleam \\* t. (x : t) : () =\n    global \"import gleam/io\"\n    ? (~> ?: t ?| string => !+ | _ => !-) ?> $'io.print(!x)' : ()\n    |:\n        global \"import gleam/int\"\n        $'io.print(int.to_string(!x))' : ()\n\n:= write_lua \\* t. (x : t) : () =\n    ~>\n        ?: t ?|\n        | i64 => $'io.write(spiral_w64.tostring(!x, true))' : ()\n        | u64 => $'io.write(spiral_w64.tostring(!x, false))' : ()\n        | _ => $'io.write(!x)' : ()\n\n:= write \\* t. (x : t) : () =\n    backend_switch {\n        Gleam = \\ () => write_gleam x\n        Lua = \\ () => write_lua x\n        Fsharp = \\ () => $'!x |> System.Console.Write' : ()\n        Python = \\ () => $'print(!x, end=\"\")' : ()\n        Rust = \\ () =>\n            $'print\\!(\"{}\", !x)' : ()\n            $'std::io::Write::flush(&mut std::io::stdout()).unwrap()' : ()\n        TypeScript = \\ () => $'process.stdout.write(String(!x))' : ()\n        Zig = \\ () => $'spiralPrintAny(!x)' : ()\n        Lean = \\ () => $'IO.print (toString !x)' : ()\n        C = \\ () => write_c x\n        Pascal = \\ () => $'Write(!x)' : ()\n        Kotlin = \\ () =>\n            $'run { System.out.write(!x.toString().toByteArray(Charsets.UTF_8)); System.out.flush() }' : ()\n        Swift = \\ () => $'print(!x, terminator: \"\")' : ()\n        Wasm = \\ () => write_wasm x\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := write_c \* t. (x : t) : () =
+      ~>
+          ?: t ?|
+          | string => $'printf("%s", (!x)->ptr)' : ()
+          | i32 => $'printf("%d", !x)' : ()
+          | i64 => $'printf("%lld", (long long)(!x))' : ()
+          | u32 => $'printf("%u", !x)' : ()
+          | u64 => $'printf("%llu", (unsigned long long)(!x))' : ()
+          | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : ()
+
+  := write_gleam \* t. (x : t) : () =
+      global "import gleam/io"
+      ? (~> ?: t ?| string => !+ | _ => !-) ?> $'io.print(!x)' : ()
+      |:
+          global "import gleam/int"
+          $'io.print(int.to_string(!x))' : ()
+
+  := write_lua \* t. (x : t) : () =
+      ~>
+          ?: t ?|
+          | i64 => $'io.write(spiral_w64.tostring(!x, true))' : ()
+          | u64 => $'io.write(spiral_w64.tostring(!x, false))' : ()
+          | _ => $'io.write(!x)' : ()
+
+  := write \* t. (x : t) : () =
+      backend_switch {
+          Gleam = \ () => write_gleam x
+          Lua = \ () => write_lua x
+          Fsharp = \ () => $'!x |> System.Console.Write' : ()
+          Python = \ () => $'print(!x, end="")' : ()
+          Rust = \ () =>
+              $'print\!("{}", !x)' : ()
+              $'std::io::Write::flush(&mut std::io::stdout()).unwrap()' : ()
+          TypeScript = \ () => $'process.stdout.write(String(!x))' : ()
+          Zig = \ () => $'spiralPrintAny(!x)' : ()
+          Lean = \ () => $'IO.print (toString !x)' : ()
+          C = \ () => write_c x
+          Pascal = \ () => $'Write(!x)' : ()
+          Kotlin = \ () =>
+              $'run { System.out.write(!x.toString().toByteArray(Charsets.UTF_8)); System.out.flush() }' : ()
+          Swift = \ () => $'print(!x, terminator: "")' : ()
+          Wasm = \ () => write_wasm x
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### write_and_write_line_print_without_failing (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> zig\n\nwrite \"a\"\nwrite_line \"b\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> zig
+
+  write "a"
+  write_line "b"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= write_ln l : () =\n    write l\n    backend_switch {\n        Gleam = \\ () => write_line () : ()\n        Lua = \\ () => write_line () : ()\n        Fsharp = \\ () => write_line () : ()\n        Python = \\ () => $\"print()\" : ()\n        Cuda = \\ () => $'printf(\"\\\\n\")' : ()\n        Rust = \\ () => $'println\\!()' : ()\n        Zig = \\ () => $'spiralPrint(&[_]u8{10})' : ()\n        Lean = \\ () => $'IO.println \"\"' : ()\n    }\n\n:= color_reset () =\n    run_target \\|\n        | Zig => \\ () =>\n            $'\"\\\\u{001b}[0m\"' : string\n        | Gleam _ => \\ () => $'\"\\\\u{001b}[0m\"'\n        | Lua _ => \\ () => $'\"\"'\n        | Rust => \\ () => $'Rc::<str>::from(\"\\\\u{001b}[0m\")' : string\n        | _ => \\ () => $'\"\\\\u001b[0m\"'\n\n:= color_bright_black () =\n    run_target \\|\n        | Zig => \\ () =>\n            $'\"\\\\u{001b}[90m\"' : string\n        | Gleam _ => \\ () => $'\"\\\\u{001b}[90m\"'\n        | Lua _ => \\ () => $'\"\"'\n        | Rust => \\ () => $'Rc::<str>::from(\"\\\\u{001b}[90m\")' : string\n        | _ => \\ () => $'\"\\\\u001b[90m\"'\n\n:= color_bright_red () =\n    run_target \\|\n        | Zig => \\ () =>\n            $'\"\\\\u{001b}[91m\"' : string\n        | Gleam _ => \\ () => $'\"\\\\u{001b}[91m\"'\n        | Lua _ => \\ () => $'\"\"'\n        | Rust => \\ () => $'Rc::<str>::from(\"\\\\u{001b}[91m\")' : string\n        | _ => \\ () => $'\"\\\\u001b[91m\"'\n\n:= color_bright_green () =\n    run_target \\|\n        | Zig => \\ () =>\n            $'\"\\\\u{001b}[92m\"' : string\n        | Gleam _ => \\ () => $'\"\\\\u{001b}[92m\"'\n        | Lua _ => \\ () => $'\"\"'\n        | Rust => \\ () => $'Rc::<str>::from(\"\\\\u{001b}[92m\")' : string\n        | _ => \\ () => $'\"\\\\u001b[92m\"'\n\n:= color_yellow () =\n    run_target \\|\n        | Zig => \\ () =>\n            $'\"\\\\u{001b}[93m\"' : string\n        | Gleam _ => \\ () => $'\"\\\\u{001b}[93m\"'\n        | Lua _ => \\ () => $'\"\"'\n        | Rust => \\ () => $'Rc::<str>::from(\"\\\\u{001b}[93m\")' : string\n        | _ => \\ () => $'\"\\\\u001b[93m\"'\n\n:= color_bright_blue () =\n    run_target \\|\n        | Zig => \\ () =>\n            $'\"\\\\u{001b}[94m\"' : string\n        | Gleam _ => \\ () => $'\"\\\\u{001b}[94m\"'\n        | Lua _ => \\ () => $'\"\"'\n        | Rust => \\ () => $'Rc::<str>::from(\"\\\\u{001b}[94m\")' : string\n        | _ => \\ () => $'\"\\\\u001b[94m\"'\n\n:= color_bright_magenta () =\n    run_target \\|\n        | Zig => \\ () =>\n            $'\"\\\\u{001b}[95m\"' : string\n        | Gleam _ => \\ () => $'\"\\\\u{001b}[95m\"'\n        | Lua _ => \\ () => $'\"\"'\n        | Rust => \\ () => $'Rc::<str>::from(\"\\\\u{001b}[95m\")' : string\n        | _ => \\ () => $'\"\\\\u001b[95m\"'\n\n:= color_bright_cyan () =\n    run_target \\|\n        | Zig => \\ () =>\n            $'\"\\\\u{001b}[96m\"' : string\n        | Gleam _ => \\ () => $'\"\\\\u{001b}[96m\"'\n        | Lua _ => \\ () => $'\"\"'\n        | Rust => \\ () => $'Rc::<str>::from(\"\\\\u{001b}[96m\")' : string\n        | _ => \\ () => $'\"\\\\u001b[96m\"'\n\n:= color_bright_white () =\n    run_target \\|\n        | Zig => \\ () =>\n            $'\"\\\\u{001b}[97m\"' : string\n        | Gleam _ => \\ () => $'\"\\\\u{001b}[97m\"'\n        | Lua _ => \\ () => $'\"\"'\n        | Rust => \\ () => $'Rc::<str>::from(\"\\\\u{001b}[97m\")' : string\n        | _ => \\ () => $'\"\\\\u001b[97m\"'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := write_ln l : () =
+      write l
+      backend_switch {
+          Gleam = \ () => write_line () : ()
+          Lua = \ () => write_line () : ()
+          Fsharp = \ () => write_line () : ()
+          Python = \ () => $"print()" : ()
+          Cuda = \ () => $'printf("\\n")' : ()
+          Rust = \ () => $'println\!()' : ()
+          Zig = \ () => $'spiralPrint(&[_]u8{10})' : ()
+          Lean = \ () => $'IO.println ""' : ()
+      }
+
+  := color_reset () =
+      run_target \|
+          | Zig => \ () =>
+              $'"\\u{001b}[0m"' : string
+          | Gleam _ => \ () => $'"\\u{001b}[0m"'
+          | Lua _ => \ () => $'""'
+          | Rust => \ () => $'Rc::<str>::from("\\u{001b}[0m")' : string
+          | _ => \ () => $'"\\u001b[0m"'
+
+  := color_bright_black () =
+      run_target \|
+          | Zig => \ () =>
+              $'"\\u{001b}[90m"' : string
+          | Gleam _ => \ () => $'"\\u{001b}[90m"'
+          | Lua _ => \ () => $'""'
+          | Rust => \ () => $'Rc::<str>::from("\\u{001b}[90m")' : string
+          | _ => \ () => $'"\\u001b[90m"'
+
+  := color_bright_red () =
+      run_target \|
+          | Zig => \ () =>
+              $'"\\u{001b}[91m"' : string
+          | Gleam _ => \ () => $'"\\u{001b}[91m"'
+          | Lua _ => \ () => $'""'
+          | Rust => \ () => $'Rc::<str>::from("\\u{001b}[91m")' : string
+          | _ => \ () => $'"\\u001b[91m"'
+
+  := color_bright_green () =
+      run_target \|
+          | Zig => \ () =>
+              $'"\\u{001b}[92m"' : string
+          | Gleam _ => \ () => $'"\\u{001b}[92m"'
+          | Lua _ => \ () => $'""'
+          | Rust => \ () => $'Rc::<str>::from("\\u{001b}[92m")' : string
+          | _ => \ () => $'"\\u001b[92m"'
+
+  := color_yellow () =
+      run_target \|
+          | Zig => \ () =>
+              $'"\\u{001b}[93m"' : string
+          | Gleam _ => \ () => $'"\\u{001b}[93m"'
+          | Lua _ => \ () => $'""'
+          | Rust => \ () => $'Rc::<str>::from("\\u{001b}[93m")' : string
+          | _ => \ () => $'"\\u001b[93m"'
+
+  := color_bright_blue () =
+      run_target \|
+          | Zig => \ () =>
+              $'"\\u{001b}[94m"' : string
+          | Gleam _ => \ () => $'"\\u{001b}[94m"'
+          | Lua _ => \ () => $'""'
+          | Rust => \ () => $'Rc::<str>::from("\\u{001b}[94m")' : string
+          | _ => \ () => $'"\\u001b[94m"'
+
+  := color_bright_magenta () =
+      run_target \|
+          | Zig => \ () =>
+              $'"\\u{001b}[95m"' : string
+          | Gleam _ => \ () => $'"\\u{001b}[95m"'
+          | Lua _ => \ () => $'""'
+          | Rust => \ () => $'Rc::<str>::from("\\u{001b}[95m")' : string
+          | _ => \ () => $'"\\u001b[95m"'
+
+  := color_bright_cyan () =
+      run_target \|
+          | Zig => \ () =>
+              $'"\\u{001b}[96m"' : string
+          | Gleam _ => \ () => $'"\\u{001b}[96m"'
+          | Lua _ => \ () => $'""'
+          | Rust => \ () => $'Rc::<str>::from("\\u{001b}[96m")' : string
+          | _ => \ () => $'"\\u001b[96m"'
+
+  := color_bright_white () =
+      run_target \|
+          | Zig => \ () =>
+              $'"\\u{001b}[97m"' : string
+          | Gleam _ => \ () => $'"\\u{001b}[97m"'
+          | Lua _ => \ () => $'""'
+          | Rust => \ () => $'Rc::<str>::from("\\u{001b}[97m")' : string
+          | _ => \ () => $'"\\u001b[97m"'
+  """,
+  timeout: 300_000
+)
+```

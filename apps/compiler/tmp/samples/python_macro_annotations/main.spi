@@ -1,0 +1,22 @@
+:! res = $'Result<i32, string>'
+:! tok = $'System.Threading.CancellationToken'
+
+:| u =
+    | W : res
+    | T : tok
+
+:= python_annotated_macro_types (k : i32) : i32 =
+    := w : res = $'!k + 1'
+    := r = ~~ $'!w * 2' : i32
+    := x = ? k > 0 ?> W w |: T ($'None' : tok)
+    ?= x ?|
+    | W y => r + $'(!y)' : i32
+    | T _ => 0i32
+
+:= main () : i32 =
+    := ~k = 7i32
+    !!!!BackendSwitch({
+        C = \ () => 24i32 : i32
+        Python = \ () => python_annotated_macro_types k : i32
+        Bend = \ () => 24i32 : i32
+    })

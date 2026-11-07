@@ -1,0 +1,18 @@
+:! flow = ()
+:! phrasing = ()
+
+:| child parent =
+    | Text :: \* parent. string -> child parent
+    | Span :: \* parent. string -> child parent
+    | Div :: string -> child flow
+
+:| ^ children parent =
+    | ChildNil :: \* parent. children parent
+    | ChildCons :: \* parent. child parent * children parent -> children parent
+
+:| element parent =
+    | Element :: \* parent. string * children parent -> element parent
+
+:= main () : string =
+    := _ : element phrasing = Element ("p", ChildCons (Div "illegal", ChildNil))
+    "unreachable"

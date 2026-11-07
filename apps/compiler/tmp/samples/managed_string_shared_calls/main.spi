@@ -1,0 +1,7 @@
+:~ measure (x : string) : i32 = sm::length x
+
+:= main () =
+    := ~x = "qwe"
+    := a = measure x
+    := b = measure x
+    (-.) ((+.) a b) 6i32

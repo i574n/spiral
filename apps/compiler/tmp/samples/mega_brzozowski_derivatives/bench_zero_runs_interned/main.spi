@@ -1,0 +1,7 @@
+:< main
+:< runtime_workload
+:< runtime_interned
+
+:= main () : i32 =
+    expect_count (run_interned_zero_runs 26i32) 26i32 "brzozowski-bench-zero-runs-count"
+    0i32

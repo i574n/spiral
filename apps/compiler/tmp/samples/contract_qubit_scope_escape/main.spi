@@ -1,0 +1,28 @@
+:! region_a = ()
+:! region_b = ()
+:! coherent = ()
+
+:| qubit region phase =
+    | QubitA :: string -> qubit region_a coherent
+    | QubitB :: string -> qubit region_b coherent
+
+:| packed_qubit =
+    | PackedQubit :: (\? region. qubit region coherent) -> packed_qubit
+
+:= expect_region_b (qubit : qubit region_b coherent) : string =
+    ?= qubit ?|
+    | QubitB label => label
+
+:= force_region_b \* region. (qubit : qubit region coherent) : string =
+    expect_region_b qubit
+
+:= with_qubit \* result.
+    (visitor : \* region. qubit region coherent -> result)
+    : result =
+    := packed = PackedQubit (\? (QubitA "psi"))
+    ?= packed ?|
+    | PackedQubit qubit =>
+        := \? region. qubit = qubit
+        visitor qubit
+
+:= main () : string = with_qubit `$force_region_b

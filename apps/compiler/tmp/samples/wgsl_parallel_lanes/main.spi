@@ -1,0 +1,15 @@
+:= gpu_lane () : u32 =
+    !!!!BackendSwitch({
+        Wgsl = \ () => $"spiral_lane" : u32
+        C = \ () => 0u32
+        Fsharp = \ () => 0u32
+        Rust = \ () => 0u32
+        Pascal = \ () => 0u32
+        Lean = \ () => 0u32
+    })
+
+:= main () : i32 =
+    := ~lane = gpu_lane ()
+    := ~square = lane *. lane
+    := ~value = (square +. 7u32) %. 251u32
+    !!!!Conv(`i32, value)

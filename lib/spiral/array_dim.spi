@@ -1,0 +1,24 @@
+:# array_dim static =
+    :< testing
+
+:! a dim el = array_base el
+
+:= create \* dim {int} el. (size : dim) : a dim el = a !!!!ArrayCreate(`el, size)
+
+:= index \* dim {int} el. ((a ar) : a dim el) (i : dim) : el = !!!!ArrayIndex(ar, i)
+
+:= set \* dim {int} el. ((a ar) : a dim el) (i : dim) (v : el) : () = !!!!ArrayIndexSet(ar, i, v)
+
+:= length \* dim {int} el. ((a ar) : a dim el) : dim = !!!!ArrayLength(`dim, ar)
+
+:= of_array \* dim {int} el. ((array ar) : array el) : a dim el = a ar
+
+:= to_array \* dim {int} el. ((a ar) : a dim el) : array el = array ar
+
+///> c
+///> rust
+:# a_u64_indexed_array_round_trips =
+    := ar : a u64 i32 = create 3u64
+    set ar 0u64 7i32
+    set ar 2u64 9i32
+    (index ar 0u64, index ar 2u64, length ar) |> _assert_eq (7i32, 9i32, 3u64)

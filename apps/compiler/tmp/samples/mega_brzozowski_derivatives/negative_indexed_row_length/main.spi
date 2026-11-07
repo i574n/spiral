@@ -1,0 +1,10 @@
+:< main
+
+:= malformed_row () : indexed_dfa_transition_vector bit_alphabet bit_finite_length =
+    IndexedDfaTransitionVectorCons (
+        dfa_transition (RegexEpsilon, zero (), RegexEmpty),
+        IndexedDfaTransitionVectorNil)
+
+:= main () : string =
+    := _ = malformed_row ()
+    "must-not-typecheck"

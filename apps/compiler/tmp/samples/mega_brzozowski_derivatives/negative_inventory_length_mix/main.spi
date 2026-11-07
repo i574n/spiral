@@ -1,0 +1,8 @@
+:< inventory_indexed_model
+
+:= impossible_vector () : root_finite_symbol_vector root_tri_alphabet model_two_length =
+    root_tri_finite_symbol_vector ()
+
+:= main () : bool =
+    := _ = impossible_vector ()
+    !+

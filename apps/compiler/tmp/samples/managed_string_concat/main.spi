@@ -1,0 +1,15 @@
+:~ choose_left (flag : bool) : string =
+    ? flag ?> "spi" |: "bad"
+
+:~ choose_right (flag : bool) : string =
+    ? flag ?> "bad" |: "ral"
+
+:= main () =
+    := left = choose_left !+
+    := right = choose_right !-
+    := value = sm::concat left right
+    ? (=.) (sm::length value : i32) 6i32 ?>
+        ? (=.) (sm::index value 0i32) 's' ?>
+            ? (=.) (sm::index value 5i32) 'l' ?> 0i32 |: 1i32
+        |: 2i32
+    |: 3i32

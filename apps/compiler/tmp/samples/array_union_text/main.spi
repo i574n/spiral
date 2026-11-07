@@ -1,0 +1,29 @@
+:| slot =
+    | None
+    | Both : string * string
+
+:! slot_array = array_base slot
+
+:= create (n : i32) : slot_array = slot_array !!!!ArrayCreate(`slot, n)
+:= get (values : slot_array) (i : i32) : slot =
+    ?= values ?|
+    | slot_array raw => !!!!ArrayIndex(raw, i)
+:= set (values : slot_array) (i : i32) (value : slot) : () =
+    ?= values ?|
+    | slot_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+:~ score x : i32 =
+    ?= x ?|
+    | None => 1i32
+    | Both (left, right) =>
+        ? !!!!EQ(left, "hi") && !!!!EQ(right, "yo") ?> 0i32 |: 1i32
+
+:= main () : i32 =
+    := values = create 1i32
+    := ~a = "hi"
+    := ~b = "yo"
+    := ~flag = !+
+    := held = ? flag ?> Both (a, b) |: None
+    set values 0i32 held
+    := loaded = get values 0i32
+    score loaded

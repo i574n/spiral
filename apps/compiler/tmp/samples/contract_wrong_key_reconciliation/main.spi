@@ -1,0 +1,22 @@
+:! ui_scope = ()
+:! item_key = ()
+:! foreign_key = ()
+
+:| keyed_child key value =
+    | KeyedChild :: \* key value. value -> keyed_child key value
+
+:| mounted_list scope key =
+    | MountedList :: \* scope key. string -> mounted_list scope key
+
+:= reconcile \* scope key value.
+    (mounted : mounted_list scope key)
+    (child : keyed_child key value)
+    : mounted_list scope key =
+    ?= mounted, child ?|
+    | MountedList _, KeyedChild _ => MountedList "keyed-reconciled"
+
+:= main () : string =
+    := mounted : mounted_list ui_scope item_key = MountedList "mounted"
+    := child : keyed_child foreign_key i32 = KeyedChild 7
+    := _ : mounted_list ui_scope item_key = reconcile mounted child
+    "unreachable"

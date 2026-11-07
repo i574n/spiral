@@ -1,0 +1,14 @@
+:| bit =
+    | Zero
+    | One
+
+:! wrapped = bit
+
+:= classify (value : wrapped) : bool =
+    ?= value ?|
+    | wrapped Zero => !+
+    | wrapped One => !-
+
+:= main () : i32 =
+    := ~value = wrapped Zero
+    ? classify value ?> 0i32 |: 1i32

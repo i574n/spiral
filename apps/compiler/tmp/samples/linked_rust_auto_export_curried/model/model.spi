@@ -1,0 +1,5 @@
+:= add3 (a : i32) (b : i32) (c : i32) : i32 = !!!!Add(!!!!Add(a, b), c)
+
+:= double (n : i32) : i32 = !!!!Mult(n, 2i32)
+
+:= main () : i32 = 0i32

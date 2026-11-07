@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>spiral_wasm.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<h1>spiral_wasm</h1>
+
+<pre class="code"><code><span class="tok-keyword">:&lt;</span> <span class="tok-variable">rust_operators</span>
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">sm'_operators</span></code></pre>
+
+<h2>spiral_wasm</h2>
+
+<h3>get_args</h3>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">get_args</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">exception</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">exception</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-string">'e'</span>
+        <span class="tok-variable">trace_level</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">trace_level</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-string">'t'</span>
+        <span class="tok-variable">wasm</span> <span class="tok-operator">=</span> <span class="tok-string">&quot;</span><span class="tok-string">wasm</span><span class="tok-string">&quot;</span><span class="tok-operator">,</span> <span class="tok-string">'w'</span>
+    <span class="tok-parenthesis">}</span></code></pre>
+
+<h3>get_command</h3>
+
+<pre class="code"><code><span class="tok-keyword">:~</span> <span class="tok-variable">get_command</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">###</span><span class="tok-string">&quot;</span><span class="tok-string">command</span><span class="tok-string">&quot;</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">clap</span><span class="tok-symbol">.new_command</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">clap</span><span class="tok-symbol">.command_args_override_self</span> <span class="tok-number">!+</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">clap</span><span class="tok-symbol">.command_init_arg</span> <span class="tok-parenthesis">(</span><span class="tok-variable">get_args</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-symbol">.exception</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span>
+        <span class="tok-variable">clap</span><span class="tok-symbol">.arg_num_args_range</span> <span class="tok-parenthesis">(</span>
+            <span class="tok-variable">clap</span><span class="tok-symbol">.new_value_range</span>
+                <span class="tok-number">!+</span>
+                <span class="tok-parenthesis">(</span><span class="tok-variable">am'</span><span class="tok-symbol">.End</span> <span class="tok-variable">eval</span><span class="tok-parenthesis">)</span>
+                <span class="tok-parenthesis">(</span><span class="tok-variable">am'</span><span class="tok-symbol">.End</span> <span class="tok-keyword">\</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-number">1</span><span class="tok-number_suffix">i32</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">convert</span><span class="tok-symbol">.convert</span> <span class="tok-operator">:</span> <span class="tok-variable">convert</span><span class="tok-symbol">.unativeint</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+        <span class="tok-parenthesis">)</span>
+        <span class="tok-operator">&gt;&gt;</span> <span class="tok-variable">clap</span><span class="tok-symbol">.arg_require_equals</span> <span class="tok-number">!+</span>
+        <span class="tok-operator">&gt;&gt;</span> <span class="tok-variable">clap</span><span class="tok-symbol">.arg_default_missing_value</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">clap</span><span class="tok-symbol">.command_init_arg</span> <span class="tok-parenthesis">(</span><span class="tok-variable">get_args</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-symbol">.trace_level</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span>
+        <span class="tok-keyword">~&gt;</span> <span class="tok-variable">clap</span><span class="tok-symbol">.arg_union</span> <span class="tok-unary_operator">`</span><span class="tok-variable">trace_level</span> <span class="tok-variable">ignore</span>
+    <span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">clap</span><span class="tok-symbol">.command_init_arg</span> <span class="tok-parenthesis">(</span><span class="tok-variable">get_args</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-symbol">.wasm</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span>
+        <span class="tok-variable">clap</span><span class="tok-symbol">.arg_required</span> <span class="tok-number">!+</span>
+    <span class="tok-parenthesis">)</span></code></pre>
+
+<h3>run</h3>
+
+<pre class="code"><code><span class="tok-keyword">:~</span> <span class="tok-variable">run</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">matches</span> <span class="tok-operator">:</span> <span class="tok-variable">clap</span><span class="tok-symbol">.arg_matches</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">:</span> <span class="tok-variable">async</span><span class="tok-symbol">.future_pin</span> <span class="tok-parenthesis">(</span>
+        <span class="tok-variable">resultm</span><span class="tok-symbol">.result'</span>
+            <span class="tok-variable">u8</span>
+            <span class="tok-variable">resultm</span><span class="tok-symbol">.anyhow_error</span>
+    <span class="tok-parenthesis">)</span>
+    <span class="tok-operator">=</span>
+    <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-keyword">:=</span> <span class="tok-variable">wasm_path</span> <span class="tok-operator">=</span>
+            <span class="tok-variable">matches</span>
+            <span class="tok-operator">|&gt;</span> <span class="tok-variable">clap</span><span class="tok-symbol">.matches_get_one</span> <span class="tok-parenthesis">(</span><span class="tok-variable">get_args</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-symbol">.wasm</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">fst</span><span class="tok-parenthesis">)</span>
+            <span class="tok-operator">|&gt;</span> <span class="tok-variable">optionm'</span><span class="tok-symbol">.unbox</span>
+            <span class="tok-operator">|&gt;</span> <span class="tok-variable">optionm</span><span class="tok-symbol">.value</span>
+            <span class="tok-operator">|&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">.from_std_string</span>
+
+        <span class="tok-variable">trace</span> <span class="tok-variable">Verbose</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">spiral_wasm.run</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">wasm_path</span> <span class="tok-parenthesis">}</span>
+
+        <span class="tok-keyword">:=</span> <span class="tok-variable">wasm</span> <span class="tok-operator">=</span> <span class="tok-variable">wasm_path</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">file_system</span><span class="tok-symbol">.read</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.try'</span>
+
+        <span class="tok-keyword">:~</span> <span class="tok-variable">fn</span> <span class="tok-parenthesis">(</span><span class="tok-variable">retry</span> <span class="tok-operator">:</span> <span class="tok-variable">u8</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+            <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                <span class="tok-keyword">:=</span> <span class="tok-variable">worker</span> <span class="tok-operator">=</span> <span class="tok-variable">near_workspaces</span><span class="tok-symbol">.sandbox_worker</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.try'</span>
+                <span class="tok-keyword">:=</span> <span class="tok-variable">contract</span> <span class="tok-operator">=</span> <span class="tok-variable">worker</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">near_workspaces</span><span class="tok-symbol">.dev_deploy</span> <span class="tok-variable">wasm</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">async</span><span class="tok-symbol">.await</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.try'</span>
+
+                <span class="tok-variable">trace</span> <span class="tok-variable">Verbose</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">spiral_wasm.run</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">retry</span> <span class="tok-variable">worker</span> <span class="tok-variable">contract</span> <span class="tok-parenthesis">}</span>
+
+                <span class="tok-keyword">:=</span> <span class="tok-variable">result</span> <span class="tok-operator">=</span>
+                    <span class="tok-variable">contract</span>
+                    <span class="tok-operator">|&gt;</span> <span class="tok-variable">near_workspaces</span><span class="tok-symbol">.call</span> <span class="tok-string">&quot;</span><span class="tok-string">state_main</span><span class="tok-string">&quot;</span>
+                    <span class="tok-operator">|&gt;</span> <span class="tok-variable">near_workspaces</span><span class="tok-symbol">.gas</span> <span class="tok-parenthesis">(</span><span class="tok-variable">near_workspaces</span><span class="tok-symbol">.from_tgas</span> <span class="tok-number">300</span><span class="tok-parenthesis">)</span>
+                    <span class="tok-operator">|&gt;</span> <span class="tok-variable">near_workspaces</span><span class="tok-symbol">.transact</span>
+                    <span class="tok-operator">|&gt;</span> <span class="tok-variable">async</span><span class="tok-symbol">.await</span>
+                    <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.try'</span>
+
+                <span class="tok-variable">trace</span> <span class="tok-variable">Verbose</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">spiral_wasm.run</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">retry</span> <span class="tok-variable">result</span> <span class="tok-parenthesis">}</span>
+
+                <span class="tok-variable">result</span>
+                <span class="tok-operator">|&gt;</span> <span class="tok-variable">near_workspaces</span><span class="tok-symbol">.logs</span>
+                <span class="tok-operator">|&gt;</span> <span class="tok-variable">am'</span><span class="tok-symbol">.vec_map</span> <span class="tok-variable">sm'</span><span class="tok-symbol">.ref_to_std_string</span>
+                <span class="tok-operator">|&gt;</span> <span class="tok-variable">am'</span><span class="tok-symbol">.vec_for_each</span> <span class="tok-variable">console</span><span class="tok-symbol">.write_line</span>
+
+                <span class="tok-variable">trace_raw</span> <span class="tok-variable">Info</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string"> </span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span>
+                <span class="tok-variable">result</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">near_workspaces</span><span class="tok-symbol">.print_usd</span> <span class="tok-variable">retry</span>
+
+                <span class="tok-keyword">:=</span> <span class="tok-variable">result2</span> <span class="tok-operator">=</span> <span class="tok-variable">result</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">near_workspaces</span><span class="tok-symbol">.into_result</span>
+
+                <span class="tok-variable">trace</span> <span class="tok-variable">Verbose</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">spiral_wasm.run</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">result2</span> <span class="tok-parenthesis">}</span>
+
+                <span class="tok-keyword">:=</span> <span class="tok-variable">receipt_failures</span> <span class="tok-operator">=</span> <span class="tok-variable">result</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">near_workspaces</span><span class="tok-symbol">.receipt_failures</span>
+                <span class="tok-keyword">:=</span> <span class="tok-variable">receipt_failures_len</span> <span class="tok-operator">=</span> <span class="tok-variable">receipt_failures</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">am'</span><span class="tok-symbol">.vec_len</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">convert</span><span class="tok-symbol">.i32</span>
+
+                <span class="tok-variable">trace</span> <span class="tok-variable">Verbose</span>
+                    <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">spiral_wasm.run</span><span class="tok-string">&quot;</span>
+                    <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">receipt_failures_len</span> <span class="tok-variable">receipt_failures</span> <span class="tok-parenthesis">}</span>
+
+                <span class="tok-keyword">:=</span> <span class="tok-variable">receipt_outcomes</span> <span class="tok-operator">=</span> <span class="tok-variable">result</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">near_workspaces</span><span class="tok-symbol">.receipt_outcomes</span>
+                <span class="tok-keyword">:=</span> <span class="tok-variable">receipt_outcomes_len</span> <span class="tok-operator">=</span> <span class="tok-variable">receipt_outcomes</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">am'</span><span class="tok-symbol">.vec_len</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">convert</span><span class="tok-symbol">.i32</span>
+
+                <span class="tok-variable">trace</span> <span class="tok-variable">Verbose</span>
+                    <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">spiral_wasm.run</span><span class="tok-string">&quot;</span>
+                    <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">receipt_outcomes_len</span> <span class="tok-variable">receipt_outcomes</span> <span class="tok-parenthesis">}</span>
+
+                <span class="tok-keyword">:=</span> <span class="tok-variable">json</span> <span class="tok-operator">=</span> <span class="tok-variable">result</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">near_workspaces</span><span class="tok-symbol">.json</span>
+
+                <span class="tok-variable">trace</span> <span class="tok-variable">Verbose</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">spiral_wasm.run</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">json</span> <span class="tok-parenthesis">}</span>
+
+                <span class="tok-keyword">:=</span> <span class="tok-variable">borsh</span> <span class="tok-operator">=</span> <span class="tok-variable">result</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">near_workspaces</span><span class="tok-symbol">.borsh</span>
+
+                <span class="tok-variable">trace</span> <span class="tok-variable">Verbose</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">spiral_wasm.run</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">borsh</span> <span class="tok-parenthesis">}</span>
+
+                <span class="tok-keyword">:=</span> <span class="tok-variable">error</span> <span class="tok-operator">=</span> <span class="tok-unary_operator">#?</span><span class="tok-parenthesis">{</span> <span class="tok-variable">receipt_outcomes_len</span> <span class="tok-variable">retry</span> <span class="tok-variable">receipt_failures</span> <span class="tok-parenthesis">}</span>
+                <span class="tok-keyword">?</span> <span class="tok-variable">receipt_failures_len</span> <span class="tok-operator">&gt;</span> <span class="tok-number">0</span>
+                <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Ok</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">error</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-keyword">_</span> <span class="tok-keyword">_</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.anyhow_error</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.box</span>
+                <span class="tok-keyword">|?</span> <span class="tok-variable">receipt_outcomes_len</span> <span class="tok-operator">&gt;</span> <span class="tok-number">1</span>
+                <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Ok</span> <span class="tok-variable">None</span> <span class="tok-operator">:</span> <span class="tok-keyword">_</span> <span class="tok-keyword">_</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.anyhow_error</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.box</span>
+                <span class="tok-keyword">|:</span> <span class="tok-variable">error</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.anyhow_error</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.err</span>
+            <span class="tok-operator">|&gt;</span> <span class="tok-variable">async</span><span class="tok-symbol">.new_future_move</span>
+
+        <span class="tok-keyword">:~</span> <span class="tok-keyword">^</span> <span class="tok-variable">루프</span> <span class="tok-parenthesis">(</span><span class="tok-variable">retry</span> <span class="tok-operator">:</span> <span class="tok-variable">u8</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+            <span class="tok-keyword">:=</span> <span class="tok-variable">max</span> <span class="tok-operator">=</span> <span class="tok-number">15</span>
+            <span class="tok-keyword">:=</span> <span class="tok-variable">init</span> <span class="tok-parenthesis">(</span><span class="tok-variable">error</span> <span class="tok-operator">:</span> <span class="tok-keyword">_</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+                <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                    <span class="tok-parenthesis">{</span> <span class="tok-variable">retry</span> <span class="tok-variable">error</span> <span class="tok-parenthesis">}</span>
+                <span class="tok-operator">|&gt;</span> <span class="tok-variable">async</span><span class="tok-symbol">.new_future_move</span>
+            <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                <span class="tok-keyword">:=</span> <span class="tok-variable">result</span> <span class="tok-operator">=</span>
+                    <span class="tok-variable">fn</span> <span class="tok-variable">retry</span>
+                    <span class="tok-operator">|&gt;</span> <span class="tok-variable">async</span><span class="tok-symbol">.await</span>
+                    <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.map_error'</span> <span class="tok-variable">sm'</span><span class="tok-symbol">.format'</span>
+                    <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.unbox</span>
+                <span class="tok-keyword">?=</span> <span class="tok-variable">result</span> <span class="tok-keyword">?|</span>
+                <span class="tok-operator">|</span> <span class="tok-variable">Ok</span> <span class="tok-parenthesis">(</span><span class="tok-variable">None</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                    <span class="tok-variable">init</span> <span class="tok-variable">None</span>
+                    <span class="tok-operator">|&gt;</span> <span class="tok-variable">async</span><span class="tok-symbol">.await</span>
+                    <span class="tok-operator">|&gt;</span> <span class="tok-variable">Ok</span>
+                <span class="tok-operator">|</span> <span class="tok-variable">Ok</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">error</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+                    <span class="tok-variable">trace</span> <span class="tok-variable">Critical</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">spiral_wasm.run / Ok (Some error)</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">retry</span> <span class="tok-variable">error</span> <span class="tok-parenthesis">}</span>
+                    <span class="tok-variable">init</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">error</span><span class="tok-parenthesis">)</span>
+                    <span class="tok-operator">|&gt;</span> <span class="tok-variable">async</span><span class="tok-symbol">.await</span>
+                    <span class="tok-operator">|&gt;</span> <span class="tok-variable">Error</span>
+                <span class="tok-operator">|</span> <span class="tok-variable">Error</span> <span class="tok-variable">error</span> <span class="tok-keyword">?&amp;</span> <span class="tok-variable">retry</span> <span class="tok-operator">&gt;=</span> <span class="tok-variable">max</span> <span class="tok-operator">=&gt;</span>
+                    <span class="tok-variable">trace</span> <span class="tok-variable">Warning</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">spiral_wasm.run / Error error</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">retry</span> <span class="tok-variable">error</span> <span class="tok-parenthesis">}</span>
+                    <span class="tok-variable">trace_raw</span> <span class="tok-variable">Warning</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-escaped_char">\n</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span>
+                    <span class="tok-variable">init</span> <span class="tok-variable">None</span>
+                    <span class="tok-operator">|&gt;</span> <span class="tok-variable">async</span><span class="tok-symbol">.await</span>
+                    <span class="tok-operator">|&gt;</span> <span class="tok-variable">Ok</span>
+                <span class="tok-operator">|</span> <span class="tok-variable">Error</span> <span class="tok-variable">error</span> <span class="tok-operator">=&gt;</span>
+                    <span class="tok-variable">trace</span> <span class="tok-variable">Warning</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">spiral_wasm.run / Error error</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">retry</span> <span class="tok-variable">error</span> <span class="tok-parenthesis">}</span>
+                    <span class="tok-variable">trace_raw</span> <span class="tok-variable">Warning</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-escaped_char">\n</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span>
+                    <span class="tok-variable">루프</span> <span class="tok-parenthesis">(</span><span class="tok-variable">retry</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">async</span><span class="tok-symbol">.await</span>
+            <span class="tok-operator">|&gt;</span> <span class="tok-variable">async</span><span class="tok-symbol">.new_future_move</span>
+        <span class="tok-keyword">:=</span> <span class="tok-variable">retries</span> <span class="tok-operator">=</span> <span class="tok-variable">루프</span> <span class="tok-number">1</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">async</span><span class="tok-symbol">.await</span>
+
+        <span class="tok-variable">trace</span> <span class="tok-variable">Verbose</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">spiral_wasm.run</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">retries</span> <span class="tok-parenthesis">}</span>
+
+        <span class="tok-keyword">?=</span> <span class="tok-variable">retries</span> <span class="tok-keyword">?|</span>
+        <span class="tok-operator">|</span> <span class="tok-variable">Ok</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">retry</span> <span class="tok-parenthesis">}</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">Ok</span> <span class="tok-variable">retry</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.box</span>
+        <span class="tok-operator">|</span> <span class="tok-variable">Error</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">retry</span> <span class="tok-variable">error</span> <span class="tok-parenthesis">}</span> <span class="tok-operator">=&gt;</span> <span class="tok-unary_operator">#?</span><span class="tok-parenthesis">{</span> <span class="tok-variable">retries</span> <span class="tok-variable">error</span> <span class="tok-parenthesis">}</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.anyhow_error</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.err</span>
+
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">async</span><span class="tok-symbol">.new_future_move</span></code></pre>
+
+<h3>main</h3>
+
+<pre class="code"><code>///&gt; _
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">run_main</span> <span class="tok-parenthesis">(</span><span class="tok-variable">args</span> <span class="tok-operator">:</span> <span class="tok-variable">array_base</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">command</span> <span class="tok-operator">=</span> <span class="tok-variable">get_command</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">arg_matches</span> <span class="tok-operator">=</span> <span class="tok-variable">command</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">clap</span><span class="tok-symbol">.command_get_matches</span>
+
+    <span class="tok-keyword">:=</span> <span class="tok-variable">trace_level</span> <span class="tok-operator">=</span>
+        <span class="tok-variable">arg_matches</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-variable">clap</span><span class="tok-symbol">.matches_get_one</span> <span class="tok-parenthesis">(</span><span class="tok-variable">get_args</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-symbol">.trace_level</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">fst</span><span class="tok-parenthesis">)</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-variable">optionm'</span><span class="tok-symbol">.unbox</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-variable">optionm</span><span class="tok-symbol">.map</span> <span class="tok-parenthesis">(</span>
+            <span class="tok-variable">sm'</span><span class="tok-symbol">.from_std_string</span>
+            <span class="tok-operator">&gt;&gt;</span> <span class="tok-variable">reflection</span><span class="tok-symbol">.union_try_pick</span>
+        <span class="tok-parenthesis">)</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-variable">optionm'</span><span class="tok-symbol">.flatten</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-variable">optionm'</span><span class="tok-symbol">.default_value</span> <span class="tok-variable">Verbose</span>
+
+    <span class="tok-keyword">:=</span> <span class="tok-variable">trace_state</span> <span class="tok-operator">=</span> <span class="tok-variable">get_trace_state_or_init</span> <span class="tok-parenthesis">(</span><span class="tok-variable">Some</span> <span class="tok-variable">trace_level</span><span class="tok-parenthesis">)</span>
+
+    <span class="tok-variable">trace</span> <span class="tok-variable">Verbose</span>
+        <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">spiral_wasm.main</span><span class="tok-string">&quot;</span>
+        <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">args</span> <span class="tok-parenthesis">}</span>
+
+    <span class="tok-keyword">:=</span> <span class="tok-variable">exception</span> <span class="tok-operator">=</span>
+        <span class="tok-variable">arg_matches</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-variable">clap</span><span class="tok-symbol">.matches_get_one</span> <span class="tok-parenthesis">(</span><span class="tok-variable">get_args</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-symbol">.exception</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">fst</span><span class="tok-parenthesis">)</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-variable">optionm'</span><span class="tok-symbol">.map</span> <span class="tok-parenthesis">(</span><span class="tok-variable">sm'</span><span class="tok-symbol">.from_std_string</span> <span class="tok-operator">&gt;&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">.trim_start</span> <span class="tok-parenthesis">[</span> <span class="tok-string">'\\'</span> <span class="tok-parenthesis">]</span> <span class="tok-operator">&gt;&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">.trim_end</span> <span class="tok-parenthesis">[</span> <span class="tok-string">'\\'</span> <span class="tok-parenthesis">]</span><span class="tok-parenthesis">)</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-variable">optionm'</span><span class="tok-symbol">.unbox</span>
+
+    <span class="tok-keyword">:=</span> <span class="tok-variable">result</span> <span class="tok-operator">=</span>
+        <span class="tok-variable">arg_matches</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-variable">run</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-variable">async</span><span class="tok-symbol">.block_on_tokio</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.map_error'</span> <span class="tok-variable">sm'</span><span class="tok-symbol">.format'</span>
+
+    <span class="tok-keyword">?=</span> <span class="tok-variable">result</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">rust</span><span class="tok-symbol">.clone_rust</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.unbox</span><span class="tok-operator">,</span> <span class="tok-variable">exception</span> <span class="tok-keyword">?|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Ok</span> <span class="tok-variable">retries</span><span class="tok-operator">,</span> <span class="tok-variable">Some</span> <span class="tok-variable">exception</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-string">&quot;</span><span class="tok-string">spiral_wasm.main / retries: </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">sm'</span><span class="tok-symbol">.format</span> <span class="tok-variable">retries</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string"> / exception: '</span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">exception</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">'</span><span class="tok-string">&quot;</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.err</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.unwrap'</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Error</span> <span class="tok-variable">_error</span><span class="tok-operator">,</span> <span class="tok-variable">Some</span> <span class="tok-parenthesis">(</span><span class="tok-string">&quot;</span><span class="tok-string">&quot;</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Error</span> <span class="tok-variable">error</span><span class="tok-operator">,</span> <span class="tok-variable">Some</span> <span class="tok-variable">exception</span> <span class="tok-keyword">?&amp;</span> <span class="tok-variable">error</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">.from_std_string</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">.contains</span> <span class="tok-variable">exception</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Error</span> <span class="tok-variable">error</span><span class="tok-operator">,</span> <span class="tok-variable">Some</span> <span class="tok-variable">exception</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-string">&quot;</span><span class="tok-string">spiral_wasm.main / exception: '</span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">exception</span> <span class="tok-operator">++#</span> <span class="tok-string">&quot;</span><span class="tok-string">' / error: </span><span class="tok-string">&quot;</span> <span class="tok-operator">++#</span> <span class="tok-variable">sm'</span><span class="tok-symbol">.from_std_string</span> <span class="tok-variable">error</span>
+        <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.err</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.unwrap'</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Ok</span> <span class="tok-variable">_retries</span><span class="tok-operator">,</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Error</span> <span class="tok-variable">_error</span><span class="tok-operator">,</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-variable">result</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">resultm</span><span class="tok-symbol">.unwrap'</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+
+    <span class="tok-number">0</span><span class="tok-number_suffix">i32</span></code></pre>
+
+<p>F#: <code>main</code> for the Fable build. Native Rust (<code>--backend Rust</code>, see build.ps1): runs <code>run_main</code> with the process args.</p>
+
+<pre class="code"><code>///&gt; _
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">main</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Fsharp</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">let main args = </span><span class="tok-variable">!run_main</span><span class="tok-string"> args</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-keyword">:=</span> <span class="tok-variable">args</span> <span class="tok-operator">:</span> <span class="tok-variable">array_base</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span> <span class="tok-variable">am'</span><span class="tok-symbol">.init_base</span> <span class="tok-parenthesis">(</span><span class="tok-variable">env</span><span class="tok-symbol">.command_line_argument_count</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-variable">env</span><span class="tok-symbol">.command_line_argument</span>
+            <span class="tok-variable">run_main</span> <span class="tok-variable">args</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+    <span class="tok-parenthesis">}</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span></code></pre>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,9 @@
+:< sm'_operators
+:< leptos
+
+:= render (class : () -> string) text =
+    pre [
+        class_fn "[padding:1px] [font-size:12px] [line-height:12px] [text-wrap:pretty] " class
+    ] \ () =>
+        text
+        |> text_fragment

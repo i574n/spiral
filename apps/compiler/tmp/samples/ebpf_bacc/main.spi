@@ -1,0 +1,11 @@
+:= ^ all_pos ~n ~ok =
+    ? n =. 0i32 ?> ok |:
+        ~~ all_pos (n -. 1i32) (ok && (n > 0i32))
+
+:= main () : i32 =
+    := ~n = 3i32
+    := yes = ~~ all_pos n !+
+    := no = ~~ all_pos n !-
+    ? yes ?>
+        ? no ?> 1i32 |: 0i32
+    |: 2i32

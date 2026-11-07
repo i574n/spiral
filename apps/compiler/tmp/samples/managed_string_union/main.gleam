@@ -1,0 +1,38 @@
+import gleam/bit_array
+import gleam/string
+import gleam/int
+pub fn spiral_string_length(text: String) -> Int {
+  bit_array.byte_size(bit_array.from_string(text))
+}
+
+pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
+  let half = int.bitwise_shift_left(1, bits - 1)
+  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+}
+
+
+pub type Us0 {
+    Us0Text(f0i0 : String)
+    Us0Number(f1i0 : Int)
+}
+pub fn score_0(v0: Us0) -> Int {
+    case v0  {
+        Us0Number(v3) -> v3
+        Us0Text(v1) -> {
+            spiral_string_length(v1)
+        }
+    }
+}
+pub fn main() {
+    let v4 =
+        case False {
+            True -> Us0Number(7)
+            False -> {
+                Us0Text("qwe")
+            }
+        }
+    let v5 = score_0(v4)
+    let v6 = score_0(v4)
+    let v7 = spiral_wrap_signed(v5 + v6, 32)
+    spiral_wrap_signed(v7 - 6, 32)
+}

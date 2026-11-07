@@ -1,0 +1,4 @@
+:= main () =
+    := a = !!!!LayoutToHeap({ q = 9i32; w = 10i32 })
+    := b = !!!!LayoutIndex(a)
+    !!!!Add(b::q, b::w)

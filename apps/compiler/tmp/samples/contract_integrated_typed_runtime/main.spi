@@ -1,0 +1,129 @@
+:! pending = ()
+:! ready = ()
+:! committed = ()
+:! retryable = ()
+:! fresh = ()
+:! persisted = ()
+:! published = ()
+
+:! nfe = { issuer : string; recipient : string; total_cents : i32 }
+
+:| rule result =
+    | IssuerRule :: rule string
+    | RecipientRule :: rule string
+    | TotalRule :: rule i32
+
+:| ^ validation result =
+    | Lift :: \* result. rule result -> validation result
+    | Zip :: \* a b. validation a * validation b -> validation (a * b)
+    | Map :: \* result.
+        (\? input. (input -> result) * validation input)
+        -> validation result
+
+:| validation_evidence status =
+    | PendingEvidence :: validation_evidence pending
+    | ReadyEvidence :: string -> validation_evidence ready
+
+:= run_rule \* result.
+    (document : nfe)
+    (rule : rule result)
+    : result =
+    ?= rule ?|
+    | IssuerRule => document::issuer
+    | RecipientRule => document::recipient
+    | TotalRule => document::total_cents
+
+:= ^ run_validation \* result.
+    (document : nfe)
+    (program : validation result)
+    : result =
+    ?= program ?|
+    | Lift rule => run_rule document rule
+    | Zip (left, right) =>
+        run_validation document left,
+        run_validation document right
+    | Map packed =>
+        := \? input. mapping, source = packed
+        mapping (run_validation document source)
+
+:= evidence (_ : (string * string) * i32) : validation_evidence ready =
+    ReadyEvidence "validated"
+
+:= validation_plan () : validation (validation_evidence ready) =
+    Map (\? (
+        evidence,
+        Zip (Zip (Lift IssuerRule, Lift RecipientRule), Lift TotalRule)
+    ))
+
+:| request effect result =
+    | QueryStatus :: string -> request retryable string
+
+:| status_receipt phase =
+    | CommittedReceipt :: string -> status_receipt committed
+
+:= retry \* result.
+    (request : request retryable result)
+    : result =
+    ?= request ?|
+    | QueryStatus _ => "committed"
+
+:= reconcile (status : string) : status_receipt committed =
+    CommittedReceipt status
+
+:| event_box phase =
+    | EventBox :: \* phase. string -> event_box phase
+
+:| outbox_op from to =
+    | PersistValidated :: validation_evidence ready -> outbox_op fresh persisted
+    | PublishCommitted :: status_receipt committed -> outbox_op persisted published
+
+:| ^ chain (step : * -> * -> *) from to =
+    | ChainStep :: \* (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: \* (step : * -> * -> *) from to.
+        (\? middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+:= execute \* from to.
+    (operation : outbox_op from to)
+    (box : event_box from)
+    : event_box to =
+    ?= operation, box ?|
+    | PersistValidated (ReadyEvidence _), EventBox _ =>
+        EventBox "persisted"
+    | PublishCommitted (CommittedReceipt _), EventBox _ =>
+        EventBox "typed-runtime-plan"
+
+:= ^ fold_chain \* (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : \* a b. step a b -> carrier a -> carrier b)
+    (program : chain step from to)
+    (input : carrier from)
+    : carrier to =
+    ?= program ?|
+    | ChainStep atom => handler atom input
+    | ChainCompose packed =>
+        := \? middle. first, second = packed
+        fold_chain `$handler second (fold_chain `$handler first input)
+
+:= publish_plan
+    (evidence : validation_evidence ready)
+    (receipt : status_receipt committed)
+    : chain outbox_op fresh published =
+    ChainCompose (\? (
+        ChainStep (PersistValidated evidence),
+        ChainStep (PublishCommitted receipt)
+    ))
+
+:= main () : string =
+    := document = nfe {
+        issuer = "ACME"
+        recipient = "CLIENT"
+        total_cents = 4200
+    }
+    := evidence = run_validation document (validation_plan ())
+    := status = retry (QueryStatus "135")
+    := receipt = reconcile status
+    := result =
+        fold_chain `$execute (publish_plan evidence receipt) (EventBox "event")
+    ?= result ?|
+    | EventBox trace => trace

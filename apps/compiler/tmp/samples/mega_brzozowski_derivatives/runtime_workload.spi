@@ -1,0 +1,228 @@
+:< main
+
+:= u64_add (a : u64) (b : u64) : u64 = !!!!Add(a, b)
+:= u64_mul (a : u64) (b : u64) : u64 = !!!!Mult(a, b)
+:= u64_and (a : u64) (b : u64) : u64 = !!!!BitwiseAnd(a, b)
+:= u64_shr (a : u64) (b : i32) : u64 = !!!!ShiftRight(a, b)
+:= u64_eq (a : u64) (b : u64) : bool = !!!!EQ(a, b)
+:= i32_add (a : i32) (b : i32) : i32 = !!!!Add(a, b)
+:= i32_sub (a : i32) (b : i32) : i32 = !!!!Sub(a, b)
+:= i32_lt (a : i32) (b : i32) : bool = !!!!LT(a, b)
+:= i32_eq (a : i32) (b : i32) : bool = !!!!EQ(a, b)
+
+:= lcg_next (seed : u64) : u64 = u64_and (u64_add (u64_mul seed 1103515245u64) 12345u64) 2147483647u64
+
+:= lcg_bit (seed : u64) : bit_alphabet =
+    ? u64_eq (u64_and (u64_shr seed 16i32) 1u64) 0u64 ?> zero () |: one ()
+
+:~ ^ random_bit_input
+    (seed : u64) (length : i32) (acc : linear_input bit_alphabet)
+    : linear_input bit_alphabet * u64
+    =
+    ? i32_lt 0i32 length ?>
+        := next = lcg_next seed
+        random_bit_input next (i32_sub length 1i32) (InputCons (lcg_bit next, acc))
+    |: acc, seed
+
+:~ ^ zeros_input (length : i32) (acc : linear_input bit_alphabet) : linear_input bit_alphabet =
+    ? i32_lt 0i32 length ?> zeros_input (i32_sub length 1i32) (InputCons (zero (), acc)) |: acc
+
+:~ ^ backtrack_stack \* alphabet {symbol_compare}.
+    (stack : regex_list alphabet) (input : linear_input alphabet)
+    : bool
+    =
+    ?= stack ?|
+    | RegexListNil =>
+        ?= input ?|
+        | InputEmpty => !+
+        | InputCons _ => !-
+    | RegexListCons (head, rest) =>
+        ?= head ?|
+        | RegexEmpty => !-
+        | RegexEpsilon => backtrack_stack rest input
+        | RegexChar expected =>
+            ?= input ?|
+            | InputEmpty => !-
+            | InputCons (symbol, tail) => ? symbol_equal expected symbol ?> backtrack_stack rest tail |: !-
+        | RegexAlt (left, right) =>
+            ? backtrack_stack (RegexListCons (left, rest)) input ?> !+
+            |: backtrack_stack (RegexListCons (right, rest)) input
+        | RegexCat (left, right) => backtrack_stack (RegexListCons (left, RegexListCons (right, rest))) input
+        | RegexStar inner =>
+            ? backtrack_stack (RegexListCons (inner, stack)) input ?> !+
+            |: backtrack_stack rest input
+
+:= backtrack_accepts \* alphabet {symbol_compare}.
+    (value : regex alphabet) (input : linear_input alphabet)
+    : bool
+    =
+    backtrack_stack (RegexListCons (value, RegexListNil)) input
+
+:= ^ star_bodies_consume \* alphabet. (value : regex alphabet) : bool =
+    ?= value ?|
+    | RegexAlt (left, right) => star_bodies_consume left && star_bodies_consume right
+    | RegexCat (left, right) => star_bodies_consume left && star_bodies_consume right
+    | RegexStar inner => ? static_nullable inner ?> !- |: star_bodies_consume inner
+    | _ => !+
+
+:= ^ static_snoc \* alphabet. (states : regex_list alphabet) (value : regex alphabet) : regex_list alphabet =
+    ?= states ?|
+    | RegexListNil => RegexListCons (value, RegexListNil)
+    | RegexListCons (head, rest) => RegexListCons (head, static_snoc rest value)
+
+:= ^ static_bit_closure
+    (pending : regex_list bit_alphabet) (seen : regex_list bit_alphabet)
+    : regex_list bit_alphabet
+    =
+    ?= pending ?|
+    | RegexListNil => seen
+    | RegexListCons (state, rest) =>
+        ? static_contains state seen
+        ?> static_bit_closure rest seen
+        |:
+            static_bit_closure
+                (RegexListCons (static_step state (zero ()), RegexListCons (static_step state (one ()), rest)))
+                (static_snoc seen state)
+
+:= ^ static_index_of \* alphabet {symbol_compare}.
+    (value : regex alphabet) (states : regex_list alphabet) (index : i32)
+    : i32
+    =
+    ?= states ?|
+    | RegexListNil => failwith "brzozowski-staged-state-missing"
+    | RegexListCons (head, rest) =>
+        ? static_regex_equal value head
+        ?> index
+        |: static_index_of value rest (i32_add index 1i32)
+
+:= ^ static_next
+    (all : regex_list bit_alphabet) (states : regex_list bit_alphabet) (symbol : bit_alphabet) (state : i32)
+    (index : i32)
+    : i32
+    =
+    ?= states ?|
+    | RegexListNil => failwith "brzozowski-staged-no-states"
+    | RegexListCons (head, rest) =>
+        := target = static_index_of (static_step head symbol) all 0i32
+        ?= rest ?|
+        | RegexListNil => target
+        | RegexListCons _ =>
+            ? i32_eq state index
+            ?> target
+            |: static_next all rest symbol state (i32_add index 1i32)
+
+:= ^ static_accepting (states : regex_list bit_alphabet) (state : i32) (index : i32) : bool =
+    ?= states ?|
+    | RegexListNil => !-
+    | RegexListCons (head, rest) =>
+        ? static_nullable head ?>
+            ? i32_eq state index ?> !+ |: static_accepting rest state (i32_add index 1i32)
+        |: static_accepting rest state (i32_add index 1i32)
+
+:= staged_accepts (value : regex bit_alphabet) (input : linear_input bit_alphabet) : bool =
+    := states = static_bit_closure (RegexListCons (static_normalize value, RegexListNil)) RegexListNil
+    :~ ^ run (state : i32) (input : linear_input bit_alphabet) : bool =
+        ?= input ?|
+        | InputEmpty => static_accepting states state 0i32
+        | InputCons (bit_alphabet symbol, rest) =>
+            ?= symbol ?|
+            | BitZero => run (static_next states states (zero ()) state 0i32) rest
+            | BitOne => run (static_next states states (one ()) state 0i32) rest
+    := ~start = 0i32
+    run start input
+
+:| match_engine =
+    | EngineDerivative
+    | EngineBacktrack
+    | EngineStaged
+
+:= engine_accepts (engine : match_engine) (value : regex bit_alphabet) (input : linear_input bit_alphabet) : bool =
+    ?= engine ?|
+    | EngineDerivative => accepts value input
+    | EngineBacktrack => backtrack_accepts value input
+    | EngineStaged => staged_accepts value input
+
+:= engine_regex (engine : match_engine) (value : regex bit_alphabet) : regex bit_alphabet =
+    ?= engine ?|
+    | EngineStaged => value
+    | _ =>
+        := ~dynamic = value
+        dynamic
+
+:= bit_any () : regex bit_alphabet = RegexAlt (RegexChar (zero ()), RegexChar (one ()))
+
+:= fourth_from_end_one () : regex bit_alphabet =
+    RegexCat (RegexStar (bit_any ()),
+        RegexCat (RegexChar (one ()), RegexCat (bit_any (), RegexCat (bit_any (), bit_any ()))))
+
+:= zero_or_two_zeros_then_one () : regex bit_alphabet =
+    RegexCat (
+        RegexStar (RegexAlt (RegexChar (zero ()), RegexCat (RegexChar (zero ()), RegexChar (zero ())))),
+        RegexChar (one ())
+    )
+
+:= count_random_matches
+    (engine : match_engine) (value : regex bit_alphabet) (length : i32) (count : i32) (seed : u64) (accepted : i32)
+    : i32
+    =
+    :~ ^ loop (count : i32) (seed : u64) (accepted : i32) : i32 =
+        ? i32_lt 0i32 count ?>
+            ?= random_bit_input seed length InputEmpty ?|
+            | input, next =>
+                := accepted = ? engine_accepts engine value input ?> i32_add accepted 1i32 |: accepted
+                loop (i32_sub count 1i32) next accepted
+        |: accepted
+    loop count seed accepted
+
+:= count_zero_runs (engine : match_engine) (value : regex bit_alphabet) (n : i32) (max : i32) (accepted : i32) : i32 =
+    :~ ^ loop (n : i32) (accepted : i32) : i32 =
+        ? i32_lt max n
+        ?> accepted
+        |:
+            := accepted =
+                ? engine_accepts engine value (zeros_input n InputEmpty)
+                ?> i32_add accepted 1i32
+                |: accepted
+            := accepted =
+                ? engine_accepts engine value (zeros_input n (InputCons (one (), InputEmpty)))
+                ?> i32_add accepted 1i32
+                |: accepted
+            loop (i32_add n 1i32) accepted
+    loop n accepted
+
+:= run_random_workloads (engine : match_engine) (~count : i32) (~length : i32) : i32 * i32 =
+    assert_static (star_bodies_consume (ends_with_zero ())) "backtracking needs consuming star bodies"
+    assert_static (star_bodies_consume (fourth_from_end_one ())) "backtracking needs consuming star bodies"
+    := ends_zero = engine_regex engine (ends_with_zero ())
+    := fourth_one = engine_regex engine (fourth_from_end_one ())
+    := ~seed = 1u64
+    := ~none = 0i32
+    count_random_matches engine ends_zero length count seed none,
+    count_random_matches engine fourth_one length count seed none
+
+:= run_zero_runs (engine : match_engine) (~max_zero_run : i32) : i32 =
+    assert_static (star_bodies_consume (zero_or_two_zeros_then_one ())) "backtracking needs consuming star bodies"
+    := zero_runs = engine_regex engine (zero_or_two_zeros_then_one ())
+    := ~none = 0i32
+    := ~first = 1i32
+    count_zero_runs engine zero_runs first max_zero_run none
+
+:= run_workloads (engine : match_engine) (count : i32) (length : i32) (max_zero_run : i32) : i32 * i32 * i32 =
+    ?= run_random_workloads engine count length ?|
+    | a, b => a, b, run_zero_runs engine max_zero_run
+
+:= expect_count (actual : i32) (expected : i32) (message : string) : () =
+    ? i32_eq actual expected ?> () |: failwith message
+
+:= expect_random_counts (counts : i32 * i32) (ends_zero : i32) (fourth_one : i32) : i32 =
+    ?= counts ?|
+    | a, b =>
+        expect_count a ends_zero "brzozowski-bench-ends-with-zero-count"
+        expect_count b fourth_one "brzozowski-bench-fourth-from-end-count"
+        0i32
+
+:= expect_counts (counts : i32 * i32 * i32) (ends_zero : i32) (fourth_one : i32) (zero_runs : i32) : i32 =
+    ?= counts ?|
+    | a, b, c =>
+        expect_count c zero_runs "brzozowski-bench-zero-runs-count"
+        expect_random_counts (a, b) ends_zero fourth_one

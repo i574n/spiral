@@ -1,0 +1,49 @@
+import CRT
+import WinSDK
+protocol US0 { var tag: Int32 { get } }
+struct US0_Cold: US0 { var tag: Int32 { 0 } }
+struct US0_Warm: US0 { var tag: Int32 { 1 } }
+struct US0_Hot: US0 { var tag: Int32 { 2 } }
+struct US0_Done: US0 { var tag: Int32 { 3 } }
+func sp_score_0(_ p0: US0) -> Int32 {
+    var v0: US0 = p0
+    switch v0.tag {
+        case 0:
+            return 1
+        case 3:
+            return 4
+        case 2:
+            return 3
+        case 1:
+            return 2
+        default:
+            fatalError("unreachable union case")
+    }
+}
+func spiral_main() -> Int32 {
+    let v0: Int32 = 3
+    let v1: Bool = (v0 == 0)
+    var v10: US0 = US0_Cold()
+    if (v1) {
+        v10 = US0_Cold()
+    } else {
+        let v3: Bool = (v0 == 1)
+        if (v3) {
+            v10 = US0_Warm()
+        } else {
+            let v5: Bool = (v0 == 2)
+            if (v5) {
+                v10 = US0_Hot()
+            } else {
+                v10 = US0_Done()
+            }
+        }
+    }
+    let v11: Int32 = sp_score_0(v10)
+    let v12: Int32 = (v11 &- 4)
+    return v12
+}
+nonisolated(unsafe) var spiral_exit_code: Int32 = 0
+let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)
+WaitForSingleObject(spiral_thread, INFINITE)
+exit(spiral_exit_code)

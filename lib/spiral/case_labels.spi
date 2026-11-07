@@ -1,0 +1,50 @@
+:# case_labels static =
+    :< testing
+
+:< sm'_operators
+
+/// ## case_labels
+:= lettered (separator : string) (letter : string) (at : i32) : string =
+    := lower = sm'::to_lower letter
+    ? at > 0 && lower <> letter ?> separator ++# lower |: lower
+
+:~ ^ labelled (separator : string) (name : string) (at : i32) (done : string) : string =
+    ? at >= sm'::length name ?> done
+    |: labelled separator name (at + 1) (done ++# lettered separator (sm'::substring at 1 name) at)
+
+:= unprefixed (prefix : string) (name : string) : string =
+    := cut : i32 = sm'::length prefix
+    ? sm'::starts_with prefix name ?> sm'::substring cut (sm'::length name - cut) name |: name
+
+:= label_of_name (prefix : string) (separator : string) (name : string) : string =
+    labelled separator (unprefixed prefix name) 0 ""
+
+:= case_fields \* t. () : list (string * t) = reflection::get_union_fields_untag ()
+
+:= case_label \* t. (prefix : string) (separator : string) (x : t) : string =
+    listm::fold (\ found (name, case) => ? case = x ?> label_of_name prefix separator name |: found) "" (case_fields ())
+
+:= case_of_label \* t. (prefix : string) (separator : string) (label : string) : option t =
+    := hit (name : string) : bool = label_of_name prefix separator name = label
+    listm::fold (\ found (name, case) => ? hit name ?> Some case |: found) None (case_fields ())
+
+:| sample_status =
+    | SamplePassed
+    | SampleNotRun
+    | SampleHuntingGround
+
+:= sample_labels (cut : string) : string * string * string =
+    case_label cut "_" SampleNotRun, case_label cut "-" SampleHuntingGround, case_label cut "_" SamplePassed
+
+///> lua
+///> rust
+:# a_case_becomes_its_label_and_back =
+    := ~cut = "Sample"
+    := expected = ("not_run", "hunting-ground", "passed"), Some SampleNotRun
+    (sample_labels cut, case_of_label cut "_" "not_run") |> _assert_eq expected
+
+///> lua
+///> rust
+:# an_unknown_label_has_no_case =
+    := ~label = "skipped"
+    (case_of_label "Sample" "_" label : option sample_status) |> _assert_eq None

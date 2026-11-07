@@ -1,0 +1,24 @@
+:! missing = ()
+:! ready = ()
+:! open_phase = ()
+:! committed_phase = ()
+
+:| transaction participant_a participant_b phase =
+    | OpenTx :: transaction missing missing open_phase
+    | PreparedA :: transaction ready missing open_phase
+    | PreparedAB :: transaction ready ready open_phase
+    | Committed :: transaction ready ready committed_phase
+
+:= prepare_a (tx : transaction missing missing open_phase)
+    : transaction ready missing open_phase =
+    ?= tx ?|
+    | OpenTx => PreparedA
+
+:= commit (tx : transaction ready ready open_phase)
+    : transaction ready ready committed_phase =
+    ?= tx ?|
+    | PreparedAB => Committed
+
+:= main () : string =
+    := _ = commit (prepare_a OpenTx)
+    "unreachable"

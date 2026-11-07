@@ -1,0 +1,63 @@
+:! v4 = ()
+:! v5 = ()
+:! v6 = ()
+
+:| document schema =
+    | DocumentV4 :: string -> document v4
+    | DocumentV5 :: string -> document v5
+    | DocumentV6 :: string -> document v6
+
+:| migration from to =
+    | Upgrade45 :: migration v4 v5
+    | Upgrade56 :: migration v5 v6
+
+:| codec schema =
+    | CodecV4 :: codec v4
+    | CodecV5 :: codec v5
+    | CodecV6 :: codec v6
+
+:| ^ chain (step : * -> * -> *) from to =
+    | ChainStep :: \* (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: \* (step : * -> * -> *) from to.
+        (\? middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+:= migrate \* from to.
+    (operation : migration from to)
+    (document : document from)
+    : document to =
+    ?= operation, document ?|
+    | Upgrade45, DocumentV4 payload => DocumentV5 payload
+    | Upgrade56, DocumentV5 payload => DocumentV6 payload
+
+:= ^ fold_chain \* (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : \* a b. step a b -> carrier a -> carrier b)
+    (program : chain step from to)
+    (input : carrier from)
+    : carrier to =
+    ?= program ?|
+    | ChainStep atom => handler atom input
+    | ChainCompose packed =>
+        := \? middle. first, second = packed
+        fold_chain `$handler second (fold_chain `$handler first input)
+
+:= encode \* schema.
+    (codec : codec schema)
+    (document : document schema)
+    : string =
+    ?= codec, document ?|
+    | CodecV4, DocumentV4 payload => payload
+    | CodecV5, DocumentV5 payload => payload
+    | CodecV6, DocumentV6 _ => "v6-codec"
+
+:= plan () : chain migration v4 v6 =
+    ChainCompose (\? (
+        ChainStep Upgrade45,
+        ChainStep Upgrade56
+    ))
+
+:= main () : string =
+    := migrated =
+        fold_chain `$migrate (plan ()) (DocumentV4 "payload")
+    encode CodecV6 migrated

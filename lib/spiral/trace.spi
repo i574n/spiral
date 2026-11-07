@@ -1,0 +1,505 @@
+:# trace static =
+    :< testing
+
+:< sm'_operators
+
+:| trace_level =
+    | Verbose
+    | Debug
+    | Info
+    | Warning
+    | Critical
+
+:= severity = \|
+    | Verbose => 10
+    | Debug => 20
+    | Info => 30
+    | Warning => 40
+    | Critical => 50
+
+:= on_chain () : bool =
+    run_target \|
+        | Rust => \ () => $'cfg\!(target_arch = "wasm32")' : bool
+        | _ => \ () => !-
+
+:= read_state () =
+    run_target \|
+        | Zig => \ () =>
+            {
+                trace_level =
+                    "TRACE_LEVEL" |> env::get_environment_variable |> reflection::union_try_pick : option trace_level
+                repl_start = None : option i64
+            }
+        | Rust => \ () =>
+            {
+                trace_level =
+                    ? on_chain ()
+                    ?> None
+                    |: "TRACE_LEVEL" |> env::get_environment_variable |> reflection::union_try_pick
+                repl_start = None
+            }
+        | TypeScript => \ () =>
+            {
+                trace_level = "TRACE_LEVEL" |> env::get_environment_variable |> reflection::union_try_pick'
+                repl_start = None
+            }
+        | _ => \ () =>
+            ~~
+                {
+                    trace_level =
+                        := get_result () =
+                            "TRACE_LEVEL"
+                            |> env::get_environment_variable
+                            |> reflection::union_try_pick
+                        backend_switch {
+                            Gleam = get_result : () -> option trace_level
+                            Lua = \ () => None : option trace_level
+                            Fsharp = get_result : () -> option trace_level
+                            Python = get_result : () -> option trace_level
+                        }
+                    repl_start =
+                        := automation = env::get_environment_variable "AUTOMATION"
+                        ? automation <>. "True"
+                        ?> None
+                        |:
+                            date_time::now ()
+                            |> date_time::to_timestamp
+                            |> \ (date_time::timestamp x) => x
+                            |> Some
+                }
+
+:== trace_state =
+    {
+        count : mut i64
+        trace_file : mut (string -> ())
+        enabled : mut bool
+        acc : mut string
+        level : mut trace_level
+        repl_start : optionm'::option' i64
+    }
+
+:~ new_trace_state trace_level' =
+    := { repl_start trace_level } = read_state ()
+    {
+        count = mut 1i64
+        trace_file = mut ignore
+        enabled = mut !+
+        acc = mut ""
+        level = trace_level |> optionm'::default_value trace_level' |> mut
+        repl_start = repl_start |> optionm'::box
+    } : trace_state
+
+:= init_trace_state trace_level : () =
+    := trace_level = trace_level |> optionm'::default_value Verbose
+    backend_switch {
+        Gleam = \ () =>
+            global "fn trace_state () { option.None }"
+            $'let new_trace_state = !new_trace_state ' : ()
+            $'let trace_level = !trace_level ' : ()
+            $'let trace_state = fn () {' : ()
+            $'  case trace_state () {' : ()
+            $'    option.None -> new_trace_state(trace_level) |> option.Some' : ()
+            $'    x -> x' : ()
+            $'  }' : ()
+            $'}' : ()
+        Lua = \ () =>
+            global "_G.trace_state = nil"
+            \ () =>
+                ? $'_G.trace_state == nil' : bool ?>
+                    := trace_state = new_trace_state trace_level
+                    $'_G.trace_state = !trace_state ' : ()
+            |> exec_unit
+        Fsharp = \ () =>
+            backend_switch {
+                Fsharp = \ () =>
+                    global "module TraceState = let mutable trace_state = None"
+            }
+            \ () =>
+                ? $'TraceState.trace_state.IsNone' ?>
+                    := trace_state = new_trace_state trace_level |> optionm'::some'
+                    $'TraceState.trace_state <- !trace_state ' : ()
+            |> exec_unit
+        Python = \ () =>
+            global "class TraceState: trace_state = None"
+            \ () =>
+                ? $'TraceState.trace_state is None' : bool ?>
+                    := trace_state = new_trace_state trace_level
+                    $'TraceState.trace_state = !trace_state ' : ()
+            |> exec_unit
+        TypeScript = \ () =>
+            global "let spiral_trace_state: any = undefined;"
+            \ () =>
+                ? $'spiral_trace_state === undefined' : bool ?>
+                    := trace_state = new_trace_state trace_level
+                    $'spiral_trace_state = !trace_state ' : ()
+            |> exec_unit
+        Rust = \ () =>
+            global """
+                fn spiral_trace_hold<T: Clone>(fresh: &std::rc::Rc<dyn Fn() -> T>) -> T {
+                    use std::sync::OnceLock;
+                    static SLOT: OnceLock<usize> = OnceLock::new();
+                    let raw = *SLOT.get_or_init(|| Box::into_raw(Box::new((*fresh)())) as usize);
+                    unsafe { (*(raw as *const T)).clone() }
+                }
+                """
+            := fresh = \ () => new_trace_state trace_level
+            :< rust_operators
+            !\\(fresh, $'"{ let _ = spiral_trace_hold(&$0); }"') : ()
+        Zig = \ () => ()
+    }
+
+:= get_trace_state_or_init trace_level : trace_state =
+    init_trace_state trace_level
+    backend_switch {
+        Gleam = \ () =>
+            := trace_level = trace_level |> optionm'::default_value Verbose
+            $'trace_state () |> option.lazy_unwrap(fn () { !new_trace_state(!trace_level) })' : trace_state
+        Lua = \ () =>
+            $'_G.trace_state' : trace_state
+        Fsharp = \ () =>
+            $'TraceState.trace_state.Value' : trace_state
+        Python = \ () =>
+            $'TraceState.trace_state' : trace_state
+        TypeScript = \ () =>
+            $'spiral_trace_state' : trace_state
+        Rust = \ () =>
+            global """
+                fn spiral_trace_hold<T: Clone>(fresh: &std::rc::Rc<dyn Fn() -> T>) -> T {
+                    use std::sync::OnceLock;
+                    static SLOT: OnceLock<usize> = OnceLock::new();
+                    let raw = *SLOT.get_or_init(|| Box::into_raw(Box::new((*fresh)())) as usize);
+                    unsafe { (*(raw as *const T)).clone() }
+                }
+                """
+            := level' = trace_level |> optionm'::default_value Verbose
+            := fresh = \ () => new_trace_state level'
+            :< rust_operators
+            !\\(fresh, $'"spiral_trace_hold(&$0)"') : trace_state
+        Zig = \ () =>
+            global """
+                fn spiralHold(comptime T: type, fresh: anytype) T {
+                    const S = struct {
+                        var slot: ?T = null;
+                    };
+                    if (S.slot == null) S.slot = fresh.call(fresh.ctx);
+                    return S.slot.?;
+                }
+                """
+            := level' = trace_level |> optionm'::default_value Verbose
+            := fresh = dyn \ () => new_trace_state level'
+            $'spiralHold(`trace_state, !fresh)' : trace_state
+    }
+
+:= set_trace_level new_level =
+    := ({ level } & trace_state) = get_trace_state_or_init None
+    level <- new_level
+    backend_switch {
+        Gleam = \ () => $'let trace_state = fn () { !(trace_state |> optionm'.some') }' : ()
+        Lua = id : () -> ()
+        Fsharp = id : () -> ()
+        Python = id : () -> ()
+        Rust = id : () -> ()
+        TypeScript = id : () -> ()
+        Zig = id : () -> ()
+    }
+
+:= test_trace_level level : bool =
+    := state = get_trace_state_or_init None
+    := level' = *state::level
+    := a : int = level |> severity
+    := b : int = level' |> severity
+    ? *state::enabled |> not
+    ?> !-
+    |: a >= b
+
+///> lua
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# test_trace_level =
+    test_trace_level Critical |> _assert_eq !+
+    test_trace_level Verbose |> _assert_eq !+
+    Debug |> set_trace_level
+    test_trace_level Verbose |> _assert_eq !-
+    Verbose |> set_trace_level
+    test_trace_level Verbose |> _assert_eq !+
+
+:= compiled_out (level : trace_level) : bool =
+    run_target \|
+        | Rust => \ () =>
+            ?= level ?|
+            | Verbose => $'matches\!(option_env\!("SPIRAL_TRACE_FLOOR"), Some("Debug" | "Info" | "Warning" | "Critical"))' : bool
+            | Debug => $'matches\!(option_env\!("SPIRAL_TRACE_FLOOR"), Some("Info" | "Warning" | "Critical"))' : bool
+            | Info => $'matches\!(option_env\!("SPIRAL_TRACE_FLOOR"), Some("Warning" | "Critical"))' : bool
+            | Warning => $'matches\!(option_env\!("SPIRAL_TRACE_FLOOR"), Some("Critical"))' : bool
+            | Critical => !-
+        | _ => \ () => !-
+
+:= trace_raw level fn =
+    \ () =>
+        := trace_state =
+            ? compiled_out level || (level |> test_trace_level |> not)
+            ?> None
+            |:
+                := text = fn ()
+                := ({ count acc } & trace_state) = get_trace_state_or_init None
+                \ () =>
+                    count <- *count + 1
+                |> exec_unit
+                :< rust_operators
+                run_target_args (\ () => text, console::write_line) \|
+                    | Zig => \ _ => text |> console::write_line
+                    | Rust => \ text, _ =>
+                        global """
+                            #[cfg(target_arch = "wasm32")]
+                            fn spiral_trace_near_log(text: &str) {
+                                use std::sync::atomic::{AtomicUsize, Ordering};
+                                static LOGGED: AtomicUsize = AtomicUsize::new(0);
+                                let mut rest = text;
+                                while !rest.is_empty() {
+                                    let used = LOGGED.load(Ordering::Relaxed);
+                                    let budget = 16000usize.saturating_sub(used);
+                                    if budget < 13 {
+                                        break;
+                                    }
+                                    let mut end = rest.len().min(15000);
+                                    while !rest.is_char_boundary(end) {
+                                        end -= 1;
+                                    }
+                                    let (chunk, tail) = rest.split_at(end);
+                                    if chunk.len() <= budget {
+                                        LOGGED.store(used + chunk.len(), Ordering::Relaxed);
+                                        near_sdk::env::log_str(chunk);
+                                        rest = tail;
+                                    } else {
+                                        let mut cut = budget - 12;
+                                        while !chunk.is_char_boundary(cut) {
+                                            cut -= 1;
+                                        }
+                                        let s = format!("{} [truncated]", &chunk[..cut]);
+                                        LOGGED.store(used + s.len(), Ordering::Relaxed);
+                                        near_sdk::env::log_str(&s);
+                                        break;
+                                    }
+                                }
+                            }
+                            """
+                        ? $'cfg\!(target_arch = "wasm32")' : bool
+                        ?>
+                            := new_acc =
+                                ? *acc = ""
+                                ?> text
+                                |? text = ""
+                                ?> *acc
+                                |: *acc ++\# text
+                            := byte_count : convert::unativeint = !\\(new_acc, $'"$0.len()"')
+                            := chunks_len : i32 = ((convert::convert byte_count : i32) + 14999i32) / 15000i32
+                            ? text <>. "" && chunks_len <= 1i32
+                            ?> acc <- new_acc
+                            |:
+                                acc <- ""
+                                !\\(new_acc, $'"{ ##[cfg(target_arch = \\\"wasm32\\\")] spiral_trace_near_log(&$0); }"')
+                        |: !\\(text, $'"println\!(\\\"{}\\\", $0)"')
+                    | _ => \ text, write_line =>
+                        text |> write_line
+                text |> *trace_state::trace_file
+                trace_state |> Some
+        backend_switch {
+            Gleam = \ () => $'let trace_state = fn () { !(trace_state |> optionm'.box) }' : ()
+            Lua = id : () -> ()
+            Fsharp = id : () -> ()
+            Python = id : () -> ()
+            Rust = id : () -> ()
+            TypeScript = id : () -> ()
+            Zig = id : () -> ()
+        }
+    |> exec_unit
+
+:= clock_two_digits (n : i32) : string =
+    (? n < 10i32 ?> "0" |: "") ++# sm'::obj_to_string n
+
+:! rust_clock_fields = $'[i64; 3]'
+
+:= rust_clock_shims () : () =
+    global """
+        #[cfg(target_arch = "wasm32")]
+        fn spiral_cfg_local_clock() -> Option<[i64; 3]> { None }
+        #[cfg(all(windows, not(target_arch = "wasm32")))]
+        fn spiral_cfg_local_clock() -> Option<[i64; 3]> {
+            #[repr(C)] struct St([u16; 8]);
+            unsafe extern "system" { fn GetLocalTime(t: *mut St); }
+            let mut t = St([0; 8]);
+            unsafe { GetLocalTime(&mut t) };
+            Some([i64::from(t.0[4]), i64::from(t.0[5]), i64::from(t.0[6])])
+        }
+        #[cfg(all(unix, not(target_arch = "wasm32")))]
+        fn spiral_cfg_local_clock() -> Option<[i64; 3]> {
+            #[repr(C, align(8))] struct Tm([i32; 16]);
+            unsafe extern "C" { fn localtime_r(t: *const std::os::raw::c_long, tm: *mut Tm) -> *mut Tm; }
+            let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs());
+            let secs = std::os::raw::c_long::try_from(now.unwrap_or(0)).unwrap_or(0);
+            let mut tm = Tm([0; 16]);
+            unsafe { localtime_r(&secs, &mut tm) };
+            Some([i64::from(tm.0[2]), i64::from(tm.0[1]), i64::from(tm.0[0])])
+        }
+        #[cfg(not(any(windows, unix, target_arch = "wasm32")))]
+        fn spiral_cfg_local_clock() -> Option<[i64; 3]> { None }
+        #[cfg(target_arch = "wasm32")]
+        fn spiral_cfg_epoch_nanos() -> u64 { near_sdk::env::block_timestamp() }
+        #[cfg(not(target_arch = "wasm32"))]
+        fn spiral_cfg_epoch_nanos() -> u64 {
+            let since = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH);
+            since.map(|d| u64::try_from(d.as_nanos()).unwrap_or(0)).unwrap_or(0)
+        }
+        """
+
+:= rust_local_clock () : optionm'::option' rust_clock_fields =
+    rust_clock_shims ()
+    $'spiral_cfg_local_clock()' : optionm'::option' rust_clock_fields
+
+:= rust_epoch_nanos () : u64 =
+    rust_clock_shims ()
+    $'spiral_cfg_epoch_nanos()' : u64
+
+:= rust_clock_hour (fields : rust_clock_fields) : i64 = $'!fields[0]' : i64
+
+:= rust_clock_minute (fields : rust_clock_fields) : i64 = $'!fields[1]' : i64
+
+:= rust_clock_second (fields : rust_clock_fields) : i64 = $'!fields[2]' : i64
+
+:= local_seconds_of_day () : u64 =
+    ?= rust_local_clock () |> optionm'::unbox ?|
+    | Some fields =>
+        conv (rust_clock_hour fields * 3600i64 + rust_clock_minute fields * 60i64 + rust_clock_second fields)
+    | None => rust_epoch_nanos () / 1000000000u64 % 86400u64
+
+///> rust
+:# local_seconds_of_day_is_within_a_day =
+    (local_seconds_of_day () < 86400u64) |> _assert_eq !+
+
+:= clock_text_of_seconds (seconds : u64) : string =
+    := two_digits (n : u64) : string = (? n < 10u64 ?> "0" |: "") ++# sm'::obj_to_string n
+    := hours_minutes = two_digits ((seconds / 3600u64) % 24u64) ++# ":" ++# two_digits ((seconds / 60u64) % 60u64)
+    hours_minutes ++# ":" ++# two_digits (seconds % 60u64)
+
+:= trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
+    \ () =>
+        := trace_state = get_trace_state_or_init None
+        := time () =
+            ~~
+                run_target \|
+                    | Zig => \ () =>
+                        global """extern "kernel32" fn GetLocalTime(t: *[8]u16) callconv(.winapi) void;"""
+                        global """fn spiralClockSeconds() u64 {
+    var secs: u64 = 0;
+    if (builtin.os.tag == .windows) {
+        var t: [8]u16 = undefined;
+        GetLocalTime(&t);
+        secs = @as(u64, t[4]) * 3600 + @as(u64, t[5]) * 60 + @as(u64, t[6]);
+    } else if (builtin.os.tag == .linux) {
+        var ts: std.os.linux.timespec = undefined;
+        _ = std.os.linux.clock_gettime(.REALTIME, &ts);
+        secs = @intCast(ts.sec);
+    }
+    return secs;
+}"""
+                        := seconds : u64 = $'spiralClockSeconds()'
+                        clock_text_of_seconds seconds
+                    | _ => \ () =>
+                        run_target \ target =>
+                            ?= target ?|
+                            | Rust => \ () =>
+                                :< rust_operators
+                                local_seconds_of_day () |> clock_text_of_seconds
+                            | TypeScript => \ () =>
+                                := now = $'new Date()' : $'Date'
+                                := hours = $'!now.getHours()' : i32
+                                := minutes = $'!now.getMinutes()' : i32
+                                := seconds = $'!now.getSeconds()' : i32
+                                := hours_minutes = clock_two_digits hours ++# ":" ++# clock_two_digits minutes
+                                hours_minutes ++# ":" ++# clock_two_digits seconds
+                            | _ => \ () =>
+                                ?= trace_state::repl_start |> optionm'::unbox ?|
+                                | Some repl_start =>
+                                    := t =
+                                        date_time::now ()
+                                        |> date_time::to_timestamp
+                                        |> \ (date_time::timestamp x) => x
+                                        |> flip (-) repl_start
+                                        |> date_time::time_span_of_micros
+                                    date_time::date_time_milliseconds
+                                        1i32 1i32 1i32
+                                        (t |> date_time::hours)
+                                        (t |> date_time::minutes)
+                                        (t |> date_time::seconds)
+                                        (t |> date_time::milliseconds)
+                                | None => date_time::now ()
+                                |> date_time::format (
+                                    backend_switch {
+                                        Gleam = \ () => "HH:mm:ss"
+                                        Lua = \ () => "%H:%M:%S"
+                                        Fsharp = \ () =>
+                                            ?= target ?|
+                                            | Rust => ~~ "hh:mm:ss"
+                                            | _ => ~~ "HH:mm:ss"
+                                        Python = \ () => "%H:%M:%S"
+                                    }
+                                )
+        := level_str () =
+            ~~
+                := color =
+                    ?= level ?|
+                    | Verbose => console::color_bright_black ()
+                    | Debug => console::color_bright_blue ()
+                    | Info => console::color_bright_green ()
+                    | Warning => console::color_yellow ()
+                    | Critical => console::color_bright_red ()
+                color ++# reflection::case_initial level ++# console::color_reset ()
+        := text = text_fn ()
+        ? text = ""
+        ?> ""
+        |:
+            := locals = locals ()
+            ~~
+                := line =
+                    ? on_chain ()
+                    ?> reflection::case_initial level ++# " " ++# text ++# " / " ++#? locals
+                    |:
+                        := count = *trace_state::count
+                        time () ++# " " ++#? count ++# level_str () ++# " " ++# text ++# " / " ++#? locals
+                line
+                |> \ x =>
+                    ~~
+                        x
+                        |> sm'::trim_start []
+                        |> sm'::trim_end [ ' '; '/' ]
+    |> trace_raw level
+
+:= trace_flush () : () =
+    trace Critical (\ () => "") id
+
+///> gleam
+///> lua
+///> cuda
+///> rust
+///> typescript
+:# trace_2 =
+    trace Debug (\ () => "test1") id
+    trace Debug (\ () => "test2") id
+    get_trace_state_or_init None ::count
+    |> \ x => *x
+    |> _assert_eq 3
+
+:= trace_format level fn obj =
+    := text, locals = fn obj
+    := locals = #?locals |> sm'::ellipsis_end 200
+    trace level (\ () => text) \ () => locals
+    obj
+
+///> fsharp
+
+:= main () =
+    init_trace_state None
+    := trace level text_fn (locals : () -> string) = trace level text_fn locals
+    $'let trace x = !trace x' : ()

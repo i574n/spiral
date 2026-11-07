@@ -1,0 +1,25 @@
+:~ empty_middle (x : string) : string =
+    sm::slice x { from = 2i32; to = 1i32 }
+
+:~ empty_end (x : string) : string =
+    sm::slice x { from = 5i32; to = 4i32 }
+
+:~ empty_source (x : string) : string =
+    sm::slice x { from = 0i32; to = 0i32 -. 1i32 }
+
+:= main () =
+    := a = empty_middle "alpha"
+    := b = empty_end "alpha"
+    := c = empty_source ""
+    := value = sm::concat (sm::concat a b) (sm::concat c "ok")
+    ? (=.) (sm::length a : i32) 0i32 ?>
+        ? (=.) (sm::length b : i32) 0i32 ?>
+            ? (=.) (sm::length c : i32) 0i32 ?>
+                ? (=.) (sm::length value : i32) 2i32 ?>
+                    ? (=.) (sm::index value 0i32) 'o' ?>
+                        ? (=.) (sm::index value 1i32) 'k' ?> 0i32 |: 1i32
+                    |: 2i32
+                |: 3i32
+            |: 4i32
+        |: 5i32
+    |: 6i32

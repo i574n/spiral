@@ -1,0 +1,189 @@
+name: gh-pages
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "compiler test.ps1 -Suite value"
+        required: false
+        default: "all"
+
+jobs:
+  build:
+    if: github.event_name != 'schedule'
+    timeout-minutes: 420
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: moonrepo/setup-rust@v1.3.0
+        with:
+          channel: "nightly-2026-10-18"
+          components: "clippy,rust-src,rustfmt"
+          targets: "wasm32-unknown-unknown"
+
+      - uses: erlef/setup-beam@v1.24.1
+        with:
+          otp-version: "29"
+          elixir-version: "1.20"
+          gleam-version: "1.19.2"
+          rebar3-version: "3.28.0"
+
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: "9.0.202"
+
+      - uses: oven-sh/setup-bun@v2.2.0
+
+      - uses: mlugg/setup-zig@v2.2.1
+        with:
+          version: "0.17.0"
+
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: "3.12.10"
+
+      - run: pwsh scripts/workflow.ps1
+
+      - uses: actions/upload-artifact@v7.0.2
+        if: contains(matrix.os, 'ubuntu')
+        with:
+          name: gh-pages
+          path: dist
+          retention-days: 30
+
+  compiler:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 360
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "SPIRAL_BIN_CACHE_DIR=$RUNNER_TEMP/spiral-bin" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v7.0.1
+
+      - uses: erlef/setup-beam@v1.24.1
+        with:
+          otp-version: "29"
+          elixir-version: "1.20"
+          gleam-version: "1.19.2"
+          rebar3-version: "3.28.0"
+
+      - uses: oven-sh/setup-bun@v2.2.0
+
+      - uses: mlugg/setup-zig@v2.2.1
+        with:
+          version: "0.17.0"
+
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: "3.12.10"
+
+      - run: pwsh scripts/workflow.ps1 -Compiler -Suite ${{ github.event.inputs.suite || 'all' }}
+
+      - if: always()
+        run: git diff --no-color -- apps/compiler/tmp/samples > "$SPIRAL_BIN_CACHE_DIR/samples-output.diff"
+
+      - if: always()
+        run: sudo apt-get update -q && sudo apt-get install -y -q linux-tools-common "linux-tools-$(uname -r)" && pwsh apps/compiler/scripts/ebpf-kernel-load.ps1 > "$SPIRAL_BIN_CACHE_DIR/ebpf-kernel-load.txt" 2>&1 || true
+
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: compiler-oracle
+          path: |
+            ${{ env.SPIRAL_BIN_CACHE_DIR }}/baseline/EXPECTED.tsv
+            ${{ env.SPIRAL_BIN_CACHE_DIR }}/runs
+            ${{ env.SPIRAL_BIN_CACHE_DIR }}/samples-output.diff
+            ${{ env.SPIRAL_BIN_CACHE_DIR }}/ebpf-kernel-load.txt
+          retention-days: 14
+
+  cells-gate:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    timeout-minutes: 240
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: moonrepo/setup-rust@v1.3.0
+        with:
+          channel: "nightly-2026-10-18"
+          components: "rust-src"
+
+      - uses: erlef/setup-beam@v1.24.1
+        with:
+          otp-version: "29"
+          elixir-version: "1.20"
+          gleam-version: "1.19.2"
+          rebar3-version: "3.28.0"
+
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: "9.0.202"
+
+      - uses: mlugg/setup-zig@v2.2.1
+        with:
+          version: "0.17.0"
+
+      - run: pwsh scripts/workflow.ps1 -Compiler
+
+      - name: transformer model cache (pins in apps/transformer/oracle.spi)
+        run: |
+          models="$HOME/.cache/spiral-bin/models/llama2c"
+          mkdir -p "$models"
+          base=https://huggingface.co/karpathy/tinyllamas/resolve/main/stories260K
+          curl -fsSL --retry 3 -o "$models/stories260K.bin" "$base/stories260K.bin"
+          curl -fsSL --retry 3 -o "$models/tok512.bin" "$base/tok512.bin"
+          printf '%s  %s\n' \
+            b0a507e7ad0f626624f17112325e66691f9076d622e1d3274d103d00299f2696 "$models/stories260K.bin" \
+            037cb335abb25d1fa9e8ecae30ed2a3a8ace9302862ebcdc05d51a6bbb10c312 "$models/tok512.bin" | sha256sum -c
+
+      - run: pwsh apps/cells/spi/ci_gate.ps1 -Out "${{ runner.temp }}/cells-gate" -Roots lib/spiral,apps/transformer
+
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: cells-gate
+          path: ${{ runner.temp }}/cells-gate
+
+  push:
+    needs: build
+    timeout-minutes: 180
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: gh-pages
+          path: gh-pages
+
+      - run: echo "$GITHUB_SHA" > gh-pages/_deploy.txt
+
+      - uses: peaceiris/actions-gh-pages@v4.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: gh-pages
+          force_orphan: true
+
+      - name: verify the deploy is live
+        shell: pwsh
+        run: |
+          $url = 'https://i574n.github.io/${{ github.event.repository.name }}/'
+          $deadline = (Get-Date).AddMinutes(6)
+          do {
+              $live = try { (Invoke-WebRequest "${url}_deploy.txt?t=$([DateTime]::UtcNow.Ticks)" -SkipHttpErrorCheck).Content.Trim() } catch { '' }
+              if ($live -ne $env:GITHUB_SHA) { Start-Sleep 15 }
+          } while ($live -ne $env:GITHUB_SHA -and (Get-Date) -lt $deadline)
+          if ($live -ne $env:GITHUB_SHA) { throw "pages serve '$live', expected $env:GITHUB_SHA" }
+          $html = (Invoke-WebRequest "${url}?t=$([DateTime]::UtcNow.Ticks)").Content
+          foreach ($mark in 'id="readme"|class="readme', 'name="viewport"') { if ($html -notmatch $mark) { throw "index lacks $mark" } }

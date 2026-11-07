@@ -1,0 +1,27 @@
+:| ^ stream =
+    | Cons : u64 * (() -> stream)
+    | Nil
+
+:| ^ visitor =
+    | Visit : i32 * (visitor -> i32)
+    | Stop
+
+:~ ^ build (n : u64) : stream =
+    ? n = 0 ?> Nil |: Cons (n, \ () => build (n - 1))
+
+:~ ^ sum (s : stream) (acc : u64) : u64 =
+    ?= s ?|
+    | Cons (x, next) => sum (next ()) (acc + x)
+    | Nil => acc
+
+:= run (v : visitor) : i32 =
+    ?= v ?|
+    | Visit (x, f) => x + f v
+    | Stop => 0
+
+:= main () : i32 =
+    := ~n = 10u64
+    := stream_sum_55 = sum (build n) 0
+    := ~k = 5i32
+    := v = Visit (k, \ self => ?= self ?| Visit (x, _) => x * 2 | Stop => 1)
+    !!!!Conv(`i32, stream_sum_55) + run v

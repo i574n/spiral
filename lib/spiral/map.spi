@@ -1,0 +1,67 @@
+:< rust_operators
+
+/// ## rust
+:! hash_map k v =
+    `(
+        rust::rust_type
+            `($'std_collections_HashMap<`k, `v>')
+            `($'std::collections::HashMap<`k, `v>')
+            "type std_collections_HashMap<'K, 'V> = class end"
+    )
+
+:! b_tree_map k v =
+    `(
+        rust::rust_type
+            `($'std_collections_BTreeMap<`k, `v>')
+            `($'std::collections::BTreeMap<`k, `v>')
+            "type std_collections_BTreeMap<'K, 'V> = class end"
+    )
+
+:= new_hash_map () : hash_map _ _ =
+    !\($'"std::collections::HashMap::new()"')
+
+:= new_b_tree_map () : b_tree_map _ _ =
+    !\($'"std::collections::BTreeMap::new()"')
+
+:= get \* k v. (key : k) (map : hash_map k v) : optionm'::option' v =
+    := key = ~~ key
+    !\\(map, $'"std::collections::HashMap::get(&$0, &!key).map(|x| x).cloned()"')
+
+:= insert \* k v. (key : k) (value : v) (map : hash_map k v) : optionm'::option' v =
+    := key = ~~ key
+    !\($'"let mut !map = !map"')
+    !\($'"std::collections::HashMap::insert(&mut !map, !key, !value)"')
+
+:= map' \* k v w. (fn : v -> w) (map : hash_map k v) : hash_map k w =
+    !\\((map, fn), $'"$0.into_iter().map(|(k, v)| (k, $1(v))).collect()"')
+
+:= hash_map_count \* k v. (map : hash_map k v) : i32 =
+    !\\(map, $'"$0.count()"')
+
+:= from_vec \* k v. (vec : am'::vec (k * v)) : hash_map k v =
+    !\($'"std::collections::HashMap::from_iter(!vec)"')
+
+:= from_vec_pairs \* k v. (vec : am'::vec (pair k v)) : hash_map k v =
+    !\($'"std::collections::HashMap::from_iter(!vec.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())))"')
+
+:= b_tree_map_from_vec_pairs \* k v. (vec : am'::vec (pair k v)) : b_tree_map k v =
+    !\($'"std::collections::BTreeMap::from_iter(!vec.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())))"')
+
+:= from_array \* k v. (array : array_base (k * v)) : hash_map k v =
+    array |> am'::to_vec |> from_vec
+
+:= from_list \* k v. (list : list (k * v)) : hash_map k v =
+    := (array list) : array _ = list |> arraym::fromList
+    list |> am'::to_vec |> from_vec
+
+:= to_vec \* k v. (map : hash_map k v) : am'::vec (k * v) =
+    !\\(map, $'"$0.into_iter().map(|(k, v)| (k, v)).collect::<Vec<_>>()"')
+
+/// ## fsharp
+:! map k v = $'Map<`k, `v>'
+
+:= item \* k v. (k : k) (map : map k v) : v =
+    $'!map.[!k]'
+
+:= of_array \* k v. (array : array (k * v)) : map k v =
+    $'!array |> Array.map (fun (struct (a, b)) -> a, b) |> Map.ofArray'

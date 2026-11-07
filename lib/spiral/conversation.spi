@@ -1,0 +1,98 @@
+///> c
+///> rust
+:# conversation static =
+    :< testing
+
+:! no_pending = ()
+:! pending_call n = ()
+
+:== usage = { model : string; tokens_out : i32 }
+
+:| ^ transcript pending =
+    | Done :: transcript no_pending
+    | System :: \* n. string * transcript n -> transcript n
+    | User :: \* n. string * transcript n -> transcript n
+    | Assistant :: \* n. string * usage * transcript n -> transcript n
+    | Call :: \* n. string * string * transcript (pending_call n) -> transcript n
+    | Result :: \* n. string * string * transcript n -> transcript (pending_call n)
+
+:= ^ weigh \* n. (t : transcript n) : i32 =
+    ?= t ?|
+    | Done => 0i32
+    | System (_, rest) => 1i32 + weigh rest
+    | User (_, rest) => 10i32 + weigh rest
+    | Assistant (_, spent, rest) => 100i32 + spent::tokens_out + weigh rest
+    | Call (_, _, rest) => 1000i32 + weigh rest
+    | Result (_, _, rest) => 10000i32 + weigh rest
+
+:# an_answered_call_closes_the_transcript =
+    := ~tokens_out = 7i32
+    := t : transcript no_pending =
+        System ("short answers",
+        User ("weather for the day?",
+        Call ("getLocation", "{}",
+        Result ("getLocation", "{\"location\":\"Cincinnati\"}",
+        Assistant ("Sunny, open the windows.", { model = "local"; tokens_out = tokens_out }, Done)))))
+    weigh t |> _assert_eq 11118i32
+
+:< sm'_operators
+
+:| ^ exchanges =
+    | NoExchange
+    | Exchange : string * string * string * exchanges
+
+:= json_specials () : string = "\\\"\n"
+
+:= json_escape_of (k : i32) : string = ? k = 0i32 ?> "\\\\" |? k = 1i32 ?> "\\\"" |: "\\n"
+
+:~ ^ json_special_index (c : char) (k : i32) : i32 =
+    ? k >= sm::length (json_specials ()) ?> -1i32
+    |? sm::index (json_specials ()) k = c ?> k
+    |: json_special_index c (k + 1i32)
+
+:~ ^ json_escape_from (text : string) (start : i32) (i : i32) (acc : string) : string =
+    ? i >= sm::length text
+    ?> acc ++# sm::slice text { from = start; to = i - 1i32 }
+    |:
+        := k = json_special_index (sm::index text i) 0i32
+        ? k < 0i32
+        ?> json_escape_from text start (i + 1i32) acc
+        |:
+            json_escape_from text
+                (i + 1i32)
+                (i + 1i32)
+                (acc ++# sm::slice text { from = start; to = i - 1i32 } ++# json_escape_of k)
+
+:= json_string (text : string) : string =
+    "\"" ++# json_escape_from text 0i32 0i32 "" ++# "\""
+
+:= exchange_line (name : string) (arguments : string) (result : string) : string =
+    "{\"name\":"
+    ++# json_string name
+    ++# ",\"arguments\":"
+    ++# json_string arguments
+    ++# ",\"result\":"
+    ++# json_string result
+    ++# "}"
+
+:= ^ exchange_lines (log : exchanges) : string =
+    ?= log ?|
+    | NoExchange => ""
+    | Exchange (name, arguments, result, rest) => exchange_line name arguments result ++# "\n" ++# exchange_lines rest
+
+///> c
+///> rust
+:# exchanges_persist_as_json_lines =
+    := log =
+        Exchange (
+            "getLocation",
+            "{}",
+            "{\"location\":\"Cincinnati\"}",
+            Exchange ("getWeather", "{\"city\":\"Cincinnati\"}", "sunny\nwarm", NoExchange)
+        )
+    exchange_lines log
+    |> _assert_eq (
+        "{\"name\":\"getLocation\",\"arguments\":\"{}\",\"result\":\"{\\\"location\\\":\\\"Cincinnati\\\"}\"}\n"
+        ^^ "{\"name\":\"getWeather\",\"arguments\":\"{\\\"city\\\":\\\"Cincinnati\\\"}\",\"result\":\"sunny\\nwarm\""
+        ^^ "}\n"
+    )

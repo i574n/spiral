@@ -1,0 +1,89 @@
+:# util static =
+    :< testing
+
+:| ^ ski =
+    | I
+    | K
+    | S
+    | App : ski * ski
+
+:= ^ eval ski =
+    ?= ski ?|
+    | App (App (K, x), y) => x |> eval
+    | App (App (App (S, x), y), z) => App (App (x, z), App (y, z)) |> eval
+    | App (I, x) => x |> eval
+    | App (K, x) => App (K, eval x)
+    | App (f, x) => App (eval f, x) |> eval
+    | _ => ski
+
+:# ski =
+    eval I
+    |> _assert_eq I
+
+    App (I, I)
+    |> eval
+    |> _assert_eq I
+
+    App (I, App (I, I))
+    |> eval
+    |> _assert_eq I
+
+:# ski_identity_nested =
+    App (App (I, I), I)
+    |> eval
+    |> _assert_eq I
+
+    App (App (App (I, I), I), I)
+    |> eval
+    |> _assert_eq I
+
+:# ski_constant =
+    eval K
+    |> _assert_eq K
+
+    App (K, I)
+    |> eval
+    |> _assert_eq (App (K, I))
+
+    App (K, K)
+    |> eval
+    |> _assert_eq (App (K, K))
+
+:# ski_constant_applied =
+    App (App (K, I), K)
+    |> eval
+    |> _assert_eq I
+
+    App (App (K, K), I)
+    |> eval
+    |> _assert_eq K
+
+    App (App (App (App (K, K), I), S), K)
+    |> eval
+    |> _assert_eq S
+
+:# ski_substitution =
+    eval S
+    |> _assert_eq S
+
+    App (App (App (S, I), I), I)
+    |> eval
+    |> _assert_eq I
+
+    App (App (App (S, K), K), I)
+    |> eval
+    |> _assert_eq I
+
+:# ski_substitution_nested =
+    App (App (App (S, K), I), (App (App (K, I), S)))
+    |> eval
+    |> _assert_eq I
+
+    App (App (K, S), App (I, App (App (App (S, K), S), I)))
+    |> eval
+    |> _assert_eq S
+
+:# ski_substitution_deep =
+    App (App (App (S, K), I), K)
+    |> eval
+    |> _assert_eq K

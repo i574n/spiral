@@ -1,0 +1,41 @@
+///- --package . --timeout 900000
+:< sm'_operators
+:< xml
+:< xml_codec
+
+:! xml_syntax = ()
+:! json_syntax = ()
+
+:| document_text s =
+    | XmlText :: string -> document_text xml_syntax
+    | JsonText :: string -> document_text json_syntax
+
+:= single_root \* t. (read : xml_node -> result t (list decode_error)) (nodes : list xml_node)
+    : result t (list decode_error)
+    =
+    ?= nodes ?|
+    | node :: [] => read node
+    | _ => Error (Unexpected (decode_path [], "a document needs exactly one root element") :: [])
+
+:= document_of \* s t.
+    (root : string) (read : xml_node -> result t (list decode_error)) (text : document_text s)
+    : result t (list decode_error)
+    =
+    ?= text ?|
+    | XmlText body => single_root read (read_xml body)
+    | JsonText body => single_root read (json_schema::json_document root body)
+
+:= invoice_id (c : xml_node) : result string (list decode_error) =
+    := id, errors = read_required "ID" read_text (element_children c) []
+    decoded_by errors (\ () => present id)
+
+///> rust
+:# one_reader_serves_both_syntaxes =
+    := from_xml = document_of "Invoice" invoice_id (XmlText "<Invoice><ID>A1</ID></Invoice>")
+    := from_json = document_of "Invoice" invoice_id (JsonText "{\"ID\":\"A1\"}")
+    ? from_xml <> Ok "A1" || from_json <> Ok "A1" ?> failwith "the same invoice reads the same in XML and in JSON"
+    ? error_texts (document_of "Invoice" invoice_id (JsonText "{\"Note\":\"x\"}")) <> [ "missing ID" ]
+    ?> failwith "a JSON document missing a required element reports it with its path"
+    := empty = document_of "Invoice" invoice_id (XmlText "")
+    ? error_texts empty <> [ "unexpected : a document needs exactly one root element" ]
+    ?> failwith "no root is reported, not raised"

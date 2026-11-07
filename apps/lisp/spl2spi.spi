@@ -1,0 +1,289 @@
+///- --package .
+:# spl2spi static =
+    :< testing
+
+:< sm'_operators
+
+:| ^ sexp =
+    | Atom : string
+    | Text : string
+    | Items : list sexp
+
+:| token =
+    | Open
+    | Close
+    | Word : string
+    | Quoted : string
+
+:| parsed =
+    | Parsed : list sexp * list token
+    | Unclosed
+
+:| read =
+    | Forms : list sexp
+    | Unbalanced : string
+
+:~ is_space (c : char) : bool = c = ' ' || c = '\n' || c = '\r' || c = '\t'
+
+:~ ends_word (c : char) : bool = is_space c || c = '(' || c = ')' || c = '"' || c = ';'
+
+:~ ^ line_end (s : string) (i : i32) : i32 = ? i >= sm::length s || sm::index s i = '\n' ?> i |: line_end s (i + 1i32)
+
+:~ ^ quote_end (s : string) (i : i32) : i32 =
+    ? i >= sm::length s ?> sm::length s
+    |? sm::index s i = '\\' ?> quote_end s (i + 2i32)
+    |? sm::index s i = '"' ?> i + 1i32
+    |: quote_end s (i + 1i32)
+
+:~ ^ word_end (s : string) (i : i32) : i32 =
+    ? i >= sm::length s || ends_word (sm::index s i) ?> i |: word_end s (i + 1i32)
+
+:~ slice_of (s : string) (from : i32) (until : i32) : string =
+    ? until <= from ?> "" |: sm::slice s { from = from; to = until - 1i32 }
+
+:~ ^ scan (s : string) (i : i32) (acc : list token) : list token =
+    ? i >= sm::length s ?> listm::rev acc
+    |:
+        := c = sm::index s i
+        ? is_space c ?> scan s (i + 1i32) acc
+        |? c = ';' ?> scan s (line_end s i) acc
+        |? c = '(' ?> scan s (i + 1i32) (Open :: acc)
+        |? c = ')' ?> scan s (i + 1i32) (Close :: acc)
+        |? c = '"' ?> scan s (quote_end s (i + 1i32)) (Quoted (slice_of s i (quote_end s (i + 1i32))) :: acc)
+        |: scan s (word_end s i) (Word (slice_of s i (word_end s i)) :: acc)
+
+:~ ^ items_of (ts : list token) (acc : list sexp) : parsed =
+    ?= ts ?|
+    | [] => Unclosed
+    | t :: rest =>
+        ?= t ?|
+        | Close => Parsed (listm::rev acc, rest)
+        | Word w => items_of rest (Atom w :: acc)
+        | Quoted q => items_of rest (Text q :: acc)
+        | Open =>
+            ?= items_of rest [] ?|
+            | Parsed (inner, after) => items_of after (Items inner :: acc)
+            | Unclosed => Unclosed
+
+:~ ^ forms_of (ts : list token) (acc : list sexp) : read =
+    ?= ts ?|
+    | [] => Forms (listm::rev acc)
+    | t :: rest =>
+        ?= t ?|
+        | Close => Unbalanced "unbalanced )"
+        | Word w => forms_of rest (Atom w :: acc)
+        | Quoted q => forms_of rest (Text q :: acc)
+        | Open =>
+            ?= items_of rest [] ?|
+            | Parsed (inner, after) => forms_of after (Items inner :: acc)
+            | Unclosed => Unbalanced "unbalanced ("
+
+:~ ^ joined (sep : string) (xs : list string) : string =
+    ?= xs ?|
+    | [] => ""
+    | x :: rest => ? listm::length rest = 0i32 ?> x |: x ++# sep ++# joined sep rest
+
+:~ ^ spaces (n : i32) : string = ? n <= 0i32 ?> "" |: " " ++# spaces (n - 1i32)
+
+:~ word_of (x : sexp) : string =
+    ?= x ?|
+    | Atom a => a
+    | _ => ""
+
+:~ text_of (x : sexp) : string =
+    ?= x ?|
+    | Atom a => a
+    | Text q => q
+    | Items _ => ""
+
+:~ items (x : sexp) : list sexp =
+    ?= x ?|
+    | Items xs => xs
+    | _ => []
+
+:~ rest (xs : list sexp) : list sexp =
+    ?= xs ?|
+    | _ :: r => r
+    | [] => []
+
+:~ ^ nth (xs : list sexp) (i : i32) : sexp =
+    ?= xs ?|
+    | [] => Items []
+    | x :: r => ? i <= 0i32 ?> x |: nth r (i - 1i32)
+
+:~ head_word (x : sexp) : string = word_of (nth (items x) 0i32)
+
+:~ is_ctor (x : sexp) : bool =
+    := a = word_of x
+    sm::length a > 0i32 && sm::index a 0i32 >= 'A' && sm::index a 0i32 <= 'Z'
+
+:~ is_infix (h : string) : bool =
+    h = "=" || h = "+" || h = "-" || h = "*" || h = "<>" || h = "<" || h = ">" || h = "<=" || h = ">=" || h = "&&"
+    || h = "||"
+
+:~ ^ format_type (t : sexp) (nested : bool) : string =
+    ?= t ?|
+    | Items xs =>
+        ?= xs ?|
+        | [] => "()"
+        | head :: args =>
+            := h = word_of head
+            := s =
+                ? h = "->" ?> joined " -> " (listm::map (\ x => format_type x (head_word x = "->")) args)
+                |? h = "tuple" ?> joined " * " (listm::map (\ x => format_type x !+) args)
+                |: joined " " (format_type head !- :: listm::map (\ x => format_type x !+) args)
+            ? nested && (h = "->" || h = "tuple" || listm::length args > 0i32) ?> "(" ++# s ++# ")" |: s
+    | x => text_of x
+
+:~ ^ format_pattern (p : sexp) : string =
+    ?= p ?|
+    | Items xs =>
+        := h = text_of (nth xs 0i32)
+        := args = rest xs
+        ? listm::length args = 0i32 ?> h
+        |? listm::length args = 1i32 ?> h ++# " " ++# format_pattern (nth args 0i32)
+        |: h ++# " (" ++# joined ", " (listm::map (\ a => format_pattern a) args) ++# ")"
+    | x => text_of x
+
+:~ ^ format_expr (e : sexp) (ind : i32) (nested : bool) : string =
+    ?= e ?|
+    | Items xs =>
+        ?= xs ?|
+        | [] => "()"
+        | head :: args => expr_of head args ind nested
+    | x => text_of x
+:& :~ expr_of (head : sexp) (args : list sexp) (ind : i32) (nested : bool) : string =
+    := h = word_of head
+    := wrap = \ (s : string) => ? nested ?> "(" ++# s ++# ")" |: s
+    := inner = \ (x : sexp) => format_expr x ind !+
+    ? h = "emit"
+    ?> "$" ++# text_of (nth args 0i32)
+    |? h = "then"
+    ?> wrap (joined " |> " (listm::map inner args))
+    |? h = "if"
+    ?> wrap (if_text args ind)
+    |? h = "match"
+    ?> match_text args ind nested
+    |? is_infix h && listm::length args = 2i32
+    ?> wrap (inner (nth args 0i32) ++# " " ++# h ++# " " ++# inner (nth args 1i32))
+    |? is_ctor head
+    ?> ctor_text h args ind nested
+    |: wrap (joined " " (inner head :: listm::map inner args))
+:& :~ if_text (args : list sexp) (ind : i32) : string =
+    := plain = \ (x : sexp) => format_expr x ind !-
+    "if " ++# plain (nth args 0i32) ++# " then " ++# plain (nth args 1i32) ++# " else " ++# plain (nth args 2i32)
+:& :~ arm_text (pad : string) (ind : i32) (a : sexp) : string =
+    pad ++# "| " ++# format_pattern (nth (items a) 0i32) ++# " => " ++# format_expr (nth (items a) 1i32) (ind + 4i32) !-
+:& :~ match_text (args : list sexp) (ind : i32) (nested : bool) : string =
+    := arms = joined "\n" (listm::map (\ a => arm_text (spaces ind) ind a) (rest args))
+    := s = "match " ++# format_expr (nth args 0i32) ind !- ++# " with\n" ++# arms
+    ? nested ?> "(\n" ++# spaces (ind + 4i32) ++# s ++# ")" |: s
+:& :~ ctor_text (h : string) (args : list sexp) (ind : i32) (nested : bool) : string =
+    := wrap = \ (s : string) => ? nested ?> "(" ++# s ++# ")" |: s
+    ? listm::length args = 0i32 ?> h
+    |? listm::length args = 1i32 ?> wrap (h ++# " " ++# format_expr (nth args 0i32) ind !+)
+    |: wrap (h ++# " (" ++# joined ", " (listm::map (\ x => format_expr x ind !-) args) ++# ")")
+
+:~ forall_of (xs : list sexp) : string * list sexp =
+    := first = nth xs 0i32
+    ? head_word first = "forall" ?> "forall " ++# joined " " (listm::map text_of (rest (items first))) ++# ". ", rest xs
+    |: "", xs
+
+:~ name_params (x : sexp) : string =
+    ?= x ?|
+    | Items xs => joined " " (listm::map text_of xs)
+    | _ => text_of x
+
+:~ case_line (c : sexp) : string =
+    := fa, r = forall_of (rest (items c))
+    "    | " ++# text_of (nth (items c) 0i32) ++# " :: " ++# fa ++# format_type (nth r 0i32) !-
+
+:~ union_text (args : list sexp) : string =
+    := is_rec = word_of (nth args 0i32) = "rec"
+    := a = ? is_rec ?> rest args |: args
+    := first = "union " ++# (? is_rec ?> "rec " |: "") ++# name_params (nth a 0i32) ++# " ="
+    joined "\n" (first :: listm::map case_line (rest a))
+
+:~ param_text (p : sexp) : string =
+    "(" ++# text_of (nth (items p) 0i32) ++# " : " ++# format_type (nth (items p) 1i32) !- ++# ")"
+
+:~ inl_text (args : list sexp) : string =
+    := is_rec = word_of (nth args 0i32) = "rec"
+    := a = ? is_rec ?> rest args |: args
+    := fa, r = forall_of (rest a)
+    := params = items (nth r 0i32)
+    := tail = rest r
+    := ps = ? listm::length params = 0i32 ?> "()" |: joined " " (listm::map param_text params)
+    := two = listm::length tail = 2i32
+    := ret = ? two ?> " : " ++# format_type (nth tail 0i32) !- |: ""
+    := body = ? two ?> nth tail 1i32 |: nth tail 0i32
+    := head = "inl " ++# (? is_rec ?> "rec " |: "") ++# text_of (nth a 0i32) ++# " " ++# fa ++# ps ++# ret
+    head ++# " =\n    " ++# format_expr body 4i32 !-
+
+:~ known_top (f : sexp) : bool =
+    := h = head_word f
+    h = "nominal" || h = "type" || h = "union" || h = "inl"
+
+:~ format_top (f : sexp) : string =
+    := h = head_word f
+    := args = rest (items f)
+    ? h = "union" ?> union_text args
+    |? h = "inl" ?> inl_text args
+    |: h ++# " " ++# name_params (nth args 0i32) ++# " = " ++# format_type (nth args 1i32) !-
+
+:~ clean (text : string) : string = text |> sm'::replace "“" "\"" |> sm'::replace "”" "\""
+
+:~ read_text (text : string) : read = forms_of (scan (clean text) 0i32 []) []
+
+:~ spi_of (forms : list sexp) : string = joined "\n\n" (listm::map format_top forms) ++# "\n"
+
+:~ spi_text (text : string) : string =
+    ?= read_text text ?|
+    | Forms forms => spi_of forms
+    | Unbalanced why => why
+
+:~ failed (why : string) : i32 =
+    console::write_error_line ("spl2spi: " ++# why)
+    2i32
+
+:~ translate (input : string) (output : string) : i32 =
+    ?= read_text (file_system::read_all_text input) ?|
+    | Unbalanced why => failed why
+    | Forms forms =>
+        ? listm::forall' known_top forms |> not ?> failed "unknown top-level form"
+        |:
+            file_system::write_all_text output (spi_of forms)
+            := count : i32 = listm::length forms
+            console::write_line (sm'::obj_to_string count ++# " forms -> " ++# output)
+            0i32
+
+:~ run (args : list string) : i32 =
+    ?= listm::rev args ?|
+    | output :: input :: _ => translate input output
+    | _ => failed "usage: spl2spi <in.spl> <out.spi>"
+
+///> rust
+:# an_inl_prints_its_typed_parameters_and_an_indented_body =
+    "(inl add ((a i64) (b i64)) i64 (emit \"!a + !b\"))" |> spi_text
+    |> _assert_eq "inl add (a : i64) (b : i64) : i64 =\n    $\"!a + !b\"\n"
+
+///> rust
+:# a_union_case_keeps_its_forall_and_parenthesizes_nested_types =
+    := spl = "(union rec (mem c) (Here (forall t) (-> string (mem (ext t) z))))"
+    spl |> spi_text |> _assert_eq "union rec mem c =\n    | Here :: forall t. string -> mem (ext t) z\n"
+
+///> rust
+:# a_match_in_a_body_puts_one_arm_per_line =
+    := spl = "(inl rec slot ((m (mem c))) i64 (match m ((Here _) 0i64) ((There t _) (add 1i64 (slot t)))))"
+    := want =
+        "inl rec slot (m : mem c) : i64 =\n    match m with\n    | Here _ => 0i64\n"
+        ^^ "    | There (t, _) => add 1i64 (slot t)\n"
+    spl |> spi_text |> _assert_eq want
+
+///> rust
+:# comments_and_smart_quotes_are_read_and_unbalanced_input_is_named =
+    ("; note\n(nominal z string)" |> spi_text, "(nominal z string" |> spi_text, "(nominal z string))" |> spi_text)
+    |> _assert_eq ("nominal z = string\n", "unbalanced (", "unbalanced )")
+
+///> _
+:= main () : i32 = env::command_line_arguments () |> run

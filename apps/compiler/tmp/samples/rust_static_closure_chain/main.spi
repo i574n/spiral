@@ -1,0 +1,19 @@
+:| ^ stream =
+    | Cons : u64 * (() -> stream)
+    | Nil
+
+:= ^ build (n : u64) : stream =
+    ? n = 0 ?> Nil |: Cons (n, \ () => build (n - 1))
+
+:= native () : i32 =
+    := static_closure_count = 80u64
+    := ~s = build static_closure_count
+    := ~acc = 0u64
+    :~ ^ loop (s : stream) (acc : u64) : u64 =
+        ?= s ?|
+        | Cons (x, next) => loop (next ()) (acc + x)
+        | Nil => acc
+    := r = loop s acc % 200
+    !!!!Conv(`i32, r)
+
+:= main () : i32 = native ()

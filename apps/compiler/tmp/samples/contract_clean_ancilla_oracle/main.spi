@@ -1,0 +1,23 @@
+:! zero = ()
+:! succ n = n
+:! clean = ()
+:! dirty = ()
+
+:| ^ qregister n =
+    | QOne :: qregister (succ zero)
+    | QSucc :: \* n. qregister n -> qregister (succ n)
+
+:| ancilla state =
+    | CleanAncilla :: ancilla clean
+    | DirtyAncilla :: ancilla dirty
+
+:= run_oracle \* n.
+    (register : qregister n)
+    (ancilla : ancilla clean)
+    : qregister n * ancilla clean =
+    register, ancilla
+
+:= main () : string =
+    := _, ancilla = run_oracle (QSucc QOne) CleanAncilla
+    ?= ancilla ?|
+    | CleanAncilla => "oracle-returned-clean-ancilla"

@@ -1,0 +1,237 @@
+///- --package .
+///> c
+///> zig
+test closure_apply_returns_zero =
+    := program () : i32 =
+        := f (z : i32) : i32 = z +. 1i32
+        := ~g = f
+        ? g 6i32 =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "closure_apply"
+
+:! closure_array_i32_array = array_base i32
+
+:= closure_array_create (n : i32) : closure_array_i32_array = closure_array_i32_array !!!!ArrayCreate(`i32, n)
+:= closure_array_get (array : closure_array_i32_array) (i : i32) : i32 =
+    ?= array ?|
+    | closure_array_i32_array values => !!!!ArrayIndex(values, i)
+:= closure_array_set (array : closure_array_i32_array) (i : i32) (value : i32) : () =
+    ?= array ?|
+    | closure_array_i32_array values => !!!!ArrayIndexSet(values, i, value)
+
+///> c
+///> zig
+test closure_array_returns_zero =
+    := program () : i32 =
+        := ~n = 7i32
+        := f (z : i32) : closure_array_i32_array =
+            := a = closure_array_create 1i32
+            closure_array_set a 0i32 n
+            a
+        := ~g = f
+        := held = g 1i32
+        ? closure_array_get held 0i32 =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "closure_array"
+
+///> c
+///> zig
+test closure_curry_returns_zero =
+    := program () : i32 =
+        := f (z : i32) (w : i32) : i32 = z *. 10i32 +. w
+        := ~g = f
+        ? g 3i32 4i32 =. 34i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "closure_curry"
+
+///> c
+///> zig
+test closure_depth_returns_zero =
+    := program () : i32 =
+        := ~n = 7i32
+        := f (z : i32) : i32 -> i32 -> i32 =
+            := g (y : i32) : i32 -> i32 =
+                := h (x : i32) : i32 =
+                    ? z =. 0i32 ?> 0i32 |: x +. n
+                h
+            g
+        := ~a = f
+        := b = a 1i32
+        := ~c = b
+        := d = c 0i32
+        := ~e = d
+        ? e 0i32 =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "closure_depth"
+
+///> c
+///> zig
+test closure_f32_heap_returns_zero =
+    := program () : i32 =
+        := ~x = 1.5f32
+        := ~word = "hi"
+        := pair = x, word
+        := box = !!!!LayoutToHeap({ value = pair })
+        := f (z : i32) : heap { value : f32 * string } =
+            ? z =. 0i32 ?>
+                box
+            |:
+                box
+        := ~g = f
+        := held = g 1i32
+        := opened = !!!!LayoutIndex(held)
+        := ~(left, right) = opened.value
+        ? left =. 1.5f32 && !!!!EQ(right, "hi") ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "closure_f32_heap"
+
+///> c
+///> zig
+test closure_heap_returns_zero =
+    := program () : i32 =
+        := ~n = 7i32
+        := box = !!!!LayoutToHeap({ value = n })
+        := f (z : i32) : heap { value : i32 } = box
+        := ~g = f
+        := held = g 1i32
+        := opened = !!!!LayoutIndex(held)
+        ? opened.value =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "closure_heap"
+
+///> c
+///> zig
+test closure_heap_heap_returns_zero =
+    := program () : i32 =
+        := ~n = 7i32
+        := ~word = "hi"
+        := inner_pair = n, word
+        := inner = !!!!LayoutToHeap({ value = inner_pair })
+        := ~extra = 1i32
+        := outer_pair = inner, extra
+        := outer = !!!!LayoutToHeap({ value = outer_pair })
+        := f (z : i32) : heap { value : (heap { value : i32 * string }) * i32 } =
+            ? z =. 0i32 ?>
+                outer
+            |:
+                outer
+        := ~g = f
+        := held = g 1i32
+        := opened = !!!!LayoutIndex(held)
+        := ~(cell, count) = opened.value
+        := inner_opened = !!!!LayoutIndex(cell)
+        := ~(left, right) = inner_opened.value
+        ? left =. 7i32 && !!!!EQ(right, "hi") && count =. 1i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "closure_heap_heap"
+
+///> c
+///> zig
+test closure_heap_heap_heap_returns_zero =
+    := program () : i32 =
+        := ~n = 7i32
+        := ~word = "hi"
+        := inner_pair = n, word
+        := inner = !!!!LayoutToHeap({ value = inner_pair })
+        := ~extra = 1i32
+        := mid_pair = inner, extra
+        := mid = !!!!LayoutToHeap({ value = mid_pair })
+        := ~mark = 2i32
+        := outer_pair = mid, mark
+        := outer = !!!!LayoutToHeap({ value = outer_pair })
+        := f (z : i32) : heap { value : (heap { value : (heap { value : i32 * string }) * i32 }) * i32 } =
+            ? z =. 0i32 ?>
+                outer
+            |:
+                outer
+        := ~g = f
+        := held = g 1i32
+        := opened = !!!!LayoutIndex(held)
+        := ~(mid_held, flag) = opened.value
+        := mid_opened = !!!!LayoutIndex(mid_held)
+        := ~(inner_held, count) = mid_opened.value
+        := inner_opened = !!!!LayoutIndex(inner_held)
+        := ~(left, right) = inner_opened.value
+        ? left =. 7i32 && !!!!EQ(right, "hi") && count =. 1i32 && flag =. 2i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "closure_heap_heap_heap"
+
+///> c
+///> zig
+test closure_heap_pair_heaps_returns_zero =
+    := program () : i32 =
+        := ~n = 7i32
+        := ~word = "hi"
+        := left_pair = n, word
+        := left_heap = !!!!LayoutToHeap({ value = left_pair })
+        := ~m = 4i32
+        := ~other = "yo"
+        := right_pair = m, other
+        := right_heap = !!!!LayoutToHeap({ value = right_pair })
+        := pair = left_heap, right_heap
+        := inner = !!!!LayoutToHeap({ value = pair })
+        := ~mark = 2i32
+        := outer_pair = inner, mark
+        := outer = !!!!LayoutToHeap({ value = outer_pair })
+        := f
+            (z : i32)
+            : heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 }
+            =
+            ? z =. 0i32 ?>
+                outer
+            |:
+                outer
+        := ~g = f
+        := held = g 1i32
+        := opened = !!!!LayoutIndex(held)
+        := ~(inner_held, flag) = opened.value
+        := inner_opened = !!!!LayoutIndex(inner_held)
+        := ~(left, right) = inner_opened.value
+        := left_opened = !!!!LayoutIndex(left)
+        := ~(a, b) = left_opened.value
+        := right_opened = !!!!LayoutIndex(right)
+        := ~(c, d) = right_opened.value
+        ? a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && flag =. 2i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "closure_heap_pair_heaps"
+
+:| closure_heap_union_heap_pair_heaps_slot =
+    | ClosureHeapUnionHeapPairHeapsNone
+    | ClosureHeapUnionHeapPairHeapsHeld :
+        (heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
+
+:~ closure_heap_union_heap_pair_heaps_score x : i32 =
+    ?= x ?|
+    | ClosureHeapUnionHeapPairHeapsNone => 1i32
+    | ClosureHeapUnionHeapPairHeapsHeld box =>
+        := opened = !!!!LayoutIndex(box)
+        := ~(inner_held, flag) = opened.value
+        := inner_opened = !!!!LayoutIndex(inner_held)
+        := ~(left, right) = inner_opened.value
+        := left_opened = !!!!LayoutIndex(left)
+        := ~(a, b) = left_opened.value
+        := right_opened = !!!!LayoutIndex(right)
+        := ~(c, d) = right_opened.value
+        ? a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && flag =. 2i32 ?> 0i32 |: 1i32
+
+///> c
+///> zig
+test closure_heap_union_heap_pair_heaps_returns_zero =
+    := program () : i32 =
+        := ~n = 7i32
+        := ~word = "hi"
+        := left_pair = n, word
+        := left_heap = !!!!LayoutToHeap({ value = left_pair })
+        := ~m = 4i32
+        := ~other = "yo"
+        := right_pair = m, other
+        := right_heap = !!!!LayoutToHeap({ value = right_pair })
+        := pair = left_heap, right_heap
+        := inner = !!!!LayoutToHeap({ value = pair })
+        := ~mark = 2i32
+        := outer_pair = inner, mark
+        := outer = !!!!LayoutToHeap({ value = outer_pair })
+        := ~on = !+
+        := held = ? on ?> ClosureHeapUnionHeapPairHeapsHeld outer |: ClosureHeapUnionHeapPairHeapsNone
+        := box = !!!!LayoutToHeap({ value = held })
+        := f (z : i32) : heap { value : closure_heap_union_heap_pair_heaps_slot } =
+            ? z =. 0i32 ?>
+                box
+            |:
+                box
+        := ~g = f
+        := loaded = g 1i32
+        := opened = !!!!LayoutIndex(loaded)
+        closure_heap_union_heap_pair_heaps_score opened.value
+    ? program () <> 0i32 ?> failwith "closure_heap_union_heap_pair_heaps"

@@ -1,0 +1,126 @@
+///- --package .
+///> gleam
+:# html_markdown static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:= escape (s : string) : string =
+    := amp = text::replace s "&" "&amp;"
+    := lt = text::replace amp "<" "&lt;"
+    := gt = text::replace lt ">" "&gt;"
+    text::replace gt "\"" "&quot;"
+
+:= ends_with (s : string) (p : string) : bool =
+    text::length s >= text::length p && text::starts_at s (text::length s - text::length p) p
+
+:~ ^ trim_trailing_ticks (s : string) : string =
+    ? ends_with s "`" ?> trim_trailing_ticks (text::take s (text::length s - 1i32)) |: s
+
+:= after_close (s : string) (from : i32) (close : string) : i32 =
+    := k = text::find_from s close from
+    ? k < 0i32 ?> -1i32 |: k + 1i32
+
+:= code_span_end (s : string) (i : i32) : i32 = ? text::one s i = "`" ?> after_close s (i + 1i32) "`" |: -1i32
+
+:= link_end_after_label (s : string) (label_end : i32) : i32 =
+    ? label_end > 0i32 && text::one s label_end = "(" ?> after_close s (label_end + 1i32) ")" |: -1i32
+
+:= link_span_end (s : string) (i : i32) : i32 =
+    ? text::one s i = "[" ?> link_end_after_label s (after_close s (i + 1i32) "]") |: -1i32
+
+:= span_end (s : string) (i : i32) : i32 =
+    := code = code_span_end s i
+    ? code >= 0i32 ?> code |: link_span_end s i
+
+:~ ^ pieces_from (s : string) (i : i32) (start : i32) (acc : list string) : list string =
+    ? i >= text::length s ?> listm::rev (text::slice_len s start (i - start) :: acc)
+    |:
+        := stop = span_end s i
+        ? stop < 0i32 ?> pieces_from s (i + 1i32) start acc
+        |:
+            := before = text::slice_len s start (i - start)
+            pieces_from s stop stop (text::slice_len s i (stop - i) :: before :: acc)
+
+:= anchor (piece : string) (label_end : i32) : string =
+    := label = text::slice_len piece 1i32 (label_end - 1i32)
+    := href = text::slice_len piece (label_end + 2i32) (text::length piece - label_end - 3i32)
+    ? text::contains href ")" ?> escape piece |: "<a href=\"" ++ escape href ++ "\">" ++ escape label ++ "</a>"
+
+:= link_html (piece : string) : string =
+    := label_end = text::find_from piece "]" 1i32
+    := whole = label_end > 0i32 && text::one piece (label_end + 1i32) = "(" && ends_with piece ")"
+    ? whole && text::length piece >= label_end + 3i32 ?> anchor piece label_end |: escape piece
+
+:= piece_html (piece : string) : string =
+    ? text::starts_with piece "`" && text::length piece >= 2i32
+    ?> "<code>" ++ escape (trim_trailing_ticks (text::drop piece 1i32)) ++ "</code>"
+    |? text::starts_with piece "[" ?> link_html piece
+    |: escape piece
+
+:= inline (line : string) : string = sm'::concat_list "" (listm::map piece_html (pieces_from line 0i32 0i32 []))
+
+:| md_block =
+    | NoBlock
+    | Paragraph
+    | ItemList
+    | CodeBlock
+
+:= close (b : md_block) : string =
+    ?= b ?|
+    | NoBlock => ""
+    | Paragraph => "</p>\n"
+    | ItemList => "</ul>\n"
+    | CodeBlock => "</code></pre>\n"
+
+:~ ^ hashes_end (s : string) (i : i32) : i32 = ? i < 6i32 && text::one s i = "#" ?> hashes_end s (i + 1i32) |: i
+
+:= heading_level (line : string) : i32 =
+    := n = hashes_end line 0i32
+    ? n >= 1i32 && text::one line n = " " ?> n |: 0i32
+
+:= item_text (line : string) : option string =
+    := first = text::one line 0i32
+    ? (first = "-" || first = "*") && text::one line 1i32 = " " ?> Some (text::drop line 2i32) |: None
+
+:== step = { html : string; block : md_block }
+
+:= heading_step (html : string) (block : md_block) (line : string) (n : i32) : step =
+    := tag = "h" ++ text::show_i32 n
+    := title = inline (text::drop line (n + 1i32))
+    { html = html ++ close block ++ "<" ++ tag ++ ">" ++ title ++ "</" ++ tag ++ ">\n"; block = NoBlock }
+
+:= item_step (html : string) (block : md_block) (item : string) : step =
+    := opened = ?= block ?| ItemList => html | _ => html ++ close block ++ "<ul>\n"
+    { html = opened ++ "<li>" ++ inline item ++ "</li>\n"; block = ItemList }
+
+:= text_step (html : string) (block : md_block) (line : string) : step =
+    ?= block ?|
+    | Paragraph => { html = html ++ " " ++ inline line; block = Paragraph }
+    | _ => { html = html ++ close block ++ "<p>" ++ inline line; block = Paragraph }
+
+:= open_step (html : string) (block : md_block) (line : string) : step =
+    ? text::starts_with line "```" ?> { html = html ++ close block ++ "<pre><code>"; block = CodeBlock }
+    |? text::trim line = "" ?> { html = html ++ close block; block = NoBlock }
+    |? heading_level line > 0i32 ?> heading_step html block line (heading_level line)
+    |:
+        ?= item_text line ?|
+        | Some item => item_step html block item
+        | None => text_step html block line
+
+:= line_step (s : step) (line : string) : step =
+    ?= s::block ?|
+    | CodeBlock =>
+        ? text::starts_with line "```" ?> { html = s::html ++ "</code></pre>\n"; block = NoBlock }
+        |: { html = s::html ++ escape line ++ "\n"; block = CodeBlock }
+    | _ => open_step s::html s::block line
+
+:= markdown (source : string) : string =
+    := last = listm::fold line_step { html = ""; block = NoBlock } (sm'::split_list "\n" source)
+    last::html ++ close last::block
+
+:# markdown_blocks_and_inline_spans_render_like_the_elixir_one =
+    := got = markdown "# T\nsome `x` and [a](b)\nmore\n- one\n- two\n```\n<x>\n```\nend"
+    := head = "<h1>T</h1>\n<p>some <code>x</code> and <a href=\"b\">a</a> more</p>\n"
+    := tail = "<ul>\n<li>one</li>\n<li>two</li>\n</ul>\n<pre><code>&lt;x&gt;\n</code></pre>\n<p>end</p>\n"
+    got |> _assert_eq (head ++ tail)

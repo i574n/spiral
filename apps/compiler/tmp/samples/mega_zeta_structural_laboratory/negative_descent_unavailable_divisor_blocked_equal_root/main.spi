@@ -1,0 +1,20 @@
+:< main
+
+:= impossible_descent_unavailable_divisor_blocked_equal_root () =
+    := root_value = positive_positional_twelve_value ()
+    ?= classify_certified_interval_positive_positional_sealed_factor root_value ?|
+    | CertifiedIntervalPositivePositionalSealedCompositeClass composite_payload =>
+        := \? divisor quotient. children =
+            certified_interval_positive_positional_sealed_composite_children_from_witness
+                (CertifiedIntervalPositivePositionalSealedCompositeWitness composite_payload)
+        := blocked
+            : certified_interval_positive_positional_recursive_descent_blocked
+                (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) divisor
+            =
+            CertifiedIntervalPositivePositionalRecursiveDescentBlockedEqual
+                (positive_positional_equal_reflexive root_value)
+        ()
+    | _ => mega_runtime_fail "twelve-must-classify-as-composite-before-the-negative-boundary"
+
+:= main () =
+    impossible_descent_unavailable_divisor_blocked_equal_root ()

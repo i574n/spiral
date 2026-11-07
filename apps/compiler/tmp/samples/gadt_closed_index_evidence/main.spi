@@ -1,0 +1,21 @@
+:! yes = ()
+:! no = ()
+
+:| ^ ev answer =
+    | Eps :: ev yes
+    | NotNo :: ev no -> ev yes
+    | Never :: ev no
+    | NotYes :: ev yes -> ev no
+
+:~ ^ yes_depth (e : ev yes) : i32 =
+    ?= e ?|
+    | Eps => 1i32
+    | NotNo inner => 1i32 +. no_depth inner
+:& :~ no_depth (e : ev no) : i32 =
+    ?= e ?|
+    | Never => 2i32
+    | NotYes inner => 1i32 +. yes_depth inner
+
+:= main () : i32 =
+    := ~v : ev yes = NotNo (NotYes (NotNo Never))
+    yes_depth v

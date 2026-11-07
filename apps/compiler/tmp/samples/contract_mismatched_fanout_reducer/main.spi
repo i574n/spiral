@@ -1,0 +1,29 @@
+:! issuer = ()
+:! total = ()
+:! status = ()
+
+:| shard key result =
+    | IssuerShard :: shard issuer string
+    | TotalShard :: shard total i32
+    | StatusShard :: shard status bool
+
+:| completed key result =
+    | Completed :: \* key result. result -> completed key result
+
+:| ^ fanout result =
+    | Leaf :: \* key result.
+        shard key result -> fanout (completed key result)
+    | Zip :: \* a b. fanout a * fanout b -> fanout (a * b)
+    | Map :: \* result.
+        (\? input. (input -> result) * fanout input)
+        -> fanout result
+
+:= wrong_reduce
+    (data : completed total i32 * completed issuer string)
+    : string = "wrong"
+
+:= main () : fanout string =
+    Map (\? (
+        wrong_reduce,
+        Zip (Leaf IssuerShard, Leaf TotalShard)
+    ))

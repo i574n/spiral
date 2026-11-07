@@ -1,0 +1,12 @@
+:= main () : i32 =
+    := ~n = 7i32
+    := cell = !!!!LayoutToHeap({ value = n })
+    := f (z : i32) : i32 -> i32 =
+        := g (x : i32) : i32 =
+            := obj = !!!!LayoutIndex(cell)
+            ? z =. 0i32 ?> 0i32 |: obj::value
+        g
+    := ~h = f
+    := inner = h 1i32
+    := ~k = inner
+    ? k 0i32 =. 7i32 ?> 0i32 |: 1i32

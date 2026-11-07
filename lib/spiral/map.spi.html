@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>map.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<pre class="code"><code><span class="tok-keyword">:&lt;</span> <span class="tok-variable">rust_operators</span></code></pre>
+
+<h2>rust</h2>
+
+<pre class="code"><code><span class="tok-keyword">:!</span> <span class="tok-variable">hash_map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std_collections_HashMap&lt;</span><span class="tok-type_variable">`k</span><span class="tok-string">, </span><span class="tok-type_variable">`v</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std::collections::HashMap&lt;</span><span class="tok-type_variable">`k</span><span class="tok-string">, </span><span class="tok-type_variable">`v</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type std_collections_HashMap&lt;'K, 'V&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">b_tree_map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std_collections_BTreeMap&lt;</span><span class="tok-type_variable">`k</span><span class="tok-string">, </span><span class="tok-type_variable">`v</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std::collections::BTreeMap&lt;</span><span class="tok-type_variable">`k</span><span class="tok-string">, </span><span class="tok-type_variable">`v</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type std_collections_BTreeMap&lt;'K, 'V&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">new_hash_map</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">hash_map</span> <span class="tok-keyword">_</span> <span class="tok-keyword">_</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;std::collections::HashMap::new()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">new_b_tree_map</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">b_tree_map</span> <span class="tok-keyword">_</span> <span class="tok-keyword">_</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;std::collections::BTreeMap::new()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">get</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">key</span> <span class="tok-operator">:</span> <span class="tok-variable">k</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">map</span> <span class="tok-operator">:</span> <span class="tok-variable">hash_map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">optionm'</span><span class="tok-symbol">::option'</span> <span class="tok-variable">v</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">key</span> <span class="tok-operator">=</span> <span class="tok-keyword">~~</span> <span class="tok-variable">key</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">map</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;std::collections::HashMap::get(&amp;$0, &amp;</span><span class="tok-variable">!key</span><span class="tok-string">).map(|x| x).cloned()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">insert</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">key</span> <span class="tok-operator">:</span> <span class="tok-variable">k</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">value</span> <span class="tok-operator">:</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">map</span> <span class="tok-operator">:</span> <span class="tok-variable">hash_map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">optionm'</span><span class="tok-symbol">::option'</span> <span class="tok-variable">v</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">key</span> <span class="tok-operator">=</span> <span class="tok-keyword">~~</span> <span class="tok-variable">key</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;let mut </span><span class="tok-variable">!map</span><span class="tok-string"> = </span><span class="tok-variable">!map</span><span class="tok-string">&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;std::collections::HashMap::insert(&amp;mut </span><span class="tok-variable">!map</span><span class="tok-string">, </span><span class="tok-variable">!key</span><span class="tok-string">, </span><span class="tok-variable">!value</span><span class="tok-string">)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">map'</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span> <span class="tok-variable">w</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fn</span> <span class="tok-operator">:</span> <span class="tok-variable">v</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">w</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">map</span> <span class="tok-operator">:</span> <span class="tok-variable">hash_map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">hash_map</span> <span class="tok-variable">k</span> <span class="tok-variable">w</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-parenthesis">(</span><span class="tok-variable">map</span><span class="tok-operator">,</span> <span class="tok-variable">fn</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.into_iter().map(|(k, v)| (k, $1(v))).collect()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">hash_map_count</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">map</span> <span class="tok-operator">:</span> <span class="tok-variable">hash_map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">map</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.count()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">from_vec</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">vec</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-parenthesis">(</span><span class="tok-variable">k</span> <span class="tok-operator">*</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">hash_map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;std::collections::HashMap::from_iter(</span><span class="tok-variable">!vec</span><span class="tok-string">)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">from_vec_pairs</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">vec</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-parenthesis">(</span><span class="tok-variable">pair</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">hash_map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;std::collections::HashMap::from_iter(</span><span class="tok-variable">!vec</span><span class="tok-string">.iter().map(|&amp;(ref k, ref v)| (k.clone(), v.clone())))&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">b_tree_map_from_vec_pairs</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">vec</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-parenthesis">(</span><span class="tok-variable">pair</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">b_tree_map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;std::collections::BTreeMap::from_iter(</span><span class="tok-variable">!vec</span><span class="tok-string">.iter().map(|&amp;(ref k, ref v)| (k.clone(), v.clone())))&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">from_array</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">array</span> <span class="tok-operator">:</span> <span class="tok-variable">array_base</span> <span class="tok-parenthesis">(</span><span class="tok-variable">k</span> <span class="tok-operator">*</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">hash_map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">array</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">am'</span><span class="tok-symbol">::to_vec</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">from_vec</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">from_list</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">list</span> <span class="tok-operator">:</span> <span class="tok-variable">list</span> <span class="tok-parenthesis">(</span><span class="tok-variable">k</span> <span class="tok-operator">*</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">hash_map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-parenthesis">(</span><span class="tok-variable">array</span> <span class="tok-variable">list</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">array</span> <span class="tok-keyword">_</span> <span class="tok-operator">=</span> <span class="tok-variable">list</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">arraym</span><span class="tok-symbol">::fromList</span>
+    <span class="tok-variable">list</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">am'</span><span class="tok-symbol">::to_vec</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">from_vec</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">to_vec</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">map</span> <span class="tok-operator">:</span> <span class="tok-variable">hash_map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-parenthesis">(</span><span class="tok-variable">k</span> <span class="tok-operator">*</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">map</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.into_iter().map(|(k, v)| (k, v)).collect::&lt;Vec&lt;_&gt;&gt;()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span></code></pre>
+
+<h2>fsharp</h2>
+
+<pre class="code"><code><span class="tok-keyword">:!</span> <span class="tok-variable">map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">Map&lt;</span><span class="tok-type_variable">`k</span><span class="tok-string">, </span><span class="tok-type_variable">`v</span><span class="tok-string">&gt;</span><span class="tok-string">'</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">item</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">k</span> <span class="tok-operator">:</span> <span class="tok-variable">k</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">map</span> <span class="tok-operator">:</span> <span class="tok-variable">map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">v</span> <span class="tok-operator">=</span>
+    <span class="tok-string">$'</span><span class="tok-variable">!map</span><span class="tok-string">.[</span><span class="tok-variable">!k</span><span class="tok-string">]</span><span class="tok-string">'</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">of_array</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">array</span> <span class="tok-operator">:</span> <span class="tok-variable">array</span> <span class="tok-parenthesis">(</span><span class="tok-variable">k</span> <span class="tok-operator">*</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span> <span class="tok-operator">=</span>
+    <span class="tok-string">$'</span><span class="tok-variable">!array</span><span class="tok-string"> |&gt; Array.map (fun (struct (a, b)) -&gt; a, b) |&gt; Map.ofArray</span><span class="tok-string">'</span></code></pre>
+
+</main>
+</body>
+</html>

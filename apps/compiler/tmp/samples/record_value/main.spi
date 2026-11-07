@@ -1,0 +1,9 @@
+:= make ~x = { left = x; right = x +. 2i32; active = x > 0i32 }
+
+:= score ~{ left right active } : i32 =
+    ? active ?> left +. right -. 4i32 |: 1i32
+
+:= main () : i32 =
+    := ~x = 1i32
+    := state = ~~ make x
+    ~~ score state

@@ -1,0 +1,3 @@
+:= main () : i32 =
+    := ~got = tools::second::second_value ()
+    ? !!!!EQ(got, 15i32) ?> 0i32 |: 1i32

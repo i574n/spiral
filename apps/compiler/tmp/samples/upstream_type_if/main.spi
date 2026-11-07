@@ -1,0 +1,2 @@
+:= pick \* t. (x : t) : i32 = ? :== t = i32 ?> 7i32 |: 3i32
+:= main () : i32 = !!!!Sub(!!!!Add(pick 1i32, pick "a"), 3i32)

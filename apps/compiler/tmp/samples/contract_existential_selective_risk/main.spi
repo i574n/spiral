@@ -1,0 +1,41 @@
+:! low = ()
+:! high = ()
+
+:| risk level =
+    | LowRisk :: risk low
+    | HighRisk :: risk high
+
+:| review level result =
+    | AutoApprove :: review low string
+    | ManualApprove :: string -> review high string
+
+:| route result =
+    | Route :: \* result.
+        (\? level. risk level * review level result)
+        -> route result
+
+:= run_review \* level result.
+    (review : review level result)
+    : result =
+    ?= review ?|
+    | AutoApprove => "auto"
+    | ManualApprove _ => "manual"
+
+:= run_route \* result. (route : route result) : result =
+    ?= route ?|
+    | Route packed =>
+        := \? level. risk_value, review_value = packed
+        run_review review_value
+
+:= describe (route : route string) : string =
+    ?= route ?|
+    | Route packed =>
+        := \? level. risk_value, review_value = packed
+        := _ = run_review review_value
+        "selective-risk-route"
+
+:= main () : string =
+    := route : route string =
+        Route (\? (HighRisk, ManualApprove "auditor"))
+    := _ = run_route route
+    describe route

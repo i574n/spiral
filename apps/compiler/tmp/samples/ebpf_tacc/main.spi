@@ -1,0 +1,10 @@
+:= ^ step ~n ~acc ~extra =
+    ? n =. 0i32 ?> acc, extra |:
+        ~~ step (n -. 1i32) (acc +. 1i32) (extra +. 2i32)
+
+:= read ~(acc, extra) : i32 =
+    ? acc =. 4i32 && extra =. 8i32 ?> 0i32 |: 1i32
+
+:= main () : i32 =
+    := ~n = 4i32
+    ~~ read (~~ step n 0i32 0i32)

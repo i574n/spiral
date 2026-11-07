@@ -1,0 +1,8 @@
+:= pick (cell : heap { value : i32 }) : heap { value : i32 } = cell
+
+:= main () : i32 =
+    := ~n = 7i32
+    := box = !!!!LayoutToHeap({ value = n })
+    := held = ~~ pick box
+    := opened = !!!!LayoutIndex(held)
+    ? opened::value =. 7i32 ?> 0i32 |: 1i32

@@ -1,0 +1,21 @@
+:= emit \* a t. (args : a) (code : string) : t =
+    $'__spiral_emit_rust !args !code '
+
+:= portable (a : i32) (b : i32) (c : i32) : i32 =
+    (a +. b +. c) +. (c -. a -. b) +. a *. b
+
+:= native (a : i32) (b : i32) (c : i32) : i32 =
+    := leading : i32 = emit ((a, b), c) ($'"{ let (x, y) = $0; x + y + $1 }"' : string)
+    := trailing : i32 = emit (c, (a, b)) ($'"{ let (x, y) = $1; $0 - x - y }"' : string)
+    := whole : i32 = emit (a, b) ($'"{ let (x, y) = $0; x * y }"' : string)
+    leading +. trailing +. whole
+
+:= main () : i32 =
+    := ~a = 1i32
+    := ~b = 2i32
+    := ~c = 40i32
+    !!!!BackendSwitch({
+        C = \ () => portable a b c : i32
+        Rust = \ () => native a b c : i32
+        Bend = \ () => portable a b c : i32
+    })

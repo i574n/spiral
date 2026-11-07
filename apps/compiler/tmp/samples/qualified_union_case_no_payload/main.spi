@@ -1,0 +1,9 @@
+:= score (s : signal::signal) : i32 =
+    ?= s ?|
+    | signal::Hit damage => damage
+    | signal::Hold => 40i32
+
+:= main () : i32 =
+    := ~hit = signal::Hit 3i32
+    := ~hold = signal::Hold
+    score hit +. score hold

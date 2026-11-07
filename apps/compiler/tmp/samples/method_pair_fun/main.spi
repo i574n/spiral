@@ -1,0 +1,15 @@
+:= make (n : i32) (m : i32) : (i32 -> i32) * (i32 -> i32) =
+    := left (x : i32) : i32 =
+        ? n =. 0i32 ?> 0i32 |: x +. n
+    := right (x : i32) : i32 =
+        ? m =. 0i32 ?> 0i32 |: x +. m
+    left, right
+
+:= main () : i32 =
+    := ~n = 3i32
+    := ~m = 4i32
+    := pair = ~~ make n m
+    := ~(a, b) = pair
+    := ~p = a
+    := ~q = b
+    ? p 0i32 +. q 0i32 =. 7i32 ?> 0i32 |: 1i32

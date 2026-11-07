@@ -1,0 +1,35 @@
+:< main
+
+:= impossible_composite_recursion_authority_wrong_root
+    ()
+    : (
+        \? length divisor quotient. certified_interval_positive_positional_composite_recursion_authority
+            (positional_zero_bit (positional_zero_bit positional_one)) length divisor quotient
+    )
+    =
+    := root_value = positive_positional_twelve_value ()
+    ?= classify_certified_interval_positive_positional_sealed_factor root_value ?|
+    | CertifiedIntervalPositivePositionalSealedCompositeClass payload =>
+        := \? length divisor quotient. natural_value, divisor_value, quotient_value, membership, division, note =
+            payload
+        := children
+            : certified_interval_positive_positional_sealed_composite_children
+                (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) divisor quotient
+            =
+            CertifiedIntervalPositivePositionalSealedCompositeChildren (
+                \? (natural_value, divisor_value, quotient_value, membership, division, note)
+            )
+        \? (
+            CertifiedIntervalPositivePositionalCompositeRecursionAuthority (
+                membership,
+                division,
+                quotient_value,
+                derive_certified_interval_positive_positional_membership_recursive_descent root_value membership,
+                derive_certified_interval_positive_positional_quotient_recursive_descent_from_children children,
+                derive_positive_positional_predecessor_accessibility root_value,
+                "the-composite-authority-is-rooted-at-twelve-not-four"))
+    | _ => mega_runtime_fail "twelve-must-classify-as-composite-before-the-negative-boundary"
+
+:= main () =
+    := _ = impossible_composite_recursion_authority_wrong_root ()
+    ()

@@ -1,0 +1,22 @@
+:! missing = ()
+:! present = ()
+
+:| ^ session cert endpoint quota =
+    | Empty :: session missing missing missing
+    | AddCert :: \* endpoint quota.
+        session missing endpoint quota
+        -> session present endpoint quota
+    | AddEndpoint :: \* cert quota.
+        session cert missing quota
+        -> session cert present quota
+    | AddQuota :: \* cert endpoint.
+        session cert endpoint missing
+        -> session cert endpoint present
+
+:= authorize (_ : session present present present) : string =
+    "authorized"
+
+:= main () : string =
+    := with_cert = AddCert Empty
+    := with_endpoint = AddEndpoint with_cert
+    authorize with_endpoint

@@ -1,0 +1,18 @@
+:= main () : i32 =
+    := above_half = dyn 2.7f64
+    := below_half = dyn 3.2f64
+    := negative_tie = dyn (0f64 - 2.5f64)
+    := odd_tie = dyn 3.5f64
+    := zero_tie = dyn 0.5f64
+    := one = dyn 1f64
+    := single = dyn 2.7f32
+    ? math::floor above_half <> 2f64 ?> 1i32
+    |? math::ceil above_half <> 3f64 ?> 2i32
+    |? math::round above_half <> 3f64 ?> 3i32
+    |? math::round below_half <> 3f64 ?> 4i32
+    |? math::round negative_tie <> 0f64 - 2f64 ?> 5i32
+    |? math::round odd_tie <> 4f64 ?> 6i32
+    |? math::round zero_tie <> 0f64 ?> 7i32
+    |? math::floor (math::atan2 one one * 1000f64) <> 785f64 ?> 8i32
+    |? math::floor single <> 2f32 ?> 9i32
+    |: 0i32

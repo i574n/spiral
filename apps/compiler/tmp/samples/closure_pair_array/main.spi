@@ -1,0 +1,28 @@
+:! i32_array = array_base i32
+
+:= create (n : i32) : i32_array = i32_array !!!!ArrayCreate(`i32, n)
+:= get (array : i32_array) (i : i32) : i32 =
+    ?= array ?|
+    | i32_array values => !!!!ArrayIndex(values, i)
+:= set (array : i32_array) (i : i32) (value : i32) : () =
+    ?= array ?|
+    | i32_array values => !!!!ArrayIndexSet(values, i, value)
+
+:= main () : i32 =
+    := ~n = 3i32
+    := ~m = 4i32
+    := f (z : i32) : i32_array * i32_array =
+        := left = create 1i32
+        := right = create 1i32
+        ? z =. 0i32 ?>
+            set left 0i32 0i32
+            set right 0i32 0i32
+            left, right
+        |:
+            set left 0i32 n
+            set right 0i32 m
+            left, right
+    := ~g = f
+    := pair = g 1i32
+    := ~(left, right) = pair
+    ? get left 0i32 +. get right 0i32 =. 7i32 ?> 0i32 |: 1i32

@@ -1,0 +1,60 @@
+:! parallel = ()
+:! serial = ()
+
+:| task effect result =
+    | ValidateIssuer :: task parallel string
+    | QueryStatus :: task parallel string
+    | Publish :: string -> task serial string
+
+:| ^ dag result =
+    | ParallelNode :: \* result. task parallel result -> dag result
+    | SerialNode :: \* result. task serial result -> dag result
+    | Zip :: \* a b. dag a * dag b -> dag (a * b)
+    | Map :: \* result.
+        (\? input. (input -> result) * dag input)
+        -> dag result
+    | Then :: \* result.
+        (\? input. dag input * (input -> dag result))
+        -> dag result
+
+:= run_task \* effect result. (task : task effect result) : result =
+    ?= task ?|
+    | ValidateIssuer => "issuer-ok"
+    | QueryStatus => "committed"
+    | Publish _ => "authorized"
+
+:= ^ run \* result. (program : dag result) : result =
+    ?= program ?|
+    | ParallelNode task => run_task task
+    | SerialNode task => run_task task
+    | Zip (left, right) => run left, run right
+    | Map packed =>
+        := \? input. mapping, source = packed
+        mapping (run source)
+    | Then packed =>
+        := \? input. source, next = packed
+        run (next (run source))
+
+:= describe \* result. (program : dag result) : string =
+    ?= program ?|
+    | Then _ => "dual-interpreter-dag"
+    | _ => "other-plan"
+
+:= summarize (_ : string * string) : string = "proof"
+
+:= plan () : dag string =
+    Then (\? (
+        Map (\? (
+            summarize,
+            Zip (
+                ParallelNode ValidateIssuer,
+                ParallelNode QueryStatus
+            )
+        )),
+        \ proof => SerialNode (Publish proof)
+    ))
+
+:= main () : string =
+    := program = plan ()
+    := _ = run program
+    describe program

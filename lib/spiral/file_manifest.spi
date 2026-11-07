@@ -1,0 +1,131 @@
+///- --package .
+:# file_manifest static =
+    :< testing
+    :< file_system_operators
+
+:< sm'_operators
+
+:== manifest_entry = { path : string; bytes : i64; sha256 : string }
+
+:| manifest_change =
+    | Added : string
+    | Changed : string
+    | Removed : string
+
+:~ child_names (dir : string) : list string =
+    file_system::read_directory_names dir
+    |> resultm::unwrap'
+    |> am'::vec_fold' (\ names name => sm'::from_std_string name :: names) []
+
+:= relative_joined (rel : string) (name : string) : string = ? rel = "" ?> name |: rel ++# "/" ++# name
+
+:~ ^ files_under (root : string) (skipped : list string) (rel : string) (found : list string) : list string =
+    := gathered = \ (acc : list string) (name : string) =>
+        := child = relative_joined rel name
+        ? file_system::directory_exists (root ++# "/" ++# child) = !- ?> child :: acc
+        |? listm'::contains name skipped ?> acc
+        |: files_under root skipped child acc
+    child_names (? rel = "" ?> root |: root ++# "/" ++# rel) |> listm::fold gathered found
+
+:~ sorted (items : list string) : list string =
+    array (listm'::to_array' (listm'::box items)) |> am'::sort |> am'::to_list' |> listm'::unbox
+
+:~ entry_of (root : string) (rel : string) : manifest_entry =
+    := full = root ++# "/" ++# rel
+    := sha256 = full |> file_system::read_all_bytes |> stream::new_cursor |> crypto::hash_read |> resultm::unwrap'
+    { path = rel; bytes = file_system::rust_file_length full; sha256 = sha256 }
+
+:~ file_manifest (root : string) (skipped : list string) : list manifest_entry =
+    files_under root skipped "" [] |> sorted |> listm::map (entry_of root)
+
+:= manifest_line (entry : manifest_entry) : string =
+    entry::sha256 ++# " " ++# sm'::show entry::bytes ++# " " ++# entry::path ++# "\n"
+
+:~ manifest_text (entries : list manifest_entry) : string = entries |> listm::map manifest_line |> sm'::concat_list ""
+
+:~ manifest_fingerprint (entries : list manifest_entry) : string = crypto::hash_text (manifest_text entries)
+
+:~ entry_of_line (line : string) : option manifest_entry =
+    := first = sm'::index_of " " line
+    := rest = ? first < 0i32 ?> "" |: sm'::slice (first + 1i32) (sm'::length line - 1i32) line
+    := second = sm'::index_of " " rest
+    ? first <= 0i32 || second <= 0i32 || second + 1i32 >= sm'::length rest ?> None
+    |:
+        := sha256 = sm'::slice 0i32 (first - 1i32) line
+        := path = sm'::slice (second + 1i32) (sm'::length rest - 1i32) rest
+        ?= (convert::try_convert (sm'::slice 0i32 (second - 1i32) rest) : option i64) ?|
+        | Some bytes => Some { path = path; bytes = bytes; sha256 = sha256 }
+        | None => None
+
+:~ ^ entries_of (lines : list string) (acc : list manifest_entry) : option (list manifest_entry) =
+    ?= lines ?|
+    | [] => Some (listm::rev acc)
+    | line :: rest ?& line = "" => entries_of rest acc
+    | line :: rest =>
+        ?= entry_of_line line ?|
+        | Some found => entries_of rest (found :: acc)
+        | None => None
+
+:~ manifest_of_text (text : string) : option (list manifest_entry) =
+    entries_of (sm'::split_list "\n" (sm'::replace "\r" "" text)) []
+
+:= same_content (base : manifest_entry) (target : manifest_entry) : bool =
+    base::sha256 = target::sha256 && base::bytes = target::bytes
+
+:~ ^ changes_from (base : list manifest_entry) (target : list manifest_entry) (acc : list manifest_change)
+    : list manifest_change
+    =
+    ?= base, target ?|
+    | [], [] => listm::rev acc
+    | (b :: rest), [] => changes_from rest [] (Removed b::path :: acc)
+    | [], (t :: rest) => changes_from [] rest (Added t::path :: acc)
+    | (b :: brest), (t :: trest) =>
+        ? b::path = t::path ?> changes_from brest trest (? same_content b t ?> acc |: Changed t::path :: acc)
+        |? lt_is (comp b::path t::path) ?> changes_from brest target (Removed b::path :: acc)
+        |: changes_from base trest (Added t::path :: acc)
+
+:~ manifest_changes (base : list manifest_entry) (target : list manifest_entry) : list manifest_change =
+    changes_from base target []
+
+:= change_line = \|
+    | Added path => "added " ++# path
+    | Changed path => "changed " ++# path
+    | Removed path => "removed " ++# path
+
+///> rust
+:# changes_walk_two_sorted_manifests_once =
+    := entry = \ (path : string) (sha256 : string) => ({ path = path; bytes = 1i64; sha256 = sha256 } : manifest_entry)
+    := base = [ entry "a.txt" "1"; entry "b.txt" "2"; entry "d.txt" "4" ]
+    := target = [ entry "b.txt" "2"; entry "c.txt" "3"; entry "d.txt" "5" ]
+    manifest_changes base target |> listm::map change_line
+    |> _assert_eq [ "removed a.txt"; "added c.txt"; "changed d.txt" ]
+
+///> rust
+:# the_canonical_text_lists_hash_bytes_and_path_per_line =
+    := entry = \ (path : string) (sha256 : string) => ({ path = path; bytes = 1i64; sha256 = sha256 } : manifest_entry)
+    manifest_text [ entry "a.txt" "1"; entry "sub/b.txt" "2" ] |> _assert_eq "1 1 a.txt\n2 1 sub/b.txt\n"
+
+///> rust
+:# the_canonical_text_reads_back_and_rejects_a_bad_line =
+    := entries = [ { path = "a b.txt"; bytes = 12i64; sha256 = "aa" }; { path = "sub/c.txt"; bytes = 0i64; sha256 = "bb" } ]
+    manifest_of_text (manifest_text entries) |> _assert_eq (Some entries)
+    manifest_of_text "aa 12 a.txt\r\nbb x c.txt\n" |> _assert_eq None
+    manifest_of_text "" |> _assert_eq (Some [])
+
+///> rust -d chrono regex sha2
+:# a_tree_lists_sorted_relative_files_and_skips_named_directories =
+    := temp_dir, disposable = "file_manifest_walk" |> crypto::hash_text |> file_system::create_temp_directory'
+    disposable |> use |> ignore
+    file_system::create_dir_all (temp_dir </> "sub") |> resultm::unwrap'
+    file_system::create_dir_all (temp_dir </> "target") |> resultm::unwrap'
+    "x" |> file_system::write_all_text (temp_dir </> "b.txt")
+    "y" |> file_system::write_all_text (temp_dir </> "sub" </> "a.txt")
+    "z" |> file_system::write_all_text (temp_dir </> "target" </> "skip.txt")
+    := entries = file_manifest temp_dir [ "target" ]
+    entries |> listm::map (\ (e : manifest_entry) => e::path) |> _assert_eq [ "b.txt"; "sub/a.txt" ]
+    entries |> listm::map (\ (e : manifest_entry) => e::sha256)
+    |> _assert_eq [
+        "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881"
+        "a1fce4363854ff888cff4b8e7875d600c2682390412a8cf79b37d0b11148b0fa"
+    ]
+    manifest_fingerprint entries |> _assert_eq (manifest_fingerprint (file_manifest temp_dir [ "target" ]))

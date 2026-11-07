@@ -1,0 +1,12 @@
+:= write_at ~xs ~index' ~value = set xs index' value
+:= read_at ~xs ~index' = index xs index'
+
+:= main () : i32 =
+    := ~n = 2i32
+    := ~xs : array i32 = create n
+    set xs 0i32 1i32
+    set xs 1i32 2i32
+    ~~ write_at xs 1i32 9i32
+    := ~a = ~~ read_at xs 0i32
+    := ~b = ~~ read_at xs 1i32
+    a +. b -. 10i32

@@ -1,0 +1,65 @@
+:! schema_v4 = ()
+:! schema_v5 = ()
+:! draft = ()
+:! authorized = ()
+:! cancelled = ()
+
+:| document schema state =
+    | DraftV4 :: string -> document schema_v4 draft
+    | AuthorizedV4 :: string -> document schema_v4 authorized
+    | DraftV5 :: string -> document schema_v5 draft
+    | AuthorizedV5 :: string -> document schema_v5 authorized
+    | CancelledV5 :: string -> document schema_v5 cancelled
+
+:| ^ nat =
+    | Z
+    | S : nat
+
+:| ^ batch =
+    | Empty
+    | Cons : (\? schema state. document schema state * batch)
+
+:= ^ fold_batch
+    (visitor : \* schema state. document schema state -> nat -> nat)
+    (count : nat)
+    (batch : batch)
+    : nat =
+    ?= batch ?|
+    | Empty => count
+    | Cons pair =>
+        := \? schema state_index. document, tail = pair
+        fold_batch `$visitor (visitor document count) tail
+
+:= count_authorized \* schema state.
+    (document : document schema state)
+    (count : nat)
+    : nat =
+    ?= document ?|
+    | DraftV4 _ => count
+    | AuthorizedV4 _ => S count
+    | DraftV5 _ => count
+    | AuthorizedV5 _ => S count
+    | CancelledV5 _ => count
+
+:= main () : string =
+    := documents =
+        Cons (\? (
+            DraftV4 "NFE-A",
+            Cons (\? (
+                AuthorizedV5 "NFE-B",
+                Cons (\? (
+                    AuthorizedV4 "NFE-C",
+                    Empty
+                ))
+            ))
+        ))
+    := count = fold_batch `$count_authorized Z documents
+    ?= count ?|
+    | S rest =>
+        ?= rest ?|
+        | S final =>
+            ?= final ?|
+            | Z => "two-authorized"
+            | _ => "unexpected"
+        | _ => "unexpected"
+    | _ => "unexpected"

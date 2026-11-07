@@ -1,0 +1,483 @@
+:# rust static =
+    :< testing
+
+:== rust_type_switch fs rs =
+    {
+        Gleam : fs
+        Lua : fs
+        Fsharp : fs
+        Python : fs
+        TypeScript : fs
+        Cpp : fs
+        CppHost : fs
+        Pascal : fs
+        Cuda : fs
+        Zig : fs
+        Lean : fs
+        Rust : rs
+    }
+
+:= fsharp_global (text : string) : () =
+    backend_switch {
+        Fsharp = \ () => global text
+    }
+
+:= rust_type \* fs rs. (fsharp : string) : $'backend_switch `(rust_type_switch fs rs)' =
+    fsharp_global fsharp
+    $'' : $'backend_switch `(rust_type_switch fs rs)'
+
+:== any_base = any
+
+:! any =
+    `(
+        rust_type
+            `($'core_any_Any')
+            `($'core::any::Any')
+            "type core_any_Any = obj"
+    )
+
+:! try t =
+    `(
+        rust_type
+            `($'core_ops_Try<`t>')
+            `($'_')
+            "type core_ops_Try<'T> = class end"
+    )
+
+:! cow t =
+    `(
+        rust_type
+            `($'std_borrow_Cow<`t>')
+            `($'std::borrow::Cow<`t>')
+            "type std_borrow_Cow<'T> = class end"
+    )
+
+:! ref_cell t =
+    `(
+        rust_type
+            `($'std_cell_RefCell<`t>')
+            `($'std::cell::RefCell<`t>')
+            "type std_cell_RefCell<'T> = class end"
+    )
+
+:! cell_ref t =
+    `(
+        rust_type
+            `($'std_cell_Ref<`t>')
+            `($'std::cell::Ref<`t>')
+            "type std_cell_Ref<'T> = class end"
+    )
+
+:! rc t =
+    `(
+        rust_type
+            `($'std_rc_Rc<`t>')
+            `($'std::rc::Rc<`t>')
+            "type std_rc_Rc<'T> = class end"
+    )
+
+:! lifetime_ref (t : * -> *) u =
+    `(
+        rust_type
+            `($'LifetimeRef<`(t u)>')
+            `($'`(t u)')
+            "type LifetimeRef<'T> = class end"
+    )
+
+:! lifetime_join t u =
+    `(
+        rust_type
+            `($'LifetimeJoin<`t, `u>')
+            `($'`t + `(u)')
+            "type LifetimeJoin<'T, 'U> = class end"
+    )
+
+:! lifetime t u =
+    `(
+        rust_type
+            `($'Lifetime<`t, `u>')
+            `($'`t `(u)')
+            "type Lifetime<'T, 'U> = class end"
+    )
+
+:! static_lifetime =
+    `(
+        rust_type
+            `($'StaticLifetime')
+            `($'\'static')
+            "type StaticLifetime = class end"
+    )
+
+:! ref t =
+    `(
+        rust_type
+            `($'Ref<`t>')
+            `($'&`(t)')
+            "type Ref<'T> = 'T"
+    )
+
+:! static_ref t = ref (lifetime static_lifetime t)
+
+:! weak_rc t =
+    `(
+        rust_type
+            `($'std_rc_Weak<`t>')
+            `($'std::rc::Weak<`t>')
+            "type std_rc_Weak<'T> = class end"
+    )
+
+:! box t =
+    `(
+        rust_type
+            `($'Box<`t>')
+            `($'Box<`t>')
+            "type Box<'T> = class end"
+    )
+
+:! mut_cell t =
+    `(
+        rust_type
+            `($'MutCell<`t>')
+            `($'MutCell<`t>')
+            "type MutCell<'T> = class end"
+    )
+
+:! pin t =
+    `(
+        rust_type
+            `($'std_pin_Pin<`t>')
+            `($'std::pin::Pin<`t>')
+            "type std_pin_Pin<'T> = class end"
+    )
+
+:! dyn' t =
+    `(
+        rust_type
+            `($'Dyn<`t>')
+            `($'dyn `(t)')
+            "type Dyn<'T> = class end"
+    )
+
+:! fn' t =
+    `(
+        rust_type
+            `($'Fn<`t>')
+            `($'Fn() -> `(t)')
+            "type Fn<'T> = class end"
+    )
+
+:! action_fn t =
+    `(
+        rust_type
+            `($'ActionFn<`t>')
+            `($'Fn(`t)')
+            "type ActionFn<'T> = class end"
+    )
+
+:! action_fn2 t u =
+    `(
+        rust_type
+            `($'ActionFn2<`t, `u>')
+            `($'Fn(`t, `u)')
+            "type ActionFn2<'T, 'U> = class end"
+    )
+
+:! fn_once t =
+    `(
+        rust_type
+            `($'FnOnce<`t>')
+            `($'FnOnce() -> `(t)')
+            "type FnOnce<'T> = class end"
+    )
+
+:! fn_unit =
+    `(
+        rust_type
+            `($'FnUnit')
+            `($'Fn()')
+            "type FnUnit = class end"
+    )
+
+:! impl t =
+    `(
+        rust_type
+            `($'Impl<`t>')
+            `($'impl `(t)')
+            "type Impl<'T> = class end"
+    )
+
+:! mut' t =
+    `(
+        rust_type
+            `($'Mut<`t>')
+            `($'mut `(t)')
+            "type Mut<'T> = class end"
+    )
+
+:! ref_mut t =
+    `(
+        rust_type
+            `($'std_cell_RefMut<`t>')
+            `($'std::cell::RefMut<`t>')
+            "type std_cell_RefMut<'T> = class end"
+    )
+
+:! send t = $'`(t)'
+
+:= emit_expr \* a t. (args : a) (code : string) : t =
+    $'__spiral_emit_rust !args !code '
+
+:= (~!\) \* t. (code : string) : t =
+    emit_expr () code
+
+:= (~!\\) \* t u. ((args : t), (code : string)) : u =
+    emit_expr args code
+
+:! ptr t =
+    `(
+        rust_type
+            `($'Ptr<`t>')
+            `($'*const `(t)')
+            "type Ptr<'T> = class end"
+    )
+
+:= ptr_read \* t. (x : ptr t) : t =
+    !\\(x, $'"std::ptr::read($0)"')
+
+:! u128 =
+    `(
+        rust_type
+            `($'u128')
+            `($'u128')
+            "type u128 = class end"
+    )
+
+:= u128 \* t. (x : t) : u128 =
+    !\\(x, $'"$0 as u128"')
+
+:= f64 \* t. (x : t) : f64 =
+    !\\(x, $'"$0 as f64"')
+
+:= unwrap_0 \* (t : * -> *) u. (x : t u) : u =
+    !\\(x, $'"$0.0"')
+
+:= unwrap_0_ref \* (t : * -> *) u. (x : ref (t u)) : ref u =
+    !\\(x, $'"&$0.0"')
+
+:= len \* t u {uint; int}. (x : t) : u =
+    backend_switch {
+        Rust = \ () => $'((!x).len() as `u)' : u
+    }
+
+:= len' \* t u {uint; int}. (x : t) : u =
+    !\\(x, $'$"$0.len()"')
+
+:= emit \* t. (x : t) : t =
+    !\\(x, $'"$0"')
+
+:= emit' \* t. (x : t) : t =
+    (!\\(x, $'$"true; let !x = $0"') : bool) |> ignore
+    x
+
+:= clone \* t. (x : t) : t =
+    !\\(x, $'"$0.clone()"')
+
+:= clone_rust \* t. (x : t) : t =
+    backend_switch {
+        Gleam = \ () => x
+        Lua = \ () => x
+        Fsharp = \ () => x
+        Python = \ () => x
+        TypeScript = \ () => x
+        Cpp = \ () => x
+        CppHost = \ () => x
+        Pascal = \ () => x
+        Cuda = \ () => x
+        Rust = \ () => clone x
+    }
+
+:= dbg \* t. (x : t) : t =
+    !\\(x, $'"dbg\!($0)"')
+
+:= new_box \* t. (x : t) : box t =
+    !\\(x, $'"Box::new($0)"')
+
+:= new_rc \* t. (x : t) : rc t =
+    !\\(x, $'"std::rc::Rc::new($0)"')
+
+:= rc_clone \* t. (x : rc t) : rc t =
+    !\\(x, $'"std::rc::Rc::clone(&$0)"')
+
+:= rc_unwrap_or_clone \* t. (x : rc t) : t =
+    !\\(x, $'"std::rc::Rc::unwrap_or_clone($0)"')
+
+:= rc_downgrade \* t. (x : rc t) : weak_rc t =
+    !\\(x, $'"std::rc::Rc::downgrade(&$0)"')
+
+:= new_ref_cell \* t. (x : t) : ref_cell t =
+    !\($'"std::cell::RefCell::new(!x)"')
+
+:= ref_cell_borrow \* t. (x : rc (ref_cell t)) : cell_ref t =
+    !\\(x, $'"std::cell::RefCell::borrow(&std::rc::Rc::clone(&$0))"')
+
+:= ref_cell_borrow_mut \* t. (x : rc (ref_cell t)) : mut' t =
+    !\\(x, $'"std::cell::RefCell::borrow_mut(&std::rc::Rc::clone(&$0))"')
+
+:= ref_leak \* t. (x : cell_ref t) : ref t =
+    !\\(x, $'"std::cell::Ref::leak($0)"')
+
+:= to_mut \* t. (x : t) : () =
+    (!\($'"true; // 1"') : bool) |> ignore
+    !\($'"let mut !x = !x"') : ()
+
+:= to_ref \* t. (x : t) : ref t =
+    !\\(x, $'"&$0"')
+
+:= to_ref_mut \* t. (x : t) : ref (mut' t) =
+    backend_switch {
+        Rust = \ () => !\\(x, $'"&mut $0"') : ref (mut' t)
+    }
+
+:= to_ref_mut' \* t. (x : ref_mut (ref (mut' t))) : ref (mut' t) =
+    x |> to_mut
+    !\\(x, $'"&mut $0"')
+
+:= ref_cell_borrow_mut' \* t. (x : rc (ref_cell (ref (mut' t)))) : ref (mut' t) =
+    := x = x |> rc_clone
+    := x : ref_mut (ref (mut' t)) = !\\(x, $'"std::cell::RefCell::borrow_mut(&$0)"')
+    x |> to_ref_mut'
+
+:= ref_map \* t u. (fn : t -> u) (x : ref t) : ref u =
+    !\($'"!fn(!x)"')
+
+:= ref_eval \* t u. (fn : t -> u) (ref : ref t) : u =
+    !\\(fn, $'"$0(!ref.clone())"')
+
+:= cow_as_ref \* t. (s : cow t) : ref t =
+    !\\(s, $'"$0.as_ref()"')
+
+:= from_mut \* t. (x : mut' t) : t =
+    !\\(x, $'"$0"')
+
+:= box_fn \* t. (x : () -> ()) : box t =
+    := x = ~~ x
+    !\($'"Box::new(move || !x())"')
+
+:= box_pin \* t. (x : t) : pin (box t) =
+    !\\(x, $'"Box::pin($0)"')
+
+:= deref \* t. (ref : ref t) : t =
+    !\\(ref, $'"*$0"')
+
+:= deref_mut \* t. (x : ref (mut' t)) : t =
+    !\\(x, $'"*$0"')
+
+:= clone_deref \* t. (ref : ref t) : t =
+    !\\(ref, $'"$0.clone()"')
+
+:= clone_ref_mut \* t. (ref : ref (mut' t)) : t =
+    !\\(ref, $'"(*$0).clone()"')
+
+:= from_ref \* t. (ref : ref t) : t =
+    !\($'"!ref"')
+
+:= from_ref_mut \* t. (ref : ref (mut' t)) : t =
+    !\($'"!ref"')
+
+:= reref \* t (u : * -> *). (x : ref (u t)) : ref t =
+    backend_switch {
+        Rust = \ () => !\\(x, $'"&*$0"') : ref t
+    }
+
+:= into \* t u. (x : t) : u =
+    !\($'"!x.into()"')
+
+:= ops_deref \* t. (ref : t) : t =
+    !\\(ref, $'"core::ops::Deref::deref(&$0)"')
+
+:! one_param t = $'(`t)'
+:= one_param_fn \* t u. (fn : t -> u) : one_param t -> u =
+    \ (x : one_param t) =>
+        := x : t = $'(!x)'
+        fn x
+
+:= box_leak \* t. (x : box t) : static_ref (mut' t) =
+    !\\(x, $'"Box::leak($0)"')
+
+:= drop \* t. (x : t) : () =
+    (!\\(x, $'"true; drop($0)"') : bool) |> ignore
+
+:= break x : () =
+    (!\($'"true; break !x"') : bool) |> ignore
+
+:= fix_closure \* t. (depth : u8 * u8) (x : t) =
+    backend_switch {
+        Rust = \ () =>
+            := is_unit : bool =
+                ~>
+                    ?: t ?|
+                    | () => !+
+                    | _ => !-
+            ? is_unit
+            ?> (!\($'"true; () }); //"') : bool) |> ignore
+            |: ($'true; (!x) }); //' : bool) |> ignore
+    }
+
+:= loop (depth : i32) (fn : () -> ()) : () =
+    (!\($'"true; loop { // rust.loop 1"') : bool) |> ignore
+    fn ()
+
+    listm::init depth id
+    |> listm::iter \ n =>
+        (!\($'"true; } // rust.loop 2 / n: {!n}"') : bool) |> ignore
+
+    (!\($'"true; } // rust.loop 3"') : bool) |> ignore
+
+    listm::init depth id
+    |> listm::iter \ n =>
+        (!\($'"true; { // rust.loop 4 / n: {!n}"') : bool) |> ignore
+
+:= capture \* t. (fn : () -> t) : t =
+    (!\($'"true; let _capture = (|| { //"') : bool) |> ignore
+    (!\\(fn (), $'"true; $0 })()"') : bool) |> ignore
+    !\($'"_capture"')
+
+:= capture_move \* t. (fn : () -> t) : t =
+    (!\($'"true; let _capture_move = (move || { //"') : bool) |> ignore
+    (!\\(fn (), $'"true; $0 })()"') : bool) |> ignore
+    !\($'"_capture_move"')
+
+:! type_emit t =
+    `(
+        rust_type
+            `($'TypeEmit<`t>')
+            `($'*/ `t /*')
+            "type TypeEmit<'T> = class end"
+    )
+
+:! partial_eq_wrapper t =
+    `(
+        rust_type
+            `($'PartialEqWrapper<`t>')
+            `($'PartialEqWrapper<`t>')
+            "type PartialEqWrapper<'T> = class end"
+    )
+
+:= new_partial_eq_wrapper \* t.
+    (eq_fn : ref (partial_eq_wrapper t) -> ref (partial_eq_wrapper t) -> bool)
+    (x : t)
+    : partial_eq_wrapper t
+    =
+    global """
+        #[derive(Debug, Clone)]
+        pub struct PartialEqWrapper<T>(pub T);
+        impl<T: ?Sized> PartialEq for PartialEqWrapper<std::sync::Arc<T>> {
+            fn eq(&self, other: &Self) -> bool { std::sync::Arc::ptr_eq(&self.0, &other.0) }
+        }
+        """
+    $'PartialEqWrapper(!x.clone())' : partial_eq_wrapper t
+
+:= concat \* (t : * -> *) u. (x : t (t u)) : t u =
+    backend_switch {
+        Rust = \ () => $'(!x).concat()' : t u
+    }

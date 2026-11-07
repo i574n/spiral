@@ -1,0 +1,8 @@
+:= main () : i32 =
+    := ~n = 7i32
+    := ~word = "hi"
+    := pair = n, word
+    := box = !!!!LayoutToHeap({ value = pair })
+    := opened = !!!!LayoutIndex(box)
+    := ~(left, right) = opened::value
+    ? left =. 7i32 && !!!!EQ(right, "hi") ?> 0i32 |: 1i32

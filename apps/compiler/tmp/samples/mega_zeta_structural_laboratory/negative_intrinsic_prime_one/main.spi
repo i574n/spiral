@@ -1,0 +1,12 @@
+:< main
+
+:= impossible_intrinsic_prime_one () :
+    certified_interval_positive_positional_sealed_factor_class positional_one =
+    CertifiedIntervalPositivePositionalSealedPrimeClass (\? (
+        PositivePositionalOne,
+        PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+        CertifiedIntervalPositivePositionalAllRejectedOne
+            "one-has-no-nonunit-factor-candidate",
+        "sealed-prime-one-must-be-uninhabitable"))
+
+:= main () = impossible_intrinsic_prime_one ()

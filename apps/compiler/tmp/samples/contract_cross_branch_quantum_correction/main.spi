@@ -1,0 +1,22 @@
+:! program_a = ()
+:! epoch_4 = ()
+:! qubit_a = ()
+:! branch_zero = ()
+:! branch_one = ()
+:! measured = ()
+:! corrected = ()
+:| measurement program epoch qubit branch state =
+    | Measurement :: \* program epoch qubit branch state. string -> measurement program epoch qubit branch state
+:| classical_bit program epoch branch state =
+    | Bit :: \* program epoch branch state. string -> classical_bit program epoch branch state
+:| correction program epoch qubit branch state =
+    | Correction :: \* program epoch qubit branch state. string -> correction program epoch qubit branch state
+:= feed_forward \* program epoch qubit branch.
+    (measurement : measurement program epoch qubit branch measured) (bit : classical_bit program epoch branch measured)
+    : correction program epoch qubit branch corrected
+    =
+    Correction "ok"
+:= main () =
+    := measurement : measurement program_a epoch_4 qubit_a branch_zero measured = Measurement "m0"
+    := wrong : classical_bit program_a epoch_4 branch_one measured = Bit "1"
+    feed_forward measurement wrong

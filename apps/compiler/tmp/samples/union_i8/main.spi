@@ -1,0 +1,11 @@
+:| slot =
+    | Missing
+    | Held : i8
+
+:= main () : i32 =
+    := ~n = 100i8
+    := ~flag = !+
+    := box = ? flag ?> Held n |: Missing
+    ?= box ?|
+    | Held value => ? value =. 100i8 ?> 0i32 |: 1i32
+    | Missing => 1i32

@@ -1,0 +1,1930 @@
+#### physics (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test static --symbol\n\n:< testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test static --symbol
+
+  :< testing
+  """,
+  timeout: 300_000
+)
+```
+
+#### init_series (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n:= x = am'::init_series -3f64 3 0.01\n:= y = x |> am'::map_base math::square\n\"square\", \"x\", \"y\", ;[ \"square\", x, y ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  := x = am'::init_series -3f64 3 0.01
+  := y = x |> am'::map_base math::square
+  "square", "x", "y", ;[ "square", x, y ]
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n:= x = am'::init_series -10f64 10 0.1\n:= y_sin = x |> am'::map_base sin\n:= y_cos = x |> am'::map_base cos\n\"sin cos\", \"x\", \"y\", ;[ \"sin\", x, y_sin; \"cos\", x, y_cos ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  := x = am'::init_series -10f64 10 0.1
+  := y_sin = x |> am'::map_base sin
+  := y_cos = x |> am'::map_base cos
+  "sin cos", "x", "y", ;[ "sin", x, y_sin; "cos", x, y_cos ]
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n:= y_pos y0 vy0 ay t =\n    y0 + vy0 * t + ay * (t |> math::square) / 2\n\n:= x = am'::init_series 0f64 5 0.01\n:= y = x |> am'::map_base (y_pos 0 20 -9.8)\n\"projectile motion\", \"time (s)\", \"\", ;[ \"height of projectile (m)\", x, y ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  := y_pos y0 vy0 ay t =
+      y0 + vy0 * t + ay * (t |> math::square) / 2
+
+  := x = am'::init_series 0f64 5 0.01
+  := y = x |> am'::map_base (y_pos 0 20 -9.8)
+  "projectile motion", "time (s)", "", ;[ "height of projectile (m)", x, y ]
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":== mass = f64\n:== time = f64\n:== position = f64\n:== velocity = f64\n:== scalar_force = f64\n\n:== velocity_cf = mass -> velocity -> list scalar_force -> (time -> velocity)\n\n:= velocity_cf m v0 fs =\n    := f_net = fs |> listm'::sum\n    := a0 = f_net / m\n    := v t = v0 + a0 * t\n    v","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :== mass = f64
+  :== time = f64
+  :== position = f64
+  :== velocity = f64
+  :== scalar_force = f64
+
+  :== velocity_cf = mass -> velocity -> list scalar_force -> (time -> velocity)
+
+  := velocity_cf m v0 fs =
+      := f_net = fs |> listm'::sum
+      := a0 = f_net / m
+      := v t = v0 + a0 * t
+      v
+  """,
+  timeout: 300_000
+)
+```
+
+#### velocity_cf (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nvelocity_cf 0.1f64 0.6 [ 0.04; -0.08 ] 0\n|> _assert_eq 0.6\n\nvelocity_cf 0.1f64 0.6 [ 0.04; -0.08 ] 1\n|> _assert_eq 0.2","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  velocity_cf 0.1f64 0.6 [ 0.04; -0.08 ] 0
+  |> _assert_eq 0.6
+
+  velocity_cf 0.1f64 0.6 [ 0.04; -0.08 ] 1
+  |> _assert_eq 0.2
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n:= x = am'::init_series 0f64 4 0.1\n:= y = x |> am'::map_base (velocity_cf 0.1f64 0.6 [ 0.04; -0.08 ])\n\"car on an air track\", \"time (s)\", \"\", ;[ \"velocity of car (m/s)\", x, y ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  := x = am'::init_series 0f64 4 0.1
+  := y = x |> am'::map_base (velocity_cf 0.1f64 0.6 [ 0.04; -0.08 ])
+  "car on an air track", "time (s)", "", ;[ "velocity of car (m/s)", x, y ]
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":== derivative = (f64 -> f64) -> f64 -> f64\n\n:= derivative dt : derivative =\n    \\ x t =>\n        (x (t + dt / 2) - x (t - dt / 2)) / dt","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :== derivative = (f64 -> f64) -> f64 -> f64
+
+  := derivative dt : derivative =
+      \ x t =>
+          (x (t + dt / 2) - x (t - dt / 2)) / dt
+  """,
+  timeout: 300_000
+)
+```
+
+#### derivative (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nderivative 1 (\\ x => x ** 4 / 4) 1 - 1\n|> _assert_approx_eq None 0.25\n\nderivative 0.001 (\\ x => x ** 4 / 4) 1 - 1\n|> _assert_approx_eq None 0.0000002499998827953931","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  derivative 1 (\ x => x ** 4 / 4) 1 - 1
+  |> _assert_approx_eq None 0.25
+
+  derivative 0.001 (\ x => x ** 4 / 4) 1 - 1
+  |> _assert_approx_eq None 0.0000002499998827953931
+  """,
+  timeout: 300_000
+)
+```
+
+#### derivative_small_steps (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nderivative 0.000001 (\\ x => x ** 4 / 4) 1 - 1\n|> _assert_approx_eq None 0.000000000001000088900582341\n\nderivative 0.000000001 (\\ x => x ** 4 / 4) 1 - 1\n|> _assert_approx_eq None 0.00000008274037099909037","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  derivative 0.000001 (\ x => x ** 4 / 4) 1 - 1
+  |> _assert_approx_eq None 0.000000000001000088900582341
+
+  derivative 0.000000001 (\ x => x ** 4 / 4) 1 - 1
+  |> _assert_approx_eq None 0.00000008274037099909037
+  """,
+  timeout: 300_000
+)
+```
+
+#### derivative_tiny_steps (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nderivative 0.000000000001 (\\ x => x ** 4 / 4) 1 - 1\n|> _assert_approx_eq None 0.00008890058234101161\n\nderivative 0.000000000000001 (\\ x => x ** 4 / 4) 1 - 1\n|> _assert_approx_eq None -0.0007992778373592246","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  derivative 0.000000000001 (\ x => x ** 4 / 4) 1 - 1
+  |> _assert_approx_eq None 0.00008890058234101161
+
+  derivative 0.000000000000001 (\ x => x ** 4 / 4) 1 - 1
+  |> _assert_approx_eq None -0.0007992778373592246
+  """,
+  timeout: 300_000
+)
+```
+
+#### derivative_round_off (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nderivative 0.000000000000000001 (\\ x => x ** 4 / 4) 1 - 1\n|> _assert_approx_eq None -1","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  derivative 0.000000000000000001 (\ x => x ** 4 / 4) 1 - 1
+  |> _assert_approx_eq None -1
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":== integration = (f64 -> f64) -> f64 -> f64 -> f64\n\n:= integral dt : integration =\n    \\ f a b =>\n        := ^ 루프 t y =\n            ? t < b\n            ?> 루프 (t + dt) (y + f t * dt)\n            |: t, y\n        루프 (a + dt / 2) 0\n        |> snd","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :== integration = (f64 -> f64) -> f64 -> f64 -> f64
+
+  := integral dt : integration =
+      \ f a b =>
+          := ^ 루프 t y =
+              ? t < b
+              ?> 루프 (t + dt) (y + f t * dt)
+              |: t, y
+          루프 (a + dt / 2) 0
+          |> snd
+  """,
+  timeout: 300_000
+)
+```
+
+#### integration (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nintegral 0.01 math::square 0 1\n|> _assert_approx_eq None 0.33332500000000004","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  integral 0.01 math::square 0 1
+  |> _assert_approx_eq None 0.33332500000000004
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= integral' dt : integration =\n    \\ f a b =>\n        listm'::init_series (a + dt / 2) (b - dt / 2) dt\n        |> listm::map (f >> (*) dt)\n        |> listm'::sum","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := integral' dt : integration =
+      \ f a b =>
+          listm'::init_series (a + dt / 2) (b - dt / 2) dt
+          |> listm::map (f >> (*) dt)
+          |> listm'::sum
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nintegral' 0.1 math::square 0 1\n|> _assert_approx_eq None (integral 0.1 math::square 0 1)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  integral' 0.1 math::square 0 1
+  |> _assert_approx_eq None (integral 0.1 math::square 0 1)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= integral'' dt : integration =\n    \\ f x y =>\n        am'::init_series (x + dt / 2) (y - dt / 2) dt\n        |> \\ x => array x : array _\n        |> arraym::map (f >> (*) dt)\n        |> am'::sum","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := integral'' dt : integration =
+      \ f x y =>
+          am'::init_series (x + dt / 2) (y - dt / 2) dt
+          |> \ x => array x : array _
+          |> arraym::map (f >> (*) dt)
+          |> am'::sum
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nintegral'' 0.01 math::square 0 1\n|> _assert_approx_eq None (integral 0.01 math::square 0 1)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  integral'' 0.01 math::square 0 1
+  |> _assert_approx_eq None (integral 0.01 math::square 0 1)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= anti_derivative dt v0 a t =\n    v0 + integral' dt a 0 t\n\n:== velocity_ft = mass -> velocity -> list (time -> scalar_force) -> (time -> velocity)\n\n:= velocity_ft dt : velocity_ft =\n    \\ m v0 fs =>\n        := f_net t = fs |> listm::map (\\ f => f t) |> listm'::sum\n        := a t = f_net t / m\n        anti_derivative dt v0 a\n\n:== position_ft = mass -> position -> velocity -> list (time -> scalar_force) -> (time -> position)\n\n:= position_ft dt : position_ft =\n    \\ m x0 v0 fs =>\n        velocity_ft dt m v0 fs\n        |> anti_derivative dt x0\n\n:= pedal_coast (t : time) : scalar_force =\n    := t_cycle = 20\n    := n_complete : i32 = t / t_cycle |> conv\n    := remainder = t - conv n_complete * t_cycle\n    ? remainder > 0 && remainder < 10\n    ?> 10\n    |: 0","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := anti_derivative dt v0 a t =
+      v0 + integral' dt a 0 t
+
+  :== velocity_ft = mass -> velocity -> list (time -> scalar_force) -> (time -> velocity)
+
+  := velocity_ft dt : velocity_ft =
+      \ m v0 fs =>
+          := f_net t = fs |> listm::map (\ f => f t) |> listm'::sum
+          := a t = f_net t / m
+          anti_derivative dt v0 a
+
+  :== position_ft = mass -> position -> velocity -> list (time -> scalar_force) -> (time -> position)
+
+  := position_ft dt : position_ft =
+      \ m x0 v0 fs =>
+          velocity_ft dt m v0 fs
+          |> anti_derivative dt x0
+
+  := pedal_coast (t : time) : scalar_force =
+      := t_cycle = 20
+      := n_complete : i32 = t / t_cycle |> conv
+      := remainder = t - conv n_complete * t_cycle
+      ? remainder > 0 && remainder < 10
+      ?> 10
+      |: 0
+  """,
+  timeout: 300_000
+)
+```
+
+#### position_ft_2 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n:= x = am'::init_series -5f64 45 0.1\n:= y = x |> am'::map_base pedal_coast\n\"child pedaling then coasting\", \"time (s)\", \"\", ;[ \"force on bike (N)\", x, y ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  := x = am'::init_series -5f64 45 0.1
+  := y = x |> am'::map_base pedal_coast
+  "child pedaling then coasting", "time (s)", "", ;[ "force on bike (N)", x, y ]
+  """,
+  timeout: 300_000
+)
+```
+
+#### position_ft_3 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n:= x = am'::init_series -5 45 1\n:= y = x |> am'::map_base (position_ft 0.1f64 20 0 0 [ pedal_coast ])\n\"child pedaling then coasting\", \"time (s)\", \"\", ;[ \"position of bike (m)\", x, y ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  := x = am'::init_series -5 45 1
+  := y = x |> am'::map_base (position_ft 0.1f64 20 0 0 [ pedal_coast ])
+  "child pedaling then coasting", "time (s)", "", ;[ "position of bike (m)", x, y ]
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= newton_second_v m fs v0 =\n    fs |> listm::map (\\ f => f v0) |> listm'::sum |> \\ x => x / m\n\n:= update_velocity dt m fs v0 =\n    v0 + newton_second_v m fs v0 * dt\n\n:= velocity_fv dt m v0 fs t =\n    stream::iterate (update_velocity dt m fs) v0\n    |> stream::try_item (t / dt |> math::round |> abs)\n    |> optionm'::default_value 0\n\n:= f_air drag rho area v =\n    -drag * rho * area * abs v * v / 2","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := newton_second_v m fs v0 =
+      fs |> listm::map (\ f => f v0) |> listm'::sum |> \ x => x / m
+
+  := update_velocity dt m fs v0 =
+      v0 + newton_second_v m fs v0 * dt
+
+  := velocity_fv dt m v0 fs t =
+      stream::iterate (update_velocity dt m fs) v0
+      |> stream::try_item (t / dt |> math::round |> abs)
+      |> optionm'::default_value 0
+
+  := f_air drag rho area v =
+      -drag * rho * area * abs v * v / 2
+  """,
+  timeout: 300_000
+)
+```
+
+#### velocity_fv (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n:= x = am'::init_series 0 60 0.5\n:= y = x |> am'::map_base (velocity_fv 1 70 0f64 [ \\ _ => 100; f_air 2 1.225 0.6 ])\n\"bike velocity\", \"time (s)\", \"\", ;[ \"velocity of bike (m/s)\", x, y ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  := x = am'::init_series 0 60 0.5
+  := y = x |> am'::map_base (velocity_fv 1 70 0f64 [ \ _ => 100; f_air 2 1.225 0.6 ])
+  "bike velocity", "time (s)", "", ;[ "velocity of bike (m/s)", x, y ]
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= newton_second_tv m fs (t, v0) =\n    := f_net = fs |> listm::map (\\ f => f (t, v0)) |> listm'::sum\n    := acc = f_net / m\n    1, acc\n\n:= update_tv dt m fs (t, v0) =\n    := dtdt, dvdt = newton_second_tv m fs (t, v0)\n    t + dtdt * dt, v0 + dvdt * dt\n\n:= velocity_ftv dt m tv0 fs t =\n    stream::iterate (~~ update_tv dt m fs) tv0\n    |> stream::try_item (t / dt |> math::round |> abs)\n    |> optionm::map snd\n    |> optionm'::default_value 0\n\n:= pedal_coast_air_velocity () =\n    velocity_ftv 0.1 20 (dyn (0, 0)) [ \\ (t, _) => pedal_coast t; \\ (_, v) => f_air 2 1.225 0.5 v ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := newton_second_tv m fs (t, v0) =
+      := f_net = fs |> listm::map (\ f => f (t, v0)) |> listm'::sum
+      := acc = f_net / m
+      1, acc
+
+  := update_tv dt m fs (t, v0) =
+      := dtdt, dvdt = newton_second_tv m fs (t, v0)
+      t + dtdt * dt, v0 + dvdt * dt
+
+  := velocity_ftv dt m tv0 fs t =
+      stream::iterate (~~ update_tv dt m fs) tv0
+      |> stream::try_item (t / dt |> math::round |> abs)
+      |> optionm::map snd
+      |> optionm'::default_value 0
+
+  := pedal_coast_air_velocity () =
+      velocity_ftv 0.1 20 (dyn (0, 0)) [ \ (t, _) => pedal_coast t; \ (_, v) => f_air 2 1.225 0.5 v ]
+  """,
+  timeout: 300_000
+)
+```
+
+#### velocity_ftv (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n:= x = am'::init_series 0 100 0.1\n:= y = x |> am'::map_base (pedal_coast_air_velocity ())\n\"pedaling and coasting with air\", \"time (s)\", \"\", ;[ \"velocity of bike (m/s)\", x, y ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  := x = am'::init_series 0 100 0.1
+  := y = x |> am'::map_base (pedal_coast_air_velocity ())
+  "pedaling and coasting with air", "time (s)", "", ;[ "velocity of bike (m/s)", x, y ]
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! state_1d = time * position * velocity\n:! rrr = f64 * f64 * f64\n\n:= newton_second_1d m fs (state_1d (t, x0, v0)) =\n    := f_net = fs |> listm::map (\\ f => f (state_1d (t, x0, v0))) |> listm'::sum\n    := acc = f_net / m\n    rrr (1f64, v0, acc)\n\n:= euler_1d dt deriv (state_1d (t0, x0, v0) &= t) =\n    := (rrr (_, _, dvdt)) = deriv t\n    := t1 = t0 + dt\n    := x1 = x0 + v0 * dt\n    := v1 = v0 + dvdt * dt\n    state_1d (t1, x1, v1)\n\n:= update_txv dt m fs =\n    newton_second_1d m fs |> euler_1d dt\n\n:= states_txv dt m txv0 fs =\n    seq::iterate_ (update_txv dt m fs) txv0\n\n:= velocity_1d sts t =\n    := (state_1d (t0, _, _)) = sts 0\n    := (state_1d (t1, _, _)) = sts 1\n    := dt = t1 - t0\n    := num_steps = t / dt |> math::round |> abs\n    := (state_1d (_, _, v0)) = sts num_steps\n    v0\n\n:= velocity_ftxv dt m txv0 fs =\n    states_txv dt m txv0 fs |> velocity_1d\n\n:= position_1d sts t =\n    := (state_1d (t0, _, _)) = sts 0\n    := (state_1d (t1, _, _)) = sts 1\n    := dt = t1 - t0\n    := num_steps = t / dt |> math::round |> abs\n    := (state_1d (_, x0, _)) = sts num_steps\n    x0\n\n:= position_ftxv dt m txv0 fs =\n    states_txv dt m txv0 fs |> position_1d\n\n:= spring_force k (state_1d (_, x0, _)) =\n    -k * x0\n\n:= damped_ho_forces () =\n    [\n        spring_force 0.8\n        \\ (state_1d (_, _, v0)) => f_air 2 1.225 (pi * math::square 0.02) v0\n        \\ _ => -0.0027 * 9.80665\n    ]\n\n:= pingpong_position t = position_ftxv 0.001 0.0027 (state_1d (0, 0.1, 0)) (damped_ho_forces ()) t","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :! state_1d = time * position * velocity
+  :! rrr = f64 * f64 * f64
+
+  := newton_second_1d m fs (state_1d (t, x0, v0)) =
+      := f_net = fs |> listm::map (\ f => f (state_1d (t, x0, v0))) |> listm'::sum
+      := acc = f_net / m
+      rrr (1f64, v0, acc)
+
+  := euler_1d dt deriv (state_1d (t0, x0, v0) &= t) =
+      := (rrr (_, _, dvdt)) = deriv t
+      := t1 = t0 + dt
+      := x1 = x0 + v0 * dt
+      := v1 = v0 + dvdt * dt
+      state_1d (t1, x1, v1)
+
+  := update_txv dt m fs =
+      newton_second_1d m fs |> euler_1d dt
+
+  := states_txv dt m txv0 fs =
+      seq::iterate_ (update_txv dt m fs) txv0
+
+  := velocity_1d sts t =
+      := (state_1d (t0, _, _)) = sts 0
+      := (state_1d (t1, _, _)) = sts 1
+      := dt = t1 - t0
+      := num_steps = t / dt |> math::round |> abs
+      := (state_1d (_, _, v0)) = sts num_steps
+      v0
+
+  := velocity_ftxv dt m txv0 fs =
+      states_txv dt m txv0 fs |> velocity_1d
+
+  := position_1d sts t =
+      := (state_1d (t0, _, _)) = sts 0
+      := (state_1d (t1, _, _)) = sts 1
+      := dt = t1 - t0
+      := num_steps = t / dt |> math::round |> abs
+      := (state_1d (_, x0, _)) = sts num_steps
+      x0
+
+  := position_ftxv dt m txv0 fs =
+      states_txv dt m txv0 fs |> position_1d
+
+  := spring_force k (state_1d (_, x0, _)) =
+      -k * x0
+
+  := damped_ho_forces () =
+      [
+          spring_force 0.8
+          \ (state_1d (_, _, v0)) => f_air 2 1.225 (pi * math::square 0.02) v0
+          \ _ => -0.0027 * 9.80665
+      ]
+
+  := pingpong_position t = position_ftxv 0.001 0.0027 (state_1d (0, 0.1, 0)) (damped_ho_forces ()) t
+  """,
+  timeout: 300_000
+)
+```
+
+#### velocity_ftxv_2 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n:= x = am'::init_series 0 3 0.01\n:= y = x |> am'::map_base pingpong_position\n\"ping pong ball on a slinky\", \"time (s)\", \"\", ;[ \"position (m)\", x, y ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  := x = am'::init_series 0 3 0.01
+  := y = x |> am'::map_base pingpong_position
+  "ping pong ball on a slinky", "time (s)", "", ;[ "position (m)", x, y ]
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= pingpong_velocity t = velocity_ftxv 0.001 0.0027 (state_1d (0, 0.1, 0)) (damped_ho_forces ()) t","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := pingpong_velocity t = velocity_ftxv 0.001 0.0027 (state_1d (0, 0.1, 0)) (damped_ho_forces ()) t
+  """,
+  timeout: 300_000
+)
+```
+
+#### velocity_ftxv_3 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n:= x = am'::init_series 0 3 0.01\n:= y = x |> am'::map_base pingpong_velocity\n\"ping pong ball on a slinky\", \"time (s)\", \"\", ;[ \"velocity (m/s)\", x, y ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  := x = am'::init_series 0 3 0.01
+  := y = x |> am'::map_base pingpong_velocity
+  "ping pong ball on a slinky", "time (s)", "", ;[ "velocity (m/s)", x, y ]
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":== update_function s = s -> s\n\n:== differential_equation s ds = s -> ds\n\n:== numerical_method s ds = differential_equation s ds -> update_function s\n\n:= solver method =\n    method >> seq::iterate\n\n:= solver' method =\n    method >> seq::iterate'\n\n:= solver_ method =\n    method >> seq::iterate_\n\n:= euler_cromer_1d dt deriv (state_1d (t0, x0, v0) &= t) =\n    := (rrr (_, _, dvdt)) = deriv t\n    := t1 = t0 + dt\n    := v1 = v0 + dvdt * dt\n    := x1 = x0 + v1 * dt\n    state_1d (t1, x1, v1)\n\n:= update_txv_ec dt m fs =\n    euler_cromer_1d dt (newton_second_1d m fs)\n\n:? (+++) ds : ds -> ds -> ds\n:? scale ds : f64 -> ds -> ds\n\n:+ (+++) rrr = \\ (rrr (dtdt0, dxdt0, dvdt0)) (rrr (dtdt1, dxdt1, dvdt1)) =>\n    rrr (dtdt0 + dtdt1, dxdt0 + dxdt1, dvdt0 + dvdt1)\n\n:+ scale rrr = \\ w (rrr (dtdt0, dxdt0, dvdt0)) =>\n    rrr (w * dtdt0, w * dxdt0, w * dvdt0)\n\n:? shift s : \\* ds. f64 -> ds -> s -> s\n\n:+ shift state_1d = \\ dt ds (state_1d (t, x, v)) =>\n    := dtdt, dxdt, dvdt =\n        ~>\n            ?= ds ?|\n            | rrr x => x\n            | state_1d x => x\n    state_1d (t + dtdt * dt, x + dxdt * dt, v + dvdt * dt)\n\n:= euler dt deriv st0 =\n    shift dt (deriv st0) st0\n\n:= runge_kutta_4 dt deriv st0 =\n    := m0 = deriv st0\n    := m1 = deriv (shift (dt / 2) m0 st0)\n    := m2 = deriv (shift (dt / 2) m1 st0)\n    := m3 = deriv (shift dt m2 st0)\n    shift (dt / 6) (m0 +++ m1 +++ m1 +++ m2 +++ m2 +++ m3) st0\n\n:= exponential (_, x0, v0) =\n    1f64, v0, x0\n\n:= of_state_1d (state_1d (t, x, v)) =\n    t, x, v","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :== update_function s = s -> s
+
+  :== differential_equation s ds = s -> ds
+
+  :== numerical_method s ds = differential_equation s ds -> update_function s
+
+  := solver method =
+      method >> seq::iterate
+
+  := solver' method =
+      method >> seq::iterate'
+
+  := solver_ method =
+      method >> seq::iterate_
+
+  := euler_cromer_1d dt deriv (state_1d (t0, x0, v0) &= t) =
+      := (rrr (_, _, dvdt)) = deriv t
+      := t1 = t0 + dt
+      := v1 = v0 + dvdt * dt
+      := x1 = x0 + v1 * dt
+      state_1d (t1, x1, v1)
+
+  := update_txv_ec dt m fs =
+      euler_cromer_1d dt (newton_second_1d m fs)
+
+  :? (+++) ds : ds -> ds -> ds
+  :? scale ds : f64 -> ds -> ds
+
+  :+ (+++) rrr = \ (rrr (dtdt0, dxdt0, dvdt0)) (rrr (dtdt1, dxdt1, dvdt1)) =>
+      rrr (dtdt0 + dtdt1, dxdt0 + dxdt1, dvdt0 + dvdt1)
+
+  :+ scale rrr = \ w (rrr (dtdt0, dxdt0, dvdt0)) =>
+      rrr (w * dtdt0, w * dxdt0, w * dvdt0)
+
+  :? shift s : \* ds. f64 -> ds -> s -> s
+
+  :+ shift state_1d = \ dt ds (state_1d (t, x, v)) =>
+      := dtdt, dxdt, dvdt =
+          ~>
+              ?= ds ?|
+              | rrr x => x
+              | state_1d x => x
+      state_1d (t + dtdt * dt, x + dxdt * dt, v + dvdt * dt)
+
+  := euler dt deriv st0 =
+      shift dt (deriv st0) st0
+
+  := runge_kutta_4 dt deriv st0 =
+      := m0 = deriv st0
+      := m1 = deriv (shift (dt / 2) m0 st0)
+      := m2 = deriv (shift (dt / 2) m1 st0)
+      := m3 = deriv (shift dt m2 st0)
+      shift (dt / 6) (m0 +++ m1 +++ m1 +++ m2 +++ m2 +++ m3) st0
+
+  := exponential (_, x0, v0) =
+      1f64, v0, x0
+
+  := of_state_1d (state_1d (t, x, v)) =
+      t, x, v
+  """,
+  timeout: 300_000
+)
+```
+
+#### shift (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nsolver (euler 0.01) (of_state_1d >> exponential >> state_1d) (state_1d (0, 1, 1)) 800i32\n|> _assert_eq (state_1d (7.999999999999874, 2864.8311229272326, 2864.8311229272326))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  solver (euler 0.01) (of_state_1d >> exponential >> state_1d) (state_1d (0, 1, 1)) 800i32
+  |> _assert_eq (state_1d (7.999999999999874, 2864.8311229272326, 2864.8311229272326))
+  """,
+  timeout: 300_000
+)
+```
+
+#### shift_euler_cromer (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nsolver (euler_cromer_1d 0.1) (of_state_1d >> exponential >> rrr) (state_1d (0, 1, 1)) 80i32\n|> _assert_eq (state_1d (7.999999999999988, 3043.379244966009, 2895.0121485099035))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  solver (euler_cromer_1d 0.1) (of_state_1d >> exponential >> rrr) (state_1d (0, 1, 1)) 80i32
+  |> _assert_eq (state_1d (7.999999999999988, 3043.379244966009, 2895.0121485099035))
+  """,
+  timeout: 300_000
+)
+```
+
+#### shift_runge_kutta (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nsolver (runge_kutta_4 1) (of_state_1d >> exponential >> rrr) (state_1d (0, 1, 1)) 8i32\n|> _assert_eq (state_1d (8.0, 2894.789038540849, 2894.789038540849))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  solver (runge_kutta_4 1) (of_state_1d >> exponential >> rrr) (state_1d (0, 1, 1)) 8i32
+  |> _assert_eq (state_1d (8.0, 2894.789038540849, 2894.789038540849))
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":== vec =\n    {\n        x : f64\n        y : f64\n        z : f64\n    }\n\n:= vec x y z : vec =\n    { x y z }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :== vec =
+      {
+          x : f64
+          y : f64
+          z : f64
+      }
+
+  := vec x y z : vec =
+      { x y z }
+  """,
+  timeout: 300_000
+)
+```
+
+#### vec (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nvec 1 2 3 ::z\n|> _assert_eq 3","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  vec 1 2 3 ::z
+  |> _assert_eq 3
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= i_hat () = vec 1 0 0\n:= j_hat () = vec 0 1 0\n:= k_hat () = vec 0 0 1\n:= zero_vec () = vec 0 0 0\n\n:= (^+^) (a : vec) (b : vec) =\n    vec (a::x + b::x) (a::y + b::y) (a::z + b::z)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := i_hat () = vec 1 0 0
+  := j_hat () = vec 0 1 0
+  := k_hat () = vec 0 0 1
+  := zero_vec () = vec 0 0 0
+
+  := (^+^) (a : vec) (b : vec) =
+      vec (a::x + b::x) (a::y + b::y) (a::z + b::z)
+  """,
+  timeout: 300_000
+)
+```
+
+#### consts (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nvec 1 2 3 ^+^ vec 4 5 6\n|> _assert_eq (vec 5 7 9)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  vec 1 2 3 ^+^ vec 4 5 6
+  |> _assert_eq (vec 5 7 9)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= sum_vec vs =\n    vs |> listm::fold (^+^) (zero_vec ())","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := sum_vec vs =
+      vs |> listm::fold (^+^) (zero_vec ())
+  """,
+  timeout: 300_000
+)
+```
+
+#### sum_vec (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n[ vec 1 2 3; vec 4 5 6 ]\n|> sum_vec\n|> _assert_eq (vec 5 7 9)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  [ vec 1 2 3; vec 4 5 6 ]
+  |> sum_vec
+  |> _assert_eq (vec 5 7 9)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= (*^) c { x y z } =\n    vec (c * x) (c * y) (c * z)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := (*^) c { x y z } =
+      vec (c * x) (c * y) (c * z)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n5 *^ vec 1 2 3\n|> _assert_eq (vec 5 10 15)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  5 *^ vec 1 2 3
+  |> _assert_eq (vec 5 10 15)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n3 *^ i_hat () ^+^ 4 *^ k_hat ()\n|> _assert_eq (vec 3 0 4)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  3 *^ i_hat () ^+^ 4 *^ k_hat ()
+  |> _assert_eq (vec 3 0 4)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= (^*) v c =\n    (*^) c v","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := (^*) v c =
+      (*^) c v
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nvec 1 2 3 ^* 5\n|> _assert_eq (vec 5 10 15)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  vec 1 2 3 ^* 5
+  |> _assert_eq (vec 5 10 15)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= (^/) { x y z } c =\n    vec (x / c) (y / c) (z / c)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := (^/) { x y z } c =
+      vec (x / c) (y / c) (z / c)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nvec 1 2 3 ^/ 5\n|> _assert_eq (vec 0.2 0.4 0.6)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  vec 1 2 3 ^/ 5
+  |> _assert_eq (vec 0.2 0.4 0.6)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= negate_vec v =\n    v ^* -1","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := negate_vec v =
+      v ^* -1
+  """,
+  timeout: 300_000
+)
+```
+
+#### negate_vec (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nvec 1 2 3\n|> negate_vec\n|> _assert_eq (vec -1 -2 -3)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  vec 1 2 3
+  |> negate_vec
+  |> _assert_eq (vec -1 -2 -3)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= (^-^) a b =\n    a ^+^ (negate_vec b)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := (^-^) a b =
+      a ^+^ (negate_vec b)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nvec 1 2 3 ^-^ vec 4 5 6\n|> _assert_eq (vec -3 -3 -3)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  vec 1 2 3 ^-^ vec 4 5 6
+  |> _assert_eq (vec -3 -3 -3)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= (<.>) { x = ax y = ay z = az } { x = bx y = by z = bz } =\n    ax * bx + ay * by + az * bz","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := (<.>) { x = ax y = ay z = az } { x = bx y = by z = bz } =
+      ax * bx + ay * by + az * bz
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n(vec 1 2 3 <.> vec 4 5 6)\n|> _assert_eq 32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  (vec 1 2 3 <.> vec 4 5 6)
+  |> _assert_eq 32
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= (><) (a : vec) (b : vec) =\n    vec\n        (a::y * b::z - a::z * b::y)\n        (a::z * b::x - a::x * b::z)\n        (a::x * b::y - a::y * b::x)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := (><) (a : vec) (b : vec) =
+      vec
+          (a::y * b::z - a::z * b::y)
+          (a::z * b::x - a::x * b::z)
+          (a::x * b::y - a::y * b::x)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n(vec 1 2 3 >< vec 4 5 6)\n|> _assert_eq (vec -3 6 -3)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  (vec 1 2 3 >< vec 4 5 6)
+  |> _assert_eq (vec -3 6 -3)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= magnitude v =\n    (v <.> v) |> sqrt","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := magnitude v =
+      (v <.> v) |> sqrt
+  """,
+  timeout: 300_000
+)
+```
+
+#### magnitude (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nvec 1 2 3\n|> magnitude\n|> _assert_approx_eq None 3.7416573867739413","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  vec 1 2 3
+  |> magnitude
+  |> _assert_approx_eq None 3.7416573867739413
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= v1 t =\n    2 *^ (t ** 2 *^ i_hat () ^+^ 3 *^ (t ** 3 *^ j_hat () ^+^ t ** 4 *^ k_hat ()))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := v1 t =
+      2 *^ (t ** 2 *^ i_hat () ^+^ 3 *^ (t ** 3 *^ j_hat () ^+^ t ** 4 *^ k_hat ()))
+  """,
+  timeout: 300_000
+)
+```
+
+#### v1 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nv1 1\n|> _assert_eq (vec 2 6 6)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  v1 1
+  |> _assert_eq (vec 2 6 6)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":== vec_derivative = (f64 -> vec) -> f64 -> vec\n\n:= vec_derivative dt : vec_derivative =\n    \\ v t =>\n        (v (t + dt / 2) ^-^ v (t - dt / 2)) ^/ dt","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :== vec_derivative = (f64 -> vec) -> f64 -> vec
+
+  := vec_derivative dt : vec_derivative =
+      \ v t =>
+          (v (t + dt / 2) ^-^ v (t - dt / 2)) ^/ dt
+  """,
+  timeout: 300_000
+)
+```
+
+#### vec_derivative (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nvec_derivative 0.01 v1 3 ::x\n|> _assert_approx_eq None (derivative 0.01 (v1 >> \\ v => v::x) 3)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  vec_derivative 0.01 v1 3 ::x
+  |> _assert_approx_eq None (derivative 0.01 (v1 >> \ v => v::x) 3)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! particle_state =\n    {\n        mass : f64\n        charge : f64\n        time : f64\n        pos_vec : vec\n        velocity : vec\n    }\n\n:= default_particle_state () : particle_state =\n    particle_state {\n        mass = 1\n        charge = 0\n        time = 0\n        pos_vec = zero_vec ()\n        velocity = zero_vec ()\n    }\n\n:== one_body_force = particle_state -> vec\n\n:! d_particle_state =\n    {\n        dmdt : f64\n        dqdt : f64\n        dtdt : f64\n        drdt : vec\n        dvdt : vec\n    }\n\n:= net_force (fs : list one_body_force) (st : particle_state) : vec = fs |> listm::map (\\ f => f st) |> sum_vec\n\n:= rate_with (st : particle_state) (dvdt : vec) : d_particle_state =\n    d_particle_state {\n        dmdt = 0\n        dqdt = 0\n        dtdt = 1\n        drdt = st::velocity\n        dvdt = dvdt\n    }\n\n:= newton_second_ps (fs : list one_body_force) (st : particle_state) : d_particle_state =\n    rate_with st (net_force fs st ^/ st::mass)\n\n:= earth_surface_gravity (st : particle_state) =\n    := g = 9.80665\n    -st::mass * g *^ k_hat ()\n\n:= air_resistance drag rho area (st : particle_state) =\n    -0.5 * drag * rho * area * magnitude st::velocity *^ st::velocity\n\n:= cromer_moved dt (v' : vec) (particle_state st) : particle_state =\n    particle_state { st ?| time = st::time + dt; pos_vec = st::pos_vec ^+^ v' ^* dt; velocity = v' }\n\n:= euler_cromer_ps dt (deriv : particle_state -> d_particle_state) (particle_state st) =\n    := dst : d_particle_state = deriv (particle_state st)\n    cromer_moved dt (st::velocity ^+^ dst::dvdt ^* dt) (particle_state st)\n\n:+ (+++) d_particle_state = \\ (a : d_particle_state) b =>\n    d_particle_state {\n        dmdt = a::dmdt + b::dmdt\n        dqdt = a::dqdt + b::dqdt\n        dtdt = a::dtdt + b::dtdt\n        drdt = a::drdt ^+^ b::drdt\n        dvdt = a::dvdt ^+^ b::dvdt\n    }\n\n:+ scale d_particle_state = \\ w (dps : d_particle_state) =>\n    d_particle_state {\n        dmdt = w * dps::dmdt\n        dqdt = w * dps::dqdt\n        dtdt = w * dps::dtdt\n        drdt = w *^ dps::drdt\n        dvdt = w *^ dps::dvdt\n    }\n\n:= shifted dt (dps : d_particle_state) (particle_state st) : particle_state =\n    particle_state { st ?|\n        time = st::time + dps::dtdt * dt\n        pos_vec = st::pos_vec ^+^ dps::drdt ^* dt\n        velocity = st::velocity ^+^ dps::dvdt ^* dt\n    }\n\n:+ shift particle_state = \\ dt dps (particle_state st) =>\n    := (d_particle_state dps) =\n        ~>\n            ?= dps ?|\n            | d_particle_state _ => dps\n    shifted dt (d_particle_state dps) (particle_state st)\n\n:= states_ps (method : numerical_method particle_state d_particle_state) : _ -> _ -> i32 -> particle_state =\n    newton_second_ps >> method >> seq::iterate_\n\n:= z_ge0 sts =\n    sts\n    |> seq::take_while_ \\ (particle_state st) _ => st::pos_vec::z >= 0\n\n:= trajectory sts =\n    sts |> listm::map \\ (particle_state st) => st::pos_vec::y, st::pos_vec::z\n\n:= update_ps (method : numerical_method particle_state d_particle_state) =\n    newton_second_ps >> method\n\n:= step_count (states : i32 -> particle_state) t =\n    := dt = (states 1)::time - (states 0)::time\n    t / dt |> math::round |> abs\n\n:= position_ps (method : numerical_method particle_state d_particle_state) fs st t =\n    := st1 = solver' method (newton_second_ps fs) st (step_count (states_ps method fs st) t)\n    st1::pos_vec\n\n:= sun_gravity (st : particle_state) : vec =\n    := big_g = 0.0000000000667408\n    := sun_mass = 1988480000000000000000000000000\n    -big_g * sun_mass * st::mass *^ st::pos_vec ^/ magnitude st::pos_vec ** 3\n\n:= wind_force v_wind drag rho area (st : particle_state) =\n    := v_rel = st::velocity ^-^ v_wind\n    -0.5 * drag * rho * area * magnitude v_rel *^ v_rel\n\n:= rock_state () =\n    := (particle_state default_particle_state') = default_particle_state ()\n    particle_state { default_particle_state' ?|\n        mass = 2\n        velocity = vec 3 0 4\n    }\n\n:= halley_update dt =\n    update_ps (euler_cromer_ps dt) [ sun_gravity ]\n\n:= halley_initial () =\n    := (particle_state default_particle_state') = default_particle_state ()\n    particle_state { default_particle_state' ?|\n        mass = 220000000000000\n        pos_vec = 87660000000 *^ i_hat ()\n        velocity = 54569 *^ j_hat ()\n    }\n\n:= baseball_forces () =\n    := area = pi * (0.074 / 2) ** 2\n    [\n        earth_surface_gravity\n        air_resistance 0.3 1.225 area\n    ]\n\n:= baseball_initial v0 theta_deg =\n    := theta_rad = theta_deg * pi / 180\n    particle_state {\n        mass = 0.145\n        charge = 0\n        time = 0\n        pos_vec = zero_vec ()\n        velocity = vec 0 (v0 * cos theta_rad) (v0 * sin theta_rad)\n    }\n\n:= baseball_trajectory dt v0 theta_deg =\n    states_ps (euler_cromer_ps dt) (baseball_forces ()) (baseball_initial v0 theta_deg)\n    >> Some\n    |> z_ge0\n    |> trajectory\n\n:= baseball_range dt v0 theta_deg =\n    baseball_trajectory dt v0 theta_deg\n    |> listm::fold (\\ _ (y, _) => y) 0","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :! particle_state =
+      {
+          mass : f64
+          charge : f64
+          time : f64
+          pos_vec : vec
+          velocity : vec
+      }
+
+  := default_particle_state () : particle_state =
+      particle_state {
+          mass = 1
+          charge = 0
+          time = 0
+          pos_vec = zero_vec ()
+          velocity = zero_vec ()
+      }
+
+  :== one_body_force = particle_state -> vec
+
+  :! d_particle_state =
+      {
+          dmdt : f64
+          dqdt : f64
+          dtdt : f64
+          drdt : vec
+          dvdt : vec
+      }
+
+  := net_force (fs : list one_body_force) (st : particle_state) : vec = fs |> listm::map (\ f => f st) |> sum_vec
+
+  := rate_with (st : particle_state) (dvdt : vec) : d_particle_state =
+      d_particle_state {
+          dmdt = 0
+          dqdt = 0
+          dtdt = 1
+          drdt = st::velocity
+          dvdt = dvdt
+      }
+
+  := newton_second_ps (fs : list one_body_force) (st : particle_state) : d_particle_state =
+      rate_with st (net_force fs st ^/ st::mass)
+
+  := earth_surface_gravity (st : particle_state) =
+      := g = 9.80665
+      -st::mass * g *^ k_hat ()
+
+  := air_resistance drag rho area (st : particle_state) =
+      -0.5 * drag * rho * area * magnitude st::velocity *^ st::velocity
+
+  := cromer_moved dt (v' : vec) (particle_state st) : particle_state =
+      particle_state { st ?| time = st::time + dt; pos_vec = st::pos_vec ^+^ v' ^* dt; velocity = v' }
+
+  := euler_cromer_ps dt (deriv : particle_state -> d_particle_state) (particle_state st) =
+      := dst : d_particle_state = deriv (particle_state st)
+      cromer_moved dt (st::velocity ^+^ dst::dvdt ^* dt) (particle_state st)
+
+  :+ (+++) d_particle_state = \ (a : d_particle_state) b =>
+      d_particle_state {
+          dmdt = a::dmdt + b::dmdt
+          dqdt = a::dqdt + b::dqdt
+          dtdt = a::dtdt + b::dtdt
+          drdt = a::drdt ^+^ b::drdt
+          dvdt = a::dvdt ^+^ b::dvdt
+      }
+
+  :+ scale d_particle_state = \ w (dps : d_particle_state) =>
+      d_particle_state {
+          dmdt = w * dps::dmdt
+          dqdt = w * dps::dqdt
+          dtdt = w * dps::dtdt
+          drdt = w *^ dps::drdt
+          dvdt = w *^ dps::dvdt
+      }
+
+  := shifted dt (dps : d_particle_state) (particle_state st) : particle_state =
+      particle_state { st ?|
+          time = st::time + dps::dtdt * dt
+          pos_vec = st::pos_vec ^+^ dps::drdt ^* dt
+          velocity = st::velocity ^+^ dps::dvdt ^* dt
+      }
+
+  :+ shift particle_state = \ dt dps (particle_state st) =>
+      := (d_particle_state dps) =
+          ~>
+              ?= dps ?|
+              | d_particle_state _ => dps
+      shifted dt (d_particle_state dps) (particle_state st)
+
+  := states_ps (method : numerical_method particle_state d_particle_state) : _ -> _ -> i32 -> particle_state =
+      newton_second_ps >> method >> seq::iterate_
+
+  := z_ge0 sts =
+      sts
+      |> seq::take_while_ \ (particle_state st) _ => st::pos_vec::z >= 0
+
+  := trajectory sts =
+      sts |> listm::map \ (particle_state st) => st::pos_vec::y, st::pos_vec::z
+
+  := update_ps (method : numerical_method particle_state d_particle_state) =
+      newton_second_ps >> method
+
+  := step_count (states : i32 -> particle_state) t =
+      := dt = (states 1)::time - (states 0)::time
+      t / dt |> math::round |> abs
+
+  := position_ps (method : numerical_method particle_state d_particle_state) fs st t =
+      := st1 = solver' method (newton_second_ps fs) st (step_count (states_ps method fs st) t)
+      st1::pos_vec
+
+  := sun_gravity (st : particle_state) : vec =
+      := big_g = 0.0000000000667408
+      := sun_mass = 1988480000000000000000000000000
+      -big_g * sun_mass * st::mass *^ st::pos_vec ^/ magnitude st::pos_vec ** 3
+
+  := wind_force v_wind drag rho area (st : particle_state) =
+      := v_rel = st::velocity ^-^ v_wind
+      -0.5 * drag * rho * area * magnitude v_rel *^ v_rel
+
+  := rock_state () =
+      := (particle_state default_particle_state') = default_particle_state ()
+      particle_state { default_particle_state' ?|
+          mass = 2
+          velocity = vec 3 0 4
+      }
+
+  := halley_update dt =
+      update_ps (euler_cromer_ps dt) [ sun_gravity ]
+
+  := halley_initial () =
+      := (particle_state default_particle_state') = default_particle_state ()
+      particle_state { default_particle_state' ?|
+          mass = 220000000000000
+          pos_vec = 87660000000 *^ i_hat ()
+          velocity = 54569 *^ j_hat ()
+      }
+
+  := baseball_forces () =
+      := area = pi * (0.074 / 2) ** 2
+      [
+          earth_surface_gravity
+          air_resistance 0.3 1.225 area
+      ]
+
+  := baseball_initial v0 theta_deg =
+      := theta_rad = theta_deg * pi / 180
+      particle_state {
+          mass = 0.145
+          charge = 0
+          time = 0
+          pos_vec = zero_vec ()
+          velocity = vec 0 (v0 * cos theta_rad) (v0 * sin theta_rad)
+      }
+
+  := baseball_trajectory dt v0 theta_deg =
+      states_ps (euler_cromer_ps dt) (baseball_forces ()) (baseball_initial v0 theta_deg)
+      >> Some
+      |> z_ge0
+      |> trajectory
+
+  := baseball_range dt v0 theta_deg =
+      baseball_trajectory dt v0 theta_deg
+      |> listm::fold (\ _ (y, _) => y) 0
+  """,
+  timeout: 300_000
+)
+```
+
+#### states_ps_3 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n:= x = am'::init_series 10 80 1\n:= y = x |> am'::map_base (baseball_range 0.01 45)\n\"range for a baseball hit at 45 m/s\",\n\"angle above horizontal (degrees)\",\n\"\",\n;[ \"horizontal range (m)\", x, y ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  := x = am'::init_series 10 80 1
+  := y = x |> am'::map_base (baseball_range 0.01 45)
+  "range for a baseball hit at 45 m/s",
+  "angle above horizontal (degrees)",
+  "",
+  ;[ "horizontal range (m)", x, y ]
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= better_range (theta_deg : f64) (best : f64 * f64) : f64 * f64 =\n    := best_range, _ = best\n    := range = baseball_range 0.01 45 theta_deg\n    ? range > best_range ?> range, theta_deg |: best\n\n:= best_angle (bounds : f64 * f64) : f64 * f64 =\n    := min, max = bounds\n    :~ ^ 루프 (theta_deg : f64) (best : f64 * f64) : f64 * f64 =\n        ? theta_deg > max ?> best |: 루프 (theta_deg + 1) (better_range theta_deg best)\n    루프 min (0f64, min)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := better_range (theta_deg : f64) (best : f64 * f64) : f64 * f64 =
+      := best_range, _ = best
+      := range = baseball_range 0.01 45 theta_deg
+      ? range > best_range ?> range, theta_deg |: best
+
+  := best_angle (bounds : f64 * f64) : f64 * f64 =
+      := min, max = bounds
+      :~ ^ 루프 (theta_deg : f64) (best : f64 * f64) : f64 * f64 =
+          ? theta_deg > max ?> best |: 루프 (theta_deg + 1) (better_range theta_deg best)
+      루프 min (0f64, min)
+  """,
+  timeout: 300_000
+)
+```
+
+#### states_ps_4 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nbest_angle (30f64, 60f64)\n|> _assert_eq (116.77499158246208, 41)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  best_angle (30f64, 60f64)
+  |> _assert_eq (116.77499158246208, 41)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= relativity_ps fs (st : particle_state) =\n    := f_net = net_force fs st\n    := u = st::velocity ^/ 299792458\n    rate_with st (sqrt (1 - (u <.> u)) *^ (f_net ^-^ (f_net <.> u) *^ u) ^/ st::mass)\n\n:= curve_arrays (xs, ys) = (xs |> listm'::box |> listm'::to_array'), (ys |> listm'::box |> listm'::to_array')\n\n:= seconds_per_year () = 365.25 * 24 * 60 * 60\n\n:= year_points states =\n    := year = seconds_per_year ()\n    states >> Some\n    |> seq::take_while_ \\ (particle_state st) (_ : i32) => st::time <= year\n    |> listm::map \\ (particle_state st) => st::time / year, st::velocity::x / 299792458\n    |> listm'::unzip\n\n:= constant_force_start () =\n    := (particle_state st) = default_particle_state ()\n    particle_state { st ?| mass = 1 }\n\n:= year_curve method deriv = solver_ method deriv (constant_force_start ()) |> year_points |> curve_arrays\n\n:~ ^ numbers_from (xs : array_base f64) (i : i32) : list string =\n    ? i >= am'::length_base xs ?> [] |: sm'::format_debug (am'::index_base i xs) :: numbers_from xs (i + 1i32)\n\n:= numbers_json (xs : array_base f64) : string =\n    sm'::concat_list \"\" [ \"[\"; numbers_from xs 0i32 |> sm'::concat_list \", \"; \"]\" ]\n\n:= series_json ((label, xs, ys) : string * array_base f64 * array_base f64) : string =\n    sm'::concat_list \"\" [ \"[\"; json::quote label; \", \"; numbers_json xs; \", \"; numbers_json ys; \"]\" ]\n\n:== chart = string * string * string * array (string * array_base f64 * array_base f64)\n\n:= chart_json ((caption, x, y, series) : chart) : string =\n    sm'::concat_list \"\" [\n        \"[\"; json::quote caption; \", \"; json::quote x; \", \"; json::quote y; \", [\"\n        series |> am'::map' series_json |> sm'::join' \", \"\n        \"]]\"\n    ]\n\n:= show_chart chart : () =\n    console::write_line (\n        sm'::concat_list \"\" [\n            \"SPIRAL_CELLS_DISPLAY_BEGIN\\napplication/vnd.spiral.plot+json\\n\"\n            chart_json chart\n            \"\\nSPIRAL_CELLS_DISPLAY_END\"\n        ]\n    )\n\n:~ ^ charts_from (cs : array_base chart) (i : i32)\n    : list string\n    =\n    ? i >= am'::length_base cs ?> [] |: chart_json (am'::index_base i cs) :: charts_from cs (i + 1i32)\n\n:= show_frames (charts : array_base chart) : () =\n    console::write_line (\n        sm'::concat_list \"\" [\n            \"SPIRAL_CELLS_DISPLAY_BEGIN\\napplication/vnd.spiral.plot-frames+json\\n[\"\n            charts_from charts 0i32 |> sm'::concat_list \", \"\n            \"]\\nSPIRAL_CELLS_DISPLAY_END\"\n        ]\n    )\n\n:= constant_force_chart newton_x newton_y relativity_y =\n    \"response to a constant force\",\n    \"time (years)\",\n    \"velocity (multiples of c)\",\n    ;[\n        \"newtonian\", newton_x, newton_y\n        \"relativistic\", newton_x, relativity_y\n    ]\n\n:= constant_force_chart_of method forces =\n    := newton_x, newton_y = year_curve method (newton_second_ps forces)\n    := _, relativity_y = year_curve method (relativity_ps forces)\n    constant_force_chart newton_x newton_y relativity_y","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := relativity_ps fs (st : particle_state) =
+      := f_net = net_force fs st
+      := u = st::velocity ^/ 299792458
+      rate_with st (sqrt (1 - (u <.> u)) *^ (f_net ^-^ (f_net <.> u) *^ u) ^/ st::mass)
+
+  := curve_arrays (xs, ys) = (xs |> listm'::box |> listm'::to_array'), (ys |> listm'::box |> listm'::to_array')
+
+  := seconds_per_year () = 365.25 * 24 * 60 * 60
+
+  := year_points states =
+      := year = seconds_per_year ()
+      states >> Some
+      |> seq::take_while_ \ (particle_state st) (_ : i32) => st::time <= year
+      |> listm::map \ (particle_state st) => st::time / year, st::velocity::x / 299792458
+      |> listm'::unzip
+
+  := constant_force_start () =
+      := (particle_state st) = default_particle_state ()
+      particle_state { st ?| mass = 1 }
+
+  := year_curve method deriv = solver_ method deriv (constant_force_start ()) |> year_points |> curve_arrays
+
+  :~ ^ numbers_from (xs : array_base f64) (i : i32) : list string =
+      ? i >= am'::length_base xs ?> [] |: sm'::format_debug (am'::index_base i xs) :: numbers_from xs (i + 1i32)
+
+  := numbers_json (xs : array_base f64) : string =
+      sm'::concat_list "" [ "["; numbers_from xs 0i32 |> sm'::concat_list ", "; "]" ]
+
+  := series_json ((label, xs, ys) : string * array_base f64 * array_base f64) : string =
+      sm'::concat_list "" [ "["; json::quote label; ", "; numbers_json xs; ", "; numbers_json ys; "]" ]
+
+  :== chart = string * string * string * array (string * array_base f64 * array_base f64)
+
+  := chart_json ((caption, x, y, series) : chart) : string =
+      sm'::concat_list "" [
+          "["; json::quote caption; ", "; json::quote x; ", "; json::quote y; ", ["
+          series |> am'::map' series_json |> sm'::join' ", "
+          "]]"
+      ]
+
+  := show_chart chart : () =
+      console::write_line (
+          sm'::concat_list "" [
+              "SPIRAL_CELLS_DISPLAY_BEGIN\napplication/vnd.spiral.plot+json\n"
+              chart_json chart
+              "\nSPIRAL_CELLS_DISPLAY_END"
+          ]
+      )
+
+  :~ ^ charts_from (cs : array_base chart) (i : i32)
+      : list string
+      =
+      ? i >= am'::length_base cs ?> [] |: chart_json (am'::index_base i cs) :: charts_from cs (i + 1i32)
+
+  := show_frames (charts : array_base chart) : () =
+      console::write_line (
+          sm'::concat_list "" [
+              "SPIRAL_CELLS_DISPLAY_BEGIN\napplication/vnd.spiral.plot-frames+json\n["
+              charts_from charts 0i32 |> sm'::concat_list ", "
+              "]\nSPIRAL_CELLS_DISPLAY_END"
+          ]
+      )
+
+  := constant_force_chart newton_x newton_y relativity_y =
+      "response to a constant force",
+      "time (years)",
+      "velocity (multiples of c)",
+      ;[
+          "newtonian", newton_x, newton_y
+          "relativistic", newton_x, relativity_y
+      ]
+
+  := constant_force_chart_of method forces =
+      := newton_x, newton_y = year_curve method (newton_second_ps forces)
+      := _, relativity_y = year_curve method (relativity_ps forces)
+      constant_force_chart newton_x newton_y relativity_y
+  """,
+  timeout: 300_000
+)
+```
+
+#### relativity_ps (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n:= ~method = runge_kutta_4 100000\nconstant_force_chart_of method [ \\ _ => 10 *^ i_hat () ] |> show_chart","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  := ~method = runge_kutta_4 100000
+  constant_force_chart_of method [ \ _ => 10 *^ i_hat () ] |> show_chart
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= uniform_lorentz_force v_e v_b (st : particle_state) =\n    st::charge *^ (v_e ^+^ st::velocity >< v_b)\n\n:= proton_start () =\n    := (particle_state st) = default_particle_state ()\n    particle_state { st ?|\n        mass = 0.000000000000000000000000001672621898\n        charge = 0.0000000000000000001602176621\n        velocity = 0.8 *^ (299792458f64 *^ j_hat ())\n    }\n\n:= orbit_points (steps : i32) states =\n    states >> Some\n    |> seq::take_while_ \\ (particle_state st) i => i < steps\n    |> listm::map \\ (particle_state st) => st::pos_vec::x, st::pos_vec::y\n    |> listm'::unzip\n    |> curve_arrays\n\n:= proton_curve method deriv (steps : i32) = solver_ method deriv (proton_start ()) |> orbit_points steps\n\n:= proton_chart newton_x newton_y relativity_x relativity_y =\n    \"proton in a 1-t magnetic field\",\n    \"x (m)\",\n    \"y (m)\",\n    ;[\n        \"newtonian\", newton_x, newton_y\n        \"relativistic\", relativity_x, relativity_y\n    ]\n\n:= proton_chart_of method forces =\n    := newton_x, newton_y = proton_curve method (newton_second_ps forces) 100i32\n    := relativity_x, relativity_y = proton_curve method (relativity_ps forces) 165i32\n    proton_chart newton_x newton_y relativity_x relativity_y","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := uniform_lorentz_force v_e v_b (st : particle_state) =
+      st::charge *^ (v_e ^+^ st::velocity >< v_b)
+
+  := proton_start () =
+      := (particle_state st) = default_particle_state ()
+      particle_state { st ?|
+          mass = 0.000000000000000000000000001672621898
+          charge = 0.0000000000000000001602176621
+          velocity = 0.8 *^ (299792458f64 *^ j_hat ())
+      }
+
+  := orbit_points (steps : i32) states =
+      states >> Some
+      |> seq::take_while_ \ (particle_state st) i => i < steps
+      |> listm::map \ (particle_state st) => st::pos_vec::x, st::pos_vec::y
+      |> listm'::unzip
+      |> curve_arrays
+
+  := proton_curve method deriv (steps : i32) = solver_ method deriv (proton_start ()) |> orbit_points steps
+
+  := proton_chart newton_x newton_y relativity_x relativity_y =
+      "proton in a 1-t magnetic field",
+      "x (m)",
+      "y (m)",
+      ;[
+          "newtonian", newton_x, newton_y
+          "relativistic", relativity_x, relativity_y
+      ]
+
+  := proton_chart_of method forces =
+      := newton_x, newton_y = proton_curve method (newton_second_ps forces) 100i32
+      := relativity_x, relativity_y = proton_curve method (relativity_ps forces) 165i32
+      proton_chart newton_x newton_y relativity_x relativity_y
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n:= ~method = runge_kutta_4 0.000000001\nproton_chart_of method [ uniform_lorentz_force (zero_vec ()) (k_hat ()) ] |> show_chart","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  := ~method = runge_kutta_4 0.000000001
+  proton_chart_of method [ uniform_lorentz_force (zero_vec ()) (k_hat ()) ] |> show_chart
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":== force_vector = vec\n:== two_body_force = particle_state -> particle_state -> force_vector\n\n:| force =\n    | ExternalForce : i32 * one_body_force\n    | InternalForce : i32 * i32 * two_body_force\n\n:! multi_particle_state_l = list particle_state\n\n:! d_multi_particle_state_l = list d_particle_state\n\n:= internal_force_on n sts n0 n1 f_two_body =\n    ? n = n0\n    ?> f_two_body (sts |> listm'::item n1)\n    |? n = n1\n    ?> f_two_body (sts |> listm'::item n0)\n    |: \\ _ => zero_vec ()\n\n:= force_on n sts force =\n    ?= force ?|\n    | ExternalForce (n0, f_one_body) =>\n        ? n = n0\n        ?> f_one_body\n        |: \\ _ => zero_vec ()\n    | InternalForce (n0, n1, f_two_body) => internal_force_on n sts n0 n1 f_two_body\n\n:= forces_on n (multi_particle_state_l sts) fs =\n    fs |> listm::map (force_on n sts)\n\n:= newton_second_mps fs (multi_particle_state_l sts) : d_multi_particle_state_l =\n    := deriv (n, st) =\n        newton_second_ps (forces_on n (multi_particle_state_l sts) fs) st\n    sts |> listm'::indexed |> listm::map deriv |> d_multi_particle_state_l\n\n:= update_mps_l (method : numerical_method multi_particle_state_l d_multi_particle_state_l) =\n    newton_second_mps >> method\n\n:+ (+++) d_multi_particle_state_l = \\ (d_multi_particle_state_l dsts1) (d_multi_particle_state_l dsts2) =>\n    d_multi_particle_state_l (listm'::zip_with_ (+++) dsts1 dsts2)\n\n:+ shift multi_particle_state_l = \\ dt dsts (multi_particle_state_l sts) =>\n    := (d_multi_particle_state_l dsts) =\n        ~>\n            ?= dsts ?|\n            | d_multi_particle_state_l _ => dsts\n    listm'::zip_with_ (shift dt) dsts sts |> multi_particle_state_l\n\n:= central_force f (particle_state st1) (particle_state st2) =\n    := r1 = st1::pos_vec\n    := r2 = st2::pos_vec\n    := r21 = r2 ^-^ r1\n    := r21mag = magnitude r21\n    f r21mag *^ r21 ^/ r21mag\n\n:= billiard_force k re =\n    := f r =\n        ? r >= re\n        ?> 0\n        |: -k * (r - re)\n    central_force f\n\n:+ scale d_multi_particle_state_l = \\ w (d_multi_particle_state_l dsts) =>\n    d_multi_particle_state_l (dsts |> listm::map (scale w))\n\n:= cromer_position dt ((particle_state st0), (particle_state st1)) =\n    particle_state { st1 ?| pos_vec = st0::pos_vec ^+^ st1::velocity ^* dt }\n\n:== mps_method_l = numerical_method multi_particle_state_l d_multi_particle_state_l\n\n:= euler_cromer_mps_l dt : mps_method_l =\n    \\ deriv mpst0 =>\n        := (multi_particle_state_l sts0) = mpst0\n        := (multi_particle_state_l sts1) = euler dt deriv mpst0\n        sts1 |> listm'::zip_ sts0 |> listm::map (cromer_position dt) |> multi_particle_state_l\n\n:= states_mps_l (method : numerical_method multi_particle_state_l d_multi_particle_state_l) =\n    newton_second_mps >> method >> seq::iterate_\n\n:= kinetic_energy (particle_state st) =\n    := m = st::mass\n    := v = magnitude st::velocity\n    0.5 * m * v ** 2\n\n:= system_ke_l (multi_particle_state_l sts) =\n    sts |> listm::map kinetic_energy |> listm'::sum\n\n:= linear_spring_pe k re (particle_state st1) (particle_state st2) =\n    := r1 = st1::pos_vec\n    := r2 = st2::pos_vec\n    := r21 = r2 ^-^ r1\n    := r21mag = magnitude r21\n    k * (r21mag - re) ** 2 / 2\n\n:= earth_surface_gravity_pe (particle_state st) =\n    := g = 9.80665\n    := m = st::mass\n    := z = st::pos_vec::z\n    m * g * z\n\n:= spring_pair_pe st0 st1 = linear_spring_pe 100 0.5 (default_particle_state ()) st0 + linear_spring_pe 100 0.5 st0 st1\n\n:= two_springs_pe (multi_particle_state_l sts) =\n    := st0 = sts |> listm'::item 0i32\n    := st1 = sts |> listm'::item 1i32\n    spring_pair_pe st0 st1 + earth_surface_gravity_pe st0 + earth_surface_gravity_pe st1\n\n:= two_springs_me mpst =\n    system_ke_l mpst + two_springs_pe mpst\n\n:= ball_radius () = 0.03\n\n:= billiard_forces_l k =\n    [ InternalForce (0, 1, billiard_force k (2 * ball_radius ())) ]\n\n:= billiard_update n_method k dt =\n    update_mps_l (n_method dt) (billiard_forces_l k)\n\n:= billiard_ball (at : vec) (velocity : vec) : particle_state =\n    := (particle_state st) = default_particle_state ()\n    particle_state { st ?| mass = 0.160; pos_vec = at; velocity = velocity }\n\n:= billiard_balls () : list particle_state =\n    [ billiard_ball (zero_vec ()) (0.2 *^ i_hat ()); billiard_ball (i_hat () ^+^ 0.02 *^ j_hat ()) (zero_vec ()) ]\n\n:= billiard_initial_l () = multi_particle_state_l (billiard_balls ())\n\n:= billiard_states_l ~n_method k dt =\n    states_mps_l (n_method dt) (billiard_forces_l k) (billiard_initial_l ())\n\n:= billiard_states_finite_l n_method k dt =\n    billiard_states_l n_method k dt\n    >> Some\n    |> seq::take_while_ (\\ (multi_particle_state_l mpst) (_ : i32) =>\n        (mpst |> listm'::item 0i32)::time <= 10\n    )\n\n:= momentum (particle_state st) =\n    := m = st::mass\n    := v = st::velocity\n    m *^ v\n\n:= system_p_l (multi_particle_state_l sts) =\n    sts |> listm::map momentum |> sum_vec\n\n:= ke_chart ec_x ec_y rk4_x rk4_y =\n    \"system kinetic energy versus time\",\n    \"time (s)\",\n    \"system kinetic energy (j)\",\n    ;[\n        \"euler-cromer\", ec_x, ec_y\n        \"runge-kutta 4\", rk4_x, rk4_y\n    ]\n\n:= ke_point_l (mpst : list particle_state) = (mpst |> listm'::item 0i32)::time, system_ke_l (multi_particle_state_l mpst)\n\n:= ke_curve_l n_method =\n    billiard_states_finite_l n_method 30 0.03\n    |> listm::map \\ (multi_particle_state_l mpst) => ke_point_l mpst\n    |> listm'::unzip\n    |> curve_arrays","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :== force_vector = vec
+  :== two_body_force = particle_state -> particle_state -> force_vector
+
+  :| force =
+      | ExternalForce : i32 * one_body_force
+      | InternalForce : i32 * i32 * two_body_force
+
+  :! multi_particle_state_l = list particle_state
+
+  :! d_multi_particle_state_l = list d_particle_state
+
+  := internal_force_on n sts n0 n1 f_two_body =
+      ? n = n0
+      ?> f_two_body (sts |> listm'::item n1)
+      |? n = n1
+      ?> f_two_body (sts |> listm'::item n0)
+      |: \ _ => zero_vec ()
+
+  := force_on n sts force =
+      ?= force ?|
+      | ExternalForce (n0, f_one_body) =>
+          ? n = n0
+          ?> f_one_body
+          |: \ _ => zero_vec ()
+      | InternalForce (n0, n1, f_two_body) => internal_force_on n sts n0 n1 f_two_body
+
+  := forces_on n (multi_particle_state_l sts) fs =
+      fs |> listm::map (force_on n sts)
+
+  := newton_second_mps fs (multi_particle_state_l sts) : d_multi_particle_state_l =
+      := deriv (n, st) =
+          newton_second_ps (forces_on n (multi_particle_state_l sts) fs) st
+      sts |> listm'::indexed |> listm::map deriv |> d_multi_particle_state_l
+
+  := update_mps_l (method : numerical_method multi_particle_state_l d_multi_particle_state_l) =
+      newton_second_mps >> method
+
+  :+ (+++) d_multi_particle_state_l = \ (d_multi_particle_state_l dsts1) (d_multi_particle_state_l dsts2) =>
+      d_multi_particle_state_l (listm'::zip_with_ (+++) dsts1 dsts2)
+
+  :+ shift multi_particle_state_l = \ dt dsts (multi_particle_state_l sts) =>
+      := (d_multi_particle_state_l dsts) =
+          ~>
+              ?= dsts ?|
+              | d_multi_particle_state_l _ => dsts
+      listm'::zip_with_ (shift dt) dsts sts |> multi_particle_state_l
+
+  := central_force f (particle_state st1) (particle_state st2) =
+      := r1 = st1::pos_vec
+      := r2 = st2::pos_vec
+      := r21 = r2 ^-^ r1
+      := r21mag = magnitude r21
+      f r21mag *^ r21 ^/ r21mag
+
+  := billiard_force k re =
+      := f r =
+          ? r >= re
+          ?> 0
+          |: -k * (r - re)
+      central_force f
+
+  :+ scale d_multi_particle_state_l = \ w (d_multi_particle_state_l dsts) =>
+      d_multi_particle_state_l (dsts |> listm::map (scale w))
+
+  := cromer_position dt ((particle_state st0), (particle_state st1)) =
+      particle_state { st1 ?| pos_vec = st0::pos_vec ^+^ st1::velocity ^* dt }
+
+  :== mps_method_l = numerical_method multi_particle_state_l d_multi_particle_state_l
+
+  := euler_cromer_mps_l dt : mps_method_l =
+      \ deriv mpst0 =>
+          := (multi_particle_state_l sts0) = mpst0
+          := (multi_particle_state_l sts1) = euler dt deriv mpst0
+          sts1 |> listm'::zip_ sts0 |> listm::map (cromer_position dt) |> multi_particle_state_l
+
+  := states_mps_l (method : numerical_method multi_particle_state_l d_multi_particle_state_l) =
+      newton_second_mps >> method >> seq::iterate_
+
+  := kinetic_energy (particle_state st) =
+      := m = st::mass
+      := v = magnitude st::velocity
+      0.5 * m * v ** 2
+
+  := system_ke_l (multi_particle_state_l sts) =
+      sts |> listm::map kinetic_energy |> listm'::sum
+
+  := linear_spring_pe k re (particle_state st1) (particle_state st2) =
+      := r1 = st1::pos_vec
+      := r2 = st2::pos_vec
+      := r21 = r2 ^-^ r1
+      := r21mag = magnitude r21
+      k * (r21mag - re) ** 2 / 2
+
+  := earth_surface_gravity_pe (particle_state st) =
+      := g = 9.80665
+      := m = st::mass
+      := z = st::pos_vec::z
+      m * g * z
+
+  := spring_pair_pe st0 st1 = linear_spring_pe 100 0.5 (default_particle_state ()) st0 + linear_spring_pe 100 0.5 st0 st1
+
+  := two_springs_pe (multi_particle_state_l sts) =
+      := st0 = sts |> listm'::item 0i32
+      := st1 = sts |> listm'::item 1i32
+      spring_pair_pe st0 st1 + earth_surface_gravity_pe st0 + earth_surface_gravity_pe st1
+
+  := two_springs_me mpst =
+      system_ke_l mpst + two_springs_pe mpst
+
+  := ball_radius () = 0.03
+
+  := billiard_forces_l k =
+      [ InternalForce (0, 1, billiard_force k (2 * ball_radius ())) ]
+
+  := billiard_update n_method k dt =
+      update_mps_l (n_method dt) (billiard_forces_l k)
+
+  := billiard_ball (at : vec) (velocity : vec) : particle_state =
+      := (particle_state st) = default_particle_state ()
+      particle_state { st ?| mass = 0.160; pos_vec = at; velocity = velocity }
+
+  := billiard_balls () : list particle_state =
+      [ billiard_ball (zero_vec ()) (0.2 *^ i_hat ()); billiard_ball (i_hat () ^+^ 0.02 *^ j_hat ()) (zero_vec ()) ]
+
+  := billiard_initial_l () = multi_particle_state_l (billiard_balls ())
+
+  := billiard_states_l ~n_method k dt =
+      states_mps_l (n_method dt) (billiard_forces_l k) (billiard_initial_l ())
+
+  := billiard_states_finite_l n_method k dt =
+      billiard_states_l n_method k dt
+      >> Some
+      |> seq::take_while_ (\ (multi_particle_state_l mpst) (_ : i32) =>
+          (mpst |> listm'::item 0i32)::time <= 10
+      )
+
+  := momentum (particle_state st) =
+      := m = st::mass
+      := v = st::velocity
+      m *^ v
+
+  := system_p_l (multi_particle_state_l sts) =
+      sts |> listm::map momentum |> sum_vec
+
+  := ke_chart ec_x ec_y rk4_x rk4_y =
+      "system kinetic energy versus time",
+      "time (s)",
+      "system kinetic energy (j)",
+      ;[
+          "euler-cromer", ec_x, ec_y
+          "runge-kutta 4", rk4_x, rk4_y
+      ]
+
+  := ke_point_l (mpst : list particle_state) = (mpst |> listm'::item 0i32)::time, system_ke_l (multi_particle_state_l mpst)
+
+  := ke_curve_l n_method =
+      billiard_states_finite_l n_method 30 0.03
+      |> listm::map \ (multi_particle_state_l mpst) => ke_point_l mpst
+      |> listm'::unzip
+      |> curve_arrays
+  """,
+  timeout: 300_000
+)
+```
+
+#### system_kinetic_energy_versus_time_1_2 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n:= ec_x, ec_y = ke_curve_l euler_cromer_mps_l\n:= rk4_x, rk4_y = ke_curve_l runge_kutta_4\nke_chart ec_x ec_y rk4_x rk4_y |> show_chart","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  := ec_x, ec_y = ke_curve_l euler_cromer_mps_l
+  := rk4_x, rk4_y = ke_curve_l runge_kutta_4
+  ke_chart ec_x ec_y rk4_x rk4_y |> show_chart
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= linear_spring k re (particle_state st1) (particle_state st2) =\n    := r1 = st1::pos_vec\n    := r2 = st2::pos_vec\n    := r21 = r2 ^-^ r1\n    := r21mag = magnitude r21\n    -k * (r21mag - re) *^ r21 ^/ r21mag\n\n:= fixed_linear_spring k re r1 =\n    := (particle_state default_particle_state') = default_particle_state ()\n    linear_spring k re (particle_state { default_particle_state' ?| pos_vec = r1 })\n\n:= string_springs () =\n    listm'::init_series 0 59 1 |> listm::map \\ n => InternalForce (n, n + 1, linear_spring 5384 0)\n\n:= forces_string_l () =\n    [\n        ExternalForce (0, fixed_linear_spring 5384 0 (zero_vec ()))\n        ExternalForce (63, fixed_linear_spring 5384 0 (0.65 *^ i_hat ()))\n    ]\n    ++ string_springs ()\n\n:= string_update_l dt =\n    update_mps_l (runge_kutta_4 dt) (forces_string_l ())\n\n:= string_ball (x : f64) (y : f64) : particle_state =\n    := (particle_state st) = default_particle_state ()\n    particle_state { st ?|\n        mass = 0.0008293 * 0.65 / 64\n        pos_vec = x *^ i_hat () ^+^ y *^ j_hat ()\n        velocity = zero_vec ()\n    }\n\n:= overtone_y (n : i32) (x : f64) : f64 = 0.005 * sin (conv n * pi * x / 0.65)\n\n:= string_initial_overtone_l n =\n    listm'::init_series 0.01 0.64 0.01\n    |> listm::map \\ x => string_ball x (overtone_y n x)\n    |> multi_particle_state_l\n\n:= pluck_y (x : f64) : f64 =\n    := n = ? x <= 0.51 ?> 0 |: 0.65\n    0.005 / (0.51 - n) * (x - n)\n\n:= string_initial_pluck_l () =\n    listm'::init_series 0.01 0.64 0.01\n    |> listm::map \\ x => string_ball x (pluck_y x)\n    |> multi_particle_state_l\n\n:= string_positions_l sts =\n    [ zero_vec () ] ++ (sts |> listm::map (\\ (particle_state st) => st::pos_vec)) ++ [ 0.65 *^ i_hat () ]\n\n:= string_frame_l initial_state (_ : f64) =\n    := (multi_particle_state_l sts) = seq::iterate' (string_update_l 0.000025) initial_state |> \\ f => f 0f64\n    string_positions_l sts |> listm::map (\\ r => r::x, r::y) |> listm'::unzip |> curve_arrays\n\n:= string_frames_l () =\n    := ~frames = listm'::init_series 0 9 1f64\n    := initial_state = string_initial_overtone_l 3i32\n    frames |> listm::map (string_frame_l initial_state) |> listm'::box |> listm'::to_array'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := linear_spring k re (particle_state st1) (particle_state st2) =
+      := r1 = st1::pos_vec
+      := r2 = st2::pos_vec
+      := r21 = r2 ^-^ r1
+      := r21mag = magnitude r21
+      -k * (r21mag - re) *^ r21 ^/ r21mag
+
+  := fixed_linear_spring k re r1 =
+      := (particle_state default_particle_state') = default_particle_state ()
+      linear_spring k re (particle_state { default_particle_state' ?| pos_vec = r1 })
+
+  := string_springs () =
+      listm'::init_series 0 59 1 |> listm::map \ n => InternalForce (n, n + 1, linear_spring 5384 0)
+
+  := forces_string_l () =
+      [
+          ExternalForce (0, fixed_linear_spring 5384 0 (zero_vec ()))
+          ExternalForce (63, fixed_linear_spring 5384 0 (0.65 *^ i_hat ()))
+      ]
+      ++ string_springs ()
+
+  := string_update_l dt =
+      update_mps_l (runge_kutta_4 dt) (forces_string_l ())
+
+  := string_ball (x : f64) (y : f64) : particle_state =
+      := (particle_state st) = default_particle_state ()
+      particle_state { st ?|
+          mass = 0.0008293 * 0.65 / 64
+          pos_vec = x *^ i_hat () ^+^ y *^ j_hat ()
+          velocity = zero_vec ()
+      }
+
+  := overtone_y (n : i32) (x : f64) : f64 = 0.005 * sin (conv n * pi * x / 0.65)
+
+  := string_initial_overtone_l n =
+      listm'::init_series 0.01 0.64 0.01
+      |> listm::map \ x => string_ball x (overtone_y n x)
+      |> multi_particle_state_l
+
+  := pluck_y (x : f64) : f64 =
+      := n = ? x <= 0.51 ?> 0 |: 0.65
+      0.005 / (0.51 - n) * (x - n)
+
+  := string_initial_pluck_l () =
+      listm'::init_series 0.01 0.64 0.01
+      |> listm::map \ x => string_ball x (pluck_y x)
+      |> multi_particle_state_l
+
+  := string_positions_l sts =
+      [ zero_vec () ] ++ (sts |> listm::map (\ (particle_state st) => st::pos_vec)) ++ [ 0.65 *^ i_hat () ]
+
+  := string_frame_l initial_state (_ : f64) =
+      := (multi_particle_state_l sts) = seq::iterate' (string_update_l 0.000025) initial_state |> \ f => f 0f64
+      string_positions_l sts |> listm::map (\ r => r::x, r::y) |> listm'::unzip |> curve_arrays
+
+  := string_frames_l () =
+      := ~frames = listm'::init_series 0 9 1f64
+      := initial_state = string_initial_overtone_l 3i32
+      frames |> listm::map (string_frame_l initial_state) |> listm'::box |> listm'::to_array'
+  """,
+  timeout: 300_000
+)
+```
+
+#### wave_1 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n:= n = 0i32\n:= x, y = array (string_frames_l ()) |> am'::index n\n(\"wave\", \"position (m)\", \"displacement (m)\", ;[ sm'::format n, x, y ]) |> show_chart","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  := n = 0i32
+  := x, y = array (string_frames_l ()) |> am'::index n
+  ("wave", "position (m)", "displacement (m)", ;[ sm'::format n, x, y ]) |> show_chart
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! multi_particle_state_s = stream::stream particle_state\n\n:! d_multi_particle_state_s = stream::stream d_particle_state\n\n:= internal_force_on_s n s n0 n1 f_two_body =\n    ? n = n0\n    ?> s |> stream::try_item n1 |> optionm::map f_two_body\n    |? n = n1\n    ?> s |> stream::try_item n0 |> optionm::map f_two_body\n    |: None\n    |> optionm'::default_value \\ _ => zero_vec ()\n\n:= force_on_s n s force =\n    ?= force ?|\n    | ExternalForce (n0, f_one_body) =>\n        ? n = n0\n        ?> f_one_body\n        |: \\ _ => zero_vec ()\n    | InternalForce (n0, n1, f_two_body) => internal_force_on_s n s n0 n1 f_two_body\n\n:= forces_on_s n (multi_particle_state_s sts) fs =\n    fs\n    |> listm::map (force_on_s n sts)\n\n:= newton_second_mps_s fs ((multi_particle_state_s sts) &= mpst) =\n    := deriv (n, st) =\n        newton_second_ps (forces_on_s n mpst fs) st\n    sts |> stream::indexed |> stream::map deriv |> d_multi_particle_state_s\n\n:= update_mps_s (method : numerical_method multi_particle_state_s d_multi_particle_state_s) =\n    newton_second_mps_s >> method\n\n:= stream_shifted dt (dsts : stream::stream d_particle_state) (sts : stream::stream particle_state) =\n    (dsts, sts)\n    ||> stream::zip_with (shift dt)\n    |> stream::memoize\n    |> \\ x => x ()\n    |> multi_particle_state_s\n\n:+ shift multi_particle_state_s = \\ dt dsts (multi_particle_state_s sts) =>\n    := (d_multi_particle_state_s dsts) =\n        ~>\n            ?= dsts ?|\n            | d_multi_particle_state_s _ => dsts\n    stream_shifted dt dsts sts\n\n:+ (+++) d_multi_particle_state_s =\n    \\ (d_multi_particle_state_s dsts1) (d_multi_particle_state_s dsts2) =>\n        (dsts1, dsts2)\n        ||> stream::zip_with (+++)\n        |> d_multi_particle_state_s\n\n:+ scale d_multi_particle_state_s = \\ w (d_multi_particle_state_s dsts) =>\n    dsts\n    |> stream::map (scale w)\n    |> d_multi_particle_state_s\n\n:== mps_method_s = numerical_method multi_particle_state_s d_multi_particle_state_s\n\n:= euler_cromer_mps_s dt : mps_method_s =\n    \\ deriv ((multi_particle_state_s sts0) &= mpst0) =>\n        := (multi_particle_state_s sts1) = euler dt deriv mpst0\n        (sts0, sts1) ||> stream::zip |> stream::map (cromer_position dt) |> multi_particle_state_s\n\n:= memoized_into next (multi_particle_state_s y) =\n    y |> stream::memoize |> (\\ thunk => thunk ()) |> multi_particle_state_s |> next\n\n:= states_mps_s (method : numerical_method multi_particle_state_s d_multi_particle_state_s) =\n    newton_second_mps_s >> method >> memoized_into >> seq::iterate'\n\n:= system_ke_s (multi_particle_state_s sts) =\n    sts\n    |> stream::map kinetic_energy\n    |> stream::sum\n\n:= billiard_forces_s k =\n    [ InternalForce (0i32, 1, billiard_force k (2 * ball_radius ())) ]\n\n:= billiard_initial_s () = billiard_balls () |> stream::from_list |> multi_particle_state_s\n\n:= billiard_states_s ~n_method k dt =\n    states_mps_s (n_method dt) (billiard_forces_s k) (billiard_initial_s ())\n\n:= early_billiards_s (multi_particle_state_s mpst) (_ : i32) : bool =\n    ?= mpst |> stream::try_item 0i32 ?|\n    | Some st => st::time <= 10\n    | None => !-\n\n:= billiard_states_finite_s n_method k dt =\n    billiard_states_s n_method k dt >> Some |> seq::take_while_ early_billiards_s\n\n:= system_p_s (multi_particle_state_s sts) =\n    sts\n    |> stream::map momentum\n    |> stream::fold (^+^) (zero_vec ())\n\n:= ke_point_s (mpst : stream::stream particle_state) =\n    mpst |> stream::try_item 0i32 |> optionm::map \\ st => st::time, system_ke_s (multi_particle_state_s mpst)\n\n:= ke_curve_s n_method =\n    billiard_states_finite_s n_method 30 0.03\n    |> listm::map \\ (multi_particle_state_s mpst) => ke_point_s mpst\n    |> listm'::choose id\n    |> listm'::unzip\n    |> curve_arrays","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :! multi_particle_state_s = stream::stream particle_state
+
+  :! d_multi_particle_state_s = stream::stream d_particle_state
+
+  := internal_force_on_s n s n0 n1 f_two_body =
+      ? n = n0
+      ?> s |> stream::try_item n1 |> optionm::map f_two_body
+      |? n = n1
+      ?> s |> stream::try_item n0 |> optionm::map f_two_body
+      |: None
+      |> optionm'::default_value \ _ => zero_vec ()
+
+  := force_on_s n s force =
+      ?= force ?|
+      | ExternalForce (n0, f_one_body) =>
+          ? n = n0
+          ?> f_one_body
+          |: \ _ => zero_vec ()
+      | InternalForce (n0, n1, f_two_body) => internal_force_on_s n s n0 n1 f_two_body
+
+  := forces_on_s n (multi_particle_state_s sts) fs =
+      fs
+      |> listm::map (force_on_s n sts)
+
+  := newton_second_mps_s fs ((multi_particle_state_s sts) &= mpst) =
+      := deriv (n, st) =
+          newton_second_ps (forces_on_s n mpst fs) st
+      sts |> stream::indexed |> stream::map deriv |> d_multi_particle_state_s
+
+  := update_mps_s (method : numerical_method multi_particle_state_s d_multi_particle_state_s) =
+      newton_second_mps_s >> method
+
+  := stream_shifted dt (dsts : stream::stream d_particle_state) (sts : stream::stream particle_state) =
+      (dsts, sts)
+      ||> stream::zip_with (shift dt)
+      |> stream::memoize
+      |> \ x => x ()
+      |> multi_particle_state_s
+
+  :+ shift multi_particle_state_s = \ dt dsts (multi_particle_state_s sts) =>
+      := (d_multi_particle_state_s dsts) =
+          ~>
+              ?= dsts ?|
+              | d_multi_particle_state_s _ => dsts
+      stream_shifted dt dsts sts
+
+  :+ (+++) d_multi_particle_state_s =
+      \ (d_multi_particle_state_s dsts1) (d_multi_particle_state_s dsts2) =>
+          (dsts1, dsts2)
+          ||> stream::zip_with (+++)
+          |> d_multi_particle_state_s
+
+  :+ scale d_multi_particle_state_s = \ w (d_multi_particle_state_s dsts) =>
+      dsts
+      |> stream::map (scale w)
+      |> d_multi_particle_state_s
+
+  :== mps_method_s = numerical_method multi_particle_state_s d_multi_particle_state_s
+
+  := euler_cromer_mps_s dt : mps_method_s =
+      \ deriv ((multi_particle_state_s sts0) &= mpst0) =>
+          := (multi_particle_state_s sts1) = euler dt deriv mpst0
+          (sts0, sts1) ||> stream::zip |> stream::map (cromer_position dt) |> multi_particle_state_s
+
+  := memoized_into next (multi_particle_state_s y) =
+      y |> stream::memoize |> (\ thunk => thunk ()) |> multi_particle_state_s |> next
+
+  := states_mps_s (method : numerical_method multi_particle_state_s d_multi_particle_state_s) =
+      newton_second_mps_s >> method >> memoized_into >> seq::iterate'
+
+  := system_ke_s (multi_particle_state_s sts) =
+      sts
+      |> stream::map kinetic_energy
+      |> stream::sum
+
+  := billiard_forces_s k =
+      [ InternalForce (0i32, 1, billiard_force k (2 * ball_radius ())) ]
+
+  := billiard_initial_s () = billiard_balls () |> stream::from_list |> multi_particle_state_s
+
+  := billiard_states_s ~n_method k dt =
+      states_mps_s (n_method dt) (billiard_forces_s k) (billiard_initial_s ())
+
+  := early_billiards_s (multi_particle_state_s mpst) (_ : i32) : bool =
+      ?= mpst |> stream::try_item 0i32 ?|
+      | Some st => st::time <= 10
+      | None => !-
+
+  := billiard_states_finite_s n_method k dt =
+      billiard_states_s n_method k dt >> Some |> seq::take_while_ early_billiards_s
+
+  := system_p_s (multi_particle_state_s sts) =
+      sts
+      |> stream::map momentum
+      |> stream::fold (^+^) (zero_vec ())
+
+  := ke_point_s (mpst : stream::stream particle_state) =
+      mpst |> stream::try_item 0i32 |> optionm::map \ st => st::time, system_ke_s (multi_particle_state_s mpst)
+
+  := ke_curve_s n_method =
+      billiard_states_finite_s n_method 30 0.03
+      |> listm::map \ (multi_particle_state_s mpst) => ke_point_s mpst
+      |> listm'::choose id
+      |> listm'::unzip
+      |> curve_arrays
+  """,
+  timeout: 300_000
+)
+```
+
+#### system_kinetic_energy_versus_time_2_2 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n:= ec_x, ec_y = ke_curve_s euler_cromer_mps_s\n:= rk4_x, rk4_y = ke_curve_s runge_kutta_4\nke_chart ec_x ec_y rk4_x rk4_y |> show_chart","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  := ec_x, ec_y = ke_curve_s euler_cromer_mps_s
+  := rk4_x, rk4_y = ke_curve_s runge_kutta_4
+  ke_chart ec_x ec_y rk4_x rk4_y |> show_chart
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= forces_string_s () =\n    [\n        ExternalForce (0i32, fixed_linear_spring 5384 0 (zero_vec ()))\n        ExternalForce (63, fixed_linear_spring 5384 0 (0.65 *^ i_hat ()))\n    ]\n    ++ string_springs ()\n\n:= string_update_s dt =\n    update_mps_s (~~ runge_kutta_4 dt) (~~ forces_string_s ())\n\n:= string_initial_overtone_s n =\n    listm'::init_series 0.01 0.64 0.01\n    |> listm::map \\ x => string_ball x (overtone_y n x)\n    |> stream::from_list\n    |> multi_particle_state_s\n\n:= string_points_s sts =\n    [ zero_vec () ]\n    ++ (sts |> stream::map (\\ (particle_state st) => st::pos_vec) |> stream::to_list)\n    ++ [ 0.65 *^ i_hat () ]\n    |> listm::map \\ r => r::x, r::y\n\n:= stream_arrays (xs, ys) =\n    (xs |> stream::to_list |> listm'::box |> listm'::to_array'), (ys |> stream::to_list |> listm'::box |> listm'::to_array')\n\n:= string_frame_s initial_state n =\n    := (multi_particle_state_s sts) = stream::iterate (string_update_s 0.000025) initial_state |> stream::item n\n    string_points_s sts |> stream::from_list |> stream::unzip |> stream_arrays\n\n:= wave_plot (n : i32) x y = \"wave\", \"position (m)\", \"displacement (m)\", ;[ sm'::format n, x, y ]\n\n:= string_frames_s () =\n    := ~frames = listm'::init_series 0 65 1f64 |> stream::from_list\n    := ~initial_state = string_initial_overtone_s 3i32\n    frames |> stream::map (string_frame_s initial_state)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := forces_string_s () =
+      [
+          ExternalForce (0i32, fixed_linear_spring 5384 0 (zero_vec ()))
+          ExternalForce (63, fixed_linear_spring 5384 0 (0.65 *^ i_hat ()))
+      ]
+      ++ string_springs ()
+
+  := string_update_s dt =
+      update_mps_s (~~ runge_kutta_4 dt) (~~ forces_string_s ())
+
+  := string_initial_overtone_s n =
+      listm'::init_series 0.01 0.64 0.01
+      |> listm::map \ x => string_ball x (overtone_y n x)
+      |> stream::from_list
+      |> multi_particle_state_s
+
+  := string_points_s sts =
+      [ zero_vec () ]
+      ++ (sts |> stream::map (\ (particle_state st) => st::pos_vec) |> stream::to_list)
+      ++ [ 0.65 *^ i_hat () ]
+      |> listm::map \ r => r::x, r::y
+
+  := stream_arrays (xs, ys) =
+      (xs |> stream::to_list |> listm'::box |> listm'::to_array'), (ys |> stream::to_list |> listm'::box |> listm'::to_array')
+
+  := string_frame_s initial_state n =
+      := (multi_particle_state_s sts) = stream::iterate (string_update_s 0.000025) initial_state |> stream::item n
+      string_points_s sts |> stream::from_list |> stream::unzip |> stream_arrays
+
+  := wave_plot (n : i32) x y = "wave", "position (m)", "displacement (m)", ;[ sm'::format n, x, y ]
+
+  := string_frames_s () =
+      := ~frames = listm'::init_series 0 65 1f64 |> stream::from_list
+      := ~initial_state = string_initial_overtone_s 3i32
+      frames |> stream::map (string_frame_s initial_state)
+  """,
+  timeout: 300_000
+)
+```
+
+#### wave_2 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nstring_frames_s ()\n|> stream::indexed\n|> stream::map (\\ ((n : i32), (x, y)) => wave_plot n x y)\n|> stream::to_list\n|> listm'::box\n|> listm'::to_array'\n|> show_frames","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  string_frames_s ()
+  |> stream::indexed
+  |> stream::map (\ ((n : i32), (x, y)) => wave_plot n x y)
+  |> stream::to_list
+  |> listm'::box
+  |> listm'::to_array'
+  |> show_frames
+  """,
+  timeout: 300_000
+)
+```

@@ -1,0 +1,5 @@
+:= main () : i32 =
+    := ~word = "hi"
+    := box = !!!!LayoutToHeap({ text = word })
+    := opened = !!!!LayoutIndex(box)
+    ? !!!!EQ(opened::text, "hi") ?> 0i32 |: 1i32

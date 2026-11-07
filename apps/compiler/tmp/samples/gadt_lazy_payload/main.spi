@@ -1,0 +1,9 @@
+:! case_record t = `( !!!!UnionToRecord(`t, \* r. => `r) )
+:| ^ pickler t =
+    | Unit :: pickler ()
+    | Alt :: \* t. case_record t -> pickler t
+:= main () : i32 =
+    := p : pickler () = Unit
+    ?= p ?|
+    | Unit => 7i32
+    | _ => 0i32

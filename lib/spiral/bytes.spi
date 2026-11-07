@@ -1,0 +1,102 @@
+:# bytes static =
+    :< testing
+
+:< sm'_operators
+
+/// ## bytes
+:= filled (count : i32) (value : i32 -> u8) : array u8 =
+    := out : array u8 = create count
+    :~ ^ go (i : i32) : () =
+        ? i < count ?>
+            set out i (value i)
+            go (i + 1)
+    go 0
+    out
+
+:= counting (count : i32) : array u8 =
+    filled count conv
+
+:= repeated (count : i32) (value : u8) : array u8 =
+    filled count (\ _ => value)
+
+:= le_u64 (x : u64) : array u8 =
+    run_target \|
+        | Rust => \ () => $'Rc::new(RefCell::new((!x).to_le_bytes().to_vec()))' : array u8
+        | _ => \ () => filled 8 (\ i => conv ((x >>> (8 * i)) &&& 255u64))
+
+:= le_word (bytes : array u8) (at : i32) : u64 =
+    :~ ^ go (j : i32) (word : u64) : u64 =
+        ? j >= 8 ?> word |: go (j + 1) (word ||| ((conv (index bytes (at + j)) : u64) <<< (8 * j)))
+    go 0 0u64
+
+:= utf8 (text : string) : array u8 =
+    run_target \|
+        | Lua => \ () => filled (sm'.length text) (\ i => conv (sm'.char_code (sm'.index i text)))
+        | Gleam => \ () => filled (sm'.length text) (\ i => conv (sm'.char_code (sm'.index i text)))
+        | _ => \ () => sm'.utf8_get_bytes text
+
+:~ ^ copy_from (out : array u8) (at : i32) (part : array u8) (i : i32) : () =
+    ? i < length part ?>
+        set out (at + i) (index part i)
+        copy_from out at part (i + 1)
+
+:= copy_into (out : array u8) (at : i32) (part : array u8) : () =
+    run_target \|
+        | Rust => \ () =>
+            $'{ let part = (!part).borrow(); (!out).borrow_mut()[(!at) as usize..(!at) as usize + part.len()].copy_from_slice(&part); }' : ()
+        | _ => \ () => copy_from out at part 0
+
+:= concat (parts : list (array u8)) : array u8 =
+    := total = listm.fold (\ sum (part : array u8) => sum + length part) 0i32 parts
+    := out : array u8 = create total
+    := place (at : i32) (part : array u8) : i32 =
+        copy_into out at part
+        at + length part
+    listm.fold place 0i32 parts |> ignore
+    out
+
+:= hex_digit (n : u8) : string =
+    := at : i32 = conv n
+    sm'.slice at at "0123456789abcdef"
+
+:= hex (bytes : array u8) : string =
+    run_target \|
+        | Rust => \ () =>
+            $'Rc::<str>::from((!bytes).borrow().iter().flat_map(|b| [b >> 4, b & 15]).map(|n| char::from(b"0123456789abcdef"[n as usize])).collect::<String>())' : string
+        | _ => \ () =>
+            :~ ^ go (i : i32) (acc : string) : string =
+                ? i >= length bytes
+                ?> acc
+                |:
+                    := b = index bytes i
+                    go (i + 1) (acc ++# hex_digit (b >>> 4) ++# hex_digit (b &&& 15u8))
+            go 0 ""
+
+///> c
+///> rust
+///> lua
+///> fsharp
+///> typescript
+///> python
+///> zig
+///> gleam
+///> pascal
+:# little_endian_words_round_trip =
+    := ~x = 81985529216486895u64
+    (le_u64 x |> hex, le_word (le_u64 x) 0, le_word (counting 10) 1)
+    |> _assert_eq ("efcdab8967452301", 81985529216486895u64, 578437695752307201u64)
+
+///> c
+///> rust
+///> lua
+///> fsharp
+///> typescript
+///> python
+///> zig
+///> gleam
+///> pascal
+:# concat_keeps_every_part_in_order =
+    := ~two = 2i32
+    concat [ counting two; repeated 0i32 9u8; utf8 "Az"; repeated two 255u8 ]
+    |> hex
+    |> _assert_eq "0001417affff"

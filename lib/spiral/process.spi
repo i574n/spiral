@@ -1,0 +1,1036 @@
+:< rust_operators
+:< sm'_operators
+:< unsupported
+
+:# process static =
+    :< testing
+    :< file_system_operators
+
+/// ## execution
+:~ split_args (args : string) : result (array_base string) _ =
+    :< parsing
+    := esc = [ '\\'; '`' ]
+    := quotes = [ '"' ]
+    := special = esc ++ quotes
+    := p_esc_pair (p : parser _) : parser string = \ t, i, s =>
+        ?= p (t, i, s) ?|
+        | Ok (_, i', s') => Ok (t |> slice i i', i', s')
+        | Error e => Error e
+    := p_esc_char c = p_char c >>. any_char () |> p_esc_pair
+    := p_word = special |> none_of |>> \ c => \ () => c () |> sm'::obj_to_string
+    := p_plain = special ++ [ ' ' ] |> many1_none_of
+    := p_esc = esc |> listm::map p_esc_char |> choice
+    := p_chunk = special |> many1_none_of
+    := p_quoted = (p_chunk <|> p_esc) |> many_strings
+    := p_quoted_all = p_quoted |> between (p_char '"') (p_char '"')
+    := p_esc_root = p_esc >>% "" >>. p_word |> many |>> \ s => \ () => s () |> sm'::concat_list ""
+    := p_esc_quote_delim =
+        esc
+        |> listm::map \ c => p_char c >>. p_char '"' >>% '"'
+        |> choice
+    := p_esc_char_noquote c = p_char c >>. none_of [ '"' ] |> p_esc_pair
+    := p_esc_noquote = esc |> listm::map p_esc_char_noquote |> choice
+    := p_quoted_esc = (p_chunk <|> p_esc_noquote) |> many_strings
+    := p_quoted_all_esc = p_quoted_esc |> between p_esc_quote_delim p_esc_quote_delim
+    := ensure_progress p : parser _ = \ input, i, s =>
+        ?= p (input, i, s) ?|
+        | Ok (r, i', s') ?& i' = i =>
+            fail (\ _ => "process.split_args / segment zero-length success") i s
+        | other => other
+    := p_segment = ensure_progress (p_quoted_all_esc <|> p_quoted_all <|> p_plain <|> p_esc_root)
+    := p_content = p_segment |> many1_strings
+    := p_args = spaces1 () |> sep_by p_content
+    args
+    |> run_parser p_args
+    |> resultm::map (fst >> \ (args : list string) =>
+        ? is_rust () ?>
+            := n = (0i32, args) ||> listm::fold \ n _ => n + 1
+            := capacity : convert::unativeint = convert::convert n
+            := acc : array_base string = $'Rc::new(RefCell::new(Vec::with_capacity(!capacity)))'
+            := _ : i32 = (0i32, args) ||> listm::fold \ n (x : string) =>
+                $'!acc.borrow_mut().push(!x)' : ()
+                n + 1
+            acc
+        |: args |> listm'::box |> listm'::to_array'
+    )
+    |> resultm::map_error eval
+
+:= split_args_plain_cases () =
+    [
+        "a b c",
+        ;[ "a"; "b"; "c" ]
+
+        "e f \"g h\" i",
+        ;[ "e"; "f"; "g h"; "i" ]
+
+        "\"j k\" \"l\" \"m\"",
+        ;[ "j k"; "l"; "m" ]
+    ]
+
+:= split_args_escaped_cases () =
+    [
+        "s -t \"u \`\"v\`\" w\"",
+        ;[ "s"; "-t"; "u \`\"v\`\" w" ]
+
+        "n -o \"p \\\"q\\\" r\"",
+        ;[ "n"; "-o"; "p \\\"q\\\" r" ]
+
+        "r -s \"t \\\"u\\\"\"",
+        ;[ "r"; "-s"; "t \\\"u\\\"" ]
+    ]
+
+:= split_args_regex_case () =
+    [
+        $'"x -y \\\"$z -a \'(b=\\\\\\"c-id=)[a-fA-F0-9]{8}\', { \`$_[1] + \`$d++ }\\\""',
+        ;[ "x"; "-y"; "$z -a '(b=\\\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }" ]
+    ]
+
+:= split_args_backtick_regex_case () =
+    [
+        "e -f \"$g -h '(i=`\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }\"",
+        ;[ "e"; "-f"; "$g -h '(i=`\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }" ]
+    ]
+
+:= split_args_quote_cases () =
+    [
+        $'"--l \\\\\\"\'\'\' m \'\'\'\\\\\\" "',
+        ;[ "--l"; "''' m '''" ]
+
+        $'"l \\\"m n:\\\\o.p\\\""',
+        ;[ "l"; "m n:\\o.p" ]
+    ]
+
+:= split_args_spaced_quote_case () =
+    [
+        $'"--r s \\\\\\"\' t \'\\\\\\" u v w \\\\\\"x y\\\\\\""',
+        ;[ "--r"; "s"; "' t '"; "u"; "v"; "w"; "x y" ]
+    ]
+
+:= split_args_path_input () =
+    $'"n --o --p q --r \\\"s:/t u/v.w\\\" --x \\\"y:/z.a\\\" --b c.d \\\"\\\\e{f-g}\\\" h.i \\\"j (k)\\\""'
+
+:= split_args_path_expected () =
+    ;[ "n"; "--o"; "--p"; "q"; "--r"; "s:/t u/v.w"; "--x"; "y:/z.a"; "--b"; "c.d"; "\\e{f-g}"; "h.i"; "j (k)" ]
+
+:= split_args_path_case () = [ split_args_path_input (), split_args_path_expected () ]
+
+:= split_args_cases () =
+    split_args_plain_cases () ++ split_args_escaped_cases () ++ split_args_regex_case ()
+    ++ split_args_backtick_regex_case () ++ split_args_quote_cases () ++ split_args_spaced_quote_case ()
+    ++ split_args_path_case ()
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+:# split_args =
+    Debug |> set_trace_level
+    split_args_cases () |> _assert_fn split_args
+
+:~ split_command (command : string) : result (string * option string) _ =
+    :< parsing
+    := quotes = [ '"'; '\'' ]
+    := p_quoted_char = quotes |> listm::map p_char |> choice
+    := normalize = \ s => \ () => s () |> sm'::replace "\\" "/"
+    := p_quoted = quotes |> none_of |> many_chars |> between p_quoted_char p_quoted_char |>> normalize
+    := p_unquoted = quotes ++ [ ' ' ] |> none_of |> many1_chars |>> normalize
+    := p_path = p_quoted <|> p_unquoted <|> (eof () >>% "")
+    := p_args = spaces1 () >>. rest_of_line ()
+    := p_command = p_path .>>. (p_args |> opt)
+    command
+    |> run_parser p_command
+    |> resultm::map (fst >> \ path, args => path (), args () |> optionm::map eval)
+    |> resultm::map_error eval
+
+:= split_command_unquoted_cases () =
+    [
+        "",
+        ("", None)
+
+        "/a/b/c",
+        ("/a/b/c", None)
+
+        "d e.f",
+        ("d", "e.f" |> Some)
+
+        "..\\..\\g.h i.j k.l",
+        ("../../g.h", "i.j k.l" |> Some)
+    ]
+
+:= split_command_quoted_cases () =
+    [
+        "m:\\n\\o.p \"q.r s.t\"",
+        ("m:/n/o.p", "\"q.r s.t\"" |> Some)
+
+        "\"..\\..\\u v\\w.x\" \"y z.a\" b.c",
+        ("../../u v/w.x", "\"y z.a\" b.c" |> Some)
+    ]
+
+:= split_command_escaped_cases () =
+    [
+        "\"..\\..\\d e.f\" -g \\\\\"h i\\\\\"",
+        ("../../d e.f", "-g \\\\\"h i\\\\\"" |> Some)
+
+        "..\\..\\j k.l -m \\\\\"n o\\\\\"",
+        ("../../j", "k.l -m \\\\\"n o\\\\\"" |> Some)
+    ]
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+:# split_command =
+    Debug |> set_trace_level
+    split_command_unquoted_cases () ++ split_command_quoted_cases () ++ split_command_escaped_cases ()
+    |> _assert_fn split_command
+
+:== execution_line =
+    {
+        process_id : int
+        line : string
+        error : bool
+    }
+
+/// ## rust
+:! process_child =
+    `(
+        rust::rust_type
+            `($'std_process_Child')
+            `($'std::process::Child')
+            "type std_process_Child = class end"
+    )
+
+:! process_child_stdin =
+    `(
+        rust::rust_type
+            `($'std_process_ChildStdin')
+            `($'std::process::ChildStdin')
+            "type std_process_ChildStdin = class end"
+    )
+
+:= process_child_stdin
+    (child : rust::ref (rust::mut' process_child))
+    : rust::ref (rust::mut' (optionm'::option' process_child_stdin))
+    =
+    !\\(child, $'"&mut $0.stdin"')
+
+/// ## execution
+:== execution_options =
+    {
+        command : string
+        cancellation_token : optionm'::option' threading::cancellation_token
+        environment_variables : array_base (string * string)
+        on_line : optionm'::option' (execution_line -> async::async ())
+        stdin : optionm'::option' (threading::arc (threading::mutex process_child_stdin) -> ())
+        trace : bool
+        working_directory : optionm'::option' string
+        stderr : bool
+    }
+
+:= execution_options (fn : execution_options -> execution_options) : execution_options =
+    {
+        command = ""
+        cancellation_token = None |> optionm'::box
+        environment_variables = am'::base ;[]
+        on_line = None |> optionm'::box
+        stdin = None |> optionm'::box
+        trace = !+
+        working_directory = None |> optionm'::box
+        stderr = !+
+    }
+    |> fn
+
+/// ## rust
+:! process_child_stderr =
+    `(
+        rust::rust_type
+            `($'std_process_ChildStderr')
+            `($'std::process::ChildStderr')
+            "type std_process_ChildStderr = class end"
+    )
+
+:= process_child_stderr
+    (child : rust::ref (rust::mut' process_child))
+    : rust::ref (rust::mut' (optionm'::option' process_child_stderr))
+    =
+    !\\(child, $'"&mut $0.stderr"')
+
+:! process_child_stdout =
+    `(
+        rust::rust_type
+            `($'std_process_ChildStdout')
+            `($'std::process::ChildStdout')
+            "type std_process_ChildStdout = class end"
+    )
+
+:= process_child_stdout
+    (child : rust::ref (rust::mut' process_child))
+    : rust::ref (rust::mut' (optionm'::option' process_child_stdout))
+    =
+    !\\(child, $'"&mut $0.stdout"')
+
+:! process_command =
+    `(
+        rust::rust_type
+            `($'std_process_Command')
+            `($'std::process::Command')
+            "type std_process_Command = class end"
+    )
+
+:! process_stdio =
+    `(
+        rust::rust_type
+            `($'std_process_Stdio')
+            `($'std::process::Stdio')
+            "type std_process_Stdio = class end"
+    )
+
+:! process_output =
+    `(
+        rust::rust_type
+            `($'std_process_Output')
+            `($'std::process::Output')
+            "type std_process_Output = class end"
+    )
+
+:! process_exit_status =
+    `(
+        rust::rust_type
+            `($'std_process_ExitStatus')
+            `($'std::process::ExitStatus')
+            "type std_process_ExitStatus = class end"
+    )
+
+:= process_output_status (output : process_output) : process_exit_status =
+    !\\(output, $'"$0.status"')
+
+:= process_output_stdout (output : process_output) : am'::vec u8 =
+    !\\(output, $'"$0.stdout"')
+
+:= process_output_stderr (output : process_output) : am'::vec u8 =
+    !\\(output, $'"$0.stderr"')
+
+:= process_exit_status_code (status : process_exit_status) : optionm'::option' i32 =
+    !\\(status, $'"$0.code()"')
+
+:= stdin_write_all (stdin : threading::mutex_guard process_child_stdin) (text : string) : () =
+    backend_switch {
+        Fsharp = \ () =>
+            := stream = text |> sm'::as_bytes
+            := stdin = ~~ stdin
+            (!\($'"true; let mut !stdin = !stdin"') : bool) |> ignore
+            (!\\(stdin, $'"true; std::io::Write::write_all(&mut *$0, !stream).unwrap()"') : bool) |> ignore
+        Rust = \ () =>
+            := stream = text |> sm'::as_bytes
+            (!\\((stdin, stream), $'"true; std::io::Write::write_all(&mut *$0, $1).unwrap()"') : bool) |> ignore
+    }
+
+:= stdin_flush (stdin : threading::mutex_guard process_child_stdin) : () =
+    backend_switch {
+        Fsharp = \ () =>
+            := stdin = ~~ stdin
+            (!\($'"true; let mut !stdin = !stdin"') : bool) |> ignore
+            (!\\(stdin, $'"true; std::io::Write::flush(&mut *$0).unwrap()"') : bool) |> ignore
+        Rust = \ () =>
+            (!\\(stdin, $'"true; std::io::Write::flush(&mut *$0).unwrap()"') : bool) |> ignore
+    }
+
+:= new_process_command (file_name : string) : process_command =
+    !\\(file_name, $'"std::process::Command::new(&*$0)"')
+
+:= process_stdio_piped () : process_stdio =
+    !\($'"std::process::Stdio::piped()"')
+
+:= process_command_args (args : am'::vec sm'::std_string) (c : process_command) : process_command =
+    (!\\(args, $'"true; let mut !c = !c; std::process::Command::args(&mut !c, &*$0)"') : bool) |> ignore
+    c |> rust::emit
+
+:= process_command_stdout (stdio : process_stdio) (c : process_command) : process_command =
+    (!\($'"true; let mut !c = !c; std::process::Command::stdout(&mut !c, std::process::Stdio::piped())"') : bool)
+    |> ignore
+    c |> rust::emit
+
+:= process_command_stderr (stdio : process_stdio) (c : process_command) : process_command =
+    (!\($'"true; let mut !c = !c; std::process::Command::stderr(&mut !c, std::process::Stdio::piped())"') : bool)
+    |> ignore
+    c |> rust::emit
+
+:= process_command_stdin (stdio : process_stdio) (c : process_command) : process_command =
+    (!\($'"true; let mut !c = !c; std::process::Command::stdin(&mut !c, std::process::Stdio::piped())"') : bool)
+    |> ignore
+    c |> rust::emit
+
+:= process_command_current_dir (dir : string) (c : process_command) : process_command =
+    (!\\(dir, $'"true; let mut !c = !c; std::process::Command::current_dir(&mut !c, &*$0)"') : bool) |> ignore
+    !\($'$"!c"')
+
+:= process_command_env (key : string) (value : string) (c : process_command) : process_command =
+    (!\\((key, value), $'"true; let mut !c = !c; std::process::Command::env(&mut !c, &*$0, &*$1)"') : bool) |> ignore
+    c |> rust::emit
+
+:= process_command_spawn
+    (c : process_command)
+    : resultm::result' process_child stream::io_error
+    =
+    (!\($'"true; let mut !c = !c"') : bool) |> ignore
+    !\($'"std::process::Command::spawn(&mut !c)"')
+
+:= child_wait_with_output
+    (child : process_child)
+    : resultm::result' process_output stream::io_error
+    =
+    !\\(child, $'"$0.wait_with_output()"')
+
+:= stdio_line
+    (stdio : result () ())
+    (trace' : bool)
+    (channel_sender : threading::arc (threading::mutex (threading::channel_sender sm'::std_string)))
+    (line : resultm::result' sm'::std_string stream::io_error)
+    : resultm::result' () sm'::std_string
+    =
+    := highlight text =
+        $'$"\\u001b[4;7m{!text}\\u001b[0m"'
+    := line =
+        ?=
+            line
+            |> resultm::map_error'' sm'::format'
+            |> resultm::unbox'
+        ?|
+        | Ok line =>
+            := line =
+                line
+                |> sm'::from_std_string
+                |> sm'::encoding_encode' (sm'::encoding_utf8' ())
+                |> rust::cow_as_ref
+                |> sm'::str_from_utf8
+                |> resultm::unwrap'
+                |> sm'::ref_to_std_string
+            := line_log = line |> sm'::from_std_string
+            := text =
+                ?= stdio ?|
+                | Ok () => $'$"> {!line_log}"'
+                | Error () => $'$"\! {!line_log}"'
+            ? trace'
+            ?> trace Verbose (\ () => text) id
+            |: text |> console::write_line
+            ?= stdio ?|
+            | Ok () => line
+            | Error () => line |> highlight |> sm'::to_std_string
+        | Error e =>
+            trace Critical
+                \ () => "process.stdio_line"
+                \ () => { trace' e }
+            e |> highlight |> sm'::to_std_string
+    channel_sender
+    |> threading::arc_mutex_lock
+    |> resultm::unwrap'
+    |> threading::mutex_guard_ref
+    |> threading::channel_send line
+    |> resultm::map_error'' sm'::format'
+
+:= stdio_line_rust
+    (stdio : result () ())
+    (trace' : bool)
+    (line : resultm::result' sm'::std_string sm'::std_string)
+    : sm'::std_string
+    =
+    := highlight text =
+        $'$"\\u001b[4;7m{!text}\\u001b[0m"'
+    ?= line |> resultm::unbox' ?|
+    | Ok line =>
+        := line_log = line |> rust::clone |> sm'::from_std_string
+        := text =
+            ?= stdio ?|
+            | Ok () => $'$"> {!line_log}"'
+            | Error () => $'$"\! {!line_log}"'
+        ? trace'
+        ?> trace Verbose (\ () => text) id
+        |: text |> console::write_line
+        ?= stdio ?|
+        | Ok () => line
+        | Error () => line |> highlight |> sm'::to_std_string
+    | Error e =>
+        trace Critical
+            \ () => "process.stdio_line"
+            \ () => { trace' e }
+        e |> highlight |> sm'::to_std_string
+
+/// ## fsharp
+:! process = $'System.Diagnostics.Process'
+
+:! process_start_info = $'System.Diagnostics.ProcessStartInfo'
+
+:! data_received_event_args = $'System.Diagnostics.DataReceivedEventArgs'
+
+:~ process_id (process : process) : i32 =
+    run_target \|
+        | Fsharp => \ () => process |> $'_.Id'
+        | _ => \ () => null ()
+
+:~ current_process_kill () =
+    run_target \|
+        | Fsharp => \ () =>
+            := fn () =
+                run_target \|
+                    | Fsharp => \ () =>
+                        trace Warning (\ () => "process.current_process_kill / exiting... 3") id
+                        $'System.Threading.Thread.Sleep 500'
+                        trace Warning (\ () => "process.current_process_kill / exiting... 2") id
+                        $'System.Console.Out.Flush ()'
+                        $'System.Threading.Thread.Sleep 1000'
+                        trace Warning (\ () => "process.current_process_kill / exiting... 1") id
+                        $'System.Console.Error.Flush ()'
+                        $'System.Environment.Exit 1' : ()
+                    | _ => \ () => ()
+            := thread : threading::thread = $'new System.Threading.Thread (!fn)'
+            thread |> $'_.Start()' : ()
+        | _ => \ () => ()
+
+:= gc_collect () =
+    run_target \|
+        | Fsharp _ => \ () => $'System.GC.Collect' () : ()
+        | _ => \ () => ()
+
+/// ## execution
+:= execute_with_options_rust (options : execution_options) : i32 * string =
+    := command = ~~ options::command
+    := file_name, arguments = command |> split_command |> resultm::get
+    := arguments =
+        arguments
+        |> optionm'::default_value ""
+        |> split_args
+        |> resultm::get
+        |> am'::to_vec
+        |> am'::vec_map sm'::to_std_string
+    trace Debug
+        \ () => "process.execute_with_options"
+        \ () => { file_name arguments = #?*arguments }
+    := trace' = options::trace
+    := on_stdout (line : resultm::result' sm'::std_string sm'::std_string) : sm'::std_string =
+        line |> stdio_line_rust (Ok ()) trace'
+    := on_stderr (line : resultm::result' sm'::std_string sm'::std_string) : sm'::std_string =
+        line |> stdio_line_rust (Error ()) trace'
+    := kind, exit_code, error, lines =
+        !\\(
+            (
+                file_name,
+                arguments,
+                options::working_directory,
+                options::environment_variables,
+                options::stdin,
+                options::cancellation_token,
+                options::stderr,
+                on_stdout,
+                on_stderr
+            ),
+            $'"{ let wd: Option<std::rc::Rc<str>> = $2.clone(); let stdin_fn: Option<std::rc::Rc<dyn \
+                Fn(std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>)>> = $4.clone(); let token: \
+                Option<std::sync::Arc<std::sync::atomic::AtomicBool>> = $5.clone(); let stderr_on: bool = $6; let mut \
+                c = std::process::Command::new(&*$0); c.args(&*$1); c.stdout(std::process::Stdio::piped()); \
+                c.stderr(std::process::Stdio::piped()); c.stdin(std::process::Stdio::piped()); if let Some(d) = &wd { \
+                c.current_dir(&**d); } for (k, v) in $3.borrow().iter() { c.env(&**k, &**v); } match c.spawn() { \
+                Err(e) => (1i32, None, Some(format\!(\\\"{}\\\", e)), Vec::new()), Ok(mut child) => { let out = \
+                child.stdout.take().unwrap(); let err = child.stderr.take().unwrap(); let (tx, rx) = \
+                std::sync::mpsc::channel::<(bool, Result<std::string::String, std::string::String>)>(); let tx2 = \
+                tx.clone(); let h1 = std::thread::spawn(move || { for l in \
+                std::io::BufRead::lines(std::io::BufReader::new(encoding_rs_io::DecodeReaderBytesBuilder::new().utf8_p\
+                assthru(true).build(out))) { if tx.send((false, l.map_err(|e| format\!(\\\"{}\\\", e)))).is_err() { \
+                break; } } }); let h2 = std::thread::spawn(move || { for l in \
+                std::io::BufRead::lines(std::io::BufReader::new(encoding_rs_io::DecodeReaderBytesBuilder::new().utf8_p\
+                assthru(true).build(err))) { if stderr_on && tx2.send((true, l.map_err(|e| format\!(\\\"{}\\\", \
+                e)))).is_err() { break; } } }); if let (Some(f), Some(s)) = (&stdin_fn, child.stdin.take()) { let a = \
+                std::sync::Arc::new(std::sync::Mutex::new(s)); f(a.clone()); let _ = std::io::Write::flush(&mut \
+                *a.lock().unwrap()); } let mut lines: Vec<std::string::String> = Vec::new(); let mut cancelled = \
+                false; loop { if let Some(t) = &token { if t.load(std::sync::atomic::Ordering::SeqCst) { let _ = \
+                child.kill(); cancelled = true; break; } } match rx.recv_timeout(std::time::Duration::from_millis(100)\
+                ) { Ok((false, l)) => lines.push($7(l)), Ok((true, l)) => lines.push($8(l)), \
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}, \
+                Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break } } if \!cancelled { let _ = h1.join(); \
+                let _ = h2.join(); } match child.wait() { Ok(s) => (0i32, s.code(), None, lines), Err(e) => (2i32, \
+                None, Some(format\!(\\\"{}\\\", e)), lines) } } } }"'
+        ) : i32 * optionm'::option' i32 * optionm'::option' sm'::std_string * am'::vec sm'::std_string
+    := error = error |> optionm'::default_value' (sm'::to_std_string "") |> sm'::from_std_string
+    := exit_code, std_trace =
+        ? kind = 1 ?>
+            trace Critical
+                \ () => "process.execute_with_options / child error"
+                \ () => { error file_name arguments = #?*arguments }
+            -1i32, error
+        |? kind = 2 ?>
+            trace Critical
+                \ () => "process.execute_with_options / output error"
+                \ () => { error file_name arguments = #?*arguments }
+            -2i32, error
+        |:
+            := exit_code, fallback =
+                ?= exit_code |> optionm'::unbox ?|
+                | Some exit_code => exit_code, ""
+                | None => -1i32, "process.execute_with_options / exit_code=None"
+            := text =
+                lines
+                |> am'::vec_map sm'::from_std_string
+                |> am'::from_vec
+                |> \ x => x : array _
+                |> seq::of_array
+                |> sm'::concat "\n"
+                |> sm'::trim
+            exit_code, (? text = "" ?> fallback |: text)
+    trace Verbose
+        \ () => "process.execute_with_options / result"
+        \ () => { file_name exit_code std_trace_len = ##std_trace }
+    exit_code, std_trace
+
+:~ execute_with_options (options : execution_options) : i32 * string =
+    backend_switch {
+        Rust = \ () => execute_with_options_rust options
+    }
+
+/// #### execute
+:~ execute command =
+    execution_options \ x => { x ?|
+        command = command
+    }
+    |> execute_with_options
+
+:= probe_text () : string = "╭─[ 你好，世界！こんにちは世界！ ]─╮"
+
+:= probe_directory (tag : string) = file_system::create_temp_directory' ("spiral-process-probe-" ++# tag)
+
+:= probe_path (temp_dir : string) : string = file_system::(</>) temp_dir (~~ "test.txt") |> file_system::normalize_path
+
+:= read_command (path : string) : string = "pwsh -c \"[IO.File]::ReadAllText('" ++# path ++# "')\""
+
+:= missing_file_read () : i32 * bool =
+    := temp_dir, disposable = probe_directory "missing"
+    disposable |> use |> ignore
+    := exit_code, result = execute (read_command (probe_path temp_dir))
+    exit_code, result |> sm'::contains "not find file"
+
+:= utf8_read_command () : string =
+    "pwsh -c \"[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
+    ^^ "[IO.File]::ReadAllText('" ++# ~~ "test.txt" ++# "')\""
+
+:= utf8_read_in (dir : string) : i32 * string =
+    execution_options \ x =>
+        { x ?|
+            command = utf8_read_command ()
+            working_directory = Some dir |> optionm'::box
+        }
+    |> execute_with_options
+
+:= utf8_round_trip () : i32 * string =
+    := temp_dir, disposable = probe_directory "utf8"
+    disposable |> use |> ignore
+    probe_text () |> file_system::write_all_text (probe_path temp_dir)
+    utf8_read_in temp_dir
+
+///> rust -d chrono encoding_rs encoding_rs_io regex sha2
+:# reading_a_missing_file_fails =
+    missing_file_read () |> _assert_eq (1, !+)
+
+///> rust -d chrono encoding_rs encoding_rs_io regex sha2
+:# utf8_text_round_trips_in_a_working_directory =
+    utf8_round_trip () |> _assert_eq (0i32, probe_text ())
+
+:= five_lines_command () : string =
+    "pwsh -c \"[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; for ($i = 0; $i "
+    ^^ "-lt 5; $i++) { Write-Output `\"Line$i`\"; Start-Sleep -Milliseconds 200 }\""
+
+:= five_lines () : i32 * string =
+    execution_options \ x => { x ?|
+        command = five_lines_command ()
+    }
+    |> execute_with_options
+
+///> rust -d chrono encoding_rs encoding_rs_io regex sha2
+:# tests_2 =
+    := exit_code, output = five_lines ()
+    exit_code |> _assert_eq 0i32
+    output |> _assert sm'::contains "Line4"
+
+/// ## shared commands
+:! shared_command = $'Rc<RefCell<std::process::Command>>'
+
+:! shared_child = $'Rc<RefCell<std::process::Child>>'
+
+:! log_file = $'std::fs::File'
+
+:! command_output = $'Rc<std::io::Result<std::process::Output>>'
+
+/// ## commands
+:= shared_command_new (program : string) : shared_command =
+    $'Rc::new(RefCell::new(std::process::Command::new(&*!program)))' : shared_command
+
+:= shared_command_arg (command : shared_command) (arg : string) : () = $'drop(!command.borrow_mut().arg(&*!arg))' : ()
+
+:= shared_command_directory (command : shared_command) (directory : string) : () =
+    $'drop(!command.borrow_mut().current_dir(&*!directory))' : ()
+
+:= shared_command_quiet (command : shared_command) : () =
+    $'drop(!command.borrow_mut().stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null()))' : ()
+
+:= shared_command_no_input (command : shared_command) : () =
+    $'drop(!command.borrow_mut().stdin(std::process::Stdio::null()))' : ()
+
+:= log_file_create (path : string) : log_file = $'std::fs::File::create(&*!path).unwrap()' : log_file
+
+:= shared_command_logging (command : shared_command) (file : log_file) : () =
+    $'drop(!command.borrow_mut().stdout(!file.try_clone().unwrap()).stderr(!file.try_clone().unwrap()))' : ()
+
+:= shared_command_output (command : shared_command) : command_output =
+    $'Rc::new(!command.borrow_mut().output())' : command_output
+
+:= command_output_ran (output : command_output) : bool = $'!output.is_ok()' : bool
+
+:= command_output_code (output : command_output) : i32 =
+    $'(&*!output).as_ref().unwrap().status.code().unwrap_or(-2)' : i32
+
+:= command_output_stdout (output : command_output) : string =
+    $'Rc::<str>::from(String::from_utf8_lossy(&(&*!output).as_ref().unwrap().stdout).as_ref())' : string
+
+:= command_output_stderr (output : command_output) : string =
+    $'Rc::<str>::from(String::from_utf8_lossy(&(&*!output).as_ref().unwrap().stderr).as_ref())' : string
+
+/// ## children
+:= shared_command_spawn (command : shared_command) : shared_child =
+    $'Rc::new(RefCell::new(!command.borrow_mut().spawn().unwrap()))' : shared_child
+
+:= shared_child_exited (child : shared_child) : bool = $'!child.borrow_mut().try_wait().unwrap().is_some()' : bool
+
+:= shared_child_code (child : shared_child) : i32 = $'!child.borrow_mut().wait().unwrap().code().unwrap_or(-2)' : i32
+
+:= shared_child_kill (child : shared_child) : () = $'drop(!child.borrow_mut().kill())' : ()
+
+:= shared_child_id (child : shared_child) : u32 = $'!child.borrow().id()' : u32
+
+:= exit_four_shell () = ? platform::is_windows () ?> "cmd", "/C", "exit 4" |: "sh", "-c", "exit 4"
+
+:= exit_four_child () =
+    := program, flag, script = exit_four_shell ()
+    := command = shared_command_new program
+    shared_command_arg command flag
+    shared_command_arg command script
+    shared_command_quiet command
+    shared_command_spawn command
+
+///> rust
+:# a_spawned_command_reports_its_exit_code =
+    := child = exit_four_child ()
+    (shared_child_id child > 0u32, shared_child_code child) |> _assert_eq (!+, 4i32)
+
+/// ## arguments
+:= present_arguments (args : list string) : list string =
+    listm::fold (\ (kept : list string) (a : string) => ? a = "" ?> kept |: a :: kept) [] args |> listm::rev
+
+:= gleam_argv (args : list string) : erlang_term::term =
+    present_arguments args |> listm::map erlang_term::charlist |> erlang_term::list_term
+
+/// ## ports
+:= windowless (options : list erlang_term::term) : list erlang_term::term = erlang_term::atom "hide" :: options
+
+:= executable_term (program : string) : erlang_term::term =
+    erlang_term::apply "os" "find_executable" [ erlang_term::charlist program ]
+
+:= port_for (program : string) (options : list erlang_term::term) : erlang_port::port =
+    := p = erlang_port::open_executable (executable_term program) (windowless options)
+    erlang_port::unlink p |> ignore
+    p
+
+:= command_for (program : string) (args : list string) : shared_command =
+    := command = shared_command_new program
+    listm::iter (\ (a : string) => shared_command_arg command a) (present_arguments args)
+    command
+
+/// ## kill
+:= kill_command (pid : i32) : string =
+    ? platform::is_windows () ?> "taskkill /F /T /PID " ++#? pid |: "kill -9 " ++#? pid
+
+:= kill_tree_of_pid (pid : i32) : () =
+    run_target \|
+        | Rust => \ () =>
+            := command = shared_command_new (? platform::is_windows () ?> "taskkill" |: "kill")
+            := flags = ? platform::is_windows () ?> [ "/F"; "/T"; "/PID" ] |: [ "-9" ]
+            listm::iter (\ (a : string) => shared_command_arg command a) flags
+            shared_command_arg command ("" ++#? pid)
+            shared_command_output command |> ignore
+        | Gleam => \ () => platform::os_command_output (kill_command pid) |> ignore
+        | _ => \ () => no_arm "kill_tree_of_pid"
+
+/// ## started
+:== started_switch =
+    {
+        Rust : shared_child
+        Gleam : $'##(Dynamic, String)'
+    }
+:! started = $'backend_switch `(started_switch)'
+
+:= gleam_started (p : erlang_port::port) (log : string) : started = $'##(!p, !log)' : started
+
+:= gleam_started_port (s : started) : erlang_port::port = $'!s.0' : erlang_port::port
+
+:= gleam_started_log (s : started) : string = $'!s.1' : string
+
+:= rust_child (s : started) : shared_child = $'!s' : shared_child
+
+:= exit_key (p : erlang_port::port) : erlang_term::term =
+    erlang_term::tuple [ erlang_term::atom "spiral_process_exit"; erlang_port::term_of p ]
+
+/// ## waiting
+:~ ^ gleam_waited (choices : erlang_port::selector) (log : string) (deadline : i64) : option i32 =
+    := left : i32 = conv (deadline - date_time::monotonic_milliseconds ())
+    := outcome = erlang_port::receive_within choices (? left > 0i32 ?> left |: 0i32)
+    ? erlang_port::received_some outcome ?>
+        := event = erlang_port::message_event (erlang_port::received_message outcome (erlang_term::atom "none"))
+        := kind = erlang_port::event_kind event
+        ? kind = "data" ?>
+            ? log <> "" ?> file_system::append_all_text log (erlang_port::event_value event |> erlang_term::cast)
+            gleam_waited choices log deadline
+        |? kind = "exit_status" ?> Some (erlang_port::event_value event |> erlang_term::cast)
+        |: gleam_waited choices log deadline
+    |: None
+
+:= timed_out (since : date_time::stopwatch) (ms : i32) : bool = date_time::stopwatch_elapsed_milliseconds since >= conv ms
+
+:~ ^ rust_waited (child : shared_child) (since : date_time::stopwatch) (ms : i32) : option i32 =
+    ? shared_child_exited child ?> Some (shared_child_code child)
+    |? timed_out since ms ?> None
+    |:
+        threading::sleep 5i32
+        rust_waited child since ms
+
+/// ## running
+:= capture_status_within (program : string) (args : list string) (ms : i32) : i32 =
+    run_target \|
+        | Rust => \ () =>
+            := command = command_for program args
+            shared_command_quiet command
+            := child = shared_command_spawn command
+            ?= rust_waited child (date_time::stopwatch ()) ms ?|
+            | Some code => code
+            | None =>
+                shared_child_kill child
+                shared_child_code child |> ignore
+                -1i32
+        | Gleam => \ () =>
+            := argv = erlang_term::tuple [ erlang_term::atom "args"; gleam_argv args ]
+            := p = port_for program [ erlang_term::atom "binary"; erlang_term::atom "exit_status"; argv ]
+            := deadline = date_time::monotonic_milliseconds () + conv ms
+            ?= gleam_waited (erlang_port::selector_of p) "" deadline ?|
+            | Some code => code
+            | None =>
+                := pid = erlang_port::os_pid p
+                erlang_port::close p |> ignore
+                kill_tree_of_pid pid
+                -1i32
+        | _ => \ () => no_arm "capture_status_within"
+
+:= start_logging (directory : string) (program : string) (args : list string) (log : string) : started =
+    run_target \|
+        | Rust => \ () =>
+            := command = command_for program args
+            shared_command_directory command directory
+            shared_command_no_input command
+            shared_command_logging command (log_file_create log)
+            $'!(shared_command_spawn command)' : started
+        | Gleam => \ () =>
+            file_system::write_all_text log ""
+            := argv = erlang_term::tuple [ erlang_term::atom "args"; gleam_argv args ]
+            := cd = erlang_term::tuple [ erlang_term::atom "cd"; erlang_term::of directory ]
+            := merged = erlang_term::atom "stderr_to_stdout"
+            := options = [ erlang_term::atom "binary"; erlang_term::atom "exit_status"; argv; merged; cd ]
+            gleam_started (port_for program options) log
+        | _ => \ () => no_arm "start_logging"
+
+:= started_pid (s : started) : i32 =
+    run_target \|
+        | Rust => \ () => conv (shared_child_id (rust_child s))
+        | Gleam => \ () => erlang_port::os_pid (gleam_started_port s)
+        | _ => \ () => no_arm "started_pid"
+
+:= await_exit_within (s : started) (ms : i32) : option i32 =
+    run_target \|
+        | Rust => \ () => rust_waited (rust_child s) (date_time::stopwatch ()) ms
+        | Gleam => \ () =>
+            := p = gleam_started_port s
+            := key = exit_key p
+            := kept = erlang_process::dictionary_get key
+            ? erlang_term::equal kept (erlang_term::atom "undefined") ?>
+                := deadline = date_time::monotonic_milliseconds () + conv ms
+                := outcome = gleam_waited (erlang_port::selector_of p) (gleam_started_log s) deadline
+                ?= outcome ?|
+                | Some code =>
+                    erlang_process::dictionary_put key (erlang_term::of code) |> ignore
+                    outcome
+                | None => None
+            |: Some (kept |> erlang_term::cast)
+        | _ => \ () => no_arm "await_exit_within"
+
+/// ## capture
+:= exit_with (code : i32) : () =
+    run_target \|
+        | Rust => \ () => $'std::process::exit(!code)' : ()
+        | Gleam => \ () => erlang_term::apply "erlang" "halt" [ erlang_term::of code ] |> ignore
+        | _ => \ () => no_arm "exit_with"
+
+:== captured = { ran : bool; code : i32; stdout : string }
+
+:= not_run () : captured = { ran = !-; code = -1i32; stdout = "" }
+
+:= rust_captured (program : string) (args : list string) (merged : bool) : captured =
+    := output = shared_command_output (command_for program args)
+    ? command_output_ran output ?>
+        := stderr = ? merged ?> command_output_stderr output |: ""
+        := stdout = command_output_stdout output ++# stderr
+        { ran = !+; code = command_output_code output; stdout = stdout }
+    |: not_run ()
+
+:~ ^ gleam_collected (choices : erlang_port::selector) (text : string) : i32 * string =
+    := outcome = erlang_port::receive_within choices 86400000i32
+    := event = erlang_port::message_event (erlang_port::received_message outcome (erlang_term::atom "none"))
+    := kind = erlang_port::event_kind event
+    ? kind = "data" ?> gleam_collected choices (text ++# (erlang_port::event_value event |> erlang_term::cast))
+    |? kind = "exit_status" ?> (erlang_port::event_value event |> erlang_term::cast), text
+    |: gleam_collected choices text
+
+:= gleam_captured (program : string) (args : list string) (merged : bool) : captured =
+    := found = erlang_term::apply "os" "find_executable" [ erlang_term::charlist program ]
+    ? erlang_term::equal found (erlang_term::atom "false") ?> not_run ()
+    |:
+        := argv = erlang_term::tuple [ erlang_term::atom "args"; gleam_argv args ]
+        := base = [ erlang_term::atom "binary"; erlang_term::atom "exit_status"; argv ]
+        := options = windowless (? merged ?> erlang_term::atom "stderr_to_stdout" :: base |: base)
+        := code, text = gleam_collected (erlang_port::selector_of (erlang_port::open_executable found options)) ""
+        { ran = !+; code = code; stdout = text }
+
+:= captured_by (program : string) (args : list string) (merged : bool) : captured =
+    run_target \|
+        | Rust => \ () => rust_captured program args merged
+        | Gleam => \ () => gleam_captured program args merged
+        | _ => \ () => no_arm "captured_by"
+
+:= succeeded (c : captured) : bool = c::ran && c::code = 0i32
+
+:= required (c : captured) : string =
+    ? succeeded c ?> c::stdout
+    |:
+        exit_with 3i32
+        ""
+
+:~ ^ words (text : string) : list string =
+    := at : i32 = sm'::index_of " " text
+    ? at < 0i32 ?> [ text ]
+    |: sm'::substring 0i32 at text :: words (sm'::substring (at + 1i32) (sm'::length text - at - 1i32) text)
+
+:= capture_stdout_list (program : string) (args : list string) : string = captured_by program args !- |> required
+
+:= capture_stdout (program : string) (args : string) : string = capture_stdout_list program (words args)
+
+:= capture_combined_list (program : string) (args : list string) : string = captured_by program args !+ |> required
+
+:= try_capture_combined_list (program : string) (args : list string) : option string =
+    := c = captured_by program args !+
+    ? succeeded c ?> Some c::stdout |: None
+
+///> rust
+///> gleam
+:# hostname_prints_a_name =
+    := out = capture_stdout "hostname" ""
+    ((sm'::length out : i32) > 1i32) |> _assert_eq !+
+
+///> rust
+///> gleam
+:# list_arguments_keep_their_spaces =
+    := args = [ "-c"; "import sys; print(len(sys.argv) - 1, sys.argv[1])"; "a b"; "c" ]
+    capture_stdout_list "python" args |> sm'::trim |> _assert_eq "2 a b"
+
+///> rust
+///> gleam
+:# combined_capture_includes_stderr =
+    := args = [ "-c"; "import sys; sys.stderr.write('warned')" ]
+    capture_combined_list "python" args |> sm'::trim |> _assert_eq "warned"
+
+///> rust
+///> gleam
+:# a_missing_or_failing_program_captures_nothing =
+    try_capture_combined_list "spiral-no-such-program" [] |> _assert_eq None
+    try_capture_combined_list "python" [ "-c"; "import sys; sys.exit(4)" ] |> _assert_eq None
+
+///> rust
+///> gleam
+:# a_succeeding_program_captures_its_stderr =
+    := args = [ "-c"; "import sys; sys.stderr.write('warned')" ]
+    try_capture_combined_list "python" args |> optionm::map sm'::trim |> _assert_eq (Some "warned")
+
+///> rust
+///> gleam
+:# a_quick_program_reports_its_exit_code =
+    capture_status_within "hostname" [] 10000i32 |> _assert_eq 0i32
+
+:= pwsh_command (command : string) : list string = [ "-NoProfile"; "-Command"; command ]
+
+///> rust
+///> gleam
+:# a_powershell_program_runs_and_reports_its_exit_code =
+    capture_status_within "pwsh" (pwsh_command "exit 7") 60000i32 |> _assert_eq 7i32
+    capture_stdout_list "pwsh" (pwsh_command "Write-Output spiral") |> sm'::trim |> _assert_eq "spiral"
+
+///> rust
+///> gleam
+:# a_program_past_its_deadline_is_killed =
+    capture_status_within "python" [ "-c"; "import time; time.sleep(30)" ] 400i32 |> _assert_eq (-1i32)
+
+:= started_log (name : string) : string =
+    file_system::get_temp_path () ++# "/spiral-process-started-" ++# name ++# ".log"
+
+:= start_quick (log : string) = start_logging "." "python" [ "-c"; "print('ready')" ] log
+
+///> rust
+///> gleam
+:# a_started_program_reports_its_exit =
+    := s = start_quick (started_log "quick")
+    (started_pid s > 0i32) |> _assert_eq !+
+    await_exit_within s 20000i32 |> _assert_eq (Some 0i32)
+    await_exit_within s 0i32 |> _assert_eq (Some 0i32)
+
+///> rust
+///> gleam
+:# a_started_program_logs_its_output =
+    := log = started_log "logged"
+    await_exit_within (start_quick log) 20000i32 |> _assert_eq (Some 0i32)
+    file_system::read_all_text log |> sm'::trim |> _assert_eq "ready"
+
+:= start_sleeper () = start_logging "." "python" [ "-c"; "import time; time.sleep(30)" ] (started_log "slow")
+
+:= has_ended (s : started) (ms : i32) : bool =
+    ?= await_exit_within s ms ?|
+    | Some _ => !+
+    | None => !-
+
+///> rust
+///> gleam
+:# a_running_program_is_killed_by_its_pid =
+    := s = start_sleeper ()
+    has_ended s 300i32 |> _assert_eq !-
+    kill_tree_of_pid (started_pid s)
+    has_ended s 10000i32 |> _assert_eq !+
+
+:= directory_marker () : string = "spiral-process-started-directory-marker.txt"
+
+:= write_marker_args () : list string = [ "-c"; "open('" ++# directory_marker () ++# "', 'w').write('here')" ]
+
+:= marker_writer_exit (dir : string) : option i32 =
+    := s = start_logging dir "python" (write_marker_args ()) (started_log "directory")
+    await_exit_within s 20000i32
+
+:= marker_places (dir : string) : bool * bool =
+    file_system::file_exists (dir ++# "/" ++# directory_marker ()), file_system::file_exists (directory_marker ())
+
+///> rust
+///> gleam
+:# a_program_runs_in_its_directory =
+    := dir = file_system::get_temp_path ()
+    marker_writer_exit dir |> _assert_eq (Some 0i32)
+    marker_places dir |> _assert_eq (!+, !-)
+    file_system::file_delete (dir ++# "/" ++# directory_marker ())

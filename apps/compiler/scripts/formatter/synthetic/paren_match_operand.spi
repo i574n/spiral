@@ -1,0 +1,6 @@
+union acquisition = ChasesAThinkAfterAcquiring | ChasesAtOnce
+
+inl chases_now (acquisition_kind : acquisition) (acquired_at_tick : i32) (current_tick_of_the_world : i32) : bool =
+    if current_tick_of_the_world < 0i32 then false
+    elif (match acquisition_kind with | ChasesAThinkAfterAcquiring => true | ChasesAtOnce => false) && acquired_at_tick >= current_tick_of_the_world then true
+    else false

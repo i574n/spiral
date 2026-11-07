@@ -1,0 +1,90 @@
+:< sm'_operators
+:< svg
+:< leptos
+
+:== props =
+    {
+        title : () -> string
+        open' : () -> bool
+        right_element : option view
+        details_class : () -> string
+        summary_class : () -> string
+    }
+
+:= props () : props =
+    {
+        title = \ () => ""
+        open' = \ () => !+
+        right_element = None
+        details_class = \ () => ""
+        summary_class = \ () => ""
+    }
+
+:= render props_fn children : _ (_ div) =
+    := props : props = props () |> props_fn
+    := right_element_none = props::right_element = None
+    := summary_class = props::summary_class
+    := right_element' =
+        props::right_element
+        |> optionm'::default_value ([] |> view_list_to_view)
+
+    div [
+        $'"class=\\\"flex flex-col [position:relative]\\\""'
+    ] \ () =>
+        :>[
+            div [
+                $'"class=\\\"[position:absolute] [right:0] [top:0]\\\""'
+            ] \ () =>
+                right_element'
+                |> view_to_fragment
+            |> element_to_view
+            details [
+                class_fn
+                    "flex flex-1 [&_summary::-webkit-details-marker]:hidden [&>summary>span]:open:-rotate-180 "
+                    props::details_class
+                attr_fn "open" props::open'
+            ] \ () =>
+                :>[
+                    summary [
+                        class_fn
+                            (
+                                "flex flex-1 items-center justify-between px-4 cursor-pointer text-gray-600 "
+                                ^^ "hover:text-gray-700 bg-gray-300 hover:bg-gray-200 "
+                            )
+                            \ () =>
+                                ? right_element_none
+                                ?> ""
+                                |: "[margin-right:40px]"
+                                ++# " "
+                                ++# summary_class ()
+                    ] \ () =>
+                        :>[
+                            div [
+                                $'"class=\\\"flex items-center gap-2\\\""'
+                            ] \ () =>
+                                := title = props::title
+                                span [
+                                    $'"class=\\\"[font-size:14px] [line-height:21px] [padding-right:11px]\\\""'
+                                ] \ () =>
+                                    leptos::reactive_fragment \ () =>
+                                        title ()
+                                        |> text_fragment
+                                |> element_to_fragment
+                            |> element_to_view
+
+                            span [
+                                $'"class=\\\"shrink-0 transition duration-300 pt-[2px]\\\""'
+                            ] \ () =>
+                                arrow_down::render (\ () => "h-5 w-5") []
+                                |> element_to_fragment
+                            |> element_to_view
+                        ]
+                    |> element_to_view
+                    div [
+                        $'"class=\\\"flex flex-1 flex-col\\\""'
+                    ] \ () =>
+                        children ()
+                    |> element_to_view
+                ]
+            |> element_to_view
+        ]

@@ -1,0 +1,68 @@
+:! draft = ()
+:! signed = ()
+:! authorized = ()
+
+:! nfe_draft = { id : string }
+:! nfe_signed = { xml : string }
+:! nfe_authorized = { protocol : string }
+
+:| document state =
+    | Draft :: nfe_draft -> document draft
+    | Signed :: nfe_signed -> document signed
+    | Authorized :: nfe_authorized -> document authorized
+
+:| transition from to =
+    | SignTransition :: transition draft signed
+    | AuthorizeTransition :: transition signed authorized
+
+:= execute \* from to.
+    (transition : transition from to)
+    (document : document from)
+    : document to =
+    ?= transition, document ?|
+    | SignTransition, Draft payload =>
+        Signed (nfe_signed { xml = payload::id })
+    | AuthorizeTransition, Signed _ =>
+        Authorized (nfe_authorized { protocol = "free-category-authorized" })
+
+:| trace state =
+    | Trace :: \* state. string -> trace state
+
+:= trace_transition \* from to.
+    (transition : transition from to)
+    (trace : trace from)
+    : trace to =
+    ?= transition, trace ?|
+    | SignTransition, Trace _ => Trace "signed"
+    | AuthorizeTransition, Trace _ => Trace "authorized"
+
+:| ^ chain (step : * -> * -> *) from to =
+    | ChainStep :: \* (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: \* (step : * -> * -> *) from to.
+        (\? middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+:= ^ fold_chain
+    \* (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : \* a b. step a b -> carrier a -> carrier b)
+    (program : chain step from to)
+    (input : carrier from)
+    : carrier to =
+    ?= program ?|
+    | ChainStep atom => handler atom input
+    | ChainCompose pair =>
+        := \? middle. first, second = pair
+        fold_chain `$handler second (fold_chain `$handler first input)
+
+:= issue () : chain transition draft authorized =
+    ChainCompose (\? (ChainStep SignTransition, ChainStep AuthorizeTransition))
+
+:= main () : string =
+    := program = issue ()
+    := initial_document = Draft (nfe_draft { id = "NFE-09" })
+    := final_document = fold_chain `$execute program initial_document
+    := final_trace = fold_chain `$trace_transition program (Trace "draft")
+    ?= final_document, final_trace ?|
+    | Authorized _, Trace _ =>
+        "typed-free-category"

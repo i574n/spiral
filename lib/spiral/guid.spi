@@ -1,0 +1,167 @@
+:< sm'_operators
+
+:# guid static =
+    :< testing
+
+:! guid_python =
+    `(
+        global "import uuid"
+        $'' : $'uuid.UUID'
+    )
+:== guid_switch =
+    {
+        Gleam : string
+        Lua : string
+        Fsharp : $'System.Guid'
+        Python : guid_python
+        Rust : $'Rc<str>'
+        TypeScript : string
+        Zig : string
+    }
+:! guid = $'backend_switch `(guid_switch)'
+
+:= new_guid (x : string) : guid =
+    run_target_args (\ () => x) \|
+        | Zig => \ _ => $'(std.ascii.allocLowerString(spiral_gpa, !x) catch @@panic("out of memory"))' : guid
+        | Gleam => \ x =>
+            := lower = sm'::to_lower x
+            $'!lower '
+        | Lua => \ x =>
+            := lower = sm'::to_lower x
+            $'!lower '
+        | Cuda => \ x =>
+            global "import uuid"
+            := lower = sm'::to_lower x
+            $'!lower '
+        | Rust => \ x => $'Rc::<str>::from(!x.to_lowercase())'
+        | TypeScript => \ x => $'!x.toLowerCase()'
+        | _ => \ x => $'!x |> `guid '
+
+:= to_string (x : guid) : string =
+    run_target_args (\ () => x) \|
+        | Fsharp => \ x => $'!x.ToString()' : string
+        | _ => \ x => $'!x ' : string
+
+:= zig_random_u64 () : u64 =
+    global """extern "kernel32" fn QueryPerformanceCounter(count: *i64) callconv(.winapi) c_int;"""
+    global """
+        var spiral_random_state: u64 = 0;
+        fn spiralRandomU64() u64 {
+            if (spiral_random_state == 0) {
+                var seed: u64 = 0;
+                if (builtin.os.tag == .windows) {
+                    var count: i64 = 0;
+                    _ = QueryPerformanceCounter(&count);
+                    seed = @bitCast(count);
+                } else if (builtin.os.tag == .linux) {
+                    var ts: std.os.linux.timespec = undefined;
+                    _ = std.os.linux.clock_gettime(.MONOTONIC, &ts);
+                    seed = @as(u64, @bitCast(@as(i64, ts.sec))) *% 1000000007 +% @as(u64, @bitCast(@as(i64, ts.nsec)));
+                }
+                spiral_random_state = (seed ^ @intFromPtr(&spiral_random_state)) | 1;
+            }
+            var x = spiral_random_state;
+            x ^= x << 13;
+            x ^= x >> 7;
+            x ^= x << 17;
+            spiral_random_state = x;
+            return x;
+        }
+        """
+    $'spiralRandomU64()' : u64
+
+:= guid_hex (width : i32) (n : u64) : string =
+    :~ ^ go (left : i32) (rest : u64) (acc : string) : string =
+        ? left <= 0i32 ?> acc
+        |:
+            := digit : i32 = conv (rest &&& 15u64)
+            go (left - 1i32) (rest >>> 4i32) (sm'::slice digit digit "0123456789abcdef" ++# acc)
+    go width n ""
+
+:= guid_v4_text (a : u64) (b : u64) : string =
+    guid_hex 8i32 (a &&& 4294967295u64)
+    ++# "-" ++# guid_hex 4i32 ((a >>> 32i32) &&& 65535u64)
+    ++# "-4" ++# guid_hex 3i32 ((a >>> 48i32) &&& 4095u64)
+    ++# "-" ++# guid_hex 4i32 ((b &&& 16383u64) ||| 32768u64)
+    ++# "-" ++# guid_hex 12i32 ((b >>> 16i32) &&& 281474976710655u64)
+
+:! rust_hasher = $'std::collections::hash_map::DefaultHasher'
+
+:= rust_random_pair () : u64 * u64 =
+    := hasher = $'std::hash::BuildHasher::build_hasher(&std::collections::hash_map::RandomState::new())' : rust_hasher
+    hasher |> rust::to_mut
+    := nanos = unix_clock::nanos_count (unix_clock::unix_now_nanos ())
+    $'std::hash::Hasher::write_u64(&mut !hasher, !nanos)' : ()
+    := a = $'std::hash::Hasher::finish(&!hasher)' : u64
+    $'std::hash::Hasher::write_u64(&mut !hasher, !a)' : ()
+    := b = $'std::hash::Hasher::finish(&!hasher)' : u64
+    a, b
+
+:= new_raw_guid () : guid =
+    backend_switch {
+        Gleam = \ () =>
+            global "import gleam_uuid"
+            $'gleam_uuid.v4_string ()' : guid
+        Lua = \ () => $'""' : guid
+        Fsharp = \ () => $'System.Guid.NewGuid' () : guid
+        TypeScript = \ () => $'globalThis.crypto.randomUUID()' : guid
+        Python = \ () =>
+            global "import uuid"
+            $'uuid.uuid4()' : guid
+        Zig = \ () =>
+            := a = zig_random_u64 ()
+            := b = zig_random_u64 ()
+            guid_v4_text a b |> new_guid
+        Rust = \ () =>
+            := a, b = rust_random_pair ()
+            guid_v4_text a b |> new_guid
+    }
+
+:== hash_guid = guid
+
+:~ hash_guid (hash : string) : hash_guid =
+    := body () =
+        := dash = "-"
+        ~~
+            := hash = hash |> sm'::pad_left 32i32 '0'
+            := a = hash |> sm'::range (am'::Start 0i32) (am'::End \ _ => 8)
+            := b = hash |> sm'::range (am'::Start 8i32) (am'::End \ _ => 12)
+            := c = hash |> sm'::range (am'::Start 12i32) (am'::End \ _ => 16)
+            := d = hash |> sm'::range (am'::Start 16i32) (am'::End \ _ => 20)
+            := e = hash |> sm'::range (am'::Start 20i32) (am'::End \ _ => 32)
+            a ++# dash ++# b ++# dash ++# c ++# dash ++# d ++# dash ++# e
+            |> new_guid
+    run_target \|
+        | Zig => \ () => body ()
+        | _ => body
+
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# hash_guid =
+    ""
+    |> hash_guid
+    |> _assert_eq' ("00000000-0000-0000-0000-000000000000" |> new_guid)
+
+    "123456789012345678901234567890123"
+    |> hash_guid
+    |> _assert_eq' ("12345678-9012-3456-7890-123456789012" |> new_guid)
+
+///> rust
+///> zig
+///> cuda
+///> gleam
+///> lua
+:# to_string_is_lowercase_text =
+    "6543210F-EDCB-A987-6543-210FEDCBA987"
+    |> new_guid
+    |> to_string
+    |> _assert_eq "6543210f-edcb-a987-6543-210fedcba987"
+
+///> fsharp
+
+:= main () =
+    $'let new_guid x = !new_guid x' : ()
+    $'let hash_guid x = !hash_guid x' : ()
+    $'let new_raw_guid x = !new_raw_guid x' : ()

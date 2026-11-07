@@ -1,0 +1,85 @@
+///- --package .
+:# qasm_numeric static =
+    :< testing
+
+:< sm'_operators
+
+:| int_kind =
+    | I8
+    | U8
+    | I16
+    | U16
+    | I32
+    | U32
+    | I64
+    | U64
+
+:| float_kind =
+    | F32
+    | F64
+    | FReal
+
+:| kind =
+    | IntKind : int_kind
+    | FloatKind : float_kind
+    | BoolKind
+
+:| arith_error =
+    | DivisionByZero
+
+:= width (k : int_kind) : i32 =
+    ?= k ?|
+    | I8 => 8i32
+    | U8 => 8i32
+    | I16 => 16i32
+    | U16 => 16i32
+    | I32 => 32i32
+    | U32 => 32i32
+    | I64 => 64i32
+    | U64 => 64i32
+
+:= is_signed (k : int_kind) : bool =
+    ?= k ?|
+    | I8 => !+
+    | I16 => !+
+    | I32 => !+
+    | I64 => !+
+    | U8 => !-
+    | U16 => !-
+    | U32 => !-
+    | U64 => !-
+
+:= wrap (k : int_kind) (bits : u64) : u64 =
+    := w = width k
+    ? w = 64i32 ?> bits |: bits &&& ((1u64 <<< w) - 1u64)
+
+:= signed_value (k : int_kind) (bits : u64) : i64 =
+    := w = width k
+    := narrow = wrap k bits
+    ? w = 64i32 ?> conv narrow
+    |? is_signed k && (narrow >>> (w - 1i32)) &&& 1u64 = 1u64 ?> (conv narrow : i64) - (conv (1u64 <<< w) : i64)
+    |: conv narrow
+
+:= truncated_div (a : i64) (b : i64) : result i64 arith_error =
+    ? b = 0i64 ?> Error DivisionByZero |: Ok (a / b)
+
+:= truncated_mod (a : i64) (b : i64) : result i64 arith_error =
+    ? b = 0i64 ?> Error DivisionByZero |: Ok (a - (a / b) * b)
+
+///> rust
+///> gleam
+:# wrap_keeps_the_low_bits_of_each_width =
+    (wrap U8 300u64, wrap U16 70000u64, wrap U32 4294967301u64, wrap U64 18446744073709551615u64)
+    |> _assert_eq (44u64, 4464u64, 5u64, 18446744073709551615u64)
+
+///> rust
+///> gleam
+:# signed_value_sign_extends_at_the_width =
+    (signed_value I8 200u64, signed_value I16 32768u64, signed_value I32 2147483648u64, signed_value I32 7u64, signed_value U32 4294967295u64)
+    |> _assert_eq ((-56i64), (-32768i64), (-2147483648i64), 7i64, 4294967295i64)
+
+///> rust
+///> gleam
+:# division_and_remainder_go_toward_zero =
+    (truncated_div (-7i64) 2i64, truncated_mod (-7i64) 2i64, truncated_div 7i64 (-2i64), truncated_mod 7i64 (-2i64), truncated_div 1i64 0i64)
+    |> _assert_eq (Ok (-3i64), Ok (-1i64), Ok (-3i64), Ok 1i64, Error DivisionByZero)

@@ -1,0 +1,74 @@
+:! ui_scope = ()
+:! item_key = ()
+:! mounted = ()
+:! reconciling = ()
+:! reconciled = ()
+
+:| keyed_child key value =
+    | InsertedChild :: \* key value. value -> keyed_child key value
+    | UpdatedChild :: \* key value. value -> keyed_child key value
+    | RemovedChild :: \* key value. string -> keyed_child key value
+
+:| mounted_list scope key state =
+    | MountedList :: \* scope key. string -> mounted_list scope key mounted
+    | ReconcilingList :: \* scope key. string -> mounted_list scope key reconciling
+    | ReconciledList :: \* scope key. string -> mounted_list scope key reconciled
+
+:| reconcile_step scope key from to =
+    | BeginReconcile :: \* scope key. reconcile_step scope key mounted reconciling
+    | ApplyInserted :: \* scope key.
+        (\? value. keyed_child key value) ->
+        reconcile_step scope key reconciling reconciled
+    | ApplyUpdated :: \* scope key.
+        (\? value. keyed_child key value) ->
+        reconcile_step scope key reconciling reconciled
+    | ApplyRemoved :: \* scope key.
+        (\? value. keyed_child key value) ->
+        reconcile_step scope key reconciling reconciled
+
+:| ^ reconcile_plan scope key from to =
+    | ReconcileLeaf :: \* scope key from to.
+        reconcile_step scope key from to
+        -> reconcile_plan scope key from to
+    | ReconcileThen :: \* scope key from to.
+        (\? middle.
+            reconcile_plan scope key from middle
+            * reconcile_step scope key middle to)
+        -> reconcile_plan scope key from to
+
+:= apply_step \* scope key from to.
+    (step : reconcile_step scope key from to)
+    (list : mounted_list scope key from)
+    : mounted_list scope key to =
+    ?= step, list ?|
+    | BeginReconcile, MountedList _ => ReconcilingList "reconciling"
+    | ApplyInserted payload, ReconcilingList _ =>
+        := \? value. InsertedChild _ = payload
+        ReconciledList "keyed-inserted"
+    | ApplyUpdated payload, ReconcilingList _ =>
+        := \? value. UpdatedChild _ = payload
+        ReconciledList "keyed-updated"
+    | ApplyRemoved payload, ReconcilingList _ =>
+        := \? value. RemovedChild _ = payload
+        ReconciledList "keyed-removed"
+
+:= ^ execute \* scope key from to.
+    (plan : reconcile_plan scope key from to)
+    (list : mounted_list scope key from)
+    : mounted_list scope key to =
+    ?= plan ?|
+    | ReconcileLeaf step => apply_step step list
+    | ReconcileThen payload =>
+        := \? middle. prefix, step = payload
+        apply_step step (execute prefix list)
+
+:= label \* scope key. (list : mounted_list scope key reconciled) : string =
+    ?= list ?|
+    | ReconciledList value => value
+
+:= main () : string =
+    := list : mounted_list ui_scope item_key mounted = MountedList "mounted"
+    := child : keyed_child item_key i32 = UpdatedChild 7
+    := plan : reconcile_plan ui_scope item_key mounted reconciled =
+        ReconcileThen (\? (ReconcileLeaf BeginReconcile, ApplyUpdated (\? child)))
+    label (execute plan list)

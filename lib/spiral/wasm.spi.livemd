@@ -1,0 +1,122 @@
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":< rust_operators\n\n:! rexie =\n    `(\n        rust::rust_type\n            `($'rexie_Rexie')\n            `($'rexie::Rexie')\n            \"type rexie_Rexie = class end\"\n    )\n\n:! rexie_store =\n    `(\n        rust::rust_type\n            `($'rexie_Store')\n            `($'rexie::Store')\n            \"type rexie_Store = class end\"\n    )\n\n:! rexie_transaction =\n    `(\n        rust::rust_type\n            `($'rexie_Transaction')\n            `($'rexie::Transaction')\n            \"type rexie_Transaction = class end\"\n    )\n\n:! rexie_error =\n    `(\n        rust::rust_type\n            `($'rexie_Error')\n            `($'rexie::Error')\n            \"type rexie_Error = class end\"\n    )\n\n:! js_value =\n    `(\n        rust::rust_type\n            `($'wasm_bindgen_JsValue')\n            `($'wasm_bindgen::JsValue')\n            \"type wasm_bindgen_JsValue = class end\"\n    )\n\n:! closure t =\n    `(\n        rust::rust_type\n            `($'wasm_bindgen_closure_Closure<`t>')\n            `($'wasm_bindgen::closure::Closure<`t>')\n            \"type wasm_bindgen_closure_Closure<'T> = class end\"\n    )\n\n:! js_function =\n    `(\n        rust::rust_type\n            `($'js_sys_Function')\n            `($'js_sys::Function')\n            \"type js_sys_Function = class end\"\n    )\n\n:! window =\n    `(\n        rust::rust_type\n            `($'web_sys_Window')\n            `($'web_sys::Window')\n            \"type web_sys_Window = class end\"\n    )\n\n:! document =\n    `(\n        rust::rust_type\n            `($'web_sys_Document')\n            `($'web_sys::Document')\n            \"type web_sys_Document = class end\"\n    )\n\n:! html_element =\n    `(\n        rust::rust_type\n            `($'web_sys_HtmlElement')\n            `($'web_sys::HtmlElement')\n            \"type web_sys_HtmlElement = class end\"\n    )\n\n:! storage =\n    `(\n        rust::rust_type\n            `($'web_sys_Storage')\n            `($'web_sys::Storage')\n            \"type web_sys_Storage = class end\"\n    )\n\n:= closure_wrap \\* t. (x : rust::box t) : closure t =\n    := x = ? is_rust () ?> x |: ~~ x\n    !\\($'\"wasm_bindgen::closure::Closure::wrap(!x)\"')\n\n:= closure_forget \\* t. (closure : closure t) =\n    !\\($'\"!closure.forget()\"') : ()\n\n:= closure_as_ref \\* t. (closure : closure t) : rust::ref js_value =\n    !\\($'\"wasm_bindgen::closure::Closure::as_ref(&!closure)\"')\n\n:= unchecked_ref (ref : rust::ref js_value) : rust::ref js_function =\n    !\\($'\"wasm_bindgen::JsCast::unchecked_ref(!ref)\"')\n\n:= set_inner_html (html : string) (el : html_element) =\n    := html = ~~ html\n    := html = html |> sm'::as_str\n    := el = ~~ el\n    !\\\\(html, $'\"!el.set_inner_html($0)\"')\n\n:= from_js_value (value : js_value) : resultm::result' (optionm'::option' sm'::json_value) sm'::std_string =\n    := value = ~~ value\n    !\\($'\"serde_wasm_bindgen::from_value(!value)\"')\n    |> resultm::map_error' \\ (x : sm'::serde_wasm_bindgen_error) => x |> sm'::format'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :< rust_operators
+
+  :! rexie =
+      `(
+          rust::rust_type
+              `($'rexie_Rexie')
+              `($'rexie::Rexie')
+              "type rexie_Rexie = class end"
+      )
+
+  :! rexie_store =
+      `(
+          rust::rust_type
+              `($'rexie_Store')
+              `($'rexie::Store')
+              "type rexie_Store = class end"
+      )
+
+  :! rexie_transaction =
+      `(
+          rust::rust_type
+              `($'rexie_Transaction')
+              `($'rexie::Transaction')
+              "type rexie_Transaction = class end"
+      )
+
+  :! rexie_error =
+      `(
+          rust::rust_type
+              `($'rexie_Error')
+              `($'rexie::Error')
+              "type rexie_Error = class end"
+      )
+
+  :! js_value =
+      `(
+          rust::rust_type
+              `($'wasm_bindgen_JsValue')
+              `($'wasm_bindgen::JsValue')
+              "type wasm_bindgen_JsValue = class end"
+      )
+
+  :! closure t =
+      `(
+          rust::rust_type
+              `($'wasm_bindgen_closure_Closure<`t>')
+              `($'wasm_bindgen::closure::Closure<`t>')
+              "type wasm_bindgen_closure_Closure<'T> = class end"
+      )
+
+  :! js_function =
+      `(
+          rust::rust_type
+              `($'js_sys_Function')
+              `($'js_sys::Function')
+              "type js_sys_Function = class end"
+      )
+
+  :! window =
+      `(
+          rust::rust_type
+              `($'web_sys_Window')
+              `($'web_sys::Window')
+              "type web_sys_Window = class end"
+      )
+
+  :! document =
+      `(
+          rust::rust_type
+              `($'web_sys_Document')
+              `($'web_sys::Document')
+              "type web_sys_Document = class end"
+      )
+
+  :! html_element =
+      `(
+          rust::rust_type
+              `($'web_sys_HtmlElement')
+              `($'web_sys::HtmlElement')
+              "type web_sys_HtmlElement = class end"
+      )
+
+  :! storage =
+      `(
+          rust::rust_type
+              `($'web_sys_Storage')
+              `($'web_sys::Storage')
+              "type web_sys_Storage = class end"
+      )
+
+  := closure_wrap \* t. (x : rust::box t) : closure t =
+      := x = ? is_rust () ?> x |: ~~ x
+      !\($'"wasm_bindgen::closure::Closure::wrap(!x)"')
+
+  := closure_forget \* t. (closure : closure t) =
+      !\($'"!closure.forget()"') : ()
+
+  := closure_as_ref \* t. (closure : closure t) : rust::ref js_value =
+      !\($'"wasm_bindgen::closure::Closure::as_ref(&!closure)"')
+
+  := unchecked_ref (ref : rust::ref js_value) : rust::ref js_function =
+      !\($'"wasm_bindgen::JsCast::unchecked_ref(!ref)"')
+
+  := set_inner_html (html : string) (el : html_element) =
+      := html = ~~ html
+      := html = html |> sm'::as_str
+      := el = ~~ el
+      !\\(html, $'"!el.set_inner_html($0)"')
+
+  := from_js_value (value : js_value) : resultm::result' (optionm'::option' sm'::json_value) sm'::std_string =
+      := value = ~~ value
+      !\($'"serde_wasm_bindgen::from_value(!value)"')
+      |> resultm::map_error' \ (x : sm'::serde_wasm_bindgen_error) => x |> sm'::format'
+  """,
+  timeout: 300_000
+)
+```

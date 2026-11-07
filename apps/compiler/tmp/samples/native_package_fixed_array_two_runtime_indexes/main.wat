@@ -1,0 +1,11 @@
+(module
+  (import "wasi_snapshot_preview1" "proc_exit" (func $proc_exit (param i32)))
+  (memory (export "memory") 2)
+  (global $hp (mut i32) (i32.const 72))
+  (func $spiralMain (result i32)
+    (return (i32.const 42))
+    (unreachable)
+  )
+  (func $_start (export "_start")
+    (call $proc_exit (call $spiralMain)))
+)

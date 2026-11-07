@@ -1,0 +1,14 @@
+:| slot =
+    | Missing
+    | Held : mut { q : i32 }
+
+:= main () : i32 =
+    := cell = !!!!LayoutToHeapMutable({ q = 1i32 })
+    := ~flag = !+
+    := box = ? flag ?> Held cell |: Missing
+    ?= box ?|
+    | Held held =>
+        held <- { q = 7i32 }
+        := opened = !!!!LayoutIndex(held)
+        ? opened::q =. 7i32 ?> 0i32 |: 1i32
+    | Missing => 1i32

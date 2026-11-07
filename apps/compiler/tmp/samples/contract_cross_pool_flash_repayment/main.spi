@@ -1,0 +1,31 @@
+:! idle = ()
+:! borrowed = ()
+:! arbitraged = ()
+:! repaid = ()
+:! usdc = ()
+:! pool_alpha = ()
+:! pool_beta = ()
+:! borrower_7 = ()
+:! block_19000000 = ()
+:! debt_note pool borrower asset block = string
+:! profit_receipt borrower asset block = string
+:! repayment_receipt pool borrower asset block = string
+
+:| flash_op from to result =
+    | Borrow :: \* pool borrower asset block.
+        string -> flash_op idle borrowed (debt_note pool borrower asset block)
+    | Repay :: \* pool borrower asset block.
+        debt_note pool borrower asset block * profit_receipt borrower asset block ->
+        flash_op arbitraged repaid (repayment_receipt pool borrower asset block)
+
+:= repay_alpha
+    (debt : debt_note pool_alpha borrower_7 usdc block_19000000)
+    (profit : profit_receipt borrower_7 usdc block_19000000)
+    : repayment_receipt pool_alpha borrower_7 usdc block_19000000 =
+    ?= Repay (debt, profit) ?|
+    | Repay _ => repayment_receipt "alpha-repaid"
+
+:= main () : repayment_receipt pool_beta borrower_7 usdc block_19000000 =
+    := debt : debt_note pool_alpha borrower_7 usdc block_19000000 = debt_note "alpha-debt"
+    := profit : profit_receipt borrower_7 usdc block_19000000 = profit_receipt "profit"
+    repay_alpha debt profit

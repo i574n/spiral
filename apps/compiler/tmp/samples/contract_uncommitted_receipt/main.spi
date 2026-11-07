@@ -1,0 +1,47 @@
+:! signed = ()
+:! authorized = ()
+:! contingency = ()
+:! normal = ()
+:! pending = ()
+:! committed = ()
+:! authorization_evidence = ()
+
+:! phase state mode = state * mode
+
+:| document index =
+    | SignedDocument :: string -> document (phase signed contingency)
+    | AuthorizedContingencyDocument :: string -> document (phase authorized contingency)
+    | AuthorizedNormalDocument :: string -> document (phase authorized normal)
+
+:| receipt evidence status =
+    | PendingReceipt :: \* evidence. string -> receipt evidence pending
+    | CommittedReceipt :: \* evidence. string -> receipt evidence committed
+
+:= authorize
+    (document : document (phase signed contingency))
+    : document (phase authorized contingency) * receipt authorization_evidence pending =
+    ?= document ?|
+    | SignedDocument id =>
+        AuthorizedContingencyDocument id,
+        PendingReceipt "authorization"
+
+:= commit \* evidence.
+    (receipt : receipt evidence pending)
+    : receipt evidence committed =
+    ?= receipt ?|
+    | PendingReceipt id => CommittedReceipt id
+
+:= reconcile
+    (input : document (phase authorized contingency) * receipt authorization_evidence committed)
+    : document (phase authorized normal) =
+    ?= input ?|
+    | AuthorizedContingencyDocument id, CommittedReceipt _ =>
+        AuthorizedNormalDocument id
+
+:= main () : string =
+    := authorized_document, pending_receipt =
+        authorize (SignedDocument "NFE-25")
+    := committed_receipt = commit pending_receipt
+    := reconciled = reconcile (authorized_document, pending_receipt)
+    ?= reconciled ?|
+    | AuthorizedNormalDocument _ => "causal-receipt"

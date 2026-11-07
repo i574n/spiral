@@ -1,0 +1,10 @@
+packageDir: ../../../../../../../lib
+packages:
+    |core-
+    spiral-
+modules:
+    qasm_numeric
+    qasm_lex
+    qasm_parse
+    qasm_eval
+    qasm_main

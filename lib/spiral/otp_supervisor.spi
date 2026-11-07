@@ -1,0 +1,90 @@
+:< sm'_operators
+
+:# otp_supervisor static =
+    :< testing
+
+:= otp_supervisor_imports () =
+    global "import gleam/otp/static_supervisor"
+    global "import gleam/otp/supervision"
+
+:! supervisor_builder = $'static_supervisor.Builder'
+:! supervisor = $'static_supervisor.Supervisor'
+:! child d = $'supervision.ChildSpecification(`d)'
+:! strategy_term = $'static_supervisor.Strategy'
+:! restart_term = $'supervision.Restart'
+
+:| strategy =
+    | OneForOne
+    | OneForAll
+    | RestForOne
+
+:| restart =
+    | Permanent
+    | Transient
+    | Temporary
+
+:= strategy_of (s : strategy) : strategy_term =
+    otp_supervisor_imports ()
+    ?= s ?|
+    | OneForOne => $'static_supervisor.OneForOne'
+    | OneForAll => $'static_supervisor.OneForAll'
+    | RestForOne => $'static_supervisor.RestForOne'
+
+:= new (choice : strategy) : supervisor_builder =
+    otp_supervisor_imports ()
+    := term = strategy_of choice
+    $'static_supervisor.new(!term)'
+
+:= restart_tolerance (intensity : i32) (period_s : i32) (spec : supervisor_builder) : supervisor_builder =
+    otp_supervisor_imports ()
+    $'static_supervisor.restart_tolerance(!spec, !intensity, !period_s)'
+
+:= add \* d. (worker : child d) (spec : supervisor_builder) : supervisor_builder =
+    otp_supervisor_imports ()
+    $'static_supervisor.add(!spec, !worker)'
+
+:= start (spec : supervisor_builder) : otp_actor::start_result supervisor =
+    otp_supervisor_imports ()
+    $'static_supervisor.start(!spec)'
+
+:= supervised (spec : supervisor_builder) : child supervisor =
+    otp_supervisor_imports ()
+    $'static_supervisor.supervised(!spec)'
+
+:= worker \* d. (run : () -> otp_actor::start_result d) : child d =
+    otp_supervisor_imports ()
+    $'supervision.worker(fn() { !run(Nil) })'
+
+:= restart_of (choice : restart) : restart_term =
+    otp_supervisor_imports ()
+    ?= choice ?|
+    | Permanent => $'supervision.Permanent'
+    | Transient => $'supervision.Transient'
+    | Temporary => $'supervision.Temporary'
+
+:= with_restart \* d. (choice : restart) (spec : child d) : child d =
+    otp_supervisor_imports ()
+    := term = restart_of choice
+    $'supervision.restart(!spec, !term)'
+
+:= with_shutdown \* d. (shutdown_ms : i32) (spec : child d) : child d =
+    otp_supervisor_imports ()
+    $'supervision.timeout(!spec, !shutdown_ms)'
+
+:= counting_worker () =
+    worker \ () =>
+        otp_actor::new 0i32 |> otp_actor::on_message (\ total (_ : i32) => otp_actor::continue total) |> otp_actor::start
+
+:= restarting_worker () = counting_worker () |> with_restart Transient
+
+///> gleam
+:# supervisor_starts_a_worker =
+    new OneForOne
+    |> restart_tolerance 3i32 5i32
+    |> add (restarting_worker ())
+    |> start
+    |> otp_actor::started_data
+    |> \|
+        | Some _ => !+
+        | None => !-
+    |> _assert_eq !+

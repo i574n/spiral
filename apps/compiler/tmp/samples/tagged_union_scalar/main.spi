@@ -1,0 +1,13 @@
+:| outcome =
+    | Hit : i32
+    | Miss : i32
+
+:~ score x : i32 =
+    ?= x ?|
+    | Hit value => value
+    | Miss value => 0i32 -. value
+
+:= main () =
+    := ~flag = !+
+    := value = ? flag ?> Hit 7i32 |: Miss 3i32
+    score value -. 7i32

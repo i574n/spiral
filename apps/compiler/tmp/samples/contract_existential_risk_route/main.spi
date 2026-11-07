@@ -1,0 +1,35 @@
+:! low = ()
+:! high = ()
+
+:| risk band =
+    | LowRisk :: risk low
+    | HighRisk :: risk high
+
+:| authorization band =
+    | Automatic :: authorization low
+    | ManualReview :: authorization high
+
+:| packed_assessment =
+    | PackAssessment ::
+        (\? band. risk band * authorization band)
+        -> packed_assessment
+
+:= inspect
+    (visitor : \* band. risk band -> authorization band -> string)
+    (assessment : packed_assessment)
+    : string =
+    ?= assessment ?|
+    | PackAssessment packed =>
+        := \? band. risk, authorization = packed
+        visitor risk authorization
+
+:= describe \* band.
+    (risk : risk band)
+    (authorization : authorization band)
+    : string =
+    ?= risk, authorization ?|
+    | LowRisk, Automatic => "selective-route"
+    | HighRisk, ManualReview => "manual-route"
+
+:= main () : string =
+    inspect `$describe (PackAssessment (\? (LowRisk, Automatic)))

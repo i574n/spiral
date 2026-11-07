@@ -1,0 +1,4 @@
+:= bottom \* a. () : a =
+    $"failwith \"trust-boundary-host-failwith-bottom\""
+
+:= main () = "forall-a-a-via-host-failwith-defined"

@@ -1,0 +1,9 @@
+:= sqrt32 (x : f32) : f32 = !!!!Sqrt(x)
+:= sqrt64 (x : f64) : f64 = !!!!Sqrt(x)
+
+:= main () : i32 =
+    := ~x32 = 144f32
+    := ~x64 = 81f64
+    := root32 = sqrt32 x32
+    := root64 = sqrt64 x64
+    ? root32 =. 12f32 && root64 =. 9f64 ?> 0i32 |: 1i32

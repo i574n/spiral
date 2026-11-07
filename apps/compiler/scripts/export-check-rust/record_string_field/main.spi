@@ -1,0 +1,7 @@
+:! label = { name : string; size : i32 }
+
+:= size_of (label l) : i32 = l.size
+
+:= main () : i32 =
+    !!!!Export("xc_size", ((\ l => size_of l) : label -> i32))
+    0i32

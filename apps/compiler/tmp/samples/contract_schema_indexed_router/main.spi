@@ -1,0 +1,17 @@
+:! no_params = ()
+:! user_params = ()
+
+:| route schema =
+    | HomeRoute :: route no_params
+    | UserRoute :: route user_params
+
+:| route_params schema =
+    | NoParams :: route_params no_params
+    | UserId :: string -> route_params user_params
+
+:= href \* schema. (route : route schema) (parameters : route_params schema) : string =
+    ?= route, parameters ?|
+    | HomeRoute, NoParams => "/"
+    | UserRoute, UserId _ => "/users/42"
+
+:= main () : string = href UserRoute (UserId "42")

@@ -1,0 +1,11 @@
+:! state_t =
+    {
+        position : i32
+        velocity : i32
+    }
+
+:! delta_t =
+    {
+        position : i32
+        velocity : i32
+    }

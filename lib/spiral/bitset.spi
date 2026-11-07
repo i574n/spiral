@@ -1,0 +1,59 @@
+:# bitset static =
+    :< testing
+
+:== bitset = { words : array u32; size : i32 }
+
+:~ ^ zero_from (x : array u32) (i : i32) : () =
+    ? i < length x ?>
+        set x i 0u32
+        zero_from x (i + 1)
+
+:= empty (size : i32) : bitset =
+    := words : array u32 = create ((size + 31) / 32)
+    zero_from words 0
+    { words = words; size = size }
+
+:= mask (i : i32) : u32 = 1u32 <<< (i &&& 31)
+
+:= has (s : bitset) (i : i32) : bool = (index s::words (i >>> 5) &&& mask i) <> 0u32
+
+:= put (s : bitset) (i : i32) : () =
+    := w = i >>> 5
+    set s::words w (index s::words w ||| mask i)
+
+:= remove (s : bitset) (i : i32) : () =
+    := w = i >>> 5
+    := v = index s::words w
+    set s::words w (v - (v &&& mask i))
+
+:~ ^ ones_in (x : u32) (n : i32) : i32 = ? x = 0u32 ?> n |: ones_in (x &&& (x - 1u32)) (n + 1)
+
+:~ ^ count_from (s : bitset) (w : i32) (n : i32) : i32 =
+    ? w >= length s::words ?> n |: count_from s (w + 1) (n + ones_in (index s::words w) 0)
+
+:= count_set (s : bitset) : i32 = count_from s 0 0
+
+///> c
+///> rust
+:# bits_are_set_and_cleared_across_words =
+    := s = empty 70
+    put s 0
+    put s 33
+    put s 69
+    remove s 33
+    (has s 0, has s 33, has s 69, has s 68, count_set s) |> _assert_eq (!+, !-, !+, !-, 2i32)
+
+///> c
+///> rust
+:# a_new_set_is_empty_at_every_word_edge =
+    := s = empty 65
+    (count_set s, has s 31, has s 32, has s 64, length s::words) |> _assert_eq (0i32, !-, !-, !-, 3i32)
+
+///> c
+///> rust
+:# the_top_bit_of_a_word_counts_once =
+    := s = empty 64
+    put s 31
+    put s 31
+    put s 63
+    (has s 31, has s 63, count_set s) |> _assert_eq (!+, !+, 2i32)

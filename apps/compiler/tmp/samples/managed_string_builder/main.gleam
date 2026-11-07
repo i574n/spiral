@@ -1,0 +1,131 @@
+import gleam/int
+import gleam/bit_array
+import gleam/string
+pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
+  let half = int.bitwise_shift_left(1, bits - 1)
+  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+}
+
+
+pub fn spiral_string_length(text: String) -> Int {
+  bit_array.byte_size(bit_array.from_string(text))
+}
+
+
+pub fn spiral_string_index(text: String, index: Int) -> String {
+  case bit_array.slice(bit_array.from_string(text), index, 1) {
+    Ok(<<byte>>) ->
+      case string.utf_codepoint(byte) {
+        Ok(codepoint) -> string.from_utf_codepoints([codepoint])
+        Error(_) -> panic as "spiral string index: not a single-byte character"
+      }
+    _ -> panic as "spiral string index: out of range"
+  }
+}
+
+@external(erlang, "gleam_stdlib", "identity")
+fn spiral_string_of_checked_bytes(bytes: BitArray) -> String {
+  case bit_array.to_string(bytes) {
+    Ok(text) -> text
+    Error(_) -> panic as "spiral string slice: splits a character"
+  }
+}
+
+fn spiral_string_starts_character(bytes: BitArray, at: Int) -> Bool {
+  case bit_array.slice(bytes, at, 1) {
+    Ok(<<lead>>) -> lead < 128 || lead >= 192
+    _ -> True
+  }
+}
+
+
+pub fn method2(v0: Int, v1: String, v2: String) -> String {
+    let v3 = spiral_wrap_signed(v0 - 1, 32)
+    let v4 = { v1 } <> { v2 }
+    let v5 = v3 == 0
+    case v5 {
+        True -> v4
+        False -> {
+            let v6 = v3 % 2
+            let v7 = v6 == 0
+            let v10 =
+                case v7 {
+                    True -> {
+                        "ab"
+                    }
+                    False -> {
+                        "c"
+                    }
+                }
+            method2(v3, v4, v10)
+        }
+    }
+}
+pub fn method1(v0: Int, v1: String) -> String {
+    let v2 = spiral_wrap_signed(v0 - 1, 32)
+    let v3 = { "" } <> { v1 }
+    let v4 = v2 == 0
+    case v4 {
+        True -> v3
+        False -> {
+            let v5 = v2 % 2
+            let v6 = v5 == 0
+            let v9 =
+                case v6 {
+                    True -> {
+                        "ab"
+                    }
+                    False -> {
+                        "c"
+                    }
+                }
+            method2(v2, v3, v9)
+        }
+    }
+}
+pub fn method0() -> String {
+    let v0 = 4
+    let v1 = v0 == 0
+    case v1 {
+        True -> {
+            ""
+        }
+        False -> {
+            let v3 = v0 % 2
+            let v4 = v3 == 0
+            let v7 =
+                case v4 {
+                    True -> {
+                        "ab"
+                    }
+                    False -> {
+                        "c"
+                    }
+                }
+            method1(v0, v7)
+        }
+    }
+}
+pub fn main() {
+    let v0 = method0()
+    let v1 = spiral_string_length(v0)
+    let v2 = v1 == 6
+    case v2 {
+        True -> {
+            let v3 = spiral_string_index(v0, 0)
+            let v4 = v3 == "a"
+            case v4 {
+                True -> {
+                    let v5 = spiral_string_index(v0, 5)
+                    let v6 = v5 == "c"
+                    case v6 {
+                        True -> 0
+                        False -> 1
+                    }
+                }
+                False -> 2
+            }
+        }
+        False -> 3
+    }
+}

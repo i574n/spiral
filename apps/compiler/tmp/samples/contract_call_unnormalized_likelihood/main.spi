@@ -1,0 +1,25 @@
+:! sample_a = ()
+:! hg38 = ()
+:! chr1 = ()
+:! model_v2 = ()
+:! raw = ()
+:! normalized = ()
+:! sums_to_one = ()
+:| likelihoods sample build contig model state =
+    | Likelihoods :: \* sample build contig model state. string -> likelihoods sample build contig model state
+:| normalization_witness sample build contig model state =
+    | Normalized :: \* sample build contig model state.
+        string ->
+        normalization_witness sample build contig model state
+:| genotype_call sample build contig model =
+    | Call :: \* sample build contig model. string -> genotype_call sample build contig model
+:= call \* sample build contig model.
+    (values : likelihoods sample build contig model normalized)
+    (proof : normalization_witness sample build contig model sums_to_one)
+    : genotype_call sample build contig model
+    =
+    Call "call"
+:= main () =
+    := values : likelihoods sample_a hg38 chr1 model_v2 raw = Likelihoods "raw"
+    := proof : normalization_witness sample_a hg38 chr1 model_v2 sums_to_one = Normalized "fake"
+    call values proof

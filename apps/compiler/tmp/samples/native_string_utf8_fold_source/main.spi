@@ -1,0 +1,19 @@
+:= fold_scalar (state : i32 * i32) (scalar : i32) : i32 * i32 =
+    := count, hash = state
+    (+.) count 1i32, (+.) ((*.) hash 3i32) ((%.) scalar 17i32)
+
+:= main () : i32 =
+    := count, hash = sm::utf8_fold fold_scalar (0i32, 0i32) "Aéλ🙂Z"
+    := empty_count, empty_hash = sm::utf8_fold fold_scalar (0i32, 0i32) ""
+    := resumed_count, resumed_hash = sm::utf8_fold_from_byte_offset fold_scalar (0i32, 0i32) "Aéλ🙂Z" 5i32
+    ? (=.) count 5i32 ?>
+        ? (=.) hash 1511i32 ?>
+            ? (=.) empty_count 0i32 ?>
+                ? (=.) empty_hash 0i32 ?>
+                    ? (=.) resumed_count 2i32 ?>
+                        ? (=.) resumed_hash 26i32 ?> 0i32 |: 6i32
+                    |: 5i32
+                |: 4i32
+            |: 3i32
+        |: 2i32
+    |: 1i32

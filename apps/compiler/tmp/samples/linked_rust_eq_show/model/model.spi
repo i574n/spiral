@@ -1,0 +1,13 @@
+:! point = { x : i32; y : i32 }
+
+:= make (n : i32) : point = point { x = n; y = !!!!Add(n, 1i32) }
+
+:= same (a : point) (b : point) : bool = !!!!EQ(a::x, b::x) && !!!!EQ(a::y, b::y)
+
+:= show (a : point) : string = !!!!PrimToString(!!!!Add(!!!!Mult(a::x, 10i32), a::y))
+
+:= main () : i32 =
+    !!!!Export("model_make", make)
+    !!!!Export("model_same", same)
+    !!!!Export("model_show", show)
+    0i32

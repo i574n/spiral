@@ -1,0 +1,510 @@
+:# seq static =
+    :< testing
+
+:== seq dim el = dim -> option el
+
+:= try_item n s =
+    n |> s
+
+:= from_list list =
+    \ n =>
+        list
+        |> listm'::try_item n
+
+:# from_list =
+    listm::init 10i32 print_and_return
+    |> from_list
+    |> try_item 5i32
+    |> _assert_eq (Some 5i32)
+
+:= map fn s =
+    \ n =>
+        n
+        |> s
+        |> optionm::map fn
+
+:# map =
+    listm::init 10i32 id
+    |> from_list
+    |> map ((*) 2)
+    |> try_item 5i32
+    |> _assert_eq (Some 10i32)
+
+:= mapi fn s =
+    \ n =>
+        n
+        |> s
+        |> optionm::map (fn n)
+
+:# mapi =
+    listm::init 10i32 print_and_return
+    |> from_list
+    |> mapi \ i x => i + x
+    |> try_item 5i32
+    |> _assert_eq (Some 10i32)
+
+:= choose \* dim {number} t u. (fn : t -> option u) (s : seq dim t) : seq dim u =
+    \ n =>
+        := ^ body fn s i i' =
+            ?= i |> s ?|
+            | None => None
+            | Some x =>
+                ?= x |> fn ?|
+                | Some x ?& n = i' => Some x
+                | Some _ => 루프 (i + 1) (i' + 1)
+                | _ => 루프 (i + 1) i'
+        :& := 루프 i i' =
+            ? n |> var_is |> not
+            ?> body fn s i i'
+            |:
+                := fn = ~~ fn
+                := s = ~~ s
+                ~~ body fn s i i'
+        루프 0 0
+
+:# choose =
+    listm::init 10i32 print_and_return
+    |> from_list
+    |> choose \ x => ? x % 2 = 0 ?> Some x |: None
+    |> try_item 1i32
+    |> _assert_eq (Some 2i32)
+
+:= indexed s =
+    s
+    |> mapi \ i x =>
+        i, x
+
+:# indexed =
+    listm::init 10i32 ((*) 2)
+    |> from_list
+    |> indexed
+    |> try_item 5i32
+    |> _assert_eq (Some (5i32, 10i32))
+
+:= zip n seq1 seq2 =
+    seq1 n, seq2 n
+
+:# zip =
+    ((listm::init 10i32 id |> from_list), (listm::init 10i32 ((*) 2) |> from_list))
+    ||> zip 5i32
+    |> _assert_eq (Some 5, Some 10)
+
+:= zip_with fn seq1 seq2 =
+    \ n =>
+        fn (seq1 n) (seq2 n)
+
+:# zip_with =
+    ((listm::init 10i32 id |> from_list), (listm::init 10i32 ((*) 2) |> from_list))
+    ||> zip_with (optionm'::choose (+))
+    |> try_item 2i32
+    |> _assert_eq (Some 6)
+
+:= fold fn init seq =
+    := ^ 루프 acc n =
+        ?= seq n ?|
+        | Some x => 루프 (fn acc x) (n + 1)
+        | None => acc
+    루프 init 0
+
+:= fold_ fn init seq =
+    :~ ^ 루프 acc n =
+        ?= seq n ?|
+        | Some x => 루프 (fn acc x) (n + 1)
+        | None => acc
+    루프 init 0
+
+:= sum seq =
+    seq |> fold (+) 0
+
+:= sum_ seq =
+    seq |> fold_ (+) 0
+
+:# sum =
+    listm::init 10i32 id
+    |> from_list
+    |> \ f (n : i32) => f n
+    |> sum
+    |> _assert_eq 45
+
+:= to_list seq =
+    seq
+    |> fold (\ acc x => x :: acc) []
+    |> listm::rev
+
+:= to_list_ seq =
+    seq
+    |> fold_ (\ acc x => x :: acc) []
+    |> listm::rev
+
+:# to_list =
+    listm::init 10i32 id
+    |> from_list
+    |> \ f (n : i32) => f n
+    |> to_list
+    |> _assert_eq (listm::init 10i32 id)
+
+:= from_array \* el. (array : array el) : seq int el =
+    \ n =>
+        ? n >= length array
+        ?> None
+        |: index array n |> Some
+
+:# from_array =
+    ;[ 1; 2; 3 ]
+    |> from_array
+    |> try_item 1i32
+    |> _assert_eq (Some 2i32)
+
+:= to_array seq =
+    := ar = ;[] |> mut
+    ((), seq)
+    ||> fold \ _ x =>
+        ar <- *ar ++ ;[x]
+    *ar
+
+:= to_array_ seq =
+    := ar = ;[] |> mut
+    ((), seq)
+    ||> fold_ \ _ x =>
+        ar <- *ar ++ ;[x]
+    *ar
+
+:# to_array =
+    listm::init 10i32 id
+    |> from_list
+    |> \ (x : i32 -> _) => x
+    |> to_array
+    |> _assert_eq (;[ 0; 1; 2; 3; 4; 5; 6; 7; 8; 9 ] : array _)
+
+:= take_while cond seq =
+    := ^ 루프 acc i =
+        ?= seq i ?|
+        | Some st ?& cond st i => 루프 (st :: acc) (i + 1)
+        | _ => acc |> listm::rev
+    루프 [] 0
+
+:# take_while =
+    listm::init 10i32 id
+    |> from_list
+    |> take_while \ n (_ : i32) => n < 5
+    |> listm'::sum
+    |> _assert_eq 10
+
+:# take_while_2 =
+    stream::new_finite_stream print_and_return 10i32
+    |> flip stream::try_item
+    |> take_while \ n (_ : i32) => n < 5
+    |> listm'::sum
+    |> _assert_eq 10
+
+:= take_while_ cond seq =
+    :~ ^ 루프 acc i =
+        ?= seq i ?|
+        | Some st ?& cond st i => 루프 (st :: acc) (i + 1)
+        | _ => acc |> listm::rev
+    루프 [] 0
+
+:# take_while_3 =
+    stream::new_infinite_stream_ print_and_return
+    |> flip stream::try_item
+    |> take_while_ \ n (_ : i32) => n < 5i32
+    |> listm'::sum
+    |> _assert_eq 10
+
+:# take_while_4 =
+    stream::new_infinite_stream_ print_and_return
+    |> stream::memoize
+    |> \ list =>
+        := list = list ()
+        \ n => list |> stream::try_item n
+    |> take_while_ \ n (_ : i32) => n < 5i32
+    |> listm'::sum
+    |> _assert_eq 10
+
+:# take_while_5 =
+    stream::new_finite_stream print_and_return 10i32
+    |> stream::memoize
+    |> \ list =>
+        := list = list ()
+        \ n => list |> stream::try_item n
+    |> take_while_ \ n (_ : i32) => n < 5
+    |> listm'::sum
+    |> _assert_eq 10
+
+:= memoize_ seq =
+    := state = mut []
+    \ n =>
+        ?= *state |> listm'::try_find_ (\ (n', _) => n' = n) ?|
+        | Some (_, v) => v
+        | None =>
+            := fresh = seq n
+            state <- (n, fresh) :: *state
+            fresh
+
+:= memoize seq = memoize_ seq
+
+:# memoize =
+    := seq =
+        \ n => n |> print_and_return |> Some
+        |> memoize_
+
+    seq
+    |> take_while_ \ n (_ : i32) => n < 5
+    |> listm'::sum
+    |> _assert_eq 10
+
+    seq
+    |> take_while_ \ n _ => n < 5
+    |> listm'::sum
+    |> _assert_eq 10
+
+:= iterate \* a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
+    := ^ 루프 \* c {number}. (x : a) (n : c) : a =
+        ? n <= 0
+        ?> x
+        |: 루프 (f x) (n - 1)
+    루프 x0 num_steps
+
+:# iterate =
+    10i32 |> iterate ((*) 2) 1i32
+    |> _assert_eq 1024
+
+:= iterate_ \* a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
+    :~ ^ 루프 \* c {number}. (x : a) (n : c) : a =
+        ? n <= 0
+        ?> x
+        |: 루프 (f x) (n - 1)
+    루프 x0 num_steps
+
+:# iterate_2 =
+    10i32 |> iterate_ ((*) 2) 1i32
+    |> _assert_eq 1024
+
+:= iterate' f x0 num_steps =
+    listm::init num_steps id
+    |> listm::fold (\ x _ => f x) x0
+
+:# iterate_3 =
+    10i32 |> iterate' ((*) 2) 1i32
+    |> _assert_eq 1024
+
+:= find_last \* item result. fold_fn fn target : option result =
+    fold_fn (\ (item : item) (result : option result) =>
+        ?= result ?|
+        | None => fn item
+        | result => result
+    ) target (None : option result)
+
+:= array_find_last \* item result. (fn : item -> option result) (target : array item) : option result =
+    find_last arraym::foldBack fn target
+
+:= list_find_last \* item result. (fn : item -> option result) (target : list item) : option result =
+    find_last listm::foldBack fn target
+
+:== seq_switch' t =
+    {
+        Gleam : $'List(`t)'
+        Fsharp : $'`t seq'
+        Python : $'list'
+        Rust : $'Rc<Vec<`t>>'
+        TypeScript : $'Array<`t>'
+        Zig : $'[]const `(t)'
+    }
+:! seq' t = $'backend_switch `(seq_switch' t)'
+
+:= length' \* t. (items : seq' t) : int =
+    backend_switch {
+        Gleam = \ () =>
+            global "import gleam/list"
+            $'!items |> list.length' : int
+        Fsharp = \ () => items |> $'Seq.length' : int
+        Python = \ () => $'len(!items)' : int
+        Rust = \ () => ($'!items.len()' : convert::unativeint) |> convert::convert : int
+        TypeScript = \ () => $'!items.length' : int
+        Zig = \ () => $'@@as(`int, @@intCast(!items.len))' : int
+    }
+
+:= to_list' \* t. (items : seq' t) : listm'::list' t =
+    backend_switch {
+        Gleam = \ () => $'!items ' : listm'::list' t
+        Fsharp = \ () => items |> $'Seq.toList' : listm'::list' t
+        Python = \ () => $'!items ' : listm'::list' t
+        Rust = \ () => $'(!items).clone()' : listm'::list' t
+        TypeScript = \ () => $'[...!items]' : listm'::list' t
+        Zig = \ () => $'!items ' : listm'::list' t
+    }
+
+:= new_seq \* t. fn : seq' t =
+    backend_switch {
+        Gleam = \ () =>
+            $'!fn()' : seq' t
+        Fsharp = \ () =>
+            \ () =>
+                $'seq {'
+                fn |> indent
+                $'}' : ()
+            |> let'
+            |> \ x => x : seq' t
+        Python = \ () =>
+            $'list(!fn())' : seq' t
+    }
+
+///> fsharp
+///> cuda
+:# new_seq =
+    \ () =>
+        "a" |> yield
+        "b" |> yield
+    |> new_seq
+    |> to_list'
+    |> listm'::unbox
+    |> _assert_eq [ "a"; "b" ]
+
+:= of_array' \* t. (items : array t) : seq' t =
+    backend_switch {
+        Gleam = \ () => $'!items |> spiral_array_to_list' : seq' t
+        Fsharp = \ () =>
+            \ () =>
+                $'for i = 0 to !items.Length - 1 do yield !items.[i]'
+            |> new_seq
+            |> \ x => x : seq' t
+        Python = \ () => $'[item for item in !items]' : seq' t
+        Rust = \ () => $'Rc::new(!items.borrow().clone())' : seq' t
+        TypeScript = \ () => $'[...!items]' : seq' t
+        Zig = \ () => $'!items ' : seq' t
+    }
+
+///> cuda
+///> rust
+///> typescript
+:# of_array =
+    (;[ "a"; "b" ] : array _)
+    |> of_array'
+    |> to_list'
+    |> listm'::unbox
+    |> _assert_eq [ "a"; "b" ]
+
+:= of_array \* t. (items : array t) : seq' t =
+    backend_switch {
+        Gleam = \ () => $'!items |> spiral_array_to_list' : seq' t
+        Fsharp = \ () => $'!items |> Seq.ofArray' : seq' t
+        Python = \ () => $'list(iter(!items))' : seq' t
+        Rust = \ () => $'Rc::new(!items.borrow().clone())' : seq' t
+        TypeScript = \ () => $'[...!items]' : seq' t
+        Zig = \ () => $'!items ' : seq' t
+    }
+
+///> cuda
+///> rust
+///> typescript
+:# of_array_2 =
+    (;[ "a"; "b" ] : array _)
+    |> of_array
+    |> to_list'
+    |> listm'::unbox
+    |> _assert_eq [ "a"; "b" ]
+
+:= of_array_base \* t. (items : array_base t) : seq' t =
+    array items
+    |> \ x => x : array _
+    |> of_array
+
+///> cuda
+///> rust
+///> typescript
+:# of_array_base =
+    am'::base ;[ "a"; "b" ]
+    |> of_array_base
+    |> to_list'
+    |> listm'::unbox
+    |> _assert_eq [ "a"; "b" ]
+
+:= to_array' \* t. (items : seq' t) : array t =
+    backend_switch {
+        Gleam = \ () => $'!items |> spiral_array_from_list' : array t
+        Fsharp = \ () => items |> $'Seq.toArray' : array t
+        Python = \ () =>
+            := x = ($'!items ' : listm'::list' t) |> listm'::to_array'
+            $'!x ' : array t
+        Rust = \ () => $'Rc::new(RefCell::new((*!items).clone()))' : array t
+        TypeScript = \ () => $'[...!items]' : array t
+        Zig = \ () => $'(spiral_gpa.dupe(`t, !items) catch @@panic("out of memory"))' : array t
+    }
+
+///> cuda
+///> rust
+///> typescript
+:# to_array_2 =
+    am'::base ;[ "a"; "b" ]
+    |> of_array_base
+    |> to_array'
+    |> \ x => x : array _
+    |> am'::to_list'
+    |> listm'::unbox
+    |> _assert_eq [ "a"; "b" ]
+
+:= of_list' \* t. (items : listm'::list' t) : seq' t =
+    backend_switch {
+        Gleam = \ () => $'!items ' : seq' t
+        Fsharp = \ () =>
+            \ () =>
+                items |> yield_from
+            |> new_seq
+            |> \ x => x : seq' t
+        Python = \ () => $'!items ' : seq' t
+        Rust = \ () => $'(!items).clone()' : seq' t
+        TypeScript = \ () => $'[...!items]' : seq' t
+        Zig = \ () => $'!items ' : seq' t
+    }
+
+:= cast' \* t u. (items : u) : seq' t =
+    backend_switch {
+        Gleam = \ () => $'!items ' : seq' t
+        Fsharp = \ () => items |> $'Seq.cast' : seq' t
+        Python = \ () => $'list(!items)' : seq' t
+        Rust = \ () =>
+            := x : seq' t =
+                ~>
+                    ?: u ?|
+                    | seq' ~x => $'(!items).clone()' : seq' t
+                    | listm'::list' ~x => $'(!items).clone()' : seq' t
+                    | array_base ~x => $'Rc::new(!items.borrow().clone())' : seq' t
+                    | array ~x => $'Rc::new(!items.borrow().clone())' : seq' t
+                    | _ => $'Rc::new(IntoIterator::into_iter(!items).collect::<Vec<`t>>())' : seq' t
+            x
+        TypeScript = \ () => $'Array.from(!items)' : seq' t
+        Zig = \ () => $'!items ' : seq' t
+    }
+
+:= rev'' \* t. (items : seq' t) : seq' t =
+    backend_switch {
+        Gleam = \ () =>
+            global "import gleam/list"
+            $'!items |> list.reverse' : seq' t
+        Fsharp = \ () => items |> $'Seq.rev' : seq' t
+        Python = \ () => $'list(reversed(!items))' : seq' t
+        Rust = \ () => $'Rc::new((!items).as_ref().iter().rev().cloned().collect::<Vec<_>>())' : seq' t
+        TypeScript = \ () => $'[...!items].reverse()' : seq' t
+        Zig = fun () => $'blk: { const r = spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"); \
+            std.mem.reverse(`t, r); break :blk r; }' : seq' t
+    }
+
+///> cuda
+///> rust
+///> typescript
+:# rev =
+    [ "a"; "b" ]
+    |> listm'::box
+    |> of_list'
+    |> rev''
+    |> to_list'
+    |> listm'::unbox
+    |> _assert_eq [ "b"; "a" ]
+
+:! fuse t =
+    `(
+        rust::rust_type
+            `($'core_iter_Fuse<`t>')
+            `($'core::iter::Fuse<`t>')
+            "type core_iter_Fuse<'T> = class end"
+    )

@@ -1,0 +1,8 @@
+:= main () : i32 =
+    := ~buffer_length = 2i32
+    := ~buffer : array u8 = create buffer_length
+    set buffer 0i32 0
+    set buffer 1i32 0
+    := ~byte_value = 65i32
+    := ~requested_bytes = 3i32
+    $"spiral_abi_libc_memset(!buffer,!byte_value,!requested_bytes)" : i32

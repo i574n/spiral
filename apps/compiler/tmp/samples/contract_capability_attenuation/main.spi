@@ -1,0 +1,21 @@
+:! admin = ()
+:! publish_only = ()
+
+:| capability scope =
+    | AdminCapability :: capability admin
+    | PublishCapability :: capability publish_only
+
+:= attenuate (capability : capability admin) : capability publish_only =
+    ?= capability ?|
+    | AdminCapability => PublishCapability
+
+:= publish (capability : capability publish_only) : string =
+    ?= capability ?|
+    | PublishCapability => "attenuated-capability"
+
+:= rotate_keys (capability : capability admin) : string =
+    ?= capability ?|
+    | AdminCapability => "keys-rotated"
+
+:= main () : string =
+    publish (attenuate AdminCapability)

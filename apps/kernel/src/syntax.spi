@@ -1,0 +1,205 @@
+///- --package .
+:# syntax static =
+    :< testing
+
+:< sm'_operators
+
+:! name = string
+
+:| ^ level =
+    | Zero
+    | Succ : level
+    | Max : level * level
+    | IMax : level * level
+    | Param : name
+
+:| binder =
+    | Default
+    | Implicit
+    | StrictImplicit
+    | InstImplicit
+
+:| ^ term =
+    | BVar : i32
+    | FVar : name
+    | Sort : level
+    | Const : name * list level
+    | App : term * term
+    | Lam : name * binder * term * term
+    | Pi : name * binder * term * term
+    | Let : name * term * term * term
+    | Proj : name * i32 * term
+    | NatLit : u64
+    | StrLit : string
+    | BigNat : string
+
+:~ name_text ((name n) : name) : string = n
+
+:~ ^ level_text (l : level) : string =
+    ?= l ?|
+    | Zero => "0"
+    | Succ x => level_text x ++# "+1"
+    | Max (a, b) => "max (" ++# level_text a ++# ") (" ++# level_text b ++# ")"
+    | IMax (a, b) => "imax (" ++# level_text a ++# ") (" ++# level_text b ++# ")"
+    | Param n => name_text n
+
+:~ sort_text (l : level) : string =
+    ?= l ?|
+    | Zero => "Prop"
+    | Succ x =>
+        ?= x ?|
+        | Zero => "Type"
+        | _ => "Sort (" ++# level_text l ++# ")"
+    | _ => "Sort (" ++# level_text l ++# ")"
+
+:~ binder_text (b : binder) (inner : string) : string =
+    ?= b ?|
+    | Default => "(" ++# inner ++# ")"
+    | Implicit => "{" ++# inner ++# "}"
+    | StrictImplicit => "⦃" ++# inner ++# "⦄"
+    | InstImplicit => "[" ++# inner ++# "]"
+
+:~ ^ term_text (t : term) : string =
+    ?= t ?|
+    | BVar i => "#" ++# sm'::obj_to_string i
+    | FVar n => name_text n
+    | Sort l => sort_text l
+    | Const (n, _) => name_text n
+    | App (f, a) => "(" ++# term_text f ++# " " ++# term_text a ++# ")"
+    | Lam (n, b, ty, body) =>
+        "fun " ++# binder_text b (name_text n ++# " : " ++# term_text ty) ++# " => " ++# term_text body
+    | Pi (n, b, ty, body) => binder_text b (name_text n ++# " : " ++# term_text ty) ++# " -> " ++# term_text body
+    | Let (n, ty, v, body) =>
+        "let " ++# name_text n ++# " : " ++# term_text ty ++# " := " ++# term_text v ++# "; " ++# term_text body
+    | Proj (n, i, s) => name_text n ++# "." ++# sm'::obj_to_string i ++# " " ++# term_text s
+    | NatLit k => sm'::obj_to_string k
+    | BigNat s => s
+    | StrLit s => "«" ++# s ++# "»"
+
+:~ larger (a : i32) (b : i32) : i32 = ? a > b ?> a |: b
+
+:~ ^ loose_range (t : term) : i32 =
+    ?= t ?|
+    | BVar i => i + 1i32
+    | App (f, a) => larger (loose_range f) (loose_range a)
+    | Lam (_, _, ty, body) => larger (loose_range ty) (loose_range body - 1i32)
+    | Pi (_, _, ty, body) => larger (loose_range ty) (loose_range body - 1i32)
+    | Let (_, ty, v, body) => larger (larger (loose_range ty) (loose_range v)) (loose_range body - 1i32)
+    | Proj (_, _, s) => loose_range s
+    | _ => 0i32
+
+:~ is_closed (t : term) : bool = loose_range t = 0i32
+
+:~ ^ node_count (t : term) : i32 =
+    ?= t ?|
+    | App (f, a) => 1i32 + node_count f + node_count a
+    | Lam (_, _, ty, body) => 1i32 + node_count ty + node_count body
+    | Pi (_, _, ty, body) => 1i32 + node_count ty + node_count body
+    | Let (_, ty, v, body) => 1i32 + node_count ty + node_count v + node_count body
+    | Proj (_, _, s) => 1i32 + node_count s
+    | _ => 1i32
+
+:~ mix (h : i64) (x : i64) : i64 = (h * 31i64 + x) % 1000000007i64
+
+:~ wide (i : i32) : i64 = conv i
+
+:~ ^ text_hash_from (s : string) (i : i32) (h : i64) : i64 =
+    ? i >= sm'::length s ?> h |: text_hash_step s i h
+:& :~ text_hash_step (s : string) (i : i32) (h : i64) : i64 =
+    := code : i64 = conv (sm'::char_code (sm::index s i))
+    text_hash_from s (i + 1i32) (mix h code)
+
+:~ text_hash (s : string) : i64 = text_hash_from s 0i32 7i64
+
+:~ ^ level_hash (l : level) : i64 =
+    ?= l ?|
+    | Zero => 1i64
+    | Succ x => mix 2i64 (level_hash x)
+    | Max (a, b) => mix (mix 3i64 (level_hash a)) (level_hash b)
+    | IMax (a, b) => mix (mix 4i64 (level_hash a)) (level_hash b)
+    | Param (name n) => mix 5i64 (text_hash n)
+
+:~ ^ levels_hash (ls : list level) : i64 =
+    ?= ls ?|
+    | l :: rest => mix (level_hash l) (levels_hash rest)
+    | [] => 6i64
+
+:~ ^ term_hash (t : term) : i64 =
+    ?= t ?|
+    | BVar i => mix 11i64 (wide i)
+    | FVar (name n) => mix 12i64 (text_hash n)
+    | Sort l => mix 13i64 (level_hash l)
+    | Const ((name n), ls) => mix (mix 14i64 (text_hash n)) (levels_hash ls)
+    | App (f, a) => mix (mix 15i64 (term_hash f)) (term_hash a)
+    | Lam (_, _, ty, body) => mix (mix 16i64 (term_hash ty)) (term_hash body)
+    | Pi (_, _, ty, body) => mix (mix 17i64 (term_hash ty)) (term_hash body)
+    | Let (_, ty, v, body) => mix (mix (mix 18i64 (term_hash ty)) (term_hash v)) (term_hash body)
+    | Proj ((name s), i, x) => mix (mix (mix 19i64 (text_hash s)) (wide i)) (term_hash x)
+    | NatLit k => mix 20i64 (conv k)
+    | BigNat s => mix 22i64 (text_hash s)
+    | StrLit s => mix 21i64 (text_hash s)
+
+:? same_as t : t -> t -> bool
+
+:~ ^ same_level (a : level) (b : level) : bool =
+    ?= a ?|
+    | Zero => ?= b ?| Zero => !+ | _ => !-
+    | Succ x => ?= b ?| Succ y => same_level x y | _ => !-
+    | Max (x, y) => ?= b ?| Max (u, v) => same_level x u && same_level y v | _ => !-
+    | IMax (x, y) => ?= b ?| IMax (u, v) => same_level x u && same_level y v | _ => !-
+    | Param (name n) => ?= b ?| Param (name m) => n = m | _ => !-
+
+:~ ^ same_levels (a : list level) (b : list level) : bool =
+    ?= a ?|
+    | x :: xs => ?= b ?| y :: ys => same_level x y && same_levels xs ys | [] => !-
+    | [] => ?= b ?| [] => !+ | _ => !-
+
+:~ ^ same_term (a : term) (b : term) : bool =
+    ?= a ?|
+    | BVar i => ?= b ?| BVar j => i = j | _ => !-
+    | FVar (name n) => ?= b ?| FVar (name m) => n = m | _ => !-
+    | Sort l => ?= b ?| Sort k => same_level l k | _ => !-
+    | Const ((name n), ls) => ?= b ?| Const ((name m), ks) => n = m && same_levels ls ks | _ => !-
+    | App (f, x) => ?= b ?| App (g, y) => same_term f g && same_term x y | _ => !-
+    | Lam (_, _, t, s) => ?= b ?| Lam (_, _, u, v) => same_term t u && same_term s v | _ => !-
+    | Pi (_, _, t, s) => ?= b ?| Pi (_, _, u, v) => same_term t u && same_term s v | _ => !-
+    | Let (_, t, x, s) => ?= b ?| Let (_, u, y, v) => same_term t u && same_term x y && same_term s v | _ => !-
+    | Proj ((name n), i, s) => ?= b ?| Proj ((name m), j, u) => n = m && i = j && same_term s u | _ => !-
+    | NatLit k => ?= b ?| NatLit j => k = j | _ => !-
+    | BigNat s => ?= b ?| BigNat r => s = r | _ => !-
+    | StrLit s => ?= b ?| StrLit r => s = r | _ => !-
+
+:+ same_as level = \ a b => same_level a b
+
+:+ same_as term = \ a b => same_term a b
+
+:~ id_on (n : string) (b : binder) : term = Lam (name n, b, Sort Zero, BVar 0i32)
+
+///> rust
+:# the_identity_on_prop_prints_with_its_binder_and_is_closed =
+    (term_text (id_on "x" Default), term_text (id_on "x" Implicit), is_closed (id_on "x" Default))
+    |> _assert_eq ("fun (x : Prop) => #0", "fun {x : Prop} => #0", !+)
+
+///> rust
+:# a_bound_variable_escaping_its_binders_is_loose =
+    := escaping = Pi (name "a", Default, Sort (Succ Zero), BVar 1i32)
+    (loose_range (BVar 2i32), loose_range escaping, is_closed escaping) |> _assert_eq (3i32, 1i32, !-)
+
+///> rust
+:# sorts_print_as_prop_type_or_their_level =
+    := texts = (sort_text Zero, sort_text (Succ Zero), sort_text (Param (name "u")), sort_text (IMax (Zero, Zero)))
+    texts |> _assert_eq ("Prop", "Type", "Sort (u)", "Sort (imax (0) (0))")
+
+///> rust
+:# equality_ignores_binder_names_and_info_but_not_structure =
+    := renamed = same_as (id_on "x" Default) (id_on "y" Implicit)
+    := other = same_as (id_on "x" Default) (Lam (name "x", Default, Sort (Succ Zero), BVar 0i32))
+    (renamed, other, same_as (Succ Zero) (Succ Zero), node_count (id_on "x" Default)) |> _assert_eq (!+, !-, !+, 3i32)
+
+///> rust
+:# the_structural_hash_agrees_with_equality_and_separates_shapes =
+    := renamed = term_hash (id_on "x" Default) = term_hash (id_on "y" Implicit)
+    := sorts = term_hash (id_on "x" Default) <> term_hash (Lam (name "x", Default, Sort (Succ Zero), BVar 0i32))
+    := fields = term_hash (Proj (name "P", 0i32, FVar (name "p"))) <> term_hash (Proj (name "P", 1i32, FVar (name "p")))
+    := names = term_hash (Const (name "ab", [])) <> term_hash (Const (name "ba", []))
+    (renamed, sorts, fields, names) |> _assert_eq (!+, !+, !+, !+)

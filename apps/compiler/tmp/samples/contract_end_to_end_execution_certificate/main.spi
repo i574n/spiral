@@ -1,0 +1,37 @@
+:! compiler_v2 = ()
+:! source_hash_a = ()
+:! publish_node = ()
+:! validated = ()
+:! authorized = ()
+:! committed = ()
+:! success = ()
+
+:| plan compiler source id from to =
+    | PublishPlan :: plan compiler_v2 source_hash_a publish_node validated authorized
+
+:| receipt compiler source id from to status =
+    | PublishReceipt :: receipt compiler_v2 source_hash_a publish_node validated authorized committed
+
+:| runtime_event compiler source id from to outcome =
+    | PublishEvent :: runtime_event compiler_v2 source_hash_a publish_node validated authorized success
+
+:| certificate compiler source id from to =
+    | Certificate :: \* compiler source id from to.
+        plan compiler source id from to *
+        receipt compiler source id from to committed *
+        runtime_event compiler source id from to success
+        -> certificate compiler source id from to
+
+:= certify \* compiler source id from to.
+    (plan : plan compiler source id from to)
+    (receipt : receipt compiler source id from to committed)
+    (event : runtime_event compiler source id from to success)
+    : certificate compiler source id from to =
+    Certificate (plan, receipt, event)
+
+:= render (certificate : certificate compiler_v2 source_hash_a publish_node validated authorized) : string =
+    ?= certificate ?|
+    | Certificate _ => "end-to-end-certificate"
+
+:= main () : string =
+    render (certify PublishPlan PublishReceipt PublishEvent)

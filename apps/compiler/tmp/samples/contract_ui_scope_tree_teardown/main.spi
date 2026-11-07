@@ -1,0 +1,66 @@
+:! app_scope = ()
+:! root_owner = ()
+:! child_a = ()
+:! child_b = ()
+:! live = ()
+:! draining = ()
+:! disposed = ()
+
+:| subtree scope root left right state =
+    | LiveSubtree :: \* scope root left right. string -> subtree scope root left right live
+    | DrainingSubtree :: \* scope root left right. string -> subtree scope root left right draining
+    | DisposedSubtree :: \* scope root left right. string -> subtree scope root left right disposed
+
+:| disposal scope owner state =
+    | LiveOwner :: \* scope owner. string -> disposal scope owner live
+    | DisposedOwner :: \* scope owner. string -> disposal scope owner disposed
+
+:| teardown_action scope root left right from to =
+    | BeginTeardown :: \* scope root left right.
+        teardown_action scope root left right live draining
+    | CommitTeardown :: \* scope root left right.
+        disposal scope left disposed * disposal scope right disposed
+        -> teardown_action scope root left right draining disposed
+
+:| ^ teardown_plan scope root left right from to =
+    | TeardownLeaf :: \* scope root left right from to.
+        teardown_action scope root left right from to
+        -> teardown_plan scope root left right from to
+    | TeardownThen :: \* scope root left right from to.
+        (\? middle.
+            teardown_plan scope root left right from middle
+            * teardown_action scope root left right middle to)
+        -> teardown_plan scope root left right from to
+
+:= apply_action \* scope root left right from to.
+    (action : teardown_action scope root left right from to)
+    (tree : subtree scope root left right from)
+    : subtree scope root left right to =
+    ?= action, tree ?|
+    | BeginTeardown, LiveSubtree _ => DrainingSubtree "scope-tree-draining"
+    | CommitTeardown (DisposedOwner _, DisposedOwner _), DrainingSubtree _ =>
+        DisposedSubtree "scope-tree-disposed"
+
+:= ^ execute \* scope root left right from to.
+    (plan : teardown_plan scope root left right from to)
+    (tree : subtree scope root left right from)
+    : subtree scope root left right to =
+    ?= plan ?|
+    | TeardownLeaf action => apply_action action tree
+    | TeardownThen payload =>
+        := \? middle. prefix, action = payload
+        apply_action action (execute prefix tree)
+
+:= label \* scope root left right.
+    (tree : subtree scope root left right disposed)
+    : string =
+    ?= tree ?|
+    | DisposedSubtree value => value
+
+:= main () : string =
+    := tree : subtree app_scope root_owner child_a child_b live = LiveSubtree "root"
+    := left : disposal app_scope child_a disposed = DisposedOwner "a"
+    := right : disposal app_scope child_b disposed = DisposedOwner "b"
+    := plan : teardown_plan app_scope root_owner child_a child_b live disposed =
+        TeardownThen (\? (TeardownLeaf BeginTeardown, CommitTeardown (left, right)))
+    label (execute plan tree)

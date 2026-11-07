@@ -1,0 +1,12 @@
+:= main () : i32 =
+    := ~a = "no"
+    := ~b = "nay"
+    := pair = a, b
+    := box : mut { value : string * string } = !!!!LayoutToHeapMutable({ value = pair })
+    := ~c = "hi"
+    := ~d = "yo"
+    := replaced = c, d
+    box <- { value = replaced }
+    := opened = !!!!LayoutIndex(box)
+    := ~(left, right) = opened::value
+    ? !!!!EQ(left, "hi") && !!!!EQ(right, "yo") ?> 0i32 |: 1i32

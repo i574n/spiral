@@ -1,0 +1,23 @@
+:! app_scope = ()
+:! i0 = ()
+:! i1 = ()
+:! i2 = ()
+:! open_stream = ()
+
+:| stream scope cursor state =
+    | Stream :: \* scope cursor state. string -> stream scope cursor state
+
+:| chunk scope from to =
+    | Chunk :: \* scope from to. string -> chunk scope from to
+
+:= append \* scope from to.
+    (stream : stream scope from open_stream)
+    (chunk : chunk scope from to)
+    : stream scope to open_stream =
+    ?= stream, chunk ?|
+    | Stream _, Chunk label => Stream label
+
+:= main () =
+    := stream0 : stream app_scope i0 open_stream = Stream "head"
+    := chunk1 : chunk app_scope i1 i2 = Chunk "tail"
+    append stream0 chunk1

@@ -1,0 +1,44 @@
+:= main () : i32 =
+    := ~a = 100i8
+    := ~three = 3i8
+    := mul = a *. three
+    := ~n = 0i8 -. 8i8
+    := ~two = 2i8
+    := dv = n /. two
+    := md = n %. three
+    := neg = !!!!Neg(three)
+    := sh = !!!!ShiftLeft(a, 1i32)
+    := ~b = 200u8
+    := ~c = 3u8
+    := ud = b /. c
+    := um = b %. c
+    := ~mask = 15u8
+    := band = !!!!BitwiseAnd(b, mask)
+    := bor = !!!!BitwiseOr(b, mask)
+    := bxor = !!!!BitwiseXor(b, mask)
+    := inv = !!!!BitwiseComplement(mask)
+    := ~p = 20000i16
+    := ~seven = 7i16
+    := d16 = p /. seven
+    := m16 = p %. seven
+    := n16 = !!!!Neg(p)
+    := ~q = 40000u16
+    := sh16 = !!!!ShiftLeft(q, 1i32)
+    ?
+        mul =. 44i8
+        && dv =. (0i8 -. 4i8)
+        && md =. (0i8 -. 2i8)
+        && neg =. (0i8 -. 3i8)
+        && sh =. (0i8 -. 56i8)
+        && ud =. 66u8
+        && um =. 2u8
+        && band =. 8u8
+        && bor =. 207u8
+        && bxor =. 199u8
+        && inv =. 240u8
+        && d16 =. 2857i16
+        && m16 =. 1i16
+        && n16 =. (0i16 -. 20000i16)
+        && sh16 =. 14464u16
+    ?> 0i32
+    |: 1i32

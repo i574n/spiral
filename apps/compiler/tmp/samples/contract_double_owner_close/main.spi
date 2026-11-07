@@ -1,0 +1,16 @@
+:! term_kind = ()
+:! owner_open = ()
+:! owner_closed = ()
+
+:| owner kind state =
+    | TermOpen :: owner term_kind owner_open
+    | TermClosed :: owner term_kind owner_closed
+
+:= close_owner \* kind. (owner : owner kind owner_open) : owner kind owner_closed =
+    ?= owner ?|
+    | TermOpen => TermClosed
+
+:= main () : string =
+    := owner_closed = close_owner TermOpen
+    := _ = close_owner owner_closed
+    "unreachable"

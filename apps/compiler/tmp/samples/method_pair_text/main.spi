@@ -1,0 +1,11 @@
+:= pick (n : i32) : string * string =
+    ? n =. 0i32 ?>
+        "no", "no"
+    |:
+        "hi", "yo"
+
+:= main () : i32 =
+    := ~n = 7i32
+    := pair = ~~ pick n
+    := ~(left, right) = pair
+    ? !!!!EQ(left, "hi") && !!!!EQ(right, "yo") ?> 0i32 |: 1i32

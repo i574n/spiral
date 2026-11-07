@@ -1,0 +1,3 @@
+:= main () : i32 =
+    := h : holders::holder bool = ~> mk::make ()
+    holders::apply_to h !+

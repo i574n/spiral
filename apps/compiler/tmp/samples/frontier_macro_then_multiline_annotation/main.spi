@@ -1,0 +1,12 @@
+:= f (left : i64) (right : i64) : i64 =
+    $"!left * !right"
+
+:| eq a b =
+    | Refl :: \* a. string -> eq a a
+
+:= g \* a b.
+    (e : eq
+            a b) : i32 =
+    0i32
+
+:= main () : i32 = 0i32

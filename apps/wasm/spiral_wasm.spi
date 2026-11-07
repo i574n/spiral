@@ -1,0 +1,224 @@
+/// # spiral_wasm
+:< rust_operators
+:< sm'_operators
+
+/// ## spiral_wasm
+
+/// ### get_args
+:= get_args () =
+    {
+        exception = "exception", 'e'
+        trace_level = "trace_level", 't'
+        wasm = "wasm", 'w'
+    }
+
+/// ### get_command
+:~ get_command () =
+    ###"command"
+    |> clap.new_command
+    |> clap.command_args_override_self !+
+    |> clap.command_init_arg (get_args () .exception) (
+        clap.arg_num_args_range (
+            clap.new_value_range
+                !+
+                (am'.End eval)
+                (am'.End \ _ => (1i32 |> convert.convert : convert.unativeint))
+        )
+        >> clap.arg_require_equals !+
+        >> clap.arg_default_missing_value ""
+    )
+    |> clap.command_init_arg (get_args () .trace_level) (
+        ~> clap.arg_union `trace_level ignore
+    )
+    |> clap.command_init_arg (get_args () .wasm) (
+        clap.arg_required !+
+    )
+
+/// ### run
+:~ run
+    (matches : clap.arg_matches)
+    : async.future_pin (
+        resultm.result'
+            u8
+            resultm.anyhow_error
+    )
+    =
+    \ () =>
+        := wasm_path =
+            matches
+            |> clap.matches_get_one (get_args () .wasm |> fst)
+            |> optionm'.unbox
+            |> optionm.value
+            |> sm'.from_std_string
+
+        trace Verbose (\ () => "spiral_wasm.run") \ () => { wasm_path }
+
+        := wasm = wasm_path |> file_system.read |> resultm.try'
+
+        :~ fn (retry : u8) =
+            \ () =>
+                := worker = near_workspaces.sandbox_worker () |> resultm.try'
+                := contract = worker |> near_workspaces.dev_deploy wasm |> async.await |> resultm.try'
+
+                trace Verbose (\ () => "spiral_wasm.run") \ () => { retry worker contract }
+
+                := result =
+                    contract
+                    |> near_workspaces.call "state_main"
+                    |> near_workspaces.gas (near_workspaces.from_tgas 300)
+                    |> near_workspaces.transact
+                    |> async.await
+                    |> resultm.try'
+
+                trace Verbose (\ () => "spiral_wasm.run") \ () => { retry result }
+
+                result
+                |> near_workspaces.logs
+                |> am'.vec_map sm'.ref_to_std_string
+                |> am'.vec_for_each console.write_line
+
+                trace_raw Info (\ () => " ")
+                result |> near_workspaces.print_usd retry
+
+                := result2 = result |> near_workspaces.into_result
+
+                trace Verbose (\ () => "spiral_wasm.run") \ () => { result2 }
+
+                := receipt_failures = result |> near_workspaces.receipt_failures
+                := receipt_failures_len = receipt_failures |> am'.vec_len |> convert.i32
+
+                trace Verbose
+                    \ () => "spiral_wasm.run"
+                    \ () => { receipt_failures_len receipt_failures }
+
+                := receipt_outcomes = result |> near_workspaces.receipt_outcomes
+                := receipt_outcomes_len = receipt_outcomes |> am'.vec_len |> convert.i32
+
+                trace Verbose
+                    \ () => "spiral_wasm.run"
+                    \ () => { receipt_outcomes_len receipt_outcomes }
+
+                := json = result |> near_workspaces.json
+
+                trace Verbose (\ () => "spiral_wasm.run") \ () => { json }
+
+                := borsh = result |> near_workspaces.borsh
+
+                trace Verbose (\ () => "spiral_wasm.run") \ () => { borsh }
+
+                := error = #?{ receipt_outcomes_len retry receipt_failures }
+                ? receipt_failures_len > 0
+                ?> (Ok (Some error) : _ _ resultm.anyhow_error) |> resultm.box
+                |? receipt_outcomes_len > 1
+                ?> (Ok None : _ _ resultm.anyhow_error) |> resultm.box
+                |: error |> resultm.anyhow_error |> resultm.err
+            |> async.new_future_move
+
+        :~ ^ 루프 (retry : u8) =
+            := max = 15
+            := init (error : _ string) =
+                \ () =>
+                    { retry error }
+                |> async.new_future_move
+            \ () =>
+                := result =
+                    fn retry
+                    |> async.await
+                    |> resultm.map_error' sm'.format'
+                    |> resultm.unbox
+                ?= result ?|
+                | Ok (None) =>
+                    init None
+                    |> async.await
+                    |> Ok
+                | Ok (Some error) =>
+                    trace Critical (\ () => "spiral_wasm.run / Ok (Some error)") \ () => { retry error }
+                    init (Some error)
+                    |> async.await
+                    |> Error
+                | Error error ?& retry >= max =>
+                    trace Warning (\ () => "spiral_wasm.run / Error error") \ () => { retry error }
+                    trace_raw Warning (\ () => "\n")
+                    init None
+                    |> async.await
+                    |> Ok
+                | Error error =>
+                    trace Warning (\ () => "spiral_wasm.run / Error error") \ () => { retry error }
+                    trace_raw Warning (\ () => "\n")
+                    루프 (retry + 1) |> async.await
+            |> async.new_future_move
+        := retries = 루프 1 |> async.await
+
+        trace Verbose (\ () => "spiral_wasm.run") \ () => { retries }
+
+        ?= retries ?|
+        | Ok { retry } => Ok retry |> resultm.box
+        | Error { retry error } => #?{ retries error } |> resultm.anyhow_error |> resultm.err
+
+    |> async.new_future_move
+
+/// ### main
+///> _
+
+:= run_main (args : array_base string) : i32 =
+    := command = get_command ()
+    := arg_matches = command |> clap.command_get_matches
+
+    := trace_level =
+        arg_matches
+        |> clap.matches_get_one (get_args () .trace_level |> fst)
+        |> optionm'.unbox
+        |> optionm.map (
+            sm'.from_std_string
+            >> reflection.union_try_pick
+        )
+        |> optionm'.flatten
+        |> optionm'.default_value Verbose
+
+    := trace_state = get_trace_state_or_init (Some trace_level)
+
+    trace Verbose
+        \ () => "spiral_wasm.main"
+        \ () => { args }
+
+    := exception =
+        arg_matches
+        |> clap.matches_get_one (get_args () .exception |> fst)
+        |> optionm'.map (sm'.from_std_string >> sm'.trim_start [ '\\' ] >> sm'.trim_end [ '\\' ])
+        |> optionm'.unbox
+
+    := result =
+        arg_matches
+        |> run
+        |> async.block_on_tokio
+        |> resultm.map_error' sm'.format'
+
+    ?= result |> rust.clone_rust |> resultm.unbox, exception ?|
+    | Ok retries, Some exception =>
+        "spiral_wasm.main / retries: " ++# sm'.format retries ++# " / exception: '" ++# exception ++# "'"
+        |> resultm.err |> resultm.unwrap'
+    | Error _error, Some ("") =>
+        ()
+    | Error error, Some exception ?& error |> sm'.from_std_string |> sm'.contains exception =>
+        ()
+    | Error error, Some exception =>
+        "spiral_wasm.main / exception: '" ++# exception ++# "' / error: " ++# sm'.from_std_string error
+        |> resultm.err |> resultm.unwrap'
+    | Ok _retries, _ =>
+        ()
+    | Error _error, _ =>
+        result |> resultm.unwrap' |> ignore
+
+    0i32
+
+/// F#: `main` for the Fable build. Native Rust (`--backend Rust`, see build.ps1): runs `run_main` with the process
+/// args.
+///> _
+
+:= main () =
+    backend_switch {
+        Fsharp = \ () => $'let main args = !run_main args' : ()
+        Rust = \ () =>
+            := args : array_base string = am'.init_base (env.command_line_argument_count ()) env.command_line_argument
+            run_main args |> ignore
+    } : ()

@@ -1,0 +1,47 @@
+:! raw_a = ()
+:! decided_a = ()
+
+:| state_a phase =
+    | RawA :: i32 -> state_a raw_a
+    | DecidedA :: i32 * bool -> state_a decided_a
+
+:~ decide_a (state : state_a raw_a) : state_a decided_a =
+    ?= state ?|
+    | RawA value => DecidedA (value, !+)
+
+:! raw_b = ()
+:! decided_b = ()
+
+:| state_b phase =
+    | DecidedB :: bool * i32 -> state_b decided_b
+    | RawB :: i32 -> state_b raw_b
+
+:~ decide_b (state : state_b raw_b) : state_b decided_b =
+    ?= state ?|
+    | RawB value => DecidedB (!+, value)
+
+:! raw_c = ()
+:! decided_c = ()
+:! final_c = ()
+
+:| state_c phase =
+    | RawC :: i32 -> state_c raw_c
+    | DecidedC :: i32 * bool -> state_c decided_c
+    | FinalC :: bool -> state_c final_c
+
+:~ decide_c (state : state_c raw_c) : state_c decided_c =
+    ?= state ?|
+    | RawC value => DecidedC (value, !+)
+
+:~ finalize_c (state : state_c decided_c) : state_c final_c =
+    ?= state ?|
+    | DecidedC (_, accepted) => FinalC accepted
+
+:= main () : i32 =
+    := a = decide_a (RawA 7i32)
+    := b = decide_b (RawB 9i32)
+    := c = finalize_c (decide_c (RawC 11i32))
+    := a_ok = ?= a ?| | DecidedA (_, accepted) => accepted
+    := b_ok = ?= b ?| | DecidedB (accepted, _) => accepted
+    := c_ok = ?= c ?| | FinalC accepted => accepted
+    ? a_ok && b_ok && c_ok ?> 0i32 |: 1i32

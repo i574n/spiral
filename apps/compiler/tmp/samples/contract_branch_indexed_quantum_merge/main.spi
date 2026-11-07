@@ -1,0 +1,64 @@
+:! lineage_a = ()
+:! root_branch = ()
+:! left_branch = ()
+:! right_branch = ()
+:! measured_branch = ()
+
+:| qtoken lineage branch =
+    | RootToken :: \* lineage. string -> qtoken lineage root_branch
+    | LeftToken :: \* lineage. string -> qtoken lineage left_branch
+    | RightToken :: \* lineage. string -> qtoken lineage right_branch
+    | MeasuredToken :: \* lineage. string -> qtoken lineage measured_branch
+
+:| branch_step lineage from to =
+    | MeasureLeft :: \* lineage. branch_step lineage left_branch measured_branch
+    | MeasureRight :: \* lineage. branch_step lineage right_branch measured_branch
+
+:| split_pair lineage =
+    | SplitPair :: \* lineage.
+        qtoken lineage left_branch * qtoken lineage right_branch
+        -> split_pair lineage
+
+:| ^ branch_plan lineage from to =
+    | BranchLeaf :: \* lineage from to.
+        branch_step lineage from to
+        -> branch_plan lineage from to
+    | BranchThen :: \* lineage from to.
+        (\? middle. branch_plan lineage from middle * branch_step lineage middle to)
+        -> branch_plan lineage from to
+
+:= split \* lineage.
+    (token : qtoken lineage root_branch)
+    : split_pair lineage =
+    ?= token ?|
+    | RootToken label => SplitPair (LeftToken label, RightToken label)
+
+:= measure_left \* lineage.
+    (step : branch_step lineage left_branch measured_branch)
+    (token : qtoken lineage left_branch)
+    : qtoken lineage measured_branch =
+    ?= step, token ?|
+    | MeasureLeft, LeftToken label => MeasuredToken label
+
+:= merge \* lineage.
+    (pair : split_pair lineage)
+    : qtoken lineage root_branch =
+    ?= pair ?|
+    | SplitPair (LeftToken _, RightToken _) => RootToken "branches-merged"
+
+:= measured_label \* lineage. (token : qtoken lineage measured_branch) : string =
+    ?= token ?|
+    | MeasuredToken value => value
+
+:= label \* lineage. (token : qtoken lineage root_branch) : string =
+    ?= token ?|
+    | RootToken value => value
+
+:= main () : string =
+    := root : qtoken lineage_a root_branch = RootToken "root"
+    := pair = split root
+    := measured =
+        ?= pair ?|
+        | SplitPair (left, _) => measure_left MeasureLeft left
+    ?= measured ?|
+    | MeasuredToken _ => label (merge pair)

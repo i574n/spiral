@@ -1,0 +1,19 @@
+:! zero = ()
+:! succ n = n
+
+:| ^ budget n =
+    | ZeroBudget :: budget zero
+    | MoreBudget :: \* n. budget n -> budget (succ n)
+
+:= spend_one \* n. (budget : budget (succ n)) : budget n =
+    ?= budget ?|
+    | MoreBudget rest => rest
+
+:= render (budget : budget (succ zero)) : string =
+    ?= budget ?|
+    | MoreBudget rest =>
+        ?= rest ?|
+        | ZeroBudget => "static-budget-preserved"
+
+:= main () : string =
+    render (spend_one (spend_one (MoreBudget (MoreBudget (MoreBudget ZeroBudget)))))

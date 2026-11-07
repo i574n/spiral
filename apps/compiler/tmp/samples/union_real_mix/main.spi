@@ -1,0 +1,16 @@
+:| slot =
+    | None
+    | Both : f64 * i32
+
+:~ score x : i32 =
+    ?= x ?|
+    | None => 1i32
+    | Both (value, n) =>
+        ? !!!!EQ(value, 1.5f64) && n =. 7i32 ?> 0i32 |: 1i32
+
+:= main () : i32 =
+    := ~x = 1.5f64
+    := ~n = 7i32
+    := ~flag = !+
+    := held = ? flag ?> Both (x, n) |: None
+    score held

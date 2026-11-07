@@ -1,0 +1,7 @@
+:< model
+
+:= main () : i32 =
+    := ~n = 3i32
+    := v : vec = $'vec\![1i32, 2, !n]'
+    := w = push4 v
+    !!!!Add(vlen w, 9i32)

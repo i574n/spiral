@@ -1,0 +1,7 @@
+:= export_add ((x, y) : i32 * i32) : i32 = !!!!Add(x, y)
+
+:= main () : i32 =
+    !!!!Export("spiral_add", export_add)
+    := ~n = 40i32
+    := got = export_add (n, 2i32)
+    ? !!!!EQ(got, 42i32) ?> 0i32 |: 1i32

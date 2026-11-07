@@ -1,0 +1,13 @@
+:| slot =
+    | None
+    | Some : i32
+
+:= main () : i32 =
+    := ~n = 7i32
+    := ~flag = !+
+    := payload = ? flag ?> Some n |: None
+    := box = !!!!LayoutToHeap({ slot = payload })
+    := opened = !!!!LayoutIndex(box)
+    ?= opened::slot ?|
+    | Some value => ? value =. 7i32 ?> 0i32 |: 1i32
+    | None => 1i32

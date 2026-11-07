@@ -1,0 +1,40 @@
+:= main () : i32 =
+    := ~n = 1i32
+    := ~word = "no"
+    := left_pair = n, word
+    := left_heap = !!!!LayoutToHeap({ value = left_pair })
+    := ~m = 2i32
+    := ~other = "zz"
+    := mid_pair = m, other
+    := mid_heap = !!!!LayoutToHeap({ value = mid_pair })
+    := ~k = 3i32
+    := ~tail = "aa"
+    := right_pair = k, tail
+    := right_heap = !!!!LayoutToHeap({ value = right_pair })
+    := slot
+        : mut { value : heap { value : i32 * string } * heap { value : i32 * string } * heap { value : i32 * string } }
+        =
+        !!!!LayoutToHeapMutable({ value = left_heap, mid_heap, right_heap })
+    := ~a0 = 7i32
+    := ~b0 = "hi"
+    := next_left_pair = a0, b0
+    := next_left = !!!!LayoutToHeap({ value = next_left_pair })
+    := ~c0 = 4i32
+    := ~d0 = "yo"
+    := next_mid_pair = c0, d0
+    := next_mid = !!!!LayoutToHeap({ value = next_mid_pair })
+    := ~e0 = 9i32
+    := ~h0 = "ok"
+    := next_right_pair = e0, h0
+    := next_right = !!!!LayoutToHeap({ value = next_right_pair })
+    := replaced = next_left, next_mid, next_right
+    slot <- { value = replaced }
+    := opened = !!!!LayoutIndex(slot)
+    := ~(left, mid, right) = opened::value
+    := left_opened = !!!!LayoutIndex(left)
+    := ~(a, b) = left_opened::value
+    := mid_opened = !!!!LayoutIndex(mid)
+    := ~(c, d) = mid_opened::value
+    := right_opened = !!!!LayoutIndex(right)
+    := ~(e, h) = right_opened::value
+    ? a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && e =. 9i32 && !!!!EQ(h, "ok") ?> 0i32 |: 1i32

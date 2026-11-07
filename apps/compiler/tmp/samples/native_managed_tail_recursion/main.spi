@@ -1,0 +1,9 @@
+:= ^ keep ~n (value : string) : string =
+    ? n =. 0i32 ?> value
+    |:
+        := next = ? n %. 2i32 =. 0i32 ?> "ok" |: "go"
+        ~~ keep (n -. 1i32) next
+
+:= main () : i32 =
+    := value = ~~ keep 1000000i32 "seed"
+    ? (=.) (sm::length value : i32) 2i32 ?> 0i32 |: 1i32

@@ -1,0 +1,7 @@
+:= double (n : i32) : i32 = !!!!Mult(n, 2i32)
+
+:= square (n : i32) : i32 = !!!!Mult(n, n)
+
+:= is_big (n : i32) : bool = !!!!GT(n, 40i32)
+
+:= main () : i32 = 0i32

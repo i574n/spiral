@@ -1,0 +1,13 @@
+:= native (k : i32) : i32 =
+    global (
+        "#[derive(Clone)] struct Outcome(i32); impl Outcome { fn json(self) -> i32 { self.0 + 1 } fn borsh(self) "
+        ^^ "-> i32 { self.0 * 2 } }"
+    )
+    := o : $'Outcome' = $'Outcome(!k)'
+    := a : i32 = $'!o.json()'
+    := b : i32 = $'!o.borsh()'
+    a + b
+
+:= main () : i32 =
+    := ~k = 7i32
+    !!!!BackendSwitch({ C = \ () => 22i32 : i32; Rust = \ () => native k : i32; Bend = \ () => 22i32 : i32 })

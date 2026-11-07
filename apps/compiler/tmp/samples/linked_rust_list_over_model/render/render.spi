@@ -1,0 +1,42 @@
+:< model
+
+:~ ^ inlines_html (xs : list inline) : string =
+    ?= xs ?|
+    | [] => ""
+    | x :: rest =>
+        := head =
+            ?= x ?|
+            | Text s => s
+            | Strong ys => cat (cat "<b>" (inlines_html ys)) "</b>"
+            | Link (url, ys) => cat (cat (cat "<a href=" url) (cat ">" (inlines_html ys))) "</a>"
+        cat head (inlines_html rest)
+
+:~ ^ items_html (xs : list (list inline)) : string =
+    ?= xs ?|
+    | [] => ""
+    | x :: rest => cat (cat (cat "<li>" (inlines_html x)) "</li>") (items_html rest)
+
+:~ ^ cells_html (xs : list string) : string =
+    ?= xs ?|
+    | [] => ""
+    | x :: rest => cat (cat (cat "<td>" x) "</td>") (cells_html rest)
+
+:~ ^ rows_html (xs : list (list string)) : string =
+    ?= xs ?|
+    | [] => ""
+    | x :: rest => cat (cat (cat "<tr>" (cells_html x)) "</tr>") (rows_html rest)
+
+:~ ^ blocks_html (bs : list block) : string =
+    ?= bs ?|
+    | [] => ""
+    | b :: rest =>
+        := head =
+            ?= b ?|
+            | Para xs => cat (cat "<p>" (inlines_html xs)) "</p>"
+            | Bullets xs => cat (cat "<ul>" (items_html xs)) "</ul>"
+            | Table xs => cat (cat "<table>" (rows_html xs)) "</table>"
+        cat head (blocks_html rest)
+
+:= main () : i32 =
+    !!!!Export("render_blocks_html", blocks_html)
+    0i32

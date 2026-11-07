@@ -1,0 +1,2299 @@
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":< sm'_operators\n:< rust_operators\n:< unsupported","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :< sm'_operators
+  :< rust_operators
+  :< unsupported
+  """,
+  timeout: 300_000
+)
+```
+
+#### file_system (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test static --symbol\n\n:< testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test static --symbol
+
+  :< testing
+  """,
+  timeout: 300_000
+)
+```
+
+## fsharp
+
+<!-- livebook:{"break_markdown":true} -->
+
+### file_mode
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! file_mode' = $'System.IO.FileMode'\n\n:| file_mode =\n    | ModeCreateNew\n    | ModeCreate\n    | ModeOpen\n    | ModeOpenOrCreate\n    | Truncate\n    | Append\n\n:= file_mode = \\|\n    | ModeCreateNew => $'System.IO.FileMode.CreateNew' : file_mode'\n    | ModeCreate => $'System.IO.FileMode.Create' : file_mode'\n    | ModeOpen => $'System.IO.FileMode.Open' : file_mode'\n    | ModeOpenOrCreate => $'System.IO.FileMode.OpenOrCreate' : file_mode'\n    | Truncate => $'System.IO.FileMode.Truncate' : file_mode'\n    | Append => $'System.IO.FileMode.Append' : file_mode'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :! file_mode' = $'System.IO.FileMode'
+
+  :| file_mode =
+      | ModeCreateNew
+      | ModeCreate
+      | ModeOpen
+      | ModeOpenOrCreate
+      | Truncate
+      | Append
+
+  := file_mode = \|
+      | ModeCreateNew => $'System.IO.FileMode.CreateNew' : file_mode'
+      | ModeCreate => $'System.IO.FileMode.Create' : file_mode'
+      | ModeOpen => $'System.IO.FileMode.Open' : file_mode'
+      | ModeOpenOrCreate => $'System.IO.FileMode.OpenOrCreate' : file_mode'
+      | Truncate => $'System.IO.FileMode.Truncate' : file_mode'
+      | Append => $'System.IO.FileMode.Append' : file_mode'
+  """,
+  timeout: 300_000
+)
+```
+
+### file_access
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! file_access' = $'System.IO.FileAccess'\n\n:| file_access =\n    | AccessRead\n    | AccessWrite\n    | AccessReadWrite\n\n:= file_access = \\|\n    | AccessRead => $'System.IO.FileAccess.Read' : file_access'\n    | AccessWrite => $'System.IO.FileAccess.ReadWrite' : file_access'\n    | AccessReadWrite => $'System.IO.FileAccess.ReadWrite' : file_access'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :! file_access' = $'System.IO.FileAccess'
+
+  :| file_access =
+      | AccessRead
+      | AccessWrite
+      | AccessReadWrite
+
+  := file_access = \|
+      | AccessRead => $'System.IO.FileAccess.Read' : file_access'
+      | AccessWrite => $'System.IO.FileAccess.ReadWrite' : file_access'
+      | AccessReadWrite => $'System.IO.FileAccess.ReadWrite' : file_access'
+  """,
+  timeout: 300_000
+)
+```
+
+### file_share
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! file_share' = $'System.IO.FileShare'\n\n:| file_share =\n    | ShareNone\n    | ShareRead\n    | ShareWrite\n    | ShareReadWrite\n    | ShareDelete\n\n:= file_share = \\|\n    | ShareNone => $'System.IO.FileShare.None' : file_share'\n    | ShareRead => $'System.IO.FileShare.Read' : file_share'\n    | ShareWrite => $'System.IO.FileShare.Write' : file_share'\n    | ShareReadWrite => $'System.IO.FileShare.ReadWrite' : file_share'\n    | ShareDelete => $'System.IO.FileShare.Delete' : file_share'\n\n:! file_info =\n    `(\n        backend_switch `(()) `({}) {\n            Fsharp = (\\ () =>\n                global \"\"\"\n                    type System_IO_FileInfo = System.IO.FileInfo\n\n                    \"\"\"\n                        ) : () -> ()\n        }\n        $'' : $'System_IO_FileInfo'\n    )\n\n:= file_info (path : string) : file_info =\n    run_target \\|\n        | Fsharp => \\ () => $'!path |> `file_info '\n        | _ => \\ () => null ()\n\n:! directory_info =\n    `(\n        backend_switch `(()) `({}) {\n            Fsharp = (\\ () =>\n                global \"\"\"\n                    type System_IO_DirectoryInfo = System.IO.DirectoryInfo\n\n                    \"\"\"\n                        ) : () -> ()\n        }\n        $'' : $'System_IO_DirectoryInfo'\n    )\n\n:= directory_info (path : string) : directory_info =\n    run_target \\|\n        | Fsharp => \\ () => $'!path |> `directory_info '\n        | _ => \\ () => null ()\n\n:= directory_info_name (info : directory_info) : string =\n    run_target \\|\n        | Fsharp => \\ () => info |> $'_.Name'\n        | _ => \\ () => null ()\n\n:= directory_info_full_name (info : directory_info) : string =\n    run_target \\|\n        | Fsharp => \\ () => info |> $'_.FullName'\n        | _ => \\ () => null ()\n\n:! file_attributes = $'System.IO.FileAttributes'\n\n:~ directory_info_attributes (info : directory_info) : file_attributes =\n    run_target \\|\n        | Fsharp => \\ () => info |> $'_.Attributes'\n        | _ => \\ () => null ()\n\n:~ file_attributes_reparse_point () : file_attributes =\n    run_target \\|\n        | Fsharp => \\ () => $'`file_attributes.ReparsePoint'\n        | _ => \\ () => null ()\n\n:~ file_attributes_has_flag (flag : file_attributes) (file_attributes : file_attributes) : bool =\n    run_target \\|\n        | Fsharp => \\ () => $'!file_attributes.HasFlag !flag '\n        | _ => \\ () => null ()\n\n:~ create_directory (path : string) : directory_info =\n    run_target \\|\n        | Fsharp => \\ () => path |> $'System.IO.Directory.CreateDirectory'\n        | _ => \\ () => null ()\n\n:~ directory_get_files (path : string) : array_base string =\n    run_target \\|\n        | Fsharp => \\ () => path |> $'System.IO.Directory.GetFiles'\n        | _ => \\ () => null ()\n\n:~ write_all_text_async (path : string) (text : string) : _ () =\n    run_target \\|\n        | Fsharp => \\ () => $'System.IO.File.WriteAllTextAsync (!path, !text)' |> async::await_task\n        | _ => \\ () => null ()\n\n:! file_system_info = $'System.IO.FileSystemInfo'\n\n:= get_source_directory () =\n    run_target \\|\n        | Rust => \\ () => $'Rc::<str>::from(env\\!(\"CARGO_MANIFEST_DIR\"))' : string\n        | _ => \\ () => $'__SOURCE_DIRECTORY__' : string","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ":! file_share' = $'System.IO.FileShare'\n\n:| file_share =\n    | ShareNone\n    | ShareRead\n    | ShareWrite\n    | ShareReadWrite\n    | ShareDelete\n\n:= file_share = \\|\n    | ShareNone => $'System.IO.FileShare.None' : file_share'\n    | ShareRead => $'System.IO.FileShare.Read' : file_share'\n    | ShareWrite => $'System.IO.FileShare.Write' : file_share'\n    | ShareReadWrite => $'System.IO.FileShare.ReadWrite' : file_share'\n    | ShareDelete => $'System.IO.FileShare.Delete' : file_share'\n\n:! file_info =\n    `(\n        backend_switch `(()) `({}) {\n            Fsharp = (\\ () =>\n                global \"\"\"\n                    type System_IO_FileInfo = System.IO.FileInfo\n\n                    \"\"\"\n                        ) : () -> ()\n        }\n        $'' : $'System_IO_FileInfo'\n    )\n\n:= file_info (path : string) : file_info =\n    run_target \\|\n        | Fsharp => \\ () => $'!path |> `file_info '\n        | _ => \\ () => null ()\n\n:! directory_info =\n    `(\n        backend_switch `(()) `({}) {\n            Fsharp = (\\ () =>\n                global \"\"\"\n                    type System_IO_DirectoryInfo = System.IO.DirectoryInfo\n\n                    \"\"\"\n                        ) : () -> ()\n        }\n        $'' : $'System_IO_DirectoryInfo'\n    )\n\n:= directory_info (path : string) : directory_info =\n    run_target \\|\n        | Fsharp => \\ () => $'!path |> `directory_info '\n        | _ => \\ () => null ()\n\n:= directory_info_name (info : directory_info) : string =\n    run_target \\|\n        | Fsharp => \\ () => info |> $'_.Name'\n        | _ => \\ () => null ()\n\n:= directory_info_full_name (info : directory_info) : string =\n    run_target \\|\n        | Fsharp => \\ () => info |> $'_.FullName'\n        | _ => \\ () => null ()\n\n:! file_attributes = $'System.IO.FileAttributes'\n\n:~ directory_info_attributes (info : directory_info) : file_attributes =\n    run_target \\|\n        | Fsharp => \\ () => info |> $'_.Attributes'\n        | _ => \\ () => null ()\n\n:~ file_attributes_reparse_point () : file_attributes =\n    run_target \\|\n        | Fsharp => \\ () => $'`file_attributes.ReparsePoint'\n        | _ => \\ () => null ()\n\n:~ file_attributes_has_flag (flag : file_attributes) (file_attributes : file_attributes) : bool =\n    run_target \\|\n        | Fsharp => \\ () => $'!file_attributes.HasFlag !flag '\n        | _ => \\ () => null ()\n\n:~ create_directory (path : string) : directory_info =\n    run_target \\|\n        | Fsharp => \\ () => path |> $'System.IO.Directory.CreateDirectory'\n        | _ => \\ () => null ()\n\n:~ directory_get_files (path : string) : array_base string =\n    run_target \\|\n        | Fsharp => \\ () => path |> $'System.IO.Directory.GetFiles'\n        | _ => \\ () => null ()\n\n:~ write_all_text_async (path : string) (text : string) : _ () =\n    run_target \\|\n        | Fsharp => \\ () => $'System.IO.File.WriteAllTextAsync (!path, !text)' |> async::await_task\n        | _ => \\ () => null ()\n\n:! file_system_info = $'System.IO.FileSystemInfo'\n\n:= get_source_directory () =\n    run_target \\|\n        | Rust => \\ () => $'Rc::<str>::from(env\\!(\"CARGO_MANIFEST_DIR\"))' : string\n        | _ => \\ () => $'__SOURCE_DIRECTORY__' : string",
+  timeout: 300_000
+)
+```
+
+#### get_source_directory (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> fsharp\n\nget_source_directory ()\n|> directory_info\n|> directory_info_name\n|> _assert_in [ \"spiral\"; \"fsharp\" ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> fsharp
+
+  get_source_directory ()
+  |> directory_info
+  |> directory_info_name
+  |> _assert_in [ "spiral"; "fsharp" ]
+  """,
+  timeout: 300_000
+)
+```
+
+## rust
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! display =\n    `(\n        rust::rust_type\n            `($'std_path_Display')\n            `($'std::path::Display')\n            \"type std_path_Display = string\"\n    )\n\n:! path =\n    `(\n        rust::rust_type\n            `($'std_path_Path')\n            `($'std::path::Path')\n            \"type std_path_Path = class end\"\n    )\n\n:! path_buf =\n    `(\n        rust::rust_type\n            `($'std_path_PathBuf')\n            `($'std::path::PathBuf')\n            \"type std_path_PathBuf = string\"\n    )\n\n:= new_path_buf (path : sm'::std_string) : path_buf =\n    run_target \\|\n        | Rust => \\ () => !\\\\(path, $'\"std::path::PathBuf::from($0)\"')\n        | _ => \\ () => path |> convert::unbox\n\n:= path_buf_join (s : string) (path_buf : path_buf) : path_buf =\n    !\\\\((path_buf, s |> sm'::to_std_string), $'\"$0.join($1)\"')\n\n:= path_buf_display (path_buf : path_buf) : display =\n    run_target_args (\\ () => path_buf) \\|\n        | Rust => \\ path_buf =>\n            := path_buf = ~~ path_buf\n            !\\($'\"!path_buf.display()\"')\n        | _ => \\ path_buf => path_buf |> convert::unbox\n\n:= path_buf_file_name (path : path_buf) : optionm'::option' (rust::ref sm'::os_str) =\n    !\\\\(path, $'\"$0.file_name()\"')\n\n:= path_buf_exists (path_buf : path_buf) : bool =\n    !\\\\(path_buf, $'\"$0.exists()\"')\n\n:= path_buf_is_dir (path_buf : path_buf) : bool =\n    !\\\\(path_buf, $'\"$0.is_dir()\"')\n\n:= path_buf_is_file (path_buf : path_buf) : bool =\n    !\\\\(path_buf, $'\"$0.is_file()\"')\n\n:= path_buf_parent (path_buf : path_buf) : optionm'::option' path_buf =\n    !\\\\(path_buf, $'\"$0.parent().map(std::path::PathBuf::from)\"')\n\n:! dir_entry =\n    `(\n        rust::rust_type\n            `($'async_walkdir_DirEntry')\n            `($'async_walkdir::DirEntry')\n            \"type async_walkdir_DirEntry = class end\"\n    )\n\n:! walk_dir =\n    `(\n        rust::rust_type\n            `($'async_walkdir_WalkDir')\n            `($'async_walkdir::WalkDir')\n            \"type async_walkdir_WalkDir = class end\"\n    )\n\n:! async_walkdir_filtering =\n    `(\n        rust::rust_type\n            `($'async_walkdir_Filtering')\n            `($'async_walkdir::Filtering')\n            \"type async_walkdir_Filtering = class end\"\n    )\n\n:| filtering =\n    | Ignore\n    | IgnoreDir\n    | Continue\n\n:! async_walkdir_error =\n    `(\n        rust::rust_type\n            `($'async_walkdir_Error')\n            `($'async_walkdir::Error')\n            \"type async_walkdir_Error = class end\"\n    )\n\n:= new_walk_dir (dir : string) : walk_dir =\n    !\\\\(dir, $'\"async_walkdir::WalkDir::new(&*$0)\"')\n\n:= walk_dir_filter (fn : dir_entry -> async::future_pin_send filtering) (walk_dir : walk_dir) : walk_dir =\n    ? is_rust () ?>\n        global \"\"\"\n            struct SpiralAssertSend<T>(T);\n            unsafe impl<T> Send for SpiralAssertSend<T> {}\n            impl<T: std::future::Future + Unpin> std::future::Future for SpiralAssertSend<T> {\n                type Output = T::Output;\n                fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<T::Output> { std::pin::Pin::new(&mut self.0).poll(cx) }\n            }\n            \"\"\"\n        := fn entry =\n            := future = fn entry\n            async::new_future_move_send \\ () =>\n                := result = future |> async::await_send\n                := filtering : async_walkdir_filtering =\n                    ?= result ?|\n                    | Ignore => !\\($'\"async_walkdir::Filtering::Ignore\"')\n                    | IgnoreDir => !\\($'\"async_walkdir::Filtering::IgnoreDir\"')\n                    | Continue => !\\($'\"async_walkdir::Filtering::Continue\"')\n                filtering\n        !\\\\((walk_dir, fn), $'\"{ let f = SpiralAssertSend($1); async_walkdir::WalkDir::filter($0, move |x| { let f = &f; SpiralAssertSend((f.0)(x)) }) }\"')\n    |:\n        := fn entry = async::new_future_send \\ () =>\n            := result = fn entry |> async::await_send\n            := filtering : async_walkdir_filtering =\n                ?= result ?|\n                | Ignore => !\\($'\"async_walkdir::Filtering::Ignore\"')\n                | IgnoreDir => !\\($'\"async_walkdir::Filtering::IgnoreDir\"')\n                | Continue => !\\($'\"async_walkdir::Filtering::Continue\"')\n            filtering\n        !\\\\((walk_dir, fn), $'\"async_walkdir::WalkDir::filter($0, move |x| $1(x))\"')\n\n:! file_type =\n    `(\n        rust::rust_type\n            `($'std_fs_FileType')\n            `($'std::fs::FileType')\n            \"type std_fs_FileType = class end\"\n    )\n\n:= dir_entry_file_type (dir_entry : dir_entry) : async::future_pin_send (resultm::result' file_type stream::io_error) =\n    := dir_entry = dir_entry |> rust::emit\n    !\\($'\"Box::pin(async_walkdir::DirEntry::file_type(&!dir_entry))\"')\n\n:= file_type_is_dir (file_type : file_type) : bool =\n    !\\\\(file_type, $'\"std::fs::FileType::is_dir(&$0)\"')\n\n:! file =\n    `(\n        rust::rust_type\n            `($'std_fs_File')\n            `($'std::fs::File')\n            \"type std_fs_File = class end\"\n    )\n\n:= file_open (path : string) : resultm::result' file stream::io_error =\n    !\\($'\"std::fs::File::open(&*!path)\"')\n\n:= rename (to : string) (path : string) : resultm::result' () stream::io_error =\n    !\\($'\"std::fs::rename(&*!path, &*!to)\"')\n\n:= dir_entry_path (dir_entry : dir_entry) : path_buf =\n    !\\\\(dir_entry, $'\"async_walkdir::DirEntry::path(&$0)\"')\n\n:= create_dir_all (path : string) : resultm::result' () stream::io_error =\n    !\\\\(path, $'\"std::fs::create_dir_all(&*$0)\"')\n\n:= file_info_link_target (file_info : file_info) : string =\n    run_target \\|\n        | Fsharp => \\ () =>\n            file_info |> $'_.LinkTarget'\n        | _ => \\ () => null ()\n\n:= read (path : string) : resultm::result' (am'::vec u8) stream::io_error =\n    !\\\\(path, $'\"std::fs::read(&*$0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ":! display =\n    `(\n        rust::rust_type\n            `($'std_path_Display')\n            `($'std::path::Display')\n            \"type std_path_Display = string\"\n    )\n\n:! path =\n    `(\n        rust::rust_type\n            `($'std_path_Path')\n            `($'std::path::Path')\n            \"type std_path_Path = class end\"\n    )\n\n:! path_buf =\n    `(\n        rust::rust_type\n            `($'std_path_PathBuf')\n            `($'std::path::PathBuf')\n            \"type std_path_PathBuf = string\"\n    )\n\n:= new_path_buf (path : sm'::std_string) : path_buf =\n    run_target \\|\n        | Rust => \\ () => !\\\\(path, $'\"std::path::PathBuf::from($0)\"')\n        | _ => \\ () => path |> convert::unbox\n\n:= path_buf_join (s : string) (path_buf : path_buf) : path_buf =\n    !\\\\((path_buf, s |> sm'::to_std_string), $'\"$0.join($1)\"')\n\n:= path_buf_display (path_buf : path_buf) : display =\n    run_target_args (\\ () => path_buf) \\|\n        | Rust => \\ path_buf =>\n            := path_buf = ~~ path_buf\n            !\\($'\"!path_buf.display()\"')\n        | _ => \\ path_buf => path_buf |> convert::unbox\n\n:= path_buf_file_name (path : path_buf) : optionm'::option' (rust::ref sm'::os_str) =\n    !\\\\(path, $'\"$0.file_name()\"')\n\n:= path_buf_exists (path_buf : path_buf) : bool =\n    !\\\\(path_buf, $'\"$0.exists()\"')\n\n:= path_buf_is_dir (path_buf : path_buf) : bool =\n    !\\\\(path_buf, $'\"$0.is_dir()\"')\n\n:= path_buf_is_file (path_buf : path_buf) : bool =\n    !\\\\(path_buf, $'\"$0.is_file()\"')\n\n:= path_buf_parent (path_buf : path_buf) : optionm'::option' path_buf =\n    !\\\\(path_buf, $'\"$0.parent().map(std::path::PathBuf::from)\"')\n\n:! dir_entry =\n    `(\n        rust::rust_type\n            `($'async_walkdir_DirEntry')\n            `($'async_walkdir::DirEntry')\n            \"type async_walkdir_DirEntry = class end\"\n    )\n\n:! walk_dir =\n    `(\n        rust::rust_type\n            `($'async_walkdir_WalkDir')\n            `($'async_walkdir::WalkDir')\n            \"type async_walkdir_WalkDir = class end\"\n    )\n\n:! async_walkdir_filtering =\n    `(\n        rust::rust_type\n            `($'async_walkdir_Filtering')\n            `($'async_walkdir::Filtering')\n            \"type async_walkdir_Filtering = class end\"\n    )\n\n:| filtering =\n    | Ignore\n    | IgnoreDir\n    | Continue\n\n:! async_walkdir_error =\n    `(\n        rust::rust_type\n            `($'async_walkdir_Error')\n            `($'async_walkdir::Error')\n            \"type async_walkdir_Error = class end\"\n    )\n\n:= new_walk_dir (dir : string) : walk_dir =\n    !\\\\(dir, $'\"async_walkdir::WalkDir::new(&*$0)\"')\n\n:= walk_dir_filter (fn : dir_entry -> async::future_pin_send filtering) (walk_dir : walk_dir) : walk_dir =\n    ? is_rust () ?>\n        global \"\"\"\n            struct SpiralAssertSend<T>(T);\n            unsafe impl<T> Send for SpiralAssertSend<T> {}\n            impl<T: std::future::Future + Unpin> std::future::Future for SpiralAssertSend<T> {\n                type Output = T::Output;\n                fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<T::Output> { std::pin::Pin::new(&mut self.0).poll(cx) }\n            }\n            \"\"\"\n        := fn entry =\n            := future = fn entry\n            async::new_future_move_send \\ () =>\n                := result = future |> async::await_send\n                := filtering : async_walkdir_filtering =\n                    ?= result ?|\n                    | Ignore => !\\($'\"async_walkdir::Filtering::Ignore\"')\n                    | IgnoreDir => !\\($'\"async_walkdir::Filtering::IgnoreDir\"')\n                    | Continue => !\\($'\"async_walkdir::Filtering::Continue\"')\n                filtering\n        !\\\\((walk_dir, fn), $'\"{ let f = SpiralAssertSend($1); async_walkdir::WalkDir::filter($0, move |x| { let f = &f; SpiralAssertSend((f.0)(x)) }) }\"')\n    |:\n        := fn entry = async::new_future_send \\ () =>\n            := result = fn entry |> async::await_send\n            := filtering : async_walkdir_filtering =\n                ?= result ?|\n                | Ignore => !\\($'\"async_walkdir::Filtering::Ignore\"')\n                | IgnoreDir => !\\($'\"async_walkdir::Filtering::IgnoreDir\"')\n                | Continue => !\\($'\"async_walkdir::Filtering::Continue\"')\n            filtering\n        !\\\\((walk_dir, fn), $'\"async_walkdir::WalkDir::filter($0, move |x| $1(x))\"')\n\n:! file_type =\n    `(\n        rust::rust_type\n            `($'std_fs_FileType')\n            `($'std::fs::FileType')\n            \"type std_fs_FileType = class end\"\n    )\n\n:= dir_entry_file_type (dir_entry : dir_entry) : async::future_pin_send (resultm::result' file_type stream::io_error) =\n    := dir_entry = dir_entry |> rust::emit\n    !\\($'\"Box::pin(async_walkdir::DirEntry::file_type(&!dir_entry))\"')\n\n:= file_type_is_dir (file_type : file_type) : bool =\n    !\\\\(file_type, $'\"std::fs::FileType::is_dir(&$0)\"')\n\n:! file =\n    `(\n        rust::rust_type\n            `($'std_fs_File')\n            `($'std::fs::File')\n            \"type std_fs_File = class end\"\n    )\n\n:= file_open (path : string) : resultm::result' file stream::io_error =\n    !\\($'\"std::fs::File::open(&*!path)\"')\n\n:= rename (to : string) (path : string) : resultm::result' () stream::io_error =\n    !\\($'\"std::fs::rename(&*!path, &*!to)\"')\n\n:= dir_entry_path (dir_entry : dir_entry) : path_buf =\n    !\\\\(dir_entry, $'\"async_walkdir::DirEntry::path(&$0)\"')\n\n:= create_dir_all (path : string) : resultm::result' () stream::io_error =\n    !\\\\(path, $'\"std::fs::create_dir_all(&*$0)\"')\n\n:= file_info_link_target (file_info : file_info) : string =\n    run_target \\|\n        | Fsharp => \\ () =>\n            file_info |> $'_.LinkTarget'\n        | _ => \\ () => null ()\n\n:= read (path : string) : resultm::result' (am'::vec u8) stream::io_error =\n    !\\\\(path, $'\"std::fs::read(&*$0)\"')",
+  timeout: 300_000
+)
+```
+
+## typescript
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= ts_path_join (b : string) (a : string) : string =\n    global \"import * as spiral_node_path from 'node:path';\"\n    $'spiral_node_path.join(!a, !b)' : string","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := ts_path_join (b : string) (a : string) : string =
+      global "import * as spiral_node_path from 'node:path';"
+      $'spiral_node_path.join(!a, !b)' : string
+  """,
+  timeout: 300_000
+)
+```
+
+## file_system
+
+<!-- livebook:{"break_markdown":true} -->
+
+### (< />)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":~ (</>) (a : string) (b : string) : string =\n    run_target_args (\\ () => a, b) \\|\n        | Rust => \\ a, b =>\n            a\n            |> sm'::to_std_string\n            |> new_path_buf\n            |> path_buf_join b\n            |> path_buf_display\n            |> sm'::format'\n            |> sm'::from_std_string\n        | TypeScript => \\ a, b =>\n            a |> ts_path_join b\n        | Fsharp => \\ a, b =>\n            $'System.IO.Path.Combine (!a, !b)'\n        | _ => \\ a, b =>\n            ? a = \"\" ?> b\n            |? (a |> sm'::ends_with \"/\") || (a |> sm'::ends_with \"\\\\\") ?> a ++# b\n            |: a ++# \"/\" ++# b","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :~ (</>) (a : string) (b : string) : string =
+      run_target_args (\ () => a, b) \|
+          | Rust => \ a, b =>
+              a
+              |> sm'::to_std_string
+              |> new_path_buf
+              |> path_buf_join b
+              |> path_buf_display
+              |> sm'::format'
+              |> sm'::from_std_string
+          | TypeScript => \ a, b =>
+              a |> ts_path_join b
+          | Fsharp => \ a, b =>
+              $'System.IO.Path.Combine (!a, !b)'
+          | _ => \ a, b =>
+              ? a = "" ?> b
+              |? (a |> sm'::ends_with "/") || (a |> sm'::ends_with "\\") ?> a ++# b
+              |: a ++# "/" ++# b
+  """,
+  timeout: 300_000
+)
+```
+
+#### path_join_without_a_native_arm (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> zig\n///> lua\n\n\"dir\" </> \"file\" |> _assert_eq \"dir/file\"\n\"dir/\" </> \"file\" |> _assert_eq \"dir/file\"\n\"\" </> \"file\" |> _assert_eq \"file\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> zig
+  ///> lua
+
+  "dir" </> "file" |> _assert_eq "dir/file"
+  "dir/" </> "file" |> _assert_eq "dir/file"
+  "" </> "file" |> _assert_eq "file"
+  """,
+  timeout: 300_000
+)
+```
+
+### get_temp_path
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= without_trailing_separator (path : string) : string =\n    ? sm'::length path > 1i32 && (sm'::ends_with \"/\" path || sm'::ends_with \"\\\\\" path)\n    ?> sm'::substring 0i32 (sm'::length path - 1i32) path\n    |: path\n\n:! gleam_dynamic = $'Dynamic'\n\n:! gleam_atom = $'atom.Atom'\n\n:! gleam_charlist = $'charlist.Charlist'\n\n:= file_system_gleam_env () =\n    global \"import gleam/dynamic.{type Dynamic}\"\n    global \"import gleam/erlang/charlist\"\n    global \"\"\"\n        @external(erlang, \"os\", \"getenv\")\n        fn spiral_fs_os_getenv(name: charlist.Charlist) -> Dynamic\n\n        @external(erlang, \"gleam_stdlib\", \"identity\")\n        fn spiral_fs_env_coerce(value: a) -> b\n\n        \"\"\"\n\n:= gleam_env_value (name : string) : gleam_dynamic =\n    file_system_gleam_env ()\n    := chars : gleam_charlist = $'charlist.from_string(!name)'\n    $'spiral_fs_os_getenv(!chars)'\n\n:= gleam_env_unset (value : gleam_dynamic) : bool =\n    := unset : gleam_dynamic = $'spiral_fs_env_coerce(False)'\n    $'!value == !unset'\n\n:= gleam_env_text (value : gleam_dynamic) : string =\n    := chars : gleam_charlist = $'spiral_fs_env_coerce(!value)'\n    $'charlist.to_string(!chars)'\n\n:~ ^ gleam_temp_directory_from (names : list string) : string =\n    ?= names ?|\n    | [] => \"/tmp\"\n    | name :: rest =>\n        := value = gleam_env_value name\n        ? gleam_env_unset value ?> gleam_temp_directory_from rest\n        |:\n            := dir = gleam_env_text value\n            ? dir = \"\" ?> gleam_temp_directory_from rest |: dir\n\n:= env_temp_dir () : string =\n    := tmpdir = env::get_environment_variable \"TMPDIR\"\n    ? tmpdir = \"\" ?>\n        := temp = env::get_environment_variable \"TEMP\"\n        ? temp = \"\" ?> \"/tmp\" |: temp\n    |: tmpdir\n\n:~ get_temp_path () : string =\n    run_target \\|\n        | Rust => \\ () =>\n            !\\($'\"std::env::temp_dir()\"')\n            |> path_buf_display\n            |> sm'::format'\n            |> sm'::from_std_string\n            |> without_trailing_separator\n        | Fsharp => \\ () =>\n            $'System.IO.Path.GetTempPath' () |> without_trailing_separator\n        | Gleam => \\ () =>\n            file_system_gleam_env ()\n            gleam_temp_directory_from [ \"TMPDIR\"; \"TEMP\"; \"TMP\" ] |> without_trailing_separator\n        | C => \\ () => env_temp_dir ()\n        | Zig => \\ () => env_temp_dir ()\n        | target => \\ () => ~~ \"file_system.get_temp_path / target: \" ++#? target |> failwith","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ":= without_trailing_separator (path : string) : string =\n    ? sm'::length path > 1i32 && (sm'::ends_with \"/\" path || sm'::ends_with \"\\\\\" path)\n    ?> sm'::substring 0i32 (sm'::length path - 1i32) path\n    |: path\n\n:! gleam_dynamic = $'Dynamic'\n\n:! gleam_atom = $'atom.Atom'\n\n:! gleam_charlist = $'charlist.Charlist'\n\n:= file_system_gleam_env () =\n    global \"import gleam/dynamic.{type Dynamic}\"\n    global \"import gleam/erlang/charlist\"\n    global \"\"\"\n        @external(erlang, \"os\", \"getenv\")\n        fn spiral_fs_os_getenv(name: charlist.Charlist) -> Dynamic\n\n        @external(erlang, \"gleam_stdlib\", \"identity\")\n        fn spiral_fs_env_coerce(value: a) -> b\n\n        \"\"\"\n\n:= gleam_env_value (name : string) : gleam_dynamic =\n    file_system_gleam_env ()\n    := chars : gleam_charlist = $'charlist.from_string(!name)'\n    $'spiral_fs_os_getenv(!chars)'\n\n:= gleam_env_unset (value : gleam_dynamic) : bool =\n    := unset : gleam_dynamic = $'spiral_fs_env_coerce(False)'\n    $'!value == !unset'\n\n:= gleam_env_text (value : gleam_dynamic) : string =\n    := chars : gleam_charlist = $'spiral_fs_env_coerce(!value)'\n    $'charlist.to_string(!chars)'\n\n:~ ^ gleam_temp_directory_from (names : list string) : string =\n    ?= names ?|\n    | [] => \"/tmp\"\n    | name :: rest =>\n        := value = gleam_env_value name\n        ? gleam_env_unset value ?> gleam_temp_directory_from rest\n        |:\n            := dir = gleam_env_text value\n            ? dir = \"\" ?> gleam_temp_directory_from rest |: dir\n\n:= env_temp_dir () : string =\n    := tmpdir = env::get_environment_variable \"TMPDIR\"\n    ? tmpdir = \"\" ?>\n        := temp = env::get_environment_variable \"TEMP\"\n        ? temp = \"\" ?> \"/tmp\" |: temp\n    |: tmpdir\n\n:~ get_temp_path () : string =\n    run_target \\|\n        | Rust => \\ () =>\n            !\\($'\"std::env::temp_dir()\"')\n            |> path_buf_display\n            |> sm'::format'\n            |> sm'::from_std_string\n            |> without_trailing_separator\n        | Fsharp => \\ () =>\n            $'System.IO.Path.GetTempPath' () |> without_trailing_separator\n        | Gleam => \\ () =>\n            file_system_gleam_env ()\n            gleam_temp_directory_from [ \"TMPDIR\"; \"TEMP\"; \"TMP\" ] |> without_trailing_separator\n        | C => \\ () => env_temp_dir ()\n        | Zig => \\ () => env_temp_dir ()\n        | target => \\ () => ~~ \"file_system.get_temp_path / target: \" ++#? target |> failwith",
+  timeout: 300_000
+)
+```
+
+#### get_temp_path_is_set_on_native_targets (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> c\n///> zig\n\n(sm'::length (get_temp_path ()) > 0i32) |> _assert_eq !+","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> c
+  ///> zig
+
+  (sm'::length (get_temp_path ()) > 0i32) |> _assert_eq !+
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= file_system_gleam_paths () =\n    global \"import gleam/dynamic.{type Dynamic}\"\n    global \"import gleam/erlang/atom\"\n    global \"import gleam/string\"\n    global \"import gleam/list\"\n    global \"\"\"\n        @external(erlang, \"filelib\", \"is_dir\")\n        fn spiral_fs_is_dir(path: String) -> Bool\n\n        @external(erlang, \"file\", \"delete\")\n        fn spiral_fs_delete(path: String) -> Dynamic\n\n        @external(erlang, \"filename\", \"basename\")\n        fn spiral_fs_basename(path: String) -> String\n\n        @external(erlang, \"file\", \"write_file\")\n        fn spiral_fs_write_file_modes(path: String, data: String, modes: List(atom.Atom)) -> Dynamic\n\n        @external(erlang, \"gleam_stdlib\", \"identity\")\n        fn spiral_fs_path_coerce(value: a) -> b\n\n        @external(erlang, \"filename\", \"extension\")\n        fn spiral_fs_extension(path: String) -> String\n\n        @external(erlang, \"filename\", \"absname\")\n        fn spiral_fs_absname(path: String) -> String\n        \"\"\"\n\n\n\n:= gleam_atom_named (name : string) : gleam_atom = $'atom.create(!name)'\n\n:= gleam_atoms_of (a : gleam_atom) : listm'::list' gleam_atom = $'[!a]'\n\n:= gleam_atom_of_dynamic (d : gleam_dynamic) : gleam_atom = $'spiral_fs_path_coerce(!d)'\n\n:= gleam_atoms_equal (a : gleam_atom) (b : gleam_atom) : bool = $'!a == !b'\n\n:= gleam_written (path : string) (text : string) (modes : listm'::list' gleam_atom) : gleam_dynamic =\n    $'spiral_fs_write_file_modes(!path, !text, !modes)'\n\n:= gleam_segment_step (acc : list string) (segment : string) : list string =\n    ? segment = \"\" || segment = \".\" ?> acc\n    |? segment = \"..\" ?>\n        ?= acc ?|\n        | _ :: up => up\n        | [] => []\n    |: (segment :: acc)\n\n:= gleam_lexical_full_path (path : string) : string =\n    file_system_gleam_paths ()\n    := absolute : string = $'spiral_fs_absname(!path)'\n    ?= sm'::split_list \"/\" absolute ?|\n    | root :: segments =>\n        root ++# \"/\" ++# (segments |> listm::fold gleam_segment_step [] |> listm::rev |> sm'::concat_list \"/\")\n    | [] => path\n\n:= gleam_dotted_extension (path : string) : string =\n    file_system_gleam_paths ()\n    := base : string = $'spiral_fs_basename(!path)'\n    := rest = ? sm'::starts_with \".\" base ?> sm'::substring 1i32 (sm'::length base - 1i32) base |: base\n    $'spiral_fs_extension(!rest)' : string\n\n:= gleam_append_text (path : string) (text : string) : () =\n    file_system_gleam_paths ()\n    := written = gleam_written path text (gleam_atoms_of (gleam_atom_named \"append\")) |> gleam_atom_of_dynamic\n    ? gleam_atoms_equal written (gleam_atom_named \"ok\") |> not\n    ?> failwith \"file_system.append_all_text: the append failed\"\n\n:~ get_file_name (path : string) : string =\n    run_target_args' path \\|\n        | Fsharp => \\ path =>\n            path |> $'System.IO.Path.GetFileName'\n        | Rust => \\ path =>\n            path\n            |> sm'::to_std_string\n            |> new_path_buf\n            |> path_buf_file_name\n            |> optionm'::map' sm'::from_os_str_ref\n            |> optionm'::unbox\n            |> optionm'::default_value \"\"\n        | TypeScript => \\ path =>\n            global \"import * as spiral_node_path from 'node:path';\"\n            $'spiral_node_path.basename(!path)' : string\n        | Gleam => \\ path =>\n            file_system_gleam_paths ()\n            $'spiral_fs_basename(!path)' : string\n        | target =>\n            \\ path => ~~ \"file_system.get_file_name / target: \" ++#? target ++# \" / path: \" ++# path |> failwith\n\n:~ get_file_name_without_extension (path : string) : string =\n    run_target_args' path \\|\n        | Rust => \\ path =>\n            := path_buf = path |> sm'::to_std_string |> new_path_buf\n            := file_stem = !\\\\(path_buf, $'\"$0.file_stem()\"')\n            ?= file_stem |> optionm'::map' sm'::from_os_str_ref |> optionm'::unbox ?|\n            | Some file_stem => file_stem\n            | None => \"\"\n        | _ => \\ path =>\n            path |> $'System.IO.Path.GetFileNameWithoutExtension'\n\n:~ get_extension (path : string) : string =\n    run_target_args' path \\|\n        | Rust => \\ path =>\n            := path_buf = path |> sm'::to_std_string |> new_path_buf\n            := extension = !\\\\(path_buf, $'\"$0.extension()\"')\n            ?= extension |> optionm'::map' sm'::from_os_str_ref |> optionm'::unbox ?|\n            | Some extension => \".\" ++# extension\n            | None => \"\"\n        | Gleam => \\ path =>\n            file_system_gleam_paths ()\n            gleam_dotted_extension path\n        | Fsharp => \\ path =>\n            $'(let name = System.IO.Path.GetFileName (!path : string) in if name.StartsWith \".\" && name.IndexOf(\\\n                \".\", 1, System.StringComparison.Ordinal) < 0 then \"\" else System.IO.Path.GetExtension (!path : string))'\n            : string\n        | _ => \\ path =>\n            path |> $'System.IO.Path.GetExtension'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ":= file_system_gleam_paths () =\n    global \"import gleam/dynamic.{type Dynamic}\"\n    global \"import gleam/erlang/atom\"\n    global \"import gleam/string\"\n    global \"import gleam/list\"\n    global \"\"\"\n        @external(erlang, \"filelib\", \"is_dir\")\n        fn spiral_fs_is_dir(path: String) -> Bool\n\n        @external(erlang, \"file\", \"delete\")\n        fn spiral_fs_delete(path: String) -> Dynamic\n\n        @external(erlang, \"filename\", \"basename\")\n        fn spiral_fs_basename(path: String) -> String\n\n        @external(erlang, \"file\", \"write_file\")\n        fn spiral_fs_write_file_modes(path: String, data: String, modes: List(atom.Atom)) -> Dynamic\n\n        @external(erlang, \"gleam_stdlib\", \"identity\")\n        fn spiral_fs_path_coerce(value: a) -> b\n\n        @external(erlang, \"filename\", \"extension\")\n        fn spiral_fs_extension(path: String) -> String\n\n        @external(erlang, \"filename\", \"absname\")\n        fn spiral_fs_absname(path: String) -> String\n        \"\"\"\n\n\n\n:= gleam_atom_named (name : string) : gleam_atom = $'atom.create(!name)'\n\n:= gleam_atoms_of (a : gleam_atom) : listm'::list' gleam_atom = $'[!a]'\n\n:= gleam_atom_of_dynamic (d : gleam_dynamic) : gleam_atom = $'spiral_fs_path_coerce(!d)'\n\n:= gleam_atoms_equal (a : gleam_atom) (b : gleam_atom) : bool = $'!a == !b'\n\n:= gleam_written (path : string) (text : string) (modes : listm'::list' gleam_atom) : gleam_dynamic =\n    $'spiral_fs_write_file_modes(!path, !text, !modes)'\n\n:= gleam_segment_step (acc : list string) (segment : string) : list string =\n    ? segment = \"\" || segment = \".\" ?> acc\n    |? segment = \"..\" ?>\n        ?= acc ?|\n        | _ :: up => up\n        | [] => []\n    |: (segment :: acc)\n\n:= gleam_lexical_full_path (path : string) : string =\n    file_system_gleam_paths ()\n    := absolute : string = $'spiral_fs_absname(!path)'\n    ?= sm'::split_list \"/\" absolute ?|\n    | root :: segments =>\n        root ++# \"/\" ++# (segments |> listm::fold gleam_segment_step [] |> listm::rev |> sm'::concat_list \"/\")\n    | [] => path\n\n:= gleam_dotted_extension (path : string) : string =\n    file_system_gleam_paths ()\n    := base : string = $'spiral_fs_basename(!path)'\n    := rest = ? sm'::starts_with \".\" base ?> sm'::substring 1i32 (sm'::length base - 1i32) base |: base\n    $'spiral_fs_extension(!rest)' : string\n\n:= gleam_append_text (path : string) (text : string) : () =\n    file_system_gleam_paths ()\n    := written = gleam_written path text (gleam_atoms_of (gleam_atom_named \"append\")) |> gleam_atom_of_dynamic\n    ? gleam_atoms_equal written (gleam_atom_named \"ok\") |> not\n    ?> failwith \"file_system.append_all_text: the append failed\"\n\n:~ get_file_name (path : string) : string =\n    run_target_args' path \\|\n        | Fsharp => \\ path =>\n            path |> $'System.IO.Path.GetFileName'\n        | Rust => \\ path =>\n            path\n            |> sm'::to_std_string\n            |> new_path_buf\n            |> path_buf_file_name\n            |> optionm'::map' sm'::from_os_str_ref\n            |> optionm'::unbox\n            |> optionm'::default_value \"\"\n        | TypeScript => \\ path =>\n            global \"import * as spiral_node_path from 'node:path';\"\n            $'spiral_node_path.basename(!path)' : string\n        | Gleam => \\ path =>\n            file_system_gleam_paths ()\n            $'spiral_fs_basename(!path)' : string\n        | target =>\n            \\ path => ~~ \"file_system.get_file_name / target: \" ++#? target ++# \" / path: \" ++# path |> failwith\n\n:~ get_file_name_without_extension (path : string) : string =\n    run_target_args' path \\|\n        | Rust => \\ path =>\n            := path_buf = path |> sm'::to_std_string |> new_path_buf\n            := file_stem = !\\\\(path_buf, $'\"$0.file_stem()\"')\n            ?= file_stem |> optionm'::map' sm'::from_os_str_ref |> optionm'::unbox ?|\n            | Some file_stem => file_stem\n            | None => \"\"\n        | _ => \\ path =>\n            path |> $'System.IO.Path.GetFileNameWithoutExtension'\n\n:~ get_extension (path : string) : string =\n    run_target_args' path \\|\n        | Rust => \\ path =>\n            := path_buf = path |> sm'::to_std_string |> new_path_buf\n            := extension = !\\\\(path_buf, $'\"$0.extension()\"')\n            ?= extension |> optionm'::map' sm'::from_os_str_ref |> optionm'::unbox ?|\n            | Some extension => \".\" ++# extension\n            | None => \"\"\n        | Gleam => \\ path =>\n            file_system_gleam_paths ()\n            gleam_dotted_extension path\n        | Fsharp => \\ path =>\n            $'(let name = System.IO.Path.GetFileName (!path : string) in if name.StartsWith \".\" && name.IndexOf(\\\n                \".\", 1, System.StringComparison.Ordinal) < 0 then \"\" else System.IO.Path.GetExtension (!path : string))'\n            : string\n        | _ => \\ path =>\n            path |> $'System.IO.Path.GetExtension'",
+  timeout: 300_000
+)
+```
+
+#### get_extension_keeps_the_dot_and_skips_dotfiles (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> gleam\n\n(get_extension \"a/b.txt\", get_extension \"a/b\", get_extension \"a/.bashrc\", get_extension \"a.tar.gz\")\n|> _assert_eq (\".txt\", \"\", \"\", \".gz\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> gleam
+
+  (get_extension "a/b.txt", get_extension "a/b", get_extension "a/.bashrc", get_extension "a.tar.gz")
+  |> _assert_eq (".txt", "", "", ".gz")
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":~ directory_separator_char () : char =\n    run_target \\|\n        | Rust => \\ () => $'(std::path::MAIN_SEPARATOR as u8)' : char\n        | TypeScript _ => \\ () => '/'\n        | Zig => \\ () => $'std.fs.path.sep' : char\n        | _ => \\ () => $'System.IO.Path.DirectorySeparatorChar'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :~ directory_separator_char () : char =
+      run_target \|
+          | Rust => \ () => $'(std::path::MAIN_SEPARATOR as u8)' : char
+          | TypeScript _ => \ () => '/'
+          | Zig => \ () => $'std.fs.path.sep' : char
+          | _ => \ () => $'System.IO.Path.DirectorySeparatorChar'
+  """,
+  timeout: 300_000
+)
+```
+
+### get_current_directory
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= file_system_gleam_stat () =\n    global \"import gleam/dynamic.{type Dynamic}\"\n    global \"import gleam/erlang/atom\"\n    global \"import gleam/erlang/charlist\"\n    global \"\"\"\n        @external(erlang, \"file\", \"get_cwd\")\n        fn spiral_fs_get_cwd() -> Result(charlist.Charlist, Dynamic)\n\n        @external(erlang, \"file\", \"read_file_info\")\n        fn spiral_fs_read_file_info(path: String, options: List(#(atom.Atom, atom.Atom))) -> Result(Dynamic, Dynamic)\n\n        @external(erlang, \"erlang\", \"element\")\n        fn spiral_fs_stat_element(index: Int, tuple: Dynamic) -> Int\n\n        \"\"\"\n\n:= gleam_cwd () : string =\n    file_system_gleam_stat ()\n    ?= ($'spiral_fs_get_cwd()' : resultm::result' gleam_charlist gleam_dynamic) |> resultm::unbox ?|\n    | Ok chars => $'charlist.to_string(!chars)' : string\n    | Error _ => failwith \"file_system.get_current_directory: file:get_cwd failed\"\n\n:= gleam_mtime_ms (path : string) : u64 =\n    file_system_gleam_stat ()\n    := time = gleam_atom_named \"time\"\n    := posix = gleam_atom_named \"posix\"\n    := option : gleam_dynamic = $'##(!time, !posix)'\n    := options : listm'::list' gleam_dynamic = $'[!option]'\n    ?= ($'spiral_fs_read_file_info(!path, !options)' : resultm::result' gleam_dynamic gleam_dynamic) |> resultm::unbox ?|\n    | Ok info => ($'spiral_fs_stat_element(6, !info)' : u64) * 1000u64\n    | Error _ => 0u64\n\n:~ get_current_directory () : string =\n    run_target \\|\n        | Rust => \\ () =>\n            := current_dir = !\\($'\"std::env::current_dir()\"') : resultm::result' path_buf stream::io_error\n            current_dir\n            |> resultm::unwrap'\n            |> path_buf_display\n            |> sm'::format'\n            |> sm'::from_std_string\n        | Fsharp => \\ () =>\n            $'System.IO.Directory.GetCurrentDirectory' ()\n        | TypeScript _ => \\ () =>\n            global \"import * as spiral_node_fs from 'node:fs';\"\n            $'spiral_node_fs.realpathSync(\".\")' : string\n        | Zig => \\ () =>\n            global \"var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;\"\n            $'(std.process.currentPathAlloc(spiral_io_threaded.io(), spiral_gpa) catch \\\n                \\@panic(\"file_system.get_current_directory failed\"))' : string\n        | Gleam => \\ () =>\n            file_system_gleam_stat ()\n            gleam_cwd ()\n        | Pascal => \\ () => $'GetCurrentDir()' : string\n        | _ => \\ () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ":= file_system_gleam_stat () =\n    global \"import gleam/dynamic.{type Dynamic}\"\n    global \"import gleam/erlang/atom\"\n    global \"import gleam/erlang/charlist\"\n    global \"\"\"\n        @external(erlang, \"file\", \"get_cwd\")\n        fn spiral_fs_get_cwd() -> Result(charlist.Charlist, Dynamic)\n\n        @external(erlang, \"file\", \"read_file_info\")\n        fn spiral_fs_read_file_info(path: String, options: List(#(atom.Atom, atom.Atom))) -> Result(Dynamic, Dynamic)\n\n        @external(erlang, \"erlang\", \"element\")\n        fn spiral_fs_stat_element(index: Int, tuple: Dynamic) -> Int\n\n        \"\"\"\n\n:= gleam_cwd () : string =\n    file_system_gleam_stat ()\n    ?= ($'spiral_fs_get_cwd()' : resultm::result' gleam_charlist gleam_dynamic) |> resultm::unbox ?|\n    | Ok chars => $'charlist.to_string(!chars)' : string\n    | Error _ => failwith \"file_system.get_current_directory: file:get_cwd failed\"\n\n:= gleam_mtime_ms (path : string) : u64 =\n    file_system_gleam_stat ()\n    := time = gleam_atom_named \"time\"\n    := posix = gleam_atom_named \"posix\"\n    := option : gleam_dynamic = $'##(!time, !posix)'\n    := options : listm'::list' gleam_dynamic = $'[!option]'\n    ?= ($'spiral_fs_read_file_info(!path, !options)' : resultm::result' gleam_dynamic gleam_dynamic) |> resultm::unbox ?|\n    | Ok info => ($'spiral_fs_stat_element(6, !info)' : u64) * 1000u64\n    | Error _ => 0u64\n\n:~ get_current_directory () : string =\n    run_target \\|\n        | Rust => \\ () =>\n            := current_dir = !\\($'\"std::env::current_dir()\"') : resultm::result' path_buf stream::io_error\n            current_dir\n            |> resultm::unwrap'\n            |> path_buf_display\n            |> sm'::format'\n            |> sm'::from_std_string\n        | Fsharp => \\ () =>\n            $'System.IO.Directory.GetCurrentDirectory' ()\n        | TypeScript _ => \\ () =>\n            global \"import * as spiral_node_fs from 'node:fs';\"\n            $'spiral_node_fs.realpathSync(\".\")' : string\n        | Zig => \\ () =>\n            global \"var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;\"\n            $'(std.process.currentPathAlloc(spiral_io_threaded.io(), spiral_gpa) catch \\\n                \\@panic(\"file_system.get_current_directory failed\"))' : string\n        | Gleam => \\ () =>\n            file_system_gleam_stat ()\n            gleam_cwd ()\n        | Pascal => \\ () => $'GetCurrentDir()' : string\n        | _ => \\ () => null ()",
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nget_current_directory ()\n|> _assert_contains (directory_separator_char ())","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  get_current_directory ()
+  |> _assert_contains (directory_separator_char ())
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":~ directory_exists (path : string) : bool =\n    run_target_args' path \\|\n        | Zig => \\ _ =>\n            global \"var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;\"\n            $'(if (std.Io.Dir.cwd().statFile(spiral_io_threaded.io(), !path, .{})) |s| s.kind == .directory else |_| \\\n                false)' : bool\n        | Fsharp => \\ path =>\n            path |> $'System.IO.Directory.Exists'\n        | Rust => \\ path =>\n            := path = path |> sm'::to_std_string |> new_path_buf\n            path_buf_exists path && path_buf_is_dir path\n        | TypeScript => \\ path =>\n            global \"import * as spiral_node_fs from 'node:fs';\"\n            $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isDirectory())' : bool\n        | Gleam => \\ path =>\n            file_system_gleam_paths ()\n            $'spiral_fs_is_dir(!path)' : bool\n        | Pascal => \\ path => $'DirectoryExists(!path)' : bool\n        | _ => \\ _ => null ()\n\n:~ directory_get_parent (path : string) : optionm'::option' string =\n    run_target_args' path \\|\n        | Fsharp => \\ path =>\n            := parent : directory_info = path |> $'System.IO.Directory.GetParent'\n            ? parent =. null ()\n            ?> None\n            |: parent |> directory_info_full_name |> Some\n            |> optionm'::box\n        | Rust => \\ path =>\n            := path_buf = path |> sm'::to_std_string |> new_path_buf\n            := parent = path_buf |> path_buf_parent\n            parent\n            |> optionm'::map' (path_buf_display >> sm'::format' >> sm'::from_std_string)\n        | TypeScript _ => \\ path =>\n            global \"import * as spiral_node_path from 'node:path';\"\n            := parent = $'spiral_node_path.dirname(!path)' : string\n            ? parent = path\n            ?> None\n            |: parent |> Some\n            |> optionm'::box\n        | _ => \\ _ => optionm'::none' ()\n\n:= directory_parent (path : string) : option string =\n    run_target_args' path \\|\n        | Pascal => \\ path =>\n            := parent = $'ExtractFileDir(ExcludeTrailingPathDelimiter(!path))' : string\n            ? parent = path || parent = \"\" ?> None |: Some parent\n        | _ => \\ path => path |> directory_get_parent |> optionm'::unbox\n\n:= directory_create_all (path : string) : result () string =\n    run_target_args' path \\|\n        | Pascal => \\ path =>\n            ? $'ForceDirectories(!path)' : bool ?> Ok () |: Error (\"directory_create_all / cannot create \" ++# path)\n        | _ => \\ path => path |> create_dir_all |> resultm::map_error' sm'::format |> resultm::unbox","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :~ directory_exists (path : string) : bool =
+      run_target_args' path \|
+          | Zig => \ _ =>
+              global "var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"
+              $'(if (std.Io.Dir.cwd().statFile(spiral_io_threaded.io(), !path, .{})) |s| s.kind == .directory else |_| \
+                  false)' : bool
+          | Fsharp => \ path =>
+              path |> $'System.IO.Directory.Exists'
+          | Rust => \ path =>
+              := path = path |> sm'::to_std_string |> new_path_buf
+              path_buf_exists path && path_buf_is_dir path
+          | TypeScript => \ path =>
+              global "import * as spiral_node_fs from 'node:fs';"
+              $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isDirectory())' : bool
+          | Gleam => \ path =>
+              file_system_gleam_paths ()
+              $'spiral_fs_is_dir(!path)' : bool
+          | Pascal => \ path => $'DirectoryExists(!path)' : bool
+          | _ => \ _ => null ()
+
+  :~ directory_get_parent (path : string) : optionm'::option' string =
+      run_target_args' path \|
+          | Fsharp => \ path =>
+              := parent : directory_info = path |> $'System.IO.Directory.GetParent'
+              ? parent =. null ()
+              ?> None
+              |: parent |> directory_info_full_name |> Some
+              |> optionm'::box
+          | Rust => \ path =>
+              := path_buf = path |> sm'::to_std_string |> new_path_buf
+              := parent = path_buf |> path_buf_parent
+              parent
+              |> optionm'::map' (path_buf_display >> sm'::format' >> sm'::from_std_string)
+          | TypeScript _ => \ path =>
+              global "import * as spiral_node_path from 'node:path';"
+              := parent = $'spiral_node_path.dirname(!path)' : string
+              ? parent = path
+              ?> None
+              |: parent |> Some
+              |> optionm'::box
+          | _ => \ _ => optionm'::none' ()
+
+  := directory_parent (path : string) : option string =
+      run_target_args' path \|
+          | Pascal => \ path =>
+              := parent = $'ExtractFileDir(ExcludeTrailingPathDelimiter(!path))' : string
+              ? parent = path || parent = "" ?> None |: Some parent
+          | _ => \ path => path |> directory_get_parent |> optionm'::unbox
+
+  := directory_create_all (path : string) : result () string =
+      run_target_args' path \|
+          | Pascal => \ path =>
+              ? $'ForceDirectories(!path)' : bool ?> Ok () |: Error ("directory_create_all / cannot create " ++# path)
+          | _ => \ path => path |> create_dir_all |> resultm::map_error' sm'::format |> resultm::unbox
+  """,
+  timeout: 300_000
+)
+```
+
+#### directory_create_all_makes_nested_directories (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> pascal\n\n:= path = get_current_directory () </> \"directory_create_all_test\" </> \"a\" </> \"b\"\n?= directory_create_all path ?|\n| Ok () => ? directory_exists path = !- ?> failwith \"the nested directory exists after directory_create_all\"\n| Error message => failwith message","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> pascal
+
+  := path = get_current_directory () </> "directory_create_all_test" </> "a" </> "b"
+  ?= directory_create_all path ?|
+  | Ok () => ? directory_exists path = !- ?> failwith "the nested directory exists after directory_create_all"
+  | Error message => failwith message
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":~ create_temp_path' (guid : guid::guid) =\n    run_target_args' guid \\|\n        | _ => \\ guid =>\n            get_temp_path ()\n            </> ~~ \"!create_temp_path_\"\n            </> (env::get_entry_assembly_name ())\n            </> (guid |> sm'::obj_to_string)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :~ create_temp_path' (guid : guid::guid) =
+      run_target_args' guid \|
+          | _ => \ guid =>
+              get_temp_path ()
+              </> ~~ "!create_temp_path_"
+              </> (env::get_entry_assembly_name ())
+              </> (guid |> sm'::obj_to_string)
+  """,
+  timeout: 300_000
+)
+```
+
+#### create_temp_path (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n\nguid::hash_guid \"\"\n|> create_temp_path'\n|> _assert_contains (directory_separator_char ())","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+
+  guid::hash_guid ""
+  |> create_temp_path'
+  |> _assert_contains (directory_separator_char ())
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":~ create_temp_path () =\n    run_target \\|\n        | _ => \\ () =>\n            date_time::now ()\n            |> date_time::new_guid_from_date_time\n            |> create_temp_path'\n\n:~ file_copy (new_path : string) (old_path : string) : () =\n    run_target_args' (old_path, new_path) \\|\n        | Fsharp => \\ old_path, new_path =>\n            $'System.IO.File.Copy (!old_path, !new_path, true)'\n        | Rust => \\ old_path, new_path =>\n            := result : _ _ stream::io_error = !\\\\((old_path, new_path), $'\"std::fs::copy(&*$0, &*$1)\"')\n            ?= result |> resultm::map_error' sm'::format' |> resultm::unbox ?|\n            | Ok (result : u64) =>\n                trace Debug\n                    \\ () => \"file_system.file_copy\"\n                    \\ () => { old_path new_path result }\n            | Error error =>\n                trace Warning\n                    \\ () => \"file_system.file_copy\"\n                    \\ () => { old_path new_path error }\n        | _ => \\ _ => ()\n\n:= file_system_gleam_files () =\n    global \"import gleam/bit_array\"\n    global \"import gleam/dynamic.{type Dynamic}\"\n    global \"import gleam/erlang/atom\"\n    global \"\"\"\n        @external(erlang, \"file\", \"read_file\")\n        fn spiral_fs_read_file(path: String) -> Result(BitArray, Dynamic)\n\n        @external(erlang, \"file\", \"write_file\")\n        fn spiral_fs_write_file(path: String, data: String) -> Dynamic\n\n        @external(erlang, \"filelib\", \"is_regular\")\n        fn spiral_fs_is_regular(path: String) -> Bool\n\n        @external(erlang, \"gleam_stdlib\", \"identity\")\n        fn spiral_fs_coerce(value: a) -> b\n\n        \"\"\"\n\n:! gleam_bytes = $'BitArray'\n\n:= gleam_read_text (path : string) : string =\n    file_system_gleam_files ()\n    ?= ($'spiral_fs_read_file(!path)' : resultm::result' gleam_bytes gleam_dynamic) |> resultm::unbox ?|\n    | Ok bytes =>\n        ?= ($'bit_array.to_string(!bytes)' : resultm::result' string ()) |> resultm::unbox ?|\n        | Ok text => text\n        | Error _ => failwith \"file_system.read_all_text: the file is not UTF-8\"\n    | Error _ => failwith \"file_system.read_all_text: file:read_file failed\"\n\n:= gleam_write_text (path : string) (text : string) : () =\n    file_system_gleam_files ()\n    := raw : gleam_dynamic = $'spiral_fs_write_file(!path, !text)'\n    := written : gleam_atom = $'spiral_fs_coerce(!raw)'\n    ? gleam_atoms_equal written (gleam_atom_named \"ok\") |> not\n    ?> failwith \"file_system.write_all_text: the write failed\"\n\n:! lua_file = $'any'\n\n:= lua_file_open (path : string) (mode : string) : lua_file = $'io.open(!path, !mode)' : lua_file\n\n:= lua_file_present (file : lua_file) : bool = $'(!file) ~= nil' : bool\n\n:= lua_file_write (file : lua_file) (text : string) : () = $'(!file):write(!text)' : ()\n\n:= lua_file_read_all (file : lua_file) : string = $'(!file):read(\"*a\")' : string\n\n:= lua_file_close (file : lua_file) : () = $'(!file):close()' : ()\n\n:= lua_file_remove (path : string) : () = $'os.remove(!path)' : ()\n\n:~ file_exists (path : string) : bool =\n    run_target_args' path \\|\n        | Zig => \\ _ =>\n            global \"var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;\"\n            $'(if (std.Io.Dir.cwd().statFile(spiral_io_threaded.io(), !path, .{})) |s| s.kind == .file else |_| false)' : bool\n        | Fsharp => \\ path =>\n            path |> $'System.IO.File.Exists'\n        | Rust => \\ path =>\n            := path_buf = path |> sm'::to_std_string |> new_path_buf\n            path_buf_exists path_buf && path_buf_is_file path_buf\n        | Gleam => \\ path =>\n            file_system_gleam_files ()\n            $'spiral_fs_is_regular(!path)' : bool\n        | TypeScript => \\ path =>\n            global \"import * as spiral_node_fs from 'node:fs';\"\n            $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isFile())' : bool\n        | Gleam _ => \\ path =>\n            global \"\"\"\n                @external(erlang, \"filelib\", \"is_regular\")\n                fn spiral_filelib_is_regular(path: String) -> Bool\n                \"\"\"\n            $'spiral_filelib_is_regular(!path)' : bool\n        | Lua => \\ path =>\n            := file = lua_file_open path \"r\"\n            ? lua_file_present file ?>\n                lua_file_close file\n                !+\n            |: !-\n        | Pascal => \\ path => $'FileExists(!path)' : bool\n        | _ => \\ _ => null ()\n\n:= write_all_text (path : string) (text : string) : () =\n    run_target_args' (path, text) \\|\n        | Zig => \\ _ =>\n            global \"var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;\"\n            $'std.Io.Dir.cwd().writeFile(spiral_io_threaded.io(), .{ .sub_path = !path, .data = !text }) catch \\\n                \\@panic(\"file_system.write_all_text failed\")' : ()\n        | Fsharp => \\ path, text =>\n            $'System.IO.File.WriteAllText (!path, !text)'\n        | Rust => \\ path, text =>\n            !\\\\((path, text), $'\"std::fs::write(&*$0, &*$1).unwrap()\"')\n        | Gleam => \\ path, text =>\n            file_system_gleam_files ()\n            gleam_write_text path text\n        | Lua => \\ path, text =>\n            := file = lua_file_open path \"w\"\n            lua_file_write file text\n            lua_file_close file\n        | Pascal => \\ path, text =>\n            := handle = $'FileCreate(!path)' : i64\n            ? handle = -1i64 ?> failwith \"file_system.write_all_text / cannot create the file\"\n            := length = sm'::length text\n            ? length > 0i32 ?>\n                := first = 1i32\n                := written = $'FileWrite(!handle, (!text)[!first], !length)' : i32\n                ? written <> length ?> failwith \"file_system.write_all_text / short write\"\n            $'FileClose(!handle)' : ()\n        | _ => \\ _ => ()\n\n:= read_all_bytes (path : string) : am'::vec u8 =\n    run_target \\|\n        | Fsharp => \\ () =>\n            $'!path |> System.IO.File.ReadAllBytes'\n            |> am'::to_vec\n        | Rust => \\ () =>\n            path |> read |> resultm::unwrap'\n        | _ => \\ () => null ()\n\n:= c_read_file_global () : () =\n    global \"#include <stdint.h>\"\n    global \"#include <stdio.h>\"\n    global (\n        \"static long spiral_read_file(const char * path, uint8_t * dst, long cap) { FILE * f = fopen(path, \\\"rb\\\"); \"\n        ^^ \"if (!f) return -1; if (!dst) { fseek(f, 0, SEEK_END); long n = ftell(f); fclose(f); return n; } \"\n        ^^ \"long n = (long)fread(dst, 1, (size_t)cap, f); fclose(f); return n; }\"\n    )\n\n:= c_read_bytes (path : string) : array u8 =\n    c_read_file_global ()\n    := size : i32 = $'(int32_t)spiral_read_file(!path->ptr, NULL, 0)' : i32\n    ? size < 0 ?> failwith \"file_system.read_bytes / cannot open the file\"\n    := bytes : array u8 = create size\n    := read : i32 = $'(int32_t)spiral_read_file(!path->ptr, !bytes->ptr, !bytes->len)' : i32\n    ? read <> size ?> failwith \"file_system.read_bytes / short read\"\n    bytes\n\n:= zig_io () : () = global \"var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;\"\n\n:= zig_read_bytes (path : string) : array u8 =\n    zig_io ()\n    $'(std.Io.Dir.cwd().readFileAlloc(spiral_io_threaded.io(), !path, spiral_gpa, .unlimited) catch \\\n        \\@panic(\"file_system.read_bytes failed\"))' : array u8\n\n:= read_bytes (path : string) : array u8 =\n    run_target \\|\n        | C => \\ () => c_read_bytes path\n        | Zig => \\ () => zig_read_bytes path\n        | _ => \\ () => am'::from_vec (read_all_bytes path)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ":~ create_temp_path () =\n    run_target \\|\n        | _ => \\ () =>\n            date_time::now ()\n            |> date_time::new_guid_from_date_time\n            |> create_temp_path'\n\n:~ file_copy (new_path : string) (old_path : string) : () =\n    run_target_args' (old_path, new_path) \\|\n        | Fsharp => \\ old_path, new_path =>\n            $'System.IO.File.Copy (!old_path, !new_path, true)'\n        | Rust => \\ old_path, new_path =>\n            := result : _ _ stream::io_error = !\\\\((old_path, new_path), $'\"std::fs::copy(&*$0, &*$1)\"')\n            ?= result |> resultm::map_error' sm'::format' |> resultm::unbox ?|\n            | Ok (result : u64) =>\n                trace Debug\n                    \\ () => \"file_system.file_copy\"\n                    \\ () => { old_path new_path result }\n            | Error error =>\n                trace Warning\n                    \\ () => \"file_system.file_copy\"\n                    \\ () => { old_path new_path error }\n        | _ => \\ _ => ()\n\n:= file_system_gleam_files () =\n    global \"import gleam/bit_array\"\n    global \"import gleam/dynamic.{type Dynamic}\"\n    global \"import gleam/erlang/atom\"\n    global \"\"\"\n        @external(erlang, \"file\", \"read_file\")\n        fn spiral_fs_read_file(path: String) -> Result(BitArray, Dynamic)\n\n        @external(erlang, \"file\", \"write_file\")\n        fn spiral_fs_write_file(path: String, data: String) -> Dynamic\n\n        @external(erlang, \"filelib\", \"is_regular\")\n        fn spiral_fs_is_regular(path: String) -> Bool\n\n        @external(erlang, \"gleam_stdlib\", \"identity\")\n        fn spiral_fs_coerce(value: a) -> b\n\n        \"\"\"\n\n:! gleam_bytes = $'BitArray'\n\n:= gleam_read_text (path : string) : string =\n    file_system_gleam_files ()\n    ?= ($'spiral_fs_read_file(!path)' : resultm::result' gleam_bytes gleam_dynamic) |> resultm::unbox ?|\n    | Ok bytes =>\n        ?= ($'bit_array.to_string(!bytes)' : resultm::result' string ()) |> resultm::unbox ?|\n        | Ok text => text\n        | Error _ => failwith \"file_system.read_all_text: the file is not UTF-8\"\n    | Error _ => failwith \"file_system.read_all_text: file:read_file failed\"\n\n:= gleam_write_text (path : string) (text : string) : () =\n    file_system_gleam_files ()\n    := raw : gleam_dynamic = $'spiral_fs_write_file(!path, !text)'\n    := written : gleam_atom = $'spiral_fs_coerce(!raw)'\n    ? gleam_atoms_equal written (gleam_atom_named \"ok\") |> not\n    ?> failwith \"file_system.write_all_text: the write failed\"\n\n:! lua_file = $'any'\n\n:= lua_file_open (path : string) (mode : string) : lua_file = $'io.open(!path, !mode)' : lua_file\n\n:= lua_file_present (file : lua_file) : bool = $'(!file) ~= nil' : bool\n\n:= lua_file_write (file : lua_file) (text : string) : () = $'(!file):write(!text)' : ()\n\n:= lua_file_read_all (file : lua_file) : string = $'(!file):read(\"*a\")' : string\n\n:= lua_file_close (file : lua_file) : () = $'(!file):close()' : ()\n\n:= lua_file_remove (path : string) : () = $'os.remove(!path)' : ()\n\n:~ file_exists (path : string) : bool =\n    run_target_args' path \\|\n        | Zig => \\ _ =>\n            global \"var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;\"\n            $'(if (std.Io.Dir.cwd().statFile(spiral_io_threaded.io(), !path, .{})) |s| s.kind == .file else |_| false)' : bool\n        | Fsharp => \\ path =>\n            path |> $'System.IO.File.Exists'\n        | Rust => \\ path =>\n            := path_buf = path |> sm'::to_std_string |> new_path_buf\n            path_buf_exists path_buf && path_buf_is_file path_buf\n        | Gleam => \\ path =>\n            file_system_gleam_files ()\n            $'spiral_fs_is_regular(!path)' : bool\n        | TypeScript => \\ path =>\n            global \"import * as spiral_node_fs from 'node:fs';\"\n            $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isFile())' : bool\n        | Gleam _ => \\ path =>\n            global \"\"\"\n                @external(erlang, \"filelib\", \"is_regular\")\n                fn spiral_filelib_is_regular(path: String) -> Bool\n                \"\"\"\n            $'spiral_filelib_is_regular(!path)' : bool\n        | Lua => \\ path =>\n            := file = lua_file_open path \"r\"\n            ? lua_file_present file ?>\n                lua_file_close file\n                !+\n            |: !-\n        | Pascal => \\ path => $'FileExists(!path)' : bool\n        | _ => \\ _ => null ()\n\n:= write_all_text (path : string) (text : string) : () =\n    run_target_args' (path, text) \\|\n        | Zig => \\ _ =>\n            global \"var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;\"\n            $'std.Io.Dir.cwd().writeFile(spiral_io_threaded.io(), .{ .sub_path = !path, .data = !text }) catch \\\n                \\@panic(\"file_system.write_all_text failed\")' : ()\n        | Fsharp => \\ path, text =>\n            $'System.IO.File.WriteAllText (!path, !text)'\n        | Rust => \\ path, text =>\n            !\\\\((path, text), $'\"std::fs::write(&*$0, &*$1).unwrap()\"')\n        | Gleam => \\ path, text =>\n            file_system_gleam_files ()\n            gleam_write_text path text\n        | Lua => \\ path, text =>\n            := file = lua_file_open path \"w\"\n            lua_file_write file text\n            lua_file_close file\n        | Pascal => \\ path, text =>\n            := handle = $'FileCreate(!path)' : i64\n            ? handle = -1i64 ?> failwith \"file_system.write_all_text / cannot create the file\"\n            := length = sm'::length text\n            ? length > 0i32 ?>\n                := first = 1i32\n                := written = $'FileWrite(!handle, (!text)[!first], !length)' : i32\n                ? written <> length ?> failwith \"file_system.write_all_text / short write\"\n            $'FileClose(!handle)' : ()\n        | _ => \\ _ => ()\n\n:= read_all_bytes (path : string) : am'::vec u8 =\n    run_target \\|\n        | Fsharp => \\ () =>\n            $'!path |> System.IO.File.ReadAllBytes'\n            |> am'::to_vec\n        | Rust => \\ () =>\n            path |> read |> resultm::unwrap'\n        | _ => \\ () => null ()\n\n:= c_read_file_global () : () =\n    global \"#include <stdint.h>\"\n    global \"#include <stdio.h>\"\n    global (\n        \"static long spiral_read_file(const char * path, uint8_t * dst, long cap) { FILE * f = fopen(path, \\\"rb\\\"); \"\n        ^^ \"if (!f) return -1; if (!dst) { fseek(f, 0, SEEK_END); long n = ftell(f); fclose(f); return n; } \"\n        ^^ \"long n = (long)fread(dst, 1, (size_t)cap, f); fclose(f); return n; }\"\n    )\n\n:= c_read_bytes (path : string) : array u8 =\n    c_read_file_global ()\n    := size : i32 = $'(int32_t)spiral_read_file(!path->ptr, NULL, 0)' : i32\n    ? size < 0 ?> failwith \"file_system.read_bytes / cannot open the file\"\n    := bytes : array u8 = create size\n    := read : i32 = $'(int32_t)spiral_read_file(!path->ptr, !bytes->ptr, !bytes->len)' : i32\n    ? read <> size ?> failwith \"file_system.read_bytes / short read\"\n    bytes\n\n:= zig_io () : () = global \"var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;\"\n\n:= zig_read_bytes (path : string) : array u8 =\n    zig_io ()\n    $'(std.Io.Dir.cwd().readFileAlloc(spiral_io_threaded.io(), !path, spiral_gpa, .unlimited) catch \\\n        \\@panic(\"file_system.read_bytes failed\"))' : array u8\n\n:= read_bytes (path : string) : array u8 =\n    run_target \\|\n        | C => \\ () => c_read_bytes path\n        | Zig => \\ () => zig_read_bytes path\n        | _ => \\ () => am'::from_vec (read_all_bytes path)",
+  timeout: 300_000
+)
+```
+
+#### read_bytes_reads_a_file_on_c (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> c\n\n:= ~path = get_temp_path () ++# \"/spiral_read_bytes_c.bin\"\n$'{ FILE * f = fopen(!path->ptr, \"wb\"); fputs(\"AB\", f); fclose(f); }' : ()\n:= b = read_bytes path\n(length b, index b 0, index b 1) |> _assert_eq (2i32, 65u8, 66u8)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> c
+
+  := ~path = get_temp_path () ++# "/spiral_read_bytes_c.bin"
+  $'{ FILE * f = fopen(!path->ptr, "wb"); fputs("AB", f); fclose(f); }' : ()
+  := b = read_bytes path
+  (length b, index b 0, index b 1) |> _assert_eq (2i32, 65u8, 66u8)
+  """,
+  timeout: 300_000
+)
+```
+
+#### read_bytes_reads_a_written_text_file (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> zig\n\n:= ~path = get_temp_path () ++# \"/spiral_read_bytes_text.bin\"\nwrite_all_text path \"AB\"\n:= b = read_bytes path\n(length b, index b 0, index b 1) |> _assert_eq (2i32, 65u8, 66u8)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> zig
+
+  := ~path = get_temp_path () ++# "/spiral_read_bytes_text.bin"
+  write_all_text path "AB"
+  := b = read_bytes path
+  (length b, index b 0, index b 1) |> _assert_eq (2i32, 65u8, 66u8)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= c_stdio () : () = global \"#include <stdio.h>\"\n\n:= c_open_at () : () =\n    c_stdio ()\n    global (\n        \"static FILE * spiral_open_at(const char * p, long at) { FILE * f = fopen(p, \\\"rb\\\"); \"\n        ^^ \"if (f && fseek(f, at, SEEK_SET)) { fclose(f); f = NULL; } return f; }\"\n    )\n\n:= c_read_open () : () =\n    c_stdio ()\n    global (\n        \"static long spiral_read_open(FILE * f, void * d, long n) { \"\n        ^^ \"long r = f ? (long)fread(d, 1, (size_t)n, f) : -1; if (f) fclose(f); return r; }\"\n    )\n\n:= c_read_region_global () : () =\n    c_open_at ()\n    c_read_open ()\n    global (\n        \"static long spiral_read_region(const char * p, long at, void * d, long n) { \"\n        ^^ \"return spiral_read_open(spiral_open_at(p, at), d, n); }\"\n    )\n\n:= c_read_region \\* el. (path : string) (at : i32) (out : array el) (bytes : i32) : i32 =\n    c_read_region_global ()\n    $'(int32_t)spiral_read_region(!path->ptr, !at, !out->ptr, !bytes)' : i32\n\n:= c_read_into \\* el. (path : string) (at : i32) (out : array el) (size : i32) : array el =\n    := bytes = size * length out\n    ? c_read_region path at out bytes <> bytes ?> failwith \"file_system.read_region / short read\"\n    out\n\n:~ ^ copy_prefix_from (b : array u8) (out : array u8) (i : i32) : () =\n    ? i < length out ?>\n        set out i (index b i)\n        copy_prefix_from b out (i + 1)\n\n:= read_prefix (path : string) (count : i32) : array u8 =\n    := out : array u8 = create count\n    run_target \\|\n        | C => \\ () => c_read_into path 0 out 1\n        | _ => \\ () =>\n            copy_prefix_from (read_bytes path) out 0\n            out\n\n:= u32_le_at (b : array u8) (at : i32) : u32 =\n    := byte (k : i32) : u32 = conv (index b (at + k))\n    byte 0 ||| (byte 1 <<< 8) ||| (byte 2 <<< 16) ||| (byte 3 <<< 24)\n\n:~ ^ f32s_from (b : array u8) (out : array f32) (offset : i32) (i : i32) : () =\n    ? i < length out ?>\n        set out i (convert::f32_of_bits (u32_le_at b (offset + 4 * i)))\n        f32s_from b out offset (i + 1)\n\n:= read_f32s (path : string) (at : i32) (count : i32) : array f32 =\n    := out : array f32 = create count\n    run_target \\|\n        | C => \\ () => c_read_into path at out 4\n        | _ => \\ () =>\n            f32s_from (read_bytes path) out at 0\n            out\n\n:= c_map_includes () : () =\n    global \"#include <stdint.h>\"\n    global (\n        \"#ifdef _WIN32\\n#include <windows.h>\\n#else\\n#include <sys/mman.h>\\n\"\n        ^^ \"#include <fcntl.h>\\n#include <unistd.h>\\n#endif\"\n    )\n\n:= c_open_win () : () =\n    global (\n        \"#ifdef _WIN32\\nstatic HANDLE spiral_open_win(const char * p) { \"\n        ^^ \"return CreateFileA(p, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL); }\\n#endif\"\n    )\n\n:= c_sized_win () : () =\n    global (\n        \"#ifdef _WIN32\\nstatic HANDLE spiral_sized_win(const char * p, long * n) { HANDLE f = spiral_open_win(p); \"\n        ^^ \"LARGE_INTEGER s; *n = GetFileSizeEx(f, &s) ? (long)s.QuadPart : -1; return f; }\\n#endif\"\n    )\n\n:= c_mapping_win () : () =\n    global (\n        \"#ifdef _WIN32\\nstatic HANDLE spiral_mapping_win(HANDLE f, long n) { HANDLE m = n < 0 ? NULL : \"\n        ^^ \"CreateFileMappingA(f, NULL, PAGE_WRITECOPY, 0, 0, NULL); CloseHandle(f); return m; }\\n#endif\"\n    )\n\n:= c_view_win () : () =\n    global (\n        \"#ifdef _WIN32\\nstatic char * spiral_view_win(HANDLE m) { \"\n        ^^ \"char * r = m ? (char *)MapViewOfFile(m, FILE_MAP_COPY, 0, 0, 0) : NULL; \"\n        ^^ \"if (m) CloseHandle(m); return r; }\\n#endif\"\n    )\n\n:= c_map_private_win () : () =\n    global (\n        \"#ifdef _WIN32\\nstatic char * spiral_map_private(const char * p, long * n) { \"\n        ^^ \"HANDLE f = spiral_sized_win(p, n); return spiral_view_win(spiral_mapping_win(f, *n)); }\\n#endif\"\n    )\n\n:= c_open_sized () : () =\n    global (\n        \"#ifndef _WIN32\\nstatic int spiral_open_sized(const char * p, long * n) { int fd = open(p, O_RDONLY); \"\n        ^^ \"if (fd >= 0) *n = (long)lseek(fd, 0, SEEK_END); return fd; }\\n#endif\"\n    )\n\n:= c_mmap () : () =\n    global (\n        \"#ifndef _WIN32\\nstatic char * spiral_mmap(int fd, long n) { void * r = mmap(NULL, n, PROT_READ | PROT_WRITE, \"\n        ^^ \"MAP_PRIVATE, fd, 0); close(fd); return r == MAP_FAILED ? NULL : (char *)r; }\\n#endif\"\n    )\n\n:= c_map_private_posix () : () =\n    global (\n        \"#ifndef _WIN32\\nstatic char * spiral_map_private(const char * p, long * n) { \"\n        ^^ \"int fd = spiral_open_sized(p, n); return fd < 0 ? NULL : spiral_mmap(fd, *n); }\\n#endif\"\n    )\n\n:= c_map_private_global () : () =\n    c_map_includes ()\n    c_open_win ()\n    c_sized_win ()\n    c_mapping_win ()\n    c_view_win ()\n    c_map_private_win ()\n    c_open_sized ()\n    c_mmap ()\n    c_map_private_posix ()\n\n:= c_pin_header () : () =\n    global (\n        \"static void * spiral_pin_header(char * h, long count) { \"\n        ^^ \"((int32_t *)h)[0] = 1 << 30; ((uint32_t *)h)[1] = (uint32_t)count; return h; }\"\n    )\n\n:= c_view_f32s () : () =\n    c_pin_header ()\n    global (\n        \"static void * spiral_view_f32s(char * m, long n, long at, long count) { \"\n        ^^ \"return !m || at < 8 || (at - 8) % 4 || at + 4 * count > n ? NULL : spiral_pin_header(m + at - 8, count); }\"\n    )\n\n:= c_map_f32s_global () : () =\n    global (\n        \"__attribute__((noinline)) static void * spiral_map_f32s(const char * p, long at, long count) { \"\n        ^^ \"long n = 0; char * m = spiral_map_private(p, &n); return spiral_view_f32s(m, n, at, count); }\"\n    )\n\n:= c_map_global () : () =\n    c_map_private_global ()\n    c_view_f32s ()\n    c_map_f32s_global ()\n\n:= c_map_header (path : string) (at : i32) (count : i32) : u64 =\n    c_map_global ()\n    := h : u64 = $'(uint64_t)(uintptr_t)spiral_map_f32s(!path->ptr, !at, !count)' : u64\n    ? h = 0u64 ?> failwith \"file_system.map_f32s / cannot map that range\"\n    h\n\n:= c_map_f32s (path : string) (at : i32) (count : i32) : array f32 =\n    := shape : array f32 = create 0\n    := h = c_map_header path at count\n    $'(__typeof__(!shape))(uintptr_t)!h' : array f32\n\n:= map_f32s (path : string) (offset : i32) (count : i32) : array f32 =\n    run_target \\|\n        | C => \\ () => c_map_f32s path offset count\n        | _ => \\ () => read_f32s path offset count\n\n:= c_write_bytes_global () : () =\n    c_stdio ()\n    global (\n        \"static void spiral_write_bytes(const char * p, const void * b, long n) { \"\n        ^^ \"FILE * f = fopen(p, \\\"wb\\\"); fwrite(b, 1, (size_t)n, f); fclose(f); }\"\n    )\n\n:= c_write_bytes (path : string) (b : array u8) : () =\n    c_write_bytes_global ()\n    $'spiral_write_bytes(!path->ptr, !b->ptr, !b->len)' : ()\n\n:= rust_write_bytes (path : string) (b : array u8) : () =\n    := v = b |> am'::base |> am'::to_vec\n    $'std::fs::write(&*!path, &*!v).unwrap()' : ()\n\n:= zig_write_bytes (path : string) (b : array u8) : () =\n    zig_io ()\n    $'std.Io.Dir.cwd().writeFile(spiral_io_threaded.io(), .{ .sub_path = !path, .data = !b }) catch \\\n        \\@panic(\"file_system.write_bytes failed\")' : ()\n\n:= fallback_write_bytes (path : string) (b : array u8) : () =\n    run_target \\|\n        | Zig => \\ () => zig_write_bytes path b\n        | _ => \\ () => failwith \"file_system.write_bytes / no arm for this backend\"\n\n:= write_bytes (path : string) (b : array u8) : () =\n    run_target \\|\n        | C => \\ () => c_write_bytes path b\n        | Rust => \\ () => rust_write_bytes path b\n        | _ => \\ () => fallback_write_bytes path b\n\n:= f32_bytes () : array u8 = ;[9u8; 9u8; 9u8; 9u8; 1u8; 0u8; 128u8; 63u8; 0u8; 0u8; 0u8; 192u8]\n\n:= map_bytes () : array u8 = ;[9u8; 9u8; 9u8; 9u8; 9u8; 9u8; 9u8; 9u8; 1u8; 0u8; 128u8; 63u8; 0u8; 0u8; 0u8; 192u8]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := c_stdio () : () = global "#include <stdio.h>"
+
+  := c_open_at () : () =
+      c_stdio ()
+      global (
+          "static FILE * spiral_open_at(const char * p, long at) { FILE * f = fopen(p, \"rb\"); "
+          ^^ "if (f && fseek(f, at, SEEK_SET)) { fclose(f); f = NULL; } return f; }"
+      )
+
+  := c_read_open () : () =
+      c_stdio ()
+      global (
+          "static long spiral_read_open(FILE * f, void * d, long n) { "
+          ^^ "long r = f ? (long)fread(d, 1, (size_t)n, f) : -1; if (f) fclose(f); return r; }"
+      )
+
+  := c_read_region_global () : () =
+      c_open_at ()
+      c_read_open ()
+      global (
+          "static long spiral_read_region(const char * p, long at, void * d, long n) { "
+          ^^ "return spiral_read_open(spiral_open_at(p, at), d, n); }"
+      )
+
+  := c_read_region \* el. (path : string) (at : i32) (out : array el) (bytes : i32) : i32 =
+      c_read_region_global ()
+      $'(int32_t)spiral_read_region(!path->ptr, !at, !out->ptr, !bytes)' : i32
+
+  := c_read_into \* el. (path : string) (at : i32) (out : array el) (size : i32) : array el =
+      := bytes = size * length out
+      ? c_read_region path at out bytes <> bytes ?> failwith "file_system.read_region / short read"
+      out
+
+  :~ ^ copy_prefix_from (b : array u8) (out : array u8) (i : i32) : () =
+      ? i < length out ?>
+          set out i (index b i)
+          copy_prefix_from b out (i + 1)
+
+  := read_prefix (path : string) (count : i32) : array u8 =
+      := out : array u8 = create count
+      run_target \|
+          | C => \ () => c_read_into path 0 out 1
+          | _ => \ () =>
+              copy_prefix_from (read_bytes path) out 0
+              out
+
+  := u32_le_at (b : array u8) (at : i32) : u32 =
+      := byte (k : i32) : u32 = conv (index b (at + k))
+      byte 0 ||| (byte 1 <<< 8) ||| (byte 2 <<< 16) ||| (byte 3 <<< 24)
+
+  :~ ^ f32s_from (b : array u8) (out : array f32) (offset : i32) (i : i32) : () =
+      ? i < length out ?>
+          set out i (convert::f32_of_bits (u32_le_at b (offset + 4 * i)))
+          f32s_from b out offset (i + 1)
+
+  := read_f32s (path : string) (at : i32) (count : i32) : array f32 =
+      := out : array f32 = create count
+      run_target \|
+          | C => \ () => c_read_into path at out 4
+          | _ => \ () =>
+              f32s_from (read_bytes path) out at 0
+              out
+
+  := c_map_includes () : () =
+      global "#include <stdint.h>"
+      global (
+          "#ifdef _WIN32\n#include <windows.h>\n#else\n#include <sys/mman.h>\n"
+          ^^ "#include <fcntl.h>\n#include <unistd.h>\n#endif"
+      )
+
+  := c_open_win () : () =
+      global (
+          "#ifdef _WIN32\nstatic HANDLE spiral_open_win(const char * p) { "
+          ^^ "return CreateFileA(p, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL); }\n#endif"
+      )
+
+  := c_sized_win () : () =
+      global (
+          "#ifdef _WIN32\nstatic HANDLE spiral_sized_win(const char * p, long * n) { HANDLE f = spiral_open_win(p); "
+          ^^ "LARGE_INTEGER s; *n = GetFileSizeEx(f, &s) ? (long)s.QuadPart : -1; return f; }\n#endif"
+      )
+
+  := c_mapping_win () : () =
+      global (
+          "#ifdef _WIN32\nstatic HANDLE spiral_mapping_win(HANDLE f, long n) { HANDLE m = n < 0 ? NULL : "
+          ^^ "CreateFileMappingA(f, NULL, PAGE_WRITECOPY, 0, 0, NULL); CloseHandle(f); return m; }\n#endif"
+      )
+
+  := c_view_win () : () =
+      global (
+          "#ifdef _WIN32\nstatic char * spiral_view_win(HANDLE m) { "
+          ^^ "char * r = m ? (char *)MapViewOfFile(m, FILE_MAP_COPY, 0, 0, 0) : NULL; "
+          ^^ "if (m) CloseHandle(m); return r; }\n#endif"
+      )
+
+  := c_map_private_win () : () =
+      global (
+          "#ifdef _WIN32\nstatic char * spiral_map_private(const char * p, long * n) { "
+          ^^ "HANDLE f = spiral_sized_win(p, n); return spiral_view_win(spiral_mapping_win(f, *n)); }\n#endif"
+      )
+
+  := c_open_sized () : () =
+      global (
+          "#ifndef _WIN32\nstatic int spiral_open_sized(const char * p, long * n) { int fd = open(p, O_RDONLY); "
+          ^^ "if (fd >= 0) *n = (long)lseek(fd, 0, SEEK_END); return fd; }\n#endif"
+      )
+
+  := c_mmap () : () =
+      global (
+          "#ifndef _WIN32\nstatic char * spiral_mmap(int fd, long n) { void * r = mmap(NULL, n, PROT_READ | PROT_WRITE, "
+          ^^ "MAP_PRIVATE, fd, 0); close(fd); return r == MAP_FAILED ? NULL : (char *)r; }\n#endif"
+      )
+
+  := c_map_private_posix () : () =
+      global (
+          "#ifndef _WIN32\nstatic char * spiral_map_private(const char * p, long * n) { "
+          ^^ "int fd = spiral_open_sized(p, n); return fd < 0 ? NULL : spiral_mmap(fd, *n); }\n#endif"
+      )
+
+  := c_map_private_global () : () =
+      c_map_includes ()
+      c_open_win ()
+      c_sized_win ()
+      c_mapping_win ()
+      c_view_win ()
+      c_map_private_win ()
+      c_open_sized ()
+      c_mmap ()
+      c_map_private_posix ()
+
+  := c_pin_header () : () =
+      global (
+          "static void * spiral_pin_header(char * h, long count) { "
+          ^^ "((int32_t *)h)[0] = 1 << 30; ((uint32_t *)h)[1] = (uint32_t)count; return h; }"
+      )
+
+  := c_view_f32s () : () =
+      c_pin_header ()
+      global (
+          "static void * spiral_view_f32s(char * m, long n, long at, long count) { "
+          ^^ "return !m || at < 8 || (at - 8) % 4 || at + 4 * count > n ? NULL : spiral_pin_header(m + at - 8, count); }"
+      )
+
+  := c_map_f32s_global () : () =
+      global (
+          "__attribute__((noinline)) static void * spiral_map_f32s(const char * p, long at, long count) { "
+          ^^ "long n = 0; char * m = spiral_map_private(p, &n); return spiral_view_f32s(m, n, at, count); }"
+      )
+
+  := c_map_global () : () =
+      c_map_private_global ()
+      c_view_f32s ()
+      c_map_f32s_global ()
+
+  := c_map_header (path : string) (at : i32) (count : i32) : u64 =
+      c_map_global ()
+      := h : u64 = $'(uint64_t)(uintptr_t)spiral_map_f32s(!path->ptr, !at, !count)' : u64
+      ? h = 0u64 ?> failwith "file_system.map_f32s / cannot map that range"
+      h
+
+  := c_map_f32s (path : string) (at : i32) (count : i32) : array f32 =
+      := shape : array f32 = create 0
+      := h = c_map_header path at count
+      $'(__typeof__(!shape))(uintptr_t)!h' : array f32
+
+  := map_f32s (path : string) (offset : i32) (count : i32) : array f32 =
+      run_target \|
+          | C => \ () => c_map_f32s path offset count
+          | _ => \ () => read_f32s path offset count
+
+  := c_write_bytes_global () : () =
+      c_stdio ()
+      global (
+          "static void spiral_write_bytes(const char * p, const void * b, long n) { "
+          ^^ "FILE * f = fopen(p, \"wb\"); fwrite(b, 1, (size_t)n, f); fclose(f); }"
+      )
+
+  := c_write_bytes (path : string) (b : array u8) : () =
+      c_write_bytes_global ()
+      $'spiral_write_bytes(!path->ptr, !b->ptr, !b->len)' : ()
+
+  := rust_write_bytes (path : string) (b : array u8) : () =
+      := v = b |> am'::base |> am'::to_vec
+      $'std::fs::write(&*!path, &*!v).unwrap()' : ()
+
+  := zig_write_bytes (path : string) (b : array u8) : () =
+      zig_io ()
+      $'std.Io.Dir.cwd().writeFile(spiral_io_threaded.io(), .{ .sub_path = !path, .data = !b }) catch \
+          \@panic("file_system.write_bytes failed")' : ()
+
+  := fallback_write_bytes (path : string) (b : array u8) : () =
+      run_target \|
+          | Zig => \ () => zig_write_bytes path b
+          | _ => \ () => failwith "file_system.write_bytes / no arm for this backend"
+
+  := write_bytes (path : string) (b : array u8) : () =
+      run_target \|
+          | C => \ () => c_write_bytes path b
+          | Rust => \ () => rust_write_bytes path b
+          | _ => \ () => fallback_write_bytes path b
+
+  := f32_bytes () : array u8 = ;[9u8; 9u8; 9u8; 9u8; 1u8; 0u8; 128u8; 63u8; 0u8; 0u8; 0u8; 192u8]
+
+  := map_bytes () : array u8 = ;[9u8; 9u8; 9u8; 9u8; 9u8; 9u8; 9u8; 9u8; 1u8; 0u8; 128u8; 63u8; 0u8; 0u8; 0u8; 192u8]
+  """,
+  timeout: 300_000
+)
+```
+
+#### map_f32s_views_floats_after_an_8_byte_header (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> c\n///> rust\n///> zig\n\n:= ~path = get_temp_path () ++# \"/spiral_map_f32s.bin\"\nwrite_bytes path (map_bytes ())\n:= x = map_f32s path 8 2\n(length x, index x 0, index x 1) |> _assert_eq (2i32, 1.0000001f32, -2.0f32)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> c
+  ///> rust
+  ///> zig
+
+  := ~path = get_temp_path () ++# "/spiral_map_f32s.bin"
+  write_bytes path (map_bytes ())
+  := x = map_f32s path 8 2
+  (length x, index x 0, index x 1) |> _assert_eq (2i32, 1.0000001f32, -2.0f32)
+  """,
+  timeout: 300_000
+)
+```
+
+#### read_f32s_reads_little_endian_floats_at_an_offset (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> c\n///> rust\n///> zig\n\n:= ~path = get_temp_path () ++# \"/spiral_read_f32s.bin\"\nwrite_bytes path (f32_bytes ())\n:= x = read_f32s path 4 2\n(length x, index x 0, index x 1) |> _assert_eq (2i32, 1.0000001f32, -2.0f32)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> c
+  ///> rust
+  ///> zig
+
+  := ~path = get_temp_path () ++# "/spiral_read_f32s.bin"
+  write_bytes path (f32_bytes ())
+  := x = read_f32s path 4 2
+  (length x, index x 0, index x 1) |> _assert_eq (2i32, 1.0000001f32, -2.0f32)
+  """,
+  timeout: 300_000
+)
+```
+
+#### read_prefix_reads_the_first_bytes (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> c\n///> rust\n///> zig\n\n:= ~path = get_temp_path () ++# \"/spiral_read_prefix.bin\"\nwrite_bytes path (f32_bytes ())\n:= head = read_prefix path 5\n(length head, index head 3, index head 4) |> _assert_eq (5i32, 9u8, 1u8)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> c
+  ///> rust
+  ///> zig
+
+  := ~path = get_temp_path () ++# "/spiral_read_prefix.bin"
+  write_bytes path (f32_bytes ())
+  := head = read_prefix path 5
+  (length head, index head 3, index head 4) |> _assert_eq (5i32, 9u8, 1u8)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= read_all_text (path : string) : string =\n    run_target \\|\n        | Zig => \\ () =>\n            global \"var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;\"\n            $'(std.Io.Dir.cwd().readFileAlloc(spiral_io_threaded.io(), !path, spiral_gpa, .unlimited) catch \\\n                \\@panic(\"file_system.read_all_text failed\"))' : string\n        | Fsharp => \\ () =>\n            $'!path |> System.IO.File.ReadAllText'\n        | Gleam => \\ () =>\n            file_system_gleam_files ()\n            gleam_read_text path\n        | Rust => \\ () =>\n            path\n            |> read_all_bytes\n            |> sm'::string_from_utf8\n            |> resultm::unwrap'\n            |> sm'::from_std_string\n        | Lua => \\ () =>\n            := file = lua_file_open path \"r\"\n            := text = lua_file_read_all file\n            lua_file_close file\n            text\n        | Pascal => \\ () =>\n            := handle = $'FileOpen(!path, fmOpenRead)' : i64\n            ? handle = -1i64 ?> failwith \"file_system.read_all_text / cannot open the file\"\n            := size = $'FileSeek(!handle, 0, 2)' : i32\n            := start = $'FileSeek(!handle, 0, 0)' : i32\n            ? start <> 0i32 ?> failwith \"file_system.read_all_text / cannot rewind the file\"\n            := text = $'StringOfChar(Chr(0), !size)' : string\n            ? size > 0i32 ?>\n                := first = 1i32\n                := read = $'FileRead(!handle, (!text)[!first], !size)' : i32\n                ? read <> size ?> failwith \"file_system.read_all_text / short read\"\n            $'FileClose(!handle)' : ()\n            text\n        | _ => \\ () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := read_all_text (path : string) : string =
+      run_target \|
+          | Zig => \ () =>
+              global "var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"
+              $'(std.Io.Dir.cwd().readFileAlloc(spiral_io_threaded.io(), !path, spiral_gpa, .unlimited) catch \
+                  \@panic("file_system.read_all_text failed"))' : string
+          | Fsharp => \ () =>
+              $'!path |> System.IO.File.ReadAllText'
+          | Gleam => \ () =>
+              file_system_gleam_files ()
+              gleam_read_text path
+          | Rust => \ () =>
+              path
+              |> read_all_bytes
+              |> sm'::string_from_utf8
+              |> resultm::unwrap'
+              |> sm'::from_std_string
+          | Lua => \ () =>
+              := file = lua_file_open path "r"
+              := text = lua_file_read_all file
+              lua_file_close file
+              text
+          | Pascal => \ () =>
+              := handle = $'FileOpen(!path, fmOpenRead)' : i64
+              ? handle = -1i64 ?> failwith "file_system.read_all_text / cannot open the file"
+              := size = $'FileSeek(!handle, 0, 2)' : i32
+              := start = $'FileSeek(!handle, 0, 0)' : i32
+              ? start <> 0i32 ?> failwith "file_system.read_all_text / cannot rewind the file"
+              := text = $'StringOfChar(Chr(0), !size)' : string
+              ? size > 0i32 ?>
+                  := first = 1i32
+                  := read = $'FileRead(!handle, (!text)[!first], !size)' : i32
+                  ? read <> size ?> failwith "file_system.read_all_text / short read"
+              $'FileClose(!handle)' : ()
+              text
+          | _ => \ () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+#### pascal_read_all_text_reads_back_what_was_written (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> pascal\n\n:= path = \"spiral-pascal-read-probe.txt\"\nwrite_all_text path \"ab\"\npath |> read_all_text |> _assert_eq \"ab\"\nwrite_all_text path \"\"\npath |> read_all_text |> _assert_eq \"\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> pascal
+
+  := path = "spiral-pascal-read-probe.txt"
+  write_all_text path "ab"
+  path |> read_all_text |> _assert_eq "ab"
+  write_all_text path ""
+  path |> read_all_text |> _assert_eq ""
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= read_text_or_empty (path : string) : string =\n    run_target \\|\n        | Rust => \\ () =>\n            $'std::rc::Rc::<str>::from(std::fs::read_to_string(&*!path).unwrap_or_default().as_str())' : string\n        | Fsharp => \\ () =>\n            $'(try System.IO.File.ReadAllText(!path : string) with _ -> \"\")' : string\n        | _ => \\ () => no_arm \"file_system.read_text_or_empty\"\n\n:= read_text_or_empty_probe () : string =\n    := path = get_temp_path () </> \"spiral-read-text-or-empty.txt\"\n    write_all_text path \"kept\"\n    path","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := read_text_or_empty (path : string) : string =
+      run_target \|
+          | Rust => \ () =>
+              $'std::rc::Rc::<str>::from(std::fs::read_to_string(&*!path).unwrap_or_default().as_str())' : string
+          | Fsharp => \ () =>
+              $'(try System.IO.File.ReadAllText(!path : string) with _ -> "")' : string
+          | _ => \ () => no_arm "file_system.read_text_or_empty"
+
+  := read_text_or_empty_probe () : string =
+      := path = get_temp_path () </> "spiral-read-text-or-empty.txt"
+      write_all_text path "kept"
+      path
+  """,
+  timeout: 300_000
+)
+```
+
+#### read_text_or_empty_reads_a_file_or_gives_empty (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n:= path = read_text_or_empty_probe ()\n(read_text_or_empty path, read_text_or_empty (path ++# \".missing\")) |> _assert_eq (\"kept\", \"\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  := path = read_text_or_empty_probe ()
+  (read_text_or_empty path, read_text_or_empty (path ++# ".missing")) |> _assert_eq ("kept", "")
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= directory_create_symbolic_link (target : string) (path : string) : () =\n    run_target \\|\n        | Fsharp => \\ () =>\n            ($'System.IO.Directory.CreateSymbolicLink (!path, !target)' : file_system_info)\n            |> ignore\n        | Rust => \\ () =>\n            global \"\"\"\n                #[cfg(windows)]\n                fn spiral_fs_symlink_dir(target: &str, path: &str) -> std::io::Result<()> {\n                    std::os::windows::fs::symlink_dir(target, path)\n                }\n                #[cfg(unix)]\n                fn spiral_fs_symlink_dir(target: &str, path: &str) -> std::io::Result<()> {\n                    std::os::unix::fs::symlink(target, path)\n                }\n                #[cfg(not(any(windows, unix)))]\n                fn spiral_fs_symlink_dir(_target: &str, _path: &str) -> std::io::Result<()> {\n                    Err(std::io::ErrorKind::Unsupported.into())\n                }\n                \"\"\"\n            := linked : resultm::result' () stream::io_error = $'spiral_fs_symlink_dir(&*!target, &*!path)'\n            ?= linked |> resultm::map_error' sm'::format |> resultm::unbox ?|\n            | Ok () => ()\n            | Error why => failwith (\"directory_create_symbolic_link / \" ++# path ++# \": \" ++# why)\n        | _ => \\ () => ()\n\n:= file_create_symbolic_link (target : string) (path : string) : () =\n    run_target \\|\n        | Fsharp => \\ () =>\n            ($'System.IO.File.CreateSymbolicLink (!path, !target)' : file_system_info)\n            |> ignore\n        | Rust => \\ () =>\n            global \"\"\"\n                #[cfg(windows)]\n                fn spiral_fs_symlink_file(target: &str, path: &str) -> std::io::Result<()> {\n                    std::os::windows::fs::symlink_file(target, path)\n                }\n                #[cfg(unix)]\n                fn spiral_fs_symlink_file(target: &str, path: &str) -> std::io::Result<()> {\n                    std::os::unix::fs::symlink(target, path)\n                }\n                #[cfg(not(any(windows, unix)))]\n                fn spiral_fs_symlink_file(_target: &str, _path: &str) -> std::io::Result<()> {\n                    Err(std::io::ErrorKind::Unsupported.into())\n                }\n                \"\"\"\n            := linked : resultm::result' () stream::io_error = $'spiral_fs_symlink_file(&*!target, &*!path)'\n            ?= linked |> resultm::map_error' sm'::format |> resultm::unbox ?|\n            | Ok () => ()\n            | Error why => failwith (\"file_create_symbolic_link / \" ++# path ++# \": \" ++# why)\n        | _ => \\ () => ()\n\n:= mklink_status (native_path : string) (native_target : string) : i32 =\n    global \"\"\"\n        fn spiral_fs_mklink_junction(path: &str, target: &str) -> i32 {\n            let output = std::process::Command::new(\"cmd\").args([\"/d\", \"/c\", \"mklink\", \"/J\", path, target]).output();\n            output.map(|o| o.status.code().unwrap_or(-2)).unwrap_or(-1)\n        }\n        \"\"\"\n    $'spiral_fs_mklink_junction(&*!native_path, &*!native_target)' : i32\n\n:= directory_create_junction (target : string) (path : string) : result () string =\n    ? path |> directory_exists ?> Error (\"directory_create_junction / path exists: \" ++# path)\n    |:\n        run_target \\|\n            | Rust => \\ () =>\n                ? platform::is_windows () ?>\n                    := native_path = path |> sm'::replace \"/\" \"\\\\\"\n                    := native_target = target |> sm'::replace \"/\" \"\\\\\"\n                    := exit_code = mklink_status native_path native_target\n                    := failure = \"directory_create_junction / mklink /J exit \" ++# sm'::format exit_code\n                    ? exit_code = 0i32 ?> Ok () |: Error failure\n                |:\n                    path |> directory_create_symbolic_link target\n                    Ok ()\n            | _ => \\ () =>\n                path |> directory_create_symbolic_link target\n                Ok ()\n\n:= file_is_read_only (path : string) : bool =\n    run_target \\|\n        | Rust => \\ () => $'std::fs::metadata(&*!path).map(|m| m.permissions().readonly()).unwrap_or(false)' : bool\n        | _ => \\ () => !-\n\n:! fs_permissions = $'std::fs::Permissions'\n\n:= rust_permissions (path : string) : optionm'::option' fs_permissions =\n    $'std::fs::metadata(&*!path).ok().map(|m| m.permissions())' : optionm'::option' fs_permissions\n\n:= rust_permissions_set (path : string) (read_only : bool) (mode : fs_permissions) : bool =\n    := mode = mode\n    mode |> rust::to_mut\n    $'!mode.set_readonly(!read_only)' : ()\n    $'std::fs::set_permissions(&*!path, !mode).is_ok()' : bool\n\n:= file_set_read_only (read_only : bool) (path : string) : bool =\n    run_target \\|\n        | Rust => \\ () =>\n            ?= rust_permissions path |> optionm'::unbox ?|\n            | Some permissions => rust_permissions_set path read_only permissions\n            | None => !-\n        | _ => \\ () => !-\n\n:| entry_kind =\n    | File\n    | Directory\n\n:~ find_parent file_type name root_dir =\n    := is_file = file_type = File\n    := exists_fn = ? is_file ?> file_exists |: directory_exists\n    :~ ^ 루프 dir =\n        ? dir </> name |> exists_fn\n        ?> dir |> Ok\n        |:\n            ?= dir |> directory_parent ?|\n            | Some parent => parent |> 루프\n            | None =>\n                \"file_system.find_parent / No parent for \" ++# (? is_file ?> \"file\" |: \"dir\")\n                ++# \" '\" ++# name ++# \"' at '\" ++# root_dir ++# \"' (until '\" ++# dir ++# \"')\"\n                |> Error\n    root_dir |> 루프","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ":= directory_create_symbolic_link (target : string) (path : string) : () =\n    run_target \\|\n        | Fsharp => \\ () =>\n            ($'System.IO.Directory.CreateSymbolicLink (!path, !target)' : file_system_info)\n            |> ignore\n        | Rust => \\ () =>\n            global \"\"\"\n                #[cfg(windows)]\n                fn spiral_fs_symlink_dir(target: &str, path: &str) -> std::io::Result<()> {\n                    std::os::windows::fs::symlink_dir(target, path)\n                }\n                #[cfg(unix)]\n                fn spiral_fs_symlink_dir(target: &str, path: &str) -> std::io::Result<()> {\n                    std::os::unix::fs::symlink(target, path)\n                }\n                #[cfg(not(any(windows, unix)))]\n                fn spiral_fs_symlink_dir(_target: &str, _path: &str) -> std::io::Result<()> {\n                    Err(std::io::ErrorKind::Unsupported.into())\n                }\n                \"\"\"\n            := linked : resultm::result' () stream::io_error = $'spiral_fs_symlink_dir(&*!target, &*!path)'\n            ?= linked |> resultm::map_error' sm'::format |> resultm::unbox ?|\n            | Ok () => ()\n            | Error why => failwith (\"directory_create_symbolic_link / \" ++# path ++# \": \" ++# why)\n        | _ => \\ () => ()\n\n:= file_create_symbolic_link (target : string) (path : string) : () =\n    run_target \\|\n        | Fsharp => \\ () =>\n            ($'System.IO.File.CreateSymbolicLink (!path, !target)' : file_system_info)\n            |> ignore\n        | Rust => \\ () =>\n            global \"\"\"\n                #[cfg(windows)]\n                fn spiral_fs_symlink_file(target: &str, path: &str) -> std::io::Result<()> {\n                    std::os::windows::fs::symlink_file(target, path)\n                }\n                #[cfg(unix)]\n                fn spiral_fs_symlink_file(target: &str, path: &str) -> std::io::Result<()> {\n                    std::os::unix::fs::symlink(target, path)\n                }\n                #[cfg(not(any(windows, unix)))]\n                fn spiral_fs_symlink_file(_target: &str, _path: &str) -> std::io::Result<()> {\n                    Err(std::io::ErrorKind::Unsupported.into())\n                }\n                \"\"\"\n            := linked : resultm::result' () stream::io_error = $'spiral_fs_symlink_file(&*!target, &*!path)'\n            ?= linked |> resultm::map_error' sm'::format |> resultm::unbox ?|\n            | Ok () => ()\n            | Error why => failwith (\"file_create_symbolic_link / \" ++# path ++# \": \" ++# why)\n        | _ => \\ () => ()\n\n:= mklink_status (native_path : string) (native_target : string) : i32 =\n    global \"\"\"\n        fn spiral_fs_mklink_junction(path: &str, target: &str) -> i32 {\n            let output = std::process::Command::new(\"cmd\").args([\"/d\", \"/c\", \"mklink\", \"/J\", path, target]).output();\n            output.map(|o| o.status.code().unwrap_or(-2)).unwrap_or(-1)\n        }\n        \"\"\"\n    $'spiral_fs_mklink_junction(&*!native_path, &*!native_target)' : i32\n\n:= directory_create_junction (target : string) (path : string) : result () string =\n    ? path |> directory_exists ?> Error (\"directory_create_junction / path exists: \" ++# path)\n    |:\n        run_target \\|\n            | Rust => \\ () =>\n                ? platform::is_windows () ?>\n                    := native_path = path |> sm'::replace \"/\" \"\\\\\"\n                    := native_target = target |> sm'::replace \"/\" \"\\\\\"\n                    := exit_code = mklink_status native_path native_target\n                    := failure = \"directory_create_junction / mklink /J exit \" ++# sm'::format exit_code\n                    ? exit_code = 0i32 ?> Ok () |: Error failure\n                |:\n                    path |> directory_create_symbolic_link target\n                    Ok ()\n            | _ => \\ () =>\n                path |> directory_create_symbolic_link target\n                Ok ()\n\n:= file_is_read_only (path : string) : bool =\n    run_target \\|\n        | Rust => \\ () => $'std::fs::metadata(&*!path).map(|m| m.permissions().readonly()).unwrap_or(false)' : bool\n        | _ => \\ () => !-\n\n:! fs_permissions = $'std::fs::Permissions'\n\n:= rust_permissions (path : string) : optionm'::option' fs_permissions =\n    $'std::fs::metadata(&*!path).ok().map(|m| m.permissions())' : optionm'::option' fs_permissions\n\n:= rust_permissions_set (path : string) (read_only : bool) (mode : fs_permissions) : bool =\n    := mode = mode\n    mode |> rust::to_mut\n    $'!mode.set_readonly(!read_only)' : ()\n    $'std::fs::set_permissions(&*!path, !mode).is_ok()' : bool\n\n:= file_set_read_only (read_only : bool) (path : string) : bool =\n    run_target \\|\n        | Rust => \\ () =>\n            ?= rust_permissions path |> optionm'::unbox ?|\n            | Some permissions => rust_permissions_set path read_only permissions\n            | None => !-\n        | _ => \\ () => !-\n\n:| entry_kind =\n    | File\n    | Directory\n\n:~ find_parent file_type name root_dir =\n    := is_file = file_type = File\n    := exists_fn = ? is_file ?> file_exists |: directory_exists\n    :~ ^ 루프 dir =\n        ? dir </> name |> exists_fn\n        ?> dir |> Ok\n        |:\n            ?= dir |> directory_parent ?|\n            | Some parent => parent |> 루프\n            | None =>\n                \"file_system.find_parent / No parent for \" ++# (? is_file ?> \"file\" |: \"dir\")\n                ++# \" '\" ++# name ++# \"' at '\" ++# root_dir ++# \"' (until '\" ++# dir ++# \"')\"\n                |> Error\n    root_dir |> 루프",
+  timeout: 300_000
+)
+```
+
+#### find_parent (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> fsharp\n\n;[ Directory, \"workspace\"; File, \"README.md\" ]\n|> arraym::map \\ file_type, file =>\n    get_source_directory ()\n    |> find_parent file_type file\n    |> resultm::get\n    |> directory_info\n    |> directory_info_name\n|> am'::distinct\n|> _assert_in [ ;[ \"spiral\" ]; ;[ \"polyglot\" ] ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> fsharp
+
+  ;[ Directory, "workspace"; File, "README.md" ]
+  |> arraym::map \ file_type, file =>
+      get_source_directory ()
+      |> find_parent file_type file
+      |> resultm::get
+      |> directory_info
+      |> directory_info_name
+  |> am'::distinct
+  |> _assert_in [ ;[ "spiral" ]; ;[ "polyglot" ] ]
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n;[ Directory, \"workspace\"; File, \"README.md\" ]\n|> arraym::map \\ file_type, file =>\n    \\ () =>\n        ~~\n            get_current_directory ()\n            |> find_parent file_type file\n            |> resultm::get\n            |> sm'::to_std_string\n            |> new_path_buf\n            |> path_buf_file_name\n            |> optionm'::try'\n            |> sm'::from_os_str_ref\n            |> Some\n            |> optionm'::box\n    |> \\ x => x () |> optionm'::unbox\n    |> optionm'::default_value \"\"\n|> am'::distinct\n|> \\ result =>\n    result |> am'::length |> _assert_eq 1i32\n    index result 0i32 |> _assert_eq \"spiral\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  ;[ Directory, "workspace"; File, "README.md" ]
+  |> arraym::map \ file_type, file =>
+      \ () =>
+          ~~
+              get_current_directory ()
+              |> find_parent file_type file
+              |> resultm::get
+              |> sm'::to_std_string
+              |> new_path_buf
+              |> path_buf_file_name
+              |> optionm'::try'
+              |> sm'::from_os_str_ref
+              |> Some
+              |> optionm'::box
+      |> \ x => x () |> optionm'::unbox
+      |> optionm'::default_value ""
+  |> am'::distinct
+  |> \ result =>
+      result |> am'::length |> _assert_eq 1i32
+      index result 0i32 |> _assert_eq "spiral"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= file_delete (path : string) : () =\n    run_target \\|\n        | Zig => \\ () =>\n            global \"var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;\"\n            $'std.Io.Dir.cwd().deleteFile(spiral_io_threaded.io(), !path) catch {}' : ()\n        | Fsharp => \\ () =>\n            path |> $'System.IO.File.Delete'\n        | Rust => \\ () =>\n            := result : resultm::result' () stream::io_error =\n                ? path |> file_exists\n                ?> !\\\\(path, $'\"std::fs::remove_file(&*$0)\"')\n                |: Ok () |> resultm::box\n            ?= result |> resultm::map_error' sm'::format |> resultm::unbox ?|\n            | Ok () => ()\n            | Error error' => console::write_error_line (sm'::(++#) \"file_system.file_delete: \" error')\n        | Gleam => \\ () =>\n            file_system_gleam_paths ()\n            $'spiral_fs_delete(!path)' : ()\n        | Lua => \\ () => lua_file_remove path\n        | _ => \\ () => ()\n\n:= written_then_deleted (path : string) : bool * bool =\n    write_all_text path \"x\"\n    := written = file_exists path\n    file_delete path\n    written, file_exists path","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := file_delete (path : string) : () =
+      run_target \|
+          | Zig => \ () =>
+              global "var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"
+              $'std.Io.Dir.cwd().deleteFile(spiral_io_threaded.io(), !path) catch {}' : ()
+          | Fsharp => \ () =>
+              path |> $'System.IO.File.Delete'
+          | Rust => \ () =>
+              := result : resultm::result' () stream::io_error =
+                  ? path |> file_exists
+                  ?> !\\(path, $'"std::fs::remove_file(&*$0)"')
+                  |: Ok () |> resultm::box
+              ?= result |> resultm::map_error' sm'::format |> resultm::unbox ?|
+              | Ok () => ()
+              | Error error' => console::write_error_line (sm'::(++#) "file_system.file_delete: " error')
+          | Gleam => \ () =>
+              file_system_gleam_paths ()
+              $'spiral_fs_delete(!path)' : ()
+          | Lua => \ () => lua_file_remove path
+          | _ => \ () => ()
+
+  := written_then_deleted (path : string) : bool * bool =
+      write_all_text path "x"
+      := written = file_exists path
+      file_delete path
+      written, file_exists path
+  """,
+  timeout: 300_000
+)
+```
+
+#### file_exists_on_gleam_tells_files_from_missing_paths (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n\n:= ~path = \"spiral-file-exists-probe.txt\"\n(written_then_deleted path, file_exists \"spiral-no-such-file.txt\") |> _assert_eq ((!+, !-), !-)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+
+  := ~path = "spiral-file-exists-probe.txt"
+  (written_then_deleted path, file_exists "spiral-no-such-file.txt") |> _assert_eq ((!+, !-), !-)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":~ read_link (path : string) : resultm::result' path_buf stream::io_error =\n    :~ run 루프 n error path' =\n        := name = path' |> get_file_name\n        := parent = path' |> directory_get_parent |> optionm'::unbox\n        := error'' = #?error\n        ?= parent ?|\n        | _ ?& n >= 11 =>\n            ($'$\"file_system.read_link / \"' : string)\n            ++# $'$\"path: {!path} / n: {!n} / path\\': {!path'} / name: {!name}\"'\n            |> stream::new_io_error\n            |> resultm::err\n        | Some parent ?& path' <>. \"\" =>\n            ?= 루프 (n + 1) parent |> resultm::map_error' sm'::format |> resultm::unbox ?|\n            | Ok parent' =>\n                (parent' |> path_buf_display |> convert::convert) </> name\n                |> sm'::to_std_string\n                |> new_path_buf\n                |> resultm::ok''\n            | Error error' =>\n                ($'$\"file_system.read_link / \"' : string)\n                ++# $'$\"error\\': {!error'} / error: {!error''} / name: {!name}\"'\n                |> stream::new_io_error\n                |> resultm::err\n        | _ =>\n            ($'$\"file_system.read_link / run / The file or directory is not a reparse point. / \"' : string)\n            ++# $'$\"path: {!path} / error: {!error''} / path\\': {!path'} / name: {!name}\"'\n            |> stream::new_io_error\n            |> resultm::err\n\n    run_target \\|\n        | Rust => \\ () =>\n            ? path |> directory_exists\n            ?> !\\\\(path, $'\"std::fs::read_link(&*$0)\"')\n            |:\n                :~ ^ 루프 \\* t {number}.\n                    (n : t)\n                    (path' : string)\n                    : resultm::result' path_buf stream::io_error\n                    =\n                    run_target \\|\n                        | Rust => \\ () =>\n                            := result : _ _ stream::io_error = !\\\\(path', $'\"std::fs::read_link(&*$0)\"')\n                            := result = result |> resultm::map_error' sm'::format |> resultm::unbox\n                            ?= result ?|\n                            | Ok x => x |> resultm::ok''\n                            | Error error => path' |> run 루프 n error\n                        | _ => \\ () => null ()\n                path |> 루프 0u8\n        | Fsharp _\n        | TypeScript _ => \\ () =>\n            :~ ^ 루프 \\* t {number}.\n                (n : t)\n                (path' : string)\n                : resultm::result' path_buf stream::io_error\n                =\n                := result =\n                    path'\n                    |> directory_info\n                    |> directory_info_attributes\n                    |> file_attributes_has_flag (file_attributes_reparse_point ())\n                ? result ?>\n                    path'\n                    |> file_info\n                    |> file_info_link_target\n                    |> convert::unbox\n                    |> resultm::ok''\n                |:\n                    := error =\n                        ($'$\"file_system.read_link / Fsharp / \"' : string)\n                        ++# $'$\"The file or directory is not a reparse point. / \"'\n                        ++# $'$\"path: {!path} / result: {!result} / path\\': {!path'} / n: {!n}\"'\n                        |> stream::new_io_error\n                    path' |> run 루프 n error\n            path |> 루프 0u8\n        | _ => \\ () => $'Unchecked.defaultof<_>'\n\n:~ normalize_path (path : string) : string =\n    ? path = \"\"\n    ?> \"\"\n    |:\n        := result =\n            ?= path |> read_link |> resultm::ok' |> optionm'::unbox ?|\n            | Some path_buf =>\n                path_buf\n                |> path_buf_display\n                |> convert::convert\n            | None => path\n        := result =\n            ? result = \"\"\n            ?> path\n            |: result\n        := result' =\n            ? result |> sm'::starts_with \"\\\\\\\\?\\\\\"\n            ?> result |> sm'::substring 4i32 ((sm'::length result : i32) - 4i32)\n            |: result\n        ? ##result' < 2\n        ?> path\n        |:\n            sm'::(++#)\n                (result' |> sm'::slice 0i32 0i32 |> sm'::to_lower)\n                (result' |> sm'::slice 1i32 ((sm'::length result' : i32) - 1i32))\n            |> sm'::replace \"\\\\\" \"/\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :~ read_link (path : string) : resultm::result' path_buf stream::io_error =
+      :~ run 루프 n error path' =
+          := name = path' |> get_file_name
+          := parent = path' |> directory_get_parent |> optionm'::unbox
+          := error'' = #?error
+          ?= parent ?|
+          | _ ?& n >= 11 =>
+              ($'$"file_system.read_link / "' : string)
+              ++# $'$"path: {!path} / n: {!n} / path\': {!path'} / name: {!name}"'
+              |> stream::new_io_error
+              |> resultm::err
+          | Some parent ?& path' <>. "" =>
+              ?= 루프 (n + 1) parent |> resultm::map_error' sm'::format |> resultm::unbox ?|
+              | Ok parent' =>
+                  (parent' |> path_buf_display |> convert::convert) </> name
+                  |> sm'::to_std_string
+                  |> new_path_buf
+                  |> resultm::ok''
+              | Error error' =>
+                  ($'$"file_system.read_link / "' : string)
+                  ++# $'$"error\': {!error'} / error: {!error''} / name: {!name}"'
+                  |> stream::new_io_error
+                  |> resultm::err
+          | _ =>
+              ($'$"file_system.read_link / run / The file or directory is not a reparse point. / "' : string)
+              ++# $'$"path: {!path} / error: {!error''} / path\': {!path'} / name: {!name}"'
+              |> stream::new_io_error
+              |> resultm::err
+
+      run_target \|
+          | Rust => \ () =>
+              ? path |> directory_exists
+              ?> !\\(path, $'"std::fs::read_link(&*$0)"')
+              |:
+                  :~ ^ 루프 \* t {number}.
+                      (n : t)
+                      (path' : string)
+                      : resultm::result' path_buf stream::io_error
+                      =
+                      run_target \|
+                          | Rust => \ () =>
+                              := result : _ _ stream::io_error = !\\(path', $'"std::fs::read_link(&*$0)"')
+                              := result = result |> resultm::map_error' sm'::format |> resultm::unbox
+                              ?= result ?|
+                              | Ok x => x |> resultm::ok''
+                              | Error error => path' |> run 루프 n error
+                          | _ => \ () => null ()
+                  path |> 루프 0u8
+          | Fsharp _
+          | TypeScript _ => \ () =>
+              :~ ^ 루프 \* t {number}.
+                  (n : t)
+                  (path' : string)
+                  : resultm::result' path_buf stream::io_error
+                  =
+                  := result =
+                      path'
+                      |> directory_info
+                      |> directory_info_attributes
+                      |> file_attributes_has_flag (file_attributes_reparse_point ())
+                  ? result ?>
+                      path'
+                      |> file_info
+                      |> file_info_link_target
+                      |> convert::unbox
+                      |> resultm::ok''
+                  |:
+                      := error =
+                          ($'$"file_system.read_link / Fsharp / "' : string)
+                          ++# $'$"The file or directory is not a reparse point. / "'
+                          ++# $'$"path: {!path} / result: {!result} / path\': {!path'} / n: {!n}"'
+                          |> stream::new_io_error
+                      path' |> run 루프 n error
+              path |> 루프 0u8
+          | _ => \ () => $'Unchecked.defaultof<_>'
+
+  :~ normalize_path (path : string) : string =
+      ? path = ""
+      ?> ""
+      |:
+          := result =
+              ?= path |> read_link |> resultm::ok' |> optionm'::unbox ?|
+              | Some path_buf =>
+                  path_buf
+                  |> path_buf_display
+                  |> convert::convert
+              | None => path
+          := result =
+              ? result = ""
+              ?> path
+              |: result
+          := result' =
+              ? result |> sm'::starts_with "\\\\?\\"
+              ?> result |> sm'::substring 4i32 ((sm'::length result : i32) - 4i32)
+              |: result
+          ? ##result' < 2
+          ?> path
+          |:
+              sm'::(++#)
+                  (result' |> sm'::slice 0i32 0i32 |> sm'::to_lower)
+                  (result' |> sm'::slice 1i32 ((sm'::length result' : i32) - 1i32))
+              |> sm'::replace "\\" "/"
+  """,
+  timeout: 300_000
+)
+```
+
+#### normalize_path_drops_the_verbatim_prefix (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n:= ~path = \"\\\\\\\\?\\\\C:\\\\x\"\npath |> normalize_path |> _assert_eq \"c:/x\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  := ~path = "\\\\?\\C:\\x"
+  path |> normalize_path |> _assert_eq "c:/x"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= deps_workspace_root (root : string) : string =\n    ?= root |> get_file_name ?|\n    | \"deps\" =>\n        ?= root |> directory_parent ?|\n        | Some parent =>\n            ?= parent |> find_parent Directory (\"spiral\" </> \"workspace\") ?|\n            | Ok outer => outer |> normalize_path\n            | Error _ => root\n        | None => root\n    | _ => root","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := deps_workspace_root (root : string) : string =
+      ?= root |> get_file_name ?|
+      | "deps" =>
+          ?= root |> directory_parent ?|
+          | Some parent =>
+              ?= parent |> find_parent Directory ("spiral" </> "workspace") ?|
+              | Ok outer => outer |> normalize_path
+              | Error _ => root
+          | None => root
+      | _ => root
+  """,
+  timeout: 300_000
+)
+```
+
+#### a_deps_root_without_an_outer_checkout_keeps_its_own_spiral (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n:= deps = get_temp_path () </> \"deps_workspace_root_test\" </> \"deps\"\n:= plain = get_temp_path () </> \"deps_workspace_root_test\"\n(deps_workspace_root deps = deps, deps_workspace_root plain = plain) |> _assert_eq (!+, !+)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  := deps = get_temp_path () </> "deps_workspace_root_test" </> "deps"
+  := plain = get_temp_path () </> "deps_workspace_root_test"
+  (deps_workspace_root deps = deps, deps_workspace_root plain = plain) |> _assert_eq (!+, !+)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= get_workspace_root () =\n    := repo_root = env::get_environment_variable \"SPIRAL_REPO_ROOT\"\n    ? repo_root <> \"\"\n    ?> repo_root |> normalize_path\n    |:\n        := dirs =\n            [ get_current_directory; get_source_directory; \\ () => \"/workspaces\" ]\n        :~ run dir =\n            dir\n            |> find_parent Directory (\"spiral\" </> \"workspace\")\n            |> \\|\n                | Ok dir => dir |> normalize_path |> Some\n                | Error error =>\n                    trace Warning\n                        \\ () => \"file_system.get_workspace_root\"\n                        \\ () => { dir error }\n                    None\n        := root =\n            (None, dirs)\n            ||> listm::fold \\ acc dir =>\n                ?= acc ?|\n                | Some dir => Some dir\n                | None => dir () |> run\n            |> optionm::value\n        deps_workspace_root root </> \"spiral\"\n\n:= get_workspace_root_external () =\n    := workspace_root = get_workspace_root ()\n    := current_dir = get_current_directory () |> sm'::to_lower\n    := workspace_root = workspace_root |> sm'::to_lower\n    ? current_dir |> sm'::starts_with workspace_root\n    ?> Error workspace_root\n    |: Ok workspace_root","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := get_workspace_root () =
+      := repo_root = env::get_environment_variable "SPIRAL_REPO_ROOT"
+      ? repo_root <> ""
+      ?> repo_root |> normalize_path
+      |:
+          := dirs =
+              [ get_current_directory; get_source_directory; \ () => "/workspaces" ]
+          :~ run dir =
+              dir
+              |> find_parent Directory ("spiral" </> "workspace")
+              |> \|
+                  | Ok dir => dir |> normalize_path |> Some
+                  | Error error =>
+                      trace Warning
+                          \ () => "file_system.get_workspace_root"
+                          \ () => { dir error }
+                      None
+          := root =
+              (None, dirs)
+              ||> listm::fold \ acc dir =>
+                  ?= acc ?|
+                  | Some dir => Some dir
+                  | None => dir () |> run
+              |> optionm::value
+          deps_workspace_root root </> "spiral"
+
+  := get_workspace_root_external () =
+      := workspace_root = get_workspace_root ()
+      := current_dir = get_current_directory () |> sm'::to_lower
+      := workspace_root = workspace_root |> sm'::to_lower
+      ? current_dir |> sm'::starts_with workspace_root
+      ?> Error workspace_root
+      |: Ok workspace_root
+  """,
+  timeout: 300_000
+)
+```
+
+#### get_workspace_root_external (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d regex\n\n?= get_workspace_root_external () ?|\n| Ok root => root\n| Error root => root\n|> get_file_name\n|> _assert_eq \"spiral\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d regex
+
+  ?= get_workspace_root_external () ?|
+  | Ok root => root
+  | Error root => root
+  |> get_file_name
+  |> _assert_eq "spiral"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":~ get_full_path (path : string) : string =\n    run_target_args (\\ () => path) \\|\n        | Fsharp => \\ path =>\n            path |> $'System.IO.Path.GetFullPath'\n        | Rust => \\ path =>\n            := current_dir = get_current_directory ()\n            current_dir </> path\n            |> normalize_path\n            |> sm'::split \"/\"\n            |> \\ x =>\n                ((array x : array _), (0i32, (;[] : array _)))\n                ||> arraym::foldBack \\ x level, acc =>\n                    ?= x, level ?|\n                    | \"..\", _ => level + 1, acc\n                    | \".\", _ => level, acc\n                    | _, 0 ?& x |> sm'::ends_with \":\" =>\n                        := drive = current_dir |> sm'::slice 0i32 0i32\n                        := letter = x |> sm'::slice 0i32 0i32\n                        0, ;[ sm'::(++#) (? sm'::to_lower letter = sm'::to_lower drive ?> drive |: sm'::to_upper letter) \":\" ] ++ acc\n                    | _, 0 => 0, ;[ x ] ++ acc\n                    | _ => level - 1, acc\n            |> snd\n            |> seq::of_array'\n            |> sm'::concat (directory_separator_char () |> sm'::obj_to_string)\n        | Gleam => \\ path =>\n            file_system_gleam_paths ()\n            gleam_lexical_full_path path\n        | _ => \\ _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :~ get_full_path (path : string) : string =
+      run_target_args (\ () => path) \|
+          | Fsharp => \ path =>
+              path |> $'System.IO.Path.GetFullPath'
+          | Rust => \ path =>
+              := current_dir = get_current_directory ()
+              current_dir </> path
+              |> normalize_path
+              |> sm'::split "/"
+              |> \ x =>
+                  ((array x : array _), (0i32, (;[] : array _)))
+                  ||> arraym::foldBack \ x level, acc =>
+                      ?= x, level ?|
+                      | "..", _ => level + 1, acc
+                      | ".", _ => level, acc
+                      | _, 0 ?& x |> sm'::ends_with ":" =>
+                          := drive = current_dir |> sm'::slice 0i32 0i32
+                          := letter = x |> sm'::slice 0i32 0i32
+                          0, ;[ sm'::(++#) (? sm'::to_lower letter = sm'::to_lower drive ?> drive |: sm'::to_upper letter) ":" ] ++ acc
+                      | _, 0 => 0, ;[ x ] ++ acc
+                      | _ => level - 1, acc
+              |> snd
+              |> seq::of_array'
+              |> sm'::concat (directory_separator_char () |> sm'::obj_to_string)
+          | Gleam => \ path =>
+              file_system_gleam_paths ()
+              gleam_lexical_full_path path
+          | _ => \ _ => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+#### get_full_path (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> fsharp\n\n\".\"\n|> get_full_path\n|> directory_info\n|> directory_info_name\n|> _assert_in [ \"spiral\"; \"fsharp\" ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> fsharp
+
+  "."
+  |> get_full_path
+  |> directory_info
+  |> directory_info_name
+  |> _assert_in [ "spiral"; "fsharp" ]
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d regex\n\n\"dir/.././._file\"\n|> get_full_path\n|> _assert_eq (get_current_directory () </> \"._file\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d regex
+
+  "dir/.././._file"
+  |> get_full_path
+  |> _assert_eq (get_current_directory () </> "._file")
+  """,
+  timeout: 300_000
+)
+```
+
+#### get_full_path_keeps_the_drive_of_an_absolute_path (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d regex\n\n? platform::is_windows () ?>\n    := drive = ? get_current_directory () |> sm'::starts_with \"Z\" ?> \"Y\" |: \"Z\"\n    sm'::(++#) drive \":/spiral_drive_probe/x\"\n    |> get_full_path\n    |> _assert_eq (sm'::(++#) drive \":\\\\spiral_drive_probe\\\\x\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d regex
+
+  ? platform::is_windows () ?>
+      := drive = ? get_current_directory () |> sm'::starts_with "Z" ?> "Y" |: "Z"
+      sm'::(++#) drive ":/spiral_drive_probe/x"
+      |> get_full_path
+      |> _assert_eq (sm'::(++#) drive ":\\spiral_drive_probe\\x")
+  """,
+  timeout: 300_000
+)
+```
+
+#### get_full_path_3 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d regex\n\n:= directory_name path =\n    path\n    |> sm'::to_std_string\n    |> new_path_buf\n    |> path_buf_file_name\n    |> optionm'::unwrap\n    |> sm'::from_os_str_ref\n\".\"\n|> get_full_path\n|> directory_name\n|> _assert_eq (get_current_directory () |> directory_name)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d regex
+
+  := directory_name path =
+      path
+      |> sm'::to_std_string
+      |> new_path_buf
+      |> path_buf_file_name
+      |> optionm'::unwrap
+      |> sm'::from_os_str_ref
+  "."
+  |> get_full_path
+  |> directory_name
+  |> _assert_eq (get_current_directory () |> directory_name)
+  """,
+  timeout: 300_000
+)
+```
+
+#### get_full_path_4 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d regex\n\n\"dir/.././._file\"\n|> get_full_path\n|> normalize_path\n|> _assert_eq (get_current_directory () </> \"._file\" |> normalize_path)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d regex
+
+  "dir/.././._file"
+  |> get_full_path
+  |> normalize_path
+  |> _assert_eq (get_current_directory () </> "._file" |> normalize_path)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":~ standardize_path path =\n    path |> get_full_path |> normalize_path\n\n:~ absolute_path path =\n    := current_dir = get_current_directory ()\n    current_dir </> path |> standardize_path\n\n:= new_file_uri (path : string) : string =\n    := path = path |> sm'::trim_start [ '/' ]\n    \"file:///\" ++# path","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :~ standardize_path path =
+      path |> get_full_path |> normalize_path
+
+  :~ absolute_path path =
+      := current_dir = get_current_directory ()
+      current_dir </> path |> standardize_path
+
+  := new_file_uri (path : string) : string =
+      := path = path |> sm'::trim_start [ '/' ]
+      "file:///" ++# path
+  """,
+  timeout: 300_000
+)
+```
+
+#### new_file_uri (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d regex\n\n@\"\\\\?\\C:\\test\"\n|> normalize_path\n|> new_file_uri\n|> _assert_eq \"file:///c:/test\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d regex
+
+  @"\\?\C:\test"
+  |> normalize_path
+  |> new_file_uri
+  |> _assert_eq "file:///c:/test"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d regex\n\n@\"\\\\?\\C:\\test\"\n|> normalize_path\n|> new_file_uri\n|> _assert_eq \"file:///c:/test\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d regex
+
+  @"\\?\C:\test"
+  |> normalize_path
+  |> new_file_uri
+  |> _assert_eq "file:///c:/test"
+  """,
+  timeout: 300_000
+)
+```
+
+## fsharp
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":~ ^ trace_file text : () =\n    run_target \\|\n    | Fsharp => \\ () =>\n        resultm::from_try\n            \\ () =>\n                := assembly_name = env::get_entry_assembly_name ()\n                := guid = date_time::now () |> date_time::new_guid_from_date_time\n                := file_name = assembly_name ++# \"_\" ++# sm'::obj_to_string guid ++# \".txt\"\n\n                := workspace_root = get_workspace_root ()\n                := trace_dir = workspace_root </> \"target/trace\"\n                trace_dir |> create_directory |> ignore\n                := path = trace_dir </> file_name\n                text |> write_all_text_async path |> async::run_synchronously\n            \\ ex =>\n                := ex = ex ()\n                := text = $'$\"file_system.trace_file / ex: %A{!ex}\"'\n                text |> console::write_line\n                text |> trace_file\n                ex\n        |> resultm::get\n    | _ => \\ () => ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :~ ^ trace_file text : () =
+      run_target \|
+      | Fsharp => \ () =>
+          resultm::from_try
+              \ () =>
+                  := assembly_name = env::get_entry_assembly_name ()
+                  := guid = date_time::now () |> date_time::new_guid_from_date_time
+                  := file_name = assembly_name ++# "_" ++# sm'::obj_to_string guid ++# ".txt"
+
+                  := workspace_root = get_workspace_root ()
+                  := trace_dir = workspace_root </> "target/trace"
+                  trace_dir |> create_directory |> ignore
+                  := path = trace_dir </> file_name
+                  text |> write_all_text_async path |> async::run_synchronously
+              \ ex =>
+                  := ex = ex ()
+                  := text = $'$"file_system.trace_file / ex: %A{!ex}"'
+                  text |> console::write_line
+                  text |> trace_file
+                  ex
+          |> resultm::get
+      | _ => \ () => ()
+  """,
+  timeout: 300_000
+)
+```
+
+#### trace_file (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> fsharp\n\n:= get_count dir : i64 =\n    := files = dir |> directory_get_files\n    array files |> am'::length |> conv\n\n:= trace_dir = get_workspace_root () </> \"target/trace\"\ntrace_dir |> create_directory |> ignore\n\n:= count = get_count trace_dir\n\ntrace_file \"test\"\n\nget_count trace_dir\n|> _assert_eq (count + 1)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> fsharp
+
+  := get_count dir : i64 =
+      := files = dir |> directory_get_files
+      array files |> am'::length |> conv
+
+  := trace_dir = get_workspace_root () </> "target/trace"
+  trace_dir |> create_directory |> ignore
+
+  := count = get_count trace_dir
+
+  trace_file "test"
+
+  get_count trace_dir
+  |> _assert_eq (count + 1)
+  """,
+  timeout: 300_000
+)
+```
+
+## file_system
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":~ delete_comparable_path (path : string) : string =\n    path |> get_full_path |> sm'::replace \"\\\\\" \"/\" |> sm'::trim_end ['/'] |> sm'::to_lower\n\n:= delete_target_contains (target : string) (root : string) : bool =\n    root <> \"\" && (target = root || sm'::starts_with (target ++# \"/\") root)\n\n:~ delete_shape_protected (target : string) : bool =\n    := parts = sm'::split \"/\" target |> array\n    := count = am'::length parts\n    := part (at : i32) : string = ? at < count ?> am'::index at parts |: \"\"\n    := rooted_home = part 0i32 = \"\" && (count = 2i32 || (count = 3i32 && part 1i32 = \"home\"))\n    := app_data = part 3i32 = \"appdata\" && (count <= 5i32 || (count = 6i32 && part 4i32 = \"local\" && part 5i32 = \"temp\"))\n    := users = part 1i32 = \"users\" && (count <= 3i32 || app_data)\n    count <= 1i32 || rooted_home || users || (count = 2i32 && part 1i32 = \"windows\")\n\n:~ ^ delete_variable_protected (target : string) (names : list string) : bool =\n    ?= names ?|\n    | [] => !-\n    | name :: rest =>\n        := value = env::get_environment_variable name\n        ? value <> \"\" && delete_target_contains target (delete_comparable_path value) ?> !+\n        |: delete_variable_protected target rest\n\n:= delete_target_is_protected (path : string) : bool =\n    := variables = [\"USERPROFILE\"; \"HOME\"; \"TEMP\"; \"TMP\"; \"TMPDIR\"; \"LOCALAPPDATA\"; \"APPDATA\"; \"SystemRoot\"; \"ProgramData\"]\n    := target = delete_comparable_path path\n    path = \"\" || delete_shape_protected target || delete_variable_protected target variables","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :~ delete_comparable_path (path : string) : string =
+      path |> get_full_path |> sm'::replace "\\" "/" |> sm'::trim_end ['/'] |> sm'::to_lower
+
+  := delete_target_contains (target : string) (root : string) : bool =
+      root <> "" && (target = root || sm'::starts_with (target ++# "/") root)
+
+  :~ delete_shape_protected (target : string) : bool =
+      := parts = sm'::split "/" target |> array
+      := count = am'::length parts
+      := part (at : i32) : string = ? at < count ?> am'::index at parts |: ""
+      := rooted_home = part 0i32 = "" && (count = 2i32 || (count = 3i32 && part 1i32 = "home"))
+      := app_data = part 3i32 = "appdata" && (count <= 5i32 || (count = 6i32 && part 4i32 = "local" && part 5i32 = "temp"))
+      := users = part 1i32 = "users" && (count <= 3i32 || app_data)
+      count <= 1i32 || rooted_home || users || (count = 2i32 && part 1i32 = "windows")
+
+  :~ ^ delete_variable_protected (target : string) (names : list string) : bool =
+      ?= names ?|
+      | [] => !-
+      | name :: rest =>
+          := value = env::get_environment_variable name
+          ? value <> "" && delete_target_contains target (delete_comparable_path value) ?> !+
+          |: delete_variable_protected target rest
+
+  := delete_target_is_protected (path : string) : bool =
+      := variables = ["USERPROFILE"; "HOME"; "TEMP"; "TMP"; "TMPDIR"; "LOCALAPPDATA"; "APPDATA"; "SystemRoot"; "ProgramData"]
+      := target = delete_comparable_path path
+      path = "" || delete_shape_protected target || delete_variable_protected target variables
+  """,
+  timeout: 300_000
+)
+```
+
+#### delete_target_is_protected_refuses_kits_cases_on_windows (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n? platform::is_windows ()\n?>\n    (\n        delete_target_is_protected \"C:\\\\\",\n        delete_target_is_protected \"C:\\\\Users\",\n        delete_target_is_protected \"C:\\\\Users\\\\me\",\n        delete_target_is_protected \"c:/users/someone\",\n        delete_target_is_protected \"C:\\\\Users\\\\me\\\\AppData\",\n        delete_target_is_protected \"C:\\\\Users\\\\me\\\\AppData\\\\Local\\\\Temp\",\n        delete_target_is_protected \"C:\\\\Windows\",\n        delete_target_is_protected \"\",\n        delete_target_is_protected \"C:\\\\home\\\\git\\\\kit\\\\.cache\\\\x\",\n        delete_target_is_protected (get_temp_path () </> \"kit-run-42\")\n    )\n    |> _assert_eq (!+, !+, !+, !+, !+, !+, !+, !+, !-, !-)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  ? platform::is_windows ()
+  ?>
+      (
+          delete_target_is_protected "C:\\",
+          delete_target_is_protected "C:\\Users",
+          delete_target_is_protected "C:\\Users\\me",
+          delete_target_is_protected "c:/users/someone",
+          delete_target_is_protected "C:\\Users\\me\\AppData",
+          delete_target_is_protected "C:\\Users\\me\\AppData\\Local\\Temp",
+          delete_target_is_protected "C:\\Windows",
+          delete_target_is_protected "",
+          delete_target_is_protected "C:\\home\\git\\kit\\.cache\\x",
+          delete_target_is_protected (get_temp_path () </> "kit-run-42")
+      )
+      |> _assert_eq (!+, !+, !+, !+, !+, !+, !+, !+, !-, !-)
+  """,
+  timeout: 300_000
+)
+```
+
+#### delete_target_is_protected_covers_roots_profiles_and_temp (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n:= home =\n    ? platform::is_windows ()\n    ?> env::get_environment_variable \"USERPROFILE\"\n    |: env::get_environment_variable \"HOME\"\n:= scratch = get_temp_path () </> \"spiral-delete-guard-probe\"\n(\n    delete_target_is_protected home,\n    delete_target_is_protected (home </> \"..\"),\n    delete_target_is_protected (get_temp_path ()),\n    delete_target_is_protected (home </> \"AppData\" </> \"..\" </> \"..\"),\n    delete_target_is_protected scratch\n)\n|> _assert_eq (!+, !+, !+, !+, !-)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  := home =
+      ? platform::is_windows ()
+      ?> env::get_environment_variable "USERPROFILE"
+      |: env::get_environment_variable "HOME"
+  := scratch = get_temp_path () </> "spiral-delete-guard-probe"
+  (
+      delete_target_is_protected home,
+      delete_target_is_protected (home </> ".."),
+      delete_target_is_protected (get_temp_path ()),
+      delete_target_is_protected (home </> "AppData" </> ".." </> ".."),
+      delete_target_is_protected scratch
+  )
+  |> _assert_eq (!+, !+, !+, !+, !-)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":~ directory_delete recursive (path : string) : () =\n    run_target_args' (path, recursive) \\|\n        | Fsharp => \\ path, recursive =>\n            ? recursive && delete_target_is_protected path\n            ?> \"file_system.directory_delete: refusing a drive root, profile, temp root or system folder: \" ++# path |> failwith\n            $'System.IO.Directory.Delete (!path, !recursive)'\n        | Rust => \\ path, recursive =>\n            ? recursive && delete_target_is_protected path\n            ?> \"file_system.directory_delete: refusing a drive root, profile, temp root or system folder: \" ++# path |> failwith\n            ? path |> directory_exists ?>\n                ? recursive\n                ?> !\\\\(path, $'\"std::fs::remove_dir_all(&*$0).unwrap()\"')\n                |: !\\\\(path, $'\"std::fs::remove_dir(&*$0).unwrap()\"')\n        | _ => \\ _ => ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :~ directory_delete recursive (path : string) : () =
+      run_target_args' (path, recursive) \|
+          | Fsharp => \ path, recursive =>
+              ? recursive && delete_target_is_protected path
+              ?> "file_system.directory_delete: refusing a drive root, profile, temp root or system folder: " ++# path |> failwith
+              $'System.IO.Directory.Delete (!path, !recursive)'
+          | Rust => \ path, recursive =>
+              ? recursive && delete_target_is_protected path
+              ?> "file_system.directory_delete: refusing a drive root, profile, temp root or system folder: " ++# path |> failwith
+              ? path |> directory_exists ?>
+                  ? recursive
+                  ?> !\\(path, $'"std::fs::remove_dir_all(&*$0).unwrap()"')
+                  |: !\\(path, $'"std::fs::remove_dir(&*$0).unwrap()"')
+          | _ => \ _ => ()
+  """,
+  timeout: 300_000
+)
+```
+
+#### directory_delete_removes_a_scratch_tree (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n:= scratch = get_temp_path () </> \"spiral-delete-guard-scratch\"\ncreate_dir_all (scratch </> \"inner\") |> ignore\ndirectory_delete !+ scratch\nscratch |> directory_exists\n|> _assert_eq !-","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  := scratch = get_temp_path () </> "spiral-delete-guard-scratch"
+  create_dir_all (scratch </> "inner") |> ignore
+  directory_delete !+ scratch
+  scratch |> directory_exists
+  |> _assert_eq !-
+  """,
+  timeout: 300_000
+)
+```
+
+#### directory_delete_refuses_a_protected_surrogate_root (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n:= surrogate = get_temp_path () </> \"spiral-delete-guard-surrogate\"\ncreate_dir_all (surrogate </> \"inner\") |> ignore\n:= before = env::environment_snapshot ()\nenv::environment_restored (before ++# sm'::char_text 0u8 ++# \"LOCALAPPDATA=\" ++# surrogate) \"SPIRAL_KEPT_\"\n:= refused =\n    catch_unwind_rust\n        (\\ () =>\n            directory_delete !+ surrogate\n            !-\n        )\n        \\ _ => !+\nenv::environment_restored before \"SPIRAL_KEPT_\"\n:= kept = surrogate |> directory_exists\ndirectory_delete !+ surrogate\n(refused, kept)\n|> _assert_eq (!+, !+)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  := surrogate = get_temp_path () </> "spiral-delete-guard-surrogate"
+  create_dir_all (surrogate </> "inner") |> ignore
+  := before = env::environment_snapshot ()
+  env::environment_restored (before ++# sm'::char_text 0u8 ++# "LOCALAPPDATA=" ++# surrogate) "SPIRAL_KEPT_"
+  := refused =
+      catch_unwind_rust
+          (\ () =>
+              directory_delete !+ surrogate
+              !-
+          )
+          \ _ => !+
+  env::environment_restored before "SPIRAL_KEPT_"
+  := kept = surrogate |> directory_exists
+  directory_delete !+ surrogate
+  (refused, kept)
+  |> _assert_eq (!+, !+)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":~ create_dir dir =\n    run_target_args' dir \\|\n        | Rust => \\ dir =>\n            ?= dir |> create_dir_all |> resultm::map_error' sm'::format' |> resultm::unbox ?|\n            | Ok () =>\n                trace Verbose\n                    \\ () => \"file_system.create_dir\"\n                    \\ () => { dir }\n            | Error error =>\n                trace Critical\n                    \\ () => \"file_system.create_dir\"\n                    \\ () => { dir error }\n            := disposable : _ () = new_disposable \\ () =>\n                dir\n                |> directory_delete !+\n            disposable\n        | _ => \\ _ => null ()\n\n:= create_temp_directory () =\n    := dir = create_temp_path ()\n    dir, dir |> create_dir","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :~ create_dir dir =
+      run_target_args' dir \|
+          | Rust => \ dir =>
+              ?= dir |> create_dir_all |> resultm::map_error' sm'::format' |> resultm::unbox ?|
+              | Ok () =>
+                  trace Verbose
+                      \ () => "file_system.create_dir"
+                      \ () => { dir }
+              | Error error =>
+                  trace Critical
+                      \ () => "file_system.create_dir"
+                      \ () => { dir error }
+              := disposable : _ () = new_disposable \ () =>
+                  dir
+                  |> directory_delete !+
+              disposable
+          | _ => \ _ => null ()
+
+  := create_temp_directory () =
+      := dir = create_temp_path ()
+      dir, dir |> create_dir
+  """,
+  timeout: 300_000
+)
+```
+
+#### create_temp_directory (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n\n:= path, disposable = create_temp_directory ()\n~~\n    path\n    |> directory_exists\n    |> _assert_eq !+\n    disposable |> use |> ignore\n    path\n    |> directory_exists\n    |> _assert_eq !+\npath\n|> directory_exists\n|> _assert_eq !-","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+
+  := path, disposable = create_temp_directory ()
+  ~~
+      path
+      |> directory_exists
+      |> _assert_eq !+
+      disposable |> use |> ignore
+      path
+      |> directory_exists
+      |> _assert_eq !+
+  path
+  |> directory_exists
+  |> _assert_eq !-
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= create_temp_directory' (hash : string) =\n    := dir = hash |> guid::hash_guid |> create_temp_path'\n    dir, dir |> create_dir\n\n:~ link_directory target_path path =\n    ? target_path |> directory_exists |> not\n    ?> target_path |> create_dir |> ignore\n\n    := lib_dir_path = path |> directory_get_parent |> optionm'::default_value' \"\"\n    ? lib_dir_path |> directory_exists |> not\n    ?> lib_dir_path |> create_dir |> ignore\n\n    ? (path |> directory_exists)\n        && (path |> read_link |> resultm::is_err)\n    ?> path |> directory_delete !+\n\n    ? path |> directory_exists |> not\n    ?> path |> directory_create_symbolic_link target_path\n\n:~ link_file target_path path =\n    ? (path |> file_exists)\n        && (path |> read_link |> resultm::is_err)\n    ?> path |> file_delete\n\n    ? path |> file_exists |> not\n    ?> path |> file_create_symbolic_link target_path","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := create_temp_directory' (hash : string) =
+      := dir = hash |> guid::hash_guid |> create_temp_path'
+      dir, dir |> create_dir
+
+  :~ link_directory target_path path =
+      ? target_path |> directory_exists |> not
+      ?> target_path |> create_dir |> ignore
+
+      := lib_dir_path = path |> directory_get_parent |> optionm'::default_value' ""
+      ? lib_dir_path |> directory_exists |> not
+      ?> lib_dir_path |> create_dir |> ignore
+
+      ? (path |> directory_exists)
+          && (path |> read_link |> resultm::is_err)
+      ?> path |> directory_delete !+
+
+      ? path |> directory_exists |> not
+      ?> path |> directory_create_symbolic_link target_path
+
+  :~ link_file target_path path =
+      ? (path |> file_exists)
+          && (path |> read_link |> resultm::is_err)
+      ?> path |> file_delete
+
+      ? path |> file_exists |> not
+      ?> path |> file_create_symbolic_link target_path
+  """,
+  timeout: 300_000
+)
+```
+
+#### link_file (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d sha2 regex\n\n:= file_name = \"LICENSE\"\n:= text = file_name\n\n:= test_hash =\n    #?*(file_name, text)\n    |> crypto::hash_text\n\n:= workspace_root = get_workspace_root ()\n:= test_dir = workspace_root </> \"target/test/file_system\" </> test_hash\n\n:= disposable = test_dir |> create_dir\ndisposable |> use |> ignore\n\n:= dir_path = test_dir </> \"dir1\"\n\n? dir_path |> directory_exists\n?> dir_path |> directory_delete !+\n\ndir_path |> create_dir |> ignore\n\n:= path = dir_path </> file_name\ntext |> write_all_text path\n\n:= dir_link_path = test_dir </> \"link1\"\n\ndir_link_path |> link_directory dir_path\n\n:= link_path = dir_link_path </> file_name\n\nlink_path\n|> read_all_text\n|> _assert_eq text\n\ndir_link_path\n|> read_link\n|> resultm::unwrap'\n|> path_buf_display\n|> convert::convert\n|> _assert sm'::ends_with \"dir1\"\n\nlink_path\n|> read_link\n|> resultm::unwrap'\n|> path_buf_display\n|> convert::convert\n|> _assert sm'::ends_with \"LICENSE\"\n\n:= link_name = \"LICENSE_\"\n\n:= link_path = dir_path </> link_name\n\nlink_path |> link_file path\n\n:= link_path' = dir_link_path </> link_name\n\nlink_path'\n|> read_all_text\n|> _assert_eq text\n\nlink_path\n|> read_link\n|> resultm::unwrap'\n|> path_buf_display\n|> convert::convert\n|> _assert sm'::ends_with \"LICENSE\"\n\nlink_path'\n|> read_link\n|> resultm::unwrap'\n|> path_buf_display\n|> convert::convert\n|> _assert sm'::ends_with \"LICENSE\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d sha2 regex
+
+  := file_name = "LICENSE"
+  := text = file_name
+
+  := test_hash =
+      #?*(file_name, text)
+      |> crypto::hash_text
+
+  := workspace_root = get_workspace_root ()
+  := test_dir = workspace_root </> "target/test/file_system" </> test_hash
+
+  := disposable = test_dir |> create_dir
+  disposable |> use |> ignore
+
+  := dir_path = test_dir </> "dir1"
+
+  ? dir_path |> directory_exists
+  ?> dir_path |> directory_delete !+
+
+  dir_path |> create_dir |> ignore
+
+  := path = dir_path </> file_name
+  text |> write_all_text path
+
+  := dir_link_path = test_dir </> "link1"
+
+  dir_link_path |> link_directory dir_path
+
+  := link_path = dir_link_path </> file_name
+
+  link_path
+  |> read_all_text
+  |> _assert_eq text
+
+  dir_link_path
+  |> read_link
+  |> resultm::unwrap'
+  |> path_buf_display
+  |> convert::convert
+  |> _assert sm'::ends_with "dir1"
+
+  link_path
+  |> read_link
+  |> resultm::unwrap'
+  |> path_buf_display
+  |> convert::convert
+  |> _assert sm'::ends_with "LICENSE"
+
+  := link_name = "LICENSE_"
+
+  := link_path = dir_path </> link_name
+
+  link_path |> link_file path
+
+  := link_path' = dir_link_path </> link_name
+
+  link_path'
+  |> read_all_text
+  |> _assert_eq text
+
+  link_path
+  |> read_link
+  |> resultm::unwrap'
+  |> path_buf_display
+  |> convert::convert
+  |> _assert sm'::ends_with "LICENSE"
+
+  link_path'
+  |> read_link
+  |> resultm::unwrap'
+  |> path_buf_display
+  |> convert::convert
+  |> _assert sm'::ends_with "LICENSE"
+  """,
+  timeout: 300_000
+)
+```
+
+#### directory_create_junction_links_reads_and_refuses_a_taken_path (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d sha2 regex\n\n:= test_dir = get_workspace_root () </> \"target/test/file_system/junction\"\n? test_dir |> directory_exists ?> test_dir |> directory_delete !+\n:= target = test_dir </> \"target\"\ntarget |> create_dir |> ignore\n\"through the junction\" |> write_all_text (target </> \"hello.txt\")\n:= link = test_dir </> \"link\"\n:= first = directory_create_junction target link\n:= second = directory_create_junction target link\n:= read = (link </> \"hello.txt\") |> read_all_text\n(first = Ok (), second <> Ok (), read) |> _assert_eq (!+, !+, \"through the junction\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d sha2 regex
+
+  := test_dir = get_workspace_root () </> "target/test/file_system/junction"
+  ? test_dir |> directory_exists ?> test_dir |> directory_delete !+
+  := target = test_dir </> "target"
+  target |> create_dir |> ignore
+  "through the junction" |> write_all_text (target </> "hello.txt")
+  := link = test_dir </> "link"
+  := first = directory_create_junction target link
+  := second = directory_create_junction target link
+  := read = (link </> "hello.txt") |> read_all_text
+  (first = Ok (), second <> Ok (), read) |> _assert_eq (!+, !+, "through the junction")
+  """,
+  timeout: 300_000
+)
+```
+
+#### file_read_only_round_trips (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d sha2 regex\n\n:= test_dir = get_workspace_root () </> \"target/test/file_system/read_only\"\ntest_dir |> create_dir |> ignore\n:= path = test_dir </> \"blob.txt\"\n? path |> file_exists ?> file_set_read_only !- path |> ignore\n\"blob\" |> write_all_text path\n:= before = file_is_read_only path\n:= locked = file_set_read_only !+ path\n:= after = file_is_read_only path\n:= unlocked = file_set_read_only !- path\n(before, locked, after, unlocked, file_is_read_only path) |> _assert_eq (!-, !+, !+, !+, !-)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d sha2 regex
+
+  := test_dir = get_workspace_root () </> "target/test/file_system/read_only"
+  test_dir |> create_dir |> ignore
+  := path = test_dir </> "blob.txt"
+  ? path |> file_exists ?> file_set_read_only !- path |> ignore
+  "blob" |> write_all_text path
+  := before = file_is_read_only path
+  := locked = file_set_read_only !+ path
+  := after = file_is_read_only path
+  := unlocked = file_set_read_only !- path
+  (before, locked, after, unlocked, file_is_read_only path) |> _assert_eq (!-, !+, !+, !+, !-)
+  """,
+  timeout: 300_000
+)
+```
+
+## rust
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":~ file_exists_content path content : bool =\n    run_target \\|\n        | Rust => \\ () =>\n            ? path |> file_exists |> not\n            ?> !-\n            |:\n                := existing_content = path |> read_all_text\n                content = existing_content\n        | _ => \\ () => null ()\n\n:~ write_all_text_exists path contents =\n    := exists' = contents |> file_exists_content path\n    ? not exists' ?>\n        := dir = path |> directory_get_parent |> optionm'::default_value' \"\"\n        ? dir |> directory_exists |> not\n        ?> dir |> create_dir |> ignore\n        contents |> write_all_text path","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :~ file_exists_content path content : bool =
+      run_target \|
+          | Rust => \ () =>
+              ? path |> file_exists |> not
+              ?> !-
+              |:
+                  := existing_content = path |> read_all_text
+                  content = existing_content
+          | _ => \ () => null ()
+
+  :~ write_all_text_exists path contents =
+      := exists' = contents |> file_exists_content path
+      ? not exists' ?>
+          := dir = path |> directory_get_parent |> optionm'::default_value' ""
+          ? dir |> directory_exists |> not
+          ?> dir |> create_dir |> ignore
+          contents |> write_all_text path
+  """,
+  timeout: 300_000
+)
+```
+
+## main
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///> fsharp\n\n:= main () =\n    init_trace_state None\n    $'let file_exists_content x = !file_exists_content x' : ()\n    $'let write_all_text_async x = !write_all_text_async x' : ()\n    $'let create_temp_path () = !create_temp_path ()' : ()\n    $'let create_temp_dir () = !create_temp_directory ()' : ()\n    $'let create_temp_dir\\' x = !create_temp_directory' x' : ()\n    $'let get_source_directory () = !get_source_directory ()' : ()\n    $'let normalize_path x = !normalize_path x' : ()\n    $'let get_full_path x = !get_full_path x' : ()\n    $'let standardize_path x = !standardize_path x' : ()\n    $'let new_file_uri x = !new_file_uri x' : ()\n    $'let get_workspace_root () = !get_workspace_root ()' : ()\n    $'let link_directory x = !link_directory x' : ()\n    := combine x = (</>) x\n    $'let (</>) x = !combine x' : ()\n\n:= remove_dir_all (path : string) : resultm::result' () stream::io_error =\n    ? delete_target_is_protected path\n    ?> \"file_system.remove_dir_all: refusing a drive root, profile, temp root or system folder: \" ++# path |> failwith\n    !\\\\(path, $'\"std::fs::remove_dir_all(&*$0)\"')\n\n:= copy_file (to : string) (path : string) : resultm::result' u64 stream::io_error =\n    !\\($'\"std::fs::copy(&*!path, &*!to)\"')\n\n:= canonicalize (path : string) : resultm::result' path_buf stream::io_error =\n    !\\\\(path, $'\"std::fs::canonicalize(&*$0)\"')\n\n:= set_current_dir (path : string) : resultm::result' () stream::io_error =\n    !\\\\(path, $'\"std::env::set_current_dir(&*$0)\"')\n\n:= get_current_dir () : resultm::result' path_buf stream::io_error =\n    !\\($'\"std::env::current_dir()\"')\n\n:= path_join_native (dir : string) (name : string) : string =\n    run_target_args' (dir, name) \\|\n        | Rust => \\ dir, name =>\n            := joined : sm'.std_string = !\\\\((dir, name), $'\"std::path::Path::new(&*$0).join(&*$1).display().to_string\\\n                ()\"')\n            sm'::from_std_string joined\n        | Fsharp => \\ dir, name => $'System.IO.Path.Combine (!dir, !name)' : string\n        | _ => \\ dir, name => dir </> name","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///> fsharp
+
+  := main () =
+      init_trace_state None
+      $'let file_exists_content x = !file_exists_content x' : ()
+      $'let write_all_text_async x = !write_all_text_async x' : ()
+      $'let create_temp_path () = !create_temp_path ()' : ()
+      $'let create_temp_dir () = !create_temp_directory ()' : ()
+      $'let create_temp_dir\' x = !create_temp_directory' x' : ()
+      $'let get_source_directory () = !get_source_directory ()' : ()
+      $'let normalize_path x = !normalize_path x' : ()
+      $'let get_full_path x = !get_full_path x' : ()
+      $'let standardize_path x = !standardize_path x' : ()
+      $'let new_file_uri x = !new_file_uri x' : ()
+      $'let get_workspace_root () = !get_workspace_root ()' : ()
+      $'let link_directory x = !link_directory x' : ()
+      := combine x = (</>) x
+      $'let (</>) x = !combine x' : ()
+
+  := remove_dir_all (path : string) : resultm::result' () stream::io_error =
+      ? delete_target_is_protected path
+      ?> "file_system.remove_dir_all: refusing a drive root, profile, temp root or system folder: " ++# path |> failwith
+      !\\(path, $'"std::fs::remove_dir_all(&*$0)"')
+
+  := copy_file (to : string) (path : string) : resultm::result' u64 stream::io_error =
+      !\($'"std::fs::copy(&*!path, &*!to)"')
+
+  := canonicalize (path : string) : resultm::result' path_buf stream::io_error =
+      !\\(path, $'"std::fs::canonicalize(&*$0)"')
+
+  := set_current_dir (path : string) : resultm::result' () stream::io_error =
+      !\\(path, $'"std::env::set_current_dir(&*$0)"')
+
+  := get_current_dir () : resultm::result' path_buf stream::io_error =
+      !\($'"std::env::current_dir()"')
+
+  := path_join_native (dir : string) (name : string) : string =
+      run_target_args' (dir, name) \|
+          | Rust => \ dir, name =>
+              := joined : sm'.std_string = !\\((dir, name), $'"std::path::Path::new(&*$0).join(&*$1).display().to_string\
+                  ()"')
+              sm'::from_std_string joined
+          | Fsharp => \ dir, name => $'System.IO.Path.Combine (!dir, !name)' : string
+          | _ => \ dir, name => dir </> name
+  """,
+  timeout: 300_000
+)
+```
+
+#### path_join_native_uses_the_platform_separator (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n:= joined = path_join_native \"dir\" \"file\"\n(joined = \"dir/file\" || joined = \"dir\\\\file\") |> _assert_eq !+","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  := joined = path_join_native "dir" "file"
+  (joined = "dir/file" || joined = "dir\\file") |> _assert_eq !+
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= read_directory_names (path : string) : resultm::result' (am'::vec sm'::std_string) stream::io_error =\n    !\\\\(path, $'\"std::fs::read_dir(&*$0).map(|entries| entries.filter_map(|entry| entry.ok().map(|entry| \\\n        entry.file_name().to_string_lossy().into_owned())).collect::<Vec<std::string::String>>())\"')\n\n:= read_dir_names (path : string) : resultm::result' (am'::vec sm'::std_string) stream::io_error = read_directory_names path","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := read_directory_names (path : string) : resultm::result' (am'::vec sm'::std_string) stream::io_error =
+      !\\(path, $'"std::fs::read_dir(&*$0).map(|entries| entries.filter_map(|entry| entry.ok().map(|entry| \
+          entry.file_name().to_string_lossy().into_owned())).collect::<Vec<std::string::String>>())"')
+
+  := read_dir_names (path : string) : resultm::result' (am'::vec sm'::std_string) stream::io_error = read_directory_names path
+  """,
+  timeout: 300_000
+)
+```
+
+#### copy_list_canonicalize_and_remove_a_tree (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n\n:= root, disposable = create_temp_directory ()\n~~\n    := tree = root </> \"tree\"\n    tree |> create_dir_all |> resultm::unwrap'\n    \"x\" |> write_all_text (tree </> \"a.txt\")\n    := copied = tree </> \"a.txt\" |> copy_file (tree </> \"b.txt\") |> resultm::unwrap'\n    := names = tree |> read_directory_names |> resultm::unwrap' |> am'::vec_len |> convert::i32\n    := canonical_ok = ?= tree |> canonicalize |> resultm::unbox ?| Ok _ => !+ | Error _ => !-\n    tree |> remove_dir_all |> resultm::unwrap'\n    (copied, names, canonical_ok, tree |> directory_exists) |> _assert_eq (1u64, 2i32, !+, !-)\n    disposable |> use |> ignore","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+
+  := root, disposable = create_temp_directory ()
+  ~~
+      := tree = root </> "tree"
+      tree |> create_dir_all |> resultm::unwrap'
+      "x" |> write_all_text (tree </> "a.txt")
+      := copied = tree </> "a.txt" |> copy_file (tree </> "b.txt") |> resultm::unwrap'
+      := names = tree |> read_directory_names |> resultm::unwrap' |> am'::vec_len |> convert::i32
+      := canonical_ok = ?= tree |> canonicalize |> resultm::unbox ?| Ok _ => !+ | Error _ => !-
+      tree |> remove_dir_all |> resultm::unwrap'
+      (copied, names, canonical_ok, tree |> directory_exists) |> _assert_eq (1u64, 2i32, !+, !-)
+      disposable |> use |> ignore
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! rust_metadata_found = $'std::io::Result<std::fs::Metadata>'\n\n:! rust_metadata = $'std::fs::Metadata'\n\n:! rust_modified_found = $'std::io::Result<std::time::SystemTime>'\n\n:! rust_system_time = $'std::time::SystemTime'\n\n:! rust_elapsed = $'std::time::Duration'\n\n:! rust_file_opened = $'std::io::Result<std::fs::File>'\n\n:! rust_open_file = $'std::fs::File'\n\n:! rust_io_done = $'std::io::Result<()>'\n\n:= rust_metadata_of (path : string) : rust_metadata_found = $'std::fs::metadata(&*!path)'\n\n:= rust_metadata_ok (r : rust_metadata_found) : bool = $'!r.is_ok()'\n\n:= rust_metadata_value (r : rust_metadata_found) : rust_metadata = $'!r.unwrap()'\n\n:= rust_modified_of (m : rust_metadata) : rust_modified_found = $'!m.modified()'\n\n:= rust_modified_ok (r : rust_modified_found) : bool = $'!r.is_ok()'\n\n:= rust_modified_value (r : rust_modified_found) : rust_system_time = $'!r.unwrap()'\n\n:= rust_since_epoch (t : rust_system_time) : rust_elapsed = $'!t.duration_since(std::time::UNIX_EPOCH).unwrap_or_defau\\\n    lt()'\n\n:= rust_elapsed_ms (d : rust_elapsed) : u64 = ($'!d.as_secs()' : u64) * 1000u64 + conv ($'!d.subsec_millis()' : u32)\n\n:= rust_last_write_ms (path : string) : u64 =\n    := found = rust_metadata_of path\n    ? rust_metadata_ok found |> not ?> 0u64\n    |:\n        := modified = found |> rust_metadata_value |> rust_modified_of\n        ? rust_modified_ok modified ?> modified |> rust_modified_value |> rust_since_epoch |> rust_elapsed_ms |: 0u64\n\n:= rust_metadata_len (m : rust_metadata) : u64 = $'!m.len()'\n\n:= rust_symlink_metadata_of (path : string) : rust_metadata_found = $'std::fs::symlink_metadata(&*!path)'\n\n:= rust_metadata_is_symlink (m : rust_metadata) : bool = $'!m.file_type().is_symlink()'\n\n:= rust_file_length (path : string) : i64 =\n    := found = rust_metadata_of path\n    ? rust_metadata_ok found |> not ?> 0i64 |: found |> rust_metadata_value |> rust_metadata_len |> conv\n\n:= rust_is_symlink (path : string) : bool =\n    := found = rust_symlink_metadata_of path\n    ? rust_metadata_ok found |> not ?> !- |: found |> rust_metadata_value |> rust_metadata_is_symlink","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :! rust_metadata_found = $'std::io::Result<std::fs::Metadata>'
+
+  :! rust_metadata = $'std::fs::Metadata'
+
+  :! rust_modified_found = $'std::io::Result<std::time::SystemTime>'
+
+  :! rust_system_time = $'std::time::SystemTime'
+
+  :! rust_elapsed = $'std::time::Duration'
+
+  :! rust_file_opened = $'std::io::Result<std::fs::File>'
+
+  :! rust_open_file = $'std::fs::File'
+
+  :! rust_io_done = $'std::io::Result<()>'
+
+  := rust_metadata_of (path : string) : rust_metadata_found = $'std::fs::metadata(&*!path)'
+
+  := rust_metadata_ok (r : rust_metadata_found) : bool = $'!r.is_ok()'
+
+  := rust_metadata_value (r : rust_metadata_found) : rust_metadata = $'!r.unwrap()'
+
+  := rust_modified_of (m : rust_metadata) : rust_modified_found = $'!m.modified()'
+
+  := rust_modified_ok (r : rust_modified_found) : bool = $'!r.is_ok()'
+
+  := rust_modified_value (r : rust_modified_found) : rust_system_time = $'!r.unwrap()'
+
+  := rust_since_epoch (t : rust_system_time) : rust_elapsed = $'!t.duration_since(std::time::UNIX_EPOCH).unwrap_or_defau\
+      lt()'
+
+  := rust_elapsed_ms (d : rust_elapsed) : u64 = ($'!d.as_secs()' : u64) * 1000u64 + conv ($'!d.subsec_millis()' : u32)
+
+  := rust_last_write_ms (path : string) : u64 =
+      := found = rust_metadata_of path
+      ? rust_metadata_ok found |> not ?> 0u64
+      |:
+          := modified = found |> rust_metadata_value |> rust_modified_of
+          ? rust_modified_ok modified ?> modified |> rust_modified_value |> rust_since_epoch |> rust_elapsed_ms |: 0u64
+
+  := rust_metadata_len (m : rust_metadata) : u64 = $'!m.len()'
+
+  := rust_symlink_metadata_of (path : string) : rust_metadata_found = $'std::fs::symlink_metadata(&*!path)'
+
+  := rust_metadata_is_symlink (m : rust_metadata) : bool = $'!m.file_type().is_symlink()'
+
+  := rust_file_length (path : string) : i64 =
+      := found = rust_metadata_of path
+      ? rust_metadata_ok found |> not ?> 0i64 |: found |> rust_metadata_value |> rust_metadata_len |> conv
+
+  := rust_is_symlink (path : string) : bool =
+      := found = rust_symlink_metadata_of path
+      ? rust_metadata_ok found |> not ?> !- |: found |> rust_metadata_value |> rust_metadata_is_symlink
+  """,
+  timeout: 300_000
+)
+```
+
+#### rust_file_length_and_rust_is_symlink_read_one_path (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n\n:= root, disposable = create_temp_directory ()\n~~\n    := file = root </> \"a.txt\"\n    \"abc\" |> write_all_text file\n    := target = root </> \"target\"\n    target |> create_dir_all |> resultm::unwrap'\n    := link = root </> \"link\"\n    directory_create_symbolic_link target link\n    := missing = root </> \"missing.txt\"\n    := lengths = rust_file_length file, rust_file_length missing\n    := links = rust_is_symlink file, rust_is_symlink link, rust_is_symlink missing\n    (lengths, links) |> _assert_eq ((3i64, 0i64), (!-, !+, !-))\n    disposable |> use |> ignore","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+
+  := root, disposable = create_temp_directory ()
+  ~~
+      := file = root </> "a.txt"
+      "abc" |> write_all_text file
+      := target = root </> "target"
+      target |> create_dir_all |> resultm::unwrap'
+      := link = root </> "link"
+      directory_create_symbolic_link target link
+      := missing = root </> "missing.txt"
+      := lengths = rust_file_length file, rust_file_length missing
+      := links = rust_is_symlink file, rust_is_symlink link, rust_is_symlink missing
+      (lengths, links) |> _assert_eq ((3i64, 0i64), (!-, !+, !-))
+      disposable |> use |> ignore
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= rust_append_opened (path : string) : rust_file_opened = $'std::fs::OpenOptions::new().create(true).append(true).ope\\\n    n(&*!path)'\n\n:= rust_file_opened_ok (r : rust_file_opened) : bool = $'!r.is_ok()'\n\n:= rust_file_of (r : rust_file_opened) : rust_open_file = $'!r.unwrap()'\n\n:= rust_written_all (f : rust_open_file) (text : string) : rust_io_done = $'std::io::Write::write_all(&mut !f, \\\n    (!text).as_bytes())'\n\n:= rust_io_ok (r : rust_io_done) : bool = $'!r.is_ok()'\n\n:= rust_append_text (path : string) (text : string) : () =\n    := opened = rust_append_opened path\n    ? rust_file_opened_ok opened |> not ?> failwith \"file_system.append_all_text: the file could not be opened\"\n    := file = rust_file_of opened\n    ? rust_written_all file text |> rust_io_ok |> not ?> failwith \"file_system.append_all_text: the write failed\"\n\n:~ last_write_ms (path : string) : u64 =\n    run_target_args' path \\|\n        | Fsharp => \\ path =>\n            ? $'System.IO.File.Exists !path' : bool\n            ?> $'uint64 ((System.IO.File.GetLastWriteTimeUtc !path) - System.DateTime.UnixEpoch).TotalMilliseconds' : u64\n            |: 0u64\n        | Rust => \\ path =>\n            rust_last_write_ms path\n        | TypeScript => \\ path =>\n            global \"import * as spiral_node_fs from 'node:fs';\"\n            ? $'spiral_node_fs.existsSync(!path)' : bool\n            ?> $'BigInt(Math.trunc(spiral_node_fs.statSync(!path).mtimeMs))' : u64\n            |: 0u64\n        | Gleam => \\ path =>\n            file_system_gleam_stat ()\n            gleam_mtime_ms path\n        | _ => \\ _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := rust_append_opened (path : string) : rust_file_opened = $'std::fs::OpenOptions::new().create(true).append(true).ope\
+      n(&*!path)'
+
+  := rust_file_opened_ok (r : rust_file_opened) : bool = $'!r.is_ok()'
+
+  := rust_file_of (r : rust_file_opened) : rust_open_file = $'!r.unwrap()'
+
+  := rust_written_all (f : rust_open_file) (text : string) : rust_io_done = $'std::io::Write::write_all(&mut !f, \
+      (!text).as_bytes())'
+
+  := rust_io_ok (r : rust_io_done) : bool = $'!r.is_ok()'
+
+  := rust_append_text (path : string) (text : string) : () =
+      := opened = rust_append_opened path
+      ? rust_file_opened_ok opened |> not ?> failwith "file_system.append_all_text: the file could not be opened"
+      := file = rust_file_of opened
+      ? rust_written_all file text |> rust_io_ok |> not ?> failwith "file_system.append_all_text: the write failed"
+
+  :~ last_write_ms (path : string) : u64 =
+      run_target_args' path \|
+          | Fsharp => \ path =>
+              ? $'System.IO.File.Exists !path' : bool
+              ?> $'uint64 ((System.IO.File.GetLastWriteTimeUtc !path) - System.DateTime.UnixEpoch).TotalMilliseconds' : u64
+              |: 0u64
+          | Rust => \ path =>
+              rust_last_write_ms path
+          | TypeScript => \ path =>
+              global "import * as spiral_node_fs from 'node:fs';"
+              ? $'spiral_node_fs.existsSync(!path)' : bool
+              ?> $'BigInt(Math.trunc(spiral_node_fs.statSync(!path).mtimeMs))' : u64
+              |: 0u64
+          | Gleam => \ path =>
+              file_system_gleam_stat ()
+              gleam_mtime_ms path
+          | _ => \ _ => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+#### last_write_ms_is_zero_for_a_missing_path_and_positive_for_a_written_file (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n:= missing = get_temp_path () </> \"spiral-last-write-missing.txt\"\n:= probe = get_temp_path () </> \"spiral-last-write-probe.txt\"\nfile_delete missing\nlast_write_ms missing |> _assert_eq 0u64\nwrite_all_text probe \"x\"\n(last_write_ms probe > 0u64) |> _assert_eq !+\nfile_delete probe","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  := missing = get_temp_path () </> "spiral-last-write-missing.txt"
+  := probe = get_temp_path () </> "spiral-last-write-probe.txt"
+  file_delete missing
+  last_write_ms missing |> _assert_eq 0u64
+  write_all_text probe "x"
+  (last_write_ms probe > 0u64) |> _assert_eq !+
+  file_delete probe
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= append_all_text (path : string) (text : string) : () =\n    run_target_args' (path, text) \\|\n        | Fsharp => \\ path, text =>\n            $'System.IO.File.AppendAllText (!path, !text)'\n        | Rust => \\ path, text =>\n            rust_append_text path text\n        | Gleam => \\ path, text =>\n            file_system_gleam_paths ()\n            gleam_append_text path text\n        | Lua => \\ path, text =>\n            := file = lua_file_open path \"a\"\n            lua_file_write file text\n            lua_file_close file\n        | _ => \\ _ => ()\n\n:= appended_text () : string =\n    := probe = get_temp_path () </> \"spiral-append-probe.txt\"\n    file_delete probe\n    append_all_text probe \"a\"\n    append_all_text probe \"b\"\n    := text = read_all_text probe\n    file_delete probe\n    text","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := append_all_text (path : string) (text : string) : () =
+      run_target_args' (path, text) \|
+          | Fsharp => \ path, text =>
+              $'System.IO.File.AppendAllText (!path, !text)'
+          | Rust => \ path, text =>
+              rust_append_text path text
+          | Gleam => \ path, text =>
+              file_system_gleam_paths ()
+              gleam_append_text path text
+          | Lua => \ path, text =>
+              := file = lua_file_open path "a"
+              lua_file_write file text
+              lua_file_close file
+          | _ => \ _ => ()
+
+  := appended_text () : string =
+      := probe = get_temp_path () </> "spiral-append-probe.txt"
+      file_delete probe
+      append_all_text probe "a"
+      append_all_text probe "b"
+      := text = read_all_text probe
+      file_delete probe
+      text
+  """,
+  timeout: 300_000
+)
+```
+
+#### append_all_text_adds_to_the_end_of_a_file (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\nappended_text () |> _assert_eq \"ab\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  appended_text () |> _assert_eq "ab"
+  """,
+  timeout: 300_000
+)
+```
+
+#### lua_files_write_read_append_and_delete (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> lua\n\n:= path = \"spiral-lua-file-probe.txt\"\nfile_delete path\npath |> file_exists |> _assert_eq !-\nwrite_all_text path \"ab\"\npath |> file_exists |> _assert_eq !+\nappend_all_text path \"c\"\npath |> read_all_text |> _assert_eq \"abc\"\nfile_delete path\npath |> file_exists |> _assert_eq !-","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> lua
+
+  := path = "spiral-lua-file-probe.txt"
+  file_delete path
+  path |> file_exists |> _assert_eq !-
+  write_all_text path "ab"
+  path |> file_exists |> _assert_eq !+
+  append_all_text path "c"
+  path |> read_all_text |> _assert_eq "abc"
+  file_delete path
+  path |> file_exists |> _assert_eq !-
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= rust_try_append_text (path : string) (text : string) : result () string =\n    := opened = rust_append_opened path\n    ? rust_file_opened_ok opened |> not ?> Error \"the file could not be opened\"\n    |:\n        := file = rust_file_of opened\n        ? rust_written_all file text |> rust_io_ok ?> Ok () |: Error \"the write failed\"\n\n:= try_append_all_text (path : string) (text : string) : result () string =\n    run_target_args' (path, text) \\|\n        | Rust => \\ path, text => rust_try_append_text path text\n        | _ => \\ path, text =>\n            append_all_text path text\n            Ok ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := rust_try_append_text (path : string) (text : string) : result () string =
+      := opened = rust_append_opened path
+      ? rust_file_opened_ok opened |> not ?> Error "the file could not be opened"
+      |:
+          := file = rust_file_of opened
+          ? rust_written_all file text |> rust_io_ok ?> Ok () |: Error "the write failed"
+
+  := try_append_all_text (path : string) (text : string) : result () string =
+      run_target_args' (path, text) \|
+          | Rust => \ path, text => rust_try_append_text path text
+          | _ => \ path, text =>
+              append_all_text path text
+              Ok ()
+  """,
+  timeout: 300_000
+)
+```
+
+#### try_append_all_text_reports_instead_of_failing (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n:= missing = get_temp_path () </> \"spiral-no-such-folder-for-append\" </> \"x.txt\"\n(try_append_all_text missing \"a\" = Error \"the file could not be opened\") |> _assert_eq !+","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  := missing = get_temp_path () </> "spiral-no-such-folder-for-append" </> "x.txt"
+  (try_append_all_text missing "a" = Error "the file could not be opened") |> _assert_eq !+
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= try_write_all_text (path : string) (text : string) : result () string =\n    run_target_args' (path, text) \\|\n        | Rust => \\ path, text =>\n            ? (!\\\\((path, text), $'\"std::fs::write(&*$0, &*$1).is_ok()\"') : bool) ?> Ok () |: Error \"the write failed\"\n        | _ => \\ path, text =>\n            write_all_text path text\n            Ok ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := try_write_all_text (path : string) (text : string) : result () string =
+      run_target_args' (path, text) \|
+          | Rust => \ path, text =>
+              ? (!\\((path, text), $'"std::fs::write(&*$0, &*$1).is_ok()"') : bool) ?> Ok () |: Error "the write failed"
+          | _ => \ path, text =>
+              write_all_text path text
+              Ok ()
+  """,
+  timeout: 300_000
+)
+```
+
+#### try_write_all_text_reports_instead_of_failing (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n:= missing = get_temp_path () </> \"spiral-no-such-folder-for-write\" </> \"x.txt\"\n(try_write_all_text missing \"a\" = Error \"the write failed\") |> _assert_eq !+\n:= path = get_temp_path () </> \"spiral-try-write-all-text.txt\"\n(try_write_all_text path \"ab\" = Ok ()) |> _assert_eq !+\npath |> read_all_text |> _assert_eq \"ab\"\nfile_delete path","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  := missing = get_temp_path () </> "spiral-no-such-folder-for-write" </> "x.txt"
+  (try_write_all_text missing "a" = Error "the write failed") |> _assert_eq !+
+  := path = get_temp_path () </> "spiral-try-write-all-text.txt"
+  (try_write_all_text path "ab" = Ok ()) |> _assert_eq !+
+  path |> read_all_text |> _assert_eq "ab"
+  file_delete path
+  """,
+  timeout: 300_000
+)
+```

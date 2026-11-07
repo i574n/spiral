@@ -1,0 +1,13 @@
+:| opt =
+    | Nothing
+    | Just : string
+
+:= main () : i32 =
+    := ~n = 2i32
+    := ~xs : array (string * opt * bool) = create n
+    set xs 0i32 ("a", Just "x", true)
+    set xs 1i32 ("b", Nothing, false)
+    := (_, o, _) = index xs 0i32
+    ?= o ?|
+    | Just s => ? s =. "x" ?> 7i32 |: 1i32
+    | Nothing => 2i32

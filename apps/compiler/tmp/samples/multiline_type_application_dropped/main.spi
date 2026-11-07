@@ -1,0 +1,12 @@
+:! box x y = x * y * string
+
+:= first \* t u.
+    (value : box
+        t u) :
+    t =
+    ?= value ?|
+    | box (x, _, _) => x
+
+:= main () : i32 = first (box (0i32, 1i32, "box"))
+
+:= oracle_must_not_record_current_error () = ()

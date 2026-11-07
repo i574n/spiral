@@ -1,0 +1,10 @@
+:= make ~x = { text = x; size = sm::length x }
+
+:~ score ~{ text size } : i32 = sm::length text +. size
+
+:= main () =
+    := ~x = "qwe"
+    := state = ~~ make x
+    := a = score state
+    := b = score state
+    (-.) ((+.) a b) 12i32

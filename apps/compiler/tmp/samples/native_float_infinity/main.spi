@@ -1,0 +1,14 @@
+:= nan_is32 (x : f32) : bool = !!!!NanIs(x)
+:= nan_is64 (x : f64) : bool = !!!!NanIs(x)
+
+:= main () : i32 =
+    := ~inf32 : f32 = !!!!Infinity(`f32)
+    := ~inf64 : f64 = !!!!Infinity(`f64)
+    := ninf32 = 0f32 -. inf32
+    := ninf64 = 0f64 -. inf64
+    := ~finite32 = 1f32
+    := ~finite64 = 1f64
+    ? nan_is32 finite32 || nan_is64 finite64 ?> 3i32
+    |? inf32 > finite32 && inf64 > finite64 ?>
+        ? ninf32 < 0f32 && ninf64 < 0f64 ?> 0i32 |: 2i32
+    |: 1i32

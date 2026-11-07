@@ -1,0 +1,37 @@
+==================
+definitions carry their name
+==================
+
+open testing
+inl rec loop (n : i32) : i32 = n
+and inl format_real forall t. (x : t) : string = ""
+let main () = 0i32
+inl (~#) a b = a
+nominal amount unit = i32
+
+---
+
+(source_file
+  (definition_line
+    (definition_keyword)
+    name: (definition_name))
+  (definition_line
+    (definition_keyword)
+    name: (definition_name)
+    (definition_rest))
+  (definition_line
+    (definition_keyword)
+    name: (definition_name)
+    (definition_rest))
+  (definition_line
+    (definition_keyword)
+    name: (definition_name)
+    (definition_rest))
+  (definition_line
+    (definition_keyword)
+    name: (definition_name)
+    (definition_rest))
+  (definition_line
+    (definition_keyword)
+    name: (definition_name)
+    (definition_rest)))

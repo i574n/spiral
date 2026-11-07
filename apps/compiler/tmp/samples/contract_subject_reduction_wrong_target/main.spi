@@ -1,0 +1,26 @@
+:! empty_ctx = string
+:! bool_sort = string
+:! source_beta = string
+:! target_true = string
+:! target_false = string
+
+:! typed_identity ctx sort term = ctx * sort * term * string
+
+:| reduction_step ctx sort source target =
+    | BetaToTrue :: string -> reduction_step empty_ctx bool_sort source_beta target_true
+
+:| ^ typed_reduction_chain ctx sort source target =
+    | ChainDone :: \* ctx sort term. typed_identity ctx sort term -> typed_reduction_chain ctx sort term term
+    | ChainMore :: \* ctx sort source target.
+        (\? middle. reduction_step ctx sort source middle * typed_reduction_chain ctx sort middle target) ->
+        typed_reduction_chain ctx sort source target
+
+:= false_is_typed () : typed_identity empty_ctx bool_sort target_false =
+    typed_identity (empty_ctx "empty", bool_sort "Bool", target_false "False", "typed-false")
+
+:= wrong_chain () : typed_reduction_chain empty_ctx bool_sort source_beta target_false =
+    ChainMore (\? (BetaToTrue "beta-reduces-to-true", ChainDone (false_is_typed ())))
+
+:= main () : string =
+    := chain = wrong_chain ()
+    "should-not-compile-wrong-subject-reduction-target"

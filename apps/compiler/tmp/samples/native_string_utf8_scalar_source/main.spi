@@ -1,0 +1,16 @@
+:= main () : i32 =
+    := value = "Aéλ🙂Z"
+    := a = sm::utf8_scalar_at_byte_offset value 0i32
+    := e = sm::utf8_scalar_at_byte_offset value 1i32
+    := lambda = sm::utf8_scalar_at_byte_offset value 3i32
+    := smile = sm::utf8_scalar_at_byte_offset value 5i32
+    := z = sm::utf8_scalar_at_byte_offset value 9i32
+    ? (=.) a 65i32 ?>
+        ? (=.) e 233i32 ?>
+            ? (=.) lambda 955i32 ?>
+                ? (=.) smile 128578i32 ?>
+                    ? (=.) z 90i32 ?> 0i32 |: 5i32
+                |: 4i32
+            |: 3i32
+        |: 2i32
+    |: 1i32

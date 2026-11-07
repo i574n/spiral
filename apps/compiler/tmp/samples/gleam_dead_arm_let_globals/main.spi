@@ -1,0 +1,19 @@
+:~ gleam_marked (x : i32) : i32 =
+    !!!!BackendSwitch({
+        Gleam = \ () =>
+            global "import spiral_dead_arm_marker"
+            x
+        Rust = \ () => x
+        C = \ () => x
+    })
+
+:~ picked (x : i32) : i32 =
+    !!!!BackendSwitch({
+        Rust = \ () => gleam_marked x
+        Gleam = \ () => x
+        C = \ () => x
+    })
+
+:= main () : i32 =
+    := ~x = 5i32
+    picked x + 1i32

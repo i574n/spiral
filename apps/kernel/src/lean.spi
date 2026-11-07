@@ -1,0 +1,256 @@
+///- --package .
+:# lean static =
+    :< testing
+
+:< sm'_operators
+:< syntax
+:< reduce
+:< env
+:< typing
+:< inductive
+
+:~ ^ level_nat (l : level) : option i32 =
+    ?= l ?|
+    | Zero => Some 0i32
+    | Succ x =>
+        ?= level_nat x ?|
+        | Some n => Some (n + 1i32)
+        | None => None
+    | _ => None
+
+:~ ^ peel (l : level) (k : i32) : level * i32 =
+    ?= l ?|
+    | Succ x => peel x (k + 1i32)
+    | _ => l, k
+
+:~ ^ lean_level (l : level) : string =
+    ?= level_nat l ?|
+    | Some n => sm'::obj_to_string n
+    | None =>
+        := base, k = peel l 0i32
+        ? k > 0i32 ?> level_atom base ++# "+" ++# sm'::obj_to_string k |: level_head base
+:& :~ level_head (l : level) : string =
+    ?= l ?|
+    | Max (a, b) => "max " ++# level_atom a ++# " " ++# level_atom b
+    | IMax (a, b) => "imax " ++# level_atom a ++# " " ++# level_atom b
+    | Param n => name_text n
+    | _ => lean_level l
+:& :~ level_atom (l : level) : string =
+    ?= level_nat l ?|
+    | Some n => sm'::obj_to_string n
+    | None =>
+        ?= l ?|
+        | Param n => name_text n
+        | _ => "(" ++# lean_level l ++# ")"
+
+:~ lean_sort (l : level) : string =
+    ?= level_nat l ?|
+    | Some n => ? n = 0i32 ?> "Prop" |? n = 1i32 ?> "Type" |: "Sort " ++# sm'::obj_to_string n
+    | None => "Sort " ++# level_atom l
+
+:~ ^ joined_with (sep : string) (xs : list string) : string =
+    ?= xs ?|
+    | x :: rest =>
+        ?= rest ?|
+        | [] => x
+        | _ => x ++# sep ++# joined_with sep rest
+    | [] => ""
+
+:~ level_args (us : list level) : string =
+    ?= us ?|
+    | [] => ""
+    | _ => ".{" ++# joined_with ", " (listm::map (\ u => lean_level u) us) ++# "}"
+
+:~ ^ bound (names : list string) (x : string) : bool =
+    ?= names ?|
+    | n :: rest => ? n = x ?> !+ |: bound rest x
+    | [] => !-
+
+:~ ^ unused (names : list string) (base : string) (k : i32) : string =
+    := candidate = base ++# "_" ++# sm'::obj_to_string k
+    ? bound names candidate ?> unused names base (k + 1i32) |: candidate
+
+:~ lean_keywords () : list string =
+    [
+        "fun"; "if"; "then"; "else"; "let"; "in"; "have"; "show"; "match"; "with"; "do"; "by"; "at"; "from"
+        "where"; "end"; "mutual"; "inductive"; "structure"; "theorem"; "def"; "example"; "axiom"; "open"
+        "namespace"; "section"; "forall"; "return"; "for"; "unless"; "instance"; "class"; "universe"; "variable"
+        "import"; "deriving"; "private"; "protected"; "noncomputable"; "partial"; "macro"; "syntax"; "Type"
+        "Prop"; "Sort"; "calc"; "suffices"; "obtain"; "nomatch"; "nofun"
+    ]
+
+:~ quoted (x : string) : string = ? bound (lean_keywords ()) x ?> "«" ++# x ++# "»" |: x
+
+:~ fresh_name (names : list string) (n : name) : string =
+    := base = name_text n
+    := shown = quoted base
+    ? bound names shown ?> unused names base 1i32 |: shown
+
+:~ ^ nth_name (names : list string) (i : i32) : option string =
+    ?= names ?|
+    | n :: rest => ? i = 0i32 ?> Some n |: nth_name rest (i - 1i32)
+    | [] => None
+
+:~ bracket (b : binder) (inner : string) : string =
+    ?= b ?|
+    | Default => "(" ++# inner ++# ")"
+    | Implicit => "{" ++# inner ++# "}"
+    | StrictImplicit => "{{" ++# inner ++# "}}"
+    | InstImplicit => "[" ++# inner ++# "]"
+
+:~ ^ lean_in (names : list string) (t : term) : string =
+    ?= t ?|
+    | BVar i =>
+        ?= nth_name names i ?|
+        | Some n => n
+        | None => "#" ++# sm'::obj_to_string i
+    | FVar n => name_text n
+    | Sort l => lean_sort l
+    | Const (n, us) => "@_root_." ++# name_text n ++# level_args us
+    | App (_, _) =>
+        := head, args = spine t []
+        "(" ++# lean_in names head ++# " " ++# joined_with " " (listm::map (\ a => lean_in names a) args) ++# ")"
+    | Lam (n, b, ty, body) =>
+        := x = fresh_name names n
+        "(fun " ++# bracket b (x ++# " : " ++# lean_in names ty) ++# " => " ++# lean_in (x :: names) body ++# ")"
+    | Pi (n, b, ty, body) =>
+        := x = fresh_name names n
+        "(" ++# bracket b (x ++# " : " ++# lean_in names ty) ++# " -> " ++# lean_in (x :: names) body ++# ")"
+    | Let (n, ty, v, body) =>
+        := x = fresh_name names n
+        "(let "
+        ++# x
+        ++# " : "
+        ++# lean_in names ty
+        ++# " := "
+        ++# lean_in names v
+        ++# "; "
+        ++# lean_in (x :: names) body
+        ++# ")"
+    | Proj (_, i, x) => "(" ++# lean_in names x ++# ")." ++# sm'::obj_to_string (i + 1i32)
+    | NatLit k => "(" ++# sm'::obj_to_string k ++# " : @_root_.Nat)"
+    | BigNat s => "(" ++# s ++# " : @_root_.Nat)"
+    | StrLit s => "(\"" ++# (s |> sm'::replace "\\" "\\\\" |> sm'::replace "\"" "\\\"") ++# "\" : @_root_.String)"
+
+:~ lean_term (t : term) : string = lean_in [] t
+
+:~ universe_params (ps : list name) : string =
+    ?= ps ?|
+    | [] => ""
+    | _ => ".{" ++# joined_with ", " (listm::map (\ p => name_text p) ps) ++# "}"
+
+:~ lean_decl (d : decl) : string =
+    ?= d ?|
+    | Axiom (n, ps, ty) => "axiom " ++# name_text n ++# universe_params ps ++# " : " ++# lean_term ty
+    | Def (n, ps, ty, value) =>
+        "def " ++# name_text n ++# universe_params ps ++# " : " ++# lean_term ty ++# " := " ++# lean_term value
+    | Recursor (n, _, _, _, _, _, _) => "-- generated by the inductive declaration: " ++# name_text n
+    | Quotient (n, _, _, _) => "-- built into Lean: " ++# name_text n
+
+:~ ^ param_binders (names : list string) (k : i32) (t : term) : list string * list string * term =
+    ?= t ?|
+    | Pi (n, b, ty, body) => ? k > 0i32 ?> param_step names k n b ty body |: [], names, t
+    | _ => [], names, t
+:& :~ param_step
+    (names : list string) (k : i32) (n : name) (b : binder) (ty : term) (body : term)
+    : list string * list string * term
+    =
+    := x = fresh_name names n
+    := shown, inner, rest = param_binders (x :: names) (k - 1i32) body
+    bracket b (x ++# " : " ++# lean_in names ty) :: shown, inner, rest
+
+:~ ^ skip_params (k : i32) (t : term) : term =
+    ?= t ?|
+    | Pi (_, _, _, body) => ? k > 0i32 ?> skip_params (k - 1i32) body |: t
+    | _ => t
+
+:~ short_name (family : name) (c : name) : string =
+    := prefix = name_text family ++# "."
+    := full = name_text c
+    ? sm'::starts_with prefix full ?> sm'::slice (sm'::length prefix) (sm'::length full - 1i32) full |: full
+
+:~ ^ unrooted (group : list name) (ps : list name) (s : string) : string =
+    ?= group ?|
+    | g :: rest =>
+        := rooted = "@_root_." ++# name_text g ++# universe_params ps
+        unrooted rest ps (s |> sm'::replace rooted ("@" ++# name_text g))
+    | [] => s
+
+:~ lean_constructor
+    (group : list name) (family : name) (ps : list name) (names : list string) (np : i32) ((c, cty) : name * term)
+    : string
+    =
+    := shown = unrooted group ps (lean_in names (skip_params np cty))
+    " | " ++# short_name family c ++# " : " ++# shown
+
+:~ lean_inductive_in (group : list name) (ind : inductive) : string =
+    ?= ind ?|
+    | Inductive (n, ps, np, ty, cs) =>
+        := shown, names, rest = param_binders [] np ty
+        := header = joined_with " " (("inductive " ++# name_text n ++# universe_params ps) :: shown)
+        := constructors = listm::map (\ entry => lean_constructor group n ps names np entry) cs
+        header ++# " : " ++# unrooted group ps (lean_in names rest) ++# " where" ++# joined_with "" constructors
+
+:~ inductive_name (ind : inductive) : name =
+    ?= ind ?|
+    | Inductive (n, _, _, _, _) => n
+
+:~ lean_inductive (ind : inductive) : string = lean_inductive_in [ inductive_name ind ] ind
+
+:~ lean_mutual (inds : list inductive) : string =
+    := group = listm::map (\ i => inductive_name i) inds
+    "mutual " ++# joined_with " " (listm::map (\ i => lean_inductive_in group i) inds) ++# " end"
+
+///> rust
+:# an_inductive_prints_its_parameters_once_and_its_constructors_without_them =
+    := list_of = \ (a : term) => App (Const (name "K.List", []), a)
+    := cons_tail = Pi (name "tl", Default, list_of (BVar 1i32), list_of (BVar 2i32))
+    := family =
+        Inductive (
+            name "K.List",
+            [],
+            1i32,
+            Pi (name "A", Default, type_sort (), type_sort ()),
+            [
+                name "K.List.nil", Pi (name "A", Default, type_sort (), list_of (BVar 0i32))
+                name "K.List.cons", Pi (name "A", Default, type_sort (), Pi (name "a", Default, BVar 0i32, cons_tail))
+            ]
+        )
+    lean_inductive family
+    |> _assert_eq (
+        "inductive K.List (A : Type) : Type where | nil : (@K.List A) | cons : ((a : A) -> ((tl : (@K.List A)) -> (@K.List A)))"
+    )
+
+///> rust
+:# terms_print_as_lean_source_with_names_for_bound_variables =
+    := shadowed = Lam (name "x", Default, Sort Zero, Lam (name "x", Implicit, Sort Zero, BVar 1i32))
+    := keyword = Lam (name "if", Default, Sort Zero, Lam (name "if", Default, Sort Zero, BVar 1i32))
+    (lean_term (poly_id ()), lean_term shadowed, lean_term keyword)
+    |> _assert_eq (
+        "(fun (A : Type) => (fun (a : A) => a))",
+        "(fun (x : Prop) => (fun {x_1 : Prop} => x))",
+        "(fun («if» : Prop) => (fun (if_1 : Prop) => «if»))"
+    )
+
+///> rust
+:# levels_and_constants_print_in_lean_syntax =
+    := u = Param (name "u")
+    := sorts =
+        lean_term (Sort (Max (u, Succ (Param (name "v"))))),
+        lean_term (Sort (Succ (Succ Zero))),
+        lean_term (Sort (Succ u))
+    := spine_of = App (App (App (Const (name "Eq.refl", [ u ]), Sort Zero), Sort Zero), Sort Zero)
+    (sorts, lean_term (Const (name "Nat.rec", [ Succ Zero; u ])), lean_term spine_of)
+    |> _assert_eq (
+        ("Sort (max u (v+1))", "Sort 2", "Sort (u+1)"),
+        "@_root_.Nat.rec.{1, u}",
+        "(@_root_.Eq.refl.{u} Prop Prop Prop)"
+    )
+
+///> rust
+:# a_universe_polymorphic_definition_prints_as_a_lean_def =
+    := u_sort = Sort (Param (name "u"))
+    := id_type = Pi (name "A", Default, u_sort, Pi (name "a", Default, BVar 0i32, BVar 1i32))
+    := id_value = Lam (name "A", Default, u_sort, Lam (name "a", Default, BVar 0i32, BVar 0i32))
+    lean_decl (Def (name "id", [ name "u" ], id_type, id_value))
+    |> _assert_eq "def id.{u} : ((A : Sort u) -> ((a : A) -> A)) := (fun (A : Sort u) => (fun (a : A) => a))"

@@ -1,0 +1,1 @@
+:= main () : i32 = model::leaf_depth (model::LeafInt 7i32)

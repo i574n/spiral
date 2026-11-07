@@ -1,0 +1,21 @@
+:~ label (flag : bool) : string =
+    ? flag ?> "a" |: "b"
+
+:~ ^ grow (n : i32) (acc : string) : string =
+    ? n <= 0i32 ?> acc
+    |:
+        := x = label ((=.) (!!!!Mod(n, 2i32)) 0i32)
+        := y = sm::concat (sm::concat acc x) "-"
+        := z = sm::concat y (sm::concat x x)
+        grow (!!!!Sub(n, 1i32)) z
+
+:= main () =
+    := s = grow 3i32 "s"
+    := t = sm::concat (sm::concat s s) "!"
+    ? (=.) (sm::length t : i32) 27i32 ?>
+        ? (=.) (sm::index t 26i32) '!' ?>
+            ? (=.) (sm::index t 13i32) 's' ?>
+                ? (=.) (sm::index t 12i32) 'b' ?> 0i32 |: 4i32
+            |: 3i32
+        |: 2i32
+    |: 1i32

@@ -1,0 +1,300 @@
+:< sm'_operators
+
+:| testing_trace =
+    | Console
+    | Trace
+    | TraceRaw
+    | Silent
+
+:= ^ __expect
+    (fn : _ -> _ -> bool)
+    (trace' : testing_trace)
+    (name : string)
+    (b : _)
+    (a : _)
+    : ()
+    =
+    := result = fn a b
+    := get_data () =
+        ? result
+        ?> sm'::show { expected = b }
+        |: sm'::show { actual = a; expected = b }
+    := get_raw_text () =
+        := data = get_data ()
+        name ++# " " ++# get_data ()
+    := result =
+        result || ~~ result
+    ?= trace' ?|
+    | Console =>
+        := text = get_raw_text ()
+        text |> console::write_line
+        text
+    | Trace =>
+        trace Info (\ () => name) get_data
+        get_raw_text ()
+    | TraceRaw =>
+        := text = get_raw_text ()
+        trace_raw Info \ () => text
+        text
+    | Silent => reflection::nameof { __expect }
+    |> assert result
+
+:= ^ __assert_approx_eq trace e b a =
+    __expect
+        \ a b => abs (b - a) < (e |> optionm::defaultWith 0.00000001)
+        trace
+        (reflection::nameof { __assert_approx_eq })
+        b
+        a
+
+:= _assert_approx_eq e b a =
+    __assert_approx_eq Console e b a
+
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# assert_approx_eq =
+    12.345f64
+    |> _assert_approx_eq (Some 0.0001f64) 12.345f64
+
+///> zig
+:# assert_approx_eq_2 print_code =
+    1f64
+    |> __assert_approx_eq Console (Some 3) 2
+
+///> zig
+:# assert_approx_eq_3 print_code =
+    (dyn 1f64)
+    |> _assert_approx_eq (Some 3) 2
+
+:= ^ __assert_eq trace b a =
+    __expect (=) trace (reflection::nameof { __assert_eq }) b a
+
+:= _assert_eq b a =
+    __assert_eq Console b a
+
+:= ^ __assert_eq' \* t. (trace : testing_trace) (b : t) (a : t) : () =
+    __expect
+        \ a b => #?a = #?b
+        trace
+        (reflection::nameof { __assert_eq' = __assert_eq' : _ -> t -> t -> () })
+        b
+        a
+
+:= _assert_eq' b a =
+    __assert_eq' Console b a
+
+:= ^ __assert_eq'' trace b a =
+    __expect (=.) trace (reflection::nameof { __assert_eq'' }) b a
+
+:= _assert_eq'' b a =
+    __assert_eq'' Console b a
+
+:= ^ __assert_ne trace b a =
+    __expect (<>.) trace (reflection::nameof { __assert_ne }) b a
+
+:= _assert_ne b a =
+    __assert_ne Console b a
+
+:= ^ __assert_gt trace b a =
+    __expect (>) trace (reflection::nameof { __assert_gt }) b a
+
+:= _assert_gt b a =
+    __assert_gt Console b a
+
+:= ^ __assert_ge trace b a =
+    __expect (>=) trace (reflection::nameof { __assert_ge }) b a
+
+:= _assert_ge b a =
+    __assert_ge Console b a
+
+:= ^ __assert_lt trace b a =
+    __expect (<) trace (reflection::nameof { __assert_lt }) b a
+
+:= _assert_lt b a =
+    __assert_lt Console b a
+
+:= ^ __assert_le trace b a =
+    __expect (<=) trace (reflection::nameof { __assert_le }) b a
+
+:= _assert_le b a =
+    __assert_le Console b a
+
+:= ^ __assert fn trace b a =
+    __expect fn trace (reflection::nameof { __assert }) a b
+
+:= _assert fn b a =
+    __assert fn Console b a
+
+:= ^ __assert_between trace a b actual =
+    := assert_between actual (a, b) =
+        __assert_ge Silent a actual
+        __assert_le Silent b actual
+        !+
+    __expect assert_between trace (reflection::nameof { __assert_between }) (a, b) actual
+
+:= _assert_between a b actual =
+    __assert_between Console a b actual
+
+:= ^ _assert_fn fn list =
+    list
+    |> listm::rev
+    |> listm::map \ input, expected => ~~
+        input
+        |> fn
+        |> resultm::get
+        |> \ x =>
+            := expected' = ~~ expected
+            := name = reflection::nameof { _assert_fn }
+            try
+                \ () =>
+                    console::write_line ""
+                    trace Verbose
+                        \ () => name
+                        \ () => { input }
+                    sm'::show x
+                    |> _assert_eq (sm'::show expected')
+                    !+
+                \ ex =>
+                    trace Critical
+                        \ () => name ++# " / error"
+                        \ () => { ex expected }
+                    Some !-
+            |> optionm::value
+    |> listm'::filter not
+    |> \|
+        | [] => ()
+        | x => #?*x |> failwith
+
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# assert_fn =
+    [
+        3i32,
+        2i32
+
+        2,
+        1
+    ]
+    |> _assert_fn \ x =>
+        x - 1
+        |> Ok
+        |> \ x => x : _ _ ()
+
+:= _assert_in items x =
+    (None, items)
+    ||> listm::fold \ acc x' =>
+        ?= acc ?|
+        | Some x => Some x
+        | None =>
+            ? x' <>. x
+            ?> None
+            |:
+                trace Debug (\ () => "_assert_in") \ () => { x x' }
+                Some ()
+    |> \|
+        | Some _ => ()
+        | None =>
+            "_assert_in / " ++#? { x items } |> failwith
+
+:= ^ __assert_contains \* t u. (trace : testing_trace) (b : t) (a : u) : () =
+    __expect
+        \ a b =>
+            run_target \|
+                | Rust => \ () =>
+                    := found : bool =
+                        ~>
+                            ?: u ?|
+                            | string =>
+                                ?: t ?|
+                                | char => $'!a.contains(char::from(!b))' : bool
+                                | _ => $'!a.contains(&*!b)' : bool
+                            | array_base _ => $'!a.borrow().contains(&!b)' : bool
+                            | _ => $'!a.iter().any(|x| *x == !b)' : bool
+                    found
+                | Zig => \ () =>
+                    ? (~> ?: u ?| string => !+ | _ => !-)
+                    ?>
+                        ~>
+                            ?: t ?|
+                            | char => $'(std.mem.indexOfScalar(u8, !a, !b) \!= null)' : bool
+                            | _ => $'(std.mem.indexOf(u8, !a, !b) \!= null)' : bool
+                    |:
+                        := len : i32 = $'@@as(i32, @@intCast(!a.len))'
+                        := same (item : t) : bool =
+                            ? (~> ?: t ?| string => !+ | _ => !-)
+                            ?> $'std.mem.eql(u8, !item, !b)' : bool
+                            |: $'(!item == !b)' : bool
+                        :~ ^ scan (i : i32) : bool =
+                            ? i >= len ?> !-
+                            |? same ($'!a[@@intCast(!i)]' : t) ?> !+
+                            |: scan (i + 1i32)
+                        scan 0i32
+                | _ => \ () =>
+                    a
+                    |> $'List.ofSeq'
+                    |> \ x => x : listm'::list' t
+                    |> $'List.tryFind' ((=) b)
+                    |> optionm'::unbox
+                    |> \ (x : option t) => x <> None
+        trace
+        "__assert_contains"
+        b
+        a
+
+:= _assert_contains b a =
+    __assert_contains Console b a
+
+///> zig
+:# assert_contains =
+    ;[ "a"; "b"; "c" ]
+    |> _assert_contains "b"
+
+///> zig
+///> rust
+:# assert_contains_2 =
+    "abcd"
+    |> _assert_contains 'b'
+
+:= _throws (fn : () -> ()) : option exn =
+    := none = None : option exn
+    := caught (ex : exn) : option (option exn) = Some (Some ex)
+    try
+        \ () =>
+            fn ()
+            none
+        caught
+    |> optionm::value
+
+:= ^ print_and_return x =
+    := name = reflection::nameof { print_and_return }
+    name ++#? { x }
+    |> console::write_line
+    x
+
+:= counterexamples (limit : i32) (lo : i64) (hi : i64) (reference : i64 -> i64) (candidate : i64 -> i64) : list i64 =
+    :~ ^ go (x : i64) (left : i32) (found : list i64) : list i64 =
+        ? x > hi ?> found
+        |? left <= 0i32 ?> found
+        |? reference x = candidate x ?> go (x + 1i64) left found
+        |: go (x + 1i64) (left - 1i32) (x :: found)
+    go lo limit [] |> listm::rev
+
+///> zig
+:# counterexamples_find_where_multiply_shift_stops_dividing_by_three =
+    := divide (x : i64) : i64 = x / 3i64
+    := multiply_shift (x : i64) : i64 = (x * 43691i64) >>> 17i32
+    counterexamples 3i32 0i64 65535i64 divide multiply_shift |> listm::length |> _assert_eq 0i32
+    counterexamples 2i32 0i64 200000i64 divide multiply_shift
+    |> listm::fold (\ packed x => packed * 1000000i64 + x) 0i64
+    |> \ packed => (packed = 131072131075i64) |> _assert_eq !+
+
+:= expect (condition : bool) (detail : string) : () = ? condition ?> () |: failwith detail
+
+///> rust
+:# expect_is_silent_when_its_condition_holds =
+    expect (1i32 + 1i32 = 2i32) "arithmetic"
+    expect ("ab" <> "") "a non-empty string"

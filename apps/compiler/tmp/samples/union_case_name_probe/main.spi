@@ -1,0 +1,20 @@
+:| shape =
+    | Circle :: f64 -> shape
+    | Square :: f64 -> shape
+    | Dot :: shape
+
+:| request r =
+    | Hello :: request string
+    | Count :: i32 -> request i32
+
+:= shape_name (x : shape) : string = !!!!UnionCaseName(x)
+
+:= request_name \* r. (q : request r) : string = !!!!UnionCaseName(q)
+
+:= main () : i32 =
+    := ~circle = Circle 1.5f64
+    := ~square = Square 2.5f64
+    := ~dot = Dot
+    := ~hello = Hello
+    := ~count = Count 3i32
+    ? !!!!EQ(shape_name circle, "Circle") && !!!!EQ(shape_name square, "Square") && !!!!EQ(shape_name dot, "Dot") && !!!!EQ(request_name hello, "Hello") && !!!!EQ(request_name count, "Count") && !!!!EQ(!!!!UnionCaseName(Square 4.0f64), "Square") ?> 42i32 |: 1i32

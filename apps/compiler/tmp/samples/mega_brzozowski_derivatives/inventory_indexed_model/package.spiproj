@@ -1,0 +1,6 @@
+packageDir: ../..
+packages:
+    mega_brzozowski_derivatives-
+modules:
+    inventory_indexed_model
+    runtime_probe

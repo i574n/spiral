@@ -1,0 +1,14 @@
+:= make_state ~n =
+    := ~xs : array i32 = create n
+    set xs 0i32 3i32
+    set xs 1i32 4i32
+    { items = xs; bias = 1i32 }
+
+:= first ~{ items bias } : i32 = index items 0i32 +. bias -. 1i32
+:= total ~{ items bias } : i32 = index items 0i32 +. index items 1i32 +. bias
+
+:= main () : i32 =
+    := state = ~~ make_state 2i32
+    := ~a = ~~ first state
+    := ~b = ~~ total state
+    a +. b -. 11i32

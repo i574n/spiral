@@ -1,0 +1,11 @@
+:! alive = ()
+:! dead = ()
+
+:| vitality phase =
+    | Living :: i32 * i32 -> vitality alive
+    | Fallen :: i32 -> vitality dead
+
+:= main () : i32 =
+    := ~n = 3i32
+    := xs : array_base (vitality alive) = !!!!ArrayCreate(`(vitality alive), n)
+    0i32

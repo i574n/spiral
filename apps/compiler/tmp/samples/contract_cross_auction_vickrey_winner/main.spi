@@ -1,0 +1,23 @@
+:! auction_501 = ()
+:! auction_502 = ()
+:! bidder_a = ()
+:! lot_gpu_9 = ()
+:! currency_usdc = ()
+
+:| winner auction bidder lot currency =
+    | Winner501 :: string -> winner auction_501 bidder_a lot_gpu_9 currency_usdc
+    | Winner502 :: string -> winner auction_502 bidder_a lot_gpu_9 currency_usdc
+
+:| second_price auction lot currency =
+    | Price501 :: string -> second_price auction_501 lot_gpu_9 currency_usdc
+
+:| settlement auction bidder lot currency =
+    | Settle501 ::
+        winner auction_501 bidder_a lot_gpu_9 currency_usdc *
+        second_price auction_501 lot_gpu_9 currency_usdc ->
+        settlement auction_501 bidder_a lot_gpu_9 currency_usdc
+
+:= main () : settlement auction_501 bidder_a lot_gpu_9 currency_usdc =
+    := wrong_winner : winner auction_502 bidder_a lot_gpu_9 currency_usdc = Winner502 "winner-from-502"
+    := price : second_price auction_501 lot_gpu_9 currency_usdc = Price501 "850"
+    Settle501 (wrong_winner, price)

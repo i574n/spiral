@@ -1,0 +1,11 @@
+:! signer_a = ()
+:! key_old = ()
+:! epoch0 = ()
+:! active = ()
+:! retired = ()
+:| public_key signer key epoch state =
+    | PublicKey :: \* signer key epoch state. string -> public_key signer key epoch state
+:= authorize \* signer key epoch. (key : public_key signer key epoch active) : string = "authorized"
+:= main () =
+    := retired_key : public_key signer_a key_old epoch0 retired = PublicKey "retired"
+    authorize retired_key

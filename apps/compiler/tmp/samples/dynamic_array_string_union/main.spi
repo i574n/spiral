@@ -1,0 +1,41 @@
+:| payload =
+    | Empty
+    | Values : array string
+
+:= reserve ~(xs : array string) ~(requested_capacity : i32) : () =
+    $'DynamicArrayReserve0(!xs,!requested_capacity)'
+
+:= resize ~(xs : array string) ~(new_length : i32) : () =
+    $'DynamicArrayResize0(!xs,!new_length)'
+
+:= capacity ~(xs : array string) : i32 =
+    $'DynamicArrayCapacity0(!xs)'
+
+:~ mutate x : i32 =
+    ?= x ?|
+    | Empty => 90i32
+    | Values values =>
+        ~~ reserve values 8i32
+        ~~ resize values 3i32
+        set values 1i32 "cde"
+        set values 2i32 "f"
+        ~~ resize values 2i32
+        ~~ capacity values
+
+:~ observe x : i32 =
+    ?= x ?|
+    | Empty => 91i32
+    | Values values =>
+        length values +. sm::length (index values 0i32) +. sm::length (index values 1i32)
+
+:= main () : i32 =
+    := ~values : array string = create 4i32
+    ~~ resize values 1i32
+    set values 0i32 "ab"
+    := ~alias = values
+    := wrapped = Values values
+    := ~grown = mutate wrapped
+    := ~score = observe wrapped
+    ~~ resize alias 0i32
+    ~~ resize alias 1i32
+    score +. grown +. length values -. 16i32

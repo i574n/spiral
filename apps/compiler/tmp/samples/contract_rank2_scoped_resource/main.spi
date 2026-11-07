@@ -1,0 +1,23 @@
+:! region_a = ()
+
+:| resource region =
+    | ResourceA :: string -> resource region_a
+
+:| scoped_resource =
+    | ScopedResource :: (\? region. resource region) -> scoped_resource
+
+:= use_and_render \* region. (resource : resource region) : string =
+    ?= resource ?|
+    | ResourceA _ => "rank2-resource-safe"
+
+:= with_resource \* result.
+    (visitor : \* region. resource region -> result)
+    : result =
+    := packed = ScopedResource (\? (ResourceA "nfe.xml"))
+    ?= packed ?|
+    | ScopedResource resource =>
+        := \? region. resource = resource
+        visitor resource
+
+:= main () : string =
+    with_resource `$use_and_render

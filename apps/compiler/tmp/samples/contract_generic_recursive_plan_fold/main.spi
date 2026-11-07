@@ -1,0 +1,59 @@
+:! s0 = ()
+:! s1 = ()
+:! s2 = ()
+:! s3 = ()
+
+:| operation from to =
+    | Step01 :: operation s0 s1
+    | Step12 :: operation s1 s2
+    | Step23 :: operation s2 s3
+
+:| node from to =
+    | Node :: \* from to. operation from to * string -> node from to
+
+:| ^ typed_plan from to =
+    | PlanLeaf :: \* from to. node from to -> typed_plan from to
+    | PlanThen :: \* from to.
+        (\? middle. typed_plan from middle * node middle to)
+        -> typed_plan from to
+
+:| ^ nat =
+    | Z
+    | S : nat
+
+:= ^ fold_count \* from to. (plan : typed_plan from to) : nat =
+    ?= plan ?|
+    | PlanLeaf _ => S Z
+    | PlanThen pair =>
+        := \? middle. prefix, _ = pair
+        S (fold_count prefix)
+
+:= ^ last_label \* from to. (plan : typed_plan from to) : string =
+    ?= plan ?|
+    | PlanLeaf (Node (_, label)) => label
+    | PlanThen pair =>
+        := \? middle. _, Node (_, label) = pair
+        label
+
+:= plan () : typed_plan s0 s3 =
+    PlanThen (\? (
+        PlanThen (\? (
+            PlanLeaf (Node (Step01, "step-1")),
+            Node (Step12, "step-2")
+        )),
+        Node (Step23, "generic-fold-3")
+    ))
+
+:= main () : string =
+    ?= fold_count (plan ()) ?|
+    | S rest =>
+        ?= rest ?|
+        | S rest' =>
+            ?= rest' ?|
+            | S final =>
+                ?= final ?|
+                | Z => last_label (plan ())
+                | _ => "invalid-count"
+            | _ => "invalid-count"
+        | _ => "invalid-count"
+    | _ => "invalid-count"

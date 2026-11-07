@@ -1,0 +1,27 @@
+:! pending = ()
+:! committed = ()
+:! persisted = ()
+:! published = ()
+
+:| status_receipt phase =
+    | PendingReceipt :: string -> status_receipt pending
+    | CommittedReceipt :: string -> status_receipt committed
+
+:| event_box phase =
+    | EventBox :: \* phase. string -> event_box phase
+
+:| outbox_op from to =
+    | PublishCommitted :: status_receipt committed -> outbox_op persisted published
+
+:= execute \* from to.
+    (operation : outbox_op from to)
+    (box : event_box from)
+    : event_box to =
+    ?= operation, box ?|
+    | PublishCommitted (CommittedReceipt _), EventBox _ => EventBox "published"
+
+:= main () : string =
+    := pending = PendingReceipt "not-committed"
+    := result = execute (PublishCommitted pending) (EventBox "persisted" : event_box persisted)
+    ?= result ?|
+    | EventBox trace => trace

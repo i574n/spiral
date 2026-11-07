@@ -1,0 +1,10 @@
+:= negate ~value : i32 =
+    $'-!value '
+
+:= accepts ~x ~y =
+    negate x <= 0i32 && ((x +. y *. 2i32) >= 9i32 || y =. 0i32)
+
+:= main () : i32 =
+    := ~x = 3i32
+    := ~y = 3i32
+    ? ~~ accepts x y ?> 0i32 |: 1i32

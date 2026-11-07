@@ -1,0 +1,4 @@
+:= main () : i32 =
+    ?= vitality::Slain 5i32 ?|
+    | vitality::Survived x => x
+    | vitality::Slain x => !!!!Add(x, 1i32)

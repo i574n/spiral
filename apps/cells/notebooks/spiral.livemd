@@ -1,0 +1,86 @@
+# Spiral in Livebook
+
+```elixir
+Mix.install([
+  {:spiral_cells, path: Path.join(__DIR__, "..")}
+])
+```
+
+## Running Spiral
+
+Insert a cell with **+ Smart → Spiral**. The form sets the timeout and whether to show
+the generated Rust. The cell compiles with the single-flight Spiral compiler's Rust
+backend, `rustc` builds that file, and the program runs. Output, the `i32` value, and
+compile errors show up in the cell.
+
+<!-- livebook:{"attrs":{"print_code":false,"source":"inl square x = x * x\n\nconsole.write_line \"Hello from Spiral!\"\nsquare 7i32\n","timeout":300},"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  inl square x = x * x
+
+  console.write_line "Hello from Spiral!"
+  square 7i32
+  """,
+  timeout: 300000
+)
+```
+
+With **Show generated Rust** the patched Rust is printed before the program output:
+
+<!-- livebook:{"attrs":{"print_code":true,"source":"inl square x = x * x\n\nsquare 7i32\n","timeout":300},"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  inl square x = x * x
+
+  square 7i32
+  """,
+  timeout: 300000,
+  print_code: true
+)
+```
+
+A body that returns `()` is compiled again with `0i32` so the print still runs. That cell
+has output and no value:
+
+<!-- livebook:{"attrs":{"print_code":false,"source":"console.write_line \"Hello from Spiral!\"\n","timeout":300},"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  console.write_line "Hello from Spiral!"
+  """,
+  timeout: 300000
+)
+```
+
+`///- --print-code` and `///- --timeout <ms>` on the first `///-` line are honored.
+`///> rust` is accepted. Any other `///>` backend raises. A `////` line is dropped.
+
+## Programmatic use
+
+`Spiral.Cells.run/2` returns a `Spiral.Cells.Result`:
+
+```elixir
+{:ok, result} = Spiral.Cells.run("1i32 + 2i32", timeout: 120_000)
+result.value
+```
+
+## Errors
+
+Compile errors are raised as `Spiral.Cells.SpiralError`. Positions refer to the wrapped
+`main.spi`:
+
+<!-- livebook:{"attrs":{"print_code":false,"source":"1i32 + \"a\"\n","timeout":300},"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  1i32 + "a"
+  """,
+  timeout: 300000
+)
+```

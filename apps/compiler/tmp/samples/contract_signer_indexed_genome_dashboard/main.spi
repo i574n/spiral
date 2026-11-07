@@ -1,0 +1,43 @@
+:! signer_a = ()
+:! key_a = ()
+:! digest_a = ()
+:! verified = ()
+:! sample_a = ()
+:! hg38 = ()
+:! chr1 = ()
+:! app_scope = ()
+:! epoch1 = ()
+:! live = ()
+:! hydrated = ()
+
+:| signed_authority signer key digest state =
+    | SignedAuthority :: \* signer key digest state. string -> signed_authority signer key digest state
+:| genome_batch signer digest sample build contig =
+    | GenomeBatch :: \* signer digest sample build contig. string -> genome_batch signer digest sample build contig
+:| resource scope epoch signer digest sample build contig state =
+    | Resource :: \* scope epoch signer digest sample build contig state.
+        string ->
+        resource scope epoch signer digest sample build contig state
+:| view scope epoch signer digest state =
+    | View :: \* scope epoch signer digest state. string -> view scope epoch signer digest state
+
+:= publish \* scope epoch signer key digest sample build contig.
+    (authority : signed_authority signer key digest verified)
+    (batch : genome_batch signer digest sample build contig)
+    : resource scope epoch signer digest sample build contig live =
+    ?= authority, batch ?|
+    | SignedAuthority _, GenomeBatch label => Resource label
+
+:= mount \* scope epoch signer digest sample build contig.
+    (resource : resource scope epoch signer digest sample build contig live)
+    (view : view scope epoch signer digest hydrated)
+    : string =
+    ?= resource, view ?|
+    | Resource _, View label => label
+
+:= main () : string =
+    := authority : signed_authority signer_a key_a digest_a verified = SignedAuthority "signed"
+    := batch : genome_batch signer_a digest_a sample_a hg38 chr1 = GenomeBatch "variants"
+    := view : view app_scope epoch1 signer_a digest_a hydrated = View "signed-genome-dashboard-mounted"
+    := resource : resource app_scope epoch1 signer_a digest_a sample_a hg38 chr1 live = publish authority batch
+    mount resource view

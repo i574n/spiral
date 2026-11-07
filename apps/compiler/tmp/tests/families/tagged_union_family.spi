@@ -1,0 +1,85 @@
+///- --package .
+:| phase =
+    | Cold
+    | Warm
+    | Hot
+    | Done
+
+:~ phase_score x : i32 =
+    ?= x ?|
+    | Cold => 1i32
+    | Warm => 2i32
+    | Hot => 3i32
+    | Done => 4i32
+
+///> c
+///> zig
+test enum_returns_zero =
+    := program () : i32 =
+        := ~selector = 3i32
+        := value =
+            ? selector =. 0i32 ?> Cold
+            |? selector =. 1i32 ?> Warm
+            |? selector =. 2i32 ?> Hot
+            |: Done
+        phase_score value -. 4i32
+    ? program () <> 0i32 ?> failwith "tagged_union_enum"
+
+:| mixed_outcome =
+    | MixedHit : i32
+    | MixedFlag : bool
+
+:~ mixed_score x : i32 =
+    ?= x ?|
+    | MixedHit value => value
+    | MixedFlag value => ? value ?> 9i32 |: 4i32
+
+///> c
+///> zig
+test heterogeneous_returns_zero =
+    := program () : i32 =
+        := ~choose_hit = !-
+        := value = ? choose_hit ?> MixedHit 7i32 |: MixedFlag !+
+        mixed_score value -. 9i32
+    ? program () <> 0i32 ?> failwith "tagged_union_heterogeneous"
+
+:| scalar_outcome =
+    | ScalarHit : i32
+    | ScalarMiss : i32
+
+:~ scalar_score x : i32 =
+    ?= x ?|
+    | ScalarHit value => value
+    | ScalarMiss value => 0i32 -. value
+
+///> c
+///> zig
+test scalar_returns_zero =
+    := program () : i32 =
+        := ~flag = !+
+        := value = ? flag ?> ScalarHit 7i32 |: ScalarMiss 3i32
+        scalar_score value -. 7i32
+    ? program () <> 0i32 ?> failwith "tagged_union_scalar"
+
+:| three_outcome =
+    | ThreeIdle
+    | ThreeHit : i32
+    | ThreeFlag : bool
+
+:~ three_score x : i32 =
+    ?= x ?|
+    | ThreeIdle => 3i32
+    | ThreeHit value => value
+    | ThreeFlag value => ? value ?> 11i32 |: 5i32
+
+///> c
+///> zig
+test three_case_returns_zero =
+    := program () : i32 =
+        := ~selector = 2i32
+        := value =
+            ? selector =. 0i32 ?> ThreeIdle
+            |? selector =. 1i32 ?> ThreeHit 7i32
+            |: ThreeFlag !+
+        three_score value -. 11i32
+    ? program () <> 0i32 ?> failwith "tagged_union_three_case"

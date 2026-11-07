@@ -1,0 +1,1 @@
+:= add_left ~g ~x : i32 = ~~ (\ x => foundation::transport::apply g x + 1i32) x

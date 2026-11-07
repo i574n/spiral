@@ -1,0 +1,110 @@
+pub type SpiralRefCell(a)
+
+pub type SpiralRef(a) {
+  SpiralRef(cell: SpiralRefCell(a))
+}
+
+@external(erlang, "main_ffi", "ref_new")
+@external(javascript, "./main_ffi.mjs", "ref_new")
+pub fn spiral_ref_cell_new(value: a) -> SpiralRefCell(a)
+
+@external(erlang, "main_ffi", "ref_get")
+@external(javascript, "./main_ffi.mjs", "ref_get")
+pub fn spiral_ref_cell_get(cell: SpiralRefCell(a)) -> a
+
+@external(erlang, "main_ffi", "ref_set")
+@external(javascript, "./main_ffi.mjs", "ref_set")
+pub fn spiral_ref_cell_set(cell: SpiralRefCell(a), value: a) -> Nil
+
+pub fn spiral_ref_new(value: a) -> SpiralRef(a) {
+  SpiralRef(cell: spiral_ref_cell_new(value))
+}
+
+pub fn spiral_ref_get(reference: SpiralRef(a)) -> a {
+  spiral_ref_cell_get(reference.cell)
+}
+
+pub fn spiral_ref_set(reference: SpiralRef(a), value: a) -> Nil {
+  spiral_ref_cell_set(reference.cell, value)
+}
+
+pub type Heap0 { Heap0(l0 : Int, l1 : String) }
+pub type Heap1 { Heap1(l0 : Heap0, l1 : Heap0) }
+pub type Heap2 { Heap2(l0 : Heap1, l1 : Int) }
+pub type Us0 {
+    Us0None
+    Us0Held(f1i0 : Heap2)
+}
+pub type Heap3 { Heap3(l0 : Us0) }
+pub type Mut0 { Mut0(l0 : Heap3) }
+pub fn score_0(v0: Us0) -> Int {
+    case v0  {
+        Us0Held(v1) -> {
+            let #(v2, v3) = #(v1.l0, v1.l1)
+            let #(v4, v5) = #(v2.l0, v2.l1)
+            let #(v6, v7) = #(v4.l0, v4.l1)
+            let #(v8, v9) = #(v5.l0, v5.l1)
+            let v10 = v6 == 7
+            let v12 =
+                case v10 {
+                    True -> {
+                        v7 == "hi"
+                    }
+                    False -> False
+                }
+            let v14 =
+                case v12 {
+                    True -> {
+                        v8 == 4
+                    }
+                    False -> False
+                }
+            let v16 =
+                case v14 {
+                    True -> {
+                        v9 == "yo"
+                    }
+                    False -> False
+                }
+            let v18 =
+                case v16 {
+                    True -> {
+                        v3 == 2
+                    }
+                    False -> False
+                }
+            case v18 {
+                True -> 0
+                False -> 1
+            }
+        }
+        Us0None -> 1
+    }
+}
+pub fn main() {
+    let v2 = Heap0(l0: 1, l1: "no")
+    let v5 = Heap0(l0: 2, l1: "zz")
+    let v6 = Heap1(l0: v2, l1: v5)
+    let v8 = Heap2(l0: v6, l1: 3)
+    let v12 =
+        case True {
+            True -> Us0Held(v8)
+            False -> Us0None
+        }
+    let v13 = Heap3(l0: v12)
+    let v14 = spiral_ref_new(Mut0(l0: v13))
+    let v17 = Heap0(l0: 7, l1: "hi")
+    let v20 = Heap0(l0: 4, l1: "yo")
+    let v21 = Heap1(l0: v17, l1: v20)
+    let v23 = Heap2(l0: v21, l1: 2)
+    let v27 =
+        case True {
+            True -> Us0Held(v23)
+            False -> Us0None
+        }
+    let v28 = Heap3(l0: v27)
+    spiral_ref_set(v14, Mut0(l0: v28))
+    let v29 = spiral_ref_get(v14).l0
+    let v30 = v29.l0
+    score_0(v30)
+}

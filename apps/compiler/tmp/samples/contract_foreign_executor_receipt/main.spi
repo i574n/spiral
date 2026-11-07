@@ -1,0 +1,23 @@
+:! scope_a = ()
+:! epoch1 = ()
+:! executor_a = ()
+:! executor_b = ()
+:! pending = ()
+:! drained = ()
+:! committed = ()
+:| effect_queue scope epoch executor state =
+    | Queue :: \* scope epoch executor state. string -> effect_queue scope epoch executor state
+:| drain_receipt scope epoch executor state =
+    | DrainReceipt :: \* scope epoch executor state. string -> drain_receipt scope epoch executor state
+:| render_frame scope epoch state = | Frame :: \* scope epoch state. string -> render_frame scope epoch state
+:= commit \* scope epoch executor.
+    (frame : render_frame scope epoch pending) (queue : effect_queue scope epoch executor drained)
+    (receipt : drain_receipt scope epoch executor drained)
+    : render_frame scope epoch committed
+    =
+    Frame "committed"
+:= main () =
+    := frame : render_frame scope_a epoch1 pending = Frame "frame"
+    := queue : effect_queue scope_a epoch1 executor_a drained = Queue "queue"
+    := foreign : drain_receipt scope_a epoch1 executor_b drained = DrainReceipt "foreign"
+    commit frame queue foreign

@@ -1,0 +1,22 @@
+:! worker_a = ()
+:! epoch_1 = ()
+:! epoch_2 = ()
+
+:| lease worker epoch =
+    | Lease1 :: lease worker_a epoch_1
+    | Lease2 :: lease worker_a epoch_2
+
+:| completion worker epoch =
+    | Completion1 :: string -> completion worker_a epoch_1
+    | Completion2 :: string -> completion worker_a epoch_2
+
+:= accept \* worker epoch.
+    (lease : lease worker epoch)
+    (completion : completion worker epoch)
+    : string =
+    ?= lease, completion ?|
+    | Lease1, Completion1 payload => payload
+    | Lease2, Completion2 payload => payload
+
+:= main () : string =
+    accept Lease2 (Completion1 "stale")

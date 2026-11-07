@@ -1,0 +1,39 @@
+:! app_scope = ()
+:! i0 = ()
+:! i1 = ()
+:! i2 = ()
+:! open_stream = ()
+:! closed_stream = ()
+
+:| stream scope cursor state =
+    | Stream :: \* scope cursor state. string -> stream scope cursor state
+
+:| chunk scope from to =
+    | Chunk :: \* scope from to. string -> chunk scope from to
+
+:| end_marker scope cursor =
+    | EndMarker :: \* scope cursor. string -> end_marker scope cursor
+
+:= append \* scope from to.
+    (stream : stream scope from open_stream)
+    (chunk : chunk scope from to)
+    : stream scope to open_stream =
+    ?= stream, chunk ?|
+    | Stream _, Chunk label => Stream label
+
+:= close \* scope cursor.
+    (stream : stream scope cursor open_stream)
+    (marker : end_marker scope cursor)
+    : stream scope cursor closed_stream =
+    ?= stream, marker ?|
+    | Stream _, EndMarker label => Stream label
+
+:= main () : string =
+    := stream0 : stream app_scope i0 open_stream = Stream "head"
+    := chunk0 : chunk app_scope i0 i1 = Chunk "body"
+    := chunk1 : chunk app_scope i1 i2 = Chunk "tail"
+    := marker : end_marker app_scope i2 = EndMarker "ssr-stream-closed"
+    := stream1 = append stream0 chunk0
+    := stream2 = append stream1 chunk1
+    ?= close stream2 marker ?|
+    | Stream label => label

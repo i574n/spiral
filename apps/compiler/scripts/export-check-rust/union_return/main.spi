@@ -1,0 +1,10 @@
+:| command =
+    | Add : i32
+    | Rename : string
+    | Clear
+
+:= decide (n : i32) : command = ? n > 10i32 ?> Add n |? n > 0i32 ?> Rename "x" |: Clear
+
+:= main () : i32 =
+    !!!!Export("xc_decide", ((\ n => decide n) : i32 -> command))
+    0i32

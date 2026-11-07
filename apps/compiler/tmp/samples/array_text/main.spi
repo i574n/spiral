@@ -1,0 +1,17 @@
+:! text_array = array_base string
+
+:= create (n : i32) : text_array = text_array !!!!ArrayCreate(`string, n)
+:= get (array : text_array) (i : i32) : string =
+    ?= array ?|
+    | text_array values => !!!!ArrayIndex(values, i)
+:= set (array : text_array) (i : i32) (value : string) : () =
+    ?= array ?|
+    | text_array values => !!!!ArrayIndexSet(values, i, value)
+
+:= main () : i32 =
+    := ~n = 2i32
+    := a = create n
+    := ~word = "hi"
+    set a 0i32 word
+    set a 1i32 "yo"
+    ? !!!!EQ(get a 0i32, "hi") ?> 0i32 |: 1i32

@@ -1,0 +1,4 @@
+:~ f (str : string) (i : i32) : i32 =
+    := n = sm::length str : i32
+    (+.) n i
+:= main () : i32 = f "abc" 1i32

@@ -1,0 +1,52 @@
+:! missing = ()
+:! present = ()
+
+:| auth_session cert endpoint =
+    | AuthSession :: \* cert endpoint. string -> auth_session cert endpoint
+
+:| action from to =
+    | AcquireCertificate :: \* endpoint.
+        action (auth_session missing endpoint) (auth_session present endpoint)
+    | SelectEndpoint :: \* cert.
+        action (auth_session cert missing) (auth_session cert present)
+    | Authorize :: action (auth_session present present) (auth_session present present)
+
+:| ^ chain (step : * -> * -> *) from to =
+    | ChainStep :: \* (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: \* (step : * -> * -> *) from to.
+        (\? middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+:= execute \* from to.
+    (operation : action from to)
+    (state : from)
+    : to =
+    ?= operation, state ?|
+    | AcquireCertificate, AuthSession _ => AuthSession "certificate-acquired"
+    | SelectEndpoint, AuthSession _ => AuthSession "endpoint-selected"
+    | Authorize, AuthSession _ => AuthSession "capability-session"
+
+:= ^ run_chain \* from to.
+    (program : chain action from to)
+    (input : from)
+    : to =
+    ?= program ?|
+    | ChainStep atom => execute atom input
+    | ChainCompose pair =>
+        := \? middle. first, second = pair
+        run_chain second (run_chain first input)
+
+:= plan () : chain action (auth_session missing missing) (auth_session present present) =
+    ChainCompose (\? (
+        ChainStep AcquireCertificate,
+        ChainCompose (\? (
+            ChainStep SelectEndpoint,
+            ChainStep Authorize
+        ))
+    ))
+
+:= main () : string =
+    := result = run_chain (plan ()) (AuthSession "start")
+    ?= result ?|
+    | AuthSession trace => trace

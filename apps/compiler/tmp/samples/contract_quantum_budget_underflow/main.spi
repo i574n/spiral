@@ -1,0 +1,17 @@
+:! zero = ()
+:! succ n = n
+:! lineage_a = ()
+:! coherent = ()
+:| ^ budget n = | ZeroBudget :: budget zero | MoreBudget :: \* n. budget n -> budget (succ n)
+:| qstate lineage phase = | QState :: \* lineage phase. string -> qstate lineage phase
+:= apply_gate \* lineage n.
+    (state : qstate lineage coherent) (budget : budget (succ n))
+    : qstate lineage coherent * budget n
+    =
+    ?= budget ?|
+    | MoreBudget rest => state, rest
+:= main () =
+    := state : qstate lineage_a coherent = QState "psi"
+    := one : budget (succ zero) = MoreBudget ZeroBudget
+    ?= apply_gate state one ?|
+    | state1, empty => apply_gate state1 empty

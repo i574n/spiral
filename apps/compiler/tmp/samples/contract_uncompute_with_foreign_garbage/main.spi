@@ -1,0 +1,30 @@
+:! owner_a = ()
+:! owner_b = ()
+:! clean = ()
+:! dirty = ()
+:! computed = ()
+:! restored = ()
+
+:| ancilla owner state =
+    | Ancilla :: \* owner state. string -> ancilla owner state
+
+:| workspace owner stage =
+    | Workspace :: \* owner stage. string -> workspace owner stage
+
+:| garbage owner witness =
+    | Garbage :: \* owner witness. string -> garbage owner witness
+
+:= uncompute \* owner.
+    (ancilla : ancilla owner dirty)
+    (workspace : workspace owner computed)
+    (garbage : garbage owner computed)
+    : ancilla owner clean * workspace owner restored =
+    ?= ancilla, workspace, garbage ?|
+    | Ancilla _, Workspace _, Garbage _ => Ancilla "clean", Workspace "restored"
+
+:= main () : ancilla owner_a clean =
+    := dirty : ancilla owner_a dirty = Ancilla "dirty-a"
+    := workspace : workspace owner_a computed = Workspace "computed-a"
+    := garbage : garbage owner_b computed = Garbage "garbage-b"
+    := clean, _ = uncompute dirty workspace garbage
+    clean

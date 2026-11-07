@@ -1,0 +1,18 @@
+:| slot =
+    | None
+    | Held : (heap { value : i32 }) * i32
+
+:~ score x : i32 =
+    ?= x ?|
+    | None => 1i32
+    | Held (cell, n) =>
+        := obj = !!!!LayoutIndex(cell)
+        ? obj::value +. n =. 7i32 ?> 0i32 |: 1i32
+
+:= main () : i32 =
+    := ~a = 3i32
+    := ~b = 4i32
+    := cell = !!!!LayoutToHeap({ value = a })
+    := ~flag = !+
+    := held = ? flag ?> Held (cell, b) |: None
+    score held

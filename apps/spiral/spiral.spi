@@ -1,0 +1,1792 @@
+/// # spiral
+:< file_system_operators
+:< rust_operators
+:< sm'_operators
+:< parsing
+
+/// ## packages
+
+/// ### package_target
+:| package_target =
+    | Rust
+
+/// ### rust_runtime
+:| rust_runtime =
+    | Wasm : string
+    | Contract : string
+
+/// ### get_package_dir
+:~ get_package_dir { workspace_root target name hash } =
+    := dir = workspace_root </> "target/spiral" </> name
+    ?= hash, (target : option package_target) ?|
+    | Some hash, Some target => dir </> "packages" </> (target |> reflection.union_to_string) </> hash
+    | _ => dir
+
+/// ## rust
+
+/// ### get_workspace_cargo_toml_content
+:= get_workspace_cargo_toml_content { workspace_root contract } : string =
+    := msrv_aware_resolver_for_near_cargo = contract
+    := cargo_features : string =
+        ? msrv_aware_resolver_for_near_cargo
+        ?> "cargo-features = [\"profile-rustflags\", \"edition2024\"]"
+        |: "cargo-features = [\"profile-rustflags\"]"
+    := resolver : string =
+        ? msrv_aware_resolver_for_near_cargo
+        ?> "resolver = \"3\""
+        |: "resolver = \"2\""
+    cargo_features
+    ++\# ""
+    ++\# "[workspace]"
+    ++\# resolver
+    ++\# "members = [\"packages/Rust/*\"]"
+    ++\# ""
+    ++\# "[workspace.dependencies]"
+    ++\# "inline_colorization = \"~0.1\""
+    ++\# ""
+    ++\# "[profile.dev]"
+    ++\# "codegen-units = 256"
+    ++\# "opt-level = 0"
+    ++\# "lto = false"
+    ++\# "debug = 1"
+    ++\# "panic = \"unwind\""
+    ++\# "rustflags = [\"-C\", \"link-arg=-s\"]"
+    ++\# "strip = \"debuginfo\""
+    ++\# "rpath = true"
+    ++\# ""
+    ++\# "[profile.release]"
+    ++\# "codegen-units = 1"
+    ++\# "opt-level = \"z\""
+    ++\# "lto = true"
+    ++\# "debug = false"
+    ++\# "panic = \"abort\""
+    ++\# "overflow-checks = true"
+    ++\# "rustflags = [\"-C\", \"link-arg=-s\"]"
+
+/// ### get_cargo_toml_content
+:= get_cargo_toml_content { hash runtime deps } : string =
+    "cargo-features = [\"edition2024\"]"
+    ++\# ""
+    ++\# "[package]"
+    ++\# $'$"name = \\\"spiral_{!hash}\\\""'
+    ++\# "version = \"0.0.1\""
+    ++\# "edition = \"2024\""
+    ++\# ""
+    ++\# "[dependencies]"
+    ++\# "inline_colorization = { workspace = true }"
+    ++\# $'$"{!deps}"'
+    ++\# ""
+    ++\# (
+        ? runtime = None ?>
+            "[[bin]]"
+            ++\# $'$"name = \\\"spiral_{!hash}\\\""'
+        |:
+            "[lib]"
+            ++\# "crate-type = [\"cdylib\"]"
+    )
+    ++\# "path = \"spiral.rs\""
+
+/// ### get_empty_cargo_toml_content
+:= get_empty_cargo_toml_content () =
+    := guid = date_time.now () |> date_time.new_guid_from_date_time |> sm'.obj_to_string
+    "[package]"
+    ++\# $'$"name = \\\"spiral_{!guid}\\\""'
+    ++\# "version = \"0.0.1\""
+    ++\# "edition = \"2021\""
+    ++\# ""
+    ++\# "[[bin]]"
+    ++\# $'$"name = \\\"spiral_{!guid}\\\""'
+    ++\# "path = \"spiral.rs\""
+
+/// ### process_rust
+:= process_rust { rs_path deps trace_level runtime cleanup } =
+    :< process
+
+    := extension = "rs"
+    := code = rs_path |> file_system.read_all_text
+
+    := hash = #?{ extension code runtime } |> crypto.hash_text
+
+    := workspace_name = "spiral"
+    := contract = runtime <> None
+    := workspace_dir_name : string = ? contract ?> "spiral_contract" |: workspace_name
+
+    := workspace_root_external = file_system.get_workspace_root_external ()
+    := workspace_root = workspace_root_external |> resultm.box |> resultm.unwrap_or_else id
+
+    := package_dir =
+        get_package_dir { workspace_root name = workspace_dir_name; target = Some Rust; hash = hash |> Some }
+
+    package_dir |> file_system.create_dir |> ignore
+
+    := workspace_dir = package_dir </> "../../.."
+    := workspace_cargo_toml_path = workspace_dir </> "Cargo.toml"
+
+    ? workspace_cargo_toml_path |> file_system.file_exists |> not
+    ?> get_empty_cargo_toml_content () |> file_system.write_all_text workspace_cargo_toml_path
+
+    := cargo_toml_path = package_dir </> "Cargo.toml"
+
+    := result' = {
+        extension = Some extension
+        code = None
+        code_path = None
+        output = None
+    }
+
+    := deps =
+        := deps =
+            ? runtime = None
+            ?> deps
+            |:
+                := has_near_sdk =
+                    deps
+                    |> am'.vec_filter (sm'.from_std_string >> sm'.contains "near-sdk")
+                    |> am'.vec_len
+                    |> convert.i32
+                    |> \ (n : int) => n > 0
+                ? has_near_sdk
+                ?> deps
+                |: deps |> am'.vec_extend (;[ "near-sdk=\"=5.11.0\"" |> sm'.to_std_string ] |> am'.base |> am'.to_vec)
+                |> am'.vec_extend (;[ "indexmap=\"=2.11.4\"" |> sm'.to_std_string ] |> am'.base |> am'.to_vec)
+        deps
+        |> am'.vec_map \ dep =>
+            := dep = dep |> sm'.from_std_string
+            ? dep |> sm'.contains "="
+            ?> dep
+            |? dep |> sm'.ends_with "]"
+            ?> dep |> sm'.replace "[" $'$"={{version=\'*\',features=["' |> \ x => $'$"{!x}}}"'
+            |: $'$"{!dep}=\'*\'"'
+        |> am'.from_vec
+        |> \ x => x : array _
+        |> seq.of_array'
+        |> sm'.concat "\n"
+
+    := new_code_path = package_dir </> $'$"{!workspace_name}.{!extension}"'
+
+    := cargo_toml_content = get_cargo_toml_content { hash runtime deps }
+    := workspace_cargo_toml_content = get_workspace_cargo_toml_content { workspace_root contract }
+
+    cargo_toml_content |> file_system.write_all_text_exists cargo_toml_path
+    workspace_cargo_toml_content |> file_system.write_all_text_exists workspace_cargo_toml_path
+
+    := main_code : string =
+        ? runtime = None
+        ?> ""
+        |:
+            $'$"\#[near_sdk::near_bindgen]"'
+            ++\# $'$"\#[derive(near_sdk::PanicOnDefault)]"'
+            ++\# "pub struct MainState {"
+            ++\# "}"
+            ++\# ""
+            ++\# $'$"\#[near_sdk::near_bindgen]"'
+            ++\# "impl MainState {"
+            ++\# "    pub fn state_main() {"
+            ++\# "        spiral_main();"
+            ++\# "    }"
+            ++\# "}"
+
+    := new_code =
+        ? main_code = ""
+        ?> code
+        |: $'$"{!code}\\n\\n{!main_code}\\n"'
+
+    new_code |> file_system.write_all_text_exists new_code_path
+
+    := exit_code, cargo_fmt_result =
+        \ () =>
+            := exit_code, result =
+                execution_options \ x => { x ?|
+                    command = $'$"cargo fmt --manifest-path \\\"{!cargo_toml_path}\\\" --"'
+                    working_directory = workspace_root_external |> resultm.box |> resultm.ok'
+                }
+                |> execute_with_options
+
+            := return () =
+                ? exit_code = 0
+                ?> Ok (exit_code, result)
+                |: Error (exit_code, result)
+
+            ? result |> sm'.contains "failed to load manifest for workspace member" |> not
+            ?> return ()
+            |:
+                := missing_toml_path =
+                    "failed to read `(?<a>.*?Cargo.toml)`"
+                    |> sm'.new_regex
+                    |> resultm.unwrap'
+                    |> sm'.regex_captures result
+                    |> am'.from_vec
+                    |> \ x => x : array _
+                    |> am'.try_item 0
+                    |> optionm.map (map.get "a" >> optionm'.unbox)
+                    |> optionm'.flatten
+                ?= missing_toml_path ?|
+                | None => Error (exit_code, result)
+                | Some missing_toml_path =>
+                    ? missing_toml_path |> file_system.file_exists |> not ?>
+                        missing_toml_path
+                        |> file_system.directory_get_parent
+                        |> optionm'.default_value' ""
+                        |> file_system.create_dir
+                        |> ignore
+                        get_empty_cargo_toml_content ()
+                        |> file_system.write_all_text missing_toml_path
+                    return ()
+        |> retry_fn' 3u8
+
+    ? exit_code <>. 0 ?>
+        trace Critical
+            \ () => "spiral.process_rust / cargo fmt error"
+            \ () => { exit_code cargo_fmt_result }
+
+    := new_code = new_code_path |> file_system.read_all_text
+
+    := command =
+        ? runtime <> None
+        then $'$"cargo +nightly-2024-07-14 build --timings --release --target wasm32-unknown-unknown --manifest-path \
+            \\\"{!cargo_toml_path}\\\""'
+        |: $'$"cargo run --timings --manifest-path \\\"{!cargo_toml_path}\\\""'
+    := environment_variables =
+        ? runtime <> None
+        ?> ;[]
+        |:
+            := fast = !-
+            ;[
+                "TRACE_LEVEL", "Verbose"
+                "RUSTC_WRAPPER", "sccache"
+                "RUST_BACKTRACE", "full"
+                "RUSTFLAGS",
+                ? fast
+                ?> "-C prefer-dynamic -C strip=symbols -C link-arg=-s -C debuginfo=0"
+                |: "-C prefer-dynamic"
+            ]
+    := exit_code, cargo_result =
+        execution_options \ x => { x ?|
+            command
+            environment_variables = am'.base environment_variables
+            working_directory = workspace_root_external |> resultm.box |> resultm.ok'
+        }
+        |> execute_with_options
+
+    := result, error =
+        ? runtime = None ?>
+            := external_command =
+                := vars =
+                    environment_variables
+                    |> arraym.map \ k, v => $'$"$env:{!k}=\'\'{!v}\'\'"' : string
+                    |> \ x => x : array _
+                    |> seq.of_array
+                    |> sm'.concat ";"
+                := command =
+                    ;[
+                        vars
+                        command
+                    ]
+                    |> \ x => x : array _
+                    |> seq.of_array
+                    |> sm'.concat ";"
+                $'$"pwsh -c \'{!command}\'"' : string
+            ? exit_code <>. 0 ?>
+                trace Critical
+                    \ () => "spiral.process_rust / error"
+                    \ () => { exit_code new_code_path external_command cleanup cargo_result }
+                result',
+                "spiral.process_rust / error / "
+                ++#? { exit_code new_code_path external_command }
+                ++# "\n"
+                ++# cargo_result
+            |:
+                := output =
+                    try
+                        \ () =>
+                            cargo_result
+                            |> sm'.split "\n"
+                            |> \ x => array x : array _
+                            |> am'.skip_while \ line =>
+                                (line |> sm'.contains "profile [optimized] target" |> not)
+                                    && (line |> sm'.contains "profile [unoptimized] target" |> not)
+                                    && (line |> sm'.contains "profile [unoptimized + debuginfo] target" |> not)
+                            |> am'.skip 2
+                            |> seq.of_array
+                            |> sm'.concat "\n"
+                        \ ex =>
+                            trace Critical
+                                \ () => "spiral.process_rust / Exception"
+                                \ () => { ex new_code_path external_command cargo_result }
+                            None
+                    |> optionm'.box
+                    |> optionm'.unwrap
+                { result' ?|
+                    code = Some new_code
+                    code_path = Some new_code_path
+                    output = Some output
+                }, ""
+        |:
+            := wasm_path : string =
+                $'$"target/spiral/{!workspace_dir_name}/target/wasm32-unknown-unknown/release/spiral_{!hash}.wasm"'
+
+            := spiral_wasm_command : string =
+                := runtime_cmd =
+                    ?= runtime ?|
+                    | Some (Wasm cmd) => cmd
+                    | Some (Contract cmd) => cmd
+                    | _ => ""
+                $'$"workspace/target/release/spiral_wasm -w {!wasm_path} -t debug {!runtime_cmd}"'
+            := command =
+                := invoke_block_path = "scripts/invoke-block.ps1"
+                := automation = "AUTOMATION" |> env.get_environment_variable
+                $'$"pwsh -c \\\"pwsh {!invoke_block_path} $env:SPIRAL_WASM_COMMAND -Linux -EnvironmentVariables \
+                    AUTOMATION={!automation}\`nNEAR_RPC_TIMEOUT_SECS=100\\\""'
+
+            ? exit_code = 0 ?>
+                := exit_code, spiral_wasm_result =
+                    execution_options \ x => { x ?|
+                        command
+                        environment_variables = am'.base ;[ "SPIRAL_WASM_COMMAND", spiral_wasm_command ]
+                        working_directory = workspace_root |> optionm'.some'
+                    }
+                    |> execute_with_options
+
+                ? exit_code = 0 ?>
+                    { result' ?|
+                        code = Some new_code
+                        code_path = Some new_code_path
+                        output = Some spiral_wasm_result
+                    }, ""
+                |:
+                    trace Critical
+                        \ () => "spiral.process_rust / wasm error"
+                        \ () => {
+                            exit_code new_code_path cargo_result cleanup
+                            spiral_wasm_result = $'$"\\n{!spiral_wasm_result}"' : string
+                        }
+                    result',
+                    "spiral.process_rust / wasm error / "
+                    ++#? { exit_code new_code_path }
+                    ++# "\n"
+                    ++# spiral_wasm_result
+            |:
+                trace Critical
+                    \ () => "spiral.process_rust / cargo error"
+                    \ () => {
+                        exit_code new_code_path wasm_path command cleanup
+                        cargo_result = $'$"\\n{!cargo_result}"' : string
+                    }
+                result',
+                "spiral.process_rust / cargo error / " ++#? { exit_code new_code_path } ++# "\n" ++# cargo_result
+
+    := ci = "CI" |> env.get_environment_variable
+
+    ? cleanup || ci <> "" ?>
+        package_dir |> file_system.directory_delete !+
+
+        := cleanup =
+            := build_target =
+                ? runtime <> None
+                ?> "wasm32-unknown-unknown/release"
+                |: "debug"
+
+            [ ".d"; ".exe"; ".pdb"; ".wasm"; "" ]
+            |> listm.map \ ext =>
+                workspace_dir </> $'$"target/{!build_target}/spiral_{!hash}{!ext}"'
+            |> listm.map \ path => path, path |> file_system.file_exists
+
+        trace Verbose
+            \ () => "spiral.process_rust / cleanup"
+            \ () => { new_code_path cleanup }
+
+        cleanup
+        |> listm'.filter snd
+        |> listm.iter (fst >> file_system.file_delete)
+
+    ? error <> "" ?>
+        run_target \|
+            | Rust => \ () => $'{ eprintln\!("{}", !error); std::process::exit(1) }' : ()
+            | _ => \ () => failwith error
+    result
+
+/// ## export
+
+/// ### magic_marker
+:= magic_marker () : parser string =
+    "#!" |> p_string
+
+/// ### magic_command
+:= magic_command () =
+    trace Verbose (\ () => "spiral.magic_command") (\ () => {})
+    magic_marker ()
+    >>. many_chars_till (any_char ()) (new_line ())
+    |>> \ s => \ () =>
+        := s = s () |> sm'.trim
+        trace Verbose (\ () => "spiral.magic_command") (\ () => { s_len = ##s })
+        s
+
+/// ### content
+:= content () =
+    trace Verbose (\ () => "spiral.content") (\ () => {})
+    new_line () >>. magic_marker () <|> eof () >>. p_return ""
+    |> look_ahead
+    |> many_chars_till (any_char ())
+    |>> \ s => \ () =>
+        := s = s () |> sm'.trim
+        trace Verbose (\ () => "spiral.content") (\ () => { s_len = ##s })
+        s
+
+/// ### export_output
+:| export_output =
+    | Fs
+    | Md
+    | Spi
+    | Spir
+
+/// ### magic
+:| magic =
+    | Fsharp
+    | Markdown
+    | Spiral : export_output
+    | Magic : string
+
+/// ### kernel_outputs
+:= kernel_outputs = \|
+    | Fsharp => [ Fs ]
+    | Markdown => [ Md ]
+    | Spiral output => [ output ]
+    | _ => []
+
+/// ### block
+:== block =
+    {
+        magic : magic
+        content : () -> string
+    }
+
+:= block () =
+    trace Verbose (\ () => "spiral.block") (\ () => {})
+    pipe2
+        (magic_command ())
+        (content ())
+        \ magic, content =>
+            trace Verbose (\ () => "spiral.block") (\ () => { magic })
+            := magic, content =
+                ?= magic () ?|
+                | "fsharp" => Fsharp, content
+                | "markdown" => Markdown, content
+                | "spiral" =>
+                    := content = content ()
+                    := output =
+                        ? content |> sm'.contains "///- " && content |> sm'.contains (" --" ++# "real")
+                        ?> Spir
+                        |: Spi
+                    output |> Spiral, \ () => content
+                | magic => magic |> Magic, content
+            {
+                magic = magic
+                content = content
+            }
+
+/// ### blocks
+:= blocks () =
+    trace Verbose (\ () => "spiral.blocks") (\ () => {})
+    new_lines ()
+    >>. sep_end_by (block ()) (new_lines1 ())
+
+/// ### format_block
+:= format_block output (block : block) =
+    trace Verbose (\ () => "spiral.format_block") (\ () => {})
+    ?= output, block ?|
+    | output, { magic = (Markdown) content = content } =>
+        := markdown_comment =
+            ?= output ?|
+            | Spi | Spir => "/// "
+            | Fs => "/// "
+            | _ => ""
+        content ()
+        |> sm'.split "\n"
+        |> am'.to_list_base'
+        |> listm'.unbox
+        |> listm.map (sm'.trim_end [])
+        |> listm'.filter (sm'.ends_with " (test)" >> not)
+        |> listm.map \|
+            | "" => markdown_comment
+            | line =>
+                := len = ##line
+                :~ ^ 루프 i =
+                    ? i >= len
+                    ?> line
+                    |:
+                        ?= line |> sm'.index i ?|
+                        | ' ' | '\t' => 루프 (i + 1)
+                        | _ =>
+                            (line |> sm'.slice 0i32 (i - 1))
+                            ++# markdown_comment
+                            ++# (line |> sm'.slice i (len - 1))
+                루프 0
+        |> sm'.concat_list "\n"
+    | Fs, { magic = (Fsharp) content = content } =>
+        := trimmed_content = content () |> sm'.trim
+        ? trimmed_content |> sm'.contains "///- "
+            && (trimmed_content |> sm'.contains (" --" ++# "test")
+                || trimmed_content |> sm'.contains (" --" ++# "ignore"))
+        ?> ""
+        |:
+            content ()
+            |> sm'.split "\n"
+            |> am'.to_list_base'
+            |> listm'.unbox
+            |> listm'.filter (sm'.trim_start [] >> sm'.starts_with "#r" >> not)
+            |> sm'.concat_list "\n"
+    | (Spi | Spir), { magic = (Spiral output') content = content } ?& output' = output =>
+        := trimmed_content = content () |> sm'.trim
+        ? trimmed_content |> sm'.contains "///- "
+            && (trimmed_content |> sm'.contains (" --" ++# "test")
+                || trimmed_content |> sm'.contains (" --" ++# "ignore"))
+        ?> ""
+        |: content ()
+    | _ => ""
+
+/// ### format_blocks
+:= format_blocks output blocks =
+    trace Verbose (\ () => "spiral.format_blocks") (\ () => {})
+    blocks
+    |> listm.map \ block =>
+        block, format_block output block
+    |> listm'.filter (snd >> (<>) "")
+    |> \ list =>
+        (list, (None, []))
+        ||> listm.foldBack (\ (block, content) (last_magic, acc) =>
+            := line_break =
+                ? block.magic = Markdown && last_magic <> Some Markdown && last_magic <> None
+                ?> ""
+                |: "\n"
+            Some block.magic, content ++# line_break :: acc
+        )
+    |> snd
+    |> sm'.concat_list "\n"
+
+/// ### indent_block
+:= indent_block (block : block) =
+    trace Verbose (\ () => "spiral.indent_block") (\ () => {})
+    { block ?|
+        content = \ () =>
+            (([], !-), block.content () |> sm'.split "\n" |> am'.to_list_base' |> listm'.unbox)
+            ||> listm.fold \ (lines, is_multiline) line =>
+                := trimmed_line = line |> sm'.trim
+                ? trimmed_line = ""
+                ?> "" :: lines, is_multiline
+                |:
+                    := single_quote_line () =
+                        (trimmed_line
+                            |> sm'.to_char_list
+                            |> listm.map ((=) '"' >> convert.try_convert >> optionm'.default_value 0)
+                            |> listm'.sum) = 1i32
+                        && trimmed_line |> sm'.contains "'\"'" |> not
+                        && trimmed_line |> sm'.ends_with "{" |> not
+                        && trimmed_line |> sm'.ends_with "{|" |> not
+                        && trimmed_line |> sm'.starts_with "}" |> not
+                        && trimmed_line |> sm'.starts_with "|}" |> not
+
+                    ?= is_multiline, trimmed_line |> sm'.split_string (am'.base ;[ "\"\"\"" ]) ?|
+                    | !-, ;[ _; _ ] =>
+                        "    " ++# line :: lines, !+
+
+                    | !+, ;[ _; _ ] =>
+                        line :: lines, !-
+
+                    | !-, _ ?& single_quote_line () =>
+                        "    " ++# line :: lines, !+
+
+                    | !-, _ ?& line |> sm'.starts_with "#" && block.magic = Fsharp =>
+                        line :: lines, !-
+
+                    | !-, _ =>
+                        "    " ++# line :: lines, !-
+
+                    | !+, _ ?& single_quote_line () && (line |> sm'.starts_with "    ") =>
+                        "    " ++# line :: lines, !-
+
+                    | !+, _ ?& single_quote_line () =>
+                        line :: lines, !-
+
+                    | !+, _ =>
+                        line :: lines, !+
+            |> fst
+            |> listm.rev
+            |> sm'.concat_list "\n"
+    }
+
+/// ### parse
+:= parse output t =
+    trace Verbose (\ () => "spiral.parse") (\ () => {})
+    ?= t |> run_parser (blocks ()) ?|
+    | Ok (blocks, _, _) =>
+        blocks
+        |> listm'.filter \ block =>
+            block.magic |> kernel_outputs |> listm'.contains output || block.magic = Markdown
+        |> listm.map Some
+        |> \ x => x ++ [ None ]
+        |> listm'.pairwise
+        |> listm'.choose \|
+            | Some { magic = (Markdown) } &= block, Some { magic = (Markdown) } => block
+            | Some { magic = (Markdown) } &= block, Some { magic = magic }
+                ?& magic |> kernel_outputs |> listm'.contains output => block
+            | Some { magic = (Markdown) } &= block, _ ?& output = Md => block
+            | Some { magic = (Markdown) }, _ => None
+            | Some block, _ => Some block
+            | _ => None
+        |> listm.map \ block => block, block.content ()
+        |> listm.fold
+            \ acc, indent => \|
+                | ({ magic = (Markdown) } : block) &= block, content
+                    ?& output = Fs
+                            && content |> sm'.starts_with "# "
+                            && content |> sm'.ends_with ")"
+                    =>
+                    ?= sm'.index_of " (" content, sm'.last_index_of ")" content ?|
+                    | i_open, i_close ?& i_open > 1 && i_close > i_open + 1 =>
+                        := module_name =
+                            content |> sm'.substring 2 (i_open - 2) |> sm'.trim
+                        := namespace_name =
+                            content |> sm'.substring (i_open + 2) (i_close - (i_open + 2)) |> sm'.trim
+
+                        := module_block =
+                            {
+                                magic = Fsharp
+                                content = \ () =>
+                                    "#if !INTERACTIVE\nnamespace " ++# namespace_name
+                                    ++\# "#endif\n\nmodule " ++# module_name ++# " ="
+                            }
+
+                        module_block :: acc, (indent + 1)
+                    | b => { block ?| magic = Markdown } :: acc, indent
+                | block, _ ?& indent > 0 =>
+                    indent_block block :: acc, indent
+                | block, _ => block :: acc, indent
+            ([], 0i32)
+        |> fst
+        |> listm.rev
+        |> Ok
+    | Error error_msg => error_msg |> Error
+
+/// ### parse_export
+:= parse_export output file =
+    trace Debug
+        (\ () => "spiral.parse_export")
+        \ () => { output = output |> reflection.union_to_string; file }
+    := t = file |> file_system.read_all_text
+    ?= parse output t ?|
+    | Ok blocks => blocks |> format_blocks output
+    | Error msg => msg () |> failwith
+
+/// ### write_export
+:= write_export output path =
+    trace Debug
+        (\ () => "spiral.write_export")
+        (\ () => { output = output |> reflection.union_to_string; path })
+    := result = parse_export output path
+    := path_dir = path |> file_system.directory_get_parent |> optionm'.default_value' ""
+    := file_name_without_ext =
+        ?= output, path |> file_system.get_file_name_without_extension ?|
+        | Spir, file_name_without_ext => file_name_without_ext ++# "_real"
+        | _, file_name_without_ext => file_name_without_ext
+    := output_path =
+        path_dir </> (file_name_without_ext ++# "." ++# (output |> reflection.union_to_string |> sm'.to_lower))
+    result |> file_system.write_all_text_exists output_path
+
+/// ### process_export
+:= process_export { entries } =
+    entries
+    |> async.into_par_iter
+    |> async.par_map \ path, export =>
+        path
+        |> file_system.get_full_path
+        |> write_export export
+    |> async.par_collect
+    |> ignore
+    ;[]
+
+/// ## gleam
+
+/// ### gleam_target
+:| gleam_target =
+    | Erlang
+    | JavaScript
+
+/// ### process_gleam
+:= package_owns_code (src_dir : string) : bool =
+    (src_dir |> sm'.ends_with "/src") || (src_dir |> sm'.ends_with "\\src")
+
+:= process_gleam { gleam_path target deps } =
+    := extension = "gleam"
+
+    := new_code_path = gleam_path
+    := new_code = new_code_path |> file_system.read_all_text
+
+    := hash = #?{ extension new_code } |> crypto.hash_text
+
+    := workspace_root_external = file_system.get_workspace_root_external ()
+    := workspace_root =
+        workspace_root_external |> resultm.box |> resultm.unwrap_or_else id |> file_system.standardize_path
+
+    := src_dir =
+        new_code_path
+        |> file_system.directory_get_parent
+        |> optionm'.default_value' ""
+        |> file_system.standardize_path
+
+    := owned = package_owns_code src_dir
+
+    := package_dir =
+        ? owned
+        ?> src_dir </> ".." |> file_system.standardize_path
+        |: src_dir </> "gleam_package" |> file_system.standardize_path
+
+    \ () =>
+        := ci = "CI" |> env.get_environment_variable
+        ? ci <> "" && package_owns_code src_dir ?>
+            package_dir
+            |> file_system.directory_delete !+
+    |> new_disposable
+    |> \ x => x : _ ()
+    |> use
+    |> ignore
+
+    := manifest_path = package_dir </> "gleam.toml"
+
+    := deps =
+        am'.base ;[
+            "gleam_stdlib=\"0.57.0\""
+            "gleam_time=\">=1.0.0 and <2.0.0\""
+            "gleam_erlang=\">=0.34.0 and <1.0.0\""
+            "envoy=\">=1.0.0 and <2.0.0\""
+            "gtempo=\">=7.1.0 and <8.0.0\""
+        ]
+        |> am'.to_vec
+        |> am'.vec_map sm'.to_std_string
+        |> am'.vec_extend deps
+        |> am'.vec_map \ dep =>
+            := dep = dep |> sm'.from_std_string
+            ? dep |> sm'.contains "="
+            ?> dep
+            |? dep |> sm'.ends_with "]"
+            ?> dep |> sm'.replace "[" $'$"={{version=\'*\',features=["' |> \ x => $'$"{!x}}}"'
+            |: $'$"{!dep}=\'*\'"'
+        |> am'.from_vec
+        |> \ x => x : array _
+        |> seq.of_array'
+        |> sm'.concat "\n"
+
+    := target' = target |> reflection.union_to_string |> sm'.to_lower
+
+    := manifest =
+        := main =
+            ? new_code_path |> sm'.contains "_real"
+            ?> "main_real"
+            |: "main"
+        $'$"name = \\\"{!main}\\\""'
+        ++\# $'$"target = \\\"{!target'}\\\""'
+        ++\# ""
+        ++\# "[dependencies]"
+        ++\# $'$"{!deps}"'
+
+    manifest |> file_system.write_all_text_exists manifest_path
+
+    ? owned |> not ?>
+        := module_file = ? new_code_path |> sm'.contains "_real" ?> "main_real.gleam" |: "main.gleam"
+        new_code |> file_system.write_all_text_exists (package_dir </> "src" </> module_file)
+
+    := exit_code, run_result =
+        0i32, ""
+
+    ? exit_code <>. 0 ?>
+        trace Critical
+            \ () => "spiral.process_gleam / check error"
+            \ () => { exit_code run_result new_code_path }
+        { extension = Some extension; code = None; code_path = None; output = None }
+    |:
+        := command =
+            ? target = Erlang
+            ?> $'$"gleam run --no-print-progress \\\"{!new_code_path}\\\""' : string
+            |: "gleam build --no-print-progress"
+        := environment_variables =
+            ;[
+                "TRACE_LEVEL", ""
+                "GLEAM_LOG", ""
+                "GLEAM_LOG_NOCOLOUR", ""
+            ]
+        ? target = Erlang ?>
+            process.execution_options \ x => { x ?|
+                command = "gleam build --no-print-progress"
+                environment_variables = am'.base environment_variables
+                working_directory = package_dir |> optionm'.some'
+                stderr = !-
+            }
+            |> process.execute_with_options
+            |> ignore
+        := exit_code, run_result =
+            process.execution_options \ x => { x ?|
+                command
+                environment_variables = am'.base environment_variables
+                working_directory = package_dir |> optionm'.some'
+                stderr = !-
+            }
+            |> process.execute_with_options
+
+        := external_command =
+            := vars =
+                environment_variables
+                |> arraym.map \ k, v => $'$"$env:{!k}=\'\'{!v}\'\'"' : string
+                |> \ x => x : array _
+                |> seq.of_array
+                |> sm'.concat ";"
+            $'$"pwsh -c \'{!vars}; {!command}\'"' : string
+        ? exit_code <>. 0 ?>
+            trace Critical
+                \ () => "spiral.process_gleam / error"
+                \ () => { exit_code run_result new_code_path external_command }
+            failwith ("spiral.process_gleam / gleam run failed\n" ++# run_result)
+        |:
+            := run_result =
+                ? target = Erlang
+                ?> run_result
+                |:
+                    := js_path = $'$"{!package_dir}/build/dev/javascript/main/main.mjs"'
+                    := js_text = js_path |> file_system.read_all_text
+                    := js_text = js_text |> sm'.replace $'$"\#app_"' $'$"\#app_{!hash}"'
+                    ? js_text |> sm'.ends_with "main()" |> not ?>
+                        $'$"{!js_text}\nmain()"'
+                        |> file_system.write_all_text_exists js_path
+
+                    := exit_code, run_result =
+                        process.execution_options \ x => { x ?|
+                            command =
+                                $'$"bunx --bun esbuild --bundle --minify --loader:.wasm=file --outdir={!src_dir} \
+                                    {!js_path}"'
+                            environment_variables =
+                                ?= "~/.bun/bin" |> env.append_path ?|
+                                | Some path => am'.base ;[ "PATH", path ]
+                                | None => am'.base ;[]
+                            working_directory = package_dir |> optionm'.some'
+                        }
+                        |> process.execute_with_options
+
+                    ? exit_code <>. 0 ?>
+                        trace Critical
+                            \ () => "spiral.process_gleam / esbuild error"
+                            \ () => { exit_code run_result new_code_path }
+                        ""
+                    |:
+                        := html =
+                            $'$"<\!DOCTYPE html>"'
+                            ++\# "<html lang=\"en\">"
+                            ++\# "  <head>"
+                            ++\# "    <meta charset=\"UTF-8\" />"
+                            ++\# $'$"    <meta name=\\\"viewport\\\" content=\\\"width=device-width, \
+                                initial-scale=1.0\\\" />"'
+                            ++\# "    <link"
+                            ++\# "      data-trunk"
+                            ++\# "      rel=\"inline\""
+                            ++\# "      href=\"../build/packages/lustre_ui/priv/static/lustre_ui.css\""
+                            ++\# "    />"
+                            ++\# "    <link"
+                            ++\# "      data-trunk"
+                            ++\# "      rel=\"inline\""
+                            ++\# "      type=\"module\""
+                            ++\# "      href=\"main.js\""
+                            ++\# "    />"
+                            ++\# "  </head>"
+                            ++\# "  <body>"
+                            ++\# $'$"    <div id=\\\"app_{!hash}\\\"></div>"'
+                            ++\# "  </body>"
+                            ++\# "</html>"
+
+                        := html_path = $'$"{!src_dir}/index.html"'
+                        html |> file_system.write_all_text_exists html_path
+
+                        "" |> file_system.write_all_text_exists $'$"{!src_dir}/spiral_{!hash}.rs"'
+
+                        := manifest =
+                            "[package]"
+                            ++\# $'$"name = \\\"spiral_{!hash}\\\""'
+                            ++\# ""
+                            ++\# "[workspace]"
+                            ++\# ""
+                            ++\# "[lib]"
+                            ++\# "crate-type = [\"cdylib\", \"rlib\"]"
+                            ++\# $'$"path = \\\"spiral_{!hash}.rs\\\""'
+                            ++\# ""
+                            ++\# "[dependencies]"
+
+                        manifest |> file_system.write_all_text_exists $'$"{!src_dir}/Cargo.toml"'
+
+                        := exit_code, run_result =
+                            process.execution_options \ x => { x ?|
+                                command = $'$"trunk build --release --minify --dist={!src_dir} --public-url=./ \
+                                    --no-sri"'
+                                environment_variables =
+                                    am'.base ;[
+                                        "TRUNK_TOOLS_WASM_BINDGEN", "0.2.93"
+                                    ]
+                                working_directory = src_dir |> optionm'.some'
+                            }
+                            |> process.execute_with_options
+
+                        ? exit_code = 0
+                        ?> html_path |> file_system.read_all_text
+                        |:
+                            trace Critical
+                                \ () => "spiral.process_gleam / trunk error"
+                                \ () => { exit_code run_result new_code_path }
+                            ""
+
+            := run_result' = run_result |> sm'.to_std_string
+
+            := output =
+                try
+                    \ () =>
+                        run_result
+                        |> sm'.split "\n"
+                        |> am'.to_vec
+                        |> am'.vec_filter \ x =>
+                            (x |> sm'.starts_with "{compiling," |> not)
+                            && (x |> sm'.starts_with "{compiled," |> not)
+                            && (x |> sm'.ends_with ".beam\"}" |> not)
+                            && (x |> sm'.starts_with "src\\main.gleam:" |> not)
+                            && (x |> sm'.starts_with "src\\main_real.gleam:" |> not)
+                            && (x |> sm'.starts_with "src/main.gleam:" |> not)
+                            && (x |> sm'.starts_with "src/main_real.gleam:" |> not)
+                            && (x |> sm'.starts_with "% " |> not)
+                        |> am'.from_vec
+                        |> \ x => x : array _
+                        |> seq.of_array
+                        |> sm'.concat "\n"
+                        |> sm'.trim_start [ '\n' ]
+                    \ ex =>
+                        trace Critical
+                            \ () => "spiral.process_gleam / Exception"
+                            \ () => { ex run_result' new_code_path external_command }
+                        None
+                |> optionm'.box
+                |> optionm'.unwrap
+
+            {
+                extension = Some extension
+                code = Some new_code
+                code_path = Some new_code_path
+                output = Some output
+            }
+
+/// ## lua
+
+/// ### process_lua
+:! lua =
+    `(
+        rust.rust_type
+            `($'mlua_Lua')
+            `($'mlua::Lua')
+            "type mlua_Lua = obj"
+    )
+
+:! lua_function =
+    `(
+        rust.rust_type
+            `($'mlua_LuaFunction')
+            `($'mlua::prelude::LuaFunction')
+            "type mlua_LuaFunction = obj"
+    )
+
+:! lua_error =
+    `(
+        rust.rust_type
+            `($'mlua_LuaError')
+            `($'mlua::prelude::LuaError')
+            "type mlua_LuaError = obj"
+    )
+
+:! lua_value =
+    `(
+        rust.rust_type
+            `($'mlua_LuaValue')
+            `($'mlua::prelude::LuaValue')
+            "type mlua_LuaValue = obj"
+    )
+
+:! lua_multi_value =
+    `(
+        rust.rust_type
+            `($'mlua_LuaMultiValue')
+            `($'mlua::prelude::LuaMultiValue')
+            "type mlua_LuaMultiValue = obj"
+    )
+
+:= lua_values_debug (values : lua_multi_value) : am'.vec string =
+    run_target_args (\ () => values) \|
+        | Rust => \ values =>
+            $'!values.iter().map(|x| Rc::<str>::from(format\!("{:?}", x))).collect::<Vec<_>>()' : am'.vec string
+        | _ => \ values =>
+            := values : am'.vec (rust.ref lua_value) = !\\(values, $'$"$0.iter().collect()"')
+            values |> am'.vec_map (rust.deref >> sm'.format_debug)
+
+:= lua_values_text (values : lua_multi_value) : am'.vec string =
+    run_target_args (\ () => values) \|
+        | Rust => \ values =>
+            $'!values.iter().map(|x| Rc::<str>::from(x.to_string().unwrap_or_else(|_| format\!("{:?}", \
+                x)))).collect::<Vec<_>>()' : am'.vec string
+        | _ => \ values => lua_values_debug values
+
+:= process_lua { lua_path } =
+    := extension = "lua"
+
+    := new_code_path = lua_path
+    := new_code = new_code_path |> file_system.read_all_text
+
+    := hash = #?{ extension new_code } |> crypto.hash_text
+
+    := workspace_root_external = file_system.get_workspace_root_external ()
+    := workspace_root =
+        workspace_root_external |> resultm.box |> resultm.unwrap_or_else id |> file_system.standardize_path
+
+    := src_dir =
+        new_code_path
+        |> file_system.directory_get_parent
+        |> optionm'.default_value' ""
+        |> file_system.standardize_path
+
+    := package_dir = src_dir </> ".." |> file_system.standardize_path
+
+    := stdio = [] |> mut
+    := stdio_clone = stdio |> rust.clone
+    := partial_line = "" |> mut
+    := partial_line_write = partial_line |> rust.clone
+    := partial_line_final = partial_line |> rust.clone
+
+    := lua : lua =
+        !\("mlua::Lua::new_with(mlua::StdLib::ALL_SAFE, mlua::LuaOptions::default()).unwrap()")
+
+    := custom_print (args : lua_multi_value) : _ _ lua_error =
+        := args =
+            args
+            |> lua_values_text
+            |> am'.from_vec_base
+            |> am'.to_list_base'
+            |> listm'.unbox
+            |> sm'.concat_list "\t"
+        stdio <- (*partial_line ++# args) :: *stdio
+        partial_line <- ""
+        Ok () |> resultm.box
+
+    := custom_print : lua_function =
+        !\\(
+            (lua, custom_print),
+            $'$"$0.create_function(move |_, args: mlua::prelude::LuaMultiValue| $1(args)).unwrap()"'
+        )
+
+    !\\((lua, custom_print), $'$"$0.globals().set(\\\"print\\\", $1).unwrap()"')
+
+    := custom_write (args : lua_multi_value) : _ _ lua_error =
+        := text =
+            args
+            |> lua_values_text
+            |> am'.from_vec_base
+            |> am'.to_list_base'
+            |> listm'.unbox
+            |> sm'.concat_list ""
+        partial_line_write <- *partial_line_write ++# text
+        Ok () |> resultm.box
+
+    := custom_write : lua_function =
+        !\\(
+            (lua, custom_write),
+            $'$"$0.create_function(move |_, args: mlua::prelude::LuaMultiValue| $1(args)).unwrap()"'
+        )
+
+    !\\((lua, custom_write), $'$"$0.globals().get::<mlua::Table>(\\\"io\\\").unwrap().set(\\\"write\\\", $1).unwrap()"')
+
+    := output : lua_multi_value =
+        := new_code = new_code |> sm'.to_std_string
+        !\\((lua, new_code), $'$"$0.load($1).eval::<mlua::MultiValue>().unwrap()"')
+    := output =
+        output |> lua_values_text |> am'.from_vec |> sm'.concat_array "\n"
+
+    := stdio =
+        := lines = ? *partial_line_final = "" ?> *stdio_clone |: *partial_line_final :: *stdio_clone
+        lines
+        |> listm.rev
+        |> sm'.concat_list "\n"
+
+    \ () =>
+        := ci = "CI" |> env.get_environment_variable
+        ? ci <> "" && package_owns_code src_dir ?>
+            package_dir
+            |> file_system.directory_delete !+
+    |> new_disposable
+    |> \ x => x : _ ()
+    |> use
+    |> ignore
+
+    {
+        extension = Some extension
+        code = Some new_code
+        code_path = Some new_code_path
+        output = Some output
+        stdio = Some stdio
+    }
+
+/// ## cuda
+
+/// ### cuda_env
+:| cuda_env =
+    | Pip
+    | Poetry
+
+/// ### cuda_python
+:= cuda_python () : string =
+    := python = "SPIRAL_PYTHON" |> env.get_environment_variable
+    ? python = "" ?> "python" |: python
+
+/// ### process_cuda
+:= process_cuda { py_path env deps } =
+    := extension = "py"
+    := python = cuda_python ()
+
+    := new_code_path = py_path
+    := new_code = new_code_path |> file_system.read_all_text
+
+    := workspace_root_external = file_system.get_workspace_root_external ()
+    := workspace_root = workspace_root_external |> resultm.box |> resultm.unwrap_or_else id
+
+    := package_dir = new_code_path |> file_system.directory_get_parent |> optionm'.default_value' ""
+
+    := manifest_path =
+        ?= env ?|
+        | Pip => package_dir </> "requirements.txt"
+        | Poetry => package_dir </> "pyproject.toml"
+
+    := deps =
+        deps
+        |> am'.vec_map \ dep =>
+            := dep = dep |> sm'.from_std_string
+            ? dep |> sm'.contains "="
+            ?> dep
+            |? dep |> sm'.ends_with "]"
+            ?> dep |> sm'.replace "[" $'$"={{version=\'*\',features=["' |> \ x => $'$"{!x}}}"'
+            |: $'$"{!dep}=\'*\'"'
+        |> am'.from_vec
+        |> \ x => x : array _
+        |> seq.of_array'
+        |> sm'.concat "\n"
+
+    := exit_code, run_result =
+        ? deps = ""
+        ?> 0, ""
+        |:
+            := manifest =
+                ?= env ?|
+                | Pip =>
+                    deps
+                | Poetry =>
+                    "[tool.poetry]"
+                    ++\# "name = \"test\""
+                    ++\# "version = \"0.0.1\""
+                    ++\# "description = \"\""
+                    ++\# "authors = []"
+                    ++\# ""
+                    ++\# "[tool.poetry.dependencies]"
+                    ++\# "python=\"~3.12\""
+                    ++\# $'$"{!deps}"'
+                    ++\# ""
+                    ++\# "[build-system]"
+                    ++\# "requires = [\"poetry-core\"]"
+                    ++\# "build-backend = \"poetry.core.masonry.api\""
+
+            manifest |> file_system.write_all_text_exists manifest_path
+
+            process.execution_options \ x => { x ?|
+                command =
+                    ?= env ?|
+                    | Pip => $'$"\\\"{!python}\\\" -m pip install -r requirements.txt"'
+                    | Poetry => "poetry install"
+                working_directory = package_dir |> optionm'.some'
+            }
+            |> process.execute_with_options
+
+    ? exit_code <>. 0 ?>
+        failwith ("spiral.process_cuda / env install error\n" ++# run_result)
+    |:
+        := command =
+            ?= env ?|
+            | Pip => $'$"\\\"{!python}\\\" \\\"{!new_code_path}\\\""'
+            | Poetry => $'$"poetry run python \\\"{!new_code_path}\\\""'
+        := environment_variables =
+            ;[
+                "TRACE_LEVEL", "Verbose"
+            ]
+        := exit_code, run_result =
+            process.execution_options \ x => { x ?|
+                command
+                environment_variables = am'.base environment_variables
+                working_directory = package_dir |> optionm'.some'
+            }
+            |> process.execute_with_options
+
+        := external_command =
+            := vars =
+                environment_variables
+                |> arraym.map \ k, v => $'$"$env:{!k}=\'\'{!v}\'\'"' : string
+                |> \ x => x : array _
+                |> seq.of_array
+                |> sm'.concat ";"
+            $'$"pwsh -c \'{!vars}; {!command}\'"' : string
+        ? exit_code = 0 ?>
+            := output =
+                try
+                    \ () =>
+                        run_result
+                        |> sm'.split "\n"
+                        |> \ x => array x : array _
+                        |> seq.of_array
+                        |> sm'.concat "\n"
+                    \ ex =>
+                        trace Critical
+                            \ () => "spiral.process_cuda / Exception"
+                            \ () => { ex run_result new_code_path external_command }
+                        None
+                |> optionm'.box
+                |> optionm'.unwrap
+
+            {
+                extension = Some extension
+                code = Some new_code
+                code_path = Some new_code_path
+                output = Some output
+            }
+        |:
+            failwith ("spiral.process_cuda / child failed\n" ++# run_result)
+
+/// ## cpp
+
+/// ### process_cpp
+:= process_cpp { cpp_path } =
+    := extension = "cpp"
+
+    := new_code_path = cpp_path
+    := new_code = new_code_path |> file_system.read_all_text
+
+    := package_dir = new_code_path |> file_system.directory_get_parent |> optionm'.default_value' ""
+
+    := cxx =
+        := cxx = "SPIRAL_CXX" |> env.get_environment_variable
+        ? cxx = "" ?> "g++" |: cxx
+    := exe_path = new_code_path ++# ".out" ++# (? platform.is_windows () ?> ".exe" |: "")
+
+    := build_command =
+        cxx ++# " -std=c++20 -O2 -w \"" ++# new_code_path ++# "\" -o \"" ++# exe_path ++# "\" -lm"
+    := exit_code, build_result =
+        process.execution_options \ x => { x ?|
+            command = build_command
+            working_directory = package_dir |> optionm'.some'
+        }
+        |> process.execute_with_options
+
+    ? exit_code <>. 0 ?>
+        failwith ("spiral.process_cpp / build failed\n" ++# build_result)
+    |:
+        := command = "\"" ++# exe_path ++# "\""
+        := exit_code, run_result =
+            process.execution_options \ x => { x ?|
+                command
+                working_directory = package_dir |> optionm'.some'
+            }
+            |> process.execute_with_options
+
+        ? exit_code = 0 ?>
+            {
+                extension = Some extension
+                code = Some new_code
+                code_path = Some new_code_path
+                output = Some run_result
+            }
+        |:
+            failwith ("spiral.process_cpp / child failed\n" ++# run_result)
+
+/// ## run
+
+/// ### get_args
+:= get_args () =
+    {
+        gleam = "gleam", {
+            gleam_path = "gleam-path", 'g'
+            target = "target", 't'
+            deps = "deps", 'd'
+        }
+        lua = "lua", {
+            lua_path = "lua-path", 'l'
+        }
+        cuda = "cuda", {
+            py_path = "py-path", 'p'
+            env = "env", 'e'
+            deps = "deps", 'd'
+        }
+        cpp = "cpp", {
+            cpp_path = "cpp-path", 'c'
+        }
+        rust = "rust", {
+            rs_path = "rs-path", 'r'
+            deps = "deps", 'd'
+            wasm = "wasm", 'w'
+            contract = "contract", 'c'
+            cleanup = "cleanup", 'l'
+        }
+        notebook_export = "export", {
+            entries = "entries", 'e'
+        }
+    }
+
+/// ### get_command
+:= command_alias (alias : rust.static_ref sm'.str) (command : clap.command) : clap.command =
+    !\\((command, alias), $'"clap::Command::alias($0, $1)"')
+
+:~ get_command () =
+    ###"command"
+    |> clap.new_command
+    |> clap.command_subcommand_required !+
+    |> clap.command_subcommand (
+        ###(get_args () .gleam |> fst)
+        |> clap.new_command
+        |> clap.command_init_arg ((get_args () .gleam |> snd).gleam_path) (
+            clap.arg_required !+
+        )
+        |> clap.command_init_arg ((get_args () .gleam |> snd).target) (
+            ~> clap.arg_union `gleam_target ignore
+        )
+        |> clap.command_init_arg ((get_args () .gleam |> snd).deps) (
+            clap.arg_value_names (am'.base ;[ ###"NAME"; ###"VERSION" ])
+            >> clap.arg_num_args_range (
+                clap.new_value_range
+                    !-
+                    (am'.Start (1i32 |> convert.convert : convert.unativeint))
+                    (am'.End eval)
+            )
+            >> clap.arg_action clap.Append
+        )
+    )
+    |> clap.command_subcommand (
+        ###(get_args () .cuda |> fst)
+        |> clap.new_command
+        |> clap.command_init_arg ((get_args () .cuda |> snd).py_path) (
+            clap.arg_required !+
+        )
+        |> clap.command_init_arg ((get_args () .cuda |> snd).env) (
+            ~> clap.arg_union `cuda_env ignore
+        )
+        |> clap.command_init_arg ((get_args () .cuda |> snd).deps) (
+            clap.arg_value_names (am'.base ;[ ###"NAME"; ###"VERSION" ])
+            >> clap.arg_num_args_range (
+                clap.new_value_range
+                    !-
+                    (am'.Start (1i32 |> convert.convert : convert.unativeint))
+                    (am'.End eval)
+            )
+            >> clap.arg_action clap.Append
+        )
+    )
+    |> clap.command_subcommand (
+        ###(get_args () .rust |> fst)
+        |> clap.new_command
+        |> clap.command_init_arg ((get_args () .rust |> snd).rs_path) (
+            clap.arg_required !+
+        )
+        |> clap.command_init_arg ((get_args () .rust |> snd).deps) (
+            clap.arg_value_names (am'.base ;[ ###"NAME"; ###"VERSION" ])
+            >> clap.arg_num_args_range (
+                clap.new_value_range
+                    !-
+                    (am'.Start (1i32 |> convert.convert : convert.unativeint))
+                    (am'.End eval)
+            )
+            >> clap.arg_action clap.Append
+        )
+        |> clap.command_init_arg ((get_args () .rust |> snd).wasm) (
+            clap.arg_num_args_range (
+                clap.new_value_range
+                    !+
+                    (am'.End eval)
+                    (am'.End \ _ => (1i32 |> convert.convert : convert.unativeint))
+            )
+            >> clap.arg_require_equals !+
+            >> clap.arg_default_missing_value ""
+        )
+        |> clap.command_init_arg ((get_args () .rust |> snd).contract) (
+            clap.arg_num_args_range (
+                clap.new_value_range
+                    !+
+                    (am'.End eval)
+                    (am'.End \ _ => (1i32 |> convert.convert : convert.unativeint))
+            )
+            >> clap.arg_require_equals !+
+            >> clap.arg_default_missing_value ""
+        )
+        |> clap.command_init_arg ((get_args () .rust |> snd).cleanup) (
+            clap.arg_default_value "true"
+            >> clap.arg_action clap.SetFalse
+        )
+    )
+    |> clap.command_subcommand (
+        := parse (s : rust.ref sm'.str) : resultm.result' (sm'.std_string * sm'.std_string) sm'.std_string =
+            trace Verbose (\ () => "spiral.get_command") (\ () => { s })
+            := path = "" |> sm'.to_std_string
+            := ext = "" |> sm'.to_std_string
+            Ok (path, ext)
+            |> resultm.box
+        ###(get_args () .notebook_export |> fst)
+        |> clap.new_command
+        |> command_alias ###"dib-export"
+        |> clap.command_init_arg ((get_args () .notebook_export |> snd).entries) (
+            clap.arg_required !+
+            >> clap.arg_index 1
+            >> clap.arg_value_names (am'.base ;[ ###"PATH"; ###"EXT" ])
+            >> clap.arg_num_args_range (
+                clap.new_value_range
+                    !-
+                    (am'.Start (2i32 |> convert.convert : convert.unativeint))
+                    (am'.End eval)
+            )
+            >> clap.arg_action clap.Append
+        )
+    )
+    |> clap.command_subcommand (
+        ###(get_args () .lua |> fst)
+        |> clap.new_command
+        |> clap.command_init_arg ((get_args () .lua |> snd).lua_path) (
+            clap.arg_required !+
+        )
+    )
+    |> clap.command_subcommand (
+        ###(get_args () .cpp |> fst)
+        |> clap.new_command
+        |> clap.command_init_arg ((get_args () .cpp |> snd).cpp_path) (
+            clap.arg_required !+
+        )
+    )
+
+/// ### run
+:~ run trace_level (matches : clap.arg_matches) : async.future_pin (resultm.result' string string) =
+    \ () =>
+        ?= matches |> clap.matches_subcommand |> optionm'.unbox ?|
+        | Some (subcommand, arg_matches)
+                ?& (subcommand |> sm'.from_std_string) = (get_args () .gleam |> fst) =>
+
+            := gleam_path =
+                arg_matches
+                |> clap.matches_get_one ((get_args () .gleam |> snd).gleam_path |> fst)
+                |> optionm'.unbox
+                |> optionm.value
+                |> sm'.from_std_string
+
+            := target =
+                arg_matches
+                |> clap.matches_get_one ((get_args () .gleam |> snd).target |> fst)
+                |> optionm'.unbox
+                |> optionm.map (
+                    sm'.from_std_string
+                    >> reflection.union_try_pick
+                )
+                |> optionm'.flatten
+                |> optionm'.default_value Erlang
+
+            := deps : am'.vec sm'.std_string =
+                arg_matches
+                |> clap.matches_get_many ((get_args () .gleam |> snd).deps |> fst)
+                |> optionm'.unbox
+                |> optionm'.default_value (;[] |> am'.base |> am'.to_vec)
+
+            := command_result =
+                process_gleam { gleam_path target deps }
+                |> \ { extension code output } =>
+                    ;[
+                        "extension", extension |> optionm'.default_value ""
+                        "code", code |> optionm'.default_value ""
+                        "output", output |> optionm'.default_value ""
+                    ]
+
+            ;[
+                "command_result",
+                command_result
+                |> am'.base
+                |> am'.to_vec
+                |> am'.vec_map' \ k, v =>
+                    new_pair (sm'.to_std_string k) (sm'.to_std_string v)
+                |> map.b_tree_map_from_vec_pairs
+                |> sm'.serialize
+                |> resultm.unwrap'
+                |> sm'.from_std_string
+            ]
+
+        | Some (subcommand, arg_matches)
+                ?& (subcommand |> sm'.from_std_string) = (get_args () .lua |> fst) =>
+
+            := lua_path =
+                arg_matches
+                |> clap.matches_get_one ((get_args () .lua |> snd).lua_path |> fst)
+                |> optionm'.unbox
+                |> optionm.value
+                |> sm'.from_std_string
+
+            := command_result =
+                process_lua { lua_path }
+                |> \ { extension code output stdio } =>
+                    ;[
+                        "extension", extension |> optionm'.default_value ""
+                        "code", code |> optionm'.default_value ""
+                        "output", stdio |> optionm'.default_value ""
+                    ]
+
+            ;[
+                "command_result",
+                command_result
+                |> am'.base
+                |> am'.to_vec
+                |> am'.vec_map' \ k, v =>
+                    new_pair (sm'.to_std_string k) (sm'.to_std_string v)
+                |> map.b_tree_map_from_vec_pairs
+                |> sm'.serialize
+                |> resultm.unwrap'
+                |> sm'.from_std_string
+            ]
+
+        | Some (subcommand, arg_matches)
+                ?& (subcommand |> sm'.from_std_string) = (get_args () .cuda |> fst) =>
+
+            := py_path =
+                arg_matches
+                |> clap.matches_get_one ((get_args () .cuda |> snd).py_path |> fst)
+                |> optionm'.unbox
+                |> optionm.value
+                |> sm'.from_std_string
+
+            := env =
+                arg_matches
+                |> clap.matches_get_one ((get_args () .cuda |> snd).env |> fst)
+                |> optionm'.unbox
+                |> optionm.map (
+                    sm'.from_std_string
+                    >> reflection.union_try_pick
+                )
+                |> optionm'.flatten
+                |> optionm'.default_value Pip
+
+            := deps : am'.vec sm'.std_string =
+                arg_matches
+                |> clap.matches_get_many ((get_args () .cuda |> snd).deps |> fst)
+                |> optionm'.unbox
+                |> optionm'.default_value (;[] |> am'.base |> am'.to_vec)
+
+            := command_result =
+                process_cuda { py_path env deps }
+                |> \ { extension code output } =>
+                    ;[
+                        "extension", extension |> optionm'.default_value ""
+                        "code", code |> optionm'.default_value ""
+                        "output", output |> optionm'.default_value ""
+                    ]
+
+            ;[
+                "command_result",
+                command_result
+                |> am'.base
+                |> am'.to_vec
+                |> am'.vec_map' \ k, v =>
+                    new_pair (sm'.to_std_string k) (sm'.to_std_string v)
+                |> map.b_tree_map_from_vec_pairs
+                |> sm'.serialize
+                |> resultm.unwrap'
+                |> sm'.from_std_string
+            ]
+
+        | Some (subcommand, arg_matches)
+                ?& (subcommand |> sm'.from_std_string) = (get_args () .cpp |> fst) =>
+
+            := cpp_path =
+                arg_matches
+                |> clap.matches_get_one ((get_args () .cpp |> snd).cpp_path |> fst)
+                |> optionm'.unbox
+                |> optionm.value
+                |> sm'.from_std_string
+
+            := command_result =
+                process_cpp { cpp_path }
+                |> \ { extension code output } =>
+                    ;[
+                        "extension", extension |> optionm'.default_value ""
+                        "code", code |> optionm'.default_value ""
+                        "output", output |> optionm'.default_value ""
+                    ]
+
+            ;[
+                "command_result",
+                command_result
+                |> am'.base
+                |> am'.to_vec
+                |> am'.vec_map' \ k, v =>
+                    new_pair (sm'.to_std_string k) (sm'.to_std_string v)
+                |> map.b_tree_map_from_vec_pairs
+                |> sm'.serialize
+                |> resultm.unwrap'
+                |> sm'.from_std_string
+            ]
+
+        | Some (subcommand, arg_matches)
+            ?& (subcommand |> sm'.from_std_string) = (get_args () .notebook_export |> fst) =>
+
+            := deps : am'.vec (sm'.std_string * sm'.std_string) =
+                arg_matches
+                |> clap.matches_get_many ((get_args () .cuda |> snd).deps |> fst)
+                |> optionm'.unbox
+                |> optionm'.default_value (;[] |> am'.base |> am'.to_vec)
+
+            := entries =
+                arg_matches
+                |> clap.matches_get_many ((get_args () .notebook_export |> snd).entries |> fst)
+                |> optionm'.unbox
+                |> optionm.map (\ (entries : am'.vec sm'.std_string) =>
+                    entries
+                    |> \ x =>
+                        !\\(x, $'$"$0.chunks_exact(2).map(|chunk| chunk.to_vec()).collect()"')
+                        : am'.vec (am'.vec sm'.std_string)
+                    |> am'.vec_map' \ chunk =>
+                        := exts () =
+                            reflection.get_union_fields_untag () : _ (_ * export_output)
+                        chunk
+                        |> am'.from_vec_base
+                        |> am'.to_list_base'
+                        |> listm'.unbox
+                        |> \|
+                            | [ path; ext ] =>
+                                ?= ext |> sm'.from_std_string |> reflection.union_try_pick ?|
+                                | Some (ext : export_output) => (path |> sm'.from_std_string, ext) |> Ok
+                                | None => "spiral.run / invalid ext / " ++#? { ext exts } |> Error
+                            | _ =>
+                                "spiral.run / invalid entries / " ++#? { entries = entries |> rust.clone; exts }
+                                |> Error
+                            |> resultm.get
+                    |> am'.from_vec_base
+                    |> am'.to_list_base'
+                    |> listm'.unbox
+                )
+                |> optionm'.default_value []
+                |> listm'.box
+                |> listm'.to_array'
+                |> am'.to_vec
+
+            process_export { entries }
+
+        | matches =>
+            ?= matches ?|
+            | Some (subcommand, arg_matches)
+                    ?& (subcommand |> sm'.from_std_string) = (get_args () .rust |> fst) =>
+
+                := rs_path =
+                    arg_matches
+                    |> clap.matches_get_one ((get_args () .rust |> snd).rs_path |> fst)
+                    |> optionm'.unbox
+                    |> optionm.value
+                    |> sm'.from_std_string
+
+                := deps : am'.vec sm'.std_string =
+                    arg_matches
+                    |> clap.matches_get_many ((get_args () .rust |> snd).deps |> fst)
+                    |> optionm'.unbox
+                    |> optionm'.default_value (;[] |> am'.base |> am'.to_vec)
+
+                := cleanup =
+                    arg_matches
+                    |> clap.matches_get_flag ((get_args () .rust |> snd).cleanup |> fst)
+
+                := wasm =
+                    arg_matches
+                    |> clap.matches_get_one ((get_args () .rust |> snd).wasm |> fst)
+                    |> optionm'.unbox
+                    |> optionm.map sm'.from_std_string
+
+                := contract =
+                    arg_matches
+                    |> clap.matches_get_one ((get_args () .rust |> snd).contract |> fst)
+                    |> optionm'.unbox
+                    |> optionm.map sm'.from_std_string
+
+                := runtime =
+                    ?= wasm, contract ?|
+                    | Some wasm, _ => Wasm wasm |> Some
+                    | _, Some contract => Contract contract |> Some
+                    | _ => None
+
+                process_rust { rs_path deps trace_level runtime cleanup }
+
+            | Some (subcommand, arg_matches) =>
+                trace Debug
+                    \ () => "spiral.run / invalid subcommand"
+                    \ () => { subcommand arg_matches }
+
+                { extension = None; code = None; code_path = None; output = None }
+            | _ =>
+                { extension = None; code = None; code_path = None; output = None }
+            |> \ { extension code code_path output } =>
+                ;[
+                    "extension", extension |> optionm'.default_value ""
+                    "code", code |> optionm'.default_value ""
+                    "code_path", code_path |> optionm'.default_value ""
+                    "output", output |> optionm'.default_value ""
+                ]
+        |> am'.base
+        |> am'.to_vec
+        |> am'.vec_map' \ k, v =>
+            new_pair (sm'.to_std_string k) (sm'.to_std_string v)
+        |> map.b_tree_map_from_vec_pairs
+        |> sm'.serialize
+        |> resultm.map_error' (sm'.format' >> sm'.from_std_string)
+        |> resultm.map' sm'.from_std_string
+    |> async.new_future_move
+
+/// ## tests
+:= tests () =
+    rust_testing.run_tests {
+        verify_app = get_command >> clap.command_debug_assert
+    }
+
+/// ## main
+///> _
+
+:= run_main (args : array_base string) : i32 =
+    := trace_state = get_trace_state_or_init (Debug |> Some)
+    := json_protocol = (env.get_environment_variable "SPIRAL_JSON") = "1"
+    := trace_enabled = trace_state.enabled
+    ? json_protocol ?> trace_enabled <- !-
+
+    trace Debug
+        \ () => "spiral.main"
+        \ () => { args }
+
+    := command = get_command ()
+    := arg_matches = command |> clap.command_get_matches
+
+    := trace_state_level = trace_state.level
+
+    := result =
+        arg_matches
+        |> run *trace_state_level
+        |> async.block_on_futures
+        |> resultm.unwrap'
+
+    ? json_protocol || *trace_state_level = Info
+    ?> result |> console.write_line
+
+    0i32
+
+:= main () =
+    ? is_rust () ?>
+        := args =
+            $'Rc::new(RefCell::new(std::env::args().skip(1).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'
+            : array_base string
+        run_main args |> ignore
+    |:
+        $'let tests () = !tests ()' : ()
+        $'let main args = !run_main args' : ()

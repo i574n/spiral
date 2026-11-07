@@ -1,0 +1,17 @@
+:! browser = ()
+:! click = ()
+:! submit = ()
+
+:| event_capability target event =
+    | BrowserClick :: event_capability browser click
+    | BrowserSubmit :: event_capability browser submit
+
+:| event_handler target event =
+    | EventHandler :: \* target event. event_capability target event * string -> event_handler target event
+
+:= install_click (handler : event_handler browser click) : string =
+    ?= handler ?|
+    | EventHandler _ => "increment:browser-click"
+
+:= main () : string =
+    install_click (EventHandler (BrowserClick, "increment"))

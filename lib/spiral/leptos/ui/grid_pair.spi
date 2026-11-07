@@ -1,0 +1,45 @@
+:< sm'_operators
+:< leptos
+
+:== props =
+    {
+        class : () -> string
+        cols_class : () -> string
+        dd_class : () -> string
+        padding_class : () -> string
+    }
+
+:= props () : props =
+    {
+        class = \ () => ""
+        padding_class = \ () => "pt-[9px] pr-[10px] pb-[11px] pl-[10px]"
+        cols_class = \ () => "sm:grid-cols-[150px_repeat(2,minmax(0,1fr))]"
+        dd_class = \ () => "[overflow:auto]"
+    }
+
+:= render props_fn left right : _ (_ dl) =
+    := props : props = props () |> props_fn
+    := left = ~~ left
+    := right = ~~ right
+    := { cols_class padding_class class } = props
+
+    dl [
+        class_fn
+            (
+                "grid gap-[1px] flex-1 even:bg-gray-50 [inline-size:max-content] [width:100%] "
+                ^^ "[grid-auto-columns:max-content] "
+            )
+            \ () =>
+                cols_class () ++# " " ++# padding_class () ++# " " ++# class ()
+    ] \ () =>
+        :>[
+            dt [
+                $'"class=\\\"[font-size:12px] text-gray-400\\\""'
+            ] left
+            |> element_to_view
+
+            dd [
+                class_fn "text-gray-700 sm:col-span-2 flex flex-1 " props::dd_class
+            ] right
+            |> element_to_view
+        ]

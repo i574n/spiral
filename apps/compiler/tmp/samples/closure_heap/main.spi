@@ -1,0 +1,8 @@
+:= main () : i32 =
+    := ~n = 7i32
+    := box = !!!!LayoutToHeap({ value = n })
+    := f (z : i32) : heap { value : i32 } = box
+    := ~g = f
+    := held = g 1i32
+    := opened = !!!!LayoutIndex(held)
+    ? opened::value =. 7i32 ?> 0i32 |: 1i32

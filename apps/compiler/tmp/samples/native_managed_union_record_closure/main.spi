@@ -1,0 +1,9 @@
+:< support
+
+:= main () : i32 =
+    := ~derive =
+        (\ seed =>
+            ? seed =. 0i32 ?> Empty
+            |: Item ("managed", 32i32)
+        ) : i32 -> payload
+    score (~~ derive 0i32) +. score (~~ derive 1i32)

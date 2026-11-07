@@ -1,0 +1,46 @@
+:! cell_array =
+    array_base (heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
+
+:= create (n : i32) : cell_array =
+    cell_array
+        !!!!ArrayCreate(`(heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 }), n)
+:= get
+    (array : cell_array) (i : i32)
+    : heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 }
+    =
+    ?= array ?|
+    | cell_array values => !!!!ArrayIndex(values, i)
+:= set
+    (array : cell_array) (i : i32)
+    (value : heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
+    : ()
+    =
+    ?= array ?|
+    | cell_array values => !!!!ArrayIndexSet(values, i, value)
+
+:= main () : i32 =
+    := ~n = 7i32
+    := ~word = "hi"
+    := left_pair = n, word
+    := left_heap = !!!!LayoutToHeap({ value = left_pair })
+    := ~m = 4i32
+    := ~other = "yo"
+    := right_pair = m, other
+    := right_heap = !!!!LayoutToHeap({ value = right_pair })
+    := pair = left_heap, right_heap
+    := inner = !!!!LayoutToHeap({ value = pair })
+    := ~mark = 2i32
+    := outer_pair = inner, mark
+    := outer = !!!!LayoutToHeap({ value = outer_pair })
+    := a = create 1i32
+    set a 0i32 outer
+    := held = get a 0i32
+    := opened = !!!!LayoutIndex(held)
+    := ~(inner_held, flag) = opened::value
+    := inner_opened = !!!!LayoutIndex(inner_held)
+    := ~(left, right) = inner_opened::value
+    := left_opened = !!!!LayoutIndex(left)
+    := ~(p, q) = left_opened::value
+    := right_opened = !!!!LayoutIndex(right)
+    := ~(r, s) = right_opened::value
+    ? p =. 7i32 && !!!!EQ(q, "hi") && r =. 4i32 && !!!!EQ(s, "yo") && flag =. 2i32 ?> 0i32 |: 1i32

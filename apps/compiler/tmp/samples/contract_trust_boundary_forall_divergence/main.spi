@@ -1,0 +1,3 @@
+:= ^ bottom \* a. () : a = bottom ()
+
+:= main () = "forall-a-a-via-divergence-defined"

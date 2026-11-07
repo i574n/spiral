@@ -1,0 +1,32 @@
+type Mut0 = {mutable l0 : string}
+let rec method3 () : string =
+    let v0 : string = ""
+    v0
+and method4 (v0 : Mut0, v1 : string) : unit =
+    let v2 : string = v0.l0
+    let v3 : string = (v2 + v1)
+    v0.l0 <- v3
+    ()
+and format_real_2 (v0 : int32) : string =
+    let v1 : string = method3()
+    let v2 : Mut0 = {l0 = v1} : Mut0
+    let v3 : string = $"{v0}"
+    method4(v2, v3)
+    let v4 : string = v2.l0
+    v4
+and method1 () : string =
+    let v0 : int32 = 1
+    let v1 : string = format_real_2(v0)
+    let v2 : string = ("Some(" + v1)
+    let v3 : string = (v2 + ")")
+    v3
+and method0 () : string =
+    let v0 : string = method1()
+    let v1 : string = ("x: " + v0)
+    v1
+let v0 : string = method0()
+let v1 : bool = v0 = ""
+if v1 then
+    1
+else
+    0

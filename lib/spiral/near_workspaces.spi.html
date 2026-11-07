@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>near_workspaces.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<h4>near_workspaces (test)</h4>
+
+<span class="badge other">test near_workspaces: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:&lt;</span> <span class="tok-variable">rust_operators</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">near_token_workspaces</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces_types_NearToken</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces::types::NearToken</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type near_workspaces_types_NearToken = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">gas</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces_types_Gas</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces::types::Gas</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type near_workspaces_types_Gas = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">near_workspaces_error</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces_error_Error</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces::error::Error</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type near_workspaces_error_Error = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">sandbox</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces_network_Sandbox</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces::network::Sandbox</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type near_workspaces_network_Sandbox = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">worker</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces_Worker&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces::Worker&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type near_workspaces_Worker&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">contract</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces_Contract</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces::Contract</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type near_workspaces_Contract = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">call_transaction</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces_operations_CallTransaction</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces::operations::CallTransaction</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type near_workspaces_operations_CallTransaction = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">execution_final_result</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces_result_ExecutionFinalResult</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces::result::ExecutionFinalResult</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type near_workspaces_result_ExecutionFinalResult = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">execution_result</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces_result_ExecutionResult&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces::result::ExecutionResult&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type near_workspaces_result_ExecutionResult&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">execution_success</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces_result_ExecutionSuccess</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces::result::ExecutionSuccess</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type near_workspaces_result_ExecutionSuccess = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">execution_failure</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces_result_ExecutionFailure</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces::result::ExecutionFailure</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type near_workspaces_result_ExecutionFailure = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">execution_outcome</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces_result_ExecutionOutcome</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_workspaces::result::ExecutionOutcome</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type near_workspaces_result_ExecutionOutcome = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">sandbox_worker</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">resultm</span><span class="tok-symbol">::result'</span> <span class="tok-parenthesis">(</span><span class="tok-variable">worker</span> <span class="tok-variable">sandbox</span><span class="tok-parenthesis">)</span> <span class="tok-variable">near_workspaces_error</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;near_workspaces::sandbox().await&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">dev_deploy</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">wasm</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-variable">u8</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">worker</span> <span class="tok-operator">:</span> <span class="tok-variable">worker</span> <span class="tok-variable">sandbox</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">:</span> <span class="tok-variable">async</span><span class="tok-symbol">::future_pin</span> <span class="tok-parenthesis">(</span><span class="tok-variable">resultm</span><span class="tok-symbol">::result'</span> <span class="tok-variable">contract</span> <span class="tok-variable">near_workspaces_error</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">worker</span> <span class="tok-operator">=</span> <span class="tok-variable">worker</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">rust</span><span class="tok-symbol">::emit</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">wasm</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;Box::pin(</span><span class="tok-variable">!worker</span><span class="tok-string">.dev_deploy(&amp;$0))&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">call</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fn_name</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">contract</span> <span class="tok-operator">:</span> <span class="tok-variable">contract</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">call_transaction</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-parenthesis">(</span><span class="tok-variable">contract</span><span class="tok-operator">,</span> <span class="tok-variable">fn_name</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.call(&amp;*$1)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">logs</span> <span class="tok-parenthesis">(</span><span class="tok-variable">result</span> <span class="tok-operator">:</span> <span class="tok-variable">execution_final_result</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-parenthesis">(</span><span class="tok-variable">rust</span><span class="tok-symbol">::ref</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::str</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;</span><span class="tok-variable">!result</span><span class="tok-string">.logs()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">into_result</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">result</span> <span class="tok-operator">:</span> <span class="tok-variable">execution_final_result</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">:</span> <span class="tok-variable">resultm</span><span class="tok-symbol">::result'</span> <span class="tok-variable">execution_success</span> <span class="tok-variable">execution_failure</span>
+    <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">result</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.into_result()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">receipt_failures</span> <span class="tok-parenthesis">(</span><span class="tok-variable">result</span> <span class="tok-operator">:</span> <span class="tok-variable">execution_final_result</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-parenthesis">(</span><span class="tok-variable">rust</span><span class="tok-symbol">::ref</span> <span class="tok-variable">execution_outcome</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">result</span> <span class="tok-operator">=</span> <span class="tok-keyword">~~</span> <span class="tok-variable">result</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;</span><span class="tok-variable">!result</span><span class="tok-string">.receipt_failures()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">receipt_outcomes</span> <span class="tok-parenthesis">(</span><span class="tok-variable">result</span> <span class="tok-operator">:</span> <span class="tok-variable">execution_final_result</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-variable">execution_outcome</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">result</span> <span class="tok-operator">=</span> <span class="tok-keyword">~~</span> <span class="tok-variable">result</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">result</span> <span class="tok-operator">:</span> <span class="tok-variable">rust</span><span class="tok-symbol">::ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">am'</span><span class="tok-symbol">::slice</span> <span class="tok-variable">execution_outcome</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span> <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;</span><span class="tok-variable">!result</span><span class="tok-string">.receipt_outcomes()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">result</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">rust</span><span class="tok-symbol">::into</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">json</span> <span class="tok-parenthesis">(</span><span class="tok-variable">result</span> <span class="tok-operator">:</span> <span class="tok-variable">execution_final_result</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">resultm</span><span class="tok-symbol">::result'</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::std_string</span> <span class="tok-variable">near_workspaces_error</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">result</span> <span class="tok-operator">=</span> <span class="tok-variable">result</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">rust</span><span class="tok-symbol">::clone_rust</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">result</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.json()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">borsh</span> <span class="tok-parenthesis">(</span><span class="tok-variable">result</span> <span class="tok-operator">:</span> <span class="tok-variable">execution_final_result</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">resultm</span><span class="tok-symbol">::result'</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::std_string</span> <span class="tok-variable">near_workspaces_error</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">result</span> <span class="tok-operator">=</span> <span class="tok-variable">result</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">rust</span><span class="tok-symbol">::clone_rust</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">result</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.borsh()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">total_gas_burnt</span> <span class="tok-parenthesis">(</span><span class="tok-variable">result</span> <span class="tok-operator">:</span> <span class="tok-variable">execution_final_result</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">gas</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">result</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.total_gas_burnt&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">as_gas</span> <span class="tok-parenthesis">(</span><span class="tok-variable">gas</span> <span class="tok-operator">:</span> <span class="tok-variable">gas</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u64</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">gas</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.as_gas()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">outcomes</span> <span class="tok-parenthesis">(</span><span class="tok-variable">result</span> <span class="tok-operator">:</span> <span class="tok-variable">execution_final_result</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-parenthesis">(</span><span class="tok-variable">rust</span><span class="tok-symbol">::ref</span> <span class="tok-variable">execution_outcome</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">result</span> <span class="tok-operator">=</span> <span class="tok-variable">result</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">rust</span><span class="tok-symbol">::emit</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;</span><span class="tok-variable">!result</span><span class="tok-string">.outcomes()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">is_success</span> <span class="tok-parenthesis">(</span><span class="tok-variable">outcome</span> <span class="tok-operator">:</span> <span class="tok-variable">execution_outcome</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">outcome</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.is_success()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">gas_burnt</span> <span class="tok-parenthesis">(</span><span class="tok-variable">outcome</span> <span class="tok-operator">:</span> <span class="tok-variable">execution_outcome</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">gas</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">outcome</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.gas_burnt&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tokens_burnt</span> <span class="tok-parenthesis">(</span><span class="tok-variable">outcome</span> <span class="tok-operator">:</span> <span class="tok-variable">execution_outcome</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">near_token_workspaces</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">outcome</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.tokens_burnt&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">transact</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">call</span> <span class="tok-operator">:</span> <span class="tok-variable">call_transaction</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">:</span> <span class="tok-variable">async</span><span class="tok-symbol">::future_pin</span> <span class="tok-parenthesis">(</span><span class="tok-variable">resultm</span><span class="tok-symbol">::result'</span> <span class="tok-variable">execution_final_result</span> <span class="tok-variable">near_workspaces_error</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;Box::pin(</span><span class="tok-variable">!call</span><span class="tok-string">.transact())&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">gas</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">gas</span> <span class="tok-operator">:</span> <span class="tok-variable">gas</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">call</span> <span class="tok-operator">:</span> <span class="tok-variable">call_transaction</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">:</span> <span class="tok-variable">call_transaction</span>
+    <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;</span><span class="tok-variable">!call</span><span class="tok-string">.gas(</span><span class="tok-variable">!gas</span><span class="tok-string">)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">from_tgas</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">tgas</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">:</span> <span class="tok-variable">gas</span>
+    <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;near_workspaces::types::Gas::from_tgas(</span><span class="tok-variable">!tgas</span><span class="tok-string"> as u64)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">gas</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">as_yoctonear</span> <span class="tok-parenthesis">(</span><span class="tok-variable">tokens</span> <span class="tok-operator">:</span> <span class="tok-variable">near_token_workspaces</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">rust</span><span class="tok-symbol">::u128</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">tokens</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.as_yoctonear()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">print_usd</span> <span class="tok-variable">retry</span> <span class="tok-parenthesis">(</span><span class="tok-variable">result</span> <span class="tok-operator">:</span> <span class="tok-variable">execution_final_result</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">total_gas_burnt</span> <span class="tok-operator">=</span> <span class="tok-variable">result</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">total_gas_burnt</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">as_gas</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">total_gas_burnt_usd</span> <span class="tok-operator">=</span> <span class="tok-variable">total_gas_burnt</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">near</span><span class="tok-symbol">::gas_to_usd</span>
+
+    <span class="tok-variable">trace</span> <span class="tok-variable">Info</span>
+        <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">near_workspaces.print_usd</span><span class="tok-string">&quot;</span>
+        <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">retry</span> <span class="tok-variable">total_gas_burnt_usd</span> <span class="tok-variable">total_gas_burnt</span> <span class="tok-parenthesis">}</span>
+
+    <span class="tok-variable">result</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">outcomes</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">iter</span><span class="tok-symbol">::into_iter</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">iter</span><span class="tok-symbol">::cloned</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">iter</span><span class="tok-symbol">::for_each</span> <span class="tok-keyword">\</span> <span class="tok-variable">outcome</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-keyword">:=</span> <span class="tok-variable">is_success</span> <span class="tok-operator">=</span> <span class="tok-variable">outcome</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">is_success</span>
+
+        <span class="tok-keyword">:=</span> <span class="tok-variable">gas_burnt</span> <span class="tok-operator">=</span> <span class="tok-variable">outcome</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">gas_burnt</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">as_gas</span>
+        <span class="tok-keyword">:=</span> <span class="tok-variable">gas_burnt_usd</span> <span class="tok-operator">=</span> <span class="tok-variable">gas_burnt</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">near</span><span class="tok-symbol">::gas_to_usd</span>
+
+        <span class="tok-keyword">:=</span> <span class="tok-variable">tokens_burnt</span> <span class="tok-operator">=</span> <span class="tok-variable">outcome</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">tokens_burnt</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">as_yoctonear</span>
+        <span class="tok-keyword">:=</span> <span class="tok-variable">tokens_burnt_usd</span> <span class="tok-operator">=</span> <span class="tok-variable">tokens_burnt</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">near</span><span class="tok-symbol">::tokens_to_usd</span>
+
+        <span class="tok-variable">trace</span> <span class="tok-variable">Info</span>
+            <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">near_workspaces.print_usd / outcome</span><span class="tok-string">&quot;</span>
+            <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">{</span> <span class="tok-variable">is_success</span> <span class="tok-variable">gas_burnt_usd</span> <span class="tok-variable">tokens_burnt_usd</span> <span class="tok-variable">gas_burnt</span> <span class="tok-variable">tokens_burnt</span> <span class="tok-parenthesis">}</span></code></pre>
+
+</main>
+</body>
+</html>

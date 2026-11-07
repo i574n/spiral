@@ -1,0 +1,344 @@
+:! payload_a = ()
+:! digest_a = ()
+:! transfer_a = ()
+:! manifest_a = ()
+:! route_mesh = ()
+:! peer_a = ()
+:! peer_b = ()
+:! peer_c = ()
+:! host_a = ()
+:! host_b = ()
+:! host_c = ()
+:! epoch_0 = ()
+:! epoch_1 = ()
+:! queue_a = ()
+:! queue_b = ()
+:! queue_c = ()
+:! source_ready = ()
+:! partitioned = ()
+:! crashed = ()
+:! resumed = ()
+:! healed = ()
+:! quorum_ready = ()
+:! committed = ()
+:! accepted = ()
+:! distinct = ()
+:! durable = ()
+:! idempotent = ()
+:! non_idempotent = ()
+
+:| payload artifact digest state =
+    | Payload :: \* artifact digest state. string -> payload artifact digest state
+
+:| durable_manifest transfer artifact digest route manifest state =
+    | DurableManifest :: \* transfer artifact digest route manifest state.
+        string -> durable_manifest transfer artifact digest route manifest state
+
+:| peer_identity peer host state =
+    | PeerIdentity :: \* peer host state. string -> peer_identity peer host state
+
+:| peer_distinct pa pb pc state =
+    | PeerDistinct :: \* pa pb pc state. string -> peer_distinct pa pb pc state
+
+:| persistent_queue transfer manifest peer host epoch queue state =
+    | PersistentQueue :: \* transfer manifest peer host epoch queue state.
+        string -> persistent_queue transfer manifest peer host epoch queue state
+
+:| replay_journal transfer manifest peer host epoch state =
+    | ReplayJournal :: \* transfer manifest peer host epoch state.
+        string -> replay_journal transfer manifest peer host epoch state
+
+:| crash_receipt transfer manifest peer host epoch state =
+    | CrashReceipt :: \* transfer manifest peer host epoch state.
+        string -> crash_receipt transfer manifest peer host epoch state
+
+:| resume_receipt transfer manifest peer host from_epoch to_epoch state =
+    | ResumeReceipt :: \* transfer manifest peer host from_epoch to_epoch state.
+        string -> resume_receipt transfer manifest peer host from_epoch to_epoch state
+
+:| partition_certificate transfer manifest route state =
+    | PartitionCertificate :: \* transfer manifest route state.
+        string -> partition_certificate transfer manifest route state
+
+:| healed_output transfer manifest peer host epoch artifact digest state =
+    | HealedOutput :: \* transfer manifest peer host epoch artifact digest state.
+        string -> healed_output transfer manifest peer host epoch artifact digest state
+
+:| convergence_quorum transfer manifest pa pb pc epoch state =
+    | ConvergenceQuorum :: \* transfer manifest pa pb pc epoch state.
+        string -> convergence_quorum transfer manifest pa pb pc epoch state
+
+:| durable_commit transfer manifest route artifact digest epoch state =
+    | DurableCommit :: \* transfer manifest route artifact digest epoch state.
+        string -> durable_commit transfer manifest route artifact digest epoch state
+
+:| durable_mesh_op transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch from to
+    effect =
+    | PartitionNetwork :: \* transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch.
+        payload artifact digest source_ready *
+        durable_manifest transfer artifact digest route manifest accepted *
+        peer_identity pa ha accepted *
+        peer_identity pb hb accepted *
+        peer_identity pc hc accepted *
+        peer_distinct pa pb pc distinct *
+        persistent_queue transfer manifest pa ha from_epoch qa durable *
+        persistent_queue transfer manifest pb hb from_epoch qb durable *
+        persistent_queue transfer manifest pc hc from_epoch qc durable *
+        partition_certificate transfer manifest route accepted ->
+        durable_mesh_op
+            transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch source_ready
+            partitioned non_idempotent
+    | CrashPeerAndPersist :: \* transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch
+        to_epoch.
+        replay_journal transfer manifest pa ha from_epoch durable *
+        crash_receipt transfer manifest pa ha from_epoch durable *
+        partition_certificate transfer manifest route accepted ->
+        durable_mesh_op
+            transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch partitioned crashed
+            idempotent
+    | ResumeCrashedPeer :: \* transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch
+        to_epoch.
+        resume_receipt transfer manifest pa ha from_epoch to_epoch durable *
+        replay_journal transfer manifest pa ha from_epoch durable *
+        persistent_queue transfer manifest pa ha to_epoch qa durable ->
+        durable_mesh_op
+            transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch crashed resumed
+            idempotent
+    | HealPartition :: \* transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch.
+        persistent_queue transfer manifest pb hb to_epoch qb durable *
+        persistent_queue transfer manifest pc hc to_epoch qc durable *
+        replay_journal transfer manifest pa ha from_epoch durable *
+        replay_journal transfer manifest pb hb to_epoch durable *
+        replay_journal transfer manifest pc hc to_epoch durable *
+        partition_certificate transfer manifest route accepted ->
+        durable_mesh_op
+            transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch resumed healed
+            idempotent
+    | FormConvergenceQuorum :: \* transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch
+        to_epoch.
+        healed_output transfer manifest pa ha to_epoch artifact digest accepted *
+        healed_output transfer manifest pb hb to_epoch artifact digest accepted *
+        healed_output transfer manifest pc hc to_epoch artifact digest accepted *
+        peer_distinct pa pb pc distinct *
+        convergence_quorum transfer manifest pa pb pc to_epoch accepted ->
+        durable_mesh_op
+            transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch healed quorum_ready
+            idempotent
+    | PublishDurableMesh :: \* transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch
+        to_epoch.
+        durable_manifest transfer artifact digest route manifest accepted *
+        convergence_quorum transfer manifest pa pb pc to_epoch accepted *
+        durable_commit transfer manifest route artifact digest to_epoch committed ->
+        durable_mesh_op
+            transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch quorum_ready
+            committed non_idempotent
+
+:| durable_row transfer manifest from_epoch to_epoch from to effect =
+    | DurableRow :: \* transfer manifest from_epoch to_epoch from to effect.
+        string -> durable_row transfer manifest from_epoch to_epoch from to effect
+
+:| durable_node transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch from to =
+    | DurableNode :: \* transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch from
+        to.
+        (\? effect.
+            durable_mesh_op
+                transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch from to effect *
+            durable_row transfer manifest from_epoch to_epoch from to effect) ->
+        durable_node transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch from to
+
+:| ^ durable_plan transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch from to =
+    | DurableLeaf :: \* transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch from
+        to.
+        durable_node transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch from to ->
+        durable_plan transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch from to
+    | DurableThen :: \* transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch from
+        to.
+        (\? middle.
+            durable_plan
+                transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch from middle *
+            durable_node
+                transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch middle to) ->
+        durable_plan transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch from to
+
+:| packed_durable_mesh transfer artifact digest =
+    | PackedDurableMesh :: \* transfer artifact digest.
+        (\? route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch.
+            durable_plan
+                transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch source_ready
+                committed) ->
+        packed_durable_mesh transfer artifact digest
+
+:= with_packed_durable_mesh \* transfer artifact digest result.
+    (visit :
+        \* route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch.
+            durable_plan
+                transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch source_ready
+                committed ->
+            result)
+    (packed : packed_durable_mesh transfer artifact digest)
+    : result
+    =
+    ?= packed ?|
+    | PackedDurableMesh payload =>
+        := \? route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch. plan = payload
+        visit plan
+
+:= node_label \* transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch from to.
+    (node : durable_node transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch from to)
+    : string
+    =
+    ?= node ?|
+    | DurableNode payload =>
+        := \? effect. _, DurableRow label = payload
+        label
+
+:= ^ terminal_label \* transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch
+    from to.
+    (plan : durable_plan transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch from to)
+    : string
+    =
+    ?= plan ?|
+    | DurableLeaf node => node_label node
+    | DurableThen payload =>
+        := \? middle. _, node = payload
+        node_label node
+
+:= manifest () : durable_manifest transfer_a payload_a digest_a route_mesh manifest_a accepted =
+    DurableManifest "durable-mesh-manifest-a"
+
+:= distinct_peers () : peer_distinct peer_a peer_b peer_c distinct =
+    PeerDistinct "peer-a-ne-peer-b-ne-peer-c"
+
+:= partition_node
+    ()
+    : durable_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c host_a host_b host_c queue_a
+        queue_b queue_c epoch_0 epoch_1 source_ready partitioned
+    =
+    DurableNode (\? (
+        PartitionNetwork (
+            Payload "checkpoint-payload",
+            manifest (),
+            PeerIdentity "peer-a@host-a",
+            PeerIdentity "peer-b@host-b",
+            PeerIdentity "peer-c@host-c",
+            distinct_peers (),
+            PersistentQueue "queue-a-epoch-0",
+            PersistentQueue "queue-b-epoch-0",
+            PersistentQueue "queue-c-epoch-0",
+            PartitionCertificate "network-partition-observed"
+        ),
+        DurableRow "partition-with-persistent-inboxes"
+    ))
+
+:= crash_node
+    ()
+    : durable_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c host_a host_b host_c queue_a
+        queue_b queue_c epoch_0 epoch_1 partitioned crashed
+    =
+    DurableNode (\? (
+        CrashPeerAndPersist (
+            ReplayJournal "peer-a-journal-fsynced",
+            CrashReceipt "peer-a-crashed-after-four-chunks",
+            PartitionCertificate "partition-still-active"
+        ),
+        DurableRow "crash-without-partial-publication"
+    ))
+
+:= resume_node
+    ()
+    : durable_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c host_a host_b host_c queue_a
+        queue_b queue_c epoch_0 epoch_1 crashed resumed
+    =
+    DurableNode (\? (
+        ResumeCrashedPeer (
+            ResumeReceipt "peer-a-epoch-0-to-epoch-1",
+            ReplayJournal "peer-a-reused-journal",
+            PersistentQueue "peer-a-healing-queue-epoch-1"
+        ),
+        DurableRow "resume-from-durable-journal"
+    ))
+
+:= heal_node
+    ()
+    : durable_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c host_a host_b host_c queue_a
+        queue_b queue_c epoch_0 epoch_1 resumed healed
+    =
+    DurableNode (\? (
+        HealPartition (
+            PersistentQueue "peer-b-healing-queue-epoch-1",
+            PersistentQueue "peer-c-healing-queue-epoch-1",
+            ReplayJournal "peer-a-journal-epoch-0",
+            ReplayJournal "peer-b-journal-epoch-1",
+            ReplayJournal "peer-c-journal-epoch-1",
+            PartitionCertificate "partition-healed"
+        ),
+        DurableRow "heal-and-replay-missing-chunks"
+    ))
+
+:= quorum () : convergence_quorum transfer_a manifest_a peer_a peer_b peer_c epoch_1 accepted =
+    ConvergenceQuorum "three-distinct-peers-same-manifest-epoch-1"
+
+:= converge_node
+    ()
+    : durable_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c host_a host_b host_c queue_a
+        queue_b queue_c epoch_0 epoch_1 healed quorum_ready
+    =
+    DurableNode (\? (
+        FormConvergenceQuorum (
+            HealedOutput "peer-a-byte-exact",
+            HealedOutput "peer-b-byte-exact",
+            HealedOutput "peer-c-byte-exact",
+            distinct_peers (),
+            quorum ()
+        ),
+        DurableRow "distinct-peer-convergence-quorum"
+    ))
+
+:= commit_node
+    ()
+    : durable_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c host_a host_b host_c queue_a
+        queue_b queue_c epoch_0 epoch_1 quorum_ready committed
+    =
+    DurableNode (\? (
+        PublishDurableMesh (
+            manifest (),
+            quorum (),
+            DurableCommit "atomic-durable-mesh-commit"
+        ),
+        DurableRow "durable-partition-healing-mesh-committed"
+    ))
+
+:= plan
+    ()
+    : durable_plan transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c host_a host_b host_c queue_a
+        queue_b queue_c epoch_0 epoch_1 source_ready committed
+    =
+    DurableThen (\? (
+        DurableThen (\? (
+            DurableThen (\? (
+                DurableThen (\? (
+                    DurableThen (\? (
+                        DurableLeaf (partition_node ()),
+                        crash_node ()
+                    )),
+                    resume_node ()
+                )),
+                heal_node ()
+            )),
+            converge_node ()
+        )),
+        commit_node ()
+    ))
+
+:= inspect \* route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch.
+    (plan :
+        durable_plan
+            transfer_a payload_a digest_a route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch source_ready
+            committed)
+    : string
+    =
+    terminal_label plan
+
+:= main () : string =
+    := packed : packed_durable_mesh transfer_a payload_a digest_a = PackedDurableMesh (\? (plan ()))
+    with_packed_durable_mesh `$inspect packed

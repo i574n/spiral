@@ -1,0 +1,5 @@
+packageDir: ../..
+packages:
+    mega_zeta_structural_laboratory-
+modules:
+    main

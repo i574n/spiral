@@ -1,0 +1,938 @@
+#### reflection (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test static --symbol\n\n:< testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test static --symbol
+
+  :< testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":< sm'_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :< sm'_operators
+  """,
+  timeout: 300_000
+)
+```
+
+## reflection
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= get_union_fields \\* union_type. () : list (string * union_type) =\n    ~>\n        real_core::union_type_to_record\n            `union_type\n            \\* union_record_type. =>\n                real_core::record_type_fold\n                    \\ acc key =>\n                        \\* value. =>\n                            := value =\n                                ?: value ?|\n                                | () => $'' : value\n                                | _ =>\n                                    backend_switch `value `({}) {\n                                        Gleam =\n                                            (\\ () =>\n                                                $'Nil' : value\n                                            ) : () -> value\n                                        Lua =\n                                            (\\ () =>\n                                                $'nil' : value\n                                            ) : () -> value\n                                        Fsharp =\n                                            (\\ () =>\n                                                $'Unchecked.defaultof<_>' : value\n                                            ) : () -> value\n                                        Python =\n                                            (\\ () =>\n                                                := is_python =\n                                                    backend_switch `bool `({}) {\n                                                        Gleam = (\\ () => !-) : () -> bool\n                                                        Lua = (\\ () => !-) : () -> bool\n                                                        Fsharp = (\\ () => !-) : () -> bool\n                                                        Python = (\\ () => !+) : () -> bool\n                                                    }\n                                                ? is_python ?>\n                                                    ?: value ?|\n                                                    | i8 => 0i8\n                                                    | i16 => 0i16\n                                                    | i32 => 0i32\n                                                    | i64 => 0i64\n                                                    | u8 => 0u8\n                                                    | u16 => 0u16\n                                                    | u32 => 0u32\n                                                    | u64 => 0u64\n                                                    | f32 => 0.0f32\n                                                    | f64 => 0.0f64\n                                                    | bool => !-\n                                                    | char => '\\0'\n                                                    | _ => $'None' : value\n                                                |: $'None' : value\n                                            ) : () -> value\n                                        Rust =\n                                            (\\ () =>\n                                                $'Default::default()' : value\n                                            ) : () -> value\n                                        Zig =\n                                            (\\ () =>\n                                                $'std.mem.zeroes(`value)' : value\n                                            ) : () -> value\n                                        TypeScript =\n                                            (\\ () =>\n                                                ?: value ?|\n                                                | i8 => 0i8\n                                                | i16 => 0i16\n                                                | i32 => 0i32\n                                                | i64 => 0i64\n                                                | u8 => 0u8\n                                                | u16 => 0u16\n                                                | u32 => 0u32\n                                                | u64 => 0u64\n                                                | f32 => 0.0f32\n                                                | f64 => 0.0f64\n                                                | bool => !-\n                                                | char => '\\0'\n                                                | _ => $'undefined' : value\n                                            ) : () -> value\n                                    }\n                            := item = real_core::nominal_create `union_type (key, value)\n                            := key' = sm'_real::symbol_to_string_real `(`key)\n                            (::) `(string * union_type) (key', item) acc\n                    (Nil `(string * union_type))\n                    `union_record_type\n:| reflection_test_target = Browser | Contract\n\n///- --timeout 900000","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := get_union_fields \* union_type. () : list (string * union_type) =
+      ~>
+          real_core::union_type_to_record
+              `union_type
+              \* union_record_type. =>
+                  real_core::record_type_fold
+                      \ acc key =>
+                          \* value. =>
+                              := value =
+                                  ?: value ?|
+                                  | () => $'' : value
+                                  | _ =>
+                                      backend_switch `value `({}) {
+                                          Gleam =
+                                              (\ () =>
+                                                  $'Nil' : value
+                                              ) : () -> value
+                                          Lua =
+                                              (\ () =>
+                                                  $'nil' : value
+                                              ) : () -> value
+                                          Fsharp =
+                                              (\ () =>
+                                                  $'Unchecked.defaultof<_>' : value
+                                              ) : () -> value
+                                          Python =
+                                              (\ () =>
+                                                  := is_python =
+                                                      backend_switch `bool `({}) {
+                                                          Gleam = (\ () => !-) : () -> bool
+                                                          Lua = (\ () => !-) : () -> bool
+                                                          Fsharp = (\ () => !-) : () -> bool
+                                                          Python = (\ () => !+) : () -> bool
+                                                      }
+                                                  ? is_python ?>
+                                                      ?: value ?|
+                                                      | i8 => 0i8
+                                                      | i16 => 0i16
+                                                      | i32 => 0i32
+                                                      | i64 => 0i64
+                                                      | u8 => 0u8
+                                                      | u16 => 0u16
+                                                      | u32 => 0u32
+                                                      | u64 => 0u64
+                                                      | f32 => 0.0f32
+                                                      | f64 => 0.0f64
+                                                      | bool => !-
+                                                      | char => '\0'
+                                                      | _ => $'None' : value
+                                                  |: $'None' : value
+                                              ) : () -> value
+                                          Rust =
+                                              (\ () =>
+                                                  $'Default::default()' : value
+                                              ) : () -> value
+                                          Zig =
+                                              (\ () =>
+                                                  $'std.mem.zeroes(`value)' : value
+                                              ) : () -> value
+                                          TypeScript =
+                                              (\ () =>
+                                                  ?: value ?|
+                                                  | i8 => 0i8
+                                                  | i16 => 0i16
+                                                  | i32 => 0i32
+                                                  | i64 => 0i64
+                                                  | u8 => 0u8
+                                                  | u16 => 0u16
+                                                  | u32 => 0u32
+                                                  | u64 => 0u64
+                                                  | f32 => 0.0f32
+                                                  | f64 => 0.0f64
+                                                  | bool => !-
+                                                  | char => '\0'
+                                                  | _ => $'undefined' : value
+                                              ) : () -> value
+                                      }
+                              := item = real_core::nominal_create `union_type (key, value)
+                              := key' = sm'_real::symbol_to_string_real `(`key)
+                              (::) `(string * union_type) (key', item) acc
+                      (Nil `(string * union_type))
+                      `union_record_type
+  :| reflection_test_target = Browser | Contract
+
+  ///- --timeout 900000
+  """,
+  timeout: 300_000
+)
+```
+
+#### get_union_fields (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> typescript\n///> cuda\n\nget_union_fields ()\n|> listm'::box\n|> listm'::to_array'\n|> array\n|> am'::sort_by snd\n|> \\ (array x : array _) => x\n|> _assert_eq' (am'::base ;[ \"Browser\", Browser; \"Contract\", Contract ])\nget_union_fields ()\n|> listm'::box\n|> listm'::to_array'\n|> array\n|> am'::sort_by snd\n|> \\ (array x : array _) => x\n|> _assert_eq' (am'::base ;[ \"Some\", Some 0i32; \"None\", None ])","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> typescript
+  ///> cuda
+
+  get_union_fields ()
+  |> listm'::box
+  |> listm'::to_array'
+  |> array
+  |> am'::sort_by snd
+  |> \ (array x : array _) => x
+  |> _assert_eq' (am'::base ;[ "Browser", Browser; "Contract", Contract ])
+  get_union_fields ()
+  |> listm'::box
+  |> listm'::to_array'
+  |> array
+  |> am'::sort_by snd
+  |> \ (array x : array _) => x
+  |> _assert_eq' (am'::base ;[ "Some", Some 0i32; "None", None ])
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= get_union_fields_untag \\* union_type. () : list (string * union_type) =\n    ~>\n        real_core::union_type_to_record\n            `union_type\n            \\* union_record_type. =>\n                := result =\n                    real_core::record_type_fold_back\n                        \\ _key =>\n                            \\* value. (acc, (i : i32)) =>\n                                := key, item : (string * union_type) =\n                                    real_core::union_untag `union_type i\n                                        (\\ key => \\* value. =>\n                                            := key' = sm'_real::symbol_to_string_real `(`key)\n                                            := value =\n                                                ?: value ?|\n                                                | () => $'' : value\n                                                | _ =>\n                                                    backend_switch `value `({}) {\n                                                        Gleam =\n                                                            (\\ () =>\n                                                                $'Nil' : value\n                                                            ) : () -> value\n                                                        Lua =\n                                                            (\\ () =>\n                                                                $'nil' : value\n                                                            ) : () -> value\n                                                        Fsharp =\n                                                            (\\ () =>\n                                                                $'Unchecked.defaultof<_>' : value\n                                                            ) : () -> value\n                                                        Python =\n                                                            (\\ () =>\n                                                                $'None' : value\n                                                            ) : () -> value\n                                                        Rust =\n                                                            (\\ () =>\n                                                                $'Default::default()' : value\n                                                            ) : () -> value\n                                                        TypeScript =\n                                                            (\\ () =>\n                                                                $'undefined' : value\n                                                            ) : () -> value\n                                                        Zig =\n                                                            (\\ () =>\n                                                                $'std.mem.zeroes(`value)' : value\n                                                            ) : () -> value\n                                                    }\n                                            := item = real_core::nominal_create `union_type (key, value)\n                                            key', item\n                                        )\n                                        (\\ _ =>\n                                            failwith\n                                                `(string * union_type)\n                                                \"reflection.get_union_fields_untag / invalid tag\"\n                                        )\n                                (::) `(string * union_type) (key, item) acc, (+) `i32 i 1\n                        `union_record_type\n                        (Nil `(string * union_type), 0i32)\n                := result = fst `(list (string * union_type)) `i32 result\n                listm::rev `(string * union_type) result\n\n///- --timeout 900000","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := get_union_fields_untag \* union_type. () : list (string * union_type) =
+      ~>
+          real_core::union_type_to_record
+              `union_type
+              \* union_record_type. =>
+                  := result =
+                      real_core::record_type_fold_back
+                          \ _key =>
+                              \* value. (acc, (i : i32)) =>
+                                  := key, item : (string * union_type) =
+                                      real_core::union_untag `union_type i
+                                          (\ key => \* value. =>
+                                              := key' = sm'_real::symbol_to_string_real `(`key)
+                                              := value =
+                                                  ?: value ?|
+                                                  | () => $'' : value
+                                                  | _ =>
+                                                      backend_switch `value `({}) {
+                                                          Gleam =
+                                                              (\ () =>
+                                                                  $'Nil' : value
+                                                              ) : () -> value
+                                                          Lua =
+                                                              (\ () =>
+                                                                  $'nil' : value
+                                                              ) : () -> value
+                                                          Fsharp =
+                                                              (\ () =>
+                                                                  $'Unchecked.defaultof<_>' : value
+                                                              ) : () -> value
+                                                          Python =
+                                                              (\ () =>
+                                                                  $'None' : value
+                                                              ) : () -> value
+                                                          Rust =
+                                                              (\ () =>
+                                                                  $'Default::default()' : value
+                                                              ) : () -> value
+                                                          TypeScript =
+                                                              (\ () =>
+                                                                  $'undefined' : value
+                                                              ) : () -> value
+                                                          Zig =
+                                                              (\ () =>
+                                                                  $'std.mem.zeroes(`value)' : value
+                                                              ) : () -> value
+                                                      }
+                                              := item = real_core::nominal_create `union_type (key, value)
+                                              key', item
+                                          )
+                                          (\ _ =>
+                                              failwith
+                                                  `(string * union_type)
+                                                  "reflection.get_union_fields_untag / invalid tag"
+                                          )
+                                  (::) `(string * union_type) (key, item) acc, (+) `i32 i 1
+                          `union_record_type
+                          (Nil `(string * union_type), 0i32)
+                  := result = fst `(list (string * union_type)) `i32 result
+                  listm::rev `(string * union_type) result
+
+  ///- --timeout 900000
+  """,
+  timeout: 300_000
+)
+```
+
+#### get_union_fields_untag (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> lua\n///> cuda\n///> rust\n///> typescript\n\nget_union_fields_untag ()\n|> _assert_eq' [ \"Browser\", Browser; \"Contract\", Contract ]\n\nget_union_fields_untag ()\n|> _assert_eq' [ \"Some\", Some (); \"None\", None ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> lua
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  get_union_fields_untag ()
+  |> _assert_eq' [ "Browser", Browser; "Contract", Contract ]
+
+  get_union_fields_untag ()
+  |> _assert_eq' [ "Some", Some (); "None", None ]
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= union_try_pick \\* t. (key : string) : option t =\n    := fields = ~> get_union_fields_untag `t ()\n    fields\n    ++ (\n        fields\n        |> listm::map \\ key', x =>\n            key' |> sm'::to_lower, x\n    )\n    |> listm'::box\n    |> listm'::to_array'\n    |> \\ x => array x : array _\n    |> am'::try_pick \\ key', x =>\n        ? key' =. key\n        ?> Some x\n        |: None\n\n///- --timeout 900000","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := union_try_pick \* t. (key : string) : option t =
+      := fields = ~> get_union_fields_untag `t ()
+      fields
+      ++ (
+          fields
+          |> listm::map \ key', x =>
+              key' |> sm'::to_lower, x
+      )
+      |> listm'::box
+      |> listm'::to_array'
+      |> \ x => array x : array _
+      |> am'::try_pick \ key', x =>
+          ? key' =. key
+          ?> Some x
+          |: None
+
+  ///- --timeout 900000
+  """,
+  timeout: 300_000
+)
+```
+
+#### union_try_pick (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> lua\n///> cuda\n///> rust\n///> typescript\n\n\"Browser\"\n|> union_try_pick\n|> _assert_eq (Some Browser)\n\n\"Browser\"\n|> union_try_pick\n|> _assert_eq (Some Browser)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> lua
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  "Browser"
+  |> union_try_pick
+  |> _assert_eq (Some Browser)
+
+  "Browser"
+  |> union_try_pick
+  |> _assert_eq (Some Browser)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= union_try_pick' \\* t. (key : string) : option t =\n    := fields = ~> get_union_fields_untag `t ()\n    fields\n    ++ (\n        fields\n        |> listm::map \\ key', x =>\n            key' |> sm'::to_lower, x\n    )\n    |> listm'::try_pick \\ key', x =>\n        ? key' =. key\n        ?> x |> Some\n        |: None\n\n///- --timeout 900000","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := union_try_pick' \* t. (key : string) : option t =
+      := fields = ~> get_union_fields_untag `t ()
+      fields
+      ++ (
+          fields
+          |> listm::map \ key', x =>
+              key' |> sm'::to_lower, x
+      )
+      |> listm'::try_pick \ key', x =>
+          ? key' =. key
+          ?> x |> Some
+          |: None
+
+  ///- --timeout 900000
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> lua\n///> cuda\n///> rust\n///> typescript\n\n\"Browser\"\n|> union_try_pick'\n|> _assert_eq (Some Browser)\n\n\"Browser\"\n|> union_try_pick'\n|> _assert_eq (Some Browser)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> lua
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  "Browser"
+  |> union_try_pick'
+  |> _assert_eq (Some Browser)
+
+  "Browser"
+  |> union_try_pick'
+  |> _assert_eq (Some Browser)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= union_cases_fold \\* union_type state. (step : state -> union_type -> state) (initial : state) : state =\n    ~>\n        real_core::union_type_to_record `union_type \\* union_record_type. =>\n            real_core::record_type_fold\n                \\ acc key => \\* value. => step acc (real_core::nominal_create `union_type (key, ()))\n                initial\n                `union_record_type\n\n///- --timeout 900000","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := union_cases_fold \* union_type state. (step : state -> union_type -> state) (initial : state) : state =
+      ~>
+          real_core::union_type_to_record `union_type \* union_record_type. =>
+              real_core::record_type_fold
+                  \ acc key => \* value. => step acc (real_core::nominal_create `union_type (key, ()))
+                  initial
+                  `union_record_type
+
+  ///- --timeout 900000
+  """,
+  timeout: 300_000
+)
+```
+
+#### union_cases_fold (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> lua\n///> cuda\n///> rust\n///> typescript\n\nunion_cases_fold (\\ count (_ : reflection_test_target) => count + 1i32) 0i32\n|> _assert_eq 2i32\n\nunion_cases_fold (\\ found (target : reflection_test_target) => ? target = Contract ?> !+ |: found) !-\n|> _assert_eq !+","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> lua
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  union_cases_fold (\ count (_ : reflection_test_target) => count + 1i32) 0i32
+  |> _assert_eq 2i32
+
+  union_cases_fold (\ found (target : reflection_test_target) => ? target = Contract ?> !+ |: found) !-
+  |> _assert_eq !+
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= union_cases_find \\* union_type. (matches : union_type -> bool) : option union_type =\n    :~ ^ search (cases : list union_type) : option union_type =\n        ?= cases ?|\n        | case :: rest => ? matches case ?> Some case |: search rest\n        | [] => None\n    search (union_cases_fold (\\ acc (case : union_type) => case :: acc) [] |> dyn)\n\n///- --timeout 900000","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := union_cases_find \* union_type. (matches : union_type -> bool) : option union_type =
+      :~ ^ search (cases : list union_type) : option union_type =
+          ?= cases ?|
+          | case :: rest => ? matches case ?> Some case |: search rest
+          | [] => None
+      search (union_cases_fold (\ acc (case : union_type) => case :: acc) [] |> dyn)
+
+  ///- --timeout 900000
+  """,
+  timeout: 300_000
+)
+```
+
+#### union_cases_find (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> lua\n///> cuda\n///> rust\n///> typescript\n\nunion_cases_find \\ (target : reflection_test_target) => target = Contract\n|> _assert_eq (Some Contract)\n\nunion_cases_find \\ (_ : reflection_test_target) => !-\n|> _assert_eq None","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> lua
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  union_cases_find \ (target : reflection_test_target) => target = Contract
+  |> _assert_eq (Some Contract)
+
+  union_cases_find \ (_ : reflection_test_target) => !-
+  |> _assert_eq None
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= union_to_string \\* t. (x : t) : string =\n    ~> get_union_fields_untag `t ()\n    |> listm'::try_pick \\ key, x' =>\n        ? x' = x\n        ?> Some key\n        |:\n            := has_case =\n                ~>\n                    real_core::union_type_to_record\n                        `t\n                        \\* union_record_type. =>\n                            real_core::record_type_fold_back\n                                \\ _key =>\n                                    \\* value. acc =>\n                                        ? acc\n                                        ?> acc\n                                        |:\n                                            ?: value ?|\n                                            | () => !-\n                                            | _ => !+\n                                `union_record_type\n                                !-\n            ? has_case |> not\n            ?> None\n            |:\n                := x' = #?x' |> sm'::split \"(\" |> am'::index_base 0\n\n                ? #?x |> sm'::starts_with x'\n                ?> Some key\n                |: None\n    |> optionm::value\n\n///- --timeout 900000","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := union_to_string \* t. (x : t) : string =
+      ~> get_union_fields_untag `t ()
+      |> listm'::try_pick \ key, x' =>
+          ? x' = x
+          ?> Some key
+          |:
+              := has_case =
+                  ~>
+                      real_core::union_type_to_record
+                          `t
+                          \* union_record_type. =>
+                              real_core::record_type_fold_back
+                                  \ _key =>
+                                      \* value. acc =>
+                                          ? acc
+                                          ?> acc
+                                          |:
+                                              ?: value ?|
+                                              | () => !-
+                                              | _ => !+
+                                  `union_record_type
+                                  !-
+              ? has_case |> not
+              ?> None
+              |:
+                  := x' = #?x' |> sm'::split "(" |> am'::index_base 0
+
+                  ? #?x |> sm'::starts_with x'
+                  ?> Some key
+                  |: None
+      |> optionm::value
+
+  ///- --timeout 900000
+  """,
+  timeout: 300_000
+)
+```
+
+#### union_to_string (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> cuda\n///> rust\n///> typescript\n\nSome !+\n|> union_to_string\n|> _assert_eq' \"Some\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  Some !+
+  |> union_to_string
+  |> _assert_eq' "Some"
+  """,
+  timeout: 300_000
+)
+```
+
+### case_name
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= case_name \\* t. (x : t) : string = !!!!UnionCaseName(x)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := case_name \* t. (x : t) : string = !!!!UnionCaseName(x)
+  """,
+  timeout: 300_000
+)
+```
+
+### case_name_styles
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= case_name_lower \\* t. (x : t) : string = !!!!UnionCaseName(x, \"lower\")\n:= case_name_snake \\* t. (x : t) : string = !!!!UnionCaseName(x, \"snake\")\n:= case_name_kebab \\* t. (x : t) : string = !!!!UnionCaseName(x, \"kebab\")\n:= case_initial \\* t. (x : t) : string = !!!!UnionCaseName(x, \"initial\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := case_name_lower \* t. (x : t) : string = !!!!UnionCaseName(x, "lower")
+  := case_name_snake \* t. (x : t) : string = !!!!UnionCaseName(x, "snake")
+  := case_name_kebab \* t. (x : t) : string = !!!!UnionCaseName(x, "kebab")
+  := case_initial \* t. (x : t) : string = !!!!UnionCaseName(x, "initial")
+  """,
+  timeout: 300_000
+)
+```
+
+### case_of_name
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= case_of_name \\* t. (text : string) : option t =\n    ~> get_union_fields_untag `t ()\n    |> listm'::try_pick \\ key, case => ? key =. text ?> Some case |: None","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := case_of_name \* t. (text : string) : option t =
+      ~> get_union_fields_untag `t ()
+      |> listm'::try_pick \ key, case => ? key =. text ?> Some case |: None
+  """,
+  timeout: 300_000
+)
+```
+
+### typed_name
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! typed_name t = string\n\n:= typed_case_name \\* t. (x : t) : typed_name t = typed_name (case_name x)\n:= case_qualified_name \\* t. (x : t) : string = !!!!NominalName(`t) ++# \"::\" ++# case_name x\n\n:= typed_name_text \\* t. ((typed_name text) : typed_name t) : string = text\n\n:= case_of_typed_name \\* t. ((typed_name text) : typed_name t) : option t = case_of_name text\n\n:= styled_step (separator : string) (acc : list string) (c : char) : list string =\n    := s = sm'::of_char c\n    := lower = sm'::to_lower s\n    ? lower <> s && listm::length acc > 0i32 ?> lower :: separator :: acc |: lower :: acc\n\n:= styled_name (separator : string) (text : string) : string =\n    sm'::to_char_list text |> listm::fold (styled_step separator) [] |> listm::rev |> sm'::concat_list \"\"\n\n:= typed_name_snake \\* t. ((typed_name text) : typed_name t) : string = styled_name \"_\" text\n\n:= typed_name_kebab \\* t. ((typed_name text) : typed_name t) : string = styled_name \"-\" text\n\n:= typed_name_lower \\* t. ((typed_name text) : typed_name t) : string = sm'::to_lower text\n\n///- --timeout 900000","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :! typed_name t = string
+
+  := typed_case_name \* t. (x : t) : typed_name t = typed_name (case_name x)
+  := case_qualified_name \* t. (x : t) : string = !!!!NominalName(`t) ++# "::" ++# case_name x
+
+  := typed_name_text \* t. ((typed_name text) : typed_name t) : string = text
+
+  := case_of_typed_name \* t. ((typed_name text) : typed_name t) : option t = case_of_name text
+
+  := styled_step (separator : string) (acc : list string) (c : char) : list string =
+      := s = sm'::of_char c
+      := lower = sm'::to_lower s
+      ? lower <> s && listm::length acc > 0i32 ?> lower :: separator :: acc |: lower :: acc
+
+  := styled_name (separator : string) (text : string) : string =
+      sm'::to_char_list text |> listm::fold (styled_step separator) [] |> listm::rev |> sm'::concat_list ""
+
+  := typed_name_snake \* t. ((typed_name text) : typed_name t) : string = styled_name "_" text
+
+  := typed_name_kebab \* t. ((typed_name text) : typed_name t) : string = styled_name "-" text
+
+  := typed_name_lower \* t. ((typed_name text) : typed_name t) : string = sm'::to_lower text
+
+  ///- --timeout 900000
+  """,
+  timeout: 300_000
+)
+```
+
+#### case_name (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> lua\n///> cuda\n///> rust\n///> typescript\n\nContract\n|> case_name\n|> _assert_eq' \"Contract\"\n\nSome 3i32\n|> case_name\n|> _assert_eq' \"Some\"\n\n:= ~payload : option i32 = None\npayload\n|> case_name\n|> _assert_eq' \"None\"\n\n\"Browser\"\n|> case_of_name\n|> _assert_eq (Some Browser)\n\n\"browser\"\n|> case_of_name\n|> _assert_eq (None : option reflection_test_target)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> lua
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  Contract
+  |> case_name
+  |> _assert_eq' "Contract"
+
+  Some 3i32
+  |> case_name
+  |> _assert_eq' "Some"
+
+  := ~payload : option i32 = None
+  payload
+  |> case_name
+  |> _assert_eq' "None"
+
+  "Browser"
+  |> case_of_name
+  |> _assert_eq (Some Browser)
+
+  "browser"
+  |> case_of_name
+  |> _assert_eq (None : option reflection_test_target)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= nameof \\* t. (x : t) : string =\n    ~>\n        real_core::record_type_fold_back\n            \\ key =>\n                \\* value. _ =>\n                    sm'_real::symbol_to_string_real `(`key)\n            `t\n            \"\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := nameof \* t. (x : t) : string =
+      ~>
+          real_core::record_type_fold_back
+              \ key =>
+                  \* value. _ =>
+                      sm'_real::symbol_to_string_real `(`key)
+              `t
+              ""
+  """,
+  timeout: 300_000
+)
+```
+
+#### nameof (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n{ test1 = \"\"; test2 = \"\" }\n|> nameof\n|> _assert_eq' \"test1\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  { test1 = ""; test2 = "" }
+  |> nameof
+  |> _assert_eq' "test1"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= get_record_fields \\* t u. (x : t) : list (string * u) =\n    ~>\n        real_core::record_type_fold_back\n            \\ key =>\n                \\* u'. acc =>\n                    := k = sm'_real::symbol_to_string_real `(`key)\n                    := v = x key\n                    (::) `(string * u') (k, v) acc\n            `t\n            (Nil `(string * u))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := get_record_fields \* t u. (x : t) : list (string * u) =
+      ~>
+          real_core::record_type_fold_back
+              \ key =>
+                  \* u'. acc =>
+                      := k = sm'_real::symbol_to_string_real `(`key)
+                      := v = x key
+                      (::) `(string * u') (k, v) acc
+              `t
+              (Nil `(string * u))
+  """,
+  timeout: 300_000
+)
+```
+
+#### get_record_fields (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n{ a = \"1\"; b = \"2\" }\n|> get_record_fields\n|> _assert_eq' [ \"a\", \"1\"; \"b\", \"2\" ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  { a = "1"; b = "2" }
+  |> get_record_fields
+  |> _assert_eq' [ "a", "1"; "b", "2" ]
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= get_functions_types \\* t {record}. (fns : t) =\n    ~>\n        := get_function_type \\* t. =\n            := args \\* t {record}. : list (string * string) =\n                real_core::record_type_fold_back\n                    \\ key =>\n                        \\* v. acc =>\n                            := k = sm'_real::symbol_to_string_real `(`key)\n                            := v = $'\"`v\"' : string\n                            (::) `(string * string) (k, v) acc\n                    `t\n                    (Nil `(string * string))\n\n            ?: t ?|\n            | ~t -> ~u => args `t, ($'\"`u\"' : string)\n\n        real_core::record_type_fold_back\n            \\ key =>\n                \\* v. acc =>\n                    := k = sm'_real::symbol_to_string_real `(`key)\n                    := args, result = get_function_type `v\n                    (::) `(string * (list (string * string) * string)) (k, (args, result)) acc\n            `(`fns)\n            (Nil `(string * (list (string * string) * string)))\n    |> \\ x => x : list (string * (list (string * string) * string))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := get_functions_types \* t {record}. (fns : t) =
+      ~>
+          := get_function_type \* t. =
+              := args \* t {record}. : list (string * string) =
+                  real_core::record_type_fold_back
+                      \ key =>
+                          \* v. acc =>
+                              := k = sm'_real::symbol_to_string_real `(`key)
+                              := v = $'"`v"' : string
+                              (::) `(string * string) (k, v) acc
+                      `t
+                      (Nil `(string * string))
+
+              ?: t ?|
+              | ~t -> ~u => args `t, ($'"`u"' : string)
+
+          real_core::record_type_fold_back
+              \ key =>
+                  \* v. acc =>
+                      := k = sm'_real::symbol_to_string_real `(`key)
+                      := args, result = get_function_type `v
+                      (::) `(string * (list (string * string) * string)) (k, (args, result)) acc
+              `(`fns)
+              (Nil `(string * (list (string * string) * string)))
+      |> \ x => x : list (string * (list (string * string) * string))
+  """,
+  timeout: 300_000
+)
+```
+
+#### get_functions_types (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --no-agree \"type names are backend-specific\" --symbol\n///> fsharp\n///> rust\n\n:= one ({ a } : { a : i32 }) : i32 = a + 1\n:= two ({ a b } : { a : i32; b : i32 }) : i32 = a + b + 2\n:= fns = { one two }\n:= i32_name = run_target \\| | Fsharp _ => \\ () => ~~ \"int32\" | _ => \\ () => \"i32\"\n\nfns\n|> get_functions_types\n|> listm::map \\ (name, args, result) => name, (args |> listm'::box |> listm'::to_array', result)\n|> listm'::box\n|> listm'::to_array'\n|> sm'::format\n|> _assert_eq' (\n    [\n        \"one\", [ \"a\", i32_name ], i32_name\n        \"two\", [ \"a\", i32_name; \"b\", i32_name ], i32_name\n    ]\n    |> listm::map \\ (name, args, result) => name, (args |> listm'::box |> listm'::to_array', result)\n    |> listm'::box\n    |> listm'::to_array'\n    |> sm'::format\n)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --no-agree "type names are backend-specific" --symbol
+  ///> fsharp
+  ///> rust
+
+  := one ({ a } : { a : i32 }) : i32 = a + 1
+  := two ({ a b } : { a : i32; b : i32 }) : i32 = a + b + 2
+  := fns = { one two }
+  := i32_name = run_target \| | Fsharp _ => \ () => ~~ "int32" | _ => \ () => "i32"
+
+  fns
+  |> get_functions_types
+  |> listm::map \ (name, args, result) => name, (args |> listm'::box |> listm'::to_array', result)
+  |> listm'::box
+  |> listm'::to_array'
+  |> sm'::format
+  |> _assert_eq' (
+      [
+          "one", [ "a", i32_name ], i32_name
+          "two", [ "a", i32_name; "b", i32_name ], i32_name
+      ]
+      |> listm::map \ (name, args, result) => name, (args |> listm'::box |> listm'::to_array', result)
+      |> listm'::box
+      |> listm'::to_array'
+      |> sm'::format
+  )
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":| nameof_probe =\n    | Alpha\n    | Beta\n    | Gamma\n    | Delta\n    | Epsilon\n\n///- --timeout 900000","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :| nameof_probe =
+      | Alpha
+      | Beta
+      | Gamma
+      | Delta
+      | Epsilon
+
+  ///- --timeout 900000
+  """,
+  timeout: 300_000
+)
+```
+
+#### nameof_cases_round_trip (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> gleam\n///> lua\n///> typescript\n///> fsharp\n\nAlpha |> case_name |> case_of_name |> _assert_eq (Some Alpha)\nBeta |> case_name |> case_of_name |> _assert_eq (Some Beta)\nGamma |> case_name |> case_of_name |> _assert_eq (Some Gamma)\nDelta |> case_name |> _assert_eq' \"Delta\"\nEpsilon |> case_name |> case_of_name |> _assert_eq (Some Epsilon)\n\"epsilon\" |> case_of_name |> _assert_eq (None : option nameof_probe)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> gleam
+  ///> lua
+  ///> typescript
+  ///> fsharp
+
+  Alpha |> case_name |> case_of_name |> _assert_eq (Some Alpha)
+  Beta |> case_name |> case_of_name |> _assert_eq (Some Beta)
+  Gamma |> case_name |> case_of_name |> _assert_eq (Some Gamma)
+  Delta |> case_name |> _assert_eq' "Delta"
+  Epsilon |> case_name |> case_of_name |> _assert_eq (Some Epsilon)
+  "epsilon" |> case_of_name |> _assert_eq (None : option nameof_probe)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --timeout 900000","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --timeout 900000
+  """,
+  timeout: 300_000
+)
+```
+
+#### typed_case_name_round_trips (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> lua\n///> rust\n///> typescript\n\n:= name = typed_case_name Contract\ntyped_name_text name |> _assert_eq' \"Contract\"\ncase_of_typed_name name |> _assert_eq (Some Contract)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> lua
+  ///> rust
+  ///> typescript
+
+  := name = typed_case_name Contract
+  typed_name_text name |> _assert_eq' "Contract"
+  case_of_typed_name name |> _assert_eq (Some Contract)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --timeout 900000","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --timeout 900000
+  """,
+  timeout: 300_000
+)
+```
+
+#### typed_name_styles (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> rust\n\nstyled_name \"_\" \"HostMacro\" |> _assert_eq' \"host_macro\"\nstyled_name \"-\" \"GadtCase\" |> _assert_eq' \"gadt-case\"\nstyled_name \"_\" \"Contract\" |> _assert_eq' \"contract\"\n:= name = typed_case_name Browser\ntyped_name_kebab name |> _assert_eq' \"browser\"\ntyped_name_lower name |> _assert_eq' \"browser\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> rust
+
+  styled_name "_" "HostMacro" |> _assert_eq' "host_macro"
+  styled_name "-" "GadtCase" |> _assert_eq' "gadt-case"
+  styled_name "_" "Contract" |> _assert_eq' "contract"
+  := name = typed_case_name Browser
+  typed_name_kebab name |> _assert_eq' "browser"
+  typed_name_lower name |> _assert_eq' "browser"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":| case_style_probe =\n    | HostMacro\n    | GadtCase\n\n///- --timeout 900000","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :| case_style_probe =
+      | HostMacro
+      | GadtCase
+
+  ///- --timeout 900000
+  """,
+  timeout: 300_000
+)
+```
+
+#### case_name_styles (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> lua\n///> rust\n///> typescript\n\n:= ~macro : case_style_probe = HostMacro\nmacro |> case_name_snake |> _assert_eq' \"host_macro\"\nmacro |> case_name_lower |> _assert_eq' \"hostmacro\"\nGadtCase |> case_name_kebab |> _assert_eq' \"gadt-case\"\nGadtCase |> case_name_snake |> _assert_eq' \"gadt_case\"\nmacro |> case_initial |> _assert_eq' \"h\"\nGadtCase |> case_initial |> _assert_eq' \"g\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> lua
+  ///> rust
+  ///> typescript
+
+  := ~macro : case_style_probe = HostMacro
+  macro |> case_name_snake |> _assert_eq' "host_macro"
+  macro |> case_name_lower |> _assert_eq' "hostmacro"
+  GadtCase |> case_name_kebab |> _assert_eq' "gadt-case"
+  GadtCase |> case_name_snake |> _assert_eq' "gadt_case"
+  macro |> case_initial |> _assert_eq' "h"
+  GadtCase |> case_initial |> _assert_eq' "g"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --timeout 900000","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --timeout 900000
+  """,
+  timeout: 300_000
+)
+```
+
+#### case_qualified_name (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> rust\n\ncase_qualified_name Contract |> _assert_eq' \"reflection_test_target::Contract\"\ncase_qualified_name Browser |> _assert_eq' \"reflection_test_target::Browser\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> rust
+
+  case_qualified_name Contract |> _assert_eq' "reflection_test_target::Contract"
+  case_qualified_name Browser |> _assert_eq' "reflection_test_target::Browser"
+  """,
+  timeout: 300_000
+)
+```
