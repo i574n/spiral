@@ -376,6 +376,9 @@
 := clone_deref \* t. (ref : ref t) : t =
     !\\(ref, $'"$0.clone()"')
 
+:= clone_ref_mut \* t. (ref : ref (mut' t)) : t =
+    !\\(ref, $'"(*$0).clone()"')
+
 := from_ref \* t. (ref : ref t) : t =
     !\($'"!ref"')
 

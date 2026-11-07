@@ -1,10 +1,20 @@
 #![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
+fn string_concat(parts: &[&str]) -> Rc<str> {
+    let mut joined = Rc::<[u8]>::new_uninit_slice(parts.iter().map(|part| part.len()).sum());
+    let bytes = Rc::get_mut(&mut joined).unwrap().as_mut_ptr() as *mut u8;
+    let mut at = 0;
+    for part in parts {
+        unsafe { std::ptr::copy_nonoverlapping(part.as_ptr(), bytes.add(at), part.len()) };
+        at += part.len();
+    }
+    unsafe { Rc::from_raw(Rc::into_raw(joined.assume_init()) as *const str) }
+}
 struct Mut0 { l0: Rc<str> }
 fn method3(mut v0: &Rc<RefCell<Mut0>>, mut v1: Rc<str>) -> () {
     let v2: Rc<str> = v0.borrow().l0.clone();
-    let v3: Rc<str> = Rc::<str>::from(format!("{}{}", v2, v1));
+    let v3: Rc<str> = string_concat(&[&*v2, &*v1]);
     v0.borrow_mut().l0 = v3;
     ()
 }
@@ -19,13 +29,12 @@ fn format_real_2(mut v0: i32) -> Rc<str> {
 fn method1() -> Rc<str> {
     let mut v0: i32 = 1i32;
     let v1: Rc<str> = format_real_2(v0);
-    let v2: Rc<str> = Rc::<str>::from(format!("{}{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Some("); } LIT.with(|lit| lit.clone()) }, v1));
-    let v3: Rc<str> = Rc::<str>::from(format!("{}{}", v2, { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(")"); } LIT.with(|lit| lit.clone()) }));
+    let v3: Rc<str> = string_concat(&["Some(", &*v1, ")"]);
     v3
 }
 fn method0() -> Rc<str> {
     let mut v0: Rc<str> = method1();
-    let v1: Rc<str> = Rc::<str>::from(format!("{}{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("x: "); } LIT.with(|lit| lit.clone()) }, v0));
+    let v1: Rc<str> = string_concat(&["x: ", &*v0]);
     v1
 }
 fn spiral_main() -> i32 {

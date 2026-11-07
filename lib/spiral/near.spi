@@ -121,6 +121,79 @@
 := log text : () =
     (!\\(text, $'$"true; near_sdk::log\!(\\\"{{}}\\\", $0)"') : bool) |> ignore
 
+:= bump_allocator () : () =
+    global """
+        #[cfg(target_arch = "wasm32")]
+        struct SpiralBumpAlloc;
+        #[cfg(target_arch = "wasm32")]
+        static SPIRAL_BUMP_NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        #[cfg(target_arch = "wasm32")]
+        unsafe impl std::alloc::GlobalAlloc for SpiralBumpAlloc {
+            unsafe fn alloc(&self, layout: std::alloc::Layout) -> *mut u8 {
+                use std::sync::atomic::Ordering::Relaxed;
+                let have = core::arch::wasm32::memory_size(0) * 65536;
+                let next = match SPIRAL_BUMP_NEXT.load(Relaxed) { 0 => have, next => next };
+                let start = (next + layout.align() - 1) & !(layout.align() - 1);
+                let end = start + layout.size();
+                if end > have && core::arch::wasm32::memory_grow(0, (end - have).div_ceil(65536)) == usize::MAX {
+                    return std::ptr::null_mut();
+                }
+                SPIRAL_BUMP_NEXT.store(end, Relaxed);
+                start as *mut u8
+            }
+            unsafe fn dealloc(&self, _: *mut u8, _: std::alloc::Layout) {}
+        }
+        #[cfg(target_arch = "wasm32")]
+        #[global_allocator]
+        static SPIRAL_BUMP: SpiralBumpAlloc = SpiralBumpAlloc;
+        """
+
+:= host_random_seed () : array u8 =
+    backend_switch {
+        Rust = \ () => $'Rc::new(RefCell::new(near_sdk::env::random_seed()))' : array u8
+    }
+
+:= host_keccak512 (bytes : array u8) : array u8 =
+    backend_switch {
+        Rust = \ () => $'Rc::new(RefCell::new(near_sdk::env::keccak512((!bytes).borrow().as_slice())))' : array u8
+    }
+
+:= host_block_height () : u64 =
+    backend_switch {
+        Rust = \ () => $'near_sdk::env::block_height()' : u64
+    }
+
+:= host_block_timestamp () : u64 =
+    backend_switch {
+        Rust = \ () => $'near_sdk::env::block_timestamp()' : u64
+    }
+
+:= host_epoch_height () : u64 =
+    backend_switch {
+        Rust = \ () => $'near_sdk::env::epoch_height()' : u64
+    }
+
+:= host_account_balance_words () : u64 * u64 =
+    backend_switch {
+        Rust = \ () =>
+            $'{ let balance = near_sdk::env::account_balance().as_yoctonear(); (balance as u64, (balance >> 64) as u64) }' : u64 * u64
+    }
+
+:= host_signer () : string =
+    backend_switch {
+        Rust = \ () => $'Rc::<str>::from(near_sdk::env::signer_account_id().as_str())' : string
+    }
+
+:= host_predecessor () : string =
+    backend_switch {
+        Rust = \ () => $'Rc::<str>::from(near_sdk::env::predecessor_account_id().as_str())' : string
+    }
+
+:= panic \* t. (text : string) : t =
+    backend_switch {
+        Rust = \ () => $'near_sdk::env::panic_str(&*!text)' : t
+    }
+
 := panic_str (text : string) : () =
     (!\\(text, $'$"true; near_sdk::env::panic_str(&*$0); //"') : bool) |> ignore
 

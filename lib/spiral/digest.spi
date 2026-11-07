@@ -1,0 +1,5 @@
+:# digest static =
+    :< testing
+
+/// ## digest
+:? digest_with h : h -> array u8 -> array u8

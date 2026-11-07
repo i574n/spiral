@@ -333,6 +333,36 @@
         Rust = \ () => $'((!vec).len() as usize)' : convert::unativeint
     }
 
+:= vec_item \* t. (i : convert::unativeint) (vec : vec t) : t =
+    backend_switch {
+        Rust = \ () => $'(!vec)[!i].clone()' : t
+    }
+
+:= vec_ref_len \* t. (vec : rust::ref (rust::mut' (vec t))) : convert::unativeint =
+    backend_switch {
+        Rust = \ () => $'(!vec).len()' : convert::unativeint
+    }
+
+:= vec_extend_from_slice \* t. (items : vec t) (vec : rust::ref (rust::mut' (vec t))) : () =
+    backend_switch {
+        Rust = \ () => $'(!vec).extend_from_slice(&(!items))' : ()
+    }
+
+:= vec_ref_to_array \* t. (vec : rust::ref (rust::mut' (vec t))) : array t =
+    backend_switch {
+        Rust = \ () => $'Rc::new(RefCell::new((!vec).clone()))' : array t
+    }
+
+:= vec_extend_from_array \* t. (items : array t) (vec : rust::ref (rust::mut' (vec t))) : () =
+    backend_switch {
+        Rust = \ () => $'(!vec).extend_from_slice(&(!items).borrow())' : ()
+    }
+
+:= vec_drain_front \* t. (count : convert::unativeint) (vec : rust::ref (rust::mut' (vec t))) : vec t =
+    backend_switch {
+        Rust = \ () => $'(!vec).drain(..!count).collect::<Vec<_>>()' : vec t
+    }
+
 := vec_chunks \* t. (n : i32) (vec : vec t) : vec (vec t) =
     !\\(vec, $'"$0.chunks(!n).map(|x| x.into_iter().map(|x| x.clone()).collect::<Vec<_>>()).collect::<Vec<_>>()"')
 

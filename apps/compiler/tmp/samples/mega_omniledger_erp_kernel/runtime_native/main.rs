@@ -806,20 +806,20 @@ fn spiral_main() -> i32 {
         let v619: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"); } LIT.with(|lit| lit.clone()) };
         US0::US0_TypedFxHashedStatementChecksumValidationRejected(v548, v583, v619)
     };
-    let (mut v640, mut v641, mut v644, mut v645, mut v646, mut v647, mut v648): (i64, i64, i64, i64, i64, i64, i64) = match &v621 {
+    let (mut v640, mut v641, mut v644, mut v645, mut v646, mut v647, mut v648): (i64, i64, i64, i64, i64, i64, i64) = match v621 {
         US0::US0_TypedFxHashedStatementChecksumValidationAccepted(v625, v626, v627, v628, v629, v630) => {
-            let v625: i64 = *v625;
-            let v626: i64 = *v626;
-            let v627: i64 = *v627;
-            let v628: i64 = *v628;
-            let v629: i64 = *v629;
-            let v630: Rc<str> = v630.clone();
+            let v625: i64 = v625;
+            let v626: i64 = v626;
+            let v627: i64 = v627;
+            let v628: i64 = v628;
+            let v629: i64 = v629;
+            let v630: Rc<str> = v630;
             (1i64, 0i64, v625, v626, v627, v628, v629)
         }
         US0::US0_TypedFxHashedStatementChecksumValidationRejected(v622, v623, v624) => {
-            let v622: i64 = *v622;
-            let v623: i64 = *v623;
-            let v624: Rc<str> = v624.clone();
+            let v622: i64 = v622;
+            let v623: i64 = v623;
+            let v624: Rc<str> = v624;
             (0i64, 1i64, 0i64, 0i64, 0i64, 0i64, 0i64)
         }
     };
@@ -1154,20 +1154,20 @@ fn spiral_main() -> i32 {
         let v902: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"); } LIT.with(|lit| lit.clone()) };
         US0::US0_TypedFxHashedStatementChecksumValidationRejected(v831, v866, v902)
     };
-    let (mut v923, mut v924, mut v927, mut v931): (i64, i64, i64, i64) = match &v904 {
+    let (mut v923, mut v924, mut v927, mut v931): (i64, i64, i64, i64) = match v904 {
         US0::US0_TypedFxHashedStatementChecksumValidationAccepted(v908, v909, v910, v911, v912, v913) => {
-            let v908: i64 = *v908;
-            let v909: i64 = *v909;
-            let v910: i64 = *v910;
-            let v911: i64 = *v911;
-            let v912: i64 = *v912;
-            let v913: Rc<str> = v913.clone();
+            let v908: i64 = v908;
+            let v909: i64 = v909;
+            let v910: i64 = v910;
+            let v911: i64 = v911;
+            let v912: i64 = v912;
+            let v913: Rc<str> = v913;
             (1i64, 0i64, v908, v912)
         }
         US0::US0_TypedFxHashedStatementChecksumValidationRejected(v905, v906, v907) => {
-            let v905: i64 = *v905;
-            let v906: i64 = *v906;
-            let v907: Rc<str> = v907.clone();
+            let v905: i64 = v905;
+            let v906: i64 = v906;
+            let v907: Rc<str> = v907;
             (0i64, 1i64, 0i64, 0i64)
         }
     };
@@ -2489,20 +2489,20 @@ fn spiral_main() -> i32 {
         let v1970: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"); } LIT.with(|lit| lit.clone()) };
         US0::US0_TypedFxHashedStatementChecksumValidationRejected(v1899, v1934, v1970)
     };
-    let (mut v1991, mut v1992, mut v1995, mut v1999): (i64, i64, i64, i64) = match &v1972 {
+    let (mut v1991, mut v1992, mut v1995, mut v1999): (i64, i64, i64, i64) = match v1972 {
         US0::US0_TypedFxHashedStatementChecksumValidationAccepted(v1976, v1977, v1978, v1979, v1980, v1981) => {
-            let v1976: i64 = *v1976;
-            let v1977: i64 = *v1977;
-            let v1978: i64 = *v1978;
-            let v1979: i64 = *v1979;
-            let v1980: i64 = *v1980;
-            let v1981: Rc<str> = v1981.clone();
+            let v1976: i64 = v1976;
+            let v1977: i64 = v1977;
+            let v1978: i64 = v1978;
+            let v1979: i64 = v1979;
+            let v1980: i64 = v1980;
+            let v1981: Rc<str> = v1981;
             (1i64, 0i64, v1976, v1980)
         }
         US0::US0_TypedFxHashedStatementChecksumValidationRejected(v1973, v1974, v1975) => {
-            let v1973: i64 = *v1973;
-            let v1974: i64 = *v1974;
-            let v1975: Rc<str> = v1975.clone();
+            let v1973: i64 = v1973;
+            let v1974: i64 = v1974;
+            let v1975: Rc<str> = v1975;
             (0i64, 1i64, 0i64, 0i64)
         }
     };
@@ -2991,20 +2991,20 @@ fn spiral_main() -> i32 {
         let v2375: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"); } LIT.with(|lit| lit.clone()) };
         US0::US0_TypedFxHashedStatementChecksumValidationRejected(v2304, v2339, v2375)
     };
-    let (mut v2396, mut v2397, mut v2404): (i64, i64, i64) = match &v2377 {
+    let (mut v2396, mut v2397, mut v2404): (i64, i64, i64) = match v2377 {
         US0::US0_TypedFxHashedStatementChecksumValidationAccepted(v2381, v2382, v2383, v2384, v2385, v2386) => {
-            let v2381: i64 = *v2381;
-            let v2382: i64 = *v2382;
-            let v2383: i64 = *v2383;
-            let v2384: i64 = *v2384;
-            let v2385: i64 = *v2385;
-            let v2386: Rc<str> = v2386.clone();
+            let v2381: i64 = v2381;
+            let v2382: i64 = v2382;
+            let v2383: i64 = v2383;
+            let v2384: i64 = v2384;
+            let v2385: i64 = v2385;
+            let v2386: Rc<str> = v2386;
             (1i64, 0i64, v2385)
         }
         US0::US0_TypedFxHashedStatementChecksumValidationRejected(v2378, v2379, v2380) => {
-            let v2378: i64 = *v2378;
-            let v2379: i64 = *v2379;
-            let v2380: Rc<str> = v2380.clone();
+            let v2378: i64 = v2378;
+            let v2379: i64 = v2379;
+            let v2380: Rc<str> = v2380;
             (0i64, 1i64, 0i64)
         }
     };
@@ -3409,20 +3409,20 @@ fn spiral_main() -> i32 {
         let v2712: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"); } LIT.with(|lit| lit.clone()) };
         US0::US0_TypedFxHashedStatementChecksumValidationRejected(v2641, v2676, v2712)
     };
-    let (mut v2733, mut v2734, mut v2741): (i64, i64, i64) = match &v2714 {
+    let (mut v2733, mut v2734, mut v2741): (i64, i64, i64) = match v2714 {
         US0::US0_TypedFxHashedStatementChecksumValidationAccepted(v2718, v2719, v2720, v2721, v2722, v2723) => {
-            let v2718: i64 = *v2718;
-            let v2719: i64 = *v2719;
-            let v2720: i64 = *v2720;
-            let v2721: i64 = *v2721;
-            let v2722: i64 = *v2722;
-            let v2723: Rc<str> = v2723.clone();
+            let v2718: i64 = v2718;
+            let v2719: i64 = v2719;
+            let v2720: i64 = v2720;
+            let v2721: i64 = v2721;
+            let v2722: i64 = v2722;
+            let v2723: Rc<str> = v2723;
             (1i64, 0i64, v2722)
         }
         US0::US0_TypedFxHashedStatementChecksumValidationRejected(v2715, v2716, v2717) => {
-            let v2715: i64 = *v2715;
-            let v2716: i64 = *v2716;
-            let v2717: Rc<str> = v2717.clone();
+            let v2715: i64 = v2715;
+            let v2716: i64 = v2716;
+            let v2717: Rc<str> = v2717;
             (0i64, 1i64, 0i64)
         }
     };

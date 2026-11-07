@@ -18,6 +18,11 @@
     | Warning => 40
     | Critical => 50
 
+:= on_chain () : bool =
+    run_target \|
+        | Rust => \ () => $'cfg\!(target_arch = "wasm32")' : bool
+        | _ => \ () => !-
+
 := read_state () =
     run_target \|
         | Zig => \ () =>
@@ -28,7 +33,10 @@
             }
         | Rust => \ () =>
             {
-                trace_level = "TRACE_LEVEL" |> env::get_environment_variable |> reflection::union_try_pick
+                trace_level =
+                    ? on_chain ()
+                    ?> None
+                    |: "TRACE_LEVEL" |> env::get_environment_variable |> reflection::union_try_pick
                 repl_start = None
             }
         | TypeScript => \ () =>
@@ -379,7 +387,7 @@
 := trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
     \ () =>
         := trace_state = get_trace_state_or_init None
-        := time =
+        := time () =
             ~~
                 run_target \|
                     | Zig => \ () =>
@@ -439,7 +447,7 @@
                                         Python = \ () => "%H:%M:%S"
                                     }
                                 )
-        := level_str =
+        := level_str () =
             ~~
                 := color =
                     ?= level ?|
@@ -448,27 +456,29 @@
                     | Info => console::color_bright_green ()
                     | Warning => console::color_yellow ()
                     | Critical => console::color_bright_red ()
-                := level_str =
-                    level
-                    |> reflection::union_to_string
-                    |> sm'::to_lower
-                    |> sm'::index 0i32
-                    |> sm'::format
-                color ++# level_str ++# console::color_reset ()
+                color ++# reflection::case_initial level ++# console::color_reset ()
         := text = text_fn ()
         ? text = ""
         ?> ""
         |:
             := locals = locals ()
             ~~
-                := count = *trace_state::count
-                time ++# " " ++#? count ++# level_str ++# " " ++# text ++# " / " ++#? locals
+                := line =
+                    ? on_chain ()
+                    ?> reflection::case_initial level ++# " " ++# text ++# " / " ++#? locals
+                    |:
+                        := count = *trace_state::count
+                        time () ++# " " ++#? count ++# level_str () ++# " " ++# text ++# " / " ++#? locals
+                line
                 |> \ x =>
                     ~~
                         x
                         |> sm'::trim_start []
                         |> sm'::trim_end [ ' '; '/' ]
     |> trace_raw level
+
+:= trace_flush () : () =
+    trace Critical (\ () => "") id
 
 ///> gleam
 ///> lua

@@ -10,6 +10,16 @@ fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {
     let slice = &bytes[from as usize..(to + 1) as usize];
     match std::str::from_utf8(slice) { Ok(text) => Rc::<str>::from(text), Err(error) => Rc::<str>::from(std::str::from_utf8(&slice[..error.valid_up_to()]).unwrap_or("")) }
 }
+fn string_concat(parts: &[&str]) -> Rc<str> {
+    let mut joined = Rc::<[u8]>::new_uninit_slice(parts.iter().map(|part| part.len()).sum());
+    let bytes = Rc::get_mut(&mut joined).unwrap().as_mut_ptr() as *mut u8;
+    let mut at = 0;
+    for part in parts {
+        unsafe { std::ptr::copy_nonoverlapping(part.as_ptr(), bytes.add(at), part.len()) };
+        at += part.len();
+    }
+    unsafe { Rc::from_raw(Rc::into_raw(joined.assume_init()) as *const str) }
+}
 fn first_codepoint_0(mut v0: Rc<str>) -> Rc<str> {
     let v1: Rc<str> = string_slice(&v0, 0i32 as i64, 1i32 as i64);
     v1
@@ -22,7 +32,7 @@ fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("éλ"); } LIT.with(|lit| lit.clone()) };
     let v1: Rc<str> = first_codepoint_0(v0.clone());
     let v2: Rc<str> = second_codepoint_1(v0);
-    let v3: Rc<str> = Rc::<str>::from(format!("{}{}", v1.clone(), v2.clone()));
+    let v3: Rc<str> = string_concat(&[&*v1, &*v2]);
     let v4: i32 = (v1.len() as i32);
     let v5: bool = v4 == 2i32;
     if v5 {

@@ -338,6 +338,7 @@
 := case_name_lower \* t. (x : t) : string = !!!!UnionCaseName(x, "lower")
 := case_name_snake \* t. (x : t) : string = !!!!UnionCaseName(x, "snake")
 := case_name_kebab \* t. (x : t) : string = !!!!UnionCaseName(x, "kebab")
+:= case_initial \* t. (x : t) : string = !!!!UnionCaseName(x, "initial")
 
 /// ### case_of_name
 := case_of_name \* t. (text : string) : option t =
@@ -541,6 +542,8 @@
     macro |> case_name_lower |> _assert_eq' "hostmacro"
     GadtCase |> case_name_kebab |> _assert_eq' "gadt-case"
     GadtCase |> case_name_snake |> _assert_eq' "gadt_case"
+    macro |> case_initial |> _assert_eq' "h"
+    GadtCase |> case_initial |> _assert_eq' "g"
 
 ///- --timeout 900000
 

@@ -12150,16 +12150,17 @@ module spiral_compiler =
                     | [b] ->
                         match term s b with
                         | DLit (LitString x) -> x
-                        | b -> raise_type_error s <| sprintf "UnionCaseName's style must be a string literal: exact, lower, snake or kebab.\nGot: %s" (show_data b)
+                        | b -> raise_type_error s <| sprintf "UnionCaseName's style must be a string literal: exact, lower, initial, snake or kebab.\nGot: %s" (show_data b)
                     | _ -> raise_type_error s "UnionCaseName takes the union value and an optional style literal."
                 let styled (k : string) =
                     match style with
                     | "exact" -> k
                     | "lower" -> k.ToLowerInvariant()
+                    | "initial" -> string (System.Char.ToLowerInvariant k.[0])
                     | "snake" | "kebab" ->
                         let separator = if style = "snake" then "_" else "-"
                         k |> Seq.mapi (fun i c -> let lower = string (System.Char.ToLowerInvariant c) in if i > 0 && lower <> string c then separator + lower else lower) |> String.concat ""
-                    | x -> raise_type_error s <| sprintf "UnionCaseName's style must be exact, lower, snake or kebab.\nGot: %s" x
+                    | x -> raise_type_error s <| sprintf "UnionCaseName's style must be exact, lower, initial, snake or kebab.\nGot: %s" x
                 let name (k : string) = DLit (LitString (styled k))
                 match term s a with
                 | DNominal(DV(L(_,YUnion h) & v) & a, _) ->
@@ -14504,6 +14505,58 @@ module spiral_compiler =
         let string_slice () =
             global' "fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {\n    let bytes = value.as_bytes();\n    let length = bytes.len() as i64;\n    if from < 0 || from > length || to < from - 1 || to >= length { std::process::abort(); }\n    if to < from { return Rc::<str>::from(\"\"); }\n    if (bytes[from as usize] & 0xC0) == 0x80 || (to + 1 < length && (bytes[(to + 1) as usize] & 0xC0) == 0x80) { std::process::exit(3); }\n    let slice = &bytes[from as usize..(to + 1) as usize];\n    match std::str::from_utf8(slice) { Ok(text) => Rc::<str>::from(text), Err(error) => Rc::<str>::from(std::str::from_utf8(&slice[..error.valid_up_to()]).unwrap_or(\"\")) }\n}"
 
+        let string_concat () =
+            global' "fn string_concat(parts: &[&str]) -> Rc<str> {\n    let mut joined = Rc::<[u8]>::new_uninit_slice(parts.iter().map(|part| part.len()).sum());\n    let bytes = Rc::get_mut(&mut joined).unwrap().as_mut_ptr() as *mut u8;\n    let mut at = 0;\n    for part in parts {\n        unsafe { std::ptr::copy_nonoverlapping(part.as_ptr(), bytes.add(at), part.len()) };\n        at += part.len();\n    }\n    unsafe { Rc::from_raw(Rc::into_raw(joined.assume_init()) as *const str) }\n}"
+        let concat_planned = Dictionary<TypedOp, Data list>(HashIdentity.Reference)
+        let concat_reads (l : Data list) = l |> List.collect (fun d -> data_term_vars d |> Array.toList |> List.choose (function WV(L(j,_)) -> Some j | _ -> None))
+        let concat_fusions (x : TypedBind []) =
+            let fused = HashSet<int>()
+            let defined = Dictionary<int, int>()
+            let chain_reads = Dictionary<int, Set<int>>()
+            let parts = Dictionary<int, Data list>()
+            let vars (vs : TyV seq) = vs |> Seq.map (fun (L(i,_)) -> i) |> Seq.toList
+            let plain_reads t =
+                match x.[t] with
+                | TyLet(_,_,o) ->
+                    match o with
+                    | TyOp(_,l) | TyArrayLiteral(_,l) -> Some (concat_reads l)
+                    | TyMacro l -> Some (l |> List.collect (function CMTerm(d,_) -> concat_reads [d] | _ -> []))
+                    | TyJoinPoint(_,a) -> Some (vars a)
+                    | TyToLayout(d,_) | TyUnionBox(_,d,_) | TyConv(_,d) | TyArrayCreate(_,d) | TyArrayLength(_,d) | TyStringLength(_,d) -> Some (concat_reads [d])
+                    | TyApply(v,d) -> Some (vars [v] @ concat_reads [d])
+                    | TyLayoutIndexAll v | TyLayoutIndexByKey(v,_) -> Some (vars [v])
+                    | _ -> None
+                | _ -> None
+            for m in 0 .. x.Length - 1 do
+                match x.[m] with
+                | TyLet(d,_,(TyOp(StaticStringConcat,([_;_] as l)) as o)) ->
+                    let reads = concat_reads l
+                    let mutable chain = Set.ofList reads
+                    let absorbed = Dictionary<int, int>()
+                    for j in List.distinct reads do
+                        match defined.TryGetValue j with
+                        | true, k ->
+                            let inner = chain_reads.[k]
+                            let once = reads |> List.filter ((=) j) |> List.length = 1
+                            let dead_after = match live_after.TryGetValue x.[m] with | true, f -> not (f j) | _ -> false
+                            let untouched = seq { k + 1 .. m - 1 } |> Seq.forall (fun t -> match x.[t] with TyLet(_,_,TyOp(StaticStringConcat,_)) -> true | _ -> match plain_reads t with Some vs -> vs |> List.forall (fun v -> v <> j && not (Set.contains v inner)) | None -> false)
+                            if once && dead_after && untouched then
+                                fused.Add k |> ignore
+                                absorbed.[j] <- k
+                                chain <- Set.union (Set.remove j chain) inner
+                        | _ -> ()
+                    chain_reads.[m] <- chain
+                    parts.[m] <- l |> List.collect (fun part ->
+                        match data_term_vars part with
+                        | [|WV(L(j,_))|] when absorbed.ContainsKey j -> parts.[absorbed.[j]]
+                        | _ -> [part])
+                    concat_planned.[o] <- parts.[m]
+                    match data_free_vars d with
+                    | [|L(i,_)|] -> defined.[i] <- m
+                    | _ -> ()
+                | _ -> ()
+            fused
+
         let layout_default_ready = Dictionary<string, bool>()
         let union_default_ready = Dictionary<string, bool>()
         let rec tyv x =
@@ -14540,7 +14593,11 @@ module spiral_compiler =
         and method_param_list (tag : int) (x : TyV []) = x |> Array.mapi (fun n (L(i,t)) -> if rust_borrowed tag n then $"mut v{i}: &{tyv t}" else $"mut v{i}: {tyv t}") |> String.concat ", "
         and method_args (tag : int) (x : TyV []) = x |> Array.mapi (fun n (L(i,_) as v) -> if rust_borrowed tag n then (if current_borrowed.Contains i then $"v{i}" else $"&v{i}") else var v) |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
-            Array.iter (fun b ->
+            let fused = concat_fusions x
+            x |> Array.iteri (fun k b ->
+              match b with
+              | TyLet(_,_,TyOp(StaticStringConcat,_)) when fused.Contains k -> ()
+              | _ ->
                 let saved = current_live.Value
                 let saved_known = current_known.Value
                 let saved_counts = current_counts.Value
@@ -14554,7 +14611,7 @@ module spiral_compiler =
                 current_live.Value <- saved
                 current_known.Value <- saved_known
                 current_counts.Value <- saved_counts
-                ) x
+                )
         and tup x =
             match data_term_vars x with
             | [||] -> "()"
@@ -14566,6 +14623,7 @@ module spiral_compiler =
             | [|x|] -> x
             | x -> String.concat ", " x |> sprintf "(%s)"
         and op s d a =
+            let concat_op = a
             let jp (a, b) =
                 match a with
                 | JPMethod(a,c) -> let tag = (method (a,c)).tag in sprintf "%s(%s)" method_names.[tag] (method_args tag b)
@@ -14851,7 +14909,22 @@ module spiral_compiler =
                 | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
                 | StringIndex, [a;b] -> $"{tup a}.as_bytes()[{tup b} as usize]"
                 | StringSlice, [a;b;c] -> string_slice (); $"string_slice(&{tup a}, {tup b} as i64, {tup c} as i64)"
-                | StaticStringConcat, [a;b] -> $"Rc::<str>::from(format!(\"{{}}{{}}\", {tup a}, {tup b}))"
+                | StaticStringConcat, [a;b] ->
+                    string_concat ()
+                    let literal (text : string) =
+                        let owned = litRust (LitString text)
+                        if owned.StartsWith "Rc::<str>::from(" && owned.EndsWith ")" then owned.Substring(16, owned.Length - 17) else owned
+                    let parts, pending =
+                        (([], None), (match concat_planned.TryGetValue concat_op with | true, planned -> planned | _ -> [a;b])) ||> List.fold (fun (parts, pending) d ->
+                            match data_term_vars d, pending with
+                            | [|WLit (LitString text)|], Some before -> parts, Some (before + text)
+                            | [|WLit (LitString text)|], None -> parts, Some text
+                            | terms, _ ->
+                                let parts = match pending with Some text -> literal text :: parts | None -> parts
+                                let part = match terms with [|WV(L(i,_))|] -> $"&*v{i}" | _ -> $"&*{tup d}"
+                                part :: parts, None)
+                    let parts = match pending with Some text -> literal text :: parts | None -> parts
+                    $"""string_concat(&[{parts |> List.rev |> String.concat ", "}])"""
                 | ArrayIndex, [a;b] ->
                     let handle, element = match data_term_vars a with [|WV(L(i,YArray t))|] -> $"v{i}", Some t | _ -> tup a, None
                     let read = $"{handle}.borrow()[{tup b} as usize]"

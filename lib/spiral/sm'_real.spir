@@ -154,7 +154,7 @@
                         := _, fields =
                             real_core::record_fold
                                 \ { state = separator, acc key value } =>
-                                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                    "; ", acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* format_debug_real `(`value) value
                                 ("", "") x
                         "{ " ++#* fields ++#* " }"
                     | _ => format_debug_other_rust `t x
@@ -183,7 +183,7 @@
                         := _, fields =
                             real_core::record_fold
                                 \ { state = separator, acc key value } =>
-                                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                    "; ", acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* format_debug_real `(`value) value
                                 ("", "") x
                         "{ " ++#* fields ++#* " }"
                     | _ =>
@@ -210,7 +210,7 @@
                         := _, fields =
                             real_core::record_fold
                                 \ { state = separator, acc key value } =>
-                                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                    "; ", acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* format_debug_real `(`value) value
                                 ("", "") x
                         "{ " ++#* fields ++#* " }"
                     | _ =>
@@ -241,7 +241,7 @@
                         := _, fields =
                             real_core::record_fold
                                 \ { state = separator, acc key value } =>
-                                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                    "; ", acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* format_debug_real `(`value) value
                                 ("", "") x
                         "{ " ++#* fields ++#* " }"
                     | _ =>
@@ -267,7 +267,7 @@
                         := _, fields =
                             real_core::record_fold
                                 \ { state = separator, acc key value } =>
-                                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                    "; ", acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* format_debug_real `(`value) value
                                 ("", "") x
                         "{ " ++#* fields ++#* " }"
                     | _ =>
@@ -293,7 +293,7 @@
                         := _, fields =
                             real_core::record_fold
                                 \ { state = separator, acc key value } =>
-                                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                    "; ", acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* format_debug_real `(`value) value
                                 ("", "") x
                         "{ " ++#* fields ++#* " }"
                     | _ =>
@@ -319,7 +319,7 @@
                         := _, fields =
                             real_core::record_fold
                                 \ { state = separator, acc key value } =>
-                                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                    "; ", acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* format_debug_real `(`value) value
                                 ("", "") x
                         "{ " ++#* fields ++#* " }"
                     | _ =>
@@ -386,7 +386,7 @@
                         := _, fields =
                             real_core::record_fold
                                 \ { state = separator, acc key value } =>
-                                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                    "; ", acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* format_debug_real `(`value) value
                                 ("", "") x
                         "{ " ++#* fields ++#* " }"
                     | _ =>
@@ -817,7 +817,7 @@
             real_core::record_fold
                 \ { state = separator, acc key value } =>
                     "; ",
-                    acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* show_real `(`value) value
+                    acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* show_real `(`value) value
                 ("", "")
                 x
         "{ " ++#* fields ++#* " }"

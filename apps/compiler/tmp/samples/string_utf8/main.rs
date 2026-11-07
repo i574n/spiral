@@ -1,6 +1,16 @@
 #![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
+fn string_concat(parts: &[&str]) -> Rc<str> {
+    let mut joined = Rc::<[u8]>::new_uninit_slice(parts.iter().map(|part| part.len()).sum());
+    let bytes = Rc::get_mut(&mut joined).unwrap().as_mut_ptr() as *mut u8;
+    let mut at = 0;
+    for part in parts {
+        unsafe { std::ptr::copy_nonoverlapping(part.as_ptr(), bytes.add(at), part.len()) };
+        at += part.len();
+    }
+    unsafe { Rc::from_raw(Rc::into_raw(joined.assume_init()) as *const str) }
+}
 fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {
     let bytes = value.as_bytes();
     let length = bytes.len() as i64;
@@ -16,7 +26,7 @@ fn spiral_main() -> i32 {
     let v2: u8 = v0.clone().as_bytes()[0i32 as usize];
     let v3: u8 = v0.clone().as_bytes()[1i32 as usize];
     let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("x"); } LIT.with(|lit| lit.clone()) };
-    let v5: Rc<str> = Rc::<str>::from(format!("{}{}", v0.clone(), v4));
+    let v5: Rc<str> = string_concat(&[&*v0, &*v4]);
     let v6: i32 = (v5.len() as i32);
     let v7: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ab"); } LIT.with(|lit| lit.clone()) };
     let v8: u8 = v7.clone().as_bytes()[0i32 as usize];
