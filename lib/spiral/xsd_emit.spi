@@ -1,3 +1,4 @@
+///> zig
 ///- --package . --timeout 1800000
 :< sm'_operators
 :< xsd

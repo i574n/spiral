@@ -1,3 +1,4 @@
+///> zig
 ///- --package .
 :< sm'_operators
 :< rust_operators

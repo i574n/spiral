@@ -15,6 +15,7 @@ defmodule Spiral.Cells.NotebookTest do
     # demo
 
     ```spiral
+    ///> rust
     inl value () = 1i32
     ```
     """)
@@ -36,7 +37,7 @@ defmodule Spiral.Cells.NotebookTest do
 
   test "spi: false writes no .spi export", %{dir: dir} do
     path = Path.join(dir, "no_spi.livemd")
-    File.write!(path, "# no spi\n\n```spiral\ninl value () = 1i32\n```\n")
+    File.write!(path, "# no spi\n\n```spiral\n///> rust\ninl value () = 1i32\n```\n")
 
     assert :ok =
              Notebook.run(path,
@@ -126,6 +127,7 @@ defmodule Spiral.Cells.NotebookTest do
     path = Path.join(dir, "demo.spi")
 
     File.write!(path, """
+    ///> rust
     /// # demo
     ///> rust
     test demo static =
@@ -162,6 +164,7 @@ defmodule Spiral.Cells.NotebookTest do
     path = Path.join(dir, "flags.spi")
 
     File.write!(path, """
+    ///> rust
     /// # flags
     inl prior () = 1i32
 
@@ -207,7 +210,7 @@ defmodule Spiral.Cells.NotebookTest do
     File.mkdir_p!(package)
     File.write!(Path.join(package, "package.spiproj"), "packageDir: .\npackages:\n    |core-\nmodules:\n    lib\n")
     path = Path.join(notebook, "note.spi")
-    File.write!(path, "///- --package vendor/pkg\ninl value () = 1i32\n\ntest value_is_one =\n    value ()\n")
+    File.write!(path, "///> rust\n///- --package vendor/pkg\ninl value () = 1i32\n\n///> rust\ntest value_is_one =\n    value ()\n")
 
     assert :ok =
              Notebook.run(path,
@@ -226,7 +229,7 @@ defmodule Spiral.Cells.NotebookTest do
     File.mkdir_p!(lib)
     File.write!(Path.join(lib, "package.spiproj"), "packages:\n    |core-\nmodules:\n")
     path = Path.join(dir, "mounted.spi")
-    File.write!(path, "///- --package #{lib}\ninl value () = 1i32\n\ntest value_is_one =\n    value ()\n")
+    File.write!(path, "///> rust\n///- --package #{lib}\ninl value () = 1i32\n\n///> rust\ntest value_is_one =\n    value ()\n")
 
     assert :ok =
              Notebook.run(path,
@@ -241,21 +244,59 @@ defmodule Spiral.Cells.NotebookTest do
              )
   end
 
-  test "spi: a ///> _ block is not compiled", %{dir: dir} do
+  test "spi: a file carrying the retired ///> _ fails to load at its line", %{dir: dir} do
     path = Path.join(dir, "skip.spi")
-    File.write!(path, "inl value () = 1i32\n\n///> _\ntest not_compiled =\n    not_spiral_emitter\n\ntest compiled =\n    value ()\n")
+    File.write!(path, "///> rust\ninl value () = 1i32\n\n///> _\ninl main () : i32 =\n    0i32\n")
     {:ok, agent} = Agent.start_link(fn -> [] end)
 
-    assert :ok = Notebook.run(path, compile: compile(agent), rustc: &rustc_ok/1, execute: run_value("ok\n"))
+    error =
+      assert_raise ArgumentError, fn ->
+        Notebook.run(path, compile: compile(agent), rustc: &rustc_ok/1, execute: run_value("ok\n"))
+      end
 
-    sources = Agent.get(agent, & &1)
+    assert Exception.message(error) =~ ~r/skip\.spi:4: \/\/\/> _ is retired/
+    assert Agent.get(agent, & &1) == []
+  end
+
+  defp compiled_sources(dir, name, text) do
+    path = Path.join(dir, name)
+    File.write!(path, "///> rust\n" <> text)
+    {:ok, agent} = Agent.start_link(fn -> [] end)
+    assert :ok = Notebook.run(path, compile: compile(agent), rustc: &rustc_ok/1, execute: run_value("ok\n"))
+    Agent.get(agent, & &1)
+  end
+
+  test "spi: a file with tests never compiles its program entry", %{dir: dir} do
+    sources =
+      compiled_sources(dir, "entry.spi", "inl value () = 1i32\n\n///> rust\ntest value_is_one =\n    value ()\n\ninl main () : i32 =\n    entry_marker ()\n    0i32\n")
+
     assert Enum.any?(sources, &(&1 =~ "inl value () = 1i32"))
-    refute Enum.any?(sources, &(&1 =~ "not_spiral_emitter"))
+    refute Enum.any?(sources, &(&1 =~ "entry_marker"))
+  end
+
+  test "spi: a test-free file still runs its self-checking main", %{dir: dir} do
+    sources = compiled_sources(dir, "check.spi", "inl value () = 1i32\n\ninl main () : i32 =\n    self_check_marker (value ())\n")
+
+    assert Enum.any?(sources, &(&1 =~ "self_check_marker"))
+  end
+
+  test "spi: an export-only main is never compiled", %{dir: dir} do
+    sources =
+      compiled_sources(dir, "exports.spi", "inl value () = 1i32\n\ninl main () : i32 =\n    export \"export_marker\" value\n    0i32\n")
+
+    refute Enum.any?(sources, &(&1 =~ "export_marker"))
+  end
+
+  test "spi: a main that dispatches on the backend is never compiled", %{dir: dir} do
+    text = "inl value () = 1i32\n\ninl main () =\n    backend_switch {\n        Rust = fun () => dispatch_marker ()\n    }\n"
+    sources = compiled_sources(dir, "native.spi", text)
+
+    refute Enum.any?(sources, &(&1 =~ "dispatch_marker"))
   end
 
   test "spi: test blocks compile together", %{dir: dir} do
     path = Path.join(dir, "together.spi")
-    File.write!(path, "inl left () = 1i32\n\ninl right () = 2i32\n\ntest left_is_one =\n    left ()\n\ntest right_is_two =\n    right ()\n")
+    File.write!(path, "///> rust\ninl left () = 1i32\n\ninl right () = 2i32\n\n///> rust\ntest left_is_one =\n    left ()\n\n///> rust\ntest right_is_two =\n    right ()\n")
     parent = self()
 
     compile = fn %{source: source} ->
@@ -276,7 +317,7 @@ defmodule Spiral.Cells.NotebookTest do
 
   test "spi: a static test block's definitions reach later blocks; a plain test block's do not", %{dir: dir} do
     path = Path.join(dir, "reach.spi")
-    File.write!(path, "test kept static =\n    inl kept () = 1i32\n\ntest dropped =\n    inl dropped () = 2i32\n    dropped ()\n\ntest uses_kept =\n    kept ()\n")
+    File.write!(path, "///> rust\ntest kept static =\n    inl kept () = 1i32\n\n///> rust\ntest dropped =\n    inl dropped () = 2i32\n    dropped ()\n\n///> rust\ntest uses_kept =\n    kept ()\n")
     {:ok, agent} = Agent.start_link(fn -> [] end)
 
     assert :ok = Notebook.run(path, compile: compile(agent), rustc: &rustc_ok/1, execute: run_value("ok\n"))
@@ -288,7 +329,7 @@ defmodule Spiral.Cells.NotebookTest do
 
   test "spi: at most four test blocks run at a time", %{dir: dir} do
     path = Path.join(dir, "many.spi")
-    File.write!(path, Enum.map_join(1..10, "\n", &"inl f#{&1} () = #{&1}i32\n\ntest f#{&1}_runs =\n    f#{&1} ()\n"))
+    File.write!(path, "///> rust\n" <> Enum.map_join(1..10, "\n", &"inl f#{&1} () = #{&1}i32\n\n///> rust\ntest f#{&1}_runs =\n    f#{&1} ()\n"))
     {:ok, counter} = Agent.start_link(fn -> {0, 0} end)
 
     compile = fn _ ->
@@ -305,8 +346,8 @@ defmodule Spiral.Cells.NotebookTest do
 
   test "spi: a _real.spir sibling becomes the main_real module", %{dir: dir} do
     path = Path.join(dir, "real.spi")
-    File.write!(path, "inl twice (x : i32) : i32 = real twice_real x\n\ntest twice_runs =\n    twice 21i32\n")
-    File.write!(Path.join(dir, "real_real.spir"), "inl twice_real (x : i32) : i32 = x + x\n\ntest twice_real_runs =\n    inl y = twice_real 2i32\n    y\n")
+    File.write!(path, "///> rust\ninl twice (x : i32) : i32 = real twice_real x\n\n///> rust\ntest twice_runs =\n    twice 21i32\n")
+    File.write!(Path.join(dir, "real_real.spir"), "inl twice_real (x : i32) : i32 = x + x\n\n///> rust\ntest twice_real_runs =\n    inl y = twice_real 2i32\n    y\n")
     {:ok, agent} = Agent.start_link(fn -> [] end)
 
     compile = fn %{spi_path: spi, source: source} ->

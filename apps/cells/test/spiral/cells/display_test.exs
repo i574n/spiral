@@ -116,6 +116,7 @@ defmodule Spiral.Cells.DisplayTest do
     #!spiral
 
     ///- --test
+    ///> rust
 
     1i32
     """)

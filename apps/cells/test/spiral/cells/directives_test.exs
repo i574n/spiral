@@ -67,28 +67,24 @@ defmodule Spiral.Cells.DirectivesTest do
   test "builder lines are recorded and the body stays spiral" do
     assert %{
              code: "inl main () : i32 =\n    1i32\n",
-             skip: false,
              builders: [%{tool: :rust, contract: nil, deps: []}]
            } =
              Directives.prepare("///> rust\n1i32")
 
     assert %{
              code: "inl main () : i32 =\n    1i32\n",
-             skip: false,
              builders: [%{tool: :rust, contract: ""}]
            } =
              Directives.prepare("///> rust -c\n1i32")
 
     assert %{
              code: "inl main () : i32 =\n    1i32\n",
-             skip: false,
              builders: [%{tool: :rust, contract: "", deps: [%{name: "near-token", version: "*"}]}]
            } = Directives.prepare("///> rust -cd near-token\n1i32")
 
-    assert %{skip: true, builders: [], code: "inl main () : i32 =\n    1i32\n"} =
-             Directives.prepare("///> _\n1i32")
+    assert_raise ArgumentError, ~r/retired/, fn -> Directives.prepare("///> _\n1i32") end
 
-    assert %{builders: [%{tool: :lua}], skip: false} = Directives.prepare("///> lua\n1i32")
+    assert %{builders: [%{tool: :lua}]} = Directives.prepare("///> lua\n1i32")
 
     assert %{builders: [%{tool: :fsharp}, %{tool: :gleam}]} =
              Directives.prepare("///> fsharp\n///> gleam\n1i32")

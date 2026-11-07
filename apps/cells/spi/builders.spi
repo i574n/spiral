@@ -1,3 +1,4 @@
+///> gleam
 ///- --package .
 ///> gleam
 :# builders static =
@@ -65,10 +66,6 @@
     | ForLean
     | ForWgsl
 
-:| tool_choice =
-    | SkipTool
-    | Tool : tool
-
 :| field =
     | FContract
     | FWasm
@@ -97,24 +94,22 @@
 :== builder = { tool : tool; raw : string; values : builder_values; deps : list dep; cleanup : option bool }
 
 :| command =
-    | SkipCommand
     | Builder : builder
 
-:= tool_of (name : string) : option tool_choice =
-    ? name = "rust" ?> Some (Tool ForRust)
-    |? name = "fsharp" || name = "fs" ?> Some (Tool ForFsharp)
-    |? name = "typescript" || name = "ts" ?> Some (Tool ForTypescript)
-    |? name = "python" || name = "py" ?> Some (Tool ForPython)
-    |? name = "cuda" ?> Some (Tool ForCuda)
-    |? name = "cpp" ?> Some (Tool ForCpp)
-    |? name = "gleam" ?> Some (Tool ForGleam)
-    |? name = "lua" ?> Some (Tool ForLua)
-    |? name = "c" ?> Some (Tool ForC)
-    |? name = "pascal" || name = "delphi" ?> Some (Tool ForPascal)
-    |? name = "zig" ?> Some (Tool ForZig)
-    |? name = "lean" ?> Some (Tool ForLean)
-    |? name = "wgsl" ?> Some (Tool ForWgsl)
-    |? name = "_" ?> Some SkipTool
+:= tool_of (name : string) : option tool =
+    ? name = "rust" ?> Some ForRust
+    |? name = "fsharp" || name = "fs" ?> Some ForFsharp
+    |? name = "typescript" || name = "ts" ?> Some ForTypescript
+    |? name = "python" || name = "py" ?> Some ForPython
+    |? name = "cuda" ?> Some ForCuda
+    |? name = "cpp" ?> Some ForCpp
+    |? name = "gleam" ?> Some ForGleam
+    |? name = "lua" ?> Some ForLua
+    |? name = "c" ?> Some ForC
+    |? name = "pascal" || name = "delphi" ?> Some ForPascal
+    |? name = "zig" ?> Some ForZig
+    |? name = "lean" ?> Some ForLean
+    |? name = "wgsl" ?> Some ForWgsl
     |: None
 
 := tool_name (t : tool) : string =
@@ -396,29 +391,28 @@
 
 := unknown_backend (name : string) : result command string = Error ("unknown Spiral backend " ++ inspect name ++ ", expected " ++ expected ())
 
-:= chosen_command (choice : tool_choice) (args : list string) (raw : string) : result command string =
-    ?= choice ?|
-    | SkipTool => Ok SkipCommand
-    | Tool t =>
-        ?= parse_tokens t args (blank t raw) ?|
-        | Ok b => Ok (Builder b)
-        | Error e => Error e
+:= chosen_command (t : tool) (args : list string) (raw : string) : result command string =
+    ?= parse_tokens t args (blank t raw) ?|
+    | Ok b => Ok (Builder b)
+    | Error e => Error e
 
 := named_command (name : string) (args : list string) (raw : string) : result command string =
     ?= tool_of (text::lowercase name) ?|
-    | Some choice => chosen_command choice args raw
+    | Some t => chosen_command t args raw
     | None => unknown_backend name
+
+:= retired_skip () : result command string =
+    Error
+        "///> _ is retired: Cells infers the cells that never run. A file with any test cell never runs its main; a main that only registers exports, or that dispatches on the backend (backend_switch, ? is_rust ()), never runs. Delete the line."
 
 := command_of (tokens : list string) (raw : string) : result command string =
     ?= tokens ?|
     | [] => unknown_backend ""
     | name :: args =>
-        ? name <> "_" ?> named_command name args raw
-        |? listm::length args = 0i32 ?> Ok SkipCommand
-        |: Error "builder _ takes no arguments"
+        ? name <> "_" ?> named_command name args raw |: retired_skip ()
 
 := parse_command (rest : string) : result command string =
-    ? rest = "_" ?> Ok SkipCommand
+    ? rest = "_" ?> retired_skip ()
     |:
         ?= tokens_from rest "" None [] ?|
         | Ok tokens => command_of tokens rest
@@ -472,7 +466,6 @@
 
 := command_wire (c : command) : string =
     ?= c ?|
-    | SkipCommand => field_text "_"
     | Builder b => builder_text b
 
 := deps_wire (tokens : string) : string = sm'::concat_list "" (listm::map (\ t => dep_text (dep_of t)) (sm'::split_list "\n" tokens))
@@ -482,6 +475,7 @@
     | Ok (commands, body) => "K" ++ field_text body ++ field_text (text::show_i32 (listm::length commands)) ++ sm'::concat_list "" (listm::map command_wire commands)
     | Error e => "E" ++ e
 
+///> gleam
 :# builder_lines_parse_into_typed_builders =
     := f = field_text
     := head = "K" ++ f "fn main\n////> kept" ++ f "1" ++ f "rust" ++ f "rust -c --deps serde=\"1.0\" rand" ++ f "+" ++ f "-" ++ f "-" ++ f "-" ++ f "-"

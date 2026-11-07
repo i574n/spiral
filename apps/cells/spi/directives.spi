@@ -1,3 +1,4 @@
+///> zig
 := (++) (left : string) (right : string) : string = left ^^ right
 
 :~ ^ take_token (src : string) (i : i32) : i32 =
@@ -40,13 +41,12 @@
 
 :| backend_line =
     | RustCell
-    | SkippedCell
 
 :== flags = { print_code : bool; timeout : timeout; packages : list string }
 
-:== prepared = { code : string; flags : flags; main : cell::main_source; skip : bool }
+:== prepared = { code : string; flags : flags; main : cell::main_source }
 
-:== scan_state = { kept : string; flags : flags; seen : bool; started : bool; skip : bool }
+:== scan_state = { kept : string; flags : flags; seen : bool; started : bool }
 
 := no_flags () : flags = { print_code = !-; timeout = NoTimeout; packages = [] }
 
@@ -71,24 +71,20 @@
 
 := backend_of (rest : string) : outcome backend_line =
     := trimmed = text::trim rest
-    ? trimmed = "_" ?> Ready SkippedCell
-    |? trimmed = "rust" || text::starts_with trimmed "rust " ?> Ready RustCell
+    ? trimmed = "rust" || text::starts_with trimmed "rust " ?> Ready RustCell
     |: Refused (UnknownBackend trimmed)
 
 := finished (s : scan_state) : outcome prepared =
     ? text::contains s::kept "\n#!" || text::starts_with s::kept "#!" ?> Refused ShebangLine
     |:
         := wrapped, generated = cell::wrap s::kept
-        Ready { code = wrapped; flags = s::flags; main = generated; skip = s::skip }
+        Ready { code = wrapped; flags = s::flags; main = generated }
 
 := kept_line (s : scan_state) (line : string) : scan_state =
     { s ?| kept = (? s::started ?> s::kept ++ "\n" ++ line |: line); started = !+ }
 
 := flags_line (s : scan_state) (line : string) : outcome flags =
     merged (tokens_from (text::drop line (text::length "///- ")) 0i32 []) s::flags
-
-:= backend_seen (s : scan_state) (b : backend_line) : scan_state =
-    ?= b ?| SkippedCell => { s ?| skip = !+ } | RustCell => s
 
 :~ ^ scanned (src : string) (i : i32) (s : scan_state) : outcome prepared =
     ?= text::next_line src i ?|
@@ -103,7 +99,7 @@
                 | Refused e => Refused e
         |? text::starts_with line "///> " ?>
             ?= backend_of (text::drop line (text::length "///> ")) ?|
-            | Ready b => scanned src next (backend_seen s b)
+            | Ready _ => scanned src next s
             | Refused e => Refused e
         |? text::starts_with line "///" ?> Refused (UnknownDirective line)
         |: scanned src next (kept_line s line)
@@ -123,10 +119,10 @@
 := prepared_text (p : prepared) : string =
     := f = p::flags
     := head = "ok\n" ++ flag_text f::print_code ++ "\n" ++ timeout_text f::timeout ++ "\n" ++ cell::main_text p::main
-    head ++ "\n" ++ sm'::concat_list "\t" (listm::rev f::packages) ++ "\n" ++ flag_text p::skip ++ "\n" ++ p::code
+    head ++ "\n" ++ sm'::concat_list "\t" (listm::rev f::packages) ++ "\n" ++ p::code
 
 := encoded (o : outcome prepared) : string = ?= o ?| Ready p => prepared_text p | Refused e => error_text e
 
-:= initial () : scan_state = { kept = ""; flags = no_flags (); seen = !-; started = !-; skip = !- }
+:= initial () : scan_state = { kept = ""; flags = no_flags (); seen = !-; started = !- }
 
 := prepare (code : string) : string = encoded (scanned (text::replace code "\r\n" "\n") 0i32 (initial ()))

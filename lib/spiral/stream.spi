@@ -1,3 +1,4 @@
+///> zig
 :# stream static =
     :< testing
 
@@ -36,6 +37,7 @@
     ||> listm::foldBack \ x acc =>
         StreamCons (x, \ () => acc)
 
+///> zig
 :# from_list =
     listm::init 3i32 id
     |> from_list
@@ -60,6 +62,7 @@
 := item i =
     try_item i >> optionm::value
 
+///> zig
 :# try_item =
     listm::init 10i32 id
     |> from_list
@@ -76,6 +79,7 @@
         StreamCons (fn n, \ () => 루프 (n + 1))
     루프 0
 
+///> zig
 :# new_infinite_stream =
     new_infinite_stream print_and_return
     |> item 4i32
@@ -109,6 +113,7 @@
         join_body_unit body s s'
     루프 \ () => s
 
+///> zig
 :# memoize =
     := memo_stream = new_finite_stream print_and_return 10 |> memoize
 
@@ -120,6 +125,7 @@
     |> item 5i32
     |> _assert_eq 5i32
 
+///> zig
 :# memoize_2 =
     := memo_stream = new_infinite_stream_ print_and_return |> memoize
 
@@ -143,6 +149,7 @@
     \ x => Some (x, f x)
     |> unfold
 
+///> zig
 :# iterate =
     iterate ((*) 2) 1i32
     |> item 10i32
@@ -155,6 +162,7 @@
             x, f x
     |> unfold
 
+///> zig
 :# iterate_2 =
     iterate_map ((*) 2) Some 1i32
     |> item 10i32
@@ -170,24 +178,28 @@
 := sum seq =
     seq |> fold (+) 0
 
+///> zig
 :# sum =
     listm::init 10i32 id
     |> from_list
     |> sum
     |> _assert_eq 45
 
+///> zig
 :# sum_2 =
     new_finite_stream print_and_return 10i32
     |> take_while \ n (_ : i32) => n < 5
     |> sum
     |> _assert_eq 10
 
+///> zig
 :# sum_3 =
     new_infinite_stream print_and_return
     |> take_while \ n (_ : i32) => n < 5i32
     |> sum
     |> _assert_eq 10
 
+///> zig
 :# sum_4 =
     iterate ((*) 6) 1i32
     |> take_while \ _ i => i <= 7i32
@@ -201,6 +213,7 @@
     |> fst
     |> rev
 
+///> zig
 :# indexed =
     listm::init 10i32 ((*) 2)
     |> from_list
@@ -213,6 +226,7 @@
     ||> fold_back \ x acc =>
         StreamCons (fn x, \ () => acc)
 
+///> zig
 :# map =
     listm::init 10i32 id
     |> from_list
@@ -236,6 +250,7 @@
         | StreamNil, _ | _, StreamNil => StreamNil
     루프 s1 s2
 
+///> zig
 :# zip_with =
     ((listm::init 10i32 id |> from_list), (listm::init 10i32 ((*) 2) |> from_list))
     ||> zip_with (+)
@@ -248,6 +263,7 @@
 := zip_ s1 s2 =
     zip_with_ pair s1 s2
 
+///> zig
 :# zip =
     ((listm::init 10i32 id |> from_list), (listm::init 10i32 ((*) 2) |> from_list))
     ||> zip
@@ -269,6 +285,7 @@
             ~~ body x
     루프 s
 
+///> zig
 :# unzip =
     listm::init 10i32 id
     |> listm::map \ x => x, x

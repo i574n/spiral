@@ -1,3 +1,4 @@
+///> zig
 :< lustre
 
 :== model = int
@@ -78,7 +79,6 @@
         ^^ "tabindex=\"0\">-</button></div></div>"
     )
 
-///> _
 
 := main' (n : int) =
     simple init (update 1) view

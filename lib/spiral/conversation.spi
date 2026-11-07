@@ -25,6 +25,8 @@
     | Call (_, _, rest) => 1000i32 + weigh rest
     | Result (_, _, rest) => 10000i32 + weigh rest
 
+///> c
+///> rust
 :# an_answered_call_closes_the_transcript =
     := ~tokens_out = 7i32
     := t : transcript no_pending =

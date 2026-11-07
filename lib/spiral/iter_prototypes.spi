@@ -1,3 +1,4 @@
+///> zig
 :! into_iterator t = infer
 
 :? iter_collect t u : into_iterator u -> t u

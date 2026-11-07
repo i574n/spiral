@@ -1,3 +1,4 @@
+///> zig
 := float_native_types () =
     backend_switch {
         Lua = \ () => ()

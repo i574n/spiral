@@ -1,3 +1,4 @@
+///> zig
 :< rust_operators
 
 :# optionm static =
@@ -6,6 +7,7 @@
 := default_value d =
     optionm::defaultWith d
 
+///> zig
 :# default_value =
     None
     |> default_value 3i32
@@ -14,6 +16,7 @@
 := (/??) a b =
     a |> default_value b
 
+///> zig
 :# default_value_2 =
     None /?? 3i32
     |> _assert_eq 3i32
@@ -22,6 +25,7 @@
     | Some x => x
     | None => fn ()
 
+///> zig
 :# default_with =
     None
     |> default_with \ () => 3i32
@@ -32,6 +36,7 @@
     | Some x, Some y => fn x y |> Some
     | _ => None
 
+///> zig
 :# choose =
     (Some 2i32, Some 3)
     ||> choose (+)
@@ -41,6 +46,7 @@
     | Some x => fn x
     | None => ()
 
+///> zig
 :# iter =
     := n = mut 1i32
     := fn =

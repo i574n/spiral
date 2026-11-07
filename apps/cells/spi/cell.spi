@@ -1,3 +1,4 @@
+///> zig
 := (++) (left : string) (right : string) : string = left ^^ right
 
 :~ ^ nth_line (xs : list string) (i : i32) : string =
@@ -88,6 +89,49 @@
         := at = search_top xs (n - 1i32) -1i32
         ? at < 0i32 ?> text::ensure_nl code ++ "inl main () : i32 = 0i32\n", MainFromDefinitionsOnly
         |: text::ensure_nl (join_lines (map_main xs 0i32 at)), MainFromExpression
+
+:~ ^ entry_rows (xs : list string) (i : i32) (at : i32) (acc : list string) : list string =
+    ?= xs ?|
+    | [] => listm::rev acc
+    | line :: rest =>
+        := statement =
+            i > at && text::length line > 4i32 && text::starts_with line "    "
+            && not (text::is_space (text::index line 4i32))
+        entry_rows rest (i + 1i32) at (? statement ?> text::trim line :: acc |: acc)
+
+:= constant_row (row : string) : bool = row = "0i32" || row = "0" || row = "()"
+
+:= continuation_row (row : string) : bool = text::starts_with row ")" || text::starts_with row "|>"
+
+:= export_call_row (row : string) : bool =
+    := n = text::length row
+    := head = text::take row (n - 3i32)
+    n > 3i32 && text::drop row (n - 3i32) = " ()" && text::contains head "export" && not (text::contains head " ")
+
+:= export_row (row : string) : bool = text::starts_with row "export " || export_call_row row
+
+:~ ^ only_exports (rows : list string) (seen : bool) : bool =
+    ?= rows ?|
+    | [] => seen
+    | row :: rest =>
+        ? export_row row ?> only_exports rest !+
+        |? constant_row row || continuation_row row ?> only_exports rest seen
+        |: !-
+
+:= backend_entry (rows : list string) : bool =
+    ?= rows ?|
+    | [] => !-
+    | row :: _ =>
+        text::starts_with row "backend_switch" || text::starts_with row "? is_rust ()" || text::starts_with row "$'!main"
+
+:= entry_skipped (has_tests : bool) (code : string) : bool =
+    := xs = read_lines code
+    := block = last_block xs (listm::length xs - 1i32)
+    ? block < 0i32 || not (main_line (nth_line xs block)) ?> !-
+    |? has_tests ?> !+
+    |:
+        := rows = entry_rows xs 0i32 block []
+        only_exports rows !- || backend_entry rows
 
 := package_project (includes : string) : string =
     if includes = "" then """

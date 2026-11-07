@@ -3,54 +3,30 @@ defmodule Spiral.Cells.NotebookTargetsTest do
 
   alias Spiral.Cells.Notebook
 
-  test "untargeted blocks are implicit only without a static prelude or a declared default" do
-    plain = [%{kind: :spiral, source: "test a =\n    1 |> _assert_eq 1"}]
-    prelude = [%{kind: :spiral, source: "///- --test static\n///> c\nopen testing"} | plain]
-    saved = System.get_env("SPIRAL_CELLS_DEFAULT_TARGET")
-    System.delete_env("SPIRAL_CELLS_DEFAULT_TARGET")
-
-    try do
-      assert Notebook.implicit_default?(plain, [])
-      refute Notebook.implicit_default?(plain, default_target: "lua")
-      refute Notebook.implicit_default?(plain, default_target: "")
-      refute Notebook.implicit_default?(prelude, [])
-    after
-      if saved, do: System.put_env("SPIRAL_CELLS_DEFAULT_TARGET", saved)
-    end
-  end
-
-  test "an untargeted test step under the implicit default is marked to fail, a targeted one and a plain cell are not" do
+  test "an untargeted test step fails whatever the defaults, a targeted one and a plain cell do not" do
     steps = [
       %{index: 0, cell_source: "///- --test\ntest one =\n    1i32 |> _assert_eq 1i32"},
       %{index: 1, cell_source: "///- --test\n///> c\ntest two =\n    1i32 |> _assert_eq 1i32"},
       %{index: 2, cell_source: "inl f () = 1i32"}
     ]
 
-    [one, two, plain] = Notebook.with_builders(steps, [], true, %{0 => "one", 1 => "two"})
+    defaults = Spiral.Cells.Builders.commands("///> rust")
+    [one, two, plain] = Notebook.with_builders(steps, defaults, %{0 => "one", 1 => "two"})
     assert one.untargeted == "one"
     refute Map.has_key?(two, :untargeted)
     refute Map.has_key?(plain, :untargeted)
-    assert Notebook.untargeted_message("one") =~ "test one has no ///> target"
-
-    [declared] = Notebook.with_builders(Enum.take(steps, 1), [], false, %{0 => "one"})
-    refute Map.has_key?(declared, :untargeted)
+    assert Notebook.untargeted_message("one") == "NoTestTarget: test one names no target: add a ///> <lang> line to it"
   end
 
   @tag :tmp_dir
-  test "untargeted test blocks of a .spi are found by name, and a static prelude covers them", %{tmp_dir: dir} do
+  test "untargeted test blocks of a .spi are found by name, and a static prelude no longer covers them", %{tmp_dir: dir} do
     bare = Path.join(dir, "bare.spi")
     File.write!(bare, "inl f () = 1i32\n\ntest one =\n    f () |> _assert_eq 1i32\n\n///> rust\ntest two =\n    f () |> _assert_eq 1i32\n")
-    covered = Path.join(dir, "covered.spi")
-    File.write!(covered, "test covered static =\n    open testing\n\ntest three =\n    1i32 |> _assert_eq 1i32\n")
-    saved = System.get_env("SPIRAL_CELLS_DEFAULT_TARGET")
-    System.delete_env("SPIRAL_CELLS_DEFAULT_TARGET")
+    prelude = Path.join(dir, "prelude.spi")
+    File.write!(prelude, "///> rust\ntest prelude static =\n    open testing\n\ntest three =\n    1i32 |> _assert_eq 1i32\n")
 
-    try do
-      assert Notebook.untargeted_tests(bare) == ["one"]
-      assert Notebook.untargeted_tests(covered) == []
-    after
-      if saved, do: System.put_env("SPIRAL_CELLS_DEFAULT_TARGET", saved)
-    end
+    assert Notebook.untargeted_tests(bare) == ["one"]
+    assert Notebook.untargeted_tests(prelude) == ["three"]
   end
 
   test "an unknown ///> backend fails only its own step, and the other steps keep their builders" do
@@ -59,17 +35,16 @@ defmodule Spiral.Cells.NotebookTargetsTest do
       %{index: 1, cell_source: "///- --test\n///> c\ntest good =\n    1i32 |> _assert_eq 1i32"}
     ]
 
-    [bad, good] = Notebook.with_builders(steps, [], false, %{0 => "bad", 1 => "good"})
+    [bad, good] = Notebook.with_builders(steps, [], %{0 => "bad", 1 => "good"})
     assert bad.builder_error =~ ~s(unknown Spiral backend "nope")
     refute Map.has_key?(good, :builder_error)
     assert Enum.map(good.builders, & &1.tool) == [:c]
   end
 
-  test "a test's own target inherits the static prelude's crates for the same tool" do
+  test "a test's own target is taken as written, without the defaults' crates" do
     defaults = Spiral.Cells.Builders.commands("///> rust -d serde_json -d chrono")
-    [rust] = Notebook.inherit_deps(Spiral.Cells.Builders.commands("///> rust -d serde_json"), defaults)
-    assert Enum.map(rust.deps, & &1.name) == ["serde_json", "chrono"]
-    [zig] = Notebook.inherit_deps(Spiral.Cells.Builders.commands("///> zig"), defaults)
-    assert zig.deps == []
+    steps = [%{index: 0, cell_source: "///- --test\n///> rust -d serde_json\ntest one =\n    1i32 |> _assert_eq 1i32"}]
+    [one] = Notebook.with_builders(steps, defaults, %{0 => "one"})
+    assert Enum.map(hd(one.builders).deps, & &1.name) == ["serde_json"]
   end
 end

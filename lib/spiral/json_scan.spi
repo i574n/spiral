@@ -1,3 +1,4 @@
+///> zig
 :# json_scan static =
     :< testing
 

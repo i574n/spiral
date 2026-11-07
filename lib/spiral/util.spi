@@ -1,3 +1,4 @@
+///> zig
 :# util static =
     :< testing
 
@@ -16,6 +17,7 @@
     | App (f, x) => App (eval f, x) |> eval
     | _ => ski
 
+///> zig
 :# ski =
     eval I
     |> _assert_eq I
@@ -28,6 +30,7 @@
     |> eval
     |> _assert_eq I
 
+///> zig
 :# ski_identity_nested =
     App (App (I, I), I)
     |> eval
@@ -37,6 +40,7 @@
     |> eval
     |> _assert_eq I
 
+///> zig
 :# ski_constant =
     eval K
     |> _assert_eq K
@@ -49,6 +53,7 @@
     |> eval
     |> _assert_eq (App (K, K))
 
+///> zig
 :# ski_constant_applied =
     App (App (K, I), K)
     |> eval
@@ -62,6 +67,7 @@
     |> eval
     |> _assert_eq S
 
+///> zig
 :# ski_substitution =
     eval S
     |> _assert_eq S
@@ -74,6 +80,7 @@
     |> eval
     |> _assert_eq I
 
+///> zig
 :# ski_substitution_nested =
     App (App (App (S, K), I), (App (App (K, I), S)))
     |> eval
@@ -83,6 +90,7 @@
     |> eval
     |> _assert_eq S
 
+///> zig
 :# ski_substitution_deep =
     App (App (App (S, K), I), K)
     |> eval

@@ -1,3 +1,4 @@
+///> zig
 /// # sm'
 :# sm static =
     :< testing
@@ -778,6 +779,7 @@
     :& := 루프 i = join_body_unit body (? var_is i ?> i |: len) i
     from |> 루프
 
+///> zig
 :# index_of_char_from =
     "abcdefabc"
     |> index_of_char_from 2i32 'a'
@@ -1436,6 +1438,7 @@
     |> trim_start chars
     |> trim_end chars
 
+///> zig
 :# trim_with =
     "  jkl  "
     |> trim_with [ ' '; '\t'; '\n' ]
@@ -1463,6 +1466,7 @@
 := trim (input : string) : string =
     input |> trim_with []
 
+///> zig
 :# trim =
     "  ghi  "
     |> trim

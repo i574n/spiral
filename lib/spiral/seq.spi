@@ -1,3 +1,4 @@
+///> zig
 :# seq static =
     :< testing
 
@@ -11,6 +12,7 @@
         list
         |> listm'::try_item n
 
+///> zig
 :# from_list =
     listm::init 10i32 print_and_return
     |> from_list
@@ -23,6 +25,7 @@
         |> s
         |> optionm::map fn
 
+///> zig
 :# map =
     listm::init 10i32 id
     |> from_list
@@ -36,6 +39,7 @@
         |> s
         |> optionm::map (fn n)
 
+///> zig
 :# mapi =
     listm::init 10i32 print_and_return
     |> from_list
@@ -62,6 +66,7 @@
                 ~~ body fn s i i'
         루프 0 0
 
+///> zig
 :# choose =
     listm::init 10i32 print_and_return
     |> from_list
@@ -74,6 +79,7 @@
     |> mapi \ i x =>
         i, x
 
+///> zig
 :# indexed =
     listm::init 10i32 ((*) 2)
     |> from_list
@@ -84,6 +90,7 @@
 := zip n seq1 seq2 =
     seq1 n, seq2 n
 
+///> zig
 :# zip =
     ((listm::init 10i32 id |> from_list), (listm::init 10i32 ((*) 2) |> from_list))
     ||> zip 5i32
@@ -93,6 +100,7 @@
     \ n =>
         fn (seq1 n) (seq2 n)
 
+///> zig
 :# zip_with =
     ((listm::init 10i32 id |> from_list), (listm::init 10i32 ((*) 2) |> from_list))
     ||> zip_with (optionm'::choose (+))
@@ -119,6 +127,7 @@
 := sum_ seq =
     seq |> fold_ (+) 0
 
+///> zig
 :# sum =
     listm::init 10i32 id
     |> from_list
@@ -136,6 +145,7 @@
     |> fold_ (\ acc x => x :: acc) []
     |> listm::rev
 
+///> zig
 :# to_list =
     listm::init 10i32 id
     |> from_list
@@ -149,6 +159,7 @@
         ?> None
         |: index array n |> Some
 
+///> zig
 :# from_array =
     ;[ 1; 2; 3 ]
     |> from_array
@@ -169,6 +180,7 @@
         ar <- *ar ++ ;[x]
     *ar
 
+///> zig
 :# to_array =
     listm::init 10i32 id
     |> from_list
@@ -183,6 +195,7 @@
         | _ => acc |> listm::rev
     루프 [] 0
 
+///> zig
 :# take_while =
     listm::init 10i32 id
     |> from_list
@@ -190,6 +203,7 @@
     |> listm'::sum
     |> _assert_eq 10
 
+///> zig
 :# take_while_2 =
     stream::new_finite_stream print_and_return 10i32
     |> flip stream::try_item
@@ -204,6 +218,7 @@
         | _ => acc |> listm::rev
     루프 [] 0
 
+///> zig
 :# take_while_3 =
     stream::new_infinite_stream_ print_and_return
     |> flip stream::try_item
@@ -211,6 +226,7 @@
     |> listm'::sum
     |> _assert_eq 10
 
+///> zig
 :# take_while_4 =
     stream::new_infinite_stream_ print_and_return
     |> stream::memoize
@@ -221,6 +237,7 @@
     |> listm'::sum
     |> _assert_eq 10
 
+///> zig
 :# take_while_5 =
     stream::new_finite_stream print_and_return 10i32
     |> stream::memoize
@@ -243,6 +260,7 @@
 
 := memoize seq = memoize_ seq
 
+///> zig
 :# memoize =
     := seq =
         \ n => n |> print_and_return |> Some
@@ -265,6 +283,7 @@
         |: 루프 (f x) (n - 1)
     루프 x0 num_steps
 
+///> zig
 :# iterate =
     10i32 |> iterate ((*) 2) 1i32
     |> _assert_eq 1024
@@ -276,6 +295,7 @@
         |: 루프 (f x) (n - 1)
     루프 x0 num_steps
 
+///> zig
 :# iterate_2 =
     10i32 |> iterate_ ((*) 2) 1i32
     |> _assert_eq 1024
@@ -284,6 +304,7 @@
     listm::init num_steps id
     |> listm::fold (\ x _ => f x) x0
 
+///> zig
 :# iterate_3 =
     10i32 |> iterate' ((*) 2) 1i32
     |> _assert_eq 1024

@@ -1,3 +1,4 @@
+///> zig
 := export \* t. (name : string) (f : t) : () = !!!!Export(name, f)
 
 := main () : i32 =

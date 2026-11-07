@@ -69,10 +69,6 @@ if test_port? do
   System.put_env("SPIRAL_CELLS_COMPILER_PORT", Integer.to_string(port))
 end
 
-if System.get_env("SPIRAL_CELLS_DEFAULT_TARGET") in [nil, ""] do
-  System.put_env("SPIRAL_CELLS_DEFAULT_TARGET", "rust")
-end
-
 Spiral.Cells.Domain.ensure!()
 ExUnit.start(exclude: [:target_audit])
 

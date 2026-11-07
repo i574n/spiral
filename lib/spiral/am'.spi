@@ -1,3 +1,4 @@
+///> zig
 :# am static =
     :< testing
 
@@ -57,6 +58,7 @@
 /// ### equable
 :+ append array t = arraym::append
 
+///> zig
 :# append =
     ()
 

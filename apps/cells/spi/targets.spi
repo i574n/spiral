@@ -1,3 +1,4 @@
+///> zig
 :| target =
     | RustTarget
     | FsharpTarget

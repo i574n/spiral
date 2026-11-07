@@ -1,3 +1,4 @@
+///> gleam
 ///- --package .
 ///> gleam
 :# daemon static =
@@ -139,9 +140,11 @@
 := sample_ask () : compile_ask =
     { backend = "rust"; spi = "a.spi"; rs = "a.rs"; wait = WithinMs 900000i32; mtime = "17"; client = "42" }
 
+///> gleam
 :# a_compile_request_is_one_tab_separated_line =
     request_line (Compile (sample_ask ())) |> _assert_eq "compile\trust\ta.spi\ta.rs\t900000\t17\t42"
 
+///> gleam
 :# compile_replies_round_trip_through_their_line =
     := q = Compile (sample_ask ())
     := done = [ Compiled ("r1", None); Compiled ("r1", Some 7i32) ]
@@ -150,19 +153,23 @@
     := all = listm::append done (listm::append late more)
     listm::map (\ c => reply_of q (reply_line q c) = c) all |> _assert_eq [ !+; !+; !+; !+; !+; !+ ]
 
+///> gleam
 :# compile_lines_read_like_the_elixir_client_did =
     := lines = [ "ok\tr1\t7\textra"; "error\ttimeout\t3\tx"; "error"; "error\t5\tno\tmain"; "error\tbare text"; "error\t" ]
     := odd = [ unexpected "ok\tr1\t7\textra"; CompileTimedOut None; unexpected "error" ]
     := failed = [ CompileFailed (Some 5i32, "no\tmain"); CompileFailed (None, "bare text"); CompileFailed (None, "") ]
     listm::map compile_of lines |> _assert_eq (listm::append odd failed)
 
+///> gleam
 :# a_status_line_keeps_an_owner_with_spaces =
     := s = { pid = "9"; stamp = "1"; idle = "0"; queue = "2"; retiring = RetiringSince "123"; owner = "x lane" }
     reply_of Status (reply_line Status s) |> _assert_eq s
 
+///> gleam
 :# a_pool_line_round_trips_and_a_dash_is_no_reading =
     := busy = { served = 12i32; refused = 1i32; peak = 3i32; free_mb = Some 2048i32 }
     (reply_of Pool (reply_line Pool busy), reply_of Pool "pool\t0\t0\t1\t-") |> _assert_eq (busy, no_pool ())
 
+///> gleam
 :# hello_reads_the_banner_pid_and_stamp =
     reply_of Hello "spiral-cells\t1\t77\t5\textra" |> _assert_eq { pid = "77"; stamp = "5" }

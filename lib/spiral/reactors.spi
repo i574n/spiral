@@ -170,6 +170,8 @@
 
 := held_one_tick () : reactor (signal i64) (signal i64) (signal i64) = { init = Absent; react = \ held _ x => x, held }
 
+///> c
+///> rust
 :# chain_delays_one_tick =
     := program = chain (chain (chain (timer 4i64) (scale 3i64)) (held_one_tick ())) (sink ())
     := _, total = run_ticks program (\ _ => ()) 20i64
@@ -187,6 +189,8 @@
 := merge_four () : reactor () four_signals (signal i64) =
     { init = (); react = \ () _ ((a, b), (c, d)) => (), add_signals (add_signals a b) (add_signals c d) }
 
+///> c
+///> rust
 :# both_fans_out_and_joins =
     := bank = both (both (scale 1i64) (scale 2i64)) (both (scale 3i64) (scale 4i64))
     := _, total = run_ticks (chain (chain (chain (timer 3i64) bank) (merge_four ())) (sink ())) (\ _ => ()) 12i64
@@ -203,6 +207,8 @@
 := countdown (period : i64) (burst : i32) : reactor i32 () (signal i32) =
     { init = 0i32; react = countdown_step period burst }
 
+///> c
+///> rust
 :# microsteps_run_until_absent =
     run_micro (countdown 5i64 3i32) (\ _ => ()) 10i64 100i32 (\ (sum : i64) (v : i32) => sum + conv v) 0i64
     |> _assert_eq (12i64, 6i64)
@@ -212,6 +218,8 @@
 := tick_stamp () : reactor () (signal i32) (signal i64) =
     { init = (); react = \ () now x => ?= x ?| | Present v => (), Present (stamped now v) | Absent => (), Absent }
 
+///> c
+///> rust
 :# microsteps_share_the_tag_through_a_chain =
     := program = chain (chain (countdown 5i64 3i32) (tick_stamp ())) (sink ())
     run_micro program (\ _ => ()) 10i64 100i32 (\ _ (v : i64) => v) 0i64
@@ -230,6 +238,8 @@
 
 := lag_pattern (now : tag) : i64 = ? now::time % 4i64 = 3i64 ?> 9i64 |: now::time % 3i64
 
+///> c
+///> rust
 :# deadlines_run_the_violation_handler =
     := guarded = with_deadline 5i64 (sampling_tens ()) \ count _ => count, Present -1i64
     := _, result = run_ticks (chain guarded (violation_tally ())) lag_pattern 12i64
@@ -249,6 +259,8 @@
         ? time >= 5i64 ?> total |: run (time + 1i64) (total + bank_step states members (time + 1i64))
     run 0i64 0i64
 
+///> c
+///> rust
 :# array_bank_keeps_member_state =
     := members = 4i32
     := states : array i64 = arraym::init members \ _ => 0i64
@@ -265,6 +277,8 @@
     := sum, _ = totals
     sum
 
+///> c
+///> rust
 :# modal_reset_restarts_history_resumes =
     (modal_total Reset, modal_total History) |> _assert_eq (72i64, 81i64)
 

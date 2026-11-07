@@ -1,3 +1,4 @@
+///> zig
 :# sized_array static =
     :< testing
 

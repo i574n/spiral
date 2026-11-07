@@ -1,3 +1,4 @@
+///> gleam
 ///- --package .
 ///> gleam
 :# json_value static =
@@ -219,6 +220,7 @@
     | Some v => render v
     | None => ""
 
+///> gleam
 :# json_values_parse_strictly_and_render_compact =
     canonical " {\"a\" : [ true , false , null, -0.5e+3 ], \"b\\u00e9\" : \"x\\ty\" } " |> _assert_eq "{\"a\":[true,false,null,-0.5e+3],\"bé\":\"x\\u0009y\"}"
     canonical "[1,]" |> _assert_eq ""

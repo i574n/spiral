@@ -1,3 +1,4 @@
+///> zig
 ///- --package .
 := concat (a : string) (b : string) : string = !!!!StaticStringConcat(a, b)
 

@@ -1,17 +1,21 @@
+///> zig
 :# physics static =
     :< testing
 
+///> zig
 :# init_series =
     := x = am'::init_series -3f64 3 0.01
     := y = x |> am'::map_base math::square
     "square", "x", "y", ;[ "square", x, y ]
 
+///> zig
 :# init_series_2 =
     := x = am'::init_series -10f64 10 0.1
     := y_sin = x |> am'::map_base sin
     := y_cos = x |> am'::map_base cos
     "sin cos", "x", "y", ;[ "sin", x, y_sin; "cos", x, y_cos ]
 
+///> zig
 :# init_series_3 =
     := y_pos y0 vy0 ay t =
         y0 + vy0 * t + ay * (t |> math::square) / 2
@@ -34,6 +38,7 @@
     := v t = v0 + a0 * t
     v
 
+///> zig
 :# velocity_cf =
     velocity_cf 0.1f64 0.6 [ 0.04; -0.08 ] 0
     |> _assert_eq 0.6
@@ -41,6 +46,7 @@
     velocity_cf 0.1f64 0.6 [ 0.04; -0.08 ] 1
     |> _assert_eq 0.2
 
+///> zig
 :# velocity_cf_2 =
     := x = am'::init_series 0f64 4 0.1
     := y = x |> am'::map_base (velocity_cf 0.1f64 0.6 [ 0.04; -0.08 ])
@@ -52,6 +58,7 @@
     \ x t =>
         (x (t + dt / 2) - x (t - dt / 2)) / dt
 
+///> zig
 :# derivative =
     derivative 1 (\ x => x ** 4 / 4) 1 - 1
     |> _assert_approx_eq None 0.25
@@ -59,6 +66,7 @@
     derivative 0.001 (\ x => x ** 4 / 4) 1 - 1
     |> _assert_approx_eq None 0.0000002499998827953931
 
+///> zig
 :# derivative_small_steps =
     derivative 0.000001 (\ x => x ** 4 / 4) 1 - 1
     |> _assert_approx_eq None 0.000000000001000088900582341
@@ -66,6 +74,7 @@
     derivative 0.000000001 (\ x => x ** 4 / 4) 1 - 1
     |> _assert_approx_eq None 0.00000008274037099909037
 
+///> zig
 :# derivative_tiny_steps =
     derivative 0.000000000001 (\ x => x ** 4 / 4) 1 - 1
     |> _assert_approx_eq None 0.00008890058234101161
@@ -73,6 +82,7 @@
     derivative 0.000000000000001 (\ x => x ** 4 / 4) 1 - 1
     |> _assert_approx_eq None -0.0007992778373592246
 
+///> zig
 :# derivative_round_off =
     derivative 0.000000000000000001 (\ x => x ** 4 / 4) 1 - 1
     |> _assert_approx_eq None -1
@@ -88,6 +98,7 @@
         루프 (a + dt / 2) 0
         |> snd
 
+///> zig
 :# integration =
     integral 0.01 math::square 0 1
     |> _assert_approx_eq None 0.33332500000000004
@@ -98,6 +109,7 @@
         |> listm::map (f >> (*) dt)
         |> listm'::sum
 
+///> zig
 :# integration_2 =
     integral' 0.1 math::square 0 1
     |> _assert_approx_eq None (integral 0.1 math::square 0 1)
@@ -109,6 +121,7 @@
         |> arraym::map (f >> (*) dt)
         |> am'::sum
 
+///> zig
 :# integration_3 =
     integral'' 0.01 math::square 0 1
     |> _assert_approx_eq None (integral 0.01 math::square 0 1)
@@ -139,11 +152,13 @@
     ?> 10
     |: 0
 
+///> zig
 :# position_ft_2 =
     := x = am'::init_series -5f64 45 0.1
     := y = x |> am'::map_base pedal_coast
     "child pedaling then coasting", "time (s)", "", ;[ "force on bike (N)", x, y ]
 
+///> zig
 :# position_ft_3 =
     := x = am'::init_series -5 45 1
     := y = x |> am'::map_base (position_ft 0.1f64 20 0 0 [ pedal_coast ])
@@ -163,6 +178,7 @@
 := f_air drag rho area v =
     -drag * rho * area * abs v * v / 2
 
+///> zig
 :# velocity_fv =
     := x = am'::init_series 0 60 0.5
     := y = x |> am'::map_base (velocity_fv 1 70 0f64 [ \ _ => 100; f_air 2 1.225 0.6 ])
@@ -186,6 +202,7 @@
 := pedal_coast_air_velocity () =
     velocity_ftv 0.1 20 (dyn (0, 0)) [ \ (t, _) => pedal_coast t; \ (_, v) => f_air 2 1.225 0.5 v ]
 
+///> zig
 :# velocity_ftv =
     := x = am'::init_series 0 100 0.1
     := y = x |> am'::map_base (pedal_coast_air_velocity ())
@@ -246,6 +263,7 @@
 
 := pingpong_position t = position_ftxv 0.001 0.0027 (state_1d (0, 0.1, 0)) (damped_ho_forces ()) t
 
+///> zig
 :# velocity_ftxv_2 =
     := x = am'::init_series 0 3 0.01
     := y = x |> am'::map_base pingpong_position
@@ -253,6 +271,7 @@
 
 := pingpong_velocity t = velocity_ftxv 0.001 0.0027 (state_1d (0, 0.1, 0)) (damped_ho_forces ()) t
 
+///> zig
 :# velocity_ftxv_3 =
     := x = am'::init_series 0 3 0.01
     := y = x |> am'::map_base pingpong_velocity
@@ -318,14 +337,17 @@
 := of_state_1d (state_1d (t, x, v)) =
     t, x, v
 
+///> zig
 :# shift =
     solver (euler 0.01) (of_state_1d >> exponential >> state_1d) (state_1d (0, 1, 1)) 800i32
     |> _assert_eq (state_1d (7.999999999999874, 2864.8311229272326, 2864.8311229272326))
 
+///> zig
 :# shift_euler_cromer =
     solver (euler_cromer_1d 0.1) (of_state_1d >> exponential >> rrr) (state_1d (0, 1, 1)) 80i32
     |> _assert_eq (state_1d (7.999999999999988, 3043.379244966009, 2895.0121485099035))
 
+///> zig
 :# shift_runge_kutta =
     solver (runge_kutta_4 1) (of_state_1d >> exponential >> rrr) (state_1d (0, 1, 1)) 8i32
     |> _assert_eq (state_1d (8.0, 2894.789038540849, 2894.789038540849))
@@ -340,6 +362,7 @@
 := vec x y z : vec =
     { x y z }
 
+///> zig
 :# vec =
     vec 1 2 3 ::z
     |> _assert_eq 3
@@ -352,6 +375,7 @@
 := (^+^) (a : vec) (b : vec) =
     vec (a::x + b::x) (a::y + b::y) (a::z + b::z)
 
+///> zig
 :# consts =
     vec 1 2 3 ^+^ vec 4 5 6
     |> _assert_eq (vec 5 7 9)
@@ -359,6 +383,7 @@
 := sum_vec vs =
     vs |> listm::fold (^+^) (zero_vec ())
 
+///> zig
 :# sum_vec =
     [ vec 1 2 3; vec 4 5 6 ]
     |> sum_vec
@@ -367,10 +392,12 @@
 := (*^) c { x y z } =
     vec (c * x) (c * y) (c * z)
 
+///> zig
 :# sum_vec_2 =
     5 *^ vec 1 2 3
     |> _assert_eq (vec 5 10 15)
 
+///> zig
 :# sum_vec_3 =
     3 *^ i_hat () ^+^ 4 *^ k_hat ()
     |> _assert_eq (vec 3 0 4)
@@ -378,6 +405,7 @@
 := (^*) v c =
     (*^) c v
 
+///> zig
 :# sum_vec_4 =
     vec 1 2 3 ^* 5
     |> _assert_eq (vec 5 10 15)
@@ -385,6 +413,7 @@
 := (^/) { x y z } c =
     vec (x / c) (y / c) (z / c)
 
+///> zig
 :# sum_vec_5 =
     vec 1 2 3 ^/ 5
     |> _assert_eq (vec 0.2 0.4 0.6)
@@ -392,6 +421,7 @@
 := negate_vec v =
     v ^* -1
 
+///> zig
 :# negate_vec =
     vec 1 2 3
     |> negate_vec
@@ -400,6 +430,7 @@
 := (^-^) a b =
     a ^+^ (negate_vec b)
 
+///> zig
 :# negate_vec_2 =
     vec 1 2 3 ^-^ vec 4 5 6
     |> _assert_eq (vec -3 -3 -3)
@@ -407,6 +438,7 @@
 := (<.>) { x = ax y = ay z = az } { x = bx y = by z = bz } =
     ax * bx + ay * by + az * bz
 
+///> zig
 :# negate_vec_3 =
     (vec 1 2 3 <.> vec 4 5 6)
     |> _assert_eq 32
@@ -417,6 +449,7 @@
         (a::z * b::x - a::x * b::z)
         (a::x * b::y - a::y * b::x)
 
+///> zig
 :# negate_vec_4 =
     (vec 1 2 3 >< vec 4 5 6)
     |> _assert_eq (vec -3 6 -3)
@@ -424,6 +457,7 @@
 := magnitude v =
     (v <.> v) |> sqrt
 
+///> zig
 :# magnitude =
     vec 1 2 3
     |> magnitude
@@ -432,6 +466,7 @@
 := v1 t =
     2 *^ (t ** 2 *^ i_hat () ^+^ 3 *^ (t ** 3 *^ j_hat () ^+^ t ** 4 *^ k_hat ()))
 
+///> zig
 :# v1 =
     v1 1
     |> _assert_eq (vec 2 6 6)
@@ -442,6 +477,7 @@
     \ v t =>
         (v (t + dt / 2) ^-^ v (t - dt / 2)) ^/ dt
 
+///> zig
 :# vec_derivative =
     vec_derivative 0.01 v1 3 ::x
     |> _assert_approx_eq None (derivative 0.01 (v1 >> \ v => v::x) 3)
@@ -610,6 +646,7 @@
     baseball_trajectory dt v0 theta_deg
     |> listm::fold (\ _ (y, _) => y) 0
 
+///> zig
 :# states_ps_3 =
     := x = am'::init_series 10 80 1
     := y = x |> am'::map_base (baseball_range 0.01 45)
@@ -629,6 +666,7 @@
         ? theta_deg > max ?> best |: 루프 (theta_deg + 1) (better_range theta_deg best)
     루프 min (0f64, min)
 
+///> zig
 :# states_ps_4 =
     best_angle (30f64, 60f64)
     |> _assert_eq (116.77499158246208, 41)
@@ -710,6 +748,7 @@
     := _, relativity_y = year_curve method (relativity_ps forces)
     constant_force_chart newton_x newton_y relativity_y
 
+///> zig
 :# relativity_ps =
     := ~method = runge_kutta_4 100000
     constant_force_chart_of method [ \ _ => 10 *^ i_hat () ] |> show_chart
@@ -748,6 +787,7 @@
     := relativity_x, relativity_y = proton_curve method (relativity_ps forces) 165i32
     proton_chart newton_x newton_y relativity_x relativity_y
 
+///> zig
 :# relativity_ps_2 =
     := ~method = runge_kutta_4 0.000000001
     proton_chart_of method [ uniform_lorentz_force (zero_vec ()) (k_hat ()) ] |> show_chart
@@ -913,6 +953,7 @@
     |> listm'::unzip
     |> curve_arrays
 
+///> zig
 :# system_kinetic_energy_versus_time_1_2 =
     := ec_x, ec_y = ke_curve_l euler_cromer_mps_l
     := rk4_x, rk4_y = ke_curve_l runge_kutta_4
@@ -978,6 +1019,7 @@
     := initial_state = string_initial_overtone_l 3i32
     frames |> listm::map (string_frame_l initial_state) |> listm'::box |> listm'::to_array'
 
+///> zig
 :# wave_1 =
     := n = 0i32
     := x, y = array (string_frames_l ()) |> am'::index n
@@ -1089,6 +1131,7 @@
     |> listm'::unzip
     |> curve_arrays
 
+///> zig
 :# system_kinetic_energy_versus_time_2_2 =
     := ec_x, ec_y = ke_curve_s euler_cromer_mps_s
     := rk4_x, rk4_y = ke_curve_s runge_kutta_4
@@ -1130,6 +1173,7 @@
     := ~initial_state = string_initial_overtone_s 3i32
     frames |> stream::map (string_frame_s initial_state)
 
+///> zig
 :# wave_2 =
     string_frames_s ()
     |> stream::indexed

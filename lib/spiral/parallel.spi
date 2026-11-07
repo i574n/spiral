@@ -1,3 +1,4 @@
+///> zig
 :# parallel static =
     :< testing
 
@@ -106,12 +107,14 @@
     for_index count \ i => set out i (fn i)
     out
 
+///> zig
 :# chunks_split_evenly =
     listm::init 10i32 id
     |> chunks 4i32
     |> listm::map listm::length
     |> _assert_eq [ 3i32; 3; 3; 1 ]
 
+///> zig
 :# chunks_empty =
     ([] : list i32)
     |> chunks 4i32

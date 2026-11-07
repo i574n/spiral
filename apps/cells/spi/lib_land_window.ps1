@@ -170,7 +170,7 @@ try {
     if ($baseProbe.Count -and -not $ProvenLog) { $baseFail = Get-ProbeFailures @(pwsh -NoProfile -File (Join-Path $PSScriptRoot 'type_probe.ps1') -File ($baseProbe -join ',') -Lib $Lib 2>&1 | ForEach-Object { "$_" }) }
     foreach ($p in $pairs) { Copy-Retry $p.Source (Join-Path $Lib $p.Live); $landedHash[$p.Live] = (Get-FileHash -LiteralPath (Join-Path $Lib $p.Live)).Hash }
     foreach ($gone in $Remove) { Remove-Item -LiteralPath (Join-Path $Lib $gone) -Force }
-    $closeOk = $true
+    $closeOk = $true; $why = [Collections.Generic.List[string]]::new()
     if ($ProvenLog -and $provenExact) {
         foreach ($p in $pairs) { "{0,-28} {1}" -f $p.Live, (Get-FileHash -LiteralPath (Join-Path $Lib $p.Live)).Hash.Substring(0, 12) }
         "LANDED from a proven close ($ProvenLog); undo: $undo"
@@ -199,7 +199,7 @@ try {
             if ((& $spelling $now) -ne (& $spelling $was)) { "$live $name changed" }
         }
     }
-    if ($drift) { $drift; $closeOk = $false } else { "$checked consumer-used signatures unchanged" }
+    if ($drift) { $drift; $closeOk = $false; $why.Add('consumer signatures changed') } else { "$checked consumer-used signatures unchanged" }
     '=== consumers'
     if (-not $env:SPIRAL_COMPILER_PACKAGE_DIR) { $env:SPIRAL_COMPILER_PACKAGE_DIR = Join-Path $repo 'deps/The-Spiral-Language/VS Code Plugin' }
     $consumerOut = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/mix-builds/lib-land-consumers'
@@ -208,7 +208,7 @@ try {
         $entry = Join-Path $repo $c
         Push-Location (Split-Path $entry)
         try { $text = @(& $Dotnet $Compiler --backend Rust (Split-Path $entry -Leaf) (Join-Path $consumerOut "$([IO.Path]::GetFileNameWithoutExtension($entry)).rs") 2>&1 | ForEach-Object { "$_" }); $code = $LASTEXITCODE } finally { Pop-Location }
-        if ($code) { "$c exit ${code}: $(@($text | Where-Object { $_ -match 'Error' } | Select-Object -First 1))"; $closeOk = $false } else { "$c compiles" }
+        if ($code) { "$c exit ${code}: $(@($text | Where-Object { $_ -match 'Error' } | Select-Object -First 1))"; $closeOk = $false; $why.Add("consumer $c exit $code") } else { "$c compiles" }
     }
     '=== document_test'
     if ($ProvenLog) { "taken from $ProvenLog : $(@($proof | Where-Object { $_ -match '^Result:' }) -join ' ')" } else {
@@ -220,7 +220,7 @@ try {
     $docOut | Set-Content -LiteralPath $docLog
     $docOut | Where-Object { $_ -match '^\s+\d+\) test |Result:' } | ForEach-Object { $_.Trim() }
     if ($docExit) {
-        $closeOk = $false
+        $closeOk = $false; $why.Add("document_test exit $docExit (log $docLog)")
         @($docOut | ForEach-Object { if ($_ -match '(\S*lib[\\/]spiral[\\/]\S+\.(?:spi|spir))') { $Matches[1] } } | Select-Object -Unique -First 10) | ForEach-Object { "document_test names $_" }
         "document_test exit ${docExit}; full log: $docLog"
     }
@@ -233,15 +233,15 @@ try {
         $nowFail = Get-ProbeFailures $lines
         $newFail = @($nowFail | Where-Object { $_ -notin $baseFail })
         if ($baseFail) { "type_probe: $($baseFail.Count) already failed before this land, not blocking: $($baseFail -join ', ')" }
-        if ($newFail) { "type_probe NEW failures: $($newFail -join ', ')"; $closeOk = $false }
-        elseif ($probeExit -and -not $nowFail) { "type_probe exit $probeExit with no FAIL rows"; $closeOk = $false }
+        if ($newFail) { "type_probe NEW failures: $($newFail -join ', ')"; $closeOk = $false; $why.Add("type_probe NEW failures: $($newFail -join ', ')") }
+        elseif ($probeExit -and -not $nowFail) { "type_probe exit $probeExit with no FAIL rows"; $closeOk = $false; $why.Add("type_probe exit $probeExit") }
     }
     '=== respell_drift'
     if ($probe.Count) {
         $drifted = @(& $Dotnet $Compiler format --check --respell-drift @($probe | ForEach-Object { Join-Path $Lib $_ }) 2>&1 | ForEach-Object { "$_" } | Where-Object { $_ -match ': respell-drift ' })
-        if ($drifted) { $drifted | Select-Object -First 10; "respell_drift: $($drifted.Count) findings in the landed files"; $closeOk = $false } else { "0 respell-drift findings in $($probe.Count) landed files" }
+        if ($drifted) { $drifted | Select-Object -First 10; "respell_drift: $($drifted.Count) findings in the landed files"; $closeOk = $false; $why.Add("respell_drift $($drifted.Count) findings") } else { "0 respell-drift findings in $($probe.Count) landed files" }
     }
-    if (-not $closeOk) { 'CLOSE FAILED: undoing'; Restore-Undo; throw 'close failed; undone' }
+    if (-not $closeOk) { "CLOSE FAILED ($($why -join '; ')): undoing"; Restore-Undo; throw "close failed ($($why -join '; ')); undone" }
     foreach ($p in $pairs) { "{0,-28} {1}" -f $p.Live, (Get-FileHash -LiteralPath (Join-Path $Lib $p.Live)).Hash.Substring(0, 12) }
     "lib digest $(Get-LibDigest @{})"
     "LANDED and closed green; undo: $undo"

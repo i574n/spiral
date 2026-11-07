@@ -512,17 +512,32 @@ defmodule Spiral.Cells.Notebook do
     path = Path.expand(path)
     doc = parse(path, File.read!(path))
 
-    if implicit_default?(doc.cells, []) do
-      for {index, name} <- Enum.sort(test_cell_names(doc)),
-          %{source: source} = Enum.at(doc.cells, index),
-          Builders.commands(source) == [],
-          do: name
-    else
-      []
-    end
+    for {index, name} <- Enum.sort(test_cell_names(doc)),
+        %{source: source} = Enum.at(doc.cells, index),
+        Builders.commands(source) == [],
+        do: name
+  end
+
+  @retired_skip ~r/^[ \t]*\/\/\/>[ \t]*_([ \t]|$)/
+
+  @doc false
+  def refuse_retired_skip!(path, text) do
+    text
+    |> String.split(~r/\r?\n/)
+    |> Enum.with_index(1)
+    |> Enum.filter(fn {line, _} -> Regex.match?(@retired_skip, line) end)
+    |> Enum.each(fn {line, n} ->
+      try do
+        Builders.split(String.trim(line))
+      rescue
+        e in ArgumentError -> reraise ArgumentError, "#{path}:#{n}: #{Exception.message(e)}", __STACKTRACE__
+      end
+    end)
   end
 
   defp parse(path, text, bounded \\ false) do
+    refuse_retired_skip!(path, text)
+
     case Path.extname(path) do
       ".livemd" -> Document.parse_livemd(text)
       ".spi" when bounded ->
@@ -593,7 +608,7 @@ defmodule Spiral.Cells.Notebook do
       |> Enum.map(&attach_source(&1, cells))
       |> only_selected(selected)
       |> Enum.reject(&static_prelude?(&1.cell_source))
-      |> with_builders(default_builders(cells, opts), implicit_default?(cells, opts), test_cell_names(doc))
+      |> with_builders(file_targets(cells), test_cell_names(doc))
       |> keyed_on_the_whole_source()
 
     budgets = Map.new(spiral, &{&1.index, opts[:timeout] || positive_int(Map.get(&1, :timeout)) || @default_timeout})
@@ -653,6 +668,7 @@ defmodule Spiral.Cells.Notebook do
   end
 
   defp memo_key(_memo, %{untargeted: _}), do: nil
+  defp memo_key(_memo, %{untargeted_file: _}), do: nil
   defp memo_key(_memo, %{builder_error: _}), do: nil
 
   defp memo_key(memo, step) do
@@ -684,44 +700,35 @@ defmodule Spiral.Cells.Notebook do
   defp static_prelude?(source), do: Regex.match?(@static_prelude, source)
 
   @doc false
-  def default_builders(cells, opts) do
-    prelude =
-      Enum.find_value(cells, fn
-        %{kind: :spiral, source: source} -> if static_prelude?(source), do: nonempty(Builders.commands(source))
-        _ -> nil
-      end)
+  def file_targets(cells) do
+    case Enum.find(cells, &(&1.kind == :spiral)) do
+      %{source: source} ->
+        source
+        |> String.split(~r/\r?\n/)
+        |> Enum.take_while(&(String.starts_with?(&1, "///>") or String.starts_with?(&1, "///-")))
+        |> Enum.filter(&String.starts_with?(&1, "///>"))
+        |> Enum.join("\n")
+        |> Builders.commands()
 
-    explicit =
-      case Access.fetch(opts, :default_target) do
-        {:ok, target} -> target
-        :error -> System.get_env("SPIRAL_CELLS_DEFAULT_TARGET")
-      end
-
-    cond do
-      prelude -> prelude
-      explicit == "" -> []
-      explicit != nil -> Builders.commands("///> " <> explicit)
-      true -> Builders.commands("///> zig")
+      nil ->
+        []
     end
   end
-
-  defp nonempty([]), do: nil
-  defp nonempty(list), do: list
 
   defp test_cell_names(doc), do: for(%{mode: "test"} = test <- Document.tests(doc), into: %{}, do: {test.index, test.name})
 
   @doc false
-  def with_builders(steps, defaults, implicit?, test_names) do
+  def with_builders(steps, defaults, test_names) do
     Enum.map(steps, fn step ->
       case step_commands(step.cell_source) do
         {:error, message} ->
           step |> Map.put(:builders, defaults) |> put_test_name(test_names) |> Map.put(:builder_error, message)
 
         {:ok, []} ->
-          step |> Map.put(:builders, defaults) |> put_test_name(test_names) |> mark_untargeted(implicit?)
+          step |> Map.put(:builders, defaults) |> put_test_name(test_names) |> mark_untargeted(defaults)
 
         {:ok, own} ->
-          step |> Map.put(:builders, inherit_deps(own, defaults)) |> put_test_name(test_names)
+          step |> Map.put(:builders, own) |> put_test_name(test_names)
       end
     end)
   end
@@ -732,37 +739,6 @@ defmodule Spiral.Cells.Notebook do
     error in ArgumentError -> {:error, Exception.message(error)}
   end
 
-  @doc false
-  def inherit_deps(own, defaults) do
-    Enum.map(own, fn builder ->
-      case Enum.find(defaults, &(&1.tool == builder.tool)) do
-        nil ->
-          builder
-
-        default ->
-          named = MapSet.new(builder.deps, & &1.name)
-          %{builder | deps: builder.deps ++ Enum.reject(default.deps, &MapSet.member?(named, &1.name))}
-      end
-    end)
-  end
-
-  @doc false
-  def implicit_default?(cells, opts) do
-    prelude? =
-      Enum.any?(cells, fn
-        %{kind: :spiral, source: source} -> static_prelude?(source)
-        _ -> false
-      end)
-
-    explicit =
-      case Access.fetch(opts, :default_target) do
-        {:ok, target} -> target
-        :error -> System.get_env("SPIRAL_CELLS_DEFAULT_TARGET")
-      end
-
-    not prelude? and explicit == nil
-  end
-
   defp put_test_name(step, test_names) do
     case Map.fetch(test_names, step.index) do
       {:ok, name} -> Map.put(step, :test_name, name)
@@ -770,11 +746,19 @@ defmodule Spiral.Cells.Notebook do
     end
   end
 
-  defp mark_untargeted(%{test_name: name} = step, true), do: Map.put(step, :untargeted, name)
-  defp mark_untargeted(step, _implicit?), do: step
+  defp mark_untargeted(%{test_name: name} = step, _defaults), do: Map.put(step, :untargeted, name)
+
+  defp mark_untargeted(step, []) do
+    if String.trim(Map.get(step, :program, "")) == "", do: step, else: Map.put(step, :untargeted_file, true)
+  end
+
+  defp mark_untargeted(step, _defaults), do: step
 
   @doc false
-  def untargeted_message(name), do: "test #{name} has no ///> target: name its backends (for example ///> zig) or declare a default with a static prelude or SPIRAL_CELLS_DEFAULT_TARGET"
+  def untargeted_message(name), do: "NoTestTarget: test #{name} names no target: add a ///> <lang> line to it"
+
+  @doc false
+  def untargeted_file_message(path), do: "NoFileTarget: #{path} names no target for its code cells: add a ///> <lang> line at its top"
 
   defp only_selected(steps, nil), do: steps
   defp only_selected(steps, selected), do: Enum.filter(steps, &MapSet.member?(selected, &1.index))
@@ -908,6 +892,11 @@ defmodule Spiral.Cells.Notebook do
 
   defp run_step(%{untargeted: name} = step, _opts, _root) do
     message = untargeted_message(name)
+    [{step.index, {:error, error_output(message), message}, nil}]
+  end
+
+  defp run_step(%{untargeted_file: true} = step, opts, _root) do
+    message = untargeted_file_message(opts[:path] || "the notebook")
     [{step.index, {:error, error_output(message), message}, nil}]
   end
 

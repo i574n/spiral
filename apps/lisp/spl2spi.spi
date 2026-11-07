@@ -1,3 +1,4 @@
+///> zig
 ///- --package .
 :# spl2spi static =
     :< testing
@@ -285,5 +286,4 @@
     ("; note\n(nominal z string)" |> spi_text, "(nominal z string" |> spi_text, "(nominal z string))" |> spi_text)
     |> _assert_eq ("nominal z = string\n", "unbalanced (", "unbalanced )")
 
-///> _
 := main () : i32 = env::command_line_arguments () |> run

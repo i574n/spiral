@@ -1,3 +1,4 @@
+///> zig
 union acquisition = ChasesAThinkAfterAcquiring | ChasesAtOnce
 
 inl chases_now (acquisition_kind : acquisition) (acquired_at_tick : i32) (current_tick_of_the_world : i32) : bool =

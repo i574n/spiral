@@ -73,6 +73,8 @@ pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
 
 :== weather_query = { location : string; days : i32; metric : bool }
 
+///> c
+///> rust
 :# decode_reads_a_flat_record =
     := ~reply = "{\"location\":\"Cincinnati\",\"days\":3,\"metric\":true}"
     := q : weather_query = decode reply
@@ -87,6 +89,8 @@ pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
     := units = ?= q::units ?| | Some _ => 100i32 | None => 50i32
     days + units + sm::length q::city
 
+///> c
+///> rust
 :# decode_fills_missing_options_with_none =
     := ~reply = "{\"city\":\"Recife\",\"days\":4}"
     city_query_score (decode reply) |> _assert_eq 60i32
@@ -98,10 +102,14 @@ pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
     := bonus = ? args::metric ?> 100i32 |: 0i32
     args::days + bonus + args::where::days + sm::length args::where::city
 
+///> c
+///> rust
 :# decode_reads_nested_records =
     := ~reply = "{\"days\":3,\"where\":{\"city\":\"Cincinnati\",\"days\":40},\"metric\":true}"
     forecast_score (decode reply) |> _assert_eq 153i32
 
+///> c
+///> rust
 :# decode_matches_keys_at_their_own_depth =
     := ~reply =
         "{\"where\":{\"city\":\"Cincinnati\",\"days\":40},\"note\":\"\\\"days\\\":9\",\"days\":3,\"metric\":true}"
@@ -115,6 +123,8 @@ pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
 
 := tagged_score (o : tagged_order) : i32 = quantities_score (array o::quantities) + tags_score (array o::tags)
 
+///> c
+///> rust
 :# decode_reads_arrays_of_scalars =
     := ~reply = "{\"customer\":\"ana\",\"quantities\":[3, 40, 200],\"tags\":[\"a,b\", \"]x\"]}"
     tagged_score (decode reply) |> _assert_eq 233243i32
@@ -129,6 +139,8 @@ pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
     := lines : array order_line = array o::lines
     lines_score (length lines) (index lines 0i32) (index lines 1i32)
 
+///> c
+///> rust
 :# decode_reads_arrays_of_records =
     := ~reply = "{\"customer\":\"ana\",\"lines\":[{\"sku\":\"p1\",\"qty\":2}, {\"sku\":\"p22\",\"qty\":30}]}"
     line_score (decode reply) |> _assert_eq 32232i32
@@ -146,6 +158,8 @@ pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
     := u = ?= r::units ?| | Metric => 1i32 | Imperial => 2i32
     u + where_score r::where + other_score r::other
 
+///> c
+///> rust
 :# decode_reads_unions_by_case_name =
     := ~reply =
         "{\"units\":\"Imperial\",\"where\":{\"TargetCity\":\"Recife\"},\"other\":{\"TargetGrid\":{\"row\":4,\"col\""
@@ -160,6 +174,8 @@ pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
     := w = ?= r::where ?| | SpotAt (x, y) => x * 1000i32 + y * 100i32 | SpotHere => 0i32
     n + sm::length unit_name * 10000i32 + w
 
+///> c
+///> rust
 :# decode_reads_tuples_as_pairs =
     := ~reply = "{\"span\":[12, \"days\"],\"where\":{\"SpotAt\":[3, 9]}}"
     span_score (decode reply) |> _assert_eq 43912i32
@@ -193,6 +209,8 @@ pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
 := forecast_here () : forecast_args =
     { where = RegionHere; days = None; units = Metric; hours = am'::init_base 3i32 (\ _ => 0i32) }
 
+///> c
+///> rust
 :# tool_schema_describes_records_unions_options_and_arrays =
     tool_schema "getForecast" (forecast_here ()) |> _assert_eq (forecast_schema ())
 
@@ -202,12 +220,16 @@ pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
     := exact = ? q::said = "say \"hi\"\n" && q::path = "a\\b" ?> 10000i32 |: 0i32
     exact + q::days + sm::length q::said * 10i32 + sm::length q::path * 1000i32
 
+///> c
+///> rust
 :# decode_unescapes_strings =
     := ~reply = "{\"said\":\"say \\\"hi\\\"\\n\",\"path\":\"a\\\\b\",\"days\":7}"
     quote_score (decode reply) |> _assert_eq 13097i32
 
 :== stamp = { span : i32 * string * i32; flag : bool }
 
+///> c
+///> rust
 :# decode_reads_tuples_longer_than_two =
     := ~reply = "{\"span\":[12,\"days\",7],\"flag\":true}"
     := q : stamp = decode reply

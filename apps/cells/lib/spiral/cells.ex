@@ -23,7 +23,7 @@ defmodule Spiral.Cells do
     Process.put(:spiral_cells_last_targets, [])
 
     if String.trim(code) == "" do
-      {:ok, %Result{}}
+      {:ok, %Result{exit_status: 0, duration_ms: 0}}
     else
       timeout = opts[:timeout] || @default_timeout
       validate_timeout!(timeout)
@@ -34,48 +34,44 @@ defmodule Spiral.Cells do
       prepared =
         if Enum.all?(builders, &Builders.host_rust?/1), do: own_main(prepared), else: prepared
 
-      if prepared.skip or Enum.any?(builders, &(&1.tool == :skip)) do
-        {:ok, %Result{exit_status: 0, source: code, duration_ms: 0}}
-      else
-        builders = if builders == [], do: [Builders.default()], else: builders
+      builders = if builders == [], do: [Builders.default()], else: builders
 
-        builders =
-          Builders.with_crates(
-            builders,
-            Enum.flat_map(prepared.packages, &Mounts.declared_crates(resolve_package(&1, opts[:root], workspace_root(opts))))
-          )
+      builders =
+        Builders.with_crates(
+          builders,
+          Enum.flat_map(prepared.packages, &Mounts.declared_crates(resolve_package(&1, opts[:root], workspace_root(opts))))
+        )
 
-        timeout = prepared.timeout || timeout
-        started = System.monotonic_time(:millisecond)
+      timeout = prepared.timeout || timeout
+      started = System.monotonic_time(:millisecond)
 
-        deadline =
-          case timeout do
-            :infinity -> :infinity
-            ms -> started + ms
-          end
-
-        dir = tmp_dir()
-        Process.put(:spiral_cells_deadline, deadline)
-        Process.put(:spiral_cells_phases, %{})
-        Process.put(:spiral_cells_targets, [])
-
-        try do
-          spi = Path.join(dir, "main.spi")
-          exe = Path.join(dir, exe_name())
-
-          with {:ok, names, imports, package_dir} <-
-                 timed(:mount_ms, fn -> mount_packages(dir, prepared.packages, opts[:root], workspace_root(opts), opts[:patches] || []) end),
-               :ok <- timed(:mount_ms, fn -> write_package(dir, names, imports, package_dir, opts[:real]) end) do
-            run_builders(builders, dir, spi, exe, prepared, opts, timeout, deadline, started)
-          end
-        after
-          unless opts[:keep_files], do: timed(:cleanup_ms, fn -> File.rm_rf(dir) end)
-          Process.put(:spiral_cells_last_phases, phases())
-          Process.put(:spiral_cells_last_targets, target_rows(builders, Process.delete(:spiral_cells_targets) || []))
-          Process.delete(:spiral_cells_deadline)
-          Process.delete(:spiral_cells_queue_ms)
-          Process.delete(:spiral_cells_phases)
+      deadline =
+        case timeout do
+          :infinity -> :infinity
+          ms -> started + ms
         end
+
+      dir = tmp_dir()
+      Process.put(:spiral_cells_deadline, deadline)
+      Process.put(:spiral_cells_phases, %{})
+      Process.put(:spiral_cells_targets, [])
+
+      try do
+        spi = Path.join(dir, "main.spi")
+        exe = Path.join(dir, exe_name())
+
+        with {:ok, names, imports, package_dir} <-
+               timed(:mount_ms, fn -> mount_packages(dir, prepared.packages, opts[:root], workspace_root(opts), opts[:patches] || []) end),
+             :ok <- timed(:mount_ms, fn -> write_package(dir, names, imports, package_dir, opts[:real]) end) do
+          run_builders(builders, dir, spi, exe, prepared, opts, timeout, deadline, started)
+        end
+      after
+        unless opts[:keep_files], do: timed(:cleanup_ms, fn -> File.rm_rf(dir) end)
+        Process.put(:spiral_cells_last_phases, phases())
+        Process.put(:spiral_cells_last_targets, target_rows(builders, Process.delete(:spiral_cells_targets) || []))
+        Process.delete(:spiral_cells_deadline)
+        Process.delete(:spiral_cells_queue_ms)
+        Process.delete(:spiral_cells_phases)
       end
     end
   end

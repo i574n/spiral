@@ -1,3 +1,4 @@
+///> gleam
 ///- --package .
 ///> gleam
 :# memo static =
@@ -284,13 +285,16 @@
 
 := reached_program_wire (program : string) (rows : string) : string = reached_program program (spans_of rows)
 
+///> gleam
 :# a_comment_outside_a_string_is_stripped_and_one_inside_is_kept =
     := kept = strip_line_comment "s = \"a // b\" // c"
     (strip_line_comment "x = 1 // note", kept) |> _assert_eq ("x = 1 ", "s = \"a // b\" ")
 
+///> gleam
 :# identifiers_follow_the_ascii_start_rule =
     identifiers "9abc f' x→y _z" |> _assert_eq [ "abc"; "f'"; "x"; "y"; "_z" ]
 
+///> gleam
 :# headers_shape_like_the_elixir_regexes =
     := op = block_shape ":= (</>) (a : string) (b : string) : string =" ""
     := fn = block_shape ":~ ^ walk (src : string) : cells =" ""
@@ -299,6 +303,7 @@
     (op::names, fn::names, ty::names, no::kind)
     |> _assert_eq ([ "(</>)" ], [ "walk" ], [ "test_mode"; "IgnoredTest"; "PlainTest" ], OtherBlock)
 
+///> gleam
 :# an_unreached_definition_is_dropped_and_main_keeps_what_it_calls =
     := program = ":= used () = 1\n:= unused () = 2\n:= main () = used ()"
     := rows = "1\t1\t:= used () = 1\n2\t2\t:= unused () = 2\n3\t3\t:= main () = used ()"

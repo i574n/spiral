@@ -1,3 +1,4 @@
+///> zig
 /// # main
 := main () =
     ? is_rust () ?>

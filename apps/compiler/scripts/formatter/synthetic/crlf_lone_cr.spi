@@ -1,2 +1,3 @@
+///> zig
 inl a () : i32 = 1i32
 inl b () : i32 = 2i32inl c () : i32 = 3i32

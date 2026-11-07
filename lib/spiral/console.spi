@@ -1,3 +1,4 @@
+///> zig
 :# console static =
     :< testing
 

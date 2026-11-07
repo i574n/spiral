@@ -1,3 +1,4 @@
+///> zig
 :# cli_args static =
     :< testing
 

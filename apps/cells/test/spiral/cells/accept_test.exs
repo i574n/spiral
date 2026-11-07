@@ -4,12 +4,15 @@ defmodule Spiral.Cells.AcceptTest do
   alias Spiral.Cells.{Accept, Notebook}
 
   @spi """
+  ///> rust
   inl one () = 1i32
 
+  ///> rust
   test one =
       one ()
       |> _assert_eq 2i32
 
+  ///> rust
   test other =
       one () |> _assert_eq 2i32
   """
@@ -62,6 +65,7 @@ defmodule Spiral.Cells.AcceptTest do
     path = Path.join(dir, "rounds.spi")
 
     File.write!(path, """
+    ///> rust
     test stats =
         5i32 |> _assert_eq 5i32
         3i32 |> _assert_eq 5i32
@@ -95,6 +99,7 @@ defmodule Spiral.Cells.AcceptTest do
 
   test "a flat tuple of plain literals is rewritten element by element, keeping each suffix" do
     spi = """
+    ///> rust
     test claims =
         (a, b, c, d) |> _assert_eq (0i32, 0u32, "x, y", false)
     """
@@ -118,6 +123,7 @@ defmodule Spiral.Cells.AcceptTest do
 
   test "a failure printed before the passing lines (C prints it twice) still binds to its own assert, never to an equal literal elsewhere" do
     spi = """
+    ///> rust
     test pinned =
         g.first |> _assert_eq 110i32
         evolved |> _assert_eq 948i32

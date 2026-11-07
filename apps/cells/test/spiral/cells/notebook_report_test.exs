@@ -9,11 +9,14 @@ defmodule Spiral.Cells.NotebookReportTest do
 
   @spi """
   /// # demo
+  ///> rust
   inl one () = 1i32
 
+  ///> rust
   test one =
       one () |> _assert_eq 1i32
 
+  ///> rust
   test broken =
       one () |> _assert_eq 3i32
 
@@ -23,6 +26,7 @@ defmodule Spiral.Cells.NotebookReportTest do
   /// ## two
   inl two () = 2i32
 
+  ///> rust
   test two =
       two () |> _assert_eq 2i32
   """
@@ -138,15 +142,18 @@ defmodule Spiral.Cells.NotebookReportTest do
     path = Path.join(dir, "prelude.spi")
 
     File.write!(path, """
+    ///> rust
     /// # prelude
     test prelude static =
         open testing
 
     inl square x = x * x
 
+    ///> rust
     test square =
         square 3i32 |> _assert_eq 9i32
 
+    ///> rust
     test square_2 =
         square 4i32 |> _assert_eq 16i32
     """)
@@ -285,17 +292,22 @@ defmodule Spiral.Cells.NotebookReportTest do
   end
   test "a `fails` test passes only when the compile fails with its code and message", %{dir: dir} do
     spi = """
+    ///> rust
     inl one () = 1i32
 
+    ///> rust
     test rejects_mixed fails EJP0040 "Unification failure" =
         one () + 1f64
 
+    ///> rust
     test rejects_any fails "Unification failure" =
         one () + 2f64
 
+    ///> rust
     test wrong_message fails EJP0040 "Unbound variable" =
         one () + 3f64
 
+    ///> rust
     test compiles_anyway fails EJP0040 "Unification failure" =
         one ()
     """
@@ -343,7 +355,7 @@ defmodule Spiral.Cells.NotebookReportTest do
   end
   test "a `fails` test passes only when its error is reported inside its own body", %{dir: dir} do
     path = Path.join(dir, "outside.spi")
-    File.write!(path, "inl broken () : i32 = 1f64\n\ntest uses_broken fails \"Unification failure\" =\n    broken ()\n")
+    File.write!(path, "///> rust\ninl broken () : i32 = 1f64\n\ntest uses_broken fails \"Unification failure\" =\n    broken ()\n")
 
     outside = fn %{source: source} ->
       if source =~ "broken ()", do: {:error, "main.spi:1:23: ETY-TermError: Unification failure."}, else: {:ok, "fn main() {}\n"}
@@ -362,8 +374,10 @@ defmodule Spiral.Cells.NotebookReportTest do
   end
   test "a `fails` text matches across the compiler's column padding and belongs to the memo key", %{dir: dir} do
     spi = """
+    ///> rust
     inl one () = 1i32
 
+    ///> rust
     test padded fails EJP0040 "Got: f64" =
         one () + 1f64
     """
@@ -449,7 +463,7 @@ defmodule Spiral.Cells.NotebookReportTest do
   end
   test "a test that never ran says why", %{dir: dir} do
     path = Path.join(dir, "stopped.spi")
-    File.write!(path, "inl one () = 1i32\n\ntest one =\n    one ()\n")
+    File.write!(path, "///> rust\ninl one () = 1i32\n\n///> rust\ntest one =\n    one ()\n")
     previous = System.get_env("SPIRAL_CELLS_CELLS")
     System.put_env("SPIRAL_CELLS_CELLS", "serial")
 
@@ -468,8 +482,10 @@ defmodule Spiral.Cells.NotebookReportTest do
   end
   test "a build_only test builds every target, never runs, and reports built, not passed", %{dir: dir} do
     spi = """
+    ///> rust
     inl one () = 1i32
 
+    ///> rust
     test host_ui build_only =
         one ()
 
@@ -477,9 +493,11 @@ defmodule Spiral.Cells.NotebookReportTest do
     test lua_ui build_only =
         one ()
 
+    ///> rust
     test broken_ui build_only =
         does_not_compile ()
 
+    ///> rust
     test plain =
         one ()
     """
@@ -515,6 +533,7 @@ defmodule Spiral.Cells.NotebookReportTest do
     #!spiral
 
     ///- --ignore
+    ///> rust
 
     inl hidden () = 1i32
 
@@ -542,6 +561,7 @@ defmodule Spiral.Cells.NotebookReportTest do
     path = Path.join(dir, "targets.spi")
 
     File.write!(path, """
+    ///> rust
     inl one () = 1i32
 
     ///> lua
@@ -632,10 +652,12 @@ defmodule Spiral.Cells.NotebookReportTest do
     path = Path.join(dir, "scoped.spi")
 
     File.write!(path, """
+    ///> rust
     /// # scoped
     test scoped static =
         open testing
 
+    ///> rust
     test spread =
         type pair_i32 = i32 * i32
         inl a, b = (1i32, 2i32 : pair_i32)
@@ -659,9 +681,11 @@ defmodule Spiral.Cells.NotebookReportTest do
     path = Path.join(dir, "endings.spi")
 
     File.write!(path, """
+    ///> rust
     test unit_end =
         if 1i32 <> 1i32 then failwith "never"
 
+    ///> rust
     test value_end =
         1i32 + 1i32
     """)
@@ -701,21 +725,19 @@ defmodule Spiral.Cells.NotebookReportTest do
   end
 
   test "a static block of only opens is a prelude, not a discovered test; a static block with definitions stays static" do
-    doc = Document.parse_spi("///> c\ntest base static =\n    open testing\n    open sm'_operators\n\ntest helpers static =\n    inl twice x = x + x\n\ntest one =\n    1i32 |> _assert_eq 1i32\n", "")
+    doc = Document.parse_spi("///> c\ntest base static =\n    open testing\n    open sm'_operators\n\ntest helpers static =\n    inl twice x = x + x\n\n///> rust\ntest one =\n    1i32 |> _assert_eq 1i32\n", "")
     assert ["prelude", "static", "test"] = Enum.map(Document.tests(doc), & &1.mode)
   end
 
-  test "untargeted tests use the static prelude's targets, else default_target, else Zig; a default_target of rust or empty keeps the Rust host; the prelude itself never runs" do
-    prelude = Document.parse_spi("///> c\ntest prelude static =\n    open testing\n\ntest one =\n    1i32 |> _assert_eq 1i32\n", "")
-    assert [%{tool: :c}] = Notebook.default_builders(prelude.cells, [])
-    assert [%{tool: :c}] = Notebook.default_builders(prelude.cells, default_target: "lua")
+  test "a file's code cells take only the ///> lines at its top, never a prelude below them, an env var or Zig" do
+    headed = Document.parse_spi("///> c\n///- --package .\ntest prelude static =\n    open testing\n\n///> rust\ntest one =\n    1i32 |> _assert_eq 1i32\n", "")
+    assert [%{tool: :c}] = Notebook.file_targets(headed.cells)
 
-    plain = Document.parse_spi("test prelude static =\n    open testing\n\ntest one =\n    1i32 |> _assert_eq 1i32\n", "")
-    assert [%{tool: :lua}] = Notebook.default_builders(plain.cells, default_target: "lua")
-    assert Notebook.default_builders(plain.cells, default_target: "") == []
-    assert [%{tool: :fsharp}] = Notebook.default_builders(plain.cells, default_target: "fsharp")
-    assert [%{tool: :rust}] = Notebook.default_builders(plain.cells, default_target: "rust")
-    assert [%{tool: :zig}] = Notebook.default_builders(plain.cells, default_target: nil)
+    prelude_only = Document.parse_spi("///- --package .\n///> lua\ntest prelude static =\n    open testing\n\ninl f () = 1i32\n", "")
+    assert Notebook.file_targets(prelude_only.cells) == []
+
+    plain = Document.parse_spi("inl f () = 1i32\n", "")
+    assert Notebook.file_targets(plain.cells) == []
   end
 
   test "zig cells run the self-hosted backend with a persistent global cache under the spiral-bin cache dir" do
@@ -729,7 +751,7 @@ defmodule Spiral.Cells.NotebookReportTest do
     File.write!(Path.join(dir, "package.spiproj"), "packages: |core-\nmodules:\n    pack\n")
     File.write!(Path.join(dir, "pack.spi"), "inl answer () = 42i32\n")
     path = Path.join(dir, "pack_sim.spi")
-    File.write!(path, "///- --package .\ntest pack_sim static =\n    open testing\n\ntest uses_pack =\n    open pack\n    answer () |> _assert_eq 42i32\n")
+    File.write!(path, "///> rust\n///- --package .\ntest pack_sim static =\n    open testing\n\n///> rust\ntest uses_pack =\n    open pack\n    answer () |> _assert_eq 42i32\n")
     {:ok, agent} = Agent.start_link(fn -> [] end)
 
     assert {:ok, %{"passed" => 1}} = Notebook.run_report(path, compile: compile(agent), rustc: fn _ -> :ok end, execute: exit_when("never", 0))
@@ -739,7 +761,7 @@ defmodule Spiral.Cells.NotebookReportTest do
 
   test "a .spi file's first ///- --timeout is the budget of its test blocks", %{dir: dir} do
     path = Path.join(dir, "slow.spi")
-    File.write!(path, "///- --timeout 1800000\ninl one () = 1i32\n\ntest one =\n    one () |> _assert_eq 1i32\n\ntest two =\n    one () |> _assert_eq 1i32\n")
+    File.write!(path, "///> rust\n///- --timeout 1800000\ninl one () = 1i32\n\n///> rust\ntest one =\n    one () |> _assert_eq 1i32\n\n///> rust\ntest two =\n    one () |> _assert_eq 1i32\n")
     {:ok, agent} = Agent.start_link(fn -> [] end)
 
     budget = fn %{source: source} ->
@@ -753,7 +775,7 @@ defmodule Spiral.Cells.NotebookReportTest do
     assert length(budgets) >= 2
     assert Enum.all?(budgets, fn {_, left} -> left > 300_000 and left <= 1_800_000 end)
 
-    File.write!(path, "inl one () = 1i32\n\ntest one =\n    one () |> _assert_eq 1i32\n")
+    File.write!(path, "///> rust\ninl one () = 1i32\n\n///> rust\ntest one =\n    one () |> _assert_eq 1i32\n")
     Agent.update(agent, fn _ -> [] end)
     assert {:ok, %{"passed" => 1}} = Notebook.run_report(path, compile: budget, rustc: fn _ -> :ok end, execute: exit_when("never", 0))
     assert Enum.all?(Agent.get(agent, & &1), fn {_, left} -> left <= 300_000 end)
@@ -761,7 +783,7 @@ defmodule Spiral.Cells.NotebookReportTest do
 
   test "a compile error points at the .spi line and column, not the throwaway main.spi", %{dir: dir} do
     path = Path.join(dir, "located.spi")
-    File.write!(path, "inl one () = 1i32\n\ntest broken =\n    inl a = one ()\n    a + missing_name |> _assert_eq 1i32\n")
+    File.write!(path, "///> rust\ninl one () = 1i32\n\n///> rust\ntest broken =\n    inl a = one ()\n    a + missing_name |> _assert_eq 1i32\n")
 
     compile = fn %{source: source} ->
       lines = String.split(source, "\n")
@@ -772,7 +794,7 @@ defmodule Spiral.Cells.NotebookReportTest do
 
     {_, report} = Notebook.run_report(path, compile: compile, rustc: fn _ -> :ok end, execute: exit_when("never", 0))
     assert [%{"name" => "broken", "message" => message}] = report["tests"]
-    assert message =~ ~r/located\.spi:5:9 \(main\.spi:\d+:\d+\): ETY-UnboundVariable/
+    assert message =~ ~r/located\.spi:7:9 \(main\.spi:\d+:\d+\): ETY-UnboundVariable/
   end
 
   test "an ambiguous or unknown main.spi line stays as it is" do

@@ -92,15 +92,18 @@ defmodule Spiral.Cells.BuildersTest do
       Builders.commands("///> rust leftover")
     end
 
-    assert_raise ArgumentError, ~r/takes no arguments/, fn ->
+    assert_raise ArgumentError, ~r/retired/, fn ->
       Builders.commands("///> _ -c")
     end
   end
 
-  test "a skip line drops the whole cell's builders from the kept body" do
-    {commands, body} = Builders.split("///> rust -c\n///> _\n1i32")
-    assert Enum.any?(commands, &(&1.tool == :skip))
-    assert body == "1i32"
+  test "the retired skip line names the inference rules" do
+    error = assert_raise ArgumentError, fn -> Builders.split("///> rust -c\n///> _\n1i32") end
+    message = Exception.message(error)
+    assert message =~ "///> _ is retired"
+    assert message =~ "any test cell"
+    assert message =~ "only registers exports"
+    assert message =~ "backend_switch"
   end
 
   test "a pascal line builds with the pascal tool" do
@@ -133,6 +136,6 @@ defmodule Spiral.Cells.BuildersTest do
     }
 
     for {tool, expected} <- table, do: assert({Builders.backend(%{tool: tool}), Builders.ext(%{tool: tool})} == expected)
-    assert_raise ArgumentError, fn -> Builders.backend(%{tool: :skip}) end
+    assert_raise ArgumentError, fn -> Builders.backend(%{tool: :fortran}) end
   end
 end

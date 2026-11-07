@@ -322,10 +322,10 @@ module spiral_compiler =
             | "f64" -> Float64T
             | x -> failwith $"Invalid default float.\nGot: %s{x}\nExpected one of: f32, f64"
         edition =
-            match results.GetResult(Edition, environmentDefault "SPIRAL_EDITION" "3") with
-            | "2" -> UpstreamEdition2
-            | "3" -> ForkEdition3
-            | x -> failwith $"Invalid edition.\nGot: %s{x}\nExpected one of: 2, 3"
+            match results.GetResult(Edition, environmentDefault "SPIRAL_EDITION" (environmentDefault "SPIRAL_DIALECT" "i574n")) with
+            | "2" | "upstream" -> UpstreamEdition2
+            | "3" | "i574n" -> ForkEdition3
+            | x -> failwith $"Invalid dialect.\nGot: %s{x}\nExpected one of: i574n, upstream (or the legacy editions 3, 2)"
         }
 
     /// ## Utils
@@ -29519,8 +29519,17 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | RawAnnot(_, _, t) -> List.rev acc, Some t
                     | _ -> List.rev acc, None
                 let ps, result = parameters term []
-                if ps.Length < 2 then None
+                let rec poly (t : RawTExpr) =
+                    match t with
+                    | RawTMetaVar _ | RawTWildcard _ | RawTForall _ | RawTExists _ | RawTTypecase _ | RawTTerm _ | RawTMacro _ -> true
+                    | RawTPair(_, a, b) | RawTFun(_, a, b, _) | RawTApply(_, a, b) -> poly a || poly b
+                    | RawTArray(_, a) | RawTLayout(_, a, _) -> poly a
+                    | RawTRecord(_, m) -> m |> Map.exists (fun _ v -> poly v)
+                    | RawTUnion(_, m, _, _) -> m |> Map.exists (fun _ (_, v) -> poly v)
+                    | _ -> false
+                if ps.Length < 2 || result.IsNone || ps |> List.exists (snd >> poly) || (result |> Option.exists poly) then None
                 else
+                    let ps = ps |> List.mapi (fun i (_, t) -> $"auto_export_arg{i}", t)
                     let pattern = ps |> List.map (fun (v, _) -> PatVar(r, v)) |> List.reduceBack (fun a b -> PatPair(r, a, b))
                     let domain = ps |> List.map snd |> List.reduceBack (fun a b -> RawTPair(r, a, b))
                     let call = ps |> List.fold (fun acc (v, _) -> RawApply(r, acc, RawV(r, v, false))) (RawV(r, name, false))
@@ -30351,6 +30360,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 "default-int", directory |>> fun x s -> {s with defaultInt=x}
                 "default-float", directory |>> fun x s -> {s with defaultFloat=x}
                 "edition", directory |>> fun x s -> {s with edition=x}
+                "dialect", directory |>> fun x s -> {s with edition = x |> Option.map (fun (r, v) -> r, (match v.Trim().Trim([| '\''; '"' |]) with "i574n" -> "3" | "upstream" -> "2" | other -> other))}
                 "crates", crate_lines |>> fun _ s -> s
                 "rust-extern", rust_extern_lines |>> fun x s -> {s with rustExtern=x}
                 "auto-export", directory |>> fun x s -> {s with autoExport=x}
@@ -34716,7 +34726,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     let toml = Path.Combine (dir.FullName, "spiral.toml")
                     let project = if File.Exists toml then toml else Path.Combine (dir.FullName, "package.spiproj")
                     if File.Exists project then
-                        let declares2 = File.ReadAllLines project |> Array.exists (fun line -> let t = line.Trim().Replace(" ", "") in t = "edition:2" || t = "edition=2")
+                        let declares2 = File.ReadAllLines project |> Array.exists (fun line -> let t = line.Trim().Replace(" ", "").Replace("'", "").Replace("\"", "") in t = "edition:2" || t = "edition=2" || t = "dialect:upstream" || t = "dialect=upstream")
                         if declares2 then Edition2 else Edition3
                     else search dir.Parent
             search (DirectoryInfo (Path.GetDirectoryName (Path.GetFullPath path)))
@@ -35257,8 +35267,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             | Some "f64" -> {env with default_float = Float64T}
             | _ -> env
         match schema.schema.edition with
-        | Some "2" -> {env with edition = UpstreamEdition2}
-        | Some "3" -> {env with edition = ForkEdition3}
+        | Some ("2" | "upstream") -> {env with edition = UpstreamEdition2}
+        | Some ("3" | "i574n") -> {env with edition = ForkEdition3}
         | _ -> env
 
     /// ### file_default_env
@@ -36519,6 +36529,23 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             | _, Some main ->
                                 let main =
                                     if file_auto_export s.packages file = Some "monomorphic" then
+                                        let own_terms =
+                                            let mutable acc = own_terms
+                                            prepass.files.uids_file |> Array.iteri (fun i (other, _) ->
+                                                if i <> mid && not (isNull (box other)) then
+                                                    let rec walk (stream : PrepassStateValue Stream) =
+                                                        if not (isNull (box stream)) && Promise.Now.isFulfilled stream then
+                                                            match Promise.Now.get stream with
+                                                            | Hopac.Stream.Cons((_, adds, _), next) ->
+                                                                match adds with
+                                                                | AInclude small | AIncludePrivate (small, _) ->
+                                                                    for KeyValue(name, e) in small.term do
+                                                                        if not (acc.ContainsKey name) then acc <- acc.Add(name, e)
+                                                                | AOpen _ -> ()
+                                                                walk next
+                                                            | Hopac.Stream.Nil -> ()
+                                                    walk other.result)
+                                            acc
                                         LinkAutoExport.main (System.IO.Path.GetFileName((file_package_dir s.packages file).TrimEnd('/', '\\'))) own_terms main
                                     else main
                                 let prototypes_instances = Dictionary(env.prototypes_instances)

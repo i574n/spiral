@@ -1,3 +1,4 @@
+///> gleam
 ///- --package .
 ///> gleam
 :# html_markdown static =
@@ -119,6 +120,7 @@
     := last = listm::fold line_step { html = ""; block = NoBlock } (sm'::split_list "\n" source)
     last::html ++ close last::block
 
+///> gleam
 :# markdown_blocks_and_inline_spans_render_like_the_elixir_one =
     := got = markdown "# T\nsome `x` and [a](b)\nmore\n- one\n- two\n```\n<x>\n```\nend"
     := head = "<h1>T</h1>\n<p>some <code>x</code> and <a href=\"b\">a</a> more</p>\n"

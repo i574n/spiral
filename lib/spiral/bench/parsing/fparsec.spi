@@ -1,3 +1,4 @@
+///> zig
 :< sm'_operators
 
 :! position_ = $'FParsec.Position'

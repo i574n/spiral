@@ -1,3 +1,4 @@
+///> gleam
 ///- --package .
 ///> gleam
 :# client static =
@@ -95,21 +96,25 @@
         l
     | Error _ => failwith "client: could not listen for the fake daemon"
 
+///> gleam
 :# a_compile_round_trips_through_a_daemon_that_speaks_the_protocol =
     := l = fake_daemon "spiral-cells\t1\t9\t42" "ok\tr7\t3"
     transact (erlang_tcp::listener_port l) "42" (Compile (daemon::sample_ask ()))
     |> _assert_eq (Ok (Compiled ("r7", Some 3i32)))
 
+///> gleam
 :# the_same_transact_reads_a_status_reply_typed_by_its_request =
     := l = fake_daemon "spiral-cells\t1\t9\t42" "status\t9\t42\t0\t1\tfalse\tx lane"
     ?= transact (erlang_tcp::listener_port l) "42" Status ?|
     | Ok s => (s::pid, s::owner) |> _assert_eq ("9", "x lane")
     | Error _ => failwith "status transact failed"
 
+///> gleam
 :# a_daemon_with_another_code_stamp_is_stale =
     := l = fake_daemon "spiral-cells\t1\t9\t41" "ok\tr7"
     transact (erlang_tcp::listener_port l) "42" (Compile (daemon::sample_ask ())) |> _assert_eq (Error Stale)
 
+///> gleam
 :# a_port_nobody_listens_on_is_unreachable =
     ?= erlang_tcp::listen_local () ?|
     | Ok l =>

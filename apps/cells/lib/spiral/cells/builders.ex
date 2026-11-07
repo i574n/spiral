@@ -21,8 +21,6 @@ defmodule Spiral.Cells.Builders do
     {builders, body}
   end
 
-  defp decode_builder(["_" | rest]), do: {%{tool: :skip, raw: "_"}, rest}
-
   defp decode_builder([tool, raw, contract, wasm, cleanup, target, env, count | rest]) do
     {deps, rest} = Enum.split(rest, 3 * String.to_integer(count))
     deps = deps |> Enum.chunk_every(3) |> Enum.map(&wire_dep/1)

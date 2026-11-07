@@ -1,3 +1,4 @@
+///> gleam
 ///- --package .
 ///> gleam
 :# source_map static =
@@ -128,6 +129,7 @@
 := remap (message : string) (program : string) (source : string) (path : string) : string =
     remap_from message 0i32 (lines_of program) (lines_of source) path ""
 
+///> gleam
 :# remap_follows_the_elixir_cases =
     := kept = remap "main.spi:2:1: oops" "x\ny\n" "y\nz\ny\n" "f.spi"
     := none = remap "main.spi:1:5: oops" "zzz\n" "a\n" "f.spi"

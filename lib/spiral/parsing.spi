@@ -1,13 +1,8 @@
+///> zig
 :< sm'_operators
 
 :# parsing static =
     :< testing
-
-///> _
-:# fparsec =
-    #r "nuget: fparsec, 2.0.0-beta2"
-
-    ()
 
 :# fparsec_2 static =
     :! position_ = $'FParsec.Position'
@@ -524,6 +519,7 @@
             |: fail (\ _ => "parsing.skip_many / inner parser consumed no text") i' s'
     s |> 루프 i
 
+///> zig
 :# skip_many =
     "sskkip_many"
     |> run_parser (skip_many (p_char 's'))
@@ -540,6 +536,7 @@
         ?> skip_many a (t, i', s')
         |: fail (\ _ => "parsing.skip_many1 / inner parser consumed no text") i' s'
 
+///> zig
 :# skip_many1 =
     "skip_many1"
     |> run_parser (skip_many1 (p_char 's'))
@@ -1096,6 +1093,7 @@
                     |: fail (\ _ => "parsing.sep_end_by / separator consumed no text") i'' s''
     s |> 루프 [] i
 
+///> zig
 :# sep_end_by =
     "sep_end_by"
     |> run_parser (sep_end_by (p_char 's' <|> p_char 'e') (p_char 'e'))
@@ -1193,6 +1191,7 @@
                     ++# sm'::show { expected = str; got rest s }
                 i s
 
+///> zig
 :# p_string =
     "hello world"
     |> run_parser (p_string "hello")
@@ -1216,6 +1215,7 @@
                     ++# sm'::show { first_char = t |> sm'::index i; rest s }
                 i s
 
+///> zig
 :# new_line =
     "hello\nworld"
     |> run_parser (many_chars_till (any_char ()) (new_line ()))
@@ -1237,6 +1237,7 @@
             | Error e => e |> Error
     s |> 루프 [] i
 
+///> zig
 :# many_till =
     "hello\nworld"
     |> run_parser (many_till (any_char ()) (new_line ()))
@@ -1247,6 +1248,7 @@
 := p_return \* t. (x : t) : parser t = \ t, i, s =>
     Ok (x, i, s)
 
+///> zig
 :# p_return =
     "abc"
     |> run_parser (p_return 42i32)
@@ -1259,6 +1261,7 @@
     | Ok (r, i', s') => Ok (r, i', s')
     | Error e => e |> Error
 
+///> zig
 :# attempt =
     "aabbcc"
     |> run_parser (attempt (p_char 'a' >>. p_char 'a' >>. p_char 'b' >>. p_char 'c'))
@@ -1270,6 +1273,7 @@
     | Ok (x, _, _) => Ok (x, i, s)
     | Error e => e |> Error
 
+///> zig
 :# look_ahead =
     "123"
     |> run_parser (look_ahead (many1_chars (p_digit ())))
@@ -1285,6 +1289,7 @@
         |> resultm::map \ rb, i'', s'' =>
             f ((\ () => ra), (\ () => rb)), i'', s''
 
+///> zig
 :# pipe2 =
     "pipe2"
     |> run_parser (pipe2 (p_string "pipe") (spaces () >>. p_string "2") (\ a, b => a () ++# b ()))
@@ -1296,6 +1301,7 @@
     := i', s' = s |> advance_newlines t i
     Ok ((), i', s')
 
+///> zig
 :# new_lines =
     "\n\nline1\nline2\n\nline4"
     |> run_parser (many_till (any_char ()) (new_lines ()))
@@ -1315,6 +1321,7 @@
                 ++# sm'::show { rest = t |> slice i preview_end }
             i s
 
+///> zig
 :# new_lines1 =
     "\n\n\n"
     |> run_parser (new_lines1 ())

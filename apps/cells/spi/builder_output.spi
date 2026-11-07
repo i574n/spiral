@@ -1,3 +1,4 @@
+///> gleam
 ///- --package .
 ///> gleam
 :# builder_output static =
@@ -149,6 +150,7 @@
 
 := esc () : string = unicode::char_of 27i32
 
+///> gleam
 :# builder_outputs_show_the_result_field_or_the_trace =
     present "  {\"output\":\" hi \"}\n" |> _assert_eq "hi"
     present ("warming up\n" ++ esc () ++ "[31mbuild failed" ++ esc () ++ "[0m\r\n{\"command_result\":\"{\\\"output\\\":\\\"inner\\\"}\"}") |> _assert_eq "inner"

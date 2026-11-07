@@ -1,2 +1,3 @@
+///> zig
 inl g (x : i32) : i32 = x
 inl h (y : i32) : i32 = g (y) + g (y) - 1i32

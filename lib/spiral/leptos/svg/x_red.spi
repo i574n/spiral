@@ -1,3 +1,4 @@
+///> zig
 :< leptos
 
 := render () : _ (_ svg) =

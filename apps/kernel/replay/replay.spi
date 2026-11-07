@@ -1,3 +1,4 @@
+///> zig
 ///- --package .
 :# replay static =
     :< testing

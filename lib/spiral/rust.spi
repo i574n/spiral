@@ -1,3 +1,4 @@
+///> zig
 :# rust static =
     :< testing
 

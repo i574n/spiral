@@ -1,3 +1,4 @@
+///> zig
 ///- --package .
 :# transformer static =
     :< testing
@@ -938,7 +939,6 @@
     | Some seed => generate_sampled r (sampler_of 1.0f32 0.9f32 (conv seed)) rest first 0 ""
     | None => generate_from r rest first 0 ""
 
-///> _
 := main () : i32 =
     := f = model_at (env::get_environment_variable "TRANSFORMER_CHECKPOINT")
     := m = ? env::get_environment_variable "TRANSFORMER_Q8" = "1" ?> with_q8 f |: f

@@ -172,8 +172,6 @@ defmodule Spiral.Cells.DocumentTest do
 
       #!spiral
 
-      ///> _
-
       inl main () =
           0i32
 
@@ -197,8 +195,6 @@ defmodule Spiral.Cells.DocumentTest do
                /// two spaces
              ///\s
              /// last line
-             ///> _
-
              inl main () =
                  0i32
              """
@@ -223,8 +219,6 @@ defmodule Spiral.Cells.DocumentTest do
       let increment x = x + 1
 
       #!spiral
-
-      ///> _
 
       inl main () =
           0i32
@@ -554,7 +548,8 @@ defmodule Spiral.Cells.DocumentTest do
     refute spi =~ "_assert_eq"
     refute spi =~ "///> rust"
 
-    assert spi =~ "/// ### main\n///> _\n"
+    assert spi =~ "/// ### main\n"
+    refute spi =~ "///> _"
     assert spi =~ ~r/^(?:inl|:=) main \(\) =/m
   end
 
@@ -607,10 +602,10 @@ defmodule Spiral.Cells.DocumentTest do
   end
 
   test "a doc comment that ends a target's cell before more code is reported as a target gap" do
-    gap = "/// ### main\n///> _\n\ninl run_main () = 0i32\n\n/// The entry.\n\ninl main () = run_main ()\n"
-    fixed = String.replace(gap, "/// The entry.\n", "/// The entry.\n///> _\n")
-    assert Document.target_gaps(gap) == [{8, "///> _"}]
+    gap = "/// ### main\n///> rust\n\ninl run_main () = 0i32\n\n/// The entry.\n\ninl main () = run_main ()\n"
+    fixed = String.replace(gap, "/// The entry.\n", "/// The entry.\n///> rust\n")
+    assert Document.target_gaps(gap) == [{8, "///> rust"}]
     assert Document.target_gaps(fixed) == []
-    assert Document.target_gaps("/// ### a\n///> _\n\ninl a () = 0i32\n\n/// ### b\n\ninl b () = 1i32\n") == []
+    assert Document.target_gaps("/// ### a\n///> rust\n\ninl a () = 0i32\n\n/// ### b\n\ninl b () = 1i32\n") == []
   end
 end

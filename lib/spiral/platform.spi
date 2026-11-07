@@ -1,3 +1,4 @@
+///> zig
 :# platform static =
     :< testing
 
@@ -77,6 +78,7 @@
     ?> ".exe"
     |: ""
 
+///> zig
 :# get_executable_suffix =
     get_executable_suffix ()
 

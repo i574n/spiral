@@ -1,3 +1,4 @@
+///> zig
 :# crypto static =
     :< testing
     :< file_system_operators

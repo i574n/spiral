@@ -1,3 +1,4 @@
+///> zig
 ///- --package .
 :# file_manifest static =
     :< testing

@@ -480,7 +480,7 @@ defmodule Spiral.CellsTest do
       Spiral.Cells.run("///> fortran\n1")
     end
 
-    assert {:ok, %Result{exit_status: 0, value: nil}} = Spiral.Cells.run("///> _\nnot spiral")
+    assert_raise ArgumentError, ~r/retired/, fn -> Spiral.Cells.run("///> _\nnot spiral") end
   end
 
   test "a bare rust builder stays on rustc" do

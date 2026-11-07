@@ -1,7 +1,7 @@
 defmodule Mix.Tasks.Spiral.Targets do
   use Mix.Task
 
-  @shortdoc "List test blocks that name no ///> target and would run on the implicit default backend; --check fails when any exist"
+  @shortdoc "List test blocks that name no ///> target (each fails with NoTestTarget); --check fails when any exist"
 
   @notebook_extensions ~w(.spi .livemd)
   @skipped_dirs ~w(deps target node_modules _build dist .git)

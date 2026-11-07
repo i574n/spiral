@@ -1,3 +1,4 @@
+///> gleam
 ///- --package .
 ///> gleam
 :# gleam_project static =
@@ -76,6 +77,7 @@
     | main :: target :: rest => manifest main target (deps_of rest [])
     | _ => ""
 
+///> gleam
 :# gleam_warnings_drop_and_manifests_list_every_dependency =
     strip_warnings "warning: Unused\n  ┌─ src/a.gleam\n3 │ let x\n\nHint: drop it\nok 1\r\nwarning: x\n\nok 2" |> _assert_eq "ok 1\nok 2"
     := toml = manifest "main" "erlang" [{ name = "gleam_json"; version = Some "\"\\>=3.0.0\"" }; { name = "envoy"; version = None }]

@@ -1,3 +1,4 @@
+///> zig
 :# heap_scope static =
     :< testing
 

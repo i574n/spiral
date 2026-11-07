@@ -1,3 +1,4 @@
+///> zig
 :# near_workspaces static =
     :< testing
 

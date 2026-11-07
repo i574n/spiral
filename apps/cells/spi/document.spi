@@ -1,3 +1,4 @@
+///> zig
 := (++) (left : string) (right : string) : string = left ^^ right
 
 :== rows = list string

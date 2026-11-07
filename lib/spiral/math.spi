@@ -1,3 +1,4 @@
+///> zig
 :# math static =
     :< testing
 
@@ -9,42 +10,51 @@
 := square x =
     x ** 2
 
+///> zig
 :# square =
     5f64
     |> sqrt
     |> square
     |> _assert_approx_eq None 5
 
+///> zig
 :# square_2 =
     e () |> square
     |> _assert_approx_eq None 7.3890560989306495
 
+///> zig
 :# square_3 =
     2 * 2 / 0.4f64 |> sqrt
     |> _assert_approx_eq None 3.1622776601683795
 
+///> zig
 :# square_4 =
     2f64 / 3
     |> _assert_approx_eq None 0.6666666666666666
 
+///> zig
 :# square_5 =
     2f64 |> log
     |> _assert_approx_eq None 0.6931471805599453
 
+///> zig
 :# square_6 =
     pi
     |> _assert_approx_eq None 3.141592653589793f64
 
+///> zig
 :# square_7 =
     pi |> cos
     |> _assert_eq -1f64
 
+///> zig
 :# square_8 =
     pi
     |> cos
     |> \ n => n / 2f64
     |> _assert_approx_eq None -0.5
 
+///> zig
 :# square_9 =
     pi / 2 |> cos
     |> _assert_approx_eq None 0.00000000000000006123233995736766f64
@@ -218,6 +228,7 @@
         Swift = \ () => log a / log new_base
     }
 
+///> zig
 :# log_base =
     100 |> log_base 10
     |> _assert_eq 2

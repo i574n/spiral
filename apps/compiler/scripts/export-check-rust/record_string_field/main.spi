@@ -1,3 +1,4 @@
+///> zig
 :! label = { name : string; size : i32 }
 
 := size_of (label l) : i32 = l.size

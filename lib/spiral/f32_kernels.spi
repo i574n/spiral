@@ -1,3 +1,4 @@
+///> zig
 :# f32_kernels static =
     :< testing
 

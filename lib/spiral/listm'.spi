@@ -1,3 +1,4 @@
+///> zig
 :# listm static =
     :< testing
 
@@ -35,6 +36,7 @@
         | _ => acc |> listm::rev
     루프 l1 l2 l3 l4 []
 
+///> zig
 :# map4_ =
     := xs = [ 1i32; 2; 3 ] |> dyn
     map4_ (\ a b c d => a + b + c + d) xs xs xs xs
@@ -44,6 +46,7 @@
     := total : f64 = conv ((end - start) / inc) + 1
     listm::init total (conv >> (*) inc >> (+) start)
 
+///> zig
 :# init_series =
     init_series 0 1 0.5
     |> _assert_eq [ 0f64; 0.5; 1 ]
@@ -53,11 +56,13 @@
     | _ :: xs => try_item (i - 1) xs
     | [] => None
 
+///> zig
 :# try_item =
     listm::init 10i32 id
     |> try_item 9i32
     |> _assert_eq (Some 9)
 
+///> zig
 :# try_item_2 =
     listm::init 10i32 id
     |> try_item 10i32
@@ -66,6 +71,7 @@
 := item i =
     try_item i >> optionm::value
 
+///> zig
 :# item =
     listm::init 10i32 id
     |> item 9i32
@@ -96,6 +102,7 @@
 := sum list =
     list |> listm::fold (+) 0
 
+///> zig
 :# sum =
     listm::init 10i32 id
     |> sum
@@ -108,6 +115,7 @@
     |> \ x, y =>
         x |> listm::rev, y |> listm::rev
 
+///> zig
 :# unzip =
     listm::init 10i32 id
     |> listm::map \ x => x, x
@@ -160,11 +168,13 @@
 := index_of__ item =
     try_index_of__ item >> optionm::value
 
+///> zig
 :# try_index_of =
     listm::init 10i32 id
     |> index_of 5i32
     |> _assert_eq 5i32
 
+///> zig
 :# try_index_of_2 =
     listm::init 10i32 id
     |> try_index_of 10i32
@@ -188,6 +198,7 @@
             |: 루프 xs
     루프 list
 
+///> zig
 :# try_find =
     listm::init 10i32 id
     |> try_find ((=) 5i32)
@@ -226,6 +237,7 @@
 := find_ x =
     try_find_ x >> optionm::value
 
+///> zig
 :# try_find_2 =
     listm::init 10i32 id
     |> find ((=) 5i32)
@@ -238,6 +250,7 @@
         | Some y => y :: acc
         | None => acc
 
+///> zig
 :# choose =
     listm::init 10i32 id
     |> choose \ x => ? x % 2 = 0 ?> Some x |: None
@@ -264,6 +277,7 @@
         | _ => listm::rev acc
     루프 [] xs ys
 
+///> zig
 :# zip_with =
     ([ 1i32; 2; 3 ], [ 4; 5; 6 ])
     ||> zip_with (+)
@@ -275,6 +289,7 @@
 := zip_ xs ys =
     zip_with_ pair xs ys
 
+///> zig
 :# zip =
     ([ 1i32; 2; 3 ], [ 4i32; 5; 6 ])
     ||> zip
@@ -287,6 +302,7 @@
     |> fst
     |> listm::rev
 
+///> zig
 :# indexed =
     listm::init 5i32 ((*) 2)
     |> indexed
@@ -306,6 +322,7 @@
         ?> new_acc
         |: (xk, [ x ]) :: new_acc
 
+///> zig
 :# group_by =
     listm::init 10i32 id
     |> group_by \ x => x % 2 = 0
@@ -316,6 +333,7 @@
     ||> listm::fold \ acc x =>
         acc && x = head
 
+///> zig
 :# forall =
     [ 1i32; 1; 1; 1; 1 ]
     |> forall' ((=) 1i32)
@@ -326,6 +344,7 @@
     |> listm::rev
     |> item 0i32
 
+///> zig
 :# last =
     listm::init 10i32 id
     |> last
@@ -347,6 +366,7 @@
             ~~ body fn list
     루프 list
 
+///> zig
 :# try_pick =
     listm::init 10i32 id
     |> try_pick \ x => ? x = 5i32 ?> Some x |: None

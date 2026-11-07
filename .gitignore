@@ -6,3 +6,4 @@ playwright-report/
 test-results/
 build/
 __pycache__/
+apps/compiler/scripts/formatter/dll/

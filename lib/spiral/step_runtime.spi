@@ -1,3 +1,4 @@
+///> zig
 :< sm'_operators
 
 :# step_runtime static =
@@ -126,6 +127,7 @@
         handle = \ total n => ? n < 0i32 ?> Stop |: Continue (total + n)
     }
 
+///> zig
 :# stopped_actor_ignores_later_messages =
     := counter = spawn (stops_on_negative ())
     send counter 5i32

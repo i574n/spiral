@@ -1,3 +1,4 @@
+///> zig
 test PROJECT_NAME static =
     :< testing
 

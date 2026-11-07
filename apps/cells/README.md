@@ -225,13 +225,15 @@ the way the matrix builds its Pascal rows: `fpc -Px86_64 -O2 -Mdelphi` (`SPIRAL_
 `SPIRAL_LEAN` (an elan proxy, given `+leanprover/lean4:v4.35.0`), else that toolchain's own `lean` under `ELAN_HOME`,
 `~/.elan` or scoop's elan, else `lean` on PATH with `+leanprover/lean4:v4.35.0`.
 A cell's `///>` lines are its whole target list (no Rust run beside them).
-A test without `///>` lines runs on its file's default targets: the `///>` lines of the file's `static` prelude test
-(`///> c` above `test prelude static =`), else `SPIRAL_CELLS_DEFAULT_TARGET` (or `default_target:`, e.g. `fsharp`).
-A test with its own `///>` lines keeps them and also inherits the `-d` crates of the default target with the same tool
-(`///> rust -d serde_json` on the prelude gives every `///> rust` test of the file `serde_json`).
-With none of those, a test without `///>` lines fails with `test <name> has no ///> target` instead of running on Zig,
-the default every other cell still gets; `mix spiral.targets <paths> [--check]` lists such tests without running anything.
-`SPIRAL_CELLS_DEFAULT_TARGET=rust` keeps the Rust host (an empty variable is unset on Windows); `default_target: ""` does too.
+Every test names its own targets: a test without `///>` lines fails with
+`NoTestTarget: test <name> names no target: add a ///> <lang> line to it`, whatever the file's `static` prelude,
+`SPIRAL_CELLS_DEFAULT_TARGET` or `default_target:` say; `mix spiral.targets <paths> [--check]` lists such tests without
+running anything. Crates a package's tests need go once in its manifest (`crates = ['serde_json']` in `spiral.toml`,
+`crates:` in `package.spiproj`) and reach every `///> rust` test of the package; a test's own `///>` line is taken as
+written, with no crates from any other line. Cells that are not tests (code cells, the whole-file check) run on the
+`///>` lines at the very top of their file (above or beside its `///- --package` header line); a file with code cells and
+no such line fails with `NoFileTarget: <path> names no target for its code cells: add a ///> <lang> line at its top`.
+There is no other default: no `SPIRAL_CELLS_DEFAULT_TARGET`, no `default_target:`, no static prelude and no Zig.
 The `static` prelude itself is never compiled or run: its `open`s and types reach every later test, which compiles them,
 and its row says `static` (counted in `static`, not in `executed`). A static block whose body is only `open` lines
 (after its `///` lines) is the file's prelude, not a test: its row says `prelude`, it is counted in `preludes`, and it is

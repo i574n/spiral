@@ -1,3 +1,4 @@
+///> zig
 :! span = { start : i32; stop : i32 }
 
 := make (n : i32) : span = span { start = 0i32; stop = n }
