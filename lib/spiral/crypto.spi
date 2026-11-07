@@ -242,6 +242,19 @@
         ? i >= size ?> acc |: go (i + 1i32) (acc ++# hex_byte (am'::index_base i bytes))
     go 0i32 ""
 
+:= hex_of_vec (bytes : am'::vec u8) : string =
+    backend_switch {
+        Rust = \ () =>
+            $'Rc::<str>::from((!bytes).iter().flat_map(|b| [b >> 4, b & 15]).map(|n| char::from(b"0123456789abcdef"[n as usize])).collect::<String>())' : string
+    }
+
+///> rust
+:# hex_of_vec =
+    [ 0u8; 15; 16; 171; 255 ]
+    |> am'::new_vec
+    |> hex_of_vec
+    |> _assert_eq "000f10abff"
+
 := rust_sha1_digest (text : string) : array_base u8 =
     $'Rc::new(RefCell::new(<sha1::Sha1 as sha1::Digest>::digest(!text.as_bytes()).to_vec()))' : array_base u8
 

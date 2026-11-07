@@ -1,0 +1,231 @@
+:# keccak static =
+    :< testing
+
+:< sm'_operators
+:< digest
+
+/// ## keccak
+:== lanes = sized_array::sized 25 u64
+
+:== digest512 = sized_array::sized 64 u8
+
+:= rate512 () : i32 = 72
+
+:= round_constant (round : i32) : u64 =
+    ?= round ?|
+    | 0 => 1u64
+    | 1 => 32898u64
+    | 2 => 9223372036854808714u64
+    | 3 => 9223372039002292224u64
+    | 4 => 32907u64
+    | 5 => 2147483649u64
+    | 6 => 9223372039002292353u64
+    | 7 => 9223372036854808585u64
+    | 8 => 138u64
+    | 9 => 136u64
+    | 10 => 2147516425u64
+    | 11 => 2147483658u64
+    | 12 => 2147516555u64
+    | 13 => 9223372036854775947u64
+    | 14 => 9223372036854808713u64
+    | 15 => 9223372036854808579u64
+    | 16 => 9223372036854808578u64
+    | 17 => 9223372036854775936u64
+    | 18 => 32778u64
+    | 19 => 9223372039002259466u64
+    | 20 => 9223372039002292353u64
+    | 21 => 9223372036854808704u64
+    | 22 => 2147483649u64
+    | _ => 9223372039002292232u64
+
+:= rotation (lane : i32) : i32 =
+    ?= lane ?|
+    | 0 => 0
+    | 1 => 1
+    | 2 => 62
+    | 3 => 28
+    | 4 => 27
+    | 5 => 36
+    | 6 => 44
+    | 7 => 6
+    | 8 => 55
+    | 9 => 20
+    | 10 => 3
+    | 11 => 10
+    | 12 => 43
+    | 13 => 25
+    | 14 => 39
+    | 15 => 41
+    | 16 => 45
+    | 17 => 15
+    | 18 => 21
+    | 19 => 8
+    | 20 => 18
+    | 21 => 2
+    | 22 => 61
+    | 23 => 56
+    | _ => 14
+
+:= rotl (value : u64) (by : i32) : u64 =
+    ? by = 0 ?> value |: (value <<< by) ||| (value >>> (64 - by))
+
+:= complement (value : u64) : u64 = !!!!BitwiseComplement(value)
+
+:~ ^ fill_lanes (lanes : array u64) (i : i32) : () =
+    ? i < length lanes ?>
+        set lanes i 0u64
+        fill_lanes lanes (i + 1)
+
+:= zero_lanes (count : i32) : array u64 =
+    := lanes : array u64 = create count
+    fill_lanes lanes 0
+    lanes
+
+:= theta (a : array u64) (c : array u64) : () =
+    :~ ^ columns (x : i32) : () =
+        ? x < 5 ?>
+            set c x (index a x ^^^ index a (x + 5) ^^^ index a (x + 10) ^^^ index a (x + 15) ^^^ index a (x + 20))
+            columns (x + 1)
+    columns 0
+    :~ ^ mix (i : i32) : () =
+        ? i < 25 ?>
+            := x = i % 5
+            set a i (index a i ^^^ index c ((x + 4) % 5) ^^^ rotl (index c ((x + 1) % 5)) 1)
+            mix (i + 1)
+    mix 0
+
+:= rho_pi (a : array u64) (b : array u64) : () =
+    :~ ^ go (i : i32) : () =
+        ? i < 25 ?>
+            := x = i % 5
+            := y = i / 5
+            set b (y + 5 * ((2 * x + 3 * y) % 5)) (rotl (index a i) (rotation i))
+            go (i + 1)
+    go 0
+
+:= chi (b : array u64) (a : array u64) : () =
+    :~ ^ go (i : i32) : () =
+        ? i < 25 ?>
+            := x = i % 5
+            := row = i - x
+            set a i (index b i ^^^ (complement (index b (row + (x + 1) % 5)) &&& index b (row + (x + 2) % 5)))
+            go (i + 1)
+    go 0
+
+:= iota (round : i32) (a : array u64) : () =
+    set a 0 (index a 0 ^^^ round_constant round)
+
+:= permute_lanes (a : array u64) : () =
+    := c = zero_lanes 5
+    := b = zero_lanes 25
+    :~ ^ rounds (round : i32) : () =
+        ? round < 24 ?>
+            theta a c
+            rho_pi a b
+            chi b a
+            iota round a
+            rounds (round + 1)
+    rounds 0
+
+:= permute ((sized_array::sized a) : lanes) : () =
+    permute_lanes a
+
+:= padded (rate : i32) (message : array u8) : array u8 =
+    := size = length message
+    := total = (size / rate + 1) * rate
+    := out : array u8 = create total
+    :~ ^ copy (i : i32) : () =
+        ? i < total ?>
+            set out i (? i < size ?> index message i |: 0u8)
+            copy (i + 1)
+    copy 0
+    set out size (index out size ||| 1u8)
+    set out (total - 1) (index out (total - 1) ||| 128u8)
+    out
+
+:= absorb_block (rate : i32) (a : array u64) (block : array u8) (offset : i32) : () =
+    :~ ^ go (i : i32) : () =
+        ? i < rate / 8 ?>
+            set a i (index a i ^^^ bytes::le_word block (offset + 8 * i))
+            go (i + 1)
+    go 0
+    permute_lanes a
+
+:= squeeze_byte (a : array u64) (i : i32) : u8 =
+    conv ((index a (i / 8) >>> (8 * (i % 8))) &&& 255u64)
+
+:= keccak512 (message : array u8) : digest512 =
+    := rate = rate512 ()
+    := a = zero_lanes 25
+    := block = padded rate message
+    :~ ^ blocks (offset : i32) : () =
+        ? offset < length block ?>
+            absorb_block rate a block offset
+            blocks (offset + rate)
+    blocks 0
+    sized_array::init (squeeze_byte a)
+
+:= digest_bytes ((sized_array::sized bytes) : digest512) : array u8 =
+    bytes
+
+:! spiral_keccak = ()
+
+:+ digest_with spiral_keccak =
+    \ _ message => keccak512 message |> digest_bytes
+
+///> c
+///> rust
+///> lua
+///> fsharp
+///> typescript
+///> python
+///> zig
+///> gleam
+///> pascal
+:# keccak512_matches_the_reference_digests =
+    := ~empty = 0i32
+    := abc : array u8 = ;[ 97u8; 98; 99 ]
+    (
+        keccak512 (bytes::counting empty) |> digest_bytes |> bytes::hex,
+        keccak512 abc |> digest_bytes |> bytes::hex
+    )
+    |> _assert_eq (
+        "0eab42de4c3ceb9235fc91acffe746b29c29a8c366b7c60e4e67c466f36a4304c00fa9caf9d87976ba469bcbe06713b435f091ef2769fb160cdab33d3670680e",
+        "18587dc2ea106b9a1563e32b3312421ca164c7f1f07bc922a9c83d77cea3a1e5d0c69910739025372dc14ac9642629379540c17e2a65b19d77aa511a9d00bb96"
+    )
+
+///> c
+///> rust
+///> lua
+///> fsharp
+///> typescript
+///> python
+///> zig
+///> gleam
+///> pascal
+:# keccak512_pads_across_the_block_boundary =
+    := ~one_short = 71i32
+    := ~full = 72i32
+    := ~long = 200i32
+    (
+        keccak512 (bytes::counting one_short) |> digest_bytes |> bytes::hex,
+        keccak512 (bytes::counting full) |> digest_bytes |> bytes::hex,
+        keccak512 (bytes::repeated long 7u8) |> digest_bytes |> bytes::hex
+    )
+    |> _assert_eq (
+        "fe0953f9afdffed7ff9764c2590ff0e6af1b0689e42ddca68d6ef003ddce2671b806e0d2e6d57117bb75ad6166e2e990ca662b6a7f8945584f5308459eabae15",
+        "76fa23369085405345fe6a2831f334113bee6b111056e21072082af56e7c1ab4458858dbdb5f88e0d86d38ca654310c9a30712319c1f4f9783fe9f3ac0469527",
+        "85cdb9fd62d41b896d8efd04a09074b21c7fccc408aa0a751681037867578dcaef6141165239597b02b8873b91315f5ef885947601803b37112f474de31f5e72"
+    )
+
+///> c
+///> rust
+///> lua
+:# a_digest_is_sixty_four_bytes_by_its_type =
+    := ~empty = 0i32
+    keccak512 (bytes::counting empty) |> sized_array::element_count |> _assert_eq 64i32
+
+:# a_digest_cannot_be_read_as_a_shorter_array fails ETY-TermError "Unification failure" =
+    := digest = keccak512 (bytes::counting 0i32)
+    := short : sized_array::sized 32 u8 = digest
+    0i32

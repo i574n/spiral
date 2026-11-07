@@ -1,6 +1,16 @@
 #![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
+fn string_concat(parts: &[&str]) -> Rc<str> {
+    let mut joined = Rc::<[u8]>::new_uninit_slice(parts.iter().map(|part| part.len()).sum());
+    let bytes = Rc::get_mut(&mut joined).unwrap().as_mut_ptr() as *mut u8;
+    let mut at = 0;
+    for part in parts {
+        unsafe { std::ptr::copy_nonoverlapping(part.as_ptr(), bytes.add(at), part.len()) };
+        at += part.len();
+    }
+    unsafe { Rc::from_raw(Rc::into_raw(joined.assume_init()) as *const str) }
+}
 fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {
     let bytes = value.as_bytes();
     let length = bytes.len() as i64;
@@ -48,7 +58,7 @@ fn closure4(mut v0: i32, mut v1: Rc<str>) -> Rc<dyn Fn(Rc<str>) -> US1> {
             let v4: i32 = v0.wrapping_add(10i32);
             US1::US1_Good(v4)
         } else {
-            let v6: Rc<str> = Rc::<str>::from(format!("{}{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("executor is fake, got "); } LIT.with(|lit| lit.clone()) }, v2));
+            let v6: Rc<str> = string_concat(&["executor is fake, got ", &*v2]);
             US1::US1_Bad(v6)
         }
     })
@@ -104,7 +114,7 @@ fn group_0(mut st: Group0) -> US1 {
                         };
                         let v14: bool = &*v13 == "";
                         if v14 {
-                            let mut v15: Rc<str> = Rc::<str>::from(format!("{}{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("unexpected "); } LIT.with(|lit| lit.clone()) }, v5));
+                            let mut v15: Rc<str> = string_concat(&["unexpected ", &*v5]);
                             return US1::US1_Bad(v15);
                         } else {
                             st = Group0::M1(v0, v1, v2, v5, v6);
@@ -153,7 +163,7 @@ fn group_0(mut st: Group0) -> US1 {
                             let v23: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
                             v23
                         };
-                        let v25: Rc<str> = Rc::<str>::from(format!("{}{}", v24, { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(" needs a value"); } LIT.with(|lit| lit.clone()) }));
+                        let v25: Rc<str> = string_concat(&[&*v24, " needs a value"]);
                         return US1::US1_Bad(v25);
                     }
                     UH0::UH0_Word(v5, v6) => {

@@ -1,6 +1,16 @@
 #![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
+fn string_concat(parts: &[&str]) -> Rc<str> {
+    let mut joined = Rc::<[u8]>::new_uninit_slice(parts.iter().map(|part| part.len()).sum());
+    let bytes = Rc::get_mut(&mut joined).unwrap().as_mut_ptr() as *mut u8;
+    let mut at = 0;
+    for part in parts {
+        unsafe { std::ptr::copy_nonoverlapping(part.as_ptr(), bytes.add(at), part.len()) };
+        at += part.len();
+    }
+    unsafe { Rc::from_raw(Rc::into_raw(joined.assume_init()) as *const str) }
+}
 #[derive(Clone)]
 enum US0 {
     US0_Hidden,
@@ -350,7 +360,7 @@ fn frame_text_loop_5(mut v0: &Rc<RefCell<Vec<i32>>>, mut v1: i32, mut v2: i32, m
                     }
                 }
             };
-            let v17: Rc<str> = Rc::<str>::from(format!("{}{}", v4, v16));
+            let v17: Rc<str> = string_concat(&[&*v4, &*v16]);
             let v18: i32 = v3.wrapping_add(1i32);
             let v19: i32 = v3.wrapping_rem(v1);
             let v20: i32 = v1.wrapping_sub(1i32);
@@ -362,7 +372,7 @@ fn frame_text_loop_5(mut v0: &Rc<RefCell<Vec<i32>>>, mut v1: i32, mut v2: i32, m
                 false
             };
             if v23 {
-                let v24: Rc<str> = Rc::<str>::from(format!("{}{}", v17, { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("\n"); } LIT.with(|lit| lit.clone()) }));
+                let v24: Rc<str> = string_concat(&[&*v17, "\n"]);
                 (v3, v4) = (v18, v24);
                 continue;
             } else {
