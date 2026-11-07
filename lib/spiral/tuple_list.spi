@@ -8,7 +8,7 @@
         loop (real_core::type_lit_to_lit `n)
     )
 
-:= tuple_length \* n el. (_ : tuple_list n el) : i32 = ~> real_core::type_lit_to_lit `n
+:= tuple_count \* n el. (_ : tuple_list n el) : i32 = ~> real_core::type_lit_to_lit `n
 
 := tuple_bound_ok \* n el. (i : i32) (_ : tuple_list n el) : bool =
     ~> real_core::lit_is i && real_core::(>) (real_core::type_lit_to_lit `n) i && real_core::(>) (real_core::(+) i 1) 0
@@ -27,7 +27,7 @@
 ///> rust
 ///> lua
 :# a_tuple_list_of_3_holds_3_items_in_order =
-    (tuple_length (tens ()), tuple_item 0 (tens ()), tuple_item 2 (tens ())) |> _assert_eq (3i32, 10i32, 30i32)
+    (tuple_count (tens ()), tuple_item 0 (tens ()), tuple_item 2 (tens ())) |> _assert_eq (3i32, 10i32, 30i32)
 
 ///> c
 :# an_index_past_the_end_is_a_compile_error fails "tuple_item: the index must be a literal in bounds" =

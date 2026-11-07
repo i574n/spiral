@@ -1,7 +1,7 @@
 ///- --package .
 := concat (a : string) (b : string) : string = !!!!StaticStringConcat(a, b)
 
-:= text_length (s : string) : i32 = sm::length s
+:= text_count (s : string) : i32 = sm::length s
 
 := char_at (s : string) (i : i32) : char = sm::index s i
 
@@ -9,10 +9,10 @@
     ? count <= 0i32 ?> "" |: sm::slice s { from to = from + count - 1i32 }
 
 :~ ^ position_of (c : char) (s : string) (i : i32) : i32 =
-    ? i >= text_length s ?> -1i32 |? char_at s i = c ?> i |: position_of c s (i + 1i32)
+    ? i >= text_count s ?> -1i32 |? char_at s i = c ?> i |: position_of c s (i + 1i32)
 
 :~ ^ zeros_from (s : string) (i : i32) : i32 =
-    ? i < text_length s && char_at s i = '0' ?> zeros_from s (i + 1i32) |: i
+    ? i < text_count s && char_at s i = '0' ?> zeros_from s (i + 1i32) |: i
 
 :~ ^ zeros_before (s : string) (i : i32) : i32 =
     ? i > 0i32 && char_at s (i - 1i32) = '0' ?> zeros_before s (i - 1i32) |: i
@@ -23,10 +23,10 @@
 := digit_value (c : char) : i32 = position_of c "0123456789" 0i32
 
 :~ ^ digits_value (s : string) (i : i32) (acc : i32) : i32 =
-    ? i >= text_length s ?> acc |: digits_value s (i + 1i32) (acc * 10i32 + digit_value (char_at s i))
+    ? i >= text_count s ?> acc |: digits_value s (i + 1i32) (acc * 10i32 + digit_value (char_at s i))
 
 := signed_value (s : string) : i32 =
-    ? text_length s = 0i32 ?> 0i32
+    ? text_count s = 0i32 ?> 0i32
     |? char_at s 0i32 = '-' ?> 0i32 - digits_value s 1i32 0i32
     |? char_at s 0i32 = '+' ?> digits_value s 1i32 0i32
     |: digits_value s 0i32 0i32
@@ -49,7 +49,7 @@
     concat (part digits 0i32 point) (concat "." (part digits point (count - point)))
 
 := fixed_digits (digits : string) (point : i32) : string =
-    := count = text_length digits
+    := count = text_count digits
     ? point <= 0i32 ?> leading_point digits point
     |? count <= point ?> trailing_zeros digits count point
     |: inner_point digits count point
@@ -61,7 +61,7 @@
     concat sign (padded_exponent (? exponent < 0i32 ?> 0i32 - exponent |: exponent))
 
 := scientific_digits (digits : string) (exponent : i32) : string =
-    := count = text_length digits
+    := count = text_count digits
     := tail = ? count > 1i32 ?> concat "." (part digits 1i32 (count - 1i32)) |: ""
     concat (part digits 0i32 1i32) (concat tail (exponent_text exponent))
 
@@ -77,20 +77,20 @@
 
 := exponent_of (unsigned : string) (marker : i32) : i32 =
     ? marker < 0i32 ?> 0i32
-    |: signed_value (part unsigned (marker + 1i32) (text_length unsigned - marker - 1i32))
+    |: signed_value (part unsigned (marker + 1i32) (text_count unsigned - marker - 1i32))
 
 := whole_of (mantissa : string) (point_at : i32) : string =
     ? point_at < 0i32 ?> mantissa |: part mantissa 0i32 point_at
 
 := fraction_of (mantissa : string) (point_at : i32) : string =
-    ? point_at < 0i32 ?> "" |: part mantissa (point_at + 1i32) (text_length mantissa - point_at - 1i32)
+    ? point_at < 0i32 ?> "" |: part mantissa (point_at + 1i32) (text_count mantissa - point_at - 1i32)
 
 := mantissa_digits (mantissa : string) : string * i32 =
     := point_at = position_of '.' mantissa 0i32
     := whole = whole_of mantissa point_at
-    concat whole (fraction_of mantissa point_at), text_length whole
+    concat whole (fraction_of mantissa point_at), text_count whole
 
-:= nonzero_span (digits : string) : i32 * i32 = zeros_from digits 0i32, zeros_before digits (text_length digits)
+:= nonzero_span (digits : string) : i32 * i32 = zeros_from digits 0i32, zeros_before digits (text_count digits)
 
 := trimmed_text (sign : string) (digits : string) (shift : i32) : string =
     := first, last = nonzero_span digits
@@ -103,8 +103,8 @@
     trimmed_text sign digits (whole_length + exponent_of unsigned marker)
 
 := signed_repr (text : string) : string =
-    := negative = text_length text > 0i32 && char_at text 0i32 = '-'
-    := unsigned = ? negative ?> part text 1i32 (text_length text - 1i32) |: text
+    := negative = text_count text > 0i32 && char_at text 0i32 = '-'
+    := unsigned = ? negative ?> part text 1i32 (text_count text - 1i32) |: text
     unsigned_repr (? negative ?> "-" |: "") unsigned
 
 := float_text_repr (text : string) : string = ? is_special text ?> text |: signed_repr text

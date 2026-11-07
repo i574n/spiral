@@ -1,0 +1,46 @@
+:| ^ words =
+    | End
+    | Word : string * words
+
+:| hit = | Hit : i32 | Miss
+
+:| outcome o = | Good : o | Bad : string
+
+:~ starts (prefix : string) (s : string) : bool =
+    ? !!!!LT(1i32, (sm::length s : i32)) ?> (=.) (sm::slice s { from = 0i32; to = 1i32 }) prefix |: !-
+
+:= flag_name (arg : string) : string =
+    ? starts "--" arg ?> sm::slice arg { from = 2i32; to = (sm::length arg : i32) -. 1i32 } |: ""
+
+:== flag_rules o = { switched : o -> string -> hit; valued : o -> string -> string -> outcome o }
+
+:~ ^ flags_parsed \* o. (rules : flag_rules o) (o : o) (args : words) : outcome o =
+    ?= args ?|
+    | End => Good o
+    | Word (arg, rest) => ? (=.) (flag_name arg) "" ?> Bad (sm::concat "unexpected " arg) |: arg_parsed rules o arg rest
+
+:& :~ arg_parsed \* o. (rules : flag_rules o) (o : o) (arg : string) (rest : words) : outcome o =
+    ?= rules::switched o (flag_name arg) ?|
+    | Hit _ => flags_parsed rules o rest
+    | Miss => valued_then rules o arg rest
+
+:& :~ valued_then \* o. (rules : flag_rules o) (o : o) (arg : string) (rest : words) : outcome o =
+    ?= rest ?|
+    | Word (value, more) => continued rules (rules::valued o (flag_name arg) value) more
+    | End => Bad (sm::concat (flag_name arg) " needs a value")
+
+:& :~ continued \* o. (rules : flag_rules o) (r : outcome o) (more : words) : outcome o =
+    ?= r ?|
+    | Good next => flags_parsed rules next more
+    | Bad why => Bad why
+
+:= switch_value (o : i32) (name : string) : hit = ? (=.) name "frames" ?> Hit (o +. 1i32) |: Miss
+
+:= run_valued (o : i32) (name : string) (value : string) : outcome i32 =
+    ? (=.) name "spi" ?> Good (o +. 10i32) |: Bad (sm::concat "executor is fake, got " value)
+
+:= main () : i32 =
+    := rules : flag_rules i32 = { switched = switch_value; valued = run_valued }
+    ?= flags_parsed rules 0i32 (Word ("--spi", Word ("a.spi", Word ("--executor", Word ("gpu", End))))) ?|
+    | Bad why => ? (=.) (sm::length why : i32) 25i32 ?> 0i32 |: 1i32
+    | Good _ => 2i32

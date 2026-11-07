@@ -95,6 +95,13 @@
 := json_response (status : i32) (body : string) : string =
     response_text status "application/json; charset=utf-8" body
 
+:= ranged_headers (kind : string) (extra : string) (body : string) : string =
+    "\r\nContent-Type: " ++# kind ++# "\r\nContent-Length: " ++# sm'::obj_to_string (erlang_term::byte_size_of body)
+    ++# extra ++# "\r\nConnection: close\r\n\r\n"
+
+:= response_ranged (status : i32) (kind : string) (extra : string) (body : string) : string =
+    status_line status ++# ranged_headers kind extra body ++# body
+
 ///> gleam
 :# a_request_splits_method_path_and_query =
     := r = request_of "GET /u?usernames=a%2Cb&x=1#f HTTP/1.1\r\nHost: h\r\n\r\n"

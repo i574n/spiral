@@ -3,7 +3,7 @@
 
 :! sized n el = array el
 
-:= size_of \* n el. (_ : sized n el) : i32 = ~> real_core::type_lit_to_lit `n
+:= element_count \* n el. (_ : sized n el) : i32 = ~> real_core::type_lit_to_lit `n
 
 := init \* n el. (f : i32 -> el) : sized n el =
     := x : array el = create (~> real_core::type_lit_to_lit `n)
@@ -71,8 +71,8 @@
 
 :~ ^ rows_from \* n d. ((sized o) : sized d f32) (x : sized n f32) (w : array f32) (i : i32) : () =
     := out : sized d f32 = sized o
-    ? i < size_of out ?>
-        set o i (dot_at w (i * size_of x) x 0 0.0f32)
+    ? i < element_count out ?>
+        set o i (dot_at w (i * element_count x) x 0 0.0f32)
         rows_from out x w (i + 1)
 
 := matmul \* n d. (o : sized d f32) (x : sized n f32) ((sized w) : sized (type_arith::mult d n) f32) : () =
@@ -82,7 +82,7 @@
     init \ i => ? 2 * i + 1 < length x ?> f (index x (2 * i)) (index x (2 * i + 1)) |: index x (2 * i)
 
 := ^ reduced \* n el. (f : el -> el -> el) (x : sized n el) : el =
-    ? size_of x <= 1 ?> item x 0 |: reduced f (halved f x)
+    ? element_count x <= 1 ?> item x 0 |: reduced f (halved f x)
 
 :| ^ dim_of t =
     | DimSized :: \* n el. i32 -> dim_of (sized n el)
@@ -106,7 +106,7 @@
 ///> lua
 :# merge_then_resized_keeps_order_and_size =
     := u : sized 5 i32 = resized (merge (small ()) (tens ()))
-    (size_of u, item u 1, item u 4) |> _assert_eq (5i32, 2i32, 30i32)
+    (element_count u, item u 1, item u 4) |> _assert_eq (5i32, 2i32, 30i32)
 
 ///> c
 ///> rust
@@ -120,7 +120,7 @@
 :# map_keeps_the_size =
     := v : sized 3 i32 = init \ i => i
     := w : sized 3 i32 = map (\ x => x * x) v
-    (size_of w, fold (+) 0i32 w) |> _assert_eq (3i32, 5i32)
+    (element_count w, fold (+) 0i32 w) |> _assert_eq (3i32, 5i32)
 
 ///> c
 ///> rust
@@ -136,7 +136,7 @@
     := u : sized 5 i32 = init \ i => i
     := parts : sized (type_arith::add 2 3) i32 = resized u
     := rest : sized 3 i32 = skip parts
-    (size_of rest, item rest 0) |> _assert_eq (3i32, 2i32)
+    (element_count rest, item rest 0) |> _assert_eq (3i32, 2i32)
 
 ///> c
 ///> rust
@@ -156,7 +156,7 @@
     := w : sized (type_arith::mult 3 4) f32 = filled 2.0f32
     := o : sized 3 f32 = filled 0.0f32
     matmul o x w
-    (size_of o, item o 1) |> _assert_eq (3i32, 8.0f32)
+    (element_count o, item o 1) |> _assert_eq (3i32, 8.0f32)
 
 ///> c
 ///> rust
@@ -216,4 +216,4 @@
 :# resized_rejects_a_different_size fails "resized: the sizes differ" =
     := v : sized 2 i32 = init \ i => i
     := u : sized 3 i32 = resized v
-    size_of u |> _assert_eq 3i32
+    element_count u |> _assert_eq 3i32

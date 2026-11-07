@@ -57,12 +57,14 @@
         (10i32 - sum % 10i32) % 10i32 = check
     | _ => !-
 
+:= mod11_holds (check : i32) (body : list i32) : bool =
+    := sum = weighted_sum body 0i32 (\ index => index % 6i32 + 2i32) 0i32
+    := positive = check > 0i32 || weighted_sum body 0i32 (\ _ => 1i32) 0i32 > 0i32
+    positive && (11i32 - sum % 11i32) % 11i32 = check
+
 := mod11_valid (text : string) : bool =
     ?= reversed_digits text 0i32 [] ?|
-    | Some (check :: body) =>
-        := sum = weighted_sum body 0i32 (\ index => index % 6i32 + 2i32) 0i32
-        := positive = check > 0i32 || weighted_sum body 0i32 (\ _ => 1i32) 0i32 > 0i32
-        positive && (11i32 - sum % 11i32) % 11i32 = check
+    | Some (check :: body) => mod11_holds check body
     | _ => !-
 
 :~ ^ check_digits_value (digits : list i32) (acc : i32) : i32 =
@@ -85,13 +87,14 @@
     | Some reversed => Some (listm::rev reversed)
     | None => None
 
+:= abn_sum (first : i32) (rest : list i32) : i32 =
+    (first - 1i32) * 10i32 + weighted_sum rest 0i32 (\ index => 2i32 * index + 1i32) 0i32
+
 := abn_valid (text : string) : bool =
     ? sm'::length text < 11i32 ?> !-
     |:
         ?= digits_of (sm'::substring 0i32 11i32 text) ?|
-        | Some (first :: rest) =>
-            := sum = (first - 1i32) * 10i32 + weighted_sum rest 0i32 (\ index => 2i32 * index + 1i32) 0i32
-            sum % 89i32 = 0i32
+        | Some (first :: rest) => abn_sum first rest % 89i32 = 0i32
         | _ => !-
 
 := luhn_term (index : i32) (digit : i32) : i32 =
@@ -180,6 +183,7 @@
     ?= node ?|
     | XmlText text => text
     | XmlElement (_, _, children) => children_text children ""
+
 :& :~ children_text (children : list xml_node) (acc : string) : string =
     ?= children ?|
     | child :: rest => children_text rest (acc ++# string_value child)
@@ -225,12 +229,14 @@
     := name = qualified_name item::node
     own_namespace item name = uri && (is_prefix_wildcard test || local_name test = local_name name)
 
+:= namespaced_name_matches (namespaces : list (string * string)) (test : string) (item : located) : bool =
+    ?= mapped_namespace (name_prefix test) namespaces ?|
+    | Some uri => prefixed_name_matches test item uri
+    | None => name_matches test item::node
+
 := name_matches_in (namespaces : list (string * string)) (test : string) (item : located) : bool =
     ?= item::node ?|
-    | XmlElement _ ?& name_prefix test <> "" =>
-        ?= mapped_namespace (name_prefix test) namespaces ?|
-        | Some uri => prefixed_name_matches test item uri
-        | None => name_matches test item::node
+    | XmlElement _ ?& name_prefix test <> "" => namespaced_name_matches namespaces test item
     | _ => name_matches test item::node
 
 := kind_matches (namespaces : list (string * string)) (test : string) (item : located) : bool =
@@ -360,7 +366,10 @@
     ?= first ?|
     | VText text => text
     | VNumber n => decimal::text n
+    | VNodes ((item :: _)) => string_value item::node
     | _ => ""
+
+:= bool_value_text (b : bool) : string = ? b ?> "true" |: "false"
 
 := atom_text (value : xvalue) : string =
     ?= value ?|
@@ -368,7 +377,7 @@
     | VNodes ([]) => ""
     | VText text => text
     | VNumber n => decimal::text n
-    | VBool b => ? b ?> "true" |: "false"
+    | VBool b => bool_value_text b
     | VSequence ((first :: _)) => item_text first
     | VSequence ([]) => ""
     | VError _ => ""
@@ -392,14 +401,17 @@
     | VBool b => Some (decimal::of_int (? b ?> 1i64 |: 0i64))
     | _ => decimal::parse (atom_text value)
 
+:= within_slack (e : decimal::decimal) (v : decimal::decimal) (s : decimal::decimal) : bool =
+    decimal::compare (decimal::add e s) v >= 0i32 && decimal::compare (decimal::subtract e s) v <= 0i32
+
 := slack_holds (arguments : list xvalue) : bool =
     ?= arguments ?|
     | expected :: value :: slack :: [] =>
         ?= number_of expected, number_of value, number_of slack ?|
-        | Some e, Some v, Some s =>
-            decimal::compare (decimal::add e s) v >= 0i32 && decimal::compare (decimal::subtract e s) v <= 0i32
+        | Some e, Some v, Some s => within_slack e v s
         | _ => !-
     | _ => !-
+
 :~ ^ texts_of_value (items : list located) (acc : list string) : list string =
     ?= items ?|
     | item :: rest => texts_of_value rest (string_value item::node :: acc)
@@ -447,6 +459,7 @@
     ?= left ?|
     | a :: rest => any_with op numeric a right || any_pair op numeric rest right
     | [] => !-
+
 :& :~ any_with (op : comparison) (numeric : bool) (a : string) (right : list string) : bool =
     ?= right ?|
     | b :: rest => compare_atoms op numeric a b || any_with op numeric a rest
@@ -590,10 +603,12 @@
 :~ ^ byte_offset (s : string) (chars : i32) (i : i32) : i32 =
     ? chars <= 0i32 || i >= sm'::length s ?> i |: byte_offset s (chars - 1i32) (i + code_point_width s i)
 
-:= char_substring (t : string) (begin : i32) (count : i32) : string =
+:= clamped_bounds (t : string) (begin : i32) (count : i32) : i32 * i32 =
     := total = code_point_count t
-    := begin' = ? begin < 0i32 ?> 0i32 |: begin
-    := stop = ? begin + count > total ?> total |: begin + count
+    (? begin < 0i32 ?> 0i32 |: begin), (? begin + count > total ?> total |: begin + count)
+
+:= char_substring (t : string) (begin : i32) (count : i32) : string =
+    := begin', stop = clamped_bounds t begin count
     ? stop <= begin' ?> ""
     |:
         := from = byte_offset t begin' 0i32
@@ -669,14 +684,16 @@
         := next, quantified, piece = greedy_step p i after_quantifier
         greedy_from p next quantified (acc ++# piece)
 
+:= anchor_skip (p : string) (i : i32) (c : u32) : i32 =
+    ? c = 92u32 ?> xsd_regex::escape_end p i
+    |? c = 91u32 ?> xsd_regex::class_end p (i + 1i32) 0i32
+    |: i + code_point_width p i
+
 :~ ^ has_bare_anchor (p : string) (i : i32) : bool =
     ? i >= sm'::length p ?> !-
     |:
         := c = code_point_at p i
-        ? c = 92u32 ?> has_bare_anchor p (xsd_regex::escape_end p i)
-        |? c = 91u32 ?> has_bare_anchor p (xsd_regex::class_end p (i + 1i32) 0i32)
-        |? c = 94u32 || c = 36u32 ?> !+
-        |: has_bare_anchor p (i + code_point_width p i)
+        ? c = 94u32 || c = 36u32 ?> !+ |: has_bare_anchor p (anchor_skip p i c)
 
 := has_trailing_anchor (s : string) : bool = sm'::ends_with "$" s && sm'::ends_with "\\$" s = !-
 
@@ -710,13 +727,13 @@
     | Some r => VBool (xsd_regex::matches_from r (atom_text input) 0i32)
     | None => VError ("matches pattern is not supported: " ++# source)
 
+:= flagged_match (input : xvalue) (pattern : xvalue) (rest : list xvalue) : xvalue =
+    := flags = matches_flags rest
+    ? flags <> "" ?> VError ("matches flags are not supported: " ++# flags) |: pattern_matches input (atom_text pattern)
+
 := matches_value (arguments : list xvalue) : xvalue =
     ?= arguments ?|
-    | input :: pattern :: rest =>
-        := flags = matches_flags rest
-        ? flags <> ""
-        ?> VError ("matches flags are not supported: " ++# flags)
-        |: pattern_matches input (atom_text pattern)
+    | input :: pattern :: rest => flagged_match input pattern rest
     | _ => VError "matches takes an input and a pattern"
 
 :~ ^ code_point_index (c : string) (s : string) (i : i32) (n : i32) : i32 =
@@ -738,11 +755,17 @@
         translated_from s from into (i + code_point_width s i) (acc ++# mapped)
 
 := third_text (arguments : list xvalue) : string = ?= arguments ?| _ :: _ :: c :: _ => atom_text c | _ => ""
+
+:= token_value (s : string) (start : i32) (stop : i32) : xvalue = VText (sm'::substring start (stop - start) s)
+
+:= last_token (s : string) (start : i32) (acc : list xvalue) : list xvalue =
+    listm::rev (token_value s start (sm'::length s) :: acc)
+
 :~ ^ split_tokens (r : xsd_regex::rx) (s : string) (start : i32) (i : i32) (acc : list xvalue) : list xvalue =
-    ? i >= sm'::length s ?> listm::rev (VText (sm'::substring start (sm'::length s - start) s) :: acc)
+    ? i >= sm'::length s ?> last_token s start acc
     |:
         := e = xsd_regex::longest_match r s i
-        ? e > i ?> split_tokens r s e e (VText (sm'::substring start (i - start) s) :: acc)
+        ? e > i ?> split_tokens r s e e (token_value s start i :: acc)
         |: split_tokens r s start (i + code_point_width s i) acc
 
 :~ ^ replaced_from (r : xsd_regex::rx) (s : string) (into : string) (i : i32) (acc : string) : string =
@@ -769,12 +792,15 @@
         | Some r => VSequence (split_tokens r s 0i32 0i32 [])
         | None => VError ("tokenize pattern is not supported: " ++# p)
 
+:= has_group_reference (into : string) : bool = sm'::contains "$" into || sm'::contains "\\" into
+
+:= pattern_replace (s : string) (p : string) (into : string) : xvalue =
+    ?= split_pattern p ?|
+    | Some r => VText (replaced_from r s into 0i32 "")
+    | None => VError ("replace pattern is not supported: " ++# p)
+
 := replace_value (s : string) (p : string) (into : string) : xvalue =
-    ? sm'::contains "$" into || sm'::contains "\\" into ?> VError "replace with group references is not supported"
-    |:
-        ?= split_pattern p ?|
-        | Some r => VText (replaced_from r s into 0i32 "")
-        | None => VError ("replace pattern is not supported: " ++# p)
+    ? has_group_reference into ?> VError "replace with group references is not supported" |: pattern_replace s p into
 
 :~ ^ values_at (n : decimal::decimal) (items : list xvalue) (position : i32) (acc : list xvalue) : list xvalue =
     ?= items ?|
@@ -787,6 +813,7 @@
     ?= items ?|
     | item :: rest => joined_with rest separator (acc ++# separator ++# item)
     | [] => acc
+
 := half_even_rounded (whole : i64) (rest : i64) (step : i64) : i64 =
     ? rest * 2i64 > step ?> whole + 1i64
     |? rest * 2i64 < step ?> whole
@@ -799,12 +826,13 @@
         := whole = decimal::floor_division a::units step
         half_even_rounded whole (a::units - whole * step) step
 
+:= cents_digits (magnitude : i64) : string =
+    := fraction = decimal::zero_padded (decimal::digits_text (magnitude % 100i64) "") 2i32
+    decimal::digits_text (magnitude / 100i64) "" ++# "." ++# fraction
+
 := cents_text (cents : i64) : string =
     := negative = cents < 0i64
-    := magnitude = ? negative ?> 0i64 - cents |: cents
-    := whole = decimal::digits_text (magnitude / 100i64) ""
-    := fraction = decimal::zero_padded (decimal::digits_text (magnitude % 100i64) "") 2i32
-    (? negative ?> "-" |: "") ++# whole ++# "." ++# fraction
+    (? negative ?> "-" |: "") ++# cents_digits (? negative ?> 0i64 - cents |: cents)
 
 := without_integer_zero (text : string) : string =
     ? sm'::starts_with "0." text ?> sm'::substring 1i32 (sm'::length text - 1i32) text
@@ -880,14 +908,16 @@
     |? c = "S" && in_time ?> Some 1i64
     |: None
 
+:= designator_step (c : string) (in_time : bool) (number : i64) (acc : i64) : option (bool * i64 * i64) =
+    ?= designator_seconds c in_time ?|
+    | Some unit => Some (in_time, 0i64, acc + number * unit)
+    | None => None
+
 := duration_step (c : string) (in_time : bool) (number : i64) (acc : i64) : option (bool * i64 * i64) =
     := digit = sm'::index_of c "0123456789"
     ? digit >= 0i32 ?> Some (in_time, number * 10i64 + conv digit, acc)
     |? c = "T" ?> Some (!+, 0i64, acc)
-    |:
-        ?= designator_seconds c in_time ?|
-        | Some unit => Some (in_time, 0i64, acc + number * unit)
-        | None => None
+    |: designator_step c in_time number acc
 
 :~ ^ duration_from (text : string) (i : i32) (in_time : bool) (number : i64) (acc : i64) : option i64 =
     ? i >= sm'::length text ?> Some acc
@@ -924,25 +954,27 @@
 
 := is_valid_day (y : i64) (m : i64) (d : i64) : bool = m >= 1i64 && m <= 12i64 && d >= 1i64 && d <= days_in_month y m
 
+:= date_parts_valid (t : string) : bool =
+    := zone = offset_seconds (sm'::substring 10i32 (sm'::length t - 10i32) t)
+    ?= number_at t 0i32 4i32, number_at t 5i32 2i32, number_at t 8i32 2i32, zone ?|
+    | Some y, Some m, Some d, Some _ => is_valid_day y m d
+    | _ => !-
+
 := is_xs_date (text : string) : bool =
     := t = sm'::trim text
-    ? is_date_shaped t = !- ?> !-
-    |:
-        := zone = offset_seconds (sm'::substring 10i32 (sm'::length t - 10i32) t)
-        ?= number_at t 0i32 4i32, number_at t 5i32 2i32, number_at t 8i32 2i32, zone ?|
-        | Some y, Some m, Some d, Some _ => is_valid_day y m d
-        | _ => !-
+    ? is_date_shaped t = !- ?> !- |: date_parts_valid t
 
 := is_time_shaped (t : string) : bool =
     sm'::length t >= 8i32 && sm'::substring 2i32 1i32 t = ":" && sm'::substring 5i32 1i32 t = ":"
 
+:= time_parts_valid (t : string) : bool =
+    ?= number_at t 0i32 2i32, number_at t 3i32 2i32, number_at t 6i32 2i32, offset_seconds (zone_after t 8i32) ?|
+    | Some h, Some mi, Some se, Some _ => h <= 23i64 && mi <= 59i64 && se <= 59i64
+    | _ => !-
+
 := is_xs_time (text : string) : bool =
     := t = sm'::trim text
-    ? is_time_shaped t = !- ?> !-
-    |:
-        ?= number_at t 0i32 2i32, number_at t 3i32 2i32, number_at t 6i32 2i32, offset_seconds (zone_after t 8i32) ?|
-        | Some h, Some mi, Some se, Some _ => h <= 23i64 && mi <= 59i64 && se <= 59i64
-        | _ => !-
+    ? is_time_shaped t = !- ?> !- |: time_parts_valid t
 
 := is_xs_integer (text : string) : bool =
     := t = sm'::trim text
@@ -951,13 +983,21 @@
 
 := is_xs_decimal (t : string) : bool = ?= decimal::parse (sm'::trim t) ?| Some _ => !+ | None => !-
 
+:= any_text (_ : string) : bool = !+
+
+:= castable_checks () : list (string * (string -> bool)) =
+    [
+        ("xs:string", any_text)
+        ("xs:integer", is_xs_integer)
+        ("xs:decimal", is_xs_decimal)
+        ("xs:date", is_xs_date)
+        ("xs:time", is_xs_time)
+    ]
+
 := castable_text (ty : string) (t : string) : xvalue =
-    ? ty = "xs:string" ?> VBool !+
-    |? ty = "xs:integer" ?> VBool (is_xs_integer t)
-    |? ty = "xs:decimal" ?> VBool (is_xs_decimal t)
-    |? ty = "xs:date" ?> VBool (is_xs_date t)
-    |? ty = "xs:time" ?> VBool (is_xs_time t)
-    |: VError ("castable as " ++# ty ++# " is not supported")
+    ?= table_lookup ty (castable_checks ()) ?|
+    | Some check => VBool (check t)
+    | None => VError ("castable as " ++# ty ++# " is not supported")
 
 := castable_value (ty : string) (optional : bool) (value : xvalue) : xvalue =
     ?= value ?|
@@ -983,9 +1023,12 @@
     | first :: rest => joined_with rest separator first
     | [] => ""
 
+:= singleton_nodes (nodes : list located) : list xvalue = listm::map (\ (n : located) => VNodes (n :: [])) nodes
+
 :~ ^ sequence_items (values : list xvalue) (acc : list xvalue) : list xvalue =
     ?= values ?|
     | VSequence inner :: rest => sequence_items rest (listm::append (listm::rev inner) acc)
+    | VNodes nodes :: rest => sequence_items rest (listm::append (listm::rev (singleton_nodes nodes)) acc)
     | value :: rest => sequence_items rest (value :: acc)
     | [] => listm::rev acc
 
@@ -1032,15 +1075,17 @@
     | FnSlack => !-
     | FnMatches => !-
 
+:~ undigited_value (f : builtin value_result) (first : xvalue) : xvalue =
+    ?= long_digits first ?|
+    | Some digits => VText digits
+    | None => VError (value_function_text f ++# " of " ++# atom_text first)
+
 :~ numeric_value (f : builtin value_result) (first : xvalue) : xvalue =
     ? is_empty_value first ?> VSequence ([])
     |:
         ?= number_of first ?|
         | Some n => VNumber n
-        | None =>
-            ?= long_digits first ?|
-            | Some digits => VText digits
-            | None => VError (value_function_text f ++# " of " ++# atom_text first)
+        | None => undigited_value f first
 
 :~ node_name_value (local : bool) (first : xvalue) : xvalue =
     ?= first ?|
@@ -1158,12 +1203,17 @@
     | ValueFunction f => value_function_value s f arguments first second
     | UnknownFunction text => VError ("unsupported function " ++# text)
 
+:~ first_argument (s : scope) (arguments : list xvalue) : xvalue =
+    ?= arguments ?|
+    | (a :: _) => a
+    | [] => VNodes (s::context :: [])
+
+:~ second_text (arguments : list xvalue) : string = ?= arguments ?| (_ :: b :: _) => atom_text b | _ => ""
+
 :~ call (s : scope) (name : function_ref) (arguments : list xvalue) : xvalue =
-    := first = ?= arguments ?| (a :: _) => a | [] => VNodes (s::context :: [])
-    := second = ?= arguments ?| (_ :: b :: _) => atom_text b | _ => ""
     ?= first_error arguments ?|
     | Some reason => VError reason
-    | None => function_value s name arguments first second
+    | None => function_value s name arguments (first_argument s arguments) (second_text arguments)
 
 :~ ^ node_values (nodes : list located) (acc : list xvalue) : list xvalue =
     ?= nodes ?|
@@ -1275,20 +1325,24 @@
     | VNodes nodes => node_values nodes []
     | VSequence values => values
     | other => other :: []
+
 :& :~ each_bound (s : scope) (v : string) (body : xpath) (items : list xvalue) (acc : list xvalue) : list xvalue =
     ?= items ?|
     | item :: rest => each_bound s v body rest (eval { s ?| variables = ((v, item) :: s::variables) } body :: acc)
     | [] => listm::rev acc
+
 :& :~ evaluated (s : scope) (arguments : list xpath) (acc : list xvalue) : list xvalue =
     ?= arguments ?|
     | argument :: rest => evaluated s rest (eval s argument :: acc)
     | [] => listm::rev acc
+
 :& :~ quantified (s : scope) (every : bool) (v : string) (body : xpath) (items : list xvalue) : bool =
     ?= items ?|
     | item :: rest =>
         := holds = effective_boolean (eval { s ?| variables = ((v, item) :: s::variables) } body)
         ? every ?> holds && quantified s every v body rest |: holds || quantified s every v body rest
     | [] => every
+
 :& :~ step_nodes
     (s : scope) (axis : step_axis) (test : string) (predicates : list xpath)
     (items : list located) (acc : list located)
@@ -1300,10 +1354,12 @@
         | VNodes kept => step_nodes s axis test predicates rest (listm::append acc kept)
         | other => other
     | [] => VNodes acc
+
 :& :~ axis_kept (s : scope) (axis : step_axis) (test : string) (predicates : list xpath) (item : located) : xvalue =
     ?= axis_found s axis item ?|
     | Some found => kept_by s predicates (filtered_by_test s::namespaces test found [])
     | None => VError ("unsupported axis " ++# axis_name axis)
+
 :& :~ kept_by (s : scope) (predicates : list xpath) (items : list located) : xvalue =
     ?= predicates ?|
     | predicate :: rest =>
@@ -1311,6 +1367,7 @@
         | VNodes kept => kept_by s rest kept
         | other => other
     | [] => VNodes items
+
 :& :~ kept_at
     (s : scope) (predicate : xpath) (items : list located) (position : i32) (acc : list located)
     : xvalue
@@ -1321,6 +1378,7 @@
         | VError e => VError e
         | value => kept_at s predicate rest (position + 1i32) (? is_kept value position ?> (item :: acc) |: acc)
     | [] => VNodes (listm::rev acc)
+
 :& :~ values_kept (s : scope) (predicates : list xpath) (items : list xvalue) : xvalue =
     ?= predicates ?|
     | predicate :: rest =>
@@ -1328,33 +1386,44 @@
         | VNumber n => values_kept s rest (values_at n items 1i32 [])
         | _ => VError "only a positional predicate applies to a sequence of values"
     | [] => VSequence items
+
 :& :~ mapped_each
     (s : scope) (mapped : xpath) (items : list located) (nodes : list located) (values : list xvalue)
     : xvalue
     =
     ?= items ?|
-    | item :: rest =>
-        ?= eval { s ?| context = item } mapped ?|
-        | VNodes found => mapped_each s mapped rest (listm::append nodes found) values
-        | VError e => VError e
-        | other => mapped_each s mapped rest nodes (other :: values)
+    | item :: rest => mapped_one s mapped rest nodes values (eval { s ?| context = item } mapped)
     | [] => mapped_result nodes values
+
+:& :~ mapped_one
+    (s : scope) (mapped : xpath) (rest : list located) (nodes : list located) (values : list xvalue) (value : xvalue)
+    : xvalue
+    =
+    ?= value ?|
+    | VNodes found => mapped_each s mapped rest (listm::append nodes found) values
+    | VError e => VError e
+    | other => mapped_each s mapped rest nodes (other :: values)
+
 :& :~ binary (s : scope) (op : binary_operator) (left : xpath) (right : xpath) : xvalue =
     ?= op ?|
     | BoolOperator b => bool_binary s b left right
     | NumberOperator n => evaluated_binary s left right (number_binary n)
     | NodesOperator n => evaluated_binary s left right (nodes_binary n)
+
 :& :~ bool_binary (s : scope) (op : operator bool_result) (left : xpath) (right : xpath) : xvalue =
     ?= op ?|
     | OpOr => or_value s left right
     | OpAnd => and_value s left right
     | OpCompare (c, _) => evaluated_binary s left right (compared_value c)
+
 :& :~ or_value (s : scope) (left : xpath) (right : xpath) : xvalue =
     := a = eval s left
     ? is_error a ?> a |? effective_boolean a ?> VBool !+ |: truth_of (eval s right)
+
 :& :~ and_value (s : scope) (left : xpath) (right : xpath) : xvalue =
     := a = eval s left
     ? is_error a ?> a |? effective_boolean a = !- ?> VBool !- |: truth_of (eval s right)
+
 :& :~ evaluated_binary (s : scope) (left : xpath) (right : xpath) (combine : xvalue -> xvalue -> xvalue) : xvalue =
     := a = eval s left
     := b = eval s right
@@ -1436,6 +1505,14 @@
     ?> failwith "member"
     ? holds "every $l in cac:InvoiceLine satisfies xs:decimal($l/cbc:LineExtensionAmount) > 0" = !-
     ?> failwith "every"
+
+///> rust
+:# mixed_sequences_cast_their_first_node =
+    := holds rule = holds_in (en16931_sample ()) rule
+    ? holds "xs:decimal((cac:InvoiceLine/cbc:LineExtensionAmount, 0)[1]) > 0" = !-
+    ?> failwith "a node first in a mixed sequence casts by its string value"
+    ? holds "xs:decimal((cbc:Missing, 0)[1]) = 0" = !- ?> failwith "a missing node falls back to the number"
+    ? holds "count((cac:InvoiceLine, 0)) = 3" = !- ?> failwith "a sequence holds one item per node"
 
 ///> rust
 :# axes_and_predicates_follow_en16931_rules =

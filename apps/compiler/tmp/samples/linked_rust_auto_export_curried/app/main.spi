@@ -1,0 +1,8 @@
+:< model
+
+:= main () : i32 =
+    := ~n = 7i32
+    := a = add3 n 1i32 2i32
+    := partial = add3 n
+    := b = partial 0i32 0i32
+    !!!!Add(a, !!!!Add(b, double n))

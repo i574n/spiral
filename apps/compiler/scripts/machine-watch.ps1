@@ -1,7 +1,7 @@
 param([int] $SampleSeconds = 10, [int] $SilentMinutes = 60, [int] $RogueMinutes = 30, [double] $RogueCores = 0.8)
 $ErrorActionPreference = 'Continue'
-$eoie = Join-Path $PSScriptRoot '../../../../kit/kit.exe'
-if (-not (Test-Path $eoie)) { $eoie = 'kit' }
+$kit = Join-Path $PSScriptRoot '../../../../kit/kit.exe'
+if (-not (Test-Path $kit)) { $kit = 'kit' }
 $stateDir = Join-Path $env:LOCALAPPDATA 'machine-watch'
 New-Item -ItemType Directory -Force $stateDir | Out-Null
 $statePath = Join-Path $stateDir 'last.json'
@@ -20,7 +20,7 @@ function Get-Owner([int] $id) {
     $hops = 0
     while ($at -and $hops -lt 40) {
         if ($at.Name -eq 'claude.exe') { return "claude:$($at.ProcessId)" }
-        if ($at.CommandLine -and $at.CommandLine -match 'job supervise (job-\S+)') { return "eoie:$($Matches[1])" }
+        if ($at.CommandLine -and $at.CommandLine -match 'job supervise (job-\S+)') { return "kit:$($Matches[1])" }
         $parent = [int]$at.ParentProcessId
         if (-not $processes.ContainsKey($parent)) {
             if ($at.Name -eq 'erl.exe' -and $at.CommandLine -match '(?i)spiral\.notebook|spiral-cells|cells-build') { return "cells-vm:$($at.ProcessId)" }
@@ -79,16 +79,16 @@ $hogs = @(Get-Process | Where-Object { $_.PrivateMemorySize64 -ge 8gb })
 $hogs | ForEach-Object { "  pid $($_.Id) $($_.ProcessName) $([int]($_.PrivateMemorySize64 / 1mb)) MB private, owner $(Get-Owner $_.Id), repo $(Get-AncestorRepo $_.Id), started $($_.StartTime.ToString('HH:mm'))" }
 
 $jobs = @{}
-foreach ($line in @(& $eoie job list 300 2>$null)) {
+foreach ($line in @(& $kit job list 300 2>$null)) {
     $m = [regex]::Match($line, 'id=(\S+) state=(\S+) exit=\S+ elapsed_ms=(\d+) stdout_bytes=(\d+) stderr_bytes=(\d+).*label=(\S+)')
     if ($m.Success) { $jobs[$m.Groups[1].Value] = [pscustomobject]@{ State = $m.Groups[2].Value; ElapsedMin = [int]([long]$m.Groups[3].Value / 60000); Out = [long]$m.Groups[4].Value + [long]$m.Groups[5].Value; Label = $m.Groups[6].Value } }
 }
 $last = if (Test-Path $statePath) { Get-Content $statePath -Raw | ConvertFrom-Json -AsHashtable } else { @{} }
 $snapshot = @{ at = $now.ToString('o'); jobs = @{} }
-$windowLines = @(& $eoie window list 2>$null | Where-Object { $_ -match '^win-' })
+$windowLines = @(& $kit window list 2>$null | Where-Object { $_ -match '^win-' })
 $liveBlock = @($windowLines | Where-Object { $_ -match ' live-gui\s+held ' }).Count -gt 0
 $cellsCores = [math]::Round((@($busy | Where-Object Owner -like 'cells-vm:*') | Measure-Object Cores -Sum).Sum, 2)
-"== eoie jobs running: $(@($jobs.Values | Where-Object State -eq 'running').Count), queued: $(@($jobs.Values | Where-Object State -eq 'queued').Count)"
+"== kit jobs running: $(@($jobs.Values | Where-Object State -eq 'running').Count), queued: $(@($jobs.Values | Where-Object State -eq 'queued').Count)"
 foreach ($id in $jobs.Keys) {
     $j = $jobs[$id]
     if ($j.State -ne 'running') { continue }
@@ -96,8 +96,8 @@ foreach ($id in $jobs.Keys) {
     $quietSince = if ($seen -and [long]$seen.out -eq $j.Out) { [DateTime]::Parse($seen.quiet_since) } else { $now }
     $snapshot.jobs[$id] = @{ out = $j.Out; quiet_since = $quietSince.ToString('o') }
     $quiet = [int]($now - $quietSince).TotalMinutes
-    $treeCores = [math]::Round((@($busy | Where-Object Owner -eq "eoie:$id") | Measure-Object Cores -Sum).Sum, 2)
-    $lastLine = if ($quiet -ge $SilentMinutes -and $treeCores -lt 0.1 -and -not $liveBlock) { @(& $eoie job tail $id 3 2>$null | Where-Object { $_ -and $_ -notmatch '^(kit job tail|--- )' }) | Select-Object -Last 1 } else { '' }
+    $treeCores = [math]::Round((@($busy | Where-Object Owner -eq "kit:$id") | Measure-Object Cores -Sum).Sum, 2)
+    $lastLine = if ($quiet -ge $SilentMinutes -and $treeCores -lt 0.1 -and -not $liveBlock) { @(& $kit job tail $id 3 2>$null | Where-Object { $_ -and $_ -notmatch '^(kit job tail|--- )' }) | Select-Object -Last 1 } else { '' }
     $flag = if ($quiet -lt $SilentMinutes) { '' } elseif ($treeCores -ge 0.1) { "  (quiet output, tree busy $treeCores cores: buffered)" } elseif ($liveBlock) { "  (quiet during a live block: waiting for a window is expected)" } elseif ($lastLine -match '(?i)waiting for') { "  (waiting by design, last line: $($lastLine.Trim()))" } elseif ($cellsCores -ge 0.5) { "  (quiet, tree idle, but detached Cells VMs use $cellsCores cores: likely this job's compiler daemon work)" } else { "  <- SILENT $quiet min, tree idle now: check the job's own progress files (Cells work can run in a shared compiler daemon outside the tree)" }
     "  $($j.Label) running $($j.ElapsedMin) min, output $($j.Out) bytes, unchanged $quiet min, tree $treeCores cores$flag"
 }

@@ -20,6 +20,16 @@ defmodule Mix.Tasks.Spiral.CellBudget do
 
     by_kind = findings |> Enum.frequencies_by(& &1.kind) |> Enum.sort() |> Enum.map_join(", ", fn {kind, n} -> "#{kind} #{n}" end)
     Mix.shell().info("cell-budget report: #{length(findings)} finding(s) in #{length(files)} file(s)" <> if(by_kind == "", do: "", else: " (#{by_kind})"))
+    if options[:granular] do
+      profile = Spiral.Cells.CellBudget.default_profile()
+
+      kinds =
+        for file <- files, source = File.read!(file), kind <- Spiral.Cells.CellBudgetRuled.kinds(source, profile, nominals_in_scope(source, file)),
+            do: kind
+
+      Mix.shell().info(Spiral.Cells.CellBudgetRuled.kinds_line(kinds))
+    end
+
     over_budget = Enum.count(findings, &(&1.kind == :over_budget))
     if options[:check] && over_budget > 0, do: Mix.raise("cell-budget: #{over_budget} definition(s) over the cell budget; split them")
   end

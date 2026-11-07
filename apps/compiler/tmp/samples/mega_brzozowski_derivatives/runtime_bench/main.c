@@ -2100,7 +2100,7 @@ static Array0 * ArrayLit0(uint32_t len, int32_t * ptr){
 static inline void AssignArray0(int32_t * a, int32_t b){
     *a = b;
 }
-static void loop24(Array0 * v0, int32_t v1){
+__attribute__((noinline)) void loop24(Array0 * v0, int32_t v1){
     while (1) {
         bool v2 = v1 < 8192l;
         if (v2){
@@ -2114,12 +2114,11 @@ static void loop24(Array0 * v0, int32_t v1){
             }
             continue;
         } else {
-            ArrayDecref0(v0);
             return ;
         }
     }
 }
-static void loop25(Array0 * v0, int32_t v1){
+__attribute__((noinline)) void loop25(Array0 * v0, int32_t v1){
     while (1) {
         bool v2 = v1 < 1l;
         if (v2){
@@ -2133,26 +2132,21 @@ static void loop25(Array0 * v0, int32_t v1){
             }
             continue;
         } else {
-            ArrayDecref0(v0);
             return ;
         }
     }
 }
-static int32_t probe27(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, Array0 * v5, Array0 * v6, int32_t v7, int32_t v8, int32_t v9, int32_t v10){
+static inline int32_t probe27(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, Array0 * v5, Array0 * v6, int32_t v7, int32_t v8, int32_t v9, int32_t v10){
     while (1) {
         int32_t v11 = v4->ptr[v10];
         bool v12 = v11 == 0l;
         if (v12){
-            ArrayDecref0(v5);
             int32_t v13 = v6->ptr[0l];
             bool v14 = v13 < 4096l;
             if (v14){
                 AssignArray0(&(v0->ptr[v13]), v7);
-                ArrayDecref0(v0);
                 AssignArray0(&(v1->ptr[v13]), v8);
-                ArrayDecref0(v1);
                 AssignArray0(&(v2->ptr[v13]), v9);
-                ArrayDecref0(v2);
                 bool v15 = v7 == 1l;
                 bool v32;
                 if (v15){
@@ -2198,15 +2192,11 @@ static int32_t probe27(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array
                     v33 = 0l;
                 }
                 AssignArray0(&(v3->ptr[v13]), v33);
-                ArrayDecref0(v3);
                 int32_t v34 = v13 + 1l;
                 AssignArray0(&(v4->ptr[v10]), v34);
-                ArrayDecref0(v4);
                 AssignArray0(&(v6->ptr[0l]), v34);
-                ArrayDecref0(v6);
                 return v13;
             } else {
-                ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v6);
                 fprintf(stderr, "%s\n", "brzozowski-interned-store-full");
                 exit(EXIT_FAILURE);
             }
@@ -2231,7 +2221,6 @@ static int32_t probe27(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array
                 v45 = false;
             }
             if (v45){
-                ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6);
                 return v37;
             } else {
                 int32_t v46 = v10 + 1l;
@@ -2276,7 +2265,6 @@ static int32_t interned_node26(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v
 static int32_t interned_alt_insert30(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, Array0 * v5, Array0 * v6, int32_t v7, int32_t v8){
     bool v9 = v8 == 0l;
     if (v9){
-        ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6);
         return v7;
     } else {
         int32_t v10 = v0->ptr[v8];
@@ -2290,12 +2278,10 @@ static int32_t interned_alt_insert30(Array0 * v0, Array0 * v1, Array0 * v2, Arra
             } else {
                 bool v16 = v7 == v12;
                 if (v16){
-                    ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6);
                     return v8;
                 } else {
                     int32_t v17 = 3l;
                     int32_t v18 = v2->ptr[v8];
-                    (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++;
                     int32_t v19 = interned_alt_insert30(v0, v1, v2, v3, v4, v5, v6, v7, v18);
                     return interned_node26(v0, v1, v2, v3, v4, v5, v6, v17, v12, v19);
                 }
@@ -2308,7 +2294,6 @@ static int32_t interned_alt_insert30(Array0 * v0, Array0 * v1, Array0 * v2, Arra
             } else {
                 bool v26 = v7 == v8;
                 if (v26){
-                    ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6);
                     return v8;
                 } else {
                     int32_t v27 = 3l;
@@ -2318,11 +2303,10 @@ static int32_t interned_alt_insert30(Array0 * v0, Array0 * v1, Array0 * v2, Arra
         }
     }
 }
-static int32_t interned_make_alt29(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, Array0 * v5, Array0 * v6, int32_t v7, int32_t v8){
+__attribute__((noinline)) int32_t interned_make_alt29(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, Array0 * v5, Array0 * v6, int32_t v7, int32_t v8){
     while (1) {
         bool v9 = v7 == 0l;
         if (v9){
-            ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6);
             return v8;
         } else {
             int32_t v10 = v0->ptr[v7];
@@ -2330,7 +2314,6 @@ static int32_t interned_make_alt29(Array0 * v0, Array0 * v1, Array0 * v2, Array0
             if (v11){
                 int32_t v12 = v2->ptr[v7];
                 int32_t v13 = v1->ptr[v7];
-                (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++;
                 int32_t v14 = interned_alt_insert30(v0, v1, v2, v3, v4, v5, v6, v13, v8);
                 {
                     Array0 * tmp91 = v0;
@@ -2362,22 +2345,18 @@ static int32_t interned_make_alt29(Array0 * v0, Array0 * v1, Array0 * v2, Array0
 static int32_t interned_make_cat31(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, Array0 * v5, Array0 * v6, int32_t v7, int32_t v8){
     bool v9 = v7 == 0l;
     if (v9){
-        ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6);
         return 0l;
     } else {
         bool v10 = v8 == 0l;
         if (v10){
-            ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6);
             return 0l;
         } else {
             bool v11 = v7 == 1l;
             if (v11){
-                ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6);
                 return v8;
             } else {
                 bool v12 = v8 == 1l;
                 if (v12){
-                    ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6);
                     return v7;
                 } else {
                     int32_t v13 = v0->ptr[v7];
@@ -2395,7 +2374,6 @@ static int32_t interned_make_cat31(Array0 * v0, Array0 * v1, Array0 * v2, Array0
                         int32_t v19 = v1->ptr[v8];
                         bool v20 = v18 == v19;
                         if (v20){
-                            ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6);
                             return v7;
                         } else {
                             int32_t v21 = 4l;
@@ -2408,7 +2386,6 @@ static int32_t interned_make_cat31(Array0 * v0, Array0 * v1, Array0 * v2, Array0
                             int32_t v26 = 4l;
                             int32_t v27 = v1->ptr[v7];
                             int32_t v28 = v2->ptr[v7];
-                            (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++;
                             int32_t v29 = interned_make_cat31(v0, v1, v2, v3, v4, v5, v6, v28, v8);
                             return interned_node26(v0, v1, v2, v3, v4, v5, v6, v26, v27, v29);
                         } else {
@@ -2425,10 +2402,10 @@ static int32_t interned_of_regex_raw28(Array0 * v0, Array0 * v1, Array0 * v2, Ar
     switch (v7->tag) {
         case 3: { // RegexAlt
             UH0 * v14 = v7->case3.v0; UH0 * v15 = v7->case3.v1;
-            (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++; (v14)->refc += 2; (v15)->refc++;
+            (v14)->refc += 2; (v15)->refc++;
             UHDecref0(v7);
             int32_t v16 = interned_of_regex_raw28(v0, v1, v2, v3, v4, v5, v6, v14);
-            (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++; (v15)->refc++;
+            (v15)->refc++;
             UHDecref0(v14);
             int32_t v17 = interned_of_regex_raw28(v0, v1, v2, v3, v4, v5, v6, v15);
             UHDecref0(v15);
@@ -2437,10 +2414,10 @@ static int32_t interned_of_regex_raw28(Array0 * v0, Array0 * v1, Array0 * v2, Ar
         }
         case 4: { // RegexCat
             UH0 * v19 = v7->case4.v0; UH0 * v20 = v7->case4.v1;
-            (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++; (v19)->refc += 2; (v20)->refc++;
+            (v19)->refc += 2; (v20)->refc++;
             UHDecref0(v7);
             int32_t v21 = interned_of_regex_raw28(v0, v1, v2, v3, v4, v5, v6, v19);
-            (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++; (v20)->refc++;
+            (v20)->refc++;
             UHDecref0(v19);
             int32_t v22 = interned_of_regex_raw28(v0, v1, v2, v3, v4, v5, v6, v20);
             UHDecref0(v20);
@@ -2467,30 +2444,28 @@ static int32_t interned_of_regex_raw28(Array0 * v0, Array0 * v1, Array0 * v2, Ar
             break;
         }
         case 0: { // RegexEmpty
-            ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6); UHDecref0(v7);
+            UHDecref0(v7);
             return 0l;
             break;
         }
         case 1: { // RegexEpsilon
-            ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6); UHDecref0(v7);
+            UHDecref0(v7);
             return 1l;
             break;
         }
         default: { // RegexStar
             UH0 * v24 = v7->case5.v0;
-            (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++; (v24)->refc += 2;
+            (v24)->refc += 2;
             UHDecref0(v7);
             int32_t v25 = interned_of_regex_raw28(v0, v1, v2, v3, v4, v5, v6, v24);
             UHDecref0(v24);
             int32_t v26 = v0->ptr[v25];
             bool v27 = v26 < 2l;
             if (v27){
-                ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6);
                 return 1l;
             } else {
                 bool v28 = v26 == 5l;
                 if (v28){
-                    ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6);
                     return v25;
                 } else {
                     int32_t v29 = 5l;
@@ -2527,58 +2502,46 @@ static int32_t interned_derivative_raw35(Array0 * v0, Array0 * v1, Array0 * v2, 
                 bool v19 = v13 == 3l;
                 if (v19){
                     int32_t v20 = v1->ptr[v7];
-                    (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++;
                     int32_t v21 = interned_derivative_raw35(v0, v1, v2, v3, v4, v5, v6, v20, v8);
                     int32_t v22 = v2->ptr[v7];
-                    (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++;
                     int32_t v23 = interned_derivative_raw35(v0, v1, v2, v3, v4, v5, v6, v22, v8);
-                    (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++;
                     v41 = interned_make_alt29(v0, v1, v2, v3, v4, v5, v6, v21, v23);
                 } else {
                     bool v25 = v13 == 4l;
                     if (v25){
                         int32_t v26 = v1->ptr[v7];
                         int32_t v27 = v2->ptr[v7];
-                        (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++;
                         int32_t v28 = interned_derivative_raw35(v0, v1, v2, v3, v4, v5, v6, v26, v8);
-                        (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++;
                         int32_t v29 = interned_make_cat31(v0, v1, v2, v3, v4, v5, v6, v28, v27);
                         int32_t v30 = v3->ptr[v26];
                         bool v31 = v30 == 1l;
                         if (v31){
-                            (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++;
                             int32_t v32 = interned_derivative_raw35(v0, v1, v2, v3, v4, v5, v6, v27, v8);
-                            (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++;
                             v41 = interned_make_alt29(v0, v1, v2, v3, v4, v5, v6, v29, v32);
                         } else {
                             v41 = v29;
                         }
                     } else {
                         int32_t v35 = v1->ptr[v7];
-                        (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++;
                         int32_t v36 = interned_derivative_raw35(v0, v1, v2, v3, v4, v5, v6, v35, v8);
-                        (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++;
                         v41 = interned_make_cat31(v0, v1, v2, v3, v4, v5, v6, v36, v7);
                     }
                 }
             }
         }
-        ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v6);
         int32_t v42 = v41 + 1l;
         AssignArray0(&(v5->ptr[v10]), v42);
-        ArrayDecref0(v5);
         return v41;
     } else {
-        ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6);
         int32_t v43 = v11 - 1l;
         return v43;
     }
 }
-static bool loop34(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, Array0 * v5, Array0 * v6, int32_t v7, UH1 * v8){
+static inline bool loop34(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, Array0 * v5, Array0 * v6, int32_t v7, UH1 * v8){
     while (1) {
         bool v9 = v7 == 0l;
         if (v9){
-            ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6); UHDecref1(v8);
+            UHDecref1(v8);
             return false;
         } else {
             switch (v8->tag) {
@@ -2597,7 +2560,6 @@ static bool loop34(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * 
                             break;
                         }
                     }
-                    (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++;
                     int32_t v16 = interned_derivative_raw35(v0, v1, v2, v3, v4, v5, v6, v7, v15);
                     {
                         Array0 * tmp101 = v0;
@@ -2623,9 +2585,8 @@ static bool loop34(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * 
                     break;
                 }
                 default: { // InputEmpty
-                    ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6); UHDecref1(v8);
+                    UHDecref1(v8);
                     int32_t v10 = v3->ptr[v7];
-                    ArrayDecref0(v3);
                     bool v11 = v10 == 1l;
                     return v11;
                     break;
@@ -2637,7 +2598,7 @@ static bool loop34(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * 
 static bool interned_accepts33(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, Array0 * v5, Array0 * v6, int32_t v7, UH1 * v8){
     return loop34(v0, v1, v2, v3, v4, v5, v6, v7, v8);
 }
-static int32_t loop32(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, Array0 * v5, Array0 * v6, int32_t v7, int32_t v8, int32_t v9, uint64_t v10, int32_t v11){
+__attribute__((noinline)) int32_t loop32(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, Array0 * v5, Array0 * v6, int32_t v7, int32_t v8, int32_t v9, uint64_t v10, int32_t v11){
     while (1) {
         bool v12 = 0l < v9;
         if (v12){
@@ -2646,7 +2607,7 @@ static int32_t loop32(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0
             UH1 * v14; uint64_t v15;
             Tuple0 tmp100 = random_bit_input1(v10, v7, v13);
             v14 = tmp100.v0; v15 = tmp100.v1;
-            (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++; (v14)->refc++;
+            (v14)->refc++;
             UHDecref1(v13);
             bool v16 = interned_accepts33(v0, v1, v2, v3, v4, v5, v6, v8, v14);
             UHDecref1(v14);
@@ -2686,22 +2647,20 @@ static int32_t loop32(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0
             }
             continue;
         } else {
-            ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6);
             return v11;
         }
     }
 }
-static int32_t loop36(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, Array0 * v5, Array0 * v6, int32_t v7, int32_t v8, int32_t v9, int32_t v10){
+static inline int32_t loop36(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, Array0 * v5, Array0 * v6, int32_t v7, int32_t v8, int32_t v9, int32_t v10){
     while (1) {
         bool v11 = v7 < v9;
         if (v11){
-            ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v3); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6);
             return v10;
         } else {
             UH1 * v12 = UH1_InputEmpty();
             (v12)->refc++;
             UH1 * v13 = zeros_input14(v9, v12);
-            (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++; (v13)->refc++;
+            (v13)->refc++;
             UHDecref1(v12);
             bool v14 = interned_accepts33(v0, v1, v2, v3, v4, v5, v6, v8, v13);
             UHDecref1(v13);
@@ -2719,7 +2678,7 @@ static int32_t loop36(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0
             (v19)->refc++;
             UHDecref1(v18);
             UH1 * v20 = zeros_input14(v9, v19);
-            (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++; (v20)->refc++;
+            (v20)->refc++;
             UHDecref1(v19);
             bool v21 = interned_accepts33(v0, v1, v2, v3, v4, v5, v6, v8, v20);
             UHDecref1(v20);
@@ -3012,23 +2971,18 @@ int32_t main(){
     Array0 * v143 = ArrayCreate0(8192l, true);
     Array0 * v144 = ArrayCreate0(1l, true);
     int32_t v145 = 0l;
-    (v142)->refc++;
     loop24(v142, v145);
     int32_t v146 = 0l;
-    (v143)->refc++;
     loop24(v143, v146);
     int32_t v147 = 0l;
-    (v144)->refc++;
     loop25(v144, v147);
     int32_t v148 = 0l;
     int32_t v149 = 0l;
     int32_t v150 = 0l;
-    (v138)->refc++; (v139)->refc++; (v140)->refc++; (v141)->refc++; (v142)->refc++; (v143)->refc++; (v144)->refc++;
     int32_t v151 = interned_node26(v138, v139, v140, v141, v142, v143, v144, v148, v149, v150);
     int32_t v152 = 1l;
     int32_t v153 = 0l;
     int32_t v154 = 0l;
-    (v138)->refc++; (v139)->refc++; (v140)->refc++; (v141)->refc++; (v142)->refc++; (v143)->refc++; (v144)->refc++;
     int32_t v155 = interned_node26(v138, v139, v140, v141, v142, v143, v144, v152, v153, v154);
     bool v156 = v151 == 0l;
     bool v158;
@@ -3061,13 +3015,12 @@ int32_t main(){
     UH0 * v180 = UH0_RegexChar(v179);
     (v178)->refc++; (v180)->refc++;
     UH0 * v181 = UH0_RegexCat(v178, v180);
-    (v166)->refc++; (v167)->refc++; (v168)->refc++; (v169)->refc++; (v170)->refc++; (v171)->refc++; (v172)->refc++; (v181)->refc++;
+    (v181)->refc++;
     UHDecref0(v178); UHDecref0(v180);
     int32_t v182 = interned_of_regex_raw28(v166, v167, v168, v169, v170, v171, v172, v181);
     UHDecref0(v181);
     uint64_t v183 = 1ull;
     int32_t v184 = 0l;
-    (v166)->refc++; (v167)->refc++; (v168)->refc++; (v169)->refc++; (v170)->refc++; (v171)->refc++; (v172)->refc++;
     int32_t v185 = loop32(v166, v167, v168, v169, v170, v171, v172, v137, v182, v136, v183, v184);
     US0 v186 = US0_BitZero();
     UH0 * v187 = UH0_RegexChar(v186);
@@ -3113,13 +3066,12 @@ int32_t main(){
     (v191)->refc++; (v211)->refc++;
     UHDecref0(v193); UHDecref0(v210);
     UH0 * v212 = UH0_RegexCat(v191, v211);
-    (v166)->refc++; (v167)->refc++; (v168)->refc++; (v169)->refc++; (v170)->refc++; (v171)->refc++; (v172)->refc++; (v212)->refc++;
+    (v212)->refc++;
     UHDecref0(v191); UHDecref0(v211);
     int32_t v213 = interned_of_regex_raw28(v166, v167, v168, v169, v170, v171, v172, v212);
     UHDecref0(v212);
     uint64_t v214 = 1ull;
     int32_t v215 = 0l;
-    (v166)->refc++; (v167)->refc++; (v168)->refc++; (v169)->refc++; (v170)->refc++; (v171)->refc++; (v172)->refc++;
     int32_t v216 = loop32(v166, v167, v168, v169, v170, v171, v172, v137, v213, v136, v214, v215);
     ArrayDecref0(v166); ArrayDecref0(v167); ArrayDecref0(v168); ArrayDecref0(v169); ArrayDecref0(v170); ArrayDecref0(v171); ArrayDecref0(v172);
     int32_t v217 = 16l;
@@ -3131,23 +3083,18 @@ int32_t main(){
     Array0 * v223 = ArrayCreate0(8192l, true);
     Array0 * v224 = ArrayCreate0(1l, true);
     int32_t v225 = 0l;
-    (v222)->refc++;
     loop24(v222, v225);
     int32_t v226 = 0l;
-    (v223)->refc++;
     loop24(v223, v226);
     int32_t v227 = 0l;
-    (v224)->refc++;
     loop25(v224, v227);
     int32_t v228 = 0l;
     int32_t v229 = 0l;
     int32_t v230 = 0l;
-    (v218)->refc++; (v219)->refc++; (v220)->refc++; (v221)->refc++; (v222)->refc++; (v223)->refc++; (v224)->refc++;
     int32_t v231 = interned_node26(v218, v219, v220, v221, v222, v223, v224, v228, v229, v230);
     int32_t v232 = 1l;
     int32_t v233 = 0l;
     int32_t v234 = 0l;
-    (v218)->refc++; (v219)->refc++; (v220)->refc++; (v221)->refc++; (v222)->refc++; (v223)->refc++; (v224)->refc++;
     int32_t v235 = interned_node26(v218, v219, v220, v221, v222, v223, v224, v232, v233, v234);
     bool v236 = v231 == 0l;
     bool v238;
@@ -3185,13 +3132,12 @@ int32_t main(){
     UH0 * v263 = UH0_RegexChar(v262);
     (v261)->refc++; (v263)->refc++;
     UH0 * v264 = UH0_RegexCat(v261, v263);
-    (v246)->refc++; (v247)->refc++; (v248)->refc++; (v249)->refc++; (v250)->refc++; (v251)->refc++; (v252)->refc++; (v264)->refc++;
+    (v264)->refc++;
     UHDecref0(v261); UHDecref0(v263);
     int32_t v265 = interned_of_regex_raw28(v246, v247, v248, v249, v250, v251, v252, v264);
     UHDecref0(v264);
     int32_t v266 = 1l;
     int32_t v267 = 0l;
-    (v246)->refc++; (v247)->refc++; (v248)->refc++; (v249)->refc++; (v250)->refc++; (v251)->refc++; (v252)->refc++;
     int32_t v268 = loop36(v246, v247, v248, v249, v250, v251, v252, v217, v265, v266, v267);
     ArrayDecref0(v246); ArrayDecref0(v247); ArrayDecref0(v248); ArrayDecref0(v249); ArrayDecref0(v250); ArrayDecref0(v251); ArrayDecref0(v252);
     bool v269 = v40 == v185;

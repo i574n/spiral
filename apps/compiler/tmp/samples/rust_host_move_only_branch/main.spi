@@ -19,5 +19,5 @@
         Fsharp = \ () => 0i32
         Zig = \ () => 0i32
         Lean = \ () => 0i32
-        Delphi = \ () => 0i32
+        Pascal = \ () => 0i32
     })

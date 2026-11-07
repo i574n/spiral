@@ -57,13 +57,13 @@
 :# a_wildcard_lists_matching_files_as_strings =
     matching_paths "erlang_file.spi" |> _assert_eq [ "erlang_file.spi" ]
 
-:= test_cache_dir () : string =
+:= test_cache_directory () : string =
     text_of (
         erlang_term::apply "filename" "basedir" [ erlang_term::atom "user_cache"; erlang_term::of "erlang-file-test" ]
     )
 
 := test_cache_file (name : string) : string =
-    := path = joined_path (test_cache_dir ()) name
+    := path = joined_path (test_cache_directory ()) name
     erlang_term::apply "filelib" "ensure_dir" [ erlang_term::of path ] |> ignore
     path
 

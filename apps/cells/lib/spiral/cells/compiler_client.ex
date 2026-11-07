@@ -545,7 +545,7 @@ defmodule Spiral.Cells.CompilerClient do
   @doc false
   def daemon_owner do
     command = System.argv() |> Enum.join(" ") |> String.replace(["\t", "\r", "\n", "'", "\""], " ") |> String.slice(0, 160)
-    job = System.get_env("KIT_JOB_ID") || System.get_env("EOIE_JOB_ID")
+    job = System.get_env("KIT_JOB_ID")
     "#{if job, do: "job #{job} "}os_pid #{System.pid()} argv #{command}"
   end
 

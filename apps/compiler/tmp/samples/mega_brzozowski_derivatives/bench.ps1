@@ -21,7 +21,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $tmpRoot = Resolve-Path (Join-Path $PSScriptRoot '../..')
 . (Join-Path $tmpRoot 'scripts/env.ps1')
-$Backend = @($Backend | ForEach-Object { $_ -split ',' } | Where-Object { $_ } | ForEach-Object { if ($_ -eq 'Delphi') { 'Pascal' } else { $_ } })
+$Backend = @($Backend | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $Program = @($Program | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $tools = Get-SpiralNativeTools
 $out = Join-Path (Get-SpiralCacheDir) 'bench/brzozowski'

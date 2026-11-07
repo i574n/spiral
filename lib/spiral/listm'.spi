@@ -446,7 +446,7 @@
             $'Rc::new(!acc.borrow().clone())' : list' t
         | _ => \ () => (list, empty' ()) ||> listm::foldBack cons'
 
-:= rust_list_length \* t. (list : list' t) : i32 =
+:= rust_list_count \* t. (list : list' t) : i32 =
     ($'(!list).len()' : convert::unativeint) |> convert::convert
 
 := rust_list_item \* t. (i : i32) (list : list' t) : t =
@@ -509,7 +509,7 @@
                     루프 (i + 1i32) ((fn item :: acc))
             루프 0i32 init
         Rust = \ () =>
-            := len : i32 = rust_list_length list
+            := len : i32 = rust_list_count list
             :~ ^ 루프 (i : i32) (acc : list u) : list u =
                 ? i >= len ?> acc
                 |:
@@ -562,7 +562,7 @@
             |> rev'
             |> fold' fn init
         Rust = \ () =>
-            := len : i32 = rust_list_length list
+            := len : i32 = rust_list_count list
             :~ ^ 루프 (i : i32) (acc : list u) : list u =
                 ? i < 0i32 ?> acc
                 |:
@@ -620,7 +620,7 @@
         Fsharp = \ () => list |> $'"List.filter !fn"' : list' t
         Python = \ () => $'list(filter(!fn, !list))' : list' t
         Rust = \ () =>
-            := len : i32 = rust_list_length list
+            := len : i32 = rust_list_count list
             :~ ^ 루프 (i : i32) (acc : list t) : list t =
                 ? i < 0i32 ?> acc
                 |:
@@ -696,7 +696,7 @@
             $'x.sort(key=!list.index)'
             $'x' : list' t
         Rust = \ () =>
-            := len : i32 = rust_list_length list
+            := len : i32 = rust_list_count list
             :~ ^ 루프 (i : i32) (seen : list t) : list t =
                 ? i >= len ?> seen
                 |:
@@ -838,13 +838,13 @@
     := ~items = [ 1i32; 2; 3; 4; 5 ]
     (skip_ 3i32 items, skip_ 9i32 items) |> _assert_eq ([ 4i32; 5 ], [])
 
-:= taken_length (n : i32) (l : list i32) : i32 = listm::length (take_ n l)
+:= taken_count (n : i32) (l : list i32) : i32 = listm::length (take_ n l)
 
 ///> rust
 ///> gleam
 :# take_stops_at_the_count_or_the_end =
     := ~n = 2i32
-    (taken_length n [ 1i32; 2; 3 ], taken_length 5i32 [ 1i32 ], taken_length (-1i32) [ 1i32 ])
+    (taken_count n [ 1i32; 2; 3 ], taken_count 5i32 [ 1i32 ], taken_count (-1i32) [ 1i32 ])
     |> _assert_eq (2i32, 1i32, 0i32)
 
 ///> rust

@@ -4,6 +4,7 @@ defmodule Spiral.Cells.Application do
   @impl true
   def start(_type, _args) do
     Spiral.Cells.Domain.ensure!()
+    Spiral.Cells.TempSweep.sweep()
     Kino.SmartCell.register(Spiral.Cells.SmartCell)
 
     children = [

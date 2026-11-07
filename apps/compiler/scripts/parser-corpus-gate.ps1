@@ -18,7 +18,7 @@ $work = Join-Path $Cache 'gate'
 if (Test-Path $work) { Remove-Item $work -Recurse -Force }
 New-Item -ItemType Directory -Force $work | Out-Null
 $corpus = Join-Path $work 'corpus.tsv'
-pwsh -NoProfile -File (Join-Path $PSScriptRoot '..\tmp\formatter\corpus.ps1') -Out $corpus | Out-Null
+pwsh -NoProfile -File (Join-Path $PSScriptRoot 'formatter\corpus.ps1') -Out $corpus | Out-Null
 foreach ($repo in 'tibia', 'x', 'dice', 'alphabet', 'kit') {
     $root = "C:\home\git\$repo"
     if (-not (Test-Path "$root\.git")) { continue }

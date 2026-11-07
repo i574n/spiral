@@ -1,7 +1,7 @@
 := reversed_ok (text : string) : i32 =
     !!!!BackendSwitch({
         C = \ () => 7i32
-        Delphi = \ () =>
+        Pascal = \ () =>
             !!!!Global("uses StrUtils;")
             $"IfThen(ReverseString(!text) = 'cba', 7, 1)" : i32
     })

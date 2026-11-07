@@ -9,6 +9,7 @@
     | TSymbol : string
 
 :! element_kind = ()
+
 :! attribute_kind = ()
 
 :| ^ axis k =
@@ -54,23 +55,36 @@
     | AttributeAxis a => attribute_axis_name a
     | UnsupportedAxis name => name
 
+:~ ^ table_lookup \* t. (key : string) (table : list (string * t)) : option t =
+    ?= table ?|
+    | (k, v) :: rest => ? k = key ?> Some v |: table_lookup key rest
+    | [] => None
+
+:= axis_names () : list (string * step_axis) =
+    [
+        ("child", ElementAxis AxisChild)
+        ("descendant", ElementAxis AxisDescendant)
+        ("descendant-or-self", ElementAxis AxisDescendantOrSelf)
+        ("self", ElementAxis AxisSelf)
+        ("parent", ElementAxis AxisParent)
+        ("ancestor", ElementAxis AxisAncestor)
+        ("ancestor-or-self", ElementAxis AxisAncestorOrSelf)
+        ("preceding", ElementAxis AxisPreceding)
+        ("following", ElementAxis AxisFollowing)
+        ("following-sibling", ElementAxis AxisFollowingSibling)
+        ("preceding-sibling", ElementAxis AxisPrecedingSibling)
+        ("attribute", AttributeAxis AxisAttribute)
+    ]
+
 := step_axis_of (name : string) : step_axis =
-    ? name = "child" ?> ElementAxis AxisChild
-    |? name = "descendant" ?> ElementAxis AxisDescendant
-    |? name = "descendant-or-self" ?> ElementAxis AxisDescendantOrSelf
-    |? name = "self" ?> ElementAxis AxisSelf
-    |? name = "parent" ?> ElementAxis AxisParent
-    |? name = "ancestor" ?> ElementAxis AxisAncestor
-    |? name = "ancestor-or-self" ?> ElementAxis AxisAncestorOrSelf
-    |? name = "preceding" ?> ElementAxis AxisPreceding
-    |? name = "following" ?> ElementAxis AxisFollowing
-    |? name = "following-sibling" ?> ElementAxis AxisFollowingSibling
-    |? name = "preceding-sibling" ?> ElementAxis AxisPrecedingSibling
-    |? name = "attribute" ?> AttributeAxis AxisAttribute
-    |: UnsupportedAxis name
+    ?= table_lookup name (axis_names ()) ?|
+    | Some axis => axis
+    | None => UnsupportedAxis name
 
 :! bool_result = ()
+
 :! number_result = ()
+
 :! nodes_result = ()
 
 :| comparison =
@@ -103,24 +117,28 @@
     | NumberOperator : operator number_result
     | NodesOperator : operator nodes_result
 
+:= general_comparison_text (c : comparison) : string =
+    ?= c ?|
+    | CmpEq => "="
+    | CmpNe => "!="
+    | CmpLt => "<"
+    | CmpLe => "<="
+    | CmpGt => ">"
+    | CmpGe => ">="
+
+:= value_comparison_text (c : comparison) : string =
+    ?= c ?|
+    | CmpEq => "eq"
+    | CmpNe => "ne"
+    | CmpLt => "lt"
+    | CmpLe => "le"
+    | CmpGt => "gt"
+    | CmpGe => "ge"
+
 := comparison_text (c : comparison) (flavor : comparison_flavor) : string =
     ?= flavor ?|
-    | GeneralComparison =>
-        ?= c ?|
-        | CmpEq => "="
-        | CmpNe => "!="
-        | CmpLt => "<"
-        | CmpLe => "<="
-        | CmpGt => ">"
-        | CmpGe => ">="
-    | ValueComparison =>
-        ?= c ?|
-        | CmpEq => "eq"
-        | CmpNe => "ne"
-        | CmpLt => "lt"
-        | CmpLe => "le"
-        | CmpGt => "gt"
-        | CmpGe => "ge"
+    | GeneralComparison => general_comparison_text c
+    | ValueComparison => value_comparison_text c
 
 := bool_operator_text (o : operator bool_result) : string =
     ?= o ?|
@@ -148,36 +166,48 @@
     | NumberOperator n => number_operator_text n
     | NodesOperator n => nodes_operator_text n
 
-:= comparison_of (x : string) : option (comparison * comparison_flavor) =
-    ? x = "=" ?> Some (CmpEq, GeneralComparison)
-    |? x = "!=" ?> Some (CmpNe, GeneralComparison)
-    |? x = "<" ?> Some (CmpLt, GeneralComparison)
-    |? x = "<=" ?> Some (CmpLe, GeneralComparison)
-    |? x = ">" ?> Some (CmpGt, GeneralComparison)
-    |? x = ">=" ?> Some (CmpGe, GeneralComparison)
-    |? x = "eq" ?> Some (CmpEq, ValueComparison)
-    |? x = "ne" ?> Some (CmpNe, ValueComparison)
-    |? x = "lt" ?> Some (CmpLt, ValueComparison)
-    |? x = "le" ?> Some (CmpLe, ValueComparison)
-    |? x = "gt" ?> Some (CmpGt, ValueComparison)
-    |? x = "ge" ?> Some (CmpGe, ValueComparison)
-    |: None
+:= comparison_names () : list (string * (comparison * comparison_flavor)) =
+    [
+        ("=", (CmpEq, GeneralComparison))
+        ("!=", (CmpNe, GeneralComparison))
+        ("<", (CmpLt, GeneralComparison))
+        ("<=", (CmpLe, GeneralComparison))
+        (">", (CmpGt, GeneralComparison))
+        (">=", (CmpGe, GeneralComparison))
+        ("eq", (CmpEq, ValueComparison))
+        ("ne", (CmpNe, ValueComparison))
+        ("lt", (CmpLt, ValueComparison))
+        ("le", (CmpLe, ValueComparison))
+        ("gt", (CmpGt, ValueComparison))
+        ("ge", (CmpGe, ValueComparison))
+    ]
+
+:= comparison_of (x : string) : option (comparison * comparison_flavor) = table_lookup x (comparison_names ())
+
+:= operator_names () : list (string * binary_operator) =
+    [
+        ("or", BoolOperator OpOr)
+        ("and", BoolOperator OpAnd)
+        ("+", NumberOperator OpAdd)
+        ("-", NumberOperator OpSubtract)
+        ("*", NumberOperator OpMultiply)
+        ("div", NumberOperator OpDivide)
+        ("mod", NumberOperator OpModulo)
+        ("|", NodesOperator OpUnion)
+        ("union", NodesOperator OpUnion)
+        ("intersect", NodesOperator OpIntersect)
+        ("except", NodesOperator OpExcept)
+    ]
+
+:= compared_operator (x : string) : option binary_operator =
+    ?= comparison_of x ?|
+    | Some (c, flavor) => Some (BoolOperator (OpCompare (c, flavor)))
+    | None => None
 
 := operator_of (x : string) : option binary_operator =
-    ? x = "or" ?> Some (BoolOperator OpOr)
-    |? x = "and" ?> Some (BoolOperator OpAnd)
-    |? x = "+" ?> Some (NumberOperator OpAdd)
-    |? x = "-" ?> Some (NumberOperator OpSubtract)
-    |? x = "*" ?> Some (NumberOperator OpMultiply)
-    |? x = "div" ?> Some (NumberOperator OpDivide)
-    |? x = "mod" ?> Some (NumberOperator OpModulo)
-    |? x = "|" || x = "union" ?> Some (NodesOperator OpUnion)
-    |? x = "intersect" ?> Some (NodesOperator OpIntersect)
-    |? x = "except" ?> Some (NodesOperator OpExcept)
-    |:
-        ?= comparison_of x ?|
-        | Some (c, flavor) => Some (BoolOperator (OpCompare (c, flavor)))
-        | None => None
+    ?= table_lookup x (operator_names ()) ?|
+    | Some o => Some o
+    | None => compared_operator x
 
 :! value_result = ()
 
@@ -304,62 +334,72 @@
     | ValueFunction v => value_function_text v
     | UnknownFunction name => name
 
+:= bool_function_names () : list (string * function_ref) =
+    [
+        ("not", BoolFunction FnNot)
+        ("true", BoolFunction FnTrue)
+        ("false", BoolFunction FnFalse)
+        ("boolean", BoolFunction FnBoolean)
+        ("exists", BoolFunction FnExists)
+        ("empty", BoolFunction FnEmpty)
+        ("contains", BoolFunction FnContains)
+        ("starts-with", BoolFunction FnStartsWith)
+        ("ends-with", BoolFunction FnEndsWith)
+        ("u:gln", BoolFunction FnGln)
+        ("u:mod11", BoolFunction FnMod11)
+        ("u:mod97-0208", BoolFunction FnMod97)
+        ("u:slack", BoolFunction FnSlack)
+        ("matches", BoolFunction FnMatches)
+        ("u:abn", BoolFunction FnAbn)
+        ("u:checkSEOrgnr", BoolFunction FnSeOrgnr)
+        ("u:TinVerification", BoolFunction FnTin)
+        ("u:checkPIVAseIT", BoolFunction FnPivaIt)
+        ("u:checkCF", BoolFunction FnCf)
+        ("u:checkCodiceIPA", BoolFunction FnCodiceIpa)
+    ]
+
+:= value_function_names () : list (string * function_ref) =
+    [
+        ("count", ValueFunction FnCount)
+        ("sum", ValueFunction FnSum)
+        ("normalize-space", ValueFunction FnNormalizeSpace)
+        ("upper-case", ValueFunction FnUpperCase)
+        ("lower-case", ValueFunction FnLowerCase)
+        ("string", ValueFunction FnString)
+        ("string-length", ValueFunction FnStringLength)
+        ("substring-after", ValueFunction FnSubstringAfter)
+        ("substring-before", ValueFunction FnSubstringBefore)
+        ("concat", ValueFunction FnConcat)
+        ("round", ValueFunction FnRound)
+        ("floor", ValueFunction FnFloor)
+        ("abs", ValueFunction FnAbs)
+        ("xs:decimal", ValueFunction FnDecimal)
+        ("number", ValueFunction FnNumber)
+        ("xs:date", ValueFunction FnDate)
+        ("name", ValueFunction FnName)
+        ("local-name", ValueFunction FnLocalName)
+        ("distinct-values", ValueFunction FnDistinctValues)
+        ("substring", ValueFunction FnSubstring)
+        ("current-date", ValueFunction FnCurrentDate)
+        ("format-number", ValueFunction FnFormatNumber)
+        ("xs:dateTime", ValueFunction FnDateTime)
+        ("xs:dayTimeDuration", ValueFunction FnDayTimeDuration)
+        ("current-dateTime", ValueFunction FnCurrentDateTime)
+        ("translate", ValueFunction FnTranslate)
+        ("tokenize", ValueFunction FnTokenize)
+        ("replace", ValueFunction FnReplace)
+        ("string-join", ValueFunction FnStringJoin)
+        ("string-to-codepoints", ValueFunction FnStringToCodepoints)
+        ("xs:integer", ValueFunction FnDecimal)
+        ("xs:double", ValueFunction FnDecimal)
+        ("current", ValueFunction FnCurrent)
+        ("namespace-uri", ValueFunction FnNamespaceUri)
+    ]
+
 := function_of (name : string) : function_ref =
-    ? name = "not" ?> BoolFunction FnNot
-    |? name = "true" ?> BoolFunction FnTrue
-    |? name = "false" ?> BoolFunction FnFalse
-    |? name = "boolean" ?> BoolFunction FnBoolean
-    |? name = "exists" ?> BoolFunction FnExists
-    |? name = "empty" ?> BoolFunction FnEmpty
-    |? name = "contains" ?> BoolFunction FnContains
-    |? name = "starts-with" ?> BoolFunction FnStartsWith
-    |? name = "ends-with" ?> BoolFunction FnEndsWith
-    |? name = "u:gln" ?> BoolFunction FnGln
-    |? name = "u:mod11" ?> BoolFunction FnMod11
-    |? name = "u:mod97-0208" ?> BoolFunction FnMod97
-    |? name = "u:slack" ?> BoolFunction FnSlack
-    |? name = "matches" ?> BoolFunction FnMatches
-    |? name = "u:abn" ?> BoolFunction FnAbn
-    |? name = "u:checkSEOrgnr" ?> BoolFunction FnSeOrgnr
-    |? name = "u:TinVerification" ?> BoolFunction FnTin
-    |? name = "u:checkPIVAseIT" ?> BoolFunction FnPivaIt
-    |? name = "u:checkCF" ?> BoolFunction FnCf
-    |? name = "u:checkCodiceIPA" ?> BoolFunction FnCodiceIpa
-    |? name = "count" ?> ValueFunction FnCount
-    |? name = "sum" ?> ValueFunction FnSum
-    |? name = "normalize-space" ?> ValueFunction FnNormalizeSpace
-    |? name = "upper-case" ?> ValueFunction FnUpperCase
-    |? name = "lower-case" ?> ValueFunction FnLowerCase
-    |? name = "string" ?> ValueFunction FnString
-    |? name = "string-length" ?> ValueFunction FnStringLength
-    |? name = "substring-after" ?> ValueFunction FnSubstringAfter
-    |? name = "substring-before" ?> ValueFunction FnSubstringBefore
-    |? name = "concat" ?> ValueFunction FnConcat
-    |? name = "round" ?> ValueFunction FnRound
-    |? name = "floor" ?> ValueFunction FnFloor
-    |? name = "abs" ?> ValueFunction FnAbs
-    |? name = "xs:decimal" ?> ValueFunction FnDecimal
-    |? name = "number" ?> ValueFunction FnNumber
-    |? name = "xs:date" ?> ValueFunction FnDate
-    |? name = "name" ?> ValueFunction FnName
-    |? name = "local-name" ?> ValueFunction FnLocalName
-    |? name = "distinct-values" ?> ValueFunction FnDistinctValues
-    |? name = "substring" ?> ValueFunction FnSubstring
-    |? name = "current-date" ?> ValueFunction FnCurrentDate
-    |? name = "format-number" ?> ValueFunction FnFormatNumber
-    |? name = "xs:dateTime" ?> ValueFunction FnDateTime
-    |? name = "xs:dayTimeDuration" ?> ValueFunction FnDayTimeDuration
-    |? name = "current-dateTime" ?> ValueFunction FnCurrentDateTime
-    |? name = "translate" ?> ValueFunction FnTranslate
-    |? name = "tokenize" ?> ValueFunction FnTokenize
-    |? name = "replace" ?> ValueFunction FnReplace
-    |? name = "string-join" ?> ValueFunction FnStringJoin
-    |? name = "string-to-codepoints" ?> ValueFunction FnStringToCodepoints
-    |? name = "xs:integer" ?> ValueFunction FnDecimal
-    |? name = "xs:double" ?> ValueFunction FnDecimal
-    |? name = "current" ?> ValueFunction FnCurrent
-    |? name = "namespace-uri" ?> ValueFunction FnNamespaceUri
-    |: UnknownFunction name
+    ?= table_lookup name (listm::append (bool_function_names ()) (value_function_names ())) ?|
+    | Some f => f
+    | None => UnknownFunction name
 
 :| ^ xpath =
     | XInvalid : string
@@ -440,11 +480,16 @@
     | x :: rest => x = target || has_text target rest
     | [] => !-
 
+:= is_star (c : u32) : bool = c = 42u32
+
+:= colon_then (s : string) (i : i32) (accept : u32 -> bool) : bool =
+    cp_at s i = 58u32 && i + 1i32 < sm'::length s && accept (cp_at s (i + 1i32))
+
 :~ ^ name_end (s : string) (i : i32) : i32 =
     ? i >= sm'::length s ?> i
     |? is_name_char (cp_at s i) ?> name_end s (i + xml::code_point_width s i)
-    |? cp_at s i = 58u32 && i + 1i32 < sm'::length s && is_name_start (cp_at s (i + 1i32)) ?> name_end s (i + 1i32)
-    |? cp_at s i = 58u32 && i + 1i32 < sm'::length s && cp_at s (i + 1i32) = 42u32 ?> i + 2i32
+    |? colon_then s i is_name_start ?> name_end s (i + 1i32)
+    |? colon_then s i is_star ?> i + 2i32
     |: i
 
 :~ ^ digits_end (s : string) (i : i32) : i32 =
@@ -458,31 +503,49 @@
 
 := paired_symbols () : list string = "!=" :: "<=" :: ">=" :: "//" :: "::" :: ".." :: []
 
+:= xpath_is_space (c : u32) : bool = c = 32u32 || c = 9u32 || c = 10u32 || c = 13u32
+
+:= xpath_starts_number (s : string) (i : i32) (c : u32) : bool =
+    is_digit c || (c = 46u32 && i + 1i32 < sm'::length s && is_digit (cp_at s (i + 1i32)))
+
+:= xpath_scan_text (s : string) (i : i32) (c : u32) : token * i32 =
+    := quote = sm'::substring i 1i32 s
+    := stop = text_end s c (i + 1i32)
+    TText (sm'::substring (i + 1i32) (stop - i - 1i32) s |> sm'::replace (quote ++# quote) quote), stop + 1i32
+
+:= xpath_scan_number (s : string) (i : i32) : token * i32 =
+    := whole = digits_end s i
+    := stop = ? whole < sm'::length s && cp_at s whole = 46u32 ?> digits_end s (whole + 1i32) |: whole
+    TNumber (sm'::substring i (stop - i) s), stop
+
+:= xpath_scan_variable (s : string) (i : i32) : token * i32 =
+    := stop = name_end s (i + 1i32)
+    TVariable (sm'::substring (i + 1i32) (stop - i - 1i32) s), stop
+
+:= xpath_scan_name (s : string) (i : i32) : token * i32 =
+    := stop = name_end s i
+    TName (sm'::substring i (stop - i) s), stop
+
+:= xpath_scan_symbol (s : string) (i : i32) : token * i32 =
+    := pair = ? i + 1i32 < sm'::length s ?> sm'::substring i 2i32 s |: ""
+    := width = xml::code_point_width s i
+    ? has_text pair (paired_symbols ()) ?> (TSymbol pair, i + 2i32) |: (TSymbol (sm'::substring i width s), i + width)
+
+:= xpath_scan_token (s : string) (i : i32) (c : u32) : token * i32 =
+    ? c = 39u32 || c = 34u32 ?> xpath_scan_text s i c
+    |? xpath_starts_number s i c ?> xpath_scan_number s i
+    |? c = 36u32 ?> xpath_scan_variable s i
+    |? is_name_start c ?> xpath_scan_name s i
+    |: xpath_scan_symbol s i
+
 :~ ^ tokens_from (s : string) (i : i32) (acc : list token) : list token =
     ? i >= sm'::length s ?> listm::rev acc
     |:
         := c = cp_at s i
-        ? c = 32u32 || c = 9u32 || c = 10u32 || c = 13u32 ?> tokens_from s (i + 1i32) acc
-        |? c = 39u32 || c = 34u32 ?>
-            := quote = sm'::substring i 1i32 s
-            := stop = text_end s c (i + 1i32)
-            := text = sm'::substring (i + 1i32) (stop - i - 1i32) s |> sm'::replace (quote ++# quote) quote
-            tokens_from s (stop + 1i32) (TText text :: acc)
-        |? is_digit c || (c = 46u32 && i + 1i32 < sm'::length s && is_digit (cp_at s (i + 1i32))) ?>
-            := whole = digits_end s i
-            := stop = ? whole < sm'::length s && cp_at s whole = 46u32 ?> digits_end s (whole + 1i32) |: whole
-            tokens_from s stop (TNumber (sm'::substring i (stop - i) s) :: acc)
-        |? c = 36u32 ?>
-            := stop = name_end s (i + 1i32)
-            tokens_from s stop (TVariable (sm'::substring (i + 1i32) (stop - i - 1i32) s) :: acc)
-        |? is_name_start c ?>
-            := stop = name_end s i
-            tokens_from s stop (TName (sm'::substring i (stop - i) s) :: acc)
+        ? xpath_is_space c ?> tokens_from s (i + 1i32) acc
         |:
-            := pair = ? i + 1i32 < sm'::length s ?> sm'::substring i 2i32 s |: ""
-            := width = xml::code_point_width s i
-            ? has_text pair (paired_symbols ()) ?> tokens_from s (i + 2i32) (TSymbol pair :: acc)
-            |: tokens_from s (i + width) (TSymbol (sm'::substring i width s) :: acc)
+            := found, next = xpath_scan_token s i c
+            tokens_from s next (found :: acc)
 
 := tokenize (s : string) : list token = tokens_from s 0i32 []
 
@@ -545,133 +608,194 @@
     ?= parsed ?|
     | items, rest => XSequence items, rest
 
+:= xpath_parse_binary (op : string) (left : xpath) (right : xpath) : xpath =
+    ?= operator_of op ?|
+    | Some o => XBinary (o, left, right)
+    | None => XInvalid ("unknown operator " ++# op)
+
+:= xpath_parse_castable_as (operand : xpath) (ty : string) (tokens : list token) : xpath * list token =
+    ? is_symbol "?" tokens ?> (XCastable (operand, ty, !+), after_first tokens) |: (XCastable (operand, ty, !-), tokens)
+
+:= xpath_parse_starts_test (tokens : list token) : bool =
+    ?= tokens ?|
+    | TName _ :: _ => !+
+    | TSymbol star :: _ => star = "*"
+    | _ => !-
+
+:= xpath_parse_kind_call (tokens : list token) : bool =
+    ?= tokens ?|
+    | TName kind :: TSymbol x :: TSymbol y :: _ => x = "(" && y = ")" && is_kind_test kind
+    | _ => !-
+
 :~ ^ parse_expr (tokens : list token) : xpath * list token =
     ?= tokens ?|
-    | TName q :: TVariable v :: TName word :: rest ?& (q = "every" || q = "some") && word = "in" =>
-        := domain, rest = parse_level 0i32 rest
-        ? is_word "satisfies" rest ?>
-            := body, rest = parse_expr (after_first rest)
-            XQuantified (q = "every", v, domain, body), rest
-        |: (XInvalid "expected satisfies", rest)
-    | TName f :: TVariable v :: TName word :: rest ?& f = "for" && word = "in" =>
-        := domain, rest = parse_level 0i32 rest
-        ? is_word "return" rest ?>
-            := body, rest = parse_expr (after_first rest)
-            XFor (v, domain, body), rest
-        |: (XInvalid "expected return", rest)
+    | TName q :: TVariable v :: TName word :: rest ?& word = "in" => xpath_parse_binding q v rest tokens
     | _ => parse_level 0i32 tokens
+
+:& :~ xpath_parse_binding (q : string) (v : string) (rest : list token) (tokens : list token) : xpath * list token =
+    ? q = "every" || q = "some" ?> xpath_parse_quantified (q = "every") v rest
+    |? q = "for" ?> xpath_parse_for v rest
+    |: parse_level 0i32 tokens
+
+:& :~ xpath_parse_quantified (every : bool) (v : string) (tokens : list token) : xpath * list token =
+    := domain, rest = parse_level 0i32 tokens
+    ? is_word "satisfies" rest ?>
+        := body, rest = parse_expr (after_first rest)
+        XQuantified (every, v, domain, body), rest
+    |: (XInvalid "expected satisfies", rest)
+
+:& :~ xpath_parse_for (v : string) (tokens : list token) : xpath * list token =
+    := domain, rest = parse_level 0i32 tokens
+    ? is_word "return" rest ?>
+        := body, rest = parse_expr (after_first rest)
+        XFor (v, domain, body), rest
+    |: (XInvalid "expected return", rest)
+
 :& :~ parse_level (level : i32) (tokens : list token) : xpath * list token =
     ? level > 6i32 ?> parse_castable tokens
     |:
         := left, rest = parse_level (level + 1i32) tokens
         parse_level_rest level left rest
+
 :& :~ parse_level_rest (level : i32) (left : xpath) (tokens : list token) : xpath * list token =
     ?= operator_at level tokens ?|
-    | Some op =>
-        := right, rest = parse_level (level + 1i32) (after_first tokens)
-        parse_level_rest level
-            ?= operator_of op ?|
-            | Some o => XBinary (o, left, right)
-            | None => XInvalid ("unknown operator " ++# op)
-            rest
+    | Some op => xpath_parse_level_step level left op tokens
     | None => left, tokens
+
+:& :~ xpath_parse_level_step (level : i32) (left : xpath) (op : string) (tokens : list token) : xpath * list token =
+    := right, rest = parse_level (level + 1i32) (after_first tokens)
+    parse_level_rest level (xpath_parse_binary op left right) rest
+
 :& :~ parse_castable (tokens : list token) : xpath * list token =
     := operand, rest = parse_unary tokens
     ?= rest ?|
-    | TName c :: TName a :: TName ty :: rest ?& c = "castable" && a = "as" =>
-        ? is_symbol "?" rest ?> (XCastable (operand, ty, !+), after_first rest) |: (XCastable (operand, ty, !-), rest)
+    | TName c :: TName a :: TName ty :: rest ?& c = "castable" && a = "as" => xpath_parse_castable_as operand ty rest
     | _ => operand, rest
+
 :& :~ parse_unary (tokens : list token) : xpath * list token =
     ? is_symbol "-" tokens ?>
         := operand, rest = parse_unary (after_first tokens)
         XNegate operand, rest
     |: parse_path tokens
+
 :& :~ parse_path (tokens : list token) : xpath * list token =
     ? is_symbol "//" tokens ?> parse_steps_after (descendants XRoot) (after_first tokens)
-    |? is_symbol "/" tokens ?>
-        := rest = after_first tokens
-        ? starts_step rest ?> parse_steps_after XRoot rest |: (XRoot, rest)
-    |? starts_primary tokens ?>
-        := filtered, rest = parse_filtered tokens
-        parse_steps filtered rest
+    |? is_symbol "/" tokens ?> xpath_parse_rooted (after_first tokens)
+    |? starts_primary tokens ?> xpath_parse_filtered_steps tokens
     |: parse_steps_after XContext tokens
+
+:& :~ xpath_parse_rooted (tokens : list token) : xpath * list token =
+    ? starts_step tokens ?> parse_steps_after XRoot tokens |: (XRoot, tokens)
+
+:& :~ xpath_parse_filtered_steps (tokens : list token) : xpath * list token =
+    := filtered, rest = parse_filtered tokens
+    parse_steps filtered rest
+
 :& :~ parse_filtered (tokens : list token) : xpath * list token =
     := primary, rest = parse_primary tokens
     := predicates, rest = parse_predicates rest []
     (?= predicates ?| [] => primary | _ => XFilter (primary, predicates)), rest
+
 :& :~ parse_steps (current : xpath) (tokens : list token) : xpath * list token =
     ? is_symbol "//" tokens ?> parse_steps_after (descendants current) (after_first tokens)
     |? is_symbol "/" tokens ?> parse_steps_after current (after_first tokens)
     |: current, tokens
+
 :& :~ parse_steps_after (input : xpath) (tokens : list token) : xpath * list token =
     := step, rest = parse_step input tokens
     parse_steps step rest
+
 :& :~ parse_step (input : xpath) (tokens : list token) : xpath * list token =
     ? starts_primary tokens ?>
         := filtered, rest = parse_filtered tokens
         XApply (input, filtered), rest
     |: parse_axis_step input tokens
+
 :& :~ parse_axis_step (input : xpath) (tokens : list token) : xpath * list token =
+    ?= tokens ?|
+    | TSymbol _ :: _ => xpath_parse_symbol_step input tokens
+    | TName _ :: _ => xpath_parse_name_step input tokens
+    | _ => XInvalid "expected a step", tokens
+
+:& :~ xpath_parse_symbol_step (input : xpath) (tokens : list token) : xpath * list token =
     ?= tokens ?|
     | TSymbol x :: rest ?& x = "." => XStep (input, ElementAxis AxisSelf, "node()", []), rest
     | TSymbol x :: rest ?& x = ".." => XStep (input, ElementAxis AxisParent, "node()", []), rest
     | TSymbol x :: TName name :: rest ?& x = "@" => with_predicates input (AttributeAxis AxisAttribute) name rest
-    | TSymbol x :: TSymbol star :: rest ?& x = "@" && star = "*" =>
-        with_predicates input (AttributeAxis AxisAttribute) "*" rest
-    | TName axis :: TSymbol x :: TName kind :: TSymbol y :: TSymbol z :: rest
-        ?& x = "::" && y = "(" && z = ")" && is_kind_test kind =>
-        with_predicates input (step_axis_of axis) (kind ++# "()") rest
-    | TName axis :: TSymbol x :: TName name :: rest ?& x = "::" => with_predicates input (step_axis_of axis) name rest
-    | TName axis :: TSymbol x :: TSymbol star :: rest ?& x = "::" && star = "*" =>
-        with_predicates input (step_axis_of axis) "*" rest
-    | TName kind :: TSymbol x :: TSymbol y :: rest ?& x = "(" && y = ")" && is_kind_test kind =>
-        with_predicates input (ElementAxis AxisChild) (kind ++# "()") rest
-    | TName name :: rest => with_predicates input (ElementAxis AxisChild) name rest
+    | TSymbol x :: TSymbol s :: r ?& x = "@" && s = "*" => with_predicates input (AttributeAxis AxisAttribute) "*" r
     | TSymbol star :: rest ?& star = "*" => with_predicates input (ElementAxis AxisChild) "*" rest
     | _ => XInvalid "expected a step", tokens
+
+:& :~ xpath_parse_name_step (input : xpath) (tokens : list token) : xpath * list token =
+    ?= tokens ?|
+    | TName axis :: TSymbol x :: rest ?& x = "::" && xpath_parse_starts_test rest =>
+        xpath_parse_node_test input (step_axis_of axis) rest
+    | _ => xpath_parse_node_test input (ElementAxis AxisChild) tokens
+
+:& :~ xpath_parse_node_test (input : xpath) (axis : step_axis) (tokens : list token) : xpath * list token =
+    ?= tokens ?|
+    | TName kind :: _ :: _ :: rest ?& xpath_parse_kind_call tokens => with_predicates input axis (kind ++# "()") rest
+    | TName name :: rest => with_predicates input axis name rest
+    | TSymbol star :: rest ?& star = "*" => with_predicates input axis "*" rest
+    | _ => XInvalid "expected a step", tokens
+
 :& :~ with_predicates (input : xpath) (axis : step_axis) (test : string) (tokens : list token) : xpath * list token =
     := predicates, rest = parse_predicates tokens []
     XStep (input, axis, test, predicates), rest
+
 :& :~ parse_predicates (tokens : list token) (acc : list xpath) : list xpath * list token =
     ? is_symbol "[" tokens ?>
         := predicate, rest = parse_expr (after_first tokens)
         := predicate, rest = closed "]" predicate rest
         parse_predicates rest (predicate :: acc)
     |: (listm::rev acc, tokens)
+
 :& :~ parse_primary (tokens : list token) : xpath * list token =
     ?= tokens ?|
     | TText text :: rest => XText text, rest
     | TNumber number :: rest => XNumber number, rest
     | TVariable name :: rest => XVariable name, rest
-    | TSymbol x :: rest ?& x = "(" =>
-        ? is_symbol ")" rest ?> (XSequence ([]), after_first rest)
-        |:
-            := inner, rest = parse_expr rest
-            ? is_symbol "," rest ?> sequence_of (parse_arguments (after_first rest) (inner :: []))
-            |: closed ")" inner rest
-    | TName word :: rest ?& word = "if" && is_symbol "(" rest =>
-        := condition, rest = parse_expr (after_first rest)
-        := condition, rest = closed ")" condition rest
-        ?= rest ?|
-        | TName then_word :: rest ?& then_word = "then" =>
-            := yes, rest = parse_expr rest
-            ?= rest ?|
-            | TName else_word :: rest ?& else_word = "else" =>
-                := no, rest = parse_expr rest
-                XIf (condition, yes, no), rest
-            | _ => XInvalid "expected else", rest
-        | _ => XInvalid "expected then", rest
-    | TName name :: _ :: rest =>
-        := arguments, rest = parse_arguments rest []
-        XCall (function_of name, arguments), rest
+    | TSymbol x :: rest ?& x = "(" => xpath_parse_parenthesized rest
+    | TName word :: rest ?& word = "if" && is_symbol "(" rest => xpath_parse_if (after_first rest)
+    | TName name :: _ :: rest => xpath_parse_call name rest
     | _ => XInvalid "expected a primary expression", tokens
+
+:& :~ xpath_parse_parenthesized (tokens : list token) : xpath * list token =
+    ? is_symbol ")" tokens ?> (XSequence ([]), after_first tokens)
+    |:
+        := inner, rest = parse_expr tokens
+        ? is_symbol "," rest ?> sequence_of (parse_arguments (after_first rest) (inner :: []))
+        |: closed ")" inner rest
+
+:& :~ xpath_parse_if (tokens : list token) : xpath * list token =
+    := condition, rest = parse_expr tokens
+    := condition, rest = closed ")" condition rest
+    ?= rest ?|
+    | TName then_word :: rest ?& then_word = "then" => xpath_parse_then condition rest
+    | _ => XInvalid "expected then", rest
+
+:& :~ xpath_parse_then (condition : xpath) (tokens : list token) : xpath * list token =
+    := yes, rest = parse_expr tokens
+    ?= rest ?|
+    | TName else_word :: rest ?& else_word = "else" =>
+        := no, rest = parse_expr rest
+        XIf (condition, yes, no), rest
+    | _ => XInvalid "expected else", rest
+
+:& :~ xpath_parse_call (name : string) (tokens : list token) : xpath * list token =
+    := arguments, rest = parse_arguments tokens []
+    XCall (function_of name, arguments), rest
+
 :& :~ parse_arguments (tokens : list token) (acc : list xpath) : list xpath * list token =
     ? is_symbol ")" tokens ?> (listm::rev acc, after_first tokens)
     |:
         := argument, rest = parse_expr tokens
-        ? is_symbol "," rest ?> parse_arguments (after_first rest) (argument :: acc)
-        |? is_symbol ")" rest ?> (listm::rev (argument :: acc), after_first rest)
-        |: (listm::rev (XInvalid "expected , or )" :: argument :: acc), rest)
+        xpath_parse_argument_rest argument rest acc
+
+:& :~ xpath_parse_argument_rest (argument : xpath) (tokens : list token) (acc : list xpath) : list xpath * list token =
+    ? is_symbol "," tokens ?> parse_arguments (after_first tokens) (argument :: acc)
+    |? is_symbol ")" tokens ?> (listm::rev (argument :: acc), after_first tokens)
+    |: (listm::rev (XInvalid "expected , or )" :: argument :: acc), tokens)
 
 := parse (s : string) : xpath =
     := parsed, rest = parse_expr (tokenize s)
@@ -692,49 +816,63 @@
     | XVariable v => "$" ++# v
     | XContext => "."
     | XRoot => "/"
-    | XStep (input, axis, test, predicates) =>
-        "(" ++# axis_name axis ++# "::" ++# test ++# " " ++# xpath_text input ++# predicates_text predicates ++# ")"
+    | XStep (input, axis, test, predicates) => xpath_step_text input axis test predicates
     | XFilter (input, predicates) => "(filter " ++# xpath_text input ++# predicates_text predicates ++# ")"
     | XCall (name, arguments) => "(" ++# joined (function_text name :: texts_of arguments []) "" ++# ")"
-    | XBinary (op, left, right) =>
-        "(" ++# operator_text op ++# " " ++# xpath_text left ++# " " ++# xpath_text right ++# ")"
+    | XBinary (op, left, right) => xpath_binary_text op left right
     | XNegate operand => "(- " ++# xpath_text operand ++# ")"
-    | XQuantified (every, v, domain, body) =>
-        := quantifier = ? every ?> "every" |: "some"
-        "(" ++# quantifier ++# " $" ++# v ++# " " ++# xpath_text domain ++# " " ++# xpath_text body ++# ")"
+    | XQuantified (every, v, domain, body) => xpath_quantified_text every v domain body
     | XApply (input, mapped) => "(apply " ++# xpath_text input ++# " " ++# xpath_text mapped ++# ")"
     | XMember (probe, _, codes) => "(member " ++# xpath_text probe ++# " " ++# joined codes "" ++# ")"
-    | XIf (condition, yes, no) =>
-        "(if " ++# xpath_text condition ++# " " ++# xpath_text yes ++# " " ++# xpath_text no ++# ")"
+    | XIf (condition, yes, no) => xpath_if_text condition yes no
     | XSequence items => "(" ++# joined ("sequence" :: texts_of items []) "" ++# ")"
     | XFor (v, domain, body) => "(for $" ++# v ++# " " ++# xpath_text domain ++# " " ++# xpath_text body ++# ")"
-    | XCastable (operand, ty, optional) =>
-        "(castable " ++# ty ++# (? optional ?> "?" |: "") ++# " " ++# xpath_text operand ++# ")"
+    | XCastable (operand, ty, optional) => xpath_castable_text operand ty optional
+
 :& :~ predicates_text (predicates : list xpath) : string =
     ?= predicates ?|
     | p :: rest => " [" ++# xpath_text p ++# "]" ++# predicates_text rest
     | [] => ""
+
 :& :~ texts_of (items : list xpath) (acc : list string) : list string =
     ?= items ?|
     | item :: rest => texts_of rest (xpath_text item :: acc)
     | [] => listm::rev acc
 
-:~ ^ node_count (counted : xpath -> bool) (x : xpath) : i32 =
-    := own = ? counted x ?> 1i32 |: 0i32
+:& :~ xpath_step_text (input : xpath) (axis : step_axis) (test : string) (predicates : list xpath) : string =
+    "(" ++# axis_name axis ++# "::" ++# test ++# " " ++# xpath_text input ++# predicates_text predicates ++# ")"
+
+:& :~ xpath_binary_text (op : binary_operator) (left : xpath) (right : xpath) : string =
+    "(" ++# operator_text op ++# " " ++# xpath_text left ++# " " ++# xpath_text right ++# ")"
+
+:& :~ xpath_quantified_text (every : bool) (v : string) (domain : xpath) (body : xpath) : string =
+    := quantifier = ? every ?> "every" |: "some"
+    "(" ++# quantifier ++# " $" ++# v ++# " " ++# xpath_text domain ++# " " ++# xpath_text body ++# ")"
+
+:& :~ xpath_if_text (condition : xpath) (yes : xpath) (no : xpath) : string =
+    "(if " ++# xpath_text condition ++# " " ++# xpath_text yes ++# " " ++# xpath_text no ++# ")"
+
+:& :~ xpath_castable_text (operand : xpath) (ty : string) (optional : bool) : string =
+    "(castable " ++# ty ++# (? optional ?> "?" |: "") ++# " " ++# xpath_text operand ++# ")"
+
+:~ ^ node_count (counted : xpath -> bool) (x : xpath) : i32 = (? counted x ?> 1i32 |: 0i32) + child_count counted x
+
+:& :~ child_count (counted : xpath -> bool) (x : xpath) : i32 =
     ?= x ?|
-    | XStep (input, _, _, predicates) => own + node_count counted input + node_counts counted predicates
-    | XFilter (input, predicates) => own + node_count counted input + node_counts counted predicates
-    | XCall (_, arguments) => own + node_counts counted arguments
-    | XBinary (_, left, right) => own + node_count counted left + node_count counted right
-    | XNegate operand => own + node_count counted operand
-    | XQuantified (_, _, domain, body) => own + node_count counted domain + node_count counted body
-    | XApply (input, mapped) => own + node_count counted input + node_count counted mapped
-    | XMember (probe, _, _) => own + node_count counted probe
-    | XIf (condition, yes, no) => own + node_count counted condition + node_count counted yes + node_count counted no
-    | XSequence items => own + node_counts counted items
-    | XFor (_, domain, body) => own + node_count counted domain + node_count counted body
-    | XCastable (operand, _, _) => own + node_count counted operand
-    | _ => own
+    | XStep (input, _, _, predicates) => node_count counted input + node_counts counted predicates
+    | XFilter (input, predicates) => node_count counted input + node_counts counted predicates
+    | XCall (_, arguments) => node_counts counted arguments
+    | XBinary (_, left, right) => node_count counted left + node_count counted right
+    | XNegate operand => node_count counted operand
+    | XQuantified (_, _, domain, body) => node_count counted domain + node_count counted body
+    | XApply (input, mapped) => node_count counted input + node_count counted mapped
+    | XMember (probe, _, _) => node_count counted probe
+    | XIf (condition, yes, no) => node_count counted condition + node_count counted yes + node_count counted no
+    | XSequence items => node_counts counted items
+    | XFor (_, domain, body) => node_count counted domain + node_count counted body
+    | XCastable (operand, _, _) => node_count counted operand
+    | _ => 0i32
+
 :& :~ node_counts (counted : xpath -> bool) (items : list xpath) : i32 =
     ?= items ?|
     | item :: rest => node_count counted item + node_counts counted rest
@@ -759,10 +897,7 @@
 
 :~ ^ lift_code_lists (x : xpath) : xpath =
     ?= x ?|
-    | XCall (name, (XText codes :: probe :: [])) ?& function_text name = "contains" =>
-        ?= padded_operand probe ?|
-        | Some inner => XMember (lift_code_lists inner, codes, spaced_words codes 0i32 0i32 [])
-        | None => XCall (name, XText codes :: lift_code_lists probe :: [])
+    | XCall (name, (XText codes :: probe :: [])) ?& function_text name = "contains" => lifted_contains name codes probe
     | XStep (input, axis, test, predicates) => XStep (lift_code_lists input, axis, test, lifted predicates)
     | XFilter (input, predicates) => XFilter (lift_code_lists input, lifted predicates)
     | XCall (name, arguments) => XCall (name, lifted arguments)
@@ -776,10 +911,16 @@
     | XFor (v, domain, body) => XFor (v, lift_code_lists domain, lift_code_lists body)
     | XCastable (operand, ty, optional) => XCastable (lift_code_lists operand, ty, optional)
     | _ => x
+
 :& :~ lifted (items : list xpath) : list xpath =
     ?= items ?|
     | item :: rest => lift_code_lists item :: lifted rest
     | [] => []
+
+:& :~ lifted_contains (name : function_ref) (codes : string) (probe : xpath) : xpath =
+    ?= padded_operand probe ?|
+    | Some inner => XMember (lift_code_lists inner, codes, spaced_words codes 0i32 0i32 [])
+    | None => XCall (name, XText codes :: lift_code_lists probe :: [])
 
 ///> rust
 :# parses_the_en16931_xpath_subset =

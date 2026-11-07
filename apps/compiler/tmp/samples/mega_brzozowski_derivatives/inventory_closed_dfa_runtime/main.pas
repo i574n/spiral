@@ -40,6 +40,10 @@ procedure SpiralRelease(o: TSpiralRc);
 begin
   if o <> nil then begin Dec(o.refc); if o.refc < 0 then begin o.DropFields; o.Free; end; end;
 end;
+function SpiralKeep(o: TSpiralRc): TSpiralRc;
+begin
+  SpiralRetain(o); Result := o;
+end;
 function input_singletons_from_symbols_0(v0: TUH0): TUH1; forward;
 function input_list_append_2(v0: TUH1; v1: TUH1): TUH1; forward;
 function input_prepend_symbol_to_corpus_3(v0: TUS0; v1: TUH1): TUH1; forward;
@@ -137,12 +141,19 @@ begin
       1: begin
           v2 := v0.c1_0;
           v3 := v0.c1_1;
+          SpiralRetain(v3);
+          SpiralRetain(v3);
+          SpiralRelease(v0);
           v4 := input_singletons_from_symbols_0(v3);
+          SpiralRelease(v3);
           v5 := UH2_InputEmpty;
+          SpiralRetain(v5);
           v6 := UH2_InputCons(v2, v5);
+          SpiralRelease(v5);
           Result := UH1_InputListCons(v6, v4);
       end;
       0: begin
+          SpiralRelease(v0);
           Result := UH1_InputListNil;
       end;
   end;
@@ -157,10 +168,18 @@ begin
       1: begin
           v2 := v0.c1_0;
           v3 := v0.c1_1;
+          SpiralRetain(v1);
+          SpiralRetain(v2);
+          SpiralRetain(v3);
+          SpiralRetain(v3);
+          SpiralRelease(v0);
           v4 := input_list_append_2(v3, v1);
+          SpiralRelease(v1);
+          SpiralRelease(v3);
           Result := UH1_InputListCons(v2, v4);
       end;
       0: begin
+          SpiralRelease(v0);
           Result := v1;
       end;
   end;
@@ -176,11 +195,19 @@ begin
       1: begin
           v3 := v1.c1_0;
           v4 := v1.c1_1;
+          SpiralRetain(v3);
+          SpiralRetain(v4);
+          SpiralRetain(v4);
+          SpiralRelease(v1);
           v5 := input_prepend_symbol_to_corpus_3(v0, v4);
+          SpiralRetain(v3);
+          SpiralRelease(v4);
           v6 := UH2_InputCons(v0, v3);
+          SpiralRelease(v3);
           Result := UH1_InputListCons(v6, v5);
       end;
       0: begin
+          SpiralRelease(v1);
           Result := UH1_InputListNil;
       end;
   end;
@@ -196,11 +223,20 @@ begin
       1: begin
           v3 := v0.c1_0;
           v4 := v0.c1_1;
+          SpiralRetain(v1);
+          SpiralRetain(v4);
+          SpiralRelease(v0);
           v5 := input_prepend_symbol_to_corpus_3(v3, v1);
+          SpiralRetain(v1);
+          SpiralRetain(v4);
           v6 := input_prepend_symbols_to_corpus_1(v4, v1);
+          SpiralRelease(v1);
+          SpiralRelease(v4);
           Result := input_list_append_2(v5, v6);
       end;
       0: begin
+          SpiralRelease(v0);
+          SpiralRelease(v1);
           Result := UH1_InputListNil;
       end;
   end;
@@ -271,12 +307,19 @@ begin
       1: begin
           v2 := v0.c1_0;
           v3 := v0.c1_1;
+          SpiralRetain(v3);
+          SpiralRetain(v3);
+          SpiralRelease(v0);
           v4 := input_singletons_from_symbols_4(v3);
+          SpiralRelease(v3);
           v5 := UH5_InputEmpty;
+          SpiralRetain(v5);
           v6 := UH5_InputCons(v2, v5);
+          SpiralRelease(v5);
           Result := UH4_InputListCons(v6, v4);
       end;
       0: begin
+          SpiralRelease(v0);
           Result := UH4_InputListNil;
       end;
   end;
@@ -291,10 +334,18 @@ begin
       1: begin
           v2 := v0.c1_0;
           v3 := v0.c1_1;
+          SpiralRetain(v1);
+          SpiralRetain(v2);
+          SpiralRetain(v3);
+          SpiralRetain(v3);
+          SpiralRelease(v0);
           v4 := input_list_append_6(v3, v1);
+          SpiralRelease(v1);
+          SpiralRelease(v3);
           Result := UH4_InputListCons(v2, v4);
       end;
       0: begin
+          SpiralRelease(v0);
           Result := v1;
       end;
   end;
@@ -310,11 +361,19 @@ begin
       1: begin
           v3 := v1.c1_0;
           v4 := v1.c1_1;
+          SpiralRetain(v3);
+          SpiralRetain(v4);
+          SpiralRetain(v4);
+          SpiralRelease(v1);
           v5 := input_prepend_symbol_to_corpus_7(v0, v4);
+          SpiralRetain(v3);
+          SpiralRelease(v4);
           v6 := UH5_InputCons(v0, v3);
+          SpiralRelease(v3);
           Result := UH4_InputListCons(v6, v5);
       end;
       0: begin
+          SpiralRelease(v1);
           Result := UH4_InputListNil;
       end;
   end;
@@ -330,11 +389,20 @@ begin
       1: begin
           v3 := v0.c1_0;
           v4 := v0.c1_1;
+          SpiralRetain(v1);
+          SpiralRetain(v4);
+          SpiralRelease(v0);
           v5 := input_prepend_symbol_to_corpus_7(v3, v1);
+          SpiralRetain(v1);
+          SpiralRetain(v4);
           v6 := input_prepend_symbols_to_corpus_5(v4, v1);
+          SpiralRelease(v1);
+          SpiralRelease(v4);
           Result := input_list_append_6(v5, v6);
       end;
       0: begin
+          SpiralRelease(v0);
+          SpiralRelease(v1);
           Result := UH4_InputListNil;
       end;
   end;
@@ -442,6 +510,8 @@ begin
           1: begin
               v6 := v1.c1_0;
               v7 := v1.c1_1;
+              SpiralRetain(v7);
+              SpiralRelease(v1);
               case v6.tag of
                   1: begin
                       v11 := US4_SymbolGreater;
@@ -485,6 +555,7 @@ begin
               end;
               v20 := v19 < 0;
               if v20 then begin
+                  SpiralRelease(v7);
                   Result := US3_InventoryDfaInputOutsideInventory;
                   Exit;
               end else begin
@@ -510,6 +581,7 @@ begin
               end;
           end;
           0: begin
+              SpiralRelease(v1);
               v2 := v0 = 0;
               if v2 then begin
                   Result := US3_InventoryDfaAccepted;
@@ -547,11 +619,21 @@ begin
           3: begin
               v53 := v0.c3_0;
               v54 := v0.c3_1;
+              SpiralRetain(v53);
+              SpiralRetain(v54);
+              SpiralRelease(v0);
               case v1.tag of
                   3: begin
                       v55 := v1.c3_0;
                       v56 := v1.c3_1;
+                      SpiralRetain(v53);
+                      SpiralRetain(v55);
+                      SpiralRetain(v55);
+                      SpiralRetain(v56);
+                      SpiralRelease(v1);
                       v57 := regex_compare_15(v53, v55);
+                      SpiralRelease(v53);
+                      SpiralRelease(v55);
                       case v57.tag of
                           1: begin
                               v0 := v54;
@@ -559,12 +641,17 @@ begin
                               Continue;
                           end;
                           else begin
+                              SpiralRelease(v54);
+                              SpiralRelease(v56);
                               Result := v57;
                               Exit;
                           end;
                       end;
                   end;
                   else begin
+                      SpiralRelease(v1);
+                      SpiralRelease(v53);
+                      SpiralRelease(v54);
                       Result := US4_SymbolGreater;
                       Exit;
                   end;
@@ -573,11 +660,21 @@ begin
           4: begin
               v28 := v0.c4_0;
               v29 := v0.c4_1;
+              SpiralRetain(v28);
+              SpiralRetain(v29);
+              SpiralRelease(v0);
               case v1.tag of
                   4: begin
                       v34 := v1.c4_0;
                       v35 := v1.c4_1;
+                      SpiralRetain(v28);
+                      SpiralRetain(v34);
+                      SpiralRetain(v34);
+                      SpiralRetain(v35);
+                      SpiralRelease(v1);
                       v36 := regex_compare_15(v28, v34);
+                      SpiralRelease(v28);
+                      SpiralRelease(v34);
                       case v36.tag of
                           1: begin
                               v0 := v29;
@@ -585,6 +682,8 @@ begin
                               Continue;
                           end;
                           else begin
+                              SpiralRelease(v29);
+                              SpiralRelease(v35);
                               Result := v36;
                               Exit;
                           end;
@@ -592,18 +691,30 @@ begin
                   end;
                   2: begin
                       v32 := v1.c2_0;
+                      SpiralRelease(v1);
+                      SpiralRelease(v28);
+                      SpiralRelease(v29);
                       Result := US4_SymbolGreater;
                       Exit;
                   end;
                   0: begin
+                      SpiralRelease(v1);
+                      SpiralRelease(v28);
+                      SpiralRelease(v29);
                       Result := US4_SymbolGreater;
                       Exit;
                   end;
                   1: begin
+                      SpiralRelease(v1);
+                      SpiralRelease(v28);
+                      SpiralRelease(v29);
                       Result := US4_SymbolGreater;
                       Exit;
                   end;
                   else begin
+                      SpiralRelease(v1);
+                      SpiralRelease(v28);
+                      SpiralRelease(v29);
                       Result := US4_SymbolLess;
                       Exit;
                   end;
@@ -611,9 +722,11 @@ begin
           end;
           2: begin
               v10 := v0.c2_0;
+              SpiralRelease(v0);
               case v1.tag of
                   2: begin
                       v13 := v1.c2_0;
+                      SpiralRelease(v1);
                       case v10.tag of
                           1: begin
                               case v13.tag of
@@ -642,42 +755,52 @@ begin
                       end;
                   end;
                   0: begin
+                      SpiralRelease(v1);
                       Result := US4_SymbolGreater;
                       Exit;
                   end;
                   1: begin
+                      SpiralRelease(v1);
                       Result := US4_SymbolGreater;
                       Exit;
                   end;
                   else begin
+                      SpiralRelease(v1);
                       Result := US4_SymbolLess;
                       Exit;
                   end;
               end;
           end;
           0: begin
+              SpiralRelease(v0);
               case v1.tag of
                   0: begin
+                      SpiralRelease(v1);
                       Result := US4_SymbolSame;
                       Exit;
                   end;
                   else begin
+                      SpiralRelease(v1);
                       Result := US4_SymbolLess;
                       Exit;
                   end;
               end;
           end;
           1: begin
+              SpiralRelease(v0);
               case v1.tag of
                   0: begin
+                      SpiralRelease(v1);
                       Result := US4_SymbolGreater;
                       Exit;
                   end;
                   1: begin
+                      SpiralRelease(v1);
                       Result := US4_SymbolSame;
                       Exit;
                   end;
                   else begin
+                      SpiralRelease(v1);
                       Result := US4_SymbolLess;
                       Exit;
                   end;
@@ -685,20 +808,28 @@ begin
           end;
           5: begin
               v44 := v0.c5_0;
+              SpiralRetain(v44);
+              SpiralRelease(v0);
               case v1.tag of
                   3: begin
                       v45 := v1.c3_0;
                       v46 := v1.c3_1;
+                      SpiralRelease(v1);
+                      SpiralRelease(v44);
                       Result := US4_SymbolLess;
                       Exit;
                   end;
                   5: begin
                       v48 := v1.c5_0;
+                      SpiralRetain(v48);
+                      SpiralRelease(v1);
                       v0 := v44;
                       v1 := v48;
                       Continue;
                   end;
                   else begin
+                      SpiralRelease(v1);
+                      SpiralRelease(v44);
                       Result := US4_SymbolGreater;
                       Exit;
                   end;
@@ -719,24 +850,41 @@ begin
       3: begin
           v2 := v1.c3_0;
           v3 := v1.c3_1;
+          SpiralRetain(v0);
+          SpiralRetain(v2);
+          SpiralRetain(v2);
+          SpiralRetain(v3);
           v4 := regex_compare_15(v0, v2);
           case v4.tag of
               2: begin
+                  SpiralRetain(v0);
+                  SpiralRetain(v3);
+                  SpiralRelease(v1);
                   v6 := alt_insert_sorted_14(v0, v3);
+                  SpiralRelease(v0);
+                  SpiralRelease(v3);
                   Result := UH7_RegexAlt(v2, v6);
               end;
               0: begin
+                  SpiralRelease(v2);
+                  SpiralRelease(v3);
                   Result := UH7_RegexAlt(v0, v1);
               end;
               1: begin
+                  SpiralRelease(v0);
+                  SpiralRelease(v2);
+                  SpiralRelease(v3);
                   Result := v1;
               end;
           end;
       end;
       0: begin
+          SpiralRelease(v1);
           Result := v0;
       end;
       else begin
+          SpiralRetain(v0);
+          SpiralRetain(v1);
           v11 := regex_compare_15(v0, v1);
           case v11.tag of
               2: begin
@@ -746,6 +894,7 @@ begin
                   Result := UH7_RegexAlt(v0, v1);
               end;
               1: begin
+                  SpiralRelease(v0);
                   Result := v1;
               end;
           end;
@@ -763,12 +912,20 @@ begin
           3: begin
               v2 := v0.c3_0;
               v3 := v0.c3_1;
+              SpiralRetain(v1);
+              SpiralRetain(v2);
+              SpiralRetain(v2);
+              SpiralRetain(v3);
+              SpiralRelease(v0);
               v4 := alt_insert_sorted_14(v2, v1);
+              SpiralRelease(v1);
+              SpiralRelease(v2);
               v0 := v3;
               v1 := v4;
               Continue;
           end;
           0: begin
+              SpiralRelease(v0);
               Result := v1;
               Exit;
           end;
@@ -802,21 +959,36 @@ begin
           3: begin
               v18 := v0.c3_0;
               v19 := v0.c3_1;
+              SpiralRetain(v18);
+              SpiralRetain(v19);
+              SpiralRelease(v0);
               case v1.tag of
                   3: begin
                       v20 := v1.c3_0;
                       v21 := v1.c3_1;
+                      SpiralRetain(v18);
+                      SpiralRetain(v20);
+                      SpiralRetain(v20);
+                      SpiralRetain(v21);
+                      SpiralRelease(v1);
                       v22 := regex_equal_17(v18, v20);
+                      SpiralRelease(v18);
+                      SpiralRelease(v20);
                       if v22 then begin
                           v0 := v19;
                           v1 := v21;
                           Continue;
                       end else begin
+                          SpiralRelease(v19);
+                          SpiralRelease(v21);
                           Result := False;
                           Exit;
                       end;
                   end;
                   else begin
+                      SpiralRelease(v1);
+                      SpiralRelease(v18);
+                      SpiralRelease(v19);
                       Result := False;
                       Exit;
                   end;
@@ -825,21 +997,36 @@ begin
           4: begin
               v26 := v0.c4_0;
               v27 := v0.c4_1;
+              SpiralRetain(v26);
+              SpiralRetain(v27);
+              SpiralRelease(v0);
               case v1.tag of
                   4: begin
                       v28 := v1.c4_0;
                       v29 := v1.c4_1;
+                      SpiralRetain(v26);
+                      SpiralRetain(v28);
+                      SpiralRetain(v28);
+                      SpiralRetain(v29);
+                      SpiralRelease(v1);
                       v30 := regex_equal_17(v26, v28);
+                      SpiralRelease(v26);
+                      SpiralRelease(v28);
                       if v30 then begin
                           v0 := v27;
                           v1 := v29;
                           Continue;
                       end else begin
+                          SpiralRelease(v27);
+                          SpiralRelease(v29);
                           Result := False;
                           Exit;
                       end;
                   end;
                   else begin
+                      SpiralRelease(v1);
+                      SpiralRelease(v26);
+                      SpiralRelease(v27);
                       Result := False;
                       Exit;
                   end;
@@ -847,9 +1034,11 @@ begin
           end;
           2: begin
               v4 := v0.c2_0;
+              SpiralRelease(v0);
               case v1.tag of
                   2: begin
                       v5 := v1.c2_0;
+                      SpiralRelease(v1);
                       case v4.tag of
                           1: begin
                               case v5.tag of
@@ -884,30 +1073,37 @@ begin
                       end;
                   end;
                   else begin
+                      SpiralRelease(v1);
                       Result := False;
                       Exit;
                   end;
               end;
           end;
           0: begin
+              SpiralRelease(v0);
               case v1.tag of
                   0: begin
+                      SpiralRelease(v1);
                       Result := True;
                       Exit;
                   end;
                   else begin
+                      SpiralRelease(v1);
                       Result := False;
                       Exit;
                   end;
               end;
           end;
           1: begin
+              SpiralRelease(v0);
               case v1.tag of
                   1: begin
+                      SpiralRelease(v1);
                       Result := True;
                       Exit;
                   end;
                   else begin
+                      SpiralRelease(v1);
                       Result := False;
                       Exit;
                   end;
@@ -915,14 +1111,20 @@ begin
           end;
           5: begin
               v34 := v0.c5_0;
+              SpiralRetain(v34);
+              SpiralRelease(v0);
               case v1.tag of
                   5: begin
                       v35 := v1.c5_0;
+                      SpiralRetain(v35);
+                      SpiralRelease(v1);
                       v0 := v34;
                       v1 := v35;
                       Continue;
                   end;
                   else begin
+                      SpiralRelease(v1);
+                      SpiralRelease(v34);
                       Result := False;
                       Exit;
                   end;
@@ -942,21 +1144,27 @@ var
 begin
   case v0.tag of
       0: begin
+          SpiralRelease(v0);
+          SpiralRelease(v1);
           Result := UH7_RegexEmpty;
       end;
       else begin
           case v1.tag of
               0: begin
+                  SpiralRelease(v0);
+                  SpiralRelease(v1);
                   Result := UH7_RegexEmpty;
               end;
               else begin
                   case v0.tag of
                       1: begin
+                          SpiralRelease(v0);
                           Result := v1;
                       end;
                       else begin
                           case v1.tag of
                               1: begin
+                                  SpiralRelease(v1);
                                   Result := v0;
                               end;
                               else begin
@@ -964,22 +1172,38 @@ begin
                                       4: begin
                                           v12 := v0.c4_0;
                                           v13 := v0.c4_1;
+                                          SpiralRetain(v1);
+                                          SpiralRetain(v12);
+                                          SpiralRetain(v13);
+                                          SpiralRetain(v13);
+                                          SpiralRelease(v0);
                                           v14 := make_cat_16(v13, v1);
+                                          SpiralRelease(v1);
+                                          SpiralRelease(v13);
                                           Result := UH7_RegexCat(v12, v14);
                                       end;
                                       5: begin
                                           v4 := v0.c5_0;
+                                          SpiralRetain(v4);
                                           case v1.tag of
                                               5: begin
                                                   v5 := v1.c5_0;
+                                                  SpiralRetain(v4);
+                                                  SpiralRetain(v5);
+                                                  SpiralRetain(v5);
                                                   v6 := regex_equal_17(v4, v5);
+                                                  SpiralRelease(v5);
                                                   if v6 then begin
+                                                      SpiralRelease(v0);
+                                                      SpiralRelease(v1);
                                                       Result := UH7_RegexStar(v4);
                                                   end else begin
+                                                      SpiralRelease(v4);
                                                       Result := UH7_RegexCat(v0, v1);
                                                   end;
                                               end;
                                               else begin
+                                                  SpiralRelease(v4);
                                                   Result := UH7_RegexCat(v0, v1);
                                               end;
                                           end;
@@ -1003,13 +1227,17 @@ var
 begin
   case v0.tag of
       0: begin
+          SpiralRelease(v0);
           Result := UH7_RegexEpsilon;
       end;
       1: begin
+          SpiralRelease(v0);
           Result := UH7_RegexEpsilon;
       end;
       5: begin
           v3 := v0.c5_0;
+          SpiralRetain(v3);
+          SpiralRelease(v0);
           Result := UH7_RegexStar(v3);
       end;
       else begin
@@ -1035,30 +1263,51 @@ begin
       3: begin
           v5 := v0.c3_0;
           v6 := v0.c3_1;
+          SpiralRetain(v5);
+          SpiralRetain(v5);
+          SpiralRetain(v6);
+          SpiralRelease(v0);
           v7 := normalize_12(v5);
+          SpiralRetain(v6);
+          SpiralRelease(v5);
           v8 := normalize_12(v6);
+          SpiralRelease(v6);
           Result := make_alt_13(v7, v8);
       end;
       4: begin
           v10 := v0.c4_0;
           v11 := v0.c4_1;
+          SpiralRetain(v10);
+          SpiralRetain(v10);
+          SpiralRetain(v11);
+          SpiralRelease(v0);
           v12 := normalize_12(v10);
+          SpiralRetain(v11);
+          SpiralRelease(v10);
           v13 := normalize_12(v11);
+          SpiralRelease(v11);
           Result := make_cat_16(v12, v13);
       end;
       2: begin
           v3 := v0.c2_0;
+          SpiralRelease(v0);
           Result := UH7_RegexChar(v3);
       end;
       0: begin
+          SpiralRelease(v0);
           Result := UH7_RegexEmpty;
       end;
       1: begin
+          SpiralRelease(v0);
           Result := UH7_RegexEpsilon;
       end;
       5: begin
           v15 := v0.c5_0;
+          SpiralRetain(v15);
+          SpiralRetain(v15);
+          SpiralRelease(v0);
           v16 := normalize_12(v15);
+          SpiralRelease(v15);
           Result := make_star_18(v16);
       end;
   end;
@@ -1088,8 +1337,15 @@ begin
       3: begin
           v5 := v0.c3_0;
           v6 := v0.c3_1;
+          SpiralRetain(v5);
+          SpiralRetain(v5);
+          SpiralRetain(v6);
+          SpiralRelease(v0);
           v7 := nullable_20(v5);
+          SpiralRetain(v6);
+          SpiralRelease(v5);
           v8 := nullable_20(v6);
+          SpiralRelease(v6);
           case v7.tag of
               0: begin
                   Result := US5_Nullable;
@@ -1117,8 +1373,15 @@ begin
       4: begin
           v16 := v0.c4_0;
           v17 := v0.c4_1;
+          SpiralRetain(v16);
+          SpiralRetain(v16);
+          SpiralRetain(v17);
+          SpiralRelease(v0);
           v18 := nullable_20(v16);
+          SpiralRetain(v17);
+          SpiralRelease(v16);
           v19 := nullable_20(v17);
+          SpiralRelease(v17);
           case v18.tag of
               0: begin
                   case v19.tag of
@@ -1137,16 +1400,20 @@ begin
       end;
       2: begin
           v3 := v0.c2_0;
+          SpiralRelease(v0);
           Result := US5_NonNullable;
       end;
       0: begin
+          SpiralRelease(v0);
           Result := US5_NonNullable;
       end;
       1: begin
+          SpiralRelease(v0);
           Result := US5_Nullable;
       end;
       5: begin
           v25 := v0.c5_0;
+          SpiralRelease(v0);
           Result := US5_Nullable;
       end;
   end;
@@ -1175,29 +1442,50 @@ begin
       3: begin
           v19 := v0.c3_0;
           v20 := v0.c3_1;
+          SpiralRetain(v19);
+          SpiralRetain(v19);
+          SpiralRetain(v20);
+          SpiralRelease(v0);
           v21 := derivative_19(v19, v1);
+          SpiralRetain(v20);
+          SpiralRelease(v19);
           v22 := derivative_19(v20, v1);
+          SpiralRelease(v20);
           Result := make_alt_13(v21, v22);
       end;
       4: begin
           v24 := v0.c4_0;
           v25 := v0.c4_1;
+          SpiralRetain(v24);
+          SpiralRetain(v24);
+          SpiralRetain(v25);
+          SpiralRelease(v0);
           v26 := nullable_20(v24);
           case v26.tag of
               1: begin
+                  SpiralRetain(v24);
                   v31 := derivative_19(v24, v1);
+                  SpiralRelease(v24);
                   Result := make_cat_16(v31, v25);
               end;
               0: begin
+                  SpiralRetain(v24);
                   v27 := derivative_19(v24, v1);
+                  SpiralRetain(v25);
+                  SpiralRetain(v27);
+                  SpiralRelease(v24);
                   v28 := make_cat_16(v27, v25);
+                  SpiralRetain(v25);
+                  SpiralRelease(v27);
                   v29 := derivative_19(v25, v1);
+                  SpiralRelease(v25);
                   Result := make_alt_13(v28, v29);
               end;
           end;
       end;
       2: begin
           v4 := v0.c2_0;
+          SpiralRelease(v0);
           case v4.tag of
               1: begin
                   case v1.tag of
@@ -1235,15 +1523,22 @@ begin
           end;
       end;
       0: begin
+          SpiralRelease(v0);
           Result := UH7_RegexEmpty;
       end;
       1: begin
+          SpiralRelease(v0);
           Result := UH7_RegexEmpty;
       end;
       5: begin
           v35 := v0.c5_0;
+          SpiralRetain(v35);
+          SpiralRetain(v35);
+          SpiralRelease(v0);
           v36 := derivative_19(v35, v1);
+          SpiralRetain(v35);
           v37 := make_star_18(v35);
+          SpiralRelease(v35);
           Result := make_cat_16(v36, v37);
       end;
   end;
@@ -1253,8 +1548,12 @@ var
   v2: TUH7;
   v3: TUH7;
 begin
+  SpiralRetain(v0);
   v2 := normalize_12(v0);
+  SpiralRetain(v2);
+  SpiralRelease(v0);
   v3 := derivative_19(v2, v1);
+  SpiralRelease(v2);
   Result := normalize_12(v3);
 end;
 function accepts_10(v0: TUH7; v1: TUH2): Boolean;
@@ -1270,14 +1569,23 @@ begin
           1: begin
               v6 := v1.c1_0;
               v7 := v1.c1_1;
+              SpiralRetain(v0);
+              SpiralRetain(v7);
+              SpiralRelease(v1);
               v8 := canonical_derivative_11(v0, v6);
+              SpiralRelease(v0);
               v0 := v8;
               v1 := v7;
               Continue;
           end;
           0: begin
+              SpiralRetain(v0);
+              SpiralRelease(v1);
               v2 := normalize_12(v0);
+              SpiralRetain(v2);
+              SpiralRelease(v0);
               v3 := nullable_20(v2);
+              SpiralRelease(v2);
               case v3.tag of
                   1: begin
                       Result := False;
@@ -1307,30 +1615,43 @@ begin
           1: begin
               v2 := v1.c1_0;
               v3 := v1.c1_1;
+              SpiralRetain(v2);
+              SpiralRetain(v3);
+              SpiralRelease(v1);
               v4 := 1;
+              SpiralRetain(v2);
               v5 := loop_9(v4, v2);
               case v5.tag of
                   0: begin
+                      SpiralRetain(v0);
+                      SpiralRetain(v2);
                       v11 := accepts_10(v0, v2);
                   end;
                   2: begin
                       v11 := False;
                   end;
                   1: begin
+                      SpiralRetain(v0);
+                      SpiralRetain(v2);
                       v7 := accepts_10(v0, v2);
                       v8 := v7 = False;
                       v11 := v8;
                   end;
               end;
+              SpiralRelease(v2);
               if v11 then begin
                   v1 := v3;
                   Continue;
               end else begin
+                  SpiralRelease(v0);
+                  SpiralRelease(v3);
                   Result := False;
                   Exit;
               end;
           end;
           0: begin
+              SpiralRelease(v0);
+              SpiralRelease(v1);
               Result := True;
               Exit;
           end;
@@ -1397,6 +1718,8 @@ begin
           1: begin
               v8 := v1.c1_0;
               v9 := v1.c1_1;
+              SpiralRetain(v9);
+              SpiralRelease(v1);
               case v8.tag of
                   0: begin
                       v12 := US4_SymbolSame;
@@ -1466,6 +1789,7 @@ begin
               end;
               v31 := v30 < 0;
               if v31 then begin
+                  SpiralRelease(v9);
                   Result := US3_InventoryDfaInputOutsideInventory;
                   Exit;
               end else begin
@@ -1506,6 +1830,7 @@ begin
               end;
           end;
           0: begin
+              SpiralRelease(v1);
               v2 := v0 = 0;
               if v2 then begin
                   v4 := False;
@@ -1549,11 +1874,21 @@ begin
           3: begin
               v59 := v0.c3_0;
               v60 := v0.c3_1;
+              SpiralRetain(v59);
+              SpiralRetain(v60);
+              SpiralRelease(v0);
               case v1.tag of
                   3: begin
                       v61 := v1.c3_0;
                       v62 := v1.c3_1;
+                      SpiralRetain(v59);
+                      SpiralRetain(v61);
+                      SpiralRetain(v61);
+                      SpiralRetain(v62);
+                      SpiralRelease(v1);
                       v63 := regex_compare_28(v59, v61);
+                      SpiralRelease(v59);
+                      SpiralRelease(v61);
                       case v63.tag of
                           1: begin
                               v0 := v60;
@@ -1561,12 +1896,17 @@ begin
                               Continue;
                           end;
                           else begin
+                              SpiralRelease(v60);
+                              SpiralRelease(v62);
                               Result := v63;
                               Exit;
                           end;
                       end;
                   end;
                   else begin
+                      SpiralRelease(v1);
+                      SpiralRelease(v59);
+                      SpiralRelease(v60);
                       Result := US4_SymbolGreater;
                       Exit;
                   end;
@@ -1575,11 +1915,21 @@ begin
           4: begin
               v34 := v0.c4_0;
               v35 := v0.c4_1;
+              SpiralRetain(v34);
+              SpiralRetain(v35);
+              SpiralRelease(v0);
               case v1.tag of
                   4: begin
                       v40 := v1.c4_0;
                       v41 := v1.c4_1;
+                      SpiralRetain(v34);
+                      SpiralRetain(v40);
+                      SpiralRetain(v40);
+                      SpiralRetain(v41);
+                      SpiralRelease(v1);
                       v42 := regex_compare_28(v34, v40);
+                      SpiralRelease(v34);
+                      SpiralRelease(v40);
                       case v42.tag of
                           1: begin
                               v0 := v35;
@@ -1587,6 +1937,8 @@ begin
                               Continue;
                           end;
                           else begin
+                              SpiralRelease(v35);
+                              SpiralRelease(v41);
                               Result := v42;
                               Exit;
                           end;
@@ -1594,18 +1946,30 @@ begin
                   end;
                   2: begin
                       v38 := v1.c2_0;
+                      SpiralRelease(v1);
+                      SpiralRelease(v34);
+                      SpiralRelease(v35);
                       Result := US4_SymbolGreater;
                       Exit;
                   end;
                   0: begin
+                      SpiralRelease(v1);
+                      SpiralRelease(v34);
+                      SpiralRelease(v35);
                       Result := US4_SymbolGreater;
                       Exit;
                   end;
                   1: begin
+                      SpiralRelease(v1);
+                      SpiralRelease(v34);
+                      SpiralRelease(v35);
                       Result := US4_SymbolGreater;
                       Exit;
                   end;
                   else begin
+                      SpiralRelease(v1);
+                      SpiralRelease(v34);
+                      SpiralRelease(v35);
                       Result := US4_SymbolLess;
                       Exit;
                   end;
@@ -1613,9 +1977,11 @@ begin
           end;
           2: begin
               v10 := v0.c2_0;
+              SpiralRelease(v0);
               case v1.tag of
                   2: begin
                       v13 := v1.c2_0;
+                      SpiralRelease(v1);
                       case v10.tag of
                           0: begin
                               case v13.tag of
@@ -1668,42 +2034,52 @@ begin
                       end;
                   end;
                   0: begin
+                      SpiralRelease(v1);
                       Result := US4_SymbolGreater;
                       Exit;
                   end;
                   1: begin
+                      SpiralRelease(v1);
                       Result := US4_SymbolGreater;
                       Exit;
                   end;
                   else begin
+                      SpiralRelease(v1);
                       Result := US4_SymbolLess;
                       Exit;
                   end;
               end;
           end;
           0: begin
+              SpiralRelease(v0);
               case v1.tag of
                   0: begin
+                      SpiralRelease(v1);
                       Result := US4_SymbolSame;
                       Exit;
                   end;
                   else begin
+                      SpiralRelease(v1);
                       Result := US4_SymbolLess;
                       Exit;
                   end;
               end;
           end;
           1: begin
+              SpiralRelease(v0);
               case v1.tag of
                   0: begin
+                      SpiralRelease(v1);
                       Result := US4_SymbolGreater;
                       Exit;
                   end;
                   1: begin
+                      SpiralRelease(v1);
                       Result := US4_SymbolSame;
                       Exit;
                   end;
                   else begin
+                      SpiralRelease(v1);
                       Result := US4_SymbolLess;
                       Exit;
                   end;
@@ -1711,20 +2087,28 @@ begin
           end;
           5: begin
               v50 := v0.c5_0;
+              SpiralRetain(v50);
+              SpiralRelease(v0);
               case v1.tag of
                   3: begin
                       v51 := v1.c3_0;
                       v52 := v1.c3_1;
+                      SpiralRelease(v1);
+                      SpiralRelease(v50);
                       Result := US4_SymbolLess;
                       Exit;
                   end;
                   5: begin
                       v54 := v1.c5_0;
+                      SpiralRetain(v54);
+                      SpiralRelease(v1);
                       v0 := v50;
                       v1 := v54;
                       Continue;
                   end;
                   else begin
+                      SpiralRelease(v1);
+                      SpiralRelease(v50);
                       Result := US4_SymbolGreater;
                       Exit;
                   end;
@@ -1745,24 +2129,41 @@ begin
       3: begin
           v2 := v1.c3_0;
           v3 := v1.c3_1;
+          SpiralRetain(v0);
+          SpiralRetain(v2);
+          SpiralRetain(v2);
+          SpiralRetain(v3);
           v4 := regex_compare_28(v0, v2);
           case v4.tag of
               2: begin
+                  SpiralRetain(v0);
+                  SpiralRetain(v3);
+                  SpiralRelease(v1);
                   v6 := alt_insert_sorted_27(v0, v3);
+                  SpiralRelease(v0);
+                  SpiralRelease(v3);
                   Result := UH8_RegexAlt(v2, v6);
               end;
               0: begin
+                  SpiralRelease(v2);
+                  SpiralRelease(v3);
                   Result := UH8_RegexAlt(v0, v1);
               end;
               1: begin
+                  SpiralRelease(v0);
+                  SpiralRelease(v2);
+                  SpiralRelease(v3);
                   Result := v1;
               end;
           end;
       end;
       0: begin
+          SpiralRelease(v1);
           Result := v0;
       end;
       else begin
+          SpiralRetain(v0);
+          SpiralRetain(v1);
           v11 := regex_compare_28(v0, v1);
           case v11.tag of
               2: begin
@@ -1772,6 +2173,7 @@ begin
                   Result := UH8_RegexAlt(v0, v1);
               end;
               1: begin
+                  SpiralRelease(v0);
                   Result := v1;
               end;
           end;
@@ -1789,12 +2191,20 @@ begin
           3: begin
               v2 := v0.c3_0;
               v3 := v0.c3_1;
+              SpiralRetain(v1);
+              SpiralRetain(v2);
+              SpiralRetain(v2);
+              SpiralRetain(v3);
+              SpiralRelease(v0);
               v4 := alt_insert_sorted_27(v2, v1);
+              SpiralRelease(v1);
+              SpiralRelease(v2);
               v0 := v3;
               v1 := v4;
               Continue;
           end;
           0: begin
+              SpiralRelease(v0);
               Result := v1;
               Exit;
           end;
@@ -1828,21 +2238,36 @@ begin
           3: begin
               v24 := v0.c3_0;
               v25 := v0.c3_1;
+              SpiralRetain(v24);
+              SpiralRetain(v25);
+              SpiralRelease(v0);
               case v1.tag of
                   3: begin
                       v26 := v1.c3_0;
                       v27 := v1.c3_1;
+                      SpiralRetain(v24);
+                      SpiralRetain(v26);
+                      SpiralRetain(v26);
+                      SpiralRetain(v27);
+                      SpiralRelease(v1);
                       v28 := regex_equal_30(v24, v26);
+                      SpiralRelease(v24);
+                      SpiralRelease(v26);
                       if v28 then begin
                           v0 := v25;
                           v1 := v27;
                           Continue;
                       end else begin
+                          SpiralRelease(v25);
+                          SpiralRelease(v27);
                           Result := False;
                           Exit;
                       end;
                   end;
                   else begin
+                      SpiralRelease(v1);
+                      SpiralRelease(v24);
+                      SpiralRelease(v25);
                       Result := False;
                       Exit;
                   end;
@@ -1851,21 +2276,36 @@ begin
           4: begin
               v32 := v0.c4_0;
               v33 := v0.c4_1;
+              SpiralRetain(v32);
+              SpiralRetain(v33);
+              SpiralRelease(v0);
               case v1.tag of
                   4: begin
                       v34 := v1.c4_0;
                       v35 := v1.c4_1;
+                      SpiralRetain(v32);
+                      SpiralRetain(v34);
+                      SpiralRetain(v34);
+                      SpiralRetain(v35);
+                      SpiralRelease(v1);
                       v36 := regex_equal_30(v32, v34);
+                      SpiralRelease(v32);
+                      SpiralRelease(v34);
                       if v36 then begin
                           v0 := v33;
                           v1 := v35;
                           Continue;
                       end else begin
+                          SpiralRelease(v33);
+                          SpiralRelease(v35);
                           Result := False;
                           Exit;
                       end;
                   end;
                   else begin
+                      SpiralRelease(v1);
+                      SpiralRelease(v32);
+                      SpiralRelease(v33);
                       Result := False;
                       Exit;
                   end;
@@ -1873,9 +2313,11 @@ begin
           end;
           2: begin
               v4 := v0.c2_0;
+              SpiralRelease(v0);
               case v1.tag of
                   2: begin
                       v5 := v1.c2_0;
+                      SpiralRelease(v1);
                       case v4.tag of
                           0: begin
                               case v5.tag of
@@ -1931,30 +2373,37 @@ begin
                       end;
                   end;
                   else begin
+                      SpiralRelease(v1);
                       Result := False;
                       Exit;
                   end;
               end;
           end;
           0: begin
+              SpiralRelease(v0);
               case v1.tag of
                   0: begin
+                      SpiralRelease(v1);
                       Result := True;
                       Exit;
                   end;
                   else begin
+                      SpiralRelease(v1);
                       Result := False;
                       Exit;
                   end;
               end;
           end;
           1: begin
+              SpiralRelease(v0);
               case v1.tag of
                   1: begin
+                      SpiralRelease(v1);
                       Result := True;
                       Exit;
                   end;
                   else begin
+                      SpiralRelease(v1);
                       Result := False;
                       Exit;
                   end;
@@ -1962,14 +2411,20 @@ begin
           end;
           5: begin
               v40 := v0.c5_0;
+              SpiralRetain(v40);
+              SpiralRelease(v0);
               case v1.tag of
                   5: begin
                       v41 := v1.c5_0;
+                      SpiralRetain(v41);
+                      SpiralRelease(v1);
                       v0 := v40;
                       v1 := v41;
                       Continue;
                   end;
                   else begin
+                      SpiralRelease(v1);
+                      SpiralRelease(v40);
                       Result := False;
                       Exit;
                   end;
@@ -1989,21 +2444,27 @@ var
 begin
   case v0.tag of
       0: begin
+          SpiralRelease(v0);
+          SpiralRelease(v1);
           Result := UH8_RegexEmpty;
       end;
       else begin
           case v1.tag of
               0: begin
+                  SpiralRelease(v0);
+                  SpiralRelease(v1);
                   Result := UH8_RegexEmpty;
               end;
               else begin
                   case v0.tag of
                       1: begin
+                          SpiralRelease(v0);
                           Result := v1;
                       end;
                       else begin
                           case v1.tag of
                               1: begin
+                                  SpiralRelease(v1);
                                   Result := v0;
                               end;
                               else begin
@@ -2011,22 +2472,38 @@ begin
                                       4: begin
                                           v12 := v0.c4_0;
                                           v13 := v0.c4_1;
+                                          SpiralRetain(v1);
+                                          SpiralRetain(v12);
+                                          SpiralRetain(v13);
+                                          SpiralRetain(v13);
+                                          SpiralRelease(v0);
                                           v14 := make_cat_29(v13, v1);
+                                          SpiralRelease(v1);
+                                          SpiralRelease(v13);
                                           Result := UH8_RegexCat(v12, v14);
                                       end;
                                       5: begin
                                           v4 := v0.c5_0;
+                                          SpiralRetain(v4);
                                           case v1.tag of
                                               5: begin
                                                   v5 := v1.c5_0;
+                                                  SpiralRetain(v4);
+                                                  SpiralRetain(v5);
+                                                  SpiralRetain(v5);
                                                   v6 := regex_equal_30(v4, v5);
+                                                  SpiralRelease(v5);
                                                   if v6 then begin
+                                                      SpiralRelease(v0);
+                                                      SpiralRelease(v1);
                                                       Result := UH8_RegexStar(v4);
                                                   end else begin
+                                                      SpiralRelease(v4);
                                                       Result := UH8_RegexCat(v0, v1);
                                                   end;
                                               end;
                                               else begin
+                                                  SpiralRelease(v4);
                                                   Result := UH8_RegexCat(v0, v1);
                                               end;
                                           end;
@@ -2050,13 +2527,17 @@ var
 begin
   case v0.tag of
       0: begin
+          SpiralRelease(v0);
           Result := UH8_RegexEpsilon;
       end;
       1: begin
+          SpiralRelease(v0);
           Result := UH8_RegexEpsilon;
       end;
       5: begin
           v3 := v0.c5_0;
+          SpiralRetain(v3);
+          SpiralRelease(v0);
           Result := UH8_RegexStar(v3);
       end;
       else begin
@@ -2082,30 +2563,51 @@ begin
       3: begin
           v5 := v0.c3_0;
           v6 := v0.c3_1;
+          SpiralRetain(v5);
+          SpiralRetain(v5);
+          SpiralRetain(v6);
+          SpiralRelease(v0);
           v7 := normalize_25(v5);
+          SpiralRetain(v6);
+          SpiralRelease(v5);
           v8 := normalize_25(v6);
+          SpiralRelease(v6);
           Result := make_alt_26(v7, v8);
       end;
       4: begin
           v10 := v0.c4_0;
           v11 := v0.c4_1;
+          SpiralRetain(v10);
+          SpiralRetain(v10);
+          SpiralRetain(v11);
+          SpiralRelease(v0);
           v12 := normalize_25(v10);
+          SpiralRetain(v11);
+          SpiralRelease(v10);
           v13 := normalize_25(v11);
+          SpiralRelease(v11);
           Result := make_cat_29(v12, v13);
       end;
       2: begin
           v3 := v0.c2_0;
+          SpiralRelease(v0);
           Result := UH8_RegexChar(v3);
       end;
       0: begin
+          SpiralRelease(v0);
           Result := UH8_RegexEmpty;
       end;
       1: begin
+          SpiralRelease(v0);
           Result := UH8_RegexEpsilon;
       end;
       5: begin
           v15 := v0.c5_0;
+          SpiralRetain(v15);
+          SpiralRetain(v15);
+          SpiralRelease(v0);
           v16 := normalize_25(v15);
+          SpiralRelease(v15);
           Result := make_star_31(v16);
       end;
   end;
@@ -2127,8 +2629,15 @@ begin
       3: begin
           v5 := v0.c3_0;
           v6 := v0.c3_1;
+          SpiralRetain(v5);
+          SpiralRetain(v5);
+          SpiralRetain(v6);
+          SpiralRelease(v0);
           v7 := nullable_33(v5);
+          SpiralRetain(v6);
+          SpiralRelease(v5);
           v8 := nullable_33(v6);
+          SpiralRelease(v6);
           case v7.tag of
               0: begin
                   Result := US5_Nullable;
@@ -2156,8 +2665,15 @@ begin
       4: begin
           v16 := v0.c4_0;
           v17 := v0.c4_1;
+          SpiralRetain(v16);
+          SpiralRetain(v16);
+          SpiralRetain(v17);
+          SpiralRelease(v0);
           v18 := nullable_33(v16);
+          SpiralRetain(v17);
+          SpiralRelease(v16);
           v19 := nullable_33(v17);
+          SpiralRelease(v17);
           case v18.tag of
               0: begin
                   case v19.tag of
@@ -2176,16 +2692,20 @@ begin
       end;
       2: begin
           v3 := v0.c2_0;
+          SpiralRelease(v0);
           Result := US5_NonNullable;
       end;
       0: begin
+          SpiralRelease(v0);
           Result := US5_NonNullable;
       end;
       1: begin
+          SpiralRelease(v0);
           Result := US5_Nullable;
       end;
       5: begin
           v25 := v0.c5_0;
+          SpiralRelease(v0);
           Result := US5_Nullable;
       end;
   end;
@@ -2214,29 +2734,50 @@ begin
       3: begin
           v25 := v0.c3_0;
           v26 := v0.c3_1;
+          SpiralRetain(v25);
+          SpiralRetain(v25);
+          SpiralRetain(v26);
+          SpiralRelease(v0);
           v27 := derivative_32(v25, v1);
+          SpiralRetain(v26);
+          SpiralRelease(v25);
           v28 := derivative_32(v26, v1);
+          SpiralRelease(v26);
           Result := make_alt_26(v27, v28);
       end;
       4: begin
           v30 := v0.c4_0;
           v31 := v0.c4_1;
+          SpiralRetain(v30);
+          SpiralRetain(v30);
+          SpiralRetain(v31);
+          SpiralRelease(v0);
           v32 := nullable_33(v30);
           case v32.tag of
               1: begin
+                  SpiralRetain(v30);
                   v37 := derivative_32(v30, v1);
+                  SpiralRelease(v30);
                   Result := make_cat_29(v37, v31);
               end;
               0: begin
+                  SpiralRetain(v30);
                   v33 := derivative_32(v30, v1);
+                  SpiralRetain(v31);
+                  SpiralRetain(v33);
+                  SpiralRelease(v30);
                   v34 := make_cat_29(v33, v31);
+                  SpiralRetain(v31);
+                  SpiralRelease(v33);
                   v35 := derivative_32(v31, v1);
+                  SpiralRelease(v31);
                   Result := make_alt_26(v34, v35);
               end;
           end;
       end;
       2: begin
           v4 := v0.c2_0;
+          SpiralRelease(v0);
           case v4.tag of
               0: begin
                   case v1.tag of
@@ -2295,15 +2836,22 @@ begin
           end;
       end;
       0: begin
+          SpiralRelease(v0);
           Result := UH8_RegexEmpty;
       end;
       1: begin
+          SpiralRelease(v0);
           Result := UH8_RegexEmpty;
       end;
       5: begin
           v41 := v0.c5_0;
+          SpiralRetain(v41);
+          SpiralRetain(v41);
+          SpiralRelease(v0);
           v42 := derivative_32(v41, v1);
+          SpiralRetain(v41);
           v43 := make_star_31(v41);
+          SpiralRelease(v41);
           Result := make_cat_29(v42, v43);
       end;
   end;
@@ -2313,8 +2861,12 @@ var
   v2: TUH8;
   v3: TUH8;
 begin
+  SpiralRetain(v0);
   v2 := normalize_25(v0);
+  SpiralRetain(v2);
+  SpiralRelease(v0);
   v3 := derivative_32(v2, v1);
+  SpiralRelease(v2);
   Result := normalize_25(v3);
 end;
 function accepts_23(v0: TUH8; v1: TUH5): Boolean;
@@ -2330,14 +2882,23 @@ begin
           1: begin
               v6 := v1.c1_0;
               v7 := v1.c1_1;
+              SpiralRetain(v0);
+              SpiralRetain(v7);
+              SpiralRelease(v1);
               v8 := canonical_derivative_24(v0, v6);
+              SpiralRelease(v0);
               v0 := v8;
               v1 := v7;
               Continue;
           end;
           0: begin
+              SpiralRetain(v0);
+              SpiralRelease(v1);
               v2 := normalize_25(v0);
+              SpiralRetain(v2);
+              SpiralRelease(v0);
               v3 := nullable_33(v2);
+              SpiralRelease(v2);
               case v3.tag of
                   1: begin
                       Result := False;
@@ -2367,30 +2928,43 @@ begin
           1: begin
               v2 := v1.c1_0;
               v3 := v1.c1_1;
+              SpiralRetain(v2);
+              SpiralRetain(v3);
+              SpiralRelease(v1);
               v4 := 2;
+              SpiralRetain(v2);
               v5 := loop_22(v4, v2);
               case v5.tag of
                   0: begin
+                      SpiralRetain(v0);
+                      SpiralRetain(v2);
                       v11 := accepts_23(v0, v2);
                   end;
                   2: begin
                       v11 := False;
                   end;
                   1: begin
+                      SpiralRetain(v0);
+                      SpiralRetain(v2);
                       v7 := accepts_23(v0, v2);
                       v8 := v7 = False;
                       v11 := v8;
                   end;
               end;
+              SpiralRelease(v2);
               if v11 then begin
                   v1 := v3;
                   Continue;
               end else begin
+                  SpiralRelease(v0);
+                  SpiralRelease(v3);
                   Result := False;
                   Exit;
               end;
           end;
           0: begin
+              SpiralRelease(v0);
+              SpiralRelease(v1);
               Result := True;
               Exit;
           end;
@@ -2418,6 +2992,8 @@ begin
           1: begin
               v7 := v1.c1_0;
               v8 := v1.c1_1;
+              SpiralRetain(v8);
+              SpiralRelease(v1);
               case v7.tag of
                   0: begin
                       v11 := US4_SymbolSame;
@@ -2464,6 +3040,7 @@ begin
               end;
               v22 := v21 < 0;
               if v22 then begin
+                  SpiralRelease(v8);
                   Result := US3_InventoryDfaInputOutsideInventory;
                   Exit;
               end else begin
@@ -2484,6 +3061,7 @@ begin
               end;
           end;
           0: begin
+              SpiralRelease(v1);
               v2 := v0 = 0;
               v3 := v2 = False;
               if v3 then begin
@@ -2577,77 +3155,169 @@ begin
   v0 := US0_BitZero;
   v1 := US0_BitOne;
   v2 := UH0_SymbolListNil;
+  SpiralRetain(v2);
   v3 := UH0_SymbolListCons(v1, v2);
+  SpiralRetain(v3);
+  SpiralRelease(v2);
   v4 := UH0_SymbolListCons(v0, v3);
+  SpiralRetain(v4);
+  SpiralRelease(v3);
   v5 := input_singletons_from_symbols_0(v4);
+  SpiralRelease(v4);
   v6 := UH2_InputEmpty;
+  SpiralRetain(v5);
+  SpiralRetain(v6);
   v7 := UH1_InputListCons(v6, v5);
+  SpiralRelease(v5);
+  SpiralRelease(v6);
   v8 := US0_BitZero;
   v9 := US0_BitOne;
   v10 := UH0_SymbolListNil;
+  SpiralRetain(v10);
   v11 := UH0_SymbolListCons(v9, v10);
+  SpiralRetain(v11);
+  SpiralRelease(v10);
   v12 := UH0_SymbolListCons(v8, v11);
+  SpiralRelease(v11);
   v13 := US0_BitZero;
   v14 := US0_BitOne;
   v15 := UH0_SymbolListNil;
+  SpiralRetain(v15);
   v16 := UH0_SymbolListCons(v14, v15);
+  SpiralRetain(v16);
+  SpiralRelease(v15);
   v17 := UH0_SymbolListCons(v13, v16);
+  SpiralRetain(v17);
+  SpiralRelease(v16);
   v18 := input_singletons_from_symbols_0(v17);
+  SpiralRetain(v12);
+  SpiralRetain(v18);
+  SpiralRelease(v17);
   v19 := input_prepend_symbols_to_corpus_1(v12, v18);
+  SpiralRetain(v7);
+  SpiralRetain(v19);
+  SpiralRelease(v12);
+  SpiralRelease(v18);
   v20 := input_list_append_2(v7, v19);
+  SpiralRelease(v7);
+  SpiralRelease(v19);
   v21 := US1_TriA;
   v22 := US1_TriB;
   v23 := US1_TriC;
   v24 := UH3_SymbolListNil;
+  SpiralRetain(v24);
   v25 := UH3_SymbolListCons(v23, v24);
+  SpiralRetain(v25);
+  SpiralRelease(v24);
   v26 := UH3_SymbolListCons(v22, v25);
+  SpiralRetain(v26);
+  SpiralRelease(v25);
   v27 := UH3_SymbolListCons(v21, v26);
+  SpiralRetain(v27);
+  SpiralRelease(v26);
   v28 := input_singletons_from_symbols_4(v27);
+  SpiralRelease(v27);
   v29 := UH5_InputEmpty;
+  SpiralRetain(v28);
+  SpiralRetain(v29);
   v30 := UH4_InputListCons(v29, v28);
+  SpiralRelease(v28);
+  SpiralRelease(v29);
   v31 := US1_TriA;
   v32 := US1_TriB;
   v33 := US1_TriC;
   v34 := UH3_SymbolListNil;
+  SpiralRetain(v34);
   v35 := UH3_SymbolListCons(v33, v34);
+  SpiralRetain(v35);
+  SpiralRelease(v34);
   v36 := UH3_SymbolListCons(v32, v35);
+  SpiralRetain(v36);
+  SpiralRelease(v35);
   v37 := UH3_SymbolListCons(v31, v36);
+  SpiralRelease(v36);
   v38 := US1_TriA;
   v39 := US1_TriB;
   v40 := US1_TriC;
   v41 := UH3_SymbolListNil;
+  SpiralRetain(v41);
   v42 := UH3_SymbolListCons(v40, v41);
+  SpiralRetain(v42);
+  SpiralRelease(v41);
   v43 := UH3_SymbolListCons(v39, v42);
+  SpiralRetain(v43);
+  SpiralRelease(v42);
   v44 := UH3_SymbolListCons(v38, v43);
+  SpiralRetain(v44);
+  SpiralRelease(v43);
   v45 := input_singletons_from_symbols_4(v44);
+  SpiralRetain(v37);
+  SpiralRetain(v45);
+  SpiralRelease(v44);
   v46 := input_prepend_symbols_to_corpus_5(v37, v45);
+  SpiralRetain(v30);
+  SpiralRetain(v46);
+  SpiralRelease(v37);
+  SpiralRelease(v45);
   v47 := input_list_append_6(v30, v46);
+  SpiralRelease(v30);
+  SpiralRelease(v46);
   v48 := US2_ModelC;
   v49 := UH6_InputEmpty;
+  SpiralRetain(v49);
   v50 := UH6_InputCons(v48, v49);
+  SpiralRelease(v49);
   v51 := US0_BitZero;
   v52 := UH7_RegexChar(v51);
   v53 := US0_BitOne;
   v54 := UH7_RegexChar(v53);
+  SpiralRetain(v52);
+  SpiralRetain(v54);
   v55 := UH7_RegexAlt(v52, v54);
+  SpiralRetain(v55);
+  SpiralRelease(v52);
+  SpiralRelease(v54);
   v56 := UH7_RegexStar(v55);
+  SpiralRelease(v55);
   v57 := US0_BitZero;
   v58 := UH7_RegexChar(v57);
+  SpiralRetain(v56);
+  SpiralRetain(v58);
   v59 := UH7_RegexCat(v56, v58);
+  SpiralRetain(v20);
+  SpiralRetain(v59);
+  SpiralRelease(v56);
+  SpiralRelease(v58);
   v60 := loop_8(v59, v20);
+  SpiralRelease(v20);
+  SpiralRelease(v59);
   if v60 then begin
       v61 := US1_TriA;
       v62 := UH8_RegexChar(v61);
       v63 := US1_TriB;
       v64 := UH8_RegexChar(v63);
+      SpiralRetain(v62);
+      SpiralRetain(v64);
       v65 := UH8_RegexAlt(v62, v64);
+      SpiralRetain(v65);
+      SpiralRelease(v62);
+      SpiralRelease(v64);
       v66 := UH8_RegexStar(v65);
+      SpiralRelease(v65);
       v67 := US1_TriC;
       v68 := UH8_RegexChar(v67);
+      SpiralRetain(v66);
+      SpiralRetain(v68);
       v69 := UH8_RegexCat(v66, v68);
+      SpiralRetain(v47);
+      SpiralRetain(v69);
+      SpiralRelease(v66);
+      SpiralRelease(v68);
       v70 := loop_21(v69, v47);
+      SpiralRelease(v69);
       if v70 then begin
           v71 := 1;
+          SpiralRetain(v50);
           v72 := loop_34(v71, v50);
           case v72.tag of
               2: begin
@@ -2663,6 +3333,8 @@ begin
   end else begin
       v75 := False;
   end;
+  SpiralRelease(v47);
+  SpiralRelease(v50);
   if v75 then begin
       Result := 0;
   end else begin
@@ -2670,8 +3342,21 @@ begin
   end;
 end;
 var SpiralOutputBuffer: array[0..65535] of Char;
+var SpiralExitCode: LongInt;
 begin
   SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);
-  Halt(SpiralMain);
+  SpiralExitCode := SpiralMain;
+  if UH0_SymbolListNil_shared <> nil then UH0_SymbolListNil_shared.Free;
+  if UH2_InputEmpty_shared <> nil then UH2_InputEmpty_shared.Free;
+  if UH1_InputListNil_shared <> nil then UH1_InputListNil_shared.Free;
+  if UH3_SymbolListNil_shared <> nil then UH3_SymbolListNil_shared.Free;
+  if UH5_InputEmpty_shared <> nil then UH5_InputEmpty_shared.Free;
+  if UH4_InputListNil_shared <> nil then UH4_InputListNil_shared.Free;
+  if UH6_InputEmpty_shared <> nil then UH6_InputEmpty_shared.Free;
+  if UH7_RegexEmpty_shared <> nil then UH7_RegexEmpty_shared.Free;
+  if UH7_RegexEpsilon_shared <> nil then UH7_RegexEpsilon_shared.Free;
+  if UH8_RegexEmpty_shared <> nil then UH8_RegexEmpty_shared.Free;
+  if UH8_RegexEpsilon_shared <> nil then UH8_RegexEpsilon_shared.Free;
+  Halt(SpiralExitCode);
 end.

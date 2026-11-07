@@ -11,7 +11,7 @@
         Lean = \ () => 0i32
         TypeScript = \ () => 0i32
         C = \ () => 0i32
-        Delphi = \ () => 0i32
+        Pascal = \ () => 0i32
         Wasm = \ () => 0i32
         Kotlin = \ () => 0i32
         Swift = \ () => 0i32

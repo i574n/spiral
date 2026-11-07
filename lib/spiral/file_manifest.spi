@@ -13,7 +13,7 @@
     | Removed : string
 
 :~ child_names (dir : string) : list string =
-    file_system::read_dir_names dir
+    file_system::read_directory_names dir
     |> resultm::unwrap'
     |> am'::vec_fold' (\ names name => sm'::from_std_string name :: names) []
 
@@ -114,7 +114,7 @@
 
 ///> rust -d chrono regex sha2
 :# a_tree_lists_sorted_relative_files_and_skips_named_directories =
-    := temp_dir, disposable = "file_manifest_walk" |> crypto::hash_text |> file_system::create_temp_dir'
+    := temp_dir, disposable = "file_manifest_walk" |> crypto::hash_text |> file_system::create_temp_directory'
     disposable |> use |> ignore
     file_system::create_dir_all (temp_dir </> "sub") |> resultm::unwrap'
     file_system::create_dir_all (temp_dir </> "target") |> resultm::unwrap'

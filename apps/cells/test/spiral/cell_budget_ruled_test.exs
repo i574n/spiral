@@ -94,4 +94,24 @@ defmodule Spiral.CellBudgetRuledTest do
     block = ":# a_test =\n    testing.expect !+ \"x\""
     assert ruled(block) == w(block)
   end
+
+  test "classify separates code from data, templates, types and tests" do
+    assert CellBudgetRuled.classify(":= g (x : i32) : i32 = x + 1") == :code
+    assert CellBudgetRuled.classify(":= limits () : config = { low = 1; high = 2 }") == :data
+    assert CellBudgetRuled.classify(":= header () : string =\n    \"use x;\"\n    ++# \"fn main() {}\"") == :template
+    assert CellBudgetRuled.classify(":| color =\n    | Red\n    | Green") == :type
+    assert CellBudgetRuled.classify("///> c\n:# a_test =\n    testing.expect !+ \"x\"") == :test
+  end
+
+  test "the granular line reports code-only over-budget share beside the exempt rows" do
+    kinds = [{:code, true}, {:code, false}, {:code, false}, {:code, false}, {:data, false}, {:template, false}, {:test, true}]
+
+    assert CellBudgetRuled.kinds_line(kinds) ==
+             "cell-budget granular: code 4 (over 1, 25.0%), data 1, template 1, type 0, test 1"
+  end
+
+  test "kinds pairs each top-level block with its class and whether it is over" do
+    source = ":| color =\n    | Red\n\n:= g (x : i32) : i32 = x + 1\n\n:# a_test =\n    testing.expect !+ \"x\"\n"
+    assert CellBudgetRuled.kinds(source) == [{:type, false}, {:code, false}, {:test, false}]
+  end
 end

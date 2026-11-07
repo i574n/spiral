@@ -27,6 +27,29 @@ defmodule Spiral.Cells.DisplayTest do
              Display.extract("x\nSPIRAL_CELLS_DISPLAY_BEGIN\ntext/html\nhalf")
   end
 
+  test "a printed plot json block becomes an svg plot; a failed render stays visible as text" do
+    json = ~s(["c", "x", "y", [["s", [1.0, 2.0], [3.0, 4.0]]]])
+    stdout = "a\nSPIRAL_CELLS_DISPLAY_BEGIN\napplication/vnd.spiral.plot+json\n#{json}\nSPIRAL_CELLS_DISPLAY_END\nb\n"
+    {displays, kept} = Display.extract(stdout)
+    assert kept == "a\nb\n"
+    assert [%{mime: "image/svg+xml", data: "<svg>" <> _}] = Display.render_values(displays, render_plot: &fake_svg/1)
+
+    failed = Display.render_values(displays, render_plot: fn _ -> {:error, "no plot tool"} end)
+    assert [%{mime: "text/plain", data: "plot not rendered: no plot tool"}] = failed
+    assert [%{mime: "text/html", data: "<b/>"}] = Display.render_values([%{mime: "text/html", data: "<b/>"}], [])
+  end
+
+  test "plot frames become one animated svg; an empty frame list stays visible as text" do
+    frame = ~s(["wave", "x", "y", [["0", [0.0, 1.0], [0.0, 0.5]]]])
+    frames = %{mime: "application/vnd.spiral.plot-frames+json", data: "[#{frame}, #{frame}]"}
+    assert [%{mime: "image/svg+xml", data: svg}] = Display.render_values([frames], render_plot: &fake_svg/1)
+    assert length(String.split(svg, "<animate ")) == 3
+    assert svg =~ ~s(keyTimes="0;0.5000;1.0000")
+
+    empty = %{mime: "application/vnd.spiral.plot-frames+json", data: "[]"}
+    assert [%{mime: "text/plain", data: "plot frames not rendered: no frames"}] = Display.render_values([empty], [])
+  end
+
   test "Rust Debug values parse into terms" do
     assert {:ok, {:tuple, ["a\"b\n", 1, -2.5, [1.0e-7, 150.0]]}} =
              Display.parse_debug(~S|("a\"b\n", 1, -2.5, [1e-7, 1.5e2])|)

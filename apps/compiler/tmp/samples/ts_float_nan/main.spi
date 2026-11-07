@@ -5,7 +5,7 @@
         Fsharp = \ () => $"nanf" : f32
         C = \ () => $"nanf(\"\")" : f32
         Rust = \ () => $"f32::NAN" : f32
-        Delphi = \ () => $"NaN" : f32
+        Pascal = \ () => $"NaN" : f32
         TypeScript = \ () => $"NaN" : f32
         CppHost = \ () => $"nanf(\"\")" : f32
         Python = \ () => $"float('nan')" : f32
@@ -18,7 +18,7 @@
         Fsharp = \ () => $"nan" : f64
         C = \ () => $"nan(\"\")" : f64
         Rust = \ () => $"f64::NAN" : f64
-        Delphi = \ () => $"NaN" : f64
+        Pascal = \ () => $"NaN" : f64
         TypeScript = \ () => $"NaN" : f64
         CppHost = \ () => $"nan(\"\")" : f64
         Python = \ () => $"float('nan')" : f64

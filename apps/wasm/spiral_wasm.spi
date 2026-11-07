@@ -35,7 +35,7 @@
     )
 
 /// ### run
-:~ ^ run
+:~ run
     (matches : clap.arg_matches)
     : async.future_pin (
         resultm.result'
@@ -195,14 +195,14 @@
 
     ?= result |> rust.clone_rust |> resultm.unbox, exception ?|
     | Ok retries, Some exception =>
-        ($'$"spiral_wasm.main / retries: {!retries} / exception: \'{!exception}\'"' : string)
+        "spiral_wasm.main / retries: " ++# sm'.format retries ++# " / exception: '" ++# exception ++# "'"
         |> resultm.err |> resultm.unwrap'
     | Error _error, Some ("") =>
         ()
     | Error error, Some exception ?& error |> sm'.from_std_string |> sm'.contains exception =>
         ()
     | Error error, Some exception =>
-        ($'$"spiral_wasm.main / exception: \'{!exception}\' / error: {!error}"' : string)
+        "spiral_wasm.main / exception: '" ++# exception ++# "' / error: " ++# sm'.from_std_string error
         |> resultm.err |> resultm.unwrap'
     | Ok _retries, _ =>
         ()
@@ -219,8 +219,6 @@
     backend_switch {
         Fsharp = \ () => $'let main args = !run_main args' : ()
         Rust = \ () =>
-            := args =
-                $'Rc::new(RefCell::new(std::env::args().skip(1).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'
-                : array_base string
+            := args : array_base string = am'.init_base (env.command_line_argument_count ()) env.command_line_argument
             run_main args |> ignore
     } : ()

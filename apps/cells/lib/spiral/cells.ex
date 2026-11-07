@@ -369,6 +369,7 @@ defmodule Spiral.Cells do
                end) do
             {:ok, %{stdout: stdout} = ran} ->
               {displays, stdout} = Display.extract(stdout)
+              displays = Display.render_values(displays, opts)
 
               {:ok,
                chunk(
@@ -451,6 +452,7 @@ defmodule Spiral.Cells do
          {:ok, ran} <- timed(:run_ms, fn -> execute(exe, opts, timeout, deadline) end) do
       {value, stdout} = Cell.split_output(ran.output)
       {displays, stdout} = Display.extract(stdout)
+      displays = Display.render_values(displays, opts)
       {value, value_displays} = Display.from_value(value, opts)
 
       {:ok,
@@ -1056,7 +1058,7 @@ defmodule Spiral.Cells do
       if imports == [] do
         text
       else
-        String.replace(text, "    |core-\n", "    |core-\n" <> Enum.map_join(imports, "", &("    " <> &1 <> "\n")), global: false)
+        String.replace(text, "modules:\n", Enum.map_join(imports, "", &("    " <> &1 <> "\n")) <> "modules:\n", global: false)
       end
 
     if package_dir do

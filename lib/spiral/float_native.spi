@@ -100,7 +100,7 @@
     := comma = float_text::position_of ',' s 0i32
     ? comma < 0i32 ?> s
     |:
-        := after = float_text::text_length s - comma - 1i32
+        := after = float_text::text_count s - comma - 1i32
         := before = float_text::part s 0i32 comma
         float_text::concat before (float_text::concat "." (float_text::part s (comma + 1i32) after))
 

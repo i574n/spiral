@@ -13,36 +13,59 @@
     | x :: rest => x = target || has_string target rest
     | [] => !-
 
-:= merge \* form. (more : xsd_schema form) (into : xsd_schema form) : xsd_schema form =
-    := target = ? namespace_text into::target_namespace = "" ?> more::target_namespace |: into::target_namespace
+:= resolve_merged_target \* form. (more : xsd_schema form) (into : xsd_schema form) : namespace_uri =
+    ? namespace_text into::target_namespace = "" ?> more::target_namespace |: into::target_namespace
+
+:= resolve_merged_types \* form. (more : xsd_schema form) (into : xsd_schema form) : xsd_schema form =
     {
         into ?|
-            target_namespace = target
             simple_types = listm::append more::simple_types into::simple_types
             complex_types = listm::append more::complex_types into::complex_types
+    }
+
+:= merge \* form. (more : xsd_schema form) (into : xsd_schema form) : xsd_schema form =
+    := target = resolve_merged_target more into
+    := typed = resolve_merged_types more into
+    {
+        typed ?|
+            target_namespace = target
             elements = listm::append more::elements into::elements
     }
 
 :== schema_catalog = list (string * string)
 
+:= resolve_catalog_prefixed (key : string) (local : string) (location : string) : string =
+    local ++# sm'::substring (sm'::length key) (sm'::length location - sm'::length key) location
+
+:= resolve_parent_tail (path : string) (marker : i32) : string =
+    sm'::substring (marker + 4i32) (sm'::length path - marker - 4i32) path
+
+:= resolve_parent_blocked (path : string) (slash : i32) (marker : i32) : bool =
+    slash < 0i32 || sm'::substring (slash + 1i32) (marker - slash - 1i32) path = ".."
+
 :~ ^ catalog_location (catalog : schema_catalog) (location : string) : option string =
     ?= catalog ?|
-    | (key, local) :: rest =>
-        ? key = location ?> Some local
-        |? sm'::ends_with "/" key && sm'::starts_with key location ?>
-            Some (local ++# sm'::substring (sm'::length key) (sm'::length location - sm'::length key) location)
-        |: catalog_location rest location
+    | (key, local) :: rest => resolve_catalog_entry key local rest location
     | [] => None
+
+:& :~ resolve_catalog_entry
+    (key : string) (local : string) (rest : schema_catalog) (location : string)
+    : option string
+    =
+    ? key = location ?> Some local
+    |? sm'::ends_with "/" key && sm'::starts_with key location ?> Some (resolve_catalog_prefixed key local location)
+    |: catalog_location rest location
 
 :~ ^ without_parent_steps (path : string) : string =
     := marker = sm'::index_of "/../" path
-    ? marker <= 0i32 ?> path
-    |:
-        := head = sm'::substring 0i32 marker path
-        := slash = sm'::last_index_of "/" head
-        := tail = sm'::substring (marker + 4i32) (sm'::length path - marker - 4i32) path
-        ? slash < 0i32 || sm'::substring (slash + 1i32) (marker - slash - 1i32) path = ".." ?> path
-        |: without_parent_steps (sm'::substring 0i32 (slash + 1i32) head ++# tail)
+    ? marker <= 0i32 ?> path |: resolve_parent_step path marker
+
+:& :~ resolve_parent_step (path : string) (marker : i32) : string =
+    := head = sm'::substring 0i32 marker path
+    := slash = sm'::last_index_of "/" head
+    := tail = resolve_parent_tail path marker
+    ? resolve_parent_blocked path slash marker ?> path
+    |: without_parent_steps (sm'::substring 0i32 (slash + 1i32) head ++# tail)
 
 := resolved_location (catalog : schema_catalog) (directory : string) (location : string) : string =
     ?= catalog_location catalog location ?|

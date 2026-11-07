@@ -72,7 +72,7 @@
         Gleam = fun () => $"case string.to_utf_codepoints(!value) { [spiral_byte_codepoint] -> \
             string.utf_codepoint_to_int(spiral_byte_codepoint) _ -> 0 }" : i32
         TypeScript = \ () => $"!value" : i32
-        Delphi = \ () => $"Ord(!value)" : i32
+        Pascal = \ () => $"Ord(!value)" : i32
         Kotlin = \ () => $"(!value and 255)" : i32
         Swift = \ () => $"(!value & 255)" : i32
         Python = \ () => $"ord(!value)" : i32

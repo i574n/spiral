@@ -93,12 +93,12 @@
 := ask_i32 (subject : self_inbox) : i32 =
     call subject 10000i32 \ (reply_to : i32_inbox) => reply_to
 
-:= length_reply (items : array i32) (reply_to : i32_inbox) : next (array i32) i32_inbox =
+:= count_reply (items : array i32) (reply_to : i32_inbox) : next (array i32) i32_inbox =
     erlang_process::send reply_to (length items : i32)
     continue items
 
 := array_actor () =
-    new_with_init 10000i32 (\ () => ;[ 4i32; 5; 6 ]) |> on_message length_reply |> start |> started_data
+    new_with_init 10000i32 (\ () => ;[ 4i32; 5; 6 ]) |> on_message count_reply |> start |> started_data
 
 ///> gleam
 :# array_state_is_built_inside_the_actor =

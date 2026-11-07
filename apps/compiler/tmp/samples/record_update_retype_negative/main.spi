@@ -1,0 +1,3 @@
+:= changed (r : { x : i32; y : i32 }) = { r ?| x = "text" }
+
+:= main () : i32 = 0i32

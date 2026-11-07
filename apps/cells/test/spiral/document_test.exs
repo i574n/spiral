@@ -550,7 +550,7 @@ defmodule Spiral.Cells.DocumentTest do
 
     spi = Document.to_spi(contract)
     assert spi =~ "///- --package ../dice"
-    assert spi =~ "lib.dice.rotate_numbers 6"
+    assert spi =~ "lib.dice.roll_within_bounds max"
     refute spi =~ "_assert_eq"
     refute spi =~ "///> rust"
 

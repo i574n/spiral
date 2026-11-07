@@ -1469,7 +1469,7 @@
     )
 
 /// ### run
-:~ ^ run trace_level (matches : clap.arg_matches) : async.future_pin (resultm.result' string string) =
+:~ run trace_level (matches : clap.arg_matches) : async.future_pin (resultm.result' string string) =
     \ () =>
         ?= matches |> clap.matches_subcommand |> optionm'.unbox ?|
         | Some (subcommand, arg_matches)

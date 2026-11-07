@@ -96,12 +96,10 @@ pub fn random_bit_input_1(v0: Int, v1: Int, v2: Uh1) -> #(Uh1, Int) {
             let v13 =
                 case v10 {
                     True -> {
-                        let v11 = Us0BitZero
-                        v11
+                        Us0BitZero
                     }
                     False -> {
-                        let v12 = Us0BitOne
-                        v12
+                        Us0BitOne
                     }
                 }
             let v14 = Uh1InputCons(v13, v2)
@@ -486,14 +484,12 @@ pub fn loop_0(v0: Uh0, v1: Int, v2: Int, v3: Int, v4: Int) -> Int {
     let v5 = 0 < v2
     case v5 {
         True -> {
-            let v6 = Uh1InputEmpty
-            let #(v7, v8) = random_bit_input_1(v3, v1, v6)
+            let #(v7, v8) = random_bit_input_1(v3, v1, Uh1InputEmpty)
             let v9 = accepts_2(v0, v7)
             let v11 =
                 case v9 {
                     True -> {
-                        let v10 = spiral_wrap_signed(v4 + 1, 32)
-                        v10
+                        spiral_wrap_signed(v4 + 1, 32)
                     }
                     False -> v4
                 }
@@ -508,8 +504,7 @@ pub fn zeros_input_14(v0: Int, v1: Uh1) -> Uh1 {
     case v2 {
         True -> {
             let v3 = spiral_wrap_signed(v0 - 1, 32)
-            let v4 = Us0BitZero
-            let v5 = Uh1InputCons(v4, v1)
+            let v5 = Uh1InputCons(Us0BitZero, v1)
             zeros_input_14(v3, v5)
         }
         False -> v1
@@ -520,27 +515,22 @@ pub fn loop_13(v0: Uh0, v1: Int, v2: Int, v3: Int) -> Int {
     case v4 {
         True -> v3
         False -> {
-            let v5 = Uh1InputEmpty
-            let v6 = zeros_input_14(v2, v5)
+            let v6 = zeros_input_14(v2, Uh1InputEmpty)
             let v7 = accepts_2(v0, v6)
             let v9 =
                 case v7 {
                     True -> {
-                        let v8 = spiral_wrap_signed(v3 + 1, 32)
-                        v8
+                        spiral_wrap_signed(v3 + 1, 32)
                     }
                     False -> v3
                 }
-            let v10 = Us0BitOne
-            let v11 = Uh1InputEmpty
-            let v12 = Uh1InputCons(v10, v11)
+            let v12 = Uh1InputCons(Us0BitOne, Uh1InputEmpty)
             let v13 = zeros_input_14(v2, v12)
             let v14 = accepts_2(v0, v13)
             let v16 =
                 case v14 {
                     True -> {
-                        let v15 = spiral_wrap_signed(v9 + 1, 32)
-                        v15
+                        spiral_wrap_signed(v9 + 1, 32)
                     }
                     False -> v9
                 }
@@ -624,16 +614,13 @@ pub fn loop_15(v0: Uh0, v1: Int, v2: Int, v3: Int, v4: Int) -> Int {
     let v5 = 0 < v2
     case v5 {
         True -> {
-            let v6 = Uh1InputEmpty
-            let #(v7, v8) = random_bit_input_1(v3, v1, v6)
-            let v9 = Uh2RegexListNil
-            let v10 = Uh2RegexListCons(v0, v9)
+            let #(v7, v8) = random_bit_input_1(v3, v1, Uh1InputEmpty)
+            let v10 = Uh2RegexListCons(v0, Uh2RegexListNil)
             let v11 = backtrack_stack_16(v10, v7)
             let v13 =
                 case v11 {
                     True -> {
-                        let v12 = spiral_wrap_signed(v4 + 1, 32)
-                        v12
+                        spiral_wrap_signed(v4 + 1, 32)
                     }
                     False -> v4
                 }
@@ -648,31 +635,24 @@ pub fn loop_17(v0: Uh0, v1: Int, v2: Int, v3: Int) -> Int {
     case v4 {
         True -> v3
         False -> {
-            let v5 = Uh1InputEmpty
-            let v6 = zeros_input_14(v2, v5)
-            let v7 = Uh2RegexListNil
-            let v8 = Uh2RegexListCons(v0, v7)
+            let v6 = zeros_input_14(v2, Uh1InputEmpty)
+            let v8 = Uh2RegexListCons(v0, Uh2RegexListNil)
             let v9 = backtrack_stack_16(v8, v6)
             let v11 =
                 case v9 {
                     True -> {
-                        let v10 = spiral_wrap_signed(v3 + 1, 32)
-                        v10
+                        spiral_wrap_signed(v3 + 1, 32)
                     }
                     False -> v3
                 }
-            let v12 = Us0BitOne
-            let v13 = Uh1InputEmpty
-            let v14 = Uh1InputCons(v12, v13)
+            let v14 = Uh1InputCons(Us0BitOne, Uh1InputEmpty)
             let v15 = zeros_input_14(v2, v14)
-            let v16 = Uh2RegexListNil
-            let v17 = Uh2RegexListCons(v0, v16)
+            let v17 = Uh2RegexListCons(v0, Uh2RegexListNil)
             let v18 = backtrack_stack_16(v17, v15)
             let v20 =
                 case v18 {
                     True -> {
-                        let v19 = spiral_wrap_signed(v11 + 1, 32)
-                        v19
+                        spiral_wrap_signed(v11 + 1, 32)
                     }
                     False -> v11
                 }
@@ -686,18 +666,15 @@ pub fn run_19(v0: Int, v1: Uh1) -> Bool {
         Uh1InputCons(v3, v4) -> {
             case v3  {
                 Us0BitOne -> {
-                    let v9 = 0
-                    run_19(v9, v4)
+                    run_19(0, v4)
                 }
                 Us0BitZero -> {
-                    let v6 = 1
-                    run_19(v6, v4)
+                    run_19(1, v4)
                 }
             }
         }
         Uh1InputEmpty -> {
-            let v2 = v0 == 1
-            v2
+            v0 == 1
         }
     }
 }
@@ -705,15 +682,12 @@ pub fn loop_18(v0: Int, v1: Int, v2: Int, v3: Int) -> Int {
     let v4 = 0 < v1
     case v4 {
         True -> {
-            let v5 = Uh1InputEmpty
-            let #(v6, v7) = random_bit_input_1(v2, v0, v5)
-            let v8 = 0
-            let v9 = run_19(v8, v6)
+            let #(v6, v7) = random_bit_input_1(v2, v0, Uh1InputEmpty)
+            let v9 = run_19(0, v6)
             let v11 =
                 case v9 {
                     True -> {
-                        let v10 = spiral_wrap_signed(v3 + 1, 32)
-                        v10
+                        spiral_wrap_signed(v3 + 1, 32)
                     }
                     False -> v3
                 }
@@ -944,8 +918,7 @@ pub fn run_21(v0: Int, v1: Uh1) -> Bool {
                                                             case v8 {
                                                                 True -> True
                                                                 False -> {
-                                                                    let v9 = v0 == 15
-                                                                    v9
+                                                                    v0 == 15
                                                                 }
                                                             }
                                                         }
@@ -967,15 +940,12 @@ pub fn loop_20(v0: Int, v1: Int, v2: Int, v3: Int) -> Int {
     let v4 = 0 < v1
     case v4 {
         True -> {
-            let v5 = Uh1InputEmpty
-            let #(v6, v7) = random_bit_input_1(v2, v0, v5)
-            let v8 = 0
-            let v9 = run_21(v8, v6)
+            let #(v6, v7) = random_bit_input_1(v2, v0, Uh1InputEmpty)
+            let v9 = run_21(0, v6)
             let v11 =
                 case v9 {
                     True -> {
-                        let v10 = spiral_wrap_signed(v3 + 1, 32)
-                        v10
+                        spiral_wrap_signed(v3 + 1, 32)
                     }
                     False -> v3
                 }
@@ -1034,8 +1004,7 @@ pub fn run_23(v0: Int, v1: Uh1) -> Bool {
             }
         }
         Uh1InputEmpty -> {
-            let v2 = v0 == 3
-            v2
+            v0 == 3
         }
     }
 }
@@ -1044,29 +1013,22 @@ pub fn loop_22(v0: Int, v1: Int, v2: Int) -> Int {
     case v3 {
         True -> v2
         False -> {
-            let v4 = Uh1InputEmpty
-            let v5 = zeros_input_14(v1, v4)
-            let v6 = 0
-            let v7 = run_23(v6, v5)
+            let v5 = zeros_input_14(v1, Uh1InputEmpty)
+            let v7 = run_23(0, v5)
             let v9 =
                 case v7 {
                     True -> {
-                        let v8 = spiral_wrap_signed(v2 + 1, 32)
-                        v8
+                        spiral_wrap_signed(v2 + 1, 32)
                     }
                     False -> v2
                 }
-            let v10 = Us0BitOne
-            let v11 = Uh1InputEmpty
-            let v12 = Uh1InputCons(v10, v11)
+            let v12 = Uh1InputCons(Us0BitOne, Uh1InputEmpty)
             let v13 = zeros_input_14(v1, v12)
-            let v14 = 0
-            let v15 = run_23(v14, v13)
+            let v15 = run_23(0, v13)
             let v17 =
                 case v15 {
                     True -> {
-                        let v16 = spiral_wrap_signed(v9 + 1, 32)
-                        v16
+                        spiral_wrap_signed(v9 + 1, 32)
                     }
                     False -> v9
                 }
@@ -1127,8 +1089,7 @@ pub fn probe_27(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int)
                                                     True -> True
                                                     False -> {
                                                         let v20 = spiral_array_get(v3, v9)
-                                                        let v21 = v20 == 1
-                                                        v21
+                                                        v20 == 1
                                                     }
                                                 }
                                             }
@@ -1141,8 +1102,7 @@ pub fn probe_27(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int)
                                                         case v25 {
                                                             True -> {
                                                                 let v26 = spiral_array_get(v3, v9)
-                                                                let v27 = v26 == 1
-                                                                v27
+                                                                v26 == 1
                                                             }
                                                             False -> False
                                                         }
@@ -1177,8 +1137,7 @@ pub fn probe_27(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int)
                 case v39 {
                     True -> {
                         let v40 = spiral_array_get(v1, v37)
-                        let v41 = v40 == v8
-                        v41
+                        v40 == v8
                     }
                     False -> False
                 }
@@ -1186,8 +1145,7 @@ pub fn probe_27(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int)
                 case v42 {
                     True -> {
                         let v43 = spiral_array_get(v2, v37)
-                        let v44 = v43 == v9
-                        v44
+                        v43 == v9
                     }
                     False -> False
                 }
@@ -1223,18 +1181,16 @@ pub fn interned_alt_insert_30(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: Sp
                     let v13 = v7 < v12
                     case v13 {
                         True -> {
-                            let v14 = 3
-                            interned_node_26(v0, v1, v2, v3, v4, v5, v6, v14, v7, v8)
+                            interned_node_26(v0, v1, v2, v3, v4, v5, v6, 3, v7, v8)
                         }
                         False -> {
                             let v16 = v7 == v12
                             case v16 {
                                 True -> v8
                                 False -> {
-                                    let v17 = 3
                                     let v18 = spiral_array_get(v2, v8)
                                     let v19 = interned_alt_insert_30(v0, v1, v2, v3, v4, v5, v6, v7, v18)
-                                    interned_node_26(v0, v1, v2, v3, v4, v5, v6, v17, v12, v19)
+                                    interned_node_26(v0, v1, v2, v3, v4, v5, v6, 3, v12, v19)
                                 }
                             }
                         }
@@ -1244,16 +1200,14 @@ pub fn interned_alt_insert_30(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: Sp
                     let v23 = v7 < v8
                     case v23 {
                         True -> {
-                            let v24 = 3
-                            interned_node_26(v0, v1, v2, v3, v4, v5, v6, v24, v7, v8)
+                            interned_node_26(v0, v1, v2, v3, v4, v5, v6, 3, v7, v8)
                         }
                         False -> {
                             let v26 = v7 == v8
                             case v26 {
                                 True -> v8
                                 False -> {
-                                    let v27 = 3
-                                    interned_node_26(v0, v1, v2, v3, v4, v5, v6, v27, v8, v7)
+                                    interned_node_26(v0, v1, v2, v3, v4, v5, v6, 3, v8, v7)
                                 }
                             }
                         }
@@ -1305,8 +1259,7 @@ pub fn interned_make_cat_31(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: Spir
                                         case v14 {
                                             True -> {
                                                 let v15 = spiral_array_get(v0, v8)
-                                                let v16 = v15 == 5
-                                                v16
+                                                v15 == 5
                                             }
                                             False -> False
                                         }
@@ -1318,8 +1271,7 @@ pub fn interned_make_cat_31(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: Spir
                                             case v20 {
                                                 True -> v7
                                                 False -> {
-                                                    let v21 = 4
-                                                    interned_node_26(v0, v1, v2, v3, v4, v5, v6, v21, v7, v8)
+                                                    interned_node_26(v0, v1, v2, v3, v4, v5, v6, 4, v7, v8)
                                                 }
                                             }
                                         }
@@ -1328,15 +1280,13 @@ pub fn interned_make_cat_31(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: Spir
                                             let v25 = v24 == 4
                                             case v25 {
                                                 True -> {
-                                                    let v26 = 4
                                                     let v27 = spiral_array_get(v1, v7)
                                                     let v28 = spiral_array_get(v2, v7)
                                                     let v29 = interned_make_cat_31(v0, v1, v2, v3, v4, v5, v6, v28, v8)
-                                                    interned_node_26(v0, v1, v2, v3, v4, v5, v6, v26, v27, v29)
+                                                    interned_node_26(v0, v1, v2, v3, v4, v5, v6, 4, v27, v29)
                                                 }
                                                 False -> {
-                                                    let v31 = 4
-                                                    interned_node_26(v0, v1, v2, v3, v4, v5, v6, v31, v7, v8)
+                                                    interned_node_26(v0, v1, v2, v3, v4, v5, v6, 4, v7, v8)
                                                 }
                                             }
                                         }
@@ -1363,14 +1313,12 @@ pub fn interned_of_regex_raw_28(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: 
             interned_make_cat_31(v0, v1, v2, v3, v4, v5, v6, v21, v22)
         }
         Uh0RegexChar(v8) -> {
-            let v9 = 2
             let v11 =
                 case v8  {
                     Us0BitOne -> 1
                     Us0BitZero -> 0
                 }
-            let v12 = 0
-            interned_node_26(v0, v1, v2, v3, v4, v5, v6, v9, v11, v12)
+            interned_node_26(v0, v1, v2, v3, v4, v5, v6, 2, v11, 0)
         }
         Uh0RegexEmpty -> 0
         Uh0RegexEpsilon -> 1
@@ -1385,9 +1333,7 @@ pub fn interned_of_regex_raw_28(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: 
                     case v28 {
                         True -> v25
                         False -> {
-                            let v29 = 5
-                            let v30 = 0
-                            interned_node_26(v0, v1, v2, v3, v4, v5, v6, v29, v25, v30)
+                            interned_node_26(v0, v1, v2, v3, v4, v5, v6, 5, v25, 0)
                         }
                     }
                 }
@@ -1463,8 +1409,7 @@ pub fn interned_derivative_raw_35(v0: SpiralArray(Int), v1: SpiralArray(Int), v2
             v41
         }
         False -> {
-            let v43 = spiral_wrap_signed(v11 - 1, 32)
-            v43
+            spiral_wrap_signed(v11 - 1, 32)
         }
     }
 }
@@ -1485,8 +1430,7 @@ pub fn loop_34(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int),
                 }
                 Uh1InputEmpty -> {
                     let v10 = spiral_array_get(v3, v7)
-                    let v11 = v10 == 1
-                    v11
+                    v10 == 1
                 }
             }
         }
@@ -1499,14 +1443,12 @@ pub fn loop_32(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int),
     let v12 = 0 < v9
     case v12 {
         True -> {
-            let v13 = Uh1InputEmpty
-            let #(v14, v15) = random_bit_input_1(v10, v7, v13)
+            let #(v14, v15) = random_bit_input_1(v10, v7, Uh1InputEmpty)
             let v16 = interned_accepts_33(v0, v1, v2, v3, v4, v5, v6, v8, v14)
             let v18 =
                 case v16 {
                     True -> {
-                        let v17 = spiral_wrap_signed(v11 + 1, 32)
-                        v17
+                        spiral_wrap_signed(v11 + 1, 32)
                     }
                     False -> v11
                 }
@@ -1521,27 +1463,22 @@ pub fn loop_36(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int),
     case v11 {
         True -> v10
         False -> {
-            let v12 = Uh1InputEmpty
-            let v13 = zeros_input_14(v9, v12)
+            let v13 = zeros_input_14(v9, Uh1InputEmpty)
             let v14 = interned_accepts_33(v0, v1, v2, v3, v4, v5, v6, v8, v13)
             let v16 =
                 case v14 {
                     True -> {
-                        let v15 = spiral_wrap_signed(v10 + 1, 32)
-                        v15
+                        spiral_wrap_signed(v10 + 1, 32)
                     }
                     False -> v10
                 }
-            let v17 = Us0BitOne
-            let v18 = Uh1InputEmpty
-            let v19 = Uh1InputCons(v17, v18)
+            let v19 = Uh1InputCons(Us0BitOne, Uh1InputEmpty)
             let v20 = zeros_input_14(v9, v19)
             let v21 = interned_accepts_33(v0, v1, v2, v3, v4, v5, v6, v8, v20)
             let v23 =
                 case v21 {
                     True -> {
-                        let v22 = spiral_wrap_signed(v16 + 1, 32)
-                        v22
+                        spiral_wrap_signed(v16 + 1, 32)
                     }
                     False -> v16
                 }
@@ -1553,37 +1490,25 @@ pub fn loop_36(v0: SpiralArray(Int), v1: SpiralArray(Int), v2: SpiralArray(Int),
 pub fn main() {
     let v0 = 200
     let v1 = 32
-    let v2 = Us0BitZero
-    let v3 = Uh0RegexChar(v2)
-    let v4 = Us0BitOne
-    let v5 = Uh0RegexChar(v4)
+    let v3 = Uh0RegexChar(Us0BitZero)
+    let v5 = Uh0RegexChar(Us0BitOne)
     let v6 = Uh0RegexAlt(v3, v5)
     let v7 = Uh0RegexStar(v6)
-    let v8 = Us0BitZero
-    let v9 = Uh0RegexChar(v8)
+    let v9 = Uh0RegexChar(Us0BitZero)
     let v10 = Uh0RegexCat(v7, v9)
-    let v11 = Us0BitZero
-    let v12 = Uh0RegexChar(v11)
-    let v13 = Us0BitOne
-    let v14 = Uh0RegexChar(v13)
+    let v12 = Uh0RegexChar(Us0BitZero)
+    let v14 = Uh0RegexChar(Us0BitOne)
     let v15 = Uh0RegexAlt(v12, v14)
     let v16 = Uh0RegexStar(v15)
-    let v17 = Us0BitOne
-    let v18 = Uh0RegexChar(v17)
-    let v19 = Us0BitZero
-    let v20 = Uh0RegexChar(v19)
-    let v21 = Us0BitOne
-    let v22 = Uh0RegexChar(v21)
+    let v18 = Uh0RegexChar(Us0BitOne)
+    let v20 = Uh0RegexChar(Us0BitZero)
+    let v22 = Uh0RegexChar(Us0BitOne)
     let v23 = Uh0RegexAlt(v20, v22)
-    let v24 = Us0BitZero
-    let v25 = Uh0RegexChar(v24)
-    let v26 = Us0BitOne
-    let v27 = Uh0RegexChar(v26)
+    let v25 = Uh0RegexChar(Us0BitZero)
+    let v27 = Uh0RegexChar(Us0BitOne)
     let v28 = Uh0RegexAlt(v25, v27)
-    let v29 = Us0BitZero
-    let v30 = Uh0RegexChar(v29)
-    let v31 = Us0BitOne
-    let v32 = Uh0RegexChar(v31)
+    let v30 = Uh0RegexChar(Us0BitZero)
+    let v32 = Uh0RegexChar(Us0BitOne)
     let v33 = Uh0RegexAlt(v30, v32)
     let v34 = Uh0RegexCat(v28, v33)
     let v35 = Uh0RegexCat(v23, v34)
@@ -1593,55 +1518,36 @@ pub fn main() {
     let v39 = 0
     let v40 = loop_0(v10, v1, v0, v38, v39)
     let v41 = loop_0(v37, v1, v0, v38, v39)
-    let v42 = 16
-    let v43 = Us0BitZero
-    let v44 = Uh0RegexChar(v43)
-    let v45 = Us0BitZero
-    let v46 = Uh0RegexChar(v45)
-    let v47 = Us0BitZero
-    let v48 = Uh0RegexChar(v47)
+    let v44 = Uh0RegexChar(Us0BitZero)
+    let v46 = Uh0RegexChar(Us0BitZero)
+    let v48 = Uh0RegexChar(Us0BitZero)
     let v49 = Uh0RegexCat(v46, v48)
     let v50 = Uh0RegexAlt(v44, v49)
     let v51 = Uh0RegexStar(v50)
-    let v52 = Us0BitOne
-    let v53 = Uh0RegexChar(v52)
+    let v53 = Uh0RegexChar(Us0BitOne)
     let v54 = Uh0RegexCat(v51, v53)
-    let v55 = 0
-    let v56 = 1
-    let v57 = loop_13(v54, v42, v56, v55)
+    let v57 = loop_13(v54, 16, 1, 0)
     let v58 = 200
     let v59 = 32
-    let v60 = Us0BitZero
-    let v61 = Uh0RegexChar(v60)
-    let v62 = Us0BitOne
-    let v63 = Uh0RegexChar(v62)
+    let v61 = Uh0RegexChar(Us0BitZero)
+    let v63 = Uh0RegexChar(Us0BitOne)
     let v64 = Uh0RegexAlt(v61, v63)
     let v65 = Uh0RegexStar(v64)
-    let v66 = Us0BitZero
-    let v67 = Uh0RegexChar(v66)
+    let v67 = Uh0RegexChar(Us0BitZero)
     let v68 = Uh0RegexCat(v65, v67)
-    let v69 = Us0BitZero
-    let v70 = Uh0RegexChar(v69)
-    let v71 = Us0BitOne
-    let v72 = Uh0RegexChar(v71)
+    let v70 = Uh0RegexChar(Us0BitZero)
+    let v72 = Uh0RegexChar(Us0BitOne)
     let v73 = Uh0RegexAlt(v70, v72)
     let v74 = Uh0RegexStar(v73)
-    let v75 = Us0BitOne
-    let v76 = Uh0RegexChar(v75)
-    let v77 = Us0BitZero
-    let v78 = Uh0RegexChar(v77)
-    let v79 = Us0BitOne
-    let v80 = Uh0RegexChar(v79)
+    let v76 = Uh0RegexChar(Us0BitOne)
+    let v78 = Uh0RegexChar(Us0BitZero)
+    let v80 = Uh0RegexChar(Us0BitOne)
     let v81 = Uh0RegexAlt(v78, v80)
-    let v82 = Us0BitZero
-    let v83 = Uh0RegexChar(v82)
-    let v84 = Us0BitOne
-    let v85 = Uh0RegexChar(v84)
+    let v83 = Uh0RegexChar(Us0BitZero)
+    let v85 = Uh0RegexChar(Us0BitOne)
     let v86 = Uh0RegexAlt(v83, v85)
-    let v87 = Us0BitZero
-    let v88 = Uh0RegexChar(v87)
-    let v89 = Us0BitOne
-    let v90 = Uh0RegexChar(v89)
+    let v88 = Uh0RegexChar(Us0BitZero)
+    let v90 = Uh0RegexChar(Us0BitOne)
     let v91 = Uh0RegexAlt(v88, v90)
     let v92 = Uh0RegexCat(v86, v91)
     let v93 = Uh0RegexCat(v81, v92)
@@ -1651,36 +1557,27 @@ pub fn main() {
     let v97 = 0
     let v98 = loop_15(v68, v59, v58, v96, v97)
     let v99 = loop_15(v95, v59, v58, v96, v97)
-    let v100 = 16
-    let v101 = Us0BitZero
-    let v102 = Uh0RegexChar(v101)
-    let v103 = Us0BitZero
-    let v104 = Uh0RegexChar(v103)
-    let v105 = Us0BitZero
-    let v106 = Uh0RegexChar(v105)
+    let v102 = Uh0RegexChar(Us0BitZero)
+    let v104 = Uh0RegexChar(Us0BitZero)
+    let v106 = Uh0RegexChar(Us0BitZero)
     let v107 = Uh0RegexCat(v104, v106)
     let v108 = Uh0RegexAlt(v102, v107)
     let v109 = Uh0RegexStar(v108)
-    let v110 = Us0BitOne
-    let v111 = Uh0RegexChar(v110)
+    let v111 = Uh0RegexChar(Us0BitOne)
     let v112 = Uh0RegexCat(v109, v111)
-    let v113 = 0
-    let v114 = 1
-    let v115 = loop_17(v112, v100, v114, v113)
+    let v115 = loop_17(v112, 16, 1, 0)
     let v116 = v40 == v98
     let v118 =
         case v116 {
             True -> {
-                let v117 = v41 == v99
-                v117
+                v41 == v99
             }
             False -> False
         }
     let v120 =
         case v118 {
             True -> {
-                let v119 = v57 == v115
-                v119
+                v57 == v115
             }
             False -> False
         }
@@ -1694,24 +1591,19 @@ pub fn main() {
     let v124 = 0
     let v125 = loop_18(v122, v121, v123, v124)
     let v126 = loop_20(v122, v121, v123, v124)
-    let v127 = 16
-    let v128 = 0
-    let v129 = 1
-    let v130 = loop_22(v127, v129, v128)
+    let v130 = loop_22(16, 1, 0)
     let v131 = v40 == v125
     let v133 =
         case v131 {
             True -> {
-                let v132 = v41 == v126
-                v132
+                v41 == v126
             }
             False -> False
         }
     let v135 =
         case v133 {
             True -> {
-                let v134 = v57 == v130
-                v134
+                v57 == v130
             }
             False -> False
         }
@@ -1728,26 +1620,16 @@ pub fn main() {
     let v142 = spiral_array_create_filled(8192, 0)
     let v143 = spiral_array_create_filled(8192, 0)
     let v144 = spiral_array_create_filled(1, 0)
-    let v145 = 0
-    loop_24(v142, v145)
-    let v146 = 0
-    loop_24(v143, v146)
-    let v147 = 0
-    loop_25(v144, v147)
-    let v148 = 0
-    let v149 = 0
-    let v150 = 0
-    let v151 = interned_node_26(v138, v139, v140, v141, v142, v143, v144, v148, v149, v150)
-    let v152 = 1
-    let v153 = 0
-    let v154 = 0
-    let v155 = interned_node_26(v138, v139, v140, v141, v142, v143, v144, v152, v153, v154)
+    loop_24(v142, 0)
+    loop_24(v143, 0)
+    loop_25(v144, 0)
+    let v151 = interned_node_26(v138, v139, v140, v141, v142, v143, v144, 0, 0, 0)
+    let v155 = interned_node_26(v138, v139, v140, v141, v142, v143, v144, 1, 0, 0)
     let v156 = v151 == 0
     let v158 =
         case v156 {
             True -> {
-                let v157 = v155 == 1
-                v157
+                v155 == 1
             }
             False -> False
         }
@@ -1756,51 +1638,34 @@ pub fn main() {
             True -> #(v138, v139, v140, v141, v142, v143, v144)
             False -> panic as "brzozowski-interned-store-init"
         }
-    let v173 = Us0BitZero
-    let v174 = Uh0RegexChar(v173)
-    let v175 = Us0BitOne
-    let v176 = Uh0RegexChar(v175)
+    let v174 = Uh0RegexChar(Us0BitZero)
+    let v176 = Uh0RegexChar(Us0BitOne)
     let v177 = Uh0RegexAlt(v174, v176)
     let v178 = Uh0RegexStar(v177)
-    let v179 = Us0BitZero
-    let v180 = Uh0RegexChar(v179)
+    let v180 = Uh0RegexChar(Us0BitZero)
     let v181 = Uh0RegexCat(v178, v180)
     let v182 = interned_of_regex_raw_28(v166, v167, v168, v169, v170, v171, v172, v181)
-    let v183 = 1
-    let v184 = 0
-    let v185 = loop_32(v166, v167, v168, v169, v170, v171, v172, v137, v182, v136, v183, v184)
-    let v186 = Us0BitZero
-    let v187 = Uh0RegexChar(v186)
-    let v188 = Us0BitOne
-    let v189 = Uh0RegexChar(v188)
+    let v185 = loop_32(v166, v167, v168, v169, v170, v171, v172, v137, v182, v136, 1, 0)
+    let v187 = Uh0RegexChar(Us0BitZero)
+    let v189 = Uh0RegexChar(Us0BitOne)
     let v190 = Uh0RegexAlt(v187, v189)
     let v191 = Uh0RegexStar(v190)
-    let v192 = Us0BitOne
-    let v193 = Uh0RegexChar(v192)
-    let v194 = Us0BitZero
-    let v195 = Uh0RegexChar(v194)
-    let v196 = Us0BitOne
-    let v197 = Uh0RegexChar(v196)
+    let v193 = Uh0RegexChar(Us0BitOne)
+    let v195 = Uh0RegexChar(Us0BitZero)
+    let v197 = Uh0RegexChar(Us0BitOne)
     let v198 = Uh0RegexAlt(v195, v197)
-    let v199 = Us0BitZero
-    let v200 = Uh0RegexChar(v199)
-    let v201 = Us0BitOne
-    let v202 = Uh0RegexChar(v201)
+    let v200 = Uh0RegexChar(Us0BitZero)
+    let v202 = Uh0RegexChar(Us0BitOne)
     let v203 = Uh0RegexAlt(v200, v202)
-    let v204 = Us0BitZero
-    let v205 = Uh0RegexChar(v204)
-    let v206 = Us0BitOne
-    let v207 = Uh0RegexChar(v206)
+    let v205 = Uh0RegexChar(Us0BitZero)
+    let v207 = Uh0RegexChar(Us0BitOne)
     let v208 = Uh0RegexAlt(v205, v207)
     let v209 = Uh0RegexCat(v203, v208)
     let v210 = Uh0RegexCat(v198, v209)
     let v211 = Uh0RegexCat(v193, v210)
     let v212 = Uh0RegexCat(v191, v211)
     let v213 = interned_of_regex_raw_28(v166, v167, v168, v169, v170, v171, v172, v212)
-    let v214 = 1
-    let v215 = 0
-    let v216 = loop_32(v166, v167, v168, v169, v170, v171, v172, v137, v213, v136, v214, v215)
-    let v217 = 16
+    let v216 = loop_32(v166, v167, v168, v169, v170, v171, v172, v137, v213, v136, 1, 0)
     let v218 = spiral_array_create_filled(4096, 0)
     let v219 = spiral_array_create_filled(4096, 0)
     let v220 = spiral_array_create_filled(4096, 0)
@@ -1808,26 +1673,16 @@ pub fn main() {
     let v222 = spiral_array_create_filled(8192, 0)
     let v223 = spiral_array_create_filled(8192, 0)
     let v224 = spiral_array_create_filled(1, 0)
-    let v225 = 0
-    loop_24(v222, v225)
-    let v226 = 0
-    loop_24(v223, v226)
-    let v227 = 0
-    loop_25(v224, v227)
-    let v228 = 0
-    let v229 = 0
-    let v230 = 0
-    let v231 = interned_node_26(v218, v219, v220, v221, v222, v223, v224, v228, v229, v230)
-    let v232 = 1
-    let v233 = 0
-    let v234 = 0
-    let v235 = interned_node_26(v218, v219, v220, v221, v222, v223, v224, v232, v233, v234)
+    loop_24(v222, 0)
+    loop_24(v223, 0)
+    loop_25(v224, 0)
+    let v231 = interned_node_26(v218, v219, v220, v221, v222, v223, v224, 0, 0, 0)
+    let v235 = interned_node_26(v218, v219, v220, v221, v222, v223, v224, 1, 0, 0)
     let v236 = v231 == 0
     let v238 =
         case v236 {
             True -> {
-                let v237 = v235 == 1
-                v237
+                v235 == 1
             }
             False -> False
         }
@@ -1836,36 +1691,28 @@ pub fn main() {
             True -> #(v218, v219, v220, v221, v222, v223, v224)
             False -> panic as "brzozowski-interned-store-init"
         }
-    let v253 = Us0BitZero
-    let v254 = Uh0RegexChar(v253)
-    let v255 = Us0BitZero
-    let v256 = Uh0RegexChar(v255)
-    let v257 = Us0BitZero
-    let v258 = Uh0RegexChar(v257)
+    let v254 = Uh0RegexChar(Us0BitZero)
+    let v256 = Uh0RegexChar(Us0BitZero)
+    let v258 = Uh0RegexChar(Us0BitZero)
     let v259 = Uh0RegexCat(v256, v258)
     let v260 = Uh0RegexAlt(v254, v259)
     let v261 = Uh0RegexStar(v260)
-    let v262 = Us0BitOne
-    let v263 = Uh0RegexChar(v262)
+    let v263 = Uh0RegexChar(Us0BitOne)
     let v264 = Uh0RegexCat(v261, v263)
     let v265 = interned_of_regex_raw_28(v246, v247, v248, v249, v250, v251, v252, v264)
-    let v266 = 1
-    let v267 = 0
-    let v268 = loop_36(v246, v247, v248, v249, v250, v251, v252, v217, v265, v266, v267)
+    let v268 = loop_36(v246, v247, v248, v249, v250, v251, v252, 16, v265, 1, 0)
     let v269 = v40 == v185
     let v271 =
         case v269 {
             True -> {
-                let v270 = v41 == v216
-                v270
+                v41 == v216
             }
             False -> False
         }
     let v273 =
         case v271 {
             True -> {
-                let v272 = v57 == v268
-                v272
+                v57 == v268
             }
             False -> False
         }

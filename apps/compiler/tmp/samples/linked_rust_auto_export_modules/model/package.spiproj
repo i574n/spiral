@@ -1,0 +1,7 @@
+packages:
+    |core-
+auto-export: monomorphic
+modules:
+    arith
+    shapes
+    model

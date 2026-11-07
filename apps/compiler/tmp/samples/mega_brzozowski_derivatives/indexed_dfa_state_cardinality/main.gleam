@@ -64,12 +64,10 @@ pub fn random_bit_input_1(v0: Int, v1: Int, v2: Uh1) -> #(Uh1, Int) {
             let v13 =
                 case v10 {
                     True -> {
-                        let v11 = Us0BitZero
-                        v11
+                        Us0BitZero
                     }
                     False -> {
-                        let v12 = Us0BitOne
-                        v12
+                        Us0BitOne
                     }
                 }
             let v14 = Uh1InputCons(v13, v2)
@@ -121,8 +119,7 @@ pub fn run_2(v0: Int, v1: Uh1) -> Bool {
         }
         Uh1InputEmpty -> {
             let v2 = v0 == 0
-            let v3 = v2 == False
-            v3
+            v2 == False
         }
     }
 }
@@ -502,17 +499,14 @@ pub fn loop_0(v0: Int, v1: Uh0, v2: Int, v3: Int, v4: Int) -> Int {
     let v5 = 0 < v2
     case v5 {
         True -> {
-            let v6 = Uh1InputEmpty
-            let #(v7, v8) = random_bit_input_1(v3, v0, v6)
-            let v9 = 0
-            let v10 = run_2(v9, v7)
+            let #(v7, v8) = random_bit_input_1(v3, v0, Uh1InputEmpty)
+            let v10 = run_2(0, v7)
             let v11 = accepts_3(v1, v7)
             let v13 =
                 case v10 {
                     True -> v11
                     False -> {
-                        let v12 = False == v11
-                        v12
+                        False == v11
                     }
                 }
             case v13 {
@@ -521,8 +515,7 @@ pub fn loop_0(v0: Int, v1: Uh0, v2: Int, v3: Int, v4: Int) -> Int {
                     let v16 =
                         case v10 {
                             True -> {
-                                let v15 = spiral_wrap_signed(v4 + 1, 32)
-                                v15
+                                spiral_wrap_signed(v4 + 1, 32)
                             }
                             False -> v4
                         }
@@ -539,8 +532,7 @@ pub fn zeros_input_15(v0: Int, v1: Uh1) -> Uh1 {
     case v2 {
         True -> {
             let v3 = spiral_wrap_signed(v0 - 1, 32)
-            let v4 = Us0BitZero
-            let v5 = Uh1InputCons(v4, v1)
+            let v5 = Uh1InputCons(Us0BitZero, v1)
             zeros_input_15(v3, v5)
         }
         False -> v1
@@ -592,17 +584,14 @@ pub fn loop_14(v0: Int, v1: Uh0, v2: Int, v3: Int) -> Int {
     case v4 {
         True -> v3
         False -> {
-            let v5 = Uh1InputEmpty
-            let v6 = zeros_input_15(v2, v5)
-            let v7 = 2
-            let v8 = run_16(v7, v6)
+            let v6 = zeros_input_15(v2, Uh1InputEmpty)
+            let v8 = run_16(2, v6)
             let v9 = accepts_3(v1, v6)
             let v11 =
                 case v8 {
                     True -> v9
                     False -> {
-                        let v10 = False == v9
-                        v10
+                        False == v9
                     }
                 }
             let v15 =
@@ -610,27 +599,22 @@ pub fn loop_14(v0: Int, v1: Uh0, v2: Int, v3: Int) -> Int {
                     True -> {
                         case v8 {
                             True -> {
-                                let v12 = spiral_wrap_signed(v3 + 1, 32)
-                                v12
+                                spiral_wrap_signed(v3 + 1, 32)
                             }
                             False -> v3
                         }
                     }
                     False -> panic as "brzozowski-compiled-core-disagrees-on-zero-run"
                 }
-            let v16 = Us0BitOne
-            let v17 = Uh1InputEmpty
-            let v18 = Uh1InputCons(v16, v17)
+            let v18 = Uh1InputCons(Us0BitOne, Uh1InputEmpty)
             let v19 = zeros_input_15(v2, v18)
-            let v20 = 2
-            let v21 = run_16(v20, v19)
+            let v21 = run_16(2, v19)
             let v22 = accepts_3(v1, v19)
             let v24 =
                 case v21 {
                     True -> v22
                     False -> {
-                        let v23 = False == v22
-                        v23
+                        False == v22
                     }
                 }
             let v28 =
@@ -638,8 +622,7 @@ pub fn loop_14(v0: Int, v1: Uh0, v2: Int, v3: Int) -> Int {
                     True -> {
                         case v21 {
                             True -> {
-                                let v25 = spiral_wrap_signed(v15 + 1, 32)
-                                v25
+                                spiral_wrap_signed(v15 + 1, 32)
                             }
                             False -> v15
                         }
@@ -734,8 +717,7 @@ pub fn run_17(v0: Int, v1: Uh3) -> Bool {
             case v2 {
                 True -> False
                 False -> {
-                    let v3 = v0 == 1
-                    v3
+                    v0 == 1
                 }
             }
         }
@@ -1168,75 +1150,47 @@ pub fn accepts_18(v0: Uh2, v1: Uh3) -> Bool {
     }
 }
 pub fn main() {
-    let v0 = 200
-    let v1 = 32
-    let v2 = 16
-    let v3 = Us0BitZero
-    let v4 = Uh0RegexChar(v3)
-    let v5 = Us0BitOne
-    let v6 = Uh0RegexChar(v5)
+    let v4 = Uh0RegexChar(Us0BitZero)
+    let v6 = Uh0RegexChar(Us0BitOne)
     let v7 = Uh0RegexAlt(v4, v6)
     let v8 = Uh0RegexStar(v7)
-    let v9 = Us0BitZero
-    let v10 = Uh0RegexChar(v9)
+    let v10 = Uh0RegexChar(Us0BitZero)
     let v11 = Uh0RegexCat(v8, v10)
-    let v12 = 1
-    let v13 = 0
-    let v14 = loop_0(v1, v11, v0, v12, v13)
+    let v14 = loop_0(32, v11, 200, 1, 0)
     let v15 = v14 == 93
     case v15 {
         True -> Nil
         False -> panic as "brzozowski-compiled-ends-with-zero-count"
     }
-    let v16 = Us0BitZero
-    let v17 = Uh0RegexChar(v16)
-    let v18 = Us0BitZero
-    let v19 = Uh0RegexChar(v18)
-    let v20 = Us0BitZero
-    let v21 = Uh0RegexChar(v20)
+    let v17 = Uh0RegexChar(Us0BitZero)
+    let v19 = Uh0RegexChar(Us0BitZero)
+    let v21 = Uh0RegexChar(Us0BitZero)
     let v22 = Uh0RegexCat(v19, v21)
     let v23 = Uh0RegexAlt(v17, v22)
     let v24 = Uh0RegexStar(v23)
-    let v25 = Us0BitOne
-    let v26 = Uh0RegexChar(v25)
+    let v26 = Uh0RegexChar(Us0BitOne)
     let v27 = Uh0RegexCat(v24, v26)
-    let v28 = 1
-    let v29 = 0
-    let v30 = loop_14(v2, v27, v28, v29)
+    let v30 = loop_14(16, v27, 1, 0)
     let v31 = v30 == 16
     case v31 {
         True -> Nil
         False -> panic as "brzozowski-compiled-zero-runs-count"
     }
-    let v32 = Us3TriA
-    let v33 = Uh2RegexChar(v32)
-    let v34 = Us3TriB
-    let v35 = Uh2RegexChar(v34)
+    let v33 = Uh2RegexChar(Us3TriA)
+    let v35 = Uh2RegexChar(Us3TriB)
     let v36 = Uh2RegexAlt(v33, v35)
     let v37 = Uh2RegexStar(v36)
-    let v38 = Us3TriC
-    let v39 = Uh2RegexChar(v38)
+    let v39 = Uh2RegexChar(Us3TriC)
     let v40 = Uh2RegexCat(v37, v39)
-    let v41 = Us3TriA
-    let v42 = Us3TriB
-    let v43 = Us3TriA
-    let v44 = Us3TriC
-    let v45 = Uh3InputEmpty
-    let v46 = Uh3InputCons(v44, v45)
-    let v47 = Uh3InputCons(v43, v46)
-    let v48 = Uh3InputCons(v42, v47)
-    let v49 = Uh3InputCons(v41, v48)
-    let v50 = Us3TriA
-    let v51 = Us3TriB
-    let v52 = Us3TriA
-    let v53 = Us3TriB
-    let v54 = Uh3InputEmpty
-    let v55 = Uh3InputCons(v53, v54)
-    let v56 = Uh3InputCons(v52, v55)
-    let v57 = Uh3InputCons(v51, v56)
-    let v58 = Uh3InputCons(v50, v57)
-    let v59 = 0
-    let v60 = run_17(v59, v49)
+    let v46 = Uh3InputCons(Us3TriC, Uh3InputEmpty)
+    let v47 = Uh3InputCons(Us3TriA, v46)
+    let v48 = Uh3InputCons(Us3TriB, v47)
+    let v49 = Uh3InputCons(Us3TriA, v48)
+    let v55 = Uh3InputCons(Us3TriB, Uh3InputEmpty)
+    let v56 = Uh3InputCons(Us3TriA, v55)
+    let v57 = Uh3InputCons(Us3TriB, v56)
+    let v58 = Uh3InputCons(Us3TriA, v57)
+    let v60 = run_17(0, v49)
     let v62 =
         case v60 {
             True -> accepts_18(v40, v49)
@@ -1245,14 +1199,12 @@ pub fn main() {
     let v68 =
         case v62 {
             True -> {
-                let v63 = 0
-                let v64 = run_17(v63, v58)
+                let v64 = run_17(0, v58)
                 case v64 {
                     True -> False
                     False -> {
                         let v65 = accepts_18(v40, v58)
-                        let v66 = v65 == False
-                        v66
+                        v65 == False
                     }
                 }
             }

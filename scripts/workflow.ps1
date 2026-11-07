@@ -25,7 +25,7 @@ if ($Compiler) {
 
     { pwsh ../apps/compiler/scripts/build.ps1 -Mode single-flight } | Invoke-Block
 
-    { pwsh ../apps/compiler/tmp/formatter/report.ps1 } | Invoke-Block
+    { pwsh ../apps/compiler/scripts/formatter/report.ps1 } | Invoke-Block
 
     $matrixRustToolchain = [regex]::Match([IO.File]::ReadAllText((Resolve-Path ../apps/compiler/scripts/test.ps1)), "'\+((?:nightly-)?[0-9][0-9.-]*)', '-C', 'opt-level").Groups[1].Value
     if (-not $matrixRustToolchain) { throw 'test.ps1 no longer names the matrix rustc toolchain' }

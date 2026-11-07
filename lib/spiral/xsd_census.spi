@@ -26,25 +26,33 @@
 :~ ^ construct_walk \* k form. (item : xsd k form) (census : construct_census) : construct_census =
     ?= item ?|
     | Simple _ => counted SimpleTypeConstruct census
-    | Complex c => items_census c::attributes (construct_walk c::content (counted ComplexTypeConstruct census))
-    | Derived d => items_census d::attributes (construct_walk d::content (counted ComplexTypeConstruct census))
+    | Complex c => typed_census c::attributes c::content census
+    | Derived d => typed_census d::attributes d::content census
     | Sequence s => items_census s::items (counted GroupConstruct census)
     | Choice c => items_census c::items (counted GroupConstruct census)
-    | Element e =>
-        ?= e::inline ?|
-        | Some inner => construct_walk inner (counted ElementConstruct census)
-        | None => counted ElementConstruct census
+    | Element e => inline_census e::inline ElementConstruct census
     | AnyContent () => counted WildcardConstruct census
     | Empty () => census
-    | Attribute a =>
-        ?= a::inline ?|
-        | Some inner => construct_walk inner (counted AttributeConstruct census)
-        | None => counted AttributeConstruct census
+    | Attribute a => inline_census a::inline AttributeConstruct census
 
 :& :~ items_census \* k form. (items : list (xsd k form)) (census : construct_census) : construct_census =
     ?= items ?|
     | item :: rest => items_census rest (construct_walk item census)
     | [] => census
+
+:& :~ inline_census \* j form.
+    (inner : option (xsd j form)) (construct : xsd_construct) (census : construct_census)
+    : construct_census
+    =
+    ?= inner ?|
+    | Some i => construct_walk i (counted construct census)
+    | None => counted construct census
+
+:& :~ typed_census \* a c form.
+    (attributes : list (xsd a form)) (content : xsd c form) (census : construct_census)
+    : construct_census
+    =
+    items_census attributes (construct_walk content (counted ComplexTypeConstruct census))
 
 := schema_census \* form. (schema : xsd_schema form) : construct_census =
     items_census schema::elements (items_census schema::complex_types (items_census schema::simple_types (

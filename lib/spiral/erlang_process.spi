@@ -336,7 +336,7 @@
     erlang_process_group_imports ()
     $'process.unsafely_create_subject(process.self(), !members.key)'
 
-:= group_size \* t. (members : group t) : i32 =
+:= member_count \* t. (members : group t) : i32 =
     erlang_process_group_imports ()
     $'list.length(erlang_process_pg_members(!members.key))'
 
@@ -367,7 +367,7 @@
 :# a_broadcast_reaches_every_member_of_the_group =
     groups_start ()
     := team, echoes = echo_team ()
-    := size = group_size team
+    := size = member_count team
     broadcast team 4i32
     (size, echo_within echoes, echo_within echoes) |> _assert_eq (2i32, Some 40i32, Some 40i32)
 

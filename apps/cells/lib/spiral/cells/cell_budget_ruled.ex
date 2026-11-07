@@ -37,6 +37,47 @@ defmodule Spiral.Cells.CellBudgetRuled do
     end
   end
 
+  def classify(block, nominals \\ []) do
+    lines = block |> String.split("\n") |> undocumented()
+    code = Enum.join(lines, "\n")
+
+    cond do
+      String.starts_with?(code, ["///>", ":#"]) -> :test
+      String.starts_with?(code, @type_heads) -> :type
+      true -> classify_body(split_header(lines), nominals)
+    end
+  end
+
+  defp classify_body({:ok, body}, nominals) do
+    text = Enum.join(body, "\n")
+
+    cond do
+      data_literal?(text, nominals) -> :data
+      template?(text) -> :template
+      true -> :code
+    end
+  end
+
+  defp classify_body(:error, _nominals), do: :code
+
+  def kinds(source, profile \\ CellBudget.default_profile(), nominals \\ []) do
+    source
+    |> CellBudget.top_level_blocks()
+    |> Enum.with_index(1)
+    |> Enum.map(fn {{_row, block}, cell} ->
+      {classify(block, nominals), ruled_weight(block, profile, nominals) > limit(cell, profile)}
+    end)
+  end
+
+  def kinds_line(kinds) do
+    counts = Enum.frequencies_by(kinds, &elem(&1, 0))
+    code = Map.get(counts, :code, 0)
+    over = Enum.count(kinds, &(&1 == {:code, true}))
+    share = :erlang.float_to_binary(over * 100 / max(code, 1), decimals: 1)
+    rest = Enum.map_join([:data, :template, :type, :test], ", ", &"#{&1} #{Map.get(counts, &1, 0)}")
+    "cell-budget granular: code #{code} (over #{over}, #{share}%), #{rest}"
+  end
+
   def declared_nominals(source) do
     ~r/^:!\s+([a-z_][\w']*)\b/m |> Regex.scan(source) |> Enum.map(fn [_, name] -> name end)
   end

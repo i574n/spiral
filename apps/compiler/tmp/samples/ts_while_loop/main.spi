@@ -6,7 +6,7 @@
         Fsharp = \ () => $"!a <- !b" : ()
         C = \ () => $"!a = !b" : ()
         Rust = \ () => $"!a = !b" : ()
-        Delphi = \ () => $"!a := !b" : ()
+        Pascal = \ () => $"!a := !b" : ()
         TypeScript = \ () => $"!a = !b" : ()
         CppHost = \ () => $"!a = !b" : ()
         Python = \ () => $"!a = !b" : ()

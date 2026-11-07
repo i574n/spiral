@@ -4310,6 +4310,7 @@ module spiral_compiler =
         | ExpectedLayout of T
         | ExpectedRecordAsResultOfIndex of T
         | RecordIndexFailed of RecordFieldNameId
+        | RecordUpdateRetypesField of RecordFieldNameId * T * T
         | ModuleIndexFailed of ModuleMemberNameId
         | ModuleIndexAmbiguous of string * string
         | ExpectedModule of T
@@ -5020,6 +5021,7 @@ module spiral_compiler =
         | ExpectedRecordInsideALayout a -> sprintf "Expected a record inside a layout type.\nGot: %s" (f a)
         | ExpectedRecordAsResultOfIndex a -> sprintf "Expected a record as result of index.\nGot: %s" (f a)
         | RecordIndexFailed a -> sprintf "The record does not have the key: %s" (RecordFieldNameIdOps.text a)
+        | RecordUpdateRetypesField(a, before, after) -> sprintf "This record update changes the field %s from %s to %s. An update may change a field's type arguments (a phantom or state index) but not its type constructor; build a new record instead." (RecordFieldNameIdOps.text a) (f before) (f after)
         | ModuleIndexFailed a -> sprintf "The module does not have the key: %s" (ModuleMemberNameIdOps.text a)
         | ModuleIndexAmbiguous(folder,key) -> $"`{folder}.{key}` is ambiguous: the folder `{folder}` has a module `{key}`, and its index module `{folder}.{folder}` has a member `{key}`."
         | ExpectedModule a -> sprintf "Expected a module.\nGot: %s" (f a)
@@ -5886,6 +5888,20 @@ module spiral_compiler =
                         ) withs ([],fields)
     
 
+                let rec head_key (t : T) =
+                    match visit_t t with
+                    | TyComment(_, a) | TyLayout(a, _) -> head_key a
+                    | TyApply _ as a -> (match type_apply_split a with TyApply _, _ -> None | h, _ -> head_key h)
+                    | TyNominal id -> Some $"nominal {id}"
+                    | TyPrim p -> Some $"prim {p}"
+                    | TySymbol s -> Some $"symbol {s}"
+                    | TyRecord _ -> Some "record"
+                    | TyFun _ -> Some "function"
+                    | TyPair _ -> Some "pair"
+                    | TyArray _ -> Some "array"
+                    | TyUnion _ -> Some "union"
+                    | TyB -> Some "unit"
+                    | _ -> None
                 let eval m =
                     let m = (m,withs) ||> List.fold (fun m x ->
                         if x.is_modify then
@@ -5912,6 +5928,12 @@ module spiral_compiler =
                                     census_rows.Add(fun () ->
                                         let a, b = show_t top_env before, show_t top_env after
                                         sprintf "%s\t%d\t%d\t%s\t%s\t%s" (if a = b then "same" else "retyped") (position.line + 1) (position.character + 1) x.symbol a b))
+                            m
+                            |> Map.tryPick (fun (_, k) v -> if k = x.symbol then Some v else None)
+                            |> Option.iter (fun before ->
+                                match head_key before, head_key x.var with
+                                | Some a, Some b when a <> b -> errors.Add(x.range, RecordUpdateRetypesField(RecordFieldNameIdOps.create x.symbol, before, x.var))
+                                | _ -> ())
                             Map.add (i, x.symbol) x.var m
                         )
                     withouts |> List.fold (fun m x -> m |> Map.filter (fun (_, k) _ -> k <> x.symbol)) m
@@ -7435,9 +7457,10 @@ module spiral_compiler =
     // The package that declares each nominal union, so a `link:` unit is matched by owner, not by its source name.
     let unionSourcePackages = System.Runtime.CompilerServices.ConditionalWeakTable<obj, int ref>()
     let packageDirsById = new System.Threading.ThreadLocal<Map<int, string>>(fun () -> Map.empty)
+    let autoExportPids = System.Collections.Concurrent.ConcurrentDictionary<int, bool>()
     // A `link:` unit as its importer sees it: its name and, once the unit is built, the unions its exports reach, keyed by
     // (source name, concrete shape) and mapped to the name the unit exports them under. None: no graph, the package owns all.
-    type LinkedUnit = {unit : string; exported : Map<string * string, string> option; calls : Map<string * string, string>; shapes : Set<string>}
+    type LinkedUnit = {unit : string; exported : Map<string * string, string> option; calls : Map<string * string, string>; wraps : Map<string * string, string>; shapes : Set<string>}
     let unionOwnerUnit (linked : Map<int, LinkedUnit>) (node : obj) =
         match unionSourcePackages.TryGetValue node with
         | true, owner -> Map.tryFind owner.Value linked
@@ -7448,7 +7471,31 @@ module spiral_compiler =
         | _ -> noteUnionSourceName node (name ())
     let definitionSources = System.Runtime.CompilerServices.ConditionalWeakTable<E, string * string>()
     let curriedDefinitionSources = System.Runtime.CompilerServices.ConditionalWeakTable<E, string * string>()
+    module CurriedWrappers =
+        let wrappers = System.Collections.Concurrent.ConcurrentDictionary<string * string, E>()
+        let arities = System.Collections.Concurrent.ConcurrentDictionary<string * string, int>()
+        let ranges = System.Collections.Concurrent.ConcurrentDictionary<Range, bool>()
+        let rec arity (e : E) = match e with EFun'(_, _, _, body, _) -> 1 + arity body | _ -> 0
+        let rec peel (e : E) = match e with EAnnot(_, a, _) | EForall'(_, _, _, a) -> peel a | _ -> e
+        let note (path : string) (name : string) (e : E) =
+            let suffix = "__uncurried"
+            if name.EndsWith suffix then
+                wrappers.[(path, name.Substring(0, name.Length - suffix.Length))] <- e
+                match e with EAnnot(r, _, _) | EFun'(r, _, _, _, _) | EForall'(r, _, _, _) -> ranges.[r] <- true | _ -> ()
+        let chain (e : E) =
+            match e with
+            | EApply(r, _, _) when not wrappers.IsEmpty && not (ranges.ContainsKey r) ->
+                let rec go e acc = match e with EApply(_, f, x) -> go f (x :: acc) | head -> head, acc
+                let head, args = go e []
+                match curriedDefinitionSources.TryGetValue (peel head) with
+                | true, key ->
+                    match wrappers.TryGetValue key, arities.TryGetValue key with
+                    | (true, w), (true, n) when n = args.Length -> Some (w, args)
+                    | _ -> None
+                | _ -> None
+            | _ -> None
     let noteDefinitionSource (path : string) (name : string) (e : E) =
+        CurriedWrappers.note path name e
         let rec walk e =
             match e with
             | EForall'(_,_,_,b) | EAnnot(_,b,_) -> walk b
@@ -7458,6 +7505,7 @@ module spiral_compiler =
             | EFun'(_,_,_,body,_) as f ->
                 curriedDefinitionSources.TryAdd(f, (path, name)) |> ignore
                 curriedDefinitionSources.TryAdd(body, (path, name)) |> ignore
+                CurriedWrappers.arities.[(path, name)] <- CurriedWrappers.arity f
             | _ -> ()
         walk e
     let noteClosureName (node : E) (name : string) =
@@ -9598,8 +9646,14 @@ module spiral_compiler =
     /// one of them with a plain argument (no string or function inside) becomes a typed call into the unit instead of an
     /// inlined body. Set per build, and empty outside Rust.
     module ExternCalls =
-        type Call = {call : string; import_text : string option; borrow_strings : bool; unit_path : string; struct_records : bool; flat_records : bool; multi_ranges : bool; copy_tuples : bool}
+        type Call = {call : string; import_text : string option; borrow_strings : bool; unit_path : string; struct_records : bool; flat_records : bool; multi_ranges : bool; copy_tuples : bool; pascal_records : bool}
+        let pascal (name : string) =
+            name.Split '_' |> Array.filter (fun w -> w <> "") |> Array.map (fun w -> string (System.Char.ToUpperInvariant w.[0]) + w.Substring 1) |> String.concat ""
         let current = new System.Threading.ThreadLocal<Map<string * string, Call>>(fun () -> Map.empty)
+        let wrapped = new System.Threading.ThreadLocal<Map<string * string, string>>(fun () -> Map.empty)
+        let lookup_wrapped (body : E) =
+            if wrapped.Value.IsEmpty then None
+            else match definitionSources.TryGetValue body with | true, key -> Map.tryFind key wrapped.Value |> Option.map (fun export -> snd key, export) | _ -> None
         let lookup (body : E) =
             if current.Value.IsEmpty then None
             else match definitionSources.TryGetValue body with | true, key -> Map.tryFind key current.Value | _ -> None
@@ -9852,13 +9906,14 @@ module spiral_compiler =
         let private missing_arm_sites = System.Collections.Concurrent.ConcurrentDictionary<string, string>()
         let clear_missing_arm () = missing_arm_sites.Clear()
         let note_missing_arm (trace : Trace) (text : string) =
-            let frames =
-                trace
-                |> List.map (fun (r : Range) -> $"{System.IO.Path.GetFileName r.path}:{(fst r.range).line + 1}")
-                |> List.filter (fun f -> not (f.StartsWith "backend.spi"))
-                |> List.truncate 8
-                |> String.concat " < "
-            missing_arm_sites.AddOrUpdate(missing_arm.Match(text).Value, frames, fun _ old -> if System.String.CompareOrdinal(frames, old) < 0 then frames else old) |> ignore
+            if validating.Value = 0 then
+                let frames =
+                    trace
+                    |> List.map (fun (r : Range) -> $"{System.IO.Path.GetFileName r.path}:{(fst r.range).line + 1}")
+                    |> List.filter (fun f -> not (f.StartsWith "backend.spi"))
+                    |> List.truncate 8
+                    |> String.concat " < "
+                missing_arm_sites.AddOrUpdate(missing_arm.Match(text).Value, frames, fun _ old -> if System.String.CompareOrdinal(frames, old) < 0 then frames else old) |> ignore
         let missing_arm_error (backend : string) (code : string) =
             let marker = missing_arm.Match(code).Value
             let site = match missing_arm_sites.TryGetValue marker with | true, frames -> $"\nReached from: {frames}" | _ -> ""
@@ -10353,7 +10408,8 @@ module spiral_compiler =
                             match ExternCalls.struct_fields linked.struct_records resolve (data_to_ty s b), b with
                             | Some (name, _), (DNominal(DRecord m, _) | DRecord m) ->
                                 let fields = m |> Map.toList |> List.mapi (fun j ((_, k), v) -> (if j > 0 then [CMText ", "] else []) @ [CMText $"{k}: "] @ pieces v) |> List.concat
-                                [CMText $"{linked.unit_path}{name} {{ "] @ fields @ [CMText " }"]
+                                if linked.pascal_records then [CMText $"{linked.unit_path}{ExternCalls.pascal name}("] @ fields @ [CMText ")"]
+                                else [CMText $"{linked.unit_path}{name} {{ "] @ fields @ [CMText " }"]
                             | _ -> pieces b
                         let range_ty = ty s range
                         let call = [CMText (linked.call + "(")] @ args @ [CMText ")"]
@@ -10362,8 +10418,12 @@ module spiral_compiler =
                             match ExternCalls.struct_fields linked.struct_records resolve range_ty with
                             | Some (_, fields) ->
                                 let parts = fields |> Map.toList |> List.map (fun ((_, k), _) -> $"r.{k}")
-                                let read = match parts with [one] -> one | many -> many |> String.concat ", " |> sprintf "(%s)"
-                                [CMText "{ let r = "] @ call @ [CMText $"; {read} }}"]
+                                if linked.pascal_records then
+                                    let read = match parts with [one] -> one | many -> many |> String.concat ", " |> sprintf "#(%s)"
+                                    [CMText "{ let r = "] @ call @ [CMText $" {read} }}"]
+                                else
+                                    let read = match parts with [one] -> one | many -> many |> String.concat ", " |> sprintf "(%s)"
+                                    [CMText "{ let r = "] @ call @ [CMText $"; {read} }}"]
                             | None when linked.copy_tuples && width > 1 ->
                                 let fields = List.init width (fun k -> $".f{k} = r.f{k}") |> String.concat ", "
                                 [CMText "blk: { const r = "] @ call @ [CMText $"; break :blk .{{ {fields} }}; }}"]
@@ -10382,7 +10442,14 @@ module spiral_compiler =
                         let where = match s.trace with r :: _ -> $"{r.path}:{(fst r.range).line + 1}:{(fst r.range).character + 1}: " | [] -> ""
                         ExternCalls.warn where (ExternCalls.lookup_curried body).Value.call "its definition is curried, so the call has no single argument to pass (take one argument, a tuple for several)"
                         term s body
-                     | _ -> term s body)
+                     | _ ->
+                        match ExternCalls.lookup_wrapped body with
+                        | Some (name, export) ->
+                            let where = match s.trace with r :: _ -> $"{r.path}:{(fst r.range).line + 1}:{(fst r.range).character + 1}: " | [] -> ""
+                            if ExternCalls.warned.Value.Add ("wrapped " + export) then
+                                eprintfn "warning: %sthe call to %s inlines its body here instead of linking: the linked unit exports it only through the lambda %s. Export the definition itself (export \"...\" %s) so direct calls become cross-unit calls." where name export name
+                        | None -> ()
+                        term s body)
                 | DV(L(_,YForall)), _ -> raise_type_error s "Cannot apply a runtime forall, and not with a term. Foralls have to be known at compile time and applied with a type."
                 | DForall _, _ -> raise_type_error s "Cannot apply a forall with a term. Inside a `( ) or ~> block there is no type inference, so a bare operator such as >, +, - or = names the typed prototype, which is a forall: write real_core::(>), real_core::(+) and so on there. Elsewhere, apply the forall's types before its terms."
                 | DV(L(_,YFun(domain,range,t) & a_ty) & a), b ->
@@ -10708,7 +10775,11 @@ module spiral_compiler =
                     call_args
             | EDefaultLit(r,a,b) -> let s = add_trace s r in default_lit s a (ty s b) |> DLit
             | EType(r,_) -> raise_type_error (add_trace s r) "Raw types are not allowed on the term level."
-            | EApply(r,a,b) -> let s = add_trace s r in apply s (term s a, term s b)
+            | EApply(r,a,b) as e ->
+                let s = add_trace s r
+                match CurriedWrappers.chain e with
+                | Some (wrapper, args) -> apply s (term s wrapper, term s (args |> List.reduceBack (fun x y -> EPair(r, x, y))))
+                | None -> apply s (term s a, term s b)
             | ETypeApply(r,a,b) ->
                 let s = add_trace s r
                 type_apply s (term s a) (ty s b)
@@ -12803,8 +12874,31 @@ module spiral_compiler =
     /// linked unit whose graph reached the same source name and shape, so every crate shares that unit's copy.
     let linkedUnionName (linked : Map<int, LinkedUnit>) (node : obj) (source : string) =
         let shape = show_ty (YUnion (unbox<Union> node))
+        let caseNames (shape : string) =
+            let names = HashSet<string>()
+            let mutable depth = 0
+            let mutable i = 0
+            while i < shape.Length do
+                let c = shape.[i]
+                if c = '{' || c = '(' || c = '[' then depth <- depth + 1
+                elif c = '}' || c = ')' || c = ']' then depth <- depth - 1
+                if depth = 1 && (c = '{' || c = '|') then
+                    let mutable j = i + 1
+                    while j < shape.Length && shape.[j] = ' ' do j <- j + 1
+                    let start = j
+                    while j < shape.Length && (System.Char.IsLetterOrDigit shape.[j] || shape.[j] = '_') do j <- j + 1
+                    if j > start then names.Add(shape.Substring(start, j - start)) |> ignore
+                i <- i + 1
+            Set.ofSeq names
         match unionOwnerUnit linked node with
-        | Some {unit = unit; exported = Some exported} -> exported |> Map.tryFind (source, shape) |> Option.map (fun name -> unit, name)
+        | Some {unit = unit; exported = Some exported} ->
+            match exported |> Map.tryFind (source, shape) with
+            | Some name -> Some (unit, name)
+            | None ->
+                let cases = caseNames shape
+                match exported |> Map.toSeq |> Seq.tryPick (fun ((s, recorded), _) -> if s = source && caseNames recorded <> cases then Some recorded else None) with
+                | Some recorded -> raise_codegen_error $"The link: unit {unit}'s unit graph records union {source} as {recorded}, but this build declares it as {shape}. The graph is stale: rebuild {unit}, and every unit between it and this one, before this unit."
+                | None -> None
         | Some {unit = unit; exported = None} -> raise_codegen_error $"The link: unit {unit} has no unit graph ({unit}/*.unit.json). Build {unit} before the units that link it."
         | None -> linked |> Map.toSeq |> Seq.tryPick (fun (_, l) -> l.exported |> Option.bind (Map.tryFind (source, shape)) |> Option.map (fun name -> l.unit, name))
 
@@ -12819,6 +12913,24 @@ module spiral_compiler =
             match closure_bodies.TryGetValue i with
             | true, e -> (match definitionSources.TryGetValue e with | true, t -> t | _ -> match curriedDefinitionSources.TryGetValue e with | true, t -> t | _ -> ("", ""))
             | _ -> ("", "")
+        let wraps i =
+            let rec head (f : E) =
+                match f with
+                | EApply(_, g, _) | EAnnot(_, g, _) | ETypeApply(_, g, _) -> head g
+                | ERecursive r -> head r.Value
+                | g -> g
+            let rec peel (e : E) =
+                match e with
+                | EFun'(_, _, _, body, _) | EFun(_, _, body, _) | EForall'(_, _, _, body) | EAnnot(_, body, _) -> peel body
+                | EApply(_, f, _) ->
+                    let h = head f
+                    match definitionSources.TryGetValue h with
+                    | true, t -> Some t
+                    | _ -> match curriedDefinitionSources.TryGetValue h with | true, t -> Some t | _ -> None
+                | _ -> None
+            match closure_bodies.TryGetValue i with
+            | true, e -> peel e
+            | _ -> None
         let exports =
             x |> Array.choose (function
                 | TyLet(_,_,TyOp(Export, [DLit (LitString name); DV(L(i,(YFun _ as t)))])) | TyLocalReturnOp(_,TyOp(Export, [DLit (LitString name); DV(L(i,(YFun _ as t)))]),_) ->
@@ -12840,7 +12952,13 @@ module spiral_compiler =
                 [| for KeyValue(node, name) in exportedUnionNames env x ->
                     {| source = (match unionSourceNames.TryGetValue node with | true, source -> source | _ -> name); shape = show_ty (YUnion (unbox<Union> node)); name = name |} |]
                 |> Array.sortBy (fun u -> u.name)
-            Some (System.Text.Json.JsonSerializer.Serialize({| exports = exports; links = links; unions = unions |}, System.Text.Json.JsonSerializerOptions(WriteIndented = true)))
+            let wrapped =
+                x |> Array.choose (function
+                    | TyLet(_,_,TyOp(Export, [DLit (LitString name); DV(L(i,YFun _))])) | TyLocalReturnOp(_,TyOp(Export, [DLit (LitString name); DV(L(i,YFun _))]),_) when fst (target i) = "" ->
+                        wraps i |> Option.map (fun (path, definition) -> {| export = name; path = path; name = definition |})
+                    | _ -> None)
+            let options = System.Text.Json.JsonSerializerOptions(WriteIndented = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)
+            Some (System.Text.Json.JsonSerializer.Serialize({| exports = exports; links = links; unions = unions; wraps = (if Array.isEmpty wrapped then null else wrapped) |}, options))
 
     /// ### unitGraphDir
     /// Where a unit's graph lives: outside the source tree, in the user cache under a key of the unit's package folder
@@ -13628,6 +13746,7 @@ module spiral_compiler =
             s.ToString()
         let escape (s : string) = s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t")
         let known = Dictionary<string, string>(System.StringComparer.Ordinal)
+        let groupArm = rx @"^[ \t]*Group[0-9]+::M[0-9]+(?:\(.*\))? => \{[ \t]*\r?$"
         let splitPlus (e : string) =
             let parts = ResizeArray<string>()
             let mutable start = 0
@@ -13680,7 +13799,7 @@ module spiral_compiler =
                     if vs |> List.forall Option.isSome then Some (vs |> List.map Option.get |> String.concat "") else None
         generated.Split([|"\n"|], System.StringSplitOptions.None)
         |> Array.map (fun line ->
-            if line.StartsWith "fn " then
+            if line.StartsWith "fn " || groupArm.IsMatch line then
                 known.Clear()
                 line
             else
@@ -13689,7 +13808,7 @@ module spiral_compiler =
                     let v = m.Groups.["v"].Value
                     let cr = if line.EndsWith "\r" then "\r" else ""
                     let ind = m.Groups.["ind"].Value
-                    match value m.Groups.["rhs"].Value with
+                    match (if m.Groups.["rhs"].Value.Trim() = v then None else value m.Groups.["rhs"].Value) with
                     | Some s ->
                         known.[v] <- s
                         let lit = escape s
@@ -13917,6 +14036,29 @@ module spiral_compiler =
     let dynRustType = System.Text.RegularExpressions.Regex(@"^\s*(?:dyn\b|Dyn\s*<)")
     let cloneIfContentsRustType =
         System.Text.RegularExpressions.Regex(@"^\s*(?:Result|Option|(?:std(?:::|_)vec(?:::|_))?Vec)\s*<")
+
+    /// ### dropDeadRustLiterals
+    let dropDeadRustLiterals (text : string) =
+        let decl = System.Text.RegularExpressions.Regex(@"^\s*let (?:mut )?(v\d+): (?:(?:::)?std::rc::)?Rc<str> = (?:(?:::)?std::rc::)?Rc::<str>::from\(""(?:[^""\\]|\\.)*""\);\s*$")
+        let starts (line : string) = line.StartsWith "fn " || line.StartsWith "pub fn " || line.StartsWith "pub(crate) fn "
+        let lines = text.Split '\n'
+        let keep = Array.create lines.Length true
+        let mutable segment = 0
+        let scan (first : int) (last : int) =
+            if last >= first then
+                let body = System.String.Join("\n", lines, first, last - first + 1)
+                for i in first .. last do
+                    let m = decl.Match lines.[i]
+                    if m.Success then
+                        let uses = System.Text.RegularExpressions.Regex.Matches(body, @"\b" + m.Groups.[1].Value + @"\b").Count
+                        if uses = 1 then keep.[i] <- false
+        for i in 0 .. lines.Length - 1 do
+            if starts lines.[i] then
+                scan segment (i - 1)
+                segment <- i
+        scan segment (lines.Length - 1)
+        if Array.forall id keep then text
+        else System.String.Join("\n", lines |> Array.indexed |> Array.filter (fun (i, _) -> keep.[i]) |> Array.map snd)
 
     /// ### cacheRustStringLiterals
     let cacheRustStringLiterals (text : string) =
@@ -14950,12 +15092,14 @@ module spiral_compiler =
                     line (indent s) $"group_{group.Head}({variant})"
                     if emitted_groups.Add group.Head then emit_group group x.range
                 else
-                    live_root outer_none x.body
+                    let looped = self_tail x.tag x.body
+                    let body = if looped then tail_lets x.tag x.body else x.body
+                    live_root outer_none body
                     let saved = self_loop
-                    if self_tail x.tag x.body then
+                    if looped then
                         self_loop <- Some (x.tag, x.free_vars)
                         line (indent s) "loop {"
-                        binds (indent (indent s)) x.body
+                        binds (indent (indent s)) body
                         if tup_ty x.range = "()" then line (indent (indent s)) "return ();"
                         line (indent s) "}"
                     else
@@ -15023,12 +15167,45 @@ module spiral_compiler =
         and self_tail tag (body : TypedBind []) =
             body.Length > 0 &&
             match Array.last body with
-            | TyLocalReturnOp(_, TyJoinPoint(JPMethod(a,c),_), _) -> (method (a,c)).tag = tag
-            | TyLocalReturnOp(_, TyIf(_,tr,fl), _) -> self_tail tag tr || self_tail tag fl
-            | TyLocalReturnOp(_, TyUnionUnbox(_,_,on_succs,on_fail), _) -> (on_succs |> Map.exists (fun _ (_,b) -> self_tail tag b)) || (on_fail |> Option.exists (self_tail tag))
-            | TyLocalReturnOp(_, TyIntSwitch(_,on_succ,on_fail), _) -> Array.exists (self_tail tag) on_succ || self_tail tag on_fail
-            | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> self_tail tag b
+            | TyLocalReturnOp(_, a, _) -> op_self_tail tag a
+            | TyLocalReturnData(r,_) when body.Length >= 2 ->
+                match body.[body.Length - 2] with
+                | TyLet(d,_,a) when returns_unchanged d r -> op_self_tail tag a
+                | _ -> false
             | _ -> false
+        and op_self_tail tag (a : TypedOp) =
+            match a with
+            | TyJoinPoint(JPMethod(x,c),_) -> (method (x,c)).tag = tag
+            | TyIf(_,tr,fl) -> self_tail tag tr || self_tail tag fl
+            | TyUnionUnbox(_,_,on_succs,on_fail) -> (on_succs |> Map.exists (fun _ (_,b) -> self_tail tag b)) || (on_fail |> Option.exists (self_tail tag))
+            | TyIntSwitch(_,on_succ,on_fail) -> Array.exists (self_tail tag) on_succ || self_tail tag on_fail
+            | TyDo b | TyIndent b -> self_tail tag b
+            | _ -> false
+        and returns_unchanged d r =
+            let bound = data_free_vars d
+            let returned = data_term_vars r
+            bound.Length = returned.Length && Array.forall2 (fun (L(i,_)) w -> match w with WV(L(j,_)) -> i = j | WLit _ -> false) bound returned
+        and tail_lets tag (body : TypedBind []) : TypedBind [] =
+            let n = body.Length
+            let last_op trace a d = Array.append body.[.. n - 3] [| TyLocalReturnOp(trace, tail_op tag a, d) |]
+            if n >= 2 then
+                match body.[n - 2], body.[n - 1] with
+                | TyLet(d,trace,a), TyLocalReturnData(r,_) when returns_unchanged d r && op_self_tail tag a -> last_op trace a d
+                | _, TyLocalReturnOp(trace,a,d) -> Array.append body.[.. n - 2] [| TyLocalReturnOp(trace, tail_op tag a, d) |]
+                | _ -> body
+            elif n = 1 then
+                match body.[0] with
+                | TyLocalReturnOp(trace,a,d) -> [| TyLocalReturnOp(trace, tail_op tag a, d) |]
+                | _ -> body
+            else body
+        and tail_op tag (a : TypedOp) : TypedOp =
+            match a with
+            | TyIf(c,tr,fl) -> TyIf(c, tail_lets tag tr, tail_lets tag fl)
+            | TyUnionUnbox(vs,u,on_succs,on_fail) -> TyUnionUnbox(vs, u, on_succs |> Map.map (fun _ (x,b) -> x, tail_lets tag b), on_fail |> Option.map (tail_lets tag))
+            | TyIntSwitch(v,on_succ,on_fail) -> TyIntSwitch(v, Array.map (tail_lets tag) on_succ, tail_lets tag on_fail)
+            | TyDo b -> TyDo (tail_lets tag b)
+            | TyIndent b -> TyIndent (tail_lets tag b)
+            | _ -> a
         and closure : _ -> ClosureRecFsharp =
             jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                 match fun_ty with
@@ -15161,6 +15338,7 @@ module spiral_compiler =
         program.ToString() |> translateFsharpInterpolations |> foldStringBindings |> inlineRustEmits
         |> rename_exported_unions
         |> import_rust_unions
+        |> dropDeadRustLiterals
         |> cacheRustStringLiterals
         |> immutableRustLets
         |> rustMoveOnLastUse
@@ -18719,6 +18897,7 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
         let exports = ResizeArray<string>()
         let closure_of_var = Dictionary<int, int>()
         let export_names = HashSet<string>()
+        let exported_record_names = HashSet<string>()
         let exported_union_names = exportedUnionNames env x
 
         let print is_type show r =
@@ -19193,13 +19372,39 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                     | true, tag -> tag
                     | _ -> raise_codegen_error $"Compiler error: the exported function {name} is not a closure without captures."
                 let parameters = env.ty_to_data domain |> data_free_vars
-                let decl = parameters |> Array.map (fun (L(k,t)) -> sprintf "v%i: %s" k (tyv t)) |> String.concat ", "
-                let call =
-                    match parameters with
-                    | [||] -> "Nil"
-                    | [|L(k,_)|] -> sprintf "v%i" k
-                    | ps -> ps |> Array.map (fun (L(k,_)) -> sprintf "v%i" k) |> String.concat ", " |> sprintf "#(%s)"
-                exports.Add($"pub fn {name}({decl}) -> {tup_ty range} {{\n  {closure_names.[tag]}(Nil)({call})\n}}\n")
+                let prim_record (t : Ty) =
+                    match t with
+                    | YNominal n ->
+                        match env.nominal_apply t with
+                        | YRecord fields when not fields.IsEmpty && fields |> Map.forall (fun _ t -> match t with YPrim _ -> true | _ -> false) ->
+                            Some (ExternCalls.pascal (n.node.name |> String.map (fun c -> if System.Char.IsLetterOrDigit c || c = '_' then c else '_')), fields)
+                        | _ -> None
+                    | _ -> None
+                let declare_record (record_name : string, fields : Map<int * string, Ty>) =
+                    if exported_record_names.Add record_name then
+                        let members = fields |> Map.toArray |> Array.map (fun ((_,k),t) -> $"{k}: {tyv t}") |> String.concat ", "
+                        exports.Insert(0, $"pub type {record_name} {{\n  {record_name}({members})\n}}\n")
+                let decl, call =
+                    match prim_record domain with
+                    | Some (record_name, fields) ->
+                        declare_record (record_name, fields)
+                        let reads = fields |> Map.toArray |> Array.map (fun ((_,k),_) -> $"v.{k}")
+                        $"v: {record_name}", (match reads with [|one|] -> one | many -> many |> String.concat ", " |> sprintf "#(%s)")
+                    | None ->
+                        parameters |> Array.map (fun (L(k,t)) -> sprintf "v%i: %s" k (tyv t)) |> String.concat ", ",
+                        (match parameters with
+                         | [||] -> "Nil"
+                         | [|L(k,_)|] -> sprintf "v%i" k
+                         | ps -> ps |> Array.map (fun (L(k,_)) -> sprintf "v%i" k) |> String.concat ", " |> sprintf "#(%s)")
+                match prim_record range with
+                | Some (record_name, fields) ->
+                    declare_record (record_name, fields)
+                    let parts = fields |> Map.toArray |> Array.mapi (fun j ((_,k),_) -> k, $"f{j}")
+                    let binding = if parts.Length = 1 then snd parts.[0] else parts |> Array.map snd |> String.concat ", " |> sprintf "#(%s)"
+                    let build = parts |> Array.map (fun (k, f) -> $"{k}: {f}") |> String.concat ", "
+                    exports.Add($"pub fn {name}({decl}) -> {record_name} {{\n  let {binding} = {closure_names.[tag]}(Nil)({call})\n  {record_name}({build})\n}}\n")
+                | None ->
+                    exports.Add($"pub fn {name}({decl}) -> {tup_ty range} {{\n  {closure_names.[tag]}(Nil)({call})\n}}\n")
                 match d with
                 | None -> line s "let _ = Nil"
                 | Some bound ->
@@ -29302,6 +29507,28 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
     type TypecheckerState = FileState<PackageId * ModuleId * BlockBundleState, TypecheckerStateValue Stream, TypecheckerStatePropagated>
     
 
+    /// ### AutoExportCurried
+    module AutoExportCurried =
+        let trace = System.Environment.GetEnvironmentVariable "SPIRAL_AUTO_EXPORT_TRACE" = "1"
+        let synthesize bundle =
+            match bundle with
+            | BundleInl(com, r, (rn, name), term, td) ->
+                let rec parameters (e : RawExpr) acc =
+                    match e with
+                    | RawFun(_, [ (PatAnnot(_, PatVar(_, v), t), body) ]) -> parameters body ((v, t) :: acc)
+                    | RawAnnot(_, _, t) -> List.rev acc, Some t
+                    | _ -> List.rev acc, None
+                let ps, result = parameters term []
+                if ps.Length < 2 then None
+                else
+                    let pattern = ps |> List.map (fun (v, _) -> PatVar(r, v)) |> List.reduceBack (fun a b -> PatPair(r, a, b))
+                    let domain = ps |> List.map snd |> List.reduceBack (fun a b -> RawTPair(r, a, b))
+                    let call = ps |> List.fold (fun acc (v, _) -> RawApply(r, acc, RawV(r, v, false))) (RawV(r, name, false))
+                    let body = match result with Some t -> RawAnnot(r, call, t) | None -> call
+                    if trace then eprintfn "auto-export: synthesized %s__uncurried of arity %d" name ps.Length
+                    Some (BundleInl(com, r, (rn, name + "__uncurried"), RawFun(r, [ (PatAnnot(r, pattern, domain), body) ]), td))
+            | _ -> None
+
     /// ### typecheck
     let rec typecheck (package_id,module_id,env : TopEnv) x = x >>=* function
         | Cons((_,b : BlockBundleValue), ls) ->
@@ -29310,7 +29537,14 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 let x = infer package_id module_id env bundle
                 let adds = match x.top_env_additions with AOpen x | AInclude x | AIncludePrivate (_, x) -> x
                 let env = inferUnion adds env
-                Job.result (Cons((b.bundle,x,env),typecheck (package_id,module_id,env) ls))
+                match (if autoExportPids.ContainsKey package_id then AutoExportCurried.synthesize bundle else None) with
+                | Some extra ->
+                    let x2 = infer package_id module_id env extra
+                    let adds2 = match x2.top_env_additions with AOpen x | AInclude x | AIncludePrivate (_, x) -> x
+                    let env2 = inferUnion adds2 env
+                    Job.result (Cons((b.bundle,x,env), Promise.Now.withValue (Cons((Some extra,x2,env2), typecheck (package_id,module_id,env2) ls))))
+                | None ->
+                    Job.result (Cons((b.bundle,x,env),typecheck (package_id,module_id,env) ls))
             | None ->
                 typecheck (package_id,module_id,env) ls :> _ Job
         | Nil ->
@@ -30017,6 +30251,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         defaultFloat : RString option
         edition : RString option
         rustExtern : (string * string list) list
+        autoExport : RString option
         }
 
     // Restore the FParsec operator scope after the adaptive assembly boundary.
@@ -30036,6 +30271,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         defaultFloat=None
         edition=None
         rustExtern=[]
+        autoExport=None
         }
 
     /// ### ConfigError
@@ -30117,6 +30353,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 "edition", directory |>> fun x s -> {s with edition=x}
                 "crates", crate_lines |>> fun _ s -> s
                 "rust-extern", rust_extern_lines |>> fun x s -> {s with rustExtern=x}
+                "auto-export", directory |>> fun x s -> {s with autoExport=x}
                 ]
             let necessary = []
 
@@ -30163,6 +30400,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         defaultFloat : string option
         edition : string option
         rustExtern : (string * string list) list
+        autoExport : string option
         }
 
     /// ### SchemaException
@@ -30427,7 +30665,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     {name = name; dir = x.range, dir}
                     )
             let packages = resolve_packages x.packages
-            Ok {moduleDir = module_dir; modules = modules; packageDir = package_dir; packages = packages; link = resolve_packages x.link; defaultInt = x.defaultInt |> Option.map snd; defaultFloat = x.defaultFloat |> Option.map snd; edition = x.edition |> Option.map snd; rustExtern = x.rustExtern}
+            Ok {moduleDir = module_dir; modules = modules; packageDir = package_dir; packages = packages; link = resolve_packages x.link; defaultInt = x.defaultInt |> Option.map snd; defaultFloat = x.defaultFloat |> Option.map snd; edition = x.edition |> Option.map snd; rustExtern = x.rustExtern; autoExport = x.autoExport |> Option.map snd}
         with :? SchemaException as e -> Error [e.Data0]
         )
 
@@ -31973,29 +32211,6 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         let relaidSpans = new System.Threading.ThreadLocal<System.Collections.Generic.List<int * int>> (fun () -> System.Collections.Generic.List<int * int> ())
         let relayOnly = new System.Threading.ThreadLocal<int[] option> (fun () -> None)
 
-        type ThenHabit =
-            | ThenLeads
-            | ThenTrails
-
-        let thenHabit = new System.Threading.ThreadLocal<ThenHabit> (fun () -> ThenLeads)
-
-        let thenHabitOf (lines : string seq) =
-            let rows =
-                lines
-                |> Seq.map (fun raw -> raw.Length - raw.TrimStart(' ').Length, raw.Trim ())
-                |> Seq.filter (fun (_, text) -> text <> "" && not (text.StartsWith "//"))
-                |> Array.ofSeq
-            let mutable leading = 0
-            let mutable trailing = 0
-            for at in 0 .. rows.Length - 1 do
-                let indent, text = rows.[at]
-                if text = "then" || text.StartsWith "then " then leading <- leading + 1
-                elif (text.StartsWith "if " || text.StartsWith "elif ") && at + 1 < rows.Length then
-                    let nextIndent, nextText = rows.[at + 1]
-                    let opensBranch = nextText = "else" || nextText = "elif" || nextText.StartsWith "else " || nextText.StartsWith "elif "
-                    if text.EndsWith " then" && nextIndent > indent then trailing <- trailing + 1
-                    elif text.Contains " then " && nextIndent = indent && opensBranch then trailing <- trailing + 1
-            if trailing > leading then ThenTrails else ThenLeads
 
         let markAuthoredBreaks (lexemes : Lexeme[]) (lineStarts : (string * bool) list) (sourceLines : (int * string option * string list) list) =
             let breaks = authoredBreaks.Value
@@ -33041,18 +33256,13 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         if isKeyword SpecElse node && depth > 0 then depth <- depth - 1
                         current.Add node
                 branches.Add (keyword, List.ofSeq current)
-                let keywordLine (node : Node) =
-                    match node with
-                    | Leaf lexeme -> match tokenLines.Value.TryGetValue lexeme.Span.From with | true, line -> Some line | _ -> None
-                    | Group _ -> None
-                let keywordLines = branches |> Seq.map (fst >> keywordLine) |> List.ofSeq
-                let writtenOnOneLine = keywordLines |> List.forall Option.isSome && (List.distinct keywordLines).Length = 1
                 let thenStaysOnCondition (keywordNode : Node) =
                     match keywordNode with
-                    | Leaf lexeme when isKeyword SpecThen keywordNode && sourceLineTable.Value.Length > 0 ->
-                        if writtenOnOneLine || not (tokenLines.Value.ContainsKey lexeme.Span.From) then thenHabit.Value = ThenTrails
-                        else not (authoredBreaks.Value.Contains lexeme.Span.From)
+                    | Leaf _ when isKeyword SpecThen keywordNode -> true
                     | _ -> false
+                let thenWord (text : string) = if text = "?>" || text.StartsWith "?> " then "?>" else "then"
+                let isThenWord (text : string) = text = "then" || text = "?>"
+                let startsWithThen (text : string) = text.StartsWith "then " || text.StartsWith "?> "
                 let rec mergeThen (pending : (Node * bool * LaidLine list) list) =
                     match pending with
                     | (conditionNode, _, condition) :: (thenNode, bodyOnOwnLine, thenLine :: body) :: rest
@@ -33060,7 +33270,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                              && thenStaysOnCondition thenNode
                              && not condition.IsEmpty
                              && (List.last condition).Indent = thenLine.Indent
-                             && (thenLine.Text = "then" || (thenLine.Text.StartsWith "then " && not bodyOnOwnLine))
+                             && (isThenWord thenLine.Text || (startsWithThen thenLine.Text && not bodyOnOwnLine))
                              && fits thenLine.Indent ((List.last condition).Text + " " + thenLine.Text) ->
                         let last = List.last condition
                         List.take (condition.Length - 1) condition @ [ { last with Text = last.Text + " " + thenLine.Text } ] @ body @ mergeThen rest
@@ -33069,12 +33279,13 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                              && thenStaysOnCondition thenNode
                              && not condition.IsEmpty
                              && (List.last condition).Indent = thenLine.Indent
-                             && thenLine.Text.StartsWith "then "
-                             && fits thenLine.Indent ((List.last condition).Text + " then") ->
+                             && startsWithThen thenLine.Text
+                             && fits thenLine.Indent ((List.last condition).Text + " " + thenWord thenLine.Text) ->
                         let last = List.last condition
+                        let word = thenWord thenLine.Text
                         List.take (condition.Length - 1) condition
-                        @ [ { last with Text = last.Text + " then" } ]
-                        @ [ { Indent = thenLine.Indent + 4; Text = thenLine.Text.Substring 5 } ]
+                        @ [ { last with Text = last.Text + " " + word } ]
+                        @ [ { Indent = thenLine.Indent + 4; Text = thenLine.Text.Substring (word.Length + 1) } ]
                         @ body
                         @ mergeThen rest
                     | (_, _, lines) :: rest -> lines @ mergeThen rest
@@ -33770,7 +33981,6 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
 
         let layout (source : Source<'phase>) =
             let _, blocks = flatten source
-            thenHabit.Value <- thenHabitOf (blocks |> Seq.collect (function Flattened (_, original) -> original | Refused (_, _, original) -> original))
             let output = ResizeArray<string> ()
             let mutable previousCode : string option = None
             let mutable previousSingleInstance = false
@@ -33819,6 +34029,29 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                         | _ -> ()
                                     relayOnly.Value <- None
                                     best
+                                let joinThenLines (lines : string list) : string list =
+                                    let rows = ResizeArray<string>(lines)
+                                    let indentOf (line : string) = line.Length - line.TrimStart(' ').Length
+                                    let quoteSafe (line : string) =
+                                        not (line.Contains "\"\"\"") && not (line.EndsWith "\\") && (line |> Seq.filter (fun c -> c = '"') |> Seq.length) % 2 = 0
+                                    let conditionHead (text : string) = text.StartsWith "? " || text.StartsWith "|? " || text.StartsWith "if " || text.StartsWith "elif "
+                                    let thenText (text : string) = text = "?>" || text.StartsWith "?> " || text = "then" || text.StartsWith "then "
+                                    let mutable at = 1
+                                    while at < rows.Count do
+                                        let line = rows.[at]
+                                        let trimmed = line.Trim ()
+                                        let previous = rows.[at - 1]
+                                        if thenText trimmed
+                                           && indentOf line = indentOf previous
+                                           && conditionHead (previous.TrimStart ())
+                                           && not (previous.Contains "//")
+                                           && quoteSafe previous
+                                           && quoteSafe line
+                                           && displayWidth (previous + " " + trimmed) <= 120 then
+                                            rows.[at - 1] <- previous + " " + trimmed
+                                            rows.RemoveAt at
+                                        else at <- at + 1
+                                    List.ofSeq rows
                                 let textHabits (lines : string list) : string list =
                                     let rows = ResizeArray<string>(lines)
                                     let indentOf (line : string) = line.Length - line.TrimStart(' ').Length
@@ -33887,7 +34120,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                                     rows.[close] <- pad p (rows.[close].TrimStart ())
                                             at <- k
                                         else at <- at + 1
-                                    List.ofSeq rows
+                                    joinThenLines (List.ofSeq rows)
                                 match (if fitsAsWritten then AsWritten else layoutFlatLine text lineStarts sourceLines) with
                                 | AsWritten ->
                                     let written = kept ()
@@ -33896,6 +34129,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                 | LaidOut marked ->
                                     match chosen marked with
                                     | Some laid ->
+                                        let joined = joinThenLines laid
+                                        let laid = if joined <> laid && sameParse joined then joined else laid
                                         let split = laid |> List.collect splitMacroLine
                                         if split = laid || sameParse split then split else laid
                                     | None ->
@@ -34962,7 +35197,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
 
     /// ### ss_empty
     let ss_empty = {
-        schema = {moduleDir = None, null; modules = []; packageDir = None, null; packages = []; link = []; defaultInt = None; defaultFloat = None; edition = None; rustExtern = []}
+        schema = {moduleDir = None, null; modules = []; packageDir = None, null; packages = []; link = []; defaultInt = None; defaultFloat = None; edition = None; rustExtern = []; autoExport = None}
         errors_parse = []; errors_modules = []; errors_packages = []
         }
     
@@ -35046,6 +35281,37 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 | None -> owner (System.IO.Path.GetDirectoryName dir)
         owner (System.IO.Path.GetDirectoryName file)
     
+
+    /// ### file_auto_export
+    let file_auto_export (packages : SchemaEnv) (file : string) =
+        let rec owner (dir : string) =
+            if System.String.IsNullOrEmpty dir then None
+            else
+                match SchemaEnv.tryFindText (SpiralFileSystem.standardize_path dir) packages with
+                | Some schema -> schema.schema.autoExport
+                | None -> owner (System.IO.Path.GetDirectoryName dir)
+        owner (System.IO.Path.GetDirectoryName file)
+
+    /// ### LinkAutoExport
+    module LinkAutoExport =
+        let trace = System.Environment.GetEnvironmentVariable "SPIRAL_AUTO_EXPORT_TRACE" = "1"
+        let rec candidate (annotated : bool) (e : E) =
+            match e with
+            | EAnnot(_, a, _) -> candidate true a
+            | EFun'(_, _, _, body, t) -> (annotated || t.IsSome) && (match body with EFun' _ | EForall' _ -> false | _ -> true)
+            | _ -> false
+        let shape (e : E) = match e with EAnnot(_, EFun' _, _) -> "annot-fun" | EFun' _ -> "fun" | EAnnot _ -> "annot-other" | _ -> "other"
+        let main (unit : string) (own : Map<string, E>) (main : E) =
+            let exports = own |> Map.toList |> List.filter (fun (name, e) -> name <> "main" && candidate false e)
+            if trace then
+                let shapes = own |> Map.toList |> List.map (fun (name, e) -> $"{name}:{shape e}") |> String.concat " "
+                eprintfn "auto-export: unit %s own %d [%s] candidates [%s] main %s" unit own.Count shapes (exports |> List.map fst |> String.concat " ") (shape main)
+            let inject (r : Range) (body : E) = List.foldBack (fun (name, e) acc -> ESeq(r, EOp(r, Export, [ELit(r, LitString $"{unit}_{name}"); e]), acc)) exports body
+            match main with
+            | _ when exports.IsEmpty -> main
+            | EAnnot(r, EFun'(r2, scope, id, body, t), ty) -> EAnnot(r, EFun'(r2, scope, id, inject r body, t), ty)
+            | EFun'(r, scope, id, body, t) -> EFun'(r, scope, id, inject r body, t)
+            | _ -> main
 
     /// ### readUnitGraph
     /// The unions a built unit exports, from its `<stem>.unit.json` graphs (unitGraphDir of its package folder); None until
@@ -35171,6 +35437,16 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 | _ -> () |])
         |> Map.ofArray
 
+    /// ### readUnitWraps
+    let readUnitWraps (dir : string) : Map<string * string, string> =
+        (try System.IO.Directory.GetFiles(unitGraphDir dir, "*.unit.json") with _ -> [||])
+        |> Array.collect (fun file ->
+            use graph = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllText file)
+            match graph.RootElement.TryGetProperty "wraps" with
+            | true, rows -> [| for w in rows.EnumerateArray() -> (w.GetProperty("path").GetString(), w.GetProperty("name").GetString()), w.GetProperty("export").GetString() |]
+            | _ -> [||])
+        |> Map.ofArray
+
     /// ### file_package_dir
     /// The folder of the package that owns the file (its nearest package.spiproj / spiral.toml in the schema env).
     let file_package_dir (packages : SchemaEnv) (file : string) =
@@ -35193,7 +35469,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 match SchemaEnv.tryFindText (SpiralFileSystem.standardize_path dir) packages with
                 | Some schema ->
                     schema.schema.link
-                    |> List.choose (fun l -> let dir = snd l.dir in Map.tryFind dir package_ids |> Option.map (fun id -> id, {unit = System.IO.Path.GetFileName(dir.TrimEnd('/', '\\')); exported = readUnitGraph dir; calls = readUnitCalls dir; shapes = Set.union (RustLinkedShapes.read dir) (GleamLinkedPrelude.read dir)}))
+                    |> List.choose (fun l -> let dir = snd l.dir in Map.tryFind dir package_ids |> Option.map (fun id -> id, {unit = System.IO.Path.GetFileName(dir.TrimEnd('/', '\\')); exported = readUnitGraph dir; calls = readUnitCalls dir; wraps = readUnitWraps dir; shapes = Set.union (RustLinkedShapes.read dir) (GleamLinkedPrelude.read dir)}))
                     |> Map.ofList
                 | None -> owner (System.IO.Path.GetDirectoryName dir)
         owner (System.IO.Path.GetDirectoryName file)
@@ -35634,6 +35910,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
     let proj_validate default_env s dirty_packages =
         let order,socs = circular_nodes s.graph dirty_packages
         let packages = ss_validate s.packages s.modules (order,socs)
+        for KeyValue(dir, pid) in fst s.package_ids do
+            match SchemaEnv.tryFindText (SpiralFileSystem.standardize_path dir) packages with
+            | Some schema when schema.schema.autoExport = Some "monomorphic" -> autoExportPids.[pid] <- true
+            | _ -> autoExportPids.TryRemove pid |> ignore
         let packages_infer = wdiff_projenvr_tc default_env (fst s.package_ids) packages s.modules s.packages_infer (dirty_packages, order)
         order, {s with packages_infer = packages_infer; packages=packages}
 
@@ -36161,9 +36441,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         trace Verbose (fun () -> "Supervisor.supervisor_server.BuildFile.file_build.wait_prepass") _locals
                         // Also note whether the entry file defines `main` itself: an `open` can bring another module's
                         // `main` into scope too (a sub-package whose module `main` opens its dependency's module `main`).
-                        Stream.foldFun (fun (own_main,_) ((_,adds,env) : PrepassStateValue) ->
-                            own_main || (match adds with AInclude small | AIncludePrivate (small, _) -> Map.containsKey "main" small.term | AOpen _ -> false), env
-                            ) (false,prepassTop_env_empty) x.result >>=* fun (own_main,env) ->
+                        Stream.foldFun (fun (own_main,own_terms,_) ((_,adds,env) : PrepassStateValue) ->
+                            let own_terms = match adds with AInclude small | AIncludePrivate (small, _) -> Map.foldBack Map.add small.term own_terms | AOpen _ -> own_terms
+                            own_main || (match adds with AInclude small | AIncludePrivate (small, _) -> Map.containsKey "main" small.term | AOpen _ -> false), own_terms, env
+                            ) (false,Map.empty,prepassTop_env_empty) x.result >>=* fun (own_main,own_terms,env) ->
                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.prepass_ready / terms: {env.term.Count} / own_main: {own_main}") _locals
                         // A block that fails to tokenize or parse is left out of its module and the build goes on, so its
                         // tokenizer and parser errors are reported here (they ride on the bundles type checking consumed).
@@ -36236,6 +36517,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                 let details = entry_errors |> List.map (fun (path,((a,_),message)) -> $"\n{path}:{a.line + 1}:{a.character + 1}: {message}") |> String.concat ""
                                 BuildFatalError $"The package of {Path.GetFileNameWithoutExtension file} has blocks that fail to tokenize or parse (such a block is left out of its module: its definitions would be missing without a word).{details}"
                             | _, Some main ->
+                                let main =
+                                    if file_auto_export s.packages file = Some "monomorphic" then
+                                        LinkAutoExport.main (System.IO.Path.GetFileName((file_package_dir s.packages file).TrimEnd('/', '\\'))) own_terms main
+                                    else main
                                 let prototypes_instances = Dictionary(env.prototypes_instances)
                                 let nominals =
                                     let t = HashConsTable()
@@ -36248,13 +36533,18 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                         RustGapTrace.clear_missing_arm ()
                                         packageDirsById.Value <- fst s.package_ids |> Map.toSeq |> Seq.map (fun (dir, id) -> id, dir) |> Map.ofSeq
                                         ExternCalls.warned.Value.Clear()
+                                        ExternCalls.wrapped.Value <-
+                                            if backend = "Rust" || backend = "Gleam" || backend = "Zig" then
+                                                file_linked_units s.packages (fst s.package_ids) file
+                                                |> Map.fold (fun m _ (l : LinkedUnit) -> l.wraps |> Map.fold (fun m k e -> Map.add k $"{l.unit}.{e}" m) m) Map.empty
+                                            else Map.empty
                                         ExternCalls.current.Value <-
                                             let calls (call : LinkedUnit -> string -> ExternCalls.Call) =
                                                 file_linked_units s.packages (fst s.package_ids) file
                                                 |> Map.fold (fun m _ (l : LinkedUnit) -> l.calls |> Map.fold (fun m k e -> Map.add k (call l e) m) m) Map.empty
-                                            if backend = "Rust" then calls (fun l e -> {call = $"{l.unit}::{e}"; import_text = None; borrow_strings = true; unit_path = $"{l.unit}::"; struct_records = true; flat_records = false; multi_ranges = true; copy_tuples = false})
-                                            elif backend = "Gleam" then calls (fun l e -> {call = $"{l.unit}.{e}"; import_text = Some $"import {l.unit}"; borrow_strings = false; unit_path = $"{l.unit}."; struct_records = false; flat_records = true; multi_ranges = true; copy_tuples = false})
-                                            elif backend = "Zig" then calls (fun l e -> {call = $"{l.unit}.{e}"; import_text = Some $"const {l.unit} = @import(\"{l.unit}.zig\");"; borrow_strings = false; unit_path = $"{l.unit}."; struct_records = false; flat_records = true; multi_ranges = true; copy_tuples = true})
+                                            if backend = "Rust" then calls (fun l e -> {call = $"{l.unit}::{e}"; import_text = None; borrow_strings = true; unit_path = $"{l.unit}::"; struct_records = true; flat_records = false; multi_ranges = true; copy_tuples = false; pascal_records = false})
+                                            elif backend = "Gleam" then calls (fun l e -> {call = $"{l.unit}.{e}"; import_text = Some $"import {l.unit}"; borrow_strings = false; unit_path = $"{l.unit}."; struct_records = true; flat_records = true; multi_ranges = true; copy_tuples = false; pascal_records = true})
+                                            elif backend = "Zig" then calls (fun l e -> {call = $"{l.unit}.{e}"; import_text = Some $"const {l.unit} = @import(\"{l.unit}.zig\");"; borrow_strings = false; unit_path = $"{l.unit}."; struct_records = false; flat_records = true; multi_ranges = true; copy_tuples = true; pascal_records = false})
                                             else Map.empty
                                         let (a,_),b = PartEvalSeams.with_conflict_restart (fun inline_restart -> peval {prototypes_instances=prototypes_instances; nominals=nominals; backend=backend; inline_restart=inline_restart} main)
                                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.peval_ready / backend: {backend}") _locals

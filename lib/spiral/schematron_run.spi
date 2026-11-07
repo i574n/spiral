@@ -20,19 +20,19 @@
     | b :: rest => bound { s ?| variables = ((b::name, eval s b::value) :: s::variables) } rest
     | [] => s
 
+:= assertion_fires (a : assertion) (holds : bool) : bool = ?= a::kind ?| Asserts => holds = !- | Reports => holds
+
+:= fired_failure (s : scope) (a : assertion) (detail : string) : failure =
+    { id = a::id; severity = a::severity; path = s::context::path; detail = detail }
+
+:= assertion_failure (s : scope) (a : assertion) : option failure =
+    ?= test_outcome s a::test ?|
+    | Broken reason => Some (fired_failure s a ("error: " ++# reason))
+    | Evaluated holds => ? assertion_fires a holds ?> Some (fired_failure s a "") |: None
+
 :~ ^ check_assertions (s : scope) (assertions : list assertion) (acc : list failure) : list failure =
     ?= assertions ?|
-    | a :: rest =>
-        := acc =
-            ?= test_outcome s a::test ?|
-            | Broken reason =>
-                { id = a::id; severity = a::severity; path = s::context::path; detail = "error: " ++# reason } :: acc
-            | Evaluated holds =>
-                := fires = ?= a::kind ?| Asserts => holds = !- | Reports => holds
-                ? fires
-                ?> { id = a::id; severity = a::severity; path = s::context::path; detail = "" } :: acc
-                |: acc
-        check_assertions s rest acc
+    | a :: rest => check_assertions s rest (?= assertion_failure s a ?| Some f => f :: acc | None => acc)
     | [] => acc
 
 :~ ^ check_contexts
@@ -46,18 +46,30 @@
         check_contexts s rest lets assertions (check_assertions at assertions acc)
     | [] => acc
 
+:= context_failure (r : rule) (reason : string) : failure =
+    { id = rule_id "context"; severity = Fatal; path = []; detail = r::context_source ++# ": " ++# reason }
+
+:= rule_failures (s : scope) (r : rule) (contexts : list located) (acc : list failure) : list failure =
+    check_contexts s contexts r::lets r::assertions acc
+
+:= nodes_step
+    (s : scope) (r : rule) (found : list located) (fired : list located) (acc : list failure)
+    : list located * list failure
+    =
+    := contexts = without_fired found fired []
+    listm::append fired contexts, rule_failures s r contexts acc
+
+:= rule_step (s : scope) (r : rule) (fired : list located) (acc : list failure) : list located * list failure =
+    ?= eval s (context_query r::context_source) ?|
+    | VNodes found => nodes_step s r found fired acc
+    | VError reason => fired, context_failure r reason :: acc
+    | _ => fired, acc
+
 :~ ^ check_rules (s : scope) (rules : list rule) (fired : list located) (acc : list failure) : list failure =
     ?= rules ?|
     | r :: rest =>
-        ?= eval s (context_query r::context_source) ?|
-        | VNodes found =>
-            := contexts = without_fired found fired []
-            check_rules s rest (listm::append fired contexts) (check_contexts s contexts r::lets r::assertions acc)
-        | VError reason =>
-            := detail = r::context_source ++# ": " ++# reason
-            := failure = { id = rule_id "context"; severity = Fatal; path = []; detail = detail }
-            check_rules s rest fired (failure :: acc)
-        | _ => check_rules s rest fired acc
+        := next_fired, next_acc = rule_step s r fired acc
+        check_rules s rest next_fired next_acc
     | [] => acc
 
 :~ ^ check_patterns (s : scope) (patterns : list pattern) (acc : list failure) : list failure =
@@ -80,12 +92,15 @@
     | p :: rest => shared_lets rest (unseen p::lets acc)
     | [] => listm::rev acc
 
-:= validate_on (today : string) (patterns : list pattern) (document : xml_node) : list failure =
+:= pattern_namespaces (patterns : list pattern) : list (string * string) = listm::concat (listm::map (\ (p : pattern) => p::namespaces) patterns)
+
+:= start_scope (today : string) (patterns : list pattern) (document : xml_node) : scope =
     := root = document_root document
-    := namespaces = listm::concat (listm::map (\ (p : pattern) => p::namespaces) patterns)
-    := start = { context = root; current = root; root = root; variables = []; today = today; namespaces = namespaces }
-    := shared = bound start (shared_lets patterns [])
-    check_patterns shared patterns []
+    { context = root; current = root; root = root; variables = []; today = today; namespaces = pattern_namespaces patterns }
+
+:= validate_on (today : string) (patterns : list pattern) (document : xml_node) : list failure =
+    := start = start_scope today patterns document
+    check_patterns (bound start (shared_lets patterns [])) patterns []
 
 := validate (patterns : list pattern) (document : xml_node) : list failure = validate_on "" patterns document
 

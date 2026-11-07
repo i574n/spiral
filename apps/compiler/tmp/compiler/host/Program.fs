@@ -898,7 +898,7 @@ module Program =
                  with ex -> [$"(could not list the typer's errors: {ex.GetType().Name}: {ex.Message})"])
                 |> List.iter (eprintfn "%s")
                 failwith $"Package typecheck rejected: {packageDir}"
-            printfn "checked package %s" packageDir
+            printfn "checked package %s (parse and type inference only: partial evaluation and test blocks did not run, so a --backend build can still fail)" packageDir
             0
         with error ->
             eprintfn "%s" error.Message

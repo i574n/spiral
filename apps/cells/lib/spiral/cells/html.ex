@@ -38,6 +38,7 @@ defmodule Spiral.Cells.Html do
     main { max-width: 960px; margin: 0 auto; padding: 12px; }
     pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
     pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+    .plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
     .badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
     .badge.passed { background-color: #23452a; color: #9fdc9f; }
     .badge.failed { background-color: #4a2323; color: #f0a0a0; }
@@ -73,6 +74,7 @@ defmodule Spiral.Cells.Html do
   defp cell(_json, _tokenize), do: ""
 
   defp output(%{"text" => text}), do: "<pre class=\"output\">" <> escape(join(text)) <> "</pre>\n"
+  defp output(%{"data" => %{"image/svg+xml" => svg}}), do: "<div class=\"plot\">" <> join(svg) <> "</div>\n"
   defp output(%{"data" => %{"text/plain" => text}}), do: "<pre class=\"output\">" <> escape(join(text)) <> "</pre>\n"
   defp output(_), do: ""
 

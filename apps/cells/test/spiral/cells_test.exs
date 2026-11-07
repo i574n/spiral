@@ -413,12 +413,13 @@ defmodule Spiral.CellsTest do
       File.rm_rf!(root)
     end
   end
-  test "a notebook lists its dependencies before its own package, so its own modules shadow theirs" do
-    lines = Spiral.Cells.notebook_package_text(["spi"], ["client-", "spiral-"], "../packages") |> String.split("\n") |> Enum.map(&String.trim/1)
-    own = Enum.find_index(lines, &(&1 == "spi"))
-    assert own > Enum.find_index(lines, &(&1 == "client-"))
-    assert own > Enum.find_index(lines, &(&1 == "spiral-"))
-    assert Enum.find_index(lines, &(&1 == "|core-")) < Enum.find_index(lines, &(&1 == "client-"))
+  test "a notebook lists its own package first and its dependency imports in declared order after it" do
+    lines = Spiral.Cells.notebook_package_text(["spi"], ["spiral-", "client-"], "../packages") |> String.split("\n") |> Enum.map(&String.trim/1)
+    at = fn wanted -> Enum.find_index(lines, &(&1 == wanted)) || flunk("#{wanted} is not a line of the package text") end
+    assert at.("|core-") < at.("spi-")
+    assert at.("spi-") < at.("spiral-")
+    assert at.("spiral-") < at.("client-")
+    assert at.("client-") < at.("modules:")
   end
 
   test "two cells share one package directory" do

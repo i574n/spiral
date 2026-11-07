@@ -81,15 +81,19 @@
 :~ ^ dot_l \* n. (k : len n) (a : floats) (ao : i32) (b : floats) (j : i32) (acc : f32) : f32 =
     ? j >= width k ?> acc |: dot_l k a ao b (j + 1) (acc + index a (ao + j) * index b j)
 
-:~ ^ rows_l \* n d. (kn : len n) (kd : len d) (o : floats) (x : floats) (w : floats) (off : i32) (i : i32) : () =
-    ? i < width kd ?>
+:~ ^ rows_l \* n d. (kn : len n) (kd : len d) (o : floats) (x : floats) (w : floats) (off : i32) (i : i32) (end : i32) : () =
+    ? i < end ?>
         set o i (dot_l kn w (off + i * width kn) x 0 0.0f32)
-        rows_l kn kd o x w off (i + 1)
+        rows_l kn kd o x w off (i + 1) end
+
+:= rows_par \* n d. (kn : len n) (kd : len d) (o : floats) (x : floats) (w : floats) (off : i32) : () =
+    := chunk, rows = 16, width kd
+    parallel::for_index ((rows + chunk - 1) / chunk) \ c => rows_l kn kd o x w off (c * chunk) (min rows ((c + 1) * chunk))
 
 := rows_if \* n d. (kn : len n) (kd : len d) (o : floats) (x : floats) (w : floats) (off : i32) (p : i32 * i32) : bool =
     := n2, d2 = p
     ? n2 = width kn && d2 = width kd ?>
-        rows_l kn kd o x w off 0
+        rows_par kn kd o x w off
         !+
     |: !-
 
@@ -157,6 +161,41 @@
     | Stories15M => shaped_by (dims_15m ()) o x w off p
     | Stories42M => shaped_by (dims_42m ()) o x w off p
     | _ => hit_large k o x w off p
+
+:== rows_group = { o : floats; off : i32; d : i32 }
+
+:= row_l_into \* n. (kn : len n) (x : floats) (w : floats) (g : rows_group) (i : i32) : () =
+    set g::o i (dot_l kn w (g::off + i * width kn) x 0 0.0f32)
+
+:~ ^ rows_l_fused \* n. (kn : len n) (x : floats) (w : floats) (a : rows_group) (b : rows_group) (c : rows_group) (r : i32) (end : i32) : () =
+    ? r < end ?>
+        ? r < a::d ?> row_l_into kn x w a r
+        |? r < a::d + b::d ?> row_l_into kn x w b (r - a::d)
+        |: row_l_into kn x w c (r - a::d - b::d)
+        rows_l_fused kn x w a b c (r + 1) end
+
+:= rows_par_fused \* n. (kn : len n) (x : floats) (w : floats) (a : rows_group) (b : rows_group) (c : rows_group) : () =
+    := chunk, rows = 16, a::d + b::d + c::d
+    parallel::for_index ((rows + chunk - 1) / chunk) \ k => rows_l_fused kn x w a b c (k * chunk) (min rows ((k + 1) * chunk))
+
+:= fused_with \* n. (kn : len n) (x : floats) (w : floats) (width_in : i32) (a : rows_group) (b : rows_group) (c : rows_group) : bool =
+    ? width_in = width kn ?>
+        rows_par_fused kn x w a b c
+        !+
+    |: !-
+
+:= fused_known (k : known) (x : floats) (w : floats) (n : i32) (a : rows_group) (b : rows_group) (c : rows_group) : bool =
+    ?= k ?|
+    | Stories15M =>
+        := ka, _, _, _ = dims_15m ()
+        fused_with ka x w n a b c
+    | Stories42M =>
+        := ka, _, _, _ = dims_42m ()
+        fused_with ka x w n a b c
+    | Stories110M =>
+        := ka, _, _, _ = dims_110m ()
+        fused_with ka x w n a b c
+    | _ => !-
 
 := matmul_known (k : known) (o : floats) (x : floats) (w : floats) (off : i32) (n : i32) (d : i32) : () =
     ? hit_known k o x w off (n, d) = !- ?> f32_kernels::matmul o x w off n d
@@ -383,7 +422,26 @@
     := xq : array i8 = create n
     := xs : floats = create (n / w::gs)
     quantize_groups !- x xq xs w::gs 0 (n / w::gs * w::gs)
-    rows_q8 o xq xs w off n d 0
+    := chunk = 16
+    parallel::for_index ((d + chunk - 1) / chunk) \ c => rows_q8 o xq xs w off n (min d ((c + 1) * chunk)) (c * chunk)
+
+:= row_into (xq : array i8) (xs : floats) (w : q8) (n : i32) (g : rows_group) (i : i32) : () =
+    set g::o i (row_q8 xq xs w (g::off + i * n) n 0 0.0f32)
+
+:~ ^ rows_fused (xq : array i8) (xs : floats) (w : q8) (n : i32) (a : rows_group) (b : rows_group) (c : rows_group) (hi : i32) (r : i32) : () =
+    ? r < hi ?>
+        ? r < a::d ?> row_into xq xs w n a r
+        |? r < a::d + b::d ?> row_into xq xs w n b (r - a::d)
+        |: row_into xq xs w n c (r - a::d - b::d)
+        rows_fused xq xs w n a b c hi (r + 1)
+
+:= matmul_q8_fused (w : q8) (x : floats) (n : i32) (a : rows_group) (b : rows_group) (c : rows_group) : () =
+    := xq : array i8 = create n
+    := xs : floats = create (n / w::gs)
+    quantize_groups !- x xq xs w::gs 0 (n / w::gs * w::gs)
+    := rows = a::d + b::d + c::d
+    := chunk = 16
+    parallel::for_index ((rows + chunk - 1) / chunk) \ k => rows_fused xq xs w n a b c (min rows ((k + 1) * chunk)) (k * chunk)
 
 := matmul_model (m : model) (o : floats) (x : floats) (off : i32) (n : i32) (d : i32) : () =
     ?= m::q8 ?|
@@ -479,10 +537,18 @@
 := qkv (m : model) (b : buffers) (layer : i32) : () =
     := a = m::l::att
     := d = m::c::dim
+    := kv = kv_dim m::c
     normed m b a::rms layer
-    project m b::q b::xb a::wq layer d d
-    project m b::k b::xb a::wk layer d (kv_dim m::c)
-    project m b::v b::xb a::wv layer d (kv_dim m::c)
+    := gq : rows_group = { o = b::q; off = layer_at a::wq layer (d * d); d = d }
+    := gk : rows_group = { o = b::k; off = layer_at a::wk layer (d * kv); d = kv }
+    := gv : rows_group = { o = b::v; off = layer_at a::wv layer (d * kv); d = kv }
+    ?= m::q8 ?|
+    | Some w => matmul_q8_fused w b::xb d gq gk gv
+    | None =>
+        ? fused_known m::k b::xb m::w d gq gk gv = !- ?>
+            project m b::q b::xb a::wq layer d d
+            project m b::k b::xb a::wk layer d kv
+            project m b::v b::xb a::wv layer d kv
 
 := cache_kv (c : config) (b : buffers) (s : caches) (layer : i32) (pos : i32) : () =
     rope_from c b pos 0
@@ -504,9 +570,19 @@
         swiglu_from hb hb2 n (i + 1)
 
 := ffn_hidden (m : model) (b : buffers) (layer : i32) : () =
-    normed m b m::l::ffn::rms layer
-    project m b::hb b::xb m::l::ffn::w1 layer m::c::dim m::c::hidden
-    project m b::hb2 b::xb m::l::ffn::w3 layer m::c::dim m::c::hidden
+    := f = m::l::ffn
+    := d = m::c::dim
+    := h = m::c::hidden
+    normed m b f::rms layer
+    := g1 : rows_group = { o = b::hb; off = layer_at f::w1 layer (d * h); d = h }
+    := g3 : rows_group = { o = b::hb2; off = layer_at f::w3 layer (d * h); d = h }
+    := none : rows_group = { o = b::hb2; off = 0; d = 0 }
+    ?= m::q8 ?|
+    | Some w => matmul_q8_fused w b::xb d g1 g3 none
+    | None =>
+        ? fused_known m::k b::xb m::w d g1 g3 none = !- ?>
+            project m b::hb b::xb f::w1 layer d h
+            project m b::hb2 b::xb f::w3 layer d h
 
 := feed_forward (m : model) (b : buffers) (layer : i32) : () =
     ffn_hidden m b layer

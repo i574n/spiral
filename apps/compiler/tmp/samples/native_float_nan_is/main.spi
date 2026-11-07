@@ -8,7 +8,7 @@
         Lean = \ () => $"(0.0 / 0.0 : Float32)" : f32
         OpenQasm = \ () => $"((1e308 * 10.0) - (1e308 * 10.0))" : f32
         Rust = \ () => $"f32::NAN" : f32
-        Delphi = \ () => $"NaN" : f32
+        Pascal = \ () => $"NaN" : f32
         })
 := make_nan64 () : f64 =
     !!!!BackendSwitch({
@@ -18,7 +18,7 @@
         Lean = \ () => $"(0.0 / 0.0 : Float)" : f64
         OpenQasm = \ () => $"((1e308 * 10.0) - (1e308 * 10.0))" : f64
         Rust = \ () => $"f64::NAN" : f64
-        Delphi = \ () => $"NaN" : f64
+        Pascal = \ () => $"NaN" : f64
         })
 
 := main () : i32 =

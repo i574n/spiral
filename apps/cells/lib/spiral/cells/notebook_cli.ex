@@ -146,8 +146,16 @@ defmodule Spiral.Cells.NotebookCli do
     lines = cell_budget_lines(paths, opts) ++ if(reports == [], do: [], else: Notebook.summary_lines(reports))
 
     case for({path, {:error, message}, _report} <- results, do: "#{path}: #{message}") do
-      [] -> {:ok, lines}
+      [] -> void_result(results, lines)
       failures -> {{:error, Enum.join(failures, "\n")}, lines}
+    end
+  end
+
+  @doc false
+  def void_result(results, lines) do
+    case for({path, _status, %{"timed_out" => n}} <- results, n > 0, do: "#{path}: VOID, #{n} test(s) hit the cell timeout, so they are not a verdict; rerun with a wider --timeout") do
+      [] -> {:ok, lines}
+      voids -> {{:error, Enum.join(voids, "\n")}, lines}
     end
   end
 

@@ -128,7 +128,7 @@ def U7.spiralTag : U7 → Int32
 def U8.spiralTag : U8 → Int32
   | .BitMatcherRaw .. => 0
 def U9.spiralTag : U9 → Int32
-  | .BitMatcherDecided .. => 0
+  | .BitMatcherDecided .. => 1
 mutual
 partial def regex_compare_5 (p0 : U4) (p1 : U4) : IO U5 := do
     let mut v0 : U4 := p0

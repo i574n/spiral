@@ -655,6 +655,47 @@
 
 := year_curve method deriv = solver_ method deriv (constant_force_start ()) |> year_points |> curve_arrays
 
+:~ ^ numbers_from (xs : array_base f64) (i : i32) : list string =
+    ? i >= am'::length_base xs ?> [] |: sm'::format_debug (am'::index_base i xs) :: numbers_from xs (i + 1i32)
+
+:= numbers_json (xs : array_base f64) : string =
+    sm'::concat_list "" [ "["; numbers_from xs 0i32 |> sm'::concat_list ", "; "]" ]
+
+:= series_json ((label, xs, ys) : string * array_base f64 * array_base f64) : string =
+    sm'::concat_list "" [ "["; json::quote label; ", "; numbers_json xs; ", "; numbers_json ys; "]" ]
+
+:== chart = string * string * string * array (string * array_base f64 * array_base f64)
+
+:= chart_json ((caption, x, y, series) : chart) : string =
+    sm'::concat_list "" [
+        "["; json::quote caption; ", "; json::quote x; ", "; json::quote y; ", ["
+        series |> am'::map' series_json |> sm'::join' ", "
+        "]]"
+    ]
+
+:= show_chart chart : () =
+    console::write_line (
+        sm'::concat_list "" [
+            "SPIRAL_CELLS_DISPLAY_BEGIN\napplication/vnd.spiral.plot+json\n"
+            chart_json chart
+            "\nSPIRAL_CELLS_DISPLAY_END"
+        ]
+    )
+
+:~ ^ charts_from (cs : array_base chart) (i : i32)
+    : list string
+    =
+    ? i >= am'::length_base cs ?> [] |: chart_json (am'::index_base i cs) :: charts_from cs (i + 1i32)
+
+:= show_frames (charts : array_base chart) : () =
+    console::write_line (
+        sm'::concat_list "" [
+            "SPIRAL_CELLS_DISPLAY_BEGIN\napplication/vnd.spiral.plot-frames+json\n["
+            charts_from charts 0i32 |> sm'::concat_list ", "
+            "]\nSPIRAL_CELLS_DISPLAY_END"
+        ]
+    )
+
 := constant_force_chart newton_x newton_y relativity_y =
     "response to a constant force",
     "time (years)",
@@ -671,7 +712,7 @@
 
 :# relativity_ps =
     := ~method = runge_kutta_4 100000
-    constant_force_chart_of method [ \ _ => 10 *^ i_hat () ]
+    constant_force_chart_of method [ \ _ => 10 *^ i_hat () ] |> show_chart
 
 := uniform_lorentz_force v_e v_b (st : particle_state) =
     st::charge *^ (v_e ^+^ st::velocity >< v_b)
@@ -709,7 +750,7 @@
 
 :# relativity_ps_2 =
     := ~method = runge_kutta_4 0.000000001
-    proton_chart_of method [ uniform_lorentz_force (zero_vec ()) (k_hat ()) ]
+    proton_chart_of method [ uniform_lorentz_force (zero_vec ()) (k_hat ()) ] |> show_chart
 
 :== force_vector = vec
 :== two_body_force = particle_state -> particle_state -> force_vector
@@ -875,7 +916,7 @@
 :# system_kinetic_energy_versus_time_1_2 =
     := ec_x, ec_y = ke_curve_l euler_cromer_mps_l
     := rk4_x, rk4_y = ke_curve_l runge_kutta_4
-    ke_chart ec_x ec_y rk4_x rk4_y
+    ke_chart ec_x ec_y rk4_x rk4_y |> show_chart
 
 := linear_spring k re (particle_state st1) (particle_state st2) =
     := r1 = st1::pos_vec
@@ -938,10 +979,9 @@
     frames |> listm::map (string_frame_l initial_state) |> listm'::box |> listm'::to_array'
 
 :# wave_1 =
-    :~ main () =
-        := n = 0i32
-        := x, y = array (string_frames_l ()) |> am'::index n
-        "wave", "position (m)", "displacement (m)", ;[ ($'$"{!n}"' : string), x, y ]
+    := n = 0i32
+    := x, y = array (string_frames_l ()) |> am'::index n
+    ("wave", "position (m)", "displacement (m)", ;[ sm'::format n, x, y ]) |> show_chart
 
 :! multi_particle_state_s = stream::stream particle_state
 
@@ -1052,7 +1092,7 @@
 :# system_kinetic_energy_versus_time_2_2 =
     := ec_x, ec_y = ke_curve_s euler_cromer_mps_s
     := rk4_x, rk4_y = ke_curve_s runge_kutta_4
-    ke_chart ec_x ec_y rk4_x rk4_y
+    ke_chart ec_x ec_y rk4_x rk4_y |> show_chart
 
 := forces_string_s () =
     [
@@ -1083,7 +1123,7 @@
     := (multi_particle_state_s sts) = stream::iterate (string_update_s 0.000025) initial_state |> stream::item n
     string_points_s sts |> stream::from_list |> stream::unzip |> stream_arrays
 
-:= wave_plot (n : i32) x y = "wave", "position (m)", "displacement (m)", ;[ ($'$"{!n}"' : string), x, y ]
+:= wave_plot (n : i32) x y = "wave", "position (m)", "displacement (m)", ;[ sm'::format n, x, y ]
 
 := string_frames_s () =
     := ~frames = listm'::init_series 0 65 1f64 |> stream::from_list
@@ -1091,6 +1131,10 @@
     frames |> stream::map (string_frame_s initial_state)
 
 :# wave_2 =
-    :~ main () =
-        := plots = string_frames_s () |> stream::indexed |> stream::map \ ((n : i32), (x, y)) => wave_plot n x y
-        plots |> stream::to_list |> listm'::box |> listm'::to_array'
+    string_frames_s ()
+    |> stream::indexed
+    |> stream::map (\ ((n : i32), (x, y)) => wave_plot n x y)
+    |> stream::to_list
+    |> listm'::box
+    |> listm'::to_array'
+    |> show_frames

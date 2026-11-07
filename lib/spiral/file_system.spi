@@ -391,15 +391,22 @@
     := chars : gleam_charlist = $'spiral_fs_env_coerce(!value)'
     $'charlist.to_string(!chars)'
 
-:~ ^ gleam_temp_dir_from (names : list string) : string =
+:~ ^ gleam_temp_directory_from (names : list string) : string =
     ?= names ?|
     | [] => "/tmp"
     | name :: rest =>
         := value = gleam_env_value name
-        ? gleam_env_unset value ?> gleam_temp_dir_from rest
+        ? gleam_env_unset value ?> gleam_temp_directory_from rest
         |:
             := dir = gleam_env_text value
-            ? dir = "" ?> gleam_temp_dir_from rest |: dir
+            ? dir = "" ?> gleam_temp_directory_from rest |: dir
+
+:= env_temp_dir () : string =
+    := tmpdir = env::get_environment_variable "TMPDIR"
+    ? tmpdir = "" ?>
+        := temp = env::get_environment_variable "TEMP"
+        ? temp = "" ?> "/tmp" |: temp
+    |: tmpdir
 
 :~ get_temp_path () : string =
     run_target \|
@@ -413,8 +420,15 @@
             $'System.IO.Path.GetTempPath' () |> without_trailing_separator
         | Gleam => \ () =>
             file_system_gleam_env ()
-            gleam_temp_dir_from [ "TMPDIR"; "TEMP"; "TMP" ] |> without_trailing_separator
+            gleam_temp_directory_from [ "TMPDIR"; "TEMP"; "TMP" ] |> without_trailing_separator
+        | C => \ () => env_temp_dir ()
+        | Zig => \ () => env_temp_dir ()
         | target => \ () => ~~ "file_system.get_temp_path / target: " ++#? target |> failwith
+
+///> c
+///> zig
+:# get_temp_path_is_set_on_native_targets =
+    (sm'::length (get_temp_path ()) > 0i32) |> _assert_eq !+
 
 := file_system_gleam_paths () =
     global "import gleam/dynamic.{type Dynamic}"
@@ -862,7 +876,7 @@
 
 ///> c
 :# read_bytes_reads_a_file_on_c =
-    := ~path = "spiral_read_bytes_c.bin"
+    := ~path = get_temp_path () ++# "/spiral_read_bytes_c.bin"
     $'{ FILE * f = fopen(!path->ptr, "wb"); fputs("AB", f); fclose(f); }' : ()
     := b = read_bytes path
     (length b, index b 0, index b 1) |> _assert_eq (2i32, 65u8, 66u8)
@@ -870,7 +884,7 @@
 ///> rust
 ///> zig
 :# read_bytes_reads_a_written_text_file =
-    := ~path = "spiral_read_bytes_text.bin"
+    := ~path = get_temp_path () ++# "/spiral_read_bytes_text.bin"
     write_all_text path "AB"
     := b = read_bytes path
     (length b, index b 0, index b 1) |> _assert_eq (2i32, 65u8, 66u8)
@@ -1084,7 +1098,7 @@
 ///> rust
 ///> zig
 :# map_f32s_views_floats_after_an_8_byte_header =
-    := ~path = "spiral_map_f32s.bin"
+    := ~path = get_temp_path () ++# "/spiral_map_f32s.bin"
     write_bytes path (map_bytes ())
     := x = map_f32s path 8 2
     (length x, index x 0, index x 1) |> _assert_eq (2i32, 1.0000001f32, -2.0f32)
@@ -1093,7 +1107,7 @@
 ///> rust
 ///> zig
 :# read_f32s_reads_little_endian_floats_at_an_offset =
-    := ~path = "spiral_read_f32s.bin"
+    := ~path = get_temp_path () ++# "/spiral_read_f32s.bin"
     write_bytes path (f32_bytes ())
     := x = read_f32s path 4 2
     (length x, index x 0, index x 1) |> _assert_eq (2i32, 1.0000001f32, -2.0f32)
@@ -1102,7 +1116,7 @@
 ///> rust
 ///> zig
 :# read_prefix_reads_the_first_bytes =
-    := ~path = "spiral_read_prefix.bin"
+    := ~path = get_temp_path () ++# "/spiral_read_prefix.bin"
     write_bytes path (f32_bytes ())
     := head = read_prefix path 5
     (length head, index head 3, index head 4) |> _assert_eq (5i32, 9u8, 1u8)
@@ -1786,13 +1800,13 @@
             disposable
         | _ => \ _ => null ()
 
-:= create_temp_dir () =
+:= create_temp_directory () =
     := dir = create_temp_path ()
     dir, dir |> create_dir
 
 ///> rust -d chrono
-:# create_temp_dir =
-    := path, disposable = create_temp_dir ()
+:# create_temp_directory =
+    := path, disposable = create_temp_directory ()
     ~~
         path
         |> directory_exists
@@ -1805,7 +1819,7 @@
     |> directory_exists
     |> _assert_eq !-
 
-:= create_temp_dir' (hash : string) =
+:= create_temp_directory' (hash : string) =
     := dir = hash |> guid::hash_guid |> create_temp_path'
     dir, dir |> create_dir
 
@@ -1960,8 +1974,8 @@
     $'let file_exists_content x = !file_exists_content x' : ()
     $'let write_all_text_async x = !write_all_text_async x' : ()
     $'let create_temp_path () = !create_temp_path ()' : ()
-    $'let create_temp_dir () = !create_temp_dir ()' : ()
-    $'let create_temp_dir\' x = !create_temp_dir' x' : ()
+    $'let create_temp_dir () = !create_temp_directory ()' : ()
+    $'let create_temp_dir\' x = !create_temp_directory' x' : ()
     $'let get_source_directory () = !get_source_directory ()' : ()
     $'let normalize_path x = !normalize_path x' : ()
     $'let get_full_path x = !get_full_path x' : ()
@@ -2003,19 +2017,21 @@
     := joined = path_join_native "dir" "file"
     (joined = "dir/file" || joined = "dir\\file") |> _assert_eq !+
 
-:= read_dir_names (path : string) : resultm::result' (am'::vec sm'::std_string) stream::io_error =
+:= read_directory_names (path : string) : resultm::result' (am'::vec sm'::std_string) stream::io_error =
     !\\(path, $'"std::fs::read_dir(&*$0).map(|entries| entries.filter_map(|entry| entry.ok().map(|entry| \
         entry.file_name().to_string_lossy().into_owned())).collect::<Vec<std::string::String>>())"')
 
+:= read_dir_names (path : string) : resultm::result' (am'::vec sm'::std_string) stream::io_error = read_directory_names path
+
 ///> rust -d chrono
 :# copy_list_canonicalize_and_remove_a_tree =
-    := root, disposable = create_temp_dir ()
+    := root, disposable = create_temp_directory ()
     ~~
         := tree = root </> "tree"
         tree |> create_dir_all |> resultm::unwrap'
         "x" |> write_all_text (tree </> "a.txt")
         := copied = tree </> "a.txt" |> copy_file (tree </> "b.txt") |> resultm::unwrap'
-        := names = tree |> read_dir_names |> resultm::unwrap' |> am'::vec_len |> convert::i32
+        := names = tree |> read_directory_names |> resultm::unwrap' |> am'::vec_len |> convert::i32
         := canonical_ok = ?= tree |> canonicalize |> resultm::unbox ?| Ok _ => !+ | Error _ => !-
         tree |> remove_dir_all |> resultm::unwrap'
         (copied, names, canonical_ok, tree |> directory_exists) |> _assert_eq (1u64, 2i32, !+, !-)
@@ -2077,7 +2093,7 @@
 
 ///> rust -d chrono
 :# rust_file_length_and_rust_is_symlink_read_one_path =
-    := root, disposable = create_temp_dir ()
+    := root, disposable = create_temp_directory ()
     ~~
         := file = root </> "a.txt"
         "abc" |> write_all_text file

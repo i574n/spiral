@@ -83,7 +83,7 @@
     := temp_dir, disposable =
         #?*(file_name, text)
         |> crypto::hash_text
-        |> file_system::create_temp_dir'
+        |> file_system::create_temp_directory'
     disposable |> use |> ignore
 
     := path = temp_dir </> file_name
@@ -102,7 +102,7 @@
     := temp_dir, disposable =
         #?*(file_name, text)
         |> crypto::hash_text
-        |> file_system::create_temp_dir'
+        |> file_system::create_temp_directory'
     disposable |> use |> ignore
 
     := path = temp_dir </> file_name

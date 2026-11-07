@@ -17,7 +17,6 @@ $env:SPIRAL_COMPILER_PACKAGE_DIR = Get-SpiralPackageDir
 $dir = if (Test-Path -LiteralPath $Sample -PathType Container) { $Sample } else { Join-Path $BundleRoot "samples/$Sample" }
 $entry = Get-ChildItem $dir -Filter 'main.spi*' | Select-Object -First 1 -ExpandProperty FullName
 if (-not $entry) { throw "no main.spi or main.spir in $dir" }
-if ($Backend -eq 'Delphi') { $Backend = 'Pascal' }
 $extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Pascal = 'pas'; Zig = 'zig'; Lua = 'lua'; Gleam = 'gleam'; TypeScript = 'ts'; Python = 'py' }[$Backend]
 if (-not $extension) { throw "bench-pair supports Fsharp, C, Rust, Pascal, Zig, Lua, Gleam, TypeScript and Python" }
 if ($Native -and $Backend -ne 'C') { throw '-Native builds and times the program for the C backend only' }

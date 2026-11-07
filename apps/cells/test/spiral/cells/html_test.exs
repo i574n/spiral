@@ -57,4 +57,12 @@ defmodule Spiral.Cells.HtmlTest do
     assert page =~ ~s(<span class="badge passed">test one: passed</span>)
     assert page =~ ~s(<pre class="output">1\n</pre>)
   end
+
+  test "an svg display output renders inline as a plot" do
+    svg = ~s(<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>)
+    output = %{"output_type" => "display_data", "metadata" => %{}, "data" => %{"image/svg+xml" => [svg]}}
+    ipynb = %{"cells" => [%{"cell_type" => "code", "source" => ["chart"], "outputs" => [output]}]}
+    page = Html.render(ipynb, fn _ -> [] end, "physics.spi")
+    assert page =~ ~s(<div class="plot">#{svg}</div>)
+  end
 end

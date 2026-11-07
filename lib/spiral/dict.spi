@@ -73,12 +73,14 @@
     | Some x => x
     | None => failwith "dict.present: the key is not in the dict"
 
-:= size \* k v. (d : dict k v) : i32 =
+:= count \* k v. (d : dict k v) : i32 =
     dict_types ()
     backend_switch {
         Gleam = \ () => $'dict.size(!d)' : i32
         Rust = \ () => ($'!d.len()' : convert::unativeint) |> convert::convert : i32
     }
+
+:= size \* k v. (d : dict k v) : i32 = count d
 
 := updated \* k v. (key : k) (fallback : v) (g : v -> v) (d : dict k v) : dict k v =
     insert key (g (?= find key d ?| Some x => x | None => fallback)) d
@@ -118,9 +120,11 @@
     ?= s ?|
     | set d => has key d
 
-:= set_size \* k. (s : set k) : i32 =
+:= set_count \* k. (s : set k) : i32 =
     ?= s ?|
-    | set d => size d
+    | set d => count d
+
+:= set_size \* k. (s : set k) : i32 = set_count s
 
 := set_items \* k. (s : set k) : list k =
     ?= s ?|
@@ -131,7 +135,7 @@
 :# dict_insert_find_remove =
     := ~k = "a"
     := d = empty () |> insert k 1i32 |> insert "b" 2i32 |> insert k 3i32
-    (find k d, find "c" d, size d, size (remove k d), has "b" (remove k d))
+    (find k d, find "c" d, count d, count (remove k d), has "b" (remove k d))
     |> _assert_eq (Some 3i32, None, 2i32, 1i32, !+)
 
 ///> rust
@@ -146,7 +150,7 @@
 :# set_add_drop =
     := ~k = "x"
     := s = set_empty () |> set_add k |> set_add k |> set_add "y"
-    (set_size s, set_has k s, set_has k (set_drop k s), (listm::length (set_items s) : i32))
+    (set_count s, set_has k s, set_has k (set_drop k s), (listm::length (set_items s) : i32))
     |> _assert_eq (2i32, !+, !-, 2i32)
 
 ///> rust

@@ -111,16 +111,46 @@ defmodule Spiral.Cells.Mounts do
       |> Enum.map_join("\n", fn entry ->
         stamp =
           case entry.kind do
-            :shadow -> "\t#{mtime(Spiral.Cells.Manifest.path(entry.target))}"
-            :patched -> "\t#{mtime(Spiral.Cells.Manifest.path(entry.target))}\t#{patches_digest({entry.package_dir, entry.patches})}"
+            :shadow -> "\t#{sources_digest(entry.target)}"
+            :patched -> "\t#{sources_digest(entry.target)}\t#{patches_digest({entry.package_dir, entry.patches})}"
             :link -> ""
           end
 
         "#{entry.name}\t#{entry.kind}\t#{forward(entry.target)}#{stamp}"
       end)
-      |> then(&("v2\n" <> &1))
+      |> then(&("v3\n" <> &1))
 
     :crypto.hash(:sha256, payload) |> Base.encode16(case: :lower) |> binary_part(0, 16)
+  end
+
+  defp sources_digest(dir) do
+    stats = source_stats(dir, dir, []) |> Enum.sort()
+    :crypto.hash(:sha256, :erlang.term_to_binary(stats)) |> Base.encode16(case: :lower) |> binary_part(0, 16)
+  end
+
+  defp source_stats(dir, root, acc) do
+    case File.ls(dir) do
+      {:ok, names} ->
+        Enum.reduce(names, acc, fn name, acc ->
+          path = Path.join(dir, name)
+
+          cond do
+            File.regular?(path) and source?(name) -> [{Path.relative_to(path, root), size_and_mtime(path)} | acc]
+            File.dir?(path) and name not in @skip -> source_stats(path, root, acc)
+            true -> acc
+          end
+        end)
+
+      _ ->
+        acc
+    end
+  end
+
+  defp size_and_mtime(path) do
+    case File.stat(path, time: :posix) do
+      {:ok, %{size: size, mtime: mtime}} -> {size, mtime}
+      _ -> {0, 0}
+    end
   end
 
   defp patches_digest(patches) do

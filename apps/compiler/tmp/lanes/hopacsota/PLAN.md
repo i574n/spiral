@@ -809,7 +809,7 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
 3. **Every speed claim is an interleaved A/B on a quiet machine,** run alone (one heavy job at a time).
 4. **Root cause before workaround.** A failing row gets a reduced `frontier_hopacsota_*` fixture first.
 5. **A decision change is written before its code,** in "Decision changes" below, with the measurement.
-6. **Backlog.** One eoie story per phase (`HOPACSOTA-P0` … `HOPACSOTA-P7`) carries the gate command and
+6. **Backlog.** One backlog story per phase (`HOPACSOTA-P0` … `HOPACSOTA-P7`) carries the gate command and
    status. Progress is updated with gate numbers, never with prose.
 7. **Every session that touches hopacsota reads this file first.** If the code disagrees with a decision,
    stop and fix the drift before adding anything.

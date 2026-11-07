@@ -4,6 +4,9 @@ defmodule Spiral.Cells.Display do
   @begin "SPIRAL_CELLS_DISPLAY_BEGIN"
   @finish "SPIRAL_CELLS_DISPLAY_END"
   @svg "image/svg+xml"
+  @plot_json "application/vnd.spiral.plot+json"
+  @frames_json "application/vnd.spiral.plot-frames+json"
+  @frame_seconds 0.1
   @plot_timeout 60_000
 
   @type t :: %{mime: String.t(), data: String.t()}
@@ -46,6 +49,62 @@ defmodule Spiral.Cells.Display do
 
   defp collect(line, {displays, kept, open}),
     do: {displays, kept, %{open | lines: [line | open.lines]}}
+
+  defp render_frames(frames, opts) do
+    Enum.reduce_while(frames, {:ok, []}, fn frame, {:ok, acc} ->
+      case render_svg(JSON.encode!(frame), opts) do
+        {:ok, svg} -> {:cont, {:ok, [svg | acc]}}
+        error -> {:halt, error}
+      end
+    end)
+    |> case do
+      {:ok, svgs} -> {:ok, Enum.reverse(svgs)}
+      error -> error
+    end
+  end
+
+  @spec animated([String.t()]) :: String.t()
+  def animated(svgs) do
+    n = length(svgs)
+    seconds = :erlang.float_to_binary(n * @frame_seconds, decimals: 2)
+
+    frames =
+      svgs
+      |> Enum.with_index()
+      |> Enum.map_join("", fn {svg, i} ->
+        from = :erlang.float_to_binary(i / n, decimals: 4)
+        to = :erlang.float_to_binary((i + 1) / n, decimals: 4)
+
+        ~s(<g visibility="hidden"><animate attributeName="visibility" values="hidden;visible;hidden" keyTimes="0;#{from};#{to}" dur="#{seconds}s" repeatCount="indefinite" calcMode="discrete"/>) <>
+          svg <> "</g>"
+      end)
+
+    ~s(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" width="640" height="480">) <> frames <> "</svg>"
+  end
+
+  @spec render_values([t()], keyword()) :: [t()]
+  def render_values(displays, opts) do
+    Enum.flat_map(displays, fn
+      %{mime: @plot_json, data: json} ->
+        case render_svg(json, opts) do
+          {:ok, svg} -> [%{mime: @svg, data: svg}]
+          {:error, reason} -> [%{mime: "text/plain", data: "plot not rendered: " <> reason}]
+        end
+
+      %{mime: @frames_json, data: json} ->
+        with {:ok, [_ | _] = frames} <- JSON.decode(json),
+             {:ok, svgs} <- render_frames(frames, opts) do
+          [%{mime: @svg, data: animated(svgs)}]
+        else
+          {:error, reason} when is_binary(reason) -> [%{mime: "text/plain", data: "plot frames not rendered: " <> reason}]
+          {:error, other} -> [%{mime: "text/plain", data: "plot frames not rendered: " <> inspect(other)}]
+          _ -> [%{mime: "text/plain", data: "plot frames not rendered: no frames"}]
+        end
+
+      display ->
+        [display]
+    end)
+  end
 
   @spec from_value(String.t() | nil, keyword()) :: {String.t() | nil, [t()]}
   def from_value(nil, _opts), do: {nil, []}

@@ -375,14 +375,14 @@
     | None =>
         !\($'"[\\\"\\\".to_string()]"') : slice' el dim
 
-:= slice_length \* t dim. (x : slice' t dim) : convert::unativeint =
+:= slice_count \* t dim. (x : slice' t dim) : convert::unativeint =
     !\($'"!x.len()"')
 
 := slice_range \* t dim.
     (start : range t) (end : range t) (s : slice' t dim) : rust::ref (slice' t dim)
     =
     := len () =
-        s |> slice_length
+        s |> slice_count
     := start, (end : convert::unativeint) =
         ?= start, end ?|
         | Start start, End fn => start, (len >> convert::convert) |> fn |> convert::convert

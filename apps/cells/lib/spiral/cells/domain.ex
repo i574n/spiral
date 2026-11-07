@@ -24,6 +24,11 @@ defmodule Spiral.Cells.Domain do
     :spiral_cells@domain.patch_rust(rust, show)
   end
 
+  def result_fields(wire) do
+    ensure!()
+    :spiral_cells@domain.result_fields(wire)
+  end
+
   def reached_program(program, rows) do
     ensure!()
     :spiral_cells@domain.reached_program(program, rows)

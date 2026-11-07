@@ -3,7 +3,7 @@ param(
     [string] $Work = (Join-Path $env:LOCALAPPDATA 'spiral-bin\candidates\formatter-gate')
 )
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot '..\..\scripts\env.ps1')
+. (Join-Path $PSScriptRoot '..\env.ps1')
 $dotnet = Resolve-SpiralDotnet
 $installed = Get-SpiralCompilerDll single-flight
 New-Item -ItemType Directory -Force $Work | Out-Null
@@ -23,15 +23,15 @@ foreach ($f in 'lib/dice.spi', 'ui/src/model/near/rpc.spi', 'ui/src/model/near/n
 }
 cmd /c "git -C C:\home\git\alphabet show HEAD:apps/documents/documents.spi > `"$dice\documents.spi`""
 $corpora.dice = $dice
-$eoie = Join-Path $Work 'corpus-eoie'
-if (-not (Test-Path $eoie)) {
-    foreach ($rel in (git -C C:\home\git\eoie ls-tree -r --name-only HEAD -- src | Where-Object { $_ -match '\.spi$' })) {
-        $to = Join-Path $eoie ($rel -replace '/', '\')
+$kit = Join-Path $Work 'corpus-kit'
+if (-not (Test-Path $kit)) {
+    foreach ($rel in (git -C C:\home\git\kit ls-tree -r --name-only HEAD -- src | Where-Object { $_ -match '\.spi$' })) {
+        $to = Join-Path $kit ($rel -replace '/', '\')
         New-Item -ItemType Directory -Force (Split-Path $to) | Out-Null
-        cmd /c "git -C C:\home\git\eoie show HEAD:$rel > `"$to`""
+        cmd /c "git -C C:\home\git\kit show HEAD:$rel > `"$to`""
     }
 }
-$corpora.eoie = $eoie
+$corpora.kit = $kit
 function Get-Squeezed([string] $text) { [regex]::Replace([regex]::Replace($text, '"\s*\^\^\s*"', ''), '[\s\(\)\\]', '') }
 $verdict = $true
 foreach ($name in $corpora.Keys) {

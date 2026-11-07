@@ -1,5 +1,5 @@
 defmodule Spiral.Cells.Notebook do
-  alias Spiral.Cells.{Builders, Document, Memo, ProcessError, Result, SpiralError, Targets, Toolchain}
+  alias Spiral.Cells.{Builders, Document, Memo, ProcessError, Result, SpiralError, Targets, TimeoutError, Toolchain}
 
   @default_timeout 300_000
   @run_keys [
@@ -35,7 +35,7 @@ defmodule Spiral.Cells.Notebook do
   ]
 
   @type status :: :ok | {:error, String.t()}
-  @type verdict :: :passed | {:failed, String.t()} | {:unsupported, String.t()}
+  @type verdict :: :passed | {:failed, String.t()} | {:unsupported, String.t()} | {:timed_out, String.t()}
   @type evaluation :: %{
           status: status(),
           outputs: %{non_neg_integer() => [map()]},
@@ -217,6 +217,7 @@ defmodule Spiral.Cells.Notebook do
       "failed" => count.("failed"),
       "skipped" => count.("skipped"),
       "unsupported" => count.("unsupported"),
+      "timed_out" => count.("timed_out"),
       "filtered" => count.("filtered"),
       "not_run" => count.("not_run"),
       "memo_hits" => Enum.count(rows, &(&1["memo"] == "hit")),
@@ -274,6 +275,7 @@ defmodule Spiral.Cells.Notebook do
       verdict == :built -> {"built", nil}
       match?({:failed, _}, verdict) -> {"failed", first_line(elem(verdict, 1))}
       match?({:unsupported, _}, verdict) -> {"unsupported", first_line(elem(verdict, 1))}
+      match?({:timed_out, _}, verdict) -> {"timed_out", first_line(elem(verdict, 1))}
       true -> {"not_run", nil}
     end
   end
@@ -868,6 +870,11 @@ defmodule Spiral.Cells.Notebook do
           |> put_in([:outputs, index], outputs)
           |> put_in([:verdicts, index], {:unsupported, message})
 
+        {:timed_out, outputs, message} ->
+          acc
+          |> put_in([:outputs, index], outputs)
+          |> put_in([:verdicts, index], {:timed_out, message})
+
         {:error, outputs, message} ->
           %{
             acc
@@ -977,6 +984,9 @@ defmodule Spiral.Cells.Notebook do
         {:error, %ProcessError{reason: :tool_missing} = error} ->
           unsupported(error)
 
+        {:error, %TimeoutError{} = error} ->
+          timed_out(error)
+
         {:error, error} ->
           text = error_text(error)
           {:error, error_output(text), text}
@@ -1058,6 +1068,9 @@ defmodule Spiral.Cells.Notebook do
 
       {:error, %ProcessError{reason: :tool_missing} = error} ->
         unsupported(error)
+
+      {:error, %TimeoutError{} = error} ->
+        timed_out(error)
 
       {:ok, %Result{} = result} ->
         text = "cell exited #{result.exit_status}\n#{result.stdout}"
@@ -1168,8 +1181,14 @@ defmodule Spiral.Cells.Notebook do
     end
   end
 
-  defp unsupported(error) do    text = "unsupported on this machine: " <> error_text(error)
+  defp unsupported(error) do
+    text = "unsupported on this machine: " <> error_text(error)
     {:unsupported, [stream("stderr", text)], text}
+  end
+
+  defp timed_out(error) do
+    text = "timed out, a VOID result and not a verdict: " <> error_text(error)
+    {:timed_out, [stream("stderr", text)], text}
   end
 
   defp run_opts(opts, root, timeout) do

@@ -21,16 +21,32 @@
 := pascal_sequence_width (lead : u32) : i32 =
     ? lead < 192u32 ?> 1i32 |? lead < 224u32 ?> 2i32 |? lead < 240u32 ?> 3i32 |: 4i32
 
+:= xml_pascal_point_width (s : string) (i : i32) (lead : u32) : i32 =
+    ? i + pascal_sequence_width lead > sm'::length s ?> 1i32 |: pascal_sequence_width lead
+
+:= xml_pascal_point_two (s : string) (i : i32) (lead : u32) : u32 =
+    := tail (k : i32) = pascal_byte_at s (i + k) - 128u32
+    (lead - 192u32) * 64u32 + tail 1i32
+
+:= xml_pascal_point_three (s : string) (i : i32) (lead : u32) : u32 =
+    := tail (k : i32) = pascal_byte_at s (i + k) - 128u32
+    (lead - 224u32) * 4096u32 + tail 1i32 * 64u32 + tail 2i32
+
+:= xml_pascal_point_four (s : string) (i : i32) (lead : u32) : u32 =
+    := tail (k : i32) = pascal_byte_at s (i + k) - 128u32
+    (lead - 240u32) * 262144u32 + tail 1i32 * 4096u32 + tail 2i32 * 64u32 + tail 3i32
+
+:= xml_pascal_point_of (s : string) (i : i32) (lead : u32) (width : i32) : u32 =
+    ? width = 1i32 ?> lead
+    |? width = 2i32 ?> xml_pascal_point_two s i lead
+    |? width = 3i32 ?> xml_pascal_point_three s i lead
+    |: xml_pascal_point_four s i lead
+
 := pascal_code_point_at (s : string) (i : i32) : u32 =
     ? i >= sm'::length s ?> 0u32
     |:
         := lead = pascal_byte_at s i
-        := width = ? i + pascal_sequence_width lead > sm'::length s ?> 1i32 |: pascal_sequence_width lead
-        := tail (k : i32) = pascal_byte_at s (i + k) - 128u32
-        ? width = 1i32 ?> lead
-        |? width = 2i32 ?> (lead - 192u32) * 64u32 + tail 1i32
-        |? width = 3i32 ?> (lead - 224u32) * 4096u32 + tail 1i32 * 64u32 + tail 2i32
-        |: (lead - 240u32) * 262144u32 + tail 1i32 * 4096u32 + tail 2i32 * 64u32 + tail 3i32
+        xml_pascal_point_of s i lead (xml_pascal_point_width s i lead)
 
 := code_point_at (s : string) (i : i32) : u32 =
     run_target \|
@@ -38,14 +54,21 @@
         | Pascal => \ () => pascal_code_point_at s i
         | _ => \ () => no_arm "code_point_at"
 
+:= xml_rust_point_width (s : string) (i : i32) : i32 =
+    rust_first_char s i
+    |> optionm'::map \ c => convert::convert (rust_char_width c)
+    |> optionm'::unwrap_or 1i32
+
+:= xml_zig_point_width (s : string) (i : i32) : i32 = ? i < sm'::length s ?> conv (zig_sequence_width s i) |: 1i32
+
+:= xml_pascal_byte_width (s : string) (i : i32) : i32 =
+    ? i < sm'::length s ?> pascal_sequence_width (pascal_byte_at s i) |: 1i32
+
 := code_point_width (s : string) (i : i32) : i32 =
     run_target \|
-        | Rust => \ () =>
-            rust_first_char s i
-            |> optionm'::map \ c => convert::convert (rust_char_width c)
-            |> optionm'::unwrap_or 1i32
-        | Zig => \ () => ? i < sm'::length s ?> conv (zig_sequence_width s i) |: 1i32
-        | Pascal => \ () => ? i < sm'::length s ?> pascal_sequence_width (pascal_byte_at s i) |: 1i32
+        | Rust => \ () => xml_rust_point_width s i
+        | Zig => \ () => xml_zig_point_width s i
+        | Pascal => \ () => xml_pascal_byte_width s i
         | _ => \ () => no_arm "code_point_width"
 
 := code_point_count (s : string) : i32 = unicode::code_point_count s
@@ -58,24 +81,28 @@
 
 := replaced_space (s : string) : string = s |> sm'::replace "\t" " " |> sm'::replace "\n" " " |> sm'::replace "\r" " "
 
+:= xml_collapsed_step (acc : string) (gap : bool) (c : string) : string = ? gap ?> acc ++# " " ++# c |: acc ++# c
+
 :~ ^ collapsed_from (s : string) (i : i32) (gap : bool) (acc : string) : string =
     ? i >= sm'::length s ?> acc
     |:
         := c = code_point_text s i
         := next = i + code_point_width s i
         ? is_space_character c ?> collapsed_from s next (acc <> "") acc
-        |? gap ?> collapsed_from s next !- (acc ++# " " ++# c)
-        |: collapsed_from s next !- (acc ++# c)
+        |: collapsed_from s next !- (xml_collapsed_step acc gap c)
 
 := collapsed_space (s : string) : string = collapsed_from s 0i32 !- ""
+
 :~ ^ text_order_from (a : string) (b : string) (i : i32) : i32 =
     ? i >= sm'::length a && i >= sm'::length b ?> 0i32
     |? i >= sm'::length a ?> -1i32
     |? i >= sm'::length b ?> 1i32
-    |:
-        := x = code_point_at a i
-        := y = code_point_at b i
-        ? x < y ?> -1i32 |? x > y ?> 1i32 |: text_order_from a b (i + code_point_width a i)
+    |: xml_text_order_at a b i
+
+:& :~ xml_text_order_at (a : string) (b : string) (i : i32) : i32 =
+    := x = code_point_at a i
+    := y = code_point_at b i
+    ? x < y ?> -1i32 |? x > y ?> 1i32 |: text_order_from a b (i + code_point_width a i)
 
 := text_order (a : string) (b : string) : i32 = text_order_from a b 0i32
 

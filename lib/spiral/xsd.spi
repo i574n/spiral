@@ -26,7 +26,9 @@
 :== occurs = { min : i32; max : occurs_bound }
 
 :! written = ()
+
 :! qualified = ()
+
 :! final = ()
 
 :! definition_name form = string
@@ -125,23 +127,35 @@
 
 := is_repeated (o : occurs) : bool = ?= o::max ?| Bounded n => n > 1i32 | Unbounded => !+
 
+:= xsd_facet_digits (local : string) (value : string) : option xsd_facet =
+    ? local = "totalDigits" ?> Some (TotalDigits (parse_count value))
+    |? local = "fractionDigits" ?> Some (FractionDigits (parse_count value))
+    |? local = "annotation" ?> None
+    |: Some (OtherFacet (local, value))
+
+:= xsd_facet_length (local : string) (value : string) : option xsd_facet =
+    ? local = "minLength" ?> Some (MinLength (parse_count value))
+    |? local = "maxLength" ?> Some (MaxLength (parse_count value))
+    |? local = "whiteSpace" ?> Some (WhiteSpace value)
+    |: xsd_facet_digits local value
+
+:= xsd_facet_named (local : string) (value : string) : option xsd_facet =
+    ? local = "enumeration" ?> Some (Enumeration value)
+    |? local = "pattern" ?> Some (Pattern value)
+    |? local = "length" ?> Some (Length (parse_count value))
+    |: xsd_facet_length local value
+
+:= xsd_facet_node (name : string) (attributes : list (string * string)) : option xsd_facet =
+    := value = attribute_or "value" "" attributes
+    := local = xml::local_name name
+    xsd_facet_named local value
+
+:= xsd_facet_kept (facet : option xsd_facet) (acc : list xsd_facet) : list xsd_facet =
+    ?= facet ?| Some f => (f :: acc) | None => acc
+
 :~ ^ facets_of (nodes : list xml::xml_node) (acc : list xsd_facet) : list xsd_facet =
     ?= nodes ?|
-    | XmlElement (name, attributes, _) :: rest =>
-        := value = attribute_or "value" "" attributes
-        := local = xml::local_name name
-        := facet =
-            ? local = "enumeration" ?> Some (Enumeration value)
-            |? local = "pattern" ?> Some (Pattern value)
-            |? local = "length" ?> Some (Length (parse_count value))
-            |? local = "minLength" ?> Some (MinLength (parse_count value))
-            |? local = "maxLength" ?> Some (MaxLength (parse_count value))
-            |? local = "whiteSpace" ?> Some (WhiteSpace value)
-            |? local = "totalDigits" ?> Some (TotalDigits (parse_count value))
-            |? local = "fractionDigits" ?> Some (FractionDigits (parse_count value))
-            |? local = "annotation" ?> None
-            |: Some (OtherFacet (local, value))
-        facets_of rest (?= facet ?| Some f => (f :: acc) | None => acc)
+    | XmlElement (name, attributes, _) :: rest => facets_of rest (xsd_facet_kept (xsd_facet_node name attributes) acc)
     | XmlText _ :: rest => facets_of rest acc
     | [] => reverse acc []
 
@@ -166,17 +180,22 @@
 
 :~ ^ union_member_facets (nodes : list xml::xml_node) (acc : list xsd_facet) : option (list xsd_facet) =
     ?= nodes ?|
-    | XmlElement (name, _, children) :: rest ?& xml::local_name name = "simpleType" =>
-        ?= first_named "restriction" children ?|
-        | Some (attributes, facets) =>
-            ? sm'::ends_with "string" (attribute_or "base" "" attributes)
-            ?> union_member_facets rest (listm::append acc (facets_of facets []))
-            |: None
-        | None => None
+    | XmlElement (name, _, children) :: rest ?& xml::local_name name = "simpleType" => xsd_union_part children rest acc
     | XmlElement (name, _, _) :: rest ?& xml::local_name name = "annotation" => union_member_facets rest acc
     | XmlText _ :: rest => union_member_facets rest acc
     | _ :: _ => None
     | [] => Some acc
+
+:& :~ xsd_union_part
+    (children : list xml::xml_node) (rest : list xml::xml_node) (acc : list xsd_facet)
+    : option (list xsd_facet)
+    =
+    ?= first_named "restriction" children ?|
+    | Some (attributes, facets) =>
+        ? sm'::ends_with "string" (attribute_or "base" "" attributes)
+        ?> union_member_facets rest (listm::append acc (facets_of facets []))
+        |: None
+    | None => None
 
 := simple \* form. (name : string) (base : string) (facets : list xsd_facet) : xsd type_def form =
     Simple { name = definition_name name; base = type_reference base; facets = facets }
@@ -186,59 +205,114 @@
     | Some reference => Some (type_reference reference)
     | None => None
 
+:= xsd_union_facets \* form.
+    (name : string) (facets : list xsd_facet) (marker : xsd type_def form)
+    : xsd type_def form
+    =
+    ?= facets ?|
+    | [] => marker
+    | _ =>
+        ? all_facets is_pattern_facet facets || all_facets is_enumeration_facet facets
+        ?> simple name "xs:string" facets
+        |: marker
+
+:= xsd_union_simple \* form.
+    (name : string) (members : list xml::xml_node) (marker : xsd type_def form)
+    : xsd type_def form
+    =
+    ?= union_member_facets members [] ?|
+    | Some facets => xsd_union_facets name facets marker
+    | None => marker
+
 := union_of \* form.
     (name : string) (attributes : list (string * string)) (members : list xml::xml_node)
     : xsd type_def form
     =
     := member_types = attribute_or "memberTypes" "" attributes
     := marker = simple name "" (OtherFacet ("union", member_types) :: [])
-    ? member_types <> "" ?> marker
-    |:
-        ?= union_member_facets members [] ?|
-        | Some facets =>
-            ?= facets ?|
-            | [] => marker
-            | _ =>
-                ? all_facets is_pattern_facet facets || all_facets is_enumeration_facet facets
-                ?> simple name "xs:string" facets
-                |: marker
-        | None => marker
+    ? member_types <> "" ?> marker |: xsd_union_simple name members marker
+
+:= xsd_union_or_empty \* form. (name : string) (children : list xml::xml_node) : xsd type_def form =
+    ?= first_named "union" children ?|
+    | Some (attributes, members) => union_of name attributes members
+    | None => simple name "" []
 
 := simple_of \* form. (name : string) (children : list xml::xml_node) : xsd type_def form =
     ?= first_named "restriction" children ?|
     | Some (attributes, facets) => simple name (attribute_or "base" "" attributes) (facets_of facets [])
-    | None =>
-        ?= first_named "union" children ?|
-        | Some (attributes, members) => union_of name attributes members
-        | None => simple name "" []
+    | None => xsd_union_or_empty name children
+
+:= xsd_element_tag (attributes : list (string * string)) : tag_name =
+    tag_name (attribute_or "name" (attribute_or "ref" "" attributes) attributes)
+
+:= xsd_attribute_inline \* form. (children : list xml::xml_node) : option (xsd type_def form) =
+    ?= first_named "simpleType" children ?|
+    | Some (_, simple_children) => Some (simple_of "" simple_children)
+    | None => None
+
+:= xsd_attribute_required (attributes : list (string * string)) : bool =
+    attribute_or "use" "optional" attributes = "required"
+
+:= xsd_attribute_of \* form.
+    (attributes : list (string * string)) (inline : option (xsd type_def form))
+    : xsd attribute_decl form
+    =
+    Attribute {
+        name = tag_name (attribute_or "name" "" attributes)
+        type_ref = reference_of "type" attributes
+        required = xsd_attribute_required attributes
+        fixed = xml::attribute_of "fixed" attributes
+        inline = inline
+    }
 
 :~ ^ particle_of \* form. (node : xml::xml_node) : option (xsd particle form) =
     ?= node ?|
     | XmlElement (name, attributes, children) =>
         := local = xml::local_name name
         := occurs = occurs_of attributes
-        ? local = "element" ?>
-            := inline =
-                ?= first_named "simpleType" children ?|
-                | Some (_, simple_children) => Some (simple_of "" simple_children)
-                | None =>
-                    ?= first_named "complexType" children ?|
-                    | Some (_, complex_children) => Some (complex_of "" complex_children)
-                    | None => None
-            Some (
-                Element {
-                    name = tag_name (attribute_or "name" (attribute_or "ref" "" attributes) attributes)
-                    type_ref = reference_of "type" attributes
-                    occurs = occurs
-                    inline = inline
-                }
-            )
-        |? local = "sequence" ?> Some (Sequence { occurs = occurs; items = particles_of children [] })
-        |? local = "choice" ?> Some (Choice { occurs = occurs; items = particles_of children [] })
-        |? local = "all" ?> Some (Sequence { occurs = occurs; items = particles_of children [] })
-        |? local = "any" ?> Some (AnyContent ())
-        |: None
+        xsd_particle_local local occurs attributes children
     | XmlText _ => None
+
+:& :~ xsd_particle_local \* form.
+    (local : string) (occurs : occurs) (attributes : list (string * string)) (children : list xml::xml_node)
+    : option (xsd particle form)
+    =
+    ? local = "element" ?> xsd_element_of occurs attributes children
+    |? local = "sequence" ?> Some (Sequence { occurs = occurs; items = particles_of children [] })
+    |: xsd_particle_group local occurs children
+
+:& :~ xsd_particle_group \* form.
+    (local : string) (occurs : occurs) (children : list xml::xml_node)
+    : option (xsd particle form)
+    =
+    ? local = "choice" ?> Some (Choice { occurs = occurs; items = particles_of children [] })
+    |? local = "all" ?> Some (Sequence { occurs = occurs; items = particles_of children [] })
+    |? local = "any" ?> Some (AnyContent ())
+    |: None
+
+:& :~ xsd_element_of \* form.
+    (occurs : occurs) (attributes : list (string * string)) (children : list xml::xml_node)
+    : option (xsd particle form)
+    =
+    := inline = xsd_element_inline children
+    Some (
+        Element {
+            name = xsd_element_tag attributes
+            type_ref = reference_of "type" attributes
+            occurs = occurs
+            inline = inline
+        }
+    )
+
+:& :~ xsd_element_inline \* form. (children : list xml::xml_node) : option (xsd type_def form) =
+    ?= first_named "simpleType" children ?|
+    | Some (_, simple_children) => Some (simple_of "" simple_children)
+    | None => xsd_complex_inline children
+
+:& :~ xsd_complex_inline \* form. (children : list xml::xml_node) : option (xsd type_def form) =
+    ?= first_named "complexType" children ?|
+    | Some (_, complex_children) => Some (complex_of "" complex_children)
+    | None => None
 
 :& :~ particles_of \* form. (nodes : list xml::xml_node) (acc : list (xsd particle form)) : list (xsd particle form) =
     ?= nodes ?|
@@ -248,79 +322,123 @@
 :& :~ complex_of \* form. (name : string) (children : list xml::xml_node) : xsd type_def form =
     ?= first_named "complexContent" children ?|
     | Some (_, content_children) => derived_of name content_children
-    | None =>
-        ?= first_named "simpleContent" children ?|
-        | Some (_, content_children) => derived_of name content_children
-        | None =>
-            := attributes = attributes_of children []
-            Complex { name = definition_name name; content = content_of children; attributes = attributes }
+    | None => xsd_complex_simple name children
+
+:& :~ xsd_complex_simple \* form. (name : string) (children : list xml::xml_node) : xsd type_def form =
+    ?= first_named "simpleContent" children ?|
+    | Some (_, content_children) => derived_of name content_children
+    | None => xsd_complex_plain name children
+
+:& :~ xsd_complex_plain \* form. (name : string) (children : list xml::xml_node) : xsd type_def form =
+    := attributes = attributes_of children []
+    Complex { name = definition_name name; content = content_of children; attributes = attributes }
 
 :& :~ content_of \* form. (children : list xml::xml_node) : xsd particle form =
     ?= particles_of children [] ?|
     | first :: _ => first
     | [] => Empty ()
 
+:& :~ xsd_derived \* form.
+    (name : string) (attributes : list (string * string)) (inner : list xml::xml_node)
+    : xsd type_def form
+    =
+    Derived {
+        name = definition_name name
+        base = type_reference (attribute_or "base" "" attributes)
+        content = content_of inner
+        attributes = attributes_of inner []
+    }
+
 :& :~ derived_of \* form. (name : string) (children : list xml::xml_node) : xsd type_def form =
-    := derived attributes inner =
-        Derived {
-            name = definition_name name
-            base = type_reference (attribute_or "base" "" attributes)
-            content = content_of inner
-            attributes = attributes_of inner []
-        }
     ?= first_named "extension" children ?|
-    | Some (attributes, inner) => derived attributes inner
-    | None =>
-        ?= first_named "restriction" children ?|
-        | Some (attributes, inner) => derived attributes inner
-        | None => Complex { name = definition_name name; content = Empty (); attributes = [] }
+    | Some (attributes, inner) => xsd_derived name attributes inner
+    | None => xsd_derived_restriction name children
+
+:& :~ xsd_derived_restriction \* form. (name : string) (children : list xml::xml_node) : xsd type_def form =
+    ?= first_named "restriction" children ?|
+    | Some (attributes, inner) => xsd_derived name attributes inner
+    | None => Complex { name = definition_name name; content = Empty (); attributes = [] }
 
 :& :~ attributes_of \* form.
     (nodes : list xml::xml_node) (acc : list (xsd attribute_decl form))
     : list (xsd attribute_decl form)
     =
     ?= nodes ?|
-    | XmlElement (name, attributes, children) :: rest =>
-        ? xml::local_name name = "attribute" ?>
-            := inline =
-                ?= first_named "simpleType" children ?|
-                | Some (_, simple_children) => Some (simple_of "" simple_children)
-                | None => None
-            := attribute =
-                Attribute {
-                    name = tag_name (attribute_or "name" "" attributes)
-                    type_ref = reference_of "type" attributes
-                    required = attribute_or "use" "optional" attributes = "required"
-                    fixed = xml::attribute_of "fixed" attributes
-                    inline = inline
-                }
-            attributes_of rest (attribute :: acc)
-        |: attributes_of rest acc
+    | XmlElement (name, attributes, children) :: rest => xsd_attribute_node name attributes children rest acc
     | XmlText _ :: rest => attributes_of rest acc
     | [] => reverse acc []
+
+:& :~ xsd_attribute_node \* form.
+    (name : string) (attributes : list (string * string)) (children : list xml::xml_node)
+    (rest : list xml::xml_node) (acc : list (xsd attribute_decl form))
+    : list (xsd attribute_decl form)
+    =
+    ? xml::local_name name = "attribute" ?>
+        := inline = xsd_attribute_inline children
+        := attribute = xsd_attribute_of attributes inline
+        attributes_of rest (attribute :: acc)
+    |: attributes_of rest acc
+
+:= xsd_simple_item \* form.
+    (item_name : string) (children : list xml::xml_node) (schema : xsd_schema form)
+    : xsd_schema form
+    =
+    { schema ?| simple_types = (simple_of item_name children :: schema::simple_types) }
+
+:= xsd_complex_item \* form.
+    (item_name : string) (children : list xml::xml_node) (schema : xsd_schema form)
+    : xsd_schema form
+    =
+    { schema ?| complex_types = (complex_of item_name children :: schema::complex_types) }
+
+:= xsd_element_item \* form.
+    (name : string) (attributes : list (string * string)) (children : list xml::xml_node) (schema : xsd_schema form)
+    : xsd_schema form
+    =
+    ?= particle_of (XmlElement (name, attributes, children)) ?|
+    | Some e => { schema ?| elements = (e :: schema::elements) }
+    | None => schema
+
+:= xsd_import_of \* form. (location : string) (namespace : string) (schema : xsd_schema form) : xsd_schema form =
+    ? location = "" && namespace <> ""
+    ?> { schema ?| namespace_imports = (namespace :: schema::namespace_imports) }
+    |: { schema ?| includes = (location :: schema::includes) }
+
+:= xsd_import_item \* form. (attributes : list (string * string)) (schema : xsd_schema form) : xsd_schema form =
+    := location = attribute_or "schemaLocation" "" attributes
+    := namespace = attribute_or "namespace" "" attributes
+    xsd_import_of location namespace schema
+
+:= xsd_schema_other \* form.
+    (local : string) (name : string) (attributes : list (string * string)) (children : list xml::xml_node)
+    (schema : xsd_schema form)
+    : xsd_schema form
+    =
+    ? local = "element" ?> xsd_element_item name attributes children schema
+    |? local = "include" || local = "import" ?> xsd_import_item attributes schema
+    |: schema
+
+:= xsd_schema_local \* form.
+    (local : string) (item_name : string) (name : string) (attributes : list (string * string))
+    (children : list xml::xml_node) (schema : xsd_schema form)
+    : xsd_schema form
+    =
+    ? local = "simpleType" ?> xsd_simple_item item_name children schema
+    |? local = "complexType" ?> xsd_complex_item item_name children schema
+    |: xsd_schema_other local name attributes children schema
+
+:= xsd_schema_item \* form.
+    (name : string) (attributes : list (string * string)) (children : list xml::xml_node) (schema : xsd_schema form)
+    : xsd_schema form
+    =
+    := local = xml::local_name name
+    := item_name = attribute_or "name" "" attributes
+    xsd_schema_local local item_name name attributes children schema
 
 :~ ^ schema_items \* form. (nodes : list xml::xml_node) (schema : xsd_schema form) : xsd_schema form =
     ?= nodes ?|
     | XmlElement (name, attributes, children) :: rest =>
-        := local = xml::local_name name
-        := item_name = attribute_or "name" "" attributes
-        := schema =
-            ? local = "simpleType"
-            ?> { schema ?| simple_types = (simple_of item_name children :: schema::simple_types) }
-            |? local = "complexType"
-            ?> { schema ?| complex_types = (complex_of item_name children :: schema::complex_types) }
-            |? local = "element" ?>
-                ?= particle_of (XmlElement (name, attributes, children)) ?|
-                | Some e => { schema ?| elements = (e :: schema::elements) }
-                | None => schema
-            |? local = "include" || local = "import" ?>
-                := location = attribute_or "schemaLocation" "" attributes
-                := namespace = attribute_or "namespace" "" attributes
-                ? location = "" && namespace <> ""
-                ?> { schema ?| namespace_imports = (namespace :: schema::namespace_imports) }
-                |: { schema ?| includes = (location :: schema::includes) }
-            |: schema
-        schema_items rest schema
+        schema_items rest (xsd_schema_item name attributes children schema)
     | XmlText _ :: rest => schema_items rest schema
     | [] => schema
 
@@ -335,15 +453,15 @@
     | x :: rest => x = target || has_prefix target rest
     | [] => !-
 
+:= xsd_schema_prefix (key : string) (value : string) (acc : list string) : list string =
+    ? value <> xml_schema_namespace () ?> acc
+    |? key = "xmlns" ?> "" :: acc
+    |? sm'::starts_with "xmlns:" key ?> sm'::substring 6i32 (sm'::length key - 6i32) key :: acc
+    |: acc
+
 :~ ^ xml_schema_prefixes (attributes : list (string * string)) (acc : list string) : list string =
     ?= attributes ?|
-    | (key, value) :: rest =>
-        := acc =
-            ? value <> xml_schema_namespace () ?> acc
-            |? key = "xmlns" ?> "" :: acc
-            |? sm'::starts_with "xmlns:" key ?> sm'::substring 6i32 (sm'::length key - 6i32) key :: acc
-            |: acc
-        xml_schema_prefixes rest acc
+    | (key, value) :: rest => xml_schema_prefixes rest (xsd_schema_prefix key value acc)
     | [] => acc
 
 := canonical_reference \* form. (prefixes : list string) (type_reference reference) : type_reference form =
@@ -362,25 +480,58 @@
 :~ ^ canonical \* k form. (prefixes : list string) (item : xsd k form) : xsd k form =
     ?= item ?|
     | Simple s => Simple { s ?| base = canonical_reference prefixes s::base }
-    | Complex c =>
-        Complex { c ?|
-            content = canonical prefixes c::content
-            attributes = canonical_all prefixes c::attributes []
-        }
-    | Derived d =>
-        Derived { d ?|
-            base = canonical_reference prefixes d::base
-            content = canonical prefixes d::content
-            attributes = canonical_all prefixes d::attributes []
-        }
+    | Complex c => xsd_canonical_complex prefixes c::name c::content c::attributes
+    | Derived d => xsd_canonical_derived prefixes d::name d::base d::content d::attributes
     | Sequence s => Sequence { s ?| items = canonical_all prefixes s::items [] }
     | Choice c => Choice { c ?| items = canonical_all prefixes c::items [] }
-    | Element e =>
-        Element { e ?| type_ref = canonical_ref prefixes e::type_ref; inline = canonical_inline prefixes e::inline }
+    | Element e => xsd_canonical_element prefixes e::name e::type_ref e::occurs e::inline
     | AnyContent () => AnyContent ()
     | Empty () => Empty ()
-    | Attribute a =>
-        Attribute { a ?| type_ref = canonical_ref prefixes a::type_ref; inline = canonical_inline prefixes a::inline }
+    | Attribute a => xsd_canonical_attribute prefixes a::name a::type_ref a::required a::fixed a::inline
+
+:& :~ xsd_canonical_complex \* form.
+    (prefixes : list string) (name : definition_name form) (content : xsd particle form)
+    (attributes : list (xsd attribute_decl form))
+    : xsd type_def form
+    =
+    Complex { name = name; content = canonical prefixes content; attributes = canonical_all prefixes attributes [] }
+
+:& :~ xsd_canonical_derived \* form.
+    (prefixes : list string) (name : definition_name form) (base : type_reference form) (content : xsd particle form)
+    (attributes : list (xsd attribute_decl form))
+    : xsd type_def form
+    =
+    Derived {
+        name = name
+        base = canonical_reference prefixes base
+        content = canonical prefixes content
+        attributes = canonical_all prefixes attributes []
+    }
+
+:& :~ xsd_canonical_element \* form.
+    (prefixes : list string) (name : tag_name) (type_ref : option (type_reference form)) (occurs : occurs)
+    (inline : option (xsd type_def form))
+    : xsd particle form
+    =
+    Element {
+        name = name
+        type_ref = canonical_ref prefixes type_ref
+        occurs = occurs
+        inline = canonical_inline prefixes inline
+    }
+
+:& :~ xsd_canonical_attribute \* form.
+    (prefixes : list string) (name : tag_name) (type_ref : option (type_reference form)) (required : bool)
+    (fixed : option string) (inline : option (xsd type_def form))
+    : xsd attribute_decl form
+    =
+    Attribute {
+        name = name
+        type_ref = canonical_ref prefixes type_ref
+        required = required
+        fixed = fixed
+        inline = canonical_inline prefixes inline
+    }
 
 :& :~ canonical_all \* k form.
     (prefixes : list string) (items : list (xsd k form)) (acc : list (xsd k form))
@@ -398,31 +549,39 @@
     | Some inner => Some (canonical prefixes inner)
     | None => None
 
-:= canonical_schema \* form. (prefixes : list string) (schema : xsd_schema form) : xsd_schema form =
+:= xsd_canonical_types \* form. (prefixes : list string) (schema : xsd_schema form) : xsd_schema form =
     {
-        target_namespace = schema::target_namespace
-        includes = schema::includes
-        namespace_imports = schema::namespace_imports
-        simple_types = canonical_all prefixes schema::simple_types []
-        complex_types = canonical_all prefixes schema::complex_types []
-        elements = canonical_all prefixes schema::elements []
+        schema ?|
+            simple_types = canonical_all prefixes schema::simple_types []
+            complex_types = canonical_all prefixes schema::complex_types []
     }
 
+:= canonical_schema \* form. (prefixes : list string) (schema : xsd_schema form) : xsd_schema form =
+    := typed = xsd_canonical_types prefixes schema
+    { typed ?| elements = canonical_all prefixes schema::elements [] }
+
+:= xsd_empty_schema () : xsd_schema written =
+    {
+        target_namespace = namespace_uri ""
+        includes = []
+        namespace_imports = []
+        simple_types = []
+        complex_types = []
+        elements = []
+    }
+
+:= xsd_schema_of
+    (attributes : list (string * string)) (children : list xml::xml_node) (empty : xsd_schema written)
+    : xsd_schema written
+    =
+    := target = namespace_uri (attribute_or "targetNamespace" "" attributes)
+    := model = schema_items children { empty ?| target_namespace = target }
+    canonical_schema (xml_schema_prefixes attributes []) model
+
 := read_schema (text : string) : xsd_schema written =
-    := empty =
-        {
-            target_namespace = namespace_uri ""
-            includes = []
-            namespace_imports = []
-            simple_types = []
-            complex_types = []
-            elements = []
-        }
+    := empty = xsd_empty_schema ()
     ?= first_named "schema" (xml::read_xml text) ?|
-    | Some (attributes, children) =>
-        := target = namespace_uri (attribute_or "targetNamespace" "" attributes)
-        := model = schema_items children { empty ?| target_namespace = target }
-        canonical_schema (xml_schema_prefixes attributes []) model
+    | Some (attributes, children) => xsd_schema_of attributes children empty
     | None => empty
 
 ///> rust

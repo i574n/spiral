@@ -20,8 +20,7 @@
 :~ put_u32 (n : u32) : array u8 =
     ;[ conv ((n >>> 24i32) &&& 255u32) : u8; conv ((n >>> 16i32) &&& 255u32) : u8; conv ((n >>> 8i32) &&& 255u32) : u8; conv (n &&& 255u32) : u8 ]
 
-:~ put_u64 (n : u64) : array u8 =
-    ;[ conv ((n >>> 56i32) &&& 255u64) : u8; conv ((n >>> 48i32) &&& 255u64) : u8; conv ((n >>> 40i32) &&& 255u64) : u8; conv ((n >>> 32i32) &&& 255u64) : u8; conv ((n >>> 24i32) &&& 255u64) : u8; conv ((n >>> 16i32) &&& 255u64) : u8; conv ((n >>> 8i32) &&& 255u64) : u8; conv (n &&& 255u64) : u8 ]
+:~ put_u64 (n : u64) : array u8 = cat (put_u32 (conv (n >>> 32i32))) (put_u32 (conv (n &&& 4294967295u64)))
 
 :~ put_i32 (n : i32) : array u8 = put_u32 (conv n)
 
@@ -70,7 +69,7 @@
         frozen (JobStep { job = "j1"; step = "compile"; exit = 0i32; detail = "ok" }) "0000000000000001000000046E6F646501000000026A3100000007636F6D70696C6500000000000000026F6B",
         frozen (JobDone { job = "j1"; exit = 0i32 }) "0000000000000001000000046E6F646502000000026A3100000000",
         frozen (JobStop { job = "j1"; reason = "memory" }) "0000000000000001000000046E6F646503000000026A31000000066D656D6F7279",
-        frozen (LeaseAcquired { tree = "eoie"; owner = "compiler" }) "0000000000000001000000046E6F64650400000004656F696500000008636F6D70696C6572"
+        frozen (LeaseAcquired { tree = "kit"; owner = "compiler" }) "0000000000000001000000046E6F646504000000036B697400000008636F6D70696C6572"
     )
 
 ///- --timeout 600000
@@ -81,7 +80,7 @@
         := bytes = encode { seq = 1u64; machine = "node"; body }
         _assert_eq expected (hex_upper bytes ((conv (am'::length bytes) : i32) - 1i32) "")
     (
-        frozen (LeaseReleased { tree = "eoie"; owner = "compiler" }) "0000000000000001000000046E6F64650500000004656F696500000008636F6D70696C6572",
+        frozen (LeaseReleased { tree = "kit"; owner = "compiler" }) "0000000000000001000000046E6F646505000000036B697400000008636F6D70696C6572",
         frozen (SlotAdmitted { slot = 1i32; owner = "compiler" }) "0000000000000001000000046E6F6465060000000100000008636F6D70696C6572",
         frozen (SlotReleased { slot = 1i32; owner = "compiler" }) "0000000000000001000000046E6F6465070000000100000008636F6D70696C6572",
         frozen (Health { cpu = 63i32; free_mem_mb = 7500i32; free_disk_gb = 84i32 }) "0000000000000001000000046E6F6465080000003F00001D4C00000054",
@@ -133,10 +132,13 @@
         fn spiral_iggy_bytes(bytes: List(Int)) -> BitArray
         """
 
-:= rd_str_utf8_gleam (a : array u8) (i : i32) (n : i32) : rd string =
+:= gleam_utf8 \* t. (bytes : t) : resultm::result' string () =
     iggy_gleam_bytes ()
+    $'bit_array.to_string(spiral_iggy_bytes(!bytes))' : resultm::result' string ()
+
+:= rd_str_utf8_gleam (a : array u8) (i : i32) (n : i32) : rd string =
     := bytes = am'::init_base (conv n) (\ j => am'::index (conv i + 4i32 + j) a) |> am'::to_list_base'
-    ?= ($'bit_array.to_string(spiral_iggy_bytes(!bytes))' : resultm::result' string ()) |> resultm::unbox ?|
+    ?= gleam_utf8 bytes |> resultm::unbox ?|
     | Ok s => RD (s, i + 4i32 + n)
     | Error _ => RUtf8
 
@@ -166,32 +168,64 @@
     | RUtf8 => NotUtf8
     | RD (body, final) => finish { seq; machine; body } final len
 
+:~ job_started_at (a : array u8) (i : i32) (len : i32) : rd event_body =
+    rd_bind (rd_str a i len) (\ job j1 => rd_bind (rd_str a j1 len) (\ label j2 => RD (JobStarted { job; label }, j2)))
+
+:~ job_step_at (a : array u8) (i : i32) (len : i32) : rd event_body =
+    rd_bind (rd_str a i len) (\ job j1 => rd_bind (rd_str a j1 len) (\ step j2 => rd_bind (rd_i32 a j2 len) (\ ex j3 => rd_bind (rd_str a j3 len) (\ detail j4 => RD (JobStep { job; step; exit = ex; detail }, j4)))))
+
+:~ job_done_at (a : array u8) (i : i32) (len : i32) : rd event_body =
+    rd_bind (rd_str a i len) (\ job j1 => rd_bind (rd_i32 a j1 len) (\ ex j2 => RD (JobDone { job; exit = ex }, j2)))
+
+:~ job_stop_at (a : array u8) (i : i32) (len : i32) : rd event_body =
+    rd_bind (rd_str a i len) (\ job j1 => rd_bind (rd_str a j1 len) (\ reason j2 => RD (JobStop { job; reason }, j2)))
+
+:~ lease_acquired_at (a : array u8) (i : i32) (len : i32) : rd event_body =
+    rd_bind (rd_str a i len) (\ tree j1 => rd_bind (rd_str a j1 len) (\ owner j2 => RD (LeaseAcquired { tree; owner }, j2)))
+
+:~ lease_released_at (a : array u8) (i : i32) (len : i32) : rd event_body =
+    rd_bind (rd_str a i len) (\ tree j1 => rd_bind (rd_str a j1 len) (\ owner j2 => RD (LeaseReleased { tree; owner }, j2)))
+
+:~ slot_admitted_at (a : array u8) (i : i32) (len : i32) : rd event_body =
+    rd_bind (rd_i32 a i len) (\ slot j1 => rd_bind (rd_str a j1 len) (\ owner j2 => RD (SlotAdmitted { slot; owner }, j2)))
+
+:~ slot_released_at (a : array u8) (i : i32) (len : i32) : rd event_body =
+    rd_bind (rd_i32 a i len) (\ slot j1 => rd_bind (rd_str a j1 len) (\ owner j2 => RD (SlotReleased { slot; owner }, j2)))
+
+:~ health_at (a : array u8) (i : i32) (len : i32) : rd event_body =
+    rd_bind (rd_i32 a i len) (\ cpu j1 => rd_bind (rd_i32 a j1 len) (\ free_mem_mb j2 => rd_bind (rd_i32 a j2 len) (\ free_disk_gb j3 => RD (Health { cpu; free_mem_mb; free_disk_gb }, j3))))
+
+:~ toolchain_at (a : array u8) (i : i32) (len : i32) : rd event_body =
+    rd_bind (rd_str a i len) (\ tool j1 => rd_bind (rd_str a j1 len) (\ version j2 => rd_bind (rd_str a j2 len) (\ path j3 => rd_bind (rd_str a j3 len) (\ mtime j4 => RD (Toolchain { tool; version; path; mtime }, j4)))))
+
+:~ body_at (tag : u8) (a : array u8) (i : i32) (len : i32) : option (rd event_body) =
+    ?= tag ?|
+    | 0u8 => Some (job_started_at a i len)
+    | 1u8 => Some (job_step_at a i len)
+    | 2u8 => Some (job_done_at a i len)
+    | 3u8 => Some (job_stop_at a i len)
+    | 4u8 => Some (lease_acquired_at a i len)
+    | 5u8 => Some (lease_released_at a i len)
+    | 6u8 => Some (slot_admitted_at a i len)
+    | 7u8 => Some (slot_released_at a i len)
+    | 8u8 => Some (health_at a i len)
+    | 9u8 => Some (toolchain_at a i len)
+    | _ => None
+
+:~ header_at (a : array u8) (len : i32) : rd (u64 * string * u8) =
+    rd_bind (rd_u64 a 0i32 len) (\ seq i0 => rd_bind (rd_str a i0 len) (\ machine i1 => rd_bind (rd_u8 a i1 len) (\ tag i2 => RD ((seq, machine, tag), i2))))
+
+:~ tagged (a : array u8) (len : i32) (seq : u64) (machine : string) (tag : u8) (i : i32) : decode_result =
+    ?= body_at tag a i len ?|
+    | Some body => complete seq machine len body
+    | None => UnknownTag tag
+
 :~ decode (a : array u8) : decode_result =
     := len = conv (am'::length a) : i32
-    ?= rd_u64 a 0i32 len ?|
+    ?= header_at a len ?|
     | RTrunc => Truncated
     | RUtf8 => NotUtf8
-    | RD (seq, i0) =>
-        ?= rd_str a i0 len ?|
-        | RTrunc => Truncated
-        | RUtf8 => NotUtf8
-        | RD (machine, i1) =>
-            ?= rd_u8 a i1 len ?|
-            | RTrunc => Truncated
-            | RUtf8 => NotUtf8
-            | RD (tag, i2) =>
-                ?= tag ?|
-                | 0u8 => complete seq machine len (rd_bind (rd_str a i2 len) (\ job j1 => rd_bind (rd_str a j1 len) (\ label j2 => RD (JobStarted { job; label }, j2))))
-                | 1u8 => complete seq machine len (rd_bind (rd_str a i2 len) (\ job j1 => rd_bind (rd_str a j1 len) (\ step j2 => rd_bind (rd_i32 a j2 len) (\ ex j3 => rd_bind (rd_str a j3 len) (\ detail j4 => RD (JobStep { job; step; exit = ex; detail }, j4))))))
-                | 2u8 => complete seq machine len (rd_bind (rd_str a i2 len) (\ job j1 => rd_bind (rd_i32 a j1 len) (\ ex j2 => RD (JobDone { job; exit = ex }, j2))))
-                | 3u8 => complete seq machine len (rd_bind (rd_str a i2 len) (\ job j1 => rd_bind (rd_str a j1 len) (\ reason j2 => RD (JobStop { job; reason }, j2))))
-                | 4u8 => complete seq machine len (rd_bind (rd_str a i2 len) (\ tree j1 => rd_bind (rd_str a j1 len) (\ owner j2 => RD (LeaseAcquired { tree; owner }, j2))))
-                | 5u8 => complete seq machine len (rd_bind (rd_str a i2 len) (\ tree j1 => rd_bind (rd_str a j1 len) (\ owner j2 => RD (LeaseReleased { tree; owner }, j2))))
-                | 6u8 => complete seq machine len (rd_bind (rd_i32 a i2 len) (\ slot j1 => rd_bind (rd_str a j1 len) (\ owner j2 => RD (SlotAdmitted { slot; owner }, j2))))
-                | 7u8 => complete seq machine len (rd_bind (rd_i32 a i2 len) (\ slot j1 => rd_bind (rd_str a j1 len) (\ owner j2 => RD (SlotReleased { slot; owner }, j2))))
-                | 8u8 => complete seq machine len (rd_bind (rd_i32 a i2 len) (\ cpu j1 => rd_bind (rd_i32 a j1 len) (\ free_mem_mb j2 => rd_bind (rd_i32 a j2 len) (\ free_disk_gb j3 => RD (Health { cpu; free_mem_mb; free_disk_gb }, j3)))))
-                | 9u8 => complete seq machine len (rd_bind (rd_str a i2 len) (\ tool j1 => rd_bind (rd_str a j1 len) (\ version j2 => rd_bind (rd_str a j2 len) (\ path j3 => rd_bind (rd_str a j3 len) (\ mtime j4 => RD (Toolchain { tool; version; path; mtime }, j4))))))
-                | _ => UnknownTag tag
+    | RD ((seq, machine, tag), i) => tagged a len seq machine tag i
 
 ///- --timeout 600000
 
@@ -210,8 +244,8 @@
 ///> gleam
 :# codec_round_trip_2 =
     := rt (ev : event) = _assert_eq (Decoded ev) (decode (encode ev))
-    := ~e4 : event = { seq = 1u64; machine = "node"; body = LeaseAcquired { tree = "eoie"; owner = "compiler" } }
-    := ~e5 : event = { seq = 1u64; machine = "node"; body = LeaseReleased { tree = "eoie"; owner = "compiler" } }
+    := ~e4 : event = { seq = 1u64; machine = "node"; body = LeaseAcquired { tree = "kit"; owner = "compiler" } }
+    := ~e5 : event = { seq = 1u64; machine = "node"; body = LeaseReleased { tree = "kit"; owner = "compiler" } }
     := ~e6 : event = { seq = 1u64; machine = "node"; body = SlotAdmitted { slot = 1i32; owner = "compiler" } }
     (rt e4, rt e5, rt e6)
 

@@ -1,0 +1,3 @@
+:< arith
+
+:= nine (n : i32) : i32 = triple (triple n)

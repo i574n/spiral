@@ -17,7 +17,7 @@ param(
     [switch]$ReuseCompile,
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
     [string]$WorkspaceRoot,
-    [ValidateSet('Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Pascal', 'Delphi', 'Cpp', 'Kotlin', 'Swift', 'Wgsl', 'Calyx', 'OpenQasm', 'Ebpf')][string]$Probe,
+    [ValidateSet('Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Pascal', 'Cpp', 'Kotlin', 'Swift', 'Wgsl', 'Calyx', 'OpenQasm', 'Ebpf')][string]$Probe,
     [string[]]$Oracle = @('Zig', 'C')
 )
 . $PSScriptRoot/env.ps1
@@ -58,9 +58,10 @@ if ($BackendsFrom -and -not $Backend) {
     for (; $j -lt $b.Length; $j++) { & $mark 1 $j }    if (-not $shared -and $owners.Count) { $Backend = @($owners | Sort-Object) }
     Write-Host "-BackendsFrom: $(if ($shared) { 'a change outside the codegen sections, so every backend' } elseif ($owners.Count) { "codegen sections changed: $($Backend -join ',')" } else { 'no change found' })"
 }
-foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all', 'fast', 'linked', 'families', 'split') { throw "unknown suite '$s'" } }
+foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all', 'fast', 'linked', 'families', 'split', 'split-corpus') { throw "unknown suite '$s'" } }
 if ($Suite -contains 'linked' -and $Suite.Count -gt 1) { throw "-Suite linked builds multi-unit cases and does not combine with '$($Suite -join ',')'" }
 if ($Suite -contains 'split' -and $Suite.Count -gt 1) { throw "-Suite split cuts samples into linked units and does not combine with '$($Suite -join ',')'" }
+if ($Suite -contains 'split-corpus' -and $Suite.Count -gt 1) { throw "-Suite split-corpus cuts real packages at module boundaries and does not combine with '$($Suite -join ',')'" }
 if ($Suite -contains 'families' -and $Suite.Count -gt 1) { throw "-Suite families runs the test-block families through Cells and does not combine with '$($Suite -join ',')'" }
 $fastSuite = $Suite -contains 'fast'
 if ($fastSuite -and $Suite.Count -gt 1) { throw "-Suite fast picks its rows from every suite and does not combine with '$($Suite -join ',')'" }
@@ -148,6 +149,7 @@ if ($Suite -contains 'linked') {
             if ($spec['Error']) {
                 if ($row.compile -ne 'error' -or $row.detail -notmatch [regex]::Escape($spec['Error'])) { $row.verdict = 'FAIL' }
             } elseif ($row.compile -ne 'ok') { $row.verdict = 'FAIL' }
+            elseif ($spec['Warns'] -and $text -notmatch [regex]::Escape($spec['Warns'])) { $row.verdict = 'FAIL'; $row.detail = "the root compile printed no warning containing: $($spec['Warns'])" }
             else {
                 $rootText = Get-Content -Raw (Join-Path $out "$root.$($unitExtension[$b])")
                 $missing = @($units[$root].Links | Where-Object { $rootText -notmatch "\b$_(::|\.)[\w{]" })
@@ -222,6 +224,7 @@ if ($Suite -contains 'split') {
         Pop-Location
         $code, (@($err) | Select-Object -First 1)
     }
+    $skipped = 0
     $rows = foreach ($case in @($matrix.Split | Where-Object { -not $Filter -or $_ -match $Filter } | Sort-Object)) {
         $sdir = Join-Path $BundleRoot $case
         $name = Split-Path $case -Leaf
@@ -232,6 +235,7 @@ if ($Suite -contains 'split') {
             $one = Join-Path $base 'single'; New-Item -ItemType Directory -Force $one | Out-Null
             Push-Location $sdir; $null = & $dotnet $compiler --backend $b main.spi (Join-Path $one "main.$ext") 2>&1; Pop-Location
             $want = (& $build $b $one $false)[0]
+            if ($want -eq 'build-fail') { Write-Host "skip $case ${b}: its single-unit build fails, so no cut has a reference"; $skipped++; continue }
             $list = @(& $dotnet $compiler split-units (Join-Path $sdir 'main.spi') --list 2>&1 | ForEach-Object { "$_" })
             $stride = [Math]::Max(1, [Math]::Floor($list.Count / 20))
             for ($k = $stride; $k -lt $list.Count; $k += $stride) {
@@ -264,7 +268,104 @@ if ($Suite -contains 'split') {
     $legal = @($rows | Where-Object result -eq 'LEGAL').Count
     $failed = @($rows | Where-Object verdict -ne 'pass')
     $failed | ForEach-Object { Write-Host "FAIL $($_.id) $($_.backend) cut $($_.cut): $($_.result)" }
-    Write-Host "split $($rows.Count) cuts, REACH $legal legal, $($failed.Count) fail (DIFFERS or native build-fail); results: $(Join-Path $runDir 'results.tsv')"
+    $reach = if ($rows.Count) { [Math]::Round(100.0 * $legal / $rows.Count, 1) } else { 0 }
+    Write-Host "split $($rows.Count) cuts, REACH $legal legal ($reach%), $($failed.Count) fail (DIFFERS or native build-fail), $skipped sample-backend pairs skipped (single-unit build fails); results: $(Join-Path $runDir 'results.tsv')"
+    if ($lockHeld) { $lock.ReleaseMutex() }
+    exit ([int]($failed.Count -gt 0))
+}
+
+if ($Suite -contains 'split-corpus') {
+    $absolute = {
+        param($root, $entry)
+        $bar = $entry.StartsWith('|'); $name = $entry.TrimStart('|')
+        if ($name -match '[\\/]') { $name = [IO.Path]::GetFullPath((Join-Path $root $name)).Replace('\', '/') }
+        "$(if ($bar) { '|' })$name"
+    }
+    $check = {
+        param($file)
+        $text = @(& $dotnet $compiler --check --timeout-ms 900000 $file 2>&1 | ForEach-Object { "$_" })
+        $LASTEXITCODE, (@($text | Where-Object { $_ -match 'ETY-\w+|TracedError|FatalError|Error|timed out' }) | Select-Object -First 1)
+    }
+    $gitRoot = [IO.Path]::GetFullPath((Join-Path $BundleRoot '../../../..'))
+    $rows = foreach ($entry in @($matrix.SplitCorpus | Where-Object { -not $Filter -or $_ -match $Filter })) {
+        $root = [IO.Path]::GetFullPath((Join-Path $gitRoot $entry))
+        $lines = if (Test-Path (Join-Path $root 'package.spiproj')) { @(Get-Content (Join-Path $root 'package.spiproj')) }
+        else {
+            $toml = Get-Content -Raw (Join-Path $root 'spiral.toml')
+            $converted = [Collections.Generic.List[string]]::new()
+            if ($toml -match '(?m)^edition\s*=\s*(\d+)') { $converted.Add("edition: $($Matches[1])") }
+            if ($toml -match "(?m)^packageDir\s*=\s*'([^']*)'") { $converted.Add("packageDir: $($Matches[1])") }
+            if ($toml -match '(?m)^packages\s*=\s*\[([^\]]*)\]') { $converted.Add('packages:'); foreach ($p in [regex]::Matches($Matches[1], "'([^']*)'")) { $converted.Add("    $($p.Groups[1].Value)") } }
+            if ($toml -match "(?m)^link\s*=") { $converted.Add('link:') }
+            $converted.Add('modules:')
+            if ($toml -match "(?s)modules\s*=\s*'''\r?\n(.*?)'''") { foreach ($m in ($Matches[1] -split "`r?`n" | Where-Object { $_.Trim() })) { $converted.Add("    $m") } }
+            @($converted)
+        }
+        $at = [Array]::FindIndex($lines, [Predicate[string]] { param($l) $l.TrimEnd() -eq 'modules:' })
+        if ($at -lt 0 -or ($lines | Where-Object { $_.TrimEnd() -eq 'link:' })) { Write-Host "skip ${root}: no modules: section, or it already links"; continue }
+        if ($at + 1 -ge $lines.Count) {
+            $lines = @(& $dotnet $compiler --resolve-manifest $root 2>$null | ForEach-Object { "$_" })
+            $at = [Array]::FindIndex([string[]] $lines, [Predicate[string]] { param($l) $l.TrimEnd() -eq 'modules:' })
+            if ($at -lt 0 -or $at + 1 -ge $lines.Count) { Write-Host "skip ${root}: no module list, and --resolve-manifest derives none, so there is no order to cut"; continue }
+            Write-Host "${root}: module order derived by --resolve-manifest ($($lines.Count - $at - 1) lines)"
+        }
+        $head = [Collections.Generic.List[string]]::new(); $section = ''
+        foreach ($line in $lines[0..($at - 1)]) {
+            if ($line -match '^packageDir:\s*(.+)$') { $head.Add("packageDir: $([IO.Path]::GetFullPath((Join-Path $root $Matches[1].Trim())).Replace('\', '/'))"); continue }
+            if ($line -match '^(\S[^:]*):') { $section = $Matches[1] }
+            if ($section -eq 'packages' -and $line -match '^\s+(\S+)$') { $head.Add("    $(& $absolute $root $Matches[1])") } else { $head.Add($line) }
+        }
+        $blocks = [Collections.Generic.List[object]]::new()
+        foreach ($line in $lines[($at + 1)..($lines.Count - 1)]) {
+            if ($line -match '^    (\S.*)$') { $blocks.Add([Collections.Generic.List[string]]::new()) }
+            if ($line.Trim() -and $blocks.Count) { $blocks[$blocks.Count - 1].Add($line) }
+        }
+        $fileOf = {
+            param($block)
+            $top = $block[0].Trim().TrimEnd('-')
+            $rel = if ($top.EndsWith('/')) { $top + $block[$block.Count - 1].Trim().TrimEnd('-') } else { $top }
+            $hit = Get-ChildItem -Path (Join-Path $root "$rel.spi*") -File -ErrorAction SilentlyContinue | Sort-Object Name | Select-Object -Last 1
+            if ($hit) { return [IO.Path]::GetRelativePath($root, $hit.FullName).Replace('\', '/') }
+            "$rel.spi"
+        }
+        $last = & $fileOf $blocks[$blocks.Count - 1]
+        $name = $entry -replace '[\\/]', '__'
+        $base = Join-Path $runDir "split-corpus/$name"
+        $wantCode, $wantWhy = & $check (Join-Path $root $last)
+        $stride = [Math]::Max(1, [Math]::Floor($blocks.Count / 8))
+        for ($k = $stride; $k -lt $blocks.Count; $k += $stride) {
+            $cut = Join-Path $base "cut$k"
+            foreach ($unit in 'model', 'app') { New-Item -ItemType Directory -Force (Join-Path $cut $unit) | Out-Null }
+            for ($i = 0; $i -lt $blocks.Count; $i++) {
+                $unit = if ($i -lt $k) { 'model' } else { 'app' }
+                $top = $blocks[$i][0].Trim().TrimEnd('-')
+                if ($top.EndsWith('/')) { Copy-Item -Recurse -Force (Join-Path $root $top.TrimEnd('/')) (Join-Path $cut $unit) }
+                else { Get-ChildItem -Path (Join-Path $root "$top.spi*") -File | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $cut $unit) -Force } }
+            }
+            $model = @($head) + 'auto-export: monomorphic' + 'modules:' + @($blocks[0..($k - 1)] | ForEach-Object { $_ })
+            $packagesAt = [Array]::FindIndex([string[]] $head, [Predicate[string]] { param($l) $l.TrimEnd() -eq 'packages:' })
+            $packagesEnd = $packagesAt
+            while ($packagesAt -ge 0 -and $packagesEnd + 1 -lt $head.Count -and $head[$packagesEnd + 1] -match '^\s+\S') { $packagesEnd++ }
+            $appHead = if ($packagesAt -ge 0) { @($head[0..$packagesEnd]) + '    ../model-' + @(if ($packagesEnd + 1 -lt $head.Count) { $head[($packagesEnd + 1)..($head.Count - 1)] }) } else { @($head) + 'packages:' + '    ../model-' }
+            $app = @($appHead) + 'link:' + '    ../model-' + 'modules:' + @($blocks[$k..($blocks.Count - 1)] | ForEach-Object { $_ })
+            $relative = {
+                param($unitDir, $manifest)
+                $manifest | ForEach-Object {
+                    if ($_ -match '^    (\|?)([A-Za-z]:/.+)$') { "    $($Matches[1])$([IO.Path]::GetRelativePath($unitDir, $Matches[2]).Replace('\', '/'))" } else { $_ }
+                }
+            }
+            Set-Content (Join-Path $cut 'model/package.spiproj') (& $relative (Join-Path $cut 'model') $model)
+            Set-Content (Join-Path $cut 'app/package.spiproj') (& $relative (Join-Path $cut 'app') $app)
+            $gotCode, $gotWhy = & $check (Join-Path $cut "app/$last")
+            $verdict = if ($gotCode -eq $wantCode) { 'pass' } else { 'FAIL' }
+            [pscustomobject][ordered]@{ id = $entry; cut = $k; blocks = $blocks.Count; want = $wantCode; got = $gotCode; verdict = $verdict; detail = "$(if ($verdict -eq 'FAIL') { $gotWhy } else { '-' })".Substring(0, [Math]::Min(200, "$(if ($verdict -eq 'FAIL') { $gotWhy } else { '-' })".Length)) }
+        }
+    }
+    $rows = @($rows)
+    $rows | Export-Csv -Delimiter "`t" -NoTypeInformation -UseQuotes Never (Join-Path $runDir 'results.tsv')
+    $failed = @($rows | Where-Object verdict -ne 'pass')
+    $failed | ForEach-Object { Write-Host "FAIL $($_.id) cut $($_.cut)/$($_.blocks): single --check exit $($_.want), split exit $($_.got): $($_.detail)" }
+    Write-Host "split-corpus $($rows.Count) cuts over $(@($rows | Select-Object -ExpandProperty id -Unique).Count) roots, $($failed.Count) fail (the split --check verdict differs from the single package's); results: $(Join-Path $runDir 'results.tsv')"
     if ($lockHeld) { $lock.ReleaseMutex() }
     exit ([int]($failed.Count -gt 0))
 }

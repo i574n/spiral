@@ -262,6 +262,8 @@
         @{ Id = 'samples/frontier_hopacsota_two_errors'; Contains = 'first body fails' }
         @{ Id = 'samples/frontier_hopacsota_deferred_validation_mismatch'; Contains = 'The backend switch needs to have the same type for all of its branches.' }
         @{ Id = 'samples/backend_switch_missing_arm_negative'; Contains = 'reaches a lib/spiral backend_switch that has no arm for the' }
+        @{ Id = 'samples/backend_switch_missing_arm_site'; Contains = 'Reached from: main.spi:21 <' }
+        @{ Id = 'samples/record_update_retype_negative'; Contains = 'This record update changes the field x from i32 to string.' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_alphabet_mix'; Contains = 'Got: (tri_alphabet : *) Expected: (bit_alphabet : *)' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_antimirov_support_assignment_count'; Contains = 'Unification failure. Got: antimirov_support_slot_assignment' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_exact_rows_not_soundness_witness'; Contains = 'Unification failure. Got: indexed_dfa_exact_transition_rows bit_alphabet' }
@@ -675,12 +677,26 @@
         'samples/linked_rust_global_pub_fields' = @{ Backends = 'Rust'; Exit = 13; Calls = 'model_make' }
         'samples/linked_rust_global_in_mod' = @{ Backends = 'Rust'; Exit = 13; Calls = 'model_make' }
         'samples/linked_rust_eq_show' = @{ Backends = 'Rust'; Exit = 2; Calls = 'model_show' }
+        'samples/linked_rust_auto_export' = @{ Backends = 'Rust'; Exit = 63; Calls = 'model_double,model_square,model_is_big' }
+        'samples/linked_rust_auto_export_curried' = @{ Backends = 'Rust'; Exit = 31; Calls = 'model_add3__uncurried,model_double' }
+        'samples/linked_rust_auto_export_modules' = @{ Backends = 'Rust'; Exit = 34; Calls = 'model_triple,model_nine,model_scale__uncurried' }
+        'samples/linked_rust_lambda_export_warn' = @{ Backends = 'Rust'; Exit = 35; Calls = 'model_triple'; Warns = 'the call to double inlines its body here instead of linking' }
         'samples/linked_rust_local_union_loop' = @{ Backends = 'Rust'; Exit = 5; Calls = 'model_second_line' }
         'samples/linked_records' = @{ Backends = 'Zig,Gleam'; Exit = 13; Calls = 'model_norm,model_make,model_pair,model_label_len' }
         'samples/linked_union' = @{ Backends = 'Zig,Gleam'; Exit = 13; Calls = 'model_make_sq,model_area' }
     'samples/linked_zig_alloc_export' = @{ Backends = 'Zig'; Exit = 13; Calls = 'model_create' }
         'samples/linked_union_name_clash' = @{ Backends = 'Rust,Gleam,Zig'; Error = 'both named color' }
     }
+
+    SplitCorpus = @(
+        'x/apps/client'
+        'spiral/apps/cells/spi'
+        'spiral/apps/kernel/src'
+        'regex/src'
+        'x/apps/sim/spi'
+        'tibia/src'
+        'spiral/lib/spiral'
+    )
 
     Split = @(
         'samples/array_i32'

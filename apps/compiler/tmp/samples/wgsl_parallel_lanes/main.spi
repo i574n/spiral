@@ -4,7 +4,7 @@
         C = \ () => 0u32
         Fsharp = \ () => 0u32
         Rust = \ () => 0u32
-        Delphi = \ () => 0u32
+        Pascal = \ () => 0u32
         Lean = \ () => 0u32
     })
 

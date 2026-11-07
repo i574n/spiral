@@ -92,15 +92,18 @@
 
 := suite_of (name : string) : option suite = reflection::union_cases_find (\ (s : suite) => suite_label s = name)
 
+:= fields_of (line : string) : array string = sm'::split "\t" line |> array
+
+:= millis_at (fields : array string) (i : i32) : f64 = (am'::index i fields |> convert::convert_i32 |> convert::f64) / 1000f64
+
+:= sample_at \* u. (m : metric u) (fields : array string) (value : () -> f64) : option (sample u) =
+    ?= backend_of (am'::index 1i32 fields), suite_of (am'::index 2i32 fields) ?|
+    | Some backend, Some suite => Some ({ metric = m; backend; suite; id = am'::index 0i32 fields; value = value () |> quantity } |> sample)
+    | _ => None
+
 := compile_sample (line : string) : option (sample ms) =
-    := fields = sm'::split "\t" line |> array
-    ? am'::length fields < 5i32 ?> None
-    |:
-        ?= backend_of (am'::index 1i32 fields), suite_of (am'::index 2i32 fields) ?|
-        | Some backend, Some suite =>
-            := seconds = (am'::index 4i32 fields |> convert::convert_i32 |> convert::f64) / 1000f64
-            Some ({ metric = CompileSeconds; backend = backend; suite = suite; id = am'::index 0i32 fields; value = seconds |> quantity } |> sample)
-        | _ => None
+    := fields = fields_of line
+    ? am'::length fields < 5i32 ?> None |: sample_at CompileSeconds fields (\ () => millis_at fields 4i32)
 
 := rendered (s : option (sample ms)) : string =
     ?= s ?|
@@ -140,26 +143,20 @@
     |> _assert_eq 2i32
 
 := native_sample (line : string) : option (sample ms) =
-    := fields = sm'::split "\t" line |> array
+    := fields = fields_of line
     ? am'::length fields < 8i32 ?> None
     |? am'::index 6i32 fields <> "ran" ?> None
-    |:
-        ?= backend_of (am'::index 1i32 fields), suite_of (am'::index 2i32 fields) ?|
-        | Some backend, Some suite =>
-            := seconds = (am'::index 7i32 fields |> convert::convert_i32 |> convert::f64) / 1000f64
-            Some ({ metric = NativeSeconds; backend = backend; suite = suite; id = am'::index 0i32 fields; value = seconds |> quantity } |> sample)
-        | _ => None
+    |: sample_at NativeSeconds fields (\ () => millis_at fields 7i32)
+
+:= verdict_value (verdict : string) : option f64 = ? verdict = "agree" ?> Some 1f64 |? verdict = "DISAGREE" ?> Some 0f64 |: None
 
 := oracle_sample (line : string) : option (sample count) =
-    := fields = sm'::split "\t" line |> array
+    := fields = fields_of line
     ? am'::length fields < 11i32 ?> None
     |:
-        := verdict = am'::index 10i32 fields
-        := agreed = ? verdict = "agree" ?> Some 1f64 |? verdict = "DISAGREE" ?> Some 0f64 |: None
-        ?= agreed, backend_of (am'::index 1i32 fields), suite_of (am'::index 2i32 fields) ?|
-        | Some v, Some backend, Some suite =>
-            Some ({ metric = OracleAgree; backend = backend; suite = suite; id = am'::index 0i32 fields; value = v |> quantity } |> sample)
-        | _ => None
+        ?= verdict_value (am'::index 10i32 fields) ?|
+        | Some v => sample_at OracleAgree fields (\ () => v)
+        | None => None
 
 := results_oracle_samples (text : string) : array (sample count) =
     results_rows text
@@ -241,10 +238,11 @@
     | Some other => Some (sample_value s < other)
     | None => None
 
+:= wins_of (pairs : array bool) : array bool = pairs |> am'::choose (\ (w : bool) => ? w ?> Some w |: None)
+
 := head_to_head \* u. (a : backend_name) (b : backend_name) (samples : array (sample u)) : i32 * i32 =
     := pairs : array bool = samples |> am'::choose (\ (s : sample u) => ? backend_label s::backend = backend_label a ?> beats b samples s |: None)
-    := wins : array bool = pairs |> am'::choose (\ (w : bool) => ? w ?> Some w |: None)
-    am'::length wins, am'::length pairs
+    am'::length (wins_of pairs), am'::length pairs
 
 := results_head_to_head (a : backend_name) (b : backend_name) (text : string) : i32 * i32 =
     results_rows text
@@ -257,16 +255,11 @@
     |> head_to_head a b
 
 := run_sample (line : string) : option (sample ms) =
-    := fields = sm'::split "\t" line |> array
+    := fields = fields_of line
     ? am'::length fields < 14i32 ?> None
     |? am'::index 6i32 fields <> "ran" ?> None
     |? am'::index 13i32 fields = "" ?> None
-    |:
-        ?= backend_of (am'::index 1i32 fields), suite_of (am'::index 2i32 fields) ?|
-        | Some backend, Some suite =>
-            := seconds = (am'::index 13i32 fields |> convert::convert_i32 |> convert::f64) / 1000f64
-            Some ({ metric = RunSeconds; backend = backend; suite = suite; id = am'::index 0i32 fields; value = seconds |> quantity } |> sample)
-        | _ => None
+    |: sample_at RunSeconds fields (\ () => millis_at fields 13i32)
 
 := results_run_head_to_head (a : backend_name) (b : backend_name) (text : string) : i32 * i32 =
     results_rows text

@@ -29,6 +29,15 @@
     every (samples ()) (\ t => same_as (instantiate (lift t 1i32) (value ())) t) |> _assert_eq !+
 
 ///> rust
+:# lifting_by_zero_is_the_identity =
+    every (samples ()) (\ t => same_as (lift t 0i32) t) |> _assert_eq !+
+
+///> rust
+:# shifts_compose_by_adding_their_amounts_at_every_cutoff =
+    := law = \ c t => same_as (shift_from (shift_from t c 2i32) c 3i32) (shift_from t c 5i32)
+    every (samples ()) (\ t => law 0i32 t && law 1i32 t && law 2i32 t) |> _assert_eq !+
+
+///> rust
 :# lifts_compose_by_adding_their_amounts =
     every (samples ()) (\ t => same_as (lift (lift t 2i32) 3i32) (lift t 5i32)) |> _assert_eq !+
 
@@ -38,6 +47,14 @@
         \ t =>
             same_as (lift (instantiate t (value ())) 1i32) (instantiate (shift_from t 1i32 1i32) (lift (value ()) 1i32))
     every (samples ()) law |> _assert_eq !+
+
+///> rust
+:# instantiation_commutes_with_shifting_at_or_above_its_depth =
+    := v = App (App (FVar (name "w"), BVar 0i32), BVar 2i32)
+    := law =
+        \ d c t =>
+            same_as (shift_from (instantiate_at t d v) c 2i32) (instantiate_at (shift_from t (c + 1i32) 2i32) d (shift_from v (c - d) 2i32))
+    every (samples ()) (\ t => law 0i32 0i32 t && law 0i32 2i32 t && law 1i32 1i32 t && law 1i32 3i32 t) |> _assert_eq !+
 
 ///> rust
 :# substituting_twice_follows_the_substitution_lemma =

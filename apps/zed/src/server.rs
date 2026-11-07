@@ -123,7 +123,7 @@ fn load_settings(worktree: &Worktree) -> SpiralSettings {
 
 fn discover_compiler(worktree: &Worktree, settings: &SpiralSettings) -> Result<Command> {
     if let Some(path) = shell_value(worktree, "SPIRAL_COMPILER")
-        .or_else(|| shell_value(worktree, "EOIE_SPIRAL_COMPILE"))
+        .or_else(|| shell_value(worktree, "KIT_SPIRAL_COMPILE"))
     {
         return command_for_compiler(worktree, &host_path(&path, zed::current_platform().0), settings);
     }
@@ -224,7 +224,7 @@ fn spiral_cache_dir(worktree: &Worktree) -> Option<PathBuf> {
 
 fn dotnet_command(worktree: &Worktree) -> String {
     if let Some(explicit) =
-        shell_value(worktree, "SPIRAL_DOTNET").or_else(|| shell_value(worktree, "EOIE_DOTNET"))
+        shell_value(worktree, "SPIRAL_DOTNET").or_else(|| shell_value(worktree, "KIT_DOTNET"))
     {
         return explicit;
     }
@@ -302,25 +302,25 @@ mod tests {
 
     #[test]
     fn windows_paths_are_normalized_before_wasi_path_operations() {
-        let path = host_path(r"C:\home\git\eoie", zed::Os::Windows);
+        let path = host_path(r"C:\home\git\kit", zed::Os::Windows);
         // Assert the string itself, not Path equality (Windows accepts both separators).
-        assert_eq!(path.to_str(), Some("C:/home/git/eoie"));
+        assert_eq!(path.to_str(), Some("C:/home/git/kit"));
         assert_eq!(path.parent().unwrap().to_str(), Some("C:/home/git"));
         assert_eq!(
-            candidate_strings(r"C:\home\git\eoie", zed::Os::Windows),
-            candidate_strings("C:/home/git/eoie", zed::Os::Windows),
+            candidate_strings(r"C:\home\git\kit", zed::Os::Windows),
+            candidate_strings("C:/home/git/kit", zed::Os::Windows),
         );
     }
 
     #[test]
     fn windows_helper_candidates_include_sibling_spiral_checkout() {
         assert_eq!(
-            candidate_strings(r"C:\home\git\eoie", zed::Os::Windows),
+            candidate_strings(r"C:\home\git\kit", zed::Os::Windows),
             vec![
-                "C:/home/git/eoie/apps/zed/dist/spiral-zed.exe",
-                "C:/home/git/eoie/spiral/apps/zed/dist/spiral-zed.exe",
-                "C:/home/git/eoie/apps/zed/target/release/spiral-zed.exe",
-                "C:/home/git/eoie/spiral/apps/zed/target/release/spiral-zed.exe",
+                "C:/home/git/kit/apps/zed/dist/spiral-zed.exe",
+                "C:/home/git/kit/spiral/apps/zed/dist/spiral-zed.exe",
+                "C:/home/git/kit/apps/zed/target/release/spiral-zed.exe",
+                "C:/home/git/kit/spiral/apps/zed/target/release/spiral-zed.exe",
                 "C:/home/git/spiral/apps/zed/dist/spiral-zed.exe",
                 "C:/home/git/apps/zed/dist/spiral-zed.exe",
             ],
@@ -340,10 +340,10 @@ mod tests {
 
     #[test]
     fn windows_unc_candidates_keep_the_share_prefix() {
-        let root = r"\\server\share\git\eoie";
+        let root = r"\\server\share\git\kit";
         assert_eq!(
             host_path(root, zed::Os::Windows).to_str(),
-            Some("//server/share/git/eoie"),
+            Some("//server/share/git/kit"),
         );
         assert_eq!(
             candidate_strings(root, zed::Os::Windows)[4],

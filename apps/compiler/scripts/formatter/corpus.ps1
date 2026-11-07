@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory)] [string] $Out,
     [string] $Spiral = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path,
-    [string] $Eoie = (Join-Path (Split-Path (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path) 'eoie'),
+    [string] $Kit = (Join-Path (Split-Path (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path) 'kit'),
     [string] $UserManifest,
     [string] $Backlog
 )
@@ -19,8 +19,8 @@ foreach ($rel in Get-Tracked $Spiral @('apps/*.spi', 'apps/*.spir')) {
     $corpus = if ($rel -like 'apps/compiler/tmp/samples/*') { 'samples' } else { 'apps' }
     Add-Row $corpus (Join-Path $Spiral $rel) $rel
 }
-if (Test-Path $Eoie) {
-    foreach ($rel in Get-Tracked $Eoie @('src/*.spi', 'src/*.spir')) { Add-Row 'eoie' (Join-Path $Eoie $rel) "eoie/$rel" }
+if (Test-Path $Kit) {
+    foreach ($rel in Get-Tracked $Kit @('src/*.spi', 'src/*.spir')) { Add-Row 'kit' (Join-Path $Kit $rel) "kit/$rel" }
 }
 if ($Backlog) { Add-Row 'agile' $Backlog 'backlog/state/agile.spi' }
 [IO.File]::WriteAllText($Out, ($rows -join "`n") + "`n")

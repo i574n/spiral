@@ -61,7 +61,7 @@
 
 := pick_cases \* t. (() : ()) : pick t = pick_enum (~> real_core::union_type_length `t) case_index case_at
 
-:= leaf_size \* t. (l : leaf t) : i32 =
+:= leaf_value_count \* t. (l : leaf t) : i32 =
     ?= l ?|
     | LeafBool () => 2
     | LeafBelow n => n
@@ -83,12 +83,12 @@
     :~ ^ go (i : i32) (acc : i32) : i32 = ? i < e ?> go (i + 1) (acc * b) |: acc
     go 0 1
 
-:= ^ size \* t. (p : pick t) : i32 =
+:= ^ count \* t. (p : pick t) : i32 =
     ?= p ?|
-    | PLeaf l => leaf_size l
-    | POpt a => 1 + size a
-    | PPair (a, b) => size a * size b
-    | PSized (n, a) => power (size a) n
+    | PLeaf l => leaf_value_count l
+    | POpt a => 1 + count a
+    | PPair (a, b) => count a * count b
+    | PSized (n, a) => power (count a) n
     | PWrap (c, _) => c::size
 
 := opt_index \* a. (f : a -> i32) (x : option a) : i32 =
@@ -96,12 +96,12 @@
     | None => 0
     | Some v => 1 + f v
 
-:= pair_index \* a b. (pb : pick b) (fa : a -> i32) (fb : b -> i32) ((u, v) : a * b) : i32 = fa u * size pb + fb v
+:= pair_index \* a b. (pb : pick b) (fa : a -> i32) (fb : b -> i32) ((u, v) : a * b) : i32 = fa u * count pb + fb v
 
 := sized_index \* n a. (pa : pick a) (f : a -> i32) (x : sized n a) : i32 =
-    := r = size pa
+    := r = count pa
     :~ ^ go (j : i32) (acc : i32) : i32 =
-        ? j < sized_array::size_of x ?> go (j + 1) (acc * r + f (sized_array::item x j)) |: acc
+        ? j < sized_array::element_count x ?> go (j + 1) (acc * r + f (sized_array::item x j)) |: acc
     go 0 0
 
 := ^ pickle \* t. (p : pick t) (x : t) : i32 =
@@ -114,10 +114,10 @@
 
 := opt_of \* a. (f : i32 -> a) (i : i32) : option a = ? i = 0 ?> None |: Some (f (i - 1))
 
-:= pair_of \* a b. (pb : pick b) (fa : i32 -> a) (fb : i32 -> b) (i : i32) : a * b = fa (i / size pb), fb (i % size pb)
+:= pair_of \* a b. (pb : pick b) (fa : i32 -> a) (fb : i32 -> b) (i : i32) : a * b = fa (i / count pb), fb (i % count pb)
 
 := sized_of \* n a. (pa : pick a) (f : i32 -> a) (i : i32) : sized n a =
-    := r = size pa
+    := r = count pa
     := len = ~> real_core::type_lit_to_lit `n
     sized_array::init \ j => f (i / power r (len - 1 - j) % r)
 
@@ -131,12 +131,12 @@
 
 := round_trips \* t. (p : pick t) : bool =
     :~ ^ go (i : i32) : bool =
-        ? i >= size p ?> !+ |: pickle p (unpickle p i) = i && go (i + 1)
+        ? i >= count p ?> !+ |: pickle p (unpickle p i) = i && go (i + 1)
     go 0
 
 := ^ width \* t. (p : pick t) : i32 =
     ?= p ?|
-    | PLeaf l => leaf_size l
+    | PLeaf l => leaf_value_count l
     | POpt a => 2 + width a
     | PPair (a, b) => width a + width b
     | PSized (n, a) => n * width a
@@ -156,7 +156,7 @@
 := sized_hot \* n a. (pa : pick a) (h : visit a) (x : sized n a) (f : i32 -> ()) : () =
     := w = width pa
     :~ ^ go (j : i32) : () =
-        ? j < sized_array::size_of x ?>
+        ? j < sized_array::element_count x ?>
             h (sized_array::item x j) (\ k => f (j * w + k))
             go (j + 1)
     go 0
@@ -194,7 +194,7 @@
 
 := ^ bytes \* t. (p : pick t) : i32 =
     ?= p ?|
-    | PLeaf l => bytes_for (leaf_size l)
+    | PLeaf l => bytes_for (leaf_value_count l)
     | POpt a => 1 + bytes a
     | PPair (a, b) => bytes a + bytes b
     | PSized (n, a) => n * bytes a
@@ -211,9 +211,9 @@
     :~ ^ go (k : i32) (acc : i32) : i32 = ? k < width ?> go (k + 1) (acc ||| (conv (g k) <<< (8 * k))) |: acc
     go 0 0
 
-:= leaf_put \* t. (l : leaf t) (x : t) (f : sink) : () = put_le (bytes_for (leaf_size l)) (leaf_index l x) f
+:= leaf_put \* t. (l : leaf t) (x : t) (f : sink) : () = put_le (bytes_for (leaf_value_count l)) (leaf_index l x) f
 
-:= leaf_get \* t. (l : leaf t) (g : source) : t = leaf_value l (get_le (bytes_for (leaf_size l)) g)
+:= leaf_get \* t. (l : leaf t) (g : source) : t = leaf_value l (get_le (bytes_for (leaf_value_count l)) g)
 
 := put_opt \* a. (w : writer a) (x : option a) (f : sink) : () =
     ?= x ?|
@@ -229,7 +229,7 @@
 := put_sized \* n a. (sa : pick a) (pa : writer a) (x : sized n a) (f : sink) : () =
     := w = bytes sa
     :~ ^ go (j : i32) : () =
-        ? j < sized_array::size_of x ?>
+        ? j < sized_array::element_count x ?>
             pa (sized_array::item x j) (\ k => f (j * w + k))
             go (j + 1)
     go 0
@@ -260,7 +260,7 @@
     | PWrap (_, l) => l::get g
 
 := codec_of \* a b. (to : a -> b) (from : b -> a) (p : pick b) : codec a =
-    { size = size p; index = to >> pickle p; value = unpickle p >> from; width = width p; hot = to >> hot p }
+    { size = count p; index = to >> pickle p; value = unpickle p >> from; width = width p; hot = to >> hot p }
 
 := layout_of \* a b. (to : a -> b) (from : b -> a) (p : pick b) : layout a =
     { bytes = bytes p; put = to >> put p; get = get p >> from }
@@ -289,7 +289,7 @@
 
 ///> c
 :# a_pair_of_an_option_and_a_bool_has_8_values =
-    size (sample ()) |> _assert_eq 8i32
+    count (sample ()) |> _assert_eq 8i32
 
 ///> c
 :# every_index_unpickles_and_pickles_back_to_itself =
@@ -302,7 +302,7 @@
 ///> c
 :# a_sized_array_of_3_bools_is_a_3_digit_binary_index =
     := x : sized 3 bool = sized_array::init \ j => j <> 1
-    (size (bits3 ()), pickle (bits3 ()) x, width (bits3 ())) |> _assert_eq (8i32, 5i32, 6i32)
+    (count (bits3 ()), pickle (bits3 ()) x, width (bits3 ())) |> _assert_eq (8i32, 5i32, 6i32)
 
 ///> c
 :# one_hot_sets_the_bias_bit_and_one_bit_per_choice =
@@ -329,7 +329,7 @@
 
 ///> c
 :# an_enum_is_a_bounded_index_with_its_inverse =
-    (size (headings ()), pickle (headings ()) (South, !+), unpickle (headings ()) 7i32, round_trips (headings ()))
+    (count (headings ()), pickle (headings ()) (South, !+), unpickle (headings ()) 7i32, round_trips (headings ()))
     |> _assert_eq (8i32, 5i32, (West, !+), !+)
 
 ///> c
@@ -357,7 +357,7 @@
 :# a_record_wraps_a_pair_of_its_fields =
     := p = pick_status ()
     := ~s = { hp = 3i32; alive = !+ }
-    (size p, pickle p s, unpickle p 7i32 = s, decode p (encode p s) = s, hot_count (one_hot p s))
+    (count p, pickle p s, unpickle p 7i32 = s, decode p (encode p s) = s, hot_count (one_hot p s))
     |> _assert_eq (8i32, 7i32, !+, !+, 3i32)
 
 ///> c

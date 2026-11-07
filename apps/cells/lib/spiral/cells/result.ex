@@ -26,30 +26,40 @@ defmodule Spiral.Cells.Result do
         }
 
   def from_outputs(outputs, fields) do
-    %__MODULE__{
-      value:
-        outputs
-        |> Enum.flat_map(fn
-          {:value, value} -> [value]
-          _ -> []
-        end)
-        |> case do
-          [] -> nil
-          values -> Enum.join(values, "\n")
-        end,
-      stdout:
-        Enum.map_join(outputs, fn
-          {name, text} when name in [:stdout, :stderr] -> text
-          _ -> ""
-        end),
-      html:
-        Enum.flat_map(outputs, fn
-          {:html, html} -> [html]
-          _ -> []
-        end),
-      outputs: outputs
-    }
-    |> struct!(fields)
+    {value, stdout, html} = outputs |> outputs_wire() |> Spiral.Cells.Domain.result_fields() |> fields_of()
+    %__MODULE__{value: value, stdout: stdout, html: html, outputs: outputs} |> struct!(fields)
+  end
+
+  @tags %{value: "v", stdout: "o", stderr: "e", html: "h"}
+
+  @doc false
+  def outputs_wire(outputs) do
+    Enum.map_join(outputs, fn
+      {name, text} when is_map_key(@tags, name) -> field(@tags[name], to_string(text))
+      _ -> ""
+    end)
+  end
+
+  @doc false
+  def fields_of(wire) do
+    {first, value, rest} = take_field(wire)
+    {"o", stdout, rest} = take_field(rest)
+    {if(first == "v", do: value), stdout, html_fields(rest, [])}
+  end
+
+  defp field(tag, text), do: tag <> Integer.to_string(byte_size(text)) <> ":" <> text
+
+  defp take_field(<<tag::binary-size(1), rest::binary>>) do
+    {size, ":" <> rest} = Integer.parse(rest)
+    <<body::binary-size(size), tail::binary>> = rest
+    {tag, body, tail}
+  end
+
+  defp html_fields("", acc), do: Enum.reverse(acc)
+
+  defp html_fields(wire, acc) do
+    {"h", html, rest} = take_field(wire)
+    html_fields(rest, [html | acc])
   end
 end
 

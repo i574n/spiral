@@ -19,4 +19,5 @@ modules:
     builder_output
     builders
     gleam_project
+    run_result
     main

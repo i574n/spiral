@@ -169,7 +169,7 @@ After rebuilding the dev extension:
 7. Repeat helper discovery with these project roots:
    - `C:\home\git\spiral`
    - `C:\home\git`
-   - a sibling project such as `C:\home\git\eoie`
+   - a sibling project such as `C:\home\git\kit`
 
 Record the Zed version, extension rebuild time, relevant log lines, and result
 in `DEVELOPMENT.md`. Until this checklist passes, editor-facing behavior remains
