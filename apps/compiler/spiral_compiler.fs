@@ -15896,13 +15896,15 @@ module spiral_compiler =
                 | (BoolOr | BitwiseOr), _ -> bin (sprintf "%s or %s")
                 | BitwiseXor, _ -> bin (sprintf "%s xor %s")
                 | BitwiseComplement, _ -> unary (sprintf "not %s") l
+                | ShiftLeft, [DLit (LitUInt64 _);_] -> bin (sprintf "QWord(%s) shl %s")
                 | ShiftLeft, _ -> bin (sprintf "%s shl %s")
                 | ShiftRight, [a;_] ->
-                    match prim_of a with
-                    | Some Int8T -> bin (sprintf "SarShortint(%s, %s)")
-                    | Some Int16T -> bin (sprintf "SarSmallint(%s, %s)")
-                    | Some Int32T -> bin (sprintf "SarLongint(%s, %s)")
-                    | Some Int64T -> bin (sprintf "SarInt64(%s, %s)")
+                    match prim_of a, a with
+                    | Some Int8T, _ -> bin (sprintf "SarShortint(%s, %s)")
+                    | Some Int16T, _ -> bin (sprintf "SarSmallint(%s, %s)")
+                    | Some Int32T, _ -> bin (sprintf "SarLongint(%s, %s)")
+                    | Some Int64T, _ -> bin (sprintf "SarInt64(%s, %s)")
+                    | _, DLit (LitUInt64 _) -> bin (sprintf "QWord(%s) shr %s")
                     | _ -> bin (sprintf "%s shr %s")
                 | Neg, _ -> unary (sprintf "-%s") l
                 | Log, _ -> unary (sprintf "Ln(%s)") l

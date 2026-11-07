@@ -1,3 +1,4 @@
+///> zig
 :# keccak static =
     :< testing
 
@@ -5,11 +6,45 @@
 :< digest
 
 /// ## keccak
-:== lanes = sized_array::sized 25 u64
+:== lanes = u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64
 
 :== digest512 = sized_array::sized 64 u8
 
-:= rate512 () : i32 = 72
+:== digest256 = sized_array::sized 32 u8
+
+:= lane (i : i32) ((a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24) : lanes) : u64 =
+    ?= i ?|
+    | 0 => a0
+    | 1 => a1
+    | 2 => a2
+    | 3 => a3
+    | 4 => a4
+    | 5 => a5
+    | 6 => a6
+    | 7 => a7
+    | 8 => a8
+    | 9 => a9
+    | 10 => a10
+    | 11 => a11
+    | 12 => a12
+    | 13 => a13
+    | 14 => a14
+    | 15 => a15
+    | 16 => a16
+    | 17 => a17
+    | 18 => a18
+    | 19 => a19
+    | 20 => a20
+    | 21 => a21
+    | 22 => a22
+    | 23 => a23
+    | _ => a24
+
+:= lanes_of (f : i32 -> u64) : lanes =
+    f 0, f 1, f 2, f 3, f 4, f 5, f 6, f 7, f 8, f 9, f 10, f 11, f 12, f 13, f 14, f 15, f 16, f 17, f 18, f 19, f 20, f 21, f 22, f 23, f 24
+
+:= zero_lanes () : lanes =
+    lanes_of (\ _ => 0u64)
 
 := round_constant (round : i32) : u64 =
     ?= round ?|
@@ -38,8 +73,8 @@
     | 22 => 2147483649u64
     | _ => 9223372039002292232u64
 
-:= rotation (lane : i32) : i32 =
-    ?= lane ?|
+:= rotation (index : i32) : i32 =
+    ?= index ?|
     | 0 => 0
     | 1 => 1
     | 2 => 62
@@ -71,101 +106,126 @@
 
 := complement (value : u64) : u64 = !!!!BitwiseComplement(value)
 
-:~ ^ fill_lanes (lanes : array u64) (i : i32) : () =
-    ? i < length lanes ?>
-        set lanes i 0u64
-        fill_lanes lanes (i + 1)
+:= theta (a : lanes) : lanes =
+    := column x = lane x a ^^^ lane (x + 5) a ^^^ lane (x + 10) a ^^^ lane (x + 15) a ^^^ lane (x + 20) a
+    := c0, c1, c2, c3, c4 = column 0, column 1, column 2, column 3, column 4
+    := c x = ?= x ?| | 0 => c0 | 1 => c1 | 2 => c2 | 3 => c3 | _ => c4
+    := mix x = c ((x + 4) % 5) ^^^ rotl (c ((x + 1) % 5)) 1
+    := d0, d1, d2, d3, d4 = mix 0, mix 1, mix 2, mix 3, mix 4
+    := d x = ?= x ?| | 0 => d0 | 1 => d1 | 2 => d2 | 3 => d3 | _ => d4
+    lanes_of (\ i => lane i a ^^^ d (i % 5))
 
-:= zero_lanes (count : i32) : array u64 =
-    := lanes : array u64 = create count
-    fill_lanes lanes 0
-    lanes
+:= pi_source (index : i32) : i32 =
+    := x = index % 5
+    := y = index / 5
+    3 * (y + 15 - 3 * x) % 5 + 5 * x
 
-:= theta (a : array u64) (c : array u64) : () =
-    :~ ^ columns (x : i32) : () =
-        ? x < 5 ?>
-            set c x (index a x ^^^ index a (x + 5) ^^^ index a (x + 10) ^^^ index a (x + 15) ^^^ index a (x + 20))
-            columns (x + 1)
-    columns 0
-    :~ ^ mix (i : i32) : () =
-        ? i < 25 ?>
-            := x = i % 5
-            set a i (index a i ^^^ index c ((x + 4) % 5) ^^^ rotl (index c ((x + 1) % 5)) 1)
-            mix (i + 1)
-    mix 0
+:= rho_pi (a : lanes) : lanes =
+    lanes_of (\ i => rotl (lane (pi_source i) a) (rotation (pi_source i)))
 
-:= rho_pi (a : array u64) (b : array u64) : () =
-    :~ ^ go (i : i32) : () =
-        ? i < 25 ?>
-            := x = i % 5
-            := y = i / 5
-            set b (y + 5 * ((2 * x + 3 * y) % 5)) (rotl (index a i) (rotation i))
-            go (i + 1)
+:= chi_lane (b : lanes) (i : i32) : u64 =
+    := x = i % 5
+    := row = i - x
+    lane i b ^^^ (complement (lane (row + (x + 1) % 5) b) &&& lane (row + (x + 2) % 5) b)
+
+:= chi (b : lanes) : lanes =
+    lanes_of (chi_lane b)
+
+:= iota (constant : u64) (a : lanes) : lanes =
+    lanes_of (\ i => ? i = 0 ?> lane 0 a ^^^ constant |: lane i a)
+
+:~ theta_step (a : lanes) : lanes =
+    theta a
+
+:~ rho_pi_step (a : lanes) : lanes =
+    rho_pi a
+
+:~ chi_iota_step (constant : u64) (a : lanes) : lanes =
+    iota constant (chi a)
+
+:~ round_fused (constant : u64) (a : lanes) : lanes =
+    iota constant (chi (rho_pi (theta a)))
+
+:= round (constant : u64) (a : lanes) : lanes =
+    run_target \|
+        | Lua => \ () => chi_iota_step constant (rho_pi_step (theta_step a))
+        | _ => \ () => round_fused constant a
+
+:~ ^ rounds (index : i32) (a : lanes) : lanes =
+    ? index >= 24 ?> a |: rounds (index + 1) (round (round_constant index) a)
+
+:= permute (a : lanes) : lanes =
+    rounds 0 a
+
+:? domain_of p : p -> u8
+
+:! keccak_padding = ()
+
+:! sha3_padding = ()
+
+:+ domain_of keccak_padding =
+    \ _ => 1u8
+
+:+ domain_of sha3_padding =
+    \ _ => 6u8
+
+:= absorb_inline (rate : i32) (block : array u8) (offset : i32) (a : lanes) : lanes =
+    permute (lanes_of (\ i => ? i < rate / 8 ?> lane i a ^^^ bytes::le_word block (offset + 8 * i) |: lane i a))
+
+:~ absorb_apart (rate : i32) (block : array u8) (offset : i32) (a : lanes) : lanes =
+    absorb_inline rate block offset a
+
+:= absorb (rate : i32) (block : array u8) (offset : i32) (a : lanes) : lanes =
+    run_target \|
+        | Lua => \ () => absorb_apart rate block offset a
+        | _ => \ () => absorb_inline rate block offset a
+
+:~ ^ absorb_full (rate : i32) (message : array u8) (offset : i32) (a : lanes) : lanes * i32 =
+    ? offset + rate > length message ?> a, offset |: absorb_full rate message (offset + rate) (absorb rate message offset a)
+
+:= final_block (rate : i32) (domain : u8) (message : array u8) (offset : i32) : array u8 =
+    := tail = length message - offset
+    := block = bytes::filled rate (\ i => ? i < tail ?> index message (offset + i) |: 0u8)
+    set block tail (index block tail ||| domain)
+    set block (rate - 1) (index block (rate - 1) ||| 128u8)
+    block
+
+:~ write_lane (out : array u8) (at : i32) (count : i32) (word : u64) : () =
+    :~ ^ go (j : i32) : () =
+        ? j < count ?>
+            set out (at + j) (conv ((word >>> (8 * j)) &&& 255u64))
+            go (j + 1)
     go 0
 
-:= chi (b : array u64) (a : array u64) : () =
-    :~ ^ go (i : i32) : () =
-        ? i < 25 ?>
-            := x = i % 5
-            := row = i - x
-            set a i (index b i ^^^ (complement (index b (row + (x + 1) % 5)) &&& index b (row + (x + 2) % 5)))
-            go (i + 1)
-    go 0
+:= squeeze \* n. (a : lanes) : sized_array::sized n u8 =
+    := size : i32 = ~> real_core::type_lit_to_lit `n
+    := out : array u8 = create size
+    := ^ fill (k : i32) : () =
+        ? 8 * k < size ?>
+            write_lane out (8 * k) (? size - 8 * k < 8 ?> size - 8 * k |: 8) (lane k a)
+            fill (k + 1)
+    fill 0
+    sized_array::sized out
 
-:= iota (round : i32) (a : array u64) : () =
-    set a 0 (index a 0 ^^^ round_constant round)
-
-:= permute_lanes (a : array u64) : () =
-    := c = zero_lanes 5
-    := b = zero_lanes 25
-    :~ ^ rounds (round : i32) : () =
-        ? round < 24 ?>
-            theta a c
-            rho_pi a b
-            chi b a
-            iota round a
-            rounds (round + 1)
-    rounds 0
-
-:= permute ((sized_array::sized a) : lanes) : () =
-    permute_lanes a
-
-:= padded (rate : i32) (message : array u8) : array u8 =
-    := size = length message
-    := total = (size / rate + 1) * rate
-    := out : array u8 = create total
-    :~ ^ copy (i : i32) : () =
-        ? i < total ?>
-            set out i (? i < size ?> index message i |: 0u8)
-            copy (i + 1)
-    copy 0
-    set out size (index out size ||| 1u8)
-    set out (total - 1) (index out (total - 1) ||| 128u8)
-    out
-
-:= absorb_block (rate : i32) (a : array u64) (block : array u8) (offset : i32) : () =
-    :~ ^ go (i : i32) : () =
-        ? i < rate / 8 ?>
-            set a i (index a i ^^^ bytes::le_word block (offset + 8 * i))
-            go (i + 1)
-    go 0
-    permute_lanes a
-
-:= squeeze_byte (a : array u64) (i : i32) : u8 =
-    conv ((index a (i / 8) >>> (8 * (i % 8))) &&& 255u64)
+:= hash \* n p {domain_of}. (padding : p) (message : array u8) : sized_array::sized n u8 =
+    := size : i32 = ~> real_core::type_lit_to_lit `n
+    := rate = 200 - 2 * size
+    := a, offset = absorb_full rate message 0 (zero_lanes ())
+    squeeze (absorb rate (final_block rate (domain_of padding) message offset) 0 a)
 
 := keccak512 (message : array u8) : digest512 =
-    := rate = rate512 ()
-    := a = zero_lanes 25
-    := block = padded rate message
-    :~ ^ blocks (offset : i32) : () =
-        ? offset < length block ?>
-            absorb_block rate a block offset
-            blocks (offset + rate)
-    blocks 0
-    sized_array::init (squeeze_byte a)
+    hash keccak_padding message
 
-:= digest_bytes ((sized_array::sized bytes) : digest512) : array u8 =
+:= keccak256 (message : array u8) : digest256 =
+    hash keccak_padding message
+
+:= sha3_512 (message : array u8) : digest512 =
+    hash sha3_padding message
+
+:= sha3_256 (message : array u8) : digest256 =
+    hash sha3_padding message
+
+:= digest_bytes \* n. ((sized_array::sized bytes) : sized_array::sized n u8) : array u8 =
     bytes
 
 :! spiral_keccak = ()
@@ -221,11 +281,43 @@
 ///> c
 ///> rust
 ///> lua
-:# a_digest_is_sixty_four_bytes_by_its_type =
+///> fsharp
+///> typescript
+///> python
+///> zig
+///> gleam
+///> pascal
+:# every_variant_comes_from_one_typed_sponge =
+    := abc : array u8 = ;[ 97u8; 98; 99 ]
+    := ~edge = 136i32
+    (
+        keccak256 abc |> digest_bytes |> bytes::hex,
+        sha3_256 abc |> digest_bytes |> bytes::hex,
+        sha3_512 abc |> digest_bytes |> bytes::hex |> sm'.slice 0i32 31i32,
+        keccak256 (bytes::counting edge) |> digest_bytes |> bytes::hex,
+        sha3_256 (bytes::counting (edge - 1)) |> digest_bytes |> bytes::hex
+    )
+    |> _assert_eq (
+        "4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532",
+        "b751850b1a57168a5693cd924b6b096e",
+        "7ce759f1ab7f9ce437719970c26b0a66ff11fe3e38e17df89cf5d29c7d7f807e",
+        "fded8fd9d6551c601eeb3b7c6bc5e5cfd8aad1d015b7e9aaa9c9b9475231d5e2"
+    )
+
+///> c
+///> rust
+///> lua
+:# a_digest_is_sized_by_its_type =
     := ~empty = 0i32
-    keccak512 (bytes::counting empty) |> sized_array::element_count |> _assert_eq 64i32
+    (keccak512 (bytes::counting empty) |> sized_array::element_count, sha3_256 (bytes::counting empty) |> sized_array::element_count)
+    |> _assert_eq (64i32, 32i32)
 
 :# a_digest_cannot_be_read_as_a_shorter_array fails ETY-TermError "Unification failure" =
     := digest = keccak512 (bytes::counting 0i32)
-    := short : sized_array::sized 32 u8 = digest
+    := short : digest256 = digest
+    0i32
+
+:# a_padding_without_a_domain_cannot_hash fails ETY-ConstraintError "domain_of" =
+    := digest : digest256 = hash 7u8 (bytes::counting 0i32)
     0i32
