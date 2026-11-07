@@ -1,0 +1,15 @@
+:! u8_array = array_base u8
+
+:= create (n : i32) : u8_array = u8_array !!!!ArrayCreate(`u8, n)
+:= get (values : u8_array) (i : i32) : u8 =
+    ?= values ?|
+    | u8_array raw => !!!!ArrayIndex(raw, i)
+:= set (values : u8_array) (i : i32) (value : u8) : () =
+    ?= values ?|
+    | u8_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+:= main () : i32 =
+    := values = create 1i32
+    := ~n = 200u8
+    set values 0i32 n
+    ? get values 0i32 =. 200u8 ?> 0i32 |: 1i32

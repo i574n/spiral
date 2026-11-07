@@ -1,0 +1,8 @@
+modules:
+    base
+    tools/
+        first
+    middle
+    tools/
+        second
+    main

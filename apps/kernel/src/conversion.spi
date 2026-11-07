@@ -1,0 +1,327 @@
+///- --package .
+:# conversion static =
+    :< testing
+
+:< sm'_operators
+:< syntax
+:< scope
+:< universes
+:< reduce
+:< env
+
+:| defeq =
+    | Same : list step
+    | Different : string
+    | NoFuel
+
+:~ ^ steps_then (a : list step) (b : list step) : list step =
+    ?= a ?|
+    | x :: rest => x :: steps_then rest b
+    | [] => b
+
+:~ with_steps (steps : list step) (d : defeq) : defeq =
+    ?= d ?|
+    | Same more => Same (steps_then steps more)
+    | other => other
+
+:~ mismatch (x : term) (y : term) : defeq = Different (term_text x ++# " vs " ++# term_text y)
+
+:~ ^ equivalent_levels (a : list level) (b : list level) : bool =
+    ?= a ?|
+    | x :: xs =>
+        ?= b ?|
+        | y :: ys => leq_full x y && leq_full y x && equivalent_levels xs ys
+        | [] => !-
+    | [] =>
+        ?= b ?|
+        | [] => !+
+        | _ => !-
+
+:~ same_constant (x : term) (y : term) : bool =
+    ?= x, y ?|
+    | Const ((name n), ls), Const ((name m), ks) => n = m && equivalent_levels ls ks
+    | _ => !-
+
+:~ applied_codomain (env : list decl) (fty : term) (a : term) (fuel : i32) : option term =
+    ?= whnf env fty fuel ?|
+    | Whnf (Pi (_, _, _, body), _) => Some (instantiate body a)
+    | _ => None
+
+:~ ^ constant_type (env : list decl) (t : term) (fuel : i32) : option term =
+    ?= t ?|
+    | Const ((name n), us) =>
+        ?= find_decl env n ?|
+        | Some d => Some (instantiate_levels (decl_type d) (decl_params d) us)
+        | None => None
+    | App (f, a) =>
+        ?= constant_type env f fuel ?|
+        | Some fty => applied_codomain env fty a fuel
+        | None => None
+    | Sort l => Some (Sort (Succ l))
+    | Lam (n, b, dom, body) =>
+        := x = "_ct" ++# sm'::obj_to_string (listm::length env : i32)
+        ?= constant_type (Axiom (name ("fvar:" ++# x), [], dom) :: env) (open_with body (name x)) fuel ?|
+        | Some bty => Some (Pi (n, b, dom, abstract_fvar bty (name x)))
+        | None => None
+    | FVar (name n) =>
+        ?= find_decl env ("fvar:" ++# n) ?|
+        | Some d => Some (decl_type d)
+        | None => None
+    | _ => None
+
+:~ ^ context_env (ctx : list (string * term)) (env : list decl) : list decl =
+    ?= ctx ?|
+    | (n, ty) :: rest => Axiom (name ("fvar:" ++# n), [], ty) :: context_env rest env
+    | [] => env
+
+:~ unit_family (env : list decl) (i : string) (args : list term) : bool =
+    ?= recursor_rules env (i ++# ".rec") ?|
+    | Some (_, np, ni, rules, _) =>
+        ?= single_rule rules ?|
+        | Some c =>
+            ?= axiom_of env c ?|
+            | Some (_, cty) => ni = 0i32 && not (is_pi (through_params cty (take args np)))
+            | None => !-
+        | None => !-
+    | None => !-
+
+:~ unit_like (env : list decl) (ty : term) (fuel : i32) : bool =
+    ?= whnf env ty fuel ?|
+    | Whnf (w, _) =>
+        := head, args = spine w []
+        ?= head ?|
+        | Const ((name i), _) => unit_family env i args
+        | _ => !-
+    | _ => !-
+
+:~ is_prop_result (r : whnf_result) : bool =
+    ?= r ?|
+    | Whnf (Sort l, _) =>
+        ?= l ?|
+        | Zero => !+
+        | _ => !-
+    | _ => !-
+
+:~ is_proposition (env : list decl) (ty : term) (fuel : i32) : bool =
+    ?= constant_type env ty fuel ?|
+    | Some s => is_prop_result (whnf env s fuel)
+    | None => !-
+
+:~ proof_type (env : list decl) (t : term) (fuel : i32) : option term =
+    ?= constant_type env t fuel ?|
+    | Some ty => ? is_proposition env ty fuel ?> Some ty |: None
+    | None => None
+
+:~ char_term (c : char) : term =
+    := k : u64 = conv (sm'::char_code c)
+    App (Const (name "Char.ofNat", []), NatLit k)
+
+:~ ^ chars_term (cs : list char) : term =
+    ?= cs ?|
+    | c :: rest => apply_all (Const (name "List.cons", [ Zero ])) [ Const (name "Char", []); char_term c; chars_term rest ]
+    | [] => App (Const (name "List.nil", [ Zero ]), Const (name "Char", []))
+
+:~ unfolded_literal (env : list decl) (t : term) : option term =
+    ?= t ?|
+    | StrLit s => Some (App (Const (name "String.ofList", []), chars_term (sm'::to_char_list s)))
+    | BigNat s =>
+        ?= recursor_rules env "Nat.rec" ?|
+        | Some (_, _, _, rules, _) =>
+            ?= rule_name_at rules 1i32 ?|
+            | Some succ => Some (App (Const (succ, []), literal_of_text (predecessor_text s)))
+            | None => None
+        | None => None
+    | NatLit k =>
+        ?= recursor_rules env "Nat.rec" ?|
+        | Some (_, _, _, rules, _) =>
+            ?= rule_name_at rules 0i32, rule_name_at rules 1i32 ?|
+            | Some zero, Some succ => Some (literal_step k zero succ)
+            | _ => None
+        | None => None
+    | _ => None
+
+:~ literal_side (env : list decl) (x : term) (y : term) : option (term * term) =
+    ?= unfolded_literal env x, unfolded_literal env y ?|
+    | Some _, Some _ => None
+    | Some u, None => Some (u, y)
+    | None, Some u => Some (x, u)
+    | None, None => None
+:~ ^ defeq_with (env : list decl) (a : term) (b : term) (fuel : i32) : defeq =
+    ? same_as a b ?> Same [] |: irrelevant_or_delta env a b fuel
+:& :~ irrelevant_or_delta (env : list decl) (a : term) (b : term) (fuel : i32) : defeq =
+    ?= proof_type env a fuel ?|
+    | Some ta =>
+        ?= proof_type env b fuel ?|
+        | Some tb => proofs_or_delta env a b (defeq_with env ta tb fuel) fuel
+        | None => lazy_delta env a b fuel
+    | None => unit_or_delta env a b fuel
+:& :~ unit_or_delta (env : list decl) (a : term) (b : term) (fuel : i32) : defeq =
+    ?= constant_type env a fuel, constant_type env b fuel ?|
+    | Some ta, Some tb ?& unit_like env ta fuel => proofs_or_delta env a b (defeq_with env ta tb fuel) fuel
+    | _ => lazy_delta env a b fuel
+:& :~ proofs_or_delta (env : list decl) (a : term) (b : term) (types : defeq) (fuel : i32) : defeq =
+    ?= types ?|
+    | Same steps => Same steps
+    | _ => lazy_delta env a b fuel
+:& :~ lazy_delta (env : list decl) (a : term) (b : term) (fuel : i32) : defeq =
+    := f, xs = spine a []
+    := g, ys = spine b []
+    ?= heads_agree env f g xs ys fuel ?|
+    | Same steps => Same steps
+    | _ => unfold_both env a b fuel
+:& :~ heads_agree (env : list decl) (f : term) (g : term) (xs : list term) (ys : list term) (fuel : i32) : defeq =
+    ? same_constant f g ?> args_defeq env xs ys fuel |: Different "heads"
+:& :~ args_defeq (env : list decl) (xs : list term) (ys : list term) (fuel : i32) : defeq =
+    ?= xs ?|
+    | x :: rest =>
+        ?= ys ?|
+        | y :: more => both (defeq_with env x y fuel) (\ () => args_defeq env rest more fuel)
+        | [] => Different "argument count"
+    | [] =>
+        ?= ys ?|
+        | [] => Same []
+        | _ => Different "argument count"
+:& :~ unfold_both (env : list decl) (a : term) (b : term) (fuel : i32) : defeq =
+    ?= whnf env a fuel ?|
+    | OutOfFuel _ => NoFuel
+    | Whnf (x, left) =>
+        ?= whnf env b fuel ?|
+        | OutOfFuel _ => NoFuel
+        | Whnf (y, right) => with_steps (steps_then left right) (compare_whnf env x y fuel)
+:& :~ both (first : defeq) (second : () -> defeq) : defeq =
+    ?= first ?|
+    | Same steps => with_steps steps (second ())
+    | other => other
+:& :~ bodies_defeq (env : list decl) (dom : term) (s : term) (v : term) (fuel : i32) : defeq =
+    := x = "_cv" ++# sm'::obj_to_string (listm::length env : i32)
+    defeq_with (Axiom (name ("fvar:" ++# x), [], dom) :: env) (open_with s (name x)) (open_with v (name x)) fuel
+:& :~ eta_against (env : list decl) (dom : term) (body : term) (other : term) (fuel : i32) : defeq =
+    := x = "_ce" ++# sm'::obj_to_string (listm::length env : i32)
+    defeq_with (Axiom (name ("fvar:" ++# x), [], dom) :: env) (open_with body (name x)) (App (other, FVar (name x))) fuel
+:& :~ eta_struct (env : list decl) (x : term) (y : term) (fuel : i32) : defeq =
+    := head, args = spine y []
+    ?= head ?|
+    | Const ((name c), _) =>
+        ?= structure_of_ctor env c ?|
+        | Some (s, np) => fields_match env (name s) x (drop args np) 0i32 fuel
+        | None => mismatch x y
+    | _ => mismatch x y
+:& :~ fields_match (env : list decl) (s : name) (x : term) (fields : list term) (k : i32) (fuel : i32) : defeq =
+    ?= fields ?|
+    | f :: rest => both (defeq_with env (Proj (s, k, x)) f fuel) (\ () => fields_match env s x rest (k + 1i32) fuel)
+    | [] => Same []
+:& :~ eta_either (env : list decl) (x : term) (y : term) (fuel : i32) : defeq =
+    ?= eta_struct env y x fuel ?|
+    | Same steps => Same steps
+    | _ => eta_struct env x y fuel
+:& :~ or_eta (env : list decl) (x : term) (y : term) (first : defeq) (fuel : i32) : defeq =
+    ?= first ?|
+    | Different _ => eta_either env x y fuel
+    | other => other
+:& :~ compare_whnf (env : list decl) (x : term) (y : term) (fuel : i32) : defeq =
+    ?= literal_side env x y ?|
+    | Some (a, b) => defeq_with env a b fuel
+    | None => compare_shapes env x y fuel
+:& :~ compare_shapes (env : list decl) (x : term) (y : term) (fuel : i32) : defeq =
+    ?= x ?|
+    | Sort l => ?= y ?| Sort k => ? leq_full l k && leq_full k l ?> Same [] |: mismatch x y | _ => mismatch x y
+    | Lam (_, _, t, s) =>
+        ?= y ?|
+        | Lam (_, _, u, v) => both (defeq_with env t u fuel) (\ () => bodies_defeq env t s v fuel)
+        | _ => eta_against env t s y fuel
+    | Pi (_, _, t, s) =>
+        ?= y ?|
+        | Pi (_, _, u, v) => both (defeq_with env t u fuel) (\ () => bodies_defeq env t s v fuel)
+        | _ => mismatch x y
+    | App (f, a) =>
+        ?= y ?|
+        | App (g, b) => or_eta env x y (both (defeq_with env f g fuel) (\ () => defeq_with env a b fuel)) fuel
+        | Lam (_, _, u, v) => eta_against env u v x fuel
+        | _ => eta_either env x y fuel
+    | Proj ((name n), i, s) =>
+        ?= y ?|
+        | Proj ((name m), j, u) => ? n = m && i = j ?> or_eta env x y (defeq_with env s u fuel) fuel |: eta_either env x y fuel
+        | Lam (_, _, u, v) => eta_against env u v x fuel
+        | _ => eta_either env x y fuel
+    | _ =>
+        ?= y ?|
+        | Lam (_, _, u, v) => eta_against env u v x fuel
+        | _ => ? same_as x y || same_constant x y ?> Same [] |: eta_either env x y fuel
+
+:~ defeq_text (d : defeq) : string =
+    ?= d ?|
+    | Same steps => "same in " ++# sm'::obj_to_string (listm::length steps : i32)
+    | Different why => "different: " ++# why
+    | NoFuel => "no fuel"
+
+:~ f () : term = FVar (name "f")
+
+///> rust
+:# a_beta_redex_is_definitionally_its_result =
+    defeq_with [] (App (identity (), FVar (name "a"))) (FVar (name "a")) 10i32 |> _assert_eq (Same [ Beta ])
+
+///> rust
+:# eta_makes_a_wrapping_lambda_equal_to_the_function =
+    := wrapped = Lam (name "x", Default, Sort Zero, App (f (), BVar 0i32))
+    (defeq_text (defeq_with [] wrapped (f ()) 10i32), defeq_text (defeq_with [] (f ()) wrapped 10i32))
+    |> _assert_eq ("same in 0", "same in 0")
+
+///> rust
+:# distinct_sorts_differ_and_a_divergent_side_reports_no_fuel =
+    := omega = App (self_apply (), self_apply ())
+    (defeq_text (defeq_with [] (Sort Zero) (Sort (Succ Zero)) 10i32), defeq_text (defeq_with [] omega (f ()) 5i32))
+    |> _assert_eq ("different: Prop vs Type", "no fuel")
+
+///> rust
+:# two_proofs_of_one_proposition_are_definitionally_equal =
+    := p = Const (name "P", [])
+    := env =
+        [
+            Axiom (name "q2", [], Const (name "T", []))
+            Axiom (name "q1", [], Const (name "T", []))
+            Axiom (name "T", [], Sort (Succ Zero))
+            Axiom (name "p2", [], p)
+            Axiom (name "p1", [], p)
+            Axiom (name "P", [], Sort Zero)
+        ]
+    (
+        defeq_text (defeq_with env (Const (name "p1", [])) (Const (name "p2", [])) 10i32),
+        defeq_text (defeq_with env (Const (name "q1", [])) (Const (name "q2", [])) 10i32)
+    )
+    |> _assert_eq ("same in 0", "different: q1 vs q2")
+
+///> rust
+:# same_headed_applications_compare_arguments_before_unfolding =
+    := env = [ Def (name "id", [], Pi (name "x", Default, Sort Zero, Sort Zero), identity ()) ]
+    := applied = \ (x : term) => App (Const (name "id", []), x)
+    := a = FVar (name "a")
+    (defeq_with env (applied a) (applied a) 10i32, defeq_with env (applied (App (identity (), a))) (applied a) 10i32)
+    |> _assert_eq (Same [], Same [ Beta ])
+
+///> rust
+:# a_constant_matches_itself_at_equivalent_universe_levels =
+    := u = Param (name "u")
+    := v = Param (name "v")
+    := env = [ Axiom (name "c", [ name "a" ], Sort (Param (name "a"))) ]
+    := at = \ (l : level) => Const (name "c", [ l ])
+    (
+        defeq_text (defeq_with env (at (Max (u, v))) (at (Max (v, u))) 10i32),
+        defeq_text (defeq_with env (at (IMax (u, Succ v))) (at (Max (u, Succ v))) 10i32),
+        defeq_text (defeq_with env (at u) (at v) 10i32) |> sm'::starts_with "different"
+    )
+    |> _assert_eq ("same in 0", "same in 0", !+)
+///> rust
+:# a_beta_zeta_diamond_joins_in_one_normal_form =
+    := a = FVar (name "a")
+    := redex = App (identity (), Let (name "y", Sort Zero, a, BVar 0i32))
+    := outer_first = Let (name "y", Sort Zero, a, BVar 0i32)
+    := inner_first = App (identity (), a)
+    := normal = \ t =>
+        ?= whnf [] t 20i32 ?|
+        | Whnf (n, _) => term_text n
+        | OutOfFuel _ => "out of fuel"
+    := joined =
+        ?= defeq_with [] outer_first inner_first 20i32 ?|
+        | Same _ => !+
+        | _ => !-
+    (normal redex, normal outer_first, normal inner_first, joined) |> _assert_eq ("a", "a", "a", !+)

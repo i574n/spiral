@@ -1,0 +1,14 @@
+:< rust_operators
+:< sm'_operators
+:< leptos
+
+:= render \* t. (class : () -> string) props (getter : () -> t) (setter : sm'::std_string -> ()) : _ (_ input) =
+    input
+        ([
+            class_fn "bg-gray-50 h-[31px] [font-size:.875rem] " class
+            attr_fn "prop:value" \ () =>
+                := value = getter ()
+                $'ToString::to_string(&!value)' : sm'::std_string
+            on_event "keyup" \ (event : keyboard_event) =>
+                event |> event_target_value |> setter
+        ] ++ props)

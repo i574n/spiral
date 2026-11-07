@@ -1,0 +1,2 @@
+:= main () : i32 = ~>
+    $"spiral_abi_libm_cabs_pack(3,4)" : i32

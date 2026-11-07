@@ -1,0 +1,406 @@
+const std = @import("std");
+const builtin = @import("builtin");
+var spiral_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+extern "kernel32" fn GetStdHandle(id: u32) callconv(.winapi) ?*anyopaque;
+extern "kernel32" fn WriteFile(handle: ?*anyopaque, buffer: [*]const u8, length: u32, written: ?*u32, overlapped: ?*anyopaque) callconv(.winapi) i32;
+fn spiralWrite(stream: u2, bytes: []const u8) void {
+    if (builtin.os.tag == .windows) {
+        const handle = GetStdHandle(if (stream == 1) 0xFFFFFFF5 else 0xFFFFFFF4);
+        var rest = bytes;
+        while (rest.len > 0) {
+            var written: u32 = 0;
+            const chunk: u32 = @intCast(@min(rest.len, 1 << 30));
+            if (WriteFile(handle, rest.ptr, chunk, &written, null) == 0) return;
+            rest = rest[written..];
+        }
+    } else if (builtin.os.tag == .linux) {
+        var rest = bytes;
+        while (rest.len > 0) {
+            const n = std.os.linux.write(stream, rest.ptr, rest.len);
+            if (@as(isize, @bitCast(n)) <= 0) return;
+            rest = rest[n..];
+        }
+    } else {
+        _ = std.c.write(stream, bytes.ptr, bytes.len);
+    }
+}
+pub const panic = std.debug.FullPanic(spiralPanic);
+fn spiralPanic(message: []const u8, _: ?usize) noreturn {
+    spiralFlush();
+    spiralWrite(2, message);
+    spiralWrite(2, "\n");
+    std.process.exit(3);
+}
+var spiral_gpa: std.mem.Allocator = undefined;
+var spiral_environ: std.process.Environ = .empty;
+var spiral_true: bool = true;
+var spiral_out_buffer: [1 << 16]u8 = undefined;
+var spiral_out_len: usize = 0;
+fn spiralFlush() void {
+    if (spiral_out_len == 0) return;
+    spiralWrite(1, spiral_out_buffer[0..spiral_out_len]);
+    spiral_out_len = 0;
+}
+fn spiralFail(s: []const u8) noreturn {
+    spiralFlush();
+    spiralWrite(2, s);
+    spiralWrite(2, "\n");
+    std.process.exit(1);
+}
+fn spiralIndex(len: usize, i: anytype) usize {
+    if (i < 0 or i >= len) std.process.exit(3);
+    return @intCast(i);
+}
+fn runtime_byte_2(p0: []const u8, p1: i32) u8 {
+    var v0: []const u8 = p0; _ = &v0;
+    var v1: i32 = p1; _ = &v1;
+    const v2: u8 = v0[spiralIndex(v0.len, v1)];
+    return v2;
+}
+fn utf8_scalar_at_byte_offset_1(p0: []const u8, p1: i32) i32 {
+    var v0: []const u8 = p0; _ = &v0;
+    var v1: i32 = p1; _ = &v1;
+    var v5: bool = undefined; _ = &v5;
+    var v7: u8 = undefined; _ = &v7;
+    var v8: i32 = undefined; _ = &v8;
+    var v9: bool = undefined; _ = &v9;
+    var v10: bool = undefined; _ = &v10;
+    var v12: bool = undefined; _ = &v12;
+    var v13: i32 = undefined; _ = &v13;
+    var v14: bool = undefined; _ = &v14;
+    var v16: u8 = undefined; _ = &v16;
+    var v17: i32 = undefined; _ = &v17;
+    var v18: bool = undefined; _ = &v18;
+    var v20: bool = undefined; _ = &v20;
+    var v19: bool = undefined; _ = &v19;
+    var v21: i32 = undefined; _ = &v21;
+    var v22: i32 = undefined; _ = &v22;
+    var v23: i32 = undefined; _ = &v23;
+    var v24: i32 = undefined; _ = &v24;
+    var v28: bool = undefined; _ = &v28;
+    var v29: i32 = undefined; _ = &v29;
+    var v30: bool = undefined; _ = &v30;
+    var v32: i32 = undefined; _ = &v32;
+    var v33: u8 = undefined; _ = &v33;
+    var v34: i32 = undefined; _ = &v34;
+    var v35: u8 = undefined; _ = &v35;
+    var v36: i32 = undefined; _ = &v36;
+    var v37: bool = undefined; _ = &v37;
+    var v39: bool = undefined; _ = &v39;
+    var v38: bool = undefined; _ = &v38;
+    var v40: bool = undefined; _ = &v40;
+    var v42: bool = undefined; _ = &v42;
+    var v41: bool = undefined; _ = &v41;
+    var v43: i32 = undefined; _ = &v43;
+    var v44: i32 = undefined; _ = &v44;
+    var v45: i32 = undefined; _ = &v45;
+    var v46: i32 = undefined; _ = &v46;
+    var v47: i32 = undefined; _ = &v47;
+    var v48: i32 = undefined; _ = &v48;
+    var v49: i32 = undefined; _ = &v49;
+    var v50: bool = undefined; _ = &v50;
+    var v52: bool = undefined; _ = &v52;
+    var v53: bool = undefined; _ = &v53;
+    var v63: bool = undefined; _ = &v63;
+    var v64: i32 = undefined; _ = &v64;
+    var v65: bool = undefined; _ = &v65;
+    var v67: i32 = undefined; _ = &v67;
+    var v68: u8 = undefined; _ = &v68;
+    var v69: i32 = undefined; _ = &v69;
+    var v70: i32 = undefined; _ = &v70;
+    var v71: u8 = undefined; _ = &v71;
+    var v72: i32 = undefined; _ = &v72;
+    var v73: u8 = undefined; _ = &v73;
+    var v74: i32 = undefined; _ = &v74;
+    var v75: bool = undefined; _ = &v75;
+    var v77: bool = undefined; _ = &v77;
+    var v76: bool = undefined; _ = &v76;
+    var v78: bool = undefined; _ = &v78;
+    var v80: bool = undefined; _ = &v80;
+    var v79: bool = undefined; _ = &v79;
+    var v81: bool = undefined; _ = &v81;
+    var v83: bool = undefined; _ = &v83;
+    var v82: bool = undefined; _ = &v82;
+    var v84: i32 = undefined; _ = &v84;
+    var v85: i32 = undefined; _ = &v85;
+    var v86: i32 = undefined; _ = &v86;
+    var v87: i32 = undefined; _ = &v87;
+    var v88: i32 = undefined; _ = &v88;
+    var v89: i32 = undefined; _ = &v89;
+    var v90: i32 = undefined; _ = &v90;
+    var v91: i32 = undefined; _ = &v91;
+    var v92: i32 = undefined; _ = &v92;
+    var v93: i32 = undefined; _ = &v93;
+    var v94: bool = undefined; _ = &v94;
+    var v96: bool = undefined; _ = &v96;
+    const v2: i32 = @as(i32, @intCast(v0.len));
+    const v3: bool = v1 < @as(i32, 0);
+    if (v3) {
+        spiralFail("UTF-8 byte offset is negative.");
+    } else {
+        v5 = v1 >= v2;
+        if (v5) {
+            spiralFail("UTF-8 byte offset is outside the string.");
+        } else {
+            v7 = runtime_byte_2(v0, v1);
+            v8 = @as(i32, v7);
+            v9 = v8 < @as(i32, 128);
+            if (v9) {
+                return v8;
+            } else {
+                v10 = v8 < @as(i32, 194);
+                if (v10) {
+                    spiralFail("UTF-8 scalar starts with an invalid lead byte.");
+                } else {
+                    v12 = v8 < @as(i32, 224);
+                    if (v12) {
+                        v13 = v1 +% @as(i32, 1);
+                        v14 = v13 >= v2;
+                        if (v14) {
+                            spiralFail("UTF-8 sequence is truncated.");
+                        } else {
+                            v16 = runtime_byte_2(v0, v13);
+                            v17 = @as(i32, v16);
+                            v18 = v17 < @as(i32, 128);
+                            if (v18) {
+                                v20 = false;
+                            } else {
+                                v19 = v17 < @as(i32, 192);
+                                v20 = v19;
+                            }
+                            if (v20) {
+                                v21 = v8 -% @as(i32, 192);
+                                v22 = v21 *% @as(i32, 64);
+                                v23 = v17 -% @as(i32, 128);
+                                v24 = v22 +% v23;
+                                return v24;
+                            } else {
+                                spiralFail("UTF-8 sequence has an invalid continuation byte.");
+                            }
+                        }
+                    } else {
+                        v28 = v8 < @as(i32, 240);
+                        if (v28) {
+                            v29 = v1 +% @as(i32, 2);
+                            v30 = v29 >= v2;
+                            if (v30) {
+                                spiralFail("UTF-8 sequence is truncated.");
+                            } else {
+                                v32 = v1 +% @as(i32, 1);
+                                v33 = runtime_byte_2(v0, v32);
+                                v34 = @as(i32, v33);
+                                v35 = runtime_byte_2(v0, v29);
+                                v36 = @as(i32, v35);
+                                v37 = v34 < @as(i32, 128);
+                                if (v37) {
+                                    v39 = false;
+                                } else {
+                                    v38 = v34 < @as(i32, 192);
+                                    v39 = v38;
+                                }
+                                if (v39) {
+                                    v40 = v36 < @as(i32, 128);
+                                    if (v40) {
+                                        v42 = false;
+                                    } else {
+                                        v41 = v36 < @as(i32, 192);
+                                        v42 = v41;
+                                    }
+                                    if (v42) {
+                                        v43 = v8 -% @as(i32, 224);
+                                        v44 = v43 *% @as(i32, 4096);
+                                        v45 = v34 -% @as(i32, 128);
+                                        v46 = v45 *% @as(i32, 64);
+                                        v47 = v44 +% v46;
+                                        v48 = v36 -% @as(i32, 128);
+                                        v49 = v47 +% v48;
+                                        v50 = v49 < @as(i32, 2048);
+                                        if (v50) {
+                                            spiralFail("UTF-8 sequence is overlong.");
+                                        } else {
+                                            v52 = v49 >= @as(i32, 55296);
+                                            if (v52) {
+                                                v53 = v49 <= @as(i32, 57343);
+                                                if (v53) {
+                                                    spiralFail("UTF-8 sequence encodes a surrogate.");
+                                                } else {
+                                                    return v49;
+                                                }
+                                            } else {
+                                                return v49;
+                                            }
+                                        }
+                                    } else {
+                                        spiralFail("UTF-8 sequence has an invalid continuation byte.");
+                                    }
+                                } else {
+                                    spiralFail("UTF-8 sequence has an invalid continuation byte.");
+                                }
+                            }
+                        } else {
+                            v63 = v8 < @as(i32, 245);
+                            if (v63) {
+                                v64 = v1 +% @as(i32, 3);
+                                v65 = v64 >= v2;
+                                if (v65) {
+                                    spiralFail("UTF-8 sequence is truncated.");
+                                } else {
+                                    v67 = v1 +% @as(i32, 1);
+                                    v68 = runtime_byte_2(v0, v67);
+                                    v69 = @as(i32, v68);
+                                    v70 = v1 +% @as(i32, 2);
+                                    v71 = runtime_byte_2(v0, v70);
+                                    v72 = @as(i32, v71);
+                                    v73 = runtime_byte_2(v0, v64);
+                                    v74 = @as(i32, v73);
+                                    v75 = v69 < @as(i32, 128);
+                                    if (v75) {
+                                        v77 = false;
+                                    } else {
+                                        v76 = v69 < @as(i32, 192);
+                                        v77 = v76;
+                                    }
+                                    if (v77) {
+                                        v78 = v72 < @as(i32, 128);
+                                        if (v78) {
+                                            v80 = false;
+                                        } else {
+                                            v79 = v72 < @as(i32, 192);
+                                            v80 = v79;
+                                        }
+                                        if (v80) {
+                                            v81 = v74 < @as(i32, 128);
+                                            if (v81) {
+                                                v83 = false;
+                                            } else {
+                                                v82 = v74 < @as(i32, 192);
+                                                v83 = v82;
+                                            }
+                                            if (v83) {
+                                                v84 = v8 -% @as(i32, 240);
+                                                v85 = v84 *% @as(i32, 262144);
+                                                v86 = v69 -% @as(i32, 128);
+                                                v87 = v86 *% @as(i32, 4096);
+                                                v88 = v85 +% v87;
+                                                v89 = v72 -% @as(i32, 128);
+                                                v90 = v89 *% @as(i32, 64);
+                                                v91 = v88 +% v90;
+                                                v92 = v74 -% @as(i32, 128);
+                                                v93 = v91 +% v92;
+                                                v94 = v93 < @as(i32, 65536);
+                                                if (v94) {
+                                                    spiralFail("UTF-8 sequence is overlong.");
+                                                } else {
+                                                    v96 = v93 > @as(i32, 1114111);
+                                                    if (v96) {
+                                                        spiralFail("UTF-8 scalar is above U+10FFFF.");
+                                                    } else {
+                                                        return v93;
+                                                    }
+                                                }
+                                            } else {
+                                                spiralFail("UTF-8 sequence has an invalid continuation byte.");
+                                            }
+                                        } else {
+                                            spiralFail("UTF-8 sequence has an invalid continuation byte.");
+                                        }
+                                    } else {
+                                        spiralFail("UTF-8 sequence has an invalid continuation byte.");
+                                    }
+                                }
+                            } else {
+                                spiralFail("UTF-8 scalar starts with an invalid lead byte.");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+fn utf8_validate_loop_0(p0: []const u8, p1: i32, p2: i32, p3: i32) i32 {
+    var v0: []const u8 = p0; _ = &v0;
+    var v1: i32 = p1; _ = &v1;
+    var v2: i32 = p2; _ = &v2;
+    var v3: i32 = p3; _ = &v3;
+    var v4: bool = undefined; _ = &v4;
+    var v5: bool = undefined; _ = &v5;
+    var v7: i32 = undefined; _ = &v7;
+    var v8: bool = undefined; _ = &v8;
+    var v13: i32 = undefined; _ = &v13;
+    var v9: bool = undefined; _ = &v9;
+    var v10: bool = undefined; _ = &v10;
+    var v14: i32 = undefined; _ = &v14;
+    var v15: i32 = undefined; _ = &v15;
+    while (true) {
+        v4 = v1 == v3;
+        if (v4) {
+            return v2;
+        } else {
+            v5 = v1 > v3;
+            if (v5) {
+                spiralFail("UTF-8 scalar width exceeds the string.");
+            } else {
+                v7 = utf8_scalar_at_byte_offset_1(v0, v1);
+                v8 = v7 < @as(i32, 128);
+                if (v8) {
+                    v13 = @as(i32, 1);
+                } else {
+                    v9 = v7 < @as(i32, 2048);
+                    if (v9) {
+                        v13 = @as(i32, 2);
+                    } else {
+                        v10 = v7 < @as(i32, 65536);
+                        if (v10) {
+                            v13 = @as(i32, 3);
+                        } else {
+                            v13 = @as(i32, 4);
+                        }
+                    }
+                }
+                v14 = v1 +% v13;
+                v15 = v2 +% @as(i32, 1);
+                v1 = v14;
+                v2 = v15;
+                continue;
+            }
+        }
+    }
+}
+fn spiralMain() i32 {
+    const v0: []const u8 = "abc";
+    const v1: i32 = @as(i32, 0);
+    const v2: i32 = @as(i32, 0);
+    const v3: i32 = @as(i32, 3);
+    const v4: i32 = utf8_validate_loop_0(v0, v1, v2, v3);
+    const v5: bool = v4 == @as(i32, 3);
+    if (v5) {
+        return @as(i32, 0);
+    } else {
+        return @as(i32, 1);
+    }
+}
+var spiral_exit_code: i32 = 0;
+fn spiralMainThread() void {
+    spiral_exit_code = spiralMain();
+}
+extern "kernel32" fn CreateThread(attributes: ?*anyopaque, stack_size: usize, start: *const fn (?*anyopaque) callconv(.winapi) u32, parameter: ?*anyopaque, flags: u32, id: ?*u32) callconv(.winapi) ?std.os.windows.HANDLE;
+extern "kernel32" fn WaitForSingleObject(handle: std.os.windows.HANDLE, milliseconds: u32) callconv(.winapi) u32;
+extern "kernel32" fn ExitProcess(code: u32) callconv(.winapi) noreturn;
+fn spiralMainThreadReserved(_: ?*anyopaque) callconv(.winapi) u32 {
+    spiralMainThread();
+    return 0;
+}
+pub fn main(init: std.process.Init.Minimal) void {
+    spiral_gpa = spiral_arena.allocator();
+    spiral_environ = init.environ;
+    if (@import("builtin").os.tag == .windows) {
+        const handle = CreateThread(null, 1 << 30, spiralMainThreadReserved, null, 0x00010000, null) orelse @panic("spiral: could not start the main thread");
+        _ = WaitForSingleObject(handle, 0xFFFFFFFF);
+    } else {
+        const thread = std.Thread.spawn(.{ .stack_size = 1 << 30 }, spiralMainThread, .{}) catch @panic("spiral: could not start the main thread");
+        thread.join();
+    }
+    spiralFlush();
+    if (@import("builtin").os.tag == .windows) ExitProcess(@bitCast(spiral_exit_code)) else std.process.exit(@truncate(@as(u32, @bitCast(spiral_exit_code))));
+}

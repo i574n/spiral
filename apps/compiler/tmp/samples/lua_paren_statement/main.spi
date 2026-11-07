@@ -1,0 +1,4 @@
+:= main () : i32 =
+    := ~x = 5i32
+    !!!!BackendSwitch({ C = \ () => $"(void)0" : (); Lua = \ () => $"(function() end)()" : (); Zig = \ () => () })
+    x + 2i32

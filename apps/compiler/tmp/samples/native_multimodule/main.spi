@@ -1,0 +1,5 @@
+:= main () : i32 =
+    := ~a = 5i32
+    := ~b = 8i32
+    := ~c = 2i32
+    ~~ math::affine a b c -. 42i32

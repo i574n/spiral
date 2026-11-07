@@ -1,0 +1,7 @@
+:= main () : i32 =
+    := ~n = 3i32
+    := f (z : i32) : i32 = z +. n
+    := ~g = f
+    := box = !!!!LayoutToHeap({ call = g })
+    := opened = !!!!LayoutIndex(box)
+    ? opened::call 4i32 =. 7i32 ?> 0i32 |: 1i32

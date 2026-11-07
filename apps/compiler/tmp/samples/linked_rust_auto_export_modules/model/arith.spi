@@ -1,0 +1,5 @@
+:= triple (n : i32) : i32 = !!!!Mult(n, 3i32)
+
+:= scale (a : i32) (b : i32) : i32 = !!!!Mult(a, b)
+
+:= first (a : i32) (b : _) : i32 = a

@@ -1,0 +1,15 @@
+:| payload =
+    | Text : string
+    | Number : i32
+
+:~ score x : i32 =
+    ?= x ?|
+    | Text value => sm::length value
+    | Number value => value
+
+:= main () =
+    := ~choose_number = !-
+    := value = ? choose_number ?> Number 7i32 |: Text "qwe"
+    := a = score value
+    := b = score value
+    (-.) ((+.) a b) 6i32

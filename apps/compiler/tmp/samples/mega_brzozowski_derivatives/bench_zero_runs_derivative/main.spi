@@ -1,0 +1,6 @@
+:< main
+:< runtime_workload
+
+:= main () : i32 =
+    expect_count (run_zero_runs EngineDerivative 26i32) 26i32 "brzozowski-bench-zero-runs-count"
+    0i32

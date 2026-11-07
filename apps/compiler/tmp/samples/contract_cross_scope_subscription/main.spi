@@ -1,0 +1,17 @@
+:! scope_a = ()
+:! scope_b = ()
+
+:| signal scope value =
+    | Signal :: \* scope value. value -> signal scope value
+
+:| subscription scope =
+    | Subscription :: \* scope. string -> subscription scope
+
+:= subscribe \* scope value. (source : signal scope value) : subscription scope =
+    ?= source ?|
+    | Signal _ => Subscription "owned-subscription"
+
+:= main () : string =
+    := source : signal scope_a i32 = Signal 42
+    := _ : subscription scope_b = subscribe source
+    "unreachable"

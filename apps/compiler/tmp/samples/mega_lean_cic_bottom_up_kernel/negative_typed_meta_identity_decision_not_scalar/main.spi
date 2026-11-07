@@ -1,0 +1,7 @@
+:< main
+
+:= impossible_typed_meta_identity_decision_not_scalar \* left right.
+    (decision : corrected_cic_typed_meta_identity_decision left right) : i64 =
+    decision
+
+:= main () = ()

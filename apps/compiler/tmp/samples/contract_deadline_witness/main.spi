@@ -1,0 +1,31 @@
+:! epoch_42 = ()
+:! fresh = ()
+:! expired = ()
+:! draft = ()
+:! authorized = ()
+
+:| clock epoch =
+    | Clock42 :: clock epoch_42
+
+:| deadline epoch status =
+    | FreshDeadline :: deadline epoch_42 fresh
+    | ExpiredDeadline :: deadline epoch_42 expired
+
+:| document epoch state =
+    | DraftDocument :: document epoch_42 draft
+    | AuthorizedDocument :: document epoch_42 authorized
+
+:= authorize \* epoch.
+    (clock : clock epoch)
+    (deadline : deadline epoch fresh)
+    (document : document epoch draft)
+    : document epoch authorized =
+    ?= clock, deadline, document ?|
+    | Clock42, FreshDeadline, DraftDocument => AuthorizedDocument
+
+:= render (document : document epoch_42 authorized) : string =
+    ?= document ?|
+    | AuthorizedDocument => "deadline-witness"
+
+:= main () : string =
+    render (authorize Clock42 FreshDeadline DraftDocument)

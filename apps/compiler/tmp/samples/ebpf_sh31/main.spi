@@ -1,0 +1,9 @@
+:= main () : i32 =
+    := ~u = 1u32
+    := ~z = 0i32
+    := ~s = 31i32
+    := hi = !!!!ShiftLeft(u, s)
+    := back = !!!!ShiftRight(hi, s)
+    := same = !!!!ShiftLeft(u, z)
+    ? hi =. 2147483648u32 && back =. 1u32 && same =. 1u32 ?> 0i32
+    |: 1i32

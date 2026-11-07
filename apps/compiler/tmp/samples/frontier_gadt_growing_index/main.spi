@@ -1,0 +1,10 @@
+:! zero = ()
+:! succ n = ()
+
+:| ^ transcript pending =
+    | Done :: transcript zero
+    | Result :: \* n. i32 * transcript (succ n) -> transcript n
+
+:= main () : i32 =
+    := t : transcript zero = Done
+    7i32

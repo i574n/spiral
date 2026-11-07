@@ -1,0 +1,46 @@
+:= while' (cond : () -> bool) (body : () -> ()) : () =
+    !!!!While((~~ cond ()), (body ()))
+
+:= set' \* t. (a : t) ~(b : t) : () =
+    !!!!BackendSwitch({
+        C = \ () => $"!a = !b" : ()
+        Ebpf = \ () => $"!a = !b" : ()
+        Zig = \ () => $"!a = !b" : ()
+    })
+
+:= map_update (key : i32) (value : i32) (expect : i32) : i32 =
+    !!!!BackendSwitch({
+        C = \ () => $"!expect" : i32
+        Ebpf = \ () => $"spiral_map_update(!key, !value)" : i32
+        Zig = \ () => expect
+    })
+
+:= map_lookup (key : i32) (expect : i32) : i32 =
+    !!!!BackendSwitch({
+        C = \ () => $"!expect" : i32
+        Ebpf = \ () => $"spiral_map_lookup(!key)" : i32
+        Zig = \ () => expect
+    })
+
+:= main () : i32 =
+    := ~bad = 0i32
+    := ~i = 1i32
+    set' bad (bad +. map_update (-1i32) (-5i32) 0i32)
+    set' bad (bad +. (map_lookup (-1i32) (-5i32) -. (-5i32)))
+    set' bad (bad +. map_update 0i32 0i32 0i32)
+    set' bad (bad +. map_lookup 0i32 0i32)
+    while' (\ () => i < 63i32) \ () =>
+        set' bad (bad +. map_update i (i +. 1i32) 0i32)
+        set' i (i +. 1i32)
+    set' bad (bad +. (map_update 63i32 1i32 1i32 -. 1i32))
+    set' bad (bad +. map_lookup 63i32 0i32)
+    set' bad (bad +. map_update (-1i32) 8i32 0i32)
+    set' bad (bad +. (map_lookup (-1i32) 8i32 -. 8i32))
+    set' bad (bad +. map_update 0i32 4i32 0i32)
+    set' bad (bad +. (map_lookup 0i32 4i32 -. 4i32))
+    set' bad (bad +. (map_update 100i32 1i32 1i32 -. 1i32))
+    set' i 1i32
+    while' (\ () => i < 63i32) \ () =>
+        set' bad (bad +. (map_lookup i (i +. 1i32) -. (i +. 1i32)))
+        set' i (i +. 1i32)
+    bad

@@ -1,0 +1,26 @@
+:! source_a = ()
+:! source_b = ()
+:! draft = ()
+:! validated = ()
+
+:| step source from to =
+    | ValidateA :: step source_a draft validated
+    | ValidateB :: step source_b draft validated
+
+:| audited source from to =
+    | Audited :: \* source from to.
+        step source from to -> audited source from to
+
+:= audit \* source from to.
+    (step : step source from to)
+    : audited source from to =
+    Audited step
+
+:= publish_a (step : audited source_a draft validated) : string =
+    ?= step ?|
+    | Audited step =>
+        ?= step ?|
+        | ValidateA => "published"
+
+:= main () : string =
+    publish_a (audit ValidateB)

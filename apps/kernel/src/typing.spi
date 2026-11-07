@@ -1,0 +1,373 @@
+///- --package .
+:# typing static =
+    :< testing
+
+:< sm'_operators
+:< syntax
+:< scope
+:< reduce
+:< conversion
+:< env
+
+:| refusal =
+    | UnknownVar : string
+    | NotAFunction : string
+    | NotAType : string
+    | Mismatch : string
+    | LooseBound : i32
+    | NoConstants : string
+    | WrongLevels : string
+    | AlreadyDeclared : string
+    | UndeclaredLevel : string
+    | NotPositive : string
+    | NotConstructorOf : string
+    | GeneratedOnly : string
+    | QuotientOnly : string
+    | NoEquality
+    | NotAStructure : string
+    | PropProjection : string
+    | NestedTooFewParams : string
+    | TooDeep
+
+:| inferred =
+    | Typed : term
+    | Rejected : refusal
+
+:| sorted =
+    | IsSort : level
+    | NotSort : refusal
+
+:~ ^ lookup (ctx : list (string * term)) (n : string) : inferred =
+    ?= ctx ?|
+    | (k, ty) :: rest => ? k = n ?> Typed ty |: lookup rest n
+    | [] => Rejected (UnknownVar n)
+
+:~ fresh (ctx : list (string * term)) (n : name) : string =
+    name_text n ++# "_" ++# sm'::obj_to_string (listm::length ctx : i32)
+
+:~ fuel () : i32 = 20000i32
+
+:~ sorted_prop (s : sorted) : bool =
+    ?= s ?|
+    | IsSort l => is_zero_level l
+    | NotSort _ => !-
+
+:~ ^ skip_applied (t : term) (args : list term) : term =
+    ?= args ?|
+    | a :: rest =>
+        ?= t ?|
+        | Pi (_, _, _, body) => skip_applied (instantiate body a) rest
+        | _ => t
+    | [] => t
+
+:~ ^ field_at (t : term) (s : name) (x : term) (k : i32) (i : i32) : option term =
+    ?= t ?|
+    | Pi (_, _, dom, body) => ? k = i ?> Some dom |: field_at (instantiate body (Proj (s, k, x))) s x (k + 1i32) i
+    | _ => None
+
+:~ field_type (env : list decl) (s : name) (i : i32) (x : term) (ty : term) : inferred =
+    := head, args = spine ty []
+    := refused = Rejected (NotAStructure (name_text s))
+    ?= head ?|
+    | Const ((name h), us) =>
+        ?= structure_ctor env (name_text s) ?|
+        | Some (c, np) =>
+            ?= find_decl env c ?|
+            | Some d =>
+                := cty = instantiate_levels (decl_type d) (decl_params d) us
+                ?= field_at (skip_applied cty (take args np)) s x 0i32 i ?|
+                | Some f => ? h = name_text s ?> Typed f |: refused
+                | None => refused
+            | None => refused
+        | None => refused
+    | _ => refused
+
+:~ ^ infer (env : list decl) (ctx : list (string * term)) (t : term) : inferred =
+    ?= t ?|
+    | Sort l => Typed (Sort (Succ l))
+    | FVar (name n) => lookup ctx n
+    | BVar i => Rejected (LooseBound i)
+    | Const (name n, us) =>
+        ?= find_decl env n ?|
+        | Some d =>
+            := ps = decl_params d
+            ? listm::length ps = (listm::length us : i32)
+            ?> Typed (instantiate_levels (decl_type d) ps us)
+            |: Rejected (WrongLevels n)
+        | None => Rejected (NoConstants n)
+    | Pi (n, b, dom, body) =>
+        ?= sort_of env ctx dom ?|
+        | NotSort why => Rejected why
+        | IsSort l1 =>
+            := x = fresh ctx n
+            ?= sort_of env ((x, dom) :: ctx) (open_with body (name x)) ?|
+            | NotSort why => Rejected why
+            | IsSort l2 => Typed (Sort (IMax (l1, l2)))
+    | Lam (n, b, dom, body) =>
+        ?= sort_of env ctx dom ?|
+        | NotSort why => Rejected why
+        | IsSort _ =>
+            := x = fresh ctx n
+            ?= infer env ((x, dom) :: ctx) (open_with body (name x)) ?|
+            | Typed codomain => Typed (Pi (n, b, dom, abstract_fvar codomain (name x)))
+            | other => other
+    | App (f, a) => apply_type env ctx f a
+    | NatLit _ => Typed (Const (name "Nat", []))
+    | BigNat _ => Typed (Const (name "Nat", []))
+    | StrLit _ => Typed (Const (name "String", []))
+    | Let (_, ty, v, body) =>
+        ?= check env ctx v ty ?|
+        | Typed _ => infer env ctx (instantiate body v)
+        | other => other
+    | Proj (s, i, x) =>
+        ?= infer env ctx x ?|
+        | Typed tx =>
+            ?= whnf env tx (fuel ()) ?|
+            | Whnf (ty, _) => prop_guard env ctx s ty (field_type env s i x ty)
+            | OutOfFuel _ => Rejected TooDeep
+        | other => other
+:& :~ prop_guard (env : list decl) (ctx : list (string * term)) (s : name) (ty : term) (r : inferred) : inferred =
+    ?= r ?|
+    | Typed f =>
+        := from_prop = sorted_prop (sort_of env ctx ty)
+        ? from_prop && not (sorted_prop (sort_of env ctx f)) ?> Rejected (PropProjection (name_text s)) |: r
+    | other => other
+:& :~ sort_of (env : list decl) (ctx : list (string * term)) (t : term) : sorted =
+    ?= infer env ctx t ?|
+    | Rejected why => NotSort why
+    | Typed ty =>
+        ?= whnf env ty (fuel ()) ?|
+        | Whnf (Sort l, _) => IsSort l
+        | Whnf (other, _) => NotSort (NotAType (term_text t ++# " : " ++# term_text other))
+        | OutOfFuel _ => NotSort TooDeep
+:& :~ check (env : list decl) (ctx : list (string * term)) (t : term) (expected : term) : inferred =
+    ?= infer env ctx t ?|
+    | Typed actual =>
+        ?= defeq_with (context_env ctx env) actual expected (fuel ()) ?|
+        | Same _ => Typed expected
+        | Different why => Rejected (Mismatch why)
+        | NoFuel => Rejected TooDeep
+    | other => other
+:& :~ apply_type (env : list decl) (ctx : list (string * term)) (f : term) (a : term) : inferred =
+    ?= infer env ctx f ?|
+    | Rejected why => Rejected why
+    | Typed fty =>
+        ?= whnf env fty (fuel ()) ?|
+        | Whnf (Pi (_, _, dom, codomain), _) =>
+            ?= check env ctx a dom ?|
+            | Typed _ => Typed (instantiate codomain a)
+            | other => other
+        | Whnf (other, _) => Rejected (NotAFunction (term_text f ++# " : " ++# term_text other))
+        | OutOfFuel _ => Rejected TooDeep
+
+:~ infer_top (env : list decl) (c : closed) : inferred = infer env [] (closed_term c)
+
+:| admitted =
+    | Admitted : list decl
+    | Refused : refusal
+
+:~ admit_typed (env : list decl) (d : decl) : admitted =
+    ?= sort_of env [] (decl_type d) ?|
+    | NotSort why => Refused why
+    | IsSort _ =>
+        ?= d ?|
+        | Axiom (_, _, _) => Admitted (d :: env)
+        | Recursor (n, _, _, _, _, _, _) => Refused (GeneratedOnly (name_text n))
+        | Quotient (n, _, _, _) => Refused (QuotientOnly (name_text n))
+        | Def (_, _, ty, value) =>
+            ?= check env [] value ty ?|
+            | Typed _ => Admitted (d :: env)
+            | Rejected why => Refused why
+
+:~ admit (env : list decl) (d : decl) : admitted =
+    := n = decl_name d
+    ?= find_decl env n ?|
+    | Some _ => Refused (AlreadyDeclared n)
+    | None =>
+        ?= stray_in_decl d ?|
+        | Some u => Refused (UndeclaredLevel u)
+        | None => admit_typed env d
+
+:~ ^ admit_all (env : list decl) (ds : list decl) : admitted =
+    ?= ds ?|
+    | d :: rest =>
+        ?= admit env d ?|
+        | Admitted more => admit_all more rest
+        | other => other
+    | [] => Admitted env
+
+:~ type_text (r : inferred) : string =
+    ?= r ?|
+    | Typed ty => term_text ty
+    | Rejected why =>
+        ?= why ?|
+        | UnknownVar n => "unknown " ++# n
+        | NotAFunction s => "not a function: " ++# s
+        | NotAType s => "not a type: " ++# s
+        | Mismatch s => "mismatch: " ++# s
+        | LooseBound i => "loose bound " ++# sm'::obj_to_string i
+        | NoConstants n => "unknown constant " ++# n
+        | WrongLevels n => "wrong number of universe levels for " ++# n
+        | AlreadyDeclared n => "already declared " ++# n
+        | UndeclaredLevel n => "undeclared universe level " ++# n
+        | NotPositive c => "not strictly positive: " ++# c
+        | NotConstructorOf c => "not a constructor of its type: " ++# c
+        | GeneratedOnly n => "only the kernel generates recursors: " ++# n
+        | QuotientOnly n => "only the kernel declares quotients: " ++# n
+        | NoEquality => "quotients need Eq declared first"
+        | NotAStructure s => "not a structure projection: " ++# s
+        | PropProjection s => "a proposition projects only proofs: " ++# s
+        | NestedTooFewParams c => "a nested container needs at least the family's parameters: " ++# c
+        | TooDeep => "too deep"
+
+:~ admitted_text (a : admitted) : string =
+    ?= a ?|
+    | Admitted env => "admitted " ++# sm'::obj_to_string (listm::length env : i32)
+    | Refused why => type_text (Rejected why)
+
+:~ type_sort () : term = Sort (Succ Zero)
+
+:~ poly_id () : term = Lam (name "A", Default, type_sort (), Lam (name "a", Default, BVar 0i32, BVar 0i32))
+
+:~ quot_of (l : level) (alpha : term) (r : term) : term = App (App (Const (name "Quot", [ l ]), alpha), r)
+
+:~ eq_of (l : level) (a : term) (x : term) (y : term) : term = apply_all (Const (name "Eq", [ l ])) [ a; x; y ]
+
+:~ relation () : term = Pi (name "a", Default, BVar 0i32, Pi (name "b", Default, BVar 1i32, Sort Zero))
+
+:~ quotient_decls () : list decl =
+    := u = Param (name "u")
+    := v = Param (name "v")
+    := over = \ (rest : term) => Pi (name "A", Implicit, Sort u, rest)
+    := quot = over (Pi (name "r", Default, relation (), Sort u))
+    := mk = over (Pi (name "r", Default, relation (), Pi (name "a", Default, BVar 1i32, quot_of u (BVar 2i32) (BVar 1i32))))
+    := related = App (App (BVar 4i32, BVar 1i32), BVar 0i32)
+    := respects =
+        Pi (name "a", Default, BVar 3i32, Pi (name "b", Default, BVar 4i32,
+            Pi (name "p", Default, related, eq_of v (BVar 4i32) (App (BVar 3i32, BVar 2i32)) (App (BVar 3i32, BVar 1i32)))))
+    := lifted =
+        Pi (name "f", Default, Pi (name "x", Default, BVar 2i32, BVar 1i32),
+            Pi (name "h", Default, respects, Pi (name "q", Default, quot_of u (BVar 4i32) (BVar 3i32), BVar 3i32)))
+    := lift = over (Pi (name "r", Implicit, relation (), Pi (name "B", Implicit, Sort v, lifted)))
+    := made = apply_all (Const (name "Quot.mk", [ u ])) [ BVar 3i32; BVar 2i32; BVar 0i32 ]
+    := inducted =
+        Pi (name "mk", Default, Pi (name "a", Default, BVar 2i32, App (BVar 1i32, made)),
+            Pi (name "q", Default, quot_of u (BVar 3i32) (BVar 2i32), App (BVar 2i32, BVar 0i32)))
+    := motive = Pi (name "q", Default, quot_of u (BVar 1i32) (BVar 0i32), Sort Zero)
+    := ind = over (Pi (name "r", Implicit, relation (), Pi (name "B", Implicit, motive, inducted)))
+    := mk_of = \ (x : term) => apply_all (Const (name "Quot.mk", [ u ])) [ BVar 4i32; BVar 3i32; x ]
+    := equal = eq_of u (quot_of u (BVar 4i32) (BVar 3i32)) (mk_of (BVar 2i32)) (mk_of (BVar 1i32))
+    := proved = Pi (name "p", Default, App (App (BVar 2i32, BVar 1i32), BVar 0i32), equal)
+    := pair = Pi (name "a", Implicit, BVar 1i32, Pi (name "b", Implicit, BVar 2i32, proved))
+    := sound = over (Pi (name "r", Implicit, relation (), pair))
+    [
+        Quotient (name "Quot", QuotType, [ name "u" ], quot)
+        Quotient (name "Quot.mk", QuotMk, [ name "u" ], mk)
+        Quotient (name "Quot.lift", QuotLift, [ name "u"; name "v" ], lift)
+        Quotient (name "Quot.ind", QuotInd, [ name "u" ], ind)
+        Axiom (name "Quot.sound", [ name "u" ], sound)
+    ]
+
+:~ ^ admit_quotient_decls (env : list decl) (ds : list decl) : admitted =
+    ?= ds ?|
+    | d :: rest =>
+        := n = decl_name d
+        ?= find_decl env n ?|
+        | Some _ => Refused (AlreadyDeclared n)
+        | None =>
+            ?= sort_of env [] (decl_type d) ?|
+            | IsSort _ => admit_quotient_decls (d :: env) rest
+            | NotSort why => Refused why
+    | [] => Admitted env
+
+:~ admit_quotients (env : list decl) : admitted =
+    ?= find_decl env "Eq" ?|
+    | Some _ => admit_quotient_decls env (quotient_decls ())
+    | None => Refused NoEquality
+
+///> rust
+:# the_polymorphic_identity_has_its_dependent_type =
+    (type_text (infer [] [] (identity ())), type_text (infer [] [] (poly_id ())))
+    |> _assert_eq ("(x : Prop) -> Prop", "(A : Type) -> (a : #0) -> #1")
+
+///> rust
+:# applying_the_polymorphic_identity_instantiates_its_type =
+    := ctx = [ ("p", Sort Zero) ]
+    infer [] ctx (App (App (poly_id (), Sort Zero), FVar (name "p"))) |> type_text |> _assert_eq "Prop"
+
+///> rust
+:# ill_typed_terms_are_rejected_with_a_named_refusal =
+    := refusals =
+        type_text (infer [] [] (App (Sort Zero, Sort Zero))),
+        type_text (infer [] [] (FVar (name "q"))),
+        type_text (infer [] [] (App (identity (), Sort Zero)))
+    refusals |> _assert_eq ("not a function: Prop : Type", "unknown q", "mismatch: Type vs Prop")
+
+///> rust
+:# constants_take_their_declared_type_and_unknown_ones_are_refused =
+    := env =
+        [
+            Axiom (name "nat", [], type_sort ())
+            Def (name "id", [], Pi (name "x", Default, Sort Zero, Sort Zero), identity ())
+        ]
+    := ctx = [ ("p", Sort Zero) ]
+    := texts =
+        type_text (infer env [] (Const (name "nat", []))),
+        type_text (infer env ctx (App (Const (name "id", []), FVar (name "p")))),
+        type_text (infer env [] (Const (name "foo", [])))
+    texts |> _assert_eq ("Type", "Prop", "unknown constant foo")
+
+///> rust
+:# a_universe_polymorphic_constant_takes_the_levels_it_is_used_at =
+    := u_sort = Sort (Param (name "u"))
+    := id_type = Pi (name "A", Default, u_sort, Pi (name "a", Default, BVar 0i32, BVar 1i32))
+    := id_value = Lam (name "A", Default, u_sort, Lam (name "a", Default, BVar 0i32, BVar 0i32))
+    := env = [ Def (name "id", [ name "u" ], id_type, id_value) ]
+    := at_type = type_text (infer env [] (Const (name "id", [ Succ Zero ])))
+    (at_type, type_text (infer env [] (Const (name "id", []))))
+    |> _assert_eq ("(A : Type) -> (a : #0) -> #1", "wrong number of universe levels for id")
+
+///> rust
+:# top_level_inference_only_accepts_closed_terms =
+    := checked = as_closed (poly_id ()) |> optionm::map (\ c => type_text (infer_top [] c))
+    (checked, as_closed (BVar 0i32) |> optionm::map (\ c => type_text (infer_top [] c)))
+    |> _assert_eq (Some "(A : Type) -> (a : #0) -> #1", None)
+///> rust
+:# declarations_are_admitted_only_when_they_type_check =
+    := nat = Axiom (name "nat", [], type_sort ())
+    := id = Def (name "id", [], Pi (name "x", Default, Sort Zero, Sort Zero), identity ())
+    := texts =
+        admitted_text (admit_all [] [ nat; id ]),
+        admitted_text (admit_all [] [ nat; nat ]),
+        admitted_text (admit_all [] [ Def (name "wrong", [], Sort Zero, Sort Zero) ]),
+        admitted_text (admit_all [] [ Axiom (name "bad", [], App (Sort Zero, Sort Zero)) ])
+    texts |> _assert_eq ("admitted 2", "already declared nat", "mismatch: Type vs Prop", "not a function: Prop : Type")
+
+///> rust
+:# a_declaration_using_an_undeclared_universe_level_is_refused =
+    := loose = Axiom (name "loose", [], Sort (Param (name "u")))
+    := bound = Axiom (name "bound", [ name "u" ], Sort (Param (name "u")))
+    (admitted_text (admit [] loose), admitted_text (admit [] bound))
+    |> _assert_eq ("undeclared universe level u", "admitted 1")
+
+///> rust
+:# the_legacy_negative_families_are_refused_at_runtime =
+    := ctx = [ ("h", FVar (name "p")); ("p", Sort Zero) ]
+    := to_type = App (Lam (name "A", Default, Sort (Succ (Succ Zero)), BVar 0i32), type_sort ())
+    := to_prop = App (Lam (name "A", Default, type_sort (), BVar 0i32), Sort Zero)
+    := refused = \ prefix r => type_text r |> sm'::starts_with prefix
+    := verdicts =
+        refused "not a type: " (infer [] ctx (Pi (name "x", Default, FVar (name "h"), Sort Zero))),
+        refused "mismatch: " (infer [] [] (Let (name "x", Sort Zero, Sort Zero, BVar 0i32))),
+        refused "loose bound" (infer [] [] (Lam (name "x", Default, Sort Zero, BVar 1i32))),
+        refused "mismatch: " (check [] ctx (App (App (poly_id (), Sort Zero), FVar (name "p"))) (type_sort ())),
+        refused "mismatch: " (check [] [] (Sort Zero) to_type),
+        refused "mismatch: " (check [] [] (Sort Zero) to_prop)
+    verdicts |> _assert_eq (!+, !+, !+, !+, !-, !+)
+
+///> rust
+:# swapping_independent_context_entries_keeps_the_type =
+    := t = Lam (name "h", Default, FVar (name "q"), FVar (name "hp"))
+    := before = type_text (infer [] [ ("p", Sort Zero); ("q", Sort Zero); ("hp", FVar (name "p")) ] t)
+    := after = type_text (infer [] [ ("q", Sort Zero); ("p", Sort Zero); ("hp", FVar (name "p")) ] t)
+    (before = after, after) |> _assert_eq (!+, "(h : q) -> p")

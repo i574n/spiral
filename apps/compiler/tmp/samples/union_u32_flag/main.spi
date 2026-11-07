@@ -1,0 +1,17 @@
+:| slot =
+    | None
+    | All : u32 * string * bool
+
+:~ score x : i32 =
+    ?= x ?|
+    | None => 1i32
+    | All (n, word, on) =>
+        ? n =. 4000000000u32 && !!!!EQ(word, "hi") && on ?> 0i32 |: 1i32
+
+:= main () : i32 =
+    := ~n = 4000000000u32
+    := ~word = "hi"
+    := ~on = !+
+    := ~flag = !+
+    := held = ? flag ?> All (n, word, on) |: None
+    score held

@@ -1,0 +1,119 @@
+///- --package .
+///> gleam
+:# client static =
+    :< testing
+    :< daemon
+    :< erlang_tcp
+
+:< daemon
+:< erlang_tcp
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:| client_failure =
+    | Unreachable : string
+    | Stale
+    | WaitedOut
+    | Lost : string
+
+:= tcp_text (f : erlang_tcp::tcp_failure) : string =
+    ?= f ?|
+    | Refused => ":econnrefused"
+    | TimedOut => ":timeout"
+    | Closed => ":closed"
+    | Failed reason => reason
+
+:= lost (f : erlang_tcp::tcp_failure) : client_failure = Lost ("compiler connection failed: " ++ tcp_text f)
+
+:= pause (ms : i32) : () =
+    := slept = erlang_term::apply "timer" "sleep" [ erlang_term::of ms ]
+    ()
+
+:~ ^ connect_from (port : i32) (left : i32) : result erlang_tcp::socket client_failure =
+    ?= erlang_tcp::connect_local port 2000i32 ?|
+    | Ok s => Ok s
+    | Error f ?& f = Refused && left > 0i32 =>
+        pause 20i32
+        connect_from port (left - 1i32)
+    | Error f =>
+        := why = "could not connect to the compiler on port " ++ text::show_i32 port ++ ": " ++ tcp_text f
+        Error (Unreachable why)
+
+:= answer_of \* r. (s : erlang_tcp::socket) (q : daemon::request r) : result r client_failure =
+    ?= erlang_tcp::receive_line s Forever ?|
+    | Ok line => Ok (daemon::reply_of q line)
+    | Error f ?& f = TimedOut => Error WaitedOut
+    | Error f => Error (lost f)
+
+:= asked \* r. (s : erlang_tcp::socket) (q : daemon::request r) : result r client_failure =
+    ?= erlang_tcp::send_line s (daemon::request_line q) ?|
+    | Ok _ => answer_of s q
+    | Error f => Error (lost f)
+
+:= greeted \* r. (s : erlang_tcp::socket) (stamp : string) (q : daemon::request r) : result r client_failure =
+    ?= erlang_tcp::receive_line s (erlang_tcp::WithinMs 5000i32) ?|
+    | Error f => Error (lost f)
+    | Ok banner =>
+        := hello = daemon::hello_of banner
+        ? hello::stamp = stamp ?> asked s q |: Error Stale
+
+:= exchange \* r. (s : erlang_tcp::socket) (stamp : string) (q : daemon::request r) : result r client_failure =
+    ?= erlang_tcp::send_line s "hello" ?|
+    | Ok _ => greeted s stamp q
+    | Error f => Error (lost f)
+
+:= transact_with \* r. (attempts : i32) (port : i32) (stamp : string) (q : daemon::request r) : result r client_failure =
+    ?= connect_from port attempts ?|
+    | Error e => Error e
+    | Ok s =>
+        := outcome = exchange s stamp q
+        erlang_tcp::close s
+        outcome
+
+:= transact \* r. (port : i32) (stamp : string) (q : daemon::request r) : result r client_failure =
+    transact_with 50i32 port stamp q
+
+:= unreachable \* r. (outcome : result r client_failure) : bool =
+    ?= outcome ?|
+    | Error f => (?= f ?| Unreachable _ => !+ | _ => !-)
+    | Ok _ => !-
+
+:= serve_once (l : erlang_tcp::listener) (banner : string) (reply : string) : () =
+    ?= erlang_tcp::accept l (erlang_tcp::WithinMs 5000i32) ?|
+    | Error _ => ()
+    | Ok s =>
+        := hello = erlang_tcp::receive_line s (erlang_tcp::WithinMs 5000i32)
+        := sent = erlang_tcp::send_line s banner
+        := request = erlang_tcp::receive_line s (erlang_tcp::WithinMs 5000i32)
+        := answered = erlang_tcp::send_line s reply
+        erlang_tcp::close s
+
+:= fake_daemon (banner : string) (reply : string) : erlang_tcp::listener =
+    ?= erlang_tcp::listen_local () ?|
+    | Ok l =>
+        := server = erlang_process::spawn (\ () => serve_once l banner reply)
+        l
+    | Error _ => failwith "client: could not listen for the fake daemon"
+
+:# a_compile_round_trips_through_a_daemon_that_speaks_the_protocol =
+    := l = fake_daemon "spiral-cells\t1\t9\t42" "ok\tr7\t3"
+    transact (erlang_tcp::listener_port l) "42" (Compile (daemon::sample_ask ()))
+    |> _assert_eq (Ok (Compiled ("r7", Some 3i32)))
+
+:# the_same_transact_reads_a_status_reply_typed_by_its_request =
+    := l = fake_daemon "spiral-cells\t1\t9\t42" "status\t9\t42\t0\t1\tfalse\tx lane"
+    ?= transact (erlang_tcp::listener_port l) "42" Status ?|
+    | Ok s => (s::pid, s::owner) |> _assert_eq ("9", "x lane")
+    | Error _ => failwith "status transact failed"
+
+:# a_daemon_with_another_code_stamp_is_stale =
+    := l = fake_daemon "spiral-cells\t1\t9\t41" "ok\tr7"
+    transact (erlang_tcp::listener_port l) "42" (Compile (daemon::sample_ask ())) |> _assert_eq (Error Stale)
+
+:# a_port_nobody_listens_on_is_unreachable =
+    ?= erlang_tcp::listen_local () ?|
+    | Ok l =>
+        := port = erlang_tcp::listener_port l
+        erlang_tcp::stop_listening l
+        transact_with 2i32 port "42" Hello |> unreachable |> _assert_eq !+
+    | Error _ => failwith "client: could not listen"

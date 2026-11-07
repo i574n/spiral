@@ -1,0 +1,18 @@
+:! cell_array = array_base (mut { q : i32 })
+
+:= create (n : i32) : cell_array = cell_array !!!!ArrayCreate(`(mut { q : i32 }), n)
+:= get (array : cell_array) (i : i32) : mut { q : i32 } =
+    ?= array ?|
+    | cell_array values => !!!!ArrayIndex(values, i)
+:= set (array : cell_array) (i : i32) (value : mut { q : i32 }) : () =
+    ?= array ?|
+    | cell_array values => !!!!ArrayIndexSet(values, i, value)
+
+:= main () : i32 =
+    := a = create 1i32
+    := cell = !!!!LayoutToHeapMutable({ q = 1i32 })
+    set a 0i32 cell
+    := held = get a 0i32
+    held <- { q = 7i32 }
+    := opened = !!!!LayoutIndex(held)
+    ? opened::q =. 7i32 ?> 0i32 |: 1i32

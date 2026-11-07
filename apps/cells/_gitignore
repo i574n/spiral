@@ -1,0 +1,11 @@
+/_build/
+/build/
+/cover/
+/deps/
+/doc/
+/.fetch
+*.ez
+spiral_cells-*.tar
+/tmp/
+/gleam.lock
+/src/

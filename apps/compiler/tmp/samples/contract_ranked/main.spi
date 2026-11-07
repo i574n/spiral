@@ -1,0 +1,49 @@
+:! draft = ()
+:! signed = ()
+:! authorized = ()
+
+:! nfe_draft = { id : string }
+:! nfe_signed = { xml : string; digest : string }
+:! nfe_authorized = { xml : string; protocol : string }
+
+:| document state =
+    | Draft :: nfe_draft -> document draft
+    | Signed :: nfe_signed -> document signed
+    | Authorized :: nfe_authorized -> document authorized
+
+:= sign (document : document draft) : document signed =
+    ?= document ?|
+    | Draft _ => Signed (nfe_signed { xml = "nfe.xml"; digest = "sha256" })
+
+:= authorize (document : document signed) : document authorized =
+    ?= document ?|
+    | Signed payload => Authorized (nfe_authorized { xml = payload::xml; protocol = "135240000000003" })
+
+:| ^ workflow a c =
+    | Step :: \* a c. (a -> c) -> workflow a c
+    | Compose :: \* a c. (\? b. workflow a b * workflow b c) -> workflow a c
+
+:= ^ run \* a c. (workflow : workflow a c) (input : a) : c =
+    ?= workflow ?|
+    | Step transform => transform input
+    | Compose pair =>
+        := \? middle. first, second = pair
+        run second (run first input)
+
+:= issue () : workflow (document draft) (document authorized) =
+    Compose (\? (Step sign, Step authorize))
+
+:= with_policy \* state. (policy : \* t. t -> t) (document : document state) : document state =
+    ?= document ?|
+    | Draft payload => Draft (policy payload)
+    | Signed payload => Signed (policy payload)
+    | Authorized payload => Authorized (policy payload)
+
+:= identity \* t. (value : t) : t = value
+
+:= main () : string =
+    := draft = Draft (nfe_draft { id = "3" })
+    := governed = with_policy `$identity draft
+    := authorized = run (issue ()) governed
+    ?= authorized ?|
+    | Authorized payload => payload::protocol

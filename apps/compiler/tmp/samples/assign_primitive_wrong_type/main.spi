@@ -1,0 +1,4 @@
+:= main () : i32 =
+    := ~i = 0i32
+    !!!!Assign(i, "text")
+    i

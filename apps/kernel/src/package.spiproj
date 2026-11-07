@@ -1,0 +1,18 @@
+packageDir: ../../../lib
+packages:
+    |core-
+    spiral-
+modules:
+    syntax
+    scope
+    subst
+    universes
+    env
+    reduce
+    conversion
+    typing
+    inductive
+    nested
+    lean
+    oracle
+    export

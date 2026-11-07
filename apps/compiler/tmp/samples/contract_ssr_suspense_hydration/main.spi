@@ -1,0 +1,53 @@
+:! app_tree = ()
+:! checksum_a = ()
+:! pending = ()
+:! ready = ()
+:! app_scope = ()
+
+:| server_view tree checksum =
+    | ServerView :: \* tree checksum. string -> server_view tree checksum
+
+:| serialized_view tree checksum =
+    | SerializedView :: \* tree checksum. string -> serialized_view tree checksum
+
+:| client_checksum checksum =
+    | ClientChecksum :: \* checksum. string -> client_checksum checksum
+
+:| resource scope state value =
+    | Resource :: \* scope state value. value -> resource scope state value
+
+:| hydrated_view tree checksum scope state =
+    | HydratedView :: \* tree checksum scope state. string -> hydrated_view tree checksum scope state
+
+:= serialize \* tree checksum.
+    (view : server_view tree checksum)
+    : serialized_view tree checksum =
+    ?= view ?|
+    | ServerView html => SerializedView html
+
+:= resolve \* scope value.
+    (resource : resource scope pending value)
+    : resource scope ready value =
+    ?= resource ?|
+    | Resource value => Resource value
+
+:= hydrate \* tree checksum scope value.
+    (serialized : serialized_view tree checksum)
+    (client : client_checksum checksum)
+    (resource : resource scope ready value)
+    : hydrated_view tree checksum scope ready =
+    ?= serialized, client, resource ?|
+    | SerializedView _, ClientChecksum _, Resource _ => HydratedView "ssr-suspense-hydrated"
+
+:= reveal \* tree checksum scope.
+    (view : hydrated_view tree checksum scope ready)
+    : string =
+    ?= view ?|
+    | HydratedView label => label
+
+:= main () : string =
+    := server : server_view app_tree checksum_a = ServerView "<main>loading</main>"
+    := checksum : client_checksum checksum_a = ClientChecksum "a"
+    := pending_resource : resource app_scope pending i32 = Resource 42
+    := ready_resource = resolve pending_resource
+    reveal (hydrate (serialize server) checksum ready_resource)

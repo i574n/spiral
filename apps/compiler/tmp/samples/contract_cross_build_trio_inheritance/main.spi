@@ -1,0 +1,32 @@
+:! hg38 = ()
+:! hg19 = ()
+:! chr1 = ()
+:! mother = ()
+:! father = ()
+:! child = ()
+:! maternal_phase = ()
+:! paternal_phase = ()
+:! phased = ()
+
+:| haplotype sample build contig phase =
+    | Haplotype :: \* sample build contig phase. string -> haplotype sample build contig phase
+
+:| genotype sample build contig state =
+    | Genotype :: \* sample build contig state. string -> genotype sample build contig state
+
+:| trio mother father child build contig =
+    | Trio :: \* mother father child build contig. string -> trio mother father child build contig
+
+:= inherit \* mother father child build contig.
+    (trio : trio mother father child build contig)
+    (maternal : haplotype mother build contig maternal_phase)
+    (paternal : haplotype father build contig paternal_phase)
+    : genotype child build contig phased =
+    ?= trio, maternal, paternal ?|
+    | Trio _, Haplotype _, Haplotype _ => Genotype "child"
+
+:= main () : genotype child hg38 chr1 phased =
+    := family : trio mother father child hg38 chr1 = Trio "family"
+    := maternal : haplotype mother hg38 chr1 maternal_phase = Haplotype "A"
+    := paternal : haplotype father hg19 chr1 paternal_phase = Haplotype "G"
+    inherit family maternal paternal

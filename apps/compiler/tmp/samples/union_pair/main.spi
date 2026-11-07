@@ -1,0 +1,14 @@
+:| pair =
+    | One : i32
+    | Both : i32 * i32
+
+:~ sum x : i32 =
+    ?= x ?|
+    | One value => value
+    | Both (left, right) => left *. 10i32 +. right
+
+:= main () : i32 =
+    := ~flag = !+
+    := both = ? flag ?> Both (3i32, 4i32) |: One 1i32
+    := one = ? flag ?> One 5i32 |: Both (1i32, 1i32)
+    ? sum both =. 34i32 && sum one =. 5i32 ?> 0i32 |: 1i32

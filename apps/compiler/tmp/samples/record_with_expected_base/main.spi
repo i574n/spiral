@@ -1,0 +1,13 @@
+:== point = { x : i32; y : i32 }
+
+:! tagged = { x : i32; y : i32 }
+
+:= moved r : point = { r ?| x = 3i32 }
+
+:= tagged_moved r : tagged = { r ?| x = 3i32 }
+
+:= main () : i32 =
+    := p = moved { x = 0i32; y = 4i32 }
+    := q = tagged_moved (tagged { x = 0i32; y = 4i32 })
+    ?= q ?|
+    | tagged { x y } => p::x +. p::y +. x +. y -. 14i32

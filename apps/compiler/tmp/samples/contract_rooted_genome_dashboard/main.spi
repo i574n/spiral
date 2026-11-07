@@ -1,0 +1,33 @@
+:! root_a = ()
+:! signer_a = ()
+:! digest_a = ()
+:! sample_a = ()
+:! hg38 = ()
+:! chr1 = ()
+:! scope_a = ()
+:! epoch1 = ()
+:! verified = ()
+:! mounted = ()
+
+:| rooted_authority root signer digest state =
+    | RootedAuthority :: \* root signer digest state. string -> rooted_authority root signer digest state
+:| genome_resource root signer digest sample build contig =
+    | GenomeResource :: \* root signer digest sample build contig.
+        string ->
+        genome_resource root signer digest sample build contig
+:| dashboard scope epoch root state =
+    | Dashboard :: \* scope epoch root state. string -> dashboard scope epoch root state
+
+:= mount \* root signer digest sample build contig scope epoch.
+    (authority : rooted_authority root signer digest verified)
+    (resource : genome_resource root signer digest sample build contig) (dashboard : dashboard scope epoch root mounted)
+    : string
+    =
+    ?= authority, resource, dashboard ?|
+    | RootedAuthority _, GenomeResource _, Dashboard _ => "rooted-genome-dashboard-mounted"
+
+:= main () : string =
+    := authority : rooted_authority root_a signer_a digest_a verified = RootedAuthority "authority"
+    := resource : genome_resource root_a signer_a digest_a sample_a hg38 chr1 = GenomeResource "resource"
+    := dashboard : dashboard scope_a epoch1 root_a mounted = Dashboard "dashboard"
+    mount authority resource dashboard

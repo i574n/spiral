@@ -1,0 +1,23 @@
+:! flow = ()
+:! phrasing = ()
+
+:| child parent =
+    | Text :: \* parent. string -> child parent
+    | Span :: \* parent. string -> child parent
+    | Div :: string -> child flow
+
+:| ^ children parent =
+    | ChildNil :: \* parent. children parent
+    | ChildCons :: \* parent. child parent * children parent -> children parent
+
+:| element parent =
+    | Element :: \* parent. string * children parent -> element parent
+
+:= render_paragraph (element : element phrasing) : string =
+    ?= element ?|
+    | Element _ => "p:typed-content-model"
+
+:= main () : string =
+    := paragraph : element phrasing =
+        Element ("p", ChildCons (Text "hello", ChildCons (Span "world", ChildNil)))
+    render_paragraph paragraph

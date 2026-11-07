@@ -1,0 +1,15 @@
+:! server = ()
+:! browser = ()
+:! cold = ()
+:! hydrated = ()
+
+:| view target phase =
+    | ServerView :: string -> view server cold
+    | BrowserView :: string -> view browser hydrated
+
+:= bind_click (view : view browser hydrated) : string =
+    ?= view ?|
+    | BrowserView html => html
+
+:= main () : string =
+    bind_click (ServerView "button")

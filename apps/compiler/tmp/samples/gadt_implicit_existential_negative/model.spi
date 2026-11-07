@@ -1,0 +1,10 @@
+:| ^ leaf t =
+    | LeafInt :: i32 -> leaf i32
+    | LeafIso :: \* a b. (a -> b) * (b -> a) * leaf b -> leaf a
+
+:= ^ leaf_depth \* t. (x : leaf t) : i32 =
+    ?= x ?|
+    | LeafInt _ => 0i32
+    | LeafIso (_, _, inner) => leaf_depth inner
+
+:= plain_answer () : i32 = 42i32

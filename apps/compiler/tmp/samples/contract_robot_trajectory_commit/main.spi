@@ -1,0 +1,25 @@
+:! robot_a = ()
+:! map_a = ()
+:! frame_map = ()
+:! start_a = ()
+:! goal_a = ()
+:! planned = ()
+:! certified = ()
+:! committed = ()
+
+:| trajectory robot map frame start goal state =
+    | Trajectory :: \* robot map frame start goal state. string -> trajectory robot map frame start goal state
+:| safety_envelope robot map frame start goal state =
+    | Envelope :: \* robot map frame start goal state. string -> safety_envelope robot map frame start goal state
+
+:= commit \* robot map frame start goal.
+    (path : trajectory robot map frame start goal planned)
+    (safety : safety_envelope robot map frame start goal certified)
+    : trajectory robot map frame start goal committed
+    =
+    ?= path, safety ?| | Trajectory _, Envelope _ => Trajectory "robot-trajectory-committed"
+
+:= main () : string =
+    := path : trajectory robot_a map_a frame_map start_a goal_a planned = Trajectory "path"
+    := safety : safety_envelope robot_a map_a frame_map start_a goal_a certified = Envelope "safe"
+    ?= commit path safety ?| | Trajectory label => label

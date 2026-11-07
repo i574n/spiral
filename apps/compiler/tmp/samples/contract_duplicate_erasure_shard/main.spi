@@ -1,0 +1,21 @@
+:! stripe_a = ()
+:! shard_a = ()
+:! shard_b = ()
+:! available = ()
+:! distinct = ()
+:! recovered = ()
+:| shard stripe identity state = | Shard :: \* stripe identity state. string -> shard stripe identity state
+:| distinct_witness left right state =
+    | Distinct :: \* left right state. string -> distinct_witness left right state
+:| stripe stripe_id state = | Stripe :: \* stripe_id state. string -> stripe stripe_id state
+:= recover \* stripe_id left right.
+    (left : shard stripe_id left available) (right : shard stripe_id right available)
+    (proof : distinct_witness left right distinct)
+    : stripe stripe_id recovered
+    =
+    Stripe "ok"
+:= main () =
+    := left : shard stripe_a shard_a available = Shard "a"
+    := duplicate : shard stripe_a shard_a available = Shard "a-again"
+    := proof : distinct_witness shard_a shard_b distinct = Distinct "a-ne-b"
+    recover left duplicate proof

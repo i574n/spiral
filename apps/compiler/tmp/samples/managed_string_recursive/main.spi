@@ -1,0 +1,15 @@
+:| ^ text_tree =
+    | Empty
+    | Node : string * text_tree * text_tree
+
+:~ ^ score tree : i32 =
+    ?= tree ?|
+    | Empty => 0i32
+    | Node (text, left, right) => sm::length text +. score left +. score right
+
+:= main () : i32 =
+    := leaf = Empty
+    := branch = Node ("qwe", leaf, leaf)
+    := root = Node ("ab", branch, branch)
+    := alias = root
+    score root +. score alias -. 16i32

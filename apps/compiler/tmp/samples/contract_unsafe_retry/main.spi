@@ -1,0 +1,21 @@
+:! retryable = ()
+:! non_retryable = ()
+
+:| request effect result =
+    | QueryStatus :: string -> request retryable string
+    | SubmitNfe :: string -> request non_retryable string
+
+:= run_request \* effect result.
+    (request : request effect result)
+    : result =
+    ?= request ?|
+    | QueryStatus protocol => protocol
+    | SubmitNfe payload => payload
+
+:= retry \* result.
+    (request : request retryable result)
+    : result =
+    run_request request
+
+:= main () : string =
+    retry (SubmitNfe "duplicate-risk")

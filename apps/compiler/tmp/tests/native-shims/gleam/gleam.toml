@@ -1,0 +1,7 @@
+name = "spiral_native"
+version = "1.0.0"
+target = "erlang"
+
+[dependencies]
+gleam_stdlib = ">= 0.57.0 and < 2.0.0"
+gleam_community_maths = ">= 2.0.2 and < 3.0.0"

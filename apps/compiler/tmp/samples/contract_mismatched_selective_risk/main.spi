@@ -1,0 +1,18 @@
+:! low = ()
+:! high = ()
+
+:| risk level =
+    | LowRisk :: risk low
+    | HighRisk :: risk high
+
+:| review level result =
+    | AutoApprove :: review low string
+    | ManualApprove :: string -> review high string
+
+:| route result =
+    | Route :: \* result.
+        (\? level. risk level * review level result)
+        -> route result
+
+:= main () : route string =
+    Route (\? (LowRisk, ManualApprove "wrong-branch"))

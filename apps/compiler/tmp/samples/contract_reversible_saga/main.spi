@@ -1,0 +1,79 @@
+:! draft = ()
+:! signed = ()
+:! authorized = ()
+
+:| document state =
+    | DraftDocument :: string -> document draft
+    | SignedDocument :: string -> document signed
+    | AuthorizedDocument :: string -> document authorized
+
+:| forward from to =
+    | SignForward :: forward draft signed
+    | AuthorizeForward :: forward signed authorized
+
+:| backward from to =
+    | UnsignBackward :: backward signed draft
+    | RevokeBackward :: backward authorized signed
+
+:| reversible from to =
+    | Reversible :: \* from to.
+        forward from to * backward to from
+        -> reversible from to
+
+:| ^ saga from to =
+    | SagaStep :: \* from to.
+        reversible from to -> saga from to
+    | SagaCompose :: \* from to.
+        (\? middle. saga from middle * saga middle to)
+        -> saga from to
+
+:= run_forward \* from to.
+    (step : forward from to)
+    (document : document from)
+    : document to =
+    ?= step, document ?|
+    | SignForward, DraftDocument id => SignedDocument id
+    | AuthorizeForward, SignedDocument id => AuthorizedDocument id
+
+:= run_backward \* from to.
+    (step : backward from to)
+    (document : document from)
+    : document to =
+    ?= step, document ?|
+    | UnsignBackward, SignedDocument id => DraftDocument id
+    | RevokeBackward, AuthorizedDocument id => SignedDocument id
+
+:= ^ execute_saga \* from to.
+    (program : saga from to)
+    (document : document from)
+    : document to =
+    ?= program ?|
+    | SagaStep (Reversible (forward, _)) =>
+        run_forward forward document
+    | SagaCompose pair =>
+        := \? middle. first, second = pair
+        execute_saga second (execute_saga first document)
+
+:= ^ rollback_saga \* from to.
+    (program : saga from to)
+    (document : document to)
+    : document from =
+    ?= program ?|
+    | SagaStep (Reversible (_, backward)) =>
+        run_backward backward document
+    | SagaCompose pair =>
+        := \? middle. first, second = pair
+        rollback_saga first (rollback_saga second document)
+
+:= plan () : saga draft authorized =
+    SagaCompose (\? (
+        SagaStep (Reversible (SignForward, UnsignBackward)),
+        SagaStep (Reversible (AuthorizeForward, RevokeBackward))
+    ))
+
+:= main () : string =
+    := program = plan ()
+    := final_document = execute_saga program (DraftDocument "NFE-22")
+    := restored = rollback_saga program final_document
+    ?= restored ?|
+    | DraftDocument _ => "saga-rollback"

@@ -1,0 +1,22 @@
+<Project>
+  <!--
+    The compiler's managed dependencies, pinned to the exact builds the compiler was validated with
+    (hashes matched against the NuGet cache). FSharp.Core comes from the SDK. Imported by References.props
+    (host, core) and Dependencies.fsproj (a flat DLL directory for the splitter's generated projects).
+  -->
+  <ItemGroup>
+    <PackageReference Include="Argu" Version="6.2.4" />
+    <PackageReference Include="FParsec" Version="2.0.0-beta2" />
+    <PackageReference Include="FSharp.Control.AsyncSeq" Version="3.2.1" />
+    <PackageReference Include="FSharp.Json" Version="0.4.1" />
+    <PackageReference Include="FSharpx.Collections" Version="3.1.0" />
+    <PackageReference Include="Hopac" Version="0.5.1" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.0" />
+    <PackageReference Include="System.Management" Version="9.0.4" />
+    <PackageReference Include="System.Reactive" Version="6.0.1-preview.1" />
+    <PackageReference Include="System.Reactive.Linq" Version="6.0.1-preview.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>

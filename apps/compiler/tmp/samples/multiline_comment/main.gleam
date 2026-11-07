@@ -1,0 +1,15 @@
+import gleam/int
+pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
+  let half = int.bitwise_shift_left(1, bits - 1)
+  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+}
+
+
+pub fn main() {
+    let v1 = spiral_wrap_signed(7 * 2, 32)
+    let v2 = v1 != 14
+    case v2 {
+        True -> 1
+        False -> 0
+    }
+}

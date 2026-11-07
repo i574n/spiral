@@ -1,0 +1,212 @@
+:# cli_args static =
+    :< testing
+
+:< sm'_operators
+
+:= flag_value (name : string) (args : list string) : option string = cli_flags::flag_value name args
+
+:= has_switch (name : string) (args : list string) : bool = cli_flags::has_switch name args
+
+:= required_text (name : string) (args : list string) : string = cli_flags::required_text name args
+
+:= required_i32 (name : string) (args : list string) : i32 = cli_flags::required_i32 name args
+
+:= flag_values (name : string) (args : list string) : list string = cli_flags::flag_values name args
+
+:= operands \* r. (args : list string) : r = ~> cli_args_real::operands_real `r args
+
+///> rust
+///> gleam
+:# a_missing_switch_is_false_and_flags_need_values =
+    := ~args = [ "--source"; "x"; "--target" ]
+    (has_switch "dry" args, flag_value "source" args, flag_value "target" args) |> _assert_eq (!-, Some "x", None)
+
+:== cli_args_test_rename = { source : string; target : string; times : i32; dry : bool }
+
+:= cli_args_test_rename_fields (r : cli_args_test_rename) : string * string * i32 * bool =
+    r::source, r::target, r::times, r::dry
+
+///> rust
+///> gleam
+:# operands_fill_a_record_by_field_type =
+    := ~args = [ "--target"; "b"; "--dry"; "--source"; "a"; "--times"; "3" ]
+    operands args |> cli_args_test_rename_fields |> _assert_eq ("a", "b", 3i32, !+)
+
+:== cli_args_test_publish = { target : string; label : option string; tag : list string }
+
+///> rust
+///> gleam
+:# optional_and_repeated_fields =
+    := ~args = [ "--tag"; "a"; "--target"; "x"; "--tag"; "b" ]
+    := parsed : cli_args_test_publish = operands args
+    (parsed::target, parsed::label, parsed::tag) |> _assert_eq ("x", None, [ "a"; "b" ])
+
+:= command_of \* command. (args : list string) : option command =
+    ?= args ?|
+    | verb :: rest => ~> cli_args_real::command_of_real `command verb rest
+    | [] => None
+
+:| cli_args_test_command =
+    | Rename : cli_args_test_rename
+    | Clear
+
+:= cli_args_test_code (c : cli_args_test_command) : i32 =
+    ?= c ?|
+    | Rename r => r::times * 10i32 + (? r::dry ?> 1i32 |: 0i32)
+    | Clear => 1i32
+
+:= cli_args_test_code_of (args : list string) : i32 =
+    ?= command_of args ?|
+    | Some c => cli_args_test_code c
+    | None => -1i32
+
+:= cli_args_test_codes (args : list string) : i32 * i32 * i32 * i32 =
+    (
+        cli_args_test_code_of args,
+        cli_args_test_code_of [ "clear" ],
+        cli_args_test_code_of [ "nope" ],
+        cli_args_test_code_of []
+    )
+
+///> rust
+///> gleam
+:# commands_pick_their_case_and_fill_its_record =
+    := ~args = [ "rename"; "--source"; "a"; "--target"; "b"; "--times"; "2"; "--dry" ]
+    cli_args_test_codes args |> _assert_eq (21i32, 1i32, -1i32, -1i32)
+
+:| cli_error =
+    | MissingFlag : string
+    | BadNumber : string * string
+    | UnknownVerb : string * list string
+    | NoVerb : list string
+    | Help : string
+
+:= missing_flag (args : list string) (name : string) (found : option cli_error) : option cli_error =
+    ?= found ?|
+    | Some _ => found
+    | None =>
+        ?= flag_value name args ?|
+        | Some _ => None
+        | None => Some (MissingFlag name)
+
+:= number_error (name : string) (text : string) : option cli_error =
+    ?= (convert::try_convert text : option i32) ?|
+    | Some _ => None
+    | None => Some (BadNumber (name, text))
+
+:= flag_number_error (args : list string) (name : string) : option cli_error =
+    ?= flag_value name args ?|
+    | Some text => number_error name text
+    | None => Some (MissingFlag name)
+
+:= number_flag_error (args : list string) (name : string) (found : option cli_error) : option cli_error =
+    ?= found ?|
+    | Some _ => found
+    | None => flag_number_error args name
+
+:== cli_field = cli_flags::cli_field
+
+:= kind_error (args : list string) (name : string) (found : option cli_error) (kind : cli_field) : option cli_error =
+    ?= kind ?|
+    | Text => missing_flag args name found
+    | Number => number_flag_error args name found
+    | Switch | Optional | Repeated => found
+
+:= first_field_error (args : list string) (fields : list (string * cli_field)) : option cli_error =
+    listm::fold (\ found (name, kind) => kind_error args name found kind) None fields
+
+:= joined (separator : string) (acc : string) (part : string) : string =
+    ? part = "" ?> acc |? acc = "" ?> part |: acc ++# separator ++# part
+
+:= usage_part (name : string) (kind : cli_field) : string =
+    ?= kind ?|
+    | Text => "--" ++# name ++# " <text>"
+    | Number => "--" ++# name ++# " <n>"
+    | Switch => "[--" ++# name ++# "]"
+    | Optional => "[--" ++# name ++# " <text>]"
+    | Repeated => "[--" ++# name ++# " <text>]..."
+
+:= fields_usage (fields : list (string * cli_field)) : string =
+    listm::fold (\ acc (name, kind) => joined " " acc (usage_part name kind)) "" fields
+
+:= cases_usage (cases : list (string * list (string * cli_field))) : string =
+    listm::fold (\ acc (name, fields) => joined "\n" acc (joined " " name (fields_usage fields))) "" cases
+
+:= parse_operands \* r. (args : list string) : result r cli_error =
+    := fields : list (string * cli_field) = ~> cli_args_real::field_kinds `r ()
+    ? has_switch "help" args
+    ?> Error (Help (fields_usage fields))
+    |:
+        ?= first_field_error args fields ?|
+        | Some error => Error error
+        | None => Ok (operands args)
+
+:= command_result \* command. (args : list string) (valid : list string) : result command cli_error =
+    ?= args ?|
+    | [] => Error (NoVerb valid)
+    | verb :: _ =>
+        ? verb = "--help"
+        ?> Error (Help (cases_usage (~> cli_args_real::case_usages `command ())))
+        |:
+            ?= command_of args ?|
+            | Some c => Ok c
+            | None => Error (UnknownVerb (verb, valid))
+
+:= parse_command \* command. (args : list string) : result command cli_error =
+    command_result args (~> cli_args_real::case_names `command ())
+
+:= listed_verbs (names : list string) : string =
+    listm::fold (\ acc name => ? acc = "" ?> name |: acc ++# " | " ++# name) "" names
+
+:= missing_flag_text (name : string) : string = "error: missing --" ++# name ++# " <value>"
+
+:= bad_number_text (pair : string * string) : string =
+    := name, text = pair
+    "error: --" ++# name ++# " expects an integer, got '" ++# text ++# "'"
+
+:= unknown_verb_text (pair : string * list string) : string =
+    := verb, valid = pair
+    "error: unknown command '" ++# verb ++# "'\nvalid: " ++# listed_verbs valid
+
+:= no_verb_text (valid : list string) : string = "error: no command given\nvalid: " ++# listed_verbs valid
+
+:= cli_error_text (error : cli_error) : string =
+    ?= error ?|
+    | MissingFlag name => missing_flag_text name
+    | BadNumber pair => bad_number_text pair
+    | UnknownVerb pair => unknown_verb_text pair
+    | NoVerb valid => no_verb_text valid
+    | Help usage => usage
+
+:= cli_args_test_error_text \* r. (outcome : result r cli_error) : string =
+    ?= outcome ?| | Error e => cli_error_text e | Ok _ => "ok"
+
+:= cli_args_test_unknown_text () : string =
+    cli_args_test_error_text (parse_command [ "nope" ] : result cli_args_test_command cli_error)
+
+:= cli_args_test_error_texts (args : list string) : string * string =
+    := bad : result cli_args_test_rename cli_error = parse_operands args
+    cli_args_test_error_text bad, cli_args_test_unknown_text ()
+
+:= cli_args_test_expected_errors () : string * string =
+    "error: missing --target <value>", "error: unknown command 'nope'\nvalid: rename | clear"
+
+///> rust
+///> gleam
+:# errors_name_the_flag_and_the_valid_verbs =
+    := ~args = [ "--source"; "a"; "--times"; "x" ]
+    cli_args_test_error_texts args |> _assert_eq (cli_args_test_expected_errors ())
+
+:= cli_args_test_help_texts () : string * string =
+    := operands_help : result cli_args_test_publish cli_error = parse_operands [ "--help" ]
+    := command_help : result cli_args_test_command cli_error = parse_command [ "--help" ]
+    cli_args_test_error_text operands_help, cli_args_test_error_text command_help
+
+:= cli_args_test_expected_help () : string * string =
+    "--target <text> [--label <text>] [--tag <text>]...",
+    "rename --source <text> --target <text> --times <n> [--dry]\nclear"
+
+///> rust
+///> gleam
+:# help_prints_usage_derived_from_the_types =
+    cli_args_test_help_texts () |> _assert_eq (cli_args_test_expected_help ())

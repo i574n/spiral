@@ -1,0 +1,15 @@
+:| choice =
+    | Left
+    | Right
+
+:= pick (a : i32) (b : i32) : choice = Left
+
+:= main () : i32 =
+    := x : i32 = 1i32
+    ?= pick
+        x
+        2i32 ?|
+    | Left => 0i32
+    | Right => 1i32
+
+:= oracle_must_not_record_current_error () = ()

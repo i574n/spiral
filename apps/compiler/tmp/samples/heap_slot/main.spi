@@ -1,0 +1,15 @@
+:| slot =
+    | None
+    | Some : i32
+
+:= main () : i32 =
+    := ~n = 3i32
+    := ~m = 4i32
+    := held = Some n
+    := pair = held, m
+    := box = !!!!LayoutToHeap({ value = pair })
+    := opened = !!!!LayoutIndex(box)
+    := ~(left, right) = opened::value
+    ?= left ?|
+    | Some value => ? value +. right =. 7i32 ?> 0i32 |: 1i32
+    | None => 1i32

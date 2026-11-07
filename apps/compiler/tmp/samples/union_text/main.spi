@@ -1,0 +1,15 @@
+:| message =
+    | Text : string
+    | Code : i32
+
+:~ score x : i32 =
+    ?= x ?|
+    | Text value => ? !!!!EQ(value, "hi") ?> 2i32 |: 3i32
+    | Code value => value
+
+:= main () : i32 =
+    := ~flag = !+
+    := ~word = "hi"
+    := text = ? flag ?> Text word |: Code 1i32
+    := code = ? flag ?> Code 5i32 |: Text word
+    ? score text =. 2i32 && score code =. 5i32 ?> 0i32 |: 1i32

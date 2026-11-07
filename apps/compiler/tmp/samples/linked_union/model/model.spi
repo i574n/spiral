@@ -1,0 +1,15 @@
+:| shape =
+    | Circle : i32
+    | Square : i32
+
+:= area (s : shape) : i32 =
+    ?= s ?|
+    | Circle r => r
+    | Square k => !!!!Add(k, k)
+
+:= make_sq (n : i32) : shape = Square n
+
+:= main () : i32 =
+    !!!!Export("model_area", area)
+    !!!!Export("model_make_sq", make_sq)
+    0i32

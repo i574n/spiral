@@ -1,0 +1,223 @@
+:# math static =
+    :< testing
+
+/// ## math
+:= e () =
+    exp 1f64
+
+/// ## square
+:= square x =
+    x ** 2
+
+:# square =
+    5f64
+    |> sqrt
+    |> square
+    |> _assert_approx_eq None 5
+
+:# square_2 =
+    e () |> square
+    |> _assert_approx_eq None 7.3890560989306495
+
+:# square_3 =
+    2 * 2 / 0.4f64 |> sqrt
+    |> _assert_approx_eq None 3.1622776601683795
+
+:# square_4 =
+    2f64 / 3
+    |> _assert_approx_eq None 0.6666666666666666
+
+:# square_5 =
+    2f64 |> log
+    |> _assert_approx_eq None 0.6931471805599453
+
+:# square_6 =
+    pi
+    |> _assert_approx_eq None 3.141592653589793f64
+
+:# square_7 =
+    pi |> cos
+    |> _assert_eq -1f64
+
+:# square_8 =
+    pi
+    |> cos
+    |> \ n => n / 2f64
+    |> _assert_approx_eq None -0.5
+
+:# square_9 =
+    pi / 2 |> cos
+    |> _assert_approx_eq None 0.00000000000000006123233995736766f64
+
+/// ## fsharp
+:= atan2 (y : f64) (x : f64) : f64 =
+    backend_switch {
+        Gleam = \ () =>
+            global """
+                @external(erlang, "math", "atan2")
+                fn spiral_math_atan2(y: Float, x: Float) -> Float
+                """
+            $'spiral_math_atan2(!y, !x)' : float
+        Lua = \ () => $'math.atan2(!y, !x)' : float
+        Fsharp = \ () => $'System.Math.Atan2 (!y, !x)' : float
+        Python = \ () =>
+            global "import math"
+            $'math.atan2(!y, !x)' : float
+        Rust = \ () => $'(!y).atan2(!x)' : float
+        Zig = \ () => $'std.math.atan2(!y, !x)' : float
+        Lean = \ () => $'Float.atan2 !y !x ' : float
+        C = \ () =>
+            global "#include <tgmath.h>"
+            $'atan2(!y, !x)' : float
+        Cpp = \ () =>
+            global "#include <cmath>"
+            $'std::atan2(!y, !x)' : float
+        Pascal = \ () => $'ArcTan2(!y, !x)' : float
+        Wasm = \ () => $'(call $math_atan2 !y !x)' : float
+        TypeScript = \ () => $'Math.atan2(!y, !x)' : float
+        Kotlin = \ () => $'kotlin.math.atan2(!y, !x)' : float
+        Swift = \ () => $'atan2(!y, !x)' : float
+    }
+
+///> rust
+///> gleam
+///> lua
+///> cuda
+:# atan2 =
+    0 |> atan2 1
+    |> _assert_eq 1.5707963267948966
+
+/// ## floor
+:= floor \* t {float}. (n : t) : t =
+    backend_switch {
+        Gleam = \ () =>
+            global "import gleam/float"
+            n |> $'float.floor' : t
+        Lua = \ () => n |> $'math.floor' : t
+        Fsharp = \ () => n |> $'floor' : t
+        Python = \ () =>
+            global "import math"
+            $'math.floor(!n)' : t
+        Rust = \ () => $'!n.floor()' : t
+        Zig = \ () => $'@@floor(!n)' : t
+        Lean = \ () => $'(!n).floor' : t
+        C = \ () =>
+            global "#include <tgmath.h>"
+            $'floor(!n)' : t
+        Cpp = \ () =>
+            global "#include <cmath>"
+            $'std::floor(!n)' : t
+        Pascal = \ () => $'Int(!n) - Ord(Frac(!n) < 0)' : t
+        Wasm = \ () => $'(`t.floor !n)' : t
+        TypeScript = \ () => $'Math.floor(!n)' : t
+        Kotlin = \ () => $'kotlin.math.floor(!n)' : t
+        Swift = \ () => $'(!n).rounded(.down)' : t
+    }
+
+///> rust
+///> gleam
+///> lua
+///> cuda
+:# floor =
+    0.6 |> floor
+    |> _assert_eq 0f64
+
+/// ## ceil
+:= ceil \* t {float}. (n : t) : t =
+    backend_switch {
+        Gleam = \ () =>
+            global "import gleam/float"
+            n |> $'float.ceiling' : t
+        Lua = \ () => n |> $'math.ceil' : t
+        Fsharp = \ () => n |> $'ceil' : t
+        Python = \ () =>
+            global "import math"
+            n |> $'math.ceil' : t
+        Rust = \ () => $'!n.ceil()' : t
+        Zig = \ () => $'@@ceil(!n)' : t
+        Lean = \ () => $'(!n).ceil' : t
+        C = \ () =>
+            global "#include <tgmath.h>"
+            $'ceil(!n)' : t
+        Cpp = \ () =>
+            global "#include <cmath>"
+            $'std::ceil(!n)' : t
+        Pascal = \ () => $'Int(!n) + Ord(Frac(!n) > 0)' : t
+        Wasm = \ () => $'(`t.ceil !n)' : t
+        TypeScript = \ () => $'Math.ceil(!n)' : t
+        Kotlin = \ () => $'kotlin.math.ceil(!n)' : t
+        Swift = \ () => $'(!n).rounded(.up)' : t
+    }
+
+///> rust
+///> gleam
+///> lua
+///> cuda
+:# ceil =
+    0.6 |> ceil
+    |> _assert_eq 1f64
+
+/// ## round
+:= round \* t {number; float}. (x : t) : t =
+    := round_half_to_even () =
+        := lower = floor x
+        := difference = x - lower
+        ? difference > 0.5 ?> lower + 1
+        |? difference < 0.5 ?> lower
+        |? floor (lower / 2) * 2 = lower ?> lower
+        |: lower + 1
+    backend_switch {
+        Gleam = round_half_to_even
+        Lua = round_half_to_even
+        Fsharp = \ () => x |> $'round' : t
+        Python = \ () => x |> $'round' : t
+        Rust = \ () => $'(!x).round_ties_even()' : t
+        Zig = round_half_to_even
+        Lean = round_half_to_even
+        C = round_half_to_even
+        Cpp = round_half_to_even
+        Pascal = round_half_to_even
+        TypeScript = round_half_to_even
+        Wasm = \ () => $'(`t.nearest !x)' : t
+        Kotlin = \ () => $'kotlin.math.round(!x)' : t
+        Swift = \ () => $'(!x).rounded(.toNearestOrEven)' : t
+    }
+
+///> rust
+///> gleam
+///> lua
+///> cuda
+:# round =
+    0.5 |> round
+    |> _assert_eq 0f64
+
+    0.6 |> round
+    |> _assert_eq 1f64
+
+    1.5 |> round
+    |> _assert_eq 2f64
+
+    2.5 |> round
+    |> _assert_eq 2f64
+
+    3.5 |> round
+    |> _assert_eq 4f64
+
+/// ## log_base
+:= log_base (new_base : f64) (a : f64) : f64 =
+    backend_switch {
+        Gleam = \ () => log a / log new_base
+        Lua = \ () => log a / log new_base
+        Fsharp = \ () => $'System.Math.Log (!a, !new_base)' : f64
+        Python = \ () => log a / log new_base
+        Rust = \ () => $'(!a).log(!new_base)' : f64
+        TypeScript = \ () => log a / log new_base
+        Zig = \ () => log a / log new_base
+        Lean = \ () => log a / log new_base
+        Kotlin = \ () => log a / log new_base
+        Swift = \ () => log a / log new_base
+    }
+
+:# log_base =
+    100 |> log_base 10
+    |> _assert_eq 2

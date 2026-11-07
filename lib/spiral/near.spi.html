@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>near.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<h4>near (test)</h4>
+
+<span class="badge other">test near: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:&lt;</span> <span class="tok-variable">rust_operators</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">vector_switch</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Gleam</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_store_vec_Vector&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span>
+        <span class="tok-variable">Lua</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_store_vec_Vector&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span>
+        <span class="tok-variable">Fsharp</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_store_vec_Vector&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span>
+        <span class="tok-variable">Python</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_store_vec_Vector&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span>
+        <span class="tok-variable">TypeScript</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_store_vec_Vector&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span>
+        <span class="tok-variable">Cpp</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_store_vec_Vector&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span>
+        <span class="tok-variable">CppHost</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_store_vec_Vector&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span>
+        <span class="tok-variable">Pascal</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_store_vec_Vector&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span>
+        <span class="tok-variable">Cuda</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_store_vec_Vector&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">SpiralNearVec&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span>
+    <span class="tok-parenthesis">}</span>
+<span class="tok-keyword">:!</span> <span class="tok-variable">vector</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::fsharp_global</span> <span class="tok-string">&quot;</span><span class="tok-string">type near_sdk_store_vec_Vector&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+        <span class="tok-variable">backend_switch</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-parenthesis">{</span><span class="tok-parenthesis">}</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">{</span>
+            <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">fun</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">global</span> <span class="tok-string">&quot;&quot;&quot;</span><span class="tok-string"></span>
+<span class="tok-string">                #[cfg(target_arch = &quot;wasm32&quot;)]</span>
+<span class="tok-string">                type SpiralNearVec&lt;T&gt; = near_sdk::store::vec::Vector&lt;T&gt;;</span>
+<span class="tok-string">                #[cfg(not(target_arch = &quot;wasm32&quot;))]</span>
+<span class="tok-string">                struct SpiralNearVec&lt;T&gt;(std::vec::Vec&lt;T&gt;);</span>
+<span class="tok-string">                #[cfg(not(target_arch = &quot;wasm32&quot;))]</span>
+<span class="tok-string">                impl&lt;T&gt; SpiralNearVec&lt;T&gt; {</span>
+<span class="tok-string">                    fn len(&amp;self) -&gt; usize { self.0.len() }</span>
+<span class="tok-string">                    fn extend&lt;I: IntoIterator&lt;Item = T&gt;&gt;(&amp;mut self, iter: I) { self.0.extend(iter); }</span>
+<span class="tok-string">                    fn drain(&amp;mut self, range: std::ops::Range&lt;u32&gt;) -&gt; std::vec::Drain&lt;'_, T&gt; {</span>
+<span class="tok-string">                        self.0.drain((range.start as usize)..(range.end as usize))</span>
+<span class="tok-string">                    }</span>
+<span class="tok-string">                    fn iter(&amp;self) -&gt; std::slice::Iter&lt;'_, T&gt; { self.0.iter() }</span>
+<span class="tok-string">                }</span>
+<span class="tok-string"></span>
+<span class="tok-string">                </span><span class="tok-string">&quot;&quot;&quot;</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+            <span class="tok-variable">Gleam</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+            <span class="tok-variable">Lua</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+            <span class="tok-variable">Fsharp</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+            <span class="tok-variable">Python</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+            <span class="tok-variable">TypeScript</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+            <span class="tok-variable">Cpp</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+            <span class="tok-variable">CppHost</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+            <span class="tok-variable">Pascal</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+            <span class="tok-variable">Cuda</span> <span class="tok-operator">=</span> <span class="tok-parenthesis">(</span><span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+        <span class="tok-parenthesis">}</span>
+        <span class="tok-string">$'</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">backend_switch </span><span class="tok-parenthesis">`(</span><span class="tok-variable">vector_switch</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-string">'</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">lookup_map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_sdk_store_LookupMap&lt;</span><span class="tok-type_variable">`k</span><span class="tok-string">, </span><span class="tok-type_variable">`v</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_sdk::store::LookupMap&lt;</span><span class="tok-type_variable">`k</span><span class="tok-string">, </span><span class="tok-type_variable">`v</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type near_sdk_store_LookupMap&lt;'K, 'V&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">iterable_set</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_sdk_store_IterableSet&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_sdk::store::IterableSet&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type near_sdk_store_IterableSet&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">account_id_switch</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Gleam</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_AccountId</span><span class="tok-string">'</span>
+        <span class="tok-variable">Lua</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_AccountId</span><span class="tok-string">'</span>
+        <span class="tok-variable">Fsharp</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_AccountId</span><span class="tok-string">'</span>
+        <span class="tok-variable">Python</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_AccountId</span><span class="tok-string">'</span>
+        <span class="tok-variable">TypeScript</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_AccountId</span><span class="tok-string">'</span>
+        <span class="tok-variable">Cpp</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_AccountId</span><span class="tok-string">'</span>
+        <span class="tok-variable">CppHost</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_AccountId</span><span class="tok-string">'</span>
+        <span class="tok-variable">Pascal</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_AccountId</span><span class="tok-string">'</span>
+        <span class="tok-variable">Cuda</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_sdk_AccountId</span><span class="tok-string">'</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">String</span><span class="tok-string">'</span>
+    <span class="tok-parenthesis">}</span>
+<span class="tok-keyword">:!</span> <span class="tok-variable">account_id</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::fsharp_global</span> <span class="tok-string">&quot;</span><span class="tok-string">type near_sdk_AccountId = class end</span><span class="tok-string">&quot;</span>
+        <span class="tok-string">$'</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">backend_switch </span><span class="tok-parenthesis">`(</span><span class="tok-variable">account_id_switch</span><span class="tok-parenthesis">)</span><span class="tok-string">'</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">new_lookup_map</span> <span class="tok-variable">prefix</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;near_sdk::store::LookupMap::new(</span><span class="tok-variable">!prefix</span><span class="tok-string">)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">new_iterable_set</span> <span class="tok-variable">prefix</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;near_sdk::store::IterableSet::new(</span><span class="tok-variable">!prefix</span><span class="tok-string">)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">new_vector</span> <span class="tok-parenthesis">(</span><span class="tok-variable">prefix</span> <span class="tok-operator">:</span> <span class="tok-variable">rust</span><span class="tok-symbol">::ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">am'</span><span class="tok-symbol">::slice</span> <span class="tok-variable">u8</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">vector</span> <span class="tok-variable">u8</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">fun</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">{ </span><span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(target_arch = &quot;wasm32&quot;)] let v = near_sdk::store::vec::Vector::new(</span><span class="tok-variable">!prefix</span><span class="tok-string">); </span>\
+            <span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(not(target_arch = &quot;wasm32&quot;))] let v = SpiralNearVec(&lt;std::vec::Vec&lt;u8&gt;&gt;::new()); v }</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">vector</span> <span class="tok-variable">u8</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">vector_extend</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">vec</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">vector</span> <span class="tok-operator">:</span> <span class="tok-variable">rust</span><span class="tok-symbol">::ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">rust</span><span class="tok-symbol">::mut'</span> <span class="tok-parenthesis">(</span><span class="tok-variable">vector</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">{ (</span><span class="tok-variable">!vector</span><span class="tok-string">).extend((</span><span class="tok-variable">!vec</span><span class="tok-string">).clone()); }</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">vector_drain_front</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">count</span> <span class="tok-operator">:</span> <span class="tok-variable">u32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">vector</span> <span class="tok-operator">:</span> <span class="tok-variable">rust</span><span class="tok-symbol">::ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">rust</span><span class="tok-symbol">::mut'</span> <span class="tok-parenthesis">(</span><span class="tok-variable">vector</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-variable">!vector</span><span class="tok-string">).drain(0..</span><span class="tok-variable">!count</span><span class="tok-string">).collect::&lt;std::vec::Vec&lt;_&gt;&gt;()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-variable">t</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">vector_to_vec</span> <span class="tok-keyword">\*</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-operator">*</span> <span class="tok-operator">-&gt;</span> <span class="tok-operator">*</span><span class="tok-parenthesis">)</span> <span class="tok-variable">u</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">vector</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-parenthesis">(</span><span class="tok-variable">vector</span> <span class="tok-variable">u</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-variable">u</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-variable">!vector</span><span class="tok-string">).iter().cloned().collect::&lt;std::vec::Vec&lt;_&gt;&gt;()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-variable">u</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">keccak512</span> <span class="tok-parenthesis">(</span><span class="tok-variable">entropy</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-variable">u8</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-variable">u8</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">fun</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">{ </span><span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(target_arch = &quot;wasm32&quot;)] let v = near_sdk::env::keccak512(&amp;(</span><span class="tok-variable">!entropy</span><span class="tok-string">)); </span>\
+            <span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(not(target_arch = &quot;wasm32&quot;))] let v = &lt;std::vec::Vec&lt;u8&gt;&gt;::from([1u8, 5, 4, 4, 5]); v }</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">.vec</span> <span class="tok-variable">u8</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">log</span> <span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">(</span><span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">text</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">$&quot;true; near_sdk::log</span><span class="tok-unescaped_char">\!</span><span class="tok-string">(</span><span class="tok-unescaped_char">\\</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">{{}}</span><span class="tok-unescaped_char">\\</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">, $0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">panic_str</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">(</span><span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">text</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">$&quot;true; near_sdk::env::panic_str(&amp;*$0); //&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">lookup_get</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-operator">.</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">key</span> <span class="tok-operator">:</span> <span class="tok-variable">k</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">map</span> <span class="tok-operator">:</span> <span class="tok-variable">rust</span><span class="tok-symbol">::ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">rust</span><span class="tok-symbol">::mut'</span> <span class="tok-parenthesis">(</span><span class="tok-variable">lookup_map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">:</span> <span class="tok-variable">optionm'</span><span class="tok-symbol">::option'</span> <span class="tok-parenthesis">(</span><span class="tok-variable">rust</span><span class="tok-symbol">::ref</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">key</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">$&quot;</span><span class="tok-variable">!map</span><span class="tok-string">.get(&amp;$0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">lookup_insert</span> <span class="tok-keyword">\*</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-operator">.</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">key</span> <span class="tok-operator">:</span> <span class="tok-variable">k</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">value</span> <span class="tok-operator">:</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">map</span> <span class="tok-operator">:</span> <span class="tok-variable">rust</span><span class="tok-symbol">::ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">rust</span><span class="tok-symbol">::mut'</span> <span class="tok-parenthesis">(</span><span class="tok-variable">lookup_map</span> <span class="tok-variable">k</span> <span class="tok-variable">v</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">(</span><span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-parenthesis">(</span><span class="tok-variable">key</span><span class="tok-operator">,</span> <span class="tok-variable">value</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">$&quot;true; </span><span class="tok-variable">!map</span><span class="tok-string">.insert(&amp;$0, $1); //&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">iterable_set_insert</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">set</span> <span class="tok-operator">:</span> <span class="tok-variable">rust</span><span class="tok-symbol">::ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">rust</span><span class="tok-symbol">::mut'</span> <span class="tok-parenthesis">(</span><span class="tok-variable">iterable_set</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">:</span> <span class="tok-variable">bool</span>
+    <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">$&quot;</span><span class="tok-variable">!set</span><span class="tok-string">.insert($0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">iterable_set_remove</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">rust</span><span class="tok-symbol">::ref</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">set</span> <span class="tok-operator">:</span> <span class="tok-variable">rust</span><span class="tok-symbol">::ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">rust</span><span class="tok-symbol">::mut'</span> <span class="tok-parenthesis">(</span><span class="tok-variable">iterable_set</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">:</span> <span class="tok-variable">bool</span>
+    <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">$&quot;</span><span class="tok-variable">!set</span><span class="tok-string">.remove($0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">iterable_set_contains</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">rust</span><span class="tok-symbol">::ref</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">set</span> <span class="tok-operator">:</span> <span class="tok-variable">rust</span><span class="tok-symbol">::ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">rust</span><span class="tok-symbol">::mut'</span> <span class="tok-parenthesis">(</span><span class="tok-variable">iterable_set</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">:</span> <span class="tok-variable">bool</span>
+    <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">$&quot;</span><span class="tok-variable">!set</span><span class="tok-string">.contains($0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">near_token_switch</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Gleam</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_token_NearToken</span><span class="tok-string">'</span>
+        <span class="tok-variable">Lua</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_token_NearToken</span><span class="tok-string">'</span>
+        <span class="tok-variable">Fsharp</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_token_NearToken</span><span class="tok-string">'</span>
+        <span class="tok-variable">Python</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_token_NearToken</span><span class="tok-string">'</span>
+        <span class="tok-variable">TypeScript</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_token_NearToken</span><span class="tok-string">'</span>
+        <span class="tok-variable">Cpp</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_token_NearToken</span><span class="tok-string">'</span>
+        <span class="tok-variable">CppHost</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_token_NearToken</span><span class="tok-string">'</span>
+        <span class="tok-variable">Pascal</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_token_NearToken</span><span class="tok-string">'</span>
+        <span class="tok-variable">Cuda</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">near_token_NearToken</span><span class="tok-string">'</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">u128</span><span class="tok-string">'</span>
+    <span class="tok-parenthesis">}</span>
+<span class="tok-keyword">:!</span> <span class="tok-variable">near_token</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::fsharp_global</span> <span class="tok-string">&quot;</span><span class="tok-string">type near_token_NearToken = class end</span><span class="tok-string">&quot;</span>
+        <span class="tok-string">$'</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">backend_switch </span><span class="tok-parenthesis">`(</span><span class="tok-variable">near_token_switch</span><span class="tok-parenthesis">)</span><span class="tok-string">'</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">near_token_sdk</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust</span><span class="tok-symbol">::rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_sdk_NearToken</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">near_sdk::NearToken</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type near_sdk_NearToken = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">random_seed</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">::vec</span> <span class="tok-variable">u8</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">fun</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">{ </span><span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(target_arch = &quot;wasm32&quot;)] let v = near_sdk::env::random_seed(); </span>\
+            <span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(not(target_arch = &quot;wasm32&quot;))] let v = &lt;std::vec::Vec&lt;u8&gt;&gt;::from([1u8, 5, 4, 4, 5]); v }</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">am'</span><span class="tok-symbol">.vec</span> <span class="tok-variable">u8</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">block_timestamp</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u64</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">fun</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">{ </span><span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(target_arch = &quot;wasm32&quot;)] let v = near_sdk::env::block_timestamp(); </span>\
+            <span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(not(target_arch = &quot;wasm32&quot;))] let v = 1u64; v }</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">u64</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">block_height</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u64</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">fun</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">{ </span><span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(target_arch = &quot;wasm32&quot;)] let v = near_sdk::env::block_height(); </span>\
+            <span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(not(target_arch = &quot;wasm32&quot;))] let v = 1u64; v }</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">u64</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">epoch_height</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u64</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">fun</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">{ </span><span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(target_arch = &quot;wasm32&quot;)] let v = near_sdk::env::epoch_height(); </span>\
+            <span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(not(target_arch = &quot;wasm32&quot;))] let v = 1u64; v }</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">u64</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">account_balance</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">near_token</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">fun</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">{ </span><span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(target_arch = &quot;wasm32&quot;)] let v = near_sdk::env::account_balance().as_yoctonear(); </span>\
+            <span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(not(target_arch = &quot;wasm32&quot;))] let v = 1u128; v }</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">near_token</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">predecessor_account_id</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">account_id</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">fun</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">{ </span><span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(target_arch = &quot;wasm32&quot;)] let v = near_sdk::env::predecessor_account_id().to_string</span>\
+            <span class="tok-string">(); </span><span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(not(target_arch = &quot;wasm32&quot;))] let v = String::from(&quot;a&quot;); v }</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">account_id</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">signer_account_id</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">account_id</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">fun</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">{ </span><span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(target_arch = &quot;wasm32&quot;)] let v = near_sdk::env::signer_account_id().to_string(); </span>\
+            <span class="tok-unescaped_char">\#</span><span class="tok-string">[cfg(not(target_arch = &quot;wasm32&quot;))] let v = String::from(&quot;a&quot;); v }</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">account_id</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">as_yoctonear</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">gas</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">rust</span><span class="tok-symbol">::u128</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-variable">!gas</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">rust</span><span class="tok-symbol">::u128</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">near_price_in_usd</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-number">6.68</span><span class="tok-number_suffix">f64</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">gas_to_usd</span> <span class="tok-parenthesis">(</span><span class="tok-variable">gas</span> <span class="tok-operator">:</span> <span class="tok-variable">u64</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">gas</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">convert</span><span class="tok-symbol">::f64</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">10_000_000_000_000_000</span> <span class="tok-operator">*</span> <span class="tok-variable">near_price_in_usd</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">tokens_to_usd</span> <span class="tok-parenthesis">(</span><span class="tok-variable">tokens</span> <span class="tok-operator">:</span> <span class="tok-variable">rust</span><span class="tok-symbol">::u128</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">tokens</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">rust</span><span class="tok-symbol">::f64</span><span class="tok-parenthesis">)</span> <span class="tok-operator">/</span> <span class="tok-number">1_000_000_000_000_000_000_000_000</span> <span class="tok-operator">*</span> <span class="tok-variable">near_price_in_usd</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span></code></pre>
+
+</main>
+</body>
+</html>

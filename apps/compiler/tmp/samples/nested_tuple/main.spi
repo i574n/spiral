@@ -1,0 +1,12 @@
+:= make ~x =
+    (x, x +. 1i32), (x +. 2i32, x +. 3i32)
+
+:= score ~(left, right) : i32 =
+    := a, b = left
+    := c, d = right
+    a +. b +. c +. d -. 10i32
+
+:= main () : i32 =
+    := ~x = 1i32
+    := state = ~~ make x
+    ~~ score state

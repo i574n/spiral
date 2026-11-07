@@ -1,0 +1,24 @@
+:| payload =
+    | Empty
+    | Values : array i32
+
+:~ bump x : i32 =
+    ?= x ?|
+    | Empty => 0i32
+    | Values values =>
+        set values 0i32 (index values 0i32 +. 1i32)
+        0i32
+
+:~ score x : i32 =
+    ?= x ?|
+    | Empty => 0i32
+    | Values values => length values +. index values 0i32 +. index values 1i32
+
+:= main () : i32 =
+    := ~n = 2i32
+    := ~values : array i32 = create n
+    set values 0i32 4i32
+    set values 1i32 5i32
+    := wrapped = Values values
+    := bumped = bump wrapped
+    score wrapped +. bumped -. 12i32

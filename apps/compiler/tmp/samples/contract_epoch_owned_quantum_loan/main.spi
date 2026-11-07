@@ -1,0 +1,33 @@
+:! lineage_a = ()
+:! epoch0 = ()
+:! owner_a = ()
+:! slot0 = ()
+:! available = ()
+:! borrowed = ()
+:! live = ()
+:! returned = ()
+
+:| qregister lineage epoch state = | QRegister :: \* lineage epoch state. string -> qregister lineage epoch state
+:| qloan lineage epoch owner slot state =
+    | QLoan :: \* lineage epoch owner slot state. string -> qloan lineage epoch owner slot state
+:| borrow_request owner slot = | BorrowRequest :: \* owner slot. string -> borrow_request owner slot
+
+:= borrow \* lineage epoch owner slot.
+    (register : qregister lineage epoch available) (request : borrow_request owner slot)
+    : qregister lineage epoch borrowed * qloan lineage epoch owner slot live
+    =
+    ?= request ?| | BorrowRequest _ => QRegister "borrowed", QLoan "loan"
+
+:= release \* lineage epoch owner slot.
+    (register : qregister lineage epoch borrowed) (loan : qloan lineage epoch owner slot live)
+    : qregister lineage epoch available * qloan lineage epoch owner slot returned
+    =
+    ?= register, loan ?| | QRegister _, QLoan _ => QRegister "epoch-owned-loan-returned", QLoan "returned"
+
+:= main () : string =
+    := register : qregister lineage_a epoch0 available = QRegister "qreg"
+    := request : borrow_request owner_a slot0 = BorrowRequest "q0"
+    ?= borrow register request ?|
+    | borrowed_register, loan =>
+        ?= release borrowed_register loan ?|
+        | QRegister label, QLoan _ => label

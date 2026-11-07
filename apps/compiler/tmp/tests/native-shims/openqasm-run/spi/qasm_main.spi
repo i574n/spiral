@@ -1,0 +1,15 @@
+:< sm'_operators
+:< qasm_eval
+
+:= run_file (path : string) : i32 =
+    ?= run_source (file_system::read_all_text path) ?|
+    | Ok code => code
+    | Error (Fail message) =>
+        console::write_error_line ("qasm error: " ++# message)
+        1i32
+
+:= main () : i32 =
+    ? env::host_argument_count () <> 2i32 ?>
+        console::write_error_line "qasm error: usage: qasm-run file.qasm"
+        1i32
+    |: run_file (env::host_argument 1i32)

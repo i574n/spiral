@@ -1,0 +1,114 @@
+///- --package .
+:< sm'_operators
+
+:== pin = { file : string; bytes : i64; sha256 : string }
+
+:== oracle = { checkpoint : pin; tokenizer : pin; steps : i32; greedy : list string }
+
+:= llama2_c_commit () : string = "350e04fe35433e6d2941dce5a1f53308f87058eb"
+
+:= stories260k_checkpoint () : pin =
+    {
+        file = "stories260K.bin"; bytes = 1056540i64
+        sha256 = "B0A507E7AD0F626624F17112325E66691F9076D622E1D3274D103D00299F2696"
+    }
+
+:= stories260k_tokenizer () : pin =
+    {
+        file = "tok512.bin"; bytes = 6227i64
+        sha256 = "037CB335ABB25D1FA9E8ECAE30ED2A3A8ACE9302862EBCDC05D51A6BBB10C312"
+    }
+
+:= stories260k_line_1 () : string =
+    "Once upon a time, there was a little girl named Lily. She loved to play outside in the park. "
+    ++# "One day, she saw a big, red ball. She wanted to play with it, but it was too high."
+
+:= stories260k_line_2 () : string =
+    "Lily's mom said, \"Lily, let's go to the park.\" Lily was sad and didn't know what to do. "
+    ++# "She said, \"I want to play with your ball, but I can't find it.\""
+
+:= stories260k_line_3 () : string =
+    "Lily was sad and didn't know what to do. She said, \"I'm sorry, Lily. I didn't know what to do.\""
+
+:= stories260k_line_4 () : string =
+    "Lily didn't want to help her mom, so she said, \"I'm sorry, mom. I didn't know what to do.\" "
+    ++# "Her mom said, \"Don't worry, Lily. We can help you."
+
+:= stories260k () : oracle =
+    {
+        checkpoint = stories260k_checkpoint (); tokenizer = stories260k_tokenizer (); steps = 256
+        greedy = [ stories260k_line_1 (); stories260k_line_2 (); stories260k_line_3 (); stories260k_line_4 () ]
+    }
+
+:= greedy_text (o : oracle) : string = sm'::concat_list "\n" o::greedy
+
+:= dragon_prompt () : list u8 =
+    [
+        84u8; 111u8; 109u8; 32u8; 109u8; 101u8; 116u8; 32u8; 97u8; 32u8; 103u8
+        114u8; 101u8; 101u8; 110u8; 32u8; 100u8; 114u8; 97u8; 103u8; 111u8; 110u8
+    ]
+
+:= dragon_line_1 () : string =
+    "Tom met a green dragon. He likes to play with his toys. He likes to play with his toys. He likes to "
+    ++# "play with his toys. He likes to play with his toys. He likes to play with his toys."
+
+:= dragon_line_2 () : string =
+    "One day, Tom and his toy car rolled in the park. They see a big box. They see a big box. They see a "
+    ++# "big box. They see a big box. They see a big box. They see a big box."
+
+:= dragon_line_3 () : string =
+    "\"Wow, Tom!\" Tom says. \"You are not a boy. It is a boy. It is not a box. It is not a box. It is "
+    ++# "not a box. It is not a box. It is not a box. It is not a"
+
+:= dragon_text () : string = sm'::concat_list "\n" [ dragon_line_1 (); dragon_line_2 (); dragon_line_3 () ]
+
+:= sampled_line_1 () : string =
+    "Once upon a time, there was a little girl named Lily. She loved to play outside in the sun. One day, "
+    ++# "her mom asked her to teach him a nice way to play in the sun. Lily was so excited to go outside and "
+    ++# "jump in the sky. "
+
+:= sampled_line_2 () : string =
+    "As she walked, she saw a tall toy car that was much carrots. The toys asked her to buy some cars and "
+    ++# "Lily all nicely. The car was curious and said, \"What's wrong?\" Lily said, \"I am sorry, I want to "
+    ++# "help you.\" "
+
+:= sampled_line_3 () : string =
+    "They both ate the cards and toys and had a brilliant, bunnys. They put the car and ate the ball "
+    ++# "together. Lily was happy that the ball could read"
+
+:= sampled_text () : string = sm'::concat_list "\n" [ sampled_line_1 (); sampled_line_2 (); sampled_line_3 () ]
+
+:== probe = { token : i32; logit : f32 }
+
+:= stories260k_step_0 () : list probe =
+    [
+        { token = 403; logit = 17.0235157f32 }; { token = 385; logit = 15.4062128f32 }
+        { token = 410; logit = 13.108263f32 }; { token = 0; logit = -6.22291136f32 }
+        { token = 511; logit = -4.40551758f32 }
+    ]
+
+:= stories260k_step_1 () : list probe =
+    [
+        { token = 407; logit = 18.4599857f32 }; { token = 383; logit = 14.2910614f32 }
+        { token = 261; logit = 10.8979673f32 }; { token = 0; logit = -9.58945847f32 }
+        { token = 511; logit = -7.43573427f32 }
+    ]
+
+:= stories260k_step_2 () : list probe =
+    [
+        { token = 261; logit = 17.1369629f32 }; { token = 407; logit = 11.7102079f32 }
+        { token = 383; logit = 11.1694374f32 }; { token = 0; logit = -12.141099f32 }
+        { token = 511; logit = -8.97455215f32 }
+    ]
+
+:= stories260k_probes () : list (list probe) = [ stories260k_step_0 (); stories260k_step_1 (); stories260k_step_2 () ]
+
+:= spiral_bin () : string =
+    := local = env::get_environment_variable "LOCALAPPDATA"
+    ? local <> "" ?> local ++# "/spiral-bin" |: env::get_environment_variable "HOME" ++# "/.cache/spiral-bin"
+
+:= model_path (p : pin) : string = spiral_bin () ++# "/models/llama2c/" ++# p::file
+
+:= stories260k_q8_text () : string =
+    :~ ^ upon (n : i32) (acc : string) : string = ? n = 0 ?> acc |: upon (n - 1) (acc ++# " upon")
+    upon 255 "Once"

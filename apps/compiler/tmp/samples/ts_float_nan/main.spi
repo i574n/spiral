@@ -1,0 +1,37 @@
+:= nan_is32 (x : f32) : bool = !!!!NanIs(x)
+:= nan_is64 (x : f64) : bool = !!!!NanIs(x)
+:= make_nan32 () : f32 =
+    !!!!BackendSwitch({
+        Fsharp = \ () => $"nanf" : f32
+        C = \ () => $"nanf(\"\")" : f32
+        Rust = \ () => $"f32::NAN" : f32
+        Pascal = \ () => $"NaN" : f32
+        TypeScript = \ () => $"NaN" : f32
+        CppHost = \ () => $"nanf(\"\")" : f32
+        Python = \ () => $"float('nan')" : f32
+        Zig = \ () => $"std.math.nan(f32)" : f32
+        Lean = \ () => $"(0.0 / 0.0 : Float32)" : f32
+        OpenQasm = \ () => $"((1e308 * 10.0) - (1e308 * 10.0))" : f32
+        })
+:= make_nan64 () : f64 =
+    !!!!BackendSwitch({
+        Fsharp = \ () => $"nan" : f64
+        C = \ () => $"nan(\"\")" : f64
+        Rust = \ () => $"f64::NAN" : f64
+        Pascal = \ () => $"NaN" : f64
+        TypeScript = \ () => $"NaN" : f64
+        CppHost = \ () => $"nan(\"\")" : f64
+        Python = \ () => $"float('nan')" : f64
+        Zig = \ () => $"std.math.nan(f64)" : f64
+        Lean = \ () => $"(0.0 / 0.0 : Float)" : f64
+        OpenQasm = \ () => $"((1e308 * 10.0) - (1e308 * 10.0))" : f64
+        })
+
+:= main () : i32 =
+    := nan32 = make_nan32 ()
+    := nan64 = make_nan64 ()
+    := ~finite32 = 1f32
+    := ~finite64 = 1f64
+    ? nan_is32 nan32 && nan_is64 nan64 ?>
+        ? nan_is32 finite32 || nan_is64 finite64 ?> 2i32 |: 0i32
+    |: 1i32

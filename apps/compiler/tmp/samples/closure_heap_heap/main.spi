@@ -1,0 +1,20 @@
+:= main () : i32 =
+    := ~n = 7i32
+    := ~word = "hi"
+    := inner_pair = n, word
+    := inner = !!!!LayoutToHeap({ value = inner_pair })
+    := ~extra = 1i32
+    := outer_pair = inner, extra
+    := outer = !!!!LayoutToHeap({ value = outer_pair })
+    := f (z : i32) : heap { value : (heap { value : i32 * string }) * i32 } =
+        ? z =. 0i32 ?>
+            outer
+        |:
+            outer
+    := ~g = f
+    := held = g 1i32
+    := opened = !!!!LayoutIndex(held)
+    := ~(cell, count) = opened::value
+    := inner_opened = !!!!LayoutIndex(cell)
+    := ~(left, right) = inner_opened::value
+    ? left =. 7i32 && !!!!EQ(right, "hi") && count =. 1i32 ?> 0i32 |: 1i32

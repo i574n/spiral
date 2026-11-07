@@ -1,0 +1,53 @@
+///- --package .
+:< sm'_operators
+
+:# doc_blocks static =
+    :< testing
+
+:| level =
+    | H1
+    | H2
+    | H3
+    | H4
+    | H5
+    | H6
+
+:| align =
+    | AlignNone
+    | AlignLeft
+    | AlignCenter
+    | AlignRight
+
+:| ^ inline =
+    | Text : string
+    | Code : string
+    | Strong : list inline
+    | Link : string * string
+    | Image : string * string
+    | AutoLink : string
+    | LinkedImage : string * string * string
+
+:| block =
+    | Heading : level * list inline
+    | Paragraph : list inline
+    | Bullets : list (list inline)
+    | Numbered : i64 * list (list inline)
+    | CodeBlock : list string
+    | Rule
+    | Table : list align * list (list inline) * list (list (list inline))
+
+:= level_of (n : i32) : option level =
+    ? n = 1i32 ?> Some H1
+    |? n = 2i32 ?> Some H2
+    |? n = 3i32 ?> Some H3
+    |? n = 4i32 ?> Some H4
+    |? n = 5i32 ?> Some H5
+    |? n = 6i32 ?> Some H6
+    |: None
+
+:~ level_tag (l : level) : string = sm'::to_lower (reflection::case_name l)
+
+///> rust
+///> gleam
+:# level_of_refuses_out_of_range_heading_levels =
+    (level_of 0i32, level_of 7i32, level_of 3i32 |> optionm::map level_tag) |> _assert_eq (None, None, Some "h3")

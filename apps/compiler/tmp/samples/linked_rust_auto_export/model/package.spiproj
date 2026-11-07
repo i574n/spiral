@@ -1,0 +1,5 @@
+packages:
+    |core-
+auto-export: monomorphic
+modules:
+    model

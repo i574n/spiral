@@ -1,0 +1,912 @@
+:# base static =
+    :< testing
+
+/// ## base
+:= emit \* t. (x : t) : t =
+    $'!x '
+
+:= emit_unit \* t. (x : t) : () =
+    $'!x '
+
+:= export \* t. (name : string) (f : t) : () =
+    !!!!Export(name, f)
+
+:= use \* t. (x : t) : t =
+    backend_switch {
+        Gleam = \ () => $'use !x = !x ' : ()
+        Lua = \ () => $'use !x = !x ' : ()
+        Fsharp = \ () => $'use !x = !x ' : ()
+        Python = \ () => $'use !x = !x ' : ()
+        Cpp = \ () => $'use !x = !x ' : ()
+        TypeScript = \ () => $'use !x = !x ' : ()
+        Rust = \ () =>
+            global """
+                struct SpiralUse(std::rc::Rc<dyn Fn()>);
+                impl Drop for SpiralUse {
+                    fn drop(&mut self) { (self.0)() }
+                }
+                """
+            $'let _spiral_use = SpiralUse((!x).clone())' : ()
+    }
+    $'!x '
+
+:! unit = $'unit'
+
+///> gleam
+///> lua
+///> cuda
+///> rust
+///> typescript
+:# run_target =
+    run_target \|
+        | Gleam => \ () => $'1 + 1'
+        | Lua => \ () => $'1 + 1'
+        | Fsharp => \ () => $'1uy + 1uy'
+        | Cuda => \ () => $'1 + 1'
+        | Rust => \ () => $'1u8 + 1u8'
+        | TypeScript => \ () => $'1 + 1'
+        | _ => \ () => $'2uy + 2uy'
+    |> _assert_eq 2u8
+
+:= eval fn =
+    fn ()
+
+:= flip fn a b =
+    fn b a
+
+:= do (body : () -> ()) : () =
+    !!!!Do(body ())
+
+:= let' fn =
+    := result : unit =
+        backend_switch {
+            Gleam = \ () => $'Nil' : unit
+            Lua = \ () => $'nil' : unit
+            Fsharp = \ () => $'()' : unit
+            Python = \ () => $'None' : unit
+        }
+    backend_switch {
+        Gleam = \ () =>
+            $'let _let\'_!result = {' : ()
+            fn |> indent
+            $'}' : ()
+        Lua = \ () =>
+            $'local _get_let_!result = function()' : ()
+            fn |> indent
+            $'end' : ()
+            $'local _let_!result = _get_let_!result()' : ()
+        Fsharp = \ () =>
+            $'let _let\'_!result =' : ()
+            fn |> indent
+        Python = \ () =>
+            $'def _let\'_!result():' : ()
+            fn |> indent
+    }
+    $'_let\'_!result '
+
+:= exec_unit (fn : () -> ()) : () =
+    fn ()
+
+:! lazy t = $'Lazy<`t>'
+
+:= memoize \* t. (fn : () -> t) : () -> t =
+    := body () =
+        := result = mut None
+        := computed = mut !-
+        \ () =>
+            ? *computed
+            ?> *result
+            |:
+                result <- fn () |> Some
+                computed <- !+
+                *result
+            |> optionm::value
+        : () -> t
+    backend_switch {
+        Gleam = \ () => body ()
+        Lua = \ () => body ()
+        Fsharp = \ () =>
+            := result : lazy t = $'lazy !fn ()'
+            \ () => $'!result.Value' : t
+        Python = \ () => body ()
+        Rust = \ () => body ()
+        TypeScript = \ () => body ()
+        Zig = \ () => body ()
+        Lean = \ () => body ()
+    }
+
+///> cuda
+///> rust
+///> typescript
+:# memoize =
+    := count = mut 0i32
+    := add =
+        \ () =>
+            count <- *count + 1
+            count
+        |> memoize
+
+    add () |> ignore
+    add () |> ignore
+    add () |> ignore
+
+    *count
+    |> _assert_eq 1
+
+:= capture \* t. (fn : () -> t) : t =
+    backend_switch {
+        Gleam = \ () =>
+            fn ()
+        Lua = \ () =>
+            fn ()
+        Fsharp = \ () =>
+            := result = dyn !+
+            $'let mutable _capture_!result : `t option = None '
+            $'('
+            $'(fun () ->'
+            $'(fun () ->'
+            fn () |> emit_unit
+            $')'
+            $'|> fun x -> x ()'
+            $') () )'
+            $'|> fun x -> _capture_!result <- Some x'
+            $'match _capture_!result with Some x -> x | None -> failwith "base.capture / _capture_!result=None"' : t
+        Python = \ () =>
+            fn ()
+        Rust = \ () => fn ()
+        Zig = \ () => fn ()
+        Lean = \ () => fn ()
+    }
+
+:= yield_from \* (t : * -> *) u. (a : t u) : () =
+    backend_switch {
+        Fsharp = \ () => $'yield\! !a ' : ()
+        Python = \ () => $'asyncio.run(!a())' : ()
+    }
+
+:= join_body body acc x =
+    ? var_is x |> not
+    ?> body acc x
+    |:
+        := acc = dyn acc
+        ~~ body acc x
+
+:# join_body static =
+    := ^ fold_list f s = \|
+        | x :: x' => fold_list f (f s x) x'
+        | [] => s
+
+///> gleam
+///> lua
+///> cuda
+///> rust
+///> typescript
+:# join_body_2 print_code =
+    [ 5i32; 4; ~~ 3; 2; 1 ]
+    |> fold_list (+) 0
+    |> _assert_eq 15
+
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# join_body_3 print_code =
+    [ 5i32; 4; ~~ 3; 2; 1 ]
+    |> fold_list (join_body (+)) 0
+    |> _assert_eq 15
+
+:= join_body_unit body d x =
+    ? var_is d |> not
+    ?> body x
+    |:
+        := x = dyn x
+        ~~ body x
+
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# join_body_unit print_code =
+    [ 5i32; 4; ~~ 3; 2; 1 ]
+    |> fold_list (\ acc n => join_body_unit ((+) acc) n n) 0
+    |> _assert_eq 15
+
+:= (+.) \* t. (a : t) (b : t) : t =
+    !!!!Add(a, b)
+
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# join_body_unit_2 =
+    ($'3' : i32) +. ($'-6' : i32)
+    |> _assert_eq -3i32
+
+:= (-.) \* t. (a : t) (b : t) : t =
+    !!!!Sub(a, b)
+
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# join_body_unit_3 =
+    ($'3' : i32) -. ($'6' : i32)
+    |> _assert_eq -3i32
+
+:= (*.) \* t. (a : t) (b : t) : t =
+    !!!!Mult(a, b)
+
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# join_body_unit_4 =
+    ($'3' : i32) *. ($'-1' : i32)
+    |> _assert_eq -3i32
+
+:= (/.) \* t. (a : t) (b : t) : t =
+    !!!!Div(a, b)
+
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# join_body_unit_5 =
+    ($'-3' : i32) /. ($'1' : i32)
+    |> _assert_eq -3i32
+
+:= (=.) \* t. (a : t) (b : t) : bool =
+    backend_switch {
+        Gleam = \ () => $'!a == !b ' : bool
+        Lua = \ () =>
+            ? (~> ?: t ?| i64 => !+ | u64 => !+ | _ => !-)
+            ?> $'spiral_w64.eq(!a, !b)' : bool
+            |: $'!a == !b ' : bool
+        Fsharp = \ () => $'!a = !b ' : bool
+        Python = \ () => $'!a == !b ' : bool
+        Rust = \ () => $'!a == !b ' : bool
+        TypeScript = \ () => $'!a === !b ' : bool
+        Zig = \ () =>
+            ? (~> ?: t ?| string => !+ | _ => !-)
+            ?> $'std.mem.eql(u8, !a, !b)' : bool
+            |: $'(!a == !b)' : bool
+        Lean = \ () => $'(!a == !b)' : bool
+        Kotlin = \ () => $'(!a == !b)' : bool
+    }
+
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# join_body_unit_6 =
+    (($'-3' : i32) =. ($'-3' : i32))
+    |> _assert_eq !+
+
+:= (<>.) \* t. (a : t) (b : t) : bool =
+    backend_switch {
+        Gleam = \ () => $'!a \!= !b ' : bool
+        Lua = \ () =>
+            ? (~> ?: t ?| i64 => !+ | u64 => !+ | _ => !-)
+            ?> $'(not spiral_w64.eq(!a, !b))' : bool
+            |: $'!a ~= !b ' : bool
+        Fsharp = \ () => $'!a <> !b ' : bool
+        Python = \ () => $'!a \!= !b ' : bool
+        Rust = \ () => $'!a \!= !b ' : bool
+        TypeScript = \ () => $'!a \!== !b ' : bool
+        Zig = \ () =>
+            ? (~> ?: t ?| string => !+ | _ => !-)
+            ?> $'(\!std.mem.eql(u8, !a, !b))' : bool
+            |: $'(!a \!= !b)' : bool
+        Lean = \ () => $'(!a \!= !b)' : bool
+        Kotlin = \ () => $'(!a \!= !b)' : bool
+    }
+
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# join_body_unit_7 =
+    (($'-3' : i32) <>. ($'3' : i32))
+    |> _assert_eq !+
+
+:= (<>..) a b =
+    \ () => a = b
+    |> dyn
+    |> eval
+    |> not
+
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# join_body_unit_8 =
+    (($'-3' : i32) <>.. ($'3' : i32))
+    |> _assert_eq !+
+
+:? append t : t -> t -> t
+
+:= (++) a b =
+    b |> append a
+
+:== pair_switch a b =
+    {
+        Gleam : $'##(`a, `b  )'
+        Lua : $'(`a, `b)'
+        Fsharp : $'(`a * `b)'
+        Python : $'(`a, `b)'
+        Rust : $'(`a, `b)'
+        TypeScript : $'[`a, `b]'
+        Zig : $'@@Tuple(&.{ `a, `b })'
+    }
+:! pair a b = $'backend_switch `(pair_switch a b)'
+
+:= pair x y =
+    x, y
+
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# pair =
+    pair 1i32 2i32
+    |> _assert_eq (1, 2)
+
+:= new_pair \* a b. (a : a) (b : b) : pair a b =
+    backend_switch {
+        Gleam = \ () =>
+            $'##(!a, !b )' : pair a b
+        Lua = \ () =>
+            $'{!a, !b}' : pair a b
+        Fsharp = \ () =>
+            $'!a, !b ' : pair a b
+        Python = \ () =>
+            $'!a, !b ' : pair a b
+        Rust = \ () =>
+            := a, b = ~~ (a, b)
+            $'(!a, !b)' : pair a b
+        TypeScript = \ () => $'[!a, !b]' : pair a b
+        Zig = \ () => $'.{ !a, !b }' : pair a b
+    }
+
+:= from_pair \* a b. (pair : pair a b) : a * b =
+    backend_switch {
+        Gleam = \ () => ($'!pair.0' : a), ($'!pair.1' : b)
+        Lua = \ () => ($'!pair[1]' : a), ($'!pair[2]' : b)
+        Fsharp = \ () => ($'fst !pair ' : a), ($'snd !pair ' : b)
+        Python = \ () => ($'!pair[0]' : a), ($'!pair[1]' : b)
+        Rust = \ () => ($'!pair.0.clone()' : a), ($'!pair.1.clone()' : b)
+        TypeScript = \ () => ($'!pair[0]' : a), ($'!pair[1]' : b)
+        Zig = \ () => ($'!pair[0]' : a), ($'!pair[1]' : b)
+    }
+
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# from_pair =
+    new_pair "a" (new_pair 1i32 "b")
+    |> from_pair
+    |> \ a, b => a, ~~ from_pair b
+    |> _assert_eq' ("a", (1i32, "b"))
+
+///> gleam
+///> lua
+///> cuda
+///> rust
+///> typescript
+:# from_pair_twice =
+    := x, y = new_pair (dyn 1i32) (dyn "a") |> from_pair
+    := z, w = new_pair (dyn 2i32) (dyn "b") |> from_pair
+    (x, y, z, w) |> _assert_eq' (1i32, "a", 2i32, "b")
+
+:= (||>) (arg1, arg2) fn =
+    arg2 |> fn arg1
+
+/// ### (||>)
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# from_pair_2 =
+    (3i32, 2i32)
+    ||> \ a b => a - b
+    |> _assert_eq 1
+
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# from_pair_3 =
+    (1i32, 2i32)
+    ||> flip pair
+    |> _assert_eq (2, 1)
+
+:! infer = $'_'
+
+:! infer' t = $'_'
+
+:! any = $'obj'
+
+:= null \* t. () : t =
+    backend_switch {
+        Gleam = \ () => $'Nil' : t
+        Lua = \ () => $'nil' : t
+        Fsharp = \ () => $'null |> unbox<`t>' : t
+        Python = \ () => $'None' : t
+        TypeScript = \ () => $'null' : t
+        Zig = \ () => $'std.mem.zeroes(`t)' : t
+    }
+
+:= ^ defaultof \* t. (() : ()) : t =
+    := run default =
+        ~>
+            ?: t ?|
+            | string => ""
+            | int => 0
+            | char => '\0'
+            | ~a * ~b => (defaultof `a ()), (defaultof `b ())
+            | option ~u => None `u
+            | ~t =>
+                ? real_core::union_type_is `t ?>
+                    real_core::union_untag `t 0
+                        (\ k => \* v. => real_core::nominal_create `t (k, ()))
+                        (\ _ => failwith `t ($'"defaultof / invalid tag"' : string))
+                |: default ()
+    backend_switch {
+        Gleam = \ () => run (\ () => ($'"base.defaultof / invalid type / t: `t"') : t) : t
+        Lua = \ () => run (\ () => ($'"base.defaultof / invalid type / t: `t"') : t) : t
+        Fsharp = \ () => run (\ () => $'Unchecked.defaultof<`t>' : t) : t
+        Python = \ () =>
+            run (\ () =>
+                ~>
+                    ?: t ?|
+                    | i8 => 0i8
+                    | i16 => 0i16
+                    | i64 => 0i64
+                    | u8 => 0u8
+                    | u16 => 0u16
+                    | u32 => 0u32
+                    | u64 => 0u64
+                    | f32 => 0.0f32
+                    | f64 => 0.0f64
+                    | bool => !-
+                    | _ => $'"base.defaultof / invalid type / t: `t"' : t
+                : t
+            ) : t
+        Rust = \ () => run (\ () => $'Default::default()' : t) : t
+        C = \ () => run (\ () => $'(`t){0}' : t) : t
+        Pascal = \ () => run (\ () => $'Default(`t)' : t) : t
+        Zig = \ () => run (\ () => $'std.mem.zeroes(`t)' : t) : t
+        Lean = \ () => run (\ () => $'(default : `t)' : t) : t
+    }
+
+///> rust
+///> gleam
+:# defaultof =
+    ~> defaultof `string ()
+    |> _assert_eq ""
+
+    ~> defaultof `i32 ()
+    |> _assert_eq 0i32
+
+    ~> defaultof `(option string) ()
+    |> _assert_eq (None : option string)
+
+///> rust
+///> c
+///> pascal
+:# defaultof_scalars =
+    ~> defaultof `string ()
+    |> _assert_eq ""
+
+    ~> defaultof `i32 ()
+    |> _assert_eq 0i32
+
+    ~> defaultof `i64 ()
+    |> _assert_eq 0i64
+
+    ~> defaultof `f64 ()
+    |> _assert_eq 0.0f64
+
+    ~> defaultof `bool ()
+    |> _assert_eq !-
+
+    ~> defaultof `(option string) ()
+    |> _assert_eq (None : option string)
+
+/// ### choice2'
+:== choice2_switch a b =
+    {
+        Gleam : $'Choice<`a, `b>'
+        Lua : $'Choice<`a, `b>'
+        Fsharp : $'Choice<`a, `b>'
+        Python : $'Choice<`a, `b>'
+        Rust : $'Result<`a, `b>'
+    }
+:! choice2' a b = $'backend_switch `(choice2_switch a b)'
+
+:= choice2_unbox \* t1 t2. (choice : choice2' t1 t2) : choice2 t1 t2 =
+    run_target_args (\ () => choice) \|
+        | Fsharp _ => \ choice =>
+            := c1of2 (x : t1) : _ _ t2 = C1of2 x
+            := c2of2 (x : t2) : _ t1 _ = C2of2 x
+            := c1of2 = ~~ c1of2
+            := c2of2 = ~~ c2of2
+            $'match !choice with Choice1Of2 x -> !c1of2 x | Choice2Of2 x -> !c2of2 x'
+        | Rust => \ choice =>
+            := c1of2 (x : t1) : _ _ t2 = C1of2 x
+            := c2of2 (x : t2) : _ t1 _ = C2of2 x
+            := c1of2 = ~~ c1of2
+            := c2of2 = ~~ c2of2
+            $'match !choice { Ok(x) => (!c1of2)(x), Err(x) => (!c2of2)(x) }'
+        | _ => \ _ => null ()
+
+:! ref t = $'`t ref'
+
+:= new_ref \* t. (x : t) : ref t =
+    $'ref !x '
+
+:= ref_value \* t. (x : ref t) : t =
+    $'!x.Value'
+
+:= ref_set_value \* t. (value : t) (ref : ref t) : ref t =
+    $'!ref.Value <- !value '
+    ref
+
+:== exn_switch =
+    {
+        Gleam : $'Nil'
+        Lua : $'nil'
+        Fsharp : $'exn'
+        Python : $'BaseException'
+        Rust : $'Rc<str>'
+        TypeScript : $'any'
+        Zig : $'[]const u8'
+        C : $'const char *'
+    }
+:! exn = $'backend_switch `(exn_switch)'
+
+:= exn x =
+    x |> $'`exn '
+
+:! rust_panic_payload = $'Box<dyn std::any::Any + Send>'
+
+:! rust_panic_hook = $'Box<dyn Fn(&std::panic::PanicHookInfo) + Sync + Send>'
+
+:! rust_caught t = $'std::thread::Result<`t>'
+
+:= rust_panic_aborts () : bool =
+    $'cfg\!(panic = "abort")' : bool
+
+:= rust_panic_take_hook () : rust_panic_hook =
+    $'std::panic::take_hook()' : rust_panic_hook
+
+:= rust_panic_set_hook (hook : rust_panic_hook) : () =
+    $'std::panic::set_hook(!hook)' : ()
+
+:= rust_panic_silent_hook () : rust_panic_hook =
+    $'Box::new(|_| ())' : rust_panic_hook
+
+:= rust_resume_unwind (payload : rust_panic_payload) : () =
+    $'std::panic::resume_unwind(!payload)' : ()
+
+:= rust_catch_unwind \* t. (fn : () -> t) : rust_caught t =
+    := fn = dyn fn
+    $'std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)()))' : rust_caught t
+
+:= rust_quietly \* t. (catch : () -> t) : t =
+    ? rust_panic_aborts () ?> catch ()
+    |:
+        := previous = rust_panic_take_hook ()
+        rust_panic_silent_hook () |> rust_panic_set_hook
+        := caught = catch ()
+        rust_panic_set_hook previous
+        caught
+
+:= rust_caught_ok \* t. (caught : rust_caught t) : bool =
+    $'!caught.is_ok()' : bool
+
+:= rust_caught_value \* t. (caught : rust_caught t) : t =
+    $'!caught.unwrap()' : t
+
+:= rust_caught_payload \* t. (caught : rust_caught t) : rust_panic_payload =
+    $'!caught.err().unwrap()' : rust_panic_payload
+
+:= rust_panic_holds_string (payload : rust_panic_payload) : bool =
+    $'!payload.downcast_ref::<String>().is_some()' : bool
+
+:= rust_panic_holds_str (payload : rust_panic_payload) : bool =
+    $'!payload.downcast_ref::<&str>().is_some()' : bool
+
+:= rust_panic_string (payload : rust_panic_payload) : string =
+    $'Rc::<str>::from(!payload.downcast_ref::<String>().unwrap().as_str())' : string
+
+:= rust_panic_str (payload : rust_panic_payload) : string =
+    $'Rc::<str>::from(*!payload.downcast_ref::<&str>().unwrap())' : string
+
+:= rust_panic_text (payload : rust_panic_payload) : string =
+    ? rust_panic_holds_string payload ?> rust_panic_string payload
+    |? rust_panic_holds_str payload ?> rust_panic_str payload
+    |: "panic"
+
+:= rust_exn_of_text (text : string) : exn =
+    $'!text' : exn
+
+:= catch_unwind_rust \* t. (fn : () -> t) (ex_fn : exn -> t) : t =
+    rust_quietly \ () =>
+        := caught = rust_catch_unwind fn
+        ? rust_caught_ok caught ?> rust_caught_value caught
+        |: caught |> rust_caught_payload |> rust_panic_text |> rust_exn_of_text |> ex_fn
+
+:! lua_attempt = $'table'
+
+:= lua_pcall \* t. (fn : () -> t) : lua_attempt =
+    $'{pcall(!fn)}' : lua_attempt
+
+:= lua_attempt_ok (attempt : lua_attempt) : bool =
+    $'!attempt[1]' : bool
+
+:= lua_attempt_value \* t. (attempt : lua_attempt) : t =
+    $'!attempt[2]' : t
+
+:= lua_attempt_error (attempt : lua_attempt) : exn =
+    $'!attempt[2]' : exn
+
+:= try \* t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
+    := some x : option t = Some x
+    := some = dyn some
+    := fn = dyn fn
+    := ex_fn = dyn ex_fn
+    backend_switch {
+        Gleam = \ () =>
+            fn () |> some
+        Lua = \ () =>
+            := attempt = lua_pcall fn
+            ? lua_attempt_ok attempt ?> attempt |> lua_attempt_value |> some
+            |: attempt |> lua_attempt_error |> ex_fn
+        Fsharp = \ () =>
+            $'(try !fn () |> !some with ex -> !ex_fn ex)' : option t
+        Python = \ () =>
+            global """
+                def spiral_try(fn, some, ex_fn):
+                    try:
+                        return some(fn())
+                    except Exception as e:
+                        return ex_fn(e)
+                """
+            $'spiral_try(!fn, !some, !ex_fn)' : option t
+        Rust = \ () =>
+            catch_unwind_rust (\ () => some (fn ())) ex_fn
+        TypeScript = \ () =>
+            $'(() => { try { return !some(!fn()); } catch (ex) { return !ex_fn(ex); } })()' : option t
+        Zig = \ () =>
+            fn () |> some
+        C = \ () =>
+            fn () |> some
+    }
+
+///> lua
+///> cuda
+///> rust
+///> typescript
+:# try_catches_failures_and_keeps_values =
+    := ~n = 5i32
+    (try (\ () => n) (\ _ => None), try (\ () => failwith "boom" : i32) (\ _ => Some 0i32))
+    |> _assert_eq (Some 5i32, Some 0i32)
+
+///> c
+:# try_keeps_values =
+    := ~n = 5i32
+    try (\ () => n) (\ _ => None)
+    |> _assert_eq (Some 5i32)
+
+///> cuda
+///> rust
+///> typescript
+:# try no_agree "exception text is backend-specific" =
+    try
+        \ () => ;[ 0i32 ] |> am'::index 1i32 |> sm'::format
+        \ ex => $'!ex ' |> sm'::format_exception |> Some
+    |> optionm::value
+    |> _assert_eq (run_target \|
+        | Gleam => \ () => null ()
+        | Lua => \ () => null ()
+        | Fsharp => \ () => ~~ "System.IndexOutOfRangeException: Index was outside the bounds of the array."
+        | Cuda => \ () => "index 1 is out of bounds for axis 0 with size 1"
+        | Cpp => \ () => null ()
+        | Rust => \ () => "index out of bounds: the len is 1 but the index is 1"
+        | TypeScript => \ () => "RangeError: array index 1 out of bounds for length 1"
+        | _ => \ () => null ()
+    )
+
+///> gleam
+///> cuda
+///> rust
+///> typescript
+:# try_2 =
+    try
+        \ () => ;[ 0i32 ] |> am'::index 0i32 |> sm'::format
+        \ ex => $'!ex ' |> sm'::format_exception |> Some
+    |> optionm::value
+    |> _assert_eq "0"
+
+:= try_unit_fsharp_python () : bool =
+    backend_switch {
+        Gleam = \ () => !-
+        Lua = \ () => !-
+        Fsharp = \ () => !+
+        Python = \ () => !+
+        TypeScript = \ () => !-
+        Cpp = \ () => !-
+        CppHost = \ () => !-
+        Pascal = \ () => !-
+        Cuda = \ () => !-
+        Rust = \ () => !-
+    }
+
+:= try_unit \* t. (fn : () -> ()) (ex_fn : (() -> exn) -> ()) : t =
+    run_target \|
+        | Rust => \ () =>
+            catch_unwind_rust fn \ ex => ex_fn \ () => ex
+            $'()' : t
+        | Zig => \ () =>
+            fn ()
+            $'std.mem.zeroes(`t)' : t
+        | Gleam _ => \ () =>
+            global "import exception"
+            global "import gleam/result"
+            := fn = dyn fn
+            := rescued = $'exception.rescue(fn() { !fn(Nil) })' : $'Result(Nil, exception.Exception)'
+            ? $'result.is_error(!rescued)' : bool ?> ex_fn (\ () => $'Nil' : exn) |: ()
+            $'Nil' : t
+        | Lua => \ () =>
+            := fn = dyn fn
+            := ok = $'pcall(!fn)' : bool
+            ? ok ?> () |: ex_fn (\ () => $'nil' : exn)
+            $'(function() return nil end)()' : t
+        | _ => \ () =>
+            ? try_unit_fsharp_python ()
+            ?>
+                := fn = dyn fn
+                := ex_fn = dyn ex_fn
+                backend_switch {
+                    Fsharp = \ () =>
+                        $'try !fn () with ex -> !ex_fn (fun () -> ex)' : ()
+                        $'()' : t
+                    Python = \ () =>
+                        global """
+                            def _spiral_try_unit(fn, ex_fn):
+                                try: fn()
+                                except Exception as ex: ex_fn(lambda: ex)
+                            """
+                        $'_spiral_try_unit(!fn, !ex_fn)' : ()
+                        $'None' : t
+                }
+            |:
+                backend_switch {
+                    Gleam = \ () => $'// base.try_unit' : ()
+                    Lua = \ () => $'-- base.try_unit' : ()
+                    Fsharp = \ () => $'try' : ()
+                    Python = \ () => $'try:' : ()
+                }
+                fn |> indent
+                backend_switch {
+                    Gleam = \ () => $'// base.try_unit' : ()
+                    Lua = \ () => $'-- base.try_unit' : ()
+                    Fsharp = \ () => $'with ex ->' : ()
+                    Python = \ () => $'except Exception as ex:' : ()
+                }
+                \ () =>
+                    := ex = $'ex'
+                    backend_switch {
+                        Fsharp = \ () => $'()' : ()
+                    }
+                    := ex () =
+                        ex
+                    ex_fn ex
+                |> indent
+                backend_switch {
+                    Gleam = \ () => $'// base.try_unit' : ()
+                    Lua = \ () => $'-- base.try_unit' : ()
+                    Fsharp = \ () =>
+                        $'|> ignore'
+                        $'(* try_unit'
+                        $'try_unit *)' : t
+                    Python = \ () => $'None' : t
+                }
+
+:= try_unit' \* t. (ex_fn : (() -> exn) -> ()) (fn : () -> ()) : t =
+    try_unit fn ex_fn
+
+:= try_finally \* t. (fn : () -> ()) (finally : () -> ()) : t =
+    run_target \|
+        | Rust => \ () =>
+            := caught = rust_catch_unwind fn
+            finally ()
+            ? rust_caught_ok caught ?> () |: caught |> rust_caught_payload |> rust_resume_unwind
+            $'()' : t
+        | Zig => \ () =>
+            fn ()
+            finally ()
+            $'std.mem.zeroes(`t)' : t
+        | Gleam _ => \ () =>
+            global "import exception"
+            := fn = dyn fn
+            := finally = dyn finally
+            $'exception.defer(fn() { !finally(Nil) }, fn() { !fn(Nil) })' : ()
+            $'Nil' : t
+        | Lua => \ () =>
+            := fn = dyn fn
+            := outcome = $'{pcall(!fn)}' : $'table'
+            finally ()
+            ? ($'!outcome[1]' : bool) ?> () |: $'error(!outcome[2], 0)' : ()
+            $'(function() return nil end)()' : t
+        | _ => \ () =>
+            ? try_unit_fsharp_python ()
+            ?>
+                := fn = dyn fn
+                := finally = dyn finally
+                backend_switch {
+                    Fsharp = \ () =>
+                        $'try !fn () finally !finally ()' : ()
+                        $'()' : t
+                    Python = \ () =>
+                        global """
+                            def _spiral_try_finally(fn, finally_fn):
+                                try: fn()
+                                finally: finally_fn()
+                            """
+                        $'_spiral_try_finally(!fn, !finally)' : ()
+                        $'None' : t
+                }
+            |:
+                backend_switch {
+                    Gleam = \ () => $'// base.try_finally' : ()
+                    Lua = \ () => $'-- base.try_finally' : ()
+                    Fsharp = \ () => $'try' : ()
+                    Python = \ () => $'try:' : ()
+                }
+                fn |> indent
+                backend_switch {
+                    Gleam = \ () => $'// base.try_finally' : ()
+                    Lua = \ () => $'-- base.try_finally' : ()
+                    Fsharp = \ () => $'finally' : ()
+                    Python = \ () => $'finally:' : ()
+                }
+                finally |> indent
+                backend_switch {
+                    Gleam = \ () => $'// base.try_finally' : ()
+                    Lua = \ () => $'-- base.try_finally' : ()
+                    Fsharp = \ () =>
+                        $'(* try_finally'
+                        $'try_finally *)'
+                        ()
+                    Python = \ () => $'// base.try_finally' : ()
+                }
+
+/// ### (:>)
+:? (~:>) r : \* t. t -> r
+
+///> gleam -d exception=">= 2.0.0 and < 3.0.0"
+:# try_unit_rescues_a_failure_on_gleam =
+    := hits = mut 0i32
+    try_unit (\ () => failwith "boom") \ _ => hits <- *hits + 1i32
+    *hits |> _assert_eq 1i32
+
+///> gleam -d exception=">= 2.0.0 and < 3.0.0"
+:# try_finally_cleans_up_on_gleam =
+    := cleaned = mut 0i32
+    try_finally (\ () => ()) \ () => cleaned <- *cleaned + 1i32
+    *cleaned |> _assert_eq 1i32
+
+///> lua
+:# try_unit_rescues_a_failure_on_lua =
+    := hits = mut 0i32
+    try_unit (\ () => failwith "boom") \ _ => hits <- *hits + 1i32
+    *hits |> _assert_eq 1i32
+
+///> lua
+:# try_finally_cleans_up_on_lua =
+    := cleaned = mut 0i32
+    try_finally (\ () => ()) \ () => cleaned <- *cleaned + 1i32
+    *cleaned |> _assert_eq 1i32

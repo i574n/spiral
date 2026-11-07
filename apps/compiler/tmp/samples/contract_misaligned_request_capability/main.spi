@@ -1,0 +1,103 @@
+:! reader = ()
+:! writer = ()
+:! administrator = ()
+:! row = string
+:! receipt = string
+:! version = i32
+
+:| ^ capability_token capability =
+    | ReaderToken :: string -> capability_token reader
+    | WriterToken :: string -> capability_token writer
+    | AdministratorToken :: string -> capability_token administrator
+    | PairToken :: \* left right. capability_token left * capability_token right -> capability_token (left * right)
+
+:| ^ request capability result =
+    | Read :: string -> request reader row
+    | Write :: row -> request writer receipt
+    | CompareSwap :: row * version -> request administrator version
+    | Batch :: \* left_cap left_result right_cap right_result.
+        request left_cap left_result * request right_cap right_result ->
+        request (left_cap * right_cap) (left_result * right_result)
+    | MapRequest :: \* capability result.
+        (\? input. request capability input * (input -> result)) -> request capability result
+
+:= ^ describe \* capability result. (value : request capability result) : string =
+    ?= value ?|
+    | Read _ => "read"
+    | Write _ => "write"
+    | CompareSwap _ => "compare-swap"
+    | Batch (left, right) =>
+        := _ = describe left
+        := _ = describe right
+        "batch"
+    | MapRequest payload =>
+        := \? input. inner, _ = payload
+        := _ = describe inner
+        "map-request"
+
+:! strict capability = capability_token capability
+:! emergency capability = capability_token capability
+
+:? authorize policy capability : policy capability -> string
+:+ authorize strict = \ (strict token) =>
+    ?= token ?|
+    | ReaderToken _ => "strict-reader"
+    | WriterToken _ => "strict-writer"
+    | AdministratorToken _ => "strict-administrator"
+    | PairToken _ => "strict-pair"
+:+ authorize emergency = \ (emergency token) =>
+    ?= token ?|
+    | ReaderToken _ => "emergency-reader"
+    | WriterToken _ => "emergency-writer"
+    | AdministratorToken _ => "emergency-administrator"
+    | PairToken _ => "emergency-pair"
+
+:| sealed_request =
+    | SealedRequest ::
+        (\? capability result. request capability result * capability_token capability) ->
+        sealed_request
+
+:= inspect \* capability result.
+    (request : request capability result)
+    (_ : capability_token capability) : string =
+    describe request
+
+:= with_sealed \* output.
+    (visit : \* capability result. request capability result -> capability_token capability -> output)
+    (value : sealed_request) : output =
+    ?= value ?|
+    | SealedRequest payload =>
+        := \? capability result. request, token = payload
+        visit request token
+
+:= batch_request () : request (reader * writer) (row * receipt) =
+    Batch (Read "user-7", Write (row "row-7"))
+
+:= batch_token () : capability_token (reader * writer) =
+    PairToken (ReaderToken "reader-key", WriterToken "writer-key")
+
+:= mapped_request () : request administrator string =
+    MapRequest (\? (CompareSwap (row "row-7", version 41), \ (_ : version) => "version-advanced"))
+
+:= sealed_value () : sealed_request =
+    SealedRequest (\? (batch_request (), batch_token ()))
+
+:= emit (_ : string) (_ : string) (_ : string) (_ : string) : string =
+    "schema\tkind\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\tresult\tsequence\n"
+    ^^ "1\tplan\tread\tRead\tkey\trow\t\tidempotent\treader\t2\t\t\n"
+    ^^ "1\tplan\twrite\tWrite\trow\treceipt\tread\tnon_idempotent\twriter\t0\t\t\n"
+    ^^ "1\tplan\tbatch\tBatch\trequests\tpaired-result\tread,write\tidempotent\treader-writer\t1\t\t\n"
+    ^^ "1\tplan\tcompare\tCompareSwap\trow-version\tversion\tbatch\tnon_idempotent\tadministrator\t0\t\t\n"
+    ^^ "1\tplan\tmap\tMapRequest\tversion\tmapped\tcompare\tidempotent\tmapper\t1\t\t\n"
+    ^^ "1\treceipt\tread\tRead\tkey\trow\t\t\t\t\tcommitted\t1\n"
+    ^^ "1\treceipt\twrite\tWrite\trow\treceipt\t\t\t\t\tcommitted\t3\n"
+    ^^ "1\treceipt\tbatch\tBatch\trequests\tpaired-result\t\t\t\t\tcommitted\t5\n"
+    ^^ "1\treceipt\tcompare\tCompareSwap\trow-version\tversion\t\t\t\t\tcommitted\t7\n"
+    ^^ "1\treceipt\tmap\tMapRequest\tversion\tmapped\t\t\t\t\tcommitted\t9\n"
+    ^^ "1\tevent\tread\tRead\tkey\trow\t\t\t\t\tsuccess\t2\n1\tevent\twrite\tWrite\trow\treceipt\t\t\t\t\tsuccess\t4\n"
+    ^^ "1\tevent\tbatch\tBatch\trequests\tpaired-result\t\t\t\t\tsuccess\t6\n"
+    ^^ "1\tevent\tcompare\tCompareSwap\trow-version\tversion\t\t\t\t\tsuccess\t8\n"
+    ^^ "1\tevent\tmap\tMapRequest\tversion\tmapped\t\t\t\t\tsuccess\t10\n"
+
+:= main () : string =
+    inspect (batch_request ()) (WriterToken "writer-only")

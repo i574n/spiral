@@ -1,0 +1,17 @@
+:| ^ int_tree =
+    | Leaf
+    | Marker
+    | Node : i32 * int_tree * int_tree
+
+:~ ^ sum tree : i32 =
+    ?= tree ?|
+    | Leaf => 0i32
+    | Marker => 0i32
+    | Node (value, left, right) => value +. (sum left +. sum right)
+
+:= main () : i32 =
+    := leaf = Leaf
+    := marker = Marker
+    := branch = Node (2i32, leaf, marker)
+    := tree = Node (1i32, branch, branch)
+    sum tree -. 5i32

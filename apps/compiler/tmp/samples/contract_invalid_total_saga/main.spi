@@ -1,0 +1,27 @@
+:! draft = ()
+:! signed = ()
+:! authorized = ()
+
+:| forward from to =
+    | Sign :: forward draft signed
+    | Authorize :: forward signed authorized
+
+:| compensate from to =
+    | Unauthorize :: compensate authorized signed
+    | Unsign :: compensate signed draft
+
+:| chain (step : * -> * -> *) from to =
+    | ChainStep :: \* (step : * -> * -> *) from to.
+        step from to -> chain step from to
+
+:! total_saga from to =
+    {
+        forward_plan : chain forward from to
+        rollback_plan : chain compensate to from
+    }
+
+:= main () : total_saga draft authorized =
+    total_saga {
+        forward_plan = ChainStep Sign
+        rollback_plan = ChainStep Unsign
+    }

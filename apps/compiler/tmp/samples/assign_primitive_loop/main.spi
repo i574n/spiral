@@ -1,0 +1,10 @@
+:= while' (cond : () -> bool) (body : () -> ()) : () =
+    !!!!While((~~ cond ()), (body ()))
+
+:= main () : i32 =
+    := ~i = 0i32
+    := ~acc = 0i32
+    while' (\ () => i < 10i32) \ () =>
+        !!!!Assign(acc, acc +. i)
+        !!!!Assign(i, i +. 1i32)
+    acc -. 45i32

@@ -1,0 +1,22 @@
+:! idle = ()
+:! sent = ()
+:! received = ()
+
+:| session state =
+    | Idle :: session idle
+    | Sent :: string -> session sent
+    | Received :: string -> session received
+
+:| command from to =
+    | Send :: string -> command idle sent
+    | Receive :: command sent received
+
+:= advance \* from to.
+    (command : command from to)
+    (session : session from)
+    : session to =
+    ?= command, session ?|
+    | Send xml, Idle => Sent xml
+    | Receive, Sent _ => Received "protocol"
+
+:= main () = advance Receive Idle

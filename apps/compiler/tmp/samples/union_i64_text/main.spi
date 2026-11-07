@@ -1,0 +1,16 @@
+:| slot =
+    | None
+    | Both : i64 * string
+
+:~ score x : i32 =
+    ?= x ?|
+    | None => 1i32
+    | Both (n, word) =>
+        ? n =. 5000000000i64 && !!!!EQ(word, "hi") ?> 0i32 |: 1i32
+
+:= main () : i32 =
+    := ~n = 5000000000i64
+    := ~word = "hi"
+    := ~flag = !+
+    := held = ? flag ?> Both (n, word) |: None
+    score held

@@ -1,0 +1,20 @@
+:# pickler_derive static =
+    :< testing
+
+:= derived \* t. () : pickler::pick t = ~> pickler_real::pick_of `t ()
+
+///> c
+///> rust
+:# a_pickler_is_derived_from_its_type =
+    := p : pickler::pick (option pickler::heading * bool) = derived ()
+    (pickler::count p, pickler::pickle p (Some pickler::South, !+), pickler::round_trips p)
+    |> _assert_eq (10i32, 7i32, !+)
+
+:== rec3 = { alive : bool; heading : pickler::heading; mana : option bool }
+
+///> c
+///> rust
+:# a_record_pickler_is_derived_from_its_fields =
+    := p : pickler::pick rec3 = derived ()
+    (pickler::count p, pickler::pickle p { alive = !+; heading = pickler::South; mana = Some !- }, pickler::round_trips p)
+    |> _assert_eq (24i32, 19i32, !+)

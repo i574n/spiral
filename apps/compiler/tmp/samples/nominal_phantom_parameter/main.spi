@@ -1,0 +1,10 @@
+:! witness phantom count = count
+:! surface phantom count = phantom * witness phantom count
+
+:= main () : i32 =
+    := w = witness 1i32
+    := s = surface (!+, w)
+    ?= s ?|
+    | surface (_, witness _) => 0i32
+
+:= oracle_must_not_record_current_error () = ()

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>math.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<h4>math (test)</h4>
+
+<span class="badge other">test math: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<h2>math</h2>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">e</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">exp</span> <span class="tok-number">1</span><span class="tok-number_suffix">f64</span></code></pre>
+
+<h2>square</h2>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">square</span> <span class="tok-variable">x</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">x</span> <span class="tok-operator">**</span> <span class="tok-number">2</span></code></pre>
+
+<span class="badge passed">test square: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-number">5</span><span class="tok-number_suffix">f64</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">sqrt</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">square</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_approx_eq</span> <span class="tok-variable">None</span> <span class="tok-number">5</span></code></pre>
+<pre class="output">__assert_approx_eq { expected = 5.0 }</pre>
+
+<span class="badge passed">test square_2: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-variable">e</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">square</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_approx_eq</span> <span class="tok-variable">None</span> <span class="tok-number">7.3890560989306495</span></code></pre>
+<pre class="output">__assert_approx_eq { expected = 7.3890560989306495 }</pre>
+
+<span class="badge passed">test square_3: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-number">2</span> <span class="tok-operator">*</span> <span class="tok-number">2</span> <span class="tok-operator">/</span> <span class="tok-number">0.4</span><span class="tok-number_suffix">f64</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">sqrt</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_approx_eq</span> <span class="tok-variable">None</span> <span class="tok-number">3.1622776601683795</span></code></pre>
+<pre class="output">__assert_approx_eq { expected = 3.1622776601683795 }</pre>
+
+<span class="badge passed">test square_4: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-number">2</span><span class="tok-number_suffix">f64</span> <span class="tok-operator">/</span> <span class="tok-number">3</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_approx_eq</span> <span class="tok-variable">None</span> <span class="tok-number">0.6666666666666666</span></code></pre>
+<pre class="output">__assert_approx_eq { expected = 0.6666666666666666 }</pre>
+
+<span class="badge passed">test square_5: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-number">2</span><span class="tok-number_suffix">f64</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">log</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_approx_eq</span> <span class="tok-variable">None</span> <span class="tok-number">0.6931471805599453</span></code></pre>
+<pre class="output">__assert_approx_eq { expected = 0.6931471805599453 }</pre>
+
+<span class="badge passed">test square_6: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-variable">pi</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_approx_eq</span> <span class="tok-variable">None</span> <span class="tok-number">3.141592653589793</span><span class="tok-number_suffix">f64</span></code></pre>
+<pre class="output">__assert_approx_eq { expected = 3.141592653589793 }</pre>
+
+<span class="badge passed">test square_7: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-variable">pi</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">cos</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">-1</span><span class="tok-number_suffix">f64</span></code></pre>
+<pre class="output">__assert_eq { expected = -1.0 }</pre>
+
+<span class="badge passed">test square_8: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-variable">pi</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">cos</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-keyword">\</span> <span class="tok-variable">n</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">n</span> <span class="tok-operator">/</span> <span class="tok-number">2</span><span class="tok-number_suffix">f64</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_approx_eq</span> <span class="tok-variable">None</span> <span class="tok-number">-0.5</span></code></pre>
+<pre class="output">__assert_approx_eq { expected = -0.5 }</pre>
+
+<span class="badge passed">test square_9: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-variable">pi</span> <span class="tok-operator">/</span> <span class="tok-number">2</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">cos</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_approx_eq</span> <span class="tok-variable">None</span> <span class="tok-number">0.00000000000000006123233995736766</span><span class="tok-number_suffix">f64</span></code></pre>
+<pre class="output">__assert_approx_eq { expected = 6.123233995736766e-17 }</pre>
+
+<h2>fsharp</h2>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">atan2</span> <span class="tok-parenthesis">(</span><span class="tok-variable">y</span> <span class="tok-operator">:</span> <span class="tok-variable">f64</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">f64</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">f64</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Gleam</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-variable">global</span> <span class="tok-string">&quot;&quot;&quot;</span><span class="tok-string"></span>
+<span class="tok-string">                @external(erlang, &quot;math&quot;, &quot;atan2&quot;)</span>
+<span class="tok-string">                fn spiral_math_atan2(y: Float, x: Float) -&gt; Float</span>
+<span class="tok-string">                </span><span class="tok-string">&quot;&quot;&quot;</span>
+            <span class="tok-string">$'</span><span class="tok-string">spiral_math_atan2(</span><span class="tok-variable">!y</span><span class="tok-string">, </span><span class="tok-variable">!x</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">float</span>
+        <span class="tok-variable">Lua</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">math.atan2(</span><span class="tok-variable">!y</span><span class="tok-string">, </span><span class="tok-variable">!x</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">float</span>
+        <span class="tok-variable">Fsharp</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">System.Math.Atan2 (</span><span class="tok-variable">!y</span><span class="tok-string">, </span><span class="tok-variable">!x</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">float</span>
+        <span class="tok-variable">Python</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">import math</span><span class="tok-string">&quot;</span>
+            <span class="tok-string">$'</span><span class="tok-string">math.atan2(</span><span class="tok-variable">!y</span><span class="tok-string">, </span><span class="tok-variable">!x</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">float</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-variable">!y</span><span class="tok-string">).atan2(</span><span class="tok-variable">!x</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">float</span>
+        <span class="tok-variable">Zig</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">std.math.atan2(</span><span class="tok-variable">!y</span><span class="tok-string">, </span><span class="tok-variable">!x</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">float</span>
+        <span class="tok-variable">Lean</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">Float.atan2 </span><span class="tok-variable">!y</span><span class="tok-string"> </span><span class="tok-variable">!x</span><span class="tok-string"> </span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">float</span>
+        <span class="tok-variable">C</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">#include &lt;tgmath.h&gt;</span><span class="tok-string">&quot;</span>
+            <span class="tok-string">$'</span><span class="tok-string">atan2(</span><span class="tok-variable">!y</span><span class="tok-string">, </span><span class="tok-variable">!x</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">float</span>
+        <span class="tok-variable">Cpp</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">#include &lt;cmath&gt;</span><span class="tok-string">&quot;</span>
+            <span class="tok-string">$'</span><span class="tok-string">std::atan2(</span><span class="tok-variable">!y</span><span class="tok-string">, </span><span class="tok-variable">!x</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">float</span>
+        <span class="tok-variable">Pascal</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">ArcTan2(</span><span class="tok-variable">!y</span><span class="tok-string">, </span><span class="tok-variable">!x</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">float</span>
+        <span class="tok-variable">Wasm</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">(call $math_atan2 </span><span class="tok-variable">!y</span><span class="tok-string"> </span><span class="tok-variable">!x</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">float</span>
+        <span class="tok-variable">TypeScript</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">Math.atan2(</span><span class="tok-variable">!y</span><span class="tok-string">, </span><span class="tok-variable">!x</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">float</span>
+        <span class="tok-variable">Kotlin</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">kotlin.math.atan2(</span><span class="tok-variable">!y</span><span class="tok-string">, </span><span class="tok-variable">!x</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">float</span>
+        <span class="tok-variable">Swift</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">atan2(</span><span class="tok-variable">!y</span><span class="tok-string">, </span><span class="tok-variable">!x</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">float</span>
+    <span class="tok-parenthesis">}</span></code></pre>
+
+<h4>atan2 (test)</h4>
+
+<span class="badge passed">test atan2: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; rust
+///&gt; gleam
+///&gt; lua
+///&gt; cuda
+
+<span class="tok-number">0</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">atan2</span> <span class="tok-number">1</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">1.5707963267948966</span></code></pre>
+<pre class="output">.rs (rust)
+__assert_eq { expected = 1.5707963267948966 }
+.gleam (gleam)
+__assert_eq { expected = 1.5707963267948966 }
+.lua (lua)
+__assert_eq { expected = 1.5707963267948966 }
+.py (cuda)
+__assert_eq { expected = 1.5707963267948966 }</pre>
+<pre class="output">0</pre>
+
+<h2>floor</h2>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">floor</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span> <span class="tok-parenthesis">{</span><span class="tok-variable">float</span><span class="tok-parenthesis">}</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">n</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Gleam</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">import gleam/float</span><span class="tok-string">&quot;</span>
+            <span class="tok-variable">n</span> <span class="tok-operator">|&gt;</span> <span class="tok-string">$'</span><span class="tok-string">float.floor</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Lua</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">n</span> <span class="tok-operator">|&gt;</span> <span class="tok-string">$'</span><span class="tok-string">math.floor</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Fsharp</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">n</span> <span class="tok-operator">|&gt;</span> <span class="tok-string">$'</span><span class="tok-string">floor</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Python</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">import math</span><span class="tok-string">&quot;</span>
+            <span class="tok-string">$'</span><span class="tok-string">math.floor(</span><span class="tok-variable">!n</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-variable">!n</span><span class="tok-string">.floor()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Zig</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-unescaped_char">@@</span><span class="tok-string">floor(</span><span class="tok-variable">!n</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Lean</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-variable">!n</span><span class="tok-string">).floor</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">C</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">#include &lt;tgmath.h&gt;</span><span class="tok-string">&quot;</span>
+            <span class="tok-string">$'</span><span class="tok-string">floor(</span><span class="tok-variable">!n</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Cpp</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">#include &lt;cmath&gt;</span><span class="tok-string">&quot;</span>
+            <span class="tok-string">$'</span><span class="tok-string">std::floor(</span><span class="tok-variable">!n</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Pascal</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">Int(</span><span class="tok-variable">!n</span><span class="tok-string">) - Ord(Frac(</span><span class="tok-variable">!n</span><span class="tok-string">) &lt; 0)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Wasm</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-type_variable">`t</span><span class="tok-string">.floor </span><span class="tok-variable">!n</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">TypeScript</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">Math.floor(</span><span class="tok-variable">!n</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Kotlin</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">kotlin.math.floor(</span><span class="tok-variable">!n</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Swift</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-variable">!n</span><span class="tok-string">).rounded(.down)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+    <span class="tok-parenthesis">}</span></code></pre>
+
+<span class="badge passed">test floor: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; rust
+///&gt; gleam
+///&gt; lua
+///&gt; cuda
+
+<span class="tok-number">0.6</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">floor</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">0</span><span class="tok-number_suffix">f64</span></code></pre>
+<pre class="output">.rs (rust)
+__assert_eq { expected = 0.0 }
+.gleam (gleam)
+__assert_eq { expected = 0.0 }
+.lua (lua)
+__assert_eq { expected = 0.0 }
+.py (cuda)
+__assert_eq { expected = 0.0 }</pre>
+<pre class="output">0</pre>
+
+<h2>ceil</h2>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">ceil</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span> <span class="tok-parenthesis">{</span><span class="tok-variable">float</span><span class="tok-parenthesis">}</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">n</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Gleam</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">import gleam/float</span><span class="tok-string">&quot;</span>
+            <span class="tok-variable">n</span> <span class="tok-operator">|&gt;</span> <span class="tok-string">$'</span><span class="tok-string">float.ceiling</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Lua</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">n</span> <span class="tok-operator">|&gt;</span> <span class="tok-string">$'</span><span class="tok-string">math.ceil</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Fsharp</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">n</span> <span class="tok-operator">|&gt;</span> <span class="tok-string">$'</span><span class="tok-string">ceil</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Python</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">import math</span><span class="tok-string">&quot;</span>
+            <span class="tok-variable">n</span> <span class="tok-operator">|&gt;</span> <span class="tok-string">$'</span><span class="tok-string">math.ceil</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-variable">!n</span><span class="tok-string">.ceil()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Zig</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-unescaped_char">@@</span><span class="tok-string">ceil(</span><span class="tok-variable">!n</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Lean</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-variable">!n</span><span class="tok-string">).ceil</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">C</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">#include &lt;tgmath.h&gt;</span><span class="tok-string">&quot;</span>
+            <span class="tok-string">$'</span><span class="tok-string">ceil(</span><span class="tok-variable">!n</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Cpp</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">#include &lt;cmath&gt;</span><span class="tok-string">&quot;</span>
+            <span class="tok-string">$'</span><span class="tok-string">std::ceil(</span><span class="tok-variable">!n</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Pascal</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">Int(</span><span class="tok-variable">!n</span><span class="tok-string">) + Ord(Frac(</span><span class="tok-variable">!n</span><span class="tok-string">) &gt; 0)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Wasm</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-type_variable">`t</span><span class="tok-string">.ceil </span><span class="tok-variable">!n</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">TypeScript</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">Math.ceil(</span><span class="tok-variable">!n</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Kotlin</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">kotlin.math.ceil(</span><span class="tok-variable">!n</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Swift</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-variable">!n</span><span class="tok-string">).rounded(.up)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+    <span class="tok-parenthesis">}</span></code></pre>
+
+<span class="badge passed">test ceil: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; rust
+///&gt; gleam
+///&gt; lua
+///&gt; cuda
+
+<span class="tok-number">0.6</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ceil</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">1</span><span class="tok-number_suffix">f64</span></code></pre>
+<pre class="output">.rs (rust)
+__assert_eq { expected = 1.0 }
+.gleam (gleam)
+__assert_eq { expected = 1.0 }
+.lua (lua)
+__assert_eq { expected = 1.0 }
+.py (cuda)
+__assert_eq { expected = 1.0 }</pre>
+<pre class="output">0</pre>
+
+<h2>round</h2>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">round</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span> <span class="tok-parenthesis">{</span><span class="tok-variable">number</span><span class="tok-operator">;</span> <span class="tok-variable">float</span><span class="tok-parenthesis">}</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">round_half_to_even</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+        <span class="tok-keyword">:=</span> <span class="tok-variable">lower</span> <span class="tok-operator">=</span> <span class="tok-variable">floor</span> <span class="tok-variable">x</span>
+        <span class="tok-keyword">:=</span> <span class="tok-variable">difference</span> <span class="tok-operator">=</span> <span class="tok-variable">x</span> <span class="tok-operator">-</span> <span class="tok-variable">lower</span>
+        <span class="tok-keyword">?</span> <span class="tok-variable">difference</span> <span class="tok-operator">&gt;</span> <span class="tok-number">0.5</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">lower</span> <span class="tok-operator">+</span> <span class="tok-number">1</span>
+        <span class="tok-keyword">|?</span> <span class="tok-variable">difference</span> <span class="tok-operator">&lt;</span> <span class="tok-number">0.5</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">lower</span>
+        <span class="tok-keyword">|?</span> <span class="tok-variable">floor</span> <span class="tok-parenthesis">(</span><span class="tok-variable">lower</span> <span class="tok-operator">/</span> <span class="tok-number">2</span><span class="tok-parenthesis">)</span> <span class="tok-operator">*</span> <span class="tok-number">2</span> <span class="tok-operator">=</span> <span class="tok-variable">lower</span> <span class="tok-keyword">?&gt;</span> <span class="tok-variable">lower</span>
+        <span class="tok-keyword">|:</span> <span class="tok-variable">lower</span> <span class="tok-operator">+</span> <span class="tok-number">1</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Gleam</span> <span class="tok-operator">=</span> <span class="tok-variable">round_half_to_even</span>
+        <span class="tok-variable">Lua</span> <span class="tok-operator">=</span> <span class="tok-variable">round_half_to_even</span>
+        <span class="tok-variable">Fsharp</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">x</span> <span class="tok-operator">|&gt;</span> <span class="tok-string">$'</span><span class="tok-string">round</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Python</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">x</span> <span class="tok-operator">|&gt;</span> <span class="tok-string">$'</span><span class="tok-string">round</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-variable">!x</span><span class="tok-string">).round_ties_even()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Zig</span> <span class="tok-operator">=</span> <span class="tok-variable">round_half_to_even</span>
+        <span class="tok-variable">Lean</span> <span class="tok-operator">=</span> <span class="tok-variable">round_half_to_even</span>
+        <span class="tok-variable">C</span> <span class="tok-operator">=</span> <span class="tok-variable">round_half_to_even</span>
+        <span class="tok-variable">Cpp</span> <span class="tok-operator">=</span> <span class="tok-variable">round_half_to_even</span>
+        <span class="tok-variable">Pascal</span> <span class="tok-operator">=</span> <span class="tok-variable">round_half_to_even</span>
+        <span class="tok-variable">TypeScript</span> <span class="tok-operator">=</span> <span class="tok-variable">round_half_to_even</span>
+        <span class="tok-variable">Wasm</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-type_variable">`t</span><span class="tok-string">.nearest </span><span class="tok-variable">!x</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Kotlin</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">kotlin.math.round(</span><span class="tok-variable">!x</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+        <span class="tok-variable">Swift</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-variable">!x</span><span class="tok-string">).rounded(.toNearestOrEven)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span>
+    <span class="tok-parenthesis">}</span></code></pre>
+
+<span class="badge passed">test round: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; rust
+///&gt; gleam
+///&gt; lua
+///&gt; cuda
+
+<span class="tok-number">0.5</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">round</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">0</span><span class="tok-number_suffix">f64</span>
+
+<span class="tok-number">0.6</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">round</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">1</span><span class="tok-number_suffix">f64</span>
+
+<span class="tok-number">1.5</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">round</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">2</span><span class="tok-number_suffix">f64</span>
+
+<span class="tok-number">2.5</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">round</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">2</span><span class="tok-number_suffix">f64</span>
+
+<span class="tok-number">3.5</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">round</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">4</span><span class="tok-number_suffix">f64</span></code></pre>
+<pre class="output">.rs (rust)
+__assert_eq { expected = 0.0 }
+__assert_eq { expected = 1.0 }
+__assert_eq { expected = 2.0 }
+__assert_eq { expected = 2.0 }
+__assert_eq { expected = 4.0 }
+.gleam (gleam)
+__assert_eq { expected = 0.0 }
+__assert_eq { expected = 1.0 }
+__assert_eq { expected = 2.0 }
+__assert_eq { expected = 2.0 }
+__assert_eq { expected = 4.0 }
+.lua (lua)
+__assert_eq { expected = 0.0 }
+__assert_eq { expected = 1.0 }
+__assert_eq { expected = 2.0 }
+__assert_eq { expected = 2.0 }
+__assert_eq { expected = 4.0 }
+.py (cuda)
+__assert_eq { expected = 0.0 }
+__assert_eq { expected = 1.0 }
+__assert_eq { expected = 2.0 }
+__assert_eq { expected = 2.0 }
+__assert_eq { expected = 4.0 }</pre>
+<pre class="output">0</pre>
+
+<h2>log_base</h2>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">log_base</span> <span class="tok-parenthesis">(</span><span class="tok-variable">new_base</span> <span class="tok-operator">:</span> <span class="tok-variable">f64</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">a</span> <span class="tok-operator">:</span> <span class="tok-variable">f64</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">f64</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Gleam</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">log</span> <span class="tok-variable">a</span> <span class="tok-operator">/</span> <span class="tok-variable">log</span> <span class="tok-variable">new_base</span>
+        <span class="tok-variable">Lua</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">log</span> <span class="tok-variable">a</span> <span class="tok-operator">/</span> <span class="tok-variable">log</span> <span class="tok-variable">new_base</span>
+        <span class="tok-variable">Fsharp</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">System.Math.Log (</span><span class="tok-variable">!a</span><span class="tok-string">, </span><span class="tok-variable">!new_base</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">f64</span>
+        <span class="tok-variable">Python</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">log</span> <span class="tok-variable">a</span> <span class="tok-operator">/</span> <span class="tok-variable">log</span> <span class="tok-variable">new_base</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-variable">!a</span><span class="tok-string">).log(</span><span class="tok-variable">!new_base</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">f64</span>
+        <span class="tok-variable">TypeScript</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">log</span> <span class="tok-variable">a</span> <span class="tok-operator">/</span> <span class="tok-variable">log</span> <span class="tok-variable">new_base</span>
+        <span class="tok-variable">Zig</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">log</span> <span class="tok-variable">a</span> <span class="tok-operator">/</span> <span class="tok-variable">log</span> <span class="tok-variable">new_base</span>
+        <span class="tok-variable">Lean</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">log</span> <span class="tok-variable">a</span> <span class="tok-operator">/</span> <span class="tok-variable">log</span> <span class="tok-variable">new_base</span>
+        <span class="tok-variable">Kotlin</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">log</span> <span class="tok-variable">a</span> <span class="tok-operator">/</span> <span class="tok-variable">log</span> <span class="tok-variable">new_base</span>
+        <span class="tok-variable">Swift</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">log</span> <span class="tok-variable">a</span> <span class="tok-operator">/</span> <span class="tok-variable">log</span> <span class="tok-variable">new_base</span>
+    <span class="tok-parenthesis">}</span></code></pre>
+
+<span class="badge passed">test log_base: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-number">100</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">log_base</span> <span class="tok-number">10</span>
+<span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-number">2</span></code></pre>
+<pre class="output">__assert_eq { expected = 2.0 }</pre>
+
+</main>
+</body>
+</html>

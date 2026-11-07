@@ -1,0 +1,31 @@
+:! app_tree = ()
+:! checksum_a = ()
+:! checksum_b = ()
+:! ready = ()
+:! app_scope = ()
+
+:| serialized_view tree checksum =
+    | SerializedView :: \* tree checksum. string -> serialized_view tree checksum
+
+:| client_checksum checksum =
+    | ClientChecksum :: \* checksum. string -> client_checksum checksum
+
+:| resource scope state value =
+    | Resource :: \* scope state value. value -> resource scope state value
+
+:| hydrated_view tree checksum scope state =
+    | HydratedView :: \* tree checksum scope state. string -> hydrated_view tree checksum scope state
+
+:= hydrate \* tree checksum scope value.
+    (serialized : serialized_view tree checksum)
+    (client : client_checksum checksum)
+    (resource : resource scope ready value)
+    : hydrated_view tree checksum scope ready =
+    ?= serialized, client, resource ?|
+    | SerializedView _, ClientChecksum _, Resource _ => HydratedView "hydrated"
+
+:= main () : hydrated_view app_tree checksum_a app_scope ready =
+    := serialized : serialized_view app_tree checksum_a = SerializedView "server"
+    := checksum : client_checksum checksum_b = ClientChecksum "client-b"
+    := resource : resource app_scope ready i32 = Resource 42
+    hydrate serialized checksum resource

@@ -1,0 +1,12 @@
+:| ^ tree n =
+    | Leaf :: \* n. tree n
+    | Node :: \* n. tree n * tree n -> tree n
+
+:~ ^ count \* n. (t : tree n) : i32 =
+    ?= t ?|
+    | Leaf => 1i32
+    | Node (a, b) => count a +. count b
+
+:= main () : i32 =
+    := ~t : tree () = Node (Leaf, Node (Leaf, Leaf))
+    count t

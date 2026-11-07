@@ -1,0 +1,24 @@
+import gleam/float
+pub fn spiral_math_sqrt(x: Float) -> Float {
+  case float.square_root(x) {
+    Ok(value) -> value
+    Error(_) -> panic as "spiral math: sqrt outside the real domain"
+  }
+}
+
+pub fn main() {
+    let v2 = spiral_math_sqrt(144.0)
+    let v3 = spiral_math_sqrt(81.0)
+    let v4 = v2 == 12.0
+    let v6 =
+        case v4 {
+            True -> {
+                v3 == 9.0
+            }
+            False -> False
+        }
+    case v6 {
+        True -> 0
+        False -> 1
+    }
+}

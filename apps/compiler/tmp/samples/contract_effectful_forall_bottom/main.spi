@@ -1,0 +1,4 @@
+:= closed_bottom \* a. () : a =
+    $"failwith \"effectful-bottom\""
+
+:= main () : i64 = closed_bottom ()

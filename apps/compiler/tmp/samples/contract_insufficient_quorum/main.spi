@@ -1,0 +1,15 @@
+:! q0 = ()
+:! q1 = ()
+:! q2 = ()
+
+:| quorum state =
+    | EmptyQuorum :: quorum q0
+    | OneApproval :: string -> quorum q1
+    | TwoApprovals :: string * string -> quorum q2
+
+:= authorize (proof : quorum q2) : string =
+    ?= proof ?|
+    | TwoApprovals _ => "authorized"
+
+:= main () : string =
+    authorize (OneApproval "only-one")

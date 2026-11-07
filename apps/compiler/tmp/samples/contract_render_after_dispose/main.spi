@@ -1,0 +1,18 @@
+:! component_scope = ()
+:! live = ()
+:! disposed = ()
+
+:| resource scope state =
+    | Resource :: \* scope state. string -> resource scope state
+
+:= dispose \* scope. (resource : resource scope live) : resource scope disposed =
+    ?= resource ?|
+    | Resource _ => Resource "disposed"
+
+:= render \* scope. (resource : resource scope live) : string =
+    ?= resource ?|
+    | Resource value => value
+
+:= main () : string =
+    := resource : resource component_scope live = Resource "live"
+    render (dispose resource)

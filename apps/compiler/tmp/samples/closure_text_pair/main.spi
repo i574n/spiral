@@ -1,0 +1,12 @@
+:= main () : i32 =
+    := ~a = "hi"
+    := ~b = "yo"
+    := f (z : i32) : string * string =
+        ? z =. 0i32 ?>
+            "no", "nay"
+        |:
+            a, b
+    := ~g = f
+    := pair = g 1i32
+    := ~(left, right) = pair
+    ? !!!!EQ(left, "hi") && !!!!EQ(right, "yo") ?> 0i32 |: 1i32

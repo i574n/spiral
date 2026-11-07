@@ -1,0 +1,10 @@
+:< semantic_witnesses
+:< minimality_witnesses
+:< exact_soundness_witnesses
+
+:= main () : string =
+    := semantic = indexed_dfa_semantic_witnesses_contract ()
+    := minimality = indexed_dfa_minimality_witnesses_contract ()
+    := _ = semantic
+    := _ = minimality
+    indexed_dfa_exact_soundness_contract ()

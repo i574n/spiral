@@ -1,0 +1,32 @@
+:! zero = ()
+:! succ n = ()
+
+:| ^ var n =
+    | VZ :: \* n. var (succ n)
+    | VS :: \* n. var n -> var (succ n)
+
+:| ^ term n =
+    | Var :: \* n. var n -> term n
+    | Lam :: \* n. term (succ n) -> term n
+    | App :: \* n. term n * term n -> term n
+
+:~ ^ rename \* n m. (ren : var n -> var m) (t : term n) : term m =
+    ?= t ?|
+    | Var v => Var (ren v)
+    | Lam body => Lam (rename (lift ren) body)
+    | App (f, x) => App (rename ren f, rename ren x)
+:& := lift \* n m. (ren : var n -> var m) (v : var (succ n)) : var (succ m) =
+    ?= v ?|
+    | VZ => VZ
+    | VS inner => VS (ren inner)
+
+:~ ^ size \* n. (t : term n) : i32 =
+    ?= t ?|
+    | Var _ => 1i32
+    | Lam body => 1i32 +. size body
+    | App (f, x) => 1i32 +. size f +. size x
+
+:= main () : i32 =
+    := ~t : term zero = Lam (App (Var VZ, Lam (Var (VS VZ))))
+    := weakened : term (succ zero) = rename (\ v => VS v) t
+    size weakened

@@ -1,0 +1,16 @@
+:| slot =
+    | None
+    | Both : string * string
+
+:~ score x : i32 =
+    ?= x ?|
+    | None => 1i32
+    | Both (left, right) =>
+        ? !!!!EQ(left, "hi") && !!!!EQ(right, "yo") ?> 0i32 |: 1i32
+
+:= main () : i32 =
+    := ~left_word = "hi"
+    := ~right_word = "yo"
+    := ~flag = !+
+    := held = ? flag ?> Both (left_word, right_word) |: None
+    score held

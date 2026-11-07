@@ -1,0 +1,548 @@
+:# reflection static =
+    :< testing
+
+:< sm'_operators
+
+/// ## reflection
+:= get_union_fields \* union_type. () : list (string * union_type) =
+    ~>
+        real_core::union_type_to_record
+            `union_type
+            \* union_record_type. =>
+                real_core::record_type_fold
+                    \ acc key =>
+                        \* value. =>
+                            := value =
+                                ?: value ?|
+                                | () => $'' : value
+                                | _ =>
+                                    backend_switch `value `({}) {
+                                        Gleam =
+                                            (\ () =>
+                                                $'Nil' : value
+                                            ) : () -> value
+                                        Lua =
+                                            (\ () =>
+                                                $'nil' : value
+                                            ) : () -> value
+                                        Fsharp =
+                                            (\ () =>
+                                                $'Unchecked.defaultof<_>' : value
+                                            ) : () -> value
+                                        Python =
+                                            (\ () =>
+                                                := is_python =
+                                                    backend_switch `bool `({}) {
+                                                        Gleam = (\ () => !-) : () -> bool
+                                                        Lua = (\ () => !-) : () -> bool
+                                                        Fsharp = (\ () => !-) : () -> bool
+                                                        Python = (\ () => !+) : () -> bool
+                                                    }
+                                                ? is_python ?>
+                                                    ?: value ?|
+                                                    | i8 => 0i8
+                                                    | i16 => 0i16
+                                                    | i32 => 0i32
+                                                    | i64 => 0i64
+                                                    | u8 => 0u8
+                                                    | u16 => 0u16
+                                                    | u32 => 0u32
+                                                    | u64 => 0u64
+                                                    | f32 => 0.0f32
+                                                    | f64 => 0.0f64
+                                                    | bool => !-
+                                                    | char => '\0'
+                                                    | _ => $'None' : value
+                                                |: $'None' : value
+                                            ) : () -> value
+                                        Rust =
+                                            (\ () =>
+                                                $'Default::default()' : value
+                                            ) : () -> value
+                                        Zig =
+                                            (\ () =>
+                                                $'std.mem.zeroes(`value)' : value
+                                            ) : () -> value
+                                        TypeScript =
+                                            (\ () =>
+                                                ?: value ?|
+                                                | i8 => 0i8
+                                                | i16 => 0i16
+                                                | i32 => 0i32
+                                                | i64 => 0i64
+                                                | u8 => 0u8
+                                                | u16 => 0u16
+                                                | u32 => 0u32
+                                                | u64 => 0u64
+                                                | f32 => 0.0f32
+                                                | f64 => 0.0f64
+                                                | bool => !-
+                                                | char => '\0'
+                                                | _ => $'undefined' : value
+                                            ) : () -> value
+                                    }
+                            := item = real_core::nominal_create `union_type (key, value)
+                            := key' = sm'_real::symbol_to_string_real `(`key)
+                            (::) `(string * union_type) (key', item) acc
+                    (Nil `(string * union_type))
+                    `union_record_type
+:| reflection_test_target = Browser | Contract
+
+///- --timeout 900000
+
+///> rust
+///> typescript
+///> cuda
+:# get_union_fields =
+    get_union_fields ()
+    |> listm'::box
+    |> listm'::to_array'
+    |> array
+    |> am'::sort_by snd
+    |> \ (array x : array _) => x
+    |> _assert_eq' (am'::base ;[ "Browser", Browser; "Contract", Contract ])
+    get_union_fields ()
+    |> listm'::box
+    |> listm'::to_array'
+    |> array
+    |> am'::sort_by snd
+    |> \ (array x : array _) => x
+    |> _assert_eq' (am'::base ;[ "Some", Some 0i32; "None", None ])
+
+:= get_union_fields_untag \* union_type. () : list (string * union_type) =
+    ~>
+        real_core::union_type_to_record
+            `union_type
+            \* union_record_type. =>
+                := result =
+                    real_core::record_type_fold_back
+                        \ _key =>
+                            \* value. (acc, (i : i32)) =>
+                                := key, item : (string * union_type) =
+                                    real_core::union_untag `union_type i
+                                        (\ key => \* value. =>
+                                            := key' = sm'_real::symbol_to_string_real `(`key)
+                                            := value =
+                                                ?: value ?|
+                                                | () => $'' : value
+                                                | _ =>
+                                                    backend_switch `value `({}) {
+                                                        Gleam =
+                                                            (\ () =>
+                                                                $'Nil' : value
+                                                            ) : () -> value
+                                                        Lua =
+                                                            (\ () =>
+                                                                $'nil' : value
+                                                            ) : () -> value
+                                                        Fsharp =
+                                                            (\ () =>
+                                                                $'Unchecked.defaultof<_>' : value
+                                                            ) : () -> value
+                                                        Python =
+                                                            (\ () =>
+                                                                $'None' : value
+                                                            ) : () -> value
+                                                        Rust =
+                                                            (\ () =>
+                                                                $'Default::default()' : value
+                                                            ) : () -> value
+                                                        TypeScript =
+                                                            (\ () =>
+                                                                $'undefined' : value
+                                                            ) : () -> value
+                                                        Zig =
+                                                            (\ () =>
+                                                                $'std.mem.zeroes(`value)' : value
+                                                            ) : () -> value
+                                                    }
+                                            := item = real_core::nominal_create `union_type (key, value)
+                                            key', item
+                                        )
+                                        (\ _ =>
+                                            failwith
+                                                `(string * union_type)
+                                                "reflection.get_union_fields_untag / invalid tag"
+                                        )
+                                (::) `(string * union_type) (key, item) acc, (+) `i32 i 1
+                        `union_record_type
+                        (Nil `(string * union_type), 0i32)
+                := result = fst `(list (string * union_type)) `i32 result
+                listm::rev `(string * union_type) result
+
+///- --timeout 900000
+
+///> gleam
+///> lua
+///> cuda
+///> rust
+///> typescript
+:# get_union_fields_untag =
+    get_union_fields_untag ()
+    |> _assert_eq' [ "Browser", Browser; "Contract", Contract ]
+
+    get_union_fields_untag ()
+    |> _assert_eq' [ "Some", Some (); "None", None ]
+
+:= union_try_pick \* t. (key : string) : option t =
+    := fields = ~> get_union_fields_untag `t ()
+    fields
+    ++ (
+        fields
+        |> listm::map \ key', x =>
+            key' |> sm'::to_lower, x
+    )
+    |> listm'::box
+    |> listm'::to_array'
+    |> \ x => array x : array _
+    |> am'::try_pick \ key', x =>
+        ? key' =. key
+        ?> Some x
+        |: None
+
+///- --timeout 900000
+
+///> gleam
+///> lua
+///> cuda
+///> rust
+///> typescript
+:# union_try_pick =
+    "Browser"
+    |> union_try_pick
+    |> _assert_eq (Some Browser)
+
+    "Browser"
+    |> union_try_pick
+    |> _assert_eq (Some Browser)
+
+:= union_try_pick' \* t. (key : string) : option t =
+    := fields = ~> get_union_fields_untag `t ()
+    fields
+    ++ (
+        fields
+        |> listm::map \ key', x =>
+            key' |> sm'::to_lower, x
+    )
+    |> listm'::try_pick \ key', x =>
+        ? key' =. key
+        ?> x |> Some
+        |: None
+
+///- --timeout 900000
+
+///> gleam
+///> lua
+///> cuda
+///> rust
+///> typescript
+:# union_try_pick_2 =
+    "Browser"
+    |> union_try_pick'
+    |> _assert_eq (Some Browser)
+
+    "Browser"
+    |> union_try_pick'
+    |> _assert_eq (Some Browser)
+
+:= union_cases_fold \* union_type state. (step : state -> union_type -> state) (initial : state) : state =
+    ~>
+        real_core::union_type_to_record `union_type \* union_record_type. =>
+            real_core::record_type_fold
+                \ acc key => \* value. => step acc (real_core::nominal_create `union_type (key, ()))
+                initial
+                `union_record_type
+
+///- --timeout 900000
+
+///> gleam
+///> lua
+///> cuda
+///> rust
+///> typescript
+:# union_cases_fold =
+    union_cases_fold (\ count (_ : reflection_test_target) => count + 1i32) 0i32
+    |> _assert_eq 2i32
+
+    union_cases_fold (\ found (target : reflection_test_target) => ? target = Contract ?> !+ |: found) !-
+    |> _assert_eq !+
+
+:= union_cases_find \* union_type. (matches : union_type -> bool) : option union_type =
+    :~ ^ search (cases : list union_type) : option union_type =
+        ?= cases ?|
+        | case :: rest => ? matches case ?> Some case |: search rest
+        | [] => None
+    search (union_cases_fold (\ acc (case : union_type) => case :: acc) [] |> dyn)
+
+///- --timeout 900000
+
+///> gleam
+///> lua
+///> cuda
+///> rust
+///> typescript
+:# union_cases_find =
+    union_cases_find \ (target : reflection_test_target) => target = Contract
+    |> _assert_eq (Some Contract)
+
+    union_cases_find \ (_ : reflection_test_target) => !-
+    |> _assert_eq None
+
+:= union_to_string \* t. (x : t) : string =
+    ~> get_union_fields_untag `t ()
+    |> listm'::try_pick \ key, x' =>
+        ? x' = x
+        ?> Some key
+        |:
+            := has_case =
+                ~>
+                    real_core::union_type_to_record
+                        `t
+                        \* union_record_type. =>
+                            real_core::record_type_fold_back
+                                \ _key =>
+                                    \* value. acc =>
+                                        ? acc
+                                        ?> acc
+                                        |:
+                                            ?: value ?|
+                                            | () => !-
+                                            | _ => !+
+                                `union_record_type
+                                !-
+            ? has_case |> not
+            ?> None
+            |:
+                := x' = #?x' |> sm'::split "(" |> am'::index_base 0
+
+                ? #?x |> sm'::starts_with x'
+                ?> Some key
+                |: None
+    |> optionm::value
+
+///- --timeout 900000
+
+///> cuda
+///> rust
+///> typescript
+:# union_to_string =
+    Some !+
+    |> union_to_string
+    |> _assert_eq' "Some"
+
+/// ### case_name
+:= case_name \* t. (x : t) : string = !!!!UnionCaseName(x)
+
+/// ### case_name_styles
+:= case_name_lower \* t. (x : t) : string = !!!!UnionCaseName(x, "lower")
+:= case_name_snake \* t. (x : t) : string = !!!!UnionCaseName(x, "snake")
+:= case_name_kebab \* t. (x : t) : string = !!!!UnionCaseName(x, "kebab")
+
+/// ### case_of_name
+:= case_of_name \* t. (text : string) : option t =
+    ~> get_union_fields_untag `t ()
+    |> listm'::try_pick \ key, case => ? key =. text ?> Some case |: None
+
+/// ### typed_name
+:! typed_name t = string
+
+:= typed_case_name \* t. (x : t) : typed_name t = typed_name (case_name x)
+:= case_qualified_name \* t. (x : t) : string = !!!!NominalName(`t) ++# "::" ++# case_name x
+
+:= typed_name_text \* t. ((typed_name text) : typed_name t) : string = text
+
+:= case_of_typed_name \* t. ((typed_name text) : typed_name t) : option t = case_of_name text
+
+:= styled_step (separator : string) (acc : list string) (c : char) : list string =
+    := s = sm'::of_char c
+    := lower = sm'::to_lower s
+    ? lower <> s && listm::length acc > 0i32 ?> lower :: separator :: acc |: lower :: acc
+
+:= styled_name (separator : string) (text : string) : string =
+    sm'::to_char_list text |> listm::fold (styled_step separator) [] |> listm::rev |> sm'::concat_list ""
+
+:= typed_name_snake \* t. ((typed_name text) : typed_name t) : string = styled_name "_" text
+
+:= typed_name_kebab \* t. ((typed_name text) : typed_name t) : string = styled_name "-" text
+
+:= typed_name_lower \* t. ((typed_name text) : typed_name t) : string = sm'::to_lower text
+
+///- --timeout 900000
+
+///> gleam
+///> lua
+///> cuda
+///> rust
+///> typescript
+:# case_name =
+    Contract
+    |> case_name
+    |> _assert_eq' "Contract"
+
+    Some 3i32
+    |> case_name
+    |> _assert_eq' "Some"
+
+    := ~payload : option i32 = None
+    payload
+    |> case_name
+    |> _assert_eq' "None"
+
+    "Browser"
+    |> case_of_name
+    |> _assert_eq (Some Browser)
+
+    "browser"
+    |> case_of_name
+    |> _assert_eq (None : option reflection_test_target)
+
+:= nameof \* t. (x : t) : string =
+    ~>
+        real_core::record_type_fold_back
+            \ key =>
+                \* value. _ =>
+                    sm'_real::symbol_to_string_real `(`key)
+            `t
+            ""
+
+:# nameof =
+    { test1 = ""; test2 = "" }
+    |> nameof
+    |> _assert_eq' "test1"
+
+:= get_record_fields \* t u. (x : t) : list (string * u) =
+    ~>
+        real_core::record_type_fold_back
+            \ key =>
+                \* u'. acc =>
+                    := k = sm'_real::symbol_to_string_real `(`key)
+                    := v = x key
+                    (::) `(string * u') (k, v) acc
+            `t
+            (Nil `(string * u))
+
+:# get_record_fields =
+    { a = "1"; b = "2" }
+    |> get_record_fields
+    |> _assert_eq' [ "a", "1"; "b", "2" ]
+
+:= get_functions_types \* t {record}. (fns : t) =
+    ~>
+        := get_function_type \* t. =
+            := args \* t {record}. : list (string * string) =
+                real_core::record_type_fold_back
+                    \ key =>
+                        \* v. acc =>
+                            := k = sm'_real::symbol_to_string_real `(`key)
+                            := v = $'"`v"' : string
+                            (::) `(string * string) (k, v) acc
+                    `t
+                    (Nil `(string * string))
+
+            ?: t ?|
+            | ~t -> ~u => args `t, ($'"`u"' : string)
+
+        real_core::record_type_fold_back
+            \ key =>
+                \* v. acc =>
+                    := k = sm'_real::symbol_to_string_real `(`key)
+                    := args, result = get_function_type `v
+                    (::) `(string * (list (string * string) * string)) (k, (args, result)) acc
+            `(`fns)
+            (Nil `(string * (list (string * string) * string)))
+    |> \ x => x : list (string * (list (string * string) * string))
+
+///> fsharp
+///> rust
+:# get_functions_types no_agree "type names are backend-specific" =
+    := one ({ a } : { a : i32 }) : i32 = a + 1
+    := two ({ a b } : { a : i32; b : i32 }) : i32 = a + b + 2
+    := fns = { one two }
+    := i32_name = run_target \| | Fsharp _ => \ () => ~~ "int32" | _ => \ () => "i32"
+
+    fns
+    |> get_functions_types
+    |> listm::map \ (name, args, result) => name, (args |> listm'::box |> listm'::to_array', result)
+    |> listm'::box
+    |> listm'::to_array'
+    |> sm'::format
+    |> _assert_eq' (
+        [
+            "one", [ "a", i32_name ], i32_name
+            "two", [ "a", i32_name; "b", i32_name ], i32_name
+        ]
+        |> listm::map \ (name, args, result) => name, (args |> listm'::box |> listm'::to_array', result)
+        |> listm'::box
+        |> listm'::to_array'
+        |> sm'::format
+    )
+
+:| nameof_probe =
+    | Alpha
+    | Beta
+    | Gamma
+    | Delta
+    | Epsilon
+
+///- --timeout 900000
+
+///> rust
+///> gleam
+///> lua
+///> typescript
+///> fsharp
+:# nameof_cases_round_trip =
+    Alpha |> case_name |> case_of_name |> _assert_eq (Some Alpha)
+    Beta |> case_name |> case_of_name |> _assert_eq (Some Beta)
+    Gamma |> case_name |> case_of_name |> _assert_eq (Some Gamma)
+    Delta |> case_name |> _assert_eq' "Delta"
+    Epsilon |> case_name |> case_of_name |> _assert_eq (Some Epsilon)
+    "epsilon" |> case_of_name |> _assert_eq (None : option nameof_probe)
+
+///- --timeout 900000
+
+///> gleam
+///> lua
+///> rust
+///> typescript
+:# typed_case_name_round_trips =
+    := name = typed_case_name Contract
+    typed_name_text name |> _assert_eq' "Contract"
+    case_of_typed_name name |> _assert_eq (Some Contract)
+
+///- --timeout 900000
+
+///> gleam
+///> rust
+:# typed_name_styles =
+    styled_name "_" "HostMacro" |> _assert_eq' "host_macro"
+    styled_name "-" "GadtCase" |> _assert_eq' "gadt-case"
+    styled_name "_" "Contract" |> _assert_eq' "contract"
+    := name = typed_case_name Browser
+    typed_name_kebab name |> _assert_eq' "browser"
+    typed_name_lower name |> _assert_eq' "browser"
+
+:| case_style_probe =
+    | HostMacro
+    | GadtCase
+
+///- --timeout 900000
+
+///> gleam
+///> lua
+///> rust
+///> typescript
+:# case_name_styles =
+    := ~macro : case_style_probe = HostMacro
+    macro |> case_name_snake |> _assert_eq' "host_macro"
+    macro |> case_name_lower |> _assert_eq' "hostmacro"
+    GadtCase |> case_name_kebab |> _assert_eq' "gadt-case"
+    GadtCase |> case_name_snake |> _assert_eq' "gadt_case"
+
+///- --timeout 900000
+
+///> gleam
+///> rust
+:# case_qualified_name =
+    case_qualified_name Contract |> _assert_eq' "reflection_test_target::Contract"
+    case_qualified_name Browser |> _assert_eq' "reflection_test_target::Browser"

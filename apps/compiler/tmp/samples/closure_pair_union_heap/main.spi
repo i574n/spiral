@@ -1,0 +1,21 @@
+:| slot =
+    | None
+    | Some : i32
+
+:= main () : i32 =
+    := ~n = 3i32
+    := ~m = 4i32
+    := cell = !!!!LayoutToHeap({ value = m })
+    := f (z : i32) : slot * heap { value : i32 } =
+        ? z =. 0i32 ?>
+            None, cell
+        |:
+            Some n, cell
+    := ~g = f
+    := pair = g 1i32
+    := ~(left, right) = pair
+    ?= left ?|
+    | Some value =>
+        := obj = !!!!LayoutIndex(right)
+        ? value +. obj::value =. 7i32 ?> 0i32 |: 1i32
+    | None => 1i32

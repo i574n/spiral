@@ -1,0 +1,28 @@
+:! hg38 = ()
+:! chr1 = ()
+:! normalized = ()
+
+:| reference build =
+    | Reference :: \* build. string -> reference build
+
+:| locus build contig =
+    | Locus :: \* build contig. i32 -> locus build contig
+
+:| variant build contig state =
+    | Variant :: \* build contig state. string -> variant build contig state
+
+:= normalize \* build contig.
+    (reference : reference build)
+    (locus : locus build contig)
+    : variant build contig normalized =
+    ?= reference, locus ?|
+    | Reference _, Locus _ => Variant "normalized-locus"
+
+:= label \* build contig state. (variant : variant build contig state) : string =
+    ?= variant ?|
+    | Variant value => value
+
+:= main () : string =
+    := reference : reference hg38 = Reference "hg38"
+    := locus : locus hg38 chr1 = Locus 101
+    label (normalize reference locus)

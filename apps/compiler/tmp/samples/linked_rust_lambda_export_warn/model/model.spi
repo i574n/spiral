@@ -1,0 +1,8 @@
+:= double (n : i32) : i32 = !!!!Mult(n, 2i32)
+
+:= triple (n : i32) : i32 = !!!!Mult(n, 3i32)
+
+:= main () : i32 =
+    !!!!Export("model_double", (\ (n : i32) => double n))
+    !!!!Export("model_triple", triple)
+    0i32

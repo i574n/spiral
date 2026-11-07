@@ -1,0 +1,33 @@
+:= main () : i32 =
+    := ~n = 3i32
+    := ~word = "no"
+    := inner_pair = n, word
+    := inner = !!!!LayoutToHeap({ value = inner_pair })
+    := ~extra = 1i32
+    := mid_pair = inner, extra
+    := mid = !!!!LayoutToHeap({ value = mid_pair })
+    := ~mark = 2i32
+    := outer_pair = mid, mark
+    := outer = !!!!LayoutToHeap({ value = outer_pair })
+    := slot : mut { value : heap { value : (heap { value : (heap { value : i32 * string }) * i32 }) * i32 } } =
+        !!!!LayoutToHeapMutable({ value = outer })
+    := ~m = 7i32
+    := ~next = "hi"
+    := next_pair = m, next
+    := next_inner = !!!!LayoutToHeap({ value = next_pair })
+    := ~count = 4i32
+    := next_mid_pair = next_inner, count
+    := next_mid = !!!!LayoutToHeap({ value = next_mid_pair })
+    := ~flag = 5i32
+    := next_outer_pair = next_mid, flag
+    := next_outer = !!!!LayoutToHeap({ value = next_outer_pair })
+    slot <- { value = next_outer }
+    := opened = !!!!LayoutIndex(slot)
+    := held = opened::value
+    := outer_opened = !!!!LayoutIndex(held)
+    := ~(mid_held, seen) = outer_opened::value
+    := mid_opened = !!!!LayoutIndex(mid_held)
+    := ~(inner_held, count_seen) = mid_opened::value
+    := inner_opened = !!!!LayoutIndex(inner_held)
+    := ~(left, right) = inner_opened::value
+    ? left =. 7i32 && !!!!EQ(right, "hi") && count_seen =. 4i32 && seen =. 5i32 ?> 0i32 |: 1i32

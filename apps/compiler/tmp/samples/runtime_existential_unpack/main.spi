@@ -1,0 +1,16 @@
+:| packed =
+    | Packed : (\? t. t * (t -> i32))
+
+:= make (flag : bool) : packed =
+    ? flag ?> Packed (\? (1i32, \ (x : i32) => x))
+    |: Packed (\? (2i32, \ (x : i32) => !!!!Sub(x, 2i32)))
+
+:= main () : i32 =
+    := ~flag = !+
+    ?= make flag ?|
+    | Packed p =>
+        := \? t. value, project = p
+        := result = project value
+        !!!!Sub(result, 1i32)
+
+:= expected_error_runtime_existentials_are_compile_time_only () = ()

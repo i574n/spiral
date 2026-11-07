@@ -1,0 +1,11 @@
+:~ middle (x : string) : string =
+    := bounds = { from = 1i32; to = 3i32 }
+    sm::slice x bounds
+
+:= main () =
+    := result = middle "alpha"
+    ? (=.) (sm::length result : i32) 3i32 ?>
+        ? (=.) (sm::index result 0i32) 'l' ?>
+            ? (=.) (sm::index result 2i32) 'h' ?> 0i32 |: 1i32
+        |: 2i32
+    |: 3i32

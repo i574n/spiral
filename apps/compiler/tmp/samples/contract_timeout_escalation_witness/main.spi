@@ -1,0 +1,29 @@
+:! job_a = ()
+:! job_b = ()
+:! running = ()
+:! escalated = ()
+
+:| job id state =
+    | RunningA :: job job_a running
+    | RunningB :: job job_b running
+    | EscalatedA :: job job_a escalated
+    | EscalatedB :: job job_b escalated
+
+:| timeout_witness id =
+    | TimeoutA :: timeout_witness job_a
+    | TimeoutB :: timeout_witness job_b
+
+:= escalate \* id.
+    (job : job id running)
+    (witness : timeout_witness id)
+    : job id escalated =
+    ?= job, witness ?|
+    | RunningA, TimeoutA => EscalatedA
+    | RunningB, TimeoutB => EscalatedB
+
+:= render (job : job job_a escalated) : string =
+    ?= job ?|
+    | EscalatedA => "timeout-escalated"
+
+:= main () : string =
+    render (escalate RunningA TimeoutA)

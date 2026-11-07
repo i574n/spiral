@@ -1,0 +1,76 @@
+local Heap0, Heap1, Heap2, Mut0
+Heap0 = function(l0, l1) return { __tag = "Heap0", l0, l1 } end
+
+Heap1 = function(l0, l1) return { __tag = "Heap1", l0, l1 } end
+
+Heap2 = function(l0, l1) return { __tag = "Heap2", l0, l1 } end
+
+Mut0 = function(l0) return { __tag = "Mut0", l0 = l0 } end
+
+local v0 = 1
+local v1 = "no"
+local v2 = { __tag = "Heap0", l0 = v0, l1 = v1 }
+local v3 = 2
+local v4 = "zz"
+local v5 = { __tag = "Heap0", l0 = v3, l1 = v4 }
+local v6 = { __tag = "Heap1", l0 = v2, l1 = v5 }
+local v7 = 3
+local v8 = { __tag = "Heap2", l0 = v6, l1 = v7 }
+local v9 = { __tag = "Mut0", l0 = v8 }
+local v10 = 7
+local v11 = "hi"
+local v12 = { __tag = "Heap0", l0 = v10, l1 = v11 }
+local v13 = 4
+local v14 = "yo"
+local v15 = { __tag = "Heap0", l0 = v13, l1 = v14 }
+local v16 = { __tag = "Heap1", l0 = v12, l1 = v15 }
+local v17 = 2
+local v18 = { __tag = "Heap2", l0 = v16, l1 = v17 }
+v9.l0 = v18
+local v19 = v9 ~= nil and v9.l0
+local v20, v21 = v19 ~= nil and v19.l0, v19 ~= nil and v19.l1
+local v22, v23 = v20 ~= nil and v20.l0, v20 ~= nil and v20.l1
+local v24, v25 = v22 ~= nil and v22.l0, v22 ~= nil and v22.l1
+local v26, v27 = v23 ~= nil and v23.l0, v23 ~= nil and v23.l1
+local v28 = v24 == 7
+local getv30 = function()
+    if v28 then
+        local v29 = v25 == "hi"
+        return v29
+    else
+        return false
+    end
+end
+local v30 = getv30()
+local getv32 = function()
+    if v30 then
+        local v31 = v26 == 4
+        return v31
+    else
+        return false
+    end
+end
+local v32 = getv32()
+local getv34 = function()
+    if v32 then
+        local v33 = v27 == "yo"
+        return v33
+    else
+        return false
+    end
+end
+local v34 = getv34()
+local getv36 = function()
+    if v34 then
+        local v35 = v21 == 2
+        return v35
+    else
+        return false
+    end
+end
+local v36 = getv36()
+if v36 then
+    return 0
+else
+    return 1
+end

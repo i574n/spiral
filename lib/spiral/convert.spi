@@ -1,0 +1,642 @@
+:# convert static =
+    :< testing
+
+/// ## convert
+:== unativeint_switch =
+    {
+        Gleam : $'unativeint'
+        Lua : $'unativeint'
+        Fsharp : $'unativeint'
+        Python : $'unativeint'
+        TypeScript : $'unativeint'
+        Cpp : $'unativeint'
+        CppHost : $'unativeint'
+        Pascal : $'unativeint'
+        Cuda : $'unativeint'
+        Rust : $'usize'
+        Zig : $'usize'
+    }
+:! unativeint = $'backend_switch `(unativeint_switch)'
+
+:= to' \* t u. (fn : t -> option u) (x : t) : option u =
+    ~>
+        ?: t * u ?|
+        | ~x * ~x => Some `u x
+        | int * int => Some `u (conv `t `u x)
+        | float * float => Some `u (conv `t `u x)
+        | int * float => Some `u (conv `t `u x)
+        | float * int => Some `u (conv `t `u x)
+        | i64 * f64 => Some `u (conv `t `u x)
+        | f64 * i64 => Some `u (conv `t `u x)
+        | i32 * f64 => Some `u (conv `t `u x)
+        | f64 * i32 => Some `u (conv `t `u x)
+        | i64 * f32 => Some `u (conv `t `u x)
+        | f32 * i64 => Some `u (conv `t `u x)
+        | char * bool => Some `u (x = '1')
+        | bool * char => Some `u (? x ?> '1' |: '0')
+        | bool * _ => Some `u (? x ?> 1 |: 0)
+        | _ => fn x
+
+:= to \* t u. (x : t) : u =
+    ? is_rust () ?>
+        := from_string : bool =
+            ~>
+                ?: t ?|
+                | string => !+
+                | _ => !-
+        x
+        |> to' \ x =>
+            := y : u =
+                ? from_string
+                ?> $'(!x).parse::<`u>().unwrap()'
+                |: $'(!x as `u)'
+            Some y
+        |> optionm::value
+    |:
+        x
+        |> to' \ x => $'!x ' |> Some
+        |> optionm::value
+
+:= numeric_conv \* t u. (x : t) : u =
+    ?
+        ~>
+            ?: t ?|
+            | i8 => !+
+            | i16 => !+
+            | i32 => !+
+            | i64 => !+
+            | u8 => !+
+            | u16 => !+
+            | u32 => !+
+            | u64 => !+
+            | f32 => !+
+            | f64 => !+
+            | _ => !-
+        && (
+            ~>
+                ?: u ?|
+                | i8 => !+
+                | i16 => !+
+                | i32 => !+
+                | i64 => !+
+                | u8 => !+
+                | u16 => !+
+                | u32 => !+
+                | u64 => !+
+                | f32 => !+
+                | f64 => !+
+                | _ => !-
+        )
+    ?> ~> conv `t `u x
+    |: $'!x ' : u
+
+:= lean_parse_helpers () : () =
+    global """
+        def spiralParseInt? (s : String) : Option Int :=
+          let u := s.trimAscii.toString
+          let v := if u.startsWith "+" then (u.drop 1).toString else u
+          v.toInt?
+
+        def spiralDigit (c : Char) : Int :=
+          if c.isDigit then (c.toNat : Int) - 48
+          else if 'a' ≤ c && c ≤ 'z' then (c.toNat : Int) - 87
+          else if 'A' ≤ c && c ≤ 'Z' then (c.toNat : Int) - 55
+          else 0
+
+        def spiralParseIntBase (s : String) (base : Int32) : Int32 :=
+          let u := s.trimAscii.toString
+          let neg := u.startsWith "-"
+          let body := if neg || u.startsWith "+" then (u.drop 1).toString else u
+          let v := body.foldl (fun acc c => acc * base.toInt + spiralDigit c) 0
+          Int32.ofInt (if neg then -v else v)
+        """
+
+:= convert_i32_base \* t. (base : i32) (x : t) : i32 =
+    backend_switch {
+        Gleam = \ () =>
+            global "import gleam/int"
+            := (n : int), (err : int) =
+                $'case int.base_parse(!x, !base) { Ok(n) -> ##(n, 0) Error(Nil) -> ##(0, 1) }'
+            ? err = 0
+            ?> n |> Some
+            |: None
+            |> optionm::value
+        Lua = \ () => $'tonumber( !x, !base )' : i32
+        Fsharp = \ () => $'System.Convert.ToInt32 (!x, !base)' : i32
+        Python = \ () => $'int (!x, !base)' : i32
+        Rust = \ () =>
+            := radix : u32 = conv base
+            $'i32::from_str_radix(&*(!x), !radix).unwrap()' : i32
+        TypeScript = \ () => $'parseInt(!x, !base)' : i32
+        C = \ () => $'(int32_t)strtol((!x)->ptr, NULL, !base)' : i32
+        Pascal = \ () =>
+            ? base = 16 ?> $'StrToInt(##36 + !x)' : i32
+            |? base = 2 ?> $'StrToInt(##37 + !x)' : i32
+            |? base = 8 ?> $'StrToInt(##38 + !x)' : i32
+            |? base = 10 ?> $'StrToInt(!x)' : i32
+            |: $'backend_switch_has_no_Pascal_arm_in_lib_spiral' : i32
+        Wasm = \ () => $'(i32.wrap_i64 (call $parse_i64 !x !base))' : i32
+        Lean = \ () =>
+            lean_parse_helpers ()
+            $'(spiralParseIntBase !x !base)' : i32
+        Kotlin = \ () => $'((!x).trim().toIntOrNull(!base) ?: 0)' : i32
+        Swift = \ () => $'(Int32(String((!x).split(separator: " ").first ?? ""), radix: Int(!base)) ?? 0)' : i32
+        Zig = \ () => $'(std.fmt.parseInt(i32, std.mem.trim(u8, !x, " \\t\\r\\n"), @@intCast(!base)) catch 0)' : i32
+    }
+
+/// ### convert_i32
+:= is_string_type \* t. (_ : t) : bool = ~> ?: t ?| string => !+ | _ => !-
+:= is_float_type \* t. (_ : t) : bool = ~> ?: t ?| f64 => !+ | f32 => !+ | _ => !-
+
+:= convert_i32 \* t. (x : t) : int =
+    backend_switch {
+        Gleam = \ () => x |> convert_i32_base 10 : int
+        Lua = \ () => x |> convert_i32_base 10 : int
+        Fsharp = \ () => $'System.Convert.ToInt32(!x)' : int
+        Python = \ () => x |> convert_i32_base 10 : int
+        Rust = \ () =>
+            ? (~> ?: t ?| string => !+ | _ => !-)
+            ?> x |> convert_i32_base 10 : int
+            |? (~> ?: t ?| f64 => !+ | f32 => !+ | _ => !-)
+            ?> $'((!x).round_ties_even() as i32)' : int
+            |: $'(!x as i32)' : int
+        C = \ () =>
+            ? is_string_type x
+            ?> x |> convert_i32_base 10 : int
+            |? is_float_type x ?>
+                global "#include <math.h>"
+                $'(int32_t)nearbyint(!x)' : int
+            |: $'(int32_t)(!x)' : int
+        Pascal = \ () =>
+            ? is_string_type x
+            ?> x |> convert_i32_base 10 : int
+            |? is_float_type x
+            ?> $'Round(!x)' : int
+            |: $'Int32(!x)' : int
+        TypeScript = \ () =>
+            ? is_string_type x
+            ?> x |> convert_i32_base 10 : int
+            |? is_float_type x
+            ?> $'backend_switch_has_no_TypeScript_float_rounding_in_lib_spiral' : int
+            |: $'Number(!x)' : int
+        Wasm = \ () =>
+            ? is_string_type x
+            ?> x |> convert_i32_base 10 : int
+            |? is_float_type x
+            ?> $'(i32.trunc_sat_f64_s (f64.nearest !x))' : int
+            |: x |> numeric_conv : int
+        Zig = \ () =>
+            ? is_string_type x
+            ?> x |> convert_i32_base 10 : int
+            |? is_float_type x
+            then $'\@as(i32, \@intFromFloat(if (\@abs(!x - \@trunc(!x)) == 0.5) 2.0 * \@round(!x / 2.0) else \
+                \@round(!x)))' : int
+            |: x |> numeric_conv : int
+        Lean = \ () =>
+            ? is_string_type x
+            ?> x |> convert_i32_base 10 : int
+            |? is_float_type x
+            ?> $'backend_switch_has_no_Lean_float_rounding_in_lib_spiral' : int
+            |: $'(Int32.ofInt (SpiralToInt.toI !x))' : int
+        Kotlin = \ () =>
+            ? is_string_type x
+            ?> x |> convert_i32_base 10 : int
+            |? is_float_type x
+            ?> $'kotlin.math.round(!x).toInt()' : int
+            |: $'(!x).toInt()' : int
+        Swift = \ () =>
+            ? is_string_type x
+            ?> x |> convert_i32_base 10 : int
+            |? is_float_type x
+            ?> $'Int32((!x).rounded(.toNearestOrEven))' : int
+            |: $'Int32(truncatingIfNeeded: !x)' : int
+    }
+
+/// ### try_convert
+:= integer_fits \* u. (_ : u) (value : i64) : bool =
+    := bounded : bool = ~> ?: u ?| i64 => !- | u64 => !- | _ => !+
+    := lowest : i64 = ~> ?: u ?| i8 => -128i64 | i16 => -32768i64 | i32 => -2147483648i64 | _ => 0i64
+    := highest : i64 =
+        ~>
+            ?: u ?|
+            | i8 => 127i64
+            | i16 => 32767i64
+            | i32 => 2147483647i64
+            | u8 => 255i64
+            | u16 => 65535i64
+            | u32 => 4294967295i64
+            | _ => 0i64
+    not bounded || (value >= lowest && value <= highest)
+
+:= parsed_integer \* u. (ok : bool) (value : i64) : option u =
+    := integral : bool =
+        ~>
+            ?: u ?|
+            | i8 => !+
+            | i16 => !+
+            | i32 => !+
+            | i64 => !+
+            | u8 => !+
+            | u16 => !+
+            | u32 => !+
+            | u64 => !+
+            | _ => !-
+    ? integral ?>
+        := converted : u = ~> conv `i64 `u value
+        ? ok && integer_fits converted value ?> Some converted |: None
+    |: None
+
+:= narrow_parsed \* u. (ok : bool) (value : f64) : option u =
+    := low, high =
+        ~>
+            ?: u ?|
+            | i8 => -128.0f64, 127.0f64
+            | i16 => -32768.0f64, 32767.0f64
+            | i32 => -2147483648.0f64, 2147483647.0f64
+            | u8 => 0.0f64, 255.0f64
+            | u16 => 0.0f64, 65535.0f64
+            | _ => 0.0f64, 4294967295.0f64
+    := converted : u = ~> conv `f64 `u value
+    ? ok && value >= low && value <= high ?> Some converted |: None
+
+:= try_convert \* t u. (x : t) : option u =
+    x
+    |> to' \ x =>
+        backend_switch {
+            Gleam = \ () =>
+                ?
+                    is_string_type x
+                    && (
+                        ~>
+                            ?: u ?|
+                            | i8 => !+
+                            | i16 => !+
+                            | i32 => !+
+                            | i64 => !+
+                            | u8 => !+
+                            | u16 => !+
+                            | u32 => !+
+                            | u64 => !+
+                            | _ => !-
+                    )
+                ?>
+                    global "import gleam/int"
+                    global "import gleam/string"
+                    := (n : int), (err : int) =
+                        $'case int.parse(string.trim(!x)) { Ok(n) -> ##(n, 0) Error(Nil) -> ##(0, 1) }'
+                    ? err = 0
+                    ?> n |> to |> Some
+                    |: None : _ u
+                |: x |> to |> Some
+            Lua = \ () =>
+                ? is_string_type x ?>
+                    := ok = ($'(string.match(!x, "^%s*[+-]?%d+%s*$") ~= nil)' : bool)
+                    := narrow : bool =
+                        ~>
+                            ?: u ?|
+                            | i8 => !+
+                            | i16 => !+
+                            | i32 => !+
+                            | u8 => !+
+                            | u16 => !+
+                            | u32 => !+
+                            | _ => !-
+                    ? narrow
+                    ?> narrow_parsed ok ($'(tonumber(!x) or 0)' : f64)
+                    |: parsed_integer ok ($'(tonumber(!x) or 0)' : i64)
+                |: x |> to |> Some : _ u
+            Fsharp = \ () =>
+                resultm::from_try
+                    \ () => $'!x |> `u '
+                    eval
+                |> resultm::ok
+                : _ u
+            Python = \ () =>
+                resultm::from_try
+                    \ () => $'`u(!x)'
+                    eval
+                |> resultm::ok
+                : _ u
+            Rust = \ () =>
+                ? (~> ?: u ?| string => !+ | _ => !-)
+                ?> Some $'Rc::<str>::from(format\!("{}", !x))'
+                |? (~> ?: t ?| string => !+ | _ => !-) ?>
+                    ($'(!x).trim().parse::<`u>().ok()' : optionm'::option' u) |> optionm'::unbox
+                |: Some $'((!x) as `u)'
+            C = \ () =>
+                ? is_string_type x ?>
+                    global "#include <stdbool.h>"
+                    global "#include <stdlib.h>"
+                    global "#include <ctype.h>"
+                    global "#include <errno.h>"
+                    global (
+                        "static bool spiral_integer_text_ok(const char *s) { char *end; while (isspace((unsigned "
+                        ^^ "char)*s)) s++; if (!*s) return false; errno = 0; strtoll(s, &end, 10); if (errno != 0 || "
+                        ^^ "end == s) return false; while (isspace((unsigned char)*end)) end++; return *end == 0; }"
+                    )
+                    parsed_integer ($'spiral_integer_text_ok((!x)->ptr)' : bool) ($'strtoll((!x)->ptr, NULL, 10)' : i64)
+                |: x |> to |> Some : _ u
+            Pascal = \ () =>
+                ? is_string_type x ?>
+                    parsed_integer
+                        ($'(StrToInt64Def(Trim(!x), 0) = StrToInt64Def(Trim(!x), 1))' : bool)
+                        ($'StrToInt64Def(Trim(!x), 0)' : i64)
+                |: x |> to |> Some : _ u
+            TypeScript = \ () =>
+                ? is_string_type x ?>
+                    := ok : bool = $'/^\\s*[+-]?\\d+\\s*$/.test(!x)'
+                    parsed_integer ok ($'(!ok ? BigInt(!x) : 0n)' : i64)
+                |: x |> to |> Some : _ u
+            Wasm = \ () =>
+                ? is_string_type x ?>
+                    parsed_integer ($'(call $integer_text_ok !x)' : bool) ($'(call $parse_i64 !x (i32.const 10))' : i64)
+                |: x |> to |> Some : _ u
+            Zig = \ () =>
+                ? is_string_type x ?>
+                    inl ok : bool = $'(if (std.fmt.parseInt(i64, std.mem.trim(u8, !x, " \\t\\r\\n"), 10)) |_| true \
+                        else |_| false)'
+                    parsed_integer ok ($'(std.fmt.parseInt(i64, std.mem.trim(u8, !x, " \\t\\r\\n"), 10) catch 0)' : i64)
+                |? (~> ?: t ?| unativeint => !+ | _ => !-) || (~> ?: u ?| unativeint => !+ | _ => !-) ?>
+                    Some ($'@@intCast(!x)' : u)
+                |: x |> numeric_conv |> Some : _ u
+            Lean = \ () =>
+                ? is_string_type x ?>
+                    lean_parse_helpers ()
+                    parsed_integer ($'(spiralParseInt? !x).isSome' : bool) ($'(Int64.ofInt ((spiralParseInt? !x).getD \
+                        0))' : i64)
+                |: x |> to |> Some : _ u
+            Kotlin = \ () =>
+                ? is_string_type x ?>
+                    parsed_integer
+                        ($'((!x).trim().toLongOrNull() \!= null)' : bool)
+                        ($'((!x).trim().toLongOrNull() ?: 0L)' : i64)
+                |: x |> to |> Some : _ u
+            Swift = \ () =>
+                ? is_string_type x
+                then parsed_integer ($'((!x).split(separator: " ").count == 1 && Int64(String((!x).split(separator: " \
+                    ")[0])) \!= nil)' : bool) ($'(Int64(String((!x).split(separator: " ").first ?? "")) ?? 0)' : i64)
+                |: x |> to |> Some : _ u
+        }
+
+///> gleam
+///> lua
+///> fsharp
+///> rust
+:# try_convert =
+    3i32
+    |> try_convert
+    |> optionm::value
+    |> _assert_eq' (
+        backend_switch {
+            Gleam = \ () => ($'3' : unativeint) : unativeint
+            Lua = \ () => ($'3' : unativeint) : unativeint
+            Fsharp = \ () => ($'3 |> `unativeint ' : unativeint) : unativeint
+            Python = \ () => ($'3' : unativeint) : unativeint
+            Rust = \ () => ($'3usize' : unativeint) : unativeint
+        } : unativeint
+    )
+
+///> gleam
+///> fsharp
+///> rust
+///> cuda
+:# try_convert_2 =
+    "3"
+    |> try_convert
+    |> _assert_eq (3i32 |> Some)
+
+    "999999999999999"
+    |> try_convert
+    |> _assert_eq (999999999999999i64 |> Some)
+
+    "a"
+    |> try_convert
+    |> _assert_eq (None : _ int)
+
+    !+
+    |> try_convert
+    |> _assert_eq (1i32 |> Some)
+
+    !-
+    |> try_convert
+    |> _assert_eq (0i32 |> Some)
+
+///> lua
+:# try_convert_reads_narrow_integers_natively =
+    := ~small = "3"
+    := ~negative = " -12 "
+    := ~wide = "2147483648"
+    := ~fraction = "1.5"
+    := ~byte = "300"
+    := a, b, c = (try_convert small : option i32), (try_convert negative : option i32), (try_convert wide : option i32)
+    := d, e = (try_convert fraction : option i32), (try_convert byte : option u8)
+    (a, b, c, d, e) |> _assert_eq (Some 3i32, Some (0i32 - 12i32), None, None, None)
+
+///> zig
+///> rust
+:# unativeint_round_trip_casts_on_native_backends =
+    := n : unativeint = 3i32 |> try_convert |> optionm::value
+    := back : i32 = n |> try_convert |> optionm::value
+    back |> _assert_eq 3i32
+
+:= convert \* t u. (x : t) : u =
+    x |> try_convert |> optionm::value
+
+:= unbox \* t u. (x : t) : u =
+    backend_switch {
+        Gleam = \ () => x |> convert : u
+        Lua = \ () => x |> to : u
+        Fsharp = \ () => $'!x |> unbox<`u>' : u
+        Python = \ () => x |> to : u
+        Rust = \ () => $'(!x)' : u
+        Zig = \ () => x |> to : u
+    }
+
+:= u8 \* t. (x : t) : u8 =
+    backend_switch {
+        Gleam = \ () => x |> convert : u8
+        Lua = \ () => x |> to : u8
+        Fsharp = \ () => x |> $'uint8' : u8
+        Python = \ () => x |> to : u8
+        Rust = \ () => $'(!x as u8)' : u8
+        TypeScript = \ () => $'Number(BigInt.asUintN(8, BigInt(!x)))' : u8
+        Zig = \ () => numeric_conv x : u8
+        Lean = \ () => numeric_conv x : u8
+        C = \ () => $'((uint8_t)(!x))' : u8
+        Pascal = \ () => $'Byte(!x)' : u8
+    }
+
+:= u16 \* t. (x : t) : u16 =
+    backend_switch {
+        Gleam = \ () => x |> convert : u16
+        Lua = \ () => x |> to : u16
+        Fsharp = \ () => x |> $'uint16' : u16
+        Python = \ () => $'!x & 0xFFFF' : u16
+        Rust = \ () => $'(!x as u16)' : u16
+        TypeScript = \ () => $'Number(BigInt.asUintN(16, BigInt(!x)))' : u16
+        Zig = \ () => numeric_conv x : u16
+        Lean = \ () => numeric_conv x : u16
+        C = \ () => numeric_conv x : u16
+        Pascal = \ () => numeric_conv x : u16
+    }
+
+:= u64 \* t. (x : t) : u64 =
+    backend_switch {
+        Gleam = \ () => x |> convert : u64
+        Lua = \ () => x |> to : u64
+        Fsharp = \ () => x |> $'uint64' : u64
+        Python = \ () => x |> to : u64
+        Rust = \ () => $'(!x as u64)' : u64
+        TypeScript = \ () =>
+            ? (~> ?: t ?| f32 => !+ | f64 => !+ | _ => !-)
+            ?> $'BigInt.asUintN(64, BigInt(Math.trunc(!x)))' : u64
+            |: $'BigInt.asUintN(64, BigInt(!x))' : u64
+        Zig = \ () => numeric_conv x : u64
+        Lean = \ () => numeric_conv x : u64
+        C = \ () => numeric_conv x : u64
+        Pascal = \ () => numeric_conv x : u64
+    }
+
+:= i32 \* t. (x : t) : i32 =
+    backend_switch {
+        Gleam = \ () => x |> convert : i32
+        Lua = \ () => x |> convert : i32
+        Fsharp = \ () => x |> convert : i32
+        Python = \ () => x |> convert : i32
+        Rust = \ () => x |> to : i32
+        TypeScript = \ () =>
+            ? (~> ?: t ?| f32 => !+ | f64 => !+ | _ => !-)
+            ?> $'(Math.trunc(!x) | 0)' : i32
+            |: $'Number(BigInt.asIntN(32, BigInt(!x)))' : i32
+        Zig = \ () => numeric_conv x : i32
+        Lean = \ () => numeric_conv x : i32
+        C = \ () => numeric_conv x : i32
+        Pascal = \ () => numeric_conv x : i32
+    }
+
+:= i64 \* t. (x : t) : i64 =
+    backend_switch {
+        Gleam = \ () => x |> convert : i64
+        Lua = \ () => x |> to : i64
+        Fsharp = \ () => x |> $'int64' : i64
+        Python = \ () => x |> to : i64
+        Rust = \ () => x |> to : i64
+        TypeScript = \ () =>
+            ? (~> ?: t ?| f32 => !+ | f64 => !+ | _ => !-)
+            ?> $'BigInt.asIntN(64, BigInt(Math.trunc(!x)))' : i64
+            |: $'BigInt.asIntN(64, BigInt(!x))' : i64
+        Zig = \ () => numeric_conv x : i64
+        Lean = \ () => numeric_conv x : i64
+        C = \ () => numeric_conv x : i64
+        Pascal = \ () => numeric_conv x : i64
+    }
+
+:= f32 \* t. (x : t) : f32 =
+    backend_switch {
+        Gleam = \ () => x |> convert : f32
+        Lua = \ () => x |> to : f32
+        Fsharp = \ () => x |> $'float32' : f32
+        Python = \ () => x |> to : f32
+        Rust = \ () => $'(!x as f32)' : f32
+        Zig = \ () => numeric_conv x : f32
+        Lean = \ () => numeric_conv x : f32
+        C = \ () => numeric_conv x : f32
+        Pascal = \ () => numeric_conv x : f32
+    }
+
+:= f64 \* t. (x : t) : f64 =
+    backend_switch {
+        Gleam = \ () => x |> convert : f64
+        Lua = \ () => x |> to : f64
+        Fsharp = \ () => x |> $'float' : f64
+        Python = \ () => x |> to : f64
+        Rust = \ () => $'(!x as f64)' : f64
+        Zig = \ () => numeric_conv x : f64
+        Lean = \ () => numeric_conv x : f64
+        C = \ () => numeric_conv x : f64
+        Pascal = \ () => numeric_conv x : f64
+    }
+
+///> rust
+///> zig
+///> c
+///> pascal
+:# widening_conversions_agree_across_native_backends =
+    := n : i32 = 300
+    (u16 n, i64 n, u64 n, f64 n, f32 n) |> _assert_eq (300u16, 300i64, 300u64, 300.0, 300.0f32)
+
+:= to_any \* t. (obj : t) : any =
+    obj |> to
+
+/// ### (~:>) any
+:+ (~:>) any = to_any
+
+:= f32_of_bits (bits : u32) : f32 =
+    run_target \|
+        | Rust => \ () => $'f32::from_bits(!bits)' : f32
+        | C => \ () =>
+            global "#include <stdint.h>"
+            global "#include <string.h>"
+            global (
+                "static float spiral_f32_of_bits(uint32_t u) { float f; memcpy(&f, &u, sizeof f); "
+                ^^ "return f; }"
+            )
+            $'spiral_f32_of_bits(!bits)' : f32
+        | Wgsl => \ () => $'bitcast<f32>(!bits)' : f32
+        | Zig => \ () => $'@@as(f32, @@bitCast(!bits))' : f32
+        | _ => \ () => failwith "convert.f32_of_bits / no arm for this backend"
+
+:= c_bits_of_f32 () : () =
+    global "#include <stdint.h>"
+    global "#include <string.h>"
+    global "static uint32_t spiral_bits_of_f32(float f) { uint32_t u; memcpy(&u, &f, sizeof u); return u; }"
+
+:= bits_of_f32 (x : f32) : u32 =
+    run_target \|
+        | Rust => \ () => $'(!x).to_bits()' : u32
+        | C => \ () =>
+            c_bits_of_f32 ()
+            $'spiral_bits_of_f32(!x)' : u32
+        | Wgsl => \ () => $'bitcast<u32>(!x)' : u32
+        | Zig => \ () => $'@@as(u32, @@bitCast(!x))' : u32
+        | _ => \ () => failwith "convert.bits_of_f32 / no arm for this backend"
+
+:= parse_f64 (text : string) : option f64 =
+    := value, parsed =
+        run_target \|
+            | Rust => \ () => $'match (!text).trim().parse::<f64>() { Ok(f) => (f, true), Err(_) => (0.0, false) }' : f64 * bool
+            | Gleam => \ () =>
+                global "import gleam/float"
+                global "import gleam/int"
+                $'case float.parse(!text) { Ok(f) -> ##(f, True) Error(_) -> case int.parse(!text) { Ok(i) -> ##(int.to_float(i), True) Error(_) -> ##(0.0, False) } }' : f64 * bool
+            | _ => \ () => failwith "convert.parse_f64 / no arm for this backend"
+    ? parsed ?> Some value |: None
+
+///> rust
+///> gleam
+:# parse_f64_reads_round_trip_literals =
+    (parse_f64 "1.5", parse_f64 "0.30000000000000004", parse_f64 "-2.5", parse_f64 "7", parse_f64 "x") |> _assert_eq (Some 1.5f64, Some 0.30000000000000004f64, Some (-2.5f64), Some 7.0f64, None)
+
+///> rust
+:# parse_f64_reads_exponents_on_rust =
+    (parse_f64 "1.5e3", parse_f64 "2e-1") |> _assert_eq (Some 1500.0f64, Some 0.2f64)
+
+///> c
+///> rust
+///> zig
+:# f32_of_bits_decodes_ieee_754 =
+    := ~one = 1065353216u32
+    (f32_of_bits one, f32_of_bits 3223322624u32) |> _assert_eq (1.0f32, -2.5f32)
+
+///> c
+///> rust
+///> zig
+:# bits_of_f32_inverts_f32_of_bits =
+    := ~one = 1.0f32
+    (bits_of_f32 one, bits_of_f32 -2.5f32, f32_of_bits (bits_of_f32 0.1f32) = 0.1f32)
+    |> _assert_eq (1065353216u32, 3223322624u32, !+)
+
+///> wgsl
+:# f32_of_bits_decodes_on_gpu =
+    := ~one = 1065353216u32
+    ? f32_of_bits one = 1.0f32 && f32_of_bits 3223322624u32 = -2.5f32 ?> 0i32 |: 1i32

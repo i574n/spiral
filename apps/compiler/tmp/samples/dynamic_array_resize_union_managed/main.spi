@@ -1,0 +1,43 @@
+:| payload =
+    | Empty
+    | Values : array i32
+
+:= reserve ~(xs : array i32) ~(requested_capacity : i32) : () =
+    $'DynamicArrayReserve0(!xs,!requested_capacity)'
+
+:= resize ~(xs : array i32) ~(new_length : i32) : () =
+    $'DynamicArrayResize0(!xs,!new_length)'
+
+:= capacity ~(xs : array i32) : i32 =
+    $'DynamicArrayCapacity0(!xs)'
+
+:= refcount ~(xs : array i32) : i32 =
+    $'DynamicArrayRefCount0(!xs)'
+
+:~ mutate x : i32 =
+    ?= x ?|
+    | Empty => 90i32
+    | Values values =>
+        ~~ reserve values 8i32
+        ~~ resize values 5i32
+        set values 1i32 11i32
+        ~~ resize values 2i32
+        ~~ capacity values
+
+:~ observe x : i32 =
+    ?= x ?|
+    | Empty => 91i32
+    | Values values => length values +. index values 0i32 +. index values 1i32
+
+:= main () : i32 =
+    := ~values : array i32 = create 2i32
+    set values 0i32 7i32
+    set values 1i32 3i32
+    := ~alias = values
+    := wrapped = Values values
+    := ~grown = mutate wrapped
+    := ~score = observe wrapped
+    ~~ resize alias 0i32
+    ~~ resize alias 2i32
+    := ~refs = refcount values
+    score +. grown +. length values +. index values 0i32 +. index values 1i32 +. refs -. 31i32

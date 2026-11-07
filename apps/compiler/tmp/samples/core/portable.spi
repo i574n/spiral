@@ -1,0 +1,3 @@
+:~ target_global (directive : string) : () =
+    := n : i32 = sm::length directive
+    ()

@@ -1,0 +1,67 @@
+:! row = string
+:! tenant_count = i32
+
+:| ^ query result =
+    | LookupUser :: string -> query row
+    | CountTenants :: string -> query tenant_count
+    | PairQuery :: \* left right. query left * query right -> query (left * right)
+    | MapQuery :: \* result. (\? input. query input * (input -> result)) -> query result
+
+:= ^ describe \* result. (value : query result) : string =
+    ?= value ?|
+    | LookupUser _ => "lookup-user"
+    | CountTenants _ => "count-tenants"
+    | PairQuery (left, right) =>
+        := _ = describe left
+        := _ = describe right
+        "pair-query"
+    | MapQuery payload =>
+        := \? input. inner, _ = payload
+        := _ = describe inner
+        "map-query"
+
+:! sql result = query result
+:! cache result = query result
+
+:? run_query interpreter result : interpreter result -> string
+:+ run_query sql = \ (sql value) => describe value
+:+ run_query cache = \ (cache value) => describe value
+
+:| packed_query =
+    | PackedSql :: (\? result. sql result * result) -> packed_query
+    | PackedCache :: (\? result. cache result * result) -> packed_query
+
+:= consume \* result. (_ : query result) (_ : result) : string = "result-hidden"
+
+:= with_packed \* output.
+    (visit : \* result. query result -> result -> output)
+    (value : packed_query) : output =
+    ?= value ?|
+    | PackedSql payload =>
+        := \? result. wrapped, result_value = payload
+        ?= wrapped ?| sql query => visit query result_value
+    | PackedCache payload =>
+        := \? result. wrapped, result_value = payload
+        ?= wrapped ?| cache query => visit query result_value
+
+:= query_value () : query (row * tenant_count) =
+    PairQuery (LookupUser "user-7", CountTenants "tenant-orbit")
+
+:= mapped_value () : query string =
+    MapQuery (\? (CountTenants "tenant-orbit", \ (_ : tenant_count) => "counted"))
+
+:= packed_value () : packed_query =
+    PackedSql (\? (sql (LookupUser "user-7"), row "row-7"))
+
+:= serialize_authority (_ : string) (_ : string) (_ : string) : string =
+    "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n"
+    ^^ "1\tlookup\tLookupUser\trequest\trow\t\tidempotent\tquery\t2\n"
+    ^^ "1\tcount\tCountTenants\trequest\tcount\t\tidempotent\tquery\t2\n"
+    ^^ "1\tpair\tPairQuery\trow-count\tpaired\tlookup,count\tidempotent\tcompose\t1\n"
+    ^^ "1\tmap\tMapQuery\tcount\tmapped\tcount\tidempotent\tmap\t1\n"
+
+:= main () : string =
+    := sql_result = run_query (sql (query_value ()))
+    := cache_result = run_query (cache (mapped_value ()))
+    := hidden = with_packed `$consume (packed_value ())
+    serialize_authority sql_result cache_result hidden

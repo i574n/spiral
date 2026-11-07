@@ -1,0 +1,6 @@
+:< model::state
+
+:? score s : s -> i32
+
+:= run () : i32 =
+    score (delta_t { position = 1i32; velocity = 2i32 })

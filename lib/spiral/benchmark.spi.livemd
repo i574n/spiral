@@ -1,0 +1,423 @@
+## benchmark
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test static --symbol\n\n:< testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test static --symbol
+
+  :< testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":< sm'_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :< sm'_operators
+  """,
+  timeout: 300_000
+)
+```
+
+## fsharp
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":== test_case_result =\n    {\n        input : string\n        expected : string\n        result : string\n        time_list : array_base i64\n    }\n\n:= run' \\* t. count (fn : () -> t) =\n    process::gc_collect ()\n    := stopwatch = date_time::stopwatch ()\n    stopwatch |> date_time::stopwatch_start\n    := time1 = stopwatch |> date_time::stopwatch_elapsed_milliseconds\n    := result : t =\n        am'::init_series 0 count 1i32\n        |> \\ x => array x : array _\n        |> am'::parallel_map \\ _n => fn ()\n        |> am'::last\n    := time2 = (stopwatch |> date_time::stopwatch_elapsed_milliseconds) - time1\n    result, time2\n\n:= run \\* input expected.\n    count\n    (solutions : list (string * (input -> expected)))\n    ((input, expected) : (input * expected))\n    : test_case_result\n    =\n    := input_str = #?*input\n\n    console::write_line \"\"\n    trace Verbose\n        \\ () => \"benchmark.run\"\n        \\ () => { input_str = input_str |> sm'::ellipsis_end 40 }\n\n    := results_with_time : array_base _ =\n        solutions\n        |> listm'::indexed\n        |> listm'::box\n        |> listm'::to_array'\n        |> am'::map_base \\ ((i : int), (test_name, solution)) =>\n            := result, time =\n                \\ () => solution input\n                |> run' count\n            trace Verbose\n                \\ () => \"benchmark.run / solutions.map\"\n                \\ () => { i = i + 1; test_name time }\n            result, time\n\n    ?= results_with_time |> am'::map_base fst ?|\n    | items ?& (items |> (\\ x => array x : array _) |> am'::length) <= 1 => ()\n    | items ?&\n        items\n        |> (\\ x => array x : array _)\n        |> arraym::forall' ((=) (items |> (\\ x => array x : array _) |> am'::index 0))\n        => ()\n    | results => failwith ($'$\"benchmark.run / error / results: {!results}\"' : string)\n\n    {\n        input = input_str\n        expected = #?*expected\n        result =\n            results_with_time\n            |> am'::map_base fst\n            |> (\\ x => array x : array _)\n            |> am'::index 0\n            |> sm'::format_debug\n        time_list = results_with_time |> am'::map_base snd\n    }\n\n:= run_all \\* input expected.\n    test_name\n    count\n    (solutions : list (string * (input -> expected)))\n    test_cases\n    =\n    console::write_line \"\"\n    console::write_line \"```\"\n    trace Verbose\n        \\ () => \"benchmark.run_all\"\n        \\ () => { test_name count }\n    test_cases\n    |> listm'::box\n    |> listm'::to_array'\n    |> am'::map_base (run count solutions)\n\n:= sort_result_list results =\n    := table =\n        := rows =\n            results\n            |> am'::map_base \\ (result : test_case_result) =>\n                := best =\n                    result::time_list\n                    |> am'::indexed\n                    |> am'::map_base \\ (i, time) =>\n                        i + 1i32, time\n                    |> \\ x => array x : array _\n                    |> am'::sort_by snd\n                    |> am'::index 0i32\n                    |> sm'::format\n                := row =\n                    [\n                        result::input |> sm'::ellipsis_end 40 |> sm'::replace \"|\" \"\"\n                        result::expected\n                        result::result\n                        best\n                    ]\n                := color : option console::console_color =\n                    :< console\n                    ?= result::expected = result::result ?|\n                    | !+ => Some $'`console_color.DarkGreen'\n                    | !- => Some $'`console_color.DarkRed'\n                row, color\n\n        := header =\n            [\n                [\n                    \"input\"\n                    \"expected\"\n                    \"result\"\n                    \"best\"\n                ]\n                [\n                    \"---\"\n                    \"---\"\n                    \"---\"\n                    \"---\"\n                ]\n            ]\n            |> listm::map \\ row => row, None\n            |> listm'::box\n            |> listm'::to_array'\n            |> \\ x => array x : array _\n        array rows\n        |> arraym::append header\n        |> \\ (array x) => x\n\n    := formatted_table =\n        := length_map : map::map i32 i64 =\n            table\n            |> am'::map_base (fst >> listm'::box >> listm'::to_array')\n            |> am'::transpose\n            |> am'::map_base \\ column =>\n                column\n                |> am'::map_base sm::length\n                |> \\ x => array x : array _\n                |> am'::sort_descending\n                |> am'::try_item 0i32\n                |> optionm'::default_value 0i64\n            |> am'::indexed\n            |> \\ x => array x : array _\n            |> map::of_array\n        table\n        |> am'::map_base \\ (row, color) =>\n            := new_row =\n                row\n                |> listm'::indexed\n                |> listm::map \\ (i, cell) =>\n                    cell |> sm'::pad_right (length_map |> map::item i |> conv) ' '\n                |> listm'::box\n                |> listm'::to_array'\n            new_row, color\n\n    console::write_line \"```\"\n    formatted_table\n    |> \\ x => array x : array _\n    |> am'::to_list'\n    |> listm'::unbox\n    |> listm::iter \\ (row, color) =>\n        ?= color ?|\n        | Some color => color |> console::set_foreground_color\n        | None => console::reset_color ()\n\n        array row |> sm'::join' \"\\t| \" |> console::write_line\n\n        console::reset_color ()\n\n    := averages =\n        results\n        |> am'::map_base \\ result =>\n            result::time_list\n            |> am'::map_base ($'float' : i64 -> f64)\n        |> am'::transpose\n        |> am'::map_base ((\\ x => array x : array _) >> am'::average)\n        |> am'::map_base ($'int64' : f64 -> i64)\n        |> am'::indexed\n        |> \\ x => array x : array _\n\n    console::write_line \"```\"\n    averages\n    |> am'::sort_by snd\n    |> am'::to_list'\n    |> listm'::unbox\n    |> listm::iter \\ ((i : i32), avg) =>\n        trace Verbose\n            \\ () => \"benchmark.sort_result_list / averages.iter\"\n            \\ () => { i = i + 1; avg }\n    console::write_line \"```\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :== test_case_result =
+      {
+          input : string
+          expected : string
+          result : string
+          time_list : array_base i64
+      }
+
+  := run' \* t. count (fn : () -> t) =
+      process::gc_collect ()
+      := stopwatch = date_time::stopwatch ()
+      stopwatch |> date_time::stopwatch_start
+      := time1 = stopwatch |> date_time::stopwatch_elapsed_milliseconds
+      := result : t =
+          am'::init_series 0 count 1i32
+          |> \ x => array x : array _
+          |> am'::parallel_map \ _n => fn ()
+          |> am'::last
+      := time2 = (stopwatch |> date_time::stopwatch_elapsed_milliseconds) - time1
+      result, time2
+
+  := run \* input expected.
+      count
+      (solutions : list (string * (input -> expected)))
+      ((input, expected) : (input * expected))
+      : test_case_result
+      =
+      := input_str = #?*input
+
+      console::write_line ""
+      trace Verbose
+          \ () => "benchmark.run"
+          \ () => { input_str = input_str |> sm'::ellipsis_end 40 }
+
+      := results_with_time : array_base _ =
+          solutions
+          |> listm'::indexed
+          |> listm'::box
+          |> listm'::to_array'
+          |> am'::map_base \ ((i : int), (test_name, solution)) =>
+              := result, time =
+                  \ () => solution input
+                  |> run' count
+              trace Verbose
+                  \ () => "benchmark.run / solutions.map"
+                  \ () => { i = i + 1; test_name time }
+              result, time
+
+      ?= results_with_time |> am'::map_base fst ?|
+      | items ?& (items |> (\ x => array x : array _) |> am'::length) <= 1 => ()
+      | items ?&
+          items
+          |> (\ x => array x : array _)
+          |> arraym::forall' ((=) (items |> (\ x => array x : array _) |> am'::index 0))
+          => ()
+      | results => failwith ($'$"benchmark.run / error / results: {!results}"' : string)
+
+      {
+          input = input_str
+          expected = #?*expected
+          result =
+              results_with_time
+              |> am'::map_base fst
+              |> (\ x => array x : array _)
+              |> am'::index 0
+              |> sm'::format_debug
+          time_list = results_with_time |> am'::map_base snd
+      }
+
+  := run_all \* input expected.
+      test_name
+      count
+      (solutions : list (string * (input -> expected)))
+      test_cases
+      =
+      console::write_line ""
+      console::write_line "```"
+      trace Verbose
+          \ () => "benchmark.run_all"
+          \ () => { test_name count }
+      test_cases
+      |> listm'::box
+      |> listm'::to_array'
+      |> am'::map_base (run count solutions)
+
+  := sort_result_list results =
+      := table =
+          := rows =
+              results
+              |> am'::map_base \ (result : test_case_result) =>
+                  := best =
+                      result::time_list
+                      |> am'::indexed
+                      |> am'::map_base \ (i, time) =>
+                          i + 1i32, time
+                      |> \ x => array x : array _
+                      |> am'::sort_by snd
+                      |> am'::index 0i32
+                      |> sm'::format
+                  := row =
+                      [
+                          result::input |> sm'::ellipsis_end 40 |> sm'::replace "|" ""
+                          result::expected
+                          result::result
+                          best
+                      ]
+                  := color : option console::console_color =
+                      :< console
+                      ?= result::expected = result::result ?|
+                      | !+ => Some $'`console_color.DarkGreen'
+                      | !- => Some $'`console_color.DarkRed'
+                  row, color
+
+          := header =
+              [
+                  [
+                      "input"
+                      "expected"
+                      "result"
+                      "best"
+                  ]
+                  [
+                      "---"
+                      "---"
+                      "---"
+                      "---"
+                  ]
+              ]
+              |> listm::map \ row => row, None
+              |> listm'::box
+              |> listm'::to_array'
+              |> \ x => array x : array _
+          array rows
+          |> arraym::append header
+          |> \ (array x) => x
+
+      := formatted_table =
+          := length_map : map::map i32 i64 =
+              table
+              |> am'::map_base (fst >> listm'::box >> listm'::to_array')
+              |> am'::transpose
+              |> am'::map_base \ column =>
+                  column
+                  |> am'::map_base sm::length
+                  |> \ x => array x : array _
+                  |> am'::sort_descending
+                  |> am'::try_item 0i32
+                  |> optionm'::default_value 0i64
+              |> am'::indexed
+              |> \ x => array x : array _
+              |> map::of_array
+          table
+          |> am'::map_base \ (row, color) =>
+              := new_row =
+                  row
+                  |> listm'::indexed
+                  |> listm::map \ (i, cell) =>
+                      cell |> sm'::pad_right (length_map |> map::item i |> conv) ' '
+                  |> listm'::box
+                  |> listm'::to_array'
+              new_row, color
+
+      console::write_line "```"
+      formatted_table
+      |> \ x => array x : array _
+      |> am'::to_list'
+      |> listm'::unbox
+      |> listm::iter \ (row, color) =>
+          ?= color ?|
+          | Some color => color |> console::set_foreground_color
+          | None => console::reset_color ()
+
+          array row |> sm'::join' "\t| " |> console::write_line
+
+          console::reset_color ()
+
+      := averages =
+          results
+          |> am'::map_base \ result =>
+              result::time_list
+              |> am'::map_base ($'float' : i64 -> f64)
+          |> am'::transpose
+          |> am'::map_base ((\ x => array x : array _) >> am'::average)
+          |> am'::map_base ($'int64' : f64 -> i64)
+          |> am'::indexed
+          |> \ x => array x : array _
+
+      console::write_line "```"
+      averages
+      |> am'::sort_by snd
+      |> am'::to_list'
+      |> listm'::unbox
+      |> listm::iter \ ((i : i32), avg) =>
+          trace Verbose
+              \ () => "benchmark.sort_result_list / averages.iter"
+              \ () => { i = i + 1; avg }
+      console::write_line "```"
+  """,
+  timeout: 300_000
+)
+```
+
+#### sort_result_list (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test static --symbol\n\n:= is_fast () =\n    !-","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test static --symbol
+
+  := is_fast () =
+      !-
+  """,
+  timeout: 300_000
+)
+```
+
+### empty2Tests
+
+<!-- livebook:{"break_markdown":true} -->
+
+Test: Empty2
+
+Solution: (a, a)
+Test case 1. A. Time: 59L
+
+Solution: (a, a)
+Test case 1. A. Time: 53L
+
+Input   | Expected        | Result  | Best
+---     | ---             | ---     | ---
+(a, a)  | a               | a       | (1, 59)
+(a, a)  | a               | a       | (1, 53)
+
+Averages
+Test case 1. Average Time: 56L
+
+Ranking
+Test case 1. Average Time: 56L
+
+---
+
+
+```
+01:12:03 [90mverbose[0m #1 benchmark.run_all / {count = 2000000; test_name = empty_2_tests}
+01:12:03 [90mverbose[0m #2 benchmark.run / {count = 2000000; expected = a; input = a, a; input_str = struct ("a", "a")}
+01:12:03 [90mverbose[0m #3 benchmark.run / solutions.map / {count = 2000000; expected = a; i = 0; input = a, a; input_str = struct ("a", "a"); test_name = A; time = 119}
+01:12:04 [90mverbose[0m #4 benchmark.run / solutions.map / {count = 2000000; expected = a; i = 1; input = a, a; input_str = struct ("a", "a"); test_name = B; time = 122}
+01:12:04 [90mverbose[0m #5 benchmark.run / {count = 2000000; expected = b; input = b, b; input_str = struct ("b", "b")}
+01:12:04 [90mverbose[0m #6 benchmark.run / solutions.map / {count = 2000000; expected = b; i = 0; input = b, b; input_str = struct ("b", "b"); test_name = A; time = 110}
+01:12:04 [90mverbose[0m #7 benchmark.run / solutions.map / {count = 2000000; expected = b; i = 1; input = b, b; input_str = struct ("b", "b"); test_name = B; time = 120}
+```
+Input            	| Expected	| Result	| Best
+---              	| ---     	| ---   	| ---
+struct ("a", "a")	| "a"     	| "a"   	| struct (1L, 119L)
+struct ("b", "b")	| "b"     	| "b"   	| struct (1L, 110L)
+```
+01:12:04 [90mverbose[0m #8 benchmark.sort_result_list / averages.iter / {avg = 114; i = 0}
+01:12:04 [90mverbose[0m #9 benchmark.sort_result_list / averages.iter / {avg = 121; i = 1}
+```
+`
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> fsharp\n\n:= get_solutions () =\n    [\n        \"A\",\n        \\ (a, _b) =>\n            a\n\n        \"B\",\n        \\ (_a, b) =>\n            b\n    ]\n\n:= ^ empty_2_tests () =\n    := test_cases = [\n        (\"a\", \"a\"), \"a\"\n        (\"b\", \"b\"), \"b\"\n    ]\n\n    := solutions = get_solutions ()\n\n\n    := count =\n        ? is_fast ()\n        ?> 1000i32\n        |: 2000000i32\n\n    run_all (reflection::nameof { empty_2_tests }) count solutions test_cases\n    |> sort_result_list\n\nempty_2_tests ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> fsharp
+
+  := get_solutions () =
+      [
+          "A",
+          \ (a, _b) =>
+              a
+
+          "B",
+          \ (_a, b) =>
+              b
+      ]
+
+  := ^ empty_2_tests () =
+      := test_cases = [
+          ("a", "a"), "a"
+          ("b", "b"), "b"
+      ]
+
+      := solutions = get_solutions ()
+
+
+      := count =
+          ? is_fast ()
+          ?> 1000i32
+          |: 2000000i32
+
+      run_all (reflection::nameof { empty_2_tests }) count solutions test_cases
+      |> sort_result_list
+
+  empty_2_tests ()
+  """,
+  timeout: 300_000
+)
+```
+
+### emptyTests
+
+<!-- livebook:{"break_markdown":true} -->
+
+Test: Empty
+
+Solution: 0
+Test case 1. A. Time: 61L
+
+Solution: 2
+Test case 1. A. Time: 62L
+
+Solution: 5
+Test case 1. A. Time: 70L
+
+Input   | Expected        | Result  | Best
+---     | ---             | ---     | ---
+0       | 0               | 0       | (1, 61)
+2       | 2               | 2       | (1, 62)
+5       | 5               | 5       | (1, 70)
+
+Averages
+Test case 1. Average Time: 64L
+
+Ranking
+Test case 1. Average Time: 64L
+
+---
+
+```
+01:21:25 [90mverbose[0m #1 benchmark.run_all / {count = 2000000; test_name = empty_1_tests}
+01:21:25 [90mverbose[0m #2 benchmark.run / {count = 2000000; expected = +1.000000; input = +0.000000; input_str = 0.0}
+01:21:25 [90mverbose[0m #3 benchmark.run / solutions.map / {count = 2000000; expected = +1.000000; i = 0; input = +0.000000; input_str = 0.0; test_name = A; time = 36}
+01:21:25 [90mverbose[0m #4 benchmark.run / {count = 2000000; expected = +3.000000; input = +2.000000; input_str = 2.0}
+01:21:25 [90mverbose[0m #5 benchmark.run / solutions.map / {count = 2000000; expected = +3.000000; i = 0; input = +2.000000; input_str = 2.0; test_name = A; time = 20}
+01:21:25 [90mverbose[0m #6 benchmark.run / {count = 2000000; expected = +6.000000; input = +5.000000; input_str = 5.0}
+01:21:25 [90mverbose[0m #7 benchmark.run / solutions.map / {count = 2000000; expected = +6.000000; i = 0; input = +5.000000; input_str = 5.0; test_name = A; time = 22}
+```
+Input	| Expected	| Result	| Best
+---  	| ---     	| ---   	| ---
+0.0  	| 1.0     	| 1.0   	| struct (1L, 36L)
+2.0  	| 3.0     	| 3.0   	| struct (1L, 20L)
+5.0  	| 6.0     	| 6.0   	| struct (1L, 22L)
+```
+01:21:25 [90mverbose[0m #8 benchmark.sort_result_list / averages.iter / {avg = 26; i = 0}
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> fsharp\n\n:= get_solutions () =\n    [\n        \"A\",\n        \\ n =>\n            n + 1f64\n    ]\n\n:= ^ empty_1_tests () =\n    := test_cases = [\n        0, 1\n        2, 3\n        5, 6\n    ]\n\n    := solutions = get_solutions ()\n\n\n    := count =\n        ? is_fast ()\n        ?> 1000i32\n        |: 2000000i32\n\n    run_all (reflection::nameof { empty_1_tests }) count solutions test_cases\n    |> sort_result_list\n\nempty_1_tests ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> fsharp
+
+  := get_solutions () =
+      [
+          "A",
+          \ n =>
+              n + 1f64
+      ]
+
+  := ^ empty_1_tests () =
+      := test_cases = [
+          0, 1
+          2, 3
+          5, 6
+      ]
+
+      := solutions = get_solutions ()
+
+
+      := count =
+          ? is_fast ()
+          ?> 1000i32
+          |: 2000000i32
+
+      run_all (reflection::nameof { empty_1_tests }) count solutions test_cases
+      |> sort_result_list
+
+  empty_1_tests ()
+  """,
+  timeout: 300_000
+)
+```

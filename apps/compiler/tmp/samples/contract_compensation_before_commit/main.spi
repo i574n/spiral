@@ -1,0 +1,27 @@
+:! draft = ()
+:! sent = ()
+:! committed = ()
+:! pending = ()
+
+:| document phase =
+    | DraftDocument :: document draft
+    | SentDocument :: document sent
+
+:| compensation from to =
+    | UndoSubmit :: compensation sent draft
+
+:| receipt from to status =
+    | PendingReceipt :: \* from to. receipt from to pending
+    | CommittedReceipt :: \* from to. receipt from to committed
+
+:= rollback \* from to.
+    (compensation : compensation to from)
+    (receipt : receipt from to committed)
+    (document : document to)
+    : document from =
+    ?= compensation, receipt, document ?|
+    | UndoSubmit, CommittedReceipt, SentDocument => DraftDocument
+
+:= main () : string =
+    := _ = rollback UndoSubmit PendingReceipt SentDocument
+    "unreachable"

@@ -1,0 +1,14 @@
+:! zero = ()
+:! succ n = n
+
+:| ^ budget n =
+    | ZeroBudget :: budget zero
+    | MoreBudget :: \* n. budget n -> budget (succ n)
+
+:= spend_one \* n. (budget : budget (succ n)) : budget n =
+    ?= budget ?|
+    | MoreBudget rest => rest
+
+:= main () : string =
+    := _ = spend_one ZeroBudget
+    "unreachable"

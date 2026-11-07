@@ -1,0 +1,211 @@
+:< sm'_operators
+
+:# erlang_tcp static =
+    :< testing
+
+:! socket = erlang_term::term
+
+:! listener = erlang_term::term
+
+:| tcp_failure =
+    | Refused
+    | TimedOut
+    | Closed
+    | Failed : string
+
+:| tcp_wait =
+    | Forever
+    | WithinMs : i32
+
+:= element (index : i32) (tuple : erlang_term::term) : erlang_term::term =
+    erlang_term::apply "erlang" "element" [ erlang_term::of index; tuple ]
+
+:= is_atom (name : string) (t : erlang_term::term) : bool = erlang_term::equal t (erlang_term::atom name)
+
+:= failure_of (reason : erlang_term::term) : tcp_failure =
+    ? is_atom "econnrefused" reason ?> Refused
+    |? is_atom "timeout" reason ?> TimedOut
+    |? is_atom "closed" reason ?> Closed
+    |: Failed (erlang_term::inspect reason)
+
+:= is_ok (t : erlang_term::term) : bool = erlang_term::equal t (erlang_term::atom "ok")
+
+:= outcome_of (t : erlang_term::term) : result erlang_term::term tcp_failure =
+    ? is_ok (element 1i32 t) ?> Ok (element 2i32 t) |: Error (failure_of (element 2i32 t))
+
+:= done_of (t : erlang_term::term) : result () tcp_failure = ? is_ok t ?> Ok () |: Error (failure_of (element 2i32 t))
+
+:= wait_term (w : tcp_wait) : erlang_term::term =
+    ?= w ?| Forever => erlang_term::atom "infinity" | WithinMs ms => erlang_term::of ms
+
+:= option_pair (key : string) (value : erlang_term::term) : erlang_term::term =
+    erlang_term::tuple [ erlang_term::atom key; value ]
+
+:= line_framing () : list erlang_term::term =
+    [ option_pair "packet" (erlang_term::atom "line"); option_pair "active" (erlang_term::atom "false") ]
+
+:= line_options () : list erlang_term::term =
+    erlang_term::atom "binary" :: listm::append (line_framing ()) [ option_pair "packet_size" (erlang_term::of 8000000i32) ]
+
+:= loopback () : erlang_term::term = [ 127i32; 0i32; 0i32; 1i32 ] |> listm::map erlang_term::of |> erlang_term::tuple
+
+:= connect_args (port : i32) (timeout_ms : i32) : list erlang_term::term =
+    [ loopback (); erlang_term::of port; erlang_term::list_term (line_options ()); erlang_term::of timeout_ms ]
+
+:= connect_local (port : i32) (timeout_ms : i32) : result socket tcp_failure =
+    erlang_term::apply "gen_tcp" "connect" (connect_args port timeout_ms) |> outcome_of |> resultm::map socket
+
+:= raw (s : socket) : erlang_term::term = ?= s ?| socket t => t
+
+:= send_line (s : socket) (line : string) : result () tcp_failure =
+    erlang_term::apply "gen_tcp" "send" [ raw s; erlang_term::of (line ++# "\n") ] |> done_of
+
+:= trimmed (t : erlang_term::term) : string = erlang_term::apply "string" "trim" [ t ] |> erlang_term::cast
+
+:= receive_line (s : socket) (w : tcp_wait) : result string tcp_failure =
+    erlang_term::apply "gen_tcp" "recv" [ raw s; erlang_term::of 0i32; wait_term w ]
+    |> outcome_of
+    |> resultm::map trimmed
+
+:= receive_line_within (s : socket) (ms : i32) : result string tcp_failure = receive_line s (WithinMs ms)
+
+:= close (s : socket) : () =
+    := closed = erlang_term::apply "gen_tcp" "close" [ raw s ]
+    ()
+
+:= listen_local () : result listener tcp_failure =
+    := opts = erlang_term::list_term (listm::append (line_options ()) [ option_pair "ip" (loopback ()) ])
+    erlang_term::apply "gen_tcp" "listen" [ erlang_term::of 0i32; opts ] |> outcome_of |> resultm::map listener
+
+:= listener_raw (l : listener) : erlang_term::term = ?= l ?| listener t => t
+
+:= listener_port (l : listener) : i32 =
+    ?= erlang_term::apply "inet" "port" [ listener_raw l ] |> outcome_of ?|
+    | Ok port => erlang_term::cast port
+    | Error _ => 0i32
+
+:= accept (l : listener) (w : tcp_wait) : result socket tcp_failure =
+    erlang_term::apply "gen_tcp" "accept" [ listener_raw l; wait_term w ] |> outcome_of |> resultm::map socket
+
+:= stop_listening (l : listener) : () =
+    := closed = erlang_term::apply "gen_tcp" "close" [ listener_raw l ]
+    ()
+
+:= raw_options () : list erlang_term::term =
+    [
+        erlang_term::atom "binary"
+        option_pair "packet" (erlang_term::atom "raw")
+        option_pair "active" (erlang_term::atom "false")
+    ]
+
+:= raw_listen_options () : erlang_term::term =
+    := extra = [ option_pair "reuseaddr" (erlang_term::atom "true"); option_pair "ip" (loopback ()) ]
+    erlang_term::list_term (listm::append (raw_options ()) extra)
+
+:= listen_raw_local_on (port : i32) : result listener tcp_failure =
+    erlang_term::apply "gen_tcp" "listen" [ erlang_term::of port; raw_listen_options () ]
+    |> outcome_of
+    |> resultm::map listener
+
+:= listen_raw_local () : result listener tcp_failure =
+    erlang_term::apply "gen_tcp" "listen" [ erlang_term::of 0i32; raw_listen_options () ]
+    |> outcome_of
+    |> resultm::map listener
+
+:= receive_chunk (s : socket) (w : tcp_wait) : result string tcp_failure =
+    := got = erlang_term::apply "gen_tcp" "recv" [ raw s; erlang_term::of 0i32; wait_term w ]
+    got |> outcome_of |> resultm::map (\ t => erlang_term::cast t)
+
+:= receive_chunk_within (s : socket) (ms : i32) : result string tcp_failure = receive_chunk s (WithinMs ms)
+
+:= accept_forever (l : listener) : result socket tcp_failure = accept l Forever
+
+:= send_text (s : socket) (text : string) : result () tcp_failure =
+    erlang_term::apply "gen_tcp" "send" [ raw s; erlang_term::of text ] |> done_of
+
+:= failure \* t. (r : result t tcp_failure) : option tcp_failure =
+    ?= r ?|
+    | Ok _ => None
+    | Error f => Some f
+
+:= sure \* t. (r : result t tcp_failure) : t =
+    ?= r ?|
+    | Ok v => v
+    | Error _ => failwith "erlang_tcp: unexpected failure in a test"
+
+:= line_pair () : listener * socket * socket =
+    := l = listen_local () |> sure
+    := client = connect_local (listener_port l) 2000i32 |> sure
+    l, client, accept l (WithinMs 2000i32) |> sure
+
+:= exchanged (from : socket) (to : socket) (line : string) : string =
+    send_line from line |> sure
+    receive_line to (WithinMs 2000i32) |> sure
+
+:= released (l : listener) (sockets : list socket) : () =
+    sockets |> listm::iter close
+    stop_listening l
+
+:= round_trip (client : socket) (server : socket) : string * string =
+    exchanged client server "hello\tworld", exchanged server client "spiral-cells\t1"
+
+///> gleam
+:# a_line_round_trips_over_a_loopback_socket =
+    := l, client, server = line_pair ()
+    := heard = round_trip client server
+    released l [ client; server ]
+    heard |> _assert_eq ("hello\tworld", "spiral-cells\t1")
+
+:= idle_then_closed (client : socket) (server : socket) : option tcp_failure * option tcp_failure =
+    := idle = receive_line client (WithinMs 50i32) |> failure
+    close server
+    idle, receive_line client (WithinMs 2000i32) |> failure
+
+///> gleam
+:# an_idle_socket_times_out_and_a_closed_peer_reads_closed =
+    := l, client, server = line_pair ()
+    := outcome = idle_then_closed client server
+    released l [ client ]
+    outcome |> _assert_eq (Some TimedOut, Some Closed)
+
+///> gleam
+:# a_port_nobody_listens_on_refuses =
+    := l = listen_local () |> sure
+    := port = listener_port l
+    stop_listening l
+    := f = connect_local port 2000i32 |> failure
+    (f = Some Refused || f = Some TimedOut) |> _assert_eq !+
+
+///> gleam
+:# a_ms_wait_times_out =
+    := l = listen_local () |> sure
+    := client = connect_local (listener_port l) 2000i32 |> sure
+    := idle = receive_line_within client 50i32 |> failure
+    close client
+    stop_listening l
+    idle |> _assert_eq (Some TimedOut)
+
+:= raw_pair () : listener * socket * socket =
+    := l = listen_raw_local () |> sure
+    := client = connect_local (listener_port l) 2000i32 |> sure
+    l, client, accept l (WithinMs 2000i32) |> sure
+
+:= raw_echo (request : string) : string =
+    := l, client, server = raw_pair ()
+    send_text client request |> sure
+    := got = receive_chunk server (WithinMs 2000i32) |> sure
+    close client
+    close server
+    stop_listening l
+    got
+
+///> gleam
+:# raw_bytes_arrive_untrimmed =
+    raw_echo "GET / HTTP/1.1\r\n\r\n" |> _assert_eq "GET / HTTP/1.1\r\n\r\n"
+
+///> gleam
+:# a_taken_port_is_refused_to_a_second_listener =
+    := l = listen_raw_local () |> sure
+    := port = listener_port l
+    := again = ?= listen_raw_local_on port ?| Ok _ => !+ | Error _ => !-
+    (port > 0i32, again) |> _assert_eq (!+, !-)

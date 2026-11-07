@@ -1,0 +1,21 @@
+:! schema_v4 = ()
+:! schema_v5 = ()
+
+:! nfe_v4 = { issuer : string; total_cents : i64 }
+:! nfe_v5 = { issuer : string; total_cents : i64; technical_responsible : string }
+
+:| document schema =
+    | V4Document :: nfe_v4 -> document schema_v4
+    | V5Document :: nfe_v5 -> document schema_v5
+
+:| field schema value =
+    | Issuer :: \* schema. field schema string
+    | TotalCents :: \* schema. field schema i64
+    | TechnicalResponsible :: field schema_v5 string
+
+:| query schema result =
+    | Get :: \* schema result. field schema result -> query schema result
+
+:= main () : string =
+    := illegal_projection : query schema_v4 string = Get TechnicalResponsible
+    "unreachable"

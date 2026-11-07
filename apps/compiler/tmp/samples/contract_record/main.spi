@@ -1,0 +1,11 @@
+:== vec =
+    {
+    x : i32
+    y : i32
+    z : i32
+    }
+
+:= vec x y z : vec =
+    { x y z }
+
+:= main () : i32 = vec 1i32 2i32 3i32 ::z

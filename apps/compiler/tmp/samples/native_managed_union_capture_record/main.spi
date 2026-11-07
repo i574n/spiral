@@ -1,0 +1,16 @@
+:< support
+
+:= main () : i32 =
+    := ~make =
+        (\ seed =>
+            := values : array i32 = create 2i32
+            set values 0i32 seed
+            set values 1i32 (seed +. 1i32)
+            := captured : payload =
+                ? seed =. 0i32 ?> Empty
+                |: Item { text = "hi"; values }
+            (\ bias => score captured +. bias) : i32 -> i32
+        ) : i32 -> (i32 -> i32)
+    := empty_use = ~~ make 0i32
+    := item_use = ~~ make 4i32
+    ~~ empty_use 5i32 +. ~~ item_use 1i32 +. ~~ item_use 2i32 +. 5i32

@@ -1,0 +1,25 @@
+:! s0 = ()
+:! s1 = ()
+:! s2 = ()
+:! s3 = ()
+
+:| operation from to =
+    | Step01 :: operation s0 s1
+    | Step23 :: operation s2 s3
+
+:| node from to =
+    | Node :: \* from to. operation from to * string -> node from to
+
+:| ^ typed_plan from to =
+    | PlanLeaf :: \* from to. node from to -> typed_plan from to
+    | PlanThen :: \* from to.
+        (\? middle. typed_plan from middle * node middle to)
+        -> typed_plan from to
+
+:= main () : string =
+    := _ : typed_plan s0 s3 =
+        PlanThen (\? (
+            PlanLeaf (Node (Step01, "step-1")),
+            Node (Step23, "step-3")
+        ))
+    "unreachable"

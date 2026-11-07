@@ -1,0 +1,1489 @@
+namespace Spiral
+
+open System
+open System.IO
+open System.Text
+open System.Text.RegularExpressions
+open System.Security.Cryptography
+open System.Net.Sockets
+open System.Collections.Generic
+open Microsoft.FSharp.Reflection
+open Hopac
+open Hopac.Infixes
+open Hopac.Stream
+open Lib
+open spiral_compiler
+
+module Program =
+    let private unionCase name =
+        FSharpType.GetUnionCases(typeof<SupervisorReq>)
+        |> Array.find (fun c -> c.Name = name)
+
+    let private anonymousRecord (recordType : Type) (values : (string * obj) list) =
+        let valueMap = Dictionary<string,obj>(StringComparer.OrdinalIgnoreCase)
+        for key, value in values do valueMap.[key] <- value
+        let fields = FSharpType.GetRecordFields recordType
+        let args = fields |> Array.map (fun field -> valueMap.[field.Name])
+        FSharpValue.MakeRecord(recordType, args)
+
+    let private fileOpenRequest uri code =
+        let case = unionCase "FileOpen"
+        let payloadType = case.GetFields().[0].PropertyType
+        let payload = anonymousRecord payloadType ["uri", box uri; "spiText", box code]
+        FSharpValue.MakeUnion(case, [|payload|]) :?> SupervisorReq
+
+    let private fileChangeRequest uri from nearTo lines =
+        let case = unionCase "FileChange"
+        let payloadType = case.GetFields().[0].PropertyType
+        let spiEditType = FSharpType.GetRecordFields(payloadType) |> Array.find (fun field -> field.Name = "spiEdit") |> fun field -> field.PropertyType
+        let spiEdit = anonymousRecord spiEditType ["from", box from; "nearTo", box nearTo; "lines", box lines]
+        let payload = anonymousRecord payloadType ["uri", box uri; "spiEdit", spiEdit]
+        FSharpValue.MakeUnion(case, [|payload|]) :?> SupervisorReq
+
+    let private projectFileOpenRequest uri text =
+        let case = unionCase "ProjectFileOpen"
+        let payloadType = case.GetFields().[0].PropertyType
+        let payload = anonymousRecord payloadType ["uri", box uri; "spiprojText", box text]
+        FSharpValue.MakeUnion(case, [|payload|]) :?> SupervisorReq
+
+    let private openedProjects = HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    let private openOwningProject (supervisor : Ch<SupervisorReq>) (inputPath : string) =
+        let rec find (directory : DirectoryInfo) =
+            if isNull directory then None
+            else
+                let candidate = spiproj_suffix directory.FullName
+                if File.Exists candidate then Some candidate else find directory.Parent
+        let enabled = String.Equals(Environment.GetEnvironmentVariable "SPIRAL_HOST_OPEN_PROJECT", "1", StringComparison.Ordinal)
+        match (if enabled then find (Directory.GetParent inputPath) else None) with
+        | Some spiproj when openedProjects.Add spiproj ->
+            let uri = spiproj |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
+            Hopac.run (supervisor *<+ projectFileOpenRequest uri (File.ReadAllText spiproj))
+        | _ -> ()
+
+    let private projectFileChangeRequest uri text =
+        let case = unionCase "ProjectFileChange"
+        let payloadType = case.GetFields().[0].PropertyType
+        let payload = anonymousRecord payloadType ["uri", box uri; "spiprojText", box text]
+        FSharpValue.MakeUnion(case, [|payload|]) :?> SupervisorReq
+
+    let private fileDeleteRequest (uris : string []) =
+        let case = unionCase "FileDelete"
+        let payloadType = case.GetFields().[0].PropertyType
+        let payload = anonymousRecord payloadType ["uris", box uris]
+        FSharpValue.MakeUnion(case, [|payload|]) :?> SupervisorReq
+
+    let private buildFileRequest uri backend (result : IVar<string option>) =
+        let case = unionCase "BuildFile"
+        let payloadType = case.GetFields().[0].PropertyType
+        let payload = anonymousRecord payloadType ["uri", box uri; "backend", box backend]
+        FSharpValue.MakeUnion(case, [|payload; box result|]) :?> SupervisorReq
+
+    let private declaredBinding (source : string) (binding : string) =
+        source.Split([|"\r\n"; "\r"; "\n"|], StringSplitOptions.None)
+        |> Array.exists (fun raw ->
+            let line = raw.TrimStart()
+            if not (line.StartsWith("let ", StringComparison.Ordinal)) then false
+            else
+                let rest = line.Substring(4)
+                let stop = rest.IndexOfAny([|' '; '\t'; ':'; '='|])
+                let name = if stop < 0 then rest else rest.Substring(0, stop)
+                String.Equals(name, binding, StringComparison.Ordinal))
+
+    let private validIdentifier (value : string) =
+        if String.IsNullOrWhiteSpace value then false
+        else
+            let first = value.[0]
+            (first = '_' || Char.IsAsciiLetter first)
+            && value
+               |> Seq.skip 1
+               |> Seq.forall (fun ch -> ch = '_' || ch = '\'' || Char.IsAsciiLetterOrDigit ch)
+
+    let private discoverEntryBinding (source : string) =
+        let lines = source.Split([|"\r\n"; "\r"; "\n"|], StringSplitOptions.None)
+        let candidate =
+            lines
+            |> Array.rev
+            |> Array.tryPick (fun raw ->
+                let value = raw.Trim().TrimEnd(';').Trim()
+                if String.IsNullOrWhiteSpace value || value.StartsWith("//") || value.StartsWith("#") then None
+                else Some value)
+        match candidate with
+        | Some value when validIdentifier value && declaredBinding source value -> value
+        | Some _ -> "(expression)"
+        | None -> failwith "generated F# has no terminal expression"
+
+    let private writeEntryManifest outputPath entryBinding generatedBytes revisionMode backend =
+        if String.Equals(Environment.GetEnvironmentVariable "SPIRAL_WRITE_ENTRY_MANIFEST", "1", StringComparison.Ordinal) then
+            let manifestPath = outputPath + ".spiral-entry"
+            let text =
+                $"schema=3\nentry_binding={entryBinding}\nbackend={backend}\nserver_pid={Environment.ProcessId}\ngenerated_bytes={generatedBytes}\nrevision_mode={revisionMode}\n"
+            File.WriteAllText(manifestPath, text)
+
+    let private traceDiagnostics =
+        String.Equals(Environment.GetEnvironmentVariable "SPIRAL_HOST_TRACE_DIAGNOSTICS", "1", StringComparison.Ordinal)
+
+    let private fatalGraceMs =
+        match Int32.TryParse(Environment.GetEnvironmentVariable "SPIRAL_HOST_FATAL_GRACE_MS") with
+        | true, value when value >= 0 -> value
+        | _ -> 750
+
+    let private normalizeUri (uri : string) =
+        Uri.UnescapeDataString(uri).Replace('\\', '/').TrimEnd('/')
+
+    let private sameUri (a : string) (b : string) =
+        String.Equals(normalizeUri a, normalizeUri b, StringComparison.OrdinalIgnoreCase)
+
+    let private renderTracedError (message : string) (trace : string list) =
+        let message = "TracedError: " + (if isNull message then "" else message.TrimEnd())
+        match trace with
+        | [] -> message
+        | frames ->
+            let frames =
+                frames
+                |> List.map (fun (frame : string) -> "  " + (if isNull frame then "" else frame.TrimEnd().Replace("\n", "\n  ")))
+                |> String.concat "\n"
+            message + "\ntrace (innermost first):\n" + frames
+
+    let private diagnosticFor uri = function
+        | TypeErrors x when sameUri x.uri uri && not (List.isEmpty x.errors) ->
+            Some $"TypeErrors: %A{x.errors}"
+        | TokenizerErrors x when sameUri x.uri uri && not (List.isEmpty x.errors) ->
+            Some $"TokenizerErrors: %A{x.errors}"
+        | PackageErrors x when not (List.isEmpty x.errors) ->
+            Some $"PackageErrors ({x.uri}): %A{x.errors}"
+        | TracedError x -> Some (renderTracedError x.message x.trace)
+        | _ -> None
+
+    let private diagnosticForOther = function
+        | TypeErrors x when not (List.isEmpty x.errors) -> Some $"TypeErrors ({x.uri}): %A{x.errors}"
+        | ParserErrors x when not (List.isEmpty x.errors) -> Some $"ParserErrors ({x.uri}): %A{x.errors}"
+        | TokenizerErrors x when not (List.isEmpty x.errors) -> Some $"TokenizerErrors ({x.uri}): %A{x.errors}"
+        | _ -> None
+
+    let private diagnosticUri = function
+        | TypeErrors x -> Some x.uri
+        | ParserErrors x -> Some x.uri
+        | TokenizerErrors x -> Some x.uri
+        | _ -> None
+
+    let private relatedClosure (inputPath : string) =
+        let files = HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        let seen = HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        let rec owner (dir : DirectoryInfo) =
+            if isNull dir then null
+            elif File.Exists(spiproj_suffix dir.FullName) then dir.FullName
+            else owner dir.Parent
+        let rec walk (dir : string) =
+            let project = spiproj_suffix dir
+            if seen.Add(Path.GetFullPath dir) && File.Exists project then
+                match schema (dir, File.ReadAllText project) with
+                | Ok parsed ->
+                    let rec add = function
+                        | FileHierarchy.File(_, (_, path), _) -> files.Add(normalizeUri (SpiralFileSystem.new_file_uri path)) |> ignore
+                        | FileHierarchy.Directory(_, _, _, children) -> List.iter add children
+                    List.iter add parsed.modules
+                    for package in parsed.packages do walk (snd package.dir)
+                | Error _ -> ()
+        match owner (DirectoryInfo(Path.GetDirectoryName(Path.GetFullPath inputPath))) with
+        | null -> files
+        | root -> walk root; files
+
+    type private DiagnosticRouter() =
+        let gate = obj()
+        let mutable active : (string * Threading.Tasks.TaskCompletionSource<string>) option = None
+        let mutable related : string option = None
+        let mutable entryTypeErrors : string option = None
+        let mutable closure : HashSet<string> = null
+        let mutable accepted = 0
+        let mutable lastKind = "none"
+        let mutable lastAt = DateTime.UtcNow
+        let mutable pumping = false
+        let mutable pendingFatal = false
+        let mutable begun = DateTime.UtcNow
+
+        member _.SetClosure(files : HashSet<string>) = lock gate (fun () -> closure <- files)
+
+        member _.Begin(uri) =
+            let waiter =
+                new Threading.Tasks.TaskCompletionSource<string>(
+                    Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously)
+            lock gate (fun () ->
+                active <- Some (uri, waiter)
+                related <- None
+                entryTypeErrors <- None
+                accepted <- 0
+                lastKind <- "none"
+                pendingFatal <- false
+                begun <- DateTime.UtcNow)
+            waiter
+
+        member _.Clear(waiter : Threading.Tasks.TaskCompletionSource<string>) =
+            lock gate (fun () ->
+                match active with
+                | Some (_, current) when Object.ReferenceEquals(current, waiter) -> active <- None
+                | _ -> ())
+
+        member _.Pumping = lock gate (fun () -> pumping || pendingFatal)
+
+        member _.Explain() =
+            lock gate (fun () ->
+                let seconds (moment : DateTime) = (DateTime.UtcNow - moment).TotalSeconds.ToString "F1"
+                let last = if accepted = 0 then "none" else lastKind + " " + seconds lastAt + " s ago"
+                let held = match related with Some text -> "; held back: " + text.Split('\n').[0] | None -> ""
+                $"router: {accepted} diagnostics since the request, last {last}; pump busy {pumping}; fatal in its grace delay {pendingFatal}; waited {seconds begun} s{held}")
+
+        member this.Accept(message : ClientErrorsRes) =
+            lock gate (fun () -> pumping <- true)
+            try this.Route message
+            finally
+                let kind = (fst (FSharpValue.GetUnionFields(message, typeof<ClientErrorsRes>))).Name
+                lock gate (fun () ->
+                    pumping <- false
+                    accepted <- accepted + 1
+                    lastKind <- kind
+                    lastAt <- DateTime.UtcNow)
+
+        member private _.Route(message : ClientErrorsRes) =
+            if traceDiagnostics then eprintfn "[diagnostic] %A" message
+            match message with
+            | FatalError fatal when lock gate (fun () -> entryTypeErrors.IsSome) ->
+                lock gate (fun () ->
+                    match active with
+                    | Some (_, waiter) -> waiter.TrySetResult($"FatalError: {fatal}") |> ignore
+                    | None -> ())
+            | FatalError fatal ->
+                let pending = lock gate (fun () -> active)
+                match pending with
+                | Some (_, waiter) ->
+                    lock gate (fun () -> pendingFatal <- true)
+                    Threading.Tasks.Task.Delay(fatalGraceMs).ContinueWith(fun (_ : Threading.Tasks.Task) ->
+                        lock gate (fun () ->
+                            pendingFatal <- false
+                            match active with
+                            | Some (_, current) when Object.ReferenceEquals(current, waiter) ->
+                                current.TrySetResult($"FatalError: {fatal}") |> ignore
+                            | _ -> ()))
+                    |> ignore
+                | None -> ()
+            | _ ->
+                lock gate (fun () ->
+                    match active with
+                    | Some (uri, waiter) ->
+                        match diagnosticFor uri message with
+                        | Some diagnostic when (match message with TypeErrors _ -> true | _ -> false) ->
+                            entryTypeErrors <- Some diagnostic
+                            Threading.Tasks.Task.Delay(1000).ContinueWith(fun (_ : Threading.Tasks.Task) ->
+                                let parseDetail = lock gate (fun () -> match related with Some text when text.StartsWith "ParserErrors" -> $"\n{text}" | _ -> "")
+                                waiter.TrySetResult(diagnostic + parseDetail) |> ignore)
+                            |> ignore
+                        | Some diagnostic -> waiter.TrySetResult(diagnostic) |> ignore
+                        | None ->
+                            let outsideClosure = match diagnosticUri message with Some other -> not (sameUri other uri) && not (isNull closure) && not (closure.Contains(normalizeUri other)) | None -> false
+                            match (if outsideClosure then None else diagnosticForOther message) with
+                            | Some text ->
+                                related <- Some text
+                                match message with
+                                | ParserErrors _ -> eprintfn "warning: %s (blocks that fail to parse are left out of their module)" text
+                                | _ -> ()
+                            | None -> ()
+                    | None -> ())
+
+    type private RevisionAction =
+        | OpenSource of string
+        | SourceUnchanged
+        | ChangeSource of fromLine : int * nearToLine : int * lines : string []
+
+    type private SourceRevisionStore() =
+        let sources = Dictionary<string,string>(StringComparer.Ordinal)
+        let splitLines (source : string) =
+            source.Split([|"\r\n"; "\r"; "\n"|], StringSplitOptions.None)
+
+        member _.Plan(uri, source) =
+            match sources.TryGetValue uri with
+            | false, _ -> OpenSource source
+            | true, previous when String.Equals(previous, source, StringComparison.Ordinal) -> SourceUnchanged
+            | true, previous ->
+                let nearTo = splitLines previous |> Array.length
+                let lines = splitLines source
+                ChangeSource(0, nearTo, lines)
+
+        member _.Commit(uri, source) =
+            sources.[uri] <- source
+
+        member _.ForgetUnder(prefix : string) =
+            sources.Keys |> Seq.filter (fun uri -> uri.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) |> Array.ofSeq |> Array.iter (fun uri -> sources.Remove uri |> ignore)
+
+    let private sessionManifests = Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    let private reopenChangedManifest (supervisor : Ch<SupervisorReq>) (revisions : SourceRevisionStore) (inputPath : string) =
+        let rec find (directory : DirectoryInfo) =
+            if isNull directory then None
+            else
+                let candidate = spiproj_suffix directory.FullName
+                if File.Exists candidate then Some candidate else find directory.Parent
+        match find (Directory.GetParent inputPath) with
+        | None -> ()
+        | Some manifest ->
+            let text = File.ReadAllText manifest
+            let changed =
+                lock sessionManifests (fun () ->
+                    match sessionManifests.TryGetValue manifest with
+                    | true, previous when String.Equals(previous, text, StringComparison.Ordinal) -> false
+                    | seen, _ ->
+                        sessionManifests.[manifest] <- text
+                        seen)
+            if changed then
+                let packageUri = Path.GetDirectoryName manifest |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
+                Hopac.run (supervisor *<+ fileDeleteRequest [| packageUri |])
+                revisions.ForgetUnder packageUri
+                let manifestUri = manifest |> SpiralFileSystem.normalize_path |> SpiralFileSystem.new_file_uri
+                Hopac.run (supervisor *<+ projectFileChangeRequest manifestUri text)
+
+    type private CachedCompilation =
+        {
+        fingerprint : string
+        generated : string
+        binding : string
+        }
+
+    type private CompilationCache(reuse : bool) =
+        let entries = Dictionary<string,CachedCompilation>(StringComparer.Ordinal)
+        let key uri backend = backend + "\u0000" + uri
+
+        member _.Reuse = reuse
+
+        member _.TryGet(uri, backend, fingerprint) =
+            match entries.TryGetValue(key uri backend) with
+            | true, cached when String.Equals(cached.fingerprint, fingerprint, StringComparison.Ordinal) -> Some cached
+            | _ -> None
+
+        member _.Put(uri, backend, fingerprint, generated, binding) =
+            entries.[key uri backend] <-
+                {
+                fingerprint = fingerprint
+                generated = generated
+                binding = binding
+                }
+
+    let private filesUnder (root : string) (skipDirectory : string -> bool) : string seq =
+        let visited = System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        let rec walk (directory : string) : string seq =
+            seq {
+                let info = DirectoryInfo directory
+                let real = match info.ResolveLinkTarget true with null -> info.FullName | target -> target.FullName
+                if visited.Add real then
+                    yield! Directory.EnumerateFiles directory
+                    for child in Directory.EnumerateDirectories directory do
+                        if not (skipDirectory (Path.GetFileName child)) then yield! walk child
+            }
+        walk root
+
+    let private sourceGraphFingerprint (inputPath : string) =
+        let relevantSource (path : string) =
+            let name = Path.GetFileName(path)
+            let extension = Path.GetExtension(path)
+            String.Equals(name, "package.spiproj", StringComparison.OrdinalIgnoreCase)
+            || String.Equals(name, "spiral.toml", StringComparison.OrdinalIgnoreCase)
+            || String.Equals(extension, ".spi", StringComparison.OrdinalIgnoreCase)
+            || String.Equals(extension, ".spir", StringComparison.OrdinalIgnoreCase)
+        let roots = ResizeArray<string>()
+        let addRoot (value : string) =
+            if not (String.IsNullOrWhiteSpace value) then
+                let full = Path.GetFullPath value
+                if Directory.Exists full && not (roots.Contains full) then roots.Add full
+        addRoot (Path.GetDirectoryName inputPath)
+        addRoot (Environment.GetEnvironmentVariable "SPIRAL_COMPILER_PACKAGE_DIR")
+        let files =
+            roots
+            |> Seq.collect (fun root -> filesUnder root (fun _ -> false))
+            |> Seq.filter relevantSource
+            |> Seq.map Path.GetFullPath
+            |> Seq.distinct
+            |> Seq.sort
+            |> Seq.toArray
+        use hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256)
+        let appendText (value : string) = hash.AppendData(Encoding.UTF8.GetBytes value)
+        for path in files do
+            appendText path
+            hash.AppendData([|0uy|])
+            hash.AppendData(File.ReadAllBytes path)
+            hash.AppendData([|0uy|])
+        Convert.ToHexString(hash.GetHashAndReset())
+
+    let private startDiagnosticPump errors (router : DiagnosticRouter) =
+        errors
+        |> FSharp.Control.AsyncSeq.iterAsync (fun message -> async { router.Accept message })
+        |> Async.Start
+
+    let private warmModulePipeline code =
+        let defaultEnv = startupParse [|"--port"; "0"|]
+        let state = wdiff_module_init_all defaultEnv true code
+        state.parser.blocks
+        |> List.iter (fun (_, parsed) -> Hopac.run parsed.block |> ignore)
+        let rec drain stream =
+            match Hopac.run stream with
+            | Nil -> ()
+            | Cons(_, next) -> drain next
+        drain state.bundler
+
+    let private directProjectCompileFsharp input output =
+        try
+            let inputPath = input |> Path.GetFullPath |> SpiralFileSystem.standardize_path
+            let outputPath = output |> Path.GetFullPath
+            let defaultEnv = startupParse [|"--port"; "0"|]
+            let emptyState : SupervisorState =
+                { packages = Map.empty
+                  modules = Map.empty
+                  packages_infer = {ok = Map.empty; error = Map.empty}
+                  packages_prepass = {ok = Map.empty; error = Map.empty}
+                  graph = mirrored_graph_empty
+                  package_ids = Map.empty, Map.empty }
+            let rec findOwner (directory : DirectoryInfo) =
+                if isNull directory then failwith $"Cannot find spiral.toml or package.spiproj for {inputPath}"
+                let candidate = directory.FullName |> SpiralFileSystem.standardize_path
+                if File.Exists(spiproj_suffix candidate) then candidate else findOwner directory.Parent
+            let packageDir = findOwner (Directory.GetParent inputPath)
+            let _, state = proj_open defaultEnv emptyState (packageDir, None)
+            let pid = (fst state.package_ids).[packageDir]
+            let tc =
+                match Map.tryFind pid state.packages_infer.ok with
+                | Some value -> value
+                | None -> failwith $"Direct project typecheck did not produce package {packageDir}"
+            let rec findModuleId = function
+                | ProjFilesTree.File(mid, path, _) when String.Equals(path, inputPath, StringComparison.Ordinal) -> Some mid
+                | ProjFilesTree.File _ -> None
+                | ProjFilesTree.Directory(_, _, children) -> List.tryPick findModuleId children
+            let mid = tc.files.files.tree |> List.tryPick findModuleId |> Option.defaultWith (fun () -> failwith $"Direct project input is not declared in package: {inputPath}")
+            let typeState, typePropagated = tc.files.uids_file.[mid]
+            let order, dirtyPackages = topological_sort' (fst state.graph) [packageDir]
+            let prepassPackages =
+                wdiff_projenvr_prepass defaultEnv (fst state.package_ids) state.packages state.packages_infer.ok state.packages_prepass (dirtyPackages, order.ToArray())
+            let prepassPackage =
+                match Map.tryFind pid prepassPackages.ok with
+                | Some value -> value
+                | None -> failwith $"Direct project prepass did not produce package {packageDir}"
+            let prepassState, _ = prepassPackage.files.uids_file.[mid]
+            let hasStateError, _ = Hopac.run typeState.state
+            let hasPropagatedError, _ = Hopac.run typePropagated
+            if hasStateError || hasPropagatedError then Error $"Direct project typecheck rejected {inputPath}"
+            else
+                let env = Hopac.run (prepass_results_summary prepassState.result)
+                let compileTerm termName =
+                    let term =
+                        Map.tryFind termName env.term
+                        |> Option.defaultWith (fun () -> failwith $"Cannot find `{termName}` in file {Path.GetFileNameWithoutExtension inputPath}.")
+                    let prototypes_instances = Dictionary(env.prototypes_instances)
+                    let nominals =
+                        let table = HashConsTable()
+                        let values = Dictionary()
+                        env.nominals |> Map.iter (fun key value -> values.Add(key, nominal_add table key value))
+                        values
+                    let (arguments, _), body = PartEvalSeams.with_conflict_restart (fun inline_restart -> peval {prototypes_instances = prototypes_instances; nominals = nominals; backend = "Fsharp"; inline_restart = inline_restart} term)
+                    termName, body, arguments
+                let directTerms =
+                    match Environment.GetEnvironmentVariable "SPIRAL_DIRECT_TERMS" with
+                    | null | "" -> [||]
+                    | value ->
+                        value.Split([|','|], StringSplitOptions.RemoveEmptyEntries)
+                        |> Array.map (fun term -> term.Trim())
+                        |> Array.filter (String.IsNullOrWhiteSpace >> not)
+                if directTerms.Length = 0 then
+                    let _, body, arguments = compileTerm "main"
+                    let generated = codegenFsharp body arguments
+                    let binding = discoverEntryBinding generated
+                    let parent = Path.GetDirectoryName outputPath
+                    if not (String.IsNullOrWhiteSpace parent) then Directory.CreateDirectory parent |> ignore
+                    File.WriteAllText(outputPath, generated)
+                    writeEntryManifest outputPath binding generated.Length "direct-project" "Fsharp"
+                    Ok (generated.Length, binding, "direct-project")
+                else
+                    Directory.CreateDirectory outputPath |> ignore
+                    let specialized = directTerms |> Array.map compileTerm
+                    let compiled =
+                        specialized
+                        |> Array.map (fun (termName, body, arguments) ->
+                            let generated = codegenFsharp body arguments
+                            let binding = discoverEntryBinding generated
+                            termName, generated, binding)
+                    let mutable generatedBytes = 0
+                    for termName, generated, binding in compiled do
+                        let termOutput = Path.Combine(outputPath, termName + ".fsx")
+                        File.WriteAllText(termOutput, generated)
+                        writeEntryManifest termOutput binding generated.Length "direct-project-multi" "Fsharp"
+                        generatedBytes <- generatedBytes + generated.Length
+                    let binding = if compiled.Length = 1 then let _, _, value = compiled.[0] in value else "multi"
+                    Ok (generatedBytes, binding, "direct-project-multi")
+        with error -> Error error.Message
+
+
+    let private rewriteRustEmitExpr (generated : string) =
+        if not (generated.Contains("__spiral_emit_rust", StringComparison.Ordinal)) then generated
+        else
+            let lines = generated.Split([|"\r\n"; "\n"|], StringSplitOptions.None)
+            let bindingPattern = Regex(@"^\s*let mut (v[0-9]+): Rc<str> = (""(?:\\.|[^""\\])*"");\s*$")
+            let emitPattern = Regex(@"^(?<prefix>\s*let mut v[0-9]+: [^=]+ = )__spiral_emit_rust (?<args>.*?) (?<code>v[0-9]+) ;\s*$")
+            let unescape (literal : string) =
+                let body = literal.Substring(1, literal.Length - 2)
+                let text = StringBuilder()
+                let mutable i = 0
+                while i < body.Length do
+                    if body.[i] = '\\' && i + 1 < body.Length then
+                        match body.[i + 1] with
+                        | 'n' -> text.Append('\n') |> ignore
+                        | 'r' -> text.Append('\r') |> ignore
+                        | 't' -> text.Append('\t') |> ignore
+                        | '"' -> text.Append('"') |> ignore
+                        | '\\' -> text.Append('\\') |> ignore
+                        | other -> text.Append('\\').Append(other) |> ignore
+                        i <- i + 2
+                    else
+                        text.Append(body.[i]) |> ignore
+                        i <- i + 1
+                text.ToString()
+            let splitArgs (value : string) =
+                let value = value.Trim()
+                if value = "()" then ["()"]
+                else
+                    let body =
+                        if value.Length >= 2 && value.[0] = '(' && value.[value.Length - 1] = ')' then
+                            value.Substring(1, value.Length - 2)
+                        else value
+                    if not (body.Contains ',') then [body.Trim()]
+                    else
+                        let parts = ResizeArray<string>()
+                        let mutable start = 0
+                        let mutable depth = 0
+                        for index = 0 to body.Length - 1 do
+                            match body.[index] with
+                            | '(' -> depth <- depth + 1
+                            | ')' -> depth <- depth - 1
+                            | ',' when depth = 0 ->
+                                parts.Add(body.Substring(start, index - start).Trim())
+                                start <- index + 1
+                            | _ -> ()
+                        parts.Add(body.Substring(start).Trim())
+                        parts |> Seq.filter (fun part -> part <> "") |> Seq.toList
+            let borrow (argument : string) =
+                let cloned = Regex.Match(argument, @"^v[0-9]+\.clone\(\)$")
+                if cloned.Success then argument.Substring(0, argument.Length - ".clone()".Length) else argument
+            let snippets = Dictionary<string, string>(StringComparer.Ordinal)
+            let bindingLine = Dictionary<string, int>(StringComparer.Ordinal)
+            let drop = HashSet<int>()
+            let rewritten = Array.copy lines
+            for index = 0 to lines.Length - 1 do
+                let binding = bindingPattern.Match lines.[index]
+                if binding.Success then
+                    let name = binding.Groups.[1].Value
+                    snippets.[name] <- unescape binding.Groups.[2].Value
+                    bindingLine.[name] <- index
+                let emitted = emitPattern.Match lines.[index]
+                if emitted.Success then
+                    let code = emitted.Groups.["code"].Value
+                    match snippets.TryGetValue code, bindingLine.TryGetValue code with
+                    | (true, payload), (true, lineIndex) ->
+                        drop.Add lineIndex |> ignore
+                        let args = splitArgs emitted.Groups.["args"].Value |> List.map borrow
+                        let mutable expression = payload
+                        for argIndex = args.Length - 1 downto 0 do
+                            expression <- expression.Replace($"${argIndex}", args.[argIndex])
+                        rewritten.[index] <- emitted.Groups.["prefix"].Value + expression + ";"
+                    | _ -> ()
+            rewritten
+            |> Array.mapi (fun index line -> if drop.Contains index then None else Some line)
+            |> Array.choose id
+            |> String.concat "\n"
+
+    let private multiFileSuffixes = function
+        | "Cpp + Cuda" -> Some [ ".corelib.hpp"; ".hpp"; ".cpp"; ".cu" ]
+        | "Python + Cuda" -> Some [ "_auto.py"; ".py" ]
+        | _ -> None
+
+    let private optionalSiblingSuffixes = function
+        | "Gleam" -> [ "_ffi.erl"; "_ffi.mjs" ]
+        | _ -> []
+
+    let private compileOne
+        (supervisor : Ch<SupervisorReq>)
+        (router : DiagnosticRouter)
+        (revisions : SourceRevisionStore)
+        (cache : CompilationCache)
+        (jobVal : (IVar<string option> -> Job<unit>) -> Threading.Tasks.Task<string>)
+        backend input output =
+        try
+            let inputPath = input |> Path.GetFullPath |> SpiralFileSystem.normalize_path
+            let outputPath = output |> Path.GetFullPath
+            let code = File.ReadAllText inputPath
+            let uri = inputPath |> SpiralFileSystem.new_file_uri
+            reopenChangedManifest supervisor revisions inputPath
+            let revision = revisions.Plan(uri, code)
+            let fingerprint = if cache.Reuse then sourceGraphFingerprint inputPath else ""
+            let multiFile = multiFileSuffixes backend
+            let started = DateTime.UtcNow
+            let cached =
+                match revision with
+                | SourceUnchanged when multiFile.IsNone && List.isEmpty (optionalSiblingSuffixes backend) && cache.Reuse -> cache.TryGet(uri, backend, fingerprint)
+                | _ -> None
+            let revisionMode =
+                match cached, revision with
+                | Some _, _ -> "cache-hit"
+                | None, OpenSource _ -> "open"
+                | None, SourceUnchanged -> "unchanged"
+                | None, ChangeSource _ -> "change"
+            if cached.IsNone then warmModulePipeline code
+            let awaitCoreWrite (path : string) (text : string) =
+                let deadline = DateTime.UtcNow.AddSeconds 5.0
+                let mutable landed = false
+                while not landed && DateTime.UtcNow < deadline do
+                    landed <- (try File.Exists path && File.ReadAllText path = text with _ -> false)
+                    if not landed then Threading.Thread.Sleep 20
+                landed
+            let rec writeWithRetry (path : string) (text : string) attempt =
+                try File.WriteAllText(path, text)
+                with :? IOException when attempt < 250 ->
+                    Threading.Thread.Sleep 20
+                    writeWithRetry path text (attempt + 1)
+            let coreOutputs =
+                let coreBase = Path.ChangeExtension(inputPath, null)
+                match multiFile with
+                | Some suffixes -> suffixes |> List.map (fun suffix -> coreBase + suffix)
+                | None -> Path.ChangeExtension(inputPath, Path.GetExtension outputPath) :: (optionalSiblingSuffixes backend |> List.map (fun suffix -> coreBase + suffix))
+            let elsewhere =
+                let outBase = Path.Combine(Path.GetDirectoryName(Path.GetFullPath outputPath), Path.GetFileNameWithoutExtension outputPath)
+                not (String.Equals(Path.GetFullPath(Path.ChangeExtension(inputPath, null)), outBase, StringComparison.OrdinalIgnoreCase))
+            let coreSnapshots =
+                if elsewhere then coreOutputs |> List.map (fun path -> path, (if File.Exists path then Some (File.ReadAllBytes path) else None))
+                else []
+            let restoreCoreOutputs () =
+                for path, before in coreSnapshots do
+                    try
+                        match before with
+                        | Some bytes -> if not (File.Exists path && File.ReadAllBytes path = bytes) then File.WriteAllBytes(path, bytes)
+                        | None -> if File.Exists path then File.Delete path
+                    with _ -> ()
+            router.SetClosure(relatedClosure inputPath)
+            let waiter = router.Begin uri
+            try
+                if cached.IsNone then
+                    match revision with
+                    | OpenSource source ->
+                        openOwningProject supervisor inputPath
+                        fileOpenRequest uri source
+                        |> fun request -> Hopac.run (supervisor *<+ request)
+                        revisions.Commit(uri, code)
+                    | ChangeSource(fromLine, nearToLine, lines) ->
+                        fileChangeRequest uri fromLine nearToLine lines
+                        |> fun request -> Hopac.run (supervisor *<+ request)
+                        revisions.Commit(uri, code)
+                    | SourceUnchanged -> ()
+
+                let buildTask =
+                    match cached with
+                    | Some cached -> Threading.Tasks.Task.FromResult cached.generated
+                    | None ->
+                        jobVal (fun result ->
+                            buildFileRequest uri backend result
+                            |> fun request -> supervisor *<+ request)
+                let winner =
+                    Threading.Tasks.Task.WhenAny(buildTask :> Threading.Tasks.Task, waiter.Task :> Threading.Tasks.Task)
+                        .GetAwaiter().GetResult()
+
+                if Object.ReferenceEquals(winner, waiter.Task) then
+                    Error (waiter.Task.GetAwaiter().GetResult())
+                else
+                    let generated = buildTask.GetAwaiter().GetResult()
+                    if isNull generated then
+                        let rec awaitBusyPump (until : DateTime) =
+                            if waiter.Task.Wait(TimeSpan.FromMilliseconds 500.0) then true
+                            elif router.Pumping && DateTime.UtcNow < until then awaitBusyPump until
+                            else false
+                        if waiter.Task.Wait(TimeSpan.FromMilliseconds(float (fatalGraceMs + 10000))) || awaitBusyPump (DateTime.UtcNow.AddSeconds 120.0) then Error (waiter.Task.GetAwaiter().GetResult())
+                        else Error $"BuildFile returned no code and no diagnostic arrived ({router.Explain()})"
+                    else
+                        let coreWrites = cached.IsNone
+                        let generated = if coreWrites && backend = "Rust" then rewriteRustEmitExpr generated else generated
+                        let parent = Path.GetDirectoryName outputPath
+                        if not (String.IsNullOrWhiteSpace parent) then Directory.CreateDirectory parent |> ignore
+                        let coreFile = Path.ChangeExtension(inputPath, Path.GetExtension outputPath)
+                        let manifestOf (stem : string) = stem + ".spiral-parts"
+                        let splitParts =
+                            let manifest = manifestOf (Path.ChangeExtension(inputPath, null))
+                            if multiFile.IsNone && coreWrites && File.Exists manifest && File.GetLastWriteTimeUtc manifest >= started.AddSeconds -2.0 then
+                                Some ((".rs" :: (File.ReadAllLines manifest |> Array.filter (String.IsNullOrWhiteSpace >> not) |> List.ofArray)) @ [ ".spiral-parts" ])
+                            else None
+                        if multiFile.IsNone && splitParts.IsNone && coreWrites && backend = "Rust" then
+                            let outStem = Path.Combine(Path.GetDirectoryName outputPath, Path.GetFileNameWithoutExtension outputPath)
+                            for stem in List.distinct [ Path.ChangeExtension(inputPath, null); outStem ] do
+                                let manifest = manifestOf stem
+                                if File.Exists manifest && File.GetLastWriteTimeUtc manifest < started.AddSeconds -2.0 then
+                                    for suffix in File.ReadAllLines manifest |> Array.filter (String.IsNullOrWhiteSpace >> not) do
+                                        try File.Delete(stem + suffix) with _ -> ()
+                                    try File.Delete manifest with _ -> ()
+                        match (match multiFile with Some suffixes -> Some suffixes | None -> splitParts) with
+                        | Some suffixes ->
+                            let coreBase = Path.ChangeExtension(inputPath, null)
+                            let outBase = Path.Combine(Path.GetDirectoryName outputPath, Path.GetFileNameWithoutExtension outputPath)
+                            let deadline = DateTime.UtcNow.AddSeconds 5.0
+                            let landed (suffix : string) =
+                                let path = coreBase + suffix
+                                File.Exists path && File.GetLastWriteTimeUtc path >= started.AddSeconds -2.0
+                            while not (suffixes |> List.forall landed) && DateTime.UtcNow < deadline do
+                                Threading.Thread.Sleep 20
+                            if not (String.Equals(Path.GetFullPath coreBase, Path.GetFullPath outBase, StringComparison.OrdinalIgnoreCase)) then
+                                for suffix in suffixes do
+                                    let source = coreBase + suffix
+                                    if File.Exists source then File.Copy(source, outBase + suffix, true)
+                        | None ->
+                            let generated =
+                                if coreWrites && not (List.isEmpty (optionalSiblingSuffixes backend)) then
+                                    let deadline = DateTime.UtcNow.AddSeconds 5.0
+                                    while not (File.Exists coreFile && File.GetLastWriteTimeUtc coreFile >= started.AddSeconds -2.0) && DateTime.UtcNow < deadline do
+                                        Threading.Thread.Sleep 20
+                                    File.ReadAllText coreFile
+                                else generated
+                            if coreWrites && String.Equals(Path.GetFullPath coreFile, outputPath, StringComparison.OrdinalIgnoreCase) then
+                                if not (awaitCoreWrite outputPath generated) then writeWithRetry outputPath generated 0
+                            else
+                                writeWithRetry outputPath generated 0
+                                if coreWrites && not coreSnapshots.IsEmpty then awaitCoreWrite coreFile generated |> ignore
+                            let coreBase = Path.ChangeExtension(inputPath, null)
+                            let siblingBase = Path.Combine(Path.GetDirectoryName outputPath, Path.GetFileName coreBase)
+                            if coreWrites && not (String.Equals(Path.GetFullPath coreBase, Path.GetFullPath siblingBase, StringComparison.OrdinalIgnoreCase)) then
+                                for suffix in optionalSiblingSuffixes backend do
+                                    let source = coreBase + suffix
+                                    if File.Exists source && File.GetLastWriteTimeUtc source >= started.AddSeconds -2.0 then File.Copy(source, siblingBase + suffix, true)
+                                    elif File.Exists(siblingBase + suffix) then File.Delete(siblingBase + suffix)
+                        restoreCoreOutputs ()
+                        let binding =
+                            match cached with
+                            | Some cached -> cached.binding
+                            | None when String.Equals(backend, "Fsharp", StringComparison.Ordinal) -> discoverEntryBinding generated
+                            | None -> "main"
+                        if multiFile.IsNone && splitParts.IsNone && List.isEmpty (optionalSiblingSuffixes backend) && cache.Reuse then cache.Put(uri, backend, fingerprint, generated, binding)
+                        writeEntryManifest outputPath binding generated.Length revisionMode backend
+                        Ok (generated.Length, binding, revisionMode)
+            finally
+                restoreCoreOutputs ()
+                router.Clear waiter
+        with error -> Error error.Message
+
+    let private decodeRustStringLiteral (literal : string) =
+        let value = System.Text.Json.JsonSerializer.Deserialize<string>(literal)
+        if isNull value then failwith "canonical plan IR contains a null Rust string literal"
+        value
+
+    let private planFieldHex (value : string) =
+        Convert.ToHexString(Encoding.UTF8.GetBytes value).ToLowerInvariant()
+
+    let private lowerPlanIrManifest (code : string) =
+        let argument = "(?:\\\"(?:\\\\.|[^\\\"\\\\])*\\\"|v[0-9]+(?:\\.clone\\(\\))?)"
+        let marker = Regex(
+            "(?m)^[ \\t]*RustPlanOp\\((?<op>" + argument + "),[ \\t]*(?<target>" + argument + "),[ \\t]*(?<expected>" + argument + "),[ \\t]*(?<payload>" + argument + "),[ \\t]*(?<effect>" + argument + ")\\);[ \\t]*\\r?$",
+            RegexOptions.CultureInvariant)
+        let binding = Regex(
+            "(?m)^[ \\t]*let (?<name>v[0-9]+): Rc<str> = Rc::<str>::from\\((?<value>\\\"(?:\\\\.|[^\\\"\\\\])*\\\")\\);[ \\t]*\\r?$",
+            RegexOptions.CultureInvariant)
+        let spiralMain = Regex.Match(code, "(?m)^fn spiral_main\\(\\) -> i32 \\{")
+        if not spiralMain.Success then failwith "canonical plan IR lowering could not locate spiral_main"
+        let bodyMatch = Regex.Match(code.Substring(spiralMain.Index), @"(?ms)^fn spiral_main\(\) -> i32 \{\r?\n(?<body>.*?)^\}")
+        if not bodyMatch.Success then failwith "canonical plan IR has no complete entry body"
+        let spiralBody = bodyMatch.Groups.["body"].Value
+        let markers = marker.Matches spiralBody
+        if markers.Count = 0 then failwith "canonical plan IR provider emitted no RustPlanOp markers"
+        if marker.Matches(code).Count <> markers.Count then
+            failwith "canonical plan IR markers must be contained entirely in spiral_main"
+        let remainder = binding.Replace(marker.Replace(spiralBody, ""), "").Trim()
+        if not (Regex.IsMatch(remainder, @"\A(?:return\s+)?0(?:i32|i64|u32|u64|i8|i16|u8|u16|isize|usize)?;?\s*\z")) then
+            failwith "canonical plan IR requires unconditional markers and a zero return; runtime control flow or unresolved operations are not attestable"
+        let bindings =
+            binding.Matches spiralBody
+            |> Seq.cast<Match>
+            |> Seq.map (fun item -> item.Groups.["name"].Value, item.Groups.["value"].Value |> decodeRustStringLiteral)
+            |> Map.ofSeq
+        let resolve (raw : string) =
+            if raw.StartsWith("\"") then decodeRustStringLiteral raw
+            else
+                let name = raw.Split('.')[0]
+                match Map.tryFind name bindings with
+                | Some value -> value
+                | None -> failwith $"canonical plan IR references an unresolved generated string binding: {raw}"
+        let rows =
+            markers
+            |> Seq.cast<Match>
+            |> Seq.map (fun item ->
+                [| "op"
+                   item.Groups.["op"].Value |> resolve |> planFieldHex
+                   item.Groups.["target"].Value |> resolve |> planFieldHex
+                   item.Groups.["expected"].Value |> resolve |> planFieldHex
+                   item.Groups.["payload"].Value |> resolve |> planFieldHex
+                   item.Groups.["effect"].Value |> resolve |> planFieldHex |]
+                |> String.concat "\t")
+            |> Seq.toArray
+        String.concat Environment.NewLine (Array.append [| "KIT-PLAN-IR\t1" |] rows) + Environment.NewLine
+
+    let private temporaryAttestationPath extension =
+        Path.Combine(Path.GetTempPath(), $"spiral-attestation-{Guid.NewGuid():N}{extension}")
+
+    let private deleteAttestationArtifacts outputPath =
+        for path in [ outputPath; outputPath + ".spiral-entry" ] do
+            try if File.Exists path then File.Delete path with _ -> ()
+
+    let private runCheck inputPath =
+        try
+            let inputPath = inputPath |> Path.GetFullPath |> SpiralFileSystem.standardize_path
+            if not (File.Exists inputPath) then failwith $"Missing check input: {inputPath}"
+            let rec findOwner (directory : DirectoryInfo) =
+                if isNull directory then failwith $"Cannot find spiral.toml or package.spiproj for {inputPath}"
+                let candidate = directory.FullName |> SpiralFileSystem.standardize_path
+                if File.Exists(spiproj_suffix candidate) then candidate else findOwner directory.Parent
+            let packageDir = findOwner (Directory.GetParent inputPath)
+            let emptyState : SupervisorState =
+                { packages = Map.empty; modules = Map.empty
+                  packages_infer = {ok = Map.empty; error = Map.empty}
+                  packages_prepass = {ok = Map.empty; error = Map.empty}
+                  graph = mirrored_graph_empty; package_ids = Map.empty, Map.empty }
+            let _, state = proj_open (startupParse [|"--port"; "0"|]) emptyState (packageDir, None)
+            let packageReasons =
+                state.packages |> Map.toList |> List.collect (fun (dir, v) -> List.concat [v.errors_parse; v.errors_modules; v.errors_packages] |> List.map (fun (_, message) -> $"{dir}: {message}"))
+            let reasonText = match packageReasons with [] -> "" | xs -> " Reasons: " + String.concat " | " xs
+            if not state.packages_infer.error.IsEmpty then
+                let failedPackages =
+                    state.packages_infer.error
+                    |> Map.toList
+                    |> List.map (fun (pid, _) -> snd state.package_ids |> Map.tryFind pid |> Option.map string |> Option.defaultWith (fun () -> string pid))
+                    |> String.concat ", "
+                failwith $"Package graph rejected: {packageDir}; packages that failed to type check: {failedPackages}. {reasonText} A packages: entry that does not resolve (|core- needs SPIRAL_COMPILER_PACKAGE_DIR or a deps/The-Spiral-Language clone) leaves the packages importing it unchecked."
+            let pid = (fst state.package_ids).[packageDir]
+            let package = state.packages_infer.ok.[pid]
+            let rec containsInput = function
+                | ProjFilesTree.File(_, path, _) -> String.Equals(path, inputPath, StringComparison.Ordinal)
+                | ProjFilesTree.Directory(_, _, children) -> List.exists containsInput children
+            if not (package.files.files.tree |> List.exists containsInput) then
+                failwith $"Check input is not declared in package: {inputPath}"
+            let hasError, _ = Hopac.run package.result
+            let rec files (tc : ProjStateTC) node acc =
+                match node with
+                | ProjFilesTree.File(mid,path,_) ->
+                    let slot = if mid < tc.files.uids_file.Length then tc.files.uids_file.[mid] else Unchecked.defaultof<_>
+                    if isNull (box slot) || isNull (box (fst slot)) then acc
+                    else (path, fst slot) :: acc
+                | ProjFilesTree.Directory(_,_,l) -> List.foldBack (files tc) l acc
+            let rec availableErrors acc (stream : Stream<_>) =
+                if Promise.Now.isFulfilled stream then
+                    match Promise.Now.get stream with
+                    | Cons((_, x : InferResult, _), next) -> availableErrors (acc @ x.errors) next
+                    | Nil -> acc
+                else acc
+            let rec availableParseErrors acc (stream : BlockBundleState) =
+                if Promise.Now.isFulfilled stream then
+                    match Promise.Now.get stream with
+                    | Cons((_, x : BlockBundleValue), next) -> availableParseErrors (acc @ x.errors) next
+                    | Nil -> acc
+                else acc
+            let located (path : string) (error : RString) =
+                let (a, _), message = error
+                $"{path}:{a.line + 1}:{a.character + 1}: {message}"
+            let parseErrors =
+                (try
+                    List.foldBack (files package) package.files.files.tree []
+                    |> List.collect (fun (path, file) -> let _, _, bundles = file.input in availableParseErrors [] bundles |> List.map (located path))
+                 with ex -> [$"(could not list the parser's errors: {ex.GetType().Name}: {ex.Message})"])
+            if hasError || not parseErrors.IsEmpty then
+                parseErrors |> List.iter (eprintfn "%s")
+                let states =
+                    let seen = HashSet<obj>(HashIdentity.Reference)
+                    package :: (Seq.append state.packages_infer.ok.Values state.packages_infer.error.Values |> List.ofSeq)
+                    |> List.filter (fun tc -> seen.Add (box tc))
+                (try
+                    states |> List.collect (fun tc -> List.foldBack (files tc) tc.files.files.tree [])
+                    |> List.collect (fun (path, file) -> availableErrors [] file.result |> List.map (located path))
+                 with ex -> [$"(could not list the typer's errors: {ex.GetType().Name}: {ex.Message})"])
+                |> List.iter (eprintfn "%s")
+                failwith $"Package typecheck rejected: {packageDir}"
+            printfn "checked package %s (parse and type inference only: partial evaluation and test blocks did not run, so a --backend build can still fail)" packageDir
+            0
+        with error ->
+            eprintfn "%s" error.Message
+            5
+
+    let private startOnCompileStack (work : unit -> 'T) : Threading.Tasks.Task<'T> =
+        let completion = Threading.Tasks.TaskCompletionSource<'T>()
+        let thread = Threading.Thread((fun () -> try completion.SetResult(work ()) with error -> completion.SetException error), 1 <<< 30)
+        thread.IsBackground <- true
+        thread.Start()
+        completion.Task
+
+    let private runAttestationBounded timeoutMs work =
+        let mutable result = 5
+        let thread = Threading.Thread(Threading.ThreadStart(fun () ->
+            try result <- work ()
+            with error -> eprintfn "%s" error.Message), 64 * 1024 * 1024)
+        thread.IsBackground <- true
+        thread.Start()
+        if thread.Join(timeoutMs : int) then result
+        else
+            eprintfn "Attestation timed out after %d ms" timeoutMs
+            3
+
+    let private runPlanIr inputPath outputPath =
+        let generatedPath = temporaryAttestationPath ".rs"
+        let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
+        let router = DiagnosticRouter()
+        let revisions = SourceRevisionStore()
+        let cache = CompilationCache(false)
+        startDiagnosticPump server.errors router
+        try
+            try
+                match compileOne server.supervisor router revisions cache server.job_val "Rust" inputPath generatedPath with
+                | Error message -> eprintfn "%s" message; 5
+                | Ok _ ->
+                    let manifest = lowerPlanIrManifest (File.ReadAllText generatedPath)
+                    let parent = Path.GetDirectoryName(Path.GetFullPath outputPath)
+                    if not (String.IsNullOrWhiteSpace parent) then Directory.CreateDirectory parent |> ignore
+                    File.WriteAllText(outputPath, manifest, UTF8Encoding(false))
+                    printfn "compiled canonical plan IR %s -> %s" inputPath outputPath
+                    0
+            with error ->
+                eprintfn "%s" error.Message
+                5
+        finally
+            deleteAttestationArtifacts generatedPath
+
+    let private cleanProtocolText (value : string) =
+        value.Replace('\t', ' ').Replace('\r', ' ').Replace('\n', ' ')
+
+    let private backendOfOutput (output : string) =
+        match Path.GetExtension(output).ToLowerInvariant() with
+        | ".fsx" | ".fs" -> "Fsharp"
+        | ".c" -> "C"
+        | ".rs" -> "Rust"
+        | ".pas" | ".dpr" -> "Pascal"
+        | ".zig" -> "Zig"
+        | ".wat" -> "Wasm"
+        | ".wgsl" -> "Wgsl"
+        | ".futil" -> "Calyx"
+        | ".kt" -> "Kotlin"
+        | ".swift" -> "Swift"
+        | ".qasm" -> "OpenQasm"
+        | ".ebpf" -> "Ebpf"
+        | ".lean" -> "Lean"
+        | ".bend" -> "Bend"
+        | ".py" -> "Python + Cuda"
+        | ".cpp" -> "Cpp + Cuda"
+        | ".lua" -> "Lua"
+        | ".gleam" -> "Gleam"
+        | ".ts" | ".mts" -> "TypeScript"
+        | other -> failwith $"cannot infer a backend from output extension '{other}'; pass --backend"
+
+    let private stallDetail () =
+        ""
+
+    let private runBatch (jobsPath : string) (resultsPath : string) (timeoutMs : int) =
+        let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
+        let router = DiagnosticRouter()
+        let revisions = SourceRevisionStore()
+        startDiagnosticPump server.errors router
+        let jobs =
+            File.ReadAllLines jobsPath
+            |> Array.filter (fun line -> not (String.IsNullOrWhiteSpace line) && not (line.StartsWith "#"))
+        let cache = CompilationCache(jobs.Length > 1)
+        use results = new StreamWriter(resultsPath, true, UTF8Encoding(false))
+        results.AutoFlush <- true
+        let recycleAfterError = String.Equals(Environment.GetEnvironmentVariable "SPIRAL_BATCH_RECYCLE_AFTER_ERROR", "1", StringComparison.Ordinal)
+        let mutable exitCode = 0
+        let mutable index = 0
+        let mutable timedOut = false
+        let mutable recycle = false
+        let mutable failureDeferredToFreshProcess = false
+        while not timedOut && not recycle && index < jobs.Length do
+            let fields = jobs.[index].Split('\t')
+            let id, backend, input, output = fields.[0], fields.[1], fields.[2], fields.[3]
+            let jobTimeoutMs = if fields.Length >= 5 && not (String.IsNullOrWhiteSpace fields.[4]) then int fields.[4] else timeoutMs
+            let failureMayComeFromEarlierBuild = recycleAfterError && index > 0
+            let recordFailure (line : string) =
+                recycle <- recycleAfterError
+                if failureMayComeFromEarlierBuild then failureDeferredToFreshProcess <- true
+                else results.WriteLine line
+            let stopwatch = Diagnostics.Stopwatch.StartNew()
+            let work = startOnCompileStack (fun () -> compileOne server.supervisor router revisions cache server.job_val backend input output)
+            try
+                if work.Wait jobTimeoutMs then
+                    match work.Result with
+                    | Ok (bytes, binding, revisionMode) ->
+                        results.WriteLine($"{id}\tok\t{stopwatch.ElapsedMilliseconds}\tbytes={bytes} entry={binding} revision={revisionMode}")
+                    | Error message ->
+                        exitCode <- 1
+                        recordFailure $"{id}\terror\t{stopwatch.ElapsedMilliseconds}\t{cleanProtocolText message}"
+                elif failureMayComeFromEarlierBuild then
+                    recordFailure ""
+                else
+                    exitCode <- 3
+                    timedOut <- true
+                    results.WriteLine($"{id}\ttimeout\t{stopwatch.ElapsedMilliseconds}\tno result within {jobTimeoutMs} ms{stallDetail ()}")
+            with error ->
+                exitCode <- 1
+                recordFailure $"{id}\terror\t{stopwatch.ElapsedMilliseconds}\t{cleanProtocolText error.Message}"
+            if not failureDeferredToFreshProcess then index <- index + 1
+        if recycle && index < jobs.Length then 4 else exitCode
+
+    let private isCommentToken (_, token) = match token with TokComment _ -> true | _ -> false
+
+    let private sourceBlocks (text : string) =
+        let text = text.Replace("\r\n", "\n")
+        let lines = text.Split '\n'
+        let state = wdiff_tokenizer_all wdiff_tokenizer_init text
+        let lineAt row = if row < lines.Length then lines.[row] else ""
+        let sourceOf row (range : TokenizerRange) =
+            let line = lineAt row
+            if range.nearTo <= line.Length then line.Substring(range.from, range.nearTo - range.from) else ""
+        let isBodyContent row (line : seq<LineToken>) =
+            let textRow = lineAt row
+            let trimmed = textRow.TrimStart()
+            let opensInComment = row > 0 && row - 1 < state.lines_state.Length && state.lines_state.[row - 1].comment_depth > 0
+            let commentRow = trimmed.StartsWith "//" || trimmed.StartsWith "(*" || opensInComment
+            if Seq.isEmpty line then not (String.IsNullOrWhiteSpace textRow || commentRow) else line |> Seq.exists (isCommentToken >> not)
+        let blocks =
+            [ for block in state.blocks do
+                let blockRows = block.block |> Seq.toArray
+                let lastRow = block.offset + blockRows.Length - 1
+                match blockRows |> Array.tryFindIndex (fun line -> line |> Seq.exists (isCommentToken >> not)) with
+                | Some i ->
+                    let headerRow = block.offset + i
+                    let lastContent =
+                        blockRows |> Array.mapi (fun j line -> j, line) |> Array.filter (fun (j, line) -> j > i && isBodyContent (block.offset + j) line)
+                        |> Array.tryLast |> Option.map (fun (j, _) -> block.offset + j) |> Option.defaultValue headerRow
+                    let statement = blockRows.[i] |> Seq.filter (isCommentToken >> not) |> Seq.toArray
+                    yield {| firstRow = block.offset; headerRow = Some headerRow; lastContent = lastContent; lastRow = lastRow; statement = statement |}
+                | None -> yield {| firstRow = block.offset; headerRow = None; lastContent = lastRow; lastRow = lastRow; statement = [||] |} ]
+        blocks, lineAt, sourceOf, state.errors.Length
+
+    let private testBlockRows (text : string) =
+        let blocks, lineAt, sourceOf, tokenizerErrors = sourceBlocks text
+        let rows =
+            [ for block in blocks do
+                match block.headerRow with
+                | Some headerRow ->
+                    match block.statement.[0] with
+                    | _, TokVar ("test", _) ->
+                        let name = if block.statement.Length > 1 then sourceOf headerRow (fst block.statement.[1]) else ""
+                        yield $"{name}\t{headerRow + 1}\t{headerRow + 2}\t{block.lastContent + 1}\t{lineAt headerRow}"
+                    | _ -> ()
+                | None -> () ]
+        rows, tokenizerErrors
+
+    let private sourceBlockRows (text : string) =
+        let blocks, lineAt, _, tokenizerErrors = sourceBlocks text
+        let rows =
+            [ for block in blocks do
+                match block.headerRow with
+                | Some headerRow -> yield $"{block.firstRow + 1}\t{headerRow + 1}\t{block.lastContent + 1}\t{block.lastRow + 1}\t{lineAt headerRow}"
+                | None -> yield $"{block.firstRow + 1}\t0\t0\t{block.lastRow + 1}\t" ]
+        rows, tokenizerErrors
+
+    let private stalledReply (stallSeconds : int) (progressMs : float) =
+        $"spiral-session\terror\t{Environment.ProcessId}\tcompiler stalled: {int progressMs} ms CPU in {stallSeconds} s with a compile outstanding"
+
+    let private watchStall (stallSeconds : int) (writer : StreamWriter) (compile : unit -> unit) =
+        if stallSeconds <= 0 then (startOnCompileStack compile).GetAwaiter().GetResult()
+        else
+            let finished = new Threading.ManualResetEventSlim(false)
+            let watch () =
+                use me = Diagnostics.Process.GetCurrentProcess()
+                let window = Diagnostics.Stopwatch.StartNew()
+                let mutable cpuAtWindowStart = me.TotalProcessorTime.TotalMilliseconds
+                while not (finished.Wait 1000) do
+                    if window.Elapsed.TotalSeconds >= float stallSeconds then
+                        me.Refresh()
+                        let cpu = me.TotalProcessorTime.TotalMilliseconds
+                        let progressMs = cpu - cpuAtWindowStart
+                        if progressMs < float (stallSeconds * 10) then
+                            try writer.WriteLine(stalledReply stallSeconds progressMs); writer.Flush() with _ -> ()
+                            exit 6
+                        cpuAtWindowStart <- cpu
+                        window.Restart()
+            let watchdog = Threading.Thread(Threading.ThreadStart watch)
+            watchdog.IsBackground <- true
+            watchdog.Start()
+            try (startOnCompileStack compile).GetAwaiter().GetResult() finally finished.Set()
+
+    let private serveSessions (accept : unit -> Socket) (stallSeconds : int) (cleanup : string list) =
+        let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
+        let router = DiagnosticRouter()
+        let revisions = SourceRevisionStore()
+        let cache = CompilationCache(true)
+        startDiagnosticPump server.errors router
+        let lastActive = ref DateTime.UtcNow
+        let busy = ref false
+        match Int32.TryParse(Environment.GetEnvironmentVariable "SPIRAL_SERVER_IDLE_EXIT_SECONDS") with
+        | true, idleSeconds when idleSeconds > 0 ->
+            let watch () =
+                while true do
+                    Threading.Thread.Sleep 5000
+                    if not busy.Value && (DateTime.UtcNow - lastActive.Value).TotalSeconds > float idleSeconds then
+                        for path in cleanup do try File.Delete path with _ -> ()
+                        exit 0
+            let watcher = Threading.Thread(Threading.ThreadStart watch)
+            watcher.IsBackground <- true
+            watcher.Start()
+        | _ -> ()
+        let mutable running = true
+        while running do
+            use client = accept ()
+            busy.Value <- true
+            use stream = new NetworkStream(client, true)
+            use reader = new StreamReader(stream, UTF8Encoding(false), false, 4096, true)
+            use writer = new StreamWriter(stream, UTF8Encoding(false), 4096, true)
+            writer.AutoFlush <- true
+            match reader.ReadLine() with
+            | null -> ()
+            | line ->
+                let fields = line.Split('\t')
+                if fields.Length = 1 && fields.[0] = "quit" then
+                    writer.WriteLine($"spiral-session\tquit\t{Environment.ProcessId}")
+                    running <- false
+                elif fields.Length = 2 && fields.[0] = "test-blocks" then
+                    if File.Exists fields.[1] then
+                        let rows, tokenizerErrors = testBlockRows (File.ReadAllText fields.[1])
+                        rows |> List.iter writer.WriteLine
+                        writer.WriteLine($"spiral-session\ttest-blocks\t{Environment.ProcessId}\t{rows.Length}\t{tokenizerErrors}")
+                    else
+                        writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\tno such file {cleanProtocolText fields.[1]}")
+                elif fields.Length = 2 && fields.[0] = "source-blocks" then
+                    if File.Exists fields.[1] then
+                        let rows, tokenizerErrors = sourceBlockRows (File.ReadAllText fields.[1])
+                        rows |> List.iter writer.WriteLine
+                        writer.WriteLine($"spiral-session\tsource-blocks\t{Environment.ProcessId}\t{rows.Length}\t{tokenizerErrors}")
+                    else
+                        writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\tno such file {cleanProtocolText fields.[1]}")
+                elif (fields.Length = 3 || fields.Length = 4) && fields.[0] = "compile" then
+                    let backend, input, output =
+                        if fields.Length = 4 then fields.[1], fields.[2], fields.[3]
+                        else "Fsharp", fields.[1], fields.[2]
+                    watchStall stallSeconds writer (fun () ->
+                        match compileOne server.supervisor router revisions cache server.job_val backend input output with
+                        | Ok (bytes, binding, revisionMode) ->
+                            writer.WriteLine($"spiral-session\tok\t{Environment.ProcessId}\t{bytes}\t{binding}\t{revisionMode}\t{backend}")
+                        | Error message ->
+                            writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\t{cleanProtocolText message}"))
+                else
+                    writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\tinvalid request")
+            lastActive.Value <- DateTime.UtcNow
+            busy.Value <- false
+        0
+
+    let private sessionPaths (socketPath : string) =
+        let socketPath = Path.GetFullPath socketPath
+        let parent = Path.GetDirectoryName socketPath
+        if not (String.IsNullOrWhiteSpace parent) then Directory.CreateDirectory parent |> ignore
+        if File.Exists socketPath then File.Delete socketPath
+        socketPath, socketPath + ".pid"
+
+    // SPIRAL_SERVER_PARENT_PID ends the server with its parent; SPIRAL_SERVER_IDLE_EXIT_SECONDS (serveSessions) ends it
+    // after that many seconds with no session, so a server whose client died without a parent watch still goes away.
+    let private exitWithParent (paths : string list) =
+        match Environment.GetEnvironmentVariable "SPIRAL_SERVER_PARENT_PID" with
+        | null | "" -> ()
+        | text ->
+            match Int32.TryParse text with
+            | false, _ -> eprintfn "SPIRAL_SERVER_PARENT_PID must be a process id, got %s; the server keeps running without a parent watch" text
+            | true, pid ->
+                let parent = try Some (Diagnostics.Process.GetProcessById pid) with _ -> None
+                let watch () =
+                    parent |> Option.iter (fun p -> p.WaitForExit())
+                    for path in paths do try File.Delete path with _ -> ()
+                    exit 0
+                let watcher = Threading.Thread(Threading.ThreadStart watch)
+                watcher.IsBackground <- true
+                watcher.Start()
+    let private runServer socketPath _initialInput =
+        let socketPath, pidPath = sessionPaths socketPath
+        use listener = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified)
+        listener.Bind(UnixDomainSocketEndPoint(socketPath))
+        listener.Listen(128)
+        File.WriteAllText(pidPath, Environment.ProcessId.ToString())
+        printfn "spiral-session-ready socket=%s pid=%d" socketPath Environment.ProcessId
+        Console.Out.Flush()
+        exitWithParent [socketPath; pidPath]
+        try serveSessions listener.Accept 0 [socketPath; pidPath]
+        finally
+            try File.Delete socketPath with _ -> ()
+            try File.Delete pidPath with _ -> ()
+
+    let private runTcpServer socketPath (stallSeconds : int) =
+        let socketPath, pidPath = sessionPaths socketPath
+        let portPath = socketPath + ".bridge"
+        let address, requestedPort =
+            match Environment.GetEnvironmentVariable "SPIRAL_SERVER_BIND" with
+            | null | "" -> Net.IPAddress.Loopback, 0
+            | bind ->
+                match (if bind.Contains "]:" || (bind.IndexOf ':' > 0 && bind.IndexOf ':' = bind.LastIndexOf ':') then Net.IPEndPoint.TryParse bind else (false, null)) with
+                | true, endpoint -> endpoint.Address, endpoint.Port
+                | _ -> failwithf "SPIRAL_SERVER_BIND must be address:port (e.g. 0.0.0.0:7470), got %s" bind
+        let listener = TcpListener(address, requestedPort)
+        listener.Start()
+        let port = (listener.LocalEndpoint :?> Net.IPEndPoint).Port
+        File.WriteAllText(pidPath, Environment.ProcessId.ToString())
+        File.WriteAllText(portPath, string port)
+        printfn "spiral-session-ready port=%d pid=%d" port Environment.ProcessId
+        Console.Out.Flush()
+        exitWithParent [pidPath; portPath]
+        try serveSessions (fun () -> let client = listener.AcceptSocket() in client.NoDelay <- true; client) stallSeconds [pidPath; portPath]
+        finally
+            try listener.Stop() with _ -> ()
+            try File.Delete pidPath with _ -> ()
+            try File.Delete portPath with _ -> ()
+
+    let private hopacWorkerStackBytes = 256 <<< 20
+
+    let private configureHopacFromEnvironment () =
+        Scheduler.Global.setCreate { Scheduler.Create.Def with MaxStackSize = Some hopacWorkerStackBytes }
+
+    let private runTestBlocks (path : string) (output : string) =
+        if not (File.Exists path) then
+            eprintfn "test-blocks: no such file %s" path
+            2
+        else
+            let rows, tokenizerErrors = testBlockRows (File.ReadAllText path)
+            if output = "-" then rows |> List.iter (printfn "%s")
+            else File.WriteAllText(output, rows |> List.map (fun row -> row + "\n") |> String.concat "", UTF8Encoding(false))
+            eprintfn "test-blocks ok file=%s blocks=%d tokenizer_errors=%d" path rows.Length tokenizerErrors
+            0
+
+    let private runSourceBlocks (output : string) (inputs : string []) =
+        match inputs |> Array.tryFind (File.Exists >> not) with
+        | Some missing ->
+            eprintfn "source-blocks: no such file %s" missing
+            2
+        | None ->
+            let perInput = inputs |> Array.map (fun path -> sourceBlockRows (File.ReadAllText path))
+            let rows = perInput |> Array.mapi (fun index (inputRows, _) -> inputRows |> List.map (fun row -> $"{index + 1}\t{row}")) |> List.concat
+            if output = "-" then rows |> List.iter (printfn "%s")
+            else File.WriteAllText(output, rows |> List.map (fun row -> row + "\n") |> String.concat "", UTF8Encoding(false))
+            eprintfn "source-blocks ok files=%d blocks=%d tokenizer_errors=%d" inputs.Length rows.Length (perInput |> Array.sumBy snd)
+            0
+
+    let private parseBuildFileArgs (argv : string []) =
+        let positional = ResizeArray<string>()
+        let mutable timeoutMs = 60 * 60 * 1000
+        let mutable exitOnError = false
+        let mutable error = None
+        let mutable i = 1
+        while error.IsNone && i < argv.Length do
+            match argv.[i] with
+            | "--build-file" | "build-file" -> i <- i + 1
+            | "--exit-on-error" -> exitOnError <- true; i <- i + 1
+            | "--timeout" | "--timeout-ms" when i + 1 < argv.Length ->
+                (match Int32.TryParse argv.[i + 1] with
+                 | true, ms when ms > 0 -> timeoutMs <- ms; i <- i + 2
+                 | _ -> error <- Some $"{argv.[i]} must be a positive 32-bit integer")
+            | "--spi-path" | "-s" when i + 1 < argv.Length -> positional.Add argv.[i + 1]; i <- i + 2
+            | x when x.StartsWith "-" -> error <- Some $"unknown option {x}"
+            | x -> positional.Add x; i <- i + 1
+        match error with
+        | Some e -> Error e
+        | None ->
+            try
+                if argv.[0] = "fsharp" then
+                    if positional.Count = 0 then Error "fsharp: no input .spi"
+                    else Ok ([ for x in positional -> "Fsharp", x, Path.ChangeExtension(x, ".fsx") ], timeoutMs, exitOnError)
+                elif positional.Count = 0 || positional.Count % 2 <> 0 then Error "build-file: expected IN OUT pairs"
+                else Ok ([ for k in 0 .. 2 .. positional.Count - 1 -> backendOfOutput positional.[k + 1], positional.[k], positional.[k + 1] ], timeoutMs, exitOnError)
+            with e -> Error e.Message
+
+    let private runBuildFiles (jobs : (string * string * string) list) (timeoutMs : int) (exitOnError : bool) =
+        let mutable result = 5
+        let work () =
+            let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
+            let router = DiagnosticRouter()
+            let revisions = SourceRevisionStore()
+            let cache = CompilationCache(List.length jobs > 1)
+            startDiagnosticPump server.errors router
+            let mutable failed = 0
+            for backend, input, output in jobs do
+                if not (exitOnError && failed > 0) then
+                    match compileOne server.supervisor router revisions cache server.job_val backend input output with
+                    | Ok (bytes, binding, revisionMode) ->
+                        printfn "compiled %s -> %s (%s, %d bytes, entry=%s, revision=%s, pid=%d)" input output backend bytes binding revisionMode Environment.ProcessId
+                    | Error message ->
+                        eprintfn "%s" message
+                        failed <- failed + 1
+            result <- if failed = 0 then 0 else 5
+        let thread = Threading.Thread(Threading.ThreadStart(fun () -> try work () with error -> eprintfn "%s" error.Message), 64 * 1024 * 1024)
+        thread.IsBackground <- true
+        thread.Start()
+        if thread.Join timeoutMs then exit result
+        else
+            eprintfn "build-file timed out after %d ms" timeoutMs
+            exit 3
+
+    let private defaultTypeFlags =
+        [ "--default-int", "SPIRAL_DEFAULT_INT", [ "i8"; "i16"; "i32"; "i64"; "u8"; "u16"; "u32"; "u64" ]
+          "--default-float", "SPIRAL_DEFAULT_FLOAT", [ "f32"; "f64" ]
+          "--edition", "SPIRAL_EDITION", [ "2"; "3" ] ]
+
+    let private packageDefaultFields =
+        [ "default-int", "SPIRAL_DEFAULT_INT", [ "i8"; "i16"; "i32"; "i64"; "u8"; "u16"; "u32"; "u64" ]
+          "default-float", "SPIRAL_DEFAULT_FLOAT", [ "f32"; "f64" ]
+          "edition", "SPIRAL_EDITION", [ "2"; "3" ] ]
+
+    let private applyPackageDefaults (input : string) : Result<unit, string> =
+        let rec nearest (dir : DirectoryInfo) =
+            if isNull dir then None
+            else
+                let candidate = spiproj_suffix dir.FullName
+                if File.Exists candidate then Some candidate else nearest dir.Parent
+        match nearest (DirectoryInfo (Path.GetDirectoryName (Path.GetFullPath input))) with
+        | None -> Ok ()
+        | Some project ->
+            match config (File.ReadAllText project) with
+            | Error _ -> Ok ()
+            | Ok raw ->
+                let declared = [ raw.defaultInt; raw.defaultFloat; raw.edition ]
+                List.zip packageDefaultFields declared
+                |> List.fold (fun state ((field, _, allowed), value) ->
+                    match state, value with
+                    | Error _, _ | _, None -> state
+                    | Ok (), Some (_, text) when not (List.contains text allowed) ->
+                        Error $"""{project}: {field} expects one of {String.concat ", " allowed}, got '{text}'"""
+                    | Ok (), Some _ -> Ok ()) (Ok ())
+
+    let private takeDefaultTypeFlags (argv : string []) : Result<string [], string> =
+        let flagOf (text : string) = defaultTypeFlags |> List.tryFind (fun (name, _, _) -> name = text)
+        let rec go (rest : string list) (kept : string list) =
+            match rest with
+            | flag :: value :: tail when (flagOf flag).IsSome ->
+                let name, variable, allowed = (flagOf flag).Value
+                if List.contains value allowed then
+                    Environment.SetEnvironmentVariable(variable, value)
+                    go tail kept
+                else Error $"""{name} expects one of {String.concat ", " allowed}, got '{value}'"""
+            | [ flag ] when (flagOf flag).IsSome -> Error $"{flag} needs a value"
+            | head :: tail -> go tail (head :: kept)
+            | [] -> Ok (List.rev kept |> Array.ofList)
+        go (List.ofArray argv) []
+
+    let reexecWithGen0Budget (rawArgv : string []) =
+        let reexec = Environment.GetEnvironmentVariable "SPIRAL_GEN0_REEXEC"
+        let longLived = rawArgv |> Array.exists (fun arg -> arg = "--server" || arg = "--server-tcp" || arg = "--batch" || arg = "build-file")
+        if not longLived || not (String.IsNullOrEmpty (Environment.GetEnvironmentVariable "DOTNET_GCgen0size")) || reexec = "0" then None
+        else
+            let hostPath = Environment.ProcessPath
+            let start = Diagnostics.ProcessStartInfo(hostPath, UseShellExecute = false)
+            if Path.GetFileNameWithoutExtension(hostPath).Equals("dotnet", StringComparison.OrdinalIgnoreCase) then
+                start.ArgumentList.Add(Reflection.Assembly.GetEntryAssembly().Location)
+            for arg in rawArgv do start.ArgumentList.Add arg
+            start.Environment.["DOTNET_GCgen0size"] <- "0x4000000"
+            use child = Diagnostics.Process.Start start
+            child.WaitForExit()
+            Some child.ExitCode
+
+    let mainBody rawArgv =
+        let defaultTypeFlagsResult = takeDefaultTypeFlags rawArgv
+        let argv = match defaultTypeFlagsResult with Ok kept -> kept | Error _ -> rawArgv
+        configureHopacFromEnvironment ()
+        if isNull (Environment.GetEnvironmentVariable "SPIRAL_HOVERS") then Environment.SetEnvironmentVariable("SPIRAL_HOVERS", "0")
+        let defaultTypeFlagsError = match defaultTypeFlagsResult with Error message -> Some message | Ok _ -> None
+        if defaultTypeFlagsError.IsSome then
+            eprintfn "%s" defaultTypeFlagsError.Value
+            2
+        elif argv.Length = 1 && argv.[0] = "--capabilities" then
+            printfn "server-tcp test-blocks source-blocks resolve-manifest"
+            0
+        elif argv.Length = 1 && argv.[0] = "--version" then
+            printfn "SpiralCompiler alpha418"
+            0
+        elif (argv.Length = 2 || (argv.Length = 4 && argv.[2] = "--stall-seconds")) && argv.[0] = "--server-tcp" then
+            let parsed, stallSeconds = if argv.Length = 4 then Int32.TryParse argv.[3] else true, 0
+            if not parsed || stallSeconds < 0 then
+                eprintfn "--stall-seconds must be a non-negative 32-bit integer"
+                2
+            else runTcpServer argv.[1] stallSeconds
+        elif argv.Length = 3 && argv.[0] = "--server" then
+            runServer argv.[1] argv.[2]
+        elif argv.Length = 3 && argv.[0] = "--test-blocks" then
+            runTestBlocks argv.[1] argv.[2]
+        elif argv.Length = 2 && argv.[0] = "--resolve-manifest" then
+            let dir = Path.GetFullPath argv.[1]
+            let manifest = spiproj_suffix dir
+            if not (File.Exists manifest) then
+                eprintfn "resolve-manifest: no spiral.toml or package.spiproj in %s" dir
+                2
+            else
+                match withDerivedModules dir (File.ReadAllText manifest) with
+                | Error message ->
+                    eprintfn "resolve-manifest: %s" message
+                    1
+                | Ok resolved ->
+                    printf "%s" (if isTomlManifest resolved then tomlManifestText resolved else resolved)
+                    0
+        elif argv.Length >= 3 && argv.[0] = "--source-blocks" then
+            runSourceBlocks argv.[1] argv.[2..]
+        elif (argv.Length = 2 || (argv.Length = 4 && argv.[1] = "--timeout-ms")) && argv.[0] = "--check" then
+            let parsed, timeoutMs = if argv.Length = 4 then Int32.TryParse argv.[2] else true, 30000
+            if not parsed || timeoutMs <= 0 then
+                eprintfn "--timeout-ms must be a positive 32-bit integer"
+                2
+            else
+                exit (runAttestationBounded timeoutMs (fun () -> runCheck argv.[argv.Length - 1]))
+        elif (argv.Length = 3 || (argv.Length = 5 && argv.[1] = "--timeout-ms")) && argv.[0] = "--plan-ir" then
+            let inputIndex = if argv.Length = 5 then 3 else 1
+            let outputIndex = if argv.Length = 5 then 4 else 2
+            let parsed, timeoutMs = if argv.Length = 5 then Int32.TryParse argv.[2] else true, 30000
+            if not parsed || timeoutMs <= 0 then
+                eprintfn "--timeout-ms must be a positive 32-bit integer"
+                2
+            else
+                exit (runAttestationBounded timeoutMs (fun () -> runPlanIr argv.[inputIndex] argv.[outputIndex]))
+        elif (argv.Length = 3 || argv.Length = 5) && argv.[0] = "--batch" then
+            let timeoutMs = if argv.Length = 5 && argv.[3] = "--timeout-ms" then int argv.[4] else 120000
+            exit (runBatch argv.[1] argv.[2] timeoutMs)
+        elif argv.Length >= 1 && argv.[0] = "format" then
+            Spiral.spiral_compiler.FormatterCli.run (List.ofArray argv.[1..])
+        elif argv.Length >= 1 && argv.[0] = "tokens" then
+            Spiral.spiral_compiler.TokensCli.run (List.ofArray argv.[1..])
+        elif argv.Length >= 1 && argv.[0] = "split-units" then
+            Spiral.spiral_compiler.SplitUnitsCli.run (List.ofArray argv.[1..])
+        elif argv.Length >= 1 && argv.[0] = "format-corpus" then
+            Spiral.spiral_compiler.FormatterCli.corpus (List.ofArray argv.[1..])
+        elif argv.Length >= 1 && (argv.[0] = "build-file" || argv.[0] = "--build-file" || argv.[0] = "fsharp") then
+            match parseBuildFileArgs argv with
+            | Ok (jobs, timeoutMs, exitOnError) -> runBuildFiles jobs timeoutMs exitOnError
+            | Error message ->
+                eprintfn "%s" message
+                2
+        elif argv.Length = 2 || (argv.Length = 4 && argv.[0] = "--backend") then
+            let backend, input, output =
+                if argv.Length = 4 then argv.[1], argv.[2], argv.[3]
+                else backendOfOutput argv.[1], argv.[0], argv.[1]
+            let backend = match backend with "Cpp" -> "Cpp + Cuda" | "Python" -> "Python + Cuda" | b -> b
+            match applyPackageDefaults input with
+            | Error message -> eprintfn "%s" message; exit 2
+            | Ok () -> ()
+            let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
+            let router = DiagnosticRouter()
+            let revisions = SourceRevisionStore()
+            let cache = CompilationCache(false)
+            startDiagnosticPump server.errors router
+            let compileResult =
+                if backend = "Fsharp" && String.Equals(Environment.GetEnvironmentVariable "SPIRAL_DIRECT_PROJECT_BUILD", "1", StringComparison.Ordinal) then
+                    directProjectCompileFsharp input output
+                else
+                    let result = ref (Error "compile thread did not finish")
+                    let worker = Threading.Thread((fun () -> result.Value <- compileOne server.supervisor router revisions cache server.job_val backend input output), 1 <<< 30)
+                    worker.Start()
+                    worker.Join()
+                    result.Value
+            match compileResult with
+            | Ok (bytes, binding, revisionMode) ->
+                printfn "compiled %s -> %s (%s, %d bytes, entry=%s, revision=%s, pid=%d)" input output backend bytes binding revisionMode Environment.ProcessId
+                0
+            | Error message ->
+                eprintfn "%s" message
+                5
+        else
+            eprintfn "usage: SpiralCompiler [--default-int i8|i16|i32|i64|u8|u16|u32|u64] [--default-float f32|f64] [--backend Fsharp|C|Rust|Pascal|Zig|Wasm|Wgsl|Calyx|Kotlin|Swift|OpenQasm|Ebpf|Lean|Bend|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.zig|.wat|.wgsl|.futil|.kt|.swift|.qasm|.ebpf|.lean|.bend|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --test-blocks INPUT.spi OUTPUT.tsv|- | --source-blocks OUTPUT.tsv|- INPUT.spi [INPUT.spi ...] | --capabilities | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | --server-tcp SOCKET [--stall-seconds N] | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS] | format FILE|DIR ... [--check] [--no-split-literals] | format --stdin --path PATH | format-corpus check|space|convert|flatten|format [--list FILE] [--out DIR] CORPUS.tsv"
+            2
+
+    [<EntryPoint>]
+    let main rawArgv =
+        match reexecWithGen0Budget rawArgv with
+        | Some code -> code
+        | None -> mainBody rawArgv

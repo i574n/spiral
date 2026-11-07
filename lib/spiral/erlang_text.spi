@@ -1,0 +1,46 @@
+:< sm'_operators
+
+:# erlang_text static =
+    :< testing
+
+:= percent_encoded (s : string) : string =
+    erlang_term::apply "uri_string" "quote" [ erlang_term::of s; erlang_term::charlist "" ] |> erlang_term::cast
+
+:= percent_decoded (s : string) : string =
+    erlang_term::apply "uri_string" "percent_decode" [ erlang_term::of s ] |> erlang_term::cast
+
+:= pad_args (width : i32) (fill : string) (s : string) : list erlang_term::term =
+    [ erlang_term::of s; erlang_term::of width; erlang_term::atom "leading"; erlang_term::charlist fill ]
+
+:= padded_leading (width : i32) (fill : string) (s : string) : string =
+    := padded = erlang_term::apply "string" "pad" (pad_args width fill s)
+    erlang_term::apply "erlang" "iolist_to_binary" [ padded ] |> erlang_term::cast
+
+:= trimmed_trailing (s : string) : string =
+    erlang_term::apply "string" "trim" [ erlang_term::of s; erlang_term::atom "trailing" ] |> erlang_term::cast
+
+:= base64_encoded (s : string) : string =
+    erlang_term::apply "base64" "encode" [ erlang_term::of s ] |> erlang_term::cast
+
+:= base64_decoded (s : string) : string =
+    erlang_term::apply "base64" "decode" [ erlang_term::of s ] |> erlang_term::cast
+
+///> gleam
+:# percent_encoding_escapes_reserved_characters =
+    percent_encoded "a b+c/~" |> _assert_eq "a%20b%2Bc%2F~"
+
+///> gleam
+:# percent_decoding_inverts_encoding =
+    percent_decoded (percent_encoded "x y&z") |> _assert_eq "x y&z"
+
+///> gleam
+:# leading_padding_fills_to_the_width =
+    padded_leading 10i32 "0" "4" |> _assert_eq "0000000004"
+
+///> gleam
+:# trailing_trim_keeps_leading_space =
+    trimmed_trailing " ab \n" |> _assert_eq " ab"
+
+///> gleam
+:# base64_round_trips_utf8 =
+    (base64_encoded "a", base64_decoded (base64_encoded "x e2e / é")) |> _assert_eq ("YQ==", "x e2e / é")

@@ -1,0 +1,57 @@
+:! nfe = { issuer : string; recipient : string; total_cents : i32 }
+
+:| rule result =
+    | IssuerRule :: rule string
+    | RecipientRule :: rule string
+    | TotalRule :: rule i32
+
+:| ^ validation result =
+    | Pure :: \* result. result -> validation result
+    | Lift :: \* result. rule result -> validation result
+    | Zip :: \* a b. validation a * validation b -> validation (a * b)
+    | Map :: \* result.
+        (\? input. (input -> result) * validation input)
+        -> validation result
+
+:= run_rule \* result.
+    (document : nfe)
+    (rule : rule result)
+    : result =
+    ?= rule ?|
+    | IssuerRule => document::issuer
+    | RecipientRule => document::recipient
+    | TotalRule => document::total_cents
+
+:= ^ run_validation \* result.
+    (document : nfe)
+    (program : validation result)
+    : result =
+    ?= program ?|
+    | Pure value => value
+    | Lift rule => run_rule document rule
+    | Zip (left, right) =>
+        run_validation document left,
+        run_validation document right
+    | Map packed =>
+        := \? input. mapping, source = packed
+        mapping (run_validation document source)
+
+:= summarize (_ : (string * string) * i32) : string =
+    "parallel-validations"
+
+:= plan () : validation string =
+    Map (\? (
+        summarize,
+        Zip (
+            Zip (Lift IssuerRule, Lift RecipientRule),
+            Lift TotalRule
+        )
+    ))
+
+:= main () : string =
+    := document = nfe {
+        issuer = "ACME"
+        recipient = "CLIENT"
+        total_cents = 4200
+    }
+    run_validation document (plan ())

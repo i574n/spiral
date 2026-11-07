@@ -1,0 +1,28 @@
+:= reserve ~(xs : array string) ~(requested_capacity : i32) : () =
+    $'DynamicArrayReserve0(!xs,!requested_capacity)'
+
+:= resize ~(xs : array string) ~(new_length : i32) : () =
+    $'DynamicArrayResize0(!xs,!new_length)'
+
+:= capacity ~(xs : array string) : i32 =
+    $'DynamicArrayCapacity0(!xs)'
+
+:= refcount ~(xs : array string) : i32 =
+    $'DynamicArrayRefCount0(!xs)'
+
+:= main () : i32 =
+    := ~values : array string = create 4i32
+    ~~ resize values 1i32
+    set values 0i32 "ab"
+    := ~alias = values
+    ~~ reserve values 8i32
+    ~~ resize values 3i32
+    set values 1i32 "cde"
+    set values 2i32 "f"
+    := first = index alias 0i32
+    := second = index values 1i32
+    := third = index values 2i32
+    := ~refs = ~~ refcount values
+    := ~cap = ~~ capacity values
+    ~~ resize alias 1i32
+    sm::length first +. sm::length second +. sm::length third +. refs +. cap +. length values -. 17i32

@@ -1,0 +1,29 @@
+:! approver_a = ()
+:! approver_b = ()
+
+:| approval approver =
+    | ApprovalA :: approval approver_a
+    | ApprovalB :: approval approver_b
+
+:| distinct left right =
+    | DistinctAB :: distinct approver_a approver_b
+    | DistinctBA :: distinct approver_b approver_a
+
+:| quorum left right =
+    | Quorum :: \* left right.
+        approval left * approval right * distinct left right
+        -> quorum left right
+
+:= combine \* left right.
+    (left : approval left)
+    (right : approval right)
+    (proof : distinct left right)
+    : quorum left right =
+    Quorum (left, right, proof)
+
+:= authorize \* left right. (quorum : quorum left right) : string =
+    ?= quorum ?|
+    | Quorum _ => "distinct-quorum"
+
+:= main () : string =
+    authorize (combine ApprovalA ApprovalB DistinctAB)

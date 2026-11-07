@@ -1,0 +1,30 @@
+:! lineage_a = ()
+:! lineage_b = ()
+:! bob = ()
+:! entangled = ()
+:! measured = ()
+:! corrected = ()
+:! outcome_01 = ()
+
+:| qubit lineage owner stage =
+    | Qubit :: \* lineage owner stage. string -> qubit lineage owner stage
+
+:| teleport_session lineage stage =
+    | TeleportSession :: \* lineage stage. string -> teleport_session lineage stage
+
+:| classical_bits lineage outcome =
+    | ClassicalBits :: \* lineage outcome. string -> classical_bits lineage outcome
+
+:= correct \* lineage.
+    (session : teleport_session lineage measured)
+    (bits : classical_bits lineage outcome_01)
+    (target : qubit lineage bob entangled)
+    : teleport_session lineage corrected =
+    ?= session, bits, target ?|
+    | TeleportSession _, ClassicalBits _, Qubit _ => TeleportSession "corrected"
+
+:= main () : teleport_session lineage_a corrected =
+    := session : teleport_session lineage_a measured = TeleportSession "measured-a"
+    := bits : classical_bits lineage_b outcome_01 = ClassicalBits "01-b"
+    := target : qubit lineage_a bob entangled = Qubit "target-a"
+    correct session bits target

@@ -1,0 +1,32 @@
+:! term_kind = ()
+:! ty_kind = ()
+:! owner_open = ()
+:! owner_closed = ()
+
+:| owner kind state =
+    | TermOpen :: owner term_kind owner_open
+    | TypeOpen :: owner ty_kind owner_open
+    | TermClosed :: owner term_kind owner_closed
+    | TypeClosed :: owner ty_kind owner_closed
+
+:| ^ owner_ledger kind state =
+    | OwnerLeaf :: \* kind state. owner kind state -> owner_ledger kind state
+    | OwnerJoin :: \* kind state. owner_ledger kind state * owner_ledger kind state -> owner_ledger kind state
+
+:= close_owner \* kind. (owner : owner kind owner_open) : owner kind owner_closed =
+    ?= owner ?|
+    | TermOpen => TermClosed
+    | TypeOpen => TypeClosed
+
+:= ^ close_ledger \* kind. (ledger : owner_ledger kind owner_open) : owner_ledger kind owner_closed =
+    ?= ledger ?|
+    | OwnerLeaf owner => OwnerLeaf (close_owner owner)
+    | OwnerJoin (left, right) => OwnerJoin (close_ledger left, close_ledger right)
+
+:= render \* kind. (ledger : owner_ledger kind owner_closed) : string =
+    ?= ledger ?|
+    | OwnerLeaf _ => "exact-once-owner-ledger"
+    | OwnerJoin _ => "exact-once-owner-ledger"
+
+:= main () : string =
+    render (close_ledger (OwnerJoin (OwnerLeaf TermOpen, OwnerLeaf TermOpen)))

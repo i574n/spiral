@@ -1,0 +1,194 @@
+#### util (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test static --symbol\n\n:< testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test static --symbol
+
+  :< testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":| ^ ski =\n    | I\n    | K\n    | S\n    | App : ski * ski\n\n:= ^ eval ski =\n    ?= ski ?|\n    | App (App (K, x), y) => x |> eval\n    | App (App (App (S, x), y), z) => App (App (x, z), App (y, z)) |> eval\n    | App (I, x) => x |> eval\n    | App (K, x) => App (K, eval x)\n    | App (f, x) => App (eval f, x) |> eval\n    | _ => ski","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :| ^ ski =
+      | I
+      | K
+      | S
+      | App : ski * ski
+
+  := ^ eval ski =
+      ?= ski ?|
+      | App (App (K, x), y) => x |> eval
+      | App (App (App (S, x), y), z) => App (App (x, z), App (y, z)) |> eval
+      | App (I, x) => x |> eval
+      | App (K, x) => App (K, eval x)
+      | App (f, x) => App (eval f, x) |> eval
+      | _ => ski
+  """,
+  timeout: 300_000
+)
+```
+
+#### ski (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\neval I\n|> _assert_eq I\n\nApp (I, I)\n|> eval\n|> _assert_eq I\n\nApp (I, App (I, I))\n|> eval\n|> _assert_eq I","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  eval I
+  |> _assert_eq I
+
+  App (I, I)
+  |> eval
+  |> _assert_eq I
+
+  App (I, App (I, I))
+  |> eval
+  |> _assert_eq I
+  """,
+  timeout: 300_000
+)
+```
+
+#### ski_identity_nested (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nApp (App (I, I), I)\n|> eval\n|> _assert_eq I\n\nApp (App (App (I, I), I), I)\n|> eval\n|> _assert_eq I","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  App (App (I, I), I)
+  |> eval
+  |> _assert_eq I
+
+  App (App (App (I, I), I), I)
+  |> eval
+  |> _assert_eq I
+  """,
+  timeout: 300_000
+)
+```
+
+#### ski_constant (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\neval K\n|> _assert_eq K\n\nApp (K, I)\n|> eval\n|> _assert_eq (App (K, I))\n\nApp (K, K)\n|> eval\n|> _assert_eq (App (K, K))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  eval K
+  |> _assert_eq K
+
+  App (K, I)
+  |> eval
+  |> _assert_eq (App (K, I))
+
+  App (K, K)
+  |> eval
+  |> _assert_eq (App (K, K))
+  """,
+  timeout: 300_000
+)
+```
+
+#### ski_constant_applied (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nApp (App (K, I), K)\n|> eval\n|> _assert_eq I\n\nApp (App (K, K), I)\n|> eval\n|> _assert_eq K\n\nApp (App (App (App (K, K), I), S), K)\n|> eval\n|> _assert_eq S","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  App (App (K, I), K)
+  |> eval
+  |> _assert_eq I
+
+  App (App (K, K), I)
+  |> eval
+  |> _assert_eq K
+
+  App (App (App (App (K, K), I), S), K)
+  |> eval
+  |> _assert_eq S
+  """,
+  timeout: 300_000
+)
+```
+
+#### ski_substitution (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\neval S\n|> _assert_eq S\n\nApp (App (App (S, I), I), I)\n|> eval\n|> _assert_eq I\n\nApp (App (App (S, K), K), I)\n|> eval\n|> _assert_eq I","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  eval S
+  |> _assert_eq S
+
+  App (App (App (S, I), I), I)
+  |> eval
+  |> _assert_eq I
+
+  App (App (App (S, K), K), I)
+  |> eval
+  |> _assert_eq I
+  """,
+  timeout: 300_000
+)
+```
+
+#### ski_substitution_nested (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nApp (App (App (S, K), I), (App (App (K, I), S)))\n|> eval\n|> _assert_eq I\n\nApp (App (K, S), App (I, App (App (App (S, K), S), I)))\n|> eval\n|> _assert_eq S","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  App (App (App (S, K), I), (App (App (K, I), S)))
+  |> eval
+  |> _assert_eq I
+
+  App (App (K, S), App (I, App (App (App (S, K), S), I)))
+  |> eval
+  |> _assert_eq S
+  """,
+  timeout: 300_000
+)
+```
+
+#### ski_substitution_deep (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nApp (App (App (S, K), I), K)\n|> eval\n|> _assert_eq K","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  App (App (App (S, K), I), K)
+  |> eval
+  |> _assert_eq K
+  """,
+  timeout: 300_000
+)
+```

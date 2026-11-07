@@ -1,0 +1,124 @@
+/// # json
+///- --real
+
+:< real_core
+
+:= (++) a b = !!!!StaticStringConcat(a, b)
+
+:= in_quotes (x : string) : string = "\"" ++ x ++ "\""
+
+:= with_item (acc : string) (item : string) : string = ? acc = "" ?> item |: acc ++ "," ++ item
+
+:= ^ schema_of \* t. () : string =
+    ?: t ?|
+    | i32 => "{\"type\":\"integer\"}"
+    | i64 => "{\"type\":\"integer\"}"
+    | f64 => "{\"type\":\"number\"}"
+    | bool => "{\"type\":\"boolean\"}"
+    | string => "{\"type\":\"string\"}"
+    | option ~el => schema_of `el ()
+    | ~a * ~b => "{\"type\":\"array\",\"prefixItems\":[" ++ (schema_of `a ()) ++ "," ++ (schema_items `b ()) ++ "]}"
+    | array_base ~el => "{\"type\":\"array\",\"items\":" ++ (schema_of `el ()) ++ "}"
+    | {} => object_schema `t ()
+    | _ =>
+        ? union_type_is `t ?> union_schema `t ()
+        |: "{}"
+
+:& := schema_items \* t. () : string =
+    ?: t ?|
+    | ~a * ~b => (schema_of `a ()) ++ "," ++ (schema_items `b ())
+    | _ => schema_of `t ()
+
+:& := object_schema \* t. () : string =
+    := props, required =
+        record_type_fold
+            \ (props, required) key =>
+                \* value. =>
+                    := name = !!!!SymbolToString(key)
+                    := props = with_item props ((in_quotes name) ++ ":" ++ (schema_of `value ()))
+                    := optional = ?: value ?| | option ~inner => !+ | _ => !-
+                    props, ? optional ?> required |: with_item required (in_quotes name)
+            ("", "")
+            `t
+    "{\"type\":\"object\",\"properties\":{" ++ props ++ "},\"required\":[" ++ required ++ "]}"
+
+:& := union_schema \* t. () : string =
+    union_type_to_record `t (
+        \* cases. =>
+            := all_nullary, alternatives =
+                record_type_fold
+                    \ (all_nullary, alternatives) key =>
+                        \* value. =>
+                            := name = !!!!SymbolToString(key)
+                            ?: value ?|
+                            | () => all_nullary, with_item alternatives ("{\"const\":" ++ (in_quotes name) ++ "}")
+                            | _ =>
+                                !-,
+                                with_item alternatives (
+                                    "{\"type\":\"object\",\"properties\":{"
+                                    ++ in_quotes name
+                                    ++ ":"
+                                    ++ (schema_of `value ())
+                                    ++ "},\"required\":["
+                                    ++ in_quotes name
+                                    ++ "]}"
+                                )
+                    (!+, "")
+                    `cases
+            ? all_nullary ?> "{\"type\":\"string\",\"oneOf\":[" ++ alternatives ++ "]}"
+            |: "{\"oneOf\":[" ++ alternatives ++ "]}"
+    )
+
+:= tool_schema name = \* params. =>
+    "{\"name\":" ++ (in_quotes name) ++ ",\"parameters\":" ++ (schema_of `params ()) ++ "}"
+
+:= ^ decode_at \* value. (s : string) (at : i32) : value =
+    ?: value ?|
+    | i32 => json_scan::parse_i32 s at
+    | string => json_scan::parse_string s at
+    | bool => json_scan::parse_bool s at
+    | {} => decode (json_scan::object_at s at) `value
+    | array_base ~el =>
+        ?: el ?|
+        | i32 => json_scan::parse_i32_array s at
+        | string => json_scan::parse_string_array s at
+        | {} =>
+            json_scan::fill_array `el (json_scan::item_count s at) \ i =>
+                decode (json_scan::object_at s (json_scan::item_start s at i)) `el
+    | ~a * ~b => decode_at `a s (json_scan::item_start s at 0i32), decode_items `b s at 1i32
+    | option ~inner =>
+        ? at < 0i32
+        ?> None `inner
+        |: Some `inner (decode_at `inner s at)
+    | _ =>
+        ? union_type_is `value ?>
+            := name = json_scan::union_case_name s at
+            := payload_at = json_scan::union_payload_at s at
+            := pick =
+                union_type_to_record `value \* cases. =>
+                    record_type_fold
+                        \ otherwise key =>
+                            \* payload. =>
+                                := case_name = !!!!SymbolToString(key)
+                                \ () =>
+                                    ? name = case_name ?>
+                                        ?: payload ?|
+                                        | () => nominal_create `value (key, ())
+                                        | _ => nominal_create `value (key, decode_at `payload s payload_at)
+                                    |: otherwise ()
+                        (\ () => failwith `value "unknown union case")
+                        `cases
+            pick ()
+        |: error_type "unsupported field type"
+
+:& := decode_items \* value. (s : string) (at : i32) (i : i32) : value =
+    ?: value ?|
+    | ~a * ~b => decode_at `a s (json_scan::item_start s at i), decode_items `b s at (i + 1i32)
+    | _ => decode_at `value s (json_scan::item_start s at i)
+
+:& := decode s = \* t. =>
+    record_type_map
+        \ key =>
+            \* value. =>
+                decode_at `value s (json_scan::value_at s !!!!SymbolToString(key))
+        `t

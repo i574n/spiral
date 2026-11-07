@@ -1,0 +1,53 @@
+:! fresh = ()
+:! persisted = ()
+:! published = ()
+:! acknowledged = ()
+
+:| event_box phase =
+    | EventBox :: \* phase. string -> event_box phase
+
+:| outbox_op from to =
+    | Persist :: outbox_op fresh persisted
+    | Publish :: outbox_op persisted published
+    | Acknowledge :: outbox_op published acknowledged
+
+:| ^ chain (step : * -> * -> *) from to =
+    | ChainStep :: \* (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: \* (step : * -> * -> *) from to.
+        (\? middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+:= execute \* from to.
+    (operation : outbox_op from to)
+    (box : event_box from)
+    : event_box to =
+    ?= operation, box ?|
+    | Persist, EventBox _ => EventBox "persisted"
+    | Publish, EventBox _ => EventBox "published"
+    | Acknowledge, EventBox _ => EventBox "outbox-acked"
+
+:= ^ fold_chain \* (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : \* a b. step a b -> carrier a -> carrier b)
+    (program : chain step from to)
+    (input : carrier from)
+    : carrier to =
+    ?= program ?|
+    | ChainStep atom => handler atom input
+    | ChainCompose packed =>
+        := \? middle. first, second = packed
+        fold_chain `$handler second (fold_chain `$handler first input)
+
+:= plan () : chain outbox_op fresh acknowledged =
+    ChainCompose (\? (
+        ChainStep Persist,
+        ChainCompose (\? (
+            ChainStep Publish,
+            ChainStep Acknowledge
+        ))
+    ))
+
+:= main () : string =
+    := result = fold_chain `$execute (plan ()) (EventBox "event")
+    ?= result ?|
+    | EventBox trace => trace

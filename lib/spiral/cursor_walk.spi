@@ -1,0 +1,99 @@
+:< sm'_operators
+
+:# cursor_walk static =
+    :< testing
+
+:== cursor_page = { next_token : string; body : string }
+
+:== cursor_stop = { token : string; pages : i32 }
+
+:| cursor_halt =
+    | CursorRepeated : cursor_stop
+    | CursorBudget : cursor_stop
+
+:== cursor_walker e = { halted : cursor_halt -> e; budget : i32; fetch : string -> result cursor_page e }
+
+:== cursor_trail = { seen : list string; pages : i32; bodies : list string }
+
+:= cursor_stepped (w : cursor_trail) (p : cursor_page) : cursor_trail =
+    { seen = (p::next_token :: w::seen); pages = w::pages + 1i32; bodies = (p::body :: w::bodies) }
+
+:= cursor_repeats (w : cursor_trail) (p : cursor_page) : bool = listm'::exists' (\ t => t = p::next_token) w::seen
+
+:| cursor_next e =
+    | CursorEnd : result (list string) e
+    | CursorOn : cursor_page
+
+:= cursor_halted \* e. (k : cursor_walker e) (h : cursor_halt) : cursor_next e = CursorEnd (Error (k::halted h))
+
+:= cursor_repeated (w : cursor_trail) (p : cursor_page) : cursor_halt =
+    CursorRepeated { token = p::next_token; pages = w::pages + 1i32 }
+
+:= cursor_finished \* e. (w : cursor_trail) (p : cursor_page) : cursor_next e =
+    CursorEnd (Ok (listm::rev (cursor_stepped w p)::bodies))
+
+:= cursor_paged \* e. (k : cursor_walker e) (w : cursor_trail) (p : cursor_page) : cursor_next e =
+    ? p::next_token = "" ?> cursor_finished w p
+    |? cursor_repeats w p ?> cursor_halted k (cursor_repeated w p)
+    |: CursorOn p
+
+:= cursor_fetched \* e. (k : cursor_walker e) (w : cursor_trail) (r : result cursor_page e) : cursor_next e =
+    ?= r ?|
+    | Error e => CursorEnd (Error e)
+    | Ok p => cursor_paged k w p
+
+:= cursor_next_of \* e. (k : cursor_walker e) (token : string) (w : cursor_trail) : cursor_next e =
+    ? w::pages >= k::budget ?> cursor_halted k (CursorBudget { token pages = w::pages })
+    |: cursor_fetched k w (k::fetch token)
+
+:~ ^ walked_from \* e. (k : cursor_walker e) (token : string) (w : cursor_trail) : result (list string) e =
+    ?= cursor_next_of k token w ?|
+    | CursorEnd r => r
+    | CursorOn p => walked_from k p::next_token (cursor_stepped w p)
+
+:= all_pages \* e. (k : cursor_walker e) : result (list string) e =
+    walked_from k "" { seen = []; pages = 0i32; bodies = [] }
+
+:= cursor_walk_text (r : result (list string) string) : string =
+    ?= r ?|
+    | Ok bodies => sm'::concat_list "," bodies
+    | Error e => "stopped at " ++# e
+
+:= cursor_walk_halt_text (h : cursor_halt) : string =
+    ?= h ?|
+    | CursorRepeated s => "repeated " ++# s::token ++# " after " ++# sm'::obj_to_string s::pages
+    | CursorBudget s => "budget at " ++# sm'::obj_to_string s::pages
+
+:= cursor_walk_with (budget : i32) (fetch : string -> result cursor_page string) : string =
+    all_pages { halted = cursor_walk_halt_text; budget; fetch } |> cursor_walk_text
+
+:= cursor_walk_two_pages (token : string) : result cursor_page string =
+    ? token = "" ?> Ok { next_token = "t2"; body = "a" }
+    |? token = "t2" ?> Ok { next_token = ""; body = "b" }
+    |: Error token
+
+///> rust
+///> gleam
+:# pages_follow_next_tokens_and_failures_stop =
+    := ~budget = 500i32
+    cursor_walk_with budget cursor_walk_two_pages |> _assert_eq "a,b"
+
+///> rust
+///> gleam
+:# a_failed_fetch_stops_the_walk =
+    := ~budget = 500i32
+    cursor_walk_with budget (\ token => ? token = "" ?> Ok { next_token = "bad"; body = "a" } |: Error token)
+    |> _assert_eq "stopped at bad"
+
+///> rust
+///> gleam
+:# repeated_cursors_and_the_budget_stop_the_walk =
+    cursor_walk_with 500i32 (\ token => Ok { next_token = "t1"; body = token })
+    |> _assert_eq "stopped at repeated t1 after 2"
+
+///> rust
+///> gleam
+:# the_budget_stops_the_walk =
+    := ~budget = 3i32
+    cursor_walk_with budget (\ token => Ok { next_token = token ++# "x"; body = "b" })
+    |> _assert_eq "stopped at budget at 3"

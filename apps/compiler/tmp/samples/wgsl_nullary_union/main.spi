@@ -1,0 +1,21 @@
+:| direction = North | East | South | West
+
+:= turn d =
+    ?= d ?|
+    | North => East
+    | East => South
+    | South => West
+    | West => North
+
+:= score d =
+    ?= d ?|
+    | North => 1i32
+    | East => 2
+    | _ => 7
+
+:= main () =
+    :~ d0 = dyn North
+    :~ d1 = turn d0
+    :~ d2 = turn d1
+    :~ same = ? d2 = dyn South ?> 100i32 |: 0
+    score d0 + score d1 * 3 + score d2 * 9 + same

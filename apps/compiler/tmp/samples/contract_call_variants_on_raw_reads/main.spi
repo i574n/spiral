@@ -1,0 +1,17 @@
+:! donor_a = ()
+:! hg38 = ()
+:! raw = ()
+:! aligned = ()
+:! variants = ()
+
+:| readset source build stage =
+    | ReadSet :: \* source build stage. string -> readset source build stage
+
+:= call_variants \* source build. (reads : readset source build aligned) : readset source build variants =
+    ?= reads ?|
+    | ReadSet label => ReadSet label
+
+:= main () : string =
+    := reads : readset donor_a hg38 raw = ReadSet "raw"
+    := _ : readset donor_a hg38 variants = call_variants reads
+    "unreachable"

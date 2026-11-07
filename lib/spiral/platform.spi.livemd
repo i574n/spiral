@@ -1,0 +1,187 @@
+#### platform (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test static --symbol\n\n:< testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test static --symbol
+
+  :< testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":< rust_operators\n:< unsupported","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :< rust_operators
+  :< unsupported
+  """,
+  timeout: 300_000
+)
+```
+
+## fsharp
+
+<!-- livebook:{"break_markdown":true} -->
+
+### os_platform
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! os_platform' = $'System.Runtime.InteropServices.OSPlatform'\n\n:| os_platform =\n    | FreeBSD\n    | Linux\n    | OSX\n    | Windows\n\n:= os_platform = \\|\n    | FreeBSD => $'`os_platform'.FreeBSD' : os_platform'\n    | Linux => $'`os_platform'.Linux' : os_platform'\n    | OSX => $'`os_platform'.OSX' : os_platform'\n    | Windows => $'`os_platform'.Windows' : os_platform'\n\n:= run_platform \\* t. (fn : os_platform -> (() -> t)) : t =\n    := result = dyn !+\n    $'let mutable _run_platform_!result : `t option = None '\n    $'\\n##if _FREEBSD'\n    fn FreeBSD () |> emit_unit\n    $'##endif\\n##if _LINUX'\n    fn Linux () |> emit_unit\n    $'##endif\\n##if _OSX'\n    fn OSX () |> emit_unit\n    $'##endif\\n##if _WINDOWS'\n    fn Windows () |> emit_unit\n    $'##endif'\n    $'|> fun x -> _run_platform_!result <- Some x'\n    $'match _run_platform_!result with Some x -> x | None -> failwith \"platform.run_platform / \\\n        _run_platform_!result=None\"'\n\n:= is_os_platform (x : os_platform') : bool =\n    x |> $'System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform'\n\n:= is_windows' () : bool =\n    run_platform \\|\n        | Windows => \\ () => !+\n        | _ => \\ () => !-","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :! os_platform' = $'System.Runtime.InteropServices.OSPlatform'
+
+  :| os_platform =
+      | FreeBSD
+      | Linux
+      | OSX
+      | Windows
+
+  := os_platform = \|
+      | FreeBSD => $'`os_platform'.FreeBSD' : os_platform'
+      | Linux => $'`os_platform'.Linux' : os_platform'
+      | OSX => $'`os_platform'.OSX' : os_platform'
+      | Windows => $'`os_platform'.Windows' : os_platform'
+
+  := run_platform \* t. (fn : os_platform -> (() -> t)) : t =
+      := result = dyn !+
+      $'let mutable _run_platform_!result : `t option = None '
+      $'\n##if _FREEBSD'
+      fn FreeBSD () |> emit_unit
+      $'##endif\n##if _LINUX'
+      fn Linux () |> emit_unit
+      $'##endif\n##if _OSX'
+      fn OSX () |> emit_unit
+      $'##endif\n##if _WINDOWS'
+      fn Windows () |> emit_unit
+      $'##endif'
+      $'|> fun x -> _run_platform_!result <- Some x'
+      $'match _run_platform_!result with Some x -> x | None -> failwith "platform.run_platform / \
+          _run_platform_!result=None"'
+
+  := is_os_platform (x : os_platform') : bool =
+      x |> $'System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform'
+
+  := is_windows' () : bool =
+      run_platform \|
+          | Windows => \ () => !+
+          | _ => \ () => !-
+  """,
+  timeout: 300_000
+)
+```
+
+## platform
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= rust_is_windows () : bool = $'cfg\\!(windows)' : bool\n\n:= fsharp_is_windows () : bool = Windows |> os_platform |> is_os_platform\n\n:= gleam_os_type_external () =\n    global \"import gleam/erlang/atom\"\n    global \"@external(erlang, \\\"os\\\", \\\"type\\\") fn platform_os_type() -> #(atom.Atom, atom.Atom)\"\n\n:= gleam_is_windows () : bool =\n    backend_switch {\n        Gleam = \\ () => gleam_os_type_external ()\n    }\n    $'atom.to_string(platform_os_type().0) == \"win32\"' : bool\n\n:= zig_is_windows () : bool = $'(@@import(\"builtin\").os.tag == .windows)' : bool\n\n:= no_is_windows_arm () : bool = failwith \"platform.is_windows / no arm for this target\"\n\n:= is_windows () : bool =\n    run_target \\|\n        | Rust => rust_is_windows\n        | Fsharp => fsharp_is_windows\n        | Gleam => gleam_is_windows\n        | Zig => zig_is_windows\n        | _ => no_is_windows_arm\n\n:= get_executable_suffix () =\n    ? is_windows ()\n    ?> \".exe\"\n    |: \"\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := rust_is_windows () : bool = $'cfg\!(windows)' : bool
+
+  := fsharp_is_windows () : bool = Windows |> os_platform |> is_os_platform
+
+  := gleam_os_type_external () =
+      global "import gleam/erlang/atom"
+      global "@external(erlang, \"os\", \"type\") fn platform_os_type() -> #(atom.Atom, atom.Atom)"
+
+  := gleam_is_windows () : bool =
+      backend_switch {
+          Gleam = \ () => gleam_os_type_external ()
+      }
+      $'atom.to_string(platform_os_type().0) == "win32"' : bool
+
+  := zig_is_windows () : bool = $'(@@import("builtin").os.tag == .windows)' : bool
+
+  := no_is_windows_arm () : bool = failwith "platform.is_windows / no arm for this target"
+
+  := is_windows () : bool =
+      run_target \|
+          | Rust => rust_is_windows
+          | Fsharp => fsharp_is_windows
+          | Gleam => gleam_is_windows
+          | Zig => zig_is_windows
+          | _ => no_is_windows_arm
+
+  := get_executable_suffix () =
+      ? is_windows ()
+      ?> ".exe"
+      |: ""
+  """,
+  timeout: 300_000
+)
+```
+
+#### get_executable_suffix (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\nget_executable_suffix ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  get_executable_suffix ()
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= gleam_os_command_output (command : string) : string =\n    := output = erlang_term::apply \"os\" \"cmd\" [ erlang_term::charlist command ]\n    erlang_term::apply \"unicode\" \"characters_to_binary\" [ output ] |> erlang_term::cast\n\n:= os_command_output (command : string) : string =\n    run_target \\|\n        | Gleam => \\ () => gleam_os_command_output command\n        | _ => \\ () => no_arm \"os_command_output\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := gleam_os_command_output (command : string) : string =
+      := output = erlang_term::apply "os" "cmd" [ erlang_term::charlist command ]
+      erlang_term::apply "unicode" "characters_to_binary" [ output ] |> erlang_term::cast
+
+  := os_command_output (command : string) : string =
+      run_target \|
+          | Gleam => \ () => gleam_os_command_output command
+          | _ => \ () => no_arm "os_command_output"
+  """,
+  timeout: 300_000
+)
+```
+
+#### an_os_command_returns_its_output (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n\nos_command_output \"echo spiral\" |> sm'::trim |> _assert_eq \"spiral\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+
+  os_command_output "echo spiral" |> sm'::trim |> _assert_eq "spiral"
+  """,
+  timeout: 300_000
+)
+```
+
+## main
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///> fsharp\n\n:= main () =\n    $'let is_windows () = !is_windows ()' : ()\n    $'let get_executable_suffix () = !get_executable_suffix ()' : ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///> fsharp
+
+  := main () =
+      $'let is_windows () = !is_windows ()' : ()
+      $'let get_executable_suffix () = !get_executable_suffix ()' : ()
+  """,
+  timeout: 300_000
+)
+```

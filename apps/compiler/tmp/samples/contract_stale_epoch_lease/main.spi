@@ -1,0 +1,30 @@
+:! epoch_one = ()
+:! epoch_two = ()
+:! unbound = ()
+:! bound = ()
+
+:| authority epoch =
+    | AuthorityOne :: authority epoch_one
+    | AuthorityTwo :: authority epoch_two
+
+:| lease epoch state =
+    | LeaseOneFresh :: lease epoch_one unbound
+    | LeaseTwoFresh :: lease epoch_two unbound
+    | LeaseOneBound :: lease epoch_one bound
+    | LeaseTwoBound :: lease epoch_two bound
+
+:= bind \* epoch.
+    (lease : lease epoch unbound)
+    (authority : authority epoch)
+    : lease epoch bound =
+    ?= lease ?|
+    | LeaseOneFresh =>
+        ?= authority ?|
+        | AuthorityOne => LeaseOneBound
+    | LeaseTwoFresh =>
+        ?= authority ?|
+        | AuthorityTwo => LeaseTwoBound
+
+:= main () : string =
+    := _ = bind LeaseOneFresh AuthorityTwo
+    "unreachable"

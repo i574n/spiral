@@ -1,0 +1,10 @@
+:< model
+
+:= main () : i32 =
+    := ~n = 5i32
+    := s = make_sq n
+    := k =
+        ?= s ?|
+        | Circle r => r
+        | Square k => k
+    !!!!Sub(!!!!Add(area s, k), 2i32)

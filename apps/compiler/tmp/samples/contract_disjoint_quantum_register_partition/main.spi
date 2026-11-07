@@ -1,0 +1,33 @@
+:! lineage_a = ()
+:! whole = ()
+:! left_slots = ()
+:! right_slots = ()
+:! coherent = ()
+
+:| qregister lineage slots phase = | QRegister :: \* lineage slots phase. string -> qregister lineage slots phase
+:| partition lineage whole left right =
+    | Partition :: \* lineage whole left right. string -> partition lineage whole left right
+
+:= split \* lineage.
+    (register : qregister lineage whole coherent)
+    : qregister lineage left_slots coherent *
+    qregister lineage right_slots coherent *
+    partition lineage whole left_slots right_slots
+    =
+    ?= register ?|
+    | QRegister _ => QRegister "left", QRegister "right", Partition "disjoint"
+
+:= merge \* lineage.
+    (left : qregister lineage left_slots coherent)
+    (right : qregister lineage right_slots coherent)
+    (proof : partition lineage whole left_slots right_slots)
+    : qregister lineage whole coherent =
+    ?= left, right, proof ?|
+    | QRegister _, QRegister _, Partition _ => QRegister "disjoint-register-recombined"
+
+:= main () : string =
+    := register : qregister lineage_a whole coherent = QRegister "psi"
+    ?= split register ?|
+    | left, right, proof =>
+        ?= merge left right proof ?|
+        | QRegister label => label

@@ -1,0 +1,26 @@
+:! root0 = ()
+:! root1 = ()
+:! epoch0 = ()
+:! epoch1 = ()
+:! draft = ()
+:! rooted = ()
+:! verified = ()
+
+:| registry_snapshot previous current epoch state =
+    | Snapshot :: \* previous current epoch state. string -> registry_snapshot previous current epoch state
+:| root_link previous current from_epoch to_epoch state =
+    | RootLink :: \* previous current from_epoch to_epoch state.
+        string ->
+        root_link previous current from_epoch to_epoch state
+
+:= advance \* previous current from_epoch to_epoch.
+    (snapshot : registry_snapshot previous current to_epoch draft)
+    (link : root_link previous current from_epoch to_epoch verified)
+    : registry_snapshot previous current to_epoch rooted
+    =
+    ?= snapshot, link ?| | Snapshot _, RootLink _ => Snapshot "registry-root-advanced"
+
+:= main () : string =
+    := snapshot : registry_snapshot root0 root1 epoch1 draft = Snapshot "candidate"
+    := link : root_link root0 root1 epoch0 epoch1 verified = RootLink "link"
+    ?= advance snapshot link ?| | Snapshot label => label

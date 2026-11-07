@@ -1,0 +1,34 @@
+:| slot =
+    | None
+    | Held : (heap { value : i32 * string } * heap { value : i32 * string } * heap { value : i32 * string })
+
+:~ score x : i32 =
+    ?= x ?|
+    | None => 1i32
+    | Held (left, mid, right) =>
+        := left_opened = !!!!LayoutIndex(left)
+        := ~(a, b) = left_opened::value
+        := mid_opened = !!!!LayoutIndex(mid)
+        := ~(c, d) = mid_opened::value
+        := right_opened = !!!!LayoutIndex(right)
+        := ~(e, h) = right_opened::value
+        ? a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && e =. 9i32 && !!!!EQ(h, "ok")
+        ?> 0i32
+        |: 1i32
+
+:= main () : i32 =
+    := ~n = 7i32
+    := ~word = "hi"
+    := left_pair = n, word
+    := left_heap = !!!!LayoutToHeap({ value = left_pair })
+    := ~m = 4i32
+    := ~other = "yo"
+    := mid_pair = m, other
+    := mid_heap = !!!!LayoutToHeap({ value = mid_pair })
+    := ~k = 9i32
+    := ~tail = "ok"
+    := right_pair = k, tail
+    := right_heap = !!!!LayoutToHeap({ value = right_pair })
+    := ~flag = !+
+    := held = ? flag ?> Held (left_heap, mid_heap, right_heap) |: None
+    score held

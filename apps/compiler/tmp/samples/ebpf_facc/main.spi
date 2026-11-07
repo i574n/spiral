@@ -1,0 +1,9 @@
+:= ^ addf ~n ~acc =
+    ? n =. 0i32 ?> acc |:
+        ~~ addf (n -. 1i32) (acc +. 1.5f32)
+
+:= main () : i32 =
+    := ~n = 4i32
+    := ~acc = 0.0f32
+    := s = ~~ addf n acc
+    ? s =. 6.0f32 ?> 0i32 |: 1i32

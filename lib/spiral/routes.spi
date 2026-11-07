@@ -1,0 +1,13 @@
+///> c
+///> rust
+:# routes static =
+    :< testing
+
+:= route \* t. (path : string) (_ : t) : string =
+    ~> routes_real::route path `t
+
+:== comment_params = { slug : string; id : i32 }
+
+:# route_names_exactly_the_handler_fields =
+    route "/articles/:slug/comments/:id" ({ slug = ""; id = 0i32 } : comment_params)
+    |> _assert_eq "/articles/:slug/comments/:id"

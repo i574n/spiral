@@ -1,0 +1,25 @@
+:! cell_array = array_base (mut { value : i32 * string })
+
+:= create (n : i32) : cell_array = cell_array !!!!ArrayCreate(`(mut { value : i32 * string }), n)
+:= get (array : cell_array) (i : i32) : mut { value : i32 * string } =
+    ?= array ?|
+    | cell_array values => !!!!ArrayIndex(values, i)
+:= set (array : cell_array) (i : i32) (value : mut { value : i32 * string }) : () =
+    ?= array ?|
+    | cell_array values => !!!!ArrayIndexSet(values, i, value)
+
+:= main () : i32 =
+    := ~n = 3i32
+    := ~word = "no"
+    := pair = n, word
+    := cell : mut { value : i32 * string } = !!!!LayoutToHeapMutable({ value = pair })
+    := a = create 1i32
+    set a 0i32 cell
+    := held = get a 0i32
+    := ~m = 7i32
+    := ~next = "hi"
+    := replaced = m, next
+    held <- { value = replaced }
+    := opened = !!!!LayoutIndex(held)
+    := ~(left, right) = opened::value
+    ? left =. 7i32 && !!!!EQ(right, "hi") ?> 0i32 |: 1i32

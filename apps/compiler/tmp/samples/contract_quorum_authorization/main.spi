@@ -1,0 +1,53 @@
+:! q0 = ()
+:! q1 = ()
+:! q2 = ()
+
+:| quorum state =
+    | EmptyQuorum :: quorum q0
+    | OneApproval :: string -> quorum q1
+    | TwoApprovals :: string * string -> quorum q2
+
+:| approval from to =
+    | FirstApproval :: string -> approval q0 q1
+    | SecondApproval :: string -> approval q1 q2
+
+:| ^ chain (step : * -> * -> *) from to =
+    | ChainStep :: \* (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: \* (step : * -> * -> *) from to.
+        (\? middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+:= apply \* from to.
+    (operation : approval from to)
+    (state : quorum from)
+    : quorum to =
+    ?= operation, state ?|
+    | FirstApproval name, EmptyQuorum =>
+        OneApproval name
+    | SecondApproval name, OneApproval first =>
+        TwoApprovals (first, name)
+
+:= ^ fold_chain \* (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : \* a b. step a b -> carrier a -> carrier b)
+    (program : chain step from to)
+    (input : carrier from)
+    : carrier to =
+    ?= program ?|
+    | ChainStep atom => handler atom input
+    | ChainCompose packed =>
+        := \? middle. first, second = packed
+        fold_chain `$handler second (fold_chain `$handler first input)
+
+:= authorization_plan () : chain approval q0 q2 =
+    ChainCompose (\? (
+        ChainStep (FirstApproval "fiscal"),
+        ChainStep (SecondApproval "security")
+    ))
+
+:= authorize (proof : quorum q2) : string =
+    ?= proof ?|
+    | TwoApprovals _ => "quorum-authorized"
+
+:= main () : string =
+    authorize (fold_chain `$apply (authorization_plan ()) EmptyQuorum)

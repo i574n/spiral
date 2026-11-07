@@ -1,0 +1,41 @@
+:= (+.) \* t. (a : t) (b : t) : t =
+    !!!!Add(a, b)
+
+:= (-.) \* t. (a : t) (b : t) : t =
+    !!!!Sub(a, b)
+
+:= (*.) \* t. (a : t) (b : t) : t =
+    !!!!Mult(a, b)
+
+:= (/.) \* t. (a : t) (b : t) : t =
+    !!!!Div(a, b)
+
+:= (%.) \* t. (a : t) (b : t) : t =
+    !!!!Mod(a, b)
+
+:= (=.) \* t. (a : t) (b : t) : bool =
+    !!!!EQ(a, b)
+
+:= (<) \* t {ord}. (a : t) (b : t) : bool =
+    !!!!LT(a, b)
+
+:= (<=) \* t {ord}. (a : t) (b : t) : bool =
+    !!!!LTE(a, b)
+
+:= (>) \* t {ord}. (a : t) (b : t) : bool =
+    !!!!GT(a, b)
+
+:= (>=) \* t {ord}. (a : t) (b : t) : bool =
+    !!!!GTE(a, b)
+
+:! array t = array_base t
+
+:? create ar el : int -> ar el
+:? index ar el : ar el -> int -> el
+:? set ar el : ar el -> int -> el -> ()
+:? length ar el : ar el -> int
+
+:+ create array = \ size => array !!!!ArrayCreate(`el, size)
+:+ index array = \ (array ar) i => !!!!ArrayIndex(ar, i)
+:+ set array = \ (array ar) i v => !!!!ArrayIndexSet(ar, i, v)
+:+ length array = \ (array ar) => !!!!ArrayLength(`int, ar)

@@ -1,0 +1,15 @@
+:| pair =
+    | One : i32
+    | Both : i32 * string
+
+:~ score x : i32 =
+    ?= x ?|
+    | One value => value
+    | Both (left, right) => ? left =. 3i32 && !!!!EQ(right, "hi") ?> 0i32 |: 1i32
+
+:= main () : i32 =
+    := ~flag = !+
+    := ~n = 3i32
+    := ~word = "hi"
+    := both = ? flag ?> Both (n, word) |: One 1i32
+    score both

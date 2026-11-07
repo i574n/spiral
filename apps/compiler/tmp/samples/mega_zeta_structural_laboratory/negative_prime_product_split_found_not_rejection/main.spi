@@ -1,0 +1,15 @@
+:< main
+
+:= impossible_prime_product_split_found_is_product_rejection \* factor previous_count product external.
+    (descent :
+        certified_arithmetic_prime_power_external_factor_descent factor (z_nat_succ previous_count) product external)
+    : positive_positional_nonfactor_certificate product external
+    =
+    ?= descent ?|
+    | CertifiedArithmeticPrimePowerExternalFactorPrimeProductSplitObstruction payload =>
+        := \? previous_product. _, _, product_found, _, _ = payload
+        product_found
+    | _ =>
+        mega_runtime_fail "only-the-prime-product-split-obstruction-branch-is-relevant"
+
+:= main () = ()

@@ -1,0 +1,13 @@
+:= native (n : i32) : i32 =
+    := a : string = $'std::rc::Rc::<str>::from("abc")'
+    := b : string = $'::std::rc::Rc::<str>::from("de")'
+    := c : string = $'crate::Rc::<str>::from("fgh")'
+    := d : string = $'Rc::<str>::from("ijkl")'
+    := ~e = "mnopq"
+    := o : string = $'None::<std::rc::Rc<str>>.unwrap_or_else(|| std::rc::Rc::<str>::from(""))'
+    := len (s : string) : i32 = $'!s.len() as i32'
+    len a +. len b +. len c +. len d +. len e +. len o +. n
+
+:= main () : i32 =
+    := ~n = 3i32
+    !!!!BackendSwitch({ C = \ () => 20i32 : i32; Rust = \ () => native n : i32; Bend = \ () => 20i32 : i32 })

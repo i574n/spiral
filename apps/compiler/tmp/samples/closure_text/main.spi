@@ -1,0 +1,6 @@
+:= main () : i32 =
+    := ~word = "hi"
+    := f (z : i32) : string =
+        ? z =. 0i32 ?> "no" |: word
+    := ~g = f
+    ? !!!!EQ(g 1i32, "hi") ?> 0i32 |: 1i32

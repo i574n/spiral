@@ -1,0 +1,7 @@
+:< parse
+:< render
+
+:= main () : i32 =
+    := ~t = "hello"
+    := html = blocks_html (parse t)
+    !!!!StringLength(`i32, html)

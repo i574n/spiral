@@ -1,0 +1,23 @@
+packageDir: ../../../lib
+packages:
+    |core-
+    spiral-
+modules:
+    text
+    cell
+    directives
+    document
+    notebook
+    targets
+    daemon
+    client
+    memo
+    manifest
+    source_map
+    html_markdown
+    json_value
+    builder_output
+    builders
+    gleam_project
+    run_result
+    main

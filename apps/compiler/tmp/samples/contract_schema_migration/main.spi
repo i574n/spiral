@@ -1,0 +1,48 @@
+:! schema_v4 = ()
+:! schema_v5 = ()
+:! schema_v6 = ()
+
+:! nfe_payload = { xml : string; schema_tag : string }
+
+:| document schema =
+    | Document :: \* schema. nfe_payload -> document schema
+
+:| migration from to =
+    | UpgradeV4V5 :: migration schema_v4 schema_v5
+    | UpgradeV5V6 :: migration schema_v5 schema_v6
+
+:= migrate \* from to.
+    (migration : migration from to)
+    (document : document from)
+    : document to =
+    ?= migration, document ?|
+    | UpgradeV4V5, Document payload =>
+        Document (nfe_payload { xml = payload::xml; schema_tag = "v5" })
+    | UpgradeV5V6, Document payload =>
+        Document (nfe_payload { xml = payload::xml; schema_tag = "v6" })
+
+:| ^ migration_path from to =
+    | MigrationStep :: \* from to. migration from to -> migration_path from to
+    | MigrationCompose :: \* from to.
+        (\? middle. migration_path from middle * migration_path middle to)
+        -> migration_path from to
+
+:= ^ run_migration \* from to.
+    (path : migration_path from to)
+    (document : document from)
+    : document to =
+    ?= path ?|
+    | MigrationStep step => migrate step document
+    | MigrationCompose pair =>
+        := \? middle. first, second = pair
+        run_migration second (run_migration first document)
+
+:= v4_to_v6 () : migration_path schema_v4 schema_v6 =
+    MigrationCompose (\? (MigrationStep UpgradeV4V5, MigrationStep UpgradeV5V6))
+
+:= main () : string =
+    := original : document schema_v4 =
+        Document (nfe_payload { xml = "NFE-08"; schema_tag = "v4" })
+    := migrated = run_migration (v4_to_v6 ()) original
+    ?= migrated ?|
+    | Document payload => payload::schema_tag

@@ -1,0 +1,5 @@
+:< main
+:< semantic_witnesses
+
+:= main () : bool =
+    require_semantic_partition_witness (one_coverage_for_two_representatives ())

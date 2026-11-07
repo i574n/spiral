@@ -1,0 +1,50 @@
+:! lineage_a = ()
+:! alice = ()
+:! bob = ()
+:! prepared = ()
+:! entangled = ()
+:! measured = ()
+:! corrected = ()
+:! outcome_01 = ()
+
+:| qubit lineage owner stage =
+    | Qubit :: \* lineage owner stage. string -> qubit lineage owner stage
+
+:| teleport_session lineage stage =
+    | TeleportSession :: \* lineage stage. string -> teleport_session lineage stage
+
+:| classical_bits lineage outcome =
+    | ClassicalBits :: \* lineage outcome. string -> classical_bits lineage outcome
+
+:= entangle \* lineage.
+    (source : qubit lineage alice prepared)
+    (target : qubit lineage bob prepared)
+    : teleport_session lineage entangled * qubit lineage bob entangled =
+    ?= source, target ?|
+    | Qubit _, Qubit label => TeleportSession "shared-epr", Qubit label
+
+:= bell_measure \* lineage.
+    (session : teleport_session lineage entangled)
+    : teleport_session lineage measured * classical_bits lineage outcome_01 =
+    ?= session ?|
+    | TeleportSession _ => TeleportSession "bell-measured", ClassicalBits "01"
+
+:= correct \* lineage.
+    (session : teleport_session lineage measured)
+    (bits : classical_bits lineage outcome_01)
+    (target : qubit lineage bob entangled)
+    : teleport_session lineage corrected * qubit lineage bob corrected =
+    ?= session, bits, target ?|
+    | TeleportSession _, ClassicalBits _, Qubit _ => TeleportSession "teleportation-corrected", Qubit "teleported"
+
+:= label \* lineage. (session : teleport_session lineage corrected) : string =
+    ?= session ?|
+    | TeleportSession value => value
+
+:= main () : string =
+    := source : qubit lineage_a alice prepared = Qubit "psi"
+    := target : qubit lineage_a bob prepared = Qubit "zero"
+    := session, entangled_target = entangle source target
+    := measured_session, bits = bell_measure session
+    := corrected_session, _ = correct measured_session bits entangled_target
+    label corrected_session

@@ -1,0 +1,355 @@
+:# crypto static =
+    :< testing
+    :< file_system_operators
+
+:< rust_operators
+:< sm'_operators
+
+:! sha256 = $'System.Security.Cryptography.SHA256'
+
+:= sha256 () : sha256 =
+    $'`sha256.Create' ()
+
+:= sha256_compute_hash (x : sha256) (data : array u8) : array u8 =
+    data |> $'!x.ComputeHash'
+
+:! sha256' =
+    `(
+        rust::rust_type
+            `($'sha2_Sha256')
+            `($'sha2::Sha256')
+            "type sha2_Sha256 = class end"
+    )
+
+:= new_sha256 () : sha256' =
+    (!\($'"true; let result : sha2::Sha256 = sha2::Digest::new()"') : bool) |> ignore
+    !\($'"result"')
+
+:= hasher_update \* el dim. (slice : rust::ref (am'::slice' el dim)) (hasher : sha256') : () =
+    (!\($'"true; sha2::Digest::update(&mut !hasher, !slice)"') : bool) |> ignore
+
+:= hasher_finalize (hasher : sha256') : rust::ref (am'::slice u8) =
+    !\($'"&sha2::Digest::finalize(!hasher)"')
+
+:= hash_read data : resultm::result' string stream::io_error =
+    := reader = data |> stream::new_buf_reader
+    (!\($'"true; let mut !reader = !reader"') : bool) |> ignore
+    := hasher = new_sha256 ()
+    (!\($'"true; let mut !hasher = !hasher"') : bool) |> ignore
+    ~>
+        := size = 1024
+        := zero = convert::convert `i32 `(convert::unativeint) 0
+        := buffer = am'::new_slice `u8 `@size 0u8
+        rust::loop 0 \ () =>
+            := count = stream::buf_reader_read `u8 `@size buffer reader
+            := count = resultm::unwrap' `(convert::unativeint) `(stream::io_error) count
+            := _ =
+                ? (=.) `(convert::unativeint) count zero ?>
+                    rust::break `(()) ()
+                    !+
+                |: !-
+            hasher_update `u8 `@size
+                (
+                    am'::slice_range `u8 `@size
+                        (am'::Start `(convert::unativeint) zero)
+                        (am'::End `(convert::unativeint)
+                            ((\ _ => count) : (() -> convert::unativeint) -> convert::unativeint))
+                        buffer
+                )
+                hasher
+    hasher
+    |> hasher_finalize
+    |> am'::slice_to_vec
+    |> am'::vec_map (sm'::format_hex' >> sm'::from_std_string)
+    |> am'::from_vec_base
+    |> am'::to_list_base'
+    |> listm'::unbox
+    |> sm'::concat_list (~~ "")
+    |> Ok
+    |> resultm::box
+
+:= get_file_hash (path : string) =
+    := path = path |> file_system::normalize_path
+    := file = path |> file_system::file_open |> resultm::unwrap'
+    := reader = file |> stream::new_buf_reader
+    reader
+    |> hash_read
+
+///> rust -d chrono regex sha2
+:# get_file_hash_2 =
+    := file_name = ~~ "test.txt"
+    := text = "\n"
+
+    := temp_dir, disposable =
+        #?*(file_name, text)
+        |> crypto::hash_text
+        |> file_system::create_temp_directory'
+    disposable |> use |> ignore
+
+    := path = temp_dir </> file_name
+    text |> file_system::write_all_text path
+
+    path
+    |> get_file_hash
+    |> resultm::unwrap'
+    |> _assert_eq "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+
+///> rust -d chrono regex sha2
+:# get_file_hash_3 =
+    := file_name = ~~ "test.txt"
+    := text = ""
+
+    := temp_dir, disposable =
+        #?*(file_name, text)
+        |> crypto::hash_text
+        |> file_system::create_temp_directory'
+    disposable |> use |> ignore
+
+    := path = temp_dir </> file_name
+    text |> file_system::write_all_text path
+    path
+    |> get_file_hash
+    |> resultm::unwrap'
+    |> _assert_eq "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+:= create_hash (x : string) : any =
+    global "import * as spiral_node_crypto from 'node:crypto';"
+    $'spiral_node_crypto.createHash(!x)' : any
+
+:= hash_update (s : string) (x : any) : any =
+    $'!x.update(!s, "utf8")' : any
+
+:= hash_digest (s : string) (x : any) : string =
+    $'!x.digest(!s)' : string
+
+:! py_sha256 = any
+
+:= hashlib_sha256 () : py_sha256 =
+    backend_switch {
+        Python = \ () =>
+            global "import hashlib"
+            $'hashlib.sha256()' : py_sha256
+    }
+
+:= sha256_update (x : string) (sha256 : py_sha256) : py_sha256 =
+    backend_switch {
+        Python = \ () =>
+            $'!sha256.update(!x)' : ()
+    }
+    sha256
+
+:= sha256_hexdigest (sha256 : py_sha256) : string =
+    backend_switch {
+        Python = \ () =>
+            $'!sha256.hexdigest()' : string
+    }
+
+:= zig_sha256_hex (input : string) : string =
+    global """
+        fn spiral_out_sha256_hex(input: []const u8) []const u8 {
+            var digest: [32]u8 = undefined;
+            std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});
+            const hex = std.fmt.bytesToHex(digest, .lower);
+            return spiral_gpa.dupe(u8, &hex) catch @panic("out of memory");
+        }
+        """
+    $'spiral_out_sha256_hex(!input)' : string
+
+///> zig
+:# zig_sha256_hex_matches_known_digests =
+    (zig_sha256_hex "", zig_sha256_hex "\n")
+    |> _assert_eq (
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    )
+
+:~ hash_text (~input : string) =
+    run_target \|
+        | Zig => \ () => zig_sha256_hex input
+        | Fsharp => \ () =>
+            := sha256 = sha256 () |> use
+            input
+            |> sm'::utf8_get_bytes
+            |> sha256_compute_hash sha256
+            |> arraym::map (sm'::byte_to_string "x2")
+            |> seq::of_array'
+            |> sm'::concat (~~ "")
+        | TypeScript => \ () =>
+            create_hash "sha256"
+            |> hash_update input
+            |> hash_digest "hex"
+        | Rust => \ () =>
+            input
+            |> sm'::utf8_get_bytes
+            |> \ (array x) => x
+            |> am'::to_vec
+            |> stream::new_cursor
+            |> hash_read
+            |> resultm::unwrap'
+        | Cuda => \ () =>
+            hashlib_sha256 ()
+            |> sha256_update (input |> sm'::encode_utf8)
+            |> sha256_hexdigest
+        | Gleam _ => \ () =>
+            global "import gleam/bit_array"
+            global "import gleam/string"
+            global """
+                type SpiralHashKind {
+                  Sha256
+                }
+                """
+            global """
+                @external(erlang, "crypto", "hash")
+                fn spiral_crypto_hash(kind: SpiralHashKind, data: String) -> BitArray
+                """
+            $'string.lowercase(bit_array.base16_encode(spiral_crypto_hash(Sha256, !input)))' : string
+        | _ => \ () => null ()
+
+///> cuda
+///> rust -d sha2
+///> typescript
+///> gleam
+:# hash_text =
+    "\n"
+    |> hash_text
+    |> _assert_eq "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+
+    ""
+    |> hash_text
+    |> _assert_eq "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+:= crypto_gleam_sha1 () =
+    global "import gleam/bit_array"
+    global "import gleam/erlang/atom"
+    global "import gleam/string"
+    global """
+        @external(erlang, "crypto", "hash")
+        fn spiral_crypto_hash_by(kind: atom.Atom, data: String) -> BitArray
+
+        @external(erlang, "crypto", "mac")
+        fn spiral_crypto_mac(kind: atom.Atom, sub: atom.Atom, key: String, data: String) -> BitArray
+
+        """
+
+:= hex_byte (b : u8) : string =
+    := high : i32 = conv (b >>> 4i32)
+    := low : i32 = conv (b &&& 15u8)
+    sm'::slice high high "0123456789abcdef" ++# sm'::slice low low "0123456789abcdef"
+
+:= hex_of_bytes (bytes : array_base u8) : string =
+    := size : i32 = am'::length_base bytes
+    :~ ^ go (i : i32) (acc : string) : string =
+        ? i >= size ?> acc |: go (i + 1i32) (acc ++# hex_byte (am'::index_base i bytes))
+    go 0i32 ""
+
+:= rust_sha1_digest (text : string) : array_base u8 =
+    $'Rc::new(RefCell::new(<sha1::Sha1 as sha1::Digest>::digest(!text.as_bytes()).to_vec()))' : array_base u8
+
+:= sha1_hex (text : string) : string =
+    backend_switch {
+        Gleam = \ () =>
+            crypto_gleam_sha1 ()
+            $'string.lowercase(bit_array.base16_encode(spiral_crypto_hash_by(atom.create("sha"), !text)))' : string
+        Rust = \ () => text |> rust_sha1_digest |> hex_of_bytes
+    }
+
+:! hmac_sha1 = $'hmac::Hmac<sha1::Sha1>'
+
+:! hmac_sha1_tag = $'hmac::digest::Output<hmac::Hmac<sha1::Sha1>>'
+
+:= hmac_sha1_base64 (key : string) (text : string) : string =
+    backend_switch {
+        Gleam = \ () =>
+            crypto_gleam_sha1 ()
+            $'bit_array.base64_encode(spiral_crypto_mac(atom.create("hmac"), atom.create("sha"), !key, !text), True)'
+            : string
+        Rust = \ () =>
+            := mac = $'<hmac::Hmac<sha1::Sha1> as hmac::KeyInit>::new_from_slice(!key.as_bytes()).unwrap()' : hmac_sha1
+            mac |> rust::to_mut
+            $'hmac::Mac::update(&mut !mac, !text.as_bytes())' : ()
+            := tag = $'hmac::Mac::finalize(!mac).into_bytes()' : hmac_sha1_tag
+            $'Rc::<str>::from(base64::Engine::encode(&base64::engine::general_purpose::STANDARD, !tag))' : string
+    }
+
+///> rust -d sha1 hmac base64
+///> gleam
+:# sha1_hex_and_hmac_sha1_base64 =
+    := ~text = "abc"
+    (sha1_hex text, hmac_sha1_base64 "key" "The quick brown fox jumps over the lazy dog")
+    |> _assert_eq ("a9993e364706816aba3e25717850c26c9cd0d89d", "3nybhbi3iqa8ino29wqQcBydtNk=")
+
+:= hex_nibble (c : string) : i32 = sm'::index_of c "0123456789abcdef"
+
+:~ ^ reverse_bytes (xs : list u8) (acc : list u8) : list u8 =
+    ?= xs ?|
+    | [] => acc
+    | x :: rest => reverse_bytes rest (x :: acc)
+
+:~ ^ hex_bytes (text : string) (size : i32) (i : i32) (acc : list u8) : option (list u8) =
+    ? i >= size ?> Some (reverse_bytes acc [])
+    |:
+        := hi = hex_nibble (sm'::slice i i text)
+        := lo = hex_nibble (sm'::slice (i + 1i32) (i + 1i32) text)
+        ? hi < 0i32 || lo < 0i32 ?> None
+        |:
+            := byte : u8 = convert::convert (hi * 16i32 + lo)
+            hex_bytes text size (i + 2i32) (byte :: acc)
+
+:= decode_hex (text : string) : option (list u8) =
+    := size : i32 = sm'::length text
+    ? size % 2i32 <> 0i32 ?> None |: hex_bytes text size 0i32 []
+
+:= rust_ed25519_verify (key : array_base u8) (message : string) (signature : array_base u8) : bool =
+    $'ed25519_dalek::VerifyingKey::from_bytes(&<[u8; 32]>::try_from(&(*!key.borrow())[..]).unwrap()) \
+        .map(|k| k.verify_strict(!message.as_bytes(), &ed25519_dalek::Signature::from_bytes( \
+            &<[u8; 64]>::try_from(&(*!signature.borrow())[..]).unwrap())).is_ok()) \
+        .unwrap_or(false)'
+
+:= ed25519_verify (public_key : string) (message : string) (signature : string) : bool =
+    ?= decode_hex public_key ?|
+    | None => !-
+    | Some key =>
+        ?= decode_hex signature ?|
+        | None => !-
+        | Some sig =>
+            ? (listm::length key : i32) <> 32i32 || (listm::length sig : i32) <> 64i32 ?> !-
+            |:
+                := key_array = key |> listm'::box |> listm'::to_array'
+                := sig_array = sig |> listm'::box |> listm'::to_array'
+                rust_ed25519_verify key_array message sig_array
+
+///> rust -d ed25519-dalek
+:# ed25519_verify_checks_rfc8032_vector_1 =
+    := ~key = "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+    := ~head = "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e06522490155"
+    := ~signature = head ++# "5fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b"
+    := ~flipped = head ++# "5fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100a"
+    := valid = ed25519_verify key "" signature
+    := tampered = ed25519_verify key "" flipped
+    := short_key = ed25519_verify "d75a98" "" signature
+    := decoded = decode_hex "0aff" = Some [ 10u8; 255u8 ]
+    (valid, tampered, short_key, decoded) |> _assert_eq (!+, !-, !-, !+)
+
+:= hash_to_port (text : string) : u16 =
+    := first_letter_code = text |> sm'::index 0i32 |> sm'::convert_to_utf32
+    := hash_part = text |> sm'::slice 0i32 7
+    := combined_value = convert::convert_i32_base 16 hash_part + first_letter_code |> convert::u16
+    trace Verbose
+        \ () => "crypto.hash_to_port"
+        \ () => { first_letter_code hash_part combined_value }
+    combined_value % 48128 + 1024
+
+///> cuda
+///> rust -d sha2
+///> typescript
+:# hash_to_port =
+    "\n"
+    |> hash_text
+    |> hash_to_port
+    |> _assert_eq 19273
+
+///> fsharp
+
+:= main () =
+    $'let hash_text x = !hash_text x' : ()
+    $'let hash_to_port x = !hash_to_port x' : ()

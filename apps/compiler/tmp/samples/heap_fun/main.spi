@@ -1,0 +1,10 @@
+:= main () : i32 =
+    := ~k = 3i32
+    := ~n = 4i32
+    := add (x : i32) : i32 = x +. k
+    := pair = add, n
+    := box = !!!!LayoutToHeap({ value = pair })
+    := opened = !!!!LayoutIndex(box)
+    := ~(f, extra) = opened::value
+    := ~g = f
+    ? g 0i32 +. extra =. 7i32 ?> 0i32 |: 1i32

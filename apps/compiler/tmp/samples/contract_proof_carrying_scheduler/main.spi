@@ -1,0 +1,86 @@
+:! pending = ()
+:! ready = ()
+:! committed = ()
+:! q0 = ()
+:! q1 = ()
+:! q2 = ()
+:! parallel = ()
+:! serial = ()
+
+:| validation_evidence status =
+    | PendingValidation :: validation_evidence pending
+    | ReadyValidation :: string -> validation_evidence ready
+
+:| receipt status =
+    | PendingReceipt :: receipt pending
+    | CommittedReceipt :: string -> receipt committed
+
+:| quorum state =
+    | EmptyQuorum :: quorum q0
+    | OneApproval :: string -> quorum q1
+    | TwoApprovals :: string * string -> quorum q2
+
+:| task effect result =
+    | ValidateAll :: task parallel (validation_evidence ready)
+    | QueryCommitted :: task parallel (receipt committed)
+    | CollectQuorum :: task parallel (quorum q2)
+    | PublishAuthorized ::
+        validation_evidence ready * receipt committed * quorum q2
+        -> task serial string
+
+:| ^ dag result =
+    | ParallelNode :: \* result. task parallel result -> dag result
+    | SerialNode :: \* result. task serial result -> dag result
+    | Zip :: \* a b. dag a * dag b -> dag (a * b)
+    | Map :: \* result.
+        (\? input. (input -> result) * dag input)
+        -> dag result
+    | Then :: \* result.
+        (\? input. dag input * (input -> dag result))
+        -> dag result
+
+:= run_task \* effect result. (task : task effect result) : result =
+    ?= task ?|
+    | ValidateAll => ReadyValidation "validated"
+    | QueryCommitted => CommittedReceipt "committed"
+    | CollectQuorum => TwoApprovals ("fiscal", "security")
+    | PublishAuthorized _ => "scheduled-authorized"
+
+:= ^ run \* result. (program : dag result) : result =
+    ?= program ?|
+    | ParallelNode task => run_task task
+    | SerialNode task => run_task task
+    | Zip (left, right) => run left, run right
+    | Map packed =>
+        := \? input. mapping, source = packed
+        mapping (run source)
+    | Then packed =>
+        := \? input. source, next = packed
+        run (next (run source))
+
+:= reshape
+    (data :
+        (validation_evidence ready * receipt committed) *
+        quorum q2)
+    : validation_evidence ready * receipt committed * quorum q2 =
+    := (evidence, receipt), quorum = data
+    evidence, receipt, quorum
+
+:= plan () : dag string =
+    Then (\? (
+        Map (\? (
+            reshape,
+            Zip (
+                Zip (
+                    ParallelNode ValidateAll,
+                    ParallelNode QueryCommitted
+                ),
+                ParallelNode CollectQuorum
+            )
+        )),
+        \ proof =>
+            SerialNode (PublishAuthorized proof)
+    ))
+
+:= main () : string =
+    run (plan ())

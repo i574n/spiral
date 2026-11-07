@@ -1,0 +1,1833 @@
+
+use serde_json::{json, Value};
+use std::collections::HashMap;
+use std::io::{BufRead, BufReader, Read, Write};
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::sync::Mutex;
+use std::time::Duration;
+
+struct Options {
+    dotnet: String,
+    compiler: String,
+    backend: String,
+}
+
+enum Launch {
+    Serve(Options),
+    Probe(Options, PathBuf),
+    FormatProbe(Options, PathBuf),
+}
+
+struct Doc {
+    path: PathBuf,
+    text: String,
+}
+
+fn main() {
+    let launch = match Launch::from_args() {
+        Ok(launch) => launch,
+        Err(error) => {
+            eprintln!("spiral-zed: {error}");
+            std::process::exit(2);
+        }
+    };
+    match launch {
+        Launch::Serve(options) => serve(options),
+        Launch::Probe(options, path) => std::process::exit(probe(&options, &path)),
+        Launch::FormatProbe(options, path) => std::process::exit(format_probe(&options, &path)),
+    }
+}
+
+fn serve(options: Options) {
+    eprintln!(
+        "spiral-zed: ready\n  dotnet: {}\n  compiler: {}\n  backend: {}",
+        options.dotnet, options.compiler, options.backend
+    );
+    let mut server = Server {
+        options,
+        docs: HashMap::new(),
+        notes: HashMap::new(),
+        stdout: Mutex::new(std::io::stdout()),
+    };
+    server.log(3, "spiral-zed is the language server. Compiler output is written here.");
+    let stdin = std::io::stdin();
+    let mut reader = BufReader::new(stdin.lock());
+    loop {
+        let Some(message) = read_message(&mut reader) else {
+            break;
+        };
+        if server.handle(message) {
+            break;
+        }
+    }
+}
+
+fn usage() -> &'static str {
+    "usage: spiral-zed --dotnet DOTNET --compiler DLL [--backend Rust] [--probe FILE.spi | --format FILE.spi]"
+}
+
+impl Launch {
+    fn from_args() -> Result<Self, String> {
+        let mut args = std::env::args().skip(1);
+        let mut dotnet = None;
+        let mut compiler = None;
+        let mut backend = "Rust".to_string();
+        let mut probe = None;
+        let mut format = None;
+        while let Some(arg) = args.next() {
+            match arg.as_str() {
+                "--dotnet" => dotnet = args.next(),
+                "--compiler" => compiler = args.next(),
+                "--backend" => {
+                    backend = args.next().unwrap_or_else(|| "Rust".to_string());
+                }
+                "--probe" => probe = Some(PathBuf::from(args.next().ok_or("--probe needs a .spi path")?)),
+                "--format" => format = Some(PathBuf::from(args.next().ok_or("--format needs a .spi path")?)),
+                "--help" | "-h" => return Err(usage().to_string()),
+                other => return Err(format!("unknown argument {other}\n{}", usage())),
+            }
+        }
+        let options = Options {
+            dotnet: dotnet.ok_or_else(|| format!("--dotnet is required\n{}", usage()))?,
+            compiler: compiler.ok_or_else(|| format!("--compiler is required\n{}", usage()))?,
+            backend,
+        };
+        Ok(match (probe, format) {
+            (Some(path), _) => Launch::Probe(options, path),
+            (None, Some(path)) => Launch::FormatProbe(options, path),
+            (None, None) => Launch::Serve(options),
+        })
+    }
+}
+
+fn probe(options: &Options, path: &Path) -> i32 {
+    eprintln!(
+        "spiral-zed: probe\n  dotnet: {}\n  compiler: {}\n  backend: {}\n  file: {}",
+        options.dotnet,
+        options.compiler,
+        options.backend,
+        path.display()
+    );
+    if !path.is_file() {
+        eprintln!("spiral-zed: missing {}", path.display());
+        return 2;
+    }
+    let started = std::time::Instant::now();
+    let output = run(
+        options,
+        &[
+            &options.compiler,
+            "--check",
+            &path.to_string_lossy(),
+        ],
+        Duration::from_secs(90),
+    );
+    let diagnostics = diagnostics_from(&output.stderr, &output.stdout, output.status);
+    eprintln!(
+        "check exit {} in {}ms, {} diagnostic(s)",
+        output.status,
+        started.elapsed().as_millis(),
+        diagnostics.len()
+    );
+    if !output.stdout.trim().is_empty() {
+        eprintln!("{}", output.stdout.trim());
+    }
+    for diagnostic in &diagnostics {
+        eprintln!("{}", format_diagnostic(diagnostic));
+    }
+    if output.status == 0 { 0 } else { 1 }
+}
+
+fn format_diagnostic(diagnostic: &Value) -> String {
+    let line = diagnostic.pointer("/range/start/line").and_then(Value::as_u64).unwrap_or(0);
+    let character = diagnostic.pointer("/range/start/character").and_then(Value::as_u64).unwrap_or(0);
+    let message = diagnostic.get("message").and_then(Value::as_str).unwrap_or("");
+    format!("diagnostic {line}:{character} {message}")
+}
+
+fn toast_diagnostic(diagnostic: &Value) -> String {
+    toast_line(&format_diagnostic(diagnostic))
+}
+
+fn toast_line(text: &str) -> String {
+    text.lines().next().unwrap_or("").chars().take(180).collect()
+}
+
+fn formatted_text(options: &Options, path: &Path, text: &str) -> Result<String, String> {
+    let output = run_with_input(
+        options,
+        &[
+            &options.compiler,
+            "format",
+            "--stdin",
+            "--path",
+            &path.to_string_lossy(),
+        ],
+        Some(text),
+        Duration::from_secs(60),
+    );
+    if output.status == 0 {
+        Ok(output.stdout)
+    } else {
+        Err(format!(
+            "format exit {} for {}\n{}",
+            output.status,
+            path.display(),
+            clip(output.stderr.trim(), 2000)
+        ))
+    }
+}
+
+fn whole_document_edit(original: &str, formatted: &str) -> Option<Value> {
+    if original == formatted {
+        return None;
+    }
+    let last_line = original.matches('\n').count();
+    let last_line_units = original.rsplit('\n').next().unwrap_or("").encode_utf16().count();
+    Some(json!({
+        "range": {
+            "start": { "line": 0, "character": 0 },
+            "end": { "line": last_line, "character": last_line_units }
+        },
+        "newText": formatted
+    }))
+}
+
+fn byte_offset_of(text: &str, line: usize, units: usize) -> usize {
+    let mut offset = 0;
+    for (index, segment) in text.split('\n').enumerate() {
+        if index == line {
+            let mut counted = 0;
+            for (byte, ch) in segment.char_indices() {
+                if counted >= units {
+                    return offset + byte;
+                }
+                counted += ch.len_utf16();
+            }
+            return offset + segment.len();
+        }
+        offset += segment.len() + 1;
+    }
+    text.len()
+}
+
+fn apply_edit(text: &str, edit: &Value) -> String {
+    let offset = |end: &str| {
+        let field = |name: &str| edit.pointer(&format!("/range/{end}/{name}")).and_then(Value::as_u64).unwrap_or(0) as usize;
+        byte_offset_of(text, field("line"), field("character"))
+    };
+    let new_text = edit.get("newText").and_then(Value::as_str).unwrap_or("");
+    format!("{}{new_text}{}", &text[..offset("start")], &text[offset("end")..])
+}
+
+fn format_probe(options: &Options, path: &Path) -> i32 {
+    let text = match std::fs::read_to_string(path) {
+        Ok(text) => text,
+        Err(error) => {
+            eprintln!("spiral-zed: read {}: {error}", path.display());
+            return 2;
+        }
+    };
+    match formatted_text(options, path, &text) {
+        Ok(formatted) => {
+            let applied = match whole_document_edit(&text, &formatted) {
+                Some(edit) => apply_edit(&text, &edit),
+                None => text,
+            };
+            let mut stdout = std::io::stdout();
+            let _ = stdout.write_all(applied.as_bytes());
+            let _ = stdout.flush();
+            0
+        }
+        Err(error) => {
+            eprintln!("spiral-zed: {error}");
+            1
+        }
+    }
+}
+
+struct Server {
+    options: Options,
+    docs: HashMap<String, Doc>,
+    notes: HashMap<String, String>,
+    stdout: Mutex<std::io::Stdout>,
+}
+
+impl Server {
+    fn handle(&mut self, message: Value) -> bool {
+        let method = message.get("method").and_then(Value::as_str).unwrap_or("");
+        let id = message.get("id").cloned();
+        match method {
+            "initialize" => {
+                self.respond(
+                    id,
+                    json!({
+                        "capabilities": {
+                            "textDocumentSync": { "openClose": true, "change": 1, "save": true },
+                            "hoverProvider": true,
+                            "documentFormattingProvider": true,
+                            "documentLinkProvider": { "resolveProvider": false },
+                            "executeCommandProvider": {
+                                "commands": ["spiral.buildFile", "spiral.showStatus", "spiral.createFile", "spiral.deleteFile", "spiral.createDirectory"]
+                            },
+                            "codeActionProvider": { "codeActionKinds": ["source"] },
+                            "semanticTokensProvider": {
+                                "legend": {
+                                    "tokenTypes": ["variable", "symbol", "string", "number", "operator", "unary_operator", "comment", "keyword", "parenthesis", "type_variable", "escaped_char", "unescaped_char", "number_suffix", "escaped_var", "type"],
+                                    "tokenModifiers": []
+                                },
+                                "full": true
+                            }
+                        },
+                        "serverInfo": { "name": "spiral-zed", "version": "0.1.0" }
+                    }),
+                );
+                false
+            }
+            "initialized" => {
+                let message = format!(
+                    "Spiral ready. backend {} compiler {}",
+                    self.options.backend,
+                    Path::new(&self.options.compiler)
+                        .file_name()
+                        .and_then(|name| name.to_str())
+                        .unwrap_or(&self.options.compiler)
+                );
+                self.log(
+                    3,
+                    &format!(
+                        "spiral-zed listening. backend {} dotnet {} compiler {}",
+                        self.options.backend, self.options.dotnet, self.options.compiler
+                    ),
+                );
+                self.show(3, &message);
+                false
+            }
+            "shutdown" => {
+                self.respond(id, Value::Null);
+                false
+            }
+            "exit" => true,
+            "textDocument/didOpen" => {
+                if let Some((uri, text)) = text_of(&message, "textDocument") {
+                    self.open_doc(uri, text);
+                }
+                false
+            }
+            "textDocument/didChange" => {
+                if let Some(uri) = message
+                    .pointer("/params/textDocument/uri")
+                    .and_then(Value::as_str)
+                {
+                    if let Some(text) = message
+                        .pointer("/params/contentChanges/0/text")
+                        .and_then(Value::as_str)
+                    {
+                        if let Some(doc) = self.docs.get_mut(uri) {
+                            doc.text = text.to_string();
+                        }
+                    }
+                }
+                false
+            }
+            "textDocument/didSave" => {
+                if let Some(uri) = message
+                    .pointer("/params/textDocument/uri")
+                    .and_then(Value::as_str)
+                {
+                    let uri = uri.to_string();
+                    self.check(&uri);
+                }
+                false
+            }
+            "textDocument/hover" => {
+                let result = self.hover(&message);
+                self.respond(id, result);
+                false
+            }
+            "textDocument/semanticTokens/full" => {
+                let tokens = message
+                    .pointer("/params/textDocument/uri")
+                    .and_then(Value::as_str)
+                    .and_then(|uri| self.docs.get(uri))
+                    .map(|doc| semantic_tokens(&doc.text))
+                    .unwrap_or_default();
+                self.respond(id, json!({ "data": tokens }));
+                false
+            }
+            "textDocument/documentLink" => {
+                let links = message
+                    .pointer("/params/textDocument/uri")
+                    .and_then(Value::as_str)
+                    .and_then(|uri| self.docs.get(uri).map(|doc| (uri.to_string(), doc)))
+                    .map(|(uri, doc)| document_links(&uri, &doc.text))
+                    .unwrap_or_default();
+                self.respond(id, Value::Array(links));
+                false
+            }
+            "textDocument/formatting" => {
+                let edits = self.formatting(&message);
+                self.respond(id, edits);
+                false
+            }
+            "textDocument/codeAction" => {
+                let actions = self.code_actions(&message);
+                self.respond(id, Value::Array(actions));
+                false
+            }
+            "workspace/executeCommand" => {
+                let command = message
+                    .pointer("/params/command")
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
+                let uri = message
+                    .pointer("/params/arguments/0")
+                    .and_then(Value::as_str)
+                    .unwrap_or("")
+                    .to_string();
+                match command {
+                    "spiral.buildFile" => self.build(&uri),
+                    "spiral.showStatus" => self.show_status(),
+                    "spiral.createFile" => self.create_file(Path::new(&uri)),
+                    "spiral.deleteFile" => self.delete_file(Path::new(&uri)),
+                    "spiral.createDirectory" => self.create_directory(Path::new(&uri)),
+                    _ => self.log(1, &format!("unknown command {command}")),
+                }
+                self.respond(id, Value::Null);
+                false
+            }
+            _ => {
+                if id.is_some() {
+                    self.respond(id, Value::Null);
+                }
+                false
+            }
+        }
+    }
+
+    fn open_doc(&mut self, uri: String, text: String) {
+        let path = uri_to_path(&uri).unwrap_or_else(|| PathBuf::from(&uri));
+        let check = is_module(&path);
+        self.docs.insert(uri.clone(), Doc { path, text });
+        if check {
+            self.check(&uri);
+        } else {
+            self.log(3, "opened a project file; module check runs on .spi and .spir");
+            self.publish(&uri, Vec::new());
+        }
+    }
+
+    fn check(&mut self, uri: &str) {
+        let Some(doc) = self.docs.get(uri) else {
+            return;
+        };
+        let path = doc.path.clone();
+        if !is_module(&path) {
+            return;
+        }
+        self.log(3, &format!("check {}", path.display()));
+        let started = std::time::Instant::now();
+        let output = run(
+            &self.options,
+            &[
+                &self.options.compiler,
+                "--check",
+                &path.to_string_lossy(),
+            ],
+            Duration::from_secs(90),
+        );
+        self.note_output(uri, &output);
+        let mut diagnostics = diagnostics_from(&output.stderr, &output.stdout, output.status);
+        diagnostics.extend(warning_diagnostics(&output.stderr, &path));
+        self.log(
+            if diagnostics.is_empty() { 3 } else { 1 },
+            &format!(
+                "check finished in {}ms, {} diagnostic(s)",
+                started.elapsed().as_millis(),
+                diagnostics.len()
+            ),
+        );
+        if let Some(first) = diagnostics.first() {
+            self.show(1, &toast_diagnostic(first));
+        }
+        self.publish(uri, diagnostics);
+    }
+
+    fn build(&mut self, uri: &str) {
+        let Some(doc) = self.docs.get(uri) else {
+            self.log(1, "build requested before the file was opened");
+            return;
+        };
+        let path = doc.path.clone();
+        if !is_module(&path) {
+            self.log(2, "build file applies to .spi and .spir modules");
+            self.show(2, "Spiral build applies to .spi and .spir modules.");
+            return;
+        }
+        let mut output_path = path.clone();
+        output_path.set_extension("rs");
+        self.log(
+            3,
+            &format!(
+                "build {} --backend {} -> {}",
+                path.display(),
+                self.options.backend,
+                output_path.display()
+            ),
+        );
+        let output = run(
+            &self.options,
+            &[
+                &self.options.compiler,
+                "--backend",
+                &self.options.backend,
+                &path.to_string_lossy(),
+                &output_path.to_string_lossy(),
+            ],
+            Duration::from_secs(180),
+        );
+        self.note_output(uri, &output);
+        self.log(
+            if output.status == 0 { 3 } else { 1 },
+            &format!(
+                "build exit {}\n{}\n{}",
+                output.status,
+                clip(output.stdout.trim(), 500),
+                clip(output.stderr.trim(), 2000)
+            ),
+        );
+        let diagnostics = diagnostics_from(&output.stderr, &output.stdout, output.status);
+        if output.status == 0 {
+            self.show(3, &format!("Spiral build wrote {}", output_path.display()));
+        } else if let Some(first) = diagnostics.first() {
+            self.show(1, &toast_diagnostic(first));
+        }
+        self.publish(uri, diagnostics);
+    }
+
+    fn show_status(&self) {
+        let message = format!(
+            "Spiral backend {} compiler {}",
+            self.options.backend,
+            Path::new(&self.options.compiler)
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or(&self.options.compiler)
+        );
+        self.log(
+            3,
+            &format!(
+                "{message}\ndotnet {}\ncompiler {}",
+                self.options.dotnet, self.options.compiler
+            ),
+        );
+        self.show(3, &message);
+    }
+
+    fn hover(&self, message: &Value) -> Value {
+        let uri = message
+            .pointer("/params/textDocument/uri")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        let line = message
+            .pointer("/params/position/line")
+            .and_then(Value::as_u64)
+            .unwrap_or(0) as usize;
+        let character = message
+            .pointer("/params/position/character")
+            .and_then(Value::as_u64)
+            .unwrap_or(0) as usize;
+        let Some(doc) = self.docs.get(uri) else {
+            return Value::Null;
+        };
+        let source_line = doc.text.lines().nth(line).unwrap_or("");
+        let (start, word) = word_at(source_line, character);
+        let kind = token_kind(&word);
+        let mut body = format!("{word}\n{kind}\nbackend {}", self.options.backend);
+        if let Some(note) = self.notes.get(uri) {
+            if !note.is_empty() {
+                body.push_str("\n\n");
+                body.push_str(note);
+            }
+        }
+        json!({
+            "contents": { "kind": "plaintext", "value": body },
+            "range": {
+                "start": { "line": line, "character": start },
+                "end": { "line": line, "character": start + word.chars().count() }
+            }
+        })
+    }
+
+    fn formatting(&self, message: &Value) -> Value {
+        let uri = message
+            .pointer("/params/textDocument/uri")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        let Some(doc) = self.docs.get(uri) else {
+            return Value::Null;
+        };
+        if !is_module(&doc.path) {
+            return Value::Null;
+        }
+        match formatted_text(&self.options, &doc.path, &doc.text) {
+            Ok(formatted) => Value::Array(whole_document_edit(&doc.text, &formatted).into_iter().collect()),
+            Err(error) => {
+                self.log(1, &error);
+                self.show(1, &toast_line(&error));
+                Value::Null
+            }
+        }
+    }
+
+    fn code_actions(&self, message: &Value) -> Vec<Value> {
+        let uri = message
+            .pointer("/params/textDocument/uri")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        let Some(doc) = self.docs.get(uri) else {
+            return Vec::new();
+        };
+        let mut actions = vec![json!({
+            "title": "Spiral: Show compiler",
+            "kind": "source",
+            "command": {
+                "title": "Spiral: Show compiler",
+                "command": "spiral.showStatus",
+                "arguments": [uri]
+            }
+        })];
+        if is_module(&doc.path) {
+            actions.insert(0, json!({
+                "title": "Spiral: Build file",
+                "kind": "source",
+                "command": {
+                    "title": "Spiral: Build file",
+                    "command": "spiral.buildFile",
+                    "arguments": [uri]
+                }
+            }));
+        }
+        if uri.ends_with("package.spiproj") {
+            actions.extend(project_actions(uri, &doc.text, &doc.path));
+        }
+        actions
+    }
+
+    fn create_file(&self, path: &Path) {
+        match create_module_file(path) {
+            Ok(()) => self.show(3, &format!("Created {}", path.display())),
+            Err(error) => {
+                self.log(1, &error);
+                self.show(1, &error);
+            }
+        }
+    }
+
+    fn delete_file(&self, path: &Path) {
+        match std::fs::remove_file(path) {
+            Ok(()) => self.show(3, &format!("Deleted {}", path.display())),
+            Err(error) => {
+                let error = format!("Delete file failed: {error}");
+                self.log(1, &error);
+                self.show(1, &error);
+            }
+        }
+    }
+
+    fn create_directory(&self, path: &Path) {
+        match std::fs::create_dir_all(path) {
+            Ok(()) => self.show(3, &format!("Created {}", path.display())),
+            Err(error) => {
+                let error = format!("Create directory failed: {error}");
+                self.log(1, &error);
+                self.show(1, &error);
+            }
+        }
+    }
+
+    fn note_output(&mut self, uri: &str, output: &RunOutput) {
+        let mut text = String::new();
+        if !output.stdout.trim().is_empty() {
+            text.push_str(output.stdout.trim());
+        }
+        if !output.stderr.trim().is_empty() {
+            if !text.is_empty() {
+                text.push('\n');
+            }
+            text.push_str(output.stderr.trim());
+        }
+        self.notes.insert(uri.to_string(), clip(&text, 8000));
+    }
+
+    fn publish(&self, uri: &str, diagnostics: Vec<Value>) {
+        self.notify(
+            "textDocument/publishDiagnostics",
+            json!({ "uri": uri, "diagnostics": diagnostics }),
+        );
+    }
+
+    fn log(&self, typ: u8, message: &str) {
+        eprintln!("spiral-zed: {message}");
+        self.notify(
+            "window/logMessage",
+            json!({ "type": typ, "message": message }),
+        );
+    }
+
+    fn show(&self, typ: u8, message: &str) {
+        self.notify(
+            "window/showMessage",
+            json!({ "type": typ, "message": message }),
+        );
+    }
+
+    fn respond(&self, id: Option<Value>, result: Value) {
+        let Some(id) = id else {
+            return;
+        };
+        self.send(&json!({ "jsonrpc": "2.0", "id": id, "result": result }));
+    }
+
+    fn notify(&self, method: &str, params: Value) {
+        self.send(&json!({ "jsonrpc": "2.0", "method": method, "params": params }));
+    }
+
+    fn send(&self, message: &Value) {
+        let body = message.to_string();
+        let mut stdout = self.stdout.lock().expect("stdout");
+        let _ = write!(stdout, "Content-Length: {}\r\n\r\n{body}", body.len());
+        let _ = stdout.flush();
+    }
+}
+
+struct RunOutput {
+    status: i32,
+    stdout: String,
+    stderr: String,
+}
+
+fn run(options: &Options, args: &[&str], timeout: Duration) -> RunOutput {
+    run_with_input(options, args, None, timeout)
+}
+
+fn run_with_input(options: &Options, args: &[&str], input: Option<&str>, timeout: Duration) -> RunOutput {
+    let mut command = Command::new(&options.dotnet);
+    command
+        .args(args)
+        .env("DOTNET_NOLOGO", "1")
+        .env("DOTNET_CLI_TELEMETRY_OPTOUT", "1")
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    if input.is_some() {
+        command.stdin(std::process::Stdio::piped());
+    }
+    if let Some(root) = Path::new(&options.dotnet).parent() {
+        command.env("DOTNET_ROOT", root);
+    }
+    let mut child = match command.spawn() {
+        Ok(child) => child,
+        Err(error) => {
+            return RunOutput {
+                status: 1,
+                stdout: String::new(),
+                stderr: format!("failed to start dotnet: {error}"),
+            };
+        }
+    };
+    let stdin_thread = match (child.stdin.take(), input) {
+        (Some(mut pipe), Some(text)) => {
+            let bytes = text.as_bytes().to_vec();
+            Some(std::thread::spawn(move || {
+                let _ = pipe.write_all(&bytes);
+            }))
+        }
+        _ => None,
+    };
+    let stdout_pipe = child.stdout.take();
+    let stderr_pipe = child.stderr.take();
+    let stdout_thread = std::thread::spawn(move || read_pipe(stdout_pipe));
+    let stderr_thread = std::thread::spawn(move || read_pipe(stderr_pipe));
+    let started = std::time::Instant::now();
+    let status = loop {
+        if let Some(status) = child.try_wait().ok().flatten() {
+            break status.code().unwrap_or(1);
+        }
+        if started.elapsed() > timeout {
+            let _ = child.kill();
+            let _ = child.wait();
+            break 3;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    };
+    if let Some(thread) = stdin_thread {
+        let _ = thread.join();
+    }
+    let stdout = stdout_thread.join().unwrap_or_default();
+    let mut stderr = stderr_thread.join().unwrap_or_default();
+    if status == 3 {
+        stderr.push_str(&format!("\ncompiler timed out after {}s", timeout.as_secs()));
+    }
+    RunOutput {
+        status,
+        stdout,
+        stderr,
+    }
+}
+
+fn read_pipe(pipe: Option<impl Read>) -> String {
+    let mut text = String::new();
+    if let Some(mut pipe) = pipe {
+        let _ = pipe.read_to_string(&mut text);
+    }
+    text
+}
+
+fn diagnostics_from(stderr: &str, stdout: &str, status: i32) -> Vec<Value> {
+    if status == 0 {
+        return Vec::new();
+    }
+    let text = if stderr.trim().is_empty() {
+        stdout.trim()
+    } else {
+        stderr.trim()
+    };
+    if text.is_empty() {
+        return vec![diagnostic(0, 0, 1, "compiler failed")];
+    }
+    let (line, character) = trace_location(text).unwrap_or((0, 0));
+    vec![diagnostic(line, character, character + 1, &clip(text, 4000))]
+}
+
+fn trace_location(text: &str) -> Option<(usize, usize)> {
+    const MARKER: &str = "Error trace on line: ";
+    let rest = text.get(text.find(MARKER)? + MARKER.len()..)?;
+    let (line, rest) = leading_usize(rest)?;
+    let rest = rest.trim_start().strip_prefix(", column:")?;
+    let (column, _) = leading_usize(rest.trim_start())?;
+    Some((line.saturating_sub(1), column.saturating_sub(1)))
+}
+
+fn leading_usize(text: &str) -> Option<(usize, &str)> {
+    let digits = text.chars().take_while(|ch| ch.is_ascii_digit()).count();
+    if digits == 0 {
+        return None;
+    }
+    let (head, tail) = text.split_at(digits);
+    Some((head.parse().ok()?, tail))
+}
+
+fn clip(text: &str, max: usize) -> String {
+    if text.len() <= max {
+        return text.to_string();
+    }
+    let mut end = max;
+    while !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    format!("{}…", &text[..end])
+}
+
+fn is_module(path: &Path) -> bool {
+    matches!(
+        path.extension().and_then(|ext| ext.to_str()),
+        Some("spi" | "spir")
+    )
+}
+
+const SEVERITY_ERROR: u8 = 1;
+const SEVERITY_WARNING: u8 = 2;
+
+fn warning_location(rest: &str) -> Option<(&str, usize, usize, &str)> {
+    for (index, _) in rest.match_indices(':') {
+        let tail = &rest[index + 1..];
+        let Some((line, after_line)) = leading_usize(tail) else { continue };
+        let Some(after_colon) = after_line.strip_prefix(':') else { continue };
+        let Some((column, after_column)) = leading_usize(after_colon) else { continue };
+        let Some(message) = after_column.strip_prefix(": ") else { continue };
+        return Some((&rest[..index], line, column, message));
+    }
+    None
+}
+
+fn same_file(reported: &str, path: &Path) -> bool {
+    let normalize = |text: &str| text.replace('\\', "/").to_ascii_lowercase();
+    normalize(reported) == normalize(&path.to_string_lossy())
+}
+
+fn warning_diagnostics(stderr: &str, path: &Path) -> Vec<Value> {
+    stderr
+        .lines()
+        .filter_map(|line| line.trim_start().strip_prefix("warning: "))
+        .filter_map(warning_location)
+        .filter(|(reported, ..)| same_file(reported, path))
+        .map(|(_, line, column, message)| {
+            let character = column.saturating_sub(1);
+            diagnostic_with(SEVERITY_WARNING, line.saturating_sub(1), character, character + 1, message)
+        })
+        .collect()
+}
+
+fn diagnostic(line: usize, start: usize, end: usize, message: &str) -> Value {
+    diagnostic_with(SEVERITY_ERROR, line, start, end, message)
+}
+
+fn diagnostic_with(severity: u8, line: usize, start: usize, end: usize, message: &str) -> Value {
+    json!({
+        "range": {
+            "start": { "line": line, "character": start },
+            "end": { "line": line, "character": end }
+        },
+        "severity": severity,
+        "source": "spiral",
+        "message": message
+    })
+}
+
+fn document_links(uri: &str, text: &str) -> Vec<Value> {
+    if !uri.ends_with("package.spiproj") {
+        return Vec::new();
+    }
+    let Some(dir) = uri_to_path(uri).and_then(|path| path.parent().map(Path::to_path_buf)) else {
+        return Vec::new();
+    };
+    let mut module_dir = dir.clone();
+    let mut in_modules = false;
+    let mut links = Vec::new();
+    for (line_index, line) in text.lines().enumerate() {
+        let trimmed = line.trim();
+        if let Some(rest) = trimmed.strip_prefix("moduleDir:") {
+            module_dir = dir.join(rest.trim());
+            in_modules = false;
+            continue;
+        }
+        if trimmed == "modules:" {
+            in_modules = true;
+            continue;
+        }
+        if in_modules && trimmed.ends_with(':') {
+            in_modules = false;
+            continue;
+        }
+        if in_modules && !trimmed.is_empty() && !trimmed.starts_with('#') {
+            let name = trimmed;
+            let column = line.find(name).unwrap_or(0);
+            let target = module_dir.join(format!("{name}.spi"));
+            links.push(json!({
+                "range": {
+                    "start": { "line": line_index, "character": column },
+                    "end": { "line": line_index, "character": column + name.chars().count() }
+                },
+                "target": path_to_uri(&target)
+            }));
+        }
+    }
+    links
+}
+
+fn project_actions(uri: &str, text: &str, project: &Path) -> Vec<Value> {
+    let Some(dir) = project.parent() else {
+        return Vec::new();
+    };
+    let mut module_dir = dir.to_path_buf();
+    let mut in_modules = false;
+    let mut actions = Vec::new();
+    for (line_index, line) in text.lines().enumerate() {
+        let trimmed = line.trim();
+        if let Some(rest) = trimmed.strip_prefix("moduleDir:") {
+            module_dir = dir.join(rest.trim());
+            if !module_dir.is_dir() {
+                actions.push(filesystem_action(uri, line_index, line, "Create directory.", "spiral.createDirectory", &module_dir, false));
+            }
+            in_modules = false;
+            continue;
+        }
+        if trimmed == "modules:" {
+            in_modules = true;
+            continue;
+        }
+        if in_modules && trimmed.ends_with(':') {
+            in_modules = false;
+            continue;
+        }
+        if in_modules && !trimmed.is_empty() && !trimmed.starts_with('#') {
+            let target = module_dir.join(format!("{trimmed}.spi"));
+            if target.is_file() {
+                actions.push(filesystem_action(uri, line_index, line, "Delete file.", "spiral.deleteFile", &target, true));
+            } else {
+                actions.push(filesystem_action(uri, line_index, line, "Create file.", "spiral.createFile", &target, false));
+            }
+        }
+    }
+    actions
+}
+
+fn filesystem_action(uri: &str, line_index: usize, line: &str, title: &str, command: &str, path: &Path, remove_line: bool) -> Value {
+    let mut action = json!({
+        "title": title,
+        "kind": "refactor",
+        "command": {
+            "title": title,
+            "command": command,
+            "arguments": [path.to_string_lossy()]
+        }
+    });
+    if remove_line {
+        let end_line = line_index + if line.ends_with('\n') { 0 } else { 1 };
+        action["edit"] = json!({
+            "changes": {
+                uri: [{
+                    "range": {
+                        "start": { "line": line_index, "character": 0 },
+                        "end": { "line": end_line, "character": 0 }
+                    },
+                    "newText": ""
+                }]
+            }
+        });
+    }
+    action
+}
+
+fn create_module_file(path: &Path) -> Result<(), String> {
+    if path.exists() {
+        return Err("File already exists.".to_string());
+    }
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    }
+    std::fs::File::create(path).map_err(|error| error.to_string())?;
+    Ok(())
+}
+
+fn word_at(line: &str, character: usize) -> (usize, String) {
+    let chars: Vec<char> = line.chars().collect();
+    if chars.is_empty() {
+        return (0, String::new());
+    }
+    let mut index = character.min(chars.len().saturating_sub(1));
+    if !is_word(chars[index]) {
+        if index > 0 && is_word(chars[index - 1]) {
+            index -= 1;
+        } else {
+            return (index, chars[index].to_string());
+        }
+    }
+    let mut start = index;
+    while start > 0 && is_word(chars[start - 1]) {
+        start -= 1;
+    }
+    let mut end = index + 1;
+    while end < chars.len() && is_word(chars[end]) {
+        end += 1;
+    }
+    (start, chars[start..end].iter().collect())
+}
+
+fn is_word(ch: char) -> bool {
+    ch.is_ascii_alphanumeric() || ch == '_' || ch == '\''
+}
+
+fn token_kind(word: &str) -> &'static str {
+    const KEYWORDS: &[&str] = &[
+        "inl", "inm", "inb", "forall", "union", "nominal", "real", "type", "open", "match",
+        "typecase", "function", "with", "without", "as", "when", "let", "rec", "if", "then",
+        "elif", "else", "join", "join_backend", "prototype", "instance", "in", "and", "fun",
+        "exists", "_",
+    ];
+    if KEYWORDS.contains(&word) {
+        "keyword"
+    } else if word.starts_with(|ch: char| ch.is_ascii_uppercase()) {
+        "type"
+    } else if word.chars().all(|ch| ch.is_ascii_digit()) {
+        "number"
+    } else {
+        "variable"
+    }
+}
+
+fn semantic_tokens(text: &str) -> Vec<u32> {
+    let mut data = Vec::new();
+    let mut prev_line = 0u32;
+    let mut prev_char = 0u32;
+    for token in scan_tokens(text) {
+        let line = token.line;
+        let character = token.character;
+        let delta_line = line - prev_line;
+        let delta_char = if delta_line == 0 {
+            character - prev_char
+        } else {
+            character
+        };
+        data.extend([delta_line, delta_char, token.length, token.kind, 0]);
+        prev_line = line;
+        prev_char = character;
+    }
+    data
+}
+
+const KIND_VARIABLE: u32 = 0;
+const KIND_SYMBOL: u32 = 1;
+const KIND_STRING: u32 = 2;
+const KIND_NUMBER: u32 = 3;
+const KIND_OPERATOR: u32 = 4;
+const KIND_UNARY: u32 = 5;
+const KIND_COMMENT: u32 = 6;
+const KIND_KEYWORD: u32 = 7;
+const KIND_PAREN: u32 = 8;
+const KIND_TYPE_VARIABLE: u32 = 9;
+const KIND_ESCAPED_CHAR: u32 = 10;
+const KIND_UNESCAPED_CHAR: u32 = 11;
+const KIND_NUMBER_SUFFIX: u32 = 12;
+const KIND_ESCAPED_VAR: u32 = 13;
+const KIND_TYPE: u32 = 14;
+
+struct ScanToken {
+    line: u32,
+    character: u32,
+    length: u32,
+    kind: u32,
+}
+
+fn scan_tokens(text: &str) -> Vec<ScanToken> {
+    scan_chars(&text.chars().collect::<Vec<_>>())
+}
+
+fn scan_chars(chars: &[char]) -> Vec<ScanToken> {
+    let mut tokens = Vec::new();
+    let mut line = 0u32;
+    let mut character = 0u32;
+    let mut index = 0;
+    while index < chars.len() {
+        let ch = chars[index];
+        if ch == '\n' {
+            line += 1;
+            character = 0;
+            index += 1;
+            continue;
+        }
+        if let Some(next) = line_comment_end(&chars, index) {
+            push_token(&mut tokens, line, character, (next - index) as u32, KIND_COMMENT);
+            character += (next - index) as u32;
+            index = next;
+            continue;
+        }
+        if ch == '(' && chars.get(index + 1) == Some(&'*') && chars.get(index + 2) == Some(&' ') {
+            index = take_block_comment(&chars, index, &mut tokens, &mut line, &mut character);
+            continue;
+        }
+        if ch == '$' && matches!(chars.get(index + 1), Some('"' | '\'')) {
+            index = take_macro(&chars, index, &mut tokens, line, &mut character);
+            continue;
+        }
+        if ch == '@' && chars.get(index + 1) == Some(&'"') {
+            index = take_raw(&chars, index, &mut tokens, line, &mut character);
+            continue;
+        }
+        if ch == '"' && chars.get(index + 1) == Some(&'"') && chars.get(index + 2) == Some(&'"') {
+            index = take_triple(&chars, index, &mut tokens, &mut line, &mut character);
+            continue;
+        }
+        if ch == '"' {
+            index = take_quoted(&chars, index, &mut tokens, line, &mut character);
+            continue;
+        }
+        if ch == '\'' {
+            if let Some(len) = char_literal_len(&chars, index) {
+                push_token(&mut tokens, line, character, len as u32, KIND_STRING);
+                index += len;
+                character += len as u32;
+                continue;
+            }
+        }
+        if ch == '~' && chars.get(index + 1).is_some_and(|next| next.is_ascii_alphabetic() || *next == '_') {
+            push_token(&mut tokens, line, character, 1, KIND_ESCAPED_VAR);
+            index += 1;
+            character += 1;
+            continue;
+        }
+        if matches!(ch, '(' | ')' | '[' | ']' | '{' | '}') {
+            push_token(&mut tokens, line, character, 1, KIND_PAREN);
+            index += 1;
+            character += 1;
+            continue;
+        }
+        if ch == '.' && chars.get(index + 1) == Some(&'(') {
+            if let Some(next) = operator_symbol_end(&chars, index) {
+                push_token(&mut tokens, line, character, (next - index) as u32, KIND_SYMBOL);
+                character += (next - index) as u32;
+                index = next;
+                continue;
+            }
+        }
+        if ch == '-' && chars.get(index + 1).is_some_and(|next| next.is_ascii_digit()) && prefix_separator(&chars, index) {
+            index = take_number(&chars, index, &mut tokens, line, &mut character);
+            continue;
+        }
+        if ch == '.' && chars.get(index + 1).is_some_and(|next| next.is_ascii_alphabetic() || *next == '_') {
+            let start = index;
+            index += 2;
+            while index < chars.len() && (chars[index].is_ascii_alphanumeric() || chars[index] == '_' || chars[index] == '\'') {
+                index += 1;
+            }
+            push_token(&mut tokens, line, character, (index - start) as u32, KIND_SYMBOL);
+            character += (index - start) as u32;
+            continue;
+        }
+        if is_operator_char(ch) {
+            let start = index;
+            index += 1;
+            while index < chars.len() && is_operator_char(chars[index]) {
+                index += 1;
+            }
+            let kind = if unary_operator(&chars, start, index) { KIND_UNARY } else { KIND_OPERATOR };
+            push_token(&mut tokens, line, character, (index - start) as u32, kind);
+            character += (index - start) as u32;
+            continue;
+        }
+        if ch.is_ascii_alphabetic() || ch == '_' {
+            let start = index;
+            index += 1;
+            while index < chars.len() && (chars[index].is_ascii_alphanumeric() || chars[index] == '_' || chars[index] == '\'') {
+                index += 1;
+            }
+            let word: String = chars[start..index].iter().collect();
+            let kind = if word == "true" || word == "false" {
+                KIND_NUMBER
+            } else {
+                match token_kind(&word) {
+                    "keyword" => KIND_KEYWORD,
+                    "type" => KIND_TYPE,
+                    "number" => KIND_NUMBER,
+                    _ => KIND_VARIABLE,
+                }
+            };
+            push_token(&mut tokens, line, character, (index - start) as u32, kind);
+            character += (index - start) as u32;
+            continue;
+        }
+        if ch.is_ascii_digit() {
+            index = take_number(&chars, index, &mut tokens, line, &mut character);
+            continue;
+        }
+        index += 1;
+        character += 1;
+    }
+    tokens
+}
+
+fn line_comment_end(chars: &[char], index: usize) -> Option<usize> {
+    if chars.get(index) != Some(&'/') || chars.get(index + 1) != Some(&'/') {
+        return None;
+    }
+    let mut cursor = index + 2;
+    loop {
+        if chars.get(cursor) == Some(&'/') {
+            cursor += 1;
+            continue;
+        }
+        if matches!(chars.get(cursor), Some('!' | '-' | '>')) && chars.get(cursor + 1) == Some(&' ') {
+            cursor += 1;
+            continue;
+        }
+        break;
+    }
+    if chars.get(cursor) != Some(&' ') {
+        return None;
+    }
+    while cursor < chars.len() && chars[cursor] != '\n' {
+        cursor += 1;
+    }
+    Some(cursor)
+}
+
+fn take_block_comment(chars: &[char], start: usize, tokens: &mut Vec<ScanToken>, line: &mut u32, character: &mut u32) -> usize {
+    let mut index = start + 2;
+    let mut depth = 1;
+    let mut chunk = start;
+    while index < chars.len() && depth > 0 {
+        if chars[index] == '\n' {
+            push_token(tokens, *line, *character, (index - chunk) as u32, KIND_COMMENT);
+            *line += 1;
+            *character = 0;
+            index += 1;
+            chunk = index;
+            continue;
+        }
+        if chars[index] == '(' && chars.get(index + 1) == Some(&'*') {
+            depth += 1;
+            index += 2;
+            continue;
+        }
+        if chars[index] == '*' && chars.get(index + 1) == Some(&')') {
+            depth -= 1;
+            index += 2;
+            continue;
+        }
+        index += 1;
+    }
+    let len = (index - chunk) as u32;
+    push_token(tokens, *line, *character, len, KIND_COMMENT);
+    *character += len;
+    index
+}
+
+fn operator_symbol_end(chars: &[char], index: usize) -> Option<usize> {
+    let mut cursor = index + 2;
+    let body = cursor;
+    while cursor < chars.len() && is_operator_char(chars[cursor]) {
+        cursor += 1;
+    }
+    if cursor > body && chars.get(cursor) == Some(&')') {
+        Some(cursor + 1)
+    } else {
+        None
+    }
+}
+
+fn prefix_separator(chars: &[char], index: usize) -> bool {
+    index == 0 || matches!(chars[index - 1], ' ' | '\n' | '(' | '[' | '{')
+}
+
+fn take_number(chars: &[char], start: usize, tokens: &mut Vec<ScanToken>, line: u32, character: &mut u32) -> usize {
+    let mut index = start + 1;
+    while index < chars.len() && (chars[index].is_ascii_digit() || chars[index] == '_') {
+        index += 1;
+    }
+    if chars.get(index) == Some(&'.') && chars.get(index + 1).is_some_and(|next| next.is_ascii_digit()) {
+        index += 1;
+        while index < chars.len() && (chars[index].is_ascii_digit() || chars[index] == '_') {
+            index += 1;
+        }
+    }
+    push_token(tokens, line, *character, (index - start) as u32, KIND_NUMBER);
+    *character += (index - start) as u32;
+    if let Some(suffix) = number_suffix_len(chars, index) {
+        push_token(tokens, line, *character, suffix as u32, KIND_NUMBER_SUFFIX);
+        index += suffix;
+        *character += suffix as u32;
+    }
+    index
+}
+
+fn is_operator_char(ch: char) -> bool {
+    ('!'..='~').contains(&ch)
+        && !ch.is_ascii_alphanumeric()
+        && ch != '_'
+        && ch != '"'
+        && ch != '\''
+        && !matches!(ch, '(' | ')' | '[' | ']' | '{' | '}')
+}
+
+fn unary_operator(chars: &[char], start: usize, end: usize) -> bool {
+    let before = if start == 0 { '\n' } else { chars[start - 1] };
+    let after = chars.get(end).copied().unwrap_or('\n');
+    let prefix = before == ' ' || before == '\n' || before == '\t' || matches!(before, '(' | '[' | '{');
+    let postfix = after == ' ' || after == '\n' || after == '\t' || matches!(after, ')' | ']' | '}');
+    prefix && !postfix
+}
+
+fn number_suffix_len(chars: &[char], index: usize) -> Option<usize> {
+    const SUFFIXES: &[&str] = &["i64", "i32", "i16", "i8", "u64", "u32", "u16", "u8", "f64", "f32"];
+    let rest: String = chars[index..].iter().take(3).collect();
+    SUFFIXES.iter().find_map(|suffix| {
+        if !rest.starts_with(suffix) {
+            return None;
+        }
+        let after = chars.get(index + suffix.len()).copied().unwrap_or(' ');
+        if after.is_ascii_alphanumeric() || after == '_' {
+            None
+        } else {
+            Some(suffix.len())
+        }
+    })
+}
+
+fn char_literal_len(chars: &[char], index: usize) -> Option<usize> {
+    let body = *chars.get(index + 1)?;
+    if body == '\\' {
+        let _escaped = chars.get(index + 2)?;
+        if chars.get(index + 3) == Some(&'\'') {
+            return Some(4);
+        }
+        return None;
+    }
+    if body == '\'' || body == '\n' {
+        return None;
+    }
+    if chars.get(index + 2) == Some(&'\'') {
+        Some(3)
+    } else {
+        None
+    }
+}
+
+fn push_token(tokens: &mut Vec<ScanToken>, line: u32, character: u32, length: u32, kind: u32) {
+    if length == 0 {
+        return;
+    }
+    tokens.push(ScanToken {
+        line,
+        character,
+        length,
+        kind,
+    });
+}
+
+fn emit_text(tokens: &mut Vec<ScanToken>, line: u32, character: &mut u32, from: usize, to: usize) {
+    let len = to.saturating_sub(from) as u32;
+    if len == 0 {
+        return;
+    }
+    push_token(tokens, line, *character, len, KIND_STRING);
+    *character += len;
+}
+
+fn take_quoted(chars: &[char], start: usize, tokens: &mut Vec<ScanToken>, line: u32, character: &mut u32) -> usize {
+    push_token(tokens, line, *character, 1, KIND_STRING);
+    *character += 1;
+    let mut index = start + 1;
+    let mut text_at = index;
+    while index < chars.len() && chars[index] != '\n' {
+        if chars[index] == '\\' && index + 1 < chars.len() && chars[index + 1] != '\n' {
+            emit_text(tokens, line, character, text_at, index);
+            let kind = if matches!(chars[index + 1], 'n' | 'r' | 't' | 'b') {
+                KIND_ESCAPED_CHAR
+            } else {
+                KIND_UNESCAPED_CHAR
+            };
+            push_token(tokens, line, *character, 2, kind);
+            *character += 2;
+            index += 2;
+            text_at = index;
+            continue;
+        }
+        if chars[index] == '"' {
+            emit_text(tokens, line, character, text_at, index);
+            push_token(tokens, line, *character, 1, KIND_STRING);
+            *character += 1;
+            return index + 1;
+        }
+        index += 1;
+    }
+    emit_text(tokens, line, character, text_at, index);
+    index
+}
+
+fn take_raw(chars: &[char], start: usize, tokens: &mut Vec<ScanToken>, line: u32, character: &mut u32) -> usize {
+    let mut index = start + 2;
+    while index < chars.len() && chars[index] != '\n' {
+        if chars[index] == '"' {
+            index += 1;
+            break;
+        }
+        index += 1;
+    }
+    let len = (index - start) as u32;
+    push_token(tokens, line, *character, len, KIND_STRING);
+    *character += len;
+    index
+}
+
+fn take_macro(chars: &[char], start: usize, tokens: &mut Vec<ScanToken>, line: u32, character: &mut u32) -> usize {
+    let closing = chars[start + 1];
+    push_token(tokens, line, *character, 2, KIND_STRING);
+    *character += 2;
+    let mut index = start + 2;
+    let mut text_at = index;
+    while index < chars.len() && chars[index] != '\n' {
+        let ch = chars[index];
+        if ch == closing {
+            emit_text(tokens, line, character, text_at, index);
+            push_token(tokens, line, *character, 1, KIND_STRING);
+            *character += 1;
+            return index + 1;
+        }
+        if ch == '\\' && index + 1 < chars.len() && chars[index + 1] != '\n' {
+            emit_text(tokens, line, character, text_at, index);
+            let kind = match chars[index + 1] {
+                'n' | 'r' | 't' | 'b' => KIND_ESCAPED_CHAR,
+                'v' => KIND_ESCAPED_VAR,
+                _ => KIND_UNESCAPED_CHAR,
+            };
+            push_token(tokens, line, *character, 2, kind);
+            *character += 2;
+            index += 2;
+            text_at = index;
+            continue;
+        }
+        if matches!(ch, '`' | '!' | '@' | '#') {
+            emit_text(tokens, line, character, text_at, index);
+            index = take_splice(chars, index, tokens, line, character);
+            text_at = index;
+            continue;
+        }
+        index += 1;
+    }
+    emit_text(tokens, line, character, text_at, index);
+    index
+}
+
+fn take_splice(chars: &[char], start: usize, tokens: &mut Vec<ScanToken>, line: u32, character: &mut u32) -> usize {
+    let sigil = chars[start];
+    if chars.get(start + 1) == Some(&'(') {
+        push_token(tokens, line, *character, 2, KIND_PAREN);
+        *character += 2;
+        let body_start = start + 2;
+        let mut depth = 1;
+        let mut index = body_start;
+        while index < chars.len() && chars[index] != '\n' {
+            if chars[index] == '(' {
+                depth += 1;
+                index += 1;
+            } else if chars[index] == ')' {
+                depth -= 1;
+                if depth == 0 {
+                    break;
+                }
+                index += 1;
+            } else {
+                index += 1;
+            }
+        }
+        if depth == 0 && chars.get(index) == Some(&')') {
+            let base = *character;
+            for mut token in scan_chars(&chars[body_start..index]) {
+                token.character += base;
+                token.line += line;
+                tokens.push(token);
+            }
+            *character = base + (index - body_start) as u32;
+            push_token(tokens, line, *character, 1, KIND_PAREN);
+            *character += 1;
+            return index + 1;
+        }
+        return body_start;
+    }
+    if chars.get(start + 1).is_some_and(|next| is_var_start(*next)) {
+        let mut end = start + 2;
+        while end < chars.len() && is_var_char(chars[end]) {
+            end += 1;
+        }
+        let kind = if sigil == '`' || sigil == '@' {
+            KIND_TYPE_VARIABLE
+        } else {
+            KIND_VARIABLE
+        };
+        let len = (end - start) as u32;
+        push_token(tokens, line, *character, len, kind);
+        *character += len;
+        return end;
+    }
+    push_token(tokens, line, *character, 1, KIND_UNESCAPED_CHAR);
+    *character += 1;
+    start + 1
+}
+
+fn is_var_start(ch: char) -> bool {
+    ch.is_ascii_alphabetic() || ch == '_'
+}
+
+fn is_var_char(ch: char) -> bool {
+    ch.is_ascii_alphanumeric() || ch == '_' || ch == '\''
+}
+
+fn take_triple(chars: &[char], start: usize, tokens: &mut Vec<ScanToken>, line: &mut u32, character: &mut u32) -> usize {
+    let mut index = start + 3;
+    let mut chunk = start;
+    let flush = |tokens: &mut Vec<ScanToken>, line: u32, character: &mut u32, chunk: usize, index: usize| {
+        let len = (index - chunk) as u32;
+        push_token(tokens, line, *character, len, KIND_STRING);
+        *character += len;
+    };
+    while index + 2 < chars.len() {
+        if chars[index] == '\n' {
+            flush(tokens, *line, character, chunk, index);
+            *line += 1;
+            *character = 0;
+            index += 1;
+            chunk = index;
+            continue;
+        }
+        if chars[index] == '"' && chars[index + 1] == '"' && chars[index + 2] == '"' {
+            index += 3;
+            flush(tokens, *line, character, chunk, index);
+            return index;
+        }
+        index += 1;
+    }
+    while index < chars.len() {
+        if chars[index] == '\n' {
+            flush(tokens, *line, character, chunk, index);
+            *line += 1;
+            *character = 0;
+            index += 1;
+            chunk = index;
+            continue;
+        }
+        index += 1;
+    }
+    flush(tokens, *line, character, chunk, index);
+    index
+}
+
+fn text_of(message: &Value, field: &str) -> Option<(String, String)> {
+    let uri = message
+        .pointer(&format!("/params/{field}/uri"))
+        .and_then(Value::as_str)?
+        .to_string();
+    let text = message
+        .pointer(&format!("/params/{field}/text"))
+        .and_then(Value::as_str)?
+        .to_string();
+    Some((uri, text))
+}
+
+fn uri_to_path(uri: &str) -> Option<PathBuf> {
+    let rest = uri.strip_prefix("file://")?;
+    let rest = rest.strip_prefix('/').unwrap_or(rest);
+    let decoded = percent_decode(rest);
+    #[cfg(windows)]
+    let decoded = decoded.replace('/', "\\");
+    Some(PathBuf::from(decoded))
+}
+
+fn path_to_uri(path: &Path) -> String {
+    let text = path.to_string_lossy().replace('\\', "/");
+    if text.starts_with('/') {
+        format!("file://{text}")
+    } else {
+        format!("file:///{text}")
+    }
+}
+
+fn percent_decode(text: &str) -> String {
+    let bytes = text.as_bytes();
+    let mut out = Vec::new();
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'%' && index + 2 < bytes.len() {
+            if let Ok(value) = u8::from_str_radix(std::str::from_utf8(&bytes[index + 1..index + 3]).unwrap_or(""), 16) {
+                out.push(value);
+                index += 3;
+                continue;
+            }
+        }
+        out.push(bytes[index]);
+        index += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+fn read_message(reader: &mut BufReader<impl Read>) -> Option<Value> {
+    let mut content_length = 0usize;
+    loop {
+        let mut line = String::new();
+        let read = reader.read_line(&mut line).ok()?;
+        if read == 0 {
+            return None;
+        }
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            break;
+        }
+        if let Some(rest) = trimmed.strip_prefix("Content-Length:") {
+            content_length = rest.trim().parse().unwrap_or(0);
+        }
+    }
+    if content_length == 0 {
+        return None;
+    }
+    let mut body = vec![0; content_length];
+    reader.read_exact(&mut body).ok()?;
+    serde_json::from_slice(&body).ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_string_at_end_of_line_is_closed() {
+        let tokens = scan_tokens("if ready then \"\"\nnext\n");
+        let strings: Vec<_> = tokens.iter().filter(|token| token.kind == KIND_STRING).collect();
+        assert_eq!(strings.len(), 2);
+        assert_eq!(strings[0].length + strings[1].length, 2);
+        assert_eq!(strings[0].line, 0);
+        assert!(tokens.iter().any(|token| token.line == 1 && token.kind == KIND_VARIABLE));
+    }
+
+    #[test]
+    fn escaped_quote_before_closer_stays_on_its_line() {
+        let tokens = scan_tokens("value = \"Include=\\\"\"\nnext\n");
+        assert!(tokens.iter().any(|token| token.kind == KIND_UNESCAPED_CHAR && token.length == 2 && token.line == 0));
+        assert!(tokens.iter().any(|token| token.line == 1 && token.kind == KIND_VARIABLE));
+        assert!(tokens.iter().filter(|token| token.kind == KIND_STRING).all(|token| token.line == 0));
+    }
+
+    #[test]
+    fn quoted_escapes_and_macro_splices_use_the_legend() {
+        let quoted = scan_tokens("\"a\\nb\"\n");
+        assert!(quoted.iter().any(|token| token.kind == KIND_ESCAPED_CHAR && token.length == 2));
+        let raw = scan_tokens("@\"a\\nb\"");
+        assert_eq!(raw.len(), 1);
+        assert_eq!(raw[0].kind, KIND_STRING);
+        assert_eq!(raw[0].length, 7);
+        let macro_text = scan_tokens("$'num_complex_Complex<`t>'\n$'emit !args '\n$\"a\\nb\\v\\#\"\n$'println\\!('\n");
+        assert!(macro_text.iter().any(|token| token.kind == KIND_TYPE_VARIABLE && token.length == 2));
+        assert!(macro_text.iter().any(|token| token.kind == KIND_VARIABLE && token.length == 5));
+        assert!(macro_text.iter().any(|token| token.kind == KIND_ESCAPED_CHAR && token.length == 2));
+        assert!(macro_text.iter().any(|token| token.kind == KIND_ESCAPED_VAR && token.length == 2));
+        assert!(macro_text.iter().any(|token| token.kind == KIND_UNESCAPED_CHAR && token.length == 2));
+        let nested = scan_tokens("$'$\"hangulize{!(platform.get_executable_suffix ())}\"'");
+        assert!(nested.iter().any(|token| token.kind == KIND_PAREN && token.length == 2));
+        assert!(nested.iter().any(|token| token.kind == KIND_VARIABLE && token.length == 8));
+        assert!(nested.iter().any(|token| token.kind == KIND_SYMBOL));
+        assert!(!nested.iter().any(|token| token.kind == KIND_COMMENT));
+    }
+
+    #[test]
+    fn comments_numbers_and_operator_symbols_follow_the_tokenizer() {
+        let nested = scan_tokens("(* (* a *) b *)\ncode\n");
+        assert!(nested.iter().any(|token| token.kind == KIND_COMMENT && token.line == 0));
+        assert!(nested.iter().any(|token| token.line == 1 && token.kind == KIND_VARIABLE));
+        assert!(!nested.iter().any(|token| token.line == 1 && token.kind == KIND_COMMENT));
+        let lines = scan_tokens("(* open\nstill *)\n_ inl\n");
+        assert_eq!(lines.iter().filter(|token| token.kind == KIND_COMMENT).count(), 2);
+        assert!(lines.iter().any(|token| token.line == 2 && token.kind == KIND_KEYWORD && token.length == 1));
+        let bare = scan_tokens("//note\n// note\n");
+        assert!(bare.iter().any(|token| token.line == 0 && token.kind == KIND_UNARY && token.length == 2));
+        assert!(bare.iter().any(|token| token.line == 0 && token.kind == KIND_VARIABLE));
+        assert!(!bare.iter().any(|token| token.line == 0 && token.kind == KIND_COMMENT));
+        assert!(bare.iter().any(|token| token.line == 1 && token.kind == KIND_COMMENT));
+        let numbers = scan_tokens("true\n1_024i32\n-1i32\nx - y\nx-1\n.(+)\n");
+        assert!(numbers.iter().any(|token| token.kind == KIND_NUMBER && token.length == 4));
+        assert!(numbers.iter().any(|token| token.kind == KIND_NUMBER && token.length == 5));
+        assert!(numbers.iter().any(|token| token.kind == KIND_NUMBER && token.length == 2));
+        assert!(numbers.iter().any(|token| token.kind == KIND_OPERATOR));
+        assert!(numbers.iter().any(|token| token.kind == KIND_SYMBOL && token.length == 4));
+        let triple = scan_tokens("\"\"\"one\ntwo\"\"\"\nnext\n");
+        assert_eq!(triple.iter().filter(|token| token.kind == KIND_STRING).count(), 2);
+        assert!(triple.iter().all(|token| token.kind != KIND_STRING || token.line < 2));
+        assert!(triple.iter().any(|token| token.line == 2 && token.kind == KIND_VARIABLE));
+        let spaced_negative = scan_tokens("x -1\n");
+        assert!(spaced_negative.iter().any(|token| token.kind == KIND_NUMBER && token.length == 2));
+        assert!(!spaced_negative.iter().any(|token| token.kind == KIND_UNARY || token.kind == KIND_OPERATOR));
+    }
+
+    #[test]
+    fn trace_location_is_zero_based() {
+        let text = "Error trace on line: 2, column: 5 in module: main.spi .\n    \"no\"\n    ^\n";
+        assert_eq!(trace_location(text), Some((1, 4)));
+        let diagnostics = diagnostics_from(text, "", 5);
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].pointer("/range/start/line").and_then(Value::as_u64), Some(1));
+        assert_eq!(diagnostics[0].pointer("/range/start/character").and_then(Value::as_u64), Some(4));
+    }
+
+    #[test]
+    fn formatting_edit_replaces_the_whole_document() {
+        assert!(whole_document_edit("inl x = 1\n", "inl x = 1\n").is_none());
+        for (original, formatted) in [
+            ("inl x=1\n", "inl x = 1\n"),
+            ("inl x=1\nlast 한", "inl x = 1\nlast 한\n"),
+            ("a\n😀 b", "a\n"),
+            ("", "inl x = 1\n"),
+        ] {
+            let edit = whole_document_edit(original, formatted).unwrap();
+            assert_eq!(apply_edit(original, &edit), formatted);
+        }
+        let edit = whole_document_edit("inl x=1\nlast 한", "y").unwrap();
+        assert_eq!(edit.pointer("/range/end/line").and_then(Value::as_u64), Some(1));
+        assert_eq!(edit.pointer("/range/end/character").and_then(Value::as_u64), Some(6));
+        assert_eq!(byte_offset_of("a\n😀 b", 1, 2), 6);
+    }
+
+    #[test]
+    fn compiler_warnings_for_the_open_file_are_warnings() {
+        let stderr = "warning: C:\\repo\\main.spi:3:7: XC004 autolink: listm.map (wrap code)\nwarning: C:\\repo\\other.spi:1:1: XC001 hashtag: #x (escape)\nerror text\n";
+        let found = warning_diagnostics(stderr, Path::new("c:/repo/main.spi"));
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].get("severity").and_then(Value::as_u64), Some(2));
+        assert_eq!(found[0].pointer("/range/start/line").and_then(Value::as_u64), Some(2));
+        assert_eq!(found[0].pointer("/range/start/character").and_then(Value::as_u64), Some(6));
+        assert_eq!(found[0].get("message").and_then(Value::as_str), Some("XC004 autolink: listm.map (wrap code)"));
+        assert!(warning_diagnostics("warning: no location here\n", Path::new("main.spi")).is_empty());
+    }
+
+    #[test]
+    fn a_clean_check_publishes_nothing() {
+        assert!(diagnostics_from("", "checked package x", 0).is_empty());
+    }
+
+    #[test]
+    fn a_rejection_without_a_trace_is_one_diagnostic() {
+        let diagnostics = diagnostics_from("Package typecheck rejected: pkg\nmore detail\n", "", 5);
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].pointer("/range/start/line").and_then(Value::as_u64), Some(0));
+    }
+
+    #[test]
+    fn hover_includes_the_compiler_note() {
+        let mut server = Server {
+            options: Options {
+                dotnet: "dotnet".into(),
+                compiler: "SpiralCompiler.dll".into(),
+                backend: "Rust".into(),
+            },
+            docs: HashMap::new(),
+            notes: HashMap::new(),
+            stdout: Mutex::new(std::io::stdout()),
+        };
+        let uri = "file:///C:/fixture/main.spi";
+        server.docs.insert(
+            uri.into(),
+            Doc {
+                path: PathBuf::from("main.spi"),
+                text: "inl main () : i32 = 0i32\n".into(),
+            },
+        );
+        server.notes.insert(uri.into(), "Package typecheck rejected".into());
+        let hover = server.hover(&json!({
+            "params": {
+                "textDocument": { "uri": uri },
+                "position": { "line": 0, "character": 0 }
+            }
+        }));
+        let body = hover.pointer("/contents/value").and_then(Value::as_str).unwrap();
+        assert!(body.contains("inl"));
+        assert!(body.contains("keyword"));
+        assert!(body.contains("Package typecheck rejected"));
+    }
+
+    #[test]
+    fn vscode_token_kinds_cover_suffix_tilde_symbol_and_char() {
+        let tokens = scan_tokens("inl ~x = 6i32\n.name\n'a'\n-y\n");
+        assert!(tokens.iter().any(|token| token.kind == KIND_ESCAPED_VAR && token.length == 1));
+        assert!(tokens.iter().any(|token| token.kind == KIND_NUMBER && token.length == 1));
+        assert!(tokens.iter().any(|token| token.kind == KIND_NUMBER_SUFFIX && token.length == 3));
+        assert!(tokens.iter().any(|token| token.kind == KIND_SYMBOL && token.length == 5));
+        assert!(tokens.iter().any(|token| token.kind == KIND_STRING && token.length == 3));
+        assert!(tokens.iter().any(|token| token.kind == KIND_UNARY));
+        let between = scan_tokens("x - y\n");
+        assert!(between.iter().any(|token| token.kind == KIND_OPERATOR));
+        assert!(!between.iter().any(|token| token.kind == KIND_UNARY));
+    }
+
+    #[test]
+    fn missing_module_offers_create_file() {
+        let dir = std::env::temp_dir().join("spiral-zed-missing-module");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let project = dir.join("package.spiproj");
+        let actions = project_actions("file:///pkg/package.spiproj", "modules:\n    gone\n", &project);
+        assert!(actions.iter().any(|action| action["title"] == "Create file."));
+        let created = dir.join("gone.spi");
+        create_module_file(&created).unwrap();
+        let again = project_actions("file:///pkg/package.spiproj", "modules:\n    gone\n", &project);
+        assert!(again.iter().any(|action| action["title"] == "Delete file."));
+        assert!(create_module_file(&created).is_err());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}

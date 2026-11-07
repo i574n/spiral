@@ -1,0 +1,18 @@
+:= main () : i32 =
+    := ~n = 3i32
+    := ~m = 4i32
+    := f (z : i32) : (i32 -> i32) * (i32 -> i32) =
+        := left (x : i32) : i32 =
+            ? z =. 0i32 ?> 0i32 |: x +. n
+        := right (x : i32) : i32 =
+            ? z =. 0i32 ?> 0i32 |: x +. m
+        ? z =. 0i32 ?>
+            right, left
+        |:
+            left, right
+    := ~h = f
+    := pair = h 1i32
+    := ~(a, b) = pair
+    := ~p = a
+    := ~q = b
+    ? p 0i32 +. q 0i32 =. 7i32 ?> 0i32 |: 1i32

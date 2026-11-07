@@ -1,0 +1,36 @@
+test PROJECT_NAME static =
+    :< testing
+
+:! hitpoints = ()
+:! milliseconds = ()
+
+:! amount unit = i32
+
+:= value_of \* unit. (amount x : amount unit) : i32 = x
+
+:= plus \* unit. (amount a : amount unit) (amount b : amount unit) : amount unit = amount (a + b)
+
+:= capped \* unit. (amount limit : amount unit) (amount x : amount unit) : amount unit =
+    amount (? x > limit ?> limit |: x)
+
+:= hp (value : i32) : amount hitpoints = amount value
+:= ms (value : i32) : amount milliseconds = amount value
+
+///> c
+test capped_healing_on_the_oracle =
+    := ~health = 150i32
+    value_of (capped (hp 150) (plus (hp health) (hp 60))) |> _assert_eq 150i32
+
+///> c
+test hitpoints_and_milliseconds_do_not_mix fails "Unification failure" =
+    plus (hp 10) (ms 20)
+
+///> wgsl
+test capped_healing_on_gpu =
+    := ~health = 150i32
+    ? value_of (capped (hp 150) (plus (hp health) (hp 60))) = 150i32 ?> 0i32 |: 1i32
+
+///> lua
+test capped_healing_in_an_embedded_host =
+    := ~health = 150i32
+    value_of (capped (hp 150) (plus (hp health) (hp 60))) |> _assert_eq 150i32

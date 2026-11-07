@@ -1,0 +1,7 @@
+:< model
+
+:= main () : i32 =
+    := ~n = 7i32
+    := a = double n
+    := b = square n
+    ? is_big b ?> !!!!Add(a, b) |: 0i32

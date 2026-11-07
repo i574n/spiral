@@ -1,0 +1,2047 @@
+#### date_time (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test static --symbol\n\n:< testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test static --symbol
+
+  :< testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":< rust_operators\n:< sm'_operators\n\n:! timestamp_gleam =\n    `(\n        backend_switch `(()) `({}) {\n            Gleam = (\\ () => global \"import gleam/time/timestamp\") : () -> ()\n        }\n        $'' : $'timestamp.Timestamp'\n    )\n:! timestamp = i64\n\n:= timestamp \\* t {int}. (x : t) : timestamp =\n    timestamp (convert::convert x : i64)\n\n:= timestamp_gleam_of ((timestamp x) : timestamp) : timestamp_gleam =\n    global \"import gleam/time/timestamp\"\n    := seconds = x / 1000000i64\n    := nanos = (x % 1000000i64) * 1000i64\n    $'timestamp.from_unix_seconds_and_nanoseconds(!seconds, !nanos)'\n\n:== timestamp_guid = guid::guid\n\n:== date_time_guid = guid::guid","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :< rust_operators
+  :< sm'_operators
+
+  :! timestamp_gleam =
+      `(
+          backend_switch `(()) `({}) {
+              Gleam = (\ () => global "import gleam/time/timestamp") : () -> ()
+          }
+          $'' : $'timestamp.Timestamp'
+      )
+  :! timestamp = i64
+
+  := timestamp \* t {int}. (x : t) : timestamp =
+      timestamp (convert::convert x : i64)
+
+  := timestamp_gleam_of ((timestamp x) : timestamp) : timestamp_gleam =
+      global "import gleam/time/timestamp"
+      := seconds = x / 1000000i64
+      := nanos = (x % 1000000i64) * 1000i64
+      $'timestamp.from_unix_seconds_and_nanoseconds(!seconds, !nanos)'
+
+  :== timestamp_guid = guid::guid
+
+  :== date_time_guid = guid::guid
+  """,
+  timeout: 300_000
+)
+```
+
+#### test_guid (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test static --symbol\n\n:= test_guid () =\n    \"6543210F-EDCB-A987-6543-210FEDCBA987\" |> guid::new_guid","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test static --symbol
+
+  := test_guid () =
+      "6543210F-EDCB-A987-6543-210FEDCBA987" |> guid::new_guid
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":| day_of_week =\n    | Sunday\n    | Monday\n    | Tuesday\n    | Wednesday\n    | Thursday\n    | Friday\n    | Saturday\n\n:| month =\n    | January\n    | February\n    | March\n    | April\n    | May\n    | June\n    | July\n    | August\n    | September\n    | October\n    | November\n    | December\n\n:! day = int\n\n:! year = int\n\n:! date_gleam =\n    `(\n        backend_switch `(()) `({}) {\n            Gleam = (\\ () =>\n                global \"import gleam/time/calendar\"\n                        ) : () -> ()\n        }\n        $'' : $'calendar.Date'\n    )\n:! time_of_day_gleam =\n    `(\n        backend_switch `(()) `({}) {\n            Gleam = (\\ () =>\n                global \"import gleam/time/calendar\"\n                        ) : () -> ()\n        }\n        $'' : $'calendar.TimeOfDay'\n    )\n:! duration_gleam =\n    `(\n        backend_switch `(()) `({}) {\n            Gleam = (\\ () =>\n                global \"import gleam/time/duration\"\n                        ) : () -> ()\n        }\n        $'' : $'duration.Duration'\n    )\n\n:! date_time_python =\n    `(\n        backend_switch `(()) `({}) {\n            Python = (\\ () => global \"import datetime\") : () -> ()\n        }\n        $'' : $'datetime.datetime'\n    )\n:== date_time_switch =\n    {\n        Gleam : date_gleam * time_of_day_gleam * duration_gleam\n        Lua : i64\n        Fsharp : $'System.DateTime'\n        Python : date_time_python\n        Rust : $'chrono::NaiveDateTime'\n        TypeScript : $'Date'\n        Zig : i64\n    }\n:! date_time = $'backend_switch `(date_time_switch)'\n\n:! calendar_month =\n    `(\n        backend_switch `(()) `({}) {\n            Gleam = (\\ () =>\n                global \"import gleam/time/calendar\"\n                        ) : () -> ()\n        }\n        $'' : $'calendar.Month'\n    )\n\n:! tempo_date_time =\n    `(\n        backend_switch `(()) `({}) {\n            Gleam = (\\ () =>\n                global \"import tempo\"\n                        ) : () -> ()\n        }\n        $'' : $'tempo.DateTime'\n    )\n\n:= zig_micros_of (date_time : date_time) : i64 = $'!date_time' : i64\n\n:= zig_date_time_of (micros : i64) : date_time = $'!micros' : date_time\n\n:= zig_micros_windows_global () : () =\n    global \"\"\"\n        fn spiralMicrosNowWindows() i64 {\n            return @divFloor(std.os.windows.ntdll.RtlGetSystemTimePrecise() - 116444736000000000, 10);\n        }\n        \"\"\"\n\n:= zig_micros_linux_global () : () =\n    global \"\"\"\n        fn spiralMicrosNowLinux() i64 {\n          var ts: std.os.linux.timespec = undefined;\n          _ = std.os.linux.clock_gettime(.REALTIME, &ts);\n          return @as(i64, ts.sec) * 1000000 + @divFloor(@as(i64, ts.nsec), 1000);\n        }\n        \"\"\"\n\n:= zig_micros_now_global () : () =\n    global \"\"\"\n        fn spiralMicrosNow() i64 {\n            if (@import(\"builtin\").os.tag == .windows) return spiralMicrosNowWindows();\n            return spiralMicrosNowLinux();\n        }\n        \"\"\"\n\n:= zig_micros_now () : i64 =\n    zig_micros_windows_global ()\n    zig_micros_linux_global ()\n    zig_micros_now_global ()\n    $'spiralMicrosNow()' : i64\n\n:= floor_div (a : i64) (b : i64) : i64 =\n    := q = a / b\n    ? a % b <> 0 && (a < 0) <> (b < 0) ?> q - 1 |: q\n\n:= civil_era (days : i64) : i64 * i64 =\n    := z = days + 719468\n    := era = floor_div z 146097\n    era, z - era * 146097\n\n:= civil_year_of_era (day_of_era : i64) : i64 =\n    (day_of_era - day_of_era / 1460 + day_of_era / 36524 - day_of_era / 146096) / 365\n\n:= civil_day_of_year (day_of_era : i64) (year_of_era : i64) : i64 =\n    day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100)\n\n:= civil_month (month_from_march : i64) : i64 = ? month_from_march < 10 ?> month_from_march + 3 |: month_from_march - 9\n\n:= civil_month_day (day_of_era : i64) (year_of_era : i64) : i64 * i64 =\n    := day_of_year = civil_day_of_year day_of_era year_of_era\n    := month_from_march = (5 * day_of_year + 2) / 153\n    civil_month month_from_march, day_of_year - (153 * month_from_march + 2) / 5 + 1\n\n:= civil_of_days (days : i64) : i64 * i64 * i64 =\n    := era, day_of_era = civil_era days\n    := year_of_era = civil_year_of_era day_of_era\n    := month, day = civil_month_day day_of_era year_of_era\n    year_of_era + era * 400 + (? month <= 2 ?> 1 |: 0), month, day\n\n:= clock_of_day (of_day : i64) : i64 * i64 * i64 * i64 =\n    := seconds = of_day / 1000000\n    seconds / 3600, seconds % 3600 / 60, seconds % 60, of_day % 1000000\n\n:= civil_of_micros (micros : i64) : i64 * i64 * i64 * i64 * i64 * i64 * i64 =\n    := micros_per_day = 86400000000i64\n    := days = floor_div micros micros_per_day\n    := year, month, day = civil_of_days days\n    := hour, minute, second, fraction = clock_of_day (micros - days * micros_per_day)\n    year, month, day, hour, minute, second, fraction\n\n:= pad_digits (width : i32) (n : i64) : string = n |> sm'::obj_to_string |> sm'::pad_left width '0'\n\n:~ ^ zig_run_end (pattern : string) (c : char) (j : i32) : i32 =\n    ? j < sm'::length pattern && sm'::index j pattern = c ?> zig_run_end pattern c (j + 1) |: j\n\n:== zig_run = { pattern : string; c : char; i : i32; stop : i32; width : i32 }\n\n:= zig_fraction_or_literal (r : zig_run) (micros : i64) : string =\n    ? r::c = 'f'\n    ?> pad_digits 7i32 (micros * 10) |> sm'::slice 0i32 (r::width - 1)\n    |: sm'::slice r::i (r::stop - 1) r::pattern\n\n:= zig_time_piece (r : zig_run) (fields : i64 * i64 * i64 * i64 * i64 * i64 * i64) : string =\n    := _, _, _, hour, minute, second, micros = fields\n    ? r::c = 'H' ?> pad_digits r::width hour\n    |? r::c = 'm' ?> pad_digits r::width minute\n    |? r::c = 's' ?> pad_digits r::width second\n    |: zig_fraction_or_literal r micros\n\n:= zig_piece (r : zig_run) (fields : i64 * i64 * i64 * i64 * i64 * i64 * i64) : string =\n    := year, month, day, _, _, _, _ = fields\n    ? r::c = 'y' ?> pad_digits r::width year\n    |? r::c = 'M' ?> pad_digits r::width month\n    |? r::c = 'd' ?> pad_digits r::width day\n    |: zig_time_piece r fields\n\n:~ ^ zig_format_from (pattern : string) (i : i32) (fields : i64 * i64 * i64 * i64 * i64 * i64 * i64) : string =\n    ? i >= sm'::length pattern ?> \"\"\n    |:\n        := c = sm'::index i pattern\n        := stop = zig_run_end pattern c i\n        zig_piece { pattern c i stop width = stop - i } fields ++# zig_format_from pattern stop fields\n\n:= zig_year (date_time : date_time) : i32 =\n    date_time |> zig_micros_of |> civil_of_micros |> \\ (year, _, _, _, _, _, _) => conv year : i32\n\n:= get_year (date_time : date_time) : i32 =\n    backend_switch {\n        Gleam = \\ () => $'0' : i32\n        Lua = \\ () => $'0' : i32\n        Fsharp = \\ () => date_time |> $'_.Year' : i32\n        Python = \\ () => $'!date_time.year' : i32\n        Rust = \\ () => $'chrono::Datelike::year(&!date_time)' : i32\n        Zig = \\ () => zig_year date_time\n    }\n\n:= split_date_time (date_time : date_time) : date_gleam * time_of_day_gleam * duration_gleam =\n    $'!date_time.0', $'!date_time.1', $'!date_time.2'\n\n:= tempo_added (result : timestamp_gleam) (duration : duration_gleam) : tempo_date_time =\n    global \"import tempo/datetime\"\n    := tempo_date_time : tempo_date_time = result |> $'datetime.from_timestamp'\n    $'!tempo_date_time |> datetime.add(!duration)' : tempo_date_time\n\n:= new_timestamp_gleam\n    (date, time_of_day, duration : date_gleam * time_of_day_gleam * duration_gleam)\n    : timestamp_gleam\n    =\n    global \"import gleam/time/timestamp\"\n    := result : timestamp_gleam = $'timestamp.from_calendar(!date, !time_of_day, !duration)'\n    tempo_added result duration |> $'datetime.to_timestamp'\n\n:= tempo_of (date_time : date_time) : tempo_date_time =\n    global \"import tempo/datetime\"\n    date_time |> split_date_time |> new_timestamp_gleam |> $'datetime.from_timestamp'\n\n:= format_gleam (format : string) (date_time : date_time) : string =\n    := tempo_date_time = tempo_of date_time\n    := pattern = ? format = \"\" ?> \"M-D-YY hh:mm:ss A\" |: format\n    $'!tempo_date_time |> datetime.format(tempo.Custom(!pattern))' : string\n\n:= lua_date_text (date_time : date_time) : string =\n    := date_format = ? get_year date_time < 1000 ?> \"%m-%d-%y\" |: \"%m-%d-%Y\"\n    := dated : optionm'::option' string = $'os.date(!date_format, !date_time)'\n    := padded = dated |> optionm'::default_value' \"\"\n    $'(!padded):gsub(\"0(%d)\", \"%1\")' : string\n\n:= lua_time_text (date_time : date_time) : string =\n    := timed : optionm'::option' string = $'os.date(\"%I:%M:%S %p\", !date_time)'\n    timed |> optionm'::default_value' \"\"\n\n:= format_lua (format : string) (date_time : date_time) : string =\n    := date_time = ~~ date_time\n    ? format <> \"\"\n    ?> $'os.date(!format, !date_time)' : string\n    |: lua_date_text date_time ++# \" \" ++# lua_time_text date_time\n\n:= format_fsharp (format : string) (date_time : date_time) : string =\n    := pattern = ? format = \"\" ?> \"M-d-y hh:mm:ss tt\" |: format\n    $'!date_time.ToString' pattern : string\n\n:= python_full_year_text (date_time : date_time) : string =\n    $'\\'{dt.month}-{dt.day}-{dt.year} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}\\'.format(dt=!date_time)' : string\n\n:= python_short_year_text (date_time : date_time) : string =\n    $'\\'{dt.month}-{dt.day}-{dt:%y} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}\\'.format(dt=!date_time)' : string\n\n:= python_default_text (date_time : date_time) : string =\n    ? get_year date_time < 1000 ?> python_full_year_text date_time |: python_short_year_text date_time\n\n:= format_python (format : string) (date_time : date_time) : string =\n    := date_time = ~~ date_time\n    ? format <> \"\" ?> $'!date_time.strftime(!format)' : string |: python_default_text date_time\n\n:= format_rust (format : string) (date_time : date_time) : string =\n    := pattern = ? format = \"\" ?> \"%-m-%-d-%-y %I:%M:%S %p\" |: format\n    $'Rc::<str>::from(!date_time.format(&*!pattern).to_string())' : string\n\n:= format_zig (format : string) (date_time : date_time) : string =\n    := pattern = ? format = \"\" ?> \"MM-dd-yyyy HH:mm:ss\" |: format\n    date_time |> zig_micros_of |> civil_of_micros |> zig_format_from pattern 0i32\n\n:= format (format : string) (date_time : date_time) : string =\n    backend_switch {\n        Gleam = \\ () => format_gleam format date_time\n        Lua = \\ () => format_lua format date_time\n        Fsharp = \\ () => format_fsharp format date_time\n        Python = \\ () => format_python format date_time\n        Rust = \\ () => format_rust format date_time\n        Zig = \\ () => format_zig format date_time\n    }\n\n:= format_iso8601 (date_time : date_time) : string =\n    backend_switch {\n        Gleam = \\ () => date_time |> format \"YYYY-MM-DDTHH-mm-ss.SSS\" : string\n        Lua = \\ () => date_time |> format \"%Y-%m-%dT%H-%M-%S.%f\" : string\n        Fsharp = \\ () => date_time |> format \"yyyy-MM-ddTHH-mm-ss.fff\" : string\n        Python = \\ () => date_time |> format \"%Y-%m-%dT%H-%M-%S.%f\" : string\n        Rust = \\ () => date_time |> format \"%Y-%m-%dT%H-%M-%S.%3f\" : string\n        Zig = \\ () => date_time |> format \"yyyy-MM-ddTHH-mm-ss.fff\" : string\n    }\n\n:! naive_date_rust = $'chrono::NaiveDate'\n\n:= rust_naive_date (year : i32) (month : u32) (day : u32) : naive_date_rust =\n    $'chrono::NaiveDate::from_ymd_opt(!year, !month, !day).unwrap()' : naive_date_rust\n\n:= rust_date_at (date : naive_date_rust) (hour : u32) (minute : u32) (second : u32) : date_time =\n    $'!date.and_hms_opt(!hour, !minute, !second).unwrap()' : date_time\n\n:= rust_date_at_milli (date : naive_date_rust) (hour : u32) (minute : u32) (second : u32) (milli : u32) : date_time =\n    $'!date.and_hms_milli_opt(!hour, !minute, !second, !milli).unwrap()' : date_time\n\n:= rust_date_at_nano (date : naive_date_rust) (hour : u32) (minute : u32) (second : u32) (nano : u32) : date_time =\n    $'!date.and_hms_nano_opt(!hour, !minute, !second, !nano).unwrap()' : date_time\n\n:= gleam_date_time (date : date_gleam) (time_of_day : time_of_day_gleam) (duration : duration_gleam) : date_time =\n    (date, time_of_day, duration) |> convert::to\n\n:= min_value_gleam () : date_time =\n    := date = $'calendar.Date(1, calendar.January, 1)' : date_gleam\n    := time_of_day = $'calendar.TimeOfDay(0, 0, 0, 0)' : time_of_day_gleam\n    gleam_date_time date time_of_day ($'duration.seconds(0) ' : duration_gleam)\n\n:= min_value_lua () : date_time =\n    := stamp : optionm'::option' date_time = $'os.time{year=1, month=1, day=1, hour=0, min=0, sec=0}'\n    stamp |> optionm'::default_value' ($'-62135596800' : date_time)\n\n:= min_value_python () : date_time =\n    global \"import datetime\"\n    $'datetime.datetime.min' : date_time\n\n:= min_value () : date_time =\n    backend_switch {\n        Gleam = \\ () => min_value_gleam ()\n        Lua = \\ () => min_value_lua ()\n        Fsharp = \\ () => $'System.DateTime.MinValue' : date_time\n        Python = \\ () => min_value_python ()\n        Rust = \\ () => rust_date_at (rust_naive_date 1i32 1u32 1u32) 0u32 0u32 0u32\n        Zig = \\ () => -62135596800000000i64 |> zig_date_time_of\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ":| day_of_week =\n    | Sunday\n    | Monday\n    | Tuesday\n    | Wednesday\n    | Thursday\n    | Friday\n    | Saturday\n\n:| month =\n    | January\n    | February\n    | March\n    | April\n    | May\n    | June\n    | July\n    | August\n    | September\n    | October\n    | November\n    | December\n\n:! day = int\n\n:! year = int\n\n:! date_gleam =\n    `(\n        backend_switch `(()) `({}) {\n            Gleam = (\\ () =>\n                global \"import gleam/time/calendar\"\n                        ) : () -> ()\n        }\n        $'' : $'calendar.Date'\n    )\n:! time_of_day_gleam =\n    `(\n        backend_switch `(()) `({}) {\n            Gleam = (\\ () =>\n                global \"import gleam/time/calendar\"\n                        ) : () -> ()\n        }\n        $'' : $'calendar.TimeOfDay'\n    )\n:! duration_gleam =\n    `(\n        backend_switch `(()) `({}) {\n            Gleam = (\\ () =>\n                global \"import gleam/time/duration\"\n                        ) : () -> ()\n        }\n        $'' : $'duration.Duration'\n    )\n\n:! date_time_python =\n    `(\n        backend_switch `(()) `({}) {\n            Python = (\\ () => global \"import datetime\") : () -> ()\n        }\n        $'' : $'datetime.datetime'\n    )\n:== date_time_switch =\n    {\n        Gleam : date_gleam * time_of_day_gleam * duration_gleam\n        Lua : i64\n        Fsharp : $'System.DateTime'\n        Python : date_time_python\n        Rust : $'chrono::NaiveDateTime'\n        TypeScript : $'Date'\n        Zig : i64\n    }\n:! date_time = $'backend_switch `(date_time_switch)'\n\n:! calendar_month =\n    `(\n        backend_switch `(()) `({}) {\n            Gleam = (\\ () =>\n                global \"import gleam/time/calendar\"\n                        ) : () -> ()\n        }\n        $'' : $'calendar.Month'\n    )\n\n:! tempo_date_time =\n    `(\n        backend_switch `(()) `({}) {\n            Gleam = (\\ () =>\n                global \"import tempo\"\n                        ) : () -> ()\n        }\n        $'' : $'tempo.DateTime'\n    )\n\n:= zig_micros_of (date_time : date_time) : i64 = $'!date_time' : i64\n\n:= zig_date_time_of (micros : i64) : date_time = $'!micros' : date_time\n\n:= zig_micros_windows_global () : () =\n    global \"\"\"\n        fn spiralMicrosNowWindows() i64 {\n            return @divFloor(std.os.windows.ntdll.RtlGetSystemTimePrecise() - 116444736000000000, 10);\n        }\n        \"\"\"\n\n:= zig_micros_linux_global () : () =\n    global \"\"\"\n        fn spiralMicrosNowLinux() i64 {\n          var ts: std.os.linux.timespec = undefined;\n          _ = std.os.linux.clock_gettime(.REALTIME, &ts);\n          return @as(i64, ts.sec) * 1000000 + @divFloor(@as(i64, ts.nsec), 1000);\n        }\n        \"\"\"\n\n:= zig_micros_now_global () : () =\n    global \"\"\"\n        fn spiralMicrosNow() i64 {\n            if (@import(\"builtin\").os.tag == .windows) return spiralMicrosNowWindows();\n            return spiralMicrosNowLinux();\n        }\n        \"\"\"\n\n:= zig_micros_now () : i64 =\n    zig_micros_windows_global ()\n    zig_micros_linux_global ()\n    zig_micros_now_global ()\n    $'spiralMicrosNow()' : i64\n\n:= floor_div (a : i64) (b : i64) : i64 =\n    := q = a / b\n    ? a % b <> 0 && (a < 0) <> (b < 0) ?> q - 1 |: q\n\n:= civil_era (days : i64) : i64 * i64 =\n    := z = days + 719468\n    := era = floor_div z 146097\n    era, z - era * 146097\n\n:= civil_year_of_era (day_of_era : i64) : i64 =\n    (day_of_era - day_of_era / 1460 + day_of_era / 36524 - day_of_era / 146096) / 365\n\n:= civil_day_of_year (day_of_era : i64) (year_of_era : i64) : i64 =\n    day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100)\n\n:= civil_month (month_from_march : i64) : i64 = ? month_from_march < 10 ?> month_from_march + 3 |: month_from_march - 9\n\n:= civil_month_day (day_of_era : i64) (year_of_era : i64) : i64 * i64 =\n    := day_of_year = civil_day_of_year day_of_era year_of_era\n    := month_from_march = (5 * day_of_year + 2) / 153\n    civil_month month_from_march, day_of_year - (153 * month_from_march + 2) / 5 + 1\n\n:= civil_of_days (days : i64) : i64 * i64 * i64 =\n    := era, day_of_era = civil_era days\n    := year_of_era = civil_year_of_era day_of_era\n    := month, day = civil_month_day day_of_era year_of_era\n    year_of_era + era * 400 + (? month <= 2 ?> 1 |: 0), month, day\n\n:= clock_of_day (of_day : i64) : i64 * i64 * i64 * i64 =\n    := seconds = of_day / 1000000\n    seconds / 3600, seconds % 3600 / 60, seconds % 60, of_day % 1000000\n\n:= civil_of_micros (micros : i64) : i64 * i64 * i64 * i64 * i64 * i64 * i64 =\n    := micros_per_day = 86400000000i64\n    := days = floor_div micros micros_per_day\n    := year, month, day = civil_of_days days\n    := hour, minute, second, fraction = clock_of_day (micros - days * micros_per_day)\n    year, month, day, hour, minute, second, fraction\n\n:= pad_digits (width : i32) (n : i64) : string = n |> sm'::obj_to_string |> sm'::pad_left width '0'\n\n:~ ^ zig_run_end (pattern : string) (c : char) (j : i32) : i32 =\n    ? j < sm'::length pattern && sm'::index j pattern = c ?> zig_run_end pattern c (j + 1) |: j\n\n:== zig_run = { pattern : string; c : char; i : i32; stop : i32; width : i32 }\n\n:= zig_fraction_or_literal (r : zig_run) (micros : i64) : string =\n    ? r::c = 'f'\n    ?> pad_digits 7i32 (micros * 10) |> sm'::slice 0i32 (r::width - 1)\n    |: sm'::slice r::i (r::stop - 1) r::pattern\n\n:= zig_time_piece (r : zig_run) (fields : i64 * i64 * i64 * i64 * i64 * i64 * i64) : string =\n    := _, _, _, hour, minute, second, micros = fields\n    ? r::c = 'H' ?> pad_digits r::width hour\n    |? r::c = 'm' ?> pad_digits r::width minute\n    |? r::c = 's' ?> pad_digits r::width second\n    |: zig_fraction_or_literal r micros\n\n:= zig_piece (r : zig_run) (fields : i64 * i64 * i64 * i64 * i64 * i64 * i64) : string =\n    := year, month, day, _, _, _, _ = fields\n    ? r::c = 'y' ?> pad_digits r::width year\n    |? r::c = 'M' ?> pad_digits r::width month\n    |? r::c = 'd' ?> pad_digits r::width day\n    |: zig_time_piece r fields\n\n:~ ^ zig_format_from (pattern : string) (i : i32) (fields : i64 * i64 * i64 * i64 * i64 * i64 * i64) : string =\n    ? i >= sm'::length pattern ?> \"\"\n    |:\n        := c = sm'::index i pattern\n        := stop = zig_run_end pattern c i\n        zig_piece { pattern c i stop width = stop - i } fields ++# zig_format_from pattern stop fields\n\n:= zig_year (date_time : date_time) : i32 =\n    date_time |> zig_micros_of |> civil_of_micros |> \\ (year, _, _, _, _, _, _) => conv year : i32\n\n:= get_year (date_time : date_time) : i32 =\n    backend_switch {\n        Gleam = \\ () => $'0' : i32\n        Lua = \\ () => $'0' : i32\n        Fsharp = \\ () => date_time |> $'_.Year' : i32\n        Python = \\ () => $'!date_time.year' : i32\n        Rust = \\ () => $'chrono::Datelike::year(&!date_time)' : i32\n        Zig = \\ () => zig_year date_time\n    }\n\n:= split_date_time (date_time : date_time) : date_gleam * time_of_day_gleam * duration_gleam =\n    $'!date_time.0', $'!date_time.1', $'!date_time.2'\n\n:= tempo_added (result : timestamp_gleam) (duration : duration_gleam) : tempo_date_time =\n    global \"import tempo/datetime\"\n    := tempo_date_time : tempo_date_time = result |> $'datetime.from_timestamp'\n    $'!tempo_date_time |> datetime.add(!duration)' : tempo_date_time\n\n:= new_timestamp_gleam\n    (date, time_of_day, duration : date_gleam * time_of_day_gleam * duration_gleam)\n    : timestamp_gleam\n    =\n    global \"import gleam/time/timestamp\"\n    := result : timestamp_gleam = $'timestamp.from_calendar(!date, !time_of_day, !duration)'\n    tempo_added result duration |> $'datetime.to_timestamp'\n\n:= tempo_of (date_time : date_time) : tempo_date_time =\n    global \"import tempo/datetime\"\n    date_time |> split_date_time |> new_timestamp_gleam |> $'datetime.from_timestamp'\n\n:= format_gleam (format : string) (date_time : date_time) : string =\n    := tempo_date_time = tempo_of date_time\n    := pattern = ? format = \"\" ?> \"M-D-YY hh:mm:ss A\" |: format\n    $'!tempo_date_time |> datetime.format(tempo.Custom(!pattern))' : string\n\n:= lua_date_text (date_time : date_time) : string =\n    := date_format = ? get_year date_time < 1000 ?> \"%m-%d-%y\" |: \"%m-%d-%Y\"\n    := dated : optionm'::option' string = $'os.date(!date_format, !date_time)'\n    := padded = dated |> optionm'::default_value' \"\"\n    $'(!padded):gsub(\"0(%d)\", \"%1\")' : string\n\n:= lua_time_text (date_time : date_time) : string =\n    := timed : optionm'::option' string = $'os.date(\"%I:%M:%S %p\", !date_time)'\n    timed |> optionm'::default_value' \"\"\n\n:= format_lua (format : string) (date_time : date_time) : string =\n    := date_time = ~~ date_time\n    ? format <> \"\"\n    ?> $'os.date(!format, !date_time)' : string\n    |: lua_date_text date_time ++# \" \" ++# lua_time_text date_time\n\n:= format_fsharp (format : string) (date_time : date_time) : string =\n    := pattern = ? format = \"\" ?> \"M-d-y hh:mm:ss tt\" |: format\n    $'!date_time.ToString' pattern : string\n\n:= python_full_year_text (date_time : date_time) : string =\n    $'\\'{dt.month}-{dt.day}-{dt.year} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}\\'.format(dt=!date_time)' : string\n\n:= python_short_year_text (date_time : date_time) : string =\n    $'\\'{dt.month}-{dt.day}-{dt:%y} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}\\'.format(dt=!date_time)' : string\n\n:= python_default_text (date_time : date_time) : string =\n    ? get_year date_time < 1000 ?> python_full_year_text date_time |: python_short_year_text date_time\n\n:= format_python (format : string) (date_time : date_time) : string =\n    := date_time = ~~ date_time\n    ? format <> \"\" ?> $'!date_time.strftime(!format)' : string |: python_default_text date_time\n\n:= format_rust (format : string) (date_time : date_time) : string =\n    := pattern = ? format = \"\" ?> \"%-m-%-d-%-y %I:%M:%S %p\" |: format\n    $'Rc::<str>::from(!date_time.format(&*!pattern).to_string())' : string\n\n:= format_zig (format : string) (date_time : date_time) : string =\n    := pattern = ? format = \"\" ?> \"MM-dd-yyyy HH:mm:ss\" |: format\n    date_time |> zig_micros_of |> civil_of_micros |> zig_format_from pattern 0i32\n\n:= format (format : string) (date_time : date_time) : string =\n    backend_switch {\n        Gleam = \\ () => format_gleam format date_time\n        Lua = \\ () => format_lua format date_time\n        Fsharp = \\ () => format_fsharp format date_time\n        Python = \\ () => format_python format date_time\n        Rust = \\ () => format_rust format date_time\n        Zig = \\ () => format_zig format date_time\n    }\n\n:= format_iso8601 (date_time : date_time) : string =\n    backend_switch {\n        Gleam = \\ () => date_time |> format \"YYYY-MM-DDTHH-mm-ss.SSS\" : string\n        Lua = \\ () => date_time |> format \"%Y-%m-%dT%H-%M-%S.%f\" : string\n        Fsharp = \\ () => date_time |> format \"yyyy-MM-ddTHH-mm-ss.fff\" : string\n        Python = \\ () => date_time |> format \"%Y-%m-%dT%H-%M-%S.%f\" : string\n        Rust = \\ () => date_time |> format \"%Y-%m-%dT%H-%M-%S.%3f\" : string\n        Zig = \\ () => date_time |> format \"yyyy-MM-ddTHH-mm-ss.fff\" : string\n    }\n\n:! naive_date_rust = $'chrono::NaiveDate'\n\n:= rust_naive_date (year : i32) (month : u32) (day : u32) : naive_date_rust =\n    $'chrono::NaiveDate::from_ymd_opt(!year, !month, !day).unwrap()' : naive_date_rust\n\n:= rust_date_at (date : naive_date_rust) (hour : u32) (minute : u32) (second : u32) : date_time =\n    $'!date.and_hms_opt(!hour, !minute, !second).unwrap()' : date_time\n\n:= rust_date_at_milli (date : naive_date_rust) (hour : u32) (minute : u32) (second : u32) (milli : u32) : date_time =\n    $'!date.and_hms_milli_opt(!hour, !minute, !second, !milli).unwrap()' : date_time\n\n:= rust_date_at_nano (date : naive_date_rust) (hour : u32) (minute : u32) (second : u32) (nano : u32) : date_time =\n    $'!date.and_hms_nano_opt(!hour, !minute, !second, !nano).unwrap()' : date_time\n\n:= gleam_date_time (date : date_gleam) (time_of_day : time_of_day_gleam) (duration : duration_gleam) : date_time =\n    (date, time_of_day, duration) |> convert::to\n\n:= min_value_gleam () : date_time =\n    := date = $'calendar.Date(1, calendar.January, 1)' : date_gleam\n    := time_of_day = $'calendar.TimeOfDay(0, 0, 0, 0)' : time_of_day_gleam\n    gleam_date_time date time_of_day ($'duration.seconds(0) ' : duration_gleam)\n\n:= min_value_lua () : date_time =\n    := stamp : optionm'::option' date_time = $'os.time{year=1, month=1, day=1, hour=0, min=0, sec=0}'\n    stamp |> optionm'::default_value' ($'-62135596800' : date_time)\n\n:= min_value_python () : date_time =\n    global \"import datetime\"\n    $'datetime.datetime.min' : date_time\n\n:= min_value () : date_time =\n    backend_switch {\n        Gleam = \\ () => min_value_gleam ()\n        Lua = \\ () => min_value_lua ()\n        Fsharp = \\ () => $'System.DateTime.MinValue' : date_time\n        Python = \\ () => min_value_python ()\n        Rust = \\ () => rust_date_at (rust_naive_date 1i32 1u32 1u32) 0u32 0u32 0u32\n        Zig = \\ () => -62135596800000000i64 |> zig_date_time_of\n    }",
+  timeout: 300_000
+)
+```
+
+#### min_value (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> fsharp\n///> cuda\n\nmin_value ()\n|> format \"\"\n|> _assert_eq \"1-1-1 12:00:00 AM\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> fsharp
+  ///> cuda
+
+  min_value ()
+  |> format ""
+  |> _assert_eq "1-1-1 12:00:00 AM"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= max_value_gleam () : date_time =\n    := date = $'calendar.Date(9999, calendar.December, 31)' : date_gleam\n    := time_of_day = $'calendar.TimeOfDay(23, 59, 59, 999)' : time_of_day_gleam\n    gleam_date_time date time_of_day ($'duration.seconds(0)  ' : duration_gleam)\n\n:= max_value_lua () : date_time =\n    := stamp : optionm'::option' date_time = $'os.time{year=9999, month=12, day=31, hour=23, min=59, sec=59}'\n    stamp |> optionm'::default_value' ($'253402300799' : date_time)\n\n:= max_value_python () : date_time =\n    global \"import datetime\"\n    $'datetime.datetime.max' : date_time\n\n:= max_value_rust () : date_time = rust_date_at_nano (rust_naive_date 9999i32 12u32 31u32) 23u32 59u32 59u32 999999900u32\n\n:= max_value () : date_time =\n    backend_switch {\n        Gleam = \\ () => max_value_gleam ()\n        Lua = \\ () => max_value_lua ()\n        Fsharp = \\ () => $'System.DateTime.MaxValue' : date_time\n        Python = \\ () => max_value_python ()\n        Rust = \\ () => max_value_rust ()\n        Zig = \\ () => 253402300799999999i64 |> zig_date_time_of\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := max_value_gleam () : date_time =
+      := date = $'calendar.Date(9999, calendar.December, 31)' : date_gleam
+      := time_of_day = $'calendar.TimeOfDay(23, 59, 59, 999)' : time_of_day_gleam
+      gleam_date_time date time_of_day ($'duration.seconds(0)  ' : duration_gleam)
+
+  := max_value_lua () : date_time =
+      := stamp : optionm'::option' date_time = $'os.time{year=9999, month=12, day=31, hour=23, min=59, sec=59}'
+      stamp |> optionm'::default_value' ($'253402300799' : date_time)
+
+  := max_value_python () : date_time =
+      global "import datetime"
+      $'datetime.datetime.max' : date_time
+
+  := max_value_rust () : date_time = rust_date_at_nano (rust_naive_date 9999i32 12u32 31u32) 23u32 59u32 59u32 999999900u32
+
+  := max_value () : date_time =
+      backend_switch {
+          Gleam = \ () => max_value_gleam ()
+          Lua = \ () => max_value_lua ()
+          Fsharp = \ () => $'System.DateTime.MaxValue' : date_time
+          Python = \ () => max_value_python ()
+          Rust = \ () => max_value_rust ()
+          Zig = \ () => 253402300799999999i64 |> zig_date_time_of
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### max_value (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> fsharp\n///> cuda\n\nmax_value ()\n|> format \"\"\n|> _assert_eq \"12-31-99 11:59:59 PM\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> fsharp
+  ///> cuda
+
+  max_value ()
+  |> format ""
+  |> _assert_eq "12-31-99 11:59:59 PM"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= gleam_calendar_imports () : () =\n    backend_switch {\n        Gleam = \\ () =>\n            global \"import gleam/time/calendar\"\n            global \"import gleam/time/timestamp\"\n    }\n\n:= to_calendar_utc_gleam (timestamp : timestamp_gleam) : date_time =\n    gleam_calendar_imports ()\n    := duration = $'calendar.utc_offset' : duration_gleam\n    := (date : date_gleam), (time_of_day : time_of_day_gleam) = $'!timestamp |> timestamp.to_calendar(!duration)'\n    gleam_date_time date time_of_day duration\n\n:= to_calendar_utc_python (micros : i64) : date_time =\n    global \"import datetime\"\n    $'datetime.datetime(1970, 1, 1) + datetime.timedelta(microseconds=!micros)' : date_time\n\n:= to_calendar_utc_rust (micros : i64) : date_time =\n    $'chrono::DateTime::from_timestamp_micros(!micros).unwrap().naive_utc()' : date_time\n\n:= to_calendar_utc ((timestamp micros) &= timestamp : timestamp) : date_time =\n    backend_switch {\n        Gleam = \\ () => timestamp |> timestamp_gleam_of |> to_calendar_utc_gleam\n        Lua = \\ () => floor_div micros 1000000i64 |> convert::unbox : date_time\n        Fsharp = \\ () => $'System.DateTime.UnixEpoch.AddTicks(!micros * 10L)' : date_time\n        Python = \\ () => to_calendar_utc_python micros\n        Rust = \\ () => to_calendar_utc_rust micros\n        Zig = \\ () => micros |> zig_date_time_of\n    }\n\n:! time_zone_provider =\n    `(\n        backend_switch `(()) `({}) {\n            Gleam = (\\ () =>\n                global \"import tempo\"\n                        ) : () -> ()\n        }\n        $'' : $'tempo.TimeZoneProvider'\n    )\n\n:= unix_epoch_lua () : date_time =\n    := stamp : optionm'::option' date_time = $'os.time{year=1970, month=1, day=1, hour=0, min=0, sec=0}'\n    stamp |> optionm'::default_value' ($'0' : date_time)\n\n:= unix_epoch_python () : date_time =\n    global \"import datetime\"\n    $'datetime.datetime(1970, 1, 1)' : date_time\n\n:= unix_epoch () : date_time =\n    backend_switch {\n        Gleam = \\ () => 0i32 |> timestamp |> to_calendar_utc : date_time\n        Lua = \\ () => unix_epoch_lua ()\n        Fsharp = \\ () => $'System.DateTime.UnixEpoch' : date_time\n        Python = \\ () => unix_epoch_python ()\n        Rust = \\ () => rust_date_at (rust_naive_date 1970i32 1u32 1u32) 0u32 0u32 0u32\n        Zig = \\ () => 0i64 |> zig_date_time_of\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := gleam_calendar_imports () : () =
+      backend_switch {
+          Gleam = \ () =>
+              global "import gleam/time/calendar"
+              global "import gleam/time/timestamp"
+      }
+
+  := to_calendar_utc_gleam (timestamp : timestamp_gleam) : date_time =
+      gleam_calendar_imports ()
+      := duration = $'calendar.utc_offset' : duration_gleam
+      := (date : date_gleam), (time_of_day : time_of_day_gleam) = $'!timestamp |> timestamp.to_calendar(!duration)'
+      gleam_date_time date time_of_day duration
+
+  := to_calendar_utc_python (micros : i64) : date_time =
+      global "import datetime"
+      $'datetime.datetime(1970, 1, 1) + datetime.timedelta(microseconds=!micros)' : date_time
+
+  := to_calendar_utc_rust (micros : i64) : date_time =
+      $'chrono::DateTime::from_timestamp_micros(!micros).unwrap().naive_utc()' : date_time
+
+  := to_calendar_utc ((timestamp micros) &= timestamp : timestamp) : date_time =
+      backend_switch {
+          Gleam = \ () => timestamp |> timestamp_gleam_of |> to_calendar_utc_gleam
+          Lua = \ () => floor_div micros 1000000i64 |> convert::unbox : date_time
+          Fsharp = \ () => $'System.DateTime.UnixEpoch.AddTicks(!micros * 10L)' : date_time
+          Python = \ () => to_calendar_utc_python micros
+          Rust = \ () => to_calendar_utc_rust micros
+          Zig = \ () => micros |> zig_date_time_of
+      }
+
+  :! time_zone_provider =
+      `(
+          backend_switch `(()) `({}) {
+              Gleam = (\ () =>
+                  global "import tempo"
+                          ) : () -> ()
+          }
+          $'' : $'tempo.TimeZoneProvider'
+      )
+
+  := unix_epoch_lua () : date_time =
+      := stamp : optionm'::option' date_time = $'os.time{year=1970, month=1, day=1, hour=0, min=0, sec=0}'
+      stamp |> optionm'::default_value' ($'0' : date_time)
+
+  := unix_epoch_python () : date_time =
+      global "import datetime"
+      $'datetime.datetime(1970, 1, 1)' : date_time
+
+  := unix_epoch () : date_time =
+      backend_switch {
+          Gleam = \ () => 0i32 |> timestamp |> to_calendar_utc : date_time
+          Lua = \ () => unix_epoch_lua ()
+          Fsharp = \ () => $'System.DateTime.UnixEpoch' : date_time
+          Python = \ () => unix_epoch_python ()
+          Rust = \ () => rust_date_at (rust_naive_date 1970i32 1u32 1u32) 0u32 0u32 0u32
+          Zig = \ () => 0i64 |> zig_date_time_of
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### unix_epoch (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> lua\n///> fsharp\n///> gleam\n///> cuda\n\nunix_epoch ()\n|> format \"\"\n|> _assert_eq \"1-1-70 12:00:00 AM\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> lua
+  ///> fsharp
+  ///> gleam
+  ///> cuda
+
+  unix_epoch ()
+  |> format ""
+  |> _assert_eq "1-1-70 12:00:00 AM"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= gleam_time_imports () : () =\n    global \"import gleam/time/calendar\"\n    global \"import gleam/time/duration\"\n    global \"import gleam/time/timestamp\"\n\n:= gleam_month (month : int) : calendar_month =\n    global \"import tempo/month\"\n    := calendar_month : resultm::result' calendar_month () = $\"!month |> month.from_int\"\n    calendar_month |> resultm::unbox |> resultm::get\n\n:= gleam_date (year : int) (month : int) (day : int) : date_gleam =\n    := calendar_month = gleam_month month\n    $'calendar.Date(#year, #calendar_month, #day)' : date_gleam\n\n:= gleam_time_of_day (hour : int) (minute : int) (second : int) (nanoseconds : int) : time_of_day_gleam =\n    $'calendar.TimeOfDay(#hour, #minute, #second, #nanoseconds)' : time_of_day_gleam\n\n:= date_time_milliseconds_gleam\n    (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) (millisecond : int)\n    : date_time\n    =\n    gleam_time_imports ()\n    := date = gleam_date year month day\n    := time_of_day = gleam_time_of_day hour minute second (millisecond * 1000000)\n    gleam_date_time date time_of_day ($'duration.milliseconds(#millisecond)' : duration_gleam)\n\n:= lua_midnight (year : int) (month : int) (day : int) : int =\n    := stamp : optionm'::option' int = $'os.time{year=!year, month=!month, day=!day, hour=0, min=0, sec=0}'\n    stamp |> optionm'::default_value' 0i32\n\n:= date_time_milliseconds_lua\n    (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) (millisecond : int)\n    : date_time\n    =\n    := total_seconds = second + (minute * 60) + (hour * 3600)\n    lua_midnight year month day + (total_seconds + (millisecond / 1000)) |> convert::unbox : date_time\n\n:= date_time_milliseconds_python\n    (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) (millisecond : int)\n    : date_time\n    =\n    global \"import datetime\"\n    $'datetime.datetime(!year, !month, !day, !hour, !minute, !second, !millisecond * 1000)' : date_time\n\n:= date_time_milliseconds_rust\n    (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) (millisecond : int)\n    : date_time\n    =\n    := date = rust_naive_date (conv year) (conv month) (conv day)\n    rust_date_at_milli date (conv hour) (conv minute) (conv second) (conv millisecond)\n\n:= date_time_milliseconds_typescript\n    (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) (millisecond : int)\n    : date_time\n    =\n    $'new Date(!year, !month - 1, !day, !hour, !minute, !second, !millisecond)' : date_time\n\n:= date_time_milliseconds_fsharp\n    (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) (millisecond : int)\n    : date_time\n    =\n    $'System.DateTime (!year, !month, !day, !hour, !minute, !second, !millisecond)' : date_time\n\n:= date_time_milliseconds\n    (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) (millisecond : int)\n    : date_time\n    =\n    backend_switch {\n        Gleam = \\ () => date_time_milliseconds_gleam year month day hour minute second millisecond\n        Lua = \\ () => date_time_milliseconds_lua year month day hour minute second millisecond\n        Fsharp = \\ () => date_time_milliseconds_fsharp year month day hour minute second millisecond\n        Python = \\ () => date_time_milliseconds_python year month day hour minute second millisecond\n        Rust = \\ () => date_time_milliseconds_rust year month day hour minute second millisecond\n        TypeScript = \\ () => date_time_milliseconds_typescript year month day hour minute second millisecond\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := gleam_time_imports () : () =
+      global "import gleam/time/calendar"
+      global "import gleam/time/duration"
+      global "import gleam/time/timestamp"
+
+  := gleam_month (month : int) : calendar_month =
+      global "import tempo/month"
+      := calendar_month : resultm::result' calendar_month () = $"!month |> month.from_int"
+      calendar_month |> resultm::unbox |> resultm::get
+
+  := gleam_date (year : int) (month : int) (day : int) : date_gleam =
+      := calendar_month = gleam_month month
+      $'calendar.Date(#year, #calendar_month, #day)' : date_gleam
+
+  := gleam_time_of_day (hour : int) (minute : int) (second : int) (nanoseconds : int) : time_of_day_gleam =
+      $'calendar.TimeOfDay(#hour, #minute, #second, #nanoseconds)' : time_of_day_gleam
+
+  := date_time_milliseconds_gleam
+      (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) (millisecond : int)
+      : date_time
+      =
+      gleam_time_imports ()
+      := date = gleam_date year month day
+      := time_of_day = gleam_time_of_day hour minute second (millisecond * 1000000)
+      gleam_date_time date time_of_day ($'duration.milliseconds(#millisecond)' : duration_gleam)
+
+  := lua_midnight (year : int) (month : int) (day : int) : int =
+      := stamp : optionm'::option' int = $'os.time{year=!year, month=!month, day=!day, hour=0, min=0, sec=0}'
+      stamp |> optionm'::default_value' 0i32
+
+  := date_time_milliseconds_lua
+      (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) (millisecond : int)
+      : date_time
+      =
+      := total_seconds = second + (minute * 60) + (hour * 3600)
+      lua_midnight year month day + (total_seconds + (millisecond / 1000)) |> convert::unbox : date_time
+
+  := date_time_milliseconds_python
+      (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) (millisecond : int)
+      : date_time
+      =
+      global "import datetime"
+      $'datetime.datetime(!year, !month, !day, !hour, !minute, !second, !millisecond * 1000)' : date_time
+
+  := date_time_milliseconds_rust
+      (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) (millisecond : int)
+      : date_time
+      =
+      := date = rust_naive_date (conv year) (conv month) (conv day)
+      rust_date_at_milli date (conv hour) (conv minute) (conv second) (conv millisecond)
+
+  := date_time_milliseconds_typescript
+      (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) (millisecond : int)
+      : date_time
+      =
+      $'new Date(!year, !month - 1, !day, !hour, !minute, !second, !millisecond)' : date_time
+
+  := date_time_milliseconds_fsharp
+      (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) (millisecond : int)
+      : date_time
+      =
+      $'System.DateTime (!year, !month, !day, !hour, !minute, !second, !millisecond)' : date_time
+
+  := date_time_milliseconds
+      (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) (millisecond : int)
+      : date_time
+      =
+      backend_switch {
+          Gleam = \ () => date_time_milliseconds_gleam year month day hour minute second millisecond
+          Lua = \ () => date_time_milliseconds_lua year month day hour minute second millisecond
+          Fsharp = \ () => date_time_milliseconds_fsharp year month day hour minute second millisecond
+          Python = \ () => date_time_milliseconds_python year month day hour minute second millisecond
+          Rust = \ () => date_time_milliseconds_rust year month day hour minute second millisecond
+          TypeScript = \ () => date_time_milliseconds_typescript year month day hour minute second millisecond
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### date_time_milliseconds (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n\ndate_time_milliseconds 1970 1 1 0 0 0 0\n|> format \"\"\n|> _assert_eq \"1-1-70 12:00:00 AM\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> lua
+  ///> fsharp
+  ///> cuda
+
+  date_time_milliseconds 1970 1 1 0 0 0 0
+  |> format ""
+  |> _assert_eq "1-1-70 12:00:00 AM"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= date_time_utc_gleam (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) : date_time =\n    gleam_time_imports ()\n    := date = gleam_date year month day\n    := time_of_day = $'calendar.TimeOfDay(#hour, #minute, #second, 0)' : time_of_day_gleam\n    gleam_date_time date time_of_day ($'duration.seconds(0)   ' : duration_gleam)\n\n:= date_time_utc_lua (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) : date_time =\n    := total_seconds = second + (minute * 60) + (hour * 3600)\n    lua_midnight year month day + total_seconds |> convert::unbox : date_time\n\n:= date_time_utc_python (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) : date_time =\n    global \"import datetime\"\n    $'datetime.datetime(!year, !month, !day, !hour, !minute, !second, tzinfo=datetime.timezone.utc)' : date_time\n\n:= date_time_utc_rust (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) : date_time =\n    := date = rust_naive_date (conv year) (conv month) (conv day)\n    rust_date_at date (conv hour) (conv minute) (conv second)\n\n:= fsharp_utc (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) : date_time =\n    $'System.DateTime (!year, !month, !day, !hour, !minute, !second, System.DateTimeKind.Utc)' : date_time\n\n:= date_time_utc\n    (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int)\n    : date_time\n    =\n    backend_switch {\n        Gleam = \\ () => date_time_utc_gleam year month day hour minute second\n        Lua = \\ () => date_time_utc_lua year month day hour minute second\n        Fsharp = \\ () => fsharp_utc year month day hour minute second\n        Python = \\ () => date_time_utc_python year month day hour minute second\n        Rust = \\ () => date_time_utc_rust year month day hour minute second\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := date_time_utc_gleam (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) : date_time =
+      gleam_time_imports ()
+      := date = gleam_date year month day
+      := time_of_day = $'calendar.TimeOfDay(#hour, #minute, #second, 0)' : time_of_day_gleam
+      gleam_date_time date time_of_day ($'duration.seconds(0)   ' : duration_gleam)
+
+  := date_time_utc_lua (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) : date_time =
+      := total_seconds = second + (minute * 60) + (hour * 3600)
+      lua_midnight year month day + total_seconds |> convert::unbox : date_time
+
+  := date_time_utc_python (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) : date_time =
+      global "import datetime"
+      $'datetime.datetime(!year, !month, !day, !hour, !minute, !second, tzinfo=datetime.timezone.utc)' : date_time
+
+  := date_time_utc_rust (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) : date_time =
+      := date = rust_naive_date (conv year) (conv month) (conv day)
+      rust_date_at date (conv hour) (conv minute) (conv second)
+
+  := fsharp_utc (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) : date_time =
+      $'System.DateTime (!year, !month, !day, !hour, !minute, !second, System.DateTimeKind.Utc)' : date_time
+
+  := date_time_utc
+      (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int)
+      : date_time
+      =
+      backend_switch {
+          Gleam = \ () => date_time_utc_gleam year month day hour minute second
+          Lua = \ () => date_time_utc_lua year month day hour minute second
+          Fsharp = \ () => fsharp_utc year month day hour minute second
+          Python = \ () => date_time_utc_python year month day hour minute second
+          Rust = \ () => date_time_utc_rust year month day hour minute second
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### date_time_utc (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n///> lua\n///> cuda\n\ndate_time_utc 1970 1 1 0 0 0\n|> format \"\"\n|> _assert_eq \"1-1-70 12:00:00 AM\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+  ///> lua
+  ///> cuda
+
+  date_time_utc 1970 1 1 0 0 0
+  |> format ""
+  |> _assert_eq "1-1-70 12:00:00 AM"
+  """,
+  timeout: 300_000
+)
+```
+
+#### calendar_constructors_build_the_same_instants_on_rust (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n\n:= shown (d : date_time) : string = d |> format \"%Y-%m-%d %H:%M:%S.%f\"\n:= utc, milliseconds = shown (date_time_utc 1970 1 1 0 0 0), shown (date_time_milliseconds 1970 1 1 0 0 0 250)\n(utc, milliseconds, shown (unix_epoch ()), shown (min_value ()), shown (max_value ()))\n|> _assert_eq (\n    \"1970-01-01 00:00:00.000000000\", \"1970-01-01 00:00:00.250000000\", \"1970-01-01 00:00:00.000000000\",\n    \"0001-01-01 00:00:00.000000000\", \"9999-12-31 23:59:59.999999900\"\n)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+
+  := shown (d : date_time) : string = d |> format "%Y-%m-%d %H:%M:%S.%f"
+  := utc, milliseconds = shown (date_time_utc 1970 1 1 0 0 0), shown (date_time_milliseconds 1970 1 1 0 0 0 250)
+  (utc, milliseconds, shown (unix_epoch ()), shown (min_value ()), shown (max_value ()))
+  |> _assert_eq (
+      "1970-01-01 00:00:00.000000000", "1970-01-01 00:00:00.250000000", "1970-01-01 00:00:00.000000000",
+      "0001-01-01 00:00:00.000000000", "9999-12-31 23:59:59.999999900"
+  )
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":| date_time_kind =\n    | Unspecified\n    | Utc\n    | Local\n\n:= fsharp_date_kind (kind : date_time_kind) : $'System.DateTimeKind' =\n    ?= kind ?|\n    | Unspecified => $'System.DateTimeKind.Unspecified'\n    | Utc => $'System.DateTimeKind.Utc'\n    | Local => $'System.DateTimeKind.Local'\n\n:= fsharp_specified (kind : date_time_kind) (date_time : date_time) : date_time =\n    := kind = fsharp_date_kind kind\n    $'System.DateTime.SpecifyKind (!date_time, !kind)' : date_time\n\n:= specify_date_kind (kind : date_time_kind) (date_time : date_time) : date_time =\n    backend_switch {\n        Gleam = \\ () => date_time\n        Lua = \\ () => date_time\n        Fsharp = \\ () => fsharp_specified kind date_time\n        Python = \\ () => $'!date_time.replace(tzinfo=None)' : date_time\n        Rust = \\ () => date_time\n        Zig = \\ () => date_time\n    }\n\n:= python_utc (date_time : date_time) : date_time =\n    global \"import datetime\"\n    $'!date_time.replace(tzinfo=datetime.timezone.utc)' : date_time\n\n:= to_universal_time (date_time : date_time) : date_time =\n    backend_switch {\n        Gleam = \\ () => date_time\n        Lua = \\ () => date_time\n        Fsharp = \\ () => date_time |> $'_.ToUniversalTime()' : date_time\n        Python = \\ () => python_utc date_time\n        Rust = \\ () => date_time\n        Zig = \\ () => date_time\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :| date_time_kind =
+      | Unspecified
+      | Utc
+      | Local
+
+  := fsharp_date_kind (kind : date_time_kind) : $'System.DateTimeKind' =
+      ?= kind ?|
+      | Unspecified => $'System.DateTimeKind.Unspecified'
+      | Utc => $'System.DateTimeKind.Utc'
+      | Local => $'System.DateTimeKind.Local'
+
+  := fsharp_specified (kind : date_time_kind) (date_time : date_time) : date_time =
+      := kind = fsharp_date_kind kind
+      $'System.DateTime.SpecifyKind (!date_time, !kind)' : date_time
+
+  := specify_date_kind (kind : date_time_kind) (date_time : date_time) : date_time =
+      backend_switch {
+          Gleam = \ () => date_time
+          Lua = \ () => date_time
+          Fsharp = \ () => fsharp_specified kind date_time
+          Python = \ () => $'!date_time.replace(tzinfo=None)' : date_time
+          Rust = \ () => date_time
+          Zig = \ () => date_time
+      }
+
+  := python_utc (date_time : date_time) : date_time =
+      global "import datetime"
+      $'!date_time.replace(tzinfo=datetime.timezone.utc)' : date_time
+
+  := to_universal_time (date_time : date_time) : date_time =
+      backend_switch {
+          Gleam = \ () => date_time
+          Lua = \ () => date_time
+          Fsharp = \ () => date_time |> $'_.ToUniversalTime()' : date_time
+          Python = \ () => python_utc date_time
+          Rust = \ () => date_time
+          Zig = \ () => date_time
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### to_universal_time (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n///> lua\n///> cuda\n\ndate_time_milliseconds 1970 1 1 0 0 0 0\n|> specify_date_kind Utc\n|> to_universal_time\n|> format \"\"\n|> _assert_eq \"1-1-70 12:00:00 AM\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+  ///> lua
+  ///> cuda
+
+  date_time_milliseconds 1970 1 1 0 0 0 0
+  |> specify_date_kind Utc
+  |> to_universal_time
+  |> format ""
+  |> _assert_eq "1-1-70 12:00:00 AM"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n///> lua\n///> cuda\n\ndate_time_utc 1970 1 1 0 0 0\n|> specify_date_kind Utc\n|> format \"\"\n|> _assert_eq \"1-1-70 12:00:00 AM\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+  ///> lua
+  ///> cuda
+
+  date_time_utc 1970 1 1 0 0 0
+  |> specify_date_kind Utc
+  |> format ""
+  |> _assert_eq "1-1-70 12:00:00 AM"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n///> lua\n///> cuda\n\ndate_time_utc 1970 1 1 0 0 0\n|> specify_date_kind Local\n|> format \"\"\n|> _assert_eq \"1-1-70 12:00:00 AM\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+  ///> lua
+  ///> cuda
+
+  date_time_utc 1970 1 1 0 0 0
+  |> specify_date_kind Local
+  |> format ""
+  |> _assert_eq "1-1-70 12:00:00 AM"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n///> lua\n///> cuda\n\ndate_time_utc 1970 1 1 0 0 0\n|> specify_date_kind Unspecified\n|> format \"\"\n|> _assert_eq \"1-1-70 12:00:00 AM\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+  ///> lua
+  ///> cuda
+
+  date_time_utc 1970 1 1 0 0 0
+  |> specify_date_kind Unspecified
+  |> format ""
+  |> _assert_eq "1-1-70 12:00:00 AM"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! time_span_python =\n    `(\n        backend_switch `(()) `({}) {\n            Python = (\\ () => global \"import datetime\") : () -> ()\n        }\n        $'' : $'datetime.timedelta'\n    )\n:== time_span_switch =\n    {\n        Gleam : $'duration.Duration'\n        Lua : $'number'\n        Fsharp : $'System.TimeSpan'\n        Python : time_span_python\n        Rust : $'chrono::TimeDelta'\n        TypeScript : $'number'\n    }\n:! time_span = $'backend_switch `(time_span_switch)'\n\n:= rust_time_delta_microseconds (n : i64) : time_span = $'chrono::TimeDelta::microseconds(!n)' : time_span\n\n:= rust_time_delta_nanoseconds (n : i64) : time_span = $'chrono::TimeDelta::nanoseconds(!n)' : time_span\n\n:= rust_time_delta_sum (a : time_span) (b : time_span) : time_span = $'!a + !b' : time_span\n\n:= rust_time_delta_of_ticks (ticks : i64) : time_span =\n    := whole_microseconds = rust_time_delta_microseconds (ticks / 10i64)\n    rust_time_delta_sum whole_microseconds (rust_time_delta_nanoseconds ((ticks % 10i64) * 100i64))\n\n:= python_timedelta x : time_span =\n    global \"import datetime\"\n    $'datetime.timedelta(!x)' : time_span\n\n:= time_span x : time_span =\n    backend_switch {\n        Gleam = \\ () => x |> convert::unbox : time_span\n        Lua = \\ () => x |> convert::unbox : time_span\n        Fsharp = \\ () => $'!x |> `time_span ' : time_span\n        Python = \\ () => python_timedelta x\n        Rust = \\ () => rust_time_delta_of_ticks (conv x)\n    }\n\n:= gleam_stamp (date_time : date_time) : timestamp_gleam = date_time |> split_date_time |> new_timestamp_gleam\n\n:= gleam_whole_seconds (duration : duration_gleam) : time_span =\n    ($'duration.to_seconds(!duration)' : float)\n    |> convert::convert\n    |> \\ x => x : int\n    |> convert::convert\n\n:= gleam_span (a : date_time) (b : date_time) : time_span =\n    := timestamp, timestamp' = gleam_stamp a, gleam_stamp b\n    := duration : duration_gleam = $'!timestamp |> timestamp.difference(!timestamp')'\n    gleam_whole_seconds duration\n\n:= new_time_span (a : date_time) (b : date_time) : time_span =\n    run_target \\|\n        | Gleam => \\ () => gleam_span a b\n        | _ => \\ () => $'!b - !a '\n\n:! rust_std_duration = $'std::time::Duration'\n\n:= rust_time_delta_ticks (time_span : time_span) : i64 =\n    := seconds : i64 = $'!time_span.num_seconds()'\n    := nanos : i32 = $'!time_span.subsec_nanos()'\n    seconds * 10000000i64 + (conv nanos : i64) / 100i64\n\n:= gleam_duration_imports () : () =\n    backend_switch {\n        Gleam = \\ () => global \"import gleam/time/duration\"\n    }\n\n:= gleam_ticks (time_span : time_span) : i64 =\n    gleam_duration_imports ()\n    := duration : duration_gleam = time_span |> $'duration.seconds'\n    duration |> $'duration.to_seconds' |> (*) 10000000f64 |> convert::convert\n\n:= lua_ticks (time_span : time_span) : i64 =\n    := seconds = time_span |> convert::unbox : f64\n    seconds * 10000000 |> convert::convert : i64\n\n:= cuda_ticks (time_span : time_span) : i64 = $'!time_span.total_seconds() * 10000000' : i64\n\n:= dotnet_ticks (time_span : time_span) : i64 = time_span |> $'_.Ticks' : i64\n\n:= span_ticks (time_span : time_span) : i64 =\n    run_target \\|\n        | Gleam => \\ () => gleam_ticks time_span\n        | Lua => \\ () => lua_ticks time_span\n        | Cuda => \\ () => cuda_ticks time_span\n        | Rust => \\ () => rust_time_delta_ticks time_span\n        | _ => \\ () => dotnet_ticks time_span\n\n:= total_seconds (time_span : time_span) : f64 = (conv (span_ticks time_span) : f64) / 10000000f64\n\n:= gleam_days (time_span : time_span) : f64 =\n    gleam_duration_imports ()\n    := duration : duration_gleam = time_span |> $'duration.seconds'\n    duration |> $'duration.to_seconds' |> (/) 86400f64\n\n:= lua_days (time_span : time_span) : f64 =\n    := seconds = time_span |> convert::unbox : f64\n    seconds / 86400 |> convert::convert : f64\n\n:= days (time_span : time_span) : f64 =\n    backend_switch {\n        Gleam = \\ () => gleam_days time_span\n        Lua = \\ () => lua_days time_span\n        Fsharp = \\ () => time_span |> $'_.TotalDays' : f64\n        Python = \\ () => $'!time_span.days' : f64\n        Rust = \\ () => (conv (rust_time_delta_ticks time_span) : f64) / 864000000000f64\n    }\n\n:= gleam_micros (date_time : date_time) : i64 =\n    global \"import gleam/time/timestamp\"\n    := t = gleam_stamp date_time\n    := seconds : i64 = $'timestamp.to_unix_seconds_and_nanoseconds(!t).0'\n    := nanos : i64 = $'timestamp.to_unix_seconds_and_nanoseconds(!t).1'\n    seconds * 1000000i64 + nanos / 1000i64\n\n:= fsharp_micros (date_time : date_time) : i64 =\n    := ticks : i64 = $'!date_time.Ticks'\n    (ticks - 621355968000000000i64) / 10i64\n\n:= python_micros (date_time : date_time) : i64 =\n    global \"import datetime\"\n    $'(!date_time.replace(tzinfo=None) - datetime.datetime(1970, 1, 1)) // \\\n        datetime.timedelta(microseconds=1)' : i64\n\n:= to_timestamp (date_time : date_time) : timestamp =\n    backend_switch {\n        Gleam = \\ () => gleam_micros date_time |> timestamp\n        Lua = \\ () => ($'!date_time * 1000000' : i64) |> timestamp\n        Fsharp = \\ () => fsharp_micros date_time |> timestamp\n        Python = \\ () => python_micros date_time |> timestamp\n        Rust = \\ () => ($'!date_time.and_utc().timestamp_micros()' : i64) |> timestamp\n        Zig = \\ () => date_time |> zig_micros_of |> timestamp\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :! time_span_python =
+      `(
+          backend_switch `(()) `({}) {
+              Python = (\ () => global "import datetime") : () -> ()
+          }
+          $'' : $'datetime.timedelta'
+      )
+  :== time_span_switch =
+      {
+          Gleam : $'duration.Duration'
+          Lua : $'number'
+          Fsharp : $'System.TimeSpan'
+          Python : time_span_python
+          Rust : $'chrono::TimeDelta'
+          TypeScript : $'number'
+      }
+  :! time_span = $'backend_switch `(time_span_switch)'
+
+  := rust_time_delta_microseconds (n : i64) : time_span = $'chrono::TimeDelta::microseconds(!n)' : time_span
+
+  := rust_time_delta_nanoseconds (n : i64) : time_span = $'chrono::TimeDelta::nanoseconds(!n)' : time_span
+
+  := rust_time_delta_sum (a : time_span) (b : time_span) : time_span = $'!a + !b' : time_span
+
+  := rust_time_delta_of_ticks (ticks : i64) : time_span =
+      := whole_microseconds = rust_time_delta_microseconds (ticks / 10i64)
+      rust_time_delta_sum whole_microseconds (rust_time_delta_nanoseconds ((ticks % 10i64) * 100i64))
+
+  := python_timedelta x : time_span =
+      global "import datetime"
+      $'datetime.timedelta(!x)' : time_span
+
+  := time_span x : time_span =
+      backend_switch {
+          Gleam = \ () => x |> convert::unbox : time_span
+          Lua = \ () => x |> convert::unbox : time_span
+          Fsharp = \ () => $'!x |> `time_span ' : time_span
+          Python = \ () => python_timedelta x
+          Rust = \ () => rust_time_delta_of_ticks (conv x)
+      }
+
+  := gleam_stamp (date_time : date_time) : timestamp_gleam = date_time |> split_date_time |> new_timestamp_gleam
+
+  := gleam_whole_seconds (duration : duration_gleam) : time_span =
+      ($'duration.to_seconds(!duration)' : float)
+      |> convert::convert
+      |> \ x => x : int
+      |> convert::convert
+
+  := gleam_span (a : date_time) (b : date_time) : time_span =
+      := timestamp, timestamp' = gleam_stamp a, gleam_stamp b
+      := duration : duration_gleam = $'!timestamp |> timestamp.difference(!timestamp')'
+      gleam_whole_seconds duration
+
+  := new_time_span (a : date_time) (b : date_time) : time_span =
+      run_target \|
+          | Gleam => \ () => gleam_span a b
+          | _ => \ () => $'!b - !a '
+
+  :! rust_std_duration = $'std::time::Duration'
+
+  := rust_time_delta_ticks (time_span : time_span) : i64 =
+      := seconds : i64 = $'!time_span.num_seconds()'
+      := nanos : i32 = $'!time_span.subsec_nanos()'
+      seconds * 10000000i64 + (conv nanos : i64) / 100i64
+
+  := gleam_duration_imports () : () =
+      backend_switch {
+          Gleam = \ () => global "import gleam/time/duration"
+      }
+
+  := gleam_ticks (time_span : time_span) : i64 =
+      gleam_duration_imports ()
+      := duration : duration_gleam = time_span |> $'duration.seconds'
+      duration |> $'duration.to_seconds' |> (*) 10000000f64 |> convert::convert
+
+  := lua_ticks (time_span : time_span) : i64 =
+      := seconds = time_span |> convert::unbox : f64
+      seconds * 10000000 |> convert::convert : i64
+
+  := cuda_ticks (time_span : time_span) : i64 = $'!time_span.total_seconds() * 10000000' : i64
+
+  := dotnet_ticks (time_span : time_span) : i64 = time_span |> $'_.Ticks' : i64
+
+  := span_ticks (time_span : time_span) : i64 =
+      run_target \|
+          | Gleam => \ () => gleam_ticks time_span
+          | Lua => \ () => lua_ticks time_span
+          | Cuda => \ () => cuda_ticks time_span
+          | Rust => \ () => rust_time_delta_ticks time_span
+          | _ => \ () => dotnet_ticks time_span
+
+  := total_seconds (time_span : time_span) : f64 = (conv (span_ticks time_span) : f64) / 10000000f64
+
+  := gleam_days (time_span : time_span) : f64 =
+      gleam_duration_imports ()
+      := duration : duration_gleam = time_span |> $'duration.seconds'
+      duration |> $'duration.to_seconds' |> (/) 86400f64
+
+  := lua_days (time_span : time_span) : f64 =
+      := seconds = time_span |> convert::unbox : f64
+      seconds / 86400 |> convert::convert : f64
+
+  := days (time_span : time_span) : f64 =
+      backend_switch {
+          Gleam = \ () => gleam_days time_span
+          Lua = \ () => lua_days time_span
+          Fsharp = \ () => time_span |> $'_.TotalDays' : f64
+          Python = \ () => $'!time_span.days' : f64
+          Rust = \ () => (conv (rust_time_delta_ticks time_span) : f64) / 864000000000f64
+      }
+
+  := gleam_micros (date_time : date_time) : i64 =
+      global "import gleam/time/timestamp"
+      := t = gleam_stamp date_time
+      := seconds : i64 = $'timestamp.to_unix_seconds_and_nanoseconds(!t).0'
+      := nanos : i64 = $'timestamp.to_unix_seconds_and_nanoseconds(!t).1'
+      seconds * 1000000i64 + nanos / 1000i64
+
+  := fsharp_micros (date_time : date_time) : i64 =
+      := ticks : i64 = $'!date_time.Ticks'
+      (ticks - 621355968000000000i64) / 10i64
+
+  := python_micros (date_time : date_time) : i64 =
+      global "import datetime"
+      $'(!date_time.replace(tzinfo=None) - datetime.datetime(1970, 1, 1)) // \
+          datetime.timedelta(microseconds=1)' : i64
+
+  := to_timestamp (date_time : date_time) : timestamp =
+      backend_switch {
+          Gleam = \ () => gleam_micros date_time |> timestamp
+          Lua = \ () => ($'!date_time * 1000000' : i64) |> timestamp
+          Fsharp = \ () => fsharp_micros date_time |> timestamp
+          Python = \ () => python_micros date_time |> timestamp
+          Rust = \ () => ($'!date_time.and_utc().timestamp_micros()' : i64) |> timestamp
+          Zig = \ () => date_time |> zig_micros_of |> timestamp
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### to_timestamp (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> cuda\n///> rust -d chrono\n\nunix_epoch ()\n|> to_timestamp\n|> _assert_eq' (0i64 |> timestamp)\n\ndate_time_utc 2026 10 13 12 0 0\n|> to_timestamp\n|> _assert_eq' (1791892800000000i64 |> timestamp)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> cuda
+  ///> rust -d chrono
+
+  unix_epoch ()
+  |> to_timestamp
+  |> _assert_eq' (0i64 |> timestamp)
+
+  date_time_utc 2026 10 13 12 0 0
+  |> to_timestamp
+  |> _assert_eq' (1791892800000000i64 |> timestamp)
+  """,
+  timeout: 300_000
+)
+```
+
+#### to_timestamp_range (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> cuda\n///> rust -d chrono\n\nmin_value ()\n|> to_timestamp\n|> _assert_eq' (-62135596800000000i64 |> timestamp)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> cuda
+  ///> rust -d chrono
+
+  min_value ()
+  |> to_timestamp
+  |> _assert_eq' (-62135596800000000i64 |> timestamp)
+  """,
+  timeout: 300_000
+)
+```
+
+#### timestamp_round_trip (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> cuda\n///> rust -d chrono\n\n1791892800123456i64\n|> timestamp\n|> to_calendar_utc\n|> to_timestamp\n|> _assert_eq' (1791892800123456i64 |> timestamp)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> cuda
+  ///> rust -d chrono
+
+  1791892800123456i64
+  |> timestamp
+  |> to_calendar_utc
+  |> to_timestamp
+  |> _assert_eq' (1791892800123456i64 |> timestamp)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= fsharp_span_of_micros (micros : i64) : time_span =\n    := ticks = micros * 10i64\n    $'System.TimeSpan.FromTicks(!ticks)' : time_span\n\n:= python_span_of_micros (micros : i64) : time_span =\n    global \"import datetime\"\n    $'datetime.timedelta(microseconds=!micros)' : time_span\n\n:= time_span_of_micros (micros : i64) : time_span =\n    backend_switch {\n        Gleam = \\ () => micros / 1000000 |> convert::unbox : time_span\n        Lua = \\ () => $'!micros / 1000000' : time_span\n        Fsharp = \\ () => fsharp_span_of_micros micros\n        Python = \\ () => python_span_of_micros micros\n        Rust = \\ () => $'chrono::TimeDelta::microseconds(!micros)' : time_span\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := fsharp_span_of_micros (micros : i64) : time_span =
+      := ticks = micros * 10i64
+      $'System.TimeSpan.FromTicks(!ticks)' : time_span
+
+  := python_span_of_micros (micros : i64) : time_span =
+      global "import datetime"
+      $'datetime.timedelta(microseconds=!micros)' : time_span
+
+  := time_span_of_micros (micros : i64) : time_span =
+      backend_switch {
+          Gleam = \ () => micros / 1000000 |> convert::unbox : time_span
+          Lua = \ () => $'!micros / 1000000' : time_span
+          Fsharp = \ () => fsharp_span_of_micros micros
+          Python = \ () => python_span_of_micros micros
+          Rust = \ () => $'chrono::TimeDelta::microseconds(!micros)' : time_span
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### spans_convert_to_seconds_and_days (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n\n(total_seconds (time_span_of_micros 1500000i64), days (time_span_of_micros 86400000000i64))\n|> _assert_eq (1.5, 1.0)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+
+  (total_seconds (time_span_of_micros 1500000i64), days (time_span_of_micros 86400000000i64))
+  |> _assert_eq (1.5, 1.0)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= span_seconds_float (time_span : time_span) : f64 = (time_span |> convert::to : i32) |> convert::convert : f64\n\n:= rust_span_hours (time_span : time_span) : i32 =\n    := total : i64 = $'!time_span.num_hours()'\n    conv (total % 24i64) : i32\n\n:= typescript_span_hours (time_span : time_span) : i32 =\n    := total : f64 = $'!time_span'\n    (conv (total / 3600000f64) : i32) % 24i32\n\n:= hours (time_span : time_span) : i32 =\n    backend_switch {\n        Gleam = \\ () => ((span_seconds_float time_span / 3600.0) |> math::floor |> convert::unbox : i32) % 24\n        Lua = \\ () => ((span_seconds_float time_span / 3600.0) |> math::floor |> convert::unbox : i32) % 24\n        Fsharp = \\ () => time_span |> $'_.Hours' : i32\n        Python = \\ () => ($'!time_span.seconds' : i32) / 3600i32\n        Rust = \\ () => rust_span_hours time_span\n        TypeScript = \\ () => typescript_span_hours time_span\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := span_seconds_float (time_span : time_span) : f64 = (time_span |> convert::to : i32) |> convert::convert : f64
+
+  := rust_span_hours (time_span : time_span) : i32 =
+      := total : i64 = $'!time_span.num_hours()'
+      conv (total % 24i64) : i32
+
+  := typescript_span_hours (time_span : time_span) : i32 =
+      := total : f64 = $'!time_span'
+      (conv (total / 3600000f64) : i32) % 24i32
+
+  := hours (time_span : time_span) : i32 =
+      backend_switch {
+          Gleam = \ () => ((span_seconds_float time_span / 3600.0) |> math::floor |> convert::unbox : i32) % 24
+          Lua = \ () => ((span_seconds_float time_span / 3600.0) |> math::floor |> convert::unbox : i32) % 24
+          Fsharp = \ () => time_span |> $'_.Hours' : i32
+          Python = \ () => ($'!time_span.seconds' : i32) / 3600i32
+          Rust = \ () => rust_span_hours time_span
+          TypeScript = \ () => typescript_span_hours time_span
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### hours (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> lua\n///> cuda\n///> rust -d chrono\n///> typescript\n\n~~ date_time_milliseconds 2002 2 2 20 22 24 26\n|> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)\n|> hours\n|> _assert_eq 10","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> lua
+  ///> cuda
+  ///> rust -d chrono
+  ///> typescript
+
+  ~~ date_time_milliseconds 2002 2 2 20 22 24 26
+  |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
+  |> hours
+  |> _assert_eq 10
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= rust_span_minutes (time_span : time_span) : i32 =\n    := total : i64 = $'!time_span.num_minutes()'\n    conv (total % 60i64) : i32\n\n:= typescript_span_minutes (time_span : time_span) : i32 =\n    := total : f64 = $'!time_span'\n    (conv (total / 60000f64) : i32) % 60i32\n\n:= minutes (time_span : time_span) : i32 =\n    backend_switch {\n        Gleam = \\ () => ((span_seconds_float time_span / 60.0) |> math::floor |> convert::unbox : i32) % 60\n        Lua = \\ () => ((span_seconds_float time_span / 60.0) |> math::floor |> convert::unbox : i32) % 60\n        Fsharp = \\ () => time_span |> $'_.Minutes' : i32\n        Python = \\ () => (($'!time_span.seconds' : i32) / 60i32) % 60i32\n        Rust = \\ () => rust_span_minutes time_span\n        TypeScript = \\ () => typescript_span_minutes time_span\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := rust_span_minutes (time_span : time_span) : i32 =
+      := total : i64 = $'!time_span.num_minutes()'
+      conv (total % 60i64) : i32
+
+  := typescript_span_minutes (time_span : time_span) : i32 =
+      := total : f64 = $'!time_span'
+      (conv (total / 60000f64) : i32) % 60i32
+
+  := minutes (time_span : time_span) : i32 =
+      backend_switch {
+          Gleam = \ () => ((span_seconds_float time_span / 60.0) |> math::floor |> convert::unbox : i32) % 60
+          Lua = \ () => ((span_seconds_float time_span / 60.0) |> math::floor |> convert::unbox : i32) % 60
+          Fsharp = \ () => time_span |> $'_.Minutes' : i32
+          Python = \ () => (($'!time_span.seconds' : i32) / 60i32) % 60i32
+          Rust = \ () => rust_span_minutes time_span
+          TypeScript = \ () => typescript_span_minutes time_span
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### minutes (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> lua\n///> cuda\n///> rust -d chrono\n///> typescript\n\n~~ date_time_milliseconds 2002 2 2 20 22 24 26\n|> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)\n|> minutes\n|> _assert_eq 11","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> lua
+  ///> cuda
+  ///> rust -d chrono
+  ///> typescript
+
+  ~~ date_time_milliseconds 2002 2 2 20 22 24 26
+  |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
+  |> minutes
+  |> _assert_eq 11
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= rust_span_seconds (time_span : time_span) : i32 =\n    := total : i64 = $'!time_span.num_seconds()'\n    conv (total % 60i64) : i32\n\n:= typescript_span_seconds (time_span : time_span) : i32 =\n    := total : f64 = $'!time_span'\n    (conv (total / 1000f64) : i32) % 60i32\n\n:= seconds (time_span : time_span) : i32 =\n    backend_switch {\n        Gleam = \\ () => (span_seconds_float time_span |> math::floor |> convert::unbox : i32) % 60\n        Lua = \\ () => (span_seconds_float time_span |> math::floor |> convert::unbox : i32) % 60\n        Fsharp = \\ () => time_span |> $'_.Seconds' : i32\n        Python = \\ () => ($'!time_span.seconds' : i32) % 60i32\n        Rust = \\ () => rust_span_seconds time_span\n        TypeScript = \\ () => typescript_span_seconds time_span\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := rust_span_seconds (time_span : time_span) : i32 =
+      := total : i64 = $'!time_span.num_seconds()'
+      conv (total % 60i64) : i32
+
+  := typescript_span_seconds (time_span : time_span) : i32 =
+      := total : f64 = $'!time_span'
+      (conv (total / 1000f64) : i32) % 60i32
+
+  := seconds (time_span : time_span) : i32 =
+      backend_switch {
+          Gleam = \ () => (span_seconds_float time_span |> math::floor |> convert::unbox : i32) % 60
+          Lua = \ () => (span_seconds_float time_span |> math::floor |> convert::unbox : i32) % 60
+          Fsharp = \ () => time_span |> $'_.Seconds' : i32
+          Python = \ () => ($'!time_span.seconds' : i32) % 60i32
+          Rust = \ () => rust_span_seconds time_span
+          TypeScript = \ () => typescript_span_seconds time_span
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### seconds (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n///> lua\n///> cuda\n///> rust -d chrono\n///> typescript\n\n~~ date_time_milliseconds 2002 2 2 20 22 24 26\n|> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)\n|> seconds\n|> _assert_eq 12","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+  ///> lua
+  ///> cuda
+  ///> rust -d chrono
+  ///> typescript
+
+  ~~ date_time_milliseconds 2002 2 2 20 22 24 26
+  |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
+  |> seconds
+  |> _assert_eq 12
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= rust_span_milliseconds (time_span : time_span) : i32 =\n    := total : i64 = $'!time_span.num_milliseconds()'\n    conv (total % 1000i64) : i32\n\n:= typescript_span_milliseconds (time_span : time_span) : i32 =\n    := total : f64 = $'!time_span'\n    := whole : i64 = conv total\n    conv (whole % 1000i64) : i32\n\n:= milliseconds (time_span : time_span) : i32 =\n    backend_switch {\n        Gleam = \\ () => ((span_seconds_float time_span * 1000.0) |> math::floor |> convert::unbox : i32) % 1000\n        Lua = \\ () => ((span_seconds_float time_span * 1000.0) |> math::floor |> convert::unbox : i32) % 1000\n        Fsharp = \\ () => time_span |> $'_.Milliseconds' : i32\n        Python = \\ () => ($'!time_span.microseconds' : i32) / 1000i32\n        Rust = \\ () => rust_span_milliseconds time_span\n        TypeScript = \\ () => typescript_span_milliseconds time_span\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := rust_span_milliseconds (time_span : time_span) : i32 =
+      := total : i64 = $'!time_span.num_milliseconds()'
+      conv (total % 1000i64) : i32
+
+  := typescript_span_milliseconds (time_span : time_span) : i32 =
+      := total : f64 = $'!time_span'
+      := whole : i64 = conv total
+      conv (whole % 1000i64) : i32
+
+  := milliseconds (time_span : time_span) : i32 =
+      backend_switch {
+          Gleam = \ () => ((span_seconds_float time_span * 1000.0) |> math::floor |> convert::unbox : i32) % 1000
+          Lua = \ () => ((span_seconds_float time_span * 1000.0) |> math::floor |> convert::unbox : i32) % 1000
+          Fsharp = \ () => time_span |> $'_.Milliseconds' : i32
+          Python = \ () => ($'!time_span.microseconds' : i32) / 1000i32
+          Rust = \ () => rust_span_milliseconds time_span
+          TypeScript = \ () => typescript_span_milliseconds time_span
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### milliseconds (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> cuda\n///> rust -d chrono\n///> typescript\n\n~~ date_time_milliseconds 2002 2 2 20 22 24 26\n|> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)\n|> milliseconds\n|> _assert_eq 13","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> cuda
+  ///> rust -d chrono
+  ///> typescript
+
+  ~~ date_time_milliseconds 2002 2 2 20 22 24 26
+  |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
+  |> milliseconds
+  |> _assert_eq 13
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= span_two_digits (n : i64) : string = sm'::pad_left 2 '0' (\"\" ++#? n)\n\n:= span_fields (a : i64) : i64 * i64 * i64 * i64 * i64 =\n    a / 864000000000i64, (a / 36000000000i64) % 24i64, (a / 600000000i64) % 60i64, (a / 10000000i64) % 60i64, a % 10000000i64\n\n:= day_prefix (days : i64) : string = ? days > 0i64 ?> \"\" ++#? days ++# \".\" |: \"\"\n\n:= fraction_suffix (fraction : i64) : string = ? fraction > 0i64 ?> \".\" ++# sm'::pad_left 7 '0' (\"\" ++#? fraction) |: \"\"\n\n:= clock_text (hours : i64) (minutes : i64) (seconds : i64) : string =\n    span_two_digits hours ++# \":\" ++# span_two_digits minutes ++# \":\" ++# span_two_digits seconds\n\n:= constant_span_text (negative : bool) (fields : i64 * i64 * i64 * i64 * i64) : string =\n    := days, hours, minutes, seconds, fraction = fields\n    := sign = ? negative ?> \"-\" |: \"\"\n    sign ++# day_prefix days ++# clock_text hours minutes seconds ++# fraction_suffix fraction\n\n:= custom_span_text (format : string) (fields : i64 * i64 * i64 * i64 * i64) : string =\n    := _, hours, minutes, seconds, _ = fields\n    := with_hours = format |> sm'::replace \"hh\" (span_two_digits hours)\n    with_hours |> sm'::replace \"mm\" (span_two_digits minutes) |> sm'::replace \"ss\" (span_two_digits seconds)\n\n:= time_span_ticks_text (format : string) (ticks : i64) : string =\n    := negative = ticks < 0i64\n    := fields = span_fields (? negative ?> 0i64 - ticks |: ticks)\n    ? format = \"\" || format = \"c\" ?> constant_span_text negative fields |: custom_span_text format fields\n\n:= rust_time_span_nanoseconds (time_span : time_span) : i64 = $'!time_span.num_nanoseconds().unwrap()' : i64\n\n:= typescript_time_span_milliseconds (time_span : time_span) : f64 = $'!time_span' : f64\n\n:= typescript_span_text (format : string) (time_span : time_span) : string =\n    := milliseconds : i64 = conv (typescript_time_span_milliseconds time_span)\n    time_span_ticks_text format (milliseconds * 10000i64)\n\n:= rust_span_text (format : string) (time_span : time_span) : string =\n    time_span_ticks_text format (rust_time_span_nanoseconds time_span / 100i64)\n\n:= gleam_span_tempo (time_span : time_span) : tempo_date_time =\n    global \"import tempo/datetime\"\n    time_span\n    |> $'duration.seconds'\n    |> \\ x => x : duration_gleam\n    |> $'datetime.from_duration'\n\n:= gleam_span_text (format : string) (time_span : time_span) : string =\n    := tempo_date_time = gleam_span_tempo time_span\n    := pattern = ? format = \"\" ?> \"c\" |: format\n    $'!tempo_date_time |> datetime.format(tempo.Custom(!pattern))' : string\n\n:= lua_two n : string = sm'::pad_left 2 '0' #?n\n\n:= lua_clock_text (time_span : time_span) : string =\n    := total_seconds = time_span |> convert::unbox : f64\n    := hours = total_seconds / 3600\n    := minutes = (total_seconds % 3600) / 60\n    := seconds = total_seconds % 60\n    lua_two hours ++# \":\" ++# lua_two minutes ++# \":\" ++# lua_two seconds\n\n:= millis_suffix (result : string) (ms : i32) : string =\n    ? ms <= 0\n    ?> result\n    |:\n        := ms =\n            #?**ms\n            |> sm'::pad_left 3 '0'\n            |> sm'::pad_right 7 '0'\n        result ++# \".\" ++# ms\n\n:= python_clock_text (time_span : time_span) : string =\n    := date = $'!time_span + !(min_value ())' : date_time\n    := time = $'!date.strftime(\"%H:%M:%S\")' : string\n    := days = time_span |> days\n    ? days <= 0 ?> time |: #?**days ++# \".\" ++# time\n\n:= other_span_text (format : string) (time_span : time_span) : string =\n    backend_switch {\n        Gleam = \\ () => gleam_span_text format time_span\n        Lua = \\ () => millis_suffix (lua_clock_text time_span) (time_span |> milliseconds)\n        Fsharp = \\ () => $'!time_span.ToString !format ' : string\n        Python = \\ () => millis_suffix (python_clock_text time_span) (time_span |> milliseconds)\n    }\n\n:= time_span_format (format : string) (time_span : time_span) : string =\n    run_target_args (\\ () => format, time_span) \\|\n        | TypeScript => \\ format, span => typescript_span_text format span\n        | Rust => \\ format, span => rust_span_text format span\n        | _ => \\ format, span => other_span_text format span","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := span_two_digits (n : i64) : string = sm'::pad_left 2 '0' ("" ++#? n)
+
+  := span_fields (a : i64) : i64 * i64 * i64 * i64 * i64 =
+      a / 864000000000i64, (a / 36000000000i64) % 24i64, (a / 600000000i64) % 60i64, (a / 10000000i64) % 60i64, a % 10000000i64
+
+  := day_prefix (days : i64) : string = ? days > 0i64 ?> "" ++#? days ++# "." |: ""
+
+  := fraction_suffix (fraction : i64) : string = ? fraction > 0i64 ?> "." ++# sm'::pad_left 7 '0' ("" ++#? fraction) |: ""
+
+  := clock_text (hours : i64) (minutes : i64) (seconds : i64) : string =
+      span_two_digits hours ++# ":" ++# span_two_digits minutes ++# ":" ++# span_two_digits seconds
+
+  := constant_span_text (negative : bool) (fields : i64 * i64 * i64 * i64 * i64) : string =
+      := days, hours, minutes, seconds, fraction = fields
+      := sign = ? negative ?> "-" |: ""
+      sign ++# day_prefix days ++# clock_text hours minutes seconds ++# fraction_suffix fraction
+
+  := custom_span_text (format : string) (fields : i64 * i64 * i64 * i64 * i64) : string =
+      := _, hours, minutes, seconds, _ = fields
+      := with_hours = format |> sm'::replace "hh" (span_two_digits hours)
+      with_hours |> sm'::replace "mm" (span_two_digits minutes) |> sm'::replace "ss" (span_two_digits seconds)
+
+  := time_span_ticks_text (format : string) (ticks : i64) : string =
+      := negative = ticks < 0i64
+      := fields = span_fields (? negative ?> 0i64 - ticks |: ticks)
+      ? format = "" || format = "c" ?> constant_span_text negative fields |: custom_span_text format fields
+
+  := rust_time_span_nanoseconds (time_span : time_span) : i64 = $'!time_span.num_nanoseconds().unwrap()' : i64
+
+  := typescript_time_span_milliseconds (time_span : time_span) : f64 = $'!time_span' : f64
+
+  := typescript_span_text (format : string) (time_span : time_span) : string =
+      := milliseconds : i64 = conv (typescript_time_span_milliseconds time_span)
+      time_span_ticks_text format (milliseconds * 10000i64)
+
+  := rust_span_text (format : string) (time_span : time_span) : string =
+      time_span_ticks_text format (rust_time_span_nanoseconds time_span / 100i64)
+
+  := gleam_span_tempo (time_span : time_span) : tempo_date_time =
+      global "import tempo/datetime"
+      time_span
+      |> $'duration.seconds'
+      |> \ x => x : duration_gleam
+      |> $'datetime.from_duration'
+
+  := gleam_span_text (format : string) (time_span : time_span) : string =
+      := tempo_date_time = gleam_span_tempo time_span
+      := pattern = ? format = "" ?> "c" |: format
+      $'!tempo_date_time |> datetime.format(tempo.Custom(!pattern))' : string
+
+  := lua_two n : string = sm'::pad_left 2 '0' #?n
+
+  := lua_clock_text (time_span : time_span) : string =
+      := total_seconds = time_span |> convert::unbox : f64
+      := hours = total_seconds / 3600
+      := minutes = (total_seconds % 3600) / 60
+      := seconds = total_seconds % 60
+      lua_two hours ++# ":" ++# lua_two minutes ++# ":" ++# lua_two seconds
+
+  := millis_suffix (result : string) (ms : i32) : string =
+      ? ms <= 0
+      ?> result
+      |:
+          := ms =
+              #?**ms
+              |> sm'::pad_left 3 '0'
+              |> sm'::pad_right 7 '0'
+          result ++# "." ++# ms
+
+  := python_clock_text (time_span : time_span) : string =
+      := date = $'!time_span + !(min_value ())' : date_time
+      := time = $'!date.strftime("%H:%M:%S")' : string
+      := days = time_span |> days
+      ? days <= 0 ?> time |: #?**days ++# "." ++# time
+
+  := other_span_text (format : string) (time_span : time_span) : string =
+      backend_switch {
+          Gleam = \ () => gleam_span_text format time_span
+          Lua = \ () => millis_suffix (lua_clock_text time_span) (time_span |> milliseconds)
+          Fsharp = \ () => $'!time_span.ToString !format ' : string
+          Python = \ () => millis_suffix (python_clock_text time_span) (time_span |> milliseconds)
+      }
+
+  := time_span_format (format : string) (time_span : time_span) : string =
+      run_target_args (\ () => format, time_span) \|
+          | TypeScript => \ format, span => typescript_span_text format span
+          | Rust => \ format, span => rust_span_text format span
+          | _ => \ format, span => other_span_text format span
+  """,
+  timeout: 300_000
+)
+```
+
+#### time_span_format (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> cuda\n///> rust -d chrono\n///> typescript\n\n~~ date_time_milliseconds 2002 2 2 20 22 24 26\n|> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)\n|> time_span_format \"c\"\n|> _assert_eq \"397.10:11:12.0130000\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> cuda
+  ///> rust -d chrono
+  ///> typescript
+
+  ~~ date_time_milliseconds 2002 2 2 20 22 24 26
+  |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
+  |> time_span_format "c"
+  |> _assert_eq "397.10:11:12.0130000"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> cuda\n///> rust -d chrono\n///> typescript\n\n~~ date_time_milliseconds 2002 2 2 20 22 24 26\n|> new_time_span (date_time_milliseconds 2002 2 2 10 11 12 26)\n|> time_span_format \"c\"\n|> _assert_eq \"10:11:12\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> cuda
+  ///> rust -d chrono
+  ///> typescript
+
+  ~~ date_time_milliseconds 2002 2 2 20 22 24 26
+  |> new_time_span (date_time_milliseconds 2002 2 2 10 11 12 26)
+  |> time_span_format "c"
+  |> _assert_eq "10:11:12"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> cuda\n///> rust -d chrono\n///> typescript\n\n~~ date_time_milliseconds 2002 2 2 20 22 24 999\n|> new_time_span (date_time_milliseconds 2002 2 2 10 11 12 0)\n|> time_span_format \"c\"\n|> _assert_eq \"10:11:12.9990000\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> cuda
+  ///> rust -d chrono
+  ///> typescript
+
+  ~~ date_time_milliseconds 2002 2 2 20 22 24 999
+  |> new_time_span (date_time_milliseconds 2002 2 2 10 11 12 0)
+  |> time_span_format "c"
+  |> _assert_eq "10:11:12.9990000"
+  """,
+  timeout: 300_000
+)
+```
+
+#### time_span_format_custom_and_negative (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n///> typescript\n\n:= later = date_time_milliseconds 2002 2 2 20 22 24 26\n:= earlier = date_time_milliseconds 2002 2 2 10 11 12 26\n:= custom = later |> new_time_span earlier |> time_span_format \"hh-mm-ss\"\n(custom, earlier |> new_time_span later |> time_span_format \"c\") |> _assert_eq (\"10-11-12\", \"-10:11:12\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+  ///> typescript
+
+  := later = date_time_milliseconds 2002 2 2 20 22 24 26
+  := earlier = date_time_milliseconds 2002 2 2 10 11 12 26
+  := custom = later |> new_time_span earlier |> time_span_format "hh-mm-ss"
+  (custom, earlier |> new_time_span later |> time_span_format "c") |> _assert_eq ("10-11-12", "-10:11:12")
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":== time_zone_info_switch =\n    {\n        Gleam : $'System.TimeZoneInfo'\n        Lua : $'System.TimeZoneInfo'\n        Fsharp : $'System.TimeZoneInfo'\n        Python : $'System.TimeZoneInfo'\n        Rust : $'chrono::FixedOffset'\n    }\n:! time_zone_info = $'backend_switch `(time_zone_info_switch)'\n\n:= gleam_add_days (days : i32) (date_time : date_time) : date_time =\n    global \"import gleam/time/duration\"\n    := duration = $'duration.days(#days)' : duration_gleam\n    := date, time_of_day, existing_duration = date_time |> split_date_time\n    gleam_date_time date time_of_day ($'!existing_duration + !duration ' : duration_gleam)\n\n:= lua_add_days (days : i32) (date_time : date_time) : date_time =\n    := seconds = days * 86400\n    (date_time |> convert::unbox) + seconds |> convert::unbox : date_time\n\n:= python_add_days (days : i32) (date_time : date_time) : date_time =\n    global \"import datetime\"\n    $'!date_time + datetime.timedelta(days=!days)' : date_time\n\n:= rust_add_days (days : i32) (date_time : date_time) : date_time =\n    := days' : i64 = conv days\n    := delta = $'chrono::TimeDelta::days(!days')' : time_span\n    $'!date_time + !delta' : date_time\n\n:= zig_add_days (days : i32) (date_time : date_time) : date_time =\n    (date_time |> zig_micros_of) + (days |> convert::convert : i64) * 86400000000i64 |> zig_date_time_of\n\n:= add_days (days : i32) (date_time : date_time) : date_time =\n    backend_switch {\n        Gleam = \\ () => gleam_add_days days date_time\n        Lua = \\ () => lua_add_days days date_time\n        Fsharp = \\ () => $'!date_time.AddDays' days : date_time\n        Python = \\ () => python_add_days days date_time\n        Rust = \\ () => rust_add_days days date_time\n        Zig = \\ () => zig_add_days days date_time\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :== time_zone_info_switch =
+      {
+          Gleam : $'System.TimeZoneInfo'
+          Lua : $'System.TimeZoneInfo'
+          Fsharp : $'System.TimeZoneInfo'
+          Python : $'System.TimeZoneInfo'
+          Rust : $'chrono::FixedOffset'
+      }
+  :! time_zone_info = $'backend_switch `(time_zone_info_switch)'
+
+  := gleam_add_days (days : i32) (date_time : date_time) : date_time =
+      global "import gleam/time/duration"
+      := duration = $'duration.days(#days)' : duration_gleam
+      := date, time_of_day, existing_duration = date_time |> split_date_time
+      gleam_date_time date time_of_day ($'!existing_duration + !duration ' : duration_gleam)
+
+  := lua_add_days (days : i32) (date_time : date_time) : date_time =
+      := seconds = days * 86400
+      (date_time |> convert::unbox) + seconds |> convert::unbox : date_time
+
+  := python_add_days (days : i32) (date_time : date_time) : date_time =
+      global "import datetime"
+      $'!date_time + datetime.timedelta(days=!days)' : date_time
+
+  := rust_add_days (days : i32) (date_time : date_time) : date_time =
+      := days' : i64 = conv days
+      := delta = $'chrono::TimeDelta::days(!days')' : time_span
+      $'!date_time + !delta' : date_time
+
+  := zig_add_days (days : i32) (date_time : date_time) : date_time =
+      (date_time |> zig_micros_of) + (days |> convert::convert : i64) * 86400000000i64 |> zig_date_time_of
+
+  := add_days (days : i32) (date_time : date_time) : date_time =
+      backend_switch {
+          Gleam = \ () => gleam_add_days days date_time
+          Lua = \ () => lua_add_days days date_time
+          Fsharp = \ () => $'!date_time.AddDays' days : date_time
+          Python = \ () => python_add_days days date_time
+          Rust = \ () => rust_add_days days date_time
+          Zig = \ () => zig_add_days days date_time
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### add_days_moves_the_timestamp (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n\ndate_time_utc 2026 10 13 12 0 0\n|> add_days 3\n|> to_timestamp\n|> _assert_eq' (1792152000000000i64 |> timestamp)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+
+  date_time_utc 2026 10 13 12 0 0
+  |> add_days 3
+  |> to_timestamp
+  |> _assert_eq' (1792152000000000i64 |> timestamp)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= to_calendar_gleam (timestamp : timestamp_gleam) : date_time =\n    gleam_calendar_imports ()\n    := duration = $'calendar.local_offset()' : duration_gleam\n    := (date : date_gleam), (time_of_day : time_of_day_gleam) = $'!timestamp |> timestamp.to_calendar(!duration)'\n    gleam_date_time date time_of_day duration\n\n:= to_calendar (timestamp : timestamp) : date_time =\n    timestamp |> timestamp_gleam_of |> to_calendar_gleam\n\n:= gleam_now () : date_time =\n    := timestamp = $'timestamp.system_time ()' : timestamp_gleam\n    timestamp |> to_calendar_gleam\n\n:= fsharp_now () : date_time =\n    run_target \\|\n        | _ => \\ () => $'System.DateTime.Now'\n\n:= python_now () : date_time =\n    global \"import datetime\"\n    $'datetime.datetime.now()' : date_time\n\n:= now () : date_time =\n    backend_switch {\n        Gleam = \\ () => gleam_now ()\n        Lua = \\ () => $'os.time()' : date_time\n        Fsharp = \\ () => fsharp_now ()\n        Python = \\ () => python_now ()\n        Rust = \\ () => $'chrono::Local::now().naive_local()' : date_time\n        Zig = \\ () => zig_micros_now () |> zig_date_time_of\n    }\n\n:= gleam_utc_now () : date_time =\n    := timestamp = $'timestamp.system_time ()' : timestamp_gleam\n    timestamp |> to_calendar_utc_gleam\n\n:= python_utc_now () : date_time =\n    global \"import datetime\"\n    $'datetime.datetime.utcnow()' : date_time\n\n:= utc_now () : date_time =\n    backend_switch {\n        Gleam = \\ () => gleam_utc_now ()\n        Lua = \\ () => $'os.time()' : date_time\n        Fsharp = \\ () => $'System.DateTime.UtcNow' : date_time\n        Python = \\ () => python_utc_now ()\n        Rust = \\ () => $'chrono::Utc::now().naive_utc()' : date_time\n        Zig = \\ () => zig_micros_now () |> zig_date_time_of\n    }\n\n:! stopwatch_python =\n    `(\n        global \"import timeit\"\n        $'' : $'timeit.default_timer'\n    )\n:== stopwatch_switch =\n    {\n        Pascal : $'TStopwatch'\n        Fsharp : $'System.Diagnostics.Stopwatch'\n        Python : stopwatch_python\n        Rust : $'std::time::Instant'\n    }\n:! stopwatch = $'backend_switch `(stopwatch_switch)'\n\n:= pascal_stopwatch () : stopwatch =\n    global \"uses System.Diagnostics\"\n    $'TStopwatch.StartNew' : stopwatch\n\n:= stopwatch () : stopwatch =\n    backend_switch {\n        Pascal = \\ () => pascal_stopwatch ()\n        Fsharp = \\ () => $'`stopwatch ()' : stopwatch\n        Python = \\ () => $'`stopwatch ' : stopwatch\n        Rust = \\ () => $'std::time::Instant::now()' : stopwatch\n    }\n\n:= rust_elapsed_milliseconds (stopwatch : stopwatch) : i64 =\n    := elapsed = $'!stopwatch.elapsed()' : rust_std_duration\n    := seconds : u64 = $'!elapsed.as_secs()'\n    := millis : u32 = $'!elapsed.subsec_millis()'\n    (conv seconds : i64) * 1000i64 + conv millis\n\n:= stopwatch_elapsed_milliseconds (stopwatch : stopwatch) : i64 =\n    ? is_rust () ?> rust_elapsed_milliseconds stopwatch |: $'!stopwatch.ElapsedMilliseconds'\n\n:= rust_elapsed_microseconds (stopwatch : stopwatch) : i64 =\n    := elapsed = $'!stopwatch.elapsed()' : rust_std_duration\n    := seconds : u64 = $'!elapsed.as_secs()'\n    := micros : u32 = $'!elapsed.subsec_micros()'\n    (conv seconds : i64) * 1000000i64 + conv micros\n\n:= dotnet_elapsed_microseconds (stopwatch : stopwatch) : i64 =\n    := ticks : i64 = $'!stopwatch.Elapsed.Ticks'\n    ticks / 10i64\n\n:= stopwatch_elapsed_microseconds (stopwatch : stopwatch) : i64 =\n    ? is_rust () ?> rust_elapsed_microseconds stopwatch |: dotnet_elapsed_microseconds stopwatch\n\n:= stopwatch_start (stopwatch : stopwatch) : () =\n    run_target \\|\n        | Rust => \\ () => ()\n        | Pascal => \\ () => ()\n        | _ => \\ () => $'!stopwatch.Start' ()\n\n:= monotonic_milliseconds () : i64 =\n    run_target \\|\n        | Gleam => \\ () =>\n            erlang_term::apply \"erlang\" \"monotonic_time\" [ erlang_term::atom \"millisecond\" ] |> erlang_term::cast\n        | _ => \\ () => failwith \"monotonic_milliseconds: no arm for this backend\"\n\n:= rust_monotonic_global () : () =\n    global \"\"\"\n        fn spiral_monotonic_nanoseconds() -> u64 {\n            static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();\n            START.get_or_init(std::time::Instant::now).elapsed().as_nanos() as u64\n        }\n        \"\"\"\n\n:= rust_monotonic_nanoseconds () : u64 =\n    rust_monotonic_global ()\n    $'spiral_monotonic_nanoseconds()' : u64\n\n:~ monotonic_nanoseconds () : u64 =\n    run_target \\|\n        | Rust => \\ () => rust_monotonic_nanoseconds ()\n        | _ => \\ () => failwith \"monotonic_nanoseconds: no arm for this backend\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ":= to_calendar_gleam (timestamp : timestamp_gleam) : date_time =\n    gleam_calendar_imports ()\n    := duration = $'calendar.local_offset()' : duration_gleam\n    := (date : date_gleam), (time_of_day : time_of_day_gleam) = $'!timestamp |> timestamp.to_calendar(!duration)'\n    gleam_date_time date time_of_day duration\n\n:= to_calendar (timestamp : timestamp) : date_time =\n    timestamp |> timestamp_gleam_of |> to_calendar_gleam\n\n:= gleam_now () : date_time =\n    := timestamp = $'timestamp.system_time ()' : timestamp_gleam\n    timestamp |> to_calendar_gleam\n\n:= fsharp_now () : date_time =\n    run_target \\|\n        | _ => \\ () => $'System.DateTime.Now'\n\n:= python_now () : date_time =\n    global \"import datetime\"\n    $'datetime.datetime.now()' : date_time\n\n:= now () : date_time =\n    backend_switch {\n        Gleam = \\ () => gleam_now ()\n        Lua = \\ () => $'os.time()' : date_time\n        Fsharp = \\ () => fsharp_now ()\n        Python = \\ () => python_now ()\n        Rust = \\ () => $'chrono::Local::now().naive_local()' : date_time\n        Zig = \\ () => zig_micros_now () |> zig_date_time_of\n    }\n\n:= gleam_utc_now () : date_time =\n    := timestamp = $'timestamp.system_time ()' : timestamp_gleam\n    timestamp |> to_calendar_utc_gleam\n\n:= python_utc_now () : date_time =\n    global \"import datetime\"\n    $'datetime.datetime.utcnow()' : date_time\n\n:= utc_now () : date_time =\n    backend_switch {\n        Gleam = \\ () => gleam_utc_now ()\n        Lua = \\ () => $'os.time()' : date_time\n        Fsharp = \\ () => $'System.DateTime.UtcNow' : date_time\n        Python = \\ () => python_utc_now ()\n        Rust = \\ () => $'chrono::Utc::now().naive_utc()' : date_time\n        Zig = \\ () => zig_micros_now () |> zig_date_time_of\n    }\n\n:! stopwatch_python =\n    `(\n        global \"import timeit\"\n        $'' : $'timeit.default_timer'\n    )\n:== stopwatch_switch =\n    {\n        Pascal : $'TStopwatch'\n        Fsharp : $'System.Diagnostics.Stopwatch'\n        Python : stopwatch_python\n        Rust : $'std::time::Instant'\n    }\n:! stopwatch = $'backend_switch `(stopwatch_switch)'\n\n:= pascal_stopwatch () : stopwatch =\n    global \"uses System.Diagnostics\"\n    $'TStopwatch.StartNew' : stopwatch\n\n:= stopwatch () : stopwatch =\n    backend_switch {\n        Pascal = \\ () => pascal_stopwatch ()\n        Fsharp = \\ () => $'`stopwatch ()' : stopwatch\n        Python = \\ () => $'`stopwatch ' : stopwatch\n        Rust = \\ () => $'std::time::Instant::now()' : stopwatch\n    }\n\n:= rust_elapsed_milliseconds (stopwatch : stopwatch) : i64 =\n    := elapsed = $'!stopwatch.elapsed()' : rust_std_duration\n    := seconds : u64 = $'!elapsed.as_secs()'\n    := millis : u32 = $'!elapsed.subsec_millis()'\n    (conv seconds : i64) * 1000i64 + conv millis\n\n:= stopwatch_elapsed_milliseconds (stopwatch : stopwatch) : i64 =\n    ? is_rust () ?> rust_elapsed_milliseconds stopwatch |: $'!stopwatch.ElapsedMilliseconds'\n\n:= rust_elapsed_microseconds (stopwatch : stopwatch) : i64 =\n    := elapsed = $'!stopwatch.elapsed()' : rust_std_duration\n    := seconds : u64 = $'!elapsed.as_secs()'\n    := micros : u32 = $'!elapsed.subsec_micros()'\n    (conv seconds : i64) * 1000000i64 + conv micros\n\n:= dotnet_elapsed_microseconds (stopwatch : stopwatch) : i64 =\n    := ticks : i64 = $'!stopwatch.Elapsed.Ticks'\n    ticks / 10i64\n\n:= stopwatch_elapsed_microseconds (stopwatch : stopwatch) : i64 =\n    ? is_rust () ?> rust_elapsed_microseconds stopwatch |: dotnet_elapsed_microseconds stopwatch\n\n:= stopwatch_start (stopwatch : stopwatch) : () =\n    run_target \\|\n        | Rust => \\ () => ()\n        | Pascal => \\ () => ()\n        | _ => \\ () => $'!stopwatch.Start' ()\n\n:= monotonic_milliseconds () : i64 =\n    run_target \\|\n        | Gleam => \\ () =>\n            erlang_term::apply \"erlang\" \"monotonic_time\" [ erlang_term::atom \"millisecond\" ] |> erlang_term::cast\n        | _ => \\ () => failwith \"monotonic_milliseconds: no arm for this backend\"\n\n:= rust_monotonic_global () : () =\n    global \"\"\"\n        fn spiral_monotonic_nanoseconds() -> u64 {\n            static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();\n            START.get_or_init(std::time::Instant::now).elapsed().as_nanos() as u64\n        }\n        \"\"\"\n\n:= rust_monotonic_nanoseconds () : u64 =\n    rust_monotonic_global ()\n    $'spiral_monotonic_nanoseconds()' : u64\n\n:~ monotonic_nanoseconds () : u64 =\n    run_target \\|\n        | Rust => \\ () => rust_monotonic_nanoseconds ()\n        | _ => \\ () => failwith \"monotonic_nanoseconds: no arm for this backend\"",
+  timeout: 300_000
+)
+```
+
+#### the_monotonic_nanosecond_clock_does_not_go_back (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n:= a = monotonic_nanoseconds ()\n:= b = monotonic_nanoseconds ()\n(b >= a) |> _assert_eq !+","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  := a = monotonic_nanoseconds ()
+  := b = monotonic_nanoseconds ()
+  (b >= a) |> _assert_eq !+
+  """,
+  timeout: 300_000
+)
+```
+
+#### the_monotonic_clock_does_not_go_back (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> gleam\n\n:= a = monotonic_milliseconds ()\n:= b = monotonic_milliseconds ()\n(b >= a) |> _assert_eq !+","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> gleam
+
+  := a = monotonic_milliseconds ()
+  := b = monotonic_milliseconds ()
+  (b >= a) |> _assert_eq !+
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! duration' =\n    `(\n        rust::rust_type\n            `($'std_time_Duration')\n            `($'std::time::Duration')\n            \"type std_time_Duration = class end\"\n    )\n\n:! date_time' t =\n    `(\n        rust::rust_type\n            `($'chrono_DateTime<`t>')\n            `($'chrono::DateTime<`t>')\n            \"type chrono_DateTime<'T> = class end\"\n    )\n\n:! local =\n    `(\n        rust::rust_type\n            `($'chrono_Local')\n            `($'chrono::Local')\n            \"type chrono_Local = class end\"\n    )\n\n:! naive_date_time =\n    `(\n        rust::rust_type\n            `($'chrono_NaiveDateTime')\n            `($'chrono::NaiveDateTime')\n            \"type chrono_NaiveDateTime = class end\"\n    )\n\n:! utc =\n    `(\n        rust::rust_type\n            `($'chrono_Utc')\n            `($'chrono::Utc')\n            \"type chrono_Utc = class end\"\n    )\n\n:= naive_utc (date_time : date_time' utc) : naive_date_time =\n    !\\\\(date_time, $'\"$0.naive_utc()\"')\n\n:= to_local (date_time : date_time' utc) : date_time' local =\n    := naive_date_time = date_time |> naive_utc\n    !\\\\(naive_date_time, $'\"chrono::offset::TimeZone::from_utc_datetime(&chrono::Local, &$0)\"')\n\n:= from_timestamp_micros \\* t {number; int}. (timestamp : t) : option (date_time' utc) =\n    := result : optionm'::option' (date_time' utc) =\n        !\\\\(timestamp, $'\"chrono::DateTime::from_timestamp_micros($0)\"')\n    result |> optionm'::unbox\n\n:= format' (format : string) (date_time : date_time' utc) : sm'::std_string =\n    !\\\\((date_time, #format), $'\"$0.format($1).to_string()\"')\n\n:= format'' (format : string) (date_time : date_time' _) : sm'::std_string =\n    !\\\\((date_time, #format), $'\"$0.format($1).to_string()\"')\n\n:= format_timestamp \\* t {number; int}. (timestamp : t) =\n    := timestamp = ~~ timestamp\n    (timestamp / 1000)\n    |> from_timestamp_micros\n    |> optionm::map \\ x =>\n        x\n        |> to_local\n        |> format'' \"%Y-%m-%d %H:%M:%S\"\n        |> sm'::from_std_string\n    |> resultm::from_option\n\n:= duration_from_millis (ms : u64) : duration' =\n    := ms = ~~ ms\n    !\\($'\"std::time::Duration::from_millis(!ms)\"')\n\n:= time_zone_local () : time_zone_info =\n    run_target \\|\n        | Fsharp _ => \\ () =>\n            $'System.TimeZoneInfo.Local'\n        | Rust => \\ () => $'*chrono::Local::now().offset()' : time_zone_info\n        | _ => \\ () => null ()\n\n:= rust_local_offset_seconds (date_time : date_time) : i32 =\n    $'chrono::TimeZone::offset_from_local_datetime(&chrono::Local, \\\n        &!date_time).earliest().map(|o| o.local_minus_utc()).unwrap_or(0)' : i32\n\n:= rust_utc_offset (date_time : date_time) : time_span =\n    := seconds : i64 = conv (rust_local_offset_seconds date_time)\n    $'chrono::TimeDelta::seconds(!seconds)' : time_span\n\n:= gleam_utc_offset () : time_span =\n    global \"import gleam/time/duration\"\n    := duration = $'calendar.utc_offset()' : duration_gleam\n    duration\n    |> $'duration.to_seconds'\n    |> ((*) 10000000i32)\n    |> convert::convert\n    |> \\ x => x : int\n    |> convert::unbox\n\n:= lua_utc_offset (date_time : date_time) : time_span =\n    := date_time = date_time |> convert::unbox : int\n    := offset = 5i32 * 3600i32\n    offset * 10000000 |> convert::convert : time_span\n\n:= other_utc_offset target (date_time : date_time) : time_span =\n    backend_switch {\n        Gleam = \\ () => gleam_utc_offset ()\n        Lua = \\ () => lua_utc_offset date_time\n        Fsharp = \\ () => failwith $'$\"date_time.get_utc_offset / target: {!target}\"' : time_span\n        Python = \\ () => $'!date_time.utcoffset()' : time_span\n    }\n\n:= get_utc_offset (time_zone_info : time_zone_info) (date_time : date_time) : time_span =\n    run_target \\|\n        | Fsharp _ => \\ () => date_time |> $'_.GetUtcOffset' (time_zone_local ())\n        | Rust => \\ () => rust_utc_offset date_time\n        | target => \\ () => other_utc_offset target date_time\n\n:= guid_sub_micro_digit (date_time : date_time) : i64 =\n    run_target \\|\n        | Fsharp => \\ () => $'(!date_time.Ticks % 10L)' : i64\n        | Rust => \\ () =>\n            := nanos : u32 = $'!date_time.and_utc().timestamp_subsec_nanos()'\n            conv (nanos / 100u32 % 10u32) : i64\n        | _ => \\ () => 0i64\n\n:= with_guid_sub_micro_digit (digit : i64) (date_time : date_time) : date_time =\n    run_target \\|\n        | Fsharp => \\ () => $'!date_time.AddTicks(!digit)' : date_time\n        | Rust => \\ () => $'(!date_time + chrono::TimeDelta::nanoseconds(!digit * 100))' : date_time\n        | _ => \\ () => date_time\n\n:= guid_date_part (year : i64) (month : i64) (day : i64) : string =\n    pad_digits 4i32 year ++# pad_digits 2i32 month ++# pad_digits 2i32 day\n\n:= guid_clock_part (hour : i64) (minute : i64) (second : i64) : string =\n    pad_digits 2i32 hour ++# pad_digits 2i32 minute ++# \"-\" ++# pad_digits 2i32 second\n\n:= guid_fraction_part (fraction : string) : string =\n    (fraction |> sm'::slice 0i32 1i32) ++# \"-\" ++# (fraction |> sm'::slice 2i32 5i32) ++# \"-\" ++# (fraction |> sm'::slice 6i32 6i32)\n\n:= guid_prefix_of_micros (micros : i64) (sub_micro : i64) : string =\n    := year, month, day, hour, minute, second, fraction_micros = civil_of_micros micros\n    := fraction = pad_digits 7i32 (fraction_micros * 10 + sub_micro)\n    guid_date_part year month day ++# \"-\" ++# guid_clock_part hour minute second ++# guid_fraction_part fraction\n\n:= guid_offset_text (date_time : date_time) : string =\n    := time_zone = date_time |> get_utc_offset (time_zone_local ())\n    := time_zone_signal = ? hours time_zone > 0 ?> 1u8 |: 0\n    := time_zone_value = time_zone |> time_span_format (~~ \"hhmm\")\n    #?time_zone_signal ++# time_zone_value\n\n:= guid_time_zone (date_time : date_time) : string =\n    run_target \\|\n        | Zig => \\ () => \"00000\"\n        | _ => \\ () => guid_offset_text date_time\n\n:= guid_with_prefix (guid' : guid::guid) (prefix : string) (time_zone : string) : date_time_guid =\n    := guid_range =\n        guid'\n        |> guid::to_string\n        |> sm'::range\n            (am'::Start (##prefix + ##time_zone))\n            (am'::End eval)\n    prefix ++# time_zone ++# guid_range |> guid::new_guid\n\n:~ date_time_guid_from_date_time (guid' : guid::guid) (date_time : date_time) =\n    := micros = date_time |> to_timestamp |> \\ (timestamp micros) => micros\n    := prefix = guid_prefix_of_micros micros (guid_sub_micro_digit date_time)\n    guid_with_prefix guid' prefix (guid_time_zone date_time)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :! duration' =
+      `(
+          rust::rust_type
+              `($'std_time_Duration')
+              `($'std::time::Duration')
+              "type std_time_Duration = class end"
+      )
+
+  :! date_time' t =
+      `(
+          rust::rust_type
+              `($'chrono_DateTime<`t>')
+              `($'chrono::DateTime<`t>')
+              "type chrono_DateTime<'T> = class end"
+      )
+
+  :! local =
+      `(
+          rust::rust_type
+              `($'chrono_Local')
+              `($'chrono::Local')
+              "type chrono_Local = class end"
+      )
+
+  :! naive_date_time =
+      `(
+          rust::rust_type
+              `($'chrono_NaiveDateTime')
+              `($'chrono::NaiveDateTime')
+              "type chrono_NaiveDateTime = class end"
+      )
+
+  :! utc =
+      `(
+          rust::rust_type
+              `($'chrono_Utc')
+              `($'chrono::Utc')
+              "type chrono_Utc = class end"
+      )
+
+  := naive_utc (date_time : date_time' utc) : naive_date_time =
+      !\\(date_time, $'"$0.naive_utc()"')
+
+  := to_local (date_time : date_time' utc) : date_time' local =
+      := naive_date_time = date_time |> naive_utc
+      !\\(naive_date_time, $'"chrono::offset::TimeZone::from_utc_datetime(&chrono::Local, &$0)"')
+
+  := from_timestamp_micros \* t {number; int}. (timestamp : t) : option (date_time' utc) =
+      := result : optionm'::option' (date_time' utc) =
+          !\\(timestamp, $'"chrono::DateTime::from_timestamp_micros($0)"')
+      result |> optionm'::unbox
+
+  := format' (format : string) (date_time : date_time' utc) : sm'::std_string =
+      !\\((date_time, #format), $'"$0.format($1).to_string()"')
+
+  := format'' (format : string) (date_time : date_time' _) : sm'::std_string =
+      !\\((date_time, #format), $'"$0.format($1).to_string()"')
+
+  := format_timestamp \* t {number; int}. (timestamp : t) =
+      := timestamp = ~~ timestamp
+      (timestamp / 1000)
+      |> from_timestamp_micros
+      |> optionm::map \ x =>
+          x
+          |> to_local
+          |> format'' "%Y-%m-%d %H:%M:%S"
+          |> sm'::from_std_string
+      |> resultm::from_option
+
+  := duration_from_millis (ms : u64) : duration' =
+      := ms = ~~ ms
+      !\($'"std::time::Duration::from_millis(!ms)"')
+
+  := time_zone_local () : time_zone_info =
+      run_target \|
+          | Fsharp _ => \ () =>
+              $'System.TimeZoneInfo.Local'
+          | Rust => \ () => $'*chrono::Local::now().offset()' : time_zone_info
+          | _ => \ () => null ()
+
+  := rust_local_offset_seconds (date_time : date_time) : i32 =
+      $'chrono::TimeZone::offset_from_local_datetime(&chrono::Local, \
+          &!date_time).earliest().map(|o| o.local_minus_utc()).unwrap_or(0)' : i32
+
+  := rust_utc_offset (date_time : date_time) : time_span =
+      := seconds : i64 = conv (rust_local_offset_seconds date_time)
+      $'chrono::TimeDelta::seconds(!seconds)' : time_span
+
+  := gleam_utc_offset () : time_span =
+      global "import gleam/time/duration"
+      := duration = $'calendar.utc_offset()' : duration_gleam
+      duration
+      |> $'duration.to_seconds'
+      |> ((*) 10000000i32)
+      |> convert::convert
+      |> \ x => x : int
+      |> convert::unbox
+
+  := lua_utc_offset (date_time : date_time) : time_span =
+      := date_time = date_time |> convert::unbox : int
+      := offset = 5i32 * 3600i32
+      offset * 10000000 |> convert::convert : time_span
+
+  := other_utc_offset target (date_time : date_time) : time_span =
+      backend_switch {
+          Gleam = \ () => gleam_utc_offset ()
+          Lua = \ () => lua_utc_offset date_time
+          Fsharp = \ () => failwith $'$"date_time.get_utc_offset / target: {!target}"' : time_span
+          Python = \ () => $'!date_time.utcoffset()' : time_span
+      }
+
+  := get_utc_offset (time_zone_info : time_zone_info) (date_time : date_time) : time_span =
+      run_target \|
+          | Fsharp _ => \ () => date_time |> $'_.GetUtcOffset' (time_zone_local ())
+          | Rust => \ () => rust_utc_offset date_time
+          | target => \ () => other_utc_offset target date_time
+
+  := guid_sub_micro_digit (date_time : date_time) : i64 =
+      run_target \|
+          | Fsharp => \ () => $'(!date_time.Ticks % 10L)' : i64
+          | Rust => \ () =>
+              := nanos : u32 = $'!date_time.and_utc().timestamp_subsec_nanos()'
+              conv (nanos / 100u32 % 10u32) : i64
+          | _ => \ () => 0i64
+
+  := with_guid_sub_micro_digit (digit : i64) (date_time : date_time) : date_time =
+      run_target \|
+          | Fsharp => \ () => $'!date_time.AddTicks(!digit)' : date_time
+          | Rust => \ () => $'(!date_time + chrono::TimeDelta::nanoseconds(!digit * 100))' : date_time
+          | _ => \ () => date_time
+
+  := guid_date_part (year : i64) (month : i64) (day : i64) : string =
+      pad_digits 4i32 year ++# pad_digits 2i32 month ++# pad_digits 2i32 day
+
+  := guid_clock_part (hour : i64) (minute : i64) (second : i64) : string =
+      pad_digits 2i32 hour ++# pad_digits 2i32 minute ++# "-" ++# pad_digits 2i32 second
+
+  := guid_fraction_part (fraction : string) : string =
+      (fraction |> sm'::slice 0i32 1i32) ++# "-" ++# (fraction |> sm'::slice 2i32 5i32) ++# "-" ++# (fraction |> sm'::slice 6i32 6i32)
+
+  := guid_prefix_of_micros (micros : i64) (sub_micro : i64) : string =
+      := year, month, day, hour, minute, second, fraction_micros = civil_of_micros micros
+      := fraction = pad_digits 7i32 (fraction_micros * 10 + sub_micro)
+      guid_date_part year month day ++# "-" ++# guid_clock_part hour minute second ++# guid_fraction_part fraction
+
+  := guid_offset_text (date_time : date_time) : string =
+      := time_zone = date_time |> get_utc_offset (time_zone_local ())
+      := time_zone_signal = ? hours time_zone > 0 ?> 1u8 |: 0
+      := time_zone_value = time_zone |> time_span_format (~~ "hhmm")
+      #?time_zone_signal ++# time_zone_value
+
+  := guid_time_zone (date_time : date_time) : string =
+      run_target \|
+          | Zig => \ () => "00000"
+          | _ => \ () => guid_offset_text date_time
+
+  := guid_with_prefix (guid' : guid::guid) (prefix : string) (time_zone : string) : date_time_guid =
+      := guid_range =
+          guid'
+          |> guid::to_string
+          |> sm'::range
+              (am'::Start (##prefix + ##time_zone))
+              (am'::End eval)
+      prefix ++# time_zone ++# guid_range |> guid::new_guid
+
+  :~ date_time_guid_from_date_time (guid' : guid::guid) (date_time : date_time) =
+      := micros = date_time |> to_timestamp |> \ (timestamp micros) => micros
+      := prefix = guid_prefix_of_micros micros (guid_sub_micro_digit date_time)
+      guid_with_prefix guid' prefix (guid_time_zone date_time)
+  """,
+  timeout: 300_000
+)
+```
+
+#### date_time_guid_from_date_time (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n\n:= suffix = test_guid () |> sm'::obj_to_string |> sm'::range (am'::End \\ x => x () - 6i32) (am'::End eval)\nunix_epoch ()\n|> specify_date_kind Utc\n|> to_universal_time\n|> date_time_guid_from_date_time (test_guid ())\n|> sm'::obj_to_string\n|> \\ s => s |> _assert_eq' ((s |> sm'::slice 0i32 29) ++# suffix)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+
+  := suffix = test_guid () |> sm'::obj_to_string |> sm'::range (am'::End \ x => x () - 6i32) (am'::End eval)
+  unix_epoch ()
+  |> specify_date_kind Utc
+  |> to_universal_time
+  |> date_time_guid_from_date_time (test_guid ())
+  |> sm'::obj_to_string
+  |> \ s => s |> _assert_eq' ((s |> sm'::slice 0i32 29) ++# suffix)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --no-agree \"local UTC offset in year 1 is implementation-defined\" --symbol\n///> rust -d chrono\n\n:= suffix = test_guid () |> sm'::obj_to_string |> sm'::range (am'::End \\ x => x () - 6i32) (am'::End eval)\nmin_value ()\n|> specify_date_kind Local\n|> date_time_guid_from_date_time (test_guid ())\n|> sm'::obj_to_string\n|> \\ s => s |> _assert_eq' $'$\"00010101-0000-0000-0000-0{!(s |> sm'.slice 25i32 29)}{!suffix}\"'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --no-agree "local UTC offset in year 1 is implementation-defined" --symbol
+  ///> rust -d chrono
+
+  := suffix = test_guid () |> sm'::obj_to_string |> sm'::range (am'::End \ x => x () - 6i32) (am'::End eval)
+  min_value ()
+  |> specify_date_kind Local
+  |> date_time_guid_from_date_time (test_guid ())
+  |> sm'::obj_to_string
+  |> \ s => s |> _assert_eq' $'$"00010101-0000-0000-0000-0{!(s |> sm'.slice 25i32 29)}{!suffix}"'
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n\n:= suffix = test_guid () |> sm'::obj_to_string |> sm'::range (am'::End \\ x => x () - 6i32) (am'::End eval)\nmax_value ()\n|> specify_date_kind Utc\n|> add_days -1\n|> date_time_guid_from_date_time (test_guid ())\n|> sm'::obj_to_string\n|> \\ s => s |> _assert_eq (\"99991230-2359-5999-9999-9\" ++# (s |> sm'::slice 25i32 29) ++# suffix)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+
+  := suffix = test_guid () |> sm'::obj_to_string |> sm'::range (am'::End \ x => x () - 6i32) (am'::End eval)
+  max_value ()
+  |> specify_date_kind Utc
+  |> add_days -1
+  |> date_time_guid_from_date_time (test_guid ())
+  |> sm'::obj_to_string
+  |> \ s => s |> _assert_eq ("99991230-2359-5999-9999-9" ++# (s |> sm'::slice 25i32 29) ++# suffix)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n\n:= suffix = test_guid () |> sm'::obj_to_string |> sm'::range (am'::End \\ x => x () - 6i32) (am'::End eval)\nunix_epoch ()\n|> specify_date_kind Utc\n|> add_days 1\n|> date_time_guid_from_date_time (test_guid ())\n|> sm'::obj_to_string\n|> \\ s => s |> _assert_eq (\"19700102-0000-0000-0000-0\" ++# (s |> sm'::slice 25i32 29) ++# suffix)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+
+  := suffix = test_guid () |> sm'::obj_to_string |> sm'::range (am'::End \ x => x () - 6i32) (am'::End eval)
+  unix_epoch ()
+  |> specify_date_kind Utc
+  |> add_days 1
+  |> date_time_guid_from_date_time (test_guid ())
+  |> sm'::obj_to_string
+  |> \ s => s |> _assert_eq ("19700102-0000-0000-0000-0" ++# (s |> sm'::slice 25i32 29) ++# suffix)
+  """,
+  timeout: 300_000
+)
+```
+
+#### zig_date_time_guid_writes_seven_contiguous_fraction_digits (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> zig\n\nunix_epoch ()\n|> add_days 1i32\n|> date_time_guid_from_date_time (test_guid ())\n|> guid::to_string\n|> sm'::slice 0i32 29i32\n|> _assert_eq \"19700102-0000-0000-0000-000000\"\n1234567i64\n|> zig_date_time_of\n|> date_time_guid_from_date_time (test_guid ())\n|> guid::to_string\n|> sm'::slice 0i32 29i32\n|> _assert_eq \"19700101-0000-0123-4567-000000\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> zig
+
+  unix_epoch ()
+  |> add_days 1i32
+  |> date_time_guid_from_date_time (test_guid ())
+  |> guid::to_string
+  |> sm'::slice 0i32 29i32
+  |> _assert_eq "19700102-0000-0000-0000-000000"
+  1234567i64
+  |> zig_date_time_of
+  |> date_time_guid_from_date_time (test_guid ())
+  |> guid::to_string
+  |> sm'::slice 0i32 29i32
+  |> _assert_eq "19700101-0000-0123-4567-000000"
+  """,
+  timeout: 300_000
+)
+```
+
+#### date_time_guid_fraction_digits_are_contiguous (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n\ndate_time_milliseconds 1970 1 1 0 0 1 123\n|> date_time_guid_from_date_time (test_guid ())\n|> sm'::obj_to_string\n|> sm'::slice 0i32 24i32\n|> _assert_eq \"19700101-0000-0112-3000-0\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+
+  date_time_milliseconds 1970 1 1 0 0 1 123
+  |> date_time_guid_from_date_time (test_guid ())
+  |> sm'::obj_to_string
+  |> sm'::slice 0i32 24i32
+  |> _assert_eq "19700101-0000-0112-3000-0"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= civil_year_and_era (year : i64) (month : i64) : i64 * i64 =\n    := y = ? month <= 2 ?> year - 1 |: year\n    := era = floor_div y 400\n    era, y - era * 400\n\n:= civil_day_of_year_from (month : i64) (day : i64) : i64 =\n    := month_from_march = ? month > 2 ?> month - 3 |: month + 9\n    (153 * month_from_march + 2) / 5 + day - 1\n\n:= days_from_civil (year : i64) (month : i64) (day : i64) : i64 =\n    := era, year_of_era = civil_year_and_era year month\n    := day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + civil_day_of_year_from month day\n    era * 146097 + day_of_era - 719468","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := civil_year_and_era (year : i64) (month : i64) : i64 * i64 =
+      := y = ? month <= 2 ?> year - 1 |: year
+      := era = floor_div y 400
+      era, y - era * 400
+
+  := civil_day_of_year_from (month : i64) (day : i64) : i64 =
+      := month_from_march = ? month > 2 ?> month - 3 |: month + 9
+      (153 * month_from_march + 2) / 5 + day - 1
+
+  := days_from_civil (year : i64) (month : i64) (day : i64) : i64 =
+      := era, year_of_era = civil_year_and_era year month
+      := day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + civil_day_of_year_from month day
+      era * 146097 + day_of_era - 719468
+  """,
+  timeout: 300_000
+)
+```
+
+#### civil_of_days_names_known_dates (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> gleam\n\n(civil_of_days 0, civil_of_days -1, civil_of_days 11016) |> _assert_eq ((1970, 1, 1), (1969, 12, 31), (2000, 2, 29))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> gleam
+
+  (civil_of_days 0, civil_of_days -1, civil_of_days 11016) |> _assert_eq ((1970, 1, 1), (1969, 12, 31), (2000, 2, 29))
+  """,
+  timeout: 300_000
+)
+```
+
+#### civil_of_days_inverts_days_from_civil (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> gleam\n\n[ -719468; -1; 0; 11016; 20396; 2932896 ]\n|> listm::map (\\ d => civil_of_days d |> \\ (y, m, day) => days_from_civil y m day)\n|> _assert_eq [ -719468; -1; 0; 11016; 20396; 2932896 ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> gleam
+
+  [ -719468; -1; 0; 11016; 20396; 2932896 ]
+  |> listm::map (\ d => civil_of_days d |> \ (y, m, day) => days_from_civil y m day)
+  |> _assert_eq [ -719468; -1; 0; 11016; 20396; 2932896 ]
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= guid_field (text : string) (first : i32) (last : i32) : i64 =\n    text |> sm'::slice first last |> convert::try_convert |> optionm::value\n\n:= guid_seconds (text : string) : i64 =\n    := field = guid_field text\n    := days = days_from_civil (field 0i32 3i32) (field 4i32 5i32) (field 6i32 7i32)\n    days * 86400 + field 9i32 10i32 * 3600 + field 11i32 12i32 * 60 + field 14i32 15i32\n\n:= guid_fraction (text : string) : i64 =\n    := field = guid_field text\n    field 16i32 17i32 * 100000 + field 19i32 22i32 * 10 + field 24i32 24i32\n\n:= micros_of_guid_prefix (text : string) : i64 * i64 =\n    := seconds = guid_seconds text\n    := fraction = guid_fraction text\n    seconds * 1000000 + fraction / 10, fraction % 10\n\n:= date_time_from_guid (date_time_guid : date_time_guid) : date_time =\n    := micros, sub_micro = date_time_guid |> guid::to_string |> micros_of_guid_prefix\n    micros |> timestamp |> to_calendar_utc |> with_guid_sub_micro_digit sub_micro","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := guid_field (text : string) (first : i32) (last : i32) : i64 =
+      text |> sm'::slice first last |> convert::try_convert |> optionm::value
+
+  := guid_seconds (text : string) : i64 =
+      := field = guid_field text
+      := days = days_from_civil (field 0i32 3i32) (field 4i32 5i32) (field 6i32 7i32)
+      days * 86400 + field 9i32 10i32 * 3600 + field 11i32 12i32 * 60 + field 14i32 15i32
+
+  := guid_fraction (text : string) : i64 =
+      := field = guid_field text
+      field 16i32 17i32 * 100000 + field 19i32 22i32 * 10 + field 24i32 24i32
+
+  := micros_of_guid_prefix (text : string) : i64 * i64 =
+      := seconds = guid_seconds text
+      := fraction = guid_fraction text
+      seconds * 1000000 + fraction / 10, fraction % 10
+
+  := date_time_from_guid (date_time_guid : date_time_guid) : date_time =
+      := micros, sub_micro = date_time_guid |> guid::to_string |> micros_of_guid_prefix
+      micros |> timestamp |> to_calendar_utc |> with_guid_sub_micro_digit sub_micro
+  """,
+  timeout: 300_000
+)
+```
+
+#### date_time_guid_round_trips_through_the_prefix (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n///> zig\n\n1791892800123456i64\n|> timestamp\n|> to_calendar_utc\n|> date_time_guid_from_date_time (test_guid ())\n|> date_time_from_guid\n|> to_timestamp\n|> \\ (timestamp micros) => micros\n|> _assert_eq 1791892800123456i64","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+  ///> zig
+
+  1791892800123456i64
+  |> timestamp
+  |> to_calendar_utc
+  |> date_time_guid_from_date_time (test_guid ())
+  |> date_time_from_guid
+  |> to_timestamp
+  |> \ (timestamp micros) => micros
+  |> _assert_eq 1791892800123456i64
+  """,
+  timeout: 300_000
+)
+```
+
+#### date_time_from_guid (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n\ndate_time_from_guid (guid::new_guid \"00010101-0000-0000-0000-0a9876543210\")\n|> _assert_eq' (min_value ())","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+
+  date_time_from_guid (guid::new_guid "00010101-0000-0000-0000-0a9876543210")
+  |> _assert_eq' (min_value ())
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> fsharp\n\ndate_time_from_guid (guid.new_guid $'$\"99991231-2359-5999-9999-9{(!test_guid () |> string |> fun s -> s.Substring \\\n    (s.Length - 11))}\"')\n|> _assert_eq' (max_value ())","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> fsharp
+
+  date_time_from_guid (guid.new_guid $'$"99991231-2359-5999-9999-9{(!test_guid () |> string |> fun s -> s.Substring \
+      (s.Length - 11))}"')
+  |> _assert_eq' (max_value ())
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> fsharp\n\ndate_time_from_guid (guid.new_guid $'$\"19700101-0000-0000-0000-0{(!test_guid () |> string |> fun s -> s.Substring \\\n    (s.Length - 11))}\"')\n|> _assert_eq' $'System.DateTime.UnixEpoch'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> fsharp
+
+  date_time_from_guid (guid.new_guid $'$"19700101-0000-0000-0000-0{(!test_guid () |> string |> fun s -> s.Substring \
+      (s.Length - 11))}"')
+  |> _assert_eq' $'System.DateTime.UnixEpoch'
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= timestamp_digits_text (micros : i64) : string =\n    := digits = micros |> sm'::obj_to_string |> sm'::pad_left 18i32 '0'\n    := piece first last = digits |> sm'::slice first last\n    piece 0i32 7i32 ++# \"-\" ++# piece 8i32 11i32 ++# \"-\" ++# piece 12i32 15i32 ++# \"-\" ++# piece 16i32 17i32\n\n:= timestamp_guid_from_timestamp (source : guid::guid) ((timestamp micros) : timestamp) : timestamp_guid =\n    timestamp_digits_text micros ++# (source |> guid::to_string |> sm'::range (am'::Start 21i32) (am'::End eval))\n    |> guid::new_guid","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := timestamp_digits_text (micros : i64) : string =
+      := digits = micros |> sm'::obj_to_string |> sm'::pad_left 18i32 '0'
+      := piece first last = digits |> sm'::slice first last
+      piece 0i32 7i32 ++# "-" ++# piece 8i32 11i32 ++# "-" ++# piece 12i32 15i32 ++# "-" ++# piece 16i32 17i32
+
+  := timestamp_guid_from_timestamp (source : guid::guid) ((timestamp micros) : timestamp) : timestamp_guid =
+      timestamp_digits_text micros ++# (source |> guid::to_string |> sm'::range (am'::Start 21i32) (am'::End eval))
+      |> guid::new_guid
+  """,
+  timeout: 300_000
+)
+```
+
+#### timestamp_guid_from_timestamp (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> zig\n///> cuda\n///> gleam\n///> lua\n\ntimestamp_guid_from_timestamp (test_guid ()) (0i64 |> timestamp)\n|> guid::to_string\n|> _assert_eq \"00000000-0000-0000-0043-210fedcba987\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> zig
+  ///> cuda
+  ///> gleam
+  ///> lua
+
+  timestamp_guid_from_timestamp (test_guid ()) (0i64 |> timestamp)
+  |> guid::to_string
+  |> _assert_eq "00000000-0000-0000-0043-210fedcba987"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> fsharp\n\ntimestamp_guid_from_timestamp (test_guid ()) (999999999999999999i64 |> timestamp)\n|> _assert_eq' (guid.new_guid $'$\"99999999-9999-9999-9943-2{(!test_guid () |> string |> fun s -> s.Substring \\\n    (s.Length - 11))}\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> fsharp
+
+  timestamp_guid_from_timestamp (test_guid ()) (999999999999999999i64 |> timestamp)
+  |> _assert_eq' (guid.new_guid $'$"99999999-9999-9999-9943-2{(!test_guid () |> string |> fun s -> s.Substring \
+      (s.Length - 11))}"')
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= guid_digits_text (source : date_time_guid) : string =\n    := text = source |> guid::to_string\n    := piece first last = text |> sm'::slice first last\n    piece 0i32 7i32 ++# piece 9i32 12i32 ++# piece 14i32 17i32 ++# piece 19i32 20i32\n\n:= timestamp_from_guid (source : date_time_guid) : timestamp =\n    guid_digits_text source\n    |> convert::try_convert\n    |> optionm::value\n    |> \\ (micros : i64) => micros |> timestamp","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := guid_digits_text (source : date_time_guid) : string =
+      := text = source |> guid::to_string
+      := piece first last = text |> sm'::slice first last
+      piece 0i32 7i32 ++# piece 9i32 12i32 ++# piece 14i32 17i32 ++# piece 19i32 20i32
+
+  := timestamp_from_guid (source : date_time_guid) : timestamp =
+      guid_digits_text source
+      |> convert::try_convert
+      |> optionm::value
+      |> \ (micros : i64) => micros |> timestamp
+  """,
+  timeout: 300_000
+)
+```
+
+#### timestamp_from_guid (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> zig\n///> cuda\n///> gleam\n///> lua\n\ntimestamp_from_guid (guid::new_guid \"00000000-0000-0000-00dc-ba9876543210\")\n|> \\ (timestamp micros) => micros\n|> _assert_eq 0i64","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> zig
+  ///> cuda
+  ///> gleam
+  ///> lua
+
+  timestamp_from_guid (guid::new_guid "00000000-0000-0000-00dc-ba9876543210")
+  |> \ (timestamp micros) => micros
+  |> _assert_eq 0i64
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> fsharp\n\ntimestamp_from_guid (guid.new_guid $'$\"99999999-9999-9999-99{(!test_guid () |> string |> fun s -> s.Substring \\\n    (s.Length - 15))}\"')\n|> _assert_eq' (999999999999999999i64 |> timestamp)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> fsharp
+
+  timestamp_from_guid (guid.new_guid $'$"99999999-9999-9999-99{(!test_guid () |> string |> fun s -> s.Substring \
+      (s.Length - 15))}"')
+  |> _assert_eq' (999999999999999999i64 |> timestamp)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= new_guid_from_date_time (date_time : date_time) =\n    := guid = guid::new_raw_guid ()\n    date_time |> date_time_guid_from_date_time guid","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := new_guid_from_date_time (date_time : date_time) =
+      := guid = guid::new_raw_guid ()
+      date_time |> date_time_guid_from_date_time guid
+  """,
+  timeout: 300_000
+)
+```
+
+#### new_guid_from_date_time (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n\nutc_now ()\n|> new_guid_from_date_time\n|> date_time_from_guid\n|> \\ date_time => new_time_span date_time (utc_now ()) |> total_seconds |> convert::i32\n|> _assert_eq 0","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+
+  utc_now ()
+  |> new_guid_from_date_time
+  |> date_time_from_guid
+  |> \ date_time => new_time_span date_time (utc_now ()) |> total_seconds |> convert::i32
+  |> _assert_eq 0
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= new_guid_from_timestamp (timestamp : timestamp) =\n    := guid = guid::new_raw_guid ()\n    timestamp |> timestamp_guid_from_timestamp guid","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := new_guid_from_timestamp (timestamp : timestamp) =
+      := guid = guid::new_raw_guid ()
+      timestamp |> timestamp_guid_from_timestamp guid
+  """,
+  timeout: 300_000
+)
+```
+
+#### new_guid_from_timestamp (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono\n\nutc_now ()\n|> to_timestamp\n|> new_guid_from_timestamp\n|> timestamp_from_guid\n|> \\ (timestamp t) =>\n    (convert::convert t - (utc_now () |> to_timestamp |> \\ (timestamp x) => convert::convert x)) / 100000i64\n|> _assert_eq 0i64","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono
+
+  utc_now ()
+  |> to_timestamp
+  |> new_guid_from_timestamp
+  |> timestamp_from_guid
+  |> \ (timestamp t) =>
+      (convert::convert t - (utc_now () |> to_timestamp |> \ (timestamp x) => convert::convert x)) / 100000i64
+  |> _assert_eq 0i64
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///> fsharp\n\n:= fsharp_to_guid_exports () : () =\n    $'let date_time_guid_from_date_time x = !date_time_guid_from_date_time x' : ()\n    $'let timestamp_guid_from_timestamp x = !timestamp_guid_from_timestamp x' : ()\n\n:= fsharp_from_guid_exports () : () =\n    $'let date_time_from_guid x = !date_time_from_guid x' : ()\n    $'let timestamp_from_guid x = !timestamp_from_guid x' : ()\n\n:= fsharp_new_guid_exports () : () =\n    $'let new_guid_from_date_time x = !new_guid_from_date_time x' : ()\n    $'let new_guid_from_timestamp x = !new_guid_from_timestamp x' : ()\n\n:= fsharp_format_exports () : () =\n    $'let format x = !format x' : ()\n    $'let format_iso8601 x = !format_iso8601 x' : ()\n\n:= main () =\n    fsharp_to_guid_exports ()\n    fsharp_from_guid_exports ()\n    fsharp_new_guid_exports ()\n    fsharp_format_exports ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///> fsharp
+
+  := fsharp_to_guid_exports () : () =
+      $'let date_time_guid_from_date_time x = !date_time_guid_from_date_time x' : ()
+      $'let timestamp_guid_from_timestamp x = !timestamp_guid_from_timestamp x' : ()
+
+  := fsharp_from_guid_exports () : () =
+      $'let date_time_from_guid x = !date_time_from_guid x' : ()
+      $'let timestamp_from_guid x = !timestamp_from_guid x' : ()
+
+  := fsharp_new_guid_exports () : () =
+      $'let new_guid_from_date_time x = !new_guid_from_date_time x' : ()
+      $'let new_guid_from_timestamp x = !new_guid_from_timestamp x' : ()
+
+  := fsharp_format_exports () : () =
+      $'let format x = !format x' : ()
+      $'let format_iso8601 x = !format_iso8601 x' : ()
+
+  := main () =
+      fsharp_to_guid_exports ()
+      fsharp_from_guid_exports ()
+      fsharp_new_guid_exports ()
+      fsharp_format_exports ()
+  """,
+  timeout: 300_000
+)
+```
+
+#### zig_date_time_is_micros_since_the_unix_epoch (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> zig\n\nunix_epoch () |> format \"yyyy-MM-dd HH:mm:ss\" |> _assert_eq \"1970-01-01 00:00:00\"\nmin_value () |> get_year |> _assert_eq 1i32\nmax_value () |> get_year |> _assert_eq 9999i32\nunix_epoch () |> add_days 1i32 |> format \"yyyy-MM-dd\" |> _assert_eq \"1970-01-02\"\nmax_value () |> format \"HH:mm:ss.ffffff\" |> _assert_eq \"23:59:59.999999\"\nunix_epoch () |> add_days -1i32 |> format_iso8601 |> _assert_eq \"1969-12-31T00-00-00.000\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> zig
+
+  unix_epoch () |> format "yyyy-MM-dd HH:mm:ss" |> _assert_eq "1970-01-01 00:00:00"
+  min_value () |> get_year |> _assert_eq 1i32
+  max_value () |> get_year |> _assert_eq 9999i32
+  unix_epoch () |> add_days 1i32 |> format "yyyy-MM-dd" |> _assert_eq "1970-01-02"
+  max_value () |> format "HH:mm:ss.ffffff" |> _assert_eq "23:59:59.999999"
+  unix_epoch () |> add_days -1i32 |> format_iso8601 |> _assert_eq "1969-12-31T00-00-00.000"
+  """,
+  timeout: 300_000
+)
+```
+
+#### stopwatch_microseconds_agree_with_milliseconds (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> pascal\n\n:= watch = stopwatch ()\nstopwatch_start watch\n:= before = stopwatch_elapsed_microseconds watch\n:= millis = stopwatch_elapsed_milliseconds watch\n:= after = stopwatch_elapsed_microseconds watch\n? before < 0i64 ?> failwith \"elapsed microseconds are never negative\"\n? after < before ?> failwith \"elapsed microseconds never go back\"\n? millis * 1000i64 > after ?> failwith \"the millisecond reading never runs ahead of a later microsecond reading\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> pascal
+
+  := watch = stopwatch ()
+  stopwatch_start watch
+  := before = stopwatch_elapsed_microseconds watch
+  := millis = stopwatch_elapsed_milliseconds watch
+  := after = stopwatch_elapsed_microseconds watch
+  ? before < 0i64 ?> failwith "elapsed microseconds are never negative"
+  ? after < before ?> failwith "elapsed microseconds never go back"
+  ? millis * 1000i64 > after ?> failwith "the millisecond reading never runs ahead of a later microsecond reading"
+  """,
+  timeout: 300_000
+)
+```
+
+#### pre_epoch_micros_floor_to_the_second_below_on_lua (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> lua\n\ntimestamp -1i64\n|> to_calendar_utc\n|> to_timestamp\n|> _assert_eq' (-1000000i64 |> timestamp)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> lua
+
+  timestamp -1i64
+  |> to_calendar_utc
+  |> to_timestamp
+  |> _assert_eq' (-1000000i64 |> timestamp)
+  """,
+  timeout: 300_000
+)
+```

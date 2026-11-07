@@ -1,0 +1,6 @@
+:= main () : i32 =
+    := mixed_count = sm::utf8_validate "Aéλ🙂Z"
+    := empty_count = sm::utf8_validate ""
+    ? (=.) mixed_count 5i32 ?>
+        ? (=.) empty_count 0i32 ?> 0i32 |: 2i32
+    |: 1i32

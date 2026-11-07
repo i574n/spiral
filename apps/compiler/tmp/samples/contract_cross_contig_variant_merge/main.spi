@@ -1,0 +1,20 @@
+:! donor_a = ()
+:! hg38 = ()
+:! chr1 = ()
+:! chr2 = ()
+
+:| callset sample build contig =
+    | Callset :: \* sample build contig. string -> callset sample build contig
+
+:= merge_calls \* sample build contig.
+    (left : callset sample build contig)
+    (right : callset sample build contig)
+    : callset sample build contig =
+    ?= left, right ?|
+    | Callset _, Callset _ => Callset "merged-calls"
+
+:= main () : string =
+    := left : callset donor_a hg38 chr1 = Callset "left"
+    := right : callset donor_a hg38 chr2 = Callset "right"
+    := _ : callset donor_a hg38 chr1 = merge_calls left right
+    "unreachable"

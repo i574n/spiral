@@ -1,0 +1,20 @@
+:! draft = ()
+:! authorized = ()
+:! cancelled = ()
+
+:! nfe_draft = { id : string }
+:! nfe_authorized = { xml : string; protocol : string }
+:! nfe_cancelled = { xml : string; reason : string }
+
+:| document state =
+    | Draft :: nfe_draft -> document draft
+    | Authorized :: nfe_authorized -> document authorized
+    | Cancelled :: nfe_cancelled -> document cancelled
+
+:= cancel (document : document authorized) : document cancelled =
+    ?= document ?|
+    | Authorized payload => Cancelled (nfe_cancelled { xml = payload::xml; reason = "requested" })
+
+:= main () =
+    := draft = Draft (nfe_draft { id = "illegal" })
+    cancel draft

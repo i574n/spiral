@@ -1,0 +1,19 @@
+:! draft = ()
+:! validated = ()
+:! authorized = ()
+:! idempotent = ()
+
+:| operation from to effect =
+    | Validate :: operation draft validated idempotent
+
+:| row from to effect =
+    | Row :: \* from to effect. string -> row from to effect
+
+:| typed_node from to =
+    | TypedNode :: \* from to.
+        (\? effect. operation from to effect * row from to effect)
+        -> typed_node from to
+
+:= main () : typed_node draft validated =
+    := wrong_row : row validated authorized idempotent = Row "wrong-transition"
+    TypedNode (\? (Validate, wrong_row))

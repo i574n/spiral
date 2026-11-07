@@ -1,0 +1,6 @@
+packages:
+    |core-
+    a-
+    b-
+modules:
+    model

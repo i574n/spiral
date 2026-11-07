@@ -1,0 +1,119 @@
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+typedef struct {
+    int tag;
+    union {
+        struct {
+            int32_t v0;
+        } case1; // Hit
+        struct {
+            bool v0;
+        } case2; // Flag
+    };
+} US0;
+typedef struct Fun0 Fun0;
+struct Fun0{
+    int refc;
+    void (*decref_fptr)(Fun0 *);
+    int32_t (*fptr)(Fun0 *, int32_t);
+};
+typedef struct Closure0 Closure0;
+struct Closure0 {
+    Fun0 base;
+    US0 v0;
+};
+static inline void USIncrefBody0(US0 * x){
+    switch (x->tag) {
+    }
+}
+static inline void USDecrefBody0(US0 * x){
+    switch (x->tag) {
+    }
+}
+void USIncref0(US0 * x){ USIncrefBody0(x); }
+void USDecref0(US0 * x){ USDecrefBody0(x); }
+US0 US0_Idle() { // Idle
+    US0 x;
+    x.tag = 0;
+    return x;
+}
+US0 US0_Hit(int32_t v0) { // Hit
+    US0 x;
+    x.tag = 1;
+    x.case1.v0 = v0;
+    return x;
+}
+US0 US0_Flag(bool v0) { // Flag
+    US0 x;
+    x.tag = 2;
+    x.case2.v0 = v0;
+    return x;
+}
+static int32_t score0(US0 v0){
+    switch (v0.tag) {
+        case 2: { // Flag
+            bool v2 = v0.case2.v0;
+            if (v2){
+                return 11l;
+            } else {
+                return 5l;
+            }
+            break;
+        }
+        case 1: { // Hit
+            int32_t v1 = v0.case1.v0;
+            return v1;
+            break;
+        }
+        default: { // Idle
+            return 3l;
+            break;
+        }
+    }
+}
+static inline void ClosureDecrefBody0(Closure0 * x){
+    (void)x;
+}
+static void ClosureDecref0(Fun0 * self){
+    Closure0 * x = (Closure0 *) self;
+    if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
+}
+static int32_t closure0(Fun0 * self, int32_t v1){
+    Closure0 * x = (Closure0 *) self;
+    US0 v0 = x->v0;
+    ClosureDecref0(self);
+    int32_t v2 = score0(v0);
+    int32_t v3 = v2 + v1;
+    return v3;
+}
+static Fun0 * ClosureCreate0(US0 v0){
+    Closure0 * x = malloc(sizeof(Closure0));
+    x->base.refc = 1;
+    x->base.decref_fptr = ClosureDecref0;
+    x->base.fptr = closure0;
+    x->v0 = v0;
+    return &x->base;
+}
+static int32_t method1(Fun0 * v0){
+    return v0->fptr(v0, 31l);
+}
+int32_t main(){
+    int32_t v0 = 2l;
+    bool v1 = v0 == 0l;
+    US0 v7;
+    if (v1){
+        v7 = US0_Idle();
+    } else {
+        bool v3 = v0 == 1l;
+        if (v3){
+            v7 = US0_Hit(7l);
+        } else {
+            v7 = US0_Flag(true);
+        }
+    }
+    Fun0 * v8 = ClosureCreate0(v7);
+    return method1(v8);
+}

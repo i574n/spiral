@@ -1,0 +1,47 @@
+:! validate_id = ()
+:! publish_id = ()
+:! parallel = ()
+:! serial = ()
+:! validation_cap = ()
+:! publish_cap = ()
+:! draft = ()
+:! validated = ()
+:! authorized = ()
+
+:| node id effect capability from to =
+    | ValidateNode :: node validate_id parallel validation_cap draft validated
+    | PublishNode :: node publish_id serial publish_cap validated authorized
+
+:| packed_node from to =
+    | PackedNode :: \* from to.
+        (\? id. \? effect. \? capability.
+            node id effect capability from to)
+        -> packed_node from to
+
+:| ^ manifest from to =
+    | ManifestNode :: \* from to. packed_node from to -> manifest from to
+    | Depends :: \* from to.
+        (\? middle. manifest from middle * packed_node middle to)
+        -> manifest from to
+
+:= render_node \* from to. (node : packed_node from to) : string =
+    ?= node ?|
+    | PackedNode node =>
+        := \? id. \? effect. \? capability. node = node
+        ?= node ?|
+        | ValidateNode => "validate|parallel|validation-cap"
+        | PublishNode => "publish|serial|publish-cap"
+
+:= ^ render \* from to. (plan : manifest from to) : string =
+    ?= plan ?|
+    | ManifestNode node => render_node node
+    | Depends _ => "proof-carrying-manifest"
+
+:= plan () : manifest draft authorized =
+    Depends (\? (
+        ManifestNode (PackedNode (\? (\? (\? ValidateNode)))),
+        PackedNode (\? (\? (\? PublishNode)))
+    ))
+
+:= main () : string =
+    render (plan ())

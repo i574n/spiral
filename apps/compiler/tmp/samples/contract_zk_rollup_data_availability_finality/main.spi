@@ -1,0 +1,188 @@
+:! batch_open = ()
+:! encoded = ()
+:! shards_published = ()
+:! availability_sampled = ()
+:! state_proved = ()
+:! finalized = ()
+
+:! batch_700 = ()
+:! epoch_31 = ()
+:! root_poseidon_7 = ()
+:! shard_0 = ()
+:! shard_3 = ()
+:! shard_5 = ()
+:! shard_set_035 = ()
+
+:| batch_payload batch =
+    | Batch700Payload :: string -> batch_payload batch_700
+
+:| erasure_commitment batch epoch root =
+    | Commitment700_31_7 :: batch_payload batch_700 * string ->
+        erasure_commitment batch_700 epoch_31 root_poseidon_7
+
+:| shard_receipt shard batch epoch root =
+    | Shard0Receipt :: string -> shard_receipt shard_0 batch_700 epoch_31 root_poseidon_7
+    | Shard3Receipt :: string -> shard_receipt shard_3 batch_700 epoch_31 root_poseidon_7
+    | Shard5Receipt :: string -> shard_receipt shard_5 batch_700 epoch_31 root_poseidon_7
+
+:| three a b c =
+    | Three :: \* a b c. a * b * c -> three a b c
+
+:| published_shard_set shardset batch epoch root =
+    | Published035 ::
+        erasure_commitment batch_700 epoch_31 root_poseidon_7 *
+        three
+            (shard_receipt shard_0 batch_700 epoch_31 root_poseidon_7)
+            (shard_receipt shard_3 batch_700 epoch_31 root_poseidon_7)
+            (shard_receipt shard_5 batch_700 epoch_31 root_poseidon_7) ->
+        published_shard_set shard_set_035 batch_700 epoch_31 root_poseidon_7
+
+:| availability_certificate shardset batch epoch root =
+    | Availability035 ::
+        published_shard_set shard_set_035 batch_700 epoch_31 root_poseidon_7 ->
+        availability_certificate shard_set_035 batch_700 epoch_31 root_poseidon_7
+
+:| execution_trace batch epoch root =
+    | Trace700 :: string -> execution_trace batch_700 epoch_31 root_poseidon_7
+
+:| zk_proof shardset batch epoch root =
+    | Proof700 ::
+        execution_trace batch_700 epoch_31 root_poseidon_7 *
+        availability_certificate shard_set_035 batch_700 epoch_31 root_poseidon_7 ->
+        zk_proof shard_set_035 batch_700 epoch_31 root_poseidon_7
+
+:| finality_receipt shardset batch epoch root =
+    | Finality700 ::
+        zk_proof shard_set_035 batch_700 epoch_31 root_poseidon_7 *
+        availability_certificate shard_set_035 batch_700 epoch_31 root_poseidon_7 ->
+        finality_receipt shard_set_035 batch_700 epoch_31 root_poseidon_7
+
+:| rollup_op from to result =
+    | EncodeBatch :: \* batch epoch root.
+        batch_payload batch ->
+        rollup_op batch_open encoded (erasure_commitment batch epoch root)
+    | PublishShards :: \* shardset batch epoch root.
+        erasure_commitment batch epoch root *
+        three
+            (shard_receipt shard_0 batch epoch root)
+            (shard_receipt shard_3 batch epoch root)
+            (shard_receipt shard_5 batch epoch root) ->
+        rollup_op encoded shards_published
+            (published_shard_set shardset batch epoch root)
+    | SampleAvailability :: \* shardset batch epoch root.
+        published_shard_set shardset batch epoch root ->
+        rollup_op shards_published availability_sampled
+            (availability_certificate shardset batch epoch root)
+    | ProveState :: \* shardset batch epoch root.
+        execution_trace batch epoch root *
+        availability_certificate shardset batch epoch root ->
+        rollup_op availability_sampled state_proved
+            (zk_proof shardset batch epoch root)
+    | FinalizeBatch :: \* shardset batch epoch root.
+        zk_proof shardset batch epoch root *
+        availability_certificate shardset batch epoch root ->
+        rollup_op state_proved finalized
+            (finality_receipt shardset batch epoch root)
+
+:! encoder_interpreter from to result = rollup_op from to result
+:! sampler_interpreter from to result = rollup_op from to result
+:! verifier_interpreter from to result = rollup_op from to result
+:! settlement_interpreter from to result = rollup_op from to result
+
+:? interpret interpreter from to result : interpreter from to result -> string
+
+:+ interpret encoder_interpreter = \ (encoder_interpreter op) =>
+    ?= op ?|
+    | EncodeBatch _ => "encode-reed-solomon"
+    | PublishShards _ => "publish-shard-commitments"
+    | SampleAvailability _ => "encoder-observe-samples"
+    | ProveState _ => "encoder-bind-trace-root"
+    | FinalizeBatch _ => "encoder-seal-batch"
+
+:+ interpret sampler_interpreter = \ (sampler_interpreter op) =>
+    ?= op ?|
+    | EncodeBatch _ => "sampler-read-commitment"
+    | PublishShards _ => "sampler-index-shards"
+    | SampleAvailability _ => "sample-distinct-shards"
+    | ProveState _ => "sampler-bind-certificate"
+    | FinalizeBatch _ => "sampler-preserve-evidence"
+
+:+ interpret verifier_interpreter = \ (verifier_interpreter op) =>
+    ?= op ?|
+    | EncodeBatch _ => "verify-commitment-shape"
+    | PublishShards _ => "verify-shard-openings"
+    | SampleAvailability _ => "verify-sampling-threshold"
+    | ProveState _ => "verify-zk-execution"
+    | FinalizeBatch _ => "verify-root-alignment"
+
+:+ interpret settlement_interpreter = \ (settlement_interpreter op) =>
+    ?= op ?|
+    | EncodeBatch _ => "settlement-pending"
+    | PublishShards _ => "settlement-wait-availability"
+    | SampleAvailability _ => "settlement-admit-proof"
+    | ProveState _ => "settlement-check-challenge-window"
+    | FinalizeBatch _ => "settlement-finalize-root"
+
+:= payload () = Batch700Payload "tx-batch-700"
+:= commitment () = Commitment700_31_7 (payload (), "rs-root-700")
+:= r0 () = Shard0Receipt "shard-0"
+:= r3 () = Shard3Receipt "shard-3"
+:= r5 () = Shard5Receipt "shard-5"
+:= published () = Published035 (commitment (), Three (r0 (), r3 (), r5 ()))
+:= availability () = Availability035 (published ())
+:= trace () = Trace700 "trace-root-700"
+:= proof () = Proof700 (trace (), availability ())
+:= finality () = Finality700 (proof (), availability ())
+
+:| sealed_rollup_result =
+    | SealedCommitment :: (\? batch epoch root. erasure_commitment batch epoch root) -> sealed_rollup_result
+    | SealedAvailability ::
+        (\? shardset batch epoch root. availability_certificate shardset batch epoch root) ->
+        sealed_rollup_result
+    | SealedFinality ::
+        (\? shardset batch epoch root. finality_receipt shardset batch epoch root) ->
+        sealed_rollup_result
+
+:= inspect_sealed (value : sealed_rollup_result) : string =
+    ?= value ?|
+    | SealedCommitment payload =>
+        := \? batch epoch root. _ = payload
+        "sealed-erasure-commitment"
+    | SealedAvailability payload =>
+        := \? shardset batch epoch root. _ = payload
+        "sealed-availability"
+    | SealedFinality payload =>
+        := \? shardset batch epoch root. _ = payload
+        "sealed-finality"
+
+:= serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : string =
+    "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n"
+    ^^ "1\tencode-batch\tEncodeBatch\tbatch_open\tencoded\t\tnon_idempotent\terasure-codec\t0\n"
+    ^^ "1\tpublish-shards\tPublishShards\tencoded\tshards_published\tencode-batch\tidempotent\tda-network\t2\n"
+    ^^ "1\tsample-availability\tSampleAvailability\tshards_published\tavailability_sampled\tpublish-shards\tidempotent"
+    ^^ "\tsamplers\t2\n1\tprove-state\tProveState\tavailability_sampled\tstate_proved\tsample-availability\tnon_idempo"
+    ^^ "tent\tzk-prover\t0\n1\tfinalize-batch\tFinalizeBatch\tstate_proved\tfinalized\tprove-state\tnon_idempotent\tse"
+    ^^ "ttlement\t0\n"
+
+:= main () : string =
+    := encode_op : rollup_op batch_open encoded (erasure_commitment batch_700 epoch_31 root_poseidon_7) =
+        EncodeBatch (payload ())
+    := sample_op
+        : rollup_op shards_published availability_sampled
+            (availability_certificate shard_set_035 batch_700 epoch_31 root_poseidon_7)
+        =
+        SampleAvailability (published ())
+    := prove_op
+        : rollup_op availability_sampled state_proved (zk_proof shard_set_035 batch_700 epoch_31 root_poseidon_7)
+        =
+        ProveState (trace (), availability ())
+    := final_op
+        : rollup_op state_proved finalized (finality_receipt shard_set_035 batch_700 epoch_31 root_poseidon_7)
+        =
+        FinalizeBatch (proof (), availability ())
+    := encoding = interpret (encoder_interpreter encode_op)
+    := sampling = interpret (sampler_interpreter sample_op)
+    := verification = interpret (verifier_interpreter prove_op)
+    := settled = interpret (settlement_interpreter final_op)
+    := sealed = inspect_sealed (SealedFinality (\? (finality ())))
+    serialize_authority encoding sampling verification sealed

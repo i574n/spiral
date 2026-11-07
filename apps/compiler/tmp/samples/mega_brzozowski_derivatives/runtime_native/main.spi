@@ -1,0 +1,16 @@
+:< main
+
+:= main () : i32 =
+    := ~bit_accept = input_110 ()
+    := ~bit_reject = input_111 ()
+    := ~tri_accept = input_aaa ()
+    := ~tri_reject = input_aab ()
+    assert_true (accepts (ends_with_zero ()) bit_accept)
+    assert_false (accepts (ends_with_zero ()) bit_reject)
+    assert_true (accepts (tri_a_star ()) tri_accept)
+    assert_false (accepts (tri_a_star ()) tri_reject)
+    := accepted_state = decide_bit_match (BitMatcherRaw (ends_with_zero (), bit_accept))
+    := rejected_state = decide_bit_match (BitMatcherRaw (ends_with_zero (), bit_reject))
+    assert_true (bit_match_value accepted_state)
+    assert_false (bit_match_value rejected_state)
+    0i32

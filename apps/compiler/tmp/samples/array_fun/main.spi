@@ -1,0 +1,19 @@
+:! fun_array = array_base (i32 -> i32)
+
+:= create (n : i32) : fun_array = fun_array !!!!ArrayCreate(`(i32 -> i32), n)
+:= get (array : fun_array) (i : i32) : i32 -> i32 =
+    ?= array ?|
+    | fun_array values => !!!!ArrayIndex(values, i)
+:= set (array : fun_array) (i : i32) (f : i32 -> i32) : () =
+    ?= array ?|
+    | fun_array values => !!!!ArrayIndexSet(values, i, f)
+
+:= main () : i32 =
+    := ~n = 3i32
+    := f (z : i32) : i32 = z +. n
+    := ~g = f
+    := ~len = 1i32
+    := a = create len
+    set a 0i32 g
+    := h = get a 0i32
+    ? h 4i32 =. 7i32 ?> 0i32 |: 1i32

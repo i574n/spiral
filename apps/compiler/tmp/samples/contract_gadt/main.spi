@@ -1,0 +1,29 @@
+:! draft = ()
+:! signed = ()
+:! authorized = ()
+:! cancelled = ()
+
+:! nfe_draft = { id : string; emit : string; dest : string }
+:! nfe_signed = { xml : string; digest : string }
+:! nfe_authorized = { xml : string; protocol : string }
+:! nfe_cancelled = { xml : string; reason : string }
+
+:| document state =
+    | Draft :: nfe_draft -> document draft
+    | Signed :: nfe_signed -> document signed
+    | Authorized :: nfe_authorized -> document authorized
+    | Cancelled :: nfe_cancelled -> document cancelled
+
+:= sign (document : document draft) : document signed =
+    ?= document ?|
+    | Draft _ => Signed (nfe_signed { xml = "nfe.xml"; digest = "sha256" })
+
+:= authorize (document : document signed) : document authorized =
+    ?= document ?|
+    | Signed payload => Authorized (nfe_authorized { xml = payload::xml; protocol = "135240000000001" })
+
+:= main () : string =
+    := draft = Draft (nfe_draft { id = "1"; emit = "A"; dest = "B" })
+    := authorized = authorize (sign draft)
+    ?= authorized ?|
+    | Authorized payload => payload::protocol

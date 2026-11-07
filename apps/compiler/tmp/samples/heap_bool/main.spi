@@ -1,0 +1,5 @@
+:= main () : i32 =
+    := ~flag = !+
+    := box = !!!!LayoutToHeap({ value = flag })
+    := opened = !!!!LayoutIndex(box)
+    ? opened::value ?> 0i32 |: 1i32

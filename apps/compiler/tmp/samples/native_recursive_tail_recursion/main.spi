@@ -1,0 +1,23 @@
+:| ^ int_box =
+    | Empty
+    | Box : i32 * int_box
+
+:= ^ keep ~n (left : int_box) (right : int_box) : int_box =
+    ? n =. 0i32 ?> left
+    |: ~~ keep (n -. 1i32) right left
+
+:= main () : i32 =
+    := empty = Empty
+    := left = Box (7i32, empty)
+    := right = Box (11i32, empty)
+    := alias = left
+    := result = ~~ keep 1000000i32 left right
+    ?= result ?|
+    | Box (x, _) =>
+        ?= alias ?|
+        | Box (y, _) =>
+            ?= right ?|
+            | Box (z, _) => ? x =. 7i32 && y =. 7i32 && z =. 11i32 ?> 0i32 |: 3i32
+            | Empty => 4i32
+        | Empty => 2i32
+    | Empty => 1i32

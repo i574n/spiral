@@ -1,0 +1,20 @@
+:! cell_array = array_base (heap { value : i32 })
+
+:= create (n : i32) : cell_array = cell_array !!!!ArrayCreate(`(heap { value : i32 }), n)
+:= get (array : cell_array) (i : i32) : heap { value : i32 } =
+    ?= array ?|
+    | cell_array values => !!!!ArrayIndex(values, i)
+:= set (array : cell_array) (i : i32) (value : heap { value : i32 }) : () =
+    ?= array ?|
+    | cell_array values => !!!!ArrayIndexSet(values, i, value)
+
+:= main () : i32 =
+    := ~n = 2i32
+    := a = create n
+    := ~x = 4i32
+    := ~y = 6i32
+    set a 0i32 !!!!LayoutToHeap({ value = x })
+    set a 1i32 !!!!LayoutToHeap({ value = y })
+    := left = !!!!LayoutIndex(get a 0i32)
+    := right = !!!!LayoutIndex(get a 1i32)
+    ? left::value +. right::value =. 10i32 ?> 0i32 |: 1i32

@@ -1,0 +1,15 @@
+:| ^ int_list =
+    | Nil
+    | Cons : i32 * int_list
+
+:~ ^ sum xs : i32 =
+    ?= xs ?|
+    | Nil => 0i32
+    | Cons (head, tail) => head +. sum tail
+
+:= main () : i32 =
+    := ~a = 1i32
+    := ~b = 2i32
+    := ~c = 3i32
+    := xs = Cons (a, Cons (b, Cons (c, Nil)))
+    sum xs -. 6i32

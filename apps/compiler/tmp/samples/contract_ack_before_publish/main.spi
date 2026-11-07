@@ -1,0 +1,22 @@
+:! persisted = ()
+:! published = ()
+:! acknowledged = ()
+
+:| event_box phase =
+    | EventBox :: \* phase. string -> event_box phase
+
+:| outbox_op from to =
+    | Publish :: outbox_op persisted published
+    | Acknowledge :: outbox_op published acknowledged
+
+:= execute \* from to.
+    (operation : outbox_op from to)
+    (box : event_box from)
+    : event_box to =
+    ?= operation, box ?|
+    | Publish, EventBox trace => EventBox trace
+    | Acknowledge, EventBox _ => EventBox "acked"
+
+:= main () : string =
+    := (EventBox result) = execute Acknowledge (EventBox "persisted" : event_box persisted)
+    result

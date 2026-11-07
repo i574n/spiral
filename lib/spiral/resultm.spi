@@ -1,0 +1,531 @@
+:# resultm static =
+    :< testing
+
+:< rust_operators
+
+/// ## resultm
+:= from_option_error error opt =
+    ?= opt ?|
+    | Some x => Ok x
+    | None => Error error
+
+:= from_option opt =
+    opt |> from_option_error "resultm.from_option / Option does not have a value."
+
+:= flatten_option \* t u. (x : option (result (option t) u)) : result (option t) u =
+    ?= x ?|
+    | Some (Error x) => Error x
+    | Some (Ok (Some x)) => Ok (Some x)
+    | _ => Ok None
+
+:= flatten \* t u. (x : result (result t u) u) : result t u =
+    ?= x ?|
+    | Ok x => x
+    | Error x => Error x
+
+:= from_try \* t. (fn : () -> t) (ex_fn : (() -> exn) -> exn) : result t exn =
+    := ok x = x |> Ok : result t exn
+    := error (e : exn) = e |> Error : result t exn
+    backend_switch {
+        Lua = \ () =>
+            := caught (ex : exn) : option (result t exn) = Some (Error (ex_fn \ () => ex))
+            try (\ () => Ok (fn ()) : result t exn) caught |> optionm::value
+        Fsharp = \ () =>
+            ~~ $'try !fn () |> !ok with ex -> (fun () -> ex) |> !ex_fn |> !error ' : result t exn
+        Python = \ () =>
+            $'fn = !fn '
+            $'ok = !ok '
+            $'error = !error '
+            $'ex_fn = !ex_fn '
+            $'try: x = ok(fn()) '
+            $'except Exception as ex: x = error(ex_fn(lambda: ex))'
+            $'x' : result t exn
+        TypeScript = \ () =>
+            $'(() => { try { return !ok(!fn()); } catch (ex) { return !error(!ex_fn(() => ex)); } })()' : result t exn
+        Rust = \ () =>
+            := caught (ex : exn) : option (result t exn) = Some (Error (ex_fn \ () => ex))
+            try (\ () => Ok (fn ()) : result t exn) caught |> optionm::value
+        Zig = \ () => fn () |> ok
+        C = \ () => fn () |> ok
+    }
+
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+:# from_try_keeps_values_and_catches_failures =
+    := settled (r : result i32 exn) : i32 =
+        ?= r ?|
+        | Ok x => x
+        | Error _ => 0i32
+    := ~n = 5i32
+    (from_try (\ () => n) eval |> settled, from_try (\ () => failwith "boom" : i32) eval |> settled)
+    |> _assert_eq (5i32, 0i32)
+
+///> c
+:# from_try_keeps_values =
+    := settled (r : result i32 exn) : i32 =
+        ?= r ?|
+        | Ok x => x
+        | Error _ => 0i32
+    := ~n = 5i32
+    from_try (\ () => n) eval |> settled
+    |> _assert_eq 5i32
+
+:= caught \* t. (fn : () -> t) : result t string =
+    := ok (x : t) : result t string = Ok x
+    := error (e : string) : result t string = Error e
+    backend_switch {
+        Gleam = \ () =>
+            global "@external(erlang, \"SPIRAL_FFI\", \"try_call\")\nfn spiral_try_call(f: fn(Nil) -> a) -> Result(a, String)"
+            $'case spiral_try_call(!fn) { Ok(v) -> !ok(v) Error(e) -> !error(e) }' : result t string
+    }
+
+///> gleam
+:# caught_keeps_values_and_contains_crashes =
+    := settled (r : result i32 string) : i32 =
+        ?= r ?|
+        | Ok x => x
+        | Error _ => 0i32
+    := ~n = 5i32
+    (caught (\ () => n) |> settled, caught (\ () => failwith "boom" : i32) |> settled, caught (\ () => n + 1i32) |> settled)
+    |> _assert_eq (5i32, 0i32, 6i32)
+
+:= rust_debug_message \* t. (prefix : string) (x : t) : string =
+    global """
+        struct SpiralDebug<T>(T);
+        trait SpiralDebugShow {
+            fn show(&self) -> String;
+        }
+        impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> {
+            fn show(&self) -> String { format!("{:?}", self.0) }
+        }
+        trait SpiralTypeShow {
+            fn show(&self) -> String;
+        }
+        impl<T> SpiralTypeShow for &SpiralDebug<T> {
+            fn show(&self) -> String { String::from(std::any::type_name::<T>()) }
+        }
+        """
+    $'Rc::<str>::from(format\!("{}{}", !prefix, (&SpiralDebug(&!x)).show()))' : string
+
+///> rust
+:# rust_debug_message_shows_debug_values =
+    (rust_debug_message "x: " 5i32, rust_debug_message "s: " "a")
+    |> _assert_eq ("x: 5", "s: \"a\"")
+
+:= get \* t e. (source : result t e) : t =
+    ?= source ?|
+    | Ok x => x
+    | Error x =>
+        backend_switch {
+            Gleam = \ () =>
+                global "import gleam/string"
+                $'"resultm.get / Error x: " <> string.inspect(!x)' : string
+            Lua = \ () => $'"resultm.get / Error x: " .. tostring(!x)' : string
+            Fsharp = \ () => $'$"resultm.get / Error x: {!x}"' : string
+            Python = \ () => $'f"resultm.get / Error x: {!x}"' : string
+            TypeScript = \ () => $'"resultm.get / Error x: " + String(!x)' : string
+            Rust = \ () => rust_debug_message "resultm.get / Error x: " x
+            Zig = fun () => $'(std.fmt.allocPrint(spiral_gpa, "resultm.get / Error x: {any}", .{ !x }) catch \
+                \@panic("out of memory"))' : string
+        }
+        |> failwith
+
+:= map \* t e u. (fn : t -> u) (source : result t e) : result u e =
+    ?= source ?|
+    | Ok x => x |> fn |> Ok
+    | Error x => Error x
+
+:= map_error \* t e u. (fn : e -> u) (source : result t e) : result t u =
+    ?= source ?|
+    | Ok x => Ok x
+    | Error x => x |> fn |> Error
+
+:= collect_list \* t e. (items : list (result t e)) : result (list t) e =
+    :~ ^ collected (items : list (result t e)) (acc : list t) : result (list t) e =
+        ?= items ?|
+        | [] => Ok (listm::rev acc)
+        | Error e :: _ => Error e
+        | Ok x :: rest => collected rest (x :: acc)
+    collected items []
+
+///> rust
+///> gleam
+:# collect_list_keeps_order_and_stops_at_the_first_error =
+    := ~bad = "bad"
+    (collect_list ([ Ok 1i32; Ok 2 ] : list (result i32 string)), collect_list [ Ok 1i32; Error bad; Error "later" ])
+    |> _assert_eq (Ok [ 1i32; 2 ], Error "bad")
+
+:= unwrap_err \* t u. (x : result t u) : u =
+    ?= x ?|
+    | Ok x =>
+        backend_switch {
+            Gleam = \ () =>
+                global "import gleam/string"
+                $'"resultm.unwrap_err / Ok x: " <> string.inspect(!x)' : string
+            Lua = \ () => $'"resultm.unwrap_err / Ok x: " .. tostring(!x)' : string
+            Fsharp = \ () => $'$"resultm.unwrap_err / Ok x: {!x}"' : string
+            Python = \ () => $'f"resultm.unwrap_err / Ok x: {!x}"' : string
+            TypeScript = \ () => $'"resultm.unwrap_err / Ok x: " + String(!x)' : string
+            Rust = \ () => rust_debug_message "resultm.unwrap_err / Ok x: " x
+            Zig = fun () => $'(std.fmt.allocPrint(spiral_gpa, "resultm.unwrap_err / Ok x: {any}", .{ !x }) catch \
+                \@panic("out of memory"))' : string
+        }
+        |> failwith
+    | Error x => x
+
+:= ok \* t. (x : result t _) : option t =
+    ?= x ?|
+    | Ok x => Some x
+    | Error _ => None
+
+/// ## fsharp
+:= result'_types () =
+    backend_switch {
+        Gleam = \ () => global "import gleam/result"
+    }
+:== result'_switch t u =
+    {
+        Gleam : $'Result(`t, `u)'
+        Lua : result t u
+        Fsharp : $'Result<`t, `u>'
+        Python : result t u
+        Rust : $'Result<`t, `u>'
+        TypeScript : result t u
+        Zig : result t u
+    }
+:! result' t u = $'backend_switch `(result'_switch t u)'
+
+:= result'_union () : bool =
+    backend_switch {
+        Gleam = \ () => !-
+        Lua = \ () => !+
+        Fsharp = \ () => !-
+        Python = \ () => !+
+        TypeScript = \ () => !+
+        Cpp = \ () => !-
+        CppHost = \ () => !-
+        Pascal = \ () => !-
+        Cuda = \ () => !-
+        Rust = \ () => !-
+        Zig = \ () => !+
+    }
+
+:= result'_python () : bool =
+    backend_switch {
+        Gleam = \ () => !-
+        Lua = \ () => !-
+        Fsharp = \ () => !-
+        Python = \ () => !+
+        TypeScript = \ () => !-
+        Cpp = \ () => !-
+        CppHost = \ () => !-
+        Pascal = \ () => !-
+        Cuda = \ () => !-
+        Rust = \ () => !-
+        Zig = \ () => !-
+    }
+
+:= result'_zig () : bool =
+    backend_switch {
+        Gleam = \ () => !-
+        Lua = \ () => !-
+        Fsharp = \ () => !-
+        Python = \ () => !-
+        TypeScript = \ () => !-
+        Cpp = \ () => !-
+        CppHost = \ () => !-
+        Pascal = \ () => !-
+        Cuda = \ () => !-
+        Rust = \ () => !-
+        Zig = \ () => !+
+        Lean = \ () => !-
+        C = \ () => !-
+        Wasm = \ () => !-
+        Bend = \ () => !-
+    }
+
+:= result'_error_text \* e. (prefix : string) (e : e) : string =
+    $'(std.fmt.allocPrint(spiral_gpa, "{s}{any}", .{ !prefix, !e }) catch @@panic("out of memory"))'
+
+:= unbox \* t u. (x : result' t u) : result t u =
+    ? result'_union ()
+    ?> $'!x ' : result t u
+    |:
+        := ok x : result t u = Ok x
+        := error x : result t u = Error x
+        := ok = ~~ ok
+        := error = ~~ error
+        backend_switch {
+            Gleam = \ () =>
+                $'case !x { Ok(x) -> !ok(x) Error(x) -> !error(x) }' : result t u
+
+            Fsharp = \ () =>
+                ~>
+                    ?: t ?|
+                    | () => $'match !x with Ok () -> !ok () | Error x -> !error x' : result t u
+                    | _ => $'match !x with Ok x -> !ok x | Error x -> !error x' : result t u
+                : result t u
+
+            Rust = \ () =>
+                ~>
+                    ?: t ?|
+                    | () => $'match !x { Ok(()) => !ok(), Err(e) => !error(e) }' : result t u
+                    | _ => $'match !x { Ok(x) => !ok(x), Err(e) => !error(e) }' : result t u
+                : result t u
+        }
+
+:= box \* t u. (x : result t u) : result' t u =
+    ? result'_union ()
+    ?> x |> dyn |> \ x => $'!x ' : result' t u
+    |:
+        ?= x ?|
+        | Ok x =>
+            backend_switch {
+                Gleam = \ () => $'Ok(!x)' : result' t u
+                Fsharp = \ () => $'Ok !x ' : result' t u
+                Rust = \ () => $'Ok::<`t, `u>(!x)' : result' t u
+            }
+        | Error err =>
+            backend_switch {
+                Gleam = \ () => $'Error(!err)' : result' t u
+                Fsharp = \ () => $'Error !err ' : result' t u
+                Rust = \ () => $'Err::<`t, `u>(!err)' : result' t u
+            }
+
+:= map''' \* t u e. (fn : t -> u) (x : result' t e) : result' u e =
+    x |> unbox |> map fn |> box
+
+///> gleam
+///> lua
+///> cuda
+///> rust
+///> typescript
+:# map =
+    := x : _ _ string = Ok 3i32
+    := y : _ i32 _ = Error "error1"
+    := x' = x |> box |> unbox
+    := y' = y |> box |> map''' id |> unbox
+    (x', y') |> _assert_eq' (x, y)
+
+/// ## rust
+:! anyhow_result t =
+    `(
+        rust::rust_type
+            `($'anyhow_Result<`t>')
+            `($'anyhow::Result<`t>')
+            "type anyhow_Result<'T> = class end"
+    )
+
+:! anyhow_error =
+    `(
+        rust::rust_type
+            `($'anyhow_Error')
+            `($'anyhow::Error')
+            "type anyhow_Error = class end"
+    )
+
+:= anyhow_error error : anyhow_error =
+    backend_switch {
+        Rust = \ () => !\\(error, $'"anyhow::anyhow\!(\\\"{}\\\", $0)"') : anyhow_error
+    }
+
+:= try' \* t u. (x : result' t u) : t =
+    := is_unit =
+        ~>
+            ?: t ?|
+            | () => !+
+            | _ => !-
+    ? result'_union () ?>
+        ?= unbox x ?|
+        | Ok x => x
+        | Error e =>
+            := msg : string =
+                ? result'_zig ()
+                ?> result'_error_text "resultm.try' / e: " e
+                |? result'_python ()
+                ?> $'f"resultm.try\' / e: {!e}"'
+                |: $'"resultm.try\' / e: " .. tostring(!e)'
+            failwith msg
+    |? is_unit
+    ?> (!\\(x, $'"true; $0?"') : bool) |> \ _ => $''
+    |: !\\(x, $'"$0?"')
+
+:= to_try \* t u. (x : result' t u) : rust::try t =
+    !\\(x, $'"$0"')
+
+:= unwrap' \* t u. (x : result' t u) : t =
+    ? result'_union () ?>
+        ?= unbox x ?|
+        | Ok x => x
+        | Error e =>
+            := msg : string =
+                ? result'_zig ()
+                ?> result'_error_text "resultm.unwrap' / e: " e
+                |? result'_python ()
+                ?> $'f"resultm.unwrap\' / e: {!e}"'
+                |: $'"resultm.unwrap\' / e: " .. tostring(!e)'
+            failwith msg
+    |: !\\(x, $'"$0.unwrap()"')
+
+:= unwrap'' \* t u. (x : result' t u) : t =
+    ? result'_union () ?>
+        ?= unbox x ?|
+        | Ok x => x
+        | Error e =>
+            := msg : string =
+                ? result'_zig ()
+                ?> result'_error_text "resultm.unwrap'' / e: " e
+                |? result'_python ()
+                ?> $'f"resultm.unwrap\'\' / e: {!e}"'
+                |: $'"resultm.unwrap\'\' / e: " .. tostring(!e)'
+            failwith msg
+    |:
+        run_target \|
+            | Rust => \ () => x |> unwrap'
+            | _ => \ () => $'match !x with Ok x -> x | Error e -> failwith $"resultm.unwrap\'\' / e: {e}"'
+
+:= unwrap_err' \* t u. (x : result' t u) : u =
+    ? result'_union () ?>
+        ?= unbox x ?|
+        | Ok x =>
+            := msg : string =
+                ? result'_zig ()
+                ?> result'_error_text "resultm.unwrap_err' / x: " x
+                |? result'_python ()
+                ?> $'f"resultm.unwrap_err\' / x: {!x}"'
+                |: $'"resultm.unwrap_err\' / x: " .. tostring(!x)'
+            failwith msg
+        | Error x => x
+    |: $'match !x with Ok x -> failwith $"resultm.unwrap_err\' / x: %A{x}" | Error x -> x'
+
+:= unbox' \* t u. (x : result' t u) : result t u =
+    unbox x
+
+:= map' \* t e u. (fn : t -> u) (source : result' t e) : result' u e =
+    ? result'_union ()
+    ?> source |> unbox |> map fn |> box
+    |:
+        (!\\(source, $'"true; let _result_map_ = $0.map(|x| { //"') : bool) |> ignore
+        (!\\(fn !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
+        !\($'"_result_map_"')
+
+:= map'' \* t e u. (fn : t -> u) (source : result' t e) : result' u e =
+    ? result'_union ()
+    ?> source |> unbox |> map fn |> box
+    |:
+        := fn = ~~ fn
+        := source = ~~ source
+        !\($'"!source.map(|x| !fn(x))"')
+
+:= map_error' \* t e u. (fn : e -> u) (source : result' t e) : result' t u =
+    ? is_rust () ?>
+        := fn = ~~ fn
+        !\\((source, fn), $'"$0.map_err(|x| $1(x))"')
+    |: source |> unbox |> map_error fn |> box
+
+:= map_error'' \* t e u. (fn : e -> u) (source : result' t e) : result' t u =
+    ? result'_union ()
+    ?> source |> unbox |> map_error fn |> box
+    |:
+        (!\\(source, $'"true; let _result_map_error__ = $0.map_err(|x| { //"') : bool) |> ignore
+        (!\\(fn !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
+        !\($'"_result_map_error__"')
+
+:= map_error''' \* t e u. (fn : e -> u) (source : result' t e) : result' t u =
+    ? result'_union ()
+    ?> source |> unbox |> map_error fn |> box
+    |: !\\((source, fn), $'"$0.map_err(|x| $1(x))"')
+
+:= option_ok_or \* t e. (e : e) (source : optionm'::option' t) : result' t e =
+    ? result'_union ()
+    ?> source |> optionm'::unbox |> from_option_error e |> box
+    |: !\\(source, $'"$0.ok_or(!e)"')
+
+:= unwrap_or_else \* t e u. (fn : e -> u) (source : result' t e) : u =
+    (!\\(source, $'"true; let _result_unwrap_or_else = $0.unwrap_or_else(|x| { //"') : bool) |> ignore
+    (!\\(fn !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
+    !\($'"_result_unwrap_or_else"')
+
+:= map_or_else \* t e u v. (fn : e -> v) (fn2 : u -> v) (source : result' t e) : v =
+    (!\\(source, $'"true; let _result_map_or_else = $0.map_or_else(|x| { //"') : bool) |> ignore
+    (!\\(fn !\($'"x"'), $'"true; $0 }, |x| { //"') : bool) |> ignore
+    (!\\(fn2 !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
+    !\($'"_result_map_or_else"')
+
+:= as_ref \* t e. (source : result' t e) : result' (rust::ref t) (rust::ref e) =
+    !\($'"!source.as_ref()"')
+
+:= as_ref' \* t e. (source : rust::ref (result' t e)) : result' (rust::ref t) (rust::ref e) =
+    !\($'"!source.as_ref()"')
+
+:= unwrap_or' \* t u. (default : t) (x : result' t u) : t =
+    ? result'_union () ?>
+        ?= unbox x ?|
+        | Ok x => x
+        | Error _ => default
+    |: !\\((x, default), $'"$0.unwrap_or($1)"')
+
+:= expect \* t u. (error : rust::ref string) (x : result' t u) : t =
+    !\($'"!x.expect(&!error)"')
+
+:= is_err \* t u. (x : result' t u) : bool =
+    ? is_rust ()
+    ?> !\\(x, $'"$0.is_err()"')
+    |:
+        ?= unbox x ?|
+        | Ok _ => !-
+        | Error _ => !+
+
+:= ok' \* t. (x : result' t _) : optionm'::option' t =
+    ? is_rust ()
+    ?> !\\(x, $'"$0.ok()"')
+    |: x |> unbox |> ok |> optionm'::box
+
+:= err \* t u. (x : u) : result' t u =
+    ? is_rust ()
+    ?> !\\(x, $'"Err($0)"')
+    |: (Error x : result t u) |> box
+
+:= ok'' \* t u. (x : t) : result' t u =
+    ? is_rust ()
+    ?> !\\(x, $'"Ok($0)"')
+    |: (Ok x : result t u) |> box
+
+:= transpose \* t u. (x : optionm'::option' (result' t u)) : result' (optionm'::option' t) u =
+    ? result'_union () ?>
+        := r : result (optionm'::option' t) u =
+            ?= optionm'::unbox x ?|
+            | Some x =>
+                ?= unbox x ?|
+                | Ok x => Ok (optionm'::some' x)
+                | Error e => Error e
+            | None => Ok (optionm'::none' ())
+        box r
+    |: !\\(x, $'"$0.transpose()"')
+
+:= rc_try_unwrap \* t. (x : rust::rc t) : result' t (rust::rc t) =
+    !\\(x, $'"std::rc::Rc::try_unwrap($0)"')
+
+///> rust
+:# rc_try_unwrap =
+    rust::new_rc !+
+    |> rc_try_unwrap
+    |> unbox
+    |> _assert_eq (Ok !+)
+
+:= bind \* a b e. (f : a -> result b e) (r : result a e) : result b e =
+    ?= r ?|
+    | Ok x => f x
+    | Error e => Error e
+
+:= resultm_halved (n : i32) : result i32 string = ? n % 2i32 = 0i32 ?> Ok (n / 2i32) |: Error "odd"
+
+///> rust
+///> gleam
+:# bind_chains_until_the_first_error =
+    := ~n = 8i32
+    (Ok n |> bind resultm_halved |> bind resultm_halved, Ok 6i32 |> bind resultm_halved |> bind resultm_halved)
+    |> _assert_eq (Ok 2i32, Error "odd")

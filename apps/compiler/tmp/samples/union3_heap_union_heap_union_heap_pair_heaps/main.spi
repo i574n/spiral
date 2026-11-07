@@ -1,0 +1,48 @@
+:| slot =
+    | None
+    | Held : (heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
+
+:| wrap =
+    | Absent
+    | Box : (heap { value : slot })
+    | Mark : i32
+
+:~ score x : i32 =
+    ?= x ?|
+    | Absent => 1i32
+    | Mark k => ? k =. 0i32 ?> 1i32 |: 1i32
+    | Box box =>
+        := opened = !!!!LayoutIndex(box)
+        ?= opened::value ?|
+        | None => 1i32
+        | Held inner =>
+            := inner_opened = !!!!LayoutIndex(inner)
+            := ~(inner_held, flag) = inner_opened::value
+            := deep_opened = !!!!LayoutIndex(inner_held)
+            := ~(left, right) = deep_opened::value
+            := left_opened = !!!!LayoutIndex(left)
+            := ~(a, b) = left_opened::value
+            := right_opened = !!!!LayoutIndex(right)
+            := ~(c, d) = right_opened::value
+            ? a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && flag =. 2i32 ?> 0i32 |: 1i32
+
+:= main () : i32 =
+    := ~n = 7i32
+    := ~word = "hi"
+    := left_pair = n, word
+    := left_heap = !!!!LayoutToHeap({ value = left_pair })
+    := ~m = 4i32
+    := ~other = "yo"
+    := right_pair = m, other
+    := right_heap = !!!!LayoutToHeap({ value = right_pair })
+    := pair = left_heap, right_heap
+    := inner = !!!!LayoutToHeap({ value = pair })
+    := ~mark = 2i32
+    := outer_pair = inner, mark
+    := outer = !!!!LayoutToHeap({ value = outer_pair })
+    := ~on = !+
+    := held = ? on ?> Held outer |: None
+    := box = !!!!LayoutToHeap({ value = held })
+    := ~use_box = !+
+    := wrapped = ? use_box ?> Box box |: Mark 1i32
+    score wrapped

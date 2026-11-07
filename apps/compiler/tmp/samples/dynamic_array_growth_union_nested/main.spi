@@ -1,0 +1,39 @@
+:| payload =
+    | Empty
+    | Nested : array (array i32)
+
+:= reserve_inner ~(xs : array i32) ~(capacity : i32) : () =
+    $'DynamicArrayReserve1(!xs,!capacity)'
+
+:= resize_inner ~(xs : array i32) ~(new_length : i32) : () =
+    $'DynamicArrayResize1(!xs,!new_length)'
+
+:= capacity_inner ~(xs : array i32) : i32 =
+    $'DynamicArrayCapacity1(!xs)'
+
+:~ observe_after_consume x : i32 =
+    ?= x ?|
+    | Empty => 0i32
+    | Nested outer =>
+        := ~a = index outer 0i32
+        := ~b = index outer 1i32
+        ~~ reserve_inner a 3i32
+        ~~ resize_inner b 1i32
+        ~~ resize_inner b 2i32
+        set b 1i32 8i32
+        := ~capacity = ~~ capacity_inner a
+        length outer +. capacity +. index a 0i32 +. index a 1i32 +. index b 0i32 +. index b 1i32
+
+:= main () : i32 =
+    := ~n = 2i32
+    := ~outer : array (array i32) = create n
+    := ~left : array i32 = create n
+    := ~right : array i32 = create n
+    set left 0i32 3i32
+    set left 1i32 4i32
+    set right 0i32 5i32
+    set right 1i32 6i32
+    set outer 0i32 left
+    set outer 1i32 right
+    := wrapped = Nested outer
+    observe_after_consume wrapped -. 26i32

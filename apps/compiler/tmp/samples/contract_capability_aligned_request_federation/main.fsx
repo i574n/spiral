@@ -1,0 +1,2 @@
+let v0 : string = "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n1\tread\tRead\tkey\trow\t\tidempotent\treader\t2\n1\twrite\tWrite\trow\treceipt\tread\tnon_idempotent\twriter\t0\n1\tbatch\tBatch\trequests\tpaired-result\tread,write\tidempotent\treader-writer\t1\n1\tcompare\tCompareSwap\trow-version\tversion\tbatch\tnon_idempotent\tadministrator\t0\n1\tmap\tMapRequest\tversion\tmapped\tcompare\tidempotent\tmapper\t1\n"
+v0

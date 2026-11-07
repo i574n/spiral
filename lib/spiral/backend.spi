@@ -1,0 +1,298 @@
+:# backend static =
+    :< testing
+
+:= backend_switch \* t. x : t =
+    ~>
+        := backend (key : string) : t =
+            := s = real_core::string_lit_to_symbol key
+            real_core::record_type_try_find `(`x) s
+                (\* v'. => (x s) ())
+                \ () =>
+                    !!!!BackendSwitch({
+                        Gleam = \ () =>
+                            ?: t ?|
+                            | () => $'Nil // backend.backend_switch / record_type_try_find / key: !key ' : t
+                            | _ => $'backend_switch_has_no_Gleam_arm_in_lib_spiral' : t
+                        Lua = \ () =>
+                            ?: t ?|
+                            | () => $'print("backend.backend_switch / record_type_try_find")' : t
+                            | _ => $'backend_switch_has_no_Lua_arm_in_lib_spiral' : t
+                        Fsharp = \ () =>
+                            ?: t ?|
+                            | () => $'() // backend.backend_switch / record_type_try_find / key: !key ' : t
+                            | _ => $'backend_switch_has_no_Fsharp_arm_in_lib_spiral' : t
+                        Python = \ () =>
+                            ?: t ?|
+                            | () => $'None ## backend.backend_switch / record_type_try_find / key: !key ' : t
+                            | _ => $'backend_switch_has_no_Python_arm_in_lib_spiral' : t
+                        Cpp = \ () =>
+                            ?: t ?|
+                            | () => $'((void)0)' : t
+                            | _ => $'backend_switch_has_no_Cpp_arm_in_lib_spiral' : t
+                        Rust = \ () =>
+                            ?: t ?|
+                            | () => $'() /* backend_switch: no Rust arm (lib/spiral) */' : t
+                            | _ =>
+                                $'compile_error\!("backend_switch: this lib/spiral function has no Rust arm yet")' : t
+                        CppHost = \ () =>
+                            $'nullptr // backend.backend_switch / record_type_try_find / key: !key ' : t
+                        Zig = \ () =>
+                            ?: t ?|
+                            | () => $'{}' : t
+                            | _ => $'@@compileError("backend_switch: this lib/spiral function has no Zig arm yet")' : t
+                        Lean = \ () =>
+                            ?: t ?|
+                            | () => $'pure ()' : t
+                            | _ => $'backend_switch_has_no_Lean_arm_in_lib_spiral' : t
+                        TypeScript = \ () =>
+                            ?: t ?|
+                            | () => $'undefined /* backend_switch: no TypeScript arm (lib/spiral) */' : t
+                            | _ => $'(() => { throw new Error("backend_switch: this lib/spiral function has no \
+                                TypeScript arm yet") })()' : t
+                        C = \ () =>
+                            ?: t ?|
+                            | () => $'((void)0)' : t
+                            | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : t
+                        Pascal = \ () =>
+                            ?: t ?|
+                            | () => $'' : t
+                            | _ => $'backend_switch_has_no_Pascal_arm_in_lib_spiral' : t
+                        Wasm = \ () =>
+                            ?: t ?|
+                            | () => $'' : t
+                            | _ => $'backend_switch_has_no_Wasm_arm_in_lib_spiral' : t
+                        Bend = \ () =>
+                            ?: t ?|
+                            | () => () : t
+                            | _ => $'backend_switch_has_no_Bend_arm_in_lib_spiral' : t
+                        Kotlin = \ () =>
+                            ?: t ?|
+                            | () => $'' : t
+                            | _ => $'backend_switch_has_no_Kotlin_arm_in_lib_spiral' : t
+                        Swift = \ () =>
+                            ?: t ?|
+                            | () => $'' : t
+                            | _ => $'backend_switch_has_no_Swift_arm_in_lib_spiral' : t
+                        Wgsl = \ () =>
+                            ?: t ?|
+                            | () => $'' : t
+                            | _ => $'backend_switch_has_no_Wgsl_arm_in_lib_spiral' : t
+                        Calyx = \ () =>
+                            ?: t ?|
+                            | () => () : t
+                            | _ => $'backend_switch_has_no_Calyx_arm_in_lib_spiral' : t
+                        OpenQasm = \ () =>
+                            ?: t ?|
+                            | () => () : t
+                            | _ => $'backend_switch_has_no_OpenQasm_arm_in_lib_spiral' : t
+                        Ebpf = \ () =>
+                            ?: t ?|
+                            | () => () : t
+                            | _ => $'backend_switch_has_no_Ebpf_arm_in_lib_spiral' : t
+                    })
+        !!!!BackendSwitch({
+            Gleam = \ () => backend "Gleam"
+            Lua = \ () => backend "Lua"
+            Fsharp = \ () => backend "Fsharp"
+            Python = \ () => backend "Python"
+            Cpp = \ () => backend "Cpp"
+            Rust = \ () => backend "Rust"
+            CppHost = \ () => backend "Cpp"
+            TypeScript = \ () => backend "TypeScript"
+            Zig = \ () => backend "Zig"
+            Lean = \ () => backend "Lean"
+            C = \ () => backend "C"
+            Pascal = \ () => backend "Pascal"
+            Wasm = \ () => backend "Wasm"
+            Bend = \ () => backend "Bend"
+            Kotlin = \ () => backend "Kotlin"
+            Swift = \ () => backend "Swift"
+            Wgsl = \ () => backend "Wgsl"
+            Calyx = \ () => backend "Calyx"
+            OpenQasm = \ () => backend "OpenQasm"
+            Ebpf = \ () => backend "Ebpf"
+        })
+
+:| backend =
+    | Gleam
+    | Lua
+    | Fsharp
+    | Cuda
+    | Cpp
+    | Rust
+    | TypeScript
+    | Zig
+    | C
+    | Lean
+    | Pascal
+    | Wasm
+    | Bend
+    | Kotlin
+    | Swift
+    | Wgsl
+    | Calyx
+    | OpenQasm
+    | Ebpf
+
+:= run_target_args' \* t u. (args : u) (fn : backend -> (u -> t)) : t =
+    backend_switch {
+        Gleam = \ () =>
+            := target = Gleam
+            fn target args
+        Lua = \ () =>
+            := target = Lua
+            fn target args
+        Fsharp = \ () =>
+            := target = Fsharp
+            fn target args
+        Python = \ () =>
+            := target = Cuda
+            fn target args
+        Cpp = \ () =>
+            := target = Cpp
+            fn target args
+        Rust = \ () =>
+            := target = Rust
+            fn target args
+        TypeScript = \ () =>
+            := target = TypeScript
+            fn target args
+        CppHost = \ () =>
+            := target = Cpp
+            fn target args
+        Zig = \ () =>
+            := target = Zig
+            fn target args
+        C = \ () =>
+            := target = C
+            fn target args
+        Lean = \ () =>
+            := target = Lean
+            fn target args
+        Pascal = \ () =>
+            := target = Pascal
+            fn target args
+        Wasm = \ () =>
+            := target = Wasm
+            fn target args
+        Bend = \ () =>
+            := target = Bend
+            fn target args
+        Kotlin = \ () =>
+            := target = Kotlin
+            fn target args
+        Swift = \ () =>
+            := target = Swift
+            fn target args
+        Wgsl = \ () =>
+            := target = Wgsl
+            fn target args
+        Calyx = \ () =>
+            := target = Calyx
+            fn target args
+        OpenQasm = \ () =>
+            := target = OpenQasm
+            fn target args
+        Ebpf = \ () =>
+            := target = Ebpf
+            fn target args
+    }
+
+:= is_rust () : bool =
+    backend_switch {
+        Gleam = \ () => !-
+        Lua = \ () => !-
+        Fsharp = \ () => !-
+        Python = \ () => !-
+        TypeScript = \ () => !-
+        Cpp = \ () => !-
+        CppHost = \ () => !-
+        Pascal = \ () => !-
+        Cuda = \ () => !-
+        Zig = \ () => !-
+        Lean = \ () => !-
+        Kotlin = \ () => !-
+        Swift = \ () => !-
+        Rust = \ () => !+
+    }
+
+:= is_zig () : bool =
+    backend_switch {
+        Gleam = \ () => !-
+        Lua = \ () => !-
+        Fsharp = \ () => !-
+        Python = \ () => !-
+        TypeScript = \ () => !-
+        Cpp = \ () => !-
+        CppHost = \ () => !-
+        Pascal = \ () => !-
+        Cuda = \ () => !-
+        Zig = \ () => !+
+        Lean = \ () => !-
+        Rust = \ () => !-
+        C = \ () => !-
+        Wasm = \ () => !-
+        Bend = \ () => !-
+        Kotlin = \ () => !-
+        Swift = \ () => !-
+    }
+
+:= run_target_args \* t u. (args : () -> u) (fn : backend -> (u -> t)) : t =
+    := args = args () |> dyn
+    fn |> run_target_args' args
+
+:= run_target \* t. (fn : backend -> (() -> t)) : t =
+    run_target_args id fn
+
+:= indent (body : () -> ()) : () =
+    backend_switch {
+        Gleam = \ () =>
+            !!!!Indent(body ())
+            ()
+        Lua = \ () =>
+            !!!!Indent(body ())
+            ()
+        Fsharp = \ () =>
+            := body () =
+                body ()
+                $'(* indent' : ()
+            !!!!Indent(body ())
+            $'indent *)' : ()
+        Python = \ () =>
+            !!!!Indent(body ())
+            ()
+        Zig = \ () =>
+            !!!!Indent(body ())
+            ()
+        Lean = \ () =>
+            !!!!Indent(body ())
+            ()
+    }
+
+:= wgsl_probe_code () : i32 =
+    run_target \|
+        | Wgsl => \ () => 7i32
+        | C => \ () => 3i32
+        | _ => \ () => 0i32
+
+///> c
+:# run_target_picks_the_c_arm =
+    := ~expected = 3i32
+    wgsl_probe_code () |> _assert_eq expected
+
+///> wgsl
+:# run_target_picks_the_wgsl_arm =
+    := ~expected = 7i32
+    ? wgsl_probe_code () = expected ?> 0i32 |: 1i32
+
+:= circuit_probe_code () : i32 =
+    run_target \|
+        | Calyx => \ () => 11i32
+        | OpenQasm => \ () => 13i32
+        | Ebpf => \ () => 17i32
+        | _ => \ () => 5i32
+
+///> c
+:# run_target_names_calyx_openqasm_and_ebpf =
+    := ~expected = 5i32
+    circuit_probe_code () |> _assert_eq expected

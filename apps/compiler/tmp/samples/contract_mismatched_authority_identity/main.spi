@@ -1,0 +1,32 @@
+:! validate_id = ()
+:! publish_id = ()
+:! draft = ()
+:! validated = ()
+:! authorized = ()
+
+:| planned id from to =
+    | ValidatePlan :: planned validate_id draft validated
+    | PublishPlan :: planned publish_id validated authorized
+
+:| receipt id from to =
+    | ValidateReceipt :: receipt validate_id draft validated
+    | PublishReceipt :: receipt publish_id validated authorized
+
+:| event id from to =
+    | ValidateEvent :: event validate_id draft validated
+    | PublishEvent :: event publish_id validated authorized
+
+:| authority id from to =
+    | Authority :: \* id from to.
+        planned id from to * receipt id from to * event id from to
+        -> authority id from to
+
+:= close \* id from to.
+    (plan : planned id from to)
+    (receipt : receipt id from to)
+    (event : event id from to)
+    : authority id from to =
+    Authority (plan, receipt, event)
+
+:= main () =
+    close PublishPlan ValidateReceipt PublishEvent

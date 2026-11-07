@@ -1,0 +1,29 @@
+:= log32 (x : f32) : f32 = !!!!Log(x)
+:= log64 (x : f64) : f64 = !!!!Log(x)
+:= exp32 (x : f32) : f32 = !!!!Exp(x)
+:= exp64 (x : f64) : f64 = !!!!Exp(x)
+:= tanh32 (x : f32) : f32 = !!!!Tanh(x)
+:= tanh64 (x : f64) : f64 = !!!!Tanh(x)
+:= sin32 (x : f32) : f32 = !!!!Sin(x)
+:= sin64 (x : f64) : f64 = !!!!Sin(x)
+:= cos32 (x : f32) : f32 = !!!!Cos(x)
+:= cos64 (x : f64) : f64 = !!!!Cos(x)
+
+:= main () : i32 =
+    := ~zero32 = 0f32
+    := ~one32 = 1f32
+    := ~zero64 = 0f64
+    := ~one64 = 1f64
+
+    ? log32 one32 =. zero32
+        && log64 one64 =. zero64
+        && exp32 zero32 =. one32
+        && exp64 zero64 =. one64
+        && tanh32 zero32 =. zero32
+        && tanh64 zero64 =. zero64
+        && sin32 zero32 =. zero32
+        && sin64 zero64 =. zero64
+        && cos32 zero32 =. one32
+        && cos64 zero64 =. one64
+    ?> 0i32
+    |: 1i32

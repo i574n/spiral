@@ -1,0 +1,5 @@
+:= main () : i32 =
+    := box : mut { q : string } = !!!!LayoutToHeapMutable({ q = "no" })
+    box <- { q = "hi" }
+    := opened = !!!!LayoutIndex(box)
+    ? !!!!EQ(opened::q, "hi") ?> 0i32 |: 1i32

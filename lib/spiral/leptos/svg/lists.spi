@@ -1,0 +1,42 @@
+:< sm'_operators
+:< leptos
+
+:= render (class : () -> string) props : _ (_ svg) =
+    svg ([
+        $'"xmlns=\\\"http://www.w3.org/2000/svg\\\""'
+        $'"fill=\\\"none\\\""'
+        $'"height=\\\"100%\\\""'
+        $'"viewBox=\\\"0 0 24 24\\\""'
+        $'"stroke-width=\\\"1.5\\\""'
+        $'"stroke=\\\"currentColor\\\""'
+        class_fn "text-gray-700 " class
+        ] ++ props) \ () =>
+        :>[
+            path [
+                $'"stroke-linecap=\\\"round\\\""'
+                $'"stroke-linejoin=\\\"round\\\""'
+                $'"d=\\\"M4.75 6.75h14.5M4.75 12h14.5M4.75 17.25h14.5\\\""'
+            ]
+            |> element_to_view
+            circle [
+                $'"cx=\\\"3\\\""'
+                $'"cy=\\\"6.75\\\""'
+                $'"r=\\\"1\\\""'
+                $'"fill=\\\"currentColor\\\""'
+            ]
+            |> element_to_view
+            circle [
+                $'"cx=\\\"3\\\""'
+                $'"cy=\\\"12\\\""'
+                $'"r=\\\"1\\\""'
+                $'"fill=\\\"currentColor\\\""'
+            ]
+            |> element_to_view
+            circle [
+                $'"cx=\\\"3\\\""'
+                $'"cy=\\\"17.25\\\""'
+                $'"r=\\\"1\\\""'
+                $'"fill=\\\"currentColor\\\""'
+            ]
+            |> element_to_view
+        ]

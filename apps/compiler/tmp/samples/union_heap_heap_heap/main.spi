@@ -1,0 +1,30 @@
+:| slot =
+    | None
+    | Held : (heap { value : (heap { value : (heap { value : i32 * string }) * i32 }) * i32 })
+
+:~ score x : i32 =
+    ?= x ?|
+    | None => 1i32
+    | Held box =>
+        := opened = !!!!LayoutIndex(box)
+        := ~(mid_held, flag) = opened::value
+        := mid_opened = !!!!LayoutIndex(mid_held)
+        := ~(inner_held, count) = mid_opened::value
+        := inner_opened = !!!!LayoutIndex(inner_held)
+        := ~(left, right) = inner_opened::value
+        ? left =. 7i32 && !!!!EQ(right, "hi") && count =. 1i32 && flag =. 2i32 ?> 0i32 |: 1i32
+
+:= main () : i32 =
+    := ~n = 7i32
+    := ~word = "hi"
+    := inner_pair = n, word
+    := inner = !!!!LayoutToHeap({ value = inner_pair })
+    := ~extra = 1i32
+    := mid_pair = inner, extra
+    := mid = !!!!LayoutToHeap({ value = mid_pair })
+    := ~mark = 2i32
+    := outer_pair = mid, mark
+    := outer = !!!!LayoutToHeap({ value = outer_pair })
+    := ~flag = !+
+    := held = ? flag ?> Held outer |: None
+    score held

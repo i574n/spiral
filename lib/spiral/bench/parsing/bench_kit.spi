@@ -1,0 +1,149 @@
+:< sm'_operators
+
+:= now_s () : f64 =
+    backend_switch {
+        Fsharp = \ () =>
+            $'float (System.Diagnostics.Stopwatch.GetTimestamp ()) / float System.Diagnostics.Stopwatch.Frequency' : f64
+        Rust = \ () =>
+            $'std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs_f64()' : f64
+    }
+
+:= show_i64 (n : i64) : string =
+    backend_switch {
+        Fsharp = \ () =>
+            $'string !n ' : string
+        Rust = \ () =>
+            $'Rc::<str>::from(!n.to_string())' : string
+    }
+
+:= show_i32 (n : i32) : string =
+    backend_switch {
+        Fsharp = \ () =>
+            $'string !n ' : string
+        Rust = \ () =>
+            $'Rc::<str>::from(!n.to_string())' : string
+    }
+
+:= f64_of_i32 (n : i32) : f64 =
+    backend_switch {
+        Fsharp = \ () =>
+            $'float !n ' : f64
+        Rust = \ () =>
+            $'(!n as f64)' : f64
+    }
+
+:= i64_of_f64 (x : f64) : i64 =
+    backend_switch {
+        Fsharp = \ () =>
+            $'int64 !x ' : i64
+        Rust = \ () =>
+            $'(!x as i64)' : i64
+    }
+
+:= print (s : string) : () =
+    console::write_line s
+
+:~ join_args (arr : array_base string) : string =
+    := n : i32 = arr |> array |> am'::length
+    :~ ^ 루프 (i : i32) (acc : string) : string =
+        ? i >= n
+        ?> acc
+        |: 루프 (i + 1) (acc ++# (? i = 0 ?> "" |: "|") ++# (arr |> am'::index_base i))
+    루프 0 ""
+
+:~ repeat_join (s : string) (n : i32) : string =
+    :~ ^ 루프 (i : i32) (acc : string) : string =
+        ? i >= n
+        ?> acc
+        |: 루프 (i + 1) (? i = 0 ?> s |: acc ++# " " ++# s)
+    루프 0 ""
+
+:~ quoted_arg (n : i32) : string =
+    := body = "ab c" |> sm'::replicate (n / 4)
+    "x \"" ++# body ++# "\" y"
+
+:= measure (count : string -> i32) (input : string) : f64 * i32 * i32 =
+    := batch (iters : i32) : f64 * i32 =
+        := t0 = now_s ()
+        :~ ^ 루프 (i : i32) (acc : i32) : i32 =
+            ? i >= iters
+            ?> acc
+            |: 루프 (i + 1) (acc + count input)
+        := acc = 루프 0 0
+        now_s () - t0, acc
+    :~ ^ calibrate (iters : i32) : i32 =
+        := dt, _ = batch iters
+        ? dt >= 0.05 || iters >= 16777216
+        ?> iters
+        |: calibrate (iters * 2)
+    := iters = calibrate 1
+    :~ ^ best (k : i32) (m : f64) (sink : i32) : f64 * i32 =
+        ? k >= 5
+        ?> m, sink
+        |:
+            := dt, acc = batch iters
+            best (k + 1) (? dt < m ?> dt |: m) (sink + acc)
+    := dt, sink = best 0 1000000.0 0
+    dt / f64_of_i32 iters * 1000000000.0, iters, sink
+
+:= run_case (impl_name : string) split (case_name : string) (input : string) : () =
+    := len : i32 = input |> sm'::length
+    := joined =
+        ?= split input ?|
+        | Ok arr => arr |> join_args
+        | Error _ => "<error>"
+    print ("RESULT\t" ++# impl_name ++# "\t" ++# case_name ++# "\t" ++# show_i32 len ++# "\t" ++# joined)
+    := count x : i32 =
+        ?= split x ?|
+        | Ok arr => arr |> array |> am'::length
+        | Error _ => -1
+    := ns, iters, sink = measure count input
+    print (
+        "TIME\t" ++# impl_name ++# "\t" ++# case_name ++# "\t" ++# show_i32 len
+        ++# "\t" ++# show_i32 iters ++# "\t" ++# show_i64 (ns |> i64_of_f64) ++# "\t" ++# show_i32 sink
+    )
+
+:~ cases () : array (string * string) =
+    := cli =
+        "dotnet repl --exit-after-run --run \"c:/repo/spiral/lib/spiral/parsing.dib\" --output-path "
+        ^^ "\"c:/repo/spiral/lib/spiral/parsing.dib.ipynb\""
+    ;[
+        "t01", "a b c"
+        "t02", "e f \"g h\" i"
+        "t03", "\"j k\" \"l\" \"m\""
+        "t04", "s -t \"u \`\"v\`\" w\""
+        "t05", "n -o \"p \\\"q\\\" r\""
+        "t06", "r -s \"t \\\"u\\\"\""
+        "t07", $'"x -y \\\"$z -a \'(b=\\\\\\"c-id=)[a-fA-F0-9]{8}\', { \`$_[1] + \`$d++ }\\\""'
+        "t08", "e -f \"$g -h '(i=`\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }\""
+        "t09", $'"--l \\\\\\"\'\'\' m \'\'\'\\\\\\" "'
+        "t10", $'"n --o --p q --r \\\"s:/t u/v.w\\\" --x \\\"y:/z.a\\\" --b c.d \\\"\\\\e{f-g}\\\" h.i \\\"j (k)\\\""'
+        "t11", $'"l \\\"m n:\\\\o.p\\\""'
+        "t12", $'"--r s \\\\\\"\' t \'\\\\\\" u v w \\\\\\"x y\\\\\\""'
+        "cli_repl", cli
+        "cli_cargo",
+        "cargo +nightly-2026-10-18 build --release --manifest-path \"C:/repo/spiral/workspace/Cargo.toml\" "
+        ^^ "--target-dir \"C:/Users/user/AppData/Local/Temp/target dir\""
+        "cli_fs_path",
+        "_ dotnet run --project c:/repo/spiral/apps/compiler/spiral_compiler.fsproj --fs-path "
+        ^^ "\\\"c:/repo/spiral/lib/spiral/parsing.fsx\\\""
+        "cli_x1", repeat_join cli 1
+        "cli_x4", repeat_join cli 4
+        "cli_x16", repeat_join cli 16
+        "quoted_64", quoted_arg 64
+        "quoted_256", quoted_arg 256
+        "quoted_1024", quoted_arg 1024
+    ]
+
+:= run_all impls =
+    := cases = cases ()
+    := n : i32 = cases |> am'::length
+    impls
+    |> listm::iter \ impl_name, split =>
+        :~ ^ 루프 (i : i32) : () =
+            ? i >= n ?> ()
+            |:
+                := case_name, input = cases |> am'::index i
+                run_case impl_name split case_name input
+                루프 (i + 1)
+        루프 0

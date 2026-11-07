@@ -1,0 +1,28 @@
+:! vec = $'Vec<i32>'
+:! opt = $'Option<Vec<i32>>'
+
+:= emit \* a t. (args : a) (code : string) : t =
+    $'__spiral_emit_rust !args !code '
+
+:~ ^ count_loop (i : i32) (acc : i32) (v : vec) : i32 =
+    ? i < 3i32 ?> count_loop (i +. 1i32) (acc +. ($'!v.into_iter().count() as i32' : i32)) v |: acc
+
+:= native (n : i32) : i32 =
+    := v : vec = $'vec\![1i32, 2, !n]'
+    := total : i32 = $'!v.into_iter().sum::<i32>()'
+    := o : opt = $'Some(vec\![!n])'
+    := m : i32 = $'match !o { Some(x) => x.len() as i32, None => 0 }'
+    := m2 : i32 = $'!o.map(|x| x[0]).unwrap_or(0)'
+    := d : i32 = $'std::convert::identity(!v).len() as i32'
+    := e : i32 = emit v ($'"$0.into_iter().count() as i32"' : string)
+    := w : vec = $'Vec::new()'
+    $'!w.push(4)' : ()
+    := wl : i32 = $'!w.len() as i32'
+    := ~f = \ () => $'!v.into_iter().count() as i32' : i32
+    := c = f () +. f ()
+    := l = count_loop 0i32 0i32 v
+    total +. m +. m2 +. d +. e +. wl +. c +. l +. ($'!v.len() as i32' : i32)
+
+:= main () : i32 =
+    := ~n = 3i32
+    !!!!BackendSwitch({ C = \ () => 35i32 : i32; Rust = \ () => native n : i32; Bend = \ () => 35i32 : i32 })

@@ -1,0 +1,28 @@
+:| ^ phase =
+    | Empty
+    | Step : i32 * phase
+
+:= reserve ~(xs : array i32) ~(requested_capacity : i32) : () =
+    $'DynamicArrayReserve0(!xs,!requested_capacity)'
+
+:= ^ keep ~n left right (xs : array i32) : i32 =
+    ? n =. 0i32 ?>
+        ?= left ?|
+        | Step (x, _) => ? x =. 7i32 ?> index xs 0i32 |: 99i32
+        | Empty => 98i32
+    |: ~~ keep (n -. 1i32) right left xs
+
+:= main () : i32 =
+    := empty = Empty
+    := left = Step (7i32, empty)
+    := right = Step (11i32, empty)
+    := ~size = 1i32
+    := ~xs : array i32 = create size
+    set xs 0i32 7i32
+    ~~ reserve xs 4i32
+    := alias = xs
+    := result = ~~ keep 1000000i32 left right xs
+    set xs 0i32 13i32
+    ? result =. 7i32 ?>
+        ? index alias 0i32 =. 13i32 ?> 0i32 |: 2i32
+    |: 1i32

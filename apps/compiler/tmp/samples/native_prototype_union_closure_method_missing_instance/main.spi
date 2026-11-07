@@ -1,0 +1,6 @@
+:! unknown = i32
+
+:? score a : a -> i32
+
+:= main () : i32 =
+    score (unknown 42i32)

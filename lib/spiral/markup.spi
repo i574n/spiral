@@ -1,0 +1,93 @@
+///- --package .
+:< sm'_operators
+
+:# markup static =
+    :< testing
+
+:| markup =
+    | Markup : string
+
+:~ markup_text (m : markup) : string =
+    ?= m ?|
+    | Markup x => x
+
+:~ trusted (s : string) : markup = Markup s
+
+:~ joined (a : markup) (b : markup) : markup = Markup (markup_text a ++# markup_text b)
+
+:~ ^ concat (ms : list markup) : markup =
+    ?= ms ?|
+    | m :: rest => joined m (concat rest)
+    | [] => Markup ""
+
+:~ entity (c : char) : string =
+    ? c = '&' ?> "&amp;"
+    |? c = '<' ?> "&lt;"
+    |? c = '>' ?> "&gt;"
+    |? c = '"' ?> "&quot;"
+    |: ""
+
+:~ run_of (s : string) (from : i32) (until : i32) : string =
+    ? until <= from ?> "" |: sm::slice s { from = from; to = until - 1i32 }
+
+:~ escape_step (s : string) (i : i32) (start : i32) (acc : string) : i32 * string =
+    := e = entity (sm::index s i)
+    ? e = "" ?> start, acc |: i + 1i32, acc ++# run_of s start i ++# e
+
+:~ ^ escape_from (s : string) (i : i32) (start : i32) (acc : string) : string =
+    ? i >= sm::length s ?> acc ++# run_of s start i
+    |:
+        := start, acc = escape_step s i start acc
+        escape_from s (i + 1i32) start acc
+
+:~ escape (s : string) : markup = Markup (escape_from s 0i32 0i32 "")
+
+:~ attribute ((name, value) : string * string) : string = " " ++# name ++# "=\"" ++# markup_text (escape value) ++# "\""
+
+:~ ^ attributes (attrs : list (string * string)) : string =
+    ?= attrs ?|
+    | a :: rest => attribute a ++# attributes rest
+    | [] => ""
+
+:~ element (tag : string) (attrs : list (string * string)) (body : markup) : markup =
+    Markup ("<" ++# tag ++# attributes attrs ++# ">" ++# markup_text body ++# "</" ++# tag ++# ">")
+
+:~ row_of (tag : string) (cells : list markup) : markup = element "tr" [] (concat (listm::map (element tag []) cells))
+
+:~ ^ table (header : list markup) (rows : list (list markup)) : markup =
+    element "table" [] (joined (row_of "th" header) (concat (listm::map (row_of "td") rows)))
+
+:~ document (title : string) (head : markup) (body : markup) : markup =
+    := doctype = "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><title>"
+    := opening = doctype ++# markup_text (escape title) ++# "</title>"
+    Markup (opening ++# markup_text head ++# "</head><body>" ++# markup_text body ++# "</body></html>\n")
+
+///> rust
+///> gleam
+:# escape_turns_the_four_specials_into_entities =
+    escape "<a href=\"x\"> & b" |> markup_text |> _assert_eq "&lt;a href=&quot;x&quot;&gt; &amp; b"
+
+///> rust
+///> gleam
+:# escape_keeps_plain_and_non_ascii_text =
+    escape "봉쥬르 é plain" |> markup_text |> _assert_eq "봉쥬르 é plain"
+
+///> rust
+///> gleam
+:# an_element_escapes_its_attribute_values_but_not_its_markup_body =
+    element "a" [ ("href", "x\"y") ] (trusted "<b>t</b>")
+    |> markup_text
+    |> _assert_eq "<a href=\"x&quot;y\"><b>t</b></a>"
+
+///> rust
+///> gleam
+:# a_table_is_a_header_row_then_data_rows =
+    := got = table [ escape "h" ] [ [ escape "<v>" ]; [ escape "w" ] ] |> markup_text
+    got |> _assert_eq "<table><tr><th>h</th></tr><tr><td>&lt;v&gt;</td></tr><tr><td>w</td></tr></table>"
+
+///> rust
+///> gleam
+:# a_document_escapes_its_title_and_keeps_its_head_and_body =
+    := got = document "a<b" (trusted "<style></style>") (trusted "<p>x</p>") |> markup_text
+    := want = "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><title>a&lt;b</title>"
+    got |> _assert_eq (want ++# "<style></style></head><body><p>x</p></body></html>\n")

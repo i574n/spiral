@@ -1,0 +1,1109 @@
+#### am (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test static --symbol\n\n:< testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test static --symbol
+
+  :< testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":< rust_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :< rust_operators
+  """,
+  timeout: 300_000
+)
+```
+
+## am'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= length \\* el. (a : array el) : int =\n    a |> length\n\n:= index \\* el. (i : int) (a : array el) : el =\n    backend_switch {\n        Gleam = \\ () => index a i\n        Lua = \\ () => index a i\n        Fsharp = \\ () => index a i\n        Python = \\ () => $'!a[!i]' : el\n        Rust = \\ () => index a i\n        TypeScript = \\ () => index a i\n        Zig = \\ () => index a i\n        Lean = \\ () => index a i\n        C = \\ () => index a i\n        Pascal = \\ () => index a i\n        Wgsl = \\ () => index a i\n    }\n\n:= index_base \\* el. (i : int) (ar : array_base el) : el =\n    ar |> array |> index i\n\n:= create_base \\* el. (n : int) : array_base el = !!!!ArrayCreate(`el, n)\n\n:= set_base \\* el. (ar : array_base el) (i : int) (v : el) : () = !!!!ArrayIndexSet(ar, i, v)\n\n:= length_base \\* el. (ar : array_base el) : int =\n    ar |> array |> length","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := length \* el. (a : array el) : int =
+      a |> length
+
+  := index \* el. (i : int) (a : array el) : el =
+      backend_switch {
+          Gleam = \ () => index a i
+          Lua = \ () => index a i
+          Fsharp = \ () => index a i
+          Python = \ () => $'!a[!i]' : el
+          Rust = \ () => index a i
+          TypeScript = \ () => index a i
+          Zig = \ () => index a i
+          Lean = \ () => index a i
+          C = \ () => index a i
+          Pascal = \ () => index a i
+          Wgsl = \ () => index a i
+      }
+
+  := index_base \* el. (i : int) (ar : array_base el) : el =
+      ar |> array |> index i
+
+  := create_base \* el. (n : int) : array_base el = !!!!ArrayCreate(`el, n)
+
+  := set_base \* el. (ar : array_base el) (i : int) (v : el) : () = !!!!ArrayIndexSet(ar, i, v)
+
+  := length_base \* el. (ar : array_base el) : int =
+      ar |> array |> length
+  """,
+  timeout: 300_000
+)
+```
+
+#### base_wrappers_round_trip (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n:= a : array_base i32 = create_base 3i32\nset_base a 1i32 7i32\n(;[ length_base a; index_base 1i32 a ]) |> _assert_eq (;[ 3i32; 7i32 ])","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  := a : array_base i32 = create_base 3i32
+  set_base a 1i32 7i32
+  (;[ length_base a; index_base 1i32 a ]) |> _assert_eq (;[ 3i32; 7i32 ])
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= base \\* el. ((array a) : array el) : array_base el =\n    a\n\n:= base' \\* el. ((array a) : array el) : array_base el =\n    a\n\n:= generic_equable x1 x2 =\n    ? length x1 <>.. length x2\n    ?> !-\n    |:\n        :~ ^ 루프 i =\n            ? i < length x1\n            ?> index i x1 = index i x2 && 루프 (i + 1)\n            |: !+\n        루프 0","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := base \* el. ((array a) : array el) : array_base el =
+      a
+
+  := base' \* el. ((array a) : array el) : array_base el =
+      a
+
+  := generic_equable x1 x2 =
+      ? length x1 <>.. length x2
+      ?> !-
+      |:
+          :~ ^ 루프 i =
+              ? i < length x1
+              ?> index i x1 = index i x2 && 루프 (i + 1)
+              |: !+
+          루프 0
+  """,
+  timeout: 300_000
+)
+```
+
+### equable
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":+ append array t = arraym::append","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :+ append array t = arraym::append
+  """,
+  timeout: 300_000
+)
+```
+
+#### append (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n\n()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+
+  ()
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= map_base \\* t u. (fn : t -> u) (x : array_base t) : array_base u =\n    array x\n    |> arraym::map fn\n    |> \\ (array x : array _) => x\n\n:= collect \\* t r. (fn : t -> array r) (items : array t) : array r =\n    items\n    |> arraym::map fn\n    |> arraym::fold (++) (;[])\n\n:= init_base n fn : array_base _ =\n    arraym::init n fn\n    |> \\ (array x : array _) => x\n\n:= init n : array_base _ =\n    init_base n id\n\n:= choose f l =\n    (l, [])\n    ||> arraym::foldBack \\ x acc =>\n        ?= f x ?|\n        | Some y => y :: acc\n        | None => acc\n    |> arraym::fromList","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := map_base \* t u. (fn : t -> u) (x : array_base t) : array_base u =
+      array x
+      |> arraym::map fn
+      |> \ (array x : array _) => x
+
+  := collect \* t r. (fn : t -> array r) (items : array t) : array r =
+      items
+      |> arraym::map fn
+      |> arraym::fold (++) (;[])
+
+  := init_base n fn : array_base _ =
+      arraym::init n fn
+      |> \ (array x : array _) => x
+
+  := init n : array_base _ =
+      init_base n id
+
+  := choose f l =
+      (l, [])
+      ||> arraym::foldBack \ x acc =>
+          ?= f x ?|
+          | Some y => y :: acc
+          | None => acc
+      |> arraym::fromList
+  """,
+  timeout: 300_000
+)
+```
+
+#### choose (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> fsharp\n///> cuda\n///> typescript\n///> cuda\n\n10\n|> init\n|> \\ x => array x : array _\n|> choose \\ x => ? x % 2 = 0 ?> Some x |: None\n|> _assert_eq (;[ 0; 2; 4; 6; 8 ])","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+  ///> cuda
+
+  10
+  |> init
+  |> \ x => array x : array _
+  |> choose \ x => ? x % 2 = 0 ?> Some x |: None
+  |> _assert_eq (;[ 0; 2; 4; 6; 8 ])
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= sum a =\n    a |> arraym::fold (+) 0","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := sum a =
+      a |> arraym::fold (+) 0
+  """,
+  timeout: 300_000
+)
+```
+
+#### sum (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> cuda\n///> rust\n///> typescript\n\n10\n|> init\n|> \\ x => array x : array _\n|> sum\n|> _assert_eq 45","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  10
+  |> init
+  |> \ x => array x : array _
+  |> sum
+  |> _assert_eq 45
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= init_series start end inc : array_base _ =\n    := total = conv ((end - start) / inc) + 1\n    arraym::init total (conv >> (*) inc >> (+) start)\n    |> \\ (array x : array _) => x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := init_series start end inc : array_base _ =
+      := total = conv ((end - start) / inc) + 1
+      arraym::init total (conv >> (*) inc >> (+) start)
+      |> \ (array x : array _) => x
+  """,
+  timeout: 300_000
+)
+```
+
+#### init_series (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> cuda\n///> rust\n///> typescript\n\ninit_series 0i32 6 2\n|> array\n|> \\ x => x : array _\n|> _assert_eq (;[ 0i32; 2; 4; 6 ])","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  init_series 0i32 6 2
+  |> array
+  |> \ x => x : array _
+  |> _assert_eq (;[ 0i32; 2; 4; 6 ])
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= head (ar : array _) =\n    ? var_is ar || length ar > 0\n    ?> ar |> index 0\n    |: error_type \"The length of the array should be greater than 0.\"\n\n:= last (ar : array _) =\n    := len = length ar\n    ? var_is ar || len > 0\n    ?> ar |> index (len - 1)\n    |: error_type \"The length of the array should be greater than 0.\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := head (ar : array _) =
+      ? var_is ar || length ar > 0
+      ?> ar |> index 0
+      |: error_type "The length of the array should be greater than 0."
+
+  := last (ar : array _) =
+      := len = length ar
+      ? var_is ar || len > 0
+      ?> ar |> index (len - 1)
+      |: error_type "The length of the array should be greater than 0."
+  """,
+  timeout: 300_000
+)
+```
+
+#### last (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> cuda\n///> rust\n///> typescript\n\n10\n|> init\n|> \\ x => array x : array _\n|> last\n|> _assert_eq 9","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  10
+  |> init
+  |> \ x => array x : array _
+  |> last
+  |> _assert_eq 9
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= try_pick \\* t u. (fn : t -> option u) (array : array t) : option u =\n    (array, None)\n    ||> arraym::foldBack \\ x acc =>\n        ?= acc ?|\n        | Some _ => acc\n        | None => x |> fn","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := try_pick \* t u. (fn : t -> option u) (array : array t) : option u =
+      (array, None)
+      ||> arraym::foldBack \ x acc =>
+          ?= acc ?|
+          | Some _ => acc
+          | None => x |> fn
+  """,
+  timeout: 300_000
+)
+```
+
+#### try_pick (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> cuda\n///> typescript\n///> cuda\n\n10\n|> init\n|> \\ x => array x : array _\n|> try_pick \\ x => ? x = 5i32 ?> Some x |: None\n|> _assert_eq (Some 5i32)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> cuda
+  ///> typescript
+  ///> cuda
+
+  10
+  |> init
+  |> \ x => array x : array _
+  |> try_pick \ x => ? x = 5i32 ?> Some x |: None
+  |> _assert_eq (Some 5i32)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= indexed \\* t u {number}. (ar : array_base t) : array_base (u * t) =\n    ((0, ;[]), (array ar : array _))\n    ||> arraym::fold \\ (i, acc) x =>\n        i + 1, acc ++ ;[i, x]\n    |> snd\n    |> \\ (array x : array _) => x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := indexed \* t u {number}. (ar : array_base t) : array_base (u * t) =
+      ((0, ;[]), (array ar : array _))
+      ||> arraym::fold \ (i, acc) x =>
+          i + 1, acc ++ ;[i, x]
+      |> snd
+      |> \ (array x : array _) => x
+  """,
+  timeout: 300_000
+)
+```
+
+#### indexed (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> typescript\n///> cuda\n\narraym::init 3i32 ((*) 2)\n|> \\ (array x : array _) => x\n|> indexed\n|> _assert_eq' (base ;[0i32, 0; 1, 2; 2, 4])","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> typescript
+  ///> cuda
+
+  arraym::init 3i32 ((*) 2)
+  |> \ (array x : array _) => x
+  |> indexed
+  |> _assert_eq' (base ;[0i32, 0; 1, 2; 2, 4])
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= slice \\* el. from nearTo s : array el =\n    arraym::slice { from nearTo } s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := slice \* el. from nearTo s : array el =
+      arraym::slice { from nearTo } s
+  """,
+  timeout: 300_000
+)
+```
+
+#### slice (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n:= x : array _ = ;[ 1i32; 2; 3 ]\nx |> slice 0 0 |> _assert_eq (;[])\nx |> slice 0 1 |> _assert_eq (;[ 1 ])\nx |> slice 1 1 |> _assert_eq (;[])\nx |> slice 1 2 |> _assert_eq (;[ 2 ])\nx |> slice 2 2 |> _assert_eq (;[])\nx |> slice 0 2 |> _assert_eq (;[ 1; 2 ])","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  := x : array _ = ;[ 1i32; 2; 3 ]
+  x |> slice 0 0 |> _assert_eq (;[])
+  x |> slice 0 1 |> _assert_eq (;[ 1 ])
+  x |> slice 1 1 |> _assert_eq (;[])
+  x |> slice 1 2 |> _assert_eq (;[ 2 ])
+  x |> slice 2 2 |> _assert_eq (;[])
+  x |> slice 0 2 |> _assert_eq (;[ 1; 2 ])
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":| range dim =\n    | Start : dim\n    | End : (() -> dim) -> dim\n\n:= range start end s =\n    := start, end =\n        := len () =\n            s |> length |> conv\n        ?= start, end ?|\n        | Start start, End fn =>\n            start, fn len\n        | End start_fn, End end_fn =>\n            start_fn len, end_fn len\n    s |> slice (start |> convert::unbox) (end |> convert::unbox)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :| range dim =
+      | Start : dim
+      | End : (() -> dim) -> dim
+
+  := range start end s =
+      := start, end =
+          := len () =
+              s |> length |> conv
+          ?= start, end ?|
+          | Start start, End fn =>
+              start, fn len
+          | End start_fn, End end_fn =>
+              start_fn len, end_fn len
+      s |> slice (start |> convert::unbox) (end |> convert::unbox)
+  """,
+  timeout: 300_000
+)
+```
+
+## rust
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":! vec t =\n    `(\n        rust::rust_type\n            `($'Vec<`t>')\n            `($'Vec<`t>')\n            \"type Vec<'T> = class end\"\n    )\n\n:= from_vec \\* el. (vec : vec el) : array el =\n    backend_switch {\n        Rust = \\ () =>\n            := vec = ~~ vec\n            $'Rc::new(RefCell::new(!vec))' : array el\n    }\n\n:= from_vec_base \\* el. (vec : vec el) : array_base el =\n    backend_switch {\n        Rust = \\ () =>\n            := vec = ~~ vec\n            $'Rc::new(RefCell::new(!vec))' : array_base el\n    }\n\n:= to_vec \\* t. (ab : array_base t) : vec t =\n    backend_switch {\n        Rust = \\ () => $'(!ab).borrow().clone()' : vec t\n    }\n\n:= to_vec' \\* (t : * -> * -> *) u v. (x : t u v) : vec u =\n    backend_switch {\n        Rust = \\ () => $'(!x).clone()' : vec u\n    }\n\n:= to_vec'' \\* (t : * -> *) (u : * -> *) v. (x : t (u v)) : vec v =\n    backend_switch {\n        Rust = \\ () => $'(!x).to_vec()' : vec v\n    }\n\n:= to_vec''' \\* t. (ab : array_base t) : vec t =\n    !\\\\(ab, $'\"to_vec($0)\"')\n\n:= vec_push \\* el. (el : el) (vec : vec el) : vec el =\n    := el = ~~ el\n    := vec = ~~ vec\n    (!\\($'\"true; let mut !vec = !vec\"') : bool) |> ignore\n    (!\\($'\"true; !vec.push(!el)\"') : bool) |> ignore\n    !\\($'\"!vec\"')\n\n:= vec_reverse \\* el. (vec : vec el) : vec el =\n    := vec = ~~ vec\n    (!\\($'\"true; let mut !vec = !vec\"') : bool) |> ignore\n    (!\\($'\"true; !vec.reverse()\"') : bool) |> ignore\n    !\\($'\"!vec\"')\n\n:= vec_retain \\* el. (fn : el -> bool) (vec : vec el) : vec el =\n    := vec = ~~ vec\n    := fn = ~~ fn\n    (!\\($'\"true; let mut !vec = !vec\"') : bool) |> ignore\n    (!\\($'\"true; !vec.retain(|x| !fn(x.clone()))\"') : bool) |> ignore\n    !\\($'\"!vec\"')\n\n:= vec_sort_by_key \\* el t. (fn : el -> t) (vec : vec el) : vec el =\n    := vec = ~~ vec\n    := fn = rust::one_param_fn fn\n    := fn = ~~ fn\n    (!\\($'\"true; let mut !vec = !vec\"') : bool) |> ignore\n    (!\\($'\"true; !vec.sort_by_key(|x| !fn(x.clone()))\"') : bool) |> ignore\n    !\\($'\"!vec\"')\n\n:= vec_extend \\* el. (el : vec el) (vec : vec el) : vec el =\n    := el = ~~ el\n    := vec = ~~ vec\n    (!\\($'\"true; let mut !vec = !vec\"') : bool) |> ignore\n    (!\\($'\"true; !vec.extend(!el)\"') : bool) |> ignore\n    !\\($'\"!vec\"')\n\n:= vec_mapi \\* dim t u. (fn : dim -> t -> u) (ar : vec t) : vec u =\n    := fn i = rust::one_param_fn (fn i)\n    := fn = ~~ fn\n    := ar = ~~ ar\n    !\\($'\"!ar.iter().enumerate().map(|(i, x)| !fn(i.try_into().unwrap())(x.clone())).collect::<Vec<_>>()\"')\n\n:= vec_map \\* t u. (fn : t -> u) (ar : vec t) : vec u =\n    := fn = rust::one_param_fn fn\n    !\\\\((ar, fn), $'\"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()\"')\n\n:= vec_map' \\* t u. (fn : t -> u) (ar : vec t) : vec u =\n    := fn = rust::one_param_fn fn\n    !\\\\((ar, fn), $'\"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()\"')\n\n:= vec_fold' \\* t u. (fn : u -> t -> u) (init : u) (ar : vec t) : u =\n    (!\\\\(ar, $'\"true; let _vec_fold_ = $0.into_iter().fold(!init, |acc, x| { //\"') : bool) |> ignore\n    (!\\\\(fn !\\($'\"acc\"') !\\($'\"x\"'), $'\"true; $0 })\"') : bool) |> ignore\n    !\\($'\"_vec_fold_\"')\n\n:= vec_for_each \\* t. (fn : t -> ()) (ar : vec t) : () =\n    (!\\\\((ar, fn), $'\"true; $0.iter().for_each(|x| { $1(x.clone()); }); //\"') : bool) |> ignore\n\n:= vec_for_each' \\* t. (fn : t -> ()) (ar : vec t) : () =\n    (!\\\\(ar, $'\"true; $0.into_iter().for_each(|x| { //\"') : bool) |> ignore\n    (!\\\\(fn !\\($'\"x\"'), $'$\"true\"') : bool) |> ignore\n    (!\\($'\"true; }}); //\"') : bool) |> ignore\n\n:= vec_for_each'' \\* t. (fn : t -> ()) (ar : vec t) : () =\n    (!\\\\(ar, $'\"true; $0.into_iter().for_each(|x| { //\"') : bool) |> ignore\n    (!\\\\(fn !\\($'\"x\"'), $'$\"true\"') : bool) |> ignore\n    (!\\($'\"true; }}); //\"') : bool) |> ignore\n\n:= vec_for_each''' \\* t. (fn : t -> ()) (ar : vec t) : () =\n    (!\\\\(ar, $'\"true; $0.into_iter().for_each(|x| { //\"') : bool) |> ignore\n    (!\\\\(fn !\\($'\"x\"'), $'$\"true\"') : bool) |> ignore\n    (!\\($'\"true; }); //\"') : bool) |> ignore\n\n:= vec_filter \\* t. (fn : t -> bool) (ar : vec t) : vec t =\n    := fn = rust::one_param_fn fn\n    !\\\\((ar, fn), $'\"$0.iter().filter(|x| $1((*x).clone())).cloned().collect::<Vec<_>>()\"')\n\n:= vec_len \\* t. (vec : vec t) : convert::unativeint =\n    backend_switch {\n        Rust = \\ () => $'((!vec).len() as usize)' : convert::unativeint\n    }\n\n:= vec_chunks \\* t. (n : i32) (vec : vec t) : vec (vec t) =\n    !\\\\(vec, $'\"$0.chunks(!n).map(|x| x.into_iter().map(|x| x.clone()).collect::<Vec<_>>()).collect::<Vec<_>>()\"')\n\n:! slice t =\n    `(\n        rust::rust_type\n            `($'Slice<`t>')\n            `($'[`t]')\n            \"type Slice<'T> = class end\"\n    )\n\n:== slice'_switch el =\n    {\n        Gleam : $'Slice\\'<`el>'\n        Lua : $'Slice\\'<`el>'\n        Fsharp : $'Slice\\'<`el>'\n        Python : $'Slice\\'<`el>'\n        TypeScript : $'Slice\\'<`el>'\n        Cpp : $'Slice\\'<`el>'\n        CppHost : $'Slice\\'<`el>'\n        Pascal : $'Slice\\'<`el>'\n        Cuda : $'Slice\\'<`el>'\n        Rust : $'_'\n    }\n:! slice' el dim =\n    `(\n        rust::fsharp_global \"type Slice'<'T> = class end\"\n        $'' : $'backend_switch `(slice'_switch el)'\n    )\n\n:! slice'' el dim =\n    `(\n        rust::rust_type\n            `($'Slice\\'_<`el>')\n            `($'[`el; 10]')\n            \"type Slice'_<'T> = class end\"\n    )\n\n:= slice_singleton \\* dim el. (x : option el) : slice' el dim =\n    ?= x ?|\n    | Some x => !\\($'\"[!x]\"')\n    | None =>\n        !\\($'\"[\\\\\\\"\\\\\\\".to_string()]\"') : slice' el dim\n\n:= slice_count \\* t dim. (x : slice' t dim) : convert::unativeint =\n    !\\($'\"!x.len()\"')\n\n:= slice_range \\* t dim.\n    (start : range t) (end : range t) (s : slice' t dim) : rust::ref (slice' t dim)\n    =\n    := len () =\n        s |> slice_count\n    := start, (end : convert::unativeint) =\n        ?= start, end ?|\n        | Start start, End fn => start, (len >> convert::convert) |> fn |> convert::convert\n        | End start_fn, End end_fn =>\n            (len >> convert::convert) |> start_fn, (len >> convert::convert) |> end_fn |> convert::convert\n    ?= start, end ?|\n    | start, end ?& end |> convert::unbox =. len () => !\\($'\"&!s[!start..]\"')\n    | start, end => !\\\\((start, end), $'\"&!s[$0..$1]\"')\n\n:= new_slice \\* el dim. (el : el) : slice' el dim =\n    !\\\\(el, $'\"[$0; @dim as usize]\"')\n\n:= as_slice \\* t. (x : array_base t) : rust::ref (slice t) =\n    := x = x |> to_vec\n    !\\($'\"!x.as_slice()\"')\n\n:= slice_to_vec \\* t. (slice : rust::ref (slice t)) : vec t =\n    !\\\\(slice, $'\"$0.iter().map(|x| *x).collect::<Vec<_>>()\"')\n\n:= to_le_bytes \\* t. (x : t) : slice' u8 8 =\n    backend_switch {\n        Rust = \\ () => $'(!x).to_le_bytes().to_vec()' : slice' u8 8\n    }\n\n:= as_bytes \\* t. (x : t) : rust::ref (slice u8) =\n    backend_switch {\n        Rust = \\ () => $'(!x).as_bytes()' : rust::ref (slice u8)\n    }\n\n:= any \\* t. (fn : t -> bool) (source : array_base t) : bool =\n    := n = source |> array |> length\n    :~ ^ loop i =\n        ? i >= n ?> !-\n        |? source |> index_base i |> fn ?> !+\n        |: loop (i + 1)\n    loop 0","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :! vec t =
+      `(
+          rust::rust_type
+              `($'Vec<`t>')
+              `($'Vec<`t>')
+              "type Vec<'T> = class end"
+      )
+
+  := from_vec \* el. (vec : vec el) : array el =
+      backend_switch {
+          Rust = \ () =>
+              := vec = ~~ vec
+              $'Rc::new(RefCell::new(!vec))' : array el
+      }
+
+  := from_vec_base \* el. (vec : vec el) : array_base el =
+      backend_switch {
+          Rust = \ () =>
+              := vec = ~~ vec
+              $'Rc::new(RefCell::new(!vec))' : array_base el
+      }
+
+  := to_vec \* t. (ab : array_base t) : vec t =
+      backend_switch {
+          Rust = \ () => $'(!ab).borrow().clone()' : vec t
+      }
+
+  := to_vec' \* (t : * -> * -> *) u v. (x : t u v) : vec u =
+      backend_switch {
+          Rust = \ () => $'(!x).clone()' : vec u
+      }
+
+  := to_vec'' \* (t : * -> *) (u : * -> *) v. (x : t (u v)) : vec v =
+      backend_switch {
+          Rust = \ () => $'(!x).to_vec()' : vec v
+      }
+
+  := to_vec''' \* t. (ab : array_base t) : vec t =
+      !\\(ab, $'"to_vec($0)"')
+
+  := vec_push \* el. (el : el) (vec : vec el) : vec el =
+      := el = ~~ el
+      := vec = ~~ vec
+      (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
+      (!\($'"true; !vec.push(!el)"') : bool) |> ignore
+      !\($'"!vec"')
+
+  := vec_reverse \* el. (vec : vec el) : vec el =
+      := vec = ~~ vec
+      (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
+      (!\($'"true; !vec.reverse()"') : bool) |> ignore
+      !\($'"!vec"')
+
+  := vec_retain \* el. (fn : el -> bool) (vec : vec el) : vec el =
+      := vec = ~~ vec
+      := fn = ~~ fn
+      (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
+      (!\($'"true; !vec.retain(|x| !fn(x.clone()))"') : bool) |> ignore
+      !\($'"!vec"')
+
+  := vec_sort_by_key \* el t. (fn : el -> t) (vec : vec el) : vec el =
+      := vec = ~~ vec
+      := fn = rust::one_param_fn fn
+      := fn = ~~ fn
+      (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
+      (!\($'"true; !vec.sort_by_key(|x| !fn(x.clone()))"') : bool) |> ignore
+      !\($'"!vec"')
+
+  := vec_extend \* el. (el : vec el) (vec : vec el) : vec el =
+      := el = ~~ el
+      := vec = ~~ vec
+      (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
+      (!\($'"true; !vec.extend(!el)"') : bool) |> ignore
+      !\($'"!vec"')
+
+  := vec_mapi \* dim t u. (fn : dim -> t -> u) (ar : vec t) : vec u =
+      := fn i = rust::one_param_fn (fn i)
+      := fn = ~~ fn
+      := ar = ~~ ar
+      !\($'"!ar.iter().enumerate().map(|(i, x)| !fn(i.try_into().unwrap())(x.clone())).collect::<Vec<_>>()"')
+
+  := vec_map \* t u. (fn : t -> u) (ar : vec t) : vec u =
+      := fn = rust::one_param_fn fn
+      !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
+
+  := vec_map' \* t u. (fn : t -> u) (ar : vec t) : vec u =
+      := fn = rust::one_param_fn fn
+      !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
+
+  := vec_fold' \* t u. (fn : u -> t -> u) (init : u) (ar : vec t) : u =
+      (!\\(ar, $'"true; let _vec_fold_ = $0.into_iter().fold(!init, |acc, x| { //"') : bool) |> ignore
+      (!\\(fn !\($'"acc"') !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
+      !\($'"_vec_fold_"')
+
+  := vec_for_each \* t. (fn : t -> ()) (ar : vec t) : () =
+      (!\\((ar, fn), $'"true; $0.iter().for_each(|x| { $1(x.clone()); }); //"') : bool) |> ignore
+
+  := vec_for_each' \* t. (fn : t -> ()) (ar : vec t) : () =
+      (!\\(ar, $'"true; $0.into_iter().for_each(|x| { //"') : bool) |> ignore
+      (!\\(fn !\($'"x"'), $'$"true"') : bool) |> ignore
+      (!\($'"true; }}); //"') : bool) |> ignore
+
+  := vec_for_each'' \* t. (fn : t -> ()) (ar : vec t) : () =
+      (!\\(ar, $'"true; $0.into_iter().for_each(|x| { //"') : bool) |> ignore
+      (!\\(fn !\($'"x"'), $'$"true"') : bool) |> ignore
+      (!\($'"true; }}); //"') : bool) |> ignore
+
+  := vec_for_each''' \* t. (fn : t -> ()) (ar : vec t) : () =
+      (!\\(ar, $'"true; $0.into_iter().for_each(|x| { //"') : bool) |> ignore
+      (!\\(fn !\($'"x"'), $'$"true"') : bool) |> ignore
+      (!\($'"true; }); //"') : bool) |> ignore
+
+  := vec_filter \* t. (fn : t -> bool) (ar : vec t) : vec t =
+      := fn = rust::one_param_fn fn
+      !\\((ar, fn), $'"$0.iter().filter(|x| $1((*x).clone())).cloned().collect::<Vec<_>>()"')
+
+  := vec_len \* t. (vec : vec t) : convert::unativeint =
+      backend_switch {
+          Rust = \ () => $'((!vec).len() as usize)' : convert::unativeint
+      }
+
+  := vec_chunks \* t. (n : i32) (vec : vec t) : vec (vec t) =
+      !\\(vec, $'"$0.chunks(!n).map(|x| x.into_iter().map(|x| x.clone()).collect::<Vec<_>>()).collect::<Vec<_>>()"')
+
+  :! slice t =
+      `(
+          rust::rust_type
+              `($'Slice<`t>')
+              `($'[`t]')
+              "type Slice<'T> = class end"
+      )
+
+  :== slice'_switch el =
+      {
+          Gleam : $'Slice\'<`el>'
+          Lua : $'Slice\'<`el>'
+          Fsharp : $'Slice\'<`el>'
+          Python : $'Slice\'<`el>'
+          TypeScript : $'Slice\'<`el>'
+          Cpp : $'Slice\'<`el>'
+          CppHost : $'Slice\'<`el>'
+          Pascal : $'Slice\'<`el>'
+          Cuda : $'Slice\'<`el>'
+          Rust : $'_'
+      }
+  :! slice' el dim =
+      `(
+          rust::fsharp_global "type Slice'<'T> = class end"
+          $'' : $'backend_switch `(slice'_switch el)'
+      )
+
+  :! slice'' el dim =
+      `(
+          rust::rust_type
+              `($'Slice\'_<`el>')
+              `($'[`el; 10]')
+              "type Slice'_<'T> = class end"
+      )
+
+  := slice_singleton \* dim el. (x : option el) : slice' el dim =
+      ?= x ?|
+      | Some x => !\($'"[!x]"')
+      | None =>
+          !\($'"[\\\"\\\".to_string()]"') : slice' el dim
+
+  := slice_count \* t dim. (x : slice' t dim) : convert::unativeint =
+      !\($'"!x.len()"')
+
+  := slice_range \* t dim.
+      (start : range t) (end : range t) (s : slice' t dim) : rust::ref (slice' t dim)
+      =
+      := len () =
+          s |> slice_count
+      := start, (end : convert::unativeint) =
+          ?= start, end ?|
+          | Start start, End fn => start, (len >> convert::convert) |> fn |> convert::convert
+          | End start_fn, End end_fn =>
+              (len >> convert::convert) |> start_fn, (len >> convert::convert) |> end_fn |> convert::convert
+      ?= start, end ?|
+      | start, end ?& end |> convert::unbox =. len () => !\($'"&!s[!start..]"')
+      | start, end => !\\((start, end), $'"&!s[$0..$1]"')
+
+  := new_slice \* el dim. (el : el) : slice' el dim =
+      !\\(el, $'"[$0; @dim as usize]"')
+
+  := as_slice \* t. (x : array_base t) : rust::ref (slice t) =
+      := x = x |> to_vec
+      !\($'"!x.as_slice()"')
+
+  := slice_to_vec \* t. (slice : rust::ref (slice t)) : vec t =
+      !\\(slice, $'"$0.iter().map(|x| *x).collect::<Vec<_>>()"')
+
+  := to_le_bytes \* t. (x : t) : slice' u8 8 =
+      backend_switch {
+          Rust = \ () => $'(!x).to_le_bytes().to_vec()' : slice' u8 8
+      }
+
+  := as_bytes \* t. (x : t) : rust::ref (slice u8) =
+      backend_switch {
+          Rust = \ () => $'(!x).as_bytes()' : rust::ref (slice u8)
+      }
+
+  := any \* t. (fn : t -> bool) (source : array_base t) : bool =
+      := n = source |> array |> length
+      :~ ^ loop i =
+          ? i >= n ?> !-
+          |? source |> index_base i |> fn ?> !+
+          |: loop (i + 1)
+      loop 0
+  """,
+  timeout: 300_000
+)
+```
+
+#### any (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> typescript\n\n:= source = init 5\n(source |> any (\\ x => x = 3), source |> any (\\ x => x > 10)) |> _assert_eq (!+, !-)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> typescript
+
+  := source = init 5
+  (source |> any (\ x => x = 3), source |> any (\ x => x > 10)) |> _assert_eq (!+, !-)
+  """,
+  timeout: 300_000
+)
+```
+
+### iter_collect vec
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":+ iter_collect vec = \\ (iter : into_iterator u) =>\n    !\\\\(iter, $'\"$0.collect::<Vec<_>>()\"')\n\n:+ iter_collect'' vec = \\ (iter : into_iterator (t (u v))) =>\n    !\\\\(iter, $'\"$0.collect::<Vec<_>>()\"')\n\n:= new_vec \\* t. (items : list t) : vec t =\n    backend_switch {\n        Rust = \\ () => items |> listm::fold (\\ v x => vec_push x v) ($'Vec::new()' : vec t)\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :+ iter_collect vec = \ (iter : into_iterator u) =>
+      !\\(iter, $'"$0.collect::<Vec<_>>()"')
+
+  :+ iter_collect'' vec = \ (iter : into_iterator (t (u v))) =>
+      !\\(iter, $'"$0.collect::<Vec<_>>()"')
+
+  := new_vec \* t. (items : list t) : vec t =
+      backend_switch {
+          Rust = \ () => items |> listm::fold (\ v x => vec_push x v) ($'Vec::new()' : vec t)
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### new_vec (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n[ 0i32; 1 ]\n|> new_vec\n|> sm'::format_debug'\n|> sm'::from_std_string\n|> _assert_eq \"[0, 1]\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  [ 0i32; 1 ]
+  |> new_vec
+  |> sm'::format_debug'
+  |> sm'::from_std_string
+  |> _assert_eq "[0, 1]"
+  """,
+  timeout: 300_000
+)
+```
+
+#### new_vec_keeps_a_list_built_at_runtime (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n:~ ^ build (n : i32) (acc : list i32) : list i32 = ? n <= 0i32 ?> acc |: build (n - 1i32) (n :: acc)\n:= ~count = 3i32\nbuild count [] |> new_vec |> vec_len |> convert::i32 |> _assert_eq 3i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  :~ ^ build (n : i32) (acc : list i32) : list i32 = ? n <= 0i32 ?> acc |: build (n - 1i32) (n :: acc)
+  := ~count = 3i32
+  build count [] |> new_vec |> vec_len |> convert::i32 |> _assert_eq 3i32
+  """,
+  timeout: 300_000
+)
+```
+
+## fsharp
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= average \\* el {number}. (a : array el) : el =\n    run_target \\|\n        | Fsharp => \\ () => $'!a |> Array.average' : el\n        | _ => \\ () => arraym::fold (+) 0 a / conv (length a)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := average \* el {number}. (a : array el) : el =
+      run_target \|
+          | Fsharp => \ () => $'!a |> Array.average' : el
+          | _ => \ () => arraym::fold (+) 0 a / conv (length a)
+  """,
+  timeout: 300_000
+)
+```
+
+#### average_divides_the_sum_by_the_count (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n;[ 1.0f64; 2.0f64; 4.5f64 ] |> average |> _assert_eq 2.5f64","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  ;[ 1.0f64; 2.0f64; 4.5f64 ] |> average |> _assert_eq 2.5f64
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= distinct \\* el. (a : array el) : array el =\n    ? is_rust () ?>\n        := a = $'!a ' : array el\n        := r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : array el\n        loop::for' { from = 0; nearTo = length a } \\ i =>\n            := x = index i a\n            := n = length r\n            := s = mut { j = 0 }\n            loop::while' (\\ () => s::j < n && index s::j r <> x) \\ () =>\n                s <- { j = s::j + 1 }\n            ? s::j = n ?> $'!r.borrow_mut().push(!x)' : ()\n        $'!r ' : array el\n    |: $'!a |> Array.distinct'\n\n:= growable \\* el. () : array el =\n    run_target \\|\n        | Rust => \\ () => $'Rc::new(RefCell::new(Vec::new()))' : array el\n        | _ => \\ () => failwith \"growable: no arm for this backend\"\n\n:= push_back \\* el. (item : el) (items : array el) : () =\n    run_target \\|\n        | Rust => \\ () => $'(!items).borrow_mut().push(!item)' : ()\n        | _ => \\ () => failwith \"push_back: no arm for this backend\"\n\n:= skip \\* el. (n : int) (a : array el) : array el =\n    run_target \\|\n        | Rust => fun () => $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as \\\n            usize).cloned().collect::<Vec<_>>()))' : array el\n        | Zig => \\ () => $'(spiral_gpa.dupe(`el, (!a)[@@intCast(!n)..]) catch @@panic(\"out of memory\"))' : array el\n        | _ => \\ () => $'!a |> Array.skip !n '\n\n:= skip_while \\* el. (fn : el -> bool) (a : array el) : array el =\n    ? is_rust ()\n    ?> $'Rc::new(RefCell::new((!a).borrow().iter().skip_while(|x| (!fn)((*x).clone())).cloned().collect::<Vec<_>>()))'\n    |: $'!a |> Array.skipWhile !fn '\n\n:= to_list_base' \\* t. (items : array_base t) : listm'::list' t =\n    backend_switch {\n        Gleam = \\ () => $'!items |> spiral_array_to_list' : listm'::list' t\n        Lua = \\ () =>\n            := len = $'##(!items)' : i32\n            := r : array t = arraym::init len \\ i =>\n                := at = i + 1i32\n                $'!items[!at]' : t\n            := (array r) = r\n            $'!r ' : listm'::list' t\n        Fsharp = \\ () => $'!items |> Array.toList' : listm'::list' t\n        Python = \\ () => $'list(!items)' : listm'::list' t\n        Rust = \\ () => $'Rc::new((!items).borrow().clone())' : listm'::list' t\n        TypeScript = \\ () => $'[...!items]' : listm'::list' t\n        Zig = \\ () => $'!items ' : listm'::list' t\n    }\n\n:= to_list' \\* t. (items : array t) : listm'::list' t =\n    items |> base |> to_list_base'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := distinct \* el. (a : array el) : array el =
+      ? is_rust () ?>
+          := a = $'!a ' : array el
+          := r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : array el
+          loop::for' { from = 0; nearTo = length a } \ i =>
+              := x = index i a
+              := n = length r
+              := s = mut { j = 0 }
+              loop::while' (\ () => s::j < n && index s::j r <> x) \ () =>
+                  s <- { j = s::j + 1 }
+              ? s::j = n ?> $'!r.borrow_mut().push(!x)' : ()
+          $'!r ' : array el
+      |: $'!a |> Array.distinct'
+
+  := growable \* el. () : array el =
+      run_target \|
+          | Rust => \ () => $'Rc::new(RefCell::new(Vec::new()))' : array el
+          | _ => \ () => failwith "growable: no arm for this backend"
+
+  := push_back \* el. (item : el) (items : array el) : () =
+      run_target \|
+          | Rust => \ () => $'(!items).borrow_mut().push(!item)' : ()
+          | _ => \ () => failwith "push_back: no arm for this backend"
+
+  := skip \* el. (n : int) (a : array el) : array el =
+      run_target \|
+          | Rust => fun () => $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as \
+              usize).cloned().collect::<Vec<_>>()))' : array el
+          | Zig => \ () => $'(spiral_gpa.dupe(`el, (!a)[@@intCast(!n)..]) catch @@panic("out of memory"))' : array el
+          | _ => \ () => $'!a |> Array.skip !n '
+
+  := skip_while \* el. (fn : el -> bool) (a : array el) : array el =
+      ? is_rust ()
+      ?> $'Rc::new(RefCell::new((!a).borrow().iter().skip_while(|x| (!fn)((*x).clone())).cloned().collect::<Vec<_>>()))'
+      |: $'!a |> Array.skipWhile !fn '
+
+  := to_list_base' \* t. (items : array_base t) : listm'::list' t =
+      backend_switch {
+          Gleam = \ () => $'!items |> spiral_array_to_list' : listm'::list' t
+          Lua = \ () =>
+              := len = $'##(!items)' : i32
+              := r : array t = arraym::init len \ i =>
+                  := at = i + 1i32
+                  $'!items[!at]' : t
+              := (array r) = r
+              $'!r ' : listm'::list' t
+          Fsharp = \ () => $'!items |> Array.toList' : listm'::list' t
+          Python = \ () => $'list(!items)' : listm'::list' t
+          Rust = \ () => $'Rc::new((!items).borrow().clone())' : listm'::list' t
+          TypeScript = \ () => $'[...!items]' : listm'::list' t
+          Zig = \ () => $'!items ' : listm'::list' t
+      }
+
+  := to_list' \* t. (items : array t) : listm'::list' t =
+      items |> base |> to_list_base'
+  """,
+  timeout: 300_000
+)
+```
+
+#### to_list (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> cuda\n///> rust\n///> typescript\n\n;[ -3i32; 6 ]\n|> to_list'\n|> listm'::unbox\n|> _assert_eq [ -3; 6 ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  ;[ -3i32; 6 ]
+  |> to_list'
+  |> listm'::unbox
+  |> _assert_eq [ -3; 6 ]
+  """,
+  timeout: 300_000
+)
+```
+
+#### to_list_snapshots_the_array (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> lua\n///> python\n///> rust\n///> typescript\n\n:= source = ;[ 1i32; 2i32; 3i32 ]\n:= snapshot = to_list' source\nset source 0i32 9i32\nsnapshot |> listm'::unbox |> _assert_eq [ 1i32; 2i32; 3i32 ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> lua
+  ///> python
+  ///> rust
+  ///> typescript
+
+  := source = ;[ 1i32; 2i32; 3i32 ]
+  := snapshot = to_list' source
+  set source 0i32 9i32
+  snapshot |> listm'::unbox |> _assert_eq [ 1i32; 2i32; 3i32 ]
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= vec_collect fn vec =\n    ((;[] |> base |> to_vec), ((vec |> from_vec : array _) |> to_list' |> listm'::unbox))\n    ||> listm::fold \\ acc x =>\n        acc |> vec_extend (fn x)\n\n:= vec_collect_option vec =\n    ((;[] |> base |> to_vec |> Ok), ((vec |> from_vec : array _) |> arraym::toList))\n    ||> listm::fold \\ acc x =>\n        x\n        |> resultm::unbox\n        |> \\ x =>\n            ?= acc, x |> resultm::map optionm'::unbox ?|\n            | Ok acc, Ok (Some x) => acc |> vec_extend x |> Ok\n            | _, Error error => error |> Error\n            | _ => acc\n\n:= vec_collect_into \\* (c : * -> * -> *) t e.\n    (x : vec (c t e))\n    : c (vec t) e\n    =\n    !\\($'\"!x.into_iter().collect()\"')\n\n:= parallel_map \\* el el'. (fn : el -> el') (a : array el) : array el' =\n    run_target \\|\n        | Fsharp => \\ () => $'!a |> Array.Parallel.map !fn ' : array el'\n        | _ => \\ () => arraym::map fn a\n\n:= map' \\* el el'. (fn : el -> el') (a : array el) : array el' =\n    run_target \\|\n        | Fsharp => \\ () => $'!a |> Array.map !fn ' : array el'\n        | _ => \\ () => arraym::map fn a\n\n:= sort_by \\* el key. (fn : el -> key) (a : array el) : array el =\n    := fsharp () = $'!a |> Array.sortBy !fn ' : array el\n    := insertion_sort () =\n        := r = arraym::map id ($'!a ' : array el)\n        := keys = arraym::map fn ($'!a ' : array el)\n        loop::for' { from = 1; nearTo = length r } \\ i =>\n            := x = index i r\n            := k = index i keys\n            := s = mut { j = i }\n            loop::while' (\\ () => s::j > 0 && gt_is (comp (index (s::j - 1) keys) k)) \\ () =>\n                := j = s::j\n                set r j (index (j - 1) r)\n                set keys j (index (j - 1) keys)\n                s <- { j = j - 1 }\n            set r s::j x\n            set keys s::j k\n        $'!r ' : array el\n    backend_switch {\n        Gleam = \\ () => fsharp ()\n        Lua = insertion_sort\n        Fsharp = \\ () => fsharp ()\n        Python = \\ () =>\n            := keys = arraym::map fn ($'!a ' : array el)\n            $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, \"tag\") else \\\n                __k)(!keys[__i]))]' : array el\n        TypeScript = \\ () =>\n            := keys = arraym::map fn ($'!a ' : array el)\n            global (\n                \"function spiral_compare(a: any, b: any): number { if (typeof a === 'object' && a !== null && \"\n                ^^ \"typeof b === 'object' && b !== null) { if (Array.isArray(a)) { for (let i = 0; i < \"\n                ^^ \"Math.min(a.length, b.length); i++) { const c = spiral_compare(a[i], b[i]); if (c !== 0) return c; \"\n                ^^ \"} return a.length - b.length; } if (a.tag !== b.tag) return a.tag - b.tag; for (const k of \"\n                ^^ \"Object.keys(a)) { if (k === 'tag') continue; const c = spiral_compare(a[k], b[k]); if (c !== 0) \"\n                ^^ \"return c; } return 0; } return a < b ? -1 : a > b ? 1 : 0; }\"\n            )\n            $'!a.map((_x: any, i: number) => i).sort((i: number, j: number) => spiral_compare(!keys[i], \\\n                !keys[j])).map((i: number) => !a[i])' : array el\n        Cpp = \\ () => fsharp ()\n        CppHost = \\ () => fsharp ()\n        Pascal = \\ () => fsharp ()\n        Cuda = \\ () => fsharp ()\n        Zig = insertion_sort\n        Lean = insertion_sort\n        Rust = \\ () =>\n            := a = $'!a ' : array el\n            := key_fn = ~~ (rust::one_param_fn fn)\n            := r = $'Rc::new(RefCell::new(!a.borrow().clone()))' : array el\n            := keys =\n                $'Rc::new(RefCell::new(!a.borrow().iter().map(|x| !key_fn(x.clone())).collect::<Vec<_>>()))' : array key\n            loop::for' { from = 1; nearTo = length a } \\ i =>\n                := x = index i r\n                := k = index i keys\n                := s = mut { j = i }\n                loop::while' (\\ () => s::j > 0 && gt_is (comp (index (s::j - 1) keys) k)) \\ () =>\n                    := j = s::j\n                    set r j (index (j - 1) r)\n                    set keys j (index (j - 1) keys)\n                    s <- { j = j - 1 }\n                set r s::j x\n                set keys s::j k\n            $'!r ' : array el\n    }\n\n:= sort \\* el. (a : array el) : array el =\n    run_target \\|\n        | Fsharp => \\ () => $'!a |> Array.sort'\n        | _ => \\ () => sort_by id a\n\n:= sort_descending \\* el. (a : array el) : array el =\n    run_target \\|\n        | Fsharp => \\ () => $'!a |> Array.sortDescending'\n        | _ => \\ () =>\n            := ascending = sort a\n            := n = length ascending\n            arraym::init n \\ i => index (n - 1 - i) ascending","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := vec_collect fn vec =
+      ((;[] |> base |> to_vec), ((vec |> from_vec : array _) |> to_list' |> listm'::unbox))
+      ||> listm::fold \ acc x =>
+          acc |> vec_extend (fn x)
+
+  := vec_collect_option vec =
+      ((;[] |> base |> to_vec |> Ok), ((vec |> from_vec : array _) |> arraym::toList))
+      ||> listm::fold \ acc x =>
+          x
+          |> resultm::unbox
+          |> \ x =>
+              ?= acc, x |> resultm::map optionm'::unbox ?|
+              | Ok acc, Ok (Some x) => acc |> vec_extend x |> Ok
+              | _, Error error => error |> Error
+              | _ => acc
+
+  := vec_collect_into \* (c : * -> * -> *) t e.
+      (x : vec (c t e))
+      : c (vec t) e
+      =
+      !\($'"!x.into_iter().collect()"')
+
+  := parallel_map \* el el'. (fn : el -> el') (a : array el) : array el' =
+      run_target \|
+          | Fsharp => \ () => $'!a |> Array.Parallel.map !fn ' : array el'
+          | _ => \ () => arraym::map fn a
+
+  := map' \* el el'. (fn : el -> el') (a : array el) : array el' =
+      run_target \|
+          | Fsharp => \ () => $'!a |> Array.map !fn ' : array el'
+          | _ => \ () => arraym::map fn a
+
+  := sort_by \* el key. (fn : el -> key) (a : array el) : array el =
+      := fsharp () = $'!a |> Array.sortBy !fn ' : array el
+      := insertion_sort () =
+          := r = arraym::map id ($'!a ' : array el)
+          := keys = arraym::map fn ($'!a ' : array el)
+          loop::for' { from = 1; nearTo = length r } \ i =>
+              := x = index i r
+              := k = index i keys
+              := s = mut { j = i }
+              loop::while' (\ () => s::j > 0 && gt_is (comp (index (s::j - 1) keys) k)) \ () =>
+                  := j = s::j
+                  set r j (index (j - 1) r)
+                  set keys j (index (j - 1) keys)
+                  s <- { j = j - 1 }
+              set r s::j x
+              set keys s::j k
+          $'!r ' : array el
+      backend_switch {
+          Gleam = \ () => fsharp ()
+          Lua = insertion_sort
+          Fsharp = \ () => fsharp ()
+          Python = \ () =>
+              := keys = arraym::map fn ($'!a ' : array el)
+              $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, "tag") else \
+                  __k)(!keys[__i]))]' : array el
+          TypeScript = \ () =>
+              := keys = arraym::map fn ($'!a ' : array el)
+              global (
+                  "function spiral_compare(a: any, b: any): number { if (typeof a === 'object' && a !== null && "
+                  ^^ "typeof b === 'object' && b !== null) { if (Array.isArray(a)) { for (let i = 0; i < "
+                  ^^ "Math.min(a.length, b.length); i++) { const c = spiral_compare(a[i], b[i]); if (c !== 0) return c; "
+                  ^^ "} return a.length - b.length; } if (a.tag !== b.tag) return a.tag - b.tag; for (const k of "
+                  ^^ "Object.keys(a)) { if (k === 'tag') continue; const c = spiral_compare(a[k], b[k]); if (c !== 0) "
+                  ^^ "return c; } return 0; } return a < b ? -1 : a > b ? 1 : 0; }"
+              )
+              $'!a.map((_x: any, i: number) => i).sort((i: number, j: number) => spiral_compare(!keys[i], \
+                  !keys[j])).map((i: number) => !a[i])' : array el
+          Cpp = \ () => fsharp ()
+          CppHost = \ () => fsharp ()
+          Pascal = \ () => fsharp ()
+          Cuda = \ () => fsharp ()
+          Zig = insertion_sort
+          Lean = insertion_sort
+          Rust = \ () =>
+              := a = $'!a ' : array el
+              := key_fn = ~~ (rust::one_param_fn fn)
+              := r = $'Rc::new(RefCell::new(!a.borrow().clone()))' : array el
+              := keys =
+                  $'Rc::new(RefCell::new(!a.borrow().iter().map(|x| !key_fn(x.clone())).collect::<Vec<_>>()))' : array key
+              loop::for' { from = 1; nearTo = length a } \ i =>
+                  := x = index i r
+                  := k = index i keys
+                  := s = mut { j = i }
+                  loop::while' (\ () => s::j > 0 && gt_is (comp (index (s::j - 1) keys) k)) \ () =>
+                      := j = s::j
+                      set r j (index (j - 1) r)
+                      set keys j (index (j - 1) keys)
+                      s <- { j = j - 1 }
+                  set r s::j x
+                  set keys s::j k
+              $'!r ' : array el
+      }
+
+  := sort \* el. (a : array el) : array el =
+      run_target \|
+          | Fsharp => \ () => $'!a |> Array.sort'
+          | _ => \ () => sort_by id a
+
+  := sort_descending \* el. (a : array el) : array el =
+      run_target \|
+          | Fsharp => \ () => $'!a |> Array.sortDescending'
+          | _ => \ () =>
+              := ascending = sort a
+              := n = length ascending
+              arraym::init n \ i => index (n - 1 - i) ascending
+  """,
+  timeout: 300_000
+)
+```
+
+#### sort_orders_on_every_backend (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> python\n///> typescript\n///> lua\n\n:= a = ;[ 3i32; 1i32; 2i32 ]\n:= ascending = sort a\n? index 0 ascending <> 1i32 || index 2 ascending <> 3i32 ?> failwith \"ascending\"\n:= descending = sort_descending a\n? index 0 descending <> 3i32 || index 2 descending <> 1i32 ?> failwith \"descending\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> python
+  ///> typescript
+  ///> lua
+
+  := a = ;[ 3i32; 1i32; 2i32 ]
+  := ascending = sort a
+  ? index 0 ascending <> 1i32 || index 2 ascending <> 3i32 ?> failwith "ascending"
+  := descending = sort_descending a
+  ? index 0 descending <> 3i32 || index 2 descending <> 1i32 ?> failwith "descending"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= transpose \\* el. (a : array_base (array_base el)) : array_base (array_base el) =\n    run_target \\|\n        | Fsharp => \\ () => $'!a |> Array.transpose' : array_base (array_base el)\n        | _ => \\ () =>\n            := rows : array (array_base el) = array a\n            := height : int = length rows\n            := width : int = ? height = 0 ?> 0 |: length (array (index 0 rows) : array el)\n            arraym::init width (\\ (c : int) =>\n                arraym::init height \\ (r : int) => index c (array (index r rows) : array el)\n                |> \\ (array column : array el) => column\n            )\n            |> \\ (array result : array (array_base el)) => result","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := transpose \* el. (a : array_base (array_base el)) : array_base (array_base el) =
+      run_target \|
+          | Fsharp => \ () => $'!a |> Array.transpose' : array_base (array_base el)
+          | _ => \ () =>
+              := rows : array (array_base el) = array a
+              := height : int = length rows
+              := width : int = ? height = 0 ?> 0 |: length (array (index 0 rows) : array el)
+              arraym::init width (\ (c : int) =>
+                  arraym::init height \ (r : int) => index c (array (index r rows) : array el)
+                  |> \ (array column : array el) => column
+              )
+              |> \ (array result : array (array_base el)) => result
+  """,
+  timeout: 300_000
+)
+```
+
+#### transpose_swaps_rows_and_columns (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n\n:= row = \\ (cells : array i32) => cells |> \\ (array x : array i32) => x\n:= rows : array (array_base i32) = ;[ row ;[ 1i32; 2i32; 3i32 ]; row ;[ 4i32; 5i32; 6i32 ] ]\n:= flipped : array (array_base i32) = array (rows |> \\ (array x : array (array_base i32)) => x |> transpose)\n:= last : array i32 = array (index 2 flipped)\n(length flipped, index 0 last, index 1 last) |> _assert_eq (3, 3i32, 6i32)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+
+  := row = \ (cells : array i32) => cells |> \ (array x : array i32) => x
+  := rows : array (array_base i32) = ;[ row ;[ 1i32; 2i32; 3i32 ]; row ;[ 4i32; 5i32; 6i32 ] ]
+  := flipped : array (array_base i32) = array (rows |> \ (array x : array (array_base i32)) => x |> transpose)
+  := last : array i32 = array (index 2 flipped)
+  (length flipped, index 0 last, index 1 last) |> _assert_eq (3, 3i32, 6i32)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= try_item \\* el. (i : i32) (a : array el) : option el =\n    := fsharp () : option el = $'!a |> Array.tryItem !i ' |> optionm'::unbox\n    := in_bounds_item () : option el =\n        := a = $'!a ' : array el\n        ? i >= 0 && i < length a ?> Some (index i a) |: None\n    backend_switch {\n        Gleam = fsharp\n        Lua = fsharp\n        Fsharp = fsharp\n        Python = fsharp\n        TypeScript = fsharp\n        Cpp = fsharp\n        CppHost = fsharp\n        Pascal = fsharp\n        Cuda = fsharp\n        Zig = in_bounds_item\n        Lean = in_bounds_item\n        Rust = in_bounds_item\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := try_item \* el. (i : i32) (a : array el) : option el =
+      := fsharp () : option el = $'!a |> Array.tryItem !i ' |> optionm'::unbox
+      := in_bounds_item () : option el =
+          := a = $'!a ' : array el
+          ? i >= 0 && i < length a ?> Some (index i a) |: None
+      backend_switch {
+          Gleam = fsharp
+          Lua = fsharp
+          Fsharp = fsharp
+          Python = fsharp
+          TypeScript = fsharp
+          Cpp = fsharp
+          CppHost = fsharp
+          Pascal = fsharp
+          Cuda = fsharp
+          Zig = in_bounds_item
+          Lean = in_bounds_item
+          Rust = in_bounds_item
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### try_item_is_none_out_of_bounds (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust\n///> zig\n\n:= a = ;[ 10i32; 20i32 ]\n:= code (i : i32) : i32 = ?= try_item i a ?| | Some x => x | None => -1i32\n[ code (-1i32); code 0i32; code 1i32; code 2i32 ] |> _assert_eq [ -1i32; 10i32; 20i32; -1i32 ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust
+  ///> zig
+
+  := a = ;[ 10i32; 20i32 ]
+  := code (i : i32) : i32 = ?= try_item i a ?| | Some x => x | None => -1i32
+  [ code (-1i32); code 0i32; code 1i32; code 2i32 ] |> _assert_eq [ -1i32; 10i32; 20i32; -1i32 ]
+  """,
+  timeout: 300_000
+)
+```

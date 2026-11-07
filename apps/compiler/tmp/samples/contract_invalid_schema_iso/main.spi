@@ -1,0 +1,14 @@
+:! v5 = ()
+:! v6 = ()
+
+:| migration from to =
+    | V5ToV6 :: migration v5 v6
+    | V6ToV5 :: migration v6 v5
+
+:| schema_iso from to =
+    | SchemaIso :: \* from to.
+        migration from to * migration to from
+        -> schema_iso from to
+
+:= main () : schema_iso v5 v6 =
+    SchemaIso (V5ToV6, V5ToV6)

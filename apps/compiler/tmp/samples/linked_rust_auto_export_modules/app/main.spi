@@ -1,0 +1,6 @@
+:< arith
+:< shapes
+
+:= main () : i32 =
+    := ~n = 2i32
+    !!!!Add(nine (first n 0i32), !!!!Add(scale n 5i32, triple n))

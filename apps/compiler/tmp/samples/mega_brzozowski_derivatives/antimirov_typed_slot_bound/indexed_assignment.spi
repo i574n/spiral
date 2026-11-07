@@ -1,0 +1,201 @@
+:< main
+:< positioned_bound
+
+:| ^ antimirov_support_vector alphabet support_count =
+    | AntimirovSupportVectorNil :: \* alphabet.
+        antimirov_support_vector alphabet finite_length_zero
+    | AntimirovSupportVectorCons :: \* alphabet support_count.
+        regex alphabet *
+        antimirov_support_vector alphabet support_count ->
+        antimirov_support_vector alphabet (finite_length_succ support_count)
+
+:! packed_antimirov_support_vector alphabet =
+    \? support_count. antimirov_support_vector alphabet support_count
+
+:= ^ antimirov_support_vector_pack \* alphabet.
+    (support : regex_list alphabet)
+    : packed_antimirov_support_vector alphabet =
+    ?= support ?|
+    | RegexListNil =>
+        packed_antimirov_support_vector (\? AntimirovSupportVectorNil)
+    | RegexListCons (head, rest) =>
+        ?= antimirov_support_vector_pack rest ?|
+        | packed_antimirov_support_vector packed =>
+            := \? support_count. support_rest = packed
+            packed_antimirov_support_vector (\? (
+                AntimirovSupportVectorCons (head, support_rest)))
+
+:| ^ antimirov_support_slot_assignment shape support_count =
+    | AntimirovSupportSlotAssignmentNil :: \* shape.
+        antimirov_support_slot_assignment shape finite_length_zero
+    | AntimirovSupportSlotAssignmentCons :: \* shape support_count.
+        antimirov_support_slot shape *
+        antimirov_support_slot_assignment shape support_count ->
+        antimirov_support_slot_assignment shape (finite_length_succ support_count)
+
+
+:| antimirov_support_slot_assignment_validation shape support_count =
+    | AntimirovSupportSlotAssignmentRejected :: \* shape support_count.
+        antimirov_support_slot_assignment_validation shape support_count
+    | AntimirovSupportSlotAssignmentCertified :: \* shape support_count.
+        antimirov_support_slot_assignment shape support_count ->
+        antimirov_support_slot_assignment_validation shape support_count
+
+:= ^ antimirov_build_support_slot_assignment \* alphabet shape support_count.
+    (cat_capability : antimirov_slot_cat_capability alphabet)
+    (equal_capability : antimirov_slot_equal_capability alphabet)
+    (root : regex alphabet)
+    (tree : antimirov_position_tree alphabet shape)
+    (support : antimirov_support_vector alphabet support_count)
+    : antimirov_support_slot_assignment_validation shape support_count =
+    ?= support ?|
+    | AntimirovSupportVectorNil =>
+        AntimirovSupportSlotAssignmentCertified AntimirovSupportSlotAssignmentNil
+    | AntimirovSupportVectorCons (head, rest) =>
+        ?= antimirov_support_slot_find
+            cat_capability equal_capability root head tree ?|
+        | SupportSlotMissing =>
+            AntimirovSupportSlotAssignmentRejected
+        | SupportSlotFound slot =>
+            ?= equal_capability ?|
+            | antimirov_slot_equal_capability equal =>
+                ? equal head (antimirov_support_slot_value cat_capability root tree slot) ?>
+                    ?= antimirov_build_support_slot_assignment
+                        cat_capability equal_capability root tree rest ?|
+                    | AntimirovSupportSlotAssignmentRejected =>
+                        AntimirovSupportSlotAssignmentRejected
+                    | AntimirovSupportSlotAssignmentCertified assignment_rest =>
+                        := assignment :
+                            antimirov_support_slot_assignment shape (finite_length_succ support_count) =
+                            AntimirovSupportSlotAssignmentCons (slot, assignment_rest)
+                        AntimirovSupportSlotAssignmentCertified assignment
+                |:
+                    AntimirovSupportSlotAssignmentRejected
+
+
+
+:! antimirov_indexed_slot_bound alphabet shape support_count =
+    antimirov_positioned_regex alphabet shape *
+    antimirov_support_vector alphabet support_count *
+    antimirov_support_slot_assignment shape support_count
+
+:| antimirov_indexed_slot_bound_validation alphabet shape support_count =
+    | AntimirovIndexedSlotBoundRejected :: \* alphabet shape support_count.
+        antimirov_indexed_slot_bound_validation alphabet shape support_count
+    | AntimirovIndexedSlotBoundCertified :: \* alphabet shape support_count.
+        antimirov_indexed_slot_bound alphabet shape support_count ->
+        antimirov_indexed_slot_bound_validation alphabet shape support_count
+
+
+:= ^ antimirov_support_vector_to_list \* alphabet support_count.
+    (support : antimirov_support_vector alphabet support_count)
+    : regex_list alphabet =
+    ?= support ?|
+    | AntimirovSupportVectorNil => RegexListNil
+    | AntimirovSupportVectorCons (head, rest) =>
+        RegexListCons (head, antimirov_support_vector_to_list rest)
+
+
+:= certify_antimirov_indexed_slot_bound_with_support \* alphabet shape support_count.
+    (cat_capability : antimirov_slot_cat_capability alphabet)
+    (equal_capability : antimirov_slot_equal_capability alphabet)
+    (positioned : antimirov_positioned_regex alphabet shape)
+    (support : antimirov_support_vector alphabet support_count)
+    : antimirov_indexed_slot_bound_validation alphabet shape support_count =
+    := tree = antimirov_positioned_regex_tree positioned
+    := normalized = antimirov_positioned_regex_value positioned
+    ? regex_list_distinct (antimirov_support_vector_to_list support) ?>
+        ?= antimirov_build_support_slot_assignment
+            cat_capability equal_capability normalized tree support ?|
+        | AntimirovSupportSlotAssignmentRejected =>
+            AntimirovIndexedSlotBoundRejected
+        | AntimirovSupportSlotAssignmentCertified assignment =>
+            := certificate :
+                antimirov_indexed_slot_bound alphabet shape support_count =
+                antimirov_indexed_slot_bound (positioned, support, assignment)
+            AntimirovIndexedSlotBoundCertified certificate
+    |:
+        AntimirovIndexedSlotBoundRejected
+
+
+:= antimirov_indexed_slot_bound_validation_is \* alphabet shape support_count.
+    (validation : antimirov_indexed_slot_bound_validation alphabet shape support_count)
+    : bool =
+    ?= validation ?|
+    | AntimirovIndexedSlotBoundRejected => !-
+    | AntimirovIndexedSlotBoundCertified _ => !+
+
+
+:= antimirov_positioned_indexed_slot_bound_passes \* alphabet {symbol_compare} shape.
+    (positioned : antimirov_positioned_regex alphabet shape)
+    : bool =
+    := normalized = normalize (antimirov_positioned_regex_value positioned)
+    := support_list = antimirov_support normalized
+    := cat_capability : antimirov_slot_cat_capability alphabet =
+        antimirov_slot_cat_capability_default
+    := equal_capability : antimirov_slot_equal_capability alphabet =
+        antimirov_slot_equal_capability_default
+    ?= antimirov_support_vector_pack support_list ?|
+    | packed_antimirov_support_vector packed =>
+        := \? support_count. support = packed
+        ?= certify_antimirov_indexed_slot_bound_with_support
+            cat_capability equal_capability positioned support ?|
+        | AntimirovIndexedSlotBoundRejected => !-
+        | AntimirovIndexedSlotBoundCertified _ => !+
+
+
+:= require_support_assignment_alignment \* alphabet shape support_count.
+    (_ : antimirov_support_vector alphabet support_count)
+    (_ : antimirov_support_slot_assignment shape support_count)
+    : bool = !+
+
+:== one_support_count = finite_length_succ finite_length_zero
+:== two_support_count = finite_length_succ one_support_count
+
+:= one_bit_support_vector_for_control ()
+    : antimirov_support_vector bit_alphabet one_support_count =
+    AntimirovSupportVectorCons (
+        normalize (ends_with_zero ()),
+        AntimirovSupportVectorNil)
+
+:= two_bit_slot_assignments_for_negative ()
+    : antimirov_support_slot_assignment bit_ends_with_zero_shape two_support_count =
+    AntimirovSupportSlotAssignmentCons (
+        SupportSlotRoot,
+        AntimirovSupportSlotAssignmentCons (
+            SupportSlotRoot,
+            AntimirovSupportSlotAssignmentNil))
+
+:= one_bit_slot_assignment_for_control ()
+    : antimirov_support_slot_assignment bit_ends_with_zero_shape one_support_count =
+    AntimirovSupportSlotAssignmentCons (
+        SupportSlotRoot,
+        AntimirovSupportSlotAssignmentNil)
+
+
+
+:= two_bit_support_vector_for_certificate ()
+    : antimirov_support_vector bit_alphabet two_support_count =
+    AntimirovSupportVectorCons (
+        normalize (ends_with_zero ()),
+        AntimirovSupportVectorCons (
+            RegexEpsilon,
+            AntimirovSupportVectorNil))
+
+:= two_tri_support_vector_for_certificate ()
+    : antimirov_support_vector tri_alphabet two_support_count =
+    AntimirovSupportVectorCons (
+        normalize (tri_ab_star_then_c ()),
+        AntimirovSupportVectorCons (
+            RegexEpsilon,
+            AntimirovSupportVectorNil))
+
+
+
+:= main () : string =
+    assert_static
+        (require_support_assignment_alignment
+            (one_bit_support_vector_for_control ())
+            (one_bit_slot_assignment_for_control ()))
+        "support vector and slot assignment must share one exact support-count index"
+    "brzozowski-antimirov-indexed-slot-alignment-green"

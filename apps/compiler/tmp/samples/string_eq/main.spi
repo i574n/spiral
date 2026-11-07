@@ -1,0 +1,11 @@
+:= main () : i32 =
+    := ~left = "é"
+    := ~right = "x"
+    := cat = !!!!StaticStringConcat(left, right)
+    := ~same = "éx"
+    := ~other = "éy"
+    := ~empty = ""
+    := blank = !!!!StringSlice(same, 1i32, 0i32)
+    ? !!!!EQ(cat, same) && !!!!NEQ(cat, other) && !!!!NEQ(left, same) && !!!!EQ(empty, blank) && !!!!NEQ(empty, left)
+    ?> 0i32
+    |: 1i32

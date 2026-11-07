@@ -1,0 +1,14 @@
+:| ^ managed_list =
+    | Nil
+    | Cons : array i32 * managed_list
+
+:~ ^ sum xs : i32 =
+    ?= xs ?|
+    | Nil => 0i32
+    | Cons (values, tail) => length values +. sum tail
+
+:= main () : i32 =
+    := ~n = 2i32
+    := ~shared : array i32 = create n
+    := xs = Cons (shared, Cons (shared, Nil))
+    sum xs -. 4i32

@@ -1,0 +1,17 @@
+:! alive = ()
+:! dead = ()
+
+:| vitality phase =
+    | Living :: i32 * i32 -> vitality alive
+    | Fallen :: i32 -> vitality dead
+
+:| struck =
+    | Survived : vitality alive
+    | Slain : vitality dead
+
+:= main () : i32 =
+    := ~h = 60i32
+    := s = ? h > 0 ?> Survived (Living (h, 100)) |: Slain (Fallen 100)
+    ?= s ?|
+    | Survived (Living (a, _)) => ? a = 60i32 ?> 0i32 |: 1i32
+    | Slain _ => 2i32

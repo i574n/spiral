@@ -1,0 +1,5 @@
+:= main () : i32 =
+    := a = lib::extra::three ()
+    a - 3i32
+
+:= expected_error_lib_extra_is_ambiguous () = ()

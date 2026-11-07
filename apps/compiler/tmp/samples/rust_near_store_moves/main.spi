@@ -1,0 +1,27 @@
+:! vector t = $'SpiralNearVec<`t>'
+:! lookup_map k v = $'near_sdk::store::LookupMap<`k, `v>'
+
+:== state = { version : u32; seeds : vector u8; owners : lookup_map u32 u8 }
+
+:= new_state (k : u32) : state =
+    global """
+        struct SpiralNearVec<T>(std::vec::Vec<T>);
+        mod near_sdk { pub mod store { pub struct LookupMap<K, V>(pub std::collections::BTreeMap<K, V>); } }
+        """
+    {
+        version = k
+        seeds = $'SpiralNearVec(vec\![1u8, 2, 3])'
+        owners = $'near_sdk::store::LookupMap(std::collections::BTreeMap::from([(1u32, 4u8)]))'
+    }
+
+:= total (s : state) : i32 =
+    := { version seeds owners } = s
+    $'(!version as i32) + (!seeds.0.len() as i32) + (*!owners.0.get(&1u32).unwrap() as i32)'
+
+:= native (k : u32) : i32 =
+    := s = ~~ new_state k
+    ~~ total s
+
+:= main () : i32 =
+    := ~k = 7u32
+    !!!!BackendSwitch({ C = \ () => 14i32 : i32; Rust = \ () => native k : i32; Bend = \ () => 14i32 : i32 })

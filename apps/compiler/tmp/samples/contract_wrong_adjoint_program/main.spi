@@ -1,0 +1,18 @@
+:! lineage_a = ()
+:! program_a = ()
+:! program_b = ()
+:! dirty = ()
+:! clean = ()
+:! verified = ()
+:| workspace lineage program state =
+    | Workspace :: \* lineage program state. string -> workspace lineage program state
+:| adjoint_proof program state = | Adjoint :: \* program state. string -> adjoint_proof program state
+:= uncompute \* lineage program.
+    (workspace : workspace lineage program dirty) (proof : adjoint_proof program verified)
+    : workspace lineage program clean
+    =
+    Workspace "clean"
+:= main () =
+    := workspace : workspace lineage_a program_a dirty = Workspace "dirty"
+    := wrong : adjoint_proof program_b verified = Adjoint "wrong"
+    uncompute workspace wrong

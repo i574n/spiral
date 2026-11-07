@@ -1,0 +1,14 @@
+:| slot =
+    | Missing
+    | Box : heap { value : i32 }
+
+:= main () : i32 =
+    := ~n = 7i32
+    := cell = !!!!LayoutToHeap({ value = n })
+    := ~flag = !+
+    := box = ? flag ?> Box cell |: Missing
+    ?= box ?|
+    | Box held =>
+        := opened = !!!!LayoutIndex(held)
+        ? opened::value =. 7i32 ?> 0i32 |: 1i32
+    | Missing => 1i32

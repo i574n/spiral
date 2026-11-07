@@ -1,0 +1,15 @@
+:! i64_array = array_base i64
+
+:= create (n : i32) : i64_array = i64_array !!!!ArrayCreate(`i64, n)
+:= get (values : i64_array) (i : i32) : i64 =
+    ?= values ?|
+    | i64_array raw => !!!!ArrayIndex(raw, i)
+:= set (values : i64_array) (i : i32) (value : i64) : () =
+    ?= values ?|
+    | i64_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+:= main () : i32 =
+    := values = create 2i32
+    := ~n = 5000000000i64
+    set values 1i32 n
+    ? get values 1i32 =. 5000000000i64 ?> 0i32 |: 1i32

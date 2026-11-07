@@ -1,0 +1,7 @@
+:= pick (n : i32) : string =
+    ? n =. 0i32 ?> "no" |: "hi"
+
+:= main () : i32 =
+    := ~n = 7i32
+    := word = ~~ pick n
+    ? !!!!EQ(word, "hi") ?> 0i32 |: 1i32

@@ -1,0 +1,18 @@
+:| ^ phase =
+    | Empty
+    | Step : i32 * phase
+
+:= ^ keep ~n left right (value : string) : i32 =
+    ? n =. 0i32 ?>
+        ?= left ?|
+        | Step (x, _) => ? x =. 7i32 ?> (sm::length value : i32) |: 99i32
+        | Empty => 98i32
+    |: ~~ keep (n -. 1i32) right left value
+
+:= main () : i32 =
+    := empty = Empty
+    := left = Step (7i32, empty)
+    := right = Step (11i32, empty)
+    := ~depth = 1000000i32
+    := seed = ? depth %. 2i32 =. 0i32 ?> "ok" |: "go"
+    ~~ keep depth left right seed -. 2i32

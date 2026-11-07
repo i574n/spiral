@@ -1,0 +1,28 @@
+:= main () : i32 =
+    := exact = sm::utf8_canonical_equal_bounded "plain" "plain"
+    := empty = sm::utf8_canonical_equal_bounded "" ""
+    := decomposed = sm::utf8_canonical_equal_bounded "éõç" "éõç"
+    := consecutive = sm::utf8_canonical_equal_bounded "é̃" "é̃"
+    := uppercase = sm::utf8_canonical_equal_bounded "À" "À"
+    := unsupported = sm::utf8_canonical_equal_bounded "Ω" "Ω"
+    := order_differs = sm::utf8_canonical_equal_bounded "é̃" "ẽ́"
+    := base_differs = sm::utf8_canonical_equal_bounded "é" "á"
+    := unsupported_differs = sm::utf8_canonical_equal_bounded "Ω" "ω"
+    := exhausted_differs = sm::utf8_canonical_equal_bounded "é" "e"
+    ? exact ?>
+        ? empty ?>
+            ? decomposed ?>
+                ? consecutive ?>
+                    ? uppercase ?>
+                        ? unsupported ?>
+                            ? order_differs ?> 7i32
+                            |? base_differs ?> 8i32
+                            |? unsupported_differs ?> 9i32
+                            |? exhausted_differs ?> 10i32
+                            |: 0i32
+                        |: 6i32
+                    |: 5i32
+                |: 4i32
+            |: 3i32
+        |: 2i32
+    |: 1i32

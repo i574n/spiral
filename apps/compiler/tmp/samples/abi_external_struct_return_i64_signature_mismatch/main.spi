@@ -1,0 +1,6 @@
+:= main () : i32 = ~>
+    := ~numerator = 5000000007i64
+    := ~denominator_i32_mismatch = 1000i32
+    := reconstructed = $"spiral_abi_libc_lldiv_pack(!numerator,!denominator_i32_mismatch)" : i64
+    := ok = $"!reconstructed == 5000000007" : bool
+    ? ok ?> 0i32 |: 1i32

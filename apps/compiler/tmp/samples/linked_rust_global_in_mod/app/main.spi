@@ -1,0 +1,7 @@
+:< model
+
+:= main () : i32 =
+    global "use model::inner;"
+    := ~n = 3i32
+    := r = make n
+    $'!r.op + !r.target' : i32

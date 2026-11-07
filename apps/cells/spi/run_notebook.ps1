@@ -1,0 +1,165 @@
+$ErrorActionPreference = "Stop"
+$notebookStarted = Get-Date
+. (Join-Path $PSScriptRoot "../../compiler/scripts/heavy.ps1")
+function Write-NotebookLedger([string] $Route, [int] $Code) {
+    $notebook = $fixed[[Math]::Max(0, $fixed.IndexOf('--path') + 1)]
+    $label = "kino notebook $([IO.Path]::GetFileName($notebook)) ($Route)"
+    $outcome = if ($Code) { "exit $Code" } else { 'ok' }
+    try { Write-RunLedger 'notebook' $label ([scriptblock]::Create("'" + ("run_notebook.ps1 $($fixed -join ' ')" -replace "'", "''") + "'")) $notebookStarted $notebookStarted '-' $outcome 0 } catch { Write-Warning "run ledger: $($_.Exception.Message)" }
+}
+$homeDir = if ($env:USERPROFILE) { $env:USERPROFILE } else { $env:HOME }
+$erlang = Join-Path $homeDir "scoop/apps/erlang/current/bin"
+$elixir = Join-Path $homeDir "scoop/apps/elixir/current/bin"
+$sep = [IO.Path]::PathSeparator
+if (Test-Path $erlang) { $env:PATH = "$erlang$sep$env:PATH" }
+if (Test-Path $elixir) { $env:PATH = "$elixir$sep$env:PATH" }
+$crashDumps = Join-Path ($env:LOCALAPPDATA ?? $homeDir) "spiral-bin/crash-dumps"
+New-Item -ItemType Directory -Force $crashDumps | Out-Null
+$env:ERL_CRASH_DUMP = Join-Path $crashDumps "erl_crash-$(Get-Date -Format yyyyMMdd-HHmmss)-$PID.dump"
+if ($IsWindows) {
+    . (Join-Path $PSScriptRoot "erl_memory_limit.ps1")
+    $erlMemoryLimit = Start-ErlMemoryLimit
+}
+$cwd = (Get-Location).Path
+$fixed = New-Object System.Collections.Generic.List[string]
+$key = $null
+foreach ($item in $args) {
+    $arg = if ($item -is [array]) { $item -join "," } else { "$item" }
+    if ($arg -in @("--path", "--output-path", "--output-dir", "--spi-path", "--spir-path", "--fs-path", "--livemd-path")) {
+        $key = $arg
+        $fixed.Add($arg)
+    }
+    elseif ($null -ne $key) {
+        $value = $arg
+        if (-not [System.IO.Path]::IsPathRooted($value)) {
+            $value = Join-Path $cwd $value
+        }
+        $fixed.Add($value)
+        $key = $null
+    }
+    else {
+        $fixed.Add($arg)
+    }
+}
+$gateWindow = $null
+$windowKit = $null
+if ($fixed -contains '--gate' -and $env:SPIRAL_CELLS_GATE_WINDOW -ne '0') {
+    $windowKit = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) "kit/bin/kit$(if ($IsWindows) { '.exe' })"
+    if (-not (Test-Path -LiteralPath $windowKit)) { $windowKit = (Get-Command kit -CommandType Application -ErrorAction Ignore | Select-Object -First 1).Source }
+    if ($windowKit) {
+        $gated = @(for ($i = 0; $i -lt $fixed.Count - 1; $i++) { if ($fixed[$i] -eq '--path') { [IO.Path]::GetFileName($fixed[$i + 1]) } }) -join ','
+        $waitMin = if ($env:SPIRAL_CELLS_GATE_WAIT_MIN -match '^\d+$') { $env:SPIRAL_CELLS_GATE_WAIT_MIN } else { '30' }
+        $leaseMin = if ($env:SPIRAL_CELLS_GATE_WINDOW_MIN -match '^\d+$') { $env:SPIRAL_CELLS_GATE_WINDOW_MIN } else { '180' }
+        $granted = "$(& $windowKit window request test-suite $leaseMin --label "cells gate $gated" --wait $waitMin --min-free-mb 0 2>&1 | Select-Object -Last 1)"
+        if ($granted -match 'id=(\S+)') { $gateWindow = $Matches[1] }
+        else { [Console]::Error.WriteLine("run_notebook.ps1 / no test-suite window after $waitMin min ($granted): running the gate anyway") }
+    }
+}
+trap { if ($gateWindow) { & $windowKit window release $gateWindow *> $null }; break }
+function Exit-Notebook([int] $Code) {
+    if ($gateWindow) { & $windowKit window release $gateWindow *> $null }
+    exit $Code
+}
+function Invoke-WarmNotebook([int] $Port, [string[]] $Arguments, [string] $Dll) {
+    $client = [System.Net.Sockets.TcpClient]::new()
+    try {
+        if (-not $client.ConnectAsync('127.0.0.1', $Port).Wait(300)) { return $null }
+        $utf8 = [System.Text.UTF8Encoding]::new($false)
+        $stream = $client.GetStream()
+        $writer = [System.IO.StreamWriter]::new($stream, $utf8)
+        $writer.NewLine = "`n"
+        $reader = [System.IO.StreamReader]::new($stream, $utf8)
+        $request = [ordered]@{ args = $Arguments; root = (Split-Path $PSScriptRoot -Parent); dll = $Dll } | ConvertTo-Json -Compress -Depth 3
+        $writer.WriteLine("notebook`t$request")
+        $writer.Flush()
+        while ($null -ne ($line = $reader.ReadLine())) {
+            $kind, $text = $line -split "`t", 2
+            switch ($kind) {
+                'line' { [Console]::Out.WriteLine($text) }
+                'error' { [Console]::Error.WriteLine((ConvertFrom-Json $text)) }
+                'end' { return [int]$text }
+                default { return $null }
+            }
+        }
+        return $null
+    }
+    catch { return $null }
+    finally { $client.Dispose() }
+}
+if ($env:SPIRAL_CELLS_WARM -ne '0') {
+    $gateRun = $fixed -contains '--gate'
+    $warmArgs = [string[]] @($fixed | Where-Object { $_ -ne '--gate' })
+    if ($gateRun) { $warmArgs += '--no-html' }
+    if (($gateRun -or $env:SPIRAL_CELLS_MEMO -eq '0') -and $warmArgs -notcontains '--no-memo') { $warmArgs += '--no-memo' }
+    $gateDir = if ($gateRun -and $warmArgs -notcontains '--output-dir' -and $warmArgs -notcontains '--output-path') { Join-Path ([IO.Path]::GetTempPath()) "spiral-cells-gate-$PID-$(Get-Random)" }
+    if ($gateDir) { $warmArgs += '--output-dir', $gateDir }
+    $warmDll = if ($env:SPIRAL_COMPILER_DLL) { $env:SPIRAL_COMPILER_DLL } else {
+        & { . (Join-Path $PSScriptRoot '../../compiler/scripts/env.ps1'); Get-SpiralCompilerDll 'single-flight' }
+    }
+    $warmPort = if ($env:SPIRAL_CELLS_COMPILER_PORT) { [int] $env:SPIRAL_CELLS_COMPILER_PORT } else {
+        $rootText = ([IO.Path]::GetFullPath((Split-Path $PSScriptRoot -Parent))).Replace('\', '/').TrimEnd('/').ToLowerInvariant()
+        $rootKey = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($rootText))).Substring(0, 16)
+        $dllItem = Get-Item -LiteralPath $warmDll -ErrorAction Ignore
+        $coreItem = if ($dllItem) { Get-Item -LiteralPath (Join-Path $dllItem.DirectoryName 'SpiralCompilerCore.dll') -ErrorAction Ignore }
+        $dllTag = if (-not $dllItem) { 'none' } else {
+            $hostTag = "$([DateTimeOffset]::new($dllItem.LastWriteTimeUtc).ToUnixTimeSeconds())-$($dllItem.Length)"
+            if ($coreItem) { "$hostTag-$([DateTimeOffset]::new($coreItem.LastWriteTimeUtc).ToUnixTimeSeconds())-$($coreItem.Length)" } else { $hostTag }
+        }
+        $portFile = Join-Path ($env:LOCALAPPDATA ?? (Join-Path $HOME '.cache')) "spiral-bin/cells-port-$rootKey-$dllTag.txt"
+        $saved = if (Test-Path -LiteralPath $portFile) { (Get-Content -LiteralPath $portFile -Raw).Trim() }
+        if ($saved -match '^\d+$') { [int] $saved } else { 13905 }
+    }
+    $warmExit = Invoke-WarmNotebook $warmPort $warmArgs $warmDll
+    if ($gateDir -and (Test-Path -LiteralPath $gateDir)) { [IO.Directory]::Delete($gateDir, $true) }
+    if ($null -ne $warmExit) { Write-NotebookLedger 'warm' $warmExit; Exit-Notebook $warmExit }
+}
+function Resolve-RealPath([string] $Path) {
+    $full = [IO.Path]::GetFullPath($Path)
+    $current = [IO.Path]::GetPathRoot($full)
+    foreach ($part in $full.Substring($current.Length).Split([char[]] @('\', '/'), [StringSplitOptions]::RemoveEmptyEntries)) {
+        $current = Join-Path $current $part
+        $target = (Get-Item -LiteralPath $current -Force -ErrorAction Ignore).LinkTarget
+        if ($target) { $current = Resolve-RealPath ([IO.Path]::GetFullPath($target, (Split-Path $current))) }
+    }
+    $current
+}
+Set-Location (Resolve-RealPath (Join-Path $PSScriptRoot ".."))
+$mix = Join-Path $elixir "mix.bat"
+if (-not (Test-Path $mix)) { $mix = "mix" }
+
+$bundleScripts = Join-Path (Get-Location) "../compiler/scripts"
+$dotnetRoot = $env:DOTNET_ROOT
+$toolchain = & {
+    . (Join-Path $bundleScripts "env.ps1")
+    $dotnet = try { Resolve-SpiralDotnet } catch { $null }
+    if (-not $dotnet) {
+        Write-Host "run_notebook.ps1 / no .NET 11 SDK: scripts/install-dotnet.ps1"
+        & (Join-Path $bundleScripts "install-dotnet.ps1") | Out-Host
+        $dotnet = Resolve-SpiralDotnet
+    }
+    $dll = if ($env:SPIRAL_COMPILER_DLL) { $env:SPIRAL_COMPILER_DLL } else { Get-SpiralCompilerDll "single-flight" }
+    if (-not (Test-Path -LiteralPath $dll)) {
+        Write-Host "run_notebook.ps1 / no compiler at $dll`: scripts/build.ps1 -Mode single-flight"
+        & (Join-Path $bundleScripts "build.ps1") -Mode single-flight | Out-Host
+        if (-not (Test-Path -LiteralPath $dll)) { throw "run_notebook.ps1 / the compiler build wrote no $dll" }
+    }
+    $packageDir = try { Get-SpiralPackageDir } catch { $null }
+    [pscustomobject]@{ Dotnet = $dotnet; Dll = $dll; PackageDir = $packageDir }
+}
+$env:DOTNET_ROOT = $dotnetRoot
+$env:SPIRAL_DOTNET = $toolchain.Dotnet
+$env:SPIRAL_COMPILER_DLL = $toolchain.Dll
+if (-not $env:SPIRAL_COMPILER_PACKAGE_DIR -and $toolchain.PackageDir) { $env:SPIRAL_COMPILER_PACKAGE_DIR = $toolchain.PackageDir }
+
+if (-not (Test-Path "deps/kino/mix.exs")) {
+    foreach ($task in "local.hex", "local.rebar", "deps.get") {
+        $taskArgs = $task -like "local.*" ? @("--force", "--if-missing") : @()
+        & $mix $task @taskArgs
+        if ($LASTEXITCODE -ne 0) { throw "run_notebook.ps1 / mix $task failed (exit code $LASTEXITCODE)" }
+    }
+}
+
+& $mix spiral.notebook @fixed
+$notebookExit = if ($null -eq $LASTEXITCODE) { 1 } else { $LASTEXITCODE }
+Write-NotebookLedger 'mix' $notebookExit
+Exit-Notebook $notebookExit

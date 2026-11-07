@@ -1,0 +1,376 @@
+#### crypto (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test static --symbol\n\n:< testing\n:< file_system_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test static --symbol
+
+  :< testing
+  :< file_system_operators
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":< rust_operators\n:< sm'_operators\n\n:! sha256 = $'System.Security.Cryptography.SHA256'\n\n:= sha256 () : sha256 =\n    $'`sha256.Create' ()\n\n:= sha256_compute_hash (x : sha256) (data : array u8) : array u8 =\n    data |> $'!x.ComputeHash'\n\n:! sha256' =\n    `(\n        rust::rust_type\n            `($'sha2_Sha256')\n            `($'sha2::Sha256')\n            \"type sha2_Sha256 = class end\"\n    )\n\n:= new_sha256 () : sha256' =\n    (!\\($'\"true; let result : sha2::Sha256 = sha2::Digest::new()\"') : bool) |> ignore\n    !\\($'\"result\"')\n\n:= hasher_update \\* el dim. (slice : rust::ref (am'::slice' el dim)) (hasher : sha256') : () =\n    (!\\($'\"true; sha2::Digest::update(&mut !hasher, !slice)\"') : bool) |> ignore\n\n:= hasher_finalize (hasher : sha256') : rust::ref (am'::slice u8) =\n    !\\($'\"&sha2::Digest::finalize(!hasher)\"')\n\n:= hash_read data : resultm::result' string stream::io_error =\n    := reader = data |> stream::new_buf_reader\n    (!\\($'\"true; let mut !reader = !reader\"') : bool) |> ignore\n    := hasher = new_sha256 ()\n    (!\\($'\"true; let mut !hasher = !hasher\"') : bool) |> ignore\n    ~>\n        := size = 1024\n        := zero = convert::convert `i32 `(convert::unativeint) 0\n        := buffer = am'::new_slice `u8 `@size 0u8\n        rust::loop 0 \\ () =>\n            := count = stream::buf_reader_read `u8 `@size buffer reader\n            := count = resultm::unwrap' `(convert::unativeint) `(stream::io_error) count\n            := _ =\n                ? (=.) `(convert::unativeint) count zero ?>\n                    rust::break `(()) ()\n                    !+\n                |: !-\n            hasher_update `u8 `@size\n                (\n                    am'::slice_range `u8 `@size\n                        (am'::Start `(convert::unativeint) zero)\n                        (am'::End `(convert::unativeint)\n                            ((\\ _ => count) : (() -> convert::unativeint) -> convert::unativeint))\n                        buffer\n                )\n                hasher\n    hasher\n    |> hasher_finalize\n    |> am'::slice_to_vec\n    |> am'::vec_map (sm'::format_hex' >> sm'::from_std_string)\n    |> am'::from_vec_base\n    |> am'::to_list_base'\n    |> listm'::unbox\n    |> sm'::concat_list (~~ \"\")\n    |> Ok\n    |> resultm::box\n\n:= get_file_hash (path : string) =\n    := path = path |> file_system::normalize_path\n    := file = path |> file_system::file_open |> resultm::unwrap'\n    := reader = file |> stream::new_buf_reader\n    reader\n    |> hash_read","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :< rust_operators
+  :< sm'_operators
+
+  :! sha256 = $'System.Security.Cryptography.SHA256'
+
+  := sha256 () : sha256 =
+      $'`sha256.Create' ()
+
+  := sha256_compute_hash (x : sha256) (data : array u8) : array u8 =
+      data |> $'!x.ComputeHash'
+
+  :! sha256' =
+      `(
+          rust::rust_type
+              `($'sha2_Sha256')
+              `($'sha2::Sha256')
+              "type sha2_Sha256 = class end"
+      )
+
+  := new_sha256 () : sha256' =
+      (!\($'"true; let result : sha2::Sha256 = sha2::Digest::new()"') : bool) |> ignore
+      !\($'"result"')
+
+  := hasher_update \* el dim. (slice : rust::ref (am'::slice' el dim)) (hasher : sha256') : () =
+      (!\($'"true; sha2::Digest::update(&mut !hasher, !slice)"') : bool) |> ignore
+
+  := hasher_finalize (hasher : sha256') : rust::ref (am'::slice u8) =
+      !\($'"&sha2::Digest::finalize(!hasher)"')
+
+  := hash_read data : resultm::result' string stream::io_error =
+      := reader = data |> stream::new_buf_reader
+      (!\($'"true; let mut !reader = !reader"') : bool) |> ignore
+      := hasher = new_sha256 ()
+      (!\($'"true; let mut !hasher = !hasher"') : bool) |> ignore
+      ~>
+          := size = 1024
+          := zero = convert::convert `i32 `(convert::unativeint) 0
+          := buffer = am'::new_slice `u8 `@size 0u8
+          rust::loop 0 \ () =>
+              := count = stream::buf_reader_read `u8 `@size buffer reader
+              := count = resultm::unwrap' `(convert::unativeint) `(stream::io_error) count
+              := _ =
+                  ? (=.) `(convert::unativeint) count zero ?>
+                      rust::break `(()) ()
+                      !+
+                  |: !-
+              hasher_update `u8 `@size
+                  (
+                      am'::slice_range `u8 `@size
+                          (am'::Start `(convert::unativeint) zero)
+                          (am'::End `(convert::unativeint)
+                              ((\ _ => count) : (() -> convert::unativeint) -> convert::unativeint))
+                          buffer
+                  )
+                  hasher
+      hasher
+      |> hasher_finalize
+      |> am'::slice_to_vec
+      |> am'::vec_map (sm'::format_hex' >> sm'::from_std_string)
+      |> am'::from_vec_base
+      |> am'::to_list_base'
+      |> listm'::unbox
+      |> sm'::concat_list (~~ "")
+      |> Ok
+      |> resultm::box
+
+  := get_file_hash (path : string) =
+      := path = path |> file_system::normalize_path
+      := file = path |> file_system::file_open |> resultm::unwrap'
+      := reader = file |> stream::new_buf_reader
+      reader
+      |> hash_read
+  """,
+  timeout: 300_000
+)
+```
+
+#### get_file_hash_2 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono regex sha2\n\n:= file_name = ~~ \"test.txt\"\n:= text = \"\\n\"\n\n:= temp_dir, disposable =\n    #?*(file_name, text)\n    |> crypto::hash_text\n    |> file_system::create_temp_directory'\ndisposable |> use |> ignore\n\n:= path = temp_dir </> file_name\ntext |> file_system::write_all_text path\n\npath\n|> get_file_hash\n|> resultm::unwrap'\n|> _assert_eq \"01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono regex sha2
+
+  := file_name = ~~ "test.txt"
+  := text = "\n"
+
+  := temp_dir, disposable =
+      #?*(file_name, text)
+      |> crypto::hash_text
+      |> file_system::create_temp_directory'
+  disposable |> use |> ignore
+
+  := path = temp_dir </> file_name
+  text |> file_system::write_all_text path
+
+  path
+  |> get_file_hash
+  |> resultm::unwrap'
+  |> _assert_eq "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  """,
+  timeout: 300_000
+)
+```
+
+#### get_file_hash_3 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d chrono regex sha2\n\n:= file_name = ~~ \"test.txt\"\n:= text = \"\"\n\n:= temp_dir, disposable =\n    #?*(file_name, text)\n    |> crypto::hash_text\n    |> file_system::create_temp_directory'\ndisposable |> use |> ignore\n\n:= path = temp_dir </> file_name\ntext |> file_system::write_all_text path\npath\n|> get_file_hash\n|> resultm::unwrap'\n|> _assert_eq \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d chrono regex sha2
+
+  := file_name = ~~ "test.txt"
+  := text = ""
+
+  := temp_dir, disposable =
+      #?*(file_name, text)
+      |> crypto::hash_text
+      |> file_system::create_temp_directory'
+  disposable |> use |> ignore
+
+  := path = temp_dir </> file_name
+  text |> file_system::write_all_text path
+  path
+  |> get_file_hash
+  |> resultm::unwrap'
+  |> _assert_eq "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= create_hash (x : string) : any =\n    global \"import * as spiral_node_crypto from 'node:crypto';\"\n    $'spiral_node_crypto.createHash(!x)' : any\n\n:= hash_update (s : string) (x : any) : any =\n    $'!x.update(!s, \"utf8\")' : any\n\n:= hash_digest (s : string) (x : any) : string =\n    $'!x.digest(!s)' : string\n\n:! py_sha256 = any\n\n:= hashlib_sha256 () : py_sha256 =\n    backend_switch {\n        Python = \\ () =>\n            global \"import hashlib\"\n            $'hashlib.sha256()' : py_sha256\n    }\n\n:= sha256_update (x : string) (sha256 : py_sha256) : py_sha256 =\n    backend_switch {\n        Python = \\ () =>\n            $'!sha256.update(!x)' : ()\n    }\n    sha256\n\n:= sha256_hexdigest (sha256 : py_sha256) : string =\n    backend_switch {\n        Python = \\ () =>\n            $'!sha256.hexdigest()' : string\n    }\n\n:= zig_sha256_hex (input : string) : string =\n    global \"\"\"\n        fn spiral_out_sha256_hex(input: []const u8) []const u8 {\n            var digest: [32]u8 = undefined;\n            std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});\n            const hex = std.fmt.bytesToHex(digest, .lower);\n            return spiral_gpa.dupe(u8, &hex) catch @panic(\"out of memory\");\n        }\n        \"\"\"\n    $'spiral_out_sha256_hex(!input)' : string","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ":= create_hash (x : string) : any =\n    global \"import * as spiral_node_crypto from 'node:crypto';\"\n    $'spiral_node_crypto.createHash(!x)' : any\n\n:= hash_update (s : string) (x : any) : any =\n    $'!x.update(!s, \"utf8\")' : any\n\n:= hash_digest (s : string) (x : any) : string =\n    $'!x.digest(!s)' : string\n\n:! py_sha256 = any\n\n:= hashlib_sha256 () : py_sha256 =\n    backend_switch {\n        Python = \\ () =>\n            global \"import hashlib\"\n            $'hashlib.sha256()' : py_sha256\n    }\n\n:= sha256_update (x : string) (sha256 : py_sha256) : py_sha256 =\n    backend_switch {\n        Python = \\ () =>\n            $'!sha256.update(!x)' : ()\n    }\n    sha256\n\n:= sha256_hexdigest (sha256 : py_sha256) : string =\n    backend_switch {\n        Python = \\ () =>\n            $'!sha256.hexdigest()' : string\n    }\n\n:= zig_sha256_hex (input : string) : string =\n    global \"\"\"\n        fn spiral_out_sha256_hex(input: []const u8) []const u8 {\n            var digest: [32]u8 = undefined;\n            std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});\n            const hex = std.fmt.bytesToHex(digest, .lower);\n            return spiral_gpa.dupe(u8, &hex) catch @panic(\"out of memory\");\n        }\n        \"\"\"\n    $'spiral_out_sha256_hex(!input)' : string",
+  timeout: 300_000
+)
+```
+
+#### zig_sha256_hex_matches_known_digests (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> zig\n\n(zig_sha256_hex \"\", zig_sha256_hex \"\\n\")\n|> _assert_eq (\n    \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\n    \"01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b\"\n)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> zig
+
+  (zig_sha256_hex "", zig_sha256_hex "\n")
+  |> _assert_eq (
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  )
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":~ hash_text (~input : string) =\n    run_target \\|\n        | Zig => \\ () => zig_sha256_hex input\n        | Fsharp => \\ () =>\n            := sha256 = sha256 () |> use\n            input\n            |> sm'::utf8_get_bytes\n            |> sha256_compute_hash sha256\n            |> arraym::map (sm'::byte_to_string \"x2\")\n            |> seq::of_array'\n            |> sm'::concat (~~ \"\")\n        | TypeScript => \\ () =>\n            create_hash \"sha256\"\n            |> hash_update input\n            |> hash_digest \"hex\"\n        | Rust => \\ () =>\n            input\n            |> sm'::utf8_get_bytes\n            |> \\ (array x) => x\n            |> am'::to_vec\n            |> stream::new_cursor\n            |> hash_read\n            |> resultm::unwrap'\n        | Cuda => \\ () =>\n            hashlib_sha256 ()\n            |> sha256_update (input |> sm'::encode_utf8)\n            |> sha256_hexdigest\n        | Gleam _ => \\ () =>\n            global \"import gleam/bit_array\"\n            global \"import gleam/string\"\n            global \"\"\"\n                type SpiralHashKind {\n                  Sha256\n                }\n                \"\"\"\n            global \"\"\"\n                @external(erlang, \"crypto\", \"hash\")\n                fn spiral_crypto_hash(kind: SpiralHashKind, data: String) -> BitArray\n                \"\"\"\n            $'string.lowercase(bit_array.base16_encode(spiral_crypto_hash(Sha256, !input)))' : string\n        | _ => \\ () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ":~ hash_text (~input : string) =\n    run_target \\|\n        | Zig => \\ () => zig_sha256_hex input\n        | Fsharp => \\ () =>\n            := sha256 = sha256 () |> use\n            input\n            |> sm'::utf8_get_bytes\n            |> sha256_compute_hash sha256\n            |> arraym::map (sm'::byte_to_string \"x2\")\n            |> seq::of_array'\n            |> sm'::concat (~~ \"\")\n        | TypeScript => \\ () =>\n            create_hash \"sha256\"\n            |> hash_update input\n            |> hash_digest \"hex\"\n        | Rust => \\ () =>\n            input\n            |> sm'::utf8_get_bytes\n            |> \\ (array x) => x\n            |> am'::to_vec\n            |> stream::new_cursor\n            |> hash_read\n            |> resultm::unwrap'\n        | Cuda => \\ () =>\n            hashlib_sha256 ()\n            |> sha256_update (input |> sm'::encode_utf8)\n            |> sha256_hexdigest\n        | Gleam _ => \\ () =>\n            global \"import gleam/bit_array\"\n            global \"import gleam/string\"\n            global \"\"\"\n                type SpiralHashKind {\n                  Sha256\n                }\n                \"\"\"\n            global \"\"\"\n                @external(erlang, \"crypto\", \"hash\")\n                fn spiral_crypto_hash(kind: SpiralHashKind, data: String) -> BitArray\n                \"\"\"\n            $'string.lowercase(bit_array.base16_encode(spiral_crypto_hash(Sha256, !input)))' : string\n        | _ => \\ () => null ()",
+  timeout: 300_000
+)
+```
+
+#### hash_text (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> cuda\n///> rust -d sha2\n///> typescript\n///> gleam\n\n\"\\n\"\n|> hash_text\n|> _assert_eq \"01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b\"\n\n\"\"\n|> hash_text\n|> _assert_eq \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> cuda
+  ///> rust -d sha2
+  ///> typescript
+  ///> gleam
+
+  "\n"
+  |> hash_text
+  |> _assert_eq "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+
+  ""
+  |> hash_text
+  |> _assert_eq "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= crypto_gleam_sha1 () =\n    global \"import gleam/bit_array\"\n    global \"import gleam/erlang/atom\"\n    global \"import gleam/string\"\n    global \"\"\"\n        @external(erlang, \"crypto\", \"hash\")\n        fn spiral_crypto_hash_by(kind: atom.Atom, data: String) -> BitArray\n\n        @external(erlang, \"crypto\", \"mac\")\n        fn spiral_crypto_mac(kind: atom.Atom, sub: atom.Atom, key: String, data: String) -> BitArray\n\n        \"\"\"\n\n:= hex_byte (b : u8) : string =\n    := high : i32 = conv (b >>> 4i32)\n    := low : i32 = conv (b &&& 15u8)\n    sm'::slice high high \"0123456789abcdef\" ++# sm'::slice low low \"0123456789abcdef\"\n\n:= hex_of_bytes (bytes : array_base u8) : string =\n    := size : i32 = am'::length_base bytes\n    :~ ^ go (i : i32) (acc : string) : string =\n        ? i >= size ?> acc |: go (i + 1i32) (acc ++# hex_byte (am'::index_base i bytes))\n    go 0i32 \"\"\n\n:= rust_sha1_digest (text : string) : array_base u8 =\n    $'Rc::new(RefCell::new(<sha1::Sha1 as sha1::Digest>::digest(!text.as_bytes()).to_vec()))' : array_base u8\n\n:= sha1_hex (text : string) : string =\n    backend_switch {\n        Gleam = \\ () =>\n            crypto_gleam_sha1 ()\n            $'string.lowercase(bit_array.base16_encode(spiral_crypto_hash_by(atom.create(\"sha\"), !text)))' : string\n        Rust = \\ () => text |> rust_sha1_digest |> hex_of_bytes\n    }\n\n:! hmac_sha1 = $'hmac::Hmac<sha1::Sha1>'\n\n:! hmac_sha1_tag = $'hmac::digest::Output<hmac::Hmac<sha1::Sha1>>'\n\n:= hmac_sha1_base64 (key : string) (text : string) : string =\n    backend_switch {\n        Gleam = \\ () =>\n            crypto_gleam_sha1 ()\n            $'bit_array.base64_encode(spiral_crypto_mac(atom.create(\"hmac\"), atom.create(\"sha\"), !key, !text), True)'\n            : string\n        Rust = \\ () =>\n            := mac = $'<hmac::Hmac<sha1::Sha1> as hmac::KeyInit>::new_from_slice(!key.as_bytes()).unwrap()' : hmac_sha1\n            mac |> rust::to_mut\n            $'hmac::Mac::update(&mut !mac, !text.as_bytes())' : ()\n            := tag = $'hmac::Mac::finalize(!mac).into_bytes()' : hmac_sha1_tag\n            $'Rc::<str>::from(base64::Engine::encode(&base64::engine::general_purpose::STANDARD, !tag))' : string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ":= crypto_gleam_sha1 () =\n    global \"import gleam/bit_array\"\n    global \"import gleam/erlang/atom\"\n    global \"import gleam/string\"\n    global \"\"\"\n        @external(erlang, \"crypto\", \"hash\")\n        fn spiral_crypto_hash_by(kind: atom.Atom, data: String) -> BitArray\n\n        @external(erlang, \"crypto\", \"mac\")\n        fn spiral_crypto_mac(kind: atom.Atom, sub: atom.Atom, key: String, data: String) -> BitArray\n\n        \"\"\"\n\n:= hex_byte (b : u8) : string =\n    := high : i32 = conv (b >>> 4i32)\n    := low : i32 = conv (b &&& 15u8)\n    sm'::slice high high \"0123456789abcdef\" ++# sm'::slice low low \"0123456789abcdef\"\n\n:= hex_of_bytes (bytes : array_base u8) : string =\n    := size : i32 = am'::length_base bytes\n    :~ ^ go (i : i32) (acc : string) : string =\n        ? i >= size ?> acc |: go (i + 1i32) (acc ++# hex_byte (am'::index_base i bytes))\n    go 0i32 \"\"\n\n:= rust_sha1_digest (text : string) : array_base u8 =\n    $'Rc::new(RefCell::new(<sha1::Sha1 as sha1::Digest>::digest(!text.as_bytes()).to_vec()))' : array_base u8\n\n:= sha1_hex (text : string) : string =\n    backend_switch {\n        Gleam = \\ () =>\n            crypto_gleam_sha1 ()\n            $'string.lowercase(bit_array.base16_encode(spiral_crypto_hash_by(atom.create(\"sha\"), !text)))' : string\n        Rust = \\ () => text |> rust_sha1_digest |> hex_of_bytes\n    }\n\n:! hmac_sha1 = $'hmac::Hmac<sha1::Sha1>'\n\n:! hmac_sha1_tag = $'hmac::digest::Output<hmac::Hmac<sha1::Sha1>>'\n\n:= hmac_sha1_base64 (key : string) (text : string) : string =\n    backend_switch {\n        Gleam = \\ () =>\n            crypto_gleam_sha1 ()\n            $'bit_array.base64_encode(spiral_crypto_mac(atom.create(\"hmac\"), atom.create(\"sha\"), !key, !text), True)'\n            : string\n        Rust = \\ () =>\n            := mac = $'<hmac::Hmac<sha1::Sha1> as hmac::KeyInit>::new_from_slice(!key.as_bytes()).unwrap()' : hmac_sha1\n            mac |> rust::to_mut\n            $'hmac::Mac::update(&mut !mac, !text.as_bytes())' : ()\n            := tag = $'hmac::Mac::finalize(!mac).into_bytes()' : hmac_sha1_tag\n            $'Rc::<str>::from(base64::Engine::encode(&base64::engine::general_purpose::STANDARD, !tag))' : string\n    }",
+  timeout: 300_000
+)
+```
+
+#### sha1_hex_and_hmac_sha1_base64 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d sha1 hmac base64\n///> gleam\n\n:= ~text = \"abc\"\n(sha1_hex text, hmac_sha1_base64 \"key\" \"The quick brown fox jumps over the lazy dog\")\n|> _assert_eq (\"a9993e364706816aba3e25717850c26c9cd0d89d\", \"3nybhbi3iqa8ino29wqQcBydtNk=\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d sha1 hmac base64
+  ///> gleam
+
+  := ~text = "abc"
+  (sha1_hex text, hmac_sha1_base64 "key" "The quick brown fox jumps over the lazy dog")
+  |> _assert_eq ("a9993e364706816aba3e25717850c26c9cd0d89d", "3nybhbi3iqa8ino29wqQcBydtNk=")
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= hex_nibble (c : string) : i32 = sm'::index_of c \"0123456789abcdef\"\n\n:~ ^ reverse_bytes (xs : list u8) (acc : list u8) : list u8 =\n    ?= xs ?|\n    | [] => acc\n    | x :: rest => reverse_bytes rest (x :: acc)\n\n:~ ^ hex_bytes (text : string) (size : i32) (i : i32) (acc : list u8) : option (list u8) =\n    ? i >= size ?> Some (reverse_bytes acc [])\n    |:\n        := hi = hex_nibble (sm'::slice i i text)\n        := lo = hex_nibble (sm'::slice (i + 1i32) (i + 1i32) text)\n        ? hi < 0i32 || lo < 0i32 ?> None\n        |:\n            := byte : u8 = convert::convert (hi * 16i32 + lo)\n            hex_bytes text size (i + 2i32) (byte :: acc)\n\n:= decode_hex (text : string) : option (list u8) =\n    := size : i32 = sm'::length text\n    ? size % 2i32 <> 0i32 ?> None |: hex_bytes text size 0i32 []\n\n:= rust_ed25519_verify (key : array_base u8) (message : string) (signature : array_base u8) : bool =\n    $'ed25519_dalek::VerifyingKey::from_bytes(&<[u8; 32]>::try_from(&(*!key.borrow())[..]).unwrap()) \\\n        .map(|k| k.verify_strict(!message.as_bytes(), &ed25519_dalek::Signature::from_bytes( \\\n            &<[u8; 64]>::try_from(&(*!signature.borrow())[..]).unwrap())).is_ok()) \\\n        .unwrap_or(false)'\n\n:= ed25519_verify (public_key : string) (message : string) (signature : string) : bool =\n    ?= decode_hex public_key ?|\n    | None => !-\n    | Some key =>\n        ?= decode_hex signature ?|\n        | None => !-\n        | Some sig =>\n            ? (listm::length key : i32) <> 32i32 || (listm::length sig : i32) <> 64i32 ?> !-\n            |:\n                := key_array = key |> listm'::box |> listm'::to_array'\n                := sig_array = sig |> listm'::box |> listm'::to_array'\n                rust_ed25519_verify key_array message sig_array","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := hex_nibble (c : string) : i32 = sm'::index_of c "0123456789abcdef"
+
+  :~ ^ reverse_bytes (xs : list u8) (acc : list u8) : list u8 =
+      ?= xs ?|
+      | [] => acc
+      | x :: rest => reverse_bytes rest (x :: acc)
+
+  :~ ^ hex_bytes (text : string) (size : i32) (i : i32) (acc : list u8) : option (list u8) =
+      ? i >= size ?> Some (reverse_bytes acc [])
+      |:
+          := hi = hex_nibble (sm'::slice i i text)
+          := lo = hex_nibble (sm'::slice (i + 1i32) (i + 1i32) text)
+          ? hi < 0i32 || lo < 0i32 ?> None
+          |:
+              := byte : u8 = convert::convert (hi * 16i32 + lo)
+              hex_bytes text size (i + 2i32) (byte :: acc)
+
+  := decode_hex (text : string) : option (list u8) =
+      := size : i32 = sm'::length text
+      ? size % 2i32 <> 0i32 ?> None |: hex_bytes text size 0i32 []
+
+  := rust_ed25519_verify (key : array_base u8) (message : string) (signature : array_base u8) : bool =
+      $'ed25519_dalek::VerifyingKey::from_bytes(&<[u8; 32]>::try_from(&(*!key.borrow())[..]).unwrap()) \
+          .map(|k| k.verify_strict(!message.as_bytes(), &ed25519_dalek::Signature::from_bytes( \
+              &<[u8; 64]>::try_from(&(*!signature.borrow())[..]).unwrap())).is_ok()) \
+          .unwrap_or(false)'
+
+  := ed25519_verify (public_key : string) (message : string) (signature : string) : bool =
+      ?= decode_hex public_key ?|
+      | None => !-
+      | Some key =>
+          ?= decode_hex signature ?|
+          | None => !-
+          | Some sig =>
+              ? (listm::length key : i32) <> 32i32 || (listm::length sig : i32) <> 64i32 ?> !-
+              |:
+                  := key_array = key |> listm'::box |> listm'::to_array'
+                  := sig_array = sig |> listm'::box |> listm'::to_array'
+                  rust_ed25519_verify key_array message sig_array
+  """,
+  timeout: 300_000
+)
+```
+
+#### ed25519_verify_checks_rfc8032_vector_1 (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> rust -d ed25519-dalek\n\n:= ~key = \"d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a\"\n:= ~head = \"e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e06522490155\"\n:= ~signature = head ++# \"5fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b\"\n:= ~flipped = head ++# \"5fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100a\"\n:= valid = ed25519_verify key \"\" signature\n:= tampered = ed25519_verify key \"\" flipped\n:= short_key = ed25519_verify \"d75a98\" \"\" signature\n:= decoded = decode_hex \"0aff\" = Some [ 10u8; 255u8 ]\n(valid, tampered, short_key, decoded) |> _assert_eq (!+, !-, !-, !+)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> rust -d ed25519-dalek
+
+  := ~key = "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+  := ~head = "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e06522490155"
+  := ~signature = head ++# "5fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b"
+  := ~flipped = head ++# "5fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100a"
+  := valid = ed25519_verify key "" signature
+  := tampered = ed25519_verify key "" flipped
+  := short_key = ed25519_verify "d75a98" "" signature
+  := decoded = decode_hex "0aff" = Some [ 10u8; 255u8 ]
+  (valid, tampered, short_key, decoded) |> _assert_eq (!+, !-, !-, !+)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":= hash_to_port (text : string) : u16 =\n    := first_letter_code = text |> sm'::index 0i32 |> sm'::convert_to_utf32\n    := hash_part = text |> sm'::slice 0i32 7\n    := combined_value = convert::convert_i32_base 16 hash_part + first_letter_code |> convert::u16\n    trace Verbose\n        \\ () => \"crypto.hash_to_port\"\n        \\ () => { first_letter_code hash_part combined_value }\n    combined_value % 48128 + 1024","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  := hash_to_port (text : string) : u16 =
+      := first_letter_code = text |> sm'::index 0i32 |> sm'::convert_to_utf32
+      := hash_part = text |> sm'::slice 0i32 7
+      := combined_value = convert::convert_i32_base 16 hash_part + first_letter_code |> convert::u16
+      trace Verbose
+          \ () => "crypto.hash_to_port"
+          \ () => { first_letter_code hash_part combined_value }
+      combined_value % 48128 + 1024
+  """,
+  timeout: 300_000
+)
+```
+
+#### hash_to_port (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> cuda\n///> rust -d sha2\n///> typescript\n\n\"\\n\"\n|> hash_text\n|> hash_to_port\n|> _assert_eq 19273","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> cuda
+  ///> rust -d sha2
+  ///> typescript
+
+  "\n"
+  |> hash_text
+  |> hash_to_port
+  |> _assert_eq 19273
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///> fsharp\n\n:= main () =\n    $'let hash_text x = !hash_text x' : ()\n    $'let hash_to_port x = !hash_to_port x' : ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///> fsharp
+
+  := main () =
+      $'let hash_text x = !hash_text x' : ()
+      $'let hash_to_port x = !hash_to_port x' : ()
+  """,
+  timeout: 300_000
+)
+```

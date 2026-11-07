@@ -1,0 +1,27 @@
+:! text_array = array_base string
+
+:= create (n : i32) : text_array = text_array !!!!ArrayCreate(`string, n)
+:= get (values : text_array) (i : i32) : string =
+    ?= values ?|
+    | text_array raw => !!!!ArrayIndex(raw, i)
+:= set (values : text_array) (i : i32) (value : string) : () =
+    ?= values ?|
+    | text_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+:| slot =
+    | None
+    | Held : text_array * bool
+
+:~ score x : i32 =
+    ?= x ?|
+    | None => 1i32
+    | Held (values, on) =>
+        ? !!!!EQ(get values 0i32, "hi") && on ?> 0i32 |: 1i32
+
+:= main () : i32 =
+    := values = create 1i32
+    := ~word = "hi"
+    set values 0i32 word
+    := ~flag = !+
+    := held = ? flag ?> Held (values, flag) |: None
+    score held

@@ -1,0 +1,809 @@
+///- --package .
+:# inductive static =
+    :< testing
+
+:< sm'_operators
+:< syntax
+:< scope
+:< reduce
+:< env
+:< conversion
+:< typing
+
+:| inductive =
+    | Inductive : name * list name * i32 * term * list (name * term)
+
+:~ ^ named_in (ns : list string) (m : string) : bool =
+    ?= ns ?|
+    | n :: rest => n = m || named_in rest m
+    | [] => !-
+
+:~ ^ mentions (ns : list string) (t : term) : bool =
+    ?= t ?|
+    | Const ((name m), _) => named_in ns m
+    | App (f, a) => mentions ns f || mentions ns a
+    | Lam (_, _, ty, body) => mentions ns ty || mentions ns body
+    | Pi (_, _, ty, body) => mentions ns ty || mentions ns body
+    | Let (_, ty, v, body) => mentions ns ty || mentions ns v || mentions ns body
+    | Proj ((name m), _, x) => named_in ns m || mentions ns x
+    | _ => !-
+
+:~ ^ none_mention (ns : list string) (ts : list term) : bool =
+    ?= ts ?|
+    | t :: rest => ? mentions ns t ?> !- |: none_mention ns rest
+    | [] => !+
+
+:~ applies (ns : list string) (t : term) : bool =
+    ?= spine t [] ?|
+    | (Const ((name m), _), args) => named_in ns m && none_mention ns args
+    | _ => !-
+
+:~ ^ positive_arg (ns : list string) (t : term) : bool =
+    ?= t ?|
+    | Pi (_, _, dom, body) => ? mentions ns dom ?> !- |: positive_arg ns body
+    | _ => ? mentions ns t ?> applies ns t |: !+
+
+:~ ^ all_positive (ns : list string) (t : term) : bool =
+    ?= t ?|
+    | Pi (_, _, dom, body) => positive_arg ns dom && all_positive ns body
+    | _ => !+
+
+:~ ^ ends_in_sort (t : term) : bool =
+    ?= t ?|
+    | Pi (_, _, _, body) => ends_in_sort body
+    | Sort _ => !+
+    | _ => !-
+
+:~ pi_over (n : name) (ty : term) (body : term) : term = Pi (n, Default, ty, abstract_fvar body n)
+
+:~ ^ pis (bs : list (name * term)) (body : term) : term =
+    ?= bs ?|
+    | (n, ty) :: rest => pi_over n ty (pis rest body)
+    | [] => body
+
+:~ ^ binders_then (a : list (name * term)) (b : list (name * term)) : list (name * term) =
+    ?= a ?|
+    | x :: rest => x :: binders_then rest b
+    | [] => b
+
+:~ ^ opened_from (ty : term) (prefix : string) (count : i32) (i : i32) : list (name * term) * term =
+    ?= ty ?|
+    | Pi (_, _, dom, body) =>
+        := n = name (prefix ++# sm'::obj_to_string i)
+        := opened = open_with body n
+        := rest, conclusion = ? i + 1i32 >= count ?> ([], opened) |: opened_from opened prefix count (i + 1i32)
+        ((n, dom) :: rest), conclusion
+    | _ => [], ty
+
+:~ params_of (ty : term) (np : i32) : list (name * term) * term = ? np <= 0i32 ?> ([], ty) |: opened_from ty "p" np 0i32
+
+:~ args_of (ty : term) : list (name * term) * term = opened_from ty "a" 1000000i32 0i32
+
+:~ ^ arg_vars (args : list (name * term)) : list term =
+    ?= args ?|
+    | (n, _) :: rest => FVar n :: arg_vars rest
+    | [] => []
+
+:~ levels_of (ps : list name) : list level = listm::map (\ p => Param p) ps
+
+:~ lam_over (n : name) (ty : term) (body : term) : term = Lam (n, Default, ty, abstract_fvar body n)
+
+:~ ^ lams (bs : list (name * term)) (body : term) : term =
+    ?= bs ?|
+    | (n, ty) :: rest => lam_over n ty (lams rest body)
+    | [] => body
+
+:~ indices_of (rest : term) : list (name * term) * term = opened_from rest "i" 1000000i32 0i32
+
+:~ ^ same_all (xs : list term) (ys : list term) : bool =
+    ?= xs ?|
+    | x :: rest =>
+        ?= ys ?|
+        | y :: more => same_as x y && same_all rest more
+        | [] => !-
+    | [] =>
+        ?= ys ?|
+        | [] => !+
+        | _ => !-
+
+:~ index_args (np : i32) (ty : term) : list term =
+    := _, targs = spine ty []
+    drop targs np
+
+:~ positivity_refusal (ns : list string) (c : name) (ty : term) : option refusal =
+    ? all_positive ns ty ?> None |: Some (NotPositive (name_text c))
+
+:~ concludes_uniformly
+    (ns : list string) (n : name) (ps : list name) (params : list (name * term)) (np : i32) (ni : i32) (conclusion : term)
+    : bool
+    =
+    := head, targs = spine conclusion []
+    := own_head = same_as head (Const (n, levels_of ps))
+    := own_params = same_all (take targs np) (arg_vars params)
+    := arity = (listm::length targs : i32) = np + ni
+    own_head && own_params && arity && none_mention ns (drop targs np)
+
+:~ constructor_refusal
+    (ns : list string) (n : name) (ps : list name) (params : list (name * term)) (np : i32) (ni : i32) (c : name)
+    (cty : term)
+    : option refusal
+    =
+    := cparams, body = params_of cty np
+    := _, conclusion = args_of body
+    := uniform = (listm::length cparams : i32) = np && concludes_uniformly ns n ps params np ni conclusion
+    ? uniform ?> positivity_refusal ns c cty |: Some (NotConstructorOf (name_text c))
+
+:~ ^ admit_constructors
+    (env : list decl) (ns : list string) (n : name) (ps : list name) (params : list (name * term)) (np : i32) (ni : i32)
+    (cs : list (name * term))
+    : admitted
+    =
+    ?= cs ?|
+    | (c, cty) :: rest =>
+        ?= constructor_refusal ns n ps params np ni c cty ?|
+        | Some why => Refused why
+        | None =>
+            ?= admit env (Axiom (c, ps, cty)) ?|
+            | Admitted more => admit_constructors more ns n ps params np ni rest
+            | other => other
+    | [] => Admitted env
+
+:~ branches_of (n : name) (ty : term) : list (name * term) * term =
+    opened_from ty (name_text n ++# "_x") 1000000i32 0i32
+
+:~ recursive_call (np : i32) (head : term) (n : name) (ty : term) : term =
+    := xs, conclusion = branches_of n ty
+    lams xs (apply_all head (joined (index_args np conclusion) [ apply_all (FVar n) (arg_vars xs) ]))
+
+:~ recursive_type (np : i32) (motive : term) (n : name) (ty : term) : term =
+    := xs, conclusion = branches_of n ty
+    pis xs (apply_all motive (joined (index_args np conclusion) [ apply_all (FVar n) (arg_vars xs) ]))
+
+:~ ^ target_in (fams : list (string * term * term)) (conclusion : term) : option (term * term) =
+    ?= fams ?|
+    | (f, motive, head) :: rest => ? applies [ f ] conclusion ?> Some (motive, head) |: target_in rest conclusion
+    | [] => None
+
+:~ recursive_target (fams : list (string * term * term)) (n : name) (ty : term) : option (term * term) =
+    := _, conclusion = branches_of n ty
+    target_in fams conclusion
+
+:~ ^ ih_binders (fams : list (string * term * term)) (np : i32) (args : list (name * term)) : list (name * term) =
+    ?= args ?|
+    | (n, ty) :: rest =>
+        := more = ih_binders fams np rest
+        ?= recursive_target fams n ty ?|
+        | Some (motive, _) => (name ("ih_" ++# name_text n), recursive_type np motive n ty) :: more
+        | None => more
+    | [] => []
+
+:~ ^ ih_terms (fams : list (string * term * term)) (np : i32) (args : list (name * term)) : list term =
+    ?= args ?|
+    | (n, ty) :: rest =>
+        := more = ih_terms fams np rest
+        ?= recursive_target fams n ty ?|
+        | Some (_, head) => recursive_call np head n ty :: more
+        | None => more
+    | [] => []
+
+:~ minor_type
+    (fams : list (string * term * term)) (us : list level) (params : list (name * term)) (np : i32) (motive : term)
+    (c : name) (cty : term)
+    : term
+    =
+    := _, body = params_of cty np
+    := args, conclusion = args_of body
+    := own = apply_all (Const (c, us)) (joined (arg_vars params) (arg_vars args))
+    := result = apply_all motive (joined (index_args np conclusion) [ own ])
+    pis (binders_then args (ih_binders fams np args)) result
+
+:~ ^ minors
+    (fams : list (string * term * term)) (us : list level) (params : list (name * term)) (np : i32) (motive : term)
+    (cs : list (name * term))
+    : list (name * term)
+    =
+    ?= cs ?|
+    | (c, cty) :: rest =>
+        := minor = minor_type fams us params np motive c cty
+        (name ("m_" ++# name_text c), minor) :: minors fams us params np motive rest
+    | [] => []
+
+:~ ^ rules_of
+    (fams : list (string * term * term)) (np : i32) (front : list (name * term)) (cs : list (name * term))
+    : list (name * term)
+    =
+    ?= cs ?|
+    | (c, cty) :: rest =>
+        := _, body = params_of cty np
+        := args, _ = args_of body
+        := minor = FVar (name ("m_" ++# name_text c))
+        := reduct = apply_all minor (joined (arg_vars args) (ih_terms fams np args))
+        (c, lams (binders_then front args) reduct) :: rules_of fams np front rest
+    | [] => []
+
+:~ rec_level () : name = name "rec_u"
+
+:| member =
+    | Member : name * list (name * term) * list (name * term)
+
+:~ member_motive (n : name) : term = FVar (name ("motive_" ++# name_text n))
+
+:~ member_major (us : list level) (params : list (name * term)) (n : name) (indices : list (name * term)) : term =
+    apply_all (apply_all (Const (n, us)) (arg_vars params)) (arg_vars indices)
+
+:~ ^ motive_binders
+    (us : list level) (params : list (name * term)) (target : level) (ms : list member)
+    : list (name * term)
+    =
+    ?= ms ?|
+    | (Member (n, indices, _)) :: rest =>
+        := motive_type = pis indices (Pi (name "t", Default, member_major us params n indices, Sort target))
+        (name ("motive_" ++# name_text n), motive_type) :: motive_binders us params target rest
+    | [] => []
+
+:~ ^ group_minors
+    (fams : list (string * term * term)) (us : list level) (params : list (name * term)) (np : i32) (ms : list member)
+    : list (name * term)
+    =
+    ?= ms ?|
+    | (Member (n, _, cs)) :: rest =>
+        binders_then (minors fams us params np (member_motive n) cs) (group_minors fams us params np rest)
+    | [] => []
+
+:~ ^ group_fams (rec_ps : list name) (front : list (name * term)) (ms : list member) : list (string * term * term) =
+    ?= ms ?|
+    | (Member (n, _, _)) :: rest =>
+        := head = apply_all (Const (name (name_text n ++# ".rec"), levels_of rec_ps)) (arg_vars front)
+        (name_text n, member_motive n, head) :: group_fams rec_ps front rest
+    | [] => []
+
+:~ ^ admit_recursors
+    (env : list decl) (us : list level) (params : list (name * term)) (np : i32) (rec_ps : list name)
+    (fams : list (string * term * term)) (front : list (name * term)) (ms : list member)
+    : admitted
+    =
+    ?= ms ?|
+    | (Member (n, indices, cs)) :: rest =>
+        := major = member_major us params n indices
+        := conclusion = apply_all (member_motive n) (joined (arg_vars indices) [ FVar (name "t") ])
+        := ty = pis (binders_then front (binders_then indices [ name "t", major ])) conclusion
+        := ni = (listm::length indices : i32)
+        := nfront = (listm::length front : i32)
+        := recursor = Recursor (name (name_text n ++# ".rec"), rec_ps, ty, np, ni, rules_of fams np front cs, nfront)
+        ?= sort_of env [] ty ?|
+        | IsSort _ => admit_recursors (recursor :: env) us params np rec_ps fams front rest
+        | NotSort why => Refused why
+    | [] => Admitted env
+
+:~ admit_group_recursors
+    (env : list decl) (ps : list name) (params : list (name * term)) (np : i32) (ms : list member)
+    (rec_ps : list name) (target : level)
+    : admitted
+    =
+    := us = levels_of ps
+    := motives = motive_binders us params target ms
+    := draft = group_fams rec_ps [] ms
+    := minors_all = group_minors draft us params np ms
+    := front = binders_then params (binders_then motives minors_all)
+    := fams = group_fams rec_ps front ms
+    admit_recursors env us params np rec_ps fams front ms
+
+:~ ^ field_context (bs : list (name * term)) : list (string * term) =
+    ?= bs ?|
+    | (n, ty) :: rest => (name_text n, ty) :: field_context rest
+    | [] => []
+
+:~ is_prop_sort (s : sorted) : bool =
+    ?= s ?|
+    | IsSort l => is_zero_level l
+    | NotSort _ => !-
+
+:~ ^ among (t : term) (ts : list term) : bool =
+    ?= ts ?|
+    | x :: rest => same_as t x || among t rest
+    | [] => !-
+
+:~ ^ fields_small
+    (env : list decl) (ctx : list (string * term)) (indices : list term) (fields : list (name * term))
+    : bool
+    =
+    ?= fields ?|
+    | (f, ty) :: rest =>
+        := small = is_prop_sort (sort_of env ctx ty) || among (FVar f) indices
+        small && fields_small env ((name_text f, ty) :: ctx) indices rest
+    | [] => !+
+
+:~ eliminates_large (env : list decl) (np : i32) (cs : list (name * term)) : bool =
+    ?= cs ?|
+    | (_, cty) :: rest =>
+        ?= rest ?|
+        | [] =>
+            := cparams, body = params_of cty np
+            := args, conclusion = args_of body
+            fields_small env (field_context cparams) (index_args np conclusion) args
+        | _ => !-
+    | [] => !+
+
+:~ ^ group_names (group : list inductive) : list string =
+    ?= group ?|
+    | (Inductive (n, _, _, _, _)) :: rest => name_text n :: group_names rest
+    | [] => []
+
+:~ ^ admit_family_types (env : list decl) (group : list inductive) : admitted =
+    ?= group ?|
+    | (Inductive (n, ps, _, ty, _)) :: rest => ? ends_in_sort ty ?> type_then env n ps ty rest |: Refused (NotAType (term_text ty))
+    | [] => Admitted env
+:& :~ type_then (env : list decl) (n : name) (ps : list name) (ty : term) (rest : list inductive) : admitted =
+    ?= admit env (Axiom (n, ps, ty)) ?|
+    | Admitted more => admit_family_types more rest
+    | other => other
+
+:~ ^ admit_group_constructors (env : list decl) (ns : list string) (group : list inductive) : admitted =
+    ?= group ?|
+    | (Inductive (n, ps, np, ty, cs)) :: rest =>
+        := params, after = params_of ty np
+        := indices, _ = indices_of after
+        ?= admit_constructors env ns n ps params np (listm::length indices : i32) cs ?|
+        | Admitted more => admit_group_constructors more ns rest
+        | other => other
+    | [] => Admitted env
+
+:~ ^ members_of (group : list inductive) : list member =
+    ?= group ?|
+    | (Inductive (n, _, np, ty, cs)) :: rest =>
+        := _, after = params_of ty np
+        := indices, _ = indices_of after
+        Member (n, indices, cs) :: members_of rest
+    | [] => []
+
+:~ ^ never_zero (l : level) : bool =
+    ?= l ?|
+    | Succ _ => !+
+    | Max (a, b) => never_zero a || never_zero b
+    | IMax (_, b) => never_zero b
+    | _ => !-
+
+:~ group_recursors
+    (env : list decl) (ps : list name) (params : list (name * term)) (np : i32) (ms : list member) (sort : term)
+    (large_prop : bool)
+    : admitted
+    =
+    := large = admit_group_recursors env ps params np ms (rec_level () :: ps) (Param (rec_level ()))
+    ?= sort ?|
+    | Sort l => ? never_zero l || large_prop ?> large |: admit_group_recursors env ps params np ms ps Zero
+    | _ => Admitted env
+
+:~ admit_mutual (env : list decl) (group : list inductive) : admitted =
+    ?= group ?|
+    | (Inductive (_, ps, np, ty, cs)) :: rest =>
+        := params, after = params_of ty np
+        := _, sort = indices_of after
+        := single = (listm::length rest : i32) = 0i32
+        ?= admit_family_types env group ?|
+        | Admitted typed =>
+            ?= admit_group_constructors typed (group_names group) group ?|
+            | Admitted full => group_recursors full ps params np (members_of group) sort (single && eliminates_large full np cs)
+            | other => other
+        | other => other
+    | [] => Admitted env
+
+:~ admit_inductive (env : list decl) (ind : inductive) : admitted = admit_mutual env [ ind ]
+
+:~ nat () : term = Const (name "Nat", [])
+
+:~ nat_decl () : inductive =
+    := succ = Pi (name "n", Default, nat (), nat ())
+    Inductive (name "Nat", [], 0i32, type_sort (), [ name "zero", nat (); name "succ", succ ])
+
+///> rust
+:# nat_is_admitted_with_its_constructors_typed =
+    := env =
+        ?= admit_inductive [] (nat_decl ()) ?|
+        | Admitted e => e
+        | Refused _ => []
+    := one = App (Const (name "succ", []), Const (name "zero", []))
+    (admitted_text (admit_inductive [] (nat_decl ())), type_text (infer env [] one)) |> _assert_eq ("admitted 4", "Nat")
+
+///> rust
+:# a_negative_occurrence_or_a_foreign_conclusion_is_refused =
+    := bad = Const (name "Bad", [])
+    := family = \ (mk : term) => Inductive (name "Bad", [], 0i32, type_sort (), [ name "mk", mk ])
+    := negative = family (Pi (name "f", Default, Pi (name "x", Default, bad, bad), bad))
+    := foreign = family (Pi (name "x", Default, bad, Sort Zero))
+    := not_a_family = Inductive (name "Bad", [], 0i32, FVar (name "q"), [])
+    := texts =
+        admitted_text (admit_inductive [] negative),
+        admitted_text (admit_inductive [] foreign),
+        admitted_text (admit_inductive [] not_a_family)
+    texts |> _assert_eq ("not strictly positive: mk", "not a constructor of its type: mk", "not a type: q")
+
+:~ nat_env () : list decl =
+    ?= admit_inductive [] (nat_decl ()) ?|
+    | Admitted e => e
+    | Refused _ => []
+
+:~ pred_of (major : term) : term =
+    := motive = Lam (name "n", Default, nat (), nat ())
+    := step = Lam (name "n", Default, nat (), Lam (name "ih", Default, nat (), BVar 1i32))
+    apply_all (Const (name "Nat.rec", [ Succ Zero ])) [ motive; Const (name "zero", []); step; major ]
+
+:~ succ_of (t : term) : term = App (Const (name "succ", []), t)
+
+///> rust
+:# iota_runs_the_recursor_on_a_constructor =
+    := two = succ_of (succ_of (Const (name "zero", [])))
+    whnf (nat_env ()) (pred_of two) 20i32
+    |> _assert_eq (Whnf (succ_of (Const (name "zero", [])), [ Iota "Nat.rec"; Beta; Beta ]))
+
+///> rust
+:# the_generated_recursor_types_its_applications =
+    := two = succ_of (succ_of (Const (name "zero", [])))
+    := fake = Recursor (name "fake", [], Sort Zero, 0i32, 0i32, [], 0i32)
+    (type_text (check (nat_env ()) [] (pred_of two) (nat ())), admitted_text (admit [] fake))
+    |> _assert_eq ("Nat", "only the kernel generates recursors: fake")
+
+:~ true_env () : list decl =
+    ?= admit_inductive [] (Inductive (name "True", [], 0i32, Sort Zero, [ name "intro", Const (name "True", []) ])) ?|
+    | Admitted e => e
+    | Refused _ => []
+
+:~ either_env () : list decl =
+    := either = Const (name "Either", [])
+    := family = Inductive (name "Either", [], 0i32, Sort Zero, [ name "left", either; name "right", either ])
+    ?= admit_inductive (true_env ()) family ?|
+    | Admitted e => e
+    | Refused _ => []
+
+///> rust
+:# a_proposition_eliminates_only_into_prop_unless_it_is_a_subsingleton =
+    := truth = Const (name "True", [])
+    := intro = Const (name "intro", [])
+    := either = Const (name "Either", [])
+    := small = apply_all (Const (name "True.rec", [ Zero ])) [ Lam (name "t", Default, truth, truth); intro; intro ]
+    := subsingleton =
+        apply_all (Const (name "True.rec", [ Succ Zero ])) [ Lam (name "t", Default, truth, Sort Zero); truth; intro ]
+    := large =
+        apply_all (Const (name "Either.rec", [])) [
+            Lam (name "t", Default, either, Sort Zero)
+            truth
+            truth
+            Const (name "left", [])
+        ]
+    := env = either_env ()
+    := small_type = type_text (check env [] small truth)
+    := subsingleton_type = type_text (check env [] subsingleton (Sort Zero))
+    (whnf env small 10i32, small_type, subsingleton_type, type_text (infer env [] large))
+    |> _assert_eq (Whnf (intro, [ Iota "True.rec" ]), "True", "Prop", "mismatch: Type vs Prop")
+
+:~ list_of (a : term) : term = App (Const (name "List", []), a)
+
+:~ list_env () : list decl =
+    := nil = Pi (name "A", Default, type_sort (), list_of (BVar 0i32))
+    := tail = Pi (name "tl", Default, list_of (BVar 1i32), list_of (BVar 2i32))
+    := cons = Pi (name "A", Default, type_sort (), Pi (name "a", Default, BVar 0i32, tail))
+    := family =
+        Inductive (
+            name "List",
+            [],
+            1i32,
+            Pi (name "A", Default, type_sort (), type_sort ()),
+            [ name "nil", nil; name "cons", cons ]
+        )
+    ?= admit_inductive (nat_env ()) family ?|
+    | Admitted e => e
+    | Refused _ => []
+
+:~ head_or_zero (xs : term) : term =
+    := motive = Lam (name "l", Default, list_of (nat ()), nat ())
+    := step =
+        Lam (name "a", Default, nat (), Lam (name "tl", Default, list_of (nat ()), Lam (name "ih", Default, nat (),
+            BVar 2i32)))
+    apply_all (Const (name "List.rec", [ Succ Zero ])) [ nat (); motive; Const (name "zero", []); step; xs ]
+
+///> rust
+:# a_parameterized_recursor_skips_the_parameters_in_iota =
+    := one = succ_of (Const (name "zero", []))
+    := xs = apply_all (Const (name "cons", [])) [ nat (); one; App (Const (name "nil", []), nat ()) ]
+    := env = list_env ()
+    (listm::length env : i32, whnf env (head_or_zero xs) 20i32, type_text (check env [] (head_or_zero xs) (nat ())))
+    |> _assert_eq (8i32, Whnf (one, [ Iota "List.rec"; Beta; Beta; Beta ]), "Nat")
+
+///> rust
+:# a_constructor_must_return_the_family_at_its_own_parameters =
+    := odd = Pi (name "A", Default, type_sort (), App (Const (name "Odd", []), Sort Zero))
+    := family = Inductive (name "Odd", [], 1i32, Pi (name "A", Default, type_sort (), type_sort ()), [ name "mk", odd ])
+    admitted_text (admit_inductive [] family) |> _assert_eq "not a constructor of its type: mk"
+
+:~ eq_env () : list decl =
+    := u = Param (name "u")
+    := former =
+        Pi (name "A", Default, Sort u, Pi (name "a", Default, BVar 0i32, Pi (name "b", Default, BVar 1i32, Sort Zero)))
+    := refl_type = apply_all (Const (name "Eq", [ u ])) [ BVar 1i32; BVar 0i32; BVar 0i32 ]
+    := refl = Pi (name "A", Default, Sort u, Pi (name "a", Default, BVar 0i32, refl_type))
+    := truth = Inductive (name "True", [], 0i32, Sort Zero, [ name "intro", Const (name "True", []) ])
+    ?= admit_inductive (nat_env ()) truth ?|
+    | Admitted base =>
+        ?= admit_inductive base (Inductive (name "Eq", [ name "u" ], 2i32, former, [ name "Eq.refl", refl ])) ?|
+        | Admitted e => e
+        | Refused _ => []
+    | Refused _ => []
+
+///> rust
+:# an_indexed_family_eliminates_along_its_index =
+    := zero = Const (name "zero", [])
+    := truth = Const (name "True", [])
+    := intro = Const (name "intro", [])
+    := level = [ Succ Zero ]
+    := motive =
+        Lam (
+            name "b",
+            Default,
+            nat (),
+            Lam (name "h", Default, apply_all (Const (name "Eq", level)) [ nat (); zero; BVar 0i32 ], truth)
+        )
+    := proof = apply_all (Const (name "Eq.refl", level)) [ nat (); zero ]
+    := use = apply_all (Const (name "Eq.rec", [ Zero; Succ Zero ])) [ nat (); zero; motive; intro; zero; proof ]
+    := env = eq_env ()
+    (listm::length env : i32, whnf env use 10i32, type_text (check env [] use truth))
+    |> _assert_eq (10i32, Whnf (intro, [ Iota "Eq.rec" ]), "True")
+
+:~ tree () : term = Const (name "Tree", [])
+
+:~ tree_env () : list decl =
+    := node = Pi (name "f", Default, Pi (name "n", Default, nat (), tree ()), tree ())
+    := family = Inductive (name "Tree", [], 0i32, type_sort (), [ name "leaf", tree (); name "node", node ])
+    ?= admit_inductive (nat_env ()) family ?|
+    | Admitted e => e
+    | Refused _ => []
+
+///> rust
+:# an_infinitely_branching_argument_gets_a_function_hypothesis =
+    := motive = Lam (name "t", Default, tree (), nat ())
+    := step =
+        Lam (name "f", Default, Pi (name "n", Default, nat (), tree ()),
+            Lam (name "ih", Default, Pi (name "n", Default, nat (), nat ()), App (BVar 0i32, Const (name "zero", []))))
+    := branches = Lam (name "n", Default, nat (), Const (name "leaf", []))
+    := use =
+        apply_all (Const (name "Tree.rec", [ Succ Zero ])) [
+            motive
+            Const (name "zero", [])
+            step
+            App (Const (name "node", []), branches)
+        ]
+    := env = tree_env ()
+    (whnf env use 30i32, type_text (check env [] use (nat ())))
+    |> _assert_eq (Whnf (Const (name "zero", []), [ Iota "Tree.rec"; Beta; Beta; Beta; Beta; Iota "Tree.rec" ]), "Nat")
+
+:~ quotient_env () : list decl =
+    := relation_type = Pi (name "a", Default, nat (), Pi (name "b", Default, nat (), Sort Zero))
+    ?= admit_quotients (eq_env ()) ?|
+    | Admitted e => Axiom (name "R", [], relation_type) :: e
+    | Refused _ => []
+
+:~ successor () : term = Lam (name "n", Default, nat (), App (Const (name "succ", []), BVar 0i32))
+
+:~ respects_successor () : term =
+    := related = App (App (Const (name "R", []), BVar 1i32), BVar 0i32)
+    := image = \ (x : term) => App (successor (), x)
+    Pi (name "a", Default, nat (), Pi (name "b", Default, nat (),
+        Pi (name "p", Default, related, eq_of (Succ Zero) (nat ()) (image (BVar 2i32)) (image (BVar 1i32)))))
+
+///> rust
+:# quotients_lift_and_induct_through_their_constructor =
+    := one = Succ Zero
+    := zero = Const (name "zero", [])
+    := r = Const (name "R", [])
+    := made = apply_all (Const (name "Quot.mk", [ one ])) [ nat (); r; zero ]
+    := env = Axiom (name "h", [], respects_successor ()) :: quotient_env ()
+    := lifted = apply_all (Const (name "Quot.lift", [ one; one ])) [ nat (); r; nat (); successor (); Const (name "h", []); made ]
+    := truth = Const (name "True", [])
+    := motive = Lam (name "q", Default, quot_of one (nat ()) r, truth)
+    := every = Lam (name "a", Default, nat (), Const (name "intro", []))
+    := inducted = apply_all (Const (name "Quot.ind", [ one ])) [ nat (); r; motive; every; made ]
+    (
+        whnf env lifted 20i32,
+        type_text (check env [] lifted (nat ())),
+        whnf env inducted 20i32,
+        type_text (check env [] inducted truth)
+    )
+    |> _assert_eq (
+        Whnf (App (Const (name "succ", []), zero), [ Iota "Quot.lift"; Beta ]),
+        "Nat",
+        Whnf (Const (name "intro", []), [ Iota "Quot.ind"; Beta ]),
+        "True"
+    )
+
+///> rust
+:# quotients_need_eq_and_only_the_kernel_declares_them =
+    := fake = Quotient (name "Quot", QuotType, [], Sort Zero)
+    (admitted_text (admit_quotients (nat_env ())), admitted_text (admit (eq_env ()) fake), admitted_text (admit_quotients (eq_env ())))
+    |> _assert_eq ("quotients need Eq declared first", "only the kernel declares quotients: Quot", "admitted 15")
+
+:~ pair () : term = Const (name "Pair", [])
+
+:~ pair_env () : list decl =
+    := made = App (App (pair (), BVar 3i32), BVar 2i32)
+    := mk = Pi (name "A", Default, type_sort (), Pi (name "B", Default, type_sort (),
+        Pi (name "a", Default, BVar 1i32, Pi (name "b", Default, BVar 1i32, made))))
+    := family = Pi (name "A", Default, type_sort (), Pi (name "B", Default, type_sort (), type_sort ()))
+    ?= admit_inductive (nat_env ()) (Inductive (name "Pair", [], 2i32, family, [ name "Pair.mk", mk ])) ?|
+    | Admitted e => e
+    | Refused _ => []
+
+///> rust
+:# a_structure_projects_its_fields_and_eta_identifies_it_with_its_fields =
+    := zero = Const (name "zero", [])
+    := one = succ_of zero
+    := made = apply_all (Const (name "Pair.mk", [])) [ nat (); nat (); zero; one ]
+    := env = pair_env ()
+    := p = FVar (name "p")
+    := pair_nn = apply_all (pair ()) [ nat (); nat () ]
+    := rebuilt = apply_all (Const (name "Pair.mk", [])) [ nat (); nat (); Proj (name "Pair", 0i32, p); Proj (name "Pair", 1i32, p) ]
+    (
+        whnf env (Proj (name "Pair", 1i32, made)) 10i32,
+        type_text (infer env [] (Proj (name "Pair", 0i32, made))),
+        defeq_text (defeq_with env p rebuilt 10i32),
+        type_text (infer env [ "p", pair_nn ] (Proj (name "Pair", 1i32, p))),
+        type_text (infer env [] (Proj (name "Pair", 2i32, made)))
+    )
+    |> _assert_eq (Whnf (one, [ Project "Pair" ]), "Nat", "same in 0", "Nat", "not a structure projection: Pair")
+
+:~ ex_env () : list decl =
+    := ex = Const (name "Ex", [])
+    := pred = Pi (name "a", Default, BVar 0i32, Sort Zero)
+    := witnessed = Pi (name "h", Default, App (BVar 1i32, BVar 0i32), App (App (ex, BVar 3i32), BVar 2i32))
+    := intro = Pi (name "A", Default, type_sort (), Pi (name "P", Default, pred, Pi (name "w", Default, BVar 1i32, witnessed)))
+    := family = Pi (name "A", Default, type_sort (), Pi (name "P", Default, pred, Sort Zero))
+    ?= admit_inductive (eq_env ()) (Inductive (name "Ex", [], 2i32, family, [ name "Ex.intro", intro ])) ?|
+    | Admitted e => e
+    | Refused _ => []
+
+///> rust
+:# a_proposition_projects_independent_proofs_but_not_a_witness_or_what_depends_on_it =
+    := truth = Const (name "True", [])
+    := holds = Lam (name "n", Default, nat (), truth)
+    := e = FVar (name "e")
+    := b = FVar (name "b")
+    := both = Pi (name "l", Default, truth, Pi (name "r", Default, truth, Const (name "Both", [])))
+    := both_env =
+        ?= admit_inductive (ex_env ()) (Inductive (name "Both", [], 0i32, Sort Zero, [ name "Both.intro", both ])) ?|
+        | Admitted grown => grown
+        | Refused _ => []
+    := ctx = [ "e", apply_all (Const (name "Ex", [])) [ nat (); holds ]; "b", Const (name "Both", []) ]
+    (
+        type_text (check both_env ctx (Proj (name "Ex", 1i32, e)) truth),
+        type_text (infer both_env ctx (Proj (name "Ex", 0i32, e))),
+        type_text (check both_env ctx (Proj (name "Both", 1i32, b)) truth)
+    )
+    |> _assert_eq ("a proposition projects only proofs: Ex", "a proposition projects only proofs: Ex", "True")
+
+:~ forest_family () : inductive =
+    := tree = Const (name "MTree", [])
+    := forest = Const (name "MForest", [])
+    := cons = Pi (name "t", Default, tree, Pi (name "f", Default, forest, forest))
+    Inductive (name "MForest", [], 0i32, type_sort (), [ name "MForest.nil", forest; name "MForest.cons", cons ])
+
+:~ tree_family () : inductive =
+    := tree = Const (name "MTree", [])
+    := node = Pi (name "f", Default, Const (name "MForest", []), tree)
+    Inductive (name "MTree", [], 0i32, type_sort (), [ name "MTree.node", node ])
+
+:~ same_flag (d : defeq) : bool =
+    ?= d ?|
+    | Same _ => !+
+    | _ => !-
+
+///> rust
+:# a_mutual_pair_recurses_through_both_families =
+    := tree = Const (name "MTree", [])
+    := forest = Const (name "MForest", [])
+    := zero = Const (name "zero", [])
+    := admitted = admit_mutual (nat_env ()) [ tree_family (); forest_family () ]
+    := env =
+        ?= admitted ?|
+        | Admitted e => e
+        | Refused _ => []
+    := on_node = Lam (name "f", Default, forest, Lam (name "ih", Default, nat (), BVar 0i32))
+    := on_cons =
+        Lam (name "t", Default, tree, Lam (name "f", Default, forest,
+            Lam (name "it", Default, nat (), Lam (name "if", Default, nat (), succ_of (BVar 0i32)))))
+    := motives = [ Lam (name "t", Default, tree, nat ()); Lam (name "f", Default, forest, nat ()) ]
+    := nil = Const (name "MForest.nil", [])
+    := leaf = App (Const (name "MTree.node", []), nil)
+    := grove = App (Const (name "MTree.node", []), apply_all (Const (name "MForest.cons", [])) [ leaf; nil ])
+    := count = apply_all (Const (name "MTree.rec", [ Succ Zero ])) (joined motives [ on_node; zero; on_cons; grove ])
+    := bad = Inductive (name "MForest", [], 0i32, type_sort (), [ name "MForest.bad", Pi (name "k", Default, Pi (name "x", Default, tree, tree), forest) ])
+    (
+        admitted_text admitted,
+        type_text (check env [] count (nat ())),
+        same_flag (defeq_with env count (succ_of zero) 50i32),
+        admitted_text (admit_mutual (nat_env ()) [ tree_family (); bad ])
+    )
+    |> _assert_eq ("admitted 11", "Nat", !+, "not strictly positive: MForest.bad")
+
+:~ ^ reduces_preserving_type (env : list decl) (ts : list term) : list bool =
+    ?= ts ?|
+    | t :: rest =>
+        := kept =
+            ?= infer env [] t ?|
+            | Typed ty =>
+                ?= whnf env t 50i32 ?|
+                | Whnf (r, _) =>
+                    ?= check env [] r ty ?|
+                    | Typed _ => !+
+                    | Rejected _ => !-
+                | OutOfFuel _ => !-
+            | Rejected _ => !-
+        kept :: reduces_preserving_type env rest
+    | [] => []
+
+///> rust
+:# reduction_preserves_the_type_of_beta_delta_and_iota_redexes =
+    := zero = Const (name "zero", [])
+    := two = succ_of (succ_of zero)
+    := beta = App (Lam (name "n", Default, nat (), succ_of (BVar 0i32)), zero)
+    := xs = apply_all (Const (name "cons", [])) [ nat (); two; App (Const (name "nil", []), nat ()) ]
+    reduces_preserving_type (list_env ()) [ beta; pred_of two; head_or_zero xs ]
+    |> _assert_eq [ !+; !+; !+ ]
+
+///> rust
+:# a_proof_of_an_equation_reduces_by_k_only_at_matching_indices =
+    := zero = Const (name "zero", [])
+    := one = App (Const (name "succ", []), zero)
+    := level = [ Succ Zero ]
+    := equal = Lam (name "h", Default, apply_all (Const (name "Eq", level)) [ nat (); zero; BVar 0i32 ], Const (name "True", []))
+    := motive = Lam (name "b", Default, nat (), equal)
+    := intro = Const (name "intro", [])
+    := at = \ (b : term) => apply_all (Const (name "Eq.rec", [ Zero; Succ Zero ])) [ nat (); zero; motive; intro; b; FVar (name "h") ]
+    (whnf (eq_env ()) (at zero) 10i32, whnf (eq_env ()) (at one) 10i32)
+    |> _assert_eq (Whnf (intro, [ Iota "Eq.rec" ]), Whnf (at one, []))
+///> rust
+:# two_hypotheses_proving_one_proposition_are_definitionally_equal =
+    := truth = Const (name "True", [])
+    := p = FVar (name "p")
+    := q = FVar (name "q")
+    := ctx = [ "p", truth; "q", truth ]
+    := claim = apply_all (Const (name "Eq", [ Zero ])) [ truth; p; q ]
+    := proof = apply_all (Const (name "Eq.refl", [ Zero ])) [ truth; p ]
+    := accepted =
+        ?= check (eq_env ()) ctx proof claim ?|
+        | Typed _ => !+
+        | Rejected _ => !-
+    accepted |> _assert_eq !+
+///> rust
+:# a_nat_literal_is_typed_reduced_and_converted_like_its_successor_chain =
+    := env = nat_env ()
+    := two_chain = succ_of (succ_of (Const (name "zero", [])))
+    := converts =
+        ?= defeq_with env (NatLit 2u64) two_chain 20i32 ?|
+        | Same _ => !+
+        | _ => !-
+    := differs =
+        ?= defeq_with env (NatLit 2u64) (NatLit 3u64) 20i32 ?|
+        | Same _ => !-
+        | _ => !+
+    (type_text (infer env [] (NatLit 3u64)), whnf env (pred_of (NatLit 3u64)) 20i32, converts, differs)
+    |> _assert_eq ("Nat", Whnf (NatLit 2u64, [ Iota "Nat.rec"; Beta; Beta ]), !+, !+)
+
+///> rust
+:# a_family_in_a_universe_variable_still_gets_its_recursor =
+    := u = Param (name "u")
+    := unit_family = Inductive (name "PUnit", [ name "u" ], 0i32, Sort u, [ name "PUnit.unit", Const (name "PUnit", [ u ]) ])
+    := pair_sort = Sort (Max (Succ Zero, u))
+    := box_family = Inductive (name "Box", [ name "u" ], 1i32, Pi (name "a", Default, Sort u, pair_sort), [ name "Box.mk", Pi (name "a", Default, Sort u, Pi (name "x", Default, BVar 0i32, App (Const (name "Box", [ u ]), BVar 1i32))) ])
+    := recursor_named = \ (a : admitted) (n : string) =>
+        ?= a ?|
+        | Admitted env => ?= find_decl env n ?| Some _ => !+ | None => !-
+        | Refused _ => !-
+    (recursor_named (admit_inductive [] unit_family) "PUnit.rec", recursor_named (admit_inductive [] box_family) "Box.rec", never_zero (Max (Succ Zero, u)), never_zero u)
+    |> _assert_eq (!+, !+, !+, !-)
+
+///> rust
+:# a_recursor_on_a_structure_variable_reduces_through_its_projections =
+    := env = pair_env ()
+    := p = FVar (name "p")
+    := pair_nn = App (App (pair (), nat ()), nat ())
+    := motive = Lam (name "q", Default, pair_nn, nat ())
+    := first = Lam (name "a", Default, nat (), Lam (name "b", Default, nat (), BVar 1i32))
+    whnf env (apply_all (Const (name "Pair.rec", [ Succ Zero ])) [ nat (); nat (); motive; first; p ]) 20i32
+    |> _assert_eq (Whnf (Proj (name "Pair", 0i32, p), [ Iota "Pair.rec"; Beta; Beta ]))

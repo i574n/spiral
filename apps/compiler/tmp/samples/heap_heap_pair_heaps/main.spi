@@ -1,0 +1,23 @@
+:= main () : i32 =
+    := ~n = 7i32
+    := ~word = "hi"
+    := left_pair = n, word
+    := left_heap = !!!!LayoutToHeap({ value = left_pair })
+    := ~m = 4i32
+    := ~other = "yo"
+    := right_pair = m, other
+    := right_heap = !!!!LayoutToHeap({ value = right_pair })
+    := pair = left_heap, right_heap
+    := inner = !!!!LayoutToHeap({ value = pair })
+    := ~mark = 2i32
+    := outer_pair = inner, mark
+    := outer = !!!!LayoutToHeap({ value = outer_pair })
+    := opened = !!!!LayoutIndex(outer)
+    := ~(inner_held, flag) = opened::value
+    := inner_opened = !!!!LayoutIndex(inner_held)
+    := ~(left, right) = inner_opened::value
+    := left_opened = !!!!LayoutIndex(left)
+    := ~(a, b) = left_opened::value
+    := right_opened = !!!!LayoutIndex(right)
+    := ~(c, d) = right_opened::value
+    ? a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && flag =. 2i32 ?> 0i32 |: 1i32

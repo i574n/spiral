@@ -1,0 +1,23 @@
+:! hg38 = ()
+:! chr1 = ()
+:! i0 = ()
+:! i1 = ()
+:! i2 = ()
+
+:| segment build contig start finish =
+    | Segment :: \* build contig start finish. string -> segment build contig start finish
+:| region build contig start finish =
+    | Region :: \* build contig start finish. string -> region build contig start finish
+
+:= merge \* build contig start middle finish.
+    (left : segment build contig start middle)
+    (right : segment build contig middle finish)
+    : region build contig start finish =
+    ?= left, right ?|
+    | Segment _, Segment _ => Region "adjacent-intervals-merged"
+
+:= main () : string =
+    := left : segment hg38 chr1 i0 i1 = Segment "left"
+    := right : segment hg38 chr1 i1 i2 = Segment "right"
+    ?= merge left right ?|
+    | Region label => label

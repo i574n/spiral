@@ -1,0 +1,23 @@
+:! count_zero = ()
+:! count_succ count = count
+
+:| ^ exact_vec count =
+    | ExactVecNil :: exact_vec count_zero
+    | ExactVecCons :: \* count.
+        i32 * exact_vec count -> exact_vec (count_succ count)
+
+:! packed_exact_vec = \? count. exact_vec count
+
+:= make_packed () : packed_exact_vec =
+    packed_exact_vec (\? (
+        ExactVecCons (1i32, ExactVecCons (2i32, ExactVecNil))))
+
+:= validate_packed (value : packed_exact_vec) : bool =
+    ?= value ?|
+    | packed_exact_vec payload =>
+        := \? count. exact = payload
+        ?= exact ?|
+        | ExactVecNil => !+
+        | ExactVecCons (_, _) => !+
+
+:= main () : bool = validate_packed (make_packed ())

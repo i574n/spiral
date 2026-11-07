@@ -1,0 +1,42 @@
+:! draft = ()
+:! sent = ()
+:! committed = ()
+:! pending = ()
+
+:| document phase =
+    | DraftDocument :: document draft
+    | SentDocument :: document sent
+
+:| transition from to =
+    | Submit :: transition draft sent
+
+:| compensation from to =
+    | UndoSubmit :: compensation sent draft
+
+:| receipt from to status =
+    | PendingReceipt :: \* from to. receipt from to pending
+    | CommittedReceipt :: \* from to. receipt from to committed
+
+:= execute \* from to.
+    (transition : transition from to)
+    (document : document from)
+    : document to =
+    ?= transition, document ?|
+    | Submit, DraftDocument => SentDocument
+
+:= rollback \* from to.
+    (compensation : compensation to from)
+    (receipt : receipt from to committed)
+    (document : document to)
+    : document from =
+    ?= compensation, receipt, document ?|
+    | UndoSubmit, CommittedReceipt, SentDocument => DraftDocument
+
+:= render (document : document draft) : string =
+    ?= document ?|
+    | DraftDocument => "compensation-receipt"
+
+:= main () : string =
+    := sent = execute Submit DraftDocument
+    := restored = rollback UndoSubmit CommittedReceipt sent
+    render restored

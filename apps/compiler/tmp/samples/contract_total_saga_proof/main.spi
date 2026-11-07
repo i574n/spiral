@@ -1,0 +1,77 @@
+:! draft = ()
+:! signed = ()
+:! authorized = ()
+
+:| document state =
+    | Draft :: document draft
+    | Signed :: document signed
+    | Authorized :: document authorized
+
+:| forward from to =
+    | Sign :: forward draft signed
+    | Authorize :: forward signed authorized
+
+:| compensate from to =
+    | Unauthorize :: compensate authorized signed
+    | Unsign :: compensate signed draft
+
+:| ^ chain (step : * -> * -> *) from to =
+    | ChainStep :: \* (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: \* (step : * -> * -> *) from to.
+        (\? middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+:! total_saga from to =
+    {
+        forward_plan : chain forward from to
+        rollback_plan : chain compensate to from
+    }
+
+:= apply_forward \* from to.
+    (operation : forward from to)
+    (document : document from)
+    : document to =
+    ?= operation, document ?|
+    | Sign, Draft => Signed
+    | Authorize, Signed => Authorized
+
+:= apply_compensation \* from to.
+    (operation : compensate from to)
+    (document : document from)
+    : document to =
+    ?= operation, document ?|
+    | Unauthorize, Authorized => Signed
+    | Unsign, Signed => Draft
+
+:= ^ fold_chain \* (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : \* a b. step a b -> carrier a -> carrier b)
+    (program : chain step from to)
+    (input : carrier from)
+    : carrier to =
+    ?= program ?|
+    | ChainStep atom => handler atom input
+    | ChainCompose packed =>
+        := \? middle. first, second = packed
+        fold_chain `$handler second (fold_chain `$handler first input)
+
+:= saga () : total_saga draft authorized =
+    total_saga {
+        forward_plan =
+            ChainCompose (\? (
+                ChainStep Sign,
+                ChainStep Authorize
+            ))
+        rollback_plan =
+            ChainCompose (\? (
+                ChainStep Unauthorize,
+                ChainStep Unsign
+            ))
+    }
+
+:= main () : string =
+    := plan = saga ()
+    := authorized = fold_chain `$apply_forward plan::forward_plan Draft
+    := rolled_back = fold_chain `$apply_compensation plan::rollback_plan authorized
+    ?= rolled_back ?|
+    | Draft => "rolled-back"

@@ -1,0 +1,94 @@
+///- --package .
+:# scope static =
+    :< testing
+
+:< sm'_operators
+:< syntax
+
+:~ ^ shift_from (t : term) (depth : i32) (by : i32) : term =
+    ?= t ?|
+    | BVar i => ? i >= depth ?> BVar (i + by) |: t
+    | App (f, a) => App (shift_from f depth by, shift_from a depth by)
+    | Lam (n, b, ty, body) => Lam (n, b, shift_from ty depth by, shift_from body (depth + 1i32) by)
+    | Pi (n, b, ty, body) => Pi (n, b, shift_from ty depth by, shift_from body (depth + 1i32) by)
+    | Let (n, ty, v, body) => Let (n, shift_from ty depth by, shift_from v depth by, shift_from body (depth + 1i32) by)
+    | Proj (s, i, x) => Proj (s, i, shift_from x depth by)
+    | _ => t
+
+:~ lift (t : term) (by : i32) : term = shift_from t 0i32 by
+
+:~ lower (t : term) (by : i32) : term = shift_from t 0i32 (0i32 - by)
+
+:~ ^ instantiate_at (t : term) (depth : i32) (value : term) : term =
+    ?= t ?|
+    | BVar i => ? i = depth ?> lift value depth |? i > depth ?> BVar (i - 1i32) |: t
+    | App (f, a) => App (instantiate_at f depth value, instantiate_at a depth value)
+    | Lam (n, b, ty, body) => Lam (n, b, instantiate_at ty depth value, instantiate_at body (depth + 1i32) value)
+    | Pi (n, b, ty, body) => Pi (n, b, instantiate_at ty depth value, instantiate_at body (depth + 1i32) value)
+    | Let (n, ty, v, body) =>
+        Let (n, instantiate_at ty depth value, instantiate_at v depth value, instantiate_at body (depth + 1i32) value)
+    | Proj (s, i, x) => Proj (s, i, instantiate_at x depth value)
+    | _ => t
+
+:~ instantiate (body : term) (value : term) : term = instantiate_at body 0i32 value
+
+:~ ^ abstract_at (t : term) (depth : i32) (n : name) : term =
+    ?= t ?|
+    | FVar m => ? same_as t (FVar n) ?> BVar depth |: t
+    | BVar i => ? i >= depth ?> BVar (i + 1i32) |: t
+    | App (f, a) => App (abstract_at f depth n, abstract_at a depth n)
+    | Lam (x, b, ty, body) => Lam (x, b, abstract_at ty depth n, abstract_at body (depth + 1i32) n)
+    | Pi (x, b, ty, body) => Pi (x, b, abstract_at ty depth n, abstract_at body (depth + 1i32) n)
+    | Let (x, ty, v, body) => Let (x, abstract_at ty depth n, abstract_at v depth n, abstract_at body (depth + 1i32) n)
+    | Proj (s, i, x) => Proj (s, i, abstract_at x depth n)
+    | _ => t
+
+:~ abstract_fvar (t : term) (n : name) : term = abstract_at t 0i32 n
+
+:~ open_with (body : term) (n : name) : term = instantiate body (FVar n)
+
+:~ sample_body () : term = App (App (BVar 0i32, FVar (name "y")), Lam (name "z", Default, Sort Zero, BVar 1i32))
+
+:! closed = term
+
+:~ as_closed (t : term) : option closed = ? is_closed t ?> Some (closed t) |: None
+
+:~ closed_term ((closed t) : closed) : term = t
+
+///> rust
+:# opening_a_body_then_abstracting_the_same_fvar_gives_it_back =
+    := body = sample_body ()
+    := opened = open_with body (name "x")
+    (is_closed opened, same_as (abstract_fvar opened (name "x")) body) |> _assert_eq (!+, !+)
+
+///> rust
+:# instantiate_replaces_the_outer_bound_variable_and_leaves_closed_terms_alone =
+    := closed = Lam (name "x", Default, Sort Zero, BVar 0i32)
+    := applied = instantiate (App (BVar 0i32, BVar 0i32)) (FVar (name "a"))
+    (same_as (instantiate closed (FVar (name "a"))) closed, term_text applied) |> _assert_eq (!+, "(a a)")
+
+///> rust
+:# lift_then_lower_is_the_identity =
+    := body = sample_body ()
+    (same_as (lower (lift body 2i32) 2i32) body, loose_range (lift body 2i32)) |> _assert_eq (!+, 3i32)
+
+///> rust
+:# only_terms_without_loose_bound_variables_become_closed =
+    := escaping = App (BVar 0i32, FVar (name "y"))
+    := wrapped = Lam (name "x", Default, Sort Zero, escaping)
+    (as_closed escaping, as_closed wrapped |> optionm::map closed_term) |> _assert_eq (None, Some wrapped)
+
+///> rust
+:# every_term_shape_round_trips_through_open_abstract_and_lift_lower =
+    := under = Lam (name "z", Default, Sort Zero, BVar 1i32)
+    := bodies =
+        [
+            sample_body ()
+            Proj (name "P", 1i32, App (BVar 0i32, under))
+            Let (name "v", BVar 0i32, Proj (name "P", 0i32, BVar 0i32), App (BVar 1i32, BVar 0i32))
+            Pi (name "a", Implicit, BVar 0i32, Proj (name "P", 0i32, BVar 1i32))
+        ]
+    := opened_back = \ (b : term) => same_as (abstract_fvar (open_with b (name "x")) (name "x")) b
+    := lifted_back = \ (b : term) => same_as (lower (lift b 3i32) 3i32) b
+    (listm::map opened_back bodies, listm::map lifted_back bodies)
+    |> _assert_eq ([ !+; !+; !+; !+ ], [ !+; !+; !+; !+ ])

@@ -1,0 +1,19 @@
+:! low = ()
+:! high = ()
+
+:| risk band =
+    | LowRisk :: risk low
+    | HighRisk :: risk high
+
+:| authorization band =
+    | Automatic :: authorization low
+    | ManualReview :: authorization high
+
+:| packed_assessment =
+    | PackAssessment ::
+        (\? band. risk band * authorization band)
+        -> packed_assessment
+
+:= main () : string =
+    := _ = PackAssessment (\? (LowRisk, ManualReview))
+    "unreachable"

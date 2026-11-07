@@ -1,0 +1,3 @@
+:< model
+
+:= main () : i32 = !!!!Add(double 7i32, triple 7i32)

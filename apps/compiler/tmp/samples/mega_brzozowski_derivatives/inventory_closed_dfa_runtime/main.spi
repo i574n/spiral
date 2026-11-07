@@ -1,0 +1,3 @@
+:< inventory_indexed_model
+
+:= main () : i32 = ? inventory_indexed_closed_dfa_runtime_probe () ?> 0i32 |: 1i32

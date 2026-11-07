@@ -1,0 +1,14 @@
+:| choice =
+    | Empty
+    | Full : i32
+
+:~ pick x : i32 =
+    ?= x ?|
+    | Empty => 0i32
+    | Full value => value
+
+:= main () : i32 =
+    := ~flag = !+
+    := full = ? flag ?> Full 7i32 |: Empty
+    := empty = ? flag ?> Empty |: Full 1i32
+    ? pick full =. 7i32 && pick empty =. 0i32 ?> 0i32 |: 1i32

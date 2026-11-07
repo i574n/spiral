@@ -1,0 +1,16 @@
+:| shade =
+    | DeepBlue :: shade
+    | LightGreen :: f64 -> shade
+    | Red :: shade
+
+:= snake (x : shade) : string = !!!!UnionCaseName(x, "snake")
+
+:= kebab (x : shade) : string = !!!!UnionCaseName(x, "kebab")
+
+:= lower (x : shade) : string = !!!!UnionCaseName(x, "lower")
+
+:= main () : i32 =
+    := ~green = LightGreen 0.5f64
+    := ~blue = DeepBlue
+    := ~red = Red
+    ? !!!!EQ(snake green, "light_green") && !!!!EQ(kebab blue, "deep-blue") && !!!!EQ(lower green, "lightgreen") && !!!!EQ(snake red, "red") && !!!!EQ(!!!!UnionCaseName(DeepBlue, "snake"), "deep_blue") && !!!!EQ(!!!!UnionCaseName(green, "exact"), "LightGreen") ?> 42i32 |: 1i32

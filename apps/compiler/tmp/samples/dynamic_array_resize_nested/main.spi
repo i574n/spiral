@@ -1,0 +1,29 @@
+:= resize_outer ~(xs : array (array i32)) ~(new_length : i32) : () =
+    $'DynamicArrayResize0(!xs,!new_length)'
+
+:= capacity_outer ~(xs : array (array i32)) : i32 =
+    $'DynamicArrayCapacity0(!xs)'
+
+:= resize_inner ~(xs : array i32) ~(new_length : i32) : () =
+    $'DynamicArrayResize1(!xs,!new_length)'
+
+:= capacity_inner ~(xs : array i32) : i32 =
+    $'DynamicArrayCapacity1(!xs)'
+
+:= main () : i32 =
+    := ~n = 1i32
+    := ~inner : array i32 = create n
+    set inner 0i32 7i32
+    := ~outer : array (array i32) = create n
+    set outer 0i32 inner
+    := ~alias_inner = index outer 0i32
+    ~~ resize_outer outer 0i32
+    ~~ resize_outer outer 1i32
+    set outer 0i32 alias_inner
+    ~~ resize_inner inner 0i32
+    ~~ resize_inner alias_inner 1i32
+    set inner 0i32 9i32
+    := ~view = index outer 0i32
+    := ~view_value_plus_lengths = index view 0i32 +. length view +. length outer
+    := ~capacities = ~~ capacity_outer outer +. ~~ capacity_inner inner
+    view_value_plus_lengths +. capacities -. 13i32

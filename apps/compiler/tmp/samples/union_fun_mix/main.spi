@@ -1,0 +1,18 @@
+:| slot =
+    | None
+    | Call : (i32 -> i32) * i32
+
+:~ score x : i32 =
+    ?= x ?|
+    | None => 1i32
+    | Call (f, n) =>
+        := ~g = f
+        ? g 0i32 +. n =. 7i32 ?> 0i32 |: 1i32
+
+:= main () : i32 =
+    := ~k = 3i32
+    := ~n = 4i32
+    := add (x : i32) : i32 = x +. k
+    := ~flag = !+
+    := held = ? flag ?> Call (add, n) |: None
+    score held

@@ -1,0 +1,301 @@
+:< main
+
+:| derivative_cat_branch =
+    | RemainderCatNullable
+    | RemainderCatNonNullable
+
+:| ^ derivative_remainder_proof alphabet =
+    | RemainderProofEmpty : alphabet * linear_input alphabet
+    | RemainderProofEpsilon : alphabet * linear_input alphabet
+    | RemainderProofChar : alphabet * alphabet * linear_input alphabet
+    | RemainderProofAlt :
+        alphabet * linear_input alphabet * derivative_remainder_proof alphabet * derivative_remainder_proof alphabet
+    | RemainderProofCat :
+        alphabet *
+        linear_input alphabet *
+        derivative_cat_branch *
+        derivative_remainder_proof alphabet *
+        derivative_remainder_proof alphabet
+    | RemainderProofStar : alphabet * linear_input alphabet * derivative_remainder_proof alphabet
+
+:~ ^ derivative_remainder_proof_source \* alphabet.
+    (proof : derivative_remainder_proof alphabet) : regex alphabet =
+    ?= proof ?|
+    | RemainderProofEmpty _ => RegexEmpty
+    | RemainderProofEpsilon _ => RegexEpsilon
+    | RemainderProofChar (expected, _, _) => RegexChar expected
+    | RemainderProofAlt (_, _, left, right) =>
+        RegexAlt (derivative_remainder_proof_source left, derivative_remainder_proof_source right)
+    | RemainderProofCat (_, _, _, left, right) =>
+        RegexCat (derivative_remainder_proof_source left, derivative_remainder_proof_source right)
+    | RemainderProofStar (_, _, inner) => RegexStar (derivative_remainder_proof_source inner)
+
+:~ ^ derivative_remainder_proof_symbol \* alphabet.
+    (proof : derivative_remainder_proof alphabet) : alphabet =
+    ?= proof ?|
+    | RemainderProofEmpty (symbol, _) => symbol
+    | RemainderProofEpsilon (symbol, _) => symbol
+    | RemainderProofChar (_, symbol, _) => symbol
+    | RemainderProofAlt (symbol, _, _, _) => symbol
+    | RemainderProofCat (symbol, _, _, _, _) => symbol
+    | RemainderProofStar (symbol, _, _) => symbol
+
+:~ ^ derivative_remainder_proof_suffix \* alphabet.
+    (proof : derivative_remainder_proof alphabet) : linear_input alphabet =
+    ?= proof ?|
+    | RemainderProofEmpty (_, suffix) => suffix
+    | RemainderProofEpsilon (_, suffix) => suffix
+    | RemainderProofChar (_, _, suffix) => suffix
+    | RemainderProofAlt (_, suffix, _, _) => suffix
+    | RemainderProofCat (_, suffix, _, _, _) => suffix
+    | RemainderProofStar (_, suffix, _) => suffix
+
+:= derivative_remainder_proof_context_same \* alphabet {symbol_compare}.
+    (parent : derivative_remainder_proof alphabet)
+    (child : derivative_remainder_proof alphabet)
+    : bool =
+    ? symbol_equal (derivative_remainder_proof_symbol parent) (derivative_remainder_proof_symbol child) ?>
+        input_equal (derivative_remainder_proof_suffix parent) (derivative_remainder_proof_suffix child)
+    |: !-
+
+:= derivative_cat_branch_of \* alphabet. (left : regex alphabet) : derivative_cat_branch =
+    ?= nullable left ?|
+    | Nullable => RemainderCatNullable
+    | NonNullable => RemainderCatNonNullable
+
+:= derivative_cat_branch_same (left : derivative_cat_branch) (right : derivative_cat_branch) : bool =
+    ?= left, right ?|
+    | RemainderCatNullable, RemainderCatNullable => !+
+    | RemainderCatNonNullable, RemainderCatNonNullable => !+
+    | _ => !-
+
+:~ ^ derivative_remainder_proof_make \* alphabet.
+    (value : regex alphabet)
+    (symbol : alphabet)
+    (suffix : linear_input alphabet)
+    : derivative_remainder_proof alphabet =
+    ?= value ?|
+    | RegexEmpty => RemainderProofEmpty (symbol, suffix)
+    | RegexEpsilon => RemainderProofEpsilon (symbol, suffix)
+    | RegexChar expected => RemainderProofChar (expected, symbol, suffix)
+    | RegexAlt (left, right) =>
+        RemainderProofAlt (
+            symbol,
+            suffix,
+            derivative_remainder_proof_make left symbol suffix,
+            derivative_remainder_proof_make right symbol suffix)
+    | RegexCat (left, right) =>
+        RemainderProofCat (
+            symbol,
+            suffix,
+            derivative_cat_branch_of left,
+            derivative_remainder_proof_make left symbol suffix,
+            derivative_remainder_proof_make right symbol suffix)
+    | RegexStar inner =>
+        RemainderProofStar (symbol, suffix, derivative_remainder_proof_make inner symbol suffix)
+
+:~ ^ derivative_remainder_proof_candidate \* alphabet {symbol_compare}.
+    (proof : derivative_remainder_proof alphabet) : regex alphabet =
+    ?= proof ?|
+    | RemainderProofEmpty _ => RegexEmpty
+    | RemainderProofEpsilon _ => RegexEmpty
+    | RemainderProofChar (expected, symbol, _) =>
+        ? symbol_equal expected symbol ?> RegexEpsilon |: RegexEmpty
+    | RemainderProofAlt (_, _, left, right) =>
+        RegexAlt (
+            derivative_remainder_proof_candidate left,
+            derivative_remainder_proof_candidate right)
+    | RemainderProofCat (_, _, branch, left, right) =>
+        := left_candidate = derivative_remainder_proof_candidate left
+        := right_candidate = derivative_remainder_proof_candidate right
+        := right_source = derivative_remainder_proof_source right
+        ?= branch ?|
+        | RemainderCatNullable =>
+            RegexAlt (RegexCat (left_candidate, right_source), right_candidate)
+        | RemainderCatNonNullable => RegexCat (left_candidate, right_source)
+    | RemainderProofStar (_, _, inner) =>
+        RegexCat (
+            derivative_remainder_proof_candidate inner,
+            RegexStar (derivative_remainder_proof_source inner))
+
+:~ ^ derivative_remainder_proof_valid \* alphabet {symbol_compare}.
+    (proof : derivative_remainder_proof alphabet)
+    : bool
+    =
+    := source = derivative_remainder_proof_source proof
+    := symbol = derivative_remainder_proof_symbol proof
+    := suffix = derivative_remainder_proof_suffix proof
+    := local_candidate = derivative_remainder_proof_candidate proof
+    := local_law = derivative_remainder_candidate_law source symbol suffix local_candidate
+    ? local_law
+    ?>
+        ?= proof ?|
+        | RemainderProofEmpty _ => !+
+        | RemainderProofEpsilon _ => !+
+        | RemainderProofChar _ => !+
+        | RemainderProofAlt (_, _, left, right) =>
+            ? derivative_remainder_proof_context_same proof left ?>
+                ? derivative_remainder_proof_context_same proof right ?>
+                    ? derivative_remainder_proof_valid left ?> derivative_remainder_proof_valid right |: !-
+                |: !-
+            |: !-
+        | RemainderProofCat (_, _, branch, left, right) =>
+            ? derivative_cat_branch_same branch (derivative_cat_branch_of (derivative_remainder_proof_source left))
+            ?>
+                ? derivative_remainder_proof_context_same proof left ?>
+                    ? derivative_remainder_proof_context_same proof right ?>
+                        ? derivative_remainder_proof_valid left ?> derivative_remainder_proof_valid right |: !-
+                    |: !-
+                |: !-
+            |: !-
+        | RemainderProofStar (_, _, inner) =>
+            ? derivative_remainder_proof_context_same proof inner
+            ?> derivative_remainder_proof_valid inner
+            |: !-
+    |: !-
+
+:! derivative_remainder_theorem_certificate alphabet =
+    regex alphabet * alphabet * linear_input alphabet * derivative_remainder_proof alphabet
+
+:= derivative_remainder_theorem_certificate_make \* alphabet.
+    (value : regex alphabet)
+    (symbol : alphabet)
+    (suffix : linear_input alphabet)
+    : derivative_remainder_theorem_certificate alphabet =
+    derivative_remainder_theorem_certificate (
+        value,
+        symbol,
+        suffix,
+        derivative_remainder_proof_make value symbol suffix)
+
+:= derivative_remainder_theorem_certificate_valid \* alphabet {symbol_compare}.
+    (certificate : derivative_remainder_theorem_certificate alphabet) : bool =
+    ?= certificate ?|
+    | derivative_remainder_theorem_certificate (claimed_source, claimed_symbol, claimed_suffix, proof) =>
+        ? regex_equal claimed_source (derivative_remainder_proof_source proof) ?>
+            ? symbol_equal claimed_symbol (derivative_remainder_proof_symbol proof) ?>
+                ? input_equal claimed_suffix (derivative_remainder_proof_suffix proof) ?>
+                    := implementation_candidate = canonical_derivative claimed_source claimed_symbol
+                    := proof_candidate = normalize (derivative_remainder_proof_candidate proof)
+                    ? regex_equal implementation_candidate proof_candidate ?>
+                        derivative_remainder_proof_valid proof
+                    |: !-
+                |: !-
+            |: !-
+        |: !-
+
+:= derivative_remainder_theorem \* alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (symbol : alphabet)
+    (suffix : linear_input alphabet)
+    : bool =
+    derivative_remainder_theorem_certificate_valid (derivative_remainder_theorem_certificate_make value symbol suffix)
+
+:~ ^ derivative_remainder_theorem_suffixes \* alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (symbol : alphabet)
+    (suffixes : input_list alphabet)
+    : bool =
+    ?= suffixes ?|
+    | InputListNil => !+
+    | InputListCons (suffix, rest) =>
+        ? derivative_remainder_theorem value symbol suffix ?>
+            derivative_remainder_theorem_suffixes value symbol rest
+        |: !-
+
+:~ ^ derivative_remainder_theorem_symbols \* alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (symbols : symbol_list alphabet)
+    (suffixes : input_list alphabet)
+    : bool =
+    ?= symbols ?|
+    | SymbolListNil => !+
+    | SymbolListCons (symbol, rest) =>
+        ? derivative_remainder_theorem_suffixes value symbol suffixes ?>
+            derivative_remainder_theorem_symbols value rest suffixes
+        |: !-
+
+:= constructor_theorem_probe () : regex bit_alphabet =
+    RegexAlt (
+        RegexEmpty,
+        RegexAlt (
+            RegexEpsilon,
+            RegexCat (
+                RegexStar (RegexAlt (RegexChar (zero ()), RegexChar (one ()))),
+                RegexChar (zero ()))))
+
+:= run_remainder_theorem_suite () : string =
+    := bit_symbols : symbol_list bit_alphabet = finite_alphabet_symbols (finite_alphabet ())
+    := tri_symbols : symbol_list tri_alphabet = finite_alphabet_symbols (finite_alphabet ())
+    := bit_suffixes = input_corpus_depth_two bit_symbols
+    := tri_suffixes = input_corpus_depth_two tri_symbols
+    := constructor_probe = constructor_theorem_probe ()
+    assert_static
+        (derivative_remainder_theorem_symbols constructor_probe bit_symbols bit_suffixes)
+        "structural remainder theorem certificate should cover every regex constructor"
+    assert_static
+        (derivative_remainder_theorem_symbols (tri_ab_star_then_c ()) tri_symbols tri_suffixes)
+        "structural remainder theorem certificate should generalize across nominal alphabets"
+    := accepted_suffix = InputCons (one (), InputCons (zero (), InputEmpty))
+    := certificate = derivative_remainder_theorem_certificate_make (ends_with_zero ()) (one ()) accepted_suffix
+    assert_static
+        (derivative_remainder_theorem_certificate_valid certificate)
+        "well-formed derivative remainder theorem certificate should validate"
+    := boolean_blind_source = RegexStar (RegexChar (zero ()))
+    := boolean_blind_suffix = InputCons (one (), InputEmpty)
+    := boolean_blind_candidate = RegexEmpty
+    assert_static
+        (derivative_language_candidate_law boolean_blind_source (zero ()) boolean_blind_suffix boolean_blind_candidate)
+        "acceptance-only derivative law should miss a partial-remainder mutant when both decisions reject"
+    assert_static
+        (
+            bool_same
+                (
+                    derivative_remainder_candidate_law boolean_blind_source
+                        (zero ())
+                        boolean_blind_suffix
+                        boolean_blind_candidate
+                )
+                !-
+        )
+        "remainder-set derivative law should reject the same partial-remainder mutant"
+    := forged_context =
+        RemainderProofAlt (
+            zero (),
+            InputEmpty,
+            RemainderProofChar (zero (), zero (), InputEmpty),
+            RemainderProofChar (one (), one (), InputEmpty))
+    assert_static
+        (bool_same (derivative_remainder_proof_valid forged_context) !-)
+        "certificate validation should reject a child proof from a different derivative context"
+    := forged_source =
+        derivative_remainder_theorem_certificate (
+            RegexEmpty,
+            zero (),
+            InputEmpty,
+            derivative_remainder_proof_make RegexEpsilon (zero ()) InputEmpty)
+    assert_static
+        (bool_same (derivative_remainder_theorem_certificate_valid forged_source) !-)
+        "certificate validation should reject a forged source binding"
+    := forged_symbol =
+        derivative_remainder_theorem_certificate (
+            RegexChar (zero ()),
+            one (),
+            InputEmpty,
+            derivative_remainder_proof_make (RegexChar (zero ())) (zero ()) InputEmpty)
+    assert_static
+        (bool_same (derivative_remainder_theorem_certificate_valid forged_symbol) !-)
+        "certificate validation should reject a forged symbol binding"
+    := forged_branch =
+        RemainderProofCat (
+            zero (),
+            InputEmpty,
+            RemainderCatNonNullable,
+            derivative_remainder_proof_make RegexEpsilon (zero ()) InputEmpty,
+            derivative_remainder_proof_make (RegexChar (zero ())) (zero ()) InputEmpty)
+    assert_static
+        (bool_same (derivative_remainder_proof_valid forged_branch) !-)
+        "certificate validation should reject a forged nullable concatenation branch"
+    "brzozowski-remainder-theorem-green"
+
+:= main () : string = run_remainder_theorem_suite ()

@@ -1,0 +1,8 @@
+:= second_line (s : string) : string =
+    ?= sm'.split_list "\n" s ?|
+    | _ :: line :: _ => line
+    | _ => ""
+
+:= main () : i32 =
+    !!!!Export("model_second_line", second_line)
+    0i32

@@ -1,0 +1,13 @@
+:= ^ climb ~n ~acc =
+    ? n =. 0i32 ?> acc |:
+        ~~ climb (n -. 1i32) (acc +. 3i32)
+
+:= ^ drop ~n ~acc =
+    ? n =. 0i32 ?> acc |:
+        ~~ drop (n -. 1i32) (acc -. 2i32)
+
+:= main () : i32 =
+    := ~n = 4i32
+    := up = ~~ climb n 0i32
+    := down = ~~ drop n 0i32
+    ? up =. 12i32 && down =. (0i32 -. 8i32) ?> 0i32 |: 1i32

@@ -1,0 +1,15 @@
+:| shout =
+    | Foo
+    | FOO
+    | Bar
+
+:= score (x : shout) : i32 =
+    ?= x ?|
+    | Foo => 1i32
+    | FOO => 10i32
+    | Bar => 100i32
+
+:= main () : i32 =
+    := ~a = Foo
+    := ~b = FOO
+    score a +. score b

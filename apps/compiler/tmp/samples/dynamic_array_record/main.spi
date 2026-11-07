@@ -1,0 +1,12 @@
+:= make_state ~n =
+    := ~xs : array i32 = create n
+    set xs 0i32 4i32
+    set xs 1i32 5i32
+    { items = xs; bias = 1i32 }
+
+:= score ~{ items bias } : i32 =
+    index items 0i32 +. index items 1i32 +. bias -. 10i32
+
+:= main () : i32 =
+    := state = ~~ make_state 2i32
+    ~~ score state

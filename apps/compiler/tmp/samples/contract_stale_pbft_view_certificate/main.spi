@@ -1,0 +1,13 @@
+:! view_7 = ()
+:! view_8 = ()
+:! epoch_11 = ()
+:! request_42 = ()
+
+:| new_view_certificate view epoch request =
+    | NewView7 :: string -> new_view_certificate view_7 epoch_11 request_42
+    | NewView8 :: string -> new_view_certificate view_8 epoch_11 request_42
+
+:= main () : new_view_certificate view_8 epoch_11 request_42 =
+    := stale : new_view_certificate view_7 epoch_11 request_42 = NewView7 "stale-view-7"
+    := required : new_view_certificate view_8 epoch_11 request_42 = stale
+    required

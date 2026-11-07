@@ -1,0 +1,11 @@
+:< main
+
+:| law_only_symbol =
+    | LawOnly
+
+:! law_only_alphabet = law_only_symbol
+
+:+ symbol_compare law_only_alphabet = \ _ _ => SymbolSame
+
+:= main () =
+    capture_derivative_language_program (RegexChar (law_only_alphabet LawOnly))

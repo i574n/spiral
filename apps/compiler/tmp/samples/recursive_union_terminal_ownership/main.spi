@@ -1,0 +1,18 @@
+:| ^ int_tree =
+    | Leaf
+    | Node : i32 * int_tree * int_tree
+
+:~ ^ sum tree : i32 =
+    ?= tree ?|
+    | Leaf => 0i32
+    | Node (value, left, right) => value +. (sum left +. sum right)
+
+:~ consume_pair left right : i32 =
+    sum left +. sum right
+
+:= main () : i32 =
+    := leaf = Leaf
+    := branch = Node (2i32, leaf, leaf)
+    := root = Node (1i32, branch, branch)
+    := alias = root
+    consume_pair root alias -. 10i32

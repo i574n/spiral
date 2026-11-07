@@ -1,0 +1,94 @@
+:# fin_vector static =
+    :< testing
+
+:! nat_zero = ()
+:! nat_succ n = ()
+
+:| ^ vector n el =
+    | VectorEnd :: \* el. vector nat_zero el
+    | VectorCons :: \* n el. el * vector n el -> vector (nat_succ n) el
+
+:| ^ fin n =
+    | FinFirst :: \* n. fin (nat_succ n)
+    | FinNext :: \* n. fin n -> fin (nat_succ n)
+
+:| some_vector el =
+    | SomeVector : (\? n. vector n el)
+
+:= ^ item \* n el. (i : fin n) (v : vector n el) : el =
+    ?= i, v ?|
+    | FinFirst, VectorCons (head, _) => head
+    | FinNext previous, VectorCons (_, tail) => item previous tail
+
+:= ^ rank \* n el. (v : vector n el) : i32 =
+    ?= v ?|
+    | VectorEnd => 0i32
+    | VectorCons (_, tail) => 1i32 + rank tail
+
+:= ^ fin_value \* n. (i : fin n) : i32 =
+    ?= i ?|
+    | FinFirst => 0i32
+    | FinNext previous => 1i32 + fin_value previous
+
+:= ^ mapped \* n a b. (f : a -> b) (v : vector n a) : vector n b =
+    ?= v ?|
+    | VectorEnd => VectorEnd
+    | VectorCons (head, tail) => VectorCons (f head, mapped f tail)
+
+:= ^ to_list \* n el. (v : vector n el) : list el =
+    ?= v ?|
+    | VectorEnd => []
+    | VectorCons (head, tail) => head :: to_list tail
+
+:= ^ of_list \* el. (xs : list el) : some_vector el =
+    ?= xs ?|
+    | [] => SomeVector (\? VectorEnd)
+    | x :: rest =>
+        ?= of_list rest ?|
+        | SomeVector packed =>
+            := \? n. v = packed
+            SomeVector (\? (VectorCons (x, v)))
+
+:= some_rank \* el. (s : some_vector el) : i32 =
+    ?= s ?|
+    | SomeVector packed =>
+        := \? n. v = packed
+        rank v
+
+:= some_list \* el. (s : some_vector el) : list el =
+    ?= s ?|
+    | SomeVector packed =>
+        := \? n. v = packed
+        to_list v
+
+:= three () : vector (nat_succ (nat_succ (nat_succ nat_zero))) i32 =
+    VectorCons (10i32, VectorCons (20i32, VectorCons (30i32, VectorEnd)))
+
+///> c
+///> rust
+///> lua
+:# a_bounded_index_looks_up_every_element_without_a_fallback =
+    := v = three ()
+    (item FinFirst v, item (FinNext FinFirst) v, item (FinNext (FinNext FinFirst)) v)
+    |> _assert_eq (10i32, 20i32, 30i32)
+
+///> c
+///> rust
+///> lua
+:# the_rank_and_the_index_value_count_their_constructors =
+    := last : fin (nat_succ (nat_succ (nat_succ nat_zero))) = FinNext (FinNext FinFirst)
+    (rank (three ()), fin_value last) |> _assert_eq (3i32, 2i32)
+
+///> c
+///> rust
+///> lua
+:# mapping_recurses_along_the_index_and_keeps_the_length =
+    := doubled = mapped (\ x => x * 2i32) (three ())
+    (rank doubled, to_list doubled) |> _assert_eq (3i32, [ 20i32; 40i32; 60i32 ])
+
+///> c
+///> rust
+///> lua
+:# a_list_packs_into_a_vector_of_its_hidden_length_and_back =
+    := packed = of_list [ 1i32; 2i32; 3i32; 4i32 ]
+    (some_rank packed, some_list packed, some_rank (of_list ([] : list i32))) |> _assert_eq (4i32, [ 1i32; 2i32; 3i32; 4i32 ], 0i32)

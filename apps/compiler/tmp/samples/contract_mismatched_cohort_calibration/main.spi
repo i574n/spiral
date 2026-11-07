@@ -1,0 +1,33 @@
+:! build_37 = ()
+:! contig_1 = ()
+:! cohort_a = ()
+:! cohort_b = ()
+:! calibration_a = ()
+:! calibration_b = ()
+:! normalized = ()
+:! phased = ()
+:! authorized = ()
+:! released = ()
+:| likelihood build contig cohort calibration state =
+    | Likelihood :: \* build contig cohort calibration state.
+        string ->
+        likelihood build contig cohort calibration state
+:| phase_set build contig cohort state =
+    | PhaseSet :: \* build contig cohort state. string -> phase_set build contig cohort state
+:| release_permit cohort calibration state =
+    | Permit :: \* cohort calibration state. string -> release_permit cohort calibration state
+:| cohort_release build contig cohort calibration state =
+    | Release :: \* build contig cohort calibration state.
+        string ->
+        cohort_release build contig cohort calibration state
+:= publish \* build contig cohort calibration.
+    (likelihood : likelihood build contig cohort calibration normalized) (phase : phase_set build contig cohort phased)
+    (permit : release_permit cohort calibration authorized)
+    : cohort_release build contig cohort calibration released
+    =
+    Release "ok"
+:= main () =
+    := likelihood : likelihood build_37 contig_1 cohort_a calibration_a normalized = Likelihood "normalized"
+    := phase : phase_set build_37 contig_1 cohort_a phased = PhaseSet "phased"
+    := wrong : release_permit cohort_b calibration_b authorized = Permit "wrong"
+    publish likelihood phase wrong

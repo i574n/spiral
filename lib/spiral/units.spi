@@ -1,0 +1,53 @@
+:# units static =
+    :< testing
+
+/// ## units
+:! amount unit = i32
+
+:= amount_of \* unit. (value : i32) : amount unit = amount value
+
+:= value_of \* unit. (amount x : amount unit) : i32 = x
+
+:= plus \* unit. (amount a : amount unit) (amount b : amount unit) : amount unit = amount (a + b)
+
+:= minus \* unit. (amount a : amount unit) (amount b : amount unit) : amount unit = amount (a - b)
+
+:= scaled \* unit. (factor : i32) (amount x : amount unit) : amount unit = amount (factor * x)
+
+:= at_least \* unit. (amount a : amount unit) (amount b : amount unit) : bool = a >= b
+
+:= capped \* unit. (amount limit : amount unit) (amount x : amount unit) : amount unit =
+    amount (? x > limit ?> limit |: x)
+
+:! sample_apples = ()
+
+:! sample_pears = ()
+
+:= apples (value : i32) : amount sample_apples = amount value
+
+:= pears (value : i32) : amount sample_pears = amount value
+
+:= arithmetic_of (count : i32) : i32 * i32 * bool =
+    := left = value_of (minus (apples count) (apples 40))
+    left, value_of (capped (apples 150) (plus (apples count) (apples 60))), at_least (apples 2000) (apples count)
+
+///> c
+///> rust
+///> lua
+:# same_unit_arithmetic =
+    := ~count = 150i32
+    arithmetic_of count |> _assert_eq (110i32, 150i32, !+)
+
+///> c
+:# apples_and_pears_do_not_add fails "Unification failure" =
+    plus (apples 10) (pears 20)
+
+///> c
+:# a_pear_is_not_an_apple fails "Unification failure" =
+    := eat (amount : amount sample_apples) = amount
+    eat (pears 5)
+
+///> wgsl
+:# units_on_gpu =
+    := ~count = 150i32
+    ? value_of (capped (apples 150) (plus (apples count) (apples 60))) = 150i32 ?> 0i32 |: 1i32

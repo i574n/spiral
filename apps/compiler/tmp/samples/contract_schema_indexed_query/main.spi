@@ -1,0 +1,58 @@
+:! schema_v4 = ()
+:! schema_v5 = ()
+
+:! nfe_v4 = { issuer : string; total_cents : i64 }
+:! nfe_v5 = { issuer : string; total_cents : i64; technical_responsible : string }
+
+:| document schema =
+    | V4Document :: nfe_v4 -> document schema_v4
+    | V5Document :: nfe_v5 -> document schema_v5
+
+:| field schema value =
+    | Issuer :: \* schema. field schema string
+    | TotalCents :: \* schema. field schema i64
+    | TechnicalResponsible :: field schema_v5 string
+
+:= read_field \* schema value.
+    (field : field schema value)
+    (document : document schema)
+    : value =
+    ?= field, document ?|
+    | Issuer, V4Document payload => payload::issuer
+    | Issuer, V5Document payload => payload::issuer
+    | TotalCents, V4Document payload => payload::total_cents
+    | TotalCents, V5Document payload => payload::total_cents
+    | TechnicalResponsible, V5Document payload => payload::technical_responsible
+
+:| ^ query schema result =
+    | Get :: \* schema result. field schema result -> query schema result
+    | Zip :: \* schema a b. query schema a * query schema b -> query schema (a * b)
+    | Map :: \* schema result.
+        (\? input. (input -> result) * query schema input)
+        -> query schema result
+
+:= ^ eval \* schema result.
+    (query : query schema result)
+    (document : document schema)
+    : result =
+    ?= query ?|
+    | Get field => read_field field document
+    | Zip (left, right) => eval left document, eval right document
+    | Map pair =>
+        := \? input. transform, inner = pair
+        transform (eval inner document)
+
+:= select_technical (pair : string * string) : string =
+    := _, technical = pair
+    technical
+
+:= main () : string =
+    := document =
+        V5Document (nfe_v5 {
+            issuer = "ACME"
+            total_cents = 4200i64
+            technical_responsible = "typed-query"
+        })
+    := projection : query schema_v5 string =
+        Map (\? (select_technical, Zip (Get Issuer, Get TechnicalResponsible)))
+    eval projection document

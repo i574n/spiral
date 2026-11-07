@@ -1,0 +1,50 @@
+///- --package .
+:= make_pair ~x ~y = x, y
+
+:= sum_pair ~(x, y) = x +. y
+
+///> c
+///> zig
+test pair_returns_zero =
+    := program () : i32 =
+        := ~x = 20i32
+        := ~y = 22i32
+        := pair = ~~ make_pair x y
+        := result = ~~ sum_pair pair
+        result -. 42i32
+    ? program () <> 0i32 ?> failwith "tuple_pair"
+
+:= classify ~x =
+    x >= 3.5f32, x, 7i32
+
+:= classified_score ~(ok, value, bias) : i32 =
+    ? ok ?>
+        ? value >= 3.5f32 ?> bias -. 7i32 |: 1i32
+    |:
+        2i32
+
+///> c
+///> zig
+test mixed_returns_zero =
+    := program () : i32 =
+        := ~x = 4.0f32
+        := state = ~~ classify x
+        ~~ classified_score state
+    ? program () <> 0i32 ?> failwith "tuple_mixed"
+
+:= make_nested ~x =
+    (x, x +. 1i32), (x +. 2i32, x +. 3i32)
+
+:= nested_score ~(left, right) : i32 =
+    := a, b = left
+    := c, d = right
+    a +. b +. c +. d -. 10i32
+
+///> c
+///> zig
+test nested_returns_zero =
+    := program () : i32 =
+        := ~x = 1i32
+        := state = ~~ make_nested x
+        ~~ nested_score state
+    ? program () <> 0i32 ?> failwith "nested_tuple"

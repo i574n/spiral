@@ -1,0 +1,5 @@
+:! point = { x : i32; y : i32 }
+:= main () : i32 =
+    := p = point { y = 3i32; x = 4i32 }
+    ?= p ?|
+    | point { x y } => !!!!Add(!!!!Mult(x, 10i32), y)

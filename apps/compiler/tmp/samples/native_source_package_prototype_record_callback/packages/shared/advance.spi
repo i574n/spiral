@@ -1,0 +1,30 @@
+:< model::state
+
+:? shift s : \* ds. ds -> s -> s
+
+:+ shift state_t = \ ds (state_t s) =>
+    := dposition, dvelocity =
+        ~>
+            ?= ds ?|
+            | delta_t d => d::position, d::velocity
+            | state_t d => d::position, d::velocity
+    state_t {
+        position = s::position + dposition
+        velocity = s::velocity + dvelocity
+    }
+
+:= advance \* s {shift} ds. (derive : s -> ds) (current : s) : s =
+    shift (~~ derive current) current
+
+:= run () : i32 =
+    := initial = state_t { position = 10i32; velocity = 20i32 }
+    := ~bias = 1i32
+    := ~derive =
+        (\ (state_t s) =>
+            delta_t {
+                position = s::position - 8i32 + bias
+                velocity = s::velocity - 18i32
+            }
+        ) : state_t -> delta_t
+    := (state_t next) = advance derive initial
+    next::position + next::velocity + 7i32

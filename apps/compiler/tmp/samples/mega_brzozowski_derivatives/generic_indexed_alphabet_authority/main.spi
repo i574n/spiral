@@ -1,0 +1,53 @@
+:< main
+
+:| authority_probe_symbol =
+    | AuthorityProbeA
+    | AuthorityProbeB
+    | AuthorityProbeC
+
+:! authority_probe_alphabet = authority_probe_symbol
+
+:+ symbol_compare authority_probe_alphabet =
+    \ (authority_probe_alphabet left) (authority_probe_alphabet right) =>
+        ?= left, right ?|
+        | AuthorityProbeA, AuthorityProbeA => SymbolSame
+        | AuthorityProbeA, _ => SymbolLess
+        | _, AuthorityProbeA => SymbolGreater
+        | AuthorityProbeB, AuthorityProbeB => SymbolSame
+        | AuthorityProbeB, AuthorityProbeC => SymbolLess
+        | AuthorityProbeC, AuthorityProbeB => SymbolGreater
+        | AuthorityProbeC, AuthorityProbeC => SymbolSame
+
+:= authority_probe_a () = authority_probe_alphabet AuthorityProbeA
+:= authority_probe_b () = authority_probe_alphabet AuthorityProbeB
+:= authority_probe_c () = authority_probe_alphabet AuthorityProbeC
+
+:+ finite_alphabet authority_probe_alphabet = \ () =>
+    finite_alphabet_descriptor (
+        SymbolListCons (
+            authority_probe_a (),
+            SymbolListCons (
+                authority_probe_b (),
+                SymbolListCons (authority_probe_c (), SymbolListNil))),
+        AlphabetCardinalitySucc (
+            AlphabetCardinalitySucc (
+                AlphabetCardinalitySucc AlphabetCardinalityZero)))
+
+:= authority_probe_symbols_exact
+    (symbols : symbol_list authority_probe_alphabet) : bool =
+    ?= symbols ?|
+    | SymbolListCons (
+        authority_probe_alphabet AuthorityProbeA,
+        SymbolListCons (
+            authority_probe_alphabet AuthorityProbeB,
+            SymbolListCons (authority_probe_alphabet AuthorityProbeC, SymbolListNil))) => !+
+    | _ => !-
+
+:= main () : string =
+    := descriptor : indexed_finite_alphabet_descriptor authority_probe_alphabet =
+        indexed_finite_alphabet_descriptor_from_authority ()
+    := capability : indexed_dfa_capability authority_probe_alphabet = make_indexed_dfa_capability ()
+    assert_static
+        (indexed_finite_alphabet_descriptor_certified capability descriptor)
+        "derived indexed descriptor must certify against the local finite_alphabet authority"
+    "generic-indexed-alphabet-authority-green"

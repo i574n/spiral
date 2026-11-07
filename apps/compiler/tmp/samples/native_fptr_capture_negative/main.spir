@@ -1,0 +1,5 @@
+:= main () =
+    := ~offset = 2i32
+    := f = (\ (value : i32) => !!!!Add(value, offset)) : i32 -> i32
+    := ~p = !!!!ToFunPtr(f)
+    p 40i32

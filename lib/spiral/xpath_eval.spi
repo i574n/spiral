@@ -1,0 +1,1867 @@
+///- --package . --timeout 900000
+:< sm'_operators
+:< xml
+:< xpath
+
+:== located = { node : xml_node; ancestors : list xml_node; path : list i32 }
+
+:| ^ xvalue =
+    | VNodes : list located
+    | VText : string
+    | VNumber : decimal::decimal
+    | VBool : bool
+    | VSequence : list xvalue
+    | VError : string
+
+:== scope =
+    {
+        context : located
+        current : located
+        root : located
+        variables : list (string * xvalue)
+        today : string
+        namespaces : list (string * string)
+    }
+
+:= attribute_node (name : string) (value : string) : xml_node = XmlElement ("@" ++# name, [], XmlText value :: [])
+
+:= written_name (node : xml_node) : string =
+    ?= node ?|
+    | XmlElement (name, _, _) => name
+    | XmlText _ => ""
+
+:= is_attribute (node : xml_node) : bool = sm'::starts_with "@" (written_name node)
+
+:= qualified_name (node : xml_node) : string =
+    := name = written_name node
+    ? is_attribute node ?> sm'::substring 1i32 (sm'::length name - 1i32) name |: name
+
+:~ ^ reversed_digits (text : string) (pos : i32) (acc : list i32) : option (list i32) =
+    ? pos >= sm'::length text ?> Some acc
+    |:
+        := digit = sm'::index_of (sm'::substring pos 1i32 text) "0123456789"
+        ? digit < 0i32 ?> None |: reversed_digits text (pos + 1i32) (digit :: acc)
+
+:= digits_at (text : string) (start : i32) (count : i32) : option (list i32) =
+    reversed_digits (sm'::substring start count text) 0i32 []
+
+:~ ^ weighted_sum (digits : list i32) (index : i32) (weight : i32 -> i32) (acc : i32) : i32 =
+    ?= digits ?|
+    | digit :: rest => weighted_sum rest (index + 1i32) weight (acc + digit * weight index)
+    | [] => acc
+
+:= gln_valid (text : string) : bool =
+    ?= reversed_digits text 0i32 [] ?|
+    | Some (check :: body) =>
+        := sum = weighted_sum body 0i32 (\ index => 1i32 + ((index + 1i32) % 2i32) * 2i32) 0i32
+        (10i32 - sum % 10i32) % 10i32 = check
+    | _ => !-
+
+:= mod11_holds (check : i32) (body : list i32) : bool =
+    := sum = weighted_sum body 0i32 (\ index => index % 6i32 + 2i32) 0i32
+    := positive = check > 0i32 || weighted_sum body 0i32 (\ _ => 1i32) 0i32 > 0i32
+    positive && (11i32 - sum % 11i32) % 11i32 = check
+
+:= mod11_valid (text : string) : bool =
+    ?= reversed_digits text 0i32 [] ?|
+    | Some (check :: body) => mod11_holds check body
+    | _ => !-
+
+:~ ^ check_digits_value (digits : list i32) (acc : i32) : i32 =
+    ?= digits ?|
+    | digit :: rest => check_digits_value rest (acc * 10i32 + digit)
+    | [] => acc
+
+:= mod97_check (base : list i32) (check : list i32) : bool =
+    97i32 - check_digits_value (listm::rev base) 0i32 % 97i32 = check_digits_value (listm::rev check) 0i32
+
+:= mod97_0208_valid (text : string) : bool =
+    ? sm'::length text < 10i32 ?> !-
+    |:
+        ?= digits_at text 0i32 8i32, digits_at text 8i32 2i32 ?|
+        | Some base, Some check => mod97_check base check
+        | _ => !-
+
+:= digits_of (text : string) : option (list i32) =
+    ?= reversed_digits text 0i32 [] ?|
+    | Some reversed => Some (listm::rev reversed)
+    | None => None
+
+:= abn_sum (first : i32) (rest : list i32) : i32 =
+    (first - 1i32) * 10i32 + weighted_sum rest 0i32 (\ index => 2i32 * index + 1i32) 0i32
+
+:= abn_valid (text : string) : bool =
+    ? sm'::length text < 11i32 ?> !-
+    |:
+        ?= digits_of (sm'::substring 0i32 11i32 text) ?|
+        | Some (first :: rest) => abn_sum first rest % 89i32 = 0i32
+        | _ => !-
+
+:= luhn_term (index : i32) (digit : i32) : i32 =
+    ? index % 2i32 = 0i32 ?> (digit * 2i32) % 10i32 + (digit * 2i32) / 10i32 |: digit
+
+:~ ^ luhn_sum (reversed : list i32) (index : i32) (acc : i32) : i32 =
+    ?= reversed ?|
+    | digit :: rest => luhn_sum rest (index + 1i32) (acc + luhn_term index digit)
+    | [] => acc
+
+:= luhn_check (main : list i32) : i32 = (10i32 - luhn_sum main 0i32 0i32 % 10i32) % 10i32
+
+:= se_orgnr_valid (text : string) : bool =
+    ? sm'::length text < 10i32 ?> !-
+    |:
+        ?= reversed_digits text 0i32 [], digits_at text 0i32 9i32, digits_at text 9i32 1i32 ?|
+        | Some _, Some main, Some (check :: []) => luhn_check main = check
+        | _ => !-
+
+:~ ^ power_of_two (n : i32) : i32 = ? n <= 0i32 ?> 1i32 |: 2i32 * power_of_two (n - 1i32)
+
+:= doubled_weight (index : i32) : i32 = power_of_two (index + 1i32)
+
+:= tin_check (body : list i32) : i32 = (weighted_sum body 0i32 doubled_weight 0i32 % 11i32) % 10i32
+
+:= tin_valid (text : string) : bool =
+    ? sm'::length text < 9i32 ?> !-
+    |:
+        ?= digits_at text 0i32 8i32, digits_at text 8i32 1i32 ?|
+        | Some body, Some (check :: []) => tin_check body = check
+        | _ => !-
+
+:= piva_mapped (digit : i32) : i32 = ? digit < 5i32 ?> digit * 2i32 |: digit * 2i32 - 9i32
+
+:~ ^ piva_sum (digits : list i32) (doubled : bool) (acc : i32) : i32 =
+    ?= digits ?|
+    | digit :: rest => piva_sum rest (doubled = !-) (acc + ? doubled ?> piva_mapped digit |: digit)
+    | [] => acc
+
+:= italian_vat_valid (code : string) : bool =
+    ?= digits_of code ?|
+    | Some digits ?& sm'::length code = 11i32 => piva_sum digits !- 0i32 % 10i32 = 0i32
+    | _ => !-
+
+:= piva_it_valid (text : string) : bool =
+    ? sm'::length text < 2i32
+    ?> !+
+    |:
+        := country = sm'::substring 0i32 2i32 text
+        ? country <> "IT" && country <> "it"
+        ?> !+
+        |: italian_vat_valid (sm'::substring 2i32 (sm'::length text - 2i32) text)
+
+:~ ^ all_letters (text : string) (i : i32) : bool =
+    ? i >= sm'::length text ?> !+
+    |:
+        := c = code_point_at text i
+        ((c >= 65u32 && c <= 90u32) || (c >= 97u32 && c <= 122u32)) && all_letters text (i + 1i32)
+
+:~ ^ all_alnum (text : string) (i : i32) : bool =
+    ? i >= sm'::length text ?> !+
+    |:
+        := c = code_point_at text i
+        := letter = (c >= 65u32 && c <= 90u32) || (c >= 97u32 && c <= 122u32)
+        (letter || (c >= 48u32 && c <= 57u32)) && all_alnum text (i + 1i32)
+
+:= is_digit_text (text : string) : bool = text <> "" && (?= digits_of text ?| Some _ => !+ | None => !-)
+
+:= cf16_name_and_year (text : string) : bool =
+    all_letters (sm'::substring 0i32 6i32 text) 0i32 && is_digit_text (sm'::substring 6i32 2i32 text)
+
+:= cf16_month_and_day (text : string) : bool =
+    all_letters (sm'::substring 8i32 1i32 text) 0i32 && is_digit_text (sm'::substring 9i32 2i32 text)
+
+:= cf16_check_tail (text : string) : bool =
+    is_digit_text (sm'::substring 14i32 1i32 text) && all_letters (sm'::substring 15i32 1i32 text) 0i32
+
+:= cf16_valid (text : string) : bool = cf16_name_and_year text && cf16_month_and_day text && cf16_check_tail text
+
+:= cf_valid (text : string) : bool =
+    ? sm'::length text = 16i32 ?> cf16_valid text |? sm'::length text = 11i32 ?> is_digit_text text |: !-
+
+:= codice_ipa_valid (text : string) : bool = sm'::length text = 6i32 && all_alnum text 0i32
+
+:~ ^ string_value (node : xml_node) : string =
+    ?= node ?|
+    | XmlText text => text
+    | XmlElement (_, _, children) => children_text children ""
+
+:& :~ children_text (children : list xml_node) (acc : string) : string =
+    ?= children ?|
+    | child :: rest => children_text rest (acc ++# string_value child)
+    | [] => acc
+
+:= name_prefix (name : string) : string =
+    := colon = sm'::index_of ":" name
+    ? colon < 0i32 ?> "" |: sm'::substring 0i32 colon name
+
+:= is_prefix_wildcard (test : string) : bool =
+    sm'::length test > 2i32 && sm'::substring (sm'::length test - 2i32) 2i32 test = ":*"
+
+:= name_matches (test : string) (node : xml_node) : bool =
+    ?= node ?|
+    | XmlElement _ =>
+        := own = qualified_name node
+        ? is_prefix_wildcard test ?> name_prefix own = name_prefix test
+        |: test = "*" || local_name test = local_name own
+    | XmlText _ => !-
+
+:~ ^ in_scope_namespace (key : string) (nodes : list xml_node) : string =
+    ?= nodes ?|
+    | XmlElement (_, attributes, _) :: rest =>
+        ?= xml::attribute_of key attributes ?|
+        | Some uri => uri
+        | None => in_scope_namespace key rest
+    | _ :: rest => in_scope_namespace key rest
+    | [] => ""
+
+:= namespace_key (prefix : string) : string = ? prefix = "" ?> "xmlns" |: "xmlns:" ++# prefix
+
+:~ ^ mapped_namespace (prefix : string) (namespaces : list (string * string)) : option string =
+    ?= namespaces ?|
+    | (p, uri) :: rest => ? p = prefix ?> Some uri |: mapped_namespace prefix rest
+    | [] => None
+
+:= own_namespace (item : located) (name : string) : string =
+    := prefix = name_prefix name
+    ? is_attribute item::node && prefix = "" ?> ""
+    |: in_scope_namespace (namespace_key prefix) (item::node :: item::ancestors)
+
+:= prefixed_name_matches (test : string) (item : located) (uri : string) : bool =
+    := name = qualified_name item::node
+    own_namespace item name = uri && (is_prefix_wildcard test || local_name test = local_name name)
+
+:= namespaced_name_matches (namespaces : list (string * string)) (test : string) (item : located) : bool =
+    ?= mapped_namespace (name_prefix test) namespaces ?|
+    | Some uri => prefixed_name_matches test item uri
+    | None => name_matches test item::node
+
+:= name_matches_in (namespaces : list (string * string)) (test : string) (item : located) : bool =
+    ?= item::node ?|
+    | XmlElement _ ?& name_prefix test <> "" => namespaced_name_matches namespaces test item
+    | _ => name_matches test item::node
+
+:= kind_matches (namespaces : list (string * string)) (test : string) (item : located) : bool =
+    ? test = "node()" ?> !+
+    |? test = "text()" ?> (?= item::node ?| XmlText _ => !+ | _ => !-)
+    |: name_matches_in namespaces test item
+
+:~ ^ children_of (parent : located) (nodes : list xml_node) (index : i32) (acc : list located) : list located =
+    ?= nodes ?|
+    | child :: rest =>
+        := located = { node = child; ancestors = (parent::node :: parent::ancestors); path = (index :: parent::path) }
+        children_of parent rest (index + 1i32) (located :: acc)
+    | [] => acc
+
+:= child_nodes (item : located) : list located =
+    ?= item::node ?|
+    | XmlElement (_, _, children) => listm::rev (children_of item children 0i32 [])
+    | XmlText _ => []
+
+:= attribute_at (item : located) (key : string) (value : string) (index : i32) : located =
+    {
+        node = attribute_node key value
+        ancestors = (item::node :: item::ancestors)
+        path = (index :: item::path)
+    }
+
+:~ ^ attributes_of
+    (item : located) (attributes : list (string * string)) (index : i32) (acc : list located)
+    : list located
+    =
+    ?= attributes ?|
+    | (key, value) :: rest =>
+        := kept = ? is_namespace_declaration key ?> acc |: attribute_at item key value index :: acc
+        attributes_of item rest (index - 1i32) kept
+    | [] => listm::rev acc
+
+:~ ^ descendants_of (items : list located) (acc : list located) : list located =
+    ?= items ?|
+    | item :: rest => descendants_of rest (descendants_of (child_nodes item) (item :: acc))
+    | [] => acc
+
+:= parent_of (item : located) : list located =
+    ?= item::ancestors ?|
+    | parent :: rest =>
+        { node = parent; ancestors = rest; path = (?= item::path ?| (_ :: up) => up | [] => []) } :: []
+    | [] => []
+
+:= sibling_index (item : located) : i32 = ?= item::path ?| index :: _ => index | [] => (-1i32)
+
+:~ ^ siblings_where (keep : i32 -> bool) (items : list located) (acc : list located) : list located =
+    ?= items ?|
+    | item :: rest => siblings_where keep rest (? keep (sibling_index item) ?> item :: acc |: acc)
+    | [] => listm::rev acc
+
+:= siblings_of (item : located) (keep : i32 -> i32 -> bool) : list located =
+    := own = sibling_index item
+    ?= parent_of item ?|
+    | parent :: _ ?& own >= 0i32 => siblings_where (keep own) (child_nodes parent) []
+    | _ => []
+
+:~ ^ ancestors_of (item : located) (acc : list located) : list located =
+    ?= parent_of item ?|
+    | parent :: _ => ancestors_of parent (parent :: acc)
+    | [] => listm::rev acc
+
+:= is_after (own : i32) (index : i32) : bool = index > own
+
+:= is_before (own : i32) (index : i32) : bool = index < own
+
+:= element_axis_nodes (axis : axis element_kind) (item : located) : option (list located) =
+    ?= axis ?|
+    | AxisChild => Some (child_nodes item)
+    | AxisSelf => Some (item :: [])
+    | AxisParent => Some (parent_of item)
+    | AxisAncestor => Some (ancestors_of item [])
+    | AxisAncestorOrSelf => Some (item :: ancestors_of item [])
+    | AxisDescendantOrSelf => Some (listm::rev (descendants_of (item :: []) []))
+    | AxisDescendant => Some (listm::rev (descendants_of (child_nodes item) []))
+    | AxisPreceding => None
+    | AxisFollowing => None
+    | AxisFollowingSibling => Some (siblings_of item is_after)
+    | AxisPrecedingSibling => Some (siblings_of item is_before)
+
+:= attribute_axis_nodes (axis : axis attribute_kind) (item : located) : list located =
+    ?= axis ?|
+    | AxisAttribute =>
+        ?= item::node ?|
+        | XmlElement (_, attributes, _) => attributes_of item attributes (-1i32) []
+        | _ => []
+
+:= axis_nodes (axis : step_axis) (item : located) : option (list located) =
+    ?= axis ?|
+    | ElementAxis a => element_axis_nodes a item
+    | AttributeAxis a => Some (attribute_axis_nodes a item)
+    | UnsupportedAxis _ => None
+
+:= element_is_preceding (a : axis element_kind) : bool =
+    ?= a ?|
+    | AxisPreceding => !+
+    | _ => !-
+
+:= is_preceding (axis : step_axis) : bool =
+    ?= axis ?|
+    | ElementAxis a => element_is_preceding a
+    | _ => !-
+
+:= element_is_following (a : axis element_kind) : bool =
+    ?= a ?|
+    | AxisFollowing => !+
+    | _ => !-
+
+:= is_following (axis : step_axis) : bool =
+    ?= axis ?|
+    | ElementAxis a => element_is_following a
+    | _ => !-
+
+:~ ^ filtered_by_test
+    (namespaces : list (string * string)) (test : string) (items : list located) (acc : list located)
+    : list located
+    =
+    ?= items ?|
+    | item :: rest =>
+        filtered_by_test namespaces test rest (? kind_matches namespaces test item ?> (item :: acc) |: acc)
+    | [] => listm::rev acc
+
+:= item_text (first : xvalue) : string =
+    ?= first ?|
+    | VText text => text
+    | VNumber n => decimal::text n
+    | VNodes ((item :: _)) => string_value item::node
+    | _ => ""
+
+:= bool_value_text (b : bool) : string = ? b ?> "true" |: "false"
+
+:= atom_text (value : xvalue) : string =
+    ?= value ?|
+    | VNodes ((first :: _)) => string_value first::node
+    | VNodes ([]) => ""
+    | VText text => text
+    | VNumber n => decimal::text n
+    | VBool b => bool_value_text b
+    | VSequence ((first :: _)) => item_text first
+    | VSequence ([]) => ""
+    | VError _ => ""
+
+:= effective_boolean (value : xvalue) : bool =
+    ?= value ?|
+    | VNodes items => (?= items ?| [] => !- | _ => !+)
+    | VText text => text <> ""
+    | VNumber n => decimal::compare n (decimal::of_int 0i64) <> 0i32
+    | VBool b => b
+    | VSequence items => (?= items ?| [] => !- | _ => !+)
+    | VError _ => !-
+
+:= is_error (value : xvalue) : bool = ?= value ?| VError _ => !+ | _ => !-
+
+:= truth_of (value : xvalue) : xvalue = ? is_error value ?> value |: VBool (effective_boolean value)
+
+:= number_of (value : xvalue) : option decimal::decimal =
+    ?= value ?|
+    | VNumber n => Some n
+    | VBool b => Some (decimal::of_int (? b ?> 1i64 |: 0i64))
+    | _ => decimal::parse (atom_text value)
+
+:= within_slack (e : decimal::decimal) (v : decimal::decimal) (s : decimal::decimal) : bool =
+    decimal::compare (decimal::add e s) v >= 0i32 && decimal::compare (decimal::subtract e s) v <= 0i32
+
+:= slack_holds (arguments : list xvalue) : bool =
+    ?= arguments ?|
+    | expected :: value :: slack :: [] =>
+        ?= number_of expected, number_of value, number_of slack ?|
+        | Some e, Some v, Some s => within_slack e v s
+        | _ => !-
+    | _ => !-
+
+:~ ^ texts_of_value (items : list located) (acc : list string) : list string =
+    ?= items ?|
+    | item :: rest => texts_of_value rest (string_value item::node :: acc)
+    | [] => listm::rev acc
+
+:~ ^ sequence_texts (items : list xvalue) (acc : list string) : list string =
+    ?= items ?|
+    | item :: rest => sequence_texts rest (atom_text item :: acc)
+    | [] => listm::rev acc
+
+:= atoms (value : xvalue) : list string =
+    ?= value ?|
+    | VNodes items => texts_of_value items []
+    | VSequence items => sequence_texts items []
+    | _ => atom_text value :: []
+
+:= is_equality (c : comparison) : bool =
+    ?= c ?|
+    | CmpEq => !+
+    | _ => !-
+
+:= numeric_order (a : string) (b : string) : option i32 =
+    ?= decimal::parse a, decimal::parse b ?|
+    | Some x, Some y => Some (decimal::compare x y)
+    | _ => None
+
+:= order_holds (op : comparison) (c : i32) : bool =
+    ?= op ?|
+    | CmpEq => c = 0i32
+    | CmpNe => c <> 0i32
+    | CmpLt => c < 0i32
+    | CmpLe => c <= 0i32
+    | CmpGt => c > 0i32
+    | CmpGe => c >= 0i32
+
+:= unordered_holds (op : comparison) : bool = ?= op ?| CmpNe => !+ | _ => !-
+
+:= compare_atoms (op : comparison) (numeric : bool) (a : string) (b : string) : bool =
+    := order = ? numeric ?> numeric_order a b |: Some (xml::text_order a b)
+    ?= order ?|
+    | Some c => order_holds op c
+    | None => unordered_holds op
+
+:~ ^ any_pair (op : comparison) (numeric : bool) (left : list string) (right : list string) : bool =
+    ?= left ?|
+    | a :: rest => any_with op numeric a right || any_pair op numeric rest right
+    | [] => !-
+
+:& :~ any_with (op : comparison) (numeric : bool) (a : string) (right : list string) : bool =
+    ?= right ?|
+    | b :: rest => compare_atoms op numeric a b || any_with op numeric a rest
+    | [] => !-
+
+:= is_numeric_value (value : xvalue) : bool =
+    ?= value ?|
+    | VNumber _ => !+
+    | _ => !-
+
+:~ ^ all_digits_from (t : string) (i : i32) : bool =
+    ? i >= sm'::length t ?> !+
+    |: sm'::index_of (sm'::substring i 1i32 t) "0123456789" >= 0i32 && all_digits_from t (i + 1i32)
+
+:= long_digits (value : xvalue) : option string =
+    := t = sm'::trim (atom_text value)
+    ? sm'::length t > 0i32 && all_digits_from t 0i32 ?> Some t |: None
+
+:~ ^ digits_modulo (text : string) (m : i64) (i : i32) (acc : i64) : i64 =
+    ? i >= sm'::length text ?> acc
+    |: digits_modulo text m (i + 1i32) ((acc * 10i64 + decimal::digit_value (sm'::substring i 1i32 text)) % m)
+
+:= is_modulo (op : operator number_result) : bool = ?= op ?| OpModulo => !+ | _ => !-
+
+:= is_zero_number (b : decimal::decimal) : bool = decimal::compare b (decimal::of_int 0i64) = 0i32
+
+:= quotient (a : decimal::decimal) (b : decimal::decimal) : xvalue =
+    ? is_zero_number b ?> VError "division by zero" |: VNumber (decimal::divide 9i32 a b)
+
+:= remainder (a : decimal::decimal) (b : decimal::decimal) : xvalue =
+    ? is_zero_number b ?> VError "modulo by zero" |: VNumber (decimal::modulo a b)
+
+:= number_arithmetic (op : operator number_result) (a : decimal::decimal) (b : decimal::decimal) : xvalue =
+    ?= op ?|
+    | OpAdd => VNumber (decimal::add a b)
+    | OpSubtract => VNumber (decimal::subtract a b)
+    | OpMultiply => VNumber (decimal::multiply a b)
+    | OpDivide => quotient a b
+    | OpModulo => remainder a b
+
+:= not_a_number (op : operator number_result) : xvalue = VError ("not a number for " ++# number_operator_text op)
+
+:= long_modulo (op : operator number_result) (left : xvalue) (units : i64) : xvalue =
+    ?= long_digits left ?|
+    | Some digits => VNumber (decimal::of_int (digits_modulo digits units 0i32 0i64))
+    | None => not_a_number op
+
+:= arithmetic (op : operator number_result) (left : xvalue) (right : xvalue) : xvalue =
+    ?= number_of left, number_of right ?|
+    | Some a, Some b => number_arithmetic op a b
+    | None, Some b ?& is_modulo op && b::scale = 0i32 && b::units > 0i64 => long_modulo op left b::units
+    | _ => not_a_number op
+
+:~ ^ same_path (a : list i32) (b : list i32) : bool =
+    ?= a ?|
+    | x :: a_rest =>
+        ?= b ?|
+        | y :: b_rest => x = y && same_path a_rest b_rest
+        | [] => !-
+    | [] => ?= b ?| [] => !+ | _ => !-
+
+:~ ^ has_located (item : located) (items : list located) : bool =
+    ?= items ?|
+    | other :: rest => same_path item::path other::path || has_located item rest
+    | [] => !-
+
+:~ ^ unique_located (items : list located) (acc : list located) : list located =
+    ?= items ?|
+    | item :: rest => unique_located rest (? has_located item acc ?> acc |: item :: acc)
+    | [] => listm::rev acc
+
+:~ ^ located_where (inside : bool) (items : list located) (others : list located) (acc : list located) : list located =
+    ?= items ?|
+    | item :: rest => located_where inside rest others (? has_located item others = inside ?> item :: acc |: acc)
+    | [] => listm::rev acc
+
+:~ ^ path_before (a : list i32) (b : list i32) : bool =
+    ?= a ?|
+    | x :: a_rest =>
+        ?= b ?|
+        | y :: b_rest => ? x < y ?> !+ |? x > y ?> !- |: path_before a_rest b_rest
+        | [] => !-
+    | [] => !-
+
+:~ ^ preceding_in (items : list located) (target : list i32) (acc : list located) : list located =
+    ?= items ?|
+    | item :: rest => preceding_in rest target (? path_before (listm::rev item::path) target ?> (item :: acc) |: acc)
+    | [] => listm::rev acc
+
+:= preceding_of (root : located) (item : located) : list located =
+    preceding_in (listm::rev (descendants_of (root :: []) [])) (listm::rev item::path) []
+
+:~ ^ following_in (items : list located) (target : list i32) (acc : list located) : list located =
+    ?= items ?|
+    | item :: rest => following_in rest target (? path_before target (listm::rev item::path) ?> (item :: acc) |: acc)
+    | [] => listm::rev acc
+
+:= following_of (root : located) (item : located) : list located =
+    following_in (listm::rev (descendants_of (root :: []) [])) (listm::rev item::path) []
+
+:= is_empty_value (value : xvalue) : bool =
+    ?= value ?|
+    | VNodes ([]) => !+
+    | VSequence ([]) => !+
+    | _ => !-
+
+:= boolean_atom (text : string) : option bool =
+    := t = sm'::trim text
+    ? t = "true" || t = "1" ?> Some !+ |? t = "false" || t = "0" ?> Some !- |: None
+
+:~ ^ booleans_of (texts : list string) (acc : list bool) : list bool =
+    ?= texts ?|
+    | text :: rest => booleans_of rest (?= boolean_atom text ?| Some b => (b :: acc) | None => acc)
+    | [] => acc
+
+:= as_booleans (value : xvalue) : list bool =
+    ?= value ?|
+    | VBool b => b :: []
+    | _ => booleans_of (atoms value) []
+
+:~ ^ any_boolean_with (equal : bool) (a : bool) (right : list bool) : bool =
+    ?= right ?|
+    | b :: rest => (a = b) = equal || any_boolean_with equal a rest
+    | [] => !-
+
+:~ ^ any_boolean_pair (equal : bool) (left : list bool) (right : list bool) : bool =
+    ?= left ?|
+    | a :: rest => any_boolean_with equal a right || any_boolean_pair equal rest right
+    | [] => !-
+
+:~ ^ collapsed (s : string) (i : i32) (pending : bool) (acc : string) : string =
+    ? i >= sm'::length s ?> acc
+    |:
+        := c = code_point_text s i
+        := next = i + sm'::length c
+        ? is_space c ?> collapsed s next (acc <> "") acc
+        |: collapsed s next !- (acc ++# (? pending ?> " " |: "") ++# c)
+
+:= normalize_space (s : string) : string = collapsed s 0i32 !- ""
+
+:~ ^ byte_offset (s : string) (chars : i32) (i : i32) : i32 =
+    ? chars <= 0i32 || i >= sm'::length s ?> i |: byte_offset s (chars - 1i32) (i + code_point_width s i)
+
+:= clamped_bounds (t : string) (begin : i32) (count : i32) : i32 * i32 =
+    := total = code_point_count t
+    (? begin < 0i32 ?> 0i32 |: begin), (? begin + count > total ?> total |: begin + count)
+
+:= char_substring (t : string) (begin : i32) (count : i32) : string =
+    := begin', stop = clamped_bounds t begin count
+    ? stop <= begin' ?> ""
+    |:
+        := from = byte_offset t begin' 0i32
+        sm'::substring from (byte_offset t stop 0i32 - from) t
+
+:= substring_after (needle : string) (s : string) : string =
+    := at = sm'::index_of needle s
+    ? at < 0i32 ?> "" |: sm'::substring (at + sm'::length needle) (sm'::length s - at - sm'::length needle) s
+
+:= substring_before (needle : string) (s : string) : string =
+    := at = sm'::index_of needle s
+    ? at < 0i32 ?> "" |: sm'::substring 0i32 at s
+
+:~ ^ lookup (name : string) (variables : list (string * xvalue)) : xvalue =
+    ?= variables ?|
+    | (key, value) :: rest => ? key = name ?> value |: lookup name rest
+    | [] => VError ("unbound $" ++# name)
+
+:~ ^ distinct_texts (items : list string) (seen : list string) (acc : list xvalue) : list xvalue =
+    ?= items ?|
+    | item :: rest =>
+        ? has_text item seen ?> distinct_texts rest seen acc
+        |: distinct_texts rest (item :: seen) (VText item :: acc)
+    | [] => listm::rev acc
+
+:~ ^ sum_texts (items : list string) (acc : decimal::decimal) : xvalue =
+    ?= items ?|
+    | item :: rest =>
+        ?= decimal::parse item ?|
+        | Some n => sum_texts rest (decimal::add acc n)
+        | None => VError ("sum over a non-number: " ++# item)
+    | [] => VNumber acc
+
+:= item_count (value : xvalue) : i32 =
+    ?= value ?|
+    | VNodes items => listm::length items
+    | VSequence items => listm::length items
+    | _ => 1i32
+
+:= has_items (value : xvalue) : bool = item_count value > 0i32 && (?= value ?| VNodes ([]) => !- | _ => !+)
+
+:= piece_to (p : string) (i : i32) (e : i32) (quantified : bool) : i32 * bool * string =
+    e, quantified, sm'::substring i (e - i) p
+
+:| greedy_token =
+    | GreedyEscape
+    | GreedyClass
+    | GreedyLazyMark
+    | GreedyQuantifier
+    | GreedyBrace
+    | GreedyPlain
+
+:= greedy_token_of (c : u32) (after_quantifier : bool) : greedy_token =
+    ? c = 92u32 ?> GreedyEscape
+    |? c = 91u32 ?> GreedyClass
+    |? c = 63u32 && after_quantifier ?> GreedyLazyMark
+    |? c = 42u32 || c = 43u32 || c = 63u32 ?> GreedyQuantifier
+    |? c = 123u32 ?> GreedyBrace
+    |: GreedyPlain
+
+:= greedy_step (p : string) (i : i32) (after_quantifier : bool) : i32 * bool * string =
+    ?= greedy_token_of (code_point_at p i) after_quantifier ?|
+    | GreedyEscape => piece_to p i (xsd_regex::escape_end p i) !-
+    | GreedyClass => piece_to p i (xsd_regex::class_end p (i + 1i32) 0i32) !-
+    | GreedyLazyMark => (i + 1i32, !-, "")
+    | GreedyQuantifier => (i + 1i32, !+, sm'::substring i 1i32 p)
+    | GreedyBrace => piece_to p i (xsd_regex::brace_end p i) !+
+    | GreedyPlain => piece_to p i (i + code_point_width p i) !-
+
+:~ ^ greedy_from (p : string) (i : i32) (after_quantifier : bool) (acc : string) : string =
+    ? i >= sm'::length p ?> acc
+    |:
+        := next, quantified, piece = greedy_step p i after_quantifier
+        greedy_from p next quantified (acc ++# piece)
+
+:= anchor_skip (p : string) (i : i32) (c : u32) : i32 =
+    ? c = 92u32 ?> xsd_regex::escape_end p i
+    |? c = 91u32 ?> xsd_regex::class_end p (i + 1i32) 0i32
+    |: i + code_point_width p i
+
+:~ ^ has_bare_anchor (p : string) (i : i32) : bool =
+    ? i >= sm'::length p ?> !-
+    |:
+        := c = code_point_at p i
+        ? c = 94u32 || c = 36u32 ?> !+ |: has_bare_anchor p (anchor_skip p i c)
+
+:= has_trailing_anchor (s : string) : bool = sm'::ends_with "$" s && sm'::ends_with "\\$" s = !-
+
+:= drop_last_char (s : string) : string = sm'::substring 0i32 (sm'::length s - 1i32) s
+
+:= drop_first_char (s : string) : string = sm'::substring 1i32 (sm'::length s - 1i32) s
+
+:= anchored_pattern (starts : bool) (ends : bool) (body : string) : string =
+    := any = "(.|\\n|\\r)*"
+    (? starts ?> "" |: any) ++# "(" ++# body ++# ")" ++# (? ends ?> "" |: any)
+
+:= anchored_search (starts : bool) (after_start : string) : option string =
+    := ends = has_trailing_anchor after_start
+    := body = ? ends ?> drop_last_char after_start |: after_start
+    ? has_bare_anchor body 0i32 ?> None |: Some (anchored_pattern starts ends body)
+
+:= search_pattern (p : string) : option string =
+    := greedy = greedy_from p 0i32 !- ""
+    := starts = sm'::starts_with "^" greedy
+    anchored_search starts (? starts ?> drop_first_char greedy |: greedy)
+
+:= matches_flags (rest : list xvalue) : string = ?= rest ?| f :: _ => atom_text f | [] => ""
+
+:= compiled_search (source : string) : option xsd_regex::rx =
+    ?= search_pattern source ?|
+    | Some search => xsd_regex::compile_pattern search
+    | None => None
+
+:= pattern_matches (input : xvalue) (source : string) : xvalue =
+    ?= compiled_search source ?|
+    | Some r => VBool (xsd_regex::matches_from r (atom_text input) 0i32)
+    | None => VError ("matches pattern is not supported: " ++# source)
+
+:= flagged_match (input : xvalue) (pattern : xvalue) (rest : list xvalue) : xvalue =
+    := flags = matches_flags rest
+    ? flags <> "" ?> VError ("matches flags are not supported: " ++# flags) |: pattern_matches input (atom_text pattern)
+
+:= matches_value (arguments : list xvalue) : xvalue =
+    ?= arguments ?|
+    | input :: pattern :: rest => flagged_match input pattern rest
+    | _ => VError "matches takes an input and a pattern"
+
+:~ ^ code_point_index (c : string) (s : string) (i : i32) (n : i32) : i32 =
+    ? i >= sm'::length s ?> -1i32
+    |? code_point_text s i = c ?> n
+    |: code_point_index c s (i + code_point_width s i) (n + 1i32)
+
+:~ ^ code_point_nth (s : string) (i : i32) (n : i32) : string =
+    ? i >= sm'::length s ?> ""
+    |? n = 0i32 ?> code_point_text s i
+    |: code_point_nth s (i + code_point_width s i) (n - 1i32)
+
+:~ ^ translated_from (s : string) (from : string) (into : string) (i : i32) (acc : string) : string =
+    ? i >= sm'::length s ?> acc
+    |:
+        := c = code_point_text s i
+        := k = code_point_index c from 0i32 0i32
+        := mapped = ? k < 0i32 ?> c |: code_point_nth into 0i32 k
+        translated_from s from into (i + code_point_width s i) (acc ++# mapped)
+
+:= third_text (arguments : list xvalue) : string = ?= arguments ?| _ :: _ :: c :: _ => atom_text c | _ => ""
+
+:= token_value (s : string) (start : i32) (stop : i32) : xvalue = VText (sm'::substring start (stop - start) s)
+
+:= last_token (s : string) (start : i32) (acc : list xvalue) : list xvalue =
+    listm::rev (token_value s start (sm'::length s) :: acc)
+
+:~ ^ split_tokens (r : xsd_regex::rx) (s : string) (start : i32) (i : i32) (acc : list xvalue) : list xvalue =
+    ? i >= sm'::length s ?> last_token s start acc
+    |:
+        := e = xsd_regex::longest_match r s i
+        ? e > i ?> split_tokens r s e e (token_value s start i :: acc)
+        |: split_tokens r s start (i + code_point_width s i) acc
+
+:~ ^ replaced_from (r : xsd_regex::rx) (s : string) (into : string) (i : i32) (acc : string) : string =
+    ? i >= sm'::length s ?> acc
+    |:
+        := e = xsd_regex::longest_match r s i
+        ? e > i ?> replaced_from r s into e (acc ++# into)
+        |:
+            := w = code_point_width s i
+            replaced_from r s into (i + w) (acc ++# sm'::substring i w s)
+
+:= split_pattern (p : string) : option xsd_regex::rx =
+    := greedy = greedy_from p 0i32 !- ""
+    ? has_bare_anchor greedy 0i32 ?> None
+    |:
+        ?= xsd_regex::compile_pattern greedy ?|
+        | Some r => ? xsd_regex::nullable r ?> None |: Some r
+        | None => None
+
+:= tokenize_value (s : string) (p : string) : xvalue =
+    ? s = "" ?> VSequence ([])
+    |:
+        ?= split_pattern p ?|
+        | Some r => VSequence (split_tokens r s 0i32 0i32 [])
+        | None => VError ("tokenize pattern is not supported: " ++# p)
+
+:= has_group_reference (into : string) : bool = sm'::contains "$" into || sm'::contains "\\" into
+
+:= pattern_replace (s : string) (p : string) (into : string) : xvalue =
+    ?= split_pattern p ?|
+    | Some r => VText (replaced_from r s into 0i32 "")
+    | None => VError ("replace pattern is not supported: " ++# p)
+
+:= replace_value (s : string) (p : string) (into : string) : xvalue =
+    ? has_group_reference into ?> VError "replace with group references is not supported" |: pattern_replace s p into
+
+:~ ^ values_at (n : decimal::decimal) (items : list xvalue) (position : i32) (acc : list xvalue) : list xvalue =
+    ?= items ?|
+    | item :: rest =>
+        := hit = decimal::compare n (decimal::of_int (conv position : i64)) = 0i32
+        values_at n rest (position + 1i32) (? hit ?> item :: acc |: acc)
+    | [] => listm::rev acc
+
+:~ ^ joined_with (items : list string) (separator : string) (acc : string) : string =
+    ?= items ?|
+    | item :: rest => joined_with rest separator (acc ++# separator ++# item)
+    | [] => acc
+
+:= half_even_rounded (whole : i64) (rest : i64) (step : i64) : i64 =
+    ? rest * 2i64 > step ?> whole + 1i64
+    |? rest * 2i64 < step ?> whole
+    |: (? whole % 2i64 = 0i64 ?> whole |: whole + 1i64)
+
+:= round_half_even_cents (a : decimal::decimal) : i64 =
+    ? a::scale <= 2i32 ?> decimal::at_scale 2i32 a
+    |:
+        := step = decimal::power_of_ten (a::scale - 2i32) 1i64
+        := whole = decimal::floor_division a::units step
+        half_even_rounded whole (a::units - whole * step) step
+
+:= cents_digits (magnitude : i64) : string =
+    := fraction = decimal::zero_padded (decimal::digits_text (magnitude % 100i64) "") 2i32
+    decimal::digits_text (magnitude / 100i64) "" ++# "." ++# fraction
+
+:= cents_text (cents : i64) : string =
+    := negative = cents < 0i64
+    (? negative ?> "-" |: "") ++# cents_digits (? negative ?> 0i64 - cents |: cents)
+
+:= without_integer_zero (text : string) : string =
+    ? sm'::starts_with "0." text ?> sm'::substring 1i32 (sm'::length text - 1i32) text
+    |? sm'::starts_with "-0." text ?> "-" ++# sm'::substring 2i32 (sm'::length text - 2i32) text
+    |: text
+
+:= is_supported_picture (picture : string) : bool = picture = "#0.00" || picture = "0.00" || picture = "#.00"
+
+:= picture_cents (picture : string) (n : decimal::decimal) : xvalue =
+    := cents = cents_text (round_half_even_cents n)
+    VText (? picture = "#.00" ?> without_integer_zero cents |: cents)
+
+:= format_number_value (value : xvalue) (picture : string) : xvalue =
+    ? is_supported_picture picture = !-
+    ?> VError ("format-number picture is not supported: " ++# picture)
+    |:
+        ?= number_of value ?|
+        | Some n => picture_cents picture n
+        | None => VText "NaN"
+
+:= number_at (text : string) (start : i32) (length : i32) : option i64 =
+    ?= reversed_digits (sm'::substring start length text) 0i32 [] ?|
+    | Some (digit :: rest) => Some (conv (check_digits_value (listm::rev (digit :: rest)) 0i32) : i64)
+    | _ => None
+
+:= signed_offset (sign : string) (magnitude : i64) : option i64 =
+    ? sign = "+" ?> Some magnitude |? sign = "-" ?> Some (0i64 - magnitude) |: None
+
+:= hh_mm_offset (zone : string) : option i64 =
+    ?= number_at zone 1i32 2i32, number_at zone 4i32 2i32 ?|
+    | Some hours, Some minutes => signed_offset (sm'::substring 0i32 1i32 zone) (hours * 3600i64 + minutes * 60i64)
+    | _ => None
+
+:= offset_seconds (zone : string) : option i64 =
+    ? zone = "" || zone = "Z" ?> Some 0i64
+    |? sm'::length zone = 6i32 && sm'::substring 3i32 1i32 zone = ":" ?> hh_mm_offset zone
+    |: None
+
+:~ ^ fraction_end (text : string) (i : i32) : i32 =
+    := digit = i < sm'::length text && sm'::index_of (sm'::substring i 1i32 text) "0123456789" >= 0i32
+    ? digit ?> fraction_end text (i + 1i32) |: i
+
+:= is_datetime_shaped (t : string) : bool =
+    sm'::length t >= 19i32 && sm'::substring 4i32 1i32 t = "-" && sm'::substring 10i32 1i32 t = "T"
+
+:= zone_after (t : string) (seconds_end : i32) : string =
+    := has_fraction = sm'::length t > seconds_end && sm'::substring seconds_end 1i32 t = "."
+    := zone_start = ? has_fraction ?> fraction_end t (seconds_end + 1i32) |: seconds_end
+    sm'::substring zone_start (sm'::length t - zone_start) t
+
+:= datetime_day (t : string) : option i64 =
+    ?= number_at t 0i32 4i32, number_at t 5i32 2i32, number_at t 8i32 2i32 ?|
+    | Some y, Some mo, Some d => Some (date_time::days_from_civil y mo d)
+    | _ => None
+
+:= datetime_clock (t : string) : option i64 =
+    ?= number_at t 11i32 2i32, number_at t 14i32 2i32, number_at t 17i32 2i32 ?|
+    | Some h, Some mi, Some se => Some (h * 3600i64 + mi * 60i64 + se)
+    | _ => None
+
+:= datetime_seconds (text : string) : option i64 =
+    := t = sm'::trim text
+    ? is_datetime_shaped t = !- ?> None
+    |:
+        ?= datetime_day t, datetime_clock t, offset_seconds (zone_after t 19i32) ?|
+        | Some day, Some clock, Some offset => Some (day * 86400i64 + clock - offset)
+        | _ => None
+
+:= designator_seconds (c : string) (in_time : bool) : option i64 =
+    ? c = "D" && in_time = !- ?> Some 86400i64
+    |? c = "H" && in_time ?> Some 3600i64
+    |? c = "M" && in_time ?> Some 60i64
+    |? c = "S" && in_time ?> Some 1i64
+    |: None
+
+:= designator_step (c : string) (in_time : bool) (number : i64) (acc : i64) : option (bool * i64 * i64) =
+    ?= designator_seconds c in_time ?|
+    | Some unit => Some (in_time, 0i64, acc + number * unit)
+    | None => None
+
+:= duration_step (c : string) (in_time : bool) (number : i64) (acc : i64) : option (bool * i64 * i64) =
+    := digit = sm'::index_of c "0123456789"
+    ? digit >= 0i32 ?> Some (in_time, number * 10i64 + conv digit, acc)
+    |? c = "T" ?> Some (!+, 0i64, acc)
+    |: designator_step c in_time number acc
+
+:~ ^ duration_from (text : string) (i : i32) (in_time : bool) (number : i64) (acc : i64) : option i64 =
+    ? i >= sm'::length text ?> Some acc
+    |:
+        ?= duration_step (sm'::substring i 1i32 text) in_time number acc ?|
+        | Some (timed, carried, total) => duration_from text (i + 1i32) timed carried total
+        | None => None
+
+:= unsigned_duration (body : string) : option i64 =
+    ? sm'::starts_with "P" body = !- ?> None |: duration_from body 1i32 !- 0i64 0i64
+
+:= duration_seconds (text : string) : option i64 =
+    := t = sm'::trim text
+    := negative = sm'::starts_with "-" t
+    := body = ? negative ?> drop_first_char t |: t
+    ?= unsigned_duration body ?|
+    | Some seconds => Some (? negative ?> 0i64 - seconds |: seconds)
+    | None => None
+
+:= datetime_value (value : xvalue) : xvalue =
+    ?= datetime_seconds (atom_text value) ?|
+    | Some seconds => VNumber (decimal::of_int seconds)
+    | None => VError ("not an xs:dateTime: " ++# atom_text value)
+
+:= is_leap_year (y : i64) : bool = (y % 4i64 = 0i64 && y % 100i64 <> 0i64) || y % 400i64 = 0i64
+
+:= days_in_month (y : i64) (m : i64) : i64 =
+    ? m = 2i64 ?> (? is_leap_year y ?> 29i64 |: 28i64)
+    |? m = 4i64 || m = 6i64 || m = 9i64 || m = 11i64 ?> 30i64
+    |: 31i64
+
+:= is_date_shaped (t : string) : bool =
+    sm'::length t >= 10i32 && sm'::substring 4i32 1i32 t = "-" && sm'::substring 7i32 1i32 t = "-"
+
+:= is_valid_day (y : i64) (m : i64) (d : i64) : bool = m >= 1i64 && m <= 12i64 && d >= 1i64 && d <= days_in_month y m
+
+:= date_parts_valid (t : string) : bool =
+    := zone = offset_seconds (sm'::substring 10i32 (sm'::length t - 10i32) t)
+    ?= number_at t 0i32 4i32, number_at t 5i32 2i32, number_at t 8i32 2i32, zone ?|
+    | Some y, Some m, Some d, Some _ => is_valid_day y m d
+    | _ => !-
+
+:= is_xs_date (text : string) : bool =
+    := t = sm'::trim text
+    ? is_date_shaped t = !- ?> !- |: date_parts_valid t
+
+:= is_time_shaped (t : string) : bool =
+    sm'::length t >= 8i32 && sm'::substring 2i32 1i32 t = ":" && sm'::substring 5i32 1i32 t = ":"
+
+:= time_parts_valid (t : string) : bool =
+    ?= number_at t 0i32 2i32, number_at t 3i32 2i32, number_at t 6i32 2i32, offset_seconds (zone_after t 8i32) ?|
+    | Some h, Some mi, Some se, Some _ => h <= 23i64 && mi <= 59i64 && se <= 59i64
+    | _ => !-
+
+:= is_xs_time (text : string) : bool =
+    := t = sm'::trim text
+    ? is_time_shaped t = !- ?> !- |: time_parts_valid t
+
+:= is_xs_integer (text : string) : bool =
+    := t = sm'::trim text
+    := digits = ? sm'::starts_with "-" t || sm'::starts_with "+" t ?> sm'::substring 1i32 (sm'::length t - 1i32) t |: t
+    sm'::length digits > 0i32 && fraction_end digits 0i32 = sm'::length digits
+
+:= is_xs_decimal (t : string) : bool = ?= decimal::parse (sm'::trim t) ?| Some _ => !+ | None => !-
+
+:= any_text (_ : string) : bool = !+
+
+:= castable_checks () : list (string * (string -> bool)) =
+    [
+        ("xs:string", any_text)
+        ("xs:integer", is_xs_integer)
+        ("xs:decimal", is_xs_decimal)
+        ("xs:date", is_xs_date)
+        ("xs:time", is_xs_time)
+    ]
+
+:= castable_text (ty : string) (t : string) : xvalue =
+    ?= table_lookup ty (castable_checks ()) ?|
+    | Some check => VBool (check t)
+    | None => VError ("castable as " ++# ty ++# " is not supported")
+
+:= castable_value (ty : string) (optional : bool) (value : xvalue) : xvalue =
+    ?= value ?|
+    | VError e => VError e
+    | _ =>
+        ? is_empty_value value ?> VBool optional
+        |? item_count value > 1i32 ?> VBool !-
+        |: castable_text ty (atom_text value)
+
+:~ ^ codepoint_values (text : string) (i : i32) (acc : list xvalue) : list xvalue =
+    ? i >= sm'::length text ?> listm::rev acc
+    |:
+        := point = VNumber (decimal::of_int (conv (xml::code_point_at text i) : i64))
+        codepoint_values text (i + xml::code_point_width text i) (point :: acc)
+
+:= duration_value (value : xvalue) : xvalue =
+    ?= duration_seconds (atom_text value) ?|
+    | Some seconds => VNumber (decimal::of_int seconds)
+    | None => VError ("not an xs:dayTimeDuration: " ++# atom_text value)
+
+:= string_joined (items : list string) (separator : string) : string =
+    ?= items ?|
+    | first :: rest => joined_with rest separator first
+    | [] => ""
+
+:= singleton_nodes (nodes : list located) : list xvalue = listm::map (\ (n : located) => VNodes (n :: [])) nodes
+
+:~ ^ sequence_items (values : list xvalue) (acc : list xvalue) : list xvalue =
+    ?= values ?|
+    | VSequence inner :: rest => sequence_items rest (listm::append (listm::rev inner) acc)
+    | VNodes nodes :: rest => sequence_items rest (listm::append (listm::rev (singleton_nodes nodes)) acc)
+    | value :: rest => sequence_items rest (value :: acc)
+    | [] => listm::rev acc
+
+:~ ^ all_nodes (values : list xvalue) (acc : list located) : option (list located) =
+    ?= values ?|
+    | VNodes items :: rest => all_nodes rest (listm::append acc items)
+    | _ :: _ => None
+    | [] => Some acc
+
+:~ ^ first_error (values : list xvalue) : option string =
+    ?= values ?|
+    | VError reason :: _ => Some reason
+    | _ :: rest => first_error rest
+    | [] => None
+
+:= sequence_value (values : list xvalue) : xvalue =
+    ?= first_error values ?|
+    | Some reason => VError reason
+    | None =>
+    ?= all_nodes values [] ?|
+    | Some nodes => VNodes nodes
+    | None => VSequence (sequence_items values [])
+
+:~ call_bool (f : builtin bool_result) (first : xvalue) (second : string) : bool =
+    ?= f ?|
+    | FnNot => effective_boolean first = !-
+    | FnTrue => !+
+    | FnFalse => !-
+    | FnBoolean => effective_boolean first
+    | FnExists => has_items first
+    | FnEmpty => is_empty_value first
+    | FnContains => sm'::contains second (atom_text first)
+    | FnStartsWith => sm'::starts_with second (atom_text first)
+    | FnEndsWith => sm'::ends_with second (atom_text first)
+    | FnGln => gln_valid (atom_text first)
+    | FnMod11 => mod11_valid (atom_text first)
+    | FnMod97 => mod97_0208_valid (atom_text first)
+    | FnAbn => abn_valid (atom_text first)
+    | FnSeOrgnr => se_orgnr_valid (atom_text first)
+    | FnTin => tin_valid (atom_text first)
+    | FnPivaIt => piva_it_valid (atom_text first)
+    | FnCf => cf_valid (atom_text first)
+    | FnCodiceIpa => codice_ipa_valid (atom_text first)
+    | FnSlack => !-
+    | FnMatches => !-
+
+:~ undigited_value (f : builtin value_result) (first : xvalue) : xvalue =
+    ?= long_digits first ?|
+    | Some digits => VText digits
+    | None => VError (value_function_text f ++# " of " ++# atom_text first)
+
+:~ numeric_value (f : builtin value_result) (first : xvalue) : xvalue =
+    ? is_empty_value first ?> VSequence ([])
+    |:
+        ?= number_of first ?|
+        | Some n => VNumber n
+        | None => undigited_value f first
+
+:~ node_name_value (local : bool) (first : xvalue) : xvalue =
+    ?= first ?|
+    | VNodes ((item :: _)) =>
+        := full = qualified_name item::node
+        VText (? local ?> local_name full |: full)
+    | _ => VText ""
+
+:~ namespace_uri_value (first : xvalue) : xvalue =
+    ?= first ?|
+    | VNodes ((item :: _)) =>
+        ?= item::node ?|
+        | XmlElement _ => VText (own_namespace item (qualified_name item::node))
+        | _ => VText ""
+    | _ => VText ""
+
+:= substring_start (start : xvalue) : i32 =
+    := from = ?= number_of start ?| Some n => decimal::round n | None => decimal::of_int 1i64
+    (conv from::units : i32) - 1i32
+
+:= rounded_count (length : xvalue) : i32 =
+    ?= number_of length ?|
+    | Some n => conv (decimal::round n)::units : i32
+    | None => 0i32
+
+:= substring_count (rest : list xvalue) (t : string) : i32 =
+    ?= rest ?|
+    | (length :: _) => rounded_count length
+    | [] => code_point_count t
+
+:~ substring_value (arguments : list xvalue) : xvalue =
+    ?= arguments ?|
+    | text :: start :: rest =>
+        := t = atom_text text
+        VText (char_substring t (substring_start start) (substring_count rest t))
+    | _ => VError "substring needs two arguments"
+
+:= floored (n : decimal::decimal) : decimal::decimal =
+    decimal::of_int (decimal::floor_division n::units (decimal::power_of_ten n::scale 1i64))
+
+:= absolute (n : decimal::decimal) : decimal::decimal =
+    ? decimal::compare n (decimal::of_int 0i64) < 0i32 ?> decimal::negate n |: n
+
+:= number_function (name : string) (op : decimal::decimal -> decimal::decimal) (first : xvalue) : xvalue =
+    ? is_empty_value first ?> VSequence ([])
+    |:
+        ?= number_of first ?|
+        | Some n => VNumber (op n)
+        | None => VError name
+
+:~ call_value (f : builtin value_result) (arguments : list xvalue) (first : xvalue) (second : string) : xvalue =
+    ?= f ?|
+    | FnCount => VNumber (decimal::of_int (conv (item_count first) : i64))
+    | FnSum => sum_texts (atoms first) (decimal::of_int 0i64)
+    | FnNormalizeSpace => VText (normalize_space (atom_text first))
+    | FnUpperCase => VText (sm'::to_upper (atom_text first))
+    | FnLowerCase => VText (sm'::to_lower (atom_text first))
+    | FnString => VText (atom_text first)
+    | FnStringLength => VNumber (decimal::of_int (conv (code_point_count (atom_text first)) : i64))
+    | FnSubstringAfter => VText (substring_after second (atom_text first))
+    | FnSubstringBefore => VText (substring_before second (atom_text first))
+    | FnConcat => VText (sm'::concat_balanced "" (sequence_texts arguments []))
+    | FnRound => number_function "round" decimal::round first
+    | FnFloor => number_function "floor" floored first
+    | FnAbs => number_function "abs" absolute first
+    | FnDecimal => numeric_value f first
+    | FnNumber => numeric_value f first
+    | FnDate => VText (atom_text first)
+    | FnName => node_name_value !- first
+    | FnLocalName => node_name_value !+ first
+    | FnNamespaceUri => namespace_uri_value first
+    | FnDistinctValues => VSequence (distinct_texts (atoms first) [] [])
+    | FnSubstring => substring_value arguments
+    | FnCurrentDate => VError "current-date needs an evaluation date"
+    | FnFormatNumber => format_number_value first second
+    | FnDateTime => datetime_value first
+    | FnDayTimeDuration => duration_value first
+    | FnCurrentDateTime => VError "current-dateTime needs an evaluation date"
+    | FnTranslate => VText (translated_from (atom_text first) second (third_text arguments) 0i32 "")
+    | FnTokenize => tokenize_value (atom_text first) second
+    | FnReplace => replace_value (atom_text first) second (third_text arguments)
+    | FnStringJoin => VText (string_joined (atoms first) second)
+    | FnStringToCodepoints => VSequence (codepoint_values (atom_text first) 0i32 [])
+    | FnCurrent => VError "current() needs a rule context"
+
+:= bool_function_value (f : builtin bool_result) (arguments : list xvalue) (first : xvalue) (second : string) : xvalue =
+    ?= f ?|
+    | FnSlack => VBool (slack_holds arguments)
+    | FnMatches => matches_value arguments
+    | _ => VBool (call_bool f first second)
+
+:= current_date_value (today : string) : xvalue =
+    ? today = "" ?> VError "current-date needs an evaluation date" |: VText (sm'::substring 0i32 10i32 today)
+
+:= current_datetime_value (today : string) : xvalue =
+    := instant = ? sm'::length today = 10i32 ?> today ++# "T00:00:00Z" |: today
+    ? today = "" ?> VError "current-dateTime needs an evaluation date" |: datetime_value (VText instant)
+
+:= value_function_value
+    (s : scope) (f : builtin value_result) (arguments : list xvalue) (first : xvalue) (second : string)
+    : xvalue
+    =
+    ?= f ?|
+    | FnCurrentDate => current_date_value s::today
+    | FnCurrentDateTime => current_datetime_value s::today
+    | FnCurrent => VNodes (s::current :: [])
+    | _ => call_value f arguments first second
+
+:= function_value
+    (s : scope) (name : function_ref) (arguments : list xvalue) (first : xvalue) (second : string)
+    : xvalue
+    =
+    ?= name ?|
+    | BoolFunction f => bool_function_value f arguments first second
+    | ValueFunction f => value_function_value s f arguments first second
+    | UnknownFunction text => VError ("unsupported function " ++# text)
+
+:~ first_argument (s : scope) (arguments : list xvalue) : xvalue =
+    ?= arguments ?|
+    | (a :: _) => a
+    | [] => VNodes (s::context :: [])
+
+:~ second_text (arguments : list xvalue) : string = ?= arguments ?| (_ :: b :: _) => atom_text b | _ => ""
+
+:~ call (s : scope) (name : function_ref) (arguments : list xvalue) : xvalue =
+    ?= first_error arguments ?|
+    | Some reason => VError reason
+    | None => function_value s name arguments (first_argument s arguments) (second_text arguments)
+
+:~ ^ node_values (nodes : list located) (acc : list xvalue) : list xvalue =
+    ?= nodes ?|
+    | node :: rest => node_values rest (VNodes (node :: []) :: acc)
+    | [] => listm::rev acc
+
+:= deduplicated (items : list located) (found : list located) : xvalue =
+    ?= items ?|
+    | (_ :: _ :: _) => VNodes (unique_located found [])
+    | _ => VNodes found
+
+:= stepped (items : list located) (result : xvalue) : xvalue =
+    ?= result ?|
+    | VNodes found => deduplicated items found
+    | VText _ | VNumber _ | VBool _ => VError "a path step or map needs nodes, not an atomic value"
+    | other => other
+
+:= mapped_result (nodes : list located) (values : list xvalue) : xvalue =
+    ?= sequence_items (listm::rev values) [] ?|
+    | [] => VNodes nodes
+    | flat => VSequence flat
+
+:= axis_found (s : scope) (axis : step_axis) (item : located) : option (list located) =
+    ? is_preceding axis ?> Some (preceding_of s::root item)
+    |? is_following axis ?> Some (following_of s::root item)
+    |: axis_nodes axis item
+
+:= is_kept (value : xvalue) (position : i32) : bool =
+    ?= value ?|
+    | VNumber n => decimal::compare n (decimal::of_int (conv position : i64)) = 0i32
+    | other => effective_boolean other
+
+:= number_binary (n : operator number_result) (a : xvalue) (b : xvalue) : xvalue =
+    ? is_empty_value a || is_empty_value b ?> VSequence ([]) |: arithmetic n a b
+
+:= node_set_value (n : operator nodes_result) (x : list located) (y : list located) : xvalue =
+    ?= n ?|
+    | OpUnion => VNodes (unique_located (listm::append x y) [])
+    | OpIntersect => VNodes (located_where !+ (unique_located x []) y [])
+    | OpExcept => VNodes (located_where !- (unique_located x []) y [])
+
+:= nodes_binary (n : operator nodes_result) (a : xvalue) (b : xvalue) : xvalue =
+    ?= a, b ?|
+    | VNodes x, VNodes y => node_set_value n x y
+    | _ => VError (nodes_operator_text n ++# " of non-nodes")
+
+:= is_bool_value (value : xvalue) : bool = ?= value ?| VBool _ => !+ | _ => !-
+
+:= compared_value (c : comparison) (a : xvalue) (b : xvalue) : xvalue =
+    ? is_bool_value a || is_bool_value b ?> VBool (any_boolean_pair (is_equality c) (as_booleans a) (as_booleans b))
+    |: VBool (any_pair c (is_numeric_value a || is_numeric_value b) (atoms a) (atoms b))
+
+:= number_literal (n : string) : xvalue =
+    ?= decimal::parse n ?|
+    | Some d => VNumber d
+    | None => VError ("number " ++# n)
+
+:= negate_value (value : xvalue) : xvalue =
+    ? is_empty_value value ?> VSequence ([])
+    |: ?= number_of value ?| Some n => VNumber (decimal::negate n) | None => VError "negate"
+
+:= member_holds (text : string) (codes : string) (words : list string) : bool =
+    ? text = "" || sm'::contains " " text ?> sm'::contains (" " ++# text ++# " ") codes |: has_text text words
+
+:~ ^ eval (s : scope) (x : xpath) : xvalue =
+    ?= x ?|
+    | XInvalid reason => VError reason
+    | XNumber n => number_literal n
+    | XText t => VText t
+    | XVariable v => lookup v s::variables
+    | XContext => VNodes (s::context :: [])
+    | XRoot => VNodes (s::root :: [])
+    | XStep (input, axis, test, predicates) => step_value s input axis test predicates
+    | XFilter (input, predicates) => filter_value s input predicates
+    | XApply (input, mapped) => apply_value s input mapped
+    | XCall (name, arguments) => call s name (evaluated s arguments [])
+    | XIf (condition, yes, no) => conditional_value s condition yes no
+    | XSequence items => sequence_value (evaluated s items [])
+    | XBinary (op, left, right) => binary s op left right
+    | XNegate operand => negate_value (eval s operand)
+    | XQuantified (every, v, domain, body) => VBool (quantified s every v body (domain_items s domain))
+    | XMember (probe, codes, words) => VBool (member_holds (atom_text (eval s probe)) codes words)
+    | XFor (v, domain, body) => sequence_value (each_bound s v body (domain_items s domain) [])
+    | XCastable (operand, ty, optional) => castable_value ty optional (eval s operand)
+
+:& :~ step_value (s : scope) (input : xpath) (axis : step_axis) (test : string) (predicates : list xpath) : xvalue =
+    ?= eval s input ?|
+    | VNodes items => stepped items (step_nodes s axis test predicates items [])
+    | VError e => VError e
+    | _ => VError ("the " ++# axis_name axis ++# " step needs nodes")
+
+:& :~ filter_value (s : scope) (input : xpath) (predicates : list xpath) : xvalue =
+    ?= eval s input ?|
+    | VNodes items => kept_by s predicates items
+    | VSequence items => values_kept s predicates items
+    | other => other
+
+:& :~ apply_value (s : scope) (input : xpath) (mapped : xpath) : xvalue =
+    ?= eval s input ?|
+    | VNodes items => mapped_each s mapped items [] []
+    | VText _ | VNumber _ | VBool _ => VError "a path step or map needs nodes, not an atomic value"
+    | other => other
+
+:& :~ conditional_value (s : scope) (condition : xpath) (yes : xpath) (no : xpath) : xvalue =
+    ? effective_boolean (eval s condition) ?> eval s yes |: eval s no
+
+:& :~ domain_items (s : scope) (domain : xpath) : list xvalue =
+    ?= eval s domain ?|
+    | VNodes nodes => node_values nodes []
+    | VSequence values => values
+    | other => other :: []
+
+:& :~ each_bound (s : scope) (v : string) (body : xpath) (items : list xvalue) (acc : list xvalue) : list xvalue =
+    ?= items ?|
+    | item :: rest => each_bound s v body rest (eval { s ?| variables = ((v, item) :: s::variables) } body :: acc)
+    | [] => listm::rev acc
+
+:& :~ evaluated (s : scope) (arguments : list xpath) (acc : list xvalue) : list xvalue =
+    ?= arguments ?|
+    | argument :: rest => evaluated s rest (eval s argument :: acc)
+    | [] => listm::rev acc
+
+:& :~ quantified (s : scope) (every : bool) (v : string) (body : xpath) (items : list xvalue) : bool =
+    ?= items ?|
+    | item :: rest =>
+        := holds = effective_boolean (eval { s ?| variables = ((v, item) :: s::variables) } body)
+        ? every ?> holds && quantified s every v body rest |: holds || quantified s every v body rest
+    | [] => every
+
+:& :~ step_nodes
+    (s : scope) (axis : step_axis) (test : string) (predicates : list xpath)
+    (items : list located) (acc : list located)
+    : xvalue
+    =
+    ?= items ?|
+    | item :: rest =>
+        ?= axis_kept s axis test predicates item ?|
+        | VNodes kept => step_nodes s axis test predicates rest (listm::append acc kept)
+        | other => other
+    | [] => VNodes acc
+
+:& :~ axis_kept (s : scope) (axis : step_axis) (test : string) (predicates : list xpath) (item : located) : xvalue =
+    ?= axis_found s axis item ?|
+    | Some found => kept_by s predicates (filtered_by_test s::namespaces test found [])
+    | None => VError ("unsupported axis " ++# axis_name axis)
+
+:& :~ kept_by (s : scope) (predicates : list xpath) (items : list located) : xvalue =
+    ?= predicates ?|
+    | predicate :: rest =>
+        ?= kept_at s predicate items 1i32 [] ?|
+        | VNodes kept => kept_by s rest kept
+        | other => other
+    | [] => VNodes items
+
+:& :~ kept_at
+    (s : scope) (predicate : xpath) (items : list located) (position : i32) (acc : list located)
+    : xvalue
+    =
+    ?= items ?|
+    | item :: rest =>
+        ?= eval { s ?| context = item } predicate ?|
+        | VError e => VError e
+        | value => kept_at s predicate rest (position + 1i32) (? is_kept value position ?> (item :: acc) |: acc)
+    | [] => VNodes (listm::rev acc)
+
+:& :~ values_kept (s : scope) (predicates : list xpath) (items : list xvalue) : xvalue =
+    ?= predicates ?|
+    | predicate :: rest =>
+        ?= eval s predicate ?|
+        | VNumber n => values_kept s rest (values_at n items 1i32 [])
+        | _ => VError "only a positional predicate applies to a sequence of values"
+    | [] => VSequence items
+
+:& :~ mapped_each
+    (s : scope) (mapped : xpath) (items : list located) (nodes : list located) (values : list xvalue)
+    : xvalue
+    =
+    ?= items ?|
+    | item :: rest => mapped_one s mapped rest nodes values (eval { s ?| context = item } mapped)
+    | [] => mapped_result nodes values
+
+:& :~ mapped_one
+    (s : scope) (mapped : xpath) (rest : list located) (nodes : list located) (values : list xvalue) (value : xvalue)
+    : xvalue
+    =
+    ?= value ?|
+    | VNodes found => mapped_each s mapped rest (listm::append nodes found) values
+    | VError e => VError e
+    | other => mapped_each s mapped rest nodes (other :: values)
+
+:& :~ binary (s : scope) (op : binary_operator) (left : xpath) (right : xpath) : xvalue =
+    ?= op ?|
+    | BoolOperator b => bool_binary s b left right
+    | NumberOperator n => evaluated_binary s left right (number_binary n)
+    | NodesOperator n => evaluated_binary s left right (nodes_binary n)
+
+:& :~ bool_binary (s : scope) (op : operator bool_result) (left : xpath) (right : xpath) : xvalue =
+    ?= op ?|
+    | OpOr => or_value s left right
+    | OpAnd => and_value s left right
+    | OpCompare (c, _) => evaluated_binary s left right (compared_value c)
+
+:& :~ or_value (s : scope) (left : xpath) (right : xpath) : xvalue =
+    := a = eval s left
+    ? is_error a ?> a |? effective_boolean a ?> VBool !+ |: truth_of (eval s right)
+
+:& :~ and_value (s : scope) (left : xpath) (right : xpath) : xvalue =
+    := a = eval s left
+    ? is_error a ?> a |? effective_boolean a = !- ?> VBool !- |: truth_of (eval s right)
+
+:& :~ evaluated_binary (s : scope) (left : xpath) (right : xpath) (combine : xvalue -> xvalue -> xvalue) : xvalue =
+    := a = eval s left
+    := b = eval s right
+    ?= a, b ?|
+    | VError e, _ => VError e
+    | _, VError e => VError e
+    | _ => combine a b
+
+:= document_root (document : xml_node) : located =
+    { node = XmlElement ("#document", [], document :: []); ancestors = []; path = [] }
+
+:= evaluate_in
+    (namespaces : list (string * string)) (today : string) (document : xml_node) (context : located) (x : xpath)
+    : xvalue
+    =
+    := root = document_root document
+    eval { context = context; current = context; root = root; variables = []; today = today; namespaces = namespaces } x
+
+:= evaluate_on (today : string) (document : xml_node) (context : located) (x : xpath) : xvalue =
+    evaluate_in [] today document context x
+
+:= evaluate (document : xml_node) (context : located) (x : xpath) : xvalue = evaluate_on "" document context x
+
+:| ^ outcome r =
+    | Evaluated :: bool -> outcome bool_result
+    | Broken :: \* r. string -> outcome r
+
+:= outcome_of (value : xvalue) : outcome bool_result =
+    ?= value ?|
+    | VError reason => Broken reason
+    | other => Evaluated (effective_boolean other)
+
+:= eval_bool (s : scope) (k : kinded bool_result) : outcome bool_result = outcome_of (eval s (kinded_source k))
+
+:= test_outcome (s : scope) (test : xpath) : outcome bool_result =
+    ?= kinded_of test ?|
+    | KindBool k => eval_bool s k
+    | _ => outcome_of (eval s test)
+
+:= root_of (document : xml_node) : located =
+    { node = document; ancestors = ((document_root document)::node :: []); path = (0i32 :: []) }
+
+:= rule_holds_on (today : string) (rule : string) : bool =
+    ?= read_xml "<r/>" ?|
+    | document :: [] => effective_boolean (evaluate_on today document (root_of document) (lift_code_lists (parse rule)))
+    | _ => failwith "one root element"
+
+:= holds_in (source : string) (rule : string) : bool =
+    ?= read_xml source ?|
+    | document :: [] => effective_boolean (evaluate document (root_of document) (lift_code_lists (parse rule)))
+    | _ => failwith "one root element"
+
+:= rule_holds (rule : string) : bool = holds_in "<r/>" rule
+
+:= castable_sample () : string =
+    "<Invoice><cbc:IssueDate>2024-02-29</cbc:IssueDate><cbc:Late>2023-02-29</cbc:Late>"
+    ++# "<cbc:IssueTime>10:15:00Z</cbc:IssueTime><cbc:Count>-12</cbc:Count></Invoice>"
+
+:= sample_invoice_line (amount : string) : string =
+    "<cac:InvoiceLine><cbc:LineExtensionAmount currencyID=\"EUR\">"
+    ++# amount
+    ++# "</cbc:LineExtensionAmount></cac:InvoiceLine>"
+
+:= en16931_sample () : string =
+    "<Invoice><cbc:ID>INV-1</cbc:ID>"
+    ++# sample_invoice_line "10.50"
+    ++# sample_invoice_line "2.25"
+    ++# "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode></Invoice>"
+
+///> rust
+:# path_functions_follow_en16931_rules =
+    := holds rule = holds_in (en16931_sample ()) rule
+    ? holds "exists(cbc:ID)" = !- ?> failwith "exists"
+    ? holds "empty(cbc:Missing) and not(empty(cbc:ID)) and not(exists(cbc:Missing))" = !- ?> failwith "empty"
+    ? holds "count(cac:InvoiceLine) = 2" = !- ?> failwith "count"
+    ? holds "count(cac:InvoiceLine) = 3" ?> failwith "a false comparison"
+    ? holds "sum(cac:InvoiceLine/cbc:LineExtensionAmount) = 12.75" = !- ?> failwith "exact sum"
+    ? holds "contains(' EUR USD ', concat(' ', normalize-space(cbc:DocumentCurrencyCode), ' '))" = !-
+    ?> failwith "member"
+    ? holds "every $l in cac:InvoiceLine satisfies xs:decimal($l/cbc:LineExtensionAmount) > 0" = !-
+    ?> failwith "every"
+
+///> rust
+:# mixed_sequences_cast_their_first_node =
+    := holds rule = holds_in (en16931_sample ()) rule
+    ? holds "xs:decimal((cac:InvoiceLine/cbc:LineExtensionAmount, 0)[1]) > 0" = !-
+    ?> failwith "a node first in a mixed sequence casts by its string value"
+    ? holds "xs:decimal((cbc:Missing, 0)[1]) = 0" = !- ?> failwith "a missing node falls back to the number"
+    ? holds "count((cac:InvoiceLine, 0)) = 3" = !- ?> failwith "a sequence holds one item per node"
+
+///> rust
+:# axes_and_predicates_follow_en16931_rules =
+    := holds rule = holds_in (en16931_sample ()) rule
+    ? holds "cac:InvoiceLine/cbc:LineExtensionAmount/@currencyID = 'EUR'" = !- ?> failwith "attribute"
+    ? holds "//cbc:LineExtensionAmount[. = '2.25']/../../cbc:ID = 'INV-1'" = !-
+    ?> failwith "descendant, predicate, parent"
+    ? holds "cac:InvoiceLine[2]/cbc:LineExtensionAmount = 2.25" = !- ?> failwith "positional predicate"
+    ?
+        holds (
+            "count(//cbc:LineExtensionAmount[not(preceding::cbc:LineExtensionAmount/@currencyID = "
+            ^^ "@currencyID)]) = 1"
+        )
+        = !-
+    ?> failwith "preceding"
+
+///> rust
+:# cast_steps_follow_xpath_2 =
+    := holds rule = holds_in (en16931_sample ()) rule
+    ? holds "xs:decimal(cbc:Missing) = 1 or not(cbc:Missing)" = !-
+    ?> failwith "an empty cast is an empty sequence"
+    ? holds "not(exists(cac:InvoiceLine/xs:decimal(cbc:Missing)))" = !-
+    ?> failwith "a cast step over missing children leaves no empty sequence behind"
+    ? holds "count(cac:InvoiceLine/xs:decimal(cbc:LineExtensionAmount)) = 2" = !-
+    ?> failwith "a cast step flattens into one value per line"
+    ? holds "xs:double(cbc:Missing) = 1 or xs:double('2.5') * 2 = 5" = !-
+    ?> failwith "xs:double reads as an exact decimal"
+
+///> rust
+:# number_functions_follow_xpath_2 =
+    := holds rule = holds_in (en16931_sample ()) rule
+    ? holds "floor(number('15.7')) = 15 and floor(-1.5) = -2 and floor(number('15')) = 15" = !- ?> failwith "floor"
+    ? holds "abs(-2.5) = 2.5 and abs(3) = 3 and abs(0) = 0" = !- ?> failwith "abs"
+    ? holds "format-number(0.5, '#.00') = '.50' and format-number(2.345, '0.00') = '2.34'" = !-
+    ?> failwith "the #.00 and 0.00 pictures"
+    ? holds "round(sum(cac:InvoiceLine/xs:decimal(cbc:LineExtensionAmount)) * 10 * 10) div 100 = 12.75" = !-
+    ?> failwith "rounding idiom"
+
+///> rust
+:# boolean_operators_keep_errors =
+    := holds rule = holds_in (en16931_sample ()) rule
+    ? holds "not(unsupported(1) = 1 or false())" ?> failwith "an error inside or stays an error under not"
+    ? holds "not(false() and unsupported(1) = 1)" = !- ?> failwith "and still decides on a false left side"
+    ? holds "'0' = false()" = !- ?> failwith "untyped 0 compares as false"
+
+///> rust
+:# normalize_space_and_substring_count_characters =
+    ? normalize_space "  Café   au  lait " <> "Café au lait"
+    ?> failwith "normalize-space keeps multi-byte characters whole"
+    ? char_substring "Café crème" 2i32 2i32 <> "fé" ?> failwith "substring counts characters"
+    ? char_substring "Café crème" 5i32 100i32 <> "crème" ?> failwith "substring clamps at the character count"
+
+///> rust
+:# castable_follows_xpath_2 =
+    := holds rule = holds_in (castable_sample ()) rule
+    ? holds "string(cbc:IssueDate) castable as xs:date" = !- ?> failwith "a leap day is a date"
+    ? holds "string(cbc:Late) castable as xs:date" ?> failwith "29 February of a common year is not a date"
+    ? holds "cbc:IssueTime castable as xs:time" = !- ?> failwith "a time with a zone"
+    ? holds "cbc:Count castable as xs:integer" = !- ?> failwith "a signed integer"
+    ? holds "'12a' castable as xs:integer" ?> failwith "an integer has only digits"
+    ? holds "cbc:Missing castable as xs:date" ?> failwith "an empty sequence is not castable"
+    ? holds "cbc:Missing castable as xs:date?" = !- ?> failwith "an optional type accepts the empty sequence"
+
+///> rust
+:# for_follows_xpath_2 =
+    := holds rule = holds_in (castable_sample ()) rule
+    ? holds "string-join(for $c in string-to-codepoints('AB') return string($c - 55), '') = '1011'" = !-
+    ?> failwith "for maps every item in order"
+    ? holds "count(for $l in (1, 2, 3) return $l * 2) = 3" = !- ?> failwith "for keeps one result per item"
+
+///> rust
+:# following_and_sibling_axes_walk_document_order =
+    := source =
+        "<Users><UserAccount id=\"a\"><UserID>u1</UserID></UserAccount>"
+        ++# "<UserAccount id=\"b\"><UserID>u1</UserID></UserAccount>"
+        ++# "<UserAccount id=\"c\"><UserID>u2</UserID></UserAccount></Users>"
+    ?= read_xml source ?|
+    | document :: [] =>
+        := root = document_root document
+        := first =
+            ?= child_nodes root ?|
+            | top :: _ =>
+                ?= child_nodes top ?|
+                | account :: _ => account
+                | [] => top
+            | [] => root
+        := holds rule = effective_boolean (evaluate document first (lift_code_lists (parse rule)))
+        ? holds "count(following-sibling::UserAccount) = 2" = !- ?> failwith "two later siblings"
+        ? holds "count(preceding-sibling::UserAccount) = 0" = !- ?> failwith "no earlier sibling"
+        ? holds "following-sibling::node()/@id = 'b'" = !- ?> failwith "the next sibling is b"
+        ? holds "normalize-space(UserID) = following-sibling::node()/normalize-space(UserID)" = !-
+        ?> failwith "a later sibling with the same id (UBL-TR's duplicate-user check)"
+        ? holds "count(following::UserID) = 2" = !- ?> failwith "following skips the node's own descendants"
+        ? holds "count(@id/following-sibling::node()) = 0" = !- ?> failwith "an attribute has no siblings"
+    | _ => failwith "one document"
+
+///> rust
+:# mod_follows_xpath_2 =
+    := holds rule = holds_in "<Invoice/>" rule
+    ? holds "10 mod 3 = 1" = !- ?> failwith "integer mod"
+    ? holds "-10 mod 3 = -1" = !- ?> failwith "the remainder takes the dividend's sign"
+    ? holds "5.5 mod 2 = 1.5" = !- ?> failwith "decimal mod"
+    ? holds "xs:integer('370400440532013000131489') mod 97 = 1" = !- ?> failwith "a 24-digit dividend folds"
+
+///> rust
+:# de_r_019_checks_an_iban =
+    := holds rule = holds_in "<Invoice/>" rule
+    := iban = "'DE89370400440532013000'"
+    := rearranged =
+        "concat(substring("
+        ++# iban
+        ++# ",5),upper-case(substring("
+        ++# iban
+        ++# ",1,2)),substring("
+        ++# iban
+        ++# ",3,2))"
+    := rule =
+        "xs:integer(string-join(for $cp in string-to-codepoints("
+        ++# rearranged
+        ++# ") return (if($cp > 64) then string($cp - 55) else string($cp - 48)),'')) mod 97 = 1"
+    ? holds rule = !- ?> failwith "DE-R-019's IBAN check accepts a valid IBAN"
+
+///> rust
+:# typed_assertions_match_the_dynamic_outcome =
+    ?= read_xml "<doc><a>1</a><a>2</a><b/></doc>" ?|
+    | document :: [] =>
+        := top = { node = document; ancestors = ((document_root document)::node :: []); path = (0i32 :: []) }
+        := s =
+            { context = top; current = top; root = document_root document; variables = []; today = ""; namespaces = [] }
+        := shown (o : outcome bool_result) : string =
+            ?= o ?|
+            | Evaluated b => ? b ?> "true" |: "false"
+            | Broken reason => "error: " ++# reason
+        := legacy (x : xpath) : string =
+            ?= eval s x ?|
+            | VError reason => "error: " ++# reason
+            | value => ? effective_boolean value ?> "true" |: "false"
+        := check (source : string) =
+            := x = parse source
+            := typed = shown (test_outcome s x)
+            ? typed <> legacy x ?> failwith (source ++# " typed " ++# typed ++# ", dynamic " ++# legacy x)
+        check "count(a) = 2"
+        check "count(a) = 3"
+        check "exists(b) and not(c)"
+        check "a = '2'"
+        check "1 + 1"
+        check "a"
+        check "c"
+        check "$missing"
+        check "unknown-fn(a)"
+        ? shown (test_outcome s (parse "count(a) = 2")) <> "true" ?> failwith "a true comparison is evaluated"
+    | _ => failwith "one document"
+
+///> rust
+:# check_digit_functions_follow_their_definitions =
+    := holds rule = rule_holds rule
+    ? holds "u:gln('7300010000001')" = !- ?> failwith "a valid GLN"
+    ? holds "u:gln('5790000435968')" = !- ?> failwith "a second valid GLN"
+    ? holds "u:gln('7300010000002')" ?> failwith "a wrong GLN check digit"
+    ? holds "u:mod11('123456785')" = !- ?> failwith "a valid mod 11"
+    ? holds "u:mod11('123456780')" ?> failwith "a wrong mod 11 check digit"
+    ? holds "u:mod11('912345670')" ?> failwith "a check value of 10 never matches a digit"
+    ? holds "u:mod97-0208('1234567894')" = !- ?> failwith "a valid mod 97"
+    ? holds "u:mod97-0208('1234567895')" ?> failwith "a wrong mod 97 check"
+
+///> rust
+:# national_identifier_functions_follow_their_definitions =
+    := holds rule = rule_holds rule
+    ? holds "u:abn('51824753556')" = !- || holds "u:abn('51824753557')"
+    ?> failwith "the ATO example ABN, and a mutation"
+    ? holds "u:checkSEOrgnr('5560360793')" = !- || holds "u:checkSEOrgnr('5560360794')" ?> failwith "Swedish Luhn"
+    ? holds "u:TinVerification('094014298')" = !- || holds "u:TinVerification('094014299')" ?> failwith "Greek TIN"
+    ? holds "u:checkPIVAseIT('IT01234567897')" = !- || holds "u:checkPIVAseIT('IT01234567898')"
+    ?> failwith "IT P.IVA"
+    ? holds "u:checkPIVAseIT('DE123')" = !- ?> failwith "a non-Italian VAT number is not checked"
+    ? holds "u:checkCF('RSSMRA85T10A562S')" = !- || holds "u:checkCF('RSSMR185T10A562S')"
+    ?> failwith "codice fiscale"
+    ? holds "u:checkCF('12345678901')" = !- ?> failwith "an 11-digit codice fiscale"
+    ? holds "u:checkCodiceIPA('ABC123')" = !- || holds "u:checkCodiceIPA('ABC-12')" ?> failwith "codice IPA"
+
+///> rust
+:# slack_and_if_follow_peppol =
+    := holds rule = rule_holds rule
+    ? holds "u:slack(10, 10.004, 0.005)" = !- ?> failwith "a value within the slack"
+    ? holds "u:slack(10, 10.01, 0.005)" ?> failwith "a value beyond the slack"
+    ? holds "if (1 = 1) then true() else false()" = !- ?> failwith "if takes its then branch"
+    ? holds "if (1 = 2) then true() else false()" ?> failwith "if takes its else branch"
+    ? holds "u:slack(if (2 > 1) then 10 else 0, 10.004, 0.005)" = !-
+    ?> failwith "an if inside a call, as Peppol R040 writes it"
+
+///> rust
+:# matches_follows_xsd_regex_rules =
+    := holds rule = rule_holds rule
+    ? holds "matches('abc', 'b')" = !- ?> failwith "matches searches anywhere"
+    ? holds "matches('abc', '^b')" ?> failwith "a caret anchors to the start"
+    ? holds "matches('TR1234567ABCDEFGHIJKLMNOPQ', '^TR\\d{7}[A-Z0-9]{17}$')" = !- ?> failwith "UBL-TR's ETTN shape"
+    ? holds "matches(' 12.50 ', '^(\\s)*?[0-9][0-9]{0,16}(\\.[0-9]{1,2}(\\s)*?)?(\\s)*?$')" = !-
+    ?> failwith "reluctant quantifiers read as greedy, as UBL-TR writes amounts"
+    ? holds "matches('a', 'a', 'i')" ?> failwith "flags are refused, not ignored"
+
+///> rust
+:# translate_and_tokenize_follow_xpath_2 =
+    := holds rule = rule_holds rule
+    ? holds "translate('a-b-c', '-', '') = 'abc'" = !- ?> failwith "translate drops unmapped characters"
+    ? holds "translate('abc', 'abc', 'AB') = 'AB'" = !- ?> failwith "translate maps by position"
+    ? holds "count(tokenize('AE E S', '\\s')) = 3" = !- ?> failwith "tokenize splits Peppol code lists on spaces"
+    ? holds "string-join(tokenize('2026-10-27', '-'), '/') = '2026/10/27'" = !-
+    ?> failwith "tokenize keeps the tokens in order"
+    ? holds "tokenize('a-b-c', '-')[2] = 'b'" = !- ?> failwith "a position selects from a value sequence"
+    ? holds "count(tokenize('a', 'x*')) = 1" ?> failwith "a pattern that matches nothing is refused"
+
+///> rust
+:# errors_in_values_are_refused_not_passed_through =
+    := holds rule = rule_holds rule
+    ? holds "count(tokenize('a-b', '-')[. = 'a']) = 2"
+    ?> failwith "a non-positional predicate on values is refused, not passed through"
+    ? holds "count('a'/x) = 1" ?> failwith "a path step on a text value is refused, not passed through"
+    ? holds "not('a'/x)" ?> failwith "an error inside a function call is an error, not a false argument"
+    ? holds "exists('a'/x)" ?> failwith "a function call propagates its argument's error"
+
+///> rust
+:# dates_follow_ubl_tr_and_dian =
+    := holds rule = rule_holds rule
+    := on_day rule = rule_holds_on "2026-10-27" rule
+    ? on_day "xs:date('2026-10-26') le xs:date(current-date())" = !-
+    ?> failwith "an earlier issue date passes, as UBL-TR checks"
+    ? on_day "xs:date('2026-10-28') le xs:date(current-date())" ?> failwith "a future issue date fails"
+    ? holds "current-date() = ''" ?> failwith "without an evaluation date current-date is refused, not empty"
+    ? holds "xs:dateTime('2026-10-26T20:00:00-05:00') = xs:dateTime('2026-10-27T01:00:00Z')" = !-
+    ?> failwith "a zone offset is normalized to UTC"
+    ? holds "xs:dateTime('2024-03-01T00:00:00Z') - xs:dateTime('2024-02-28T00:00:00Z') = 172800" = !-
+    ?> failwith "2024 is a leap year"
+    ? on_day "xs:dateTime('2026-11-05T23:59:59Z') < current-dateTime() + xs:dayTimeDuration('P10DT0H')" = !-
+    ?> failwith "inside DIAN's ten-day window"
+    ? on_day "xs:dateTime('2026-11-06T00:00:01Z') < current-dateTime() + xs:dayTimeDuration('P10DT0H')"
+    ?> failwith "past DIAN's ten-day window"
+    ? on_day "xs:dateTime('2026-10-22T00:00:01Z') > current-dateTime() - xs:dayTimeDuration('P5DT0H')" = !-
+    ?> failwith "inside DIAN's five-day window"
+    ? holds "current-dateTime() = current-dateTime()"
+    ?> failwith "without an evaluation date current-dateTime is refused"
+
+///> rust
+:# format_number_rounds_half_to_even =
+    := holds rule = rule_holds rule
+    ? holds "format-number(10.005, '#0.00') = '10.00'" = !- ?> failwith "format-number rounds half to even"
+    ? holds "format-number(10.015, '#0.00') = '10.02'" = !- ?> failwith "half to even rounds up to an even cent"
+    ? holds "format-number(7, '#0.00') = '7.00'" = !- ?> failwith "two decimals always"
+    ? holds "format-number(-0.5, '#0.00') = '-0.50'" = !- ?> failwith "a negative amount keeps its sign"
+
+///> rust
+:# strings_and_sequences_follow_xpath_2 =
+    := holds rule = rule_holds rule
+    ? holds "replace('NO 12 3', '([ \\n\\r\\t\\s])', '') = 'NO123'" = !-
+    ?> failwith "replace drops the matched spaces"
+    ? holds "string-join(('a', 'b'), ' ') = 'a b'" = !- ?> failwith "string-join puts the separator between items"
+    ? holds "string-join(('', 'b'), '-') = '-b'" = !- ?> failwith "string-join keeps an empty first item"
+    ? holds "count(('a', 'b', 'c')) = 3" = !- ?> failwith "a sequence constructor counts its items"
+    ? holds "('A', 'B') = 'B'" = !- ?> failwith "a general comparison with a sequence matches any item"
+    ? holds "'C' = ('A', 'B')" ?> failwith "a general comparison with a sequence fails when no item matches"
+    ? holds "count(()) = 0" = !- ?> failwith "the empty sequence has no items"
+    ? holds "xs:integer('05') = 5" = !- ?> failwith "xs:integer reads digits as a number"
+
+///> rust
+:# except_intersect_and_current_follow_xpath_2 =
+    ?= read_xml "<doc><a n=\"1\"/><a n=\"2\"/><b/></doc>" ?|
+    | document :: [] =>
+        := top = { node = document; ancestors = ((document_root document)::node :: []); path = (0i32 :: []) }
+        := holds_at item rule = effective_boolean (evaluate document item (lift_code_lists (parse rule)))
+        := holds rule = holds_at top rule
+        ? holds "count(* except b) = 2" = !- ?> failwith "except"
+        ? holds "count(* intersect a) = 2" = !- ?> failwith "intersect"
+        ? holds "count(a union b) = 3" = !- ?> failwith "the union keyword"
+        ? holds "count(a | * except a) = 3" = !- ?> failwith "except binds tighter than the union"
+        ? holds "count(/doc/(* except a)) = 1" = !- ?> failwith "a parenthesized step"
+        ?= evaluate document top (parse "a[1]") ?|
+        | VNodes (first :: _) =>
+            ? holds_at first "count(../(* except current())) = 2" = !- ?> failwith "current() is the context node"
+            ? holds_at first "count(../a[@n = current()/@n]) = 1" = !-
+            ?> failwith "current() stays the rule's node inside a predicate"
+        | _ => failwith "the first a"
+    | _ => failwith "one document"
+
+///> rust
+:# a_prefix_wildcard_matches_the_written_prefix =
+    ?= read_xml "<doc><ext:a/><ext:b><c/></ext:b><d/></doc>" ?|
+    | document :: [] =>
+        := top = { node = document; ancestors = ((document_root document)::node :: []); path = (0i32 :: []) }
+        := holds rule = effective_boolean (evaluate document top (lift_code_lists (parse rule)))
+        ? holds "count(ext:*) = 2" = !- ?> failwith "ext:* takes the elements written with that prefix"
+        ? holds "count(* except ext:*) = 1" = !- ?> failwith "everything else is d"
+        ? holds "count(ext:*[* except ext:*]//*) = 1" = !- ?> failwith "DIAN's first rule context reaches c"
+        ? xpath_text (parse "ext:*") <> "(child::ext:* .)"
+        ?> failwith ("one name token: " ++# xpath_text (parse "ext:*"))
+    | _ => failwith "one document"
+
+///> rust
+:# a_namespace_map_matches_names_by_uri =
+    := text =
+        "<Invoice xmlns=\"urn:inv\" xmlns:cbc=\"urn:cbc\" xmlns:ds=\"urn:ds\">"
+        ++# "<cbc:Reference/><ds:Reference/><ds:Reference/></Invoice>"
+    ?= read_xml text ?|
+    | document :: [] =>
+        := root = document_root document
+        := holds namespaces rule =
+            effective_boolean (evaluate_in namespaces "" document root (lift_code_lists (parse rule)))
+        := mapped = [ ("ubl", "urn:inv"); ("cbc", "urn:cbc"); ("sig", "urn:ds") ]
+        ? holds [] "count(//cbc:Reference) = 3" = !- ?> failwith "without a map, names compare by local name as before"
+        ? holds mapped "count(//cbc:Reference) = 1" = !-
+        ?> failwith "with a map, cbc:Reference is only the urn:cbc element"
+        ? holds mapped "count(//sig:Reference) = 2" = !- ?> failwith "the map's own prefix reaches ds:Reference by URI"
+        ? holds mapped "count(/ubl:Invoice) = 1" = !- ?> failwith "a mapped prefix matches the default-namespace root"
+        ? holds mapped "count(//sig:*) = 2" = !- ?> failwith "a mapped prefix wildcard goes by URI"
+        ? holds [] "namespace-uri(/*) = 'urn:inv'" = !-
+        ?> failwith "namespace-uri() reads the default namespace in scope"
+        ? holds [] "count(//*[namespace-uri() = 'urn:ds' and local-name() = 'Reference']) = 2" = !-
+        ?> failwith "namespace-uri() resolves a prefixed name, as DIAN's signature exemption needs"
+    | _ => failwith "one document"
+
+///> rust
+:# a_predicate_error_reaches_the_caller =
+    ?= read_xml "<doc><a n=\"1\"/><a n=\"2\"/></doc>" ?|
+    | document :: [] =>
+        := top = { node = document; ancestors = ((document_root document)::node :: []); path = (0i32 :: []) }
+        := value rule = evaluate document top (lift_code_lists (parse rule))
+        ?= value "count(a[no-such-function(.)])" ?|
+        | VError _ => ()
+        | _ => failwith "an unsupported function inside a predicate is an error, not a false predicate"
+        ? effective_boolean (value "count(a[@n = '2']) = 1") = !- ?> failwith "boolean predicates still filter"
+        ? effective_boolean (value "count(a[2]) = 1") = !- ?> failwith "positional predicates still filter"
+    | _ => failwith "one document"
+
+///> rust
+:# name_of_an_attribute_is_its_xml_name =
+    ?= read_xml "<doc xmlns:x=\"urn:x\"><a n=\"1\" x:k=\"2\"/><x:b/></doc>" ?|
+    | document :: [] =>
+        := top = { node = document; ancestors = ((document_root document)::node :: []); path = (0i32 :: []) }
+        := holds_in namespaces rule =
+            effective_boolean (evaluate_in namespaces "" document top (lift_code_lists (parse rule)))
+        := holds rule = holds_in [] rule
+        := mapped = ("y", "urn:x") :: []
+        ? holds "name(a/@n) = 'n'" = !- ?> failwith "name() of an attribute has no @"
+        ? holds "local-name(a/@n) = 'n'" = !- ?> failwith "local-name() of an attribute has no @"
+        ? holds "name(a/@x:k) = 'x:k'" = !- ?> failwith "a prefixed attribute keeps its prefix in name()"
+        ? holds "local-name(a/@x:k) = 'k'" = !- ?> failwith "local-name() drops the prefix"
+        ? holds "name(x:b) = 'x:b'" = !- ?> failwith "a prefixed element keeps its prefix in name()"
+        ? holds "local-name(x:b) = 'b'" = !- ?> failwith "local-name() of a prefixed element drops the prefix"
+        ? holds "namespace-uri(a/@x:k) = 'urn:x'" = !- ?> failwith "a prefixed attribute is in its prefix's namespace"
+        ? holds "namespace-uri(a/@n) = ''" = !- ?> failwith "an unprefixed attribute is in no namespace"
+        ? holds_in mapped "count(a/@y:k) = 1" = !- ?> failwith "a mapped prefix reaches an attribute by URI"
+        ? holds_in mapped "count(a/@y:n) = 0" = !- ?> failwith "a mapped prefix never matches an unprefixed attribute"
+        ? holds "name(a) = 'a'" = !- ?> failwith "element names are unchanged"
+    | _ => failwith "one document"

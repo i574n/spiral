@@ -1,0 +1,35 @@
+:! lineage_a = ()
+:! zero = ()
+:! one = ()
+
+:| branch lineage bit =
+    | ZeroBranch :: string -> branch lineage_a zero
+    | OneBranch :: string -> branch lineage_a one
+
+:| branch_result lineage bit =
+    | ZeroResult :: string -> branch_result lineage_a zero
+    | OneResult :: string -> branch_result lineage_a one
+
+:| measurement lineage =
+    | Measurement :: \* lineage. branch lineage zero * branch lineage one -> measurement lineage
+
+:= handle_zero \* lineage. (branch : branch lineage zero) : branch_result lineage zero =
+    ?= branch ?|
+    | ZeroBranch _ => ZeroResult "zero-handled"
+
+:= handle_one \* lineage. (branch : branch lineage one) : branch_result lineage one =
+    ?= branch ?|
+    | OneBranch _ => OneResult "one-handled"
+
+:= merge_branches \* lineage.
+    (zero_result : branch_result lineage zero)
+    (one_result : branch_result lineage one)
+    : string =
+    ?= zero_result, one_result ?|
+    | ZeroResult _, OneResult _ => "measurement-branches-joined"
+
+:= main () : string =
+    := measured : measurement lineage_a = Measurement (ZeroBranch "0", OneBranch "1")
+    ?= measured ?|
+    | Measurement (zero_branch, one_branch) =>
+        merge_branches (handle_zero zero_branch) (handle_one one_branch)

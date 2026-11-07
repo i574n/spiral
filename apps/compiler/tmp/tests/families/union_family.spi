@@ -1,0 +1,227 @@
+///- --package .
+:! union_array_i32_array = array_base i32
+
+:= union_array_create (n : i32) : union_array_i32_array = union_array_i32_array !!!!ArrayCreate(`i32, n)
+:= union_array_get (array : union_array_i32_array) (i : i32) : i32 =
+    ?= array ?|
+    | union_array_i32_array values => !!!!ArrayIndex(values, i)
+:= union_array_set (array : union_array_i32_array) (i : i32) (value : i32) : () =
+    ?= array ?|
+    | union_array_i32_array values => !!!!ArrayIndexSet(values, i, value)
+
+:| union_array_slot =
+    | UnionArrayMissing
+    | UnionArrayHeld : union_array_i32_array
+
+///> c
+///> zig
+test union_array_returns_zero =
+    := program () : i32 =
+        := ~n = 2i32
+        := a = union_array_create n
+        := ~x = 7i32
+        union_array_set a 0i32 x
+        := ~flag = !+
+        := box = ? flag ?> UnionArrayHeld a |: UnionArrayMissing
+        ?= box ?|
+        | UnionArrayHeld values => ? union_array_get values 0i32 =. 7i32 ?> 0i32 |: 1i32
+        | UnionArrayMissing => 1i32
+    ? program () <> 0i32 ?> failwith "union_array"
+
+:! union_array_mix_i32_array = array_base i32
+
+:= union_array_mix_create (n : i32) : union_array_mix_i32_array = union_array_mix_i32_array !!!!ArrayCreate(`i32, n)
+:= union_array_mix_get (array : union_array_mix_i32_array) (i : i32) : i32 =
+    ?= array ?|
+    | union_array_mix_i32_array values => !!!!ArrayIndex(values, i)
+:= union_array_mix_set (array : union_array_mix_i32_array) (i : i32) (value : i32) : () =
+    ?= array ?|
+    | union_array_mix_i32_array values => !!!!ArrayIndexSet(values, i, value)
+
+:| union_array_mix_slot =
+    | UnionArrayMixNone
+    | UnionArrayMixHeld : union_array_mix_i32_array * i32
+
+:~ union_array_mix_score x : i32 =
+    ?= x ?|
+    | UnionArrayMixNone => 1i32
+    | UnionArrayMixHeld (array, n) =>
+        ? union_array_mix_get array 0i32 +. n =. 7i32 ?> 0i32 |: 1i32
+
+///> c
+///> zig
+test union_array_mix_returns_zero =
+    := program () : i32 =
+        := ~a = 3i32
+        := ~b = 4i32
+        := values = union_array_mix_create 1i32
+        union_array_mix_set values 0i32 a
+        := ~flag = !+
+        := held = ? flag ?> UnionArrayMixHeld (values, b) |: UnionArrayMixNone
+        union_array_mix_score held
+    ? program () <> 0i32 ?> failwith "union_array_mix"
+
+:| union_bool_answer =
+    | UnionBoolNo : bool
+    | UnionBoolYes : i32
+
+:~ union_bool_score x : i32 =
+    ?= x ?|
+    | UnionBoolNo value => ? value ?> 1i32 |: 2i32
+    | UnionBoolYes value => value
+
+///> c
+///> zig
+test union_bool_returns_zero =
+    := program () : i32 =
+        := ~flag = !+
+        := yes = ? flag ?> UnionBoolYes 7i32 |: UnionBoolNo !-
+        := no = ? flag ?> UnionBoolNo !+ |: UnionBoolYes 1i32
+        ? union_bool_score yes =. 7i32 && union_bool_score no =. 1i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "union_bool"
+
+:| union_call_slot =
+    | UnionCallMissing
+    | UnionCallCall : (i32 -> i32)
+
+///> c
+///> zig
+test union_call_returns_zero =
+    := program () : i32 =
+        := ~n = 3i32
+        := f (z : i32) : i32 = z +. n
+        := ~g = f
+        := ~flag = !+
+        := box = ? flag ?> UnionCallCall g |: UnionCallMissing
+        ?= box ?|
+        | UnionCallCall call => ? call 4i32 =. 7i32 ?> 0i32 |: 1i32
+        | UnionCallMissing => 1i32
+    ? program () <> 0i32 ?> failwith "union_call"
+
+:| union_case_record_field_order_shape = Box : { w : i32; h : i32 } | Dot
+
+///> c
+///> zig
+test union_case_record_field_order_returns_zero =
+    := program () : i32 =
+        := s = Box { h = 3i32; w = 4i32 }
+        ?= s ?|
+        | Box { w h } => !!!!Add(!!!!Mult(w, 10i32), h)
+        | Dot => 0i32
+    ? program () <> 43i32 ?> failwith "union_case_record_field_order"
+
+:| union_cell_mix_slot =
+    | UnionCellMixNone
+    | UnionCellMixHeld : (heap { value : i32 }) * i32
+
+:~ union_cell_mix_score x : i32 =
+    ?= x ?|
+    | UnionCellMixNone => 1i32
+    | UnionCellMixHeld (cell, n) =>
+        := obj = !!!!LayoutIndex(cell)
+        ? obj.value +. n =. 7i32 ?> 0i32 |: 1i32
+
+///> c
+///> zig
+test union_cell_mix_returns_zero =
+    := program () : i32 =
+        := ~a = 3i32
+        := ~b = 4i32
+        := cell = !!!!LayoutToHeap({ value = a })
+        := ~flag = !+
+        := held = ? flag ?> UnionCellMixHeld (cell, b) |: UnionCellMixNone
+        union_cell_mix_score held
+    ? program () <> 0i32 ?> failwith "union_cell_mix"
+
+:| union_f32_text_slot =
+    | UnionF32TextNone
+    | UnionF32TextBoth : f32 * string
+
+:~ union_f32_text_score x : i32 =
+    ?= x ?|
+    | UnionF32TextNone => 1i32
+    | UnionF32TextBoth (left, word) =>
+        ? left =. 1.5f32 && !!!!EQ(word, "hi") ?> 0i32 |: 1i32
+
+///> c
+///> zig
+test union_f32_text_returns_zero =
+    := program () : i32 =
+        := ~value = 1.5f32
+        := ~word = "hi"
+        := ~flag = !+
+        := held = ? flag ?> UnionF32TextBoth (value, word) |: UnionF32TextNone
+        union_f32_text_score held
+    ? program () <> 0i32 ?> failwith "union_f32_text"
+
+:! union_f64s_f64_array = array_base f64
+
+:= union_f64s_create (n : i32) : union_f64s_f64_array = union_f64s_f64_array !!!!ArrayCreate(`f64, n)
+:= union_f64s_get (array : union_f64s_f64_array) (i : i32) : f64 =
+    ?= array ?|
+    | union_f64s_f64_array values => !!!!ArrayIndex(values, i)
+:= union_f64s_set (array : union_f64s_f64_array) (i : i32) (value : f64) : () =
+    ?= array ?|
+    | union_f64s_f64_array values => !!!!ArrayIndexSet(values, i, value)
+
+:| union_f64s_slot =
+    | UnionF64sMissing
+    | UnionF64sHeld : union_f64s_f64_array
+
+///> c
+///> zig
+test union_f64s_returns_zero =
+    := program () : i32 =
+        := a = union_f64s_create 1i32
+        := ~x = 1.5f64
+        union_f64s_set a 0i32 x
+        := ~flag = !+
+        := box = ? flag ?> UnionF64sHeld a |: UnionF64sMissing
+        ?= box ?|
+        | UnionF64sHeld values =>
+            := y = union_f64s_get values 0i32
+            ? !!!!EQ(y, 1.5f64) ?> 0i32 |: 1i32
+        | UnionF64sMissing => 1i32
+    ? program () <> 0i32 ?> failwith "union_f64s"
+
+:| union_fun_mix_slot =
+    | UnionFunMixNone
+    | UnionFunMixCall : (i32 -> i32) * i32
+
+:~ union_fun_mix_score x : i32 =
+    ?= x ?|
+    | UnionFunMixNone => 1i32
+    | UnionFunMixCall (f, n) =>
+        := ~g = f
+        ? g 0i32 +. n =. 7i32 ?> 0i32 |: 1i32
+
+///> c
+///> zig
+test union_fun_mix_returns_zero =
+    := program () : i32 =
+        := ~k = 3i32
+        := ~n = 4i32
+        := add (x : i32) : i32 = x +. k
+        := ~flag = !+
+        := held = ? flag ?> UnionFunMixCall (add, n) |: UnionFunMixNone
+        union_fun_mix_score held
+    ? program () <> 0i32 ?> failwith "union_fun_mix"
+
+:| union_heap_slot =
+    | UnionHeapMissing
+    | UnionHeapBox : heap { value : i32 }
+
+///> c
+///> zig
+test union_heap_returns_zero =
+    := program () : i32 =
+        := ~n = 7i32
+        := cell = !!!!LayoutToHeap({ value = n })
+        := ~flag = !+
+        := box = ? flag ?> UnionHeapBox cell |: UnionHeapMissing
+        ?= box ?|
+        | UnionHeapBox held =>
+            := opened = !!!!LayoutIndex(held)
+            ? opened.value =. 7i32 ?> 0i32 |: 1i32
+        | UnionHeapMissing => 1i32
+    ? program () <> 0i32 ?> failwith "union_heap"

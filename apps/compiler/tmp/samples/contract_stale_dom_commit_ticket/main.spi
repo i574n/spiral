@@ -1,0 +1,23 @@
+:! scope_a = ()
+:! epoch0 = ()
+:! epoch1 = ()
+:! host_a = ()
+:! staged = ()
+:! committed = ()
+:! current = ()
+:| dom_tree scope epoch state = | DomTree :: \* scope epoch state. string -> dom_tree scope epoch state
+:| mutation_batch scope epoch host state =
+    | Mutations :: \* scope epoch host state. string -> mutation_batch scope epoch host state
+:| commit_ticket scope epoch host state =
+    | Ticket :: \* scope epoch host state. string -> commit_ticket scope epoch host state
+:= commit \* scope epoch host.
+    (tree : dom_tree scope epoch staged) (batch : mutation_batch scope epoch host staged)
+    (ticket : commit_ticket scope epoch host current)
+    : dom_tree scope epoch committed
+    =
+    DomTree "committed"
+:= main () =
+    := tree : dom_tree scope_a epoch1 staged = DomTree "tree"
+    := batch : mutation_batch scope_a epoch1 host_a staged = Mutations "batch"
+    := stale : commit_ticket scope_a epoch0 host_a current = Ticket "stale"
+    commit tree batch stale

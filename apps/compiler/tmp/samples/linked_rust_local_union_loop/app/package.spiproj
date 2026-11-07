@@ -1,0 +1,8 @@
+packages:
+    |core-
+    ../../../../../../lib/spiral-
+    model-
+link:
+    model-
+modules:
+    main

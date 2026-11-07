@@ -1,0 +1,38 @@
+:! app_scope = ()
+:! epoch7 = ()
+:! sample_a = ()
+:! hg38 = ()
+:! chr1 = ()
+:! sealed = ()
+:! live = ()
+:! hydrated = ()
+
+:| callset_authority state sample build contig =
+    | CallsetAuthority :: \* state sample build contig. string -> callset_authority state sample build contig
+
+:| resource scope epoch lifecycle sample build contig =
+    | Resource :: \* scope epoch lifecycle sample build contig.
+        string ->
+        resource scope epoch lifecycle sample build contig
+
+:| view scope epoch hydration =
+    | View :: \* scope epoch hydration. string -> view scope epoch hydration
+
+:= publish \* scope epoch sample build contig.
+    (proof : callset_authority sealed sample build contig)
+    : resource scope epoch live sample build contig =
+    ?= proof ?|
+    | CallsetAuthority calls => Resource calls
+
+:= mount \* scope epoch sample build contig.
+    (resource : resource scope epoch live sample build contig)
+    (view : view scope epoch hydrated)
+    : string =
+    ?= resource, view ?|
+    | Resource _, View label => label
+
+:= main () : string =
+    := proof : callset_authority sealed sample_a hg38 chr1 = CallsetAuthority "42-variants"
+    := resource : resource app_scope epoch7 live sample_a hg38 chr1 = publish proof
+    := dashboard : view app_scope epoch7 hydrated = View "sealed-genome-dashboard"
+    mount resource dashboard

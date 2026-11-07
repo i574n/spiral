@@ -1,0 +1,2511 @@
+const std = @import("std");
+const builtin = @import("builtin");
+var spiral_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+extern "kernel32" fn GetStdHandle(id: u32) callconv(.winapi) ?*anyopaque;
+extern "kernel32" fn WriteFile(handle: ?*anyopaque, buffer: [*]const u8, length: u32, written: ?*u32, overlapped: ?*anyopaque) callconv(.winapi) i32;
+fn spiralWrite(stream: u2, bytes: []const u8) void {
+    if (builtin.os.tag == .windows) {
+        const handle = GetStdHandle(if (stream == 1) 0xFFFFFFF5 else 0xFFFFFFF4);
+        var rest = bytes;
+        while (rest.len > 0) {
+            var written: u32 = 0;
+            const chunk: u32 = @intCast(@min(rest.len, 1 << 30));
+            if (WriteFile(handle, rest.ptr, chunk, &written, null) == 0) return;
+            rest = rest[written..];
+        }
+    } else if (builtin.os.tag == .linux) {
+        var rest = bytes;
+        while (rest.len > 0) {
+            const n = std.os.linux.write(stream, rest.ptr, rest.len);
+            if (@as(isize, @bitCast(n)) <= 0) return;
+            rest = rest[n..];
+        }
+    } else {
+        _ = std.c.write(stream, bytes.ptr, bytes.len);
+    }
+}
+pub const panic = std.debug.FullPanic(spiralPanic);
+fn spiralPanic(message: []const u8, _: ?usize) noreturn {
+    spiralFlush();
+    spiralWrite(2, message);
+    spiralWrite(2, "\n");
+    std.process.exit(3);
+}
+var spiral_gpa: std.mem.Allocator = undefined;
+var spiral_environ: std.process.Environ = .empty;
+var spiral_true: bool = true;
+var spiral_out_buffer: [1 << 16]u8 = undefined;
+var spiral_out_len: usize = 0;
+fn spiralFlush() void {
+    if (spiral_out_len == 0) return;
+    spiralWrite(1, spiral_out_buffer[0..spiral_out_len]);
+    spiral_out_len = 0;
+}
+fn spiralCreate(comptime T: type, v: T) *T {
+    const p = spiral_gpa.create(T) catch @panic("out of memory");
+    p.* = v;
+    return p;
+}
+const US0 = struct { tag: i32 };
+const UH0 = struct { tag: i32, c1_0: US0 = undefined, c1_1: *UH0 = undefined };
+const UH2 = struct { tag: i32, c1_0: US0 = undefined, c1_1: *UH2 = undefined };
+const UH1 = struct { tag: i32, c1_0: *UH2 = undefined, c1_1: *UH1 = undefined };
+const US1 = struct { tag: i32 };
+const UH3 = struct { tag: i32, c1_0: US1 = undefined, c1_1: *UH3 = undefined };
+const UH5 = struct { tag: i32, c1_0: US1 = undefined, c1_1: *UH5 = undefined };
+const UH4 = struct { tag: i32, c1_0: *UH5 = undefined, c1_1: *UH4 = undefined };
+const US2 = struct { tag: i32 };
+const UH6 = struct { tag: i32, c1_0: US2 = undefined, c1_1: *UH6 = undefined };
+const UH7 = struct { tag: i32, c2_0: US0 = undefined, c3_0: *UH7 = undefined, c3_1: *UH7 = undefined, c4_0: *UH7 = undefined, c4_1: *UH7 = undefined, c5_0: *UH7 = undefined };
+const US3 = struct { tag: i32 };
+const US4 = struct { tag: i32 };
+const US5 = struct { tag: i32 };
+const UH8 = struct { tag: i32, c2_0: US1 = undefined, c3_0: *UH8 = undefined, c3_1: *UH8 = undefined, c4_0: *UH8 = undefined, c4_1: *UH8 = undefined, c5_0: *UH8 = undefined };
+fn US0_BitZero() US0 {
+    return US0{ .tag = 0 };
+}
+fn US0_BitOne() US0 {
+    return US0{ .tag = 1 };
+}
+fn UH0_SymbolListNil() *UH0 {
+    const shared = struct {
+        var value: UH0 = UH0{ .tag = 0 };
+    };
+    return &shared.value;
+}
+fn UH0_SymbolListCons(a0: US0, a1: *UH0) *UH0 {
+    return spiralCreate(UH0, UH0{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
+}
+fn UH2_InputEmpty() *UH2 {
+    const shared = struct {
+        var value: UH2 = UH2{ .tag = 0 };
+    };
+    return &shared.value;
+}
+fn UH2_InputCons(a0: US0, a1: *UH2) *UH2 {
+    return spiralCreate(UH2, UH2{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
+}
+fn UH1_InputListNil() *UH1 {
+    const shared = struct {
+        var value: UH1 = UH1{ .tag = 0 };
+    };
+    return &shared.value;
+}
+fn UH1_InputListCons(a0: *UH2, a1: *UH1) *UH1 {
+    return spiralCreate(UH1, UH1{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
+}
+fn input_singletons_from_symbols_0(p0: *UH0) *UH1 {
+    var v0: *UH0 = p0; _ = &v0;
+    var v2: US0 = undefined; _ = &v2;
+    var v3: *UH0 = undefined; _ = &v3;
+    var v4: *UH1 = undefined; _ = &v4;
+    var v5: *UH2 = undefined; _ = &v5;
+    var v6: *UH2 = undefined; _ = &v6;
+    switch (v0.tag) {
+        1 => {
+            v2 = v0.c1_0;
+            v3 = v0.c1_1;
+            v4 = input_singletons_from_symbols_0(v3);
+            v5 = UH2_InputEmpty();
+            v6 = UH2_InputCons(v2, v5);
+            return UH1_InputListCons(v6, v4);
+        },
+        0 => {
+            return UH1_InputListNil();
+        },
+        else => unreachable,
+    }
+}
+fn input_list_append_2(p0: *UH1, p1: *UH1) *UH1 {
+    var v0: *UH1 = p0; _ = &v0;
+    var v1: *UH1 = p1; _ = &v1;
+    var v2: *UH2 = undefined; _ = &v2;
+    var v3: *UH1 = undefined; _ = &v3;
+    var v4: *UH1 = undefined; _ = &v4;
+    switch (v0.tag) {
+        1 => {
+            v2 = v0.c1_0;
+            v3 = v0.c1_1;
+            v4 = input_list_append_2(v3, v1);
+            return UH1_InputListCons(v2, v4);
+        },
+        0 => {
+            return v1;
+        },
+        else => unreachable,
+    }
+}
+fn input_prepend_symbol_to_corpus_3(p0: US0, p1: *UH1) *UH1 {
+    var v0: US0 = p0; _ = &v0;
+    var v1: *UH1 = p1; _ = &v1;
+    var v3: *UH2 = undefined; _ = &v3;
+    var v4: *UH1 = undefined; _ = &v4;
+    var v5: *UH1 = undefined; _ = &v5;
+    var v6: *UH2 = undefined; _ = &v6;
+    switch (v1.tag) {
+        1 => {
+            v3 = v1.c1_0;
+            v4 = v1.c1_1;
+            v5 = input_prepend_symbol_to_corpus_3(v0, v4);
+            v6 = UH2_InputCons(v0, v3);
+            return UH1_InputListCons(v6, v5);
+        },
+        0 => {
+            return UH1_InputListNil();
+        },
+        else => unreachable,
+    }
+}
+fn input_prepend_symbols_to_corpus_1(p0: *UH0, p1: *UH1) *UH1 {
+    var v0: *UH0 = p0; _ = &v0;
+    var v1: *UH1 = p1; _ = &v1;
+    var v3: US0 = undefined; _ = &v3;
+    var v4: *UH0 = undefined; _ = &v4;
+    var v5: *UH1 = undefined; _ = &v5;
+    var v6: *UH1 = undefined; _ = &v6;
+    switch (v0.tag) {
+        1 => {
+            v3 = v0.c1_0;
+            v4 = v0.c1_1;
+            v5 = input_prepend_symbol_to_corpus_3(v3, v1);
+            v6 = input_prepend_symbols_to_corpus_1(v4, v1);
+            return input_list_append_2(v5, v6);
+        },
+        0 => {
+            return UH1_InputListNil();
+        },
+        else => unreachable,
+    }
+}
+fn US1_TriA() US1 {
+    return US1{ .tag = 0 };
+}
+fn US1_TriB() US1 {
+    return US1{ .tag = 1 };
+}
+fn US1_TriC() US1 {
+    return US1{ .tag = 2 };
+}
+fn UH3_SymbolListNil() *UH3 {
+    const shared = struct {
+        var value: UH3 = UH3{ .tag = 0 };
+    };
+    return &shared.value;
+}
+fn UH3_SymbolListCons(a0: US1, a1: *UH3) *UH3 {
+    return spiralCreate(UH3, UH3{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
+}
+fn UH5_InputEmpty() *UH5 {
+    const shared = struct {
+        var value: UH5 = UH5{ .tag = 0 };
+    };
+    return &shared.value;
+}
+fn UH5_InputCons(a0: US1, a1: *UH5) *UH5 {
+    return spiralCreate(UH5, UH5{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
+}
+fn UH4_InputListNil() *UH4 {
+    const shared = struct {
+        var value: UH4 = UH4{ .tag = 0 };
+    };
+    return &shared.value;
+}
+fn UH4_InputListCons(a0: *UH5, a1: *UH4) *UH4 {
+    return spiralCreate(UH4, UH4{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
+}
+fn input_singletons_from_symbols_4(p0: *UH3) *UH4 {
+    var v0: *UH3 = p0; _ = &v0;
+    var v2: US1 = undefined; _ = &v2;
+    var v3: *UH3 = undefined; _ = &v3;
+    var v4: *UH4 = undefined; _ = &v4;
+    var v5: *UH5 = undefined; _ = &v5;
+    var v6: *UH5 = undefined; _ = &v6;
+    switch (v0.tag) {
+        1 => {
+            v2 = v0.c1_0;
+            v3 = v0.c1_1;
+            v4 = input_singletons_from_symbols_4(v3);
+            v5 = UH5_InputEmpty();
+            v6 = UH5_InputCons(v2, v5);
+            return UH4_InputListCons(v6, v4);
+        },
+        0 => {
+            return UH4_InputListNil();
+        },
+        else => unreachable,
+    }
+}
+fn input_list_append_6(p0: *UH4, p1: *UH4) *UH4 {
+    var v0: *UH4 = p0; _ = &v0;
+    var v1: *UH4 = p1; _ = &v1;
+    var v2: *UH5 = undefined; _ = &v2;
+    var v3: *UH4 = undefined; _ = &v3;
+    var v4: *UH4 = undefined; _ = &v4;
+    switch (v0.tag) {
+        1 => {
+            v2 = v0.c1_0;
+            v3 = v0.c1_1;
+            v4 = input_list_append_6(v3, v1);
+            return UH4_InputListCons(v2, v4);
+        },
+        0 => {
+            return v1;
+        },
+        else => unreachable,
+    }
+}
+fn input_prepend_symbol_to_corpus_7(p0: US1, p1: *UH4) *UH4 {
+    var v0: US1 = p0; _ = &v0;
+    var v1: *UH4 = p1; _ = &v1;
+    var v3: *UH5 = undefined; _ = &v3;
+    var v4: *UH4 = undefined; _ = &v4;
+    var v5: *UH4 = undefined; _ = &v5;
+    var v6: *UH5 = undefined; _ = &v6;
+    switch (v1.tag) {
+        1 => {
+            v3 = v1.c1_0;
+            v4 = v1.c1_1;
+            v5 = input_prepend_symbol_to_corpus_7(v0, v4);
+            v6 = UH5_InputCons(v0, v3);
+            return UH4_InputListCons(v6, v5);
+        },
+        0 => {
+            return UH4_InputListNil();
+        },
+        else => unreachable,
+    }
+}
+fn input_prepend_symbols_to_corpus_5(p0: *UH3, p1: *UH4) *UH4 {
+    var v0: *UH3 = p0; _ = &v0;
+    var v1: *UH4 = p1; _ = &v1;
+    var v3: US1 = undefined; _ = &v3;
+    var v4: *UH3 = undefined; _ = &v4;
+    var v5: *UH4 = undefined; _ = &v5;
+    var v6: *UH4 = undefined; _ = &v6;
+    switch (v0.tag) {
+        1 => {
+            v3 = v0.c1_0;
+            v4 = v0.c1_1;
+            v5 = input_prepend_symbol_to_corpus_7(v3, v1);
+            v6 = input_prepend_symbols_to_corpus_5(v4, v1);
+            return input_list_append_6(v5, v6);
+        },
+        0 => {
+            return UH4_InputListNil();
+        },
+        else => unreachable,
+    }
+}
+fn US2_ModelA() US2 {
+    return US2{ .tag = 0 };
+}
+fn US2_ModelB() US2 {
+    return US2{ .tag = 1 };
+}
+fn US2_ModelC() US2 {
+    return US2{ .tag = 2 };
+}
+fn UH6_InputEmpty() *UH6 {
+    const shared = struct {
+        var value: UH6 = UH6{ .tag = 0 };
+    };
+    return &shared.value;
+}
+fn UH6_InputCons(a0: US2, a1: *UH6) *UH6 {
+    return spiralCreate(UH6, UH6{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
+}
+fn UH7_RegexEmpty() *UH7 {
+    const shared = struct {
+        var value: UH7 = UH7{ .tag = 0 };
+    };
+    return &shared.value;
+}
+fn UH7_RegexEpsilon() *UH7 {
+    const shared = struct {
+        var value: UH7 = UH7{ .tag = 1 };
+    };
+    return &shared.value;
+}
+fn UH7_RegexChar(a0: US0) *UH7 {
+    return spiralCreate(UH7, UH7{ .tag = 2, .c2_0 = a0 });
+}
+fn UH7_RegexAlt(a0: *UH7, a1: *UH7) *UH7 {
+    return spiralCreate(UH7, UH7{ .tag = 3, .c3_0 = a0, .c3_1 = a1 });
+}
+fn UH7_RegexCat(a0: *UH7, a1: *UH7) *UH7 {
+    return spiralCreate(UH7, UH7{ .tag = 4, .c4_0 = a0, .c4_1 = a1 });
+}
+fn UH7_RegexStar(a0: *UH7) *UH7 {
+    return spiralCreate(UH7, UH7{ .tag = 5, .c5_0 = a0 });
+}
+fn US3_InventoryDfaAccepted() US3 {
+    return US3{ .tag = 0 };
+}
+fn US3_InventoryDfaRejected() US3 {
+    return US3{ .tag = 1 };
+}
+fn US3_InventoryDfaInputOutsideInventory() US3 {
+    return US3{ .tag = 2 };
+}
+fn US4_SymbolLess() US4 {
+    return US4{ .tag = 0 };
+}
+fn US4_SymbolSame() US4 {
+    return US4{ .tag = 1 };
+}
+fn US4_SymbolGreater() US4 {
+    return US4{ .tag = 2 };
+}
+fn loop_9(p0: i32, p1: *UH2) US3 {
+    var v0: i32 = p0; _ = &v0;
+    var v1: *UH2 = p1; _ = &v1;
+    var v6: US0 = undefined; _ = &v6;
+    var v7: *UH2 = undefined; _ = &v7;
+    var v11: US4 = undefined; _ = &v11;
+    var v12: bool = undefined; _ = &v12;
+    var v19: i32 = undefined; _ = &v19;
+    var v16: US4 = undefined; _ = &v16;
+    var v17: bool = undefined; _ = &v17;
+    var v20: bool = undefined; _ = &v20;
+    var v22: bool = undefined; _ = &v22;
+    var v27: i32 = undefined; _ = &v27;
+    var v23: bool = undefined; _ = &v23;
+    var v25: bool = undefined; _ = &v25;
+    var v2: bool = undefined; _ = &v2;
+    while (true) {
+        switch (v1.tag) {
+            1 => {
+                v6 = v1.c1_0;
+                v7 = v1.c1_1;
+                switch (v6.tag) {
+                    1 => {
+                        v11 = US4_SymbolGreater();
+                    },
+                    0 => {
+                        v11 = US4_SymbolSame();
+                    },
+                    else => unreachable,
+                }
+                switch (v11.tag) {
+                    1 => {
+                        v12 = true;
+                    },
+                    else => {
+                        v12 = false;
+                    },
+                }
+                if (v12) {
+                    v19 = @as(i32, 0);
+                } else {
+                    switch (v6.tag) {
+                        1 => {
+                            v16 = US4_SymbolSame();
+                        },
+                        0 => {
+                            v16 = US4_SymbolLess();
+                        },
+                        else => unreachable,
+                    }
+                    switch (v16.tag) {
+                        1 => {
+                            v17 = true;
+                        },
+                        else => {
+                            v17 = false;
+                        },
+                    }
+                    if (v17) {
+                        v19 = @as(i32, 1);
+                    } else {
+                        v19 = @as(i32, -1);
+                    }
+                }
+                v20 = v19 < @as(i32, 0);
+                if (v20) {
+                    return US3_InventoryDfaInputOutsideInventory();
+                } else {
+                    v22 = v0 == @as(i32, 0);
+                    if (v22) {
+                        v23 = v19 == @as(i32, 0);
+                        if (v23) {
+                            v27 = @as(i32, 0);
+                        } else {
+                            v27 = @as(i32, 1);
+                        }
+                    } else {
+                        v25 = v19 == @as(i32, 0);
+                        if (v25) {
+                            v27 = @as(i32, 0);
+                        } else {
+                            v27 = @as(i32, 1);
+                        }
+                    }
+                    v0 = v27;
+                    v1 = v7;
+                    continue;
+                }
+            },
+            0 => {
+                v2 = v0 == @as(i32, 0);
+                if (v2) {
+                    return US3_InventoryDfaAccepted();
+                } else {
+                    return US3_InventoryDfaRejected();
+                }
+            },
+            else => unreachable,
+        }
+    }
+}
+fn regex_compare_15(p0: *UH7, p1: *UH7) US4 {
+    var v0: *UH7 = p0; _ = &v0;
+    var v1: *UH7 = p1; _ = &v1;
+    var v53: *UH7 = undefined; _ = &v53;
+    var v54: *UH7 = undefined; _ = &v54;
+    var v55: *UH7 = undefined; _ = &v55;
+    var v56: *UH7 = undefined; _ = &v56;
+    var v57: US4 = undefined; _ = &v57;
+    var v28: *UH7 = undefined; _ = &v28;
+    var v29: *UH7 = undefined; _ = &v29;
+    var v34: *UH7 = undefined; _ = &v34;
+    var v35: *UH7 = undefined; _ = &v35;
+    var v36: US4 = undefined; _ = &v36;
+    var v32: US0 = undefined; _ = &v32;
+    var v10: US0 = undefined; _ = &v10;
+    var v13: US0 = undefined; _ = &v13;
+    var v44: *UH7 = undefined; _ = &v44;
+    var v45: *UH7 = undefined; _ = &v45;
+    var v46: *UH7 = undefined; _ = &v46;
+    var v48: *UH7 = undefined; _ = &v48;
+    while (true) {
+        switch (v0.tag) {
+            3 => {
+                v53 = v0.c3_0;
+                v54 = v0.c3_1;
+                switch (v1.tag) {
+                    3 => {
+                        v55 = v1.c3_0;
+                        v56 = v1.c3_1;
+                        v57 = regex_compare_15(v53, v55);
+                        switch (v57.tag) {
+                            1 => {
+                                v0 = v54;
+                                v1 = v56;
+                                continue;
+                            },
+                            else => {
+                                return v57;
+                            },
+                        }
+                    },
+                    else => {
+                        return US4_SymbolGreater();
+                    },
+                }
+            },
+            4 => {
+                v28 = v0.c4_0;
+                v29 = v0.c4_1;
+                switch (v1.tag) {
+                    4 => {
+                        v34 = v1.c4_0;
+                        v35 = v1.c4_1;
+                        v36 = regex_compare_15(v28, v34);
+                        switch (v36.tag) {
+                            1 => {
+                                v0 = v29;
+                                v1 = v35;
+                                continue;
+                            },
+                            else => {
+                                return v36;
+                            },
+                        }
+                    },
+                    2 => {
+                        v32 = v1.c2_0;
+                        return US4_SymbolGreater();
+                    },
+                    0 => {
+                        return US4_SymbolGreater();
+                    },
+                    1 => {
+                        return US4_SymbolGreater();
+                    },
+                    else => {
+                        return US4_SymbolLess();
+                    },
+                }
+            },
+            2 => {
+                v10 = v0.c2_0;
+                switch (v1.tag) {
+                    2 => {
+                        v13 = v1.c2_0;
+                        switch (v10.tag) {
+                            1 => {
+                                switch (v13.tag) {
+                                    1 => {
+                                        return US4_SymbolSame();
+                                    },
+                                    0 => {
+                                        return US4_SymbolGreater();
+                                    },
+                                    else => unreachable,
+                                }
+                            },
+                            0 => {
+                                switch (v13.tag) {
+                                    1 => {
+                                        return US4_SymbolLess();
+                                    },
+                                    0 => {
+                                        return US4_SymbolSame();
+                                    },
+                                    else => unreachable,
+                                }
+                            },
+                            else => unreachable,
+                        }
+                    },
+                    0 => {
+                        return US4_SymbolGreater();
+                    },
+                    1 => {
+                        return US4_SymbolGreater();
+                    },
+                    else => {
+                        return US4_SymbolLess();
+                    },
+                }
+            },
+            0 => {
+                switch (v1.tag) {
+                    0 => {
+                        return US4_SymbolSame();
+                    },
+                    else => {
+                        return US4_SymbolLess();
+                    },
+                }
+            },
+            1 => {
+                switch (v1.tag) {
+                    0 => {
+                        return US4_SymbolGreater();
+                    },
+                    1 => {
+                        return US4_SymbolSame();
+                    },
+                    else => {
+                        return US4_SymbolLess();
+                    },
+                }
+            },
+            5 => {
+                v44 = v0.c5_0;
+                switch (v1.tag) {
+                    3 => {
+                        v45 = v1.c3_0;
+                        v46 = v1.c3_1;
+                        return US4_SymbolLess();
+                    },
+                    5 => {
+                        v48 = v1.c5_0;
+                        v0 = v44;
+                        v1 = v48;
+                        continue;
+                    },
+                    else => {
+                        return US4_SymbolGreater();
+                    },
+                }
+            },
+            else => unreachable,
+        }
+    }
+}
+fn alt_insert_sorted_14(p0: *UH7, p1: *UH7) *UH7 {
+    var v0: *UH7 = p0; _ = &v0;
+    var v1: *UH7 = p1; _ = &v1;
+    var v2: *UH7 = undefined; _ = &v2;
+    var v3: *UH7 = undefined; _ = &v3;
+    var v4: US4 = undefined; _ = &v4;
+    var v6: *UH7 = undefined; _ = &v6;
+    var v11: US4 = undefined; _ = &v11;
+    switch (v1.tag) {
+        3 => {
+            v2 = v1.c3_0;
+            v3 = v1.c3_1;
+            v4 = regex_compare_15(v0, v2);
+            switch (v4.tag) {
+                2 => {
+                    v6 = alt_insert_sorted_14(v0, v3);
+                    return UH7_RegexAlt(v2, v6);
+                },
+                0 => {
+                    return UH7_RegexAlt(v0, v1);
+                },
+                1 => {
+                    return v1;
+                },
+                else => unreachable,
+            }
+        },
+        0 => {
+            return v0;
+        },
+        else => {
+            v11 = regex_compare_15(v0, v1);
+            switch (v11.tag) {
+                2 => {
+                    return UH7_RegexAlt(v1, v0);
+                },
+                0 => {
+                    return UH7_RegexAlt(v0, v1);
+                },
+                1 => {
+                    return v1;
+                },
+                else => unreachable,
+            }
+        },
+    }
+}
+fn make_alt_13(p0: *UH7, p1: *UH7) *UH7 {
+    var v0: *UH7 = p0; _ = &v0;
+    var v1: *UH7 = p1; _ = &v1;
+    var v2: *UH7 = undefined; _ = &v2;
+    var v3: *UH7 = undefined; _ = &v3;
+    var v4: *UH7 = undefined; _ = &v4;
+    while (true) {
+        switch (v0.tag) {
+            3 => {
+                v2 = v0.c3_0;
+                v3 = v0.c3_1;
+                v4 = alt_insert_sorted_14(v2, v1);
+                v0 = v3;
+                v1 = v4;
+                continue;
+            },
+            0 => {
+                return v1;
+            },
+            else => {
+                return alt_insert_sorted_14(v0, v1);
+            },
+        }
+    }
+}
+fn regex_equal_17(p0: *UH7, p1: *UH7) bool {
+    var v0: *UH7 = p0; _ = &v0;
+    var v1: *UH7 = p1; _ = &v1;
+    var v18: *UH7 = undefined; _ = &v18;
+    var v19: *UH7 = undefined; _ = &v19;
+    var v20: *UH7 = undefined; _ = &v20;
+    var v21: *UH7 = undefined; _ = &v21;
+    var v22: bool = undefined; _ = &v22;
+    var v26: *UH7 = undefined; _ = &v26;
+    var v27: *UH7 = undefined; _ = &v27;
+    var v28: *UH7 = undefined; _ = &v28;
+    var v29: *UH7 = undefined; _ = &v29;
+    var v30: bool = undefined; _ = &v30;
+    var v4: US0 = undefined; _ = &v4;
+    var v5: US0 = undefined; _ = &v5;
+    var v15: US4 = undefined; _ = &v15;
+    var v34: *UH7 = undefined; _ = &v34;
+    var v35: *UH7 = undefined; _ = &v35;
+    while (true) {
+        switch (v0.tag) {
+            3 => {
+                v18 = v0.c3_0;
+                v19 = v0.c3_1;
+                switch (v1.tag) {
+                    3 => {
+                        v20 = v1.c3_0;
+                        v21 = v1.c3_1;
+                        v22 = regex_equal_17(v18, v20);
+                        if (v22) {
+                            v0 = v19;
+                            v1 = v21;
+                            continue;
+                        } else {
+                            return false;
+                        }
+                    },
+                    else => {
+                        return false;
+                    },
+                }
+            },
+            4 => {
+                v26 = v0.c4_0;
+                v27 = v0.c4_1;
+                switch (v1.tag) {
+                    4 => {
+                        v28 = v1.c4_0;
+                        v29 = v1.c4_1;
+                        v30 = regex_equal_17(v26, v28);
+                        if (v30) {
+                            v0 = v27;
+                            v1 = v29;
+                            continue;
+                        } else {
+                            return false;
+                        }
+                    },
+                    else => {
+                        return false;
+                    },
+                }
+            },
+            2 => {
+                v4 = v0.c2_0;
+                switch (v1.tag) {
+                    2 => {
+                        v5 = v1.c2_0;
+                        switch (v4.tag) {
+                            1 => {
+                                switch (v5.tag) {
+                                    1 => {
+                                        v15 = US4_SymbolSame();
+                                    },
+                                    0 => {
+                                        v15 = US4_SymbolGreater();
+                                    },
+                                    else => unreachable,
+                                }
+                            },
+                            0 => {
+                                switch (v5.tag) {
+                                    1 => {
+                                        v15 = US4_SymbolLess();
+                                    },
+                                    0 => {
+                                        v15 = US4_SymbolSame();
+                                    },
+                                    else => unreachable,
+                                }
+                            },
+                            else => unreachable,
+                        }
+                        switch (v15.tag) {
+                            1 => {
+                                return true;
+                            },
+                            else => {
+                                return false;
+                            },
+                        }
+                    },
+                    else => {
+                        return false;
+                    },
+                }
+            },
+            0 => {
+                switch (v1.tag) {
+                    0 => {
+                        return true;
+                    },
+                    else => {
+                        return false;
+                    },
+                }
+            },
+            1 => {
+                switch (v1.tag) {
+                    1 => {
+                        return true;
+                    },
+                    else => {
+                        return false;
+                    },
+                }
+            },
+            5 => {
+                v34 = v0.c5_0;
+                switch (v1.tag) {
+                    5 => {
+                        v35 = v1.c5_0;
+                        v0 = v34;
+                        v1 = v35;
+                        continue;
+                    },
+                    else => {
+                        return false;
+                    },
+                }
+            },
+            else => unreachable,
+        }
+    }
+}
+fn make_cat_16(p0: *UH7, p1: *UH7) *UH7 {
+    var v0: *UH7 = p0; _ = &v0;
+    var v1: *UH7 = p1; _ = &v1;
+    var v12: *UH7 = undefined; _ = &v12;
+    var v13: *UH7 = undefined; _ = &v13;
+    var v14: *UH7 = undefined; _ = &v14;
+    var v4: *UH7 = undefined; _ = &v4;
+    var v5: *UH7 = undefined; _ = &v5;
+    var v6: bool = undefined; _ = &v6;
+    switch (v0.tag) {
+        0 => {
+            return UH7_RegexEmpty();
+        },
+        else => {
+            switch (v1.tag) {
+                0 => {
+                    return UH7_RegexEmpty();
+                },
+                else => {
+                    switch (v0.tag) {
+                        1 => {
+                            return v1;
+                        },
+                        else => {
+                            switch (v1.tag) {
+                                1 => {
+                                    return v0;
+                                },
+                                else => {
+                                    switch (v0.tag) {
+                                        4 => {
+                                            v12 = v0.c4_0;
+                                            v13 = v0.c4_1;
+                                            v14 = make_cat_16(v13, v1);
+                                            return UH7_RegexCat(v12, v14);
+                                        },
+                                        5 => {
+                                            v4 = v0.c5_0;
+                                            switch (v1.tag) {
+                                                5 => {
+                                                    v5 = v1.c5_0;
+                                                    v6 = regex_equal_17(v4, v5);
+                                                    if (v6) {
+                                                        return UH7_RegexStar(v4);
+                                                    } else {
+                                                        return UH7_RegexCat(v0, v1);
+                                                    }
+                                                },
+                                                else => {
+                                                    return UH7_RegexCat(v0, v1);
+                                                },
+                                            }
+                                        },
+                                        else => {
+                                            return UH7_RegexCat(v0, v1);
+                                        },
+                                    }
+                                },
+                            }
+                        },
+                    }
+                },
+            }
+        },
+    }
+}
+fn make_star_18(p0: *UH7) *UH7 {
+    var v0: *UH7 = p0; _ = &v0;
+    var v3: *UH7 = undefined; _ = &v3;
+    switch (v0.tag) {
+        0 => {
+            return UH7_RegexEpsilon();
+        },
+        1 => {
+            return UH7_RegexEpsilon();
+        },
+        5 => {
+            v3 = v0.c5_0;
+            return UH7_RegexStar(v3);
+        },
+        else => {
+            return UH7_RegexStar(v0);
+        },
+    }
+}
+fn normalize_12(p0: *UH7) *UH7 {
+    var v0: *UH7 = p0; _ = &v0;
+    var v5: *UH7 = undefined; _ = &v5;
+    var v6: *UH7 = undefined; _ = &v6;
+    var v7: *UH7 = undefined; _ = &v7;
+    var v8: *UH7 = undefined; _ = &v8;
+    var v10: *UH7 = undefined; _ = &v10;
+    var v11: *UH7 = undefined; _ = &v11;
+    var v12: *UH7 = undefined; _ = &v12;
+    var v13: *UH7 = undefined; _ = &v13;
+    var v3: US0 = undefined; _ = &v3;
+    var v15: *UH7 = undefined; _ = &v15;
+    var v16: *UH7 = undefined; _ = &v16;
+    switch (v0.tag) {
+        3 => {
+            v5 = v0.c3_0;
+            v6 = v0.c3_1;
+            v7 = normalize_12(v5);
+            v8 = normalize_12(v6);
+            return make_alt_13(v7, v8);
+        },
+        4 => {
+            v10 = v0.c4_0;
+            v11 = v0.c4_1;
+            v12 = normalize_12(v10);
+            v13 = normalize_12(v11);
+            return make_cat_16(v12, v13);
+        },
+        2 => {
+            v3 = v0.c2_0;
+            return UH7_RegexChar(v3);
+        },
+        0 => {
+            return UH7_RegexEmpty();
+        },
+        1 => {
+            return UH7_RegexEpsilon();
+        },
+        5 => {
+            v15 = v0.c5_0;
+            v16 = normalize_12(v15);
+            return make_star_18(v16);
+        },
+        else => unreachable,
+    }
+}
+fn US5_Nullable() US5 {
+    return US5{ .tag = 0 };
+}
+fn US5_NonNullable() US5 {
+    return US5{ .tag = 1 };
+}
+fn nullable_20(p0: *UH7) US5 {
+    var v0: *UH7 = p0; _ = &v0;
+    var v5: *UH7 = undefined; _ = &v5;
+    var v6: *UH7 = undefined; _ = &v6;
+    var v7: US5 = undefined; _ = &v7;
+    var v8: US5 = undefined; _ = &v8;
+    var v16: *UH7 = undefined; _ = &v16;
+    var v17: *UH7 = undefined; _ = &v17;
+    var v18: US5 = undefined; _ = &v18;
+    var v19: US5 = undefined; _ = &v19;
+    var v3: US0 = undefined; _ = &v3;
+    var v25: *UH7 = undefined; _ = &v25;
+    switch (v0.tag) {
+        3 => {
+            v5 = v0.c3_0;
+            v6 = v0.c3_1;
+            v7 = nullable_20(v5);
+            v8 = nullable_20(v6);
+            switch (v7.tag) {
+                0 => {
+                    return US5_Nullable();
+                },
+                else => {
+                    switch (v8.tag) {
+                        0 => {
+                            return US5_Nullable();
+                        },
+                        else => {
+                            switch (v7.tag) {
+                                1 => {
+                                    switch (v8.tag) {
+                                        1 => {
+                                            return US5_NonNullable();
+                                        },
+                                        else => unreachable,
+                                    }
+                                },
+                                else => unreachable,
+                            }
+                        },
+                    }
+                },
+            }
+        },
+        4 => {
+            v16 = v0.c4_0;
+            v17 = v0.c4_1;
+            v18 = nullable_20(v16);
+            v19 = nullable_20(v17);
+            switch (v18.tag) {
+                0 => {
+                    switch (v19.tag) {
+                        0 => {
+                            return US5_Nullable();
+                        },
+                        else => {
+                            return US5_NonNullable();
+                        },
+                    }
+                },
+                else => {
+                    return US5_NonNullable();
+                },
+            }
+        },
+        2 => {
+            v3 = v0.c2_0;
+            return US5_NonNullable();
+        },
+        0 => {
+            return US5_NonNullable();
+        },
+        1 => {
+            return US5_Nullable();
+        },
+        5 => {
+            v25 = v0.c5_0;
+            return US5_Nullable();
+        },
+        else => unreachable,
+    }
+}
+fn derivative_19(p0: *UH7, p1: US0) *UH7 {
+    var v0: *UH7 = p0; _ = &v0;
+    var v1: US0 = p1; _ = &v1;
+    var v19: *UH7 = undefined; _ = &v19;
+    var v20: *UH7 = undefined; _ = &v20;
+    var v21: *UH7 = undefined; _ = &v21;
+    var v22: *UH7 = undefined; _ = &v22;
+    var v24: *UH7 = undefined; _ = &v24;
+    var v25: *UH7 = undefined; _ = &v25;
+    var v26: US5 = undefined; _ = &v26;
+    var v31: *UH7 = undefined; _ = &v31;
+    var v27: *UH7 = undefined; _ = &v27;
+    var v28: *UH7 = undefined; _ = &v28;
+    var v29: *UH7 = undefined; _ = &v29;
+    var v4: US0 = undefined; _ = &v4;
+    var v14: US4 = undefined; _ = &v14;
+    var v15: bool = undefined; _ = &v15;
+    var v35: *UH7 = undefined; _ = &v35;
+    var v36: *UH7 = undefined; _ = &v36;
+    var v37: *UH7 = undefined; _ = &v37;
+    switch (v0.tag) {
+        3 => {
+            v19 = v0.c3_0;
+            v20 = v0.c3_1;
+            v21 = derivative_19(v19, v1);
+            v22 = derivative_19(v20, v1);
+            return make_alt_13(v21, v22);
+        },
+        4 => {
+            v24 = v0.c4_0;
+            v25 = v0.c4_1;
+            v26 = nullable_20(v24);
+            switch (v26.tag) {
+                1 => {
+                    v31 = derivative_19(v24, v1);
+                    return make_cat_16(v31, v25);
+                },
+                0 => {
+                    v27 = derivative_19(v24, v1);
+                    v28 = make_cat_16(v27, v25);
+                    v29 = derivative_19(v25, v1);
+                    return make_alt_13(v28, v29);
+                },
+                else => unreachable,
+            }
+        },
+        2 => {
+            v4 = v0.c2_0;
+            switch (v4.tag) {
+                1 => {
+                    switch (v1.tag) {
+                        1 => {
+                            v14 = US4_SymbolSame();
+                        },
+                        0 => {
+                            v14 = US4_SymbolGreater();
+                        },
+                        else => unreachable,
+                    }
+                },
+                0 => {
+                    switch (v1.tag) {
+                        1 => {
+                            v14 = US4_SymbolLess();
+                        },
+                        0 => {
+                            v14 = US4_SymbolSame();
+                        },
+                        else => unreachable,
+                    }
+                },
+                else => unreachable,
+            }
+            switch (v14.tag) {
+                1 => {
+                    v15 = true;
+                },
+                else => {
+                    v15 = false;
+                },
+            }
+            if (v15) {
+                return UH7_RegexEpsilon();
+            } else {
+                return UH7_RegexEmpty();
+            }
+        },
+        0 => {
+            return UH7_RegexEmpty();
+        },
+        1 => {
+            return UH7_RegexEmpty();
+        },
+        5 => {
+            v35 = v0.c5_0;
+            v36 = derivative_19(v35, v1);
+            v37 = make_star_18(v35);
+            return make_cat_16(v36, v37);
+        },
+        else => unreachable,
+    }
+}
+fn canonical_derivative_11(p0: *UH7, p1: US0) *UH7 {
+    var v0: *UH7 = p0; _ = &v0;
+    var v1: US0 = p1; _ = &v1;
+    const v2: *UH7 = normalize_12(v0);
+    const v3: *UH7 = derivative_19(v2, v1);
+    return normalize_12(v3);
+}
+fn accepts_10(p0: *UH7, p1: *UH2) bool {
+    var v0: *UH7 = p0; _ = &v0;
+    var v1: *UH2 = p1; _ = &v1;
+    var v6: US0 = undefined; _ = &v6;
+    var v7: *UH2 = undefined; _ = &v7;
+    var v8: *UH7 = undefined; _ = &v8;
+    var v2: *UH7 = undefined; _ = &v2;
+    var v3: US5 = undefined; _ = &v3;
+    while (true) {
+        switch (v1.tag) {
+            1 => {
+                v6 = v1.c1_0;
+                v7 = v1.c1_1;
+                v8 = canonical_derivative_11(v0, v6);
+                v0 = v8;
+                v1 = v7;
+                continue;
+            },
+            0 => {
+                v2 = normalize_12(v0);
+                v3 = nullable_20(v2);
+                switch (v3.tag) {
+                    1 => {
+                        return false;
+                    },
+                    0 => {
+                        return true;
+                    },
+                    else => unreachable,
+                }
+            },
+            else => unreachable,
+        }
+    }
+}
+fn loop_8(p0: *UH7, p1: *UH1) bool {
+    var v0: *UH7 = p0; _ = &v0;
+    var v1: *UH1 = p1; _ = &v1;
+    var v2: *UH2 = undefined; _ = &v2;
+    var v3: *UH1 = undefined; _ = &v3;
+    var v4: i32 = undefined; _ = &v4;
+    var v5: US3 = undefined; _ = &v5;
+    var v11: bool = undefined; _ = &v11;
+    var v7: bool = undefined; _ = &v7;
+    var v8: bool = undefined; _ = &v8;
+    while (true) {
+        switch (v1.tag) {
+            1 => {
+                v2 = v1.c1_0;
+                v3 = v1.c1_1;
+                v4 = @as(i32, 1);
+                v5 = loop_9(v4, v2);
+                switch (v5.tag) {
+                    0 => {
+                        v11 = accepts_10(v0, v2);
+                    },
+                    2 => {
+                        v11 = false;
+                    },
+                    1 => {
+                        v7 = accepts_10(v0, v2);
+                        v8 = v7 == false;
+                        v11 = v8;
+                    },
+                    else => unreachable,
+                }
+                if (v11) {
+                    v1 = v3;
+                    continue;
+                } else {
+                    return false;
+                }
+            },
+            0 => {
+                return true;
+            },
+            else => unreachable,
+        }
+    }
+}
+fn UH8_RegexEmpty() *UH8 {
+    const shared = struct {
+        var value: UH8 = UH8{ .tag = 0 };
+    };
+    return &shared.value;
+}
+fn UH8_RegexEpsilon() *UH8 {
+    const shared = struct {
+        var value: UH8 = UH8{ .tag = 1 };
+    };
+    return &shared.value;
+}
+fn UH8_RegexChar(a0: US1) *UH8 {
+    return spiralCreate(UH8, UH8{ .tag = 2, .c2_0 = a0 });
+}
+fn UH8_RegexAlt(a0: *UH8, a1: *UH8) *UH8 {
+    return spiralCreate(UH8, UH8{ .tag = 3, .c3_0 = a0, .c3_1 = a1 });
+}
+fn UH8_RegexCat(a0: *UH8, a1: *UH8) *UH8 {
+    return spiralCreate(UH8, UH8{ .tag = 4, .c4_0 = a0, .c4_1 = a1 });
+}
+fn UH8_RegexStar(a0: *UH8) *UH8 {
+    return spiralCreate(UH8, UH8{ .tag = 5, .c5_0 = a0 });
+}
+fn loop_22(p0: i32, p1: *UH5) US3 {
+    var v0: i32 = p0; _ = &v0;
+    var v1: *UH5 = p1; _ = &v1;
+    var v8: US1 = undefined; _ = &v8;
+    var v9: *UH5 = undefined; _ = &v9;
+    var v12: US4 = undefined; _ = &v12;
+    var v13: bool = undefined; _ = &v13;
+    var v30: i32 = undefined; _ = &v30;
+    var v19: US4 = undefined; _ = &v19;
+    var v20: bool = undefined; _ = &v20;
+    var v26: US4 = undefined; _ = &v26;
+    var v27: bool = undefined; _ = &v27;
+    var v31: bool = undefined; _ = &v31;
+    var v33: bool = undefined; _ = &v33;
+    var v46: i32 = undefined; _ = &v46;
+    var v34: bool = undefined; _ = &v34;
+    var v37: bool = undefined; _ = &v37;
+    var v38: bool = undefined; _ = &v38;
+    var v41: bool = undefined; _ = &v41;
+    var v42: bool = undefined; _ = &v42;
+    var v2: bool = undefined; _ = &v2;
+    var v4: bool = undefined; _ = &v4;
+    var v3: bool = undefined; _ = &v3;
+    while (true) {
+        switch (v1.tag) {
+            1 => {
+                v8 = v1.c1_0;
+                v9 = v1.c1_1;
+                switch (v8.tag) {
+                    0 => {
+                        v12 = US4_SymbolSame();
+                    },
+                    else => {
+                        v12 = US4_SymbolGreater();
+                    },
+                }
+                switch (v12.tag) {
+                    1 => {
+                        v13 = true;
+                    },
+                    else => {
+                        v13 = false;
+                    },
+                }
+                if (v13) {
+                    v30 = @as(i32, 0);
+                } else {
+                    switch (v8.tag) {
+                        0 => {
+                            v19 = US4_SymbolLess();
+                        },
+                        1 => {
+                            v19 = US4_SymbolSame();
+                        },
+                        2 => {
+                            v19 = US4_SymbolGreater();
+                        },
+                        else => unreachable,
+                    }
+                    switch (v19.tag) {
+                        1 => {
+                            v20 = true;
+                        },
+                        else => {
+                            v20 = false;
+                        },
+                    }
+                    if (v20) {
+                        v30 = @as(i32, 1);
+                    } else {
+                        switch (v8.tag) {
+                            0 => {
+                                v26 = US4_SymbolLess();
+                            },
+                            1 => {
+                                v26 = US4_SymbolLess();
+                            },
+                            2 => {
+                                v26 = US4_SymbolSame();
+                            },
+                            else => unreachable,
+                        }
+                        switch (v26.tag) {
+                            1 => {
+                                v27 = true;
+                            },
+                            else => {
+                                v27 = false;
+                            },
+                        }
+                        if (v27) {
+                            v30 = @as(i32, 2);
+                        } else {
+                            v30 = @as(i32, -1);
+                        }
+                    }
+                }
+                v31 = v30 < @as(i32, 0);
+                if (v31) {
+                    return US3_InventoryDfaInputOutsideInventory();
+                } else {
+                    v33 = v0 == @as(i32, 0);
+                    if (v33) {
+                        v34 = v30 == @as(i32, 0);
+                        if (v34) {
+                            v46 = @as(i32, 0);
+                        } else {
+                            v46 = @as(i32, 0);
+                        }
+                    } else {
+                        v37 = v0 == @as(i32, 1);
+                        if (v37) {
+                            v38 = v30 == @as(i32, 0);
+                            if (v38) {
+                                v46 = @as(i32, 0);
+                            } else {
+                                v46 = @as(i32, 0);
+                            }
+                        } else {
+                            v41 = v30 == @as(i32, 0);
+                            if (v41) {
+                                v46 = @as(i32, 2);
+                            } else {
+                                v42 = v30 == @as(i32, 1);
+                                if (v42) {
+                                    v46 = @as(i32, 2);
+                                } else {
+                                    v46 = @as(i32, 1);
+                                }
+                            }
+                        }
+                    }
+                    v0 = v46;
+                    v1 = v9;
+                    continue;
+                }
+            },
+            0 => {
+                v2 = v0 == @as(i32, 0);
+                if (v2) {
+                    v4 = false;
+                } else {
+                    v3 = v0 == @as(i32, 1);
+                    v4 = v3;
+                }
+                if (v4) {
+                    return US3_InventoryDfaAccepted();
+                } else {
+                    return US3_InventoryDfaRejected();
+                }
+            },
+            else => unreachable,
+        }
+    }
+}
+fn regex_compare_28(p0: *UH8, p1: *UH8) US4 {
+    var v0: *UH8 = p0; _ = &v0;
+    var v1: *UH8 = p1; _ = &v1;
+    var v59: *UH8 = undefined; _ = &v59;
+    var v60: *UH8 = undefined; _ = &v60;
+    var v61: *UH8 = undefined; _ = &v61;
+    var v62: *UH8 = undefined; _ = &v62;
+    var v63: US4 = undefined; _ = &v63;
+    var v34: *UH8 = undefined; _ = &v34;
+    var v35: *UH8 = undefined; _ = &v35;
+    var v40: *UH8 = undefined; _ = &v40;
+    var v41: *UH8 = undefined; _ = &v41;
+    var v42: US4 = undefined; _ = &v42;
+    var v38: US1 = undefined; _ = &v38;
+    var v10: US1 = undefined; _ = &v10;
+    var v13: US1 = undefined; _ = &v13;
+    var v50: *UH8 = undefined; _ = &v50;
+    var v51: *UH8 = undefined; _ = &v51;
+    var v52: *UH8 = undefined; _ = &v52;
+    var v54: *UH8 = undefined; _ = &v54;
+    while (true) {
+        switch (v0.tag) {
+            3 => {
+                v59 = v0.c3_0;
+                v60 = v0.c3_1;
+                switch (v1.tag) {
+                    3 => {
+                        v61 = v1.c3_0;
+                        v62 = v1.c3_1;
+                        v63 = regex_compare_28(v59, v61);
+                        switch (v63.tag) {
+                            1 => {
+                                v0 = v60;
+                                v1 = v62;
+                                continue;
+                            },
+                            else => {
+                                return v63;
+                            },
+                        }
+                    },
+                    else => {
+                        return US4_SymbolGreater();
+                    },
+                }
+            },
+            4 => {
+                v34 = v0.c4_0;
+                v35 = v0.c4_1;
+                switch (v1.tag) {
+                    4 => {
+                        v40 = v1.c4_0;
+                        v41 = v1.c4_1;
+                        v42 = regex_compare_28(v34, v40);
+                        switch (v42.tag) {
+                            1 => {
+                                v0 = v35;
+                                v1 = v41;
+                                continue;
+                            },
+                            else => {
+                                return v42;
+                            },
+                        }
+                    },
+                    2 => {
+                        v38 = v1.c2_0;
+                        return US4_SymbolGreater();
+                    },
+                    0 => {
+                        return US4_SymbolGreater();
+                    },
+                    1 => {
+                        return US4_SymbolGreater();
+                    },
+                    else => {
+                        return US4_SymbolLess();
+                    },
+                }
+            },
+            2 => {
+                v10 = v0.c2_0;
+                switch (v1.tag) {
+                    2 => {
+                        v13 = v1.c2_0;
+                        switch (v10.tag) {
+                            0 => {
+                                switch (v13.tag) {
+                                    0 => {
+                                        return US4_SymbolSame();
+                                    },
+                                    else => {
+                                        return US4_SymbolLess();
+                                    },
+                                }
+                            },
+                            else => {
+                                switch (v13.tag) {
+                                    0 => {
+                                        return US4_SymbolGreater();
+                                    },
+                                    else => {
+                                        switch (v10.tag) {
+                                            1 => {
+                                                switch (v13.tag) {
+                                                    1 => {
+                                                        return US4_SymbolSame();
+                                                    },
+                                                    2 => {
+                                                        return US4_SymbolLess();
+                                                    },
+                                                    else => unreachable,
+                                                }
+                                            },
+                                            2 => {
+                                                switch (v13.tag) {
+                                                    1 => {
+                                                        return US4_SymbolGreater();
+                                                    },
+                                                    2 => {
+                                                        return US4_SymbolSame();
+                                                    },
+                                                    else => unreachable,
+                                                }
+                                            },
+                                            else => unreachable,
+                                        }
+                                    },
+                                }
+                            },
+                        }
+                    },
+                    0 => {
+                        return US4_SymbolGreater();
+                    },
+                    1 => {
+                        return US4_SymbolGreater();
+                    },
+                    else => {
+                        return US4_SymbolLess();
+                    },
+                }
+            },
+            0 => {
+                switch (v1.tag) {
+                    0 => {
+                        return US4_SymbolSame();
+                    },
+                    else => {
+                        return US4_SymbolLess();
+                    },
+                }
+            },
+            1 => {
+                switch (v1.tag) {
+                    0 => {
+                        return US4_SymbolGreater();
+                    },
+                    1 => {
+                        return US4_SymbolSame();
+                    },
+                    else => {
+                        return US4_SymbolLess();
+                    },
+                }
+            },
+            5 => {
+                v50 = v0.c5_0;
+                switch (v1.tag) {
+                    3 => {
+                        v51 = v1.c3_0;
+                        v52 = v1.c3_1;
+                        return US4_SymbolLess();
+                    },
+                    5 => {
+                        v54 = v1.c5_0;
+                        v0 = v50;
+                        v1 = v54;
+                        continue;
+                    },
+                    else => {
+                        return US4_SymbolGreater();
+                    },
+                }
+            },
+            else => unreachable,
+        }
+    }
+}
+fn alt_insert_sorted_27(p0: *UH8, p1: *UH8) *UH8 {
+    var v0: *UH8 = p0; _ = &v0;
+    var v1: *UH8 = p1; _ = &v1;
+    var v2: *UH8 = undefined; _ = &v2;
+    var v3: *UH8 = undefined; _ = &v3;
+    var v4: US4 = undefined; _ = &v4;
+    var v6: *UH8 = undefined; _ = &v6;
+    var v11: US4 = undefined; _ = &v11;
+    switch (v1.tag) {
+        3 => {
+            v2 = v1.c3_0;
+            v3 = v1.c3_1;
+            v4 = regex_compare_28(v0, v2);
+            switch (v4.tag) {
+                2 => {
+                    v6 = alt_insert_sorted_27(v0, v3);
+                    return UH8_RegexAlt(v2, v6);
+                },
+                0 => {
+                    return UH8_RegexAlt(v0, v1);
+                },
+                1 => {
+                    return v1;
+                },
+                else => unreachable,
+            }
+        },
+        0 => {
+            return v0;
+        },
+        else => {
+            v11 = regex_compare_28(v0, v1);
+            switch (v11.tag) {
+                2 => {
+                    return UH8_RegexAlt(v1, v0);
+                },
+                0 => {
+                    return UH8_RegexAlt(v0, v1);
+                },
+                1 => {
+                    return v1;
+                },
+                else => unreachable,
+            }
+        },
+    }
+}
+fn make_alt_26(p0: *UH8, p1: *UH8) *UH8 {
+    var v0: *UH8 = p0; _ = &v0;
+    var v1: *UH8 = p1; _ = &v1;
+    var v2: *UH8 = undefined; _ = &v2;
+    var v3: *UH8 = undefined; _ = &v3;
+    var v4: *UH8 = undefined; _ = &v4;
+    while (true) {
+        switch (v0.tag) {
+            3 => {
+                v2 = v0.c3_0;
+                v3 = v0.c3_1;
+                v4 = alt_insert_sorted_27(v2, v1);
+                v0 = v3;
+                v1 = v4;
+                continue;
+            },
+            0 => {
+                return v1;
+            },
+            else => {
+                return alt_insert_sorted_27(v0, v1);
+            },
+        }
+    }
+}
+fn regex_equal_30(p0: *UH8, p1: *UH8) bool {
+    var v0: *UH8 = p0; _ = &v0;
+    var v1: *UH8 = p1; _ = &v1;
+    var v24: *UH8 = undefined; _ = &v24;
+    var v25: *UH8 = undefined; _ = &v25;
+    var v26: *UH8 = undefined; _ = &v26;
+    var v27: *UH8 = undefined; _ = &v27;
+    var v28: bool = undefined; _ = &v28;
+    var v32: *UH8 = undefined; _ = &v32;
+    var v33: *UH8 = undefined; _ = &v33;
+    var v34: *UH8 = undefined; _ = &v34;
+    var v35: *UH8 = undefined; _ = &v35;
+    var v36: bool = undefined; _ = &v36;
+    var v4: US1 = undefined; _ = &v4;
+    var v5: US1 = undefined; _ = &v5;
+    var v21: US4 = undefined; _ = &v21;
+    var v40: *UH8 = undefined; _ = &v40;
+    var v41: *UH8 = undefined; _ = &v41;
+    while (true) {
+        switch (v0.tag) {
+            3 => {
+                v24 = v0.c3_0;
+                v25 = v0.c3_1;
+                switch (v1.tag) {
+                    3 => {
+                        v26 = v1.c3_0;
+                        v27 = v1.c3_1;
+                        v28 = regex_equal_30(v24, v26);
+                        if (v28) {
+                            v0 = v25;
+                            v1 = v27;
+                            continue;
+                        } else {
+                            return false;
+                        }
+                    },
+                    else => {
+                        return false;
+                    },
+                }
+            },
+            4 => {
+                v32 = v0.c4_0;
+                v33 = v0.c4_1;
+                switch (v1.tag) {
+                    4 => {
+                        v34 = v1.c4_0;
+                        v35 = v1.c4_1;
+                        v36 = regex_equal_30(v32, v34);
+                        if (v36) {
+                            v0 = v33;
+                            v1 = v35;
+                            continue;
+                        } else {
+                            return false;
+                        }
+                    },
+                    else => {
+                        return false;
+                    },
+                }
+            },
+            2 => {
+                v4 = v0.c2_0;
+                switch (v1.tag) {
+                    2 => {
+                        v5 = v1.c2_0;
+                        switch (v4.tag) {
+                            0 => {
+                                switch (v5.tag) {
+                                    0 => {
+                                        v21 = US4_SymbolSame();
+                                    },
+                                    else => {
+                                        v21 = US4_SymbolLess();
+                                    },
+                                }
+                            },
+                            else => {
+                                switch (v5.tag) {
+                                    0 => {
+                                        v21 = US4_SymbolGreater();
+                                    },
+                                    else => {
+                                        switch (v4.tag) {
+                                            1 => {
+                                                switch (v5.tag) {
+                                                    1 => {
+                                                        v21 = US4_SymbolSame();
+                                                    },
+                                                    2 => {
+                                                        v21 = US4_SymbolLess();
+                                                    },
+                                                    else => unreachable,
+                                                }
+                                            },
+                                            2 => {
+                                                switch (v5.tag) {
+                                                    1 => {
+                                                        v21 = US4_SymbolGreater();
+                                                    },
+                                                    2 => {
+                                                        v21 = US4_SymbolSame();
+                                                    },
+                                                    else => unreachable,
+                                                }
+                                            },
+                                            else => unreachable,
+                                        }
+                                    },
+                                }
+                            },
+                        }
+                        switch (v21.tag) {
+                            1 => {
+                                return true;
+                            },
+                            else => {
+                                return false;
+                            },
+                        }
+                    },
+                    else => {
+                        return false;
+                    },
+                }
+            },
+            0 => {
+                switch (v1.tag) {
+                    0 => {
+                        return true;
+                    },
+                    else => {
+                        return false;
+                    },
+                }
+            },
+            1 => {
+                switch (v1.tag) {
+                    1 => {
+                        return true;
+                    },
+                    else => {
+                        return false;
+                    },
+                }
+            },
+            5 => {
+                v40 = v0.c5_0;
+                switch (v1.tag) {
+                    5 => {
+                        v41 = v1.c5_0;
+                        v0 = v40;
+                        v1 = v41;
+                        continue;
+                    },
+                    else => {
+                        return false;
+                    },
+                }
+            },
+            else => unreachable,
+        }
+    }
+}
+fn make_cat_29(p0: *UH8, p1: *UH8) *UH8 {
+    var v0: *UH8 = p0; _ = &v0;
+    var v1: *UH8 = p1; _ = &v1;
+    var v12: *UH8 = undefined; _ = &v12;
+    var v13: *UH8 = undefined; _ = &v13;
+    var v14: *UH8 = undefined; _ = &v14;
+    var v4: *UH8 = undefined; _ = &v4;
+    var v5: *UH8 = undefined; _ = &v5;
+    var v6: bool = undefined; _ = &v6;
+    switch (v0.tag) {
+        0 => {
+            return UH8_RegexEmpty();
+        },
+        else => {
+            switch (v1.tag) {
+                0 => {
+                    return UH8_RegexEmpty();
+                },
+                else => {
+                    switch (v0.tag) {
+                        1 => {
+                            return v1;
+                        },
+                        else => {
+                            switch (v1.tag) {
+                                1 => {
+                                    return v0;
+                                },
+                                else => {
+                                    switch (v0.tag) {
+                                        4 => {
+                                            v12 = v0.c4_0;
+                                            v13 = v0.c4_1;
+                                            v14 = make_cat_29(v13, v1);
+                                            return UH8_RegexCat(v12, v14);
+                                        },
+                                        5 => {
+                                            v4 = v0.c5_0;
+                                            switch (v1.tag) {
+                                                5 => {
+                                                    v5 = v1.c5_0;
+                                                    v6 = regex_equal_30(v4, v5);
+                                                    if (v6) {
+                                                        return UH8_RegexStar(v4);
+                                                    } else {
+                                                        return UH8_RegexCat(v0, v1);
+                                                    }
+                                                },
+                                                else => {
+                                                    return UH8_RegexCat(v0, v1);
+                                                },
+                                            }
+                                        },
+                                        else => {
+                                            return UH8_RegexCat(v0, v1);
+                                        },
+                                    }
+                                },
+                            }
+                        },
+                    }
+                },
+            }
+        },
+    }
+}
+fn make_star_31(p0: *UH8) *UH8 {
+    var v0: *UH8 = p0; _ = &v0;
+    var v3: *UH8 = undefined; _ = &v3;
+    switch (v0.tag) {
+        0 => {
+            return UH8_RegexEpsilon();
+        },
+        1 => {
+            return UH8_RegexEpsilon();
+        },
+        5 => {
+            v3 = v0.c5_0;
+            return UH8_RegexStar(v3);
+        },
+        else => {
+            return UH8_RegexStar(v0);
+        },
+    }
+}
+fn normalize_25(p0: *UH8) *UH8 {
+    var v0: *UH8 = p0; _ = &v0;
+    var v5: *UH8 = undefined; _ = &v5;
+    var v6: *UH8 = undefined; _ = &v6;
+    var v7: *UH8 = undefined; _ = &v7;
+    var v8: *UH8 = undefined; _ = &v8;
+    var v10: *UH8 = undefined; _ = &v10;
+    var v11: *UH8 = undefined; _ = &v11;
+    var v12: *UH8 = undefined; _ = &v12;
+    var v13: *UH8 = undefined; _ = &v13;
+    var v3: US1 = undefined; _ = &v3;
+    var v15: *UH8 = undefined; _ = &v15;
+    var v16: *UH8 = undefined; _ = &v16;
+    switch (v0.tag) {
+        3 => {
+            v5 = v0.c3_0;
+            v6 = v0.c3_1;
+            v7 = normalize_25(v5);
+            v8 = normalize_25(v6);
+            return make_alt_26(v7, v8);
+        },
+        4 => {
+            v10 = v0.c4_0;
+            v11 = v0.c4_1;
+            v12 = normalize_25(v10);
+            v13 = normalize_25(v11);
+            return make_cat_29(v12, v13);
+        },
+        2 => {
+            v3 = v0.c2_0;
+            return UH8_RegexChar(v3);
+        },
+        0 => {
+            return UH8_RegexEmpty();
+        },
+        1 => {
+            return UH8_RegexEpsilon();
+        },
+        5 => {
+            v15 = v0.c5_0;
+            v16 = normalize_25(v15);
+            return make_star_31(v16);
+        },
+        else => unreachable,
+    }
+}
+fn nullable_33(p0: *UH8) US5 {
+    var v0: *UH8 = p0; _ = &v0;
+    var v5: *UH8 = undefined; _ = &v5;
+    var v6: *UH8 = undefined; _ = &v6;
+    var v7: US5 = undefined; _ = &v7;
+    var v8: US5 = undefined; _ = &v8;
+    var v16: *UH8 = undefined; _ = &v16;
+    var v17: *UH8 = undefined; _ = &v17;
+    var v18: US5 = undefined; _ = &v18;
+    var v19: US5 = undefined; _ = &v19;
+    var v3: US1 = undefined; _ = &v3;
+    var v25: *UH8 = undefined; _ = &v25;
+    switch (v0.tag) {
+        3 => {
+            v5 = v0.c3_0;
+            v6 = v0.c3_1;
+            v7 = nullable_33(v5);
+            v8 = nullable_33(v6);
+            switch (v7.tag) {
+                0 => {
+                    return US5_Nullable();
+                },
+                else => {
+                    switch (v8.tag) {
+                        0 => {
+                            return US5_Nullable();
+                        },
+                        else => {
+                            switch (v7.tag) {
+                                1 => {
+                                    switch (v8.tag) {
+                                        1 => {
+                                            return US5_NonNullable();
+                                        },
+                                        else => unreachable,
+                                    }
+                                },
+                                else => unreachable,
+                            }
+                        },
+                    }
+                },
+            }
+        },
+        4 => {
+            v16 = v0.c4_0;
+            v17 = v0.c4_1;
+            v18 = nullable_33(v16);
+            v19 = nullable_33(v17);
+            switch (v18.tag) {
+                0 => {
+                    switch (v19.tag) {
+                        0 => {
+                            return US5_Nullable();
+                        },
+                        else => {
+                            return US5_NonNullable();
+                        },
+                    }
+                },
+                else => {
+                    return US5_NonNullable();
+                },
+            }
+        },
+        2 => {
+            v3 = v0.c2_0;
+            return US5_NonNullable();
+        },
+        0 => {
+            return US5_NonNullable();
+        },
+        1 => {
+            return US5_Nullable();
+        },
+        5 => {
+            v25 = v0.c5_0;
+            return US5_Nullable();
+        },
+        else => unreachable,
+    }
+}
+fn derivative_32(p0: *UH8, p1: US1) *UH8 {
+    var v0: *UH8 = p0; _ = &v0;
+    var v1: US1 = p1; _ = &v1;
+    var v25: *UH8 = undefined; _ = &v25;
+    var v26: *UH8 = undefined; _ = &v26;
+    var v27: *UH8 = undefined; _ = &v27;
+    var v28: *UH8 = undefined; _ = &v28;
+    var v30: *UH8 = undefined; _ = &v30;
+    var v31: *UH8 = undefined; _ = &v31;
+    var v32: US5 = undefined; _ = &v32;
+    var v37: *UH8 = undefined; _ = &v37;
+    var v33: *UH8 = undefined; _ = &v33;
+    var v34: *UH8 = undefined; _ = &v34;
+    var v35: *UH8 = undefined; _ = &v35;
+    var v4: US1 = undefined; _ = &v4;
+    var v20: US4 = undefined; _ = &v20;
+    var v21: bool = undefined; _ = &v21;
+    var v41: *UH8 = undefined; _ = &v41;
+    var v42: *UH8 = undefined; _ = &v42;
+    var v43: *UH8 = undefined; _ = &v43;
+    switch (v0.tag) {
+        3 => {
+            v25 = v0.c3_0;
+            v26 = v0.c3_1;
+            v27 = derivative_32(v25, v1);
+            v28 = derivative_32(v26, v1);
+            return make_alt_26(v27, v28);
+        },
+        4 => {
+            v30 = v0.c4_0;
+            v31 = v0.c4_1;
+            v32 = nullable_33(v30);
+            switch (v32.tag) {
+                1 => {
+                    v37 = derivative_32(v30, v1);
+                    return make_cat_29(v37, v31);
+                },
+                0 => {
+                    v33 = derivative_32(v30, v1);
+                    v34 = make_cat_29(v33, v31);
+                    v35 = derivative_32(v31, v1);
+                    return make_alt_26(v34, v35);
+                },
+                else => unreachable,
+            }
+        },
+        2 => {
+            v4 = v0.c2_0;
+            switch (v4.tag) {
+                0 => {
+                    switch (v1.tag) {
+                        0 => {
+                            v20 = US4_SymbolSame();
+                        },
+                        else => {
+                            v20 = US4_SymbolLess();
+                        },
+                    }
+                },
+                else => {
+                    switch (v1.tag) {
+                        0 => {
+                            v20 = US4_SymbolGreater();
+                        },
+                        else => {
+                            switch (v4.tag) {
+                                1 => {
+                                    switch (v1.tag) {
+                                        1 => {
+                                            v20 = US4_SymbolSame();
+                                        },
+                                        2 => {
+                                            v20 = US4_SymbolLess();
+                                        },
+                                        else => unreachable,
+                                    }
+                                },
+                                2 => {
+                                    switch (v1.tag) {
+                                        1 => {
+                                            v20 = US4_SymbolGreater();
+                                        },
+                                        2 => {
+                                            v20 = US4_SymbolSame();
+                                        },
+                                        else => unreachable,
+                                    }
+                                },
+                                else => unreachable,
+                            }
+                        },
+                    }
+                },
+            }
+            switch (v20.tag) {
+                1 => {
+                    v21 = true;
+                },
+                else => {
+                    v21 = false;
+                },
+            }
+            if (v21) {
+                return UH8_RegexEpsilon();
+            } else {
+                return UH8_RegexEmpty();
+            }
+        },
+        0 => {
+            return UH8_RegexEmpty();
+        },
+        1 => {
+            return UH8_RegexEmpty();
+        },
+        5 => {
+            v41 = v0.c5_0;
+            v42 = derivative_32(v41, v1);
+            v43 = make_star_31(v41);
+            return make_cat_29(v42, v43);
+        },
+        else => unreachable,
+    }
+}
+fn canonical_derivative_24(p0: *UH8, p1: US1) *UH8 {
+    var v0: *UH8 = p0; _ = &v0;
+    var v1: US1 = p1; _ = &v1;
+    const v2: *UH8 = normalize_25(v0);
+    const v3: *UH8 = derivative_32(v2, v1);
+    return normalize_25(v3);
+}
+fn accepts_23(p0: *UH8, p1: *UH5) bool {
+    var v0: *UH8 = p0; _ = &v0;
+    var v1: *UH5 = p1; _ = &v1;
+    var v6: US1 = undefined; _ = &v6;
+    var v7: *UH5 = undefined; _ = &v7;
+    var v8: *UH8 = undefined; _ = &v8;
+    var v2: *UH8 = undefined; _ = &v2;
+    var v3: US5 = undefined; _ = &v3;
+    while (true) {
+        switch (v1.tag) {
+            1 => {
+                v6 = v1.c1_0;
+                v7 = v1.c1_1;
+                v8 = canonical_derivative_24(v0, v6);
+                v0 = v8;
+                v1 = v7;
+                continue;
+            },
+            0 => {
+                v2 = normalize_25(v0);
+                v3 = nullable_33(v2);
+                switch (v3.tag) {
+                    1 => {
+                        return false;
+                    },
+                    0 => {
+                        return true;
+                    },
+                    else => unreachable,
+                }
+            },
+            else => unreachable,
+        }
+    }
+}
+fn loop_21(p0: *UH8, p1: *UH4) bool {
+    var v0: *UH8 = p0; _ = &v0;
+    var v1: *UH4 = p1; _ = &v1;
+    var v2: *UH5 = undefined; _ = &v2;
+    var v3: *UH4 = undefined; _ = &v3;
+    var v4: i32 = undefined; _ = &v4;
+    var v5: US3 = undefined; _ = &v5;
+    var v11: bool = undefined; _ = &v11;
+    var v7: bool = undefined; _ = &v7;
+    var v8: bool = undefined; _ = &v8;
+    while (true) {
+        switch (v1.tag) {
+            1 => {
+                v2 = v1.c1_0;
+                v3 = v1.c1_1;
+                v4 = @as(i32, 2);
+                v5 = loop_22(v4, v2);
+                switch (v5.tag) {
+                    0 => {
+                        v11 = accepts_23(v0, v2);
+                    },
+                    2 => {
+                        v11 = false;
+                    },
+                    1 => {
+                        v7 = accepts_23(v0, v2);
+                        v8 = v7 == false;
+                        v11 = v8;
+                    },
+                    else => unreachable,
+                }
+                if (v11) {
+                    v1 = v3;
+                    continue;
+                } else {
+                    return false;
+                }
+            },
+            0 => {
+                return true;
+            },
+            else => unreachable,
+        }
+    }
+}
+fn loop_34(p0: i32, p1: *UH6) US3 {
+    var v0: i32 = p0; _ = &v0;
+    var v1: *UH6 = p1; _ = &v1;
+    var v7: US2 = undefined; _ = &v7;
+    var v8: *UH6 = undefined; _ = &v8;
+    var v11: US4 = undefined; _ = &v11;
+    var v12: bool = undefined; _ = &v12;
+    var v21: i32 = undefined; _ = &v21;
+    var v18: US4 = undefined; _ = &v18;
+    var v19: bool = undefined; _ = &v19;
+    var v22: bool = undefined; _ = &v22;
+    var v24: bool = undefined; _ = &v24;
+    var v28: i32 = undefined; _ = &v28;
+    var v26: bool = undefined; _ = &v26;
+    var v2: bool = undefined; _ = &v2;
+    var v3: bool = undefined; _ = &v3;
+    while (true) {
+        switch (v1.tag) {
+            1 => {
+                v7 = v1.c1_0;
+                v8 = v1.c1_1;
+                switch (v7.tag) {
+                    0 => {
+                        v11 = US4_SymbolSame();
+                    },
+                    else => {
+                        v11 = US4_SymbolGreater();
+                    },
+                }
+                switch (v11.tag) {
+                    1 => {
+                        v12 = true;
+                    },
+                    else => {
+                        v12 = false;
+                    },
+                }
+                if (v12) {
+                    v21 = @as(i32, 0);
+                } else {
+                    switch (v7.tag) {
+                        0 => {
+                            v18 = US4_SymbolLess();
+                        },
+                        1 => {
+                            v18 = US4_SymbolSame();
+                        },
+                        2 => {
+                            v18 = US4_SymbolGreater();
+                        },
+                        else => unreachable,
+                    }
+                    switch (v18.tag) {
+                        1 => {
+                            v19 = true;
+                        },
+                        else => {
+                            v19 = false;
+                        },
+                    }
+                    if (v19) {
+                        v21 = @as(i32, 1);
+                    } else {
+                        v21 = @as(i32, -1);
+                    }
+                }
+                v22 = v21 < @as(i32, 0);
+                if (v22) {
+                    return US3_InventoryDfaInputOutsideInventory();
+                } else {
+                    v24 = v0 == @as(i32, 0);
+                    if (v24) {
+                        v28 = @as(i32, 0);
+                    } else {
+                        v26 = v21 == @as(i32, 0);
+                        if (v26) {
+                            v28 = @as(i32, 1);
+                        } else {
+                            v28 = @as(i32, 0);
+                        }
+                    }
+                    v0 = v28;
+                    v1 = v8;
+                    continue;
+                }
+            },
+            0 => {
+                v2 = v0 == @as(i32, 0);
+                v3 = v2 == false;
+                if (v3) {
+                    return US3_InventoryDfaAccepted();
+                } else {
+                    return US3_InventoryDfaRejected();
+                }
+            },
+            else => unreachable,
+        }
+    }
+}
+fn spiralMain() i32 {
+    var v75: bool = undefined; _ = &v75;
+    var v61: US1 = undefined; _ = &v61;
+    var v62: *UH8 = undefined; _ = &v62;
+    var v63: US1 = undefined; _ = &v63;
+    var v64: *UH8 = undefined; _ = &v64;
+    var v65: *UH8 = undefined; _ = &v65;
+    var v66: *UH8 = undefined; _ = &v66;
+    var v67: US1 = undefined; _ = &v67;
+    var v68: *UH8 = undefined; _ = &v68;
+    var v69: *UH8 = undefined; _ = &v69;
+    var v70: bool = undefined; _ = &v70;
+    var v71: i32 = undefined; _ = &v71;
+    var v72: US3 = undefined; _ = &v72;
+    const v0: US0 = US0_BitZero();
+    const v1: US0 = US0_BitOne();
+    const v2: *UH0 = UH0_SymbolListNil();
+    const v3: *UH0 = UH0_SymbolListCons(v1, v2);
+    const v4: *UH0 = UH0_SymbolListCons(v0, v3);
+    const v5: *UH1 = input_singletons_from_symbols_0(v4);
+    const v6: *UH2 = UH2_InputEmpty();
+    const v7: *UH1 = UH1_InputListCons(v6, v5);
+    const v8: US0 = US0_BitZero();
+    const v9: US0 = US0_BitOne();
+    const v10: *UH0 = UH0_SymbolListNil();
+    const v11: *UH0 = UH0_SymbolListCons(v9, v10);
+    const v12: *UH0 = UH0_SymbolListCons(v8, v11);
+    const v13: US0 = US0_BitZero();
+    const v14: US0 = US0_BitOne();
+    const v15: *UH0 = UH0_SymbolListNil();
+    const v16: *UH0 = UH0_SymbolListCons(v14, v15);
+    const v17: *UH0 = UH0_SymbolListCons(v13, v16);
+    const v18: *UH1 = input_singletons_from_symbols_0(v17);
+    const v19: *UH1 = input_prepend_symbols_to_corpus_1(v12, v18);
+    const v20: *UH1 = input_list_append_2(v7, v19);
+    const v21: US1 = US1_TriA();
+    const v22: US1 = US1_TriB();
+    const v23: US1 = US1_TriC();
+    const v24: *UH3 = UH3_SymbolListNil();
+    const v25: *UH3 = UH3_SymbolListCons(v23, v24);
+    const v26: *UH3 = UH3_SymbolListCons(v22, v25);
+    const v27: *UH3 = UH3_SymbolListCons(v21, v26);
+    const v28: *UH4 = input_singletons_from_symbols_4(v27);
+    const v29: *UH5 = UH5_InputEmpty();
+    const v30: *UH4 = UH4_InputListCons(v29, v28);
+    const v31: US1 = US1_TriA();
+    const v32: US1 = US1_TriB();
+    const v33: US1 = US1_TriC();
+    const v34: *UH3 = UH3_SymbolListNil();
+    const v35: *UH3 = UH3_SymbolListCons(v33, v34);
+    const v36: *UH3 = UH3_SymbolListCons(v32, v35);
+    const v37: *UH3 = UH3_SymbolListCons(v31, v36);
+    const v38: US1 = US1_TriA();
+    const v39: US1 = US1_TriB();
+    const v40: US1 = US1_TriC();
+    const v41: *UH3 = UH3_SymbolListNil();
+    const v42: *UH3 = UH3_SymbolListCons(v40, v41);
+    const v43: *UH3 = UH3_SymbolListCons(v39, v42);
+    const v44: *UH3 = UH3_SymbolListCons(v38, v43);
+    const v45: *UH4 = input_singletons_from_symbols_4(v44);
+    const v46: *UH4 = input_prepend_symbols_to_corpus_5(v37, v45);
+    const v47: *UH4 = input_list_append_6(v30, v46);
+    const v48: US2 = US2_ModelC();
+    const v49: *UH6 = UH6_InputEmpty();
+    const v50: *UH6 = UH6_InputCons(v48, v49);
+    const v51: US0 = US0_BitZero();
+    const v52: *UH7 = UH7_RegexChar(v51);
+    const v53: US0 = US0_BitOne();
+    const v54: *UH7 = UH7_RegexChar(v53);
+    const v55: *UH7 = UH7_RegexAlt(v52, v54);
+    const v56: *UH7 = UH7_RegexStar(v55);
+    const v57: US0 = US0_BitZero();
+    const v58: *UH7 = UH7_RegexChar(v57);
+    const v59: *UH7 = UH7_RegexCat(v56, v58);
+    const v60: bool = loop_8(v59, v20);
+    if (v60) {
+        v61 = US1_TriA();
+        v62 = UH8_RegexChar(v61);
+        v63 = US1_TriB();
+        v64 = UH8_RegexChar(v63);
+        v65 = UH8_RegexAlt(v62, v64);
+        v66 = UH8_RegexStar(v65);
+        v67 = US1_TriC();
+        v68 = UH8_RegexChar(v67);
+        v69 = UH8_RegexCat(v66, v68);
+        v70 = loop_21(v69, v47);
+        if (v70) {
+            v71 = @as(i32, 1);
+            v72 = loop_34(v71, v50);
+            switch (v72.tag) {
+                2 => {
+                    v75 = true;
+                },
+                else => {
+                    v75 = false;
+                },
+            }
+        } else {
+            v75 = false;
+        }
+    } else {
+        v75 = false;
+    }
+    if (v75) {
+        return @as(i32, 0);
+    } else {
+        return @as(i32, 1);
+    }
+}
+var spiral_exit_code: i32 = 0;
+fn spiralMainThread() void {
+    spiral_exit_code = spiralMain();
+}
+extern "kernel32" fn CreateThread(attributes: ?*anyopaque, stack_size: usize, start: *const fn (?*anyopaque) callconv(.winapi) u32, parameter: ?*anyopaque, flags: u32, id: ?*u32) callconv(.winapi) ?std.os.windows.HANDLE;
+extern "kernel32" fn WaitForSingleObject(handle: std.os.windows.HANDLE, milliseconds: u32) callconv(.winapi) u32;
+extern "kernel32" fn ExitProcess(code: u32) callconv(.winapi) noreturn;
+fn spiralMainThreadReserved(_: ?*anyopaque) callconv(.winapi) u32 {
+    spiralMainThread();
+    return 0;
+}
+pub fn main(init: std.process.Init.Minimal) void {
+    spiral_gpa = spiral_arena.allocator();
+    spiral_environ = init.environ;
+    if (@import("builtin").os.tag == .windows) {
+        const handle = CreateThread(null, 1 << 30, spiralMainThreadReserved, null, 0x00010000, null) orelse @panic("spiral: could not start the main thread");
+        _ = WaitForSingleObject(handle, 0xFFFFFFFF);
+    } else {
+        const thread = std.Thread.spawn(.{ .stack_size = 1 << 30 }, spiralMainThread, .{}) catch @panic("spiral: could not start the main thread");
+        thread.join();
+    }
+    spiralFlush();
+    if (@import("builtin").os.tag == .windows) ExitProcess(@bitCast(spiral_exit_code)) else std.process.exit(@truncate(@as(u32, @bitCast(spiral_exit_code))));
+}

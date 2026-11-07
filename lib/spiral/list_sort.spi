@@ -1,0 +1,82 @@
+///- --package .
+:< sm'_operators
+
+:# list_sort static =
+    :< testing
+
+:= closed \* t. (out : list t) (rest : list t) : list t = listm::append (listm::rev out) rest
+
+:~ ^ merged \* t. (f : t -> t -> bool) (a : list t) (b : list t) (o : list t) : list t =
+    ?= a ?|
+    | [] => closed o b
+    | x :: xs =>
+        ?= b ?|
+        | [] => closed o a
+        | y :: ys => ? f y x ?> merged f a ys (y :: o) |: merged f xs b (x :: o)
+
+:= steps_down \* t. (first : t -> t -> bool) (x : t) (cur : list t) : bool =
+    ?= cur ?| last :: _ => first x last | [] => !+
+
+:~ ^ falling \* t. (first : t -> t -> bool) (l : list t) (cur : list t) : list t * list t =
+    ?= l ?|
+    | x :: rest ?& steps_down first x cur => falling first rest (x :: cur)
+    | _ => cur, l
+
+:= steps_up \* t. (first : t -> t -> bool) (x : t) (cur : list t) : bool =
+    ?= cur ?| last :: _ => not (first x last) | [] => !+
+
+:~ ^ rising \* t. (first : t -> t -> bool) (l : list t) (cur : list t) : list t * list t =
+    ?= l ?|
+    | x :: rest ?& steps_up first x cur => rising first rest (x :: cur)
+    | _ => listm::rev cur, l
+
+:~ ^ runs_of \* t. (first : t -> t -> bool) (l : list t) (acc : list (list t)) : list (list t) =
+    ?= l ?|
+    | [] => listm::rev acc
+    | a :: b :: _ ?& first b a =>
+        := run, rest = falling first l []
+        runs_of first rest (run :: acc)
+    | _ =>
+        := run, rest = rising first l []
+        runs_of first rest (run :: acc)
+
+:~ ^ merged_pairs \* t. (first : t -> t -> bool) (runs : list (list t)) : list (list t) =
+    ?= runs ?|
+    | a :: b :: rest => merged first a b [] :: merged_pairs first rest
+    | _ => runs
+
+:~ ^ merged_all \* t. (first : t -> t -> bool) (runs : list (list t)) : list t =
+    ?= runs ?|
+    | [] => []
+    | [ run ] => run
+    | _ => merged_all first (merged_pairs first runs)
+
+:~ sorted_by \* t. (first : t -> t -> bool) (l : list t) : list t = runs_of first l [] |> merged_all first
+
+:= by_number (a : i32 * string) (b : i32 * string) : bool = fst a < fst b
+
+:= numbered (keys : list i32) : list (i32 * string) = keys |> listm::map (\ k => (k, sm'::obj_to_string k))
+
+///> rust
+///> gleam
+:# sorts_and_keeps_equal_keys_in_order =
+    sorted_by by_number [ (3i32, "a"); (1i32, "b"); (3i32, "c"); (2i32, "d") ] |> listm::map snd
+    |> _assert_eq [ "b"; "d"; "a"; "c" ]
+
+///> rust
+///> gleam
+:# empty_and_single_lists_are_already_sorted =
+    (sorted_by by_number [], sorted_by by_number [ (5i32, "x") ] |> listm::map snd) |> _assert_eq ([], [ "x" ])
+
+///> rust
+///> gleam
+:# nearly_sorted_input_in_either_direction_sorts =
+    := up, down = numbered [ 1i32; 2i32; 4i32; 3i32; 5i32 ], numbered [ 5i32; 4i32; 2i32; 3i32; 1i32 ]
+    (sorted_by by_number up |> listm::map fst, sorted_by by_number down |> listm::map fst)
+    |> _assert_eq ([ 1i32; 2i32; 3i32; 4i32; 5i32 ], [ 1i32; 2i32; 3i32; 4i32; 5i32 ])
+
+///> rust
+///> gleam
+:# a_falling_run_keeps_equal_keys_in_order =
+    sorted_by by_number [ (3i32, "a"); (2i32, "b"); (2i32, "c"); (1i32, "d") ] |> listm::map snd
+    |> _assert_eq [ "d"; "b"; "c"; "a" ]

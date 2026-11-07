@@ -1,0 +1,18 @@
+:~ first_codepoint (x : string) : string =
+    sm::slice x { from = 0i32; to = 1i32 }
+
+:~ second_codepoint (x : string) : string =
+    sm::slice x { from = 2i32; to = 3i32 }
+
+:= main () =
+    := source = "éλ"
+    := first = first_codepoint source
+    := second = second_codepoint source
+    := joined = sm::concat first second
+    ? (=.) (sm::length source : i32) 4i32 ?>
+        ? (=.) (sm::length first : i32) 2i32 ?>
+            ? (=.) (sm::length second : i32) 2i32 ?>
+                ? (=.) (sm::length joined : i32) 4i32 ?> 0i32 |: 1i32
+            |: 2i32
+        |: 3i32
+    |: 4i32

@@ -1,0 +1,5 @@
+:== comment_params = { slug : string; id : i32 }
+
+:= main () : i32 =
+    := ~path = routes::route "/articles/:slug/comments" ({ slug = ""; id = 0i32 } : comment_params)
+    sm::length path

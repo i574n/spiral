@@ -1,0 +1,31 @@
+import gleam/int
+pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
+  let half = int.bitwise_shift_left(1, bits - 1)
+  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+}
+
+
+pub fn g_c0(capt: #(Int)) -> fn(Int) -> Int {
+    fn (v1) {
+        let #(v0) = capt
+        let v2 = v0 == 0
+        case v2 {
+            True -> 0
+            False -> {
+                spiral_wrap_signed(v1 + v0, 32)
+            }
+        }
+    }
+}
+pub fn method0(v0: Int) -> fn(Int) -> Int {
+    g_c0(#(v0))
+}
+pub fn main() {
+    let v1 = method0(7)
+    let v2 = v1(0)
+    let v3 = v2 == 7
+    case v3 {
+        True -> 0
+        False -> 1
+    }
+}

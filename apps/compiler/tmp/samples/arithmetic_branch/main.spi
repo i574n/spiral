@@ -1,0 +1,5 @@
+:= main () : i32 =
+    := ~a = 6i32
+    := ~b = 7i32
+    := product = a *. b
+    ? product =. 42i32 ?> 0i32 |: 1i32

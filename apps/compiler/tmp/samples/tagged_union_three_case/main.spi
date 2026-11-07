@@ -1,0 +1,18 @@
+:| outcome =
+    | Idle
+    | Hit : i32
+    | Flag : bool
+
+:~ score x : i32 =
+    ?= x ?|
+    | Idle => 3i32
+    | Hit value => value
+    | Flag value => ? value ?> 11i32 |: 5i32
+
+:= main () =
+    := ~selector = 2i32
+    := value =
+        ? selector =. 0i32 ?> Idle
+        |? selector =. 1i32 ?> Hit 7i32
+        |: Flag !+
+    score value -. 11i32

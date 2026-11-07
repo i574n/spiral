@@ -1,0 +1,7 @@
+:= ^ sum_down ~n ~acc =
+    ? n =. 0i32 ?> acc
+    |: ~~ sum_down (n -. 1i32) (acc +. n)
+
+:= main () : i32 =
+    := ~n = 10i32
+    ~~ sum_down n 0i32 -. 55i32

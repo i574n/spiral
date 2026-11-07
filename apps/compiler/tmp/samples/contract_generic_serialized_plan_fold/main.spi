@@ -1,0 +1,106 @@
+:! draft = ()
+:! validated = ()
+:! authorized = ()
+:! published = ()
+:! archived = ()
+:! idempotent = ()
+:! non_idempotent = ()
+
+:| operation from to effect =
+    | Validate :: operation draft validated idempotent
+    | Authorize :: operation validated authorized idempotent
+    | Publish :: operation authorized published non_idempotent
+    | Archive :: operation published archived idempotent
+
+:| row from to effect =
+    | Row :: \* from to effect. string -> row from to effect
+
+:| typed_node from to =
+    | TypedNode :: \* from to.
+        (\? effect. operation from to effect * row from to effect)
+        -> typed_node from to
+
+:| ^ typed_plan from to =
+    | PlanLeaf :: \* from to. typed_node from to -> typed_plan from to
+    | PlanThen :: \* from to.
+        (\? middle. typed_plan from middle * typed_node middle to)
+        -> typed_plan from to
+
+:| serialized_node from to =
+    | SerializedNode :: \* from to.
+        (\? effect. row from to effect)
+        -> serialized_node from to
+
+:| ^ serialized_plan from to =
+    | SerializedLeaf :: \* from to. serialized_node from to -> serialized_plan from to
+    | SerializedThen :: \* from to.
+        (\? middle. serialized_plan from middle * serialized_node middle to)
+        -> serialized_plan from to
+
+:| ^ nat =
+    | Z
+    | S : nat
+
+:= serialize_node \* from to.
+    (node : typed_node from to)
+    : serialized_node from to =
+    ?= node ?|
+    | TypedNode payload =>
+        := \? effect. _, row = payload
+        SerializedNode (\? row)
+
+:= ^ serialize_plan \* from to.
+    (plan : typed_plan from to)
+    : serialized_plan from to =
+    ?= plan ?|
+    | PlanLeaf node => SerializedLeaf (serialize_node node)
+    | PlanThen payload =>
+        := \? middle. prefix, node = payload
+        SerializedThen (\? (serialize_plan prefix, serialize_node node))
+
+:= ^ count \* from to. (plan : serialized_plan from to) : nat =
+    ?= plan ?|
+    | SerializedLeaf _ => S Z
+    | SerializedThen payload =>
+        := \? middle. prefix, _ = payload
+        S (count prefix)
+
+:= ^ last_row \* from to. (plan : serialized_plan from to) : string =
+    ?= plan ?|
+    | SerializedLeaf (SerializedNode payload) =>
+        := \? effect. Row label = payload
+        label
+    | SerializedThen payload =>
+        := \? middle. _, SerializedNode row_payload = payload
+        := \? effect. Row label = row_payload
+        label
+
+:= plan () : typed_plan draft archived =
+    PlanThen (\? (
+        PlanThen (\? (
+            PlanThen (\? (
+                PlanLeaf (TypedNode (\? (Validate, Row "validate"))),
+                TypedNode (\? (Authorize, Row "authorize"))
+            )),
+            TypedNode (\? (Publish, Row "publish"))
+        )),
+        TypedNode (\? (Archive, Row "generic-authority-fold-4"))
+    ))
+
+:= main () : string =
+    := serialized = serialize_plan (plan ())
+    ?= count serialized ?|
+    | S a =>
+        ?= a ?|
+        | S b =>
+            ?= b ?|
+            | S c =>
+                ?= c ?|
+                | S d =>
+                    ?= d ?|
+                    | Z => last_row serialized
+                    | _ => "invalid-count"
+                | _ => "invalid-count"
+            | _ => "invalid-count"
+        | _ => "invalid-count"
+    | _ => "invalid-count"

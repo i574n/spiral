@@ -1,0 +1,6 @@
+:= main () : i32 =
+    := x = dyn 41i32
+    console::write_line (sm'::obj_to_string x)
+    console::write_line "hi"
+    console::write_line (sm'::obj_to_string (dyn !+))
+    ? x + 1i32 = 42i32 ?> 0i32 |: 1i32

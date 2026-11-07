@@ -1,0 +1,431 @@
+///- --package .
+:# nested static =
+    :< testing
+
+:< sm'_operators
+:< syntax
+:< scope
+:< reduce
+:< env
+:< conversion
+:< typing
+:< inductive
+
+:| aux =
+    | Aux : string * term * list term * name * list level * i32 * list (string * name) * string * term * list (name * term)
+
+:~ ^ applied_pi (ty : term) (args : list term) : term =
+    ?= args ?|
+    | a :: rest =>
+        ?= ty ?|
+        | Pi (_, _, _, body) => applied_pi (instantiate body a) rest
+        | _ => ty
+    | [] => ty
+
+:~ ^ all_closed (ts : list term) : bool =
+    ?= ts ?|
+    | t :: rest => is_closed t && all_closed rest
+    | [] => !+
+
+:~ container_params (env : list decl) (i : string) : option i32 =
+    ?= recursor_rules env (i ++# ".rec") ?|
+    | Some (_, np, ni, _, _) => ? ni = 0i32 && np > 0i32 ?> Some np |: None
+    | None => None
+
+:~ is_nested (env : list decl) (ns : list string) (t : term) : bool =
+    := head, args = spine t []
+    ?= head ?|
+    | Const ((name i), _) =>
+        ?= container_params env i ?|
+        | Some np =>
+            := fits = (listm::length args : i32) = np
+            not (named_in ns i) && fits && not (none_mention ns args) && all_closed args
+        | None => !-
+    | _ => !-
+
+:~ added (t : term) (found : list term) : list term = ? among t found ?> found |: t :: found
+
+:~ ^ occurrences (env : list decl) (ns : list string) (t : term) (found : list term) : list term =
+    ? is_nested env ns t ?> added t found |: inner_occurrences env ns t found
+:& :~ inner_occurrences (env : list decl) (ns : list string) (t : term) (found : list term) : list term =
+    ?= t ?|
+    | App (f, a) => occurrences env ns a (occurrences env ns f found)
+    | Lam (_, _, ty, body) => occurrences env ns body (occurrences env ns ty found)
+    | Pi (_, _, ty, body) => occurrences env ns body (occurrences env ns ty found)
+    | Let (_, ty, v, body) => occurrences env ns body (occurrences env ns v (occurrences env ns ty found))
+    | Proj (_, _, x) => occurrences env ns x found
+    | _ => found
+
+:~ ^ collect (env : list decl) (ns : list string) (ts : list term) (found : list term) : list term =
+    ?= ts ?|
+    | t :: rest => collect env ns rest (occurrences env ns t found)
+    | [] => found
+
+:~ ^ bodies_of (np : i32) (cs : list (name * term)) : list term =
+    ?= cs ?|
+    | (_, cty) :: rest =>
+        := _, body = params_of cty np
+        body :: bodies_of np rest
+    | [] => []
+
+:~ ^ group_bodies (group : list inductive) : list term =
+    ?= group ?|
+    | (Inductive (_, _, np, _, cs)) :: rest => joined (bodies_of np cs) (group_bodies rest)
+    | [] => []
+
+:~ family_decl_type (env : list decl) (i : string) : option (list name * term) =
+    ?= find_decl env i ?|
+    | Some d =>
+        ?= d ?|
+        | Axiom (_, ps, ty) => Some (ps, ty)
+        | _ => None
+    | None => None
+
+:~ ^ aux_ctor_bodies
+    (env : list decl) (us : list level) (args : list term) (prefix : string) (rules : list (name * term))
+    : list (name * term)
+    =
+    ?= rules ?|
+    | (c, _) :: rest =>
+        := more = aux_ctor_bodies env us args prefix rest
+        ?= family_decl_type env (name_text c) ?|
+        | Some (cps, cty) => (name (prefix ++# "." ++# name_text c), applied_pi (instantiate_levels cty cps us) args) :: more
+        | None => more
+    | [] => []
+
+:~ ^ ctor_pairs (prefix : string) (rules : list (name * term)) : list (string * name) =
+    ?= rules ?|
+    | (c, _) :: rest => (prefix ++# "." ++# name_text c, c) :: ctor_pairs prefix rest
+    | [] => []
+
+:~ aux_of (env : list decl) (params : list (name * term)) (owner : string) (k : i32) (o : term) : option aux =
+    := head, args = spine o []
+    ?= head ?|
+    | Const ((name i), us) =>
+        ?= family_decl_type env i, recursor_rules env (i ++# ".rec") ?|
+        | Some (ips, ity), Some (_, inp, _, rules, _) =>
+            := prefix = owner ++# "._aux" ++# sm'::obj_to_string k
+            := sort = applied_pi (instantiate_levels ity ips us) args
+            := asabs = listm::map (\ a => lams params a) args
+            := recn = owner ++# ".rec_" ++# sm'::obj_to_string k
+            Some (Aux (prefix, o, asabs, name i, us, inp, ctor_pairs prefix rules, recn, sort, aux_ctor_bodies env us args prefix rules))
+        | _ => None
+    | _ => None
+
+:~ ^ auxes_of (env : list decl) (params : list (name * term)) (owner : string) (os : list term) (k : i32) : list aux =
+    ?= os ?|
+    | o :: rest =>
+        ?= aux_of env params owner k o ?|
+        | Some a => a :: auxes_of env params owner rest (k + 1i32)
+        | None => auxes_of env params owner rest (k + 1i32)
+    | [] => []
+
+:~ ^ aux_bodies (auxes : list aux) : list term =
+    ?= auxes ?|
+    | (Aux (_, _, _, _, _, _, _, _, _, cs)) :: rest => joined (bodies_of 0i32 cs) (aux_bodies rest)
+    | [] => []
+
+:~ ^ closure_of
+    (env : list decl) (ns : list string) (params : list (name * term)) (owner : string) (found : list term) (fuel : i32)
+    : list term
+    =
+    := more = collect env ns (aux_bodies (auxes_of env params owner (listm::rev found) 1i32)) found
+    := settled = (listm::length more : i32) = (listm::length found : i32)
+    ? fuel <= 0i32 || settled ?> found |: closure_of env ns params owner more (fuel - 1i32)
+
+:~ ^ swap_in (pairs : list (term * term)) (t : term) : option term =
+    ?= pairs ?|
+    | (o, r) :: rest => ? same_as t o ?> Some r |: swap_in rest t
+    | [] => None
+
+:~ ^ replaced (pairs : list (term * term)) (t : term) : term =
+    ?= swap_in pairs t ?|
+    | Some r => r
+    | None => replaced_inside pairs t
+:& :~ replaced_inside (pairs : list (term * term)) (t : term) : term =
+    ?= t ?|
+    | App (f, a) => App (replaced pairs f, replaced pairs a)
+    | Lam (n, b, ty, body) => Lam (n, b, replaced pairs ty, replaced pairs body)
+    | Pi (n, b, ty, body) => Pi (n, b, replaced pairs ty, replaced pairs body)
+    | Let (n, ty, v, body) => Let (n, replaced pairs ty, replaced pairs v, replaced pairs body)
+    | Proj (s, i, x) => Proj (s, i, replaced pairs x)
+    | _ => t
+
+:~ ^ swap_pairs (auxes : list aux) (ps : list name) (params : list (name * term)) : list (term * term) =
+    ?= auxes ?|
+    | (Aux (family, o, _, _, _, _, _, _, _, _)) :: rest =>
+        (o, apply_all (Const (name family, levels_of ps)) (arg_vars params)) :: swap_pairs rest ps params
+    | [] => []
+
+:~ ^ swapped_ctors
+    (pairs : list (term * term)) (params : list (name * term)) (np : i32) (cs : list (name * term))
+    : list (name * term)
+    =
+    ?= cs ?|
+    | (c, cty) :: rest =>
+        := _, body = params_of cty np
+        (c, pis params (replaced pairs body)) :: swapped_ctors pairs params np rest
+    | [] => []
+
+:~ ^ swapped_bodies
+    (pairs : list (term * term)) (params : list (name * term)) (cs : list (name * term))
+    : list (name * term)
+    =
+    ?= cs ?|
+    | (c, body) :: rest => (c, pis params (replaced pairs body)) :: swapped_bodies pairs params rest
+    | [] => []
+
+:~ ^ swapped_group
+    (pairs : list (term * term)) (params : list (name * term)) (group : list inductive)
+    : list inductive
+    =
+    ?= group ?|
+    | (Inductive (n, ps, np, ty, cs)) :: rest =>
+        Inductive (n, ps, np, ty, swapped_ctors pairs params np cs) :: swapped_group pairs params rest
+    | [] => []
+
+:~ ^ aux_inductives
+    (pairs : list (term * term)) (ps : list name) (np : i32) (params : list (name * term)) (auxes : list aux)
+    : list inductive
+    =
+    ?= auxes ?|
+    | (Aux (family, _, _, _, _, _, _, _, sort, cs)) :: rest =>
+        := ctors = swapped_bodies pairs params cs
+        Inductive (name family, ps, np, pis params sort, ctors) :: aux_inductives pairs ps np params rest
+    | [] => []
+
+:~ ^ inductives_then (a : list inductive) (b : list inductive) : list inductive =
+    ?= a ?|
+    | x :: rest => x :: inductives_then rest b
+    | [] => b
+
+:~ ^ too_few (auxes : list aux) (np : i32) : option string =
+    ?= auxes ?|
+    | (Aux (family, _, _, _, _, inp, _, _, _, _)) :: rest => ? inp < np ?> Some family |: too_few rest np
+    | [] => None
+
+:~ instantiated (asabs : list term) (xs : list term) : list term = listm::map (\ a => beta_all a xs) asabs
+
+:~ ^ pair_for (pairs : list (string * name)) (h : string) : option name =
+    ?= pairs ?|
+    | (a, c) :: rest => ? a = h ?> Some c |: pair_for rest h
+    | [] => None
+
+:~ ^ back_head (bs : list aux) (np : i32) (h : string) (ls : list level) (args : list term) : option term =
+    ?= bs ?|
+    | (Aux (family, _, asabs, i, us, _, cpairs, recn, _, _)) :: rest =>
+        := front = instantiated asabs (take args np)
+        := tail = drop args np
+        ? h = family ?> Some (apply_all (Const (i, us)) (joined front tail))
+        |? h = family ++# ".rec" ?> Some (apply_all (Const (name recn, ls)) args)
+        |: ctor_or_next rest np h ls args cpairs us (joined front tail)
+    | [] => None
+:& :~ ctor_or_next
+    (rest : list aux) (np : i32) (h : string) (ls : list level) (args : list term) (cpairs : list (string * name))
+    (us : list level) (shown : list term)
+    : option term
+    =
+    ?= pair_for cpairs h ?|
+    | Some c => Some (apply_all (Const (c, us)) shown)
+    | None => back_head rest np h ls args
+
+:~ ^ back (bs : list aux) (np : i32) (t : term) : term =
+    := head, args = spine t []
+    := shown = backs bs np args
+    ?= head ?|
+    | Const ((name h), ls) =>
+        ?= back_head bs np h ls shown ?|
+        | Some r => r
+        | None => apply_all head shown
+    | Lam (n, b, ty, body) => apply_all (Lam (n, b, back bs np ty, back bs np body)) shown
+    | Pi (n, b, ty, body) => apply_all (Pi (n, b, back bs np ty, back bs np body)) shown
+    | Let (n, ty, v, body) => apply_all (Let (n, back bs np ty, back bs np v, back bs np body)) shown
+    | Proj (s, i, x) => apply_all (Proj (s, i, back bs np x)) shown
+    | _ => apply_all head shown
+:& :~ backs (bs : list aux) (np : i32) (ts : list term) : list term =
+    ?= ts ?|
+    | t :: rest => back bs np t :: backs bs np rest
+    | [] => []
+
+:~ ^ dummies (gap : i32) (t : term) : term = ? gap <= 0i32 ?> t |: Lam (name "_p", Default, Sort Zero, dummies (gap - 1i32) t)
+
+:~ ^ with_gap (rhs : term) (k : i32) (gap : i32) : term =
+    ? k <= 0i32 ?> dummies gap (lift rhs gap) |: under_lam rhs k gap
+:& :~ under_lam (rhs : term) (k : i32) (gap : i32) : term =
+    ?= rhs ?|
+    | Lam (n, b, ty, body) => Lam (n, b, ty, with_gap body (k - 1i32) gap)
+    | _ => rhs
+
+:~ ^ ctor_origin (bs : list aux) (c : string) : option (name * i32) =
+    ?= bs ?|
+    | (Aux (_, _, _, _, _, inp, cpairs, _, _, _)) :: rest =>
+        ?= pair_for cpairs c ?|
+        | Some orig => Some (orig, inp)
+        | None => ctor_origin rest c
+    | [] => None
+
+:~ ^ back_rules
+    (bs : list aux) (np : i32) (nfront : i32) (rules : list (name * term))
+    : list (name * term)
+    =
+    ?= rules ?|
+    | (c, rhs) :: rest =>
+        := more = back_rules bs np nfront rest
+        := shown = back bs np rhs
+        ?= ctor_origin bs (name_text c) ?|
+        | Some (orig, inp) => (orig, with_gap shown nfront (inp - np)) :: more
+        | None => (c, shown) :: more
+    | [] => []
+
+:~ ^ is_aux_decl (bs : list aux) (n : string) : bool =
+    ?= bs ?|
+    | (Aux (family, _, _, _, _, _, cpairs, _, _, _)) :: rest =>
+        ?= pair_for cpairs n ?|
+        | Some _ => !+
+        | None => n = family || is_aux_decl rest n
+    | [] => !-
+
+:~ ^ rec_back (bs : list aux) (n : string) : string =
+    ?= bs ?|
+    | (Aux (family, _, _, _, _, _, _, recn, _, _)) :: rest => ? n = family ++# ".rec" ?> recn |: rec_back rest n
+    | [] => n
+
+:~ translate_decl (bs : list aux) (np : i32) (d : decl) : option decl =
+    ?= d ?|
+    | Axiom (n, ps, ty) => ? is_aux_decl bs (name_text n) ?> None |: Some (Axiom (n, ps, back bs np ty))
+    | Recursor (n, rps, ty, rnp, ni, rules, nfront) =>
+        := renamed = name (rec_back bs (name_text n))
+        Some (Recursor (renamed, rps, back bs np ty, rnp, ni, back_rules bs np nfront rules, nfront))
+    | _ => Some d
+
+:~ ^ newest (full : list decl) (k : i32) : list decl =
+    ?= full ?|
+    | d :: rest => ? k <= 0i32 ?> [] |: d :: newest rest (k - 1i32)
+    | [] => []
+
+:~ ^ translated_onto (bs : list aux) (np : i32) (news : list decl) (env : list decl) : list decl =
+    ?= news ?|
+    | d :: rest =>
+        ?= translate_decl bs np d ?|
+        | Some d2 => d2 :: translated_onto bs np rest env
+        | None => translated_onto bs np rest env
+    | [] => env
+
+:~ admit_with_auxes
+    (env : list decl) (group : list inductive) (ps : list name) (np : i32) (params : list (name * term)) (auxes : list aux)
+    : admitted
+    =
+    ?= too_few auxes np ?|
+    | Some family => Refused (NestedTooFewParams family)
+    | None =>
+        := pairs = swap_pairs auxes ps params
+        := extended = inductives_then (swapped_group pairs params group) (aux_inductives pairs ps np params auxes)
+        ?= admit_mutual env extended ?|
+        | Admitted full =>
+            := added_count = (listm::length full : i32) - (listm::length env : i32)
+            Admitted (translated_onto auxes np (newest full added_count) env)
+        | other => other
+
+:~ admit_nested (env : list decl) (group : list inductive) : admitted =
+    ?= group ?|
+    | (Inductive (owner, ps, np, ty, _)) :: _ =>
+        := ns = group_names group
+        := params, _ = params_of ty np
+        := first = collect env ns (group_bodies group) []
+        := found = closure_of env ns params (name_text owner) first 4i32
+        ?= found ?|
+        | [] => admit_mutual env group
+        | _ => admit_with_auxes env group ps np params (auxes_of env params (name_text owner) (listm::rev found) 1i32)
+    | [] => Admitted env
+
+:~ tree () : term = Const (name "Tree", [])
+
+:~ trees () : term = App (Const (name "List", []), tree ())
+
+:~ tree_family () : inductive =
+    Inductive (name "Tree", [], 0i32, type_sort (), [ name "node", Pi (name "cs", Default, trees (), tree ()) ])
+
+:~ tree_env () : list decl =
+    ?= admit_nested (list_env ()) [ tree_family () ] ?|
+    | Admitted e => e
+    | Refused _ => []
+
+:~ ^ tree_list (xs : list term) : term =
+    ?= xs ?|
+    | x :: rest => apply_all (Const (name "cons", [])) [ tree (); x; tree_list rest ]
+    | [] => App (Const (name "nil", []), tree ())
+
+:~ leaf () : term = App (Const (name "node", []), tree_list [])
+
+:~ count_with (recursor : string) (major : term) : term =
+    := m_tree = Lam (name "t", Default, tree (), nat ())
+    := m_list = Lam (name "l", Default, trees (), nat ())
+    := on_node = Lam (name "cs", Default, trees (), Lam (name "ih", Default, nat (), BVar 0i32))
+    := on_cons =
+        Lam (name "h", Default, tree (), Lam (name "t", Default, trees (), Lam (name "ih_h", Default, nat (),
+            Lam (name "ih_t", Default, nat (), succ_of (BVar 0i32)))))
+    := spine_args = [ m_tree; m_list; on_node; Const (name "zero", []); on_cons; major ]
+    apply_all (Const (name recursor, [ Succ Zero ])) spine_args
+
+:~ declared (env : list decl) (n : string) : bool =
+    ?= find_decl env n ?|
+    | Some _ => !+
+    | None => !-
+
+///> rust
+:# a_nested_family_keeps_its_container_in_the_constructor_type =
+    := env = tree_env ()
+    := node_type =
+        ?= infer env [] (Const (name "node", [])) ?|
+        | Typed ty => same_as ty (Pi (name "x", Default, trees (), tree ()))
+        | Rejected _ => !-
+    (admitted_text (admit_nested (list_env ()) [ tree_family () ]), node_type)
+    |> _assert_eq ("admitted 12", !+)
+
+///> rust
+:# the_auxiliary_family_is_translated_away_and_its_recursor_named_like_lean =
+    := env = tree_env ()
+    (declared env "Tree.rec", declared env "Tree.rec_1", declared env "Tree._aux1", declared env "Tree._aux1.cons")
+    |> _assert_eq (!+, !+, !-, !-)
+
+///> rust
+:# iota_runs_through_the_container_constructors =
+    := env = tree_env ()
+    := two = succ_of (succ_of (Const (name "zero", [])))
+    := via_tree = count_with "Tree.rec" (App (Const (name "node", []), tree_list [ leaf (); leaf () ]))
+    := via_list = count_with "Tree.rec_1" (tree_list [ leaf (); leaf (); leaf () ])
+    := same_two =
+        ?= defeq_with env via_tree two 400i32 ?|
+        | Same _ => !+
+        | _ => !-
+    := three = succ_of two
+    := same_three =
+        ?= defeq_with env via_list three 400i32 ?|
+        | Same _ => !+
+        | _ => !-
+    := typed_nat =
+        ?= infer env [] via_tree ?|
+        | Typed ty =>
+            ?= defeq_with env ty (nat ()) 50i32 ?|
+            | Same _ => !+
+            | _ => !-
+        | Rejected _ => !-
+    (typed_nat, same_two, same_three) |> _assert_eq (!+, !+, !+)
+
+///> rust
+:# a_container_that_is_negative_in_its_parameter_cannot_nest =
+    := neg_of = \ (a : term) => App (Const (name "Neg", []), a)
+    := mk = Pi (name "A", Default, type_sort (), Pi (name "f", Default, Pi (name "x", Default, BVar 0i32, nat ()), neg_of (BVar 1i32)))
+    := neg = Inductive (name "Neg", [], 1i32, Pi (name "A", Default, type_sort (), type_sort ()), [ name "negmk", mk ])
+    := env =
+        ?= admit_inductive (nat_env ()) neg ?|
+        | Admitted e => e
+        | Refused _ => []
+    := bad = Const (name "T", [])
+    := t_family = Inductive (name "T", [], 0i32, type_sort (), [ name "t", Pi (name "n", Default, neg_of bad, bad) ])
+    admitted_text (admit_nested env [ t_family ]) |> _assert_eq "not strictly positive: T._aux1.negmk"
+
+///> rust
+:# a_family_without_nesting_is_admitted_as_before =
+    (admitted_text (admit_nested (nat_env ()) [ tree_family () ]), admitted_text (admit_nested [] [ nat_decl () ]))
+    |> _assert_eq ("not strictly positive: node", "admitted 4")

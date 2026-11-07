@@ -1,0 +1,36 @@
+:! app_scope = ()
+:! keys_before = ()
+:! keys_after = ()
+:! key_b = ()
+:! key_c = ()
+:! live = ()
+:! disposed = ()
+:! complete = ()
+
+:| mounted scope keys state =
+    | Mounted :: \* scope keys state. string -> mounted scope keys state
+
+:| patch scope old_keys new_keys first_removed second_removed state =
+    | Patch :: \* scope old_keys new_keys first_removed second_removed state.
+        string ->
+        patch scope old_keys new_keys first_removed second_removed state
+
+:| disposal scope key state =
+    | Disposal :: \* scope key state. string -> disposal scope key state
+
+:= commit \* scope.
+    (mounted : mounted scope keys_before live)
+    (patch : patch scope keys_before keys_after key_b key_c complete)
+    (first : disposal scope key_b disposed)
+    (second : disposal scope key_c disposed)
+    : mounted scope keys_after live =
+    ?= mounted, patch, first, second ?|
+    | Mounted _, Patch _, Disposal _, Disposal _ => Mounted "multi-key-disposal-committed"
+
+:= main () : string =
+    := mounted : mounted app_scope keys_before live = Mounted "a,b,c"
+    := patch : patch app_scope keys_before keys_after key_b key_c complete = Patch "remove-b-c"
+    := b : disposal app_scope key_b disposed = Disposal "b"
+    := c : disposal app_scope key_c disposed = Disposal "c"
+    ?= commit mounted patch b c ?|
+    | Mounted label => label

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Materializes the compiler's dependencies (Packages.props plus the SDK's FSharp.Core) as a flat DLL
+    directory, <cache>/lib, for projects the splitter generates. Built by Get-SpiralLibDir (scripts/env.ps1).
+  -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>SpiralCompilerDependencies</AssemblyName>
+    <OutDir>$(SpiralCacheDir)/lib/</OutDir>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Dependencies.fs" />
+  </ItemGroup>
+  <Import Project="Packages.props" />
+</Project>

@@ -1,0 +1,20 @@
+:| slot =
+    | None
+    | Some : i32
+
+:= pick (n : i32) : slot * slot =
+    ? n =. 0i32 ?>
+        None, None
+    |:
+        Some n, None
+
+:= main () : i32 =
+    := ~n = 7i32
+    := pair = ~~ pick n
+    := ~(left, right) = pair
+    ?= left ?|
+    | Some value =>
+        ?= right ?|
+        | None => ? value =. 7i32 ?> 0i32 |: 1i32
+        | Some other => 1i32
+    | None => 1i32

@@ -1,0 +1,489 @@
+import "primitives/core.futil";
+import "primitives/binary_operators.futil";
+import "primitives/memories/comb.futil";
+component spiral_main() -> (out: 32) {
+  cells {
+    spiral_tick = std_reg(1);
+    spiral_ret = std_reg(32);
+    v0 = std_reg(64);
+    v1 = std_reg(64);
+    v2 = std_reg(64);
+    op3 = std_sdiv_pipe(64);
+    v3 = std_reg(64);
+    v4 = std_reg(64);
+    op6 = std_mult_pipe(64);
+    v5 = std_reg(64);
+    v6 = std_reg(64);
+    op9 = std_pad(32, 64);
+    t10 = std_reg(64);
+    op12 = std_srsh(64);
+    v7 = std_reg(32);
+    v8 = std_reg(64);
+    op15 = std_pad(32, 64);
+    op16 = std_lsh(64);
+    op17 = std_srsh(64);
+    v9 = std_reg(64);
+    v10 = std_reg(32);
+    op20 = std_slice(64, 32);
+    v11 = std_reg(64);
+    v12 = std_reg(64);
+    op23 = std_add(64);
+    v13 = std_reg(64);
+    op25 = std_pad(32, 64);
+    t26 = std_reg(64);
+    op28 = std_rsh(64);
+    v14 = std_reg(64);
+    op30 = std_pad(32, 64);
+    op31 = std_lsh(64);
+    op32 = std_srsh(64);
+    v15 = std_reg(1);
+    op34 = std_eq(64);
+    v17 = std_reg(1);
+    b36 = std_reg(1);
+    v16 = std_reg(1);
+    op38 = std_eq(64);
+    v19 = std_reg(1);
+    b42 = std_reg(1);
+    v18 = std_reg(1);
+    op44 = std_eq(64);
+    v21 = std_reg(1);
+    b48 = std_reg(1);
+    v20 = std_reg(1);
+    op50 = std_eq(64);
+    v23 = std_reg(1);
+    b54 = std_reg(1);
+    v22 = std_reg(1);
+    op56 = std_eq(32);
+    v25 = std_reg(1);
+    b60 = std_reg(1);
+    v24 = std_reg(1);
+    op62 = std_eq(64);
+    v27 = std_reg(1);
+    b66 = std_reg(1);
+    v26 = std_reg(1);
+    op68 = std_eq(64);
+    v29 = std_reg(1);
+    b72 = std_reg(1);
+    v28 = std_reg(1);
+    op74 = std_eq(64);
+    b78 = std_reg(1);
+  }
+  wires {
+    group g1 {
+      v0.in = 64'd5000000000;
+      v0.write_en = 1'd1;
+      g1[done] = v0.done;
+    }
+    group g2 {
+      v1.in = 64'd18446744073709551612;
+      v1.write_en = 1'd1;
+      g2[done] = v1.done;
+    }
+    group g4 {
+      op3.left = v0.out;
+      op3.right = v1.out;
+      op3.go = !op3.done ? 1'd1;
+      v2.in = op3.out_quotient;
+      v2.write_en = op3.done;
+      g4[done] = v2.done;
+    }
+    group g5 {
+      v3.in = 64'd1000000;
+      v3.write_en = 1'd1;
+      g5[done] = v3.done;
+    }
+    group g7 {
+      op6.left = v3.out;
+      op6.right = v3.out;
+      op6.go = !op6.done ? 1'd1;
+      v4.in = op6.out;
+      v4.write_en = op6.done;
+      g7[done] = v4.done;
+    }
+    group g8 {
+      v5.in = 64'd18446744073709551608;
+      v5.write_en = 1'd1;
+      g8[done] = v5.done;
+    }
+    group g11 {
+      op9.in = 32'd1;
+      t10.in = op9.out;
+      t10.write_en = 1'd1;
+      g11[done] = t10.done;
+    }
+    group g13 {
+      op12.left = v5.out;
+      op12.right = t10.out;
+      v6.in = op12.out;
+      v6.write_en = 1'd1;
+      g13[done] = v6.done;
+    }
+    group g14 {
+      v7.in = 32'd7;
+      v7.write_en = 1'd1;
+      g14[done] = v7.done;
+    }
+    group g18 {
+      op15.in = v7.out;
+      op16.left = op15.out;
+      op16.right = 64'd32;
+      op17.left = op16.out;
+      op17.right = 64'd32;
+      v8.in = op17.out;
+      v8.write_en = 1'd1;
+      g18[done] = v8.done;
+    }
+    group g19 {
+      v9.in = 64'd9;
+      v9.write_en = 1'd1;
+      g19[done] = v9.done;
+    }
+    group g21 {
+      op20.in = v9.out;
+      v10.in = op20.out;
+      v10.write_en = 1'd1;
+      g21[done] = v10.done;
+    }
+    group g22 {
+      v11.in = 64'd4294967296;
+      v11.write_en = 1'd1;
+      g22[done] = v11.done;
+    }
+    group g24 {
+      op23.left = v11.out;
+      op23.right = 64'd1;
+      v12.in = op23.out;
+      v12.write_en = 1'd1;
+      g24[done] = v12.done;
+    }
+    group g27 {
+      op25.in = 32'd1;
+      t26.in = op25.out;
+      t26.write_en = 1'd1;
+      g27[done] = t26.done;
+    }
+    group g29 {
+      op28.left = v11.out;
+      op28.right = t26.out;
+      v13.in = op28.out;
+      v13.write_en = 1'd1;
+      g29[done] = v13.done;
+    }
+    group g33 {
+      op30.in = v7.out;
+      op31.left = op30.out;
+      op31.right = 64'd32;
+      op32.left = op31.out;
+      op32.right = 64'd32;
+      v14.in = op32.out;
+      v14.write_en = 1'd1;
+      g33[done] = v14.done;
+    }
+    group g35 {
+      op34.left = v2.out;
+      op34.right = 64'd18446744072459551616;
+      v15.in = op34.out;
+      v15.write_en = 1'd1;
+      g35[done] = v15.done;
+    }
+    group g37 {
+      b36.in = v15.out;
+      b36.write_en = 1'd1;
+      g37[done] = b36.done;
+    }
+    group g39 {
+      op38.left = v4.out;
+      op38.right = 64'd1000000000000;
+      v16.in = op38.out;
+      v16.write_en = 1'd1;
+      g39[done] = v16.done;
+    }
+    group g40 {
+      v17.in = v16.out;
+      v17.write_en = 1'd1;
+      g40[done] = v17.done;
+    }
+    group g41 {
+      v17.in = 1'd0;
+      v17.write_en = 1'd1;
+      g41[done] = v17.done;
+    }
+    group g43 {
+      b42.in = v17.out;
+      b42.write_en = 1'd1;
+      g43[done] = b42.done;
+    }
+    group g45 {
+      op44.left = v6.out;
+      op44.right = 64'd18446744073709551612;
+      v18.in = op44.out;
+      v18.write_en = 1'd1;
+      g45[done] = v18.done;
+    }
+    group g46 {
+      v19.in = v18.out;
+      v19.write_en = 1'd1;
+      g46[done] = v19.done;
+    }
+    group g47 {
+      v19.in = 1'd0;
+      v19.write_en = 1'd1;
+      g47[done] = v19.done;
+    }
+    group g49 {
+      b48.in = v19.out;
+      b48.write_en = 1'd1;
+      g49[done] = b48.done;
+    }
+    group g51 {
+      op50.left = v8.out;
+      op50.right = 64'd7;
+      v20.in = op50.out;
+      v20.write_en = 1'd1;
+      g51[done] = v20.done;
+    }
+    group g52 {
+      v21.in = v20.out;
+      v21.write_en = 1'd1;
+      g52[done] = v21.done;
+    }
+    group g53 {
+      v21.in = 1'd0;
+      v21.write_en = 1'd1;
+      g53[done] = v21.done;
+    }
+    group g55 {
+      b54.in = v21.out;
+      b54.write_en = 1'd1;
+      g55[done] = b54.done;
+    }
+    group g57 {
+      op56.left = v10.out;
+      op56.right = 32'd9;
+      v22.in = op56.out;
+      v22.write_en = 1'd1;
+      g57[done] = v22.done;
+    }
+    group g58 {
+      v23.in = v22.out;
+      v23.write_en = 1'd1;
+      g58[done] = v23.done;
+    }
+    group g59 {
+      v23.in = 1'd0;
+      v23.write_en = 1'd1;
+      g59[done] = v23.done;
+    }
+    group g61 {
+      b60.in = v23.out;
+      b60.write_en = 1'd1;
+      g61[done] = b60.done;
+    }
+    group g63 {
+      op62.left = v12.out;
+      op62.right = 64'd4294967297;
+      v24.in = op62.out;
+      v24.write_en = 1'd1;
+      g63[done] = v24.done;
+    }
+    group g64 {
+      v25.in = v24.out;
+      v25.write_en = 1'd1;
+      g64[done] = v25.done;
+    }
+    group g65 {
+      v25.in = 1'd0;
+      v25.write_en = 1'd1;
+      g65[done] = v25.done;
+    }
+    group g67 {
+      b66.in = v25.out;
+      b66.write_en = 1'd1;
+      g67[done] = b66.done;
+    }
+    group g69 {
+      op68.left = v13.out;
+      op68.right = 64'd2147483648;
+      v26.in = op68.out;
+      v26.write_en = 1'd1;
+      g69[done] = v26.done;
+    }
+    group g70 {
+      v27.in = v26.out;
+      v27.write_en = 1'd1;
+      g70[done] = v27.done;
+    }
+    group g71 {
+      v27.in = 1'd0;
+      v27.write_en = 1'd1;
+      g71[done] = v27.done;
+    }
+    group g73 {
+      b72.in = v27.out;
+      b72.write_en = 1'd1;
+      g73[done] = b72.done;
+    }
+    group g75 {
+      op74.left = v14.out;
+      op74.right = 64'd7;
+      v28.in = op74.out;
+      v28.write_en = 1'd1;
+      g75[done] = v28.done;
+    }
+    group g76 {
+      v29.in = v28.out;
+      v29.write_en = 1'd1;
+      g76[done] = v29.done;
+    }
+    group g77 {
+      v29.in = 1'd0;
+      v29.write_en = 1'd1;
+      g77[done] = v29.done;
+    }
+    group g79 {
+      b78.in = v29.out;
+      b78.write_en = 1'd1;
+      g79[done] = b78.done;
+    }
+    group g80 {
+      spiral_ret.in = 32'd0;
+      spiral_ret.write_en = 1'd1;
+      g80[done] = spiral_ret.done;
+    }
+    group g81 {
+      spiral_ret.in = 32'd1;
+      spiral_ret.write_en = 1'd1;
+      g81[done] = spiral_ret.done;
+    }
+    out = spiral_ret.out;
+  }
+  control {
+    seq {
+      g1;
+      g2;
+      g4;
+      g5;
+      g7;
+      g8;
+      g11;
+      g13;
+      g14;
+      g18;
+      g19;
+      g21;
+      g22;
+      g24;
+      g27;
+      g29;
+      g33;
+      g35;
+      g37;
+      if b36.out {
+        seq {
+          g39;
+          g40;
+        }
+      } else {
+        seq {
+          g41;
+        }
+      };
+      g43;
+      if b42.out {
+        seq {
+          g45;
+          g46;
+        }
+      } else {
+        seq {
+          g47;
+        }
+      };
+      g49;
+      if b48.out {
+        seq {
+          g51;
+          g52;
+        }
+      } else {
+        seq {
+          g53;
+        }
+      };
+      g55;
+      if b54.out {
+        seq {
+          g57;
+          g58;
+        }
+      } else {
+        seq {
+          g59;
+        }
+      };
+      g61;
+      if b60.out {
+        seq {
+          g63;
+          g64;
+        }
+      } else {
+        seq {
+          g65;
+        }
+      };
+      g67;
+      if b66.out {
+        seq {
+          g69;
+          g70;
+        }
+      } else {
+        seq {
+          g71;
+        }
+      };
+      g73;
+      if b72.out {
+        seq {
+          g75;
+          g76;
+        }
+      } else {
+        seq {
+          g77;
+        }
+      };
+      g79;
+      if b78.out {
+        seq {
+          g80;
+        }
+      } else {
+        seq {
+          g81;
+        }
+      };
+    }
+  }
+}
+component main() -> () {
+  cells {
+    @external spiral_io = comb_mem_d1(32, 1, 1);
+    entry = spiral_main();
+  }
+  wires {
+    group spiral_store {
+      spiral_io.addr0 = 1'd0;
+      spiral_io.write_en = 1'd1;
+      spiral_io.write_data = entry.out;
+      spiral_store[done] = spiral_io.done;
+    }
+  }
+  control {
+    seq {
+      invoke entry()();
+      spiral_store;
+    }
+  }
+}

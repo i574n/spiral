@@ -1,0 +1,20 @@
+:! zero = ()
+:! succ n = n
+:! retryable = ()
+
+:| ^ budget n =
+    | ZeroBudget :: budget zero
+    | MoreBudget :: \* n. budget n -> budget (succ n)
+
+:| request effect result =
+    | QueryStatus :: request retryable string
+
+:= retry_once \* n result.
+    (budget : budget (succ n))
+    (request : request retryable result)
+    : result =
+    ?= budget, request ?|
+    | MoreBudget _, QueryStatus => "ok"
+
+:= main () : string =
+    retry_once ZeroBudget QueryStatus

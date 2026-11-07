@@ -1,0 +1,4 @@
+:= main () : i32 =
+    := ~at = 0i32
+    := c = !!!!StringIndex("z", at)
+    ? !!!!EQ(c, 'z') ?> 42i32 |: 1i32

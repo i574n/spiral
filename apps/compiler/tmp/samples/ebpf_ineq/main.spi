@@ -1,0 +1,21 @@
+:= main () : i32 =
+    := ~a = 0i32 -. 3i32
+    := ~b = 0i32 -. 4i32
+    := ~c = 0i32 -. 3i32
+    := ~u = 4294967295u32
+    := ~v = 0u32
+    := ~w = 4294967295u32
+    := ~x = 0.0f32 -. 1.5f32
+    := ~y = 0.0f32 -. 0.5f32
+    := ~z = 0.0f32 -. 1.5f32
+    := idiff = !!!!NEQ(a, b)
+    := isame = !!!!NEQ(a, c)
+    := udiff = !!!!NEQ(u, v)
+    := usame = !!!!NEQ(u, w)
+    := fdiff = !!!!NEQ(x, y)
+    := fsame = !!!!NEQ(x, z)
+    ? idiff && udiff && fdiff ?>
+        ? isame ?> 1i32 |:
+            ? usame ?> 2i32 |:
+                ? fsame ?> 3i32 |: 0i32
+    |: 4i32

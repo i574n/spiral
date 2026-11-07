@@ -1,0 +1,42 @@
+import CRT
+import WinSDK
+func f_c0(_ v0: Int64, _ v1: String) -> (Int32) -> (Int64, String) {
+    return { (v2: Int32) -> (Int64, String) in
+        var v3: Bool = false
+        v3 = (v2 == 0)
+        if (v3) {
+            var v4: String = ""
+            v4 = "no"
+            return ((0 as Int64), v4)
+        } else {
+            return (v0, v1)
+        }
+    }
+}
+func spiral_main() -> Int32 {
+    let v0: Int64 = (5000000000 as Int64)
+    let v1: String = "hi"
+    let v2: (Int32) -> (Int64, String) = f_c0(v0, v1)
+    var v3: Int64 = (0 as Int64)
+    var v4: String = ""
+    let spiral_tuple323 = v2(1)
+    v3 = spiral_tuple323.0
+    v4 = spiral_tuple323.1
+    let v5: Bool = (v3 == (5000000000 as Int64))
+    var v7: Bool = false
+    if (v5) {
+        let v6: Bool = (v4 == "hi")
+        v7 = v6
+    } else {
+        v7 = false
+    }
+    if (v7) {
+        return 0
+    } else {
+        return 1
+    }
+}
+nonisolated(unsafe) var spiral_exit_code: Int32 = 0
+let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)
+WaitForSingleObject(spiral_thread, INFINITE)
+exit(spiral_exit_code)

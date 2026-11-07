@@ -1,0 +1,10 @@
+:! vec = $'Vec<i32>'
+
+:= push4 (v : vec) : vec = $'{ let mut w = !v; w.push(4); w }' : vec
+
+:= vlen (v : vec) : i32 = $'!v.len() as i32' : i32
+
+:= main () : i32 =
+    !!!!Export("model_push4", push4)
+    !!!!Export("model_vlen", vlen)
+    0i32

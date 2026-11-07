@@ -1,0 +1,9 @@
+:= main () : i32 =
+    := ~a = 4294967295u32
+    := ~b = 15u32
+    := band = !!!!BitwiseAnd(a, b)
+    := bor = !!!!BitwiseOr(a, b)
+    := bxor = !!!!BitwiseXor(a, b)
+    := inv = !!!!BitwiseComplement(b)
+    ? band =. 15u32 && bor =. a && bxor =. inv && inv =. 4294967280u32 ?> 0i32
+    |: 1i32

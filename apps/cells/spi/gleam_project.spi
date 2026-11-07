@@ -1,0 +1,83 @@
+///- --package .
+///> gleam
+:# gleam_project static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ ^ digits_end (s : string) (i : i32) : i32 = ? i < text::length s && json_value::is_digit (text::byte_at s i) ?> digits_end s (i + 1i32) |: i
+
+:= numbered_gutter (line : string) : bool =
+    := k = digits_end line 0i32
+    k > 0i32 && text::starts_at line k " │"
+
+:= warning_line (line : string) : bool =
+    := lead = ["\t"; " "; "Hint:"; "│"; "┌"]
+    line = "" || listm::fold (\ hit p => hit || text::starts_with line p) !- lead || numbered_gutter line
+
+:~ ^ kept_lines (lines : list string) (skipping : bool) (acc : list string) : list string =
+    ?= lines ?|
+    | line :: rest =>
+        ? text::starts_with line "warning: " ?> kept_lines rest !+ acc
+        |? skipping && warning_line line ?> kept_lines rest !+ acc
+        |: kept_lines rest !- (line :: acc)
+    | [] => listm::rev acc
+
+:= strip_warnings (text_in : string) : string =
+    sm'::concat_list "\n" (kept_lines (sm'::split_list "\n" (text::replace text_in "\r\n" "\n")) !- [])
+
+:== gleam_dep = { name : string; version : option string }
+
+:= default_deps () : list (string * string) =
+    [
+        ("gleam_stdlib", ">=1.0.5 and <2.0.0"); ("gleam_time", ">=1.0.0 and <2.0.0"); ("gleam_erlang", ">=1.3.0 and <2.0.0")
+        ("gleam_otp", ">=1.3.0 and <2.0.0"); ("envoy", ">=1.2.0 and <2.0.0"); ("gleam_community_maths", ">=2.0.2 and <3.0.0")
+        ("gtempo", ">=7.4.0 and <8.0.0")
+    ]
+
+:= is_default (name : string) : bool = listm::fold (\ hit (n, v) => hit || (n = name && v = v)) !- (default_deps ())
+
+:~ ^ quotes_start (s : string) (i : i32) : i32 = ? i < text::length s && text::byte_at s i = 34i32 ?> quotes_start s (i + 1i32) |: i
+
+:~ ^ quotes_end (s : string) (i : i32) (floor : i32) : i32 = ? i > floor && text::byte_at s (i - 1i32) = 34i32 ?> quotes_end s (i - 1i32) floor |: i
+
+:= trim_quotes (s : string) : string =
+    := a = quotes_start s 0i32
+    text::slice_len s a (quotes_end s (text::length s) a - a)
+
+:= cleaned (version : option string) : string =
+    := v = ?= version ?| Some x => x | None => "*"
+    trim_quotes (text::replace v "\\" "")
+
+:= dep_line (name : string) (version : string) : string = name ++ " = " ++ builders::inspect version
+
+:= manifest (main : string) (target : string) (deps : list gleam_dep) : string =
+    := fixed = listm::map (\ (n, v) => dep_line n v) (default_deps ())
+    := extra = listm::fold (\ acc (d : gleam_dep) => ? is_default d::name ?> acc |: dep_line d::name (cleaned d::version) :: acc) [] deps
+    := head = ["name = " ++ builders::inspect main; "target = " ++ builders::inspect target; ""; "[dependencies]"]
+    sm'::concat_list "\n" (listm::append head (listm::append fixed (listm::rev extra))) ++ "\n"
+
+:~ ^ fields_from (s : string) (i : i32) (acc : list string) : list string =
+    := colon = text::find_from s ":" i
+    ? i >= text::length s || colon < 0i32 ?> listm::rev acc
+    |:
+        := n = text::parse_i32 (text::slice_len s i (colon - i))
+        fields_from s (colon + 1i32 + n) (text::slice_len s (colon + 1i32) n :: acc)
+
+:~ ^ deps_of (fields : list string) (acc : list gleam_dep) : list gleam_dep =
+    ?= fields ?|
+    | name :: version :: rest =>
+        := v = ? text::starts_with version "+" ?> Some (text::drop version 1i32) |: None
+        deps_of rest ({ name = name; version = v } :: acc)
+    | _ => listm::rev acc
+
+:= manifest_wire (wire : string) : string =
+    ?= fields_from wire 0i32 [] ?|
+    | main :: target :: rest => manifest main target (deps_of rest [])
+    | _ => ""
+
+:# gleam_warnings_drop_and_manifests_list_every_dependency =
+    strip_warnings "warning: Unused\n  ┌─ src/a.gleam\n3 │ let x\n\nHint: drop it\nok 1\r\nwarning: x\n\nok 2" |> _assert_eq "ok 1\nok 2"
+    := toml = manifest "main" "erlang" [{ name = "gleam_json"; version = Some "\"\\>=3.0.0\"" }; { name = "envoy"; version = None }]
+    text::contains toml "\ngleam_json = \">=3.0.0\"\n" |> _assert_eq !+
+    text::starts_with toml "name = \"main\"\ntarget = \"erlang\"\n\n[dependencies]\ngleam_stdlib = " |> _assert_eq !+

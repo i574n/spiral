@@ -1,0 +1,59 @@
+; membership.spl with one wrong proof: it claims Bool sits at slot zero of [Unit, Bool] (it is at slot one), so the
+; type checker must reject it. Otherwise identical to membership.spl.
+;
+; De Bruijn membership in a typed linear context, transpiled from
+; spiral/apps/compiler/tmp/samples/mega_spiral_proves_spiral_relative_consistency/main.spi (lines 1-97).
+; Conventions: (-> a b) is a function type, (tuple a b) a product type, (forall a b) a binder clause,
+; (then x f g) the |> threading form, (emit "...") a $"..." macro, ; a comment.
+
+(nominal meta_zero string)
+(nominal (meta_succ n) (tuple n string))
+(type exact_linear_zero meta_zero)
+
+(nominal exact_linear_unit_type string)
+(nominal exact_linear_bool_type string)
+
+(inl reflected_runtime_add_i64 ((left i64) (right i64)) i64
+  (emit "!left + !right"))
+
+(nominal exact_linear_free_context_empty string)
+(nominal (exact_linear_free_context_extend tail domain) (tuple tail domain))
+
+(union rec (exact_linear_free_context_membership context slot domain)
+  (ExactLinearFreeContextMembershipHere (forall tail domain)
+    (-> string
+        (exact_linear_free_context_membership
+          (exact_linear_free_context_extend tail domain) exact_linear_zero domain)))
+  (ExactLinearFreeContextMembershipThere (forall tail head slot domain)
+    (-> (tuple (exact_linear_free_context_membership tail slot domain) string)
+        (exact_linear_free_context_membership
+          (exact_linear_free_context_extend tail head) (meta_succ slot) domain))))
+
+(inl rec exact_linear_free_context_membership_slot (forall context slot domain)
+  ((membership (exact_linear_free_context_membership context slot domain))) i64
+  (match membership
+    ((ExactLinearFreeContextMembershipHere _) 0i64)
+    ((ExactLinearFreeContextMembershipThere tail _)
+      (reflected_runtime_add_i64 1i64 (exact_linear_free_context_membership_slot tail)))))
+
+(type exact_linear_unit_bool_context
+  (exact_linear_free_context_extend
+    (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_bool_type)
+    exact_linear_unit_type))
+
+(inl exact_linear_unit_bool_context_unit_membership ()
+  (exact_linear_free_context_membership
+    exact_linear_unit_bool_context exact_linear_zero exact_linear_unit_type)
+  (ExactLinearFreeContextMembershipHere "the-most-recent-context-entry-is-unit-at-slot-zero"))
+
+(inl exact_linear_unit_bool_context_bool_membership ()
+  (exact_linear_free_context_membership
+    exact_linear_unit_bool_context exact_linear_zero exact_linear_bool_type)
+  (ExactLinearFreeContextMembershipThere
+    (ExactLinearFreeContextMembershipHere "the-older-context-entry-is-Bool")
+    "one-structural-context-step-derives-Bool-at-slot-one"))
+
+; slot of Bool in [Unit, Bool] is 1: exit code 0 when it is
+(inl main () i32
+  (if (= (then (exact_linear_unit_bool_context_bool_membership ()) exact_linear_free_context_membership_slot) 1i64)
+      0i32 1i32))

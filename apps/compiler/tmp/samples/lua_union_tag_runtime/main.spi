@@ -1,0 +1,10 @@
+:| compass =
+    | Northward
+    | Eastward
+    | Southward
+    | Westward
+
+:= main () : i32 =
+    := ~d = Southward
+    := t : i32 = ~> real_core::union_tag d
+    ? t = 2i32 ?> 0i32 |: 1i32

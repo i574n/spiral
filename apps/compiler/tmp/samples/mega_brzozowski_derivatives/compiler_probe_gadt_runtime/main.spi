@@ -1,0 +1,15 @@
+:! raw_phase = ()
+:! decided_phase = ()
+
+:| phase_state phase =
+    | RawState :: i32 -> phase_state raw_phase
+    | DecidedState :: i32 * bool -> phase_state decided_phase
+
+:~ decide_state (state : phase_state raw_phase) : phase_state decided_phase =
+    ?= state ?|
+    | RawState value => DecidedState (value, !+)
+
+:= main () : bool =
+    := state = decide_state (RawState 7i32)
+    ?= state ?|
+    | DecidedState (_, accepted) => accepted

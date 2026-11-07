@@ -1,0 +1,10 @@
+:= make_pair ~x ~y = x, y
+
+:= sum_pair ~(x, y) = x +. y
+
+:= main () : i32 =
+    := ~x = 20i32
+    := ~y = 22i32
+    := pair = ~~ make_pair x y
+    := result = ~~ sum_pair pair
+    result -. 42i32

@@ -1,0 +1,51 @@
+:! parallel = ()
+:! serial = ()
+:! validation_capability = ()
+:! publication_capability = ()
+:! ready = ()
+:! committed = ()
+
+:| validation_evidence status =
+    | ReadyEvidence :: validation_evidence ready
+
+:| receipt status =
+    | CommittedReceipt :: receipt committed
+
+:| job effect capability result =
+    | ValidateJob ::
+        job parallel validation_capability (validation_evidence ready)
+    | PublishJob ::
+        job serial publication_capability (receipt committed)
+
+:| executable_job =
+    | ExecutableJob ::
+        (\? effect. \? capability. \? result.
+            job effect capability result * (result -> string))
+        -> executable_job
+
+:= run_job \* effect capability result.
+    (job : job effect capability result)
+    : result =
+    ?= job ?|
+    | ValidateJob => ReadyEvidence
+    | PublishJob => CommittedReceipt
+
+:= run_executable (packed : executable_job) : string =
+    ?= packed ?|
+    | ExecutableJob packed =>
+        := \? effect. \? capability. \? result. job, render = packed
+        render (run_job job)
+
+:= render_validation (evidence : validation_evidence ready) : string =
+    ?= evidence ?|
+    | ReadyEvidence => "validated-job"
+
+:= render_publication (receipt : receipt committed) : string =
+    ?= receipt ?|
+    | CommittedReceipt => "heterogeneous-jobs"
+
+:= main () : string =
+    := first = ExecutableJob (\? (\? (\? (ValidateJob, render_validation))))
+    := second = ExecutableJob (\? (\? (\? (PublishJob, render_publication))))
+    := _ = run_executable first
+    run_executable second

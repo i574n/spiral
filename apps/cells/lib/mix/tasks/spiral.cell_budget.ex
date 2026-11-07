@@ -1,0 +1,82 @@
+defmodule Mix.Tasks.Spiral.CellBudget do
+  use Mix.Task
+
+  @shortdoc "Reports what a renderer would rewrite in Spiral sources and which definitions exceed the cell budget; --check fails on the latter"
+
+  @extensions [".spi", ".spir", ".livemd"]
+  @skipped ["target", "node_modules", "deps", "bin", "obj", "_build", ".git", ".history"]
+
+  @impl true
+  def run(args) do
+    {options, paths} = OptionParser.parse!(args, strict: [check: :boolean, granular: :boolean])
+    files = paths |> Enum.flat_map(&sources/1) |> Enum.uniq()
+
+    findings =
+      for file <- files, {profile, source} <- [{Spiral.Cells.CellBudget.default_profile(), File.read!(file)}],
+          finding <- findings_of(source, profile, options[:granular] == true, file) do
+        Mix.shell().info(Spiral.Cells.CellBudget.format(file, finding))
+        finding
+      end
+
+    by_kind = findings |> Enum.frequencies_by(& &1.kind) |> Enum.sort() |> Enum.map_join(", ", fn {kind, n} -> "#{kind} #{n}" end)
+    Mix.shell().info("cell-budget report: #{length(findings)} finding(s) in #{length(files)} file(s)" <> if(by_kind == "", do: "", else: " (#{by_kind})"))
+    if options[:granular] do
+      profile = Spiral.Cells.CellBudget.default_profile()
+
+      kinds =
+        for file <- files, source = File.read!(file), kind <- Spiral.Cells.CellBudgetRuled.kinds(source, profile, nominals_in_scope(source, file)),
+            do: kind
+
+      Mix.shell().info(Spiral.Cells.CellBudgetRuled.kinds_line(kinds))
+    end
+
+    over_budget = Enum.count(findings, &(&1.kind == :over_budget))
+    if options[:check] && over_budget > 0, do: Mix.raise("cell-budget: #{over_budget} definition(s) over the cell budget; split them")
+  end
+
+  defp findings_of(source, profile, true, file),
+    do:
+      Spiral.Cells.CellBudget.rewrites(source, profile) ++
+        Spiral.Cells.CellBudgetRuled.over_budget(source, profile, nominals_in_scope(source, file))
+
+  defp findings_of(source, profile, false, _file),
+    do: Spiral.Cells.CellBudget.rewrites(source, profile) ++ Spiral.Cells.CellBudget.over_budget(source, profile)
+
+  @doc false
+  def nominals_in_scope(source, file) do
+    lib = System.get_env("SPIRAL_LIB") || Path.expand("../../../../../lib/spiral", __DIR__)
+
+    imported =
+      for [_, name] <- Regex.scan(~r/^:<\s+([a-z_][\w']*)/m, source),
+          candidate <- [Path.join(Path.dirname(file), name <> ".spi"), Path.join(lib, name <> ".spi")],
+          File.regular?(candidate),
+          nominal <- Spiral.Cells.CellBudgetRuled.declared_nominals(File.read!(candidate)),
+          do: nominal
+
+    Enum.uniq(Spiral.Cells.CellBudgetRuled.declared_nominals(source) ++ imported)
+  end
+
+  defp sources(path) do
+    cond do
+      File.dir?(path) ->
+        path |> String.replace("\\", "/") |> walk() |> Enum.sort()
+
+      File.regular?(path) -> [path]
+      true -> []
+    end
+  end
+
+  defp walk(dir) do
+    dir
+    |> File.ls!()
+    |> Enum.flat_map(fn name ->
+      full = Path.join(dir, name)
+
+      case File.lstat(full) do
+        {:ok, %{type: :directory}} -> if name in @skipped, do: [], else: walk(full)
+        {:ok, %{type: :regular}} -> if Path.extname(name) in @extensions, do: [full], else: []
+        _ -> []
+      end
+    end)
+  end
+end

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>rust.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<h4>rust (test)</h4>
+
+<span class="badge other">test rust: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:==</span> <span class="tok-variable">rust_type_switch</span> <span class="tok-variable">fs</span> <span class="tok-variable">rs</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Gleam</span> <span class="tok-operator">:</span> <span class="tok-variable">fs</span>
+        <span class="tok-variable">Lua</span> <span class="tok-operator">:</span> <span class="tok-variable">fs</span>
+        <span class="tok-variable">Fsharp</span> <span class="tok-operator">:</span> <span class="tok-variable">fs</span>
+        <span class="tok-variable">Python</span> <span class="tok-operator">:</span> <span class="tok-variable">fs</span>
+        <span class="tok-variable">TypeScript</span> <span class="tok-operator">:</span> <span class="tok-variable">fs</span>
+        <span class="tok-variable">Cpp</span> <span class="tok-operator">:</span> <span class="tok-variable">fs</span>
+        <span class="tok-variable">CppHost</span> <span class="tok-operator">:</span> <span class="tok-variable">fs</span>
+        <span class="tok-variable">Pascal</span> <span class="tok-operator">:</span> <span class="tok-variable">fs</span>
+        <span class="tok-variable">Cuda</span> <span class="tok-operator">:</span> <span class="tok-variable">fs</span>
+        <span class="tok-variable">Zig</span> <span class="tok-operator">:</span> <span class="tok-variable">fs</span>
+        <span class="tok-variable">Lean</span> <span class="tok-operator">:</span> <span class="tok-variable">fs</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">:</span> <span class="tok-variable">rs</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">fsharp_global</span> <span class="tok-parenthesis">(</span><span class="tok-variable">text</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Fsharp</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">global</span> <span class="tok-variable">text</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">rust_type</span> <span class="tok-keyword">\*</span> <span class="tok-variable">fs</span> <span class="tok-variable">rs</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fsharp</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">backend_switch </span><span class="tok-parenthesis">`(</span><span class="tok-variable">rust_type_switch</span> <span class="tok-variable">fs</span> <span class="tok-variable">rs</span><span class="tok-parenthesis">)</span><span class="tok-string">'</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">fsharp_global</span> <span class="tok-variable">fsharp</span>
+    <span class="tok-string">$'</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-string">$'</span><span class="tok-string">backend_switch </span><span class="tok-parenthesis">`(</span><span class="tok-variable">rust_type_switch</span> <span class="tok-variable">fs</span> <span class="tok-variable">rs</span><span class="tok-parenthesis">)</span><span class="tok-string">'</span>
+
+<span class="tok-keyword">:==</span> <span class="tok-variable">any_base</span> <span class="tok-operator">=</span> <span class="tok-variable">any</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">any</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">core_any_Any</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">core::any::Any</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type core_any_Any = obj</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">try</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">core_ops_Try&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">_</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type core_ops_Try&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">cow</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std_borrow_Cow&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std::borrow::Cow&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type std_borrow_Cow&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">ref_cell</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std_cell_RefCell&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std::cell::RefCell&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type std_cell_RefCell&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">cell_ref</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std_cell_Ref&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std::cell::Ref&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type std_cell_Ref&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">rc</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std_rc_Rc&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std::rc::Rc&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type std_rc_Rc&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">lifetime_ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-operator">*</span> <span class="tok-operator">-&gt;</span> <span class="tok-operator">*</span><span class="tok-parenthesis">)</span> <span class="tok-variable">u</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">LifetimeRef&lt;</span><span class="tok-parenthesis">`(</span><span class="tok-variable">t</span> <span class="tok-variable">u</span><span class="tok-parenthesis">)</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-parenthesis">`(</span><span class="tok-variable">t</span> <span class="tok-variable">u</span><span class="tok-parenthesis">)</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type LifetimeRef&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">lifetime_join</span> <span class="tok-variable">t</span> <span class="tok-variable">u</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">LifetimeJoin&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">, </span><span class="tok-type_variable">`u</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-type_variable">`t</span><span class="tok-string"> + </span><span class="tok-parenthesis">`(</span><span class="tok-variable">u</span><span class="tok-parenthesis">)</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type LifetimeJoin&lt;'T, 'U&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">lifetime</span> <span class="tok-variable">t</span> <span class="tok-variable">u</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">Lifetime&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">, </span><span class="tok-type_variable">`u</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-type_variable">`t</span><span class="tok-string"> </span><span class="tok-parenthesis">`(</span><span class="tok-variable">u</span><span class="tok-parenthesis">)</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type Lifetime&lt;'T, 'U&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">static_lifetime</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">StaticLifetime</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-unescaped_char">\'</span><span class="tok-string">static</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type StaticLifetime = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">ref</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">Ref&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&amp;</span><span class="tok-parenthesis">`(</span><span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type Ref&lt;'T&gt; = 'T</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">static_ref</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span> <span class="tok-variable">ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">lifetime</span> <span class="tok-variable">static_lifetime</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">weak_rc</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std_rc_Weak&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std::rc::Weak&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type std_rc_Weak&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">box</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">Box&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">Box&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type Box&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">mut_cell</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">MutCell&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">MutCell&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type MutCell&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">pin</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std_pin_Pin&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std::pin::Pin&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type std_pin_Pin&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">dyn'</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">Dyn&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">dyn </span><span class="tok-parenthesis">`(</span><span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type Dyn&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">fn'</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">Fn&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">Fn() -&gt; </span><span class="tok-parenthesis">`(</span><span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type Fn&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">action_fn</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">ActionFn&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">Fn(</span><span class="tok-type_variable">`t</span><span class="tok-string">)</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type ActionFn&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">action_fn2</span> <span class="tok-variable">t</span> <span class="tok-variable">u</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">ActionFn2&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">, </span><span class="tok-type_variable">`u</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">Fn(</span><span class="tok-type_variable">`t</span><span class="tok-string">, </span><span class="tok-type_variable">`u</span><span class="tok-string">)</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type ActionFn2&lt;'T, 'U&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">fn_once</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">FnOnce&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">FnOnce() -&gt; </span><span class="tok-parenthesis">`(</span><span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type FnOnce&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">fn_unit</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">FnUnit</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">Fn()</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type FnUnit = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">impl</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">Impl&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">impl </span><span class="tok-parenthesis">`(</span><span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type Impl&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">mut'</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">Mut&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">mut </span><span class="tok-parenthesis">`(</span><span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type Mut&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">ref_mut</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std_cell_RefMut&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">std::cell::RefMut&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type std_cell_RefMut&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">send</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-parenthesis">`(</span><span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-string">'</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">emit_expr</span> <span class="tok-keyword">\*</span> <span class="tok-variable">a</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">args</span> <span class="tok-operator">:</span> <span class="tok-variable">a</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">code</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-string">$'</span><span class="tok-string">__spiral_emit_rust </span><span class="tok-variable">!args</span><span class="tok-string"> </span><span class="tok-variable">!code</span><span class="tok-string"> </span><span class="tok-string">'</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-parenthesis">(</span><span class="tok-operator">~!\</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">code</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">emit_expr</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-variable">code</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-parenthesis">(</span><span class="tok-operator">~!\\</span><span class="tok-parenthesis">)</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span> <span class="tok-variable">u</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">(</span><span class="tok-variable">args</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-parenthesis">(</span><span class="tok-variable">code</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">emit_expr</span> <span class="tok-variable">args</span> <span class="tok-variable">code</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">ptr</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">Ptr&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">*const </span><span class="tok-parenthesis">`(</span><span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type Ptr&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">ptr_read</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">ptr</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;std::ptr::read($0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">u128</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">u128</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">u128</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type u128 = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">u128</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u128</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0 as u128&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">f64</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">f64</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0 as f64&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">unwrap_0</span> <span class="tok-keyword">\*</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-operator">*</span> <span class="tok-operator">-&gt;</span> <span class="tok-operator">*</span><span class="tok-parenthesis">)</span> <span class="tok-variable">u</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-variable">u</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.0&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">unwrap_0_ref</span> <span class="tok-keyword">\*</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-operator">*</span> <span class="tok-operator">-&gt;</span> <span class="tok-operator">*</span><span class="tok-parenthesis">)</span> <span class="tok-variable">u</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-variable">u</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-variable">u</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;&amp;$0.0&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">len</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span> <span class="tok-variable">u</span> <span class="tok-parenthesis">{</span><span class="tok-variable">uint</span><span class="tok-operator">;</span> <span class="tok-variable">int</span><span class="tok-parenthesis">}</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">((</span><span class="tok-variable">!x</span><span class="tok-string">).len() as </span><span class="tok-type_variable">`u</span><span class="tok-string">)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">u</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">len'</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span> <span class="tok-variable">u</span> <span class="tok-parenthesis">{</span><span class="tok-variable">uint</span><span class="tok-operator">;</span> <span class="tok-variable">int</span><span class="tok-parenthesis">}</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">$&quot;$0.len()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">emit</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">emit'</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">(</span><span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">$&quot;true; let </span><span class="tok-variable">!x</span><span class="tok-string"> = $0&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+    <span class="tok-variable">x</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">clone</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.clone()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">clone_rust</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Gleam</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">x</span>
+        <span class="tok-variable">Lua</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">x</span>
+        <span class="tok-variable">Fsharp</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">x</span>
+        <span class="tok-variable">Python</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">x</span>
+        <span class="tok-variable">TypeScript</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">x</span>
+        <span class="tok-variable">Cpp</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">x</span>
+        <span class="tok-variable">CppHost</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">x</span>
+        <span class="tok-variable">Pascal</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">x</span>
+        <span class="tok-variable">Cuda</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">x</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">clone</span> <span class="tok-variable">x</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">dbg</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;dbg</span><span class="tok-unescaped_char">\!</span><span class="tok-string">($0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">new_box</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">box</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;Box::new($0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">new_rc</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">rc</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;std::rc::Rc::new($0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">rc_clone</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">rc</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">rc</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;std::rc::Rc::clone(&amp;$0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">rc_unwrap_or_clone</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">rc</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;std::rc::Rc::unwrap_or_clone($0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">rc_downgrade</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">rc</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">weak_rc</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;std::rc::Rc::downgrade(&amp;$0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">new_ref_cell</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">ref_cell</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;std::cell::RefCell::new(</span><span class="tok-variable">!x</span><span class="tok-string">)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">ref_cell_borrow</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">rc</span> <span class="tok-parenthesis">(</span><span class="tok-variable">ref_cell</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">cell_ref</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;std::cell::RefCell::borrow(&amp;std::rc::Rc::clone(&amp;$0))&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">ref_cell_borrow_mut</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">rc</span> <span class="tok-parenthesis">(</span><span class="tok-variable">ref_cell</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">mut'</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;std::cell::RefCell::borrow_mut(&amp;std::rc::Rc::clone(&amp;$0))&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">ref_leak</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">cell_ref</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;std::cell::Ref::leak($0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">to_mut</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">(</span><span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;true; // 1&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;let mut </span><span class="tok-variable">!x</span><span class="tok-string"> = </span><span class="tok-variable">!x</span><span class="tok-string">&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">to_ref</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;&amp;$0&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">to_ref_mut</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">mut'</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;&amp;mut $0&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">mut'</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">to_ref_mut'</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">ref_mut</span> <span class="tok-parenthesis">(</span><span class="tok-variable">ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">mut'</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">mut'</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">x</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">to_mut</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;&amp;mut $0&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">ref_cell_borrow_mut'</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">rc</span> <span class="tok-parenthesis">(</span><span class="tok-variable">ref_cell</span> <span class="tok-parenthesis">(</span><span class="tok-variable">ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">mut'</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">mut'</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">x</span> <span class="tok-operator">=</span> <span class="tok-variable">x</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">rc_clone</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">ref_mut</span> <span class="tok-parenthesis">(</span><span class="tok-variable">ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">mut'</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span> <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;std::cell::RefCell::borrow_mut(&amp;$0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+    <span class="tok-variable">x</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">to_ref_mut'</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">ref_map</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span> <span class="tok-variable">u</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fn</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">u</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-variable">u</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;</span><span class="tok-variable">!fn</span><span class="tok-string">(</span><span class="tok-variable">!x</span><span class="tok-string">)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">ref_eval</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span> <span class="tok-variable">u</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fn</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">u</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">ref</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">fn</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0(</span><span class="tok-variable">!ref</span><span class="tok-string">.clone())&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">cow_as_ref</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">s</span> <span class="tok-operator">:</span> <span class="tok-variable">cow</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">s</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.as_ref()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">from_mut</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">mut'</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">box_fn</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">box</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">x</span> <span class="tok-operator">=</span> <span class="tok-keyword">~~</span> <span class="tok-variable">x</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;Box::new(move || </span><span class="tok-variable">!x</span><span class="tok-string">())&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">box_pin</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">pin</span> <span class="tok-parenthesis">(</span><span class="tok-variable">box</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;Box::pin($0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">deref</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">ref</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">ref</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;*$0&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">deref_mut</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">mut'</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;*$0&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">clone_deref</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">ref</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">ref</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;$0.clone()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">from_ref</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">ref</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;</span><span class="tok-variable">!ref</span><span class="tok-string">&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">from_ref_mut</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">ref</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">mut'</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;</span><span class="tok-variable">!ref</span><span class="tok-string">&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">reref</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span> <span class="tok-parenthesis">(</span><span class="tok-variable">u</span> <span class="tok-operator">:</span> <span class="tok-operator">*</span> <span class="tok-operator">-&gt;</span> <span class="tok-operator">*</span><span class="tok-parenthesis">)</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">u</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;&amp;*$0&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-variable">t</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">into</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span> <span class="tok-variable">u</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">u</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;</span><span class="tok-variable">!x</span><span class="tok-string">.into()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">ops_deref</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">ref</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">ref</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;core::ops::Deref::deref(&amp;$0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">one_param</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-type_variable">`t</span><span class="tok-string">)</span><span class="tok-string">'</span>
+<span class="tok-keyword">:=</span> <span class="tok-variable">one_param_fn</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span> <span class="tok-variable">u</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fn</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">u</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">one_param</span> <span class="tok-variable">t</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">u</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">one_param</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-keyword">:=</span> <span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-variable">!x</span><span class="tok-string">)</span><span class="tok-string">'</span>
+        <span class="tok-variable">fn</span> <span class="tok-variable">x</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">box_leak</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">box</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">static_ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">mut'</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;Box::leak($0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">drop</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">(</span><span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">x</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;true; drop($0)&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">break</span> <span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">(</span><span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;true; break </span><span class="tok-variable">!x</span><span class="tok-string">&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">fix_closure</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">depth</span> <span class="tok-operator">:</span> <span class="tok-variable">u8</span> <span class="tok-operator">*</span> <span class="tok-variable">u8</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span>
+            <span class="tok-keyword">:=</span> <span class="tok-variable">is_unit</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+                <span class="tok-keyword">~&gt;</span>
+                    <span class="tok-keyword">?:</span> <span class="tok-variable">t</span> <span class="tok-keyword">?|</span>
+                    <span class="tok-operator">|</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!+</span>
+                    <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!-</span>
+            <span class="tok-keyword">?</span> <span class="tok-variable">is_unit</span>
+            <span class="tok-keyword">?&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;true; () }); //&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+            <span class="tok-keyword">|:</span> <span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">true; (</span><span class="tok-variable">!x</span><span class="tok-string">) }); //</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+    <span class="tok-parenthesis">}</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">loop</span> <span class="tok-parenthesis">(</span><span class="tok-variable">depth</span> <span class="tok-operator">:</span> <span class="tok-variable">i32</span><span class="tok-parenthesis">)</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fn</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">(</span><span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;true; loop { // rust.loop 1&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+    <span class="tok-variable">fn</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+
+    <span class="tok-variable">listm</span><span class="tok-symbol">::init</span> <span class="tok-variable">depth</span> <span class="tok-variable">id</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm</span><span class="tok-symbol">::iter</span> <span class="tok-keyword">\</span> <span class="tok-variable">n</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-parenthesis">(</span><span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;true; } // rust.loop 2 / n: {</span><span class="tok-variable">!n</span><span class="tok-string">}&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+
+    <span class="tok-parenthesis">(</span><span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;true; } // rust.loop 3&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+
+    <span class="tok-variable">listm</span><span class="tok-symbol">::init</span> <span class="tok-variable">depth</span> <span class="tok-variable">id</span>
+    <span class="tok-operator">|&gt;</span> <span class="tok-variable">listm</span><span class="tok-symbol">::iter</span> <span class="tok-keyword">\</span> <span class="tok-variable">n</span> <span class="tok-operator">=&gt;</span>
+        <span class="tok-parenthesis">(</span><span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;true; { // rust.loop 4 / n: {</span><span class="tok-variable">!n</span><span class="tok-string">}&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">capture</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fn</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">(</span><span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;true; let _capture = (|| { //&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+    <span class="tok-parenthesis">(</span><span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">fn</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;true; $0 })()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;_capture&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">capture_move</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fn</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-parenthesis">(</span><span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;true; let _capture_move = (move || { //&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+    <span class="tok-parenthesis">(</span><span class="tok-unary_operator">!\\</span><span class="tok-parenthesis">(</span><span class="tok-variable">fn</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span><span class="tok-operator">,</span> <span class="tok-string">$'</span><span class="tok-string">&quot;true; $0 })()&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">ignore</span>
+    <span class="tok-unary_operator">!\</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">&quot;_capture_move&quot;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">type_emit</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">TypeEmit&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">*/ </span><span class="tok-type_variable">`t</span><span class="tok-string"> /*</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type TypeEmit&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:!</span> <span class="tok-variable">partial_eq_wrapper</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span>
+        <span class="tok-variable">rust_type</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">PartialEqWrapper&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-unary_operator">`</span><span class="tok-parenthesis">(</span><span class="tok-string">$'</span><span class="tok-string">PartialEqWrapper&lt;</span><span class="tok-type_variable">`t</span><span class="tok-string">&gt;</span><span class="tok-string">'</span><span class="tok-parenthesis">)</span>
+            <span class="tok-string">&quot;</span><span class="tok-string">type PartialEqWrapper&lt;'T&gt; = class end</span><span class="tok-string">&quot;</span>
+    <span class="tok-parenthesis">)</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">new_partial_eq_wrapper</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">eq_fn</span> <span class="tok-operator">:</span> <span class="tok-variable">ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">partial_eq_wrapper</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">ref</span> <span class="tok-parenthesis">(</span><span class="tok-variable">partial_eq_wrapper</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">bool</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span>
+    <span class="tok-operator">:</span> <span class="tok-variable">partial_eq_wrapper</span> <span class="tok-variable">t</span>
+    <span class="tok-operator">=</span>
+    <span class="tok-variable">global</span> <span class="tok-string">&quot;&quot;&quot;</span><span class="tok-string"></span>
+<span class="tok-string">        #[derive(Debug, Clone)]</span>
+<span class="tok-string">        pub struct PartialEqWrapper&lt;T&gt;(pub T);</span>
+<span class="tok-string">        impl&lt;T: ?Sized&gt; PartialEq for PartialEqWrapper&lt;std::sync::Arc&lt;T&gt;&gt; {</span>
+<span class="tok-string">            fn eq(&amp;self, other: &amp;Self) -&gt; bool { std::sync::Arc::ptr_eq(&amp;self.0, &amp;other.0) }</span>
+<span class="tok-string">        }</span>
+<span class="tok-string">        </span><span class="tok-string">&quot;&quot;&quot;</span>
+    <span class="tok-string">$'</span><span class="tok-string">PartialEqWrapper(</span><span class="tok-variable">!x</span><span class="tok-string">.clone())</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">partial_eq_wrapper</span> <span class="tok-variable">t</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">concat</span> <span class="tok-keyword">\*</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-operator">:</span> <span class="tok-operator">*</span> <span class="tok-operator">-&gt;</span> <span class="tok-operator">*</span><span class="tok-parenthesis">)</span> <span class="tok-variable">u</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-parenthesis">(</span><span class="tok-variable">t</span> <span class="tok-variable">u</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-variable">u</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Rust</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-variable">!x</span><span class="tok-string">).concat()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-variable">u</span>
+    <span class="tok-parenthesis">}</span></code></pre>
+
+</main>
+</body>
+</html>

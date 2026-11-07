@@ -1,0 +1,78 @@
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
+use std::cell::RefCell;
+use std::rc::Rc;
+#[derive(Clone)]
+enum UH0 {
+    UH0_Empty,
+    UH0_Box(i32, Rc<UH0>),
+}
+enum Group1 {
+    M1(i32),
+    M2(i32),
+}
+fn group_1(mut st: Group1) -> Rc<UH0> {
+    loop {
+        match st {
+            Group1::M1(mut v0) => {
+                let v1: i32 = v0.wrapping_sub(1i32);
+                let v2: bool = v1 == 0i32;
+                if v2 {
+                    let v3: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Empty); } CASE.with(|case| case.clone()) };
+                    return Rc::new(UH0::UH0_Box(11i32, v3));
+                } else {
+                    st = Group1::M2(v1);
+                    continue;
+                }
+            }
+            Group1::M2(mut v0) => {
+                let v1: i32 = v0.wrapping_sub(1i32);
+                let v2: bool = v1 == 0i32;
+                if v2 {
+                    let v3: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Empty); } CASE.with(|case| case.clone()) };
+                    return Rc::new(UH0::UH0_Box(7i32, v3));
+                } else {
+                    st = Group1::M1(v1);
+                    continue;
+                }
+            }
+        }
+    }
+}
+fn method2(mut v0: i32) -> Rc<UH0> {
+    group_1(Group1::M2(v0))
+}
+fn method1(mut v0: i32) -> Rc<UH0> {
+    group_1(Group1::M1(v0))
+}
+fn method0() -> Rc<UH0> {
+    let v0: i32 = 1000000i32;
+    let v1: bool = v0 == 0i32;
+    if v1 {
+        let v2: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Empty); } CASE.with(|case| case.clone()) };
+        Rc::new(UH0::UH0_Box(7i32, v2))
+    } else {
+        method1(v0)
+    }
+}
+fn spiral_main() -> i32 {
+    let v0: Rc<UH0> = method0();
+    match Rc::unwrap_or_clone(v0) {
+        UH0::UH0_Box(v1, v2) => {
+            let v1: i32 = v1;
+            let v2: Rc<UH0> = v2;
+            let v3: bool = v1 == 7i32;
+            if v3 {
+                0i32
+            } else {
+                3i32
+            }
+        }
+        UH0::UH0_Empty => {
+            1i32
+        }
+    }
+}
+fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
+    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
+}

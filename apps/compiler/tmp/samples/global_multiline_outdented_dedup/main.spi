@@ -1,0 +1,10 @@
+:= noted (x : i32) : i32 =
+    !!!!Global("""
+        // one copy of this multi-line global, whatever the call count
+        // the closing quote sits left of the content on purpose
+    """)
+    x +. 1i32
+
+:= main () : i32 =
+    := ~a = 1i32
+    noted a +. noted a +. noted a -. 6i32

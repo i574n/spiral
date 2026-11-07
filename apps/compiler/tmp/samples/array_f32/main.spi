@@ -1,0 +1,15 @@
+:! f32_array = array_base f32
+
+:= create (n : i32) : f32_array = f32_array !!!!ArrayCreate(`f32, n)
+:= get (values : f32_array) (i : i32) : f32 =
+    ?= values ?|
+    | f32_array raw => !!!!ArrayIndex(raw, i)
+:= set (values : f32_array) (i : i32) (value : f32) : () =
+    ?= values ?|
+    | f32_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+:= main () : i32 =
+    := values = create 1i32
+    := ~x = 1.5f32
+    set values 0i32 x
+    ? get values 0i32 =. 1.5f32 ?> 0i32 |: 1i32

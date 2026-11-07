@@ -1,0 +1,22 @@
+:! nfe = { issuer : string; total_cents : i32 }
+
+:| rule result =
+    | IssuerRule :: rule string
+    | TotalRule :: rule i32
+
+:| ^ validation result =
+    | Lift :: \* result. rule result -> validation result
+    | Zip :: \* a b. validation a * validation b -> validation (a * b)
+    | Map :: \* result.
+        (\? input. (input -> result) * validation input)
+        -> validation result
+
+:= summarize_total (_ : i32) : string = "wrong"
+
+:= plan () : validation string =
+    Map (\? (
+        summarize_total,
+        Zip (Lift IssuerRule, Lift TotalRule)
+    ))
+
+:= main () : string = "unreachable"

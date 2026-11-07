@@ -1,0 +1,54 @@
+:! owner_a = ()
+:! clean = ()
+:! dirty = ()
+:! coherent = ()
+:! computed = ()
+:! restored = ()
+
+:| ancilla owner state =
+    | Ancilla :: \* owner state. string -> ancilla owner state
+
+:| workspace owner stage =
+    | Workspace :: \* owner stage. string -> workspace owner stage
+
+:| garbage owner witness =
+    | Garbage :: \* owner witness. string -> garbage owner witness
+
+:| result owner stage =
+    | Result :: \* owner stage. string -> result owner stage
+
+:= compute \* owner.
+    (ancilla : ancilla owner clean)
+    (workspace : workspace owner coherent)
+    : ancilla owner dirty * workspace owner computed * garbage owner computed =
+    ?= ancilla, workspace ?|
+    | Ancilla _, Workspace _ => Ancilla "dirty", Workspace "computed", Garbage "reversible-witness"
+
+:= observe \* owner.
+    (workspace : workspace owner computed)
+    : result owner computed =
+    ?= workspace ?|
+    | Workspace _ => Result "quantum-result"
+
+:= uncompute \* owner.
+    (ancilla : ancilla owner dirty)
+    (workspace : workspace owner computed)
+    (garbage : garbage owner computed)
+    : ancilla owner clean * workspace owner restored =
+    ?= ancilla, workspace, garbage ?|
+    | Ancilla _, Workspace _, Garbage _ => Ancilla "clean", Workspace "restored"
+
+:= seal \* owner.
+    (ancilla : ancilla owner clean)
+    (result : result owner computed)
+    : string =
+    ?= ancilla, result ?|
+    | Ancilla _, Result label => label
+
+:= main () : string =
+    := ancilla : ancilla owner_a clean = Ancilla "zero"
+    := workspace : workspace owner_a coherent = Workspace "psi"
+    := dirty, computed_workspace, garbage = compute ancilla workspace
+    := result = observe computed_workspace
+    := clean_ancilla, _ = uncompute dirty computed_workspace garbage
+    seal clean_ancilla result

@@ -1,0 +1,8 @@
+:= main () : i32 =
+    := ~n = 5000000000i64
+    := ~x = 1.5f64
+    := pair = n, x
+    := box = !!!!LayoutToHeap({ value = pair })
+    := opened = !!!!LayoutIndex(box)
+    := ~(left, right) = opened::value
+    ? left =. 5000000000i64 && !!!!EQ(right, 1.5f64) ?> 0i32 |: 1i32

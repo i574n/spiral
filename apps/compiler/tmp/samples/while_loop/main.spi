@@ -1,0 +1,25 @@
+:= while' (cond : () -> bool) (body : () -> ()) : () =
+    !!!!While((~~ cond ()), (body ()))
+
+:= set' \* t. (a : t) ~(b : t) : () =
+    !!!!BackendSwitch({
+        Fsharp = \ () => $"!a <- !b" : ()
+        C = \ () => $"!a = !b" : ()
+        Zig = \ () => $"!a = !b" : ()
+        Lean = \ () => $"!a := !b" : ()
+        Rust = \ () => $"!a = !b" : ()
+        Pascal = \ () => $"!a := !b" : ()
+        Wgsl = \ () => $"!a = !b" : ()
+        Kotlin = \ () => $"!a = !b" : ()
+        Swift = \ () => $"!a = !b" : ()
+        OpenQasm = \ () => $"!a = !b" : ()
+        Ebpf = \ () => $"!a = !b" : ()
+    })
+
+:= main () : i32 =
+    := ~i = 0i32
+    := ~acc = 0i32
+    while' (\ () => i < 10i32) \ () =>
+        set' acc (acc +. i)
+        set' i (i +. 1i32)
+    acc -. 45i32

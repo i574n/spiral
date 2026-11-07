@@ -1,0 +1,26 @@
+:! key_certified = ()
+:! leader_elected = ()
+:! epoch_21 = ()
+:! epoch_22 = ()
+:! committee_9 = ()
+:! validator_17 = ()
+:! group_key committee epoch = string
+:! ssle_ticket validator committee epoch = string
+:! leader_certificate validator committee epoch = string
+
+:| dkg_ssle_op from to result =
+    | ElectLeader :: \* validator committee epoch.
+        group_key committee epoch * ssle_ticket validator committee epoch ->
+        dkg_ssle_op key_certified leader_elected (leader_certificate validator committee epoch)
+
+:= elect_epoch_22
+    (key : group_key committee_9 epoch_22)
+    (ticket : ssle_ticket validator_17 committee_9 epoch_22)
+    : leader_certificate validator_17 committee_9 epoch_22 =
+    ?= ElectLeader (key, ticket) ?|
+    | ElectLeader _ => leader_certificate "leader-17"
+
+:= main () : leader_certificate validator_17 committee_9 epoch_22 =
+    := key : group_key committee_9 epoch_22 = group_key "group-key-9-22"
+    := stale : ssle_ticket validator_17 committee_9 epoch_21 = ssle_ticket "stale-ticket"
+    elect_epoch_22 key stale

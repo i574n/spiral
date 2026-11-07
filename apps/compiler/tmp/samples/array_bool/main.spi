@@ -1,0 +1,15 @@
+:! bool_array = array_base bool
+
+:= create (n : i32) : bool_array = bool_array !!!!ArrayCreate(`bool, n)
+:= get (values : bool_array) (i : i32) : bool =
+    ?= values ?|
+    | bool_array raw => !!!!ArrayIndex(raw, i)
+:= set (values : bool_array) (i : i32) (value : bool) : () =
+    ?= values ?|
+    | bool_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+:= main () : i32 =
+    := values = create 1i32
+    := ~on = !+
+    set values 0i32 on
+    ? get values 0i32 ?> 0i32 |: 1i32

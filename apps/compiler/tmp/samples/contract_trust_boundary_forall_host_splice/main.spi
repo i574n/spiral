@@ -1,0 +1,4 @@
+:= bottom \* a. () : a =
+    $"Unchecked.defaultof<_>"
+
+:= main () = "forall-a-a-via-host-splice-defined"

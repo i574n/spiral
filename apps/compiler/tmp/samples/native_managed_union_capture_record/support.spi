@@ -1,0 +1,14 @@
+:== item =
+    {
+        text : string
+        values : array i32
+    }
+
+:| payload =
+    | Empty
+    | Item : item
+
+:= score x : i32 =
+    ?= x ?|
+    | Empty => 3i32
+    | Item { text values } => sm::length text +. length values +. index values 0i32 +. index values 1i32

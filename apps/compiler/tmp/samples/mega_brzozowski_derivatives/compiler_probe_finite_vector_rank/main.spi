@@ -1,0 +1,48 @@
+:! vector_zero = ()
+:! vector_succ n = ()
+
+:| ^ finite_vector alphabet length =
+    | FiniteVectorNil :: \* alphabet. finite_vector alphabet vector_zero
+    | FiniteVectorCons :: \* alphabet length.
+        alphabet * finite_vector alphabet length ->
+        finite_vector alphabet (vector_succ length)
+
+:| ^ finite_rank length =
+    | FiniteRankZero :: \* length. finite_rank (vector_succ length)
+    | FiniteRankSucc :: \* length. finite_rank length -> finite_rank (vector_succ length)
+
+:= ^ finite_vector_lookup \* alphabet length.
+    (rank : finite_rank length)
+    (values : finite_vector alphabet length)
+    : alphabet =
+    ?= rank, values ?|
+    | FiniteRankZero, FiniteVectorCons (head, _) => head
+    | FiniteRankSucc previous, FiniteVectorCons (_, tail) =>
+        finite_vector_lookup previous tail
+
+:| bit_symbol = BitZero | BitOne
+:! bit_alphabet = bit_symbol
+
+:== bit_length = vector_succ (vector_succ vector_zero)
+
+:= bit_values () : finite_vector bit_alphabet bit_length =
+    FiniteVectorCons (
+        bit_alphabet BitZero,
+        FiniteVectorCons (bit_alphabet BitOne, FiniteVectorNil))
+
+:= bit_rank_zero () : finite_rank bit_length = FiniteRankZero
+:= bit_rank_one () : finite_rank bit_length = FiniteRankSucc FiniteRankZero
+
+:= bit_is_zero (bit_alphabet symbol) : bool =
+    ?= symbol ?|
+    | BitZero => !+
+    | BitOne => !-
+
+:= bit_is_one (bit_alphabet symbol) : bool =
+    ?= symbol ?|
+    | BitZero => !-
+    | BitOne => !+
+
+:= main () : bool =
+    bit_is_zero (finite_vector_lookup (bit_rank_zero ()) (bit_values ())) &&
+    bit_is_one (finite_vector_lookup (bit_rank_one ()) (bit_values ()))

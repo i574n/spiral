@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>platform.spi</title>
+<style>
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+main { max-width: 960px; margin: 0 auto; padding: 12px; }
+pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }
+.plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }
+.badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }
+.badge.passed { background-color: #23452a; color: #9fdc9f; }
+.badge.failed { background-color: #4a2323; color: #f0a0a0; }
+.badge.other { background-color: #333; color: #bbb; }
+a { color: #4fc1ff; }
+.tok-comment { color: #6a9955; }
+.tok-escaped_char { color: #d7ba7d; }
+.tok-escaped_var { color: #d7ba7d; }
+.tok-keyword { color: #c586c0; }
+.tok-number { color: #b5cea8; }
+.tok-number_suffix { color: #b5cea8; }
+.tok-operator { color: #d4d4d4; }
+.tok-parenthesis { color: #ffd700; }
+.tok-string { color: #ce9178; }
+.tok-symbol { color: #4fc1ff; }
+.tok-type_variable { color: #4ec9b0; }
+.tok-unary_operator { color: #d4d4d4; }
+.tok-unescaped_char { color: #ce9178; }
+.tok-variable { color: #9cdcfe; }
+@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }
+</style>
+</head>
+<body>
+<main>
+<h4>platform (test)</h4>
+
+<span class="badge other">test platform: prelude</span>
+<pre class="code"><code>///- --test static --symbol
+
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">testing</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:&lt;</span> <span class="tok-variable">rust_operators</span>
+<span class="tok-keyword">:&lt;</span> <span class="tok-variable">unsupported</span></code></pre>
+
+<h2>fsharp</h2>
+
+<h3>os_platform</h3>
+
+<pre class="code"><code><span class="tok-keyword">:!</span> <span class="tok-variable">os_platform'</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">System.Runtime.InteropServices.OSPlatform</span><span class="tok-string">'</span>
+
+<span class="tok-keyword">:|</span> <span class="tok-variable">os_platform</span> <span class="tok-operator">=</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">FreeBSD</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Linux</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">OSX</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Windows</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">os_platform</span> <span class="tok-operator">=</span> <span class="tok-keyword">\|</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">FreeBSD</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-type_variable">`os_platform'</span><span class="tok-string">.FreeBSD</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">os_platform'</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Linux</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-type_variable">`os_platform'</span><span class="tok-string">.Linux</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">os_platform'</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">OSX</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-type_variable">`os_platform'</span><span class="tok-string">.OSX</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">os_platform'</span>
+    <span class="tok-operator">|</span> <span class="tok-variable">Windows</span> <span class="tok-operator">=&gt;</span> <span class="tok-string">$'</span><span class="tok-type_variable">`os_platform'</span><span class="tok-string">.Windows</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">os_platform'</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">run_platform</span> <span class="tok-keyword">\*</span> <span class="tok-variable">t</span><span class="tok-operator">.</span> <span class="tok-parenthesis">(</span><span class="tok-variable">fn</span> <span class="tok-operator">:</span> <span class="tok-variable">os_platform</span> <span class="tok-operator">-&gt;</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">-&gt;</span> <span class="tok-variable">t</span><span class="tok-parenthesis">)</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">t</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">result</span> <span class="tok-operator">=</span> <span class="tok-variable">dyn</span> <span class="tok-number">!+</span>
+    <span class="tok-string">$'</span><span class="tok-string">let mutable _run_platform_</span><span class="tok-variable">!result</span><span class="tok-string"> : </span><span class="tok-type_variable">`t</span><span class="tok-string"> option = None </span><span class="tok-string">'</span>
+    <span class="tok-string">$'</span><span class="tok-escaped_char">\n</span><span class="tok-unescaped_char">##</span><span class="tok-string">if _FREEBSD</span><span class="tok-string">'</span>
+    <span class="tok-variable">fn</span> <span class="tok-variable">FreeBSD</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">emit_unit</span>
+    <span class="tok-string">$'</span><span class="tok-unescaped_char">##</span><span class="tok-string">endif</span><span class="tok-escaped_char">\n</span><span class="tok-unescaped_char">##</span><span class="tok-string">if _LINUX</span><span class="tok-string">'</span>
+    <span class="tok-variable">fn</span> <span class="tok-variable">Linux</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">emit_unit</span>
+    <span class="tok-string">$'</span><span class="tok-unescaped_char">##</span><span class="tok-string">endif</span><span class="tok-escaped_char">\n</span><span class="tok-unescaped_char">##</span><span class="tok-string">if _OSX</span><span class="tok-string">'</span>
+    <span class="tok-variable">fn</span> <span class="tok-variable">OSX</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">emit_unit</span>
+    <span class="tok-string">$'</span><span class="tok-unescaped_char">##</span><span class="tok-string">endif</span><span class="tok-escaped_char">\n</span><span class="tok-unescaped_char">##</span><span class="tok-string">if _WINDOWS</span><span class="tok-string">'</span>
+    <span class="tok-variable">fn</span> <span class="tok-variable">Windows</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">emit_unit</span>
+    <span class="tok-string">$'</span><span class="tok-unescaped_char">##</span><span class="tok-string">endif</span><span class="tok-string">'</span>
+    <span class="tok-string">$'</span><span class="tok-string">|&gt; fun x -&gt; _run_platform_</span><span class="tok-variable">!result</span><span class="tok-string"> &lt;- Some x</span><span class="tok-string">'</span>
+    <span class="tok-string">$'</span><span class="tok-string">match _run_platform_</span><span class="tok-variable">!result</span><span class="tok-string"> with Some x -&gt; x | None -&gt; failwith &quot;platform.run_platform / </span>\
+        <span class="tok-string">_run_platform_</span><span class="tok-variable">!result</span><span class="tok-string">=None&quot;</span><span class="tok-string">'</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">is_os_platform</span> <span class="tok-parenthesis">(</span><span class="tok-variable">x</span> <span class="tok-operator">:</span> <span class="tok-variable">os_platform'</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">x</span> <span class="tok-operator">|&gt;</span> <span class="tok-string">$'</span><span class="tok-string">System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform</span><span class="tok-string">'</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">is_windows'</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">run_platform</span> <span class="tok-keyword">\|</span>
+        <span class="tok-operator">|</span> <span class="tok-variable">Windows</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!+</span>
+        <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-number">!-</span></code></pre>
+
+<h2>platform</h2>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">rust_is_windows</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">cfg</span><span class="tok-unescaped_char">\!</span><span class="tok-string">(windows)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">fsharp_is_windows</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span> <span class="tok-variable">Windows</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">os_platform</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">is_os_platform</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">gleam_os_type_external</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">import gleam/erlang/atom</span><span class="tok-string">&quot;</span>
+    <span class="tok-variable">global</span> <span class="tok-string">&quot;</span><span class="tok-string">@external(erlang, </span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">os</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">, </span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">type</span><span class="tok-unescaped_char">\&quot;</span><span class="tok-string">) fn platform_os_type() -&gt; #(atom.Atom, atom.Atom)</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">gleam_is_windows</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">backend_switch</span> <span class="tok-parenthesis">{</span>
+        <span class="tok-variable">Gleam</span> <span class="tok-operator">=</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">gleam_os_type_external</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-parenthesis">}</span>
+    <span class="tok-string">$'</span><span class="tok-string">atom.to_string(platform_os_type().0) == &quot;win32&quot;</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">zig_is_windows</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span> <span class="tok-string">$'</span><span class="tok-string">(</span><span class="tok-unescaped_char">@@</span><span class="tok-string">import(&quot;builtin&quot;).os.tag == .windows)</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">no_is_windows_arm</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span> <span class="tok-variable">failwith</span> <span class="tok-string">&quot;</span><span class="tok-string">platform.is_windows / no arm for this target</span><span class="tok-string">&quot;</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">is_windows</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">bool</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">run_target</span> <span class="tok-keyword">\|</span>
+        <span class="tok-operator">|</span> <span class="tok-variable">Rust</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">rust_is_windows</span>
+        <span class="tok-operator">|</span> <span class="tok-variable">Fsharp</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">fsharp_is_windows</span>
+        <span class="tok-operator">|</span> <span class="tok-variable">Gleam</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">gleam_is_windows</span>
+        <span class="tok-operator">|</span> <span class="tok-variable">Zig</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">zig_is_windows</span>
+        <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">no_is_windows_arm</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">get_executable_suffix</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">?</span> <span class="tok-variable">is_windows</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-keyword">?&gt;</span> <span class="tok-string">&quot;</span><span class="tok-string">.exe</span><span class="tok-string">&quot;</span>
+    <span class="tok-keyword">|:</span> <span class="tok-string">&quot;</span><span class="tok-string">&quot;</span></code></pre>
+
+<h4>get_executable_suffix (test)</h4>
+
+<span class="badge passed">test get_executable_suffix: passed</span>
+<pre class="code"><code>///- --test --symbol
+
+<span class="tok-variable">get_executable_suffix</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span></code></pre>
+
+<pre class="code"><code><span class="tok-keyword">:=</span> <span class="tok-variable">gleam_os_command_output</span> <span class="tok-parenthesis">(</span><span class="tok-variable">command</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-keyword">:=</span> <span class="tok-variable">output</span> <span class="tok-operator">=</span> <span class="tok-variable">erlang_term</span><span class="tok-symbol">::apply</span> <span class="tok-string">&quot;</span><span class="tok-string">os</span><span class="tok-string">&quot;</span> <span class="tok-string">&quot;</span><span class="tok-string">cmd</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">[</span> <span class="tok-variable">erlang_term</span><span class="tok-symbol">::charlist</span> <span class="tok-variable">command</span> <span class="tok-parenthesis">]</span>
+    <span class="tok-variable">erlang_term</span><span class="tok-symbol">::apply</span> <span class="tok-string">&quot;</span><span class="tok-string">unicode</span><span class="tok-string">&quot;</span> <span class="tok-string">&quot;</span><span class="tok-string">characters_to_binary</span><span class="tok-string">&quot;</span> <span class="tok-parenthesis">[</span> <span class="tok-variable">output</span> <span class="tok-parenthesis">]</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">erlang_term</span><span class="tok-symbol">::cast</span>
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">os_command_output</span> <span class="tok-parenthesis">(</span><span class="tok-variable">command</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span><span class="tok-parenthesis">)</span> <span class="tok-operator">:</span> <span class="tok-variable">string</span> <span class="tok-operator">=</span>
+    <span class="tok-variable">run_target</span> <span class="tok-keyword">\|</span>
+        <span class="tok-operator">|</span> <span class="tok-variable">Gleam</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">gleam_os_command_output</span> <span class="tok-variable">command</span>
+        <span class="tok-operator">|</span> <span class="tok-keyword">_</span> <span class="tok-operator">=&gt;</span> <span class="tok-keyword">\</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=&gt;</span> <span class="tok-variable">no_arm</span> <span class="tok-string">&quot;</span><span class="tok-string">os_command_output</span><span class="tok-string">&quot;</span></code></pre>
+
+<h4>an_os_command_returns_its_output (test)</h4>
+
+<span class="badge passed">test an_os_command_returns_its_output: passed</span>
+<pre class="code"><code>///- --test --symbol
+///&gt; gleam
+
+<span class="tok-variable">os_command_output</span> <span class="tok-string">&quot;</span><span class="tok-string">echo spiral</span><span class="tok-string">&quot;</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">sm'</span><span class="tok-symbol">::trim</span> <span class="tok-operator">|&gt;</span> <span class="tok-variable">_assert_eq</span> <span class="tok-string">&quot;</span><span class="tok-string">spiral</span><span class="tok-string">&quot;</span></code></pre>
+<pre class="output">__assert_eq { expected = spiral }</pre>
+
+<h2>main</h2>
+
+<pre class="code"><code>///&gt; fsharp
+
+<span class="tok-keyword">:=</span> <span class="tok-variable">main</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span> <span class="tok-operator">=</span>
+    <span class="tok-string">$'</span><span class="tok-string">let is_windows () = </span><span class="tok-variable">!is_windows</span><span class="tok-string"> ()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span>
+    <span class="tok-string">$'</span><span class="tok-string">let get_executable_suffix () = </span><span class="tok-variable">!get_executable_suffix</span><span class="tok-string"> ()</span><span class="tok-string">'</span> <span class="tok-operator">:</span> <span class="tok-parenthesis">(</span><span class="tok-parenthesis">)</span></code></pre>
+
+</main>
+</body>
+</html>

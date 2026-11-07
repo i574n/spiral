@@ -1,0 +1,7 @@
+:< model
+
+:= main () : i32 =
+    := ~csv = "a,bb,ccc"
+    := mine = ?= sm'.split_list "," csv ?| | _ :: b :: _ => (sm'.length b : i32) | _ => 0i32
+    := ~text = "x\nyyy\nz"
+    !!!!Add(mine, (sm'.length (second_line text) : i32))

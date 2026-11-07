@@ -1,0 +1,39 @@
+:== singleton t = t
+
+:! draft = ()
+:! signed = ()
+
+:! nfe_draft = { id : string }
+:! nfe_signed = { xml : string; digest : string }
+
+:| document state =
+    | Draft :: nfe_draft -> document draft
+    | Signed :: nfe_signed -> document signed
+
+:! stamped state = { payload : document state; label : string }
+
+:= sign (document : document draft) : document signed =
+    ?= document ?|
+    | Draft _ => Signed (nfe_signed { xml = "nfe.xml"; digest = "sha256" })
+
+:= stamp \* state. (document : document state) : stamped state =
+    stamped { payload = document; label = "audited" }
+
+:| ^ compound (f : * -> *) t =
+    | Singleton :: \* (f : * -> *) t. f t -> compound f (singleton t)
+    | Pair :: \* (f : * -> *) a b. compound f a * compound f b -> compound f (a * b)
+
+:= ^ compound_map \* (f : * -> *) (g : * -> *) t.
+    (transform : \* state. f state -> g state)
+    (value : compound f t)
+    : compound g t =
+    ?= value ?|
+    | Singleton item => Singleton (transform item)
+    | Pair (left, right) => Pair (compound_map `$transform left, compound_map `$transform right)
+
+:= main () : string =
+    := draft = Draft (nfe_draft { id = "4" })
+    := signed = sign draft
+    := documents = Pair (Singleton draft, Singleton signed)
+    := _ = compound_map `$stamp documents
+    "hkt-audited"

@@ -1,0 +1,21 @@
+:! cell_array = array_base (heap { value : f32 * string })
+
+:= create (n : i32) : cell_array = cell_array !!!!ArrayCreate(`(heap { value : f32 * string }), n)
+:= get (array : cell_array) (i : i32) : heap { value : f32 * string } =
+    ?= array ?|
+    | cell_array values => !!!!ArrayIndex(values, i)
+:= set (array : cell_array) (i : i32) (value : heap { value : f32 * string }) : () =
+    ?= array ?|
+    | cell_array values => !!!!ArrayIndexSet(values, i, value)
+
+:= main () : i32 =
+    := ~x = 1.5f32
+    := ~word = "hi"
+    := pair = x, word
+    := cell = !!!!LayoutToHeap({ value = pair })
+    := a = create 1i32
+    set a 0i32 cell
+    := held = get a 0i32
+    := opened = !!!!LayoutIndex(held)
+    := ~(left, right) = opened::value
+    ? left =. 1.5f32 && !!!!EQ(right, "hi") ?> 0i32 |: 1i32

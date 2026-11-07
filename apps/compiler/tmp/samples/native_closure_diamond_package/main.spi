@@ -1,0 +1,5 @@
+:= main () : i32 =
+    := ~name = "abc"
+    := f (z : i32) : i32 = sm::length name + z
+    := ~g = f
+    left::use::add_left g 16i32 + right::use::add_right g 17i32

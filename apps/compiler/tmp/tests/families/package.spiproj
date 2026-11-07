@@ -1,0 +1,15 @@
+packageDir: ../../samples
+packages:
+    core-
+modules:
+    ebpf_family
+    tagged_union_family
+    tuple_family
+    string_family
+    small_int_family
+    array_family
+    union_family
+    mut_family
+    closure_family
+    heap_family
+    method_family

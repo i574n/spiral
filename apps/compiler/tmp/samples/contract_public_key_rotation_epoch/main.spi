@@ -1,0 +1,35 @@
+:! signer_a = ()
+:! key_old = ()
+:! key_new = ()
+:! epoch0 = ()
+:! epoch1 = ()
+:! active = ()
+:! pending = ()
+:! retired = ()
+:! rotated = ()
+
+:| public_key signer key epoch state =
+    | PublicKey :: \* signer key epoch state. string -> public_key signer key epoch state
+:| rotation signer old_key new_key old_epoch new_epoch state =
+    | Rotation :: \* signer old_key new_key old_epoch new_epoch state.
+        string ->
+        rotation signer old_key new_key old_epoch new_epoch state
+
+:= rotate \* signer old_key new_key old_epoch new_epoch.
+    (old : public_key signer old_key old_epoch active)
+    (next : public_key signer new_key new_epoch pending)
+    (proof : rotation signer old_key new_key old_epoch new_epoch rotated)
+    : public_key signer old_key old_epoch retired * public_key signer new_key new_epoch active
+    =
+    ?= old, next, proof ?|
+    | PublicKey _, PublicKey _, Rotation _ => PublicKey "retired", PublicKey "public-key-rotated"
+
+:= authorize \* signer key epoch. (key : public_key signer key epoch active) : string =
+    ?= key ?| | PublicKey label => label
+
+:= main () : string =
+    := old : public_key signer_a key_old epoch0 active = PublicKey "old"
+    := next : public_key signer_a key_new epoch1 pending = PublicKey "new"
+    := proof : rotation signer_a key_old key_new epoch0 epoch1 rotated = Rotation "rotation"
+    ?= rotate old next proof ?|
+    | PublicKey _, activated => authorize activated

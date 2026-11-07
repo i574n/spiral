@@ -1,0 +1,15 @@
+:! parallel = ()
+:! serial = ()
+
+:| task effect result =
+    | ValidateIssuer :: task parallel string
+    | Publish :: string -> task serial string
+
+:| dag result =
+    | ParallelNode :: \* result. task parallel result -> dag result
+
+:= parallel_node \* result. (task : task parallel result) : dag result =
+    ParallelNode task
+
+:= main () : dag string =
+    parallel_node (Publish "not-parallel")

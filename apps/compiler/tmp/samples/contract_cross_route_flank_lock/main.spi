@@ -1,0 +1,25 @@
+:! route_north = ()
+:! route_south = ()
+:! train_77 = ()
+:! epoch_5 = ()
+:! point_12 = ()
+:! flank_9 = ()
+
+:| point_lock point route train epoch =
+    | Point12North :: string -> point_lock point_12 route_north train_77 epoch_5
+    | Point12South :: string -> point_lock point_12 route_south train_77 epoch_5
+
+:| flank_lock flank route train epoch =
+    | Flank9North :: string -> flank_lock flank_9 route_north train_77 epoch_5
+    | Flank9South :: string -> flank_lock flank_9 route_south train_77 epoch_5
+
+:| signal_token point flank route train epoch =
+    | NorthSignal ::
+        point_lock point_12 route_north train_77 epoch_5 *
+        flank_lock flank_9 route_north train_77 epoch_5 ->
+        signal_token point_12 flank_9 route_north train_77 epoch_5
+
+:= main () : signal_token point_12 flank_9 route_north train_77 epoch_5 =
+    := point : point_lock point_12 route_north train_77 epoch_5 = Point12North "north-point"
+    := wrong_flank : flank_lock flank_9 route_south train_77 epoch_5 = Flank9South "south-flank"
+    NorthSignal (point, wrong_flank)

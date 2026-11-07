@@ -1,0 +1,8 @@
+:| payload =
+    | Empty
+    | Item : string * i32
+
+:= score x : i32 =
+    ?= x ?|
+    | Empty => 3i32
+    | Item (text, value) => sm::length text +. value

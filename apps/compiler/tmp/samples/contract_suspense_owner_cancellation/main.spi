@@ -1,0 +1,62 @@
+:! app_scope = ()
+:! epoch1 = ()
+:! owner_a = ()
+:! pending = ()
+:! running = ()
+:! cancelled = ()
+:! fresh = ()
+:! used = ()
+
+:| suspense_task scope epoch owner state =
+    | PendingTask :: \* scope epoch owner. string -> suspense_task scope epoch owner pending
+    | RunningTask :: \* scope epoch owner. string -> suspense_task scope epoch owner running
+    | CancelledTask :: \* scope epoch owner. string -> suspense_task scope epoch owner cancelled
+
+:| cancel_token scope epoch owner state =
+    | FreshCancelToken :: \* scope epoch owner. string -> cancel_token scope epoch owner fresh
+    | UsedCancelToken :: \* scope epoch owner. string -> cancel_token scope epoch owner used
+
+:| task_step scope epoch owner from to =
+    | StartTask :: \* scope epoch owner. task_step scope epoch owner pending running
+    | CancelRunning :: \* scope epoch owner.
+        cancel_token scope epoch owner fresh ->
+        task_step scope epoch owner running cancelled
+
+:| ^ task_plan scope epoch owner from to =
+    | TaskLeaf :: \* scope epoch owner from to.
+        task_step scope epoch owner from to
+        -> task_plan scope epoch owner from to
+    | TaskThen :: \* scope epoch owner from to.
+        (\? middle.
+            task_plan scope epoch owner from middle
+            * task_step scope epoch owner middle to)
+        -> task_plan scope epoch owner from to
+
+:= apply_step \* scope epoch owner from to.
+    (step : task_step scope epoch owner from to)
+    (task : suspense_task scope epoch owner from)
+    : suspense_task scope epoch owner to =
+    ?= step, task ?|
+    | StartTask, PendingTask label => RunningTask label
+    | CancelRunning (FreshCancelToken _), RunningTask _ => CancelledTask "suspense-cancelled"
+
+:= ^ execute \* scope epoch owner from to.
+    (plan : task_plan scope epoch owner from to)
+    (task : suspense_task scope epoch owner from)
+    : suspense_task scope epoch owner to =
+    ?= plan ?|
+    | TaskLeaf step => apply_step step task
+    | TaskThen payload =>
+        := \? middle. prefix, step = payload
+        apply_step step (execute prefix task)
+
+:= label \* scope epoch owner. (task : suspense_task scope epoch owner cancelled) : string =
+    ?= task ?|
+    | CancelledTask value => value
+
+:= main () : string =
+    := task : suspense_task app_scope epoch1 owner_a pending = PendingTask "fetch"
+    := token : cancel_token app_scope epoch1 owner_a fresh = FreshCancelToken "cancel"
+    := plan : task_plan app_scope epoch1 owner_a pending cancelled =
+        TaskThen (\? (TaskLeaf StartTask, CancelRunning token))
+    label (execute plan task)

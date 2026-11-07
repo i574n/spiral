@@ -1,0 +1,20 @@
+:! i32_array = array_base i32
+
+:= create (n : i32) : i32_array = i32_array !!!!ArrayCreate(`i32, n)
+:= get (values : i32_array) (i : i32) : i32 =
+    ?= values ?|
+    | i32_array raw => !!!!ArrayIndex(raw, i)
+:= set (values : i32_array) (i : i32) (value : i32) : () =
+    ?= values ?|
+    | i32_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+:= main () : i32 =
+    := ~n = 3i32
+    := ~m = 4i32
+    := values = create 1i32
+    set values 0i32 n
+    := pair = values, m
+    := box = !!!!LayoutToHeap({ value = pair })
+    := opened = !!!!LayoutIndex(box)
+    := ~(held, extra) = opened::value
+    ? get held 0i32 +. extra =. 7i32 ?> 0i32 |: 1i32

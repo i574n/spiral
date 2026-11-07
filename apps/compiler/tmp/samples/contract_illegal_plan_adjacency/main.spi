@@ -1,0 +1,38 @@
+:! production = ()
+:! schema_v4 = ()
+:! normal = ()
+:! contingency = ()
+:! draft = ()
+:! signed = ()
+:! authorized = ()
+:! phase env schema state mode = env * schema * state * mode
+
+:| fiscal_op from to =
+    | Sign :: \* env schema mode.
+        fiscal_op
+            (phase env schema draft mode)
+            (phase env schema signed mode)
+    | AuthorizeContingency :: \* env schema.
+        fiscal_op
+            (phase env schema signed contingency)
+            (phase env schema authorized contingency)
+
+:| ^ chain (step : * -> * -> *) from to =
+    | ChainStep :: \* (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: \* (step : * -> * -> *) from to.
+        (\? middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+:= illegal_plan () :
+    chain fiscal_op
+        (phase production schema_v4 draft normal)
+        (phase production schema_v4 authorized contingency) =
+    ChainCompose (\? (
+        ChainStep Sign,
+        ChainStep AuthorizeContingency
+    ))
+
+:= main () : string =
+    := _ = illegal_plan ()
+    "unreachable"

@@ -1,0 +1,16 @@
+:! zero = ()
+:! succ n = n
+
+:| ^ qregister n =
+    | QOne :: qregister (succ zero)
+    | QSucc :: \* n. qregister n -> qregister (succ n)
+
+:| qgate n =
+    | Hadamard :: qgate (succ zero)
+    | Cnot :: qgate (succ (succ zero))
+
+:= apply_gate \* n. (_ : qgate n) (register : qregister n) : qregister n = register
+
+:= main () : string =
+    := _ = apply_gate Cnot QOne
+    "unreachable"

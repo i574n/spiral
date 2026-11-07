@@ -1,0 +1,24 @@
+:! schema_v5 = ()
+:! operator = ()
+:! auditor = ()
+
+:| capability role =
+    | OperatorCapability :: capability operator
+    | AuditorCapability :: capability auditor
+
+:| document schema =
+    | V5Document :: string -> document schema_v5
+
+:| query role schema result =
+    | DigestQuery :: query auditor schema_v5 string
+
+:= run_query \* role schema result.
+    (capability : capability role)
+    (query : query role schema result)
+    (document : document schema)
+    : result =
+    ?= capability, query, document ?|
+    | AuditorCapability, DigestQuery, V5Document digest => digest
+
+:= main () : string =
+    run_query OperatorCapability DigestQuery (V5Document "sha256")

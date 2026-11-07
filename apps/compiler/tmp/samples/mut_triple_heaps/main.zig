@@ -1,0 +1,160 @@
+const std = @import("std");
+const builtin = @import("builtin");
+var spiral_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+extern "kernel32" fn GetStdHandle(id: u32) callconv(.winapi) ?*anyopaque;
+extern "kernel32" fn WriteFile(handle: ?*anyopaque, buffer: [*]const u8, length: u32, written: ?*u32, overlapped: ?*anyopaque) callconv(.winapi) i32;
+fn spiralWrite(stream: u2, bytes: []const u8) void {
+    if (builtin.os.tag == .windows) {
+        const handle = GetStdHandle(if (stream == 1) 0xFFFFFFF5 else 0xFFFFFFF4);
+        var rest = bytes;
+        while (rest.len > 0) {
+            var written: u32 = 0;
+            const chunk: u32 = @intCast(@min(rest.len, 1 << 30));
+            if (WriteFile(handle, rest.ptr, chunk, &written, null) == 0) return;
+            rest = rest[written..];
+        }
+    } else if (builtin.os.tag == .linux) {
+        var rest = bytes;
+        while (rest.len > 0) {
+            const n = std.os.linux.write(stream, rest.ptr, rest.len);
+            if (@as(isize, @bitCast(n)) <= 0) return;
+            rest = rest[n..];
+        }
+    } else {
+        _ = std.c.write(stream, bytes.ptr, bytes.len);
+    }
+}
+pub const panic = std.debug.FullPanic(spiralPanic);
+fn spiralPanic(message: []const u8, _: ?usize) noreturn {
+    spiralFlush();
+    spiralWrite(2, message);
+    spiralWrite(2, "\n");
+    std.process.exit(3);
+}
+var spiral_gpa: std.mem.Allocator = undefined;
+var spiral_environ: std.process.Environ = .empty;
+var spiral_true: bool = true;
+var spiral_out_buffer: [1 << 16]u8 = undefined;
+var spiral_out_len: usize = 0;
+fn spiralFlush() void {
+    if (spiral_out_len == 0) return;
+    spiralWrite(1, spiral_out_buffer[0..spiral_out_len]);
+    spiral_out_len = 0;
+}
+fn spiralCreate(comptime T: type, v: T) *T {
+    const p = spiral_gpa.create(T) catch @panic("out of memory");
+    p.* = v;
+    return p;
+}
+const Heap0 = struct { l0: i32, l1: []const u8 };
+const Mut1 = struct { l0: *Heap0, l1: *Heap0, l2: *Heap0 };
+fn heapCreate0(a0: i32, a1: []const u8) *Heap0 {
+    return spiralCreate(Heap0, .{ .l0 = a0, .l1 = a1 });
+}
+fn mutCreate1(a0: *Heap0, a1: *Heap0, a2: *Heap0) *Mut1 {
+    return spiralCreate(Mut1, .{ .l0 = a0, .l1 = a1, .l2 = a2 });
+}
+fn spiralMain() i32 {
+    var v9: *Mut1 = undefined; _ = &v9;
+    var v30: bool = undefined; _ = &v30;
+    var v29: bool = undefined; _ = &v29;
+    var v32: bool = undefined; _ = &v32;
+    var v31: bool = undefined; _ = &v31;
+    var v34: bool = undefined; _ = &v34;
+    var v33: bool = undefined; _ = &v33;
+    var v36: bool = undefined; _ = &v36;
+    var v35: bool = undefined; _ = &v35;
+    var v38: bool = undefined; _ = &v38;
+    var v37: bool = undefined; _ = &v37;
+    const v0: i32 = @as(i32, 1);
+    const v1: []const u8 = "no";
+    const v2: *Heap0 = heapCreate0(v0, v1);
+    const v3: i32 = @as(i32, 2);
+    const v4: []const u8 = "zz";
+    const v5: *Heap0 = heapCreate0(v3, v4);
+    const v6: i32 = @as(i32, 3);
+    const v7: []const u8 = "aa";
+    const v8: *Heap0 = heapCreate0(v6, v7);
+    v9 = mutCreate1(v2, v5, v8);
+    const v10: i32 = @as(i32, 7);
+    const v11: []const u8 = "hi";
+    const v12: *Heap0 = heapCreate0(v10, v11);
+    const v13: i32 = @as(i32, 4);
+    const v14: []const u8 = "yo";
+    const v15: *Heap0 = heapCreate0(v13, v14);
+    const v16: i32 = @as(i32, 9);
+    const v17: []const u8 = "ok";
+    const v18: *Heap0 = heapCreate0(v16, v17);
+    v9.l0 = v12;
+    v9.l1 = v15;
+    v9.l2 = v18;
+    const v19: *Heap0 = v9.l0;
+    const v20: *Heap0 = v9.l1;
+    const v21: *Heap0 = v9.l2;
+    const v22: i32 = v19.l0;
+    const v23: []const u8 = v19.l1;
+    const v24: i32 = v20.l0;
+    const v25: []const u8 = v20.l1;
+    const v26: i32 = v21.l0;
+    const v27: []const u8 = v21.l1;
+    const v28: bool = v22 == @as(i32, 7);
+    if (v28) {
+        v29 = std.mem.eql(u8, v23, "hi");
+        v30 = v29;
+    } else {
+        v30 = false;
+    }
+    if (v30) {
+        v31 = v24 == @as(i32, 4);
+        v32 = v31;
+    } else {
+        v32 = false;
+    }
+    if (v32) {
+        v33 = std.mem.eql(u8, v25, "yo");
+        v34 = v33;
+    } else {
+        v34 = false;
+    }
+    if (v34) {
+        v35 = v26 == @as(i32, 9);
+        v36 = v35;
+    } else {
+        v36 = false;
+    }
+    if (v36) {
+        v37 = std.mem.eql(u8, v27, "ok");
+        v38 = v37;
+    } else {
+        v38 = false;
+    }
+    if (v38) {
+        return @as(i32, 0);
+    } else {
+        return @as(i32, 1);
+    }
+}
+var spiral_exit_code: i32 = 0;
+fn spiralMainThread() void {
+    spiral_exit_code = spiralMain();
+}
+extern "kernel32" fn CreateThread(attributes: ?*anyopaque, stack_size: usize, start: *const fn (?*anyopaque) callconv(.winapi) u32, parameter: ?*anyopaque, flags: u32, id: ?*u32) callconv(.winapi) ?std.os.windows.HANDLE;
+extern "kernel32" fn WaitForSingleObject(handle: std.os.windows.HANDLE, milliseconds: u32) callconv(.winapi) u32;
+extern "kernel32" fn ExitProcess(code: u32) callconv(.winapi) noreturn;
+fn spiralMainThreadReserved(_: ?*anyopaque) callconv(.winapi) u32 {
+    spiralMainThread();
+    return 0;
+}
+pub fn main(init: std.process.Init.Minimal) void {
+    spiral_gpa = spiral_arena.allocator();
+    spiral_environ = init.environ;
+    if (@import("builtin").os.tag == .windows) {
+        const handle = CreateThread(null, 1 << 30, spiralMainThreadReserved, null, 0x00010000, null) orelse @panic("spiral: could not start the main thread");
+        _ = WaitForSingleObject(handle, 0xFFFFFFFF);
+    } else {
+        const thread = std.Thread.spawn(.{ .stack_size = 1 << 30 }, spiralMainThread, .{}) catch @panic("spiral: could not start the main thread");
+        thread.join();
+    }
+    spiralFlush();
+    if (@import("builtin").os.tag == .windows) ExitProcess(@bitCast(spiral_exit_code)) else std.process.exit(@truncate(@as(u32, @bitCast(spiral_exit_code))));
+}

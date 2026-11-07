@@ -1,0 +1,27 @@
+:! count_zero = ()
+:! count_succ count = count
+
+:| ^ exact_vec count =
+    | ExactVecNil :: exact_vec count_zero
+    | ExactVecCons :: \* count.
+        i32 * exact_vec count -> exact_vec (count_succ count)
+
+:| exact_vec_validation count =
+    | ExactVecRejected :: \* count. exact_vec_validation count
+    | ExactVecCertified :: \* count.
+        exact_vec count -> exact_vec_validation count
+
+:= ^ certify_exact_vec \* count.
+    (value : exact_vec count)
+    : exact_vec_validation count =
+    ?= value ?|
+    | ExactVecNil => ExactVecCertified ExactVecNil
+    | ExactVecCons (head, rest) =>
+        ?= certify_exact_vec rest ?|
+        | ExactVecRejected => ExactVecRejected
+        | ExactVecCertified rest_certified =>
+            := rebuilt =
+                ExactVecCons (head, rest_certified)
+            ExactVecCertified rebuilt
+
+:= main () : bool = !+

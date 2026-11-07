@@ -1,0 +1,340 @@
+:! surgery_a = ()
+:! patient_a = ()
+:! robot_a = ()
+:! surgeon_a = ()
+:! left_arm = ()
+:! right_arm = ()
+:! owner_team = ()
+:! ct_frame = ()
+:! room_a = ()
+:! epoch_44 = ()
+:! scalpel_a = ()
+:! tissue_a = ()
+:! branch_benign = ()
+:! registry_root_a = ()
+:! observer_a = ()
+
+:! admitted = ()
+:! leased = ()
+:! partitioned = ()
+:! calibrated = ()
+:! incised = ()
+:! sampled = ()
+:! decided = ()
+:! closed = ()
+:! drained = ()
+:! committed = ()
+:! live = ()
+:! available = ()
+:! pending = ()
+:! used = ()
+:! observed = ()
+:! distinct = ()
+:! idempotent = ()
+:! non_idempotent = ()
+
+:| patient_case surgery patient surgeon state =
+    | PatientCase :: \* surgery patient surgeon state. string -> patient_case surgery patient surgeon state
+
+:| room_lease room epoch state =
+    | RoomLease :: \* room epoch state. string -> room_lease room epoch state
+
+:| arm_token robot arm owner state =
+    | ArmToken :: \* robot arm owner state. string -> arm_token robot arm owner state
+
+:| distinct_arms left right state =
+    | DistinctArms :: \* left right state. string -> distinct_arms left right state
+
+:| frame_registration surgery frame state =
+    | FrameRegistration :: \* surgery frame state. string -> frame_registration surgery frame state
+
+:| instrument_token instrument owner state =
+    | InstrumentToken :: \* instrument owner state. string -> instrument_token instrument owner state
+
+:| pathology_sample surgery patient tissue branch state =
+    | PathologySample :: \* surgery patient tissue branch state.
+        string ->
+        pathology_sample surgery patient tissue branch state
+
+:| one_shot_decision surgery branch state =
+    | OneShotDecision :: \* surgery branch state. string -> one_shot_decision surgery branch state
+
+:| effect_drain room epoch state =
+    | EffectDrain :: \* room epoch state. string -> effect_drain room epoch state
+
+:| surgical_checkpoint surgery root observer state =
+    | SurgicalCheckpoint :: \* surgery root observer state.
+        string ->
+        surgical_checkpoint surgery root observer state
+
+:| packed_decision surgery patient tissue =
+    | PackedDecision :: \* surgery patient tissue.
+        (\? branch.
+            pathology_sample surgery patient tissue branch sampled * one_shot_decision surgery branch pending) ->
+        packed_decision surgery patient tissue
+
+:| surgery_op surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer from to
+    effect =
+    | Admit :: \* surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer.
+        patient_case surgery patient surgeon admitted ->
+        surgery_op
+            surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer admitted
+            leased non_idempotent
+    | LeaseRoom :: \* surgery patient robot surgeon left right owner frame room epoch instrument tissue root
+        observer.
+        room_lease room epoch live ->
+        surgery_op
+            surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer leased
+            partitioned non_idempotent
+    | PartitionArms :: \* surgery patient robot surgeon left right owner frame room epoch instrument tissue root
+        observer.
+        arm_token robot left owner available *
+        arm_token robot right owner available *
+        distinct_arms left right distinct ->
+        surgery_op
+            surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer partitioned
+            calibrated idempotent
+    | RegisterFrame :: \* surgery patient robot surgeon left right owner frame room epoch instrument tissue root
+        observer.
+        frame_registration surgery frame calibrated *
+        arm_token robot left owner available *
+        arm_token robot right owner available ->
+        surgery_op
+            surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer calibrated
+            incised idempotent
+    | Incise :: \* surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer.
+        frame_registration surgery frame calibrated *
+        instrument_token instrument owner available *
+        arm_token robot left owner available ->
+        surgery_op
+            surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer incised
+            sampled non_idempotent
+    | Sample :: \* surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer.
+        pathology_sample surgery patient tissue branch_benign sampled ->
+        surgery_op
+            surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer sampled
+            decided non_idempotent
+    | Decide :: \* surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer.
+        one_shot_decision surgery branch_benign pending *
+        pathology_sample surgery patient tissue branch_benign sampled ->
+        surgery_op
+            surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer decided
+            closed non_idempotent
+    | Close :: \* surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer.
+        one_shot_decision surgery branch_benign used *
+        arm_token robot right owner available *
+        instrument_token instrument owner available ->
+        surgery_op
+            surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer closed
+            drained non_idempotent
+    | CommitSurgery :: \* surgery patient robot surgeon left right owner frame room epoch instrument tissue root
+        observer.
+        room_lease room epoch live *
+        effect_drain room epoch drained *
+        surgical_checkpoint surgery root observer observed ->
+        surgery_op
+            surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer drained
+            committed idempotent
+
+:| surgery_row surgery patient robot frame room epoch from to effect =
+    | SurgeryRow :: \* surgery patient robot frame room epoch from to effect.
+        string ->
+        surgery_row surgery patient robot frame room epoch from to effect
+
+:| surgery_node surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer from
+    to =
+    | SurgeryNode :: \* surgery patient robot surgeon left right owner frame room epoch instrument tissue root
+        observer from to.
+        (\? effect.
+            surgery_op
+                surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer from
+                to effect *
+            surgery_row surgery patient robot frame room epoch from to effect) ->
+        surgery_node
+            surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer from to
+
+:| ^ surgery_plan surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer
+    from to =
+    | SurgeryLeaf :: \* surgery patient robot surgeon left right owner frame room epoch instrument tissue root
+        observer from to.
+        surgery_node
+            surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer from to ->
+        surgery_plan
+            surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer from to
+    | SurgeryThen :: \* surgery patient robot surgeon left right owner frame room epoch instrument tissue root
+        observer from to.
+        (\? middle.
+            surgery_plan
+                surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer from
+                middle *
+            surgery_node
+                surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer
+                middle to) ->
+        surgery_plan
+            surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer from to
+
+:= decision_label \* surgery patient tissue branch.
+    (sample : pathology_sample surgery patient tissue branch sampled)
+    (decision : one_shot_decision surgery branch pending) : string =
+    ?= sample, decision ?| | PathologySample _, OneShotDecision label => label
+
+:= inspect_decision \* surgery patient tissue result.
+    (visitor :
+        \* surgery patient tissue branch.
+            pathology_sample surgery patient tissue branch sampled ->
+            one_shot_decision surgery branch pending ->
+            result)
+    (packed : packed_decision surgery patient tissue)
+    : result
+    =
+    ?= packed ?|
+    | PackedDecision payload =>
+        := \? branch. sample, decision = payload
+        visitor sample decision
+
+:= node_label \* surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer
+    from to.
+    (node :
+        surgery_node
+            surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer from to)
+    : string
+    =
+    ?= node ?|
+    | SurgeryNode payload =>
+        := \? effect. _, SurgeryRow label = payload
+        label
+
+:= ^ terminal_label \* surgery patient robot surgeon left right owner frame room epoch instrument tissue root
+    observer from to.
+    (plan :
+        surgery_plan
+            surgery patient robot surgeon left right owner frame room epoch instrument tissue root observer from to)
+    : string
+    =
+    ?= plan ?|
+    | SurgeryLeaf node => node_label node
+    | SurgeryThen payload =>
+        := \? middle. _, node = payload
+        node_label node
+
+:= admit_node
+    ()
+    : surgery_node surgery_a patient_a robot_a surgeon_a left_arm right_arm owner_team ct_frame room_a epoch_44
+        scalpel_a tissue_a registry_root_a observer_a admitted leased
+    =
+    SurgeryNode (\? (Admit (PatientCase "admitted"), SurgeryRow "admit"))
+
+:= lease_node
+    ()
+    : surgery_node surgery_a patient_a robot_a surgeon_a left_arm right_arm owner_team ct_frame room_a epoch_44
+        scalpel_a tissue_a registry_root_a observer_a leased partitioned
+    =
+    SurgeryNode (\? (LeaseRoom (RoomLease "room-epoch"), SurgeryRow "lease"))
+
+:= partition_node
+    ()
+    : surgery_node surgery_a patient_a robot_a surgeon_a left_arm right_arm owner_team ct_frame room_a epoch_44
+        scalpel_a tissue_a registry_root_a observer_a partitioned calibrated
+    =
+    SurgeryNode (
+        \? (PartitionArms (ArmToken "left", ArmToken "right", DistinctArms "left-ne-right"), SurgeryRow "partition")
+    )
+
+:= frame_node
+    ()
+    : surgery_node surgery_a patient_a robot_a surgeon_a left_arm right_arm owner_team ct_frame room_a epoch_44
+        scalpel_a tissue_a registry_root_a observer_a calibrated incised
+    =
+    SurgeryNode (
+        \? (
+            RegisterFrame (FrameRegistration "ct-frame", ArmToken "left", ArmToken "right"),
+            SurgeryRow "register-frame"
+        )
+    )
+
+:= incise_node
+    ()
+    : surgery_node surgery_a patient_a robot_a surgeon_a left_arm right_arm owner_team ct_frame room_a epoch_44
+        scalpel_a tissue_a registry_root_a observer_a incised sampled
+    =
+    SurgeryNode (
+        \? (Incise (FrameRegistration "ct-frame", InstrumentToken "scalpel", ArmToken "left"), SurgeryRow "incise")
+    )
+
+:= sample_node
+    ()
+    : surgery_node surgery_a patient_a robot_a surgeon_a left_arm right_arm owner_team ct_frame room_a epoch_44
+        scalpel_a tissue_a registry_root_a observer_a sampled decided
+    =
+    SurgeryNode (\? (Sample (PathologySample "benign-sample"), SurgeryRow "sample"))
+
+:= decide_node
+    ()
+    : surgery_node surgery_a patient_a robot_a surgeon_a left_arm right_arm owner_team ct_frame room_a epoch_44
+        scalpel_a tissue_a registry_root_a observer_a decided closed
+    =
+    SurgeryNode (\? (Decide (OneShotDecision "continue", PathologySample "benign-sample"), SurgeryRow "decide"))
+
+:= close_node
+    ()
+    : surgery_node surgery_a patient_a robot_a surgeon_a left_arm right_arm owner_team ct_frame room_a epoch_44
+        scalpel_a tissue_a registry_root_a observer_a closed drained
+    =
+    SurgeryNode (
+        \? (Close (OneShotDecision "used", ArmToken "right", InstrumentToken "scalpel"), SurgeryRow "close")
+    )
+
+:= commit_node
+    ()
+    : surgery_node surgery_a patient_a robot_a surgeon_a left_arm right_arm owner_team ct_frame room_a epoch_44
+        scalpel_a tissue_a registry_root_a observer_a drained committed
+    =
+    SurgeryNode (
+        \? (
+            CommitSurgery (
+                RoomLease "room-epoch",
+                EffectDrain "effects-drained",
+                SurgicalCheckpoint "region-safe-robotic-surgery"
+            ),
+            SurgeryRow "region-safe-robotic-surgery"
+        )
+    )
+
+:= plan
+    ()
+    : surgery_plan surgery_a patient_a robot_a surgeon_a left_arm right_arm owner_team ct_frame room_a epoch_44
+        scalpel_a tissue_a registry_root_a observer_a admitted committed
+    =
+    SurgeryThen (\? (
+        SurgeryThen (\? (
+            SurgeryThen (\? (
+                SurgeryThen (\? (
+                    SurgeryThen (\? (
+                        SurgeryThen (\? (
+                            SurgeryThen (\? (
+                                SurgeryThen (\? (
+                                    SurgeryLeaf (admit_node ()),
+                                    lease_node ()
+                                )),
+                                partition_node ()
+                            )),
+                            frame_node ()
+                        )),
+                        incise_node ()
+                    )),
+                    sample_node ()
+                )),
+                decide_node ()
+            )),
+            close_node ()
+        )),
+        commit_node ()
+    ))
+
+:= main () : string =
+    := sample : pathology_sample surgery_a patient_a tissue_a branch_benign sampled = PathologySample "benign-sample"
+    := decision : one_shot_decision surgery_a branch_benign pending = OneShotDecision "continue"
+    := packed : packed_decision surgery_a patient_a tissue_a = PackedDecision (\? (sample, decision))
+    := inspected = inspect_decision `$decision_label packed
+    := _ = inspected
+    terminal_label (plan ())

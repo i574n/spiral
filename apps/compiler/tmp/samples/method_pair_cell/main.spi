@@ -1,0 +1,11 @@
+:= pick (cell : heap { value : i32 }) (extra : i32) : heap { value : i32 } * i32 =
+    cell, extra
+
+:= main () : i32 =
+    := ~a = 3i32
+    := ~b = 4i32
+    := cell = !!!!LayoutToHeap({ value = a })
+    := pair = ~~ pick cell b
+    := ~(left, right) = pair
+    := obj = !!!!LayoutIndex(left)
+    ? obj::value +. right =. 7i32 ?> 0i32 |: 1i32

@@ -1,0 +1,7 @@
+:= ^ countdown ~n =
+    ? n =. 0i32 ?> 0i32
+    |: ~~ countdown (n -. 1i32)
+
+:= main () : i32 =
+    := ~n = 1000000i32
+    ~~ countdown n

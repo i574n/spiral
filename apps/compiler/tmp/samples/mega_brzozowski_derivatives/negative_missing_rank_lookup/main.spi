@@ -1,0 +1,25 @@
+:< main
+
+:| paired_symbol =
+    | PairedLeft
+    | PairedRight
+
+:! paired_alphabet = paired_symbol
+
+:+ symbol_compare paired_alphabet = \ (paired_alphabet left) (paired_alphabet right) =>
+    ?= left, right ?|
+    | PairedLeft, PairedLeft => SymbolSame
+    | PairedLeft, PairedRight => SymbolLess
+    | PairedRight, PairedLeft => SymbolGreater
+    | PairedRight, PairedRight => SymbolSame
+
+:= paired_symbols () : symbol_list paired_alphabet =
+    SymbolListCons (
+        paired_alphabet PairedLeft,
+        SymbolListCons (paired_alphabet PairedRight, SymbolListNil))
+
+:= main () =
+    dfa_run_with_inventory
+        (RegexChar (paired_alphabet PairedLeft))
+        (paired_symbols ())
+        InputEmpty

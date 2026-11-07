@@ -1,0 +1,13 @@
+:< support
+
+:= main () : i32 =
+    := ~derive =
+        (\ seed =>
+            ? seed =. 0i32 ?> Empty
+            |:
+                := values : array i32 = create 2i32
+                set values 0i32 seed
+                set values 1i32 (seed +. 1i32)
+                Values values
+        ) : i32 -> payload
+    score (~~ derive 0i32) +. score (~~ derive 4i32) +. 28i32

@@ -1,0 +1,66 @@
+:! schema_v4 = ()
+:! schema_v5 = ()
+
+:! v4_payload = { issuer : string }
+:! v5_payload = { issuer : string; technical_responsible : string }
+
+:| document schema =
+    | V4Document :: v4_payload -> document schema_v4
+    | V5Document :: v5_payload -> document schema_v5
+
+:| wire schema =
+    | V4Wire :: string -> wire schema_v4
+    | V5Wire :: string -> wire schema_v5
+
+:| codec schema =
+    | V4Codec :: codec schema_v4
+    | V5Codec :: codec schema_v5
+
+:= encode \* schema.
+    (codec : codec schema)
+    (document : document schema)
+    : wire schema =
+    ?= codec, document ?|
+    | V4Codec, V4Document payload => V4Wire payload::issuer
+    | V5Codec, V5Document payload => V5Wire payload::technical_responsible
+
+:= decode \* schema.
+    (codec : codec schema)
+    (wire : wire schema)
+    : document schema =
+    ?= codec, wire ?|
+    | V4Codec, V4Wire issuer =>
+        V4Document (v4_payload { issuer })
+    | V5Codec, V5Wire technical_responsible =>
+        V5Document (v5_payload {
+            issuer = "ACME"
+            technical_responsible
+        })
+
+:| packed_codec =
+    | PackedCodec :: (\? schema. codec schema) -> packed_codec
+
+:= inspect
+    (visitor : \* schema. codec schema -> string)
+    (packed : packed_codec)
+    : string =
+    ?= packed ?|
+    | PackedCodec value =>
+        := \? schema. codec = value
+        visitor codec
+
+:= codec_name \* schema. (codec : codec schema) : string =
+    ?= codec ?|
+    | V4Codec => "v4"
+    | V5Codec => "v5"
+
+:= main () : string =
+    := original = V5Document (v5_payload {
+        issuer = "ACME"
+        technical_responsible = "codec-roundtrip"
+    })
+    := encoded = encode V5Codec original
+    := decoded = decode V5Codec encoded
+    := _ = inspect `$codec_name (PackedCodec (\? V5Codec))
+    ?= decoded ?|
+    | V5Document payload => payload::technical_responsible

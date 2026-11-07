@@ -1,0 +1,23 @@
+:| inner =
+    | A : i32
+    | B : i32
+
+:| outer =
+    | Wrap : inner
+    | Other : i32
+
+:~ score_inner x : i32 =
+    ?= x ?|
+    | A value => value
+    | B value => 0i32 -. value
+
+:~ score x : i32 =
+    ?= x ?|
+    | Wrap value => score_inner value
+    | Other value => value
+
+:= main () : i32 =
+    := ~flag = !+
+    := wrapped = ? flag ?> Wrap (A 7i32) |: Other 1i32
+    := other = ? flag ?> Other 4i32 |: Wrap (B 2i32)
+    ? score wrapped =. 7i32 && score other =. 4i32 ?> 0i32 |: 1i32

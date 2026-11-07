@@ -1,0 +1,26 @@
+:! parallel = ()
+:! validation_capability = ()
+:! ready = ()
+:! committed = ()
+
+:| validation_evidence status =
+    | ReadyEvidence :: validation_evidence ready
+
+:| receipt status =
+    | CommittedReceipt :: receipt committed
+
+:| job effect capability result =
+    | ValidateJob ::
+        job parallel validation_capability (validation_evidence ready)
+
+:| executable_job =
+    | ExecutableJob ::
+        (\? effect. \? capability. \? result.
+            job effect capability result * (result -> string))
+        -> executable_job
+
+:= render_receipt (receipt : receipt committed) : string =
+    "wrong-handler"
+
+:= main () : executable_job =
+    ExecutableJob (\? (\? (\? (ValidateJob, render_receipt))))

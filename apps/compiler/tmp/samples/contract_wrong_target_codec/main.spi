@@ -1,0 +1,21 @@
+:! v5 = ()
+:! v6 = ()
+
+:| document schema =
+    | DocumentV5 :: string -> document v5
+    | DocumentV6 :: string -> document v6
+
+:| codec schema =
+    | CodecV5 :: codec v5
+    | CodecV6 :: codec v6
+
+:= encode \* schema.
+    (codec : codec schema)
+    (document : document schema)
+    : string =
+    ?= codec, document ?|
+    | CodecV5, DocumentV5 payload => payload
+    | CodecV6, DocumentV6 payload => payload
+
+:= main () : string =
+    encode CodecV5 (DocumentV6 "wrong")

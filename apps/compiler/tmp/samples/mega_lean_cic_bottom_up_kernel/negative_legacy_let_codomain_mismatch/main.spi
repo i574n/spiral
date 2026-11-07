@@ -1,0 +1,6 @@
+:< main
+
+:= impossible_legacy_let_function_result () : corrected_cic_term empty_ctx identity_sort =
+    CorrectedLet (\? (identity_binder (), corrected_cic_true (), corrected_cic_bound_here ()))
+
+:= main () = impossible_legacy_let_function_result ()
