@@ -1,3 +1,4 @@
+///> zig
 :# bytes static =
     :< testing
 
@@ -25,9 +26,13 @@
         | _ => \ () => filled 8 (\ i => conv ((x >>> (8 * i)) &&& 255u64))
 
 := le_word (bytes : array u8) (at : i32) : u64 =
-    :~ ^ go (j : i32) (word : u64) : u64 =
-        ? j >= 8 ?> word |: go (j + 1) (word ||| ((conv (index bytes (at + j)) : u64) <<< (8 * j)))
-    go 0 0u64
+    run_target \|
+        | Rust => \ () =>
+            $'u64::from_le_bytes((!bytes).borrow()[(!at) as usize..(!at) as usize + 8].try_into().unwrap())' : u64
+        | _ => \ () =>
+            :~ ^ go (j : i32) (word : u64) : u64 =
+                ? j >= 8 ?> word |: go (j + 1) (word ||| ((conv (index bytes (at + j)) : u64) <<< (8 * j)))
+            go 0 0u64
 
 := utf8 (text : string) : array u8 =
     run_target \|
@@ -85,6 +90,19 @@
     := ~x = 81985529216486895u64
     (le_u64 x |> hex, le_word (le_u64 x) 0, le_word (counting 10) 1)
     |> _assert_eq ("efcdab8967452301", 81985529216486895u64, 578437695752307201u64)
+
+///> c
+///> rust
+///> lua
+///> fsharp
+///> typescript
+///> python
+///> zig
+///> gleam
+///> pascal
+:# small_constants_keep_their_high_bytes_zero =
+    (le_u64 3u64 |> hex, le_u64 4294967296u64 |> hex)
+    |> _assert_eq ("0300000000000000", "0000000001000000")
 
 ///> c
 ///> rust
