@@ -1,4 +1,3 @@
-///> zig
 :< leptos
 
 := render head body =

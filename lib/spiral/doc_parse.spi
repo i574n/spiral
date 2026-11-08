@@ -1,0 +1,282 @@
+///- --package .
+:< doc_text
+:< doc_inline
+:< doc_table
+:< markup
+:< doc_blocks
+:< sm'_operators
+
+:# doc_parse static =
+    :< testing
+
+:| line =
+    | Blank
+    | Fence : string
+    | HeadingLine : level * string
+    | RuleLine
+    | RowLine : string
+    | BulletLine : string
+    | NumberLine : i64 * string
+    | PlainLine : string
+
+:| pending =
+    | Idle
+    | InParagraph : string
+    | InBullets : list (list inline) * string
+    | InNumbered : i64 * list (list inline) * string
+    | InCode : string * list string
+    | InTable : list align * list (list inline) * list (list (list inline))
+
+:~ starts_with (s : string) (prefix : string) : bool =
+    (sm::length prefix : i32) <= sm::length s && run_of s 0i32 (sm::length prefix) = prefix
+
+:~ ^ hashes_from (s : string) (i : i32) : i32 =
+    ? i < sm::length s && sm::index s i = '#' ?> hashes_from s (i + 1i32) |: i
+
+:~ heading_of (s : string) : option (level * string) =
+    := n = hashes_from s 0i32
+    ? n < sm::length s && sm::index s n = ' ' ?>
+        ?= level_of n ?|
+        | Some l => Some (l, run_of s (n + 1i32) (sm::length s))
+        | None => None
+    |: None
+
+:~ bullet_of (s : string) (lead : i32) : option string =
+    := c = ? lead < sm::length s ?> sm::index s lead |: ' '
+    ? (c = '-' || c = '*') && at_is s (lead + 1i32) ' ' ?> Some (run_of s (lead + 2i32) (sm::length s)) |: None
+
+:~ digit_value (c : char) : i64 =
+    := code : i64 = conv (sm'::char_code c)
+    ? code >= 48i64 && code <= 57i64 ?> code - 48i64 |: -1i64
+
+:~ ^ digits_from (s : string) (i : i32) (value : i64) (count : i32) : i64 * i32 =
+    := d = ? i < sm::length s ?> digit_value (sm::index s i) |: -1i64
+    ? d >= 0i64 && count < 9i32 ?> digits_from s (i + 1i32) (value * 10i64 + d) (count + 1i32) |: value, i
+
+:~ number_of (s : string) (lead : i32) : option (i64 * string) =
+    := value, stop = digits_from s lead 0i64 0i32
+    ? stop > lead && at_is s stop '.' && at_is s (stop + 1i32) ' '
+    ?> Some (value, run_of s (stop + 2i32) (sm::length s))
+    |: None
+
+:~ listed (s : string) (lead : i32) : line =
+    ?= bullet_of s lead ?|
+    | Some item => BulletLine item
+    | None =>
+        ?= number_of s lead ?|
+        | Some n => NumberLine n
+        | None => PlainLine s
+
+:~ shaped (s : string) (ld : i32) : line =
+    ? sm::index s ld = '|' ?> RowLine s
+    |:
+        ?= heading_of s ?|
+        | Some h => HeadingLine h
+        | None => listed s ld
+
+:~ classify (s : string) : line =
+    := ld = spaces_from s 0i32
+    ? ld = sm::length s ?> Blank
+    |? starts_with s "```" ?> Fence (trim (run_of s 3i32 (sm::length s)))
+    |? s = "---" ?> RuleLine
+    |: shaped s ld
+
+:~ delimiter_aligns (next : list string) : option (list align) =
+    ?= next ?|
+    | s :: _ =>
+        ?= classify s ?|
+        | RowLine row => aligns_of row
+        | _ => None
+    | [] => None
+
+:~ after_first (lines : list string) : list string =
+    ?= lines ?|
+    | _ :: rest => rest
+    | [] => []
+
+:~ inline_cells (cells : list string) : list (list inline) = listm::map parse_inline cells
+
+:~ finished (done : list (list inline)) (last : string) : list (list inline) = listm::rev (parse_inline last :: done)
+
+:~ bullets_of ((d, x) : list (list inline) * string) : block = Bullets (finished d x)
+
+:~ pre_of ((lang, l) : string * list string) : block = CodeBlock (lang, listm::rev l)
+
+:~ numbers_of ((n, d, x) : i64 * list (list inline) * string) : block = Numbered (n, finished d x)
+
+:~ rows_of ((a, h, r) : list align * list (list inline) * list (list (list inline))) : block =
+    Table (a, h, listm::rev r)
+
+:~ close_block (p : pending) (b : list block) : list block =
+    ?= p ?|
+    | InCode l => pre_of l :: b
+    | InTable t => rows_of t :: b
+    | _ => b
+
+:~ close (p : pending) (b : list block) : list block =
+    ?= p ?|
+    | InParagraph x => Paragraph (parse_inline x) :: b
+    | InBullets u => bullets_of u :: b
+    | InNumbered n => numbers_of n :: b
+    | _ => close_block p b
+
+:~ joined_trim (item : string) (s : string) : string = item ++# " " ++# trim s
+
+:~ grow_item ((d, x) : list (list inline) * string) (s : string) : list (list inline) * string = d, joined_trim x s
+
+:~ grow_numbered ((n, d, x) : i64 * list (list inline) * string) (s : string) : i64 * list (list inline) * string =
+    n, d, joined_trim x s
+
+:~ grow (p : pending) (s : string) : pending =
+    ?= p ?|
+    | InParagraph z => InParagraph (z ++# " " ++# s)
+    | InBullets i => InBullets (grow_item i s)
+    | InNumbered k => InNumbered (grow_numbered k s)
+    | _ => InParagraph s
+
+:~ continues (st : pending) : bool =
+    ?= st ?|
+    | InParagraph _ => !+
+    | InBullets _ => !+
+    | InNumbered _ => !+
+    | _ => !-
+
+:~ continued (st : pending) (s : string) (bs : list block) : pending * list block =
+    ? continues st ?> grow st s, bs |: grow st s, close st bs
+
+:~ bulleted (state : pending) (item : string) (blocks : list block) : pending * list block =
+    ?= state ?|
+    | InBullets (done, last) => InBullets (parse_inline last :: done, item), blocks
+    | _ => InBullets ([], item), close state blocks
+
+:~ numbered (state : pending) (n : i64) (item : string) (blocks : list block) : pending * list block =
+    ?= state ?|
+    | InNumbered (k, d, l) => InNumbered (k, parse_inline l :: d, item), blocks
+    | _ => InNumbered (n, [], item), close state blocks
+
+:~ heading_block (l : level) (title : string) : block = Heading (l, parse_inline title)
+
+:~ resume (r : list string) (next : pending * list block) =
+    := p, b = next
+    r, p, b
+
+:~ row_step (s : string) (row : string) (r : list string) (p : pending) (b : list block) =
+    ?= delimiter_aligns r ?|
+    | Some a => after_first r, InTable (a, inline_cells (row_cells row), []), close p b
+    | None => resume r (continued p s b)
+
+:~ item_step (s : string) (l : line) (r : list string) (p : pending) (b : list block) =
+    ?= l ?|
+    | BulletLine x => resume r (bulleted p x b)
+    | NumberLine (n, x) => resume r (numbered p n x b)
+    | _ => resume r (continued p s b)
+
+:~ ended (l : line) (r : list string) (c : list block) =
+    ?= l ?|
+    | Fence lang => Some (r, InCode (lang, []), c)
+    | Blank => Some (r, Idle, c)
+    | HeadingLine (h, t) => Some (r, Idle, heading_block h t :: c)
+    | RuleLine => Some (r, Idle, Rule :: c)
+    | _ => None
+
+:~ plain_step (s : string) (l : line) (r : list string) (p : pending) (b : list block) =
+    ?= ended l r (close p b) ?|
+    | Some x => x
+    | None => item_step s l r p b
+
+:~ line_step (s : string) (r : list string) (p : pending) (b : list block) =
+    ?= classify s ?|
+    | RowLine row => row_step s row r p b
+    | l => plain_step s l r p b
+
+:~ code_step (s : string) (r : list string) ((lang, code) : string * list string) (b : list block) =
+    ? starts_with s "```" ?> r, Idle, close (InCode (lang, code)) b |: r, InCode (lang, s :: code), b
+
+:~ table_step (s : string) (ls : list string) (r : list string) (p : pending) (b : list block) =
+    ?= p, classify s ?|
+    | InTable (a, h, x), RowLine row => r, InTable (a, h, inline_cells (row_cells row) :: x), b
+    | _ => ls, Idle, close p b
+
+:~ step (ls : list string) (s : string) (r : list string) (p : pending) (b : list block) =
+    ?= p ?|
+    | InCode code => code_step s r code b
+    | InTable _ => table_step s ls r p b
+    | _ => line_step s r p b
+
+:~ ^ blocks_from (ls : list string) (p : pending) (b : list block) : list block =
+    ?= ls ?|
+    | [] => listm::rev (close p b)
+    | s :: r =>
+        := ls2, p2, b2 = step ls s r p b
+        blocks_from ls2 p2 b2
+
+:~ ^ lines_from (s : string) (i : i32) (b : i32) (a : list string) : list string =
+    ? i >= sm::length s ?> listm::rev (run_of s b i :: a)
+    |? sm::index s i = '\n' ?> lines_from s (i + 1i32) (i + 1i32) (run_of s b i :: a)
+    |: lines_from s (i + 1i32) b a
+
+:~ parse_markdown (s : string) : list block = blocks_from (lines_from s 0i32 0i32 []) Idle []
+
+///> rust
+///> gleam
+:# headings_need_a_space_and_at_most_six_hashes =
+    parse_markdown "# T\n####### seven\n#tag"
+    |> _assert_eq [Heading (H1, [Text "T"]); Paragraph [Text "####### seven #tag"]]
+
+///> rust
+///> gleam
+:# a_paragraph_joins_its_lines_with_a_space =
+    parse_markdown "one\ntwo\n\nthree"
+    |> _assert_eq [Paragraph [Text "one two"]; Paragraph [Text "three"]]
+
+///> rust
+///> gleam
+:# bullets_flatten_nesting_and_take_lazy_lines =
+    parse_markdown "- top\n  - nested\nmore"
+    |> _assert_eq [Bullets [[Text "top"]; [Text "nested more"]]]
+
+///> rust
+///> gleam
+:# an_ordered_list_keeps_its_start_and_wrapped_lines =
+    parse_markdown "3. three\n   wrapped\n4. four"
+    |> _assert_eq [Numbered (3i64, [[Text "three wrapped"]; [Text "four"]])]
+
+///> rust
+///> gleam
+:# a_bullet_after_an_ordered_list_starts_a_new_list =
+    parse_markdown "1. a\n- b" |> _assert_eq [Numbered (1i64, [[Text "a"]]); Bullets [[Text "b"]]]
+
+///> rust
+///> gleam
+:# fenced_code_keeps_lines_verbatim =
+    parse_markdown "```\nlet x = 1 < 2\n```\n---" |> _assert_eq [CodeBlock ("", ["let x = 1 < 2"]); Rule]
+
+///> rust
+///> gleam
+:# a_fence_keeps_its_language =
+    parse_markdown "```spiral\ninl x = 1\n```" |> _assert_eq [CodeBlock ("spiral", ["inl x = 1"])]
+
+:= table_fixture_row () : list (list inline) = [[Code "x"]; [Text "y "; Text "|"; Text " z"]]
+
+///> rust
+///> gleam
+:# a_table_needs_a_delimiter_row_and_reads_alignment =
+    parse_markdown "| A | B |\n| :- | -: |\n| `x` | y \\| z |"
+    |> _assert_eq [Table ([AlignLeft; AlignRight], [[Text "A"]; [Text "B"]], [table_fixture_row ()])]
+
+///> rust
+///> gleam
+:# a_pipe_line_without_a_delimiter_row_is_a_paragraph =
+    parse_markdown "| a |\nb" |> _assert_eq [Paragraph [Text "| a | b"]]
+
+///> rust
+///> gleam
+:# center_alignment_and_a_table_ending_at_a_paragraph =
+    parse_markdown "|h|\n|:-:|\n|v|\nafter"
+    |> _assert_eq [Table ([AlignCenter], [[Text "h"]], [[[Text "v"]]]); Paragraph [Text "after"]]
+
+///> rust
+///> gleam
+:# inline_code_may_wrap_a_line_inside_an_item_or_a_paragraph =
+    parse_markdown "- run `a\n  b` now\n\nsee `x\ny`."
+    |> _assert_eq [Bullets [[Text "run "; Code "a b"; Text " now"]]; Paragraph [Text "see "; Code "x y"; Text "."]]

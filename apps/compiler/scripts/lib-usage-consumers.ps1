@@ -21,7 +21,7 @@ if ($PackageDir) { $env:SPIRAL_COMPILER_PACKAGE_DIR = (Resolve-Path $PackageDir)
 $env:MIX_BUILD_PATH = Join-Path ([IO.Path]::GetTempPath()) 'spiral-consumer-census-build'
 $env:PATH = "$HOME\scoop\apps\erlang\current\bin;$HOME\scoop\apps\elixir\current\bin;$env:PATH"
 $watch = [Diagnostics.Stopwatch]::StartNew()
-Push-Location (Join-Path $spiral 'apps/cells')
+Push-Location ($env:SPIRAL_CELLS_ROOT ? $env:SPIRAL_CELLS_ROOT : (Join-Path $spiral 'apps/cells'))
 try {
     for ($at = 0; $at -lt $Paths.Count; $at += $PathsPerRun) {
         $chunk = $Paths[$at..([Math]::Min($at + $PathsPerRun, $Paths.Count) - 1)]

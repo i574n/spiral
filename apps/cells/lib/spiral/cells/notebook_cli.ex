@@ -152,17 +152,29 @@ defmodule Spiral.Cells.NotebookCli do
   end
 
   @doc false
-  def void_result(results, lines) do
-    case for({path, _status, %{"timed_out" => n}} <- results, n > 0, do: "#{path}: VOID, #{n} test(s) hit the cell timeout, so they are not a verdict; rerun with a wider --timeout") do
+  def void_result(results, lines, load \\ &load_text/0) do
+    case for({path, _status, %{"timed_out" => n} = report} <- results, n > 0, do: {path, n, timed_rows(report)}) do
       [] -> {:ok, lines}
-      voids -> {{:error, Enum.join(voids, "\n")}, lines}
+      voids -> {{:void, Enum.map_join(voids, "\n", fn {path, n, rows} -> Spiral.Cells.Domain.void_text(path, n, rows, load.()) end)}, lines}
+    end
+  end
+
+  defp timed_rows(report), do: Enum.map_join(report["tests"] || [], "\n", &"#{&1["name"]}\t#{&1["status"]}\t#{&1["timeout_ms"]}")
+
+  defp load_text do
+    with {:win32, _} <- :os.type(),
+         {text, 0} <- System.cmd("powershell", ["-NoProfile", "-Command", "(Get-CimInstance Win32_Processor | Measure-Object LoadPercentage -Average).Average"], stderr_to_stdout: true) do
+      "cpu #{String.trim(text)}%"
+    else
+      {:unix, _} -> with {:ok, text} <- File.read("/proc/loadavg"), do: "loadavg " <> hd(String.split(text)), else: (_ -> "")
+      _ -> ""
     end
   end
 
   @doc false
   def cell_budget_lines(paths, opts) do
     for path <- paths,
-        opts[:cell_budget] == true or Spiral.Cells.CellBudget.edition3?(path),
+        opts[:cell_budget] == true or Spiral.Cells.CellBudget.i574n_dialect?(path),
         finding <- path |> File.read!() |> Spiral.Cells.CellBudget.rewrites(Spiral.Cells.CellBudget.default_profile()),
         do: "cell-budget " <> Spiral.Cells.CellBudget.format(Path.expand(path), finding)
   end

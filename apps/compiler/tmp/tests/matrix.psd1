@@ -681,6 +681,9 @@
         'samples/linked_rust_auto_export_curried' = @{ Backends = 'Rust'; Exit = 31; Calls = 'model_add3__uncurried,model_double' }
         'samples/linked_rust_auto_export_modules' = @{ Backends = 'Rust'; Exit = 34; Calls = 'model_triple,model_nine,model_scale__uncurried' }
         'samples/linked_rust_lambda_export_warn' = @{ Backends = 'Rust'; Exit = 35; Calls = 'model_triple'; Warns = 'the call to double inlines its body here instead of linking' }
+        'samples/linked_duplicate_package_type_hint' = @{ Backends = 'Rust'; Error = 'Both types print the same, but their nominals come from different package loads' }
+        'samples/linked_literal_suffix_redundant' = @{ Backends = 'Rust'; Exit = 21; Warns = 'WTY-RedundantLiteralSuffix' }
+        'samples/linked_literal_suffix_needed' = @{ Backends = 'Rust'; Exit = 22; NoWarns = 'WTY-RedundantLiteralSuffix' }
         'samples/linked_rust_local_union_loop' = @{ Backends = 'Rust'; Exit = 5; Calls = 'model_second_line' }
         'samples/linked_records' = @{ Backends = 'Zig,Gleam'; Exit = 13; Calls = 'model_norm,model_make,model_pair,model_label_len' }
         'samples/linked_union' = @{ Backends = 'Zig,Gleam'; Exit = 13; Calls = 'model_make_sq,model_area' }

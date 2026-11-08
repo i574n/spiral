@@ -1,4 +1,3 @@
-///> zig
 ///- --package . --timeout 900000
 :< sm'_operators
 :< xsd
@@ -62,6 +61,80 @@
 := completeness_of (census : construct_census) : completeness =
     ? census::wildcards = 0i32 ?> Complete |: Partial census::wildcards
 
+:| ceiling_construct =
+    | ChoiceCeiling
+    | EnumerationCeiling
+    | PatternCeiling
+    | LengthCeiling
+    | DigitsCeiling
+    | BoundsCeiling
+    | OccursCeiling
+    | RecordCeiling
+
+:= ceiling_bound (local : string) : bool =
+    local = "minInclusive" || local = "maxInclusive" || local = "minExclusive" || local = "maxExclusive"
+
+:= ceiling_other (local : string) : option ceiling_construct = ? ceiling_bound local ?> Some BoundsCeiling |: None
+
+:= ceiling_facet (facet : xsd_facet) : option ceiling_construct =
+    ?= facet ?|
+    | Enumeration _ => Some EnumerationCeiling
+    | Pattern _ => Some PatternCeiling
+    | Length _ => Some LengthCeiling
+    | MinLength _ => Some LengthCeiling
+    | MaxLength _ => Some LengthCeiling
+    | TotalDigits _ => Some DigitsCeiling
+    | FractionDigits _ => Some DigitsCeiling
+    | OtherFacet (local, _) => ceiling_other local
+    | WhiteSpace _ => None
+
+:= ceiling_with (seen : list ceiling_construct) (kind : option ceiling_construct) : list ceiling_construct =
+    ?= kind ?|
+    | Some k => ? listm'::contains k seen ?> seen |: k :: seen
+    | None => seen
+
+:~ ^ ceiling_facets
+    (facets : list xsd_facet) (seen : list ceiling_construct) (found : list ceiling_construct)
+    : list ceiling_construct
+    =
+    ?= facets ?|
+    | f :: rest => ceiling_facets rest (ceiling_with seen (ceiling_facet f)) found
+    | [] => listm::append seen found
+
+:= ceiling_occurs (o : occurs) (found : list ceiling_construct) : list ceiling_construct =
+    ? o::min = 1i32 && o::max = Bounded 1i32 ?> found |: OccursCeiling :: found
+
+:~ ^ ceiling_walk \* k form. (item : xsd k form) (found : list ceiling_construct) : list ceiling_construct =
+    ?= item ?|
+    | Simple s => ceiling_facets s::facets [] found
+    | Complex c => ceiling_all c::attributes (ceiling_walk c::content (RecordCeiling :: found))
+    | Derived d => ceiling_all d::attributes (ceiling_walk d::content (RecordCeiling :: found))
+    | Sequence s => ceiling_all s::items found
+    | Choice c => ceiling_all c::items (ChoiceCeiling :: found)
+    | Element e => ceiling_inline e::inline (ceiling_occurs e::occurs found)
+    | AnyContent () => found
+    | Empty () => found
+    | Attribute a => ceiling_inline a::inline found
+
+:& :~ ceiling_all \* k form. (items : list (xsd k form)) (found : list ceiling_construct) : list ceiling_construct =
+    ?= items ?|
+    | item :: rest => ceiling_all rest (ceiling_walk item found)
+    | [] => found
+
+:& :~ ceiling_inline \* form.
+    (inner : option (xsd type_def form)) (found : list ceiling_construct)
+    : list ceiling_construct
+    =
+    ?= inner ?|
+    | Some i => ceiling_walk i found
+    | None => found
+
+:= schema_ceiling \* form. (schema : xsd_schema form) : list ceiling_construct =
+    ceiling_all schema::elements (ceiling_all schema::complex_types (ceiling_all schema::simple_types []))
+
+:= ceiling_count (kind : ceiling_construct) (found : list ceiling_construct) : i32 =
+    listm::length (listm'::filter (\ x => x = kind) found)
+
 ///> rust
 :# every_construct_is_counted_and_a_wildcard_is_not_modeled =
     := typed =
@@ -80,3 +153,25 @@
     := o = schema_census (read_schema wildcard)
     ? completeness_of o <> Partial 1i32 ?> failwith "one xs:any leaves the schema partial by one"
     ? o::modeled <> o::constructs - 1i32 ?> failwith "only the wildcard is not modeled"
+
+///> rust
+:# each_ceiling_construct_counts_once_per_definition =
+    := text =
+        "<xs:schema><xs:simpleType name=\"TCode\"><xs:restriction base=\"xs:string\"><xs:enumeration value=\"A\"/>"
+        ++# "<xs:enumeration value=\"B\"/><xs:pattern value=\"[AB]\"/></xs:restriction></xs:simpleType>"
+        ++# "<xs:simpleType name=\"TAmount\"><xs:restriction base=\"xs:decimal\"><xs:totalDigits value=\"15\"/>"
+        ++# "<xs:fractionDigits value=\"2\"/><xs:minInclusive value=\"0\"/></xs:restriction></xs:simpleType>"
+        ++# "<xs:simpleType name=\"TName\"><xs:restriction base=\"xs:string\"><xs:maxLength value=\"60\"/>"
+        ++# "</xs:restriction></xs:simpleType><xs:complexType name=\"TOrder\"><xs:sequence>"
+        ++# "<xs:element name=\"Line\" minOccurs=\"0\" maxOccurs=\"unbounded\"><xs:complexType><xs:choice>"
+        ++# "<xs:element name=\"Code\" type=\"TCode\"/><xs:element name=\"Name\" type=\"TName\"/></xs:choice>"
+        ++# "</xs:complexType></xs:element></xs:sequence></xs:complexType></xs:schema>"
+    := found = schema_ceiling (read_schema text)
+    ? ceiling_count EnumerationCeiling found <> 1i32 ?> failwith "two enumeration values are one enumerated type"
+    ? ceiling_count PatternCeiling found <> 1i32 ?> failwith "the pattern facet is counted"
+    ? ceiling_count DigitsCeiling found <> 1i32 ?> failwith "totalDigits and fractionDigits are one digits type"
+    ? ceiling_count BoundsCeiling found <> 1i32 ?> failwith "minInclusive is a bounds facet"
+    ? ceiling_count LengthCeiling found <> 1i32 ?> failwith "maxLength is a length facet"
+    ? ceiling_count RecordCeiling found <> 2i32 ?> failwith "the named and the inline complex type are records"
+    ? ceiling_count ChoiceCeiling found <> 1i32 ?> failwith "the choice is counted"
+    ? ceiling_count OccursCeiling found <> 1i32 ?> failwith "only the repeated optional element changes occurs"

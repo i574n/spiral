@@ -44,8 +44,8 @@ defmodule Spiral.Cells.ManifestTest do
   end
 
   test "a list may span lines and a blank or comment line stays blank" do
-    assert Manifest.from_toml("# note\ncrates = [\n  'serde',\n  \"regex\"\n]\n") ==
-             Enum.join(["", "crates:", "    serde", "    regex", ""], "\n")
+    assert Manifest.from_toml("# note\nnotes = [\n  'serde',\n  \"regex\"\n]\n") ==
+             Enum.join(["", "notes:", "    serde", "    regex", ""], "\n")
   end
 
   @tag :tmp_dir

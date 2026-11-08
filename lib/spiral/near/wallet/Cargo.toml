@@ -11,4 +11,3 @@ crate-type = ["cdylib", "rlib"]
 path = "near_wallet.rs"
 
 [dependencies]
-

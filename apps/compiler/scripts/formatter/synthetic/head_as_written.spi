@@ -1,4 +1,3 @@
-///> zig
 inl wrap_twice forall t. (value : t) : option (option t) = Some (Some value)
 
 let run { first_argument_name second_argument_name third_argument_name fourth_argument }

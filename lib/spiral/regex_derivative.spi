@@ -1,0 +1,109 @@
+///- --package .
+:< regex_charset
+:< regex_syntax
+:< regex_nullable
+
+:# regex_derivative static =
+    :< testing
+
+:| verdict =
+    | Accepted
+    | Rejected
+
+:= verdict_of (b : bool) : verdict = ? b ?> Accepted |: Rejected
+
+:~ ^ derive (c : u32) (r : re) : re =
+    ?= r ?|
+    | Nothing => Nothing
+    | Epsilon => Nothing
+    | Set s => ? contains c s ?> Epsilon |: Nothing
+    | Seq (a, b) => derive_seq c a b
+    | _ => derive_rest c r
+
+:& :~ derive_seq (c : u32) (a : re) (b : re) : re =
+    := first = seq (derive c a) b
+    ? nullable a ?> alt first (derive c b) |: first
+
+:& :~ derive_rest (c : u32) (r : re) : re =
+    ?= r ?|
+    | Alt (a, b) => alt (derive c a) (derive c b)
+    | And (a, b) => both (derive c a) (derive c b)
+    | _ => derive_unary c r
+
+:& :~ derive_unary (c : u32) (r : re) : re =
+    ?= r ?|
+    | Not a => negate (derive c a)
+    | Star a => seq (derive c a) r
+    | Repeat (a, low, up) => seq (derive c a) (repeat a (one_less low) (upper_less up))
+    | _ => Nothing
+
+:~ ^ derive_word (codes : list u32) (r : re) : re =
+    ?= codes ?|
+    | c :: rest => derive_word rest (derive c r)
+    | [] => r
+
+:~ matches (r : re) (codes : list u32) : verdict = verdict_of (nullable (derive_word codes r))
+
+:~ ^ zeros (n : u32) (tail : list u32) : list u32 = ? n = 0u32 ?> tail |: zeros (n - 1u32) (48u32 :: tail)
+
+:= zeros_then_one (n : u32) : list u32 = zeros n [ 49u32 ]
+
+:= zero_runs () : re = seq (star (alt (zero ()) (seq (zero ()) (zero ())))) (one ())
+
+:= ends_in_zero () : re = seq (star (bit ())) (zero ())
+
+:= fourth_from_end () : re = seq (star (bit ())) (seq (one ()) (repeat (bit ()) 3u32 (Bounded 3u32)))
+
+:= remainder_holds (r : re) (c : u32) (rest : list u32) : bool = matches r (c :: rest) = matches (derive c r) rest
+
+:~ ^ copies (n : u32) (c : u32) : list u32 = ? n = 0u32 ?> [] |: c :: copies (n - 1u32) c
+
+:~ ^ verdicts_for (r : re) (lengths : list u32) : list verdict =
+    ?= lengths ?|
+    | n :: rest => matches r (copies n 97u32) :: verdicts_for r rest
+    | [] => []
+
+///> rust
+///> gleam
+:# a_class_derives_to_epsilon_only_on_its_members =
+    := ~seven = 55u32
+    := ~letter = 120u32
+    (same_re (derive seven (Set (digits ()))) Epsilon, same_re (derive letter (Set (digits ()))) Nothing)
+    |> _assert_eq (!+, !+)
+
+///> rust
+///> gleam
+:# zero_runs_accept_a_final_one_and_reject_a_run_alone =
+    := ~n = 26u32
+    (matches (zero_runs ()) (zeros_then_one n), matches (zero_runs ()) (zeros n [])) |> _assert_eq (Accepted, Rejected)
+
+///> rust
+///> gleam
+:# the_fourth_symbol_from_the_end_decides =
+    (
+        matches (fourth_from_end ()) [ 49u32; 48u32; 48u32; 48u32 ],
+        matches (fourth_from_end ()) [ 49u32; 48u32; 48u32; 49u32; 48u32 ]
+    )
+    |> _assert_eq (Accepted, Rejected)
+
+///> rust
+///> gleam
+:# a_counted_repeat_accepts_exactly_its_range =
+    verdicts_for (repeat (code 97u32) 2u32 (Bounded 4u32)) [ 1u32; 2u32; 4u32; 5u32 ]
+    |> _assert_eq [ Rejected; Accepted; Accepted; Rejected ]
+
+///> rust
+///> gleam
+:# intersection_and_complement_derive_like_sets =
+    := r = both (star (bit ())) (negate (ends_in_zero ()))
+    (matches r [ 48u32; 49u32 ], matches r [ 49u32; 48u32 ], matches r []) |> _assert_eq (Accepted, Rejected, Accepted)
+
+///> rust
+///> gleam
+:# the_remainder_theorem_holds_on_every_split =
+    := ~c = 49u32
+    (
+        remainder_holds (fourth_from_end ()) c [ 48u32; 48u32; 48u32 ],
+        remainder_holds (zero_runs ()) 48u32 [ 48u32; 49u32 ]
+    )
+    |> _assert_eq (!+, !+)

@@ -229,7 +229,7 @@ defmodule Spiral.Cells.Memo do
     {known, unknown} =
       Enum.reduce(keyed, {%{}, []}, fn {text, key}, {known, unknown} ->
         case remembered_bounds(store_context, key) do
-          {:ok, {:source_blocks, spans}} -> {Map.put(known, text, spans), unknown}
+          {:ok, {:source_rows, spans}} -> {Map.put(known, text, spans), unknown}
           _ -> {known, [{text, key} | unknown]}
         end
       end)
@@ -240,8 +240,8 @@ defmodule Spiral.Cells.Memo do
       case SourceBlocks.of_texts(opts, Enum.map(unknown, &elem(&1, 0))) do
         {:ok, spans} ->
           Enum.each(unknown, fn {text, key} ->
-            store(store_context, key, {:source_blocks, Map.get(spans, text, [])})
-            :ets.insert(bounds_table(), {key, Map.get(spans, text, [])})
+            store(store_context, key, {:source_rows, Map.get(spans, text, "")})
+            :ets.insert(bounds_table(), {key, Map.get(spans, text, "")})
           end)
           Map.merge(known, spans)
 
@@ -258,11 +258,11 @@ defmodule Spiral.Cells.Memo do
 
     case :ets.lookup(table, key) do
       [{^key, spans}] ->
-        {:ok, {:source_blocks, spans}}
+        {:ok, {:source_rows, spans}}
 
       [] ->
         case fetch(store_context, key) do
-          {:ok, {:source_blocks, spans}} = hit ->
+          {:ok, {:source_rows, spans}} = hit ->
             :ets.insert(table, {key, spans})
             hit
 
@@ -277,7 +277,7 @@ defmodule Spiral.Cells.Memo do
   end
 
   defp bounds_key(binaries, text) do
-    {:source_blocks, binaries, text}
+    {:source_rows, binaries, text}
     |> :erlang.term_to_binary()
     |> then(&:crypto.hash(:sha256, &1))
     |> Base.encode16(case: :lower)
@@ -397,11 +397,9 @@ defmodule Spiral.Cells.Memo do
     end
   end
 
-  @test_header ~r/^(?:test|:#)(?![\w'])/u
-
   defp compiled_blocks(text, bounds) do
     case Map.fetch(bounds, text) do
-      {:ok, spans} -> text |> SourceBlocks.split(spans) |> Enum.reject(&Regex.match?(@test_header, &1.header_text))
+      {:ok, rows} -> SourceBlocks.split(text, rows)
       :error -> [%{header_text: "", lines: String.split(text, "\n")}]
     end
   end
@@ -479,7 +477,7 @@ defmodule Spiral.Cells.Memo do
 
   def reached_program(program, bounds) do
     case Map.fetch(bounds, program) do
-      {:ok, spans} -> Spiral.Cells.Domain.reached_program(program, Enum.map_join(spans, "\n", &"#{&1.header}\t#{&1.last}\t#{&1.header_text}"))
+      {:ok, rows} -> Spiral.Cells.Domain.reached_program(program, rows)
       :error -> program
     end
   end

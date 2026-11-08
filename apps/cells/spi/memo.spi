@@ -1,6 +1,4 @@
-///> gleam
 ///- --package .
-///> gleam
 :# memo static =
     :< testing
 

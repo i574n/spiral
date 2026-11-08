@@ -1,9 +1,10 @@
-///> zig
 ///- --package . --timeout 900000
 :< sm'_operators
 :< xml
 
 :! decode_path = list string
+
+:== field_meta = { tag : string; min : i32; max : option i32 }
 
 :| decode_error =
     | Missing : decode_path
@@ -65,12 +66,33 @@
 := undecoded (which : string) (errors : list decode_error) : option string =
     Some (which ++# " does not decode: " ++# joined "; " (listm::map error_text errors))
 
+:~ ^ twin_taken (name : string) (nodes : list xml_node) (skipped : list xml_node) : option (xml_node * list xml_node) =
+    ?= nodes ?|
+    | n :: rest => ? node_name n = name ?> Some (n, listm::append (listm::rev skipped) rest) |: twin_taken name rest (n :: skipped)
+    | [] => None
+
+:& :~ twin_aligned_children (expected : list xml_node) (actual : list xml_node) (acc : list xml_node) : list xml_node =
+    ?= expected ?|
+    | e :: rest =>
+        ?= twin_taken (node_name e) actual [] ?|
+        | Some (a, others) => twin_aligned_children rest others (twin_aligned_to e a :: acc)
+        | None => twin_aligned_children rest actual acc
+    | [] => listm::append (listm::rev acc) actual
+
+:& :~ twin_aligned_to (expected : xml_node) (actual : xml_node) : xml_node =
+    ?= actual ?|
+    | XmlElement (name, attributes, children) =>
+        XmlElement (name, attributes, twin_aligned_children (element_children expected) children [])
+    | _ => actual
+
 := twin_difference \* t.
     (read : xml_node -> result t (list decode_error)) (write : t -> xml_node) (first : xml_node) (second : xml_node)
     : option string
     =
     ?= (read first, read second) ?|
-    | (Ok a, Ok b) => value_difference (write a) (write b)
+    | (Ok a, Ok b) =>
+        := expected = write a
+        value_difference expected (twin_aligned_to expected (write b))
     | (Error errors, _) => undecoded "the first" errors
     | (_, Error errors) => undecoded "the second" errors
 
@@ -286,6 +308,20 @@
     ?= round_trip_difference "Amount" (amount_text (dyn "12.50")) ?|
     | Some d => failwith ("a value written, read and written again is unchanged: " ++# d)
     | None => ()
+
+:= twin_leaf (name : string) (value : string) : xml_node = element name [] (text_children value)
+
+///> rust
+:# twins_compare_differently_named_siblings_in_any_order =
+    := first = element "a" [] [ twin_leaf "b" "1"; twin_leaf "c" "2"; twin_leaf "d" "3"; twin_leaf "d" "4" ]
+    := reordered = element "a" [] [ twin_leaf "d" "3"; twin_leaf "c" "2"; twin_leaf "b" "1"; twin_leaf "d" "4" ]
+    := swapped = element "a" [] [ twin_leaf "b" "1"; twin_leaf "c" "2"; twin_leaf "d" "4"; twin_leaf "d" "3" ]
+    := changed = element "a" [] [ twin_leaf "c" "9"; twin_leaf "b" "1"; twin_leaf "d" "3"; twin_leaf "d" "4" ]
+    ? value_difference first (twin_aligned_to first reordered) <> None
+    ?> failwith "differently named siblings in another order are the same twin (JSON members are unordered)"
+    ? value_difference first (twin_aligned_to first swapped) = None
+    ?> failwith "repeated same-name siblings keep their order (JSON arrays are ordered)"
+    ? value_difference first (twin_aligned_to first changed) = None ?> failwith "a changed text is still a difference"
 
 := header_id (c : xml_node) : result string (list decode_error) =
     := id, errors = read_required "ID" read_text (element_children c) []

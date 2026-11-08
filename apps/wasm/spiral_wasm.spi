@@ -1,4 +1,3 @@
-///> zig
 /// # spiral_wasm
 :< rust_operators
 :< sm'_operators
@@ -161,7 +160,6 @@
 /// ### main
 /// F#: `main` for the Fable build. Native Rust (`--backend Rust`, see build.ps1): runs `run_main` with the process
 /// args.
-
 := run_main (args : array_base string) : i32 =
     := command = get_command ()
     := arg_matches = command |> clap.command_get_matches

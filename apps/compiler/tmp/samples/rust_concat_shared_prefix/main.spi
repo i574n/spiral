@@ -1,0 +1,8 @@
+:= path (root : string) (relative : string) : string = !!!!StaticStringConcat(!!!!StaticStringConcat(root, "/"), relative)
+
+:~ two (root : string) : i32 =
+    := a = path root "first.spi"
+    := b = path root "second.txt"
+    !!!!Add((sm::length a : i32), (sm::length b : i32))
+
+:= main () : i32 = two "dir"

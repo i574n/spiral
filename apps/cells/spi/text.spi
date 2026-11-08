@@ -1,4 +1,3 @@
-///> zig
 := (++) (left : string) (right : string) : string = left ^^ right
 
 := ffi () : () =

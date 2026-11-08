@@ -1,4 +1,3 @@
-///> zig
 ///- --package .
 :< sm'_operators
 
@@ -682,31 +681,46 @@
     | move :: rest => reverse_moves rest (move :: reversed)
     | [] => reversed
 
+:= regex_interval_high (rest : list u32) : u32 = ?= rest ?| (next :: _) => next - 1u32 | [] => last_code_point ()
+
+:= regex_known (index : i32) : option i32 = ? index >= 0i32 ?> Some index |: None
+
+:= regex_span (low : u32) (high : u32) (target : i32) : dfa_move = { low = low; high = high; target = target }
+
 :~ ^ state_moves
     (r : rx) (starts : list u32) (states : list rx) (count : i32) (moves : list dfa_move)
     : list rx * i32 * list dfa_move
     =
     ?= starts ?|
-    | low :: rest =>
-        := high = ?= rest ?| (next :: _) => next - 1u32 | [] => last_code_point ()
-        := next_rx = derive_similar low r
-        ?= next_rx ?|
-        | RxNone => state_moves r rest states count moves
-        | _ =>
-            := known = state_index next_rx states 0i32
-            ? known >= 0i32
-            ?> state_moves r rest states count (add_move { low = low; high = high; target = known } moves)
-            |:
-                state_moves r rest
-                    (with_state next_rx states)
-                    (count + 1i32)
-                    (add_move { low = low; high = high; target = count } moves)
+    | low :: rest => regex_state_at r rest states count moves low (regex_interval_high rest) (derive_similar low r)
     | [] => states, count, reverse_moves moves []
+
+:& :~ regex_state_at
+    (r : rx) (rest : list u32) (states : list rx) (count : i32) (moves : list dfa_move) (low : u32) (high : u32)
+    (next_rx : rx)
+    : list rx * i32 * list dfa_move
+    =
+    ?= next_rx ?|
+    | RxNone => state_moves r rest states count moves
+    | _ => regex_state_known r rest states count moves low high next_rx (regex_known (state_index next_rx states 0i32))
+
+:& :~ regex_state_known
+    (r : rx) (rest : list u32) (states : list rx) (count : i32) (moves : list dfa_move) (low : u32) (high : u32)
+    (next_rx : rx) (known : option i32)
+    : list rx * i32 * list dfa_move
+    =
+    ?= known ?|
+    | Some target => state_moves r rest states count (add_move (regex_span low high target) moves)
+    | None => state_moves r rest (with_state next_rx states) (count + 1i32) (add_move (regex_span low high count) moves)
 
 :~ ^ reverse_states (rows : list dfa_state) (reversed : list dfa_state) : list dfa_state =
     ?= rows ?|
     | row :: rest => reverse_states rest (row :: reversed)
     | [] => reversed
+
+:= regex_state_row (r : rx) (states : list rx) (count : i32) : list rx * i32 * dfa_state =
+    := states, count, moves = state_moves r (interval_starts r [ 0u32 ]) states count []
+    states, count, { accepting = nullable r; moves = moves }
 
 :~ ^ build_states
     (index : i32) (states : list rx) (count : i32) (limit : i32) (rows : list dfa_state)
@@ -715,9 +729,8 @@
     ? index >= count ?> Some (reverse_states rows [])
     |? count > limit ?> None
     |:
-        := r = state_rx states index
-        := states, count, moves = state_moves r (interval_starts r [ 0u32 ]) states count []
-        build_states (index + 1i32) states count limit ({ accepting = nullable r; moves = moves } :: rows)
+        := states, count, row = regex_state_row (state_rx states index) states count
+        build_states (index + 1i32) states count limit (row :: rows)
 
 := dfa_state_limit () : i32 = 4096i32
 
@@ -774,20 +787,24 @@
         ? dfa_matches rows "" ?> failwith "empty rejected"
     | None => failwith "a counted repeat stays within the state limit"
 
+:= regex_line_stop (text : string) (pos : i32) : i32 =
+    := stop = xml::find_from "\n" text pos
+    ? stop < 0i32 ?> sm'::length text |: stop
+
+:= regex_compiled_tally (line : string) (ok : i32) (failed : i32) : i32 * i32 =
+    ?= compile_pattern line ?|
+    | Some _ => ok + 1i32, failed
+    | None => ok, failed + 1i32
+
+:= regex_tally (line : string) (acc : i32 * i32) : i32 * i32 =
+    := ok, failed = acc
+    ? line = "" ?> acc |: regex_compiled_tally line ok failed
+
 :~ ^ count_compiled (text : string) (pos : i32) (acc : i32 * i32) : i32 * i32 =
     ? pos >= sm'::length text ?> acc
     |:
-        := stop = xml::find_from "\n" text pos
-        := stop = ? stop < 0i32 ?> sm'::length text |: stop
-        := line = sm'::substring pos (stop - pos) text |> sm'::trim
-        := ok, failed = acc
-        := acc =
-            ? line = "" ?> acc
-            |:
-                ?= compile_pattern line ?|
-                | Some _ => ok + 1i32, failed
-                | None => ok, failed + 1i32
-        count_compiled text (stop + 1i32) acc
+        := stop = regex_line_stop text pos
+        count_compiled text (stop + 1i32) (regex_tally (sm'::substring pos (stop - pos) text |> sm'::trim) acc)
 
 :~ ^ lines_of (text : string) (pos : i32) (acc : list string) : list string =
     ? pos >= sm'::length text ?> listm::rev acc
@@ -798,22 +815,20 @@
 
 :== disagreement = { count : i32; first : string }
 
+:= regex_first_disagreement (pattern : string) (probe : string) (acc : disagreement) : string =
+    ? acc::first = "" ?> pattern ++# " on [" ++# probe ++# "]" |: acc::first
+
+:= regex_disagree (pattern : string) (probe : string) (agree : bool) (acc : disagreement) : disagreement =
+    ? agree ?> acc |: { count = acc::count + 1i32; first = regex_first_disagreement pattern probe acc }
+
 :~ ^ row_disagreements
     (pattern : string) (matches : string -> bool) (probes : list string) (row : string) (j : i32) (acc : disagreement)
     : disagreement
     =
     ?= probes ?|
     | probe :: rest =>
-        := expected = sm'::substring j 1i32 row = "1"
-        := actual = matches probe
-        := acc =
-            ? expected = actual ?> acc
-            |:
-                {
-                    count = acc::count + 1i32
-                    first = ? acc::first = "" ?> pattern ++# " on [" ++# probe ++# "]" |: acc::first
-                }
-        row_disagreements pattern matches rest row (j + 1i32) acc
+        := agree = (sm'::substring j 1i32 row = "1") = matches probe
+        row_disagreements pattern matches rest row (j + 1i32) (regex_disagree pattern probe agree acc)
     | [] => acc
 
 := failed_pattern (reason : string) (pattern : string) (acc : disagreement) : disagreement =
@@ -859,22 +874,28 @@
         lines : string
     }
 
+:= regex_states_of (pattern : string) : i32 =
+    ?= dfa_of_pattern pattern ?|
+    | Some rows => states_in rows 0i32
+    | None => 0i32
+
+:= regex_counted (pattern : string) (states : i32) (acc : state_census) : state_census =
+    := line = count_text states "" ++# "\t" ++# pattern ++# "\n"
+    { acc ?| patterns = (acc::patterns + 1i32); states = (acc::states + states); lines = (acc::lines ++# line) }
+
+:= regex_without_dfa (states : i32) (acc : state_census) : state_census =
+    ? states = 0i32 ?> { acc ?| without_dfa = acc::without_dfa + 1i32 } |: acc
+
+:= regex_largest (pattern : string) (states : i32) (acc : state_census) : state_census =
+    ? states > acc::largest ?> { acc ?| largest = states; largest_pattern = pattern } |: acc
+
+:= regex_census_step (pattern : string) (acc : state_census) : state_census =
+    := states = regex_states_of pattern
+    regex_largest pattern states (regex_without_dfa states (regex_counted pattern states acc))
+
 :~ ^ census_of (patterns : list string) (acc : state_census) : state_census =
     ?= patterns ?|
-    | pattern :: rest =>
-        ? pattern = "" ?> census_of rest acc
-        |:
-            := states = ?= dfa_of_pattern pattern ?| Some rows => states_in rows 0i32 | None => 0i32
-            := larger = states > acc::largest
-            := line = count_text states "" ++# "\t" ++# pattern ++# "\n"
-            := acc =
-                { acc ?|
-                    patterns = (acc::patterns + 1i32)
-                    states = (acc::states + states)
-                    lines = (acc::lines ++# line)
-                }
-            := acc = ? states = 0i32 ?> { acc ?| without_dfa = acc::without_dfa + 1i32 } |: acc
-            census_of rest (? larger ?> { acc ?| largest = states; largest_pattern = pattern } |: acc)
+    | pattern :: rest => census_of rest (? pattern = "" ?> acc |: regex_census_step pattern acc)
     | [] => acc
 
 :~ ^ first_points (values : list string) (points : list u32) : list u32 =
@@ -883,13 +904,15 @@
         first_points rest (? sm'::length value = 0i32 ?> points |: insert_point (cp_at value 0i32) points)
     | [] => points
 
+:= regex_with_tail (point : u32) (value : string) (acc : list string) : list string =
+    ? sm'::length value > 0i32 && cp_at value 0i32 = point ?>
+        := width = cp_width value 0i32
+        sm'::substring width (sm'::length value - width) value :: acc
+    |: acc
+
 :~ ^ tails_after (point : u32) (values : list string) (acc : list string) : list string =
     ?= values ?|
-    | value :: rest =>
-        ? sm'::length value > 0i32 && cp_at value 0i32 = point ?>
-            := width = cp_width value 0i32
-            tails_after point rest (sm'::substring width (sm'::length value - width) value :: acc)
-        |: tails_after point rest acc
+    | value :: rest => tails_after point rest (regex_with_tail point value acc)
     | [] => acc
 
 :~ ^ has_empty (values : list string) : bool =
@@ -913,27 +936,34 @@
 
 :== value_dfa = { register : list (dfa_state * i32); rows : list dfa_state; count : i32 }
 
+:= regex_point_move (p : u32) (target : i32) : dfa_move = { low = p; high = p; target = target }
+
+:= regex_register_row (row : dfa_state) (built : value_dfa) : i32 * value_dfa =
+    := known = registered row built::register
+    ? known >= 0i32 ?> known, built
+    |:
+        built::count,
+        { register = (row, built::count) :: built::register; rows = row :: built::rows; count = built::count + 1i32 }
+
 :~ ^ value_state (values : list string) (built : value_dfa) : i32 * value_dfa =
     value_moves (first_points values []) values [] (has_empty values) built
+
 :& :~ value_moves
     (points : list u32) (values : list string) (moves : list dfa_move) (accepting : bool) (built : value_dfa)
     : i32 * value_dfa
     =
     ?= points ?|
     | point :: rest =>
-        := target, built = value_state (tails_after point values []) built
-        value_moves rest values (add_move { low = point; high = point; target = target } moves) accepting built
-    | [] =>
-        := row = { accepting = accepting; moves = reverse_moves moves [] }
-        := known = registered row built::register
-        ? known >= 0i32 ?> known, built
-        |:
-            built::count,
-            {
-                register = (row, built::count) :: built::register
-                rows = row :: built::rows
-                count = built::count + 1i32
-            }
+        regex_value_point point rest values moves accepting (value_state (tails_after point values []) built)
+    | [] => regex_register_row { accepting = accepting; moves = reverse_moves moves [] } built
+
+:& :~ regex_value_point
+    (p : u32) (rest : list u32) (values : list string) (moves : list dfa_move) (accepting : bool)
+    (placed : i32 * value_dfa)
+    : i32 * value_dfa
+    =
+    := target, built = placed
+    value_moves rest values (add_move (regex_point_move p target) moves) accepting built
 
 :~ ^ renumbered_moves (last : i32) (moves : list dfa_move) (acc : list dfa_move) : list dfa_move =
     ?= moves ?|
@@ -1006,13 +1036,17 @@
     := width, offsets = fitting_width rows 1i32 10i32
     offset_lines rows offsets width ""
 
+:= regex_table_row (table : string) (i : i32) : i32 * i32 * i32 * i32 =
+    := low, i = read_number table (i + 1i32) 0i32
+    := high, i = read_number table (i + 1i32) 0i32
+    := target, i = read_number table (i + 1i32) 0i32
+    low, high, target, i
+
 :~ ^ table_step (table : string) (c : u32) (i : i32) : i32 =
     ? i >= sm'::length table || cp_at table i <> 32u32 ?> -1i32
     |:
-        := low, i = read_number table (i + 1i32) 0i32
-        := high, i = read_number table (i + 1i32) 0i32
-        := target, i = read_number table (i + 1i32) 0i32
-        ? c < (conv low : u32) ?> -1i32 |? c <= (conv high : u32) ?> target |: table_step table c i
+        := low, high, target, next = regex_table_row table i
+        ? c < (conv low : u32) ?> -1i32 |? c <= (conv high : u32) ?> target |: table_step table c next
 
 :~ ^ table_run (table : string) (line : i32) (s : string) (i : i32) : bool =
     ? i >= sm'::length s ?> cp_at table line = 49u32

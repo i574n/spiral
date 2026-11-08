@@ -310,6 +310,13 @@ module Program =
         member _.Commit(uri, source) =
             sources.[uri] <- source
 
+        member _.Forget(uri : string) = sources.Remove uri |> ignore
+
+        member _.TryText(uri : string) =
+            match sources.TryGetValue uri with
+            | true, text -> Some text
+            | _ -> None
+
         member _.ForgetUnder(prefix : string) =
             sources.Keys |> Seq.filter (fun uri -> uri.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) |> Array.ofSeq |> Array.iter (fun uri -> sources.Remove uri |> ignore)
 
@@ -601,26 +608,43 @@ module Program =
         | "Gleam" -> [ "_ffi.erl"; "_ffi.mjs" ]
         | _ -> []
 
-    let private compileOne
+    let private promotedTestEntry : (string * string) option ref = ref None
+
+    let private selectTestEntry (supervisor : Ch<SupervisorReq>) (revisions : SourceRevisionStore) (uri : string) (testEntry : string option) =
+        let wanted = testEntry |> Option.map (fun name -> uri, name)
+        if promotedTestEntry.Value <> wanted then
+            match promotedTestEntry.Value with
+            | Some (previous, _) when previous <> uri ->
+                select_test_entry previous None
+                match revisions.TryText previous with
+                | Some text -> Hopac.run (supervisor *<+ fileOpenRequest previous text)
+                | None -> ()
+            | _ -> ()
+            revisions.Forget uri
+            promotedTestEntry.Value <- wanted
+        select_test_entry uri testEntry
+
+    let private compileOneTest
         (supervisor : Ch<SupervisorReq>)
         (router : DiagnosticRouter)
         (revisions : SourceRevisionStore)
         (cache : CompilationCache)
         (jobVal : (IVar<string option> -> Job<unit>) -> Threading.Tasks.Task<string>)
-        backend input output =
+        backend input output (testEntry : string option) =
         try
             let inputPath = input |> Path.GetFullPath |> SpiralFileSystem.normalize_path
             let outputPath = output |> Path.GetFullPath
             let code = File.ReadAllText inputPath
             let uri = inputPath |> SpiralFileSystem.new_file_uri
             reopenChangedManifest supervisor revisions inputPath
+            selectTestEntry supervisor revisions uri testEntry
             let revision = revisions.Plan(uri, code)
             let fingerprint = if cache.Reuse then sourceGraphFingerprint inputPath else ""
             let multiFile = multiFileSuffixes backend
             let started = DateTime.UtcNow
             let cached =
                 match revision with
-                | SourceUnchanged when multiFile.IsNone && List.isEmpty (optionalSiblingSuffixes backend) && cache.Reuse -> cache.TryGet(uri, backend, fingerprint)
+                | SourceUnchanged when multiFile.IsNone && List.isEmpty (optionalSiblingSuffixes backend) && cache.Reuse && testEntry.IsNone -> cache.TryGet(uri, backend, fingerprint)
                 | _ -> None
             let revisionMode =
                 match cached, revision with
@@ -757,13 +781,16 @@ module Program =
                             | Some cached -> cached.binding
                             | None when String.Equals(backend, "Fsharp", StringComparison.Ordinal) -> discoverEntryBinding generated
                             | None -> "main"
-                        if multiFile.IsNone && splitParts.IsNone && List.isEmpty (optionalSiblingSuffixes backend) && cache.Reuse then cache.Put(uri, backend, fingerprint, generated, binding)
+                        if multiFile.IsNone && splitParts.IsNone && List.isEmpty (optionalSiblingSuffixes backend) && cache.Reuse && testEntry.IsNone then cache.Put(uri, backend, fingerprint, generated, binding)
                         writeEntryManifest outputPath binding generated.Length revisionMode backend
                         Ok (generated.Length, binding, revisionMode)
             finally
                 restoreCoreOutputs ()
                 router.Clear waiter
         with error -> Error error.Message
+
+    let private compileOne supervisor router revisions cache jobVal backend input output =
+        compileOneTest supervisor router revisions cache jobVal backend input output None
 
     let private decodeRustStringLiteral (literal : string) =
         let value = System.Text.Json.JsonSerializer.Deserialize<string>(literal)
@@ -1153,12 +1180,13 @@ module Program =
                         writer.WriteLine($"spiral-session\tsource-blocks\t{Environment.ProcessId}\t{rows.Length}\t{tokenizerErrors}")
                     else
                         writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\tno such file {cleanProtocolText fields.[1]}")
-                elif (fields.Length = 3 || fields.Length = 4) && fields.[0] = "compile" then
+                elif (fields.Length = 3 || fields.Length = 4 || (fields.Length = 6 && fields.[4] = "test")) && fields.[0] = "compile" then
                     let backend, input, output =
-                        if fields.Length = 4 then fields.[1], fields.[2], fields.[3]
+                        if fields.Length >= 4 then fields.[1], fields.[2], fields.[3]
                         else "Fsharp", fields.[1], fields.[2]
+                    let testEntry = if fields.Length = 6 then Some fields.[5] else None
                     watchStall stallSeconds writer (fun () ->
-                        match compileOne server.supervisor router revisions cache server.job_val backend input output with
+                        match compileOneTest server.supervisor router revisions cache server.job_val backend input output testEntry with
                         | Ok (bytes, binding, revisionMode) ->
                             writer.WriteLine($"spiral-session\tok\t{Environment.ProcessId}\t{bytes}\t{binding}\t{revisionMode}\t{backend}")
                         | Error message ->
@@ -1378,6 +1406,10 @@ module Program =
     let mainBody rawArgv =
         let defaultTypeFlagsResult = takeDefaultTypeFlags rawArgv
         let argv = match defaultTypeFlagsResult with Ok kept -> kept | Error _ -> rawArgv
+        let cliTestEntry, argv =
+            match Array.tryFindIndex ((=) "--test") argv with
+            | Some i when i + 1 < argv.Length -> Some argv.[i + 1], Array.append argv.[.. i - 1] argv.[i + 2 ..]
+            | _ -> None, argv
         configureHopacFromEnvironment ()
         if isNull (Environment.GetEnvironmentVariable "SPIRAL_HOVERS") then Environment.SetEnvironmentVariable("SPIRAL_HOVERS", "0")
         let defaultTypeFlagsError = match defaultTypeFlagsResult with Error message -> Some message | Ok _ -> None
@@ -1467,7 +1499,7 @@ module Program =
                     directProjectCompileFsharp input output
                 else
                     let result = ref (Error "compile thread did not finish")
-                    let worker = Threading.Thread((fun () -> result.Value <- compileOne server.supervisor router revisions cache server.job_val backend input output), 1 <<< 30)
+                    let worker = Threading.Thread((fun () -> result.Value <- compileOneTest server.supervisor router revisions cache server.job_val backend input output cliTestEntry), 1 <<< 30)
                     worker.Start()
                     worker.Join()
                     result.Value

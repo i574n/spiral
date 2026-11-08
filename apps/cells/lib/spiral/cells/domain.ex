@@ -3,9 +3,7 @@ defmodule Spiral.Cells.Domain do
   @beams Path.expand("../../../build/dev/erlang", __DIR__)
 
   def ensure! do
-    for name <- ["spiral_cells", "gleam_stdlib", "gleam_erlang"] do
-      Code.append_path(Path.join([@beams, name, "ebin"]))
-    end
+    for name <- ["spiral_cells", "gleam_stdlib", "gleam_erlang"], do: Code.append_path(Path.join([@beams, name, "ebin"]))
 
     unless Code.ensure_loaded?(:spiral_cells@domain) do
       raise "spiral_cells domain beam is missing from #{@beams}"
@@ -14,34 +12,22 @@ defmodule Spiral.Cells.Domain do
     :ok
   end
 
-  def prepare(code) do
-    ensure!()
-    :spiral_cells@domain.prepare(code)
-  end
+  @passthrough [
+    prepare: 1, patch_rust: 2, verdict_counts: 1, void_text: 4, source_input_rows: 2, source_split_blocks: 2,
+    result_fields: 1, reached_program: 2, from_toml: 1, declares_modules: 1, i574n_dialect: 1, source_remap: 4,
+    markdown_html: 1, json_canonical: 1, builder_present: 1, builder_failure_trace: 1, builder_split: 1, host_language: 1,
+    host_extension: 1, is_cl_compiler: 1, mount_sibling_project: 1, gleam_strip_warnings: 1, split_output: 1, unit_result: 1,
+    package_project: 1, parse_dib: 1, to_spi: 1, to_spir: 1, to_spi_tested: 1, to_spir_tested: 1, from_spi_bounded: 4,
+    target_backend: 1, target_extension: 1, from_spi: 2, target_gaps: 1, test_index: 1, plan_tests: 1, plan: 1
+  ]
 
-  def patch_rust(rust, show) do
-    ensure!()
-    :spiral_cells@domain.patch_rust(rust, show)
-  end
+  for {name, arity} <- @passthrough do
+    args = Macro.generate_arguments(arity, __MODULE__)
 
-  def result_fields(wire) do
-    ensure!()
-    :spiral_cells@domain.result_fields(wire)
-  end
-
-  def reached_program(program, rows) do
-    ensure!()
-    :spiral_cells@domain.reached_program(program, rows)
-  end
-
-  def from_toml(text) do
-    ensure!()
-    :spiral_cells@domain.from_toml(text)
-  end
-
-  def declares_modules(text) do
-    ensure!()
-    :spiral_cells@domain.declares_modules(text) == "true"
+    def unquote(name)(unquote_splicing(args)) do
+      ensure!()
+      :spiral_cells@domain.unquote(name)(unquote_splicing(args))
+    end
   end
 
   def manifest_path(dir) do
@@ -53,59 +39,22 @@ defmodule Spiral.Cells.Domain do
     end
   end
 
-  def source_remap(message, program, source, path) do
+  def mount_patch_first(body, old, new) do
     ensure!()
-    :spiral_cells@domain.source_remap(message, program, source, path)
+
+    case :spiral_cells@domain.mount_patch_first(body, old, new) do
+      "K" <> patched -> {:ok, patched}
+      "E" -> :error
+    end
   end
 
-  def markdown_html(text) do
+  def mount_nested_name(names) do
     ensure!()
-    :spiral_cells@domain.markdown_html(text)
-  end
 
-  def json_canonical(text) do
-    ensure!()
-    :spiral_cells@domain.json_canonical(text)
-  end
-
-  def builder_present(text) do
-    ensure!()
-    :spiral_cells@domain.builder_present(text)
-  end
-
-  def builder_failure_trace(text) do
-    ensure!()
-    :spiral_cells@domain.builder_failure_trace(text)
-  end
-
-  def builder_split(text) do
-    ensure!()
-    :spiral_cells@domain.builder_split(text)
-  end
-
-  def builder_deps(text) do
-    ensure!()
-    :spiral_cells@domain.builder_deps(text)
-  end
-
-  def host_language(text) do
-    ensure!()
-    :spiral_cells@domain.host_language(text)
-  end
-
-  def host_extension(text) do
-    ensure!()
-    :spiral_cells@domain.host_extension(text)
-  end
-
-  def is_cl_compiler(text) do
-    ensure!()
-    :spiral_cells@domain.is_cl_compiler(text)
-  end
-
-  def gleam_strip_warnings(text) do
-    ensure!()
-    :spiral_cells@domain.gleam_strip_warnings(text)
+    case :spiral_cells@domain.mount_nested_name(Enum.join(names, "\n")) do
+      "" -> nil
+      name -> name
+    end
   end
 
   def gleam_manifest(path, deps, target) do
@@ -113,86 +62,6 @@ defmodule Spiral.Cells.Domain do
     main = if String.contains?(Path.basename(path), "_real"), do: "main_real", else: "main"
     fields = [main, target | Enum.flat_map(deps, fn %{name: name, version: version} -> [name, if(is_nil(version), do: "-", else: "+" <> version)] end)]
     :spiral_cells@domain.gleam_manifest(Enum.map_join(fields, &"#{byte_size(&1)}:#{&1}"))
-  end
-
-  def split_output(output) do
-    ensure!()
-    :spiral_cells@domain.split_output(output)
-  end
-
-  def unit_result(output) do
-    ensure!()
-    :spiral_cells@domain.unit_result(output)
-  end
-
-  def package_project(includes) do
-    ensure!()
-    :spiral_cells@domain.package_project(includes)
-  end
-
-  def parse_dib(text) do
-    ensure!()
-    :spiral_cells@domain.parse_dib(text)
-  end
-
-  def to_spi(text) do
-    ensure!()
-    :spiral_cells@domain.to_spi(text)
-  end
-
-  def to_spir(text) do
-    ensure!()
-    :spiral_cells@domain.to_spir(text)
-  end
-
-  def to_spi_tested(text) do
-    ensure!()
-    :spiral_cells@domain.to_spi_tested(text)
-  end
-
-  def to_spir_tested(text) do
-    ensure!()
-    :spiral_cells@domain.to_spir_tested(text)
-  end
-
-  def from_spi_bounded(spi, spir, spi_bounds, spir_bounds) do
-    ensure!()
-    :spiral_cells@domain.from_spi_bounded(spi, spir, spi_bounds, spir_bounds)
-  end
-
-  def target_backend(tool) do
-    ensure!()
-    :spiral_cells@domain.target_backend(tool)
-  end
-
-  def target_extension(tool) do
-    ensure!()
-    :spiral_cells@domain.target_extension(tool)
-  end
-
-  def from_spi(spi, spir) do
-    ensure!()
-    :spiral_cells@domain.from_spi(spi, spir)
-  end
-
-  def target_gaps(spi) do
-    ensure!()
-    :spiral_cells@domain.target_gaps(spi)
-  end
-
-  def test_index(wire) do
-    ensure!()
-    :spiral_cells@domain.test_index(wire)
-  end
-
-  def plan_tests(wire) do
-    ensure!()
-    :spiral_cells@domain.plan_tests(wire)
-  end
-
-  def plan(wire) do
-    ensure!()
-    :spiral_cells@domain.plan(wire)
   end
 
   def decode_plan(wire) do

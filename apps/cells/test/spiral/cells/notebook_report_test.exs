@@ -115,7 +115,7 @@ defmodule Spiral.Cells.NotebookReportTest do
     assert map_size(mismatches) == 1
   end
 
-  test "a .spi compiles once per test block plus once for the whole file", %{dir: dir} do
+  test "a .spi compiles once per test block and never as a whole file", %{dir: dir} do
     path = Path.join(dir, "demo.spi")
     File.write!(path, @spi)
     {:ok, agent} = Agent.start_link(fn -> [] end)
@@ -128,14 +128,12 @@ defmodule Spiral.Cells.NotebookReportTest do
              )
 
     sources = Agent.get(agent, & &1)
-    assert length(sources) == 4
-    whole = Enum.filter(sources, &(&1 =~ "inl two () = 2i32" and not (&1 =~ "_assert_eq")))
-    assert [program] = whole
-    assert program =~ "inl one () = 1i32"
+    assert length(sources) == 3
+    assert Enum.all?(sources, &(&1 =~ "_assert_eq"))
 
     cells = Document.parse_spi(@spi, "")
 
-    assert map_size(Notebook.evaluate(cells, root: dir, compile: compile(agent), rustc: fn _ -> :ok end, execute: exit_when("never", 0), plan: :tests).outputs) == 4
+    assert map_size(Notebook.evaluate(cells, root: dir, compile: compile(agent), rustc: fn _ -> :ok end, execute: exit_when("never", 0), plan: :tests).outputs) == 3
   end
 
   test "--test keeps the static test bodies above it (the lib's `open testing` prelude)", %{dir: dir} do
@@ -241,7 +239,7 @@ defmodule Spiral.Cells.NotebookReportTest do
       {status, report, outputs, length(Agent.get(agent, & &1))}
     end
 
-    {{:error, _}, first, outputs, 4} = run.()
+    {{:error, _}, first, outputs, 3} = run.()
     assert first["memo_hits"] == 0
     assert Enum.map(first["tests"], &{&1["name"], &1["memo"]}) == [{"one", "miss"}, {"broken", "miss"}, {"later", nil}, {"two", "miss"}]
 
@@ -355,7 +353,7 @@ defmodule Spiral.Cells.NotebookReportTest do
   end
   test "a `fails` test passes only when its error is reported inside its own body", %{dir: dir} do
     path = Path.join(dir, "outside.spi")
-    File.write!(path, "///> rust\ninl broken () : i32 = 1f64\n\ntest uses_broken fails \"Unification failure\" =\n    broken ()\n")
+    File.write!(path, "inl broken () : i32 = 1f64\n\n///> rust\ntest uses_broken fails \"Unification failure\" =\n    broken ()\n")
 
     outside = fn %{source: source} ->
       if source =~ "broken ()", do: {:error, "main.spi:1:23: ETY-TermError: Unification failure."}, else: {:ok, "fn main() {}\n"}
@@ -533,11 +531,12 @@ defmodule Spiral.Cells.NotebookReportTest do
     #!spiral
 
     ///- --ignore
-    ///> rust
 
     inl hidden () = 1i32
 
     #!spiral
+
+    ///> rust
 
     inl shown () = 2i32
     """)
@@ -727,17 +726,6 @@ defmodule Spiral.Cells.NotebookReportTest do
   test "a static block of only opens is a prelude, not a discovered test; a static block with definitions stays static" do
     doc = Document.parse_spi("///> c\ntest base static =\n    open testing\n    open sm'_operators\n\ntest helpers static =\n    inl twice x = x + x\n\n///> rust\ntest one =\n    1i32 |> _assert_eq 1i32\n", "")
     assert ["prelude", "static", "test"] = Enum.map(Document.tests(doc), & &1.mode)
-  end
-
-  test "a file's code cells take only the ///> lines at its top, never a prelude below them, an env var or Zig" do
-    headed = Document.parse_spi("///> c\n///- --package .\ntest prelude static =\n    open testing\n\n///> rust\ntest one =\n    1i32 |> _assert_eq 1i32\n", "")
-    assert [%{tool: :c}] = Notebook.file_targets(headed.cells)
-
-    prelude_only = Document.parse_spi("///- --package .\n///> lua\ntest prelude static =\n    open testing\n\ninl f () = 1i32\n", "")
-    assert Notebook.file_targets(prelude_only.cells) == []
-
-    plain = Document.parse_spi("inl f () = 1i32\n", "")
-    assert Notebook.file_targets(plain.cells) == []
   end
 
   test "zig cells run the self-hosted backend with a persistent global cache under the spiral-bin cache dir" do

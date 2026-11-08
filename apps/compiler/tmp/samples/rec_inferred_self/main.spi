@@ -1,0 +1,4 @@
+:= count_down (n : i32) : i32 =
+    ? n = 0 ?> 17 |: count_down (n - 1)
+
+:= main () : i32 = count_down 5

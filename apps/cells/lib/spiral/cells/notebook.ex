@@ -203,26 +203,17 @@ defmodule Spiral.Cells.Notebook do
 
   @doc false
   def counts(rows) do
-    by = Enum.frequencies_by(rows, & &1["status"])
-    count = &Map.get(by, &1, 0)
+    wire = Enum.map_join(rows, "\n", &Enum.join([&1["status"] || "", &1["memo"] || "", &1["no_agree"] || ""], "\t"))
 
-    %{
-      "discovered" => length(rows) - count.("prelude"),
-      "preludes" => count.("prelude"),
-      "executed" => count.("passed") + count.("failed") + count.("accepted") + count.("built"),
-      "built" => count.("built"),
-      "static" => count.("static"),
-      "accepted" => count.("accepted"),
-      "passed" => count.("passed"),
-      "failed" => count.("failed"),
-      "skipped" => count.("skipped"),
-      "unsupported" => count.("unsupported"),
-      "timed_out" => count.("timed_out"),
-      "filtered" => count.("filtered"),
-      "not_run" => count.("not_run"),
-      "memo_hits" => Enum.count(rows, &(&1["memo"] == "hit")),
-      "no_agree_reasons" => rows |> Enum.flat_map(&List.wrap(&1["no_agree"])) |> Enum.frequencies()
-    }
+    wire
+    |> Spiral.Cells.Domain.verdict_counts()
+    |> String.split("\n", trim: true)
+    |> Enum.reduce(%{"no_agree_reasons" => %{}}, fn line, acc ->
+      case String.split(line, "\t") do
+        ["no_agree", reason, n] -> put_in(acc, ["no_agree_reasons", reason], String.to_integer(n))
+        [key, n] -> Map.put(acc, key, String.to_integer(n))
+      end
+    end)
   end
 
   defp with_mismatch(row, {:failed, message}) when is_binary(message) do
@@ -608,7 +599,7 @@ defmodule Spiral.Cells.Notebook do
       |> Enum.map(&attach_source(&1, cells))
       |> only_selected(selected)
       |> Enum.reject(&static_prelude?(&1.cell_source))
-      |> with_builders(file_targets(cells), test_cell_names(doc))
+      |> with_builders(test_cell_names(doc))
       |> keyed_on_the_whole_source()
 
     budgets = Map.new(spiral, &{&1.index, opts[:timeout] || positive_int(Map.get(&1, :timeout)) || @default_timeout})
@@ -668,7 +659,6 @@ defmodule Spiral.Cells.Notebook do
   end
 
   defp memo_key(_memo, %{untargeted: _}), do: nil
-  defp memo_key(_memo, %{untargeted_file: _}), do: nil
   defp memo_key(_memo, %{builder_error: _}), do: nil
 
   defp memo_key(memo, step) do
@@ -699,33 +689,19 @@ defmodule Spiral.Cells.Notebook do
 
   defp static_prelude?(source), do: Regex.match?(@static_prelude, source)
 
-  @doc false
-  def file_targets(cells) do
-    case Enum.find(cells, &(&1.kind == :spiral)) do
-      %{source: source} ->
-        source
-        |> String.split(~r/\r?\n/)
-        |> Enum.take_while(&(String.starts_with?(&1, "///>") or String.starts_with?(&1, "///-")))
-        |> Enum.filter(&String.starts_with?(&1, "///>"))
-        |> Enum.join("\n")
-        |> Builders.commands()
+  @runnable_modes ["test", "fails", "build_only"]
 
-      nil ->
-        []
-    end
-  end
-
-  defp test_cell_names(doc), do: for(%{mode: "test"} = test <- Document.tests(doc), into: %{}, do: {test.index, test.name})
+  defp test_cell_names(doc), do: for(%{mode: mode} = test <- Document.tests(doc), mode in @runnable_modes, into: %{}, do: {test.index, test.name})
 
   @doc false
-  def with_builders(steps, defaults, test_names) do
+  def with_builders(steps, test_names) do
     Enum.map(steps, fn step ->
       case step_commands(step.cell_source) do
         {:error, message} ->
-          step |> Map.put(:builders, defaults) |> put_test_name(test_names) |> Map.put(:builder_error, message)
+          step |> Map.put(:builders, []) |> put_test_name(test_names) |> Map.put(:builder_error, message)
 
         {:ok, []} ->
-          step |> Map.put(:builders, defaults) |> put_test_name(test_names) |> mark_untargeted(defaults)
+          step |> Map.put(:builders, []) |> put_test_name(test_names) |> mark_untargeted()
 
         {:ok, own} ->
           step |> Map.put(:builders, own) |> put_test_name(test_names)
@@ -746,20 +722,13 @@ defmodule Spiral.Cells.Notebook do
     end
   end
 
-  defp mark_untargeted(%{test_name: name} = step, _defaults), do: Map.put(step, :untargeted, name)
+  defp mark_untargeted(%{test_name: name} = step), do: Map.put(step, :untargeted, name)
 
-  defp mark_untargeted(step, []) do
-    if String.trim(Map.get(step, :program, "")) == "", do: step, else: Map.put(step, :untargeted_file, true)
-  end
+  defp mark_untargeted(step), do: Map.merge(step, %{program: "", real: ""})
 
-  defp mark_untargeted(step, _defaults), do: step
 
   @doc false
   def untargeted_message(name), do: "NoTestTarget: test #{name} names no target: add a ///> <lang> line to it"
-
-  @doc false
-  def untargeted_file_message(path), do: "NoFileTarget: #{path} names no target for its code cells: add a ///> <lang> line at its top"
-
   defp only_selected(steps, nil), do: steps
   defp only_selected(steps, selected), do: Enum.filter(steps, &MapSet.member?(selected, &1.index))
 
@@ -892,11 +861,6 @@ defmodule Spiral.Cells.Notebook do
 
   defp run_step(%{untargeted: name} = step, _opts, _root) do
     message = untargeted_message(name)
-    [{step.index, {:error, error_output(message), message}, nil}]
-  end
-
-  defp run_step(%{untargeted_file: true} = step, opts, _root) do
-    message = untargeted_file_message(opts[:path] || "the notebook")
     [{step.index, {:error, error_output(message), message}, nil}]
   end
 

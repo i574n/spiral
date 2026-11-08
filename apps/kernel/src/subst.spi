@@ -1,4 +1,3 @@
-///> zig
 ///- --package .
 :# subst static =
     :< testing
@@ -63,3 +62,11 @@
     := v = App (FVar (name "w"), BVar 1i32)
     := law = \ t => same_as (instantiate (instantiate t u) v) (instantiate (instantiate_at t 1i32 v) (instantiate u v))
     every (samples ()) law |> _assert_eq !+
+
+///> rust
+:# lifting_then_instantiating_is_a_tight_retraction =
+    := there = \ t => lift t 1i32
+    := home = \ t => instantiate t (value ())
+    := shape = round_trip.Retraction round_trip.ThereAndBack
+    (round_trip.laws_hold shape same_as same_as there home (samples ()) (samples ()), round_trip.tight shape same_as same_as there home (samples ()) (samples ()))
+    |> _assert_eq (!+, !+)

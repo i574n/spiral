@@ -1,0 +1,6 @@
+:| color = | Red | Blue
+
+:= is_red (c : color) : bool =
+    ?= c ?|
+    | Red => true
+    | Blue => false

@@ -1,4 +1,3 @@
-///> zig
 nominal cell_array =
     array_base (heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
 

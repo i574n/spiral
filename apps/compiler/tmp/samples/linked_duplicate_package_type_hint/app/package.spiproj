@@ -1,0 +1,6 @@
+packages:
+    |core-
+    pkg_a-
+    pkg_b-
+modules:
+    main

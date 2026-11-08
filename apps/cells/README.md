@@ -228,12 +228,11 @@ A cell's `///>` lines are its whole target list (no Rust run beside them).
 Every test names its own targets: a test without `///>` lines fails with
 `NoTestTarget: test <name> names no target: add a ///> <lang> line to it`, whatever the file's `static` prelude,
 `SPIRAL_CELLS_DEFAULT_TARGET` or `default_target:` say; `mix spiral.targets <paths> [--check]` lists such tests without
-running anything. Crates a package's tests need go once in its manifest (`crates = ['serde_json']` in `spiral.toml`,
-`crates:` in `package.spiproj`) and reach every `///> rust` test of the package; a test's own `///>` line is taken as
-written, with no crates from any other line. Cells that are not tests (code cells, the whole-file check) run on the
-`///>` lines at the very top of their file (above or beside its `///- --package` header line); a file with code cells and
-no such line fails with `NoFileTarget: <path> names no target for its code cells: add a ///> <lang> line at its top`.
-There is no other default: no `SPIRAL_CELLS_DEFAULT_TARGET`, no `default_target:`, no static prelude and no Zig.
+running anything. A test's crates go on its own line (`///> rust -d serde_json`), naming only what that test uses;
+nothing adds crates from a manifest or another line. No static block carries a target, and a file has no target header.
+Cells runs only test cells (`test`, `fails`, `build_only`): code cells and a file's `main` are never compiled or run by
+Cells, only by the builds that generate code from them, so a self-checking program keeps its check in a test cell.
+There is no default target: no `SPIRAL_CELLS_DEFAULT_TARGET`, no `default_target:`, no static prelude and no Zig.
 The `static` prelude itself is never compiled or run: its `open`s and types reach every later test, which compiles them,
 and its row says `static` (counted in `static`, not in `executed`). A static block whose body is only `open` lines
 (after its `///` lines) is the file's prelude, not a test: its row says `prelude`, it is counted in `preludes`, and it is
@@ -335,9 +334,9 @@ fails and the file is not touched.
 ### Cell budget
 
 Every top-level definition is a cell, and a cell has a budget: 280 weighted characters (CJK and emoji weigh 2, a link
-23), less its header line. When the nearest `package.spiproj` above a notebook says `edition: 3` (or `--cell-budget` is
-passed), a run prints one `cell-budget <file>:<line>:<col>: <kind>: <text> (<hint>)` line per thing a renderer would
-rewrite: `#` before a letter (hashtag), `@` before a name (mention), `$` before letters (cashtag) and text that looks like
+23), less its header line. When the nearest manifest above a notebook is in the i574n dialect (the default: no key,
+`edition: 3` or `dialect: i574n`; only `dialect: upstream` opts out), or `--cell-budget` is passed, a run prints one
+`cell-budget <file>:<line>:<col>: <kind>: <text> (<hint>)` line per thing a renderer would rewrite: `#` before a letter (hashtag), `@` before a name (mention), `$` before letters (cashtag) and text that looks like
 a domain (`cell.ai`; member access spelled `::` never does). These are warnings: the run's result does not change.
 `mix spiral.cell_budget <file or dir>...` is the CI report over `.spi`, `.spir` and `.livemd` files: every finding, every
 definition over budget (`over_budget`) and a summary line. With `--check` it exits 1 when a definition is over budget.
@@ -383,7 +382,7 @@ returns `%{status, outputs, durations, verdicts, unavailable, report}` by cell i
 
 A cell's `///- --timeout <ms>` directive is its budget. It wins over the smart cell's `timeout` field (a smart cell
 always passes one) and over the 300 s default. The first Spiral cell's `--timeout` (in a `.spi`, the file's first `///-` line)
-is also the budget of every test cell without its own and of the whole-file run.
+is also the budget of every test cell without its own.
 
 ### F# cells (`Spiral.Cells.FsiSession`, `Spiral.Cells.FsiChain`)
 

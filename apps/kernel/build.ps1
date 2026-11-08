@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 
 $notebooks = @(Get-ChildItem src -Filter *.spi | ForEach-Object { '--path'; $_.FullName })
 $env:SPIRAL_CELLS_MEMO = '0'
-Push-Location (Join-Path '..' 'cells')
+Push-Location ($env:SPIRAL_CELLS_ROOT ? $env:SPIRAL_CELLS_ROOT : (Join-Path '..' 'cells'))
 try { $cells = @(& pwsh -NoProfile -File (Join-Path 'spi' 'run_notebook.ps1') --gate @notebooks 2>&1 | ForEach-Object { "$_" }); $cellsExit = $LASTEXITCODE }
 finally { Pop-Location }
 $cells | ForEach-Object { Write-Output "apps/kernel/build.ps1 / cells / $_" }

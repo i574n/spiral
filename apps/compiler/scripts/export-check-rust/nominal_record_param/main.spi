@@ -1,4 +1,3 @@
-///> zig
 :! span = { start : i32; stop : i32 }
 
 := width (span s) : i32 = s.stop - s.start

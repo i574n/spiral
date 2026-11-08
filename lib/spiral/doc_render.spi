@@ -1,4 +1,3 @@
-///> zig
 ///- --package .
 :< sm'_operators
 
@@ -108,7 +107,10 @@
 :~ numbered_html ((start, items) : i64 * list (list inline)) : markup =
     trusted (ordered_open start) ++ items_html items ++ trusted "</ol>\n"
 
-:~ pre_html (lines : list string) : markup = trusted "<pre><code>" ++ code_html lines ++ trusted "</code></pre>\n"
+:~ code_open (lang : string) : markup =
+    ? lang = "" ?> trusted "<pre><code>" |: trusted "<pre><code class=\"language-" ++ escape lang ++ trusted "\">"
+
+:~ pre_html (lang : string) (lines : list string) : markup = code_open lang ++ code_html lines ++ trusted "</code></pre>\n"
 
 :~ hr () : markup = trusted "<hr>\n"
 
@@ -120,7 +122,7 @@
     | Paragraph x => para_html x
     | Bullets x => bullets_html x
     | Numbered n => numbered_html n
-    | CodeBlock x => pre_html x
+    | CodeBlock (lang, x) => pre_html lang x
     | Rule => hr ()
     | Table t => table_of t
 

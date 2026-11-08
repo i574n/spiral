@@ -1,0 +1,21 @@
+///- --package .
+:< markup
+:< sm'_operators
+
+:# doc_text static =
+    :< testing
+
+:~ at_is (s : string) (i : i32) (c : char) : bool = i < sm::length s && sm::index s i = c
+
+:~ ^ spaces_from (s : string) (i : i32) : i32 =
+    ? i < sm::length s && sm::index s i = ' ' ?> spaces_from s (i + 1i32) |: i
+
+:~ ^ trail_from (s : string) (i : i32) : i32 =
+    ? i > 0i32 && sm::index s (i - 1i32) = ' ' ?> trail_from s (i - 1i32) |: i
+
+:~ trim (s : string) : string = run_of s (spaces_from s 0i32) (trail_from s (sm::length s))
+
+///> rust
+///> gleam
+:# trim_drops_surrounding_spaces_only =
+    (trim "  a b  ", trim "", trim "x") |> _assert_eq ("a b", "", "x")

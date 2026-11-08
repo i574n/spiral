@@ -1,0 +1,56 @@
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:== source_row = { input : string; header : string; last : string; header_text : string }
+
+:= row_of (line : string) : option source_row =
+    := t1 = text::find_char line 0i32 '\t'
+    := t2 = text::find_char line (t1 + 1i32) '\t'
+    := t3 = text::find_char line (t2 + 1i32) '\t'
+    := t4 = text::find_char line (t3 + 1i32) '\t'
+    := t5 = text::find_char line (t4 + 1i32) '\t'
+    := header = text::slice_len line (t2 + 1i32) (t3 - t2 - 1i32)
+    ? t1 < 0i32 || t2 < 0i32 || t3 < 0i32 || t4 < 0i32 || t5 < 0i32 || header = "0" ?> None
+    |:
+        := last = text::slice_len line (t4 + 1i32) (t5 - t4 - 1i32)
+        Some { input = text::take line t1; header; last; header_text = text::drop line (t5 + 1i32) }
+
+:= span_row (r : source_row) : string = r::header ++ "\t" ++ r::last ++ "\t" ++ r::header_text
+
+:~ ^ rows_for (lines : list string) (input : string) (acc : list string) : list string =
+    ?= lines ?|
+    | [] => listm::rev acc
+    | line :: rest =>
+        ?= row_of line ?|
+        | Some r => rows_for rest input (? r::input = input ?> span_row r :: acc |: acc)
+        | None => rows_for rest input acc
+
+:= input_rows (tsv : string) (input : string) : string = sm'::concat_list "\n" (rows_for (sm'::split_list "\n" tsv) input [])
+
+:= word_byte (b : i32) : bool =
+    (b >= 48i32 && b <= 57i32) || (b >= 65i32 && b <= 90i32) || (b >= 97i32 && b <= 122i32) || b = 95i32 || b = 39i32 || b >= 128i32
+
+:= keyword_alone (h : string) (k : string) : bool =
+    text::starts_with h k && (text::length h = text::length k || not (word_byte (text::byte_at h (text::length k))))
+
+:= test_header (h : string) : bool = keyword_alone h "test" || keyword_alone h ":#"
+
+:= field (tag : string) (s : string) : string = tag ++ text::show_i32 (text::length s) ++ ":" ++ s
+
+:= block_wire (lines : list string) (s : memo::span) : string =
+    := body = memo::lines_between lines 1i32 s []
+    field "b" s::header_text ++ sm'::concat_list "" (listm::map (field "l") body)
+
+:= split_blocks (program : string) (rows : string) : string =
+    := lines = sm'::split_list "\n" (text::replace program "\r\n" "\n")
+    := kept = memo::keep (\ (s : memo::span) => not (test_header s::header_text)) (memo::spans_of rows)
+    sm'::concat_list "" (listm::map (block_wire lines) kept)
+
+///> gleam
+:# rows_group_by_input_and_skip_headerless_blocks =
+    := tsv = "1\t1\t2\t3\t4\tinl a () =\n1\t5\t0\t0\t6\t\n2\t1\t1\t1\t1\ttest x =\n"
+    (input_rows tsv "1", input_rows tsv "2", input_rows tsv "3") |> _assert_eq ("2\t4\tinl a () =", "1\t1\ttest x =", "")
+
+///> gleam
+:# test_headers_are_split_out_and_a_block_past_the_end_has_no_lines =
+    := rows = "1\t2\t:= a =\n3\t3\t:# t =\n4\t4\ttest_ok =\n9\t9\t:= g ="
+    split_blocks ":= a =\n 1\n:# t =\ntest_ok" rows |> _assert_eq "b5::= a =l5::= a =l2: 1b9:test_ok =l7:test_okb5::= g ="

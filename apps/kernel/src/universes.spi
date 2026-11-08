@@ -1,4 +1,3 @@
-///> zig
 ///- --package .
 :# universes static =
     :< testing

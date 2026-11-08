@@ -1148,6 +1148,7 @@ defmodule Spiral.Cells.CompilerDaemon do
 
     case status do
       :ok -> shown ++ ["end\t0"]
+      {:void, message} -> shown ++ ["error\t" <> JSON.encode!(message), "end\t3"]
       {:error, message} -> shown ++ ["error\t" <> JSON.encode!(message), "end\t1"]
     end
   rescue

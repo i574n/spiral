@@ -1,6 +1,4 @@
-///> gleam
 ///- --package .
-///> gleam
 :# manifest static =
     :< testing
 
@@ -129,6 +127,17 @@
 
 := declares_modules (s : string) : bool = declares_from s 0i32
 
+:= upstream_line (line : string) : bool =
+    := t = text::trim line
+    text::starts_with t "dialect:" && text::trim (text::drop t 8i32) = "upstream"
+
+:~ ^ any_upstream (lines : list string) : bool =
+    ?= lines ?|
+    | [] => !-
+    | line :: rest => upstream_line line || any_upstream rest
+
+:= i574n_dialect (text_in : string) : bool = not (any_upstream (sm'::split_list "\n" (from_toml text_in)))
+
 ///> gleam
 :# scalars_lists_and_blocks_convert_like_the_elixir_reader =
     := toml = "edition = 3\npackageDir = '../lib'\npackages = ['|core-', \"spiral-\"]\nmodules = '''\nmain\n'''"
@@ -144,6 +153,16 @@
     declares_modules "edition = 3\n  modules =\n'''main'''" |> _assert_eq !+
     declares_modules "x = 1\nmodules\n  = 'a'" |> _assert_eq !+
     declares_modules "submodules = 1\n# modules = 2\nmodules_x = 3" |> _assert_eq !-
+
+///> gleam
+:# the_i574n_dialect_is_the_default_with_or_without_a_key =
+    := keyless = i574n_dialect "packageDir = '../lib'\nmodules = '''\nmain\n'''"
+    := compat = i574n_dialect "edition = 3", i574n_dialect "edition: 3"
+    (keyless, compat, i574n_dialect "dialect = \"i574n\"", i574n_dialect "dialect: i574n") |> _assert_eq (!+, (!+, !+), !+, !+)
+
+///> gleam
+:# only_the_upstream_dialect_opts_out_in_either_spelling =
+    (i574n_dialect "dialect = 'upstream'", i574n_dialect "  dialect:   upstream\r\nmodules:\n    main") |> _assert_eq (!-, !-)
 
 ///> gleam
 :# a_name_joins_a_dir_like_elixir_path_join =

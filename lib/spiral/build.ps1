@@ -12,7 +12,7 @@ $ResolvedScriptDir | Set-Location
 
 Write-Output "spiral/lib/spiral/build.ps1 / ScriptDir: $ScriptDir / ResolvedScriptDir: $ResolvedScriptDir"
 
-$livebook = Join-Path $ResolvedScriptDir "../../apps/cells/spi/run_notebook.ps1"
+$livebook = Join-Path ($env:SPIRAL_CELLS_ROOT ? $env:SPIRAL_CELLS_ROOT : (Join-Path $ResolvedScriptDir "../../apps/cells")) "spi/run_notebook.ps1"
 $notebooks = @(
     "physics", "parsing", "sm'", "rust", "rust_testing", "near", "near_workspaces", "testing", "guid",
     "async", "trace", "am'", "crypto", "common", "resultm", "console", "base", "convert", "date_time", "math",

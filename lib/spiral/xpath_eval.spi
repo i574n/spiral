@@ -1,4 +1,3 @@
-///> zig
 ///- --package . --timeout 900000
 :< sm'_operators
 :< xml

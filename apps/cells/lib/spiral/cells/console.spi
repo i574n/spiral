@@ -1,4 +1,3 @@
-///> zig
 := (~!\\) \* t u. ((args : t), (code : string)) : u =
     $'__spiral_emit_rust !args !code '
 

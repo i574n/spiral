@@ -1,4 +1,3 @@
-///> zig
 :| command =
     | Add : i32
     | Rename : string

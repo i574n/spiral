@@ -1,6 +1,4 @@
-///> gleam
 ///- --package .
-///> gleam
 :# builders static =
     :< testing
 
@@ -468,7 +466,6 @@
     ?= c ?|
     | Builder b => builder_text b
 
-:= deps_wire (tokens : string) : string = sm'::concat_list "" (listm::map (\ t => dep_text (dep_of t)) (sm'::split_list "\n" tokens))
 
 := split_wire (code : string) : string =
     ?= split code ?|

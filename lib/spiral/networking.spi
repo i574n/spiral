@@ -1,4 +1,3 @@
-///> zig
 :# networking static =
     :< testing
 

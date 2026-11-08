@@ -1,4 +1,3 @@
-///> zig
 ///- --package .
 :# inductive static =
     :< testing

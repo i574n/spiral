@@ -1,4 +1,3 @@
-///> zig
 :# keyed_rng static =
     :< testing
 

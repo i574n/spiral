@@ -12,7 +12,7 @@
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; overlays = [ rust-overlay.overlays.default ]; };
       beam = pkgs.beam.packages.erlang_29;
-      rust = pkgs.rust-bin.nightly."2026-10-18".default.override {
+      rust = pkgs.rust-bin.nightly."2026-11-05".default.override {
         extensions = [ "clippy" "rust-src" "rustfmt" ];
         targets = [ "wasm32-unknown-unknown" ];
       };

@@ -36,6 +36,7 @@ defmodule Spiral.Cells.Mounts do
     case Spiral.Cells.FileLock.with_lock(dir <> ".lock", fn -> build(dir, entries) end, 180_000) do
       :ok -> {:ok, forward(dir)}
       {:error, reason} when is_binary(reason) -> {:error, reason}
+      {:error, :lock_timeout} -> {:error, %Spiral.Cells.TimeoutError{message: "waited 180 s on the mount lock #{dir}.lock, held by a live build", timeout: 180_000}}
       {:error, reason} -> {:error, "could not mount packages: #{inspect(reason)}"}
     end
   end
@@ -163,26 +164,26 @@ defmodule Spiral.Cells.Mounts do
     with :ok <- top_level_only(patched_names),
          :ok <- shadow(link, target, patched_names, package_dir) do
       Enum.reduce_while(patches, :ok, fn {file, old, new}, :ok ->
-        text = File.read!(Path.join(target, file))
+        case Spiral.Cells.Domain.mount_patch_first(File.read!(Path.join(target, file)), old, new) do
+          {:ok, patched} ->
+            File.write!(Path.join(link, file), patched)
+            {:cont, :ok}
 
-        if String.contains?(text, old) do
-          File.write!(Path.join(link, file), String.replace(text, old, new, global: false))
-          {:cont, :ok}
-        else
-          {:halt, {:error, "patch for #{file} does not apply: #{inspect(old)} is not in #{Path.join(target, file)}"}}
+          :error ->
+            {:halt, {:error, "patch for #{file} does not apply: #{inspect(old)} is not in #{Path.join(target, file)}"}}
         end
       end)
     end
   end
 
   defp top_level_only(names) do
-    case Enum.find(names, &(Path.dirname(&1) != ".")) do
+    case Spiral.Cells.Domain.mount_nested_name(Enum.to_list(names)) do
       nil -> :ok
       nested -> {:error, "patch target #{nested} is nested; patched mounts take top-level package files only"}
     end
   end
 
-  defp project_for_mount(text, _target, :siblings), do: text |> then(&Regex.replace(~r/^packageDir:\s*.+$/m, &1, "packageDir: ..")) |> sibling_entries()
+  defp project_for_mount(text, _target, :siblings), do: Spiral.Cells.Domain.mount_sibling_project(text)
 
   defp project_for_mount(text, target, :absolute) do
     Regex.replace(~r/^packageDir:\s*(.+)$/m, text, fn _, dir -> "packageDir: " <> (dir |> String.trim() |> Path.expand(target)) end)
@@ -343,26 +344,6 @@ defmodule Spiral.Cells.Mounts do
     end
   end
 
-  @spec declared_crates(String.t()) :: [String.t()]
-  def declared_crates(dir) do
-    case Spiral.Cells.Manifest.read(dir) do
-      {:ok, text} ->
-        {crates, _mode} =
-          Enum.reduce(String.split(text, ~r/\r?\n/), {[], :out}, fn line, {crates, mode} ->
-            cond do
-              String.starts_with?(line, "crates:") -> {crates, :in}
-              line != "" and not String.starts_with?(line, [" ", "\t"]) -> {crates, :out}
-              mode == :in and String.trim(line) != "" -> {[String.trim(line) | crates], :in}
-              true -> {crates, mode}
-            end
-          end)
-
-        Enum.reverse(crates)
-
-      _ ->
-        []
-    end
-  end
 
   @spec mount_name(String.t()) :: String.t()
   def mount_name(target) do
@@ -405,17 +386,6 @@ defmodule Spiral.Cells.Mounts do
   end
 
   defp relative_entry?(item), do: String.starts_with?(item, ["./", "../", ".\\", "..\\"])
-
-  defp sibling_entries(text) do
-    Enum.reduce(package_entries(text), text, fn {item, declared}, acc ->
-      if relative_entry?(item) do
-        suffix = String.replace_prefix(declared, item, "")
-        String.replace(acc, ~r/^(\s+)#{Regex.escape(declared)}\s*$/m, "\\1#{Path.basename(item)}#{suffix}")
-      else
-        acc
-      end
-    end)
-  end
 
   defp package_base(dir, text) do
     case Regex.run(~r/^packageDir:\s*(.+?)\s*$/m, text) do

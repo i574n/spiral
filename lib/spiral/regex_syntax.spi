@@ -1,0 +1,371 @@
+///- --package .
+:< regex_charset
+
+:# regex_syntax static =
+    :< testing
+
+:| upper =
+    | Bounded : u32
+    | Unbounded
+
+:| ^ re =
+    | Nothing
+    | Epsilon
+    | Set : char_set normal
+    | Seq : re * re
+    | Alt : re * re
+    | And : re * re
+    | Not : re
+    | Star : re
+    | Repeat : re * u32 * upper
+
+:= rank (r : re) : u32 =
+    ?= r ?|
+    | Nothing => 0u32
+    | Epsilon => 1u32
+    | Set _ => 2u32
+    | Seq _ => 3u32
+    | Alt _ => 4u32
+    | And _ => 5u32
+    | Not _ => 6u32
+    | Star _ => 7u32
+    | Repeat _ => 8u32
+
+:= order_upper (a : upper) (b : upper) : order =
+    ?= a ?|
+    | Bounded x => ?= b ?| Bounded y => order_u32 x y | Unbounded => Before
+    | Unbounded => ?= b ?| Bounded _ => After | Unbounded => Same
+
+:= then_order (first : order) (next : () -> order) : order =
+    ?= first ?|
+    | Same => next ()
+    | o => o
+
+:~ ^ order_re (a : re) (b : re) : order = then_order (order_u32 (rank a) (rank b)) (\ () => order_same a b)
+
+:& :~ order_same (a : re) (b : re) : order =
+    ?= a ?|
+    | Set x => ?= b ?| Set y => order_sets x y | _ => Same
+    | Seq (x, y) => ?= b ?| Seq (u, v) => order_two x y u v | _ => Same
+    | _ => order_pair a b
+
+:& :~ order_pair (a : re) (b : re) : order =
+    ?= a ?|
+    | Alt (x, y) => ?= b ?| Alt (u, v) => order_two x y u v | _ => Same
+    | And (x, y) => ?= b ?| And (u, v) => order_two x y u v | _ => Same
+    | _ => order_unary a b
+
+:& :~ order_unary (a : re) (b : re) : order =
+    ?= a ?|
+    | Not x => ?= b ?| Not u => order_re x u | _ => Same
+    | Star x => ?= b ?| Star u => order_re x u | _ => Same
+    | Repeat (x, low, up) => order_repeat_with x low up b
+    | _ => Same
+
+:& :~ order_repeat_with (x : re) (low : u32) (up : upper) (b : re) : order =
+    ?= b ?|
+    | Repeat (u, l, p) => order_repeat x low up u l p
+    | _ => Same
+
+:& :~ order_two (x : re) (y : re) (u : re) (v : re) : order = then_order (order_re x u) (\ () => order_re y v)
+
+:& :~ order_repeat (x : re) (low : u32) (up : upper) (u : re) (l : u32) (p : upper) : order =
+    then_order (order_u32 low l) (\ () => then_order (order_upper up p) (\ () => order_re x u))
+
+:~ same_re (a : re) (b : re) : bool =
+    ?= order_re a b ?|
+    | Same => !+
+    | _ => !-
+
+:= is_nothing (r : re) : bool =
+    ?= r ?|
+    | Nothing => !+
+    | _ => !-
+
+:= is_universal (r : re) : bool =
+    ?= r ?|
+    | Not inner => is_nothing inner
+    | _ => !-
+
+:= universal () : re = Not Nothing
+
+:~ starred_twice (a : re) (b : re) : bool =
+    ?= a ?|
+    | Star _ =>
+        ?= b ?|
+        | Seq (h, _) => same_re a h
+        | _ => same_re a b
+    | _ => !-
+
+:~ ^ seq (a : re) (b : re) : re =
+    ?= a ?|
+    | Nothing => Nothing
+    | Epsilon => b
+    | Seq (x, y) => seq x (seq y b)
+    | _ =>
+        ?= b ?|
+        | Nothing => Nothing
+        | Epsilon => a
+        | _ => ? starred_twice a b ?> b |: Seq (a, b)
+
+:~ ^ insert_leaf (leaf : re) (sorted : list re) : list re =
+    ?= sorted ?|
+    | head :: rest =>
+        ?= order_re leaf head ?|
+        | Same => sorted
+        | Before => leaf :: sorted
+        | After => head :: insert_leaf leaf rest
+    | [] => [ leaf ]
+
+:~ ^ alt_leaves (r : re) (sorted : list re) : list re =
+    ?= r ?|
+    | Alt (x, y) => alt_leaves x (alt_leaves y sorted)
+    | Nothing => sorted
+    | _ => insert_leaf r sorted
+
+:~ ^ and_leaves (r : re) (sorted : list re) : list re =
+    ?= r ?|
+    | And (x, y) => and_leaves x (and_leaves y sorted)
+    | _ => ? is_universal r ?> sorted |: insert_leaf r sorted
+
+:~ ^ alt_of (leaves : list re) : re =
+    ?= leaves ?|
+    | [] => Nothing
+    | leaf :: [] => leaf
+    | leaf :: rest => Alt (leaf, alt_of rest)
+
+:~ ^ and_of (leaves : list re) : re =
+    ?= leaves ?|
+    | [] => universal ()
+    | leaf :: [] => leaf
+    | leaf :: rest => And (leaf, and_of rest)
+
+:~ alt (a : re) (b : re) : re =
+    ? is_universal a || is_universal b ?> universal () |: alt_of (alt_leaves a (alt_leaves b []))
+
+:~ both (a : re) (b : re) : re =
+    ? is_nothing a || is_nothing b ?> Nothing |: and_of (and_leaves a (and_leaves b []))
+
+:~ negate (a : re) : re =
+    ?= a ?|
+    | Not inner => inner
+    | _ => Not a
+
+:~ star (a : re) : re =
+    ?= a ?|
+    | Nothing => Epsilon
+    | Epsilon => Epsilon
+    | Star _ => a
+    | _ => Star a
+
+:= one_less (n : u32) : u32 = ? n = 0u32 ?> 0u32 |: n - 1u32
+
+:= upper_less (up : upper) : upper =
+    ?= up ?|
+    | Bounded n => Bounded (one_less n)
+    | Unbounded => Unbounded
+
+:= repeat_atom (a : re) (low : u32) (up : upper) : re =
+    ?= a ?|
+    | Nothing => ? low = 0u32 ?> Epsilon |: Nothing
+    | Epsilon => Epsilon
+    | _ => Repeat (a, low, up)
+
+:~ bounded_repeat (a : re) (low : u32) (n : u32) (up : upper) : re =
+    ? n = 0u32 ?> Epsilon |? n < low ?> Nothing |? low = 1u32 && n = 1u32 ?> a |: repeat_atom a low up
+
+:~ repeat (a : re) (low : u32) (up : upper) : re =
+    ?= up ?|
+    | Bounded n => bounded_repeat a low n up
+    | Unbounded => ? low = 0u32 ?> star a |: repeat_atom a low up
+
+:= set (s : char_set normal) : re = ? is_empty s ?> Nothing |: Set s
+
+:= code (c : u32) : re = Set (single c)
+
+:~ ^ word (codes : list u32) : re =
+    ?= codes ?|
+    | c :: rest => seq (code c) (word rest)
+    | [] => Epsilon
+
+:= optional (a : re) : re = alt Epsilon a
+
+:= plus (a : re) : re = seq a (star a)
+
+:= any_code () : re = Set (everything ())
+
+:= zero () : re = code 48u32
+
+:= one () : re = code 49u32
+
+:= bit () : re = alt (zero ()) (one ())
+
+:| canon_fault =
+    | SeqNotRightNested
+    | SeqWithUnit
+    | StarsRepeated
+    | AltNotNormal
+    | AndNotNormal
+    | DoubleNot
+    | StarOfTrivial
+    | RepeatNotReduced
+
+:| canon =
+    | Canonical
+    | Breaks : canon_fault * re
+
+:~ is_before (o : order) : bool =
+    ?= o ?|
+    | Before => !+
+    | _ => !-
+
+:~ is_trivial (r : re) : bool = is_nothing r || same_re r Epsilon
+
+:~ alt_head (r : re) : re =
+    ?= r ?|
+    | Alt (h, _) => h
+    | _ => r
+
+:~ and_head (r : re) : re =
+    ?= r ?|
+    | And (h, _) => h
+    | _ => r
+
+:~ has_unit (x : re) (y : re) : bool = is_nothing x || is_nothing y || is_universal x || is_universal y
+
+:~ seq_fault (x : re) (y : re) : option canon_fault =
+    ?= x ?|
+    | Seq _ => Some SeqNotRightNested
+    | _ => ? is_trivial x || is_trivial y ?> Some SeqWithUnit |? starred_twice x y ?> Some StarsRepeated |: None
+
+:~ alt_fault (x : re) (y : re) : option canon_fault =
+    ?= x ?|
+    | Alt _ => Some AltNotNormal
+    | _ => ? has_unit x y || not (is_before (order_re x (alt_head y))) ?> Some AltNotNormal |: None
+
+:~ and_fault (x : re) (y : re) : option canon_fault =
+    ?= x ?|
+    | And _ => Some AndNotNormal
+    | _ => ? has_unit x y || not (is_before (order_re x (and_head y))) ?> Some AndNotNormal |: None
+
+:~ star_fault (x : re) : option canon_fault =
+    ?= x ?|
+    | Star _ => Some StarOfTrivial
+    | _ => ? is_trivial x ?> Some StarOfTrivial |: None
+
+:~ not_fault (x : re) : option canon_fault =
+    ?= x ?|
+    | Not _ => Some DoubleNot
+    | _ => None
+
+:~ bounded_fault (x : re) (low : u32) (n : u32) : bool = is_trivial x || n = 0u32 || n < low || (low = 1u32 && n = 1u32)
+
+:~ repeat_fault (x : re) (low : u32) (up : upper) : option canon_fault =
+    ?= up ?|
+    | Bounded n => ? bounded_fault x low n ?> Some RepeatNotReduced |: None
+    | Unbounded => ? is_trivial x || low = 0u32 ?> Some RepeatNotReduced |: None
+
+:~ unary_fault (r : re) : option canon_fault =
+    ?= r ?|
+    | Not x => not_fault x
+    | Star x => star_fault x
+    | _ => None
+
+:~ shape_fault (r : re) : option canon_fault =
+    ?= r ?|
+    | Seq (x, y) => seq_fault x y
+    | Alt (x, y) => alt_fault x y
+    | And (x, y) => and_fault x y
+    | Repeat (x, low, up) => repeat_fault x low up
+    | _ => unary_fault r
+
+:~ parts_of (r : re) : list re =
+    ?= r ?|
+    | Seq (x, y) => [ x; y ]
+    | Alt (x, y) => [ x; y ]
+    | And (x, y) => [ x; y ]
+    | Not x => [ x ]
+    | Star x => [ x ]
+    | Repeat (x, _, _) => [ x ]
+    | _ => []
+
+:~ then_canon (a : canon) (b : () -> canon) : canon =
+    ?= a ?|
+    | Canonical => b ()
+    | broken => broken
+
+:~ ^ all_canonical (k : re -> canon) (rs : list re) : canon =
+    ?= rs ?|
+    | x :: rest => then_canon (k x) (\ () => all_canonical k rest)
+    | [] => Canonical
+
+:~ ^ is_canonical (r : re) : canon =
+    ?= shape_fault r ?|
+    | Some f => Breaks (f, r)
+    | None => all_canonical is_canonical (parts_of r)
+
+:= fault_of (c : canon) : option canon_fault =
+    ?= c ?|
+    | Breaks (f, _) => Some f
+    | Canonical => None
+
+///> rust
+///> gleam
+:# alternation_is_sorted_and_deduplicated =
+    same_re (alt (one ()) (alt (zero ()) (one ()))) (alt (zero ()) (one ())) |> _assert_eq !+
+
+///> rust
+///> gleam
+:# nothing_is_the_unit_of_alternation_and_absorbs_sequence =
+    (same_re (alt Nothing (bit ())) (bit ()), same_re (seq (bit ()) Nothing) Nothing) |> _assert_eq (!+, !+)
+
+///> rust
+///> gleam
+:# sequence_nests_to_the_right =
+    same_re (seq (seq (zero ()) (one ())) (zero ())) (Seq (zero (), Seq (one (), zero ()))) |> _assert_eq !+
+
+///> rust
+///> gleam
+:# a_double_negation_and_a_starred_star_collapse =
+    (same_re (negate (negate (bit ()))) (bit ()), same_re (star (star (bit ()))) (star (bit ()))) |> _assert_eq (!+, !+)
+
+:~ repeat_bit (low : u32) (n : u32) : re = repeat (bit ()) low (Bounded n)
+
+///> rust
+///> gleam
+:# counted_repetition_stays_one_node =
+    rank (repeat (bit ()) 1u32 (Bounded 1000u32)) |> _assert_eq 8u32
+
+///> rust
+///> gleam
+:# degenerate_counts_simplify =
+    (
+        same_re (repeat_bit 0u32 0u32) Epsilon,
+        same_re (repeat_bit 1u32 1u32) (bit ()),
+        same_re (repeat_bit 3u32 2u32) Nothing
+    )
+    |> _assert_eq (!+, !+, !+)
+
+///> rust
+///> gleam
+:# the_universal_language_absorbs_alternation_and_is_the_unit_of_intersection =
+    (is_universal (alt (bit ()) (universal ())), same_re (both (universal ()) (bit ())) (bit ())) |> _assert_eq (!+, !+)
+
+///> rust
+///> gleam
+:# two_equal_stars_in_a_row_collapse_to_one =
+    := ~b = star (bit ())
+    (same_re (seq b b) b, same_re (seq b (seq b (zero ()))) (seq b (zero ()))) |> _assert_eq (!+, !+)
+
+:~ fault_for (r : re) : option canon_fault = fault_of (is_canonical r)
+
+///> rust
+///> gleam
+:# hand_built_terms_name_the_canonical_rule_they_break =
+    (fault_for (Seq (Seq (zero (), one ()), zero ())), fault_for (Alt (one (), zero ())))
+    |> _assert_eq (Some SeqNotRightNested, Some AltNotNormal)
+
+///> rust
+///> gleam
+:# a_star_of_a_star_breaks_a_rule_and_the_smart_constructors_break_none =
+    (fault_for (Star (Star (bit ()))), fault_for (seq (star (bit ())) (zero ()))) |> _assert_eq (Some StarOfTrivial, None)

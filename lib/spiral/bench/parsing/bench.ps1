@@ -9,7 +9,7 @@ param(
     [string] $Agent = 'parsing-bench',
     [string] $Spc,
     [string] $Heavy,
-    [string] $RustToolchain = 'nightly-2026-10-18',
+    [string] $RustToolchain = 'nightly-2026-11-05',
     [int] $MinFreeMB = 2500,
     [switch] $MemoryWait,
     [string] $TraceLevel = 'Info',

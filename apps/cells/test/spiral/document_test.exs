@@ -537,7 +537,7 @@ defmodule Spiral.Cells.DocumentTest do
 
     spi = Document.to_spi(dice)
     assert spi =~ "/// # dice (Dice)"
-    assert spi =~ ~r/^(?:inl|:=) sixth_power_sequence \(\) =/m
+    assert spi =~ ~r/^(?:inl|:=) face_of_pips \(p : u8\) : option face =/m
     assert spi =~ ~r/^(?:inl|:=) main \(_args : array_base string\) =/m
     refute spi =~ "_assert_eq"
     refute spi =~ ~r/^\s*(?:open|:<) testing$/m

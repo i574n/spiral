@@ -1,4 +1,3 @@
-///> zig
 ///- --package .
 :# spl2spi static =
     :< testing

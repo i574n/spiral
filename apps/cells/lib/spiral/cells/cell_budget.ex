@@ -201,11 +201,11 @@ defmodule Spiral.Cells.CellBudget do
     "#{location}: #{finding.kind}: #{finding.text} (#{finding.hint})"
   end
 
-  @spec edition3?(String.t()) :: boolean()
-  def edition3?(path) do
+  @spec i574n_dialect?(String.t()) :: boolean()
+  def i574n_dialect?(path) do
     case nearest_project(path |> Path.expand() |> Path.dirname()) do
       nil -> false
-      dir -> dir |> Spiral.Cells.Manifest.read!() |> String.split(~r/\r?\n/) |> Enum.any?(&(String.trim(&1) == "edition: 3"))
+      dir -> dir |> Spiral.Cells.Manifest.path() |> File.read!() |> Spiral.Cells.Domain.i574n_dialect()
     end
   end
 

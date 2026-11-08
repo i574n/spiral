@@ -1,0 +1,130 @@
+:# f32_trits static =
+    :< testing
+
+:== floats = array f32
+
+:| trit =
+    | Neg
+    | Zero
+    | Pos
+
+:! trits n = array u8
+
+:= count \* n. (_ : trits n) : i32 = ~> real_core::type_lit_to_lit `n
+
+:= code_of (t : trit) : u8 =
+    ?= t ?|
+    | Neg => 0u8
+    | Zero => 1u8
+    | Pos => 2u8
+
+:= trit_of (code : u8) : trit = ? code = 0u8 ?> Neg |: ? code = 2u8 ?> Pos |: Zero
+
+:= bytes_of \* n. ((trits b) : trits n) : array u8 = b
+
+:= code_in (b : array u8) (i : i32) : u8 = (index b (i / 4) >>> (2 * (i % 4))) &&& 3u8
+
+:~ ^ pack_from (b : array u8) (f : i32 -> trit) (n : i32) (i : i32) : () =
+    ? i < n ?>
+        set b (i / 4) (index b (i / 4) ||| (code_of (f i) <<< (2 * (i % 4))))
+        pack_from b f n (i + 1)
+
+:= pack \* n. (f : i32 -> trit) : trits n =
+    := n = count (trits (create 0) : trits n)
+    := b : array u8 = create ((n + 3) / 4)
+    pack_from b f n 0
+    trits b
+
+:= trit_at \* n. (t : trits n) (i : i32) : trit = trit_of (code_in (bytes_of t) i)
+
+:= signed (c : u8) (acc : f32) (v : f32) : f32 = ? c = 2u8 ?> acc + v |: ? c = 0u8 ?> acc - v |: acc
+
+:~ ^ dot_from (b : array u8) (x : floats) (n : i32) (i : i32) (acc : f32) : f32 =
+    ? i >= n ?> acc |: dot_from b x n (i + 1) (signed (code_in b i) acc (index x i))
+
+:= ternary_dot \* n. (t : trits n) (x : floats) : f32 = dot_from (bytes_of t) x (count t) 0 0.0f32
+
+:~ ^ abs_sum (w : floats) (off : i32) (n : i32) (i : i32) (acc : f32) : f32 =
+    ? i >= n ?> acc |: abs_sum w off n (i + 1) (acc + abs (index w (off + i)))
+
+:= absmean (w : floats) (off : i32) (n : i32) : f32 = abs_sum w off n 0 0.0f32 / conv n + 0.00001f32
+
+:= trit_near (v : f32) : trit = ? v >= 0.5f32 ?> Pos |: ? v <= 0.0f32 - 0.5f32 ?> Neg |: Zero
+
+:= quantize \* n. (w : floats) (off : i32) (gamma : f32) : trits n = pack (\ i => trit_near (index w (off + i) / gamma))
+
+:~ ^ list_into (x : array trit) (values : list trit) (i : i32) : () =
+    ?= values ?|
+    | v :: rest =>
+        set x i v
+        list_into x rest (i + 1)
+    | [] => ()
+
+:= trit_array (values : list trit) : array trit =
+    := x : array trit = create (listm::length values)
+    list_into x values 0
+    x
+
+:= seven () : trits 7 =
+    := a = trit_array [ Pos; Neg; Zero; Pos; Pos; Neg; Zero ]
+    pack (\ i => index a i)
+
+:= five () : trits 5 =
+    := a = trit_array [ Pos; Neg; Zero; Pos; Neg ]
+    pack (\ i => index a i)
+
+:= quantized () : trits 5 * f32 =
+    := w = f32_kernels::floats_of [ 0.9f32; (0.0f32 - 0.2f32); (0.0f32 - 1.4f32); 0.05f32; 0.6f32 ]
+    := gamma = absmean w 0 5
+    quantize w 0 gamma, gamma
+
+///> c
+///> rust
+:# seven_trits_pack_into_two_bytes_and_read_back =
+    := t = seven ()
+    (count t, length (bytes_of t), trit_at t 0, trit_at t 1, trit_at t 2, trit_at t 6)
+    |> _assert_eq (7, 2, Pos, Neg, Zero, Zero)
+
+///> c
+///> rust
+:# a_ternary_dot_adds_subtracts_and_skips =
+    ternary_dot (five ()) (f32_kernels::floats_of [ 1.0f32; 2.0f32; 3.0f32; 4.0f32; 5.0f32 ])
+    |> _assert_eq (0.0f32 - 2.0f32)
+
+///> c
+///> rust
+:# absmean_quantization_rounds_and_clamps_to_trits =
+    := t, gamma = quantized ()
+    (abs (gamma - 0.63001f32) < 0.000001f32, trit_at t 0, trit_at t 1, trit_at t 2, trit_at t 3, trit_at t 4)
+    |> _assert_eq (!+, Pos, Zero, Neg, Zero, Pos)
+
+:= trit_value (t : trit) : f32 =
+    ?= t ?|
+    | Neg => 0.0f32 - 1.0f32
+    | Zero => 0.0f32
+    | Pos => 1.0f32
+
+:~ ^ wave_from (x : floats) (i : i32) : () =
+    ? i < length x ?>
+        set x i (conv ((i * 37) % 23 - 11) / 7.0f32)
+        wave_from x (i + 1)
+
+:= wave (n : i32) : floats =
+    := x : floats = create n
+    wave_from x 0
+    x
+
+:~ ^ dequant_dot_from \* n. (t : trits n) (x : floats) (i : i32) (acc : f32) : f32 =
+    ? i >= count t ?> acc |: dequant_dot_from t x (i + 1) (acc + trit_value (trit_at t i) * index x i)
+
+:= wide_pair () : f32 * f32 =
+    := w = wave 288
+    := t : trits 288 = quantize w 0 (absmean w 0 288)
+    := v = wave 289
+    ternary_dot t v, dequant_dot_from t v 0 0.0f32
+
+///> c
+///> rust
+:# a_288_wide_ternary_dot_equals_the_dequantized_dot =
+    := got, want = wide_pair ()
+    (abs (got - want) <= 0.0001f32 + 0.0001f32 * abs want, abs (want - 226.0f32) < 0.001f32) |> _assert_eq (!+, !+)

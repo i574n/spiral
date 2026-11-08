@@ -17,7 +17,7 @@ if (!(BuildSpiral "spl2spi.spi" "$targetDir/spl2spi/spl2spi.rs" "apps/lisp/spl2s
     throw "RUST-FAILED apps/lisp / spl2spi.spi / compile"
 }
 $spl2spi = "$targetDir/spl2spi/spl2spi$(_exe)"
-{ rustc +nightly-2026-10-18 -O --edition 2021 "$targetDir/spl2spi/spl2spi.rs" -o $spl2spi } | Invoke-Block
+{ rustc +nightly-2026-11-05 -O --edition 2021 "$targetDir/spl2spi/spl2spi.rs" -o $spl2spi } | Invoke-Block
 
 function Build-Sample([string] $Sample) {
     $dir = "$targetDir/$Sample"
@@ -33,7 +33,7 @@ foreach ($sample in 'membership', 'membership_short') {
         throw "RUST-FAILED apps/lisp / $sample.spl / compile"
     }
     $dir = "$targetDir/$sample"
-    { rustc +nightly-2026-10-18 -O --edition 2021 "$dir/main.rs" -o "$dir/main$(_exe)" } | Invoke-Block
+    { rustc +nightly-2026-11-05 -O --edition 2021 "$dir/main.rs" -o "$dir/main$(_exe)" } | Invoke-Block
     & "$dir/main$(_exe)"
     if ($LASTEXITCODE -ne 0) {
         throw "RUST-FAILED apps/lisp / $sample.spl / run exit code $LASTEXITCODE, expected 0"

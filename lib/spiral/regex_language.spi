@@ -1,0 +1,131 @@
+///- --package .
+:< regex_charset
+:< regex_syntax
+:< regex_derivative
+
+:# regex_language static =
+    :< testing
+
+:~ ^ union_sorted (a : list i32) (b : list i32) : list i32 =
+    ?= a ?|
+    | [] => b
+    | x :: xs =>
+        ?= b ?|
+        | [] => a
+        | y :: ys => ? x < y ?> x :: union_sorted xs b |? y < x ?> y :: union_sorted a ys |: x :: union_sorted xs ys
+
+:~ ^ inter_sorted (a : list i32) (b : list i32) : list i32 =
+    ?= a ?|
+    | [] => []
+    | x :: xs =>
+        ?= b ?|
+        | [] => []
+        | y :: ys => ? x < y ?> inter_sorted xs b |? y < x ?> inter_sorted a ys |: x :: inter_sorted xs ys
+
+:~ ^ minus_sorted (a : list i32) (b : list i32) : list i32 =
+    ?= a ?|
+    | [] => []
+    | x :: xs =>
+        ?= b ?|
+        | [] => a
+        | y :: ys => ? x < y ?> x :: minus_sorted xs b |? y < x ?> minus_sorted a ys |: minus_sorted xs ys
+
+:~ ^ span (from : i32) (upto : i32) : list i32 = ? from > upto ?> [] |: from :: span (from + 1i32) upto
+
+:~ ^ code_at (codes : list u32) (i : i32) : u32 =
+    ?= codes ?|
+    | c :: rest => ? i = 0i32 ?> c |: code_at rest (i - 1i32)
+    | [] => 0u32
+
+:~ ^ code_count (codes : list u32) (n : i32) : i32 =
+    ?= codes ?|
+    | _ :: rest => code_count rest (n + 1i32)
+    | [] => n
+
+:== subject = { codes : list u32; size : i32 }
+
+:~ ^ ends (r : re) (t : subject) (p : i32) : list i32 =
+    ?= r ?|
+    | Nothing => []
+    | Epsilon => [ p ]
+    | Seq (a, b) => ends_from b t (ends a t p) []
+    | _ => ends_rest r t p
+
+:& :~ ends_rest (r : re) (t : subject) (p : i32) : list i32 =
+    ?= r ?|
+    | Set s => ? p < t::size && contains (code_at t::codes p) s ?> [ p + 1i32 ] |: []
+    | Alt (a, b) => union_sorted (ends a t p) (ends b t p)
+    | _ => ends_logic r t p
+
+:& :~ ends_logic (r : re) (t : subject) (p : i32) : list i32 =
+    ?= r ?|
+    | And (a, b) => inter_sorted (ends a t p) (ends b t p)
+    | Not a => minus_sorted (span p t::size) (ends a t p)
+    | _ => ends_loop r t p
+
+:& :~ ends_loop (r : re) (t : subject) (p : i32) : list i32 =
+    ?= r ?|
+    | Star a => closure a t [ p ] [ p ]
+    | Repeat (a, low, up) => repeat_ends a t low up [ p ]
+    | _ => []
+
+:& :~ ends_from (r : re) (t : subject) (starts : list i32) (acc : list i32) : list i32 =
+    ?= starts ?|
+    | q :: rest => ends_from r t rest (union_sorted acc (ends r t q))
+    | [] => acc
+
+:& :~ closure (a : re) (t : subject) (frontier : list i32) (reached : list i32) : list i32 =
+    ?= frontier ?|
+    | [] => reached
+    | _ =>
+        := next = minus_sorted (ends_from a t frontier []) reached
+        closure a t next (union_sorted reached next)
+
+:& :~ repeat_ends (a : re) (t : subject) (low : u32) (up : upper) (at : list i32) : list i32 =
+    ? low > 0u32 ?> repeat_ends a t (low - 1u32) (upper_less up) (ends_from a t at []) |: repeat_upto a t up at
+
+:& :~ repeat_upto (a : re) (t : subject) (up : upper) (at : list i32) : list i32 =
+    ?= up ?|
+    | Unbounded => closure a t at at
+    | Bounded k => bounded_ends a t k at at
+
+:& :~ bounded_ends (a : re) (t : subject) (k : u32) (at : list i32) (acc : list i32) : list i32 =
+    ? k = 0u32 ?> acc
+    |:
+        := next = ends_from a t at []
+        ? next = [] ?> acc |: bounded_ends a t (k - 1u32) next (union_sorted acc next)
+
+:= language_answer (r : re) (codes : list u32) : verdict =
+    := t = { codes = codes; size = code_count codes 0i32 }
+    verdict_of (inter_sorted (ends r t 0i32) [ t::size ] <> [])
+
+:~ ^ answers_on (r : re) (ws : list (list u32)) : list verdict =
+    ?= ws ?|
+    | w :: rest => language_answer r w :: answers_on r rest
+    | [] => []
+
+:~ ^ letters_from (c : u32) (n : u32) : list u32 = ? n = 0u32 ?> [] |: c :: letters_from (c + 1u32) (n - 1u32)
+
+:~ ^ letters_answers (r : re) (ns : list u32) : list verdict =
+    ?= ns ?|
+    | n :: rest => language_answer r (letters_from 97u32 n) :: letters_answers r rest
+    | [] => []
+
+///> rust
+///> gleam
+:# the_fourth_symbol_from_the_end_by_language_remainders =
+    := ~r = fourth_from_end ()
+    answers_on r [ [ 49u32; 48u32; 48u32; 48u32 ]; [ 48u32; 48u32; 48u32; 48u32 ]; [ 49u32; 48u32; 48u32 ] ]
+    |> _assert_eq [ Accepted; Rejected; Rejected ]
+
+///> rust
+///> gleam
+:# intersection_and_complement_are_set_operations_on_end_positions =
+    := ~r = both (star (bit ())) (negate (ends_in_zero ()))
+    answers_on r [ []; [ 49u32 ]; [ 49u32; 48u32 ] ] |> _assert_eq [ Accepted; Accepted; Rejected ]
+
+///> rust
+///> gleam
+:# counted_repetition_counts_whole_copies =
+    letters_answers (repeat (Set (lower ())) 2u32 (Bounded 3u32)) [ 1u32; 2u32; 3u32; 4u32 ]
+    |> _assert_eq [ Rejected; Accepted; Accepted; Rejected ]

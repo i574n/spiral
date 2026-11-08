@@ -75,7 +75,10 @@ if ($recycleWarmBatches) { $env:SPIRAL_BATCH_RECYCLE_AFTER_ERROR = '1' }
 if ($Parallel -le 0) {
     $cpus = [Environment]::ProcessorCount
     $byCpu = [Math]::Ceiling($cpus / 2)
-    $freeGb = try { (Get-CimInstance Win32_OperatingSystem -ErrorAction Stop).FreePhysicalMemory / 1MB } catch { 3 }
+    $freeGb = try { (Get-CimInstance Win32_OperatingSystem -ErrorAction Stop).FreePhysicalMemory / 1MB } catch {
+        $available = if (Test-Path /proc/meminfo) { Select-String -Path /proc/meminfo -Pattern '^MemAvailable:\s+(\d+) kB' | Select-Object -First 1 }
+        if ($available) { [double]$available.Matches[0].Groups[1].Value / 1MB } else { 3 }
+    }
     $Parallel = [int][Math]::Max(1, [Math]::Min($byCpu, [Math]::Floor($freeGb / 1.5)))
 }
 if ($Accept -and $Probe) { throw '-Probe runs are never accepted: they only measure a backend against the C rows' }
@@ -139,17 +142,19 @@ if ($Suite -contains 'linked') {
             $out = Join-Path $runDir "linked/$($case -replace '^samples/', '')/$b"
             New-Item -ItemType Directory -Force $out | Out-Null
             $row = [ordered]@{ id = $case; backend = $b; compile = 'ok'; linked = ''; native = ''; exit = ''; want = $(if ($spec['Error']) { "error: $($spec['Error'])" } else { $spec['Exit'] }); verdict = 'pass'; detail = '' }
+            $errorText = ''
             foreach ($u in $order) {
                 $entry = @('main.spi', "$u.spi") | ForEach-Object { Join-Path $units[$u].Dir $_ } | Where-Object { Test-Path $_ } | Select-Object -First 1
                 Push-Location $units[$u].Dir
                 $text = (& $dotnet $compiler --backend $b (Split-Path $entry -Leaf) (Join-Path $out "$u.$($unitExtension[$b])") 2>&1 | ForEach-Object { "$_" }) -join "`n"
                 Pop-Location
-                if ($LASTEXITCODE) { $row.compile = 'error'; $row.detail = "${u}: " + ($text -replace '\s+', ' ').Substring(0, [Math]::Min(300, ($text -replace '\s+', ' ').Length)); break }
+                if ($LASTEXITCODE) { $row.compile = 'error'; $errorText = $text; $row.detail = "${u}: " + ($text -replace '\s+', ' ').Substring(0, [Math]::Min(300, ($text -replace '\s+', ' ').Length)); break }
             }
             if ($spec['Error']) {
-                if ($row.compile -ne 'error' -or $row.detail -notmatch [regex]::Escape($spec['Error'])) { $row.verdict = 'FAIL' }
+                if ($row.compile -ne 'error' -or $errorText -notmatch [regex]::Escape($spec['Error'])) { $row.verdict = 'FAIL' }
             } elseif ($row.compile -ne 'ok') { $row.verdict = 'FAIL' }
             elseif ($spec['Warns'] -and $text -notmatch [regex]::Escape($spec['Warns'])) { $row.verdict = 'FAIL'; $row.detail = "the root compile printed no warning containing: $($spec['Warns'])" }
+            elseif ($spec['NoWarns'] -and $text -match [regex]::Escape($spec['NoWarns'])) { $row.verdict = 'FAIL'; $row.detail = "the root compile printed a warning containing: $($spec['NoWarns'])" }
             else {
                 $rootText = Get-Content -Raw (Join-Path $out "$root.$($unitExtension[$b])")
                 $missing = @($units[$root].Links | Where-Object { $rootText -notmatch "\b$_(::|\.)[\w{]" })
@@ -288,7 +293,8 @@ if ($Suite -contains 'split-corpus') {
     }
     $gitRoot = [IO.Path]::GetFullPath((Join-Path $BundleRoot '../../../..'))
     $rows = foreach ($entry in @($matrix.SplitCorpus | Where-Object { -not $Filter -or $_ -match $Filter })) {
-        $root = [IO.Path]::GetFullPath((Join-Path $gitRoot $entry))
+        $root = if ($env:SPIRAL_CELLS_ROOT -and $entry -match '^spiral/apps/cells(/|$)') { [IO.Path]::GetFullPath([IO.Path]::Combine($env:SPIRAL_CELLS_ROOT, $entry.Substring('spiral/apps/cells'.Length).TrimStart('/'))) }
+        else { [IO.Path]::GetFullPath((Join-Path $gitRoot $entry)) }
         $lines = if (Test-Path (Join-Path $root 'package.spiproj')) { @(Get-Content (Join-Path $root 'package.spiproj')) }
         else {
             $toml = Get-Content -Raw (Join-Path $root 'spiral.toml')
@@ -1060,7 +1066,7 @@ function Build-And-Run($job) {
     $build = switch ($job.Backend) {
         'C' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-fwrapv', '-w') + (Get-CFlags $job) + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
         'Ebpf' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-fwrapv', '-w', '-x', 'c') + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
-        'Rust' { if (-not $tools.Rustc) { return 'no-toolchain' }; Invoke-Native $tools.Rustc @('+nightly-2026-10-18', '-C', 'opt-level=2', '-A', 'warnings', '--edition', '2024', '-o', $exe, $job.Output) $dir 180 }
+        'Rust' { if (-not $tools.Rustc) { return 'no-toolchain' }; Invoke-Native $tools.Rustc @('+nightly-2026-11-05', '-C', 'opt-level=2', '-A', 'warnings', '--edition', '2024', '-o', $exe, $job.Output) $dir 180 }
         'Pascal' { if (-not $tools.Fpc) { return 'no-toolchain' }; Invoke-Native $tools.Fpc @('-O2', '-Mdelphi', '-Px86_64', "-FE$binDir", "-FU$binDir", "-o$exe", $job.Output) $dir 180 }
         'Zig' {
             if (-not $zigExe) { return 'no-toolchain' }

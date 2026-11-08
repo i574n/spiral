@@ -117,21 +117,6 @@ defmodule Spiral.Cells.Builders do
 
   def argv(%{tool: :lua}, path), do: ["lua", "--lua-path", path]
 
-  @doc false
-  def with_crates(builders, []), do: builders
-
-  def with_crates(builders, crates) do
-    declared = crates |> Enum.join("\n") |> Spiral.Cells.Domain.builder_deps() |> wire_fields([]) |> Enum.chunk_every(3) |> Enum.map(&wire_dep/1)
-
-    Enum.map(builders, fn
-      %{tool: :rust} = builder ->
-        named = MapSet.new(builder.deps, & &1.name)
-        %{builder | deps: builder.deps ++ Enum.reject(declared, &MapSet.member?(named, &1.name))}
-
-      builder ->
-        builder
-    end)
-  end
 
   defp blank(tool, raw) do
     %{

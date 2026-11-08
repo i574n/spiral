@@ -52,7 +52,8 @@ $ErrorActionPreference = 'Stop'
 $env:PATH = "$HOME\scoop\apps\erlang\current\bin;$HOME\scoop\apps\elixir\current\bin;$env:PATH"
 $env:SPIRAL_CELLS_COMPILER_PORT = "$Port"
 $env:SPIRAL_CELLS_DAEMON_OWNER = "bench-cells-vs-matrix private daemon port $Port"
-$daemon = Start-Process -FilePath 'cmd.exe' -ArgumentList '/d', '/c', 'mix spiral.compiler_daemon' -WorkingDirectory 'C:\home\git\spiral\apps\cells' -PassThru -NoNewWindow
+$cells = $env:SPIRAL_CELLS_ROOT ? $env:SPIRAL_CELLS_ROOT : 'C:\home\git\spiral\apps\cells'
+$daemon = Start-Process -FilePath 'cmd.exe' -ArgumentList '/d', '/c', 'mix spiral.compiler_daemon' -WorkingDirectory $cells -PassThru -NoNewWindow
 $deadline = (Get-Date).AddMinutes(10)
 $up = $false
 while (-not $up -and (Get-Date) -lt $deadline -and -not $daemon.HasExited) {
@@ -63,7 +64,7 @@ Write-Host "private daemon pid $($daemon.Id) listening on $Port"
 pwsh -NoProfile -File $TestBlocks -Lib $Lib -Files $Files -Out $Out -Compiler daemon
 $code = $LASTEXITCODE
 if (-not $daemon.HasExited) { taskkill /T /F /PID $daemon.Id | Out-Null }
-Push-Location 'C:\home\git\spiral\apps\cells'
+Push-Location $cells
 $listed = @(mix spiral.compiler_daemon --list 2>$null | Where-Object { $_ -match '^\d+\t\d+\t' })
 Pop-Location
 foreach ($row in $listed) {

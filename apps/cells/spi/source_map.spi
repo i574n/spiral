@@ -1,6 +1,4 @@
-///> gleam
 ///- --package .
-///> gleam
 :# source_map static =
     :< testing
 

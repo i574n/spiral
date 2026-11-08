@@ -1,0 +1,169 @@
+///- --package .
+:< markup
+:< doc_blocks
+:< doc_text
+:< sm'_operators
+
+:# doc_inline static =
+    :< testing
+
+:~ ^ find_char (s : string) (c : char) (i : i32) : i32 =
+    ? i >= sm::length s ?> -1i32
+    |? sm::index s i = c ?> i
+    |: find_char s c (i + 1i32)
+
+:~ marker (c : char) : bool = c = '`' || c = '[' || c = '!' || c = '*' || c = '<' || c = '\\'
+
+:~ ^ next_marker (s : string) (i : i32) : i32 =
+    ? i >= sm::length s ?> i
+    |? marker (sm::index s i) ?> i
+    |: next_marker s (i + 1i32)
+
+:~ ^ double_star (s : string) (i : i32) : i32 =
+    ? i + 1i32 >= sm::length s ?> -1i32
+    |? sm::index s i = '*' && sm::index s (i + 1i32) = '*' ?> i
+    |: double_star s (i + 1i32)
+
+:~ escapable (c : char) : bool =
+    c = '*' || c = '_' || c = '\\' || c = '`' || c = '[' || c = ']'
+    || c = '#' || c = '-' || c = '!' || c = '<' || c = '|'
+
+:~ paren_close (s : string) (mid : i32) : i32 =
+    ? mid < 0i32 ?> -1i32 |? at_is s (mid + 1i32) '(' ?> find_char s ')' (mid + 2i32) |: -1i32
+
+:~ image_close (s : string) (i : i32) : i32 =
+    ? at_is s i '!' && at_is s (i + 1i32) '[' ?> paren_close s (find_char s ']' (i + 2i32)) |: -1i32
+
+:~ badge_close (s : string) (i : i32) : i32 =
+    := inner = ? at_is s i '[' ?> image_close s (i + 1i32) |: -1i32
+    ? inner >= 0i32 && at_is s (inner + 1i32) ']' ?> paren_close s (inner + 1i32) |: -1i32
+
+:~ image_at (s : string) (i : i32) (close : i32) : inline =
+    := mid = find_char s ']' (i + 2i32)
+    Image (run_of s (i + 2i32) mid, run_of s (mid + 2i32) close)
+
+:~ linked_image_at (s : string) (i : i32) (close : i32) : inline =
+    := inner = image_close s (i + 1i32)
+    := mid = find_char s ']' (i + 3i32)
+    LinkedImage (run_of s (i + 3i32) mid, run_of s (mid + 2i32) inner, run_of s (inner + 3i32) close)
+
+:~ link_close (s : string) (i : i32) : i32 =
+    ? at_is s i '[' ?> paren_close s (find_char s ']' (i + 1i32)) |: -1i32
+
+:~ link_at (s : string) (i : i32) (close : i32) : inline =
+    := mid = find_char s ']' (i + 1i32)
+    Link (run_of s (i + 1i32) mid, run_of s (mid + 2i32) close)
+
+:~ auto_close (s : string) (i : i32) : i32 =
+    := close = ? at_is s i '<' ?> find_char s '>' (i + 1i32) |: -1i32
+    ? close > i + 5i32 && run_of s (i + 1i32) (i + 5i32) = "http" ?> close |: -1i32
+
+:~ code_close (s : string) (i : i32) : i32 = ? at_is s i '`' ?> find_char s '`' (i + 1i32) |: -1i32
+
+:~ strong_close (s : string) (i : i32) : i32 =
+    ? at_is s i '*' && at_is s (i + 1i32) '*' ?> double_star s (i + 2i32) |: -1i32
+
+:~ escaped_at (s : string) (i : i32) : bool =
+    at_is s i '\\' && i + 1i32 < sm::length s && escapable (sm::index s (i + 1i32))
+
+:~ ^ rev_inlines (xs : list inline) (acc : list inline) : list inline =
+    ?= xs ?|
+    | x :: rest => rev_inlines rest (x :: acc)
+    | [] => acc
+
+:== found = option (i32 * inline)
+
+:~ or_else (b : () -> found) (a : found) : found =
+    ?= a ?|
+    | Some _ => a
+    | None => b ()
+
+:~ code_try (s : string) (i : i32) : found =
+    := c = code_close s i
+    ? c >= 0i32 ?> Some (c + 1i32, Code (run_of s (i + 1i32) c)) |: None
+
+:~ escape_try (s : string) (i : i32) : found =
+    ? escaped_at s i ?> Some (i + 2i32, Text (run_of s (i + 1i32) (i + 2i32))) |: None
+
+:~ strong_try (r : string -> list inline) (s : string) (i : i32) : found =
+    := c = strong_close s i
+    ? c >= 0i32 ?> Some (c + 2i32, Strong (r (run_of s (i + 2i32) c))) |: None
+
+:~ auto_try (s : string) (i : i32) : found =
+    := c = auto_close s i
+    ? c >= 0i32 ?> Some (c + 1i32, AutoLink (run_of s (i + 1i32) c)) |: None
+
+:~ image_try (s : string) (i : i32) : found =
+    := c = image_close s i
+    ? c >= 0i32 ?> Some (c + 1i32, image_at s i c) |: None
+
+:~ badge_try (s : string) (i : i32) : found =
+    := c = badge_close s i
+    ? c >= 0i32 ?> Some (c + 1i32, linked_image_at s i c) |: None
+
+:~ link_try (s : string) (i : i32) : found =
+    := c = link_close s i
+    ? c >= 0i32 ?> Some (c + 1i32, link_at s i c) |: None
+
+:~ plain_piece (s : string) (i : i32) : i32 * inline =
+    := stop = next_marker s (i + 1i32)
+    stop, Text (run_of s i stop)
+
+:~ strong_or_auto (r : string -> list inline) (s : string) (i : i32) : found =
+    strong_try r s i |> or_else (\ () => auto_try s i)
+
+:~ marked (r : string -> list inline) (s : string) (i : i32) : found =
+    code_try s i |> or_else (\ () => escape_try s i) |> or_else (\ () => strong_or_auto r s i)
+
+:~ linked_piece (s : string) (i : i32) : found =
+    image_try s i |> or_else (\ () => badge_try s i) |> or_else (\ () => link_try s i)
+
+:~ piece (r : string -> list inline) (s : string) (i : i32) : i32 * inline =
+    ?= marked r s i |> or_else (\ () => linked_piece s i) ?|
+    | Some p => p
+    | None => plain_piece s i
+
+:~ ^ inlines_from (s : string) (i : i32) (acc : list inline) : list inline =
+    ? i >= sm::length s ?> rev_inlines acc []
+    |:
+        := next, x = piece (\ t => inlines_from t 0i32 []) s i
+        inlines_from s next (x :: acc)
+
+:~ parse_inline (s : string) : list inline = inlines_from s 0i32 []
+
+///> rust
+///> gleam
+:# plain_text_is_one_text_run =
+    parse_inline "just words" |> _assert_eq [Text "just words"]
+
+///> rust
+///> gleam
+:# backticks_make_code_and_a_lone_backtick_stays_text =
+    (parse_inline "a `b` c", parse_inline "x ` y")
+    |> _assert_eq ([Text "a "; Code "b"; Text " c"], [Text "x "; Text "` y"])
+
+///> rust
+///> gleam
+:# a_link_keeps_label_and_href =
+    parse_inline "see [a link](x.html)." |> _assert_eq [Text "see "; Link ("a link", "x.html"); Text "."]
+
+///> rust
+///> gleam
+:# an_image_and_a_badge_link =
+    parse_inline "![logo](l.png) [![CI](b.svg)](ci.html)"
+    |> _assert_eq [Image ("logo", "l.png"); Text " "; LinkedImage ("CI", "b.svg", "ci.html")]
+
+///> rust
+///> gleam
+:# double_stars_nest_inline_content =
+    parse_inline "**a `b`** c" |> _assert_eq [Strong [Text "a "; Code "b"]; Text " c"]
+
+///> rust
+///> gleam
+:# an_angle_url_autolinks_and_other_angles_stay_text =
+    (parse_inline "<https://x.org>", parse_inline "<b>") |> _assert_eq ([AutoLink "https://x.org"], [Text "<b>"])
+
+///> rust
+///> gleam
+:# backslash_escapes_a_marker =
+    parse_inline "\\*star\\* y \\| z" |> _assert_eq [Text "*"; Text "star"; Text "*"; Text " y "; Text "|"; Text " z"]

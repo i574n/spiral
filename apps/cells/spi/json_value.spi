@@ -1,6 +1,4 @@
-///> gleam
 ///- --package .
-///> gleam
 :# json_value static =
     :< testing
 

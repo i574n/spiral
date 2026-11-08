@@ -22,7 +22,7 @@ if (!(Test-Path "$fork/.git")) {
 }
 
 if (Get-Command rustup -ErrorAction Ignore) {
-    rustup install nightly-2026-10-18
+    rustup install nightly-2026-11-05
 }
 
 if ($IsWindows -and !(Get-Command rsync -ErrorAction Ignore)) {

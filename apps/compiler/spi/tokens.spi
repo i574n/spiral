@@ -1,4 +1,3 @@
-///> zig
 :< sm'_operators
 
 :| token_keyword =
@@ -140,7 +139,7 @@
         |: i, depth
     scan from open_depth
 
-:= edition3_symbol_token (symbol : string) : option spiral_token =
+:= i574n_symbol_token (symbol : string) : option spiral_token =
     ?= symbol ?|
     | ":=" => Some (TokKeyword SpecInl)
     | ":~" => Some (TokKeyword SpecLet)
@@ -278,9 +277,9 @@
 ///> c
 ///> rust
 ///> fsharp
-:# edition3_symbols_map_to_keywords =
+:# i574n_symbols_map_to_keywords =
     := legend symbol =
-        ?= edition3_symbol_token symbol ?|
+        ?= i574n_symbol_token symbol ?|
         | Some token => token_legend token
         | None => -1
     ? legend ":=" <> 7 ?> failwith ":= is inl"
@@ -422,13 +421,13 @@
     ? peek start |> glyph_is is_operator_char ?>
         := past = start |> advance 1 |> skip_while is_operator_char
         := name = text_between start past
-        ?= edition3_symbol_token name ?|
+        ?= i574n_symbol_token name ?|
         | Some keyword => Lexed (span_between start past, keyword, skip_spaces past)
         | None =>
             := trimmed = without_list_separators name
             := trimmed_length : i32 = sm'::length trimmed
             := trimmed_keyword =
-                ? 0 < trimmed_length && trimmed_length < sm'::length name ?> edition3_symbol_token trimmed |: None
+                ? 0 < trimmed_length && trimmed_length < sm'::length name ?> i574n_symbol_token trimmed |: None
             ?= trimmed_keyword ?|
             | Some keyword =>
                 := stop = { start ?| from = start::from + trimmed_length }
@@ -475,7 +474,7 @@
 
 ///> rust
 ///> fsharp
-:# lex_operator_tells_unary_binary_and_edition3_keywords =
+:# lex_operator_tells_unary_binary_and_i574n_keywords =
     ? cursor_of "+ 1" |> lex_operator |> lexed_summary <> (4, 1, 2) ?> failwith "plus before a space is binary"
     ? { text = "a -b"; from = 2 } |> lex_operator |> lexed_summary <> (5, 3, 3) ?> failwith "glued minus is unary"
     ? { text = "a - b"; from = 2 } |> lex_operator |> lexed_summary <> (4, 3, 4) ?> failwith "spaced minus is binary"

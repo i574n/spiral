@@ -1,4 +1,3 @@
-///> zig
 :# iggy static =
     :< testing
 
@@ -30,10 +29,8 @@
     cat (put_u32 (conv (am'::length bytes))) bytes
 
 :~ body_tag (b : event_body) : u8 =
-    ?= b ?|
-    | JobStarted _ => 0u8  | JobStep _ => 1u8      | JobDone _ => 2u8      | JobStop _ => 3u8
-    | LeaseAcquired _ => 4u8 | LeaseReleased _ => 5u8 | SlotAdmitted _ => 6u8 | SlotReleased _ => 7u8
-    | Health _ => 8u8      | Toolchain _ => 9u8
+    := tag : i32 = ~> real_core::union_tag b
+    conv tag
 
 :~ body_bytes (b : event_body) : array u8 =
     ?= b ?|
@@ -199,19 +196,21 @@
 :~ toolchain_at (a : array u8) (i : i32) (len : i32) : rd event_body =
     rd_bind (rd_str a i len) (\ tool j1 => rd_bind (rd_str a j1 len) (\ version j2 => rd_bind (rd_str a j2 len) (\ path j3 => rd_bind (rd_str a j3 len) (\ mtime j4 => RD (Toolchain { tool; version; path; mtime }, j4)))))
 
+:== reader = array u8 -> i32 -> i32 -> rd event_body
+
+:~ readers () : list reader =
+    [ job_started_at; job_step_at; job_done_at; job_stop_at; lease_acquired_at; lease_released_at ]
+    ++ [ slot_admitted_at; slot_released_at; health_at; toolchain_at ]
+
+:~ ^ reader_at (n : i32) (rs : list reader) : option reader =
+    ?= rs ?|
+    | [] => None
+    | r :: rest => ? n = 0i32 ?> Some r |: reader_at (n - 1i32) rest
+
 :~ body_at (tag : u8) (a : array u8) (i : i32) (len : i32) : option (rd event_body) =
-    ?= tag ?|
-    | 0u8 => Some (job_started_at a i len)
-    | 1u8 => Some (job_step_at a i len)
-    | 2u8 => Some (job_done_at a i len)
-    | 3u8 => Some (job_stop_at a i len)
-    | 4u8 => Some (lease_acquired_at a i len)
-    | 5u8 => Some (lease_released_at a i len)
-    | 6u8 => Some (slot_admitted_at a i len)
-    | 7u8 => Some (slot_released_at a i len)
-    | 8u8 => Some (health_at a i len)
-    | 9u8 => Some (toolchain_at a i len)
-    | _ => None
+    ?= reader_at (conv tag : i32) (readers ()) ?|
+    | Some read => Some (read a i len)
+    | None => None
 
 :~ header_at (a : array u8) (len : i32) : rd (u64 * string * u8) =
     rd_bind (rd_u64 a 0i32 len) (\ seq i0 => rd_bind (rd_str a i0 len) (\ machine i1 => rd_bind (rd_u8 a i1 len) (\ tag i2 => RD ((seq, machine, tag), i2))))
@@ -229,6 +228,20 @@
     | RD ((seq, machine, tag), i) => tagged a len seq machine tag i
 
 ///- --timeout 600000
+
+///> rust
+///> gleam
+:# every_case_keeps_its_declaration_order_as_wire_tag =
+    := ~s = "s"
+    := ~n = 1i32
+    [
+        JobStarted { job = s; label = s }; JobStep { job = s; step = s; exit = n; detail = s }; JobDone { job = s; exit = n }
+        JobStop { job = s; reason = s }; LeaseAcquired { tree = s; owner = s }; LeaseReleased { tree = s; owner = s }
+        SlotAdmitted { slot = n; owner = s }; SlotReleased { slot = n; owner = s }
+        Health { cpu = n; free_mem_mb = n; free_disk_gb = n }; Toolchain { tool = s; version = s; path = s; mtime = s }
+    ]
+    |> listm::map body_tag
+    |> _assert_eq [ 0u8; 1u8; 2u8; 3u8; 4u8; 5u8; 6u8; 7u8; 8u8; 9u8 ]
 
 ///> rust
 ///> gleam

@@ -1,0 +1,482 @@
+:# f32_grads static =
+    :< testing
+
+:== floats = array f32
+
+:= matmul_back_row (dx : floats) (dw : floats) (g : f32) (x : floats) (w : floats) (n : i32) (i : i32) : () =
+    f32_kernels::axpy dx 0 g w (i * n) n 0
+    f32_kernels::axpy dw (i * n) g x 0 n 0
+
+:~ ^ matmul_back_rows (dx : floats) (dw : floats) (dout : floats) (x : floats) (w : floats) (n : i32) (i : i32) : () =
+    ? i < length dout ?>
+        matmul_back_row dx dw (index dout i) x w n i
+        matmul_back_rows dx dw dout x w n (i + 1)
+
+:= matmul_backward (dx : floats) (dw : floats) (dout : floats) (x : floats) (w : floats) (n : i32) (d : i32) : () =
+    matmul_back_rows dx dw dout x w n 0
+
+:= inverse_rms (x : floats) (n : i32) : f32 =
+    1.0f32 / sqrt (f32_kernels::sum_squares x n 0 0.0f32 / conv n + 0.00001f32)
+
+:~ ^ weighted_sum (dout : floats) (w : floats) (x : floats) (n : i32) (i : i32) (acc : f32) : f32 =
+    ? i >= n ?> acc |: weighted_sum dout w x n (i + 1) (acc + index dout i * index w i * index x i)
+
+:== rms_terms = { s : f32; c : f32 }
+
+:= rms_step (dx : floats) (dw : floats) (dout : floats) (x : floats) (w : floats) (k : rms_terms) (i : i32) : () =
+    set dw i (index dw i + index dout i * k::s * index x i)
+    set dx i (index dx i + k::s * index w i * index dout i - k::c * index x i)
+
+:~ ^ rms_back_from
+    (dx : floats) (dw : floats) (dout : floats) (x : floats) (w : floats) (k : rms_terms) (i : i32)
+    : ()
+    =
+    ? i < length x ?>
+        rms_step dx dw dout x w k i
+        rms_back_from dx dw dout x w k (i + 1)
+
+:= rmsnorm_backward (dx : floats) (dw : floats) (dout : floats) (x : floats) (w : floats) (n : i32) : () =
+    := s = inverse_rms x n
+    rms_back_from dx dw dout x w { s = s; c = s * s * s / conv n * weighted_sum dout w x n 0 0.0f32 } 0
+
+:~ ^ softmax_back_from (dx : floats) (y : floats) (dy : floats) (inner : f32) (i : i32) : () =
+    ? i < length y ?>
+        set dx i (index dx i + index y i * (index dy i - inner))
+        softmax_back_from dx y dy inner (i + 1)
+
+:= softmax_backward (dx : floats) (y : floats) (dy : floats) : () =
+    softmax_back_from dx y dy (f32_kernels::dot dy 0 y 0 (length y) 0 0.0f32) 0
+
+:= sigmoid (a : f32) : f32 = 1.0f32 / (1.0f32 + exp (0.0f32 - a))
+
+:= silu (a : f32) : f32 = a * sigmoid a
+
+:= silu_slope (a : f32) : f32 =
+    := s = sigmoid a
+    s * (1.0f32 + a * (1.0f32 - s))
+
+:= swiglu_step (da : floats) (db : floats) (dh : floats) (a : floats) (b : floats) (i : i32) : () =
+    set db i (index db i + index dh i * silu (index a i))
+    set da i (index da i + index dh i * index b i * silu_slope (index a i))
+
+:~ ^ swiglu_back_from (da : floats) (db : floats) (dh : floats) (a : floats) (b : floats) (i : i32) : () =
+    ? i < length a ?>
+        swiglu_step da db dh a b i
+        swiglu_back_from da db dh a b (i + 1)
+
+:= swiglu_backward (da : floats) (db : floats) (dh : floats) (a : floats) (b : floats) : () =
+    swiglu_back_from da db dh a b 0
+
+:= zeros (n : i32) : floats =
+    := o : floats = create n
+    f32_kernels::zero_from o 0 n 0
+    o
+
+:= nudged (x : floats) (k : i32) (h : f32) : floats =
+    := o = zeros (length x)
+    f32_kernels::copy_into o 0 x 0 (length x) 0
+    set o k (index o k + h)
+    o
+
+:= matmul_loss (dout : floats) (x : floats) (w : floats) (n : i32) (d : i32) : f32 =
+    := o = zeros d
+    f32_kernels::matmul o x w 0 n d
+    f32_kernels::dot dout 0 o 0 d 0 0.0f32
+
+:= rms_loss (dout : floats) (x : floats) (w : floats) (n : i32) : f32 =
+    := o = zeros n
+    f32_kernels::rmsnorm o x w 0 n
+    f32_kernels::dot dout 0 o 0 n 0 0.0f32
+
+:= central (plus : f32) (minus : f32) (h : f32) : f32 = (plus - minus) / (2.0f32 * h)
+
+:= close (analytic : f32) (numeric : f32) : bool = abs (analytic - numeric) <= 0.01f32 + 0.01f32 * abs numeric
+
+:= mm_x () : floats = f32_kernels::floats_of [ 0.5f32; (0.0f32 - 1.0f32); 2.0f32 ]
+
+:= mm_w () : floats = f32_kernels::floats_of [ 1.0f32; 2.0f32; (0.0f32 - 0.5f32); 0.25f32; (0.0f32 - 1.5f32); 3.0f32 ]
+
+:= mm_dout () : floats = f32_kernels::floats_of [ 0.75f32; (0.0f32 - 2.0f32) ]
+
+:= mm_grads () : floats * floats =
+    := dx, dw = zeros 3, zeros 6
+    matmul_backward dx dw (mm_dout ()) (mm_x ()) (mm_w ()) 3 2
+    dx, dw
+
+:= mm_dx_numeric (k : i32) : f32 =
+    := h = 0.01f32
+    := plus = matmul_loss (mm_dout ()) (nudged (mm_x ()) k h) (mm_w ()) 3 2
+    central plus (matmul_loss (mm_dout ()) (nudged (mm_x ()) k (0.0f32 - h)) (mm_w ()) 3 2) h
+
+:= mm_dw_numeric (k : i32) : f32 =
+    := h = 0.01f32
+    := plus = matmul_loss (mm_dout ()) (mm_x ()) (nudged (mm_w ()) k h) 3 2
+    central plus (matmul_loss (mm_dout ()) (mm_x ()) (nudged (mm_w ()) k (0.0f32 - h)) 3 2) h
+
+:~ ^ all_close (analytic : floats) (numeric : i32 -> f32) (i : i32) : bool =
+    ? i >= length analytic ?> !+ |: close (index analytic i) (numeric i) && all_close analytic numeric (i + 1)
+
+:= rn_x () : floats = f32_kernels::floats_of [ 0.3f32; (0.0f32 - 1.2f32); 2.5f32; 0.8f32 ]
+
+:= rn_w () : floats = f32_kernels::floats_of [ 1.5f32; (0.0f32 - 0.5f32); 0.75f32; 2.0f32 ]
+
+:= rn_dout () : floats = f32_kernels::floats_of [ 1.0f32; 0.5f32; (0.0f32 - 1.5f32); 0.25f32 ]
+
+:= rn_grads () : floats * floats =
+    := dx, dw = zeros 4, zeros 4
+    rmsnorm_backward dx dw (rn_dout ()) (rn_x ()) (rn_w ()) 4
+    dx, dw
+
+:= rn_dx_numeric (k : i32) : f32 =
+    := h = 0.001f32
+    := plus = rms_loss (rn_dout ()) (nudged (rn_x ()) k h) (rn_w ()) 4
+    central plus (rms_loss (rn_dout ()) (nudged (rn_x ()) k (0.0f32 - h)) (rn_w ()) 4) h
+
+:= rn_dw_numeric (k : i32) : f32 =
+    := h = 0.001f32
+    := plus = rms_loss (rn_dout ()) (rn_x ()) (nudged (rn_w ()) k h) 4
+    central plus (rms_loss (rn_dout ()) (rn_x ()) (nudged (rn_w ()) k (0.0f32 - h)) 4) h
+
+///> c
+///> rust
+:# matmul_backward_matches_central_differences =
+    := dx, dw = mm_grads ()
+    (all_close dx mm_dx_numeric 0, all_close dw mm_dw_numeric 0) |> _assert_eq (!+, !+)
+
+///> c
+///> rust
+:# matmul_backward_input_gradient_is_the_transposed_product =
+    := dx, _ = mm_grads ()
+    (close (index dx 0) 0.25f32, close (index dx 1) 4.5f32, close (index dx 2) (0.0f32 - 6.375f32))
+    |> _assert_eq (!+, !+, !+)
+
+///> c
+///> rust
+:# rmsnorm_backward_matches_central_differences =
+    := dx, dw = rn_grads ()
+    (all_close dx rn_dx_numeric 0, all_close dw rn_dw_numeric 0) |> _assert_eq (!+, !+)
+
+:= softmax_of (x : floats) : floats =
+    := o = zeros (length x)
+    f32_kernels::copy_into o 0 x 0 (length x) 0
+    f32_kernels::softmax o 0 (length o)
+    o
+
+:= sm_x () : floats = f32_kernels::floats_of [ 0.2f32; (0.0f32 - 1.0f32); 1.5f32; 0.4f32 ]
+
+:= sm_dy () : floats = f32_kernels::floats_of [ 1.0f32; (0.0f32 - 0.5f32); 0.25f32; 2.0f32 ]
+
+:= sm_loss (x : floats) : f32 = f32_kernels::dot (sm_dy ()) 0 (softmax_of x) 0 4 0 0.0f32
+
+:= sm_dx_numeric (k : i32) : f32 =
+    := h = 0.001f32
+    central (sm_loss (nudged (sm_x ()) k h)) (sm_loss (nudged (sm_x ()) k (0.0f32 - h))) h
+
+:= sm_grad () : floats =
+    := dx = zeros 4
+    softmax_backward dx (softmax_of (sm_x ())) (sm_dy ())
+    dx
+
+:= sw_a () : floats = f32_kernels::floats_of [ 0.5f32; (0.0f32 - 1.5f32); 2.0f32 ]
+
+:= sw_b () : floats = f32_kernels::floats_of [ 1.25f32; 0.75f32; (0.0f32 - 2.0f32) ]
+
+:= sw_dh () : floats = f32_kernels::floats_of [ 1.0f32; (0.0f32 - 2.0f32); 0.5f32 ]
+
+:~ ^ sw_loss_from (a : floats) (b : floats) (i : i32) (acc : f32) : f32 =
+    ? i >= length a ?> acc |: sw_loss_from a b (i + 1) (acc + index (sw_dh ()) i * silu (index a i) * index b i)
+
+:= sw_da_numeric (k : i32) : f32 =
+    := h = 0.001f32
+    central
+        (sw_loss_from (nudged (sw_a ()) k h) (sw_b ()) 0 0.0f32)
+        (sw_loss_from (nudged (sw_a ()) k (0.0f32 - h)) (sw_b ()) 0 0.0f32)
+        h
+
+:= sw_db_numeric (k : i32) : f32 =
+    := h = 0.001f32
+    central
+        (sw_loss_from (sw_a ()) (nudged (sw_b ()) k h) 0 0.0f32)
+        (sw_loss_from (sw_a ()) (nudged (sw_b ()) k (0.0f32 - h)) 0 0.0f32)
+        h
+
+:= sw_grads () : floats * floats =
+    := da, db = zeros 3, zeros 3
+    swiglu_backward da db (sw_dh ()) (sw_a ()) (sw_b ())
+    da, db
+
+///> c
+///> rust
+:# softmax_backward_matches_central_differences =
+    all_close (sm_grad ()) sm_dx_numeric 0 |> _assert_eq !+
+
+///> c
+///> rust
+:# swiglu_backward_matches_central_differences =
+    := da, db = sw_grads ()
+    (all_close da sw_da_numeric 0, all_close db sw_db_numeric 0) |> _assert_eq (!+, !+)
+
+:== head = { q : floats; k : floats; v : floats; d : i32 }
+
+:== grads = { dq : floats; dk : floats; dv : floats }
+
+:== query_row = { p : floats; dp : floats; inner : f32; i : i32 }
+
+:= inverse_root (d : i32) : f32 = 1.0f32 / sqrt (conv d * 1.0f32)
+
+:~ ^ score_from (h : head) (p : floats) (i : i32) (j : i32) : () =
+    ? j <= i ?>
+        set p j (f32_kernels::dot h::q (i * h::d) h::k (j * h::d) h::d 0 0.0f32 * inverse_root h::d)
+        score_from h p i (j + 1)
+
+:= head_probs (h : head) (i : i32) : floats =
+    := p : floats = create (i + 1)
+    score_from h p i 0
+    f32_kernels::softmax p 0 (i + 1)
+    p
+
+:~ ^ attend_from (h : head) (o : floats) (p : floats) (i : i32) (j : i32) : () =
+    ? j <= i ?>
+        f32_kernels::axpy o (i * h::d) (index p j) h::v (j * h::d) h::d 0
+        attend_from h o p i (j + 1)
+
+:~ ^ attention_rows (h : head) (o : floats) (t : i32) (i : i32) : () =
+    ? i < t ?>
+        attend_from h o (head_probs h i) i 0
+        attention_rows h o t (i + 1)
+
+:= attention (o : floats) (h : head) (t : i32) : () = attention_rows h o t 0
+
+:~ ^ dp_from (h : head) (dout : floats) (dp : floats) (i : i32) (j : i32) : () =
+    ? j <= i ?>
+        set dp j (f32_kernels::dot dout (i * h::d) h::v (j * h::d) h::d 0 0.0f32)
+        dp_from h dout dp i (j + 1)
+
+:= query_row_of (h : head) (dout : floats) (i : i32) : query_row =
+    := p = head_probs h i
+    := dp : floats = create (i + 1)
+    dp_from h dout dp i 0
+    { p = p; dp = dp; inner = f32_kernels::dot dp 0 p 0 (i + 1) 0 0.0f32; i = i }
+
+:= score_grad (h : head) (r : query_row) (j : i32) : f32 = index r::p j * (index r::dp j - r::inner) * inverse_root h::d
+
+:= query_key_step (h : head) (g : grads) (r : query_row) (j : i32) (ds : f32) : () =
+    f32_kernels::axpy g::dq (r::i * h::d) ds h::k (j * h::d) h::d 0
+    f32_kernels::axpy g::dk (j * h::d) ds h::q (r::i * h::d) h::d 0
+
+:= attend_step (h : head) (g : grads) (dout : floats) (r : query_row) (j : i32) : () =
+    query_key_step h g r j (score_grad h r j)
+    f32_kernels::axpy g::dv (j * h::d) (index r::p j) dout (r::i * h::d) h::d 0
+
+:~ ^ attend_back_from (h : head) (g : grads) (dout : floats) (r : query_row) (j : i32) : () =
+    ? j <= r::i ?>
+        attend_step h g dout r j
+        attend_back_from h g dout r (j + 1)
+
+:~ ^ attention_back_rows (h : head) (g : grads) (dout : floats) (t : i32) (i : i32) : () =
+    ? i < t ?>
+        attend_back_from h g dout (query_row_of h dout i) 0
+        attention_back_rows h g dout t (i + 1)
+
+:= attention_backward (g : grads) (dout : floats) (h : head) (t : i32) : () = attention_back_rows h g dout t 0
+
+:= at_q () : floats = f32_kernels::floats_of [ 0.4f32; (0.0f32 - 0.7f32); 1.1f32; 0.3f32; (0.0f32 - 0.5f32); 0.9f32 ]
+
+:= at_k () : floats = f32_kernels::floats_of [ 0.8f32; 0.2f32; (0.0f32 - 0.6f32); 1.0f32; 0.5f32; (0.0f32 - 1.2f32) ]
+
+:= at_v () : floats = f32_kernels::floats_of [ 1.0f32; (0.0f32 - 0.5f32); 0.25f32; 2.0f32; (0.0f32 - 1.5f32); 0.75f32 ]
+
+:= at_dout () : floats = f32_kernels::floats_of [ 0.5f32; (0.0f32 - 1.0f32); 1.5f32; 0.5f32; (0.0f32 - 0.5f32); 2.0f32 ]
+
+:= at_with (q : floats) (k : floats) (v : floats) : head = { q = q; k = k; v = v; d = 2 }
+
+:= at_loss (h : head) : f32 =
+    := o = zeros 6
+    attention o h 3
+    f32_kernels::dot (at_dout ()) 0 o 0 6 0 0.0f32
+
+:= at_grads (t : i32) : grads =
+    := g : grads = { dq = zeros 6; dk = zeros 6; dv = zeros 6 }
+    attention_backward g (at_dout ()) (at_with (at_q ()) (at_k ()) (at_v ())) t
+    g
+
+:= at_dq_numeric (n : i32) : f32 =
+    := e = 0.001f32
+    central
+        (at_loss (at_with (nudged (at_q ()) n e) (at_k ()) (at_v ())))
+        (at_loss (at_with (nudged (at_q ()) n (0.0f32 - e)) (at_k ()) (at_v ())))
+        e
+
+:= at_dk_numeric (n : i32) : f32 =
+    := e = 0.001f32
+    central
+        (at_loss (at_with (at_q ()) (nudged (at_k ()) n e) (at_v ())))
+        (at_loss (at_with (at_q ()) (nudged (at_k ()) n (0.0f32 - e)) (at_v ())))
+        e
+
+:= at_dv_numeric (n : i32) : f32 =
+    := e = 0.001f32
+    central
+        (at_loss (at_with (at_q ()) (at_k ()) (nudged (at_v ()) n e)))
+        (at_loss (at_with (at_q ()) (at_k ()) (nudged (at_v ()) n (0.0f32 - e))))
+        e
+
+///> c
+///> rust
+:# causal_attention_backward_matches_central_differences =
+    := g = at_grads 3
+    (all_close g::dq at_dq_numeric 0, all_close g::dk at_dk_numeric 0, all_close g::dv at_dv_numeric 0)
+    |> _assert_eq (!+, !+, !+)
+
+///> c
+///> rust
+:# one_token_attention_passes_the_output_gradient_straight_to_its_value =
+    := g = at_grads 1
+    (index g::dv 0, index g::dv 1, index g::dq 0, index g::dk 1, index g::dv 2)
+    |> _assert_eq (0.5f32, (0.0f32 - 1.0f32), 0.0f32, 0.0f32, 0.0f32)
+
+:= embed (o : floats) (table : floats) (token : i32) (n : i32) : () = f32_kernels::copy_into o 0 table (token * n) n 0
+
+:= embed_backward (dtable : floats) (dx : floats) (token : i32) (n : i32) : () =
+    f32_kernels::axpy dtable (token * n) 1.0f32 dx 0 n 0
+
+:= rope_angle_of (pos : i32) (hs : i32) (i : i32) : f32 =
+    conv pos * (1.0f32 / (10000.0f32 ** (conv (i % hs) / conv hs)))
+
+:= rotate_pair (v : floats) (i : i32) (c : f32) (s : f32) : () =
+    := v0, v1 = index v i, index v (i + 1)
+    set v i (v0 * c - v1 * s)
+    set v (i + 1) (v0 * s + v1 * c)
+
+:~ ^ rope_from (v : floats) (pos : i32) (hs : i32) (sign : f32) (i : i32) : () =
+    ? i + 1 < length v ?>
+        := a = sign * rope_angle_of pos hs i
+        rotate_pair v i (cos a) (sin a)
+        rope_from v pos hs sign (i + 2)
+
+:= rope (v : floats) (pos : i32) (hs : i32) : () = rope_from v pos hs 1.0f32 0
+
+:= rope_backward (dv : floats) (pos : i32) (hs : i32) : () = rope_from dv pos hs (0.0f32 - 1.0f32) 0
+
+:= probs_of (logits : floats) : floats =
+    := p = zeros (length logits)
+    f32_kernels::copy_into p 0 logits 0 (length logits) 0
+    f32_kernels::softmax p 0 (length p)
+    p
+
+:= cross_entropy (logits : floats) (target : i32) : f32 = 0.0f32 - log (index (probs_of logits) target)
+
+:= cross_entropy_backward (dlogits : floats) (logits : floats) (target : i32) : () =
+    f32_kernels::axpy dlogits 0 1.0f32 (probs_of logits) 0 (length logits) 0
+    set dlogits target (index dlogits target - 1.0f32)
+
+:= rp_v () : floats = f32_kernels::floats_of [ 0.3f32; 1.1f32; 0.7f32; (0.0f32 - 0.2f32); 0.4f32; 0.9f32 ]
+
+:= rp_dy () : floats = f32_kernels::floats_of [ 1.0f32; 0.5f32; 0.25f32; 2.0f32; (0.0f32 - 0.75f32); 1.5f32 ]
+
+:= rp_loss (v : floats) : f32 =
+    := o = zeros (length v)
+    f32_kernels::copy_into o 0 v 0 (length v) 0
+    rope o 3 6
+    f32_kernels::dot (rp_dy ()) 0 o 0 (length o) 0 0.0f32
+
+:= rp_numeric (k : i32) : f32 =
+    := e = 0.001f32
+    central (rp_loss (nudged (rp_v ()) k e)) (rp_loss (nudged (rp_v ()) k (0.0f32 - e))) e
+
+:= rp_grad () : floats =
+    := g = rp_dy ()
+    rope_backward g 3 6
+    g
+
+:= ce_logits () : floats = f32_kernels::floats_of [ 0.5f32; 1.5f32; (0.0f32 - 0.3f32); 2.0f32; 0.1f32 ]
+
+:= ce_numeric (k : i32) : f32 =
+    := e = 0.001f32
+    central (cross_entropy (nudged (ce_logits ()) k e) 2) (cross_entropy (nudged (ce_logits ()) k (0.0f32 - e)) 2) e
+
+:= ce_grad () : floats =
+    := g = zeros 5
+    cross_entropy_backward g (ce_logits ()) 2
+    g
+
+:= embed_grads () : floats =
+    := dt = zeros 6
+    embed_backward dt (f32_kernels::floats_of [ 0.5f32; (0.0f32 - 1.0f32) ]) 1 2
+    embed_backward dt (f32_kernels::floats_of [ 0.25f32; 2.0f32 ]) 1 2
+    dt
+
+///> c
+///> rust
+:# rope_backward_matches_central_differences =
+    all_close (rp_grad ()) rp_numeric 0 |> _assert_eq !+
+
+///> c
+///> rust
+:# cross_entropy_backward_matches_central_differences =
+    all_close (ce_grad ()) ce_numeric 0 |> _assert_eq !+
+
+///> c
+///> rust
+:# embedding_backward_adds_every_use_into_its_row =
+    := g = embed_grads ()
+    (index g 0, index g 2, index g 3, index g 5) |> _assert_eq (0.0f32, 0.75f32, 1.0f32, 0.0f32)
+
+:~ ^ relu_from (o : floats) (x : floats) (i : i32) : () =
+    ? i < length x ?>
+        set o i (max 0.0f32 (index x i))
+        relu_from o x (i + 1)
+
+:= relu (o : floats) (x : floats) : () = relu_from o x 0
+
+:~ ^ relu_back_from (dx : floats) (x : floats) (dy : floats) (i : i32) : () =
+    ? i < length x ?>
+        ? index x i > 0.0f32 ?> set dx i (index dx i + index dy i)
+        relu_back_from dx x dy (i + 1)
+
+:= relu_backward (dx : floats) (x : floats) (dy : floats) : () = relu_back_from dx x dy 0
+
+:= bce_logits (z : f32) (y : f32) : f32 = max z 0.0f32 - z * y + log (1.0f32 + exp (0.0f32 - abs z))
+
+:= bce_logits_backward (z : f32) (y : f32) : f32 = sigmoid z - y
+
+:= rl_x () : floats = f32_kernels::floats_of [ 0.7f32; (0.0f32 - 0.4f32); 1.3f32; (0.0f32 - 2.1f32); 0.25f32 ]
+
+:= rl_dy () : floats = f32_kernels::floats_of [ 1.0f32; 2.0f32; (0.0f32 - 0.5f32); 0.75f32; (0.0f32 - 1.5f32) ]
+
+:= rl_loss (x : floats) : f32 =
+    := o = zeros (length x)
+    relu o x
+    f32_kernels::dot (rl_dy ()) 0 o 0 (length o) 0 0.0f32
+
+:= rl_numeric (k : i32) : f32 =
+    := e = 0.001f32
+    central (rl_loss (nudged (rl_x ()) k e)) (rl_loss (nudged (rl_x ()) k (0.0f32 - e))) e
+
+:= rl_grad () : floats =
+    := g = zeros 5
+    relu_backward g (rl_x ()) (rl_dy ())
+    g
+
+:= bce_numeric (z : f32) (y : f32) : f32 =
+    := e = 0.001f32
+    central (bce_logits (z + e) y) (bce_logits (z - e) y) e
+
+:= bce_close (z : f32) (y : f32) : bool = close (bce_logits_backward z y) (bce_numeric z y)
+
+///> c
+///> rust
+:# relu_backward_matches_central_differences_away_from_the_kink =
+    all_close (rl_grad ()) rl_numeric 0 |> _assert_eq !+
+
+///> c
+///> rust
+:# bce_with_logits_gradient_matches_central_differences =
+    (bce_close 1.5f32 1.0f32, bce_close (0.0f32 - 2.0f32) 1.0f32, bce_close 0.3f32 0.0f32, bce_close 25.0f32 0.0f32)
+    |> _assert_eq (!+, !+, !+, !+)
+
+///> c
+///> rust
+:# bce_with_logits_at_zero_is_log_two_with_a_half_gradient =
+    (abs (bce_logits 0.0f32 1.0f32 - 0.6931472f32) < 0.000001f32, bce_logits_backward 0.0f32 1.0f32)
+    |> _assert_eq (!+, -0.5f32)

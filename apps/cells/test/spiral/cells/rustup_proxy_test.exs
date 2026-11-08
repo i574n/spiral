@@ -4,7 +4,7 @@ defmodule Spiral.Cells.RustupProxyTest do
   @flags ["-C", "opt-level=2", "-A", "warnings", "--edition", "2024", "-o", "main.exe", "main.rs"]
 
   test "a rustc inside a rustup toolchain directory runs as itself, with no toolchain argument" do
-    direct = "C:/Users/x/scoop/persist/rustup/.rustup/toolchains/nightly-2026-10-18-x86_64-pc-windows-msvc/bin/rustc.exe"
+    direct = "C:/Users/x/scoop/persist/rustup/.rustup/toolchains/nightly-2026-11-05-x86_64-pc-windows-msvc/bin/rustc.exe"
     assert Spiral.Cells.rustc_args(direct, "main.rs", "main.exe") == @flags
   end
 

@@ -33,6 +33,7 @@ defmodule Mix.Tasks.Spiral.Notebook do
 
     case status do
       :ok -> :ok
+      {:void, message} -> Mix.shell().error(message) && exit({:shutdown, 3})
       {:error, message} -> Mix.raise(message)
     end
   end

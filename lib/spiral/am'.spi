@@ -1,4 +1,3 @@
-///> zig
 :# am static =
     :< testing
 
@@ -90,7 +89,6 @@
 ///> fsharp
 ///> cuda
 ///> typescript
-///> cuda
 :# choose =
     10
     |> init
@@ -156,7 +154,6 @@
 ///> rust
 ///> cuda
 ///> typescript
-///> cuda
 :# try_pick =
     10
     |> init

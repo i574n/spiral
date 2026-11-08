@@ -268,7 +268,12 @@ module spiral_compiler =
         default_uint : PrimitiveType
         default_float : PrimitiveType
         edition : SpiralEdition
+        test_entry : string option
         }
+
+    let test_entry_parsed = System.Collections.Concurrent.ConcurrentDictionary<string, string option>()
+
+    let mutable test_entry_selection : (string * string) option = None
 
     /// ### CliArguments
     type CliArguments =
@@ -326,6 +331,7 @@ module spiral_compiler =
             | "2" | "upstream" -> UpstreamEdition2
             | "3" | "i574n" -> ForkEdition3
             | x -> failwith $"Invalid dialect.\nGot: %s{x}\nExpected one of: i574n, upstream (or the legacy editions 3, 2)"
+        test_entry = None
         }
 
     /// ## Utils
@@ -857,6 +863,8 @@ module spiral_compiler =
 
     /// ### GlobalId
     type GlobalId = { package_id : PackageId; module_id : ModuleId; tag : int }
+
+    let mutable package_dirs_by_id : Map<PackageId, string> = Map.empty
 
     let globalIdStableText (id: GlobalId) =
         string id.package_id + ":" + string id.module_id + ":" + string id.tag
@@ -3668,9 +3676,35 @@ module spiral_compiler =
         | TokVar ("test", _) :: (TokVar _ | TokKeyword _) :: modes -> blockParsingTestModesValid modes
         | _ -> false
 
+    let blockParsingTestEntryName (name : string) = "\u0001test " + name
+
+    let blockParsingTestEntryStart (s : BlockParsingEnv) =
+        match s.default_env.test_entry with
+        | Some wanted when 1 < s.tokens.Length ->
+            let headerRow = s.tokens_cords.[0].row
+            let header = s.tokens |> Array.indexed |> Array.filter (fun (i, _) -> s.tokens_cords.[i].row = headerRow) |> Array.map (snd >> snd)
+            let isStatic = header |> Array.exists (function TokVar ("static", _) -> true | _ -> false)
+            match snd s.tokens.[1] with
+            | TokVar (name, _) when name = wanted && not isStatic && header.Length < s.tokens.Length -> Some header.Length
+            | _ -> None
+        | _ -> None
+
     let blockParsingParse (s : BlockParsingEnv) : ParseResult =
         if 0 < s.tokens.Length && blockParsingIsTest s then
-            if blockParsingTestHeaderValid s then Error [] else Error [ fst s.tokens.[0], MalformedTestHeader ]
+            if not (blockParsingTestHeaderValid s) then Error [ fst s.tokens.[0], MalformedTestHeader ]
+            else
+                match blockParsingTestEntryStart s with
+                | None -> Error []
+                | Some bodyStart ->
+                    s.Index <- bodyStart
+                    match root_term s with
+                    | Ok body when s.Index = s.tokens.Length ->
+                        let r = fst s.tokens.[0]
+                        let name = match snd s.tokens.[1] with TokVar (name, _) -> name | _ -> ""
+                        Ok (TopInl ("", r, (fst s.tokens.[1], blockParsingTestEntryName name), RawFun (r, [ PatB r, body ]), s.is_top_down))
+                    | Ok _ -> Error [ fst s.tokens.[s.Index], ExpectedEob ]
+                    | Error [] -> Error [ fst (Array.last s.tokens), UnexpectedEob ]
+                    | Error errors -> Error errors
         elif 0 < s.tokens.Length then
             match top_statement s with
             | Ok _ as x -> if s.Index = s.tokens.Length then x else Error [fst s.tokens.[s.Index], ExpectedEob]
@@ -4998,7 +5032,27 @@ module spiral_compiler =
         | ExpectedSymbol' a -> sprintf "Expected a symbol.\nGot: %s" (f a)
         | KindError(a,b) -> sprintf "Kind unification failure.\nGot:      %s\nExpected: %s" (show_kind a) (show_kind b)
         | KindErrorInConstraint(a,b) -> sprintf "Kind unification failure when propagating them from constraints.\nGot:      %s\nExpected: %s" (show_kind a) (show_kind b)
-        | TermError(a,b) -> sprintf "Unification failure.\nGot:      %s\nExpected: %s" (f a) (f b)
+        | TermError(a,b) ->
+            let got, expected = f a, f b
+            let hint =
+                if got <> expected then ""
+                else
+                    let rec nominals acc t =
+                        match visit_t t with
+                        | TyNominal i -> Set.add i acc
+                        | TyPair(a,b) | TyFun(a,b,_) | TyApply(a,b,_) -> nominals (nominals acc a) b
+                        | TyArray a | TyComment(_,a) | TyInl(_,a) | TyForall(_,a) | TyExists(_,a) | TyLayout(a,_) -> nominals acc a
+                        | TyRecord l -> l |> Map.fold (fun acc _ v -> nominals acc v) acc
+                        | TyUnion(l,_) -> l |> Map.fold (fun acc _ (_,v) -> nominals acc v) acc
+                        | _ -> acc
+                    let packages t = nominals Set.empty t |> Set.map (fun (i : GlobalId) -> i.package_id)
+                    let pa, pb = packages a, packages b
+                    if pa = pb then ""
+                    else
+                        let name p = match Map.tryFind p package_dirs_by_id with Some dir -> dir | None -> $"package {p}"
+                        let only s s' = Set.difference s s' |> Set.toList |> List.map name |> String.concat ", "
+                        $"\nBoth types print the same, but their nominals come from different package loads ({only pa pb} vs {only pb pa}): the same package was probably loaded from two paths (a direct compiler call without SPIRAL_COMPILER_PACKAGE_DIR, or two packageDir entries reaching one package)."
+            sprintf "Unification failure.\nGot:      %s\nExpected: %s%s" got expected hint
         | RecursiveMetavarsNotAllowed(a,b) -> sprintf "Recursive metavariables are not allowed. A metavar cannot be unified with a type that has itself.\nGot:      %s\nExpected: %s" (f a) (f b)
         | RecursiveTypevarsNotAllowed(a,b) -> sprintf "Recursive type variables are not allowed. A type variable cannot be unified with a type that has itself.\nGot:      %s\nExpected: %s" (f a) (f b)
         | ExpectedSymbolAsRecordKey a -> sprintf "Expected symbol as a record key.\nGot: %s" (f a)
@@ -5140,6 +5194,17 @@ module spiral_compiler =
             | _ -> t)
     
 
+    let literal_suffix_warn = System.Environment.GetEnvironmentVariable "SPIRAL_WARN_LITERAL_SUFFIX" <> "0"
+
+    let literal_suffix_suggestion (a : Literal) =
+        let text = a.LitToString()
+        match a with
+        | LitFloat32 x when System.Single.IsFinite x -> Some (if text.Contains '.' || text.Contains 'E' then text else text + ".0")
+        | LitFloat64 x when System.Double.IsFinite x -> Some (if text.Contains '.' || text.Contains 'E' then text else text + ".0")
+        | LitFloat32 _ | LitFloat64 _ -> None
+        | LitUInt8 _ | LitUInt16 _ | LitUInt32 _ | LitUInt64 _ | LitInt8 _ | LitInt16 _ | LitInt32 _ | LitInt64 _ -> Some text
+        | LitBool _ | LitString _ | LitChar _ -> None
+
     /// ### InferResult
     type [<ReferenceEquality>] InferResult = {
         filled_top : FilledTop Hopac.Promise
@@ -5147,6 +5212,8 @@ module spiral_compiler =
         offset : int
         hovers : RString []
         errors : RString list
+        warnings : RString list
+        self_unbound : bool
         }
     
 
@@ -5271,6 +5338,8 @@ module spiral_compiler =
         let at_tag i = {package_id=package_id; module_id=module_id; tag=i}
         let mutable top_env = top_env' // Is mutated only in two places at the top level. During actual inference can otherwise be thought of as immutable.
         let errors = ResizeArray()
+        let warnings = ResizeArray<RString>()
+        let top_down_bundle = match expr with BundleInl(_,_,_,_,td) | BundleRecInl(_,td) -> td | _ -> false
         let census_rows = ResizeArray<unit -> string>()
         let generalized_statements = Dictionary(HashIdentity.Reference)
         let type_apply_args = Dictionary(HashIdentity.Reference)
@@ -5782,7 +5851,13 @@ module spiral_compiler =
             | RawB r -> unify r s TyB
             | RawV(r,a,is_tvar_applied) -> rawv (r,a,is_tvar_applied)
             | RawDefaultLit(r,_) -> unify r s (fresh_subst_var scope (Set.singleton CNumber) KindType); hover_types.AddHover(r,(s,"")); annotations.Add(x,(r,s))
-            | RawLit(r,a) -> unify r s (lit a)
+            | RawLit(r,a) ->
+                if literal_suffix_warn && top_down_bundle then
+                    match literal_suffix_suggestion a, visit_t s, lit a with
+                    | Some text, TyPrim p, TyPrim q when p = q ->
+                        warnings.Add(r, $"WTY-RedundantLiteralSuffix: the context already gives this literal the type {show_primt p}, so its suffix is redundant; write {text}")
+                    | _ -> ()
+                unify r s (lit a)
             | RawSymbol(r,x) -> unify r s (TySymbol x)
             | RawIfThenElse(_,cond,tr,fl) -> f (TyPrim BoolT) cond; f s tr; f s fl
             | RawIfThen(r,cond,tr) -> f (TyPrim BoolT) cond; unify r s TyB; f TyB tr
@@ -6722,6 +6797,11 @@ module spiral_compiler =
             // ws: SPIRAL_HOVERS=0 (set by the CLI host, which never serves hovers) skips rendering every hover type to text.
             hovers = if System.Environment.GetEnvironmentVariable "SPIRAL_HOVERS" = "0" then [||] else hover_types.ToArray() |> HopacExtensions.A.map (fun ((a:VSCRange),(b,(com : string))) -> a, let b = show_t top_env b in if com <> "" then sprintf "%s\n---\n%s" b com else b)
             errors = errors |> Seq.toList |> List.map (fun (a,b) -> a, $"{type_error_report (show_type_error top_env b) (box b)} In the definition: {bundle_binding_names expr}.")
+            warnings = if 0 = errors.Count then Seq.toList warnings else []
+            self_unbound =
+                match expr with
+                | BundleInl(_,_,(_,own),_,true) -> errors |> Seq.exists (fun (_, e) -> match e with UnboundVariable (UnboundTermName n) -> TermNameIdOps.text n = own | _ -> false)
+                | _ -> false
             }
     
 
@@ -7458,6 +7538,7 @@ module spiral_compiler =
     let unionSourcePackages = System.Runtime.CompilerServices.ConditionalWeakTable<obj, int ref>()
     let packageDirsById = new System.Threading.ThreadLocal<Map<int, string>>(fun () -> Map.empty)
     let autoExportPids = System.Collections.Concurrent.ConcurrentDictionary<int, bool>()
+    let upstreamDialectPids = System.Collections.Concurrent.ConcurrentDictionary<int, bool>()
     // A `link:` unit as its importer sees it: its name and, once the unit is built, the unions its exports reach, keyed by
     // (source name, concrete shape) and mapped to the name the unit exports them under. None: no graph, the package owns all.
     type LinkedUnit = {unit : string; exported : Map<string * string, string> option; calls : Map<string * string, string>; wraps : Map<string * string, string>; shapes : Set<string>}
@@ -14539,7 +14620,7 @@ module spiral_compiler =
                             let inner = chain_reads.[k]
                             let once = reads |> List.filter ((=) j) |> List.length = 1
                             let dead_after = match live_after.TryGetValue x.[m] with | true, f -> not (f j) | _ -> false
-                            let untouched = seq { k + 1 .. m - 1 } |> Seq.forall (fun t -> match x.[t] with TyLet(_,_,TyOp(StaticStringConcat,_)) -> true | _ -> match plain_reads t with Some vs -> vs |> List.forall (fun v -> v <> j && not (Set.contains v inner)) | None -> false)
+                            let untouched = seq { k + 1 .. m - 1 } |> Seq.forall (fun t -> match x.[t] with TyLet(_,_,TyOp(StaticStringConcat,l')) -> not (List.contains j (concat_reads l')) | _ -> match plain_reads t with Some vs -> vs |> List.forall (fun v -> v <> j && not (Set.contains v inner)) | None -> false)
                             if once && dead_after && untouched then
                                 fused.Add k |> ignore
                                 absorbed.[j] <- k
@@ -29617,6 +29698,11 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             match b.bundle with
             | Some bundle ->
                 let x = infer package_id module_id env bundle
+                let x =
+                    match bundle with
+                    | BundleInl(com, r, w, body, true) when x.self_unbound && not (upstreamDialectPids.ContainsKey package_id) ->
+                        infer package_id module_id env (BundleRecInl([ com, r, w, body ], true))
+                    | _ -> x
                 let adds = match x.top_env_additions with AOpen x | AInclude x | AIncludePrivate (_, x) -> x
                 let env = inferUnion adds env
                 match (if autoExportPids.ContainsKey package_id then AutoExportCurried.synthesize bundle else None) with
@@ -30956,7 +31042,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
               default_int = Int32T
               default_uint = UInt32T
               default_float = Float64T
-              edition = (match edition with Edition2 -> UpstreamEdition2 | Edition3 -> ForkEdition3) }
+              edition = (match edition with Edition2 -> UpstreamEdition2 | Edition3 -> ForkEdition3)
+              test_entry = None }
 
         type ShapeKind =
             | PositionShape
@@ -33346,6 +33433,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 let thenWord (text : string) = if text = "?>" || text.StartsWith "?> " then "?>" else "then"
                 let isThenWord (text : string) = text = "then" || text = "?>"
                 let startsWithThen (text : string) = text.StartsWith "then " || text.StartsWith "?> "
+                let thenAuthoredOnOwnLine (thenNode : Node) =
+                    match thenNode with
+                    | Leaf lexeme -> authoredBreaks.Value.Contains lexeme.Span.From
+                    | Group _ -> false
                 let rec mergeThen (pending : (Node * bool * LaidLine list) list) =
                     match pending with
                     | (conditionNode, _, condition) :: (thenNode, bodyOnOwnLine, thenLine :: body) :: rest
@@ -33353,7 +33444,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                              && thenStaysOnCondition thenNode
                              && not condition.IsEmpty
                              && (List.last condition).Indent = thenLine.Indent
-                             && (isThenWord thenLine.Text || (startsWithThen thenLine.Text && not bodyOnOwnLine))
+                             && (isThenWord thenLine.Text || (startsWithThen thenLine.Text && not bodyOnOwnLine && not (thenAuthoredOnOwnLine thenNode)))
                              && fits thenLine.Indent ((List.last condition).Text + " " + thenLine.Text) ->
                         let last = List.last condition
                         List.take (condition.Length - 1) condition @ [ { last with Text = last.Text + " " + thenLine.Text } ] @ body @ mergeThen rest
@@ -35352,7 +35443,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 match SchemaEnv.tryFindText (SpiralFileSystem.standardize_path dir) packages with
                 | Some schema -> package_default_env default_env schema
                 | None -> owner (System.IO.Path.GetDirectoryName dir)
-        owner (System.IO.Path.GetDirectoryName file)
+        let env = owner (System.IO.Path.GetDirectoryName file)
+        match test_entry_selection with
+        | Some (path, name) when path = file -> { env with test_entry = Some name }
+        | _ -> env
 
     /// ### file_rust_extern
     let file_rust_extern (packages : SchemaEnv) (file : string) =
@@ -35790,7 +35884,9 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         try let! x = File.ReadAllTextAsync(path)
                             let parsed = ref Unchecked.defaultof<_>
                             let failure : exn ref = ref null
-                            let parser = System.Threading.Thread((fun () -> try parsed.Value <- wdiff_module_init_all (file_default_env default_env packages path) (is_top_down path) x with error -> failure.Value <- error), 512 <<< 20)
+                            let env = file_default_env default_env packages path
+                            test_entry_parsed.[path] <- env.test_entry
+                            let parser = System.Threading.Thread((fun () -> try parsed.Value <- wdiff_module_init_all env (is_top_down path) x with error -> failure.Value <- error), 512 <<< 20)
                             parser.Start ()
                             parser.Join ()
                             if not (isNull failure.Value) then raise failure.Value
@@ -35993,10 +36089,14 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
     let proj_validate default_env s dirty_packages =
         let order,socs = circular_nodes s.graph dirty_packages
         let packages = ss_validate s.packages s.modules (order,socs)
+        package_dirs_by_id <- fst s.package_ids |> Map.toSeq |> Seq.map (fun (dir, pid) -> pid, dir) |> Map.ofSeq
         for KeyValue(dir, pid) in fst s.package_ids do
             match SchemaEnv.tryFindText (SpiralFileSystem.standardize_path dir) packages with
             | Some schema when schema.schema.autoExport = Some "monomorphic" -> autoExportPids.[pid] <- true
             | _ -> autoExportPids.TryRemove pid |> ignore
+            match SchemaEnv.tryFindText (SpiralFileSystem.standardize_path dir) packages with
+            | Some schema when (package_default_env default_env schema).edition = UpstreamEdition2 -> upstreamDialectPids.[pid] <- true
+            | _ -> upstreamDialectPids.TryRemove pid |> ignore
         let packages_infer = wdiff_projenvr_tc default_env (fst s.package_ids) packages s.modules s.packages_infer (dirty_packages, order)
         order, {s with packages_infer = packages_infer; packages=packages}
 
@@ -36237,6 +36337,9 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         // trace Verbose (fun () -> $"Supervisor.file / uri: {uri} / result: {result} / result': {result'}") _locals
         result'
 
+    let select_test_entry (uri : string) (name : string option) =
+        test_entry_selection <- name |> Option.map (fun name -> file uri, name)
+
     /// ### supervisor_server
     let supervisor_server (default_env : DefaultEnv) atten (errors : SupervisorErrorSources) req =
         let fatal x = Hopac.start (Ch.send errors.fatal x)
@@ -36248,9 +36351,11 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             | SupervisorReq.FileOpen x ->
                 let file = file x.uri
                 // trace Verbose (fun () -> $"Supervisor.supervisor_server.loop.FileOpen / x: %A{x} / file: {file}") _locals
+                let env = file_default_env default_env s.packages file
+                let parsed_with = match test_entry_parsed.TryGetValue file with | true, v -> v | _ -> None
                 match Map.tryFind file s.modules with
-                | Some m -> wdiff_module_all (file_default_env default_env s.packages file) m x.spiText
-                | None -> wdiff_module_init_all (file_default_env default_env s.packages file) (is_top_down file) x.spiText
+                | Some m when parsed_with = env.test_entry -> wdiff_module_all env m x.spiText
+                | _ -> test_entry_parsed.[file] <- env.test_entry; wdiff_module_init_all env (is_top_down file) x.spiText
                 |> fun v -> proj_revalidate_owner default_env {s with modules = Map.add file v s.modules} file
                 |> handle_file_packages file
             | SupervisorReq.FileChange x ->
@@ -36592,9 +36697,29 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             with _ -> ()
                         entry_errors >>=* fun entry_errors ->
                         let entry_errors = entry_errors @ package_errors
-                        if List.isEmpty entry_errors then dependency_warnings ()
+                        let literal_warnings () =
+                            try
+                                let rec available acc (stream : Stream<_>) =
+                                    if Promise.Now.isFulfilled stream then
+                                        match Promise.Now.get stream with
+                                        | Hopac.Stream.Cons((_, x : InferResult, _), next) -> available (acc @ x.warnings) next
+                                        | Hopac.Stream.Nil -> acc
+                                    else acc
+                                let rec own_files x acc =
+                                    match x with
+                                    | ProjFilesTree.File(mid,path,_) ->
+                                        let slot = if mid < tc.files.uids_file.Length then tc.files.uids_file.[mid] else Unchecked.defaultof<_>
+                                        if isNull (box slot) || isNull (box (fst slot)) then acc
+                                        else (available [] (fst slot).result |> List.map (fun w -> path, w)) @ acc
+                                    | ProjFilesTree.Directory(_,_,l) -> List.foldBack own_files l acc
+                                let found = List.foldBack own_files tc.files.files.tree [] |> List.distinct
+                                found |> List.truncate 50 |> List.iter (fun (path,((p,_),message)) -> eprintfn "warning: %s:%i:%i: %s" path (p.line + 1) (p.character + 1) message)
+                                if found.Length > 50 then eprintfn "warning: %d more WTY-RedundantLiteralSuffix warnings in this package (SPIRAL_WARN_LITERAL_SUFFIX=0 turns them off)" (found.Length - 50)
+                            with _ -> ()
+                        if List.isEmpty entry_errors then (dependency_warnings (); literal_warnings ())
                         let body() =
-                            match backend, Map.tryFind "main" env.term with
+                            let test_entry = (file_default_env default_env s.packages file).test_entry
+                            match backend, Map.tryFind (match test_entry with Some name -> blockParsingTestEntryName name | None -> "main") env.term with
                             | "Check", _ -> BuildSkip
                             | _, _ when not (List.isEmpty entry_errors) ->
                                 let details = entry_errors |> List.map (fun (path,((a,_),message)) -> $"\n{path}:{a.line + 1}:{a.character + 1}: {message}") |> String.concat ""
@@ -36733,7 +36858,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                             |> Async.Start
                                         trace Critical (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build / ex: %A{ex}") _locals
                                         BuildFatalError(ex.Message)
-                            | _, None -> BuildFatalError $"Cannot find `main` in file {Path.GetFileNameWithoutExtension file}."
+                            | _, None ->
+                                match test_entry with
+                                | Some name -> BuildFatalError $"Cannot find test `{name}` in file {Path.GetFileNameWithoutExtension file} (a static test is a prelude, not an entry)."
+                                | None -> BuildFatalError $"Cannot find `main` in file {Path.GetFileNameWithoutExtension file}."
 
                         // The partial evaluator is using too much stack space, so as a temporary fix, I am running it on a separate thread with much more of it.
                         // Restored 2026-09-30: commit 1eb2ecf had replaced the thread with an inline call, so peval ran

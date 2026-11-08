@@ -1,4 +1,3 @@
-///> zig
 inl certified_rows () =
     certificate.CertifiedRow (false, certificate.PackedMoves (exists (certificate.MovesNext (48u32, 57u32, 1i32, certificate.MovesEnd))))
     ::     certificate.CertifiedRow (false, certificate.PackedMoves (exists (certificate.MovesNext (48u32, 57u32, 2i32, certificate.MovesEnd))))

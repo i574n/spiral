@@ -1,4 +1,3 @@
-///> zig
 /// # spiral
 :< file_system_operators
 :< rust_operators
@@ -49,6 +48,7 @@
     ++\# "codegen-units = 256"
     ++\# "opt-level = 0"
     ++\# "lto = false"
+    ++\# "incremental = false"
     ++\# "debug = 1"
     ++\# "panic = \"unwind\""
     ++\# "rustflags = [\"-C\", \"link-arg=-s\"]"
@@ -1754,7 +1754,6 @@
     }
 
 /// ## main
-
 := run_main (args : array_base string) : i32 =
     := trace_state = get_trace_state_or_init (Debug |> Some)
     := json_protocol = (env.get_environment_variable "SPIRAL_JSON") = "1"

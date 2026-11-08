@@ -49,7 +49,8 @@ defmodule Spiral.Cells.Result do
 
   defp field(tag, text), do: tag <> Integer.to_string(byte_size(text)) <> ":" <> text
 
-  defp take_field(<<tag::binary-size(1), rest::binary>>) do
+  @doc false
+  def take_field(<<tag::binary-size(1), rest::binary>>) do
     {size, ":" <> rest} = Integer.parse(rest)
     <<body::binary-size(^size), tail::binary>> = rest
     {tag, body, tail}

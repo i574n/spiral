@@ -1,4 +1,3 @@
-///> zig
 :< sm'_operators
 
 :~ split_args (args : string) : result (array_base string) string =

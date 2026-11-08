@@ -65,7 +65,7 @@ defmodule Spiral.Cells.MemoTest do
 
   test "every module the spiral library lists resolves to a file" do
     lib = Path.expand("../../../../../lib/spiral", __DIR__)
-    project = File.read!(Path.join(lib, "package.spiproj"))
+    project = Spiral.Cells.Manifest.read!(lib)
     entries =
       project
       |> String.replace("\r\n", "\n")
@@ -322,9 +322,15 @@ defmodule Spiral.Cells.MemoTest do
 
   test "source-blocks rows group by input and skip headerless blocks" do
     rows = "1\t1\t2\t3\t4\tinl a () =\n1\t5\t0\t0\t6\t\n2\t1\t1\t1\t1\ttest x =\n"
-    assert SourceBlocks.parse_rows(rows) == %{
-             1 => [%{first: 1, header: 2, last_content: 3, last: 4, header_text: "inl a () ="}],
-             2 => [%{first: 1, header: 1, last_content: 1, last: 1, header_text: "test x ="}]
-           }
+    assert Enum.map(["1", "2", "3"], &Spiral.Cells.Domain.source_input_rows(rows, &1)) == ["2\t4\tinl a () =", "1\t1\ttest x =", ""]
+  end
+
+  test "a split keeps each block's lines, drops test blocks, and gives a block past the end no lines" do
+    rows = "1\t2\t:= a =\n3\t3\t:# t =\n4\t4\ttest_ok =\n9\t9\t:= g ="
+    assert SourceBlocks.split(":= a =\n 1\n:# t =\ntest_ok", rows) == [
+             %{header_text: ":= a =", lines: [":= a =", " 1"]},
+             %{header_text: "test_ok =", lines: ["test_ok"]},
+             %{header_text: ":= g =", lines: []}
+           ]
   end
 end

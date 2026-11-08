@@ -1,0 +1,136 @@
+:# f32_optim static =
+    :< testing
+
+:== floats = array f32
+
+:== adamw = { lr : f32; beta1 : f32; beta2 : f32; eps : f32; decay : f32 }
+
+:== moments = { m : floats; v : floats; step : i32 }
+
+:== bias = { c1 : f32; c2 : f32 }
+
+:== span = { at : i32; size : i32; decays : bool }
+
+:== cosine = { peak : f32; floor : f32; warmup : i32; decay_steps : i32 }
+
+:| schedule =
+    | Constant : f32
+    | WarmupCosine : cosine
+
+:= zeros (n : i32) : floats =
+    := o : floats = create n
+    f32_kernels::zero_from o 0 n 0
+    o
+
+:= decayed (c : cosine) (it : i32) : f32 =
+    := ratio : f32 = conv (it - c::warmup) / conv (c::decay_steps - c::warmup)
+    c::floor + 0.5f32 * (1.0f32 + cos (3.14159265f32 * ratio)) * (c::peak - c::floor)
+
+:= cosine_lr (c : cosine) (it : i32) : f32 =
+    ? it < c::warmup ?> c::peak * conv it / conv c::warmup |: ? it > c::decay_steps ?> c::floor |: decayed c it
+
+:= rate (s : schedule) (it : i32) : f32 =
+    ?= s ?|
+    | Constant lr => lr
+    | WarmupCosine c => cosine_lr c it
+
+:= zero_moments (n : i32) : moments = { m = zeros n; v = zeros n; step = 0 }
+
+:= bias_at (o : adamw) (step : i32) : bias =
+    { c1 = 1.0f32 - o::beta1 ** conv step; c2 = 1.0f32 - o::beta2 ** conv step }
+
+:= moment_step (o : adamw) (s : moments) (g : f32) (i : i32) : () =
+    set s::m i (o::beta1 * index s::m i + (1.0f32 - o::beta1) * g)
+    set s::v i (o::beta2 * index s::v i + (1.0f32 - o::beta2) * g * g)
+
+:= param_step (o : adamw) (lr : f32) (k : bias) (p : floats) (s : moments) (i : i32) : () =
+    := denom = sqrt (index s::v i) / sqrt k::c2 + o::eps
+    set p i (index p i * (1.0f32 - lr * o::decay) - lr / k::c1 * index s::m i / denom)
+
+:~ ^ adamw_from (o : adamw) (lr : f32) (k : bias) (p : floats) (g : floats) (s : moments) (i : i32) (end : i32) : () =
+    ? i < end ?>
+        moment_step o s (index g i) i
+        param_step o lr k p s i
+        adamw_from o lr k p g s (i + 1) end
+
+:= span_step (o : adamw) (lr : f32) (k : bias) (p : floats) (g : floats) (s : moments) (x : span) : () =
+    adamw_from (? x::decays ?> o |: { o ?| decay = 0.0f32 }) lr k p g s x::at (x::at + x::size)
+
+:= adamw_spans (o : adamw) (lr : f32) (p : floats) (g : floats) (s : moments) (spans : list span) : moments =
+    := next = s::step + 1
+    spans |> listm::iter (span_step o lr (bias_at o next) p g s)
+    { s ?| step = next }
+
+:= adamw_step (o : adamw) (lr : f32) (p : floats) (g : floats) (s : moments) : moments =
+    adamw_spans o lr p g s [ { at = 0; size = length p; decays = !+ } ]
+
+:~ ^ scale_from (g : floats) (c : f32) (i : i32) : () =
+    ? i < length g ?>
+        set g i (index g i * c)
+        scale_from g c (i + 1)
+
+:= clip_norm (g : floats) (max_norm : f32) : f32 =
+    := total = sqrt (f32_kernels::sum_squares g (length g) 0 0.0f32)
+    := coef = max_norm / (total + 0.000001f32)
+    ? coef < 1.0f32 ?> scale_from g coef 0
+    total
+
+:= near (x : f32) (want : f32) : bool = abs (x - want) <= 0.00001f32 + 0.00001f32 * abs want
+
+:= test_adamw () : adamw = { lr = 0.1f32; beta1 = 0.9f32; beta2 = 0.999f32; eps = 0.00000001f32; decay = 0.1f32 }
+
+:= two_steps () : floats =
+    := p, g =
+        f32_kernels::floats_of [ 1.0f32; (0.0f32 - 2.0f32) ], f32_kernels::floats_of [ 0.5f32; (0.0f32 - 0.25f32) ]
+    := o = test_adamw ()
+    adamw_step o o::lr p g (adamw_step o o::lr p g (zero_moments 2)) |> ignore
+    p
+
+:= test_cosine () : schedule = WarmupCosine { peak = 1.0f32; floor = 0.1f32; warmup = 10; decay_steps = 110 }
+
+:= clipped (values : list f32) : f32 * floats =
+    := g = f32_kernels::floats_of values
+    clip_norm g 1.0f32, g
+
+///> c
+///> rust
+:# adamw_two_steps_match_the_hand_computed_updates =
+    := p = two_steps ()
+    (near (index p 0) 0.7811f32, near (index p 1) (0.0f32 - 1.7612f32)) |> _assert_eq (!+, !+)
+
+///> c
+///> rust
+:# warmup_cosine_ramps_peaks_halves_and_floors =
+    := r = rate (test_cosine ())
+    (near (r 5) 0.5f32, near (r 10) 1.0f32, near (r 60) 0.55f32, near (r 110) 0.1f32, near (r 200) 0.1f32)
+    |> _assert_eq (!+, !+, !+, !+, !+)
+
+///> c
+///> rust
+:# clipping_scales_gradients_above_the_norm_down_to_it =
+    := big, g = clipped [ 3.0f32; 4.0f32 ]
+    (near big 5.0f32, near (index g 0) 0.6f32, near (index g 1) 0.8f32) |> _assert_eq (!+, !+, !+)
+
+///> c
+///> rust
+:# clipping_leaves_gradients_under_the_norm_alone =
+    := small, h = clipped [ 0.3f32; 0.4f32 ]
+    (near small 0.5f32, near (index h 0) 0.3f32, near (index h 1) 0.4f32) |> _assert_eq (!+, !+, !+)
+
+:= test_parts () : list span = [ { at = 0; size = 1; decays = !+ }; { at = 1; size = 1; decays = !- } ]
+
+:= split_step () : floats =
+    := p, g = f32_kernels::floats_of [ 1.0f32; 1.0f32 ], f32_kernels::floats_of [ 0.5f32; 0.5f32 ]
+    adamw_spans (test_adamw ()) 0.1f32 p g (zero_moments 2) (test_parts ()) |> ignore
+    p
+
+///> c
+///> rust
+:# a_span_without_decay_skips_only_the_decay_term =
+    := p = split_step ()
+    (near (index p 0) 0.89f32, near (index p 1) 0.9f32) |> _assert_eq (!+, !+)
+
+///> c
+///> rust
+:# a_constant_schedule_ignores_the_step =
+    (rate (Constant 0.3f32) 0, rate (Constant 0.3f32) 7) |> _assert_eq (0.3f32, 0.3f32)

@@ -1,4 +1,3 @@
-///> zig
 := export \* t. (name : string) (f : t) : () = !!!!Export(name, f)
 
 := main () : i32 =
@@ -32,8 +31,13 @@
         "reached_program"
         ((\ (program : string), (rows : string) => memo::reached_program_wire program rows) : string * string -> string)
     export "result_fields" ((\ wire => run_result::result_fields_wire wire) : string -> string)
+    export "verdict_counts" ((\ rows => verdicts::counts_wire rows) : string -> string)
+    export "void_text" ((\ (path : string), (count : i32), (rows : string), (load : string) => verdicts::void_text path count rows load) : string * i32 * string * string -> string)
+    export "source_input_rows" ((\ (tsv : string), (input : string) => source_blocks::input_rows tsv input) : string * string -> string)
+    export "source_split_blocks" ((\ (program : string), (rows : string) => source_blocks::split_blocks program rows) : string * string -> string)
     export "from_toml" ((\ text => manifest::from_toml text) : string -> string)
-    export "declares_modules" ((\ text => ? manifest::declares_modules text ?> "true" |: "false") : string -> string)
+    export "declares_modules" ((\ text => manifest::declares_modules text) : string -> bool)
+    export "i574n_dialect" ((\ text => manifest::i574n_dialect text) : string -> bool)
     export "manifest_path" ((\ dir => manifest::manifest_path_text dir) : string -> string)
     export
         "source_remap"
@@ -47,10 +51,12 @@
     export "builder_present" ((\ text => builder_output::present text) : string -> string)
     export "builder_failure_trace" ((\ text => builder_output::failure_trace text) : string -> string)
     export "builder_split" ((\ text => builders::split_wire text) : string -> string)
-    export "builder_deps" ((\ text => builders::deps_wire text) : string -> string)
     export "host_language" ((\ text => targets::host_language text) : string -> string)
     export "host_extension" ((\ text => targets::host_extension text) : string -> string)
     export "is_cl_compiler" ((\ text => ? targets::is_cl text ?> "true" |: "false") : string -> string)
     export "gleam_strip_warnings" ((\ text => gleam_project::strip_warnings text) : string -> string)
     export "gleam_manifest" ((\ wire => gleam_project::manifest_wire wire) : string -> string)
+    export "mount_patch_first" ((\ (body : string), (old : string), (new : string) => mount_text::patch_first body old new) : string * string * string -> string)
+    export "mount_nested_name" ((\ names => mount_text::nested_name names) : string -> string)
+    export "mount_sibling_project" ((\ text => mount_text::sibling_project text) : string -> string)
     0i32

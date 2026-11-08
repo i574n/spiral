@@ -1,4 +1,3 @@
-///> zig
 :# async static =
     :< testing
 

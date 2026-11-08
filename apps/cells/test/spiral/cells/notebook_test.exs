@@ -260,7 +260,7 @@ defmodule Spiral.Cells.NotebookTest do
 
   defp compiled_sources(dir, name, text) do
     path = Path.join(dir, name)
-    File.write!(path, "///> rust\n" <> text)
+    File.write!(path, text)
     {:ok, agent} = Agent.start_link(fn -> [] end)
     assert :ok = Notebook.run(path, compile: compile(agent), rustc: &rustc_ok/1, execute: run_value("ok\n"))
     Agent.get(agent, & &1)
@@ -274,10 +274,10 @@ defmodule Spiral.Cells.NotebookTest do
     refute Enum.any?(sources, &(&1 =~ "entry_marker"))
   end
 
-  test "spi: a test-free file still runs its self-checking main", %{dir: dir} do
+  test "spi: code cells and main never run, so a file without test cells compiles nothing", %{dir: dir} do
     sources = compiled_sources(dir, "check.spi", "inl value () = 1i32\n\ninl main () : i32 =\n    self_check_marker (value ())\n")
 
-    assert Enum.any?(sources, &(&1 =~ "self_check_marker"))
+    assert sources == []
   end
 
   test "spi: an export-only main is never compiled", %{dir: dir} do
@@ -361,7 +361,7 @@ defmodule Spiral.Cells.NotebookTest do
 
     assert :ok = Notebook.run(path, compile: compile, rustc: &rustc_ok/1, execute: run_value("ok\n"))
     runs = Agent.get(agent, & &1)
-    assert length(runs) == 3
+    assert length(runs) == 2
 
     for {source, real, proj} <- runs do
       refute source =~ "inl twice_real", "a real definition reached a top-down program"

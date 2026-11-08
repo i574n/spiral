@@ -3,8 +3,6 @@ defmodule Spiral.Cells.SourceBlocks do
 
   @inputs_per_call 150
 
-  @type block :: %{first: pos_integer(), header: pos_integer(), last_content: pos_integer(), last: pos_integer(), header_text: String.t()}
-
   @spec available?(keyword()) :: boolean()
   def available?(opts) do
     case host(opts) do
@@ -13,7 +11,7 @@ defmodule Spiral.Cells.SourceBlocks do
     end
   end
 
-  @spec of_texts(keyword(), [String.t()]) :: {:ok, %{String.t() => [block()]}} | :unavailable
+  @spec of_texts(keyword(), [String.t()]) :: {:ok, %{String.t() => String.t()}} | :unavailable
   def of_texts(opts, texts) do
     texts = Enum.uniq(texts)
 
@@ -29,12 +27,15 @@ defmodule Spiral.Cells.SourceBlocks do
     end
   end
 
-  @spec split(String.t(), [block()]) :: [%{header_text: String.t(), lines: [String.t()]}]
-  def split(text, blocks) do
-    lines = text |> String.replace("\r\n", "\n") |> String.split("\n") |> List.to_tuple()
+  @spec split(String.t(), String.t()) :: [%{header_text: String.t(), lines: [String.t()]}]
+  def split(text, rows), do: text |> Spiral.Cells.Domain.source_split_blocks(rows) |> blocks([])
 
-    for %{header: header, last: last, header_text: header_text} <- blocks do
-      %{header_text: header_text, lines: for(row <- header..min(last, tuple_size(lines))//1, do: elem(lines, row - 1))}
+  defp blocks("", acc), do: acc |> Enum.map(&%{&1 | lines: Enum.reverse(&1.lines)}) |> Enum.reverse()
+
+  defp blocks(wire, acc) do
+    case Spiral.Cells.Result.take_field(wire) do
+      {"b", header_text, rest} -> blocks(rest, [%{header_text: header_text, lines: []} | acc])
+      {"l", line, rest} -> blocks(rest, [%{hd(acc) | lines: [line | hd(acc).lines]} | tl(acc)])
     end
   end
 
@@ -60,8 +61,8 @@ defmodule Spiral.Cells.SourceBlocks do
 
       case System.cmd(dotnet, [dll, "--source-blocks", out | inputs], stderr_to_stdout: true) do
         {_, 0} ->
-          by_input = out |> File.read!() |> parse_rows()
-          {:ok, Map.new(indexed, fn {text, i} -> {text, Map.get(by_input, i, [])} end)}
+          tsv = File.read!(out)
+          {:ok, Map.new(indexed, fn {text, i} -> {text, Spiral.Cells.Domain.source_input_rows(tsv, Integer.to_string(i))} end)}
 
         _ ->
           :unavailable
@@ -73,18 +74,4 @@ defmodule Spiral.Cells.SourceBlocks do
     end
   end
 
-  @doc false
-  def parse_rows(tsv) do
-    tsv
-    |> String.split("\n", trim: true)
-    |> Enum.map(&String.split(&1, "\t", parts: 6))
-    |> Enum.flat_map(fn
-      [input, first, header, last_content, last, header_text] when header != "0" ->
-        [{String.to_integer(input), %{first: String.to_integer(first), header: String.to_integer(header), last_content: String.to_integer(last_content), last: String.to_integer(last), header_text: header_text}}]
-
-      _ ->
-        []
-    end)
-    |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
-  end
 end

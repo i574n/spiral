@@ -1,6 +1,4 @@
-///> gleam
 ///- --package .
-///> gleam
 :# gleam_project static =
     :< testing
 

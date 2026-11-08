@@ -1,0 +1,5 @@
+:= step (n : i32) : i32 = n + 1
+
+:= step (n : i32) : i32 = step (step n)
+
+:= main () : i32 = step 40

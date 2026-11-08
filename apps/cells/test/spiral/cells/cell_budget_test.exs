@@ -16,22 +16,28 @@ defmodule Spiral.Cells.CellBudgetTest do
     assert CellBudget.weight("가") == 2
   end
 
-  test "edition 3 is read from the nearest package.spiproj and only then does a run print cell-budget warnings" do
+  test "the nearest manifest's dialect decides the run's cell-budget warnings, and only upstream opts out" do
     dir = Spiral.Cells.TestHelpers.tmp_dir!("cell_budget")
     nested = Path.join(dir, "sub")
     File.mkdir_p!(nested)
     path = Path.join(nested, "post.spi")
     File.write!(path, "inl tag = #trending\n")
 
-    File.write!(Path.join(dir, "package.spiproj"), "packages: |core-\nmodules:\n    post\n")
-    refute CellBudget.edition3?(path)
+    File.write!(Path.join(dir, "package.spiproj"), "dialect: upstream\npackages: |core-\nmodules:\n    post\n")
+    refute CellBudget.i574n_dialect?(path)
     assert NotebookCli.cell_budget_lines([path], []) == []
     assert [line] = NotebookCli.cell_budget_lines([path], cell_budget: true)
     assert line =~ ~r/^cell-budget .*post\.spi:1:11: hashtag: #trending/
 
-    File.write!(Path.join(dir, "package.spiproj"), "edition: 3\npackages: |core-\nmodules:\n    post\n")
-    assert CellBudget.edition3?(path)
-    assert [_] = NotebookCli.cell_budget_lines([path], [])
+    for manifest <- ["packages: |core-\nmodules:\n    post\n", "edition: 3\nmodules:\n    post\n", "dialect: i574n\nmodules:\n    post\n"] do
+      File.write!(Path.join(dir, "package.spiproj"), manifest)
+      assert CellBudget.i574n_dialect?(path), manifest
+      assert [_] = NotebookCli.cell_budget_lines([path], [])
+    end
+
+    File.rm!(Path.join(dir, "package.spiproj"))
+    File.write!(Path.join(dir, "spiral.toml"), "dialect = 'upstream'\n")
+    refute CellBudget.i574n_dialect?(path)
   end
 
   test "the CI report lists findings and a summary and never fails" do

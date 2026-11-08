@@ -1,4 +1,3 @@
-///> zig
 /// ### array
 
 := array' \* t. (x : array_base t) : array t =

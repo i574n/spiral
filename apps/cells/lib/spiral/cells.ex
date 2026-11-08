@@ -36,11 +36,6 @@ defmodule Spiral.Cells do
 
       builders = if builders == [], do: [Builders.default()], else: builders
 
-      builders =
-        Builders.with_crates(
-          builders,
-          Enum.flat_map(prepared.packages, &Mounts.declared_crates(resolve_package(&1, opts[:root], workspace_root(opts))))
-        )
 
       timeout = prepared.timeout || timeout
       started = System.monotonic_time(:millisecond)
@@ -877,7 +872,7 @@ defmodule Spiral.Cells do
     end
   end
 
-  @rust_toolchain "+nightly-2026-10-18"
+  @rust_toolchain "+nightly-2026-11-05"
   @rust_flags ["-C", "opt-level=2", "-A", "warnings", "--edition", "2024"]
 
   @spec rustc_args(String.t(), String.t(), String.t()) :: [String.t()]

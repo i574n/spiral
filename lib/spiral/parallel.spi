@@ -1,4 +1,3 @@
-///> zig
 :# parallel static =
     :< testing
 

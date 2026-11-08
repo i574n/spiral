@@ -12,6 +12,8 @@ modules:
     daemon
     client
     memo
+    source_blocks
+    verdicts
     manifest
     source_map
     html_markdown
@@ -20,4 +22,5 @@ modules:
     builders
     gleam_project
     run_result
+    mount_text
     main

@@ -1,4 +1,3 @@
-///> zig
 ///- --package .
 :# nested static =
     :< testing

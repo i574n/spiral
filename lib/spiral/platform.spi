@@ -1,4 +1,3 @@
-///> zig
 :# platform static =
     :< testing
 

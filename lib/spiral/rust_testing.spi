@@ -1,4 +1,3 @@
-///> zig
 :# rust_testing static =
     :< testing
 
@@ -34,7 +33,7 @@
             ? is_rust () ?> test () |: ()
         |:
             process::execution_options \ x => { x ?|
-                command = "cargo +nightly-2026-10-18 test --timings -- --show-output"
+                command = "cargo +nightly-2026-11-05 test --timings -- --show-output"
                 working_directory = file_system::get_source_directory () |> Some |> optionm'::box
                 environment_variables = am'::base ;[ "TEST", "1" ]
             }

@@ -1,4 +1,3 @@
-///> zig
 := (++) (left : string) (right : string) : string = left ^^ right
 
 :| ^ nb =
@@ -235,12 +234,12 @@
 
 :| plan_scope =
     | EveryCell
-    | TestsAndWholeFile
+    | TestsOnly
 
 := planned (scope : plan_scope) (test : i32) : bool =
     ?= scope ?|
     | EveryCell => !+
-    | TestsAndWholeFile => test = 1i32 || test = 2i32
+    | TestsOnly => test = 1i32 || test = 2i32
 
 :| file_budget =
     | BudgetUnseen
@@ -261,18 +260,6 @@
     |? test = 1i32 || test = 2i32 ?> inherited_budget budget
     |: "-"
 
-:= whole_file
-    (scope : plan_scope) (last_def : i32) (packages : nb) (opens : nb) (defs : nb) (reals : nb) (budget : file_budget)
-    (acc : steps)
-    : steps
-    =
-    ?= scope ?|
-    | EveryCell => acc
-    | TestsAndWholeFile =>
-        ? last_def < 0i32
-        ?> acc
-        |: Step (last_def, inherited_budget budget, program packages opens defs "", join_nb reals, acc)
-
 :~ ^ any_test (xs : sources) : bool =
     ?= xs ?|
     | NoSource => !-
@@ -281,22 +268,22 @@
         (kind = "spiral" && test <> 0i32) || any_test rest
 
 :~ ^ walk
-    (scope : plan_scope) (has_tests : bool) (xs : sources) (index : i32) (last_def : i32) (packages : nb) (opens : nb)
+    (scope : plan_scope) (has_tests : bool) (xs : sources) (index : i32) (packages : nb) (opens : nb)
     (defs : nb) (reals : nb) (budget : file_budget) (acc : steps)
     : steps
     =
     ?= xs ?|
-    | NoSource => whole_file scope last_def packages opens defs reals budget acc
+    | NoSource => acc
     | Source (kind, source, rest) =>
         ? kind <> "spiral"
-        ?> walk scope has_tests rest (index + 1i32) last_def packages opens defs reals budget acc
+        ?> walk scope has_tests rest (index + 1i32) packages opens defs reals budget acc
         |:
             := cell_packages, test, is_real, timeout, body, cell_opens = scan source
             := skip = ? test = 0i32 && cell::entry_skipped has_tests body ?> 1i32 |: 0i32
             := packages2 = merge packages cell_packages
             := budget2 = budget_after budget timeout
             ? test = 3i32
-            ?> walk scope has_tests rest (index + 1i32) last_def packages2 opens defs reals budget2 acc
+            ?> walk scope has_tests rest (index + 1i32) packages2 opens defs reals budget2 acc
             |:
                 := code, real_code =
                     ? skip = 1i32
@@ -313,12 +300,10 @@
                 := timeout_text = step_budget budget2 test timeout
                 := step = ? planned scope test ?> Step (index, timeout_text, code, real_code, acc) |: acc
                 := kept = test <> 1i32 && skip = 0i32 && text::trim body <> ""
-                := last_def2 = ? kept && test = 0i32 ?> index |: last_def
                 ? is_real = 1i32
                 ?>
                     walk scope has_tests rest
                         (index + 1i32)
-                        last_def2
                         packages2
                         opens
                         defs
@@ -328,10 +313,10 @@
                         budget2
                         step
                 |? test = 1i32
-                ?> walk scope has_tests rest (index + 1i32) last_def2 packages2 opens defs reals budget2 step
+                ?> walk scope has_tests rest (index + 1i32) packages2 opens defs reals budget2 step
                 |? kept
-                ?> walk scope has_tests rest (index + 1i32) last_def2 packages2 opens (snoc defs body) reals budget2 step
-                |: walk scope has_tests rest (index + 1i32) last_def2 packages2 opens defs reals budget2 step
+                ?> walk scope has_tests rest (index + 1i32) packages2 opens (snoc defs body) reals budget2 step
+                |: walk scope has_tests rest (index + 1i32) packages2 opens defs reals budget2 step
 
 :~ ^ rev_steps (xs : steps) (acc : steps) : steps =
     ?= xs ?|
@@ -358,10 +343,10 @@
         := sources = load_sources (text::drop src next)
         := found =
             rev_steps
-                (walk scope (any_test sources) sources 0i32 -1i32 packages NoNb NoNb NoNb BudgetUnseen NoStep)
+                (walk scope (any_test sources) sources 0i32 packages NoNb NoNb NoNb BudgetUnseen NoStep)
                 NoStep
         text::show_i32 (count_steps found) ++ "\n" ++ emit_steps found
 
 := plan (src : string) : string = plan_in EveryCell src
 
-:= plan_tests (src : string) : string = plan_in TestsAndWholeFile src
+:= plan_tests (src : string) : string = plan_in TestsOnly src

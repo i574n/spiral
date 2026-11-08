@@ -1,4 +1,3 @@
-///> zig
 :< sm'_operators
 :< unsupported
 
@@ -136,13 +135,15 @@
 :~ ^ name_end (s : string) (pos : i32) : i32 =
     ? pos < sm'::length s && is_name_end (at s pos) = !- ?> name_end s (pos + code_point_width s pos) |: pos
 
+:= xml_find_portable (needle : string) (s : string) (pos : i32) : i32 =
+    := found = sm'::substring pos (sm'::length s - pos) s |> sm'::index_of needle
+    ? found < 0i32 ?> -1i32 |: pos + found
+
 := find_from (needle : string) (s : string) (pos : i32) : i32 =
     run_target \|
         | Rust => fun () => $'(&*!s)[(!pos as usize)..].find(&*!needle).map(|i| (i + !pos as usize) as \
             i32).unwrap_or(-1)' : i32
-        | _ => \ () =>
-            := found = sm'::substring pos (sm'::length s - pos) s |> sm'::index_of needle
-            ? found < 0i32 ?> -1i32 |: pos + found
+        | _ => \ () => xml_find_portable needle s pos
 
 := hex_digit (c : string) : i32 =
     := lower = sm'::index_of c "0123456789abcdef"
@@ -157,23 +158,33 @@
         := d = hex_digit (sm'::substring i 1i32 digits)
         ? d < 0i32 || d >= base || acc > 1114111i32 ?> -1i32 |: reference_value digits base (i + 1i32) (acc * base + d)
 
+:= code_point_valid (value : i32) : bool = value >= 0i32 && value <= 1114111i32
+
+:= reference_is_hex (body : string) : bool =
+    sm'::length body > 1i32 && (sm'::substring 0i32 1i32 body = "x" || sm'::substring 0i32 1i32 body = "X")
+
+:= numeric_reference_value (body : string) : i32 =
+    := hex = reference_is_hex body
+    := digits = ? hex ?> sm'::substring 1i32 (sm'::length body - 1i32) body |: body
+    ? sm'::length digits = 0i32 ?> -1i32 |: reference_value digits (? hex ?> 16i32 |: 10i32) 0i32 0i32
+
+:= reference_value_at (text : string) (start : i32) (semi : i32) : i32 =
+    numeric_reference_value (sm'::substring (start + 2i32) (semi - start - 2i32) text)
+
 :~ ^ numeric_references_from (text : string) (pos : i32) (acc : string) : string =
     := start = find_from "&#" text pos
-    ? start < 0i32
-    ?> acc ++# sm'::substring pos (sm'::length text - pos) text
-    |:
-        := before = acc ++# sm'::substring pos (start - pos) text
-        := semi = find_from ";" text start
-        ? semi < 0i32
-        ?> before ++# sm'::substring start (sm'::length text - start) text
-        |:
-            := body = sm'::substring (start + 2i32) (semi - start - 2i32) text
-            := hex =
-                sm'::length body > 1i32 && (sm'::substring 0i32 1i32 body = "x" || sm'::substring 0i32 1i32 body = "X")
-            := digits = ? hex ?> sm'::substring 1i32 (sm'::length body - 1i32) body |: body
-            := value = ? sm'::length digits = 0i32 ?> -1i32 |: reference_value digits (? hex ?> 16i32 |: 10i32) 0i32 0i32
-            ? value < 0i32 || value > 1114111i32 ?> numeric_references_from text (start + 2i32) (before ++# "&#")
-            |: numeric_references_from text (semi + 1i32) (before ++# code_point_string (conv value))
+    ? start < 0i32 ?> acc ++# sm'::substring pos (sm'::length text - pos) text
+    |: numeric_reference_step text start (acc ++# sm'::substring pos (start - pos) text)
+
+:& :~ numeric_reference_step (text : string) (start : i32) (before : string) : string =
+    := semi = find_from ";" text start
+    ? semi < 0i32 ?> before ++# sm'::substring start (sm'::length text - start) text
+    |: reference_decoded text start semi before
+
+:& :~ reference_decoded (text : string) (start : i32) (semi : i32) (before : string) : string =
+    := value = reference_value_at text start semi
+    ? code_point_valid value ?> numeric_references_from text (semi + 1i32) (before ++# code_point_string (conv value))
+    |: numeric_references_from text (start + 2i32) (before ++# "&#")
 
 := decode_numeric_references (text : string) : string = numeric_references_from text 0i32 ""
 
@@ -196,39 +207,67 @@
     | x :: xs => reverse_attributes xs (x :: acc)
     | [] => acc
 
+:= xml_attribute_value_at (s : string) (quote_at : i32) : string * i32 =
+    := value_stop = find_from (at s quote_at) s (quote_at + 1i32)
+    sm'::substring (quote_at + 1i32) (value_stop - quote_at - 1i32) s |> decode_entities, value_stop + 1i32
+
+:= xml_attribute_at (s : string) (pos : i32) : (string * string) * i32 =
+    := name_stop = name_end s pos
+    := value, next = xml_attribute_value_at s (skip_spaces s (skip_spaces s name_stop + 1i32))
+    (sm'::substring pos (name_stop - pos) s, value), next
+
+:= xml_attributes_end (c : string) : bool = c = ">" || c = "/" || c = "?"
+
 :~ ^ read_attributes (s : string) (pos : i32) (acc : list (string * string)) : list (string * string) * i32 =
     := pos = skip_spaces s pos
-    := c = at s pos
-    ? c = ">" || c = "/" || c = "?" ?> reverse_attributes acc [], pos
+    ? xml_attributes_end (at s pos) ?> reverse_attributes acc [], pos
     |:
-        := name_stop = name_end s pos
-        := name = sm'::substring pos (name_stop - pos) s
-        := eq = skip_spaces s name_stop
-        := quote_at = skip_spaces s (eq + 1i32)
-        := quote = at s quote_at
-        := value_stop = find_from quote s (quote_at + 1i32)
-        := value = sm'::substring (quote_at + 1i32) (value_stop - quote_at - 1i32) s |> decode_entities
-        read_attributes s (value_stop + 1i32) ((name, value) :: acc)
+        := attribute, next = xml_attribute_at s pos
+        read_attributes s next (attribute :: acc)
+
+:= xml_text_stop (s : string) (pos : i32) : i32 =
+    := stop = find_from "<" s pos
+    ? stop < 0i32 ?> sm'::length s |: stop
+
+:= xml_text_node (s : string) (pos : i32) (stop : i32) (acc : list xml_node) : list xml_node =
+    := text = sm'::substring pos (stop - pos) s |> sm'::trim |> decode_entities
+    ? text = "" ?> acc |: XmlText text :: acc
+
+:= xml_skip_to (s : string) (pos : i32) : option i32 =
+    ? sm'::substring pos 4i32 s = "<!--" ?> Some (find_from "-->" s pos + 3i32)
+    |? sm'::substring pos 2i32 s = "<?" ?> Some (find_from "?>" s pos + 2i32)
+    |? sm'::substring pos 2i32 s = "<!" ?> Some (find_from ">" s pos + 1i32)
+    |: None
 
 :~ ^ read_nodes (s : string) (pos : i32) (acc : list xml_node) : list xml_node * i32 =
     ? pos >= sm'::length s ?> reverse_nodes acc [], pos
-    |? at s pos <> "<" ?>
-        := stop = find_from "<" s pos
-        := stop = ? stop < 0i32 ?> sm'::length s |: stop
-        := text = sm'::substring pos (stop - pos) s |> sm'::trim |> decode_entities
-        read_nodes s stop (? text = "" ?> acc |: XmlText text :: acc)
-    |? sm'::substring pos 4i32 s = "<!--" ?> read_nodes s (find_from "-->" s pos + 3i32) acc
-    |? sm'::substring pos 2i32 s = "<?" ?> read_nodes s (find_from "?>" s pos + 2i32) acc
-    |? sm'::substring pos 2i32 s = "<!" ?> read_nodes s (find_from ">" s pos + 1i32) acc
+    |? at s pos <> "<" ?> xml_read_text s pos acc
     |? sm'::substring pos 2i32 s = "</" ?> reverse_nodes acc [], find_from ">" s pos + 1i32
+    |: xml_read_markup s pos acc
+
+:& :~ xml_read_markup (s : string) (pos : i32) (acc : list xml_node) : list xml_node * i32 =
+    ?= xml_skip_to s pos ?|
+    | Some next => read_nodes s next acc
+    | None => xml_read_element s pos acc
+
+:& :~ xml_read_text (s : string) (pos : i32) (acc : list xml_node) : list xml_node * i32 =
+    := stop = xml_text_stop s pos
+    read_nodes s stop (xml_text_node s pos stop acc)
+
+:& :~ xml_read_element (s : string) (pos : i32) (acc : list xml_node) : list xml_node * i32 =
+    := name_stop = name_end s (pos + 1i32)
+    := name = sm'::substring (pos + 1i32) (name_stop - pos - 1i32) s
+    := attributes, after = read_attributes s name_stop []
+    xml_element_body s name attributes after acc
+
+:& :~ xml_element_body
+    (s : string) (name : string) (attributes : list (string * string)) (after : i32) (acc : list xml_node)
+    : list xml_node * i32
+    =
+    ? at s after = "/" ?> read_nodes s (after + 2i32) (XmlElement (name, attributes, []) :: acc)
     |:
-        := name_stop = name_end s (pos + 1i32)
-        := name = sm'::substring (pos + 1i32) (name_stop - pos - 1i32) s
-        := attributes, after = read_attributes s name_stop []
-        ? at s after = "/" ?> read_nodes s (after + 2i32) (XmlElement (name, attributes, []) :: acc)
-        |:
-            := children, after_children = read_nodes s (after + 1i32) []
-            read_nodes s after_children (XmlElement (name, attributes, children) :: acc)
+        := children, after_children = read_nodes s (after + 1i32) []
+        read_nodes s after_children (XmlElement (name, attributes, children) :: acc)
 
 := read_xml (s : string) : list xml_node =
     := nodes, _ = read_nodes s 0i32 []
@@ -293,12 +332,13 @@
     ? count_named "enumeration" nodes <> 2i32 ?> failwith "two enumerations"
     ? count_named "simpleType" nodes <> 1i32 ?> failwith "one simpleType"
 
+:= xml_with_name (name : string) (seen : list string) : list string =
+    ? listm'::contains name seen ?> seen |: name :: seen
+
 :~ ^ element_names (nodes : list xml_node) (seen : list string) : list string =
     ?= nodes ?|
     | XmlElement (name, _, children) :: rest =>
-        := name = local_name name
-        := seen = ? listm'::contains name seen ?> seen |: name :: seen
-        element_names rest (element_names children seen)
+        element_names rest (element_names children (xml_with_name (local_name name) seen))
     | XmlText _ :: rest => element_names rest seen
     | [] => seen
 
@@ -347,12 +387,15 @@
     | _ :: rest => text_in rest
     | [] => ""
 
+:= xml_element_named (target : string) (node : xml_node) : bool =
+    ?= node ?|
+    | XmlElement (name, _, _) => local_name name = local_name target
+    | _ => !-
+
 :~ ^ children_named (target : string) (nodes : list xml_node) : list xml_node =
     ?= nodes ?|
-    | XmlElement (name, attributes, children) :: rest =>
-        ? local_name name = local_name target ?> XmlElement (name, attributes, children) :: children_named target rest
-        |: children_named target rest
-    | _ :: rest => children_named target rest
+    | node :: rest =>
+        ? xml_element_named target node ?> node :: children_named target rest |: children_named target rest
     | [] => []
 
 :~ ^ member_position (name : string) (members : list string) (at : i32) : option i32 =
@@ -365,20 +408,30 @@
     | [] => acc
     | _ => listm::rev current :: acc
 
+:= xml_member_position (members : list string) (node : xml_node) : option i32 =
+    ?= node ?|
+    | XmlElement (name, _, _) => member_position (local_name name) members 0i32
+    | _ => None
+
 :~ ^ member_runs
     (members : list string) (nodes : list xml_node) (last : i32) (current : list xml_node) (acc : list (list xml_node))
     : list (list xml_node)
     =
     ?= nodes ?|
-    | XmlElement (name, attributes, children) :: rest =>
-        := node = XmlElement (name, attributes, children)
-        ?= member_position (local_name name) members 0i32 ?|
-        | Some at =>
-            ? at > last ?> member_runs members rest at (node :: current) acc
-            |: member_runs members rest at (node :: []) (closed_run current acc)
-        | None => member_runs members rest last current acc
-    | _ :: rest => member_runs members rest last current acc
+    | node :: rest => member_run_at members rest last current acc node (xml_member_position members node)
     | [] => listm::rev (closed_run current acc)
+
+:& :~ member_run_at
+    (members : list string) (rest : list xml_node) (last : i32) (current : list xml_node) (acc : list (list xml_node))
+    (node : xml_node) (position : option i32)
+    : list (list xml_node)
+    =
+    ?= position ?|
+    | Some at =>
+        ? at > last
+        ?> member_runs members rest at (node :: current) acc
+        |: member_runs members rest at [ node ] (closed_run current acc)
+    | None => member_runs members rest last current acc
 
 := group_runs (members : list string) (nodes : list xml_node) : list (list xml_node) =
     member_runs members nodes (0i32 - 1i32) [] []
@@ -426,20 +479,26 @@
     | name :: rest => local_name name = target || named_in target rest
     | [] => !-
 
+:= xml_claimed (claimed : list string) (node : xml_node) : bool =
+    ?= node ?|
+    | XmlElement (name, _, _) => named_in (local_name name) claimed
+    | _ => !-
+
+:= xml_unclaimed (claimed : list string) (node : xml_node) : bool =
+    ?= node ?|
+    | XmlElement (name, _, _) => named_in (local_name name) claimed = !-
+    | _ => !-
+
 :~ ^ unclaimed_children (claimed : list string) (nodes : list xml_node) : list xml_node =
     ?= nodes ?|
-    | XmlElement (name, attributes, children) :: rest =>
-        ? named_in (local_name name) claimed ?> unclaimed_children claimed rest
-        |: XmlElement (name, attributes, children) :: unclaimed_children claimed rest
-    | _ :: rest => unclaimed_children claimed rest
+    | node :: rest =>
+        ? xml_unclaimed claimed node ?> node :: unclaimed_children claimed rest |: unclaimed_children claimed rest
     | [] => []
 
 :~ ^ claimed_children (claimed : list string) (nodes : list xml_node) : list xml_node =
     ?= nodes ?|
-    | XmlElement (name, attributes, children) :: rest =>
-        ? named_in (local_name name) claimed ?> XmlElement (name, attributes, children) :: claimed_children claimed rest
-        |: claimed_children claimed rest
-    | _ :: rest => claimed_children claimed rest
+    | node :: rest =>
+        ? xml_claimed claimed node ?> node :: claimed_children claimed rest |: claimed_children claimed rest
     | [] => []
 
 := text_children (text : string) : list xml_node = ? text = "" ?> [] |: XmlText text :: []
@@ -529,10 +588,12 @@
 
 :~ ^ same_node (a : xml_node) (b : xml_node) : bool =
     ? is_text_node a || is_text_node b ?> is_text_node a && is_text_node b && node_text a = node_text b
-    |:
-        node_name a = node_name b
-        && same_attributes (element_attributes a) (element_attributes b)
-        && same_nodes (significant (element_children a)) (significant (element_children b))
+    |: xml_same_element a b
+
+:& :~ xml_same_element (a : xml_node) (b : xml_node) : bool =
+    node_name a = node_name b
+    && same_attributes (element_attributes a) (element_attributes b)
+    && same_nodes (significant (element_children a)) (significant (element_children b))
 
 :& :~ same_nodes (a : list xml_node) (b : list xml_node) : bool =
     ?= a ?|
@@ -556,11 +617,16 @@
 
 :~ ^ with_namespace (target : string) (uri : string) (node : xml_node) : xml_node =
     ?= node ?|
-    | XmlElement (name, attributes, children) =>
-        ? local_name name = target
-        ?> XmlElement (target, ("xmlns", uri) :: attributes, with_namespace_all target uri children)
-        |: XmlElement (name, attributes, with_namespace_all target uri children)
+    | XmlElement (name, attributes, children) => xml_namespaced_element target uri name attributes children
     | XmlText _ => node
+
+:& :~ xml_namespaced_element
+    (target : string) (uri : string) (name : string) (attributes : list (string * string)) (children : list xml_node)
+    : xml_node
+    =
+    ? local_name name = target
+    ?> XmlElement (target, ("xmlns", uri) :: attributes, with_namespace_all target uri children)
+    |: XmlElement (name, attributes, with_namespace_all target uri children)
 
 :& :~ with_namespace_all (target : string) (uri : string) (nodes : list xml_node) : list xml_node =
     ?= nodes ?|
@@ -633,6 +699,35 @@
         ? has_attribute_pair key value into ?> missing_attribute rest into |: Some (key ++# "=" ++# value)
     | [] => None
 
+:= xml_extra_attribute
+    (here : string) (wanted : list (string * string)) (got : list (string * string))
+    : option string
+    =
+    ?= missing_attribute got wanted ?|
+    | Some a => Some (here ++# ": extra attribute " ++# a)
+    | None => None
+
+:= xml_attribute_difference
+    (here : string) (wanted : list (string * string)) (got : list (string * string))
+    : option string
+    =
+    ?= missing_attribute wanted got ?|
+    | Some a => Some (here ++# ": missing attribute " ++# a)
+    | None => xml_extra_attribute here wanted got
+
+:= xml_text_difference
+    (same : string -> string -> bool) (here : string) (expected : xml_node) (actual : xml_node)
+    : option string
+    =
+    := e = sm'::trim (text_in (element_children expected))
+    := a = sm'::trim (text_in (element_children actual))
+    ? same e a ?> None |: Some (here ++# ": text '" ++# e ++# "' vs '" ++# a ++# "'")
+
+:= xml_extra_child (path : string) (actual : list xml_node) : option string =
+    ?= actual ?|
+    | a :: _ => Some (path ++# ": extra " ++# local_name (node_name a))
+    | [] => None
+
 :~ ^ first_difference_at
     (same : string -> string -> bool) (path : string) (expected : xml_node) (actual : xml_node)
     : option string
@@ -640,40 +735,52 @@
     := name = local_name (node_name expected)
     := here = path ++# "/" ++# name
     ? name <> local_name (node_name actual) ?> Some (here ++# ": element " ++# local_name (node_name actual))
-    |:
-        := wanted = content_attributes (element_attributes expected) []
-        := got = content_attributes (element_attributes actual) []
-        ?= missing_attribute wanted got ?|
-        | Some a => Some (here ++# ": missing attribute " ++# a)
-        | None =>
-            ?= missing_attribute got wanted ?|
-            | Some a => Some (here ++# ": extra attribute " ++# a)
-            | None =>
-                := expected_children = elements_of (element_children expected) []
-                := actual_children = elements_of (element_children actual) []
-                ? listm::length expected_children = 0i32 && listm::length actual_children = 0i32
-                ?>
-                    := e = sm'::trim (text_in (element_children expected))
-                    := a = sm'::trim (text_in (element_children actual))
-                    ? same e a ?> None |: Some (here ++# ": text '" ++# e ++# "' vs '" ++# a ++# "'")
-                |: first_child_difference same here expected_children actual_children
+    |: xml_content_difference same here expected actual
+
+:& :~ xml_content_difference
+    (same : string -> string -> bool) (here : string) (expected : xml_node) (actual : xml_node)
+    : option string
+    =
+    := wanted = content_attributes (element_attributes expected) []
+    := got = content_attributes (element_attributes actual) []
+    ?= xml_attribute_difference here wanted got ?|
+    | Some d => Some d
+    | None => xml_children_difference same here expected actual
+
+:& :~ xml_children_difference
+    (same : string -> string -> bool) (here : string) (expected : xml_node) (actual : xml_node)
+    : option string
+    =
+    := e = elements_of (element_children expected) []
+    := a = elements_of (element_children actual) []
+    ? listm::length e = 0i32 && listm::length a = 0i32
+    ?> xml_text_difference same here expected actual
+    |: first_child_difference same here e a
 
 :& :~ first_child_difference
     (same : string -> string -> bool) (path : string) (expected : list xml_node) (actual : list xml_node)
     : option string
     =
     ?= expected ?|
-    | e :: rest_expected =>
-        ?= actual ?|
-        | a :: rest_actual =>
-            ?= first_difference_at same path e a ?|
-            | Some d => Some d
-            | None => first_child_difference same path rest_expected rest_actual
-        | [] => Some (path ++# ": missing " ++# local_name (node_name e))
-    | [] =>
-        ?= actual ?|
-        | a :: _ => Some (path ++# ": extra " ++# local_name (node_name a))
-        | [] => None
+    | e :: rest => xml_child_against same path e rest actual
+    | [] => xml_extra_child path actual
+
+:& :~ xml_child_against
+    (same : string -> string -> bool) (path : string) (e : xml_node) (rest : list xml_node) (actual : list xml_node)
+    : option string
+    =
+    ?= actual ?|
+    | a :: rest_actual => xml_child_pair same path e a rest rest_actual
+    | [] => Some (path ++# ": missing " ++# local_name (node_name e))
+
+:& :~ xml_child_pair
+    (same : string -> string -> bool) (path : string) (e : xml_node) (a : xml_node) (rest : list xml_node)
+    (rest_actual : list xml_node)
+    : option string
+    =
+    ?= first_difference_at same path e a ?|
+    | Some d => Some d
+    | None => first_child_difference same path rest rest_actual
 
 := first_difference_by (same : string -> string -> bool) (expected : xml_node) (actual : xml_node) : option string =
     first_difference_at same "" expected actual
@@ -717,7 +824,7 @@
     ? collapsed_space " a  \n b   c " <> "a b c" ?> failwith "collapse joins inner runs into one space"
     ? collapsed_space "  é  ü " <> "é ü" ?> failwith "collapse keeps non-ASCII code points whole"
     ? collapsed_space " \n\t " <> "" ?> failwith "only spaces collapse to nothing"
-    ? listm::length (checked_fixed "Version" "4.0" [("Version", "4.0")]) <> 1i32 ?> failwith "the fixed value reads"
+    ? listm::length (checked_fixed "Version" "4.0" [ ("Version", "4.0") ]) <> 1i32 ?> failwith "the fixed value reads"
     ? listm::length (checked_fixed "Version" "4.0" []) <> 0i32 ?> failwith "an absent fixed attribute stays absent"
 
 ///> rust

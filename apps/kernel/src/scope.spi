@@ -1,4 +1,3 @@
-///> zig
 ///- --package .
 :# scope static =
     :< testing

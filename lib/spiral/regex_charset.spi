@@ -1,0 +1,161 @@
+///- --package .
+:# regex_charset static =
+    :< testing
+
+:== code_range = { low : u32; high : u32 }
+
+:! loose = ()
+:! normal = ()
+
+:| char_set form =
+    | Loose :: list code_range -> char_set loose
+    | Normal :: list code_range -> char_set normal
+
+:= last_code_point () : u32 = 1114111u32
+
+:= range (low : u32) (high : u32) : code_range = { low = low; high = high }
+
+:= loose_of (ranges : list code_range) : char_set loose = Loose ranges
+
+:= ranges_of (set : char_set normal) : list code_range =
+    ?= set ?|
+    | Normal ranges => ranges
+
+:~ ^ insert_by_low (r : code_range) (sorted : list code_range) : list code_range =
+    ?= sorted ?|
+    | head :: rest => ? r::low <= head::low ?> r :: sorted |: head :: insert_by_low r rest
+    | [] => [ r ]
+
+:~ ^ sorted_by_low (ranges : list code_range) (sorted : list code_range) : list code_range =
+    ?= ranges ?|
+    | r :: rest => sorted_by_low rest (? r::low <= r::high ?> insert_by_low r sorted |: sorted)
+    | [] => sorted
+
+:~ merge_pair (a : code_range) (b : code_range) (tail : list code_range) : list code_range =
+    ? b::low <= a::high + 1u32 ?> range a::low (? a::high < b::high ?> b::high |: a::high) :: tail |: a :: b :: tail
+
+:~ ^ merged (sorted : list code_range) : list code_range =
+    ?= sorted ?|
+    | a :: rest =>
+        ?= merged rest ?|
+        | b :: tail => merge_pair a b tail
+        | [] => [ a ]
+    | [] => []
+
+:= normalize (set : char_set loose) : char_set normal =
+    ?= set ?|
+    | Loose ranges => Normal (merged (sorted_by_low ranges []))
+
+:= of_ranges (ranges : list code_range) : char_set normal = normalize (loose_of ranges)
+
+:= single (c : u32) : char_set normal = Normal [ range c c ]
+
+:= everything () : char_set normal = Normal [ range 0u32 (last_code_point ()) ]
+
+:~ ^ contains_in (c : u32) (ranges : list code_range) : bool =
+    ?= ranges ?|
+    | r :: rest => ? c < r::low ?> !- |? c <= r::high ?> !+ |: contains_in c rest
+    | [] => !-
+
+:~ contains (c : u32) (set : char_set normal) : bool = contains_in c (ranges_of set)
+
+:~ gap_before (r : code_range) (next : u32) (tail : list code_range) : list code_range =
+    ? r::low > next ?> range next (r::low - 1u32) :: tail |: tail
+
+:~ ^ gaps (ranges : list code_range) (next : u32) : list code_range =
+    ?= ranges ?|
+    | r :: rest => gap_before r next (? r::high >= last_code_point () ?> [] |: gaps rest (r::high + 1u32))
+    | [] => [ range next (last_code_point ()) ]
+
+:~ complement (set : char_set normal) : char_set normal = Normal (gaps (ranges_of set) 0u32)
+
+:~ set_union (a : char_set normal) (b : char_set normal) : char_set normal =
+    of_ranges (listm::append (ranges_of a) (ranges_of b))
+
+:~ intersection (a : char_set normal) (b : char_set normal) : char_set normal =
+    complement (set_union (complement a) (complement b))
+
+:~ minus (a : char_set normal) (b : char_set normal) : char_set normal = intersection a (complement b)
+
+:~ is_empty (set : char_set normal) : bool =
+    ?= ranges_of set ?|
+    | [] => !+
+    | _ => !-
+
+:| order =
+    | Before
+    | Same
+    | After
+
+:= order_u32 (a : u32) (b : u32) : order = ? a < b ?> Before |? a > b ?> After |: Same
+
+:~ order_range (x : code_range) (y : code_range) : order =
+    ?= order_u32 x::low y::low ?|
+    | Same => order_u32 x::high y::high
+    | o => o
+
+:~ order_empty (b : list code_range) : order =
+    ?= b ?|
+    | [] => Same
+    | _ => Before
+
+:~ after_tie (head : order) (rest : order) : order =
+    ?= head ?|
+    | Same => rest
+    | o => o
+
+:~ ^ order_ranges (a : list code_range) (b : list code_range) : order =
+    ?= a ?|
+    | [] => order_empty b
+    | x :: xs =>
+        ?= b ?|
+        | [] => After
+        | y :: ys => after_tie (order_range x y) (order_ranges xs ys)
+
+:~ order_sets (a : char_set normal) (b : char_set normal) : order = order_ranges (ranges_of a) (ranges_of b)
+
+:~ ^ count_ranges (ranges : list code_range) (n : i32) : i32 =
+    ?= ranges ?|
+    | _ :: rest => count_ranges rest (n + 1i32)
+    | [] => n
+
+:= digits () : char_set normal = of_ranges [ range 48u32 57u32 ]
+
+:= vowels () : char_set normal =
+    of_ranges [ range 97u32 97u32; range 101u32 101u32; range 105u32 105u32; range 111u32 111u32; range 117u32 117u32 ]
+
+:= lower () : char_set normal = of_ranges [ range 97u32 122u32 ]
+
+///> rust
+///> gleam
+:# overlapping_and_adjacent_ranges_merge_into_one =
+    ranges_of (of_ranges [ range 60u32 70u32; range 48u32 57u32; range 58u32 59u32 ])
+    |> _assert_eq [ range 48u32 70u32 ]
+
+///> rust
+///> gleam
+:# a_reversed_range_is_dropped =
+    ranges_of (of_ranges [ range 9u32 3u32; range 1u32 1u32 ]) |> _assert_eq [ range 1u32 1u32 ]
+
+///> rust
+///> gleam
+:# the_complement_of_digits_is_two_gaps =
+    ranges_of (complement (digits ())) |> _assert_eq [ range 0u32 47u32; range 58u32 (last_code_point ()) ]
+
+///> rust
+///> gleam
+:# a_double_complement_is_the_set =
+    order_sets (complement (complement (vowels ()))) (vowels ()) |> _assert_eq Same
+
+///> rust
+///> gleam
+:# lowercase_minus_vowels_is_five_ranges =
+    count_ranges (ranges_of (minus (lower ()) (vowels ()))) 0i32 |> _assert_eq 5i32
+
+///> rust
+///> gleam
+:# membership_reads_the_ranges =
+    := ~seven = 55u32
+    := ~letter = 120u32
+    (contains seven (digits ()), contains letter (digits ()), is_empty (intersection (digits ()) (lower ())))
+    |> _assert_eq (!+, !-, !+)

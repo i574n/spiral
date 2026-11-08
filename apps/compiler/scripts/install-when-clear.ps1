@@ -24,7 +24,7 @@ while ($true) {
     Start-Sleep 120
 }
 "$(Get-Date -Format HH:mm) clear: no running $AvoidJobPattern job and the dry run passes"
-$win = & $kit window request compiler-install 60 --label "main install $Name" 2>&1 | Select-Object -Last 1
+$win = & $kit window request compiler-install 60 --label "compiler install $Name" 2>&1 | Select-Object -Last 1
 "$win"
 $winId = if ("$win" -match 'id=(\S+)') { $Matches[1] }
 try {

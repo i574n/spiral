@@ -1,4 +1,3 @@
-///> zig
 /// ## benchmark
 :# benchmark static =
     :< testing

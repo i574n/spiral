@@ -3,18 +3,18 @@ defmodule Spiral.Cells.NotebookTargetsTest do
 
   alias Spiral.Cells.Notebook
 
-  test "an untargeted test step fails whatever the defaults, a targeted one and a plain cell do not" do
+  test "an untargeted test step fails, a targeted one and a plain cell do not, and a plain cell is planned empty" do
     steps = [
       %{index: 0, cell_source: "///- --test\ntest one =\n    1i32 |> _assert_eq 1i32"},
       %{index: 1, cell_source: "///- --test\n///> c\ntest two =\n    1i32 |> _assert_eq 1i32"},
       %{index: 2, cell_source: "inl f () = 1i32"}
     ]
 
-    defaults = Spiral.Cells.Builders.commands("///> rust")
-    [one, two, plain] = Notebook.with_builders(steps, defaults, %{0 => "one", 1 => "two"})
+    [one, two, plain] = Notebook.with_builders(steps, %{0 => "one", 1 => "two"})
     assert one.untargeted == "one"
     refute Map.has_key?(two, :untargeted)
     refute Map.has_key?(plain, :untargeted)
+    assert plain.program == ""
     assert Notebook.untargeted_message("one") == "NoTestTarget: test one names no target: add a ///> <lang> line to it"
   end
 
@@ -35,16 +35,15 @@ defmodule Spiral.Cells.NotebookTargetsTest do
       %{index: 1, cell_source: "///- --test\n///> c\ntest good =\n    1i32 |> _assert_eq 1i32"}
     ]
 
-    [bad, good] = Notebook.with_builders(steps, [], %{0 => "bad", 1 => "good"})
+    [bad, good] = Notebook.with_builders(steps, %{0 => "bad", 1 => "good"})
     assert bad.builder_error =~ ~s(unknown Spiral backend "nope")
     refute Map.has_key?(good, :builder_error)
     assert Enum.map(good.builders, & &1.tool) == [:c]
   end
 
   test "a test's own target is taken as written, without the defaults' crates" do
-    defaults = Spiral.Cells.Builders.commands("///> rust -d serde_json -d chrono")
     steps = [%{index: 0, cell_source: "///- --test\n///> rust -d serde_json\ntest one =\n    1i32 |> _assert_eq 1i32"}]
-    [one] = Notebook.with_builders(steps, defaults, %{0 => "one"})
+    [one] = Notebook.with_builders(steps, %{0 => "one"})
     assert Enum.map(hd(one.builders).deps, & &1.name) == ["serde_json"]
   end
 end

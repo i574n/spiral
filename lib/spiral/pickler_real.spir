@@ -14,7 +14,7 @@
     | {} => record_pick `t ()
     | _ => union_pick `t ()
 
-:& := size_of_type \* v. () : i32 = pickler::size `v (pick_of `v ())
+:& := size_of_type \* v. () : i32 = pickler::count `v (pick_of `v ())
 
 :& := field_index acc value =
     := p = pick_of `(`value) ()

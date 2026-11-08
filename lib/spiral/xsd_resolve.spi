@@ -1,4 +1,3 @@
-///> zig
 ///- --package .
 :< sm'_operators
 :< xsd
@@ -106,14 +105,19 @@
     | (key, uri) :: rest => ? key = prefix ?> Some uri |: namespace_for prefix rest
     | [] => None
 
+:= resolve_declared_prefix (key : string) : option string =
+    ? key = "xmlns" ?> Some ""
+    |? sm'::starts_with "xmlns:" key ?> Some (sm'::substring 6i32 (sm'::length key - 6i32) key)
+    |: None
+
+:= resolve_declared (key : string) (value : string) (acc : list (string * string)) : list (string * string) =
+    ?= resolve_declared_prefix key ?|
+    | Some prefix => (prefix, value) :: acc
+    | None => acc
+
 :~ ^ declared_namespaces (attributes : list (string * string)) (acc : list (string * string)) : list (string * string) =
     ?= attributes ?|
-    | (key, value) :: rest =>
-        ? key = "xmlns"
-        ?> declared_namespaces rest (("", value) :: acc)
-        |? sm'::starts_with "xmlns:" key
-        ?> declared_namespaces rest ((sm'::substring 6i32 (sm'::length key - 6i32) key, value) :: acc)
-        |: declared_namespaces rest acc
+    | (key, value) :: rest => declared_namespaces rest (resolve_declared key value acc)
     | [] => acc
 
 := schema_namespaces (text : string) : list (string * string) =
@@ -152,39 +156,49 @@
 
 :~ ^ renamed
     \* k a b.
-    (definition : definition_name a -> definition_name b) (reference : type_reference a -> type_reference b)
-    (item : xsd k a)
+    (d : definition_name a -> definition_name b) (r : type_reference a -> type_reference b) (item : xsd k a)
     : xsd k b
     =
     ?= item ?|
-    | Simple s => Simple { s ?| name = definition s::name; base = reference s::base }
-    | Complex c =>
-        Complex { c ?|
-            name = definition c::name
-            content = renamed definition reference c::content
-            attributes = renamed_all definition reference c::attributes []
-        }
-    | Derived d =>
-        Derived { d ?|
-            name = definition d::name
-            base = reference d::base
-            content = renamed definition reference d::content
-            attributes = renamed_all definition reference d::attributes []
-        }
-    | Sequence s => Sequence { s ?| items = renamed_all definition reference s::items [] }
-    | Choice c => Choice { c ?| items = renamed_all definition reference c::items [] }
-    | Element e =>
-        Element { e ?|
-            type_ref = rename_ref reference e::type_ref
-            inline = renamed_inline definition reference e::inline
-        }
+    | Simple s => Simple { s ?| name = d s::name; base = r s::base }
+    | Complex c => Complex (resolve_renamed_complex d r c)
+    | Derived x => Derived (resolve_renamed_derived d r x)
+    | Sequence s => Sequence { s ?| items = renamed_all d r s::items [] }
+    | Choice c => Choice { c ?| items = renamed_all d r c::items [] }
+    | Element e => Element { e ?| type_ref = rename_ref r e::type_ref; inline = renamed_inline d r e::inline }
     | AnyContent () => AnyContent ()
     | Empty () => Empty ()
-    | Attribute a =>
-        Attribute { a ?|
-            type_ref = rename_ref reference a::type_ref
-            inline = renamed_inline definition reference a::inline
-        }
+    | Attribute x => Attribute { x ?| type_ref = rename_ref r x::type_ref; inline = renamed_inline d r x::inline }
+
+:& :~ resolve_renamed_complex \* a b.
+    (d : definition_name a -> definition_name b) (r : type_reference a -> type_reference b)
+    (c : { name : definition_name a; content : xsd particle a; attributes : list (xsd attribute_decl a) })
+    : { name : definition_name b; content : xsd particle b; attributes : list (xsd attribute_decl b) }
+    =
+    { c ?| name = d c::name; content = renamed d r c::content; attributes = renamed_all d r c::attributes [] }
+
+:& :~ resolve_renamed_derived \* a b.
+    (d : definition_name a -> definition_name b) (r : type_reference a -> type_reference b)
+    (x :
+        {
+            name : definition_name a
+            base : type_reference a
+            content : xsd particle a
+            attributes : list (xsd attribute_decl a)
+        })
+    : {
+        name : definition_name b
+        base : type_reference b
+        content : xsd particle b
+        attributes : list (xsd attribute_decl b)
+    }
+    =
+    {
+        name = d x::name
+        base = r x::base
+        content = renamed d r x::content
+        attributes = renamed_all d r x::attributes []
+    }
 
 :& :~ renamed_all
     \* k a b.
@@ -206,15 +220,14 @@
     | None => None
 
 := rename_schema \* a b.
-    (definition : definition_name a -> definition_name b) (reference : type_reference a -> type_reference b)
-    (schema : xsd_schema a)
+    (d : definition_name a -> definition_name b) (r : type_reference a -> type_reference b) (s : xsd_schema a)
     : xsd_schema b
     =
     {
-        schema ?|
-            simple_types = renamed_all definition reference schema::simple_types []
-            complex_types = renamed_all definition reference schema::complex_types []
-            elements = renamed_all definition reference schema::elements []
+        s ?|
+            simple_types = renamed_all d r s::simple_types []
+            complex_types = renamed_all d r s::complex_types []
+            elements = renamed_all d r s::elements []
     }
 
 := qualify_schema (namespaces : list (string * string)) (schema : xsd_schema written) : xsd_schema qualified =
@@ -230,17 +243,26 @@
         qualified_locals : bool
     }
 
+:= resolve_builtin_namespace (uri : string) : bool =
+    uri = "http://www.w3.org/2001/XMLSchema" || uri = "http://www.w3.org/2000/09/xmldsig#"
+
+:= resolve_used_prefix (text : string) (prefix : string) (value : string) : bool =
+    prefix <> "" && resolve_builtin_namespace value = !- && sm'::contains ("ref=\"" ++# prefix ++# ":") text
+
+:= resolve_with_prefix
+    (text : string) (key : string) (value : string) (acc : list (string * string))
+    : list (string * string)
+    =
+    ?= resolve_declared_prefix key ?|
+    | Some prefix => ? resolve_used_prefix text prefix value ?> (prefix, value) :: acc |: acc
+    | None => acc
+
 :~ ^ declared_document_prefixes
     (text : string) (attributes : list (string * string)) (acc : list (string * string))
     : list (string * string)
     =
     ?= attributes ?|
-    | (key, value) :: rest =>
-        := known = value = "http://www.w3.org/2001/XMLSchema" || value = "http://www.w3.org/2000/09/xmldsig#"
-        := prefix = ? sm'::starts_with "xmlns:" key ?> sm'::substring 6i32 (sm'::length key - 6i32) key |: ""
-        ? prefix <> "" && known = !- && sm'::contains ("ref=\"" ++# prefix ++# ":") text
-        ?> declared_document_prefixes text rest ((prefix, value) :: acc)
-        |: declared_document_prefixes text rest acc
+    | (key, value) :: rest => declared_document_prefixes text rest (resolve_with_prefix text key value acc)
     | [] => acc
 
 := schema_attributes (text : string) : list (string * string) =
@@ -260,13 +282,17 @@
         | Some prefix => prefix ++# ":" ++# local
         | None => fallback
 
+:= resolve_prefixed_tag (scope : tag_scope) (name : string) : string =
+    ?= namespace_for (prefix_of name) scope::file_namespaces ?|
+    | Some uri => tag_in scope uri (xml::local_name name) name
+    | None => name
+
 := scoped_tag (scope : tag_scope) (name : string) : string =
-    ? sm'::contains ":" name ?>
-        ?= namespace_for (prefix_of name) scope::file_namespaces ?|
-        | Some uri => tag_in scope uri (xml::local_name name) name
-        | None => name
+    ? sm'::contains ":" name ?> resolve_prefixed_tag scope name
     |? scope::qualified_locals ?> tag_in scope scope::file_namespace name name
     |: name
+
+:= resolve_scoped_name (scope : tag_scope) (name : tag_name) : tag_name = tag_name (scoped_tag scope (tag_text name))
 
 :~ ^ tagged \* k a. (scope : tag_scope) (item : xsd k a) : xsd k a =
     ?= item ?|
@@ -275,8 +301,7 @@
     | Derived d => Derived { d ?| content = tagged scope d::content }
     | Sequence s => Sequence { s ?| items = tagged_all scope s::items [] }
     | Choice c => Choice { c ?| items = tagged_all scope c::items [] }
-    | Element e =>
-        Element { e ?| name = tag_name (scoped_tag scope (tag_text e::name)); inline = tagged_inline scope e::inline }
+    | Element e => Element { e ?| name = resolve_scoped_name scope e::name; inline = tagged_inline scope e::inline }
     | AnyContent () => AnyContent ()
     | Empty () => Empty ()
     | Attribute a => Attribute a
@@ -322,22 +347,31 @@
     | name :: rest => ? qualified_local name = local ?> Some (qualified_uri name) |: uri_of_local local rest
     | [] => None
 
+:= resolve_clashes (name : string) (seen : list string) : bool =
+    ?= uri_of_local (qualified_local name) seen ?|
+    | Some uri => uri <> qualified_uri name
+    | None => !-
+
+:= resolve_with_local (local : string) (clash : bool) (acc : list string) : list string =
+    ? clash && has_string local acc = !- ?> local :: acc |: acc
+
 :~ ^ colliding_locals (names : list string) (seen : list string) (acc : list string) : list string =
     ?= names ?|
     | name :: rest =>
-        := local = qualified_local name
-        := clash =
-            ?= uri_of_local local seen ?|
-            | Some uri => uri <> qualified_uri name
-            | None => !-
-        colliding_locals rest (name :: seen) (? clash && has_string local acc = !- ?> local :: acc |: acc)
+        colliding_locals rest (name :: seen) (resolve_with_local (qualified_local name) (resolve_clashes name seen) acc)
     | [] => acc
 
+:= resolve_trimmed_uri (uri : string) : string =
+    ? sm'::ends_with "/" uri ?> sm'::substring 0i32 (sm'::length uri - 1i32) uri |: uri
+
+:= resolve_last_separator (s : string) : i32 =
+    := cut = sm'::last_index_of "/" s
+    := colon = sm'::last_index_of ":" s
+    ? colon > cut ?> colon |: cut
+
 := namespace_tag (uri : string) : string =
-    := trimmed = ? sm'::ends_with "/" uri ?> sm'::substring 0i32 (sm'::length uri - 1i32) uri |: uri
-    := cut = sm'::last_index_of "/" trimmed
-    := colon = sm'::last_index_of ":" trimmed
-    := at = ? colon > cut ?> colon |: cut
+    := trimmed = resolve_trimmed_uri uri
+    := at = resolve_last_separator trimmed
     sm'::substring (at + 1i32) (sm'::length trimmed - at - 1i32) trimmed
 
 := final_name (root : string) (collisions : list string) (name : string) : string =
@@ -374,30 +408,49 @@
         document_prefixes = declared_document_prefixes text attributes []
     }
 
-:= file_scope (document : document_scope) (attributes : list (string * string)) : tag_scope =
+:= resolve_qualified (a : list (string * string)) : bool = attribute_text "elementFormDefault" a = "qualified"
+
+:= file_scope (d : document_scope) (a : list (string * string)) : tag_scope =
     {
-        root_namespace = document::root_namespace
-        document_prefixes = document::document_prefixes
-        file_namespace = attribute_text "targetNamespace" attributes
-        file_namespaces = declared_namespaces attributes []
-        qualified_locals = attribute_text "elementFormDefault" attributes = "qualified"
+        root_namespace = d::root_namespace
+        document_prefixes = d::document_prefixes
+        file_namespace = attribute_text "targetNamespace" a
+        file_namespaces = declared_namespaces a []
+        qualified_locals = resolve_qualified a
     }
 
-:~ ^ load_tree
-    (catalog : schema_catalog) (document : document_scope) (path : string) (tree : loaded_tree qualified)
+:= resolve_read_schema (document : document_scope) (path : string) : xsd_schema qualified =
+    := text = xml::read_text_replacing_invalid_utf8 path
+    := attributes = schema_attributes text
+    text
+    |> read_schema
+    |> tag_schema (file_scope document attributes)
+    |> qualify_schema (declared_namespaces attributes [])
+
+:= resolve_locations (catalog : schema_catalog) (schema : xsd_schema qualified) : list string =
+    listm::append schema::includes (catalogued_namespaces catalog schema::namespace_imports [])
+
+:= resolve_loaded
+    (path : string) (schema : xsd_schema qualified) (tree : loaded_tree qualified)
     : loaded_tree qualified
     =
-    ? has_string path tree::paths ?> tree
-    |? xml::is_file path = !- ?> { tree ?| missing = (path :: tree::missing) }
-    |:
-        := text = xml::read_text_replacing_invalid_utf8 path
-        := attributes = schema_attributes text
-        := schema =
-            text |> read_schema |> tag_schema (file_scope document attributes)
-            |> qualify_schema (declared_namespaces attributes [])
-        := loaded = { tree ?| paths = (path :: tree::paths); schema = merge schema tree::schema }
-        := locations = listm::append schema::includes (catalogued_namespaces catalog schema::namespace_imports [])
-        load_includes catalog document (directory_of path) locations loaded
+    { tree ?| paths = (path :: tree::paths); schema = merge schema tree::schema }
+
+:= resolve_missing (path : string) (tree : loaded_tree qualified) : loaded_tree qualified =
+    { tree ?| missing = (path :: tree::missing) }
+
+:~ ^ load_tree
+    (c : schema_catalog) (d : document_scope) (p : string) (t : loaded_tree qualified)
+    : loaded_tree qualified
+    =
+    ? has_string p t::paths ?> t |? xml::is_file p = !- ?> resolve_missing p t |: resolve_load_file c d p t
+
+:& :~ resolve_load_file
+    (c : schema_catalog) (d : document_scope) (p : string) (t : loaded_tree qualified)
+    : loaded_tree qualified
+    =
+    := schema = resolve_read_schema d p
+    load_includes c d (directory_of p) (resolve_locations c schema) (resolve_loaded p schema t)
 
 :& :~ load_includes
     (catalog : schema_catalog)
@@ -414,20 +467,23 @@
         load_includes catalog document directory rest tree
     | [] => tree
 
+:= resolve_empty_schema \* form. () : xsd_schema form =
+    {
+        target_namespace = namespace_uri ""
+        includes = []
+        namespace_imports = []
+        simple_types = []
+        complex_types = []
+        elements = []
+    }
+
+:= resolve_document_of (path : string) : document_scope =
+    ? xml::is_file path ?> document_scope_of (xml::read_text_replacing_invalid_utf8 path)
+    |: { root_namespace = ""; document_prefixes = [] }
+
 := load_schema_tree_with (catalog : schema_catalog) (path : string) : loaded_tree final =
-    := empty =
-        {
-            target_namespace = namespace_uri ""
-            includes = []
-            namespace_imports = []
-            simple_types = []
-            complex_types = []
-            elements = []
-        }
-    := document =
-        ? xml::is_file path ?> document_scope_of (xml::read_text_replacing_invalid_utf8 path)
-        |: { root_namespace = ""; document_prefixes = [] }
-    := tree = load_tree catalog document path { paths = []; missing = []; schema = empty }
+    := tree =
+        load_tree catalog (resolve_document_of path) path { paths = []; missing = []; schema = resolve_empty_schema () }
     { tree ?| schema = finalize_names tree::schema }
 
 := load_schema_tree (path : string) : loaded_tree final = load_schema_tree_with [] path
@@ -549,12 +605,13 @@
         unresolved_in names rest (? dangling ?> acc + 1i32 |: acc)
     | [] => acc
 
+:= resolve_schema_references \* form. (schema : xsd_schema form) : list string =
+    references_all schema::elements (references_all schema::complex_types (references_all schema::simple_types []))
+
 := unresolved_count \* form. (tree : loaded_tree form) : i32 =
     := schema = tree::schema
     := names = type_names schema::simple_types (type_names schema::complex_types [])
-    := references =
-        references_all schema::elements (references_all schema::complex_types (references_all schema::simple_types []))
-    unresolved_in names references 0i32
+    unresolved_in names (resolve_schema_references schema) 0i32
 
 ///> rust
 :# unresolved_count_counts_dangling_type_references =

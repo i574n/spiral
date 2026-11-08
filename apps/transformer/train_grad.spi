@@ -1,0 +1,625 @@
+///- --package .
+:# train_grad static =
+    :< testing
+
+:< sm'_operators
+
+:== floats = array f32
+
+:== net = { m : transformer::model; tokens : array i32 }
+
+:== att_lw = { ra : floats; wq : floats; wk : floats; wv : floats; wo : floats }
+
+:== ffn_lw = { rf : floats; w1 : floats; w2 : floats; w3 : floats }
+
+:== att_in = { h : floats; q : floats; k : floats; v : floats }
+
+:== qkv_grads = { dq : floats; dk : floats; dv : floats }
+
+:== ffn_in = { x2 : floats; hf : floats; u : floats; z : floats; m : floats }
+
+:== layer = { a : att_lw; f : ffn_lw; ga : att_lw; gf : ffn_lw }
+
+:== back_io = { xm : floats; a : floats; dout : floats; dxm : floats; da : floats }
+
+:== qkv_io = { x : floats; dxm : floats; dx : floats }
+
+:= dim (n : net) : i32 = n::m::c::dim
+
+:= hid (n : net) : i32 = n::m::c::hidden
+
+:= hs (n : net) : i32 = transformer::head_size n::m::c
+
+:= kvd (n : net) : i32 = transformer::kv_dim n::m::c
+
+:= steps (n : net) : i32 = length n::tokens - 1
+
+:= token (n : net) (t : i32) : i32 = index n::tokens t
+
+:= sq (n : net) : i32 = dim n * dim n
+
+:= kv_sq (n : net) : i32 = kvd n * dim n
+
+:= ff (n : net) : i32 = hid n * dim n
+
+:~ ^ for_from (count : i32) (f : i32 -> ()) (i : i32) : () =
+    ? i < count ?>
+        f i
+        for_from count f (i + 1)
+
+:= for_each (count : i32) (f : i32 -> ()) : () = for_from count f 0
+
+:= zeros (count : i32) : floats = f32_grads::zeros count
+
+:= slice (w : floats) (off : i32) (count : i32) : floats =
+    := o = zeros count
+    f32_kernels::copy_into o 0 w off count 0
+    o
+
+:= add_at (g : floats) (off : i32) (x : floats) : () = f32_kernels::axpy g off 1.0f32 x 0 (length x) 0
+
+:= row (x : floats) (t : i32) (width : i32) : floats = slice x (t * width) width
+
+:= slab_add (g : floats) (s : transformer::slab) (l : i32) (x : floats) : () = add_at g (s::at + l * length x) x
+
+:= mm_back (dx : floats) (dw : floats) (dout : floats) (x : floats) (w : floats) : () =
+    f32_grads::matmul_backward dx dw dout x w (length x) (length dout)
+
+:= rms_back (dx : floats) (dw : floats) (dout : floats) (x : floats) (w : floats) : () =
+    f32_grads::rmsnorm_backward dx dw dout x w (length x)
+
+:= put (o : floats) (t : i32) (r : floats) : () = f32_kernels::copy_into o (t * length r) r 0 (length r) 0
+
+:= normed (x : floats) (w : floats) : floats =
+    := o = zeros (length x)
+    f32_kernels::rmsnorm o x w 0 (length x)
+    o
+
+:= times (w : floats) (x : floats) (d : i32) : floats =
+    := o = zeros d
+    f32_kernels::matmul o x w 0 (length x) d
+    o
+
+:= plus (a : floats) (b : floats) : floats =
+    := o = slice a 0 (length a)
+    f32_kernels::add_into o b (length a) 0
+    o
+
+:~ ^ gate_from (o : floats) (u : floats) (z : floats) (i : i32) : () =
+    ? i < length o ?>
+        set o i (f32_grads::silu (index u i) * index z i)
+        gate_from o u z (i + 1)
+
+:= gated (u : floats) (z : floats) : floats =
+    := o = zeros (length u)
+    gate_from o u z 0
+    o
+
+:= layer_slab (n : net) (s : transformer::slab) (l : i32) (size : i32) : floats = slice n::m::w (s::at + l * size) size
+
+:= att_of (n : net) (l : i32) : att_lw =
+    := a, s = n::m::l::att, layer_slab n
+    {
+        ra = s a::rms l (dim n)
+        wq = s a::wq l (sq n)
+        wk = s a::wk l (kv_sq n)
+        wv = s a::wv l (kv_sq n)
+        wo = s a::wo l (sq n)
+    }
+
+:= ffn_of_layer (n : net) (l : i32) : ffn_lw =
+    := f, s = n::m::l::ffn, layer_slab n
+    { rf = s f::rms l (dim n); w1 = s f::w1 l (ff n); w2 = s f::w2 l (ff n); w3 = s f::w3 l (ff n) }
+
+:= zero_att (n : net) : att_lw =
+    { ra = zeros (dim n); wq = zeros (sq n); wk = zeros (kv_sq n); wv = zeros (kv_sq n); wo = zeros (sq n) }
+
+:= zero_ffn (n : net) : ffn_lw = { rf = zeros (dim n); w1 = zeros (ff n); w2 = zeros (ff n); w3 = zeros (ff n) }
+
+:= layer_of (n : net) (l : i32) : layer = { a = att_of n l; f = ffn_of_layer n l; ga = zero_att n; gf = zero_ffn n }
+
+:= add_att (n : net) (g : floats) (l : i32) (p : att_lw) : () =
+    := a = n::m::l::att
+    slab_add g a::rms l p::ra
+    slab_add g a::wq l p::wq
+    slab_add g a::wk l p::wk
+    slab_add g a::wv l p::wv
+    slab_add g a::wo l p::wo
+
+:= add_ffn (n : net) (g : floats) (l : i32) (p : ffn_lw) : () =
+    := f = n::m::l::ffn
+    slab_add g f::rms l p::rf
+    slab_add g f::w1 l p::w1
+    slab_add g f::w2 l p::w2
+    slab_add g f::w3 l p::w3
+
+:= add_layer (n : net) (g : floats) (l : i32) (y : layer) : () =
+    add_att n g l y::ga
+    add_ffn n g l y::gf
+
+:= roped (n : net) (w : floats) (h : floats) (d : i32) (t : i32) : floats =
+    := o = times w h d
+    f32_grads::rope o t (hs n)
+    o
+
+:= att_row (n : net) (p : att_lw) (x : floats) (s : att_in) (t : i32) : () =
+    := h = normed (row x t (dim n)) p::ra
+    put s::h t h
+    put s::q t (roped n p::wq h (dim n) t)
+    put s::k t (roped n p::wk h (kvd n) t)
+    put s::v t (times p::wv h (kvd n))
+
+:= att_inputs (n : net) (p : att_lw) (x : floats) : att_in =
+    := tk, kv = steps n * dim n, steps n * kvd n
+    := s : att_in = { h = zeros tk; q = zeros tk; k = zeros kv; v = zeros kv }
+    for_each (steps n) (\ t => att_row n p x s t)
+    s
+
+:= head_cols (n : net) (src : floats) (width : i32) (col : i32) : floats =
+    := o, w = zeros (steps n * hs n), hs n
+    for_each (steps n) (\ t => f32_kernels::copy_into o (t * w) src (t * width + col * w) w 0)
+    o
+
+:= scatter (n : net) (dst : floats) (width : i32) (col : i32) (src : floats) : () =
+    := w = hs n
+    for_each (steps n) (\ t => f32_kernels::axpy dst (t * width + col * w) 1.0f32 src (t * w) w 0)
+
+:= kv_head (n : net) (h : i32) : i32 = h / (n::m::c::heads / n::m::c::kv_heads)
+
+:= head_of (n : net) (s : att_in) (h : i32) : f32_grads::head =
+    := c = head_cols n
+    { q = c s::q (dim n) h; k = c s::k (kvd n) (kv_head n h); v = c s::v (kvd n) (kv_head n h); d = hs n }
+
+:= att_head (n : net) (s : att_in) (a : floats) (h : i32) : () =
+    := o = zeros (steps n * hs n)
+    f32_grads::attention o (head_of n s h) (steps n)
+    scatter n a (dim n) h o
+
+:= attended (n : net) (s : att_in) : floats =
+    := a = zeros (steps n * dim n)
+    for_each n::m::c::heads (\ h => att_head n s a h)
+    a
+
+:= mid_of (n : net) (p : att_lw) (x : floats) (a : floats) : floats =
+    := xm, d = zeros (steps n * dim n), dim n
+    for_each (steps n) (\ t => put xm t (plus (row x t d) (times p::wo (row a t d) d)))
+    xm
+
+:= ffn_in_of (n : net) (p : ffn_lw) (xm : floats) (t : i32) : ffn_in =
+    := x2 = row xm t (dim n)
+    := hf = normed x2 p::rf
+    := u, z = times p::w1 hf (hid n), times p::w3 hf (hid n)
+    { x2 = x2; hf = hf; u = u; z = z; m = gated u z }
+
+:= out_row (n : net) (p : ffn_lw) (xm : floats) (y : floats) (t : i32) : () =
+    := f = ffn_in_of n p xm t
+    put y t (plus f::x2 (times p::w2 f::m (dim n)))
+
+:= layer_forward (n : net) (l : i32) (x : floats) : floats =
+    := a, f = att_of n l, ffn_of_layer n l
+    := xm = mid_of n a x (attended n (att_inputs n a x))
+    := y = zeros (steps n * dim n)
+    for_each (steps n) (\ t => out_row n f xm y t)
+    y
+
+:= embedded (n : net) : floats =
+    := x = zeros (steps n * dim n)
+    for_each (steps n) (\ t => f32_kernels::copy_into x (t * dim n) n::m::w (token n t * dim n) (dim n) 0)
+    x
+
+:~ ^ forward_from (n : net) (stash : floats) (x : floats) (l : i32) : floats =
+    ? l >= n::m::c::layers ?> x
+    |:
+        f32_kernels::copy_into stash (l * length x) x 0 (length x) 0
+        forward_from n stash (layer_forward n l x) (l + 1)
+
+:= final_w (n : net) : floats = slice n::m::w n::m::l::final::at (dim n)
+
+:= final_rows (n : net) (x : floats) : floats =
+    := xf, rf = zeros (length x), final_w n
+    for_each (steps n) (\ t => put xf t (normed (row x t (dim n)) rf))
+    xf
+
+:= logits_row (n : net) (xf : floats) (t : i32) : floats =
+    := o = zeros n::m::c::vocab
+    f32_kernels::matmul o (row xf t (dim n)) n::m::w n::m::l::cls::at (dim n) n::m::c::vocab
+    o
+
+:~ ^ loss_from (n : net) (xf : floats) (t : i32) (acc : f32) : f32 =
+    ? t >= steps n ?> acc
+    |: loss_from n xf (t + 1) (acc + f32_grads::cross_entropy (logits_row n xf t) (token n (t + 1)))
+
+:= cls_back (n : net) (g : floats) (dl : floats) (x : floats) (dx : floats) : () =
+    := s = n::m::l::cls
+    := gw = zeros s::size
+    mm_back dx gw dl x (slice n::m::w s::at s::size)
+    add_at g s::at gw
+
+:= logit_back (n : net) (g : floats) (xf : floats) (dxf : floats) (t : i32) : () =
+    := dl, dr = zeros n::m::c::vocab, zeros (dim n)
+    f32_grads::cross_entropy_backward dl (logits_row n xf t) (token n (t + 1))
+    cls_back n g dl (row xf t (dim n)) dr
+    put dxf t dr
+
+:= final_back (n : net) (g : floats) (xl : floats) (dxf : floats) (dx : floats) (t : i32) : () =
+    := dr, dgf, d = zeros (dim n), zeros (dim n), dim n
+    rms_back dr dgf (row dxf t d) (row xl t d) (final_w n)
+    add_at g n::m::l::final::at dgf
+    put dx t dr
+
+:= gate_back (n : net) (f : ffn_in) (dm : floats) : floats * floats =
+    := du, dz = zeros (hid n), zeros (hid n)
+    f32_grads::swiglu_backward du dz dm f::u f::z
+    du, dz
+
+:= up_back (n : net) (y : layer) (f : ffn_in) (dm : floats) : floats =
+    := du, dz = gate_back n f dm
+    := dhf = zeros (dim n)
+    mm_back dhf y::gf::w1 du f::hf y::f::w1
+    mm_back dhf y::gf::w3 dz f::hf y::f::w3
+    dhf
+
+:= ffn_back (n : net) (y : layer) (f : ffn_in) (dy : floats) : floats =
+    := dm, dx2 = zeros (hid n), slice dy 0 (length dy)
+    mm_back dm y::gf::w2 dy f::m y::f::w2
+    rms_back dx2 y::gf::rf (up_back n y f dm) f::x2 y::f::rf
+    dx2
+
+:= mid_back (n : net) (y : layer) (b : back_io) (t : i32) : () =
+    := d = dim n
+    := dx2, dar = ffn_back n y (ffn_in_of n y::f b::xm t) (row b::dout t d), zeros d
+    put b::dxm t dx2
+    mm_back dar y::ga::wo dx2 (row b::a t d) y::a::wo
+    put b::da t dar
+
+:= head_grads (n : net) : f32_grads::grads =
+    := w = steps n * hs n
+    { dq = zeros w; dk = zeros w; dv = zeros w }
+
+:= scatter_head (n : net) (gq : qkv_grads) (gr : f32_grads::grads) (h : i32) : () =
+    scatter n gq::dq (dim n) h gr::dq
+    scatter n gq::dk (kvd n) (kv_head n h) gr::dk
+    scatter n gq::dv (kvd n) (kv_head n h) gr::dv
+
+:= head_back (n : net) (s : att_in) (da : floats) (gq : qkv_grads) (h : i32) : () =
+    := gr = head_grads n
+    f32_grads::attention_backward gr (head_cols n da (dim n) h) (head_of n s h) (steps n)
+    scatter_head n gq gr h
+
+:= roped_back (n : net) (src : floats) (t : i32) (width : i32) : floats =
+    := o = row src t width
+    f32_grads::rope_backward o t (hs n)
+    o
+
+:= qk_back (n : net) (y : layer) (h : floats) (gq : qkv_grads) (t : i32) : floats =
+    := dh = zeros (dim n)
+    mm_back dh y::ga::wq (roped_back n gq::dq t (dim n)) h y::a::wq
+    mm_back dh y::ga::wk (roped_back n gq::dk t (kvd n)) h y::a::wk
+    dh
+
+:= proj_back (n : net) (y : layer) (s : att_in) (gq : qkv_grads) (t : i32) : floats =
+    := h = row s::h t (dim n)
+    := dh = qk_back n y h gq t
+    mm_back dh y::ga::wv (row gq::dv t (kvd n)) h y::a::wv
+    dh
+
+:= qkv_back (n : net) (y : layer) (s : att_in) (gq : qkv_grads) (q : qkv_io) (t : i32) : () =
+    := dxr, d = row q::dxm t (dim n), dim n
+    rms_back dxr y::ga::ra (proj_back n y s gq t) (row q::x t d) y::a::ra
+    put q::dx t dxr
+
+:= attention_back (n : net) (s : att_in) (da : floats) : qkv_grads =
+    := tk, kv = steps n * dim n, steps n * kvd n
+    := gq : qkv_grads = { dq = zeros tk; dk = zeros kv; dv = zeros kv }
+    for_each n::m::c::heads (\ h => head_back n s da gq h)
+    gq
+
+:= back_io_of (n : net) (y : layer) (x : floats) (dout : floats) : att_in * back_io =
+    := s = att_inputs n y::a x
+    := a = attended n s
+    s, { xm = mid_of n y::a x a; a = a; dout = dout; dxm = zeros (length x); da = zeros (length x) }
+
+:= att_back_of (n : net) (y : layer) (s : att_in) (b : back_io) : qkv_grads =
+    for_each (steps n) (\ t => mid_back n y b t)
+    attention_back n s b::da
+
+:= input_back (n : net) (y : layer) (s : att_in) (gq : qkv_grads) (q : qkv_io) : floats =
+    for_each (steps n) (\ t => qkv_back n y s gq q t)
+    q::dx
+
+:= qkv_io_of (b : back_io) (x : floats) : qkv_io = { x = x; dxm = b::dxm; dx = zeros (length x) }
+
+:= layer_back (n : net) (g : floats) (l : i32) (x : floats) (dout : floats) : floats =
+    := y = layer_of n l
+    := s, b = back_io_of n y x dout
+    := dx = input_back n y s (att_back_of n y s b) (qkv_io_of b x)
+    add_layer n g l y
+    dx
+
+:~ ^ back_from (n : net) (g : floats) (stash : floats) (dx : floats) (l : i32) : floats =
+    ? l < 0 ?> dx |: back_from n g stash (layer_back n g l (slice stash (l * length dx) (length dx)) dx) (l - 1)
+
+:= embed_back (n : net) (g : floats) (dx : floats) : () =
+    for_each (steps n) (\ t => f32_grads::embed_backward g (row dx t (dim n)) (token n t) (dim n))
+
+:= dlast (n : net) (g : floats) (xl : floats) : floats =
+    := xf, dxf, dxl = final_rows n xl, zeros (length xl), zeros (length xl)
+    for_each (steps n) (\ t => logit_back n g xf dxf t)
+    for_each (steps n) (\ t => final_back n g xl dxf dxl t)
+    dxl
+
+:= stash_of (n : net) : floats = zeros (n::m::c::layers * steps n * dim n)
+
+:= backward (n : net) (g : floats) (stash : floats) (xl : floats) : () =
+    embed_back n g (back_from n g stash (dlast n g xl) (n::m::c::layers - 1))
+
+:= gradients (n : net) : floats * f32 =
+    := g, stash = zeros (length n::m::w), stash_of n
+    := xl = forward_from n stash (embedded n) 0
+    := loss = loss_from n (final_rows n xl) 0 0.0f32
+    backward n g stash xl
+    g, loss
+
+:~ ^ sumsq_from (g : floats) (s : transformer::slab) (i : i32) (acc : f32) : f32 =
+    ? i >= s::size ?> acc
+    |:
+        := v = index g (s::at + i)
+        sumsq_from g s (i + 1) (acc + v * v)
+
+:= att_slabs (l : transformer::layout) : list transformer::slab =
+    [ l::embed; l::att::rms; l::att::wq; l::att::wk; l::att::wv; l::att::wo ]
+
+:= ffn_slabs (l : transformer::layout) : list transformer::slab =
+    [ l::ffn::rms; l::ffn::w1; l::ffn::w2; l::ffn::w3; l::final ]
+
+:= near (got : f32) (want : f32) : bool = abs (got - want) <= 0.001f32 * abs want
+
+:== slab = transformer::slab
+
+:= sumsq_of (g : floats) (s : transformer::slab) : f32 = sumsq_from g s 0 0.0f32
+
+:~ ^ delta_from (a : floats) (b : floats) (s : transformer::slab) (i : i32) (acc : f32) : f32 =
+    ? i >= s::size ?> acc
+    |:
+        := v = index a (s::at + i) - index b (s::at + i)
+        delta_from a b s (i + 1) (acc + v * v)
+
+:= delta_of (a : floats) (b : floats) (s : transformer::slab) : f32 = delta_from a b s 0 0.0f32
+
+:~ ^ all_near (measure : slab -> f32) (slabs : list slab) (want : list f32) : bool =
+    ?= slabs ?|
+    | s :: rest =>
+        ?= want ?|
+        | w :: more => near (measure s) w && all_near measure rest more
+        | [] => !-
+    | [] => listm::length want = 0
+
+:= torch_att () : list f32 = [ 1877.64539f32; 75.0413132f32; 1807.34644f32; 6161.02637f32; 18726.8242f32; 5540.3877f32 ]
+
+:= torch_ffn () : list f32 = [ 353.832947f32; 7373.06787f32; 6826.14209f32; 8164.00586f32; 24.4049263f32 ]
+
+:~ ^ fill_ints (x : array i32) (values : list i32) (i : i32) : () =
+    ?= values ?|
+    | v :: rest =>
+        set x i v
+        fill_ints x rest (i + 1)
+    | [] => ()
+
+:= ints_of (values : list i32) : array i32 =
+    := x : array i32 = create (listm::length values)
+    fill_ints x values 0
+    x
+
+:= fixed_net () : net =
+    := m = transformer::fp32_model_at (oracle::model_path (oracle::stories260k ())::checkpoint)
+    { m = m; tokens = ints_of [ 1; 403; 407; 261; 378; 410; 274; 384; 259 ] }
+
+:= gradient_checks (n : net) : bool * bool * bool =
+    := g, loss = gradients n
+    near loss 50.8682938f32,
+    all_near (sumsq_of g) (att_slabs n::m::l) (torch_att ()),
+    all_near (sumsq_of g) (ffn_slabs n::m::l) (torch_ffn ())
+
+:= shared_of (m : transformer::model) : bool = m::l::cls::at = m::l::embed::at
+
+:= header_fields (c : transformer::config) (shared : bool) : list i32 =
+    [ c::dim; c::hidden; c::layers; c::heads; c::kv_heads; ? shared ?> c::vocab |: 0 - c::vocab; c::seq ]
+
+:~ ^ put_fields (o : array u8) (fields : list i32) (at : i32) : () =
+    ?= fields ?|
+    | v :: rest =>
+        transformer::put_u32 o at (conv v)
+        put_fields o rest (at + 4)
+    | [] => ()
+
+:= body_floats (m : transformer::model) : i32 =
+    ? shared_of m ?> length m::w + m::c::seq * transformer::head_size m::c |: length m::w
+
+:= fp32_bytes (m : transformer::model) (w : floats) : array u8 =
+    := o : array u8 = create (28 + 4 * body_floats m)
+    put_fields o (header_fields m::c (shared_of m)) 0
+    transformer::put_f32s o 28 w 0 (length w) 0
+    o
+
+:= write_fp32_file (m : transformer::model) (w : floats) (path : string) : () =
+    file_system::write_bytes path (fp32_bytes m w)
+
+:~ ^ same_from (a : floats) (b : floats) (i : i32) : bool =
+    ? i >= length a ?> !+ |: index a i = index b i && same_from a b (i + 1)
+
+:= header_of (m : transformer::model) : list i32 = header_fields m::c (shared_of m)
+
+:= same_weights (a : floats) (b : floats) : bool = length a = length b && same_from a b 0
+
+:= round_trip (m : transformer::model) (path : string) : bool * bool =
+    write_fp32_file m m::w path
+    := back = transformer::fp32_model_at path
+    header_of back = header_of m, same_weights back::w m::w
+
+///> c
+///> rust
+:# an_fp32_checkpoint_written_in_the_llama2c_format_reads_back_bit_for_bit =
+    round_trip (fixed_net ())::m (file_system::get_temp_path () ++# "/spiral_stories260k_fp32_out.bin")
+    |> _assert_eq (!+, !+)
+
+:= span_of (s : transformer::slab) (decays : bool) : f32_optim::span = { at = s::at; size = s::size; decays = decays }
+
+:= att_spans (l : transformer::layout) : list f32_optim::span =
+    := a = l::att
+    [ span_of l::embed !+; span_of a::rms !-; span_of a::wq !+; span_of a::wk !+; span_of a::wv !+; span_of a::wo !+ ]
+
+:= ffn_spans (l : transformer::layout) (shared : bool) : list f32_optim::span =
+    := f, cls = l::ffn, ? shared ?> [] |: [ span_of l::cls !+ ]
+    listm::append [ span_of f::rms !-; span_of f::w1 !+; span_of f::w2 !+; span_of f::w3 !+; span_of l::final !- ] cls
+
+:= spans_of (m : transformer::model) : list f32_optim::span =
+    listm::append (att_spans m::l) (ffn_spans m::l (shared_of m))
+
+:== batch = { g : floats; loss : f32; count : i32 }
+
+:~ ^ list_into \* t. (x : array t) (values : list t) (i : i32) : () =
+    ?= values ?|
+    | v :: rest =>
+        set x i v
+        list_into x rest (i + 1)
+    | [] => ()
+
+:= array_of \* t. (values : list t) : array t =
+    := x : array t = create (listm::length values)
+    list_into x values 0
+    x
+
+:= window_grads (m : transformer::model) (ws : array (array i32)) : array (floats * f32) =
+    parallel::map_index (length ws) (\ i => gradients { m = m; tokens = index ws i })
+
+:= add_part (b : batch) (part : floats * f32) (tokens : i32) : batch =
+    := g, loss = part
+    f32_kernels::add_into b::g g (length g) 0
+    { b ?| loss = b::loss + loss; count = b::count + tokens }
+
+:~ ^ sum_from (b : batch) (parts : array (floats * f32)) (ws : array (array i32)) (i : i32) : batch =
+    ? i >= length parts ?> b |: sum_from (add_part b (index parts i) (length (index ws i) - 1)) parts ws (i + 1)
+
+:= summed (m : transformer::model) (windows : list (array i32)) : batch =
+    := ws = array_of windows
+    sum_from { g = zeros (length m::w); loss = 0.0f32; count = 0 } (window_grads m ws) ws 0
+
+:= mean_batch (m : transformer::model) (windows : list (array i32)) : batch =
+    := b = summed m windows
+    := k = 1.0f32 / conv b::count
+    f32_optim::scale_from b::g k 0
+    { b ?| loss = b::loss * k }
+
+:== trainer =
+    {
+        m : transformer::model
+        o : f32_optim::adamw
+        s : f32_optim::moments
+        sched : f32_optim::schedule
+        it : i32
+    }
+
+:= adam_of (t : trainer) (g : floats) : f32_optim::moments =
+    f32_optim::adamw_spans t::o (f32_optim::rate t::sched t::it) t::m::w g t::s (spans_of t::m)
+
+:= train_step (t : trainer) (windows : list (array i32)) : trainer * f32 * f32 =
+    := b = mean_batch t::m windows
+    := norm = f32_optim::clip_norm b::g 1.0f32
+    { t ?| s = adam_of t b::g; it = t::it + 1 }, b::loss, norm
+
+:= llama2c_adamw () : f32_optim::adamw =
+    { lr = 0.001f32; beta1 = 0.9f32; beta2 = 0.99f32; eps = 0.00000001f32; decay = 0.01f32 }
+
+:= trainer_of (m : transformer::model) (sched : f32_optim::schedule) : trainer =
+    { m = m; o = llama2c_adamw (); s = f32_optim::zero_moments (length m::w); sched = sched; it = 0 }
+
+:= text_windows () : list (array i32) =
+    [
+        ints_of [ 1; 301; 427; 309; 426; 301; 427; 309; 394; 265; 262; 415; 271; 422; 280; 295; 269 ]
+        ints_of [ 412; 293; 422; 286; 262; 423; 388; 432; 358; 409; 416; 411; 424; 351; 358; 381; 261 ]
+    ]
+
+:= torch_step_att () : list f32 =
+    [ 0.0142027987f32; 0.000319960673f32; 0.0204673931f32; 0.0102386484f32; 0.0102396766f32; 0.0204780493f32 ]
+
+:= torch_step_ffn () : list f32 =
+    [ 0.000319990271f32; 0.0550302006f32; 0.0550277084f32; 0.0550290309f32; 0.0000639936989f32 ]
+
+:= stepped (m : transformer::model) : f32 * f32 * floats =
+    := before = slice m::w 0 (length m::w)
+    := _, loss, norm = train_step (trainer_of m (f32_optim::Constant 0.001f32)) (text_windows ())
+    loss, norm, before
+
+:= delta_checks (m : transformer::model) (before : floats) : bool * bool =
+    := d = delta_of m::w before
+    all_near d (att_slabs m::l) (torch_step_att ()), all_near d (ffn_slabs m::l) (torch_step_ffn ())
+
+:= step_checks (m : transformer::model) : bool * bool * bool * bool =
+    := loss, norm, before = stepped m
+    := a, b = delta_checks m before
+    near loss 2.40475512f32, near norm 9.64964485f32, a, b
+
+///> c
+///> rust
+:# one_adamw_step_on_stories260k_matches_pytorch =
+    step_checks (fixed_net ())::m |> _assert_eq (!+, !+, !+, !+)
+
+:= u16_at (data : array u8) (k : i32) : i32 = conv (index data (2 * k)) + 256 * conv (index data (2 * k + 1))
+
+:= window_at (data : array u8) (start : i32) (len : i32) : array i32 =
+    := x : array i32 = create len
+    for_each len (\ i => set x i (u16_at data (start + i)))
+    x
+
+:= start_of (data : array u8) (len : i32) (seed : u64) : i32 = conv (seed % conv (length data / 2 - len))
+
+:= next_window (data : array u8) (len : i32) (seed : u64) : array i32 * u64 =
+    := next = xorshift seed
+    window_at data (start_of data len next) len, next
+
+:== window_list = list (array i32)
+
+:~ ^ windows_from (data : array u8) (len : i32) (count : i32) (seed : u64) (acc : window_list) : window_list * u64 =
+    ? count <= 0 ?> acc, seed
+    |:
+        := w, next = next_window data len seed
+        windows_from data len (count - 1) next (w :: acc)
+
+:= put_u16 (o : array u8) (k : i32) (v : i32) : () =
+    set o (2 * k) (conv (v % 256))
+    set o (2 * k + 1) (conv (v / 256))
+
+:= ramp_bytes (tokens : i32) : array u8 =
+    := o : array u8 = create (2 * tokens)
+    for_each tokens (\ k => put_u16 o k k)
+    o
+
+:= tiny_bytes () : array u8 =
+    := o = ramp_bytes 4
+    set o 2 2u8
+    set o 3 1u8
+    set o 4 255u8
+    set o 5 255u8
+    o
+
+///> c
+///> rust
+:# a_window_reads_little_endian_u16_tokens =
+    := w = window_at (tiny_bytes ()) 0 4
+    (index w 0, index w 1, index w 2, index w 3) |> _assert_eq (0, 258, 65535, 3)
+
+:= sampled_starts () : i32 * i32 * u64 =
+    := ws, seed = windows_from (ramp_bytes 1003) 3 2 88172645463325252u64 []
+    ?= ws ?|
+    | a :: b :: [] => index a 0, index b 0, seed
+    | _ => -1, -1, 0u64
+
+///> c
+///> rust
+:# the_sampler_draws_xorshift_window_starts_deterministically =
+    sampled_starts () |> _assert_eq (515, 512, 3040900993826735515u64)
+
+///> c
+///> rust
+:# stories260k_gradients_match_pytorch_autograd =
+    gradient_checks (fixed_net ()) |> _assert_eq (!+, !+, !+)

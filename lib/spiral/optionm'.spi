@@ -1,4 +1,3 @@
-///> zig
 :< rust_operators
 
 :# optionm static =
@@ -221,7 +220,6 @@
 ///> fsharp
 ///> cuda
 ///> typescript
-///> cuda
 :# of_obj =
     null ()
     |> of_obj

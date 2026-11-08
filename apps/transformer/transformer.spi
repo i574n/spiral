@@ -1,4 +1,3 @@
-///> zig
 ///- --package .
 :# transformer static =
     :< testing

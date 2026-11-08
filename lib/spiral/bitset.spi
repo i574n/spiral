@@ -1,4 +1,3 @@
-///> zig
 :# bitset static =
     :< testing
 

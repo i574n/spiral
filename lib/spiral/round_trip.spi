@@ -1,0 +1,86 @@
+///- --package .
+:< sm'_operators
+
+:# round_trip static =
+    :< testing
+
+:| direction =
+    | ThereAndBack
+    | BackAndThere
+
+:| shape =
+    | Iso
+    | Retraction : direction
+    | Lossy : list string
+
+:~ ^ every \* t. (xs : list t) (law : t -> bool) : bool =
+    ?= xs ?|
+    | x :: rest => law x && every rest law
+    | [] => !+
+
+:~ ^ any \* t. (xs : list t) (law : t -> bool) : bool =
+    ?= xs ?|
+    | x :: rest => law x || any rest law
+    | [] => !-
+
+:= there_and_back \* a b. (same : a -> a -> bool) (there : a -> b) (home : b -> a) (x : a) : bool = same (home (there x)) x
+
+:= back_and_there \* a b. (same : b -> b -> bool) (there : a -> b) (home : b -> a) (y : b) : bool = same (there (home y)) y
+
+:= forward_holds \* a b. (same : a -> a -> bool) (there : a -> b) (home : b -> a) (xs : list a) : bool =
+    every xs (there_and_back same there home)
+
+:= backward_holds \* a b. (same : b -> b -> bool) (there : a -> b) (home : b -> a) (ys : list b) : bool =
+    every ys (back_and_there same there home)
+
+:= laws_hold \* a b. (s : shape) (same_a : a -> a -> bool) (same_b : b -> b -> bool) (there : a -> b) (home : b -> a) (xs : list a) (ys : list b)
+    : bool
+    =
+    ?= s ?|
+    | Iso => forward_holds same_a there home xs && backward_holds same_b there home ys
+    | Retraction d =>
+        ?= d ?|
+        | ThereAndBack => forward_holds same_a there home xs
+        | BackAndThere => backward_holds same_b there home ys
+    | Lossy _ => !+
+
+:= tight \* a b. (s : shape) (same_a : a -> a -> bool) (same_b : b -> b -> bool) (there : a -> b) (home : b -> a) (xs : list a) (ys : list b)
+    : bool
+    =
+    := forward = forward_holds same_a there home xs
+    := backward = backward_holds same_b there home ys
+    ?= s ?|
+    | Iso => !+
+    | Retraction d =>
+        ?= d ?|
+        | ThereAndBack => not backward
+        | BackAndThere => not forward
+    | Lossy _ => not (forward && backward)
+
+:~ widen (x : u8) : i32 = conv x
+
+:~ narrow (n : i32) : u8 = conv (n % 256i32)
+
+:~ same_u8 (a : u8) (b : u8) : bool = a = b
+
+:~ same_i32 (a : i32) (b : i32) : bool = a = b
+
+:~ bytes () : list u8 = [ 0u8; 1u8; 127u8; 255u8 ]
+
+:~ wide_numbers () : list i32 = [ 0i32; 255i32; 256i32; 1000i32 ]
+
+///> rust
+:# widening_a_byte_is_a_retraction_back_to_the_byte =
+    (laws_hold (Retraction ThereAndBack) same_u8 same_i32 widen narrow (bytes ()) (wide_numbers ()), tight (Retraction ThereAndBack) same_u8 same_i32 widen narrow (bytes ()) (wide_numbers ()))
+    |> _assert_eq (!+, !+)
+
+///> rust
+:# declaring_the_byte_pair_an_iso_fails_its_laws =
+    laws_hold Iso same_u8 same_i32 widen narrow (bytes ()) (wide_numbers ()) |> _assert_eq !-
+
+///> rust
+:# a_pair_whose_both_trips_hold_is_not_tight_as_a_retraction =
+    := same = \ (a : i32) (b : i32) => a = b
+    := keep = \ (n : i32) => n
+    (laws_hold Iso same same keep keep (wide_numbers ()) (wide_numbers ()), tight (Retraction ThereAndBack) same same keep keep (wide_numbers ()) (wide_numbers ()))
+    |> _assert_eq (!+, !-)

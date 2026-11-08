@@ -1,0 +1,108 @@
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:= patch_first (body : string) (old : string) (new : string) : string =
+    := at = text::find_from body old 0i32
+    ? at < 0i32 ?> "E" |: "K" ++ text::take body at ++ new ++ text::drop body (at + text::length old)
+
+:= separator (ch : string) : bool = ch = "/" || ch = "\\"
+
+:~ ^ has_separator (s : string) (i : i32) : bool =
+    ? i >= text::length s ?> !- |? separator (text::slice_len s i 1i32) ?> !+ |: has_separator s (i + 1i32)
+
+:= without_dot_slash (name : string) : string =
+    ? text::starts_with name "./" || text::starts_with name ".\\" ?> text::drop name 2i32 |: name
+
+:= nested (name : string) : bool = has_separator (without_dot_slash name) 0i32
+
+:~ ^ first_nested (names : list string) : string =
+    ?= names ?|
+    | [] => ""
+    | name :: rest => ? nested name ?> name |: first_nested rest
+
+:~ ^ lines_of (src : string) (i : i32) (acc : list string) : list string =
+    := nl = text::find_from src "\n" i
+    ? nl < 0i32 ?> listm::rev (text::drop src i :: acc) |: lines_of src (nl + 1i32) (text::slice_len src i (nl - i) :: acc)
+
+:= nested_name (names : string) : string = first_nested (? names = "" ?> [] |: lines_of names 0i32 [])
+
+:= blank_char (ch : string) : bool = ch = " " || ch = "\t" || ch = "\r" || ch = "\n"
+
+:~ ^ lead_blank (s : string) (i : i32) : i32 = ? i < text::length s && blank_char (text::slice_len s i 1i32) ?> lead_blank s (i + 1i32) |: i
+
+:~ ^ trail_blank (s : string) (n : i32) : i32 = ? n > 0i32 && blank_char (text::slice_len s (n - 1i32) 1i32) ?> trail_blank s (n - 1i32) |: n
+
+:= package_dir_line (line : string) : bool =
+    := prefix = "packageDir:"
+    := rest = text::drop line (text::length prefix)
+    text::starts_with line prefix && trail_blank rest (text::length rest) > lead_blank rest 0i32
+
+:~ ^ trimmed_end (s : string) (suffix : string) : string =
+    ? text::length s >= text::length suffix && text::drop s (text::length s - text::length suffix) = suffix
+    ?> trimmed_end (text::take s (text::length s - text::length suffix)) suffix
+    |: s
+
+:= entry_item (declared : string) : string = trimmed_end (trimmed_end declared "-") "*"
+
+:= relative_item (item : string) : bool =
+    text::starts_with item "./" || text::starts_with item "../" || text::starts_with item ".\\" || text::starts_with item "..\\"
+
+:~ ^ last_separator (s : string) (i : i32) : i32 =
+    ? i < 0i32 ?> -1i32 |? separator (text::slice_len s i 1i32) ?> i |: last_separator s (i - 1i32)
+
+:~ ^ without_trailing_separators (s : string) : string =
+    ? text::length s > 1i32 && separator (text::drop s (text::length s - 1i32)) ?> without_trailing_separators (text::take s (text::length s - 1i32)) |: s
+
+:= basename (path : string) : string =
+    := p = without_trailing_separators path
+    text::drop p (last_separator p (text::length p - 1i32) + 1i32)
+
+:= starts_blank (line : string) : bool = text::starts_with line " " || text::starts_with line "\t"
+
+:= declared_of (line : string) : string =
+    := a = lead_blank line 0i32
+    text::slice_len line a (trail_blank line (text::length line) - a)
+
+:~ ^ package_lines (lines : list string) (inside : bool) (acc : list string) : list string =
+    ?= lines ?|
+    | [] => listm::rev acc
+    | line :: rest =>
+        := bare = trimmed_end line "\r"
+        ? text::starts_with bare "packages:" ?> package_lines rest !+ acc
+        |? text::starts_with bare "modules:" ?> package_lines rest !- acc
+        |? bare <> "" && not (starts_blank bare) ?> package_lines rest !- acc
+        |? inside && declared_of line <> "" && not (text::starts_with (declared_of line) "|")
+        ?> package_lines rest inside (declared_of line :: acc)
+        |: package_lines rest inside acc
+
+:= sibling_line (declared : string) (line : string) : string =
+    := item = entry_item declared
+    := a = lead_blank line 0i32
+    ? starts_blank line && relative_item item && declared_of line = declared
+    ?> text::take line a ++ basename item ++ text::drop declared (text::length item)
+    |: line
+
+:= rewrite_line (declareds : list string) (line : string) : string =
+    := dir = ? package_dir_line line ?> "packageDir: .." |: line
+    listm::fold (\ acc declared => sibling_line declared acc) dir declareds
+
+:= join_lines (lines : list string) : string = sm'::concat_list "\n" lines
+
+:= rewrite_dir_only (line : string) : string = ? package_dir_line line ?> "packageDir: .." |: line
+
+:= sibling_project (src : string) : string =
+    := lines = lines_of src 0i32 []
+    := declareds = package_lines (listm::map rewrite_dir_only lines) !- []
+    join_lines (listm::map (rewrite_line declareds) lines)
+
+///> gleam
+:# a_patch_replaces_only_the_first_occurrence =
+    (patch_first "a b a" "a" "x", patch_first "abc" "z" "y") |> _assert_eq ("Kx b a", "E")
+
+///> gleam
+:# nested_patch_targets_are_named_and_top_level_ones_pass =
+    (nested_name "a.spi\n./b.spi\nsub/c.spi", nested_name "a.spi", nested_name "") |> _assert_eq ("sub/c.spi", "", "")
+
+///> gleam
+:# sibling_projects_point_package_dir_up_and_shorten_relative_entries =
+    := src = "packageDir: ../../lib\npackages:\n    |core-\n    ../client-\n    spiral-\nmodules:\n    main"
+    sibling_project src |> _assert_eq "packageDir: ..\npackages:\n    |core-\n    client-\n    spiral-\nmodules:\n    main"

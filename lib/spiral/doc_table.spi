@@ -1,0 +1,55 @@
+///- --package .
+:< markup
+:< doc_blocks
+:< doc_text
+:< sm'_operators
+
+:# doc_table static =
+    :< testing
+
+:~ align_of (spec : string) : align =
+    := n = sm::length spec
+    := left = n > 0i32 && sm::index spec 0i32 = ':'
+    := right = n > 0i32 && sm::index spec (n - 1i32) = ':'
+    ? left && right ?> AlignCenter |? right ?> AlignRight |? left ?> AlignLeft |: AlignNone
+
+:~ ^ cell_end (s : string) (i : i32) : i32 =
+    ? i >= sm::length s ?> i
+    |? sm::index s i = '\\' && i + 1i32 < sm::length s ?> cell_end s (i + 2i32)
+    |? sm::index s i = '|' ?> i
+    |: cell_end s (i + 1i32)
+
+:~ ^ cells_from (s : string) (i : i32) (a : list string) : list string =
+    ? i >= sm::length s ?> listm::rev a
+    |:
+        := e = cell_end s i
+        := x = trim (run_of s i e)
+        ? e >= sm::length s && x = "" ?> listm::rev a |: cells_from s (e + 1i32) (x :: a)
+
+:~ row_cells (row : string) : list string =
+    := body = trim row
+    cells_from (run_of body 1i32 (sm::length body)) 0i32 []
+
+:~ table_char (c : char) : bool = c = '|' || c = ':' || c = ' '
+
+:~ ^ delimiter_chars (s : string) (i : i32) (dash : bool) : bool =
+    ? i >= sm::length s ?> dash
+    |:
+        := c = sm::index s i
+        ? c = '-' ?> delimiter_chars s (i + 1i32) !+
+        |? table_char c ?> delimiter_chars s (i + 1i32) dash
+        |: !-
+
+:~ aligns_of (row : string) : option (list align) =
+    ? delimiter_chars row 0i32 !- ?> Some (listm::map align_of (row_cells row)) |: None
+
+///> rust
+///> gleam
+:# a_row_splits_into_trimmed_cells_and_keeps_escaped_pipes =
+    row_cells "| a | y \\| z |" |> _assert_eq ["a"; "y \\| z"]
+
+///> rust
+///> gleam
+:# a_delimiter_row_reads_alignments_and_a_plain_row_does_not =
+    (aligns_of "| :- | -: | :-: | - |", aligns_of "| a | b |")
+    |> _assert_eq (Some [AlignLeft; AlignRight; AlignCenter; AlignNone], None)

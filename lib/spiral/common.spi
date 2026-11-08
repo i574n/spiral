@@ -1,4 +1,3 @@
-///> zig
 :# common static =
     :< testing
 

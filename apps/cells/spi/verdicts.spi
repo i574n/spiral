@@ -1,0 +1,77 @@
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:== tally = { status : string; hit : bool; reason : string }
+
+:= tally_of (line : string) : tally =
+    ?= sm'::split_list "\t" line ?|
+    | status :: memo :: reason :: _ => { status; hit = memo = "hit"; reason }
+    | status :: memo :: [] => { status; hit = memo = "hit"; reason = "" }
+    | status :: [] => { status; hit = !-; reason = "" }
+    | [] => { status = ""; hit = !-; reason = "" }
+
+:= tallies_of (rows : string) : list tally = ? rows = "" ?> [] |: listm::map tally_of (sm'::split_list "\n" rows)
+
+:= count_status (ts : list tally) (s : string) : i32 = listm::fold (\ n (t : tally) => ? t::status = s ?> n + 1i32 |: n) 0i32 ts
+
+:= count_line (key : string) (n : i32) : string = key ++ "\t" ++ text::show_i32 n
+
+:~ ^ bump (reason : string) (seen : list (string * i32)) : list (string * i32) =
+    ?= seen ?|
+    | [] => [ (reason, 1i32) ]
+    | (r, n) :: rest => ? r = reason ?> (r, n + 1i32) :: rest |: (r, n) :: bump reason rest
+
+:= reasons_of (ts : list tally) : list (string * i32) =
+    listm::fold (\ acc (t : tally) => ? t::reason = "" ?> acc |: bump t::reason acc) [] ts
+
+:= counts_wire (rows : string) : string =
+    := ts = tallies_of rows
+    := c = count_status ts
+    := executed = c "passed" + c "failed" + c "accepted" + c "built"
+    := hits = listm::fold (\ n (t : tally) => ? t::hit ?> n + 1i32 |: n) 0i32 ts
+    := fixed = [
+        count_line "discovered" (listm::length ts - c "prelude"); count_line "preludes" (c "prelude"); count_line "executed" executed
+        count_line "built" (c "built"); count_line "static" (c "static"); count_line "accepted" (c "accepted")
+        count_line "passed" (c "passed"); count_line "failed" (c "failed"); count_line "skipped" (c "skipped")
+        count_line "unsupported" (c "unsupported"); count_line "timed_out" (c "timed_out"); count_line "filtered" (c "filtered")
+        count_line "not_run" (c "not_run"); count_line "memo_hits" hits
+    ]
+    := reasons = listm::map (\ (r, n) => "no_agree\t" ++ r ++ "\t" ++ text::show_i32 n) (reasons_of ts)
+    sm'::concat_list "\n" (listm::append fixed reasons)
+
+:= timed_entry (line : string) : string =
+    ?= sm'::split_list "\t" line ?|
+    | name :: "timed_out" :: ms :: _ ?& ms <> "" => name ++ " at " ++ ms ++ " ms"
+    | name :: "timed_out" :: _ => name
+    | _ => ""
+
+:= joined (sep : string) (acc : string) (e : string) : string = ? e = "" ?> acc |: ? acc = "" ?> e |: acc ++ sep ++ e
+
+:= void_text (path : string) (count : i32) (rows : string) (load : string) : string =
+    := named = ? rows = "" ?> [] |: sm'::split_list "\n" rows |> listm::map timed_entry
+    := shown = joined "; " (listm::fold (joined ", ") "" named) load
+    := detail = ? shown = "" ?> "" |: " (" ++ shown ++ ")"
+    path ++ ": VOID, " ++ text::show_i32 count ++ " test(s) hit the cell timeout" ++ detail ++ ", so they are not a verdict; rerun with a wider --timeout"
+
+///> gleam
+:# counts_read_statuses_hits_and_reasons =
+    counts_wire "passed\thit\nfailed\tmiss\tgleam floats\nprelude\nfailed\t\tgleam floats\ntimed_out"
+    |> sm'::split_list "\n" |> listm::length |> _assert_eq 15i32
+
+///> gleam
+:# executed_discovered_and_reasons_count_like_the_elixir =
+    := w = counts_wire "passed\thit\nfailed\tmiss\tgleam floats\nprelude\nfailed\t\tgleam floats\ntimed_out"
+    (text::contains w "executed\t3", text::contains w "discovered\t4", text::contains w "no_agree\tgleam floats\t2") |> _assert_eq (!+, !+, !+)
+
+///> gleam
+:# no_rows_count_zero =
+    (text::contains (counts_wire "") "discovered\t0", text::contains (counts_wire "") "no_agree") |> _assert_eq (!+, !-)
+
+///> gleam
+:# a_void_names_each_timed_out_test_and_its_budget =
+    := rows = "slow\ttimed_out\t600000\nfine\tpassed\t600000\nbare\ttimed_out\t"
+    void_text "/n/a.spi" 2i32 rows "cpu 97%" |> _assert_eq "/n/a.spi: VOID, 2 test(s) hit the cell timeout (slow at 600000 ms, bare; cpu 97%), so they are not a verdict; rerun with a wider --timeout"
+
+///> gleam
+:# a_void_without_rows_or_load_keeps_the_short_message =
+    (void_text "/n/a.spi" 2i32 "" "", void_text "/n/a.spi" 2i32 "" "loadavg 3.1")
+    |> _assert_eq ("/n/a.spi: VOID, 2 test(s) hit the cell timeout, so they are not a verdict; rerun with a wider --timeout", "/n/a.spi: VOID, 2 test(s) hit the cell timeout (loadavg 3.1), so they are not a verdict; rerun with a wider --timeout")

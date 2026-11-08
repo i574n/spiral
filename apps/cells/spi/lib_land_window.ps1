@@ -43,7 +43,7 @@ for ($i = 0; $i -lt $BaseHash.Count; $i++) {
     if ($pairs[$i].New) { if ($BaseHash[$i] -ne 'new') { throw "$($pairs[$i].Live) is a new file: give 'new' as its -BaseHash" }; continue }
     if ($BaseHash[$i] -eq 'new') { throw "$($pairs[$i].Live) exists in lib: 'new' is only for new files" }
     $now = (Get-FileHash -LiteralPath (Join-Path $Lib $pairs[$i].Live)).Hash
-    if (-not $now.StartsWith($BaseHash[$i])) { throw "$($pairs[$i].Live) changed since its draft was proven (now $($now.Substring(0, 12))): re-prove first" }
+    if (-not $now.StartsWith($BaseHash[$i], [StringComparison]::OrdinalIgnoreCase)) { throw "$($pairs[$i].Live) changed since its draft was proven (now $($now.Substring(0, 12))): re-prove first" }
 }
 function Get-LibDigest([hashtable] $override) {
     $rows = foreach ($f in Get-ChildItem -LiteralPath $Lib -Recurse -File | Where-Object { $_.Extension -in '.spi', '.spir', '.spiproj' }) {

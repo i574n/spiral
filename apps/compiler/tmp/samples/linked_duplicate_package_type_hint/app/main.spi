@@ -1,0 +1,1 @@
+:= main () : i32 = ? shade_b::is_red (shade_a::red ()) ?> 1 |: 0

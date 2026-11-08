@@ -313,7 +313,7 @@ function Invoke-Notebook {
         [int] $Retries = 1
     )
     $fullPath = (Resolve-Path $Path).Path
-    $runNotebook = Join-Path $PSScriptRoot "../apps/cells/spi/run_notebook.ps1"
+    $runNotebook = Join-Path ($env:SPIRAL_CELLS_ROOT ? $env:SPIRAL_CELLS_ROOT : (Join-Path $PSScriptRoot "../apps/cells")) "spi/run_notebook.ps1"
     { pwsh -NoProfile -File $runNotebook --path $fullPath @Arguments } | Invoke-Block -Retries $Retries
 }
 
@@ -375,7 +375,7 @@ function Invoke-PwshNotebook {
             if (Test-Path $dir) { $env:PATH = "$dir$([IO.Path]::PathSeparator)$env:PATH" }
         }
         if (Search-Command "mix") {
-            $cellsDir = ResolveLink (Join-Path $PSScriptRoot "../apps/cells")
+            $cellsDir = ResolveLink ($env:SPIRAL_CELLS_ROOT ? $env:SPIRAL_CELLS_ROOT : (Join-Path $PSScriptRoot "../apps/cells"))
             if (-not (Test-Path (Join-Path $cellsDir "deps/kino/mix.exs"))) {
                 { mix local.hex --force --if-missing } | Invoke-Block -Location $cellsDir -OnError Continue
                 { mix local.rebar --force --if-missing } | Invoke-Block -Location $cellsDir -OnError Continue

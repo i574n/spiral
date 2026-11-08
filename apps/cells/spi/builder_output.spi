@@ -1,6 +1,4 @@
-///> gleam
 ///- --package .
-///> gleam
 :# builder_output static =
     :< testing
     :< json_value
