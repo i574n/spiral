@@ -170,12 +170,16 @@
 
 := random' \* t. (min : t) (max : t) : t =
     run_target \|
-        | Zig => \ () => random_in_span (guid::zig_random_u64 ()) (convert::i64 min) (convert::i64 max) |> convert::numeric_conv
+        | Zig =>
+            \ () =>
+                random_in_span (guid::zig_random_u64 ()) (convert::i64 min) (convert::i64 max) |> convert::numeric_conv
         | Rust => \ () => native_random_between (convert::i64 min) (convert::i64 max) |> convert::convert
         | Cuda _ => \ () =>
             global "import random"
             $'random.randrange(!min, !max)' : t
-        | TypeScript => \ () => random_in_span (typescript_random_u53 ()) (convert::i64 min) (convert::i64 max) |> convert::numeric_conv
+        | TypeScript =>
+            \ () =>
+                random_in_span (typescript_random_u53 ()) (convert::i64 min) (convert::i64 max) |> convert::numeric_conv
         | Lua => \ () =>
             := low, high = convert::i32 min, convert::i32 max - 1i32
             convert::convert (? high < low ?> low |: lua_math_random low high)
@@ -186,7 +190,8 @@
 ///> rust
 :# random_draws_stay_in_their_half_open_range =
     :~ ^ outside (draws : i32) : i32 =
-        ? draws = 0i32 ?> 0i32
+        ? draws = 0i32
+        ?> 0i32
         |:
             := x = random' 3i32 7i32
             (? x < 3i32 || x >= 7i32 ?> 1i32 |: 0i32) + outside (draws - 1i32)

@@ -229,7 +229,8 @@
     run_target \|
         | Rust => \ () =>
             ?= level ?|
-            | Verbose => $'matches\!(option_env\!("SPIRAL_TRACE_FLOOR"), Some("Debug" | "Info" | "Warning" | "Critical"))' : bool
+            | Verbose =>
+                $'matches\!(option_env\!("SPIRAL_TRACE_FLOOR"), Some("Debug" | "Info" | "Warning" | "Critical"))' : bool
             | Debug => $'matches\!(option_env\!("SPIRAL_TRACE_FLOOR"), Some("Info" | "Warning" | "Critical"))' : bool
             | Info => $'matches\!(option_env\!("SPIRAL_TRACE_FLOOR"), Some("Warning" | "Critical"))' : bool
             | Warning => $'matches\!(option_env\!("SPIRAL_TRACE_FLOOR"), Some("Critical"))' : bool

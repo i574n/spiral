@@ -24,11 +24,13 @@
 
 := rust_sub_nanos (d : rust_epoch_elapsed) : u32 = $'!d.subsec_nanos()' : u32
 
-:= rust_whole_millis (d : rust_epoch_elapsed) : u64 = rust_whole_seconds d * 1000u64 + conv (rust_sub_nanos d) / 1000000u64
+:= rust_whole_millis (d : rust_epoch_elapsed) : u64 =
+    rust_whole_seconds d * 1000u64 + conv (rust_sub_nanos d) / 1000000u64
 
 := rust_whole_nanos (d : rust_epoch_elapsed) : u64 = rust_whole_seconds d * 1000000000u64 + conv (rust_sub_nanos d)
 
-:= erlang_system_time (unit : string) : i64 = erlang_term::apply "erlang" "system_time" [ erlang_term::atom unit ] |> erlang_term::cast
+:= erlang_system_time (unit : string) : i64 =
+    erlang_term::apply "erlang" "system_time" [ erlang_term::atom unit ] |> erlang_term::cast
 
 := fsharp_unix_millis () : i64 = $'System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()' : i64
 
@@ -74,4 +76,5 @@
     := s = seconds_count (unix_now_seconds ())
     := ns = nanos_count (unix_now_nanos ())
     := seconds_agree = s * 1000u64 + 2000u64 > ms && s * 1000u64 <= ms + 2000u64
-    (ms > 1700000000000u64, seconds_agree, ns / 1000000u64 + 2000u64 > ms, ms_since start < 1000u64) |> _assert_eq (!+, !+, !+, !+)
+    (ms > 1700000000000u64, seconds_agree, ns / 1000000u64 + 2000u64 > ms, ms_since start < 1000u64)
+    |> _assert_eq (!+, !+, !+, !+)

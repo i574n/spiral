@@ -787,18 +787,24 @@
         ? kind = "data" ?>
             ? log <> "" ?> file_system::append_all_text log (erlang_port::event_value event |> erlang_term::cast)
             gleam_waited choices log deadline
-        |? kind = "exit_status" ?> Some (erlang_port::event_value event |> erlang_term::cast)
+        |? kind = "exit_status"
+        ?> Some (erlang_port::event_value event |> erlang_term::cast)
         |: gleam_waited choices log deadline
     |: None
 
-:= timed_out (since : date_time::stopwatch) (ms : i32) : bool = date_time::stopwatch_elapsed_milliseconds since >= conv ms
+:= timed_out (since : date_time::stopwatch) (ms : i32) : bool =
+    date_time::stopwatch_elapsed_milliseconds since >= conv ms
+
+:= after_tick (ms : i32) : i32 =
+    threading::sleep 5i32
+    ms
 
 :~ ^ rust_waited (child : shared_child) (since : date_time::stopwatch) (ms : i32) : option i32 =
-    ? shared_child_exited child ?> Some (shared_child_code child)
-    |? timed_out since ms ?> None
-    |:
-        threading::sleep 5i32
-        rust_waited child since ms
+    ? shared_child_exited child
+    ?> Some (shared_child_code child)
+    |? timed_out since ms
+    ?> None
+    |: rust_waited child since (after_tick ms)
 
 /// ## running
 := capture_status_within (program : string) (args : list string) (ms : i32) : i32 =
@@ -890,13 +896,16 @@
     := outcome = erlang_port::receive_within choices 86400000i32
     := event = erlang_port::message_event (erlang_port::received_message outcome (erlang_term::atom "none"))
     := kind = erlang_port::event_kind event
-    ? kind = "data" ?> gleam_collected choices (text ++# (erlang_port::event_value event |> erlang_term::cast))
-    |? kind = "exit_status" ?> (erlang_port::event_value event |> erlang_term::cast), text
+    ? kind = "data"
+    ?> gleam_collected choices (text ++# (erlang_port::event_value event |> erlang_term::cast))
+    |? kind = "exit_status"
+    ?> (erlang_port::event_value event |> erlang_term::cast), text
     |: gleam_collected choices text
 
 := gleam_captured (program : string) (args : list string) (merged : bool) : captured =
     := found = erlang_term::apply "os" "find_executable" [ erlang_term::charlist program ]
-    ? erlang_term::equal found (erlang_term::atom "false") ?> not_run ()
+    ? erlang_term::equal found (erlang_term::atom "false")
+    ?> not_run ()
     |:
         := argv = erlang_term::tuple [ erlang_term::atom "args"; gleam_argv args ]
         := base = [ erlang_term::atom "binary"; erlang_term::atom "exit_status"; argv ]
@@ -913,14 +922,16 @@
 := succeeded (c : captured) : bool = c::ran && c::code = 0i32
 
 := required (c : captured) : string =
-    ? succeeded c ?> c::stdout
+    ? succeeded c
+    ?> c::stdout
     |:
         exit_with 3i32
         ""
 
 :~ ^ words (text : string) : list string =
     := at : i32 = sm'::index_of " " text
-    ? at < 0i32 ?> [ text ]
+    ? at < 0i32
+    ?> [ text ]
     |: sm'::substring 0i32 at text :: words (sm'::substring (at + 1i32) (sm'::length text - at - 1i32) text)
 
 := capture_stdout_list (program : string) (args : list string) : string = captured_by program args !- |> required

@@ -522,7 +522,8 @@
         Python = \ () =>
             := len : i32 = $'len(!list)'
             :~ ^ 루프 (i : i32) (acc : list u) : list u =
-                ? i >= len ?> acc
+                ? i >= len
+                ?> acc
                 |:
                     := item : t = $'!list[!i]'
                     루프 (i + 1i32) ((fn item :: acc))
@@ -530,7 +531,8 @@
         Rust = \ () =>
             := len : i32 = rust_list_count list
             :~ ^ 루프 (i : i32) (acc : list u) : list u =
-                ? i >= len ?> acc
+                ? i >= len
+                ?> acc
                 |:
                     := item : t = rust_list_item i list
                     루프 (i + 1i32) ((fn item :: acc))
@@ -538,7 +540,8 @@
         TypeScript = \ () =>
             := len : i32 = $'!list.length'
             :~ ^ 루프 (i : i32) (acc : list u) : list u =
-                ? i >= len ?> acc
+                ? i >= len
+                ?> acc
                 |:
                     := item : t = $'!list[!i]'
                     루프 (i + 1i32) ((fn item :: acc))
@@ -546,7 +549,8 @@
         Zig = \ () =>
             := len : i32 = $'@@as(i32, @@intCast(!list.len))'
             :~ ^ 루프 (i : i32) (acc : list u) : list u =
-                ? i >= len ?> acc
+                ? i >= len
+                ?> acc
                 |:
                     := item : t = $'!list[@@intCast(!i)]'
                     루프 (i + 1i32) ((fn item :: acc))
@@ -583,7 +587,8 @@
         Rust = \ () =>
             := len : i32 = rust_list_count list
             :~ ^ 루프 (i : i32) (acc : list u) : list u =
-                ? i < 0i32 ?> acc
+                ? i < 0i32
+                ?> acc
                 |:
                     := item : t = rust_list_item i list
                     루프 (i - 1i32) ((fn item :: acc))
@@ -591,7 +596,8 @@
         TypeScript = \ () =>
             := len : i32 = $'!list.length'
             :~ ^ 루프 (i : i32) (acc : list u) : list u =
-                ? i < 0i32 ?> acc
+                ? i < 0i32
+                ?> acc
                 |:
                     := item : t = $'!list[!i]'
                     루프 (i - 1i32) ((fn item :: acc))
@@ -599,7 +605,8 @@
         Zig = \ () =>
             := len : i32 = $'@@as(i32, @@intCast(!list.len))'
             :~ ^ 루프 (i : i32) (acc : list u) : list u =
-                ? i < 0i32 ?> acc
+                ? i < 0i32
+                ?> acc
                 |:
                     := item : t = $'!list[@@intCast(!i)]'
                     루프 (i - 1i32) ((fn item :: acc))
@@ -641,7 +648,8 @@
         Rust = \ () =>
             := len : i32 = rust_list_count list
             :~ ^ 루프 (i : i32) (acc : list t) : list t =
-                ? i < 0i32 ?> acc
+                ? i < 0i32
+                ?> acc
                 |:
                     := item : t = rust_list_item i list
                     루프 (i - 1i32) (? fn item ?> (item :: acc) |: acc)
@@ -649,7 +657,8 @@
         TypeScript = \ () =>
             := len : i32 = $'!list.length'
             :~ ^ 루프 (i : i32) (acc : list t) : list t =
-                ? i < 0i32 ?> acc
+                ? i < 0i32
+                ?> acc
                 |:
                     := item : t = $'!list[!i]'
                     루프 (i - 1i32) (? fn item ?> (item :: acc) |: acc)
@@ -657,7 +666,8 @@
         Zig = \ () =>
             := len : i32 = $'@@as(i32, @@intCast(!list.len))'
             :~ ^ 루프 (i : i32) (acc : list t) : list t =
-                ? i < 0i32 ?> acc
+                ? i < 0i32
+                ?> acc
                 |:
                     := item : t = $'!list[@@intCast(!i)]'
                     루프 (i - 1i32) (? fn item ?> (item :: acc) |: acc)
@@ -717,7 +727,8 @@
         Rust = \ () =>
             := len : i32 = rust_list_count list
             :~ ^ 루프 (i : i32) (seen : list t) : list t =
-                ? i >= len ?> seen
+                ? i >= len
+                ?> seen
                 |:
                     := item : t = rust_list_item i list
                     루프 (i + 1i32) (? exists' (\ x => x = item) seen ?> seen |: (item :: seen))
@@ -725,7 +736,8 @@
         TypeScript = \ () =>
             := len : i32 = $'!list.length'
             :~ ^ 루프 (i : i32) (seen : list t) : list t =
-                ? i >= len ?> seen
+                ? i >= len
+                ?> seen
                 |:
                     := item : t = $'!list[!i]'
                     루프 (i + 1i32) (? exists' (\ x => x = item) seen ?> seen |: (item :: seen))
@@ -733,7 +745,8 @@
         Zig = \ () =>
             := len : i32 = $'@@as(i32, @@intCast(!list.len))'
             :~ ^ 루프 (i : i32) (seen : list t) : list t =
-                ? i >= len ?> seen
+                ? i >= len
+                ?> seen
                 |:
                     := item : t = $'!list[@@intCast(!i)]'
                     루프 (i + 1i32) (? exists' (\ x => x = item) seen ?> seen |: (item :: seen))

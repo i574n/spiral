@@ -37,7 +37,8 @@
     ? is_attribute node ?> sm'::substring 1i32 (sm'::length name - 1i32) name |: name
 
 :~ ^ reversed_digits (text : string) (pos : i32) (acc : list i32) : option (list i32) =
-    ? pos >= sm'::length text ?> Some acc
+    ? pos >= sm'::length text
+    ?> Some acc
     |:
         := digit = sm'::index_of (sm'::substring pos 1i32 text) "0123456789"
         ? digit < 0i32 ?> None |: reversed_digits text (pos + 1i32) (digit :: acc)
@@ -76,7 +77,8 @@
     97i32 - check_digits_value (listm::rev base) 0i32 % 97i32 = check_digits_value (listm::rev check) 0i32
 
 := mod97_0208_valid (text : string) : bool =
-    ? sm'::length text < 10i32 ?> !-
+    ? sm'::length text < 10i32
+    ?> !-
     |:
         ?= digits_at text 0i32 8i32, digits_at text 8i32 2i32 ?|
         | Some base, Some check => mod97_check base check
@@ -91,7 +93,8 @@
     (first - 1i32) * 10i32 + weighted_sum rest 0i32 (\ index => 2i32 * index + 1i32) 0i32
 
 := abn_valid (text : string) : bool =
-    ? sm'::length text < 11i32 ?> !-
+    ? sm'::length text < 11i32
+    ?> !-
     |:
         ?= digits_of (sm'::substring 0i32 11i32 text) ?|
         | Some (first :: rest) => abn_sum first rest % 89i32 = 0i32
@@ -108,7 +111,8 @@
 := luhn_check (main : list i32) : i32 = (10i32 - luhn_sum main 0i32 0i32 % 10i32) % 10i32
 
 := se_orgnr_valid (text : string) : bool =
-    ? sm'::length text < 10i32 ?> !-
+    ? sm'::length text < 10i32
+    ?> !-
     |:
         ?= reversed_digits text 0i32 [], digits_at text 0i32 9i32, digits_at text 9i32 1i32 ?|
         | Some _, Some main, Some (check :: []) => luhn_check main = check
@@ -121,7 +125,8 @@
 := tin_check (body : list i32) : i32 = (weighted_sum body 0i32 doubled_weight 0i32 % 11i32) % 10i32
 
 := tin_valid (text : string) : bool =
-    ? sm'::length text < 9i32 ?> !-
+    ? sm'::length text < 9i32
+    ?> !-
     |:
         ?= digits_at text 0i32 8i32, digits_at text 8i32 1i32 ?|
         | Some body, Some (check :: []) => tin_check body = check
@@ -149,13 +154,15 @@
         |: italian_vat_valid (sm'::substring 2i32 (sm'::length text - 2i32) text)
 
 :~ ^ all_letters (text : string) (i : i32) : bool =
-    ? i >= sm'::length text ?> !+
+    ? i >= sm'::length text
+    ?> !+
     |:
         := c = code_point_at text i
         ((c >= 65u32 && c <= 90u32) || (c >= 97u32 && c <= 122u32)) && all_letters text (i + 1i32)
 
 :~ ^ all_alnum (text : string) (i : i32) : bool =
-    ? i >= sm'::length text ?> !+
+    ? i >= sm'::length text
+    ?> !+
     |:
         := c = code_point_at text i
         := letter = (c >= 65u32 && c <= 90u32) || (c >= 97u32 && c <= 122u32)
@@ -200,7 +207,8 @@
     ?= node ?|
     | XmlElement _ =>
         := own = qualified_name node
-        ? is_prefix_wildcard test ?> name_prefix own = name_prefix test
+        ? is_prefix_wildcard test
+        ?> name_prefix own = name_prefix test
         |: test = "*" || local_name test = local_name own
     | XmlText _ => !-
 
@@ -222,7 +230,8 @@
 
 := own_namespace (item : located) (name : string) : string =
     := prefix = name_prefix name
-    ? is_attribute item::node && prefix = "" ?> ""
+    ? is_attribute item::node && prefix = ""
+    ?> ""
     |: in_scope_namespace (namespace_key prefix) (item::node :: item::ancestors)
 
 := prefixed_name_matches (test : string) (item : located) (uri : string) : bool =
@@ -240,8 +249,10 @@
     | _ => name_matches test item::node
 
 := kind_matches (namespaces : list (string * string)) (test : string) (item : located) : bool =
-    ? test = "node()" ?> !+
-    |? test = "text()" ?> (?= item::node ?| XmlText _ => !+ | _ => !-)
+    ? test = "node()"
+    ?> !+
+    |? test = "text()"
+    ?> (?= item::node ?| XmlText _ => !+ | _ => !-)
     |: name_matches_in namespaces test item
 
 :~ ^ children_of (parent : located) (nodes : list xml_node) (index : i32) (acc : list located) : list located =
@@ -471,7 +482,8 @@
     | _ => !-
 
 :~ ^ all_digits_from (t : string) (i : i32) : bool =
-    ? i >= sm'::length t ?> !+
+    ? i >= sm'::length t
+    ?> !+
     |: sm'::index_of (sm'::substring i 1i32 t) "0123456789" >= 0i32 && all_digits_from t (i + 1i32)
 
 := long_digits (value : xvalue) : option string =
@@ -479,7 +491,8 @@
     ? sm'::length t > 0i32 && all_digits_from t 0i32 ?> Some t |: None
 
 :~ ^ digits_modulo (text : string) (m : i64) (i : i32) (acc : i64) : i64 =
-    ? i >= sm'::length text ?> acc
+    ? i >= sm'::length text
+    ?> acc
     |: digits_modulo text m (i + 1i32) ((acc * 10i64 + decimal::digit_value (sm'::substring i 1i32 text)) % m)
 
 := is_modulo (op : operator number_result) : bool = ?= op ?| OpModulo => !+ | _ => !-
@@ -591,11 +604,13 @@
     | [] => !-
 
 :~ ^ collapsed (s : string) (i : i32) (pending : bool) (acc : string) : string =
-    ? i >= sm'::length s ?> acc
+    ? i >= sm'::length s
+    ?> acc
     |:
         := c = code_point_text s i
         := next = i + sm'::length c
-        ? is_space c ?> collapsed s next (acc <> "") acc
+        ? is_space c
+        ?> collapsed s next (acc <> "") acc
         |: collapsed s next !- (acc ++# (? pending ?> " " |: "") ++# c)
 
 := normalize_space (s : string) : string = collapsed s 0i32 !- ""
@@ -609,7 +624,8 @@
 
 := char_substring (t : string) (begin : i32) (count : i32) : string =
     := begin', stop = clamped_bounds t begin count
-    ? stop <= begin' ?> ""
+    ? stop <= begin'
+    ?> ""
     |:
         := from = byte_offset t begin' 0i32
         sm'::substring from (byte_offset t stop 0i32 - from) t
@@ -630,7 +646,8 @@
 :~ ^ distinct_texts (items : list string) (seen : list string) (acc : list xvalue) : list xvalue =
     ?= items ?|
     | item :: rest =>
-        ? has_text item seen ?> distinct_texts rest seen acc
+        ? has_text item seen
+        ?> distinct_texts rest seen acc
         |: distinct_texts rest (item :: seen) (VText item :: acc)
     | [] => listm::rev acc
 
@@ -662,11 +679,16 @@
     | GreedyPlain
 
 := greedy_token_of (c : u32) (after_quantifier : bool) : greedy_token =
-    ? c = 92u32 ?> GreedyEscape
-    |? c = 91u32 ?> GreedyClass
-    |? c = 63u32 && after_quantifier ?> GreedyLazyMark
-    |? c = 42u32 || c = 43u32 || c = 63u32 ?> GreedyQuantifier
-    |? c = 123u32 ?> GreedyBrace
+    ? c = 92u32
+    ?> GreedyEscape
+    |? c = 91u32
+    ?> GreedyClass
+    |? c = 63u32 && after_quantifier
+    ?> GreedyLazyMark
+    |? c = 42u32 || c = 43u32 || c = 63u32
+    ?> GreedyQuantifier
+    |? c = 123u32
+    ?> GreedyBrace
     |: GreedyPlain
 
 := greedy_step (p : string) (i : i32) (after_quantifier : bool) : i32 * bool * string =
@@ -679,18 +701,22 @@
     | GreedyPlain => piece_to p i (i + code_point_width p i) !-
 
 :~ ^ greedy_from (p : string) (i : i32) (after_quantifier : bool) (acc : string) : string =
-    ? i >= sm'::length p ?> acc
+    ? i >= sm'::length p
+    ?> acc
     |:
         := next, quantified, piece = greedy_step p i after_quantifier
         greedy_from p next quantified (acc ++# piece)
 
 := anchor_skip (p : string) (i : i32) (c : u32) : i32 =
-    ? c = 92u32 ?> xsd_regex::escape_end p i
-    |? c = 91u32 ?> xsd_regex::class_end p (i + 1i32) 0i32
+    ? c = 92u32
+    ?> xsd_regex::escape_end p i
+    |? c = 91u32
+    ?> xsd_regex::class_end p (i + 1i32) 0i32
     |: i + code_point_width p i
 
 :~ ^ has_bare_anchor (p : string) (i : i32) : bool =
-    ? i >= sm'::length p ?> !-
+    ? i >= sm'::length p
+    ?> !-
     |:
         := c = code_point_at p i
         ? c = 94u32 || c = 36u32 ?> !+ |: has_bare_anchor p (anchor_skip p i c)
@@ -737,17 +763,22 @@
     | _ => VError "matches takes an input and a pattern"
 
 :~ ^ code_point_index (c : string) (s : string) (i : i32) (n : i32) : i32 =
-    ? i >= sm'::length s ?> -1i32
-    |? code_point_text s i = c ?> n
+    ? i >= sm'::length s
+    ?> -1i32
+    |? code_point_text s i = c
+    ?> n
     |: code_point_index c s (i + code_point_width s i) (n + 1i32)
 
 :~ ^ code_point_nth (s : string) (i : i32) (n : i32) : string =
-    ? i >= sm'::length s ?> ""
-    |? n = 0i32 ?> code_point_text s i
+    ? i >= sm'::length s
+    ?> ""
+    |? n = 0i32
+    ?> code_point_text s i
     |: code_point_nth s (i + code_point_width s i) (n - 1i32)
 
 :~ ^ translated_from (s : string) (from : string) (into : string) (i : i32) (acc : string) : string =
-    ? i >= sm'::length s ?> acc
+    ? i >= sm'::length s
+    ?> acc
     |:
         := c = code_point_text s i
         := k = code_point_index c from 0i32 0i32
@@ -762,31 +793,37 @@
     listm::rev (token_value s start (sm'::length s) :: acc)
 
 :~ ^ split_tokens (r : xsd_regex::rx) (s : string) (start : i32) (i : i32) (acc : list xvalue) : list xvalue =
-    ? i >= sm'::length s ?> last_token s start acc
+    ? i >= sm'::length s
+    ?> last_token s start acc
     |:
         := e = xsd_regex::longest_match r s i
-        ? e > i ?> split_tokens r s e e (token_value s start i :: acc)
+        ? e > i
+        ?> split_tokens r s e e (token_value s start i :: acc)
         |: split_tokens r s start (i + code_point_width s i) acc
 
 :~ ^ replaced_from (r : xsd_regex::rx) (s : string) (into : string) (i : i32) (acc : string) : string =
-    ? i >= sm'::length s ?> acc
+    ? i >= sm'::length s
+    ?> acc
     |:
         := e = xsd_regex::longest_match r s i
-        ? e > i ?> replaced_from r s into e (acc ++# into)
+        ? e > i
+        ?> replaced_from r s into e (acc ++# into)
         |:
             := w = code_point_width s i
             replaced_from r s into (i + w) (acc ++# sm'::substring i w s)
 
 := split_pattern (p : string) : option xsd_regex::rx =
     := greedy = greedy_from p 0i32 !- ""
-    ? has_bare_anchor greedy 0i32 ?> None
+    ? has_bare_anchor greedy 0i32
+    ?> None
     |:
         ?= xsd_regex::compile_pattern greedy ?|
         | Some r => ? xsd_regex::nullable r ?> None |: Some r
         | None => None
 
 := tokenize_value (s : string) (p : string) : xvalue =
-    ? s = "" ?> VSequence ([])
+    ? s = ""
+    ?> VSequence ([])
     |:
         ?= split_pattern p ?|
         | Some r => VSequence (split_tokens r s 0i32 0i32 [])
@@ -815,12 +852,15 @@
     | [] => acc
 
 := half_even_rounded (whole : i64) (rest : i64) (step : i64) : i64 =
-    ? rest * 2i64 > step ?> whole + 1i64
-    |? rest * 2i64 < step ?> whole
+    ? rest * 2i64 > step
+    ?> whole + 1i64
+    |? rest * 2i64 < step
+    ?> whole
     |: (? whole % 2i64 = 0i64 ?> whole |: whole + 1i64)
 
 := round_half_even_cents (a : decimal::decimal) : i64 =
-    ? a::scale <= 2i32 ?> decimal::at_scale 2i32 a
+    ? a::scale <= 2i32
+    ?> decimal::at_scale 2i32 a
     |:
         := step = decimal::power_of_ten (a::scale - 2i32) 1i64
         := whole = decimal::floor_division a::units step
@@ -835,8 +875,10 @@
     (? negative ?> "-" |: "") ++# cents_digits (? negative ?> 0i64 - cents |: cents)
 
 := without_integer_zero (text : string) : string =
-    ? sm'::starts_with "0." text ?> sm'::substring 1i32 (sm'::length text - 1i32) text
-    |? sm'::starts_with "-0." text ?> "-" ++# sm'::substring 2i32 (sm'::length text - 2i32) text
+    ? sm'::starts_with "0." text
+    ?> sm'::substring 1i32 (sm'::length text - 1i32) text
+    |? sm'::starts_with "-0." text
+    ?> "-" ++# sm'::substring 2i32 (sm'::length text - 2i32) text
     |: text
 
 := is_supported_picture (picture : string) : bool = picture = "#0.00" || picture = "0.00" || picture = "#.00"
@@ -867,8 +909,10 @@
     | _ => None
 
 := offset_seconds (zone : string) : option i64 =
-    ? zone = "" || zone = "Z" ?> Some 0i64
-    |? sm'::length zone = 6i32 && sm'::substring 3i32 1i32 zone = ":" ?> hh_mm_offset zone
+    ? zone = "" || zone = "Z"
+    ?> Some 0i64
+    |? sm'::length zone = 6i32 && sm'::substring 3i32 1i32 zone = ":"
+    ?> hh_mm_offset zone
     |: None
 
 :~ ^ fraction_end (text : string) (i : i32) : i32 =
@@ -895,17 +939,22 @@
 
 := datetime_seconds (text : string) : option i64 =
     := t = sm'::trim text
-    ? is_datetime_shaped t = !- ?> None
+    ? is_datetime_shaped t = !-
+    ?> None
     |:
         ?= datetime_day t, datetime_clock t, offset_seconds (zone_after t 19i32) ?|
         | Some day, Some clock, Some offset => Some (day * 86400i64 + clock - offset)
         | _ => None
 
 := designator_seconds (c : string) (in_time : bool) : option i64 =
-    ? c = "D" && in_time = !- ?> Some 86400i64
-    |? c = "H" && in_time ?> Some 3600i64
-    |? c = "M" && in_time ?> Some 60i64
-    |? c = "S" && in_time ?> Some 1i64
+    ? c = "D" && in_time = !-
+    ?> Some 86400i64
+    |? c = "H" && in_time
+    ?> Some 3600i64
+    |? c = "M" && in_time
+    ?> Some 60i64
+    |? c = "S" && in_time
+    ?> Some 1i64
     |: None
 
 := designator_step (c : string) (in_time : bool) (number : i64) (acc : i64) : option (bool * i64 * i64) =
@@ -915,12 +964,15 @@
 
 := duration_step (c : string) (in_time : bool) (number : i64) (acc : i64) : option (bool * i64 * i64) =
     := digit = sm'::index_of c "0123456789"
-    ? digit >= 0i32 ?> Some (in_time, number * 10i64 + conv digit, acc)
-    |? c = "T" ?> Some (!+, 0i64, acc)
+    ? digit >= 0i32
+    ?> Some (in_time, number * 10i64 + conv digit, acc)
+    |? c = "T"
+    ?> Some (!+, 0i64, acc)
     |: designator_step c in_time number acc
 
 :~ ^ duration_from (text : string) (i : i32) (in_time : bool) (number : i64) (acc : i64) : option i64 =
-    ? i >= sm'::length text ?> Some acc
+    ? i >= sm'::length text
+    ?> Some acc
     |:
         ?= duration_step (sm'::substring i 1i32 text) in_time number acc ?|
         | Some (timed, carried, total) => duration_from text (i + 1i32) timed carried total
@@ -945,8 +997,10 @@
 := is_leap_year (y : i64) : bool = (y % 4i64 = 0i64 && y % 100i64 <> 0i64) || y % 400i64 = 0i64
 
 := days_in_month (y : i64) (m : i64) : i64 =
-    ? m = 2i64 ?> (? is_leap_year y ?> 29i64 |: 28i64)
-    |? m = 4i64 || m = 6i64 || m = 9i64 || m = 11i64 ?> 30i64
+    ? m = 2i64
+    ?> (? is_leap_year y ?> 29i64 |: 28i64)
+    |? m = 4i64 || m = 6i64 || m = 9i64 || m = 11i64
+    ?> 30i64
     |: 31i64
 
 := is_date_shaped (t : string) : bool =
@@ -1003,12 +1057,15 @@
     ?= value ?|
     | VError e => VError e
     | _ =>
-        ? is_empty_value value ?> VBool optional
-        |? item_count value > 1i32 ?> VBool !-
+        ? is_empty_value value
+        ?> VBool optional
+        |? item_count value > 1i32
+        ?> VBool !-
         |: castable_text ty (atom_text value)
 
 :~ ^ codepoint_values (text : string) (i : i32) (acc : list xvalue) : list xvalue =
-    ? i >= sm'::length text ?> listm::rev acc
+    ? i >= sm'::length text
+    ?> listm::rev acc
     |:
         := point = VNumber (decimal::of_int (conv (xml::code_point_at text i) : i64))
         codepoint_values text (i + xml::code_point_width text i) (point :: acc)
@@ -1081,7 +1138,8 @@
     | None => VError (value_function_text f ++# " of " ++# atom_text first)
 
 :~ numeric_value (f : builtin value_result) (first : xvalue) : xvalue =
-    ? is_empty_value first ?> VSequence ([])
+    ? is_empty_value first
+    ?> VSequence ([])
     |:
         ?= number_of first ?|
         | Some n => VNumber n
@@ -1130,7 +1188,8 @@
     ? decimal::compare n (decimal::of_int 0i64) < 0i32 ?> decimal::negate n |: n
 
 := number_function (name : string) (op : decimal::decimal -> decimal::decimal) (first : xvalue) : xvalue =
-    ? is_empty_value first ?> VSequence ([])
+    ? is_empty_value first
+    ?> VSequence ([])
     |:
         ?= number_of first ?|
         | Some n => VNumber (op n)
@@ -1237,8 +1296,10 @@
     | flat => VSequence flat
 
 := axis_found (s : scope) (axis : step_axis) (item : located) : option (list located) =
-    ? is_preceding axis ?> Some (preceding_of s::root item)
-    |? is_following axis ?> Some (following_of s::root item)
+    ? is_preceding axis
+    ?> Some (preceding_of s::root item)
+    |? is_following axis
+    ?> Some (following_of s::root item)
     |: axis_nodes axis item
 
 := is_kept (value : xvalue) (position : i32) : bool =
@@ -1263,7 +1324,8 @@
 := is_bool_value (value : xvalue) : bool = ?= value ?| VBool _ => !+ | _ => !-
 
 := compared_value (c : comparison) (a : xvalue) (b : xvalue) : xvalue =
-    ? is_bool_value a || is_bool_value b ?> VBool (any_boolean_pair (is_equality c) (as_booleans a) (as_booleans b))
+    ? is_bool_value a || is_bool_value b
+    ?> VBool (any_boolean_pair (is_equality c) (as_booleans a) (as_booleans b))
     |: VBool (any_pair c (is_numeric_value a || is_numeric_value b) (atoms a) (atoms b))
 
 := number_literal (n : string) : xvalue =
@@ -1272,7 +1334,8 @@
     | None => VError ("number " ++# n)
 
 := negate_value (value : xvalue) : xvalue =
-    ? is_empty_value value ?> VSequence ([])
+    ? is_empty_value value
+    ?> VSequence ([])
     |: ?= number_of value ?| Some n => VNumber (decimal::negate n) | None => VError "negate"
 
 := member_holds (text : string) (codes : string) (words : list string) : bool =

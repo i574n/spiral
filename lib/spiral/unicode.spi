@@ -27,9 +27,12 @@
     := c : u32 = conv n
     := lead mark shift = utf8_lead byte_text mark shift c
     := continuation shift = utf8_continuation byte_text shift c
-    ? c < 128u32 ?> byte_text (conv c)
-    |? c < 2048u32 ?> lead 192u32 6i32 ++# continuation 0i32
-    |? c < 65536u32 ?> lead 224u32 12i32 ++# continuation 6i32 ++# continuation 0i32
+    ? c < 128u32
+    ?> byte_text (conv c)
+    |? c < 2048u32
+    ?> lead 192u32 6i32 ++# continuation 0i32
+    |? c < 65536u32
+    ?> lead 224u32 12i32 ++# continuation 6i32 ++# continuation 0i32
     |: lead 240u32 18i32 ++# continuation 12i32 ++# continuation 6i32 ++# continuation 0i32
 
 := c_byte_text (b : u8) : string =
@@ -96,7 +99,8 @@
     s |> first_scalar |> optionm'::map (\ c => conv c) |> optionm'::default_value' 0i32
 
 :~ ^ pascal_code_point_count_from (s : string) (i : i32) (acc : i32) : i32 =
-    ? i >= sm'::length s ?> acc
+    ? i >= sm'::length s
+    ?> acc
     |:
         := byte = $'Ord((!s)[!i + 1])' : i32
         pascal_code_point_count_from s (i + 1i32) (? byte >= 128i32 && byte < 192i32 ?> acc |: acc + 1i32)
@@ -147,10 +151,12 @@
 
 := rust_scalar_is_alphanumeric (c : rust_scalar) : bool = $'!c.is_alphanumeric()' : bool
 
+:= rust_is_alphanumeric (c : i32) : bool =
+    (conv c : u32) |> rust_char_of_u32 |> optionm'::map rust_scalar_is_alphanumeric |> optionm'::default_value' !-
+
 := is_alphanumeric (c : i32) : bool =
     run_target \|
-        | Rust => \ () =>
-            (conv c : u32) |> rust_char_of_u32 |> optionm'::map rust_scalar_is_alphanumeric |> optionm'::default_value' !-
+        | Rust => \ () => rust_is_alphanumeric c
         | _ => \ () => no_arm "unicode.is_alphanumeric"
 
 ///> rust
@@ -217,7 +223,12 @@
 ///> zig
 :# char_of_covers_every_utf8_width =
     := ~a = 65i32
-    (sm::length (char_of a), sm::length (char_of 2047i32), sm::length (char_of 65535i32), sm::length (char_of 1114111i32))
+    (
+        sm::length (char_of a),
+        sm::length (char_of 2047i32),
+        sm::length (char_of 65535i32),
+        sm::length (char_of 1114111i32)
+    )
     |> _assert_eq (1i32, 2i32, 3i32, 4i32)
 
 ///> rust -d unicode-normalization

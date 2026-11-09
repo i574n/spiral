@@ -90,7 +90,8 @@
     | Bounded k => bounded_ends a t k at at
 
 :& :~ bounded_ends (a : re) (t : subject) (k : u32) (at : list i32) (acc : list i32) : list i32 =
-    ? k = 0u32 ?> acc
+    ? k = 0u32
+    ?> acc
     |:
         := next = ends_from a t at []
         ? next = [] ?> acc |: bounded_ends a t (k - 1u32) next (union_sorted acc next)

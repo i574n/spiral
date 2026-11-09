@@ -72,7 +72,14 @@
     | Builtin d => "-- built into Lean: " ++# decl_name d
     | Mutual inds => lean_mutual inds
     | Nested ind => lean_inductive ind
-    | Poly (ps, ty, value) => "section universe " ++# joined_with " " (listm::map (\ p => name_text p) ps) ++# " example : " ++# lean_term ty ++# " := " ++# lean_term value ++# " end"
+    | Poly (ps, ty, value) =>
+        "section universe "
+        ++# joined_with " " (listm::map (\ p => name_text p) ps)
+        ++# " example : "
+        ++# lean_term ty
+        ++# " := "
+        ++# lean_term value
+        ++# " end"
 
 :~ ^ annotated (k : i32) (entries : list entry) (vs : list verdict) : list string =
     ?= entries ?|
@@ -137,7 +144,13 @@
 :~ list_family () : inductive =
     := nil = pi_of "A" (type_sort ()) (k_list (BVar 0i32))
     := cons = pi_of "A" (type_sort ()) (pi_of "a" (BVar 0i32) (pi_of "tl" (k_list (BVar 1i32)) (k_list (BVar 2i32))))
-    Inductive (name "K.List", [], 1i32, pi_of "A" (type_sort ()) (type_sort ()), [ name "K.List.nil", nil; name "K.List.cons", cons ])
+    Inductive (
+        name "K.List",
+        [],
+        1i32,
+        pi_of "A" (type_sort ()) (type_sort ()),
+        [ name "K.List.nil", nil; name "K.List.cons", cons ]
+    )
 
 :~ k_eq (l : level) (a : term) (x : term) (y : term) : term = applied (Const (name "K.Eq", [ l ])) [ a; x; y ]
 
@@ -155,17 +168,44 @@
 
 :~ family_corpus () : list entry =
     := two = Succ (Succ Zero)
-    := xs = applied (Const (name "K.List.cons", [])) [ k_type (); k_value (); App (Const (name "K.List.nil", []), k_type ()) ]
+    := xs =
+        applied (Const (name "K.List.cons", [])) [
+            k_type ()
+            k_value ()
+            App (Const (name "K.List.nil", []), k_type ())
+        ]
     := head_step = lam_of "a" (k_type ()) (lam_of "tl" (k_list (k_type ())) (lam_of "ih" (k_type ()) (BVar 2i32)))
-    := head = applied (Const (name "K.List.rec", [ Succ Zero ])) [ k_type (); lam_of "l" (k_list (k_type ())) (k_type ()); k_value (); head_step; xs ]
+    := head =
+        applied (Const (name "K.List.rec", [ Succ Zero ])) [
+            k_type ()
+            lam_of "l" (k_list (k_type ())) (k_type ())
+            k_value ()
+            head_step
+            xs
+        ]
     := refl = applied (Const (name "K.Eq.refl", [ two ])) [ type_sort (); k_type () ]
-    := transport_motive = lam_of "b" (type_sort ()) (lam_of "h" (k_eq two (type_sort ()) (k_type ()) (BVar 0i32)) (BVar 1i32))
+    := transport_motive =
+        lam_of "b" (type_sort ()) (lam_of "h" (k_eq two (type_sort ()) (k_type ()) (BVar 0i32)) (BVar 1i32))
     := transport =
-        applied (Const (name "K.Eq.rec", [ Succ Zero; two ])) [ type_sort (); k_type (); transport_motive; k_value (); k_type (); refl ]
+        applied (Const (name "K.Eq.rec", [ Succ Zero; two ])) [
+            type_sort ()
+            k_type ()
+            transport_motive
+            k_value ()
+            k_type ()
+            refl
+        ]
     := tree_step =
-        lam_of "f" (pi_of "n" (k_nat ()) (k_tree ())) (lam_of "ih" (pi_of "n" (k_nat ()) (k_type ())) (App (BVar 0i32, k_zero ())))
+        lam_of "f" (pi_of "n" (k_nat ()) (k_tree ())) (lam_of "ih" (pi_of "n" (k_nat ()) (k_type ())) (App (BVar 0i32,
+            k_zero ())))
     := tree_value = App (Const (name "K.Tree.node", []), lam_of "n" (k_nat ()) (Const (name "K.Tree.leaf", [])))
-    := tree_rec = applied (Const (name "K.Tree.rec", [ Succ Zero ])) [ lam_of "t" (k_tree ()) (k_type ()); k_value (); tree_step; tree_value ]
+    := tree_rec =
+        applied (Const (name "K.Tree.rec", [ Succ Zero ])) [
+            lam_of "t" (k_tree ()) (k_type ())
+            k_value ()
+            tree_step
+            tree_value
+        ]
     [
         Family (list_family ())
         Judge (k_type (), head)
@@ -210,10 +250,19 @@
     := respects = pi_of "a" (k_type ()) (pi_of "b" (k_type ()) conclusion)
     := made = applied (Const (name "Quot.mk", [ one ])) [ k_type (); r; k_value () ]
     := identity_on = lam_of "x" (k_type ()) (BVar 0i32)
-    := lifted = applied (Const (name "Quot.lift", [ one; one ])) [ k_type (); r; k_type (); identity_on; Const (name "K.h", []); made ]
+    := lifted =
+        applied (Const (name "Quot.lift", [ one; one ])) [
+            k_type ()
+            r
+            k_type ()
+            identity_on
+            Const (name "K.h", [])
+            made
+        ]
     := refl_t = applied (Const (name "Eq.refl", [ one ])) [ k_type (); k_value () ]
     := classes = quot_of one (k_type ()) r
-    := sound = applied (Const (name "Quot.sound", [ one ])) [ k_type (); r; k_value (); k_value (); Const (name "K.rtt", []) ]
+    := sound =
+        applied (Const (name "Quot.sound", [ one ])) [ k_type (); r; k_value (); k_value (); Const (name "K.rtt", []) ]
     := truth = Const (name "K.True", [])
     := every = lam_of "a" (k_type ()) (Const (name "K.True.intro", []))
     := inducted = applied (Const (name "Quot.ind", [ one ])) [ k_type (); r; lam_of "q" classes truth; every; made ]
@@ -237,29 +286,52 @@
     := pred = pi_of "a" (BVar 0i32) (prop_sort ())
     := witnessed = pi_of "h" (App (BVar 1i32, BVar 0i32)) (App (App (ex, BVar 3i32), BVar 2i32))
     := intro = pi_of "A" (type_sort ()) (pi_of "P" pred (pi_of "w" (BVar 1i32) witnessed))
-    Inductive (name "K.Ex", [], 2i32, pi_of "A" (type_sort ()) (pi_of "P" pred (prop_sort ())), [ name "K.Ex.intro", intro ])
+    Inductive (
+        name "K.Ex",
+        [],
+        2i32,
+        pi_of "A" (type_sort ()) (pi_of "P" pred (prop_sort ())),
+        [ name "K.Ex.intro", intro ]
+    )
 
 :~ both_family () : inductive =
     := truth = Const (name "K.True", [])
     := intro = pi_of "l" truth (pi_of "r" truth (Const (name "K.Both", [])))
     Inductive (name "K.Both", [], 0i32, prop_sort (), [ name "K.Both.intro", intro ])
 
-:~ k_exists () : term = App (App (Const (name "K.Ex", []), k_type ()), lam_of "x" (k_type ()) (Const (name "K.True", [])))
+:~ k_exists () : term =
+    App (App (Const (name "K.Ex", []), k_type ()), lam_of "x" (k_type ()) (Const (name "K.True", [])))
 
 :~ structure_corpus () : list entry =
     := one = Succ Zero
     := made = App (App (Const (name "K.Pair", []), BVar 3i32), BVar 2i32)
     := mk = pi_of "A" (type_sort ()) (pi_of "B" (type_sort ()) (pi_of "a" (BVar 1i32) (pi_of "b" (BVar 1i32) made)))
-    := family = Inductive (name "K.Pair", [], 2i32, pi_of "A" (type_sort ()) (pi_of "B" (type_sort ()) (type_sort ())), [ name "K.Pair.mk", mk ])
+    := family =
+        Inductive (
+            name "K.Pair",
+            [],
+            2i32,
+            pi_of "A" (type_sort ()) (pi_of "B" (type_sort ()) (type_sort ())),
+            [ name "K.Pair.mk", mk ]
+        )
     := built = applied (Const (name "K.Pair.mk", [])) [ k_type (); k_type (); k_value (); Const (name "K.t2", []) ]
     := p = BVar 0i32
-    := rebuilt = applied (Const (name "K.Pair.mk", [])) [ k_type (); k_type (); Proj (name "K.Pair", 0i32, p); Proj (name "K.Pair", 1i32, p) ]
+    := rebuilt =
+        applied (Const (name "K.Pair.mk", [])) [
+            k_type ()
+            k_type ()
+            Proj (name "K.Pair", 0i32, p)
+            Proj (name "K.Pair", 1i32, p)
+        ]
     := eta_type = pi_of "p" (k_pair ()) (eq_of one (k_pair ()) p rebuilt)
     := eta_proof = lam_of "p" (k_pair ()) (applied (Const (name "Eq.refl", [ one ])) [ k_pair (); p ])
     [
         Family family
         Judge (k_type (), Proj (name "K.Pair", 0i32, built))
-        Judge (eq_of one (k_type ()) (Proj (name "K.Pair", 1i32, built)) (Const (name "K.t2", [])), applied (Const (name "Eq.refl", [ one ])) [ k_type (); Const (name "K.t2", []) ])
+        Judge (
+            eq_of one (k_type ()) (Proj (name "K.Pair", 1i32, built)) (Const (name "K.t2", [])),
+            applied (Const (name "Eq.refl", [ one ])) [ k_type (); Const (name "K.t2", []) ]
+        )
         Judge (eta_type, eta_proof)
         Judge (k_type (), Proj (name "K.Pair", 2i32, built))
         Family (exists_family ())
@@ -282,18 +354,35 @@
     := forest = Const (name "K.MForest", [])
     := node = Inductive (name "K.MTree", [], 0i32, type_sort (), [ name "K.MTree.node", pi_of "f" forest tree ])
     := cons = pi_of "t" tree (pi_of "f" forest forest)
-    := grove_family = Inductive (name "K.MForest", [], 0i32, type_sort (), [ name "K.MForest.nil", forest; name "K.MForest.cons", cons ])
+    := grove_family =
+        Inductive (
+            name "K.MForest",
+            [],
+            0i32,
+            type_sort (),
+            [ name "K.MForest.nil", forest; name "K.MForest.cons", cons ]
+        )
     := bad_tree = Const (name "K.BTree", [])
     := bad_forest = Const (name "K.BForest", [])
-    := bad_node = Inductive (name "K.BTree", [], 0i32, type_sort (), [ name "K.BTree.node", pi_of "f" bad_forest bad_tree ])
-    := bad = Inductive (name "K.BForest", [], 0i32, type_sort (), [ name "K.BForest.bad", pi_of "k" (pi_of "x" bad_tree bad_tree) bad_forest ])
+    := bad_node =
+        Inductive (name "K.BTree", [], 0i32, type_sort (), [ name "K.BTree.node", pi_of "f" bad_forest bad_tree ])
+    := bad =
+        Inductive (
+            name "K.BForest",
+            [],
+            0i32,
+            type_sort (),
+            [ name "K.BForest.bad", pi_of "k" (pi_of "x" bad_tree bad_tree) bad_forest ]
+        )
     := nil = Const (name "K.MForest.nil", [])
     := leaf = App (Const (name "K.MTree.node", []), nil)
     := grove = App (Const (name "K.MTree.node", []), applied (Const (name "K.MForest.cons", [])) [ leaf; nil ])
     := on_node = lam_of "f" forest (lam_of "ih" (k_nat ()) (BVar 0i32))
-    := on_cons = lam_of "t" tree (lam_of "f" forest (lam_of "it" (k_nat ()) (lam_of "if" (k_nat ()) (k_succ (BVar 0i32)))))
+    := on_cons =
+        lam_of "t" tree (lam_of "f" forest (lam_of "it" (k_nat ()) (lam_of "if" (k_nat ()) (k_succ (BVar 0i32)))))
     := motives = [ lam_of "t" tree (k_nat ()); lam_of "f" forest (k_nat ()) ]
-    := count = applied (Const (name "K.MTree.rec", [ one ])) (followed_terms motives [ on_node; k_zero (); on_cons; grove ])
+    := count =
+        applied (Const (name "K.MTree.rec", [ one ])) (followed_terms motives [ on_node; k_zero (); on_cons; grove ])
     := counted = eq_of one (k_nat ()) count (k_succ (k_zero ()))
     [
         Mutual [ bad_node; bad ]
@@ -317,9 +406,15 @@
     := negt = Const (name "K.NegT", [])
     := bad = Inductive (name "K.NegT", [], 0i32, type_sort (), [ name "K.NegT.t", pi_of "n" (neg_of negt) negt ])
     := on_node = lam_of "cs" ntrees (lam_of "ih" (k_nat ()) (BVar 0i32))
-    := on_cons = lam_of "h" ntree (lam_of "tl" ntrees (lam_of "ih_h" (k_nat ()) (lam_of "ih_tl" (k_nat ()) (k_succ (BVar 0i32)))))
+    := on_cons =
+        lam_of
+            "h"
+            ntree
+            (lam_of "tl" ntrees (lam_of "ih_h" (k_nat ()) (lam_of "ih_tl" (k_nat ()) (k_succ (BVar 0i32)))))
     := motives = [ lam_of "t" ntree (k_nat ()); lam_of "l" ntrees (k_nat ()) ]
-    := over = \ (r : string) (major : term) => applied (Const (name r, [ one ])) (followed_terms motives [ on_node; k_zero (); on_cons; major ])
+    := over =
+        \ (r : string) (major : term) =>
+            applied (Const (name r, [ one ])) (followed_terms motives [ on_node; k_zero (); on_cons; major ])
     := two = k_succ (k_succ (k_zero ()))
     := counted = eq_of one (k_nat ()) (over "K.NTree.rec_1" pair) two
     [
@@ -350,16 +445,36 @@
     := two = Succ (Succ Zero)
     := h_ty = k_eq two (type_sort ()) (k_type ()) (k_type ())
     := motive = lam_of "b" (type_sort ()) (lam_of "h" (k_eq two (type_sort ()) (k_type ()) (BVar 0i32)) (BVar 1i32))
-    := moved = applied (Const (name "K.Eq.rec", [ one; two ])) [ type_sort (); k_type (); motive; k_value (); k_type (); BVar 0i32 ]
+    := moved =
+        applied (Const (name "K.Eq.rec", [ one; two ])) [
+            type_sort ()
+            k_type ()
+            motive
+            k_value ()
+            k_type ()
+            BVar 0i32
+        ]
     := ty = pi_of "h" h_ty (k_eq one (k_type ()) moved (k_value ()))
     := refl_v = applied (Const (name "K.Eq.refl", [ one ])) [ k_type (); k_value () ]
     := h_by_delta = k_eq two (type_sort ()) (k_type ()) (applied (k_id two) [ type_sort (); k_type () ])
-    := moved_delta = applied (Const (name "K.Eq.rec", [ one; two ])) [ type_sort (); k_type (); motive; k_value (); applied (k_id two) [ type_sort (); k_type () ]; BVar 0i32 ]
+    := moved_delta =
+        applied (Const (name "K.Eq.rec", [ one; two ])) [
+            type_sort ()
+            k_type ()
+            motive
+            k_value ()
+            applied (k_id two) [ type_sort (); k_type () ]
+            BVar 0i32
+        ]
     := ty_delta = pi_of "h" h_by_delta (k_eq one (k_type ()) moved_delta (k_value ()))
     := unit = Const (name "K.Unit", [])
     := unit_family = Inductive (name "K.Unit", [], 0i32, type_sort (), [ name "K.Unit.unit", unit ])
-    := proofs_ty = pi_of "P" (prop_sort ()) (pi_of "p" (BVar 0i32) (pi_of "q" (BVar 1i32) (k_eq Zero (BVar 2i32) (BVar 1i32) (BVar 0i32))))
-    := proofs_v = lam_of "P" (prop_sort ()) (lam_of "p" (BVar 0i32) (lam_of "q" (BVar 1i32) (applied (Const (name "K.Eq.refl", [ Zero ])) [ BVar 2i32; BVar 1i32 ])))
+    := proofs_ty =
+        pi_of "P" (prop_sort ()) (pi_of "p" (BVar 0i32) (pi_of "q" (BVar 1i32) (k_eq Zero (BVar 2i32) (BVar 1i32) (
+            BVar 0i32))))
+    := proofs_v =
+        lam_of "P" (prop_sort ()) (lam_of "p" (BVar 0i32) (lam_of "q" (BVar 1i32) (
+            applied (Const (name "K.Eq.refl", [ Zero ])) [ BVar 2i32; BVar 1i32 ])))
     := units_ty = pi_of "x" unit (pi_of "y" unit (k_eq one unit (BVar 1i32) (BVar 0i32)))
     := units_v = lam_of "x" unit (lam_of "y" unit (applied (Const (name "K.Eq.refl", [ one ])) [ unit; BVar 1i32 ]))
     [
@@ -383,9 +498,22 @@
     := step = lam_of "n" nat (lam_of "ih" nat (BVar 1i32))
     := pred_three = applied (Const (name "Nat.rec", [ one ])) [ lam_of "n" nat nat; zero_c; step; NatLit 3u64 ]
     := binary = pi_of "n" nat (pi_of "m" nat nat)
-    := recurse_on_m = \ (base : term) (next : term) => lam_of "n" nat (lam_of "m" nat (applied (Const (name "Nat.rec", [ one ])) [ lam_of "k" nat nat; base; next; BVar 0i32 ]))
-    := add_body = recurse_on_m (BVar 1i32) (lam_of "k" nat (lam_of "ih" nat (App (Const (name "Nat.succ", []), BVar 0i32))))
-    := mul_body = recurse_on_m zero_c (lam_of "k" nat (lam_of "ih" nat (applied (Const (name "Nat.add", [])) [ BVar 0i32; BVar 3i32 ])))
+    := recurse_on_m =
+        \ (base : term) (next : term) =>
+            lam_of
+                "n"
+                nat
+                (
+                    lam_of
+                        "m"
+                        nat
+                        (applied (Const (name "Nat.rec", [ one ])) [ lam_of "k" nat nat; base; next; BVar 0i32 ])
+                )
+    := add_body =
+        recurse_on_m (BVar 1i32) (lam_of "k" nat (lam_of "ih" nat (App (Const (name "Nat.succ", []), BVar 0i32))))
+    := mul_body =
+        recurse_on_m zero_c (lam_of "k" nat (lam_of "ih" nat (
+            applied (Const (name "Nat.add", [])) [ BVar 0i32; BVar 3i32 ])))
     := op = \ (o : string) (a : term) (b : term) => applied (Const (name o, [])) [ a; b ]
     := refl_at = \ (k : u64) => applied (Const (name "Eq.refl", [ one ])) [ nat; NatLit k ]
     := bool = Const (name "Bool", [])
@@ -397,7 +525,10 @@
         Builtin (Def (name "Nat.add", [], binary, add_body))
         Builtin (Def (name "Nat.mul", [], binary, mul_body))
         Judge (eq_of one nat (op "Nat.add" (NatLit 2u64) (NatLit 3u64)) (NatLit 5u64), refl_at 5u64)
-        Judge (eq_of one nat (op "Nat.add" (NatLit 2u64) (App (Const (name "Nat.succ", []), zero_c))) (NatLit 3u64), refl_at 3u64)
+        Judge (
+            eq_of one nat (op "Nat.add" (NatLit 2u64) (App (Const (name "Nat.succ", []), zero_c))) (NatLit 3u64),
+            refl_at 3u64
+        )
         Judge (eq_of one nat (op "Nat.mul" (NatLit 6u64) (NatLit 7u64)) (NatLit 42u64), refl_at 42u64)
         Judge (eq_of one nat (op "Nat.mul" (NatLit 2u64) (NatLit 3u64)) (NatLit 5u64), refl_at 5u64)
         Prelude (Inductive (name "Bool", [], 0i32, type_sort (), [ name "Bool.false", bool; name "Bool.true", bool ]))
@@ -428,8 +559,15 @@
     := u = Param (name "u")
     := list_of = \ (a : term) => App (Const (name "List", [ u ]), a)
     := nil = pi_of "α" (Sort (Succ u)) (list_of (BVar 0i32))
-    := cons = pi_of "α" (Sort (Succ u)) (pi_of "head" (BVar 0i32) (pi_of "tail" (list_of (BVar 1i32)) (list_of (BVar 2i32))))
-    Inductive (name "List", [ name "u" ], 1i32, pi_of "α" (Sort (Succ u)) (Sort (Succ u)), [ name "List.nil", nil; name "List.cons", cons ])
+    := cons =
+        pi_of "α" (Sort (Succ u)) (pi_of "head" (BVar 0i32) (pi_of "tail" (list_of (BVar 1i32)) (list_of (BVar 2i32))))
+    Inductive (
+        name "List",
+        [ name "u" ],
+        1i32,
+        pi_of "α" (Sort (Succ u)) (Sort (Succ u)),
+        [ name "List.nil", nil; name "List.cons", cons ]
+    )
 
 :~ string_corpus () : list entry =
     := nat = Const (name "Nat", [])
@@ -452,13 +590,51 @@
         Judge (eq_of one string (StrLit "ab") (StrLit "ba"), refl_of "ab")
         Judge (eq_of one string (StrLit "ab") (of_list (cons (ch 97u64) (cons (ch 99u64) nil))), refl_of "ab")
         Judge (eq_of one string (StrLit "") (of_list nil), refl_of "")
-        Judge (eq_of one (Const (name "Bool", [])) (applied (Const (name "Nat.ble", [])) [ NatLit 1u64; BigNat "18446744073709551616" ]) (Const (name "Bool.true", [])), applied (Const (name "Eq.refl", [ one ])) [ Const (name "Bool", []); Const (name "Bool.true", []) ])
-        Judge (eq_of one nat (BigNat "18446744073709551616") (App (Const (name "Nat.succ", []), NatLit 18446744073709551615u64)), applied (Const (name "Eq.refl", [ one ])) [ nat; BigNat "18446744073709551616" ])
-        Judge (eq_of one (Const (name "Bool", [])) (applied (Const (name "Nat.beq", [])) [ BigNat "18446744073709551616"; NatLit 18446744073709551615u64 ]) (Const (name "Bool.true", [])), applied (Const (name "Eq.refl", [ one ])) [ Const (name "Bool", []); Const (name "Bool.true", []) ])
-        Judge (eq_of one (Const (name "Bool", [])) (applied (Const (name "Nat.ble", [])) [ App (Const (name "Nat.succ", []), NatLit 55296u64); NatLit 4294967296u64 ]) (Const (name "Bool.true", [])), applied (Const (name "Eq.refl", [ one ])) [ Const (name "Bool", []); Const (name "Bool.true", []) ])
+        Judge (
+            eq_of one
+                (Const (name "Bool", []))
+                (applied (Const (name "Nat.ble", [])) [ NatLit 1u64; BigNat "18446744073709551616" ])
+                (Const (name "Bool.true", [])),
+            applied (Const (name "Eq.refl", [ one ])) [ Const (name "Bool", []); Const (name "Bool.true", []) ]
+        )
+        Judge (
+            eq_of one nat
+                (BigNat "18446744073709551616")
+                (App (Const (name "Nat.succ", []), NatLit 18446744073709551615u64)),
+            applied (Const (name "Eq.refl", [ one ])) [ nat; BigNat "18446744073709551616" ]
+        )
+        Judge (
+            eq_of one
+                (Const (name "Bool", []))
+                (applied (Const (name "Nat.beq", [])) [ BigNat "18446744073709551616"; NatLit 18446744073709551615u64 ])
+                (Const (name "Bool.true", [])),
+            applied (Const (name "Eq.refl", [ one ])) [ Const (name "Bool", []); Const (name "Bool.true", []) ]
+        )
+        Judge (
+            eq_of one
+                (Const (name "Bool", []))
+                (
+                    applied (Const (name "Nat.ble", [])) [
+                        App (Const (name "Nat.succ", []), NatLit 55296u64)
+                        NatLit 4294967296u64
+                    ]
+                )
+                (Const (name "Bool.true", [])),
+            applied (Const (name "Eq.refl", [ one ])) [ Const (name "Bool", []); Const (name "Bool.true", []) ]
+        )
         Builtin (Axiom (name "Nat.sub", [], pi_of "n" nat (pi_of "m" nat nat)))
-        Judge (eq_of one nat (applied (Const (name "Nat.pow", [])) [ NatLit 2u64; NatLit 64u64 ]) (BigNat "18446744073709551616"), applied (Const (name "Eq.refl", [ one ])) [ nat; BigNat "18446744073709551616" ])
-        Judge (eq_of one nat (applied (Const (name "Nat.sub", [])) [ BigNat "18446744073709551616"; NatLit 1u64 ]) (NatLit 18446744073709551615u64), applied (Const (name "Eq.refl", [ one ])) [ nat; NatLit 18446744073709551615u64 ])
+        Judge (
+            eq_of one nat
+                (applied (Const (name "Nat.pow", [])) [ NatLit 2u64; NatLit 64u64 ])
+                (BigNat "18446744073709551616"),
+            applied (Const (name "Eq.refl", [ one ])) [ nat; BigNat "18446744073709551616" ]
+        )
+        Judge (
+            eq_of one nat
+                (applied (Const (name "Nat.sub", [])) [ BigNat "18446744073709551616"; NatLit 1u64 ])
+                (NatLit 18446744073709551615u64),
+            applied (Const (name "Eq.refl", [ one ])) [ nat; NatLit 18446744073709551615u64 ]
+        )
     ]
 
 :~ ^ bumped (t : term) : term =
@@ -491,14 +667,29 @@
     := intro = Const (name "K.True.intro", [])
     := large = applied (Const (name "K.True.rec", [ two ])) [ lam_of "t" truth (type_sort ()); k_type (); intro ]
     := either = Const (name "K.Either", [])
-    := either_family = Inductive (name "K.Either", [], 0i32, prop_sort (), [ name "K.Either.left", either; name "K.Either.right", either ])
+    := either_family =
+        Inductive (
+            name "K.Either",
+            [],
+            0i32,
+            prop_sort (),
+            [ name "K.Either.left", either; name "K.Either.right", either ]
+        )
     := either_large =
-        applied (Const (name "K.Either.rec", [])) [ lam_of "t" either (type_sort ()); k_type (); k_type (); Const (name "K.Either.left", []) ]
+        applied (Const (name "K.Either.rec", [])) [
+            lam_of "t" either (type_sort ())
+            k_type ()
+            k_type ()
+            Const (name "K.Either.left", [])
+        ]
     [
         Family (nat_family ())
         Judge (k_type (), nat_rec (Succ Zero) (k_type ()) (k_value ()) (BVar 0i32) (k_zero ()))
         Judge (nat_rec two (type_sort ()) (k_type ()) (BVar 0i32) (k_zero ()), k_value ())
-        Judge (nat_rec two (type_sort ()) (k_type ()) (pi_of "x" (k_type ()) (k_type ())) (k_succ (k_zero ())), k_value ())
+        Judge (
+            nat_rec two (type_sort ()) (k_type ()) (pi_of "x" (k_type ()) (k_type ())) (k_succ (k_zero ())),
+            k_value ()
+        )
         Family (true_family ())
         Judge (type_sort (), large)
         Family either_family
@@ -545,7 +736,10 @@
 ///- --timeout 900000
 ///> rust
 :# kernel_verdicts_are_written_beside_their_lean_source =
-    := later = followed_by (conversion_corpus ()) (followed_by (quotient_corpus ()) (followed_by (structure_corpus ()) (followed_by (mutual_corpus ()) (followed_by (nested_corpus ()) (followed_by (universe_corpus ()) (followed_by (k_like_corpus ()) (followed_by (literal_corpus ()) (string_corpus ()))))))))
+    := later =
+        followed_by (conversion_corpus ()) (followed_by (quotient_corpus ()) (followed_by (structure_corpus ()) (
+            followed_by (mutual_corpus ()) (followed_by (nested_corpus ()) (followed_by (universe_corpus ()) (
+            followed_by (k_like_corpus ()) (followed_by (literal_corpus ()) (string_corpus ()))))))))
     := families = followed_by (inductive_corpus ()) (followed_by (family_corpus ()) later)
     := entries = followed_by (corpus ()) families
     := _ = file_system::write_all_text (oracle_path ()) (lean_file (with_mutants entries))

@@ -95,19 +95,32 @@
     | Builder : builder
 
 := tool_of (name : string) : option tool =
-    ? name = "rust" ?> Some ForRust
-    |? name = "fsharp" || name = "fs" ?> Some ForFsharp
-    |? name = "typescript" || name = "ts" ?> Some ForTypescript
-    |? name = "python" || name = "py" ?> Some ForPython
-    |? name = "cuda" ?> Some ForCuda
-    |? name = "cpp" ?> Some ForCpp
-    |? name = "gleam" ?> Some ForGleam
-    |? name = "lua" ?> Some ForLua
-    |? name = "c" ?> Some ForC
-    |? name = "pascal" || name = "delphi" ?> Some ForPascal
-    |? name = "zig" ?> Some ForZig
-    |? name = "lean" ?> Some ForLean
-    |? name = "wgsl" ?> Some ForWgsl
+    ? name = "rust"
+    ?> Some ForRust
+    |? name = "fsharp" || name = "fs"
+    ?> Some ForFsharp
+    |? name = "typescript" || name = "ts"
+    ?> Some ForTypescript
+    |? name = "python" || name = "py"
+    ?> Some ForPython
+    |? name = "cuda"
+    ?> Some ForCuda
+    |? name = "cpp"
+    ?> Some ForCpp
+    |? name = "gleam"
+    ?> Some ForGleam
+    |? name = "lua"
+    ?> Some ForLua
+    |? name = "c"
+    ?> Some ForC
+    |? name = "pascal" || name = "delphi"
+    ?> Some ForPascal
+    |? name = "zig"
+    ?> Some ForZig
+    |? name = "lean"
+    ?> Some ForLean
+    |? name = "wgsl"
+    ?> Some ForWgsl
     |: None
 
 := tool_name (t : tool) : string =
@@ -126,22 +139,29 @@
     | ForLean => "lean"
     | ForWgsl => "wgsl"
 
-:= expected () : string = "rust, fsharp, typescript, python, cuda, cpp, gleam, lua, c, pascal, delphi, zig, lean, or wgsl"
+:= expected () : string =
+    "rust, fsharp, typescript, python, cuda, cpp, gleam, lua, c, pascal, delphi, zig, lean, or wgsl"
 
 := deps_long (name : string) : option flag_kind = ? name = "deps" ?> Some TakesDeps |: None
 
 := deps_short (letter : string) : option flag_kind = ? letter = "d" ?> Some TakesDeps |: None
 
 := rust_long (name : string) : option flag_kind =
-    ? name = "contract" ?> Some (TakesOptional FContract)
-    |? name = "wasm" ?> Some (TakesOptional FWasm)
-    |? name = "cleanup" ?> Some TakesCleanup
+    ? name = "contract"
+    ?> Some (TakesOptional FContract)
+    |? name = "wasm"
+    ?> Some (TakesOptional FWasm)
+    |? name = "cleanup"
+    ?> Some TakesCleanup
     |: deps_long name
 
 := rust_short (letter : string) : option flag_kind =
-    ? letter = "c" ?> Some (TakesOptional FContract)
-    |? letter = "w" ?> Some (TakesOptional FWasm)
-    |? letter = "l" ?> Some TakesCleanup
+    ? letter = "c"
+    ?> Some (TakesOptional FContract)
+    |? letter = "w"
+    ?> Some (TakesOptional FWasm)
+    |? letter = "l"
+    ?> Some TakesCleanup
     |: deps_short letter
 
 := long_flag (t : tool) (name : string) : option flag_kind =
@@ -163,7 +183,13 @@
     | _ => None
 
 := blank (t : tool) (raw : string) : builder =
-    { tool = t; raw = raw; values = { contract = None; wasm = None; target = None; env = None }; deps = []; cleanup = None }
+    {
+        tool = t
+        raw = raw
+        values = { contract = None; wasm = None; target = None; env = None }
+        deps = []
+        cleanup = None
+    }
 
 := set_value (f : field) (v : string) (x : builder_values) : builder_values =
     ?= f ?|
@@ -176,20 +202,35 @@
 
 := upper_hex (n : i32) : string = text::one "0123456789ABCDEF" n
 
-:= hex4_upper (c : i32) : string = upper_hex (c / 4096i32 % 16i32) ++ upper_hex (c / 256i32 % 16i32) ++ upper_hex (c / 16i32 % 16i32) ++ upper_hex (c % 16i32)
+:= hex4_upper (c : i32) : string =
+    upper_hex (c / 4096i32 % 16i32)
+    ++ upper_hex (c / 256i32 % 16i32)
+    ++ upper_hex (c / 16i32 % 16i32)
+    ++ upper_hex (c % 16i32)
 
 := named_escape (c : i32) : string =
-    ? c = 7i32 ?> "\\a"
-    |? c = 8i32 ?> "\\b"
-    |? c = 9i32 ?> "\\t"
-    |? c = 10i32 ?> "\\n"
-    |? c = 11i32 ?> "\\v"
-    |? c = 12i32 ?> "\\f"
-    |? c = 13i32 ?> "\\r"
-    |? c = 27i32 ?> "\\e"
-    |? c = 127i32 ?> "\\d"
-    |? c = 34i32 ?> "\\\""
-    |? c = 92i32 ?> "\\\\"
+    ? c = 7i32
+    ?> "\\a"
+    |? c = 8i32
+    ?> "\\b"
+    |? c = 9i32
+    ?> "\\t"
+    |? c = 10i32
+    ?> "\\n"
+    |? c = 11i32
+    ?> "\\v"
+    |? c = 12i32
+    ?> "\\f"
+    |? c = 13i32
+    ?> "\\r"
+    |? c = 27i32
+    ?> "\\e"
+    |? c = 127i32
+    ?> "\\d"
+    |? c = 34i32
+    ?> "\\\""
+    |? c = 92i32
+    ?> "\\\\"
     |: ""
 
 := within (c : i32) (lo : i32) (hi : i32) : bool = c >= lo && c <= hi
@@ -203,24 +244,35 @@
 
 :~ ^ printable_from (s : string) (i : i32) : bool =
     := w = json_value::utf8_width_at s i
-    ? i >= text::length s ?> !+
-    |? json_value::at s i < 128i32 ?> ? unprintable (json_value::at s i) ?> !- |: printable_from s (i + 1i32)
-    |? w = 0i32 || unprintable (text::code_point s i) ?> !-
+    ? i >= text::length s
+    ?> !+
+    |? json_value::at s i < 128i32
+    ?> ? unprintable (json_value::at s i) ?> !- |: printable_from s (i + 1i32)
+    |? w = 0i32 || unprintable (text::code_point s i)
+    ?> !-
     |: printable_from s (i + w)
 
 :~ ^ bytes_from (s : string) (i : i32) (acc : string) : string =
-    ? i >= text::length s ?> acc
-    |: bytes_from s (i + 1i32) (? i = 0i32 ?> text::show_i32 (text::byte_at s i) |: acc ++ ", " ++ text::show_i32 (text::byte_at s i))
+    ? i >= text::length s
+    ?> acc
+    |:
+        bytes_from s
+            (i + 1i32)
+            (? i = 0i32 ?> text::show_i32 (text::byte_at s i) |: acc ++ ", " ++ text::show_i32 (text::byte_at s i))
 
 :~ ^ quoted_from (s : string) (i : i32) (acc : string) : string =
     := b = json_value::at s i
     := w = ? b < 128i32 ?> 1i32 |: json_value::utf8_width_at s i
     := c = ? b < 128i32 ?> b |: text::code_point s i
     := named = named_escape c
-    ? i >= text::length s ?> acc
-    |? named <> "" ?> quoted_from s (i + 1i32) (acc ++ named)
-    |? c = 35i32 && json_value::at s (i + 1i32) = 123i32 ?> quoted_from s (i + 1i32) (acc ++ "\\#")
-    |? unicode_escaped c ?> quoted_from s (i + w) (acc ++ "\\u" ++ hex4_upper c)
+    ? i >= text::length s
+    ?> acc
+    |? named <> ""
+    ?> quoted_from s (i + 1i32) (acc ++ named)
+    |? c = 35i32 && json_value::at s (i + 1i32) = 123i32
+    ?> quoted_from s (i + 1i32) (acc ++ "\\#")
+    |? unicode_escaped c
+    ?> quoted_from s (i + w) (acc ++ "\\u" ++ hex4_upper c)
     |: quoted_from s (i + w) (acc ++ text::slice_len s i w)
 
 := inspect (s : string) : string =
@@ -239,19 +291,25 @@
     |:
         ?= q ?|
         | None =>
-            ? g = " " || g = "\t" ?> tokens_from rest "" None pushed
-            |? g = "\\" && is_quote (first_grapheme rest) ?> tokens_from (rest_graphemes rest) (current ++ first_grapheme rest) None acc
-            |? is_quote g ?> tokens_from rest current (Some g) acc
+            ? g = " " || g = "\t"
+            ?> tokens_from rest "" None pushed
+            |? g = "\\" && is_quote (first_grapheme rest)
+            ?> tokens_from (rest_graphemes rest) (current ++ first_grapheme rest) None acc
+            |? is_quote g
+            ?> tokens_from rest current (Some g) acc
             |: tokens_from rest (current ++ g) None acc
         | Some open_q =>
-            ? g = "\\" && first_grapheme rest = open_q ?> tokens_from (rest_graphemes rest) (current ++ open_q) q acc
-            |? g = open_q ?> tokens_from rest current None acc
+            ? g = "\\" && first_grapheme rest = open_q
+            ?> tokens_from (rest_graphemes rest) (current ++ open_q) q acc
+            |? g = open_q
+            ?> tokens_from rest current None acc
             |: tokens_from rest (current ++ g) q acc
 
 := ends_with (s : string) (p : string) : bool =
     text::length s >= text::length p && text::starts_at s (text::length s - text::length p) p
 
-:= quoted_by (v : string) (mark : string) : bool = text::starts_with v mark && ends_with v mark && text::length v >= 2i32
+:= quoted_by (v : string) (mark : string) : bool =
+    text::starts_with v mark && ends_with v mark && text::length v >= 2i32
 
 := unquoted (v : string) : string =
     := n = grapheme_count v
@@ -259,15 +317,19 @@
 
 := dep_of (token : string) : dep =
     := k = text::find_from token "=" 0i32
-    ? k >= 0i32 ?> { name = text::take token k; version = Version (unquoted (text::drop token (k + 1i32))); raw = token }
-    |? ends_with token "]" ?> { name = token; version = NoVersion; raw = token }
+    ? k >= 0i32
+    ?> { name = text::take token k; version = Version (unquoted (text::drop token (k + 1i32))); raw = token }
+    |? ends_with token "]"
+    ?> { name = token; version = NoVersion; raw = token }
     |: { name = token; version = AnyVersion; raw = token }
 
 := is_flag_token (t : string) : bool = text::starts_with t "-" && t <> "-"
 
 := bool_of (v : string) (flag : string) : result bool string =
-    ? v = "true" ?> Ok !+
-    |? v = "false" ?> Ok !-
+    ? v = "true"
+    ?> Ok !+
+    |? v = "false"
+    ?> Ok !-
     |: Error ("expected true or false for " ++ flag ++ ", got: " ++ inspect v)
 
 :~ ^ deps_run (tokens : list string) (taken : list dep) : list dep * list string =
@@ -289,15 +351,26 @@
 
 := cleanup_step (rest : list string) (b : builder) : builder * list string =
     ?= rest ?|
-    | next :: left => ? next = "true" ?> { b ?| cleanup = Some !+ }, left |? next = "false" ?> { b ?| cleanup = Some !- }, left |: { b ?| cleanup = Some !- }, rest
+    | next :: left =>
+        ? next = "true"
+        ?> { b ?| cleanup = Some !+ }, left
+        |? next = "false"
+        ?> { b ?| cleanup = Some !- }, left
+        |: { b ?| cleanup = Some !- }, rest
     | [] => { b ?| cleanup = Some !- }, rest
 
-:= optional_flag (f : field) (value : inline) (rest : list string) (b : builder) : result (builder * list string) string =
+:= optional_flag
+    (f : field) (value : inline) (rest : list string) (b : builder)
+    : result (builder * list string) string
+    =
     ?= value ?|
     | Inline v => Ok (with_value f v b, rest)
     | Bare => optional_step f rest b
 
-:= one_flag (f : field) (value : inline) (rest : list string) (b : builder) (flag : string) : result (builder * list string) string =
+:= one_flag
+    (f : field) (value : inline) (rest : list string) (b : builder) (flag : string)
+    : result (builder * list string) string
+    =
     ?= value ?|
     | Inline v => Ok (with_value f v b, rest)
     | Bare => one_step f rest b flag
@@ -306,29 +379,42 @@
     := taken, left = deps_run rest []
     ? listm::length taken = 0i32 ?> Error ("expected a dependency name for " ++ flag) |: Ok (add_deps b taken, left)
 
-:= deps_flag (value : inline) (rest : list string) (b : builder) (flag : string) : result (builder * list string) string =
+:= deps_flag
+    (value : inline) (rest : list string) (b : builder) (flag : string)
+    : result (builder * list string) string
+    =
     ?= value ?|
-    | Inline v => Ok (add_deps b [dep_of v], rest)
+    | Inline v => Ok (add_deps b [ dep_of v ], rest)
     | Bare => deps_bare rest b flag
 
-:= cleanup_inline (v : string) (rest : list string) (b : builder) (flag : string) : result (builder * list string) string =
+:= cleanup_inline
+    (v : string) (rest : list string) (b : builder) (flag : string)
+    : result (builder * list string) string
+    =
     ?= bool_of v flag ?|
     | Ok on => Ok ({ b ?| cleanup = Some on }, rest)
     | Error e => Error e
 
-:= cleanup_flag (value : inline) (rest : list string) (b : builder) (flag : string) : result (builder * list string) string =
+:= cleanup_flag
+    (value : inline) (rest : list string) (b : builder) (flag : string)
+    : result (builder * list string) string
+    =
     ?= value ?|
     | Inline v => cleanup_inline v rest b flag
     | Bare => Ok (cleanup_step rest b)
 
-:= apply_flag (kind : flag_kind) (value : inline) (rest : list string) (b : builder) (flag : string) : result (builder * list string) string =
+:= apply_flag
+    (kind : flag_kind) (value : inline) (rest : list string) (b : builder) (flag : string)
+    : result (builder * list string) string
+    =
     ?= kind ?|
     | TakesOptional f => optional_flag f value rest b
     | TakesOne f => one_flag f value rest b flag
     | TakesDeps => deps_flag value rest b flag
     | TakesCleanup => cleanup_flag value rest b flag
 
-:= unknown_flag (flag : string) : result (builder * list string) string = Error ("unknown builder flag " ++ inspect flag)
+:= unknown_flag (flag : string) : result (builder * list string) string =
+    Error ("unknown builder flag " ++ inspect flag)
 
 := consuming (kind : flag_kind) : bool =
     ?= kind ?|
@@ -345,13 +431,16 @@
     := letter = first_grapheme letters
     := others = rest_graphemes letters
     := flag = "-" ++ letter
-    ? letters = "" ?> Ok (b, rest)
+    ? letters = ""
+    ?> Ok (b, rest)
     |:
         ?= short_flag t letter ?|
         | None => unknown_flag flag
         | Some kind =>
-            ? consuming kind && others <> "" ?> Error ("builder flag " ++ flag ++ " must be the last flag in -" ++ letter ++ others)
-            |? consuming kind ?> apply_flag kind Bare rest b flag
+            ? consuming kind && others <> ""
+            ?> Error ("builder flag " ++ flag ++ " must be the last flag in -" ++ letter ++ others)
+            |? consuming kind
+            ?> apply_flag kind Bare rest b flag
             |:
                 ?= apply_flag kind (cluster_value kind) [] b flag ?|
                 | Ok (next, _) => cluster t others rest next
@@ -372,7 +461,8 @@
     ?= value ?|
     | Bare => cluster t letters rest b
     | Inline v =>
-        ? grapheme_count letters <> 1i32 ?> unknown_flag token
+        ? grapheme_count letters <> 1i32
+        ?> unknown_flag token
         |:
             ?= short_flag t letters ?|
             | Some kind => apply_flag kind (Inline v) rest b ("-" ++ letters)
@@ -382,12 +472,18 @@
     ?= tokens ?|
     | [] => Ok b
     | token :: rest =>
-        := step = ? text::starts_with token "--" ?> long_step t token rest b |? is_flag_token token ?> short_step t token rest b |: Error ("unexpected builder argument " ++ inspect token)
+        := step =
+            ? text::starts_with token "--"
+            ?> long_step t token rest b
+            |? is_flag_token token
+            ?> short_step t token rest b
+            |: Error ("unexpected builder argument " ++ inspect token)
         ?= step ?|
         | Ok (next, left) => parse_tokens t left next
         | Error e => Error e
 
-:= unknown_backend (name : string) : result command string = Error ("unknown Spiral backend " ++ inspect name ++ ", expected " ++ expected ())
+:= unknown_backend (name : string) : result command string =
+    Error ("unknown Spiral backend " ++ inspect name ++ ", expected " ++ expected ())
 
 := chosen_command (t : tool) (args : list string) (raw : string) : result command string =
     ?= parse_tokens t args (blank t raw) ?|
@@ -400,8 +496,11 @@
     | None => unknown_backend name
 
 := retired_skip () : result command string =
-    Error
-        "///> _ is retired: Cells infers the cells that never run. A file with any test cell never runs its main; a main that only registers exports, or that dispatches on the backend (backend_switch, ? is_rust ()), never runs. Delete the line."
+    Error (
+        "///> _ is retired: Cells infers the cells that never run. A file with any test cell never runs its main; "
+        ^^ "a main that only registers exports, or that dispatches on the backend (backend_switch, ? is_rust ()), "
+        ^^ "never runs. Delete the line."
+    )
 
 := command_of (tokens : list string) (raw : string) : result command string =
     ?= tokens ?|
@@ -410,7 +509,8 @@
         ? name <> "_" ?> named_command name args raw |: retired_skip ()
 
 := parse_command (rest : string) : result command string =
-    ? rest = "_" ?> retired_skip ()
+    ? rest = "_"
+    ?> retired_skip ()
     |:
         ?= tokens_from rest "" None [] ?|
         | Ok tokens => command_of tokens rest
@@ -423,7 +523,10 @@
     |? text::starts_with trimmed "///>" ?> Some (builder_output::utrim (text::drop trimmed 4i32))
     |: None
 
-:~ ^ split_lines (lines : list string) (body : list string) (commands : list command) : result (list command * string) string =
+:~ ^ split_lines
+    (lines : list string) (body : list string) (commands : list command)
+    : result (list command * string) string
+    =
     ?= lines ?|
     | [] => Ok (listm::rev commands, sm'::concat_list "\n" (listm::rev body))
     | line :: rest =>
@@ -434,7 +537,8 @@
             | Ok c => split_lines rest body (c :: commands)
             | Error e => Error e
 
-:= split (code : string) : result (list command * string) string = split_lines (sm'::split_list "\n" (text::replace code "\r\n" "\n")) [] []
+:= split (code : string) : result (list command * string) string =
+    split_lines (sm'::split_list "\n" (text::replace code "\r\n" "\n")) [] []
 
 := field_text (s : string) : string = text::show_i32 (text::length s) ++ ":" ++ s
 
@@ -459,7 +563,11 @@
 := builder_text (b : builder) : string =
     := v = b::values
     := head = field_text (tool_name b::tool) ++ field_text b::raw ++ option_text v::contract ++ option_text v::wasm
-    := tail = cleanup_text b::cleanup ++ option_text v::target ++ option_text v::env ++ field_text (text::show_i32 (listm::length b::deps))
+    := tail =
+        cleanup_text b::cleanup
+        ++ option_text v::target
+        ++ option_text v::env
+        ++ field_text (text::show_i32 (listm::length b::deps))
     head ++ tail ++ sm'::concat_list "" (listm::map dep_text b::deps)
 
 := command_wire (c : command) : string =
@@ -467,15 +575,31 @@
     | Builder b => builder_text b
 
 
+:= split_ok_wire (commands : list command) (body : string) : string =
+    "K"
+    ++ field_text body
+    ++ field_text (text::show_i32 (listm::length commands))
+    ++ sm'::concat_list "" (listm::map command_wire commands)
+
 := split_wire (code : string) : string =
     ?= split code ?|
-    | Ok (commands, body) => "K" ++ field_text body ++ field_text (text::show_i32 (listm::length commands)) ++ sm'::concat_list "" (listm::map command_wire commands)
+    | Ok (commands, body) => split_ok_wire commands body
     | Error e => "E" ++ e
 
 ///> gleam
 :# builder_lines_parse_into_typed_builders =
     := f = field_text
-    := head = "K" ++ f "fn main\n////> kept" ++ f "1" ++ f "rust" ++ f "rust -c --deps serde=\"1.0\" rand" ++ f "+" ++ f "-" ++ f "-" ++ f "-" ++ f "-"
+    := head =
+        "K"
+        ++ f "fn main\n////> kept"
+        ++ f "1"
+        ++ f "rust"
+        ++ f "rust -c --deps serde=\"1.0\" rand"
+        ++ f "+"
+        ++ f "-"
+        ++ f "-"
+        ++ f "-"
+        ++ f "-"
     := deps = f "2" ++ f "serde" ++ f "+1.0" ++ f "serde=1.0" ++ f "rand" ++ f "+*" ++ f "rand"
     split_wire "///> rust -c --deps serde=\"1.0\" rand\nfn main\n////> kept" |> _assert_eq (head ++ deps)
     split_wire "///> haskell" |> _assert_eq ("Eunknown Spiral backend \"haskell\", expected " ++ expected ())

@@ -141,7 +141,8 @@
     impls
     |> listm::iter \ impl_name, split =>
         :~ ^ 루프 (i : i32) : () =
-            ? i >= n ?> ()
+            ? i >= n
+            ?> ()
             |:
                 := case_name, input = cases |> am'::index i
                 run_case impl_name split case_name input

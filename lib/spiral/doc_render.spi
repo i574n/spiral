@@ -110,7 +110,8 @@
 :~ code_open (lang : string) : markup =
     ? lang = "" ?> trusted "<pre><code>" |: trusted "<pre><code class=\"language-" ++ escape lang ++ trusted "\">"
 
-:~ pre_html (lang : string) (lines : list string) : markup = code_open lang ++ code_html lines ++ trusted "</code></pre>\n"
+:~ pre_html (lang : string) (lines : list string) : markup =
+    code_open lang ++ code_html lines ++ trusted "</code></pre>\n"
 
 :~ hr () : markup = trusted "<hr>\n"
 

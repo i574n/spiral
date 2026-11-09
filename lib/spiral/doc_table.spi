@@ -14,17 +14,29 @@
     ? left && right ?> AlignCenter |? right ?> AlignRight |? left ?> AlignLeft |: AlignNone
 
 :~ ^ cell_end (s : string) (i : i32) : i32 =
-    ? i >= sm::length s ?> i
-    |? sm::index s i = '\\' && i + 1i32 < sm::length s ?> cell_end s (i + 2i32)
-    |? sm::index s i = '|' ?> i
+    ? i >= sm::length s
+    ?> i
+    |? sm::index s i = '\\' && i + 1i32 < sm::length s
+    ?> cell_end s (i + 2i32)
+    |? sm::index s i = '|'
+    ?> i
     |: cell_end s (i + 1i32)
 
+:= cell_at (s : string) (i : i32) : i32 * string =
+    := e = cell_end s i
+    e, trim (run_of s i e)
+
+:= trailing_empty (s : string) (e : i32) (x : string) : bool =
+    e >= sm::length s && x = ""
+
 :~ ^ cells_from (s : string) (i : i32) (a : list string) : list string =
-    ? i >= sm::length s ?> listm::rev a
+    ? i >= sm::length s
+    ?> listm::rev a
     |:
-        := e = cell_end s i
-        := x = trim (run_of s i e)
-        ? e >= sm::length s && x = "" ?> listm::rev a |: cells_from s (e + 1i32) (x :: a)
+        := e, x = cell_at s i
+        ? trailing_empty s e x
+        ?> listm::rev a
+        |: cells_from s (e + 1i32) (x :: a)
 
 :~ row_cells (row : string) : list string =
     := body = trim row
@@ -33,11 +45,12 @@
 :~ table_char (c : char) : bool = c = '|' || c = ':' || c = ' '
 
 :~ ^ delimiter_chars (s : string) (i : i32) (dash : bool) : bool =
-    ? i >= sm::length s ?> dash
+    ? i >= sm::length s
+    ?> dash
     |:
         := c = sm::index s i
-        ? c = '-' ?> delimiter_chars s (i + 1i32) !+
-        |? table_char c ?> delimiter_chars s (i + 1i32) dash
+        ? c = '-' || table_char c
+        ?> delimiter_chars s (i + 1i32) (dash || c = '-')
         |: !-
 
 :~ aligns_of (row : string) : option (list align) =
@@ -46,10 +59,10 @@
 ///> rust
 ///> gleam
 :# a_row_splits_into_trimmed_cells_and_keeps_escaped_pipes =
-    row_cells "| a | y \\| z |" |> _assert_eq ["a"; "y \\| z"]
+    row_cells "| a | y \\| z |" |> _assert_eq [ "a"; "y \\| z" ]
 
 ///> rust
 ///> gleam
 :# a_delimiter_row_reads_alignments_and_a_plain_row_does_not =
     (aligns_of "| :- | -: | :-: | - |", aligns_of "| a | b |")
-    |> _assert_eq (Some [AlignLeft; AlignRight; AlignCenter; AlignNone], None)
+    |> _assert_eq (Some [ AlignLeft; AlignRight; AlignCenter; AlignNone ], None)

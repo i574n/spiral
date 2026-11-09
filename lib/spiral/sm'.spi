@@ -145,7 +145,8 @@
 := obj_to_string_typescript \* t. (x : t) : string =
     $'String(!x)' : string
 := obj_to_string_wasm \* t. (x : t) : string =
-    ? (~> ?: t ?| string => !+ | _ => !-) ?> $'!x ' : string
+    ? (~> ?: t ?| string => !+ | _ => !-)
+    ?> $'!x ' : string
     |: $'backend_switch_has_no_Wasm_arm_in_lib_spiral' : string
 := obj_to_string_zig \* t. (x : t) : string =
     ? (~> ?: t ?| string => !+ | string_builder_real => !+ | _ => !-)
@@ -228,20 +229,25 @@
     |> format_debug
 
 := obj_to_string \* t. (x : t) : string =
-    ? ~> show_composite_real `t () ?> ~> show_real `t x
+    ? ~> show_composite_real `t ()
+    ?> ~> show_real `t x
     |:
         backend_switch {
-            Gleam = \ () => obj_to_string_prim x (\ () => #?*x : string)
-            Lua = \ () => obj_to_string_prim x (\ () => #?*x : string)
-            Fsharp = \ () => obj_to_string_prim x (\ () => obj_to_string_fsharp x)
-            Python = \ () => obj_to_string_prim x (\ () => obj_to_string_python x)
-            Rust = \ () => obj_to_string_prim x (\ () => obj_to_string_rust x)
-            TypeScript = \ () => obj_to_string_prim x (\ () => obj_to_string_typescript x)
-            Zig = \ () => obj_to_string_prim x (\ () => obj_to_string_zig x)
-            Lean = \ () => obj_to_string_prim x (\ () => $'toString !x ' : string)
-            Wasm = \ () => obj_to_string_prim x (\ () => obj_to_string_wasm x)
-            C = \ () => obj_to_string_prim x (\ () => failwith "sm'.obj_to_string / the C backend prints integers, bools and chars only")
-            Pascal = \ () => obj_to_string_prim x (\ () => failwith "sm'.obj_to_string / the Pascal backend prints integers, bools and chars only")
+            Gleam = \ () => obj_to_string_prim x \ () => #?*x : string
+            Lua = \ () => obj_to_string_prim x \ () => #?*x : string
+            Fsharp = \ () => obj_to_string_prim x \ () => obj_to_string_fsharp x
+            Python = \ () => obj_to_string_prim x \ () => obj_to_string_python x
+            Rust = \ () => obj_to_string_prim x \ () => obj_to_string_rust x
+            TypeScript = \ () => obj_to_string_prim x \ () => obj_to_string_typescript x
+            Zig = \ () => obj_to_string_prim x \ () => obj_to_string_zig x
+            Lean = \ () => obj_to_string_prim x \ () => $'toString !x ' : string
+            Wasm = \ () => obj_to_string_prim x \ () => obj_to_string_wasm x
+            C = \ () =>
+                obj_to_string_prim x \ () =>
+                    failwith "sm'.obj_to_string / the C backend prints integers, bools and chars only"
+            Pascal = \ () =>
+                obj_to_string_prim x \ () =>
+                    failwith "sm'.obj_to_string / the Pascal backend prints integers, bools and chars only"
         }
 
 ///> c
@@ -250,9 +256,13 @@
     |> _assert_eq ("42", "-7", "true", "x")
 
 ///> pascal
-:# obj_to_string_on_pascal_prints_ints_bools_and_chars =
-    (obj_to_string 42i32, obj_to_string (0i64 - 7), obj_to_string 18446744073709551615u64, obj_to_string !-, obj_to_string 'x')
-    |> _assert_eq ("42", "-7", "18446744073709551615", "false", "x")
+:# obj_to_string_on_pascal_prints_ints =
+    (obj_to_string 42i32, obj_to_string (0i64 - 7), obj_to_string 18446744073709551615u64)
+    |> _assert_eq ("42", "-7", "18446744073709551615")
+
+///> pascal
+:# obj_to_string_on_pascal_prints_bools_and_chars =
+    (obj_to_string !-, obj_to_string 'x') |> _assert_eq ("false", "x")
 
 ///> gleam
 ///> lua
@@ -473,8 +483,7 @@
                 set digits j (carry % 10)
                 spill (j + 1) (carry / 10)
         :~ ^ go (i : i32) (carry : i32) : i32 =
-            ? i < length
-            ?>
+            ? i < length ?>
                 := t = am'::index i digits * factor + carry
                 set digits i (t % 10)
                 go (i + 1) (t / 10)
@@ -506,7 +515,8 @@
         ? i > drop + decimals && am'::index i digits = 0 ?> leading (i - 1) |: i
     := first = leading top
     := digit_text (d : i32) : string =
-        ? d = 0 ?> "0" |? d = 1 ?> "1" |? d = 2 ?> "2" |? d = 3 ?> "3" |? d = 4 ?> "4"
+        ? d = 0
+        ?> "0" |? d = 1 ?> "1" |? d = 2 ?> "2" |? d = 3 ?> "3" |? d = 4 ?> "4"
         |? d = 5 ?> "5" |? d = 6 ?> "6" |? d = 7 ?> "7" |? d = 8 ?> "8" |: "9"
     :~ ^ text (i : i32) (acc : string) : string =
         ? i < drop
@@ -690,7 +700,8 @@
 := clip (width : i32) (s : string) : string =
     run_target \|
         | Rust => \ () =>
-            $'{ let text = &*!s; if text.chars().count() <= !width as usize { std::rc::Rc::<str>::from(text) } else { std::rc::Rc::<str>::from(text.chars().take((!width as usize).saturating_sub(3)).collect::<String>() + "...") } }' : string
+            $'{ let text = &*!s; if text.chars().count() <= !width as usize { std::rc::Rc::<str>::from(text) } else { std::rc::Rc::<str>::from(text.chars().take((!width as usize).saturating_sub(3)).collect::<String>() + "...") } }'
+            : string
         | Fsharp => \ () =>
             := count = $'(!s).Length' : i32
             ? count <= width ?> s
@@ -754,7 +765,8 @@
             |> optionm'::map \ i => convert::convert i
             |> optionm'::unwrap_or -1i32
         | Gleam => \ () =>
-            ? search = "" ?> gleam_byte_size s
+            ? search = ""
+            ?> gleam_byte_size s
             |:
                 := found = gleam_find_trailing search s
                 ? gleam_is_nomatch found ?> -1i32 |: gleam_byte_size s - gleam_byte_size (gleam_dynamic_text found)
@@ -784,13 +796,15 @@
     |> index_of_char_from 2i32 'a'
     |> _assert_eq 4i32
 
+:~ ^ portable_same_from (search : string) (s : string) (at : i32) (m : i32) (k : i32) : bool =
+    ? k >= m
+    ?> !+
+    |? sm::index s (at + k) = sm::index search k
+    ?> portable_same_from search s at m (k + 1)
+    |: !-
+
 := portable_matches_at (search : string) (s : string) (at : i32) : bool =
-    := m : i32 = sm::length search
-    :~ ^ same (k : i32) : bool =
-        ? k >= m ?> !+
-        |? sm::index s (at + k) = sm::index search k ?> same (k + 1)
-        |: !-
-    same 0
+    portable_same_from search s at (sm::length search) 0
 
 /// ### portable_index_of
 := portable_ends_with (value : string) (s : string) : bool =
@@ -803,16 +817,20 @@
     := m : i32 = sm::length value
     m <= n && portable_matches_at value s 0
 
-:= portable_index_of (search : string) (s : string) : i32 =
-    := n : i32 = sm::length s
-    := m : i32 = sm::length search
-    :~ ^ scan (at : i32) : i32 =
-        ? at + m > n ?> -1i32
-        |? portable_matches_at search s at ?> at
-        |: scan (at + 1)
-    scan 0
+:~ ^ portable_index_scan (search : string) (s : string) (n : i32) (m : i32) (at : i32) : i32 =
+    ? at + m > n
+    ?> -1i32
+    |? portable_matches_at search s at
+    ?> at
+    |: portable_index_scan search s n m (at + 1)
 
-:~ ^ portable_replace_runs (old : string) (new : string) (s : string) (n : i32) (m : i32) (start : i32) (at : i32) (acc : list string) : list string =
+:= portable_index_of (search : string) (s : string) : i32 =
+    portable_index_scan search s (sm::length s) (sm::length search) 0
+
+:~ ^ portable_replace_runs
+    (old : string) (new : string) (s : string) (n : i32) (m : i32) (start : i32) (at : i32) (acc : list string)
+    : list string
+    =
     ? at + m > n ?> (? start < n ?> slice start (n - 1i32) s :: acc |: acc)
     |? portable_matches_at old s at ?>
         := run = ? start < at ?> slice start (at - 1i32) s :: acc |: acc
@@ -822,7 +840,8 @@
 := portable_replace (old : string) (new : string) (s : string) : string =
     := n : i32 = sm::length s
     := m : i32 = sm::length old
-    ? m = 0i32 ?> s
+    ? m = 0i32
+    ?> s
     |: portable_replace_runs old new s n m 0i32 0i32 [] |> listm::rev |> concat_list ""
 
 := gleam_split_once_head (search : string) (s : string) : optionm'::option' string =
@@ -848,11 +867,13 @@
             ? found < 0 ?> -1 |: $'len((!s)[:!found].encode("utf-8", "surrogateescape"))' : int
         Rust = \ () =>
             ($'!s.find(&*!search)' : optionm'::option' convert::unativeint)
-            |> optionm'::map \ i => convert::convert i
+            |> optionm'::map (\ i => convert::convert i)
             |> optionm'::unwrap_or -1
         C = \ () => conv (portable_index_of search s) : int
         Pascal = \ () => conv (portable_index_of search s) : int
-        Kotlin = \ () => $'(!s).indexOf(!search).let { i -> if (i < 0) -1 else (!s).substring(0, i).toByteArray(Charsets.UTF_8).size }' : int
+        Kotlin = \ () =>
+            $'(!s).indexOf(!search).let { i -> if (i < 0) -1 else (!s).substring(0, i).toByteArray(Charsets.UTF_8).size }'
+            : int
         TypeScript = \ () => $'!s.indexOf(!search)' : int
         Zig = \ () => $'(if (std.mem.indexOf(u8, !s, !search)) |i| @@as(`int, @@intCast(i)) else -1)' : int
         Lean = \ () =>
@@ -1016,7 +1037,8 @@
     |> _assert_eq ("pir", "", "", "é", "a’😀")
 
 :~ ^ ascii_case_runs (upper : bool) (s : string) (n : i32) (start : i32) (i : i32) (acc : list string) : list string =
-    ? i >= n ?> (? start < n ?> slice start (n - 1i32) s :: acc |: acc)
+    ? i >= n
+    ?> (? start < n ?> slice start (n - 1i32) s :: acc |: acc)
     |:
         := b : u8 = convert::u8 (index i s)
         := hit = ? upper ?> 97u8 <= b && b <= 122u8 |: 65u8 <= b && b <= 90u8
@@ -1048,7 +1070,8 @@
     }
 
 :~ ^ kebab_from (text : string) (size : i32) (at : i32) (out : string) : string =
-    ? at >= size ?> out
+    ? at >= size
+    ?> out
     |:
         := letter = substring at 1i32 text
         := lower = to_lower letter
@@ -1137,9 +1160,12 @@
 
 := ascii_class_of (input : char) : ascii_class =
     := c : u32 = char_code input
-    ? (65u32 <= c && c <= 90u32) || (97u32 <= c && c <= 122u32) ?> AsciiLetter
-    |? 48u32 <= c && c <= 57u32 ?> AsciiDigit
-    |? c = 32u32 || (9u32 <= c && c <= 13u32) ?> AsciiSpace
+    ? (65u32 <= c && c <= 90u32) || (97u32 <= c && c <= 122u32)
+    ?> AsciiLetter
+    |? 48u32 <= c && c <= 57u32
+    ?> AsciiDigit
+    |? c = 32u32 || (9u32 <= c && c <= 13u32)
+    ?> AsciiSpace
     |: AsciiOther
 
 := is_ascii_letter (input : char) : bool = ?= ascii_class_of input ?| AsciiLetter => !+ | _ => !-
@@ -1553,7 +1579,14 @@
 ///> zig
 ///> pascal
 :# replace_agrees_on_c =
-    ("a.b.c" |> replace "." "--", "aaa" |> replace "aa" "b", "x" |> replace "y" "z", "" |> replace "a" "b", "é.é" |> replace "." "") |> _assert_eq ("a--b--c", "ba", "x", "", "éé")
+    (
+        "a.b.c" |> replace "." "--",
+        "aaa" |> replace "aa" "b",
+        "x" |> replace "y" "z",
+        "" |> replace "a" "b",
+        "é.é" |> replace "." ""
+    )
+    |> _assert_eq ("a--b--c", "ba", "x", "", "éé")
 
 ///> lua
 ///> rust
@@ -1569,13 +1602,17 @@
     |> _assert_eq (1, 3, -1, "a%b%c", !+)
 
 :~ ^ split_matches_from (str : string) (separator : string) (at : i32) (k : i32) : bool =
-    ? k >= sm::length separator ?> !+
-    |? sm::index str (at + k) = sm::index separator k ?> split_matches_from str separator at (k + 1)
+    ? k >= sm::length separator
+    ?> !+
+    |? sm::index str (at + k) = sm::index separator k
+    ?> split_matches_from str separator at (k + 1)
     |: !-
 
 :~ ^ split_next_from (str : string) (separator : string) (at : i32) : i32 =
-    ? at + sm::length separator > sm::length str ?> sm::length str
-    |? split_matches_from str separator at 0 ?> at
+    ? at + sm::length separator > sm::length str
+    ?> sm::length str
+    |? split_matches_from str separator at 0
+    ?> at
     |: split_next_from str separator (at + 1)
 
 :~ ^ split_count (str : string) (separator : string) (at : i32) (parts : i32) : i32 =
@@ -1583,7 +1620,9 @@
     ? hit >= sm::length str ?> parts |: split_count str separator (hit + sm::length separator) (parts + 1)
 
 :~ ^ split_start_of (str : string) (separator : string) (part : i32) (at : i32) : i32 =
-    ? part = 0 ?> at |: split_start_of str separator (part - 1) (split_next_from str separator at + sm::length separator)
+    ? part = 0
+    ?> at
+    |: split_start_of str separator (part - 1) (split_next_from str separator at + sm::length separator)
 
 := split_part (str : string) (separator : string) (part : i32) : string =
     := from = split_start_of str separator part 0
@@ -1643,15 +1682,18 @@
 
 := line_without_return (line : string) : string =
     := n : int = length line
-    ? ends_with "\r" line |> not ?> line
-    |? n = 1 ?> ""
+    ? ends_with "\r" line |> not
+    ?> line
+    |? n = 1
+    ?> ""
     |: slice 0 (n - 2) line
 
 := nonempty_line_fold \* s. (f : s -> string -> s) (init : s) (text : string) : s =
     := parts = line_parts text
     := count = line_part_count parts
     :~ ^ go (i : int) (acc : s) : s =
-        ? i >= count ?> acc
+        ? i >= count
+        ?> acc
         |:
             := line = parts |> am'::index_base i |> line_without_return
             go (i + 1) (? line = "" ?> acc |: f acc line)
@@ -1671,8 +1713,11 @@
             nonempty_line_fold (\ acc line => acc |> am'::vec_push line) (am'::new_vec []) text |> am'::from_vec
         | _ => \ () =>
             := parts = line_parts text
-            (arraym::init (line_part_count parts) (\ i => parts |> am'::index_base i |> line_without_return) : array string)
-            |> arraym::filter (\ line => line <> "")
+            (
+                arraym::init (line_part_count parts) \ i => parts |> am'::index_base i |> line_without_return
+                : array string
+            )
+            |> arraym::filter \ line => line <> ""
 
 ///> rust
 ///> gleam
@@ -2513,7 +2558,8 @@
 := after_first_line (text : string) : string =
     run_target \|
         | Rust => \ () =>
-            $'std::rc::Rc::<str>::from((!text).split_once(char::from(10u8)).map(|(_, rest)| rest).unwrap_or(""))' : string
+            $'std::rc::Rc::<str>::from((!text).split_once(char::from(10u8)).map(|(_, rest)| rest).unwrap_or(""))'
+            : string
         | Fsharp => \ () =>
             := at = $'(!text).IndexOf(char 10)' : i32
             := rest = at + 1i32
@@ -2656,7 +2702,8 @@
 :+ to_string std_string = from_std_string
 
 :~ split_list (separator : string) (s : string) : list string =
-    ? length separator = 0i32 ?> [ s ]
+    ? length separator = 0i32
+    ?> [ s ]
     |: arraym::fold (\ acc (part : string) => part :: acc) [] (split separator s |> array) |> listm::rev
 
 := split_joined (separator : string) (s : string) : string = split_list separator s |> concat_list "|"
@@ -2669,7 +2716,8 @@
 
 /// ### decimal_i32
 :~ ^ decimal_from (text : string) (i : i32) (n : i32) : option i32 =
-    ? i >= length text ?> Some n
+    ? i >= length text
+    ?> Some n
     |:
         := d : i32 = index_of (substring i 1i32 text) "0123456789"
         := overflows = n > 214748364i32 || (n = 214748364i32 && d > 7i32)

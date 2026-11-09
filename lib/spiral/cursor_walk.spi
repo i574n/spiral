@@ -33,8 +33,10 @@
     CursorEnd (Ok (listm::rev (cursor_stepped w p)::bodies))
 
 := cursor_paged \* e. (k : cursor_walker e) (w : cursor_trail) (p : cursor_page) : cursor_next e =
-    ? p::next_token = "" ?> cursor_finished w p
-    |? cursor_repeats w p ?> cursor_halted k (cursor_repeated w p)
+    ? p::next_token = ""
+    ?> cursor_finished w p
+    |? cursor_repeats w p
+    ?> cursor_halted k (cursor_repeated w p)
     |: CursorOn p
 
 := cursor_fetched \* e. (k : cursor_walker e) (w : cursor_trail) (r : result cursor_page e) : cursor_next e =
@@ -43,7 +45,8 @@
     | Ok p => cursor_paged k w p
 
 := cursor_next_of \* e. (k : cursor_walker e) (token : string) (w : cursor_trail) : cursor_next e =
-    ? w::pages >= k::budget ?> cursor_halted k (CursorBudget { token pages = w::pages })
+    ? w::pages >= k::budget
+    ?> cursor_halted k (CursorBudget { token pages = w::pages })
     |: cursor_fetched k w (k::fetch token)
 
 :~ ^ walked_from \* e. (k : cursor_walker e) (token : string) (w : cursor_trail) : result (list string) e =
@@ -68,8 +71,10 @@
     all_pages { halted = cursor_walk_halt_text; budget; fetch } |> cursor_walk_text
 
 := cursor_walk_two_pages (token : string) : result cursor_page string =
-    ? token = "" ?> Ok { next_token = "t2"; body = "a" }
-    |? token = "t2" ?> Ok { next_token = ""; body = "b" }
+    ? token = ""
+    ?> Ok { next_token = "t2"; body = "a" }
+    |? token = "t2"
+    ?> Ok { next_token = ""; body = "b" }
     |: Error token
 
 ///> rust

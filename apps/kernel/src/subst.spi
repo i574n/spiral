@@ -53,8 +53,11 @@
     := v = App (App (FVar (name "w"), BVar 0i32), BVar 2i32)
     := law =
         \ d c t =>
-            same_as (shift_from (instantiate_at t d v) c 2i32) (instantiate_at (shift_from t (c + 1i32) 2i32) d (shift_from v (c - d) 2i32))
-    every (samples ()) (\ t => law 0i32 0i32 t && law 0i32 2i32 t && law 1i32 1i32 t && law 1i32 3i32 t) |> _assert_eq !+
+            same_as
+                (shift_from (instantiate_at t d v) c 2i32)
+                (instantiate_at (shift_from t (c + 1i32) 2i32) d (shift_from v (c - d) 2i32))
+    every (samples ()) (\ t => law 0i32 0i32 t && law 0i32 2i32 t && law 1i32 1i32 t && law 1i32 3i32 t)
+    |> _assert_eq !+
 
 ///> rust
 :# substituting_twice_follows_the_substitution_lemma =
@@ -68,5 +71,8 @@
     := there = \ t => lift t 1i32
     := home = \ t => instantiate t (value ())
     := shape = round_trip.Retraction round_trip.ThereAndBack
-    (round_trip.laws_hold shape same_as same_as there home (samples ()) (samples ()), round_trip.tight shape same_as same_as there home (samples ()) (samples ()))
+    (
+        round_trip.laws_hold shape same_as same_as there home (samples ()) (samples ()),
+        round_trip.tight shape same_as same_as there home (samples ()) (samples ())
+    )
     |> _assert_eq (!+, !+)

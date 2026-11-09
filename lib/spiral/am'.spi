@@ -444,8 +444,10 @@
 := any \* t. (fn : t -> bool) (source : array_base t) : bool =
     := n = source |> array |> length
     :~ ^ loop i =
-        ? i >= n ?> !-
-        |? source |> index_base i |> fn ?> !+
+        ? i >= n
+        ?> !-
+        |? source |> index_base i |> fn
+        ?> !+
         |: loop (i + 1)
     loop 0
 

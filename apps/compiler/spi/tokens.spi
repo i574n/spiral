@@ -120,7 +120,8 @@
 := lex_state_error (state : lex_state) : option string =
     ? in_triple state
     ?> Some ("Unterminated triple-quoted string. Expected '" ++# sm'::replicate state::triple_quotes "\"" ++# "'.")
-    |? 0 < state::comment_depth ?> Some "Unterminated multiline comment. Expected '*)'."
+    |? 0 < state::comment_depth
+    ?> Some "Unterminated multiline comment. Expected '*)'."
     |:
         ?= state::macro_close ?|
         | Some _ =>
@@ -399,7 +400,8 @@
     ? dot && (peek_at 1 start |> glyph_is (\ c => c = '(')) ?>
         := body = start |> advance 2
         := past = body |> skip_while is_operator_char
-        ? past::from = body::from ?> LexError (body::from, "operator")
+        ? past::from = body::from
+        ?> LexError (body::from, "operator")
         |? peek past |> glyph_is (\ c => c = ')') ?>
             := closed = past |> advance 1
             Lexed (span_between start closed, text_between body past |> symbol, skip_spaces closed)
@@ -412,7 +414,8 @@
 
 :~ ^ without_list_separators (text : string) : string =
     := length : i32 = sm'::length text
-    ? length = 0 ?> text
+    ? length = 0
+    ?> text
     |:
         := last = sm'::index (length - 1) text
         ? last = ',' || last = ';' ?> text |> sm'::slice 0 (length - 2) |> without_list_separators |: text
@@ -506,10 +509,14 @@
     |: LexError (start::from, "comment"), state
 := lex_char_quoted (start : cursor) : lexed =
     := escaped c =
-        ? c = 'n' ?> '\n'
-        |? c = 'r' ?> '\r'
-        |? c = 't' ?> '\t'
-        |? c = 'b' ?> '\b'
+        ? c = 'n'
+        ?> '\n'
+        |? c = 'r'
+        ?> '\r'
+        |? c = 't'
+        ?> '\t'
+        |? c = 'b'
+        ?> '\b'
         |: c
     := closed (body : cursor) (value : char) : lexed =
         ? peek body |> glyph_is (\ c => c = '\'') ?>
@@ -589,20 +596,30 @@
     := width = suffix |> advance 1
     := two (a : char) (b : char) : bool = char_at_is 0 a width && char_at_is 1 b width
     ? char_at_is 0 'i' suffix ?>
-        ? char_at_is 0 '8' width ?> parsed (\ (x : i8) => LitInt8 x) "i8" (width |> advance 1)
-        |? two '1' '6' ?> parsed (\ (x : i16) => LitInt16 x) "i16" (width |> advance 2)
-        |? two '3' '2' ?> parsed (\ (x : i32) => LitInt32 x) "i32" (width |> advance 2)
-        |? two '6' '4' ?> parsed (\ (x : i64) => LitInt64 x) "i64" (width |> advance 2)
+        ? char_at_is 0 '8' width
+        ?> parsed (\ (x : i8) => LitInt8 x) "i8" (width |> advance 1)
+        |? two '1' '6'
+        ?> parsed (\ (x : i16) => LitInt16 x) "i16" (width |> advance 2)
+        |? two '3' '2'
+        ?> parsed (\ (x : i32) => LitInt32 x) "i32" (width |> advance 2)
+        |? two '6' '4'
+        ?> parsed (\ (x : i64) => LitInt64 x) "i64" (width |> advance 2)
         |: NumberError (width::from, "8,16,32 or 64")
     |? char_at_is 0 'u' suffix ?>
-        ? char_at_is 0 '8' width ?> parsed (\ (x : u8) => LitUInt8 x) "uint8" (width |> advance 1)
-        |? two '1' '6' ?> parsed (\ (x : u16) => LitUInt16 x) "u16" (width |> advance 2)
-        |? two '3' '2' ?> parsed (\ (x : u32) => LitUInt32 x) "u32" (width |> advance 2)
-        |? two '6' '4' ?> parsed (\ (x : u64) => LitUInt64 x) "u64" (width |> advance 2)
+        ? char_at_is 0 '8' width
+        ?> parsed (\ (x : u8) => LitUInt8 x) "uint8" (width |> advance 1)
+        |? two '1' '6'
+        ?> parsed (\ (x : u16) => LitUInt16 x) "u16" (width |> advance 2)
+        |? two '3' '2'
+        ?> parsed (\ (x : u32) => LitUInt32 x) "u32" (width |> advance 2)
+        |? two '6' '4'
+        ?> parsed (\ (x : u64) => LitUInt64 x) "u64" (width |> advance 2)
         |: NumberError (width::from, "8,16,32 or 64")
     |? char_at_is 0 'f' suffix ?>
-        ? two '3' '2' ?> parsed (\ (x : f32) => LitFloat32 x) "f32" (width |> advance 2)
-        |? two '6' '4' ?> parsed (\ (x : f64) => LitFloat64 x) "f64" (width |> advance 2)
+        ? two '3' '2'
+        ?> parsed (\ (x : f32) => LitFloat32 x) "f32" (width |> advance 2)
+        |? two '6' '4'
+        ?> parsed (\ (x : f64) => LitFloat64 x) "f64" (width |> advance 2)
         |: NumberError (width::from, "32 or 64")
     |: NumberPlain (span_between start suffix, text, skip_spaces suffix)
 
@@ -673,10 +690,14 @@
     | _ => LexError (start::from, "`(`,`[`,`{`,`}`,`]` or `)`")
 
 := escaped_token (c : char) : spiral_token =
-    ? c = 'n' ?> TokEscapedChar '\n'
-    |? c = 'r' ?> TokEscapedChar '\r'
-    |? c = 't' ?> TokEscapedChar '\t'
-    |? c = 'b' ?> TokEscapedChar '\b'
+    ? c = 'n'
+    ?> TokEscapedChar '\n'
+    |? c = 'r'
+    ?> TokEscapedChar '\r'
+    |? c = 't'
+    ?> TokEscapedChar '\t'
+    |? c = 'b'
+    ?> TokEscapedChar '\b'
     |: TokUnescapedChar c
 
 :~ ^ quoted_text

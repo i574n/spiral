@@ -9,12 +9,15 @@
 := bare_cells_text (segment : string) : string = segment |> sm'::replace "\t" " " |> sm'::replace "," "\t"
 
 := tsv_piece (segment : string) (at : i32) (count : i32) : string =
-    ? at % 2i32 = 1i32 ?> quoted_cell_text segment
-    |? segment = "" && at > 0i32 && at < count - 1i32 ?> "\""
+    ? at % 2i32 = 1i32
+    ?> quoted_cell_text segment
+    |? segment = "" && at > 0i32 && at < count - 1i32
+    ?> "\""
     |: bare_cells_text segment
 
 :~ ^ quoted_as_tsv (segments : array string) (at : i32) (count : i32) (acc : string) : string =
-    ? at >= count ?> acc
+    ? at >= count
+    ?> acc
     |: quoted_as_tsv segments (at + 1i32) count (acc ++# tsv_piece (am'::index at segments) at count)
 
 :~ csv_line_as_tsv (line : string) : string =

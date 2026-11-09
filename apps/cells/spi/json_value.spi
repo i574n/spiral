@@ -40,7 +40,13 @@
 := number_end (s : string) (i : i32) : i32 = exp_end s (frac_end s (int_end s (? at s i = 45i32 ?> i + 1i32 |: i)))
 
 := hex_val (b : i32) : i32 =
-    ? is_digit b ?> b - 48i32 |? b >= 65i32 && b <= 70i32 ?> b - 55i32 |? b >= 97i32 && b <= 102i32 ?> b - 87i32 |: -1i32
+    ? is_digit b
+    ?> b - 48i32
+    |? b >= 65i32 && b <= 70i32
+    ?> b - 55i32
+    |? b >= 97i32 && b <= 102i32
+    ?> b - 87i32
+    |: -1i32
 
 := hex4 (s : string) (i : i32) : i32 =
     := a = hex_val (at s i)
@@ -50,14 +56,22 @@
     ? a < 0i32 || b < 0i32 || c < 0i32 || d < 0i32 ?> -1i32 |: ((a * 16i32 + b) * 16i32 + c) * 16i32 + d
 
 := simple_escape (e : i32) : string =
-    ? e = 34i32 ?> "\""
-    |? e = 92i32 ?> "\\"
-    |? e = 47i32 ?> "/"
-    |? e = 98i32 ?> unicode::char_of 8i32
-    |? e = 102i32 ?> unicode::char_of 12i32
-    |? e = 110i32 ?> "\n"
-    |? e = 114i32 ?> "\r"
-    |? e = 116i32 ?> "\t"
+    ? e = 34i32
+    ?> "\""
+    |? e = 92i32
+    ?> "\\"
+    |? e = 47i32
+    ?> "/"
+    |? e = 98i32
+    ?> unicode::char_of 8i32
+    |? e = 102i32
+    ?> unicode::char_of 12i32
+    |? e = 110i32
+    ?> "\n"
+    |? e = 114i32
+    ?> "\r"
+    |? e = 116i32
+    ?> "\t"
     |: ""
 
 := is_high (code : i32) : bool = code >= 55296i32 && code <= 56319i32
@@ -66,7 +80,8 @@
 
 := low_after (s : string) (i : i32) : i32 = ? at s i = 92i32 && at s (i + 1i32) = 117i32 ?> hex4 s (i + 2i32) |: -1i32
 
-:= paired (high : i32) (low : i32) : string = unicode::char_of (65536i32 + (high - 55296i32) * 1024i32 + (low - 56320i32))
+:= paired (high : i32) (low : i32) : string =
+    unicode::char_of (65536i32 + (high - 55296i32) * 1024i32 + (low - 56320i32))
 
 := within (s : string) (i : i32) (lo : i32) (hi : i32) : bool =
     := b = at s i
@@ -77,7 +92,8 @@
 
 := utf8_width_at (s : string) (i : i32) : i32 =
     := b = at s i
-    ? b >= 194i32 && b <= 223i32 ?> ? within s (i + 1i32) 128i32 191i32 ?> 2i32 |: 0i32
+    ? b >= 194i32 && b <= 223i32
+    ?> ? within s (i + 1i32) 128i32 191i32 ?> 2i32 |: 0i32
     |? b >= 224i32 && b <= 239i32 ?>
         := lo = ? b = 224i32 ?> 160i32 |: 128i32
         := hi = ? b = 237i32 ?> 159i32 |: 191i32
@@ -91,11 +107,16 @@
 :~ ^ string_from (s : string) (start : i32) (i : i32) (acc : string) : option (string * i32) =
     := c = at s i
     := chunk = text::slice_len s start (i - start)
-    ? c < 0i32 ?> None
-    |? c = 34i32 ?> Some (acc ++ chunk, i + 1i32)
-    |? c = 92i32 ?> escape_at s i (acc ++ chunk)
-    |? c < 32i32 ?> None
-    |? c < 128i32 ?> string_from s start (i + 1i32) acc
+    ? c < 0i32
+    ?> None
+    |? c = 34i32
+    ?> Some (acc ++ chunk, i + 1i32)
+    |? c = 92i32
+    ?> escape_at s i (acc ++ chunk)
+    |? c < 32i32
+    ?> None
+    |? c < 128i32
+    ?> string_from s start (i + 1i32) acc
     |:
         := w = utf8_width_at s i
         ? w = 0i32 ?> None |: string_from s start (i + w) acc
@@ -103,16 +124,21 @@
 :& :~ escape_at (s : string) (slash : i32) (acc : string) : option (string * i32) =
     := e = at s (slash + 1i32)
     := plain = simple_escape e
-    ? e = 117i32 ?> code_at s slash acc
-    |? plain = "" ?> None
+    ? e = 117i32
+    ?> code_at s slash acc
+    |? plain = ""
+    ?> None
     |: string_from s (slash + 2i32) (slash + 2i32) (acc ++ plain)
 
 :& :~ code_at (s : string) (slash : i32) (acc : string) : option (string * i32) =
     := code = hex4 s (slash + 2i32)
     := low = low_after s (slash + 6i32)
-    ? code < 0i32 || is_low code ?> None
-    |? is_high code && is_low low ?> string_from s (slash + 12i32) (slash + 12i32) (acc ++ paired code low)
-    |? is_high code ?> None
+    ? code < 0i32 || is_low code
+    ?> None
+    |? is_high code && is_low low
+    ?> string_from s (slash + 12i32) (slash + 12i32) (acc ++ paired code low)
+    |? is_high code
+    ?> None
     |: string_from s (slash + 6i32) (slash + 6i32) (acc ++ unicode::char_of code)
 
 := string_at (s : string) (q_at : i32) : option (string * i32) = string_from s (q_at + 1i32) (q_at + 1i32) ""
@@ -127,15 +153,20 @@
 :~ ^ value_at (s : string) (start : i32) : option (json * i32) =
     := i = skip_ws s start
     := c = at s i
-    ? c = 123i32 ?> object_at s (i + 1i32)
-    |? c = 91i32 ?> array_at s (i + 1i32)
+    ? c = 123i32
+    ?> object_at s (i + 1i32)
+    |? c = 91i32
+    ?> array_at s (i + 1i32)
     |? c = 34i32 ?>
         ?= string_at s i ?|
         | Some (t, next) => Some (JStr t, next)
         | None => None
-    |? c = 116i32 ?> word s i "true" (JBool !+)
-    |? c = 102i32 ?> word s i "false" (JBool !-)
-    |? c = 110i32 ?> word s i "null" JNull
+    |? c = 116i32
+    ?> word s i "true" (JBool !+)
+    |? c = 102i32
+    ?> word s i "false" (JBool !-)
+    |? c = 110i32
+    ?> word s i "null" JNull
     |: number_at s i
 
 :& :~ object_at (s : string) (opened : i32) : option (json * i32) =
@@ -144,13 +175,15 @@
 
 :& :~ member_at (s : string) (start : i32) (acc : list (string * json)) : option (json * i32) =
     := i = skip_ws s start
-    ? at s i <> 34i32 ?> None
+    ? at s i <> 34i32
+    ?> None
     |:
         ?= string_at s i ?|
         | None => None
         | Some (key, after) =>
             := colon = skip_ws s after
-            ? at s colon <> 58i32 ?> None
+            ? at s colon <> 58i32
+            ?> None
             |:
                 ?= value_at s (colon + 1i32) ?|
                 | None => None
@@ -159,8 +192,10 @@
 :& :~ after_member (s : string) (start : i32) (acc : list (string * json)) : option (json * i32) =
     := i = skip_ws s start
     := c = at s i
-    ? c = 44i32 ?> member_at s (i + 1i32) acc
-    |? c = 125i32 ?> Some (JObj (listm::rev acc), i + 1i32)
+    ? c = 44i32
+    ?> member_at s (i + 1i32) acc
+    |? c = 125i32
+    ?> Some (JObj (listm::rev acc), i + 1i32)
     |: None
 
 :& :~ array_at (s : string) (opened : i32) : option (json * i32) =
@@ -175,8 +210,10 @@
 :& :~ after_item (s : string) (start : i32) (acc : list json) : option (json * i32) =
     := i = skip_ws s start
     := c = at s i
-    ? c = 44i32 ?> item_at s (i + 1i32) acc
-    |? c = 93i32 ?> Some (JArr (listm::rev acc), i + 1i32)
+    ? c = 44i32
+    ?> item_at s (i + 1i32) acc
+    |? c = 93i32
+    ?> Some (JArr (listm::rev acc), i + 1i32)
     |: None
 
 := parse (s : string) : option json =
@@ -197,9 +234,15 @@
 :~ ^ quoted_from (s : string) (i : i32) (start : i32) (acc : string) : string =
     := c = at s i
     := chunk = text::slice_len s start (i - start)
-    ? c < 0i32 ?> acc ++ chunk
-    |? c = 34i32 || c = 92i32 ?> quoted_from s (i + 1i32) (i + 1i32) (acc ++ chunk ++ "\\" ++ text::one s i)
-    |? c < 32i32 ?> quoted_from s (i + 1i32) (i + 1i32) (acc ++ chunk ++ "\\u00" ++ text::hex_digit (c / 16i32) ++ text::hex_digit (c % 16i32))
+    ? c < 0i32
+    ?> acc ++ chunk
+    |? c = 34i32 || c = 92i32
+    ?> quoted_from s (i + 1i32) (i + 1i32) (acc ++ chunk ++ "\\" ++ text::one s i)
+    |? c < 32i32 ?>
+        quoted_from s
+            (i + 1i32)
+            (i + 1i32)
+            (acc ++ chunk ++ "\\u00" ++ text::hex_digit (c / 16i32) ++ text::hex_digit (c % 16i32))
     |: quoted_from s (i + 1i32) start acc
 
 := quoted (s : string) : string = "\"" ++ quoted_from s 0i32 0i32 "" ++ "\""
@@ -220,7 +263,8 @@
 
 ///> gleam
 :# json_values_parse_strictly_and_render_compact =
-    canonical " {\"a\" : [ true , false , null, -0.5e+3 ], \"b\\u00e9\" : \"x\\ty\" } " |> _assert_eq "{\"a\":[true,false,null,-0.5e+3],\"bé\":\"x\\u0009y\"}"
+    canonical " {\"a\" : [ true , false , null, -0.5e+3 ], \"b\\u00e9\" : \"x\\ty\" } "
+    |> _assert_eq "{\"a\":[true,false,null,-0.5e+3],\"bé\":\"x\\u0009y\"}"
     canonical "[1,]" |> _assert_eq ""
     canonical "01" |> _assert_eq ""
     canonical "\"\\ud800\"" |> _assert_eq ""

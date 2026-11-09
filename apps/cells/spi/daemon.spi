@@ -6,7 +6,8 @@
 
 :~ ^ fields_from (line : string) (at : i32) (acc : list string) : list string =
     := tab = text::find_from line "\t" at
-    ? tab < 0i32 ?> listm::rev (text::drop line at :: acc)
+    ? tab < 0i32
+    ?> listm::rev (text::drop line at :: acc)
     |: fields_from line (tab + 1i32) (text::slice_len line at (tab - at) :: acc)
 
 := fields (line : string) : list string = fields_from line 0i32 []
@@ -14,8 +15,10 @@
 := tabbed (xs : list string) : string = sm'::concat_list "\t" xs
 
 :~ ^ digits_from (s : string) (i : i32) : bool =
-    ? i >= text::length s ?> !+
-    |? text::digit_val (text::index s i) < 0i32 ?> !-
+    ? i >= text::length s
+    ?> !+
+    |? text::digit_val (text::index s i) < 0i32
+    ?> !-
     |: digits_from s (i + 1i32)
 
 := queue_ms (s : string) : option i32 = ? s <> "" && digits_from s 0i32 ?> Some (text::parse_i32 s) |: None
@@ -153,7 +156,8 @@
 
 ///> gleam
 :# compile_lines_read_like_the_elixir_client_did =
-    := lines = [ "ok\tr1\t7\textra"; "error\ttimeout\t3\tx"; "error"; "error\t5\tno\tmain"; "error\tbare text"; "error\t" ]
+    := lines =
+        [ "ok\tr1\t7\textra"; "error\ttimeout\t3\tx"; "error"; "error\t5\tno\tmain"; "error\tbare text"; "error\t" ]
     := odd = [ unexpected "ok\tr1\t7\textra"; CompileTimedOut None; unexpected "error" ]
     := failed = [ CompileFailed (Some 5i32, "no\tmain"); CompileFailed (None, "bare text"); CompileFailed (None, "") ]
     listm::map compile_of lines |> _assert_eq (listm::append odd failed)

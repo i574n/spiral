@@ -23,9 +23,12 @@
 := is_atom (name : string) (t : erlang_term::term) : bool = erlang_term::equal t (erlang_term::atom name)
 
 := failure_of (reason : erlang_term::term) : tcp_failure =
-    ? is_atom "econnrefused" reason ?> Refused
-    |? is_atom "timeout" reason ?> TimedOut
-    |? is_atom "closed" reason ?> Closed
+    ? is_atom "econnrefused" reason
+    ?> Refused
+    |? is_atom "timeout" reason
+    ?> TimedOut
+    |? is_atom "closed" reason
+    ?> Closed
     |: Failed (erlang_term::inspect reason)
 
 := is_ok (t : erlang_term::term) : bool = erlang_term::equal t (erlang_term::atom "ok")
@@ -45,7 +48,8 @@
     [ option_pair "packet" (erlang_term::atom "line"); option_pair "active" (erlang_term::atom "false") ]
 
 := line_options () : list erlang_term::term =
-    erlang_term::atom "binary" :: listm::append (line_framing ()) [ option_pair "packet_size" (erlang_term::of 8000000i32) ]
+    erlang_term::atom "binary"
+    :: listm::append (line_framing ()) [ option_pair "packet_size" (erlang_term::of 8000000i32) ]
 
 := loopback () : erlang_term::term = [ 127i32; 0i32; 0i32; 1i32 ] |> listm::map erlang_term::of |> erlang_term::tuple
 

@@ -91,4 +91,10 @@
 ///> lua
 :# a_list_packs_into_a_vector_of_its_hidden_length_and_back =
     := packed = of_list [ 1i32; 2i32; 3i32; 4i32 ]
-    (some_rank packed, some_list packed, some_rank (of_list ([] : list i32))) |> _assert_eq (4i32, [ 1i32; 2i32; 3i32; 4i32 ], 0i32)
+    (some_rank packed, some_list packed) |> _assert_eq (4i32, [ 1i32; 2i32; 3i32; 4i32 ])
+
+///> c
+///> rust
+///> lua
+:# an_empty_list_packs_into_a_vector_of_length_zero =
+    some_rank (of_list ([] : list i32)) |> _assert_eq 0i32

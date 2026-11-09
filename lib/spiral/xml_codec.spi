@@ -54,7 +54,8 @@
     | Error errors => Some ("does not decode: " ++# joined "; " (listm::map error_text errors))
 
 := same_value (expected : string) (actual : string) : bool =
-    ? expected = actual ?> !+
+    ? expected = actual
+    ?> !+
     |:
         ?= (decimal::parse expected, decimal::parse actual) ?|
         | (Some e, Some a) => decimal::compare e a = 0i32
@@ -68,7 +69,10 @@
 
 :~ ^ twin_taken (name : string) (nodes : list xml_node) (skipped : list xml_node) : option (xml_node * list xml_node) =
     ?= nodes ?|
-    | n :: rest => ? node_name n = name ?> Some (n, listm::append (listm::rev skipped) rest) |: twin_taken name rest (n :: skipped)
+    | n :: rest =>
+        ? node_name n = name
+        ?> Some (n, listm::append (listm::rev skipped) rest)
+        |: twin_taken name rest (n :: skipped)
     | [] => None
 
 :& :~ twin_aligned_children (expected : list xml_node) (actual : list xml_node) (acc : list xml_node) : list xml_node =

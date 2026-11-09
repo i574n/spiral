@@ -368,4 +368,5 @@
 ///> rust
 ///> gleam
 :# a_star_of_a_star_breaks_a_rule_and_the_smart_constructors_break_none =
-    (fault_for (Star (Star (bit ()))), fault_for (seq (star (bit ())) (zero ()))) |> _assert_eq (Some StarOfTrivial, None)
+    (fault_for (Star (Star (bit ()))), fault_for (seq (star (bit ())) (zero ())))
+    |> _assert_eq (Some StarOfTrivial, None)

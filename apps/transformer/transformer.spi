@@ -81,14 +81,18 @@
 :~ ^ dot_l \* n. (k : len n) (a : floats) (ao : i32) (b : floats) (j : i32) (acc : f32) : f32 =
     ? j >= width k ?> acc |: dot_l k a ao b (j + 1) (acc + index a (ao + j) * index b j)
 
-:~ ^ rows_l \* n d. (kn : len n) (kd : len d) (o : floats) (x : floats) (w : floats) (off : i32) (i : i32) (end : i32) : () =
+:~ ^ rows_l \* n d.
+    (kn : len n) (kd : len d) (o : floats) (x : floats) (w : floats) (off : i32) (i : i32) (end : i32)
+    : ()
+    =
     ? i < end ?>
         set o i (dot_l kn w (off + i * width kn) x 0 0.0f32)
         rows_l kn kd o x w off (i + 1) end
 
 := rows_par \* n d. (kn : len n) (kd : len d) (o : floats) (x : floats) (w : floats) (off : i32) : () =
     := chunk, rows = 16, width kd
-    parallel::for_index ((rows + chunk - 1) / chunk) \ c => rows_l kn kd o x w off (c * chunk) (min rows ((c + 1) * chunk))
+    parallel::for_index ((rows + chunk - 1) / chunk) \ c =>
+        rows_l kn kd o x w off (c * chunk) (min rows ((c + 1) * chunk))
 
 := rows_if \* n d. (kn : len n) (kd : len d) (o : floats) (x : floats) (w : floats) (off : i32) (p : i32 * i32) : bool =
     := n2, d2 = p
@@ -101,8 +105,10 @@
     (ka : len a) (kb : len b) (kc : len c) (o : floats) (x : floats) (w : floats) (off : i32) (p : i32 * i32)
     : bool
     =
-    ? rows_if ka kb o x w off p ?> !+
-    |? rows_if kb ka o x w off p ?> !+
+    ? rows_if ka kb o x w off p
+    ?> !+
+    |? rows_if kb ka o x w off p
+    ?> !+
     |: rows_if ka kc o x w off p
 
 := shaped_square \* a v.
@@ -137,10 +143,14 @@
     cfg::dim = width ka && cfg::hidden = width kb && cfg::vocab = width kc && kv_dim cfg = width kv
 
 := known_of (cfg : config) : known =
-    ? fits (dims_15m ()) cfg ?> Stories15M
-    |? fits (dims_42m ()) cfg ?> Stories42M
-    |? fits (dims_110m ()) cfg ?> Stories110M
-    |? fits (dims_260k ()) cfg ?> Stories260K
+    ? fits (dims_15m ()) cfg
+    ?> Stories15M
+    |? fits (dims_42m ()) cfg
+    ?> Stories42M
+    |? fits (dims_110m ()) cfg
+    ?> Stories110M
+    |? fits (dims_260k ()) cfg
+    ?> Stories260K
     |: Unknown
 
 := shaped_by \* a b c v.
@@ -167,7 +177,10 @@
 := row_l_into \* n. (kn : len n) (x : floats) (w : floats) (g : rows_group) (i : i32) : () =
     set g::o i (dot_l kn w (g::off + i * width kn) x 0 0.0f32)
 
-:~ ^ rows_l_fused \* n. (kn : len n) (x : floats) (w : floats) (a : rows_group) (b : rows_group) (c : rows_group) (r : i32) (end : i32) : () =
+:~ ^ rows_l_fused \* n.
+    (kn : len n) (x : floats) (w : floats) (a : rows_group) (b : rows_group) (c : rows_group) (r : i32) (end : i32)
+    : ()
+    =
     ? r < end ?>
         ? r < a::d ?> row_l_into kn x w a r
         |? r < a::d + b::d ?> row_l_into kn x w b (r - a::d)
@@ -176,15 +189,22 @@
 
 := rows_par_fused \* n. (kn : len n) (x : floats) (w : floats) (a : rows_group) (b : rows_group) (c : rows_group) : () =
     := chunk, rows = 16, a::d + b::d + c::d
-    parallel::for_index ((rows + chunk - 1) / chunk) \ k => rows_l_fused kn x w a b c (k * chunk) (min rows ((k + 1) * chunk))
+    parallel::for_index ((rows + chunk - 1) / chunk) \ k =>
+        rows_l_fused kn x w a b c (k * chunk) (min rows ((k + 1) * chunk))
 
-:= fused_with \* n. (kn : len n) (x : floats) (w : floats) (width_in : i32) (a : rows_group) (b : rows_group) (c : rows_group) : bool =
+:= fused_with \* n.
+    (kn : len n) (x : floats) (w : floats) (width_in : i32) (a : rows_group) (b : rows_group) (c : rows_group)
+    : bool
+    =
     ? width_in = width kn ?>
         rows_par_fused kn x w a b c
         !+
     |: !-
 
-:= fused_known (k : known) (x : floats) (w : floats) (n : i32) (a : rows_group) (b : rows_group) (c : rows_group) : bool =
+:= fused_known
+    (k : known) (x : floats) (w : floats) (n : i32) (a : rows_group) (b : rows_group) (c : rows_group)
+    : bool
+    =
     ?= k ?|
     | Stories15M =>
         := ka, _, _, _ = dims_15m ()
@@ -428,7 +448,11 @@
 := row_into (xq : array i8) (xs : floats) (w : q8) (n : i32) (g : rows_group) (i : i32) : () =
     set g::o i (row_q8 xq xs w (g::off + i * n) n 0 0.0f32)
 
-:~ ^ rows_fused (xq : array i8) (xs : floats) (w : q8) (n : i32) (a : rows_group) (b : rows_group) (c : rows_group) (hi : i32) (r : i32) : () =
+:~ ^ rows_fused
+    (xq : array i8) (xs : floats) (w : q8) (n : i32) (a : rows_group) (b : rows_group) (c : rows_group) (hi : i32)
+    (r : i32)
+    : ()
+    =
     ? r < hi ?>
         ? r < a::d ?> row_into xq xs w n a r
         |? r < a::d + b::d ?> row_into xq xs w n b (r - a::d)
@@ -441,7 +465,8 @@
     quantize_groups !- x xq xs w::gs 0 (n / w::gs * w::gs)
     := rows = a::d + b::d + c::d
     := chunk = 16
-    parallel::for_index ((rows + chunk - 1) / chunk) \ k => rows_fused xq xs w n a b c (min rows ((k + 1) * chunk)) (k * chunk)
+    parallel::for_index ((rows + chunk - 1) / chunk) \ k =>
+        rows_fused xq xs w n a b c (min rows ((k + 1) * chunk)) (k * chunk)
 
 := matmul_model (m : model) (o : floats) (x : floats) (off : i32) (n : i32) (d : i32) : () =
     ?= m::q8 ?|
@@ -689,7 +714,8 @@
     ? i >= stop ?> acc |: fallback_bytes t (i + 1) stop ((conv (index t i) : i32) + 3 :: acc)
 
 :~ ^ initial_from (pieces : array bytes) (t : bytes) (i : i32) (acc : list i32) : list i32 =
-    ? i >= length t ?> acc
+    ? i >= length t
+    ?> acc
     |:
         := stop = codepoint_end t (i + 1)
         := id = find_piece pieces (slice_bytes t i (stop - i)) 0
@@ -713,7 +739,8 @@
     ?= ids ?|
     | [] => []
     | x :: rest =>
-        ? at > 0 ?> x :: merged_at rest (at - 1) id
+        ? at > 0
+        ?> x :: merged_at rest (at - 1) id
         |: ?= rest ?| | _ :: tail => id :: tail | [] => [ id ]
 
 :~ ^ merge_all (pieces : array bytes) (scores : floats) (ids : list i32) : list i32 =
@@ -726,7 +753,8 @@
     p
 
 := encode (pieces : array bytes) (scores : floats) (text : bytes) : list i32 =
-    ? length text = 0 ?> [ 1 ]
+    ? length text = 0
+    ?> [ 1 ]
     |:
         := prefix = find_piece pieces (space_piece ()) 0
         1 :: merge_all pieces scores (prefix :: listm::rev (initial_from pieces text 0 []))
@@ -738,13 +766,15 @@
     argmax r::s::logits
 
 :~ ^ generate (r : run) (token : i32) (pos : i32) (out : string) : string =
-    ? pos >= r::steps ?> out
+    ? pos >= r::steps
+    ?> out
     |:
         := next = next_token r token pos
         ? next = 1 ?> out |: generate r next (pos + 1) (out ++# piece_text token (index r::pieces next))
 
 :~ ^ generate_from (r : run) (forced : list i32) (token : i32) (pos : i32) (out : string) : string =
-    ? pos >= r::steps ?> out
+    ? pos >= r::steps
+    ?> out
     |:
         := sampled = next_token r token pos
         := next, rest = ?= forced ?| | p :: more => p, more | [] => sampled, []
@@ -768,7 +798,8 @@
     { temperature = temperature; topp = topp; rng = rng }
 
 :~ ^ mult_from (probs : floats) (coin : f32) (i : i32) (cdf : f32) : i32 =
-    ? i >= length probs ?> length probs - 1
+    ? i >= length probs
+    ?> length probs - 1
     |:
         := cdf = cdf + index probs i
         ? coin < cdf ?> i |: mult_from probs coin (i + 1) cdf
@@ -777,12 +808,14 @@
     ? index probs i < cutoff ?> !- |: ? best < 0 ?> !+ |: index probs i > index probs best
 
 :~ ^ pick_max (probs : floats) (taken : array bool) (cutoff : f32) (i : i32) (best : i32) : i32 =
-    ? i >= length probs ?> best
+    ? i >= length probs
+    ?> best
     |: pick_max probs taken cutoff (i + 1) (? index taken i ?> best |: ? beats probs cutoff i best ?> i |: best)
 
 :~ ^ nucleus (p : floats) (taken : array bool) (cut : f32) (top : f32) (acc : f32) (picks : list i32) : f32 * list i32 =
     := i = pick_max p taken cut 0 (-1)
-    ? i < 0 ?> acc, picks
+    ? i < 0
+    ?> acc, picks
     |:
         set taken i !+
         := acc = acc + index p i
@@ -809,7 +842,8 @@
         scale_from x t (i + 1)
 
 := sample (s : sampler) (logits : floats) : i32 =
-    ? s::temperature = 0.0f32 ?> argmax logits
+    ? s::temperature = 0.0f32
+    ?> argmax logits
     |:
         scale_from logits s::temperature 0
         softmax logits 0 (length logits)
@@ -817,7 +851,8 @@
         ? s::topp <= 0.0f32 || s::topp >= 1.0f32 ?> mult_from logits coin 0 0.0f32 |: sample_topp logits s::topp coin
 
 :~ ^ generate_sampled (r : run) (s : sampler) (forced : list i32) (token : i32) (pos : i32) (out : string) : string =
-    ? pos >= r::steps ?> out
+    ? pos >= r::steps
+    ?> out
     |:
         forward r::m r::b r::s token pos
         := next, rest = ?= forced ?| | p :: more => p, more | [] => sample s r::s::logits, []

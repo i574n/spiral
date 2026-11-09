@@ -16,5 +16,10 @@
 ///> rust
 :# a_record_pickler_is_derived_from_its_fields =
     := p : pickler::pick rec3 = derived ()
-    (pickler::count p, pickler::pickle p { alive = !+; heading = pickler::South; mana = Some !- }, pickler::round_trips p)
-    |> _assert_eq (24i32, 19i32, !+)
+    (pickler::count p, pickler::round_trips p) |> _assert_eq (24i32, !+)
+
+///> c
+///> rust
+:# a_derived_record_pickler_pickles_a_record =
+    := p : pickler::pick rec3 = derived ()
+    pickler::pickle p { alive = !+; heading = pickler::South; mana = Some !- } |> _assert_eq 19i32

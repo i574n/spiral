@@ -485,18 +485,26 @@
 := colon_then (s : string) (i : i32) (accept : u32 -> bool) : bool =
     cp_at s i = 58u32 && i + 1i32 < sm'::length s && accept (cp_at s (i + 1i32))
 
-:~ ^ name_end (s : string) (i : i32) : i32 =
-    ? i >= sm'::length s ?> i
-    |? is_name_char (cp_at s i) ?> name_end s (i + xml::code_point_width s i)
-    |? colon_then s i is_name_start ?> name_end s (i + 1i32)
-    |? colon_then s i is_star ?> i + 2i32
+:~ star_end (s : string) (i : i32) : i32 =
+    ? colon_then s i is_star
+    ?> i + 2i32
     |: i
+
+:~ ^ name_end (s : string) (i : i32) : i32 =
+    ? i >= sm'::length s
+    ?> i
+    |? is_name_char (cp_at s i)
+    ?> name_end s (i + xml::code_point_width s i)
+    |? colon_then s i is_name_start
+    ?> name_end s (i + 1i32)
+    |: star_end s i
 
 :~ ^ digits_end (s : string) (i : i32) : i32 =
     ? i < sm'::length s && is_digit (cp_at s i) ?> digits_end s (i + 1i32) |: i
 
 :~ ^ text_end (s : string) (quote : u32) (i : i32) : i32 =
-    ? i >= sm'::length s ?> i
+    ? i >= sm'::length s
+    ?> i
     |? cp_at s i = quote ?>
         ? i + 1i32 < sm'::length s && cp_at s (i + 1i32) = quote ?> text_end s quote (i + 2i32) |: i
     |: text_end s quote (i + xml::code_point_width s i)
@@ -532,17 +540,23 @@
     ? has_text pair (paired_symbols ()) ?> (TSymbol pair, i + 2i32) |: (TSymbol (sm'::substring i width s), i + width)
 
 := xpath_scan_token (s : string) (i : i32) (c : u32) : token * i32 =
-    ? c = 39u32 || c = 34u32 ?> xpath_scan_text s i c
-    |? xpath_starts_number s i c ?> xpath_scan_number s i
-    |? c = 36u32 ?> xpath_scan_variable s i
-    |? is_name_start c ?> xpath_scan_name s i
+    ? c = 39u32 || c = 34u32
+    ?> xpath_scan_text s i c
+    |? xpath_starts_number s i c
+    ?> xpath_scan_number s i
+    |? c = 36u32
+    ?> xpath_scan_variable s i
+    |? is_name_start c
+    ?> xpath_scan_name s i
     |: xpath_scan_symbol s i
 
 :~ ^ tokens_from (s : string) (i : i32) (acc : list token) : list token =
-    ? i >= sm'::length s ?> listm::rev acc
+    ? i >= sm'::length s
+    ?> listm::rev acc
     |:
         := c = cp_at s i
-        ? xpath_is_space c ?> tokens_from s (i + 1i32) acc
+        ? xpath_is_space c
+        ?> tokens_from s (i + 1i32) acc
         |:
             := found, next = xpath_scan_token s i c
             tokens_from s next (found :: acc)
@@ -568,12 +582,18 @@
     ? is_symbol symbol tokens ?> (parsed, after_first tokens) |: (XInvalid ("expected " ++# symbol), tokens)
 
 := level_operators (level : i32) : string =
-    ? level = 0i32 ?> "or"
-    |? level = 1i32 ?> "and"
-    |? level = 2i32 ?> "= != < <= > >= eq ne lt le gt ge"
-    |? level = 3i32 ?> "+ -"
-    |? level = 4i32 ?> "* div mod"
-    |? level = 5i32 ?> "| union"
+    ? level = 0i32
+    ?> "or"
+    |? level = 1i32
+    ?> "and"
+    |? level = 2i32
+    ?> "= != < <= > >= eq ne lt le gt ge"
+    |? level = 3i32
+    ?> "+ -"
+    |? level = 4i32
+    ?> "* div mod"
+    |? level = 5i32
+    ?> "| union"
     |: "intersect except"
 
 := is_level_operator (level : i32) (x : string) : bool =
@@ -627,14 +647,18 @@
     | TName kind :: TSymbol x :: TSymbol y :: _ => x = "(" && y = ")" && is_kind_test kind
     | _ => !-
 
+:= quantifier_word (q : string) : bool = q = "every" || q = "some"
+
 :~ ^ parse_expr (tokens : list token) : xpath * list token =
     ?= tokens ?|
     | TName q :: TVariable v :: TName word :: rest ?& word = "in" => xpath_parse_binding q v rest tokens
     | _ => parse_level 0i32 tokens
 
 :& :~ xpath_parse_binding (q : string) (v : string) (rest : list token) (tokens : list token) : xpath * list token =
-    ? q = "every" || q = "some" ?> xpath_parse_quantified (q = "every") v rest
-    |? q = "for" ?> xpath_parse_for v rest
+    ? quantifier_word q
+    ?> xpath_parse_quantified (q = "every") v rest
+    |? q = "for"
+    ?> xpath_parse_for v rest
     |: parse_level 0i32 tokens
 
 :& :~ xpath_parse_quantified (every : bool) (v : string) (tokens : list token) : xpath * list token =
@@ -652,7 +676,8 @@
     |: (XInvalid "expected return", rest)
 
 :& :~ parse_level (level : i32) (tokens : list token) : xpath * list token =
-    ? level > 6i32 ?> parse_castable tokens
+    ? level > 6i32
+    ?> parse_castable tokens
     |:
         := left, rest = parse_level (level + 1i32) tokens
         parse_level_rest level left rest
@@ -680,8 +705,10 @@
 
 :& :~ parse_path (tokens : list token) : xpath * list token =
     ? is_symbol "//" tokens ?> parse_steps_after (descendants XRoot) (after_first tokens)
-    |? is_symbol "/" tokens ?> xpath_parse_rooted (after_first tokens)
-    |? starts_primary tokens ?> xpath_parse_filtered_steps tokens
+    |? is_symbol "/" tokens
+    ?> xpath_parse_rooted (after_first tokens)
+    |? starts_primary tokens
+    ?> xpath_parse_filtered_steps tokens
     |: parse_steps_after XContext tokens
 
 :& :~ xpath_parse_rooted (tokens : list token) : xpath * list token =
@@ -698,7 +725,8 @@
 
 :& :~ parse_steps (current : xpath) (tokens : list token) : xpath * list token =
     ? is_symbol "//" tokens ?> parse_steps_after (descendants current) (after_first tokens)
-    |? is_symbol "/" tokens ?> parse_steps_after current (after_first tokens)
+    |? is_symbol "/" tokens
+    ?> parse_steps_after current (after_first tokens)
     |: current, tokens
 
 :& :~ parse_steps_after (input : xpath) (tokens : list token) : xpath * list token =
@@ -761,10 +789,12 @@
     | _ => XInvalid "expected a primary expression", tokens
 
 :& :~ xpath_parse_parenthesized (tokens : list token) : xpath * list token =
-    ? is_symbol ")" tokens ?> (XSequence ([]), after_first tokens)
+    ? is_symbol ")" tokens
+    ?> (XSequence ([]), after_first tokens)
     |:
         := inner, rest = parse_expr tokens
-        ? is_symbol "," rest ?> sequence_of (parse_arguments (after_first rest) (inner :: []))
+        ? is_symbol "," rest
+        ?> sequence_of (parse_arguments (after_first rest) (inner :: []))
         |: closed ")" inner rest
 
 :& :~ xpath_parse_if (tokens : list token) : xpath * list token =
@@ -787,14 +817,17 @@
     XCall (function_of name, arguments), rest
 
 :& :~ parse_arguments (tokens : list token) (acc : list xpath) : list xpath * list token =
-    ? is_symbol ")" tokens ?> (listm::rev acc, after_first tokens)
+    ? is_symbol ")" tokens
+    ?> (listm::rev acc, after_first tokens)
     |:
         := argument, rest = parse_expr tokens
         xpath_parse_argument_rest argument rest acc
 
 :& :~ xpath_parse_argument_rest (argument : xpath) (tokens : list token) (acc : list xpath) : list xpath * list token =
-    ? is_symbol "," tokens ?> parse_arguments (after_first tokens) (argument :: acc)
-    |? is_symbol ")" tokens ?> (listm::rev (argument :: acc), after_first tokens)
+    ? is_symbol "," tokens
+    ?> parse_arguments (after_first tokens) (argument :: acc)
+    |? is_symbol ")" tokens
+    ?> (listm::rev (argument :: acc), after_first tokens)
     |: (listm::rev (XInvalid "expected , or )" :: argument :: acc), tokens)
 
 := parse (s : string) : xpath =
@@ -883,7 +916,8 @@
 := member_count (x : xpath) : i32 = node_count (\| XMember _ => !+ | _ => !-) x
 
 :~ ^ spaced_words (s : string) (i : i32) (start : i32) (acc : list string) : list string =
-    ? i >= sm'::length s ?> listm::rev acc
+    ? i >= sm'::length s
+    ?> listm::rev acc
     |? cp_at s i = 32u32 ?>
         := acc = ? i > start && start > 0i32 ?> (sm'::substring start (i - start) s :: acc) |: acc
         spaced_words s (i + 1i32) (i + 1i32) acc

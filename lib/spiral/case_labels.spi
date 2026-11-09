@@ -9,7 +9,8 @@
     ? at > 0 && lower <> letter ?> separator ++# lower |: lower
 
 :~ ^ labelled (separator : string) (name : string) (at : i32) (done : string) : string =
-    ? at >= sm'::length name ?> done
+    ? at >= sm'::length name
+    ?> done
     |: labelled separator name (at + 1) (done ++# lettered separator (sm'::substring at 1 name) at)
 
 := unprefixed (prefix : string) (name : string) : string =

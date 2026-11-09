@@ -3542,6 +3542,7 @@ module spiral_compiler =
         | TopPrototype of Comments * VSCRange * (VSCRange * VarString) * (VSCRange * VarString) * TypeVar list * RawTExpr
         | TopInstance of VSCRange * (VSCRange * VarString) * (VSCRange * VarString) * TypeVar list * RawExpr
         | TopOpen of VSCRange * (VSCRange * VarString) * (VSCRange * SymbolString) list
+        | TopStatic of VSCRange * TopStatement list
 
     /// ### top_inl_or_let_process
     let top_inl_or_let_process comments is_top_down = function
@@ -3693,6 +3694,27 @@ module spiral_compiler =
         if 0 < s.tokens.Length && blockParsingIsTest s then
             if not (blockParsingTestHeaderValid s) then Error [ fst s.tokens.[0], MalformedTestHeader ]
             else
+                let headerRow = s.tokens_cords.[0].row
+                let headerLength = s.tokens_cords |> Array.filter (fun c -> c.row = headerRow) |> Array.length
+                let isStatic = s.tokens |> Array.take headerLength |> Array.exists (function (_, TokVar ("static", _)) -> true | _ -> false)
+                if isStatic && s.default_env.test_entry.IsSome && headerLength < s.tokens.Length then
+                    let bodyColumn = (fst (fst s.tokens.[headerLength])).character
+                    let starts =
+                        [ for i in headerLength .. s.tokens.Length - 1 do
+                            if i = headerLength || (s.tokens_cords.[i].row <> s.tokens_cords.[i - 1].row && (fst (fst s.tokens.[i])).character = bodyColumn) then yield i ]
+                    let bounds = List.zip starts ((List.tail starts) @ [ s.tokens.Length ])
+                    let statements =
+                        bounds |> List.map (fun (a, b) ->
+                            let sub = { s with tokens = s.tokens.[a .. b - 1]; tokens_cords = s.tokens_cords.[a .. b - 1]; layout_columns = s.layout_columns.[a .. b - 1]; i = ref 0 }
+                            match top_statement sub with
+                            | Ok x when sub.Index = sub.tokens.Length -> Ok x
+                            | Ok _ -> Error [ fst sub.tokens.[sub.Index], ExpectedEob ]
+                            | Error [] -> Error [ fst sub.tokens.[0], UnexpectedEob ]
+                            | Error errors -> Error errors)
+                    match statements |> List.tryPick (function Error e -> Some e | Ok _ -> None) with
+                    | Some errors -> Error errors
+                    | None -> Ok (TopStatic (fst s.tokens.[0], statements |> List.choose (function Ok x -> Some x | Error _ -> None)))
+                else
                 match blockParsingTestEntryStart s with
                 | None -> Error []
                 | Some bodyStart ->
@@ -4145,6 +4167,11 @@ module spiral_compiler =
             | Ok (TopAnd(r,_)) -> init {s with errors = (offset +. r, "Invalid `and` statement.") :: s.errors} x'
             | Ok (TopRecInl _ as a) -> recinl {s with tmp = {offset=offset; block=a} :: s.tmp} x'
             | Ok (TopNominalRec _ as a) -> rectype {s with tmp = {offset=offset; block=a} :: s.tmp} x'
+            | Ok (TopStatic(_, statements)) ->
+                let rec emit (s : BlockBundleStateInner) = function
+                    | [] -> init s x'
+                    | a :: rest -> move_temp {s with tmp = {offset=offset; block=a} :: s.tmp} (fun s -> emit s rest)
+                emit s statements
             | Ok a -> move_temp {s with tmp = {offset=offset; block=a} :: s.tmp} (fun s -> init s x')
             | Error er -> init {s with errors = List.append (show_block_parsing_error offset er) s.errors} x'
         and recinl (s : BlockBundleStateInner) l = iter s l <| fun (offset,x,x') ->
@@ -5196,6 +5223,8 @@ module spiral_compiler =
 
     let literal_suffix_warn = System.Environment.GetEnvironmentVariable "SPIRAL_WARN_LITERAL_SUFFIX" <> "0"
 
+    let upstreamDialectPids = System.Collections.Concurrent.ConcurrentDictionary<int, bool>()
+
     let literal_suffix_suggestion (a : Literal) =
         let text = a.LitToString()
         match a with
@@ -5340,6 +5369,13 @@ module spiral_compiler =
         let errors = ResizeArray()
         let warnings = ResizeArray<RString>()
         let top_down_bundle = match expr with BundleInl(_,_,_,_,td) | BundleRecInl(_,td) -> td | _ -> false
+        match expr with
+        | BundleRecInl([ (_, r, (_, own), body) ], true) when not (upstreamDialectPids.ContainsKey package_id) && not (Map.containsKey (TermNameIdOps.create own) top_env'.term) ->
+            let env = loc_env top_env'
+            let refs = validate_bound_vars env env.constraints Set.empty Set.empty (Choice1Of2 body)
+            if not (refs |> Seq.exists (fun (_, e) -> match e with UnboundVariable (UnboundTermName n) -> TermNameIdOps.text n = own | _ -> false)) then
+                warnings.Add(r, $"WTY-UnneededRecMarker: {own} never refers to itself, so its ^ is not needed; drop the ^")
+        | _ -> ()
         let census_rows = ResizeArray<unit -> string>()
         let generalized_statements = Dictionary(HashIdentity.Reference)
         let type_apply_args = Dictionary(HashIdentity.Reference)
@@ -7538,7 +7574,6 @@ module spiral_compiler =
     let unionSourcePackages = System.Runtime.CompilerServices.ConditionalWeakTable<obj, int ref>()
     let packageDirsById = new System.Threading.ThreadLocal<Map<int, string>>(fun () -> Map.empty)
     let autoExportPids = System.Collections.Concurrent.ConcurrentDictionary<int, bool>()
-    let upstreamDialectPids = System.Collections.Concurrent.ConcurrentDictionary<int, bool>()
     // A `link:` unit as its importer sees it: its name and, once the unit is built, the unions its exports reach, keyed by
     // (source name, concrete shape) and mapped to the name the unit exports them under. None: no graph, the package owns all.
     type LinkedUnit = {unit : string; exported : Map<string * string, string> option; calls : Map<string * string, string>; wraps : Map<string * string, string>; shapes : Set<string>}
@@ -33349,6 +33384,20 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
 
         and layoutExpression (indent : int) (nodes : Node list) : LaidLine list =
             let whole = inlineComplete nodes
+            let atomIf =
+                match nodes with
+                | first :: rest when isKeyword SpecIf first && not (rest |> List.exists (isKeyword SpecIf)) && whole.Length <= 40 ->
+                    let isBranchWord node = isKeyword SpecThen node || isKeyword SpecElif node || isKeyword SpecElse node
+                    let rec branches (current : Node list) (keyword : Node) (acc : (Node * Node list) list) (ns : Node list) =
+                        match ns with
+                        | node :: tail when isBranchWord node -> branches [] node ((keyword, List.rev current) :: acc) tail
+                        | node :: tail -> branches (node :: current) keyword acc tail
+                        | [] -> List.rev ((keyword, List.rev current) :: acc)
+                    branches [] first [] rest
+                    |> List.forall (fun (keyword, branch) ->
+                        isKeyword SpecIf keyword || isKeyword SpecElif keyword
+                        || (match branch with [ Leaf lexeme ] -> (match lexeme.Token with TokKeyword _ | TokOperator _ -> false | _ -> true) | _ -> false))
+                | _ -> false
             let hasTopKeyword = nodes |> List.exists (fun node -> match node with Leaf lexeme -> not lexeme.InsideMacro && (match lexeme.Token with TokKeyword _ -> true | TokOperator ("=>", _) -> true | _ -> false) | _ -> false)
             let annotationAt =
                 if hasTopKeyword then None
@@ -33412,7 +33461,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             @ [ { Indent = indent; Text = inlineText [ List.last head ] } ]
                     headLines @ layoutArms indent arms
                 | None -> [ { Indent = indent; Text = whole } ]
-            | first :: _ when isKeyword SpecIf first && (statements nodes).Length = 1 && fits indent whole && not (opensLayout nodes) -> [ { Indent = indent; Text = whole } ]
+            | first :: _ when isKeyword SpecIf first && atomIf && (statements nodes).Length = 1 && fits indent whole && not (opensLayout nodes) -> [ { Indent = indent; Text = whole } ]
             | first :: _ when isKeyword SpecIf first ->
                 let branches = ResizeArray<Node * Node list> ()
                 let mutable keyword = first
@@ -33446,7 +33495,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                              && thenStaysOnCondition thenNode
                              && not condition.IsEmpty
                              && (List.last condition).Indent = thenLine.Indent
-                             && (isThenWord thenLine.Text || (startsWithThen thenLine.Text && not bodyOnOwnLine && not (thenAuthoredOnOwnLine thenNode)))
+                             && isThenWord thenLine.Text
                              && fits thenLine.Indent ((List.last condition).Text + " " + thenLine.Text) ->
                         let last = List.last condition
                         List.take (condition.Length - 1) condition @ [ { last with Text = last.Text + " " + thenLine.Text } ] @ body @ mergeThen rest
@@ -34217,7 +34266,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                         let line = rows.[at]
                                         let trimmed = line.Trim ()
                                         let previous = rows.[at - 1]
-                                        if thenText trimmed
+                                        if (trimmed = "then" || trimmed = "?>")
                                            && indentOf line = indentOf previous
                                            && conditionHead (previous.TrimStart ())
                                            && not (previous.Contains "//")
@@ -34226,6 +34275,44 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                            && displayWidth (previous + " " + trimmed) <= 120 then
                                             rows.[at - 1] <- previous + " " + trimmed
                                             rows.RemoveAt at
+                                        else at <- at + 1
+                                    List.ofSeq rows
+                                let splitThenLines (lines : string list) : string list =
+                                    let rows = ResizeArray<string>(lines)
+                                    let indentOf (line : string) = line.Length - line.TrimStart(' ').Length
+                                    let conditionHead (text : string) = text.StartsWith "? " || text.StartsWith "|? " || text.StartsWith "if " || text.StartsWith "elif "
+                                    let branchHead (text : string) = text = "|:" || text.StartsWith "|: " || text.StartsWith "|? " || text = "else" || text.StartsWith "else " || text.StartsWith "elif "
+                                    let plain (text : string) = not (text.Contains "//") && not (text.Contains "'\"'") && not (text.Contains "\"\"\"") && not (text.EndsWith "\\")
+                                    let topThen (text : string) =
+                                        let mutable depth = 0
+                                        let mutable quoted = false
+                                        let mutable found = -1
+                                        let mutable k = 0
+                                        while found < 0 && k < text.Length do
+                                            let c = text.[k]
+                                            if quoted then
+                                                if c = '\\' then k <- k + 1
+                                                elif c = '"' then quoted <- false
+                                            elif c = '"' then quoted <- true
+                                            elif c = '(' || c = '[' || c = '{' then depth <- depth + 1
+                                            elif c = ')' || c = ']' || c = '}' then depth <- depth - 1
+                                            elif depth = 0 && k + 4 < text.Length && text.Substring (k, 4) = " ?> " then found <- k + 1
+                                            elif depth = 0 && k + 6 < text.Length && text.Substring (k, 6) = " then " then found <- k + 1
+                                            k <- k + 1
+                                        if quoted || depth <> 0 then -1 else found
+                                    let mutable at = 0
+                                    while at < rows.Count - 1 do
+                                        let line = rows.[at]
+                                        let trimmed = line.TrimStart ()
+                                        let next = rows.[at + 1]
+                                        let i = indentOf line
+                                        if conditionHead trimmed && plain line && indentOf next = i && branchHead (next.TrimStart ()) then
+                                            match topThen trimmed with
+                                            | cut when cut > 0 ->
+                                                rows.[at] <- System.String (' ', i) + trimmed.Substring(0, cut).TrimEnd ()
+                                                rows.Insert (at + 1, System.String (' ', i) + trimmed.Substring cut)
+                                                at <- at + 2
+                                            | _ -> at <- at + 1
                                         else at <- at + 1
                                     List.ofSeq rows
                                 let textHabits (lines : string list) : string list =
@@ -34296,7 +34383,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                                     rows.[close] <- pad p (rows.[close].TrimStart ())
                                             at <- k
                                         else at <- at + 1
-                                    joinThenLines (List.ofSeq rows)
+                                    splitThenLines (joinThenLines (List.ofSeq rows))
                                 match (if fitsAsWritten then AsWritten else layoutFlatLine text lineStarts sourceLines) with
                                 | AsWritten ->
                                     let written = kept ()

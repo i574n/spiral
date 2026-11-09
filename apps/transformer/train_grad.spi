@@ -208,7 +208,8 @@
     x
 
 :~ ^ forward_from (n : net) (stash : floats) (x : floats) (l : i32) : floats =
-    ? l >= n::m::c::layers ?> x
+    ? l >= n::m::c::layers
+    ?> x
     |:
         f32_kernels::copy_into stash (l * length x) x 0 (length x) 0
         forward_from n stash (layer_forward n l x) (l + 1)
@@ -226,7 +227,8 @@
     o
 
 :~ ^ loss_from (n : net) (xf : floats) (t : i32) (acc : f32) : f32 =
-    ? t >= steps n ?> acc
+    ? t >= steps n
+    ?> acc
     |: loss_from n xf (t + 1) (acc + f32_grads::cross_entropy (logits_row n xf t) (token n (t + 1)))
 
 := cls_back (n : net) (g : floats) (dl : floats) (x : floats) (dx : floats) : () =
@@ -361,7 +363,8 @@
     g, loss
 
 :~ ^ sumsq_from (g : floats) (s : transformer::slab) (i : i32) (acc : f32) : f32 =
-    ? i >= s::size ?> acc
+    ? i >= s::size
+    ?> acc
     |:
         := v = index g (s::at + i)
         sumsq_from g s (i + 1) (acc + v * v)
@@ -379,7 +382,8 @@
 := sumsq_of (g : floats) (s : transformer::slab) : f32 = sumsq_from g s 0 0.0f32
 
 :~ ^ delta_from (a : floats) (b : floats) (s : transformer::slab) (i : i32) (acc : f32) : f32 =
-    ? i >= s::size ?> acc
+    ? i >= s::size
+    ?> acc
     |:
         := v = index a (s::at + i) - index b (s::at + i)
         delta_from a b s (i + 1) (acc + v * v)
@@ -580,7 +584,8 @@
 :== window_list = list (array i32)
 
 :~ ^ windows_from (data : array u8) (len : i32) (count : i32) (seed : u64) (acc : window_list) : window_list * u64 =
-    ? count <= 0 ?> acc, seed
+    ? count <= 0
+    ?> acc, seed
     |:
         := w, next = next_window data len seed
         windows_from data len (count - 1) next (w :: acc)

@@ -211,20 +211,27 @@
 
 := zig_time_piece (r : zig_run) (fields : i64 * i64 * i64 * i64 * i64 * i64 * i64) : string =
     := _, _, _, hour, minute, second, micros = fields
-    ? r::c = 'H' ?> pad_digits r::width hour
-    |? r::c = 'm' ?> pad_digits r::width minute
-    |? r::c = 's' ?> pad_digits r::width second
+    ? r::c = 'H'
+    ?> pad_digits r::width hour
+    |? r::c = 'm'
+    ?> pad_digits r::width minute
+    |? r::c = 's'
+    ?> pad_digits r::width second
     |: zig_fraction_or_literal r micros
 
 := zig_piece (r : zig_run) (fields : i64 * i64 * i64 * i64 * i64 * i64 * i64) : string =
     := year, month, day, _, _, _, _ = fields
-    ? r::c = 'y' ?> pad_digits r::width year
-    |? r::c = 'M' ?> pad_digits r::width month
-    |? r::c = 'd' ?> pad_digits r::width day
+    ? r::c = 'y'
+    ?> pad_digits r::width year
+    |? r::c = 'M'
+    ?> pad_digits r::width month
+    |? r::c = 'd'
+    ?> pad_digits r::width day
     |: zig_time_piece r fields
 
 :~ ^ zig_format_from (pattern : string) (i : i32) (fields : i64 * i64 * i64 * i64 * i64 * i64 * i64) : string =
-    ? i >= sm'::length pattern ?> ""
+    ? i >= sm'::length pattern
+    ?> ""
     |:
         := c = sm'::index i pattern
         := stop = zig_run_end pattern c i
@@ -389,7 +396,8 @@
     global "import datetime"
     $'datetime.datetime.max' : date_time
 
-:= max_value_rust () : date_time = rust_date_at_nano (rust_naive_date 9999i32 12u32 31u32) 23u32 59u32 59u32 999999900u32
+:= max_value_rust () : date_time =
+    rust_date_at_nano (rust_naive_date 9999i32 12u32 31u32) 23u32 59u32 59u32 999999900u32
 
 := max_value () : date_time =
     backend_switch {
@@ -997,7 +1005,11 @@
 := span_two_digits (n : i64) : string = sm'::pad_left 2 '0' ("" ++#? n)
 
 := span_fields (a : i64) : i64 * i64 * i64 * i64 * i64 =
-    a / 864000000000i64, (a / 36000000000i64) % 24i64, (a / 600000000i64) % 60i64, (a / 10000000i64) % 60i64, a % 10000000i64
+    a / 864000000000i64,
+    (a / 36000000000i64) % 24i64,
+    (a / 600000000i64) % 60i64,
+    (a / 10000000i64) % 60i64,
+    a % 10000000i64
 
 := day_prefix (days : i64) : string = ? days > 0i64 ?> "" ++#? days ++# "." |: ""
 
@@ -1443,7 +1455,11 @@
     pad_digits 2i32 hour ++# pad_digits 2i32 minute ++# "-" ++# pad_digits 2i32 second
 
 := guid_fraction_part (fraction : string) : string =
-    (fraction |> sm'::slice 0i32 1i32) ++# "-" ++# (fraction |> sm'::slice 2i32 5i32) ++# "-" ++# (fraction |> sm'::slice 6i32 6i32)
+    (fraction |> sm'::slice 0i32 1i32)
+    ++# "-"
+    ++# (fraction |> sm'::slice 2i32 5i32)
+    ++# "-"
+    ++# (fraction |> sm'::slice 6i32 6i32)
 
 := guid_prefix_of_micros (micros : i64) (sub_micro : i64) : string =
     := year, month, day, hour, minute, second, fraction_micros = civil_of_micros micros

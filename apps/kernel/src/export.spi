@@ -20,7 +20,15 @@
 :== def_part = { levelParams : array_base i32; name : i32; safety : string; type_ : i32; value : i32 }
 :== value_part = { levelParams : array_base i32; name : i32; type_ : i32; value : i32 }
 :== quot_part = { kind : string; levelParams : array_base i32; name : i32; type_ : i32 }
-:== type_part = { ctors : array_base i32; levelParams : array_base i32; name : i32; numNested : i32; numParams : i32; type_ : i32 }
+:== type_part =
+    {
+        ctors : array_base i32
+        levelParams : array_base i32
+        name : i32
+        numNested : i32
+        numParams : i32
+        type_ : i32
+    }
 :== ctor_part = { name : i32; type_ : i32 }
 :== rec_part = { levelParams : array_base i32; name : i32; type_ : i32 }
 :== group_part = { ctors : array_base ctor_part; recs : array_base rec_part; types : array_base type_part }
@@ -66,7 +74,10 @@
 
 := read_row (line : string) : row = json.decode (renamed line)
 
-:~ ^ listed_from (xs : array_base i32) (i : i32) (n : i32) : list i32 = ? i >= n ?> [] |: index (array xs) i :: listed_from xs (i + 1i32) n
+:~ ^ listed_from (xs : array_base i32) (i : i32) (n : i32) : list i32 =
+    ? i >= n
+    ?> []
+    |: index (array xs) i :: listed_from xs (i + 1i32) n
 
 :~ listed (xs : array_base i32) : list i32 = listed_from xs 0i32 (length (array xs))
 
@@ -101,14 +112,17 @@
 :~ binder_term (names : array string) (terms : array term) (p : binder_part) (is_pi : bool) : term =
     := n = name_at names p::name
     := b = binder_of p::binderInfo
-    ? is_pi ?> Pi (n, b, index terms p::type_, index terms p::body) |: Lam (n, b, index terms p::type_, index terms p::body)
+    ? is_pi
+    ?> Pi (n, b, index terms p::type_, index terms p::body)
+    |: Lam (n, b, index terms p::type_, index terms p::body)
 
 :~ shaped_term (names : array string) (terms : array term) (r : row) : option term =
     ?= r::app, r::lam, r::forallE, r::letE ?|
     | Some p, _, _, _ => Some (App (index terms p::fn, index terms p::arg))
     | _, Some p, _, _ => Some (binder_term names terms p !-)
     | _, _, Some p, _ => Some (binder_term names terms p !+)
-    | _, _, _, Some p => Some (Let (name_at names p::name, index terms p::type_, index terms p::value, index terms p::body))
+    | _, _, _, Some p =>
+        Some (Let (name_at names p::name, index terms p::type_, index terms p::value, index terms p::body))
     | _ => None
 
 :~ leaf_term (names : array string) (levels : array level) (terms : array term) (r : row) : term =
@@ -147,11 +161,20 @@
     | c :: rest => ? c::name = k ?> Some c |: ctor_named rest k
     | [] => None
 
-:~ ^ ctor_list (xs : array_base ctor_part) (i : i32) (n : i32) : list ctor_part = ? i >= n ?> [] |: index (array xs) i :: ctor_list xs (i + 1i32) n
+:~ ^ ctor_list (xs : array_base ctor_part) (i : i32) (n : i32) : list ctor_part =
+    ? i >= n
+    ?> []
+    |: index (array xs) i :: ctor_list xs (i + 1i32) n
 
-:~ ^ rec_list (xs : array_base rec_part) (i : i32) (n : i32) : list rec_part = ? i >= n ?> [] |: index (array xs) i :: rec_list xs (i + 1i32) n
+:~ ^ rec_list (xs : array_base rec_part) (i : i32) (n : i32) : list rec_part =
+    ? i >= n
+    ?> []
+    |: index (array xs) i :: rec_list xs (i + 1i32) n
 
-:~ ^ type_list (xs : array_base type_part) (i : i32) (n : i32) : list type_part = ? i >= n ?> [] |: index (array xs) i :: type_list xs (i + 1i32) n
+:~ ^ type_list (xs : array_base type_part) (i : i32) (n : i32) : list type_part =
+    ? i >= n
+    ?> []
+    |: index (array xs) i :: type_list xs (i + 1i32) n
 
 :~ ^ ctors_of (names : array string) (terms : array term) (all : list ctor_part) (ks : list i32) : list (name * term) =
     ?= ks ?|
@@ -162,7 +185,13 @@
     | [] => []
 
 :~ family_of (names : array string) (terms : array term) (all : list ctor_part) (t : type_part) : inductive =
-    Inductive (name_at names t::name, names_at names t::levelParams, t::numParams, index terms t::type_, ctors_of names terms all (listed t::ctors))
+    Inductive (
+        name_at names t::name,
+        names_at names t::levelParams,
+        t::numParams,
+        index terms t::type_,
+        ctors_of names terms all (listed t::ctors)
+    )
 
 :~ ^ any_nested (ts : list type_part) : bool =
     ?= ts ?|
@@ -173,7 +202,9 @@
     := all = ctor_list g::ctors 0i32 (length (array g::ctors))
     := types = type_list g::types 0i32 (length (array g::types))
     := nested = any_nested types
-    := recs = listm::map (\ (r : rec_part) => (name_at names r::name, names_at names r::levelParams, index terms r::type_)) (rec_list g::recs 0i32 (length (array g::recs)))
+    := recs =
+        listm::map (\ (r : rec_part) => name_at names r::name, names_at names r::levelParams, index terms r::type_) (
+            rec_list g::recs 0i32 (length (array g::recs)))
     Group (listm::map (\ t => family_of names terms all t) types, nested, recs)
 
 :~ def_item (names : array string) (terms : array term) (p : def_part) : item =
@@ -192,7 +223,8 @@
 
 :~ item_of (names : array string) (terms : array term) (r : row) : option item =
     ?= r::axiom, r::def, r::thm, r::opaque ?|
-    | Some p, _, _, _ => Some (Single (Axiom (name_at names p::name, names_at names p::levelParams, index terms p::type_)))
+    | Some p, _, _, _ =>
+        Some (Single (Axiom (name_at names p::name, names_at names p::levelParams, index terms p::type_)))
     | _, Some p, _, _ => Some (def_item names terms p)
     | _, _, Some p, _ => Some (value_item names terms p !-)
     | _, _, _, Some p => Some (value_item names terms p !+)
@@ -202,7 +234,10 @@
         | _, Some g => Some (group_item names terms g)
         | _ => None
 
-:~ ^ items_from (names : array string) (levels : array level) (terms : array term) (lines : list string) (acc : list item) : list item =
+:~ ^ items_from
+    (names : array string) (levels : array level) (terms : array term) (lines : list string) (acc : list item)
+    : list item
+    =
     ?= lines ?|
     | line :: rest =>
         := r = read_row line

@@ -1,24 +1,31 @@
 := (++) (left : string) (right : string) : string = left ^^ right
 
 :~ ^ take_token (src : string) (i : i32) : i32 =
-    ? i >= text::length src ?> i
+    ? i >= text::length src
+    ?> i
     |:
         := ch = text::index src i
-        ? ch = ' ' ?> i
-        |? ch = '\t' ?> i
+        ? ch = ' '
+        ?> i
+        |? ch = '\t'
+        ?> i
         |: take_token src (i + 1i32)
 
 :~ ^ skip_ws (src : string) (i : i32) : i32 =
-    ? i >= text::length src ?> i
+    ? i >= text::length src
+    ?> i
     |:
         := ch = text::index src i
-        ? ch = ' ' ?> skip_ws src (i + 1i32)
-        |? ch = '\t' ?> skip_ws src (i + 1i32)
+        ? ch = ' '
+        ?> skip_ws src (i + 1i32)
+        |? ch = '\t'
+        ?> skip_ws src (i + 1i32)
         |: i
 
 :~ ^ tokens_from (src : string) (i : i32) (acc : list string) : list string =
     := j = skip_ws src i
-    ? j >= text::length src ?> listm::rev acc
+    ? j >= text::length src
+    ?> listm::rev acc
     |:
         := k = take_token src j
         tokens_from src k (text::slice_len src j (k - j) :: acc)
@@ -70,14 +77,18 @@
 
 := backend_of (rest : string) : outcome backend_line =
     := trimmed = text::trim rest
-    ? trimmed = "rust" || text::starts_with trimmed "rust " ?> Ready RustCell
+    ? trimmed = "rust" || text::starts_with trimmed "rust "
+    ?> Ready RustCell
     |: Refused (UnknownBackend trimmed)
 
+:= ready_of (s : scan_state) : outcome prepared =
+    := wrapped, generated = cell::wrap s::kept
+    Ready { code = wrapped; flags = s::flags; main = generated }
+
 := finished (s : scan_state) : outcome prepared =
-    ? text::contains s::kept "\n#!" || text::starts_with s::kept "#!" ?> Refused ShebangLine
-    |:
-        := wrapped, generated = cell::wrap s::kept
-        Ready { code = wrapped; flags = s::flags; main = generated }
+    ? text::contains s::kept "\n#!" || text::starts_with s::kept "#!"
+    ?> Refused ShebangLine
+    |: ready_of s
 
 := kept_line (s : scan_state) (line : string) : scan_state =
     { s ?| kept = (? s::started ?> s::kept ++ "\n" ++ line |: line); started = !+ }
@@ -91,7 +102,8 @@
     | LineGot (line, next) =>
         ? text::starts_with line "////" ?> scanned src next s
         |? text::starts_with line "///- " ?>
-            ? s::seen ?> scanned src next s
+            ? s::seen
+            ?> scanned src next s
             |:
                 ?= flags_line s line ?|
                 | Ready f => scanned src next { s ?| flags = f; seen = !+ }

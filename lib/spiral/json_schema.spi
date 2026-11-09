@@ -25,17 +25,24 @@
     ? count = 0i32 ?> acc |: hex_value s (pos + 1i32) (count - 1i32) (acc * 16i32 + hex_digit (char_at s pos))
 
 := escaped (c : string) : string =
-    ? c = "n" ?> "\n"
-    |? c = "t" ?> "\t"
-    |? c = "r" ?> "\r"
-    |? c = "b" ?> xml::code_point_string 8u32
-    |? c = "f" ?> xml::code_point_string 12u32
+    ? c = "n"
+    ?> "\n"
+    |? c = "t"
+    ?> "\t"
+    |? c = "r"
+    ?> "\r"
+    |? c = "b"
+    ?> xml::code_point_string 8u32
+    |? c = "f"
+    ?> xml::code_point_string 12u32
     |: c
 
 :~ ^ json_string_from (s : string) (pos : i32) (acc : string) : string * i32 =
     := c = char_at s pos
-    ? c = "" ?> acc, pos
-    |? c = "\"" ?> acc, pos + 1i32
+    ? c = ""
+    ?> acc, pos
+    |? c = "\""
+    ?> acc, pos + 1i32
     |? c = "\\" ?>
         := e = char_at s (pos + 1i32)
         ? e = "u" ?>
@@ -58,14 +65,19 @@
 :~ ^ json_value_at (s : string) (start : i32) : json_value * i32 =
     := pos = skip_json_spaces s start
     := c = char_at s pos
-    ? c = "{" ?> json_members s (pos + 1i32) []
-    |? c = "[" ?> json_items s (pos + 1i32) []
+    ? c = "{"
+    ?> json_members s (pos + 1i32) []
+    |? c = "["
+    ?> json_items s (pos + 1i32) []
     |? c = "\"" ?>
         := text, next = json_string_from s (pos + 1i32) ""
         JsonText text, next
-    |? word_at s pos "true" ?> JsonBool !+, pos + 4i32
-    |? word_at s pos "false" ?> JsonBool !-, pos + 5i32
-    |? word_at s pos "null" ?> JsonNull, pos + 4i32
+    |? word_at s pos "true"
+    ?> JsonBool !+, pos + 4i32
+    |? word_at s pos "false"
+    ?> JsonBool !-, pos + 5i32
+    |? word_at s pos "null"
+    ?> JsonNull, pos + 4i32
     |:
         := stop = number_end s pos
         JsonNumber (sm'::substring pos (stop - pos) s), stop
@@ -73,8 +85,10 @@
 :& :~ json_members (s : string) (start : i32) (acc : list (string * json_value)) : json_value * i32 =
     := pos = skip_json_spaces s start
     := c = char_at s pos
-    ? c = "}" || c = "" ?> JsonObject (reverse acc []), pos + 1i32
-    |? c = "," ?> json_members s (pos + 1i32) acc
+    ? c = "}" || c = ""
+    ?> JsonObject (reverse acc []), pos + 1i32
+    |? c = ","
+    ?> json_members s (pos + 1i32) acc
     |:
         := key, after_key = json_string_from s (pos + 1i32) ""
         := colon = skip_json_spaces s after_key
@@ -84,8 +98,10 @@
 :& :~ json_items (s : string) (start : i32) (acc : list json_value) : json_value * i32 =
     := pos = skip_json_spaces s start
     := c = char_at s pos
-    ? c = "]" || c = "" ?> JsonArray (reverse acc []), pos + 1i32
-    |? c = "," ?> json_items s (pos + 1i32) acc
+    ? c = "]" || c = ""
+    ?> JsonArray (reverse acc []), pos + 1i32
+    |? c = ","
+    ?> json_items s (pos + 1i32) acc
     |:
         := value, next = json_value_at s pos
         json_items s next (value :: acc)
@@ -95,11 +111,16 @@
     value
 
 := json_escaped (c : string) : string =
-    ? c = "\"" ?> "\\\""
-    |? c = "\\" ?> "\\\\"
-    |? c = "\n" ?> "\\n"
-    |? c = "\r" ?> "\\r"
-    |? c = "\t" ?> "\\t"
+    ? c = "\""
+    ?> "\\\""
+    |? c = "\\"
+    ?> "\\\\"
+    |? c = "\n"
+    ?> "\\n"
+    |? c = "\r"
+    ?> "\\r"
+    |? c = "\t"
+    ?> "\\t"
     |: c
 
 :~ ^ json_quoted_from (s : string) (pos : i32) (acc : string) : string =
@@ -212,17 +233,24 @@
     ? slash >= 0i32 ?> sm'::substring (slash + 1i32) (sm'::length reference - slash - 1i32) reference |: reference
 
 := builtin_of (kind : string) : string =
-    ? kind = "integer" ?> "xs:integer"
-    |? kind = "number" ?> "xs:decimal"
-    |? kind = "boolean" ?> "xs:boolean"
+    ? kind = "integer"
+    ?> "xs:integer"
+    |? kind = "number"
+    ?> "xs:decimal"
+    |? kind = "boolean"
+    ?> "xs:boolean"
     |: "xs:string"
 
 := builtin_of_schema (schema : json_value) : string =
     := format = text_field "format" schema
-    ? text_field "type" schema <> "string" ?> builtin_of (text_field "type" schema)
-    |? format = "date" ?> "xs:date"
-    |? format = "date-time" ?> "xs:dateTime"
-    |? format = "time" ?> "xs:time"
+    ? text_field "type" schema <> "string"
+    ?> builtin_of (text_field "type" schema)
+    |? format = "date"
+    ?> "xs:date"
+    |? format = "date-time"
+    ?> "xs:dateTime"
+    |? format = "time"
+    ?> "xs:time"
     |: "xs:string"
 
 :~ ^ has_text (target : string) (items : list string) : bool =
@@ -262,7 +290,8 @@
 :& :~ property_element (owner : string) (key : string) (schema : json_value) (min : i32) : xsd particle written =
     := reference = text_field "$ref" schema
     := kind = text_field "type" schema
-    ? reference <> "" ?> element_particle key (Some (type_reference (reference_name reference))) (single min) None
+    ? reference <> ""
+    ?> element_particle key (Some (type_reference (reference_name reference))) (single min) None
     |? kind = "array" ?>
         := items =
             ?= field "items" schema ?|
@@ -274,7 +303,8 @@
         ?= property_element owner key items least ?|
         | Element e => Element { e ?| occurs = { min = least; max = bound } }
         | other => other
-    |? kind = "object" ?> element_particle key None (single min) (Some (object_type "" schema))
+    |? kind = "object"
+    ?> element_particle key None (single min) (Some (object_type "" schema))
     |:
         := facets = string_facets schema
         ?= facets ?|
@@ -385,7 +415,8 @@
     | (key, value) :: rest =>
         ?= ubl_scalar_text value ?|
         | Some scalar =>
-            ? key = "_" ?> ubl_json_parts name rest attributes (xml::text_children scalar) children
+            ? key = "_"
+            ?> ubl_json_parts name rest attributes (xml::text_children scalar) children
             |: ubl_json_parts name rest ((key, scalar) :: attributes) text children
         | None => ubl_json_parts name rest attributes text children
     | [] => xml::element name (reverse attributes []) (listm::append text (reverse children []))
@@ -394,7 +425,10 @@
     ? key = "_D" ?> "xmlns" |: "xmlns:" ++# sm'::substring 1i32 (sm'::length key - 1i32) key
 
 := ubl_json_declared (declared : list (string * string)) (root : xml::xml_node) : xml::xml_node =
-    xml::element (xml::node_name root) (listm::append declared (xml::element_attributes root)) (xml::element_children root)
+    xml::element
+        (xml::node_name root)
+        (listm::append declared (xml::element_attributes root))
+        (xml::element_children root)
 
 :~ ^ ubl_json_roots
     (members : list (string * json_value)) (namespaces : list (string * string)) (roots : list xml::xml_node)
@@ -438,15 +472,21 @@
     | _ => failwith "no top-level member is dropped"
 
 :~ ^ escaped_json_from (s : string) (pos : i32) (acc : string) : string =
-    ? pos >= sm'::length s ?> acc
+    ? pos >= sm'::length s
+    ?> acc
     |:
         := c = xml::code_point_text s pos
         := piece =
-            ? c = "\"" ?> "\\\""
-            |? c = "\\" ?> "\\\\"
-            |? c = "\n" ?> "\\n"
-            |? c = "\r" ?> "\\r"
-            |? c = "\t" ?> "\\t"
+            ? c = "\""
+            ?> "\\\""
+            |? c = "\\"
+            ?> "\\\\"
+            |? c = "\n"
+            ?> "\\n"
+            |? c = "\r"
+            ?> "\\r"
+            |? c = "\t"
+            ?> "\\t"
             |: c
         escaped_json_from s (pos + sm'::length c) (acc ++# piece)
 
@@ -473,7 +513,8 @@
 
 :~ ^ resolved (root : json_value) (schema : json_value) : json_value =
     := reference = text_field "$ref" schema
-    ? reference = "" ?> schema
+    ? reference = ""
+    ?> schema
     |:
         ?= member (reference_name reference) (definitions_of root) ?|
         | Some target => resolved root target
@@ -487,11 +528,14 @@
         ?= field "properties" shape ?|
         | Some (JsonObject members) => members
         | _ => []
-    ? kind = "object" || listm::length properties > 0i32 ?> JsonObject (json_members_of root properties children [])
+    ? kind = "object" || listm::length properties > 0i32
+    ?> JsonObject (json_members_of root properties children [])
     |:
         := text = xml::text_in children
-        ? kind = "integer" || kind = "number" ?> JsonNumber text
-        |? kind = "boolean" ?> JsonBool (text = "true")
+        ? kind = "integer" || kind = "number"
+        ?> JsonNumber text
+        |? kind = "boolean"
+        ?> JsonBool (text = "true")
         |: JsonText text
 
 :& :~ json_members_of
@@ -508,7 +552,8 @@
                 ?= field "items" shape ?|
                 | Some item => item
                 | None => JsonObject []
-            ? listm::length present = 0i32 ?> json_members_of root rest children acc
+            ? listm::length present = 0i32
+            ?> json_members_of root rest children acc
             |:
                 := values = listm::map (\ n => json_of_node root items n) present
                 json_members_of root rest children ((key, JsonArray values) :: acc)

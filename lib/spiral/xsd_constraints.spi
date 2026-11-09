@@ -98,7 +98,10 @@
 
 := duplicate_of (c : identity_constraint) (key : string) : string = constraint_text c::name ++# ": duplicate " ++# key
 
-:= seen_step (c : identity_constraint) (key : string) (seen : list string) (acc : list string) : list string * list string =
+:= seen_step
+    (c : identity_constraint) (key : string) (seen : list string) (acc : list string)
+    : list string * list string
+    =
     ? has_key key seen ?> seen, duplicate_of c key :: acc |: key :: seen, acc
 
 := item_step
@@ -167,7 +170,8 @@
     ?= constraints ?|
     | c :: [] =>
         := keyed = ?= c::kind ?| Key => !+ | Unique => !-
-        ? constraint_text c::name <> "pk_nItem" || owner_text c::element <> "det" || keyed ?> failwith "one unique on det"
+        ? constraint_text c::name <> "pk_nItem" || owner_text c::element <> "det" || keyed
+        ?> failwith "one unique on det"
     | _ => failwith "one constraint"
     := check (document : string) =
         ?= read_xml document ?|

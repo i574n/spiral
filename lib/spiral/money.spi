@@ -36,7 +36,8 @@
     | Floor
 
 := rounded (mode : rounding) (places : i32) (d : decimal::decimal) : decimal::decimal =
-    ? d::scale <= places ?> d
+    ? d::scale <= places
+    ?> d
     |:
         := step = decimal::power_of_ten (d::scale - places) 1i64
         := q = decimal::floor_division d::units step

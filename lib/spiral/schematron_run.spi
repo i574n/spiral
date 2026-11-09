@@ -92,11 +92,13 @@
     | p :: rest => shared_lets rest (unseen p::lets acc)
     | [] => listm::rev acc
 
-:= pattern_namespaces (patterns : list pattern) : list (string * string) = listm::concat (listm::map (\ (p : pattern) => p::namespaces) patterns)
+:= pattern_namespaces (patterns : list pattern) : list (string * string) =
+    listm::concat (listm::map (\ (p : pattern) => p::namespaces) patterns)
 
 := start_scope (today : string) (patterns : list pattern) (document : xml_node) : scope =
     := root = document_root document
-    { context = root; current = root; root = root; variables = []; today = today; namespaces = pattern_namespaces patterns }
+    := ns = pattern_namespaces patterns
+    { context = root; current = root; root = root; variables = []; today = today; namespaces = ns }
 
 := validate_on (today : string) (patterns : list pattern) (document : xml_node) : list failure =
     := start = start_scope today patterns document
@@ -176,7 +178,8 @@
     ?= read_xml document ?|
     | root :: [] =>
         := failures = validate (read_schematron rules) root
-        ? listm::length failures <> 2i32 ?> failwith "the amounts outside the let-bound range fail, the one inside holds"
+        ? listm::length failures <> 2i32
+        ?> failwith "the amounts outside the let-bound range fail, the one inside holds"
         := main = "<schema><include href=\"part/rules.sch\"/></schema>"
         := part =
             "<?xml version=\"1.0\"?><pattern id=\"q\"><rule context=\"line\">"

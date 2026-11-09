@@ -171,9 +171,12 @@
     := round_half_to_even () =
         := lower = floor x
         := difference = x - lower
-        ? difference > 0.5 ?> lower + 1
-        |? difference < 0.5 ?> lower
-        |? floor (lower / 2) * 2 = lower ?> lower
+        ? difference > 0.5
+        ?> lower + 1
+        |? difference < 0.5
+        ?> lower
+        |? floor (lower / 2) * 2 = lower
+        ?> lower
         |: lower + 1
     backend_switch {
         Gleam = round_half_to_even

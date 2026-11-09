@@ -77,7 +77,8 @@
     | None => None
     | Some text_in =>
         := trimmed = text::trim text_in
-        ? trimmed = "" ?> None
+        ? trimmed = ""
+        ?> None
         |:
             ?= best_matches p::line program source trimmed ?|
             | index :: [] =>
@@ -101,8 +102,7 @@
     := b = digits_end s a
     := c = digits_end s (b + 1i32)
     := shaped = b > a && text::one s b = ":" && c > b + 1i32
-    ? text::starts_at s i marker && word_char_before s i = !- && shaped
-    ?>
+    ? text::starts_at s i marker && word_char_before s i = !- && shaped ?>
         := line = text::parse_i32 (text::slice_len s a (b - a))
         := column = text::parse_i32 (text::slice_len s (b + 1i32) (c - b - 1i32))
         Some { start = i; stop = c; at = generated_at line column }
@@ -115,7 +115,8 @@
     (s : string) (i : i32) (program : list string) (source : list string) (path : string) (acc : string)
     : string
     =
-    ? i >= text::length s ?> acc
+    ? i >= text::length s
+    ?> acc
     |:
         ?= hit_at s i ?|
         | Some h =>

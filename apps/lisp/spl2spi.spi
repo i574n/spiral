@@ -30,8 +30,10 @@
 :~ ^ line_end (s : string) (i : i32) : i32 = ? i >= sm::length s || sm::index s i = '\n' ?> i |: line_end s (i + 1i32)
 
 :~ ^ quote_end (s : string) (i : i32) : i32 =
-    ? i >= sm::length s ?> sm::length s
-    |? sm::index s i = '\\' ?> quote_end s (i + 2i32)
+    ? i >= sm::length s
+    ?> sm::length s
+    |? sm::index s i = '\\'
+    ?> quote_end s (i + 2i32)
     |? sm::index s i = '"' ?> i + 1i32
     |: quote_end s (i + 1i32)
 
@@ -42,11 +44,14 @@
     ? until <= from ?> "" |: sm::slice s { from = from; to = until - 1i32 }
 
 :~ ^ scan (s : string) (i : i32) (acc : list token) : list token =
-    ? i >= sm::length s ?> listm::rev acc
+    ? i >= sm::length s
+    ?> listm::rev acc
     |:
         := c = sm::index s i
-        ? is_space c ?> scan s (i + 1i32) acc
-        |? c = ';' ?> scan s (line_end s i) acc
+        ? is_space c
+        ?> scan s (i + 1i32) acc
+        |? c = ';'
+        ?> scan s (line_end s i) acc
         |? c = '(' ?> scan s (i + 1i32) (Open :: acc)
         |? c = ')' ?> scan s (i + 1i32) (Close :: acc)
         |? c = '"' ?> scan s (quote_end s (i + 1i32)) (Quoted (slice_of s i (quote_end s (i + 1i32))) :: acc)
@@ -129,8 +134,10 @@
         | head :: args =>
             := h = word_of head
             := s =
-                ? h = "->" ?> joined " -> " (listm::map (\ x => format_type x (head_word x = "->")) args)
-                |? h = "tuple" ?> joined " * " (listm::map (\ x => format_type x !+) args)
+                ? h = "->"
+                ?> joined " -> " (listm::map (\ x => format_type x (head_word x = "->")) args)
+                |? h = "tuple"
+                ?> joined " * " (listm::map (\ x => format_type x !+) args)
                 |: joined " " (format_type head !- :: listm::map (\ x => format_type x !+) args)
             ? nested && (h = "->" || h = "tuple" || listm::length args > 0i32) ?> "(" ++# s ++# ")" |: s
     | x => text_of x
@@ -140,8 +147,10 @@
     | Items xs =>
         := h = text_of (nth xs 0i32)
         := args = rest xs
-        ? listm::length args = 0i32 ?> h
-        |? listm::length args = 1i32 ?> h ++# " " ++# format_pattern (nth args 0i32)
+        ? listm::length args = 0i32
+        ?> h
+        |? listm::length args = 1i32
+        ?> h ++# " " ++# format_pattern (nth args 0i32)
         |: h ++# " (" ++# joined ", " (listm::map (\ a => format_pattern a) args) ++# ")"
     | x => text_of x
 
@@ -180,13 +189,16 @@
     ? nested ?> "(\n" ++# spaces (ind + 4i32) ++# s ++# ")" |: s
 :& :~ ctor_text (h : string) (args : list sexp) (ind : i32) (nested : bool) : string =
     := wrap = \ (s : string) => ? nested ?> "(" ++# s ++# ")" |: s
-    ? listm::length args = 0i32 ?> h
-    |? listm::length args = 1i32 ?> wrap (h ++# " " ++# format_expr (nth args 0i32) ind !+)
+    ? listm::length args = 0i32
+    ?> h
+    |? listm::length args = 1i32
+    ?> wrap (h ++# " " ++# format_expr (nth args 0i32) ind !+)
     |: wrap (h ++# " (" ++# joined ", " (listm::map (\ x => format_expr x ind !-) args) ++# ")")
 
 :~ forall_of (xs : list sexp) : string * list sexp =
     := first = nth xs 0i32
-    ? head_word first = "forall" ?> "forall " ++# joined " " (listm::map text_of (rest (items first))) ++# ". ", rest xs
+    ? head_word first = "forall"
+    ?> "forall " ++# joined " " (listm::map text_of (rest (items first))) ++# ". ", rest xs
     |: "", xs
 
 :~ name_params (x : sexp) : string =
@@ -227,8 +239,10 @@
 :~ format_top (f : sexp) : string =
     := h = head_word f
     := args = rest (items f)
-    ? h = "union" ?> union_text args
-    |? h = "inl" ?> inl_text args
+    ? h = "union"
+    ?> union_text args
+    |? h = "inl"
+    ?> inl_text args
     |: h ++# " " ++# name_params (nth args 0i32) ++# " = " ++# format_type (nth args 1i32) !-
 
 :~ clean (text : string) : string = text |> sm'::replace "“" "\"" |> sm'::replace "”" "\""
@@ -250,7 +264,8 @@
     ?= read_text (file_system::read_all_text input) ?|
     | Unbalanced why => failed why
     | Forms forms =>
-        ? listm::forall' known_top forms |> not ?> failed "unknown top-level form"
+        ? listm::forall' known_top forms |> not
+        ?> failed "unknown top-level form"
         |:
             file_system::write_all_text output (spi_of forms)
             := count : i32 = listm::length forms

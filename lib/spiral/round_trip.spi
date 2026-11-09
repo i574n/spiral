@@ -23,9 +23,11 @@
     | x :: rest => law x || any rest law
     | [] => !-
 
-:= there_and_back \* a b. (same : a -> a -> bool) (there : a -> b) (home : b -> a) (x : a) : bool = same (home (there x)) x
+:= there_and_back \* a b. (same : a -> a -> bool) (there : a -> b) (home : b -> a) (x : a) : bool =
+    same (home (there x)) x
 
-:= back_and_there \* a b. (same : b -> b -> bool) (there : a -> b) (home : b -> a) (y : b) : bool = same (there (home y)) y
+:= back_and_there \* a b. (same : b -> b -> bool) (there : a -> b) (home : b -> a) (y : b) : bool =
+    same (there (home y)) y
 
 := forward_holds \* a b. (same : a -> a -> bool) (there : a -> b) (home : b -> a) (xs : list a) : bool =
     every xs (there_and_back same there home)
@@ -33,7 +35,9 @@
 := backward_holds \* a b. (same : b -> b -> bool) (there : a -> b) (home : b -> a) (ys : list b) : bool =
     every ys (back_and_there same there home)
 
-:= laws_hold \* a b. (s : shape) (same_a : a -> a -> bool) (same_b : b -> b -> bool) (there : a -> b) (home : b -> a) (xs : list a) (ys : list b)
+:= laws_hold \* a b.
+    (s : shape) (same_a : a -> a -> bool) (same_b : b -> b -> bool) (there : a -> b) (home : b -> a) (xs : list a)
+    (ys : list b)
     : bool
     =
     ?= s ?|
@@ -44,7 +48,9 @@
         | BackAndThere => backward_holds same_b there home ys
     | Lossy _ => !+
 
-:= tight \* a b. (s : shape) (same_a : a -> a -> bool) (same_b : b -> b -> bool) (there : a -> b) (home : b -> a) (xs : list a) (ys : list b)
+:= tight \* a b.
+    (s : shape) (same_a : a -> a -> bool) (same_b : b -> b -> bool) (there : a -> b) (home : b -> a) (xs : list a)
+    (ys : list b)
     : bool
     =
     := forward = forward_holds same_a there home xs
@@ -71,7 +77,10 @@
 
 ///> rust
 :# widening_a_byte_is_a_retraction_back_to_the_byte =
-    (laws_hold (Retraction ThereAndBack) same_u8 same_i32 widen narrow (bytes ()) (wide_numbers ()), tight (Retraction ThereAndBack) same_u8 same_i32 widen narrow (bytes ()) (wide_numbers ()))
+    (
+        laws_hold (Retraction ThereAndBack) same_u8 same_i32 widen narrow (bytes ()) (wide_numbers ()),
+        tight (Retraction ThereAndBack) same_u8 same_i32 widen narrow (bytes ()) (wide_numbers ())
+    )
     |> _assert_eq (!+, !+)
 
 ///> rust
@@ -82,5 +91,8 @@
 :# a_pair_whose_both_trips_hold_is_not_tight_as_a_retraction =
     := same = \ (a : i32) (b : i32) => a = b
     := keep = \ (n : i32) => n
-    (laws_hold Iso same same keep keep (wide_numbers ()) (wide_numbers ()), tight (Retraction ThereAndBack) same same keep keep (wide_numbers ()) (wide_numbers ()))
+    (
+        laws_hold Iso same same keep keep (wide_numbers ()) (wide_numbers ()),
+        tight (Retraction ThereAndBack) same same keep keep (wide_numbers ()) (wide_numbers ())
+    )
     |> _assert_eq (!+, !-)

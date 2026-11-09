@@ -89,7 +89,11 @@
         | Ok x => x
         | Error _ => 0i32
     := ~n = 5i32
-    (caught (\ () => n) |> settled, caught (\ () => failwith "boom" : i32) |> settled, caught (\ () => n + 1i32) |> settled)
+    (
+        caught (\ () => n) |> settled,
+        caught (\ () => failwith "boom" : i32) |> settled,
+        caught (\ () => n + 1i32) |> settled
+    )
     |> _assert_eq (5i32, 0i32, 6i32)
 
 := rust_debug_message \* t. (prefix : string) (x : t) : string =

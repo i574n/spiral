@@ -69,7 +69,13 @@
 ///> rust
 ///> gleam
 :# exposition_renders_one_prometheus_line =
-    { metric = CompileSeconds; backend = BackendRust; suite = Examples; id = "samples/hello"; value = 1.5f64 |> quantity }
+    {
+        metric = CompileSeconds
+        backend = BackendRust
+        suite = Examples
+        id = "samples/hello"
+        value = 1.5f64 |> quantity
+    }
     |> sample
     |> exposition
     |> _assert_eq "spiral_backend_compile_seconds{backend=\"rust\",suite=\"examples\",id=\"samples/hello\"} 1.5"
@@ -94,11 +100,13 @@
 
 := fields_of (line : string) : array string = sm'::split "\t" line |> array
 
-:= millis_at (fields : array string) (i : i32) : f64 = (am'::index i fields |> convert::convert_i32 |> convert::f64) / 1000f64
+:= millis_at (fields : array string) (i : i32) : f64 =
+    (am'::index i fields |> convert::convert_i32 |> convert::f64) / 1000f64
 
 := sample_at \* u. (m : metric u) (fields : array string) (value : () -> f64) : option (sample u) =
     ?= backend_of (am'::index 1i32 fields), suite_of (am'::index 2i32 fields) ?|
-    | Some backend, Some suite => Some ({ metric = m; backend; suite; id = am'::index 0i32 fields; value = value () |> quantity } |> sample)
+    | Some backend, Some suite =>
+        Some ({ metric = m; backend; suite; id = am'::index 0i32 fields; value = value () |> quantity } |> sample)
     | _ => None
 
 := compile_sample (line : string) : option (sample ms) =
@@ -144,15 +152,23 @@
 
 := native_sample (line : string) : option (sample ms) =
     := fields = fields_of line
-    ? am'::length fields < 8i32 ?> None
-    |? am'::index 6i32 fields <> "ran" ?> None
+    ? am'::length fields < 8i32
+    ?> None
+    |? am'::index 6i32 fields <> "ran"
+    ?> None
     |: sample_at NativeSeconds fields (\ () => millis_at fields 7i32)
 
-:= verdict_value (verdict : string) : option f64 = ? verdict = "agree" ?> Some 1f64 |? verdict = "DISAGREE" ?> Some 0f64 |: None
+:= verdict_value (verdict : string) : option f64 =
+    ? verdict = "agree"
+    ?> Some 1f64
+    |? verdict = "DISAGREE"
+    ?> Some 0f64
+    |: None
 
 := oracle_sample (line : string) : option (sample count) =
     := fields = fields_of line
-    ? am'::length fields < 11i32 ?> None
+    ? am'::length fields < 11i32
+    ?> None
     |:
         ?= verdict_value (am'::index 10i32 fields) ?|
         | Some v => sample_at OracleAgree fields (\ () => v)
@@ -192,13 +208,19 @@
     |> _assert_eq 2i32
 
 := backends () : array backend_name =
-    ;[BackendC; BackendRust; BackendZig; BackendGleam; BackendFsharp; BackendLua; BackendWasm; BackendPascal; BackendPython; BackendCpp; BackendOpenQasm]
+    ;[BackendC; BackendRust; BackendZig; BackendGleam; BackendFsharp; BackendLua
+      BackendWasm; BackendPascal; BackendPython; BackendCpp; BackendOpenQasm]
 
 := sample_value \* u. (s : sample u) : f64 =
     s::value |> \ (quantity v) => v
 
+:= backend_value \* u. (b : backend_name) (s : sample u) : option f64 =
+    ? backend_label s::backend = backend_label b
+    ?> Some (sample_value s)
+    |: None
+
 := backend_total \* u. (b : backend_name) (samples : array (sample u)) : f64 =
-    := values : array f64 = samples |> am'::choose (\ (s : sample u) => ? backend_label s::backend = backend_label b ?> Some (sample_value s) |: None)
+    := values : array f64 = samples |> am'::choose (\ (s : sample u) => backend_value b s)
     values |> arraym::fold (+) 0f64
 
 := heavier \* u. (samples : array (sample u)) (best : option backend_name) (b : backend_name) : option backend_name =
@@ -214,10 +236,15 @@
     ++# "_total{backend=\"" ++# backend_label b
     ++# "\"} " ++# sm'::obj_to_string (backend_total b samples)
 
+:= compile_total_line (samples : array (sample ms)) (b : backend_name) : option string =
+    ? backend_total b samples > 0f64
+    ?> Some (total_line CompileSeconds samples b)
+    |: None
+
 := results_totals (text : string) : array string =
     := samples = results_rows text |> am'::choose compile_sample
     backends ()
-    |> am'::choose (\ (b : backend_name) => ? backend_total b samples > 0f64 ?> Some (total_line CompileSeconds samples b) |: None)
+    |> am'::choose (\ (b : backend_name) => compile_total_line samples b)
 
 := results_heaviest (text : string) : option backend_name =
     results_rows text
@@ -230,7 +257,12 @@
     | None => "none"
 
 := value_for \* u. (b : backend_name) (id : string) (samples : array (sample u)) : option f64 =
-    := hits : array f64 = samples |> am'::choose (\ (s : sample u) => ? backend_label s::backend = backend_label b && s::id = id ?> Some (sample_value s) |: None)
+    := hits : array f64 =
+        samples
+        |> am'::choose \ (s : sample u) =>
+            ? backend_label s::backend = backend_label b && s::id = id
+            ?> Some (sample_value s)
+            |: None
     ? am'::length hits = 0i32 ?> None |: Some (am'::index 0i32 hits)
 
 := beats \* u. (b : backend_name) (samples : array (sample u)) (s : sample u) : option bool =
@@ -241,7 +273,9 @@
 := wins_of (pairs : array bool) : array bool = pairs |> am'::choose (\ (w : bool) => ? w ?> Some w |: None)
 
 := head_to_head \* u. (a : backend_name) (b : backend_name) (samples : array (sample u)) : i32 * i32 =
-    := pairs : array bool = samples |> am'::choose (\ (s : sample u) => ? backend_label s::backend = backend_label a ?> beats b samples s |: None)
+    := pairs : array bool =
+        samples
+        |> am'::choose \ (s : sample u) => ? backend_label s::backend = backend_label a ?> beats b samples s |: None
     am'::length (wins_of pairs), am'::length pairs
 
 := results_head_to_head (a : backend_name) (b : backend_name) (text : string) : i32 * i32 =
@@ -256,9 +290,12 @@
 
 := run_sample (line : string) : option (sample ms) =
     := fields = fields_of line
-    ? am'::length fields < 14i32 ?> None
-    |? am'::index 6i32 fields <> "ran" ?> None
-    |? am'::index 13i32 fields = "" ?> None
+    ? am'::length fields < 14i32
+    ?> None
+    |? am'::index 6i32 fields <> "ran"
+    ?> None
+    |? am'::index 13i32 fields = ""
+    ?> None
     |: sample_at RunSeconds fields (\ () => millis_at fields 13i32)
 
 := results_run_head_to_head (a : backend_name) (b : backend_name) (text : string) : i32 * i32 =
@@ -269,28 +306,36 @@
 ///> rust
 ///> gleam
 :# run_head_to_head_reads_the_run_column =
-    := wins, shared = "id\tbackend\tsuite\tcompile\tcompile_ms\tresidual\tnative\tnative_ms\texit\tstdout\toracle\tbaseline\tdetail\trun_ms\nsamples/a\tC\texamples\tok\t10\th\tran\t900\t0\ts\tagree\tparity\t\t40\nsamples/a\tZig\texamples\tok\t10\th\tran\t1500\t0\ts\tagree\tparity\t\t30\nsamples/b\tC\texamples\tok\t10\th\tran\t900\t0\ts\tagree\tparity\t\t20\nsamples/b\tZig\texamples\tok\t10\th\tran\t1500\t0\ts\tagree\tparity\t\t" |> results_run_head_to_head BackendZig BackendC
+    := wins, shared =
+        "id\tbackend\tsuite\tcompile\tcompile_ms\tresidual\tnative\tnative_ms\texit\tstdout\toracle\tbaseline\tdetail\trun_ms\nsamples/a\tC\texamples\tok\t10\th\tran\t900\t0\ts\tagree\tparity\t\t40\nsamples/a\tZig\texamples\tok\t10\th\tran\t1500\t0\ts\tagree\tparity\t\t30\nsamples/b\tC\texamples\tok\t10\th\tran\t900\t0\ts\tagree\tparity\t\t20\nsamples/b\tZig\texamples\tok\t10\th\tran\t1500\t0\ts\tagree\tparity\t\t"
+        |> results_run_head_to_head BackendZig BackendC
     wins |> _assert_eq 1i32
     shared |> _assert_eq 1i32
 
 ///> rust
 ///> gleam
 :# native_head_to_head_counts_ran_rows_only =
-    := wins, shared = "id\tbackend\tsuite\tcompile\tcompile_ms\tresidual\tnative\tnative_ms\nsamples/a\tC\texamples\tok\t10\th\tran\t300\nsamples/a\tZig\texamples\tok\t10\th\tran\t200\nsamples/b\tC\texamples\tok\t10\th\tran\t100\nsamples/b\tZig\texamples\tok\t10\th\tbuild-fail\t50" |> results_native_head_to_head BackendZig BackendC
+    := wins, shared =
+        "id\tbackend\tsuite\tcompile\tcompile_ms\tresidual\tnative\tnative_ms\nsamples/a\tC\texamples\tok\t10\th\tran\t300\nsamples/a\tZig\texamples\tok\t10\th\tran\t200\nsamples/b\tC\texamples\tok\t10\th\tran\t100\nsamples/b\tZig\texamples\tok\t10\th\tbuild-fail\t50"
+        |> results_native_head_to_head BackendZig BackendC
     wins |> _assert_eq 1i32
     shared |> _assert_eq 1i32
 
 ///> rust
 ///> gleam
 :# head_to_head_counts_shared_samples_only =
-    := wins, shared = "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t10\nsamples/a\tZig\texamples\tok\t20\nsamples/b\tC\texamples\tok\t30\nsamples/b\tZig\texamples\tok\t5\nsamples/c\tC\texamples\tok\t7" |> results_head_to_head BackendC BackendZig
+    := wins, shared =
+        "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t10\nsamples/a\tZig\texamples\tok\t20\nsamples/b\tC\texamples\tok\t30\nsamples/b\tZig\texamples\tok\t5\nsamples/c\tC\texamples\tok\t7"
+        |> results_head_to_head BackendC BackendZig
     wins |> _assert_eq 1i32
     shared |> _assert_eq 2i32
 
 ///> rust
 ///> gleam
 :# results_totals_sum_compile_seconds_per_backend =
-    := totals = "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t1500\nsamples/b\tC\tcontracts\tok\t750\nsamples/c\tZig\texamples\tok\t2000" |> results_totals
+    := totals =
+        "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t1500\nsamples/b\tC\tcontracts\tok\t750\nsamples/c\tZig\texamples\tok\t2000"
+        |> results_totals
     am'::length totals |> _assert_eq 2i32
     am'::index 0i32 totals |> _assert_eq "spiral_backend_compile_seconds_total{backend=\"c\"} 2.25"
 

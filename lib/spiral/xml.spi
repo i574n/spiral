@@ -37,13 +37,17 @@
     (lead - 240u32) * 262144u32 + tail 1i32 * 4096u32 + tail 2i32 * 64u32 + tail 3i32
 
 := xml_pascal_point_of (s : string) (i : i32) (lead : u32) (width : i32) : u32 =
-    ? width = 1i32 ?> lead
-    |? width = 2i32 ?> xml_pascal_point_two s i lead
-    |? width = 3i32 ?> xml_pascal_point_three s i lead
+    ? width = 1i32
+    ?> lead
+    |? width = 2i32
+    ?> xml_pascal_point_two s i lead
+    |? width = 3i32
+    ?> xml_pascal_point_three s i lead
     |: xml_pascal_point_four s i lead
 
 := pascal_code_point_at (s : string) (i : i32) : u32 =
-    ? i >= sm'::length s ?> 0u32
+    ? i >= sm'::length s
+    ?> 0u32
     |:
         := lead = pascal_byte_at s i
         xml_pascal_point_of s i lead (xml_pascal_point_width s i lead)
@@ -84,19 +88,24 @@
 := xml_collapsed_step (acc : string) (gap : bool) (c : string) : string = ? gap ?> acc ++# " " ++# c |: acc ++# c
 
 :~ ^ collapsed_from (s : string) (i : i32) (gap : bool) (acc : string) : string =
-    ? i >= sm'::length s ?> acc
+    ? i >= sm'::length s
+    ?> acc
     |:
         := c = code_point_text s i
         := next = i + code_point_width s i
-        ? is_space_character c ?> collapsed_from s next (acc <> "") acc
+        ? is_space_character c
+        ?> collapsed_from s next (acc <> "") acc
         |: collapsed_from s next !- (xml_collapsed_step acc gap c)
 
 := collapsed_space (s : string) : string = collapsed_from s 0i32 !- ""
 
 :~ ^ text_order_from (a : string) (b : string) (i : i32) : i32 =
-    ? i >= sm'::length a && i >= sm'::length b ?> 0i32
-    |? i >= sm'::length a ?> -1i32
-    |? i >= sm'::length b ?> 1i32
+    ? i >= sm'::length a && i >= sm'::length b
+    ?> 0i32
+    |? i >= sm'::length a
+    ?> -1i32
+    |? i >= sm'::length b
+    ?> 1i32
     |: xml_text_order_at a b i
 
 :& :~ xml_text_order_at (a : string) (b : string) (i : i32) : i32 =
@@ -147,13 +156,15 @@
 
 := hex_digit (c : string) : i32 =
     := lower = sm'::index_of c "0123456789abcdef"
-    ? lower >= 0i32 ?> lower
+    ? lower >= 0i32
+    ?> lower
     |:
         := upper = sm'::index_of c "ABCDEF"
         ? upper >= 0i32 ?> upper + 10i32 |: -1i32
 
 :~ ^ reference_value (digits : string) (base : i32) (i : i32) (acc : i32) : i32 =
-    ? i >= sm'::length digits ?> acc
+    ? i >= sm'::length digits
+    ?> acc
     |:
         := d = hex_digit (sm'::substring i 1i32 digits)
         ? d < 0i32 || d >= base || acc > 1114111i32 ?> -1i32 |: reference_value digits base (i + 1i32) (acc * base + d)
@@ -173,17 +184,20 @@
 
 :~ ^ numeric_references_from (text : string) (pos : i32) (acc : string) : string =
     := start = find_from "&#" text pos
-    ? start < 0i32 ?> acc ++# sm'::substring pos (sm'::length text - pos) text
+    ? start < 0i32
+    ?> acc ++# sm'::substring pos (sm'::length text - pos) text
     |: numeric_reference_step text start (acc ++# sm'::substring pos (start - pos) text)
 
 :& :~ numeric_reference_step (text : string) (start : i32) (before : string) : string =
     := semi = find_from ";" text start
-    ? semi < 0i32 ?> before ++# sm'::substring start (sm'::length text - start) text
+    ? semi < 0i32
+    ?> before ++# sm'::substring start (sm'::length text - start) text
     |: reference_decoded text start semi before
 
 :& :~ reference_decoded (text : string) (start : i32) (semi : i32) (before : string) : string =
     := value = reference_value_at text start semi
-    ? code_point_valid value ?> numeric_references_from text (semi + 1i32) (before ++# code_point_string (conv value))
+    ? code_point_valid value
+    ?> numeric_references_from text (semi + 1i32) (before ++# code_point_string (conv value))
     |: numeric_references_from text (start + 2i32) (before ++# "&#")
 
 := decode_numeric_references (text : string) : string = numeric_references_from text 0i32 ""
@@ -220,7 +234,8 @@
 
 :~ ^ read_attributes (s : string) (pos : i32) (acc : list (string * string)) : list (string * string) * i32 =
     := pos = skip_spaces s pos
-    ? xml_attributes_end (at s pos) ?> reverse_attributes acc [], pos
+    ? xml_attributes_end (at s pos)
+    ?> reverse_attributes acc [], pos
     |:
         := attribute, next = xml_attribute_at s pos
         read_attributes s next (attribute :: acc)
@@ -234,15 +249,21 @@
     ? text = "" ?> acc |: XmlText text :: acc
 
 := xml_skip_to (s : string) (pos : i32) : option i32 =
-    ? sm'::substring pos 4i32 s = "<!--" ?> Some (find_from "-->" s pos + 3i32)
-    |? sm'::substring pos 2i32 s = "<?" ?> Some (find_from "?>" s pos + 2i32)
-    |? sm'::substring pos 2i32 s = "<!" ?> Some (find_from ">" s pos + 1i32)
+    ? sm'::substring pos 4i32 s = "<!--"
+    ?> Some (find_from "-->" s pos + 3i32)
+    |? sm'::substring pos 2i32 s = "<?"
+    ?> Some (find_from "?>" s pos + 2i32)
+    |? sm'::substring pos 2i32 s = "<!"
+    ?> Some (find_from ">" s pos + 1i32)
     |: None
 
 :~ ^ read_nodes (s : string) (pos : i32) (acc : list xml_node) : list xml_node * i32 =
-    ? pos >= sm'::length s ?> reverse_nodes acc [], pos
-    |? at s pos <> "<" ?> xml_read_text s pos acc
-    |? sm'::substring pos 2i32 s = "</" ?> reverse_nodes acc [], find_from ">" s pos + 1i32
+    ? pos >= sm'::length s
+    ?> reverse_nodes acc [], pos
+    |? at s pos <> "<"
+    ?> xml_read_text s pos acc
+    |? sm'::substring pos 2i32 s = "</"
+    ?> reverse_nodes acc [], find_from ">" s pos + 1i32
     |: xml_read_markup s pos acc
 
 :& :~ xml_read_markup (s : string) (pos : i32) (acc : list xml_node) : list xml_node * i32 =
@@ -264,7 +285,8 @@
     (s : string) (name : string) (attributes : list (string * string)) (after : i32) (acc : list xml_node)
     : list xml_node * i32
     =
-    ? at s after = "/" ?> read_nodes s (after + 2i32) (XmlElement (name, attributes, []) :: acc)
+    ? at s after = "/"
+    ?> read_nodes s (after + 2i32) (XmlElement (name, attributes, []) :: acc)
     |:
         := children, after_children = read_nodes s (after + 1i32) []
         read_nodes s after_children (XmlElement (name, attributes, children) :: acc)
@@ -587,7 +609,8 @@
     | [] => []
 
 :~ ^ same_node (a : xml_node) (b : xml_node) : bool =
-    ? is_text_node a || is_text_node b ?> is_text_node a && is_text_node b && node_text a = node_text b
+    ? is_text_node a || is_text_node b
+    ?> is_text_node a && is_text_node b && node_text a = node_text b
     |: xml_same_element a b
 
 :& :~ xml_same_element (a : xml_node) (b : xml_node) : bool =
@@ -734,7 +757,8 @@
     =
     := name = local_name (node_name expected)
     := here = path ++# "/" ++# name
-    ? name <> local_name (node_name actual) ?> Some (here ++# ": element " ++# local_name (node_name actual))
+    ? name <> local_name (node_name actual)
+    ?> Some (here ++# ": element " ++# local_name (node_name actual))
     |: xml_content_difference same here expected actual
 
 :& :~ xml_content_difference

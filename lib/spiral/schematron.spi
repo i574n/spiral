@@ -57,7 +57,14 @@
     (id : rule_id) (severity : severity) (kind : assertion_kind) (source : string) (message : string)
     : assertion
     =
-    { id = id; severity = severity; kind = kind; test = xpath::lift_code_lists (xpath::parse source); source = source; message = message }
+    {
+        id = id
+        severity = severity
+        kind = kind
+        test = xpath::lift_code_lists (xpath::parse source)
+        source = source
+        message = message
+    }
 
 := schematron_assertion_id (named : string) (message : string) : rule_id = rule_id (? named = "" ?> message |: named)
 
@@ -114,7 +121,8 @@
     =
     ? is_abstract_rule name attributes
     ?> abstract_rules_in rest ({ id = attribute_or "id" attributes; children = children } :: acc)
-    |? xml::local_name name = "rule" ?> abstract_rules_in rest acc
+    |? xml::local_name name = "rule"
+    ?> abstract_rules_in rest acc
     |: abstract_rules_in rest (abstract_rules_in children acc)
 
 :~ ^ abstract_children (id : string) (abstracts : list abstract_rule) : list xml_node =
@@ -140,12 +148,18 @@
     listm::append (extended_children abstracts (depth + 1i32) inherited) (extended_children abstracts depth rest)
 
 := schematron_rule_of
-    (default : severity) (abstracts : list abstract_rule) (attributes : list (string * string)) (children : list xml_node)
+    (default : severity) (abstracts : list abstract_rule) (attributes : list (string * string))
+    (children : list xml_node)
     : rule
     =
     := source = attribute_or "context" attributes
     := content = extended_children abstracts 0i32 children
-    { context = xpath::parse source; context_source = source; lets = lets_in content []; assertions = assertions_in default content [] }
+    {
+        context = xpath::parse source
+        context_source = source
+        lets = lets_in content []
+        assertions = assertions_in default content []
+    }
 
 := schematron_rule_into
     (default : severity) (abstracts : list abstract_rule) (node : xml_node) (acc : list rule)
@@ -165,7 +179,8 @@
     | [] => listm::rev acc
 
 := schematron_pattern_of
-    (default : severity) (abstracts : list abstract_rule) (attributes : list (string * string)) (children : list xml_node)
+    (default : severity) (abstracts : list abstract_rule) (attributes : list (string * string))
+    (children : list xml_node)
     : pattern
     =
     := id = pattern_id (attribute_or "id" attributes)
@@ -191,7 +206,9 @@
 := patterns_of_children (default : severity) (children : list xml_node) : list pattern =
     := schema_lets = lets_in children []
     := abstracts = abstract_rules_in children []
-    listm::map (\ (p : pattern) => { p ?| lets = listm::append schema_lets p::lets }) (patterns_in default abstracts children [])
+    listm::map
+        \ (p : pattern) => { p ?| lets = listm::append schema_lets p::lets }
+        (patterns_in default abstracts children [])
 
 := read_schematron_with (default : severity) (text : string) : list pattern =
     ?= xml::single_root (xml::read_xml text) ?|
@@ -206,7 +223,8 @@
 
 := href_parts (href : string) : string * string =
     := hash = sm'::index_of "#" href
-    ? hash < 0i32 ?> (href, "")
+    ? hash < 0i32
+    ?> (href, "")
     |: (sm'::substring 0i32 hash href, sm'::substring (hash + 1i32) (sm'::length href - hash - 1i32) href)
 
 :~ ^ element_with_id (id : string) (nodes : list xml_node) : option xml_node =
@@ -216,10 +234,12 @@
     | [] => None
 
 :& :~ schematron_element_in
-    (id : string) (name : string) (attributes : list (string * string)) (children : list xml_node) (rest : list xml_node)
+    (id : string) (name : string) (attributes : list (string * string)) (children : list xml_node)
+    (rest : list xml_node)
     : option xml_node
     =
-    ? attribute_or "id" attributes = id ?> Some (XmlElement (name, attributes, children))
+    ? attribute_or "id" attributes = id
+    ?> Some (XmlElement (name, attributes, children))
     |:
         ?= element_with_id id children ?|
         | Some found => Some found
@@ -311,7 +331,10 @@
     { acc ?| assertions = acc::assertions + 1i32; fatal = acc::fatal + schematron_fatal_count a::severity }
 
 := schematron_count_members (a : assertion) (acc : census) : census =
-    { acc ?| invalid = acc::invalid + xpath::invalid_count a::test; members = acc::members + xpath::member_count a::test }
+    { acc ?|
+        invalid = acc::invalid + xpath::invalid_count a::test
+        members = acc::members + xpath::member_count a::test
+    }
 
 :~ ^ assertions_census (assertions : list assertion) (acc : census) : census =
     ?= assertions ?|
@@ -354,8 +377,10 @@
     sm'::trim (sm'::substring (sm'::length label) (sm'::length text - sm'::length label) text)
 
 := labelled (default : severity) (text : string) : severity * string =
-    ? sm'::index_of "Fatal:" text = 0i32 ?> (Fatal, schematron_after_label text "Fatal:")
-    |? sm'::index_of "Warning:" text = 0i32 ?> (Warning, schematron_after_label text "Warning:")
+    ? sm'::index_of "Fatal:" text = 0i32
+    ?> (Fatal, schematron_after_label text "Fatal:")
+    |? sm'::index_of "Warning:" text = 0i32
+    ?> (Warning, schematron_after_label text "Warning:")
     |: (default, text)
 
 := schematron_compiled_message (default : severity) (test_branch : xml_node) (message : xml_node) : assertion =
@@ -363,14 +388,17 @@
     := source = attribute_or "test" (xml::element_attributes test_branch)
     schematron_assertion (rule_id text) severity Asserts source text
 
-:= schematron_compiled_otherwise (default : severity) (test_branch : xml_node) (otherwise : xml_node) : option assertion =
+:= schematron_compiled_otherwise
+    (default : severity) (test_branch : xml_node) (otherwise : xml_node)
+    : option assertion
+    =
     ?= xml::first_child "message" (xml::element_children otherwise) ?|
     | Some message => Some (schematron_compiled_message default test_branch message)
     | None => None
 
-:= schematron_compiled_when (default : severity) (branches : list xml_node) (test_branch : xml_node) : option assertion =
+:= schematron_compiled_when (default : severity) (branches : list xml_node) (branch : xml_node) : option assertion =
     ?= xml::first_child "otherwise" branches ?|
-    | Some otherwise => schematron_compiled_otherwise default test_branch otherwise
+    | Some otherwise => schematron_compiled_otherwise default branch otherwise
     | None => None
 
 := compiled_assertion (default : severity) (branches : list xml_node) : option assertion =
@@ -410,9 +438,17 @@
     | group :: rest => group :: with_compiled_rule mode r rest
     | [] => [ (mode, [ r ]) ]
 
-:= schematron_compiled_rule (default : severity) (attributes : list (string * string)) (children : list xml_node) : rule =
+:= schematron_compiled_rule
+    (default : severity) (attributes : list (string * string)) (children : list xml_node)
+    : rule
+    =
     := source = attribute_or "match" attributes
-    { context = xpath::parse source; context_source = source; lets = compiled_lets children []; assertions = compiled_assertions default children [] }
+    {
+        context = xpath::parse source
+        context_source = source
+        lets = compiled_lets children []
+        assertions = compiled_assertions default children []
+    }
 
 := schematron_grouped
     (default : severity) (node : xml_node) (acc : list (string * list rule))
@@ -500,7 +536,8 @@
     | r :: [] =>
         ? r::context_source <> "/Invoice" ?> failwith "only the concrete rule is read as a rule"
         := ids = sm'::concat_balanced "," (listm::map (\ (a : assertion) => rule_text a::id) r::assertions)
-        ? ids <> "TR-1,TR-2" ?> failwith ("the concrete rule inherits its abstract rules' assertions in order: " ++# ids)
+        ? ids <> "TR-1,TR-2"
+        ?> failwith ("the concrete rule inherits its abstract rules' assertions in order: " ++# ids)
     | _ => failwith "abstract rules are not rules of their own"
     := totals = schematron_census patterns (empty_census ())
     ? totals::rules <> 1i32 || totals::assertions <> 2i32 ?> failwith "the census counts the concrete rule"

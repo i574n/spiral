@@ -245,7 +245,8 @@
 := hex_of_vec (bytes : am'::vec u8) : string =
     backend_switch {
         Rust = \ () =>
-            $'Rc::<str>::from((!bytes).iter().flat_map(|b| [b >> 4, b & 15]).map(|n| char::from(b"0123456789abcdef"[n as usize])).collect::<String>())' : string
+            $'Rc::<str>::from((!bytes).iter().flat_map(|b| [b >> 4, b & 15]).map(|n| char::from(b"0123456789abcdef"[n as usize])).collect::<String>())'
+            : string
     }
 
 ///> rust
@@ -299,11 +300,13 @@
     | x :: rest => reverse_bytes rest (x :: acc)
 
 :~ ^ hex_bytes (text : string) (size : i32) (i : i32) (acc : list u8) : option (list u8) =
-    ? i >= size ?> Some (reverse_bytes acc [])
+    ? i >= size
+    ?> Some (reverse_bytes acc [])
     |:
         := hi = hex_nibble (sm'::slice i i text)
         := lo = hex_nibble (sm'::slice (i + 1i32) (i + 1i32) text)
-        ? hi < 0i32 || lo < 0i32 ?> None
+        ? hi < 0i32 || lo < 0i32
+        ?> None
         |:
             := byte : u8 = convert::convert (hi * 16i32 + lo)
             hex_bytes text size (i + 2i32) (byte :: acc)
@@ -325,7 +328,8 @@
         ?= decode_hex signature ?|
         | None => !-
         | Some sig =>
-            ? (listm::length key : i32) <> 32i32 || (listm::length sig : i32) <> 64i32 ?> !-
+            ? (listm::length key : i32) <> 32i32 || (listm::length sig : i32) <> 64i32
+            ?> !-
             |:
                 := key_array = key |> listm'::box |> listm'::to_array'
                 := sig_array = sig |> listm'::box |> listm'::to_array'

@@ -204,7 +204,8 @@
 ///> lua
 :# a_bounded_index_is_checked_once_and_then_reads_without_a_check =
     := v = tens ()
-    (read_or_zero v (bounded_of 0), read_or_zero v (bounded_of 2), read_or_zero v (bounded_of 3), read_or_zero v (bounded_of (0 - 1)))
+    (read_or_zero v (bounded_of 0), read_or_zero v (bounded_of 2), read_or_zero v (bounded_of 3), read_or_zero v (
+        bounded_of (0 - 1)))
     |> _assert_eq (10i32, 30i32, 0i32, 0i32)
 
 ///> wgsl

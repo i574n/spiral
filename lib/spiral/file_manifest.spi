@@ -22,8 +22,10 @@
 :~ ^ files_under (root : string) (skipped : list string) (rel : string) (found : list string) : list string =
     := gathered = \ (acc : list string) (name : string) =>
         := child = relative_joined rel name
-        ? file_system::directory_exists (root ++# "/" ++# child) = !- ?> child :: acc
-        |? listm'::contains name skipped ?> acc
+        ? file_system::directory_exists (root ++# "/" ++# child) = !-
+        ?> child :: acc
+        |? listm'::contains name skipped
+        ?> acc
         |: files_under root skipped child acc
     child_names (? rel = "" ?> root |: root ++# "/" ++# rel) |> listm::fold gathered found
 
@@ -49,7 +51,8 @@
     := first = sm'::index_of " " line
     := rest = ? first < 0i32 ?> "" |: sm'::slice (first + 1i32) (sm'::length line - 1i32) line
     := second = sm'::index_of " " rest
-    ? first <= 0i32 || second <= 0i32 || second + 1i32 >= sm'::length rest ?> None
+    ? first <= 0i32 || second <= 0i32 || second + 1i32 >= sm'::length rest
+    ?> None
     |:
         := sha256 = sm'::slice 0i32 (first - 1i32) line
         := path = sm'::slice (second + 1i32) (sm'::length rest - 1i32) rest
@@ -80,8 +83,10 @@
     | (b :: rest), [] => changes_from rest [] (Removed b::path :: acc)
     | [], (t :: rest) => changes_from [] rest (Added t::path :: acc)
     | (b :: brest), (t :: trest) =>
-        ? b::path = t::path ?> changes_from brest trest (? same_content b t ?> acc |: Changed t::path :: acc)
-        |? lt_is (comp b::path t::path) ?> changes_from brest target (Removed b::path :: acc)
+        ? b::path = t::path
+        ?> changes_from brest trest (? same_content b t ?> acc |: Changed t::path :: acc)
+        |? lt_is (comp b::path t::path)
+        ?> changes_from brest target (Removed b::path :: acc)
         |: changes_from base trest (Added t::path :: acc)
 
 :~ manifest_changes (base : list manifest_entry) (target : list manifest_entry) : list manifest_change =
@@ -107,7 +112,8 @@
 
 ///> rust
 :# the_canonical_text_reads_back_and_rejects_a_bad_line =
-    := entries = [ { path = "a b.txt"; bytes = 12i64; sha256 = "aa" }; { path = "sub/c.txt"; bytes = 0i64; sha256 = "bb" } ]
+    := entries =
+        [ { path = "a b.txt"; bytes = 12i64; sha256 = "aa" }; { path = "sub/c.txt"; bytes = 0i64; sha256 = "bb" } ]
     manifest_of_text (manifest_text entries) |> _assert_eq (Some entries)
     manifest_of_text "aa 12 a.txt\r\nbb x c.txt\n" |> _assert_eq None
     manifest_of_text "" |> _assert_eq (Some [])

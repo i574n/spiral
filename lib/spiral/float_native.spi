@@ -98,7 +98,8 @@
 
 := decimal_point (s : string) : string =
     := comma = float_text::position_of ',' s 0i32
-    ? comma < 0i32 ?> s
+    ? comma < 0i32
+    ?> s
     |:
         := after = float_text::text_count s - comma - 1i32
         := before = float_text::part s 0i32 comma
@@ -143,7 +144,8 @@
     := wide = lean_widen v
     := sign = ? wide < 0f64 ?> "-" |: ""
     := a = lean_abs wide
-    ? a = 0f64 ?> (? 1f64 / wide < 0f64 ?> "-0.0" |: "0.0")
+    ? a = 0f64
+    ?> (? 1f64 / wide < 0f64 ?> "-0.0" |: "0.0")
     |:
         := e = lean_floor_log10 a
         :~ ^ search (p : i64) : string =
@@ -173,6 +175,8 @@
 := is_positive \* t {number}. (v : t) : bool = v > -v
 
 := shortest \* t {number}. (v : t) : string =
-    ? is_nan v ?> "NaN"
-    |? is_infinite v ?> (? is_positive v ?> "Infinity" |: "-Infinity")
+    ? is_nan v
+    ?> "NaN"
+    |? is_infinite v
+    ?> (? is_positive v ?> "Infinity" |: "-Infinity")
     |: native_shortest v

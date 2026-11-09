@@ -944,7 +944,8 @@
         "runge-kutta 4", rk4_x, rk4_y
     ]
 
-:= ke_point_l (mpst : list particle_state) = (mpst |> listm'::item 0i32)::time, system_ke_l (multi_particle_state_l mpst)
+:= ke_point_l (mpst : list particle_state) =
+    (mpst |> listm'::item 0i32)::time, system_ke_l (multi_particle_state_l mpst)
 
 := ke_curve_l n_method =
     billiard_states_finite_l n_method 30 0.03
@@ -1159,7 +1160,8 @@
     |> listm::map \ r => r::x, r::y
 
 := stream_arrays (xs, ys) =
-    (xs |> stream::to_list |> listm'::box |> listm'::to_array'), (ys |> stream::to_list |> listm'::box |> listm'::to_array')
+    (xs |> stream::to_list |> listm'::box |> listm'::to_array'),
+    (ys |> stream::to_list |> listm'::box |> listm'::to_array')
 
 := string_frame_s initial_state n =
     := (multi_particle_state_s sts) = stream::iterate (string_update_s 0.000025) initial_state |> stream::item n

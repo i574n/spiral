@@ -12,7 +12,8 @@
 := unicode_escape (c : i32) : string = sm'::concat_list "" [ "\\u00"; hex_digit (c / 16i32); hex_digit (c % 16i32) ]
 
 := short_escape (c : i32) : option string =
-    ? c = 8i32 ?> Some "\\b" |? c = 9i32 ?> Some "\\t" |? c = 10i32 ?> Some "\\n"
+    ? c = 8i32
+    ?> Some "\\b" |? c = 9i32 ?> Some "\\t" |? c = 10i32 ?> Some "\\n"
     |? c = 12i32 ?> Some "\\f" |? c = 13i32 ?> Some "\\r" |: None
 
 := control_escape (c : i32) : string =
@@ -62,7 +63,8 @@ pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
 ///> rust
 ///> gleam
 :# quote_uses_short_forms_for_backspace_formfeed_and_return =
-    quote (sm'::concat_list "" [ unicode::char_of 8i32; unicode::char_of 12i32; unicode::char_of 13i32 ]) |> _assert_eq "\"\\b\\f\\r\""
+    quote (sm'::concat_list "" [ unicode::char_of 8i32; unicode::char_of 12i32; unicode::char_of 13i32 ])
+    |> _assert_eq "\"\\b\\f\\r\""
 
 ///> rust
 ///> gleam

@@ -36,13 +36,17 @@
 := line_of (line : string) : toml_line =
     := trimmed = text::trim line
     := eq = text::find_from trimmed "=" 0i32
-    ? trimmed = "" || text::starts_with trimmed "#" ?> Blank
-    |? eq <= 0i32 ?> Raw line
+    ? trimmed = "" || text::starts_with trimmed "#"
+    ?> Blank
+    |? eq <= 0i32
+    ?> Raw line
     |:
         := key = text::trim (text::take trimmed eq)
         := value = text::trim (text::drop trimmed (eq + 1i32))
-        ? text::starts_with value "'''" ?> Block (key, text::drop value 3i32)
-        |? text::starts_with value "[" ?> ListStart (key, value)
+        ? text::starts_with value "'''"
+        ?> Block (key, text::drop value 3i32)
+        |? text::starts_with value "["
+        ?> ListStart (key, value)
         |: Scalar (key, value)
 
 := indented (line : string) : string = "    " ++ line
@@ -51,7 +55,8 @@
     ?= lines ?|
     | [] => acc, []
     | line :: rest =>
-        ? ends_with (text::trim line) "'''" ?> acc, lines
+        ? ends_with (text::trim line) "'''"
+        ?> acc, lines
         |: block_body rest ((? text::trim line = "" ?> "" |: indented line) :: acc)
 
 :~ ^ collect (value : string) (lines : list string) : string * list string =
@@ -99,7 +104,13 @@
 
 := joined (dir : string) (name : string) : string =
     := cut = ends_with dir "/" || ends_with dir "\\"
-    ? dir = "" ?> name |? dir = "/" ?> "/" ++ name |? cut ?> text::take dir (text::length dir - 1i32) ++ "/" ++ name |: dir ++ "/" ++ name
+    ? dir = ""
+    ?> name
+    |? dir = "/"
+    ?> "/" ++ name
+    |? cut
+    ?> text::take dir (text::length dir - 1i32) ++ "/" ++ name
+    |: dir ++ "/" ++ name
 
 :~ ^ first_regular (paths : list string) : option string =
     ?= paths ?|
@@ -115,7 +126,10 @@
 
 := ascii_space (b : i32) : bool = b = 32i32 || (b >= 9i32 && b <= 13i32)
 
-:~ ^ spaces_end (s : string) (i : i32) : i32 = ? i < text::length s && ascii_space (text::byte_at s i) ?> spaces_end s (i + 1i32) |: i
+:~ ^ spaces_end (s : string) (i : i32) : i32 =
+    ? i < text::length s && ascii_space (text::byte_at s i)
+    ?> spaces_end s (i + 1i32)
+    |: i
 
 := declares_at (s : string) (line : i32) : bool =
     := k = spaces_end s line
@@ -158,15 +172,18 @@
 :# the_i574n_dialect_is_the_default_with_or_without_a_key =
     := keyless = i574n_dialect "packageDir = '../lib'\nmodules = '''\nmain\n'''"
     := compat = i574n_dialect "edition = 3", i574n_dialect "edition: 3"
-    (keyless, compat, i574n_dialect "dialect = \"i574n\"", i574n_dialect "dialect: i574n") |> _assert_eq (!+, (!+, !+), !+, !+)
+    (keyless, compat, i574n_dialect "dialect = \"i574n\"", i574n_dialect "dialect: i574n")
+    |> _assert_eq (!+, (!+, !+), !+, !+)
 
 ///> gleam
 :# only_the_upstream_dialect_opts_out_in_either_spelling =
-    (i574n_dialect "dialect = 'upstream'", i574n_dialect "  dialect:   upstream\r\nmodules:\n    main") |> _assert_eq (!-, !-)
+    (i574n_dialect "dialect = 'upstream'", i574n_dialect "  dialect:   upstream\r\nmodules:\n    main")
+    |> _assert_eq (!-, !-)
 
 ///> gleam
 :# a_name_joins_a_dir_like_elixir_path_join =
-    (joined "" "a", joined "/" "a", joined "d/" "a", joined "d\\" "a", joined "d" "a") |> _assert_eq ("a", "/a", "d/a", "d/a", "d/a")
+    (joined "" "a", joined "/" "a", joined "d/" "a", joined "d\\" "a", joined "d" "a")
+    |> _assert_eq ("a", "/a", "d/a", "d/a", "d/a")
 
 ///> gleam
 :# a_dir_s_manifest_is_its_first_regular_name =

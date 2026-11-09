@@ -37,12 +37,18 @@
     | Table : list align * list (list inline) * list (list (list inline))
 
 := level_of (n : i32) : option level =
-    ? n = 1i32 ?> Some H1
-    |? n = 2i32 ?> Some H2
-    |? n = 3i32 ?> Some H3
-    |? n = 4i32 ?> Some H4
-    |? n = 5i32 ?> Some H5
-    |? n = 6i32 ?> Some H6
+    ? n = 1i32
+    ?> Some H1
+    |? n = 2i32
+    ?> Some H2
+    |? n = 3i32
+    ?> Some H3
+    |? n = 4i32
+    ?> Some H4
+    |? n = 5i32
+    ?> Some H5
+    |? n = 6i32
+    ?> Some H6
     |: None
 
 :~ level_tag (l : level) : string = sm'::to_lower (reflection::case_name l)

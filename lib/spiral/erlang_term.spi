@@ -79,7 +79,8 @@
 := charlist (text : string) : term = apply "unicode" "characters_to_list" [ of text ]
 
 :~ ^ items_from (reversed : term) (acc : list term) : list term =
-    ? equal reversed (list_term []) ?> acc
+    ? equal reversed (list_term [])
+    ?> acc
     |: items_from (apply "erlang" "tl" [ reversed ]) (apply "erlang" "hd" [ reversed ] :: acc)
 
 := items_of (native : term) : list term = items_from (apply "lists" "reverse" [ native ]) []

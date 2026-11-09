@@ -595,7 +595,8 @@
     $'std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)()))' : rust_caught t
 
 := rust_quietly \* t. (catch : () -> t) : t =
-    ? rust_panic_aborts () ?> catch ()
+    ? rust_panic_aborts ()
+    ?> catch ()
     |:
         := previous = rust_panic_take_hook ()
         rust_panic_silent_hook () |> rust_panic_set_hook
@@ -625,8 +626,10 @@
     $'Rc::<str>::from(*!payload.downcast_ref::<&str>().unwrap())' : string
 
 := rust_panic_text (payload : rust_panic_payload) : string =
-    ? rust_panic_holds_string payload ?> rust_panic_string payload
-    |? rust_panic_holds_str payload ?> rust_panic_str payload
+    ? rust_panic_holds_string payload
+    ?> rust_panic_string payload
+    |? rust_panic_holds_str payload
+    ?> rust_panic_str payload
     |: "panic"
 
 := rust_exn_of_text (text : string) : exn =
@@ -635,7 +638,8 @@
 := catch_unwind_rust \* t. (fn : () -> t) (ex_fn : exn -> t) : t =
     rust_quietly \ () =>
         := caught = rust_catch_unwind fn
-        ? rust_caught_ok caught ?> rust_caught_value caught
+        ? rust_caught_ok caught
+        ?> rust_caught_value caught
         |: caught |> rust_caught_payload |> rust_panic_text |> rust_exn_of_text |> ex_fn
 
 :! lua_attempt = $'table'

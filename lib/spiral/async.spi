@@ -365,8 +365,7 @@
     }
 
 := catch' \* t e. (a : async t) : async (choice2' t e) =
-    ? is_rust ()
-    ?>
+    ? is_rust () ?>
         := r = a |> catch_rust
         $'(!r)' : async (choice2' t e)
     |:

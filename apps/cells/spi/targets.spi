@@ -14,19 +14,32 @@
     | WgslTarget
 
 := target_of (tool : string) : option target =
-    ? tool = "rust" ?> Some RustTarget
-    |? tool = "fsharp" ?> Some FsharpTarget
-    |? tool = "typescript" ?> Some TypescriptTarget
-    |? tool = "python" ?> Some PythonTarget
-    |? tool = "cuda" ?> Some CudaTarget
-    |? tool = "cpp" ?> Some CppTarget
-    |? tool = "gleam" ?> Some GleamTarget
-    |? tool = "lua" ?> Some LuaTarget
-    |? tool = "c" ?> Some CTarget
-    |? tool = "pascal" || tool = "delphi" ?> Some PascalTarget
-    |? tool = "zig" ?> Some ZigTarget
-    |? tool = "lean" ?> Some LeanTarget
-    |? tool = "wgsl" ?> Some WgslTarget
+    ? tool = "rust"
+    ?> Some RustTarget
+    |? tool = "fsharp"
+    ?> Some FsharpTarget
+    |? tool = "typescript"
+    ?> Some TypescriptTarget
+    |? tool = "python"
+    ?> Some PythonTarget
+    |? tool = "cuda"
+    ?> Some CudaTarget
+    |? tool = "cpp"
+    ?> Some CppTarget
+    |? tool = "gleam"
+    ?> Some GleamTarget
+    |? tool = "lua"
+    ?> Some LuaTarget
+    |? tool = "c"
+    ?> Some CTarget
+    |? tool = "pascal" || tool = "delphi"
+    ?> Some PascalTarget
+    |? tool = "zig"
+    ?> Some ZigTarget
+    |? tool = "lean"
+    ?> Some LeanTarget
+    |? tool = "wgsl"
+    ?> Some WgslTarget
     |: None
 
 := backend_name (t : target) : string =
@@ -79,11 +92,16 @@
     | PowershellHost
 
 := host_of (language : string) : option host =
-    ? language = "fsharp" || language = "fs" ?> Some FsiHost
-    |? language = "python" || language = "py" ?> Some PythonHost
-    |? language = "lua" ?> Some LuaHost
-    |? language = "javascript" || language = "js" ?> Some JavascriptHost
-    |? language = "powershell" || language = "pwsh" ?> Some PowershellHost
+    ? language = "fsharp" || language = "fs"
+    ?> Some FsiHost
+    |? language = "python" || language = "py"
+    ?> Some PythonHost
+    |? language = "lua"
+    ?> Some LuaHost
+    |? language = "javascript" || language = "js"
+    ?> Some JavascriptHost
+    |? language = "powershell" || language = "pwsh"
+    ?> Some PowershellHost
     |: None
 
 := host_name (h : host) : string =
@@ -113,6 +131,8 @@
     | None => ""
 
 :~ ^ without_exe (s : string) : string =
-    ? text::length s >= 4i32 && text::starts_at s (text::length s - 4i32) ".exe" ?> without_exe (text::take s (text::length s - 4i32)) |: s
+    ? text::length s >= 4i32 && text::starts_at s (text::length s - 4i32) ".exe"
+    ?> without_exe (text::take s (text::length s - 4i32))
+    |: s
 
 := is_cl (basename : string) : bool = without_exe (text::lowercase basename) = "cl"

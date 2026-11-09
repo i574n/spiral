@@ -21,15 +21,23 @@
 
 :~ ^ lines_of (src : string) (i : i32) (acc : list string) : list string =
     := nl = text::find_from src "\n" i
-    ? nl < 0i32 ?> listm::rev (text::drop src i :: acc) |: lines_of src (nl + 1i32) (text::slice_len src i (nl - i) :: acc)
+    ? nl < 0i32
+    ?> listm::rev (text::drop src i :: acc)
+    |: lines_of src (nl + 1i32) (text::slice_len src i (nl - i) :: acc)
 
 := nested_name (names : string) : string = first_nested (? names = "" ?> [] |: lines_of names 0i32 [])
 
 := blank_char (ch : string) : bool = ch = " " || ch = "\t" || ch = "\r" || ch = "\n"
 
-:~ ^ lead_blank (s : string) (i : i32) : i32 = ? i < text::length s && blank_char (text::slice_len s i 1i32) ?> lead_blank s (i + 1i32) |: i
+:~ ^ lead_blank (s : string) (i : i32) : i32 =
+    ? i < text::length s && blank_char (text::slice_len s i 1i32)
+    ?> lead_blank s (i + 1i32)
+    |: i
 
-:~ ^ trail_blank (s : string) (n : i32) : i32 = ? n > 0i32 && blank_char (text::slice_len s (n - 1i32) 1i32) ?> trail_blank s (n - 1i32) |: n
+:~ ^ trail_blank (s : string) (n : i32) : i32 =
+    ? n > 0i32 && blank_char (text::slice_len s (n - 1i32) 1i32)
+    ?> trail_blank s (n - 1i32)
+    |: n
 
 := package_dir_line (line : string) : bool =
     := prefix = "packageDir:"
@@ -44,13 +52,18 @@
 := entry_item (declared : string) : string = trimmed_end (trimmed_end declared "-") "*"
 
 := relative_item (item : string) : bool =
-    text::starts_with item "./" || text::starts_with item "../" || text::starts_with item ".\\" || text::starts_with item "..\\"
+    text::starts_with item "./"
+    || text::starts_with item "../"
+    || text::starts_with item ".\\"
+    || text::starts_with item "..\\"
 
 :~ ^ last_separator (s : string) (i : i32) : i32 =
     ? i < 0i32 ?> -1i32 |? separator (text::slice_len s i 1i32) ?> i |: last_separator s (i - 1i32)
 
 :~ ^ without_trailing_separators (s : string) : string =
-    ? text::length s > 1i32 && separator (text::drop s (text::length s - 1i32)) ?> without_trailing_separators (text::take s (text::length s - 1i32)) |: s
+    ? text::length s > 1i32 && separator (text::drop s (text::length s - 1i32))
+    ?> without_trailing_separators (text::take s (text::length s - 1i32))
+    |: s
 
 := basename (path : string) : string =
     := p = without_trailing_separators path
@@ -67,9 +80,12 @@
     | [] => listm::rev acc
     | line :: rest =>
         := bare = trimmed_end line "\r"
-        ? text::starts_with bare "packages:" ?> package_lines rest !+ acc
-        |? text::starts_with bare "modules:" ?> package_lines rest !- acc
-        |? bare <> "" && not (starts_blank bare) ?> package_lines rest !- acc
+        ? text::starts_with bare "packages:"
+        ?> package_lines rest !+ acc
+        |? text::starts_with bare "modules:"
+        ?> package_lines rest !- acc
+        |? bare <> "" && not (starts_blank bare)
+        ?> package_lines rest !- acc
         |? inside && declared_of line <> "" && not (text::starts_with (declared_of line) "|")
         ?> package_lines rest inside (declared_of line :: acc)
         |: package_lines rest inside acc
@@ -105,4 +121,5 @@
 ///> gleam
 :# sibling_projects_point_package_dir_up_and_shorten_relative_entries =
     := src = "packageDir: ../../lib\npackages:\n    |core-\n    ../client-\n    spiral-\nmodules:\n    main"
-    sibling_project src |> _assert_eq "packageDir: ..\npackages:\n    |core-\n    client-\n    spiral-\nmodules:\n    main"
+    sibling_project src
+    |> _assert_eq "packageDir: ..\npackages:\n    |core-\n    client-\n    spiral-\nmodules:\n    main"

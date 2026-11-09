@@ -342,8 +342,10 @@
         | Fsharp => \ a, b =>
             $'System.IO.Path.Combine (!a, !b)'
         | _ => \ a, b =>
-            ? a = "" ?> b
-            |? (a |> sm'::ends_with "/") || (a |> sm'::ends_with "\\") ?> a ++# b
+            ? a = ""
+            ?> b
+            |? (a |> sm'::ends_with "/") || (a |> sm'::ends_with "\\")
+            ?> a ++# b
             |: a ++# "/" ++# b
 
 ///> gleam
@@ -396,7 +398,8 @@
     | [] => "/tmp"
     | name :: rest =>
         := value = gleam_env_value name
-        ? gleam_env_unset value ?> gleam_temp_directory_from rest
+        ? gleam_env_unset value
+        ?> gleam_temp_directory_from rest
         |:
             := dir = gleam_env_text value
             ? dir = "" ?> gleam_temp_directory_from rest |: dir
@@ -472,7 +475,8 @@
     $'spiral_fs_write_file_modes(!path, !text, !modes)'
 
 := gleam_segment_step (acc : list string) (segment : string) : list string =
-    ? segment = "" || segment = "." ?> acc
+    ? segment = "" || segment = "."
+    ?> acc
     |? segment = ".." ?>
         ?= acc ?|
         | _ :: up => up
@@ -591,7 +595,9 @@
     := posix = gleam_atom_named "posix"
     := option : gleam_dynamic = $'##(!time, !posix)'
     := options : listm'::list' gleam_dynamic = $'[!option]'
-    ?= ($'spiral_fs_read_file_info(!path, !options)' : resultm::result' gleam_dynamic gleam_dynamic) |> resultm::unbox ?|
+    ?=
+        ($'spiral_fs_read_file_info(!path, !options)' : resultm::result' gleam_dynamic gleam_dynamic) |> resultm::unbox
+    ?|
     | Ok info => ($'spiral_fs_stat_element(6, !info)' : u64) * 1000u64
     | Error _ => 0u64
 
@@ -1247,7 +1253,8 @@
     $'spiral_fs_mklink_junction(&*!native_path, &*!native_target)' : i32
 
 := directory_create_junction (target : string) (path : string) : result () string =
-    ? path |> directory_exists ?> Error ("directory_create_junction / path exists: " ++# path)
+    ? path |> directory_exists
+    ?> Error ("directory_create_junction / path exists: " ++# path)
     |:
         run_target \|
             | Rust => \ () =>
@@ -1559,7 +1566,13 @@
                     | _, 0 ?& x |> sm'::ends_with ":" =>
                         := drive = current_dir |> sm'::slice 0i32 0i32
                         := letter = x |> sm'::slice 0i32 0i32
-                        0, ;[ sm'::(++#) (? sm'::to_lower letter = sm'::to_lower drive ?> drive |: sm'::to_upper letter) ":" ] ++ acc
+                        0,
+                        ;[
+                            sm'::(++#)
+                                (? sm'::to_lower letter = sm'::to_lower drive ?> drive |: sm'::to_upper letter)
+                                ":"
+                        ]
+                        ++ acc
                     | _, 0 => 0, ;[ x ] ++ acc
                     | _ => level - 1, acc
             |> snd
@@ -1680,7 +1693,7 @@
 
 /// ## file_system
 :~ delete_comparable_path (path : string) : string =
-    path |> get_full_path |> sm'::replace "\\" "/" |> sm'::trim_end ['/'] |> sm'::to_lower
+    path |> get_full_path |> sm'::replace "\\" "/" |> sm'::trim_end [ '/' ] |> sm'::to_lower
 
 := delete_target_contains (target : string) (root : string) : bool =
     root <> "" && (target = root || sm'::starts_with (target ++# "/") root)
@@ -1690,7 +1703,8 @@
     := count = am'::length parts
     := part (at : i32) : string = ? at < count ?> am'::index at parts |: ""
     := rooted_home = part 0i32 = "" && (count = 2i32 || (count = 3i32 && part 1i32 = "home"))
-    := app_data = part 3i32 = "appdata" && (count <= 5i32 || (count = 6i32 && part 4i32 = "local" && part 5i32 = "temp"))
+    := app_data =
+        part 3i32 = "appdata" && (count <= 5i32 || (count = 6i32 && part 4i32 = "local" && part 5i32 = "temp"))
     := users = part 1i32 = "users" && (count <= 3i32 || app_data)
     count <= 1i32 || rooted_home || users || (count = 2i32 && part 1i32 = "windows")
 
@@ -1699,18 +1713,19 @@
     | [] => !-
     | name :: rest =>
         := value = env::get_environment_variable name
-        ? value <> "" && delete_target_contains target (delete_comparable_path value) ?> !+
+        ? value <> "" && delete_target_contains target (delete_comparable_path value)
+        ?> !+
         |: delete_variable_protected target rest
 
 := delete_target_is_protected (path : string) : bool =
-    := variables = ["USERPROFILE"; "HOME"; "TEMP"; "TMP"; "TMPDIR"; "LOCALAPPDATA"; "APPDATA"; "SystemRoot"; "ProgramData"]
+    := variables =
+        [ "USERPROFILE"; "HOME"; "TEMP"; "TMP"; "TMPDIR"; "LOCALAPPDATA"; "APPDATA"; "SystemRoot"; "ProgramData" ]
     := target = delete_comparable_path path
     path = "" || delete_shape_protected target || delete_variable_protected target variables
 
 ///> rust
 :# delete_target_is_protected_refuses_kits_cases_on_windows =
-    ? platform::is_windows ()
-    ?>
+    ? platform::is_windows () ?>
         (
             delete_target_is_protected "C:\\",
             delete_target_is_protected "C:\\Users",
@@ -1744,12 +1759,14 @@
 :~ directory_delete recursive (path : string) : () =
     run_target_args' (path, recursive) \|
         | Fsharp => \ path, recursive =>
-            ? recursive && delete_target_is_protected path
-            ?> "file_system.directory_delete: refusing a drive root, profile, temp root or system folder: " ++# path |> failwith
+            ? recursive && delete_target_is_protected path ?>
+                "file_system.directory_delete: refusing a drive root, profile, temp root or system folder: " ++# path
+                |> failwith
             $'System.IO.Directory.Delete (!path, !recursive)'
         | Rust => \ path, recursive =>
-            ? recursive && delete_target_is_protected path
-            ?> "file_system.directory_delete: refusing a drive root, profile, temp root or system folder: " ++# path |> failwith
+            ? recursive && delete_target_is_protected path ?>
+                "file_system.directory_delete: refusing a drive root, profile, temp root or system folder: " ++# path
+                |> failwith
             ? path |> directory_exists ?>
                 ? recursive
                 ?> !\\(path, $'"std::fs::remove_dir_all(&*$0).unwrap()"')
@@ -2022,7 +2039,8 @@
     !\\(path, $'"std::fs::read_dir(&*$0).map(|entries| entries.filter_map(|entry| entry.ok().map(|entry| \
         entry.file_name().to_string_lossy().into_owned())).collect::<Vec<std::string::String>>())"')
 
-:= read_dir_names (path : string) : resultm::result' (am'::vec sm'::std_string) stream::io_error = read_directory_names path
+:= read_dir_names (path : string) : resultm::result' (am'::vec sm'::std_string) stream::io_error =
+    read_directory_names path
 
 ///> rust -d chrono
 :# copy_list_canonicalize_and_remove_a_tree =
@@ -2073,7 +2091,8 @@
 
 := rust_last_write_ms (path : string) : u64 =
     := found = rust_metadata_of path
-    ? rust_metadata_ok found |> not ?> 0u64
+    ? rust_metadata_ok found |> not
+    ?> 0u64
     |:
         := modified = found |> rust_metadata_value |> rust_modified_of
         ? rust_modified_ok modified ?> modified |> rust_modified_value |> rust_since_epoch |> rust_elapsed_ms |: 0u64
@@ -2196,7 +2215,8 @@
 
 := rust_try_append_text (path : string) (text : string) : result () string =
     := opened = rust_append_opened path
-    ? rust_file_opened_ok opened |> not ?> Error "the file could not be opened"
+    ? rust_file_opened_ok opened |> not
+    ?> Error "the file could not be opened"
     |:
         := file = rust_file_of opened
         ? rust_written_all file text |> rust_io_ok ?> Ok () |: Error "the write failed"

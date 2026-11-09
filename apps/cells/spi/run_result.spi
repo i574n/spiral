@@ -11,15 +11,20 @@
     | OtherOut
 
 := output_of (tag : string) (body : string) : output =
-    ? tag = "v" ?> ValueOut body
-    |? tag = "o" ?> StdoutOut body
-    |? tag = "e" ?> StderrOut body
-    |? tag = "h" ?> HtmlOut body
+    ? tag = "v"
+    ?> ValueOut body
+    |? tag = "o"
+    ?> StdoutOut body
+    |? tag = "e"
+    ?> StderrOut body
+    |? tag = "h"
+    ?> HtmlOut body
     |: OtherOut
 
 :~ ^ outputs_from (wire : string) (i : i32) (acc : list output) : list output =
     := colon = text::find_char wire i ':'
-    ? i >= text::length wire || colon < 0i32 ?> listm::rev acc
+    ? i >= text::length wire || colon < 0i32
+    ?> listm::rev acc
     |:
         := n = text::parse_i32 (text::slice_len wire (i + 1i32) (colon - i - 1i32))
         := item = output_of (text::slice_len wire i 1i32) (text::slice_len wire (colon + 1i32) n)
@@ -36,11 +41,16 @@
 
 := field (tag : string) (body : string) : string = tag ++ text::show_i32 (text::length body) ++ ":" ++ body
 
-:= value_field (values : list string) : string = ?= values ?| [] => "n0:" | _ => field "v" (sm'::concat_list "\n" values)
+:= value_field (values : list string) : string =
+    ?= values ?|
+    | [] => "n0:"
+    | _ => field "v" (sm'::concat_list "\n" values)
 
 := fields_wire (outputs : list output) : string =
     := html = listm::map (field "h") (gather html_of outputs)
-    value_field (gather value_of outputs) ++ field "o" (sm'::concat_list "" (gather printed_of outputs)) ++ sm'::concat_list "" html
+    value_field (gather value_of outputs)
+    ++ field "o" (sm'::concat_list "" (gather printed_of outputs))
+    ++ sm'::concat_list "" html
 
 := result_fields_wire (wire : string) : string = fields_wire (outputs_from wire 0i32 [])
 

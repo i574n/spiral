@@ -44,7 +44,8 @@
     ? i >= n ?> m |: max_from x off n (i + 1) (max m (index x (off + i)))
 
 :~ ^ exp_from (x : floats) (off : i32) (n : i32) (m : f32) (i : i32) (acc : f32) : f32 =
-    ? i >= n ?> acc
+    ? i >= n
+    ?> acc
     |:
         := e = exp (index x (off + i) - m)
         set x (off + i) e

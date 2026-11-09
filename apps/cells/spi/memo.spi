@@ -27,12 +27,14 @@
 := has_i32 (xs : list i32) (n : i32) : bool = any (\ x => x = n) xs
 
 :~ ^ strip_from (line : string) (i : i32) (in_string : bool) (acc : string) : string =
-    ? i >= text::length line ?> acc
+    ? i >= text::length line
+    ?> acc
     |:
         := ch = text::one line i
         ? in_string && ch = "\\" && i + 1i32 < text::length line
         ?> strip_from line (i + 2i32) !+ (acc ++ text::slice_len line i 2i32)
-        |? ch = "\"" ?> strip_from line (i + 1i32) (in_string = !-) (acc ++ ch)
+        |? ch = "\""
+        ?> strip_from line (i + 1i32) (in_string = !-) (acc ++ ch)
         |? in_string = !- && text::starts_at line i "//" ?> acc
         |: strip_from line (i + 1i32) in_string (acc ++ ch)
 
@@ -66,9 +68,9 @@
     ? i < text::length s && word_at s i ?> word_end s (i + char_width s i) |: i
 
 :~ ^ identifiers_from (s : string) (i : i32) (acc : list string) : list string =
-    ? i >= text::length s ?> listm::rev acc
-    |? text::byte_at s i < 128i32 && ident_start (text::one s i)
-    ?>
+    ? i >= text::length s
+    ?> listm::rev acc
+    |? text::byte_at s i < 128i32 && ident_start (text::one s i) ?>
         := stop = word_end s (i + 1i32)
         identifiers_from s stop (text::slice_len s i (stop - i) :: acc)
     |: identifiers_from s (i + char_width s i) acc
@@ -122,19 +124,18 @@
 
 :~ ^ cases_from (code : string) (i : i32) (acc : list string) : list string =
     := bar = text::find_from code "|" i
-    ? bar < 0i32 ?> listm::rev acc
+    ? bar < 0i32
+    ?> listm::rev acc
     |:
         := at = spaces_end code (bar + 1i32)
-        ? at < text::length code && upper_start (text::one code at)
-        ?>
+        ? at < text::length code && upper_start (text::one code at) ?>
             := stop = word_end code (at + 1i32)
             cases_from code stop (text::slice_len code at (stop - at) :: acc)
         |: cases_from code (bar + 1i32) acc
 
 := operator_shape (header : string) (at : i32) : option shape =
     := stop = until_any header (at + 1i32) ")"
-    ? text::one header at = "(" && stop > at + 1i32 && text::one header stop = ")"
-    ?>
+    ? text::one header at = "(" && stop > at + 1i32 && text::one header stop = ")" ?>
         := op = text::slice_len header (at + 1i32) (stop - at - 1i32)
         Some { kind = Definition; names = [ "(" ++ op ++ ")" ]; operators = [ op ] }
     |: None
@@ -159,9 +160,12 @@
     := v = name_start header (value_keys ())
     := t = name_start header (type_keys ())
     := inst = first_keyword header 0i32 [ "instance"; ":+" ]
-    ? v >= 0i32 ?> value_shape header v
-    |? t >= 0i32 ?> type_shape header code t
-    |? inst >= 0i32 ?> instance_shape header inst
+    ? v >= 0i32
+    ?> value_shape header v
+    |? t >= 0i32
+    ?> type_shape header code t
+    |? inst >= 0i32
+    ?> instance_shape header inst
     |: other_shape ()
 
 :== span = { header : i32; last : i32; header_text : string }
@@ -172,8 +176,10 @@
     ?= lines ?|
     | [] => listm::rev acc
     | l :: rest =>
-        ? row > s::last ?> listm::rev acc
-        |? row >= s::header ?> lines_between rest (row + 1i32) s (l :: acc)
+        ? row > s::last
+        ?> listm::rev acc
+        |? row >= s::header
+        ?> lines_between rest (row + 1i32) s (l :: acc)
         |: lines_between rest (row + 1i32) s acc
 
 := is_instance (header : string) : bool =
@@ -236,7 +242,8 @@
     ?= todo ?|
     | [] => seen
     | i :: rest =>
-        ? dict::has i seen ?> reach g rest seen
+        ? dict::has i seen
+        ?> reach g rest seen
         |:
             ?= nth i g::blocks ?|
             | Some b => reach g (listm::append (next_of g b) rest) (dict::insert i () seen)

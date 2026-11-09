@@ -12,7 +12,8 @@
 :< inductive
 
 :| aux =
-    | Aux : string * term * list term * name * list level * i32 * list (string * name) * string * term * list (name * term)
+    | Aux :
+        string * term * list term * name * list level * i32 * list (string * name) * string * term * list (name * term)
 
 :~ ^ applied_pi (ty : term) (args : list term) : term =
     ?= args ?|
@@ -89,7 +90,8 @@
     | (c, _) :: rest =>
         := more = aux_ctor_bodies env us args prefix rest
         ?= family_decl_type env (name_text c) ?|
-        | Some (cps, cty) => (name (prefix ++# "." ++# name_text c), applied_pi (instantiate_levels cty cps us) args) :: more
+        | Some (cps, cty) =>
+            (name (prefix ++# "." ++# name_text c), applied_pi (instantiate_levels cty cps us) args) :: more
         | None => more
     | [] => []
 
@@ -108,7 +110,20 @@
             := sort = applied_pi (instantiate_levels ity ips us) args
             := asabs = listm::map (\ a => lams params a) args
             := recn = owner ++# ".rec_" ++# sm'::obj_to_string k
-            Some (Aux (prefix, o, asabs, name i, us, inp, ctor_pairs prefix rules, recn, sort, aux_ctor_bodies env us args prefix rules))
+            Some (
+                Aux (
+                    prefix,
+                    o,
+                    asabs,
+                    name i,
+                    us,
+                    inp,
+                    ctor_pairs prefix rules,
+                    recn,
+                    sort,
+                    aux_ctor_bodies env us args prefix rules
+                )
+            )
         | _ => None
     | _ => None
 
@@ -216,8 +231,10 @@
     | (Aux (family, _, asabs, i, us, _, cpairs, recn, _, _)) :: rest =>
         := front = instantiated asabs (take args np)
         := tail = drop args np
-        ? h = family ?> Some (apply_all (Const (i, us)) (joined front tail))
-        |? h = family ++# ".rec" ?> Some (apply_all (Const (name recn, ls)) args)
+        ? h = family
+        ?> Some (apply_all (Const (i, us)) (joined front tail))
+        |? h = family ++# ".rec"
+        ?> Some (apply_all (Const (name recn, ls)) args)
         |: ctor_or_next rest np h ls args cpairs us (joined front tail)
     | [] => None
 :& :~ ctor_or_next
@@ -247,7 +264,10 @@
     | t :: rest => back bs np t :: backs bs np rest
     | [] => []
 
-:~ ^ dummies (gap : i32) (t : term) : term = ? gap <= 0i32 ?> t |: Lam (name "_p", Default, Sort Zero, dummies (gap - 1i32) t)
+:~ ^ dummies (gap : i32) (t : term) : term =
+    ? gap <= 0i32
+    ?> t
+    |: Lam (name "_p", Default, Sort Zero, dummies (gap - 1i32) t)
 
 :~ ^ with_gap (rhs : term) (k : i32) (gap : i32) : term =
     ? k <= 0i32 ?> dummies gap (lift rhs gap) |: under_lam rhs k gap
@@ -312,7 +332,8 @@
     | [] => env
 
 :~ admit_with_auxes
-    (env : list decl) (group : list inductive) (ps : list name) (np : i32) (params : list (name * term)) (auxes : list aux)
+    (env : list decl) (group : list inductive) (ps : list name) (np : i32) (params : list (name * term))
+    (auxes : list aux)
     : admitted
     =
     ?= too_few auxes np ?|
@@ -415,7 +436,9 @@
 ///> rust
 :# a_container_that_is_negative_in_its_parameter_cannot_nest =
     := neg_of = \ (a : term) => App (Const (name "Neg", []), a)
-    := mk = Pi (name "A", Default, type_sort (), Pi (name "f", Default, Pi (name "x", Default, BVar 0i32, nat ()), neg_of (BVar 1i32)))
+    := mk =
+        Pi (name "A", Default, type_sort (), Pi (name "f", Default, Pi (name "x", Default, BVar 0i32, nat ()), neg_of (
+            BVar 1i32)))
     := neg = Inductive (name "Neg", [], 1i32, Pi (name "A", Default, type_sort (), type_sort ()), [ name "negmk", mk ])
     := env =
         ?= admit_inductive (nat_env ()) neg ?|

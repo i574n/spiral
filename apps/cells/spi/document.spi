@@ -30,14 +30,22 @@
     | OtherKind s => s
 
 := kind_of (s : string) : cell_kind =
-    ? s = "markdown" ?> Markdown
-    |? s = "spiral" ?> SpiralCode
-    |? s = "fsharp" ?> FsharpCode
-    |? s = "import" ?> ImportCell
-    |? s = "test" ?> TestCell
-    |? text::starts_with s "code/" ?> CodeIn (text::drop s 5i32)
-    |? text::starts_with s "real_test:" ?> NamedTest (RealRealm, text::drop s 10i32)
-    |? text::starts_with s "test:" ?> NamedTest (SpiRealm, text::drop s 5i32)
+    ? s = "markdown"
+    ?> Markdown
+    |? s = "spiral"
+    ?> SpiralCode
+    |? s = "fsharp"
+    ?> FsharpCode
+    |? s = "import"
+    ?> ImportCell
+    |? s = "test"
+    ?> TestCell
+    |? text::starts_with s "code/"
+    ?> CodeIn (text::drop s 5i32)
+    |? text::starts_with s "real_test:"
+    ?> NamedTest (RealRealm, text::drop s 10i32)
+    |? text::starts_with s "test:"
+    ?> NamedTest (SpiRealm, text::drop s 5i32)
     |: OtherKind s
 
 :== cells = list (cell_kind * string)
@@ -95,14 +103,17 @@
     text::show_i32 (count_cells ordered) ++ "\n" ++ emit_cells ordered
 
 :~ ^ letter_end (line : string) (i : i32) : i32 =
-    ? i >= text::length line ?> i
-    |? text::is_letter (text::index line i) ?> letter_end line (i + 1i32)
+    ? i >= text::length line
+    ?> i
+    |? text::is_letter (text::index line i)
+    ?> letter_end line (i + 1i32)
     |: i
 
 := marker (line : string) : mark =
     ? text::starts_with line "#!" ?>
         := n = letter_end line 2i32
-        ? n = 2i32 ?> None
+        ? n = 2i32
+        ?> None
         |: Some (text::slice_len line 2i32 (n - 2i32), text::drop line n)
     |: None
 
@@ -124,7 +135,8 @@
         | None => walk src next xs kind (add_line buffer line)
         | Some (name, rest) =>
             := xs2 = push xs kind buffer
-            ? name = "meta" ?> walk src next xs2 None ""
+            ? name = "meta"
+            ?> walk src next xs2 None ""
             |:
                 ?= kind_of name ?|
                 | ImportCell => walk src next ((ImportCell, text::trim rest) :: xs2) kind ""
@@ -190,18 +202,22 @@
         | _ => (kind, source) :: (keep_docs rest)
 
 :~ ^ lead_ws (line : string) (i : i32) : i32 =
-    ? i >= text::length line ?> i
+    ? i >= text::length line
+    ?> i
     |:
         := ch = text::index line i
-        ? ch = ' ' ?> lead_ws line (i + 1i32)
-        |? ch = '\t' ?> lead_ws line (i + 1i32)
+        ? ch = ' '
+        ?> lead_ws line (i + 1i32)
+        |? ch = '\t'
+        ?> lead_ws line (i + 1i32)
         |: i
 
 := doc_line (line : string) : string =
     ? line = "" ?> "/// "
     |:
         := i = lead_ws line 0i32
-        ? i >= text::length line ?> line
+        ? i >= text::length line
+        ?> line
         |: text::take line i ++ "/// " ++ text::drop line i
 
 := test_heading (line : string) : bool =
@@ -218,9 +234,12 @@
 
 := format_cell (kind : cell_kind) (source : string) : string =
     := t = text::trim source
-    ? kind = Markdown ?> join_rows (md_go t 0i32 [])
-    |? kind = TestCell ?> t
-    |? test_cell t ?> ""
+    ? kind = Markdown
+    ?> join_rows (md_go t 0i32 [])
+    |? kind = TestCell
+    ?> t
+    |? test_cell t
+    ?> ""
     |: t
 
 :~ ^ formatted (xs : cells) (acc : cells) : cells =
@@ -246,7 +265,8 @@
             s ++ brk ++ "\n" ++ emit_spi rest
 
 :~ ^ read_cells (src : string) (i : i32) (n : i32) (acc : cells) : cells =
-    ? n <= 0i32 ?> rev_cells acc []
+    ? n <= 0i32
+    ?> rev_cells acc []
     |:
         ?= text::next_line src i ?|
         | LineDone => rev_cells acc []
@@ -310,8 +330,7 @@
 :~ ^ test_name_go (src : string) (i : i32) (pending : bool) (acc : string) : string =
     ? i >= text::length src
     ?> acc
-    |? text::byte_at src i >= 128i32
-    ?>
+    |? text::byte_at src i >= 128i32 ?>
         := width = text::utf8_width (text::byte_at src i)
         ? unicode_letter (text::code_point src i)
         ?> test_name_go src (i + width) !- (name_piece pending acc (text::lowercase (text::slice_len src i width)))
@@ -348,7 +367,8 @@
     ?= text::next_line src i ?|
     | LineDone => found
     | LineGot (line, next) =>
-        ? text::starts_with (text::trim line) "#" ?> last_heading_line src next line
+        ? text::starts_with (text::trim line) "#"
+        ?> last_heading_line src next line
         |: last_heading_line src next found
 
 := heading_test_name (source : string) : string =
@@ -388,7 +408,8 @@
 
 := reason_after (s : string) (marker : string) : string =
     := k = text::find_from (s ++ " ") (marker ++ " ") 0i32
-    ? k < 0i32 ?> ""
+    ? k < 0i32
+    ?> ""
     |:
         := rest = text::drop s (k + text::length marker)
         := n = quoted_end rest
@@ -396,7 +417,8 @@
 
 := word_after (s : string) (marker : string) : string =
     := k = text::find_from s marker 0i32
-    ? k < 0i32 ?> ""
+    ? k < 0i32
+    ?> ""
     |:
         := start = k + text::length marker
         text::slice_len s start (text::take_unicode_ident s start - start)
@@ -456,7 +478,8 @@
 
 := user_flag_row (line : string) : bool =
     := flags = text::trim (text::drop line 4i32)
-    text::starts_with line "///- " && not (text::starts_with flags "--test" || text::starts_with flags "--ignore" || text::starts_with flags "--real")
+    text::starts_with line "///- "
+    && not (text::starts_with flags "--test" || text::starts_with flags "--ignore" || text::starts_with flags "--real")
 
 :~ ^ test_block_go
     (src : string) (i : i32) (targets : rows) (options : string) (body : rows) (name : string)
@@ -516,7 +539,8 @@
     | LineGot (line, next) =>
         := t = text::trim line
         ? t = "" || text::starts_with t "///" ?> only_opens_from source next seen
-        |? text::starts_with t "open " || text::starts_with t ":< " ?> only_opens_from source next !+
+        |? text::starts_with t "open " || text::starts_with t ":< "
+        ?> only_opens_from source next !+
         |: !-
 
 := opens_only_body (source : string) : bool =
@@ -543,10 +567,14 @@
 
 := test_mode_of (source : string) : test_mode =
     := head = " " ++ first_line source ++ " "
-    ? text::contains head " --ignore " ?> IgnoredTest
-    |? text::contains head " --fails " ?> FailingTest
-    |? text::contains head " --build-only " ?> BuildOnlyTest
-    |? text::contains head " --test static " ?> (? opens_only_body source ?> PreludeTest |: StaticTest)
+    ? text::contains head " --ignore "
+    ?> IgnoredTest
+    |? text::contains head " --fails "
+    ?> FailingTest
+    |? text::contains head " --build-only "
+    ?> BuildOnlyTest
+    |? text::contains head " --test static "
+    ?> (? opens_only_body source ?> PreludeTest |: StaticTest)
     |: PlainTest
 
 :== test_row = { at : i32; name : string; mode : test_mode; realm : test_realm; symbol : string; shown : string }
@@ -570,13 +598,12 @@
     | [] => acc
     | (kind, source) :: rest =>
         := t = text::trim source
-        ? kind = Markdown
-        ?>
+        ? kind = Markdown ?>
             ?= heading_name source ?|
             | None => index_tests real_wanted rest (i + 1i32) last title used acc
-            | Some heading => index_tests real_wanted rest (i + 1i32) (Some heading) (nonempty (heading_title source)) used acc
-        |? kind = SpiralCode && test_cell t && spir_cell t = real_wanted
-        ?>
+            | Some heading =>
+                index_tests real_wanted rest (i + 1i32) (Some heading) (nonempty (heading_title source)) used acc
+        |? kind = SpiralCode && test_cell t && spir_cell t = real_wanted ?>
             := base = or_name "cell" last
             := n = count_row used base
             := name = explicit_name t (? n = 0i32 ?> base |: base ++ "_" ++ text::show_i32 (n + 1i32))
@@ -608,15 +635,20 @@
 := to_spir_tested (src : string) : string = export_text SpirExport KeepTests src
 
 :~ ^ flags_valid (s : string) : bool =
-    ? s = "" ?> !+
-    |? text::starts_with s " static" ?> flags_valid (text::drop s 7i32)
-    |? text::starts_with s " print_code" ?> flags_valid (text::drop s 11i32)
-    |? text::starts_with s " ignore" ?> flags_valid (text::drop s 7i32)
+    ? s = ""
+    ?> !+
+    |? text::starts_with s " static"
+    ?> flags_valid (text::drop s 7i32)
+    |? text::starts_with s " print_code"
+    ?> flags_valid (text::drop s 11i32)
+    |? text::starts_with s " ignore"
+    ?> flags_valid (text::drop s 7i32)
     |? text::starts_with s " no_agree" ?>
         := rest = text::drop s 9i32
         := n = quoted_end rest
         ? n < 0i32 ?> !- |: flags_valid (text::drop rest n)
-    |? text::starts_with s " build_only" ?> flags_valid (text::drop s 11i32)
+    |? text::starts_with s " build_only"
+    ?> flags_valid (text::drop s 11i32)
     |? text::starts_with s " reference " ?>
         := n = text::take_unicode_ident s 11i32
         ? n > 11i32 ?> flags_valid (text::drop s n) |: !-
@@ -675,7 +707,8 @@
 := comment_line (line : string) : bool = text::starts_with line "//" || text::starts_with line "(* "
 
 := test_like (line : string) : bool =
-    ? text::starts_with line ":# " ?> !+
+    ? text::starts_with line ":# "
+    ?> !+
     |? text::starts_with line "test" ?>
         ? text::length line = 4i32 ?> !+ |: text::ident_char (text::index line 4i32) = !-
     |: !-
@@ -689,7 +722,8 @@
     ?= text::next_line src i ?|
     | LineDone => !-
     | LineGot (line, next) =>
-        ? text::blank line || comment_line line ?> resumes_test src next
+        ? text::blank line || comment_line line
+        ?> resumes_test src next
         |: text::is_space (text::index line 0i32)
 
 :== open_test = { name : string; modes : string; targets : rows; body : rows; form : header_form; last : i32 }
@@ -765,33 +799,33 @@
     (line : string) (code : rows) (targets : rows) (real_mode : bool) (acc : cells)
     : spi_mode * rows * cells
     =
-    ? text::starts_with line "///>"
-    ?>
+    ? text::starts_with line "///>" ?>
         ? no_rows code ?> Between, line :: targets, acc |: InCode code, line :: targets, acc
     |:
         ?= header_of line ?|
         | Some (name, modes) =>
             := directives, rest_code = split_directives code []
-            := opened = { name; modes; targets = append_rows targets directives; body = []; form = WellFormed; last = -1i32 }
+            := opened =
+                { name; modes; targets = append_rows targets directives; body = []; form = WellFormed; last = -1i32 }
             InTest opened, [], close_open rest_code [] real_mode acc
         | None =>
-            ? test_like line
-            ?>
+            ? test_like line ?>
                 := form = Malformed line
                 := broken = { name = malformed_name line; modes = ""; targets; body = []; form; last = -1i32 }
                 InTest broken, [], close_open code [] real_mode acc
             |? doc_start line
             ?> InDoc ((undoc line) :: []), [], close_open code targets real_mode acc
-            |? no_rows code
-            ?>
+            |? no_rows code ?>
                 ? line = "" && no_rows targets ?> Between, [], acc
                 |: InCode (line :: targets), [], acc
             |: InCode (line :: (append_rows targets code)), [], acc
 
 :~ ^ tab_field (line : string) (from : i32) (n : i32) : string =
     := stop = text::find_char line from '\t'
-    ? n = 0i32 ?> (? stop < 0i32 ?> text::drop line from |: text::slice_len line from (stop - from))
-    |? stop < 0i32 ?> ""
+    ? n = 0i32
+    ?> (? stop < 0i32 ?> text::drop line from |: text::slice_len line from (stop - from))
+    |? stop < 0i32
+    ?> ""
     |: tab_field line (stop + 1i32) (n - 1i32)
 
 :== body_bound = { header : i32; last : i32 }
@@ -831,8 +865,7 @@
         ?= mode ?|
         | InTest t =>
             := grown = \ (kept : string) => InTest { t ?| body = kept :: t::body }
-            ? t::last >= 0i32
-            ?>
+            ? t::last >= 0i32 ?>
                 ? row + 1i32 <= t::last
                 ?> spi_walk src next (row + 1i32) bounds (grown (bounded_line line)) targets real_mode acc
                 |: spi_walk src i row bounds Between [] real_mode (test_cell_of t real_mode acc)
@@ -860,7 +893,8 @@
     | LineGot (line, next) =>
         ? text::starts_with line "/// #" ?> target_gaps_walk src next (row + 1i32) "" !- acc
         |? text::starts_with line "///>" ?> target_gaps_walk src next (row + 1i32) line !- acc
-        |? doc_start line ?> target_gaps_walk src next (row + 1i32) in_force (after_doc || in_force <> "") acc
+        |? doc_start line
+        ?> target_gaps_walk src next (row + 1i32) in_force (after_doc || in_force <> "") acc
         |? after_doc && indented line = !- && text::starts_with line "//" = !-
         ?> target_gaps_walk src next (row + 1i32) in_force !- ((text::show_i32 row ++ "\t" ++ in_force) :: acc)
         |: target_gaps_walk src next (row + 1i32) in_force after_doc acc
@@ -892,12 +926,10 @@
     ?= xs ?|
     | [] => acc
     | (kind, source) :: rest =>
-        ? kind = Markdown
-        ?>
+        ? kind = Markdown ?>
             := last2 = ?= heading_name source ?| Some heading => Some heading | None => last
             name_tested rest last2 spi_used real_used ((kind, source) :: acc)
-        |? test_named_kind kind
-        ?>
+        |? test_named_kind kind ?>
             := realm = realm_of kind
             := used = realm_rows realm spi_used real_used
             := name = kind_test_name kind
@@ -926,13 +958,16 @@
     ?= real_cells ?|
     | [] => rev_cells acc spi
     | (real_kind, real_source) :: real_rest =>
-        ? real_kind <> Markdown ?> interleave spi real_rest ((real_kind, real_source) :: acc)
+        ? real_kind <> Markdown
+        ?> interleave spi real_rest ((real_kind, real_source) :: acc)
         |:
             ?= spi ?|
             | [] => rev_cells acc real_cells
             | (kind, source) :: rest =>
-                ? kind <> Markdown ?> interleave rest real_cells ((kind, source) :: acc)
-                |? source = real_source ?> interleave rest real_rest ((kind, source) :: acc)
+                ? kind <> Markdown
+                ?> interleave rest real_cells ((kind, source) :: acc)
+                |? source = real_source
+                ?> interleave rest real_rest ((kind, source) :: acc)
                 |: interleave rest real_cells ((kind, source) :: acc)
 
 := from_spi_bounded (spi : string) (spir : string) (spi_bounds : string) (spir_bounds : string) : string =

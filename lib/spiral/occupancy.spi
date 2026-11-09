@@ -128,18 +128,24 @@
         | _ => \ () => -1
 
 := blocks_by_cc (major : i32) (minor : i32) : i32 =
-    ? major = 3 ?> 16
-    |? major = 7 ?> ? minor = 5 ?> 16 |: 32
-    |? major = 8 ?> ? minor = 0 ?> 32 |: ? minor = 9 ?> 24 |: 16
+    ? major = 3
+    ?> 16
+    |? major = 7
+    ?> ? minor = 5 ?> 16 |: 32
+    |? major = 8
+    ?> ? minor = 0 ?> 32 |: ? minor = 9 ?> 24 |: 16
     |: 32
 
 := reserved_by_cc (major : i32) : i32 = ? major >= 8 ?> 1024 |: 0
 
 := filled (query : attribute -> i32) (a : attribute) : i32 =
     := v = query a
-    ? v >= 0 ?> v
-    |? a = BlocksPerSm ?> blocks_by_cc (query CcMajor) (query CcMinor)
-    |? a = SmemReserved ?> reserved_by_cc (query CcMajor)
+    ? v >= 0
+    ?> v
+    |? a = BlocksPerSm
+    ?> blocks_by_cc (query CcMajor) (query CcMinor)
+    |? a = SmemReserved
+    ?> reserved_by_cc (query CcMajor)
     |: v
 
 := probed (ordinal : i32) : option device =

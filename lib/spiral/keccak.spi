@@ -6,13 +6,42 @@
 :< digest
 
 /// ## keccak
-:== lanes = u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64 * u64
+:== lanes =
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64 *
+    u64
 
 :== digest512 = sized_array::sized 64 u8
 
 :== digest256 = sized_array::sized 32 u8
 
-:= lane (i : i32) ((a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24) : lanes) : u64 =
+:= lane
+    (i : i32)
+    ((a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24) : lanes)
+    : u64
+    =
     ?= i ?|
     | 0 => a0
     | 1 => a1
@@ -41,7 +70,8 @@
     | _ => a24
 
 := lanes_of (f : i32 -> u64) : lanes =
-    f 0, f 1, f 2, f 3, f 4, f 5, f 6, f 7, f 8, f 9, f 10, f 11, f 12, f 13, f 14, f 15, f 16, f 17, f 18, f 19, f 20, f 21, f 22, f 23, f 24
+    f 0, f 1, f 2, f 3, f 4, f 5, f 6, f 7, f 8, f 9, f 10, f 11, f 12,
+    f 13, f 14, f 15, f 16, f 17, f 18, f 19, f 20, f 21, f 22, f 23, f 24
 
 := zero_lanes () : lanes =
     lanes_of (\ _ => 0u64)
@@ -181,7 +211,9 @@
         | _ => \ () => absorb_inline rate block offset a
 
 :~ ^ absorb_full (rate : i32) (message : array u8) (offset : i32) (a : lanes) : lanes * i32 =
-    ? offset + rate > length message ?> a, offset |: absorb_full rate message (offset + rate) (absorb rate message offset a)
+    ? offset + rate > length message
+    ?> a, offset
+    |: absorb_full rate message (offset + rate) (absorb rate message offset a)
 
 := final_block (rate : i32) (domain : u8) (message : array u8) (offset : i32) : array u8 =
     := tail = length message - offset
@@ -250,9 +282,9 @@
         keccak512 abc |> digest_bytes |> bytes::hex
     )
     |> _assert_eq (
-        "0eab42de4c3ceb9235fc91acffe746b29c29a8c366b7c60e4e67c466f36a4304c00fa9caf9d87976ba469bcbe06713b435f091ef2769fb160cdab33d3670680e",
-        "18587dc2ea106b9a1563e32b3312421ca164c7f1f07bc922a9c83d77cea3a1e5d0c69910739025372dc14ac9642629379540c17e2a65b19d77aa511a9d00bb96"
-    )
+           "0eab42de4c3ceb9235fc91acffe746b29c29a8c366b7c60e4e67c466f36a4304c00fa9caf9d87976ba469bcbe06713b435f091ef2769fb160cdab33d3670680e",
+           "18587dc2ea106b9a1563e32b3312421ca164c7f1f07bc922a9c83d77cea3a1e5d0c69910739025372dc14ac9642629379540c17e2a65b19d77aa511a9d00bb96"
+       )
 
 ///> c
 ///> rust
@@ -273,10 +305,10 @@
         keccak512 (bytes::repeated long 7u8) |> digest_bytes |> bytes::hex
     )
     |> _assert_eq (
-        "fe0953f9afdffed7ff9764c2590ff0e6af1b0689e42ddca68d6ef003ddce2671b806e0d2e6d57117bb75ad6166e2e990ca662b6a7f8945584f5308459eabae15",
-        "76fa23369085405345fe6a2831f334113bee6b111056e21072082af56e7c1ab4458858dbdb5f88e0d86d38ca654310c9a30712319c1f4f9783fe9f3ac0469527",
-        "85cdb9fd62d41b896d8efd04a09074b21c7fccc408aa0a751681037867578dcaef6141165239597b02b8873b91315f5ef885947601803b37112f474de31f5e72"
-    )
+           "fe0953f9afdffed7ff9764c2590ff0e6af1b0689e42ddca68d6ef003ddce2671b806e0d2e6d57117bb75ad6166e2e990ca662b6a7f8945584f5308459eabae15",
+           "76fa23369085405345fe6a2831f334113bee6b111056e21072082af56e7c1ab4458858dbdb5f88e0d86d38ca654310c9a30712319c1f4f9783fe9f3ac0469527",
+           "85cdb9fd62d41b896d8efd04a09074b21c7fccc408aa0a751681037867578dcaef6141165239597b02b8873b91315f5ef885947601803b37112f474de31f5e72"
+       )
 
 ///> c
 ///> rust
@@ -310,14 +342,17 @@
 ///> lua
 :# a_digest_is_sized_by_its_type =
     := ~empty = 0i32
-    (keccak512 (bytes::counting empty) |> sized_array::element_count, sha3_256 (bytes::counting empty) |> sized_array::element_count)
+    (
+        keccak512 (bytes::counting empty) |> sized_array::element_count,
+        sha3_256 (bytes::counting empty) |> sized_array::element_count
+    )
     |> _assert_eq (64i32, 32i32)
 
-:# a_digest_cannot_be_read_as_a_shorter_array fails ETY-TermError "Unification failure" =
+:# a_digest_cannot_be_read_as_a_shorter_array fails ETY - TermError "Unification failure" =
     := digest = keccak512 (bytes::counting 0i32)
     := short : digest256 = digest
     0i32
 
-:# a_padding_without_a_domain_cannot_hash fails ETY-ConstraintError "domain_of" =
+:# a_padding_without_a_domain_cannot_hash fails ETY - ConstraintError "domain_of" =
     := digest : digest256 = hash 7u8 (bytes::counting 0i32)
     0i32

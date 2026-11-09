@@ -164,12 +164,18 @@
     ? b = 0u64 ?> nat_result acc |: (? acc > 18446744073709551615u64 / a ?> None |: power a (b - 1u64) (acc * a))
 
 :~ powered (a : u64) (b : u64) : option term =
-    ? a <= 1u64 ?> nat_result (? b = 0u64 ?> 1u64 |: a)
+    ? a <= 1u64
+    ?> nat_result (? b = 0u64 ?> 1u64 |: a)
     |: power a b 1u64
 
 :~ shifted_left (a : u64) (b : u64) : option term =
     := k : i32 = conv (? b >= 64u64 ?> 63u64 |: b)
-    ? a = 0u64 || b = 0u64 ?> nat_result a |: (? b >= 64u64 || (a >>> (64i32 - k)) > 0u64 ?> None |: nat_result (a <<< k))
+    ? a = 0u64 || b = 0u64
+    ?> nat_result a
+    |:
+        ? b >= 64u64 || (a >>> (64i32 - k)) > 0u64
+        ?> None
+        |: nat_result (a <<< k)
 
 :~ shifted_right (a : u64) (b : u64) : option term =
     := k : i32 = conv (? b >= 64u64 ?> 0u64 |: b)
@@ -251,7 +257,10 @@
 
 :~ ^ digits_le (xs : list char) (ys : list char) : bool =
     ?= xs, ys ?|
-    | (x :: xr), (y :: yr) => ? sm'::char_code x = sm'::char_code y ?> digits_le xr yr |: sm'::char_code x < sm'::char_code y
+    | (x :: xr), (y :: yr) =>
+        ? sm'::char_code x = sm'::char_code y
+        ?> digits_le xr yr
+        |: sm'::char_code x < sm'::char_code y
     | _ => !+
 
 :~ decimal_le (x : string) (y : string) : bool =
@@ -281,8 +290,14 @@
 
 :~ ^ subtracted (a : list i32) (b : list i32) (borrow : i32) : list i32 =
     ?= a, b ?|
-    | (x :: xs), (y :: ys) => ? x - y - borrow < 0i32 ?> (x - y - borrow + 10i32) :: subtracted xs ys 1i32 |: (x - y - borrow) :: subtracted xs ys 0i32
-    | (x :: xs), [] => ? x - borrow < 0i32 ?> (x - borrow + 10i32) :: subtracted xs [] 1i32 |: (x - borrow) :: subtracted xs [] 0i32
+    | (x :: xs), (y :: ys) =>
+        ? x - y - borrow < 0i32
+        ?> (x - y - borrow + 10i32) :: subtracted xs ys 1i32
+        |: (x - y - borrow) :: subtracted xs ys 0i32
+    | (x :: xs), [] =>
+        ? x - borrow < 0i32
+        ?> (x - borrow + 10i32) :: subtracted xs [] 1i32
+        |: (x - borrow) :: subtracted xs [] 0i32
     | _ => []
 
 :~ ^ scaled (a : list i32) (d : i32) (carry : i32) : list i32 =
@@ -295,7 +310,10 @@
     | d :: rest => added (scaled a d 0i32) (0i32 :: multiplied a rest) 0i32
     | [] => []
 
-:~ ^ powered_digits (a : list i32) (k : u64) (acc : list i32) : list i32 = ? k = 0u64 ?> acc |: powered_digits a (k - 1u64) (multiplied acc a)
+:~ ^ powered_digits (a : list i32) (k : u64) (acc : list i32) : list i32 =
+    ? k = 0u64
+    ?> acc
+    |: powered_digits a (k - 1u64) (multiplied acc a)
 
 :~ big_arith (op : string) (x : string) (y : string) : option term =
     := a = little_digits x
@@ -330,7 +348,10 @@
     ?= m ?|
     | BigNat s =>
         ?= rule_name_at rules 1i32 ?|
-        | Some succ => ? family_of_recursor n = "Nat" ?> App (Const (succ, []), literal_of_text (predecessor_text s)) |: m
+        | Some succ =>
+            ? family_of_recursor n = "Nat"
+            ?> App (Const (succ, []), literal_of_text (predecessor_text s))
+            |: m
         | None => m
     | NatLit k =>
         ?= rule_name_at rules 0i32, rule_name_at rules 1i32 ?|
@@ -342,7 +363,10 @@
     | Pi (_, _, _, body) => 1i32 + pi_count body
     | _ => 0i32
 
-:~ ^ projections (s : name) (major : term) (i : i32) (k : i32) : list term = ? i >= k ?> [] |: Proj (s, i, major) :: projections s major (i + 1i32) k
+:~ ^ projections (s : name) (major : term) (i : i32) (k : i32) : list term =
+    ? i >= k
+    ?> []
+    |: Proj (s, i, major) :: projections s major (i + 1i32) k
 
 :~ ctor_fields (env : list decl) (c : string) (np : i32) : option i32 =
     ?= axiom_of env c ?|
@@ -360,7 +384,10 @@
 
 :~ succ_literal (o : option term) : option term =
     ?= o ?|
-    | Some (NatLit k) => ? k = 18446744073709551615u64 ?> Some (BigNat "18446744073709551616") |: Some (NatLit (k + 1u64))
+    | Some (NatLit k) =>
+        ? k = 18446744073709551615u64
+        ?> Some (BigNat "18446744073709551616")
+        |: Some (NatLit (k + 1u64))
     | _ => None
 :~ ^ whnf_with (env : list decl) (t : term) (fuel : i32) (trace : list step) : whnf_result =
     := head, args = spine t []
@@ -368,11 +395,13 @@
     | Lam (_, _, _, body) =>
         ?= args ?|
         | a :: rest =>
-            ? fuel <= 0i32 ?> OutOfFuel (t, listm::rev trace)
+            ? fuel <= 0i32
+            ?> OutOfFuel (t, listm::rev trace)
             |: whnf_with env (apply_all (instantiate body a) rest) (fuel - 1i32) (Beta :: trace)
         | [] => Whnf (t, listm::rev trace)
     | Let (_, _, v, body) =>
-        ? fuel <= 0i32 ?> OutOfFuel (t, listm::rev trace)
+        ? fuel <= 0i32
+        ?> OutOfFuel (t, listm::rev trace)
         |: whnf_with env (apply_all (instantiate body v) args) (fuel - 1i32) (Zeta :: trace)
     | Const ((name n), us) =>
         ?= quot_kind_of env n ?|
@@ -414,7 +443,8 @@
         | None =>
             ?= unfold_at env n us ?|
             | Some value =>
-                ? fuel <= 0i32 ?> OutOfFuel (t, listm::rev trace)
+                ? fuel <= 0i32
+                ?> OutOfFuel (t, listm::rev trace)
                 |: whnf_with env (apply_all value args) (fuel - 1i32) (Delta n :: trace)
             | None => Whnf (t, listm::rev trace)
 :& :~ literal_arg (env : list decl) (t : term) (fuel : i32) : option term =
@@ -475,7 +505,11 @@
                     ?> Whnf (t, listm::rev trace)
                     |? left <= 0i32
                     ?> OutOfFuel (t, listm::rev so_far)
-                    |: whnf_with env (apply_all (App (f, a)) (drop args (major_at + 1i32))) (left - 1i32) (Iota n :: so_far)
+                    |:
+                        whnf_with env
+                            (apply_all (App (f, a)) (drop args (major_at + 1i32)))
+                            (left - 1i32)
+                            (Iota n :: so_far)
                 | None => Whnf (t, listm::rev trace)
             | None => Whnf (t, listm::rev trace)
 :& :~ iota
@@ -498,7 +532,8 @@
                 | Some rhs =>
                     := reduct = beta_all (instantiate_levels rhs rec_ps us) (joined (take args front) (drop cargs np))
                     := rest = drop args (front + ni + 1i32)
-                    ? left <= 0i32 ?> OutOfFuel (t, listm::rev so_far)
+                    ? left <= 0i32
+                    ?> OutOfFuel (t, listm::rev so_far)
                     |: whnf_with env (apply_all reduct rest) (left - 1i32) (Iota n :: so_far)
                 | None => k_iota env t n rec_ps us np ni rules front args left so_far trace
             | _ => k_iota env t n rec_ps us np ni rules front args left so_far trace
@@ -510,7 +545,8 @@
     ?= k_major env n us np ni rules front args ?|
     | Some idx ?& indices_agree env idx (take (drop args front) ni) left =>
         := reduct = beta_all (instantiate_levels (rule_rhs rules) rec_ps us) (take args front)
-        ? left <= 0i32 ?> OutOfFuel (t, listm::rev so_far)
+        ? left <= 0i32
+        ?> OutOfFuel (t, listm::rev so_far)
         |: whnf_with env (apply_all reduct (drop args (front + ni + 1i32))) (left - 1i32) (Iota n :: so_far)
     | _ => struct_iota env t n rec_ps us np ni rules front args left so_far trace
 :& :~ struct_iota
@@ -522,7 +558,8 @@
     | Some k, Some major =>
         := fields = projections (name (family_of_recursor n)) major 0i32 k
         := reduct = beta_all (instantiate_levels (rule_rhs rules) rec_ps us) (joined (take args front) fields)
-        ? left <= 0i32 ?> OutOfFuel (t, listm::rev so_far)
+        ? left <= 0i32
+        ?> OutOfFuel (t, listm::rev so_far)
         |: whnf_with env (apply_all reduct (drop args (front + ni + 1i32))) (left - 1i32) (Iota n :: so_far)
     | _ => Whnf (t, listm::rev trace)
 :& :~ indices_agree (env : list decl) (xs : list term) (ys : list term) (fuel : i32) : bool =
@@ -535,7 +572,10 @@
         ?= ys ?|
         | [] => !+
         | _ => !-
-:& :~ same_whnf (env : list decl) (x : term) (y : term) (fuel : i32) : bool = ? same_as x y ?> !+ |: whnf_same env x y fuel
+:& :~ same_whnf (env : list decl) (x : term) (y : term) (fuel : i32) : bool =
+    ? same_as x y
+    ?> !+
+    |: whnf_same env x y fuel
 :& :~ whnf_same (env : list decl) (x : term) (y : term) (fuel : i32) : bool =
     ?= whnf_with env x fuel [], whnf_with env y fuel [] ?|
     | Whnf (a, _), Whnf (b, _) => same_as a b

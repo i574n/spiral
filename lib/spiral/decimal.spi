@@ -10,7 +10,8 @@
 := at_scale (scale : i32) (d : decimal) : i64 = d::units * power_of_ten (scale - d::scale) 1i64
 
 :~ ^ normalized (d : decimal) : decimal =
-    ? d::scale > 0i32 && d::units % 10i64 = 0i64 ?> normalized { units = d::units / 10i64; scale = d::scale - 1i32 }
+    ? d::scale > 0i32 && d::units % 10i64 = 0i64
+    ?> normalized { units = d::units / 10i64; scale = d::scale - 1i32 }
     |: d
 
 := of_int (n : i64) : decimal = { units = n; scale = 0i32 }
@@ -23,7 +24,8 @@
 
 := subtract (a : decimal) (b : decimal) : decimal = add a (negate b)
 
-:= multiply (a : decimal) (b : decimal) : decimal = normalized { units = a::units * b::units; scale = a::scale + b::scale }
+:= multiply (a : decimal) (b : decimal) : decimal =
+    normalized { units = a::units * b::units; scale = a::scale + b::scale }
 
 := compare (a : decimal) (b : decimal) : i32 =
     := scale = larger a::scale b::scale
@@ -36,7 +38,8 @@
     ? n % d <> 0i64 && (n < 0i64) <> (d < 0i64) ?> q - 1i64 |: q
 
 := round_to (places : i32) (a : decimal) : decimal =
-    ? a::scale <= places ?> a
+    ? a::scale <= places
+    ?> a
     |:
         := step = power_of_ten (a::scale - places) 1i64
         normalized { units = floor_division (a::units * 2i64 + step) (step * 2i64); scale = places }
@@ -58,11 +61,14 @@
     (s : string) (i : i32) (acc : i64) (scale : i32) (seen_point : bool) (digits : i32)
     : option decimal
     =
-    ? i >= sm'::length s ?> (? digits = 0i32 ?> None |: Some { units = acc; scale = scale })
+    ? i >= sm'::length s
+    ?> (? digits = 0i32 ?> None |: Some { units = acc; scale = scale })
     |:
         := c = sm'::substring i 1i32 s
-        ? c = "." ?> (? seen_point ?> None |: digits_from s (i + 1i32) acc scale !+ digits)
-        |? sm'::index_of c "0123456789" >= 0i32 && acc > (9223372036854775807i64 - digit_value c) / 10i64 ?> None
+        ? c = "."
+        ?> (? seen_point ?> None |: digits_from s (i + 1i32) acc scale !+ digits)
+        |? sm'::index_of c "0123456789" >= 0i32 && acc > (9223372036854775807i64 - digit_value c) / 10i64
+        ?> None
         |? sm'::index_of c "0123456789" >= 0i32 ?>
             := scale = ? seen_point ?> scale + 1i32 |: scale
             digits_from s (i + 1i32) (acc * 10i64 + digit_value c) scale seen_point (digits + 1i32)
@@ -70,7 +76,8 @@
 
 := parse (text : string) : option decimal =
     := s = sm'::trim text
-    ? s = "" ?> None
+    ? s = ""
+    ?> None
     |:
         := sign = sm'::substring 0i32 1i32 s
         := body = ? sign = "-" || sign = "+" ?> sm'::substring 1i32 (sm'::length s - 1i32) s |: s
@@ -89,7 +96,8 @@
     := negative = a::units < 0i64
     := magnitude = ? negative ?> 0i64 - a::units |: a::units
     := sign = ? negative ?> "-" |: ""
-    ? a::scale <= 0i32 ?> sign ++# digits_text magnitude ""
+    ? a::scale <= 0i32
+    ?> sign ++# digits_text magnitude ""
     |:
         := digits = zero_padded (digits_text magnitude "") (a::scale + 1i32)
         := whole = sm'::length digits - a::scale

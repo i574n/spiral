@@ -32,10 +32,14 @@
 := regex_range_order (a : u32 * u32) (b : u32 * u32) : i32 =
     := a_low, a_high = a
     := b_low, b_high = b
-    ? a_low < b_low ?> -1i32
-    |? a_low > b_low ?> 1i32
-    |? a_high < b_high ?> -1i32
-    |? a_high > b_high ?> 1i32
+    ? a_low < b_low
+    ?> -1i32
+    |? a_low > b_low
+    ?> 1i32
+    |? a_high < b_high
+    ?> -1i32
+    |? a_high > b_high
+    ?> 1i32
     |: 0i32
 
 :~ ^ ranges_compare (a : list (u32 * u32)) (b : list (u32 * u32)) : i32 =
@@ -50,19 +54,25 @@
         := order = regex_range_order a_head b_head
         ? order <> 0i32 ?> order |: ranges_compare a_rest b_rest
 
+:= class_order (a_negated : bool) (b_negated : bool) (a_ranges : list (u32 * u32)) (b_ranges : list (u32 * u32)) : i32 =
+    ? a_negated = b_negated
+    ?> ranges_compare a_ranges b_ranges
+    |? a_negated
+    ?> 1i32
+    |: -1i32
+
 := regex_compare_class (a_negated : bool) (a_ranges : list (u32 * u32)) (b : rx) : i32 =
     ?= b ?|
-    | RxClass (b_negated, b_ranges) =>
-        ? a_negated = b_negated ?> ranges_compare a_ranges b_ranges
-        |? a_negated ?> 1i32
-        |: -1i32
+    | RxClass (b_negated, b_ranges) => class_order a_negated b_negated a_ranges b_ranges
     | _ => 0i32
 
 :~ ^ rx_compare (a : rx) (b : rx) : i32 =
     := a_tag = rx_tag a
     := b_tag = rx_tag b
-    ? a_tag < b_tag ?> -1i32
-    |? a_tag > b_tag ?> 1i32
+    ? a_tag < b_tag
+    ?> -1i32
+    |? a_tag > b_tag
+    ?> 1i32
     |: regex_compare_same_tag a b
 
 :& :~ regex_compare_same_tag (a : rx) (b : rx) : i32 =
@@ -96,10 +106,14 @@
 :& :~ regex_compare_repeat (a_inner : rx) (a_low : i32) (a_high : i32) (b : rx) : i32 =
     ?= b ?|
     | RxRepeat (b_inner, b_low, b_high) =>
-        ? a_low < b_low ?> -1i32
-        |? a_low > b_low ?> 1i32
-        |? a_high < b_high ?> -1i32
-        |? a_high > b_high ?> 1i32
+        ? a_low < b_low
+        ?> -1i32
+        |? a_low > b_low
+        ?> 1i32
+        |? a_high < b_high
+        ?> -1i32
+        |? a_high > b_high
+        ?> 1i32
         |: rx_compare a_inner b_inner
     | _ => 0i32
 
@@ -136,8 +150,10 @@
     ?= sorted ?|
     | head :: rest =>
         := order = rx_compare leaf head
-        ? order = 0i32 ?> sorted
-        |? order < 0i32 ?> leaf :: sorted
+        ? order = 0i32
+        ?> sorted
+        |? order < 0i32
+        ?> leaf :: sorted
         |: head :: insert_leaf leaf rest
     | [] => [ leaf ]
 
@@ -213,7 +229,8 @@
         | Rejects right => Rejects (AltRejects (left, right))
 
 :& :~ regex_nullability_repeat (a : rx) (low : i32) : nullability =
-    ? low <= 0i32 ?> Accepts RepeatFromZero
+    ? low <= 0i32
+    ?> Accepts RepeatFromZero
     |:
         ?= nullability_of a ?|
         | Accepts inner => Accepts (RepeatOfNullable inner)
@@ -250,8 +267,10 @@
 
 := counted (atom : rx) (low : i32) (high : i32) : rx =
     := low = ? low < 0i32 ?> 0i32 |: low
-    ? high <= 0i32 ?> RxEps
-    |? low = 1i32 && high = 1i32 ?> atom
+    ? high <= 0i32
+    ?> RxEps
+    |? low = 1i32 && high = 1i32
+    ?> atom
     |:
         ?= atom ?|
         | RxNone => ? low = 0i32 ?> RxEps |: RxNone
@@ -305,15 +324,21 @@
 := single (c : u32) : rx = RxClass (!-, [ (c, c) ])
 
 := regex_escape_ranges_tail (c : u32) : list (u32 * u32) =
-    ? c = 110u32 ?> [ (10u32, 10u32) ]
-    |? c = 114u32 ?> [ (13u32, 13u32) ]
-    |? c = 116u32 ?> [ (9u32, 9u32) ]
+    ? c = 110u32
+    ?> [ (10u32, 10u32) ]
+    |? c = 114u32
+    ?> [ (13u32, 13u32) ]
+    |? c = 116u32
+    ?> [ (9u32, 9u32) ]
     |: [ (c, c) ]
 
 := escape_ranges (c : u32) : list (u32 * u32) =
-    ? c = 100u32 ?> [ (48u32, 57u32) ]
-    |? c = 115u32 ?> [ (32u32, 32u32); (9u32, 10u32); (13u32, 13u32) ]
-    |? c = 119u32 ?> [ (48u32, 57u32); (65u32, 90u32); (97u32, 122u32); (95u32, 95u32) ]
+    ? c = 100u32
+    ?> [ (48u32, 57u32) ]
+    |? c = 115u32
+    ?> [ (32u32, 32u32); (9u32, 10u32); (13u32, 13u32) ]
+    |? c = 119u32
+    ?> [ (48u32, 57u32); (65u32, 90u32); (97u32, 122u32); (95u32, 95u32) ]
     |: regex_escape_ranges_tail c
 
 := last_code_point () : u32 = 1114111u32
@@ -344,10 +369,14 @@
     ? is_negated_escape c ?> complement_ranges (escape_ranges (c + 32u32)) |: escape_ranges c
 
 := block_range (name : string) : option (u32 * u32) =
-    ? name = "IsBasicLatin" ?> Some (0u32, 127u32)
-    |? name = "IsLatin-1Supplement" ?> Some (128u32, 255u32)
-    |? name = "IsLatinExtended-A" ?> Some (256u32, 383u32)
-    |? name = "IsLatinExtended-B" ?> Some (384u32, 591u32)
+    ? name = "IsBasicLatin"
+    ?> Some (0u32, 127u32)
+    |? name = "IsLatin-1Supplement"
+    ?> Some (128u32, 255u32)
+    |? name = "IsLatinExtended-A"
+    ?> Some (256u32, 383u32)
+    |? name = "IsLatinExtended-B"
+    ?> Some (384u32, 591u32)
     |: None
 
 := outside_range (low : u32) (high : u32) : list (u32 * u32) =
@@ -370,7 +399,8 @@
 
 := property_at (p : string) (i : i32) : option (list (u32 * u32) * i32) =
     := kind = cp_at p (i + 1i32)
-    ? (kind = 112u32 || kind = 80u32) && cp_at p (i + 2i32) = 123u32 ?> regex_property_block p i kind
+    ? (kind = 112u32 || kind = 80u32) && cp_at p (i + 2i32) = 123u32
+    ?> regex_property_block p i kind
     |: None
 
 :~ ^ read_number (p : string) (i : i32) (acc : i32) : i32 * i32 =
@@ -383,7 +413,8 @@
     cp_at p next = 45u32 && cp_at p (next + 1i32) <> 93u32 && next + 1i32 < sm'::length p
 
 :~ ^ class_items (p : string) (i : i32) (acc : list (u32 * u32)) : list (u32 * u32) * i32 =
-    ? i >= sm'::length p || cp_at p i = 93u32 ?> acc, i + 1i32
+    ? i >= sm'::length p || cp_at p i = 93u32
+    ?> acc, i + 1i32
     |:
         := c = cp_at p i
         ? c = 92u32 ?> regex_class_escape p i acc |: regex_class_char p i c acc
@@ -422,22 +453,28 @@
 
 := regex_parse_upper (p : string) (n : i32) (after_n : i32) (atom : rx) : rx * i32 =
     := after_comma = after_n + 1i32
-    ? cp_at p after_comma = 125u32 ?> seq (counted atom n n) (star atom), after_comma + 1i32
+    ? cp_at p after_comma = 125u32
+    ?> seq (counted atom n n) (star atom), after_comma + 1i32
     |:
         := m, after_m = read_number p after_comma 0i32
         counted atom n m, after_m + 1i32
 
 := regex_parse_braces (p : string) (i : i32) (atom : rx) : rx * i32 =
     := n, after_n = read_number p (i + 1i32) 0i32
-    ? cp_at p after_n = 125u32 ?> counted atom n n, after_n + 1i32
+    ? cp_at p after_n = 125u32
+    ?> counted atom n n, after_n + 1i32
     |: regex_parse_upper p n after_n atom
 
 := regex_parse_quant_at (p : string) (i : i32) (atom : rx) : rx * i32 =
     := c = cp_at p i
-    ? c = 63u32 ?> alt_written RxEps atom, i + 1i32
-    |? c = 42u32 ?> star atom, i + 1i32
-    |? c = 43u32 ?> seq atom (star atom), i + 1i32
-    |? c = 123u32 ?> regex_parse_braces p i atom
+    ? c = 63u32
+    ?> alt_written RxEps atom, i + 1i32
+    |? c = 42u32
+    ?> star atom, i + 1i32
+    |? c = 43u32
+    ?> seq atom (star atom), i + 1i32
+    |? c = 123u32
+    ?> regex_parse_braces p i atom
     |: atom, i
 
 :~ ^ parse_alt (p : string) (i : i32) : rx * i32 =
@@ -448,7 +485,8 @@
     |: left, after_left
 
 :& :~ parse_seq (p : string) (i : i32) (acc : rx) : rx * i32 =
-    ? i >= sm'::length p || cp_at p i = 124u32 || cp_at p i = 41u32 ?> acc, i
+    ? i >= sm'::length p || cp_at p i = 124u32 || cp_at p i = 41u32
+    ?> acc, i
     |:
         := atom, after_atom = parse_atom p i
         := quantified, after_quant = parse_quant p after_atom atom
@@ -456,10 +494,14 @@
 
 :& :~ parse_atom (p : string) (i : i32) : rx * i32 =
     := c = cp_at p i
-    ? c = 40u32 ?> regex_parse_group p i
-    |? c = 91u32 ?> regex_parse_class p i
-    |? c = 46u32 ?> RxClass (!+, [ (10u32, 10u32); (13u32, 13u32) ]), i + 1i32
-    |? c = 92u32 ?> regex_parse_escape p i
+    ? c = 40u32
+    ?> regex_parse_group p i
+    |? c = 91u32
+    ?> regex_parse_class p i
+    |? c = 46u32
+    ?> RxClass (!+, [ (10u32, 10u32); (13u32, 13u32) ]), i + 1i32
+    |? c = 92u32
+    ?> regex_parse_escape p i
     |: single c, i + cp_width p i
 
 :& :~ regex_parse_group (p : string) (i : i32) : rx * i32 =
@@ -467,7 +509,8 @@
     inner, after_inner + 1i32
 
 :& :~ parse_quant (p : string) (i : i32) (atom : rx) : rx * i32 =
-    ? i >= sm'::length p ?> atom, i
+    ? i >= sm'::length p
+    ?> atom, i
     |: regex_parse_quant_at p i atom
 
 :~ ^ first_outside (ranges : list (u32 * u32)) (candidates : list u32) : u32 =
@@ -484,7 +527,8 @@
     | [] => None
 
 := regex_class_low_example (ranges : list (u32 * u32)) (low : u32) : string =
-    ? low >= 33u32 ?> xml::code_point_string low
+    ? low >= 33u32
+    ?> xml::code_point_string low
     |:
         ?= first_inside ranges [ 65u32; 97u32; 49u32 ] ?|
         | Some c => xml::code_point_string c
@@ -496,7 +540,8 @@
     | [] => ""
 
 := class_example (negated : bool) (ranges : list (u32 * u32)) : string =
-    ? negated ?> xml::code_point_string (first_outside ranges [ 65u32; 97u32; 49u32; 90u32; 122u32 ])
+    ? negated
+    ?> xml::code_point_string (first_outside ranges [ 65u32; 97u32; 49u32; 90u32; 122u32 ])
     |: regex_class_first_example ranges
 
 :~ ^ example_with (stars : i32) (r : rx) : string =
@@ -510,8 +555,10 @@
     | RxRepeat (a, low, _) => repeated (example_with stars a) low
 
 :~ ^ brace_end (p : string) (i : i32) : i32 =
-    ? i >= sm'::length p ?> i
-    |? cp_at p i = 125u32 ?> i + 1i32
+    ? i >= sm'::length p
+    ?> i
+    |? cp_at p i = 125u32
+    ?> i + 1i32
     |: brace_end p (i + 1i32)
 
 := regex_escape_letter_end (p : string) (letter : i32) : i32 =
@@ -522,53 +569,66 @@
 
 := escape_end (p : string) (i : i32) : i32 =
     := letter = i + 1i32
-    ? letter >= sm'::length p ?> letter
+    ? letter >= sm'::length p
+    ?> letter
     |: regex_escape_letter_end p letter
 
 :~ ^ class_end (p : string) (i : i32) (depth : i32) : i32 =
-    ? i >= sm'::length p ?> i
+    ? i >= sm'::length p
+    ?> i
     |: regex_class_end_at p i depth
 
 :& :~ regex_class_end_at (p : string) (i : i32) (depth : i32) : i32 =
     := c = cp_at p i
-    ? c = 92u32 ?> class_end p (escape_end p i) depth
-    |? c = 91u32 ?> class_end p (i + cp_width p i) (depth + 1i32)
-    |? c = 93u32 ?> regex_class_close p i depth
+    ? c = 92u32
+    ?> class_end p (escape_end p i) depth
+    |? c = 91u32
+    ?> class_end p (i + cp_width p i) (depth + 1i32)
+    |? c = 93u32
+    ?> regex_class_close p i depth
     |: class_end p (i + cp_width p i) depth
 
 :& :~ regex_class_close (p : string) (i : i32) (depth : i32) : i32 =
     ? depth = 0i32 ?> i + 1i32 |: class_end p (i + 1i32) (depth - 1i32)
 
 :~ ^ invalid_from (p : string) (i : i32) (atom : bool) (quant : bool) : bool =
-    ? i >= sm'::length p ?> !-
+    ? i >= sm'::length p
+    ?> !-
     |:
         := c = cp_at p i
-        ? c = 92u32 ?> regex_invalid_escape p i
-        |? c = 91u32 ?> invalid_from p (class_end p (i + 1i32) 0i32) !+ !-
+        ? c = 92u32
+        ?> regex_invalid_escape p i
+        |? c = 91u32
+        ?> invalid_from p (class_end p (i + 1i32) 0i32) !+ !-
         |: regex_invalid_other p i c atom quant
 
 :& :~ regex_invalid_escape (p : string) (i : i32) : bool =
     ? is_name_escape (cp_at p (i + 1i32)) ?> !+ |: invalid_from p (escape_end p i) !+ !-
 
 :& :~ regex_invalid_other (p : string) (i : i32) (c : u32) (atom : bool) (quant : bool) : bool =
-    ? c = 40u32 || c = 124u32 ?> invalid_from p (i + 1i32) !- !-
-    |? c = 63u32 || c = 42u32 || c = 43u32 || c = 123u32 ?> regex_invalid_quant p i c atom quant
+    ? c = 40u32 || c = 124u32
+    ?> invalid_from p (i + 1i32) !- !-
+    |? c = 63u32 || c = 42u32 || c = 43u32 || c = 123u32
+    ?> regex_invalid_quant p i c atom quant
     |: invalid_from p (i + cp_width p i) !+ !-
 
 :& :~ regex_invalid_quant (p : string) (i : i32) (c : u32) (atom : bool) (quant : bool) : bool =
-    ? atom = !- || quant ?> !+
+    ? atom = !- || quant
+    ?> !+
     |: invalid_from p (? c = 123u32 ?> brace_end p i |: i + 1i32) !- !+
 
 := is_xsd_pattern (p : string) : bool = invalid_from p 0i32 !- !- = !-
 
 := compile_pattern (p : string) : option rx =
-    ? is_xsd_pattern p = !- ?> None
+    ? is_xsd_pattern p = !-
+    ?> None
     |:
         := r, stop = parse_alt p 0i32
         ? stop = sm'::length p ?> Some r |: None
 
 :~ ^ matches_from (r : rx) (s : string) (i : i32) : bool =
-    ? i >= sm'::length s ?> nullable r
+    ? i >= sm'::length s
+    ?> nullable r
     |:
         ?= r ?|
         | RxNone => !-
@@ -581,7 +641,8 @@
 
 :~ ^ longest_from (r : rx) (s : string) (i : i32) (last : i32) : i32 =
     := last = ? nullable r ?> i |: last
-    ? i >= sm'::length s ?> last
+    ? i >= sm'::length s
+    ?> last
     |:
         ?= derive (cp_at s i) r ?|
         | RxNone => last
@@ -628,8 +689,10 @@
 :~ ^ insert_point (point : u32) (sorted : list u32) : list u32 =
     ?= sorted ?|
     | head :: rest =>
-        ? point = head ?> sorted
-        |? point < head ?> point :: sorted
+        ? point = head
+        ?> sorted
+        |? point < head
+        ?> point :: sorted
         |: head :: insert_point point rest
     | [] => [ point ]
 
@@ -669,10 +732,14 @@
     | head :: rest => ? index = 0i32 ?> head |: state_rx rest (index - 1i32)
     | [] => RxNone
 
+:~ adjacent_moves (last : dfa_move) (move : dfa_move) : bool =
+    last::target = move::target && last::high + 1u32 = move::low
+
 :~ add_move (move : dfa_move) (moves : list dfa_move) : list dfa_move =
     ?= moves ?|
     | last :: rest =>
-        ? last::target = move::target && last::high + 1u32 = move::low ?> { last ?| high = move::high } :: rest
+        ? adjacent_moves last move
+        ?> { last ?| high = move::high } :: rest
         |: move :: moves
     | [] => [ move ]
 
@@ -726,8 +793,10 @@
     (index : i32) (states : list rx) (count : i32) (limit : i32) (rows : list dfa_state)
     : option (list dfa_state)
     =
-    ? index >= count ?> Some (reverse_states rows [])
-    |? count > limit ?> None
+    ? index >= count
+    ?> Some (reverse_states rows [])
+    |? count > limit
+    ?> None
     |:
         := states, count, row = regex_state_row (state_rx states index) states count
         build_states (index + 1i32) states count limit (row :: rows)
@@ -752,10 +821,12 @@
     | [] => { accepting = !-; moves = [] }
 
 :~ ^ dfa_run (rows : list dfa_state) (state : i32) (s : string) (i : i32) : bool =
-    ? state < 0i32 ?> !-
+    ? state < 0i32
+    ?> !-
     |:
         := row = dfa_row rows state
-        ? i >= sm'::length s ?> row::accepting
+        ? i >= sm'::length s
+        ?> row::accepting
         |: dfa_run rows (move_target (cp_at s i) row::moves) s (i + cp_width s i)
 
 := dfa_matches (rows : list dfa_state) (s : string) : bool = dfa_run rows 0i32 s 0i32
@@ -801,13 +872,15 @@
     ? line = "" ?> acc |: regex_compiled_tally line ok failed
 
 :~ ^ count_compiled (text : string) (pos : i32) (acc : i32 * i32) : i32 * i32 =
-    ? pos >= sm'::length text ?> acc
+    ? pos >= sm'::length text
+    ?> acc
     |:
         := stop = regex_line_stop text pos
         count_compiled text (stop + 1i32) (regex_tally (sm'::substring pos (stop - pos) text |> sm'::trim) acc)
 
 :~ ^ lines_of (text : string) (pos : i32) (acc : list string) : list string =
-    ? pos >= sm'::length text ?> listm::rev acc
+    ? pos >= sm'::length text
+    ?> listm::rev acc
     |:
         := stop = xml::find_from "\n" text pos
         := stop = ? stop < 0i32 ?> sm'::length text |: stop
@@ -940,7 +1013,8 @@
 
 := regex_register_row (row : dfa_state) (built : value_dfa) : i32 * value_dfa =
     := known = registered row built::register
-    ? known >= 0i32 ?> known, built
+    ? known >= 0i32
+    ?> known, built
     |:
         built::count,
         { register = (row, built::count) :: built::register; rows = row :: built::rows; count = built::count + 1i32 }
@@ -1043,16 +1117,20 @@
     low, high, target, i
 
 :~ ^ table_step (table : string) (c : u32) (i : i32) : i32 =
-    ? i >= sm'::length table || cp_at table i <> 32u32 ?> -1i32
+    ? i >= sm'::length table || cp_at table i <> 32u32
+    ?> -1i32
     |:
         := low, high, target, next = regex_table_row table i
         ? c < (conv low : u32) ?> -1i32 |? c <= (conv high : u32) ?> target |: table_step table c next
 
+:~ table_accepts (table : string) (line : i32) : bool = cp_at table line = 49u32
+
 :~ ^ table_run (table : string) (line : i32) (s : string) (i : i32) : bool =
-    ? i >= sm'::length s ?> cp_at table line = 49u32
+    ? i >= sm'::length s
+    ?> table_accepts table line
     |:
-        := next = table_step table (cp_at s i) (line + 1i32)
-        ? next < 0i32 ?> !- |: table_run table next s (i + cp_width s i)
+        := n = table_step table (cp_at s i) (line + 1i32)
+        ? n < 0i32 ?> !- |: table_run table n s (i + cp_width s i)
 
 := table_matches (table : string) (s : string) : bool = table_run table 0i32 s 0i32
 

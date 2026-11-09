@@ -18,7 +18,8 @@
     ?= moves ?|
     | MovesEnd => !+
     | MovesNext (low, high, target, rest) =>
-        ? low < above || high < low || target < 0i32 || target >= bound ?> error_type "a forged certificate row"
+        ? low < above || high < low || target < 0i32 || target >= bound
+        ?> error_type "a forged certificate row"
         |: moves_sound bound (high + 1u32) rest
 
 := row_sound (bound : i32) (row : certified_row) : bool =

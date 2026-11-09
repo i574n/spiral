@@ -15,8 +15,10 @@
 := is_alnum (c : string) : bool = sm'::index_of c (alnum ()) >= 0i32
 
 := snake_piece (c : string) (previous_lower : bool) (previous_upper : bool) (next_lower : bool) : string =
-    ? is_upper c ?> (? previous_lower || (previous_upper && next_lower) ?> "_" |: "") ++# sm'::to_lower c
-    |? is_alnum c ?> c
+    ? is_upper c
+    ?> (? previous_lower || (previous_upper && next_lower) ?> "_" |: "") ++# sm'::to_lower c
+    |? is_alnum c
+    ?> c
     |: "_"
 
 := lower_at (s : string) (at : i32) : bool = at < sm'::length s && is_lower (xml::code_point_text s at)
@@ -28,7 +30,8 @@
     snake_piece c previous_lower previous_upper (lower_at s (pos + sm'::length c))
 
 :~ ^ snake_from (s : string) (pos : i32) (previous_lower : bool) (previous_upper : bool) (acc : string) : string =
-    ? pos >= sm'::length s ?> acc
+    ? pos >= sm'::length s
+    ?> acc
     |:
         := c = xml::code_point_text s pos
         := piece = emit_snake_piece_at s pos previous_lower previous_upper
@@ -77,7 +80,8 @@
     ? has_name name (spiral_keywords ()) ?> name ++# "_value" |: name
 
 :~ ^ case_from (s : string) (pos : i32) (acc : string) : string =
-    ? pos >= sm'::length s ?> acc
+    ? pos >= sm'::length s
+    ?> acc
     |:
         := c = xml::code_point_text s pos
         case_from s (pos + sm'::length c) (acc ++# (? is_alnum c ?> c |: "_"))
@@ -296,7 +300,8 @@
 := u32_text (n : u32) : string = int_text (conv n : i32)
 
 := emit_range_test (move : xsd_regex::dfa_move) : string =
-    ? move::low = move::high ?> "c = " ++# u32_text move::low ++# "u32"
+    ? move::low = move::high
+    ?> "c = " ++# u32_text move::low ++# "u32"
     |: u32_text move::low ++# "u32 <= c && c <= " ++# u32_text move::high ++# "u32"
 
 := emit_range_arm (move : xsd_regex::dfa_move) (function_name : string) (keyword : string) : string =
@@ -345,7 +350,8 @@
     xsd_regex::dfa_of_pattern_within (direct_coded_state_limit ()) p
 
 :~ ^ fnv_from (s : string) (i : i32) (h : u64) : u64 =
-    ? i >= sm'::length s ?> h
+    ? i >= sm'::length s
+    ?> h
     |:
         fnv_from s
             (i + xml::code_point_width s i)
@@ -717,8 +723,10 @@
     (staged : list string) (o : occurs) (name : tag_name) (inline : option (xsd type_def form))
     : bool
     =
-    ? o::min < 1i32 ?> !-
-    |? has_name (xml::local_name (tag_text name)) staged ?> !+
+    ? o::min < 1i32
+    ?> !-
+    |? has_name (xml::local_name (tag_text name)) staged
+    ?> !+
     |:
         ?= inline ?|
         | Some inner => type_requires_staged staged inner
@@ -928,7 +936,8 @@
 
 := line_after (marker : string) (text : string) : option string =
     := at = sm'::index_of marker text
-    ? at < 0i32 ?> None
+    ? at < 0i32
+    ?> None
     |:
         := from = at + sm'::length marker
         Some (first_line (sm'::substring from (sm'::length text - from) text))
@@ -954,7 +963,8 @@
     |> sm'::replace ("nominal " ++# name ++# " =") ("nominal " ++# name ++# " s =")
 
 := staged_item (staged : list string) (signatures : list string) (item : emitted) : emitted =
-    ? has_name item::name staged = !- ?> item
+    ? has_name item::name staged = !-
+    ?> item
     |:
         := text = staged_declaration_text item::name item::text
         { item ?| text = staged_signatures signatures (staged_references staged text) }
@@ -968,7 +978,8 @@
 
 := field_assignment (field : string) (expression : string) : string =
     := one_line = "        " ++# field ++# " = " ++# expression
-    ? sm'::length one_line <= line_width () ?> one_line
+    ? sm'::length one_line <= line_width ()
+    ?> one_line
     |: "        " ++# field ++# " =\n            " ++# expression
 
 := fitted_definition (head : string) (body : string) : string =
@@ -977,7 +988,8 @@
 
 := fitted_header (name : string) (parameters : string) (result : string) : string =
     := one_line = name ++# " " ++# parameters ++# " : " ++# result ++# " ="
-    ? sm'::length one_line <= line_width () ?> one_line ++# "\n"
+    ? sm'::length one_line <= line_width ()
+    ?> one_line ++# "\n"
     |: name ++# "\n    " ++# parameters ++# "\n    : " ++# result ++# "\n    =\n"
 
 :~ ^ patterns_accept (facets : list xsd_facet) (s : string) (matched : bool) (none_seen : bool) : bool =
@@ -1016,10 +1028,12 @@
     | [] => 1i32
 
 :~ ^ example_search (facets : list xsd_facet) (r : xsd_regex::rx) (stars : i32) : string =
-    ? stars > 64i32 ?> xsd_regex::example_with 1i32 r
+    ? stars > 64i32
+    ?> xsd_regex::example_with 1i32 r
     |:
         := candidate = xsd_regex::example_with stars r
-        ? patterns_accept facets candidate !- !+ && lengths_accept facets candidate ?> candidate
+        ? patterns_accept facets candidate !- !+ && lengths_accept facets candidate
+        ?> candidate
         |: example_search facets r (stars + 1i32)
 
 := builtin_example (reference : string) : string =
@@ -1044,8 +1058,10 @@
 := prefers_builtin_example (base : string) : bool = is_calendar_builtin base || is_positive_integer_builtin base
 
 :~ ^ zero_padded_one (p : string) (left : i32) (text : string) : option string =
-    ? left = 0i32 ?> None
-    |? xsd_regex::pattern_matches p text ?> Some text
+    ? left = 0i32
+    ?> None
+    |? xsd_regex::pattern_matches p text
+    ?> Some text
     |: zero_padded_one p (left - 1i32) ("0" ++# text)
 
 := positive_example (base : string) (p : string) (facets : list xsd_facet) : option string =
@@ -1074,7 +1090,8 @@
     ? xml::code_point_count text >= min_length facets ?> text |: xsd_regex::repeated "1" (min_length facets)
 
 := unpatterned_example (base : string) (facets : list xsd_facet) : string =
-    ? is_builtin_reference base ?> builtin_or_repeated base facets
+    ? is_builtin_reference base
+    ?> builtin_or_repeated base facets
     |: xsd_regex::repeated "1" (? min_length facets < 1i32 ?> 1i32 |: min_length facets)
 
 := simple_example (base : string) (facets : list xsd_facet) : string =
@@ -1092,7 +1109,8 @@
     | [] => None
 
 := builtin_white_space (base : string) : string =
-    ? base = "" || is_builtin_reference base = !- ?> "preserve"
+    ? base = "" || is_builtin_reference base = !-
+    ?> "preserve"
     |:
         ?= builtin_kind_of base ?|
         | StringBuiltin => "preserve"
@@ -1194,7 +1212,8 @@
     (inherits : bool)
     : string
     =
-    ? is_constrained facets ?> emit_constrained_text ty name base facets code
+    ? is_constrained facets
+    ?> emit_constrained_text ty name base facets code
     |: emit_unconstrained_text ty name base facets code inherits
 
 := simple_references \* form. (inherits : bool) (base : type_reference form) (code : pattern_code) : list string =
@@ -1444,7 +1463,8 @@
 :~ ^ unique_emitted (items : list emitted) (seen : list string) (acc : list emitted) : list emitted =
     ?= items ?|
     | item :: rest =>
-        ? has_name item::name seen ?> unique_emitted rest seen acc
+        ? has_name item::name seen
+        ?> unique_emitted rest seen acc
         |: unique_emitted rest (item::name :: seen) (item :: acc)
     | [] => reverse acc []
 
@@ -1483,7 +1503,8 @@
     |: order_pass rest known done_names ordered (item :: deferred)
 
 := reindented_fields (fields : string) : string =
-    ? fields = "" ?> ""
+    ? fields = ""
+    ?> ""
     |: "    " ++# sm'::replace "\n" "\n    " (sm'::substring 0i32 (sm'::length fields - 1i32) fields) ++# "\n"
 
 := record_fields_of (item : emitted) : string =
@@ -1809,8 +1830,10 @@
 
 := emit_recursive_getter (ty : string) (text : string) : string =
     := getter = "inl " ++# ty ++# "_get forall r. (f : " ++# ty ++# "_field r) (x : " ++# ty ++# ") : r ="
-    ? sm'::starts_with getter text ?> unwrapped_parameter ty getter text
-    |? builds_record ty text ?> record_constructors ty text
+    ? sm'::starts_with getter text
+    ?> unwrapped_parameter ty getter text
+    |? builds_record ty text
+    ?> record_constructors ty text
     |: text
 
 := emit_recursive_attributes (ty : string) (text : string) : string =
@@ -2009,12 +2032,14 @@
 := value_example (kind : type_kind) (t : string) (reference : string) (variant : string) : string =
     ?= kind ?|
     | KindText =>
-        ? is_builtin_reference reference ?> "\"" ++# escape_text (builtin_example reference) ++# "\""
+        ? is_builtin_reference reference
+        ?> "\"" ++# escape_text (builtin_example reference) ++# "\""
         |: t ++# "_example " ++# variant
     | _ => t ++# "_example " ++# variant
 
 :~ ^ repeated_items (value : string -> string) (index : i32) (count : i32) (acc : list string) : list string =
-    ? index >= count ?> reverse acc []
+    ? index >= count
+    ?> reverse acc []
     |: repeated_items value (index + 1i32) count (value ("(k + " ++# int_text index ++# "i32)") :: acc)
 
 := repeated_list (value : string -> string) (count : i32) : string =
@@ -2197,11 +2222,13 @@
 :? any_witness f : f -> string -> option witness
 
 := coded_attribute_read (field : string) (required : bool) (t : string) (key : string) : string =
-    ? required ?> option_binding field ("xml_codec.attribute_parsed " ++# t ++# "_of_string " ++# key)
+    ? required
+    ?> option_binding field ("xml_codec.attribute_parsed " ++# t ++# "_of_string " ++# key)
     |: binding field ("xml_codec.attribute_optional_parsed " ++# t ++# "_of_string " ++# key)
 
 := plain_attribute_read (field : string) (name : string) (required : bool) (key : string) : string =
-    ? required ?> binding field ("xml_codec.attribute_required " ++# key)
+    ? required
+    ?> binding field ("xml_codec.attribute_required " ++# key)
     |: binding field ("xml.attribute_of \"" ++# name ++# "\" attributes, errors")
 
 := fixed_check_text (name : string) (value : string) : string =
@@ -2256,7 +2283,8 @@
     (items : list (xsd particle form)) (ty : string) (field : string) (read : string)
     : string
     =
-    ? single_element_arms items ?> binding field (emit_claimed_choice_read items ty)
+    ? single_element_arms items
+    ?> binding field (emit_claimed_choice_read items ty)
     |: binding field ("xml_codec.all_taken [" ++# read ++# "] errors")
 
 := emit_reading_choice_part \* form.
@@ -2369,7 +2397,8 @@
     (staged : list string) (ty : string) (parts : list part) (attribute_parts : list string)
     : list string
     =
-    ? has_name ty staged = !- ?> record_texts Reading ty parts attribute_parts
+    ? has_name ty staged = !-
+    ?> record_texts Reading ty parts attribute_parts
     |: emit_staged_of_children ty parts :: emit_staged_of_xml ty :: []
 
 := emit_signed_call \* form. (v : element_view form) : string =
@@ -2386,8 +2415,10 @@
     (staged : list string) (signatures : list string) (kinds : list (string * type_kind)) (v : element_view form)
     : string
     =
-    ? is_staged_signature signatures v::name v::occurs ?> emit_signed_element_read v
-    |? has_name v::t staged ?> emit_staged_element_field v
+    ? is_staged_signature signatures v::name v::occurs
+    ?> emit_signed_element_read v
+    |? has_name v::t staged
+    ?> emit_staged_element_field v
     |: element_part Reading kinds v
 
 :+ derived_prefix staged_reading = \ _ kinds base => derived_prefix Reading kinds base
@@ -2458,9 +2489,13 @@
     ++# source
     ++# ")"
 
+:= emit_required_attribute_part \* form. (a : attribute_view form) (source : string) : string =
+    "[(\"" ++# a::name ++# "\", " ++# attribute_value_text a::kind a::t source ++# ")]"
+
 := emit_writing_attribute_part \* form. (a : attribute_view form) : string =
     := source = "x." ++# field_name a::name
-    ? a::required ?> "[(\"" ++# a::name ++# "\", " ++# attribute_value_text a::kind a::t source ++# ")]"
+    ? a::required
+    ?> emit_required_attribute_part a source
     |: emit_optional_attribute_part a source
 
 := emit_witness_texts (ty : string) (witnesses : list witness) : list string =
@@ -2571,7 +2606,8 @@
     (staged : list string) (ty : string) (parts : list part) (attribute_parts : list string)
     : list string
     =
-    ? has_name ty staged = !- ?> record_texts Writing ty parts attribute_parts
+    ? has_name ty staged = !-
+    ?> record_texts Writing ty parts attribute_parts
     |: emit_staged_children ty parts :: emit_staged_attributes ty attribute_parts :: emit_staged_to_xml ty :: []
 
 := emit_signed_once_write \* form. (v : element_view form) : string =
@@ -2586,8 +2622,10 @@
     (signatures : list string) (kinds : list (string * type_kind)) (v : element_view form)
     : string
     =
-    ? is_staged_signature signatures v::name v::occurs && is_required_once v::occurs ?> emit_signed_once_write v
-    |? is_staged_signature signatures v::name v::occurs ?> emit_staged_list_write v
+    ? is_staged_signature signatures v::name v::occurs && is_required_once v::occurs
+    ?> emit_signed_once_write v
+    |? is_staged_signature signatures v::name v::occurs
+    ?> emit_staged_list_write v
     |: element_part Writing kinds v
 
 :+ derived_prefix staged_writing = \ _ kinds base => derived_prefix Writing kinds base
@@ -2636,14 +2674,16 @@
     |: value_example a::kind a::t (reference_text r) "k"
 
 := emit_unfixed_attribute_example \* form. (a : attribute_view form) : string =
-    ? a::inline ?> a::t ++# "_example k"
+    ? a::inline
+    ?> a::t ++# "_example k"
     |:
         ?= a::type_ref ?|
         | Some r => emit_referenced_attribute_example a r
         | None => value_example a::kind a::t "" "k"
 
 := emit_example_attribute_value \* form. (a : attribute_view form) : string =
-    ? a::required = !- ?> "None"
+    ? a::required = !-
+    ?> "None"
     |:
         ?= a::fixed ?|
         | Some f => fixed_example a::kind a::t f
@@ -2707,7 +2747,8 @@
     (staged : list string) (ty : string) (parts : list part) (attribute_parts : list string)
     : list string
     =
-    ? has_name ty staged = !- ?> record_texts Exampling ty parts attribute_parts
+    ? has_name ty staged = !-
+    ?> record_texts Exampling ty parts attribute_parts
     |: emit_staged_example_record ty parts :: []
 
 := emit_staged_element_example \* form.
@@ -3650,8 +3691,10 @@
 
 := codec_shape_of (functions : list string) (aliases : list string) (f : string) : option codec_shape =
     := key = function_key f
-    ? sm'::ends_with "_of_xml forall s." key ?> staged_codec functions aliases (codec_name key "_of_xml forall s.")
-    |? sm'::ends_with "_of_xml" key ?> plain_codec functions aliases (codec_name key "_of_xml")
+    ? sm'::ends_with "_of_xml forall s." key
+    ?> staged_codec functions aliases (codec_name key "_of_xml forall s.")
+    |? sm'::ends_with "_of_xml" key
+    ?> plain_codec functions aliases (codec_name key "_of_xml")
     |: None
 
 := plain_codec_text (ty : string) : string =
@@ -3794,7 +3837,8 @@
     =
     ?= items ?|
     | item :: rest =>
-        ? has_name item::name shared ?> split_items rest shared (item :: core) own
+        ? has_name item::name shared
+        ?> split_items rest shared (item :: core) own
         |: split_items rest shared core (item :: own)
     | [] => reverse core [], reverse own []
 
@@ -3809,7 +3853,8 @@
     =
     ?= functions ?|
     | f :: rest =>
-        ? is_core_function f names shared versions ?> split_functions rest names shared versions (f :: core) own
+        ? is_core_function f names shared versions
+        ?> split_functions rest names shared versions (f :: core) own
         |: split_functions rest names shared versions core (f :: own)
     | [] => reverse core [], reverse own []
 
@@ -3932,7 +3977,8 @@
     | [] => prefix
 
 :~ ^ past_last_underscore (s : string) (pos : i32) (best : i32) : i32 =
-    ? pos >= sm'::length s ?> best
+    ? pos >= sm'::length s
+    ?> best
     |: past_last_underscore s (pos + 1i32) (? sm'::substring pos 1i32 s = "_" ?> pos + 1i32 |: best)
 
 := version_prefix_length (modules : list string) : i32 =
@@ -3946,7 +3992,8 @@
 
 := upper_first (s : string) : string =
     := at = ? sm'::length s > 0i32 ?> sm'::index_of (sm'::substring 0i32 1i32 s) (lower_letters ()) |: 0i32 - 1i32
-    ? at < 0i32 ?> capitalized s
+    ? at < 0i32
+    ?> capitalized s
     |: sm'::substring at 1i32 (upper_letters ()) ++# sm'::substring 1i32 (sm'::length s - 1i32) s
 
 := versioned_case (name : string) (tag : string) : string =

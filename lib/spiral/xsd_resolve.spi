@@ -52,8 +52,10 @@
     (key : string) (local : string) (rest : schema_catalog) (location : string)
     : option string
     =
-    ? key = location ?> Some local
-    |? sm'::ends_with "/" key && sm'::starts_with key location ?> Some (resolve_catalog_prefixed key local location)
+    ? key = location
+    ?> Some local
+    |? sm'::ends_with "/" key && sm'::starts_with key location
+    ?> Some (resolve_catalog_prefixed key local location)
     |: catalog_location rest location
 
 :~ ^ without_parent_steps (path : string) : string =
@@ -64,7 +66,8 @@
     := head = sm'::substring 0i32 marker path
     := slash = sm'::last_index_of "/" head
     := tail = resolve_parent_tail path marker
-    ? resolve_parent_blocked path slash marker ?> path
+    ? resolve_parent_blocked path slash marker
+    ?> path
     |: without_parent_steps (sm'::substring 0i32 (slash + 1i32) head ++# tail)
 
 := resolved_location (catalog : schema_catalog) (directory : string) (location : string) : string =
@@ -106,8 +109,10 @@
     | [] => None
 
 := resolve_declared_prefix (key : string) : option string =
-    ? key = "xmlns" ?> Some ""
-    |? sm'::starts_with "xmlns:" key ?> Some (sm'::substring 6i32 (sm'::length key - 6i32) key)
+    ? key = "xmlns"
+    ?> Some ""
+    |? sm'::starts_with "xmlns:" key
+    ?> Some (sm'::substring 6i32 (sm'::length key - 6i32) key)
     |: None
 
 := resolve_declared (key : string) (value : string) (acc : list (string * string)) : list (string * string) =
@@ -128,7 +133,8 @@
 := qualified (uri : string) (local : string) : string = ? local = "" ?> "" |: "{" ++# uri ++# "}" ++# local
 
 := qualify_reference (namespaces : list (string * string)) (reference : string) : string =
-    ? reference = "" || is_builtin reference ?> reference
+    ? reference = "" || is_builtin reference
+    ?> reference
     |:
         ?= namespace_for (prefix_of reference) namespaces ?|
         | Some uri => qualified uri (xml::local_name reference)
@@ -276,7 +282,8 @@
     | [] => None
 
 := tag_in (scope : tag_scope) (uri : string) (local : string) (fallback : string) : string =
-    ? uri = scope::root_namespace ?> local
+    ? uri = scope::root_namespace
+    ?> local
     |:
         ?= prefix_for uri scope::document_prefixes ?|
         | Some prefix => prefix ++# ":" ++# local
@@ -288,8 +295,10 @@
     | None => name
 
 := scoped_tag (scope : tag_scope) (name : string) : string =
-    ? sm'::contains ":" name ?> resolve_prefixed_tag scope name
-    |? scope::qualified_locals ?> tag_in scope scope::file_namespace name name
+    ? sm'::contains ":" name
+    ?> resolve_prefixed_tag scope name
+    |? scope::qualified_locals
+    ?> tag_in scope scope::file_namespace name name
     |: name
 
 := resolve_scoped_name (scope : tag_scope) (name : tag_name) : tag_name = tag_name (scoped_tag scope (tag_text name))
@@ -375,7 +384,8 @@
     sm'::substring (at + 1i32) (sm'::length trimmed - at - 1i32) trimmed
 
 := final_name (root : string) (collisions : list string) (name : string) : string =
-    ? sm'::starts_with "{" name = !- ?> name
+    ? sm'::starts_with "{" name = !-
+    ?> name
     |:
         := local = qualified_local name
         := uri = qualified_uri name
@@ -478,7 +488,8 @@
     }
 
 := resolve_document_of (path : string) : document_scope =
-    ? xml::is_file path ?> document_scope_of (xml::read_text_replacing_invalid_utf8 path)
+    ? xml::is_file path
+    ?> document_scope_of (xml::read_text_replacing_invalid_utf8 path)
     |: { root_namespace = ""; document_prefixes = [] }
 
 := load_schema_tree_with (catalog : schema_catalog) (path : string) : loaded_tree final =

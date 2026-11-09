@@ -118,7 +118,8 @@
 
 :~ ^ chars_term (cs : list char) : term =
     ?= cs ?|
-    | c :: rest => apply_all (Const (name "List.cons", [ Zero ])) [ Const (name "Char", []); char_term c; chars_term rest ]
+    | c :: rest =>
+        apply_all (Const (name "List.cons", [ Zero ])) [ Const (name "Char", []); char_term c; chars_term rest ]
     | [] => App (Const (name "List.nil", [ Zero ]), Const (name "Char", []))
 
 :~ unfolded_literal (env : list decl) (t : term) : option term =
@@ -197,7 +198,11 @@
     defeq_with (Axiom (name ("fvar:" ++# x), [], dom) :: env) (open_with s (name x)) (open_with v (name x)) fuel
 :& :~ eta_against (env : list decl) (dom : term) (body : term) (other : term) (fuel : i32) : defeq =
     := x = "_ce" ++# sm'::obj_to_string (listm::length env : i32)
-    defeq_with (Axiom (name ("fvar:" ++# x), [], dom) :: env) (open_with body (name x)) (App (other, FVar (name x))) fuel
+    defeq_with
+        (Axiom (name ("fvar:" ++# x), [], dom) :: env)
+        (open_with body (name x))
+        (App (other, FVar (name x)))
+        fuel
 :& :~ eta_struct (env : list decl) (x : term) (y : term) (fuel : i32) : defeq =
     := head, args = spine y []
     ?= head ?|

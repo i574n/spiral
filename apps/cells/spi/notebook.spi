@@ -46,24 +46,31 @@
     | Flag (s, rest) => rev_flags rest (Flag (s, acc))
 
 :~ ^ take_token (src : string) (i : i32) : i32 =
-    ? i >= text::length src ?> i
+    ? i >= text::length src
+    ?> i
     |:
         := ch = text::index src i
-        ? ch = ' ' ?> i
-        |? ch = '\t' ?> i
+        ? ch = ' '
+        ?> i
+        |? ch = '\t'
+        ?> i
         |: take_token src (i + 1i32)
 
 :~ ^ skip_ws (src : string) (i : i32) : i32 =
-    ? i >= text::length src ?> i
+    ? i >= text::length src
+    ?> i
     |:
         := ch = text::index src i
-        ? ch = ' ' ?> skip_ws src (i + 1i32)
-        |? ch = '\t' ?> skip_ws src (i + 1i32)
+        ? ch = ' '
+        ?> skip_ws src (i + 1i32)
+        |? ch = '\t'
+        ?> skip_ws src (i + 1i32)
         |: i
 
 :~ ^ flags_from (src : string) (i : i32) (acc : flags) : flags =
     := j = skip_ws src i
-    ? j >= text::length src ?> rev_flags acc NoFlag
+    ? j >= text::length src
+    ?> rev_flags acc NoFlag
     |:
         := k = take_token src j
         flags_from src k (Flag (text::slice_len src j (k - j), acc))
@@ -75,7 +82,8 @@
     ?= xs ?|
     | NoFlag => packages, test, is_real, timeout
     | Flag ("--package", Flag (path, rest)) =>
-        ? text::starts_with path "--" ?> read_flags rest packages test is_real timeout
+        ? text::starts_with path "--"
+        ?> read_flags rest packages test is_real timeout
         |: read_flags rest (add_nb packages path) test is_real timeout
     | Flag ("--package", rest) => read_flags rest packages test is_real timeout
     | Flag ("--ignore", rest) => read_flags rest packages 3i32 is_real timeout
@@ -146,7 +154,8 @@
     | Step : i32 * string * string * string * steps
 
 :~ ^ read_sources (src : string) (i : i32) (n : i32) (acc : sources) : sources =
-    ? n <= 0i32 ?> acc
+    ? n <= 0i32
+    ?> acc
     |:
         ?= text::next_line src i ?|
         | LineDone => acc
@@ -183,14 +192,16 @@
     | LineGot (line, next) =>
         := top = line <> "" && text::starts_with line " " = !-
         := declaration = ? top ?> cell::declaration line |: in_declaration
-        ? declaration ?> split_declarations src next !+ (declarations ++ "\n" ++ line) rest
+        ? declaration
+        ?> split_declarations src next !+ (declarations ++ "\n" ++ line) rest
         |: split_declarations src next !- declarations (rest ++ "\n" ++ line)
 
 :~ ^ last_top_block (src : string) (i : i32) (block : string) : string =
     ?= text::next_line src i ?|
     | LineDone => block
     | LineGot (line, next) =>
-        ? line <> "" && text::starts_with line " " = !- ?> last_top_block src next line
+        ? line <> "" && text::starts_with line " " = !-
+        ?> last_top_block src next line
         |: last_top_block src next (block ++ "\n" ++ line)
 
 :~ ^ names_status_target (src : string) (i : i32) : bool =
@@ -225,8 +236,7 @@
 
 := real_program (packages : nb) (reals : nb) (body : string) : string * string =
     := wrapped, generated = cell::wrap body
-    ? cell::from_expression generated
-    ?>
+    ? cell::from_expression generated ?>
         := entry = text::replace wrapped "inl main () : i32 =" ("inl " ++ real_entry () ++ " () =")
         program packages NoNb NoNb ("inl main () : i32 =\n    inl _ = real " ++ real_entry () ++ " ()\n    0i32"),
         join_nb (snoc reals entry)
@@ -256,8 +266,10 @@
     | BudgetUnseen => "-"
 
 := step_budget (budget : file_budget) (test : i32) (timeout : string) : string =
-    ? timeout <> "" ?> timeout
-    |? test = 1i32 || test = 2i32 ?> inherited_budget budget
+    ? timeout <> ""
+    ?> timeout
+    |? test = 1i32 || test = 2i32
+    ?> inherited_budget budget
     |: "-"
 
 :~ ^ any_test (xs : sources) : bool =
@@ -300,8 +312,7 @@
                 := timeout_text = step_budget budget2 test timeout
                 := step = ? planned scope test ?> Step (index, timeout_text, code, real_code, acc) |: acc
                 := kept = test <> 1i32 && skip = 0i32 && text::trim body <> ""
-                ? is_real = 1i32
-                ?>
+                ? is_real = 1i32 ?>
                     walk scope has_tests rest
                         (index + 1i32)
                         packages2

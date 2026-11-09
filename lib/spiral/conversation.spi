@@ -46,8 +46,10 @@
 := json_escape_of (k : i32) : string = ? k = 0i32 ?> "\\\\" |? k = 1i32 ?> "\\\"" |: "\\n"
 
 :~ ^ json_special_index (c : char) (k : i32) : i32 =
-    ? k >= sm::length (json_specials ()) ?> -1i32
-    |? sm::index (json_specials ()) k = c ?> k
+    ? k >= sm::length (json_specials ())
+    ?> -1i32
+    |? sm::index (json_specials ()) k = c
+    ?> k
     |: json_special_index c (k + 1i32)
 
 :~ ^ json_escape_from (text : string) (start : i32) (i : i32) (acc : string) : string =

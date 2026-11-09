@@ -9,10 +9,12 @@
 := rust_renamed (to : string) (from : string) : bool = $'std::fs::rename(&*!from, &*!to).is_ok()'
 
 := rust_written_and_synced (opened : file_system::rust_file_opened) (text : string) : result () string =
-    ? file_system::rust_file_opened_ok opened |> not ?> Error "the file could not be opened"
+    ? file_system::rust_file_opened_ok opened |> not
+    ?> Error "the file could not be opened"
     |:
         := file = file_system::rust_file_of opened
-        ? file_system::rust_written_all file text |> file_system::rust_io_ok |> not ?> Error "the write failed"
+        ? file_system::rust_written_all file text |> file_system::rust_io_ok |> not
+        ?> Error "the write failed"
         |: ? rust_synced file |> file_system::rust_io_ok ?> Ok () |: Error "the sync failed"
 
 := durable_append (path : string) (text : string) : result () string =
@@ -24,7 +26,8 @@
     := temp = path ++# ".tmp"
     ?= rust_written_and_synced (rust_created temp) text ?|
     | Ok () =>
-        ? rust_renamed path temp ?> Ok ()
+        ? rust_renamed path temp
+        ?> Ok ()
         |:
             file_system::file_delete temp
             Error "the rename failed"

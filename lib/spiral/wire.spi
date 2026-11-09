@@ -25,7 +25,8 @@
     a', b + xtea_term key a' sum' ((sum' >>> 11) &&& 3), sum'
 
 :~ ^ xtea_encrypt_rounds (key : xtea_key) (index : i32) (a : u32) (b : u32) (sum : u32) : u32 * u32 =
-    ? index >= xtea_rounds () ?> a, b
+    ? index >= xtea_rounds ()
+    ?> a, b
     |:
         := a', b', sum' = xtea_encrypt_step key a b sum
         xtea_encrypt_rounds key (index + 1) a' b' sum'
@@ -38,7 +39,8 @@
     a - xtea_term key b' sum' (sum' &&& 3), b', sum'
 
 :~ ^ xtea_decrypt_rounds (key : xtea_key) (index : i32) (a : u32) (b : u32) (sum : u32) : u32 * u32 =
-    ? index >= xtea_rounds () ?> a, b
+    ? index >= xtea_rounds ()
+    ?> a, b
     |:
         := a', b', sum' = xtea_decrypt_step key a b sum
         xtea_decrypt_rounds key (index + 1) a' b' sum'

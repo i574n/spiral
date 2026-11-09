@@ -216,8 +216,7 @@
                             | _ => $'!a.iter().any(|x| *x == !b)' : bool
                     found
                 | Zig => \ () =>
-                    ? (~> ?: u ?| string => !+ | _ => !-)
-                    ?>
+                    ? (~> ?: u ?| string => !+ | _ => !-) ?>
                         ~>
                             ?: t ?|
                             | char => $'(std.mem.indexOfScalar(u8, !a, !b) \!= null)' : bool
@@ -229,8 +228,10 @@
                             ?> $'std.mem.eql(u8, !item, !b)' : bool
                             |: $'(!item == !b)' : bool
                         :~ ^ scan (i : i32) : bool =
-                            ? i >= len ?> !-
-                            |? same ($'!a[@@intCast(!i)]' : t) ?> !+
+                            ? i >= len
+                            ?> !-
+                            |? same ($'!a[@@intCast(!i)]' : t)
+                            ?> !+
                             |: scan (i + 1i32)
                         scan 0i32
                 | _ => \ () =>
@@ -277,9 +278,12 @@
 
 := counterexamples (limit : i32) (lo : i64) (hi : i64) (reference : i64 -> i64) (candidate : i64 -> i64) : list i64 =
     :~ ^ go (x : i64) (left : i32) (found : list i64) : list i64 =
-        ? x > hi ?> found
-        |? left <= 0i32 ?> found
-        |? reference x = candidate x ?> go (x + 1i64) left found
+        ? x > hi
+        ?> found
+        |? left <= 0i32
+        ?> found
+        |? reference x = candidate x
+        ?> go (x + 1i64) left found
         |: go (x + 1i64) (left - 1i32) (x :: found)
     go lo limit [] |> listm::rev
 

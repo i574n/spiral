@@ -26,9 +26,12 @@
     ? i >= text_count s ?> acc |: digits_value s (i + 1i32) (acc * 10i32 + digit_value (char_at s i))
 
 := signed_value (s : string) : i32 =
-    ? text_count s = 0i32 ?> 0i32
-    |? char_at s 0i32 = '-' ?> 0i32 - digits_value s 1i32 0i32
-    |? char_at s 0i32 = '+' ?> digits_value s 1i32 0i32
+    ? text_count s = 0i32
+    ?> 0i32
+    |? char_at s 0i32 = '-'
+    ?> 0i32 - digits_value s 1i32 0i32
+    |? char_at s 0i32 = '+'
+    ?> digits_value s 1i32 0i32
     |: digits_value s 0i32 0i32
 
 :~ ^ digits_text (n : i32) (acc : string) : string =
@@ -50,8 +53,10 @@
 
 := fixed_digits (digits : string) (point : i32) : string =
     := count = text_count digits
-    ? point <= 0i32 ?> leading_point digits point
-    |? count <= point ?> trailing_zeros digits count point
+    ? point <= 0i32
+    ?> leading_point digits point
+    |? count <= point
+    ?> trailing_zeros digits count point
     |: inner_point digits count point
 
 := padded_exponent (n : i32) : string = ? n < 10i32 ?> concat "0" (digits_text n "") |: digits_text n ""
@@ -67,7 +72,8 @@
 
 := laid_out (sign : string) (digits : string) (point : i32) : string =
     := exponent = point - 1i32
-    ? -4i32 <= exponent && exponent < 16i32 ?> concat sign (fixed_digits digits point)
+    ? -4i32 <= exponent && exponent < 16i32
+    ?> concat sign (fixed_digits digits point)
     |: concat sign (scientific_digits digits exponent)
 
 := is_special (text : string) : bool = text = "NaN" || text = "Infinity" || text = "-Infinity"
@@ -76,7 +82,8 @@
     ? marker < 0i32 ?> unsigned |: part unsigned 0i32 marker
 
 := exponent_of (unsigned : string) (marker : i32) : i32 =
-    ? marker < 0i32 ?> 0i32
+    ? marker < 0i32
+    ?> 0i32
     |: signed_value (part unsigned (marker + 1i32) (text_count unsigned - marker - 1i32))
 
 := whole_of (mantissa : string) (point_at : i32) : string =
@@ -94,7 +101,8 @@
 
 := trimmed_text (sign : string) (digits : string) (shift : i32) : string =
     := first, last = nonzero_span digits
-    ? first >= last ?> concat sign "0.0"
+    ? first >= last
+    ?> concat sign "0.0"
     |: laid_out sign (part digits first (last - first)) (shift - first)
 
 := unsigned_repr (sign : string) (unsigned : string) : string =

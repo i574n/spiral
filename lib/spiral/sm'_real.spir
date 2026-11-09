@@ -77,7 +77,7 @@
     | _ =>
         backend_switch `string `({}) {
             Gleam =
-                (\ () =>
+                \ () =>
                     ?: t ?|
                     | char => convert::to `(`x) `string x
                     | string_builder_real => convert::to `(`x) `string x
@@ -88,9 +88,9 @@
                             | array_base _ => $'!x |> spiral_array_to_list' : t
                             | _ => x
                         $'string.inspect(!x)' : string
-                    ) : () -> string
+                : () -> string
             Lua =
-                (\ () =>
+                \ () =>
                     ?: t ?|
                     | ~a * ~b =>
                         := a, b =
@@ -107,27 +107,27 @@
                                     ", ", acc ++#* separator ++#* format_debug_real `(`value) value
                                 ("", "") x
                         fields
-                    | array_base _ =>
-                        (++#*) ((++#*) "[" ($'table.concat(!x, ", ")' : string)) "]"
+                    | array_base _ => (++#*) ((++#*) "[" ($'table.concat(!x, ", ")' : string)) "]"
                     | i64 => $'spiral_w64.tostring(!x, true)' : string
                     | u64 => $'spiral_w64.tostring(!x, false)' : string
                     | t =>
                         ? real_core::union_type_is `t
                         ?> serialize_union `t x
                         |: $'tostring(!x)       ' : string
-                ) : () -> string
+                : () -> string
             Fsharp = (\ () => $'$"%A{!x}"' : string) : () -> string
             Python =
-                (\ () =>
+                \ () =>
                     $'f"{!x}"' : string
-                ) : () -> string
+                : () -> string
             Rust =
-                (\ () =>
+                \ () =>
                     ?: t ?|
                     | char => $'Rc::<str>::from(format\!("{:?}", !x as char))' : string
                     | optionm'::option' ~a =>
-                        ? real_core::prim_type_is `a
-                        ?> $'Rc::<str>::from(match &!x { Some(v) => format\!("Some {:?}", v), None => String::from("None") })' : string
+                        ? real_core::prim_type_is `a ?>
+                            $'Rc::<str>::from(match &!x { Some(v) => format\!("Some {:?}", v), None => String::from("None") })'
+                            : string
                         |:
                             := x = $'Rc::new(RefCell::new(!x.clone().into_iter().collect::<Vec<_>>()))' : array_base a
                             ? !!!!EQ(!!!!ArrayLength(`u64, x), 0u64) ?> "None"
@@ -154,13 +154,17 @@
                         := _, fields =
                             real_core::record_fold
                                 \ { state = separator, acc key value } =>
-                                    "; ", acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* format_debug_real `(`value) value
-                                ("", "") x
+                                    "; ",
+                                    acc
+                                    ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ")
+                                    ++#* format_debug_real `(`value) value
+                                ("", "")
+                                x
                         "{ " ++#* fields ++#* " }"
                     | _ => format_debug_other_rust `t x
-                ) : () -> string
+                : () -> string
             TypeScript =
-                (\ () =>
+                \ () =>
                     ?: t ?|
                     | char => $'"\'" + String.fromCharCode(!x) + "\'"' : string
                     | optionm'::option' ~a =>
@@ -174,8 +178,9 @@
                         := a, b = x
                         (++#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))
                     | array_base ~el =>
-                        ? (?: el ?| char => !+ | _ => !-)
-                        ?> $'"[" + !x.map((c: number) => "\'" + String.fromCharCode(c) + "\'").join(", ") + "]"' : string
+                        ? (?: el ?| char => !+ | _ => !-) ?>
+                            $'"[" + !x.map((c: number) => "\'" + String.fromCharCode(c) + "\'").join(", ") + "]"'
+                            : string
                         |? real_core::prim_type_is `el
                         ?> $'"[" + !x.join(", ") + "]"' : string
                         |: $'String(!x)' : string
@@ -183,22 +188,26 @@
                         := _, fields =
                             real_core::record_fold
                                 \ { state = separator, acc key value } =>
-                                    "; ", acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* format_debug_real `(`value) value
-                                ("", "") x
+                                    "; ",
+                                    acc
+                                    ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ")
+                                    ++#* format_debug_real `(`value) value
+                                ("", "")
+                                x
                         "{ " ++#* fields ++#* " }"
                     | _ =>
                         ? real_core::union_type_is `t
                         ?> serialize_union_rust `t x
-                        |? real_core::nominal_type_is `t
-                        ?>
+                        |? real_core::nominal_type_is `t ?>
                             := y = real_core::nominal_strip x
                             format_debug_real `(`y) y
                         |: $'String(!x)' : string
-                ) : () -> string
+                : () -> string
             Zig =
-                (\ () =>
+                \ () =>
                     ?: t ?|
-                    | char => $'(std.fmt.allocPrint(spiral_gpa, "\'{c}\'", .{ !x }) catch @@panic("out of memory"))' : string
+                    | char =>
+                        $'(std.fmt.allocPrint(spiral_gpa, "\'{c}\'", .{ !x }) catch @@panic("out of memory"))' : string
                     | bool => $'(if (!x) "true" else "false")' : string
                     | () * ~b =>
                         := _, b = x
@@ -210,22 +219,25 @@
                         := _, fields =
                             real_core::record_fold
                                 \ { state = separator, acc key value } =>
-                                    "; ", acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* format_debug_real `(`value) value
-                                ("", "") x
+                                    "; ",
+                                    acc
+                                    ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ")
+                                    ++#* format_debug_real `(`value) value
+                                ("", "")
+                                x
                         "{ " ++#* fields ++#* " }"
                     | _ =>
                         ? real_core::union_type_is `t
                         ?> serialize_union_rust `t x
-                        |? real_core::nominal_type_is `t
-                        ?>
+                        |? real_core::nominal_type_is `t ?>
                             := y = real_core::nominal_strip x
                             format_debug_real `(`y) y
                         |? real_core::prim_type_is `t
                         ?> $'(std.fmt.allocPrint(spiral_gpa, "{d}", .{ !x }) catch @@panic("out of memory"))' : string
                         |: $'(std.fmt.allocPrint(spiral_gpa, "{any}", .{ !x }) catch @@panic("out of memory"))' : string
-                ) : () -> string
+                : () -> string
             Pascal =
-                (\ () =>
+                \ () =>
                     ?: t ?|
                     | bool => $'BoolToStr(!x, \'true\', \'false\')' : string
                     | char => $'string(!x)' : string
@@ -241,20 +253,23 @@
                         := _, fields =
                             real_core::record_fold
                                 \ { state = separator, acc key value } =>
-                                    "; ", acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* format_debug_real `(`value) value
-                                ("", "") x
+                                    "; ",
+                                    acc
+                                    ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ")
+                                    ++#* format_debug_real `(`value) value
+                                ("", "")
+                                x
                         "{ " ++#* fields ++#* " }"
                     | _ =>
                         ? real_core::union_type_is `t
                         ?> serialize_union_rust `t x
-                        |? real_core::nominal_type_is `t
-                        ?>
+                        |? real_core::nominal_type_is `t ?>
                             := y = real_core::nominal_strip x
                             format_debug_real `(`y) y
                         |: $'IntToStr(!x)' : string
-                ) : () -> string
+                : () -> string
             Lean =
-                (\ () =>
+                \ () =>
                     ?: t ?|
                     | char => $'("\'" ++ toString !x ++ "\'")' : string
                     | () * ~b =>
@@ -267,20 +282,23 @@
                         := _, fields =
                             real_core::record_fold
                                 \ { state = separator, acc key value } =>
-                                    "; ", acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* format_debug_real `(`value) value
-                                ("", "") x
+                                    "; ",
+                                    acc
+                                    ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ")
+                                    ++#* format_debug_real `(`value) value
+                                ("", "")
+                                x
                         "{ " ++#* fields ++#* " }"
                     | _ =>
                         ? real_core::union_type_is `t
                         ?> serialize_union_rust `t x
-                        |? real_core::nominal_type_is `t
-                        ?>
+                        |? real_core::nominal_type_is `t ?>
                             := y = real_core::nominal_strip x
                             format_debug_real `(`y) y
                         |: $'toString !x ' : string
-                ) : () -> string
+                : () -> string
             Kotlin =
-                (\ () =>
+                \ () =>
                     ?: t ?|
                     | char => $'("\'" + Char(!x) + "\'")' : string
                     | () * ~b =>
@@ -293,20 +311,23 @@
                         := _, fields =
                             real_core::record_fold
                                 \ { state = separator, acc key value } =>
-                                    "; ", acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* format_debug_real `(`value) value
-                                ("", "") x
+                                    "; ",
+                                    acc
+                                    ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ")
+                                    ++#* format_debug_real `(`value) value
+                                ("", "")
+                                x
                         "{ " ++#* fields ++#* " }"
                     | _ =>
                         ? real_core::union_type_is `t
                         ?> serialize_union_rust `t x
-                        |? real_core::nominal_type_is `t
-                        ?>
+                        |? real_core::nominal_type_is `t ?>
                             := y = real_core::nominal_strip x
                             format_debug_real `(`y) y
                         |: $'(!x).toString()' : string
-                ) : () -> string
+                : () -> string
             Swift =
-                (\ () =>
+                \ () =>
                     ?: t ?|
                     | char => $'("\'" + String(UnicodeScalar(UInt32(!x)) ?? " ") + "\'")' : string
                     | () * ~b =>
@@ -319,20 +340,23 @@
                         := _, fields =
                             real_core::record_fold
                                 \ { state = separator, acc key value } =>
-                                    "; ", acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* format_debug_real `(`value) value
-                                ("", "") x
+                                    "; ",
+                                    acc
+                                    ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ")
+                                    ++#* format_debug_real `(`value) value
+                                ("", "")
+                                x
                         "{ " ++#* fields ++#* " }"
                     | _ =>
                         ? real_core::union_type_is `t
                         ?> serialize_union_rust `t x
-                        |? real_core::nominal_type_is `t
-                        ?>
+                        |? real_core::nominal_type_is `t ?>
                             := y = real_core::nominal_strip x
                             format_debug_real `(`y) y
                         |: $'String(describing: !x)' : string
-                ) : () -> string
+                : () -> string
             C =
-                (\ () =>
+                \ () =>
                     := buffer () =
                         global "#include <stdio.h>"
                         global "#include <stdint.h>"
@@ -386,18 +410,21 @@
                         := _, fields =
                             real_core::record_fold
                                 \ { state = separator, acc key value } =>
-                                    "; ", acc ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ") ++#* format_debug_real `(`value) value
-                                ("", "") x
+                                    "; ",
+                                    acc
+                                    ++#* (separator ++#* symbol_to_string_real `(`key) ++#* " = ")
+                                    ++#* format_debug_real `(`value) value
+                                ("", "")
+                                x
                         "{ " ++#* fields ++#* " }"
                     | _ =>
                         ? real_core::union_type_is `t
                         ?> serialize_union_rust `t x
-                        |? real_core::nominal_type_is `t
-                        ?>
+                        |? real_core::nominal_type_is `t ?>
                             := y = real_core::nominal_strip x
                             format_debug_real `(`y) y
                         |: $'StringLit(sizeof("<`t>"), "<`t>")' : string
-                ) : () -> string
+                : () -> string
         }
 :& := format_debug_other_rust \* t. (x : t) : string =
     ? real_core::prim_type_is `t
@@ -489,8 +516,7 @@
     | string => x
     | ~f ~a => format_debug_real `t x
     | _ =>
-        ? real_core::nominal_type_is `t
-        ?>
+        ? real_core::nominal_type_is `t ?>
             := x = real_core::nominal_strip x
             obj_to_string_rust_inner_real `(`x) x
         |: format_debug_real `t x
@@ -602,82 +628,86 @@
             := s : string =
                 backend_switch `string `({}) {
                     Gleam =
-                        (\ () =>
+                        \ () =>
                             ?= b ?|
                             | (_ : string) => b : string
                             | _ => format_debug_real `(`b) b
-                        ) : () -> string
+                        : () -> string
                     Lua =
-                        (\ () =>
+                        \ () =>
                             ?= b ?|
                             | (_ : f32) | (_ : f64) => float_native::shortest `t b
                             | (_ : string) => b : string
                             | _ => format_debug_real `(`b) b
-                        ) : () -> string
+                        : () -> string
                     Fsharp =
-                        (\ () =>
+                        \ () =>
                             ?= b ?|
                             | (_ : f32) | (_ : f64) => float_native::shortest `t b
                             | (_ : string) => b : string
                             | _ => $'$"{!b}"' : string
-                        ) : () -> string
+                        : () -> string
                     Python =
-                        (\ () =>
+                        \ () =>
                             ?= b ?|
                             | (_ : f32) | (_ : f64) => float_native::shortest `t b
                             | (_ : string) => b : string
                             | _ => $'f"{!b}"' : string
-                        ) : () -> string
+                        : () -> string
                     Rust =
-                        (\ () =>
+                        \ () =>
                             ?= b ?|
                             | (_ : f32) | (_ : f64) => float_native::shortest `t b
                             | (_ : string) => b : string
                             | (_ : char) => $'Rc::<str>::from(format\!("{}", !b as char))' : string
                             | _ => $'Rc::<str>::from(format\!("{}", !b))' : string
-                        ) : () -> string
+                        : () -> string
                     TypeScript =
-                        (\ () =>
+                        \ () =>
                             ?= b ?|
                             | (_ : f32) | (_ : f64) => float_native::shortest `t b
                             | (_ : string) => b : string
                             | (_ : char) => $'String.fromCharCode(!b)' : string
                             | _ => $'String(!b)' : string
-                        ) : () -> string
+                        : () -> string
                     Zig =
-                        (\ () =>
+                        \ () =>
                             ?= b ?|
                             | (_ : f32) | (_ : f64) => float_native::shortest `t b
                             | (_ : string) => b : string
-                            | (_ : char) => $'(std.fmt.allocPrint(spiral_gpa, "{c}", .{ !b }) catch @@panic("out of memory"))' : string
+                            | (_ : char) =>
+                                $'(std.fmt.allocPrint(spiral_gpa, "{c}", .{ !b }) catch @@panic("out of memory"))'
+                                : string
                             | (_ : bool) => ? b ?> "true" |: "false"
-                            | _ => $'(std.fmt.allocPrint(spiral_gpa, "{d}", .{ !b }) catch @@panic("out of memory"))' : string
-                        ) : () -> string
+                            | _ =>
+                                $'(std.fmt.allocPrint(spiral_gpa, "{d}", .{ !b }) catch @@panic("out of memory"))'
+                                : string
+                        : () -> string
                     Lean =
-                        (\ () =>
+                        \ () =>
                             ?= b ?|
                             | (_ : f32) | (_ : f64) => float_native::shortest `t b
                             | (_ : string) => b : string
                             | _ => $'toString !b ' : string
-                        ) : () -> string
+                        : () -> string
                     Kotlin =
-                        (\ () =>
+                        \ () =>
                             ?= b ?|
                             | (_ : f32) | (_ : f64) => float_native::shortest `t b
                             | (_ : string) => b : string
                             | (_ : char) => $'Char(!b).toString()' : string
                             | _ => $'(!b).toString()' : string
-                        ) : () -> string
+                        : () -> string
                     Swift =
-                        (\ () =>
+                        \ () =>
                             ?= b ?|
                             | (_ : f32) | (_ : f64) => float_native::shortest `t b
                             | (_ : string) => b : string
                             | (_ : char) => $'String(UnicodeScalar(UInt32(!b)) ?? " ")' : string
                             | _ => $'String(describing: !b)' : string
-                        ) : () -> string
+                        : () -> string
                     C =
-                        (\ () =>
+                        \ () =>
                             ?= b ?|
                             | (_ : f32) | (_ : f64) => float_native::shortest `t b
                             | (_ : string) => b : string
@@ -690,15 +720,15 @@
                                 global """static inline uint32_t spiral_format_plain_char(int32_t x) { return (uint32_t)snprintf(spiral_format_buffer, sizeof spiral_format_buffer, "%c", (int)x) + 1u; }"""
                                 $'StringLit(spiral_format_plain_char(!b), spiral_format_buffer)' : string
                             | _ => format_debug_real `(`b) b
-                        ) : () -> string
+                        : () -> string
                     Pascal =
-                        (\ () =>
+                        \ () =>
                             ?= b ?|
                             | (_ : f32) | (_ : f64) => float_native::shortest `t b
                             | (_ : string) => b : string
                             | (_ : char) => $'string(!b)' : string
                             | _ => format_debug_real `(`b) b
-                        ) : () -> string
+                        : () -> string
                 }
             := s : string =
                 ?= b ?|

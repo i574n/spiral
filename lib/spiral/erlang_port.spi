@@ -76,7 +76,8 @@
 
 :~ ^ exit_text_within (p : port) (left : i32) : string =
     := outcome = receive_within (selector_of p) 30000i32
-    ? received_some outcome = !- || left <= 0i32 ?> "timeout"
+    ? received_some outcome = !- || left <= 0i32
+    ?> "timeout"
     |: exit_text_or outcome \ () => exit_text_within p (left - 1i32)
 
 ///> gleam
@@ -95,8 +96,10 @@
 
 := event_named (event : erlang_term::term) : port_event =
     := kind = event_kind event
-    ? kind = "exit_status" ?> Exited (event_value event |> erlang_term::cast)
-    |? kind = "data" ?> Output (event_value event |> erlang_term::cast)
+    ? kind = "exit_status"
+    ?> Exited (event_value event |> erlang_term::cast)
+    |? kind = "data"
+    ?> Output (event_value event |> erlang_term::cast)
     |: Quiet
 
 := event_of (outcome : received) : port_event =

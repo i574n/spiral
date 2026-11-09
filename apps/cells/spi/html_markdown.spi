@@ -33,10 +33,12 @@
     ? code >= 0i32 ?> code |: link_span_end s i
 
 :~ ^ pieces_from (s : string) (i : i32) (start : i32) (acc : list string) : list string =
-    ? i >= text::length s ?> listm::rev (text::slice_len s start (i - start) :: acc)
+    ? i >= text::length s
+    ?> listm::rev (text::slice_len s start (i - start) :: acc)
     |:
         := stop = span_end s i
-        ? stop < 0i32 ?> pieces_from s (i + 1i32) start acc
+        ? stop < 0i32
+        ?> pieces_from s (i + 1i32) start acc
         |:
             := before = text::slice_len s start (i - start)
             pieces_from s stop stop (text::slice_len s i (stop - i) :: before :: acc)
@@ -54,7 +56,8 @@
 := piece_html (piece : string) : string =
     ? text::starts_with piece "`" && text::length piece >= 2i32
     ?> "<code>" ++ escape (trim_trailing_ticks (text::drop piece 1i32)) ++ "</code>"
-    |? text::starts_with piece "[" ?> link_html piece
+    |? text::starts_with piece "["
+    ?> link_html piece
     |: escape piece
 
 := inline (line : string) : string = sm'::concat_list "" (listm::map piece_html (pieces_from line 0i32 0i32 []))
@@ -99,9 +102,12 @@
     | _ => { html = html ++ close block ++ "<p>" ++ inline line; block = Paragraph }
 
 := open_step (html : string) (block : md_block) (line : string) : step =
-    ? text::starts_with line "```" ?> { html = html ++ close block ++ "<pre><code>"; block = CodeBlock }
-    |? text::trim line = "" ?> { html = html ++ close block; block = NoBlock }
-    |? heading_level line > 0i32 ?> heading_step html block line (heading_level line)
+    ? text::starts_with line "```"
+    ?> { html = html ++ close block ++ "<pre><code>"; block = CodeBlock }
+    |? text::trim line = ""
+    ?> { html = html ++ close block; block = NoBlock }
+    |? heading_level line > 0i32
+    ?> heading_step html block line (heading_level line)
     |:
         ?= item_text line ?|
         | Some item => item_step html block item
@@ -110,7 +116,8 @@
 := line_step (s : step) (line : string) : step =
     ?= s::block ?|
     | CodeBlock =>
-        ? text::starts_with line "```" ?> { html = s::html ++ "</code></pre>\n"; block = NoBlock }
+        ? text::starts_with line "```"
+        ?> { html = s::html ++ "</code></pre>\n"; block = NoBlock }
         |: { html = s::html ++ escape line ++ "\n"; block = CodeBlock }
     | _ => open_step s::html s::block line
 

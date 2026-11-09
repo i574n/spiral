@@ -73,7 +73,9 @@
 
 := counting_worker () =
     worker \ () =>
-        otp_actor::new 0i32 |> otp_actor::on_message (\ total (_ : i32) => otp_actor::continue total) |> otp_actor::start
+        otp_actor::new 0i32
+        |> otp_actor::on_message (\ total (_ : i32) => otp_actor::continue total)
+        |> otp_actor::start
 
 := restarting_worker () = counting_worker () |> with_restart Transient
 

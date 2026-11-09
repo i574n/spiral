@@ -21,9 +21,12 @@
     | [] => Markup ""
 
 :~ entity (c : char) : string =
-    ? c = '&' ?> "&amp;"
-    |? c = '<' ?> "&lt;"
-    |? c = '>' ?> "&gt;"
+    ? c = '&'
+    ?> "&amp;"
+    |? c = '<'
+    ?> "&lt;"
+    |? c = '>'
+    ?> "&gt;"
     |? c = '"' ?> "&quot;"
     |: ""
 
@@ -35,7 +38,8 @@
     ? e = "" ?> start, acc |: i + 1i32, acc ++# run_of s start i ++# e
 
 :~ ^ escape_from (s : string) (i : i32) (start : i32) (acc : string) : string =
-    ? i >= sm::length s ?> acc ++# run_of s start i
+    ? i >= sm::length s
+    ?> acc ++# run_of s start i
     |:
         := start, acc = escape_step s i start acc
         escape_from s (i + 1i32) start acc

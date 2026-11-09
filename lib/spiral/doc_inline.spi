@@ -8,20 +8,26 @@
     :< testing
 
 :~ ^ find_char (s : string) (c : char) (i : i32) : i32 =
-    ? i >= sm::length s ?> -1i32
-    |? sm::index s i = c ?> i
+    ? i >= sm::length s
+    ?> -1i32
+    |? sm::index s i = c
+    ?> i
     |: find_char s c (i + 1i32)
 
 :~ marker (c : char) : bool = c = '`' || c = '[' || c = '!' || c = '*' || c = '<' || c = '\\'
 
 :~ ^ next_marker (s : string) (i : i32) : i32 =
-    ? i >= sm::length s ?> i
-    |? marker (sm::index s i) ?> i
+    ? i >= sm::length s
+    ?> i
+    |? marker (sm::index s i)
+    ?> i
     |: next_marker s (i + 1i32)
 
 :~ ^ double_star (s : string) (i : i32) : i32 =
-    ? i + 1i32 >= sm::length s ?> -1i32
-    |? sm::index s i = '*' && sm::index s (i + 1i32) = '*' ?> i
+    ? i + 1i32 >= sm::length s
+    ?> -1i32
+    |? sm::index s i = '*' && sm::index s (i + 1i32) = '*'
+    ?> i
     |: double_star s (i + 1i32)
 
 :~ escapable (c : char) : bool =
@@ -124,7 +130,8 @@
     | None => plain_piece s i
 
 :~ ^ inlines_from (s : string) (i : i32) (acc : list inline) : list inline =
-    ? i >= sm::length s ?> rev_inlines acc []
+    ? i >= sm::length s
+    ?> rev_inlines acc []
     |:
         := next, x = piece (\ t => inlines_from t 0i32 []) s i
         inlines_from s next (x :: acc)
@@ -134,36 +141,36 @@
 ///> rust
 ///> gleam
 :# plain_text_is_one_text_run =
-    parse_inline "just words" |> _assert_eq [Text "just words"]
+    parse_inline "just words" |> _assert_eq [ Text "just words" ]
 
 ///> rust
 ///> gleam
 :# backticks_make_code_and_a_lone_backtick_stays_text =
     (parse_inline "a `b` c", parse_inline "x ` y")
-    |> _assert_eq ([Text "a "; Code "b"; Text " c"], [Text "x "; Text "` y"])
+    |> _assert_eq ([ Text "a "; Code "b"; Text " c" ], [ Text "x "; Text "` y" ])
 
 ///> rust
 ///> gleam
 :# a_link_keeps_label_and_href =
-    parse_inline "see [a link](x.html)." |> _assert_eq [Text "see "; Link ("a link", "x.html"); Text "."]
+    parse_inline "see [a link](x.html)." |> _assert_eq [ Text "see "; Link ("a link", "x.html"); Text "." ]
 
 ///> rust
 ///> gleam
 :# an_image_and_a_badge_link =
     parse_inline "![logo](l.png) [![CI](b.svg)](ci.html)"
-    |> _assert_eq [Image ("logo", "l.png"); Text " "; LinkedImage ("CI", "b.svg", "ci.html")]
+    |> _assert_eq [ Image ("logo", "l.png"); Text " "; LinkedImage ("CI", "b.svg", "ci.html") ]
 
 ///> rust
 ///> gleam
 :# double_stars_nest_inline_content =
-    parse_inline "**a `b`** c" |> _assert_eq [Strong [Text "a "; Code "b"]; Text " c"]
+    parse_inline "**a `b`** c" |> _assert_eq [ Strong [ Text "a "; Code "b" ]; Text " c" ]
 
 ///> rust
 ///> gleam
 :# an_angle_url_autolinks_and_other_angles_stay_text =
-    (parse_inline "<https://x.org>", parse_inline "<b>") |> _assert_eq ([AutoLink "https://x.org"], [Text "<b>"])
+    (parse_inline "<https://x.org>", parse_inline "<b>") |> _assert_eq ([ AutoLink "https://x.org" ], [ Text "<b>" ])
 
 ///> rust
 ///> gleam
 :# backslash_escapes_a_marker =
-    parse_inline "\\*star\\* y \\| z" |> _assert_eq [Text "*"; Text "star"; Text "*"; Text " y "; Text "|"; Text " z"]
+    parse_inline "\\*star\\* y \\| z" |> _assert_eq [ Text "*"; Text "star"; Text "*"; Text " y "; Text "|"; Text " z" ]

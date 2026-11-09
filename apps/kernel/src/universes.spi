@@ -44,7 +44,8 @@
     (check : list (string * i32) -> bool)
     : bool
     =
-    ? v > bound ?> !+
+    ? v > bound
+    ?> !+
     |: every_assignment rest bound ((p, v) :: env) check && every_value p rest bound (v + 1i32) env check
 
 :~ leq_upto (a : level) (b : level) (bound : i32) : bool =

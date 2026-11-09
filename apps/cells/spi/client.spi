@@ -61,7 +61,10 @@
     | Ok _ => greeted s stamp q
     | Error f => Error (lost f)
 
-:= transact_with \* r. (attempts : i32) (port : i32) (stamp : string) (q : daemon::request r) : result r client_failure =
+:= transact_with \* r.
+    (attempts : i32) (port : i32) (stamp : string) (q : daemon::request r)
+    : result r client_failure
+    =
     ?= connect_from port attempts ?|
     | Error e => Error e
     | Ok s =>

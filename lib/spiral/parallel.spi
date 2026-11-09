@@ -13,7 +13,8 @@
         ?= rest ?|
         | [] => ? taken = 0i32 ?> listm::rev acc |: listm::rev (listm::rev chunk :: acc)
         | x :: more =>
-            ? taken + 1i32 = size ?> split more 0i32 [] (listm::rev (x :: chunk) :: acc)
+            ? taken + 1i32 = size
+            ?> split more 0i32 [] (listm::rev (x :: chunk) :: acc)
             |: split more (taken + 1i32) (x :: chunk) acc
     ? size < 1i32 ?> [] |: split items 0i32 [] []
 
@@ -45,14 +46,18 @@
             ?= erlang_process::selector_receive_forever choices ?|
             | ChunkDone (index, values) => gather (results_left - 1i32) ends_left ((index, values) :: finished) crashed
             | WorkerEnded reason =>
-                ? erlang_process::exited_normally reason ?> gather results_left (ends_left - 1i32) finished crashed
+                ? erlang_process::exited_normally reason
+                ?> gather results_left (ends_left - 1i32) finished crashed
                 |: gather (results_left - 1i32) (ends_left - 1i32) finished !+
     gather count count [] !-
 
 := rust_available_parallelism () : convert::unativeint =
     $'std::thread::available_parallelism().map_or(1, |n| n.get())' : convert::unativeint
 
-:= rust_scoped_map \* t u. (fn : t -> u) (items : listm'::list' t) (chunk_size : convert::unativeint) : listm'::list' u =
+:= rust_scoped_map \* t u.
+    (fn : t -> u) (items : listm'::list' t) (chunk_size : convert::unativeint)
+    : listm'::list' u
+    =
     global """
         fn spiral_scope_map<T: Sync + Clone, U: Send>(
             items: &[T], chunk_size: usize, make: fn() -> std::rc::Rc<dyn Fn(T) -> U>,
@@ -139,7 +144,9 @@
 
 ///> rust
 :# map_workers_have_room_for_deep_recursion =
-    listm::init 4i32 id |> map (\ _ => listm::length (countdown 100000i32)) |> testing::_assert_eq [100000i32; 100000i32; 100000i32; 100000i32]
+    listm::init 4i32 id
+    |> map (\ _ => listm::length (countdown 100000i32))
+    |> testing::_assert_eq [ 100000i32; 100000i32; 100000i32; 100000i32 ]
 
 ///> gleam
 ///> rust

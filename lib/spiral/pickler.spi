@@ -114,7 +114,8 @@
 
 := opt_of \* a. (f : i32 -> a) (i : i32) : option a = ? i = 0 ?> None |: Some (f (i - 1))
 
-:= pair_of \* a b. (pb : pick b) (fa : i32 -> a) (fb : i32 -> b) (i : i32) : a * b = fa (i / count pb), fb (i % count pb)
+:= pair_of \* a b. (pb : pick b) (fa : i32 -> a) (fb : i32 -> b) (i : i32) : a * b =
+    fa (i / count pb), fb (i % count pb)
 
 := sized_of \* n a. (pa : pick a) (f : i32 -> a) (i : i32) : sized n a =
     := r = count pa

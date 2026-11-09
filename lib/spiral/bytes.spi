@@ -48,7 +48,8 @@
 := copy_into (out : array u8) (at : i32) (part : array u8) : () =
     run_target \|
         | Rust => \ () =>
-            $'{ let part = (!part).borrow(); (!out).borrow_mut()[(!at) as usize..(!at) as usize + part.len()].copy_from_slice(&part); }' : ()
+            $'{ let part = (!part).borrow(); (!out).borrow_mut()[(!at) as usize..(!at) as usize + part.len()].copy_from_slice(&part); }'
+            : ()
         | _ => \ () => copy_from out at part 0
 
 := concat (parts : list (array u8)) : array u8 =
@@ -67,7 +68,8 @@
 := hex (bytes : array u8) : string =
     run_target \|
         | Rust => \ () =>
-            $'Rc::<str>::from((!bytes).borrow().iter().flat_map(|b| [b >> 4, b & 15]).map(|n| char::from(b"0123456789abcdef"[n as usize])).collect::<String>())' : string
+            $'Rc::<str>::from((!bytes).borrow().iter().flat_map(|b| [b >> 4, b & 15]).map(|n| char::from(b"0123456789abcdef"[n as usize])).collect::<String>())'
+            : string
         | _ => \ () =>
             :~ ^ go (i : i32) (acc : string) : string =
                 ? i >= length bytes

@@ -18,7 +18,12 @@
 :~ cat (a : array u8) (b : array u8) : array u8 = a ++ b
 
 :~ put_u32 (n : u32) : array u8 =
-    ;[ conv ((n >>> 24i32) &&& 255u32) : u8; conv ((n >>> 16i32) &&& 255u32) : u8; conv ((n >>> 8i32) &&& 255u32) : u8; conv (n &&& 255u32) : u8 ]
+    ;[
+        conv ((n >>> 24i32) &&& 255u32) : u8
+        conv ((n >>> 16i32) &&& 255u32) : u8
+        conv ((n >>> 8i32) &&& 255u32) : u8
+        conv (n &&& 255u32) : u8
+    ]
 
 :~ put_u64 (n : u64) : array u8 = cat (put_u32 (conv (n >>> 32i32))) (put_u32 (conv (n &&& 4294967295u64)))
 
@@ -34,22 +39,23 @@
 
 :~ body_bytes (b : event_body) : array u8 =
     ?= b ?|
-    | JobStarted r    => cat (put_str r::job) (put_str r::label)
-    | JobStep r       => cat (put_str r::job) (cat (put_str r::step) (cat (put_i32 r::exit) (put_str r::detail)))
-    | JobDone r       => cat (put_str r::job) (put_i32 r::exit)
-    | JobStop r       => cat (put_str r::job) (put_str r::reason)
+    | JobStarted r => cat (put_str r::job) (put_str r::label)
+    | JobStep r => cat (put_str r::job) (cat (put_str r::step) (cat (put_i32 r::exit) (put_str r::detail)))
+    | JobDone r => cat (put_str r::job) (put_i32 r::exit)
+    | JobStop r => cat (put_str r::job) (put_str r::reason)
     | LeaseAcquired r => cat (put_str r::tree) (put_str r::owner)
     | LeaseReleased r => cat (put_str r::tree) (put_str r::owner)
-    | SlotAdmitted r  => cat (put_i32 r::slot) (put_str r::owner)
-    | SlotReleased r  => cat (put_i32 r::slot) (put_str r::owner)
-    | Health r        => cat (put_i32 r::cpu) (cat (put_i32 r::free_mem_mb) (put_i32 r::free_disk_gb))
-    | Toolchain r     => cat (put_str r::tool) (cat (put_str r::version) (cat (put_str r::path) (put_str r::mtime)))
+    | SlotAdmitted r => cat (put_i32 r::slot) (put_str r::owner)
+    | SlotReleased r => cat (put_i32 r::slot) (put_str r::owner)
+    | Health r => cat (put_i32 r::cpu) (cat (put_i32 r::free_mem_mb) (put_i32 r::free_disk_gb))
+    | Toolchain r => cat (put_str r::tool) (cat (put_str r::version) (cat (put_str r::path) (put_str r::mtime)))
 
 :~ encode (e : event) : array u8 =
     cat (put_u64 e::seq) (cat (put_str e::machine) (cat ;[ body_tag e::body ] (body_bytes e::body)))
 
 :~ ^ hex_upper (a : array u8) (i : i32) (acc : string) : string =
-    ? i < 0i32 ?> acc
+    ? i < 0i32
+    ?> acc
     |:
         := b : u64 = conv (am'::index i a)
         := digit (n : u64) = sm'::substring (conv n : i32) 1i32 "0123456789ABCDEF"
@@ -62,13 +68,19 @@
     := frozen (body : event_body) (expected : string) =
         := bytes = encode { seq = 1u64; machine = "node"; body }
         _assert_eq expected (hex_upper bytes ((conv (am'::length bytes) : i32) - 1i32) "")
-    (
-        frozen (JobStarted { job = "j1"; label = "build" }) "0000000000000001000000046E6F646500000000026A31000000056275696C64",
-        frozen (JobStep { job = "j1"; step = "compile"; exit = 0i32; detail = "ok" }) "0000000000000001000000046E6F646501000000026A3100000007636F6D70696C6500000000000000026F6B",
-        frozen (JobDone { job = "j1"; exit = 0i32 }) "0000000000000001000000046E6F646502000000026A3100000000",
-        frozen (JobStop { job = "j1"; reason = "memory" }) "0000000000000001000000046E6F646503000000026A31000000066D656D6F7279",
-        frozen (LeaseAcquired { tree = "kit"; owner = "compiler" }) "0000000000000001000000046E6F646504000000036B697400000008636F6D70696C6572"
-    )
+    frozen
+        (JobStarted { job = "j1"; label = "build" })
+        "0000000000000001000000046E6F646500000000026A31000000056275696C64",
+    frozen
+        (JobStep { job = "j1"; step = "compile"; exit = 0i32; detail = "ok" })
+        "0000000000000001000000046E6F646501000000026A3100000007636F6D70696C6500000000000000026F6B",
+    frozen (JobDone { job = "j1"; exit = 0i32 }) "0000000000000001000000046E6F646502000000026A3100000000",
+    frozen
+        (JobStop { job = "j1"; reason = "memory" })
+        "0000000000000001000000046E6F646503000000026A31000000066D656D6F7279",
+    frozen
+        (LeaseAcquired { tree = "kit"; owner = "compiler" })
+        "0000000000000001000000046E6F646504000000036B697400000008636F6D70696C6572"
 
 ///- --timeout 600000
 
@@ -77,16 +89,27 @@
     := frozen (body : event_body) (expected : string) =
         := bytes = encode { seq = 1u64; machine = "node"; body }
         _assert_eq expected (hex_upper bytes ((conv (am'::length bytes) : i32) - 1i32) "")
-    (
-        frozen (LeaseReleased { tree = "kit"; owner = "compiler" }) "0000000000000001000000046E6F646505000000036B697400000008636F6D70696C6572",
-        frozen (SlotAdmitted { slot = 1i32; owner = "compiler" }) "0000000000000001000000046E6F6465060000000100000008636F6D70696C6572",
-        frozen (SlotReleased { slot = 1i32; owner = "compiler" }) "0000000000000001000000046E6F6465070000000100000008636F6D70696C6572",
-        frozen (Health { cpu = 63i32; free_mem_mb = 7500i32; free_disk_gb = 84i32 }) "0000000000000001000000046E6F6465080000003F00001D4C00000054",
-        frozen (Toolchain { tool = "perl"; version = "5.42.3"; path = "p"; mtime = "2026-10-26" }) "0000000000000001000000046E6F646509000000047065726C00000006352E34322E3300000001700000000A323032362D31302D3236"
-    )
+    frozen
+        (LeaseReleased { tree = "kit"; owner = "compiler" })
+        "0000000000000001000000046E6F646505000000036B697400000008636F6D70696C6572",
+    frozen
+        (SlotAdmitted { slot = 1i32; owner = "compiler" })
+        "0000000000000001000000046E6F6465060000000100000008636F6D70696C6572",
+    frozen
+        (SlotReleased { slot = 1i32; owner = "compiler" })
+        "0000000000000001000000046E6F6465070000000100000008636F6D70696C6572",
+    frozen
+        (Health { cpu = 63i32; free_mem_mb = 7500i32; free_disk_gb = 84i32 })
+        "0000000000000001000000046E6F6465080000003F00001D4C00000054",
+    frozen
+        (Toolchain { tool = "perl"; version = "5.42.3"; path = "p"; mtime = "2026-10-26" })
+        "0000000000000001000000046E6F646509000000047065726C00000006352E34322E3300000001700000000A323032362D31302D3236"
 
 :~ read_u32 (a : array u8) (i : i32) : u32 =
-    (conv (am'::index i a) <<< 24i32) ||| (conv (am'::index (i + 1i32) a) <<< 16i32) ||| (conv (am'::index (i + 2i32) a) <<< 8i32) ||| conv (am'::index (i + 3i32) a)
+    (conv (am'::index i a) <<< 24i32)
+    ||| (conv (am'::index (i + 1i32) a) <<< 16i32)
+    ||| (conv (am'::index (i + 2i32) a) <<< 8i32)
+    ||| conv (am'::index (i + 3i32) a)
 
 :~ read_u64 (a : array u8) (i : i32) : u64 =
     (conv (read_u32 a i) <<< 32i32) ||| conv (read_u32 a (i + 4i32))
@@ -170,7 +193,10 @@
     rd_bind (rd_str a i len) (\ job j1 => rd_bind (rd_str a j1 len) (\ label j2 => RD (JobStarted { job; label }, j2)))
 
 :~ job_step_at (a : array u8) (i : i32) (len : i32) : rd event_body =
-    rd_bind (rd_str a i len) (\ job j1 => rd_bind (rd_str a j1 len) (\ step j2 => rd_bind (rd_i32 a j2 len) (\ ex j3 => rd_bind (rd_str a j3 len) (\ detail j4 => RD (JobStep { job; step; exit = ex; detail }, j4)))))
+    rd_bind (rd_str a i len) \ job j1 =>
+        rd_bind (rd_str a j1 len) \ step j2 =>
+            rd_bind (rd_i32 a j2 len) \ ex j3 =>
+                rd_bind (rd_str a j3 len) \ detail j4 => RD (JobStep { job; step; exit = ex; detail }, j4)
 
 :~ job_done_at (a : array u8) (i : i32) (len : i32) : rd event_body =
     rd_bind (rd_str a i len) (\ job j1 => rd_bind (rd_i32 a j1 len) (\ ex j2 => RD (JobDone { job; exit = ex }, j2)))
@@ -179,22 +205,31 @@
     rd_bind (rd_str a i len) (\ job j1 => rd_bind (rd_str a j1 len) (\ reason j2 => RD (JobStop { job; reason }, j2)))
 
 :~ lease_acquired_at (a : array u8) (i : i32) (len : i32) : rd event_body =
-    rd_bind (rd_str a i len) (\ tree j1 => rd_bind (rd_str a j1 len) (\ owner j2 => RD (LeaseAcquired { tree; owner }, j2)))
+    rd_bind (rd_str a i len) \ tree j1 =>
+        rd_bind (rd_str a j1 len) \ owner j2 => RD (LeaseAcquired { tree; owner }, j2)
 
 :~ lease_released_at (a : array u8) (i : i32) (len : i32) : rd event_body =
-    rd_bind (rd_str a i len) (\ tree j1 => rd_bind (rd_str a j1 len) (\ owner j2 => RD (LeaseReleased { tree; owner }, j2)))
+    rd_bind (rd_str a i len) \ tree j1 =>
+        rd_bind (rd_str a j1 len) \ owner j2 => RD (LeaseReleased { tree; owner }, j2)
 
 :~ slot_admitted_at (a : array u8) (i : i32) (len : i32) : rd event_body =
-    rd_bind (rd_i32 a i len) (\ slot j1 => rd_bind (rd_str a j1 len) (\ owner j2 => RD (SlotAdmitted { slot; owner }, j2)))
+    rd_bind (rd_i32 a i len) \ slot j1 =>
+        rd_bind (rd_str a j1 len) \ owner j2 => RD (SlotAdmitted { slot; owner }, j2)
 
 :~ slot_released_at (a : array u8) (i : i32) (len : i32) : rd event_body =
-    rd_bind (rd_i32 a i len) (\ slot j1 => rd_bind (rd_str a j1 len) (\ owner j2 => RD (SlotReleased { slot; owner }, j2)))
+    rd_bind (rd_i32 a i len) \ slot j1 =>
+        rd_bind (rd_str a j1 len) \ owner j2 => RD (SlotReleased { slot; owner }, j2)
 
 :~ health_at (a : array u8) (i : i32) (len : i32) : rd event_body =
-    rd_bind (rd_i32 a i len) (\ cpu j1 => rd_bind (rd_i32 a j1 len) (\ free_mem_mb j2 => rd_bind (rd_i32 a j2 len) (\ free_disk_gb j3 => RD (Health { cpu; free_mem_mb; free_disk_gb }, j3))))
+    rd_bind (rd_i32 a i len) \ cpu j1 =>
+        rd_bind (rd_i32 a j1 len) \ free_mem_mb j2 =>
+            rd_bind (rd_i32 a j2 len) \ free_disk_gb j3 => RD (Health { cpu; free_mem_mb; free_disk_gb }, j3)
 
 :~ toolchain_at (a : array u8) (i : i32) (len : i32) : rd event_body =
-    rd_bind (rd_str a i len) (\ tool j1 => rd_bind (rd_str a j1 len) (\ version j2 => rd_bind (rd_str a j2 len) (\ path j3 => rd_bind (rd_str a j3 len) (\ mtime j4 => RD (Toolchain { tool; version; path; mtime }, j4)))))
+    rd_bind (rd_str a i len) \ tool j1 =>
+        rd_bind (rd_str a j1 len) \ version j2 =>
+            rd_bind (rd_str a j2 len) \ path j3 =>
+                rd_bind (rd_str a j3 len) \ mtime j4 => RD (Toolchain { tool; version; path; mtime }, j4)
 
 :== reader = array u8 -> i32 -> i32 -> rd event_body
 
@@ -213,7 +248,8 @@
     | None => None
 
 :~ header_at (a : array u8) (len : i32) : rd (u64 * string * u8) =
-    rd_bind (rd_u64 a 0i32 len) (\ seq i0 => rd_bind (rd_str a i0 len) (\ machine i1 => rd_bind (rd_u8 a i1 len) (\ tag i2 => RD ((seq, machine, tag), i2))))
+    rd_bind (rd_u64 a 0i32 len) \ seq i0 =>
+        rd_bind (rd_str a i0 len) \ machine i1 => rd_bind (rd_u8 a i1 len) (\ tag i2 => RD ((seq, machine, tag), i2))
 
 :~ tagged (a : array u8) (len : i32) (seq : u64) (machine : string) (tag : u8) (i : i32) : decode_result =
     ?= body_at tag a i len ?|
@@ -235,10 +271,16 @@
     := ~s = "s"
     := ~n = 1i32
     [
-        JobStarted { job = s; label = s }; JobStep { job = s; step = s; exit = n; detail = s }; JobDone { job = s; exit = n }
-        JobStop { job = s; reason = s }; LeaseAcquired { tree = s; owner = s }; LeaseReleased { tree = s; owner = s }
-        SlotAdmitted { slot = n; owner = s }; SlotReleased { slot = n; owner = s }
-        Health { cpu = n; free_mem_mb = n; free_disk_gb = n }; Toolchain { tool = s; version = s; path = s; mtime = s }
+        JobStarted { job = s; label = s }
+        JobStep { job = s; step = s; exit = n; detail = s }
+        JobDone { job = s; exit = n }
+        JobStop { job = s; reason = s }
+        LeaseAcquired { tree = s; owner = s }
+        LeaseReleased { tree = s; owner = s }
+        SlotAdmitted { slot = n; owner = s }
+        SlotReleased { slot = n; owner = s }
+        Health { cpu = n; free_mem_mb = n; free_disk_gb = n }
+        Toolchain { tool = s; version = s; path = s; mtime = s }
     ]
     |> listm::map body_tag
     |> _assert_eq [ 0u8; 1u8; 2u8; 3u8; 4u8; 5u8; 6u8; 7u8; 8u8; 9u8 ]
@@ -248,9 +290,10 @@
 :# codec_round_trip_1 =
     := rt (ev : event) = _assert_eq (Decoded ev) (decode (encode ev))
     := ~e0 : event = { seq = 1u64; machine = "node"; body = JobStarted { job = "j1"; label = "build" } }
-    := ~e1 : event = { seq = 1u64; machine = "node"; body = JobStep { job = "j1"; step = "compile"; exit = 0i32; detail = "ok" } }
+    := ~e1 : event =
+        { seq = 1u64; machine = "node"; body = JobStep { job = "j1"; step = "compile"; exit = 0i32; detail = "ok" } }
     := ~e3 : event = { seq = 1u64; machine = "node"; body = JobStop { job = "j1"; reason = "memory" } }
-    (rt e0, rt e1, rt e3)
+    rt e0, rt e1, rt e3
 
 ///- --timeout 600000
 
@@ -270,9 +313,15 @@
 :# codec_round_trip_3 =
     := rt (ev : event) = _assert_eq (Decoded ev) (decode (encode ev))
     := ~e7 : event = { seq = 1u64; machine = "node"; body = SlotReleased { slot = 1i32; owner = "compiler" } }
-    := ~e8 : event = { seq = 1u64; machine = "node"; body = Health { cpu = 63i32; free_mem_mb = 7500i32; free_disk_gb = 84i32 } }
-    := ~e9 : event = { seq = 1u64; machine = "node"; body = Toolchain { tool = "perl"; version = "5.42.3"; path = "p"; mtime = "2026-10-26" } }
-    (rt e7, rt e8, rt e9)
+    := ~e8 : event =
+        { seq = 1u64; machine = "node"; body = Health { cpu = 63i32; free_mem_mb = 7500i32; free_disk_gb = 84i32 } }
+    := ~e9 : event =
+        {
+            seq = 1u64
+            machine = "node"
+            body = Toolchain { tool = "perl"; version = "5.42.3"; path = "p"; mtime = "2026-10-26" }
+        }
+    rt e7, rt e8, rt e9
 
 ///- --timeout 600000
 
@@ -280,15 +329,68 @@
 :# malformed_input_is_refused =
     := ~jd : event = { seq = 1u64; machine = "node"; body = JobDone { job = "j1"; exit = 0i32 } }
     := ~truncated : array u8 =
-        ;[ 0u8; 0u8; 0u8; 0u8; 0u8; 0u8; 0u8; 1u8; 0u8; 0u8; 0u8; 4u8; 110u8; 111u8; 100u8; 101u8; 2u8; 0u8; 0u8; 0u8; 2u8; 106u8; 49u8; 0u8; 0u8; 0u8 ]
+        ;[
+            0u8
+            0u8
+            0u8
+            0u8
+            0u8
+            0u8
+            0u8
+            1u8
+            0u8
+            0u8
+            0u8
+            4u8
+            110u8
+            111u8
+            100u8
+            101u8
+            2u8
+            0u8
+            0u8
+            0u8
+            2u8
+            106u8
+            49u8
+            0u8
+            0u8
+            0u8
+        ]
     := ~tagged : array u8 =
-        ;[ 0u8; 0u8; 0u8; 0u8; 0u8; 0u8; 0u8; 1u8; 0u8; 0u8; 0u8; 4u8; 110u8; 111u8; 100u8; 101u8; 42u8; 0u8; 0u8; 0u8; 2u8; 106u8; 49u8; 0u8; 0u8; 0u8; 0u8 ]
-    (
-        _assert_eq (Decoded jd) (decode (encode jd)),
-        _assert_eq Truncated (decode truncated),
-        _assert_eq (TrailingBytes 1i32) (decode (encode jd ++ ;[ 0u8 ])),
-        _assert_eq (UnknownTag 42u8) (decode tagged)
-    )
+        ;[
+            0u8
+            0u8
+            0u8
+            0u8
+            0u8
+            0u8
+            0u8
+            1u8
+            0u8
+            0u8
+            0u8
+            4u8
+            110u8
+            111u8
+            100u8
+            101u8
+            42u8
+            0u8
+            0u8
+            0u8
+            2u8
+            106u8
+            49u8
+            0u8
+            0u8
+            0u8
+            0u8
+        ]
+    _assert_eq (Decoded jd) (decode (encode jd)),
+    _assert_eq Truncated (decode truncated),
+    _assert_eq (TrailingBytes 1i32) (decode (encode jd ++ ;[ 0u8 ])),
+    _assert_eq (UnknownTag 42u8) (decode tagged)
 
 ///- --timeout 600000
 

@@ -9,7 +9,8 @@
 
 := map_view \* k v. (t : erlang_term::term) : erl_map k v = erl_map t
 
-:= map_call \* k v. (f : string) (args : list erlang_term::term) : erl_map k v = erl_map (erlang_term::apply "maps" f args)
+:= map_call \* k v. (f : string) (args : list erlang_term::term) : erl_map k v =
+    erl_map (erlang_term::apply "maps" f args)
 
 := map_new \* k v. () : erl_map k v = map_call "new" []
 

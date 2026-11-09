@@ -130,10 +130,14 @@
         TypeScript = \ () => $'parseInt(!x, !base)' : i32
         C = \ () => $'(int32_t)strtol((!x)->ptr, NULL, !base)' : i32
         Pascal = \ () =>
-            ? base = 16 ?> $'StrToInt(##36 + !x)' : i32
-            |? base = 2 ?> $'StrToInt(##37 + !x)' : i32
-            |? base = 8 ?> $'StrToInt(##38 + !x)' : i32
-            |? base = 10 ?> $'StrToInt(!x)' : i32
+            ? base = 16
+            ?> $'StrToInt(##36 + !x)' : i32
+            |? base = 2
+            ?> $'StrToInt(##37 + !x)' : i32
+            |? base = 8
+            ?> $'StrToInt(##38 + !x)' : i32
+            |? base = 10
+            ?> $'StrToInt(!x)' : i32
             |: $'backend_switch_has_no_Pascal_arm_in_lib_spiral' : i32
         Wasm = \ () => $'(i32.wrap_i64 (call $parse_i64 !x !base))' : i32
         Lean = \ () =>
@@ -604,18 +608,22 @@
 := parse_f64 (text : string) : option f64 =
     := value, parsed =
         run_target \|
-            | Rust => \ () => $'match (!text).trim().parse::<f64>() { Ok(f) => (f, true), Err(_) => (0.0, false) }' : f64 * bool
+            | Rust =>
+                \ () =>
+                    $'match (!text).trim().parse::<f64>() { Ok(f) => (f, true), Err(_) => (0.0, false) }' : f64 * bool
             | Gleam => \ () =>
                 global "import gleam/float"
                 global "import gleam/int"
-                $'case float.parse(!text) { Ok(f) -> ##(f, True) Error(_) -> case int.parse(!text) { Ok(i) -> ##(int.to_float(i), True) Error(_) -> ##(0.0, False) } }' : f64 * bool
+                $'case float.parse(!text) { Ok(f) -> ##(f, True) Error(_) -> case int.parse(!text) { Ok(i) -> ##(int.to_float(i), True) Error(_) -> ##(0.0, False) } }'
+                : f64 * bool
             | _ => \ () => failwith "convert.parse_f64 / no arm for this backend"
     ? parsed ?> Some value |: None
 
 ///> rust
 ///> gleam
 :# parse_f64_reads_round_trip_literals =
-    (parse_f64 "1.5", parse_f64 "0.30000000000000004", parse_f64 "-2.5", parse_f64 "7", parse_f64 "x") |> _assert_eq (Some 1.5f64, Some 0.30000000000000004f64, Some (-2.5f64), Some 7.0f64, None)
+    (parse_f64 "1.5", parse_f64 "0.30000000000000004", parse_f64 "-2.5", parse_f64 "7", parse_f64 "x")
+    |> _assert_eq (Some 1.5f64, Some 0.30000000000000004f64, Some (-2.5f64), Some 7.0f64, None)
 
 ///> rust
 :# parse_f64_reads_exponents_on_rust =

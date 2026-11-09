@@ -198,8 +198,10 @@
     ? now::time % period = 0i64 ?> burst - 1i32, Present burst |: 0i32, Absent
 
 := countdown_step (period : i64) (burst : i32) (left : i32) (now : tag) (_ : ()) : i32 * signal i32 =
-    ? now::micro = 0i32 ?> burst_start period burst now
-    |? left > 0i32 ?> left - 1i32, Present left
+    ? now::micro = 0i32
+    ?> burst_start period burst now
+    |? left > 0i32
+    ?> left - 1i32, Present left
     |: 0i32, Absent
 
 := countdown (period : i64) (burst : i32) : reactor i32 () (signal i32) =

@@ -314,7 +314,8 @@
 
 := slice (start : int) (end : int) (t : string) : string =
     := t = dyn t
-    ? start >= end ?> ""
+    ? start >= end
+    ?> ""
     |:
         t
         |> sm'::range (am'::Start start) (am'::End \ _ => end)

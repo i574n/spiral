@@ -6,17 +6,23 @@
 :< json_value
 
 := space3 (b1 : i32) (b2 : i32) : bool =
-    (b1 = 128i32 && ((b2 >= 128i32 && b2 <= 138i32) || b2 = 168i32 || b2 = 169i32 || b2 = 175i32)) || (b1 = 129i32 && b2 = 159i32)
+    (b1 = 128i32 && ((b2 >= 128i32 && b2 <= 138i32) || b2 = 168i32 || b2 = 169i32 || b2 = 175i32))
+    || (b1 = 129i32 && b2 = 159i32)
 
 := space_width (s : string) (i : i32) : i32 =
     := b = at s i
     := b1 = at s (i + 1i32)
     := b2 = at s (i + 2i32)
-    ? b = 32i32 || (b >= 9i32 && b <= 13i32) ?> 1i32
-    |? b = 194i32 && (b1 = 133i32 || b1 = 160i32) ?> 2i32
-    |? b = 225i32 && b1 = 154i32 && b2 = 128i32 ?> 3i32
-    |? b = 226i32 && space3 b1 b2 ?> 3i32
-    |? b = 227i32 && b1 = 128i32 && b2 = 128i32 ?> 3i32
+    ? b = 32i32 || (b >= 9i32 && b <= 13i32)
+    ?> 1i32
+    |? b = 194i32 && (b1 = 133i32 || b1 = 160i32)
+    ?> 2i32
+    |? b = 225i32 && b1 = 154i32 && b2 = 128i32
+    ?> 3i32
+    |? b = 226i32 && space3 b1 b2
+    ?> 3i32
+    |? b = 227i32 && b1 = 128i32 && b2 = 128i32
+    ?> 3i32
     |: 0i32
 
 :~ ^ content_start (s : string) (i : i32) : i32 =
@@ -25,8 +31,10 @@
 
 :~ ^ content_end (s : string) (i : i32) (last : i32) : i32 =
     := w = space_width s i
-    ? i >= text::length s ?> last
-    |? w > 0i32 ?> content_end s (i + w) last
+    ? i >= text::length s
+    ?> last
+    |? w > 0i32
+    ?> content_end s (i + w) last
     |:
         := next = i + text::utf8_width (at s i)
         content_end s next next
@@ -64,7 +72,10 @@
         | Some candidate => result_of candidate
         | None => None
 
-:= drop_cr (line : string) : string = ? text::length line > 0i32 && at line (text::length line - 1i32) = 13i32 ?> text::take line (text::length line - 1i32) |: line
+:= drop_cr (line : string) : string =
+    ? text::length line > 0i32 && at line (text::length line - 1i32) = 13i32
+    ?> text::take line (text::length line - 1i32)
+    |: line
 
 :~ ^ crlf_lines (pieces : list string) (acc : list string) : list string =
     ?= pieces ?|
@@ -80,8 +91,10 @@
 
 :~ ^ ansi_from (s : string) (i : i32) (start : i32) (acc : string) : string =
     := j = params_end s (i + 2i32)
-    ? i >= text::length s ?> acc ++ text::slice_len s start (i - start)
-    |? at s i = 27i32 && at s (i + 1i32) = 91i32 && at s j = 109i32 ?> ansi_from s (j + 1i32) (j + 1i32) (acc ++ text::slice_len s start (i - start))
+    ? i >= text::length s
+    ?> acc ++ text::slice_len s start (i - start)
+    |? at s i = 27i32 && at s (i + 1i32) = 91i32 && at s j = 109i32
+    ?> ansi_from s (j + 1i32) (j + 1i32) (acc ++ text::slice_len s start (i - start))
     |: ansi_from s (i + 1i32) start acc
 
 := strip_ansi (s : string) : string = ansi_from s 0i32 0i32 ""
@@ -151,7 +164,14 @@
 ///> gleam
 :# builder_outputs_show_the_result_field_or_the_trace =
     present "  {\"output\":\" hi \"}\n" |> _assert_eq "hi"
-    present ("warming up\n" ++ esc () ++ "[31mbuild failed" ++ esc () ++ "[0m\r\n{\"command_result\":\"{\\\"output\\\":\\\"inner\\\"}\"}") |> _assert_eq "inner"
+    present (
+        "warming up\n"
+        ++ esc ()
+        ++ "[31mbuild failed"
+        ++ esc ()
+        ++ "[0m\r\n{\"command_result\":\"{\\\"output\\\":\\\"inner\\\"}\"}"
+    )
+    |> _assert_eq "inner"
     present "noise\n{\"output\":\"\"}" |> _assert_eq "noise"
     present "plain text" |> _assert_eq "plain text"
     failure_trace "compile ERROR at 3\n{\"output\":\"\"}" |> _assert_eq "compile ERROR at 3"

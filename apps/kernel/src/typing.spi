@@ -240,11 +240,22 @@
     := v = Param (name "v")
     := over = \ (rest : term) => Pi (name "A", Implicit, Sort u, rest)
     := quot = over (Pi (name "r", Default, relation (), Sort u))
-    := mk = over (Pi (name "r", Default, relation (), Pi (name "a", Default, BVar 1i32, quot_of u (BVar 2i32) (BVar 1i32))))
+    := mk =
+        over (Pi (name "r", Default, relation (), Pi (name "a", Default, BVar 1i32, quot_of u (BVar 2i32) (BVar 1i32))))
     := related = App (App (BVar 4i32, BVar 1i32), BVar 0i32)
     := respects =
-        Pi (name "a", Default, BVar 3i32, Pi (name "b", Default, BVar 4i32,
-            Pi (name "p", Default, related, eq_of v (BVar 4i32) (App (BVar 3i32, BVar 2i32)) (App (BVar 3i32, BVar 1i32)))))
+        Pi (
+            name "a",
+            Default,
+            BVar 3i32,
+            Pi (
+                name "b",
+                Default,
+                BVar 4i32,
+                Pi (name "p", Default, related, eq_of v (BVar 4i32) (App (BVar 3i32, BVar 2i32)) (App (BVar 3i32,
+                    BVar 1i32)))
+            )
+        )
     := lifted =
         Pi (name "f", Default, Pi (name "x", Default, BVar 2i32, BVar 1i32),
             Pi (name "h", Default, respects, Pi (name "q", Default, quot_of u (BVar 4i32) (BVar 3i32), BVar 3i32)))

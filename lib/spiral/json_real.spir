@@ -21,7 +21,8 @@
     | array_base ~el => "{\"type\":\"array\",\"items\":" ++ (schema_of `el ()) ++ "}"
     | {} => object_schema `t ()
     | _ =>
-        ? union_type_is `t ?> union_schema `t ()
+        ? union_type_is `t
+        ?> union_schema `t ()
         |: "{}"
 
 :& := schema_items \* t. () : string =
@@ -65,7 +66,8 @@
                                 )
                     (!+, "")
                     `cases
-            ? all_nullary ?> "{\"type\":\"string\",\"oneOf\":[" ++ alternatives ++ "]}"
+            ? all_nullary
+            ?> "{\"type\":\"string\",\"oneOf\":[" ++ alternatives ++ "]}"
             |: "{\"oneOf\":[" ++ alternatives ++ "]}"
     )
 

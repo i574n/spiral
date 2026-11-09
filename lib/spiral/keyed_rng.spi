@@ -24,7 +24,8 @@
 
 := drawn (seed s) (tick t) (entity e) (code : u32) : u32 = mix32 (s + mix32 (t + mix32 (e + mix32 code)))
 
-:= draw \* p {purpose_code}. (key : roll_key p) : u32 = drawn key::seed key::tick key::entity (purpose_code key::purpose)
+:= draw \* p {purpose_code}. (key : roll_key p) : u32 =
+    drawn key::seed key::tick key::entity (purpose_code key::purpose)
 
 := roll_between \* p {purpose_code}. (low : u32) (high : u32) (key : roll_key p) : u32 =
     low + draw key % (high - low + 1u32)

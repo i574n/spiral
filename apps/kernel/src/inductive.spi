@@ -114,7 +114,8 @@
     ? all_positive ns ty ?> None |: Some (NotPositive (name_text c))
 
 :~ concludes_uniformly
-    (ns : list string) (n : name) (ps : list name) (params : list (name * term)) (np : i32) (ni : i32) (conclusion : term)
+    (ns : list string) (n : name) (ps : list name) (params : list (name * term)) (np : i32) (ni : i32)
+    (conclusion : term)
     : bool
     =
     := head, targs = spine conclusion []
@@ -331,7 +332,10 @@
 
 :~ ^ admit_family_types (env : list decl) (group : list inductive) : admitted =
     ?= group ?|
-    | (Inductive (n, ps, _, ty, _)) :: rest => ? ends_in_sort ty ?> type_then env n ps ty rest |: Refused (NotAType (term_text ty))
+    | (Inductive (n, ps, _, ty, _)) :: rest =>
+        ? ends_in_sort ty
+        ?> type_then env n ps ty rest
+        |: Refused (NotAType (term_text ty))
     | [] => Admitted env
 :& :~ type_then (env : list decl) (n : name) (ps : list name) (ty : term) (rest : list inductive) : admitted =
     ?= admit env (Axiom (n, ps, ty)) ?|
@@ -382,7 +386,8 @@
         ?= admit_family_types env group ?|
         | Admitted typed =>
             ?= admit_group_constructors typed (group_names group) group ?|
-            | Admitted full => group_recursors full ps params np (members_of group) sort (single && eliminates_large full np cs)
+            | Admitted full =>
+                group_recursors full ps params np (members_of group) sort (single && eliminates_large full np cs)
             | other => other
         | other => other
     | [] => Admitted env
@@ -616,7 +621,8 @@
 ///> rust
 :# quotients_need_eq_and_only_the_kernel_declares_them =
     := fake = Quotient (name "Quot", QuotType, [], Sort Zero)
-    (admitted_text (admit_quotients (nat_env ())), admitted_text (admit (eq_env ()) fake), admitted_text (admit_quotients (eq_env ())))
+    (admitted_text (admit_quotients (nat_env ())), admitted_text (admit (eq_env ()) fake), admitted_text (
+        admit_quotients (eq_env ())))
     |> _assert_eq ("quotients need Eq declared first", "only the kernel declares quotients: Quot", "admitted 15")
 
 :~ pair () : term = Const (name "Pair", [])
@@ -652,7 +658,8 @@
     := ex = Const (name "Ex", [])
     := pred = Pi (name "a", Default, BVar 0i32, Sort Zero)
     := witnessed = Pi (name "h", Default, App (BVar 1i32, BVar 0i32), App (App (ex, BVar 3i32), BVar 2i32))
-    := intro = Pi (name "A", Default, type_sort (), Pi (name "P", Default, pred, Pi (name "w", Default, BVar 1i32, witnessed)))
+    := intro =
+        Pi (name "A", Default, type_sort (), Pi (name "P", Default, pred, Pi (name "w", Default, BVar 1i32, witnessed)))
     := family = Pi (name "A", Default, type_sort (), Pi (name "P", Default, pred, Sort Zero))
     ?= admit_inductive (eq_env ()) (Inductive (name "Ex", [], 2i32, family, [ name "Ex.intro", intro ])) ?|
     | Admitted e => e
@@ -751,10 +758,18 @@
     := zero = Const (name "zero", [])
     := one = App (Const (name "succ", []), zero)
     := level = [ Succ Zero ]
-    := equal = Lam (name "h", Default, apply_all (Const (name "Eq", level)) [ nat (); zero; BVar 0i32 ], Const (name "True", []))
+    := equal =
+        Lam (
+            name "h",
+            Default,
+            apply_all (Const (name "Eq", level)) [ nat (); zero; BVar 0i32 ],
+            Const (name "True", [])
+        )
     := motive = Lam (name "b", Default, nat (), equal)
     := intro = Const (name "intro", [])
-    := at = \ (b : term) => apply_all (Const (name "Eq.rec", [ Zero; Succ Zero ])) [ nat (); zero; motive; intro; b; FVar (name "h") ]
+    := at =
+        \ (b : term) =>
+            apply_all (Const (name "Eq.rec", [ Zero; Succ Zero ])) [ nat (); zero; motive; intro; b; FVar (name "h") ]
     (whnf (eq_env ()) (at zero) 10i32, whnf (eq_env ()) (at one) 10i32)
     |> _assert_eq (Whnf (intro, [ Iota "Eq.rec" ]), Whnf (at one, []))
 ///> rust
@@ -788,14 +803,30 @@
 ///> rust
 :# a_family_in_a_universe_variable_still_gets_its_recursor =
     := u = Param (name "u")
-    := unit_family = Inductive (name "PUnit", [ name "u" ], 0i32, Sort u, [ name "PUnit.unit", Const (name "PUnit", [ u ]) ])
+    := unit_family =
+        Inductive (name "PUnit", [ name "u" ], 0i32, Sort u, [ name "PUnit.unit", Const (name "PUnit", [ u ]) ])
     := pair_sort = Sort (Max (Succ Zero, u))
-    := box_family = Inductive (name "Box", [ name "u" ], 1i32, Pi (name "a", Default, Sort u, pair_sort), [ name "Box.mk", Pi (name "a", Default, Sort u, Pi (name "x", Default, BVar 0i32, App (Const (name "Box", [ u ]), BVar 1i32))) ])
+    := box_family =
+        Inductive (
+            name "Box",
+            [ name "u" ],
+            1i32,
+            Pi (name "a", Default, Sort u, pair_sort),
+            [
+                name "Box.mk", Pi (name "a", Default, Sort u, Pi (name "x", Default, BVar 0i32,
+                    App (Const (name "Box", [ u ]), BVar 1i32)))
+            ]
+        )
     := recursor_named = \ (a : admitted) (n : string) =>
         ?= a ?|
         | Admitted env => ?= find_decl env n ?| Some _ => !+ | None => !-
         | Refused _ => !-
-    (recursor_named (admit_inductive [] unit_family) "PUnit.rec", recursor_named (admit_inductive [] box_family) "Box.rec", never_zero (Max (Succ Zero, u)), never_zero u)
+    (
+        recursor_named (admit_inductive [] unit_family) "PUnit.rec",
+        recursor_named (admit_inductive [] box_family) "Box.rec",
+        never_zero (Max (Succ Zero, u)),
+        never_zero u
+    )
     |> _assert_eq (!+, !+, !+, !-)
 
 ///> rust
