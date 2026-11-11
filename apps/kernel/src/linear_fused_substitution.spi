@@ -1,0 +1,113 @@
+///- --package .
+:# linear_fused_substitution static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+:< linear_terms
+:< linear_substitution
+:< linear_open_substitution
+:< linear_strengthening
+:< linear_variable_strengthening
+:< linear_term_strengthening
+:< linear_weakened
+
+:| ^ fs a u i c e r y =
+    | FsVar :: \* a u i c e r. fsv a u i c e r -> fs a u i c e r r
+    | FsLeft :: \* a u i c e r l t. fsl a u i c e r l t -> fs a u i c e r (tensor_type l t)
+    | FsLam :: \* a u i c e r d y. fsm a u i c e r d y -> fs a u i c e r (arrow_type d y)
+
+:& :| fsv a u i c e r =
+    | FsVarAt :: \* a u i c e r. (\? s. membership a s r * single_use a s r u * selected a s r i * tstr a i c e r * string) -> fsv a u i c e r
+
+:& :| fsl a u i c e r l t =
+    | FsLeftPart :: \* a u i c e r l t. (\? lu li le ru re. fs a lu li c le r l * tstr a ru c re t * merges a lu ru u a li ru i * usage_merge c le re e * string) -> fsl a u i c e r l t
+
+:& :| fsm a u i c e r d y =
+    | FsLamPart :: \* a u i c e r d y. fs (extend a d) (used u) (used i) (extend c d) (used e) r y * string -> fsm a u i c e r d y
+
+:= ^ fused_steps \* a u i c e r y. (p : fs a u i c e r y) : i32 =
+    ?= p ?|
+    | FsVar _ => 0i32
+    | FsLeft (FsLeftPart q) =>
+        := \? lu li le ru re. x, _, _, _, _ = q
+        1i32 + fused_steps x
+    | FsLam (FsLamPart (body, _)) => 1i32 + fused_steps body
+
+:== src_two = used (unused usage_empty)
+
+:== mid_two = unused (used usage_empty)
+
+:= replacement_strength () : tstr unit_unit mid_two one_cell (used usage_empty) unit_type = TLeaf (TVariable (\? (remove_plan (), "r")))
+
+:= fused_var () : fs unit_unit src_two mid_two one_cell (used usage_empty) unit_type unit_type =
+    FsVar (FsVarAt (\? (MembershipHere "s", newer_use (), SelectedHere "s", replacement_strength (), "v")))
+
+:= bool_strength () : tstr unit_unit (unused (unused usage_empty)) one_cell (unused usage_empty) bool_type =
+    TLeaf (TConstant (StrengthenHere "drop", quiet_two (), AllUnusedExtend (empty_usage (), "o"), KindTrue, "b"))
+
+:= fused_src_mid () : merges unit_unit src_two (unused (unused usage_empty)) src_two unit_unit mid_two (unused (unused usage_empty)) mid_two =
+    MergeStep (\? (LeftOnly "l", none_merge (), "s")), MergeStep (\? (Neither "n", left_merge (), "i"))
+
+:== fused_pair c e = fs unit_unit src_two mid_two c e unit_type (tensor_type unit_type bool_type)
+
+:= fused_left () : fused_pair one_cell (used usage_empty) =
+    FsLeft (FsLeftPart (\? (fused_var (), bool_strength (), fused_src_mid (), left_merge (), "pair")))
+
+///> rust
+:# a_fused_substitution_strengthening_descends_through_the_pair =
+    (fused_steps (fused_var ()), fused_steps (fused_left ())) |> _assert_eq (0i32, 1i32)
+
+///> rust
+:# a_fused_strengthening_cannot_drop_the_replacement fails "Unification failure" =
+    := p : fused_pair empty_context usage_empty = fused_left ()
+    p |> ignore
+
+:== under_unit = extend unit_unit unit_type
+
+:== kept_one = extend one_cell unit_type
+
+:== b_src = unused (used (unused usage_empty))
+
+:== b_mid = unused (unused (used usage_empty))
+
+:== b_bind = used (unused (unused usage_empty))
+
+:== at1 = meta_succ zero
+
+:= uu_use () : single_use under_unit at1 unit_type b_src = SingleUseThere (SingleUseHere (AllUnusedExtend (empty_usage (), "o"), "s"), "b")
+
+:= uu_pick () : selected under_unit at1 unit_type b_mid = SelectedThere (\? (SelectedHere "s", MarkUnused "b", "down"))
+
+:= uu_repl () : tstr under_unit b_mid kept_one (unused (used usage_empty)) unit_type = TLeaf (TVariable (\? (VUnused (remove_plan (), "b"), "r")))
+
+:= var_under_unit () : fs under_unit b_src b_mid kept_one (unused (used usage_empty)) unit_type unit_type =
+    FsVar (FsVarAt (\? (MembershipThere (MembershipHere "s", "b"), uu_use (), uu_pick (), uu_repl (), "v")))
+
+:= binder_strength () : tstr under_unit b_bind kept_one (used (unused usage_empty)) unit_type =
+    TLeaf (TVariable (\? (VBase (VUsedHere (StrengthenHere "drop", quiet_two (), AllUnusedExtend (empty_usage (), "o"), "b")), "keep")))
+
+:= body_src () : usage_merge under_unit b_src b_bind (used src_two) =
+    MergeStep (\? (RightOnly "b", MergeStep (\? (LeftOnly "s", none_merge (), "m")), "m"))
+
+:= body_mid () : usage_merge under_unit b_mid b_bind (used mid_two) =
+    MergeStep (\? (RightOnly "b", MergeStep (\? (Neither "s", left_merge (), "m")), "m"))
+
+:= body_src_mid () : merges under_unit b_src b_bind (used src_two) under_unit b_mid b_bind (used mid_two) = body_src (), body_mid ()
+
+:= body_tgt () : usage_merge kept_one (unused (used usage_empty)) (used (unused usage_empty)) (used (used usage_empty)) =
+    MergeStep (\? (RightOnly "b", left_merge (), "t"))
+
+:== fused_arrow c e = fs unit_unit src_two mid_two c e unit_type (arrow_type unit_type (tensor_type unit_type unit_type))
+
+:= fused_lambda () : fused_arrow one_cell (used usage_empty) =
+    FsLam (FsLamPart (FsLeft (FsLeftPart (\? (var_under_unit (), binder_strength (), body_src_mid (), body_tgt (), "pair"))), "lam"))
+
+///> rust
+:# a_fused_lambda_descends_through_its_binder =
+    fused_steps (fused_lambda ()) |> _assert_eq 2i32
+
+///> rust
+:# a_fused_lambda_cannot_drop_the_replacement fails "Unification failure" =
+    := p : fused_arrow empty_context usage_empty = fused_lambda ()
+    p |> ignore

@@ -282,9 +282,11 @@
             "{\"axiom\":{\"isUnsafe\":false,\"levelParams\":[5],\"name\":3,\"type\":3}}"
             "{\"ie\":4,\"natVal\":\"18446744073709551616\"}"
             "{\"ie\":5,\"natVal\":\"42\"}"
-            "{\"def\":{\"all\":[2],\"hints\":\"abbrev\",\"levelParams\":[],\"name\":2,\"safety\":\"safe\",\"type\":1,\"value\":5}}"
+            "{\"def\":{\"all\":[2],\"hints\":\"abbrev\",\"levelParams\":[],\"name\":2,\"safety\":\"safe\",\"type\":"
+            ^^ "1,\"value\":5}}"
             "{\"ie\":6,\"strVal\":\"ab\"}"
-            "{\"def\":{\"all\":[7],\"hints\":{\"regular\":3},\"levelParams\":[],\"name\":7,\"safety\":\"unsafe\",\"type\":1,\"value\":6}}"
+            "{\"def\":{\"all\":[7],\"hints\":{\"regular\":3},\"levelParams\":[],\"name\":7,\"safety\":\"unsafe\",\""
+            ^^ "type\":1,\"value\":6}}"
         ]
     lines |> items_of |> listm::map item_text
     |> _assert_eq [ "decl Bool.true"; "decl Bool.false"; "skipped t (unsafe)" ]

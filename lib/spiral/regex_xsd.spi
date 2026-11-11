@@ -1,0 +1,526 @@
+///- --package . --timeout 900000
+:< regex_charset
+:< regex_syntax
+:< regex_nullable
+:< regex_derivative
+
+:# regex_xsd static =
+    :< testing
+
+:| refusal =
+    | UnclosedGroup
+    | UnclosedClass
+    | UnexpectedClose
+    | NothingToRepeat
+    | StackedQuantifier
+    | BadCount
+    | UnknownBlock
+    | NameEscape
+    | Lookaround
+
+:| parsed =
+    | Parsed : re
+    | Refused : refusal
+
+:| step =
+    | Took : re * list u32
+    | Failed : refusal
+
+:| set_step =
+    | SetTook : char_set normal * list u32
+    | SetFailed : refusal
+
+:~ ^ codes_of (s : string) : list u32 = to_u32 (unicode::code_points s)
+:& :~ to_u32 (xs : list i32) : list u32 =
+    ?= xs ?|
+    | x :: rest => (conv x : u32) :: to_u32 rest
+    | [] => []
+
+:| block =
+    | BasicLatin
+    | Latin1Supplement
+    | LatinExtendedA
+    | LatinExtendedB
+    | GeneralPunctuation
+    | CurrencySymbols
+
+:= later_block_name (b : block) : string =
+    ?= b ?|
+    | LatinExtendedB => "IsLatinExtended-B"
+    | GeneralPunctuation => "IsGeneralPunctuation"
+    | _ => "IsCurrencySymbols"
+
+:= block_name (b : block) : string =
+    ?= b ?|
+    | BasicLatin => "IsBasicLatin"
+    | Latin1Supplement => "IsLatin-1Supplement"
+    | LatinExtendedA => "IsLatinExtended-A"
+    | _ => later_block_name b
+
+:= later_block_range (b : block) : code_range =
+    ?= b ?|
+    | LatinExtendedB => range 384u32 591u32
+    | GeneralPunctuation => range 8192u32 8303u32
+    | _ => range 8352u32 8399u32
+
+:= block_range (b : block) : code_range =
+    ?= b ?|
+    | BasicLatin => range 0u32 127u32
+    | Latin1Supplement => range 128u32 255u32
+    | LatinExtendedA => range 256u32 383u32
+    | _ => later_block_range b
+
+:= all_blocks () : list block =
+    [ BasicLatin; Latin1Supplement; LatinExtendedA; LatinExtendedB; GeneralPunctuation; CurrencySymbols ]
+
+:~ ^ block_named (name : list u32) (blocks : list block) : set_step =
+    ?= blocks ?|
+    | b :: rest =>
+        ? codes_of (block_name b) = name ?> SetTook (of_ranges [ block_range b ], []) |: block_named name rest
+    | [] => SetFailed UnknownBlock
+
+:~ ^ until_brace (codes : list u32) (name : list u32) : list u32 * list u32 =
+    ?= codes ?|
+    | c :: rest => ? c = 125u32 ?> listm::rev name, rest |: until_brace rest (c :: name)
+    | [] => listm::rev name, []
+
+:= with_rest (s : set_step) (rest : list u32) : set_step =
+    ?= s ?|
+    | SetTook (set, _) => SetTook (set, rest)
+    | failed => failed
+
+:= negated_with_rest (s : set_step) (rest : list u32) : set_step =
+    ?= s ?|
+    | SetTook (set, _) => SetTook (complement set, rest)
+    | failed => failed
+
+:= property (negated : bool) (codes : list u32) : set_step =
+    := name, rest = until_brace codes []
+    := found = block_named name (all_blocks ())
+    ? negated ?> negated_with_rest found rest |: with_rest found rest
+
+:= white_space () : char_set normal = of_ranges [ range 32u32 32u32; range 9u32 10u32; range 13u32 13u32 ]
+
+:= word_characters () : char_set normal =
+    of_ranges [ range 48u32 57u32; range 65u32 90u32; range 97u32 122u32; range 95u32 95u32 ]
+
+:= line_breaks () : char_set normal = of_ranges [ range 10u32 10u32; range 13u32 13u32 ]
+
+:= escape_literal (c : u32) : u32 = ? c = 110u32 ?> 10u32 |? c = 114u32 ?> 13u32 |? c = 116u32 ?> 9u32 |: c
+
+:= is_name_escape (c : u32) : bool = c = 105u32 || c = 99u32 || c = 73u32 || c = 67u32
+
+:= word_escape (c : u32) (rest : list u32) : set_step =
+    ? c = 119u32
+    ?> SetTook (word_characters (), rest)
+    |? c = 87u32
+    ?> SetTook (complement (word_characters ()), rest)
+    |: SetTook (single (escape_literal c), rest)
+
+:= space_escape (c : u32) (rest : list u32) : set_step =
+    ? c = 115u32
+    ?> SetTook (white_space (), rest)
+    |? c = 83u32
+    ?> SetTook (complement (white_space ()), rest)
+    |: word_escape c rest
+
+:= class_escape (c : u32) (rest : list u32) : set_step =
+    ? c = 100u32
+    ?> SetTook (digits (), rest)
+    |? c = 68u32
+    ?> SetTook (complement (digits ()), rest)
+    |: space_escape c rest
+
+:= starts_with (c : u32) (codes : list u32) : bool =
+    ?= codes ?|
+    | x :: _ => x = c
+    | [] => !-
+
+:= drop_one (codes : list u32) : list u32 =
+    ?= codes ?|
+    | _ :: rest => rest
+    | [] => []
+
+:= escape_at (c : u32) (rest : list u32) : set_step =
+    ? (c = 112u32 || c = 80u32) && starts_with 123u32 rest
+    ?> property (c = 80u32) (drop_one rest)
+    |? is_name_escape c
+    ?> SetFailed NameEscape
+    |: class_escape c rest
+
+:= escape (codes : list u32) : set_step =
+    ?= codes ?|
+    | c :: rest => escape_at c rest
+    | [] => SetFailed NothingToRepeat
+
+:= base_set (negated : bool) (acc : list code_range) : char_set normal =
+    := base = of_ranges acc
+    ? negated ?> complement base |: base
+
+:= subtracted (base : char_set normal) (s : set_step) : set_step =
+    ?= s ?|
+    | SetTook (sub, rest) =>
+        ? starts_with 93u32 rest ?> SetTook (minus base sub, drop_one rest) |: SetFailed UnclosedClass
+    | failed => failed
+
+:= is_range_end (codes : list u32) : bool =
+    ?= codes ?|
+    | dash :: h :: _ => dash = 45u32 && h <> 93u32 && h <> 91u32
+    | _ => !-
+
+:= range_end (codes : list u32) : u32 * list u32 =
+    ?= codes ?|
+    | _ :: h :: rest => h, rest
+    | _ => 0u32, []
+
+:~ ^ class_body (codes : list u32) (acc : list code_range) (negated : bool) : set_step =
+    ?= codes ?|
+    | c :: rest => class_char c rest acc negated
+    | [] => SetFailed UnclosedClass
+
+:& :~ class_char (c : u32) (rest : list u32) (acc : list code_range) (negated : bool) : set_step =
+    ? c = 93u32 ?> SetTook (base_set negated acc, rest) |: class_minus c rest acc negated
+
+:& :~ class_minus (c : u32) (rest : list u32) (acc : list code_range) (negated : bool) : set_step =
+    ? c = 45u32 && starts_with 91u32 rest ?> class_subtract rest acc negated |: class_more c rest acc negated
+
+:& :~ class_subtract (rest : list u32) (acc : list code_range) (negated : bool) : set_step =
+    subtracted (base_set negated acc) (class_open (drop_one rest))
+
+:& :~ class_more (c : u32) (rest : list u32) (acc : list code_range) (negated : bool) : set_step =
+    ? c = 92u32 ?> class_escaped (escape rest) acc negated |: class_plain c rest acc negated
+
+:& :~ class_plain (c : u32) (rest : list u32) (acc : list code_range) (negated : bool) : set_step =
+    ? is_range_end rest ?> class_range c (range_end rest) acc negated |: class_body rest (range c c :: acc) negated
+
+:& :~ class_escaped (s : set_step) (acc : list code_range) (negated : bool) : set_step =
+    ?= s ?|
+    | SetTook (set, rest) => class_body rest (listm::append (ranges_of set) acc) negated
+    | failed => failed
+
+:& :~ class_range (low : u32) (high_rest : u32 * list u32) (acc : list code_range) (negated : bool) : set_step =
+    := high, rest = high_rest
+    class_body rest (range low high :: acc) negated
+
+:& :~ class_open (codes : list u32) : set_step =
+    ? starts_with 94u32 codes ?> class_body (drop_one codes) [] !+ |: class_body codes [] !-
+
+:= set_to_step (s : set_step) : step =
+    ?= s ?|
+    | SetTook (set_value, rest) => Took (set set_value, rest)
+    | SetFailed f => Failed f
+
+:| number =
+    | Number : u32 * list u32
+    | NoNumber
+
+:~ is_digit_code (c : u32) : bool = 48u32 <= c && c <= 57u32
+
+:~ number_if (seen : bool) (acc : u32) (codes : list u32) : number = ? seen ?> Number (acc, codes) |: NoNumber
+
+:~ ^ digits_from (codes : list u32) (acc : u32) (seen : bool) : number =
+    ?= codes ?|
+    | c :: rest => ? is_digit_code c ?> digits_from rest (acc * 10u32 + c - 48u32) !+ |: number_if seen acc codes
+    | [] => number_if seen acc []
+
+:= starts_quantifier (codes : list u32) : bool =
+    starts_with 63u32 codes || starts_with 42u32 codes || starts_with 43u32 codes || starts_with 123u32 codes
+
+:= no_stack (r : re) (rest : list u32) : step = ? starts_quantifier rest ?> Failed StackedQuantifier |: Took (r, rest)
+
+:= closes_count (rest : list u32) (low : u32) (high : u32) : bool = starts_with 125u32 rest && low <= high
+
+:= counted_bound (r : re) (low : u32) (n : number) : step =
+    ?= n ?|
+    | Number (high, rest) =>
+        ? closes_count rest low high ?> no_stack (repeat r low (Bounded high)) (drop_one rest) |: Failed BadCount
+    | NoNumber => Failed BadCount
+
+:= counted_max (r : re) (low : u32) (codes : list u32) : step =
+    ? starts_with 125u32 codes
+    ?> no_stack (repeat r low Unbounded) (drop_one codes)
+    |: counted_bound r low (digits_from codes 0u32 !-)
+
+:= counted_upper (r : re) (low : u32) (codes : list u32) : step =
+    ? starts_with 125u32 codes
+    ?> no_stack (repeat r low (Bounded low)) (drop_one codes)
+    |? starts_with 44u32 codes
+    ?> counted_max r low (drop_one codes)
+    |: Failed BadCount
+
+:= counted (r : re) (codes : list u32) : step =
+    ?= digits_from codes 0u32 !- ?|
+    | Number (low, rest) => counted_upper r low rest
+    | NoNumber => Failed BadCount
+
+:= plus_or_counted (r : re) (c : u32) (more : list u32) (rest : list u32) : step =
+    ? c = 43u32 ?> no_stack (plus r) more |? c = 123u32 ?> counted r more |: Took (r, rest)
+
+:= quantify (r : re) (rest : list u32) : step =
+    ?= rest ?|
+    | c :: more =>
+        ? c = 63u32
+        ?> no_stack (optional r) more
+        |? c = 42u32
+        ?> no_stack (star r) more
+        |: plus_or_counted r c more rest
+    | [] => Took (r, [])
+
+:= ends_branch (codes : list u32) : bool =
+    ?= codes ?|
+    | c :: _ => c = 124u32 || c = 41u32
+    | [] => !+
+
+:= join_alt (left : re) (s : step) : step =
+    ?= s ?|
+    | Took (right, rest) => Took (alt left right, rest)
+    | failed => failed
+
+:= quantified (s : step) : step =
+    ?= s ?|
+    | Took (r, rest) => quantify r rest
+    | failed => failed
+
+:= atom_literal (c : u32) (rest : list u32) : step =
+    ? c = 46u32
+    ?> Took (set (complement (line_breaks ())), rest)
+    |? c = 42u32 || c = 43u32 || c = 63u32 || c = 123u32
+    ?> Failed NothingToRepeat
+    |: Took (code c, rest)
+
+:~ ^ alternation (codes : list u32) : step = after_branch (branch codes Epsilon)
+
+:& :~ after_branch (s : step) : step =
+    ?= s ?|
+    | Took (left, rest) => ? starts_with 124u32 rest ?> join_alt left (alternation (drop_one rest)) |: s
+    | failed => failed
+
+:& :~ branch (codes : list u32) (acc : re) : step =
+    ? ends_branch codes ?> Took (acc, codes) |: after_piece acc (quantified (atom codes))
+
+:& :~ after_piece (acc : re) (s : step) : step =
+    ?= s ?|
+    | Took (r, rest) => branch rest (seq acc r)
+    | failed => failed
+
+:& :~ atom (codes : list u32) : step =
+    ?= codes ?|
+    | c :: rest => atom_at c rest
+    | [] => Failed NothingToRepeat
+
+:& :~ atom_at (c : u32) (rest : list u32) : step =
+    ? c = 40u32
+    ?> atom_group rest
+    |? c = 91u32
+    ?> set_to_step (class_open rest)
+    |? c = 92u32
+    ?> set_to_step (escape rest)
+    |: atom_literal c rest
+
+:& :~ atom_group (rest : list u32) : step = ? starts_with 63u32 rest ?> Failed Lookaround |: group (alternation rest)
+
+:& :~ group (s : step) : step =
+    ?= s ?|
+    | Took (r, rest) => ? starts_with 41u32 rest ?> Took (r, drop_one rest) |: Failed UnclosedGroup
+    | failed => failed
+
+:= parsed_of (s : step) : parsed =
+    ?= s ?|
+    | Took (r, rest) => ? starts_with 41u32 rest ?> Refused UnexpectedClose |: Parsed r
+    | Failed f => Refused f
+
+:= parse_xsd (pattern : string) : parsed = parsed_of (alternation (codes_of pattern))
+
+:= xsd_accepts (pattern : string) (text : string) : verdict =
+    ?= parse_xsd pattern ?|
+    | Parsed r => matches r (codes_of text)
+    | Refused _ => Rejected
+
+:= refusal_of (pattern : string) : option refusal =
+    ?= parse_xsd pattern ?|
+    | Parsed _ => None
+    | Refused f => Some f
+
+///> rust
+///> gleam
+:# counted_digits_need_exactly_eight =
+    (xsd_accepts "[0-9]{8}" "12345678", xsd_accepts "[0-9]{8}" "1234567") |> _assert_eq (Accepted, Rejected)
+
+///> rust
+///> gleam
+:# an_escaped_dot_is_literal_and_a_bare_dot_skips_line_breaks =
+    (xsd_accepts "1\\.04" "1.04", xsd_accepts "1\\.04" "1x04", xsd_accepts "." "\n")
+    |> _assert_eq (Accepted, Rejected, Rejected)
+
+///> rust
+///> gleam
+:# caret_and_dollar_are_literal_and_the_whole_text_must_match =
+    (xsd_accepts "^a$" "^a$", xsd_accepts "^a$" "a", xsd_accepts "ab" "abc")
+    |> _assert_eq (Accepted, Rejected, Rejected)
+
+///> rust
+///> gleam
+:# class_subtraction_removes_the_vowels =
+    (xsd_accepts "[a-z-[aeiou]]+" "bcd", xsd_accepts "[a-z-[aeiou]]+" "bad") |> _assert_eq (Accepted, Rejected)
+
+///> rust
+///> gleam
+:# a_block_escape_reads_its_range_and_an_unknown_block_is_refused =
+    (xsd_accepts "\\p{IsBasicLatin}{1,10}" "ABC-123", refusal_of "\\p{IsKlingon}")
+    |> _assert_eq (Accepted, Some UnknownBlock)
+
+///> rust
+///> gleam
+:# what_xsd_forbids_is_refused_with_its_reason =
+    (refusal_of "a*?", refusal_of "(?!0)", refusal_of "\\i")
+    |> _assert_eq (Some StackedQuantifier, Some Lookaround, Some NameEscape)
+
+///> rust
+///> gleam
+:# an_unfinished_pattern_is_refused_with_what_it_lacks =
+    (refusal_of "*a", refusal_of "(ab", refusal_of "[ab")
+    |> _assert_eq (Some NothingToRepeat, Some UnclosedGroup, Some UnclosedClass)
+
+///> rust
+///> gleam
+:# negated_classes_and_an_alternation_after_a_bar =
+    (xsd_accepts "[^@]+@[^\\.]+\\..+" "a@b.c", xsd_accepts "a|-[0-9]" "-5") |> _assert_eq (Accepted, Accepted)
+
+:= seen (r : re) (n : i32) (last : i32) : i32 = ? nullable r ?> n |: last
+
+:~ ^ longest_from (r : re) (codes : list u32) (n : i32) (last : i32) : i32 =
+    := last = seen r n last
+    ?= codes ?|
+    | [] => last
+    | c :: rest =>
+        ?= derive c r ?|
+        | Nothing => last
+        | next => longest_from next rest (n + 1i32) last
+
+:= longest_match (r : re) (codes : list u32) : i32 = longest_from r codes 0i32 (0i32 - 1i32)
+
+:= parsed_or_nothing (pattern : string) : re =
+    ?= parse_xsd pattern ?|
+    | Parsed r => r
+    | Refused _ => Nothing
+
+:= longest_on (pattern : string) (text : string) : i32 = longest_match (parsed_or_nothing pattern) (codes_of text)
+
+///> rust
+:# the_longest_match_counts_code_points_and_is_minus_one_without_a_match =
+    (longest_on "[0-9]+" "123ab", longest_on "[0-9]+" "ab", longest_on "a*" "b") |> _assert_eq (3i32, 0i32 - 1i32, 0i32)
+
+:~ ^ brace_span_from (codes : list u32) (n : i32) : i32 =
+    ?= codes ?|
+    | [] => n
+    | c :: rest => ? c = 125u32 ?> n + 1i32 |: brace_span_from rest (n + 1i32)
+
+:= letter_span (letter : u32) (rest : list u32) : i32 =
+    ?= rest ?|
+    | c :: _ => ? c = 123u32 && (letter = 112u32 || letter = 80u32) ?> 2i32 + brace_span_from rest 0i32 |: 2i32
+    | [] => 2i32
+
+:= escape_span (codes : list u32) : i32 =
+    ?= codes ?|
+    | _ :: letter :: rest => letter_span letter rest
+    | _ => listm::length codes
+
+:~ ^ dropped (k : i32) (codes : list u32) : list u32 =
+    ?= codes ?|
+    | _ :: rest => ? k > 0i32 ?> dropped (k - 1i32) rest |: codes
+    | [] => []
+
+:= class_step (codes : list u32) (c : u32) (depth : i32) : i32 * i32 * bool =
+    ? c = 92u32
+    ?> escape_span codes, depth, !-
+    |? c = 91u32
+    ?> 1i32, depth + 1i32, !-
+    |? c = 93u32
+    ?> 1i32, depth - 1i32, depth = 0i32
+    |: 1i32, depth, !-
+
+:~ ^ class_span_from (codes : list u32) (depth : i32) (n : i32) : i32 =
+    ?= codes ?|
+    | [] => n
+    | c :: _ =>
+        := taken, next, closed = class_step codes c depth
+        ? closed ?> n + taken |: class_span_from (dropped taken codes) next (n + taken)
+
+///> rust
+:# syntax_spans_skip_counts_and_escapes_whole =
+    (
+        brace_span_from (codes_of "{2,3}x") 0i32,
+        escape_span (codes_of "\\p{IsBasicLatin}x"),
+        escape_span (codes_of "\\d+")
+    )
+    |> _assert_eq (5i32, 16i32, 2i32)
+
+:= class_span (text : string) : i32 = class_span_from (codes_of text) 0i32 0i32
+
+///> rust
+:# a_class_span_ends_at_its_own_bracket_through_subtraction_and_escapes =
+    (class_span "a-z]x", class_span "a-z-[aeiou]]x", class_span "\\]]x") |> _assert_eq (4i32, 12i32, 3i32)
+
+:= lib_blocks () : list block = [ BasicLatin; Latin1Supplement; LatinExtendedA; LatinExtendedB ]
+
+:= lib_block_names () : list string =
+    [ "IsBasicLatin"; "IsLatin-1Supplement"; "IsLatinExtended-A"; "IsLatinExtended-B" ]
+
+:= lib_block_ranges () : list code_range =
+    [ range 0u32 127u32; range 128u32 255u32; range 256u32 383u32; range 384u32 591u32 ]
+
+///> rust
+:# the_four_blocks_lib_knows_keep_their_names_and_ranges =
+    (listm::map block_name (lib_blocks ()), listm::map block_range (lib_blocks ()))
+    |> _assert_eq (lib_block_names (), lib_block_ranges ())
+
+:= value_alt (acc : re) (v : string) : re = alt acc (word (codes_of v))
+
+:= values_re (values : list string) : re = values |> listm::fold value_alt Nothing
+
+:= value_verdicts (values : list string) (texts : list string) : list verdict =
+    := r = values_re values
+    listm::map (\ (t : string) => matches r (codes_of t)) texts
+
+///> rust
+:# a_value_set_accepts_exactly_its_members =
+    value_verdicts [ "MYR"; "SGD"; "" ] [ "MYR"; "SGD"; ""; "MY"; "MYRR"; "USD" ]
+    |> _assert_eq [ Accepted; Accepted; Accepted; Rejected; Rejected; Rejected ]
+
+:~ ^ first_member (s : char_set normal) (candidates : list u32) : option u32 =
+    ?= candidates ?|
+    | c :: rest => ? contains c s ?> Some c |: first_member s rest
+    | [] => None
+
+:= low_example (s : char_set normal) (low : u32) : list u32 =
+    ?= first_member s [ 65u32; 97u32; 49u32; 90u32; 122u32 ] ?|
+    | Some c => [ c ]
+    | None => [ low ]
+
+:= set_example (s : char_set normal) : list u32 =
+    ?= ranges_of s ?|
+    | r :: _ => ? r::low >= 33u32 ?> [ r::low ] |: low_example s r::low
+    | [] => []
+
+:~ ^ repeated_codes (codes : list u32) (count : i32) : list u32 =
+    ? count <= 0i32 ?> [] |: listm::append codes (repeated_codes codes (count - 1i32))
+
+:~ ^ example_of (stars : i32) (r : re) : list u32 =
+    ?= r ?|
+    | Set s => set_example s
+    | Seq (a, b) => listm::append (example_of stars a) (example_of stars b)
+    | Alt (a, _) => example_of stars a
+    | other => repeat_example stars other
+
+:& :~ repeat_example (stars : i32) (r : re) : list u32 =
+    ?= r ?|
+    | Star a => repeated_codes (example_of stars a) stars
+    | Repeat (a, low, _) => repeated_codes (example_of stars a) (conv low : i32)
+    | _ => []
+
+:= example_text (stars : i32) (pattern : string) : list u32 = example_of stars (parsed_or_nothing pattern)
+
+///> rust
+:# examples_follow_the_lib_choice_rule_on_digits_negations_and_stars =
+    (example_text 1i32 "[0-9]{8}", example_text 1i32 "[^@]{2}", example_text 2i32 "a*b")
+    |> _assert_eq (codes_of "00000000", codes_of "AA", codes_of "aab")

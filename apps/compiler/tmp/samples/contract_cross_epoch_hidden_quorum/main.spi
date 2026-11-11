@@ -195,7 +195,7 @@
         := \? effect. _, ClearingRow label = payload
         label
 
-:= ^ terminal_label \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+:= terminal_label \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
     batch participant_left participant_right root observer_left observer_right from to.
     (plan :
         clearing_plan
@@ -393,7 +393,7 @@
         := \? effect. _, ParallelRow label = payload
         label
 
-:= ^ parallel_terminal \* batch epoch from to. (plan : parallel_plan batch epoch from to) : string =
+:= parallel_terminal \* batch epoch from to. (plan : parallel_plan batch epoch from to) : string =
     ?= plan ?|
     | ParallelLeaf node => parallel_node_label node
     | ParallelThen payload =>
@@ -680,7 +680,7 @@
         := \? effect. _, MultihostRecoveryRow label = payload
         label
 
-:= ^ multihost_terminal \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+:= multihost_terminal \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
     observer_left observer_right observer_third from to.
     (plan :
         multihost_recovery_plan
@@ -1093,7 +1093,7 @@
         v36_observe_node ()
     ))
 
-:= ^ v36_terminal \* tenant old_epoch old_root new_epoch new_root from to.
+:= v36_terminal \* tenant old_epoch old_root new_epoch new_root from to.
     (plan : v36_plan tenant old_epoch old_root new_epoch new_root from to) : string =
     ?= plan ?|
     | V36Leaf (V36Node payload) =>

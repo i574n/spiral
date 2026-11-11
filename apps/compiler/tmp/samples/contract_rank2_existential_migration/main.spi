@@ -223,7 +223,7 @@
         observe_node ()
     ))
 
-:= ^ terminal \* tenant old_epoch old_root new_epoch new_root from to.
+:= terminal \* tenant old_epoch old_root new_epoch new_root from to.
     (plan : migration_plan tenant old_epoch old_root new_epoch new_root from to) : string =
     ?= plan ?|
     | MigrationLeaf (MigrationNode payload) =>

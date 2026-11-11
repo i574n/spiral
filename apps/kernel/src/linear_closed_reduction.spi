@@ -1,0 +1,431 @@
+///- --package .
+:# linear_closed_reduction static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+:< linear_terms
+:< linear_substitution
+:< linear_reduction
+:< linear_values
+
+:= no_merge () : usage_merge empty_context usage_empty usage_empty usage_empty = MergeEmpty "closed-parts-merge-nothing"
+
+:= closed_pair \* l r. (left : closed l) (right : closed r) (note : string) : closed (tensor_type l r) =
+    Intro (Tensor (\? (left, right, no_merge (), note)))
+
+:= closed_if \* y. (guard : closed bool_type) (yes : closed y) (no : closed y) (note : string) : closed y =
+    Elim (If (\? (guard, yes, no, no_merge (), note)))
+
+:= closed_identity \* y. () : closed (arrow_type y y) =
+    := once = SingleUseHere (empty_usage (), "the-binder-is-used-once")
+    Intro (Lambda (Variable (VariableAt (\? (MembershipHere "the-binder", once, "identity"))), "closed-identity"))
+
+:= closed_apply \* d y. (f : closed (arrow_type d y)) (x : closed d) (note : string) : closed y =
+    Elim (Apply (\? (f, x, no_merge (), note)))
+
+:= apply_identity \* y. (x : closed y) (note : string) : closed y = closed_apply (closed_identity ()) x note
+
+:= true_if \* y. (branch : closed y) (note : string) : closed y = closed_if (bool_of "guard" !+) branch branch note
+
+:= right_apply_if \* y. (branch : closed y) (note : string) : closed y =
+    closed_if (bool_of "guard" !+) branch (apply_identity branch "right") note
+
+:= false_distinct_if \* y. (branch : closed y) (note : string) : closed y =
+    closed_if (bool_of "guard" !-) (true_if branch "nested") branch note
+
+:= ^ derivation_target \* d r. (deriv : derivation d r) : closed r =
+    ?= deriv ?|
+    | Bound (argument, _) => argument
+    | Units u => units_target u
+    | Bools b => bools_target b
+    | Steps s => steps_target s
+
+:& := units_target \* d r. (u : unit_derivation d r) : closed r =
+    ?= u ?|
+    | LeftUnit (i, n) => closed_pair (derivation_target i) (unit_of "unit") n
+    | RightUnit (i, n) => closed_pair (unit_of "unit") (derivation_target i) n
+
+:& := bools_target \* d r. (b : bool_derivation d r) : closed r =
+    ?= b ?|
+    | LeftBoolTrue (i, n) => closed_pair (derivation_target i) (bool_of "true" !+) n
+    | RightBoolFalse (i, n) => closed_pair (bool_of "false" !-) (derivation_target i) n
+
+:& := steps_target \* d r. (s : step_derivation d r) : closed r =
+    ?= s ?|
+    | IfTrue (i, n) => true_if (derivation_target i) n
+    | ApplyIdentity (i, n) => apply_identity (derivation_target i) n
+    | Forks f => forks_target f
+
+:& := forks_target \* d r. (f : fork_derivation d r) : closed r =
+    ?= f ?|
+    | IfTrueRightApply (i, n) => right_apply_if (derivation_target i) n
+    | IfFalseDistinct (i, n) => false_distinct_if (derivation_target i) n
+
+:= derivation_source \* d r. (deriv : derivation d r) : closed r =
+    closed_apply (Intro (Lambda (open_body deriv, "closes-the-open-body"))) (derivation_argument deriv) "recursive-beta"
+
+:| closed_atomic ty =
+    | AtomicBeta :: \* y. closed_beta y -> closed_atomic y
+    | AtomicStep :: \* y. small_step empty_context usage_empty usage_empty y -> closed_atomic y
+    | AtomicRecursive :: \* y. (\? d. derivation d y * string) -> closed_atomic y
+
+:= atomic_source \* y. (a : closed_atomic y) : closed y =
+    ?= a ?|
+    | AtomicBeta b => closed_beta_source b
+    | AtomicStep s => step_source s
+    | AtomicRecursive p =>
+        := \? d. deriv, _ = p
+        derivation_source deriv
+
+:= atomic_target \* y. (a : closed_atomic y) : closed y =
+    ?= a ?|
+    | AtomicBeta b => closed_beta_target b
+    | AtomicStep s => step_target s
+    | AtomicRecursive p =>
+        := \? d. deriv, _ = p
+        derivation_target deriv
+
+:| ^ reduction ty =
+    | ReduceAtomic :: \* y. closed_atomic y -> reduction y
+    | ReduceTensor :: \* l r. tensor_reduction l r -> reduction (tensor_type l r)
+    | ReduceApply :: \* y. apply_reduction y -> reduction y
+
+:& :| tensor_reduction l r =
+    | ReduceLeft :: \* l r. reduction l * closed r * string -> tensor_reduction l r
+    | ReduceRight :: \* l r. closed l * reduction r * string -> tensor_reduction l r
+
+:& :| apply_reduction y =
+    | ReduceFun :: \* y. (\? d. reduction (arrow_type d y) * closed d * string) -> apply_reduction y
+    | ReduceArg :: \* y. (\? d. closed (arrow_type d y) * reduction d * string) -> apply_reduction y
+
+:= ^ reduction_source \* y. (step : reduction y) : closed y =
+    ?= step ?|
+    | ReduceAtomic a => atomic_source a
+    | ReduceTensor t => tensor_source t
+    | ReduceApply p => apply_source p
+
+:& := tensor_source \* l r. (t : tensor_reduction l r) : closed (tensor_type l r) =
+    ?= t ?|
+    | ReduceLeft (s, r, n) => closed_pair (reduction_source s) r n
+    | ReduceRight (l, s, n) => closed_pair l (reduction_source s) n
+
+:& := apply_source \* y. (p : apply_reduction y) : closed y =
+    ?= p ?|
+    | ReduceFun q =>
+        := \? d. s, x, n = q
+        closed_apply (reduction_source s) x n
+    | ReduceArg q =>
+        := \? d. f, s, n = q
+        closed_apply f (reduction_source s) n
+
+:= ^ reduction_target \* y. (step : reduction y) : closed y =
+    ?= step ?|
+    | ReduceAtomic a => atomic_target a
+    | ReduceTensor t => tensor_target t
+    | ReduceApply p => apply_target p
+
+:& := tensor_target \* l r. (t : tensor_reduction l r) : closed (tensor_type l r) =
+    ?= t ?|
+    | ReduceLeft (s, r, n) => closed_pair (reduction_target s) r n
+    | ReduceRight (l, s, n) => closed_pair l (reduction_target s) n
+
+:& := apply_target \* y. (p : apply_reduction y) : closed y =
+    ?= p ?|
+    | ReduceFun q =>
+        := \? d. s, x, n = q
+        closed_apply (reduction_target s) x n
+    | ReduceArg q =>
+        := \? d. f, s, n = q
+        closed_apply f (reduction_target s) n
+
+:= triple \* d r. (deriv : derivation d r) : i32 * i32 * i32 =
+    size (open_body deriv), size (derivation_source deriv), size (derivation_target deriv)
+
+:= left_unit () : derivation bool_type (tensor_type bool_type unit_type) = Units (LeftUnit (Bound (bool_of "t" !+, "b"), "l"))
+
+:= right_unit () : derivation bool_type (tensor_type unit_type bool_type) = Units (RightUnit (Bound (bool_of "f" !-, "b"), "r"))
+
+:== deep_type = tensor_type (tensor_type bool_type (tensor_type bool_type bool_type)) unit_type
+
+:= deep () : derivation bool_type deep_type =
+    Units (LeftUnit (Bools (RightBoolFalse (Bools (LeftBoolTrue (Bound (bool_of "t" !+, "b"), "1")), "2")), "3"))
+
+///> rust
+:# recursive_beta_sizes_match_the_sample =
+    (triple (Bound (unit_of "u", "b")), triple (left_unit ()), triple (right_unit ()), triple (deep ()))
+    |> _assert_eq ((1i32, 4i32, 1i32), (3i32, 6i32, 3i32), (3i32, 6i32, 3i32), (7i32, 10i32, 7i32))
+
+:= identity_beta () : reduction unit_type = ReduceAtomic (AtomicBeta (IdentityBeta (unit_of "u", "id")))
+
+///> rust
+:# a_left_congruence_reduces_inside_the_pair =
+    := step = ReduceTensor (ReduceLeft (identity_beta (), unit_of "held", "left"))
+    (size (reduction_source step), size (reduction_target step)) |> _assert_eq (6i32, 3i32)
+
+///> rust
+:# an_argument_congruence_reduces_under_the_application =
+    := step = ReduceApply (ReduceArg (\? (closed_identity (), identity_beta (), "argument")))
+    (size (reduction_source step), size (reduction_target step)) |> _assert_eq (7i32, 4i32)
+
+///> rust
+:# a_recursive_beta_step_is_a_closed_reduction =
+    := step = ReduceAtomic (AtomicRecursive (\? (deep (), "deep")))
+    (size (reduction_source step), size (reduction_target step)) |> _assert_eq (10i32, 7i32)
+
+:| progress ty =
+    | ProgressValue :: \* y. value empty_context usage_empty y * string -> progress y
+    | ProgressStep :: \* y. reduction y * string -> progress y
+
+:= progress_source \* y. (p : progress y) : closed y =
+    ?= p ?|
+    | ProgressValue (v, _) => value_term v
+    | ProgressStep (s, _) => reduction_source s
+
+:= progress_target \* y. (p : progress y) : closed y =
+    ?= p ?|
+    | ProgressValue (v, _) => value_term v
+    | ProgressStep (s, _) => reduction_target s
+
+:= recursive_progress \* d r. (deriv : derivation d r) : progress r =
+    ProgressStep (ReduceAtomic (AtomicRecursive (\? (deriv, "one-derivation"))), "recursive-beta-enters-progress")
+
+:= lambda_value \* d r. (deriv : derivation d r) : value empty_context usage_empty (arrow_type d r) =
+    Leaf (ValueLambda (open_body deriv, "the-closed-lambda-of-the-same-derivation"))
+
+:== authority d r = value empty_context usage_empty (arrow_type d r) * progress r
+
+:= authority_of \* d r. (deriv : derivation d r) : authority d r = lambda_value deriv, recursive_progress deriv
+
+:= value_progress () : progress (tensor_type unit_type unit_type) =
+    := u = Leaf (ValueConstant (UnitValue (empty_usage (), "u")))
+    ProgressValue (ValueTensor (\? (u, u, no_merge (), "pair")), "a-value-is-done")
+
+///> rust
+:# a_value_makes_progress_as_itself =
+    := p = value_progress ()
+    (size (progress_source p), size (progress_target p)) |> _assert_eq (3i32, 3i32)
+
+///> rust
+:# one_derivation_gives_the_lambda_value_and_its_progress =
+    := closure, step = authority_of (deep ())
+    (size (value_term closure), size (progress_source step), size (progress_target step)) |> _assert_eq (8i32, 10i32, 7i32)
+
+:! source_unit = ()
+
+:! source_true = ()
+
+:! source_false = ()
+
+:! source_pair l r = l * r
+
+:! source_identity y = ()
+
+:! source_lambda d c = ()
+
+:== closed_value y = value empty_context usage_empty y
+
+:| leaf_source source ty =
+    | SourceUnit :: string -> leaf_source source_unit unit_type
+    | SourceTrue :: string -> leaf_source source_true bool_type
+    | SourceFalse :: string -> leaf_source source_false bool_type
+
+:| lambda_source source ty =
+    | SourceIdentity :: \* y. string -> lambda_source (source_identity y) (arrow_type y y)
+    | SourceLambda :: \* d c. closed_value (arrow_type d c) * string -> lambda_source (source_lambda d c) (arrow_type d c)
+
+:| ^ vsource source ty =
+    | SourceLeaf :: \* s y. leaf_source s y -> vsource s y
+    | SourceFn :: \* s y. lambda_source s y -> vsource s y
+    | SourcePair :: \* a b l r. vsource a l * vsource b r * string -> vsource (source_pair a b) (tensor_type l r)
+
+:= unused_note (n : string) : all_unused empty_context usage_empty * string = empty_usage (), n
+
+:= as_value \* y. (k : constant empty_context usage_empty y) : closed_value y = Leaf (ValueConstant k)
+
+:= leaf_value \* s y. (l : leaf_source s y) : closed_value y =
+    ?= l ?|
+    | SourceUnit n => as_value (UnitValue (unused_note n))
+    | SourceTrue n => as_value (TrueValue (unused_note n))
+    | SourceFalse n => as_value (FalseValue (unused_note n))
+
+:= fn_value \* s y. (f : lambda_source s y) : closed_value y =
+    ?= f ?|
+    | SourceIdentity n => Leaf (ValueLambda (generic_variable (), n))
+    | SourceLambda (v, _) => v
+
+:= ^ source_value \* s y. (src : vsource s y) : closed_value y =
+    ?= src ?|
+    | SourceLeaf leaf => leaf_value leaf
+    | SourceFn f => fn_value f
+    | SourcePair (l, r, n) => ValueTensor (\? (source_value l, source_value r, no_merge (), n))
+
+:= source_term \* s y. (src : vsource s y) : closed y = value_term (source_value src)
+
+:= source_progress \* s y. (src : vsource s y) : progress y = ProgressValue (source_value src, "a-value-source-is-done")
+
+:! source_ready_identity y a = source_identity y * a
+
+:! source_tensor_beta y a = source_lambda y (tensor_type y unit_type) * a
+
+:== tail_source y = vsource (source_lambda y (tensor_type y unit_type)) (arrow_type y (tensor_type y unit_type))
+
+:| ready_beta source ty =
+    | ReadyIdentity :: \* a y. vsource a y * string -> ready_beta (source_ready_identity y a) y
+    | ReadyTail :: \* a y. tail_source y * vsource a y * string -> ready_beta (source_tensor_beta y a) (tensor_type y unit_type)
+
+:= ready_relation \* s y. (w : ready_beta s y) : closed_beta y =
+    ?= w ?|
+    | ReadyIdentity (a, n) => IdentityBeta (source_term a, n)
+    | ReadyTail (_, a, n) => TensorBeta (source_term a, n)
+
+:= ready_progress \* s y. (w : ready_beta s y) : progress y = ProgressStep (ReduceAtomic (AtomicBeta (ready_relation w)), "ready-beta")
+
+:== ready_bundle y = closed_beta y * progress y
+
+:= ready_bundle_of \* s y. (w : ready_beta s y) : ready_bundle y = ready_relation w, ready_progress w
+
+:= tail_lambda \* y. () : tail_source y =
+    SourceFn (SourceLambda (Leaf (ValueLambda (Intro (Tensor (\? (generic_variable (), unit_tail (), left_only (), "t"))), "t")), "t"))
+
+:= unit_source () : vsource source_unit unit_type = SourceLeaf (SourceUnit "u")
+
+:= identity_source () : vsource (source_identity unit_type) (arrow_type unit_type unit_type) = SourceFn (SourceIdentity "id")
+
+:= pair_source () : vsource (source_pair source_unit source_true) (tensor_type unit_type bool_type) =
+    SourcePair (unit_source (), SourceLeaf (SourceTrue "t"), "pair")
+
+///> rust
+:# value_sources_embed_with_their_shapes =
+    (size (source_term (pair_source ())), size (source_term (identity_source ()))) |> _assert_eq (3i32, 2i32)
+
+///> rust
+:# a_value_source_is_its_own_progress =
+    := step = source_progress (pair_source ())
+    (size (progress_source step), size (progress_target step)) |> _assert_eq (3i32, 3i32)
+
+///> rust
+:# a_ready_identity_steps_to_its_argument =
+    := relation, step = ready_bundle_of (ReadyIdentity (unit_source (), "id"))
+    (size (closed_beta_source relation), size (progress_source step), size (progress_target step)) |> _assert_eq (4i32, 4i32, 1i32)
+
+///> rust
+:# a_ready_tail_steps_to_the_pair =
+    := r, step = ready_bundle_of (ReadyTail (tail_lambda (), unit_source (), "tail"))
+    (size (closed_beta_source r), size (progress_source step), size (progress_target step)) |> _assert_eq (6i32, 6i32, 3i32)
+
+:== ready_opened d r = derivation d r * closed_value (arrow_type d r) * closed r * closed r * string
+
+:= open_ready \* d r. (deriv : derivation d r) : ready_opened d r =
+    := closure, step = authority_of deriv
+    deriv, closure, progress_source step, progress_target step, "the-ready-recursive-beta-opened"
+
+:= opened_shape \* d r. ((_, closure, source, target, _) : ready_opened d r) : i32 * i32 * i32 * i32 =
+    outer_tag (value_term closure), outer_tag source, size source, size target
+
+:= lambda_leaf_tag \* d y. (l : leaf_value empty_context usage_empty (arrow_type d y)) : i32 =
+    ?= l ?|
+    | ValueLambda (body, _) => outer_tag body
+
+:= lambda_tag \* d y. (v : closed_value (arrow_type d y)) : i32 =
+    ?= v ?|
+    | Leaf l => lambda_leaf_tag l
+
+:= identity_at \* y. () : closed_value (arrow_type y y) = fn_value (SourceIdentity "identity")
+
+///> rust
+:# a_ready_recursive_beta_opens_to_a_lambda_and_an_application =
+    opened_shape (open_ready (deep ())) |> _assert_eq (6i32, 1i32, 10i32, 7i32)
+
+///> rust
+:# lambda_values_keep_their_body_shapes =
+    := tail = lambda_tag (source_value (tail_lambda () : tail_source unit_type))
+    (tail, lambda_tag (identity_at () : closed_value (arrow_type bool_type bool_type))) |> _assert_eq (5i32, 0i32)
+
+///> rust
+:# the_identity_body_is_a_variable_at_a_composite_type =
+    lambda_tag (identity_at () : closed_value (arrow_type (tensor_type unit_type bool_type) (tensor_type unit_type bool_type)))
+    |> _assert_eq 0i32
+
+///> rust
+:# an_identity_beta_reduction_keeps_its_result_type fails "Unification failure" =
+    := target : closed bool_type = reduction_target (identity_beta ())
+    target |> ignore
+
+///> rust
+:# a_left_congruence_target_keeps_the_pair_type fails "Unification failure" =
+    := target : closed (tensor_type bool_type unit_type) = reduction_target (ReduceTensor (ReduceLeft (identity_beta (), unit_of "held", "left")))
+    target |> ignore
+
+///> rust
+:# a_right_congruence_target_keeps_the_pair_type fails "Unification failure" =
+    := target : closed (tensor_type unit_type bool_type) = reduction_target (ReduceTensor (ReduceRight (unit_of "held", identity_beta (), "right")))
+    target |> ignore
+
+///> rust
+:# an_argument_congruence_target_keeps_the_result_type fails "Unification failure" =
+    := target : closed bool_type = reduction_target (ReduceApply (ReduceArg (\? (closed_identity (), identity_beta (), "argument"))))
+    target |> ignore
+
+///> rust
+:# a_recursive_beta_target_keeps_the_derived_type fails "Unification failure" =
+    := target : closed bool_type = reduction_target (ReduceAtomic (AtomicRecursive (\? (deep (), "deep"))))
+    target |> ignore
+
+///> rust
+:# a_progress_target_keeps_the_reduced_type fails "Unification failure" =
+    := target : closed bool_type = progress_target (ProgressStep (identity_beta (), "step"))
+    target |> ignore
+
+///> rust
+:# progress_from_a_reduction_keeps_its_type fails "Unification failure" =
+    := moved : progress bool_type = ProgressStep (identity_beta (), "step")
+    moved |> ignore
+
+///> rust
+:# an_authority_keeps_the_derived_result_type fails "Unification failure" =
+    := held : authority bool_type bool_type = authority_of (left_unit ())
+    held |> ignore
+
+///> rust
+:# a_unit_tensor_tail_takes_no_bool_argument fails "Unification failure" =
+    := r = ReadyTail ((tail_lambda () : tail_source unit_type), SourceLeaf (SourceTrue "a-Bool-argument"), "unit-tail")
+    r |> ignore
+
+///> rust
+:# a_bool_tensor_tail_takes_no_unit_argument fails "Unification failure" =
+    := r = ReadyTail ((tail_lambda () : tail_source bool_type), SourceLeaf (SourceUnit "a-Unit-argument"), "bool-tail")
+    r |> ignore
+
+///> rust
+:# a_derivation_source_keeps_its_argument_on_the_left fails "Unification failure" =
+    := t : closed (tensor_type unit_type bool_type) = derivation_source (Units (LeftUnit (Bound (bool_of "b" !+, "bound"), "left")))
+    t |> ignore
+
+///> rust
+:# a_true_source_cannot_be_reindexed_as_false fails "Unification failure" =
+    := v : vsource source_false bool_type = SourceLeaf (SourceTrue "t")
+    v |> ignore
+
+///> rust
+:# a_ready_identity_is_indexed_by_the_identity_lambda fails "Unification failure" =
+    := w : ready_beta (source_tensor_beta unit_type source_unit) unit_type = ReadyIdentity (unit_source (), "id")
+    w |> ignore
+
+///> rust
+:# a_ready_witness_is_not_a_value_source fails "Unification failure" =
+    := v : vsource source_unit unit_type = ReadyIdentity (unit_source (), "id")
+    v |> ignore
+
+///> rust
+:# an_atomic_tensor_beta_target_keeps_the_pair_type fails "Unification failure" =
+    := t : closed unit_type = atomic_target (AtomicBeta (TensorBeta (unit_of "u", "tensor-beta")))
+    t |> ignore
+
+:= arg_tensor_beta () : reduction (tensor_type unit_type unit_type) =
+    ReduceApply (ReduceArg (\? (closed_identity (), ReduceAtomic (AtomicBeta (TensorBeta (unit_of "u", "t"))), "argument")))
+
+///> rust
+:# an_argument_tensor_beta_target_keeps_the_pair_type fails "Unification failure" =
+    := t : closed unit_type = reduction_target (arg_tensor_beta ())
+    t |> ignore

@@ -145,7 +145,8 @@
 ///> rust
 ///> gleam
 :# results_exposition_keeps_known_rows =
-    "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t10\nsamples/b\tZig\tcontracts\terror\t2000\nsamples/c\tNope\texamples\tok\t5"
+    "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t10\n"
+    ^^ "samples/b\tZig\tcontracts\terror\t2000\nsamples/c\tNope\texamples\tok\t5"
     |> results_exposition
     |> am'::length
     |> _assert_eq 2i32
@@ -202,7 +203,10 @@
 ///> rust
 ///> gleam
 :# oracle_samples_skip_rows_without_a_verdict =
-    "id\tbackend\tsuite\tcompile\tcompile_ms\tresidual\tnative\tnative_ms\texit\tstdout\toracle\nsamples/a\tC\texamples\tok\t10\th\tran\t5\t0\ts\tagree\nsamples/b\tRust\texamples\tok\t10\th\tran\t5\t1\ts\tDISAGREE\nsamples/c\tZig\texamples\tok\t10\th\tran\t5\t0\ts\tno-zig"
+    "id\tbackend\tsuite\tcompile\tcompile_ms\tresidual\tnative\tnative_ms\texit\tstdout\toracle\n"
+    ^^ "samples/a\tC\texamples\tok\t10\th\tran\t5\t0\ts\tagree\n"
+    ^^ "samples/b\tRust\texamples\tok\t10\th\tran\t5\t1\ts\tDISAGREE\n"
+    ^^ "samples/c\tZig\texamples\tok\t10\th\tran\t5\t0\ts\tno-zig"
     |> results_oracle_samples
     |> am'::length
     |> _assert_eq 2i32
@@ -307,7 +311,11 @@
 ///> gleam
 :# run_head_to_head_reads_the_run_column =
     := wins, shared =
-        "id\tbackend\tsuite\tcompile\tcompile_ms\tresidual\tnative\tnative_ms\texit\tstdout\toracle\tbaseline\tdetail\trun_ms\nsamples/a\tC\texamples\tok\t10\th\tran\t900\t0\ts\tagree\tparity\t\t40\nsamples/a\tZig\texamples\tok\t10\th\tran\t1500\t0\ts\tagree\tparity\t\t30\nsamples/b\tC\texamples\tok\t10\th\tran\t900\t0\ts\tagree\tparity\t\t20\nsamples/b\tZig\texamples\tok\t10\th\tran\t1500\t0\ts\tagree\tparity\t\t"
+        "id\tbackend\tsuite\tcompile\tcompile_ms\tresidual\tnative\tnative_ms\texit\tstdout\toracle\tbaseline\tdeta"
+        ^^ "il\trun_ms\nsamples/a\tC\texamples\tok\t10\th\tran\t900\t0\ts\tagree\tparity\t\t40\n"
+        ^^ "samples/a\tZig\texamples\tok\t10\th\tran\t1500\t0\ts\tagree\tparity\t\t30\n"
+        ^^ "samples/b\tC\texamples\tok\t10\th\tran\t900\t0\ts\tagree\tparity\t\t20\n"
+        ^^ "samples/b\tZig\texamples\tok\t10\th\tran\t1500\t0\ts\tagree\tparity\t\t"
         |> results_run_head_to_head BackendZig BackendC
     wins |> _assert_eq 1i32
     shared |> _assert_eq 1i32
@@ -316,7 +324,9 @@
 ///> gleam
 :# native_head_to_head_counts_ran_rows_only =
     := wins, shared =
-        "id\tbackend\tsuite\tcompile\tcompile_ms\tresidual\tnative\tnative_ms\nsamples/a\tC\texamples\tok\t10\th\tran\t300\nsamples/a\tZig\texamples\tok\t10\th\tran\t200\nsamples/b\tC\texamples\tok\t10\th\tran\t100\nsamples/b\tZig\texamples\tok\t10\th\tbuild-fail\t50"
+        "id\tbackend\tsuite\tcompile\tcompile_ms\tresidual\tnative\tnative_ms\n"
+        ^^ "samples/a\tC\texamples\tok\t10\th\tran\t300\nsamples/a\tZig\texamples\tok\t10\th\tran\t200\n"
+        ^^ "samples/b\tC\texamples\tok\t10\th\tran\t100\nsamples/b\tZig\texamples\tok\t10\th\tbuild-fail\t50"
         |> results_native_head_to_head BackendZig BackendC
     wins |> _assert_eq 1i32
     shared |> _assert_eq 1i32
@@ -325,7 +335,8 @@
 ///> gleam
 :# head_to_head_counts_shared_samples_only =
     := wins, shared =
-        "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t10\nsamples/a\tZig\texamples\tok\t20\nsamples/b\tC\texamples\tok\t30\nsamples/b\tZig\texamples\tok\t5\nsamples/c\tC\texamples\tok\t7"
+        "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t10\nsamples/a\tZig\texamples\tok\t20\n"
+        ^^ "samples/b\tC\texamples\tok\t30\nsamples/b\tZig\texamples\tok\t5\nsamples/c\tC\texamples\tok\t7"
         |> results_head_to_head BackendC BackendZig
     wins |> _assert_eq 1i32
     shared |> _assert_eq 2i32
@@ -334,7 +345,8 @@
 ///> gleam
 :# results_totals_sum_compile_seconds_per_backend =
     := totals =
-        "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t1500\nsamples/b\tC\tcontracts\tok\t750\nsamples/c\tZig\texamples\tok\t2000"
+        "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t1500\n"
+        ^^ "samples/b\tC\tcontracts\tok\t750\nsamples/c\tZig\texamples\tok\t2000"
         |> results_totals
     am'::length totals |> _assert_eq 2i32
     am'::index 0i32 totals |> _assert_eq "spiral_backend_compile_seconds_total{backend=\"c\"} 2.25"
@@ -342,7 +354,8 @@
 ///> rust
 ///> gleam
 :# results_heaviest_names_the_backend_that_drains_most =
-    "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t1500\nsamples/b\tC\tcontracts\tok\t750\nsamples/c\tZig\texamples\tok\t2000"
+    "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tC\texamples\tok\t1500\nsamples/b\tC\tcontracts\tok\t750\n"
+    ^^ "samples/c\tZig\texamples\tok\t2000"
     |> results_heaviest
     |> heaviest_label
     |> _assert_eq "c"
@@ -350,7 +363,8 @@
 ///> rust
 ///> gleam
 :# results_totals_cover_python_cpp_and_openqasm =
-    "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tPython\texamples\tok\t1500\nsamples/b\tCpp\texamples\tok\t250\nsamples/c\tOpenQasm\texamples\tok\t500"
+    "id\tbackend\tsuite\tcompile\tcompile_ms\nsamples/a\tPython\texamples\tok\t1500\n"
+    ^^ "samples/b\tCpp\texamples\tok\t250\nsamples/c\tOpenQasm\texamples\tok\t500"
     |> results_totals
     |> am'::length
     |> _assert_eq 3i32

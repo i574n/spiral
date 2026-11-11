@@ -93,8 +93,6 @@
 
 := count_of (native : term) : i32 = apply "erlang" "length" [ native ] |> cast
 
-:= length_of (native : term) : i32 = count_of native
-
 := item_at (i : i32) (native : term) : term = apply "lists" "nth" [ of (i + 1i32); native ]
 
 := last_of (native : term) : term = apply "lists" "last" [ native ]

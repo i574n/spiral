@@ -1,7 +1,7 @@
 param([string] $SpiFile = 'guid.spi')
 $ErrorActionPreference = 'Stop'
 $here = $PSScriptRoot
-$cells = 'C:\home\git\spiral\apps\cells'
+$cells = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $elixir = Join-Path $HOME 'scoop\apps\elixir\current\bin\elixir.bat'
 $ebin = Join-Path $env:LOCALAPPDATA 'spiral-bin\mix-builds\lib-gate\lib\*\ebin'
 $rel = Join-Path $env:LOCALAPPDATA 'spiral-bin\bin\single-flight\SpiralCompiler\Release\net11.0'
@@ -12,7 +12,7 @@ New-Item -ItemType Directory -Force $scratch | Out-Null
 Copy-Item $rel (Join-Path $scratch 'net11.0') -Recurse
 $copy = Join-Path $scratch 'net11.0\SpiralCompiler.dll'
 Push-Location $cells
-try { $line = & $elixir -pa $ebin (Join-Path $here 'daemon_collision.exs') (Join-Path $rel 'SpiralCompiler.dll') $copy 'c:/home/git/spiral/apps/cells' } finally { Pop-Location }
+try { $line = & $elixir -pa $ebin (Join-Path $here 'daemon_collision.exs') (Join-Path $rel 'SpiralCompiler.dll') $copy $cells.Replace('\', '/').ToLowerInvariant() } finally { Pop-Location }
 "collide: $line"
 if ($line -notmatch 'live_port=(\d+) copy_mtime_offset=(\d+) copy_port=(\d+) next_slot=(\d+)' -or $Matches[1] -ne $Matches[3]) { throw 'no forced collision' }
 $livePort = [int] $Matches[1]; $nextSlot = [int] $Matches[4]

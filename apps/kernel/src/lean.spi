@@ -218,8 +218,9 @@
         )
     lean_inductive family
     |> _assert_eq (
-           "inductive K.List (A : Type) : Type where | nil : (@K.List A) | cons : ((a : A) -> ((tl : (@K.List A)) -> (@K.List A)))"
-       )
+        "inductive K.List (A : Type) : Type where | nil : (@K.List A) | cons : ((a : A) -> ((tl : (@K.List A)) "
+        ^^ "-> (@K.List A)))"
+    )
 
 ///> rust
 :# terms_print_as_lean_source_with_names_for_bound_variables =

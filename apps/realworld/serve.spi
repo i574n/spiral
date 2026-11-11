@@ -1,0 +1,77 @@
+///- --package .
+:# serve static =
+    :< testing
+
+:< sm'_operators
+:< auth
+:< server
+
+:= method_of (text : string) : realworld_api::http_method =
+    ? text = "POST" ?> realworld_api::Post |? text = "PUT" ?> realworld_api::Put |? text = "DELETE" ?> realworld_api::Delete |: realworld_api::Get
+
+:= token_of (r : erlang_http_server::request) : string = erlang_http_server::header_value "authorization" r::head
+
+:= request_from (raw : string) : http_request =
+    := r = erlang_http_server::request_of raw
+    { method = method_of r::method; path = r::path; authorization = token_of r; body = erlang_http_server::body_of r }
+
+:= answer_raw (k : server_keys) (s : rw_store) (raw : string) : string * rw_store =
+    := out = dispatch k s (request_from raw)
+    erlang_http_server::json_response out::reply::status out::reply::body, out::store
+
+:= chunk_or_empty (sock : erlang_tcp::socket) : string =
+    ?= erlang_tcp::receive_chunk_within sock 10000i32 ?| Ok chunk => chunk | Error _ => ""
+
+:~ ^ received (sock : erlang_tcp::socket) (acc : string) : string =
+    := chunk = ? erlang_http_server::complete acc ?> "" |: chunk_or_empty sock
+    ? chunk = "" ?> acc |: received sock (acc ++# chunk)
+
+:= reply_for (k : server_keys) (s : rw_store) (raw : string) : string * rw_store =
+    ? erlang_http_server::complete raw ?> answer_raw k s raw |: "", s
+
+:= sent (sock : erlang_tcp::socket) (reply : string) : () = ? reply = "" ?> () |: erlang_tcp::send_text sock reply |> ignore
+
+:~ handled (k : server_keys) (s : rw_store) (sock : erlang_tcp::socket) : rw_store =
+    := reply, next = reply_for k s (received sock "")
+    sent sock reply
+    erlang_tcp::close sock
+    next
+
+:~ ^ served_on (k : server_keys) (s : rw_store) (listener : erlang_tcp::listener) : i32 =
+    ?= erlang_tcp::accept_forever listener ?|
+    | Ok sock => served_on k (handled k s sock) listener
+    | Error _ => 1i32
+
+:= keys_from_env () : option server_keys =
+    := secret = env::get_environment_variable "REALWORLD_SECRET"
+    := salt = env::get_environment_variable "REALWORLD_SALT"
+    ? secret = "" || salt = "" ?> None |: Some { secret salt; rounds = 120000u32 }
+
+:= serve (port : i32) : i32 =
+    ?= keys_from_env () ?|
+    | None => 3i32
+    | Some k =>
+        ?= erlang_tcp::listen_raw_local_on port ?|
+        | Ok listener => served_on k (realworld_model::empty_store ()) listener
+        | Error _ => 2i32
+
+:= raw_post (path : string) (body : string) : string =
+    := length = sm'::obj_to_string (erlang_term::byte_size_of body)
+    "POST " ++# path ++# " HTTP/1.1\r\nHost: rw\r\nContent-Length: " ++# length ++# "\r\n\r\n" ++# body
+
+:= raw_get (path : string) (token : string) : string = "GET " ++# path ++# " HTTP/1.1\r\nHost: rw\r\nAuthorization: " ++# token ++# "\r\n\r\n"
+
+:= status_word (reply : string) : string = sm'::slice 9i32 11i32 reply
+
+:= registered_raw () : string * rw_store = answer_raw (keys ()) (realworld_model::empty_store ()) (raw_post "/api/users" (jake_body ()))
+
+:= status_after (s : rw_store) (raw : string) : string =
+    := reply, _ = answer_raw (keys ()) s raw
+    status_word reply
+
+:= jake_get (path : string) : string = raw_get path (header_for (real_crypto ()) "s3cret" 1i32)
+
+///> gleam
+:# raw_http_requests_round_trip_through_the_dispatcher =
+    := made, s = registered_raw ()
+    (status_word made, status_after s (jake_get "/api/user"), status_after s (raw_get "/api/nowhere" "")) |> _assert_eq ("201", "200", "404")

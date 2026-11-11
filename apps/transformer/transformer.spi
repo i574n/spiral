@@ -182,8 +182,10 @@
     : ()
     =
     ? r < end ?>
-        ? r < a::d ?> row_l_into kn x w a r
-        |? r < a::d + b::d ?> row_l_into kn x w b (r - a::d)
+        ? r < a::d
+        ?> row_l_into kn x w a r
+        |? r < a::d + b::d
+        ?> row_l_into kn x w b (r - a::d)
         |: row_l_into kn x w c (r - a::d - b::d)
         rows_l_fused kn x w a b c (r + 1) end
 
@@ -454,8 +456,10 @@
     : ()
     =
     ? r < hi ?>
-        ? r < a::d ?> row_into xq xs w n a r
-        |? r < a::d + b::d ?> row_into xq xs w n b (r - a::d)
+        ? r < a::d
+        ?> row_into xq xs w n a r
+        |? r < a::d + b::d
+        ?> row_into xq xs w n b (r - a::d)
         |: row_into xq xs w n c (r - a::d - b::d)
         rows_fused xq xs w n a b c hi (r + 1)
 

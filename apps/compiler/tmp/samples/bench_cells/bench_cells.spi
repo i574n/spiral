@@ -1,0 +1,227 @@
+///- --package .
+:# bench_cells static =
+    :< testing
+
+:= failwith \* t. (msg : string) : t = !!!!FailWith(`t, msg)
+
+:~ ^ mark_from (marks : array_base i32) (n : i32) (j : i32) (step : i32) : () =
+    ? j >= n ?> ()
+    |:
+        !!!!ArrayIndexSet(marks, j, 1i32)
+        mark_from marks n (j + step) step
+
+:= cross_out (marks : array_base i32) (n : i32) (i : i32) : () = ? i <= n / i ?> mark_from marks n (i * i) i |: ()
+
+:~ ^ scan_from (marks : array_base i32) (n : i32) (i : i32) (count : i32) : i32 =
+    ? i >= n
+    ?> count
+    |? !!!!EQ(!!!!ArrayIndex(marks, i), 0i32) ?>
+        cross_out marks n i
+        scan_from marks n (i + 1) (count + 1)
+    |: scan_from marks n (i + 1) count
+
+:= sieve_count (n : i32) : i32 =
+    := marks : array_base i32 = !!!!ArrayCreate(`i32, n)
+    scan_from marks n 2 0
+
+:~ ^ sieve_repeat (n : i32) (rounds : i32) (r : i32) (last : i32) : i32 =
+    ? r >= rounds ?> last
+    |:
+        := found = sieve_count (n + last / 2147483647i32)
+        ? !!!!EQ(found, 148933i32) ?> sieve_repeat n rounds (r + 1) found |: failwith "bench-sieve-wrong-prime-count"
+
+:= sieve_rounds (n : i32) (rounds : i32) : i32 = sieve_repeat n rounds 0 n
+
+:| ^ tree =
+    | Leaf : i32
+    | Node : tree * tree
+
+:~ ^ build (depth : i32) (seed : i32) : tree =
+    ? depth <= 0 ?> Leaf seed
+    |: Node (build (depth - 1) (seed * 2), build (depth - 1) (seed * 2 + 1))
+
+:~ ^ leaves (t : tree) : i32 =
+    ?= t ?|
+    | Leaf _ => 1
+    | Node (a, b) => leaves a + leaves b
+
+:~ ^ checksum (t : tree) : i32 =
+    ?= t ?|
+    | Leaf n => !!!!Mod(n, 1000003)
+    | Node (a, b) => !!!!Mod(checksum a * 31 + checksum b, 1000003)
+
+:~ ^ tree_repeat (depth : i32) (rounds : i32) (first : i32) (r : i32) (last : i32) : bool =
+    ? r >= rounds
+    ?> !+
+    |:
+        := t = build (depth + last / 2147483647i32) 1
+        := c = checksum t
+        !!!!EQ(leaves t, 1048576i32) && !!!!EQ(c, first) && tree_repeat depth rounds first (r + 1) c
+
+:= tree_rounds (depth : i32) (rounds : i32) : bool =
+    := first = checksum (build depth 1)
+    tree_repeat depth rounds first 0 first
+
+:= code (c : char) : u32 =
+    ? !!!!EQ(c, ':') ?> 58u32 |? !!!!EQ(c, '-') ?> 45u32 |? !!!!EQ(c, 's') ?> 115u32 |: 1u32
+
+:~ ^ fnv_from (s : string) (n : i32) (i : i32) (h : u32) : u32 =
+    ? i >= n ?> h |: fnv_from s n (i + 1) (!!!!Mult(!!!!BitwiseXor(h, code !!!!StringIndex(s, i)), 16777619u32))
+
+:= fnv1a (s : string) : u32 = fnv_from s !!!!StringLength(`i32, s) 0 2166136261u32
+
+:~ ^ copies_of (unit : string) (k : i32) (acc : string) : string = ? k <= 0 ?> acc |: copies_of unit (k - 1) (acc ^^ unit)
+
+:~ ^ suffixes (text : string) (n : i32) (k : i32) (acc : u32) : u32 =
+    ? k >= n ?> acc |: suffixes text n (k + 1) (!!!!BitwiseXor(acc, fnv1a !!!!StringSlice(text, k, n - 1)))
+
+:~ ^ strings_repeat (text : string) (n : i32) (rounds : i32) (first : u32) (r : i32) (last : u32) : bool =
+    ? r >= rounds
+    ?> !+
+    |:
+        := h = suffixes text n !!!!Conv(`i32, last / 4294967295u32) 0u32
+        !!!!EQ(h, first) && strings_repeat text n rounds first (r + 1) h
+
+:= strings_rounds (copies : i32) (rounds : i32) : bool =
+    := text = copies_of "spiral-bench-strings:" copies ""
+    := n = !!!!StringLength(`i32, text)
+    := first = suffixes text n 0 0u32
+    !!!!EQ(n, 4095i32) && strings_repeat text n rounds first 0 first
+
+:~ ^ orbit (cr : f64) (ci : f64) (cap : i32) (zr : f64) (zi : f64) (k : i32) : i32 =
+    ? k >= cap
+    ?> k
+    |:
+        := zr2 = zr * zr
+        := zi2 = zi * zi
+        ? zr2 + zi2 > 4.0 ?> k |: orbit cr ci cap (zr2 - zi2 + cr) (2.0 * zr * zi + ci) (k + 1)
+
+:= pixel (width : i32) (x : i32) (ci : f64) (limit : i32) : i32 =
+    orbit (!!!!Conv(`f64, x) * 3.2 / !!!!Conv(`f64, width) - 2.2) ci limit 0.0 0.0 0
+
+:~ ^ cols (width : i32) (ci : f64) (limit : i32) (x : i32) (row : i32) : i32 =
+    ? x >= width ?> row |: cols width ci limit (x + 1) (row + pixel width x ci limit)
+
+:~ ^ rows (width : i32) (height : i32) (limit : i32) (y : i32) (acc : i32) : i32 =
+    ? y >= height
+    ?> acc
+    |: rows width height limit (y + 1) (acc + cols width (!!!!Conv(`f64, y) * 2.4 / !!!!Conv(`f64, height) - 1.2) limit 0 0)
+
+:~ ^ float_repeat (width : i32) (height : i32) (limit : i32) (rounds : i32) (first : i32) (r : i32) (last : i32) : bool =
+    ? r >= rounds
+    ?> !+
+    |:
+        := c = rows (width + last / 2147483647i32) height limit 0 0
+        !!!!EQ(c, first) && float_repeat width height limit rounds first (r + 1) c
+
+:= float_rounds (width : i32) (height : i32) (limit : i32) (rounds : i32) : bool =
+    := first = rows width height limit 0 0
+    float_repeat width height limit rounds first 0 first
+
+///> rust
+:# overhead_rust =
+    := ~seed = 197i32
+    !!!!Mod(seed, 256i32) |> _assert_eq 197i32
+
+///> rust
+:# sieve_rust =
+    := ~n = 2000000i32
+    sieve_rounds n 8i32 |> _assert_eq 148933i32
+
+///> rust
+:# tree_rust =
+    := ~depth = 20i32
+    tree_rounds depth 8i32 |> _assert_eq !+
+
+///> rust
+:# strings_rust =
+    := ~copies = 195i32
+    strings_rounds copies 8i32 |> _assert_eq !+
+
+///> rust
+:# float_rust =
+    := ~width = 480i32
+    := ~height = 360i32
+    := ~limit = 200i32
+    float_rounds width height limit 8i32 |> _assert_eq !+
+
+///> c
+:# overhead_c =
+    := ~seed = 197i32
+    !!!!Mod(seed, 256i32) |> _assert_eq 197i32
+
+///> c
+:# sieve_c =
+    := ~n = 2000000i32
+    sieve_rounds n 8i32 |> _assert_eq 148933i32
+
+///> c
+:# tree_c =
+    := ~depth = 20i32
+    tree_rounds depth 8i32 |> _assert_eq !+
+
+///> c
+:# strings_c =
+    := ~copies = 195i32
+    strings_rounds copies 8i32 |> _assert_eq !+
+
+///> c
+:# float_c =
+    := ~width = 480i32
+    := ~height = 360i32
+    := ~limit = 200i32
+    float_rounds width height limit 8i32 |> _assert_eq !+
+
+///> zig
+:# overhead_zig =
+    := ~seed = 197i32
+    !!!!Mod(seed, 256i32) |> _assert_eq 197i32
+
+///> zig
+:# sieve_zig =
+    := ~n = 2000000i32
+    sieve_rounds n 8i32 |> _assert_eq 148933i32
+
+///> zig
+:# tree_zig =
+    := ~depth = 20i32
+    tree_rounds depth 8i32 |> _assert_eq !+
+
+///> zig
+:# strings_zig =
+    := ~copies = 195i32
+    strings_rounds copies 8i32 |> _assert_eq !+
+
+///> zig
+:# float_zig =
+    := ~width = 480i32
+    := ~height = 360i32
+    := ~limit = 200i32
+    float_rounds width height limit 8i32 |> _assert_eq !+
+
+///> gleam
+:# overhead_gleam =
+    := ~seed = 197i32
+    !!!!Mod(seed, 256i32) |> _assert_eq 197i32
+
+///> gleam
+:# sieve_gleam =
+    := ~n = 2000000i32
+    sieve_rounds n 1i32 |> _assert_eq 148933i32
+
+///> gleam
+:# tree_gleam =
+    := ~depth = 20i32
+    tree_rounds depth 1i32 |> _assert_eq !+
+
+///> gleam
+:# strings_gleam =
+    := ~copies = 195i32
+    strings_rounds copies 1i32 |> _assert_eq !+
+
+///> gleam
+:# float_gleam =
+    := ~width = 480i32
+    := ~height = 360i32
+    := ~limit = 200i32
+    float_rounds width height limit 1i32 |> _assert_eq !+

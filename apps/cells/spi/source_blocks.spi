@@ -1,3 +1,7 @@
+///- --package .
+:# source_blocks static =
+    :< testing
+
 := (++) (left : string) (right : string) : string = left ^^ right
 
 :== source_row = { input : string; header : string; last : string; header_text : string }
@@ -62,4 +66,4 @@
 :# test_headers_are_split_out_and_a_block_past_the_end_has_no_lines =
     := rows = "1\t2\t:= a =\n3\t3\t:# t =\n4\t4\ttest_ok =\n9\t9\t:= g ="
     split_blocks ":= a =\n 1\n:# t =\ntest_ok" rows
-    |> _assert_eq "b5::= a =l5::= a =l2: 1b9:test_ok =l7:test_okb5::= g ="
+    |> _assert_eq "b6::= a =l6::= a =l2: 1b9:test_ok =l7:test_okb6::= g ="

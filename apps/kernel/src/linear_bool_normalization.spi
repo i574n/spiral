@@ -1,0 +1,615 @@
+///- --package .
+:# linear_bool_normalization static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+:< linear_terms
+:< linear_substitution
+:< linear_reduction
+:< linear_values
+:< linear_closed_reduction
+
+:! true_normal = string
+
+:! false_normal = string
+
+:| normal_form normal =
+    | NormalTrue :: string -> normal_form true_normal
+    | NormalFalse :: string -> normal_form false_normal
+
+:| ^ normalization normal =
+    | Normal :: \* n. normal_form n -> normalization n
+    | Guarded :: \* n. guard_norm n -> normalization n
+
+:& :| guard_norm normal =
+    | GuardTrue :: \* n. normalization true_normal * normalization n * closed bool_type * string -> guard_norm n
+    | GuardFalse :: \* n. normalization false_normal * closed bool_type * normalization n * string -> guard_norm n
+
+:= closed_choice (guard : closed bool_type) (yes : closed bool_type) (no : closed bool_type) (note : string) : closed bool_type =
+    Elim (If (\? (guard, yes, no, MergeEmpty "closed-branches-merge-nothing", note)))
+
+:= form_source \* n. (f : normal_form n) : closed bool_type =
+    ?= f ?|
+    | NormalTrue note => bool_of note !+
+    | NormalFalse note => bool_of note !-
+
+:= ^ normal_source \* n. (norm : normalization n) : closed bool_type =
+    ?= norm ?|
+    | Normal f => form_source f
+    | Guarded g => guard_source g
+
+:& := guard_source \* n. (norm : guard_norm n) : closed bool_type =
+    ?= norm ?|
+    | GuardTrue (g, t, e, n) => closed_choice (normal_source g) (normal_source t) e n
+    | GuardFalse (g, t, e, n) => closed_choice (normal_source g) t (normal_source e) n
+
+:== closed_bool_value = value empty_context usage_empty bool_type
+
+:= form_value \* n. (f : normal_form n) : closed_bool_value =
+    ?= f ?|
+    | NormalTrue note => Leaf (ValueConstant (TrueValue (empty_usage (), note)))
+    | NormalFalse note => Leaf (ValueConstant (FalseValue (empty_usage (), note)))
+
+:= ^ normal_value \* n. (norm : normalization n) : closed_bool_value =
+    ?= norm ?|
+    | Normal f => form_value f
+    | Guarded g => guard_value g
+
+:& := guard_value \* n. (norm : guard_norm n) : closed_bool_value =
+    ?= norm ?|
+    | GuardTrue (_, t, _, _) => normal_value t
+    | GuardFalse (_, _, e, _) => normal_value e
+
+:= ^ normal_steps \* n. (norm : normalization n) : i32 =
+    ?= norm ?|
+    | Normal _ => 0i32
+    | Guarded g => guard_steps g
+
+:& := guard_steps \* n. (norm : guard_norm n) : i32 =
+    ?= norm ?|
+    | GuardTrue (g, t, _, _) => normal_steps g + 1i32 + normal_steps t
+    | GuardFalse (g, _, e, _) => normal_steps g + 1i32 + normal_steps e
+
+:= normal_truth \* n. (norm : normalization n) : bool = canonical_bool (bool_canonical_of (normal_value norm))
+
+:= true_form (note : string) : normalization true_normal = Normal (NormalTrue note)
+
+:= false_form (note : string) : normalization false_normal = Normal (NormalFalse note)
+
+:= inner_normal () : normalization true_normal =
+    Guarded (GuardFalse (false_form "guard", bool_of "then" !-, true_form "else", "if-false-then-false-else-true"))
+
+:= outer_normal () : normalization false_normal =
+    Guarded (GuardTrue (inner_normal (), false_form "then", bool_of "else" !+, "nested-guard"))
+
+///> rust
+:# the_nested_guard_normalizes_to_false_in_two_steps =
+    := norm = outer_normal ()
+    (size (normal_source norm), normal_truth norm, normal_steps norm) |> _assert_eq (7i32, !-, 2i32)
+
+///> rust
+:# the_inner_guard_normalizes_to_true_in_one_step =
+    := norm = inner_normal ()
+    (size (normal_source norm), normal_truth norm, normal_steps norm) |> _assert_eq (4i32, !+, 1i32)
+
+:== closed_step y = small_step empty_context usage_empty usage_empty y
+
+:| bool_progress normal =
+    | ProgressTrue :: string -> bool_progress true_normal
+    | ProgressFalse :: string -> bool_progress false_normal
+    | NormalStep :: \* n. closed_step bool_type * normalization n * string -> bool_progress n
+
+:= true_branch \* n. (t : normalization n) (e : closed bool_type) (note : string) : closed_step bool_type =
+    Branch (TrueStep (\? (empty_usage (), normal_source t, e, no_merge (), note)))
+
+:= false_branch \* n. (t : closed bool_type) (e : normalization n) (note : string) : closed_step bool_type =
+    Branch (FalseStep (\? (empty_usage (), t, normal_source e, no_merge (), note)))
+
+:= inside (s : closed_step bool_type) (yes : closed bool_type) (no : closed bool_type) (note : string) : closed_step bool_type =
+    Guard (GuardStep (\? (s, yes, no, no_merge (), no_merge (), note)))
+
+:= guarded_true \* n. (s : closed_step bool_type) (k : normalization true_normal) (t : normalization n) (e : closed bool_type) (m : string) : bool_progress n =
+    NormalStep (inside s (normal_source t) e m, Guarded (GuardTrue (k, t, e, m)), m)
+
+:= after_true \* n. (p : bool_progress true_normal) (t : normalization n) (e : closed bool_type) (m : string) : bool_progress n =
+    ?= p ?|
+    | ProgressTrue _ => NormalStep (true_branch t e m, t, m)
+    | NormalStep (s, k, _) => guarded_true s k t e m
+
+:= guarded_false \* n. (s : closed_step bool_type) (k : normalization false_normal) (t : closed bool_type) (e : normalization n) (m : string) : bool_progress n =
+    NormalStep (inside s t (normal_source e) m, Guarded (GuardFalse (k, t, e, m)), m)
+
+:= after_false \* n. (p : bool_progress false_normal) (t : closed bool_type) (e : normalization n) (m : string) : bool_progress n =
+    ?= p ?|
+    | ProgressFalse _ => NormalStep (false_branch t e m, e, m)
+    | NormalStep (s, k, _) => guarded_false s k t e m
+
+:= form_progress \* n. (f : normal_form n) : bool_progress n =
+    ?= f ?|
+    | NormalTrue note => ProgressTrue note
+    | NormalFalse note => ProgressFalse note
+
+:= ^ progress_view \* n. (norm : normalization n) : bool_progress n =
+    ?= norm ?|
+    | Normal f => form_progress f
+    | Guarded g => guard_progress g
+
+:& := guard_progress \* n. (norm : guard_norm n) : bool_progress n =
+    ?= norm ?|
+    | GuardTrue (g, t, e, n) => after_true (progress_view g) t e n
+    | GuardFalse (g, t, e, n) => after_false (progress_view g) t e n
+
+:= form_done \* n. (f : normal_form n) : progress bool_type = ProgressValue (form_value f, "a-normal-form-is-done")
+
+:= stepped (s : closed_step bool_type) (m : string) : progress bool_type = ProgressStep (ReduceAtomic (AtomicStep s), m)
+
+:= bool_closed_progress \* n. (norm : normalization n) : progress bool_type =
+    ?= progress_view norm ?|
+    | ProgressTrue m => form_done (NormalTrue m)
+    | ProgressFalse m => form_done (NormalFalse m)
+    | NormalStep (s, _, m) => stepped s m
+
+:= ^ run_steps \* n. (norm : normalization n) : i32 =
+    ?= progress_view norm ?|
+    | NormalStep (_, k, _) => 1i32 + run_steps k
+    | _ => 0i32
+
+:= first_step \* n. (norm : normalization n) : i32 * i32 * i32 * i32 =
+    ?= progress_view norm ?|
+    | NormalStep (s, k, _) => outer_tag (step_target s), outer_tag (normal_source k), size (step_target s), size (normal_source k)
+    | _ => 0i32, 0i32, 0i32, 0i32
+
+///> rust
+:# the_first_step_lands_on_the_continuation_source =
+    first_step (outer_normal ()) |> _assert_eq (7i32, 7i32, 4i32, 4i32)
+
+///> rust
+:# stepping_to_a_value_takes_exactly_the_counted_steps =
+    (run_steps (outer_normal ()), normal_steps (outer_normal ()), run_steps (inner_normal ())) |> _assert_eq (2i32, 2i32, 1i32)
+
+///> rust
+:# a_normalization_enters_closed_progress =
+    := p, q = bool_closed_progress (outer_normal ()), bool_closed_progress (false_form "f")
+    (size (progress_source p), size (progress_target p), size (progress_target q)) |> _assert_eq (7i32, 4i32, 1i32)
+
+:| ^ program normal =
+    | Literal :: \* n. normal_form n -> program n
+    | Shortcut :: \* n. shortcut n -> program n
+    | Nested :: \* n. nested n -> program n
+
+:& :| shortcut normal =
+    | TrueThen :: \* n. program n * closed bool_type * string -> shortcut n
+    | FalseElse :: \* n. closed bool_type * program n * string -> shortcut n
+
+:& :| nested normal =
+    | NestTrue :: \* n. program true_normal * program n * closed bool_type * string -> nested n
+    | NestFalse :: \* n. program false_normal * closed bool_type * program n * string -> nested n
+
+:= ^ program_norm \* n. (p : program n) : normalization n =
+    ?= p ?|
+    | Literal f => Normal f
+    | Shortcut s => shortcut_norm s
+    | Nested g => nested_norm g
+
+:& := shortcut_norm \* n. (s : shortcut n) : normalization n =
+    ?= s ?|
+    | TrueThen (t, e, m) => Guarded (GuardTrue (true_form "guard", program_norm t, e, m))
+    | FalseElse (t, e, m) => Guarded (GuardFalse (false_form "guard", t, program_norm e, m))
+
+:& := nested_norm \* n. (g : nested n) : normalization n =
+    ?= g ?|
+    | NestTrue (c, t, e, m) => Guarded (GuardTrue (program_norm c, program_norm t, e, m))
+    | NestFalse (c, t, e, m) => Guarded (GuardFalse (program_norm c, t, program_norm e, m))
+
+:= program_term \* n. (p : program n) : closed bool_type = normal_source (program_norm p)
+
+:== multistep n = normalization n * string
+
+:= multistep_of \* n. (p : program n) : multistep n = program_norm p, "linked-multistep"
+
+:= multistep_progress \* n. ((norm, _) : multistep n) : progress bool_type = bool_closed_progress norm
+
+:= literal_false () : program false_normal = Literal (NormalFalse "f")
+
+:= outer_program () : program false_normal =
+    := inner = Nested (NestFalse (literal_false (), bool_of "then" !-, Literal (NormalTrue "t"), "inner"))
+    Nested (NestTrue (inner, literal_false (), bool_of "else" !+, "outer"))
+
+///> rust
+:# the_nested_program_elaborates_to_the_sample_normalization =
+    := norm, _ = multistep_of (outer_program ())
+    (size (program_term (outer_program ())), normal_steps norm, normal_truth norm) |> _assert_eq (7i32, 2i32, !-)
+
+///> rust
+:# a_true_shortcut_takes_one_step_to_its_then_program =
+    := p = Shortcut (TrueThen (literal_false (), bool_of "else" !+, "if-true"))
+    (size (program_term p), normal_steps (program_norm p), run_steps (program_norm p)) |> _assert_eq (4i32, 1i32, 1i32)
+
+///> rust
+:# a_multistep_enters_closed_progress =
+    := p = multistep_progress (multistep_of (outer_program ()))
+    (size (progress_source p), size (progress_target p)) |> _assert_eq (7i32, 4i32)
+
+:| not_false ty =
+    | NotFalseUnit :: string -> not_false unit_type
+    | NotFalseBool :: string -> not_false bool_type
+    | NotFalseTensor :: \* l r. string -> not_false (tensor_type l r)
+    | NotFalseArrow :: \* d c. string -> not_false (arrow_type d c)
+
+:= constant_not_false \* y. (k : constant empty_context usage_empty y) : not_false y =
+    ?= k ?|
+    | UnitValue _ => NotFalseUnit "unit"
+    | TrueValue _ => NotFalseBool "true"
+    | FalseValue _ => NotFalseBool "false"
+
+:= leaf_not_false \* y. (l : leaf_value empty_context usage_empty y) : not_false y =
+    ?= l ?|
+    | ValueConstant k => constant_not_false k
+    | ValueLambda _ => NotFalseArrow "lambda"
+
+:= value_not_false \* y. (v : closed_value y) : not_false y =
+    ?= v ?|
+    | Leaf l => leaf_not_false l
+    | ValueTensor _ => NotFalseTensor "pair"
+
+:= not_false_tag \* y. (w : not_false y) : i32 =
+    ?= w ?|
+    | NotFalseUnit _ => 0i32
+    | NotFalseBool _ => 1i32
+    | NotFalseTensor _ => 2i32
+    | NotFalseArrow _ => 3i32
+
+:| fragment ty =
+    | FragmentValue :: \* y. closed_value y * string -> fragment y
+    | FragmentTrue :: program true_normal * string -> fragment bool_type
+    | FragmentFalse :: program false_normal * string -> fragment bool_type
+
+:= fragment_term \* y. (f : fragment y) : closed y =
+    ?= f ?|
+    | FragmentValue (v, _) => value_term v
+    | FragmentTrue (p, _) => program_term p
+    | FragmentFalse (p, _) => program_term p
+
+:= fragment_value \* y. (f : fragment y) : closed_value y =
+    ?= f ?|
+    | FragmentValue (v, _) => v
+    | FragmentTrue (p, _) => normal_value (program_norm p)
+    | FragmentFalse (p, _) => normal_value (program_norm p)
+
+:= fragment_progress \* y. (f : fragment y) : progress y =
+    ?= f ?|
+    | FragmentValue (v, m) => ProgressValue (v, m)
+    | FragmentTrue (p, _) => bool_closed_progress (program_norm p)
+    | FragmentFalse (p, _) => bool_closed_progress (program_norm p)
+
+:= fragment_not_false \* y. (f : fragment y) : not_false y = value_not_false (fragment_value f)
+
+:= normal_truth_of (v : closed_value bool_type) : bool = canonical_bool (bool_canonical_of v)
+
+:= unit_value () : closed_value unit_type = source_value (unit_source ())
+
+:= false_value () : closed_value bool_type = form_value (NormalFalse "f")
+
+:= nf \* y. (v : closed_value y) : i32 = not_false_tag (value_not_false v)
+
+:= unit_identity () : closed_value (arrow_type unit_type unit_type) = identity_at ()
+
+///> rust
+:# unit_and_bool_values_are_not_false =
+    (nf (unit_value ()), nf (false_value ())) |> _assert_eq (0i32, 1i32)
+
+///> rust
+:# pairs_and_lambdas_are_not_false =
+    (nf (source_value (pair_source ())), nf (unit_identity ())) |> _assert_eq (2i32, 3i32)
+
+:= false_fragment () : fragment bool_type = FragmentFalse (outer_program (), "fragment")
+
+///> rust
+:# a_program_fragment_normalizes_to_its_value =
+    := f = false_fragment ()
+    (size (fragment_term f), normal_truth_of (fragment_value f)) |> _assert_eq (7i32, !-)
+
+///> rust
+:# a_program_fragment_steps_and_is_not_false =
+    := f = false_fragment ()
+    (size (progress_target (fragment_progress f)), not_false_tag (fragment_not_false f)) |> _assert_eq (4i32, 1i32)
+
+///> rust
+:# a_value_fragment_is_its_own_progress =
+    := f = FragmentValue (source_value (pair_source ()), "value")
+    := p = fragment_progress f
+    (size (fragment_term f), size (progress_source p), size (progress_target p)) |> _assert_eq (3i32, 3i32, 3i32)
+
+:== nf_authority y = fragment y * string
+
+:= nf_source \* y. ((f, _) : nf_authority y) : closed y = fragment_term f
+
+:= nf_progress \* y. ((f, _) : nf_authority y) : progress y = fragment_progress f
+
+:= nf_value \* y. ((f, _) : nf_authority y) : closed_value y = fragment_value f
+
+:= nf_witness \* y. ((f, _) : nf_authority y) : not_false y = fragment_not_false f
+
+:= unit_authority () : nf_authority unit_type = FragmentValue (unit_value (), "unit-fragment"), "unit-authority"
+
+///> rust
+:# the_unit_authority_is_unit_on_every_reading =
+    := a = unit_authority ()
+    (outer_tag (nf_source a), outer_tag (progress_source (nf_progress a)), nf (nf_value a), not_false_tag (nf_witness a))
+    |> _assert_eq (2i32, 2i32, 0i32, 0i32)
+
+///> rust
+:# a_bool_program_authority_steps_and_stays_not_false =
+    := a = (false_fragment (), "false-authority")
+    (size (nf_source a), size (progress_target (nf_progress a)), not_false_tag (nf_witness a)) |> _assert_eq (7i32, 4i32, 1i32)
+
+:| frontier domain codomain =
+    | FrontierStep :: \* d c. progress c * string -> frontier d c
+    | FrontierReady :: \* d c. closed_value (arrow_type d c) * closed_value d * string -> frontier d c
+
+:= function_step \* d c. (r : reduction (arrow_type d c)) (x : closed d) : frontier d c =
+    FrontierStep (ProgressStep (ReduceApply (ReduceFun (\? (r, x, "function"))), "function"), "step")
+
+:= argument_step \* d c. (f : closed_value (arrow_type d c)) (r : reduction d) : frontier d c =
+    FrontierStep (ProgressStep (ReduceApply (ReduceArg (\? (value_term f, r, "argument"))), "argument"), "step")
+
+:= after_function \* d c. (f : closed_value (arrow_type d c)) (ap : progress d) : frontier d c =
+    ?= ap ?|
+    | ProgressStep (r, _) => argument_step f r
+    | ProgressValue (v, _) => FrontierReady (f, v, "ready")
+
+:= frontier_of \* d c. (fp : progress (arrow_type d c)) (ap : progress d) : frontier d c =
+    ?= fp ?|
+    | ProgressStep (r, _) => function_step r (progress_source ap)
+    | ProgressValue (f, _) => after_function f ap
+
+:= frontier_reading \* d c. (f : frontier d c) : i32 * i32 * i32 =
+    ?= f ?|
+    | FrontierStep (p, _) => 0i32, size (progress_source p), size (progress_target p)
+    | FrontierReady (fv, av, _) => 1i32, size (value_term fv), size (value_term av)
+
+:== endpoints y = reduction y
+
+:= endpoints_progress \* y. (e : endpoints y) : progress y = ProgressStep (e, "endpoints")
+
+:= unit_fn () : closed_value (arrow_type unit_type unit_type) = identity_at ()
+
+:= unit_done () : progress unit_type = ProgressValue (unit_value (), "unit")
+
+:= fn_reduction () : reduction (arrow_type unit_type unit_type) = ReduceAtomic (AtomicBeta (IdentityBeta (closed_identity (), "id-id")))
+
+///> rust
+:# a_reducing_function_steps_the_application =
+    frontier_reading (frontier_of (ProgressStep (fn_reduction (), "f")) (unit_done ())) |> _assert_eq (0i32, 7i32, 4i32)
+
+///> rust
+:# a_function_value_lets_the_argument_step =
+    frontier_reading (frontier_of (ProgressValue (unit_fn (), "f")) (ProgressStep (identity_beta (), "a"))) |> _assert_eq (0i32, 7i32, 4i32)
+
+///> rust
+:# two_values_make_a_ready_redex =
+    frontier_reading (frontier_of (ProgressValue (unit_fn (), "f")) (unit_done ())) |> _assert_eq (1i32, 2i32, 1i32)
+
+///> rust
+:# endpoints_read_the_reduction =
+    := p = endpoints_progress (identity_beta ())
+    (size (progress_source p), size (progress_target p)) |> _assert_eq (4i32, 1i32)
+
+:! sbeta a = a
+
+:! scond_true t e = t * e
+
+:! scond_false t e = t * e
+
+:! sapp c = c
+
+:! snonendo a = a
+
+:! sarg_beta f a d = f * a * d
+
+:! sfun_beta f a d = f * a * d
+
+:== unit_bool = tensor_type unit_type bool_type
+
+:== parts f a d c = vsource f (arrow_type d c) * vsource a d * string
+
+:| beta_leaf source ty =
+    | SPIdentity :: \* a y. vsource a y * string -> beta_leaf (sbeta a) y
+    | SPTensor :: \* a y. vsource a y * string -> beta_leaf (source_tensor_beta y a) (tensor_type y unit_type)
+
+:| app_beta s y =
+    | SPNonendo :: \* a. vsource a unit_type * string -> app_beta (snonendo a) unit_bool
+    | SPArgBeta :: \* f a d c. parts f a d c -> app_beta (sarg_beta f a d) c
+    | SPFunBeta :: \* f a d c. parts f a d c -> app_beta (sfun_beta f a d) c
+
+:| leaf_prog source ty =
+    | SPValue :: \* s y. vsource s y -> leaf_prog s y
+    | SPBetaLeaf :: \* s y. beta_leaf s y -> leaf_prog s y
+    | SPAppBeta :: \* s y. app_beta s y -> leaf_prog s y
+
+:| ^ sprog s y =
+    | SPLeaf :: \* s y. leaf_prog s y -> sprog s y
+    | SPPair :: \* a b l r. sprog a l * sprog b r * string -> sprog (source_pair a b) (tensor_type l r)
+    | SPMore :: \* s y. more_prog s y -> sprog s y
+
+:& :| more_prog s y =
+    | SPIf :: \* s y. branch_prog s y -> more_prog s y
+    | SPApp :: \* c y. sprog c y * string -> more_prog (sapp c) y
+
+:& :| branch_prog s y =
+    | SPTrue :: \* t e y. sprog t y * sprog e y * string -> branch_prog (scond_true t e) y
+    | SPFalse :: \* t e y. sprog t y * sprog e y * string -> branch_prog (scond_false t e) y
+
+:= atomic_progress \* y. (b : closed_beta y) (n : string) : progress y = ProgressStep (ReduceAtomic (AtomicBeta b), n)
+
+:= beta_leaf_witness \* s y. (b : beta_leaf s y) : progress y =
+    ?= b ?|
+    | SPIdentity (a, n) => atomic_progress (IdentityBeta (source_term a, n)) n
+    | SPTensor (a, n) => atomic_progress (TensorBeta (source_term a, n)) n
+
+:= id_beta \* y. (x : closed y) (n : string) : reduction y = ReduceAtomic (AtomicBeta (IdentityBeta (x, n)))
+
+:= unit_bool_fn () : closed (arrow_type unit_type (tensor_type unit_type bool_type)) =
+    Intro (Lambda (Intro (Tensor (\? (generic_variable (), Constant (TrueValue (tail_unused (), "t")), left_only (), "x-true"))), "fn"))
+
+:= arg_step \* d c. (f : closed (arrow_type d c)) (r : reduction d) (n : string) : progress c =
+    ProgressStep (ReduceApply (ReduceArg (\? (f, r, n))), n)
+
+:= arg_beta \* d c. (f : closed (arrow_type d c)) (a : closed d) (n : string) : progress c = arg_step f (id_beta a n) n
+
+:= fun_beta \* d c. (f : closed (arrow_type d c)) (a : closed d) (n : string) : progress c =
+    ProgressStep (ReduceApply (ReduceFun (\? (id_beta f n, a, n))), n)
+
+:= term_of \* s y. (x : vsource s y) : closed y = source_term x
+
+:= beta_app \* s y. (b : app_beta s y) : progress y =
+    ?= b ?|
+    | SPNonendo (a, n) => arg_beta (unit_bool_fn ()) (term_of a) n
+    | SPArgBeta (f, a, n) => arg_beta (term_of f) (term_of a) n
+    | SPFunBeta (f, a, n) => fun_beta (term_of f) (term_of a) n
+
+:= leaf_witness \* s y. (l : leaf_prog s y) : progress y =
+    ?= l ?|
+    | SPValue v => source_progress v
+    | SPBetaLeaf b => beta_leaf_witness b
+    | SPAppBeta b => beta_app b
+
+:= pair_value \* l r. (lv : closed_value l) (rv : closed_value r) (n : string) : progress (tensor_type l r) =
+    ProgressValue (ValueTensor (\? (lv, rv, no_merge (), n)), n)
+
+:= pair_after \* l r. (lv : closed_value l) (rp : progress r) (n : string) : progress (tensor_type l r) =
+    ?= rp ?|
+    | ProgressStep (s, _) => ProgressStep (ReduceTensor (ReduceRight (value_term lv, s, n)), n)
+    | ProgressValue (rv, _) => pair_value lv rv n
+
+:= pair_witness \* l r. (lp : progress l) (rp : progress r) (n : string) : progress (tensor_type l r) =
+    ?= lp ?|
+    | ProgressStep (s, _) => ProgressStep (ReduceTensor (ReduceLeft (s, progress_source rp, n)), n)
+    | ProgressValue (lv, _) => pair_after lv rp n
+
+:= step_true \* y. (t : closed y) (e : closed y) (n : string) : closed_step y = Branch (TrueStep (\? (empty_usage (), t, e, no_merge (), n)))
+
+:= step_false \* y. (t : closed y) (e : closed y) (n : string) : closed_step y = Branch (FalseStep (\? (empty_usage (), t, e, no_merge (), n)))
+
+:= branch_step \* y. (truth : bool) (t : closed y) (e : closed y) (n : string) : progress y =
+    ProgressStep (ReduceAtomic (AtomicStep (? truth ?> step_true t e n |: step_false t e n)), n)
+
+:= app_witness \* y. (cp : progress y) (n : string) : progress y =
+    ?= cp ?|
+    | ProgressValue (v, _) => atomic_progress (IdentityBeta (value_term v, n)) n
+    | ProgressStep (s, _) => ProgressStep (ReduceApply (ReduceArg (\? (closed_identity (), s, n))), n)
+
+:= ^ sp_witness \* s y. (p : sprog s y) : progress y =
+    ?= p ?|
+    | SPLeaf l => leaf_witness l
+    | SPPair (l, r, n) => pair_witness (sp_witness l) (sp_witness r) n
+    | SPMore m => more_witness m
+
+:& := more_witness \* s y. (m : more_prog s y) : progress y =
+    ?= m ?|
+    | SPIf b => branch_witness b
+    | SPApp (c, n) => app_witness (sp_witness c) n
+
+:& := branch_witness \* s y. (b : branch_prog s y) : progress y =
+    ?= b ?|
+    | SPTrue (t, e, n) => branch_step !+ (sp_source t) (sp_source e) n
+    | SPFalse (t, e, n) => branch_step !- (sp_source t) (sp_source e) n
+
+:& := sp_source \* s y. (p : sprog s y) : closed y = progress_source (sp_witness p)
+
+:= reading \* s y. (p : sprog s y) : i32 * i32 =
+    := w = sp_witness p
+    size (progress_source w), size (progress_target w)
+
+:= unit_sp () : sprog source_unit unit_type = SPLeaf (SPValue (unit_source ()))
+
+:= beta_sp () : sprog (sbeta source_unit) unit_type = SPLeaf (SPBetaLeaf (SPIdentity (unit_source (), "beta")))
+
+///> rust
+:# a_pair_steps_left_then_right_then_is_a_value =
+    := u, b = unit_sp (), beta_sp ()
+    (reading (SPPair (b, u, "l")), reading (SPPair (u, b, "r")), reading (SPPair (u, u, "v"))) |> _assert_eq ((6i32, 3i32), (6i32, 3i32), (3i32, 3i32))
+
+///> rust
+:# a_conditional_steps_to_its_branch =
+    (reading (SPMore (SPIf (SPTrue (unit_sp (), beta_sp (), "t")))), reading (SPMore (SPIf (SPFalse (unit_sp (), beta_sp (), "f"))))) |> _assert_eq ((7i32, 1i32), (7i32, 4i32))
+
+///> rust
+:# an_identity_application_betas_a_value_and_congruences_a_step =
+    (reading (SPMore (SPApp (unit_sp (), "v"))), reading (SPMore (SPApp (SPMore (SPApp (unit_sp (), "in")), "out")))) |> _assert_eq ((4i32, 1i32), (7i32, 4i32))
+
+:= app_reading \* s y. (b : app_beta s y) : i32 * i32 = reading (SPLeaf (SPAppBeta b))
+
+:= id_source () : vsource (source_identity unit_type) (arrow_type unit_type unit_type) = SourceFn (SourceIdentity "id")
+
+///> rust
+:# a_non_endo_application_steps_its_argument =
+    app_reading (SPNonendo (unit_source (), "nonendo")) |> _assert_eq (9i32, 6i32)
+
+///> rust
+:# identity_betas_step_in_argument_and_function_position =
+    := f, a = id_source (), unit_source ()
+    (app_reading (SPArgBeta (f, a, "arg")), app_reading (SPFunBeta (f, a, "fun"))) |> _assert_eq ((7i32, 4i32), (7i32, 4i32))
+
+:= bool_fn () : closed_value (arrow_type bool_type bool_type) = identity_at ()
+
+:= true_done () : progress bool_type = ProgressValue (form_value (NormalTrue "t"), "true")
+
+:= tail_fn () : closed_value (arrow_type unit_type (tensor_type unit_type unit_type)) = source_value (tail_lambda ())
+
+:= ready_of \* d c. (f : closed_value (arrow_type d c)) (a : progress d) : i32 * i32 * i32 = frontier_reading (frontier_of (ProgressValue (f, "f")) a)
+
+///> rust
+:# identity_frontiers_are_ready_at_bool_and_unit =
+    (ready_of (bool_fn ()) (true_done ()), ready_of (unit_fn ()) (unit_done ())) |> _assert_eq ((1i32, 2i32, 1i32), (1i32, 2i32, 1i32))
+
+///> rust
+:# a_non_identity_lambda_frontier_is_ready =
+    ready_of (tail_fn ()) (unit_done ()) |> _assert_eq (1i32, 4i32, 1i32)
+
+///> rust
+:# a_bool_fragment_is_not_evidence_that_false_is_not_false fails "Unification failure" =
+    := w : not_false false_type = constant_not_false (TrueValue (empty_usage (), "a-Bool-program-value"))
+    w |> ignore
+
+///> rust
+:# a_tensor_not_false_witness_does_not_cover_false fails "Unification failure" =
+    := w : not_false false_type = NotFalseTensor "a-pair-value"
+    w |> ignore
+
+///> rust
+:# a_false_normal_form_is_not_a_true_normalization fails "Unification failure" =
+    := n : normalization true_normal = Normal (NormalFalse "f")
+    n |> ignore
+
+///> rust
+:# a_true_literal_program_keeps_its_outcome fails "Unification failure" =
+    := p : program false_normal = Literal (NormalTrue "t")
+    p |> ignore
+
+///> rust
+:# a_nested_guard_program_keeps_its_false_outcome fails "Unification failure" =
+    := p : program true_normal = outer_program ()
+    p |> ignore
+
+///> rust
+:# a_multistep_tail_keeps_its_outcome fails "Unification failure" =
+    := m : multistep false_normal = multistep_of (Literal (NormalTrue "t"))
+    m |> ignore
+
+///> rust
+:# a_progress_continuation_keeps_its_outcome fails "Unification failure" =
+    := t = Normal (NormalTrue "t")
+    := p : bool_progress false_normal = NormalStep (true_branch t (bool_of "e" !-) "s", t, "continue")
+    p |> ignore
+
+///> rust
+:# a_multistep_progress_keeps_the_bool_type fails "Unification failure" =
+    := p : progress unit_type = multistep_progress (multistep_of (outer_program ()))
+    p |> ignore
+
+///> rust
+:# a_multistep_needs_a_normalization_not_a_program fails "Unification failure" =
+    := m : multistep false_normal = literal_false (), "an-unlinked-trace"
+    m |> ignore

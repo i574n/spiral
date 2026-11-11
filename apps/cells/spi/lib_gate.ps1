@@ -11,7 +11,9 @@ param(
     [string[]] $Test = @()
 )
 $ErrorActionPreference = 'Continue'
-$libRoot = Get-Item (Resolve-Path $Lib).Path
+$Lib = (Resolve-Path $Lib).Path
+foreach ($name in 'RawOut', 'NotebookOut') { $value = Get-Variable $name -ValueOnly; if ($value) { Set-Variable $name ([IO.Path]::GetFullPath($value, (Get-Location).Path)) } }
+$libRoot = Get-Item $Lib
 while ($libRoot -and -not (@('lib/spiral', 'deps/spiral/lib/spiral') | Where-Object { Test-Path (Join-Path $libRoot.FullName "$_/testing.spi") })) { $libRoot = $libRoot.Parent }
 if (-not $libRoot -and ((Resolve-Path $Lib).Path -replace '\\', '/') -notmatch '/lib/spiral/?$') { throw "-Lib needs lib/spiral at or above it: Cells finds the lib and its real prelude through that path (got $Lib)" }
 if (-not (Test-Path -LiteralPath (Join-Path $Lib $File))) { throw "no $File under -Lib ${Lib}: a missing file runs zero tests and reads as green" }
@@ -53,7 +55,11 @@ if ($j.executed -eq 0 -and $j.discovered -gt 0) { "lib-gate / discovered $($j.di
 $mixError = [regex]::Match($out, '(?m)^\*\* \(Mix\)[^\n]*')
 if ($mixError.Success) { "lib-gate / mix aborted: $($mixError.Value)"; exit 2 }
 $fileReport = [regex]::Match($out, 'spiral-tests file (\{[^\n]*\})')
-if ($fileReport.Success) { $names = ($fileReport.Groups[1].Value | ConvertFrom-Json).failed_tests; if ($names) { "failed: $($names -join ', ')" } }
+if ($fileReport.Success) {
+    $report = $fileReport.Groups[1].Value | ConvertFrom-Json
+    if ($report.failed_tests) { "failed: $($report.failed_tests -join ', ')" }
+    if ($report.failed_messages) { foreach ($why in $report.failed_messages.PSObject.Properties) { "  $($why.Name): $($why.Value)" } }
+}
 if ($Detail) { $out -split "`n" | Select-String -SimpleMatch $Detail -Context 0, 4 | Select-Object -First 40 | ForEach-Object { $_.Line; $_.Context.PostContext } }
 $out = $out -replace '(?m)^[a-zA-Z]:/\S*?/lib/spiral/', 'spiral/' -replace ' \(main\.spi:\d+:\d+\)', ''
 $errors = [regex]::Matches($out, '(?m)(?:^|\s)(?:spiral/|[a-zA-Z]:/\S*/)?([^/\s:]+\.spir?):(\d+):\d+: (ETY-\w+): ([^\n]*?)(?=\s[a-zA-Z]:/\S+\.spir?:\d|\s?spiral/\S+\.spir?:\d|\n|$)((\n(Got|Expected):[^\n]*){0,2})')

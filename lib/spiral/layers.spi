@@ -1,3 +1,7 @@
+///- --package .
+:# layers static =
+    :< testing
+
 :| layer_row =
     | LayerRow :: string * string * string -> layer_row
 
@@ -109,7 +113,6 @@
 := layer_of_otp_supervisor () : layer_row = LayerRow ("otp_supervisor", "Host", "erlang")
 := layer_of_parallel () : layer_row = LayerRow ("parallel", "Std", "")
 := layer_of_parsing () : layer_row = LayerRow ("parsing", "Std", "")
-:= layer_of_physics () : layer_row = LayerRow ("physics", "Std", "")
 := layer_of_pickler () : layer_row = LayerRow ("pickler", "Core", "")
 := layer_of_pickler_derive () : layer_row = LayerRow ("pickler_derive", "Std", "")
 := layer_of_pickler_real () : layer_row = LayerRow ("pickler_real", "Core", "")
@@ -154,6 +157,10 @@
 := layer_of_trace () : layer_row = LayerRow ("trace", "Std", "")
 := layer_of_transactions () : layer_row = LayerRow ("transactions", "Ecosystem", "")
 := layer_of_tuple_list () : layer_row = LayerRow ("tuple_list", "Core", "")
+:= layer_of_ui_dom () : layer_row = LayerRow ("ui_dom", "Std", "")
+:= layer_of_ui_dom_ts () : layer_row = LayerRow ("ui_dom_ts", "Host", "typescript")
+:= layer_of_ui_signals () : layer_row = LayerRow ("ui_signals", "Std", "")
+:= layer_of_ui_view () : layer_row = LayerRow ("ui_view", "Std", "")
 := layer_of_unicode () : layer_row = LayerRow ("unicode", "Std", "")
 := layer_of_units () : layer_row = LayerRow ("units", "Core", "")
 := layer_of_unix_clock () : layer_row = LayerRow ("unix_clock", "Os", "")

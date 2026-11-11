@@ -1,0 +1,54 @@
+:= failwith \* t. (msg : string) : t = !!!!FailWith(`t, msg)
+
+:= escape (cr : f64) (ci : f64) (limit : i32) : i32 =
+    :~ ^ go (zr : f64) (zi : f64) (k : i32) : i32 =
+        ? k >= limit ?> k
+        |:
+            := zr2 = zr *. zr
+            := zi2 = zi *. zi
+            ? zr2 +. zi2 > 4.0 ?> k
+            |: go (zr2 -. zi2 +. cr) (2.0 *. zr *. zi +. ci) (k +. 1)
+    go 0.0 0.0 0
+
+:= mandel (width : i32) (height : i32) (limit : i32) : i32 =
+    :~ ^ rows (y : i32) (acc : i32) : i32 =
+        ? y >= height ?> acc
+        |:
+            := ci = !!!!Conv(`f64, y) *. 2.4 /. !!!!Conv(`f64, height) -. 1.2
+            :~ ^ cols (x : i32) (row : i32) : i32 =
+                ? x >= width ?> row
+                |: cols (x +. 1) (row +. escape (!!!!Conv(`f64, x) *. 3.2 /. !!!!Conv(`f64, width) -. 2.2) ci limit)
+            rows (y +. 1) (acc +. cols 0 0)
+    rows 0 0
+
+:= main () : i32 =
+    := ~width = 480i32
+    := ~height = 360i32
+    := ~limit = 200i32
+    := ~rounds = !!!!BackendSwitch({
+        Gleam = \ () => 1i32
+        Lua = \ () => 1i32
+        Fsharp = \ () => 8i32
+        Python = \ () => 1i32
+        Cpp = \ () => 8i32
+        Rust = \ () => 8i32
+        CppHost = \ () => 8i32
+        Zig = \ () => 8i32
+        Lean = \ () => 1i32
+        TypeScript = \ () => 1i32
+        C = \ () => 8i32
+        Pascal = \ () => 8i32
+        Wasm = \ () => 8i32
+        Kotlin = \ () => 8i32
+        Swift = \ () => 8i32
+        Bend = \ () => 1i32
+    })
+    := first = mandel width height limit
+    :~ ^ repeat (r : i32) (last : i32) : () =
+        ? r >= rounds ?> ()
+        |:
+            := m = mandel (width +. last /. 2147483647i32) height limit
+            ? !!!!EQ(m, first) ?> () |: failwith "bench-float-count-drift"
+            repeat (r +. 1) m
+    repeat 1 first
+    !!!!Mod(first, 256i32)

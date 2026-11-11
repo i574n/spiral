@@ -1142,7 +1142,11 @@
 /// ### cuda_python
 := cuda_python () : string =
     := python = "SPIRAL_PYTHON" |> env.get_environment_variable
-    ? python = "" ?> "python" |: python
+    ? python <> ""
+    ?> python
+    |? platform.is_windows ()
+    ?> "python"
+    |: "python3"
 
 /// ### process_cuda
 := process_cuda { py_path env deps } =

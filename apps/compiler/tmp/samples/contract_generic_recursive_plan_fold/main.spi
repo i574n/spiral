@@ -28,7 +28,7 @@
         := \? middle. prefix, _ = pair
         S (fold_count prefix)
 
-:= ^ last_label \* from to. (plan : typed_plan from to) : string =
+:= last_label \* from to. (plan : typed_plan from to) : string =
     ?= plan ?|
     | PlanLeaf (Node (_, label)) => label
     | PlanThen pair =>

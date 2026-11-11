@@ -62,6 +62,8 @@ defmodule Spiral.Cells.CellBudgetTest do
     assert Enum.map(CellBudget.top_level_blocks(source), &elem(&1, 0)) == [1, 3, 7]
     assert [%{kind: :over_budget, line: 7, column: 1, text: "weight 293 > 273"}] = CellBudget.over_budget(source)
     assert CellBudget.over_budget("inl a = 1\n") == []
+    assert [%{line: 4, text: "weight 293 > 273"}] = CellBudget.over_budget("inl a = 1\n\n\n" <> long)
+    assert [{1, "inl a = 1"}, {5, "inl b = 2"}] = CellBudget.top_level_blocks("inl a = 1\n\n\n\ninl b = 2\n")
 
     dir = Spiral.Cells.TestHelpers.tmp_dir!("cell_budget_over_budget")
     File.write!(Path.join(dir, "short.spi"), "inl a = 1\n")

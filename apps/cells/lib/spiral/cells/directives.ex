@@ -24,6 +24,29 @@ defmodule Spiral.Cells.Directives do
     end
   end
 
+  @spec scale_budget(pos_integer() | nil | :infinity) :: pos_integer() | nil | :infinity
+  def scale_budget(ms) when is_integer(ms), do: max(1, round(ms * timeout_scale()))
+  def scale_budget(other), do: other
+
+  @spec timeout_scale() :: float()
+  def timeout_scale do
+    case Float.parse(System.get_env("SPIRAL_CELLS_TIMEOUT_SCALE") || "") do
+      {scale, ""} when scale > 0 -> scale
+      _ -> 1.0
+    end
+  end
+
+  @spec scale_note() :: String.t()
+  def scale_note do
+    case timeout_scale() do
+      scale when scale == 1.0 -> ""
+      scale -> " (header and default budgets scaled by SPIRAL_CELLS_TIMEOUT_SCALE=#{scale})"
+    end
+  end
+
+  @spec per_test_compile?() :: boolean()
+  def per_test_compile?, do: System.get_env("SPIRAL_CELLS_PER_TEST") != "0"
+
   @main_from_expression "1"
   @main_from_definitions_only "2"
 
@@ -34,7 +57,7 @@ defmodule Spiral.Cells.Directives do
      %{
        code: code,
        print_code: print == "1",
-       timeout: if(timeout == "-", do: nil, else: String.to_integer(timeout)),
+       timeout: if(timeout == "-", do: nil, else: scale_budget(String.to_integer(timeout))),
        generated_main: generated in [@main_from_expression, @main_from_definitions_only],
        no_value: generated == @main_from_definitions_only,
        packages: if(packages == "", do: [], else: String.split(packages, "\t"))

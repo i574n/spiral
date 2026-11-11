@@ -705,6 +705,8 @@
 
 := shared_child_id (child : shared_child) : u32 = $'!child.borrow().id()' : u32
 
+:= python_program () : string = ? platform::is_windows () ?> "python" |: "python3"
+
 := exit_four_shell () = ? platform::is_windows () ?> "cmd", "/C", "exit 4" |: "sh", "-c", "exit 4"
 
 := exit_four_child () =
@@ -744,16 +746,20 @@
     command
 
 /// ## kill
+:= descendants_shell () : string = "d() { for c in $(ps -o pid= --ppid \"$1\" 2>/dev/null); do d \"$c\"; echo \"$c\"; done; }; "
+
+:= posix_tree_kill (pid : i32) : string = descendants_shell () ++# "kill -9 $(d " ++#? pid ++# ") " ++#? pid
+
 := kill_command (pid : i32) : string =
-    ? platform::is_windows () ?> "taskkill /F /T /PID " ++#? pid |: "kill -9 " ++#? pid
+    ? platform::is_windows () ?> "taskkill /F /T /PID " ++#? pid |: posix_tree_kill pid
+
+:= kill_args (pid : i32) : list string = ? platform::is_windows () ?> [ "/F"; "/T"; "/PID"; "" ++#? pid ] |: [ "-c"; posix_tree_kill pid ]
 
 := kill_tree_of_pid (pid : i32) : () =
     run_target \|
         | Rust => \ () =>
-            := command = shared_command_new (? platform::is_windows () ?> "taskkill" |: "kill")
-            := flags = ? platform::is_windows () ?> [ "/F"; "/T"; "/PID" ] |: [ "-9" ]
-            listm::iter (\ (a : string) => shared_command_arg command a) flags
-            shared_command_arg command ("" ++#? pid)
+            := command = shared_command_new (? platform::is_windows () ?> "taskkill" |: "sh")
+            listm::iter (\ (a : string) => shared_command_arg command a) (kill_args pid)
             shared_command_output command |> ignore
         | Gleam => \ () => platform::os_command_output (kill_command pid) |> ignore
         | _ => \ () => no_arm "kill_tree_of_pid"
@@ -954,25 +960,25 @@
 ///> gleam
 :# list_arguments_keep_their_spaces =
     := args = [ "-c"; "import sys; print(len(sys.argv) - 1, sys.argv[1])"; "a b"; "c" ]
-    capture_stdout_list "python" args |> sm'::trim |> _assert_eq "2 a b"
+    capture_stdout_list (python_program ()) args |> sm'::trim |> _assert_eq "2 a b"
 
 ///> rust
 ///> gleam
 :# combined_capture_includes_stderr =
     := args = [ "-c"; "import sys; sys.stderr.write('warned')" ]
-    capture_combined_list "python" args |> sm'::trim |> _assert_eq "warned"
+    capture_combined_list (python_program ()) args |> sm'::trim |> _assert_eq "warned"
 
 ///> rust
 ///> gleam
 :# a_missing_or_failing_program_captures_nothing =
     try_capture_combined_list "spiral-no-such-program" [] |> _assert_eq None
-    try_capture_combined_list "python" [ "-c"; "import sys; sys.exit(4)" ] |> _assert_eq None
+    try_capture_combined_list (python_program ()) [ "-c"; "import sys; sys.exit(4)" ] |> _assert_eq None
 
 ///> rust
 ///> gleam
 :# a_succeeding_program_captures_its_stderr =
     := args = [ "-c"; "import sys; sys.stderr.write('warned')" ]
-    try_capture_combined_list "python" args |> optionm::map sm'::trim |> _assert_eq (Some "warned")
+    try_capture_combined_list (python_program ()) args |> optionm::map sm'::trim |> _assert_eq (Some "warned")
 
 ///> rust
 ///> gleam
@@ -990,12 +996,12 @@
 ///> rust
 ///> gleam
 :# a_program_past_its_deadline_is_killed =
-    capture_status_within "python" [ "-c"; "import time; time.sleep(30)" ] 400i32 |> _assert_eq (-1i32)
+    capture_status_within (python_program ()) [ "-c"; "import time; time.sleep(30)" ] 400i32 |> _assert_eq (-1i32)
 
 := started_log (name : string) : string =
     file_system::get_temp_path () ++# "/spiral-process-started-" ++# name ++# ".log"
 
-:= start_quick (log : string) = start_logging "." "python" [ "-c"; "print('ready')" ] log
+:= start_quick (log : string) = start_logging "." (python_program ()) [ "-c"; "print('ready')" ] log
 
 ///> rust
 ///> gleam
@@ -1012,7 +1018,7 @@
     await_exit_within (start_quick log) 20000i32 |> _assert_eq (Some 0i32)
     file_system::read_all_text log |> sm'::trim |> _assert_eq "ready"
 
-:= start_sleeper () = start_logging "." "python" [ "-c"; "import time; time.sleep(30)" ] (started_log "slow")
+:= start_sleeper () = start_logging "." (python_program ()) [ "-c"; "import time; time.sleep(30)" ] (started_log "slow")
 
 := has_ended (s : started) (ms : i32) : bool =
     ?= await_exit_within s ms ?|
@@ -1032,7 +1038,7 @@
 := write_marker_args () : list string = [ "-c"; "open('" ++# directory_marker () ++# "', 'w').write('here')" ]
 
 := marker_writer_exit (dir : string) : option i32 =
-    := s = start_logging dir "python" (write_marker_args ()) (started_log "directory")
+    := s = start_logging dir (python_program ()) (write_marker_args ()) (started_log "directory")
     await_exit_within s 20000i32
 
 := marker_places (dir : string) : bool * bool =
@@ -1045,3 +1051,44 @@
     marker_writer_exit dir |> _assert_eq (Some 0i32)
     marker_places dir |> _assert_eq (!+, !-)
     file_system::file_delete (dir ++# "/" ++# directory_marker ())
+
+:= megabyte_args () : list string = [ "-c"; "import sys; sys.stdout.write('a' * 1000000)" ]
+
+///> rust
+///> gleam
+:# a_megabyte_of_output_is_captured_whole =
+    (sm'::length (capture_stdout_list (python_program ()) (megabyte_args ())) : i32) |> _assert_eq 1000000i32
+
+:= parent_of_sleeper () : string =
+    "import subprocess, sys, time; p = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)']); print(p.pid, flush=True); time.sleep(60)"
+
+:= windows_alive () : string =
+    "import ctypes; k = ctypes.windll.kernel32; h = k.OpenProcess(0x1000, 0, pid); c = ctypes.c_ulong(); alive = bool(h) and k.GetExitCodeProcess(h, ctypes.byref(c)) and c.value == 259"
+
+:= posix_alive () : string = "try:\n    os.kill(pid, 0); alive = True\nexcept OSError:\n    alive = False"
+
+:= alive_check () : string = ? platform::is_windows () ?> windows_alive () |: posix_alive ()
+
+:= alive_probe (pid : i32) : list string =
+    [ "-c"; "import os, sys\npid = " ++# sm'::obj_to_string pid ++# "\n" ++# alive_check () ++# "\nsys.exit(0 if alive else 1)" ]
+
+:= pid_alive (pid : i32) : bool = capture_status_within (python_program ()) (alive_probe pid) 20000i32 = 0i32
+
+:= logged_pid (log : string) : i32 = ?= (convert::try_convert (sm'::trim (file_system::read_all_text log)) : option i32) ?| Some p => p | None => 0i32
+
+:= start_parent (log : string) : started = start_logging "." (python_program ()) [ "-c"; parent_of_sleeper () ] log
+
+:= tree_started (log : string) : started * bool * i32 =
+    := s = start_parent log
+    s, has_ended s 3000i32 = !-, logged_pid log
+
+:= tree_kill_observed () : bool * bool * bool * bool =
+    := s, running, g = tree_started (started_log "tree")
+    := before = g > 0i32 && pid_alive g
+    kill_tree_of_pid (started_pid s)
+    running, before, has_ended s 10000i32, pid_alive g
+
+///> rust
+///> gleam
+:# killing_a_tree_also_ends_the_grandchild =
+    tree_kill_observed () |> _assert_eq (!+, !+, !+, !-)

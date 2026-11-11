@@ -1,0 +1,533 @@
+///- --package .
+:# linear_reduction static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+:< linear_terms
+:< linear_substitution
+
+:== branch_parts c g b s y = all_unused c g * term c b y * term c b y * usage_merge c g b s * string
+
+:| branch_step context source_usage branch_usage ty =
+    | TrueStep :: \* c s b y. (\? g. branch_parts c g b s y) -> branch_step c s b y
+    | FalseStep :: \* c s b y. (\? g. branch_parts c g b s y) -> branch_step c s b y
+
+:| ^ small_step context source_usage target_usage ty =
+    | Branch :: \* c s t y. branch_step c s t y -> small_step c s t y
+    | Guard :: \* c s t y. guard_step c s t y -> small_step c s t y
+
+:& :| guard_step context source_usage target_usage ty =
+    | GuardStep :: \* c s t y.
+        (\? gs gt b. small_step c gs gt bool_type * term c b y * term c b y * usage_merge c gs b s
+        * usage_merge c gt b t * string) -> guard_step c s t y
+
+:= source_guard \* c g. (truth : bool) (unused : all_unused c g) : term c g bool_type =
+    ? truth
+    ?> Constant (TrueValue (unused, "the-True-step-source-guard"))
+    |: Constant (FalseValue (unused, "the-False-step-source-guard"))
+
+:= if_of \* c g b s y. (truth : bool) (parts : branch_parts c g b s y) : term c s y =
+    := unused, yes, no, merge, note = parts
+    Elim (If (\? (source_guard truth unused, yes, no, merge, note)))
+
+:= branch_source \* c s b y. (step : branch_step c s b y) : term c s y =
+    ?= step ?|
+    | TrueStep payload =>
+        := \? g. parts = payload
+        if_of !+ parts
+    | FalseStep payload =>
+        := \? g. parts = payload
+        if_of !- parts
+
+:= branch_target \* c s b y. (step : branch_step c s b y) : term c b y =
+    ?= step ?|
+    | TrueStep payload =>
+        := \? g. _, yes, _, _, _ = payload
+        yes
+    | FalseStep payload =>
+        := \? g. _, _, no, _, _ = payload
+        no
+
+:= ^ step_source \* c s t y. (step : small_step c s t y) : term c s y =
+    ?= step ?|
+    | Branch b => branch_source b
+    | Guard g => guard_source g
+
+:& := guard_source \* c s t y. (step : guard_step c s t y) : term c s y =
+    ?= step ?|
+    | GuardStep payload =>
+        := \? gs gt b. inner, yes, no, source_merge, _, note = payload
+        Elim (If (\? (step_source inner, yes, no, source_merge, note)))
+
+:= ^ step_target \* c s t y. (step : small_step c s t y) : term c t y =
+    ?= step ?|
+    | Branch b => branch_target b
+    | Guard g => guard_target g
+
+:& := guard_target \* c s t y. (step : guard_step c s t y) : term c t y =
+    ?= step ?|
+    | GuardStep payload =>
+        := \? gs gt b. inner, yes, no, _, target_merge, note = payload
+        Elim (If (\? (step_target inner, yes, no, target_merge, note)))
+
+:= step_preservation \* c s t y. (step : small_step c s t y) : term c t y = step_target step
+
+:== closed y = term empty_context usage_empty y
+
+:== closed_step y = small_step empty_context usage_empty usage_empty y
+
+:= merge_of (note : string) : usage_merge empty_context usage_empty usage_empty usage_empty = MergeEmpty note
+
+:= true_step \* y. (yes : closed y) (no : closed y) (note : string) : closed_step y =
+    Branch (TrueStep (\? (empty_usage (), yes, no, merge_of "the-closed-guard-and-branches-merge-empty", note)))
+
+:= false_step \* y. (yes : closed y) (no : closed y) (note : string) : closed_step y =
+    Branch (FalseStep (\? (empty_usage (), yes, no, merge_of "the-closed-guard-and-branches-merge-empty", note)))
+
+:= true_unit_step () : closed_step unit_type =
+    true_step (unit_of "the-True-then-branch-is-the-target") (unit_of "the-True-else-branch") "if-True-reduces-to-then"
+
+:= false_unit_step () : closed_step unit_type =
+    false_step (unit_of "the-False-then-branch") (unit_of "the-False-else-branch-is-the-target") "if-False-reduces-to-else"
+
+:= bool_of (note : string) (value : bool) : closed bool_type =
+    ? value ?> Constant (TrueValue (empty_usage (), note)) |: Constant (FalseValue (empty_usage (), note))
+
+:= guard_bool_step () : closed_step bool_type =
+    true_step (bool_of "the-inner-then-is-BoolFalse" !-) (bool_of "the-inner-else-is-BoolTrue" !+) "inner-guard-step"
+
+:= guard_unit_step () : closed_step unit_type =
+    := yes, no = unit_of "the-outer-then", unit_of "the-outer-else"
+    := merge = merge_of "the-outer-merge"
+    Guard (GuardStep (\? (guard_bool_step (), yes, no, merge, merge, "only-the-guard-steps")))
+
+:= constant_note \* c u y. (t : term c u y) : string =
+    ?= t ?|
+    | Constant k =>
+        ?= k ?|
+        | UnitValue (_, note) => note
+        | TrueValue (_, note) => note
+        | FalseValue (_, note) => note
+    | _ => term_label t
+
+:= guard_note \* c u y. (t : term c u y) : string =
+    ?= t ?|
+    | Elim e =>
+        ?= e ?|
+        | If payload =>
+            := \? g b. guard, _, _, _, _ = payload
+            constant_note guard
+        | Apply _ => "apply"
+    | _ => term_label t
+
+:= generic_variable \* y. () : term (extend empty_context y) (used usage_empty) y =
+    := once = SingleUseHere (empty_usage (), "the-binder-is-used-once")
+    Variable (VariableAt (\? (MembershipHere "the-binder-is-the-newest-cell", once, "one-shared-type-index")))
+
+:= identity_term_for \* y. () : closed (arrow_type y y) =
+    Intro (Lambda (generic_variable (), "the-generic-identity-removes-the-used-head-for-any-domain"))
+
+:| beta_relation ty =
+    | BetaRelation :: \* y. closed y * string -> beta_relation y
+
+:= beta_source \* y. (relation : beta_relation y) : closed y =
+    ?= relation ?|
+    | BetaRelation (argument, _) =>
+        Elim (Apply (\? (identity_term_for (), argument, merge_of "the-redex-merge", "the-identity-applied")))
+
+:= beta_target \* y. (relation : beta_relation y) : closed y =
+    ?= relation ?|
+    | BetaRelation (argument, _) => argument
+
+:| beta_step =
+    | BetaStep :: (\? y. beta_relation y * string) -> beta_step
+
+:= packed_bool_beta () : beta_step =
+    BetaStep (\? (BetaRelation (bool_of "the-beta-argument-is-BoolTrue" !+, "bool-beta"), "a-packed-step"))
+
+:= packed_source_label (step : beta_step) : string =
+    ?= step ?|
+    | BetaStep payload =>
+        := \? y. relation, _ = payload
+        term_label (beta_source relation)
+
+:= unit_tail \* y. () : term (extend empty_context y) (unused usage_empty) unit_type =
+    := unused = AllUnusedExtend (AllUnusedEmpty "the-tail-starts-empty", "the-binder-is-unused-by-the-tail")
+    Constant (UnitValue (unused, "the-constant-Unit-tail"))
+
+:= left_only \* y. () : usage_merge (extend empty_context y) (used usage_empty) (unused usage_empty) (used usage_empty) =
+    MergeStep (\? (LeftOnly "only-the-left-child-uses-the-binder", MergeEmpty "starts-empty", "the-body-merge"))
+
+:= tensor_lambda_for \* y. () : closed (arrow_type y (tensor_type y unit_type)) =
+    := body = Intro (Tensor (\? (generic_variable (), unit_tail (), left_only (), "pairs-the-binder-with-Unit")))
+    Intro (Lambda (body, "the-lambda-removes-the-used-head"))
+
+:= tensor_beta_source \* y. (argument : closed y) : closed (tensor_type y unit_type) =
+    Elim (Apply (\? (tensor_lambda_for (), argument, merge_of "the-closed-application-merge", "the-tensor-redex")))
+
+:= tensor_beta_target \* y. (argument : closed y) : closed (tensor_type y unit_type) =
+    Intro (Tensor (\? (argument, unit_of "the-rebuilt-Unit-tail", merge_of "the-closed-pair-merge", "only-the-left-is-replaced")))
+
+:| tensor_beta_step =
+    | TensorBetaStep :: (\? y. closed y * string) -> tensor_beta_step
+
+:= left_note \* c u y. (t : term c u y) : string =
+    ?= t ?|
+    | Intro i =>
+        ?= i ?|
+        | Tensor payload =>
+            := \? a b. left, _, _, _ = payload
+            constant_note left
+        | Lambda _ => "lambda"
+    | _ => term_label t
+
+:= packed_tensor_target (step : tensor_beta_step) : string =
+    ?= step ?|
+    | TensorBetaStep payload =>
+        := \? y. argument, _ = payload
+        left_note (tensor_beta_target argument)
+
+:| closed_beta result_ty =
+    | IdentityBeta :: \* y. closed y * string -> closed_beta y
+    | TensorBeta :: \* y. closed y * string -> closed_beta (tensor_type y unit_type)
+
+:= closed_beta_source \* r. (relation : closed_beta r) : closed r =
+    ?= relation ?|
+    | IdentityBeta (argument, note) => beta_source (BetaRelation (argument, note))
+    | TensorBeta (argument, _) => tensor_beta_source argument
+
+:= closed_beta_target \* r. (relation : closed_beta r) : closed r =
+    ?= relation ?|
+    | IdentityBeta (argument, _) => argument
+    | TensorBeta (argument, _) => tensor_beta_target argument
+
+:| closed_beta_step =
+    | ClosedBetaStep :: (\? r. closed_beta r * string) -> closed_beta_step
+
+:= step_sizes (step : closed_beta_step) : i32 * i32 =
+    ?= step ?|
+    | ClosedBetaStep payload =>
+        := \? r. relation, _ = payload
+        size (closed_beta_source relation), size (closed_beta_target relation)
+
+:= identity_unit_step () : closed_beta_step = ClosedBetaStep (\? (IdentityBeta (unit_of "the-argument", "id"), "s"))
+
+:= tensor_unit_step () : closed_beta_step = ClosedBetaStep (\? (TensorBeta (unit_of "the-argument", "t"), "s"))
+
+:== body_of d r = term (extend empty_context d) (used usage_empty) r
+
+:== body_tail d t = term (extend empty_context d) (unused usage_empty) t
+
+:= tail_unused \* y. () : all_unused (extend empty_context y) (unused usage_empty) =
+    AllUnusedExtend (AllUnusedEmpty "the-tail-starts-empty", "the-tail-leaves-the-binder")
+
+:= bool_tail \* y. (value : bool) : body_tail y bool_type =
+    ? value ?> Constant (TrueValue (tail_unused (), "the-BoolTrue-tail")) |: Constant (FalseValue (tail_unused (), "the-BoolFalse-tail"))
+
+:| ^ derivation d r =
+    | Bound :: \* d. closed d * string -> derivation d d
+    | Units :: \* d r. unit_derivation d r -> derivation d r
+    | Bools :: \* d r. bool_derivation d r -> derivation d r
+    | Steps :: \* d r. step_derivation d r -> derivation d r
+
+:& :| unit_derivation d r =
+    | LeftUnit :: \* d r. derivation d r * string -> unit_derivation d (tensor_type r unit_type)
+    | RightUnit :: \* d r. derivation d r * string -> unit_derivation d (tensor_type unit_type r)
+
+:& :| bool_derivation d r =
+    | LeftBoolTrue :: \* d r. derivation d r * string -> bool_derivation d (tensor_type r bool_type)
+    | RightBoolFalse :: \* d r. derivation d r * string -> bool_derivation d (tensor_type bool_type r)
+
+:& :| step_derivation d r =
+    | IfTrue :: \* d r. derivation d r * string -> step_derivation d r
+    | ApplyIdentity :: \* d r. derivation d r * string -> step_derivation d r
+    | Forks :: \* d r. fork_derivation d r -> step_derivation d r
+
+:& :| fork_derivation d r =
+    | IfTrueRightApply :: \* d r. derivation d r * string -> fork_derivation d r
+    | IfFalseDistinct :: \* d r. derivation d r * string -> fork_derivation d r
+
+:= ^ derivation_argument \* d r. (deriv : derivation d r) : closed d =
+    ?= deriv ?|
+    | Bound (argument, _) => argument
+    | Units u => unit_argument u
+    | Bools b => bool_argument b
+    | Steps s => step_argument s
+
+:& := unit_argument \* d r. (deriv : unit_derivation d r) : closed d =
+    ?= deriv ?|
+    | LeftUnit (inner, _) => derivation_argument inner
+    | RightUnit (inner, _) => derivation_argument inner
+
+:& := bool_argument \* d r. (deriv : bool_derivation d r) : closed d =
+    ?= deriv ?|
+    | LeftBoolTrue (inner, _) => derivation_argument inner
+    | RightBoolFalse (inner, _) => derivation_argument inner
+
+:& := step_argument \* d r. (deriv : step_derivation d r) : closed d =
+    ?= deriv ?|
+    | IfTrue (inner, _) => derivation_argument inner
+    | ApplyIdentity (inner, _) => derivation_argument inner
+    | Forks f => fork_argument f
+
+:& := fork_argument \* d r. (deriv : fork_derivation d r) : closed d =
+    ?= deriv ?|
+    | IfTrueRightApply (inner, _) => derivation_argument inner
+    | IfFalseDistinct (inner, _) => derivation_argument inner
+
+:= right_only \* y. () : usage_merge (extend empty_context y) (unused usage_empty) (used usage_empty) (used usage_empty) =
+    MergeStep (\? (RightOnly "only-the-right-child-uses-the-binder", MergeEmpty "starts-empty", "the-body-merge"))
+
+:= left_pair \* d r t. (inner : body_of d r) (tail : body_tail d t) (note : string) : body_of d (tensor_type r t) =
+    Intro (Tensor (\? (inner, tail, left_only (), note)))
+
+:= right_pair \* d r t. (tail : body_tail d t) (inner : body_of d r) (note : string) : body_of d (tensor_type t r) =
+    Intro (Tensor (\? (tail, inner, right_only (), note)))
+
+:= true_guard \* d. () : body_tail d bool_type = Constant (TrueValue (tail_unused (), "the-guard-leaves-the-binder"))
+
+:= inner_identity \* d r. () : body_tail d (arrow_type r r) =
+    := once = SingleUseHere (tail_unused (), "the-inner-binder-is-used-once")
+    Intro (Lambda (Variable (VariableAt (\? (MembershipHere "the-inner-binder", once, "inner-identity"))), "keeps-the-outer"))
+
+:= false_guard \* d. () : body_tail d bool_type = Constant (FalseValue (tail_unused (), "the-false-guard-leaves-the-binder"))
+
+:= if_with \* d r. (guard : body_tail d bool_type) (yes : body_of d r) (no : body_of d r) (note : string) : body_of d r =
+    Elim (If (\? (guard, yes, no, right_only (), note)))
+
+:= if_body \* d r. (branch : body_of d r) (note : string) : body_of d r =
+    Elim (If (\? (true_guard (), branch, branch, right_only (), note)))
+
+:= apply_body \* d r. (argument : body_of d r) (note : string) : body_of d r =
+    Elim (Apply (\? (inner_identity (), argument, right_only (), note)))
+
+:= right_apply_body \* d r. (branch : body_of d r) (note : string) : body_of d r =
+    if_with (true_guard ()) branch (apply_body branch "the-distinct-right-branch") note
+
+:= false_distinct_body \* d r. (branch : body_of d r) (note : string) : body_of d r =
+    if_with (false_guard ()) (if_body branch "the-nested-conditional") branch note
+
+:= ^ open_body \* d r. (deriv : derivation d r) : body_of d r =
+    ?= deriv ?|
+    | Bound _ => generic_variable ()
+    | Units u => unit_body u
+    | Bools b => bool_body b
+    | Steps s => step_body s
+
+:& := unit_body \* d r. (deriv : unit_derivation d r) : body_of d r =
+    ?= deriv ?|
+    | LeftUnit (inner, note) => left_pair (open_body inner) (unit_tail ()) note
+    | RightUnit (inner, note) => right_pair (unit_tail ()) (open_body inner) note
+
+:& := bool_body \* d r. (deriv : bool_derivation d r) : body_of d r =
+    ?= deriv ?|
+    | LeftBoolTrue (inner, note) => left_pair (open_body inner) (bool_tail !+) note
+    | RightBoolFalse (inner, note) => right_pair (bool_tail !-) (open_body inner) note
+
+:& := step_body \* d r. (deriv : step_derivation d r) : body_of d r =
+    ?= deriv ?|
+    | IfTrue (inner, note) => if_body (open_body inner) note
+    | ApplyIdentity (inner, note) => apply_body (open_body inner) note
+    | Forks f => fork_body f
+
+:& := fork_body \* d r. (deriv : fork_derivation d r) : body_of d r =
+    ?= deriv ?|
+    | IfTrueRightApply (inner, note) => right_apply_body (open_body inner) note
+    | IfFalseDistinct (inner, note) => false_distinct_body (open_body inner) note
+
+:= nested_derivation () : derivation bool_type (tensor_type unit_type (tensor_type bool_type unit_type)) =
+    Units (RightUnit (Units (LeftUnit (Bound (bool_of "the-bound-argument" !+, "bound"), "left")), "right"))
+
+:= bool_wrapped () : derivation unit_type (tensor_type bool_type (tensor_type unit_type bool_type)) =
+    Bools (RightBoolFalse (Bools (LeftBoolTrue (Bound (unit_of "the-unit-argument", "bound"), "true-tail")), "head"))
+
+:= constant_tag \* c u y. (k : constant c u y) : i32 =
+    ?= k ?|
+    | UnitValue _ => 2i32
+    | TrueValue _ => 3i32
+    | FalseValue _ => 4i32
+
+:= outer_tag \* c u y. (t : term c u y) : i32 =
+    ?= t ?|
+    | Variable _ => 0i32
+    | Constant k => constant_tag k
+    | Intro i => ?= i ?| | Tensor _ => 5i32 | Lambda _ => 6i32
+    | Elim e => ?= e ?| | Apply _ => 1i32 | If _ => 7i32
+
+:= beta_tags \* r. (relation : closed_beta r) : i32 * i32 =
+    outer_tag (closed_beta_source relation), outer_tag (closed_beta_target relation)
+
+///> rust
+:# a_true_step_starts_at_an_if_true_and_ends_at_its_then_branch =
+    := step = true_unit_step ()
+    (guard_note (step_source step), constant_note (step_target step))
+    |> _assert_eq ("the-True-step-source-guard", "the-True-then-branch-is-the-target")
+
+///> rust
+:# a_false_step_ends_at_its_else_branch =
+    := step = false_unit_step ()
+    (guard_note (step_source step), constant_note (step_preservation step))
+    |> _assert_eq ("the-False-step-source-guard", "the-False-else-branch-is-the-target")
+
+///> rust
+:# a_guard_step_rewrites_only_the_guard_and_keeps_both_branches =
+    := step = guard_unit_step ()
+    (term_label (step_source step), guard_note (step_target step))
+    |> _assert_eq ("elim", "the-inner-then-is-BoolFalse")
+
+///> rust
+:# an_identity_beta_redex_steps_to_its_argument =
+    := unit_beta = BetaRelation (unit_of "the-unit-argument", "unit-beta")
+    (term_label (beta_source unit_beta), constant_note (beta_target unit_beta)) |> _assert_eq ("elim", "the-unit-argument")
+
+///> rust
+:# the_same_beta_relation_works_at_another_type =
+    constant_note (beta_target (BetaRelation (bool_of "the-bool-argument" !-, "bool-beta"))) |> _assert_eq "the-bool-argument"
+
+///> rust
+:# a_beta_step_packs_its_type_and_still_rebuilds_the_redex =
+    packed_source_label (packed_bool_beta ()) |> _assert_eq "elim"
+
+///> rust
+:# a_tensor_beta_redex_steps_to_the_pair_of_its_argument_and_unit =
+    := argument = bool_of "the-tensor-argument" !+
+    (term_label (tensor_beta_source argument), left_note (tensor_beta_target argument))
+    |> _assert_eq ("elim", "the-tensor-argument")
+
+///> rust
+:# a_packed_tensor_step_keeps_its_argument_on_the_left =
+    packed_tensor_target (TensorBetaStep (\? (unit_of "the-packed-argument", "unit-tensor-beta")))
+    |> _assert_eq "the-packed-argument"
+
+///> rust
+:# one_relation_covers_both_redexes =
+    := pair = TensorBeta (unit_of "the-tensor-argument", "tensor")
+    (term_label (closed_beta_source pair), left_note (closed_beta_target pair))
+    |> _assert_eq ("elim", "the-tensor-argument")
+
+///> rust
+:# beta_steps_shrink_by_the_sample_sizes_identity_4_to_1_and_tensor_6_to_3 =
+    (step_sizes (identity_unit_step ()), step_sizes (tensor_unit_step ())) |> _assert_eq ((4i32, 1i32), (6i32, 3i32))
+
+///> rust
+:# a_derivation_keeps_its_bound_argument_through_nested_tensors =
+    constant_note (derivation_argument (nested_derivation ())) |> _assert_eq "the-bound-argument"
+
+///> rust
+:# the_open_body_of_a_nested_derivation_has_one_node_per_constructor_plus_units =
+    size (open_body (nested_derivation ())) |> _assert_eq 5i32
+
+///> rust
+:# bool_tail_derivations_keep_the_argument_and_build_two_tensors =
+    := d = bool_wrapped ()
+    (constant_note (derivation_argument d), size (open_body d)) |> _assert_eq ("the-unit-argument", 5i32)
+
+:= if_bound () : derivation unit_type unit_type = Steps (IfTrue (Bound (unit_of "the-if-argument", "bound"), "if-true"))
+
+:= apply_bound () : derivation unit_type unit_type = Steps (ApplyIdentity (Bound (unit_of "the-apply-argument", "b"), "apply"))
+
+///> rust
+:# conditional_and_application_derivations_keep_the_argument_and_their_body_sizes =
+    (constant_note (derivation_argument (if_bound ())), size (open_body (if_bound ())), size (open_body (apply_bound ())))
+    |> _assert_eq ("the-if-argument", 4i32, 4i32)
+
+:= fork_right () : derivation unit_type unit_type = Steps (Forks (IfTrueRightApply (Bound (unit_of "the-fork-argument", "b"), "f")))
+
+:= fork_false () : derivation unit_type unit_type = Steps (Forks (IfFalseDistinct (Bound (unit_of "the-false-argument", "b"), "f")))
+
+///> rust
+:# composed_conditionals_keep_the_argument =
+    := right, wrong = fork_right (), fork_false ()
+    (constant_note (derivation_argument right), size (open_body right), size (open_body wrong))
+    |> _assert_eq ("the-fork-argument", 7i32, 7i32)
+
+///> rust
+:# beta_steps_have_the_sample_runtime_tags =
+    (beta_tags (IdentityBeta (unit_of "u", "id")), beta_tags (TensorBeta (unit_of "u", "t"))) |> _assert_eq ((1i32, 2i32), (1i32, 5i32))
+
+///> rust
+:# the_closed_conditional_has_the_sample_runtime_tags =
+    outer_tag (closed_unit_conditional ()) |> _assert_eq 7i32
+
+///> rust
+:# a_unit_step_cannot_target_a_bool fails "Unification failure" =
+    := t : closed bool_type = step_target (true_unit_step ())
+    t |> ignore
+
+///> rust
+:# a_guard_step_requires_a_bool_guard_step fails "Unification failure" =
+    := g : guard_step empty_context usage_empty usage_empty unit_type = GuardStep (\? (true_unit_step (), unit_of "a", unit_of "b", merge_of "m", merge_of "n", "g"))
+    g |> ignore
+
+///> rust
+:# a_unit_beta_cannot_target_a_bool fails "Unification failure" =
+    := t : closed bool_type = beta_target (BetaRelation (unit_of "u", "unit-beta"))
+    t |> ignore
+
+///> rust
+:# a_unit_wrapped_derivation_cannot_return_its_domain fails "Unification failure" =
+    := d : derivation bool_type bool_type = Units (LeftUnit (Bound (bool_of "b" !+, "bound"), "left"))
+    d |> ignore
+
+///> rust
+:# a_bound_unit_cannot_be_a_bool_derivation fails "Unification failure" =
+    := d : derivation bool_type bool_type = Bound (unit_of "u", "bound")
+    d |> ignore
+
+///> rust
+:# a_bool_identity_beta_cannot_target_a_unit fails "Unification failure" =
+    := t : closed unit_type = beta_target (BetaRelation (bool_of "b" !+, "bool-beta"))
+    t |> ignore
+
+///> rust
+:# a_tensor_identity_beta_cannot_target_a_unit fails "Unification failure" =
+    := t : closed unit_type = beta_target (BetaRelation (tensor_beta_target (unit_of "u"), "tensor-beta"))
+    t |> ignore
+
+///> rust
+:# a_higher_order_identity_beta_cannot_target_a_bool fails "Unification failure" =
+    := f : closed (arrow_type unit_type unit_type) = identity_term_for ()
+    := t : closed bool_type = beta_target (BetaRelation (f, "higher-order-beta"))
+    t |> ignore
+
+///> rust
+:# a_bool_tensor_identity_beta_cannot_target_a_unit fails "Unification failure" =
+    := t : closed unit_type = beta_target (BetaRelation (tensor_beta_target (bool_of "b" !+), "bool-tensor-beta"))
+    t |> ignore
+
+///> rust
+:# an_identity_application_derivation_keeps_its_result_type fails "Unification failure" =
+    := d : derivation bool_type unit_type = Steps (ApplyIdentity (Units (LeftUnit (Bound (bool_of "b" !+, "bound"), "left")), "apply"))
+    d |> ignore
+
+///> rust
+:# a_bool_derivation_cannot_be_retagged_with_a_unit_domain fails "Unification failure" =
+    := b : derivation bool_type bool_type = Bound (bool_of "b" !+, "bound")
+    := d : derivation unit_type bool_type = b
+    d |> ignore
+
+///> rust
+:# a_false_distinct_fork_keeps_its_domain fails "Unification failure" =
+    := d : derivation bool_type unit_type = Steps (Forks (IfFalseDistinct (Bound (unit_of "u", "bound"), "false-distinct")))
+    d |> ignore
+
+///> rust
+:# a_tensor_beta_cannot_hide_behind_a_unit_result fails "Unification failure" =
+    := r : closed_beta unit_type = TensorBeta (unit_of "u", "tensor-beta")
+    r |> ignore
+
+///> rust
+:# a_beta_step_needs_a_relation_not_a_raw_term fails "Unification failure" =
+    := s : beta_step = BetaStep (\? (bool_of "raw" !+, "raw-term-wrapper"))
+    s |> ignore
+
+///> rust
+:# a_guard_step_keeps_its_target_usage fails "Unification failure" =
+    := g : guard_step empty_context usage_empty (used usage_empty) unit_type = GuardStep (\? (guard_bool_step (), unit_of "a", unit_of "b", merge_of "m", merge_of "n", "g"))
+    g |> ignore
+
+///> rust
+:# a_bound_unit_cannot_take_a_composite_domain fails "Unification failure" =
+    := d : derivation (tensor_type unit_type bool_type) (tensor_type unit_type bool_type) = Bound (unit_of "u", "bound")
+    d |> ignore

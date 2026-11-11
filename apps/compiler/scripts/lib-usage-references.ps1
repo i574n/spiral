@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory)] [string] $References,
-    [string] $Lib = 'C:\home\git\spiral\lib\spiral',
+    [string] $Lib = (Join-Path $PSScriptRoot '..\..\..\lib\spiral'),
     [string] $Out = (Join-Path ([IO.Path]::GetTempPath()) 'lib-usage-references.tsv')
 )
 $ErrorActionPreference = 'Stop'

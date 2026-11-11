@@ -101,6 +101,22 @@ defmodule Spiral.Cells.NotebookReportTest do
     refute Map.has_key?(JSON.decode!(json)["failed_targets"], "green")
   end
 
+  test "the summary names why each failed test failed, so a starved server is not mistaken for a red" do
+    starved = "port 13945 accepts connections but never answers the handshake (:timeout)"
+
+    report = %{
+      "tests" => [
+        %{"name" => "starved", "status" => "failed", "message" => starved},
+        %{"name" => "real", "status" => "failed", "message" => "BYR left in 2017-01"},
+        %{"name" => "green", "status" => "passed"}
+      ]
+    }
+
+    assert ["spiral-tests file " <> json, _total] = Notebook.summary_lines([{"why.spi", report}])
+    assert %{"failed_messages" => %{"starved" => ^starved, "real" => "BYR left in 2017-01"}} = JSON.decode!(json)
+    refute Map.has_key?(JSON.decode!(json)["failed_messages"], "green")
+  end
+
   test "the summary carries actual and expected of each failed _assert_eq" do
     report = %{
       "tests" => [
@@ -175,7 +191,7 @@ defmodule Spiral.Cells.NotebookReportTest do
 
   test "compile errors name main.spi, not the cell's temp dir, whatever the drive letter case" do
     assert {:error, %Spiral.Cells.SpiralError{message: message}} =
-             Spiral.Cells.run("inl x () = y",
+             Spiral.Cells.run("///> rust\ninl x () = y",
                compile: fn %{spi_path: spi} ->
                  shown = spi |> String.replace("\\", "/") |> String.upcase()
                  {:error, "FatalError: #{shown}:1:12: Unbound variable: y.\nfile:///#{shown}"}

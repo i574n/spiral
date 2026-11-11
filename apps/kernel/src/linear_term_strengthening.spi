@@ -1,0 +1,148 @@
+///- --package .
+:# linear_term_strengthening static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+:< linear_terms
+:< linear_strengthening
+:< linear_variable_strengthening
+
+:| const_kind y =
+    | KindUnit :: const_kind unit_type
+    | KindTrue :: const_kind bool_type
+    | KindFalse :: const_kind bool_type
+
+:== const_payload a b c e y = strengthen a b c e * all_unused a b * all_unused c e * const_kind y * string
+
+:== merges a p q s c x z t = usage_merge a p q s * usage_merge c x z t
+
+:| tleaf sc su tc tu y =
+    | TVariable :: \* a b c e y. (\? s t. vstr a s b c t e y * string) -> tleaf a b c e y
+    | TConstant :: \* a b c e y. const_payload a b c e y -> tleaf a b c e y
+
+:| ^ tstr sc su tc tu y =
+    | TLeaf :: \* a b c e y. tleaf a b c e y -> tstr a b c e y
+    | TIntro :: \* a b c e y. tintro a b c e y -> tstr a b c e y
+    | TElim :: \* a b c e y. telim a b c e y -> tstr a b c e y
+
+:& :| tintro sc su tc tu y =
+    | TTensor :: \* a s c t l r. ttensor a s c t l r -> tintro a s c t (tensor_type l r)
+    | TLambda :: \* a b c e d y. tstr (extend a d) (used b) (extend c d) (used e) y * string -> tintro a b c e (arrow_type d y)
+
+:& :| ttensor sc ss tc ts l r =
+    | Pair :: \* a s c t l r. (\? p q x z. tstr a p c x l * tstr a q c z r * merges a p q s c x z t * string) -> ttensor a s c t l r
+
+:& :| telim sc su tc tu y =
+    | TIf :: \* a s c t y. tif a s c t y -> telim a s c t y
+    | TApply :: \* a s c t y. tapply a s c t y -> telim a s c t y
+
+:& :| tif sc ss tc ts y =
+    | Branch :: \* a s c t y. (\? g h x z. tstr a g c x bool_type * tstr a h c z y * tstr a h c z y * merges a g h s c x z t * string) -> tif a s c t y
+
+:& :| tapply sc ss tc ts y =
+    | Call :: \* a s c t y. (\? d f g x z. tstr a f c x (arrow_type d y) * tstr a g c z d * merges a f g s c x z t * string) -> tapply a s c t y
+
+:= constant_of \* c u y. (k : const_kind y) (unused_all : all_unused c u) (note : string) : constant c u y =
+    ?= k ?|
+    | KindUnit => UnitValue (unused_all, note)
+    | KindTrue => TrueValue (unused_all, note)
+    | KindFalse => FalseValue (unused_all, note)
+
+:= leaf_source \* a b c e y. (p : tleaf a b c e y) : term a b y =
+    ?= p ?|
+    | TVariable q =>
+        := \? s t. plan, _ = q
+        Variable (vsource plan)
+    | TConstant (_, source_unused, _, k, note) => Constant (constant_of k source_unused note)
+
+:= leaf_target \* a b c e y. (p : tleaf a b c e y) : term c e y =
+    ?= p ?|
+    | TVariable q =>
+        := \? s t. plan, _ = q
+        Variable (vtarget plan)
+    | TConstant (_, _, target_unused, k, note) => Constant (constant_of k target_unused note)
+
+:= ^ tsource \* a b c e y. (p : tstr a b c e y) : term a b y =
+    ?= p ?|
+    | TLeaf l => leaf_source l
+    | TIntro i => Intro (intro_source i)
+    | TElim e => Elim (elim_source e)
+
+:& := intro_source \* a b c e y. (p : tintro a b c e y) : intro a b y =
+    ?= p ?|
+    | TTensor t => pair_source t
+    | TLambda (body, n) => Lambda (tsource body, n)
+
+:& := elim_source \* a b c e y. (p : telim a b c e y) : elim a b y =
+    ?= p ?|
+    | TIf i => if_source i
+    | TApply x => call_source x
+
+:& := pair_source \* a s c t l r. ((Pair q) : ttensor a s c t l r) : intro a s (tensor_type l r) =
+    := \? p1 q1 x1 z1. l, r, (m, _), n = q
+    Tensor (\? (tsource l, tsource r, m, n))
+
+:& := if_source \* a s c t y. ((Branch q) : tif a s c t y) : elim a s y =
+    := \? g1 h1 x1 z1. g, u, v, (m, _), n = q
+    If (\? (tsource g, tsource u, tsource v, m, n))
+
+:& := call_source \* a s c t y. ((Call q) : tapply a s c t y) : elim a s y =
+    := \? d1 f1 g1 x1 z1. f, x, (m, _), n = q
+    Apply (\? (tsource f, tsource x, m, n))
+
+:= ^ ttarget \* a b c e y. (p : tstr a b c e y) : term c e y =
+    ?= p ?|
+    | TLeaf l => leaf_target l
+    | TIntro i => Intro (intro_target i)
+    | TElim e => Elim (elim_target e)
+
+:& := intro_target \* a b c e y. (p : tintro a b c e y) : intro c e y =
+    ?= p ?|
+    | TTensor t => pair_target t
+    | TLambda (body, n) => Lambda (ttarget body, n)
+
+:& := elim_target \* a b c e y. (p : telim a b c e y) : elim c e y =
+    ?= p ?|
+    | TIf i => if_target i
+    | TApply x => call_target x
+
+:& := pair_target \* a s c t l r. ((Pair q) : ttensor a s c t l r) : intro c t (tensor_type l r) =
+    := \? p1 q1 x1 z1. l, r, (_, m), n = q
+    Tensor (\? (ttarget l, ttarget r, m, n))
+
+:& := if_target \* a s c t y. ((Branch q) : tif a s c t y) : elim c t y =
+    := \? g1 h1 x1 z1. g, u, v, (_, m), n = q
+    If (\? (ttarget g, ttarget u, ttarget v, m, n))
+
+:& := call_target \* a s c t y. ((Call q) : tapply a s c t y) : elim c t y =
+    := \? d1 f1 g1 x1 z1. f, x, (_, m), n = q
+    Apply (\? (ttarget f, ttarget x, m, n))
+
+:= unit_plan () : tstr (extend empty_context unit_type) (unused usage_empty) empty_context usage_empty unit_type =
+    TLeaf (TConstant (tail_plan (), AllUnusedExtend (empty_usage (), "older-unused"), empty_usage (), KindUnit, "unit-survives"))
+
+:= variable_plan () : tstr two_units (used (unused usage_empty)) one_cell (used usage_empty) unit_type =
+    TLeaf (TVariable (\? (used_here_plan (), "the-replacement-variable-survives")))
+
+:== unit_arrow = arrow_type unit_type unit_type
+
+:= lambda_plan () : tstr (extend empty_context unit_type) (unused usage_empty) empty_context usage_empty unit_arrow =
+    TIntro (TLambda (variable_plan (), "the-binder-keeps-its-variable"))
+
+///> rust
+:# a_strengthened_constant_keeps_its_kind_on_both_sides =
+    (term_label (tsource (unit_plan ())), term_label (ttarget (unit_plan ()))) |> _assert_eq ("constant", "constant")
+
+///> rust
+:# a_strengthened_variable_stays_a_variable_at_slot_zero =
+    (term_label (tsource (variable_plan ())), term_label (ttarget (variable_plan ()))) |> _assert_eq ("variable", "variable")
+
+///> rust
+:# strengthening_passes_under_a_lambda_binder =
+    (term_label (tsource (lambda_plan ())), term_label (ttarget (lambda_plan ()))) |> _assert_eq ("intro", "intro")
+
+///> rust
+:# term_strengthening_cannot_drop_a_preserved_used_cell fails "Unification failure" =
+    := p : tstr two_units (used (unused usage_empty)) empty_context usage_empty unit_type = variable_plan ()
+    p |> ignore

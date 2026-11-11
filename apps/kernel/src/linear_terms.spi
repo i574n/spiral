@@ -1,0 +1,205 @@
+///- --package .
+:# linear_terms static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+
+:! empty_context = string
+
+:! extend tail domain = tail * domain
+
+:| ^ membership context slot domain =
+    | MembershipHere :: \* t d. string -> membership (extend t d) zero d
+    | MembershipThere :: \* t h s d. membership t s d * string -> membership (extend t h) (meta_succ s) d
+
+:! usage_empty = string
+
+:! unused tail = tail * string
+
+:! used tail = tail * string
+
+:| ^ all_unused context usage =
+    | AllUnusedEmpty :: string -> all_unused empty_context usage_empty
+    | AllUnusedExtend :: \* t u d. all_unused t u * string -> all_unused (extend t d) (unused u)
+
+:| ^ single_use context slot domain usage =
+    | SingleUseHere :: \* t u d. all_unused t u * string -> single_use (extend t d) zero d (used u)
+    | SingleUseThere :: \* t h s d u. single_use t s d u * string -> single_use (extend t h) (meta_succ s) d (unused u)
+
+:| merged l r s a b c =
+    | Neither :: \* l r s. string -> merged l r s (unused l) (unused r) (unused s)
+    | RightOnly :: \* l r s. string -> merged l r s (unused l) (used r) (used s)
+    | LeftOnly :: \* l r s. string -> merged l r s (used l) (unused r) (used s)
+
+:| ^ usage_merge context left right total =
+    | MergeEmpty :: string -> usage_merge empty_context usage_empty usage_empty usage_empty
+    | MergeStep :: \* t d a b c. (\? l r s. merged l r s a b c * usage_merge t l r s * string) -> usage_merge (extend t d) a b c
+
+:| variable context usage ty =
+    | VariableAt :: \* c u y. (\? s. membership c s y * single_use c s y u * string) -> variable c u y
+
+:| constant context usage ty =
+    | UnitValue :: \* c u. all_unused c u * string -> constant c u unit_type
+    | TrueValue :: \* c u. all_unused c u * string -> constant c u bool_type
+    | FalseValue :: \* c u. all_unused c u * string -> constant c u bool_type
+
+:| ^ term context usage ty =
+    | Variable :: \* c u y. variable c u y -> term c u y
+    | Constant :: \* c u y. constant c u y -> term c u y
+    | Intro :: \* c u y. intro c u y -> term c u y
+    | Elim :: \* c u y. elim c u y -> term c u y
+
+:& :| intro context usage ty =
+    | Tensor :: \* c s l r. (\? a b. term c a l * term c b r * usage_merge c a b s * string) -> intro c s (tensor_type l r)
+    | Lambda :: \* c u d y. term (extend c d) (used u) y * string -> intro c u (arrow_type d y)
+
+:& :| elim context usage ty =
+    | If :: \* c s y. (\? g b. term c g bool_type * term c b y * term c b y * usage_merge c g b s * string) -> elim c s y
+    | Apply :: \* c s y. (\? d f a. term c f (arrow_type d y) * term c a d * usage_merge c f a s * string) -> elim c s y
+
+:| context_usage_equality source_context source_usage target_context target_usage =
+    | ContextUsageRefl :: \* c u. string -> context_usage_equality c u c u
+
+:| term_index_transport source_context source_usage target_context target_usage ty =
+    | TransportRefl :: \* c u y. string -> term_index_transport c u c u y
+
+:= term_index_transport_from_equality \* sc su tc tu y.
+    (equality : context_usage_equality sc su tc tu)
+    : term_index_transport sc su tc tu y
+    =
+    ?= equality ?|
+    | ContextUsageRefl note => TransportRefl note
+
+:= term_index_transport_apply \* sc su tc tu y.
+    (transport : term_index_transport sc su tc tu y) (x : term sc su y)
+    : term tc tu y
+    =
+    ?= transport ?|
+    | TransportRefl _ => x
+
+:| false_elimination context usage ty =
+    | FalseElimination :: \* c u y. witness y * term c u false_type * string -> false_elimination c u y
+
+:= false_note () : string =
+    "False-elimination-preserves-the-source-context-and-usage-while-the-result-type-is-carried-by-an-intrinsic-witness"
+
+:= false_eliminate \* c u y. (result_type : witness y) (absurd : term c u false_type) : false_elimination c u y =
+    FalseElimination (result_type, absurd, false_note ())
+
+:| ^ all_used context usage =
+    | AllUsedEmpty :: string -> all_used empty_context usage_empty
+    | AllUsedExtend :: \* t u d. all_used t u * string -> all_used (extend t d) (used u)
+
+:| closure_reason =
+    | UsageIndexCarriesClosedness
+    | AllUsedConsumesTheContext
+
+:| fully_used_term context ty =
+    | FullyUsed :: \* c y. (\? u. term c u y * all_used c u * closure_reason) -> fully_used_term c y
+
+:| closed_term ty =
+    | Closed :: \* y. (\? u. term empty_context u y * all_used empty_context u * closure_reason) -> closed_term y
+
+:== one_unit = extend empty_context unit_type
+
+:= empty_usage () : all_unused empty_context usage_empty = AllUnusedEmpty "the-empty-context-has-the-empty-usage-index"
+
+:= newest_variable (here : string) (once : string) (note : string) : term one_unit (used usage_empty) unit_type =
+    := use = SingleUseHere (empty_usage (), once)
+    Variable (VariableAt (\? (MembershipHere here, use, note)))
+
+:= identity_body () : term one_unit (used usage_empty) unit_type =
+    := once = "the-bound-Unit-is-used-once-and-the-empty-tail-is-unused"
+    newest_variable "the-bound-Unit-is-the-newest-context-cell" once "the-variable-node-links-membership-and-single-use-indices"
+
+:= identity_term () : term empty_context usage_empty (arrow_type unit_type unit_type) =
+    Intro (Lambda (identity_body (), "lambda-removes-one-used-head-from-the-body-usage-index"))
+
+:= unit_of (note : string) : term empty_context usage_empty unit_type = Constant (UnitValue (empty_usage (), note))
+
+:= then_unit () : term empty_context usage_empty unit_type = unit_of "the-closed-conditional-then-branch-is-Unit"
+
+:= else_unit () : term empty_context usage_empty unit_type = unit_of "the-closed-conditional-else-branch-is-Unit"
+
+:= closed_guard () : term empty_context usage_empty bool_type =
+    Constant (TrueValue (empty_usage (), "the-closed-conditional-guard-is-BoolTrue"))
+
+:= closed_merge () : usage_merge empty_context usage_empty usage_empty usage_empty =
+    MergeEmpty "the-closed-conditional-merges-the-empty-guard-and-branch-usages"
+
+:= closed_unit_conditional () : term empty_context usage_empty unit_type =
+    := note = "the-conditional-requires-a-Bool-guard-and-two-branches-with-one-shared-usage-index"
+    Elim (If (\? (closed_guard (), then_unit (), else_unit (), closed_merge (), note)))
+
+:= empty_used () : all_used empty_context usage_empty =
+    AllUsedEmpty "the-empty-outer-context-is-fully-consumed-by-the-empty-usage-index"
+
+:= closed_identity_term () : closed_term (arrow_type unit_type unit_type) =
+    Closed (\? (identity_term (), empty_used (), UsageIndexCarriesClosedness))
+
+:= only_cell () : term one_unit (used usage_empty) unit_type =
+    := once = "the-only-context-cell-is-used-exactly-once"
+    newest_variable "the-only-Unit-cell-is-the-variable-source" once "membership-and-single-use-share-the-same-slot"
+
+:= one_unit_used () : all_used one_unit (used usage_empty) =
+    := tail = AllUsedEmpty "the-tail-is-empty-and-therefore-fully-used"
+    AllUsedExtend (tail, "the-single-head-is-used-so-the-whole-context-is-fully-used")
+
+:= fully_used_variable_term () : fully_used_term one_unit unit_type =
+    FullyUsed (\? (only_cell (), one_unit_used (), AllUsedConsumesTheContext))
+
+:= term_label \* c u y. (t : term c u y) : string =
+    ?= t ?|
+    | Variable _ => "variable"
+    | Constant _ => "constant"
+    | Intro _ => "intro"
+    | Elim _ => "elim"
+
+:= closed_reason \* y. (c : closed_term y) : closure_reason =
+    ?= c ?|
+    | Closed payload =>
+        := \? u. _, _, reason = payload
+        reason
+
+:= fully_used_reason \* c y. (f : fully_used_term c y) : closure_reason =
+    ?= f ?|
+    | FullyUsed payload =>
+        := \? u. _, _, reason = payload
+        reason
+
+///> rust
+:# the_identity_is_an_intro_and_the_closed_conditional_an_elim =
+    (term_label (identity_term ()), term_label (closed_unit_conditional ())) |> _assert_eq ("intro", "elim")
+
+///> rust
+:# a_closed_term_carries_its_all_used_proof_on_the_term_usage_index =
+    closed_reason (closed_identity_term ()) |> _assert_eq UsageIndexCarriesClosedness
+
+///> rust
+:# a_fully_used_term_may_consume_a_nonempty_context =
+    fully_used_reason (fully_used_variable_term ()) |> _assert_eq AllUsedConsumesTheContext
+
+///> rust
+:# a_reflexive_transport_returns_the_same_term =
+    := transport = term_index_transport_from_equality (ContextUsageRefl "the-same-context-and-usage")
+    term_label (term_index_transport_apply transport (identity_term ())) |> _assert_eq "intro"
+
+///> rust
+:# a_lambda_cannot_discard_its_linear_binder fails "Unification failure" =
+    := body = Constant (UnitValue (AllUnusedExtend (empty_usage (), "bound-unused"), "a-constant-body"))
+    Intro (Lambda (body, "unused-head")) |> term_label |> ignore
+
+///> rust
+:# a_nonempty_context_cannot_enter_the_closed_wrapper fails "Unification failure" =
+    := closed : closed_term unit_type = Closed (\? (only_cell (), one_unit_used (), UsageIndexCarriesClosedness))
+    closed_reason closed |> ignore
+
+///> rust
+:# false_elimination_requires_a_false_premise fails "Unification failure" =
+    false_eliminate (LinearBase (LinearBool "bool-result")) (unit_of "a-Unit-premise") |> ignore
+
+///> rust
+:# a_cell_cannot_be_used_by_both_sides_of_a_merge fails "Unification failure" =
+    := both : usage_merge one_unit (used usage_empty) (used usage_empty) (used usage_empty) = MergeStep (\? (RightOnly "r", MergeEmpty "e", "both"))
+    both |> ignore

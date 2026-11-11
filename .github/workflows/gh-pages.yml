@@ -89,6 +89,9 @@ jobs:
       - run: pwsh scripts/workflow.ps1 -Compiler -Suite ${{ github.event.inputs.suite || 'all' }}
 
       - if: always()
+        run: pwsh scripts/workflow.ps1 -K3s
+
+      - if: always()
         run: git diff --no-color -- apps/compiler/tmp/samples > "$SPIRAL_BIN_CACHE_DIR/samples-output.diff"
 
       - if: always()

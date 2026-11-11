@@ -102,6 +102,7 @@ defmodule Spiral.Cells.SmartCellTest do
       {kino, source} = start_smart_cell!(SmartCell, %{})
 
       assert source =~ "Spiral.Cells.eval!("
+      assert source =~ "///> rust"
       assert source =~ "square 7i32"
       assert %{fields: fields} = connect(kino, nil, @wait)
 

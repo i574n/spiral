@@ -1,0 +1,254 @@
+///- --package .
+:# ui_view static =
+    :< testing
+
+:< sm'_operators
+:< ui_signals
+
+:! phrasing = ()
+
+:! flow = ()
+
+:! anchor = ()
+
+:! plain = ()
+
+:! canvas = ()
+
+:! shape = ()
+
+:| attr e =
+    | Class :: \* e. string -> attr e
+    | Href :: string -> attr anchor
+    | ViewBox :: string -> attr canvas
+    | D :: string -> attr shape
+
+:! table_part = ()
+
+:! row_part = ()
+
+:! cell_part = ()
+
+:! option_part = ()
+
+:! svg_part = ()
+
+:! no_children = ()
+
+:| basic_tag e k c =
+    | SpanTag :: basic_tag plain phrasing phrasing
+    | LinkTag :: basic_tag anchor phrasing phrasing
+    | ParaTag :: basic_tag plain flow phrasing
+    | DivTag :: basic_tag plain flow flow
+
+:| table_tag e k c =
+    | TableTag :: table_tag plain flow table_part
+    | TheadTag :: table_tag plain table_part row_part
+    | TbodyTag :: table_tag plain table_part row_part
+    | TrTag :: table_tag plain row_part cell_part
+
+:| extra_tag e k c =
+    | TdTag :: extra_tag plain cell_part phrasing
+    | ThTag :: extra_tag plain cell_part phrasing
+    | PreTag :: extra_tag plain flow phrasing
+    | ButtonTag :: extra_tag plain phrasing phrasing
+
+:| control_tag e k c =
+    | LabelTag :: control_tag plain phrasing phrasing
+    | SelectTag :: control_tag plain phrasing option_part
+    | OptionTag :: control_tag plain option_part phrasing
+    | NavTag :: control_tag plain flow flow
+
+:| graphic_tag e k c =
+    | SvgTag :: graphic_tag canvas phrasing svg_part
+    | PathTag :: graphic_tag shape svg_part no_children
+
+:| more_tag e k c =
+    | Control :: \* e k c. control_tag e k c -> more_tag e k c
+    | Graphic :: \* e k c. graphic_tag e k c -> more_tag e k c
+
+:| element e k c =
+    | Basic :: \* e k c. basic_tag e k c -> element e k c
+    | Tabular :: \* e k c. table_tag e k c -> element e k c
+    | Extra :: \* e k c. extra_tag e k c -> element e k c
+    | More :: \* e k c. more_tag e k c -> element e k c
+
+:= control \* e k c. (t : control_tag e k c) : element e k c = More (Control t)
+
+:= graphic \* e k c. (t : graphic_tag e k c) : element e k c = More (Graphic t)
+
+:| leaf m =
+    | Text : string
+    | Bound : graph m -> string
+
+:| input_view m =
+    | InputOf : (graph m -> string) * (string -> graph m -> graph m)
+
+:== handler m = graph m -> graph m
+
+:| ^ view m k =
+    | Leaf :: \* m. leaf m -> view m phrasing
+    | Element :: \* m k. (\? e c. element e k c * list (attr e) * list (view m c)) -> view m k
+    | Clickable :: \* m k. handler m * view m k -> view m k
+    | Changed :: \* m k. (string -> graph m -> graph m) * view m k -> view m k
+    | KeyUp :: \* m k. (string -> graph m -> graph m) * view m k -> view m k
+    | Input :: \* m. input_view m -> view m phrasing
+    | Each :: \* m k. (\? r. (graph m -> list r) * (r -> string) * (r -> view m k)) -> view m k
+
+:= basic_name \* e k c. (t : basic_tag e k c) : string =
+    ?= t ?|
+    | SpanTag => "span"
+    | LinkTag => "a"
+    | ParaTag => "p"
+    | DivTag => "div"
+
+:= table_name \* e k c. (t : table_tag e k c) : string =
+    ?= t ?|
+    | TableTag => "table"
+    | TheadTag => "thead"
+    | TbodyTag => "tbody"
+    | TrTag => "tr"
+
+:= extra_name \* e k c. (t : extra_tag e k c) : string =
+    ?= t ?|
+    | TdTag => "td"
+    | ThTag => "th"
+    | PreTag => "pre"
+    | ButtonTag => "button"
+
+:= control_name \* e k c. (t : control_tag e k c) : string =
+    ?= t ?|
+    | LabelTag => "label"
+    | SelectTag => "select"
+    | OptionTag => "option"
+    | NavTag => "nav"
+
+:= graphic_name \* e k c. (t : graphic_tag e k c) : string =
+    ?= t ?|
+    | SvgTag => "svg"
+    | PathTag => "path"
+
+:= tag_name \* e k c. (t : element e k c) : string =
+    ?= t ?|
+    | Basic b => basic_name b
+    | Tabular b => table_name b
+    | Extra b => extra_name b
+    | More (Control b) => control_name b
+    | More (Graphic b) => graphic_name b
+
+:= escape (text : string) : string = text |> sm'::replace "&" "&amp;" |> sm'::replace "<" "&lt;" |> sm'::replace ">" "&gt;" |> sm'::replace "\"" "&quot;"
+
+:= attr_pair \* e. (a : attr e) : string * string =
+    ?= a ?|
+    | Class name => "class", name
+    | Href url => "href", url
+    | ViewBox box => "viewBox", box
+    | D path => "d", path
+
+:= attr_one \* e. (acc : string) (a : attr e) : string =
+    ?= attr_pair a ?|
+    | (name, value) => acc ++# " " ++# name ++# "=\"" ++# escape value ++# "\""
+
+:= tag (name : string) (attrs : string) (inner : string) : string = "<" ++# name ++# attrs ++# ">" ++# inner ++# "</" ++# name ++# ">"
+
+:= joined \* a. (f : a -> string) (items : list a) : string = listm::fold (\ acc x => acc ++# f x) "" items
+
+:= leaf_text \* m. (g : graph m) (l : leaf m) : string =
+    ?= l ?|
+    | Text text => escape text
+    | Bound read => escape (read g)
+
+:= open_tag \* e k c. (t : element e k c) (attrs : list (attr e)) (inner : string) : string = tag (tag_name t) (listm::fold attr_one "" attrs) inner
+
+:= input_html \* m. (g : graph m) ((InputOf (read, _)) : input_view m) : string = "<input value=\"" ++# escape (read g) ++# "\">"
+
+:= ^ render \* m k. (g : graph m) (v : view m k) : string =
+    ?= v ?|
+    | Leaf l => leaf_text g l
+    | Element p =>
+        := \? e c. t, attrs, items = p
+        open_tag t attrs (joined (render g) items)
+    | _ => render_more g v
+
+:& := render_more \* m k. (g : graph m) (v : view m k) : string =
+    ?= v ?|
+    | Clickable (_, inner) => render g inner
+    | Changed (_, inner) => render g inner
+    | KeyUp (_, inner) => render g inner
+    | Input i => input_html g i
+    | Each q =>
+        := \? r. read, _, row = q
+        joined (\ x => render g (row x)) (read g)
+    | _ => ""
+
+:= el \* m e k c. (t : element e k c) (attrs : list (attr e)) (items : list (view m c)) : view m k = Element (\? (t, attrs, items))
+
+:= on_click \* m k. (handler : graph m -> graph m) (inner : view m k) : view m k = Clickable (handler, inner)
+
+:= on_change \* m k. (handler : string -> graph m -> graph m) (inner : view m k) : view m k = Changed (handler, inner)
+
+:= on_keyup \* m k. (handler : string -> graph m -> graph m) (inner : view m k) : view m k = KeyUp (handler, inner)
+
+:= input_of \* m. (s : signal m string) : view m phrasing = Input (InputOf ((\g => get g s), (\v g => set g s v)))
+
+:= each \* m k r. (s : signal m (list r)) (key : r -> string) (row : r -> view m k) : view m k = Each (\? ((\g => get g s), key, row))
+
+:= each_by \* m k r. (read : graph m -> list r) (key : r -> string) (row : r -> view m k) : view m k = Each (\? (read, key, row))
+
+:= text \* m. (s : string) : view m phrasing = Leaf (Text s)
+
+:= bound \* m t. (s : signal m t) (show : t -> string) : view m phrasing = Leaf (Bound (\g => show (get g s)))
+
+:= label_span () : view probe_model phrasing = el (Basic SpanTag) [Class "label"] [text "label "; bound (label_signal ()) id]
+
+:= docs_link () : view probe_model phrasing = el (Basic LinkTag) [Href "/docs?a=1&b=2"] [text "docs"]
+
+:= counter_view () : view probe_model flow =
+    el (Basic DivTag) [Class "app"] [el (Basic ParaTag) [] [text "a < b: "; bound (a_signal ()) sm'::show]; el (Basic ParaTag) [] [label_span (); docs_link ()]]
+
+:= expected_html (a : string) (label : string) : string =
+    "<div class=\"app\"><p>a &lt; b: " ++# a ++# "</p><p><span class=\"label\">label " ++# label ++# "</span><a href=\"/docs?a=1&amp;b=2\">docs</a></p></div>"
+
+///> rust
+:# a_view_renders_escaped_html_with_attributes_and_signal_values =
+    render (probe_graph ()) (counter_view ()) |> _assert_eq (expected_html "0" "")
+
+///> rust
+:# a_set_changes_the_bound_text_on_the_next_render =
+    := g = set (set (probe_graph ()) (a_signal ()) 7i32) (label_signal ()) "x"
+    render g (counter_view ()) |> _assert_eq (expected_html "7" "x")
+
+:= cell \* m. (s : string) : view m cell_part = el (Extra TdTag) [] [text s]
+
+:= heading \* m. (s : string) : view m cell_part = el (Extra ThTag) [] [text s]
+
+:= ledger_table () : view probe_model flow =
+    el (Tabular TableTag) [Class "ledger"] [el (Tabular TbodyTag) [] [el (Tabular TrTag) [] [heading "a"; cell "<1>"]]]
+
+///> rust
+:# a_typed_table_renders_its_rows_and_escaped_cells =
+    render (probe_graph ()) (ledger_table ()) |> _assert_eq "<table class=\"ledger\"><tbody><tr><th>a</th><td>&lt;1&gt;</td></tr></tbody></table>"
+
+:= chooser () : view probe_model phrasing = el (control SelectTag) [] [el (control OptionTag) [] [text "a"]]
+
+:= icon () : view probe_model phrasing = el (graphic SvgTag) [ViewBox "0 0 2 2"] [el (graphic PathTag) [D "M0 0L2 2"] []]
+
+:= picker () : view probe_model flow = el (control NavTag) [] [el (Basic ParaTag) [] [el (control LabelTag) [] [text "pick"]; chooser (); icon ()]]
+
+///> rust
+:# controls_and_inline_svg_render_with_typed_children =
+    render (probe_graph ()) (picker ())
+    |> _assert_eq "<nav><p><label>pick</label><select><option>a</option></select><svg viewBox=\"0 0 2 2\"><path d=\"M0 0L2 2\"></path></svg></p></nav>"
+
+:== rows_model = { items : list string }
+
+:= items_signal () : signal rows_model (list string) =
+    signal { id = 0i32; read = \(x : rows_model) => x::items; write = \(x : rows_model) (v : list string) => { x ?| items = v } }
+
+:= rows_graph (items : list string) : graph rows_model = empty { items = items }
+
+:= ledger_rows () : view rows_model flow = el (Tabular TableTag) [] [el (Tabular TbodyTag) [] [each (items_signal ()) id (\(s : string) => el (Tabular TrTag) [] [cell s])]]
+
+///> rust
+:# a_keyed_list_renders_one_row_per_item_of_its_signal =
+    render (rows_graph ["a"; "<b>"]) (ledger_rows ()) |> _assert_eq "<table><tbody><tr><td>a</td></tr><tr><td>&lt;b&gt;</td></tr></tbody></table>"

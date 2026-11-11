@@ -14,10 +14,10 @@ Write-Output "spiral/lib/spiral/build.ps1 / ScriptDir: $ScriptDir / ResolvedScri
 
 $livebook = Join-Path ($env:SPIRAL_CELLS_ROOT ? $env:SPIRAL_CELLS_ROOT : (Join-Path $ResolvedScriptDir "../../apps/cells")) "spi/run_notebook.ps1"
 $notebooks = @(
-    "physics", "parsing", "sm'", "rust", "rust_testing", "near", "near_workspaces", "testing", "guid",
+    "parsing", "sm'", "rust", "rust_testing", "near", "near_workspaces", "testing", "guid",
     "async", "trace", "am'", "crypto", "common", "resultm", "console", "base", "convert", "date_time", "math",
     "map", "optionm'", "listm'", "reflection", "iter", "wasm", "leptos/leptos", "lustre", "util", "platform", "stream",
-    "threading", "benchmark", "seq", "env", "file_system", "networking", "clap"
+    "threading", "benchmark", "seq", "env", "file_system", "networking", "clap", "tlds"
 )
 function Get-NotebookArgs([string] $Notebook) {
     @("--path", (Join-Path $ResolvedScriptDir "$Notebook.spi"), "--livemd")

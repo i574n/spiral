@@ -186,7 +186,7 @@
         := \? effect. _, TransferRow label = payload
         label
 
-:= ^ terminal_label \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1
+:= terminal_label \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1
     d2 from to.
     (plan :
         transfer_plan

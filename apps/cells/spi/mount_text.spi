@@ -1,3 +1,7 @@
+///- --package .
+:# mount_text static =
+    :< testing
+
 := (++) (left : string) (right : string) : string = left ^^ right
 
 := patch_first (body : string) (old : string) (new : string) : string =

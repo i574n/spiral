@@ -237,7 +237,7 @@
         := \? effect. _, PublicByzantineRow label = payload
         label
 
-:= ^ terminal_label \* transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old
+:= terminal_label \* transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old
     kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from to.
     (plan :
         public_byzantine_plan

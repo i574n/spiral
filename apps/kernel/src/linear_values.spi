@@ -1,0 +1,114 @@
+///- --package .
+:# linear_values static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+:< linear_terms
+:< linear_substitution
+
+:| leaf_value context usage ty =
+    | ValueConstant :: \* c u y. constant c u y -> leaf_value c u y
+    | ValueLambda :: \* c u d y. term (extend c d) (used u) y * string -> leaf_value c u (arrow_type d y)
+
+:| ^ value context usage ty =
+    | Leaf :: \* c u y. leaf_value c u y -> value c u y
+    | ValueTensor :: \* c s l r. (\? a b. value c a l * value c b r * usage_merge c a b s * string) -> value c s (tensor_type l r)
+
+:= leaf_term \* c u y. (v : leaf_value c u y) : term c u y =
+    ?= v ?|
+    | ValueConstant k => Constant k
+    | ValueLambda payload => Intro (Lambda payload)
+
+:= ^ value_term \* c u y. (v : value c u y) : term c u y =
+    ?= v ?|
+    | Leaf l => leaf_term l
+    | ValueTensor p =>
+        := \? a b. l, r, m, note = p
+        Intro (Tensor (\? (value_term l, value_term r, m, note)))
+
+:= unit_leaf \* c u. (v : leaf_value c u unit_type) : term c u unit_type =
+    ?= v ?|
+    | ValueConstant k => Constant k
+
+:= unit_canonical \* c u. (v : value c u unit_type) : term c u unit_type =
+    ?= v ?|
+    | Leaf l => unit_leaf l
+
+:| bool_canonical context usage =
+    | CanonicalTrue :: \* c u. all_unused c u * string -> bool_canonical c u
+    | CanonicalFalse :: \* c u. all_unused c u * string -> bool_canonical c u
+
+:= bool_constant \* c u. (k : constant c u bool_type) : bool_canonical c u =
+    ?= k ?|
+    | TrueValue payload => CanonicalTrue payload
+    | FalseValue payload => CanonicalFalse payload
+
+:= bool_leaf \* c u. (v : leaf_value c u bool_type) : bool_canonical c u =
+    ?= v ?|
+    | ValueConstant k => bool_constant k
+
+:= bool_canonical_of \* c u. (v : value c u bool_type) : bool_canonical c u =
+    ?= v ?|
+    | Leaf l => bool_leaf l
+
+:= canonical_bool \* c u. (k : bool_canonical c u) : bool =
+    ?= k ?|
+    | CanonicalTrue _ => !+
+    | CanonicalFalse _ => !-
+
+:= closed_merge () : usage_merge empty_context usage_empty usage_empty usage_empty = MergeEmpty "a-closed-pair-merges-nothing"
+
+:= constant_value \* y. (k : constant empty_context usage_empty y) : value empty_context usage_empty y = Leaf (ValueConstant k)
+
+:= unit_value () : value empty_context usage_empty unit_type = constant_value (UnitValue (empty_usage (), "unit"))
+
+:= true_value () : value empty_context usage_empty bool_type = constant_value (TrueValue (empty_usage (), "true"))
+
+:= false_value () : value empty_context usage_empty bool_type = constant_value (FalseValue (empty_usage (), "false"))
+
+:= pair_value () : value empty_context usage_empty (tensor_type unit_type bool_type) =
+    ValueTensor (\? (unit_value (), true_value (), closed_merge (), "pair"))
+
+:= lambda_value () : value empty_context usage_empty (arrow_type unit_type unit_type) =
+    Leaf (ValueLambda (identity_body (), "the-identity-is-a-value"))
+
+///> rust
+:# values_embed_into_terms_with_their_sizes =
+    (size (value_term (pair_value ())), size (value_term (lambda_value ()))) |> _assert_eq (3i32, 2i32)
+
+///> rust
+:# canonical_forms_read_back_the_value =
+    := yes, no = bool_canonical_of (true_value ()), bool_canonical_of (false_value ())
+    (size (unit_canonical (unit_value ())), canonical_bool yes, canonical_bool no) |> _assert_eq (1i32, !+, !-)
+
+///> rust
+:# false_has_no_canonical_value fails "Unification failure" =
+    := v : value empty_context usage_empty false_type = Leaf (ValueConstant (UnitValue (empty_usage (), "a-Unit-constant")))
+    v |> ignore
+
+:= false_constant \* c u t. (k : constant c u false_type) : t =
+    ?= k ?|
+
+:= false_leaf \* c u t. (v : leaf_value c u false_type) : t =
+    ?= v ?|
+    | ValueConstant k => false_constant k
+
+:= false_absurd \* c u t. (v : value c u false_type) : t =
+    ?= v ?|
+    | Leaf l => false_leaf l
+
+:== closed_false = value empty_context usage_empty false_type
+
+:= false_count (v : closed_false) : i32 = false_absurd v
+
+:= false_label (v : closed_false) : string = false_absurd v
+
+///> rust
+:# a_closed_false_value_eliminates_into_any_type =
+    (false_count, false_label) |> ignore
+    canonical_bool (bool_canonical_of (false_value ())) |> _assert_eq !-
+
+///> rust
+:# the_false_eliminator_rejects_a_bool_value fails "Unification failure" =
+    (false_absurd (false_value ()) : i32) |> ignore

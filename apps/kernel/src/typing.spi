@@ -29,7 +29,7 @@
     | NestedTooFewParams : string
     | TooDeep
 
-:| inferred =
+:| private inferred =
     | Typed : term
     | Rejected : refusal
 
@@ -382,3 +382,19 @@
     := before = type_text (infer [] [ ("p", Sort Zero); ("q", Sort Zero); ("hp", FVar (name "p")) ] t)
     := after = type_text (infer [] [ ("q", Sort Zero); ("p", Sort Zero); ("hp", FVar (name "p")) ] t)
     (before = after, after) |> _assert_eq (!+, "(h : q) -> p")
+
+:~ mismatched (r : inferred) : bool = type_text r |> sm'::starts_with "mismatch: "
+
+:~ refused_as_prop_to_type (t : term) : bool = mismatched (check [] [] t (Pi (name "a", Default, Sort Zero, type_sort ())))
+
+:~ refused_for_p (ty : term) : bool = mismatched (check [] [ ("p", Sort Zero) ] (App (App (poly_id (), Sort Zero), FVar (name "p"))) ty)
+
+///> rust
+:# a_lambda_or_partial_application_keeps_its_codomain =
+    := lam = Lam (name "x", Default, Sort Zero, BVar 0i32)
+    (refused_as_prop_to_type lam, refused_as_prop_to_type (App (poly_id (), Sort Zero))) |> _assert_eq (!+, !+)
+
+///> rust
+:# a_full_application_keeps_its_result =
+    := one_level = Pi (name "a", Default, Sort Zero, Sort Zero)
+    (refused_for_p one_level, refused_for_p (FVar (name "p")), refused_for_p (Sort Zero)) |> _assert_eq (!+, !+, !-)

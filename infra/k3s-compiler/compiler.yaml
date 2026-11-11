@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spiral-compiler
+  labels:
+    app: spiral-compiler
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: spiral-compiler
+  template:
+    metadata:
+      labels:
+        app: spiral-compiler
+    spec:
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: compiler
+          image: spiral-compiler:local
+          imagePullPolicy: IfNotPresent
+          args: ["--server-tcp", "/work/session/compiler"]
+          env:
+            - name: SPIRAL_SERVER_BIND
+              value: 0.0.0.0:7470
+          ports:
+            - name: session
+              containerPort: 7470
+          readinessProbe:
+            tcpSocket:
+              port: session
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: session
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "1"
+              memory: 4Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: work
+              mountPath: /work
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: work
+          emptyDir:
+            sizeLimit: 2Gi
+        - name: tmp
+          emptyDir:
+            sizeLimit: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spiral-compiler
+  labels:
+    app: spiral-compiler
+spec:
+  type: ClusterIP
+  selector:
+    app: spiral-compiler
+  ports:
+    - name: session
+      port: 7470
+      targetPort: session

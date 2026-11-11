@@ -1,0 +1,5 @@
+packageDir = '../../lib'
+packages = ['|core-', 'spiral-']
+modules = '''
+physics
+'''

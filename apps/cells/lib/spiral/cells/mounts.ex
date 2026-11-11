@@ -72,6 +72,14 @@ defmodule Spiral.Cells.Mounts do
     end
   end
 
+  @spec escapes_through_link?(String.t()) :: boolean()
+  def escapes_through_link?(target) do
+    case Regex.run(~r/^packageDir:\s*(.+?)\s*$/m, Spiral.Cells.Manifest.read!(target)) do
+      [_, dir] -> Path.type(dir) == :relative and (dir |> String.replace("\\", "/") |> String.trim_trailing("/")) not in [".", ".."]
+      _ -> false
+    end
+  end
+
   defp build(dir, entries) do
     if File.regular?(Path.join(dir, "ready")) do
       :ok

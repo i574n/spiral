@@ -43,11 +43,6 @@ defmodule Spiral.Cells.Builders do
     commands
   end
 
-  @spec default() :: map()
-  def default do
-    blank(:rust, "rust")
-  end
-
   @spec host_rust?(map()) :: boolean()
   def host_rust?(%{tool: :rust, contract: nil, wasm: nil, deps: [], cleanup: cleanup}) do
     cleanup != false
@@ -116,20 +111,6 @@ defmodule Spiral.Cells.Builders do
   end
 
   def argv(%{tool: :lua}, path), do: ["lua", "--lua-path", path]
-
-
-  defp blank(tool, raw) do
-    %{
-      tool: tool,
-      raw: raw,
-      contract: nil,
-      wasm: nil,
-      deps: [],
-      cleanup: nil,
-      target: nil,
-      env: nil
-    }
-  end
 
   defp value_arg(_name, nil), do: []
   defp value_arg(name, ""), do: ["--#{name}="]

@@ -57,4 +57,27 @@ defmodule Spiral.Cells.ManifestTest do
     assert Manifest.path(dir) == Path.join(dir, "spiral.toml")
     assert Manifest.read!(dir) in ["packageDir: b\n", "packageDir: b\nmodules:\n\n"]
   end
+
+  test "a derived manifest is resolved once per directory state, and a failed resolve is not kept" do
+    dir = Spiral.Cells.TestHelpers.tmp_dir!("manifest-cached")
+    File.write!(Path.join(dir, "a.spi"), "inl a = 1\n")
+    me = self()
+    resolver = fn d -> send(me, {:resolved, d}); "modules:\n    a\n" end
+
+    assert Manifest.cached(dir, resolver) == "modules:\n    a\n"
+    assert Manifest.cached(dir, resolver) == "modules:\n    a\n"
+    assert_received {:resolved, _}
+    refute_received {:resolved, _}
+
+    File.write!(Path.join(dir, "b.spi"), "inl b = 2\n")
+    assert Manifest.cached(dir, resolver) == "modules:\n    a\n"
+    assert_received {:resolved, _}
+
+    failing = fn d -> send(me, {:failed, d}); nil end
+    File.write!(Path.join(dir, "c.spi"), "inl c = 3\n")
+    assert Manifest.cached(dir, failing) == nil
+    assert Manifest.cached(dir, failing) == nil
+    assert_received {:failed, _}
+    assert_received {:failed, _}
+  end
 end

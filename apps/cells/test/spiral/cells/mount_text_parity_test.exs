@@ -13,7 +13,7 @@ defmodule Spiral.Cells.MountTextParityTest do
     Enum.reduce(old_package_entries(text), text, fn {item, declared}, acc ->
       if old_relative?(item) do
         suffix = String.replace_prefix(declared, item, "")
-        String.replace(acc, ~r/^(\s+)#{Regex.escape(declared)}\s*$/m, "\\1#{Path.basename(item)}#{suffix}")
+        String.replace(acc, ~r/^(\s+)#{Regex.escape(declared)}\s*$/m, "\\1#{old_basename(item)}#{suffix}")
       else
         acc
       end
@@ -45,7 +45,9 @@ defmodule Spiral.Cells.MountTextParityTest do
     end
   end
 
-  defp old_nested(names), do: Enum.find(names, &(Path.dirname(&1) != "."))
+  defp old_basename(item), do: item |> String.replace("\\", "/") |> Path.basename()
+
+  defp old_nested(names), do: Enum.find(names, &(&1 |> String.replace("\\", "/") |> Path.dirname() != "."))
 
   defp old_patch(body, old, new), do: if(String.contains?(body, old), do: {:ok, String.replace(body, old, new, global: false)}, else: :error)
 

@@ -614,7 +614,8 @@
             | Gleam => \ () =>
                 global "import gleam/float"
                 global "import gleam/int"
-                $'case float.parse(!text) { Ok(f) -> ##(f, True) Error(_) -> case int.parse(!text) { Ok(i) -> ##(int.to_float(i), True) Error(_) -> ##(0.0, False) } }'
+                $'case float.parse(!text) { Ok(f) -> ##(f, True) Error(_) -> case int.parse(!text) { Ok(i) -> \
+                    ##(int.to_float(i), True) Error(_) -> ##(0.0, False) } }'
                 : f64 * bool
             | _ => \ () => failwith "convert.parse_f64 / no arm for this backend"
     ? parsed ?> Some value |: None

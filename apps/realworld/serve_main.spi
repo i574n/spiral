@@ -1,0 +1,12 @@
+///- --package .
+:# serve_main static =
+    :< testing
+
+:< serve
+
+:= serve_exports () : () =
+    export "serve" ((\ x => serve 8080i32) : string -> i32)
+
+:= main () : i32 =
+    serve_exports ()
+    0i32

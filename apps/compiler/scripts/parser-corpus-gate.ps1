@@ -1,7 +1,8 @@
 param(
     [Parameter(Mandatory)] [string] $CoreSource,
     [string] $Cache = (Join-Path $env:LOCALAPPDATA 'spiral-bin\candidates\parser-corpus-gate'),
-    [string] $SampleDir
+    [string] $SampleDir,
+    [string[]] $ConsumerRepos = @()
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'env.ps1')
@@ -19,9 +20,9 @@ if (Test-Path $work) { Remove-Item $work -Recurse -Force }
 New-Item -ItemType Directory -Force $work | Out-Null
 $corpus = Join-Path $work 'corpus.tsv'
 pwsh -NoProfile -File (Join-Path $PSScriptRoot 'formatter\corpus.ps1') -Out $corpus | Out-Null
-foreach ($repo in 'tibia', 'x', 'dice', 'alphabet', 'kit') {
-    $root = "C:\home\git\$repo"
-    if (-not (Test-Path "$root\.git")) { continue }
+foreach ($root in $ConsumerRepos) {
+    if (-not (Test-Path (Join-Path $root '.git'))) { throw "consumer repo '$root' is not a git checkout" }
+    $repo = Split-Path $root -Leaf
     foreach ($rel in git -C $root ls-files -- '*.spi' '*.spir') { Add-Content $corpus "$repo`t3`t$(Join-Path $root $rel)`t$repo/$rel" }
 }
 "corpus rows: $((Get-Content $corpus).Count)"

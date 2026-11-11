@@ -3,6 +3,23 @@ defmodule Spiral.Cells.TestHelpers do
 
   def fixture(name), do: Path.join(@fixtures, name)
 
+  def dice_root, do: System.get_env("SPIRAL_CELLS_DICE_ROOT") || Path.expand("../../../../dice", __DIR__)
+
+  def alphabet_root, do: System.get_env("SPIRAL_CELLS_ALPHABET_ROOT") || Path.expand("../../../../alphabet", __DIR__)
+
+  def dice_corpus?, do: File.regular?(Path.join(dice_root(), "lib/dice.spi"))
+
+  def alphabet_corpus?, do: File.dir?(Path.join(alphabet_root(), "apps/documents"))
+
+  def sibling_repos? do
+    home = Path.expand("../../../..", __DIR__)
+
+    case File.ls(home) do
+      {:ok, names} -> Enum.count(names, &File.exists?(Path.join([home, &1, ".git"]))) > 1
+      {:error, _} -> false
+    end
+  end
+
   def escript do
     exe = if match?({:win32, _}, :os.type()), do: "escript.exe", else: "escript"
     path = Path.join([:code.root_dir(), "bin", exe])
@@ -70,7 +87,13 @@ if test_port? do
 end
 
 Spiral.Cells.Domain.ensure!()
-ExUnit.start(exclude: [:target_audit])
+ExUnit.start(
+  exclude:
+    [:target_audit] ++
+      if(Spiral.Cells.TestHelpers.dice_corpus?(), do: [], else: [:dice_corpus]) ++
+      if(Spiral.Cells.TestHelpers.alphabet_corpus?(), do: [], else: [:alphabet_corpus]) ++
+      if(Spiral.Cells.TestHelpers.sibling_repos?(), do: [], else: [:sibling_repos])
+)
 
 if test_port? do
   ExUnit.after_suite(fn _ ->

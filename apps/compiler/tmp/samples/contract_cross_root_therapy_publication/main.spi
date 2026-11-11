@@ -271,7 +271,7 @@
         := \? from to. node = payload
         visitor node
 
-:= ^ final_row \* patient sample build contig cohort calibration purpose round root batch route host epoch from
+:= final_row \* patient sample build contig cohort calibration purpose round root batch route host epoch from
     to.
     (plan :
         serialized_plan

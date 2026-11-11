@@ -1,0 +1,5 @@
+:= failwith \* t. (msg : string) : t = !!!!FailWith(`t, msg)
+
+:= main () : () =
+    := ~n = 20i32
+    ? !!!!EQ(n +. 22i32, 42i32) ?> () |: failwith "c-unit-main-wrong-sum"

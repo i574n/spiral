@@ -4,7 +4,7 @@ param(
     [string[]] $Test = @(),
     [string] $Negative = '',
     [switch] $Control,
-    [string] $Lib = 'C:\home\git\spiral\lib\spiral',
+    [string] $Lib = (Join-Path $PSScriptRoot '..\..\..\lib\spiral'),
     [string] $Kit = (Join-Path $env:LOCALAPPDATA 'kit\bin\kit.exe'),
     [string] $Work = (Join-Path ([IO.Path]::GetTempPath()) "lib-program-gate-$PID")
 )

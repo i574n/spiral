@@ -58,10 +58,24 @@ if ($BackendsFrom -and -not $Backend) {
     for (; $j -lt $b.Length; $j++) { & $mark 1 $j }    if (-not $shared -and $owners.Count) { $Backend = @($owners | Sort-Object) }
     Write-Host "-BackendsFrom: $(if ($shared) { 'a change outside the codegen sections, so every backend' } elseif ($owners.Count) { "codegen sections changed: $($Backend -join ',')" } else { 'no change found' })"
 }
-foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all', 'fast', 'linked', 'families', 'split', 'split-corpus') { throw "unknown suite '$s'" } }
+foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all', 'fast', 'linked', 'families', 'split', 'split-corpus', 'tstypes', 'linkgate') { throw "unknown suite '$s'" } }
+if ($Suite -contains 'linkgate') {
+    if ($Suite.Count -gt 1) { throw "-Suite linkgate runs split then split-corpus and does not combine with '$($Suite -join ',')'" }
+    $passOn = @('-Mode', $Mode, '-Configuration', $Configuration)
+    if ($TimeoutSec -gt 0) { $passOn += @('-TimeoutSec', $TimeoutSec) }
+    if ($Parallel -gt 0) { $passOn += @('-Parallel', $Parallel) }
+    if ($Filter) { $passOn += @('-Filter', $Filter) }
+    $codes = foreach ($part in 'split', 'split-corpus') {
+        pwsh -NoProfile -File $PSCommandPath -Suite $part @passOn | Out-Host
+        Write-Host "linkgate: $part exit $LASTEXITCODE"
+        $LASTEXITCODE
+    }
+    exit ([int](@($codes | Where-Object { $_ -ne 0 }).Count -ne 0))
+}
 if ($Suite -contains 'linked' -and $Suite.Count -gt 1) { throw "-Suite linked builds multi-unit cases and does not combine with '$($Suite -join ',')'" }
 if ($Suite -contains 'split' -and $Suite.Count -gt 1) { throw "-Suite split cuts samples into linked units and does not combine with '$($Suite -join ',')'" }
 if ($Suite -contains 'split-corpus' -and $Suite.Count -gt 1) { throw "-Suite split-corpus cuts real packages at module boundaries and does not combine with '$($Suite -join ',')'" }
+if ($Suite -contains 'tstypes' -and $Suite.Count -gt 1) { throw "-Suite tstypes checks --types-out declarations with tsc and does not combine with '$($Suite -join ',')'" }
 if ($Suite -contains 'families' -and $Suite.Count -gt 1) { throw "-Suite families runs the test-block families through Cells and does not combine with '$($Suite -join ',')'" }
 $fastSuite = $Suite -contains 'fast'
 if ($fastSuite -and $Suite.Count -gt 1) { throw "-Suite fast picks its rows from every suite and does not combine with '$($Suite -join ',')'" }
@@ -121,6 +135,43 @@ if ($Suite -contains 'families') {
     exit ([int]($failed -ne 0))
 }
 
+if ($Suite -contains 'tstypes') {
+    $tsc = (Get-SpiralNativeTools).Tsc
+    if (-not $tsc) { throw 'the tstypes suite needs the native TypeScript 7 tsc: set SPIRAL_TSC or unpack @typescript/typescript-<rid> into <spiral cache>/toolchains/tsc' }
+    $tscVersion = (& $tsc --version | Select-Object -Last 1).Trim()
+    $compileInto = { param($entry, $out, $extra)
+        New-Item -ItemType Directory -Force $out | Out-Null
+        & $dotnet $compiler @extra --backend Fsharp $entry (Join-Path $out 'main.fsx') *> (Join-Path $out 'compile.log')
+        $LASTEXITCODE }
+    $rows = foreach ($case in Get-ChildItem (Join-Path $BundleRoot 'tests/tstypes') -Directory | Where-Object { -not $Filter -or $_.Name -match $Filter } | Sort-Object Name) {
+        $out = Join-Path $runDir "tstypes/$($case.Name)"
+        $types = Join-Path $out 'types.d.ts'
+        $compiled = & $compileInto (Join-Path $case.FullName 'main.spi') $out @('--types-out', $types)
+        & $tsc --strict --noEmit --target es2022 --lib es2022 $types (Join-Path $case.FullName 'probe.ts') *> (Join-Path $out 'tsc.log')
+        $checked = $LASTEXITCODE
+        $expected = @(Select-String -LiteralPath (Join-Path $case.FullName 'probe.ts') -Pattern '^\s*// @ts-expect-error').Count
+        $negatives = @(Get-ChildItem (Join-Path $case.FullName 'negatives') -Directory -ErrorAction Ignore | Sort-Object Name)
+        $accepted = @(foreach ($n in $negatives) {
+            $entry = Join-Path $n.FullName 'main.spi'
+            $code = & $compileInto $entry (Join-Path $out "negatives/$($n.Name)") @()
+            $log = Join-Path $out "negatives/$($n.Name)/compile.log"
+            $own = Select-String -LiteralPath $log -Pattern ([regex]::Escape(($entry -replace '\\', '/')) + ':\d+:\d+: ETY-') -Quiet
+            $expectFile = Join-Path $n.FullName 'expect'
+            $reason = (Test-Path -LiteralPath $expectFile) -and (Select-String -LiteralPath $log -SimpleMatch (Get-Content -LiteralPath $expectFile -TotalCount 1).Trim() -Quiet)
+            if ($code -eq 0 -or -not $own -or -not $reason) { $n.Name }
+        })
+        $verdict = if ($compiled -eq 0 -and $checked -eq 0 -and $expected -eq $negatives.Count -and $negatives.Count -gt 0 -and $accepted.Count -eq 0) { 'PASS' } else { 'FAIL' }
+        [pscustomobject]@{ case = $case.Name; compile = $compiled; tsc = $checked; expect_errors = $expected; negatives = $negatives.Count; spiral_accepted = ($accepted -join ','); verdict = $verdict }
+    }
+    New-Item -ItemType Directory -Force $runDir | Out-Null
+    $rows | Export-Csv -Delimiter "`t" -NoTypeInformation -UseQuotes Never (Join-Path $runDir 'results.tsv')
+    $rows | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
+    $failed = @($rows | Where-Object verdict -ne 'PASS').Count
+    Write-Host "tstypes $(@($rows).Count) cases, $failed failed, tsc $tscVersion; results: $(Join-Path $runDir 'results.tsv')"
+    if ($lockHeld) { $lock.ReleaseMutex() }
+    exit ([int]($failed -ne 0))
+}
+
 if ($Suite -contains 'linked') {
     $tools = Get-SpiralNativeTools
     $unitExtension = @{ Rust = 'rs'; Zig = 'zig'; Gleam = 'gleam' }
@@ -133,6 +184,7 @@ if ($Suite -contains 'linked') {
             $section = { param($name) if ($proj -match "(?ms)^$($name):\s*\n((?:[ \t]+\S.*\n?)*)") { @($Matches[1] -split '\n' | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^[\w.]+-$' } | ForEach-Object { $_.TrimEnd('-') }) } else { @() } }
             $units[$dir.Name] = @{ Dir = $dir.FullName; Packages = & $section 'packages'; Links = & $section 'link' }
         }
+        if ($env:SPIRAL_DERIVED_LINKS -eq '1') { foreach ($u in @($units.Keys)) { $units[$u].Links = @(@($units[$u].Links) + @($units[$u].Packages | Where-Object { $units.ContainsKey($_) -and ((Test-Path (Join-Path $units[$_].Dir 'main.spi')) -or (Test-Path (Join-Path $units[$_].Dir "$_.spi"))) }) | Select-Object -Unique) } }
         $root = @($units.Keys | Where-Object { $name = $_; -not ($units.Values | Where-Object { $_.Packages -contains $name }) }) | Select-Object -First 1
         $order = [System.Collections.Generic.List[string]]::new()
         $visit = { param($u) foreach ($l in $units[$u].Links) { if (-not $order.Contains($l)) { & $visit $l } }; if (-not $order.Contains($u)) { $order.Add($u) } }
@@ -143,12 +195,32 @@ if ($Suite -contains 'linked') {
             New-Item -ItemType Directory -Force $out | Out-Null
             $row = [ordered]@{ id = $case; backend = $b; compile = 'ok'; linked = ''; native = ''; exit = ''; want = $(if ($spec['Error']) { "error: $($spec['Error'])" } else { $spec['Exit'] }); verdict = 'pass'; detail = '' }
             $errorText = ''
-            foreach ($u in $order) {
-                $entry = @('main.spi', "$u.spi") | ForEach-Object { Join-Path $units[$u].Dir $_ } | Where-Object { Test-Path $_ } | Select-Object -First 1
-                Push-Location $units[$u].Dir
-                $text = (& $dotnet $compiler --backend $b (Split-Path $entry -Leaf) (Join-Path $out "$u.$($unitExtension[$b])") 2>&1 | ForEach-Object { "$_" }) -join "`n"
-                Pop-Location
-                if ($LASTEXITCODE) { $row.compile = 'error'; $errorText = $text; $row.detail = "${u}: " + ($text -replace '\s+', ' ').Substring(0, [Math]::Min(300, ($text -replace '\s+', ' ').Length)); break }
+            $entryOf = { param($u) @('main.spi', "$u.spi") | ForEach-Object { Join-Path $units[$u].Dir $_ } | Where-Object { Test-Path $_ } | Select-Object -First 1 }
+            if ($env:SPIRAL_LINKED_WARM -ne '0') {
+                $jobsPath = Join-Path $out 'warm.jobs.tsv'
+                $resultsPath = Join-Path $out 'warm.results.tsv'
+                $logPath = Join-Path $out 'warm.log'
+                Remove-Item $resultsPath -ErrorAction Ignore
+                $order | ForEach-Object { "$_`t$b`t$(& $entryOf $_)`t$(Join-Path $out "$_.$($unitExtension[$b])")`t120000" } | Set-Content $jobsPath
+                & $dotnet $compiler --batch $jobsPath $resultsPath 2> $logPath | Out-Null
+                $text = if (Test-Path $logPath) { (Get-Content $logPath | ForEach-Object { "$_" }) -join "`n" } else { '' }
+                $results = @{}
+                if (Test-Path $resultsPath) { foreach ($line in Get-Content $resultsPath) { $f = $line.Split("`t", 4); if ($f.Count -ge 2) { $results[$f[0]] = $f } } }
+                foreach ($u in $order) {
+                    $r = $results[$u]
+                    if (-not $r -or $r[1] -ne 'ok') {
+                        $detail = if ($r -and $r.Count -ge 4) { $r[3] } else { 'no result' }
+                        $row.compile = 'error'; $errorText = "$detail`n$text"; $row.detail = "${u}: " + ($detail -replace '\s+', ' ').Substring(0, [Math]::Min(300, ($detail -replace '\s+', ' ').Length)); break
+                    }
+                }
+            } else {
+                foreach ($u in $order) {
+                    $entry = & $entryOf $u
+                    Push-Location $units[$u].Dir
+                    $text = (& $dotnet $compiler --backend $b (Split-Path $entry -Leaf) (Join-Path $out "$u.$($unitExtension[$b])") 2>&1 | ForEach-Object { "$_" }) -join "`n"
+                    Pop-Location
+                    if ($LASTEXITCODE) { $row.compile = 'error'; $errorText = $text; $row.detail = "${u}: " + ($text -replace '\s+', ' ').Substring(0, [Math]::Min(300, ($text -replace '\s+', ' ').Length)); break }
+                }
             }
             if ($spec['Error']) {
                 if ($row.compile -ne 'error' -or $errorText -notmatch [regex]::Escape($spec['Error'])) { $row.verdict = 'FAIL' }
@@ -167,7 +239,7 @@ if ($Suite -contains 'linked') {
                         $externs = [System.Collections.Generic.List[string]]::new()
                         foreach ($u in $order | Where-Object { $_ -ne $root }) {
                             & rustc --edition 2024 --crate-type rlib --crate-name $u "$u.rs" @externs -L $out -o "lib$u.rlib" -A warnings 2>&1 | Where-Object { "$_" -match '^error' } | Select-Object -First 1 | ForEach-Object { $row.detail = "rustc ${u}: $_" }
-                            $externs.Add('--extern'); $externs.Add("$u=$out\lib$u.rlib")
+                            $externs.Add('--extern'); $externs.Add("$u=$(Join-Path $out "lib$u.rlib")")
                         }
                         & rustc --edition 2024 --crate-name $root "$root.rs" @externs -L $out -o "$root.exe" -A warnings 2>&1 | Where-Object { "$_" -match '^error' } | Select-Object -First 1 | ForEach-Object { $row.detail = "rustc ${root}: $_" }
                         Test-Path "$root.exe"
@@ -219,13 +291,15 @@ if ($Suite -contains 'split') {
         param($b, $dir, $linked)
         Push-Location $dir
         $err = @()
+        $exe = if ($IsWindows) { 'main.exe' } else { 'main' }
+        $pin = @(Get-SpiralRustPin)
         if ($b -eq 'Zig') { $err = @(& $tools.Zig build-exe -O ReleaseFast --name main main.zig 2>&1 | ForEach-Object { "$_" }) }
         elseif ($linked) {
-            $err = @(& rustc --edition 2024 --crate-type rlib --crate-name model model.rs -o libmodel.rlib -A warnings 2>&1 | ForEach-Object { "$_" } | Where-Object { $_ -match '^error' })
-            $err += @(& rustc --edition 2024 --crate-name main main.rs --extern "model=$dir\libmodel.rlib" -L $dir -o main.exe -A warnings 2>&1 | ForEach-Object { "$_" } | Where-Object { $_ -match '^error' })
+            $err = @(& rustc @pin --edition 2024 --crate-type rlib --crate-name model model.rs -o libmodel.rlib -A warnings 2>&1 | ForEach-Object { "$_" } | Where-Object { $_ -match '^error' })
+            $err += @(& rustc @pin --edition 2024 --crate-name main main.rs --extern "model=$(Join-Path $dir 'libmodel.rlib')" -L $dir -o $exe -A warnings 2>&1 | ForEach-Object { "$_" } | Where-Object { $_ -match '^error' })
         }
-        else { $err = @(& rustc --edition 2024 --crate-name main main.rs -o main.exe -A warnings 2>&1 | ForEach-Object { "$_" } | Where-Object { $_ -match '^error' }) }
-        $code = if (Test-Path main.exe) { & .\main.exe | Out-Null; "$LASTEXITCODE" } else { 'build-fail' }
+        else { $err = @(& rustc @pin --edition 2024 --crate-name main main.rs -o $exe -A warnings 2>&1 | ForEach-Object { "$_" } | Where-Object { $_ -match '^error' }) }
+        $code = if (Test-Path $exe) { & (Join-Path $dir $exe) | Out-Null; "$LASTEXITCODE" } else { 'build-fail' }
         Pop-Location
         $code, (@($err) | Select-Object -First 1)
     }
@@ -243,19 +317,48 @@ if ($Suite -contains 'split') {
             if ($want -eq 'build-fail') { Write-Host "skip $case ${b}: its single-unit build fails, so no cut has a reference"; $skipped++; continue }
             $list = @(& $dotnet $compiler split-units (Join-Path $sdir 'main.spi') --list 2>&1 | ForEach-Object { "$_" })
             $stride = [Math]::Max(1, [Math]::Floor($list.Count / 20))
+            $cuts = [System.Collections.Generic.List[object]]::new()
             for ($k = $stride; $k -lt $list.Count; $k += $stride) {
                 $cut = Join-Path $base "cut$k"
                 New-Item -ItemType Directory -Force $cut | Out-Null
-                if (-not (Test-Path (Join-Path $cut 'core'))) { New-Item -ItemType Junction -Path (Join-Path $cut 'core') -Target (Join-Path $BundleRoot 'samples/core') | Out-Null }
+                if (-not (Test-Path (Join-Path $cut 'core'))) { New-Item -ItemType $(if ($IsWindows) { 'Junction' } else { 'SymbolicLink' }) -Path (Join-Path $cut 'core') -Target (Join-Path $BundleRoot 'samples/core') | Out-Null }
                 $split = @(& $dotnet $compiler split-units (Join-Path $sdir 'main.spi') --cut $k --out $cut 2>&1 | ForEach-Object { "$_" })
                 if ($LASTEXITCODE) { continue }
-                $row = [ordered]@{ id = $case; backend = $b; cut = $k; want = $want; verdict = 'pass'; result = ''; detail = (($split | Select-Object -Last 1) -split 'generics by source ')[-1] }
+                $cuts.Add(@{ K = $k; Dir = $cut; Detail = (($split | Select-Object -Last 1) -split 'generics by source ')[-1] })
+            }
+            $cutUnits = @(@('model', 'model.spi', 'model'), @('app', 'main.spi', 'main'))
+            $splitWarm = $env:SPIRAL_LINKED_WARM -ne '0'
+            $warmResults = @{}
+            if ($splitWarm -and $cuts.Count) {
+                $jobsPath = Join-Path $base 'warm.jobs.tsv'
+                $resultsPath = Join-Path $base 'warm.results.tsv'
+                Remove-Item $resultsPath -ErrorAction Ignore
+                $cuts | ForEach-Object { $c = $_; $cutUnits | ForEach-Object { "cut$($c.K)/$($_[0])`t$b`t$(Join-Path $c.Dir "$($_[0])/$($_[1])")`t$(Join-Path $c.Dir "app/$($_[2]).$ext")`t120000" } } | Set-Content $jobsPath
+                & $dotnet $compiler --batch $jobsPath $resultsPath 2> (Join-Path $base 'warm.log') | Out-Null
+                if (Test-Path $resultsPath) { foreach ($line in Get-Content $resultsPath) { $f = $line.Split("`t", 4); if ($f.Count -ge 2) { $warmResults[$f[0]] = $f } } }
+            }
+            foreach ($c in $cuts) {
+                $k = $c.K
+                $cut = $c.Dir
+                $row = [ordered]@{ id = $case; backend = $b; cut = $k; want = $want; verdict = 'pass'; result = ''; detail = $c.Detail }
                 $refused = $null
-                foreach ($u in @(@('model', 'model.spi', 'model'), @('app', 'main.spi', 'main'))) {
-                    Push-Location (Join-Path $cut $u[0]); $text = @(& $dotnet $compiler --backend $b $u[1] (Join-Path $cut "app/$($u[2]).$ext") 2>&1 | ForEach-Object { "$_" }); $e = $LASTEXITCODE; Pop-Location
-                    if ($e -and -not $refused) { $refused = "refused ($($u[0])): $(@($text | Where-Object { $_ -match 'ETY-\w+|TracedError|FatalError' }) | Select-Object -First 1)" }
+                $environment = $null
+                foreach ($u in $cutUnits) {
+                    if ($splitWarm) {
+                        $r = $warmResults["cut$k/$($u[0])"]
+                        $e = -not $r -or $r[1] -ne 'ok'
+                        $text = if ($r -and $r.Count -ge 4 -and $r[3] -match '(ETY-\w+|TracedError|FatalError).*') { @($Matches[0]) } elseif ($r -and $r.Count -ge 4) { @($r[3]) } else { @('no result') }
+                    }
+                    else {
+                        Push-Location (Join-Path $cut $u[0]); $text = @(& $dotnet $compiler --backend $b $u[1] (Join-Path $cut "app/$($u[2]).$ext") 2>&1 | ForEach-Object { "$_" }); $e = $LASTEXITCODE; Pop-Location
+                    }
+                    if ($e -and -not $refused) {
+                        if (($text -join "`n") -match 'PackageErrors|is not loaded') { $environment = "environment ($($u[0])): the cut's packages did not load, so this cut tested nothing" }
+                        $refused = "refused ($($u[0])): $(@($text | Where-Object { $_ -match 'ETY-\w+|TracedError|FatalError' }) | Select-Object -First 1)"
+                    }
                 }
-                if ($refused) { $row.result = $refused.Substring(0, [Math]::Min(160, $refused.Length)) }
+                if ($environment) { $row.result = $environment; $row.verdict = 'FAIL'; $environment = $null }
+                elseif ($refused) { $row.result = $refused.Substring(0, [Math]::Min(160, $refused.Length)) }
                 else {
                     $appDir = Join-Path $cut 'app'
                     $linked = (Get-Content -Raw (Join-Path $appDir "main.$ext")) -match 'model(::|\.)'
@@ -1066,7 +1169,7 @@ function Build-And-Run($job) {
     $build = switch ($job.Backend) {
         'C' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-fwrapv', '-w') + (Get-CFlags $job) + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
         'Ebpf' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-fwrapv', '-w', '-x', 'c') + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
-        'Rust' { if (-not $tools.Rustc) { return 'no-toolchain' }; Invoke-Native $tools.Rustc @('+nightly-2026-11-05', '-C', 'opt-level=2', '-A', 'warnings', '--edition', '2024', '-o', $exe, $job.Output) $dir 180 }
+        'Rust' { if (-not $tools.Rustc) { return 'no-toolchain' }; Invoke-Native $tools.Rustc (@(Get-SpiralRustPin $tools.Rustc) + @('-C', 'opt-level=2', '-A', 'warnings', '--edition', '2024', '-o', $exe, $job.Output)) $dir 180 }
         'Pascal' { if (-not $tools.Fpc) { return 'no-toolchain' }; Invoke-Native $tools.Fpc @('-O2', '-Mdelphi', '-Px86_64', "-FE$binDir", "-FU$binDir", "-o$exe", $job.Output) $dir 180 }
         'Zig' {
             if (-not $zigExe) { return 'no-toolchain' }

@@ -195,7 +195,7 @@
         := \? effect. _, ClearingRow label = payload
         label
 
-:= ^ terminal_label \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+:= terminal_label \* grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
     batch participant_left participant_right root observer_left observer_right from to.
     (plan :
         clearing_plan
@@ -393,7 +393,7 @@
         := \? effect. _, ParallelRow label = payload
         label
 
-:= ^ parallel_terminal \* batch epoch from to. (plan : parallel_plan batch epoch from to) : string =
+:= parallel_terminal \* batch epoch from to. (plan : parallel_plan batch epoch from to) : string =
     ?= plan ?|
     | ParallelLeaf node => parallel_node_label node
     | ParallelThen payload =>

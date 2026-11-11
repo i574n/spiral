@@ -1,0 +1,274 @@
+///- --package .
+:# linear_open_substitution static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+:< linear_terms
+:< linear_substitution
+:< linear_variable_strengthening
+:< linear_term_strengthening
+
+:| mark tail full =
+    | MarkUnused :: \* u. string -> mark u (unused u)
+    | MarkUsed :: \* u. string -> mark u (used u)
+
+:| ^ selected c s d u =
+    | SelectedHere :: \* t u d. string -> selected (extend t d) zero d (unused u)
+    | SelectedThere :: \* t h s d f. (\? u. selected t s d u * mark u f * string) -> selected (extend t h) (meta_succ s) d f
+
+:== var_payload c s u v r = membership c s r * single_use c s r u * selected c s r v * term c v r * string
+
+:| ^ osub c u v r y =
+    | OVar :: \* c u v r. (\? s. var_payload c s u v r) -> osub c u v r r
+    | OIntro :: \* c u v r y. ointro c u v r y -> osub c u v r y
+    | OElim :: \* c u v r y. oelim c u v r y -> osub c u v r y
+
+:& :| ointro c u v r y =
+    | OTensor :: \* c u v r l t. otensor c u v r l t -> ointro c u v r (tensor_type l t)
+    | OLambda :: \* c u v r d y. osub (extend c d) (used u) (used v) r y * string -> ointro c u v r (arrow_type d y)
+
+:& :| otensor c u v r l t =
+    | TLeftSide :: \* c u v r l t. oleft c u v r l t -> otensor c u v r l t
+    | TRightSide :: \* c u v r l t. oright c u v r l t -> otensor c u v r l t
+
+:& :| oleft c u v r l t =
+    | LeftPart :: \* c u v r l t. (\? a b w. osub c a b r l * term c w t * merges c a w u c b w v * string) -> oleft c u v r l t
+
+:& :| oright c u v r l t =
+    | RightPart :: \* c u v r l t. (\? w a b. term c w l * osub c a b r t * merges c w a u c w b v * string) -> oright c u v r l t
+
+:& :| oelim c u v r y =
+    | OApp :: \* c u v r y. oapp c u v r y -> oelim c u v r y
+    | OIf :: \* c u v r y. oif c u v r y -> oelim c u v r y
+
+:& :| oapp c u v r y =
+    | OFun :: \* c u v r y. ofun c u v r y -> oapp c u v r y
+    | OArg :: \* c u v r y. oarg c u v r y -> oapp c u v r y
+
+:& :| oif c u v r y =
+    | OGuard :: \* c u v r y. oguard c u v r y -> oif c u v r y
+    | OBranches :: \* c u v r y. obranch c u v r y -> oif c u v r y
+
+:& :| ofun c u v r y =
+    | FunPart :: \* c u v r y. (\? d a b w. osub c a b r (arrow_type d y) * term c w d * merges c a w u c b w v * string) -> ofun c u v r y
+
+:& :| oarg c u v r y =
+    | ArgPart :: \* c u v r y. (\? d w a b. term c w (arrow_type d y) * osub c a b r d * merges c w a u c w b v * string) -> oarg c u v r y
+
+:& :| oguard c u v r y =
+    | GuardPart :: \* c u v r y. (\? a b w. osub c a b r bool_type * term c w y * term c w y * merges c a w u c b w v * string) -> oguard c u v r y
+
+:& :| obranch c u v r y =
+    | BranchPart :: \* c u v r y. (\? w a b. term c w bool_type * osub c a b r y * osub c a b r y * merges c w a u c w b v * string) -> obranch c u v r y
+
+:= var_source \* c s u v r. ((m, w, _, _, n) : var_payload c s u v r) : term c u r = Variable (VariableAt (\? (m, w, n)))
+
+:= ^ osource \* c u v r y. (p : osub c u v r y) : term c u y =
+    ?= p ?|
+    | OVar q =>
+        := \? k. x = q
+        var_source x
+    | OIntro i => Intro (ointro_source i)
+    | OElim e => Elim (oelim_source e)
+
+:& := ointro_source \* c u v r y. (p : ointro c u v r y) : intro c u y =
+    ?= p ?|
+    | OTensor t => otensor_source t
+    | OLambda (body, n) => Lambda (osource body, n)
+
+:& := otensor_source \* c u v r l t. (p : otensor c u v r l t) : intro c u (tensor_type l t) =
+    ?= p ?|
+    | TLeftSide x => left_source x
+    | TRightSide x => right_source x
+
+:& := left_source \* c u v r l t. ((LeftPart q) : oleft c u v r l t) : intro c u (tensor_type l t) =
+    := \? a b w. x, held, (m, _), n = q
+    Tensor (\? (osource x, held, m, n))
+
+:& := right_source \* c u v r l t. ((RightPart q) : oright c u v r l t) : intro c u (tensor_type l t) =
+    := \? w a b. held, x, (m, _), n = q
+    Tensor (\? (held, osource x, m, n))
+
+:& := oelim_source \* c u v r y. (p : oelim c u v r y) : elim c u y =
+    ?= p ?|
+    | OApp (OFun f) => fun_source f
+    | OApp (OArg g) => arg_source g
+    | OIf (OGuard h) => guard_source h
+    | OIf (OBranches b) => branch_source b
+
+:& := fun_source \* c u v r y. ((FunPart q) : ofun c u v r y) : elim c u y =
+    := \? d a b w. x, held, (m, _), n = q
+    Apply (\? (osource x, held, m, n))
+
+:& := arg_source \* c u v r y. ((ArgPart q) : oarg c u v r y) : elim c u y =
+    := \? d w a b. held, x, (m, _), n = q
+    Apply (\? (held, osource x, m, n))
+
+:& := guard_source \* c u v r y. ((GuardPart q) : oguard c u v r y) : elim c u y =
+    := \? a b w. x, yes, no, (m, _), n = q
+    If (\? (osource x, yes, no, m, n))
+
+:& := branch_source \* c u v r y. ((BranchPart q) : obranch c u v r y) : elim c u y =
+    := \? w a b. g, yes, no, (m, _), n = q
+    If (\? (g, osource yes, osource no, m, n))
+
+:= ^ otarget \* c u v r y. (p : osub c u v r y) : term c v y =
+    ?= p ?|
+    | OVar q =>
+        := \? k. _, _, _, replacement, _ = q
+        replacement
+    | OIntro i => Intro (ointro_target i)
+    | OElim e => Elim (oelim_target e)
+
+:& := ointro_target \* c u v r y. (p : ointro c u v r y) : intro c v y =
+    ?= p ?|
+    | OTensor t => otensor_target t
+    | OLambda (body, n) => Lambda (otarget body, n)
+
+:& := otensor_target \* c u v r l t. (p : otensor c u v r l t) : intro c v (tensor_type l t) =
+    ?= p ?|
+    | TLeftSide x => left_target x
+    | TRightSide x => right_target x
+
+:& := left_target \* c u v r l t. ((LeftPart q) : oleft c u v r l t) : intro c v (tensor_type l t) =
+    := \? a b w. x, held, (_, m), n = q
+    Tensor (\? (otarget x, held, m, n))
+
+:& := right_target \* c u v r l t. ((RightPart q) : oright c u v r l t) : intro c v (tensor_type l t) =
+    := \? w a b. held, x, (_, m), n = q
+    Tensor (\? (held, otarget x, m, n))
+
+:& := oelim_target \* c u v r y. (p : oelim c u v r y) : elim c v y =
+    ?= p ?|
+    | OApp (OFun f) => fun_target f
+    | OApp (OArg g) => arg_target g
+    | OIf (OGuard h) => guard_target h
+    | OIf (OBranches b) => branch_target b
+
+:& := fun_target \* c u v r y. ((FunPart q) : ofun c u v r y) : elim c v y =
+    := \? d a b w. x, held, (_, m), n = q
+    Apply (\? (otarget x, held, m, n))
+
+:& := arg_target \* c u v r y. ((ArgPart q) : oarg c u v r y) : elim c v y =
+    := \? d w a b. held, x, (_, m), n = q
+    Apply (\? (held, otarget x, m, n))
+
+:& := guard_target \* c u v r y. ((GuardPart q) : oguard c u v r y) : elim c v y =
+    := \? a b w. x, yes, no, (_, m), n = q
+    If (\? (otarget x, yes, no, m, n))
+
+:& := branch_target \* c u v r y. ((BranchPart q) : obranch c u v r y) : elim c v y =
+    := \? w a b. g, yes, no, (_, m), n = q
+    If (\? (g, otarget yes, otarget no, m, n))
+
+:= unit_in_cell () : term one_cell (unused usage_empty) unit_type = Constant (UnitValue (AllUnusedExtend (empty_usage (), "cell-unused"), "unit"))
+
+:= var_plan () : osub one_cell (used usage_empty) (unused usage_empty) unit_type unit_type =
+    OVar (\? (MembershipHere "slot-zero", SingleUseHere (empty_usage (), "used-once"), SelectedHere "selected", unit_in_cell (), "replace-by-unit"))
+
+:= left_merge () : usage_merge one_cell (used usage_empty) (unused usage_empty) (used usage_empty) = MergeStep (\? (LeftOnly "l", MergeEmpty "e", "m"))
+
+:= none_merge () : usage_merge one_cell (unused usage_empty) (unused usage_empty) (unused usage_empty) = MergeStep (\? (Neither "n", MergeEmpty "e", "m"))
+
+:= left_plan () : osub one_cell (used usage_empty) (unused usage_empty) unit_type (tensor_type unit_type unit_type) =
+    OIntro (OTensor (TLeftSide (LeftPart (\? (var_plan (), unit_in_cell (), (left_merge (), none_merge ()), "left")))))
+
+///> rust
+:# the_variable_case_puts_the_replacement_at_the_selected_slot =
+    (term_label (osource (var_plan ())), term_label (otarget (var_plan ()))) |> _assert_eq ("variable", "constant")
+
+///> rust
+:# a_tensor_left_substitution_keeps_the_shape_and_the_held_right_part =
+    (size (osource (left_plan ())), size (otarget (left_plan ())), term_label (otarget (left_plan ()))) |> _assert_eq (3i32, 3i32, "intro")
+
+:= right_merge () : usage_merge one_cell (unused usage_empty) (used usage_empty) (used usage_empty) = MergeStep (\? (RightOnly "r", MergeEmpty "e", "m"))
+
+:= right_plan () : osub one_cell (used usage_empty) (unused usage_empty) unit_type (tensor_type unit_type unit_type) =
+    OIntro (OTensor (TRightSide (RightPart (\? (unit_in_cell (), var_plan (), (right_merge (), none_merge ()), "right")))))
+
+///> rust
+:# a_tensor_right_substitution_keeps_the_shape_and_the_held_left_part =
+    (size (osource (right_plan ())), size (otarget (right_plan ())), term_label (otarget (right_plan ()))) |> _assert_eq (3i32, 3i32, "intro")
+
+:== two_cells = extend one_cell unit_type
+
+:= outer_unused () : all_unused two_cells (unused (unused usage_empty)) = AllUnusedExtend (AllUnusedExtend (empty_usage (), "o"), "b")
+
+:= outer_use () : single_use two_cells (meta_succ zero) unit_type (unused (used usage_empty)) =
+    SingleUseThere (SingleUseHere (empty_usage (), "outer-once"), "binder-unused")
+
+:= outer_pick () : selected two_cells (meta_succ zero) unit_type (unused (unused usage_empty)) =
+    SelectedThere (\? (SelectedHere "outer", MarkUnused "binder-unused", "one-cell-down"))
+
+:= outer_member () : membership two_cells (meta_succ zero) unit_type = MembershipThere (MembershipHere "outer", "under-the-binder")
+
+:= outer_plan () : osub two_cells (unused (used usage_empty)) (unused (unused usage_empty)) unit_type unit_type =
+    OVar (\? (outer_member (), outer_use (), outer_pick (), Constant (UnitValue (outer_unused (), "unit")), "replace"))
+
+:= binder_var () : term two_cells (used (unused usage_empty)) unit_type =
+    Variable (VariableAt (\? (MembershipHere "binder", SingleUseHere (AllUnusedExtend (empty_usage (), "o"), "once"), "the-binder")))
+
+:= body_merges () : usage_merge two_cells (unused (used usage_empty)) (used (unused usage_empty)) (used (used usage_empty)) =
+    MergeStep (\? (RightOnly "r", left_merge (), "m"))
+
+:= target_merges () : usage_merge two_cells (unused (unused usage_empty)) (used (unused usage_empty)) (used (unused usage_empty)) =
+    MergeStep (\? (RightOnly "r", none_merge (), "m"))
+
+:= lambda_body () : osub two_cells (used (used usage_empty)) (used (unused usage_empty)) unit_type (tensor_type unit_type unit_type) =
+    OIntro (OTensor (TLeftSide (LeftPart (\? (outer_plan (), binder_var (), (body_merges (), target_merges ()), "pair")))))
+
+:= lambda_plan () : osub one_cell (used usage_empty) (unused usage_empty) unit_type (arrow_type unit_type (tensor_type unit_type unit_type)) =
+    OIntro (OLambda (lambda_body (), "lambda-outer"))
+
+///> rust
+:# a_substitution_under_a_lambda_reaches_the_outer_variable =
+    (size (osource (lambda_plan ())), size (otarget (lambda_plan ())), term_label (otarget (lambda_plan ()))) |> _assert_eq (4i32, 4i32, "intro")
+
+:= fun_plan () : osub one_cell (used usage_empty) (unused usage_empty) unit_type (tensor_type unit_type unit_type) =
+    OElim (OApp (OFun (FunPart (\? (lambda_plan (), unit_in_cell (), (left_merge (), none_merge ()), "fun")))))
+
+:= cell_identity () : term one_cell (unused usage_empty) (arrow_type unit_type unit_type) = Intro (Lambda (binder_var (), "id"))
+
+:= arg_plan () : osub one_cell (used usage_empty) (unused usage_empty) unit_type unit_type =
+    OElim (OApp (OArg (ArgPart (\? (cell_identity (), var_plan (), (right_merge (), none_merge ()), "arg")))))
+
+///> rust
+:# a_substitution_in_function_position_rewrites_the_applied_lambda =
+    (size (osource (fun_plan ())), size (otarget (fun_plan ())), term_label (otarget (fun_plan ()))) |> _assert_eq (6i32, 6i32, "elim")
+
+///> rust
+:# a_substitution_in_argument_position_rewrites_the_argument =
+    (size (osource (arg_plan ())), size (otarget (arg_plan ())), term_label (otarget (arg_plan ()))) |> _assert_eq (4i32, 4i32, "elim")
+
+///> rust
+:# a_substitution_target_cannot_keep_the_selected_cell_used fails "Unification failure" =
+    := p : osub one_cell (used usage_empty) (used usage_empty) unit_type unit_type = var_plan ()
+    p |> ignore
+
+///> rust
+:# a_tensor_substitution_target_cannot_keep_the_selected_cell_used fails "Unification failure" =
+    := p : osub one_cell (used usage_empty) (used usage_empty) unit_type (tensor_type unit_type unit_type) = left_plan ()
+    p |> ignore
+
+:== kept_used y = osub one_cell (used usage_empty) (used usage_empty) unit_type y
+
+///> rust
+:# a_right_side_substitution_cannot_keep_the_selected_cell_used fails "Unification failure" =
+    := p : kept_used (tensor_type unit_type unit_type) = right_plan ()
+    p |> ignore
+
+///> rust
+:# a_substitution_under_a_lambda_cannot_keep_the_outer_cell_used fails "Unification failure" =
+    := p : kept_used (arrow_type unit_type (tensor_type unit_type unit_type)) = lambda_plan ()
+    p |> ignore
+
+///> rust
+:# an_argument_substitution_cannot_keep_the_selected_cell_used fails "Unification failure" =
+    := p : kept_used unit_type = arg_plan ()
+    p |> ignore
+
+///> rust
+:# a_function_substitution_cannot_keep_the_selected_cell_used fails "Unification failure" =
+    := p : kept_used (tensor_type unit_type unit_type) = fun_plan ()
+    p |> ignore

@@ -90,3 +90,50 @@
         | Some _ => !+
         | None => !-
     |> _assert_eq !+
+
+:| restart_msg =
+    | Bump
+    | Crash
+    | Ask : erlang_process::subject i32
+
+:= answer (total : i32) (reply : erlang_process::subject i32) : otp_actor::next i32 restart_msg =
+    otp_actor::send reply total
+    otp_actor::continue total
+
+:= restart_step (total : i32) (message : restart_msg) : otp_actor::next i32 restart_msg =
+    ?= message ?|
+    | Bump => otp_actor::continue (total + 1i32)
+    | Crash => otp_actor::stop_abnormal "crash on request"
+    | Ask reply => answer total reply
+
+:== restart_name = erlang_process::name restart_msg
+
+:== restart_inbox = erlang_process::subject restart_msg
+
+:= named_worker (address : restart_name) : child restart_inbox =
+    worker \ () => otp_actor::new 0i32 |> otp_actor::named address |> otp_actor::on_message restart_step |> otp_actor::start
+
+:= supervise_named (address : restart_name) : () =
+    new OneForOne |> restart_tolerance 3i32 5i32 |> add (named_worker address |> with_restart Transient) |> start |> ignore
+
+:= pause (ms : i32) : () = erlang_term::apply "timer" "sleep" [ erlang_term::of ms ] |> ignore
+
+:= count_after_bumps (inbox : restart_inbox) : i32 =
+    otp_actor::send inbox Bump
+    otp_actor::send inbox Bump
+    otp_actor::call inbox 5000i32 Ask
+
+:= count_after_crash (inbox : restart_inbox) : i32 =
+    otp_actor::send inbox Crash
+    pause 300i32
+    otp_actor::call inbox 5000i32 Ask
+
+:= restart_counts (address : restart_name) : i32 * i32 =
+    supervise_named address
+    := inbox = erlang_process::named_subject address
+    := before = count_after_bumps inbox
+    before, count_after_crash inbox
+
+///> gleam
+:# a_crashed_transient_worker_is_restarted_with_fresh_state =
+    restart_counts (erlang_process::new_name "org2-restart") |> _assert_eq (2i32, 0i32)

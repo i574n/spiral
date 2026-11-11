@@ -1,0 +1,582 @@
+///- --package .
+:< regex_charset
+:< regex_syntax
+:< regex_derivative
+:< regex_dfa
+:< regex_nullable
+:< regex_minimal
+:< regex_language
+
+:# regex_certificate static =
+    :< testing
+
+:| equivalence =
+    | Equivalent : i32
+    | Distinguished : list u32
+
+:== side = { automaton : dfa; at : target }
+
+:== pending_pair = { left : target; right : target; word : list u32 }
+
+:== search = { a : dfa; b : dfa; codes : list u32 }
+
+:~ ^ seen_pair (l : target) (r : target) (seen : list (target * target)) : bool =
+    ?= seen ?|
+    | (x, y) :: rest => (x = l && y = r) || seen_pair l r rest
+    | [] => !-
+
+:~ both_dead (l : target) (r : target) : bool = l = Dead && r = Dead
+
+:== seen_pairs = list (target * target)
+
+:~ enqueued (l : target) (r : target) (p : pending_pair) (c : u32) (todo : list pending_pair) : list pending_pair =
+    listm::append todo [ { left = l; right = r; word = c :: p::word } ]
+
+:~ pair_step (s : search) (p : pending_pair) (c : u32) : target * target = step s::a p::left c, step s::b p::right c
+
+:~ visit_pair
+    (s : search) (p : pending_pair) (c : u32) (seen : seen_pairs) (todo : list pending_pair)
+    : seen_pairs * list pending_pair
+    =
+    := l, r = pair_step s p c
+    ? both_dead l r || seen_pair l r seen ?> seen, todo |: (l, r) :: seen, enqueued l r p c todo
+
+:== pending_work = list pending_pair * seen_pairs
+
+:~ ^ successors
+    (s : search) (p : pending_pair) (cs : list u32) (seen : seen_pairs) (todo : list pending_pair)
+    : pending_work
+    =
+    ?= cs ?|
+    | c :: rest =>
+        := seen, todo = visit_pair s p c seen todo
+        successors s p rest seen todo
+    | [] => todo, seen
+
+:~ differs (s : search) (p : pending_pair) : bool = verdict_at s::a p::left <> verdict_at s::b p::right
+
+:~ ^ explore (s : search) (queue : list pending_pair) (seen : seen_pairs) (pairs : i32) : equivalence =
+    ?= queue ?|
+    | p :: rest => ? differs s p ?> Distinguished (listm::rev p::word) |: explore_next s p rest seen pairs
+    | [] => Equivalent pairs
+
+:& :~ explore_next
+    (s : search) (p : pending_pair) (rest : list pending_pair) (seen : seen_pairs) (pairs : i32)
+    : equivalence
+    =
+    := queue, seen = successors s p s::codes seen rest
+    explore s queue seen (pairs + 1i32)
+
+:~ lows_of_both (a : dfa) (b : dfa) : list u32 =
+    lows_of (classes_from (range_points a::classes (range_points b::classes [ 0u32 ])))
+
+:~ compare_from (a : dfa) (l : target) (b : dfa) (r : target) : equivalence =
+    explore { a = a; b = b; codes = lows_of_both a b } [ { left = l; right = r; word = [] } ] [ (l, r) ] 0i32
+
+:= equivalent (a : dfa) (b : dfa) : equivalence = compare_from a a::start b b::start
+
+:== witness = { left : i32; right : i32; word : list u32 }
+
+:| minimality =
+    | Minimal : list witness
+    | NotMinimal : i32 * i32
+
+:~ compare_states (m : dfa) (i : i32) (j : i32) : equivalence = compare_from m (To (state i)) m (To (state j))
+
+:~ ^ witnesses_for (m : dfa) (i : i32) (j : i32) (n : i32) (acc : list witness) : minimality =
+    ? i >= n
+    ?> Minimal (listm::rev acc)
+    |? j >= n
+    ?> witnesses_for m (i + 1i32) (i + 2i32) n acc
+    |: witness_pair m i j n acc
+
+:& :~ witness_pair (m : dfa) (i : i32) (j : i32) (n : i32) (acc : list witness) : minimality =
+    ?= compare_states m i j ?|
+    | Distinguished w => witnesses_for m i (j + 1i32) n ({ left = i; right = j; word = w } :: acc)
+    | Equivalent _ => NotMinimal (i, j)
+
+:= certify (m : dfa) : minimality = witnesses_for m 0i32 1i32 (state_count m) []
+
+:| check =
+    | Certified : i32
+    | Forged : witness
+    | Uncertified : i32 * i32
+
+:~ witness_holds (m : dfa) (w : witness) : bool =
+    language_answer (re_nth w::left m::regexes) w::word <> language_answer (re_nth w::right m::regexes) w::word
+
+:~ ^ check_witnesses (m : dfa) (ws : list witness) (n : i32) : check =
+    ?= ws ?|
+    | w :: rest => ? witness_holds m w ?> check_witnesses m rest (n + 1i32) |: Forged w
+    | [] => Certified n
+
+:= check_minimality (m : dfa) (c : minimality) : check =
+    ?= c ?|
+    | Minimal ws => check_witnesses m ws 0i32
+    | NotMinimal (i, j) => Uncertified (i, j)
+
+:= is_forged (c : check) : bool =
+    ?= c ?|
+    | Forged _ => !+
+    | _ => !-
+
+:= minimal_of (r : re) : dfa =
+    ?= build r ?|
+    | Built d => minimize d
+    | StateCapReached _ => { classes = []; start = Dead; rows = []; regexes = [] }
+
+:! built_phase = ()
+:! minimal_phase = ()
+:! certified_phase = ()
+
+:| ^ automaton phase =
+    | Eager :: dfa -> automaton built_phase
+    | Minimized :: dfa -> automaton minimal_phase
+    | CertifiedAutomaton :: dfa * i32 -> automaton certified_phase
+
+:= automaton_dfa \* p. (a : automaton p) : dfa =
+    ?= a ?|
+    | Eager d => d
+    | Minimized d => d
+    | CertifiedAutomaton (d, _) => d
+
+:= minimized (a : automaton built_phase) : automaton minimal_phase = Minimized (minimize (automaton_dfa a))
+
+:= certified (a : automaton minimal_phase) : option (automaton certified_phase) =
+    := d = automaton_dfa a
+    ?= check_minimality d (certify d) ?|
+    | Certified pairs => Some (CertifiedAutomaton (d, pairs))
+    | _ => None
+
+:= eager_of (r : re) : dfa =
+    ?= build r ?|
+    | Built d => d
+    | StateCapReached _ => { classes = []; start = Dead; rows = []; regexes = [] }
+
+:= certified_of (r : re) : automaton certified_phase =
+    ?= certified (minimized (Eager (eager_of r))) ?|
+    | Some a => a
+    | None => failwith "certificate.certified_of / minimize produced an automaton that fails its own certificate"
+
+:= run_certified (a : automaton certified_phase) (codes : list u32) : verdict = run_unchecked (automaton_dfa a) codes
+
+:| dfa_violation =
+    | OpenTarget : i32 * i32
+    | NotTotal : i32
+    | WrongTransition : i32 * i32
+    | AcceptingMismatch : i32
+    | DuplicateKey : i32 * i32
+
+:| dfa_check =
+    | SoundDfa : i32
+    | Violates : dfa_violation
+
+:~ ^ count_next (ts : list target) (n : i32) : i32 =
+    ?= ts ?|
+    | _ :: rest => count_next rest (n + 1i32)
+    | [] => n
+
+:~ ^ count_lows (lows : list u32) (n : i32) : i32 =
+    ?= lows ?|
+    | _ :: rest => count_lows rest (n + 1i32)
+    | [] => n
+
+:== sound_ctx = { d : dfa; n : i32; width : i32; lows : list u32 }
+
+:~ first_of \* t. (a : option t) (b : option t) : option t =
+    ?= a ?|
+    | Some _ => a
+    | None => b
+
+:~ state_violation (x : sound_ctx) (e : re) (i : i32) (j : i32) (k : i32) : option dfa_violation =
+    ? k < 0i32 || k >= x::n
+    ?> Some (OpenTarget (i, j))
+    |? same_re e (re_nth k x::d::regexes) |> not
+    ?> Some (WrongTransition (i, j))
+    |: None
+
+:~ column_violation (x : sound_ctx) (e : re) (i : i32) (j : i32) (t : target) : option dfa_violation =
+    ?= t ?|
+    | To s => state_violation x e i j (state_index s)
+    | Dead ?& is_nothing e |> not => Some (WrongTransition (i, j))
+    | _ => None
+
+:~ column_at (x : sound_ctx) (r : re) (c : u32) (i : i32) (j : i32) (next : list target) : option dfa_violation =
+    column_violation x (derive c r) i j (target_at j next)
+
+:~ ^ columns_sound
+    (x : sound_ctx) (r : re) (i : i32) (lows : list u32) (next : list target) (j : i32)
+    : option dfa_violation
+    =
+    ?= lows ?|
+    | c :: rest => first_of (column_at x r c i j next) (columns_sound x r i rest next (j + 1i32))
+    | [] => None
+
+:~ row_flags (x : sound_ctx) (w : row) (i : i32) (r : re) : option dfa_violation =
+    ? w::accepting <> verdict_of (nullable r)
+    ?> Some (AcceptingMismatch i)
+    |? count_next w::next 0i32 <> x::width
+    ?> Some (NotTotal i)
+    |: None
+
+:~ row_violation (x : sound_ctx) (w : row) (i : i32) : option dfa_violation =
+    := r = re_nth i x::d::regexes
+    first_of (row_flags x w i r) (columns_sound x r i x::lows w::next 0i32)
+
+:~ ^ rows_sound (x : sound_ctx) (rows : list row) (i : i32) : option dfa_violation =
+    ?= rows ?|
+    | w :: rest => first_of (row_violation x w i) (rows_sound x rest (i + 1i32))
+    | [] => None
+
+:~ ^ duplicate_from (r : re) (i : i32) (rest : list re) (k : i32) : option dfa_violation =
+    ?= rest ?|
+    | x :: xs => ? same_re r x ?> Some (DuplicateKey (i, k)) |: duplicate_from r i xs (k + 1i32)
+    | [] => None
+
+:~ ^ keys_distinct (rs : list re) (i : i32) : option dfa_violation =
+    ?= rs ?|
+    | r :: rest =>
+        ?= duplicate_from r i rest (i + 1i32) ?|
+        | Some v => Some v
+        | None => keys_distinct rest (i + 1i32)
+    | [] => None
+
+:= sound_ctx_of (d : dfa) : sound_ctx =
+    := lows = lows_of d::classes
+    { d = d; n = state_count d; width = count_lows lows 0i32; lows = lows }
+
+:= check_dfa (d : dfa) : dfa_check =
+    ?= first_of (rows_sound (sound_ctx_of d) d::rows 0i32) (keys_distinct d::regexes 0i32) ?|
+    | Some v => Violates v
+    | None => SoundDfa (state_count d)
+
+:| partition_check =
+    | Partitions : i32
+    | Gap : u32
+    | InvertedClass : i32
+    | ShortOfTheTop : u32
+
+:~ top_check (rest : list code_range) (i : i32) : partition_check =
+    ? listm::length rest = 0i32 ?> Partitions (i + 1i32) |: InvertedClass (i + 1i32)
+
+:~ ^ partition_from (classes : list code_range) (expected : u32) (i : i32) : partition_check =
+    ?= classes ?|
+    | c :: rest => partition_class c rest expected i
+    | [] => ShortOfTheTop expected
+
+:& :~ partition_class (c : code_range) (rest : list code_range) (expected : u32) (i : i32) : partition_check =
+    ? c::low <> expected
+    ?> Gap expected
+    |? c::high < c::low
+    ?> InvertedClass i
+    |: partition_next c rest i
+
+:& :~ partition_next (c : code_range) (rest : list code_range) (i : i32) : partition_check =
+    ? c::high = last_code_point () ?> top_check rest i |: partition_from rest (c::high + 1u32) (i + 1i32)
+
+:= check_partition (classes : list code_range) : partition_check = partition_from classes 0u32 0i32
+
+:| set_check =
+    | NormalSet : i32
+    | Unsorted : i32
+    | Touching : i32
+    | InvertedRange : i32
+
+:~ ^ set_from (ranges : list code_range) (i : i32) : set_check =
+    ?= ranges ?|
+    | a :: rest => ? a::high < a::low ?> InvertedRange i |: set_next a rest i
+    | [] => NormalSet 0i32
+
+:& :~ set_next (a : code_range) (rest : list code_range) (i : i32) : set_check =
+    ?= rest ?|
+    | b :: _ => set_pair a b rest i
+    | [] => NormalSet (i + 1i32)
+
+:& :~ set_pair (a : code_range) (b : code_range) (rest : list code_range) (i : i32) : set_check =
+    ? b::low <= a::high
+    ?> Unsorted (i + 1i32)
+    |? b::low = a::high + 1u32
+    ?> Touching (i + 1i32)
+    |: set_from rest (i + 1i32)
+
+:= check_normal (s : char_set normal) : set_check = set_from (ranges_of s) 0i32
+
+:| quotient_check =
+    | Faithful : i32
+    | Diverges : list u32
+    | Grew : i32 * i32
+    | Orphan : i32
+    | Uncovered : i32
+
+:~ ^ has_re (r : re) (rs : list re) : bool =
+    ?= rs ?|
+    | x :: rest => same_re x r || has_re r rest
+    | [] => !-
+
+:~ ^ origins_from (rs : list re) (eager : list re) (i : i32) : option quotient_check =
+    ?= rs ?|
+    | r :: rest => ? has_re r eager ?> origins_from rest eager (i + 1i32) |: Some (Orphan i)
+    | [] => None
+
+:~ is_equivalent (e : equivalence) : bool =
+    ?= e ?|
+    | Equivalent _ => !+
+    | Distinguished _ => !-
+
+:~ ^ covered_by (d : dfa) (i : i32) (m : dfa) (j : i32) (n : i32) : bool =
+    ? j >= n
+    ?> is_equivalent (compare_from d (To (state i)) m Dead)
+    |: is_equivalent (compare_from d (To (state i)) m (To (state j))) || covered_by d i m (j + 1i32) n
+
+:~ ^ coverage_from (d : dfa) (m : dfa) (i : i32) (n : i32) : option quotient_check =
+    ? i >= n
+    ?> None
+    |? covered_by d i m 0i32 (state_count m)
+    ?> coverage_from d m (i + 1i32) n
+    |: Some (Uncovered i)
+
+:~ faithful (e : equivalence) : quotient_check =
+    ?= e ?|
+    | Equivalent pairs => Faithful pairs
+    | Distinguished w => Diverges w
+
+:~ or_check (b : () -> quotient_check) (a : option quotient_check) : quotient_check =
+    ?= a ?|
+    | Some v => v
+    | None => b ()
+
+:= quotient_parts (d : dfa) (m : dfa) : quotient_check =
+    origins_from m::regexes d::regexes 0i32
+    |> or_check \ () => coverage_from d m 0i32 (state_count d) |> or_check (\ () => faithful (equivalent d m))
+
+:= check_quotient (d : dfa) (m : dfa) : quotient_check =
+    ? state_count m > state_count d ?> Grew (state_count d, state_count m) |: quotient_parts d m
+
+:= escape_row (w : row) : row = { w ?| next = listm::map (\ _ => To (state 99i32)) w::next }
+
+:= flip_accepting (w : row) : row = { w ?| accepting = ? w::accepting = Accepted ?> Rejected |: Accepted }
+
+:= drop_first_target (ts : list target) : list target =
+    ?= ts ?|
+    | _ :: rest => rest
+    | [] => []
+
+:= shorter_row (w : row) : row = { w ?| next = drop_first_target w::next }
+
+:= start_only_row (w : row) : row = { w ?| next = listm::map (\ _ => To (state 0i32)) w::next }
+
+:= swapped_rows (rows : list row) : list row =
+    ?= rows ?|
+    | a :: b :: rest => b :: a :: rest
+    | other => other
+
+
+
+:= forged (c : minimality) : minimality =
+    ?= c ?|
+    | Minimal ws => Minimal (listm::map (\ (w : witness) => { w ?| word = [] }) ws)
+    | other => other
+
+///> rust
+///> gleam
+:# every_pair_of_sixteen_states_has_a_checked_distinguishing_word =
+    := ~r = fourth_from_end ()
+    := m = minimal_of r
+    check_minimality m (certify m) |> _assert_eq (Certified 120i32)
+
+///> rust
+///> gleam
+:# an_emptied_word_is_caught_as_a_forgery =
+    := ~r = fourth_from_end ()
+    := m = minimal_of r
+    is_forged (check_minimality m (forged (certify m))) |> _assert_eq !+
+
+///> rust
+///> gleam
+:# zero_runs_equal_zeros_then_one =
+    := ~r = zero_runs ()
+    := ~s = seq (star (zero ())) (one ())
+    equivalent (minimal_of r) (minimal_of s) |> _assert_eq (Equivalent 2i32)
+
+///> rust
+///> gleam
+:# different_languages_give_a_word_the_matchers_disagree_on =
+    := ~r = ends_in_zero ()
+    := ~s = seq (star (bit ())) (one ())
+    equivalent (minimal_of r) (minimal_of s) |> _assert_eq (Distinguished [ 48u32 ])
+
+:= certified_pairs (a : automaton certified_phase) : i32 =
+    ?= a ?|
+    | CertifiedAutomaton (_, n) => n
+
+///> rust
+///> gleam
+:# a_certified_automaton_runs_and_keeps_its_pair_count =
+    := a = certified_of (fourth_from_end ())
+    (run_certified a [ 49u32; 48u32; 48u32; 48u32 ], run_certified a [ 48u32 ], certified_pairs a)
+    |> _assert_eq (Accepted, Rejected, 120i32)
+
+///> rust
+:# a_minimized_automaton_cannot_run_as_certified fails "Unification failure" =
+    run_certified (Minimized (minimal_of (ends_in_zero ()))) []
+
+///> rust
+:# an_eager_automaton_cannot_skip_minimizing_on_its_way_to_a_certificate fails "Unification failure" =
+    certified (Eager (eager_of (ends_in_zero ())))
+
+///> rust
+///> gleam
+:# an_eager_dfa_passes_every_structural_check =
+    := d = eager_of (fourth_from_end ())
+    check_dfa d |> _assert_eq (SoundDfa (state_count d))
+
+///> rust
+///> gleam
+:# a_forged_accepting_flag_is_named =
+    := d = eager_of (ends_in_zero ())
+    check_dfa { d ?| rows = listm::map (\ (w : row) => flip_accepting w) d::rows }
+    |> _assert_eq (Violates (AcceptingMismatch 0i32))
+
+///> rust
+///> gleam
+:# a_target_outside_the_table_is_named =
+    := d = eager_of (ends_in_zero ())
+    check_dfa { d ?|
+        rows = listm::map (\ (w : row) => escape_row w) d::rows
+    }
+    |> _assert_eq (Violates (OpenTarget (0i32, 0i32)))
+
+///> rust
+///> gleam
+:# a_row_missing_a_column_is_named =
+    := d = eager_of (ends_in_zero ())
+    check_dfa { d ?| rows = listm::map (\ (w : row) => shorter_row w) d::rows }
+    |> _assert_eq (Violates (NotTotal 0i32))
+
+///> rust
+///> gleam
+:# a_transition_to_the_wrong_state_is_named =
+    := d = eager_of (ends_in_zero ())
+    check_dfa { d ?| rows = listm::map (\ (w : row) => start_only_row w) d::rows }
+    |> _assert_eq (Violates (WrongTransition (0i32, 0i32)))
+
+///> rust
+///> gleam
+:# a_repeated_state_key_is_named =
+    := d = eager_of (ends_in_zero ())
+    check_dfa { d ?| regexes = listm::append d::regexes [ re_nth 0i32 d::regexes ] }
+    |> _assert_eq (Violates (DuplicateKey (0i32, 2i32)))
+
+///> rust
+///> gleam
+:# swapped_rows_are_caught_by_their_accepting_flags =
+    := d = eager_of (ends_in_zero ())
+    check_dfa { d ?| rows = swapped_rows d::rows } |> _assert_eq (Violates (AcceptingMismatch 0i32))
+
+///> rust
+///> gleam
+:# the_classes_of_a_dfa_partition_every_code_point =
+    := d = eager_of (fourth_from_end ())
+    (check_partition d::classes, check_partition [ range 0u32 47u32; range 49u32 (last_code_point ()) ])
+    |> _assert_eq (Partitions 4i32, Gap 48u32)
+
+///> rust
+///> gleam
+:# an_inverted_class_and_a_short_partition_are_named =
+    (check_partition [ range 0u32 5u32; range 6u32 3u32 ], check_partition [ range 0u32 10u32 ])
+    |> _assert_eq (InvertedClass 1i32, ShortOfTheTop 11u32)
+
+///> rust
+///> gleam
+:# touching_and_inverted_ranges_in_a_forged_normal_set_are_named =
+    (check_normal (Normal [ range 48u32 57u32; range 58u32 60u32 ]), check_normal (Normal [ range 57u32 48u32 ]))
+    |> _assert_eq (Touching 1i32, InvertedRange 0i32)
+
+///> rust
+///> gleam
+:# normalization_sorts_and_merges =
+    check_normal (of_ranges [ range 97u32 122u32; range 65u32 90u32; range 91u32 96u32 ]) |> _assert_eq (NormalSet 1i32)
+
+///> rust
+///> gleam
+:# a_forged_normal_set_is_named =
+    check_normal (Normal [ range 97u32 122u32; range 65u32 90u32 ]) |> _assert_eq (Unsorted 1i32)
+
+///> rust
+:# a_loose_set_cannot_become_a_class_without_normalizing fails "Unification failure" =
+    Set (loose_of [ range 57u32 48u32; range 48u32 52u32 ])
+
+///> rust
+///> gleam
+:# minimizing_keeps_the_language_and_every_eager_state_has_a_home =
+    := d = eager_of (fourth_from_end ())
+    check_quotient d (minimize d) |> _assert_eq (Faithful 16i32)
+
+///> rust
+///> gleam
+:# a_quotient_state_without_an_eager_origin_is_named =
+    := d = eager_of (ends_in_zero ())
+    := m = minimize d
+    check_quotient d { m ?| regexes = listm::map (\ _ => Nothing) m::regexes } |> _assert_eq (Orphan 0i32)
+
+///> rust
+///> gleam
+:# a_quotient_with_a_flipped_flag_leaves_an_eager_state_homeless =
+    := d = eager_of (ends_in_zero ())
+    := m = minimize d
+    check_quotient d { m ?| rows = listm::map flip_accepting m::rows } |> _assert_eq (Uncovered 0i32)
+
+:= sample_patterns () : list re =
+    [ fourth_from_end (); zero_runs (); ends_in_zero (); both (star (bit ())) (negate (ends_in_zero ())) ]
+
+:~ ^ first_breaking (rs : list re) (i : i32) : option (i32 * canon_fault) =
+    ?= rs ?|
+    | r :: rest =>
+        ?= fault_of (is_canonical r) ?|
+        | Some f => Some (i, f)
+        | None => first_breaking rest (i + 1i32)
+    | [] => None
+
+:= breaking_state (r : re) : option (i32 * canon_fault) =
+    := d = eager_of r
+    first_breaking d::regexes 0i32
+
+///> rust
+///> gleam
+:# every_state_of_every_eager_dfa_is_canonical =
+    := patterns = listm::append (sample_patterns ()) [ repeat (code 97u32) 2u32 (Bounded 4u32) ]
+    listm::map breaking_state patterns |> _assert_eq [ None; None; None; None; None ]
+
+:~ ^ positions_of (r : re) : i32 =
+    ?= r ?|
+    | Set _ => 1i32
+    | Seq (x, y) => positions_of x + positions_of y
+    | Alt (x, y) => positions_of x + positions_of y
+    | _ => positions_rest r
+
+:& :~ positions_rest (r : re) : i32 =
+    ?= r ?|
+    | And (x, y) => positions_of x + positions_of y
+    | Not x => positions_of x
+    | Star x => positions_of x
+    | Repeat (x, _, _) => positions_of x
+    | _ => 0i32
+
+:~ ^ power_of_two (n : i32) (acc : i64) : i64 = ? n <= 0i32 ?> acc |: power_of_two (n - 1i32) (acc * 2i64)
+
+:| closure_check =
+    | WithinBound : i32 * i64
+    | PastBound : i32 * i64
+
+:= within (n : i32) (bound : i64) : closure_check = WithinBound (n, bound)
+
+:= check_closure (r : re) : closure_check =
+    := n = state_count (eager_of r)
+    := bound = power_of_two (positions_of r + 1i32) 1i64
+    ? (conv n : i64) <= bound ?> WithinBound (n, bound) |: PastBound (n, bound)
+
+///> rust
+///> gleam
+:# the_derivative_closure_stays_within_two_to_the_positions_plus_one =
+    := want = [ within 16i32 64i64; within 4i32 32i64; within 2i32 16i64; within 2i32 64i64 ]
+    listm::map check_closure (sample_patterns ()) |> _assert_eq want

@@ -3,8 +3,6 @@ defmodule Spiral.Cells.DocumentTest do
 
   alias Spiral.Cells.Document
 
-  @dice Path.expand("../../../../../dice", __DIR__)
-
   test "exports definitions, keeps opens, and drops tests" do
     doc =
       Document.parse_dib("""
@@ -320,8 +318,9 @@ defmodule Spiral.Cells.DocumentTest do
     assert Document.to_livemd(Document.parse_livemd(text)) == text
   end
 
+  @tag :alphabet_corpus
   test "alphabet: documents is a .spi source that writes back byte for byte" do
-    alphabet = Path.expand("../../../../../alphabet/apps", __DIR__)
+    alphabet = Path.join(Spiral.Cells.TestHelpers.alphabet_root(), "apps")
     documents_source = File.read!(Path.join(alphabet, "documents/documents.spi"))
     documents = Document.parse_spi(documents_source, "")
 
@@ -524,9 +523,10 @@ defmodule Spiral.Cells.DocumentTest do
     assert blocks >= 370
   end
 
+  @tag :dice_corpus
   test "dice's Spiral sources are .spi files whose test blocks load as notebook cells and write back byte for byte" do
-    dice_source = File.read!(Path.join(@dice, "lib/dice.spi"))
-    contract_source = File.read!(Path.join(@dice, "contract/dice_contract.spi"))
+    dice_source = File.read!(Path.join(Spiral.Cells.TestHelpers.dice_root(), "lib/dice.spi"))
+    contract_source = File.read!(Path.join(Spiral.Cells.TestHelpers.dice_root(), "contract/dice_contract.spi"))
     dice = Document.parse_spi(dice_source, "")
     contract = Document.parse_spi(contract_source, "")
 

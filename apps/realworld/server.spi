@@ -1,0 +1,721 @@
+///- --package .
+:# server static =
+    :< testing
+
+:< sm'_operators
+:< auth
+
+:== rw_user = realworld_model::user
+
+:== response = { status : i32; body : string }
+
+:== served = { store : rw_store; reply : response }
+
+:== login_envelope = { user : realworld_api::login_body }
+
+:== register_envelope = { user : realworld_api::registration_body }
+
+:= error_body (reason : string) : string = "{\"errors\":{\"body\":[" ++# json::quote reason ++# "]}}"
+
+:= image_json (image : option string) : string =
+    ?= image ?|
+    | Some url => json::quote url
+    | None => "null"
+
+:= user_head (u : rw_user) (token : string) : string =
+    "{\"user\":{\"email\":" ++# json::quote u::email ++# ",\"token\":" ++# json::quote token
+
+:= user_json (u : rw_user) (token : string) : string =
+    := tail = ",\"username\":" ++# json::quote u::username ++# ",\"bio\":" ++# json::quote u::bio
+    user_head u token ++# tail ++# ",\"image\":" ++# image_json u::image ++# "}}"
+
+:= replied (s : rw_store) (status : i32) (body : string) : served = { store = s; reply = { status = status; body = body } }
+
+:= token_in (header : string) : string =
+    ? sm'::length header < 6i32 ?> "" |: sm'::substring 6i32 (sm'::length header - 6i32) header
+
+:= user_reply (s : rw_store) (status : i32) (email : string) (header : string) : served =
+    ?= user_with s email ?|
+    | Some (_, u) => replied s status (user_json u (token_in header))
+    | None => replied s 404i32 (error_body "user not found")
+
+:= login_of (body : string) : realworld_api::login_body =
+    := envelope : login_envelope = json::decode body
+    envelope::user
+
+:= login_route (s : rw_store) (secret : string) (body : string) : served =
+    := b = login_of body
+    ?= login s secret b::email b::password ?|
+    | LoggedIn header => user_reply s 200i32 b::email header
+    | LoginRefused why => replied s 401i32 (error_body why)
+
+:= registration_of (body : string) : realworld_api::registration_body =
+    := envelope : register_envelope = json::decode body
+    envelope::user
+
+:= new_user (r : realworld_api::registration_body) : rw_user =
+    { username = r::username; email = r::email; bio = ""; image = None; password_hash = "" }
+
+:= issued (s : rw_store) (secret : string) (email : string) : served =
+    ?= logged_in secret (realworld_model::Id (s::next_id - 1i32)) ?|
+    | LoggedIn header => user_reply s 201i32 email header
+    | LoginRefused why => replied s 500i32 (error_body why)
+
+:== server_keys = { secret : string; salt : string; rounds : u32 }
+
+:= register_route (k : server_keys) (s : rw_store) (body : string) : served =
+    := r = registration_of body
+    issued (register s (new_user r) r::password k::salt k::rounds) k::secret r::email
+
+:= current_of (s : rw_store) (header : string) (uid : i32) : served =
+    ?= realworld_model::get_user s (realworld_model::Id uid) ?|
+    | Some u => replied s 200i32 (user_json u (token_in header))
+    | None => replied s 404i32 (error_body "user not found")
+
+:= current_route (s : rw_store) (secret : string) (header : string) : served =
+    ?= authenticate (real_crypto ()) secret header ?|
+    | Admitted r => current_of s header (user_of r)
+    | Unauthorized why => replied s 401i32 (unauthorized_body why)
+
+:= after (n : i32) (s : string) : string = ? sm'::length s > n ?> sm'::substring n (sm'::length s - n) s |: ""
+
+:= trimmed (k : i32) (s : string) : string = ? sm'::length s > k ?> sm'::substring 0i32 (sm'::length s - k) s |: ""
+
+:= between (prefix : string) (suffix : string) (path : string) : string = trimmed (sm'::length suffix) (after (sm'::length prefix) path)
+
+:= profile_name (path : string) : string = after 14i32 path
+
+:= quoted_list (xs : list string) : string =
+    := parts = listm::fold (\ acc t => ? acc = "" ?> json::quote t |: acc ++# "," ++# json::quote t) "" xs
+    "[" ++# parts ++# "]"
+
+:= tags_json (tags : list string) : string = "{\"tags\":" ++# quoted_list tags ++# "}"
+
+:= bool_json (b : bool) : string = ? b ?> "true" |: "false"
+
+:= profile_head (u : rw_user) : string = "{\"username\":" ++# json::quote u::username ++# ",\"bio\":" ++# json::quote u::bio
+
+:= profile_fields (u : rw_user) (following : bool) : string =
+    profile_head u ++# ",\"image\":" ++# image_json u::image ++# ",\"following\":" ++# bool_json following ++# "}"
+
+:= profile_json (u : rw_user) (following : bool) : string = "{\"profile\":" ++# profile_fields u following ++# "}"
+
+:== uid = realworld_model::id rw_user
+
+:= viewer_of (secret : string) (header : string) : option uid =
+    ?= authenticate (real_crypto ()) secret header ?|
+    | Admitted r => Some (realworld_model::Id (user_of r))
+    | Unauthorized _ => None
+
+:= follows_from (s : rw_store) (viewer : option uid) (target : uid) : bool =
+    ?= viewer ?| Some v => realworld_model::is_following s v target | None => false
+
+:= named (name : string) (p : uid * rw_user) : bool =
+    ?= p ?|
+    | (_, u) => u::username = name
+
+:= profile_route (s : rw_store) (v : option uid) (n : string) : served =
+    ?= realworld_model::find_by (named n) s::users ?|
+    | Some (id, u) => replied s 200i32 (profile_json u (follows_from s v id))
+    | None => replied s 404i32 (error_body "profile not found")
+
+:== aid = realworld_model::id realworld_model::article
+
+:== rw_article = realworld_model::article
+
+:= favorite_count (s : rw_store) (a : aid) : i32 =
+    listm::fold (\ n p => ? realworld_model::id_eq (realworld_model::pair_val p) a ?> n + 1i32 |: n) 0i32 s::favorites
+
+:= favorited_by (s : rw_store) (v : option uid) (a : aid) : bool =
+    ?= v ?| Some u => realworld_model::is_favorited s u a | None => false
+
+:= user_fields (s : rw_store) (v : option uid) (who : uid) : string =
+    ?= realworld_model::get_user s who ?|
+    | Some u => profile_fields u (follows_from s v who)
+    | None => "null"
+
+:= author_fields (s : rw_store) (v : option uid) (a : rw_article) : string = user_fields s v a::author
+
+:= article_head (a : rw_article) : string =
+    "{\"slug\":" ++# json::quote a::slug ++# ",\"title\":" ++# json::quote a::title ++# ",\"description\":" ++# json::quote a::description
+
+:= article_body (a : rw_article) : string =
+    ",\"body\":" ++# json::quote a::body ++# ",\"tagList\":" ++# quoted_list a::tag_list ++# ",\"createdAt\":" ++# json::quote a::created_at
+
+:= article_flags (s : rw_store) (v : option uid) (id : aid) : string =
+    ",\"favorited\":" ++# bool_json (favorited_by s v id) ++# ",\"favoritesCount\":" ++# sm'::obj_to_string (favorite_count s id)
+
+:= updated_json (a : rw_article) : string = ",\"updatedAt\":" ++# json::quote a::updated_at
+
+:= article_fields (s : rw_store) (v : option uid) (p : aid * rw_article) : string =
+    ?= p ?|
+    | (id, a) => article_head a ++# article_body a ++# updated_json a ++# article_flags s v id ++# ",\"author\":" ++# author_fields s v a ++# "}"
+
+:= with_slug (slug : string) (p : aid * rw_article) : bool =
+    ?= p ?|
+    | (_, a) => a::slug = slug
+
+:= article_reply (s : rw_store) (v : option uid) (p : aid * rw_article) : served = replied s 200i32 ("{\"article\":" ++# article_fields s v p ++# "}")
+
+:= article_route (s : rw_store) (v : option uid) (n : string) : served =
+    ?= realworld_model::find_by (with_slug n) s::articles ?|
+    | Some p => article_reply s v p
+    | None => replied s 404i32 (error_body "article not found")
+
+:== article_row = aid * rw_article
+
+:= joined_articles (s : rw_store) (v : option uid) (xs : list article_row) : string =
+    listm::fold (\ acc p => ? acc = "" ?> article_fields s v p |: acc ++# "," ++# article_fields s v p) "" xs
+
+:= articles_from (s : rw_store) (v : option uid) (xs : list article_row) : string =
+    "{\"articles\":[" ++# joined_articles s v xs ++# "],\"articlesCount\":" ++# sm'::obj_to_string (listm::length xs : i32) ++# "}"
+
+:= articles_json (s : rw_store) (v : option uid) : string = articles_from s v s::articles
+
+:= no_token (s : rw_store) : served = replied s 401i32 (unauthorized_body "missing token")
+
+:= by_followed (s : rw_store) (me : uid) (p : article_row) : bool =
+    ?= p ?|
+    | (_, a) => realworld_model::is_following s me a::author
+
+:= feed_route (s : rw_store) (v : option uid) : served =
+    ?= v ?|
+    | Some me => replied s 200i32 (articles_from s v (realworld_model::keep_where (by_followed s me) s::articles))
+    | None => no_token s
+
+:== user_envelope = { user : realworld_api::user_update }
+
+:= or_keep (o : option string) (old : string) : string = ?= o ?| Some x => x | None => old
+
+:= patched (u : rw_user) (p : realworld_api::user_update) : rw_user =
+    { u with email = or_keep p::email u::email; username = or_keep p::username u::username; bio = or_keep p::bio u::bio }
+
+:= with_image (u : rw_user) (p : realworld_api::user_update) : rw_user = ?= p::image ?| Some _ => { u with image = p::image } | None => u
+
+:= updated_reply (s : rw_store) (me : uid) (u : rw_user) (header : string) : served =
+    replied (realworld_model::update_user s me u) 200i32 (user_json u (token_in header))
+
+:= update_found (s : rw_store) (me : uid) (h : string) (p : realworld_api::user_update) : served =
+    ?= realworld_model::get_user s me ?|
+    | Some u => updated_reply s me (with_image (patched u p) p) h
+    | None => replied s 404i32 (error_body "user not found")
+
+:= update_user_route (s : rw_store) (v : option uid) (header : string) (body : string) : served =
+    := e : user_envelope = json::decode body
+    ?= v ?| Some me => update_found s me header e::user | None => no_token s
+
+:== article_input = { title : string; description : string; body : string; tagList : list string }
+
+:== article_envelope = { article : article_input }
+
+:= slug_of (title : string) : string = sm'::replace " " "-" (sm'::to_lower title)
+
+:= authored (i : article_input) (author : uid) : rw_article =
+    { slug = slug_of i::title; title = i::title; description = i::description; body = i::body; tag_list = i::tagList; author; created_at = ""; updated_at = "" }
+
+:= created (s : rw_store) (v : uid) (i : article_input) : served =
+    := pair = realworld_model::Id s::next_id, authored i v
+    replied (realworld_model::create_article s (authored i v)) 201i32 ("{\"article\":" ++# article_fields s (Some v) pair ++# "}")
+
+:= create_route (s : rw_store) (viewer : option uid) (body : string) : served =
+    := e : article_envelope = json::decode body
+    ?= viewer ?|
+    | Some v => created s v e::article
+    | None => no_token s
+
+:= toggled_follow (s : rw_store) (me : uid) (id : uid) (on : bool) : rw_store =
+    ? on ?> realworld_model::follow s me id |: realworld_model::unfollow s me id
+
+:= follow_if_found (s : rw_store) (me : uid) (n : string) (on : bool) : rw_store =
+    ?= realworld_model::find_by (named n) s::users ?| Some (id, _) => toggled_follow s me id on | None => s
+
+:= follow_route (s : rw_store) (v : option uid) (on : bool) (n : string) : served =
+    ?= v ?| Some me => profile_route (follow_if_found s me n on) (Some me) n | None => no_token s
+
+:= toggled_favorite (s : rw_store) (me : uid) (id : aid) (on : bool) : rw_store =
+    ? on ?> realworld_model::favorite s me id |: realworld_model::unfavorite s me id
+
+:= favorite_if_found (s : rw_store) (me : uid) (n : string) (on : bool) : rw_store =
+    ?= realworld_model::find_by (with_slug n) s::articles ?| Some (id, _) => toggled_favorite s me id on | None => s
+
+:= favorite_route (s : rw_store) (v : option uid) (on : bool) (n : string) : served =
+    ?= v ?| Some me => article_route (favorite_if_found s me n on) (Some me) n | None => no_token s
+
+:== rw_comment = realworld_model::comment
+
+:== cid = realworld_model::id rw_comment
+
+:== comment_input = { body : string }
+
+:== comment_envelope = { comment : comment_input }
+
+:= comment_head (id : cid) (c : rw_comment) : string =
+    "{\"id\":" ++# sm'::obj_to_string (realworld_model::id_raw id) ++# ",\"createdAt\":" ++# json::quote c::created_at
+
+:= comment_tail (c : rw_comment) : string = ",\"updatedAt\":" ++# json::quote c::updated_at ++# ",\"body\":" ++# json::quote c::body
+
+:= comment_fields (s : rw_store) (v : option uid) (p : cid * rw_comment) : string =
+    ?= p ?|
+    | (id, c) => comment_head id c ++# comment_tail c ++# ",\"author\":" ++# user_fields s v c::author ++# "}"
+
+:= article_id_of (s : rw_store) (slug : string) : option aid =
+    ?= realworld_model::find_by (with_slug slug) s::articles ?| Some (id, _) => Some id | None => None
+
+:= on_article (a : aid) (p : cid * rw_comment) : bool = realworld_model::comment_of_article a p
+
+:= comments_json (s : rw_store) (v : option uid) (a : aid) : string =
+    := items = listm::fold (\ acc p => ? on_article a p ?> (? acc = "" ?> comment_fields s v p |: acc ++# "," ++# comment_fields s v p) |: acc) "" s::comments
+    "{\"comments\":[" ++# items ++# "]}"
+
+:= comments_route (s : rw_store) (v : option uid) (slug : string) : served =
+    ?= article_id_of s slug ?| Some a => replied s 200i32 (comments_json s v a) | None => replied s 404i32 (error_body "article not found")
+
+:= new_comment (me : uid) (a : aid) (text : string) : rw_comment = { body = text; author = me; article = a; created_at = ""; updated_at = "" }
+
+:= comment_reply (s : rw_store) (me : uid) (c : rw_comment) : served =
+    replied (realworld_model::add_comment s c) 200i32 ("{\"comment\":" ++# comment_fields s (Some me) (realworld_model::Id s::next_id, c) ++# "}")
+
+:= added_comment (s : rw_store) (me : uid) (a : aid) (text : string) : served = comment_reply s me (new_comment me a text)
+
+:= comment_on (s : rw_store) (me : uid) (slug : string) (text : string) : served =
+    ?= article_id_of s slug ?| Some a => added_comment s me a text | None => replied s 404i32 (error_body "article not found")
+
+:= comment_route (s : rw_store) (v : option uid) (slug : string) (body : string) : served =
+    := e : comment_envelope = json::decode body
+    ?= v ?| Some me => comment_on s me slug e::comment::body | None => no_token s
+
+:= dropped (s : rw_store) (slug : string) : rw_store =
+    { s with articles = realworld_model::keep_where (\ p => ? with_slug slug p ?> false |: true) s::articles }
+
+:= drop_if_author (s : rw_store) (me : uid) (slug : string) (a : rw_article) : served =
+    ? realworld_model::id_eq a::author me ?> replied (dropped s slug) 200i32 "{}" |: replied s 403i32 (error_body "not the author")
+
+:= drop_owned (s : rw_store) (me : uid) (slug : string) : served =
+    ?= realworld_model::find_by (with_slug slug) s::articles ?|
+    | Some (_, a) => drop_if_author s me slug a
+    | None => replied s 404i32 (error_body "article not found")
+
+:= drop_route (s : rw_store) (v : option uid) (slug : string) : served =
+    ?= v ?| Some me => drop_owned s me slug | None => no_token s
+
+:== edit_envelope = { article : realworld_api::article_update }
+
+:= edited (a : rw_article) (p : realworld_api::article_update) : rw_article =
+    := t = or_keep p::title a::title
+    { a with title = t; slug = slug_of t; description = or_keep p::description a::description; body = or_keep p::body a::body }
+
+:= replaced (s : rw_store) (id : aid) (b : rw_article) : rw_store =
+    := swap = \ acc p => ? realworld_model::id_eq (realworld_model::pair_key p) id ?> (id, b) :: acc |: p :: acc
+    { s with articles = listm::fold swap [] s::articles |> listm::rev }
+
+:= edit_reply (s : rw_store) (me : uid) (p : aid * rw_article) : served = replied s 200i32 ("{\"article\":" ++# article_fields s (Some me) p ++# "}")
+
+:= edit_if_author (s : rw_store) (me : uid) (id : aid) (a : rw_article) (b : rw_article) : served =
+    ? realworld_model::id_eq a::author me ?> edit_reply (replaced s id b) me (id, b) |: replied s 403i32 (error_body "not the author")
+
+:= edit_of (body : string) : realworld_api::article_update =
+    := e : edit_envelope = json::decode body
+    e::article
+
+:= edit_owned (s : rw_store) (me : uid) (n : string) (b : string) : served =
+    ?= realworld_model::find_by (with_slug n) s::articles ?|
+    | Some (id, a) => edit_if_author s me id a (edited a (edit_of b))
+    | None => replied s 404i32 (error_body "article not found")
+
+:= edit_route (s : rw_store) (v : option uid) (slug : string) (body : string) : served =
+    ?= v ?| Some me => edit_owned s me slug body | None => no_token s
+
+:= comment_by (s : rw_store) (n : i32) : option (cid * rw_comment) =
+    realworld_model::find_by (\ p => realworld_model::id_eq (realworld_model::pair_key p) (realworld_model::Id n)) s::comments
+
+:= drop_comment_if_author (s : rw_store) (me : uid) (id : cid) (c : rw_comment) : served =
+    ? realworld_model::id_eq c::author me ?> replied (realworld_model::delete_comment s id) 200i32 "{}" |: replied s 403i32 (error_body "not the author")
+
+:= drop_comment_route (s : rw_store) (v : option uid) (n : i32) : served =
+    ?= v, comment_by s n ?|
+    | Some me, Some (id, c) => drop_comment_if_author s me id c
+    | Some _, None => replied s 404i32 (error_body "comment not found")
+    | None, _ => no_token s
+
+:== http_request = { method : realworld_api::http_method; path : string; authorization : string; body : string }
+
+:| social_op =
+    | FollowOp : bool * string
+    | FavoriteOp : bool * string
+
+:| article_op =
+    | CommentsOp : string
+    | CommentOp : string
+    | DropOp : string
+    | EditOp : string
+    | DropCommentOp : i32
+
+:| route =
+    | ToLogin
+    | ToRegister
+    | ToCurrent
+    | ToTags
+    | ToProfile : string
+    | ToArticles
+    | ToArticle : string
+    | ToCreate
+    | ToFeed
+    | ToUpdateUser
+    | ToSocial : social_op
+    | ToArticleOp : article_op
+    | Nowhere
+
+:= at (r : http_request) (m : realworld_api::http_method) (path : string) : bool = r::method = m && r::path = path
+
+:= is_profile (r : http_request) : bool = r::method = realworld_api::Get && sm'::starts_with "/api/profiles/" r::path
+
+:= is_article (r : http_request) : bool = r::method = realworld_api::Get && sm'::starts_with "/api/articles/" r::path
+
+:= under_article (r : http_request) (suffix : string) : bool = sm'::starts_with "/api/articles/" r::path && sm'::ends_with suffix r::path
+
+:= comments_of (r : http_request) : string = between "/api/articles/" "/comments" r::path
+
+:= listed_comments (r : http_request) : bool = r::method = realworld_api::Get && under_article r "/comments"
+
+:= article_route_of (r : http_request) : route =
+    ? at r realworld_api::Get "/api/articles" ?> ToArticles
+    |? listed_comments r ?> ToArticleOp (CommentsOp (comments_of r))
+    |? is_article r ?> ToArticle (after 14i32 r::path)
+    |: Nowhere
+
+:= feed_or (r : http_request) : route = ? at r realworld_api::Get "/api/articles/feed" ?> ToFeed |: article_route_of r
+
+:= read_route (r : http_request) : route =
+    ? at r realworld_api::Get "/api/tags" ?> ToTags |? is_profile r ?> ToProfile (profile_name r::path) |: feed_or r
+
+:= writes (r : http_request) : bool = r::method = realworld_api::Post || r::method = realworld_api::Delete
+
+:= social (r : http_request) (prefix : string) (suffix : string) : bool =
+    writes r && sm'::starts_with prefix r::path && sm'::ends_with suffix r::path
+
+:= posted (r : http_request) : bool = r::method = realworld_api::Post
+
+:= follow_name (r : http_request) : string = between "/api/profiles/" "/follow" r::path
+
+:= favorite_slug (r : http_request) : string = between "/api/articles/" "/favorite" r::path
+
+:= dropping (r : http_request) : bool = r::method = realworld_api::Delete && sm'::starts_with "/api/articles/" r::path
+
+:= comment_id (r : http_request) : i32 =
+    ?= (convert::try_convert (after (sm'::last_index_of "/" r::path + 1i32) r::path) : option i32) ?| Some n => n | None => -1i32
+
+:= editing (r : http_request) : bool = r::method = realworld_api::Put && sm'::starts_with "/api/articles/" r::path
+
+:= drops (r : http_request) : route =
+    ? sm'::contains "/comments/" r::path ?> ToArticleOp (DropCommentOp (comment_id r)) |: ToArticleOp (DropOp (after 14i32 r::path))
+
+:= edit_or_read (r : http_request) : route = ? editing r ?> ToArticleOp (EditOp (after 14i32 r::path)) |: read_route r
+
+:= article_writes (r : http_request) : route =
+    ? posted r && under_article r "/comments" ?> ToArticleOp (CommentOp (comments_of r)) |? dropping r ?> drops r |: edit_or_read r
+
+:= social_route (r : http_request) : route =
+    ? social r "/api/profiles/" "/follow" ?> ToSocial (FollowOp (posted r, follow_name r))
+    |? social r "/api/articles/" "/favorite" ?> ToSocial (FavoriteOp (posted r, favorite_slug r))
+    |: article_writes r
+
+:= write_route (r : http_request) : route =
+    ? at r realworld_api::Post "/api/articles" ?> ToCreate |? at r realworld_api::Put "/api/user" ?> ToUpdateUser |: social_route r
+
+:= route_of (r : http_request) : route =
+    ? at r realworld_api::Post "/api/users/login" ?> ToLogin
+    |? at r realworld_api::Post "/api/users" ?> ToRegister
+    |? at r realworld_api::Get "/api/user" ?> ToCurrent
+    |: write_route r
+
+:= missing (s : rw_store) : served = replied s 404i32 (error_body "no such route")
+
+:= tags_reply (s : rw_store) : served = replied s 200i32 (tags_json (realworld_model::get_tags s))
+
+:= listed_reads (s : rw_store) (v : option uid) (t : route) : served =
+    ?= t ?|
+    | ToTags => tags_reply s
+    | ToArticles => replied s 200i32 (articles_json s v)
+    | ToFeed => feed_route s v
+    | ToArticle n => article_route s v n
+    | _ => missing s
+
+:= edits (s : rw_store) (v : option uid) (r : http_request) (op : article_op) : served =
+    ?= op ?|
+    | EditOp n => edit_route s v n r::body
+    | DropCommentOp n => drop_comment_route s v n
+    | _ => missing s
+
+:= article_op_reply (s : rw_store) (v : option uid) (r : http_request) (op : article_op) : served =
+    ?= op ?|
+    | CommentsOp n => comments_route s v n
+    | CommentOp n => comment_route s v n r::body
+    | DropOp n => drop_route s v n
+    | _ => edits s v r op
+
+:= comment_reads (s : rw_store) (v : option uid) (r : http_request) (t : route) : served =
+    ?= t ?| ToArticleOp op => article_op_reply s v r op | _ => listed_reads s v t
+
+:= account_reads (s : rw_store) (v : option uid) (r : http_request) (t : route) : served =
+    ?= t ?| ToUpdateUser => update_user_route s v r::authorization r::body | _ => comment_reads s v r t
+
+:= social_reads (s : rw_store) (v : option uid) (r : http_request) (t : route) : served =
+    ?= t ?|
+    | ToSocial (FollowOp (on, n)) => follow_route s v on n
+    | ToSocial (FavoriteOp (on, n)) => favorite_route s v on n
+    | _ => account_reads s v r t
+
+:= reads (k : server_keys) (s : rw_store) (r : http_request) (t : route) : served =
+    := v = viewer_of k::secret r::authorization
+    ?= t ?|
+    | ToProfile n => profile_route s v n
+    | ToCreate => create_route s v r::body
+    | _ => social_reads s v r t
+
+:= dispatch (k : server_keys) (s : rw_store) (r : http_request) =
+    ?= route_of r ?|
+    | ToLogin => login_route s k::secret r::body
+    | ToRegister => register_route k s r::body
+    | ToCurrent => current_route s k::secret r::authorization
+    | t => reads k s r t
+
+:= keys () : server_keys = { secret = "s3cret"; salt = "salt-1"; rounds = 2u32 }
+
+:= post (path : string) (body : string) : http_request =
+    { method = realworld_api::Post; path = path; authorization = ""; body = body }
+
+:= jake_body () : string = "{\"user\":{\"username\":\"jake\",\"email\":\"jake@jake.jake\",\"password\":\"hunter2\"}}"
+
+:= registered () : served = dispatch (keys ()) (realworld_model::empty_store ()) (post "/api/users" (jake_body ()))
+
+:= status_of (s : served) : i32 = s::reply::status
+
+:= as_jake (path : string) : http_request =
+    { method = realworld_api::Get; path = path; authorization = header_for (real_crypto ()) "s3cret" 1i32; body = "" }
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# register_creates_and_login_answers_with_the_user =
+    := made = registered ()
+    (status_of made, status_of (dispatch (keys ()) made::store (post "/api/users/login" (jake_body ()))))
+    |> _assert_eq (201i32, 200i32)
+
+:= status_at (s : served) (r : http_request) : i32 = status_of (dispatch (keys ()) s::store r)
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# the_user_route_needs_a_valid_token =
+    := m = registered ()
+    := j = as_jake "/api/user"
+    := ~empty = ""
+    (status_at m j, status_at m { j with authorization = empty }) |> _assert_eq (200i32, 401i32)
+
+:= wrong_login () : string = "{\"user\":{\"email\":\"jake@jake.jake\",\"password\":\"nope\"}}"
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# a_wrong_password_is_401 =
+    status_at (registered ()) (post "/api/users/login" (wrong_login ())) |> _assert_eq 401i32
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# an_unknown_route_is_404 =
+    status_at (registered ()) (post "/x" "") |> _assert_eq 404i32
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# the_user_body_has_the_spec_shape =
+    sm'::starts_with "{\"user\":{\"email\":\"jake@jake.jake\",\"token\":\"1." (registered ())::reply::body |> _assert_eq !+
+
+:= anonymous (path : string) : http_request = { method = realworld_api::Get; path = path; authorization = ""; body = "" }
+
+:= with_article (s : served) : rw_store = realworld_model::create_article s::store (realworld_model::sample_article ())
+
+:= body_at (s : rw_store) (r : http_request) : string = (dispatch (keys ()) s r)::reply::body
+
+:= jake_profile (following : bool) : string = "{\"profile\":{\"username\":\"jake\",\"bio\":\"\",\"image\":null,\"following\":" ++# (? following ?> "true" |: "false") ++# "}}"
+
+:= anon_body (s : rw_store) (path : string) : string = body_at s (anonymous path)
+
+:= anon_status (s : rw_store) (path : string) : i32 = (dispatch (keys ()) s (anonymous path))::reply::status
+
+:= self_followed () : rw_store = realworld_model::follow (registered ())::store (realworld_model::Id 1i32) (realworld_model::Id 1i32)
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# tags_list_the_distinct_article_tags =
+    anon_body (with_article (registered ())) "/api/tags" |> _assert_eq "{\"tags\":[\"x\"]}"
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# a_profile_answers_without_a_token_and_an_unknown_one_is_404 =
+    := s = (registered ())::store
+    (anon_body s "/api/profiles/jake", anon_status s "/api/profiles/nobody") |> _assert_eq (jake_profile false, 404i32)
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# a_profile_shows_following_for_the_token_holder =
+    := s = self_followed ()
+    (body_at s (as_jake "/api/profiles/jake"), anon_body s "/api/profiles/jake") |> _assert_eq (jake_profile true, jake_profile false)
+
+:= hi_head () : string = "{\"slug\":\"hi\",\"title\":\"Hi\",\"description\":\"d\",\"body\":\"b\",\"tagList\":[\"x\"],\"createdAt\":\"\",\"updatedAt\":\"\""
+
+:= jake_author () : string = ",\"author\":{\"username\":\"jake\",\"bio\":\"\",\"image\":null,\"following\":false}}"
+
+:= hi_fields (fav : bool) (count : i32) : string =
+    hi_head () ++# ",\"favorited\":" ++# bool_json fav ++# ",\"favoritesCount\":" ++# sm'::obj_to_string count ++# jake_author ()
+
+:= with_hi () : rw_store = with_article (registered ())
+
+:= hi_json (fav : bool) (count : i32) : string = "{\"article\":" ++# hi_fields fav count ++# "}"
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# an_article_reads_by_slug_and_an_unknown_slug_is_404 =
+    := s = with_hi ()
+    (anon_body s "/api/articles/hi", anon_status s "/api/articles/nope") |> _assert_eq (hi_json false 0i32, 404i32)
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# the_article_list_counts_its_articles =
+    anon_body (with_hi ()) "/api/articles" |> _assert_eq ("{\"articles\":[" ++# hi_fields false 0i32 ++# "],\"articlesCount\":1}")
+
+:= favored () : rw_store = realworld_model::favorite (with_hi ()) (realworld_model::Id 1i32) (realworld_model::Id 2i32)
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# a_favorite_shows_for_its_owner_and_counts_for_everyone =
+    := s = favored ()
+    (body_at s (as_jake "/api/articles/hi"), anon_body s "/api/articles/hi") |> _assert_eq (hi_json true 1i32, hi_json false 1i32)
+
+:= hi_there_body () : string = "{\"article\":{\"title\":\"Hi There\",\"description\":\"d\",\"body\":\"b\",\"tagList\":[\"x\"]}}"
+
+:= jake_posts (path : string) (body : string) : http_request =
+    := j = as_jake path
+    { j with method = realworld_api::Post; body = body }
+
+:= created_hi () : served = dispatch (keys ()) (registered ())::store (jake_posts "/api/articles" (hi_there_body ()))
+
+:= anonymous_post_status () : i32 = status_at (registered ()) (post "/api/articles" (hi_there_body ()))
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# creating_an_article_needs_a_token_and_answers_201 =
+    := made = created_hi ()
+    (status_of made, anonymous_post_status (), anon_status made::store "/api/articles/hi-there") |> _assert_eq (201i32, 401i32, 200i32)
+
+:= jake_deletes (path : string) : http_request =
+    := j = as_jake path
+    { j with method = realworld_api::Delete }
+
+:= then_deleted (on : served) (path : string) : string = (dispatch (keys ()) on::store (jake_deletes path))::reply::body
+
+:= jake_followed () : served = dispatch (keys ()) (registered ())::store (jake_posts "/api/profiles/jake/follow" "")
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# follow_and_unfollow_toggle_the_profile =
+    := on = jake_followed ()
+    (on::reply::body, then_deleted on "/api/profiles/jake/follow") |> _assert_eq (jake_profile true, jake_profile false)
+
+:= jake_favored () : served = dispatch (keys ()) (with_hi ()) (jake_posts "/api/articles/hi/favorite" "")
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# favorite_and_unfavorite_toggle_the_article =
+    := on = jake_favored ()
+    (on::reply::body, then_deleted on "/api/articles/hi/favorite") |> _assert_eq (hi_json true 1i32, hi_json false 0i32)
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# social_writes_need_a_token =
+    status_at (registered ()) (post "/api/profiles/jake/follow" "") |> _assert_eq 401i32
+
+:= nice_comment () : string = "{\"id\":3,\"createdAt\":\"\",\"updatedAt\":\"\",\"body\":\"nice\"" ++# jake_author ()
+
+:= comment_json () : string = "{\"comment\":" ++# nice_comment () ++# "}"
+
+:= comments_list () : string = "{\"comments\":[" ++# nice_comment () ++# "]}"
+
+:= commented () : served = dispatch (keys ()) (with_hi ()) (jake_posts "/api/articles/hi/comments" "{\"comment\":{\"body\":\"nice\"}}")
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# a_comment_is_added_and_listed_under_its_article =
+    := made = commented ()
+    (made::reply::body, anon_body made::store "/api/articles/hi/comments") |> _assert_eq (comment_json (), comments_list ())
+
+:= dropped_hi () : served = dispatch (keys ()) (with_hi ()) (jake_deletes "/api/articles/hi")
+
+:= anon_delete (path : string) : http_request =
+    := a = anonymous path
+    { a with method = realworld_api::Delete }
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# the_author_deletes_an_article =
+    := gone = dropped_hi ()
+    (gone::reply::status, anon_status gone::store "/api/articles/hi") |> _assert_eq (200i32, 404i32)
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# deleting_an_article_needs_a_token =
+    status_at (registered ()) (anon_delete "/api/articles/hi") |> _assert_eq 401i32
+
+:= jake_puts (path : string) (body : string) : http_request =
+    := j = as_jake path
+    { j with method = realworld_api::Put; body = body }
+
+:= bio_update () : served = dispatch (keys ()) (registered ())::store (jake_puts "/api/user" "{\"user\":{\"bio\":\"hi\"}}")
+
+:= me_after (up : served) : string = body_at up::store (as_jake "/api/user")
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# updating_the_user_sets_the_given_field =
+    := up = bio_update ()
+    (up::reply::status, sm'::contains "\"bio\":\"hi\"" (me_after up)) |> _assert_eq (200i32, !+)
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# updating_the_user_keeps_the_other_fields =
+    sm'::contains "\"username\":\"jake\"" (me_after (bio_update ())) |> _assert_eq !+
+
+:= self_followed_hi () : rw_store = realworld_model::follow (with_hi ()) (realworld_model::Id 1i32) (realworld_model::Id 1i32)
+
+:= following_author () : string = ",\"author\":{\"username\":\"jake\",\"bio\":\"\",\"image\":null,\"following\":true}}"
+
+:= hi_fields_following () : string = hi_head () ++# ",\"favorited\":false,\"favoritesCount\":0" ++# following_author ()
+
+:= feed_of (s : rw_store) : string = body_at s (as_jake "/api/articles/feed")
+
+:= one_followed () : string = "{\"articles\":[" ++# hi_fields_following () ++# "],\"articlesCount\":1}"
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# the_feed_lists_only_articles_by_followed_authors =
+    (feed_of (with_hi ()), feed_of (self_followed_hi ())) |> _assert_eq ("{\"articles\":[],\"articlesCount\":0}", one_followed ())
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# the_feed_needs_a_token =
+    anon_status (with_hi ()) "/api/articles/feed" |> _assert_eq 401i32
+
+:= hey_body () : string = "{\"article\":{\"title\":\"Hey\"}}"
+
+:= edited_hi () : served = dispatch (keys ()) (with_hi ()) (jake_puts "/api/articles/hi" (hey_body ()))
+
+:= edit_statuses (e : served) : i32 * i32 * i32 = e::reply::status, anon_status e::store "/api/articles/hey", anon_status e::store "/api/articles/hi"
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# the_author_edits_an_article_and_its_slug_follows_the_title =
+    edit_statuses (edited_hi ()) |> _assert_eq (200i32, 200i32, 404i32)
+
+:= comment_dropped () : served = dispatch (keys ()) (commented ())::store (jake_deletes "/api/articles/hi/comments/3")
+
+///> rust -d sha2 hmac pbkdf2 subtle
+///> gleam
+:# the_author_deletes_a_comment =
+    := d = comment_dropped ()
+    (d::reply::status, anon_body d::store "/api/articles/hi/comments") |> _assert_eq (200i32, "{\"comments\":[]}")

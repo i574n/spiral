@@ -37,6 +37,7 @@ defmodule Spiral.Cells.ManifestDeclaresParityTest do
         do: file
   end
 
+  @tag :sibling_repos
   test "Manifest.declares_modules? answers what the old line regex answered over every tracked manifest and the edges" do
     manifests = Enum.map(tracked("*.toml") ++ tracked("*.spiproj"), &File.read!/1)
     texts = manifests ++ Enum.flat_map(manifests, &[String.replace(&1, "modules", "  modules"), String.replace(&1, "\n", "\r\n")]) ++ @edges

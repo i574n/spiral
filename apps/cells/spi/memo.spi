@@ -40,7 +40,10 @@
 
 := strip_line_comment (line : string) : string = strip_from line 0i32 !- ""
 
-:= latin1_symbol (cp : i32) : bool = cp >= 128i32 && cp < 192i32 && cp <> 170i32 && cp <> 181i32 && cp <> 186i32
+:= latin1_number (cp : i32) : bool = cp = 178i32 || cp = 179i32 || cp = 185i32 || (cp >= 188i32 && cp <= 190i32)
+
+:= latin1_symbol (cp : i32) : bool =
+    cp >= 128i32 && cp < 192i32 && cp <> 170i32 && cp <> 181i32 && cp <> 186i32 && (latin1_number cp = !-)
 
 := symbol_point (cp : i32) : bool =
     latin1_symbol cp
@@ -51,18 +54,16 @@
     || (cp >= 65280i32 && cp < 65296i32)
     || cp >= 126976i32
 
-:= ascii_word (ch : string) : bool =
-    ch <> "" && text::contains "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'" ch
+:= upper_byte (b : i32) : bool = b >= 65i32 && b <= 90i32
 
-:= ident_start (ch : string) : bool =
-    ch <> "" && text::contains "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_" ch
+:= ident_start_byte (b : i32) : bool = upper_byte b || (b >= 97i32 && b <= 122i32) || b = 95i32
 
-:= upper_start (ch : string) : bool = ch <> "" && text::contains "ABCDEFGHIJKLMNOPQRSTUVWXYZ" ch
+:= word_byte (b : i32) : bool = ident_start_byte b || (b >= 48i32 && b <= 57i32) || b = 39i32
 
 := char_width (s : string) (i : i32) : i32 = text::utf8_width (text::byte_at s i)
 
 := word_at (s : string) (i : i32) : bool =
-    ? text::byte_at s i < 128i32 ?> ascii_word (text::one s i) |: symbol_point (text::code_point s i) = !-
+    ? text::byte_at s i < 128i32 ?> word_byte (text::byte_at s i) |: symbol_point (text::code_point s i) = !-
 
 :~ ^ word_end (s : string) (i : i32) : i32 =
     ? i < text::length s && word_at s i ?> word_end s (i + char_width s i) |: i
@@ -70,7 +71,7 @@
 :~ ^ identifiers_from (s : string) (i : i32) (acc : list string) : list string =
     ? i >= text::length s
     ?> listm::rev acc
-    |? text::byte_at s i < 128i32 && ident_start (text::one s i) ?>
+    |? ident_start_byte (text::byte_at s i) ?>
         := stop = word_end s (i + 1i32)
         identifiers_from s stop (text::slice_len s i (stop - i) :: acc)
     |: identifiers_from s (i + char_width s i) acc
@@ -128,7 +129,7 @@
     ?> listm::rev acc
     |:
         := at = spaces_end code (bar + 1i32)
-        ? at < text::length code && upper_start (text::one code at) ?>
+        ? at < text::length code && upper_byte (text::byte_at code at) ?>
             := stop = word_end code (at + 1i32)
             cases_from code stop (text::slice_len code at (stop - at) :: acc)
         |: cases_from code (bar + 1i32) acc
@@ -168,6 +169,17 @@
     ?> instance_shape header inst
     |: other_shape ()
 
+:~ ^ spaced (xs : list string) (acc : string) : string =
+    ?= xs ?|
+    | x :: rest => spaced rest (? acc = "" ?> x |: acc ++ " " ++ x)
+    | [] => acc
+
+:= kind_word (k : block_kind) : string = ?= k ?| Definition => "definition" | OtherBlock => "other"
+
+:= shape_row (header : string) (code : string) : string =
+    := s = block_shape header code
+    kind_word s::kind ++ "\t" ++ spaced s::names "" ++ "\t" ++ spaced s::operators ""
+
 :== span = { header : i32; last : i32; header_text : string }
 
 :== src_block = { code : string; shape : shape; tokens : list string; is_inst : bool }
@@ -184,6 +196,159 @@
 
 := is_instance (header : string) : bool =
     word_then_space header 0i32 "instance" >= 0i32 || word_then_space header 0i32 ":+" >= 0i32
+
+:~ ^ uniq_from (xs : list string) (seen : dict::dict string ()) (acc : list string) : list string =
+    ?= xs ?|
+    | x :: rest => ? dict::has x seen ?> uniq_from rest seen acc |: uniq_from rest (dict::insert x () seen) (x :: acc)
+    | [] => listm::rev acc
+
+:= ident_at (s : string) (i : i32) : bool = i < text::length s && ident_start_byte (text::byte_at s i)
+
+:= sep_width (s : string) (i : i32) : i32 =
+    ? text::starts_at s i "::" && ident_at s (i + 2i32) ?> 2i32 |? text::starts_at s i "." && ident_at s (i + 1i32) ?> 1i32 |: 0i32
+
+:~ ^ chain_end (s : string) (i : i32) : i32 =
+    := w = sep_width s i
+    ? w = 0i32 ?> i |: chain_end s (word_end s (i + w + 1i32))
+
+:~ ^ char_start (s : string) (i : i32) : i32 =
+    ? i > 0i32 && text::byte_at s i >= 128i32 && text::byte_at s i < 192i32 ?> char_start s (i - 1i32) |: i
+
+:= word_before (s : string) (i : i32) : bool =
+    ? i <= 0i32
+    ?> !-
+    |:
+        := j = char_start s (i - 1i32)
+        word_at s j && text::byte_at s j <> 39i32
+
+:= keyword_end (s : string) (i : i32) : i32 =
+    ? text::starts_at s i ":<" ?> i + 2i32
+    |? text::starts_at s i "open" && word_before s i = !- ?> i + 4i32
+    |: -1i32
+
+:= open_name_at (s : string) (k : i32) : i32 = ? k < 0i32 ?> -1i32 |: (? spaces_end s k > k && ident_at s (spaces_end s k) ?> spaces_end s k |: -1i32)
+
+:~ ^ opens_from (s : string) (i : i32) (acc : list string) : list string =
+    ? i >= text::length s
+    ?> listm::rev acc
+    |:
+        := j = open_name_at s (keyword_end s i)
+        ? j >= 0i32 ?>
+            := stop = chain_end s (word_end s (j + 1i32))
+            opens_from s stop (text::replace (text::slice_len s j (stop - j)) "::" "." :: acc)
+        |: opens_from s (i + char_width s i) acc
+
+:= opened_wire (code : string) : string = spaced (uniq_from (opens_from code 0i32 []) (dict::empty ()) []) ""
+
+:= line_end (s : string) (i : i32) : i32 =
+    := n = text::find_from s "\n" i
+    ? n < 0i32 ?> text::length s |: n
+
+:= escape_at (s : string) (i : i32) : bool =
+    text::byte_at s i = 92i32 && i + 1i32 < text::length s && text::byte_at s (i + 1i32) <> 10i32
+
+:= comment_at (s : string) (i : i32) : bool =
+    text::byte_at s i = 47i32 && i + 1i32 < text::length s && text::byte_at s (i + 1i32) = 47i32
+
+:~ ^ strip_run (s : string) (from : i32) (i : i32) (in_string : bool) (acc : string) : string =
+    ? i >= text::length s
+    ?> acc ++ text::slice_len s from (i - from)
+    |? text::byte_at s i = 10i32 ?> strip_run s from (i + 1i32) !- acc
+    |? in_string && escape_at s i ?> strip_run s from (i + 2i32) !+ acc
+    |? text::byte_at s i = 34i32 ?> strip_run s from (i + 1i32) (in_string = !-) acc
+    |? in_string = !- && comment_at s i ?>
+        := e = line_end s i
+        strip_run s e e !- (acc ++ text::slice_len s from (i - from))
+    |: strip_run s from (i + 1i32) in_string acc
+
+:= strip_comments (s : string) : string = strip_run s 0i32 0i32 !- ""
+
+:~ ^ token_end (s : string) (i : i32) (e : i32) : i32 =
+    ? i < e && text::is_space (text::index s i) = !- ?> token_end s (i + 1i32) e |: i
+
+:~ ^ package_args (s : string) (i : i32) (e : i32) (acc : list string) : list string =
+    := k = text::find_from s "--package" i
+    ? k < 0i32 || k >= e
+    ?> acc
+    |:
+        := p = spaces_end s (k + 9i32)
+        ? p > k + 9i32 && p < e ?>
+            := q = token_end s p e
+            package_args s q e (text::slice_len s p (q - p) :: acc)
+        |: package_args s (k + 1i32) e acc
+
+:~ ^ flags_from (s : string) (i : i32) (acc : list string) : list string =
+    ? i >= text::length s
+    ?> listm::rev acc
+    |:
+        := e = line_end s i
+        flags_from s (e + 1i32) (? text::starts_at s i "///- " ?> package_args s (i + 5i32) e acc |: acc)
+
+:= package_wire (program : string) : string = spaced (flags_from program 0i32 []) ""
+
+:= ws_byte (b : i32) : bool = b = 32i32 || (b >= 9i32 && b <= 13i32)
+
+:~ ^ ws_end (s : string) (i : i32) (e : i32) : i32 = ? i < e && ws_byte (text::byte_at s i) ?> ws_end s (i + 1i32) e |: i
+
+:~ ^ value_end (s : string) (i : i32) (e : i32) : i32 =
+    := b = ? i < e ?> text::byte_at s i |: 34i32
+    ? b <> 34i32 && b <> 13i32 ?> value_end s (i + 1i32) e |: i
+
+:= quote_skip (s : string) (i : i32) (e : i32) : i32 = ? i < e && text::byte_at s i = 34i32 ?> i + 1i32 |: i
+
+:= value_start (s : string) (b : i32) (e : i32) : i32 =
+    := j = ws_end s b e
+    := k = ws_end s (j + 4i32) e
+    ? text::starts_at s j "path" && k < e && text::byte_at s k = 61i32 ?> quote_skip s (ws_end s (k + 1i32) e) e |: -1i32
+
+:= shim_line (s : string) (b : i32) (e : i32) : option string =
+    := v = value_start s b e
+    := w = ? v < 0i32 ?> v |: value_end s v e
+    ? v >= 0i32 && w > v && ws_end s (quote_skip s w e) e = e ?> Some (text::slice_len s v (w - v)) |: None
+
+:~ ^ shim_from (s : string) (b : i32) : string =
+    ? b > text::length s
+    ?> "0\t"
+    |:
+        := e = line_end s b
+        ?= shim_line s b e ?|
+        | Some v => "1\t" ++ v
+        | None => shim_from s (e + 1i32)
+
+:= shim_path (text : string) : string = shim_from text 0i32
+
+:== refs = { unq : list string; quals : list string }
+
+:~ ^ refs_from (s : string) (i : i32) (unq : list string) (quals : list string) : refs =
+    ? i >= text::length s
+    ?> { unq = listm::rev unq; quals = listm::rev quals }
+    |? ident_at s i ?>
+        := stop = word_end s (i + 1i32)
+        := last = chain_end s stop
+        := head = text::slice_len s i (stop - i)
+        ? last = stop ?> refs_from s stop (head :: unq) quals |: refs_from s last (head :: unq) (text::slice_len s i (last - i) :: quals)
+    |: refs_from s (i + char_width s i) unq quals
+
+:~ ^ dotted_init (parts : list string) (acc : string) : string =
+    ?= parts ?|
+    | _ :: [] => acc
+    | p :: rest => dotted_init rest (? acc = "" ?> p |: acc ++ "." ++ p)
+    | [] => acc
+
+:~ ^ last_part (parts : list string) : string = ?= parts ?| p :: [] => p | _ :: rest => last_part rest | [] => ""
+
+:= qual_pair (token : string) : string =
+    := parts = sm'::split_list "." (text::replace token "::" ".")
+    dotted_init parts "" ++ "|" ++ last_part parts
+
+:= facts_row (header : string) (code : string) : string =
+    := names = (block_shape header code)::names
+    := tokens = uniq_from (identifiers code |> keep (\ t => has_text names t = !-)) (dict::empty ()) []
+    := r = refs_from code 0i32 [] []
+    := unq = uniq_from (r::unq |> keep (\ t => has_text names t = !-)) (dict::empty ()) []
+    := quals = listm::map qual_pair (uniq_from r::quals (dict::empty ()) [])
+    shape_row header code ++ "\t" ++ spaced tokens "" ++ "\t" ++ (? is_instance header ?> "instance" |: "")
+    ++ "\t" ++ spaced unq "" ++ "\t" ++ spaced quals ""
 
 := block_of (lines : list string) (s : span) : src_block =
     := code = sm'::concat_list "\n" (listm::map strip_line_comment (lines_between lines 1i32 s []))
@@ -309,7 +474,46 @@
     |> _assert_eq ([ "(</>)" ], [ "walk" ], [ "test_mode"; "IgnoredTest"; "PlainTest" ], OtherBlock)
 
 ///> gleam
+:# shape_rows_carry_kind_names_and_operators =
+    := op = shape_row ":= (</>) (a : string) (b : string) : string =" ""
+    := ty = shape_row ":| test_mode =" "    | IgnoredTest\n    | PlainTest"
+    := no = shape_row ":= _ = 1" ""
+    (op, ty, no) |> _assert_eq ("definition\t(</>)\t</>", "definition\ttest_mode IgnoredTest PlainTest\t", "other\t\t")
+
+///> gleam
 :# an_unreached_definition_is_dropped_and_main_keeps_what_it_calls =
     := program = ":= used () = 1\n:= unused () = 2\n:= main () = used ()"
     := rows = "1\t1\t:= used () = 1\n2\t2\t:= unused () = 2\n3\t3\t:= main () = used ()"
     reached_program_wire program rows |> _assert_eq ":= used () = 1\n:= main () = used ()"
+
+///> gleam
+:# facts_rows_add_deduped_tokens_without_names_and_the_instance_flag =
+    := f = facts_row ":= walk (src : string) : cells =" ":= walk (src : string) : cells =\n    walk src src"
+    := i = facts_row "instance show list" "instance show list = show_list"
+    := q = facts_row ":= f () = x" ":= f () = text::length s + a.b.c 1 + m.n"
+    (f, i)
+    |> _assert_eq (
+        "definition\twalk\t\tsrc string cells\t\tsrc string cells\t",
+        "definition\tshow\t\tinstance list show_list\tinstance\tinstance list show_list\t"
+    )
+    q |> _assert_eq "definition\tf\t\ttext length s a b c m n\t\ttext s a m\ttext|length a.b|c m|n"
+
+///> gleam
+:# opened_names_read_open_and_module_imports_once =
+    := code = ":< testing\nopen sm'_operators\n:< a::b.c\nreopen x\nopened y\n:< testing\nx.open z\n'open q"
+    opened_wire code |> _assert_eq "testing sm'_operators a.b.c z q"
+
+///> gleam
+:# strip_comments_drop_line_comments_outside_strings_only =
+    := text = "a // x\n\"b // in\" // y\nc \\\" // z\n\"d \\\" // e\" f"
+    strip_comments text |> _assert_eq "a \n\"b // in\" \nc \\\" // z\n\"d \\\" // e\" f"
+
+///> gleam
+:# package_paths_read_every_flag_line =
+    := program = "///- --package .. --package\t../lib\n:# x =\n///- --package\n///-  --package a\r\n//- --package no"
+    package_wire program |> _assert_eq ".. ../lib a"
+
+///> gleam
+:# shim_path_reads_the_first_path_line =
+    := shims = [ "x = 1\npath = \"C:/a b/c\"\n"; "  path=plain  \n"; "path = \"x\" # no\npath = y"; "nopath = z" ]
+    listm::map shim_path shims |> _assert_eq [ "1\tC:/a b/c"; "1\tplain  "; "1\ty"; "0\t" ]

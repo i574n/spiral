@@ -79,6 +79,8 @@
     | i32 => json_scan::parse_i32 s at
     | string => json_scan::parse_string s at
     | bool => json_scan::parse_bool s at
+    | f64 => json_scan::parse_f64 s at
+    | u32 => json_scan::parse_u32 s at
     | {} => decode (json_scan::object_at s at) `value
     | array_base ~el =>
         ?: el ?|
@@ -89,9 +91,10 @@
                 decode (json_scan::object_at s (json_scan::item_start s at i)) `el
     | ~a * ~b => decode_at `a s (json_scan::item_start s at 0i32), decode_items `b s at 1i32
     | option ~inner =>
-        ? at < 0i32
+        ? json_scan::absent s at
         ?> None `inner
         |: Some `inner (decode_at `inner s at)
+    | list ~el => json_scan::list_of_items `el (json_scan::item_count s at) \ i => decode_at `el s (json_scan::item_start s at i)
     | _ =>
         ? union_type_is `value ?>
             := name = json_scan::union_case_name s at

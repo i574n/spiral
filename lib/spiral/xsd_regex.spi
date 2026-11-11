@@ -179,91 +179,28 @@
     | RxStar _ => a
     | _ => RxStar a
 
-:! accepts_empty = ()
+:= repeat_bound (n : i32) : u32 = ? n < 0i32 ?> 0u32 |: (conv n : u32)
 
-:! rejects_empty = ()
+:= class_set (negated : bool) (ranges : list (u32 * u32)) : regex_charset::char_set regex_charset::normal =
+    := set = regex_charset::of_ranges (listm::map (\ (low, high) => regex_charset::range low high) ranges)
+    ? negated ?> regex_charset::complement set |: set
 
-:| ^ nullable_evidence answer =
-    | EpsAccepts :: nullable_evidence accepts_empty
-    | StarAccepts :: nullable_evidence accepts_empty
-    | RepeatFromZero :: nullable_evidence accepts_empty
-    | RepeatOfNullable :: nullable_evidence accepts_empty -> nullable_evidence accepts_empty
-    | SeqAccepts :: nullable_evidence accepts_empty * nullable_evidence accepts_empty -> nullable_evidence accepts_empty
-    | AltLeftAccepts :: nullable_evidence accepts_empty -> nullable_evidence accepts_empty
-    | AltRightAccepts :: nullable_evidence accepts_empty -> nullable_evidence accepts_empty
-    | NoneRejects :: nullable_evidence rejects_empty
-    | ClassRejects :: nullable_evidence rejects_empty
-    | SeqLeftRejects :: nullable_evidence rejects_empty -> nullable_evidence rejects_empty
-    | SeqRightRejects :: nullable_evidence rejects_empty -> nullable_evidence rejects_empty
-    | AltRejects :: nullable_evidence rejects_empty * nullable_evidence rejects_empty -> nullable_evidence rejects_empty
-    | RepeatRejects :: nullable_evidence rejects_empty -> nullable_evidence rejects_empty
-
-:| ^ nullability =
-    | Accepts : nullable_evidence accepts_empty
-    | Rejects : nullable_evidence rejects_empty
-
-:~ ^ nullability_of (r : rx) : nullability =
+:~ ^ to_re (r : rx) : regex_syntax::re =
     ?= r ?|
-    | RxNone => Rejects NoneRejects
-    | RxEps => Accepts EpsAccepts
-    | RxClass _ => Rejects ClassRejects
-    | RxSeq (a, b) => regex_nullability_seq a b
-    | RxAlt (a, b) => regex_nullability_alt a b
-    | RxStar _ => Accepts StarAccepts
-    | RxRepeat (a, low, _) => regex_nullability_repeat a low
+    | RxNone => regex_syntax::Nothing
+    | RxEps => regex_syntax::Epsilon
+    | RxClass (negated, ranges) => regex_syntax::Set (class_set negated ranges)
+    | RxSeq (a, b) => regex_syntax::Seq (to_re a, to_re b)
+    | RxAlt (a, b) => regex_syntax::Alt (to_re a, to_re b)
+    | RxStar a => regex_syntax::Star (to_re a)
+    | RxRepeat (a, low, high) =>
+        regex_syntax::Repeat (to_re a, repeat_bound low, regex_syntax::Bounded (repeat_bound high))
 
-:& :~ regex_nullability_seq (a : rx) (b : rx) : nullability =
-    ?= nullability_of a ?|
-    | Rejects left => Rejects (SeqLeftRejects left)
-    | Accepts left =>
-        ?= nullability_of b ?|
-        | Accepts right => Accepts (SeqAccepts (left, right))
-        | Rejects right => Rejects (SeqRightRejects right)
+:= nullability_of (r : rx) : regex_nullable::nullability = regex_nullable::nullability_of (to_re r)
 
-:& :~ regex_nullability_alt (a : rx) (b : rx) : nullability =
-    ?= nullability_of a ?|
-    | Accepts left => Accepts (AltLeftAccepts left)
-    | Rejects left =>
-        ?= nullability_of b ?|
-        | Accepts right => Accepts (AltRightAccepts right)
-        | Rejects right => Rejects (AltRejects (left, right))
+:= nullable (r : rx) : bool = regex_nullable::nullable (to_re r)
 
-:& :~ regex_nullability_repeat (a : rx) (low : i32) : nullability =
-    ? low <= 0i32
-    ?> Accepts RepeatFromZero
-    |:
-        ?= nullability_of a ?|
-        | Accepts inner => Accepts (RepeatOfNullable inner)
-        | Rejects inner => Rejects (RepeatRejects inner)
-
-:= nullable (r : rx) : bool =
-    ?= nullability_of r ?|
-    | Accepts _ => !+
-    | Rejects _ => !-
-
-:~ ^ accept_reason (evidence : nullable_evidence accepts_empty) : string =
-    ?= evidence ?|
-    | EpsAccepts => "eps"
-    | StarAccepts => "star"
-    | RepeatFromZero => "repeat-from-zero"
-    | RepeatOfNullable inner => "repeat(" ++# accept_reason inner ++# ")"
-    | SeqAccepts (left, right) => "seq(" ++# accept_reason left ++# ", " ++# accept_reason right ++# ")"
-    | AltLeftAccepts inner => "left(" ++# accept_reason inner ++# ")"
-    | AltRightAccepts inner => "right(" ++# accept_reason inner ++# ")"
-
-:~ ^ reject_reason (evidence : nullable_evidence rejects_empty) : string =
-    ?= evidence ?|
-    | NoneRejects => "none"
-    | ClassRejects => "class"
-    | SeqLeftRejects inner => "seq-left(" ++# reject_reason inner ++# ")"
-    | SeqRightRejects inner => "seq-right(" ++# reject_reason inner ++# ")"
-    | AltRejects (left, right) => "alt(" ++# reject_reason left ++# ", " ++# reject_reason right ++# ")"
-    | RepeatRejects inner => "repeat(" ++# reject_reason inner ++# ")"
-
-:= nullability_text (r : rx) : string =
-    ?= nullability_of r ?|
-    | Accepts evidence => "accepts " ++# accept_reason evidence
-    | Rejects evidence => "rejects " ++# reject_reason evidence
+:= nullability_text (r : rx) : string = regex_nullable::nullability_text (to_re r)
 
 := counted (atom : rx) (low : i32) (high : i32) : rx =
     := low = ? low < 0i32 ?> 0i32 |: low
@@ -915,6 +852,20 @@
     | Some r => row_disagreements pattern (\ probe => matches_from r probe 0i32) probes row 0i32 acc
     | None => failed_pattern "does not compile: " pattern acc
 
+:~ ^ probe_codes (s : string) (i : i32) (acc : list u32) : list u32 =
+    ? i >= sm'::length s ?> listm::rev acc |: probe_codes s (i + cp_width s i) (cp_at s i :: acc)
+
+:= canonical_matches (r : rx) (probe : string) : bool =
+    regex_nullable::nullable (regex_derivative::derive_word (probe_codes probe 0i32 []) (to_re r))
+
+:= canonical_disagreements
+    (pattern : string) (row : string) (probes : list string) (acc : disagreement)
+    : disagreement
+    =
+    ?= compile_pattern pattern ?|
+    | Some r => row_disagreements pattern (canonical_matches r) probes row 0i32 acc
+    | None => failed_pattern "does not compile: " pattern acc
+
 := dfa_disagreements (pattern : string) (row : string) (probes : list string) (acc : disagreement) : disagreement =
     ?= dfa_of_pattern pattern ?|
     | Some rows => row_disagreements pattern (dfa_matches rows) probes row 0i32 acc
@@ -1149,9 +1100,9 @@
 :# nullability_carries_its_evidence =
     ?
         nullability_text (RxSeq (RxStar RxEps, RxRepeat (single 97u32, 0i32, 3i32)))
-        <> "accepts seq(star, repeat-from-zero)"
+        <> "accepts seq(star,repeat-from-zero)"
     ?> failwith "both halves accept the empty word, each with its own reason"
-    ? nullability_text (RxAlt (single 97u32, RxSeq (RxEps, RxNone))) <> "rejects alt(class, seq-right(none))"
+    ? nullability_text (RxAlt (single 97u32, RxSeq (RxEps, RxNone))) <> "rejects alt(set,seq-right(nothing))"
     ?> failwith "an alternative rejects only when both sides reject"
     ? nullable (RxAlt (single 97u32, RxEps)) = !- ?> failwith "nullable reads the evidence"
 

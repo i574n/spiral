@@ -23,4 +23,5 @@ modules:
     gleam_project
     run_result
     mount_text
+    cell_budget
     main

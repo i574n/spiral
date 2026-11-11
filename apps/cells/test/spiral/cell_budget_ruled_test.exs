@@ -40,6 +40,25 @@ defmodule Spiral.CellBudgetRuledTest do
     assert ruled(":= format (d : date) : string =\n" <> nested) == w(nested)
   end
 
+  test "rule 1: a flat run_target_args dispatch over 10 targets counts its head line plus its heaviest arm" do
+    targets = ~w(Rust Gleam Python Lua Zig C Lean Wasm Kotlin Swift)
+    arms = Enum.map(targets, &"        | #{&1} => \\ var => get_env_#{String.downcase(&1)} var")
+    body = Enum.join(["    run_target_args (\\ () => var) \\|" | arms], "\n")
+    heaviest = arms |> Enum.map(&String.trim/1) |> Enum.max_by(&w/1)
+
+    weight = ruled(":= get_environment_variable (var : string) : string =\n" <> body)
+    assert weight == w("run_target_args (\\ () => var) \\|") + w(heaviest)
+    assert weight < w(body)
+    assert weight < 272
+  end
+
+  test "rule 1 counter-example: a run_target_args dispatch with a multi-line or logic arm counts the whole body" do
+    multi = "    run_target_args (\\ () => var) \\|\n        | Rust => \\ var =>\n            get_env_rust var\n        | Gleam => \\ var => get_env_gleam var"
+    assert ruled(":= get_environment_variable (var : string) : string =\n" <> multi) == w(multi)
+    logic = "    run_target_args (\\ () => var) \\|\n        | Rust => \\ var => ? var = \"\" ?> a |: b\n        | Gleam => \\ var => get_env_gleam var"
+    assert ruled(":= get_environment_variable (var : string) : string =\n" <> logic) == w(logic)
+  end
+
   test "data: a type declaration and a constant record literal are exempt" do
     assert ruled(":| color =\n    | Red\n    | Green") == 0
     record = ":= family_root () : row =\n    { name = \"invoice\"; lines = [ Line 1i32; Line 2i32 ]; total = 10i32 }"

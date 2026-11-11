@@ -23,6 +23,7 @@ defmodule Spiral.CellsLiveTest do
     assert {:ok, %Result{value: "49", stdout: stdout, exit_status: 0}} =
              Spiral.Cells.run(
                """
+               ///> rust
                inl square x = x * x
 
                console.write_line "Hello from Spiral!"
@@ -36,7 +37,7 @@ defmodule Spiral.CellsLiveTest do
 
   test "a print with no value still runs" do
     assert {:ok, %Result{value: nil, stdout: stdout, exit_status: 0}} =
-             Spiral.Cells.run("console.write_line \"Hello from Spiral!\"\n", timeout: @budget)
+             Spiral.Cells.run("///> rust\nconsole.write_line \"Hello from Spiral!\"\n", timeout: @budget)
 
     assert stdout =~ "Hello from Spiral!"
   end
@@ -45,7 +46,7 @@ defmodule Spiral.CellsLiveTest do
     root = Path.expand("../fixtures", __DIR__)
 
     assert {:ok, %Result{value: "42", exit_status: 0}} =
-             Spiral.Cells.run("///- --package shared\noffset.add_one 41i32",
+             Spiral.Cells.run("///> rust\n///- --package shared\noffset.add_one 41i32",
                root: root,
                timeout: @budget
              )
@@ -53,7 +54,7 @@ defmodule Spiral.CellsLiveTest do
 
   test "a type error is a SpiralError" do
     assert {:error, %SpiralError{message: message}} =
-             Spiral.Cells.run("1i32 + \"a\"", timeout: @budget)
+             Spiral.Cells.run("///> rust\n1i32 + \"a\"", timeout: @budget)
 
     assert message =~ "i32"
     assert message =~ "string"

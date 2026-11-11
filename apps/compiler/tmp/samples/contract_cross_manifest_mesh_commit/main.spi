@@ -141,7 +141,7 @@
         := \? effect. _, MeshRow label = payload
         label
 
-:= ^ terminal_label \* transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to.
+:= terminal_label \* transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to.
     (plan : mesh_plan transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to) : string =
     ?= plan ?|
     | MeshLeaf node => node_label node

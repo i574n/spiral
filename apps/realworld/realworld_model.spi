@@ -1,0 +1,246 @@
+///- --package . --timeout 900000
+:# realworld_model static =
+    :< testing
+
+:< sm'_operators
+
+:| id t =
+    | Id :: \* t. i32 -> id t
+
+:= id_raw \* t. (i : id t) : i32 =
+    ?= i ?|
+    | Id n => n
+
+:= id_eq \* t. (a : id t) (b : id t) : bool =
+    id_raw a = id_raw b
+
+:== user = { username : string; email : string; bio : string; image : option string; password_hash : string }
+
+:== article = { slug : string; title : string; description : string; body : string; tag_list : list string; author : id user; created_at : string; updated_at : string }
+
+:== comment = { body : string; author : id user; article : id article; created_at : string; updated_at : string }
+
+:== store = { users : list (id user * user); articles : list (id article * article); comments : list (id comment * comment); follows : list (id user * id user); favorites : list (id user * id article); next_id : i32 }
+
+:= empty_store () : store =
+    { users = []; articles = []; comments = []; follows = []; favorites = []; next_id = 1i32 }
+
+:= create_user (s : store) (u : user) : store =
+    { s with users = (Id (s::next_id), u) :: s::users; next_id = s::next_id + 1i32 }
+
+:= sample_user () : user =
+    { username = "jake"; email = "jake@jake.jake"; bio = ""; image = None; password_hash = "x" }
+
+:= sample_user2 () : user =
+    { username = "neo"; email = "neo@matrix.io"; bio = ""; image = None; password_hash = "y" }
+
+:= sample_article () : article =
+    { slug = "hi"; title = "Hi"; description = "d"; body = "b"; tag_list = ["x"]; author = Id 1i32; created_at = ""; updated_at = "" }
+
+:= pair_key \* k v. (p : k * v) : k =
+    ?= p ?|
+    | (a, _) => a
+
+:= pair_val \* k v. (p : k * v) : v =
+    ?= p ?|
+    | (_, b) => b
+
+:= find_by \* t. (keep : t -> bool) (xs : list t) : option t =
+    listm::fold (\ found x => ?= found ?| Some _ => found | None => ? keep x ?> Some x |: None) None xs
+
+:= keep_where \* t. (keep : t -> bool) (xs : list t) : list t = listm::fold (\ acc x => ? keep x ?> x :: acc |: acc) [] xs |> listm::rev
+
+:= values_of \* k v. (xs : list (k * v)) : list v = listm::fold (\ acc p => pair_val p :: acc) [] xs |> listm::rev
+
+:= get_user (s : store) (uid : id user) : option user =
+    ?= find_by (\ p => id_eq (pair_key p) uid) s::users ?|
+    | Some p => Some (pair_val p)
+    | None => None
+
+:= create_article (s : store) (a : article) : store =
+    { s with articles = (Id (s::next_id), a) :: s::articles; next_id = s::next_id + 1i32 }
+
+:= follow (s : store) (follower : id user) (followed : id user) : store =
+    { s with follows = (follower, followed) :: s::follows }
+
+:= is_following (s : store) (follower : id user) (followed : id user) : bool =
+    ?= find_by (\ p => ? id_eq (pair_key p) follower ?> id_eq (pair_val p) followed |: false) s::follows ?|
+    | Some _ => true
+    | None => false
+
+:= favorite (s : store) (u : id user) (a : id article) : store =
+    { s with favorites = (u, a) :: s::favorites }
+
+:= is_favorited (s : store) (u : id user) (a : id article) : bool =
+    ?= find_by (\ p => ? id_eq (pair_key p) u ?> id_eq (pair_val p) a |: false) s::favorites ?|
+    | Some _ => true
+    | None => false
+
+:= unfollow (s : store) (follower : id user) (followed : id user) : store =
+    { s with follows = keep_where (\ p => ? id_eq (pair_key p) follower ?> (? id_eq (pair_val p) followed ?> false |: true) |: true) s::follows }
+
+:= unfavorite (s : store) (u : id user) (a : id article) : store =
+    { s with favorites = keep_where (\ p => ? id_eq (pair_key p) u ?> (? id_eq (pair_val p) a ?> false |: true) |: true) s::favorites }
+
+:= delete_user (s : store) (uid : id user) : store =
+    { s with users = keep_where (\ p => ? id_eq (pair_key p) uid ?> false |: true) s::users }
+
+:= update_user (s : store) (uid : id user) (u : user) : store =
+    { s with users = (uid, u) :: keep_where (\ p => ? id_eq (pair_key p) uid ?> false |: true) s::users }
+
+:= list_users (s : store) : list user =
+    values_of s::users
+
+:= sample_comment () : comment =
+    { body = "nice"; author = Id 1i32; article = Id 2i32; created_at = ""; updated_at = "" }
+
+:= add_comment (s : store) (c : comment) : store =
+    { s with comments = (Id (s::next_id), c) :: s::comments; next_id = s::next_id + 1i32 }
+
+:= get_comment (s : store) (cid : id comment) : option comment =
+    ?= find_by (\ p => id_eq (pair_key p) cid) s::comments ?|
+    | Some p => Some (pair_val p)
+    | None => None
+
+:= delete_comment (s : store) (cid : id comment) : store =
+    { s with comments = keep_where (\ p => ? id_eq (pair_key p) cid ?> false |: true) s::comments }
+
+:= str_distinct (xs : list string) : list string =
+    listm::fold (\ acc x => ?= find_by (\ y => y = x) acc ?| Some _ => acc | None => x :: acc) [] xs
+
+:= article_tag_list (p : id article * article) : list string =
+    ?= p ?|
+    | (_, a) => a::tag_list
+
+:= get_tags (s : store) : list string =
+    := tags = listm::fold (\ acc p => listm::fold (\ inner t => t :: inner) acc (article_tag_list p)) [] s::articles
+    str_distinct (listm::rev tags)
+
+:= get_article (s : store) (aid : id article) : option article =
+    ?= find_by (\ p => id_eq (pair_key p) aid) s::articles ?|
+    | Some p => Some (pair_val p)
+    | None => None
+
+:= list_articles (s : store) : list article =
+    values_of s::articles
+
+:= comment_of_article (aid : id article) (p : id comment * comment) : bool =
+    ?= p ?|
+    | (_, c) => id_eq c::article aid
+
+:= list_comments (s : store) (aid : id article) : list comment =
+    values_of (keep_where (comment_of_article aid) s::comments)
+
+///> rust
+:# phantom_ids_distinguish_entities =
+    := u : id user = Id 1i32
+    (id_raw u, id_eq u (Id 1i32), id_eq u (Id 2i32))
+    |> _assert_eq (1i32, true, false)
+
+///> rust
+:# empty_store_starts_at_id_one =
+    (empty_store ())::next_id |> _assert_eq 1i32
+
+///> rust
+:# creates_advance_the_id_counter =
+    := s = create_user (create_user (empty_store ()) (sample_user ())) (sample_user2 ())
+    s::next_id |> _assert_eq 3i32
+
+///> rust
+:# get_user_finds_a_created_user =
+    := s0 = create_user (empty_store ()) (sample_user ())
+    ?= get_user s0 (Id 1i32) ?|
+    | Some u => u::username
+    | None => "none"
+    |> _assert_eq "jake"
+
+///> rust
+:# follow_then_is_following_is_directional =
+    := s = follow (empty_store ()) (Id 1i32) (Id 2i32)
+    (is_following s (Id 1i32) (Id 2i32), is_following s (Id 2i32) (Id 1i32))
+    |> _assert_eq (true, false)
+
+///> rust
+:# create_article_advances_the_counter =
+    := s = create_article (create_user (empty_store ()) (sample_user ())) (sample_article ())
+    s::next_id |> _assert_eq 3i32
+
+///> rust
+:# unfollow_removes_the_edge =
+    := s = unfollow (follow (empty_store ()) (Id 1i32) (Id 2i32)) (Id 1i32) (Id 2i32)
+    is_following s (Id 1i32) (Id 2i32) |> _assert_eq false
+
+///> rust
+:# favorite_toggle_round_trips =
+    := s1 = favorite (empty_store ()) (Id 1i32) (Id 7i32)
+    := s2 = unfavorite s1 (Id 1i32) (Id 7i32)
+    (is_favorited s1 (Id 1i32) (Id 7i32), is_favorited s2 (Id 1i32) (Id 7i32))
+    |> _assert_eq (true, false)
+
+///> rust
+:# update_user_replaces_in_place =
+    := s1 = update_user (create_user (empty_store ()) (sample_user ())) (Id 1i32) (sample_user2 ())
+    ?= get_user s1 (Id 1i32) ?|
+    | Some u => u::username
+    | None => "none"
+    |> _assert_eq "neo"
+
+///> rust
+:# delete_user_removes_it =
+    := s1 = delete_user (create_user (empty_store ()) (sample_user ())) (Id 1i32)
+    ?= get_user s1 (Id 1i32) ?|
+    | Some _ => "found"
+    | None => "gone"
+    |> _assert_eq "gone"
+
+///> rust
+:# list_users_returns_created =
+    ?= list_users (create_user (empty_store ()) (sample_user ())) ?|
+    | u :: _ => u::username
+    | [] => "empty"
+    |> _assert_eq "jake"
+
+///> rust
+:# add_then_get_comment =
+    := s = add_comment (empty_store ()) (sample_comment ())
+    ?= get_comment s (Id 1i32) ?|
+    | Some c => c::body
+    | None => "none"
+    |> _assert_eq "nice"
+
+///> rust
+:# delete_comment_removes_it =
+    := s = delete_comment (add_comment (empty_store ()) (sample_comment ())) (Id 1i32)
+    ?= get_comment s (Id 1i32) ?|
+    | Some _ => "found"
+    | None => "gone"
+    |> _assert_eq "gone"
+
+///> rust
+:# get_tags_lists_article_tags =
+    ?= get_tags (create_article (empty_store ()) (sample_article ())) ?|
+    | t :: _ => t
+    | [] => "none"
+    |> _assert_eq "x"
+
+///> rust
+:# get_article_finds_a_created_article =
+    ?= get_article (create_article (empty_store ()) (sample_article ())) (Id 1i32) ?|
+    | Some a => a::slug
+    | None => "none"
+    |> _assert_eq "hi"
+
+///> rust
+:# list_articles_returns_created =
+    ?= list_articles (create_article (empty_store ()) (sample_article ())) ?|
+    | a :: _ => a::slug
+    | [] => "empty"
+    |> _assert_eq "hi"
+
+///> rust
+:# list_comments_filters_by_article =
+    := s = add_comment (empty_store ()) (sample_comment ())
+    ?= list_comments s (Id 2i32) ?|
+    | c :: _ => c::body
+    | [] => "empty"
+    |> _assert_eq "nice"

@@ -236,3 +236,13 @@
 :# nfc_composes =
     := ~s = unicode_decomposed_e ()
     nfc s |> _assert_eq (char_of 233i32)
+
+:~ ^ spaces_of (k : i32) (acc : string) : string = ? k <= 0i32 ?> acc |: spaces_of (k - 1i32) (acc ++# " ")
+
+:= pad_points_right (width : i32) (text : string) : string =
+    text ++# spaces_of (width - listm::length (code_points text)) ""
+
+///> rust
+:# a_pad_counts_code_points_not_bytes =
+    (pad_points_right 4i32 "ab", pad_points_right 3i32 "é", pad_points_right 1i32 "abc")
+    |> _assert_eq ("ab  ", "é  ", "abc")

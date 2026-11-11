@@ -1,5 +1,5 @@
 defmodule Spiral.Cells.Notebook do
-  alias Spiral.Cells.{Builders, Document, Memo, ProcessError, Result, SpiralError, Targets, TimeoutError, Toolchain}
+  alias Spiral.Cells.{Builders, Directives, Document, Memo, ProcessError, Result, SpiralError, Targets, TimeoutError, Toolchain}
 
   @default_timeout 300_000
   @run_keys [
@@ -113,7 +113,11 @@ defmodule Spiral.Cells.Notebook do
       unavailable: ran.unavailable,
       memo: ran.memo,
       targets: ran.targets,
-      report: report(tests, selected, ran) |> with_no_agree_reasons(cells) |> with_compiler_pin(opts[:compiler_pin])
+      report:
+        report(tests, selected, ran)
+        |> with_no_agree_reasons(cells)
+        |> with_compiler_pin(opts[:compiler_pin])
+        |> with_whole_memo_keys(Map.get(ran, :whole_memo_keys, false))
     }
   end
 
@@ -122,6 +126,10 @@ defmodule Spiral.Cells.Notebook do
     do: Map.put(report, "compiler", %{"pin" => pin, "stamp" => Path.basename(Path.dirname(pin))})
 
   def with_compiler_pin(report, _pin), do: report
+
+  @doc false
+  def with_whole_memo_keys(report, true), do: Map.put(report, "memo_keys", "whole")
+  def with_whole_memo_keys(report, _whole), do: report
 
   @no_agree_reason ~r/^\/\/\/- [^\n]*--no-agree\s+"([^"]*)"/m
   @bare_no_agree ~r/^\/\/\/- [^\n]*--no-agree(?!\s+")/m
@@ -311,12 +319,13 @@ defmodule Spiral.Cells.Notebook do
           |> Map.put("failed_tests", for(row <- rows, row["status"] == "failed", do: row["name"]))
           |> Map.put("accept_refused", for(row <- rows, row["accept_refused"], into: %{}, do: {row["name"], row["accept_refused"]}))
           |> Map.put("failed_targets", failed_targets(rows))
+          |> Map.put("failed_messages", for(row <- rows, row["status"] == "failed", row["message"], into: %{}, do: {row["name"], row["message"]}))
           |> Map.put("mismatches", for(row <- rows, row["status"] == "failed", row["actual"], into: %{}, do: {row["name"], %{"actual" => row["actual"], "expected" => row["expected"]}}))
           |> Map.put("accepted_sites", for(row <- rows, row["accepted_site"], into: %{}, do: {row["name"], row["accepted_site"]}))
           |> Map.merge(headroom(rows))
         end)
         |> case do
-          [] -> [counts([]) |> Map.put("file", path) |> Map.put("failed_tests", []) |> Map.put("accept_refused", %{}) |> Map.put("failed_targets", %{}) |> Map.put("mismatches", %{}) |> Map.put("accepted_sites", %{})]
+          [] -> [counts([]) |> Map.put("file", path) |> Map.put("failed_tests", []) |> Map.put("accept_refused", %{}) |> Map.put("failed_targets", %{}) |> Map.put("failed_messages", %{}) |> Map.put("mismatches", %{}) |> Map.put("accepted_sites", %{})]
           lines -> lines
         end
       end)
@@ -335,7 +344,7 @@ defmodule Spiral.Cells.Notebook do
         "spiral-tests headroom " <> JSON.encode!(Map.take(file, ["file", "headroom", "slowest_ms", "timeout_ms"]))
       end
 
-    Enum.map(files, &("spiral-tests file " <> JSON.encode!(&1))) ++ warnings ++
+    Enum.map(files, &("spiral-tests file " <> JSON.encode!(Spiral.Cells.Result.json_safe(&1)))) ++ warnings ++
       ["spiral-tests total " <> JSON.encode!(total)]
   end
 
@@ -412,7 +421,7 @@ defmodule Spiral.Cells.Notebook do
       end
 
     File.mkdir_p!(Path.dirname(output_path))
-    File.write!(output_path, JSON.encode!(ipynb(doc, outputs, durations, report) |> pool_metadata(pool_before, pool_after)))
+    File.write!(output_path, JSON.encode!(ipynb(doc, outputs, durations, report) |> pool_metadata(pool_before, pool_after) |> Spiral.Cells.Result.json_safe()))
 
     result =
       case status do
@@ -550,7 +559,7 @@ defmodule Spiral.Cells.Notebook do
 
   @stubbed_runs [:compile, :rustc, :execute, :target, :host]
 
-  defp compiler_bounds?(opts), do: not Enum.any?(@stubbed_runs, &Keyword.has_key?(opts, &1))
+  defp compiler_bounds?(opts), do: not Enum.any?(@stubbed_runs, &(Keyword.get(opts, &1) != nil))
 
   @doc false
   def test_bounds(path, opts \\ []) do
@@ -602,7 +611,7 @@ defmodule Spiral.Cells.Notebook do
       |> with_builders(test_cell_names(doc))
       |> keyed_on_the_whole_source()
 
-    budgets = Map.new(spiral, &{&1.index, opts[:timeout] || positive_int(Map.get(&1, :timeout)) || @default_timeout})
+    budgets = Map.new(spiral, &{&1.index, opts[:timeout] || Directives.scale_budget(positive_int(Map.get(&1, :timeout)) || @default_timeout)})
     memo = Memo.context(opts, spiral)
     {spiral, recalled} = recall(spiral, memo)
 
@@ -626,7 +635,7 @@ defmodule Spiral.Cells.Notebook do
           Map.new(recalled, &{elem(&1, 0), :hit})
           |> Map.merge(for(%{memo: _} = step <- spiral, into: %{}, do: {step.index, :miss}))
 
-        %{collect(recalled, ran) | memo: flags} |> Map.put(:budgets, budgets)
+        %{collect(recalled, ran) | memo: flags} |> Map.put(:budgets, budgets) |> Map.put(:whole_memo_keys, Memo.whole_keys?(memo))
 
       {:error, message} ->
         %{no_runs() | status: {:error, message}}
@@ -920,7 +929,7 @@ defmodule Spiral.Cells.Notebook do
   defp dispatch_step(step, opts, root), do: dispatch_spiral(step, opts, root)
 
   defp dispatch_host(%{language: language, source: source}, opts, root) do
-    timeout = opts[:timeout] || @default_timeout
+    timeout = opts[:timeout] || Directives.scale_budget(@default_timeout)
     started = System.monotonic_time(:millisecond)
 
     deadline =
@@ -952,7 +961,7 @@ defmodule Spiral.Cells.Notebook do
   end
 
   defp dispatch_spiral(step, opts, root) do
-    timeout = opts[:timeout] || positive_int(step.timeout) || @default_timeout
+    timeout = opts[:timeout] || Directives.scale_budget(positive_int(step.timeout) || @default_timeout)
 
     source_path = opts[:path]
 
@@ -967,6 +976,7 @@ defmodule Spiral.Cells.Notebook do
         |> Keyword.put(:test_cell, Regex.match?(~r/^\/\/\/- [^\n]*--test\b/m, step.cell_source))
         |> Keyword.put(:build_only, build_only?(step.cell_source))
         |> Keyword.put(:test_name, Map.get(step, :test_name))
+        |> Keyword.put(:test_source, source_path)
 
       ran = if Regex.match?(@bare_no_agree, step.cell_source), do: :bare_no_agree, else: step.program |> Spiral.Cells.run(opts) |> in_source(source_path)
 
@@ -1038,7 +1048,8 @@ defmodule Spiral.Cells.Notebook do
   @doc false
   def expectation(source) do
     with [_, clause] <- Regex.run(~r/^\/\/\/- [^\n]*--fails\s+(.*?)\s*$/m, source),
-         [_, code, substring] <- Regex.run(~r/\A(?:(\S+)\s+)?"(.*)"\z/, clause) do
+         [_, code, substring] <- Regex.run(~r/\A(?:(\S+(?:\s+-\s+\S+)*)\s+)?"(.*)"\z/, clause) do
+      code = String.replace(code, ~r/\s+-\s+/, "-")
       %{code: if(code == "", do: nil, else: code), substring: substring}
     else
       _ -> nil
@@ -1340,6 +1351,8 @@ defmodule Spiral.Cells.Notebook do
           )
           |> test_metadata(Map.get(tests, index))
 
+        keep_phase_row(cell, Map.get(durations, index), Map.get(tests, index))
+
         {json, if(ran, do: n + 1, else: n)}
       end)
 
@@ -1410,6 +1423,20 @@ defmodule Spiral.Cells.Notebook do
       "outputs" => outputs
     }
   end
+
+  defp keep_phase_row(cell, {_ms, phases}, test) when map_size(phases) > 0 do
+    case System.get_env("SPIRAL_CELLS_PHASE_ROWS") do
+      path when is_binary(path) and path != "" ->
+        source = if test, do: ":# #{test["name"]} =\n" <> source_of(cell), else: source_of(cell)
+        wire = Enum.map_join(phases, "\n", fn {key, value} -> "#{phase_key(key)}=#{value}" end)
+        File.write!(path, Spiral.Cells.Domain.phase_row(source, wire) <> "\n", [:append])
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp keep_phase_row(_cell, _duration, _test), do: :ok
 
   defp phase_key(key), do: key |> Atom.to_string() |> String.replace_suffix("_ms", "")
 

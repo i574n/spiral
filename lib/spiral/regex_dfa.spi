@@ -1,0 +1,245 @@
+///- --package .
+:< regex_charset
+:< regex_syntax
+:< regex_nullable
+:< regex_derivative
+
+:# regex_dfa static =
+    :< testing
+
+:~ ^ insert_point (p : u32) (sorted : list u32) : list u32 =
+    ?= sorted ?|
+    | head :: rest => ? p = head ?> sorted |? p < head ?> p :: sorted |: head :: insert_point p rest
+    | [] => [ p ]
+
+:~ with_range (r : code_range) (points : list u32) : list u32 =
+    := points = insert_point r::low points
+    ? r::high < last_code_point () ?> insert_point (r::high + 1u32) points |: points
+
+:~ ^ range_points (ranges : list code_range) (points : list u32) : list u32 =
+    ?= ranges ?|
+    | r :: rest => range_points rest (with_range r points)
+    | [] => points
+
+:~ ^ points_in (todo : list re) (points : list u32) : list u32 =
+    ?= todo ?|
+    | r :: rest =>
+        ?= r ?|
+        | Set s => points_in rest (range_points (ranges_of s) points)
+        | _ => points_in (listm::append (parts_of r) rest) points
+    | [] => points
+
+:~ points_of (r : re) (points : list u32) : list u32 = points_in [ r ] points
+
+:~ ^ classes_from (points : list u32) : list code_range =
+    ?= points ?|
+    | low :: rest =>
+        ?= rest ?|
+        | next :: _ => range low (next - 1u32) :: classes_from rest
+        | [] => [ range low (last_code_point ()) ]
+    | [] => []
+
+:= classes_of (r : re) : list code_range = classes_from (points_of r [ 0u32 ])
+
+:~ ^ lows_of (classes : list code_range) : list u32 =
+    ?= classes ?|
+    | c :: rest => c::low :: lows_of rest
+    | [] => []
+
+:! state = i32
+
+:= state_index (state s) : i32 = s
+
+:| target =
+    | Dead
+    | To : state
+
+:== row = { accepting : verdict; next : list target }
+
+:== dfa = { classes : list code_range; start : target; rows : list row; regexes : list re }
+
+:| built =
+    | Built : dfa
+    | StateCapReached : i32
+
+:| lookup =
+    | Known : state
+    | Unknown
+
+:== frontier = { known : list (re * state); count : i32 }
+
+:~ ^ find_state (r : re) (known : list (re * state)) : lookup =
+    ?= known ?|
+    | (k, s) :: rest => ? same_re r k ?> Known s |: find_state r rest
+    | [] => Unknown
+
+:~ with_state (d : re) (f : frontier) : frontier = { known = (d, state f::count) :: f::known; count = f::count + 1i32 }
+
+:~ target_of (d : re) (f : frontier) : target * frontier =
+    ? is_nothing d
+    ?> Dead, f
+    |:
+        ?= find_state d f::known ?|
+        | Known s => To s, f
+        | Unknown => To (state f::count), with_state d f
+
+:~ ^ re_at (index : i32) (known : list (re * state)) : re =
+    ?= known ?|
+    | (k, s) :: rest => ? state_index s = index ?> k |: re_at index rest
+    | [] => Nothing
+
+:~ ^ row_targets (r : re) (lows : list u32) (f : frontier) (acc : list target) : list target * frontier =
+    ?= lows ?|
+    | c :: rest =>
+        := t, f = target_of (derive c r) f
+        row_targets r rest f (t :: acc)
+    | [] => listm::rev acc, f
+
+:~ ^ regexes_in_order (index : i32) (f : frontier) (acc : list re) : list re =
+    ? index < 0i32 ?> acc |: regexes_in_order (index - 1i32) f (re_at index f::known :: acc)
+
+:~ start_target (start : re) : target = ? is_nothing start ?> Dead |: To (state 0i32)
+
+:~ built_dfa (start : re) (classes : list code_range) (f : frontier) (rows : list row) : built =
+    Built {
+        classes = classes
+        start = start_target start
+        rows = listm::rev rows
+        regexes = regexes_in_order (f::count - 1i32) f []
+    }
+
+:~ next_row (r : re) (classes : list code_range) (f : frontier) : row * frontier =
+    := next, f = row_targets r (lows_of classes) f []
+    { accepting = verdict_of (nullable r); next = next }, f
+
+:~ ^ build_rows
+    (index : i32) (cap : i32) (start : re) (classes : list code_range) (f : frontier) (rows : list row)
+    : built
+    =
+    ? index >= f::count ?> built_dfa start classes f rows |: build_next index cap start classes f rows
+
+:& :~ build_next
+    (index : i32) (cap : i32) (start : re) (classes : list code_range) (f : frontier) (rows : list row)
+    : built
+    =
+    ? f::count > cap ?> StateCapReached f::count |: build_step index cap start classes f rows
+
+:& :~ build_step
+    (index : i32) (cap : i32) (start : re) (classes : list code_range) (f : frontier) (rows : list row)
+    : built
+    =
+    := row, f = next_row (re_at index f::known) classes f
+    build_rows (index + 1i32) cap start classes f (row :: rows)
+
+:= first_frontier (r : re) : frontier =
+    ? is_nothing r ?> { known = []; count = 0i32 } |: { known = [ (r, state 0i32) ]; count = 1i32 }
+
+:~ build_within (cap : i32) (r : re) : built = build_rows 0i32 cap r (classes_of r) (first_frontier r) []
+
+:= state_ceiling () : i32 = 10000i32
+
+:= table_bytes_ceiling () : i32 = 2097152i32
+
+:= table_cap (classes : i32) : i32 =
+    := by_table = table_bytes_ceiling () / (8i32 * (? classes < 1i32 ?> 1i32 |: classes))
+    ? by_table < state_ceiling () ?> by_table |: state_ceiling ()
+
+:= build (r : re) : built = build_within (table_cap (listm::length (classes_of r))) r
+
+:~ ^ class_index (c : u32) (classes : list code_range) (i : i32) : i32 =
+    ?= classes ?|
+    | k :: rest => ? c <= k::high ?> i |: class_index c rest (i + 1i32)
+    | [] => i
+
+:~ ^ target_at (i : i32) (next : list target) : target =
+    ?= next ?|
+    | t :: rest => ? i = 0i32 ?> t |: target_at (i - 1i32) rest
+    | [] => Dead
+
+:~ ^ row_at (i : i32) (rows : list row) : row =
+    ?= rows ?|
+    | r :: rest => ? i = 0i32 ?> r |: row_at (i - 1i32) rest
+    | [] => { accepting = Rejected; next = [] }
+
+:~ step (d : dfa) (t : target) (c : u32) : target =
+    ?= t ?|
+    | Dead => Dead
+    | To s =>
+        := r = row_at (state_index s) d::rows
+        target_at (class_index c d::classes 0i32) r::next
+
+:~ verdict_at (d : dfa) (t : target) : verdict =
+    ?= t ?|
+    | Dead => Rejected
+    | To s =>
+        := r = row_at (state_index s) d::rows
+        r::accepting
+
+:~ ^ run_from (d : dfa) (t : target) (codes : list u32) : verdict =
+    ?= codes ?|
+    | c :: rest => run_from d (step d t c) rest
+    | [] => verdict_at d t
+
+:= run_unchecked (d : dfa) (codes : list u32) : verdict = run_from d d::start codes
+
+:~ ^ state_count (d : dfa) : i32 = count_rows d::rows 0i32
+:& :~ count_rows (rows : list row) (n : i32) : i32 =
+    ?= rows ?|
+    | _ :: rest => count_rows rest (n + 1i32)
+    | [] => n
+
+:| size =
+    | States : i32
+    | Refused : i32
+
+:= size_of (b : built) : size =
+    ?= b ?|
+    | Built d => States (state_count d)
+    | StateCapReached n => Refused n
+
+:= built_run (b : built) (codes : list u32) : verdict =
+    ?= b ?|
+    | Built d => run_unchecked d codes
+    | StateCapReached _ => Rejected
+
+///> rust
+///> gleam
+:# the_classes_of_a_bit_pattern_split_around_zero_and_one =
+    := ~r = ends_in_zero ()
+    classes_of r
+    |> _assert_eq [ range 0u32 47u32; range 48u32 48u32; range 49u32 49u32; range 50u32 (last_code_point ()) ]
+
+///> rust
+///> gleam
+:# ends_in_zero_builds_two_live_states =
+    := ~r = ends_in_zero ()
+    size_of (build r) |> _assert_eq (States 2i32)
+
+///> rust
+///> gleam
+:# the_dfa_answers_like_the_derivatives =
+    := ~r = fourth_from_end ()
+    := w = [ 49u32; 48u32; 49u32; 49u32; 48u32 ]
+    (built_run (build r) w, matches r w) |> _assert_eq (Rejected, Rejected)
+
+///> rust
+///> gleam
+:# a_small_cap_refuses_instead_of_growing =
+    := ~r = fourth_from_end ()
+    size_of (build_within 4i32 r) |> _assert_eq (Refused 6i32)
+
+///> rust
+///> gleam
+:# a_thousand_counted_letters_build_one_state_per_count =
+    := ~r = repeat (Set (lower ())) 1u32 (Bounded 1000u32)
+    size_of (build r) |> _assert_eq (States 1001i32)
+
+///> rust
+:# a_run_past_the_old_4096_cap_builds_under_the_table_ceiling =
+    := ~r = repeat (Set (lower ())) 1u32 (Bounded 5000u32)
+    size_of (build r) |> _assert_eq (States 5001i32)
+
+///> rust
+///> gleam
+:# the_cap_is_the_smaller_of_10000_states_and_2_mb_of_table =
+    (table_cap 3i32, table_cap 200i32, table_cap 0i32) |> _assert_eq (10000i32, 1310i32, 10000i32)

@@ -19,6 +19,7 @@ defmodule Spiral.Cells.ManifestPathParityTest do
 
   @edges ["", ".", "/", "no_such_dir", "spi", "spi/", "spi//", "spi\\", "mix.exs", "../cells", "../../apps/cells/spi"]
 
+  @tag :sibling_repos
   test "Spiral's manifest_path finds the same file as the Elixir it replaces" do
     dirs = tracked_dirs()
     texts = Enum.flat_map(dirs, &[&1, &1 <> "/", String.replace(&1, "/", "\\") <> "\\"]) ++ @edges

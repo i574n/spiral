@@ -1,6 +1,8 @@
 param(
     [Parameter(Mandatory)] [string] $Dll,
-    [string] $Work = (Join-Path $env:LOCALAPPDATA 'spiral-bin\candidates\formatter-gate')
+    [string] $Work = (Join-Path $env:LOCALAPPDATA 'spiral-bin\candidates\formatter-gate'),
+    [string[]] $Consumers = @(),
+    [string] $ComplaintCorpus = 'dice'
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\env.ps1')
@@ -16,22 +18,20 @@ $corpora.lib = Join-Path $Work 'corpus-lib-head'
 if (-not (Test-Path $corpora.user)) { pwsh -NoProfile -File (Join-Path $PSScriptRoot 'extract-corpus.ps1') -Out $corpora.user -Which user | Out-Null }
 if (-not (Test-Path $corpora.lib)) { pwsh -NoProfile -File (Join-Path $PSScriptRoot 'extract-corpus.ps1') -Out $corpora.lib -Which lib-head | Out-Null }
 $corpora.synthetic = Join-Path $PSScriptRoot 'synthetic'
-$dice = Join-Path $Work 'corpus-dice'
-if (-not (Test-Path $dice)) { New-Item -ItemType Directory $dice | Out-Null }
-foreach ($f in 'lib/dice.spi', 'ui/src/model/near/rpc.spi', 'ui/src/model/near/nearblocks.spi', 'ui/src/components/content.spi', 'ui/src/components/menu_tabs.spi') {
-    cmd /c "git -C C:\home\git\dice show HEAD:$f > `"$dice\$(Split-Path $f -Leaf)`""
-}
-cmd /c "git -C C:\home\git\alphabet show HEAD:apps/documents/documents.spi > `"$dice\documents.spi`""
-$corpora.dice = $dice
-$kit = Join-Path $Work 'corpus-kit'
-if (-not (Test-Path $kit)) {
-    foreach ($rel in (git -C C:\home\git\kit ls-tree -r --name-only HEAD -- src | Where-Object { $_ -match '\.spi$' })) {
-        $to = Join-Path $kit ($rel -replace '/', '\')
-        New-Item -ItemType Directory -Force (Split-Path $to) | Out-Null
-        cmd /c "git -C C:\home\git\kit show HEAD:$rel > `"$to`""
+foreach ($consumer in $Consumers) {
+    if ($consumer -notmatch '^(?<name>[\w-]+)=(?<repo>.+):(?<paths>[^:]+)$') { throw "consumer '$consumer': expected <name>=<repo dir>:<path>[,<path>...]" }
+    $name = $Matches.name; $repo = $Matches.repo; $paths = $Matches.paths -split ','
+    $dir = Join-Path $Work "corpus-$name"
+    if (-not $corpora.Contains($name)) {
+        if (Test-Path $dir) { Remove-Item -Recurse -Force $dir }
+        New-Item -ItemType Directory $dir | Out-Null
+        $corpora[$name] = $dir
     }
+    $quoted = ($paths | ForEach-Object { '"' + $_ + '"' }) -join ' '
+    cmd /c "git -C `"$repo`" archive --format=tar HEAD -- $quoted | tar -x -C `"$dir`""
+    if ($LASTEXITCODE) { throw "consumer '$consumer': extracting HEAD failed" }
+    Get-ChildItem $dir -Recurse -File | Where-Object Extension -ne '.spi' | Remove-Item -Force
 }
-$corpora.kit = $kit
 function Get-Squeezed([string] $text) { [regex]::Replace([regex]::Replace($text, '"\s*\^\^\s*"', ''), '[\s\(\)\\]', '') }
 $verdict = $true
 foreach ($name in $corpora.Keys) {
@@ -132,10 +132,12 @@ foreach ($name in $corpora.Keys) {
     }
     "== fitting authored lines not kept verbatim, $name`: $($counts -join ', ') (informational: parentheses the candidate drops on purpose count too)"
 }
-$complaintFiles = @(Get-ChildItem (Join-Path $Work 'dice-candidate') -Filter *.spi | ForEach-Object FullName)
-$complaints = Get-FormatComplaints $complaintFiles
-$complaints.Lines | ForEach-Object { if ($_.StartsWith(' ')) { "  $_" } else { "== complaints $_" } }
-if ($complaints.Failed) { $verdict = $false }
+if ($corpora.Contains($ComplaintCorpus)) {
+    $complaintFiles = @(Get-ChildItem (Join-Path $Work "$ComplaintCorpus-candidate") -Recurse -Filter *.spi | ForEach-Object FullName)
+    $complaints = Get-FormatComplaints $complaintFiles
+    $complaints.Lines | ForEach-Object { if ($_.StartsWith(' ')) { "  $_" } else { "== complaints $_" } }
+    if ($complaints.Failed) { $verdict = $false }
+}
 function Get-JoinedAuthoredLines([string] $diffPath) {
     $removed = @(); $added = @(); $file = ''
     $flush = {
@@ -177,4 +179,4 @@ $joined = @($flagged | Where-Object { Test-AuthoredLine $_ } | ForEach-Object { 
 "== joined authored lines that fit in 120 (then lines included): $($joined.Count)"
 $joined | Select-Object -First 25 | ForEach-Object { "  JOINED: $_" }
 if ($joined.Count) { $verdict = $false }
-"automatic part: $(if ($verdict) { 'PASS' } else { 'FAIL' }) (candidate exits equal the installed ones or are 0, no file differs beyond parentheses, whitespace and backslash continuations, no authored break that fit is joined, a second format pass changes no synthetic file and no file the installed formatter keeps stable, and the dice files have no parenthesized join head and no off-grid line); then read every hunk in $Work\review-*.diff by hand"
+"automatic part: $(if ($verdict) { 'PASS' } else { 'FAIL' }) (candidate exits equal the installed ones or are 0, no file differs beyond parentheses, whitespace and backslash continuations, no authored break that fit is joined, a second format pass changes no synthetic file and no file the installed formatter keeps stable, and the $ComplaintCorpus files, when that corpus is given, have no parenthesized join head and no off-grid line); then read every hunk in $Work\review-*.diff by hand"

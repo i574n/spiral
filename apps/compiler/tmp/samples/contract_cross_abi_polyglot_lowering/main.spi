@@ -130,7 +130,7 @@
         := \? middle. prefix, node = payload
         EmittedThen (\? (emit_plan prefix, emit_node node))
 
-:= ^ terminal_row \* source schema backend abi memory capability from to.
+:= terminal_row \* source schema backend abi memory capability from to.
     (plan : emitted_plan source schema backend abi memory capability from to) : string =
     ?= plan ?|
     | EmittedLeaf (EmittedNode payload) =>

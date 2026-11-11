@@ -62,6 +62,12 @@ defmodule Spiral.Cells.Result do
     {"h", html, rest} = take_field(wire)
     html_fields(rest, [html | acc])
   end
+
+  @spec json_safe(term()) :: term()
+  def json_safe(text) when is_binary(text), do: String.replace_invalid(text)
+  def json_safe(list) when is_list(list), do: Enum.map(list, &json_safe/1)
+  def json_safe(map) when is_map(map) and not is_struct(map), do: Map.new(map, fn {k, v} -> {json_safe(k), json_safe(v)} end)
+  def json_safe(other), do: other
 end
 
 defimpl Kino.Render, for: Spiral.Cells.Result do

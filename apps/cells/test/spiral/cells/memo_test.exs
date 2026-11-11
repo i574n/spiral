@@ -123,6 +123,15 @@ defmodule Spiral.Cells.MemoTest do
     refute Memo.compiler_binaries_print(dll) == first
   end
 
+  test "a backslash-spelled dir still finds its entries, so prune and the compiler print see every file" do
+    dir = Spiral.Cells.TestHelpers.tmp_dir!("memo-glob")
+    File.mkdir_p!(Path.join(dir, "ab"))
+    File.write!(Path.join([dir, "ab", "k.etf"]), "x")
+    spelled = if match?({:win32, _}, :os.type()), do: String.replace(dir, "/", "\\"), else: dir
+    assert [found] = Memo.glob(spelled, "*/*.etf")
+    assert Path.basename(found) == "k.etf"
+  end
+
   test "the same compiler binaries key the same from another folder and with other timestamps", %{package: package} do
     step = %{program: "inl main () = 0i32\n", real: ""}
     key = fn dir -> Memo.key(Memo.context([memo: true, compiler_dll: Path.join(dir, "SpiralCompiler.dll")], [step]), step, []) end
@@ -209,6 +218,17 @@ defmodule Spiral.Cells.MemoTest do
     whole = fn unused -> step = %{program: program.(unused), real: "", whole_source_key: true}; Memo.key(context.(step), step, []) end
     assert reached.("1i32") == reached.("(")
     refute whole.("1i32") == whole.("(")
+  end
+  test "a context without source bounds keys on whole sources, never meets a bounded run's keys, and says so in the report" do
+    step = %{program: "inl helper () = 1i32\ninl unused () = 2i32\ninl spiral_cells_test () = helper ()\nspiral_cells_test ()\n", real: ""}
+    bounded = Memo.context([memo: true, memo_dir: Spiral.Cells.TestHelpers.tmp_dir!("bounded")], [step])
+    unbounded = %{bounded | bounds: :unavailable}
+    refute Memo.whole_keys?(bounded)
+    assert Memo.whole_keys?(unbounded)
+    refute Memo.whole_keys?(nil)
+    refute Memo.key(unbounded, step, []) == Memo.key(bounded, step, [])
+    assert Spiral.Cells.Notebook.with_whole_memo_keys(%{"tests" => []}, true)["memo_keys"] == "whole"
+    refute Map.has_key?(Spiral.Cells.Notebook.with_whole_memo_keys(%{"tests" => []}, false), "memo_keys")
   end
   test "an unqualified name resolves in opened modules and modules the code opens; m.x only in module m", %{package: package} do
     File.write!(Path.join(package, "package.spiproj"), "packages:\n    |core-\nmodules:\n    listed-\n    sub/\n        inner\n    other\n    user\n")
@@ -332,5 +352,13 @@ defmodule Spiral.Cells.MemoTest do
              %{header_text: "test_ok =", lines: ["test_ok"]},
              %{header_text: ":= g =", lines: []}
            ]
+  end
+
+  test "a stub option only turns the memo off when it is set, so a nil build_receipt keeps notebook runs memoized" do
+    assert Memo.enabled?(build_receipt: nil, target: nil, compile: nil)
+    refute Memo.enabled?(build_receipt: "receipt.txt")
+    refute Memo.enabled?(compile: fn _ -> {:ok, ""} end)
+    refute Memo.enabled?(memo: false, build_receipt: nil)
+    assert Memo.enabled?(memo: true, compile: fn _ -> {:ok, ""} end)
   end
 end

@@ -1,0 +1,68 @@
+///- --package .
+:# linear_renaming static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+:< linear_terms
+
+:| ^ renaming sc ss su tc ts tu d =
+    | RenameIdentity :: \* c s u d. string -> renaming c s u c s u d
+    | RenameWeaken :: \* sc ss su mc ms mu h d.
+        renaming sc ss su mc ms mu d * string -> renaming sc ss su (extend mc h) (meta_succ ms) (unused mu) d
+
+:= ^ renamed_membership \* sc ss su tc ts tu d.
+    (r : renaming sc ss su tc ts tu d) (m : membership sc ss d) : membership tc ts d =
+    ?= r ?|
+    | RenameIdentity _ => m
+    | RenameWeaken (p, _) => MembershipThere (renamed_membership p m, "crosses-one-cell")
+
+:= ^ renamed_single_use \* sc ss su tc ts tu d.
+    (r : renaming sc ss su tc ts tu d) (u : single_use sc ss d su) : single_use tc ts d tu =
+    ?= r ?|
+    | RenameIdentity _ => u
+    | RenameWeaken (p, _) => SingleUseThere (renamed_single_use p u, "new-cell-unused")
+
+:= renamed_variable \* sc ss su tc ts tu d.
+    (r : renaming sc ss su tc ts tu d) (m : membership sc ss d) (u : single_use sc ss d su) : term tc tu d =
+    Variable (VariableAt (\? (renamed_membership r m, renamed_single_use r u, "lockstep")))
+
+:= ^ renaming_depth \* sc ss su tc ts tu d. (r : renaming sc ss su tc ts tu d) : i32 =
+    ?= r ?|
+    | RenameIdentity _ => 0i32
+    | RenameWeaken (p, _) => 1i32 + renaming_depth p
+
+:= weaken \* c s d u h. (m : membership c s d) (u : single_use c s d u) : term (extend c h) (unused u) d =
+    renamed_variable (RenameWeaken (RenameIdentity "source", "weakening-crosses-one-cell")) m u
+
+:= only_membership () : membership one_unit zero unit_type = MembershipHere "the-only-Unit-cell"
+
+:= only_single_use () : single_use one_unit zero unit_type (used usage_empty) =
+    SingleUseHere (empty_usage (), "the-Unit-cell-is-used-once")
+
+:== unit_bool = extend one_unit bool_type
+
+:= weakened_unit () : term unit_bool (unused (used usage_empty)) unit_type =
+    weaken (only_membership ()) (only_single_use ())
+
+:== three_heads = extend (extend (extend one_unit bool_type) unit_type) bool_type
+
+:== three_slot = meta_succ (meta_succ (meta_succ zero))
+
+:== three_usage = unused (unused (unused (used usage_empty)))
+
+:== three_plan = renaming one_unit zero (used usage_empty) three_heads three_slot three_usage unit_type
+
+:= three_steps () : three_plan =
+    := one = RenameWeaken (RenameIdentity "source", "first-step")
+    RenameWeaken (RenameWeaken (one, "second-step-composes"), "third-step-recurses")
+
+///> rust
+:# weakening_keeps_the_variable_type_and_marks_the_newer_cell_unused =
+    term_label (weakened_unit ()) |> _assert_eq "variable"
+
+///> rust
+:# a_three_step_plan_renames_in_lockstep_and_counts_its_steps =
+    := plan = three_steps ()
+    := moved = renamed_variable plan (only_membership ()) (only_single_use ())
+    (term_label moved, renaming_depth plan) |> _assert_eq ("variable", 3i32)

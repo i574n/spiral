@@ -115,6 +115,16 @@
         { pid; stamp; idle; queue; retiring = retiring_of retiring; owner = sm'::concat_list " " owner }
     | _ => { pid = ""; stamp = ""; idle = ""; queue = ""; retiring = NotRetiring; owner = "" }
 
+:= compile_row (line : string) : string =
+    ?= compile_of line ?|
+    | Compiled (revision, queue) => tabbed [ "ok"; free_text queue; revision ]
+    | CompileTimedOut queue => tabbed [ "timeout"; free_text queue; "" ]
+    | CompileFailed (queue, message) => tabbed [ "failed"; free_text queue; message ]
+
+:= status_row (line : string) : string =
+    := s = status_of line
+    tabbed [ s::pid; s::stamp; s::idle; s::queue; retiring_text s::retiring; s::owner ]
+
 := hello_of (line : string) : hello_reply =
     ?= fields line ?|
     | "spiral-cells" :: "1" :: pid :: stamp :: _ => { pid; stamp }
@@ -129,6 +139,22 @@
     | "pool" :: served :: refused :: peak :: free :: [] =>
         { served = count_of served; refused = count_of refused; peak = count_of peak; free_mb = queue_ms free }
     | _ => no_pool ()
+
+:= counted (s : string) : bool = queue_ms s <> None
+
+:= pool_row (line : string) : string =
+    ?= fields line ?|
+    | "pool" :: served :: refused :: peak :: _ :: [] ?& counted served && counted refused && counted peak =>
+        := p = pool_of line
+        tabbed [ text::show_i32 p::served; text::show_i32 p::refused; text::show_i32 p::peak; free_text p::free_mb ]
+    | _ => ""
+
+:= hello_row (line : string) : string =
+    ?= fields line ?|
+    | "spiral-cells" :: "1" :: pid :: stamp :: tag :: _ ?& counted pid && counted stamp => tabbed [ "banner"; pid; stamp; tag ]
+    | "spiral-cells" :: "1" :: pid :: stamp :: [] ?& counted pid && counted stamp => tabbed [ "legacy"; pid; stamp; "" ]
+    | "spiral-cells" :: "1" :: _ :: _ => tabbed [ "unreadable"; ""; ""; "" ]
+    | _ => tabbed [ "other"; ""; ""; "" ]
 
 := reply_of \* r. (q : request r) (line : string) : r =
     ?= q ?|
@@ -168,9 +194,31 @@
     reply_of Status (reply_line Status s) |> _assert_eq s
 
 ///> gleam
+:# a_status_row_drops_the_tag_and_joins_owner_fields =
+    := lines = [ "status\t9\t1\t0\t2\t123\tx\tlane"; "status\t9\t1\t0\t2\tfalse"; "ok\tr1" ]
+    listm::map status_row lines |> _assert_eq [ "9\t1\t0\t2\t123\tx lane"; "9\t1\t0\t2\tfalse\t"; "\t\t\t\tfalse\t" ]
+
+///> gleam
+:# a_compile_row_tags_the_outcome_and_keeps_the_queue =
+    := lines = [ "ok\tr1\t7"; "error\ttimeout"; "error\t5\tno\tmain"; "huh" ]
+    := rows = [ "ok\t7\tr1"; "timeout\t-\t"; "failed\t5\tno\tmain"; "failed\t-\tunexpected compiler reply: huh" ]
+    listm::map compile_row lines |> _assert_eq rows
+
+///> gleam
 :# a_pool_line_round_trips_and_a_dash_is_no_reading =
     := busy = { served = 12i32; refused = 1i32; peak = 3i32; free_mb = Some 2048i32 }
     (reply_of Pool (reply_line Pool busy), reply_of Pool "pool\t0\t0\t1\t-") |> _assert_eq (busy, no_pool ())
+
+///> gleam
+:# a_pool_row_is_empty_unless_every_count_reads =
+    := lines = [ "pool\t12\t1\t3\t2048"; "pool\t0\t0\t1\t-"; "pool\t1\tx\t3\t5"; "pool\t1\t2\t3"; "status\t1" ]
+    listm::map pool_row lines |> _assert_eq [ "12\t1\t3\t2048"; "0\t0\t1\t-"; ""; ""; "" ]
+
+///> gleam
+:# a_hello_row_names_the_banner_kind =
+    := lines = [ "spiral-cells\t1\t77\t5\tbun"; "spiral-cells\t1\t77\t5"; "spiral-cells\t1\t77\tx"; "spiral-cells\t1"; "ok" ]
+    := rows = [ "banner\t77\t5\tbun"; "legacy\t77\t5\t"; "unreadable\t\t\t"; "other\t\t\t"; "other\t\t\t" ]
+    listm::map hello_row lines |> _assert_eq rows
 
 ///> gleam
 :# hello_reads_the_banner_pid_and_stamp =

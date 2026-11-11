@@ -64,7 +64,7 @@ if (Test-Command "cargo") {
     if (!(Test-Command "trunk")) {
         cargo binstall -y --locked trunk@0.21.14
         if ($LASTEXITCODE -ne 0) {
-            cargo +nightly-2026-11-05 install trunk --version 0.21.14 --locked
+            cargo install trunk --version 0.21.14 --locked
             if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / cargo install trunk failed (exit code $LASTEXITCODE)" }
         }
     }

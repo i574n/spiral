@@ -104,7 +104,9 @@ defmodule Spiral.Cells.Targets do
 
 
       {:zig, path} ->
-        run_program(Toolchain.zig(opts), "zig", zig_run_args(path, opts), opts, timeout, deadline, false)
+        if System.get_env("SPIRAL_CELLS_ZIG_RELEASE") == "1",
+          do: run_zig_release(path, opts, timeout, deadline),
+          else: run_program(Toolchain.zig(opts), "zig", zig_run_args(path, opts), opts, timeout, deadline, false)
 
       {:lean, path} ->
         {lean, args} = Toolchain.lean(opts)
@@ -121,6 +123,18 @@ defmodule Spiral.Cells.Targets do
     local_cache = Path.join(Path.dirname(path), ".zig-cache")
     backend = if zig_self_hosted?(), do: ["-fno-llvm"], else: []
     ["run"] ++ backend ++ ["--global-cache-dir", global_cache, "--cache-dir", local_cache, path]
+  end
+
+  defp run_zig_release(path, opts, timeout, deadline) do
+    exe = Path.join(Path.dirname(path), exe_name())
+    global_cache = Path.join(Toolchain.cache_dir(opts), "cells-zig-cache")
+    local_cache = Path.join(Path.dirname(path), ".zig-cache")
+    args = ["build-exe", "-O", "ReleaseFast", "--global-cache-dir", global_cache, "--cache-dir", local_cache, "-femit-bin=" <> exe, path]
+
+    with {:ok, _built} <- Spiral.Cells.timed(:target_build_ms, fn -> run_program(Toolchain.zig(opts), "zig build-exe", args, opts, timeout, deadline, false) end),
+         {:ok, ran} <- Spiral.Cells.timed(:target_run_ms, fn -> run_status(exe, exe_name(), [], opts, timeout, deadline, false) end) do
+      {:ok, cell_exit(ran)}
+    end
   end
 
   defp zig_self_hosted? do
@@ -287,8 +301,8 @@ defmodule Spiral.Cells.Targets do
       exe = Path.join(Path.dirname(path), exe_name())
       shown = Path.basename(cc)
 
-      with {:ok, _compiled} <- run_program(cc, shown, c_args(cc, path, exe, opts[:root]), opts, timeout, deadline, false),
-           {:ok, ran} <- run_status(exe, exe_name(), [], opts, timeout, deadline, false) do
+      with {:ok, _compiled} <- Spiral.Cells.timed(:target_build_ms, fn -> run_program(cc, shown, c_args(cc, path, exe, opts[:root]), opts, timeout, deadline, false) end),
+           {:ok, ran} <- Spiral.Cells.timed(:target_run_ms, fn -> run_status(exe, exe_name(), [], opts, timeout, deadline, false) end) do
         {:ok, cell_exit(ran)}
       end
     else
@@ -348,10 +362,10 @@ defmodule Spiral.Cells.Targets do
   end
 
   defp build_and_run_gleam(package, manifest, target, opts, timeout, deadline) do
-    with {:ok, _built} <- gleam_build(package, manifest, opts, timeout, deadline) do
+    with {:ok, _built} <- Spiral.Cells.timed(:target_build_ms, fn -> gleam_build(package, manifest, opts, timeout, deadline) end) do
       if opts[:build_receipt],
         do: build_only_receipt(package, target, opts[:build_receipt]),
-        else: run_gleam_program(package, target, opts, Keyword.put(opts, :cwd, opts[:root] || package), timeout, deadline)
+        else: Spiral.Cells.timed(:target_run_ms, fn -> run_gleam_program(package, target, opts, Keyword.put(opts, :cwd, opts[:root] || package), timeout, deadline) end)
     end
   end
 
@@ -396,7 +410,7 @@ defmodule Spiral.Cells.Targets do
     File.rm_rf!(src)
     File.mkdir_p!(src)
     File.cp_r!(Path.join(package, "src"), src)
-    [_, name] = Regex.run(~r/^name = "([^"]+)"/m, manifest)
+    {name, _target} = manifest_facts(manifest)
     build = Path.join(warm, "build")
     for mode <- listed(build), target <- listed(Path.join(build, mode)), do: File.rm_rf!(Path.join([build, mode, target, name]))
     warm
@@ -423,9 +437,15 @@ defmodule Spiral.Cells.Targets do
   @doc false
   def gleam_lock_path(manifest, opts) do
     requirements = manifest |> String.split("\n") |> Enum.drop_while(&(&1 != "[dependencies]")) |> Enum.join("\n")
-    target = Regex.run(~r/^target = (.*)$/m, manifest, capture: :all_but_first) || []
+    {_name, target} = manifest_facts(manifest)
     key = :crypto.hash(:sha256, :erlang.term_to_binary({target, requirements})) |> Base.encode16(case: :lower) |> binary_part(0, 24)
     Path.join(Toolchain.cache_dir(opts), "cells-gleam-locks/#{key}.toml")
+  end
+
+  @doc false
+  def manifest_facts(manifest) do
+    [name, found, target] = manifest |> Spiral.Cells.Domain.gleam_manifest_facts() |> String.split("\t", parts: 3)
+    {name, if(found == "1", do: [target], else: [])}
   end
 
   defp keep_gleam_lock(manifest_path, locked) do
@@ -716,7 +736,7 @@ defmodule Spiral.Cells.Targets do
 
   defp timeout_error(%{output: output}, timeout) do
     %TimeoutError{
-      message: "Spiral cell timed out after #{format_ms(timeout)}; the process tree was killed.",
+      message: "Spiral cell timed out after #{format_ms(timeout)}#{Spiral.Cells.Directives.scale_note()}; the process tree was killed.",
       timeout: timeout,
       output: output
     }

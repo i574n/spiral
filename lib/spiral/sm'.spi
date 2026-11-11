@@ -700,7 +700,9 @@
 := clip (width : i32) (s : string) : string =
     run_target \|
         | Rust => \ () =>
-            $'{ let text = &*!s; if text.chars().count() <= !width as usize { std::rc::Rc::<str>::from(text) } else { std::rc::Rc::<str>::from(text.chars().take((!width as usize).saturating_sub(3)).collect::<String>() + "...") } }'
+            $'{ let text = &*!s; if text.chars().count() <= !width as usize { std::rc::Rc::<str>::from(text) } else { \
+                std::rc::Rc::<str>::from(text.chars().take((!width as usize).saturating_sub(3)).collect::<String>() + \
+                "...") } }'
             : string
         | Fsharp => \ () =>
             := count = $'(!s).Length' : i32
@@ -831,7 +833,8 @@
     (old : string) (new : string) (s : string) (n : i32) (m : i32) (start : i32) (at : i32) (acc : list string)
     : list string
     =
-    ? at + m > n ?> (? start < n ?> slice start (n - 1i32) s :: acc |: acc)
+    ? at + m > n
+    ?> (? start < n ?> slice start (n - 1i32) s :: acc |: acc)
     |? portable_matches_at old s at ?>
         := run = ? start < at ?> slice start (at - 1i32) s :: acc |: acc
         portable_replace_runs old new s n m (at + m) (at + m) (new :: run)
@@ -872,7 +875,8 @@
         C = \ () => conv (portable_index_of search s) : int
         Pascal = \ () => conv (portable_index_of search s) : int
         Kotlin = \ () =>
-            $'(!s).indexOf(!search).let { i -> if (i < 0) -1 else (!s).substring(0, i).toByteArray(Charsets.UTF_8).size }'
+            $'(!s).indexOf(!search).let { i -> if (i < 0) -1 else (!s).substring(0, \
+                i).toByteArray(Charsets.UTF_8).size }'
             : int
         TypeScript = \ () => $'!s.indexOf(!search)' : int
         Zig = \ () => $'(if (std.mem.indexOf(u8, !s, !search)) |i| @@as(`int, @@intCast(i)) else -1)' : int
@@ -1489,13 +1493,24 @@
     |> _assert_eq ("a", "a.spi", "abc", "")
 
 := trim (input : string) : string =
-    input |> trim_with []
+    run_target \|
+        | Rust => \ () =>
+            $'Rc::<str>::from((!input).trim_matches(|c: char| { let n = c as u32; n == 32 || n == 9 || n == 13 || n == 10 }))'
+            : string
+        | _ => \ () => input |> trim_with []
 
 ///> zig
+///> rust
 :# trim =
     "  ghi  "
     |> trim
     |> _assert_eq "ghi"
+
+///> rust
+///> gleam
+:# trim_strips_space_tab_cr_lf_and_keeps_inner_text =
+    (trim "\t\r\n é x \n", trim "")
+    |> _assert_eq ("é x", "")
 
 := concat (a : string) (b : seq::seq' string) : string =
     backend_switch {
@@ -2740,3 +2755,32 @@
             ? found <> "" ?> found |: optionm'::default_value' "" (map::get "a" captures)
         ""
     |> _assert_eq "xx"
+
+:= join_lines_skipping_empty (left : string) (right : string) : string =
+    ? right = "" ?> left |? left = "" ?> right |: left ++# "\n" ++# right
+
+:= strip_quote_pair (s : string) : string =
+    := n : i32 = length s
+    ? n >= 2i32 && starts_with "\"" s && ends_with "\"" s ?> substring 1i32 (n - 2i32) s |: s
+
+///> rust
+:# joining_lines_skips_an_empty_side =
+    (join_lines_skipping_empty "a" "", join_lines_skipping_empty "" "b", join_lines_skipping_empty "a" "b")
+    |> _assert_eq ("a", "b", "a\nb")
+
+///> rust
+:# one_surrounding_quote_pair_is_stripped_and_nothing_else =
+    (strip_quote_pair "\"ab\"", strip_quote_pair "\"", strip_quote_pair "a\"b\"c", strip_quote_pair "\"\"")
+    |> _assert_eq ("ab", "\"", "a\"b\"c", "")
+
+:= quoted_fields (line : string) : list string =
+    := step = \ ((i, kept) : i32 * list string) (piece : string) =>
+        i + 1i32, (? i % 2i32 = 1i32 ?> listm::append kept [ piece ] |: kept)
+    := _, kept = split_list "\"" line |> listm::fold step (0i32, [])
+    kept
+
+///> rust
+///> gleam
+:# quoted_fields_reads_the_fields_of_a_state_row =
+    quoted_fields "inl wait_of_a () = Waits (\"A\", \"train\", \"TRAIN44\")" |> _assert_eq [ "A"; "train"; "TRAIN44" ]
+    (quoted_fields "no quotes here", quoted_fields "\"\"") |> _assert_eq ([], [ "" ])

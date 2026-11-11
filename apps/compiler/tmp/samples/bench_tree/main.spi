@@ -1,0 +1,51 @@
+:= failwith \* t. (msg : string) : t = !!!!FailWith(`t, msg)
+
+:| ^ tree =
+    | Leaf : i32
+    | Node : tree * tree
+
+:~ ^ build (depth : i32) (seed : i32) : tree =
+    ? depth <= 0 ?> Leaf seed
+    |: Node (build (depth -. 1) (seed *. 2), build (depth -. 1) (seed *. 2 +. 1))
+
+:~ ^ leaves (t : tree) : i32 =
+    ?= t ?|
+    | Leaf _ => 1
+    | Node (a, b) => leaves a +. leaves b
+
+:~ ^ checksum (t : tree) : i32 =
+    ?= t ?|
+    | Leaf n => !!!!Mod(n, 1000003)
+    | Node (a, b) => !!!!Mod(checksum a *. 31 +. checksum b, 1000003)
+
+:= main () : i32 =
+    := ~depth = 20i32
+    := ~rounds = !!!!BackendSwitch({
+        Gleam = \ () => 1i32
+        Lua = \ () => 1i32
+        Fsharp = \ () => 8i32
+        Python = \ () => 1i32
+        Cpp = \ () => 8i32
+        Rust = \ () => 8i32
+        CppHost = \ () => 8i32
+        Zig = \ () => 8i32
+        Lean = \ () => 1i32
+        TypeScript = \ () => 1i32
+        C = \ () => 8i32
+        Pascal = \ () => 8i32
+        Wasm = \ () => 8i32
+        Kotlin = \ () => 8i32
+        Swift = \ () => 8i32
+        Bend = \ () => 1i32
+    })
+    := first = checksum (build depth 1)
+    :~ ^ repeat (r : i32) (last : i32) : () =
+        ? r >= rounds ?> ()
+        |:
+            := t = build (depth +. last /. 2147483647i32) 1
+            := c = checksum t
+            ? !!!!EQ(leaves t, 1048576i32) ?> () |: failwith "bench-tree-wrong-leaf-count"
+            ? !!!!EQ(c, first) ?> () |: failwith "bench-tree-checksum-drift"
+            repeat (r +. 1) c
+    repeat 1 first
+    !!!!Mod(first, 256i32)

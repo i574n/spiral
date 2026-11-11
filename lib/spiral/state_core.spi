@@ -327,8 +327,9 @@
 
     database
 
-:~ use_requests \* t u.
+:~ use_requests_with \* t u.
     (requests : leptos::arc_memo (am'::vec networking::request))
+    (decode : string -> resultm::result' u sm'::std_string)
     (map : u -> t)
     : leptos::arc_memo (am'::vec (resultm::result' (optionm'::option' t) sm'::std_string))
     =
@@ -590,7 +591,7 @@
                 ?= json, state_data ?|
                 | Some value, _ | _, Some (Ok (Some value)) =>
                     value
-                    |> sm'::deserialize
+                    |> decode
                     |> resultm::map'' (Some >> optionm'::box)
                 | value =>
                     := value_log = #?*value
@@ -646,3 +647,10 @@
         |> leptos::new_arc_memo
 
     result
+
+:~ use_requests \* t u.
+    (requests : leptos::arc_memo (am'::vec networking::request))
+    (map : u -> t)
+    : leptos::arc_memo (am'::vec (resultm::result' (optionm'::option' t) sm'::std_string))
+    =
+    use_requests_with requests sm'::deserialize map

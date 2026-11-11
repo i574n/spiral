@@ -1191,6 +1191,21 @@
     := path = read_text_or_empty_probe ()
     (read_text_or_empty path, read_text_or_empty (path ++# ".missing")) |> _assert_eq ("kept", "")
 
+:= read_text_under (root : string) (relative : string) : string = read_text_or_empty (root </> relative)
+
+:= read_text_lf (path : string) : string = read_text_or_empty path |> sm'::replace "\r\n" "\n"
+
+:= crlf_probe () : string =
+    := path = get_temp_path () </> "spiral-read-text-lf.txt"
+    write_all_text path "a\r\nb\r\n"
+    path
+
+///> rust
+:# rooted_and_lf_reads_follow_read_text_or_empty =
+    := lf = read_text_lf (crlf_probe ())
+    (read_text_under (get_temp_path ()) "spiral-read-text-lf.txt", lf, read_text_lf (crlf_probe () ++# ".missing"))
+    |> _assert_eq ("a\r\nb\r\n", "a\nb\n", "")
+
 := directory_create_symbolic_link (target : string) (path : string) : () =
     run_target \|
         | Fsharp => \ () =>
@@ -1735,7 +1750,7 @@
             delete_target_is_protected "C:\\Users\\me\\AppData\\Local\\Temp",
             delete_target_is_protected "C:\\Windows",
             delete_target_is_protected "",
-            delete_target_is_protected "C:\\home\\git\\kit\\.cache\\x",
+            delete_target_is_protected "C:\\work\\app\\.cache\\x",
             delete_target_is_protected (get_temp_path () </> "kit-run-42")
         )
         |> _assert_eq (!+, !+, !+, !+, !+, !+, !+, !+, !-, !-)
@@ -2038,9 +2053,6 @@
 := read_directory_names (path : string) : resultm::result' (am'::vec sm'::std_string) stream::io_error =
     !\\(path, $'"std::fs::read_dir(&*$0).map(|entries| entries.filter_map(|entry| entry.ok().map(|entry| \
         entry.file_name().to_string_lossy().into_owned())).collect::<Vec<std::string::String>>())"')
-
-:= read_dir_names (path : string) : resultm::result' (am'::vec sm'::std_string) stream::io_error =
-    read_directory_names path
 
 ///> rust -d chrono
 :# copy_list_canonicalize_and_remove_a_tree =

@@ -1,0 +1,80 @@
+///- --package .
+:# linear_variable_strengthening static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+:< linear_terms
+:< linear_strengthening
+
+:== remove_payload t s u r d = strengthen (extend t r) (unused u) t u * membership t s d * single_use t s d u * string
+
+:== used_payload a b c e = strengthen a b c e * all_unused a b * all_unused c e * string
+
+:| vbase sc ss su tc ts tu d =
+    | VRemove :: \* t s u r d. remove_payload t s u r d -> vbase (extend t r) (meta_succ s) (unused u) t s u d
+    | VUsedHere :: \* a b c e h. used_payload a b c e -> vbase (extend a h) zero (used b) (extend c h) zero (used e) h
+
+:| ^ vstr sc ss su tc ts tu d =
+    | VBase :: \* a b c e f g d. vbase a b c e f g d -> vstr a b c e f g d
+    | VUnused :: \* a s u c x y h d. vstr a s u c x y d * string -> vstr (extend a h) (meta_succ s) (unused u) (extend c h) (meta_succ x) (unused y) d
+
+:= shifted \* c y u h. (v : variable c u y) (note : string) : variable (extend c h) (unused u) y =
+    ?= v ?|
+    | VariableAt payload =>
+        := \? k. m, w, _ = payload
+        VariableAt (\? (MembershipThere (m, "shift"), SingleUseThere (w, "unused"), note))
+
+:= base_source \* a b c e f g d. (p : vbase a b c e f g d) : variable a c d =
+    ?= p ?|
+    | VRemove (_, m, w, n) => shifted (VariableAt (\? (m, w, n))) n
+    | VUsedHere (_, t, _, n) => VariableAt (\? (MembershipHere "head", SingleUseHere (t, "tail"), n))
+
+:= base_target \* a b c e f g d. (p : vbase a b c e f g d) : variable e g d =
+    ?= p ?|
+    | VRemove (_, m, w, n) => VariableAt (\? (m, w, n))
+    | VUsedHere (_, _, t, n) => VariableAt (\? (MembershipHere "head", SingleUseHere (t, "tail"), n))
+
+:= ^ vsource \* a b c e f g d. (p : vstr a b c e f g d) : variable a c d =
+    ?= p ?|
+    | VBase b => base_source b
+    | VUnused (rest, note) => shifted (vsource rest) note
+
+:= ^ vtarget \* a b c e f g d. (p : vstr a b c e f g d) : variable e g d =
+    ?= p ?|
+    | VBase b => base_target b
+    | VUnused (rest, note) => shifted (vtarget rest) note
+
+:= ^ depth \* c s y. (m : membership c s y) : i32 =
+    ?= m ?|
+    | MembershipHere _ => 0i32
+    | MembershipThere (rest, _) => 1i32 + depth rest
+
+:= slot \* c u y. (v : variable c u y) : i32 =
+    ?= v ?|
+    | VariableAt payload =>
+        := \? k. m, _, _ = payload
+        depth m
+
+:== one_cell = extend empty_context unit_type
+
+:== two_cells = extend one_cell unit_type
+
+:= remove_plan () : vstr two_cells (meta_succ zero) (unused (used usage_empty)) one_cell zero (used usage_empty) unit_type =
+    VBase (VRemove (StrengthenHere "drop", MembershipHere "older", SingleUseHere (empty_usage (), "used"), "remove"))
+
+:= used_here_plan () : vstr two_units zero (used (unused usage_empty)) one_cell zero (used usage_empty) unit_type =
+    VBase (VUsedHere (tail_plan (), AllUnusedExtend (empty_usage (), "older-unused"), empty_usage (), "replacement-survives"))
+
+///> rust
+:# removing_the_newer_cell_shifts_the_source_slot_one_step =
+    (slot (vsource (remove_plan ())), slot (vtarget (remove_plan ()))) |> _assert_eq (1i32, 0i32)
+
+///> rust
+:# the_used_head_survives_at_slot_zero_on_both_sides =
+    (slot (vsource (used_here_plan ())), slot (vtarget (used_here_plan ()))) |> _assert_eq (0i32, 0i32)
+
+///> rust
+:# variable_strengthening_cannot_drop_the_used_head fails "Unification failure" =
+    := p : vstr two_units zero (used (unused usage_empty)) empty_context zero usage_empty unit_type = used_here_plan ()
+    p |> ignore

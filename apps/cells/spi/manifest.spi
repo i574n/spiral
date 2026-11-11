@@ -141,16 +141,23 @@
 
 := declares_modules (s : string) : bool = declares_from s 0i32
 
-:= upstream_line (line : string) : bool =
+:= value_of (key : string) (line : string) : option string =
     := t = text::trim line
-    text::starts_with t "dialect:" && text::trim (text::drop t 8i32) = "upstream"
+    := head = key ++ ":"
+    ? text::starts_with t head ?> Some (text::trim (text::drop t (text::length head))) |: None
 
-:~ ^ any_upstream (lines : list string) : bool =
+:~ ^ first_value (key : string) (lines : list string) : option string =
     ?= lines ?|
-    | [] => !-
-    | line :: rest => upstream_line line || any_upstream rest
+    | [] => None
+    | line :: rest => ?= value_of key line ?| Some v => Some v | None => first_value key rest
 
-:= i574n_dialect (text_in : string) : bool = not (any_upstream (sm'::split_list "\n" (from_toml text_in)))
+:= legacy_upstream (edition : string) : bool = edition = "2" || edition = "upstream"
+
+:= i574n_dialect (text_in : string) : bool =
+    := lines = sm'::split_list "\n" (from_toml text_in)
+    ?= first_value "dialect" lines ?|
+    | Some dialect => dialect <> "upstream"
+    | None => ?= first_value "edition" lines ?| Some edition => not (legacy_upstream edition) | None => !+
 
 ///> gleam
 :# scalars_lists_and_blocks_convert_like_the_elixir_reader =
@@ -179,6 +186,21 @@
 :# only_the_upstream_dialect_opts_out_in_either_spelling =
     (i574n_dialect "dialect = 'upstream'", i574n_dialect "  dialect:   upstream\r\nmodules:\n    main")
     |> _assert_eq (!-, !-)
+
+///> gleam
+:# a_dialect_only_manifest_decides_by_its_dialect =
+    (i574n_dialect "dialect = \"i574n\"\nmodules = '''\nmain\n'''", i574n_dialect "dialect = \"upstream\"\nmodules = '''\nmain\n'''")
+    |> _assert_eq (!+, !-)
+
+///> gleam
+:# legacy_editions_map_to_a_dialect_and_a_year_is_not_one =
+    := legacy = i574n_dialect "edition = 3", i574n_dialect "edition = 2", i574n_dialect "edition = 'upstream'"
+    (legacy, i574n_dialect "edition = 2026", i574n_dialect "dialect = \"upstream\"\nedition = 2026")
+    |> _assert_eq ((!+, !-, !-), !+, !-)
+
+///> gleam
+:# the_dialect_wins_over_a_legacy_edition =
+    (i574n_dialect "dialect = \"i574n\"\nedition = 2", i574n_dialect "edition = 3\ndialect = \"upstream\"") |> _assert_eq (!+, !-)
 
 ///> gleam
 :# a_name_joins_a_dir_like_elixir_path_join =

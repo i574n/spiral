@@ -242,11 +242,14 @@
         ? i >= size ?> acc |: go (i + 1i32) (acc ++# hex_byte (am'::index_base i bytes))
     go 0i32 ""
 
+:= rust_hex_of_vec (bytes : am'::vec u8) : string =
+    $'Rc::<str>::from((!bytes).iter().flat_map(|b| [b >> 4, \
+        b & 15]).map(|n| char::from(b"0123456789abcdef"[n as usize])).collect::<String>())'
+    : string
+
 := hex_of_vec (bytes : am'::vec u8) : string =
     backend_switch {
-        Rust = \ () =>
-            $'Rc::<str>::from((!bytes).iter().flat_map(|b| [b >> 4, b & 15]).map(|n| char::from(b"0123456789abcdef"[n as usize])).collect::<String>())'
-            : string
+        Rust = \ () => rust_hex_of_vec bytes
     }
 
 ///> rust
@@ -346,6 +349,104 @@
     := short_key = ed25519_verify "d75a98" "" signature
     := decoded = decode_hex "0aff" = Some [ 10u8; 255u8 ]
     (valid, tampered, short_key, decoded) |> _assert_eq (!+, !-, !-, !+)
+
+:= crypto_gleam_pbkdf2 () =
+    crypto_gleam_sha1 ()
+    global """
+        @external(erlang, "crypto", "pbkdf2_hmac")
+        fn spiral_crypto_pbkdf2(digest: atom.Atom, pass: String, salt: String, iter: Int, len: Int) -> BitArray
+        """
+
+:= crypto_gleam_hash_equals () =
+    crypto_gleam_sha1 ()
+    global """
+        @external(erlang, "crypto", "hash_equals")
+        fn spiral_crypto_hash_equals(a: String, b: String) -> Bool
+        """
+
+:! hmac_sha256 = $'hmac::Hmac<sha2::Sha256>'
+
+:! hmac_sha256_tag = $'hmac::digest::Output<hmac::Hmac<sha2::Sha256>>'
+
+:= rust_hmac_sha256_new (key : string) : hmac_sha256 =
+    $'<hmac::Hmac<sha2::Sha256> as hmac::KeyInit>::new_from_slice(!key.as_bytes()).unwrap()' : hmac_sha256
+
+:= rust_tag_bytes (tag : hmac_sha256_tag) : array_base u8 = $'Rc::new(RefCell::new(!tag.to_vec()))' : array_base u8
+
+:= rust_hmac_sha256 (key : string) (text : string) : array_base u8 =
+    := mac = rust_hmac_sha256_new key
+    mac |> rust::to_mut
+    $'hmac::Mac::update(&mut !mac, !text.as_bytes())' : ()
+    rust_tag_bytes ($'hmac::Mac::finalize(!mac).into_bytes()' : hmac_sha256_tag)
+
+:= gleam_hmac_sha256_hex (key : string) (text : string) : string =
+    crypto_gleam_sha1 ()
+    := mac = $'spiral_crypto_mac(atom.create("hmac"), atom.create("sha256"), !key, !text)' : string
+    $'string.lowercase(bit_array.base16_encode(!mac))' : string
+
+:= hmac_sha256_hex (key : string) (text : string) : string =
+    backend_switch {
+        Gleam = \ () => gleam_hmac_sha256_hex key text
+        Rust = \ () => rust_hmac_sha256 key text |> hex_of_bytes
+    }
+
+:= rust_pbkdf2_sha256 (pass : string) (salt : string) (rounds : u32) : array_base u8 =
+    $'{ let mut out = [0u8; 32]; pbkdf2::pbkdf2_hmac::<sha2::Sha256>(!pass.as_bytes(), !salt.as_bytes(), !rounds, &mut out); Rc::new(RefCell::new(out.to_vec())) }'
+    : array_base u8
+
+:= gleam_pbkdf2_sha256_hex (pass : string) (salt : string) (rounds : u32) : string =
+    crypto_gleam_pbkdf2 ()
+    := key = $'spiral_crypto_pbkdf2(atom.create("sha256"), !pass, !salt, !rounds, 32)' : string
+    $'string.lowercase(bit_array.base16_encode(!key))' : string
+
+:= pbkdf2_sha256_hex (pass : string) (salt : string) (rounds : u32) : string =
+    backend_switch {
+        Gleam = \ () => gleam_pbkdf2_sha256_hex pass salt rounds
+        Rust = \ () => rust_pbkdf2_sha256 pass salt rounds |> hex_of_bytes
+    }
+
+:= rust_constant_time_equal (a : string) (b : string) : bool =
+    $'{ use subtle::ConstantTimeEq; !a.len() == !b.len() && bool::from(!a.as_bytes().ct_eq(!b.as_bytes())) }' : bool
+
+:= gleam_constant_time_equal (a : string) (b : string) : bool =
+    crypto_gleam_hash_equals ()
+    $'string.byte_size(!a) == string.byte_size(!b) && spiral_crypto_hash_equals(!a, !b)' : bool
+
+:= constant_time_equal (a : string) (b : string) : bool =
+    backend_switch {
+        Gleam = \ () => gleam_constant_time_equal a b
+        Rust = \ () => rust_constant_time_equal a b
+    }
+
+///> rust -d sha2 hmac
+///> gleam
+:# hmac_sha256_matches_rfc4231_test_case_2 =
+    hmac_sha256_hex "Jefe" "what do ya want for nothing?"
+    |> _assert_eq "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
+
+///> rust -d sha2 pbkdf2
+///> gleam
+:# pbkdf2_sha256_matches_the_published_one_round_vector =
+    pbkdf2_sha256_hex "password" "salt" 1u32
+    |> _assert_eq "120fb6cffcf8b32c43e7225256c4f837a86548c92ccc35480805987cb70be17b"
+
+///> rust -d sha2 pbkdf2
+///> gleam
+:# pbkdf2_sha256_matches_the_published_two_round_vector =
+    pbkdf2_sha256_hex "password" "salt" 2u32
+    |> _assert_eq "ae4d0c95af6b46d32d0adff928f06dd02a303f8ef3c251dfd6e2d85a95474c43"
+
+///> rust -d sha2 pbkdf2
+///> gleam
+:# pbkdf2_sha256_at_4096_rounds_matches_the_published_vector =
+    pbkdf2_sha256_hex "password" "salt" 4096u32
+    |> _assert_eq "c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a"
+
+///> rust -d subtle
+///> gleam
+:# constant_time_equal_compares_whole_strings_and_lengths =
+    (constant_time_equal "abc" "abc", constant_time_equal "abc" "abd", constant_time_equal "abc" "ab")
+    |> _assert_eq (!+, !-, !-)
 
 := hash_to_port (text : string) : u16 =
     := first_letter_code = text |> sm'::index 0i32 |> sm'::convert_to_utf32

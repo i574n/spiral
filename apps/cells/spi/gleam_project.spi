@@ -90,6 +90,35 @@
         deps_of rest ({ name = name; version = v } :: acc)
     | _ => listm::rev acc
 
+:= next_line (s : string) (i : i32) : i32 =
+    := n = text::find_from s "\n" i
+    ? n < 0i32 ?> -1i32 |: n + 1i32
+
+:~ ^ quoted_value_from (s : string) (i : i32) (prefix : string) : option string =
+    ? i < 0i32 || i > text::length s
+    ?> None
+    |:
+        := start = i + text::length prefix
+        := q = ? text::starts_at s i prefix ?> text::find_from s "\"" start |: -1i32
+        ? q > start ?> Some (text::slice_len s start (q - start)) |: quoted_value_from s (next_line s i) prefix
+
+:~ ^ line_value_from (s : string) (i : i32) (prefix : string) : option string =
+    ? i < 0i32 || i > text::length s
+    ?> None
+    |? text::starts_at s i prefix ?>
+        := start = i + text::length prefix
+        := n = text::find_from s "\n" start
+        := stop = ? n < 0i32 ?> text::length s |: n
+        Some (text::slice_len s start (stop - start))
+    |: line_value_from s (next_line s i) prefix
+
+:= option_text (o : option string) : string = ?= o ?| Some v => v | None => ""
+
+:= manifest_facts (manifest : string) : string =
+    := name = option_text (quoted_value_from manifest 0i32 "name = \"")
+    := target = line_value_from manifest 0i32 "target = "
+    name ++ (? target = None ?> "\t0\t" |: "\t1\t" ++ option_text target)
+
 := manifest_wire (wire : string) : string =
     ?= fields_from wire 0i32 [] ?|
     | main :: target :: rest => manifest main target (deps_of rest [])
@@ -106,3 +135,10 @@
         ]
     text::contains toml "\ngleam_json = \">=3.0.0\"\n" |> _assert_eq !+
     text::starts_with toml "name = \"main\"\ntarget = \"erlang\"\n\n[dependencies]\ngleam_stdlib = " |> _assert_eq !+
+
+///> gleam
+:# manifest_facts_read_the_first_name_and_target_lines =
+    := made = manifest "main" "erlang" []
+    := odd = "x = 1\nname = \"\"\nname = \"cells\"\ntarget = javascript\n"
+    := facts = (manifest_facts made, manifest_facts odd, manifest_facts "name = \"a\"")
+    facts |> _assert_eq ("main\t1\t\"erlang\"", "cells\t1\tjavascript", "a\t0\t")

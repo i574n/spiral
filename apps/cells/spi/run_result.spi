@@ -1,3 +1,4 @@
+///- --package .
 :# run_result static =
     :< testing
 
@@ -54,14 +55,14 @@
 
 := result_fields_wire (wire : string) : string = fields_wire (outputs_from wire 0i32 [])
 
-///> zig
+///> gleam
 :# values_join_with_newlines_and_streams_concatenate =
     result_fields_wire "v1:ao3:x\nye1:!v2:bch3:<p>x5:12345" |> _assert_eq "v4:a\nbco4:x\ny!h3:<p>"
 
-///> zig
+///> gleam
 :# no_value_is_marked_and_html_keeps_its_order =
     result_fields_wire "h1:1o0:h1:2" |> _assert_eq "n0:o0:h1:1h1:2"
 
-///> zig
+///> gleam
 :# an_empty_wire_has_no_value_and_no_output =
     result_fields_wire "" |> _assert_eq "n0:o0:"

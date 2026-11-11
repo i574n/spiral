@@ -361,3 +361,29 @@
 := plan (src : string) : string = plan_in EveryCell src
 
 := plan_tests (src : string) : string = plan_in TestsOnly src
+
+:~ ^ word_stop (s : string) (i : i32) : i32 =
+    ? i < text::length s && text::is_space (text::index s i) = !- ?> word_stop s (i + 1i32) |: i
+
+:= word_after (s : string) (marker : string) : string =
+    := at = text::find_from s marker 0i32
+    := start = at + text::length marker
+    ? at < 0i32 ?> "" |: text::slice_len s start (word_stop s start - start)
+
+:= phase_of (phases : string) (key : string) : i32 =
+    := v = word_after ("\n" ++ phases) ("\n" ++ key ++ "=")
+    ? v = "" ?> 0i32 |: text::parse_i32 v
+
+:= phase_text (phases : string) (key : string) : string = text::show_i32 (phase_of phases key)
+
+:= phase_row (source : string) (phases : string) : string =
+    := build = text::show_i32 (phase_of phases "rustc" + phase_of phases "target_build")
+    := run = text::show_i32 (phase_of phases "run" + phase_of phases "target_run")
+    := head = word_after source ":# " ++ "\t" ++ word_after source "///> "
+    := times = phase_text phases "queue" ++ "\t" ++ phase_text phases "mount" ++ "\t" ++ phase_text phases "compile"
+    head ++ "\t" ++ times ++ "\t" ++ build ++ "\t" ++ run ++ "\t" ++ phase_text phases "target"
+///> gleam
+:# a_phase_row_names_the_test_and_sums_build_and_run =
+    := rust = phase_row "///> rust\n:# sieve_rust =\n    x" "queue=5\nmount=2\ncompile=3\nrustc=4\nrun=6"
+    := c = phase_row "///> c\n:# sieve_c =" "compile=3\ntarget_build=7\ntarget_run=8\ntarget=16"
+    (rust, c, phase_row "1i32" "") |> _assert_eq ("sieve_rust\trust\t5\t2\t3\t4\t6\t0", "sieve_c\tc\t0\t0\t3\t7\t8\t16", "\t\t0\t0\t0\t0\t0\t0")

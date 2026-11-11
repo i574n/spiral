@@ -61,6 +61,21 @@
         := \? n. v = packed
         to_list v
 
+:= shifted \* n. (found : option (fin n)) : option (fin (nat_succ n)) =
+    ?= found ?|
+    | Some i => Some (FinNext i)
+    | None => None
+
+:= ^ find_fin \* n el. (holds : el -> bool) (v : vector n el) : option (fin n) =
+    ?= v ?|
+    | VectorEnd => None
+    | VectorCons (head, tail) => ? holds head ?> Some FinFirst |: shifted (find_fin holds tail)
+
+:= found_at \* n. (found : option (fin n)) : i32 =
+    ?= found ?|
+    | Some i => fin_value i
+    | None => 0i32 - 1i32
+
 := three () : vector (nat_succ (nat_succ (nat_succ nat_zero))) i32 =
     VectorCons (10i32, VectorCons (20i32, VectorCons (30i32, VectorEnd)))
 
@@ -98,3 +113,11 @@
 ///> lua
 :# an_empty_list_packs_into_a_vector_of_length_zero =
     some_rank (of_list ([] : list i32)) |> _assert_eq 0i32
+
+///> c
+///> rust
+///> lua
+:# find_fin_names_the_first_matching_element_by_a_bounded_index =
+    := v = three ()
+    (found_at (find_fin (\ (x : i32) => x = 20i32) v), found_at (find_fin (\ (x : i32) => x = 99i32) v))
+    |> _assert_eq (1i32, 0i32 - 1i32)

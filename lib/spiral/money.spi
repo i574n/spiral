@@ -34,6 +34,17 @@
     | HalfUp
     | HalfEven
     | Floor
+    | Ceiling
+
+:= half_even_units (q : i64) (step : i64) (twice : i64) : i64 =
+    ? twice > step ?> q + 1i64 |? twice < step ?> q |? q % 2i64 = 0i64 ?> q |: q + 1i64
+
+:= rounded_units (mode : rounding) (q : i64) (step : i64) (twice : i64) : i64 =
+    ?= mode ?|
+    | Floor => q
+    | Ceiling => ? twice = 0i64 ?> q |: q + 1i64
+    | HalfUp => ? twice >= step ?> q + 1i64 |: q
+    | HalfEven => half_even_units q step twice
 
 := rounded (mode : rounding) (places : i32) (d : decimal::decimal) : decimal::decimal =
     ? d::scale <= places
@@ -41,23 +52,20 @@
     |:
         := step = decimal::power_of_ten (d::scale - places) 1i64
         := q = decimal::floor_division d::units step
-        := twice = (d::units - q * step) * 2i64
-        := units =
-            ?= mode ?|
-            | Floor => q
-            | HalfUp => ? twice >= step ?> q + 1i64 |: q
-            | HalfEven => ? twice > step ?> q + 1i64 |? twice < step ?> q |? q % 2i64 = 0i64 ?> q |: q + 1i64
-        decimal::normalized { units = units; scale = places }
+        decimal::normalized { units = rounded_units mode q step ((d::units - q * step) * 2i64); scale = places }
 
-:= converted \* a b. (mode : rounding) (places : i32) (route : fx_route a b) (x : amount a) : amount b =
-    := value = value_of x
+:= via_value \* a m b. (first : rate a m) (second : rate m b) (value : decimal::decimal) : decimal::decimal =
+    decimal::multiply (decimal::multiply value (rate_value first)) (rate_value second)
+
+:= route_value \* a b. (route : fx_route a b) (value : decimal::decimal) : decimal::decimal =
     ?= route ?|
-    | Direct r => amount (rounded mode places (decimal::multiply value (rate_value r)))
+    | Direct r => decimal::multiply value (rate_value r)
     | Via packed =>
         := \? m. first, second = packed
-        amount (
-            rounded mode places (decimal::multiply (decimal::multiply value (rate_value first)) (rate_value second))
-        )
+        via_value first second value
+
+:= converted \* a b. (mode : rounding) (places : i32) (route : fx_route a b) (x : amount a) : amount b =
+    amount (rounded mode places (route_value route (value_of x)))
 
 := same (x : decimal::decimal) (y : decimal::decimal) : bool = decimal::compare x y = 0i32
 
@@ -84,6 +92,17 @@
     ?> failwith "floor: -2.5 -> -3"
     ? same (rounded HalfUp 0i32 (tenths (0i64 - 25i64))) (decimal::of_int (0i64 - 2i64)) = !-
     ?> failwith "half up matches decimal.round_to: -2.5 -> -2"
+
+///> rust
+:# ceiling_rounds_up_and_never_undershoots =
+    := tenths (units : i64) : decimal::decimal = { units = units; scale = 1i32 }
+    := thousandths (units : i64) : decimal::decimal = { units = units; scale = 3i32 }
+    ? same (rounded Ceiling 0i32 (tenths 21i64)) (decimal::of_int 3i64) = !- ?> failwith "ceiling: 2.1 -> 3"
+    ? same (rounded Ceiling 0i32 (tenths 20i64)) (decimal::of_int 2i64) = !- ?> failwith "ceiling: an exact 2.0 stays 2"
+    ? same (rounded Ceiling 0i32 (tenths (0i64 - 25i64))) (decimal::of_int (0i64 - 2i64)) = !-
+    ?> failwith "ceiling: -2.5 -> -2"
+    ? same (rounded Ceiling 2i32 (thousandths 1651i64)) (cents 166i64) = !-
+    ?> failwith "ceiling: 1.651 -> 1.66 where half up gives 1.65"
 
 ///> rust
 :# brl_plus_eur_does_not_type fails "Unification" =

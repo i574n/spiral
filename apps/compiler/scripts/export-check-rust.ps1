@@ -1,7 +1,7 @@
 param([string] $Dll, [string[]] $Case)
 $ErrorActionPreference = 'Continue'
-$pin = if ((Get-Command rustc -ErrorAction SilentlyContinue).Source -match '[\\/]\.cargo[\\/]bin[\\/]') { @('+nightly-2026-11-05') } else { @() }
 . (Join-Path $PSScriptRoot 'env.ps1')
+$pin = Get-SpiralRustPin
 $dotnet = Resolve-SpiralDotnet
 $compiler = if ($Dll) { $Dll } else { Get-SpiralCompilerDll single-flight }
 $env:SPIRAL_COMPILER_PACKAGE_DIR = Get-SpiralPackageDir

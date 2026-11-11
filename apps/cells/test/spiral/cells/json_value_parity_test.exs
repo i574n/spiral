@@ -114,6 +114,7 @@ defmodule Spiral.Cells.JsonValueParityTest do
     end
   end
 
+  @tag :sibling_repos
   test "the Spiral JSON parser accepts exactly what JSON.decode accepts and reads the same values" do
     files = json_files()
     docs = Enum.map(files, &File.read!/1) ++ encoded_docs()

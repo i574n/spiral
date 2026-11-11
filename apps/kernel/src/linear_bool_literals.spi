@@ -1,0 +1,141 @@
+///- --package .
+:# linear_bool_literals static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+:< linear_terms
+:< linear_substitution
+
+:= negate_constant \* c u y. (k : constant c u y) : constant c u y =
+    ?= k ?|
+    | TrueValue (unused, _) => FalseValue (unused, "negated-true")
+    | FalseValue (unused, _) => TrueValue (unused, "negated-false")
+    | _ => k
+
+:= ^ negate \* c u y. (t : term c u y) : term c u y =
+    ?= t ?|
+    | Constant k => Constant (negate_constant k)
+    | Intro i => Intro (negate_intro i)
+    | Elim e => Elim (negate_elim e)
+    | _ => t
+
+:& := negate_intro \* c u y. (i : intro c u y) : intro c u y =
+    ?= i ?|
+    | Tensor payload =>
+        := \? a b. l, r, m, note = payload
+        Tensor (\? (negate l, negate r, m, note))
+    | Lambda (body, note) => Lambda (negate body, note)
+
+:& := negate_elim \* c u y. (e : elim c u y) : elim c u y =
+    ?= e ?|
+    | Apply payload =>
+        := \? d f a. fn, arg, m, note = payload
+        Apply (\? (negate fn, negate arg, m, note))
+    | _ => e
+
+:= falsy_constant \* c u y. (k : constant c u y) : constant c u y =
+    ?= k ?|
+    | TrueValue (unused, _) => FalseValue (unused, "replaced-true")
+    | _ => k
+
+:= ^ falsy \* c u y. (t : term c u y) : term c u y =
+    ?= t ?|
+    | Constant k => Constant (falsy_constant k)
+    | Intro i => Intro (falsy_intro i)
+    | Elim e => Elim (falsy_elim e)
+    | _ => t
+
+:& := falsy_intro \* c u y. (i : intro c u y) : intro c u y =
+    ?= i ?|
+    | Tensor payload =>
+        := \? a b. l, r, m, note = payload
+        Tensor (\? (falsy l, falsy r, m, note))
+    | Lambda (body, note) => Lambda (falsy body, note)
+
+:& := falsy_elim \* c u y. (e : elim c u y) : elim c u y =
+    ?= e ?|
+    | If p =>
+        := \? g b. x, y, z, m, n = p
+        If (\? (falsy x, falsy y, falsy z, m, n))
+    | Apply p =>
+        := \? d f a. x, y, m, n = p
+        Apply (\? (falsy x, falsy y, m, n))
+
+:= constant_word \* c u y. (k : constant c u y) : string =
+    ?= k ?|
+    | UnitValue _ => "unit"
+    | TrueValue _ => "true"
+    | FalseValue _ => "false"
+
+:= join3 (a : list string) (b : list string) (c : list string) : list string = listm::append a (listm::append b c)
+
+:= ^ words \* c u y. (t : term c u y) : list string =
+    ?= t ?|
+    | Constant k => [constant_word k]
+    | Intro i => intro_words i
+    | Elim e => elim_words e
+    | _ => []
+
+:& := intro_words \* c u y. (i : intro c u y) : list string =
+    ?= i ?|
+    | Tensor payload =>
+        := \? a b. l, r, _, _ = payload
+        listm::append (words l) (words r)
+    | Lambda (body, _) => words body
+
+:& := elim_words \* c u y. (e : elim c u y) : list string =
+    ?= e ?|
+    | If p =>
+        := \? g b. x, y, z, _, _ = p
+        join3 (words x) (words y) (words z)
+    | Apply p =>
+        := \? d f a. x, y, _, _ = p
+        listm::append (words x) (words y)
+
+:= true_of (note : string) : term empty_context usage_empty bool_type = Constant (TrueValue (empty_usage (), note))
+
+:= false_of (note : string) : term empty_context usage_empty bool_type = Constant (FalseValue (empty_usage (), note))
+
+:= empty_merge (note : string) : usage_merge empty_context usage_empty usage_empty usage_empty = MergeEmpty note
+
+:= pair \* l r. (left : term empty_context usage_empty l) (right : term empty_context usage_empty r) (note : string)
+    : term empty_context usage_empty (tensor_type l r)
+    =
+    Intro (Tensor (\? (left, right, empty_merge "closed-cells-merge-empty", note)))
+
+:= mixed_pair () : term empty_context usage_empty (tensor_type bool_type bool_type) =
+    pair (true_of "the-left-cell-is-BoolTrue") (false_of "the-right-cell-is-BoolFalse") "a-tensor-exposing-both-Bool-words"
+
+:= nested_pair () : term empty_context usage_empty (tensor_type bool_type (tensor_type bool_type bool_type)) =
+    pair (true_of "the-outer-left-cell-is-BoolTrue") (mixed_pair ()) "an-outer-tensor-over-the-mixed-pair"
+
+:= literal_conditional () : term empty_context usage_empty bool_type =
+    := merge = empty_merge "guard-and-branches-merge-empty"
+    Elim (If (\? (true_of "guard-true", true_of "then-true", false_of "else-false", merge, "closed-Bool-conditional")))
+
+:= rewritten \* c u y. (f : term c u y -> term c u y) (source : term c u y) : list string * list string * i32 * i32 =
+    := target = f source
+    words source, words target, size source, size target
+
+:= involution () : list string * bool * i32 * i32 * i32 =
+    := source = nested_pair ()
+    := once = negate source
+    := twice = negate once
+    words once, words twice = words source, size source, size once, size twice
+
+///> rust
+:# a_total_replacement_turns_both_cells_of_the_pair_into_false_and_keeps_the_size =
+    rewritten falsy (mixed_pair ()) |> _assert_eq (["true"; "false"], ["false"; "false"], 3i32, 3i32)
+
+///> rust
+:# a_replacement_reaches_the_guard_and_both_branches_of_a_conditional =
+    rewritten falsy (literal_conditional ()) |> _assert_eq (["true"; "true"; "false"], ["false"; "false"; "false"], 4i32, 4i32)
+
+///> rust
+:# negation_twice_restores_every_literal_and_keeps_the_size =
+    involution () |> _assert_eq (["false"; "false"; "true"], !+, 5i32, 5i32, 5i32)
+
+///> rust
+:# negation_leaves_a_conditional_as_it_is =
+    words (negate (literal_conditional ())) |> _assert_eq ["true"; "true"; "false"]

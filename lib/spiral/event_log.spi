@@ -3,7 +3,7 @@
 
 :! command_id = string
 :! payload_hash = string
-:! entry ev = i64 * string * string * ev
+:! entry ev = i64 * command_id * payload_hash * ev
 :! event_log ev = i64 * list (entry ev)
 
 := empty_log \* ev. () : event_log ev = event_log (0i64, [])
@@ -14,9 +14,11 @@
 
 := entry_position \* ev. ((entry (at, _, _, _)) : entry ev) : i64 = at
 
-:= entry_id \* ev. ((entry (_, id, _, _)) : entry ev) : string = id
+:= entry_id \* ev. ((entry (_, id, _, _)) : entry ev) : command_id = id
 
-:= entry_hash \* ev. ((entry (_, _, hash, _)) : entry ev) : string = hash
+:= entry_hash \* ev. ((entry (_, _, hash, _)) : entry ev) : payload_hash = hash
+
+:= entry_event \* ev. ((entry (_, _, _, event)) : entry ev) : ev = event
 
 :| append_outcome ev =
     | Appended :: \* ev. event_log ev -> append_outcome ev
@@ -24,7 +26,7 @@
     | Collided :: \* ev. i64 -> append_outcome ev
     | Stale :: \* ev. i64 -> append_outcome ev
 
-:= earlier \* ev. (id : string) (entries : list (entry ev)) : option (entry ev) =
+:= earlier \* ev. (id : command_id) (entries : list (entry ev)) : option (entry ev) =
     listm::fold
         \ found e =>
             ?= found ?|
@@ -34,8 +36,7 @@
         entries
 
 := append \* ev.
-    (expected : i64) ((command_id id) : command_id) ((payload_hash hash) : payload_hash) (event : ev)
-    (log : event_log ev)
+    (expected : i64) (id : command_id) (hash : payload_hash) (event : ev) (log : event_log ev)
     : append_outcome ev
     =
     ?= earlier id (entries_of log) ?|
@@ -46,15 +47,24 @@
         ?> Appended (event_log (head + 1i64, entry (head + 1i64, id, hash, event) :: entries_of log))
         |: Stale head
 
-:= outcome_code \* ev. (outcome : append_outcome ev) : i64 * i64 =
+:= outcome_position \* ev. (outcome : append_outcome ev) : i64 =
     ?= outcome ?|
-    | Appended log => 0i64, head_of log
-    | Replayed at => 1i64, at
-    | Collided at => 2i64, at
-    | Stale at => 3i64, at
+    | Appended log => head_of log
+    | Replayed at => at
+    | Collided at => at
+    | Stale at => at
 
-:= entry_line \* ev. (text_of : ev -> string) ((entry (at, id, hash, event)) : entry ev) : string =
-    sm'::obj_to_string at ++# "\t" ++# id ++# "\t" ++# hash ++# "\t" ++# text_of event ++# "\n"
+:= entry_line \* ev. (text_of : ev -> string) (e : entry ev) : string =
+    := (command_id id) = entry_id e
+    := (payload_hash hash) = entry_hash e
+    sm'::obj_to_string (entry_position e)
+    ++# "\t"
+    ++# id
+    ++# "\t"
+    ++# hash
+    ++# "\t"
+    ++# text_of (entry_event e)
+    ++# "\n"
 
 := append_durably \* ev.
     (text_of : ev -> string) (path : string) (expected : i64) (id : command_id) (hash : payload_hash) (event : ev)
@@ -107,20 +117,87 @@
     | Appended log => log
     | _ => failwith "expected an append"
 
+:| membership =
+    | Recorded :: i64 -> membership
+    | Conflicting :: i64 -> membership
+    | Absent :: membership
+
+:= membership_of \* ev. (id : command_id) (hash : payload_hash) (log : event_log ev)
+    : membership
+    =
+    ?= earlier id (entries_of log) ?|
+    | Some e => ? entry_hash e = hash ?> Recorded (entry_position e) |: Conflicting (entry_position e)
+    | None => Absent
+
+:= history \* ev. (log : event_log ev) : list ev = listm::fold (\ acc e => entry_event e :: acc) [] (entries_of log)
+
+:= fact_at \* ev. (position : i64) (log : event_log ev) : option (command_id * payload_hash) =
+    listm::fold
+        \ found e =>
+            ?= found ?|
+            | Some _ => found
+            | None => ? entry_position e = position ?> Some (entry_id e, entry_hash e) |: None
+        None
+        (entries_of log)
+
+:~ ^ line_codes (text : string) (i : i32) (acc : list u32) : list u32 =
+    ? i >= sm'::length text
+    ?> listm::rev acc
+    |: line_codes text (i + xml::code_point_width text i) (xml::code_point_at text i :: acc)
+
+:= line_checksum (body : string) : string = sm'::obj_to_string (wire::adler_of (line_codes body 0i32 []))
+
+:= framed_line \* ev. (text_of : ev -> string) (e : entry ev) : string =
+    := line = entry_line text_of e
+    := body = sm'::substring 0i32 (sm'::length line - 1i32) line
+    body ++# "\t" ++# line_checksum body ++# "\n"
+
+:= framed_text \* ev. (text_of : ev -> string) (log : event_log ev) : string =
+    listm::fold (\ acc e => framed_line text_of e ++# acc) "" (entries_of log)
+
+:| audit =
+    | Intact :: i64 -> audit
+    | Corrupt :: i64 * string * string -> audit
+
+:= frame_verdict (frame : i64) (line : string) : option audit =
+    := cut = sm'::last_index_of "\t" line
+    := body = ? cut < 0i32 ?> line |: sm'::substring 0i32 cut line
+    := stored = ? cut < 0i32 ?> "" |: sm'::substring (cut + 1i32) (sm'::length line - cut - 1i32) line
+    := recomputed = line_checksum body
+    ? stored = recomputed ?> None |: Some (Corrupt (frame, stored, recomputed))
+
+:~ ^ audit_from (text : string) (pos : i32) (frame : i64) : audit =
+    ? pos >= sm'::length text
+    ?> Intact (frame - 1i64)
+    |:
+        := stop = xml::find_from "\n" text pos
+        := stop = ? stop < 0i32 ?> sm'::length text |: stop
+        ?= frame_verdict frame (sm'::substring pos (stop - pos) text) ?|
+        | Some bad => bad
+        | None => audit_from text (stop + 1i32) (frame + 1i64)
+
+:= audit_frames (text : string) : audit = audit_from text 0i32 1i64
+
+:= one_entry_log () : event_log string =
+    appended_log (append 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" (empty_log ()))
+
+:= two_entry_log () : event_log string =
+    append 1i64 (command_id "nfe-1-cancel") (payload_hash "h2") "cancelled" (one_entry_log ()) |> appended_log
+
 ///> rust
 :# an_append_at_the_expected_position_advances_the_log =
     := first = appended_log (append 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" (empty_log ()))
     := second = append 1i64 (command_id "nfe-2") (payload_hash "h2") "authorized" first
-    ? outcome_code second = (0i64, 2i64) = !- ?> failwith "two appends at their expected positions reach position 2"
+    ? head_of (appended_log second) <> 2i64 ?> failwith "two appends at their expected positions reach position 2"
 
 ///> rust
 :# a_repeated_command_replays_and_a_changed_payload_collides =
     := log = appended_log (append 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" (empty_log ()))
-    ? outcome_code (append 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" log) = (1i64, 1i64) = !-
+    ? append 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" log <> Replayed 1i64
     ?> failwith "a retry of nfe-1 with its old expected position replays position 1"
-    ? outcome_code (append 1i64 (command_id "nfe-1") (payload_hash "h9") "cancelled" log) = (2i64, 1i64) = !-
+    ? append 1i64 (command_id "nfe-1") (payload_hash "h9") "cancelled" log <> Collided 1i64
     ?> failwith "nfe-1 with another payload collides with position 1"
-    ? outcome_code (append 0i64 (command_id "nfe-2") (payload_hash "h2") "authorized" log) = (3i64, 1i64) = !-
+    ? append 0i64 (command_id "nfe-2") (payload_hash "h2") "authorized" log <> Stale 1i64
     ?> failwith "a new command at a moved position is stale at 1"
 
 ///> rust
@@ -136,7 +213,7 @@
     := retried = written (append_durably text path 0i64 (command_id "nfe-1") (payload_hash "h1") "authorized" log)
     := clashing = written (append_durably text path 1i64 (command_id "nfe-1") (payload_hash "h9") "cancelled" log)
     := second = written (append_durably text path 1i64 (command_id "nfe-2") (payload_hash "h2") "authorized" log)
-    ? (outcome_code retried, outcome_code clashing, outcome_code second) <> ((1i64, 1i64), (2i64, 1i64), (0i64, 2i64))
+    ? (retried, clashing, outcome_position second) <> (Replayed 1i64, Collided 1i64, 2i64)
     ?> failwith "the retry replays, the changed payload collides, the new command appends"
     ? file_system::read_all_text path <> "1\tnfe-1\th1\tauthorized\n2\tnfe-2\th2\tauthorized\n"
     ?> failwith "only the two real appends are on disk, in order"
@@ -162,3 +239,47 @@
 :# a_log_of_one_event_type_takes_no_other fails "Unification" =
     := log : event_log string = empty_log ()
     append 0i64 (command_id "nfe-1") (payload_hash "h1") 7i32 log |> ignore
+
+///> rust
+:# a_recorded_command_is_a_member_at_its_position =
+    ? membership_of (command_id "nfe-1") (payload_hash "h1") (one_entry_log ()) <> Recorded 1i64
+    ?> failwith "nfe-1 with its payload is recorded at 1"
+
+///> rust
+:# the_same_command_with_another_payload_conflicts =
+    ? membership_of (command_id "nfe-1") (payload_hash "h9") (one_entry_log ()) <> Conflicting 1i64
+    ?> failwith "nfe-1 with another payload conflicts at 1"
+
+///> rust
+:# a_command_never_appended_is_absent =
+    ? membership_of (command_id "nfe-2") (payload_hash "h2") (one_entry_log ()) <> Absent
+    ?> failwith "nfe-2 was never appended"
+
+///> rust
+:# the_history_reads_the_events_oldest_first =
+    ? history (two_entry_log ()) <> [ "authorized"; "cancelled" ]
+    ?> failwith "the authorization comes before the cancellation"
+
+///> rust
+:# a_fact_is_the_id_and_hash_at_a_position =
+    ? fact_at 2i64 (two_entry_log ()) <> Some (command_id "nfe-1-cancel", payload_hash "h2")
+    ?> failwith "position 2 is the cancellation"
+    ? fact_at 3i64 (two_entry_log ()) <> None ?> failwith "nothing is recorded past the head"
+
+///> rust
+:# a_framed_log_audits_intact =
+    ? audit_frames (framed_text (\ (e : string) => e) (two_entry_log ())) <> Intact 2i64
+    ?> failwith "both frames of a written log check out"
+
+///> rust
+:# a_changed_event_is_corrupt_at_its_frame =
+    := text = sm'::replace "cancelled" "cancelleD" (framed_text (\ (e : string) => e) (two_entry_log ()))
+    ?= audit_frames text ?|
+    | Corrupt (frame, _, _) => ? frame <> 2i64 ?> failwith "the edited second frame no longer matches its checksum"
+    | Intact _ => failwith "an edited frame is not intact"
+
+///> rust
+:# a_frame_without_its_checksum_is_corrupt =
+    ?= audit_frames "1\tnfe-1\th1\tauthorized\n" ?|
+    | Corrupt (frame, _, _) => ? frame <> 1i64 ?> failwith "a bare entry line fails closed"
+    | Intact _ => failwith "a frame without its checksum is not intact"

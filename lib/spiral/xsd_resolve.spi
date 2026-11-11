@@ -132,13 +132,39 @@
 
 := qualified (uri : string) (local : string) : string = ? local = "" ?> "" |: "{" ++# uri ++# "}" ++# local
 
-:= qualify_reference (namespaces : list (string * string)) (reference : string) : string =
+:= xbrli_instance_namespace () : string = "http://www.xbrl.org/2003/instance"
+
+:= xbrli_item_builtins () : list (string * string) =
+    [
+        ("stringItemType", "string"); ("monetaryItemType", "decimal"); ("booleanItemType", "boolean")
+        ("dateItemType", "date"); ("gYearMonthItemType", "gYearMonth"); ("gYearItemType", "gYear")
+    ]
+
+:~ ^ item_builtin_in (local : string) (table : list (string * string)) : option string =
+    ?= table ?|
+    | (name, base) :: rest => ? name = local ?> Some base |: item_builtin_in local rest
+    | [] => None
+
+:= xbrli_item_builtin (namespaces : list (string * string)) (reference : string) : option string =
+    ?= namespace_for (prefix_of reference) namespaces ?|
+    | Some uri =>
+        ? uri = xbrli_instance_namespace ()
+        ?> item_builtin_in (xml::local_name reference) (xbrli_item_builtins ())
+        |: None
+    | None => None
+
+:= qualify_plain (namespaces : list (string * string)) (reference : string) : string =
     ? reference = "" || is_builtin reference
     ?> reference
     |:
         ?= namespace_for (prefix_of reference) namespaces ?|
         | Some uri => qualified uri (xml::local_name reference)
         | None => reference
+
+:= qualify_reference (namespaces : list (string * string)) (reference : string) : string =
+    ?= xbrli_item_builtin namespaces reference ?|
+    | Some base => "xs:" ++# base
+    | None => qualify_plain namespaces reference
 
 := renamed_definition \* a b.
     (rename : string -> string) ((definition_name name) : definition_name a)
@@ -645,3 +671,13 @@
         ? resolved_location catalog "C:/x/" only <> "C:/corpus/common.xsd"
         ?> failwith "a namespace key maps to its file"
     | _ => failwith "only the catalogued namespace is kept"
+
+///> rust
+:# an_xbrli_item_type_resolves_to_its_xml_schema_builtin =
+    := ns = [ ("xbrli", xbrli_instance_namespace ()); ("other", "urn:x") ]
+    ? qualify_reference ns "xbrli:monetaryItemType" <> "xs:decimal" ?> failwith "a monetary item is an xs:decimal"
+    ? qualify_reference ns "xbrli:stringItemType" <> "xs:string" ?> failwith "a string item is an xs:string"
+    ? qualify_reference [ ("x", xbrli_instance_namespace ()) ] "x:dateItemType" <> "xs:date"
+    ?> failwith "the namespace decides, not the prefix"
+    ? qualify_reference ns "other:monetaryItemType" = "xs:decimal"
+    ?> failwith "another namespace's monetaryItemType is not an xbrli item"

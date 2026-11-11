@@ -16,3 +16,21 @@ modules:
     lean
     oracle
     export
+    linear_types
+    linear_terms
+    linear_renaming
+    linear_substitution
+    linear_strengthening
+    linear_variable_strengthening
+    linear_reduction
+    linear_lambda_substitution
+    linear_term_strengthening
+    linear_open_substitution
+    linear_values
+    linear_open_betas
+    linear_closed_reduction
+    linear_general_reduction
+    linear_bool_normalization
+    linear_bool_literals
+    linear_weakened
+    linear_fused_substitution

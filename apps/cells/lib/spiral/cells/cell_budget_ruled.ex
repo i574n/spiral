@@ -105,7 +105,11 @@ defmodule Spiral.Cells.CellBudgetRuled do
           :error ->
             case flat_switch(body) do
               {:ok, switch_line, arms} -> CellBudget.cell_weight(switch_line, profile) + Enum.max(Enum.map(arms, &CellBudget.cell_weight(&1, profile)))
-              :error -> CellBudget.cell_weight(text, profile)
+              :error ->
+                case flat_run_target(body) do
+                  {:ok, head, arms} -> CellBudget.cell_weight(head, profile) + Enum.max(Enum.map(arms, &CellBudget.cell_weight(&1, profile)))
+                  :error -> CellBudget.cell_weight(text, profile)
+                end
             end
         end
     end
@@ -175,6 +179,27 @@ defmodule Spiral.Cells.CellBudgetRuled do
   end
 
   defp flat_switch(_), do: :error
+
+  @run_target_arm ~r/^\| [A-Za-z_][\w']* => \\ [^=]+ => (?<call>\S.*)$/
+
+  defp flat_run_target([head | rest]) do
+    trimmed = String.trim(head)
+    arms = Enum.reject(rest, &(String.trim(&1) == ""))
+
+    if String.starts_with?(trimmed, "run_target_args") and String.ends_with?(trimmed, "\\|") and arms != [] and
+         Enum.all?(arms, &flat_run_target_arm?/1),
+       do: {:ok, trimmed, Enum.map(arms, &String.trim/1)},
+       else: :error
+  end
+
+  defp flat_run_target(_), do: :error
+
+  defp flat_run_target_arm?(raw) do
+    case Regex.named_captures(@run_target_arm, String.trim(raw)) do
+      %{"call" => call} -> String.length(raw) <= 120 and not String.contains?(call, ["?= ", " ? ", "?> ", ":= ", "\\ ", "fun "])
+      nil -> false
+    end
+  end
 
   defp flat_switch_arm?(raw) do
     case Regex.named_captures(@switch_arm, String.trim(raw)) do

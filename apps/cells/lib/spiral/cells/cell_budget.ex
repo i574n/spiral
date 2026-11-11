@@ -69,6 +69,21 @@ defmodule Spiral.Cells.CellBudget do
 
   @spec cell_weight(String.t(), %Profile{}) :: non_neg_integer()
   def cell_weight(text, profile \\ default_profile()) do
+    if profile === default_profile(), do: Spiral.Cells.Domain.cell_weight(present_tlds(text), text), else: host_cell_weight(text, profile)
+  end
+
+  defp present_tlds(text) do
+    ~r/[A-Za-z]{2,63}/
+    |> Regex.scan(text)
+    |> List.flatten()
+    |> Enum.map(&String.downcase/1)
+    |> Enum.uniq()
+    |> Enum.filter(&MapSet.member?(@tlds, &1))
+    |> Enum.join("\n")
+  end
+
+  @doc false
+  def host_cell_weight(text, profile \\ default_profile()) do
     links = autolinks(text, profile)
     plain = Enum.reduce(links, weight(text, profile), fn {_, link}, total -> total - weight(link, profile) end)
     plain + profile.link_weight * length(links)
@@ -105,7 +120,7 @@ defmodule Spiral.Cells.CellBudget do
       |> Enum.reduce({[], [], 1, 0, false}, fn {line, row}, {blocks, current, start, blanks, seen} ->
         cond do
           line == "" -> {blocks, current, start, blanks + 1, seen}
-          blanks > 0 and seen and not String.starts_with?(line, [" ", "\t"]) -> {finish_block(blocks, current, start), [line | List.duplicate("", blanks - 1)], row, 0, true}
+          blanks > 0 and seen and not String.starts_with?(line, [" ", "\t"]) -> {finish_block(blocks, current, start), [line], row, 0, true}
           true -> {blocks, [line | List.duplicate("", blanks) ++ current], if(seen, do: start, else: row), 0, true}
         end
       end)

@@ -14,7 +14,7 @@
 
 := read_lines (text : string) : list string = collect text 0i32 []
 
-:= declaration (line : string) : bool =
+:~ declaration (line : string) : bool =
     ? text::starts_with line "open " || text::starts_with line ":< "
     ?> !+
     |? text::starts_with line "prototype " || text::starts_with line ":? "
@@ -29,7 +29,7 @@
     ?> !+
     |: !-
 
-:= binding_keyword (line : string) : bool =
+:~ binding_keyword (line : string) : bool =
     ? text::starts_with line "inl " || text::starts_with line ":= "
     ?> !+
     |? text::starts_with line "and " || text::starts_with line ":& "

@@ -1,0 +1,51 @@
+:= failwith \* t. (msg : string) : t = !!!!FailWith(`t, msg)
+
+:= code (c : char) : u32 =
+    ? !!!!EQ(c, ':') ?> 58u32
+    |:
+        ? !!!!EQ(c, '-') ?> 45u32
+        |:
+            ? !!!!EQ(c, 's') ?> 115u32
+            |: 1u32
+
+:= fnv1a (s : string) : u32 =
+    := n = !!!!StringLength(`i32, s)
+    :~ ^ go (i : i32) (h : u32) : u32 =
+        ? i >= n ?> h
+        |: go (i +. 1) (!!!!Mult(!!!!BitwiseXor(h, code !!!!StringIndex(s, i)), 16777619u32))
+    go 0 2166136261u32
+
+:= main () : i32 =
+    := ~text = "spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:spiral-bench-strings:"
+    := ~rounds = !!!!BackendSwitch({
+        Gleam = \ () => 1i32
+        Lua = \ () => 1i32
+        Fsharp = \ () => 8i32
+        Python = \ () => 1i32
+        Cpp = \ () => 8i32
+        Rust = \ () => 8i32
+        CppHost = \ () => 8i32
+        Zig = \ () => 8i32
+        Lean = \ () => 1i32
+        TypeScript = \ () => 1i32
+        C = \ () => 8i32
+        Pascal = \ () => 8i32
+        Wasm = \ () => 8i32
+        Kotlin = \ () => 8i32
+        Swift = \ () => 8i32
+        Bend = \ () => 1i32
+    })
+    := n = !!!!StringLength(`i32, text)
+    ? !!!!EQ(n, 4095i32) ?> () |: failwith "bench-strings-wrong-length"
+    :~ ^ suffixes (k : i32) (acc : u32) : u32 =
+        ? k >= n ?> acc
+        |: suffixes (k +. 1) (!!!!BitwiseXor(acc, fnv1a !!!!StringSlice(text, k, n -. 1)))
+    := first = suffixes 0 0u32
+    :~ ^ repeat (r : i32) (last : u32) : () =
+        ? r >= rounds ?> ()
+        |:
+            := h = suffixes !!!!Conv(`i32, last /. 4294967295u32) 0u32
+            ? !!!!EQ(h, first) ?> () |: failwith "bench-strings-hash-drift"
+            repeat (r +. 1) h
+    repeat 1 first
+    !!!!Conv(`i32, !!!!Mod(first, 256u32))

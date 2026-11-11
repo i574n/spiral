@@ -137,3 +137,35 @@
 ///> gleam
 :# a_run_collects_its_output_until_the_exit =
     run_collect (erl_eval_port "io:put_chars(\"hi\"), halt(3).") 60i32 [] |> _assert_eq (Finished (3i32, "hi"))
+
+:| process_pattern =
+    | DeadlineHit
+    | LargeOutput
+
+:= outcome_kind (o : run_outcome) : string =
+    ?= o ?|
+    | Finished (code, _) => "finished " ++#? code
+    | TimedOut _ => "timed out"
+
+:= output_length (o : run_outcome) : i32 =
+    ?= o ?|
+    | Finished (_, text) => sm'::length text
+    | TimedOut text => sm'::length text
+
+:= sleeper () : string = "timer:sleep(30000), halt(0)."
+
+:= megabyte_writer () : string = "io:put_chars(lists:duplicate(1000000, 97)), halt(0)."
+
+:= pattern_run (pattern : process_pattern) : run_outcome =
+    ?= pattern ?|
+    | DeadlineHit => run_collect (erl_eval_port (sleeper ())) 2i32 []
+    | LargeOutput => run_collect (erl_eval_port (megabyte_writer ())) 60i32 []
+
+///> gleam
+:# a_child_past_its_quiet_budget_times_out =
+    outcome_kind (pattern_run DeadlineHit) |> _assert_eq "timed out"
+
+///> gleam
+:# a_megabyte_of_output_arrives_whole =
+    := o = pattern_run LargeOutput
+    (outcome_kind o, output_length o) |> _assert_eq ("finished 0", 1000000i32)

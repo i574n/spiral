@@ -1,3 +1,7 @@
+///- --package .
+:# verdicts static =
+    :< testing
+
 := (++) (left : string) (right : string) : string = left ^^ right
 
 :== tally = { status : string; hit : bool; reason : string }
@@ -87,12 +91,16 @@
 :# a_void_names_each_timed_out_test_and_its_budget =
     := rows = "slow\ttimed_out\t600000\nfine\tpassed\t600000\nbare\ttimed_out\t"
     void_text "/n/a.spi" 2i32 rows "cpu 97%"
-    |> _assert_eq "/n/a.spi: VOID, 2 test(s) hit the cell timeout (slow at 600000 ms, bare; cpu 97%), so they are not a verdict; rerun with a wider --timeout"
+    |> _assert_eq (
+        "/n/a.spi: VOID, 2 test(s) hit the cell timeout (slow at 600000 ms, bare; cpu 97%), so they are not a "
+        ^^ "verdict; rerun with a wider --timeout"
+    )
 
 ///> gleam
 :# a_void_without_rows_or_load_keeps_the_short_message =
     (void_text "/n/a.spi" 2i32 "" "", void_text "/n/a.spi" 2i32 "" "loadavg 3.1")
     |> _assert_eq (
-           "/n/a.spi: VOID, 2 test(s) hit the cell timeout, so they are not a verdict; rerun with a wider --timeout",
-           "/n/a.spi: VOID, 2 test(s) hit the cell timeout (loadavg 3.1), so they are not a verdict; rerun with a wider --timeout"
-       )
+        "/n/a.spi: VOID, 2 test(s) hit the cell timeout, so they are not a verdict; rerun with a wider --timeout",
+        "/n/a.spi: VOID, 2 test(s) hit the cell timeout (loadavg 3.1), so they are not a verdict; rerun with a "
+        ^^ "wider --timeout"
+    )

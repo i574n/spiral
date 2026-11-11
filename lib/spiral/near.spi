@@ -175,7 +175,8 @@
 := host_account_balance_words () : u64 * u64 =
     backend_switch {
         Rust = \ () =>
-            $'{ let balance = near_sdk::env::account_balance().as_yoctonear(); (balance as u64, (balance >> 64) as u64) }'
+            $'{ let balance = near_sdk::env::account_balance().as_yoctonear(); \
+                (balance as u64, (balance >> 64) as u64) }'
             : u64 * u64
     }
 

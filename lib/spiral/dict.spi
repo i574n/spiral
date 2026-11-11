@@ -80,8 +80,6 @@
         Rust = \ () => ($'!d.len()' : convert::unativeint) |> convert::convert : i32
     }
 
-:= size \* k v. (d : dict k v) : i32 = count d
-
 := updated \* k v. (key : k) (fallback : v) (g : v -> v) (d : dict k v) : dict k v =
     insert key (g (?= find key d ?| Some x => x | None => fallback)) d
 
@@ -123,8 +121,6 @@
 := set_count \* k. (s : set k) : i32 =
     ?= s ?|
     | set d => count d
-
-:= set_size \* k. (s : set k) : i32 = set_count s
 
 := set_items \* k. (s : set k) : list k =
     ?= s ?|

@@ -403,7 +403,7 @@
     | Inline v => cleanup_inline v rest b flag
     | Bare => Ok (cleanup_step rest b)
 
-:= apply_flag
+:~ apply_flag
     (kind : flag_kind) (value : inline) (rest : list string) (b : builder) (flag : string)
     : result (builder * list string) string
     =

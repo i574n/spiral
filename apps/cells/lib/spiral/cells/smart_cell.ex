@@ -5,6 +5,7 @@ defmodule Spiral.Cells.SmartCell do
 
   @default_timeout_s 300
   @default_source """
+  ///> rust
   inl square x = x * x
 
   console.write_line "Hello from Spiral!"

@@ -1,0 +1,61 @@
+///- --package .
+:# linear_substitution static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+:< linear_terms
+
+:= ^ idsub \* c u y. (t : term c u y) : term c u y =
+    ?= t ?|
+    | Intro i => Intro (idsub_intro i)
+    | Elim e => Elim (idsub_elim e)
+    | _ => t
+
+:& := idsub_intro \* c u y. (i : intro c u y) : intro c u y =
+    ?= i ?|
+    | Tensor payload =>
+        := \? a b. l, r, m, note = payload
+        Tensor (\? (idsub l, idsub r, m, note))
+    | Lambda (body, note) => Lambda (idsub body, note)
+
+:& := idsub_elim \* c u y. (e : elim c u y) : elim c u y =
+    ?= e ?|
+    | If p =>
+        := \? g b. x, y, z, m, n = p
+        If (\? (idsub x, idsub y, idsub z, m, n))
+    | Apply p =>
+        := \? d f a. x, y, m, n = p
+        Apply (\? (idsub x, idsub y, m, n))
+
+:= ^ size \* c u y. (t : term c u y) : i32 =
+    ?= t ?|
+    | Intro i => 1i32 + intro_size i
+    | Elim e => 1i32 + elim_size e
+    | _ => 1i32
+
+:& := intro_size \* c u y. (i : intro c u y) : i32 =
+    ?= i ?|
+    | Tensor payload =>
+        := \? a b. l, r, _, _ = payload
+        size l + size r
+    | Lambda (body, _) => size body
+
+:& := elim_size \* c u y. (e : elim c u y) : i32 =
+    ?= e ?|
+    | If payload =>
+        := \? g b. guard, yes, no, _, _ = payload
+        size guard + size yes + size no
+    | Apply payload =>
+        := \? d f a. fn, arg, _, _ = payload
+        size fn + size arg
+
+///> rust
+:# the_identity_substitution_keeps_the_identity_term =
+    := t = identity_term ()
+    (size t, size (idsub t), term_label (idsub t)) |> _assert_eq (2i32, 2i32, "intro")
+
+///> rust
+:# the_identity_substitution_keeps_the_closed_conditional =
+    := t = closed_unit_conditional ()
+    (size t, size (idsub t), term_label (idsub t)) |> _assert_eq (4i32, 4i32, "elim")

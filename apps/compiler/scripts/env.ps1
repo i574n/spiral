@@ -93,6 +93,14 @@ function Resolve-SpiralTool([string]$Name, [string[]]$Candidates) {
     $null
 }
 
+function Get-SpiralRustPin([string]$Rustc = (Get-Command rustc -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1).Source) {
+    if (-not $Rustc -or -not (Get-ChildItem -LiteralPath (Split-Path $Rustc) -Filter 'rustup*' -File -ErrorAction SilentlyContinue | Where-Object { $_.BaseName -eq 'rustup' })) { return @() }
+    $toolchain = Join-Path $PSScriptRoot '../../../rust-toolchain.toml'
+    $channel = Select-String -LiteralPath $toolchain -Pattern '^\s*channel\s*=\s*"([^"]+)"' | Select-Object -First 1
+    if (-not $channel) { throw "$toolchain has no channel line; it is generated from i574n.github/scripts/pins/pins.spi" }
+    @("+$($channel.Matches[0].Groups[1].Value)")
+}
+
 function Get-SpiralNativeTools {
     [pscustomobject]@{
         CC = Resolve-SpiralTool 'cc' @($env:SPIRAL_CC, 'gcc', 'clang', 'cc')
@@ -115,6 +123,7 @@ function Get-SpiralNativeTools {
         Erl = Resolve-SpiralTool 'erl' @($env:SPIRAL_ERL, (Join-Path $HOME 'scoop/apps/erlang/current/bin/erl'), 'erl')
         Lua = Resolve-SpiralTool 'lua' @($env:SPIRAL_LUA, 'lua', 'luajit')
         Bun = Resolve-SpiralTool 'bun' @($env:SPIRAL_BUN, 'bun')
+        Tsc = @($env:SPIRAL_TSC, (Join-Path (Get-SpiralCacheDir) 'toolchains/tsc/lib/tsc.exe'), (Join-Path (Get-SpiralCacheDir) 'toolchains/tsc/lib/tsc')) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
         Dotnet = $(try { Resolve-SpiralDotnet } catch { $null })
         BendMain = @($env:SPIRAL_BEND_MAIN, (Join-Path (Get-SpiralCacheDir) 'toolchains/bend/bend2/main.ts'), $(if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'spiral-bin/toolchains/bend/bend2/main.ts' })) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
         Python = Resolve-SpiralTool 'python' @($env:SPIRAL_PYTHON, (Join-Path $HOME 'scoop/apps/python/current/python.exe'), 'python', 'python3')

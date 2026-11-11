@@ -69,7 +69,8 @@ function Invoke-WarmNotebook([int] $Port, [string[]] $Arguments, [string] $Dll) 
         $writer = [System.IO.StreamWriter]::new($stream, $utf8)
         $writer.NewLine = "`n"
         $reader = [System.IO.StreamReader]::new($stream, $utf8)
-        $request = [ordered]@{ args = $Arguments; root = (Split-Path $PSScriptRoot -Parent); dll = $Dll } | ConvertTo-Json -Compress -Depth 3
+        $bun = if ($env:SPIRAL_BUN) { $env:SPIRAL_BUN } else { (Get-Command bun -CommandType Application -ErrorAction Ignore | Select-Object -First 1).Source }
+        $request = [ordered]@{ args = $Arguments; root = (Split-Path $PSScriptRoot -Parent); dll = $Dll; bun = "$bun" } | ConvertTo-Json -Compress -Depth 3
         $writer.WriteLine("notebook`t$request")
         $writer.Flush()
         while ($null -ne ($line = $reader.ReadLine())) {

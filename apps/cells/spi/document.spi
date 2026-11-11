@@ -754,11 +754,11 @@
 
 := indented (line : string) : bool = ? line = "" ?> !+ |: text::is_space (text::index line 0i32)
 
-:= code_cell (lines : rows) (real_mode : bool) (acc : cells) : cells =
+:~ code_cell (lines : rows) (real_mode : bool) (acc : cells) : cells =
     := source = text::trim_newlines (join_rows (rev_rows lines []))
     ? text::blank source ?> acc |: (SpiralCode, real_marker real_mode source) :: acc
 
-:= doc_cell (lines : rows) (real_mode : bool) (acc : cells) : cells =
+:~ doc_cell (lines : rows) (real_mode : bool) (acc : cells) : cells =
     := source = text::trim_newlines (join_rows (rev_rows lines []))
     ? source = "" ?> acc |: (Markdown, source) :: acc
 
@@ -771,12 +771,12 @@
     | WellFormed => rev_rows (drop_blank_rows body) []
     | Malformed line => malformed_body line
 
-:= test_cell_of (t : open_test) (real_mode : bool) (acc : cells) : cells =
+:~ test_cell_of (t : open_test) (real_mode : bool) (acc : cells) : cells =
     := source = test_cell_source real_mode t::modes (rev_rows t::targets []) (test_body t::form t::body)
     := realm = ? real_mode ?> RealRealm |: SpiRealm
     (NamedTest (realm, t::name), source) :: acc
 
-:= close_mode (mode : spi_mode) (targets : rows) (real_mode : bool) (acc : cells) : cells =
+:~ close_mode (mode : spi_mode) (targets : rows) (real_mode : bool) (acc : cells) : cells =
     ?= mode ?|
     | Between => code_cell targets real_mode acc
     | InDoc lines => code_cell targets real_mode (doc_cell lines real_mode acc)
@@ -816,7 +816,8 @@
             |? doc_start line
             ?> InDoc ((undoc line) :: []), [], close_open code targets real_mode acc
             |? no_rows code ?>
-                ? line = "" && no_rows targets ?> Between, [], acc
+                ? line = "" && no_rows targets
+                ?> Between, [], acc
                 |: InCode (line :: targets), [], acc
             |: InCode (line :: (append_rows targets code)), [], acc
 

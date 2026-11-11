@@ -1,0 +1,55 @@
+///- --package .
+:# linear_strengthening static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+:< linear_terms
+
+:| mark_step source target source_tail target_tail =
+    | KeepUnused :: \* b e. string -> mark_step (unused b) (unused e) b e
+    | KeepUsed :: \* b e. string -> mark_step (used b) (used e) b e
+
+:| ^ strengthen sc su tc tu =
+    | StrengthenHere :: \* t u d. string -> strengthen (extend t d) (unused u) t u
+    | StrengthenThere :: \* a c h f g. (\? b e. strengthen a b c e * mark_step f g b e * string) -> strengthen (extend a h) f (extend c h) g
+
+:= tail_plan () : strengthen (extend empty_context unit_type) (unused usage_empty) empty_context usage_empty =
+    StrengthenHere "the-selected-older-unused-Unit-is-removed"
+
+:== two_units = extend (extend empty_context unit_type) unit_type
+
+:= context_plan () : strengthen two_units (used (unused usage_empty)) (extend empty_context unit_type) (used usage_empty) =
+    StrengthenThere (\? (tail_plan (), KeepUsed "the-newer-used-Unit-replacement-is-preserved", "keep-the-newer-cell"))
+
+:= ^ removed_depth \* a b c e. (plan : strengthen a b c e) : i32 =
+    ?= plan ?|
+    | StrengthenHere _ => 0i32
+    | StrengthenThere p =>
+        := \? x y. rest, _, _ = p
+        1i32 + removed_depth rest
+
+:= kept_note \* f g b e. (step : mark_step f g b e) : string =
+    ?= step ?|
+    | KeepUnused note => note
+    | KeepUsed note => note
+
+:= top_kept_note \* a b c e. (plan : strengthen a b c e) : string =
+    ?= plan ?|
+    | StrengthenHere note => note
+    | StrengthenThere p =>
+        := \? x y. _, step, _ = p
+        kept_note step
+
+///> rust
+:# the_plan_removes_the_older_unused_unit_one_cell_down =
+    (removed_depth (tail_plan ()), removed_depth (context_plan ())) |> _assert_eq (0i32, 1i32)
+
+///> rust
+:# the_plan_keeps_the_newer_used_unit =
+    top_kept_note (context_plan ()) |> _assert_eq "the-newer-used-Unit-replacement-is-preserved"
+
+///> rust
+:# strengthening_cannot_remove_a_used_cell fails "Unification failure" =
+    := plan : strengthen one_unit (used usage_empty) empty_context usage_empty = StrengthenHere "removes-a-used-cell"
+    removed_depth plan |> ignore

@@ -1,0 +1,324 @@
+///- --package .
+:# ui_dom static =
+    :< testing
+
+:< sm'_operators
+:< ui_signals
+:< ui_view
+
+:| dom_op =
+    | Create : i32 * string
+    | CreateText : i32 * string
+    | SetAttr : i32 * string * string
+    | Append : i32 * i32
+    | SetText : i32 * string
+    | Listen : i32 * i32
+    | SetValue : i32 * string
+    | ListenInput : i32 * i32
+    | ListenChange : i32 * i32
+    | ListenKey : i32 * i32
+    | Remove : i32
+
+:! binding m = { node : i32; read : graph m -> string; last : string; value : bool }
+
+:== input_handler m = i32 * (string -> graph m -> graph m)
+
+:== row_entry = string * i32 * i32
+
+:! parts m = { next : i32; ops : list dom_op; binds : list (binding m); handlers : list (i32 * (graph m -> graph m)); inputs : list (input_handler m) }
+
+:| ^ keyed m =
+    | Keyed : i32 * list row_entry * (graph m -> list row_entry -> parts m -> list row_entry * parts m * list (keyed m) * list row_entry)
+
+:! mounted m = { next : i32; ops : list dom_op; binds : list (binding m); handlers : list (i32 * (graph m -> graph m)); inputs : list (input_handler m); lists : list (keyed m) }
+
+:= parts_of \* m. ((mounted s) : mounted m) : parts m = parts { next = s::next; ops = s::ops; binds = s::binds; handlers = s::handlers; inputs = s::inputs }
+
+:= mounted_of \* m. ((parts p) : parts m) : mounted m = mounted { next = p::next; ops = p::ops; binds = p::binds; handlers = p::handlers; inputs = p::inputs; lists = [] }
+
+:= parts_next \* m. ((parts p) : parts m) : i32 = p::next
+
+:= with_parts \* m. ((mounted s) : mounted m) ((parts p) : parts m) : mounted m =
+    mounted { s ?| next = p::next; ops = p::ops; binds = p::binds; handlers = p::handlers; inputs = p::inputs }
+
+:= with_lists \* m. ((mounted s) : mounted m) (ks : list (keyed m)) : mounted m = mounted { s ?| lists = listm::append s::lists ks }
+
+:= lists_of \* m. ((mounted s) : mounted m) : list (keyed m) = s::lists
+
+:= quiet \* m. ((parts p) : parts m) : parts m = parts { p ?| ops = [] }
+
+:= in_rows (rows : list row_entry) (node : i32) : bool = listm::fold (\ acc (_, lo, hi) => acc || (node >= lo && node < hi)) !- rows
+
+:= alive \* m. (gone : list row_entry) ((binding b) : binding m) : bool = ? in_rows gone b::node ?> !- |: !+
+
+:= drop_rows \* m. (gone : list row_entry) ((parts p) : parts m) : parts m =
+    parts { p ?| ops = listm::fold (\ acc (_, root, _) => Remove root :: acc) p::ops gone; binds = listm'::filter (alive gone) p::binds }
+
+:= row_of (key : string) (rows : list row_entry) : option row_entry = listm::fold (\ acc (k, lo, hi) => ? k = key ?> Some (k, lo, hi) |: acc) None rows
+
+:= gone_rows (keys : list string) (rows : list row_entry) : list row_entry = listm'::filter (\ (k, _, _) => ? listm'::contains k keys ?> !- |: !+) rows
+
+:= kept_rows (keys : list string) (rows : list row_entry) : list row_entry = listm'::filter (\ (k, _, _) => listm'::contains k keys) rows
+
+:= first_row (key : string) (rows : list row_entry) : option row_entry =
+    ?= rows ?|
+    | (k, lo, hi) :: _ => ? k = key ?> Some (k, lo, hi) |: None
+    | [] => None
+
+:= tail_rows (rows : list row_entry) : list row_entry =
+    ?= rows ?|
+    | _ :: rest => rest
+    | [] => []
+
+:= move_row \* m. (p : i32) ((_, root, _) : row_entry) ((parts s) : parts m) : parts m = parts { s ?| ops = Append (p, root) :: s::ops }
+
+:== syncing m = list row_entry * parts m * list row_entry * bool * list (keyed m)
+
+:== resync m = list (keyed m) * parts m * list row_entry
+
+:== patching m = list dom_op * list (binding m)
+
+:= start \* m. () : mounted m = mounted { next = 1i32; ops = []; binds = []; handlers = []; inputs = []; lists = [] }
+
+:= type_in \* m. (g : graph m) ((mounted s) : mounted m) (i : i32) (text : string) : graph m =
+    listm::fold (\ acc (j, f) => ? j = i ?> f text acc |: acc) g s::inputs
+
+:= listen \* m. (root : i32) (f : graph m -> graph m) ((mounted s) : mounted m) : mounted m =
+    := i = listm::length s::handlers
+    mounted { s ?| ops = Listen (root, i) :: s::ops; handlers = (i, f) :: s::handlers }
+
+:= click \* m. (g : graph m) ((mounted s) : mounted m) (i : i32) : graph m =
+    listm::fold (\ acc (j, f) => ? j = i ?> f acc |: acc) g s::handlers
+
+:= last_id \* m. ((mounted s) : mounted m) : i32 = s::next - 1i32
+
+:= next_id \* m. ((mounted s) : mounted m) : i32 = s::next
+
+:= with_node \* m. ((mounted s) : mounted m) (parent : i32) (op : dom_op) : mounted m =
+    mounted { s ?| next = s::next + 1i32; ops = Append (parent, s::next) :: op :: s::ops }
+
+:= text_node \* m. (parent : i32) (text : string) ((mounted s) : mounted m) : mounted m =
+    with_node (mounted s) parent (CreateText (s::next, text))
+
+:= with_attr \* m e. ((mounted s) : mounted m) (a : attr e) : mounted m =
+    ?= attr_pair a ?|
+    | (name, value) => mounted { s ?| ops = SetAttr (s::next - 1i32, name, value) :: s::ops }
+
+:= element \* m e k c. (parent : i32) (t : element e k c) (attrs : list (attr e)) ((mounted s) : mounted m) : mounted m =
+    listm::fold with_attr (with_node (mounted s) parent (Create (s::next, tag_name t))) attrs
+
+:= new_binding \* m. (g : graph m) (id : i32) (read : graph m -> string) (value : bool) : binding m = binding { node = id; read = read; last = read g; value = value }
+
+:= with_binding \* m. (b : binding m) ((mounted t) : mounted m) : mounted m = mounted { t ?| binds = b :: t::binds }
+
+:= bind_leaf \* m. (g : graph m) (parent : i32) (read : graph m -> string) (st : mounted m) : mounted m =
+    := t = text_node parent (read g) st
+    with_binding (new_binding g (last_id t) read !-) t
+
+:= leaf_node \* m. (g : graph m) (parent : i32) (l : leaf m) (st : mounted m) : mounted m =
+    ?= l ?|
+    | Text text => text_node parent text st
+    | Bound read => bind_leaf g parent read st
+
+:= listen_input \* m. (id : i32) (v : string) (f : string -> graph m -> graph m) ((mounted t) : mounted m) : mounted m =
+    := i = listm::length t::inputs
+    mounted { t ?| ops = ListenInput (id, i) :: SetValue (id, v) :: t::ops; inputs = (i, f) :: t::inputs }
+
+:= listen_text \* m. (op : i32 * i32 -> dom_op) (root : i32) (f : string -> graph m -> graph m) ((mounted t) : mounted m) : mounted m =
+    := i = listm::length t::inputs
+    mounted { t ?| ops = op (root, i) :: t::ops; inputs = (i, f) :: t::inputs }
+
+:= input_node \* m. (g : graph m) (p : i32) (read : graph m -> string) (f : string -> graph m -> graph m) (s : mounted m) : mounted m =
+    := id = next_id s
+    listen_input id (read g) f (with_binding (new_binding g id read !+) (with_node s p (Create (id, "input"))))
+
+:= children \* m a. (go : i32 -> a -> mounted m -> mounted m) (opened : mounted m) (xs : list a) : mounted m =
+    listm::fold (\ acc x => go (last_id opened) x acc) opened xs
+
+:= ^ mount \* m k. (g : graph m) (p : i32) (v : view m k) (s : mounted m) : mounted m =
+    ?= v ?|
+    | Leaf l => leaf_node g p l s
+    | Element q =>
+        := \? e c. t, attrs, xs = q
+        children (mount g) (element p t attrs s) xs
+    | _ => mount_click g p v s
+
+:& := mount_click \* m k. (g : graph m) (p : i32) (v : view m k) (s : mounted m) : mounted m =
+    ?= v ?|
+    | Clickable (f, inner) => listen (next_id s) f (mount g p inner s)
+    | Input (InputOf (read, f)) => input_node g p read f s
+    | Changed (f, inner) => listen_text (\ x => ListenChange x) (next_id s) f (mount g p inner s)
+    | KeyUp (f, inner) => listen_text (\ x => ListenKey x) (next_id s) f (mount g p inner s)
+    | _ => mount_each g p v s
+
+:& := mount_each \* m k. (g : graph m) (p : i32) (v : view m k) (s : mounted m) : mounted m =
+    ?= v ?|
+    | Each q =>
+        := \? r. read, key, row = q
+        := sync = sync_rows read key row p
+        := (rows, ps, born, _) = sync g [] (parts_of s)
+        with_lists (with_parts s ps) (Keyed (p, rows, sync) :: born)
+    | _ => s
+
+:& := sync_rows \* m k r. (read : graph m -> list r) (key : r -> string) (row : r -> view m k) (p : i32) (g : graph m) (rows : list row_entry) (ps : parts m)
+    : list row_entry * parts m * list (keyed m) * list row_entry
+    =
+    := items = read g
+    := keys = listm::map key items
+    := gone = gone_rows keys rows
+    := (entries, out, _, _, born) = listm::fold (add_row key row p g rows) ([], drop_rows gone ps, kept_rows keys rows, !-, []) items
+    listm::rev entries, out, born, gone
+
+:& := add_row \* m k r. (key : r -> string) (row : r -> view m k) (p : i32) (g : graph m) (rows : list row_entry) ((acc, ps, rest, moving, born) : syncing m) (x : r) : syncing m =
+    := k = key x
+    := head = ? moving ?> None |: first_row k rest
+    ?= head ?|
+    | Some e => e :: acc, ps, tail_rows rest, !-, born
+    | None =>
+        ?= row_of k rows ?|
+        | Some e => e :: acc, move_row p e ps, rest, !+, born
+        | None =>
+            := mounted_row = mount g p (row x) (mounted_of ps)
+            := after = parts_of mounted_row
+            (k, parts_next ps, parts_next after) :: acc, after, rest, !+, listm::append born (lists_of mounted_row)
+
+:= ops_of \* m. ((mounted s) : mounted m) : list dom_op = listm::rev s::ops
+
+:= patch_of \* m. ((binding b) : binding m) (now : string) : dom_op = ? b::value ?> SetValue (b::node, now) |: SetText (b::node, now)
+
+:= refresh_one \* m. (g : graph m) ((binding b) : binding m) ((ops, kept) : patching m) : patching m =
+    := now = b::read g
+    ? now = b::last ?> ops, binding b :: kept |: patch_of (binding b) now :: ops, binding { b ?| last = now } :: kept
+
+:= sync_list \* m. (g : graph m) ((kept, ps, gone) : resync m) (k : keyed m) : resync m =
+    ?= k ?|
+    | Keyed (p, rows, sync) =>
+        ? in_rows gone p ?> kept, ps, gone
+        |:
+            := (now, out, born, dropped) = sync g rows ps
+            listm::fold (\ acc b => b :: acc) (Keyed (p, now, sync) :: kept) born, out, listm::append gone dropped
+
+:= settle \* m. (g : graph m) ((mounted s) : mounted m) (lists : list (keyed m)) ((parts p) : parts m) : list dom_op * mounted m =
+    := (ops, kept) = listm::fold (\ acc b => refresh_one g b acc) ([], []) p::binds
+    := settled = mounted { s ?| next = p::next; binds = listm::rev kept; handlers = p::handlers; inputs = p::inputs; lists = listm::rev lists }
+    listm::rev (listm::append ops p::ops), settled
+
+:= refresh \* m. (g : graph m) (st : mounted m) : list dom_op * mounted m =
+    := (mounted s) = st
+    := (kept, ps, _) = listm::fold (sync_list g) ([], quiet (parts_of st), []) s::lists
+    settle g st kept ps
+
+:= first_op (ops : list dom_op) : option dom_op =
+    ?= ops ?|
+    | op :: _ => Some op
+    | [] => None
+
+:= is_attr (op : dom_op) : bool =
+    ?= op ?|
+    | SetAttr _ => !+
+    | _ => !-
+
+:= is_listen (op : dom_op) : bool =
+    ?= op ?|
+    | Listen _ => !+
+    | _ => !-
+
+:= mount_counter (g : graph probe_model) : mounted probe_model = mount g 0i32 (counter_view ()) (start ())
+
+///> rust
+///> typescript
+:# a_mount_emits_each_node_once_with_its_attributes =
+    := ops = ops_of (mount_counter (probe_graph ()))
+    (listm::length ops, first_op ops, listm::length (listm'::filter is_attr ops)) |> _assert_eq (23i32, Some (Create (1i32, "div")), 3i32)
+
+:= bump (g : graph probe_model) : graph probe_model = set g (a_signal ()) (get g (a_signal ()) + 1i32)
+
+:= clicker_view () : view probe_model flow = el (Basic DivTag) [] [el (Basic ParaTag) [] [bound (a_signal ()) sm'::show; on_click bump (el (Basic SpanTag) [] [text "+"])]]
+
+:= clicked (g : graph probe_model) : list dom_op * list dom_op =
+    := m = mount g 0i32 (clicker_view ()) (start ())
+    listm'::filter is_listen (ops_of m), fst (refresh (click g m 0i32) m)
+
+///> rust
+///> typescript
+:# a_click_runs_its_handler_and_patches_the_bound_text_in_place =
+    clicked (probe_graph ()) |> _assert_eq ([Listen (4i32, 0i32)], [SetText (3i32, "1")])
+
+:= echo_view () : view probe_model flow = el (Basic DivTag) [] [el (Basic ParaTag) [] [input_of (label_signal ()); bound (label_signal ()) id]]
+
+:= typed (g : graph probe_model) : list dom_op =
+    := m = mount g 0i32 (echo_view ()) (start ())
+    fst (refresh (type_in g m 0i32 "hi") m)
+
+///> rust
+///> typescript
+:# typing_into_an_input_patches_its_value_and_the_bound_text =
+    typed (probe_graph ()) |> _assert_eq [SetText (4i32, "hi"); SetValue (3i32, "hi")]
+
+///> rust
+///> typescript
+:# a_set_patches_only_the_changed_text_node =
+    := g = set (probe_graph ()) (label_signal ()) "x"
+    := (_, m) = refresh g (mount_counter (probe_graph ()))
+    refresh (set g (a_signal ()) 7i32) m |> fst |> _assert_eq [SetText (4i32, "7")]
+
+:= keyed_patches () : list dom_op * list dom_op =
+    := m = mount (rows_graph ["a"; "b"; "c"]) 0i32 (ledger_rows ()) (start ())
+    := (still, _) = refresh (rows_graph ["a"; "b"; "c"]) m
+    still, fst (refresh (rows_graph ["a"; "c"; "d"]) m)
+
+///> rust
+///> typescript
+:# a_keyed_list_removes_vanished_rows_and_mounts_only_new_keys =
+    keyed_patches ()
+    |> _assert_eq ([], [Remove 6i32; Create (12i32, "tr"); Append (2i32, 12i32); Create (13i32, "td"); Append (12i32, 13i32); CreateText (14i32, "d"); Append (13i32, 14i32)])
+
+:= keyed_moves () : list dom_op * list dom_op =
+    := two = mount (rows_graph ["a"; "b"]) 0i32 (ledger_rows ()) (start ())
+    := three = mount (rows_graph ["a"; "b"; "c"]) 0i32 (ledger_rows ()) (start ())
+    fst (refresh (rows_graph ["a"; "c"; "b"]) two), fst (refresh (rows_graph ["c"; "a"; "b"]) three)
+
+///> rust
+///> typescript
+:# a_key_inserted_mid_list_mounts_then_moves_the_rows_after_it_and_a_reorder_only_moves =
+    keyed_moves ()
+    |> _assert_eq ([Create (9i32, "tr"); Append (2i32, 9i32); Create (10i32, "td"); Append (9i32, 10i32); CreateText (11i32, "c"); Append (10i32, 11i32); Append (2i32, 6i32)], [Append (2i32, 9i32); Append (2i32, 3i32); Append (2i32, 6i32)])
+
+:= relabel (v : string) (g : graph probe_model) : graph probe_model = set g (label_signal ()) v
+
+:= picker_view () : view probe_model flow =
+    := chooser = el (control SelectTag) [] [el (control OptionTag) [] [text "a"]; el (control OptionTag) [] [text "b"]]
+    el (Basic DivTag) [] [el (Basic ParaTag) [] [on_change relabel chooser; on_keyup relabel (input_of (label_signal ())); bound (label_signal ()) id]]
+
+:= picked (g : graph probe_model) : list dom_op * list dom_op * list dom_op =
+    := m = mount g 0i32 (picker_view ()) (start ())
+    := listens = listm'::filter (\ op => ?= op ?| | ListenChange _ => !+ | ListenKey _ => !+ | _ => !-) (ops_of m)
+    listens, fst (refresh (type_in g m 0i32 "b") m), fst (refresh (type_in g m 2i32 "Enter") m)
+
+///> rust
+///> typescript
+:# a_select_change_and_a_keyup_deliver_their_text_to_the_handler =
+    picked (probe_graph ())
+    |> _assert_eq ([ListenChange (3i32, 0i32); ListenKey (8i32, 2i32)], [SetText (9i32, "b"); SetValue (8i32, "b")], [SetText (9i32, "Enter"); SetValue (8i32, "Enter")])
+
+:== group = string * list string
+
+:== groups_model = { groups : list group }
+
+:= groups_signal () : signal groups_model (list group) =
+    signal { id = 0i32; read = \(x : groups_model) => x::groups; write = \(x : groups_model) (v : list group) => { x ?| groups = v } }
+
+:= items_of (name : string) (g : graph groups_model) : list string = listm::fold (\ acc (n, xs) => ? n = name ?> xs |: acc) [] (get g (groups_signal ()))
+
+:= group_view ((name, _) : group) : view groups_model flow = el (Basic ParaTag) [] [each_by (items_of name) id (\(s : string) => el (Basic SpanTag) [] [text s])]
+
+:= groups_graph (gs : list group) : graph groups_model = empty { groups = gs }
+
+:= nested_patches () : list dom_op * list dom_op =
+    := m = mount (groups_graph [("a", ["1"; "2"]); ("b", ["3"])]) 0i32 (el (Basic DivTag) [] [each (groups_signal ()) fst group_view]) (start ())
+    fst (refresh (groups_graph [("a", ["1"; "3"]); ("b", ["3"])]) m), fst (refresh (groups_graph [("b", ["3"])]) m)
+
+///> rust
+///> typescript
+:# an_inner_keyed_list_patches_in_place_and_disappears_with_its_row =
+    nested_patches () |> _assert_eq ([Remove 5i32; Create (10i32, "span"); Append (2i32, 10i32); CreateText (11i32, "3"); Append (10i32, 11i32)], [Remove 2i32])

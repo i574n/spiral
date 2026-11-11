@@ -838,3 +838,36 @@
     := first = Lam (name "a", Default, nat (), Lam (name "b", Default, nat (), BVar 1i32))
     whnf env (apply_all (Const (name "Pair.rec", [ Succ Zero ])) [ nat (); nat (); motive; first; p ]) 20i32
     |> _assert_eq (Whnf (Proj (name "Pair", 0i32, p), [ Iota "Pair.rec"; Beta; Beta ]))
+
+:~ rec_on_zero (motive : term) (zero_case : term) (step : term) : bool =
+    := t = apply_all (Const (name "Nat.rec", [ Succ Zero ])) [ motive; zero_case; step; Const (name "zero", []) ]
+    ?= infer (nat_env ()) [] t ?|
+    | Rejected _ => !+
+    | Typed _ => !-
+
+:~ nat_motive () : term = Lam (name "n", Default, nat (), nat ())
+
+:~ nat_step () : term = Lam (name "n", Default, nat (), Lam (name "ih", Default, nat (), BVar 1i32))
+
+:~ prop_step () : term = Lam (name "n", Default, nat (), Lam (name "ih", Default, nat (), Sort Zero))
+
+///> rust
+:# a_recursor_refuses_methods_from_the_wrong_category =
+    := z = Const (name "zero", [])
+    := on = rec_on_zero (nat_motive ())
+    (on z (nat_step ()), on (nat_step ()) z, on z (prop_step ()), rec_on_zero z z (nat_step ())) |> _assert_eq (!-, !+, !+, !+)
+
+///> rust
+:# a_defeq_verdict_cannot_be_forged_outside_conversion fails "UnboundVariable" =
+    := forged = Same []
+    forged |> ignore
+
+///> rust
+:# a_typing_verdict_cannot_be_forged_outside_typing fails "UnboundVariable" =
+    := forged = Typed (Sort Zero)
+    forged |> ignore
+
+///> rust
+:# a_qualified_defeq_constructor_is_not_exported fails "ModuleIndexFailed" =
+    := forged = conversion::Same []
+    forged |> ignore

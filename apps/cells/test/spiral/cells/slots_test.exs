@@ -90,7 +90,7 @@ defmodule Spiral.Cells.SlotsTest do
     end
 
     assert {:ok, %Result{value: "7", phases: phases}} =
-             Spiral.Cells.run("7i32",
+             Spiral.Cells.run("///> rust\n7i32",
                compile: fn _ ->
                  send(releaser, :go)
                  {:ok, @rust}

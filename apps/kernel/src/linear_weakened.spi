@@ -1,0 +1,579 @@
+///- --package .
+:# linear_weakened static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+:< linear_terms
+:< linear_substitution
+:< linear_renaming
+:< linear_reduction
+:< linear_open_substitution
+:< linear_strengthening
+
+:= ^ slot_of \* c s d. (m : membership c s d) : i32 =
+    ?= m ?|
+    | MembershipHere _ => 0i32
+    | MembershipThere (rest, _) => 1i32 + slot_of rest
+
+:= var_slot \* c u y. (t : term c u y) : i32 =
+    ?= t ?|
+    | Variable (VariableAt p) =>
+        := \? s. m, _, _ = p
+        slot_of m
+    | _ => -1i32
+
+:= var_of \* c s d u. (m : membership c s d) (su : single_use c s d u) (note : string) : term c u d =
+    Variable (VariableAt (\? (m, su, note)))
+
+:= pair_slots \* c u l r. (t : term c u (tensor_type l r)) : i32 * i32 =
+    ?= t ?|
+    | Intro (Tensor p) =>
+        := \? a b. x, y, _, _ = p
+        var_slot x, var_slot y
+    | _ => -1i32, -1i32
+
+:= apply_slots \* c u y. (t : term c u y) : i32 * i32 =
+    ?= t ?|
+    | Elim (Apply p) =>
+        := \? d f a. x, z, _, _ = p
+        var_slot x, var_slot z
+    | _ => -1i32, -1i32
+
+:= unit_cell () : membership unit_bool (meta_succ zero) unit_type = MembershipThere (MembershipHere "older-Unit", "crosses-Bool")
+
+:= unit_use () : single_use unit_bool (meta_succ zero) unit_type (unused (used usage_empty)) =
+    SingleUseThere (SingleUseHere (empty_usage (), "Unit-used-once"), "Bool-unused-by-Unit")
+
+:= bool_cell () : membership unit_bool zero bool_type = MembershipHere "newest-Bool"
+
+:= bool_use () : single_use unit_bool zero bool_type (used (unused usage_empty)) =
+    SingleUseHere (AllUnusedExtend (empty_usage (), "Unit-unused-by-Bool"), "Bool-used-once")
+
+:= tail_merge () : usage_merge one_unit (used usage_empty) (unused usage_empty) (used usage_empty) =
+    MergeStep (\? (LeftOnly "Unit-only-left", MergeEmpty "empty-tail", "older-cell"))
+
+:== pair_total = used (used usage_empty)
+
+:= pair_merge () : usage_merge unit_bool (unused (used usage_empty)) (used (unused usage_empty)) pair_total =
+    MergeStep (\? (RightOnly "Bool-only-right", tail_merge (), "newest-cell"))
+
+:= closed_pair () : term unit_bool pair_total (tensor_type unit_type bool_type) =
+    := left = var_of (unit_cell ()) (unit_use ()) "Unit-variable"
+    Intro (Tensor (\? (left, var_of (bool_cell ()) (bool_use ()) "Bool-variable", pair_merge (), "two-variable-tensor")))
+
+:= all_used_pair () : all_used unit_bool pair_total = AllUsedExtend (AllUsedExtend (AllUsedEmpty "empty-tail", "Unit-used"), "Bool-used")
+
+:= closed_unit_bool () : fully_used_term unit_bool (tensor_type unit_type bool_type) =
+    FullyUsed (\? (closed_pair (), all_used_pair (), AllUsedConsumesTheContext))
+
+:== weakened = extend unit_bool unit_type
+
+:= weak_merge () : usage_merge weakened (unused (unused (used usage_empty))) (unused (used (unused usage_empty))) (unused pair_total) =
+    MergeStep (\? (Neither "new-head-unused", pair_merge (), "weakened-head"))
+
+:= weak_pair () : term weakened (unused pair_total) (tensor_type unit_type bool_type) =
+    := left = weaken (unit_cell ()) (unit_use ())
+    Intro (Tensor (\? (left, weaken (bool_cell ()) (bool_use ()), weak_merge (), "weakened-tensor")))
+
+:== bool_fn = arrow_type bool_type bool_type
+
+:== fn_arg = extend (extend empty_context bool_type) bool_fn
+
+:= fn_cell () : membership fn_arg zero bool_fn = MembershipHere "newest-function"
+
+:= fn_use () : single_use fn_arg zero bool_fn (used (unused usage_empty)) =
+    SingleUseHere (AllUnusedExtend (empty_usage (), "argument-unused-by-function"), "function-used-once")
+
+:= arg_cell () : membership fn_arg (meta_succ zero) bool_type = MembershipThere (MembershipHere "older-argument", "crosses-function")
+
+:= arg_use () : single_use fn_arg (meta_succ zero) bool_type (unused (used usage_empty)) =
+    SingleUseThere (SingleUseHere (empty_usage (), "argument-used-once"), "function-unused-by-argument")
+
+:= arg_tail () : usage_merge (extend empty_context bool_type) (unused usage_empty) (used usage_empty) (used usage_empty) =
+    MergeStep (\? (RightOnly "argument-only-right", MergeEmpty "empty-tail", "older-cell"))
+
+:= apply_merge () : usage_merge fn_arg (used (unused usage_empty)) (unused (used usage_empty)) pair_total =
+    MergeStep (\? (LeftOnly "function-only-left", arg_tail (), "newest-cell"))
+
+:= weak_apply_merge () : usage_merge (extend fn_arg unit_type) (unused (used (unused usage_empty))) (unused (unused (used usage_empty))) (unused pair_total) =
+    MergeStep (\? (Neither "new-head-unused", apply_merge (), "weakened-head"))
+
+:= weak_apply () : term (extend fn_arg unit_type) (unused pair_total) bool_type =
+    := f = weaken (fn_cell ()) (fn_use ())
+    Elim (Apply (\? (f, weaken (arg_cell ()) (arg_use ()), weak_apply_merge (), "weakened-application")))
+
+///> rust
+:# a_closed_unit_bool_tensor_uses_both_cells_and_is_closed_by_its_usage =
+    (pair_slots (closed_pair ()), size (closed_pair ()), fully_used_reason (closed_unit_bool ())) |> _assert_eq ((1i32, 0i32), 3i32, AllUsedConsumesTheContext)
+
+///> rust
+:# weakening_the_tensor_shifts_both_variables_one_slot_up =
+    pair_slots (weak_pair ()) |> _assert_eq (2i32, 1i32)
+
+///> rust
+:# weakening_the_application_shifts_function_and_argument_one_slot_up =
+    apply_slots (weak_apply ()) |> _assert_eq (1i32, 2i32)
+
+:| ^ outer_plan sc su tc tu =
+    | OuterSame :: \* c u. string -> outer_plan c u c u
+    | OuterMore :: \* sc su mc mu h. outer_plan sc su mc mu * string -> outer_plan sc su (extend mc h) (unused mu)
+
+:= ^ outer_unused \* sc su tc tu. (plan : outer_plan sc su tc tu) (p : all_unused sc su) : all_unused tc tu =
+    ?= plan ?|
+    | OuterSame _ => p
+    | OuterMore (rest, n) => AllUnusedExtend (outer_unused rest p, n)
+
+:= ^ compose \* a b c d e f. (first : outer_plan a b c d) (second : outer_plan c d e f) : outer_plan a b e f =
+    ?= second ?|
+    | OuterSame _ => first
+    | OuterMore (rest, n) => OuterMore (compose first rest, n)
+
+:= ^ plan_steps \* sc su tc tu. (plan : outer_plan sc su tc tu) : i32 =
+    ?= plan ?|
+    | OuterSame _ => 0i32
+    | OuterMore (rest, _) => 1i32 + plan_steps rest
+
+:= ^ unused_count \* c u. (p : all_unused c u) : i32 =
+    ?= p ?|
+    | AllUnusedEmpty _ => 0i32
+    | AllUnusedExtend (rest, _) => 1i32 + unused_count rest
+
+:== unit_fn = arrow_type unit_type unit_type
+
+:= identity_over \* c u. (outer : all_unused c u) : term c u unit_fn =
+    := body = var_of (MembershipHere "bound-Unit") (SingleUseHere (outer, "bound-used-once")) "identity-body"
+    Intro (Lambda (body, "identity-over-unused-outer-cells"))
+
+:= weaken_identity \* sc su tc tu. (plan : outer_plan sc su tc tu) (outer : all_unused sc su) : term tc tu unit_fn =
+    identity_over (outer_unused plan outer)
+
+:= use_outer \* c s d u. (su : single_use c s d u) : i32 =
+    ?= su ?|
+    | SingleUseHere (p, _) => unused_count p
+    | _ => -1i32
+
+:= body_shape \* c u y. (t : term c u y) : i32 * i32 =
+    ?= t ?|
+    | Variable (VariableAt p) =>
+        := \? s. m, su, _ = p
+        slot_of m, use_outer su
+    | _ => -1i32, -1i32
+
+:= lambda_shape \* c u. (t : term c u unit_fn) : i32 * i32 =
+    ?= t ?|
+    | Intro (Lambda (body, _)) => body_shape body
+    | _ => -1i32, -1i32
+
+:== bool_outer = extend empty_context bool_type
+
+:== bool_unit_outer = extend bool_outer unit_type
+
+:== three_outer = extend bool_unit_outer bool_type
+
+:== one_unused = unused usage_empty
+
+:== two_unused = unused one_unused
+
+:= add_bool () : outer_plan empty_context usage_empty bool_outer one_unused = OuterMore (OuterSame "source", "add-Bool")
+
+:= add_unit () : outer_plan bool_outer one_unused bool_unit_outer two_unused = OuterMore (OuterSame "middle", "add-Unit")
+
+:= add_late () : outer_plan bool_unit_outer two_unused three_outer (unused two_unused) = OuterMore (OuterSame "late", "add-Bool")
+
+:= both_steps () : outer_plan empty_context usage_empty bool_unit_outer two_unused = OuterMore (add_bool (), "add-Unit")
+
+:= sequential () : i32 * i32 =
+    := first = add_bool ()
+    lambda_shape (weaken_identity (add_unit ()) (outer_unused first (empty_usage ())))
+
+:== assoc_plan = outer_plan empty_context usage_empty three_outer (unused two_unused)
+
+:= left_plan () : assoc_plan = compose (compose (add_bool ()) (add_unit ())) (add_late ())
+
+:= right_plan () : assoc_plan = compose (add_bool ()) (compose (add_unit ()) (add_late ()))
+
+:= plan_facts (plan : assoc_plan) : i32 * i32 = plan_steps plan, unused_count (outer_unused plan (empty_usage ()))
+
+:= composed () : outer_plan empty_context usage_empty bool_unit_outer two_unused = compose (add_bool ()) (add_unit ())
+
+///> rust
+:# a_weakened_identity_keeps_its_bound_variable_at_slot_zero =
+    lambda_shape (weaken_identity (add_bool ()) (empty_usage ())) |> _assert_eq (0i32, 1i32)
+
+///> rust
+:# two_weakening_steps_leave_both_outer_cells_unused =
+    sequential () |> _assert_eq (0i32, 2i32)
+
+///> rust
+:# one_two_step_plan_weakens_like_the_two_steps =
+    (plan_steps (both_steps ()), lambda_shape (weaken_identity (both_steps ()) (empty_usage ()))) |> _assert_eq (2i32, (0i32, 2i32))
+
+///> rust
+:# the_composed_plan_weakens_like_its_parts_applied_in_turn =
+    (plan_steps (composed ()), lambda_shape (weaken_identity (composed ()) (empty_usage ())), sequential ()) |> _assert_eq (2i32, (0i32, 2i32), (0i32, 2i32))
+
+///> rust
+:# plan_composition_is_associative_in_steps_and_unused_cells =
+    (plan_facts (left_plan ()), plan_facts (right_plan ())) |> _assert_eq ((3i32, 3i32), (3i32, 3i32))
+
+:| ^ shape context =
+    | ShapeEmpty :: string -> shape empty_context
+    | ShapeExtend :: \* t d. shape t * string -> shape (extend t d)
+
+:| ^ spine context =
+    | SpineDone :: string -> spine empty_context
+    | SpineMore :: \* t d. spine t * membership (extend t d) zero d * string -> spine (extend t d)
+
+:= ^ spine_of \* c. (s : shape c) : spine c =
+    ?= s ?|
+    | ShapeEmpty n => SpineDone n
+    | ShapeExtend (rest, _) => SpineMore (spine_of rest, MembershipHere "newest-cell-covered-once", "tail-first")
+
+:= ^ spine_facts \* c. (s : spine c) : i32 * i32 =
+    ?= s ?|
+    | SpineDone _ => 0i32, 0i32
+    | SpineMore (rest, m, _) =>
+        := cells, slots = spine_facts rest
+        cells + 1i32, slots + slot_of m
+
+:== unit_bool_unit = extend unit_bool unit_type
+
+:= ubu_shape () : shape unit_bool_unit = ShapeExtend (ShapeExtend (ShapeExtend (ShapeEmpty "empty", "oldest-Unit"), "middle-Bool"), "newest-Unit")
+
+///> rust
+:# the_membership_spine_covers_every_cell_once_at_its_local_slot =
+    spine_facts (spine_of (ubu_shape ())) |> _assert_eq (3i32, 0i32)
+
+:| ^ usage_vector context =
+    | VectorEmpty :: string -> usage_vector empty_context
+    | VectorUsed :: \* t d. usage_vector t * string -> usage_vector (extend t d)
+    | VectorUnused :: \* t d. usage_vector t * string -> usage_vector (extend t d)
+
+:= ^ used_vector \* c. (s : shape c) : usage_vector c =
+    ?= s ?|
+    | ShapeEmpty n => VectorEmpty n
+    | ShapeExtend (rest, _) => VectorUsed (used_vector rest, "every-cell-consumed")
+
+:= ^ unused_vector \* c. (s : shape c) : usage_vector c =
+    ?= s ?|
+    | ShapeEmpty n => VectorEmpty n
+    | ShapeExtend (rest, _) => VectorUnused (unused_vector rest, "cell-unused")
+
+:= ^ use_vector \* c s d. (sh : shape c) (m : membership c s d) : usage_vector c =
+    ?= sh, m ?|
+    | ShapeExtend (r, _), MembershipHere _ => VectorUsed (unused_vector r, "here")
+    | ShapeExtend (r, _), MembershipThere (i, _) => VectorUnused (use_vector r i, "there")
+
+:= shift_facts (bit : i32) ((cells, used, bits) : i32 * i32 * i32) : i32 * i32 * i32 = cells + 1i32, used + bit, bits * 2i32 + bit
+
+:= ^ vector_facts \* c. (v : usage_vector c) : i32 * i32 * i32 =
+    ?= v ?|
+    | VectorEmpty _ => 0i32, 0i32, 0i32
+    | VectorUnused (rest, _) => shift_facts 0i32 (vector_facts rest)
+    | VectorUsed (rest, _) => shift_facts 1i32 (vector_facts rest)
+
+:| indexed_at context slot ty =
+    | IndexedFree :: \* c s d. shape c * membership c s d * string -> indexed_at c s d
+    | IndexedLambda :: \* c s d. shape c * membership c s d * string -> indexed_at c s (arrow_type d (tensor_type d d))
+
+:== term_facts = i32 * i32 * i32 * i32 * i32
+
+:= facts_of \* c s d. (tag : i32) (sh : shape c) (m : membership c s d) : term_facts =
+    := cells, used, bits = vector_facts (use_vector sh m)
+    tag, slot_of m, cells, used, bits + 1i32
+
+:= indexed_facts \* c s y. (t : indexed_at c s y) : term_facts =
+    ?= t ?|
+    | IndexedFree (sh, m, _) => facts_of 0i32 sh m
+    | IndexedLambda (sh, m, _) => facts_of 1i32 sh m
+
+:= add_facts ((a, b, c, d, e) : term_facts) ((f, g, h, i, j) : term_facts) : term_facts = a + f, b + g, c + h, d + i, e + j
+
+:= ub_shape () : shape unit_bool = ShapeExtend (ShapeExtend (ShapeEmpty "empty", "older-Unit"), "newest-Bool")
+
+:= lambda_at \* s d. (m : membership unit_bool s d) : indexed_at unit_bool s (arrow_type d (tensor_type d d)) = IndexedLambda (ub_shape (), m, "pair-the-cell")
+
+:= both_lambdas () : term_facts = add_facts (indexed_facts (lambda_at (unit_cell ()))) (indexed_facts (lambda_at (bool_cell ())))
+
+///> rust
+:# a_used_vector_from_a_shape_consumes_every_cell =
+    (vector_facts (used_vector (ubu_shape ())), vector_facts (unused_vector (ubu_shape ()))) |> _assert_eq ((3i32, 3i32, 7i32), (3i32, 0i32, 0i32))
+
+///> rust
+:# context_indexed_lambdas_at_each_cell_sum_to_the_sample_facts =
+    both_lambdas () |> _assert_eq (2i32, 1i32, 4i32, 2i32, 5i32)
+
+:= ^ compose_renaming \* a b c d e f g h i x. (first : renaming a b c d e f x) (second : renaming d e f g h i x) : renaming a b c g h i x =
+    ?= second ?|
+    | RenameIdentity _ => first
+    | RenameWeaken (p, n) => RenameWeaken (compose_renaming first p, n)
+
+:= first_step () : renaming one_unit zero (used usage_empty) unit_bool (meta_succ zero) (unused (used usage_empty)) unit_type = RenameWeaken (RenameIdentity "source", "add-Bool")
+
+:= two_steps () : renaming unit_bool (meta_succ zero) (unused (used usage_empty)) three_heads three_slot three_usage unit_type =
+    RenameWeaken (RenameWeaken (RenameIdentity "middle", "add-Unit"), "add-Bool")
+
+:= composed_steps () : three_plan = compose_renaming (first_step ()) (two_steps ())
+
+:= sequential_slot () : i32 =
+    := m = renamed_membership (first_step ()) (only_membership ())
+    var_slot (renamed_variable (two_steps ()) m (renamed_single_use (first_step ()) (only_single_use ())))
+
+:= direct_slot () : i32 = var_slot (renamed_variable (composed_steps ()) (only_membership ()) (only_single_use ()))
+
+:= renamed_slots () : i32 * i32 * i32 * i32 =
+    direct_slot (), sequential_slot (), renaming_depth (composed_steps ()), renaming_depth (first_step ()) + renaming_depth (two_steps ())
+
+///> rust
+:# composed_renaming_plans_rename_like_their_parts_in_turn =
+    renamed_slots () |> _assert_eq (3i32, 3i32, 3i32, 3i32)
+
+:= if_tags \* c u y. (t : term c u y) : i32 * i32 * i32 * i32 =
+    ?= t ?|
+    | Elim (If p) =>
+        := \? g b. x, y, z, _, _ = p
+        outer_tag t, outer_tag x, outer_tag y, outer_tag z
+    | _ => -1i32, -1i32, -1i32, -1i32
+
+:= tensor_tags \* c u l r. (t : term c u (tensor_type l r)) : i32 * i32 * i32 =
+    ?= t ?|
+    | Intro (Tensor p) =>
+        := \? a b. x, y, _, _ = p
+        outer_tag t, outer_tag x, outer_tag y
+    | _ => -1i32, -1i32, -1i32
+
+:= closed_unit_bool () : term empty_context usage_empty (tensor_type unit_type bool_type) =
+    := right = Constant (TrueValue (empty_usage (), "right-Bool"))
+    Intro (Tensor (\? (unit_of "left-Unit", right, MergeEmpty "closed-cells", "closed-Unit-Bool")))
+
+///> rust
+:# the_closed_conditional_tags_its_guard_and_both_branches =
+    if_tags (closed_unit_conditional ()) |> _assert_eq (7i32, 3i32, 2i32, 2i32)
+
+///> rust
+:# the_identity_substitution_keeps_a_closed_unit_bool_tensor =
+    := t = closed_unit_bool ()
+    (size t, size (idsub t), tensor_tags (idsub t)) |> _assert_eq (3i32, 3i32, (5i32, 2i32, 3i32))
+
+:== unit_unit = extend one_unit unit_type
+
+:= open_replacement () : term unit_unit (unused (used usage_empty)) unit_type =
+    := use = SingleUseThere (SingleUseHere (empty_usage (), "older-used"), "newer-unused")
+    var_of (MembershipThere (MembershipHere "older-Unit", "crosses-newer")) use "open-replacement"
+
+:== open_plan = osub unit_unit (used (unused usage_empty)) (unused (used usage_empty)) unit_type unit_type
+
+:= newer_use () : single_use unit_unit zero unit_type (used (unused usage_empty)) =
+    SingleUseHere (AllUnusedExtend (empty_usage (), "older-unused"), "newer-used")
+
+:= open_var_plan () : open_plan = OVar (\? (MembershipHere "slot-zero", newer_use (), SelectedHere "selected", open_replacement (), "open"))
+
+///> rust
+:# the_variable_case_accepts_an_open_variable_replacement =
+    (var_slot (osource (open_var_plan ())), var_slot (otarget (open_var_plan ()))) |> _assert_eq (0i32, 1i32)
+
+:= ^ osub_steps \* c u v r y. (p : osub c u v r y) : i32 =
+    ?= p ?|
+    | OVar _ => 0i32
+    | OIntro i => ointro_steps i
+    | OElim e => oelim_steps e
+
+:& := ointro_steps \* c u v r y. (p : ointro c u v r y) : i32 =
+    ?= p ?|
+    | OTensor (TLeftSide x) => left_steps x
+    | OTensor (TRightSide x) => right_steps x
+    | OLambda (body, _) => 1i32 + osub_steps body
+
+:& := left_steps \* c u v r l t. ((LeftPart q) : oleft c u v r l t) : i32 =
+    := \? a b w. x, _, _, _ = q
+    1i32 + osub_steps x
+
+:& := right_steps \* c u v r l t. ((RightPart q) : oright c u v r l t) : i32 =
+    := \? w a b. _, x, _, _ = q
+    1i32 + osub_steps x
+
+:& := oelim_steps \* c u v r y. (p : oelim c u v r y) : i32 =
+    ?= p ?|
+    | OApp (OFun f) => fun_steps f
+    | OApp (OArg g) => arg_steps g
+    | OIf (OGuard h) => guard_steps h
+    | OIf (OBranches b) => branch_steps b
+
+:& := fun_steps \* c u v r y. ((FunPart q) : ofun c u v r y) : i32 =
+    := \? d a b w. x, _, _, _ = q
+    1i32 + osub_steps x
+
+:& := arg_steps \* c u v r y. ((ArgPart q) : oarg c u v r y) : i32 =
+    := \? d w a b. _, x, _, _ = q
+    1i32 + osub_steps x
+
+:& := guard_steps \* c u v r y. ((GuardPart q) : oguard c u v r y) : i32 =
+    := \? a b w. x, _, _, _, _ = q
+    1i32 + osub_steps x
+
+:& := branch_steps \* c u v r y. ((BranchPart q) : obranch c u v r y) : i32 =
+    := \? w a b. _, yes, no, _, _ = q
+    1i32 + osub_steps yes + osub_steps no
+
+prototype steps_of p : p -> i32
+
+instance steps_of renaming sc ss su tc ts tu d = \ x => renaming_depth x
+
+instance steps_of outer_plan sc su tc tu = \ x => plan_steps x
+
+instance steps_of strengthen sc su tc tu = \ x => removed_depth x
+
+instance steps_of osub c u v r y = \ x => osub_steps x
+
+///> rust
+:# one_steps_of_prototype_counts_renaming_and_weakening_plans =
+    (steps_of (three_steps ()), steps_of (both_steps ()), steps_of (composed_steps ()), steps_of (context_plan ())) |> _assert_eq (3i32, 2i32, 3i32, 1i32)
+
+///> rust
+:# the_same_prototype_counts_open_substitution_descents =
+    (steps_of (var_plan ()), steps_of (arg_plan ()), steps_of (lambda_plan ()), steps_of (fun_plan ())) |> _assert_eq (0i32, 1i32, 2i32, 3i32)
+
+///> rust
+:# a_choice_substitution_target_cannot_keep_the_source_usage fails "Unification failure" =
+    := p : osub unit_unit (used (unused usage_empty)) (used (unused usage_empty)) unit_type unit_type = open_var_plan ()
+    p |> ignore
+
+:= bool_in_unit_unit () : term unit_unit (unused (unused usage_empty)) bool_type =
+    Constant (TrueValue (AllUnusedExtend (AllUnusedExtend (empty_usage (), "o"), "n"), "b"))
+
+:== quiet_plan = osub unit_unit (used (unused usage_empty)) (unused (unused usage_empty)) unit_type unit_type
+
+///> rust
+:# an_open_variable_replacement_keeps_the_selected_type fails "Unification failure" =
+    := p : quiet_plan = OVar (\? (MembershipHere "slot-zero", newer_use (), SelectedHere "s", bool_in_unit_unit (), "b"))
+    p |> ignore
+
+:== pair_plan l t = osub unit_unit (used (unused usage_empty)) (unused (used usage_empty)) unit_type (tensor_type l t)
+
+:= right_merges () = MergeStep (\? (RightOnly "r", none_merge (), "s")), MergeStep (\? (Neither "n", right_merge (), "t"))
+
+:= choice_right () : pair_plan bool_type unit_type =
+    OIntro (OTensor (TRightSide (RightPart (\? (bool_in_unit_unit (), open_var_plan (), right_merges (), "right")))))
+
+:= left_merges () = MergeStep (\? (LeftOnly "l", none_merge (), "s")), MergeStep (\? (Neither "n", left_merge (), "t"))
+
+:= choice_left () : pair_plan unit_type bool_type =
+    OIntro (OTensor (TLeftSide (LeftPart (\? (open_var_plan (), bool_in_unit_unit (), left_merges (), "left")))))
+
+///> rust
+:# the_two_cell_choice_plans_descend_once =
+    (steps_of (choice_right ()), steps_of (choice_left ())) |> _assert_eq (1i32, 1i32)
+
+:== kept_pair l t = osub unit_unit (used (unused usage_empty)) (used (unused usage_empty)) unit_type (tensor_type l t)
+
+///> rust
+:# a_right_choice_target_cannot_keep_the_source_usage fails "Unification failure" =
+    := p : kept_pair bool_type unit_type = choice_right ()
+    p |> ignore
+
+///> rust
+:# a_left_choice_target_cannot_keep_the_source_usage fails "Unification failure" =
+    := p : kept_pair unit_type bool_type = choice_left ()
+    p |> ignore
+
+:= quiet_two () = AllUnusedExtend (AllUnusedExtend (empty_usage (), "o"), "n")
+
+:= identity_in_unit_unit () : term unit_unit (unused (unused usage_empty)) (arrow_type unit_type unit_type) =
+    Intro (Lambda (Variable (VariableAt (\? (MembershipHere "x", SingleUseHere (quiet_two (), "once"), "x"))), "id"))
+
+:= choice_arg () : osub unit_unit (used (unused usage_empty)) (unused (used usage_empty)) unit_type unit_type =
+    OElim (OApp (OArg (ArgPart (\? (identity_in_unit_unit (), open_var_plan (), right_merges (), "arg")))))
+
+///> rust
+:# the_two_cell_argument_plan_descends_once =
+    steps_of (choice_arg ()) |> _assert_eq 1i32
+
+///> rust
+:# an_argument_choice_target_cannot_keep_the_source_usage fails "Unification failure" =
+    := p : osub unit_unit (used (unused usage_empty)) (used (unused usage_empty)) unit_type unit_type = choice_arg ()
+    p |> ignore
+
+:= bool_identity_in_unit_unit () : term unit_unit (unused (unused usage_empty)) (arrow_type bool_type bool_type) =
+    Intro (Lambda (Variable (VariableAt (\? (MembershipHere "x", SingleUseHere (quiet_two (), "once"), "x"))), "bool-id"))
+
+///> rust
+:# an_argument_plan_must_match_the_function_domain fails "Unification failure" =
+    := p = OElim (OApp (OArg (ArgPart (\? (bool_identity_in_unit_unit (), open_var_plan (), right_merges (), "a")))))
+    p |> ignore
+
+:== under_bool = extend unit_unit bool_type
+
+:== slot1 = meta_succ zero
+
+:== slot2 = meta_succ (meta_succ zero)
+
+:= ub_use () : single_use under_bool slot1 unit_type (unused (used (unused usage_empty))) =
+    SingleUseThere (SingleUseHere (AllUnusedExtend (empty_usage (), "o"), "s"), "b")
+
+:= ub_pick () : selected under_bool slot1 unit_type (unused (unused (used usage_empty))) =
+    SelectedThere (\? (SelectedHere "s", MarkUnused "b", "down"))
+
+:= ub_older () : single_use under_bool slot2 unit_type (unused (unused (used usage_empty))) =
+    SingleUseThere (SingleUseThere (SingleUseHere (empty_usage (), "o"), "s"), "b")
+
+:= ub_member () : membership under_bool slot2 unit_type = MembershipThere (MembershipThere (MembershipHere "o", "s"), "b")
+
+:= ub_repl () : term under_bool (unused (unused (used usage_empty))) unit_type = Variable (VariableAt (\? (ub_member (), ub_older (), "r")))
+
+:== ub_plan = osub under_bool (unused (used (unused usage_empty))) (unused (unused (used usage_empty))) unit_type unit_type
+
+:= outer_var_under_bool () : ub_plan = OVar (\? (MembershipThere (MembershipHere "s", "b"), ub_use (), ub_pick (), ub_repl (), "outer"))
+
+:= bool_binder_var () : term under_bool (used (unused (unused usage_empty))) bool_type =
+    Variable (VariableAt (\? (MembershipHere "b", SingleUseHere (quiet_two (), "once"), "b")))
+
+:== used_binder u = used (unused u)
+
+:= lambda_src () : usage_merge under_bool (unused (used (unused usage_empty))) (used_binder (unused usage_empty)) (used (used (unused usage_empty))) =
+    MergeStep (\? (RightOnly "b", MergeStep (\? (LeftOnly "s", none_merge (), "m")), "m"))
+
+:= lambda_tgt () : usage_merge under_bool (unused (unused (used usage_empty))) (used_binder (unused usage_empty)) (used (unused (used usage_empty))) =
+    MergeStep (\? (RightOnly "b", MergeStep (\? (Neither "s", left_merge (), "m")), "m"))
+
+:= lambda_body_merges () = lambda_src (), lambda_tgt ()
+
+:== arrow_plan u v = osub unit_unit u v unit_type (arrow_type bool_type (tensor_type unit_type bool_type))
+
+:= choice_lambda () : arrow_plan (used (unused usage_empty)) (unused (used usage_empty)) =
+    := body = OIntro (OTensor (TLeftSide (LeftPart (\? (outer_var_under_bool (), bool_binder_var (), lambda_body_merges (), "pair")))))
+    OIntro (OLambda (body, "lambda-outer"))
+
+:= choice_fun () : pair_plan unit_type bool_type =
+    OElim (OApp (OFun (FunPart (\? (choice_lambda (), bool_in_unit_unit (), left_merges (), "fun")))))
+
+///> rust
+:# the_lambda_and_function_choice_plans_descend_through_the_binder =
+    (steps_of (choice_lambda ()), steps_of (choice_fun ())) |> _assert_eq (2i32, 3i32)
+
+///> rust
+:# a_lambda_choice_target_cannot_keep_the_source_usage fails "Unification failure" =
+    := p : arrow_plan (used (unused usage_empty)) (used (unused usage_empty)) = choice_lambda ()
+    p |> ignore
+
+///> rust
+:# a_function_choice_target_cannot_keep_the_source_usage fails "Unification failure" =
+    := p : kept_pair unit_type bool_type = choice_fun ()
+    p |> ignore
+
+///> rust
+:# a_function_choice_endpoint_cannot_keep_the_source_usage fails "Unification failure" =
+    := t : term unit_unit (used (unused usage_empty)) (tensor_type unit_type bool_type) = otarget (choice_fun ())
+    t |> ignore
+
+:== bare_plan y = osub unit_unit (used (unused usage_empty)) (unused (used usage_empty)) unit_type y
+
+///> rust
+:# a_right_choice_keeps_its_pair_result fails "Unification failure" =
+    := p : bare_plan bool_type = choice_right ()
+    p |> ignore
+
+///> rust
+:# a_function_choice_keeps_its_pair_result fails "Unification failure" =
+    := p : bare_plan unit_type = choice_fun ()
+    p |> ignore

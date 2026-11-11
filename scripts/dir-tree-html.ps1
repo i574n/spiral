@@ -5,21 +5,21 @@ Set-Location $ScriptDir
 $ErrorActionPreference = "Stop"
 . ./core.ps1
 
-$rendererCommit = 'a643950e0628bc57005c94a9db83edc05a4c66ea'
+$rendererCommit = '4ab01fc231e621ed53c363e1a037e5300959678d'
 $spiralRoot = ResolveLink (Split-Path $ScriptDir)
-$repo = Join-Path (Split-Path $spiralRoot) "dir-tree-html"
-$exe = Join-Path $repo "dist/dir-tree-html$(_exe)"
+$repo = Join-Path (Split-Path $spiralRoot) "html"
+$exe = Join-Path $repo "dist/html$(_exe)"
 if (!(Test-Path $exe)) {
     if (!(Test-Path (Join-Path $repo ".git"))) {
         $url = git ls-remote --get-url
         $owner = ($url -split '/' | Select-Object -Last 2 | Select-Object -First 1) -replace '\.git$', '' ?? $env:GITHUB_REPOSITORY_OWNER
         $domain = ($url -split '/' | Select-Object -Last 3 | Select-Object -First 1) ?? $env:GITHUB_SERVER_URL -replace 'https?://', ''
-        git clone https://$domain/$owner/dir-tree-html.git $repo
-        if ($LASTEXITCODE -ne 0) { throw "dir-tree-html.ps1 / git clone dir-tree-html failed (exit code $LASTEXITCODE)" }
+        git clone https://$domain/$owner/html.git $repo
+        if ($LASTEXITCODE -ne 0) { throw "dir-tree-html.ps1 / git clone html failed (exit code $LASTEXITCODE)" }
         git -C $repo checkout --quiet $rendererCommit
         if ($LASTEXITCODE -ne 0) { throw "dir-tree-html.ps1 / git checkout $rendererCommit failed (exit code $LASTEXITCODE)" }
     }
     { pwsh (Join-Path $repo "scripts/init.ps1") -fast 1 } | Invoke-Block
-    { pwsh (Join-Path $repo "build.ps1") } | Invoke-Block
+    { pwsh (Join-Path $repo "build.ps1") -fast 1 } | Invoke-Block
 }
 Write-Output $exe

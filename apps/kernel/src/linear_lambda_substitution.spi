@@ -1,0 +1,62 @@
+///- --package .
+:# linear_lambda_substitution static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+:< linear_terms
+:< linear_substitution
+:< linear_reduction
+
+:== cells x y = extend (extend empty_context x) y
+
+:= older_var \* x y. () : term (cells x y) (unused (used usage_empty)) x =
+    := once = SingleUseThere (SingleUseHere (empty_usage (), "x-once"), "y-unused")
+    Variable (VariableAt (\? (MembershipThere (MembershipHere "older", "x-older"), once, "older")))
+
+:= newer_var \* x y. () : term (cells x y) (used (unused usage_empty)) y =
+    Variable (VariableAt (\? (MembershipHere "newer", SingleUseHere (AllUnusedExtend (empty_usage (), "older-unused"), "newer-once"), "newer")))
+
+:= both_merge \* x y. () : usage_merge (cells x y) (unused (used usage_empty)) (used (unused usage_empty)) (used (used usage_empty)) =
+    MergeStep (\? (RightOnly "newer", MergeStep (\? (LeftOnly "older", MergeEmpty "e", "m")), "m"))
+
+:= nested_outer () : closed (arrow_type unit_type (arrow_type bool_type (tensor_type unit_type bool_type))) =
+    Intro (Lambda (Intro (Lambda (Intro (Tensor (\? (older_var (), newer_var (), both_merge (), "x-y"))), "y")), "x"))
+
+:= nested_source () : closed (arrow_type bool_type (tensor_type unit_type bool_type)) =
+    Elim (Apply (\? (nested_outer (), unit_of "unit", MergeEmpty "e", "apply")))
+
+:= nested_target () : closed (arrow_type bool_type (tensor_type unit_type bool_type)) =
+    Intro (Lambda (Intro (Tensor (\? (unit_tail (), generic_variable (), right_only (), "unit-y"))), "y"))
+
+:== bool_fn = arrow_type bool_type bool_type
+
+:= app_outer () : closed (arrow_type bool_fn bool_fn) =
+    Intro (Lambda (Intro (Lambda (Elim (Apply (\? (older_var (), newer_var (), both_merge (), "f-b"))), "b")), "f"))
+
+:= app_source () : closed bool_fn = Elim (Apply (\? (app_outer (), Intro (Lambda (generic_variable (), "id")), MergeEmpty "e", "apply")))
+
+:= weak_identity () : term (extend empty_context bool_type) (unused usage_empty) bool_fn =
+    := once = SingleUseHere (AllUnusedExtend (empty_usage (), "b"), "z")
+    Intro (Lambda (Variable (VariableAt (\? (MembershipHere "z", once, "z"))), "id"))
+
+:= app_body () : term (extend empty_context bool_type) (used usage_empty) bool_type =
+    Elim (Apply (\? (weak_identity (), generic_variable (), right_only (), "id-b")))
+
+:= app_target () : closed bool_fn = Intro (Lambda (app_body (), "b"))
+
+:= shape \* y. (source : closed y) (target : closed y) : i32 * i32 * i32 * i32 =
+    outer_tag source, outer_tag target, size source, size target
+
+///> rust
+:# nested_lambda_substitution_matches_the_sample_runtime =
+    shape (nested_source ()) (nested_target ()) |> _assert_eq (1i32, 6i32, 7i32, 4i32)
+
+///> rust
+:# application_lambda_substitution_matches_the_sample_runtime =
+    (shape (app_source ()) (app_target ()), outer_tag (app_body ()), size (app_body ())) |> _assert_eq ((1i32, 6i32, 8i32, 5i32), 1i32, 4i32)
+
+///> rust
+:# application_lambda_substitution_preserves_closedness_and_shrinks_by_three =
+    := source, target = app_source (), app_target ()
+    (size source - size target, size (nested_source ()) - size (nested_target ())) |> _assert_eq (3i32, 3i32)

@@ -7,7 +7,7 @@ $mainNew = "#ifdef __bpf__`n#define SEC(name) __attribute__((section(name), used
 foreach ($sample in $Samples) {
     $work = Join-Path $env:LOCALAPPDATA "spiral-bin/runs/ebpf-dual-profile/$sample"
     New-Item -ItemType Directory -Force $work | Out-Null
-    $text = [IO.File]::ReadAllText("C:\home\git\spiral\apps\compiler\tmp\samples\$sample\main.ebpf").Replace("`r`n", "`n")
+    $text = [IO.File]::ReadAllText((Join-Path $PSScriptRoot "..\tmp\samples\$sample\main.ebpf")).Replace("`r`n", "`n")
     $emittedDual = $text.Contains('#ifdef __bpf__')
     if (-not $emittedDual -and (-not $text.Contains($capOld) -or -not $text.Contains($mainOld))) { throw "$sample does not have the expected cap or host main" }
     $dual = Join-Path $work 'main.c'

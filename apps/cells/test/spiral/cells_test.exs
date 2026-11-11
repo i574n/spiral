@@ -29,10 +29,19 @@ defmodule Spiral.CellsTest do
     fn _ctx -> {:ok, %{exit_status: 0, output: output, duration_ms: 4}} end
   end
 
+  test "a cell that names no target is refused before it compiles" do
+    compile = fn _ -> flunk("an untargeted cell must not reach the compiler") end
+    assert {:error, %SpiralError{message: message}} = Spiral.Cells.run("1i32", compile: compile)
+    assert message == Spiral.Cells.untargeted_cell_message()
+    assert message =~ "NoTestTarget"
+    assert_raise SpiralError, ~r/names no target/, fn -> Spiral.Cells.eval!("1i32", compile: compile) end
+  end
+
   test "value and stdout come from the patched binary" do
     assert {:ok, %Result{} = result} =
              Spiral.Cells.run(
                """
+               ///> rust
                inl square x = x * x
                console.write_line "Hello from Spiral!"
                square 7i32
@@ -61,7 +70,7 @@ defmodule Spiral.CellsTest do
     root = Spiral.Cells.TestHelpers.tmp_dir!("host_cwd")
 
     assert {:ok, _} =
-             Spiral.Cells.run("1i32",
+             Spiral.Cells.run("///> rust\n1i32",
                compile: &compile_ok/1,
                rustc: &rustc_ok/1,
                execute: execute,
@@ -71,7 +80,7 @@ defmodule Spiral.CellsTest do
     assert_received {:ran, _exe, ^root}
 
     assert {:ok, _} =
-             Spiral.Cells.run("1i32", compile: &compile_ok/1, rustc: &rustc_ok/1, execute: execute)
+             Spiral.Cells.run("///> rust\n1i32", compile: &compile_ok/1, rustc: &rustc_ok/1, execute: execute)
 
     assert_received {:ran, exe, cwd}
     assert cwd == Path.dirname(exe)
@@ -79,7 +88,7 @@ defmodule Spiral.CellsTest do
 
   test "print_code puts the patched Rust in front of stdout" do
     assert {:ok, %Result{stdout: stdout, value: "3"}} =
-             Spiral.Cells.run("1i32 + 2i32",
+             Spiral.Cells.run("///> rust\n1i32 + 2i32",
                print_code: true,
                compile: &compile_ok/1,
                rustc: &rustc_ok/1,
@@ -100,7 +109,7 @@ defmodule Spiral.CellsTest do
     end
 
     assert {:ok, %Result{value: nil, stdout: "Hello", source: source}} =
-             Spiral.Cells.run("console.write_line \"Hello\"",
+             Spiral.Cells.run("///> rust\nconsole.write_line \"Hello\"",
                compile: compile,
                rustc: &rustc_ok/1,
                execute: run_value("Hello\n")
@@ -121,7 +130,7 @@ defmodule Spiral.CellsTest do
     end
 
     assert {:ok, %Result{value: nil}} =
-             Spiral.Cells.run("trace Verbose (fun () => \"\") id",
+             Spiral.Cells.run("///> rust\ntrace Verbose (fun () => \"\") id",
                compile: compile,
                builders: [
                  %{
@@ -153,7 +162,7 @@ defmodule Spiral.CellsTest do
     end
 
     assert {:ok, %Result{value: ~s{("a", 1)}, source: source}} =
-             Spiral.Cells.run("\"a\", 1i32",
+             Spiral.Cells.run("///> rust\n\"a\", 1i32",
                compile: compile,
                rustc: &rustc_ok/1,
                execute: run_value(~s{SPIRAL_CELLS_VALUE:("a", 1)\n})
@@ -223,7 +232,7 @@ defmodule Spiral.CellsTest do
     end
 
     assert {:error, %SpiralError{message: message, details: details}} =
-             Spiral.Cells.run("1i32 + \"a\"", compile: compile, timeout: 30_000)
+             Spiral.Cells.run("///> rust\n1i32 + \"a\"", compile: compile, timeout: 30_000)
 
     assert message =~ "Got: string"
     assert details =~ "inl main () : i32 ="
@@ -233,7 +242,7 @@ defmodule Spiral.CellsTest do
     execute = fn _ -> {:error, {:timeout, %{timeout: 3_000, output: "partial"}}} end
 
     assert {:error, %TimeoutError{timeout: 3_000, message: message}} =
-             Spiral.Cells.run("1i32",
+             Spiral.Cells.run("///> rust\n1i32",
                compile: &compile_ok/1,
                rustc: &rustc_ok/1,
                execute: execute,
@@ -254,7 +263,7 @@ defmodule Spiral.CellsTest do
     started = System.monotonic_time(:millisecond)
 
     assert {:error, %TimeoutError{timeout: 900_000, message: message}} =
-             Spiral.Cells.run("///- --test --timeout 900000\n1i32",
+             Spiral.Cells.run("///> rust\n///- --test --timeout 900000\n1i32",
                compile: &compile_ok/1,
                rustc: &rustc_ok/1,
                execute: execute,
@@ -268,7 +277,7 @@ defmodule Spiral.CellsTest do
 
   test "a missing compiler is a ProcessError" do
     assert {:error, %ProcessError{message: message}} =
-             Spiral.Cells.run("1i32",
+             Spiral.Cells.run("///> rust\n1i32",
                compiler_dll: "C:/missing/SpiralCompiler.dll",
                timeout: 30_000
              )
@@ -299,7 +308,7 @@ defmodule Spiral.CellsTest do
     end
 
     assert {:ok, %Result{value: "42"}} =
-             Spiral.Cells.run("///- --package shared\noffset.add_one 41i32",
+             Spiral.Cells.run("///> rust\n///- --package shared\noffset.add_one 41i32",
                compile: compile,
                rustc: &rustc_ok/1,
                execute: run_value("SPIRAL_CELLS_VALUE:42\n"),
@@ -363,7 +372,8 @@ defmodule Spiral.CellsTest do
 
     assert {:ok, %Result{value: "1"}} =
              Spiral.Cells.run(
-               "///- --package #{String.replace(spiral, "\\", "/")} --package #{String.replace(dice, "\\", "/")}\n1i32",
+               "///> rust\n///- --package #{String.replace(spiral, "\\", "/")} " <>
+                 "--package #{String.replace(dice, "\\", "/")}\n1i32",
                compile: compile,
                rustc: &rustc_ok/1,
                execute: run_value("SPIRAL_CELLS_VALUE:1\n"),
@@ -441,7 +451,7 @@ defmodule Spiral.CellsTest do
     end
 
     assert {:ok, %Result{}} =
-             Spiral.Cells.run("///- --package shared\n1i32",
+             Spiral.Cells.run("///> rust\n///- --package shared\n1i32",
                compile: compile,
                rustc: &rustc_ok/1,
                execute: run_value("SPIRAL_CELLS_VALUE:1\n"),
@@ -450,7 +460,7 @@ defmodule Spiral.CellsTest do
              )
 
     assert {:ok, %Result{}} =
-             Spiral.Cells.run("///- --package shared\n2i32",
+             Spiral.Cells.run("///> rust\n///- --package shared\n2i32",
                compile: compile,
                rustc: &rustc_ok/1,
                execute: run_value("SPIRAL_CELLS_VALUE:2\n"),
@@ -465,7 +475,7 @@ defmodule Spiral.CellsTest do
 
   test "a missing package is a ProcessError" do
     assert {:error, %ProcessError{message: message}} =
-             Spiral.Cells.run("///- --package missing\n1i32",
+             Spiral.Cells.run("///> rust\n///- --package missing\n1i32",
                root: Path.expand("../fixtures", __DIR__),
                timeout: 30_000
              )
@@ -641,7 +651,7 @@ defmodule Spiral.CellsTest do
       output =
         capture_io(fn ->
           assert %Result{value: "49"} =
-                   Spiral.Cells.eval!("square 7i32",
+                   Spiral.Cells.eval!("///> rust\nsquare 7i32",
                      compile: &compile_ok/1,
                      rustc: &rustc_ok/1,
                      execute: run_value("Hello from Spiral!\nSPIRAL_CELLS_VALUE:49\n")
@@ -661,7 +671,7 @@ defmodule Spiral.CellsTest do
       end
 
       capture_io(fn ->
-        assert Spiral.Cells.eval!("console.write_line \"hi\"",
+        assert Spiral.Cells.eval!("///> rust\nconsole.write_line \"hi\"",
                  compile: compile,
                  rustc: &rustc_ok/1,
                  execute: run_value("hi\n")
@@ -671,7 +681,7 @@ defmodule Spiral.CellsTest do
 
     test "raises on Spiral errors" do
       assert_raise SpiralError, ~r/Unification failure/, fn ->
-        Spiral.Cells.eval!("x", compile: fn _ -> {:error, "Unification failure."} end)
+        Spiral.Cells.eval!("///> rust\nx", compile: fn _ -> {:error, "Unification failure."} end)
       end
     end
   end
@@ -696,9 +706,11 @@ defmodule Spiral.CellsTest do
     assert String.ends_with?(dir, "deps/The-Spiral-Language/VS Code Plugin"), dir
   end
 
-  test "the Rust host builds like the compiler matrix: rustup's nightly-2026-11-05, opt-level 2, edition 2024, warnings off" do
+  test "the Rust host builds like the compiler matrix: rustup's pinned channel from rust-toolchain.toml, opt-level 2, edition 2024, warnings off" do
+    assert Spiral.Cells.rust_channel() =~ ~r/^nightly-\d{4}-\d{2}-\d{2}$/
+
     assert Spiral.Cells.rustc_args("C:/Users/x/scoop/apps/rustup/current/.cargo/bin/rustc.exe", "main.rs", "main.exe") ==
-             ["+nightly-2026-11-05", "-C", "opt-level=2", "-A", "warnings", "--edition", "2024", "-o", "main.exe", "main.rs"]
+             ["+" <> Spiral.Cells.rust_channel(), "-C", "opt-level=2", "-A", "warnings", "--edition", "2024", "-o", "main.exe", "main.rs"]
 
     assert Spiral.Cells.rustc_args("/opt/rust/bin/rustc", "main.rs", "main") ==
              ["-C", "opt-level=2", "-A", "warnings", "--edition", "2024", "-o", "main", "main.rs"]
@@ -718,13 +730,13 @@ defmodule Spiral.CellsTest do
 
     escript = Spiral.Cells.TestHelpers.escript()
 
-    assert :ok = Spiral.Cells.prepare_rust_toolchain({escript, [fake.("listed", "nightly-2026-11-05-x86_64-pc-windows-msvc", 1)]}, 60_000)
+    assert :ok = Spiral.Cells.prepare_rust_toolchain({escript, [fake.("listed", Spiral.Cells.rust_channel() <> "-x86_64-pc-windows-msvc", 1)]}, 60_000)
     assert :ok = Spiral.Cells.prepare_rust_toolchain({escript, [fake.("installs", "stable-x86_64-pc-windows-msvc", 0)]}, 60_000)
 
     assert {:error, %ProcessError{message: message}} =
              Spiral.Cells.prepare_rust_toolchain({escript, [fake.("offline", "stable-x86_64-pc-windows-msvc", 1)]}, 60_000)
 
-    assert message =~ "rustup toolchain install nightly-2026-11-05 failed (exit 1)"
+    assert message =~ "rustup toolchain install #{Spiral.Cells.rust_channel()} failed (exit 1)"
     assert message =~ "offline"
   end
 end

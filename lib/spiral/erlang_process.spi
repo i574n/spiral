@@ -300,10 +300,16 @@
     global "@external(erlang, \"pg\", \"start\") fn erlang_process_pg_start(scope: atom.Atom) -> dynamic.Dynamic"
 
 := erlang_process_pg_join_import () =
-    global "@external(erlang, \"pg\", \"join\") fn erlang_process_pg_join(group: dynamic.Dynamic, member: process.Pid) -> dynamic.Dynamic"
+    global (
+        "@external(erlang, \"pg\", \"join\") fn erlang_process_pg_join(group: dynamic.Dynamic, member: "
+        ^^ "process.Pid) -> dynamic.Dynamic"
+    )
 
 := erlang_process_pg_members_import () =
-    global "@external(erlang, \"pg\", \"get_members\") fn erlang_process_pg_members(group: dynamic.Dynamic) -> List(process.Pid)"
+    global (
+        "@external(erlang, \"pg\", \"get_members\") fn erlang_process_pg_members(group: dynamic.Dynamic) -> "
+        ^^ "List(process.Pid)"
+    )
 
 := erlang_process_pg_externals () =
     global "pub type ErlangProcessGroup(message) { ErlangProcessGroup(key: dynamic.Dynamic) }"
@@ -342,7 +348,8 @@
 
 := broadcast \* t. (members : group t) (message : t) : () =
     erlang_process_group_imports ()
-    $'list.each(erlang_process_pg_members(!members.key), fn(member) { process.send(process.unsafely_create_subject(member, !members.key), !message) })'
+    $'list.each(erlang_process_pg_members(!members.key), fn(member) { \
+        process.send(process.unsafely_create_subject(member, !members.key), !message) })'
 
 := echo_member (team : group i32) (ready : subject ()) (echoes : subject i32) : () =
     join_group team

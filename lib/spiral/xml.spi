@@ -81,6 +81,28 @@
 
 := code_point_text (s : string) (i : i32) : string = sm'::substring i (code_point_width s i) s
 
+:= xml_digits_unsigned (t : string) : string =
+    ? sm'::starts_with "-" t || sm'::starts_with "+" t ?> sm'::substring 1i32 (sm'::length t - 1i32) t |: t
+
+:= xml_digits_split (u : string) (point : i32) : string * string =
+    := whole = sm'::substring 0i32 point u
+    := fraction = sm'::substring (point + 1i32) (sm'::length u - point - 1i32) u
+    sm'::trim_start [ '0' ] whole, sm'::trim_end [ '0' ] fraction
+
+:= xml_digits_parts (s : string) : string * string =
+    := unsigned = xml_digits_unsigned (sm'::trim s)
+    := point = sm'::index_of "." unsigned
+    ? point < 0i32 ?> sm'::trim_start [ '0' ] unsigned, "" |: xml_digits_split unsigned point
+
+:= fraction_digits (s : string) : i32 =
+    := _, fraction = xml_digits_parts s
+    sm'::length fraction
+
+:= total_digits (s : string) : i32 =
+    := whole, fraction = xml_digits_parts s
+    := n = sm'::length whole + sm'::length fraction
+    ? n = 0i32 ?> 1i32 |: n
+
 := is_space_character (c : string) : bool = c = " " || c = "\t" || c = "\n" || c = "\r"
 
 := replaced_space (s : string) : string = s |> sm'::replace "\t" " " |> sm'::replace "\n" " " |> sm'::replace "\r" " "
@@ -327,6 +349,16 @@
     ?= attribute_of key attributes ?|
     | Some value => value = expected
     | None => !-
+
+///> rust
+:# digit_counts_follow_xsd =
+    ? total_digits "123.4500" <> 5i32 ?> failwith "trailing fraction zeros are not significant"
+    ? fraction_digits "123.4500" <> 2i32 ?> failwith "fraction digits drop trailing zeros"
+    ? total_digits "-0.5" <> 1i32 ?> failwith "a sign and a leading zero are not digits"
+    ? total_digits "0.05" <> 2i32 ?> failwith "0.05 is 5 x 10^-2: n = 2 needs two digits (XSD 1.1)"
+    ? total_digits "007" <> 1i32 ?> failwith "leading zeros are not significant"
+    ? total_digits "0" <> 1i32 ?> failwith "zero has one digit"
+    ? fraction_digits "10" <> 0i32 ?> failwith "an integer has no fraction digits"
 
 ///> rust
 :# text_order_follows_code_points =

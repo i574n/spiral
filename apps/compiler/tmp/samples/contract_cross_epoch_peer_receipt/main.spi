@@ -192,7 +192,7 @@
         := \? effect. _, DurableRow label = payload
         label
 
-:= ^ terminal_label \* transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch
+:= terminal_label \* transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch
     from to.
     (plan : durable_plan transfer artifact digest route manifest pa pb pc ha hb hc qa qb qc from_epoch to_epoch from to)
     : string

@@ -130,7 +130,18 @@ defmodule Spiral.Cells.CompilerDaemon do
   def banner, do: "spiral-cells\t#{@version}\t#{System.pid()}\t#{boot_stamp()}\t#{served_dll_tag()}"
 
   @doc false
-  def served_dll_tag, do: dll_tag(Toolchain.compiler_dll([]))
+  def served_dll_tag, do: served_compiler_tag() <> "~" <> tool_tag(Toolchain.bun([]))
+
+  @doc false
+  def served_compiler_tag, do: dll_tag(Toolchain.compiler_dll([]))
+
+  @doc false
+  def tool_tag(nil), do: "none"
+  def tool_tag(path) do
+    spelled = String.replace(path, "\\", "/")
+    spelled = if match?({:win32, _}, :os.type()), do: String.downcase(spelled), else: spelled
+    spelled |> :erlang.phash2() |> Integer.to_string(16)
+  end
 
   @doc false
   def dll_tag(dll) do
@@ -626,14 +637,10 @@ defmodule Spiral.Cells.CompilerDaemon do
 
     case :persistent_term.get(key, nil) do
       nil ->
-        capabilities =
-          case System.cmd(dotnet, [dll, "--capabilities"], stderr_to_stdout: true) do
-            {text, 0} -> text |> String.split() |> Enum.uniq()
-            _ -> []
-          end
-
-        :persistent_term.put(key, capabilities)
-        capabilities
+        case System.cmd(dotnet, [dll, "--capabilities"], stderr_to_stdout: true) do
+          {text, 0} -> text |> String.split() |> Enum.uniq() |> tap(&:persistent_term.put(key, &1))
+          _ -> []
+        end
 
       capabilities ->
         capabilities
@@ -819,7 +826,8 @@ defmodule Spiral.Cells.CompilerDaemon do
 
     case :gen_tcp.connect({127, 0, 0, 1}, state.compiler.compiler_port, socket_opts(), 5_000) do
       {:ok, sock} ->
-        :gen_tcp.send(sock, "compile\t#{req.backend}\t#{req.input}\t#{req.output}\n")
+        test = if is_binary(Map.get(req, :test)), do: "\ttest\t#{req.test}", else: ""
+        :gen_tcp.send(sock, "compile\t#{req.backend}\t#{req.input}\t#{req.output}#{test}\n")
 
         result =
           case :gen_tcp.recv(sock, 0, timeout) do
@@ -1125,7 +1133,8 @@ defmodule Spiral.Cells.CompilerDaemon do
          true <- Enum.all?(args, &is_binary/1) do
       cond do
         same_root(root) != same_root(@cells_root) -> {["stale\tthe daemon serves another Cells checkout: #{@cells_root}"], :keep}
-        other_build?(fields["dll"]) -> {["stale\tthe daemon serves another compiler build: #{served_dll_tag()}, requested #{dll_tag(fields["dll"])}"], :keep}
+        other_build?(fields["dll"]) -> {["stale\tthe daemon serves another compiler build: #{served_compiler_tag()}, requested #{dll_tag(fields["dll"])}"], :keep}
+        other_bun?(fields["bun"]) -> {["stale\tthe daemon resolves another bun than this client: #{inspect(Toolchain.bun([]))}, requested #{fields["bun"]}"], :keep}
         reason = stale_code() -> {["stale\t" <> reason <> "; retiring"], :retire}
         true -> {run_notebook(args), :keep}
       end
@@ -1134,7 +1143,11 @@ defmodule Spiral.Cells.CompilerDaemon do
     end
   end
 
-  defp other_build?(dll), do: is_binary(dll) and dll_tag(dll) != served_dll_tag()
+  defp other_build?(dll), do: is_binary(dll) and dll_tag(dll) != served_compiler_tag()
+
+  @doc false
+  def other_bun?(bun) when is_binary(bun), do: tool_tag(if(bun == "", do: nil, else: bun)) != tool_tag(Toolchain.bun([]))
+  def other_bun?(_), do: false
 
   defp same_root(path) do
     expanded = path |> Path.expand() |> String.trim_trailing("/")
@@ -1148,11 +1161,11 @@ defmodule Spiral.Cells.CompilerDaemon do
 
     case status do
       :ok -> shown ++ ["end\t0"]
-      {:void, message} -> shown ++ ["error\t" <> JSON.encode!(message), "end\t3"]
-      {:error, message} -> shown ++ ["error\t" <> JSON.encode!(message), "end\t1"]
+      {:void, message} -> shown ++ ["error\t" <> JSON.encode!(Spiral.Cells.Result.json_safe(message)), "end\t3"]
+      {:error, message} -> shown ++ ["error\t" <> JSON.encode!(Spiral.Cells.Result.json_safe(message)), "end\t1"]
     end
   rescue
-    error -> ["error\t" <> JSON.encode!(Exception.message(error)), "end\t1"]
+    error -> ["error\t" <> JSON.encode!(Spiral.Cells.Result.json_safe(Exception.message(error))), "end\t1"]
   end
 
   defp parse_request(rest) do
@@ -1165,7 +1178,8 @@ defmodule Spiral.Cells.CompilerDaemon do
       timeout: parse_timeout(timeout),
       mtime: String.to_integer(mtime),
       client: Enum.at(extra, 0) || "anonymous",
-      pin: Enum.at(extra, 1)
+      pin: if(Enum.at(extra, 1) in [nil, "", "test"], do: nil, else: Enum.at(extra, 1)),
+      test: case Enum.drop_while(extra, &(&1 != "test")) do ["test", name | _] -> name; _ -> nil end
     }
   end
 

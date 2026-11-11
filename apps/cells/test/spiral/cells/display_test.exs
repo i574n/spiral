@@ -86,7 +86,7 @@ defmodule Spiral.Cells.DisplayTest do
       "SPIRAL_CELLS_DISPLAY_BEGIN\nimage/svg+xml\n#{@svg}\nSPIRAL_CELLS_DISPLAY_END\nline\nSPIRAL_CELLS_VALUE:#{@plot}\n"
 
     assert {:ok, %Result{value: nil, stdout: "line", displays: displays}} =
-             Spiral.Cells.run("1i32",
+             Spiral.Cells.run("///> rust\n1i32",
                compile: fn _ -> {:ok, @rust} end,
                rustc: fn _ -> :ok end,
                execute: fn _ -> {:ok, %{exit_status: 0, output: output, duration_ms: 1}} end,

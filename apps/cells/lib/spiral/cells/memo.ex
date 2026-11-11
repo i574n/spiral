@@ -7,6 +7,10 @@ defmodule Spiral.Cells.Memo do
   @tool_opts [:print_code, :plot, :render_plot, :spiral, :python, :lua, :pwsh, :cc, :dcc, :rustc_bin, :patches]
   @stub_opts [:compile, :rustc, :execute, :target, :host, :build_receipt]
 
+  @spec whole_keys?(map() | nil) :: boolean()
+  def whole_keys?(%{bounds: :unavailable}), do: true
+  def whole_keys?(_context), do: false
+
   @spec context(keyword(), [map()]) :: map() | nil
   def context(opts, steps) do
     if enabled?(opts) do
@@ -52,7 +56,7 @@ defmodule Spiral.Cells.Memo do
 
     with true <- File.regular?(shim),
          {:ok, text} <- File.read(shim),
-         [_, target] <- Regex.run(~r/^\s*path\s*=\s*"?([^"\r\n]+)"?\s*$/m, text) do
+         "1\t" <> target <- Spiral.Cells.Domain.shim_path(text) do
       target
     else
       _ -> nil
@@ -64,7 +68,7 @@ defmodule Spiral.Cells.Memo do
     case opts[:memo] do
       true -> true
       false -> false
-      _ -> System.get_env("SPIRAL_CELLS_MEMO") != "0" and not Enum.any?(@stub_opts, &Keyword.has_key?(opts, &1))
+      _ -> System.get_env("SPIRAL_CELLS_MEMO") != "0" and not Enum.any?(@stub_opts, &(Keyword.get(opts, &1) != nil))
     end
   end
 
@@ -74,7 +78,9 @@ defmodule Spiral.Cells.Memo do
     program = if whole, do: step.program, else: reached_program(step.program, context.bounds)
     packages = Enum.map(package_paths(step.program), &{&1, package_print_for(Map.get(context.packages, &1), program, whole)})
 
-    {context.base, program, Map.get(step, :real, ""), builder_lines, packages}
+    base = if Spiral.Cells.Directives.per_test_compile?(), do: {context.base, :per_test, Map.get(step, :test_name)}, else: context.base
+
+    {base, program, Map.get(step, :real, ""), builder_lines, packages}
     |> :erlang.term_to_binary()
     |> then(&:crypto.hash(:sha256, &1))
     |> Base.encode16(case: :lower)
@@ -156,8 +162,7 @@ defmodule Spiral.Cells.Memo do
       :persistent_term.put({__MODULE__, :pruned, context.dir}, now)
 
       context.dir
-      |> Path.join("*/*.etf")
-      |> Path.wildcard()
+      |> glob("*/*.etf")
       |> Enum.map(&{&1, mtime(&1)})
       |> Enum.sort_by(&elem(&1, 1), :desc)
       |> Enum.drop(@keep_entries)
@@ -166,6 +171,10 @@ defmodule Spiral.Cells.Memo do
 
     :ok
   end
+
+  @doc false
+  @spec glob(String.t(), String.t()) :: [String.t()]
+  def glob(dir, pattern), do: dir |> String.replace("\\", "/") |> Path.join(pattern) |> Path.wildcard()
 
   defp mtime(path) do
     case File.stat(path, time: :posix) do
@@ -179,17 +188,18 @@ defmodule Spiral.Cells.Memo do
   def compiler_binaries_print(dll) do
     dir = Path.dirname(dll)
 
-    names =
-      [Path.basename(dll) | dir |> Path.join("SpiralCompiler*.dll") |> Path.wildcard() |> Enum.map(&Path.basename/1)]
-      |> Enum.map(&String.downcase/1)
-      |> Enum.uniq()
+    entries =
+      [Path.basename(dll) | dir |> glob("SpiralCompiler*.dll") |> Enum.map(&Path.basename/1)]
+      |> Enum.uniq_by(&String.downcase/1)
+      |> Enum.map(&{String.downcase(&1), Path.join(dir, &1)})
       |> Enum.sort()
 
-    cache_key = {__MODULE__, :compiler_binaries, dir, Enum.map(names, &{&1, file_stamp(Path.join(dir, &1))})}
+    stamps = Enum.map(entries, fn {name, path} -> {name, file_stamp(path)} end)
+    cache_key = {__MODULE__, :compiler_binaries, dir, stamps}
 
     case :persistent_term.get(cache_key, nil) do
       nil ->
-        print = Enum.map(names, &{&1, content_hash(Path.join(dir, &1))})
+        print = Enum.map(entries, fn {name, path} -> {name, content_hash(path)} end)
         :persistent_term.put(cache_key, print)
         print
 
@@ -414,7 +424,7 @@ defmodule Spiral.Cells.Memo do
   defp full_deps_print(deps), do: for({name, dep} <- deps, do: {name, package_print_for(dep, "", true)})
 
   defp reached_package_print(%{blocks: _} = index, program) do
-    code = program |> String.split("\n") |> Enum.map_join("\n", &strip_line_comment/1)
+    code = Spiral.Cells.Domain.strip_comments(program)
     {unqualified, qualified} = references(code, [])
     in_scope = index.opened ++ opened_names(code)
     from_operators = for {op, id} <- index.operators, String.contains?(program, op), do: id
@@ -441,26 +451,12 @@ defmodule Spiral.Cells.Memo do
     end
   end
 
-  @identifier ~r/[A-Za-z_][\w']*/u
-  @qualified_name ~r/[A-Za-z_][\w']*(?:(?:\.|::)[A-Za-z_][\w']*)+/u
-  @open_statement ~r/(?:\bopen|:<)\s+([A-Za-z_][\w']*(?:(?:\.|::)[A-Za-z_][\w']*)*)/u
-
-  defp opened_names(code), do: @open_statement |> Regex.scan(code, capture: :all_but_first) |> List.flatten() |> Enum.map(&String.replace(&1, "::", ".")) |> Enum.uniq()
+  @doc false
+  def opened_names(code), do: code |> Spiral.Cells.Domain.opened_names() |> String.split(" ", trim: true)
 
   defp references(code, names) do
-    qualified =
-      @qualified_name
-      |> Regex.scan(code)
-      |> List.flatten()
-      |> Enum.uniq()
-      |> Enum.map(fn token ->
-        parts = String.split(token, [".", "::"])
-        {Enum.join(Enum.drop(parts, -1), "."), List.last(parts)}
-      end)
-
-    heads = Regex.replace(@qualified_name, code, fn token -> token |> String.split([".", "::"]) |> hd() end)
-    unqualified = @identifier |> Regex.scan(heads) |> List.flatten() |> Enum.uniq() |> Enum.reject(&(&1 in names))
-    {unqualified, qualified}
+    {_kind, _names, _operators, _tokens, _instance, unqualified, qualified} = block_facts("", code)
+    {Enum.reject(unqualified, &(&1 in names)), qualified}
   end
 
   defp resolve_references(index, unqualified, qualified, in_scope) do
@@ -484,49 +480,27 @@ defmodule Spiral.Cells.Memo do
 
   defp shaped_blocks(blocks) do
     Enum.map(blocks, fn %{header_text: header, lines: block_lines} ->
-      code = block_lines |> Enum.map(&strip_line_comment/1) |> Enum.join("\n")
-      {kind, names, operators} = block_shape(header, code)
-      tokens = @identifier |> Regex.scan(code) |> List.flatten() |> Enum.uniq() |> Enum.reject(&(&1 in names))
-      {unqualified, qualified} = references(code, names)
-      %{text: Enum.join(block_lines, "\n"), code: code, kind: kind, names: names, operators: operators, tokens: tokens, unqualified: unqualified, qualified: qualified, instance: Regex.match?(~r/^(?:instance|:\+)\s/, header)}
+      code = block_lines |> Enum.join("\n") |> Spiral.Cells.Domain.strip_comments()
+      {kind, names, operators, tokens, instance, unqualified, qualified} = block_facts(header, code)
+      %{text: Enum.join(block_lines, "\n"), code: code, kind: kind, names: names, operators: operators, tokens: tokens, unqualified: unqualified, qualified: qualified, instance: instance}
     end)
   end
 
-  defp block_shape(header, code) do
-    cond do
-      match = Regex.run(~r/^(?:(?:and|:&)\s+)?(?:inl|let|inm|inb|:=|:~)(?:\s+(?:rec|\^))?\s+\(([^)\s]+)\)/, header) ->
-        {:definition, ["(" <> Enum.at(match, 1) <> ")"], [Enum.at(match, 1)]}
-
-      match = Regex.run(~r/^(?:(?:and|:&)\s+)?(?:inl|let|inm|inb|:=|:~)(?:\s+(?:rec|\^))?\s+([^\s(:=]+)/u, header) ->
-        if Enum.at(match, 1) in ["_", "()"], do: {:other, [], []}, else: {:definition, [Enum.at(match, 1)], []}
-
-      match = Regex.run(~r/^(?:(?:and|:&)\s+)?(?:type|union|nominal|prototype|:==|:\||:!|:\?)(?:\s+(?:rec|\^))?\s+([^\s=]+)/u, header) ->
-        cases = ~r/\|\s*([A-Z][\w']*)/u |> Regex.scan(code, capture: :all_but_first) |> List.flatten()
-        {:definition, [Enum.at(match, 1) | cases], []}
-
-      match = Regex.run(~r/^(?:instance|:\+)\s+(\S+)/u, header) ->
-        {:definition, [Enum.at(match, 1)], []}
-
-      true ->
-        {:other, [], []}
-    end
-  end
-
-  defp strip_line_comment(line), do: line |> String.to_charlist() |> strip_chars(false, [])
-
-  defp strip_chars([], _in_string, acc), do: acc |> Enum.reverse() |> List.to_string()
-  defp strip_chars([?\\, char | rest], true, acc), do: strip_chars(rest, true, [char, ?\\ | acc])
-  defp strip_chars([?" | rest], in_string, acc), do: strip_chars(rest, not in_string, [?" | acc])
-  defp strip_chars([?/, ?/ | _rest], false, acc), do: strip_chars([], false, acc)
-  defp strip_chars([char | rest], in_string, acc), do: strip_chars(rest, in_string, [char | acc])
   @doc false
-  def package_paths(program) do
-    ~r/^\/\/\/- (.*)$/m
-    |> Regex.scan(program)
-    |> Enum.flat_map(fn [_, flags] ->
-      ~r/--package\s+(\S+)/ |> Regex.scan(flags) |> Enum.map(fn [_, path] -> path end)
-    end)
+  def block_shape(header, code) do
+    [kind, names, operators] = header |> Spiral.Cells.Domain.block_shape(code) |> String.split("\t")
+    {String.to_existing_atom(kind), String.split(names, " ", trim: true), String.split(operators, " ", trim: true)}
   end
+
+  @doc false
+  def block_facts(header, code) do
+    [kind, names, operators, tokens, instance, unqualified, qualified] = header |> Spiral.Cells.Domain.block_facts(code) |> String.split("\t")
+    pairs = for pair <- String.split(qualified, " ", trim: true), [module, name] = String.split(pair, "|"), do: {module, name}
+    {String.to_existing_atom(kind), String.split(names, " ", trim: true), String.split(operators, " ", trim: true), String.split(tokens, " ", trim: true), instance == "instance", String.split(unqualified, " ", trim: true), pairs}
+  end
+
+  @doc false
+  def package_paths(program), do: program |> Spiral.Cells.Domain.package_paths() |> String.split(" ", trim: true)
 
   defp tree_print(dir, bounds), do: package_print(dir, MapSet.new(), bounds)
 

@@ -1162,7 +1162,9 @@ module Program =
             match reader.ReadLine() with
             | null -> ()
             | line ->
-                let fields = line.Split('\t')
+                let fields, wantWarnings =
+                    let all = line.Split('\t')
+                    if all.Length > 1 && all.[all.Length - 1] = "warnings" then all.[.. all.Length - 2], true else all, false
                 if fields.Length = 1 && fields.[0] = "quit" then
                     writer.WriteLine($"spiral-session\tquit\t{Environment.ProcessId}")
                     running <- false
@@ -1186,7 +1188,17 @@ module Program =
                         else "Fsharp", fields.[1], fields.[2]
                     let testEntry = if fields.Length = 6 then Some fields.[5] else None
                     watchStall stallSeconds writer (fun () ->
-                        match compileOneTest server.supervisor router revisions cache server.job_val backend input output testEntry with
+                        let captured = new StringWriter()
+                        let previousError = Console.Error
+                        if wantWarnings then Console.SetError(TextWriter.Synchronized captured)
+                        let result =
+                            try compileOneTest server.supervisor router revisions cache server.job_val backend input output testEntry
+                            finally if wantWarnings then Console.SetError previousError
+                        if wantWarnings then
+                            for text in captured.ToString().Split('\n') do
+                                let text = text.TrimEnd()
+                                if text.StartsWith "warning:" then writer.WriteLine($"spiral-session\twarning\t{cleanProtocolText text}")
+                        match result with
                         | Ok (bytes, binding, revisionMode) ->
                             writer.WriteLine($"spiral-session\tok\t{Environment.ProcessId}\t{bytes}\t{binding}\t{revisionMode}\t{backend}")
                         | Error message ->
@@ -1345,12 +1357,12 @@ module Program =
     let private defaultTypeFlags =
         [ "--default-int", "SPIRAL_DEFAULT_INT", [ "i8"; "i16"; "i32"; "i64"; "u8"; "u16"; "u32"; "u64" ]
           "--default-float", "SPIRAL_DEFAULT_FLOAT", [ "f32"; "f64" ]
-          "--edition", "SPIRAL_EDITION", [ "2"; "3" ] ]
+          "--edition", "SPIRAL_EDITION", [ "2"; "3" ]
+          "--dialect", "SPIRAL_DIALECT", [ "i574n"; "upstream" ] ]
 
     let private packageDefaultFields =
         [ "default-int", "SPIRAL_DEFAULT_INT", [ "i8"; "i16"; "i32"; "i64"; "u8"; "u16"; "u32"; "u64" ]
-          "default-float", "SPIRAL_DEFAULT_FLOAT", [ "f32"; "f64" ]
-          "edition", "SPIRAL_EDITION", [ "2"; "3" ] ]
+          "default-float", "SPIRAL_DEFAULT_FLOAT", [ "f32"; "f64" ] ]
 
     let private applyPackageDefaults (input : string) : Result<unit, string> =
         let rec nearest (dir : DirectoryInfo) =
@@ -1364,7 +1376,7 @@ module Program =
             match config (File.ReadAllText project) with
             | Error _ -> Ok ()
             | Ok raw ->
-                let declared = [ raw.defaultInt; raw.defaultFloat; raw.edition ]
+                let declared = [ raw.defaultInt; raw.defaultFloat ]
                 List.zip packageDefaultFields declared
                 |> List.fold (fun state ((field, _, allowed), value) ->
                     match state, value with
@@ -1410,6 +1422,18 @@ module Program =
             match Array.tryFindIndex ((=) "--test") argv with
             | Some i when i + 1 < argv.Length -> Some argv.[i + 1], Array.append argv.[.. i - 1] argv.[i + 2 ..]
             | _ -> None, argv
+        let argv =
+            match Array.tryFindIndex ((=) "--features-out") argv with
+            | Some i when i + 1 < argv.Length ->
+                Environment.SetEnvironmentVariable("SPIRAL_FEATURES_OUT", Path.GetFullPath argv.[i + 1])
+                Array.append argv.[.. i - 1] argv.[i + 2 ..]
+            | _ -> argv
+        let argv =
+            match Array.tryFindIndex ((=) "--types-out") argv with
+            | Some i when i + 1 < argv.Length ->
+                Environment.SetEnvironmentVariable("SPIRAL_TYPES_OUT", Path.GetFullPath argv.[i + 1])
+                Array.append argv.[.. i - 1] argv.[i + 2 ..]
+            | _ -> argv
         configureHopacFromEnvironment ()
         if isNull (Environment.GetEnvironmentVariable "SPIRAL_HOVERS") then Environment.SetEnvironmentVariable("SPIRAL_HOVERS", "0")
         let defaultTypeFlagsError = match defaultTypeFlagsResult with Error message -> Some message | Ok _ -> None

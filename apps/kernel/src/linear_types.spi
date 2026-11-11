@@ -1,0 +1,75 @@
+///- --package .
+:# linear_types static =
+    :< testing
+
+:< sm'_operators
+
+:! meta_zero = string
+
+:! meta_succ n = n * string
+
+:| ^ meta_add left right total =
+    | MetaAddZero :: \* right. string -> meta_add meta_zero right right
+    | MetaAddSucc :: \* left right total. meta_add left right total * string -> meta_add (meta_succ left) right (meta_succ total)
+
+:== zero = meta_zero
+
+:== one = meta_succ meta_zero
+
+:! unit_type = string
+
+:! bool_type = string
+
+:! false_type = string
+
+:! tensor_type left right = left * right
+
+:! arrow_type domain codomain = domain * codomain
+
+:| base_witness ty =
+    | LinearUnit :: string -> base_witness unit_type
+    | LinearBool :: string -> base_witness bool_type
+    | LinearFalse :: string -> base_witness false_type
+
+:| ^ witness ty =
+    | LinearBase :: \* ty. base_witness ty -> witness ty
+    | LinearTensor :: \* l r. witness l * witness r * string -> witness (tensor_type l r)
+    | LinearArrow :: \* d c. witness d * witness c * string -> witness (arrow_type d c)
+
+:= add_one_zero () : meta_add one zero one = MetaAddSucc (MetaAddZero "zero-plus-zero-is-zero", "one-plus-zero-is-one")
+
+:= add_zero_right \* right. () : meta_add zero right right = MetaAddZero "zero-plus-right-preserves-the-exact-usage-index"
+
+:| add_rule =
+    | ZeroCase
+    | SuccessorCase
+
+:= rule_of \* l r t. (proof : meta_add l r t) : add_rule =
+    ?= proof ?|
+    | MetaAddZero _ => ZeroCase
+    | MetaAddSucc _ => SuccessorCase
+
+:= ^ add_steps \* l r t. (proof : meta_add l r t) : i32 =
+    ?= proof ?|
+    | MetaAddZero _ => 0i32
+    | MetaAddSucc (rest, _) => 1i32 + add_steps rest
+
+:= witness_label \* ty. (w : witness ty) : string =
+    ?= w ?|
+    | LinearBase _ => "base"
+    | LinearTensor (_, _, label) => label
+    | LinearArrow (_, _, label) => label
+
+///> rust
+:# one_plus_zero_is_one_by_a_successor_over_the_zero_case =
+    (rule_of (add_one_zero ()), add_steps (add_one_zero ()), rule_of (add_zero_right () : meta_add zero one one))
+    |> _assert_eq (SuccessorCase, 1i32, ZeroCase)
+
+:= unit_bool () : witness (tensor_type unit_type bool_type) = LinearTensor (LinearBase (LinearUnit "unit"), LinearBase (LinearBool "bool"), "tensor")
+
+:= unit_bool_into_false () : witness (arrow_type (tensor_type unit_type bool_type) false_type) =
+    LinearArrow (unit_bool (), LinearBase (LinearFalse "false"), "arrow")
+
+///> rust
+:# a_tensor_into_false_witness_carries_its_type_in_the_index =
+    (witness_label (unit_bool_into_false ()), witness_label (unit_bool ())) |> _assert_eq ("arrow", "tensor")

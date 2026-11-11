@@ -47,7 +47,7 @@ defmodule Spiral.Cells.Server do
 
   defp run_request(%{args: args, cwd: cwd, env: env}) do
     previous_cwd = File.cwd!()
-    previous_env = for {name, _} <- System.get_env(), String.starts_with?(name, "SPIRAL_"), into: %{}, do: {name, System.get_env(name)}
+    previous_env = for {name, _} <- System.get_env(), forwarded?(name), into: %{}, do: {name, System.get_env(name)}
 
     try do
       Enum.each(Map.keys(previous_env), &System.delete_env/1)
@@ -63,13 +63,17 @@ defmodule Spiral.Cells.Server do
     end
   end
 
+  @doc false
+  @spec forwarded?(String.t()) :: boolean()
+  def forwarded?(name), do: String.starts_with?(name, "SPIRAL_") or String.upcase(name) == "PATH"
+
   def try_execute(args) do
     with true <- System.get_env("SPIRAL_CELLS_SERVER") != "0",
          {:ok, binary} <- File.read(info_path()),
          %{port: port, stamp: stamp} <- :erlang.binary_to_term(binary),
          true <- stamp == source_stamp(),
          {:ok, socket} <- :gen_tcp.connect({127, 0, 0, 1}, port, [:binary, packet: 4, active: false], @connect_timeout_ms) do
-      env = for {name, value} <- System.get_env(), String.starts_with?(name, "SPIRAL_"), into: %{}, do: {name, value}
+      env = for {name, value} <- System.get_env(), forwarded?(name), into: %{}, do: {name, value}
       :ok = :gen_tcp.send(socket, :erlang.term_to_binary(%{args: args, cwd: File.cwd!(), env: env}))
 
       result =

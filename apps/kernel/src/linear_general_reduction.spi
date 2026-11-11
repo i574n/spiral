@@ -1,0 +1,320 @@
+///- --package .
+:# linear_general_reduction static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+:< linear_terms
+:< linear_substitution
+:< linear_reduction
+:< linear_values
+:< linear_closed_reduction
+
+:== cell y = linear_open_betas::cell y
+
+:== pair y = linear_open_betas::pair_type y
+
+:== unit_pair = linear_open_betas::unit_pair
+
+:== bcell = linear_open_betas::bcell
+
+:== ibeta y = linear_open_betas::ibeta y
+
+:== tbeta y = linear_open_betas::tbeta y
+
+:== abeta y = linear_open_betas::abeta y
+
+:== one_used = used usage_empty
+
+:== open_term c y = term c one_used y
+
+:| open_family context ty =
+    | OpenIdentity :: \* y. ibeta y -> open_family (cell y) y
+    | OpenTensor :: \* y. tbeta y -> open_family (cell y) (pair y)
+    | OpenApply :: \* y. abeta y -> open_family (cell y) y
+
+:| open_fixed context ty =
+    | OpenLambda :: string -> open_fixed one_unit (arrow_type unit_type unit_pair)
+    | OpenConditional :: string -> open_fixed bcell unit_type
+
+:| open_beta context ty =
+    | Family :: \* c y. open_family c y -> open_beta c y
+    | Fixed :: \* c y. open_fixed c y -> open_beta c y
+
+:= family_source \* c y. (r : open_family c y) : open_term c y =
+    ?= r ?|
+    | OpenIdentity b => linear_open_betas::ibeta_source b
+    | OpenTensor b => linear_open_betas::tbeta_source b
+    | OpenApply b => linear_open_betas::abeta_source b
+
+:= family_target \* c y. (r : open_family c y) : open_term c y =
+    ?= r ?|
+    | OpenIdentity b => linear_open_betas::ibeta_target b
+    | OpenTensor b => linear_open_betas::tbeta_target b
+    | OpenApply b => linear_open_betas::abeta_target b
+
+:= fixed_source \* c y. (r : open_fixed c y) : open_term c y =
+    ?= r ?|
+    | OpenLambda _ => linear_open_betas::lambda_source ()
+    | OpenConditional _ => linear_open_betas::cond_source ()
+
+:= fixed_target \* c y. (r : open_fixed c y) : open_term c y =
+    ?= r ?|
+    | OpenLambda _ => linear_open_betas::lambda_target ()
+    | OpenConditional _ => linear_open_betas::cond_target ()
+
+:= open_source \* c y. (b : open_beta c y) : open_term c y =
+    ?= b ?|
+    | Family f => family_source f
+    | Fixed x => fixed_source x
+
+:= open_target \* c y. (b : open_beta c y) : open_term c y =
+    ?= b ?|
+    | Family f => family_target f
+    | Fixed x => fixed_target x
+
+:| general c s t ty =
+    | AnyClosed :: \* y. reduction y -> general empty_context usage_empty usage_empty y
+    | AnyStep :: \* c s t y. small_step c s t y -> general c s t y
+    | AnyOpen :: \* c y. open_beta c y -> general c one_used one_used y
+
+:= general_source \* c s t y. (r : general c s t y) : term c s y =
+    ?= r ?|
+    | AnyClosed x => reduction_source x
+    | AnyStep x => step_source x
+    | AnyOpen x => open_source x
+
+:= general_target \* c s t y. (r : general c s t y) : term c t y =
+    ?= r ?|
+    | AnyClosed x => reduction_target x
+    | AnyStep x => step_target x
+    | AnyOpen x => open_target x
+
+:= sizes \* c s t y. (r : general c s t y) : i32 * i32 = size (general_source r), size (general_target r)
+
+:== open_step y = general (cell y) one_used one_used y
+
+:= identity_step () : open_step unit_type = AnyOpen (Family (OpenIdentity (linear_open_betas::unit_beta ())))
+
+:= tensor_step () : general (cell unit_type) one_used one_used (pair unit_type) = AnyOpen (Family (OpenTensor (linear_open_betas::pair_beta ())))
+
+:= apply_step () : open_step unit_type = AnyOpen (Family (OpenApply (linear_open_betas::app_beta ())))
+
+///> rust
+:# the_open_beta_families_keep_their_sizes =
+    (sizes (identity_step ()), sizes (tensor_step ()), sizes (apply_step ())) |> _assert_eq ((4i32, 1i32), (6i32, 3i32), (7i32, 4i32))
+
+///> rust
+:# the_fixed_open_betas_keep_their_sizes =
+    (sizes (AnyOpen (Fixed (OpenLambda "lambda"))), sizes (AnyOpen (Fixed (OpenConditional "if")))) |> _assert_eq ((7i32, 4i32), (7i32, 4i32))
+
+///> rust
+:# a_closed_reduction_is_a_general_reduction =
+    sizes (AnyClosed (ReduceAtomic (AtomicRecursive (\? (deep (), "deep"))))) |> _assert_eq (10i32, 7i32)
+
+:| ^ trace ty =
+    | TraceBase :: \* y. reduction y -> trace y
+    | TraceMore :: \* y. (\? d. closed (arrow_type d y) * trace d * string) -> trace y
+
+:= ^ trace_reduction \* y. (t : trace y) : reduction y =
+    ?= t ?|
+    | TraceBase r => r
+    | TraceMore p =>
+        := \? d. f, inner, n = p
+        ReduceApply (ReduceArg (\? (f, trace_reduction inner, n)))
+
+:= ^ trace_depth \* y. (t : trace y) : i32 =
+    ?= t ?|
+    | TraceBase _ => 0i32
+    | TraceMore p =>
+        := \? d. _, inner, _ = p
+        1i32 + trace_depth inner
+
+:= ^ argument_depth \* y. (r : reduction y) : i32 =
+    ?= r ?|
+    | ReduceApply a => apply_depth a
+    | _ => 0i32
+
+:& := apply_depth \* y. (a : apply_reduction y) : i32 =
+    ?= a ?|
+    | ReduceArg q =>
+        := \? d. _, s, _ = q
+        1i32 + argument_depth s
+    | ReduceFun _ => 0i32
+
+:= wrapped (t : trace unit_type) : trace unit_type = TraceMore (\? (closed_identity (), t, "wrap"))
+
+:= trace_three () : trace unit_type = wrapped (wrapped (wrapped (TraceBase (identity_beta ()))))
+
+///> rust
+:# a_depth_three_argument_trace_reduces_under_three_applications =
+    := t = trace_three ()
+    (trace_depth t, argument_depth (trace_reduction t), sizes (AnyClosed (trace_reduction t))) |> _assert_eq (3i32, 3i32, (13i32, 10i32))
+
+///> rust
+:# the_trace_depth_matches_the_reduction_depth_at_four =
+    := t = wrapped (trace_three ())
+    (trace_depth t, argument_depth (trace_reduction t)) |> _assert_eq (4i32, 4i32)
+
+:= tags \* c s t y. (r : general c s t y) : i32 * i32 = outer_tag (general_source r), outer_tag (general_target r)
+
+:= recursive_of \* y. (d : derivation unit_type y) : general empty_context usage_empty usage_empty y = AnyClosed (ReduceAtomic (AtomicRecursive (\? (d, "r"))))
+
+:= bound_unit () : derivation unit_type unit_type = Bound (unit_of "u", "b")
+
+:= apply_if_true () : derivation unit_type unit_type = Steps (ApplyIdentity (Steps (IfTrue (bound_unit (), "if")), "app"))
+
+:= shared_argument () : derivation unit_type unit_type = Steps (Forks (IfTrueRightApply (bound_unit (), "shared")))
+
+///> rust
+:# a_recursive_beta_through_a_conditional_reduces_an_application =
+    (tags (recursive_of (apply_if_true ())), sizes (recursive_of (apply_if_true ()))) |> _assert_eq ((1i32, 1i32), (10i32, 7i32))
+
+///> rust
+:# the_shared_argument_case_reduces_an_application_to_a_conditional =
+    (tags (recursive_of (shared_argument ())), sizes (recursive_of (shared_argument ()))) |> _assert_eq ((1i32, 7i32), (10i32, 7i32))
+
+:= btrue () : closed bool_type = bool_of "t" !+
+
+:= bfalse () : closed bool_type = bool_of "f" !-
+
+:= bid () : closed (arrow_type bool_type bool_type) = closed_identity ()
+
+:= true_branch \* y. (yes : closed y) (no : closed y) : small_step empty_context usage_empty usage_empty y =
+    Branch (TrueStep (\? (empty_usage (), yes, no, no_merge (), "true")))
+
+:= congruence \* y. (r : apply_reduction y) : general empty_context usage_empty usage_empty y = AnyClosed (ReduceApply r)
+
+:= fun_identity () : general empty_context usage_empty usage_empty bool_type =
+    congruence (ReduceFun (\? (ReduceAtomic (AtomicBeta (IdentityBeta (bid (), "f"))), btrue (), "fun")))
+
+:= arg_identity () : general empty_context usage_empty usage_empty bool_type =
+    congruence (ReduceArg (\? (bid (), ReduceAtomic (AtomicBeta (IdentityBeta (btrue (), "a"))), "arg")))
+
+:= fun_conditional () : general empty_context usage_empty usage_empty bool_type =
+    congruence (ReduceFun (\? (ReduceAtomic (AtomicStep (true_branch (bid ()) (bid ()))), btrue (), "fun-if")))
+
+:= arg_conditional () : general empty_context usage_empty usage_empty bool_type =
+    congruence (ReduceArg (\? (bid (), ReduceAtomic (AtomicStep (true_branch (btrue ()) (bfalse ()))), "arg-if")))
+
+///> rust
+:# bool_application_congruences_keep_an_application_on_both_ends =
+    (tags (fun_identity ()), tags (arg_identity ()), tags (fun_conditional ()), tags (arg_conditional ())) |> _assert_eq ((1i32, 1i32), (1i32, 1i32), (1i32, 1i32), (1i32, 1i32))
+
+///> rust
+:# bool_application_congruences_shrink_to_the_applied_identity =
+    (sizes (fun_identity ()), sizes (arg_identity ()), sizes (fun_conditional ()), sizes (arg_conditional ())) |> _assert_eq ((7i32, 4i32), (7i32, 4i32), (8i32, 4i32), (7i32, 4i32))
+
+:= guard_step () : small_step empty_context usage_empty usage_empty unit_type =
+    Guard (GuardStep (\? (true_branch (btrue ()) (bfalse ()), unit_of "y", unit_of "n", no_merge (), no_merge (), "guard")))
+
+///> rust
+:# a_guard_step_preserves_a_conditional =
+    (tags (AnyStep (guard_step ())), sizes (AnyStep (guard_step ()))) |> _assert_eq ((7i32, 7i32), (7i32, 4i32))
+
+///> rust
+:# the_open_beta_families_preserve_their_target_shapes =
+    (tags (identity_step ()), tags (tensor_step ()), tags (apply_step ())) |> _assert_eq ((1i32, 0i32), (1i32, 5i32), (1i32, 1i32))
+
+///> rust
+:# the_fixed_open_betas_preserve_their_target_shapes =
+    (tags (AnyOpen (Fixed (OpenLambda "l"))), tags (AnyOpen (Fixed (OpenConditional "c")))) |> _assert_eq ((1i32, 6i32), (1i32, 7i32))
+
+:= unit_if_step () : small_step empty_context usage_empty usage_empty unit_type = true_branch (unit_of "y") (unit_of "n")
+
+:= right_if () : general empty_context usage_empty usage_empty (tensor_type bool_type unit_type) =
+    AnyClosed (ReduceTensor (ReduceRight (bfalse (), ReduceAtomic (AtomicStep (unit_if_step ())), "right")))
+
+///> rust
+:# a_right_congruence_steps_a_conditional_inside_the_pair =
+    (tags (right_if ()), sizes (right_if ())) |> _assert_eq ((5i32, 5i32), (6i32, 3i32))
+
+:= unit_false () : derivation unit_type unit_type = Steps (Forks (IfFalseDistinct (bound_unit (), "false")))
+
+:= composed () : derivation unit_type unit_type = Steps (ApplyIdentity (unit_false (), "composed"))
+
+:= progress_sizes \* y. (p : progress y) : i32 * i32 = size (progress_source p), size (progress_target p)
+
+///> rust
+:# shallow_recursive_beta_progress_and_the_false_opening_match_the_sample =
+    (progress_sizes (recursive_progress (bound_unit ())), opened_shape (open_ready (unit_false ()))) |> _assert_eq ((4i32, 1i32), (6i32, 1i32, 10i32, 7i32))
+
+///> rust
+:# the_composed_opening_matches_the_sample =
+    opened_shape (open_ready (composed ())) |> _assert_eq (6i32, 1i32, 13i32, 10i32)
+
+:= true_left () : derivation bool_type (tensor_type bool_type unit_type) = Units (LeftUnit (Bound (btrue (), "b"), "l"))
+
+///> rust
+:# a_bool_left_unit_authority_gives_its_lambda_and_progress =
+    := closure, step = authority_of (true_left ())
+    (size (value_term closure), progress_sizes step) |> _assert_eq (4i32, (6i32, 3i32))
+
+:= unit_bool () : vsource (source_pair source_unit source_true) (tensor_type unit_type bool_type) = pair_source ()
+
+///> rust
+:# a_composite_ready_beta_over_a_unit_bool_source =
+    := relation, step = ready_bundle_of (ReadyIdentity (unit_bool (), "composite"))
+    (size (closed_beta_source relation), progress_sizes step) |> _assert_eq (6i32, (6i32, 3i32))
+
+:= tail_fn_term () : closed (arrow_type unit_type (tensor_type unit_type unit_type)) = source_term (tail_lambda ())
+
+:= unit_tail_over (t : trace unit_type) : trace (tensor_type unit_type unit_type) = TraceMore (\? (tail_fn_term (), t, "tail"))
+
+:= depth_two () : trace (tensor_type unit_type unit_type) = unit_tail_over (wrapped (TraceBase (identity_beta ())))
+
+:= depth_three () : trace (tensor_type unit_type unit_type) = unit_tail_over (wrapped (wrapped (TraceBase (identity_beta ()))))
+
+///> rust
+:# argument_congruence_under_a_unit_tensor_layer_at_depth_two =
+    (trace_depth (depth_two ()), sizes (AnyClosed (trace_reduction (depth_two ())))) |> _assert_eq (2i32, (12i32, 9i32))
+
+///> rust
+:# argument_congruence_under_a_unit_tensor_layer_at_depth_three =
+    (trace_depth (depth_three ()), sizes (AnyClosed (trace_reduction (depth_three ())))) |> _assert_eq (3i32, (15i32, 12i32))
+
+///> rust
+:# a_trace_projects_to_progress_and_endpoints =
+    := r = trace_reduction (trace_three ())
+    (progress_sizes (ProgressStep (r, "trace")), sizes (AnyClosed r)) |> _assert_eq ((13i32, 10i32), (13i32, 10i32))
+
+:= bool_arg () : linear_open_betas::arg_term bool_type =
+    Variable (VariableAt (\? (linear_open_betas::here_slot (), linear_open_betas::here_use (empty_usage ()), "x")))
+
+:= bool_merge () : linear_open_betas::arg_merge bool_type = MergeStep (\? (RightOnly "arg", MergeEmpty "e", "m"))
+
+:= bool_beta () : linear_open_betas::ibeta bool_type =
+    linear_open_betas::IBeta (linear_open_betas::id_body (AllUnusedExtend (empty_usage (), "x")), bool_arg (), bool_merge (), "bool")
+
+///> rust
+:# the_open_identity_beta_has_a_bool_instance =
+    := step = AnyOpen (Family (OpenIdentity (bool_beta ())))
+    (tags step, sizes step) |> _assert_eq ((1i32, 0i32), (4i32, 1i32))
+
+///> rust
+:# a_right_conditional_congruence_keeps_its_tensor_order fails "Unification failure" =
+    := g : general empty_context usage_empty usage_empty (tensor_type unit_type bool_type) = right_if ()
+    g |> ignore
+
+///> rust
+:# a_right_congruence_target_keeps_its_tensor_order fails "Unification failure" =
+    := t : closed (tensor_type unit_type bool_type) = general_target (right_if ())
+    t |> ignore
+
+///> rust
+:# a_bool_reduction_cannot_preserve_a_unit_type fails "Unification failure" =
+    := g : general empty_context usage_empty usage_empty unit_type = fun_identity ()
+    g |> ignore
+
+///> rust
+:# an_open_general_target_keeps_its_type fails "Unification failure" =
+    := t : term bcell one_used bool_type = general_target (AnyOpen (Fixed (OpenConditional "c")))
+    t |> ignore
+
+:= closed_bool_beta () : reduction bool_type = ReduceAtomic (AtomicBeta (IdentityBeta (bool_of "b" !+, "id")))
+
+///> rust
+:# a_left_general_congruence_target_keeps_the_pair_type fails "Unification failure" =
+    := g = AnyClosed (ReduceTensor (ReduceLeft (closed_bool_beta (), unit_of "u", "l")))
+    := t : closed (tensor_type unit_type bool_type) = general_target g
+    t |> ignore

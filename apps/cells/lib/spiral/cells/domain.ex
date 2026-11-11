@@ -14,11 +14,13 @@ defmodule Spiral.Cells.Domain do
 
   @passthrough [
     prepare: 1, patch_rust: 2, verdict_counts: 1, void_text: 4, source_input_rows: 2, source_split_blocks: 2,
-    result_fields: 1, reached_program: 2, from_toml: 1, declares_modules: 1, i574n_dialect: 1, source_remap: 4,
+    result_fields: 1, reached_program: 2, block_shape: 2, cell_weight: 2, status_reply: 1, from_toml: 1, source_remap: 4,
     markdown_html: 1, json_canonical: 1, builder_present: 1, builder_failure_trace: 1, builder_split: 1, host_language: 1,
     host_extension: 1, is_cl_compiler: 1, mount_sibling_project: 1, gleam_strip_warnings: 1, split_output: 1, unit_result: 1,
     package_project: 1, parse_dib: 1, to_spi: 1, to_spir: 1, to_spi_tested: 1, to_spir_tested: 1, from_spi_bounded: 4,
-    target_backend: 1, target_extension: 1, from_spi: 2, target_gaps: 1, test_index: 1, plan_tests: 1, plan: 1
+    target_backend: 1, target_extension: 1, from_spi: 2, target_gaps: 1, test_index: 1, plan_tests: 1, plan: 1, compile_reply: 1,
+    block_facts: 2, pool_reply: 1, hello_reply: 1, gleam_manifest_facts: 1,
+    opened_names: 1, package_paths: 1, strip_comments: 1, shim_path: 1, phase_row: 2
   ]
 
   for {name, arity} <- @passthrough do
@@ -28,6 +30,16 @@ defmodule Spiral.Cells.Domain do
       ensure!()
       :spiral_cells@domain.unquote(name)(unquote_splicing(args))
     end
+  end
+
+  def declares_modules(text) do
+    ensure!()
+    :spiral_cells@domain.declares_modules(text) in [true, "true"]
+  end
+
+  def i574n_dialect(text) do
+    ensure!()
+    :spiral_cells@domain.i574n_dialect(text) in [true, "true"]
   end
 
   def manifest_path(dir) do

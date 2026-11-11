@@ -204,7 +204,7 @@
         := \? effect. _, SurgeryRow label = payload
         label
 
-:= ^ terminal_label \* surgery patient robot surgeon left right owner frame room epoch instrument tissue root
+:= terminal_label \* surgery patient robot surgeon left right owner frame room epoch instrument tissue root
     observer from to.
     (plan :
         surgery_plan

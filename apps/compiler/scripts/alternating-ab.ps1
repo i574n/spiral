@@ -2,11 +2,11 @@ param(
     [Parameter(Mandatory)] [string] $Dll,
     [string] $Variants = 'w1-cw1,w8-cw1,w8-cw2,w8-cw8',
     [int] $Rounds = 5,
-    [string] $Source = 'C:\home\git\spiral\apps\spiral\spiral.spi',
+    [string] $Source = (Join-Path $PSScriptRoot '..\..\spiral\spiral.spi'),
     [int] $TimeoutSec = 900
 )
 $ErrorActionPreference = 'Stop'
-. C:\home\git\spiral\apps\compiler\scripts\env.ps1
+. (Join-Path $PSScriptRoot 'env.ps1')
 $dotnet = Resolve-SpiralDotnet
 $out = Join-Path $env:LOCALAPPDATA ('spiral-bin\candidates\hopacsota-p2\alternating-ab\{0}' -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
 New-Item -ItemType Directory -Force $out | Out-Null

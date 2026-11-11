@@ -1,0 +1,79 @@
+///- --package .
+:# ui_signals static =
+    :< testing
+
+:< sm'_operators
+
+:! signal model t = { id : i32; read : model -> t; write : model -> t -> model }
+
+:! memo model t = { deps : list i32; compute : model -> t; cache : model -> option t; store : model -> option t -> model }
+
+:! reaction model = { deps : list i32; run : model -> model }
+
+:! graph model = { model : model; clears : list (list i32 * (model -> model)); reactions : list (reaction model) }
+
+:= empty \* model. (x : model) : graph model = graph { model = x; clears = []; reactions = [] }
+
+:= model_of \* model. ((graph g) : graph model) : model = g::model
+
+:= watch \* model t. ((graph g) : graph model) ((memo m) : memo model t) : graph model =
+    graph { g ?| clears = (m::deps, \(x : model) => m::store x None) :: g::clears }
+
+:= react \* model. ((graph g) : graph model) (r : reaction model) : graph model = graph { g ?| reactions = r :: g::reactions }
+
+:~ ^ clear \* model. (id : i32) (x : model) (rows : list (list i32 * (model -> model))) : model =
+    ?= rows ?|
+    | (deps, wipe) :: rest => clear id (? listm'::contains id deps ?> wipe x |: x) rest
+    | [] => x
+
+:~ ^ run_reactions \* model. (id : i32) (x : model) (rows : list (reaction model)) : model =
+    ?= rows ?|
+    | (reaction r) :: rest => run_reactions id (? listm'::contains id r::deps ?> r::run x |: x) rest
+    | [] => x
+
+:= get \* model t. (g : graph model) ((signal s) : signal model t) : t = s::read (model_of g)
+
+:= set \* model t. ((graph g) : graph model) ((signal s) : signal model t) (v : t) : graph model =
+    ? s::read g::model = v ?> graph g
+    |: graph { g ?| model = run_reactions s::id (clear s::id (s::write g::model v) g::clears) g::reactions }
+
+:= stored \* model t. (store : model -> option t -> model) (v : t) (x : model) : t * model = v, store x (Some v)
+
+:= get_memo \* model t. ((graph g) : graph model) ((memo m) : memo model t) : t * graph model =
+    := (v, x) = ?= m::cache g::model ?| | Some v => v, g::model | None => stored m::store (m::compute g::model) g::model
+    v, graph { g ?| model = x }
+
+:== probe_model = { a : i32; label : string; doubled : option i32; runs : i32; effects : i32 }
+
+:= a_signal () : signal probe_model i32 = signal { id = 0i32; read = \(x : probe_model) => x::a; write = \(x : probe_model) (v : i32) => { x ?| a = v } }
+
+:= label_signal () : signal probe_model string =
+    signal { id = 1i32; read = \(x : probe_model) => x::label; write = \(x : probe_model) (v : string) => { x ?| label = v } }
+
+:= store_doubled (x : probe_model) (v : option i32) : probe_model =
+    ?= v ?|
+    | Some _ => { x ?| doubled = v; runs = x::runs + 1i32 }
+    | None => { x ?| doubled = v }
+
+:= doubled_memo () : memo probe_model i32 =
+    memo { deps = [0i32]; compute = \(x : probe_model) => x::a * 2i32; cache = \(x : probe_model) => x::doubled; store = store_doubled }
+
+:= probe_graph () : graph probe_model =
+    := start = { a = 0i32; label = ""; doubled = None; runs = 0i32; effects = 0i32 }
+    react (watch (empty start) (doubled_memo ())) (reaction { deps = [0i32]; run = \(x : probe_model) => { x ?| effects = x::effects + 1i32 } })
+
+:= read_doubled (g : graph probe_model) : i32 * graph probe_model = get_memo g (doubled_memo ())
+
+:= counts (g : graph probe_model) : i32 * i32 = (model_of g)::runs, (model_of g)::effects
+
+///> rust
+:# a_set_recomputes_the_memo_once_and_runs_its_effect_once =
+    := (_, g) = read_doubled (probe_graph ())
+    := (six, g) = read_doubled (set g (a_signal ()) 3i32)
+    (six, counts g) |> _assert_eq (6i32, (2i32, 1i32))
+
+///> rust
+:# unrelated_and_unchanged_sets_do_nothing =
+    := (_, g) = read_doubled (set (probe_graph ()) (a_signal ()) 3i32)
+    := (six, g) = read_doubled (set (set g (label_signal ()) "x") (a_signal ()) 3i32)
+    (six, counts g) |> _assert_eq (6i32, (1i32, 1i32))

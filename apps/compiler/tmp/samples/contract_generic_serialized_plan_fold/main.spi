@@ -65,7 +65,7 @@
         := \? middle. prefix, _ = payload
         S (count prefix)
 
-:= ^ last_row \* from to. (plan : serialized_plan from to) : string =
+:= last_row \* from to. (plan : serialized_plan from to) : string =
     ?= plan ?|
     | SerializedLeaf (SerializedNode payload) =>
         := \? effect. Row label = payload

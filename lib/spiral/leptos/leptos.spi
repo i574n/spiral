@@ -454,6 +454,8 @@
     := fn = fn |> send_wrapper_new
     $'"" + !name + "={ move || (*!fn)() }"'
 
+:= class (classes : string) : string = $'"class=\\\"" + !classes + "\\\""'
+
 := class_fn (classes : string) (fn : () -> string) : string =
     attr_fn "class" \ () => classes ++# fn () |> sm'::to_std_string
 

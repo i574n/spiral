@@ -39,10 +39,10 @@ defmodule Spiral.Cells.CompilerDaemonTest do
   end
 
   test "the warm-port file key ignores slash direction, case and a trailing slash, so run_notebook.ps1 can compute it" do
-    assert CompilerClient.root_key("C:\\Home\\Git\\Cells\\") == CompilerClient.root_key("c:/home/git/cells")
-    assert CompilerClient.root_key("c:/home/git/cells") =~ ~r/\A[0-9A-F]{16}\z/
-    refute CompilerClient.root_key("c:/home/git/cells") == CompilerClient.root_key("c:/home/git/cells2")
-    assert CompilerClient.warm_port_file("c:/home/git/cells", "1700000000-315392") =~ ~r/cells-port-[0-9A-F]{16}-1700000000-315392\.txt\z/
+    assert CompilerClient.root_key("C:\\Work\\Cells\\") == CompilerClient.root_key("c:/work/cells")
+    assert CompilerClient.root_key("c:/work/cells") =~ ~r/\A[0-9A-F]{16}\z/
+    refute CompilerClient.root_key("c:/work/cells") == CompilerClient.root_key("c:/work/cells2")
+    assert CompilerClient.warm_port_file("c:/work/cells", "1700000000-315392") =~ ~r/cells-port-[0-9A-F]{16}-1700000000-315392\.txt\z/
   end
 
   defmodule StuckWorker do
@@ -76,6 +76,18 @@ defmodule Spiral.Cells.CompilerDaemonTest do
   test "the banner carries the served compiler's tag after the code stamp" do
     assert [_, "1", _pid, _stamp, tag] = String.split(CompilerDaemon.banner(), "\t")
     assert tag == CompilerDaemon.served_dll_tag()
+  end
+
+  test "the served tag names the bun it resolves, so a client with another bun never reuses this daemon" do
+    assert CompilerDaemon.tool_tag("C:\\tools\\bun.exe") == CompilerDaemon.tool_tag("C:/tools/bun.exe")
+    refute CompilerDaemon.tool_tag("C:/tools/bun.exe") == CompilerDaemon.tool_tag("/opt/bun/bin/bun")
+    assert CompilerDaemon.tool_tag(nil) == "none"
+    if match?({:win32, _}, :os.type()), do: assert(CompilerDaemon.tool_tag("c:/Tools/Bun.exe") == CompilerDaemon.tool_tag("C:\\tools\\bun.exe"))
+    refute CompilerDaemon.other_bun?(Spiral.Cells.Toolchain.bun([]) || "")
+    assert CompilerDaemon.other_bun?("/no/such/elsewhere/bun")
+    refute CompilerDaemon.other_bun?(nil)
+    bun = CompilerDaemon.tool_tag(Spiral.Cells.Toolchain.bun([]))
+    assert CompilerDaemon.served_dll_tag() == CompilerDaemon.served_compiler_tag() <> "~" <> bun
   end
 
   test "the daemon port: the build port by default, SPIRAL_CELLS_COMPILER_PORT otherwise" do
@@ -628,6 +640,25 @@ defmodule Spiral.Cells.CompilerDaemonTest do
       after
         GenServer.stop(daemon, :normal, 30_000)
         if saved, do: System.put_env("TMPDIR", saved), else: System.delete_env("TMPDIR")
+        File.rm_rf(dir)
+      end
+    end
+
+    test "a failed capabilities probe is retried, not remembered for the life of the process" do
+      dir = Path.join(System.tmp_dir!(), "kcap#{System.unique_integer([:positive])}")
+      File.mkdir_p!(dir)
+      ready = Path.join(dir, "ready")
+      fake = Path.join(dir, "flaky_compiler.ps1")
+      File.write!(fake, "if (Test-Path -LiteralPath '#{ready}') { 'source-blocks resolve-manifest' } else { exit 3 }\n")
+      pwsh = System.find_executable("pwsh")
+
+      try do
+        assert CompilerDaemon.host_capabilities(pwsh, fake) == []
+        File.write!(ready, "")
+        assert CompilerDaemon.host_capabilities(pwsh, fake) == ["source-blocks", "resolve-manifest"]
+        File.rm!(ready)
+        assert CompilerDaemon.host_capabilities(pwsh, fake) == ["source-blocks", "resolve-manifest"]
+      after
         File.rm_rf(dir)
       end
     end

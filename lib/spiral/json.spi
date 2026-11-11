@@ -95,6 +95,20 @@ pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
     := ~reply = "{\"city\":\"Recife\",\"days\":4}"
     city_query_score (decode reply) |> _assert_eq 60i32
 
+:== tagged = { name : string; tags : list string }
+
+///> rust
+:# decode_reads_a_list_field_from_a_run_time_reply =
+    := ~reply = "{\"name\":\"a\",\"tags\":[\"x\",\"y\"]}"
+    := t : tagged = decode reply
+    (t::name, (listm::length t::tags : i32), t::tags) |> _assert_eq ("a", 2i32, [ "x"; "y" ])
+
+///> c
+///> rust
+:# decode_reads_null_options_as_none =
+    := ~reply = "{\"city\":\"Natal\",\"days\":null,\"units\": null}"
+    city_query_score (decode reply) |> _assert_eq 55i32
+
 :== place = { city : string; days : i32 }
 :== forecast_query = { days : i32; where : place; metric : bool }
 
@@ -241,3 +255,10 @@ pub fn spiral_json_quote(s: &str) -> std::rc::Rc<str> {
     testing::expect (quote "plain" = "\"plain\"") "plain text is only wrapped"
     testing::expect (quote "a\"b\\c" = "\"a\\\"b\\\\c\"") "quotes and backslashes are escaped"
     testing::expect (quote "l1\nl2\tx" = "\"l1\\nl2\\tx\"") "newlines and tabs are escaped"
+
+:== measured = { amount : f64; height : u32 }
+
+///> rust
+:# number_fields_decode_as_f64_and_u32 =
+    (decode "{\"amount\": 2.5e-3, \"height\": 4000000000}" : measured)
+    |> _assert_eq { amount = 0.0025; height = 4000000000u32 }

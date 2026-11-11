@@ -1,0 +1,46 @@
+:= failwith \* t. (msg : string) : t = !!!!FailWith(`t, msg)
+
+:= sieve_count (n : i32) : i32 =
+    := marks : array_base i32 = !!!!ArrayCreate(`i32, n)
+    :~ ^ mark (j : i32) (step : i32) : () =
+        ? j >= n ?> ()
+        |:
+            !!!!ArrayIndexSet(marks, j, 1i32)
+            mark (j +. step) step
+    :~ ^ scan (i : i32) (count : i32) : i32 =
+        ? i >= n ?> count
+        |:
+            ? !!!!EQ(!!!!ArrayIndex(marks, i), 0i32) ?>
+                ? i <= n /. i ?> mark (i *. i) i |: ()
+                scan (i +. 1) (count +. 1)
+            |: scan (i +. 1) count
+    scan 2 0
+
+:= main () : i32 =
+    := ~n = 2000000i32
+    := ~rounds = !!!!BackendSwitch({
+        Gleam = \ () => 1i32
+        Lua = \ () => 1i32
+        Fsharp = \ () => 8i32
+        Python = \ () => 1i32
+        Cpp = \ () => 8i32
+        Rust = \ () => 8i32
+        CppHost = \ () => 8i32
+        Zig = \ () => 8i32
+        Lean = \ () => 1i32
+        TypeScript = \ () => 1i32
+        C = \ () => 8i32
+        Pascal = \ () => 8i32
+        Wasm = \ () => 8i32
+        Kotlin = \ () => 8i32
+        Swift = \ () => 8i32
+        Bend = \ () => 1i32
+    })
+    :~ ^ repeat (r : i32) (last : i32) : () =
+        ? r >= rounds ?> ()
+        |:
+            := c = sieve_count (n +. last /. 2147483647i32)
+            ? !!!!EQ(c, 148933i32) ?> () |: failwith "bench-sieve-wrong-prime-count"
+            repeat (r +. 1) c
+    repeat 0 n
+    !!!!Mod(148933i32, 256i32)

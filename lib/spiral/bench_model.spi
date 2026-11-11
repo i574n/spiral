@@ -1,0 +1,196 @@
+///- --package .
+:# bench_model static =
+    :< testing
+
+:< sm'_operators
+
+:| outlier_rule =
+    | KeepAll
+    | MadCutoff : f64
+
+:== plan = { rounds : i32; passes : i32; warmup_passes : i32; quiet_cores : f64; aa_low : f64; aa_high : f64; outliers : outlier_rule }
+
+:== machine_state = { busy_cores : f64; load : f64 }
+
+:== sample = { arm : string; round : i32; nanos : u64; state : machine_state }
+
+:== spread = { low : f64; middle : f64; high : f64 }
+
+:| aa_verdict =
+    | InBand : f64
+    | Void : f64
+
+:~ ^ insert_sorted (x : f64) (xs : list f64) : list f64 =
+    ?= xs ?|
+    | [] => [ x ]
+    | y :: rest => ? x <= y ?> x :: xs |: y :: insert_sorted x rest
+
+:~ ^ sorted (xs : list f64) (acc : list f64) : list f64 =
+    ?= xs ?|
+    | [] => acc
+    | x :: rest => sorted rest (insert_sorted x acc)
+
+:~ ^ at (i : i32) (xs : list f64) : f64 =
+    ?= xs ?|
+    | [] => 0.0
+    | x :: rest => ? i <= 0i32 ?> x |: at (i - 1i32) rest
+
+:~ spread_of (xs : list f64) : spread =
+    := s = sorted xs []
+    := n = listm::length s
+    { low = at (n / 4i32) s; middle = at (n / 2i32) s; high = at ((3i32 * n) / 4i32) s }
+
+:~ median (xs : list f64) : f64 =
+    := s = spread_of xs
+    s::middle
+
+:~ abs_f64 (x : f64) : f64 = ? x < 0.0 ?> 0.0 - x |: x
+
+:~ mad (xs : list f64) : f64 =
+    := m = median xs
+    median (listm::map (\ (x : f64) => abs_f64 (x - m)) xs)
+
+:~ kept (rule : outlier_rule) (xs : list f64) : list f64 =
+    ?= rule ?|
+    | KeepAll => xs
+    | MadCutoff k =>
+        := m = median xs
+        := limit = k * mad xs
+        listm'::filter (\ (x : f64) => abs_f64 (x - m) <= limit) xs
+
+:~ quiet (p : plan) (s : sample) : bool = s::state::busy_cores < p::quiet_cores
+
+:~ aa_of (p : plan) (ratio : f64) : aa_verdict = ? ratio >= p::aa_low && ratio <= p::aa_high ?> InBand ratio |: Void ratio
+
+:~ ^ rotated (k : i32) (arms : list string) : list string =
+    ? k <= 0i32
+    ?> arms
+    |:
+        ?= arms ?|
+        | a :: rest => rotated (k - 1i32) (listm::append rest [ a ])
+        | [] => arms
+
+:~ ^ schedule_from (r : i32) (p : plan) (arms : list string) : list (i32 * string) =
+    ? r > p::rounds
+    ?> []
+    |: listm::append (listm::map (\ (a : string) => r, a) (rotated (r - 1i32) arms)) (schedule_from (r + 1i32) p arms)
+
+:~ schedule (p : plan) (arms : list string) : list (i32 * string) = schedule_from 1i32 p arms
+
+:~ percentile (per_mille : i32) (xs : list f64) : f64 =
+    := s = sorted xs []
+    at ((per_mille * (listm::length s - 1i32)) / 1000i32) s
+
+:~ pick (seed : u32) (n : i32) (i : i32) : i32 =
+    convert::i32 (keyed_rng::mix32 (seed + keyed_rng::mix32 (convert::convert i : u32)) % (convert::convert n : u32))
+
+:~ ^ resample (seed : u32) (xs : list f64) (n : i32) (i : i32) (acc : list f64) : list f64 =
+    ? i >= n ?> acc |: resample seed xs n (i + 1i32) (at (pick seed n i) xs :: acc)
+
+:~ ^ boot_medians (xs : list f64) (b : i32) (acc : list f64) : list f64 =
+    ? b <= 0i32
+    ?> acc
+    |: boot_medians xs (b - 1i32) (median (resample (keyed_rng::mix32 (convert::convert b : u32)) xs (listm::length xs) 0i32 []) :: acc)
+
+:~ bootstrap_ci (resamples : i32) (xs : list f64) : spread =
+    := ms = boot_medians xs resamples []
+    { low = percentile 25i32 ms; middle = median xs; high = percentile 975i32 ms }
+
+:== row = { workload : string; backend : string; arm : string; round : i32; nanos : u64 }
+
+:== summary = { workload : string; backend : string; arm : string; count : i32; mad : f64; ci : spread }
+
+:~ same_cell (w : string) (b : string) (a : string) (r : row) : bool = r::workload = w && r::backend = b && r::arm = a
+
+:~ cell_samples (p : plan) (rows : list row) (w : string) (b : string) (a : string) : list f64 =
+    rows |> listm'::filter (same_cell w b a) |> listm::map (\ (r : row) => convert::f64 r::nanos) |> kept p::outliers
+
+:~ summary_of (p : plan) (resamples : i32) (rows : list row) (w : string) (b : string) (a : string) : summary =
+    := xs = cell_samples p rows w b a
+    { workload = w; backend = b; arm = a; count = listm::length xs; mad = mad xs; ci = bootstrap_ci resamples xs }
+
+:~ aa_ratio (p : plan) (base : summary) (twin : summary) : aa_verdict = aa_of p (twin::ci::middle / base::ci::middle)
+
+:= default_plan () : plan =
+    { rounds = 15i32; passes = 25i32; warmup_passes = 3i32; quiet_cores = 2.0; aa_low = 0.95; aa_high = 1.05; outliers = MadCutoff 3.0 }
+
+:= calm () : machine_state = { busy_cores = 0.5; load = 0.4 }
+
+:= sample_on (m : machine_state) : sample = { arm = "a"; round = 1i32; nanos = 10u64; state = m }
+
+:| time_unit =
+    | Nanos
+    | Micros
+    | Millis
+
+:= unit_of (ms : f64) : time_unit = ? ms >= 1.0 ?> Millis |? ms >= 0.001 ?> Micros |: Nanos
+
+:= in_unit (u : time_unit) (ms : f64) : f64 =
+    ?= u ?|
+    | Millis => ms
+    | Micros => ms * 1000.0
+    | Nanos => ms * 1000000.0
+
+:= unit_name (u : time_unit) : string =
+    ?= u ?|
+    | Millis => "ms"
+    | Micros => "us"
+    | Nanos => "ns"
+
+///> rust
+:# the_median_and_spread_come_from_the_sorted_samples =
+    := s = spread_of [ 5.0; 1.0; 3.0; 9.0; 7.0 ]
+    (s::low, s::middle, s::high) |> _assert_eq (3.0, 5.0, 7.0)
+
+///> rust
+:# a_far_outlier_is_dropped_by_the_mad_cutoff_and_kept_by_keep_all =
+    := xs = [ 10.0; 11.0; 10.0; 12.0; 11.0; 90.0 ]
+    (listm::length (kept (MadCutoff 3.0) xs), listm::length (kept KeepAll xs)) |> _assert_eq (5i32, 6i32)
+
+///> rust
+:# an_aa_ratio_outside_the_band_voids_the_table =
+    := p = default_plan ()
+    (aa_of p 1.02, aa_of p 1.2) |> _assert_eq (InBand 1.02, Void 1.2)
+
+///> rust
+:# arms_rotate_one_place_per_round =
+    rotated 1i32 [ "a"; "b"; "c" ] |> _assert_eq [ "b"; "c"; "a" ]
+
+///> rust
+:# a_sample_taken_on_busy_cores_is_not_quiet =
+    := p = default_plan ()
+    (quiet p (sample_on (calm ())), quiet p (sample_on { busy_cores = 3.0; load = 2.0 })) |> _assert_eq (!+, !-)
+
+///> rust
+:# the_print_unit_keeps_a_thousand_quanta_per_value =
+    (unit_of 1.5, unit_of 0.5, unit_of 0.0005) |> _assert_eq (Millis, Micros, Nanos)
+
+///> rust
+:# a_value_scales_into_its_unit =
+    (in_unit (unit_of 0.5) 0.5, in_unit (unit_of 0.25) 0.25, unit_name (unit_of 0.0005)) |> _assert_eq (500.0, 250.0, "ns")
+
+///> rust
+:# rounds_interleave_every_arm_and_rotate_the_order =
+    := p = default_plan ()
+    schedule { p ?| rounds = 2i32 } [ "a"; "b"; "aa" ]
+    |> _assert_eq [ (1i32, "a"); (1i32, "b"); (1i32, "aa"); (2i32, "b"); (2i32, "aa"); (2i32, "a") ]
+
+:= rows_of (arm : string) (values : list u64) : list row =
+    values |> listm::map (\ (v : u64) => { workload = "w"; backend = "c"; arm = arm; round = 1i32; nanos = v })
+
+:= arm_summary (arm : string) (values : list u64) : summary = summary_of (default_plan ()) 200i32 (rows_of arm values) "w" "c" arm
+
+///> rust
+:# the_interval_brackets_the_median =
+    := s = arm_summary "a" [ 100u64; 102u64; 98u64; 101u64; 99u64; 500u64 ]
+    (s::count, s::ci::middle, s::ci::low <= s::ci::middle && s::ci::middle <= s::ci::high) |> _assert_eq (5i32, 100.0, !+)
+
+///> rust
+:# a_twin_inside_the_band_passes =
+    := base, twin = arm_summary "a" [ 100u64; 101u64; 99u64 ], arm_summary "aa" [ 101u64; 100u64; 102u64 ]
+    aa_ratio (default_plan ()) base twin |> _assert_eq (InBand 1.01)
+
+///> rust
+:# a_slow_twin_voids_the_table =
+    := base, slow = arm_summary "a" [ 100u64; 101u64; 99u64 ], arm_summary "aa" [ 120u64; 121u64; 119u64 ]
+    aa_ratio (default_plan ()) base slow |> _assert_eq (Void 1.2)

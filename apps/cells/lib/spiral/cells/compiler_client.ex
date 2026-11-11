@@ -32,17 +32,8 @@ defmodule Spiral.Cells.CompilerClient do
           :gen_tcp.send(sock, "status\n")
           row =
             case recv_line(sock, 1_000) do
-              {:ok, "status\t" <> rest} ->
-                case String.split(String.trim(rest), "\t") do
-                  [pid, stamp, idle, queued, retiring | owner] ->
-                    %{port: port, pid: pid, stamp: stamp, idle_min: idle, queued: queued, retiring: retiring, owner: Enum.join(owner, " ")}
-
-                  _ ->
-                    %{port: port, pid: nil, stamp: nil, idle_min: nil, queued: nil, retiring: nil, owner: nil}
-                end
-
-              _ ->
-                %{port: port, pid: nil, stamp: nil, idle_min: nil, queued: nil, retiring: nil, owner: nil}
+              {:ok, line} -> Map.put(status_fields(line), :port, port)
+              _ -> Map.put(status_fields(""), :port, port)
             end
 
           :gen_tcp.close(sock)
@@ -76,13 +67,8 @@ defmodule Spiral.Cells.CompilerClient do
         :gen_tcp.send(sock, "pool\n")
 
         row =
-          with {:ok, "pool\t" <> rest} <- recv_line(sock, 1_000),
-               [served, refused, peak, free] <- String.split(String.trim(rest), "\t"),
-               {served, ""} <- Integer.parse(served),
-               {refused, ""} <- Integer.parse(refused),
-               {peak, ""} <- Integer.parse(peak) do
-            [%{served: served, refused_growth: refused, peak_workers: peak, last_free_mb: free_reading(free)}]
-          else
+          case recv_line(sock, 1_000) do
+            {:ok, line} -> pool_fields(line)
             _ -> []
           end
 
@@ -94,10 +80,17 @@ defmodule Spiral.Cells.CompilerClient do
     end
   end
 
-  defp free_reading(text) do
-    case Integer.parse(text) do
-      {mb, ""} -> mb
-      _ -> nil
+  @doc """
+  One pool reply line as a one-row list of the daemon's pool counters, or an empty list when the line is not a pool reply.
+  """
+  @spec pool_fields(String.t()) :: [map()]
+  def pool_fields(line) do
+    case line |> Spiral.Cells.Domain.pool_reply() |> String.split("\t") do
+      [served, refused, peak, free] ->
+        [%{served: String.to_integer(served), refused_growth: String.to_integer(refused), peak_workers: String.to_integer(peak), last_free_mb: if(free == "-", do: nil, else: String.to_integer(free))}]
+
+      _ ->
+        []
     end
   end
 
@@ -138,7 +131,11 @@ defmodule Spiral.Cells.CompilerClient do
   def ensure(port) do
     case ping(port) do
       {:ok, stamp, pid} ->
-        if stamp == CompilerDaemon.code_stamp(), do: :ok, else: replace(port, pid)
+        cond do
+          stamp != CompilerDaemon.code_stamp() -> replace(port, pid)
+          foreign_toolchain?(port) -> {:error, process_error(foreign_toolchain_message(port))}
+          true -> :ok
+        end
 
       :down ->
         start(port)
@@ -342,31 +339,18 @@ defmodule Spiral.Cells.CompilerClient do
         :gen_tcp.send(sock, "hello\n")
 
         case recv_line(sock, 5_000) do
-          {:ok, "spiral-cells\t1\t" <> rest} ->
-            case String.split(rest, "\t") do
-              [_pid, stamp | _] ->
-                if String.to_integer(stamp) == CompilerDaemon.code_stamp() do
-                  :gen_tcp.send(sock, request_line(req) <> "\n")
+          {:ok, line} ->
+            if current_banner?(line) do
+              :gen_tcp.send(sock, request_line(req) <> "\n")
 
-                  case recv_line(sock, :infinity) do
-                    {:ok, "ok\t" <> rest} -> ok_revision(rest)
-                    {:ok, "error\ttimeout"} -> {:error, :timeout}
-                    {:ok, "error\ttimeout\t" <> queue} -> error_timeout(queue)
-                    {:ok, "error\t" <> rest} -> error_message(rest)
-                    {:ok, other} -> {:error, "unexpected compiler reply: #{other}"}
-                    {:error, :timeout} -> {:error, :timeout}
-                    {:error, reason} -> {:error, "compiler connection failed: #{inspect(reason)}"}
-                  end
-                else
-                  {:error, :stale}
-                end
-
-              _ ->
-                {:error, :stale}
+              case recv_line(sock, :infinity) do
+                {:ok, line} -> compile_result(line)
+                {:error, :timeout} -> {:error, :timeout}
+                {:error, reason} -> {:error, "compiler connection failed: #{inspect(reason)}"}
+              end
+            else
+              {:error, :stale}
             end
-
-          {:ok, _other} ->
-            {:error, :stale}
 
           {:error, reason} ->
             {:error, "compiler connection failed: #{inspect(reason)}"}
@@ -399,20 +383,8 @@ defmodule Spiral.Cells.CompilerClient do
 
         result =
           case recv_line(sock, 1_000) do
-            {:ok, "spiral-cells\t1\t" <> rest} ->
-              case String.split(rest, "\t") do
-                [pid, stamp | _] ->
-                  case Integer.parse(stamp) do
-                    {stamp, ""} -> {:ok, stamp, String.to_integer(pid)}
-                    _ -> {:occupied, "unreadable banner"}
-                  end
-
-                _ ->
-                  {:occupied, "unreadable banner"}
-              end
-
-            {:ok, other} ->
-              {:occupied, String.trim(other)}
+            {:ok, line} ->
+              ping_result(line)
 
             {:error, reason} ->
               {:occupied, inspect(reason)}
@@ -624,18 +596,19 @@ defmodule Spiral.Cells.CompilerClient do
     end
   end
 
-  defp error_timeout(queue) do
+  @doc """
+  One compile reply line as the client result, ok with the revision, a timeout, or an error message, crediting the daemon
+  queue wait the line reports.
+  """
+  @spec compile_result(String.t()) :: {:ok, String.t()} | {:error, :timeout | String.t()}
+  def compile_result(line) do
+    [tag, queue, payload] = line |> Spiral.Cells.Domain.compile_reply() |> String.split("\t", parts: 3)
     credit_queue(queue)
-    {:error, :timeout}
-  end
 
-  defp error_message(rest) do
-    with [queue, message] <- String.split(rest, "\t", parts: 2),
-         {ms, ""} when ms >= 0 <- Integer.parse(queue) do
-      credit_queue(ms)
-      {:error, message}
-    else
-      _ -> {:error, rest}
+    case tag do
+      "ok" -> {:ok, payload}
+      "timeout" -> {:error, :timeout}
+      "failed" -> {:error, payload}
     end
   end
 
@@ -650,25 +623,17 @@ defmodule Spiral.Cells.CompilerClient do
     end
   end
 
-  defp ok_revision(rest) do
-    case String.split(rest, "\t") do
-      [revision, queue] ->
-        credit_queue(queue)
-        {:ok, revision}
-
-      [revision] ->
-        {:ok, revision}
-
-      _ ->
-        {:error, "unexpected compiler reply: ok\t#{rest}"}
-    end
-  end
 
   defp request_line(req) do
     line = "compile\t#{req.backend}\t#{req.spi}\t#{req.rs}\t#{timeout_field(req.timeout)}\t#{req.mtime}\t#{System.pid()}"
 
-    case Map.get(req, :pin) do
+    line = case Map.get(req, :pin) do
       pin when is_binary(pin) and pin != "" -> line <> "\t" <> pin
+      _ -> line
+    end
+
+    case Map.get(req, :test) do
+      name when is_binary(name) and name != "" -> line <> "\ttest\t" <> name
       _ -> line
     end
   end
@@ -739,7 +704,7 @@ defmodule Spiral.Cells.CompilerClient do
       nil ->
         port = pick_slot(first, mine, 0, &banner_dll/1)
         :persistent_term.put(key, port)
-        _ = File.write(warm_port_file(Path.expand("../../..", __DIR__), mine), Integer.to_string(port))
+        _ = File.write(warm_port_file(Path.expand("../../..", __DIR__), CompilerDaemon.served_compiler_tag()), Integer.to_string(port))
         port
 
       port ->
@@ -768,6 +733,43 @@ defmodule Spiral.Cells.CompilerClient do
   @doc false
   def warm_port_file(root, dll_tag), do: Path.join(runtime_dir(), "cells-port-#{root_key(root)}-#{dll_tag}.txt")
 
+  defp foreign_toolchain?(port) do
+    case banner_dll(port) do
+      {:dll, tag} -> tag != CompilerDaemon.served_dll_tag()
+      _ -> false
+    end
+  end
+
+  defp foreign_toolchain_message(port) do
+    "the compiler daemon on port #{port} was started with another toolchain (compiler or bun) than this client's; " <>
+      "stop that daemon or set another SPIRAL_CELLS_COMPILER_PORT"
+  end
+
+  @doc """
+  One hello reply line as its kind (banner, legacy, unreadable or other) with the daemon pid, code stamp and toolchain tag.
+  """
+  @spec banner(String.t()) :: {String.t(), String.t(), String.t(), String.t()}
+  def banner(line) do
+    [kind, pid, stamp, tag] = line |> Spiral.Cells.Domain.hello_reply() |> String.split("\t", parts: 4)
+    {kind, pid, stamp, tag}
+  end
+
+  @doc false
+  def ping_result(line) do
+    case banner(line) do
+      {kind, pid, stamp, _tag} when kind in ["banner", "legacy"] -> {:ok, String.to_integer(stamp), String.to_integer(pid)}
+      {"other", _, _, _} -> {:occupied, String.trim(line)}
+      _ -> {:occupied, "unreadable banner"}
+    end
+  end
+
+  defp current_banner?(line) do
+    case banner(line) do
+      {kind, _pid, stamp, _tag} when kind in ["banner", "legacy"] -> String.to_integer(stamp) == CompilerDaemon.code_stamp()
+      _ -> false
+    end
+  end
+
   defp banner_dll(port) do
     case :gen_tcp.connect({127, 0, 0, 1}, port, socket_opts(), 500) do
       {:ok, sock} ->
@@ -775,9 +777,10 @@ defmodule Spiral.Cells.CompilerClient do
 
         result =
           case recv_line(sock, 1_000) do
-            {:ok, "spiral-cells\t1\t" <> rest} ->
-              case String.split(String.trim(rest), "\t") do
-                [_pid, _stamp, tag | _] -> {:dll, tag}
+            {:ok, line} ->
+              case banner(line) do
+                {"banner", _pid, _stamp, tag} -> {:dll, tag}
+                {"other", _, _, _} -> :other
                 _ -> :legacy
               end
 
@@ -815,6 +818,17 @@ defmodule Spiral.Cells.CompilerClient do
   end
 
   defp process_error(message), do: %ProcessError{message: message}
+
+  @doc """
+  One `status` reply line as the fields `live_daemons/0` reports, every field nil when the line is not a status reply.
+  """
+  @spec status_fields(String.t()) :: map()
+  def status_fields(line) do
+    case line |> Spiral.Cells.Domain.status_reply() |> String.split("\t") do
+      ["" | _] -> %{pid: nil, stamp: nil, idle_min: nil, queued: nil, retiring: nil, owner: nil}
+      [pid, stamp, idle, queued, retiring, owner] -> %{pid: pid, stamp: stamp, idle_min: idle, queued: queued, retiring: retiring, owner: owner}
+    end
+  end
 
   defp recv_line(sock, timeout) do
     case :gen_tcp.recv(sock, 0, timeout) do

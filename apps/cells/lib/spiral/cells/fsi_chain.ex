@@ -5,19 +5,17 @@ defmodule Spiral.Cells.FsiChain do
   - An F# cell is one submission.
   - `#!import <file>.fs|.fsx` submits the file's text (what .NET Interactive's `#!import` does), so a file that
     redefines `US0` shadows the previous one instead of clashing with it.
-  - `#!import <notebook>.dib` runs the notebook's F# cells and its own `#!import`s, each as its own submission. A
-    relative path is resolved against the importing file's directory, then the notebook's directory. Spiral and other
-    kernels' cells of an imported notebook are skipped (noted in the output).
+  - A relative import path is resolved against the notebook's directory. Other files, notebooks included, are
+    refused: F# cells come from the notebook itself.
   - Each cell holds a job slot (`Spiral.Cells.Slots`) while it runs. The session starts inside the first cell's slot.
   - A cell's budget is the `:timeout` option, else its `///- --timeout <ms>` line, else 300 s (an import cell: per
-    submission, i.e. per imported file / imported notebook cell). A cell that times out
+    submission, i.e. per imported file). A cell that times out
     kills the session; the cells after it fail with a note instead of running against a session that lost its
     definitions.
   """
-  alias Spiral.Cells.{Document, FsiSession, Slots}
+  alias Spiral.Cells.{FsiSession, Slots}
 
   @default_timeout 300_000
-  @max_depth 16
 
   @type cell :: %{index: non_neg_integer(), kind: :fsharp | :import, source: String.t()}
   @type outcome :: {:ok, %{stdout: String.t(), value: String.t() | nil}} | {:error, String.t()}
@@ -110,7 +108,7 @@ defmodule Spiral.Cells.FsiChain do
             {:error, %{output: output, reason: :timeout}} ->
               message =
                 join(
-                  "F# cell timed out after #{format_ms(budget)}; the fsi process tree was killed.",
+                  "F# cell timed out after #{format_ms(budget)}#{Spiral.Cells.Directives.scale_note()}; the fsi process tree was killed.",
                   join(acc.stdout, output)
                 )
 
@@ -142,7 +140,7 @@ defmodule Spiral.Cells.FsiChain do
 
   @doc false
   def budget(cell, opts) do
-    opts[:timeout] || directive_timeout(cell) || @default_timeout
+    opts[:timeout] || Spiral.Cells.Directives.scale_budget(directive_timeout(cell) || @default_timeout)
   end
 
   defp directive_timeout(%{kind: :fsharp, source: source}) do
@@ -162,86 +160,28 @@ defmodule Spiral.Cells.FsiChain do
     {:ok, [%{label: "input.fsx", code: source |> strip_magic() |> nuget_refs()}]}
   end
 
-  def submissions(%{kind: :import, source: path}, root), do: expand(path, [root], root, 0)
-
-  defp expand(_path, _bases, _root, depth) when depth > @max_depth do
-    {:error, "#!import: nested deeper than #{@max_depth} levels"}
-  end
-
-  defp expand(path, bases, root, depth) do
+  def submissions(%{kind: :import, source: path}, root) do
     path = String.trim(path)
 
-    case resolve(path, bases) || resolve_livemd(path, bases) do
-      nil ->
-        {:error,
-         "#!import: #{path} was not found (looked in #{Enum.join(Enum.uniq(bases), ", ")})"}
-
-      file ->
-        case String.downcase(Path.extname(file)) do
-          ext when ext in [".fs", ".fsx"] ->
-            {:ok, [%{label: Path.basename(file), code: file |> File.read!() |> nuget_refs()}]}
-
-          # TODO: DIB-MODERNIZE retire the .dib and .livemd import routes; F# cells come from .spi test blocks
-          #     no .dib file is left in our repos (2026-10-17); ~15 tests here build .dib fixtures to delete or port
-          ".dib" ->
-            expand_notebook(file, &Document.parse_dib/1, root, depth)
-
-          ".livemd" ->
-            expand_notebook(file, &Document.parse_livemd/1, root, depth)
-
-          other ->
-            {:error, "#!import: #{path}: #{other} files are not supported by the F# session"}
-        end
+    case resolve(path, root) do
+      nil -> {:error, "#!import: #{path} was not found (looked in #{root})"}
+      file -> import_file(path, file)
     end
   end
 
-  defp expand_notebook(file, parse, root, depth) do
-    doc = file |> File.read!() |> String.replace("\r\n", "\n") |> parse.()
-    name = Path.basename(file)
-    bases = [Path.dirname(file), root]
+  defp import_file(path, file) do
+    case String.downcase(Path.extname(file)) do
+      ext when ext in [".fs", ".fsx"] ->
+        {:ok, [%{label: Path.basename(file), code: file |> File.read!() |> nuget_refs()}]}
 
-    doc.cells
-    |> Enum.with_index(1)
-    |> Enum.reduce_while({:ok, []}, fn {cell, n}, {:ok, acc} ->
-      case cell do
-        %{kind: :fsharp, source: source} ->
-          {:cont, {:ok, acc ++ [%{label: "#{name}[#{n}]", code: source |> strip_magic() |> nuget_refs()}]}}
-
-        %{kind: :import, source: path} ->
-          case expand(path, bases, root, depth + 1) do
-            {:ok, parts} -> {:cont, {:ok, acc ++ parts}}
-            error -> {:halt, error}
-          end
-
-        %{kind: :markdown} ->
-          {:cont, {:ok, acc}}
-
-        other ->
-          kernel = Map.get(other, :language) || to_string(other.kind)
-
-          {:cont,
-           {:ok,
-            acc ++
-              [
-                {:note,
-                 "#{name}[#{n}]: #{kernel} cell skipped (only F# cells run in the F# session)"}
-              ]}}
-      end
-    end)
-  end
-
-  defp resolve(path, bases) do
-    if Path.type(path) == :absolute do
-      if File.regular?(path), do: path
-    else
-      bases
-      |> Enum.map(&Path.expand(path, &1))
-      |> Enum.find(&File.regular?/1)
+      other ->
+        {:error, "#!import: #{path}: #{other} files are not supported by the F# session"}
     end
   end
 
-  defp resolve_livemd(path, bases) do
-    if String.downcase(Path.extname(path)) == ".dib", do: resolve(Path.rootname(path) <> ".livemd", bases)
+  defp resolve(path, root) do
+    file = if Path.type(path) == :absolute, do: path, else: Path.expand(path, root)
+    if File.regular?(file), do: file
   end
 
   defp nuget_refs(code) do

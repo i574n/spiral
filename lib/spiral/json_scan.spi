@@ -77,7 +77,6 @@
 
 :~ text_between (s : string) (from : i32) (until : i32) : string =
     ? until <= from ?> "" |: sm::slice s { from = from; to = until - 1i32 }
-
 :~ hex_letter_high (c : char) : i32 =
     ? c = 'd' || c = 'D'
     ?> 13i32
@@ -218,6 +217,26 @@
 
 :~ ^ skip_spaces (s : string) (at : i32) : i32 = ? sm::index s at = ' ' ?> skip_spaces s (at + 1i32) |: at
 
+:~ absent (s : string) (at : i32) : bool = at < 0i32 || sm::index s (skip_spaces s at) = 'n'
+
+:~ number_char (c : char) : bool = digit_of c >= 0i32 || c = '-' || c = '+' || c = '.' || c = 'e' || c = 'E'
+
+:~ ^ number_end (s : string) (at : i32) (n : i32) : i32 = ? at < n && number_char (sm::index s at) ?> number_end s (at + 1i32) n |: at
+
+:~ parse_f64 (s : string) (at : i32) : f64 =
+    := at = ? at < 0i32 ?> at |: skip_spaces s at
+    ? at < 0i32 ?> 0.0
+    |: ?= convert::parse_f64 (text_between s at (number_end s at (sm::length s))) ?| | Some f => f | None => 0.0
+
+:~ ^ digits64 (s : string) (at : i32) (n : i32) (acc : i64) : i64 =
+    ? at >= n ?> acc
+    |:
+        := d = digit_of (sm::index s at)
+        ? d >= 0i32 ?> digits64 s (at + 1i32) n (acc * 10i64 + (conv d : i64)) |: acc
+
+:~ parse_u32 (s : string) (at : i32) : u32 = ? at < 0i32 ?> 0u32 |: (conv (digits64 s (skip_spaces s at) (sm::length s) 0i64) : u32)
+
+
 :~ has_items (s : string) (at : i32) : bool =
     at >= 0i32 && sm::index s at = '[' && sm::index s (skip_spaces s (at + 1i32)) <> ']'
 
@@ -230,6 +249,8 @@
         := _ = items_into s at starts
         starts
     |: am'::create_base 0i32
+
+:= list_of_items \* el. (count : i32) (item : i32 -> el) : list el = listm::init count item
 
 := fill_array \* el. (count : i32) (item : i32 -> el) : array_base el =
     := out : array_base el = am'::create_base count
@@ -294,3 +315,7 @@
 :# parse_string_keeps_a_malformed_unicode_escape =
     := ~s = "\"a\\u12zz\""
     parse_string s 0i32 |> _assert_eq "a\\u12zz"
+
+///> rust
+:# numbers_parse_as_f64_and_u32_up_to_their_span =
+    (parse_f64 "{\"a\":1.5e-3,\"b\":7}" 5i32, parse_u32 "[4000000000]" 1i32, number_end "-2.5]" 0i32 5i32) |> _assert_eq (0.0015, 4000000000u32, 4i32)

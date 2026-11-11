@@ -1,0 +1,171 @@
+///- --package . --timeout 900000
+:# realworld_api static =
+    :< testing
+
+:< sm'_operators
+
+:== conduit_user = { email : string; token : string; username : string; bio : string; image : option string }
+
+:== conduit_profile = { username : string; bio : string; image : option string; following : bool }
+
+:== conduit_article = { slug : string; title : string; description : string; body : string; tag_list : list string; created_at : string; updated_at : string; favorited : bool; favorites_count : i32; author : conduit_profile }
+
+:== conduit_comment = { id : i32; created_at : string; updated_at : string; body : string; author : conduit_profile }
+
+:== article_list = { articles : list conduit_article; articles_count : i32 }
+
+:== login_body = { email : string; password : string }
+
+:== registration_body = { username : string; email : string; password : string }
+
+:== user_update = { email : option string; username : option string; password : option string; image : option string; bio : option string }
+
+:== new_article = { title : string; description : string; body : string; tag_list : list string }
+
+:== article_update = { title : option string; description : option string; body : option string }
+
+:== article_query = { tag : option string; author : option string; favorited : option string; limit : i32; offset : i32 }
+
+:== feed_page = { limit : i32; offset : i32 }
+
+:! no_content = ()
+
+:| http_method =
+    | Get
+    | Post
+    | Put
+    | Delete
+
+:| route_auth =
+    | Required
+    | Optional
+    | Anonymous
+
+:== route_spec = { method : http_method; path : string; auth : route_auth }
+
+:= spec (method : http_method) (path : string) (auth : route_auth) : route_spec = { method = method; path = path; auth = auth }
+
+:| user_route =
+    | Login : login_body
+    | Register : registration_body
+    | CurrentUser
+    | UpdateUser : user_update
+
+:| profile_route =
+    | GetProfile : string
+    | Follow : string
+    | Unfollow : string
+
+:| article_route =
+    | GetArticle : string
+    | CreateArticle : new_article
+    | UpdateArticle : string * article_update
+    | Favorite : string
+    | Unfavorite : string
+
+:| listing_route =
+    | ListArticles : article_query
+    | Feed : feed_page
+
+:| removal_route =
+    | DeleteArticle : string
+    | DeleteComment : string * i32
+
+:| comments r =
+    | AddComment :: string * string -> comments conduit_comment
+    | GetComments :: string -> comments (list conduit_comment)
+
+:| account r =
+    | Users :: user_route -> account conduit_user
+    | Profiles :: profile_route -> account conduit_profile
+    | GetTags :: account (list string)
+
+:| content r =
+    | Articles :: article_route -> content conduit_article
+    | Listings :: listing_route -> content article_list
+    | Removals :: removal_route -> content no_content
+    | Comments :: \* r. comments r -> content r
+
+:| conduit_route r =
+    | Account :: \* r. account r -> conduit_route r
+    | Content :: \* r. content r -> conduit_route r
+
+:= profile_path (name : string) : string = "/api/profiles/" ++# name
+
+:= article_path (slug : string) : string = "/api/articles/" ++# slug
+
+:= comments_path (slug : string) : string = article_path slug ++# "/comments"
+
+:= user_spec (u : user_route) : route_spec =
+    ?= u ?|
+    | Login _ => spec Post "/api/users/login" Anonymous
+    | Register _ => spec Post "/api/users" Anonymous
+    | CurrentUser => spec Get "/api/user" Required
+    | UpdateUser _ => spec Put "/api/user" Required
+
+:= profile_spec (route : profile_route) : route_spec =
+    ?= route ?|
+    | GetProfile n => spec Get (profile_path n) Optional
+    | Follow n => spec Post (profile_path n ++# "/follow") Required
+    | Unfollow n => spec Delete (profile_path n ++# "/follow") Required
+
+:= article_method (route : article_route) : http_method =
+    ?= route ?|
+    | CreateArticle _ | Favorite _ => Post
+    | UpdateArticle _ => Put
+    | Unfavorite _ => Delete
+    | GetArticle _ => Get
+
+:= article_paths (route : article_route) : string =
+    ?= route ?|
+    | CreateArticle _ => "/api/articles"
+    | GetArticle s | UpdateArticle (s, _) => article_path s
+    | Favorite s | Unfavorite s => article_path s ++# "/favorite"
+
+:= article_auth (route : article_route) : route_auth =
+    ?= route ?|
+    | GetArticle _ => Optional
+    | _ => Required
+
+:= listing_spec (route : listing_route) : route_spec =
+    ?= route ?|
+    | ListArticles _ => spec Get "/api/articles" Optional
+    | Feed _ => spec Get "/api/articles/feed" Required
+
+:= removal_spec (route : removal_route) : route_spec =
+    ?= route ?|
+    | DeleteArticle s => spec Delete (article_path s) Required
+    | DeleteComment (s, id) => spec Delete (comments_path s ++# "/" ++# sm'::show id) Required
+
+:= comments_spec \* r. (route : comments r) : route_spec =
+    ?= route ?|
+    | AddComment (s, _) => spec Post (comments_path s) Required
+    | GetComments s => spec Get (comments_path s) Optional
+
+:= account_spec \* r. (route : account r) : route_spec =
+    ?= route ?|
+    | Users u => user_spec u
+    | Profiles p => profile_spec p
+    | GetTags => spec Get "/api/tags" Anonymous
+
+:= content_spec \* r. (route : content r) : route_spec =
+    ?= route ?|
+    | Articles a => spec (article_method a) (article_paths a) (article_auth a)
+    | Listings l => listing_spec l
+    | Removals d => removal_spec d
+    | Comments c => comments_spec c
+
+:= route_spec_of \* r. (route : conduit_route r) : route_spec =
+    ?= route ?|
+    | Account a => account_spec a
+    | Content c => content_spec c
+
+///> rust
+:# a_route_names_its_method_path_and_auth =
+    route_spec_of (Content (Removals (DeleteComment ("how-to", 3i32))))
+    |> _assert_eq (spec Delete "/api/articles/how-to/comments/3" Required)
+
+///> rust
+:# public_and_profile_routes_follow_the_spec =
+    (route_spec_of (Account GetTags), route_spec_of (Account (Profiles (Follow "jake"))))
+    |> _assert_eq (spec Get "/api/tags" Anonymous, spec Post "/api/profiles/jake/follow" Required)

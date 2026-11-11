@@ -86,38 +86,21 @@ defmodule Spiral.Cells.FsiSessionTest do
     assert {:error, %{reason: :closed}} = FsiSession.submit(s, "1")
   end
 
-  test "imports resolve against the importing file, then the notebook; other kernels' cells are noted",
+  test "an import resolves an F# file against the notebook's directory and refuses an imported notebook",
        %{dir: dir} do
     lib = Path.join(dir, "lib")
     File.mkdir_p!(Path.join(lib, "sub"))
     File.write!(Path.join(lib, "sub/a.fsx"), "let a = 1\n")
+    File.write!(Path.join(lib, "nb.dib"), "#!fsharp\n\nlet before = 0\n")
+    File.write!(Path.join(lib, "nb.livemd"), "# nb\n")
 
-    File.write!(Path.join(lib, "nb.dib"), """
-    #!fsharp
+    assert {:ok, [%{label: "a.fsx", code: "let a = 1\n"}]} =
+             FsiChain.submissions(%{index: 0, kind: :import, source: "lib/sub/a.fsx"}, dir)
 
-    let before = 0
-
-    #!fsharp
-
-    #!import sub/a.fsx
-    let after = a + 1
-
-    #!spiral
-
-    inl x = 1
-    """)
-
-    assert {:ok, parts} =
-             FsiChain.submissions(%{index: 0, kind: :import, source: "lib/nb.dib"}, dir)
-
-    assert [
-             %{label: "nb.dib[1]", code: "let before = 0"},
-             %{label: "a.fsx", code: "let a = 1\n"},
-             %{label: "nb.dib[3]", code: "let after = a + 1"},
-             {:note, note}
-           ] = parts
-
-    assert note =~ "spiral cell skipped"
+    for notebook <- ["lib/nb.dib", "lib/nb.livemd"] do
+      assert {:error, refused} = FsiChain.submissions(%{index: 0, kind: :import, source: notebook}, dir)
+      assert refused =~ "files are not supported by the F# session"
+    end
 
     assert {:error, message} =
              FsiChain.submissions(%{index: 0, kind: :import, source: "missing.fsx"}, dir)
@@ -133,14 +116,6 @@ defmodule Spiral.Cells.FsiSessionTest do
       "type US0 = Second of string\nlet second = Second \"two\"\n"
     )
 
-    File.write!(Path.join(dir, "helpers.dib"), """
-    #!fsharp
-
-    #!import first.fsx
-    type First_US0 = US0
-    #!import second.fsx
-    """)
-
     path = Path.join(dir, "nb.dib")
 
     File.write!(path, """
@@ -150,7 +125,15 @@ defmodule Spiral.Cells.FsiSessionTest do
 
     #!fsharp
 
-    #!import helpers.dib
+    #!import first.fsx
+
+    #!fsharp
+
+    type First_US0 = US0
+
+    #!fsharp
+
+    #!import second.fsx
 
     #!fsharp
 
@@ -193,15 +176,17 @@ defmodule Spiral.Cells.FsiSessionTest do
     code = Enum.filter(cells, &(&1["cell_type"] == "code"))
     texts = Enum.map(code, &cell_text/1)
 
-    assert [import, shown, failed, running, ignored, timed_out, skipped] = texts
+    assert [first_import, alias, second_import, shown, failed, running, ignored, timed_out, skipped] = texts
     assert Enum.all?(code, &(&1["metadata"]["language"] == "fsharp"))
-    refute import =~ "error"
+    refute first_import =~ "error"
+    refute alias =~ "error"
+    refute second_import =~ "error"
     assert shown =~ ~s(First 1 Second "two")
     assert shown =~ "First 1"
     assert failed =~ "input.fsx(1,1): error FS0039"
     assert running =~ "still running"
     assert ignored == ""
-    assert Enum.at(code, 4)["execution_count"] == nil
+    assert Enum.at(code, 6)["execution_count"] == nil
     assert timed_out =~ "timed out after 3s"
     assert skipped =~ "skipped: the F# session was killed when cell"
   end

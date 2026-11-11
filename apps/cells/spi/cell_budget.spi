@@ -1,0 +1,243 @@
+///- --package .
+:# cell_budget static =
+    :< testing
+
+:< sm'_operators
+
+:! cell_weight = i32
+
+:== over = { line : i32; weight : cell_weight; limit : cell_weight }
+
+:| finding =
+    | OverBudget : over
+
+:= weight_value ((cell_weight w) : cell_weight) : i32 = w
+
+:= code_weight (c : i32) : i32 =
+    ? c <= 4351i32 || (c >= 8192i32 && c <= 8205i32) ?> 1i32
+    |? (c >= 8208i32 && c <= 8223i32) || (c >= 8242i32 && c <= 8247i32) ?> 1i32
+    |: 2i32
+
+:~ ^ points_weight (cs : list i32) (n : i32) : i32 =
+    ?= cs ?|
+    | [] => n
+    | c :: rest => points_weight rest (n + code_weight c)
+
+:! tld_list = list string
+
+:= no_tlds () : tld_list = tld_list []
+
+:== tally = { links : i32; points : i32 }
+
+:== split_run = { run : list i32; after : list i32 }
+
+:= ascii_letter (c : i32) : bool = (c >= 65i32 && c <= 90i32) || (c >= 97i32 && c <= 122i32)
+
+:= ascii_alnum (c : i32) : bool = ascii_letter c || (c >= 48i32 && c <= 57i32)
+
+:= wide_word (c : i32) : bool = c >= 128i32 && (c < 8192i32 || c > 8303i32) && (c < 12288i32 || c > 12351i32)
+
+:= run_point (c : i32) : bool = ascii_alnum c || c = 45i32 || c = 95i32 || c = 46i32
+
+:= blocks_link (prev : i32) : bool = wide_word prev || prev = 64i32 || prev = 47i32
+
+:= lower (c : i32) : i32 = ? c >= 65i32 && c <= 90i32 ?> c + 32i32 |: c
+
+:~ ^ run_and_rest (cps : list i32) (acc : list i32) : split_run =
+    ?= cps ?|
+    | [] => { run = listm::rev acc; after = [] }
+    | c :: rest => ? run_point c ?> run_and_rest rest (c :: acc) |: { run = listm::rev acc; after = cps }
+
+:~ ^ dot_parts (cps : list i32) (cur : list i32) (acc : list (list i32)) : list (list i32) =
+    ?= cps ?|
+    | [] => listm::rev (listm::rev cur :: acc)
+    | c :: rest => ? c = 46i32 ?> dot_parts rest [] (listm::rev cur :: acc) |: dot_parts rest (c :: cur) acc
+
+:~ ^ last_point (p : list i32) (d : i32) : i32 =
+    ?= p ?|
+    | [] => d
+    | [ x ] => x
+    | _ :: rest => last_point rest d
+
+:~ first_point (p : list i32) : i32 =
+    ?= p ?|
+    | [] => 0i32 - 1i32
+    | x :: _ => x
+
+:~ all_points (f : i32 -> bool) (p : list i32) : bool = listm::fold (\ ok c => ok && f c) !+ p
+
+:~ label (p : list i32) : bool =
+    := inner = \ (x : i32) => ascii_alnum x || x = 45i32 || x = 95i32
+    ascii_alnum (first_point p) && ascii_alnum (last_point p 0i32) && all_points inner p
+
+:~ tld (p : list i32) : bool =
+    := n = listm::length p
+    n >= 2i32 && n <= 63i32 && all_points ascii_letter p
+
+:~ ^ leading_labels (ps : list (list i32)) (n : i32) : i32 =
+    ?= ps ?|
+    | [] => n
+    | p :: rest => ? label p ?> leading_labels rest (n + 1i32) |: n
+
+:~ ^ nth (i : i32) (ps : list (list i32)) : list i32 =
+    ?= ps ?|
+    | [] => []
+    | p :: rest => ? i <= 0i32 ?> p |: nth (i - 1i32) rest
+
+:~ ^ taken (j : i32) (ps : list (list i32)) : list (list i32) =
+    ?= ps ?|
+    | p :: rest => ? j <= 0i32 ?> [] |: p :: taken (j - 1i32) rest
+    | [] => []
+
+:~ ^ link_end (parts : list (list i32)) (k : i32) (j : i32) (next : i32) : i32 =
+    ? j < 2i32 ?> 0i32
+    |? tld (nth (j - 1i32) parts) && (j < k || wide_word next = !-) ?> j
+    |: link_end parts k (j - 1i32) next
+
+:~ text_of (p : list i32) : string = listm::fold (\ s c => s ++# unicode::char_of (lower c)) "" p
+
+:~ dotted (ps : list (list i32)) : string =
+    listm::fold (\ s p => ? s = "" ?> text_of p |: s ++# "." ++# text_of p) "" ps
+
+:~ span (ps : list (list i32)) : i32 = listm::fold (\ n p => n + listm::length p) (listm::length ps - 1i32) ps
+
+:~ known ((tld_list ts) : tld_list) (p : list i32) : bool =
+    := t = text_of p
+    listm::fold (\ hit x => hit || x = t) !- ts
+
+:~ accepted (tlds : tld_list) (link : list (list i32)) (j : i32) : bool =
+    := last = nth (j - 1i32) link
+    ? known tlds last = !- ?> !-
+    |? dotted link = "t" ++# ".co" ?> !+
+    |: listm::length last <> 2i32 || listm::length (nth (j - 2i32) link) > 2i32
+
+:~ link_of (prev : i32) (parts : list (list i32)) (next : i32) : i32 =
+    := k = listm::length parts
+    := l = leading_labels parts 0i32
+    ? blocks_link prev ?> 0i32 |: link_end parts k (? l + 1i32 < k ?> l + 1i32 |: k) next
+
+:~ counted (t : tally) (link : list (list i32)) : tally = { links = t::links + 1i32; points = t::points + span link }
+
+:~ link_count (tlds : tld_list) (prev : i32) (run : list i32) (next : i32) (t : tally) : tally =
+    := parts = dot_parts run [] []
+    := j = link_of prev parts next
+    ? j >= 2i32 && accepted tlds (taken j parts) j ?> counted t (taken j parts) |: t
+
+:== cursor = { prev : i32; rest : list i32; t : tally }
+
+:~ through_run (tlds : tld_list) (c : cursor) : cursor =
+    := s = run_and_rest c::rest []
+    { prev = 46i32; rest = s::after; t = link_count tlds c::prev s::run (first_point s::after) c::t }
+
+:~ stepped (tlds : tld_list) (c : cursor) (x : i32) (more : list i32) : cursor =
+    ? run_point x ?> through_run tlds c |: { prev = x; rest = more; t = c::t }
+
+:~ ^ link_tally (tlds : tld_list) (c : cursor) : tally =
+    ?= c::rest ?|
+    | [] => c::t
+    | x :: more => link_tally tlds (stepped tlds c x more)
+
+:~ text_weight (tlds : tld_list) (s : string) : cell_weight =
+    := cps = unicode::code_points s
+    := t = link_tally tlds { prev = 0i32 - 1i32; rest = cps; t = { links = 0i32; points = 0i32 } }
+    cell_weight (points_weight cps 0i32 - t::points + 23i32 * t::links)
+
+:= weight_wire (tlds : string) (s : string) : i32 =
+    weight_value (text_weight (tld_list (? tlds = "" ?> [] |: sm'::split_list "\n" tlds)) s)
+
+:~ header_text (k : i32) : string = "c" ++# sm'::show k ++# " 1/1\n"
+
+:~ cell_limit (k : i32) : cell_weight = cell_weight (280i32 - weight_value (text_weight (no_tlds ()) (header_text k)))
+
+:== block = { row : i32; text : string }
+
+:== scan = { done : list block; cur : list string; start : i32; blanks : i32; seen : bool }
+
+:~ ^ joined_lines (ls : list string) : string =
+    ?= ls ?|
+    | [] => ""
+    | [ l ] => l
+    | l :: rest => l ++# "\n" ++# joined_lines rest
+
+:~ ^ blank_lines (n : i32) (acc : list string) : list string = ? n <= 0i32 ?> acc |: blank_lines (n - 1i32) ("" :: acc)
+
+:~ finished (s : scan) : list block =
+    ?= s::cur ?|
+    | [] => s::done
+    | cur => { row = s::start; text = sm'::trim_end [ ' '; '\t'; '\n' ] (joined_lines (listm::rev cur)) } :: s::done
+
+:~ opens_block (s : scan) (line : string) : bool =
+    s::blanks > 0i32 && s::seen && (sm'::starts_with " " line || sm'::starts_with "\t" line) = !-
+
+:~ blank_seen (s : scan) : scan = { done = s::done; cur = s::cur; start = s::start; blanks = s::blanks + 1i32; seen = s::seen }
+
+:~ new_block (s : scan) (row : i32) (line : string) : scan = { done = finished s; cur = [ line ]; start = row; blanks = 0i32; seen = !+ }
+
+:~ grown (s : scan) (row : i32) (line : string) : scan =
+    := start = ? s::seen ?> s::start |: row
+    { done = s::done; cur = line :: blank_lines s::blanks s::cur; start = start; blanks = 0i32; seen = !+ }
+
+:~ scan_line (s : scan) (row : i32) (line : string) : scan =
+    ? line = "" ?> blank_seen s |? opens_block s line ?> new_block s row line |: grown s row line
+
+:~ ^ scan_lines (s : scan) (row : i32) (lines : list string) : scan =
+    ?= lines ?|
+    | [] => s
+    | l :: rest => scan_lines (scan_line s row l) (row + 1i32) rest
+
+:~ ^ base_lines (a : array_base string) (i : i32) (acc : list string) : list string =
+    ? i < 0i32 ?> acc |: base_lines a (i - 1i32) (am'::index_base i a :: acc)
+
+:~ source_lines (source : string) : list string =
+    := a = sm'::split "\n" (sm'::replace "\r\n" "\n" source)
+    base_lines a (am'::length_base a - 1i32) []
+
+:~ blocks (source : string) : list block =
+    := empty = { done = []; cur = []; start = 1i32; blanks = 0i32; seen = !- }
+    listm::rev (finished (scan_lines empty 1i32 (source_lines source)))
+
+:~ block_finding (tlds : tld_list) (b : block) (k : i32) (a : list finding) : list finding =
+    := w = text_weight tlds b::text
+    := limit = cell_limit k
+    ? weight_value w > weight_value limit ?> OverBudget { line = b::row; weight = w; limit = limit } :: a |: a
+
+:~ ^ over_from (tlds : tld_list) (bs : list block) (k : i32) (acc : list finding) : list finding =
+    ?= bs ?|
+    | [] => listm::rev acc
+    | b :: rest => over_from tlds rest (k + 1i32) (block_finding tlds b k acc)
+
+:~ over_budget (tlds : tld_list) (source : string) : list finding = over_from tlds (blocks source) 1i32 []
+
+:= some_tlds () : tld_list = tld_list [ "rs"; "app"; "co"; "com" ]
+
+:~ plain (s : string) : i32 = weight_value (text_weight (no_tlds ()) s)
+
+:~ linked (s : string) : i32 = weight_value (text_weight (some_tlds ()) s)
+
+:~ rows_of (bs : list block) : list i32 = listm::map (\ (b : block) => b::row) bs
+
+///> rust
+:# a_blank_line_ends_a_block_only_before_an_unindented_line =
+    rows_of (blocks ":= a () =\n    1\n\n    2\n\n:= b () = 3\n") |> _assert_eq [ 1i32; 6i32 ]
+
+///> rust
+:# code_points_weigh_one_inside_the_ranges_and_two_outside =
+    (plain "abé", plain "中文", plain "‐") |> _assert_eq (3i32, 4i32, 1i32)
+
+///> rust
+:# a_known_domain_weighs_23_and_a_two_letter_tld_needs_a_long_second_label =
+    := text = "see name" ++# ".rs and x.rs and foo" ++# ".app"
+    (linked text, linked ("t" ++# ".co/x"), linked "foo.zzz") |> _assert_eq (64i32, 25i32, 7i32)
+
+///> rust
+:# a_domain_after_at_or_slash_is_not_a_link =
+    (linked "a@b.com", linked "https://github.com", linked "foo.com-bar") |> _assert_eq (7i32, 18i32, 11i32)
+
+///> rust
+:# the_limit_is_280_less_the_numbered_cell_header =
+    (weight_value (cell_limit 1i32), weight_value (cell_limit 10i32), weight_value (cell_limit 100i32)) |> _assert_eq (273i32, 272i32, 271i32)
+
+///> gleam
+:# the_weight_wire_reads_newline_joined_tlds_like_the_typed_list =
+    := text = "see name" ++# ".rs and x.rs and foo" ++# ".app"
+    (weight_wire "rs\napp\nco\ncom" text, weight_wire "" text, weight_wire "rs\napp\nco\ncom" "plain") |> _assert_eq (64i32, 32i32, 5i32)

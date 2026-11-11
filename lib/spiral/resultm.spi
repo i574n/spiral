@@ -78,7 +78,10 @@
     := error (e : string) : result t string = Error e
     backend_switch {
         Gleam = \ () =>
-            global "@external(erlang, \"SPIRAL_FFI\", \"try_call\")\nfn spiral_try_call(f: fn(Nil) -> a) -> Result(a, String)"
+            global (
+                "@external(erlang, \"SPIRAL_FFI\", \"try_call\")\n"
+                ^^ "fn spiral_try_call(f: fn(Nil) -> a) -> Result(a, String)"
+            )
             $'case spiral_try_call(!fn) { Ok(v) -> !ok(v) Error(e) -> !error(e) }' : result t string
     }
 

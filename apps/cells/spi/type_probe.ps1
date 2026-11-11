@@ -29,8 +29,15 @@ $copyRootFull = [IO.Path]::GetFullPath($CopyRoot).TrimEnd('\', '/') + [IO.Path]:
 if (-not ($scratchRoots | Where-Object { $copyRootFull.StartsWith($_, [StringComparison]::OrdinalIgnoreCase) -and $copyRootFull.Length -gt $_.Length })) { throw "-CopyRoot must sit under a scratch root ($($scratchRoots -join ', ')), got '$CopyRoot': robocopy /MIR prunes its target" }
 $copy = Join-Path $CopyRoot 'lib/spiral'
 if ([IO.Path]::GetFullPath($copy).TrimEnd('\', '/') -eq $Lib.TrimEnd('\', '/')) { throw "the copy must not be the lib itself: the probe edits $manifestName and adds modules" }
-robocopy $Lib $copy /MIR /XD target _build .cache node_modules build /XF *.fsx /NFL /NDL /NJH /NJS /NP | Out-Null
-if ($LASTEXITCODE -ge 8) { throw "robocopy of $Lib failed with $LASTEXITCODE" }
+if ($IsWindows) {
+    robocopy $Lib $copy /MIR /XD target _build .cache node_modules build /XF *.fsx /NFL /NDL /NJH /NJS /NP | Out-Null
+    if ($LASTEXITCODE -ge 8) { throw "robocopy of $Lib failed with $LASTEXITCODE" }
+}
+else {
+    New-Item -ItemType Directory -Force $copy | Out-Null
+    rsync -a --delete --exclude target --exclude _build --exclude .cache --exclude node_modules --exclude build --exclude '*.fsx' "$Lib/" "$copy/"
+    if ($LASTEXITCODE -ne 0) { throw "rsync of $Lib failed with $LASTEXITCODE" }
+}
 
 $proj = Join-Path $copy $manifestName
 $projText = [IO.File]::ReadAllText($proj).TrimEnd("`n")

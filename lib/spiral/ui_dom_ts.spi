@@ -1,0 +1,238 @@
+///- --package .
+:# ui_dom_ts static =
+    :< testing
+
+:< sm'_operators
+:< ui_signals
+:< ui_view
+:< ui_dom
+
+:! dom_node = $'any'
+
+:! dom_table = $'Map<number, any>'
+
+:= new_table (root : dom_node) : dom_table = $'new Map<number, any>([[0, !root]])' : dom_table
+
+:= node_at (table : dom_table) (id : i32) : dom_node = $'!table.get(!id)' : dom_node
+
+:= put (table : dom_table) (id : i32) (node : dom_node) : () = $'!table.set(!id, !node)' : ()
+
+:= element_node (tag : string) : dom_node = $'document.createElement(!tag)' : dom_node
+
+:= text_node_of (text : string) : dom_node = $'document.createTextNode(!text)' : dom_node
+
+:= append_to (parent : dom_node) (child : dom_node) : () = $'!parent.appendChild(!child)' : ()
+
+:= set_text (node : dom_node) (text : string) : () = $'!node.textContent = !text' : ()
+
+:= set_attr (node : dom_node) (name : string) (value : string) : () = $'!node.setAttribute(!name, !value)' : ()
+
+:= remove_node (node : dom_node) : () = $'!node.remove()' : ()
+
+:= attr_of (node : dom_node) (name : string) : string = $'String(!node.getAttribute(!name))' : string
+
+:= link (t : dom_table) (p : i32) (c : i32) : () = append_to (node_at t p) (node_at t c)
+
+:= set_value (node : dom_node) (v : string) : () = $'!node.value = !v' : ()
+
+:= edit_op (t : dom_table) (op : dom_op) : () =
+    ?= op ?|
+    | SetAttr (i, k, v) => set_attr (node_at t i) k v
+    | SetText (i, s) => set_text (node_at t i) s
+    | SetValue (i, v) => set_value (node_at t i) v
+    | Remove i => remove_node (node_at t i)
+    | _ => ()
+
+:= apply_op (t : dom_table) (op : dom_op) : () =
+    ?= op ?|
+    | Create (i, s) => put t i (element_node s)
+    | CreateText (i, s) => put t i (text_node_of s)
+    | Append (p, c) => link t p c
+    | _ => edit_op t op
+
+:= apply_all (table : dom_table) (ops : list dom_op) : () = listm::iter (apply_op table) ops
+
+:! app_state m = $'any'
+
+:= new_state \* m. (g : graph m) (st : mounted m) (t : dom_table) : app_state m =
+    $'({ g: !g, m: !st, t: !t })' : app_state m
+
+:= state_graph \* m. (s : app_state m) : graph m = $'!s.g' : graph m
+
+:= state_mounted \* m. (s : app_state m) : mounted m = $'!s.m' : mounted m
+
+:= state_table \* m. (s : app_state m) : dom_table = $'!s.t' : dom_table
+
+:= store \* m. (s : app_state m) (g : graph m) (st : mounted m) : () = $'!s.g = !g; !s.m = !st' : ()
+
+:= on_dom_click \* m. (s : app_state m) (i : i32) : () =
+    := g = click (state_graph s) (state_mounted s) i
+    := (ops, st) = refresh g (state_mounted s)
+    apply_all (state_table s) ops
+    store s g st
+
+:= on_dom_input \* m. (s : app_state m) (i : i32) (text : string) : () =
+    := g = type_in (state_graph s) (state_mounted s) i text
+    := (ops, st) = refresh g (state_mounted s)
+    apply_all (state_table s) ops
+    store s g st
+
+:= wire_input \* m. (s : app_state m) (id : i32) (i : i32) : () =
+    := h = \ (text : string) => on_dom_input s i text
+    := node = node_at (state_table s) id
+    $'!node.addEventListener("input", (e: any) => !h(String(e.target.value)))' : ()
+
+:= wire_change \* m. (s : app_state m) (id : i32) (i : i32) : () =
+    := h = \ (text : string) => on_dom_input s i text
+    := node = node_at (state_table s) id
+    $'!node.addEventListener("change", (e: any) => !h(String(e.target.value)))' : ()
+
+:= wire_key \* m. (s : app_state m) (id : i32) (i : i32) : () =
+    := h = \ (text : string) => on_dom_input s i text
+    := node = node_at (state_table s) id
+    $'!node.addEventListener("keyup", (e: any) => !h(String(e.key)))' : ()
+
+:= wire_click \* m. (s : app_state m) (id : i32) (i : i32) : () =
+    := h = \ () => on_dom_click s i
+    := node = node_at (state_table s) id
+    $'!node.addEventListener("click", () => !h())' : ()
+
+:= wire \* m. (s : app_state m) (op : dom_op) : () =
+    ?= op ?|
+    | Listen (id, i) => wire_click s id i
+    | ListenInput (id, i) => wire_input s id i
+    | ListenChange (id, i) => wire_change s id i
+    | ListenKey (id, i) => wire_key s id i
+    | _ => ()
+
+:= start_app \* m. (g : graph m) (st : mounted m) (t : dom_table) : app_state m =
+    := s = new_state g st t
+    apply_all t (ops_of st)
+    listm::iter (wire s) (ops_of st)
+    s
+
+:= text_of (node : dom_node) : string = $'String(!node.textContent)' : string
+
+:= same_node (a : dom_node) (b : dom_node) : bool = $'!a === !b' : bool
+
+:= install_fake_element () : () =
+    $'(globalThis as any).fakeEl = (tag: any) => ({ tag, kids: [] as any[], attrs: {} as any, appendChild(c) { if (c.parentNode) { c.parentNode.kids = c.parentNode.kids.filter((k: any) => (k === c) === false) }; c.parentNode = this; this.kids.push(c) }, remove() { this.parentNode.kids = this.parentNode.kids.filter((k: any) => (k === this) === false) }, setAttribute(k, v) { this.attrs[k] = v }, getAttribute(k) { return this.attrs[k] } })'
+    : ()
+
+:= install_fake_typing () : () =
+    $'const mk2 = (globalThis as any).fakeEl; (globalThis as any).fakeEl = (t: any) => Object.assign(mk2(t), { type(v) { this.value = v; this.oninput({ target: this }) }, choose(v) { this.value = v; this.onchange({ target: this }) }, press(k) { this.onkeyup({ key: k }) } })'
+    : ()
+
+:= install_fake_events () : () =
+    $'const mk = (globalThis as any).fakeEl; (globalThis as any).fakeEl = (t: any) => Object.assign(mk(t), { addEventListener(e, h) { this["on" + e] = h }, click() { this.onclick() } })'
+    : ()
+    install_fake_typing ()
+
+:= fake_document () : dom_node =
+    install_fake_element ()
+    install_fake_events ()
+    $'globalThis.document = { createElement: (globalThis as any).fakeEl, createTextNode: (textContent: any) => ({ textContent }) } as any'
+    : ()
+    element_node "root"
+
+:= counter_table (g : graph probe_model) : dom_table * mounted probe_model =
+    := table = new_table (fake_document ())
+    := m = mount_counter g
+    apply_all table (ops_of m)
+    table, m
+
+:= after_set (g : graph probe_model) (table : dom_table) (m : mounted probe_model) : () =
+    apply_all table (fst (refresh (set g (a_signal ()) 7i32) m))
+
+///> typescript
+:# a_set_rewrites_the_same_text_node_in_place =
+    := g = probe_graph ()
+    := (table, m) = counter_table g
+    := before = node_at table 4i32
+    after_set g table m
+    (same_node before (node_at table 4i32), text_of before) |> _assert_eq (!+, "7")
+
+:= click_node (node : dom_node) : () = $'!node.click()' : ()
+
+:= clicker_app (t : dom_table) : app_state probe_model =
+    start_app (probe_graph ()) (mount (probe_graph ()) 0i32 (clicker_view ()) (start ())) t
+
+:= clicked_text () : bool * string =
+    := t = new_table (fake_document ())
+    := _ = clicker_app t
+    := before = node_at t 3i32
+    click_node (node_at t 4i32)
+    same_node before (node_at t 3i32), text_of before
+
+///> typescript
+:# a_dom_click_runs_the_handler_and_rewrites_the_same_text_node =
+    clicked_text () |> _assert_eq (!+, "1")
+
+///> typescript
+:# attributes_reach_the_dom_unescaped =
+    := (table, _) = counter_table (probe_graph ())
+    (attr_of (node_at table 1i32) "class", attr_of (node_at table 9i32) "href") |> _assert_eq ("app", "/docs?a=1&b=2")
+
+:= type_node (node : dom_node) (v : string) : () = $'!node.type(!v)' : ()
+
+:= value_of (node : dom_node) : string = $'String(!node.value)' : string
+
+:= echo_app (t : dom_table) : app_state probe_model =
+    start_app (probe_graph ()) (mount (probe_graph ()) 0i32 (echo_view ()) (start ())) t
+
+:= typed_text () : bool * string * string =
+    := t = new_table (fake_document ())
+    := _ = echo_app t
+    := before = node_at t 4i32
+    := input = node_at t 3i32
+    type_node input "hi"
+    same_node before (node_at t 4i32), text_of before, value_of input
+
+///> typescript
+:# typing_into_a_dom_input_rewrites_the_bound_text_in_place =
+    typed_text () |> _assert_eq (!+, "hi", "hi")
+
+:= kid_count (node : dom_node) : i32 = $'!node.kids.length' : i32
+
+:= row_text (node : dom_node) (i : i32) : string = $'String(!node.kids[!i].kids[0].kids[0].textContent)' : string
+
+:= keyed_dom () : i32 * i32 * string * string =
+    := t = new_table (fake_document ())
+    := m = mount (rows_graph [ "a"; "b"; "c" ]) 0i32 (ledger_rows ()) (start ())
+    apply_all t (ops_of m)
+    := before = kid_count (node_at t 2i32)
+    apply_all t (fst (refresh (rows_graph [ "a"; "c"; "d" ]) m))
+    := body = node_at t 2i32
+    before, kid_count body, row_text body 1i32, row_text body 2i32
+
+///> typescript
+:# a_removed_key_detaches_its_row_and_a_new_key_appends_one =
+    keyed_dom () |> _assert_eq (3i32, 3i32, "c", "d")
+
+:= reordered_dom () : i32 * string * string * string =
+    := t = new_table (fake_document ())
+    := m = mount (rows_graph [ "a"; "b"; "c" ]) 0i32 (ledger_rows ()) (start ())
+    apply_all t (ops_of m)
+    apply_all t (fst (refresh (rows_graph [ "c"; "a"; "b" ]) m))
+    := body = node_at t 2i32
+    kid_count body, row_text body 0i32, row_text body 1i32, row_text body 2i32
+
+///> typescript
+:# a_reorder_moves_the_same_row_nodes_into_the_new_key_order =
+    reordered_dom () |> _assert_eq (3i32, "c", "a", "b")
+
+:= choose_node (node : dom_node) (v : string) : () = $'!node.choose(!v)' : ()
+
+:= press_node (node : dom_node) (k : string) : () = $'!node.press(!k)' : ()
+
+:= picked_dom () : string * string =
+    := t = new_table (fake_document ())
+    := s = start_app (probe_graph ()) (mount (probe_graph ()) 0i32 (picker_view ()) (start ())) t
+    choose_node (node_at t 3i32) "b"
+    := chosen = text_of (node_at t 9i32)
+    press_node (node_at t 8i32) "Enter"
+    chosen, text_of (node_at t 9i32)
+
+///> typescript
+:# a_chosen_option_and_a_released_key_reach_the_bound_text =
+    picked_dom () |> _assert_eq ("b", "Enter")

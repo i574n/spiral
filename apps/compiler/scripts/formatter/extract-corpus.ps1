@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $repo, $rev, $filter = switch ($Which) {
     'user' { (Join-Path ($env:LOCALAPPDATA ?? (Join-Path $HOME '.cache')) 'spiral-bin/corpus-src/polyglot.git'), 'bb856d13', '\.(spi|spir)$' }
-    'lib-head' { 'C:\home\git\spiral', 'HEAD', '^lib/.*\.(spi|spir)$' }
+    'lib-head' { (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path, 'HEAD', '^lib/.*\.(spi|spir)$' }
 }
 if ($Which -eq 'user' -and -not (Test-Path $repo)) { git clone --bare --quiet --filter=blob:none https://github.com/fc1943s/polyglot $repo; if ($LASTEXITCODE) { throw "clone of fc1943s/polyglot into $repo failed" } }
 if (Test-Path $Out) { Remove-Item -LiteralPath $Out -Recurse -Force }

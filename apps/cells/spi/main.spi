@@ -29,10 +29,22 @@
     export "target_backend" ((\ tool => targets::backend (targets::target_of tool)) : string -> string)
     export "target_extension" ((\ tool => targets::extension (targets::target_of tool)) : string -> string)
     export "plan" ((\ text => notebook::plan text) : string -> string)
+    export "phase_row" ((\ (source : string), (phases : string) => notebook::phase_row source phases) : string * string -> string)
     export "plan_tests" ((\ text => notebook::plan_tests text) : string -> string)
     export
         "reached_program"
         ((\ (program : string), (rows : string) => memo::reached_program_wire program rows) : string * string -> string)
+    export "block_shape" ((\ (header : string), (code : string) => memo::shape_row header code) : string * string -> string)
+    export "block_facts" ((\ (header : string), (code : string) => memo::facts_row header code) : string * string -> string)
+    export "opened_names" ((\ code => memo::opened_wire code) : string -> string)
+    export "package_paths" ((\ program => memo::package_wire program) : string -> string)
+    export "strip_comments" ((\ text => memo::strip_comments text) : string -> string)
+    export "shim_path" ((\ text => memo::shim_path text) : string -> string)
+    export "cell_weight" ((\ (tlds : string), (text : string) => cell_budget::weight_wire tlds text) : string * string -> i32)
+    export "status_reply" ((\ line => daemon::status_row line) : string -> string)
+    export "compile_reply" ((\ line => daemon::compile_row line) : string -> string)
+    export "pool_reply" ((\ line => daemon::pool_row line) : string -> string)
+    export "hello_reply" ((\ line => daemon::hello_row line) : string -> string)
     export "result_fields" ((\ wire => run_result::result_fields_wire wire) : string -> string)
     export "verdict_counts" ((\ rows => verdicts::counts_wire rows) : string -> string)
     export
@@ -72,6 +84,7 @@
     export "is_cl_compiler" ((\ text => ? targets::is_cl text ?> "true" |: "false") : string -> string)
     export "gleam_strip_warnings" ((\ text => gleam_project::strip_warnings text) : string -> string)
     export "gleam_manifest" ((\ wire => gleam_project::manifest_wire wire) : string -> string)
+    export "gleam_manifest_facts" ((\ manifest => gleam_project::manifest_facts manifest) : string -> string)
     export
         "mount_patch_first"
         (

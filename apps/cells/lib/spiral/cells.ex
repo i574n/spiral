@@ -25,49 +25,54 @@ defmodule Spiral.Cells do
     if String.trim(code) == "" do
       {:ok, %Result{exit_status: 0, duration_ms: 0}}
     else
-      timeout = opts[:timeout] || @default_timeout
+      timeout = opts[:timeout] || Directives.scale_budget(@default_timeout)
       validate_timeout!(timeout)
       prepared = code |> Spiral.Cells.Lisp.expand(opts) |> Directives.prepare(opts)
 
-      builders = cell_builders(opts, prepared)
-
-      prepared =
-        if Enum.all?(builders, &Builders.host_rust?/1), do: own_main(prepared), else: prepared
-
-      builders = if builders == [], do: [Builders.default()], else: builders
-
-
-      timeout = prepared.timeout || timeout
-      started = System.monotonic_time(:millisecond)
-
-      deadline =
-        case timeout do
-          :infinity -> :infinity
-          ms -> started + ms
-        end
-
-      dir = tmp_dir()
-      Process.put(:spiral_cells_deadline, deadline)
-      Process.put(:spiral_cells_phases, %{})
-      Process.put(:spiral_cells_targets, [])
-
-      try do
-        spi = Path.join(dir, "main.spi")
-        exe = Path.join(dir, exe_name())
-
-        with {:ok, names, imports, package_dir} <-
-               timed(:mount_ms, fn -> mount_packages(dir, prepared.packages, opts[:root], workspace_root(opts), opts[:patches] || []) end),
-             :ok <- timed(:mount_ms, fn -> write_package(dir, names, imports, package_dir, opts[:real]) end) do
-          run_builders(builders, dir, spi, exe, prepared, opts, timeout, deadline, started)
-        end
-      after
-        unless opts[:keep_files], do: timed(:cleanup_ms, fn -> File.rm_rf(dir) end)
-        Process.put(:spiral_cells_last_phases, phases())
-        Process.put(:spiral_cells_last_targets, target_rows(builders, Process.delete(:spiral_cells_targets) || []))
-        Process.delete(:spiral_cells_deadline)
-        Process.delete(:spiral_cells_queue_ms)
-        Process.delete(:spiral_cells_phases)
+      case cell_builders(opts, prepared) do
+        [] -> {:error, %SpiralError{message: untargeted_cell_message()}}
+        builders -> run_targeted(builders, prepared, opts, timeout)
       end
+    end
+  end
+
+  @spec untargeted_cell_message() :: String.t()
+  def untargeted_cell_message, do: "NoTestTarget: the cell names no target: add a ///> <lang> line to it"
+
+  defp run_targeted(builders, prepared, opts, timeout) do
+    prepared =
+      if Enum.all?(builders, &Builders.host_rust?/1), do: own_main(prepared), else: prepared
+
+    timeout = prepared.timeout || timeout
+    started = System.monotonic_time(:millisecond)
+
+    deadline =
+      case timeout do
+        :infinity -> :infinity
+        ms -> started + ms
+      end
+
+    dir = tmp_dir()
+    Process.put(:spiral_cells_deadline, deadline)
+    Process.put(:spiral_cells_phases, %{})
+    Process.put(:spiral_cells_targets, [])
+
+    try do
+      spi = Path.join(dir, "main.spi")
+      exe = Path.join(dir, exe_name())
+
+      with {:ok, names, imports, package_dir} <-
+             timed(:mount_ms, fn -> mount_packages(dir, prepared.packages, opts[:root], workspace_root(opts), opts[:patches] || []) end),
+           :ok <- timed(:mount_ms, fn -> write_package(dir, names, imports, package_dir, opts[:real]) end) do
+        run_builders(builders, dir, spi, exe, prepared, opts, timeout, deadline, started)
+      end
+    after
+      unless opts[:keep_files], do: timed(:cleanup_ms, fn -> File.rm_rf(dir) end)
+      Process.put(:spiral_cells_last_phases, phases())
+      Process.put(:spiral_cells_last_targets, target_rows(builders, Process.delete(:spiral_cells_targets) || []))
+      Process.delete(:spiral_cells_deadline)
+      Process.delete(:spiral_cells_queue_ms)
+      Process.delete(:spiral_cells_phases)
     end
   end
 
@@ -346,7 +351,7 @@ defmodule Spiral.Cells do
 
         host ->
           in_slot(fn ->
-            run_host_rust(text, show_value, output, exe, prepared, opts, timeout, deadline)
+            run_host_rust(builder, text, show_value, output, exe, prepared, opts, timeout, deadline)
           end)
 
         true ->
@@ -400,7 +405,8 @@ defmodule Spiral.Cells do
     result
   end
 
-  defp timed(name, fun) do
+  @doc false
+  def timed(name, fun) do
     started = System.monotonic_time(:millisecond)
 
     try do
@@ -434,7 +440,7 @@ defmodule Spiral.Cells do
 
   defp add_phase(_name, _ms), do: :ok
 
-  defp run_host_rust(text, show_value, rs, exe, prepared, opts, timeout, deadline) do
+  defp run_host_rust(builder, text, show_value, rs, exe, prepared, opts, timeout, deadline) do
     rust = timed(:patch_ms, fn -> Cell.patch_rust(text, show_value) end)
 
     with :ok <- reject_unpatched(rust),
@@ -448,7 +454,7 @@ defmodule Spiral.Cells do
 
       {:ok,
        chunk(
-         Builders.default(),
+         builder,
          shown_stdout(prepared, rust, stdout),
          value,
          ran.exit_status,
@@ -760,15 +766,30 @@ defmodule Spiral.Cells do
       opts[:env] == nil
   end
 
+  defp per_test_request(req, opts) do
+    source = opts[:test_source]
+
+    if System.get_env("SPIRAL_CELLS_PER_TEST_TRACE") == "1" do
+      IO.puts(:stderr, "per-test trace / flag #{Directives.per_test_compile?()} name #{inspect(opts[:test_name])} source #{inspect(source)} real #{inspect(opts[:real])} spi #{req.spi}")
+    end
+
+    if Directives.per_test_compile?() and is_binary(opts[:test_name]) and is_binary(source) and
+         String.ends_with?(source, ".spi") and opts[:real] in [nil, ""] do
+      req |> Map.merge(%{spi: Path.expand(source), mtime: source_mtime(Path.expand(source), opts)}) |> Map.put(:test, opts[:test_name])
+    else
+      req
+    end
+  end
+
   defp shared_compile(spi, output, backend, opts, timeout, deadline) do
-    case CompilerClient.compile(%{
+    case CompilerClient.compile(per_test_request(%{
            spi: spi,
            rs: output,
            timeout: budget(deadline),
            mtime: source_mtime(spi, opts),
            backend: backend,
            pin: opts[:compiler_pin]
-         }) do
+         }, opts)) do
       {:ok, _revision} ->
         charge_queue()
         {:ok, File.read!(output)}
@@ -872,7 +893,16 @@ defmodule Spiral.Cells do
     end
   end
 
-  @rust_toolchain "+nightly-2026-11-05"
+  @rust_toolchain_file Path.expand("../../../../rust-toolchain.toml", __DIR__)
+  @external_resource @rust_toolchain_file
+  @rust_channel (case Regex.run(~r/^\s*channel\s*=\s*"([^"]+)"/m, File.read!(@rust_toolchain_file)) do
+                   [_, channel] -> channel
+                   _ -> raise "no channel in #{@rust_toolchain_file}"
+                 end)
+  @rust_toolchain "+" <> @rust_channel
+
+  @spec rust_channel() :: String.t()
+  def rust_channel, do: @rust_channel
   @rust_flags ["-C", "opt-level=2", "-A", "warnings", "--edition", "2024"]
 
   @spec rustc_args(String.t(), String.t(), String.t()) :: [String.t()]
@@ -1017,7 +1047,7 @@ defmodule Spiral.Cells do
 
   defp timeout_error(%{output: output}, timeout) do
     %TimeoutError{
-      message: "Spiral cell timed out after #{format_ms(timeout)}; the process tree was killed.",
+      message: "Spiral cell timed out after #{format_ms(timeout)}#{Directives.scale_note()}; the process tree was killed.",
       timeout: timeout,
       output: output
     }
@@ -1120,6 +1150,7 @@ defmodule Spiral.Cells do
             cond do
               own != [] -> %{name: name, target: target, kind: :patched, patches: own, package_dir: if(shared, do: :siblings, else: :absolute)}
               shared -> %{name: name, target: target, kind: :shadow}
+              Mounts.escapes_through_link?(target) -> %{name: name, target: target, kind: :patched, patches: [], package_dir: :absolute}
               true -> %{name: name, target: target, kind: :link}
             end
 

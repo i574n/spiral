@@ -32,7 +32,7 @@
         | ValidateNode => "validate|parallel|validation-cap"
         | PublishNode => "publish|serial|publish-cap"
 
-:= ^ render \* from to. (plan : manifest from to) : string =
+:= render \* from to. (plan : manifest from to) : string =
     ?= plan ?|
     | ManifestNode node => render_node node
     | Depends _ => "proof-carrying-manifest"

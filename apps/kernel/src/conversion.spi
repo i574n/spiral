@@ -9,7 +9,7 @@
 :< reduce
 :< env
 
-:| defeq =
+:| private defeq =
     | Same : list step
     | Different : string
     | NoFuel

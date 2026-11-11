@@ -1,0 +1,18 @@
+:| ^ tree =
+    | Leaf : i32
+    | Node : tree * tree
+
+:= main () : i32 =
+    := ~unions : array tree = create 2i32
+    := ~moved_unions : array tree = create 2i32
+    set moved_unions 0i32 (index unions 1i32)
+    := ~strings : array string = create 2i32
+    := ~moved_strings : array string = create 2i32
+    set moved_strings 0i32 (index strings 1i32)
+    := ~nested : array (array tree) = create 1i32
+    set nested 0i32 (index nested 0i32)
+    set nested 0i32 (create 4i32)
+    set (index nested 0i32) 0i32 (Leaf 40i32)
+    ?= index (index nested 0i32) 0i32 ?|
+    | Leaf n => n +. length moved_unions
+    | Node _ => 0i32

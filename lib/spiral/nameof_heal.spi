@@ -28,6 +28,12 @@
     | "parenthesis" => Paren
     | _ => OtherClass
 
+:= char_slice (s : string) (from : i32) (count : i32) : string =
+    run_target \|
+        | Rust => \ () =>
+            $'Rc::<str>::from((!s).chars().skip(!from as usize).take(!count as usize).collect::<String>())' : string
+        | _ => \ () => sm'::substring from count s
+
 := token_of (source_lines : array string) (row : string) : option token =
     := fields = sm'::split "\t" row |> array
     ? am'::length fields < 4i32
@@ -42,7 +48,7 @@
             Some (
                 {
                     line = line
-                    text = sm'::substring from (near - from) (am'::index line source_lines)
+                    text = char_slice (am'::index line source_lines) from (near - from)
                     role = class_of (am'::index 3i32 fields)
                 }
                 |> token
@@ -267,3 +273,11 @@
         b::first_line |> _assert_eq 13i32
         b::arms |> _assert_eq 3i32
     | _ => _assert_eq 0i32 1i32
+
+///> rust
+:# token_columns_count_characters_not_bytes =
+    := text =
+        ?= token_of ;[ "é = ab" ] "0\t4\t6\tvariable" ?|
+        | Some (token t) => t::text
+        | None => ""
+    text |> _assert_eq "ab"

@@ -1,6 +1,6 @@
 param(
-    [Parameter(Mandatory)] [string[]] $Draft,
-    [Parameter(Mandatory)] [string] $Label,
+    [string[]] $Draft = @(),
+    [string] $Label,
     [string[]] $BaseHash = @(),
     [string[]] $Remove = @(),
     [string[]] $RemoveHash = @(),
@@ -13,12 +13,14 @@ param(
     [int] $MinFreeMb = 1200,
     [string] $ProvenLog,
     [switch] $PrivateLib,
+    [switch] $DigestOnly,
     [switch] $Apply
 )
 $ErrorActionPreference = 'Stop'
+if (-not $DigestOnly -and (-not $Draft.Count -or -not $Label)) { throw '-Draft and -Label are required unless -DigestOnly' }
 $kit = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) "kit/bin/kit$(if ($IsWindows) { '.exe' })"
-if (-not (Test-Path -LiteralPath $kit)) { $kit = (Get-Command kit -ErrorAction Stop).Source }
-if (!(Test-Path $kit)) { $kit = (Get-Command kit -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source }
+if (-not $PrivateLib -and -not $DigestOnly -and -not (Test-Path -LiteralPath $kit)) { $kit = (Get-Command kit -ErrorAction Stop).Source }
+if (-not $PrivateLib -and -not $DigestOnly -and !(Test-Path $kit)) { $kit = (Get-Command kit -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source }
 $Lib = (Resolve-Path $Lib).Path.TrimEnd('\')
 $Draft = @($Draft | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $BaseHash = @($BaseHash | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
@@ -45,13 +47,39 @@ for ($i = 0; $i -lt $BaseHash.Count; $i++) {
     $now = (Get-FileHash -LiteralPath (Join-Path $Lib $pairs[$i].Live)).Hash
     if (-not $now.StartsWith($BaseHash[$i], [StringComparison]::OrdinalIgnoreCase)) { throw "$($pairs[$i].Live) changed since its draft was proven (now $($now.Substring(0, 12))): re-prove first" }
 }
+function Get-AddedComments([string] $LivePath, [string] $DraftPath) {
+    $seen = @{}
+    if ($LivePath -and (Test-Path -LiteralPath $LivePath)) { foreach ($l in [IO.File]::ReadAllLines($LivePath)) { $seen[$l] = 1 + ($seen[$l] ?? 0) } }
+    $n = 0
+    foreach ($l in [IO.File]::ReadAllLines($DraftPath)) {
+        $n++
+        if ($seen[$l] -gt 0) { $seen[$l]--; continue }
+        if ($l -match '^\s*///(?![>-])' -or $l -match '^\s*//(?!/)') { "${n}: $l" }
+    }
+}
+$commented = foreach ($p in $pairs | Where-Object { $_.Live -match '\.spir?$' }) {
+    foreach ($hit in @(Get-AddedComments (Join-Path $Lib $p.Live) $p.Source)) { "$($p.Live):$hit" }
+}
+if ($commented) { $commented | ForEach-Object { "ADDED COMMENT: $_" }; throw "drafts add comment lines (no comments in code; ///> and ///- directives are fine): remove them first; nothing was written" }
 function Get-LibDigest([hashtable] $override) {
     $rows = foreach ($f in Get-ChildItem -LiteralPath $Lib -Recurse -File | Where-Object { $_.Extension -in '.spi', '.spir', '.spiproj' }) {
         $rel = $f.FullName.Substring($Lib.Length + 1).Replace('\', '/')
+        if ($Remove -contains $rel) { continue }
         "$rel $(if ($override.ContainsKey($rel)) { $override[$rel] } else { (Get-FileHash -LiteralPath $f.FullName).Hash })"
     }
     foreach ($k in $override.Keys) { if (-not (Test-Path -LiteralPath (Join-Path $Lib $k))) { $rows += "$k $($override[$k])" } }
     [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes((($rows | Sort-Object -Culture 'en-US') -join "`n")))).Substring(0, 16)
+}
+if ($DigestOnly) {
+    $planned = $Remove
+    $Remove = @()
+    "lib digest $(Get-LibDigest @{})"
+    $Remove = $planned
+    if ($pairs -or $Remove.Count) {
+        $after = @{}; foreach ($p in $pairs) { $after[$p.Live] = (Get-FileHash -LiteralPath $p.Source).Hash }
+        "post-land digest $(Get-LibDigest $after)"
+    }
+    return
 }
 if ($ProvenLog) {
     $proof = Get-Content -LiteralPath $ProvenLog -ErrorAction Stop
@@ -66,10 +94,21 @@ if ($ProvenLog) {
     }
     "close proven by $ProvenLog for $($pairs.Count) drafts"
 }
+function Test-ReaderProcess($p) {
+    $image = [IO.Path]::GetFileName("$($p.ExecutablePath)")
+    if (-not $image) { $image = "$($p.Name)" }
+    $cmd = "$($p.CommandLine)"
+    if ($image -match '^(pwsh|powershell)(\.exe)?$') {
+        if ($cmd -match '(?i)-File\s+"?([^"]+?\.ps1)"?(\s|$)') { return [IO.Path]::GetFileName($Matches[1]) -in 'lib_gate.ps1', 'run_notebook.ps1' }
+        return $false
+    }
+    if ($image -match '^(erl|werl|erlsrv|elixir|mix)(\.exe|\.bat|\.cmd)?$') { return $cmd -match 'spiral\.notebook|document_test' }
+    $false
+}
 function Get-LiveReaders {
     $all = @(Get-CimInstance Win32_Process)
     $byId = @{}; foreach ($p in $all) { $byId[[int]$p.ProcessId] = $p }
-    @($all | Where-Object { "$($_.CommandLine)" -match 'lib_gate\.ps1|run_notebook\.ps1|spiral\.notebook|document_test' -and $_.ProcessId -ne $PID } | Where-Object {
+    @($all | Where-Object { $_.ProcessId -ne $PID -and (Test-ReaderProcess $_) } | Where-Object {
         $paths = @([regex]::Matches("$($_.CommandLine)", '--path\s+"?([^"\s]+)') | ForEach-Object { $_.Groups[1].Value.Replace('/', '\') })
         $elsewhere = $paths.Count -and -not @($paths | Where-Object { -not ($_ -match '\\lib\\spiral\\') -or $_.StartsWith($Lib + '\', [StringComparison]::OrdinalIgnoreCase) }).Count
         if ($elsewhere) { return $false }
@@ -142,10 +181,14 @@ if ($readers.Count) { $readers | ForEach-Object { "LIVE READER: $($_.ProcessId) 
 $undo = Join-Path $UndoRoot (Get-Date -Format 'yyyyMMdd-HHmmss')
 $winMinutes = [Math]::Max(30, 45 + 10 * [Math]::Ceiling($pairs.Count / 10))
 "land $Label"
-$win = & $kit window request tree-write $winMinutes --label ($Lib.Replace('\', '/')) --wait $MaxWaitMin --min-free-mb $MinFreeMb 2>&1 | Select-Object -Last 1
-"$win"
-$winId = if ("$win" -match 'id=(\S+)') { $Matches[1] }
-if (-not $winId) { throw "no tree-write window on $Lib within $MaxWaitMin min: not landing" }
+$winId = $null
+if ($PrivateLib) { "tree-write window skipped: -PrivateLib lands into a private copy, which no window guards" }
+else {
+    $win = & $kit window request tree-write $winMinutes --label ($Lib.Replace('\', '/')) --wait $MaxWaitMin --min-free-mb $MinFreeMb 2>&1 | Select-Object -Last 1
+    "$win"
+    $winId = if ("$win" -match 'id=(\S+)') { $Matches[1] }
+    if (-not $winId) { throw "no tree-write window on $Lib within $MaxWaitMin min: not landing" }
+}
 foreach ($live in @($pairs | Where-Object { -not $_.New } | ForEach-Object Live) + $Remove) { $u = Join-Path $undo $live; New-Item -ItemType Directory -Force (Split-Path $u) | Out-Null; Copy-Item -LiteralPath (Join-Path $Lib $live) -Destination $u }
 $landedHash = @{}
 function Restore-Undo {
@@ -165,6 +208,47 @@ function Restore-Undo {
 $probe = @($pairs | Where-Object { $_.Live -like '*.spi' -and $_.Live -notlike '../*' } | ForEach-Object Live)
 $baseProbe = @($pairs | Where-Object { $_.Live -like '*.spi' -and $_.Live -notlike '../*' -and -not $_.New } | ForEach-Object Live)
 function Get-ProbeFailures([string[]] $lines) { @($lines | ForEach-Object { if ($_ -match '^type-probe (\S+): FAIL') { $Matches[1] } }) }
+function Get-ExecutedVerdict([string] $rel, [string[]] $out, [int] $code) {
+    $line = @($out | Where-Object { $_ -match '^spiral-tests total \{' }) | Select-Object -Last 1
+    if (-not $line) { return [pscustomobject]@{ Ok = $false; Text = "executed_cells ${rel}: no spiral-tests total line (gate exit $code)"; Why = "executed_cells ${rel} printed no totals" } }
+    $t = $line.Substring('spiral-tests total '.Length) | ConvertFrom-Json
+    $text = "executed_cells $rel discovered $($t.discovered) executed $($t.executed) failed $($t.failed) unsupported $($t.unsupported)"
+    $ok = $t.executed -eq $t.discovered -and $t.failed -eq 0 -and $t.unsupported -eq 0
+    $unbound = @($out | Where-Object { $_ -match 'testing' -and $_ -match 'Unbound' }).Count
+    if (-not $ok -and $unbound) {
+        $text = "executed_cells $rel UNMEASURED: gated directly, the lib file cannot open testing, so its cells need the app-package probe; this close relies on type_probe alone for it"
+        return [pscustomobject]@{ Ok = $true; Totals = $null; Text = $text; Why = '' }
+    }
+    [pscustomobject]@{ Ok = $ok; Totals = $t; Text = $text; Why = "executed_cells ${rel}: not every discovered cell executed green" }
+}
+function Get-FailedPairs([string[]] $lines) {
+    $line = @($lines | Where-Object { $_ -match '^spiral-tests file \{' }) | Select-Object -Last 1
+    if (-not $line) { return @() }
+    $file = $line.Substring('spiral-tests file '.Length) | ConvertFrom-Json
+    $targeted = @(foreach ($p in $file.failed_targets.PSObject.Properties) { foreach ($target in $p.Value) { "$($p.Name)@$target" } })
+    $untargeted = @($file.failed_tests | Where-Object { -not $file.failed_targets.PSObject.Properties[$_] } | ForEach-Object { "$_@all" })
+    @($targeted + $untargeted)
+}
+function Compare-ExecutedBase([string] $rel, [string] $raw, [string[]] $rawLines, $verdict) {
+    $t = $verdict.Totals
+    if ($t.executed -ne $t.discovered -or $t.unsupported -ne 0) { return $verdict }
+    $landed = Join-Path $Lib $rel
+    $held = "$raw.landed"
+    $baseRaw = "$raw.base.txt"
+    Copy-Item -LiteralPath $landed -Destination $held -Force
+    try {
+        Copy-Retry (Join-Path $undo $rel) $landed
+        pwsh -NoProfile -File (Join-Path $PSScriptRoot 'lib_gate.ps1') -File $rel -Lib $Lib -RawOut $baseRaw 2>&1 | Out-Null
+    } finally { Copy-Retry $held $landed; Remove-Item -LiteralPath $held -Force }
+    $base = if (Test-Path -LiteralPath $baseRaw) { Get-FailedPairs @(Get-Content -LiteralPath $baseRaw) } else { @() }
+    $now = Get-FailedPairs $rawLines
+    $new = @($now | Where-Object { $base -notcontains $_ })
+    if ($now.Count -and -not $new.Count) {
+        return [pscustomobject]@{ Ok = $true; Totals = $t; Text = "$($verdict.Text); every red is red on the base too: $($now -join ', ')"; Why = '' }
+    }
+    $named = if ($new.Count) { $new -join ', ' } else { 'unnamed' }
+    [pscustomobject]@{ Ok = $false; Totals = $t; Text = "$($verdict.Text); NEW reds, green on the base: $named"; Why = "executed_cells ${rel}: new reds $named" }
+}
 try {
     $baseFail = @()
     if ($baseProbe.Count -and -not $ProvenLog) { $baseFail = Get-ProbeFailures @(pwsh -NoProfile -File (Join-Path $PSScriptRoot 'type_probe.ps1') -File ($baseProbe -join ',') -Lib $Lib 2>&1 | ForEach-Object { "$_" }) }
@@ -204,11 +288,29 @@ try {
     if (-not $env:SPIRAL_COMPILER_PACKAGE_DIR) { $env:SPIRAL_COMPILER_PACKAGE_DIR = Join-Path $repo 'deps/The-Spiral-Language/VS Code Plugin' }
     $consumerOut = Join-Path ($env:LOCALAPPDATA ?? $env:XDG_CACHE_HOME ?? (Join-Path $HOME '.cache')) 'spiral-bin/mix-builds/lib-land-consumers'
     New-Item -ItemType Directory -Force $consumerOut | Out-Null
-    foreach ($c in $Consumer) {
-        $entry = Join-Path $repo $c
-        Push-Location (Split-Path $entry)
-        try { $text = @(& $Dotnet $Compiler --backend Rust (Split-Path $entry -Leaf) (Join-Path $consumerOut "$([IO.Path]::GetFileNameWithoutExtension($entry)).rs") 2>&1 | ForEach-Object { "$_" }); $code = $LASTEXITCODE } finally { Pop-Location }
-        if ($code) { "$c exit ${code}: $(@($text | Where-Object { $_ -match 'Error' } | Select-Object -First 1))"; $closeOk = $false; $why.Add("consumer $c exit $code") } else { "$c compiles" }
+    if ($env:SPIRAL_LAND_WARM -eq '1' -and $Consumer.Count) {
+        $jobsPath = Join-Path $consumerOut 'warm.jobs.tsv'; $resultsPath = Join-Path $consumerOut 'warm.results.tsv'
+        Remove-Item $resultsPath -ErrorAction Ignore
+        $keyed = [ordered]@{}
+        for ($i = 0; $i -lt $Consumer.Count; $i++) { $keyed["c$i"] = $Consumer[$i] }
+        $keyed.GetEnumerator() | ForEach-Object { $entry = (Resolve-Path (Join-Path $repo $_.Value)).Path; "$($_.Key)`tRust`t$entry`t$(Join-Path $consumerOut "$([IO.Path]::GetFileNameWithoutExtension($entry)).rs")`t600000" } | Set-Content $jobsPath
+        & $Dotnet $Compiler --batch $jobsPath $resultsPath 2>&1 | Out-Null
+        $results = @{}
+        if (Test-Path $resultsPath) { foreach ($line in Get-Content $resultsPath) { $f = $line.Split("`t", 4); if ($f.Count -ge 2) { $results[$f[0]] = $f } } }
+        foreach ($k in $keyed.Keys) {
+            $c = $keyed[$k]; $r = $results[$k]
+            if (-not $r -or $r[1] -ne 'ok') {
+                $detail = if ($r -and $r.Count -ge 4) { (($r[3] -split "`n") | Where-Object { $_ -match 'Error' } | Select-Object -First 1) } else { 'no result' }
+                "$c exit 1: $detail"; $closeOk = $false; $why.Add("consumer $c exit 1")
+            } else { "$c compiles" }
+        }
+    } else {
+        foreach ($c in $Consumer) {
+            $entry = Join-Path $repo $c
+            Push-Location (Split-Path $entry)
+            try { $text = @(& $Dotnet $Compiler --backend Rust (Split-Path $entry -Leaf) (Join-Path $consumerOut "$([IO.Path]::GetFileNameWithoutExtension($entry)).rs") 2>&1 | ForEach-Object { "$_" }); $code = $LASTEXITCODE } finally { Pop-Location }
+            if ($code) { "$c exit ${code}: $(@($text | Where-Object { $_ -match 'Error' } | Select-Object -First 1))"; $closeOk = $false; $why.Add("consumer $c exit $code") } else { "$c compiles" }
+        }
     }
     '=== document_test'
     if ($ProvenLog) { "taken from $ProvenLog : $(@($proof | Where-Object { $_ -match '^Result:' }) -join ' ')" } else {
@@ -235,6 +337,24 @@ try {
         if ($baseFail) { "type_probe: $($baseFail.Count) already failed before this land, not blocking: $($baseFail -join ', ')" }
         if ($newFail) { "type_probe NEW failures: $($newFail -join ', ')"; $closeOk = $false; $why.Add("type_probe NEW failures: $($newFail -join ', ')") }
         elseif ($probeExit -and -not $nowFail) { "type_probe exit $probeExit with no FAIL rows"; $closeOk = $false; $why.Add("type_probe exit $probeExit") }
+    }
+    '=== executed_cells'
+    if ($ProvenLog) {
+        $proved = @($proof | Where-Object { $_ -match '^executed_cells ' })
+        if ($proved.Count) { $proved } else { 'the proof predates the executed_cells check: the landed cells were typed, not run' }
+    } elseif ($probe.Count) {
+        $rawRoot = Join-Path $undo 'executed-cells'
+        New-Item -ItemType Directory -Force $rawRoot | Out-Null
+        foreach ($rel in $probe) {
+            $raw = Join-Path $rawRoot (($rel -replace '[\\/]', '_') + '.raw.txt')
+            $gateOut = @(pwsh -NoProfile -File (Join-Path $PSScriptRoot 'lib_gate.ps1') -File $rel -Lib $Lib -RawOut $raw 2>&1 | ForEach-Object { "$_" })
+            $gateCode = $LASTEXITCODE
+            $rawLines = if (Test-Path -LiteralPath $raw) { @(Get-Content -LiteralPath $raw) } else { $gateOut }
+            $verdict = Get-ExecutedVerdict $rel $rawLines $gateCode
+            if (-not $verdict.Ok -and $verdict.Totals -and $baseProbe -contains $rel) { $verdict = Compare-ExecutedBase $rel $raw $rawLines $verdict }
+            $verdict.Text
+            if (-not $verdict.Ok) { $closeOk = $false; $why.Add($verdict.Why) }
+        }
     }
     '=== respell_drift'
     if ($probe.Count) {

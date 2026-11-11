@@ -1,0 +1,245 @@
+///- --package .
+:# linear_open_betas static =
+    :< testing
+
+:< sm'_operators
+:< linear_types
+:< linear_terms
+:< linear_substitution
+
+:== cell y = extend empty_context y
+
+:== bound y = extend (cell y) y
+
+:== body_term y = term (bound y) (used (unused usage_empty)) y
+
+:== arg_term y = term (cell y) (used usage_empty) y
+
+:== arg_merge y = usage_merge (cell y) (unused usage_empty) (used usage_empty) (used usage_empty)
+
+:| ibeta y =
+    | IBeta :: \* y. body_term y * arg_term y * arg_merge y * string -> ibeta y
+
+:= identity_fn \* y. (body : body_term y) : term (cell y) (unused usage_empty) (arrow_type y y) = Intro (Lambda (body, "the-linear-identity"))
+
+:= ibeta_source \* y. ((IBeta (body, arg, m, n)) : ibeta y) : arg_term y = Elim (Apply (\? (identity_fn body, arg, m, n)))
+
+:= ibeta_target \* y. ((IBeta (_, arg, _, _)) : ibeta y) : arg_term y = arg
+
+:= outer_unused () : all_unused one_unit (unused usage_empty) = AllUnusedExtend (empty_usage (), "the-outer-cell-is-unused-by-the-body")
+
+:= bound_use () : single_use (bound unit_type) zero unit_type (used (unused usage_empty)) = SingleUseHere (outer_unused (), "the-bound-variable-is-used-once")
+
+:= bound_slot () : membership (bound unit_type) zero unit_type = MembershipHere "the-body-is-the-bound-variable"
+
+:= identity_body () : body_term unit_type = Variable (VariableAt (\? (bound_slot (), bound_use (), "x")))
+
+:= right_only () : arg_merge unit_type = MergeStep (\? (RightOnly "the-argument-owns-the-cell", MergeEmpty "e", "m"))
+
+:= unit_beta () : ibeta unit_type = IBeta (identity_body (), only_cell (), right_only (), "apply-the-identity-to-the-open-unit-variable")
+
+///> rust
+:# the_open_identity_beta_reduces_the_application_to_its_argument =
+    (term_label (ibeta_source (unit_beta ())), term_label (ibeta_target (unit_beta ()))) |> _assert_eq ("elim", "variable")
+
+///> rust
+:# the_open_identity_beta_shrinks_size_four_to_one =
+    (size (ibeta_source (unit_beta ())), size (ibeta_target (unit_beta ()))) |> _assert_eq (4i32, 1i32)
+
+:== pair_type y = tensor_type y bool_type
+
+:== tensor_body y = term (bound y) (used (unused usage_empty)) (pair_type y)
+
+:== tensor_parts y = all_unused (cell y) (unused usage_empty) * usage_merge (cell y) (used usage_empty) (unused usage_empty) (used usage_empty)
+
+:| tbeta y =
+    | TBeta :: \* y. tensor_body y * arg_term y * arg_merge y * tensor_parts y * string -> tbeta y
+
+:= pair_fn \* y. (body : tensor_body y) : term (cell y) (unused usage_empty) (arrow_type y (pair_type y)) = Intro (Lambda (body, "pair-with-true"))
+
+:= tbeta_source \* y. ((TBeta (body, arg, m, _, n)) : tbeta y) : term (cell y) (used usage_empty) (pair_type y) = Elim (Apply (\? (pair_fn body, arg, m, n)))
+
+:= tbeta_target \* y. ((TBeta (_, arg, _, (unused_all, tm), n)) : tbeta y) : term (cell y) (used usage_empty) (pair_type y) =
+    Intro (Tensor (\? (arg, Constant (TrueValue (unused_all, "true-is-preserved")), tm, n)))
+
+:= bound_unused () : all_unused (bound unit_type) (unused (unused usage_empty)) = AllUnusedExtend (outer_unused (), "the-bound-cell-is-unused-by-true")
+
+:= inner_neither () : usage_merge one_unit (unused usage_empty) (unused usage_empty) (unused usage_empty) = MergeStep (\? (Neither "n", MergeEmpty "e", "m"))
+
+:= body_merge () : usage_merge (bound unit_type) (used (unused usage_empty)) (unused (unused usage_empty)) (used (unused usage_empty)) =
+    MergeStep (\? (LeftOnly "the-variable-owns-the-bound-cell", inner_neither (), "m"))
+
+:= pair_body () : tensor_body unit_type = Intro (Tensor (\? (identity_body (), Constant (TrueValue (bound_unused (), "true")), body_merge (), "pair")))
+
+:= target_merge () : usage_merge one_unit (used usage_empty) (unused usage_empty) (used usage_empty) = MergeStep (\? (LeftOnly "the-argument-owns-the-cell", MergeEmpty "e", "m"))
+
+:= pair_beta () : tbeta unit_type = TBeta (pair_body (), only_cell (), right_only (), (outer_unused (), target_merge ()), "apply-the-pair-function")
+
+///> rust
+:# the_open_tensor_beta_rebuilds_the_pair_around_the_argument =
+    (term_label (tbeta_source (pair_beta ())), term_label (tbeta_target (pair_beta ()))) |> _assert_eq ("elim", "intro")
+
+///> rust
+:# the_open_tensor_beta_shrinks_size_six_to_three =
+    (size (tbeta_source (pair_beta ())), size (tbeta_target (pair_beta ()))) |> _assert_eq (6i32, 3i32)
+
+:= here_slot \* c y. () : membership (extend c y) zero y = MembershipHere "z"
+
+:= here_use \* c u y. (au : all_unused c u) : single_use (extend c y) zero y (used u) = SingleUseHere (au, "z-once")
+
+:= id_body \* c u y. (au : all_unused c u) : term (extend c y) (used u) y = Variable (VariableAt (\? (here_slot (), here_use au, "z")))
+
+:= id_in \* c u y. (au : all_unused c u) : term c u (arrow_type y y) = Intro (Lambda (id_body au, "the-inner-identity"))
+
+:| abeta y =
+    | ABeta :: \* y. body_term y * arg_term y * arg_merge y * term (cell y) (unused usage_empty) (arrow_type y y) * string -> abeta y
+
+:= abeta_source \* y. ((ABeta (body, arg, m, _, n)) : abeta y) : arg_term y = Elim (Apply (\? (identity_fn body, arg, m, n)))
+
+:= abeta_target \* y. ((ABeta (_, arg, m, inner, n)) : abeta y) : arg_term y = Elim (Apply (\? (inner, arg, m, n)))
+
+:= bound_right_only () : usage_merge (bound unit_type) (unused (unused usage_empty)) (used (unused usage_empty)) (used (unused usage_empty)) =
+    MergeStep (\? (RightOnly "the-variable-owns-the-bound-cell", inner_neither (), "m"))
+
+:= app_body () : body_term unit_type = Elim (Apply (\? (id_in (bound_unused ()), identity_body (), bound_right_only (), "id-x")))
+
+:= app_beta () : abeta unit_type = ABeta (app_body (), only_cell (), right_only (), id_in (outer_unused ()), "apply-the-id-wrapper")
+
+///> rust
+:# the_open_application_beta_keeps_the_inner_identity_applied_to_the_argument =
+    (term_label (abeta_source (app_beta ())), term_label (abeta_target (app_beta ()))) |> _assert_eq ("elim", "elim")
+
+///> rust
+:# the_open_application_beta_shrinks_size_seven_to_four =
+    (size (abeta_source (app_beta ())), size (abeta_target (app_beta ()))) |> _assert_eq (7i32, 4i32)
+
+:== unit_pair = tensor_type unit_type unit_type
+
+:== three = extend (bound unit_type) unit_type
+
+:= x_slot () : membership three (meta_succ zero) unit_type = MembershipThere (bound_slot (), "y-is-newer")
+
+:= x_use () : single_use three (meta_succ zero) unit_type (unused (used (unused usage_empty))) = SingleUseThere (bound_use (), "y-is-unused-by-x")
+
+:= x_in_three () : term three (unused (used (unused usage_empty))) unit_type = Variable (VariableAt (\? (x_slot (), x_use (), "x")))
+
+:= xy_merge () : usage_merge three (unused (used (unused usage_empty))) (used (unused (unused usage_empty))) (used (used (unused usage_empty))) =
+    MergeStep (\? (RightOnly "y-owns-its-cell", body_merge (), "m"))
+
+:= xy_pair () : term three (used (used (unused usage_empty))) unit_pair = Intro (Tensor (\? (x_in_three (), id_body (bound_unused ()), xy_merge (), "x-y")))
+
+:= curried_fn () : term one_unit (unused usage_empty) (arrow_type unit_type (arrow_type unit_type unit_pair)) =
+    Intro (Lambda (Intro (Lambda (xy_pair (), "y")), "x"))
+
+:= lambda_source () : term one_unit (used usage_empty) (arrow_type unit_type unit_pair) = Elim (Apply (\? (curried_fn (), only_cell (), right_only (), "redex")))
+
+:= cell_slot () : membership one_unit zero unit_type = MembershipHere "u0"
+
+:= cell_use () : single_use one_unit zero unit_type (used usage_empty) = SingleUseHere (empty_usage (), "u0-once")
+
+:= lifted_arg () : term (bound unit_type) (unused (used usage_empty)) unit_type =
+    Variable (VariableAt (\? (MembershipThere (cell_slot (), "lift"), SingleUseThere (cell_use (), "y-unused"), "arg-lifted")))
+
+:= lifted_merge () : usage_merge (bound unit_type) (unused (used usage_empty)) (used (unused usage_empty)) (used (used usage_empty)) =
+    MergeStep (\? (RightOnly "y-owns-its-cell", target_merge (), "m"))
+
+:= lambda_target () : term one_unit (used usage_empty) (arrow_type unit_type unit_pair) =
+    Intro (Lambda (Intro (Tensor (\? (lifted_arg (), identity_body (), lifted_merge (), "arg-y"))), "y"))
+
+///> rust
+:# the_open_lambda_beta_lifts_the_argument_under_the_kept_binder =
+    (term_label (lambda_source ()), term_label (lambda_target ())) |> _assert_eq ("elim", "intro")
+
+///> rust
+:# the_open_lambda_beta_shrinks_size_seven_to_four =
+    (size (lambda_source ()), size (lambda_target ())) |> _assert_eq (7i32, 4i32)
+
+:== bcell = extend empty_context bool_type
+
+:== bbound = extend bcell bool_type
+
+:= b_slot () : membership bcell zero bool_type = MembershipHere "b"
+
+:= b_use () : single_use bcell zero bool_type (used usage_empty) = SingleUseHere (empty_usage (), "b-once")
+
+:= bool_arg () : term bcell (used usage_empty) bool_type = Variable (VariableAt (\? (b_slot (), b_use (), "b")))
+
+:= b_unused () : all_unused bcell (unused usage_empty) = AllUnusedExtend (empty_usage (), "b-unused")
+
+:= gb_unused () : all_unused bbound (unused (unused usage_empty)) = AllUnusedExtend (b_unused (), "g-unused")
+
+:= b_neither () : usage_merge bcell (unused usage_empty) (unused usage_empty) (unused usage_empty) = MergeStep (\? (Neither "n", MergeEmpty "e", "m"))
+
+:= guard_merge () : usage_merge bbound (used (unused usage_empty)) (unused (unused usage_empty)) (used (unused usage_empty)) =
+    MergeStep (\? (LeftOnly "the-guard-owns-g", b_neither (), "m"))
+
+:= unit_in \* c u. (au : all_unused c u) : term c u unit_type = Constant (UnitValue (au, "unit"))
+
+:= if_body () : term bbound (used (unused usage_empty)) unit_type =
+    Elim (If (\? (id_body (b_unused ()), unit_in (gb_unused ()), unit_in (gb_unused ()), guard_merge (), "if-g")))
+
+:= b_right_only () : usage_merge bcell (unused usage_empty) (used usage_empty) (used usage_empty) = MergeStep (\? (RightOnly "r", MergeEmpty "e", "m"))
+
+:= b_left_only () : usage_merge bcell (used usage_empty) (unused usage_empty) (used usage_empty) = MergeStep (\? (LeftOnly "l", MergeEmpty "e", "m"))
+
+:= cond_source () : term bcell (used usage_empty) unit_type =
+    Elim (Apply (\? (Intro (Lambda (if_body (), "g")), bool_arg (), b_right_only (), "redex")))
+
+:= cond_target () : term bcell (used usage_empty) unit_type =
+    Elim (If (\? (bool_arg (), unit_in (b_unused ()), unit_in (b_unused ()), b_left_only (), "if-b")))
+
+///> rust
+:# the_open_conditional_beta_guards_on_the_open_bool =
+    (term_label (cond_source ()), term_label (cond_target ())) |> _assert_eq ("elim", "elim")
+
+///> rust
+:# the_open_conditional_beta_shrinks_size_seven_to_four =
+    (size (cond_source ()), size (cond_target ())) |> _assert_eq (7i32, 4i32)
+
+///> rust
+:# the_open_identity_beta_target_is_not_another_cell_type fails "Unification failure" =
+    := target : arg_term bool_type = ibeta_target (unit_beta ())
+    target |> ignore
+
+///> rust
+:# the_open_identity_beta_step_is_not_an_application_beta_step fails "Unification failure" =
+    abeta_target (unit_beta ()) |> ignore
+
+///> rust
+:# the_open_application_beta_step_is_not_an_identity_beta_step fails "Unification failure" =
+    ibeta_target (app_beta ()) |> ignore
+
+///> rust
+:# the_open_application_beta_target_keeps_the_argument_type fails "Unification failure" =
+    := target : term (cell unit_type) (used usage_empty) bool_type = abeta_target (app_beta ())
+    target |> ignore
+
+///> rust
+:# the_open_tensor_beta_target_is_not_the_conditional_target fails "Unification failure" =
+    := target : term bcell (used usage_empty) unit_type = tbeta_target (pair_beta ())
+    target |> ignore
+
+///> rust
+:# the_open_tensor_beta_target_is_a_pair fails "Unification failure" =
+    := target : term (cell unit_type) (used usage_empty) unit_type = tbeta_target (pair_beta ())
+    target |> ignore
+
+///> rust
+:# the_open_conditional_beta_target_is_not_the_tensor_target fails "Unification failure" =
+    := target : term (cell unit_type) (used usage_empty) (pair_type unit_type) = cond_target ()
+    target |> ignore
+
+///> rust
+:# the_open_conditional_beta_target_keeps_the_unit_type fails "Unification failure" =
+    := target : term bcell (used usage_empty) bool_type = cond_target ()
+    target |> ignore
+
+///> rust
+:# the_open_lambda_beta_target_is_not_the_tensor_target fails "Unification failure" =
+    := target : term (cell unit_type) (used usage_empty) (pair_type unit_type) = lambda_target ()
+    target |> ignore
+
+///> rust
+:# the_open_lambda_beta_target_keeps_the_function_type fails "Unification failure" =
+    := target : term one_unit (used usage_empty) unit_pair = lambda_target ()
+    target |> ignore

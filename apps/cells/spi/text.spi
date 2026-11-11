@@ -1,3 +1,7 @@
+///- --package .
+:# text static =
+    :< testing
+
 := (++) (left : string) (right : string) : string = left ^^ right
 
 := ffi () : () =
@@ -43,7 +47,7 @@
     := n = to - from + 1i32
     $'kino_text_at(!text, !from, !n)' : string
 
-:= starts_at (text : string) (i : i32) (pat : string) : bool =
+:~ starts_at (text : string) (i : i32) (pat : string) : bool =
     := n = length pat
     ? i < 0i32
     ?> !-
@@ -376,7 +380,15 @@
     ?> -1i32
     |: take_tilde_word text (skip_spaces text (i + 1i32))
 
-:= is_value_binding (line : string) : bool =
+:= binds_at (line : string) (at : i32) : bool = at >= 0i32 && eq_at line at
+
+:= value_binding_from (line : string) (after : i32) : bool =
+    := named = take_name line after
+    named <> after
+    && (binds_at line named || binds_at line (group_word line named) || binds_at line (group_paren line named)
+        || binds_at line (group_comma line named))
+
+:~ is_value_binding (line : string) : bool =
     := origin =
         ? starts_at line 0i32 "and "
         ?> skip_spaces line 3i32
@@ -393,25 +405,7 @@
         ? keyword_end >= 0i32 && keyword_end < length line && index line keyword_end = ' ' ?>
             skip_spaces line keyword_end
         |: -1i32
-    ? after < 0i32
-    ?> !-
-    |:
-        := named = take_name line after
-        ? named = after
-        ?> !-
-        |? eq_at line named
-        ?> !+
-        |:
-            := word = group_word line named
-            ? word >= 0i32 && eq_at line word
-            ?> !+
-            |:
-                := paren = group_paren line named
-                ? paren >= 0i32 && eq_at line paren
-                ?> !+
-                |:
-                    := comma = group_comma line named
-                    ? comma >= 0i32 && eq_at line comma ?> !+ |: !-
+    after >= 0i32 && value_binding_from line after
 
 :| line_step =
     | LineDone
@@ -491,3 +485,12 @@
 := err (kind : string) (payload : string) : string = "error\n" ++ kind ++ "\n" ++ payload
 
 := is_error (text : string) : bool = starts_with text "error\n"
+
+///> gleam
+:# a_value_binding_names_its_value_before_an_equals =
+    (is_value_binding ":= x = 1", is_value_binding ":= a, b = p", is_value_binding ":= f x = 1")
+    |> _assert_eq (!+, !+, !-)
+
+///> gleam
+:# a_nameless_or_non_binding_line_is_not_a_value_binding =
+    (is_value_binding ":= = 1", is_value_binding "type t = i32", is_value_binding ":=x = 1") |> _assert_eq (!-, !-, !-)

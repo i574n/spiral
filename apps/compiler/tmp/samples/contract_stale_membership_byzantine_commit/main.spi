@@ -140,7 +140,7 @@
         := \? effect. _, ByzantineRow label = payload
         label
 
-:= ^ terminal_label \* transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to.
+:= terminal_label \* transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to.
     (plan : byzantine_plan transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to)
     : string
     =

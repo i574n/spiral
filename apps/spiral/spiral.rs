@@ -6848,11 +6848,11 @@ fn method93(mut v0: Rc<str>, mut v1: Rc<str>, mut v2: Rc<UH0>, mut v3: i32, mut 
                 }
             }
             US18::US18_Ok(v1165, v1166, v1167, v1168, v1169, v1170) => {
-                let mut v1165: Rc<str> = v1165.clone();
-                let mut v1166: i32 = *v1166;
+                let v1165: Rc<str> = v1165.clone();
+                let v1166: i32 = *v1166;
                 let v1167: i32 = *v1167;
-                let v1168: i32 = *v1168;
-                let v1169: i32 = *v1169;
+                let mut v1168: i32 = *v1168;
+                let mut v1169: i32 = *v1169;
                 let v1170: i32 = *v1170;
                 v1164
             }
@@ -6861,7 +6861,7 @@ fn method93(mut v0: Rc<str>, mut v1: Rc<str>, mut v2: Rc<UH0>, mut v3: i32, mut 
             US18::US18_Error(v1201, v1202, v1203, v1204, v1205, v1206) => {
                 let v1201: Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>> = v1201.clone();
                 let v1202: i32 = *v1202;
-                let v1203: i32 = *v1203;
+                let mut v1203: i32 = *v1203;
                 let v1204: i32 = *v1204;
                 let v1205: i32 = *v1205;
                 let v1206: i32 = *v1206;
@@ -6870,7 +6870,7 @@ fn method93(mut v0: Rc<str>, mut v1: Rc<str>, mut v2: Rc<UH0>, mut v3: i32, mut 
                 match v1208 {
                     US26::US26_Error(v1223, v1224, v1225, v1226, v1227, v1228) => {
                         let v1223: Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>> = v1223;
-                        let v1224: i32 = v1224;
+                        let mut v1224: i32 = v1224;
                         let v1225: i32 = v1225;
                         let v1226: i32 = v1226;
                         let v1227: i32 = v1227;
@@ -6878,10 +6878,10 @@ fn method93(mut v0: Rc<str>, mut v1: Rc<str>, mut v2: Rc<UH0>, mut v3: i32, mut 
                         US18::US18_Error(v1223, v1224, v1225, v1226, v1227, v1228)
                     }
                     US26::US26_Ok(v1209, v1210, v1211, v1212, v1213, v1214) => {
-                        let mut v1209: Rc<UH0> = v1209;
+                        let v1209: Rc<UH0> = v1209;
                         let v1210: i32 = v1210;
                         let v1211: i32 = v1211;
-                        let v1212: i32 = v1212;
+                        let mut v1212: i32 = v1212;
                         let v1213: i32 = v1213;
                         let v1214: i32 = v1214;
                         let v1215: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(Vec::new()));
@@ -6890,7 +6890,7 @@ fn method93(mut v0: Rc<str>, mut v1: Rc<str>, mut v2: Rc<UH0>, mut v3: i32, mut 
                         let v1218: Rc<Vec<Rc<str>>> = Rc::new(v1215.borrow().clone());
                         let v1219: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new((v1218).as_ref().clone()));
                         let v1220: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                        let mut v1221: Rc<str> = Rc::<str>::from((*v1219.borrow()).join(&*v1220));
+                        let v1221: Rc<str> = Rc::<str>::from((*v1219.borrow()).join(&*v1220));
                         US18::US18_Ok(v1221, v1210, v1211, v1212, v1213, v1214)
                     }
                 }
@@ -6901,7 +6901,7 @@ fn method93(mut v0: Rc<str>, mut v1: Rc<str>, mut v2: Rc<UH0>, mut v3: i32, mut 
                 let v1197: i32 = *v1197;
                 let v1198: i32 = *v1198;
                 let v1199: i32 = *v1199;
-                let mut v1200: i32 = *v1200;
+                let v1200: i32 = *v1200;
                 v1194
             }
         };
@@ -6991,7 +6991,7 @@ fn method93(mut v0: Rc<str>, mut v1: Rc<str>, mut v2: Rc<UH0>, mut v3: i32, mut 
                     (v2, v3, v4, v5, v6, v7) = (v1280, v1274, v1275, v1276, v1277, v1278);
                     continue;
                 } else {
-                    let mut v1282: Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>> = closure63();
+                    let v1282: Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>> = closure63();
                     return US18::US18_Error(v1282, v3, v4, v5, v6, v7);
                 }
             }
@@ -8074,7 +8074,7 @@ fn method99(mut v0: Rc<str>, mut v1: Rc<UH0>, mut v2: i32, mut v3: i32, mut v4: 
                             }
                         }
                     };
-                    let v1203: US18 = match &v845 {
+                    let mut v1203: US18 = match &v845 {
                         US18::US18_Error(v852, v853, v854, v855, v856, v857) => {
                             let v852: Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>> = v852.clone();
                             let mut v853: i32 = *v853;
@@ -8434,7 +8434,7 @@ fn method99(mut v0: Rc<str>, mut v1: Rc<UH0>, mut v2: i32, mut v3: i32, mut v4: 
                                                     };
                                                     US17::US17_Ok(b'"', v1159, v1164, v1165, v1166, v1167)
                                                 } else {
-                                                    let v1169: Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>> = closure30();
+                                                    let mut v1169: Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>> = closure30();
                                                     US17::US17_Error(v1169, v877, v878, v879, v880, v881)
                                                 }
                                             };
@@ -8532,12 +8532,12 @@ fn method99(mut v0: Rc<str>, mut v1: Rc<UH0>, mut v2: i32, mut v3: i32, mut v4: 
                         US18::US18_Error(v1210, v1211, v1212, v1213, v1214, v1215) => {
                             let v1210: Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>> = v1210.clone();
                             let v1211: i32 = *v1211;
-                            let v1212: i32 = *v1212;
+                            let mut v1212: i32 = *v1212;
                             let v1213: i32 = *v1213;
                             let v1214: i32 = *v1214;
                             let v1215: i32 = *v1215;
                             let (mut v1216, mut v1217, mut v1218, mut v1219, mut v1220): (i32, i32, i32, i32, i32) = method94(v40, v41, v42, v43, v0.clone(), v39, v40, v41, v42, v43);
-                            let mut v1221: bool = v1216 > v39;
+                            let v1221: bool = v1216 > v39;
                             if v1221 {
                                 let v1222: bool = v39 >= v1216;
                                 let v1227: Rc<str> = if v1222 {
@@ -8560,7 +8560,7 @@ fn method99(mut v0: Rc<str>, mut v1: Rc<UH0>, mut v2: i32, mut v3: i32, mut v4: 
                             let v1206: i32 = *v1206;
                             let v1207: i32 = *v1207;
                             let v1208: i32 = *v1208;
-                            let mut v1209: i32 = *v1209;
+                            let v1209: i32 = *v1209;
                             v1203
                         }
                     };
@@ -8634,8 +8634,8 @@ fn method99(mut v0: Rc<str>, mut v1: Rc<UH0>, mut v2: i32, mut v3: i32, mut v4: 
                     };
                     let v1300: US18 = match v1283 {
                         US18::US18_Error(v1284, v1285, v1286, v1287, v1288, v1289) => {
-                            let v1284: Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>> = v1284;
-                            let v1285: i32 = v1285;
+                            let mut v1284: Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>> = v1284;
+                            let mut v1285: i32 = v1285;
                             let v1286: i32 = v1286;
                             let v1287: i32 = v1287;
                             let v1288: i32 = v1288;
@@ -8648,7 +8648,7 @@ fn method99(mut v0: Rc<str>, mut v1: Rc<UH0>, mut v2: i32, mut v3: i32, mut v4: 
                             let v1293: i32 = v1293;
                             let v1294: i32 = v1294;
                             let v1295: i32 = v1295;
-                            let mut v1296: i32 = v1296;
+                            let v1296: i32 = v1296;
                             let v1297: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Nil); } CASE.with(|case| case.clone()) };
                             method93(v0.clone(), v1291, v1297, v1292, v1293, v1294, v1295, v1296)
                         }
@@ -8662,7 +8662,7 @@ fn method99(mut v0: Rc<str>, mut v1: Rc<UH0>, mut v2: i32, mut v3: i32, mut v4: 
                             let mut v1313: i32 = v1313;
                             let v1314: i32 = v1314;
                             let v1315: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Nil); } CASE.with(|case| case.clone()) };
-                            let mut v1316: Rc<UH0> = method92(v1, v1315);
+                            let v1316: Rc<UH0> = method92(v1, v1315);
                             return US26::US26_Ok(v1316, v2, v3, v4, v5, v6);
                         }
                         US18::US18_Ok(v1301, v1302, v1303, v1304, v1305, v1306) => {
@@ -8670,7 +8670,7 @@ fn method99(mut v0: Rc<str>, mut v1: Rc<UH0>, mut v2: i32, mut v3: i32, mut v4: 
                             let mut v1302: i32 = v1302;
                             let v1303: i32 = v1303;
                             let v1304: i32 = v1304;
-                            let v1305: i32 = v1305;
+                            let mut v1305: i32 = v1305;
                             let v1306: i32 = v1306;
                             let v1307: Rc<UH0> = Rc::new(UH0::UH0_Cons(v1301, v1));
                             (v1, v2, v3, v4, v5, v6) = (v1307, v1302, v1303, v1304, v1305, v1306);
@@ -10189,9 +10189,9 @@ fn split_args_86(mut v0: Rc<str>) -> US25 {
             let v1161: i32 = 1i32;
             let v1162: i32 = 1i32;
             let (mut v1163, mut v1164, mut v1165, mut v1166, mut v1167): (i32, i32, i32, i32, i32) = method90(v1, v0.clone(), v1159, v1160, v1161, v1162, v1);
-            let v1168: bool = v1163 > 0i32;
+            let mut v1168: bool = v1163 > 0i32;
             if v1168 {
-                let v1169: bool = 0i32 >= v1163;
+                let mut v1169: bool = 0i32 >= v1163;
                 let v1174: Rc<str> = if v1169 {
                     let v1170: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
                     v1170
@@ -10242,16 +10242,16 @@ fn split_args_86(mut v0: Rc<str>) -> US25 {
                 }
                 US26::US26_Ok(v1199, v1200, v1201, v1202, v1203, v1204) => {
                     let v1199: Rc<UH0> = v1199;
-                    let mut v1200: i32 = v1200;
+                    let v1200: i32 = v1200;
                     let v1201: i32 = v1201;
                     let v1202: i32 = v1202;
-                    let v1203: i32 = v1203;
+                    let mut v1203: i32 = v1203;
                     let v1204: i32 = v1204;
                     let v1205: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(Vec::new()));
                     let v1206: i32 = 0i32;
                     let v1207: i32 = method28(v1205.clone(), v1199, v1206);
                     let v1208: Rc<Vec<Rc<str>>> = Rc::new(v1205.borrow().clone());
-                    let mut v1209: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new((v1208).as_ref().clone()));
+                    let v1209: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new((v1208).as_ref().clone()));
                     let v1210: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
                     let v1211: Rc<str> = Rc::<str>::from((*v1209.borrow()).join(&*v1210));
                     US18::US18_Ok(v1211, v1200, v1201, v1202, v1203, v1204)
@@ -10270,7 +10270,7 @@ fn split_args_86(mut v0: Rc<str>) -> US25 {
     };
     let v1234: US18 = match &v1223 {
         US18::US18_Ok(v1224, v1225, v1226, v1227, v1228, v1229) => {
-            let v1224: Rc<str> = v1224.clone();
+            let mut v1224: Rc<str> = v1224.clone();
             let v1225: i32 = *v1225;
             let v1226: i32 = *v1226;
             let v1227: i32 = *v1227;
@@ -10334,8 +10334,8 @@ fn split_args_86(mut v0: Rc<str>) -> US25 {
     };
     let v1293: US27 = match v1270 {
         US26::US26_Error(v1284, v1285, v1286, v1287, v1288, v1289) => {
-            let v1284: Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>> = v1284;
-            let v1285: i32 = v1285;
+            let mut v1284: Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>> = v1284;
+            let mut v1285: i32 = v1285;
             let v1286: i32 = v1286;
             let v1287: i32 = v1287;
             let v1288: i32 = v1288;
@@ -10351,12 +10351,12 @@ fn split_args_86(mut v0: Rc<str>) -> US25 {
             let v1275: i32 = v1275;
             let v1276: i32 = v1276;
             let v1277: bool = v1272 >= v1276;
-            let mut v1282: Rc<str> = if v1277 {
+            let v1282: Rc<str> = if v1277 {
                 let v1278: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
                 v1278
             } else {
                 let v1280: i32 = v1276.wrapping_sub(1i32);
-                let mut v1281: Rc<str> = string_slice(&v0, v1272 as i64, v1280 as i64);
+                let v1281: Rc<str> = string_slice(&v0, v1272 as i64, v1280 as i64);
                 v1281
             };
             US27::US27_Ok(v1271, v1282, v1273, v1274, v1275, v1276)
@@ -10370,7 +10370,7 @@ fn split_args_86(mut v0: Rc<str>) -> US25 {
         US27::US27_Ok(v1294, v1295, v1296, v1297, v1298, v1299) => {
             let v1294: Rc<UH0> = v1294;
             let v1295: Rc<str> = v1295;
-            let mut v1296: i32 = v1296;
+            let v1296: i32 = v1296;
             let v1297: i32 = v1297;
             let v1298: i32 = v1298;
             let mut v1299: i32 = v1299;
@@ -10379,7 +10379,7 @@ fn split_args_86(mut v0: Rc<str>) -> US25 {
             let mut v1302: usize = ((v1301) as usize);
             let v1303: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(Vec::with_capacity(v1302)));
             let v1304: i32 = 0i32;
-            let v1305: i32 = method101(v1303.clone(), v1294, v1304);
+            let mut v1305: i32 = method101(v1303.clone(), v1294, v1304);
             US28::US28_Ok(v1303)
         }
     };
@@ -17972,7 +17972,7 @@ fn run_15(mut v0: US0, mut v1: clap::ArgMatches) -> std::pin::Pin<Box<dyn std::f
     let mut v15: US4 = US4::US4_None;
     let v16: US4 = v15.clone();
     let mut v17: US4 = v13.unwrap_or(v16);
-    let v2697: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = match v17 {
+    let v2700: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = match v17 {
         US4::US4_Some(v18, v19) => {
             let mut v18: std::string::String = v18;
             let mut v19: clap::ArgMatches = v19;
@@ -19342,646 +19342,652 @@ main()", v499));
                         };
                         let v1123: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_PYTHON"); } LIT.with(|lit| lit.clone()) };
                         let v1124: Rc<str> = get_environment_variable_1(v1123);
-                        let v1125: bool = &*v1124 == "";
-                        let v1127: Rc<str> = if v1125 {
-                            let v1126: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("python"); } LIT.with(|lit| lit.clone()) };
-                            v1126
-                        } else {
+                        let v1125: bool = &*v1124 != "";
+                        let v1130: Rc<str> = if v1125 {
                             v1124
-                        };
-                        let v1129: Result<Vec<u8>, std::io::Error> = std::fs::read(&*v1048);
-                        let v1131: Vec<u8> = v1129.unwrap();
-                        let v1132: Vec<u8> = method23(v1131);
-                        let v1134: Result<std::string::String, std::string::FromUtf8Error> = std::string::String::from_utf8(v1132);
-                        let v1136: std::string::String = v1134.unwrap();
-                        let v1138: Rc<str> = Rc::<str>::from(String::as_str(&v1136));
-                        let v1139: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_REPO_ROOT"); } LIT.with(|lit| lit.clone()) };
-                        let v1140: Rc<str> = get_environment_variable_1(v1139);
-                        let v1141: bool = &*v1140 != "";
-                        let v1187: Rc<str> = if v1141 {
-                            normalize_path_29(v1140)
                         } else {
-                            let v1143: Rc<str> = get_current_directory_43();
-                            let v1144: US10 = run_44(v1143);
-                            let v1150: US10 = match v1144 {
+                            let v1126: bool = cfg!(windows);
+                            if v1126 {
+                                let v1127: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("python"); } LIT.with(|lit| lit.clone()) };
+                                v1127
+                            } else {
+                                let v1128: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("python3"); } LIT.with(|lit| lit.clone()) };
+                                v1128
+                            }
+                        };
+                        let v1132: Result<Vec<u8>, std::io::Error> = std::fs::read(&*v1048);
+                        let v1134: Vec<u8> = v1132.unwrap();
+                        let v1135: Vec<u8> = method23(v1134);
+                        let v1137: Result<std::string::String, std::string::FromUtf8Error> = std::string::String::from_utf8(v1135);
+                        let v1139: std::string::String = v1137.unwrap();
+                        let v1141: Rc<str> = Rc::<str>::from(String::as_str(&v1139));
+                        let v1142: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_REPO_ROOT"); } LIT.with(|lit| lit.clone()) };
+                        let v1143: Rc<str> = get_environment_variable_1(v1142);
+                        let v1144: bool = &*v1143 != "";
+                        let v1190: Rc<str> = if v1144 {
+                            normalize_path_29(v1143)
+                        } else {
+                            let v1146: Rc<str> = get_current_directory_43();
+                            let v1147: US10 = run_44(v1146);
+                            let v1153: US10 = match v1147 {
                                 US10::US10_None => {
-                                    let v1147: Rc<str> = Rc::<str>::from(env!("CARGO_MANIFEST_DIR"));
-                                    run_44(v1147)
+                                    let v1150: Rc<str> = Rc::<str>::from(env!("CARGO_MANIFEST_DIR"));
+                                    run_44(v1150)
                                 }
-                                US10::US10_Some(v1145) => {
-                                    let v1145: Rc<str> = v1145;
-                                    US10::US10_Some(v1145)
+                                US10::US10_Some(v1148) => {
+                                    let v1148: Rc<str> = v1148;
+                                    US10::US10_Some(v1148)
                                 }
                             };
-                            let v1156: US10 = match v1150 {
+                            let v1159: US10 = match v1153 {
                                 US10::US10_None => {
-                                    let v1153: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("/workspaces"); } LIT.with(|lit| lit.clone()) };
-                                    run_44(v1153)
+                                    let v1156: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("/workspaces"); } LIT.with(|lit| lit.clone()) };
+                                    run_44(v1156)
                                 }
-                                US10::US10_Some(v1151) => {
-                                    let v1151: Rc<str> = v1151;
-                                    US10::US10_Some(v1151)
+                                US10::US10_Some(v1154) => {
+                                    let v1154: Rc<str> = v1154;
+                                    US10::US10_Some(v1154)
                                 }
                             };
-                            let v1160: Rc<str> = match v1156 {
+                            let v1163: Rc<str> = match v1159 {
                                 US10::US10_None => {
                                     std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Option does not have a value."); } LIT.with(|lit| lit.clone()) }))
                                 }
-                                US10::US10_Some(v1157) => {
-                                    let v1157: Rc<str> = v1157;
-                                    v1157
+                                US10::US10_Some(v1160) => {
+                                    let v1160: Rc<str> = v1160;
+                                    v1160
                                 }
                             };
-                            let v1161: Rc<str> = get_file_name_33(v1160.clone());
-                            let v1162: bool = "deps" == &*v1161;
-                            let v1184: Rc<str> = if v1162 {
-                                let v1163: Option<Rc<str>> = directory_get_parent_35(v1160.clone());
-                                let v1164: Option<Rc<str>> = method34(v1163);
-                                let mut v1165: Rc<dyn Fn((Rc<str>)) -> US10> = closure13();
-                                let mut v1166: Option<US10> = v1164.map(|x| v1165(x));
-                                let v1168: US10 = US10::US10_None;
-                                let v1169: US10 = v1168.clone();
-                                let v1170: US10 = v1166.unwrap_or(v1169);
-                                match v1170 {
+                            let v1164: Rc<str> = get_file_name_33(v1163.clone());
+                            let v1165: bool = "deps" == &*v1164;
+                            let v1187: Rc<str> = if v1165 {
+                                let v1166: Option<Rc<str>> = directory_get_parent_35(v1163.clone());
+                                let v1167: Option<Rc<str>> = method34(v1166);
+                                let mut v1168: Rc<dyn Fn((Rc<str>)) -> US10> = closure13();
+                                let mut v1169: Option<US10> = v1167.map(|x| v1168(x));
+                                let v1171: US10 = US10::US10_None;
+                                let v1172: US10 = v1171.clone();
+                                let v1173: US10 = v1169.unwrap_or(v1172);
+                                match v1173 {
                                     US10::US10_None => {
-                                        v1160
+                                        v1163
                                     }
-                                    US10::US10_Some(v1171) => {
-                                        let v1171: Rc<str> = v1171;
-                                        let v1172: US13 = US13::US13_Directory;
-                                        let v1173: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral"); } LIT.with(|lit| lit.clone()) };
-                                        let v1174: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("workspace"); } LIT.with(|lit| lit.clone()) };
-                                        let v1175: Rc<str> = method40(v1173, v1174);
-                                        let v1176: US14 = find_parent_45(v1172, v1175, v1171);
-                                        match v1176 {
-                                            US14::US14_Error(v1179) => {
-                                                let v1179: Rc<str> = v1179;
-                                                v1160
+                                    US10::US10_Some(v1174) => {
+                                        let v1174: Rc<str> = v1174;
+                                        let v1175: US13 = US13::US13_Directory;
+                                        let v1176: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral"); } LIT.with(|lit| lit.clone()) };
+                                        let v1177: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("workspace"); } LIT.with(|lit| lit.clone()) };
+                                        let v1178: Rc<str> = method40(v1176, v1177);
+                                        let v1179: US14 = find_parent_45(v1175, v1178, v1174);
+                                        match v1179 {
+                                            US14::US14_Error(v1182) => {
+                                                let v1182: Rc<str> = v1182;
+                                                v1163
                                             }
-                                            US14::US14_Ok(v1177) => {
-                                                let v1177: Rc<str> = v1177;
-                                                normalize_path_29(v1177)
+                                            US14::US14_Ok(v1180) => {
+                                                let v1180: Rc<str> = v1180;
+                                                normalize_path_29(v1180)
                                             }
                                         }
                                     }
                                 }
                             } else {
-                                v1160
+                                v1163
                             };
-                            let v1185: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral"); } LIT.with(|lit| lit.clone()) };
-                            method40(v1184, v1185)
+                            let v1188: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral"); } LIT.with(|lit| lit.clone()) };
+                            method40(v1187, v1188)
                         };
-                        let v1188: Rc<str> = get_current_directory_43();
-                        let v1189: Rc<str> = Rc::<str>::from(v1188.to_lowercase());
-                        let v1190: Rc<str> = Rc::<str>::from(v1187.to_lowercase());
-                        let v1191: bool = v1189.starts_with(&*v1190);
-                        let v1194: US14 = if v1191 {
-                            US14::US14_Error(v1190)
+                        let v1191: Rc<str> = get_current_directory_43();
+                        let v1192: Rc<str> = Rc::<str>::from(v1191.to_lowercase());
+                        let v1193: Rc<str> = Rc::<str>::from(v1190.to_lowercase());
+                        let v1194: bool = v1192.starts_with(&*v1193);
+                        let v1197: US14 = if v1194 {
+                            US14::US14_Error(v1193)
                         } else {
-                            US14::US14_Ok(v1190)
+                            US14::US14_Ok(v1193)
                         };
-                        let mut v1200: Result<Rc<str>, Rc<str>> = match v1194 {
-                            US14::US14_Error(v1197) => {
-                                let v1197: Rc<str> = v1197;
-                                let v1198: Result<Rc<str>, Rc<str>> = Err::<Rc<str>, Rc<str>>(v1197);
-                                v1198
+                        let mut v1203: Result<Rc<str>, Rc<str>> = match v1197 {
+                            US14::US14_Error(v1200) => {
+                                let v1200: Rc<str> = v1200;
+                                let v1201: Result<Rc<str>, Rc<str>> = Err::<Rc<str>, Rc<str>>(v1200);
+                                v1201
                             }
-                            US14::US14_Ok(v1195) => {
-                                let v1195: Rc<str> = v1195;
-                                let v1196: Result<Rc<str>, Rc<str>> = Ok::<Rc<str>, Rc<str>>(v1195);
-                                v1196
+                            US14::US14_Ok(v1198) => {
+                                let v1198: Rc<str> = v1198;
+                                let v1199: Result<Rc<str>, Rc<str>> = Ok::<Rc<str>, Rc<str>>(v1198);
+                                v1199
                             }
                         };
-                        let v1202: bool = true; let _result_unwrap_or_else = v1200.unwrap_or_else(|x| { //;
-                        let v1204: Rc<str> = x;
-                        let v1206: bool = true; v1204 });
-                        let v1208: Rc<str> = _result_unwrap_or_else;
-                        let mut v1209: Option<Rc<str>> = directory_get_parent_35(v1048.clone());
-                        let v1211: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                        let v1212: Rc<str> = v1211.clone();
-                        let v1213: Rc<str> = v1209.unwrap_or(v1212);
-                        let v1219: Rc<str> = match &v1105 {
+                        let v1205: bool = true; let _result_unwrap_or_else = v1203.unwrap_or_else(|x| { //;
+                        let v1207: Rc<str> = x;
+                        let v1209: bool = true; v1207 });
+                        let v1211: Rc<str> = _result_unwrap_or_else;
+                        let mut v1212: Option<Rc<str>> = directory_get_parent_35(v1048.clone());
+                        let v1214: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                        let v1215: Rc<str> = v1214.clone();
+                        let v1216: Rc<str> = v1212.unwrap_or(v1215);
+                        let v1222: Rc<str> = match &v1105 {
                             US33::US33_Pip => {
-                                let v1214: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("requirements.txt"); } LIT.with(|lit| lit.clone()) };
-                                method40(v1213.clone(), v1214)
+                                let v1217: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("requirements.txt"); } LIT.with(|lit| lit.clone()) };
+                                method40(v1216.clone(), v1217)
                             }
                             US33::US33_Poetry => {
-                                let v1216: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("pyproject.toml"); } LIT.with(|lit| lit.clone()) };
-                                method40(v1213.clone(), v1216)
+                                let v1219: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("pyproject.toml"); } LIT.with(|lit| lit.clone()) };
+                                method40(v1216.clone(), v1219)
                             }
                         };
-                        let mut v1221: Rc<dyn Fn((std::string::String)) -> Rc<str>> = closure81();
-                        let v1222: Vec<Rc<str>> = v1122.iter().map(|x| v1221(x.clone())).collect::<Vec<_>>();
-                        let v1223: Vec<Rc<str>> = method62(v1222);
-                        let v1224: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(v1223));
-                        let v1225: Rc<Vec<Rc<str>>> = Rc::new(v1224.borrow().clone());
-                        let v1226: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("\n"); } LIT.with(|lit| lit.clone()) };
-                        let v1227: Rc<str> = Rc::<str>::from(v1225.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*v1226));
-                        let v1228: bool = &*v1227 == "";
-                        let (mut v1255, mut v1256): (i32, Rc<str>) = if v1228 {
-                            (0i32, v1211.clone())
+                        let mut v1224: Rc<dyn Fn((std::string::String)) -> Rc<str>> = closure81();
+                        let v1225: Vec<Rc<str>> = v1122.iter().map(|x| v1224(x.clone())).collect::<Vec<_>>();
+                        let v1226: Vec<Rc<str>> = method62(v1225);
+                        let v1227: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(v1226));
+                        let v1228: Rc<Vec<Rc<str>>> = Rc::new(v1227.borrow().clone());
+                        let v1229: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("\n"); } LIT.with(|lit| lit.clone()) };
+                        let v1230: Rc<str> = Rc::<str>::from(v1228.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*v1229));
+                        let v1231: bool = &*v1230 == "";
+                        let (mut v1258, mut v1259): (i32, Rc<str>) = if v1231 {
+                            (0i32, v1214.clone())
                         } else {
-                            let v1240: Rc<str> = match &v1105 {
+                            let v1243: Rc<str> = match &v1105 {
                                 US33::US33_Pip => {
-                                    v1227
+                                    v1230
                                 }
                                 US33::US33_Poetry => {
-                                    let v1229: Rc<str> = Rc::<str>::from(format!("{}", v1227));
-                                    let v1238: Rc<str> = string_concat(&["[tool.poetry]\nname = \"test\"\nversion = \"0.0.1\"\ndescription = \"\"\nauthors = []\n\n[tool.poetry.dependencies]\npython=\"~3.12\"\n", &*v1229, "\n\n[build-system]\nrequires = [\"poetry-core\"]\nbuild-backend = \"poetry.core.masonry.api\""]);
-                                    v1238
+                                    let v1232: Rc<str> = Rc::<str>::from(format!("{}", v1230));
+                                    let v1241: Rc<str> = string_concat(&["[tool.poetry]\nname = \"test\"\nversion = \"0.0.1\"\ndescription = \"\"\nauthors = []\n\n[tool.poetry.dependencies]\npython=\"~3.12\"\n", &*v1232, "\n\n[build-system]\nrequires = [\"poetry-core\"]\nbuild-backend = \"poetry.core.masonry.api\""]);
+                                    v1241
                                 }
                             };
-                            write_all_text_exists_63(v1219, v1240);
-                            let v1241: Option<std::sync::Arc<std::sync::atomic::AtomicBool>> = None;
-                            let v1242: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![]));
-                            let v1243: Option<Rc<dyn Fn(i32, Rc<str>, bool) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>>> = None;
-                            let v1244: Option<Rc<dyn Fn(std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>) -> ()>> = None;
-                            let v1245: Option<Rc<str>> = None;
-                            let v1249: Rc<str> = match &v1105 {
+                            write_all_text_exists_63(v1222, v1243);
+                            let v1244: Option<std::sync::Arc<std::sync::atomic::AtomicBool>> = None;
+                            let v1245: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![]));
+                            let v1246: Option<Rc<dyn Fn(i32, Rc<str>, bool) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>>> = None;
+                            let v1247: Option<Rc<dyn Fn(std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>) -> ()>> = None;
+                            let v1248: Option<Rc<str>> = None;
+                            let v1252: Rc<str> = match &v1105 {
                                 US33::US33_Pip => {
-                                    let v1246: Rc<str> = Rc::<str>::from(format!("\"{}\" -m pip install -r requirements.txt", v1127));
-                                    v1246
+                                    let v1249: Rc<str> = Rc::<str>::from(format!("\"{}\" -m pip install -r requirements.txt", v1130));
+                                    v1249
                                 }
                                 US33::US33_Poetry => {
-                                    let v1247: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("poetry install"); } LIT.with(|lit| lit.clone()) };
-                                    v1247
+                                    let v1250: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("poetry install"); } LIT.with(|lit| lit.clone()) };
+                                    v1250
                                 }
                             };
-                            let v1250: Option<Rc<str>> = Some(v1213.clone());
-                            let v1251: bool = true;
-                            let v1252: bool = true;
-                            execute_with_options_75(v1249, v1241, v1242, v1243, v1244, v1251, v1250, v1252)
+                            let v1253: Option<Rc<str>> = Some(v1216.clone());
+                            let v1254: bool = true;
+                            let v1255: bool = true;
+                            execute_with_options_75(v1252, v1244, v1245, v1246, v1247, v1254, v1253, v1255)
                         };
-                        let v1257: bool = v1255 != 0i32 ;
-                        let (mut v1352, mut v1353, mut v1354, mut v1355): (US10, US10, US10, US10) = if v1257 {
-                            let v1258: Rc<str> = string_concat(&["spiral.process_cuda / env install error\n", &*v1256]);
-                            let (mut v1259, mut v1260, mut v1261, mut v1262): (US10, US10, US10, US10) = std::panic::panic_any::<std::string::String>(format!("{}", v1258));
-                            (v1259, v1260, v1261, v1262)
+                        let v1260: bool = v1258 != 0i32 ;
+                        let (mut v1355, mut v1356, mut v1357, mut v1358): (US10, US10, US10, US10) = if v1260 {
+                            let v1261: Rc<str> = string_concat(&["spiral.process_cuda / env install error\n", &*v1259]);
+                            let (mut v1262, mut v1263, mut v1264, mut v1265): (US10, US10, US10, US10) = std::panic::panic_any::<std::string::String>(format!("{}", v1261));
+                            (v1262, v1263, v1264, v1265)
                         } else {
-                            let v1266: Rc<str> = match v1105 {
+                            let v1269: Rc<str> = match v1105 {
                                 US33::US33_Pip => {
-                                    let v1263: Rc<str> = Rc::<str>::from(format!("\"{}\" \"{}\"", v1127, v1048));
-                                    v1263
+                                    let v1266: Rc<str> = Rc::<str>::from(format!("\"{}\" \"{}\"", v1130, v1048));
+                                    v1266
                                 }
                                 US33::US33_Poetry => {
-                                    let v1264: Rc<str> = Rc::<str>::from(format!("poetry run python \"{}\"", v1048));
-                                    v1264
+                                    let v1267: Rc<str> = Rc::<str>::from(format!("poetry run python \"{}\"", v1048));
+                                    v1267
                                 }
                             };
-                            let v1267: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("TRACE_LEVEL"); } LIT.with(|lit| lit.clone()) };
-                            let v1268: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Verbose"); } LIT.with(|lit| lit.clone()) };
-                            let v1269: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v1267, v1268)]));
-                            let v1270: Option<std::sync::Arc<std::sync::atomic::AtomicBool>> = None;
-                            let v1272: Option<Rc<dyn Fn(i32, Rc<str>, bool) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>>> = None;
-                            let v1273: Option<Rc<dyn Fn(std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>) -> ()>> = None;
-                            let v1274: Option<Rc<str>> = None;
-                            let v1275: Option<Rc<str>> = Some(v1213.clone());
-                            let v1276: bool = true;
-                            let v1277: bool = true;
-                            let (mut v1278, mut v1279): (i32, Rc<str>) = execute_with_options_75(v1266.clone(), v1270, v1269.clone(), v1272, v1273, v1276, v1275, v1277);
-                            let v1280: i32 = (v1269.clone().borrow().len() as i32);
-                            let mut v1281: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(vec![<Rc<str>>::default(); v1280 as usize]));
-                            let mut v1282: Rc<RefCell<Mut9>> = Rc::new(RefCell::new(Mut9 { l0: 0i32 }));
-                            while method53(v1280, &v1282) {
-                                let v1284: i32 = v1282.borrow().l0;
-                                let (mut v1285, mut v1286): (Rc<str>, Rc<str>) = v1269.borrow()[v1284 as usize].clone();
-                                let v1287: Rc<str> = Rc::<str>::from(format!("$env:{}=''{}''", v1285, v1286));
-                                v1281.borrow_mut()[v1284 as usize] = v1287;
-                                let v1288: i32 = v1284.wrapping_add(1i32);
-                                v1282.borrow_mut().l0 = v1288;
+                            let v1270: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("TRACE_LEVEL"); } LIT.with(|lit| lit.clone()) };
+                            let v1271: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Verbose"); } LIT.with(|lit| lit.clone()) };
+                            let v1272: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v1270, v1271)]));
+                            let v1273: Option<std::sync::Arc<std::sync::atomic::AtomicBool>> = None;
+                            let v1275: Option<Rc<dyn Fn(i32, Rc<str>, bool) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>>> = None;
+                            let v1276: Option<Rc<dyn Fn(std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>) -> ()>> = None;
+                            let v1277: Option<Rc<str>> = None;
+                            let v1278: Option<Rc<str>> = Some(v1216.clone());
+                            let v1279: bool = true;
+                            let v1280: bool = true;
+                            let (mut v1281, mut v1282): (i32, Rc<str>) = execute_with_options_75(v1269.clone(), v1273, v1272.clone(), v1275, v1276, v1279, v1278, v1280);
+                            let v1283: i32 = (v1272.clone().borrow().len() as i32);
+                            let mut v1284: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(vec![<Rc<str>>::default(); v1283 as usize]));
+                            let mut v1285: Rc<RefCell<Mut9>> = Rc::new(RefCell::new(Mut9 { l0: 0i32 }));
+                            while method53(v1283, &v1285) {
+                                let v1287: i32 = v1285.borrow().l0;
+                                let (mut v1288, mut v1289): (Rc<str>, Rc<str>) = v1272.borrow()[v1287 as usize].clone();
+                                let v1290: Rc<str> = Rc::<str>::from(format!("$env:{}=''{}''", v1288, v1289));
+                                v1284.borrow_mut()[v1287 as usize] = v1290;
+                                let v1291: i32 = v1287.wrapping_add(1i32);
+                                v1285.borrow_mut().l0 = v1291;
                                 ()
                             };
-                            let v1289: Rc<Vec<Rc<str>>> = Rc::new(v1281.borrow().clone());
-                            let v1290: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(";"); } LIT.with(|lit| lit.clone()) };
-                            let v1291: Rc<str> = Rc::<str>::from(v1289.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*v1290));
-                            let v1292: Rc<str> = Rc::<str>::from(format!("pwsh -c '{}; {}'", v1291, v1266));
-                            let v1293: bool = v1278 == 0i32;
-                            let (mut v1348, mut v1349, mut v1350, mut v1351): (US10, US10, US10, US10) = if v1293 {
-                                let v1294: Rc<dyn Fn(Rc<str>) -> US10> = some_c71();
-                                let v1295: Rc<dyn Fn() -> Rc<str>> = closure82(v1279.clone());
-                                let mut v1296: Rc<dyn Fn(Rc<str>) -> US10> = closure83(v1048.clone(), v1279, v1292);
-                                let v1297: bool = cfg!(panic = "abort");
-                                let v1330: US10 = if v1297 {
-                                    let v1298: Rc<dyn Fn() -> US10> = closure75(v1294, v1295);
-                                    let mut v1299: std::thread::Result<US10> = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (v1298)()));
-                                    let v1300: bool = v1299.is_ok();
-                                    if v1300 {
-                                        let v1301: US10 = v1299.unwrap();
-                                        v1301
+                            let v1292: Rc<Vec<Rc<str>>> = Rc::new(v1284.borrow().clone());
+                            let v1293: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(";"); } LIT.with(|lit| lit.clone()) };
+                            let v1294: Rc<str> = Rc::<str>::from(v1292.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*v1293));
+                            let v1295: Rc<str> = Rc::<str>::from(format!("pwsh -c '{}; {}'", v1294, v1269));
+                            let v1296: bool = v1281 == 0i32;
+                            let (mut v1351, mut v1352, mut v1353, mut v1354): (US10, US10, US10, US10) = if v1296 {
+                                let v1297: Rc<dyn Fn(Rc<str>) -> US10> = some_c71();
+                                let v1298: Rc<dyn Fn() -> Rc<str>> = closure82(v1282.clone());
+                                let mut v1299: Rc<dyn Fn(Rc<str>) -> US10> = closure83(v1048.clone(), v1282, v1295);
+                                let v1300: bool = cfg!(panic = "abort");
+                                let v1333: US10 = if v1300 {
+                                    let v1301: Rc<dyn Fn() -> US10> = closure75(v1297, v1298);
+                                    let mut v1302: std::thread::Result<US10> = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (v1301)()));
+                                    let v1303: bool = v1302.is_ok();
+                                    if v1303 {
+                                        let v1304: US10 = v1302.unwrap();
+                                        v1304
                                     } else {
-                                        let mut v1302: Box<dyn std::any::Any + Send> = v1299.err().unwrap();
-                                        let v1303: bool = v1302.downcast_ref::<String>().is_some();
-                                        let v1309: Rc<str> = if v1303 {
-                                            let v1304: Rc<str> = Rc::<str>::from(v1302.downcast_ref::<String>().unwrap().as_str());
-                                            v1304
+                                        let mut v1305: Box<dyn std::any::Any + Send> = v1302.err().unwrap();
+                                        let v1306: bool = v1305.downcast_ref::<String>().is_some();
+                                        let v1312: Rc<str> = if v1306 {
+                                            let v1307: Rc<str> = Rc::<str>::from(v1305.downcast_ref::<String>().unwrap().as_str());
+                                            v1307
                                         } else {
-                                            let v1305: bool = v1302.downcast_ref::<&str>().is_some();
-                                            if v1305 {
-                                                let v1306: Rc<str> = Rc::<str>::from(*v1302.downcast_ref::<&str>().unwrap());
-                                                v1306
+                                            let v1308: bool = v1305.downcast_ref::<&str>().is_some();
+                                            if v1308 {
+                                                let v1309: Rc<str> = Rc::<str>::from(*v1305.downcast_ref::<&str>().unwrap());
+                                                v1309
                                             } else {
-                                                let v1307: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("panic"); } LIT.with(|lit| lit.clone()) };
-                                                v1307
+                                                let v1310: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("panic"); } LIT.with(|lit| lit.clone()) };
+                                                v1310
                                             }
                                         };
-                                        let v1310: Rc<str> = v1309;
-                                        v1296(v1310)
+                                        let mut v1313: Rc<str> = v1312;
+                                        v1299(v1313)
                                     }
                                 } else {
-                                    let mut v1313: Box<dyn Fn(&std::panic::PanicHookInfo) + Sync + Send> = std::panic::take_hook();
-                                    let v1314: Box<dyn Fn(&std::panic::PanicHookInfo) + Sync + Send> = Box::new(|_| ());
-                                    std::panic::set_hook(v1314);
-                                    let v1315: Rc<dyn Fn() -> US10> = closure75(v1294, v1295);
-                                    let mut v1316: std::thread::Result<US10> = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (v1315)()));
-                                    let v1317: bool = v1316.is_ok();
-                                    let v1329: US10 = if v1317 {
-                                        let v1318: US10 = v1316.unwrap();
-                                        v1318
+                                    let v1316: Box<dyn Fn(&std::panic::PanicHookInfo) + Sync + Send> = std::panic::take_hook();
+                                    let v1317: Box<dyn Fn(&std::panic::PanicHookInfo) + Sync + Send> = Box::new(|_| ());
+                                    std::panic::set_hook(v1317);
+                                    let v1318: Rc<dyn Fn() -> US10> = closure75(v1297, v1298);
+                                    let mut v1319: std::thread::Result<US10> = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (v1318)()));
+                                    let v1320: bool = v1319.is_ok();
+                                    let v1332: US10 = if v1320 {
+                                        let v1321: US10 = v1319.unwrap();
+                                        v1321
                                     } else {
-                                        let mut v1319: Box<dyn std::any::Any + Send> = v1316.err().unwrap();
-                                        let v1320: bool = v1319.downcast_ref::<String>().is_some();
-                                        let v1326: Rc<str> = if v1320 {
-                                            let v1321: Rc<str> = Rc::<str>::from(v1319.downcast_ref::<String>().unwrap().as_str());
-                                            v1321
+                                        let mut v1322: Box<dyn std::any::Any + Send> = v1319.err().unwrap();
+                                        let v1323: bool = v1322.downcast_ref::<String>().is_some();
+                                        let v1329: Rc<str> = if v1323 {
+                                            let v1324: Rc<str> = Rc::<str>::from(v1322.downcast_ref::<String>().unwrap().as_str());
+                                            v1324
                                         } else {
-                                            let v1322: bool = v1319.downcast_ref::<&str>().is_some();
-                                            if v1322 {
-                                                let v1323: Rc<str> = Rc::<str>::from(*v1319.downcast_ref::<&str>().unwrap());
-                                                v1323
+                                            let v1325: bool = v1322.downcast_ref::<&str>().is_some();
+                                            if v1325 {
+                                                let v1326: Rc<str> = Rc::<str>::from(*v1322.downcast_ref::<&str>().unwrap());
+                                                v1326
                                             } else {
-                                                let v1324: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("panic"); } LIT.with(|lit| lit.clone()) };
-                                                v1324
+                                                let v1327: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("panic"); } LIT.with(|lit| lit.clone()) };
+                                                v1327
                                             }
                                         };
-                                        let v1327: Rc<str> = v1326;
-                                        v1296(v1327)
+                                        let v1330: Rc<str> = v1329;
+                                        v1299(v1330)
                                     };
-                                    std::panic::set_hook(v1313);
-                                    v1329
+                                    std::panic::set_hook(v1316);
+                                    v1332
                                 };
-                                let v1335: Option<Rc<str>> = match v1330 {
+                                let v1338: Option<Rc<str>> = match v1333 {
                                     US10::US10_None => {
-                                        let v1333: Option<Rc<str>> = None;
-                                        v1333
+                                        let v1336: Option<Rc<str>> = None;
+                                        v1336
                                     }
-                                    US10::US10_Some(v1331) => {
-                                        let v1331: Rc<str> = v1331;
-                                        let v1332: Option<Rc<str>> = Some(v1331.clone());
-                                        v1332
+                                    US10::US10_Some(v1334) => {
+                                        let v1334: Rc<str> = v1334;
+                                        let v1335: Option<Rc<str>> = Some(v1334.clone());
+                                        v1335
                                     }
                                 };
-                                let v1337: Rc<str> = v1335.unwrap();
-                                let v1338: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("py"); } LIT.with(|lit| lit.clone()) };
-                                let v1339: US10 = US10::US10_Some(v1338);
-                                let v1340: US10 = US10::US10_Some(v1138);
-                                let v1341: US10 = US10::US10_Some(v1048);
-                                let v1342: US10 = US10::US10_Some(v1337);
-                                (v1339, v1340, v1341, v1342)
+                                let v1340: Rc<str> = v1338.unwrap();
+                                let v1341: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("py"); } LIT.with(|lit| lit.clone()) };
+                                let v1342: US10 = US10::US10_Some(v1341);
+                                let v1343: US10 = US10::US10_Some(v1141);
+                                let v1344: US10 = US10::US10_Some(v1048);
+                                let v1345: US10 = US10::US10_Some(v1340);
+                                (v1342, v1343, v1344, v1345)
                             } else {
-                                let v1343: Rc<str> = string_concat(&["spiral.process_cuda / child failed\n", &*v1279]);
-                                let (mut v1344, mut v1345, mut v1346, mut v1347): (US10, US10, US10, US10) = std::panic::panic_any::<std::string::String>(format!("{}", v1343));
-                                (v1344, v1345, v1346, v1347)
+                                let v1346: Rc<str> = string_concat(&["spiral.process_cuda / child failed\n", &*v1282]);
+                                let (mut v1347, mut v1348, mut v1349, mut v1350): (US10, US10, US10, US10) = std::panic::panic_any::<std::string::String>(format!("{}", v1346));
+                                (v1347, v1348, v1349, v1350)
                             };
-                            (v1348, v1349, v1350, v1351)
+                            (v1351, v1352, v1353, v1354)
                         };
-                        let v1358: Rc<str> = match v1352 {
+                        let v1361: Rc<str> = match v1355 {
                             US10::US10_None => {
-                                v1211.clone()
+                                v1214.clone()
                             }
-                            US10::US10_Some(v1356) => {
-                                let v1356: Rc<str> = v1356;
-                                v1356
+                            US10::US10_Some(v1359) => {
+                                let v1359: Rc<str> = v1359;
+                                v1359
                             }
                         };
-                        let v1359: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("extension"); } LIT.with(|lit| lit.clone()) };
-                        let v1362: Rc<str> = match v1353 {
+                        let v1362: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("extension"); } LIT.with(|lit| lit.clone()) };
+                        let v1365: Rc<str> = match v1356 {
                             US10::US10_None => {
-                                v1211.clone()
+                                v1214.clone()
                             }
-                            US10::US10_Some(v1360) => {
-                                let v1360: Rc<str> = v1360;
-                                v1360
+                            US10::US10_Some(v1363) => {
+                                let v1363: Rc<str> = v1363;
+                                v1363
                             }
                         };
-                        let v1363: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("code"); } LIT.with(|lit| lit.clone()) };
-                        let v1366: Rc<str> = match v1355 {
+                        let v1366: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("code"); } LIT.with(|lit| lit.clone()) };
+                        let v1369: Rc<str> = match v1358 {
                             US10::US10_None => {
-                                v1211
+                                v1214
                             }
-                            US10::US10_Some(v1364) => {
-                                let v1364: Rc<str> = v1364;
-                                v1364
+                            US10::US10_Some(v1367) => {
+                                let v1367: Rc<str> = v1367;
+                                v1367
                             }
                         };
-                        let v1367: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("output"); } LIT.with(|lit| lit.clone()) };
-                        let v1368: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v1359, v1358), (v1363, v1362), (v1367, v1366)]));
-                        let v1369: Vec<(Rc<str>, Rc<str>)> = (v1368).borrow().clone();
-                        let mut v1371: Rc<dyn Fn(((Rc<str>, Rc<str>))) -> (std::string::String, std::string::String)> = closure84();
-                        let v1372: Vec<(std::string::String, std::string::String)> = v1369.iter().map(|x| v1371(x.clone())).collect::<Vec<_>>();
-                        let v1374: std::collections::BTreeMap<std::string::String, std::string::String> = std::collections::BTreeMap::from_iter(v1372.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())));
-                        let v1376: Result<std::string::String, serde_json::Error> = serde_json::to_string(&v1374);
-                        let v1378: std::string::String = v1376.unwrap();
-                        let v1380: Rc<str> = Rc::<str>::from(String::as_str(&v1378));
-                        let v1381: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("command_result"); } LIT.with(|lit| lit.clone()) };
-                        let v1382: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v1381, v1380)]));
-                        v1382
+                        let v1370: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("output"); } LIT.with(|lit| lit.clone()) };
+                        let v1371: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v1362, v1361), (v1366, v1365), (v1370, v1369)]));
+                        let v1372: Vec<(Rc<str>, Rc<str>)> = (v1371).borrow().clone();
+                        let mut v1374: Rc<dyn Fn(((Rc<str>, Rc<str>))) -> (std::string::String, std::string::String)> = closure84();
+                        let v1375: Vec<(std::string::String, std::string::String)> = v1372.iter().map(|x| v1374(x.clone())).collect::<Vec<_>>();
+                        let v1377: std::collections::BTreeMap<std::string::String, std::string::String> = std::collections::BTreeMap::from_iter(v1375.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())));
+                        let v1379: Result<std::string::String, serde_json::Error> = serde_json::to_string(&v1377);
+                        let v1381: std::string::String = v1379.unwrap();
+                        let v1383: Rc<str> = Rc::<str>::from(String::as_str(&v1381));
+                        let v1384: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("command_result"); } LIT.with(|lit| lit.clone()) };
+                        let v1385: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v1384, v1383)]));
+                        v1385
                     } else {
-                        let v1384: Rc<str> = Rc::<str>::from(String::as_str(&v18));
-                        let v1385: bool = &*v1384 == "cpp";
-                        if v1385 {
-                            let v1386: Rc<str> = method125();
-                            let v1388: &str = &*v1386;
-                            let v1390: Option<std::string::String> = clap::ArgMatches::get_one(&v19, v1388).cloned();
-                            let v1391: Option<std::string::String> = method18(v1390);
-                            let mut v1392: Rc<dyn Fn((std::string::String)) -> US5> = closure10();
-                            let mut v1393: Option<US5> = v1391.map(|x| v1392(x));
-                            let v1395: US5 = US5::US5_None;
-                            let v1396: US5 = v1395.clone();
-                            let v1397: US5 = v1393.unwrap_or(v1396);
-                            let v1401: std::string::String = match v1397 {
+                        let v1387: Rc<str> = Rc::<str>::from(String::as_str(&v18));
+                        let v1388: bool = &*v1387 == "cpp";
+                        if v1388 {
+                            let v1389: Rc<str> = method125();
+                            let v1391: &str = &*v1389;
+                            let v1393: Option<std::string::String> = clap::ArgMatches::get_one(&v19, v1391).cloned();
+                            let v1394: Option<std::string::String> = method18(v1393);
+                            let mut v1395: Rc<dyn Fn((std::string::String)) -> US5> = closure10();
+                            let mut v1396: Option<US5> = v1394.map(|x| v1395(x));
+                            let v1398: US5 = US5::US5_None;
+                            let v1399: US5 = v1398.clone();
+                            let v1400: US5 = v1396.unwrap_or(v1399);
+                            let v1404: std::string::String = match v1400 {
                                 US5::US5_None => {
                                     std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Option does not have a value."); } LIT.with(|lit| lit.clone()) }))
                                 }
-                                US5::US5_Some(v1398) => {
-                                    let v1398: std::string::String = v1398;
-                                    v1398
+                                US5::US5_Some(v1401) => {
+                                    let v1401: std::string::String = v1401;
+                                    v1401
                                 }
                             };
-                            let v1403: Rc<str> = Rc::<str>::from(String::as_str(&v1401));
-                            let v1405: Result<Vec<u8>, std::io::Error> = std::fs::read(&*v1403);
-                            let v1407: Vec<u8> = v1405.unwrap();
-                            let v1408: Vec<u8> = method23(v1407);
-                            let v1410: Result<std::string::String, std::string::FromUtf8Error> = std::string::String::from_utf8(v1408);
-                            let v1412: std::string::String = v1410.unwrap();
-                            let v1414: Rc<str> = Rc::<str>::from(String::as_str(&v1412));
-                            let mut v1415: Option<Rc<str>> = directory_get_parent_35(v1403.clone());
-                            let v1417: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                            let v1418: Rc<str> = v1417.clone();
-                            let v1419: Rc<str> = v1415.unwrap_or(v1418);
-                            let v1420: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_CXX"); } LIT.with(|lit| lit.clone()) };
-                            let v1421: Rc<str> = get_environment_variable_1(v1420);
-                            let v1422: bool = &*v1421 == "";
-                            let v1424: Rc<str> = if v1422 {
-                                let v1423: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("g++"); } LIT.with(|lit| lit.clone()) };
-                                v1423
+                            let v1406: Rc<str> = Rc::<str>::from(String::as_str(&v1404));
+                            let v1408: Result<Vec<u8>, std::io::Error> = std::fs::read(&*v1406);
+                            let v1410: Vec<u8> = v1408.unwrap();
+                            let v1411: Vec<u8> = method23(v1410);
+                            let v1413: Result<std::string::String, std::string::FromUtf8Error> = std::string::String::from_utf8(v1411);
+                            let v1415: std::string::String = v1413.unwrap();
+                            let v1417: Rc<str> = Rc::<str>::from(String::as_str(&v1415));
+                            let mut v1418: Option<Rc<str>> = directory_get_parent_35(v1406.clone());
+                            let v1420: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                            let v1421: Rc<str> = v1420.clone();
+                            let v1422: Rc<str> = v1418.unwrap_or(v1421);
+                            let v1423: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_CXX"); } LIT.with(|lit| lit.clone()) };
+                            let v1424: Rc<str> = get_environment_variable_1(v1423);
+                            let v1425: bool = &*v1424 == "";
+                            let v1427: Rc<str> = if v1425 {
+                                let v1426: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("g++"); } LIT.with(|lit| lit.clone()) };
+                                v1426
                             } else {
-                                v1421
+                                v1424
                             };
-                            let v1425: Rc<str> = string_concat(&[&*v1403, ".out"]);
-                            let v1426: bool = cfg!(windows);
-                            let v1428: Rc<str> = if v1426 {
-                                let v1427: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(".exe"); } LIT.with(|lit| lit.clone()) };
-                                v1427
+                            let v1428: Rc<str> = string_concat(&[&*v1406, ".out"]);
+                            let v1429: bool = cfg!(windows);
+                            let v1431: Rc<str> = if v1429 {
+                                let v1430: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(".exe"); } LIT.with(|lit| lit.clone()) };
+                                v1430
                             } else {
-                                v1417.clone()
+                                v1420.clone()
                             };
-                            let v1429: Rc<str> = string_concat(&[&*v1425, &*v1428]);
-                            let v1434: Rc<str> = string_concat(&[&*v1424, " -std=c++20 -O2 -w \"", &*v1403, "\" -o \"", &*v1429, "\" -lm"]);
-                            let v1435: Option<std::sync::Arc<std::sync::atomic::AtomicBool>> = None;
-                            let v1436: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![]));
-                            let v1437: Option<Rc<dyn Fn(i32, Rc<str>, bool) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>>> = None;
-                            let v1438: Option<Rc<dyn Fn(std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>) -> ()>> = None;
-                            let v1439: Option<Rc<str>> = None;
-                            let v1440: Option<Rc<str>> = Some(v1419.clone());
-                            let v1441: bool = true;
-                            let v1442: bool = true;
-                            let (mut v1443, mut v1444): (i32, Rc<str>) = execute_with_options_75(v1434, v1435, v1436, v1437, v1438, v1441, v1440, v1442);
-                            let v1445: bool = v1443 != 0i32 ;
-                            let (mut v1478, mut v1479, mut v1480, mut v1481): (US10, US10, US10, US10) = if v1445 {
-                                let v1446: Rc<str> = string_concat(&["spiral.process_cpp / build failed\n", &*v1444]);
-                                let (mut v1447, mut v1448, mut v1449, mut v1450): (US10, US10, US10, US10) = std::panic::panic_any::<std::string::String>(format!("{}", v1446));
-                                (v1447, v1448, v1449, v1450)
+                            let v1432: Rc<str> = string_concat(&[&*v1428, &*v1431]);
+                            let v1437: Rc<str> = string_concat(&[&*v1427, " -std=c++20 -O2 -w \"", &*v1406, "\" -o \"", &*v1432, "\" -lm"]);
+                            let v1438: Option<std::sync::Arc<std::sync::atomic::AtomicBool>> = None;
+                            let v1439: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![]));
+                            let v1440: Option<Rc<dyn Fn(i32, Rc<str>, bool) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>>> = None;
+                            let v1441: Option<Rc<dyn Fn(std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>) -> ()>> = None;
+                            let v1442: Option<Rc<str>> = None;
+                            let v1443: Option<Rc<str>> = Some(v1422.clone());
+                            let v1444: bool = true;
+                            let v1445: bool = true;
+                            let (mut v1446, mut v1447): (i32, Rc<str>) = execute_with_options_75(v1437, v1438, v1439, v1440, v1441, v1444, v1443, v1445);
+                            let v1448: bool = v1446 != 0i32 ;
+                            let (mut v1481, mut v1482, mut v1483, mut v1484): (US10, US10, US10, US10) = if v1448 {
+                                let v1449: Rc<str> = string_concat(&["spiral.process_cpp / build failed\n", &*v1447]);
+                                let (mut v1450, mut v1451, mut v1452, mut v1453): (US10, US10, US10, US10) = std::panic::panic_any::<std::string::String>(format!("{}", v1449));
+                                (v1450, v1451, v1452, v1453)
                             } else {
-                                let v1452: Rc<str> = string_concat(&["\"", &*v1429, "\""]);
-                                let v1453: Option<std::sync::Arc<std::sync::atomic::AtomicBool>> = None;
-                                let v1454: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![]));
-                                let v1455: Option<Rc<dyn Fn(i32, Rc<str>, bool) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>>> = None;
-                                let v1456: Option<Rc<dyn Fn(std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>) -> ()>> = None;
-                                let v1457: Option<Rc<str>> = None;
-                                let v1458: Option<Rc<str>> = Some(v1419.clone());
-                                let v1459: bool = true;
-                                let v1460: bool = true;
-                                let (mut v1461, mut v1462): (i32, Rc<str>) = execute_with_options_75(v1452, v1453, v1454, v1455, v1456, v1459, v1458, v1460);
-                                let v1463: bool = v1461 == 0i32;
-                                let (mut v1474, mut v1475, mut v1476, mut v1477): (US10, US10, US10, US10) = if v1463 {
-                                    let v1464: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("cpp"); } LIT.with(|lit| lit.clone()) };
-                                    let v1465: US10 = US10::US10_Some(v1464);
-                                    let v1466: US10 = US10::US10_Some(v1414);
-                                    let v1467: US10 = US10::US10_Some(v1403);
-                                    let v1468: US10 = US10::US10_Some(v1462);
-                                    (v1465, v1466, v1467, v1468)
+                                let v1455: Rc<str> = string_concat(&["\"", &*v1432, "\""]);
+                                let v1456: Option<std::sync::Arc<std::sync::atomic::AtomicBool>> = None;
+                                let v1457: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![]));
+                                let v1458: Option<Rc<dyn Fn(i32, Rc<str>, bool) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>>> = None;
+                                let v1459: Option<Rc<dyn Fn(std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>) -> ()>> = None;
+                                let v1460: Option<Rc<str>> = None;
+                                let v1461: Option<Rc<str>> = Some(v1422.clone());
+                                let v1462: bool = true;
+                                let v1463: bool = true;
+                                let (mut v1464, mut v1465): (i32, Rc<str>) = execute_with_options_75(v1455, v1456, v1457, v1458, v1459, v1462, v1461, v1463);
+                                let v1466: bool = v1464 == 0i32;
+                                let (mut v1477, mut v1478, mut v1479, mut v1480): (US10, US10, US10, US10) = if v1466 {
+                                    let v1467: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("cpp"); } LIT.with(|lit| lit.clone()) };
+                                    let v1468: US10 = US10::US10_Some(v1467);
+                                    let v1469: US10 = US10::US10_Some(v1417);
+                                    let v1470: US10 = US10::US10_Some(v1406);
+                                    let v1471: US10 = US10::US10_Some(v1465);
+                                    (v1468, v1469, v1470, v1471)
                                 } else {
-                                    let v1469: Rc<str> = string_concat(&["spiral.process_cpp / child failed\n", &*v1462]);
-                                    let (mut v1470, mut v1471, mut v1472, mut v1473): (US10, US10, US10, US10) = std::panic::panic_any::<std::string::String>(format!("{}", v1469));
-                                    (v1470, v1471, v1472, v1473)
+                                    let v1472: Rc<str> = string_concat(&["spiral.process_cpp / child failed\n", &*v1465]);
+                                    let (mut v1473, mut v1474, mut v1475, mut v1476): (US10, US10, US10, US10) = std::panic::panic_any::<std::string::String>(format!("{}", v1472));
+                                    (v1473, v1474, v1475, v1476)
                                 };
-                                (v1474, v1475, v1476, v1477)
+                                (v1477, v1478, v1479, v1480)
                             };
-                            let v1484: Rc<str> = match v1478 {
+                            let v1487: Rc<str> = match v1481 {
                                 US10::US10_None => {
-                                    v1417.clone()
+                                    v1420.clone()
                                 }
-                                US10::US10_Some(v1482) => {
-                                    let v1482: Rc<str> = v1482;
-                                    v1482
+                                US10::US10_Some(v1485) => {
+                                    let v1485: Rc<str> = v1485;
+                                    v1485
                                 }
                             };
-                            let v1485: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("extension"); } LIT.with(|lit| lit.clone()) };
-                            let v1488: Rc<str> = match v1479 {
+                            let v1488: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("extension"); } LIT.with(|lit| lit.clone()) };
+                            let v1491: Rc<str> = match v1482 {
                                 US10::US10_None => {
-                                    v1417.clone()
+                                    v1420.clone()
                                 }
-                                US10::US10_Some(v1486) => {
-                                    let v1486: Rc<str> = v1486;
-                                    v1486
+                                US10::US10_Some(v1489) => {
+                                    let v1489: Rc<str> = v1489;
+                                    v1489
                                 }
                             };
-                            let v1489: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("code"); } LIT.with(|lit| lit.clone()) };
-                            let v1492: Rc<str> = match v1481 {
+                            let v1492: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("code"); } LIT.with(|lit| lit.clone()) };
+                            let v1495: Rc<str> = match v1484 {
                                 US10::US10_None => {
-                                    v1417
+                                    v1420
                                 }
-                                US10::US10_Some(v1490) => {
-                                    let v1490: Rc<str> = v1490;
-                                    v1490
+                                US10::US10_Some(v1493) => {
+                                    let v1493: Rc<str> = v1493;
+                                    v1493
                                 }
                             };
-                            let v1493: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("output"); } LIT.with(|lit| lit.clone()) };
-                            let v1494: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v1485, v1484), (v1489, v1488), (v1493, v1492)]));
-                            let v1495: Vec<(Rc<str>, Rc<str>)> = (v1494).borrow().clone();
-                            let mut v1497: Rc<dyn Fn(((Rc<str>, Rc<str>))) -> (std::string::String, std::string::String)> = closure85();
-                            let v1498: Vec<(std::string::String, std::string::String)> = v1495.iter().map(|x| v1497(x.clone())).collect::<Vec<_>>();
-                            let v1500: std::collections::BTreeMap<std::string::String, std::string::String> = std::collections::BTreeMap::from_iter(v1498.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())));
-                            let v1502: Result<std::string::String, serde_json::Error> = serde_json::to_string(&v1500);
-                            let v1504: std::string::String = v1502.unwrap();
-                            let v1506: Rc<str> = Rc::<str>::from(String::as_str(&v1504));
-                            let v1507: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("command_result"); } LIT.with(|lit| lit.clone()) };
-                            let v1508: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v1507, v1506)]));
-                            v1508
+                            let v1496: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("output"); } LIT.with(|lit| lit.clone()) };
+                            let v1497: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v1488, v1487), (v1492, v1491), (v1496, v1495)]));
+                            let v1498: Vec<(Rc<str>, Rc<str>)> = (v1497).borrow().clone();
+                            let mut v1500: Rc<dyn Fn(((Rc<str>, Rc<str>))) -> (std::string::String, std::string::String)> = closure85();
+                            let v1501: Vec<(std::string::String, std::string::String)> = v1498.iter().map(|x| v1500(x.clone())).collect::<Vec<_>>();
+                            let v1503: std::collections::BTreeMap<std::string::String, std::string::String> = std::collections::BTreeMap::from_iter(v1501.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())));
+                            let v1505: Result<std::string::String, serde_json::Error> = serde_json::to_string(&v1503);
+                            let v1507: std::string::String = v1505.unwrap();
+                            let v1509: Rc<str> = Rc::<str>::from(String::as_str(&v1507));
+                            let v1510: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("command_result"); } LIT.with(|lit| lit.clone()) };
+                            let v1511: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v1510, v1509)]));
+                            v1511
                         } else {
-                            let v1510: Rc<str> = Rc::<str>::from(String::as_str(&v18));
-                            let v1511: bool = &*v1510 == "export";
-                            if v1511 {
-                                let v1512: Rc<str> = method21();
-                                let v1514: &str = &*v1512;
-                                let v1516: Option<Vec<(std::string::String, std::string::String)>> = clap::ArgMatches::get_many(&v19, v1514).map(|x| x.cloned().into_iter().collect());
-                                let v1517: Option<Vec<(std::string::String, std::string::String)>> = method126(v1516);
-                                let mut v1518: Rc<dyn Fn((Vec<(std::string::String, std::string::String)>)) -> US34> = closure86();
-                                let mut v1519: Option<US34> = v1517.map(|x| v1518(x));
-                                let v1521: US34 = US34::US34_None;
-                                let v1522: US34 = v1521.clone();
-                                let v1523: US34 = v1519.unwrap_or(v1522);
-                                let v1524: Rc<RefCell<Vec<(std::string::String, std::string::String)>>> = Rc::new(RefCell::new(vec![]));
-                                let v1525: Vec<(std::string::String, std::string::String)> = (v1524).borrow().clone();
-                                let v1529: Rc<str> = method127();
-                                let v1531: &str = &*v1529;
-                                let v1533: Option<Vec<std::string::String>> = clap::ArgMatches::get_many(&v19, v1531).map(|x| x.cloned().into_iter().collect());
-                                let v1534: Option<Vec<std::string::String>> = method22(v1533);
-                                let mut v1535: Rc<dyn Fn((Vec<std::string::String>)) -> US9> = closure11();
-                                let mut v1536: Option<US9> = v1534.map(|x| v1535(x));
-                                let v1538: US9 = US9::US9_None;
-                                let v1539: US9 = v1538.clone();
-                                let v1540: US9 = v1536.unwrap_or(v1539);
-                                let v1558: US35 = match v1540 {
+                            let v1513: Rc<str> = Rc::<str>::from(String::as_str(&v18));
+                            let v1514: bool = &*v1513 == "export";
+                            if v1514 {
+                                let v1515: Rc<str> = method21();
+                                let v1517: &str = &*v1515;
+                                let v1519: Option<Vec<(std::string::String, std::string::String)>> = clap::ArgMatches::get_many(&v19, v1517).map(|x| x.cloned().into_iter().collect());
+                                let v1520: Option<Vec<(std::string::String, std::string::String)>> = method126(v1519);
+                                let mut v1521: Rc<dyn Fn((Vec<(std::string::String, std::string::String)>)) -> US34> = closure86();
+                                let mut v1522: Option<US34> = v1520.map(|x| v1521(x));
+                                let v1524: US34 = US34::US34_None;
+                                let v1525: US34 = v1524.clone();
+                                let v1526: US34 = v1522.unwrap_or(v1525);
+                                let v1527: Rc<RefCell<Vec<(std::string::String, std::string::String)>>> = Rc::new(RefCell::new(vec![]));
+                                let v1528: Vec<(std::string::String, std::string::String)> = (v1527).borrow().clone();
+                                let v1532: Rc<str> = method127();
+                                let v1534: &str = &*v1532;
+                                let v1536: Option<Vec<std::string::String>> = clap::ArgMatches::get_many(&v19, v1534).map(|x| x.cloned().into_iter().collect());
+                                let v1537: Option<Vec<std::string::String>> = method22(v1536);
+                                let mut v1538: Rc<dyn Fn((Vec<std::string::String>)) -> US9> = closure11();
+                                let mut v1539: Option<US9> = v1537.map(|x| v1538(x));
+                                let v1541: US9 = US9::US9_None;
+                                let v1542: US9 = v1541.clone();
+                                let v1543: US9 = v1539.unwrap_or(v1542);
+                                let v1561: US35 = match v1543 {
                                     US9::US9_None => {
                                         US35::US35_None
                                     }
-                                    US9::US9_Some(v1541) => {
-                                        let mut v1541: Vec<std::string::String> = v1541;
-                                        let v1543: Vec<Vec<std::string::String>> = v1541.chunks_exact(2).map(|chunk| chunk.to_vec()).collect();
-                                        let mut v1545: Rc<dyn Fn((Vec<std::string::String>)) -> (Rc<str>, US36)> = closure87(v1541);
-                                        let v1546: Vec<(Rc<str>, US36)> = v1543.iter().map(|x| v1545(x.clone())).collect::<Vec<_>>();
-                                        let v1547: Vec<(Rc<str>, US36)> = method134(v1546);
-                                        let v1548: Rc<RefCell<Vec<(Rc<str>, US36)>>> = Rc::new(RefCell::new(v1547));
-                                        let v1549: Rc<Vec<(Rc<str>, US36)>> = Rc::new((v1548).borrow().clone());
-                                        let v1550: usize = (v1549).len();
-                                        let v1551: i32 = ((v1550) as i32);
-                                        let v1552: i32 = v1551.wrapping_sub(1i32);
-                                        let v1553: Rc<UH1> = { thread_local!{ static CASE: Rc<UH1> = Rc::new(UH1::UH1_Nil); } CASE.with(|case| case.clone()) };
-                                        let v1554: Rc<UH1> = method135(v1549, v1552, v1553);
-                                        US35::US35_Some(v1554)
+                                    US9::US9_Some(v1544) => {
+                                        let mut v1544: Vec<std::string::String> = v1544;
+                                        let v1546: Vec<Vec<std::string::String>> = v1544.chunks_exact(2).map(|chunk| chunk.to_vec()).collect();
+                                        let mut v1548: Rc<dyn Fn((Vec<std::string::String>)) -> (Rc<str>, US36)> = closure87(v1544);
+                                        let v1549: Vec<(Rc<str>, US36)> = v1546.iter().map(|x| v1548(x.clone())).collect::<Vec<_>>();
+                                        let v1550: Vec<(Rc<str>, US36)> = method134(v1549);
+                                        let v1551: Rc<RefCell<Vec<(Rc<str>, US36)>>> = Rc::new(RefCell::new(v1550));
+                                        let v1552: Rc<Vec<(Rc<str>, US36)>> = Rc::new((v1551).borrow().clone());
+                                        let v1553: usize = (v1552).len();
+                                        let v1554: i32 = ((v1553) as i32);
+                                        let v1555: i32 = v1554.wrapping_sub(1i32);
+                                        let v1556: Rc<UH1> = { thread_local!{ static CASE: Rc<UH1> = Rc::new(UH1::UH1_Nil); } CASE.with(|case| case.clone()) };
+                                        let v1557: Rc<UH1> = method135(v1552, v1555, v1556);
+                                        US35::US35_Some(v1557)
                                     }
                                 };
-                                let v1562: Rc<UH1> = match v1558 {
+                                let v1565: Rc<UH1> = match v1561 {
                                     US35::US35_None => {
                                         { thread_local!{ static CASE: Rc<UH1> = Rc::new(UH1::UH1_Nil); } CASE.with(|case| case.clone()) }
                                     }
-                                    US35::US35_Some(v1559) => {
-                                        let v1559: Rc<UH1> = v1559;
-                                        v1559
+                                    US35::US35_Some(v1562) => {
+                                        let v1562: Rc<UH1> = v1562;
+                                        v1562
                                     }
                                 };
-                                let v1563: Rc<RefCell<Vec<(Rc<str>, US36)>>> = Rc::new(RefCell::new(Vec::new()));
-                                let v1564: i32 = 0i32;
-                                let v1565: i32 = method136(v1563.clone(), v1562, v1564);
-                                let v1566: Rc<Vec<(Rc<str>, US36)>> = Rc::new(v1563.borrow().clone());
-                                let v1567: Rc<RefCell<Vec<(Rc<str>, US36)>>> = Rc::new(RefCell::new((v1566).as_ref().clone()));
-                                let v1568: Vec<(Rc<str>, US36)> = (v1567).borrow().clone();
-                                let v1569: Vec<(Rc<str>, US36)> = method134(v1568);
-                                let v1570: Rc<RefCell<Vec<(Rc<str>, US36)>>> = Rc::new(RefCell::new(v1569));
-                                let v1571: i32 = (v1570.borrow().len() as i32);
-                                let v1572: i32 = 0i32;
-                                let v1573: Vec<()> = Vec::new();
-                                let v1574: Vec<()> = loop_137(&v1570, v1571, v1572, v1573);
-                                let v1575: Vec<()> = method185(v1574);
-                                let v1576: Rc<RefCell<Vec<()>>> = Rc::new(RefCell::new(v1575));
-                                let v1577: Vec<()> = (v1576).borrow().clone();
-                                let v1578: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![]));
-                                v1578
+                                let v1566: Rc<RefCell<Vec<(Rc<str>, US36)>>> = Rc::new(RefCell::new(Vec::new()));
+                                let v1567: i32 = 0i32;
+                                let v1568: i32 = method136(v1566.clone(), v1565, v1567);
+                                let v1569: Rc<Vec<(Rc<str>, US36)>> = Rc::new(v1566.borrow().clone());
+                                let v1570: Rc<RefCell<Vec<(Rc<str>, US36)>>> = Rc::new(RefCell::new((v1569).as_ref().clone()));
+                                let v1571: Vec<(Rc<str>, US36)> = (v1570).borrow().clone();
+                                let v1572: Vec<(Rc<str>, US36)> = method134(v1571);
+                                let v1573: Rc<RefCell<Vec<(Rc<str>, US36)>>> = Rc::new(RefCell::new(v1572));
+                                let v1574: i32 = (v1573.borrow().len() as i32);
+                                let v1575: i32 = 0i32;
+                                let v1576: Vec<()> = Vec::new();
+                                let v1577: Vec<()> = loop_137(&v1573, v1574, v1575, v1576);
+                                let v1578: Vec<()> = method185(v1577);
+                                let v1579: Rc<RefCell<Vec<()>>> = Rc::new(RefCell::new(v1578));
+                                let v1580: Vec<()> = (v1579).borrow().clone();
+                                let v1581: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![]));
+                                v1581
                             } else {
-                                let v1580: Rc<str> = Rc::<str>::from(String::as_str(&v18));
-                                let v1581: bool = &*v1580 == "rust";
-                                let (mut v2661, mut v2662, mut v2663, mut v2664): (US10, US10, US10, US10) = if v1581 {
-                                    let v1582: Rc<str> = method186();
-                                    let v1584: &str = &*v1582;
-                                    let v1586: Option<std::string::String> = clap::ArgMatches::get_one(&v19, v1584).cloned();
-                                    let v1587: Option<std::string::String> = method18(v1586);
-                                    let mut v1588: Rc<dyn Fn((std::string::String)) -> US5> = closure10();
-                                    let mut v1589: Option<US5> = v1587.map(|x| v1588(x));
-                                    let v1591: US5 = US5::US5_None;
-                                    let v1592: US5 = v1591.clone();
-                                    let v1593: US5 = v1589.unwrap_or(v1592);
-                                    let v1597: std::string::String = match v1593 {
+                                let v1583: Rc<str> = Rc::<str>::from(String::as_str(&v18));
+                                let v1584: bool = &*v1583 == "rust";
+                                let (mut v2664, mut v2665, mut v2666, mut v2667): (US10, US10, US10, US10) = if v1584 {
+                                    let v1585: Rc<str> = method186();
+                                    let v1587: &str = &*v1585;
+                                    let v1589: Option<std::string::String> = clap::ArgMatches::get_one(&v19, v1587).cloned();
+                                    let v1590: Option<std::string::String> = method18(v1589);
+                                    let mut v1591: Rc<dyn Fn((std::string::String)) -> US5> = closure10();
+                                    let mut v1592: Option<US5> = v1590.map(|x| v1591(x));
+                                    let v1594: US5 = US5::US5_None;
+                                    let v1595: US5 = v1594.clone();
+                                    let v1596: US5 = v1592.unwrap_or(v1595);
+                                    let v1600: std::string::String = match v1596 {
                                         US5::US5_None => {
                                             std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Option does not have a value."); } LIT.with(|lit| lit.clone()) }))
                                         }
-                                        US5::US5_Some(v1594) => {
-                                            let v1594: std::string::String = v1594;
-                                            v1594
+                                        US5::US5_Some(v1597) => {
+                                            let v1597: std::string::String = v1597;
+                                            v1597
                                         }
                                     };
-                                    let v1599: Rc<str> = Rc::<str>::from(String::as_str(&v1597));
-                                    let v1600: Rc<str> = method21();
-                                    let v1602: &str = &*v1600;
-                                    let v1604: Option<Vec<std::string::String>> = clap::ArgMatches::get_many(&v19, v1602).map(|x| x.cloned().into_iter().collect());
-                                    let v1605: Option<Vec<std::string::String>> = method22(v1604);
-                                    let mut v1606: Rc<dyn Fn((Vec<std::string::String>)) -> US9> = closure11();
-                                    let mut v1607: Option<US9> = v1605.map(|x| v1606(x));
-                                    let v1609: US9 = US9::US9_None;
-                                    let v1610: US9 = v1609.clone();
-                                    let v1611: US9 = v1607.unwrap_or(v1610);
-                                    let v1612: Rc<RefCell<Vec<std::string::String>>> = Rc::new(RefCell::new(vec![]));
-                                    let v1613: Vec<std::string::String> = (v1612).borrow().clone();
-                                    let v1616: Vec<std::string::String> = match v1611 {
+                                    let v1602: Rc<str> = Rc::<str>::from(String::as_str(&v1600));
+                                    let v1603: Rc<str> = method21();
+                                    let v1605: &str = &*v1603;
+                                    let v1607: Option<Vec<std::string::String>> = clap::ArgMatches::get_many(&v19, v1605).map(|x| x.cloned().into_iter().collect());
+                                    let v1608: Option<Vec<std::string::String>> = method22(v1607);
+                                    let mut v1609: Rc<dyn Fn((Vec<std::string::String>)) -> US9> = closure11();
+                                    let mut v1610: Option<US9> = v1608.map(|x| v1609(x));
+                                    let v1612: US9 = US9::US9_None;
+                                    let v1613: US9 = v1612.clone();
+                                    let v1614: US9 = v1610.unwrap_or(v1613);
+                                    let v1615: Rc<RefCell<Vec<std::string::String>>> = Rc::new(RefCell::new(vec![]));
+                                    let v1616: Vec<std::string::String> = (v1615).borrow().clone();
+                                    let v1619: Vec<std::string::String> = match v1614 {
                                         US9::US9_None => {
-                                            v1613
+                                            v1616
                                         }
-                                        US9::US9_Some(v1614) => {
-                                            let v1614: Vec<std::string::String> = v1614;
-                                            v1614
+                                        US9::US9_Some(v1617) => {
+                                            let v1617: Vec<std::string::String> = v1617;
+                                            v1617
                                         }
                                     };
-                                    let v1617: Rc<str> = method187();
-                                    let v1619: &str = &*v1617;
-                                    let v1621: bool = clap::ArgMatches::get_flag(&v19, v1619);
-                                    let v1622: Rc<str> = method188();
-                                    let v1624: &str = &*v1622;
-                                    let v1626: Option<std::string::String> = clap::ArgMatches::get_one(&v19, v1624).cloned();
-                                    let v1627: Option<std::string::String> = method18(v1626);
-                                    let mut v1628: Option<US5> = v1627.map(|x| v1588(x));
-                                    let v1630: US5 = US5::US5_None;
-                                    let v1631: US5 = v1630.clone();
-                                    let v1632: US5 = v1628.unwrap_or(v1631);
-                                    let v1639: US10 = match v1632 {
+                                    let v1620: Rc<str> = method187();
+                                    let v1622: &str = &*v1620;
+                                    let v1624: bool = clap::ArgMatches::get_flag(&v19, v1622);
+                                    let v1625: Rc<str> = method188();
+                                    let v1627: &str = &*v1625;
+                                    let v1629: Option<std::string::String> = clap::ArgMatches::get_one(&v19, v1627).cloned();
+                                    let v1630: Option<std::string::String> = method18(v1629);
+                                    let mut v1631: Option<US5> = v1630.map(|x| v1591(x));
+                                    let v1633: US5 = US5::US5_None;
+                                    let v1634: US5 = v1633.clone();
+                                    let v1635: US5 = v1631.unwrap_or(v1634);
+                                    let v1642: US10 = match v1635 {
                                         US5::US5_None => {
                                             US10::US10_None
                                         }
-                                        US5::US5_Some(v1633) => {
-                                            let v1633: std::string::String = v1633;
-                                            let v1635: Rc<str> = Rc::<str>::from(String::as_str(&v1633));
-                                            US10::US10_Some(v1635)
+                                        US5::US5_Some(v1636) => {
+                                            let v1636: std::string::String = v1636;
+                                            let v1638: Rc<str> = Rc::<str>::from(String::as_str(&v1636));
+                                            US10::US10_Some(v1638)
                                         }
                                     };
-                                    let v1640: Rc<str> = method189();
-                                    let v1642: &str = &*v1640;
-                                    let v1644: Option<std::string::String> = clap::ArgMatches::get_one(&v19, v1642).cloned();
-                                    let v1645: Option<std::string::String> = method18(v1644);
-                                    let mut v1646: Option<US5> = v1645.map(|x| v1588(x));
-                                    let v1648: US5 = US5::US5_None;
-                                    let v1649: US5 = v1648.clone();
-                                    let v1650: US5 = v1646.unwrap_or(v1649);
-                                    let v1657: US10 = match v1650 {
+                                    let v1643: Rc<str> = method189();
+                                    let v1645: &str = &*v1643;
+                                    let v1647: Option<std::string::String> = clap::ArgMatches::get_one(&v19, v1645).cloned();
+                                    let v1648: Option<std::string::String> = method18(v1647);
+                                    let mut v1649: Option<US5> = v1648.map(|x| v1591(x));
+                                    let v1651: US5 = US5::US5_None;
+                                    let v1652: US5 = v1651.clone();
+                                    let v1653: US5 = v1649.unwrap_or(v1652);
+                                    let v1660: US10 = match v1653 {
                                         US5::US5_None => {
                                             US10::US10_None
                                         }
-                                        US5::US5_Some(v1651) => {
-                                            let v1651: std::string::String = v1651;
-                                            let v1653: Rc<str> = Rc::<str>::from(String::as_str(&v1651));
-                                            US10::US10_Some(v1653)
+                                        US5::US5_Some(v1654) => {
+                                            let v1654: std::string::String = v1654;
+                                            let v1656: Rc<str> = Rc::<str>::from(String::as_str(&v1654));
+                                            US10::US10_Some(v1656)
                                         }
                                     };
-                                    let v1666: US46 = match v1639 {
-                                        US10::US10_Some(v1658) => {
-                                            let v1658: Rc<str> = v1658;
-                                            let v1659: US47 = US47::US47_Wasm(v1658);
-                                            US46::US46_Some(v1659)
+                                    let v1669: US46 = match v1642 {
+                                        US10::US10_Some(v1661) => {
+                                            let v1661: Rc<str> = v1661;
+                                            let v1662: US47 = US47::US47_Wasm(v1661);
+                                            US46::US46_Some(v1662)
                                         }
                                         _ => {
-                                            match v1657 {
-                                                US10::US10_Some(v1661) => {
-                                                    let v1661: Rc<str> = v1661;
-                                                    let v1662: US47 = US47::US47_Contract(v1661);
-                                                    US46::US46_Some(v1662)
+                                            match v1660 {
+                                                US10::US10_Some(v1664) => {
+                                                    let v1664: Rc<str> = v1664;
+                                                    let v1665: US47 = US47::US47_Contract(v1664);
+                                                    US46::US46_Some(v1665)
                                                 }
                                                 _ => {
                                                     US46::US46_None
@@ -19989,16 +19995,16 @@ main()", v499));
                                             }
                                         }
                                     };
-                                    let v1668: Result<Vec<u8>, std::io::Error> = std::fs::read(&*v1599);
-                                    let v1670: Vec<u8> = v1668.unwrap();
-                                    let v1671: Vec<u8> = method23(v1670);
-                                    let v1673: Result<std::string::String, std::string::FromUtf8Error> = std::string::String::from_utf8(v1671);
-                                    let v1675: std::string::String = v1673.unwrap();
-                                    let v1677: Rc<str> = Rc::<str>::from(String::as_str(&v1675));
-                                    let v1680: Rc<str> = method190(v1666.clone());
-                                    let v1683: Rc<str> = string_concat(&["{ extension = rs; code = ", &*v1677, "; runtime = ", &*v1680, " }"]);
-                                    let v1684: Rc<str> = hash_text_24(v1683);
-                                    let v1685: bool = match &v1666 {
+                                    let v1671: Result<Vec<u8>, std::io::Error> = std::fs::read(&*v1602);
+                                    let v1673: Vec<u8> = v1671.unwrap();
+                                    let v1674: Vec<u8> = method23(v1673);
+                                    let v1676: Result<std::string::String, std::string::FromUtf8Error> = std::string::String::from_utf8(v1674);
+                                    let v1678: std::string::String = v1676.unwrap();
+                                    let v1680: Rc<str> = Rc::<str>::from(String::as_str(&v1678));
+                                    let v1683: Rc<str> = method190(v1669.clone());
+                                    let v1686: Rc<str> = string_concat(&["{ extension = rs; code = ", &*v1680, "; runtime = ", &*v1683, " }"]);
+                                    let v1687: Rc<str> = hash_text_24(v1686);
+                                    let v1688: bool = match &v1669 {
                                         US46::US46_None => {
                                             true
                                         }
@@ -20006,174 +20012,174 @@ main()", v499));
                                             false
                                         }
                                     };
-                                    let v1686: bool = v1685 != true;
-                                    let v1689: Rc<str> = if v1686 {
-                                        let v1687: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral_contract"); } LIT.with(|lit| lit.clone()) };
-                                        v1687
+                                    let v1689: bool = v1688 != true;
+                                    let v1692: Rc<str> = if v1689 {
+                                        let v1690: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral_contract"); } LIT.with(|lit| lit.clone()) };
+                                        v1690
                                     } else {
-                                        let v1688: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral"); } LIT.with(|lit| lit.clone()) };
-                                        v1688
+                                        let v1691: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral"); } LIT.with(|lit| lit.clone()) };
+                                        v1691
                                     };
-                                    let v1690: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_REPO_ROOT"); } LIT.with(|lit| lit.clone()) };
-                                    let v1691: Rc<str> = get_environment_variable_1(v1690);
-                                    let v1692: bool = &*v1691 != "";
-                                    let v1738: Rc<str> = if v1692 {
-                                        normalize_path_29(v1691)
+                                    let v1693: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_REPO_ROOT"); } LIT.with(|lit| lit.clone()) };
+                                    let v1694: Rc<str> = get_environment_variable_1(v1693);
+                                    let v1695: bool = &*v1694 != "";
+                                    let v1741: Rc<str> = if v1695 {
+                                        normalize_path_29(v1694)
                                     } else {
-                                        let v1694: Rc<str> = get_current_directory_43();
-                                        let v1695: US10 = run_44(v1694);
-                                        let v1701: US10 = match v1695 {
+                                        let v1697: Rc<str> = get_current_directory_43();
+                                        let v1698: US10 = run_44(v1697);
+                                        let v1704: US10 = match v1698 {
                                             US10::US10_None => {
-                                                let v1698: Rc<str> = Rc::<str>::from(env!("CARGO_MANIFEST_DIR"));
-                                                run_44(v1698)
+                                                let v1701: Rc<str> = Rc::<str>::from(env!("CARGO_MANIFEST_DIR"));
+                                                run_44(v1701)
                                             }
-                                            US10::US10_Some(v1696) => {
-                                                let v1696: Rc<str> = v1696;
-                                                US10::US10_Some(v1696)
+                                            US10::US10_Some(v1699) => {
+                                                let v1699: Rc<str> = v1699;
+                                                US10::US10_Some(v1699)
                                             }
                                         };
-                                        let v1707: US10 = match v1701 {
+                                        let v1710: US10 = match v1704 {
                                             US10::US10_None => {
-                                                let v1704: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("/workspaces"); } LIT.with(|lit| lit.clone()) };
-                                                run_44(v1704)
+                                                let v1707: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("/workspaces"); } LIT.with(|lit| lit.clone()) };
+                                                run_44(v1707)
                                             }
-                                            US10::US10_Some(v1702) => {
-                                                let v1702: Rc<str> = v1702;
-                                                US10::US10_Some(v1702)
+                                            US10::US10_Some(v1705) => {
+                                                let v1705: Rc<str> = v1705;
+                                                US10::US10_Some(v1705)
                                             }
                                         };
-                                        let v1711: Rc<str> = match v1707 {
+                                        let v1714: Rc<str> = match v1710 {
                                             US10::US10_None => {
                                                 std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Option does not have a value."); } LIT.with(|lit| lit.clone()) }))
                                             }
-                                            US10::US10_Some(v1708) => {
-                                                let v1708: Rc<str> = v1708;
-                                                v1708
+                                            US10::US10_Some(v1711) => {
+                                                let v1711: Rc<str> = v1711;
+                                                v1711
                                             }
                                         };
-                                        let v1712: Rc<str> = get_file_name_33(v1711.clone());
-                                        let v1713: bool = "deps" == &*v1712;
-                                        let v1735: Rc<str> = if v1713 {
-                                            let v1714: Option<Rc<str>> = directory_get_parent_35(v1711.clone());
-                                            let v1715: Option<Rc<str>> = method34(v1714);
-                                            let mut v1716: Rc<dyn Fn((Rc<str>)) -> US10> = closure13();
-                                            let mut v1717: Option<US10> = v1715.map(|x| v1716(x));
-                                            let v1719: US10 = US10::US10_None;
-                                            let v1720: US10 = v1719.clone();
-                                            let v1721: US10 = v1717.unwrap_or(v1720);
-                                            match v1721 {
+                                        let v1715: Rc<str> = get_file_name_33(v1714.clone());
+                                        let v1716: bool = "deps" == &*v1715;
+                                        let v1738: Rc<str> = if v1716 {
+                                            let v1717: Option<Rc<str>> = directory_get_parent_35(v1714.clone());
+                                            let v1718: Option<Rc<str>> = method34(v1717);
+                                            let mut v1719: Rc<dyn Fn((Rc<str>)) -> US10> = closure13();
+                                            let mut v1720: Option<US10> = v1718.map(|x| v1719(x));
+                                            let v1722: US10 = US10::US10_None;
+                                            let v1723: US10 = v1722.clone();
+                                            let v1724: US10 = v1720.unwrap_or(v1723);
+                                            match v1724 {
                                                 US10::US10_None => {
-                                                    v1711
+                                                    v1714
                                                 }
-                                                US10::US10_Some(v1722) => {
-                                                    let v1722: Rc<str> = v1722;
-                                                    let v1723: US13 = US13::US13_Directory;
-                                                    let v1724: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral"); } LIT.with(|lit| lit.clone()) };
-                                                    let v1725: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("workspace"); } LIT.with(|lit| lit.clone()) };
-                                                    let v1726: Rc<str> = method40(v1724, v1725);
-                                                    let v1727: US14 = find_parent_45(v1723, v1726, v1722);
-                                                    match v1727 {
-                                                        US14::US14_Error(v1730) => {
-                                                            let v1730: Rc<str> = v1730;
-                                                            v1711
+                                                US10::US10_Some(v1725) => {
+                                                    let v1725: Rc<str> = v1725;
+                                                    let v1726: US13 = US13::US13_Directory;
+                                                    let v1727: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral"); } LIT.with(|lit| lit.clone()) };
+                                                    let v1728: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("workspace"); } LIT.with(|lit| lit.clone()) };
+                                                    let v1729: Rc<str> = method40(v1727, v1728);
+                                                    let v1730: US14 = find_parent_45(v1726, v1729, v1725);
+                                                    match v1730 {
+                                                        US14::US14_Error(v1733) => {
+                                                            let v1733: Rc<str> = v1733;
+                                                            v1714
                                                         }
-                                                        US14::US14_Ok(v1728) => {
-                                                            let v1728: Rc<str> = v1728;
-                                                            normalize_path_29(v1728)
+                                                        US14::US14_Ok(v1731) => {
+                                                            let v1731: Rc<str> = v1731;
+                                                            normalize_path_29(v1731)
                                                         }
                                                     }
                                                 }
                                             }
                                         } else {
-                                            v1711
+                                            v1714
                                         };
-                                        let v1736: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral"); } LIT.with(|lit| lit.clone()) };
-                                        method40(v1735, v1736)
+                                        let v1739: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral"); } LIT.with(|lit| lit.clone()) };
+                                        method40(v1738, v1739)
                                     };
-                                    let v1739: Rc<str> = get_current_directory_43();
-                                    let v1740: Rc<str> = Rc::<str>::from(v1739.to_lowercase());
-                                    let v1741: Rc<str> = Rc::<str>::from(v1738.to_lowercase());
-                                    let v1742: bool = v1740.starts_with(&*v1741);
-                                    let v1745: US14 = if v1742 {
-                                        US14::US14_Error(v1741)
+                                    let v1742: Rc<str> = get_current_directory_43();
+                                    let v1743: Rc<str> = Rc::<str>::from(v1742.to_lowercase());
+                                    let v1744: Rc<str> = Rc::<str>::from(v1741.to_lowercase());
+                                    let v1745: bool = v1743.starts_with(&*v1744);
+                                    let v1748: US14 = if v1745 {
+                                        US14::US14_Error(v1744)
                                     } else {
-                                        US14::US14_Ok(v1741)
+                                        US14::US14_Ok(v1744)
                                     };
-                                    let mut v1751: Result<Rc<str>, Rc<str>> = match &v1745 {
-                                        US14::US14_Error(v1748) => {
-                                            let v1748: Rc<str> = v1748.clone();
-                                            let v1749: Result<Rc<str>, Rc<str>> = Err::<Rc<str>, Rc<str>>(v1748);
-                                            v1749
+                                    let mut v1754: Result<Rc<str>, Rc<str>> = match &v1748 {
+                                        US14::US14_Error(v1751) => {
+                                            let v1751: Rc<str> = v1751.clone();
+                                            let v1752: Result<Rc<str>, Rc<str>> = Err::<Rc<str>, Rc<str>>(v1751);
+                                            v1752
                                         }
-                                        US14::US14_Ok(v1746) => {
-                                            let v1746: Rc<str> = v1746.clone();
-                                            let v1747: Result<Rc<str>, Rc<str>> = Ok::<Rc<str>, Rc<str>>(v1746);
-                                            v1747
+                                        US14::US14_Ok(v1749) => {
+                                            let v1749: Rc<str> = v1749.clone();
+                                            let v1750: Result<Rc<str>, Rc<str>> = Ok::<Rc<str>, Rc<str>>(v1749);
+                                            v1750
                                         }
                                     };
-                                    let v1753: bool = true; let _result_unwrap_or_else = v1751.unwrap_or_else(|x| { //;
-                                    let v1755: Rc<str> = x;
-                                    let v1757: bool = true; v1755 });
-                                    let v1759: Rc<str> = _result_unwrap_or_else;
-                                    let v1760: US48 = US48::US48_Rust;
-                                    let v1761: US49 = US49::US49_Some(v1760);
-                                    let v1762: US10 = US10::US10_Some(v1684.clone());
-                                    let v1763: Rc<str> = get_package_dir_192(v1762, v1689.clone(), v1761, v1759.clone());
-                                    let v1764: Rc<dyn Fn()> = create_dir_65(v1763.clone());
-                                    let v1765: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("../../.."); } LIT.with(|lit| lit.clone()) };
-                                    let v1766: Rc<str> = method40(v1763.clone(), v1765);
-                                    let v1767: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Cargo.toml"); } LIT.with(|lit| lit.clone()) };
-                                    let v1768: Rc<str> = method40(v1766.clone(), v1767.clone());
-                                    let v1769: bool = file_exists_47(v1768.clone());
-                                    let v1770: bool = v1769 == false;
-                                    if v1770 {
-                                        let v1771: chrono::NaiveDateTime = chrono::Local::now().naive_local();
-                                        let mut v1772: std::collections::hash_map::DefaultHasher = std::hash::BuildHasher::build_hasher(&std::collections::hash_map::RandomState::new());
-                                        let v1774: bool = true; // 1;
-                                        let mut v1772 = v1772;
-                                        let mut v1776: std::time::SystemTime = std::time::SystemTime::now();
-                                        let mut v1777: std::time::Duration = v1776.duration_since(std::time::UNIX_EPOCH).unwrap_or_default();
-                                        let v1778: u64 = v1777.as_secs();
-                                        let v1779: u64 = v1778.wrapping_mul(1000000000u64);
-                                        let v1780: u32 = v1777.subsec_nanos();
-                                        let v1781: u64 = (v1780 as u64);
-                                        let v1782: u64 = v1779.wrapping_add(v1781);
-                                        std::hash::Hasher::write_u64(&mut v1772, v1782);
-                                        let v1783: u64 = std::hash::Hasher::finish(&v1772);
-                                        std::hash::Hasher::write_u64(&mut v1772, v1783);
-                                        let v1784: u64 = std::hash::Hasher::finish(&v1772);
-                                        let v1785: u64 = v1783 & 4294967295u64;
-                                        let v1786: i32 = 8i32;
-                                        let v1787: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                                        let v1788: Rc<str> = go_193(v1786, v1785, v1787.clone());
-                                        let v1790: u64 = v1783.wrapping_shr((32i32) as u32);
-                                        let v1791: u64 = v1790 & 65535u64;
-                                        let v1792: i32 = 4i32;
-                                        let v1793: Rc<str> = go_193(v1792, v1791, v1787.clone());
-                                        let v1796: u64 = v1783.wrapping_shr((48i32) as u32);
-                                        let v1797: u64 = v1796 & 4095u64;
-                                        let v1798: i32 = 3i32;
-                                        let v1799: Rc<str> = go_193(v1798, v1797, v1787.clone());
-                                        let v1802: u64 = v1784 & 16383u64;
-                                        let v1803: u64 = v1802 | 32768u64;
-                                        let v1804: i32 = 4i32;
-                                        let v1805: Rc<str> = go_193(v1804, v1803, v1787.clone());
-                                        let v1808: u64 = v1784.wrapping_shr((16i32) as u32);
-                                        let v1809: u64 = v1808 & 281474976710655u64;
-                                        let v1810: i32 = 12i32;
-                                        let v1811: Rc<str> = go_193(v1810, v1809, v1787);
-                                        let v1812: Rc<str> = string_concat(&[&*v1788, "-", &*v1793, "-4", &*v1799, "-", &*v1805, "-", &*v1811]);
-                                        let v1813: Rc<str> = Rc::<str>::from(v1812.to_lowercase());
-                                        let v1814: Rc<str> = date_time_guid_from_date_time_194(v1813, v1771);
-                                        let v1815: Rc<str> = Rc::<str>::from(format!("{}", v1814));
-                                        let v1816: Rc<str> = Rc::<str>::from(format!("name = \"spiral_{}\"", v1815));
-                                        let v1826: Rc<str> = Rc::<str>::from(format!("name = \"spiral_{}\"", v1815));
-                                        let v1830: Rc<str> = string_concat(&["[package]\n", &*v1816, "\nversion = \"0.0.1\"\nedition = \"2021\"\n\n[[bin]]\n", &*v1826, "\npath = \"spiral.rs\""]);
-                                        std::fs::write(&*v1768, &*v1830).unwrap();
+                                    let v1756: bool = true; let _result_unwrap_or_else = v1754.unwrap_or_else(|x| { //;
+                                    let v1758: Rc<str> = x;
+                                    let v1760: bool = true; v1758 });
+                                    let v1762: Rc<str> = _result_unwrap_or_else;
+                                    let v1763: US48 = US48::US48_Rust;
+                                    let v1764: US49 = US49::US49_Some(v1763);
+                                    let v1765: US10 = US10::US10_Some(v1687.clone());
+                                    let v1766: Rc<str> = get_package_dir_192(v1765, v1692.clone(), v1764, v1762.clone());
+                                    let v1767: Rc<dyn Fn()> = create_dir_65(v1766.clone());
+                                    let v1768: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("../../.."); } LIT.with(|lit| lit.clone()) };
+                                    let v1769: Rc<str> = method40(v1766.clone(), v1768);
+                                    let v1770: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Cargo.toml"); } LIT.with(|lit| lit.clone()) };
+                                    let v1771: Rc<str> = method40(v1769.clone(), v1770.clone());
+                                    let v1772: bool = file_exists_47(v1771.clone());
+                                    let v1773: bool = v1772 == false;
+                                    if v1773 {
+                                        let v1774: chrono::NaiveDateTime = chrono::Local::now().naive_local();
+                                        let mut v1775: std::collections::hash_map::DefaultHasher = std::hash::BuildHasher::build_hasher(&std::collections::hash_map::RandomState::new());
+                                        let v1777: bool = true; // 1;
+                                        let mut v1775 = v1775;
+                                        let mut v1779: std::time::SystemTime = std::time::SystemTime::now();
+                                        let mut v1780: std::time::Duration = v1779.duration_since(std::time::UNIX_EPOCH).unwrap_or_default();
+                                        let v1781: u64 = v1780.as_secs();
+                                        let v1782: u64 = v1781.wrapping_mul(1000000000u64);
+                                        let v1783: u32 = v1780.subsec_nanos();
+                                        let v1784: u64 = (v1783 as u64);
+                                        let v1785: u64 = v1782.wrapping_add(v1784);
+                                        std::hash::Hasher::write_u64(&mut v1775, v1785);
+                                        let v1786: u64 = std::hash::Hasher::finish(&v1775);
+                                        std::hash::Hasher::write_u64(&mut v1775, v1786);
+                                        let v1787: u64 = std::hash::Hasher::finish(&v1775);
+                                        let v1788: u64 = v1786 & 4294967295u64;
+                                        let v1789: i32 = 8i32;
+                                        let v1790: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                                        let v1791: Rc<str> = go_193(v1789, v1788, v1790.clone());
+                                        let v1793: u64 = v1786.wrapping_shr((32i32) as u32);
+                                        let v1794: u64 = v1793 & 65535u64;
+                                        let v1795: i32 = 4i32;
+                                        let v1796: Rc<str> = go_193(v1795, v1794, v1790.clone());
+                                        let v1799: u64 = v1786.wrapping_shr((48i32) as u32);
+                                        let v1800: u64 = v1799 & 4095u64;
+                                        let v1801: i32 = 3i32;
+                                        let v1802: Rc<str> = go_193(v1801, v1800, v1790.clone());
+                                        let v1805: u64 = v1787 & 16383u64;
+                                        let v1806: u64 = v1805 | 32768u64;
+                                        let v1807: i32 = 4i32;
+                                        let v1808: Rc<str> = go_193(v1807, v1806, v1790.clone());
+                                        let v1811: u64 = v1787.wrapping_shr((16i32) as u32);
+                                        let v1812: u64 = v1811 & 281474976710655u64;
+                                        let v1813: i32 = 12i32;
+                                        let v1814: Rc<str> = go_193(v1813, v1812, v1790);
+                                        let v1815: Rc<str> = string_concat(&[&*v1791, "-", &*v1796, "-4", &*v1802, "-", &*v1808, "-", &*v1814]);
+                                        let v1816: Rc<str> = Rc::<str>::from(v1815.to_lowercase());
+                                        let v1817: Rc<str> = date_time_guid_from_date_time_194(v1816, v1774);
+                                        let v1818: Rc<str> = Rc::<str>::from(format!("{}", v1817));
+                                        let v1819: Rc<str> = Rc::<str>::from(format!("name = \"spiral_{}\"", v1818));
+                                        let v1829: Rc<str> = Rc::<str>::from(format!("name = \"spiral_{}\"", v1818));
+                                        let v1833: Rc<str> = string_concat(&["[package]\n", &*v1819, "\nversion = \"0.0.1\"\nedition = \"2021\"\n\n[[bin]]\n", &*v1829, "\npath = \"spiral.rs\""]);
+                                        std::fs::write(&*v1771, &*v1833).unwrap();
                                         ()
                                     };
-                                    let v1832: Rc<str> = method40(v1763.clone(), v1767);
-                                    let v1833: bool = match &v1666 {
+                                    let v1835: Rc<str> = method40(v1766.clone(), v1770);
+                                    let v1836: bool = match &v1669 {
                                         US46::US46_None => {
                                             true
                                         }
@@ -20181,55 +20187,55 @@ main()", v499));
                                             false
                                         }
                                     };
-                                    let v1871: Vec<std::string::String> = if v1833 {
-                                        v1616
+                                    let v1874: Vec<std::string::String> = if v1836 {
+                                        v1619
                                     } else {
-                                        let mut v1835: Rc<dyn Fn((std::string::String)) -> bool> = closure106();
-                                        let v1836: Vec<std::string::String> = v1616.iter().filter(|x| v1835((*x).clone())).cloned().collect::<Vec<_>>();
-                                        let v1837: usize = ((v1836).len() as usize);
-                                        let v1838: i32 = (v1837 as i32);
-                                        let v1839: bool = v1838 > 0i32;
-                                        let v1855: Vec<std::string::String> = if v1839 {
-                                            v1616
+                                        let mut v1838: Rc<dyn Fn((std::string::String)) -> bool> = closure106();
+                                        let v1839: Vec<std::string::String> = v1619.iter().filter(|x| v1838((*x).clone())).cloned().collect::<Vec<_>>();
+                                        let v1840: usize = ((v1839).len() as usize);
+                                        let v1841: i32 = (v1840 as i32);
+                                        let v1842: bool = v1841 > 0i32;
+                                        let v1858: Vec<std::string::String> = if v1842 {
+                                            v1619
                                         } else {
-                                            let v1840: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("near-sdk=\"=5.11.0\""); } LIT.with(|lit| lit.clone()) };
-                                            let v1842: &str = &*v1840;
-                                            let v1844: std::string::String = String::from(v1842);
-                                            let v1845: Rc<RefCell<Vec<std::string::String>>> = Rc::new(RefCell::new(vec![v1844]));
-                                            let v1846: Vec<std::string::String> = (v1845).borrow().clone();
-                                            let v1847: Vec<std::string::String> = method60(v1846);
-                                            let mut v1848: Vec<std::string::String> = method61(v1616);
-                                            let v1850: bool = true; let mut v1848 = v1848;
-                                            let v1852: bool = true; v1848.extend(v1847);
-                                            let v1854: Vec<std::string::String> = v1848;
-                                            v1854
+                                            let v1843: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("near-sdk=\"=5.11.0\""); } LIT.with(|lit| lit.clone()) };
+                                            let v1845: &str = &*v1843;
+                                            let v1847: std::string::String = String::from(v1845);
+                                            let v1848: Rc<RefCell<Vec<std::string::String>>> = Rc::new(RefCell::new(vec![v1847]));
+                                            let v1849: Vec<std::string::String> = (v1848).borrow().clone();
+                                            let v1850: Vec<std::string::String> = method60(v1849);
+                                            let mut v1851: Vec<std::string::String> = method61(v1619);
+                                            let v1853: bool = true; let mut v1851 = v1851;
+                                            let v1855: bool = true; v1851.extend(v1850);
+                                            let v1857: Vec<std::string::String> = v1851;
+                                            v1857
                                         };
-                                        let v1856: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("indexmap=\"=2.11.4\""); } LIT.with(|lit| lit.clone()) };
-                                        let v1858: &str = &*v1856;
-                                        let v1860: std::string::String = String::from(v1858);
-                                        let v1861: Rc<RefCell<Vec<std::string::String>>> = Rc::new(RefCell::new(vec![v1860]));
-                                        let v1862: Vec<std::string::String> = (v1861).borrow().clone();
-                                        let v1863: Vec<std::string::String> = method60(v1862);
-                                        let mut v1864: Vec<std::string::String> = method61(v1855);
-                                        let v1866: bool = true; let mut v1864 = v1864;
-                                        let v1868: bool = true; v1864.extend(v1863);
-                                        let v1870: Vec<std::string::String> = v1864;
-                                        v1870
+                                        let v1859: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("indexmap=\"=2.11.4\""); } LIT.with(|lit| lit.clone()) };
+                                        let v1861: &str = &*v1859;
+                                        let v1863: std::string::String = String::from(v1861);
+                                        let v1864: Rc<RefCell<Vec<std::string::String>>> = Rc::new(RefCell::new(vec![v1863]));
+                                        let v1865: Vec<std::string::String> = (v1864).borrow().clone();
+                                        let v1866: Vec<std::string::String> = method60(v1865);
+                                        let mut v1867: Vec<std::string::String> = method61(v1858);
+                                        let v1869: bool = true; let mut v1867 = v1867;
+                                        let v1871: bool = true; v1867.extend(v1866);
+                                        let v1873: Vec<std::string::String> = v1867;
+                                        v1873
                                     };
-                                    let mut v1873: Rc<dyn Fn((std::string::String)) -> Rc<str>> = closure107();
-                                    let v1874: Vec<Rc<str>> = v1871.iter().map(|x| v1873(x.clone())).collect::<Vec<_>>();
-                                    let v1875: Vec<Rc<str>> = method62(v1874);
-                                    let v1876: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(v1875));
-                                    let v1877: Rc<Vec<Rc<str>>> = Rc::new(v1876.borrow().clone());
-                                    let v1878: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("\n"); } LIT.with(|lit| lit.clone()) };
-                                    let v1879: Rc<str> = Rc::<str>::from(v1877.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*v1878));
-                                    let v1881: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("rs"); } LIT.with(|lit| lit.clone()) };
-                                    let v1882: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral.rs"); } LIT.with(|lit| lit.clone()) };
-                                    let v1883: Rc<str> = method40(v1763.clone(), v1882);
-                                    let v1884: Rc<str> = Rc::<str>::from(format!("name = \"spiral_{}\"", v1684));
-                                    let v1896: Rc<str> = Rc::<str>::from(format!("{}", v1879));
-                                    let v1900: Rc<str> = string_concat(&["cargo-features = [\"edition2024\"]\n\n[package]\n", &*v1884, "\nversion = \"0.0.1\"\nedition = \"2024\"\n\n[dependencies]\ninline_colorization = { workspace = true }\n", &*v1896, "\n"]);
-                                    let v1901: bool = match &v1666 {
+                                    let mut v1876: Rc<dyn Fn((std::string::String)) -> Rc<str>> = closure107();
+                                    let v1877: Vec<Rc<str>> = v1874.iter().map(|x| v1876(x.clone())).collect::<Vec<_>>();
+                                    let v1878: Vec<Rc<str>> = method62(v1877);
+                                    let v1879: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(v1878));
+                                    let v1880: Rc<Vec<Rc<str>>> = Rc::new(v1879.borrow().clone());
+                                    let v1881: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("\n"); } LIT.with(|lit| lit.clone()) };
+                                    let v1882: Rc<str> = Rc::<str>::from(v1880.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*v1881));
+                                    let v1884: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("rs"); } LIT.with(|lit| lit.clone()) };
+                                    let v1885: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral.rs"); } LIT.with(|lit| lit.clone()) };
+                                    let v1886: Rc<str> = method40(v1766.clone(), v1885);
+                                    let v1887: Rc<str> = Rc::<str>::from(format!("name = \"spiral_{}\"", v1687));
+                                    let v1899: Rc<str> = Rc::<str>::from(format!("{}", v1882));
+                                    let v1903: Rc<str> = string_concat(&["cargo-features = [\"edition2024\"]\n\n[package]\n", &*v1887, "\nversion = \"0.0.1\"\nedition = \"2024\"\n\n[dependencies]\ninline_colorization = { workspace = true }\n", &*v1899, "\n"]);
+                                    let v1904: bool = match &v1669 {
                                         US46::US46_None => {
                                             true
                                         }
@@ -20237,33 +20243,33 @@ main()", v499));
                                             false
                                         }
                                     };
-                                    let v1905: Rc<str> = if v1901 {
-                                        let v1902: Rc<str> = Rc::<str>::from(format!("name = \"spiral_{}\"", v1684));
-                                        let v1903: Rc<str> = string_concat(&["[[bin]]\n", &*v1902]);
-                                        v1903
+                                    let v1908: Rc<str> = if v1904 {
+                                        let v1905: Rc<str> = Rc::<str>::from(format!("name = \"spiral_{}\"", v1687));
+                                        let v1906: Rc<str> = string_concat(&["[[bin]]\n", &*v1905]);
+                                        v1906
                                     } else {
-                                        let v1904: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("[lib]\ncrate-type = [\"cdylib\"]"); } LIT.with(|lit| lit.clone()) };
-                                        v1904
+                                        let v1907: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("[lib]\ncrate-type = [\"cdylib\"]"); } LIT.with(|lit| lit.clone()) };
+                                        v1907
                                     };
-                                    let v1909: Rc<str> = string_concat(&[&*v1900, "\n", &*v1905, "\npath = \"spiral.rs\""]);
-                                    let v1912: Rc<str> = if v1686 {
-                                        let v1910: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("cargo-features = [\"profile-rustflags\", \"edition2024\"]"); } LIT.with(|lit| lit.clone()) };
-                                        v1910
-                                    } else {
-                                        let v1911: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("cargo-features = [\"profile-rustflags\"]"); } LIT.with(|lit| lit.clone()) };
-                                        v1911
-                                    };
-                                    let v1915: Rc<str> = if v1686 {
-                                        let v1913: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("resolver = \"3\""); } LIT.with(|lit| lit.clone()) };
+                                    let v1912: Rc<str> = string_concat(&[&*v1903, "\n", &*v1908, "\npath = \"spiral.rs\""]);
+                                    let v1915: Rc<str> = if v1689 {
+                                        let v1913: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("cargo-features = [\"profile-rustflags\", \"edition2024\"]"); } LIT.with(|lit| lit.clone()) };
                                         v1913
                                     } else {
-                                        let v1914: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("resolver = \"2\""); } LIT.with(|lit| lit.clone()) };
+                                        let v1914: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("cargo-features = [\"profile-rustflags\"]"); } LIT.with(|lit| lit.clone()) };
                                         v1914
                                     };
-                                    let v1969: Rc<str> = string_concat(&[&*v1912, "\n\n[workspace]\n", &*v1915, "\nmembers = [\"packages/Rust/*\"]\n\n[workspace.dependencies]\ninline_colorization = \"~0.1\"\n\n[profile.dev]\ncodegen-units = 256\nopt-level = 0\nlto = false\nincremental = false\ndebug = 1\npanic = \"unwind\"\nrustflags = [\"-C\", \"link-arg=-s\"]\nstrip = \"debuginfo\"\nrpath = true\n\n[profile.release]\ncodegen-units = 1\nopt-level = \"z\"\nlto = true\ndebug = false\npanic = \"abort\"\noverflow-checks = true\nrustflags = [\"-C\", \"link-arg=-s\"]"]);
-                                    write_all_text_exists_63(v1832.clone(), v1909);
-                                    write_all_text_exists_63(v1768, v1969);
-                                    let v1970: bool = match &v1666 {
+                                    let v1918: Rc<str> = if v1689 {
+                                        let v1916: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("resolver = \"3\""); } LIT.with(|lit| lit.clone()) };
+                                        v1916
+                                    } else {
+                                        let v1917: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("resolver = \"2\""); } LIT.with(|lit| lit.clone()) };
+                                        v1917
+                                    };
+                                    let v1972: Rc<str> = string_concat(&[&*v1915, "\n\n[workspace]\n", &*v1918, "\nmembers = [\"packages/Rust/*\"]\n\n[workspace.dependencies]\ninline_colorization = \"~0.1\"\n\n[profile.dev]\ncodegen-units = 256\nopt-level = 0\nlto = false\nincremental = false\ndebug = 1\npanic = \"unwind\"\nrustflags = [\"-C\", \"link-arg=-s\"]\nstrip = \"debuginfo\"\nrpath = true\n\n[profile.release]\ncodegen-units = 1\nopt-level = \"z\"\nlto = true\ndebug = false\npanic = \"abort\"\noverflow-checks = true\nrustflags = [\"-C\", \"link-arg=-s\"]"]);
+                                    write_all_text_exists_63(v1835.clone(), v1912);
+                                    write_all_text_exists_63(v1771, v1972);
+                                    let v1973: bool = match &v1669 {
                                         US46::US46_None => {
                                             true
                                         }
@@ -20271,34 +20277,34 @@ main()", v499));
                                             false
                                         }
                                     };
-                                    let v1995: Rc<str> = if v1970 {
-                                        let v1971: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                                        v1971
+                                    let v1998: Rc<str> = if v1973 {
+                                        let v1974: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                                        v1974
                                     } else {
-                                        let v1972: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("#[near_sdk::near_bindgen]"); } LIT.with(|lit| lit.clone()) };
-                                        let v1973: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("#[derive(near_sdk::PanicOnDefault)]"); } LIT.with(|lit| lit.clone()) };
-                                        let v1982: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("#[near_sdk::near_bindgen]"); } LIT.with(|lit| lit.clone()) };
-                                        let v1994: Rc<str> = string_concat(&[&*v1972, "\n", &*v1973, "\npub struct MainState {\n}\n\n", &*v1982, "\nimpl MainState {\n    pub fn state_main() {\n        spiral_main();\n    }\n}"]);
-                                        v1994
-                                    };
-                                    let v1996: bool = &*v1995 == "";
-                                    let v1998: Rc<str> = if v1996 {
-                                        v1677
-                                    } else {
-                                        let v1997: Rc<str> = Rc::<str>::from(format!("{}\n\n{}\n", v1677, v1995));
+                                        let v1975: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("#[near_sdk::near_bindgen]"); } LIT.with(|lit| lit.clone()) };
+                                        let v1976: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("#[derive(near_sdk::PanicOnDefault)]"); } LIT.with(|lit| lit.clone()) };
+                                        let v1985: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("#[near_sdk::near_bindgen]"); } LIT.with(|lit| lit.clone()) };
+                                        let v1997: Rc<str> = string_concat(&[&*v1975, "\n", &*v1976, "\npub struct MainState {\n}\n\n", &*v1985, "\nimpl MainState {\n    pub fn state_main() {\n        spiral_main();\n    }\n}"]);
                                         v1997
                                     };
-                                    write_all_text_exists_63(v1883.clone(), v1998);
-                                    let v1999: u8 = 1u8;
-                                    let (mut v2000, mut v2001): (i32, Rc<str>) = method198(v1745.clone(), v1832.clone(), v1999);
-                                    let v2002: bool = v2000 != 0i32 ;
-                                    if v2002 {
-                                        let v2004: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c3();
-                                        { let _ = spiral_trace_hold(&v2004); };
-                                        let v2006: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c4();
-                                        let (mut v2007, mut v2008, mut v2009, mut v2010, mut v2011, mut v2012): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2006);
-                                        let v2013: US0 = v2011.borrow().l0.clone();
-                                        let v2018: i32 = match v2013 {
+                                    let v1999: bool = &*v1998 == "";
+                                    let v2001: Rc<str> = if v1999 {
+                                        v1680
+                                    } else {
+                                        let v2000: Rc<str> = Rc::<str>::from(format!("{}\n\n{}\n", v1680, v1998));
+                                        v2000
+                                    };
+                                    write_all_text_exists_63(v1886.clone(), v2001);
+                                    let v2002: u8 = 1u8;
+                                    let (mut v2003, mut v2004): (i32, Rc<str>) = method198(v1748.clone(), v1835.clone(), v2002);
+                                    let v2005: bool = v2003 != 0i32 ;
+                                    if v2005 {
+                                        let v2007: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c3();
+                                        { let _ = spiral_trace_hold(&v2007); };
+                                        let v2009: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c4();
+                                        let (mut v2010, mut v2011, mut v2012, mut v2013, mut v2014, mut v2015): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2009);
+                                        let v2016: US0 = v2014.borrow().l0.clone();
+                                        let v2021: i32 = match v2016 {
                                             US0::US0_Critical => {
                                                 50i32
                                             }
@@ -20315,81 +20321,81 @@ main()", v499));
                                                 40i32
                                             }
                                         };
-                                        let v2019: bool = v2009.borrow().l0;
-                                        let v2020: bool = v2019 == false;
-                                        let v2022: bool = if v2020 {
+                                        let v2022: bool = v2012.borrow().l0;
+                                        let v2023: bool = v2022 == false;
+                                        let v2025: bool = if v2023 {
                                             false
                                         } else {
-                                            let v2021: bool = 50i32 >= v2018;
-                                            v2021
+                                            let v2024: bool = 50i32 >= v2021;
+                                            v2024
                                         };
-                                        let v2023: bool = v2022 == false;
-                                        let v2068: US2 = if v2023 {
+                                        let v2026: bool = v2025 == false;
+                                        let v2071: US2 = if v2026 {
                                             US2::US2_None
                                         } else {
-                                            { let _ = spiral_trace_hold(&v2004); };
-                                            let (mut v2027, mut v2028, mut v2029, mut v2030, mut v2031, mut v2032): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2006);
-                                            let v2033: Rc<str> = method204(&v2027, &v2028, &v2029, &v2030, &v2031, v2032.clone(), &v2027, &v2028, &v2029, &v2030, &v2031, v2032.clone(), v2000, v2001);
-                                            { let _ = spiral_trace_hold(&v2004); };
-                                            let (mut v2036, mut v2037, mut v2038, mut v2039, mut v2040, mut v2041): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2006);
-                                            let v2042: i64 = v2036.borrow().l0;
-                                            let v2043: i64 = v2042.wrapping_add(1i64);
-                                            v2036.borrow_mut().l0 = v2043;
-                                            let v2044: Rc<dyn Fn(Rc<str>) -> ()> = closure6();
-                                            let v2045: bool = cfg!(target_arch = "wasm32");
-                                            if v2045 {
-                                                let v2046: Rc<str> = v2039.borrow().l0.clone();
-                                                let v2047: bool = &*v2046 == "";
-                                                let v2054: Rc<str> = if v2047 {
-                                                    v2033.clone()
+                                            { let _ = spiral_trace_hold(&v2007); };
+                                            let (mut v2030, mut v2031, mut v2032, mut v2033, mut v2034, mut v2035): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2009);
+                                            let v2036: Rc<str> = method204(&v2030, &v2031, &v2032, &v2033, &v2034, v2035.clone(), &v2030, &v2031, &v2032, &v2033, &v2034, v2035.clone(), v2003, v2004);
+                                            { let _ = spiral_trace_hold(&v2007); };
+                                            let (mut v2039, mut v2040, mut v2041, mut v2042, mut v2043, mut v2044): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2009);
+                                            let v2045: i64 = v2039.borrow().l0;
+                                            let v2046: i64 = v2045.wrapping_add(1i64);
+                                            v2039.borrow_mut().l0 = v2046;
+                                            let v2047: Rc<dyn Fn(Rc<str>) -> ()> = closure6();
+                                            let v2048: bool = cfg!(target_arch = "wasm32");
+                                            if v2048 {
+                                                let v2049: Rc<str> = v2042.borrow().l0.clone();
+                                                let v2050: bool = &*v2049 == "";
+                                                let v2057: Rc<str> = if v2050 {
+                                                    v2036.clone()
                                                 } else {
-                                                    let v2048: bool = &*v2033 == "";
-                                                    if v2048 {
-                                                        let v2049: Rc<str> = v2039.borrow().l0.clone();
-                                                        v2049
-                                                    } else {
-                                                        let v2050: Rc<str> = v2039.borrow().l0.clone();
-                                                        let v2052: Rc<str> = string_concat(&[&*v2050, "\n", &*v2033]);
+                                                    let v2051: bool = &*v2036 == "";
+                                                    if v2051 {
+                                                        let v2052: Rc<str> = v2042.borrow().l0.clone();
                                                         v2052
+                                                    } else {
+                                                        let v2053: Rc<str> = v2042.borrow().l0.clone();
+                                                        let v2055: Rc<str> = string_concat(&[&*v2053, "\n", &*v2036]);
+                                                        v2055
                                                     }
                                                 };
-                                                let v2056: usize = v2054.len();
-                                                let v2057: i32 = ((v2056) as i32);
-                                                let v2058: i32 = v2057.wrapping_add(14999i32);
-                                                let v2059: i32 = v2058.wrapping_div(15000i32);
-                                                let v2060: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                                                let v2061: bool = v2033 != v2060 ;
-                                                let v2063: bool = if v2061 {
-                                                    let v2062: bool = v2059 <= 1i32;
-                                                    v2062
+                                                let v2059: usize = v2057.len();
+                                                let v2060: i32 = ((v2059) as i32);
+                                                let v2061: i32 = v2060.wrapping_add(14999i32);
+                                                let v2062: i32 = v2061.wrapping_div(15000i32);
+                                                let v2063: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                                                let v2064: bool = v2036 != v2063 ;
+                                                let v2066: bool = if v2064 {
+                                                    let v2065: bool = v2062 <= 1i32;
+                                                    v2065
                                                 } else {
                                                     false
                                                 };
-                                                if v2063 {
-                                                    v2039.borrow_mut().l0 = v2054;
+                                                if v2066 {
+                                                    v2042.borrow_mut().l0 = v2057;
                                                     ()
                                                 } else {
-                                                    v2039.borrow_mut().l0 = v2060;
-                                                    { #[cfg(target_arch = "wasm32")] spiral_trace_near_log(&v2054); };
+                                                    v2042.borrow_mut().l0 = v2063;
+                                                    { #[cfg(target_arch = "wasm32")] spiral_trace_near_log(&v2057); };
                                                     ()
                                                 }
                                             } else {
-                                                println!("{}", v2033);
+                                                println!("{}", v2036);
                                                 ()
                                             };
-                                            let mut v2066: Rc<dyn Fn(Rc<str>) -> ()> = v2037.borrow().l0.clone();
-                                            v2066(v2033);
-                                            US2::US2_Some(v2036, v2037, v2038, v2039, v2040, v2041)
+                                            let mut v2069: Rc<dyn Fn(Rc<str>) -> ()> = v2040.borrow().l0.clone();
+                                            v2069(v2036);
+                                            US2::US2_Some(v2039, v2040, v2041, v2042, v2043, v2044)
                                         };
                                         ()
                                     };
-                                    let v2070: Result<Vec<u8>, std::io::Error> = std::fs::read(&*v1883);
-                                    let v2072: Vec<u8> = v2070.unwrap();
-                                    let v2073: Vec<u8> = method23(v2072);
-                                    let v2075: Result<std::string::String, std::string::FromUtf8Error> = std::string::String::from_utf8(v2073);
-                                    let v2077: std::string::String = v2075.unwrap();
-                                    let v2079: Rc<str> = Rc::<str>::from(String::as_str(&v2077));
-                                    let v2080: bool = match &v1666 {
+                                    let v2073: Result<Vec<u8>, std::io::Error> = std::fs::read(&*v1886);
+                                    let v2075: Vec<u8> = v2073.unwrap();
+                                    let v2076: Vec<u8> = method23(v2075);
+                                    let v2078: Result<std::string::String, std::string::FromUtf8Error> = std::string::String::from_utf8(v2076);
+                                    let v2080: std::string::String = v2078.unwrap();
+                                    let v2082: Rc<str> = Rc::<str>::from(String::as_str(&v2080));
+                                    let v2083: bool = match &v1669 {
                                         US46::US46_None => {
                                             true
                                         }
@@ -20397,15 +20403,15 @@ main()", v499));
                                             false
                                         }
                                     };
-                                    let v2081: bool = v2080 != true;
-                                    let v2084: Rc<str> = if v2081 {
-                                        let v2082: Rc<str> = Rc::<str>::from(format!("cargo +nightly-2024-07-14 build --timings --release --target wasm32-unknown-unknown --manifest-path \"{}\"", v1832));
-                                        v2082
+                                    let v2084: bool = v2083 != true;
+                                    let v2087: Rc<str> = if v2084 {
+                                        let v2085: Rc<str> = Rc::<str>::from(format!("cargo +nightly-2024-07-14 build --timings --release --target wasm32-unknown-unknown --manifest-path \"{}\"", v1835));
+                                        v2085
                                     } else {
-                                        let v2083: Rc<str> = Rc::<str>::from(format!("cargo run --timings --manifest-path \"{}\"", v1832));
-                                        v2083
+                                        let v2086: Rc<str> = Rc::<str>::from(format!("cargo run --timings --manifest-path \"{}\"", v1835));
+                                        v2086
                                     };
-                                    let v2085: bool = match &v1666 {
+                                    let v2088: bool = match &v1669 {
                                         US46::US46_None => {
                                             true
                                         }
@@ -20413,43 +20419,43 @@ main()", v499));
                                             false
                                         }
                                     };
-                                    let v2086: bool = v2085 != true;
-                                    let v2097: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = if v2086 {
-                                        let v2087: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![]));
-                                        v2087
+                                    let v2089: bool = v2088 != true;
+                                    let v2100: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = if v2089 {
+                                        let v2090: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![]));
+                                        v2090
                                     } else {
-                                        let v2088: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("TRACE_LEVEL"); } LIT.with(|lit| lit.clone()) };
-                                        let v2089: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Verbose"); } LIT.with(|lit| lit.clone()) };
-                                        let v2090: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("RUSTC_WRAPPER"); } LIT.with(|lit| lit.clone()) };
-                                        let v2091: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("sccache"); } LIT.with(|lit| lit.clone()) };
-                                        let v2092: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("RUST_BACKTRACE"); } LIT.with(|lit| lit.clone()) };
-                                        let v2093: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("full"); } LIT.with(|lit| lit.clone()) };
-                                        let v2094: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("RUSTFLAGS"); } LIT.with(|lit| lit.clone()) };
-                                        let v2095: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("-C prefer-dynamic"); } LIT.with(|lit| lit.clone()) };
-                                        let v2096: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v2088, v2089), (v2090, v2091), (v2092, v2093), (v2094, v2095)]));
-                                        v2096
+                                        let v2091: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("TRACE_LEVEL"); } LIT.with(|lit| lit.clone()) };
+                                        let v2092: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Verbose"); } LIT.with(|lit| lit.clone()) };
+                                        let v2093: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("RUSTC_WRAPPER"); } LIT.with(|lit| lit.clone()) };
+                                        let v2094: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("sccache"); } LIT.with(|lit| lit.clone()) };
+                                        let v2095: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("RUST_BACKTRACE"); } LIT.with(|lit| lit.clone()) };
+                                        let v2096: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("full"); } LIT.with(|lit| lit.clone()) };
+                                        let v2097: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("RUSTFLAGS"); } LIT.with(|lit| lit.clone()) };
+                                        let v2098: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("-C prefer-dynamic"); } LIT.with(|lit| lit.clone()) };
+                                        let v2099: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v2091, v2092), (v2093, v2094), (v2095, v2096), (v2097, v2098)]));
+                                        v2099
                                     };
-                                    let v2098: Option<std::sync::Arc<std::sync::atomic::AtomicBool>> = None;
-                                    let v2100: Option<Rc<dyn Fn(i32, Rc<str>, bool) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>>> = None;
-                                    let v2101: Option<Rc<dyn Fn(std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>) -> ()>> = None;
-                                    let v2102: Option<Rc<str>> = None;
-                                    let mut v2108: Result<Rc<str>, Rc<str>> = match v1745 {
-                                        US14::US14_Error(v2105) => {
-                                            let v2105: Rc<str> = v2105;
-                                            let v2106: Result<Rc<str>, Rc<str>> = Err::<Rc<str>, Rc<str>>(v2105);
-                                            v2106
+                                    let v2101: Option<std::sync::Arc<std::sync::atomic::AtomicBool>> = None;
+                                    let v2103: Option<Rc<dyn Fn(i32, Rc<str>, bool) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>>> = None;
+                                    let v2104: Option<Rc<dyn Fn(std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>) -> ()>> = None;
+                                    let v2105: Option<Rc<str>> = None;
+                                    let mut v2111: Result<Rc<str>, Rc<str>> = match v1748 {
+                                        US14::US14_Error(v2108) => {
+                                            let v2108: Rc<str> = v2108;
+                                            let v2109: Result<Rc<str>, Rc<str>> = Err::<Rc<str>, Rc<str>>(v2108);
+                                            v2109
                                         }
-                                        US14::US14_Ok(v2103) => {
-                                            let v2103: Rc<str> = v2103;
-                                            let v2104: Result<Rc<str>, Rc<str>> = Ok::<Rc<str>, Rc<str>>(v2103);
-                                            v2104
+                                        US14::US14_Ok(v2106) => {
+                                            let v2106: Rc<str> = v2106;
+                                            let v2107: Result<Rc<str>, Rc<str>> = Ok::<Rc<str>, Rc<str>>(v2106);
+                                            v2107
                                         }
                                     };
-                                    let v2110: Option<Rc<str>> = v2108.ok();
-                                    let v2111: bool = true;
-                                    let v2112: bool = true;
-                                    let (mut v2113, mut v2114): (i32, Rc<str>) = execute_with_options_75(v2084.clone(), v2098, v2097.clone(), v2100, v2101, v2111, v2110, v2112);
-                                    let v2115: bool = match &v1666 {
+                                    let v2113: Option<Rc<str>> = v2111.ok();
+                                    let v2114: bool = true;
+                                    let v2115: bool = true;
+                                    let (mut v2116, mut v2117): (i32, Rc<str>) = execute_with_options_75(v2087.clone(), v2101, v2100.clone(), v2103, v2104, v2114, v2113, v2115);
+                                    let v2118: bool = match &v1669 {
                                         US46::US46_None => {
                                             true
                                         }
@@ -20457,34 +20463,34 @@ main()", v499));
                                             false
                                         }
                                     };
-                                    let (mut v2470, mut v2471, mut v2472, mut v2473, mut v2474): (US10, US10, US10, US10, Rc<str>) = if v2115 {
-                                        let v2116: i32 = (v2097.clone().borrow().len() as i32);
-                                        let mut v2117: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(vec![<Rc<str>>::default(); v2116 as usize]));
-                                        let mut v2118: Rc<RefCell<Mut9>> = Rc::new(RefCell::new(Mut9 { l0: 0i32 }));
-                                        while method53(v2116, &v2118) {
-                                            let v2120: i32 = v2118.borrow().l0;
-                                            let (mut v2121, mut v2122): (Rc<str>, Rc<str>) = v2097.borrow()[v2120 as usize].clone();
-                                            let v2123: Rc<str> = Rc::<str>::from(format!("$env:{}=''{}''", v2121, v2122));
-                                            v2117.borrow_mut()[v2120 as usize] = v2123;
-                                            let v2124: i32 = v2120.wrapping_add(1i32);
-                                            v2118.borrow_mut().l0 = v2124;
+                                    let (mut v2473, mut v2474, mut v2475, mut v2476, mut v2477): (US10, US10, US10, US10, Rc<str>) = if v2118 {
+                                        let v2119: i32 = (v2100.clone().borrow().len() as i32);
+                                        let mut v2120: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(vec![<Rc<str>>::default(); v2119 as usize]));
+                                        let mut v2121: Rc<RefCell<Mut9>> = Rc::new(RefCell::new(Mut9 { l0: 0i32 }));
+                                        while method53(v2119, &v2121) {
+                                            let v2123: i32 = v2121.borrow().l0;
+                                            let (mut v2124, mut v2125): (Rc<str>, Rc<str>) = v2100.borrow()[v2123 as usize].clone();
+                                            let v2126: Rc<str> = Rc::<str>::from(format!("$env:{}=''{}''", v2124, v2125));
+                                            v2120.borrow_mut()[v2123 as usize] = v2126;
+                                            let v2127: i32 = v2123.wrapping_add(1i32);
+                                            v2121.borrow_mut().l0 = v2127;
                                             ()
                                         };
-                                        let v2125: Rc<Vec<Rc<str>>> = Rc::new(v2117.borrow().clone());
-                                        let v2126: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(";"); } LIT.with(|lit| lit.clone()) };
-                                        let v2127: Rc<str> = Rc::<str>::from(v2125.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*v2126));
-                                        let v2128: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(vec![v2127, v2084]));
-                                        let v2129: Rc<Vec<Rc<str>>> = Rc::new(v2128.borrow().clone());
-                                        let v2130: Rc<str> = Rc::<str>::from(v2129.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*v2126));
-                                        let v2131: Rc<str> = Rc::<str>::from(format!("pwsh -c '{}'", v2130));
-                                        let v2132: bool = v2113 != 0i32 ;
-                                        if v2132 {
-                                            let v2134: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c3();
-                                            { let _ = spiral_trace_hold(&v2134); };
-                                            let v2136: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c4();
-                                            let (mut v2137, mut v2138, mut v2139, mut v2140, mut v2141, mut v2142): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2136);
-                                            let v2143: US0 = v2141.borrow().l0.clone();
-                                            let v2148: i32 = match v2143 {
+                                        let v2128: Rc<Vec<Rc<str>>> = Rc::new(v2120.borrow().clone());
+                                        let v2129: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(";"); } LIT.with(|lit| lit.clone()) };
+                                        let v2130: Rc<str> = Rc::<str>::from(v2128.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*v2129));
+                                        let v2131: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(vec![v2130, v2087]));
+                                        let v2132: Rc<Vec<Rc<str>>> = Rc::new(v2131.borrow().clone());
+                                        let v2133: Rc<str> = Rc::<str>::from(v2132.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*v2129));
+                                        let v2134: Rc<str> = Rc::<str>::from(format!("pwsh -c '{}'", v2133));
+                                        let v2135: bool = v2116 != 0i32 ;
+                                        if v2135 {
+                                            let v2137: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c3();
+                                            { let _ = spiral_trace_hold(&v2137); };
+                                            let v2139: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c4();
+                                            let (mut v2140, mut v2141, mut v2142, mut v2143, mut v2144, mut v2145): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2139);
+                                            let v2146: US0 = v2144.borrow().l0.clone();
+                                            let v2151: i32 = match v2146 {
                                                 US0::US0_Critical => {
                                                     50i32
                                                 }
@@ -20501,214 +20507,214 @@ main()", v499));
                                                     40i32
                                                 }
                                             };
-                                            let v2149: bool = v2139.borrow().l0;
-                                            let v2150: bool = v2149 == false;
-                                            let v2152: bool = if v2150 {
+                                            let v2152: bool = v2142.borrow().l0;
+                                            let v2153: bool = v2152 == false;
+                                            let v2155: bool = if v2153 {
                                                 false
                                             } else {
-                                                let v2151: bool = 50i32 >= v2148;
-                                                v2151
+                                                let v2154: bool = 50i32 >= v2151;
+                                                v2154
                                             };
-                                            let v2153: bool = v2152 == false;
-                                            let v2198: US2 = if v2153 {
+                                            let v2156: bool = v2155 == false;
+                                            let v2201: US2 = if v2156 {
                                                 US2::US2_None
                                             } else {
-                                                { let _ = spiral_trace_hold(&v2134); };
-                                                let (mut v2157, mut v2158, mut v2159, mut v2160, mut v2161, mut v2162): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2136);
-                                                let v2163: Rc<str> = method205(&v2157, &v2158, &v2159, &v2160, &v2161, v2162.clone(), &v2157, &v2158, &v2159, &v2160, &v2161, v2162.clone(), v2113, v1883.clone(), v2131.clone(), v1621, v2114.clone());
-                                                { let _ = spiral_trace_hold(&v2134); };
-                                                let (mut v2166, mut v2167, mut v2168, mut v2169, mut v2170, mut v2171): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2136);
-                                                let v2172: i64 = v2166.borrow().l0;
-                                                let v2173: i64 = v2172.wrapping_add(1i64);
-                                                v2166.borrow_mut().l0 = v2173;
-                                                let v2174: Rc<dyn Fn(Rc<str>) -> ()> = closure6();
-                                                let v2175: bool = cfg!(target_arch = "wasm32");
-                                                if v2175 {
-                                                    let v2176: Rc<str> = v2169.borrow().l0.clone();
-                                                    let v2177: bool = &*v2176 == "";
-                                                    let v2184: Rc<str> = if v2177 {
-                                                        v2163.clone()
+                                                { let _ = spiral_trace_hold(&v2137); };
+                                                let (mut v2160, mut v2161, mut v2162, mut v2163, mut v2164, mut v2165): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2139);
+                                                let v2166: Rc<str> = method205(&v2160, &v2161, &v2162, &v2163, &v2164, v2165.clone(), &v2160, &v2161, &v2162, &v2163, &v2164, v2165.clone(), v2116, v1886.clone(), v2134.clone(), v1624, v2117.clone());
+                                                { let _ = spiral_trace_hold(&v2137); };
+                                                let (mut v2169, mut v2170, mut v2171, mut v2172, mut v2173, mut v2174): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2139);
+                                                let v2175: i64 = v2169.borrow().l0;
+                                                let v2176: i64 = v2175.wrapping_add(1i64);
+                                                v2169.borrow_mut().l0 = v2176;
+                                                let v2177: Rc<dyn Fn(Rc<str>) -> ()> = closure6();
+                                                let v2178: bool = cfg!(target_arch = "wasm32");
+                                                if v2178 {
+                                                    let v2179: Rc<str> = v2172.borrow().l0.clone();
+                                                    let v2180: bool = &*v2179 == "";
+                                                    let v2187: Rc<str> = if v2180 {
+                                                        v2166.clone()
                                                     } else {
-                                                        let v2178: bool = &*v2163 == "";
-                                                        if v2178 {
-                                                            let v2179: Rc<str> = v2169.borrow().l0.clone();
-                                                            v2179
-                                                        } else {
-                                                            let v2180: Rc<str> = v2169.borrow().l0.clone();
-                                                            let v2182: Rc<str> = string_concat(&[&*v2180, "\n", &*v2163]);
+                                                        let v2181: bool = &*v2166 == "";
+                                                        if v2181 {
+                                                            let v2182: Rc<str> = v2172.borrow().l0.clone();
                                                             v2182
+                                                        } else {
+                                                            let v2183: Rc<str> = v2172.borrow().l0.clone();
+                                                            let v2185: Rc<str> = string_concat(&[&*v2183, "\n", &*v2166]);
+                                                            v2185
                                                         }
                                                     };
-                                                    let v2186: usize = v2184.len();
-                                                    let v2187: i32 = ((v2186) as i32);
-                                                    let v2188: i32 = v2187.wrapping_add(14999i32);
-                                                    let v2189: i32 = v2188.wrapping_div(15000i32);
-                                                    let v2190: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                                                    let v2191: bool = v2163 != v2190 ;
-                                                    let v2193: bool = if v2191 {
-                                                        let v2192: bool = v2189 <= 1i32;
-                                                        v2192
+                                                    let v2189: usize = v2187.len();
+                                                    let v2190: i32 = ((v2189) as i32);
+                                                    let v2191: i32 = v2190.wrapping_add(14999i32);
+                                                    let v2192: i32 = v2191.wrapping_div(15000i32);
+                                                    let v2193: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                                                    let v2194: bool = v2166 != v2193 ;
+                                                    let v2196: bool = if v2194 {
+                                                        let v2195: bool = v2192 <= 1i32;
+                                                        v2195
                                                     } else {
                                                         false
                                                     };
-                                                    if v2193 {
-                                                        v2169.borrow_mut().l0 = v2184;
+                                                    if v2196 {
+                                                        v2172.borrow_mut().l0 = v2187;
                                                         ()
                                                     } else {
-                                                        v2169.borrow_mut().l0 = v2190;
-                                                        { #[cfg(target_arch = "wasm32")] spiral_trace_near_log(&v2184); };
+                                                        v2172.borrow_mut().l0 = v2193;
+                                                        { #[cfg(target_arch = "wasm32")] spiral_trace_near_log(&v2187); };
                                                         ()
                                                     }
                                                 } else {
-                                                    println!("{}", v2163);
+                                                    println!("{}", v2166);
                                                     ()
                                                 };
-                                                let mut v2196: Rc<dyn Fn(Rc<str>) -> ()> = v2167.borrow().l0.clone();
-                                                v2196(v2163);
-                                                US2::US2_Some(v2166, v2167, v2168, v2169, v2170, v2171)
+                                                let mut v2199: Rc<dyn Fn(Rc<str>) -> ()> = v2170.borrow().l0.clone();
+                                                v2199(v2166);
+                                                US2::US2_Some(v2169, v2170, v2171, v2172, v2173, v2174)
                                             };
-                                            let v2199: Rc<str> = format_real_74(v2113);
-                                            let v2209: Rc<str> = string_concat(&["spiral.process_rust / error / { exit_code = ", &*v2199, "; new_code_path = ", &*v1883, "; external_command = ", &*v2131, " }\n", &*v2114]);
-                                            let v2210: US10 = US10::US10_Some(v1881);
-                                            let v2211: US10 = US10::US10_None;
-                                            let v2212: US10 = US10::US10_None;
-                                            let v2213: US10 = US10::US10_None;
-                                            (v2210, v2211, v2212, v2213, v2209)
+                                            let v2202: Rc<str> = format_real_74(v2116);
+                                            let v2212: Rc<str> = string_concat(&["spiral.process_rust / error / { exit_code = ", &*v2202, "; new_code_path = ", &*v1886, "; external_command = ", &*v2134, " }\n", &*v2117]);
+                                            let v2213: US10 = US10::US10_Some(v1884);
+                                            let v2214: US10 = US10::US10_None;
+                                            let v2215: US10 = US10::US10_None;
+                                            let v2216: US10 = US10::US10_None;
+                                            (v2213, v2214, v2215, v2216, v2212)
                                         } else {
-                                            let v2214: Rc<dyn Fn(Rc<str>) -> US10> = some_c71();
-                                            let v2215: Rc<dyn Fn() -> Rc<str>> = closure108(v2114.clone());
-                                            let mut v2216: Rc<dyn Fn(Rc<str>) -> US10> = closure110(v1883.clone(), v2114, v2131);
-                                            let v2217: bool = cfg!(panic = "abort");
-                                            let v2250: US10 = if v2217 {
-                                                let v2218: Rc<dyn Fn() -> US10> = closure75(v2214, v2215);
-                                                let mut v2219: std::thread::Result<US10> = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (v2218)()));
-                                                let v2220: bool = v2219.is_ok();
-                                                if v2220 {
-                                                    let v2221: US10 = v2219.unwrap();
-                                                    v2221
+                                            let v2217: Rc<dyn Fn(Rc<str>) -> US10> = some_c71();
+                                            let v2218: Rc<dyn Fn() -> Rc<str>> = closure108(v2117.clone());
+                                            let mut v2219: Rc<dyn Fn(Rc<str>) -> US10> = closure110(v1886.clone(), v2117, v2134);
+                                            let v2220: bool = cfg!(panic = "abort");
+                                            let v2253: US10 = if v2220 {
+                                                let v2221: Rc<dyn Fn() -> US10> = closure75(v2217, v2218);
+                                                let mut v2222: std::thread::Result<US10> = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (v2221)()));
+                                                let v2223: bool = v2222.is_ok();
+                                                if v2223 {
+                                                    let v2224: US10 = v2222.unwrap();
+                                                    v2224
                                                 } else {
-                                                    let mut v2222: Box<dyn std::any::Any + Send> = v2219.err().unwrap();
-                                                    let v2223: bool = v2222.downcast_ref::<String>().is_some();
-                                                    let v2229: Rc<str> = if v2223 {
-                                                        let v2224: Rc<str> = Rc::<str>::from(v2222.downcast_ref::<String>().unwrap().as_str());
-                                                        v2224
+                                                    let mut v2225: Box<dyn std::any::Any + Send> = v2222.err().unwrap();
+                                                    let v2226: bool = v2225.downcast_ref::<String>().is_some();
+                                                    let v2232: Rc<str> = if v2226 {
+                                                        let v2227: Rc<str> = Rc::<str>::from(v2225.downcast_ref::<String>().unwrap().as_str());
+                                                        v2227
                                                     } else {
-                                                        let v2225: bool = v2222.downcast_ref::<&str>().is_some();
-                                                        if v2225 {
-                                                            let v2226: Rc<str> = Rc::<str>::from(*v2222.downcast_ref::<&str>().unwrap());
-                                                            v2226
+                                                        let v2228: bool = v2225.downcast_ref::<&str>().is_some();
+                                                        if v2228 {
+                                                            let v2229: Rc<str> = Rc::<str>::from(*v2225.downcast_ref::<&str>().unwrap());
+                                                            v2229
                                                         } else {
-                                                            let v2227: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("panic"); } LIT.with(|lit| lit.clone()) };
-                                                            v2227
+                                                            let v2230: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("panic"); } LIT.with(|lit| lit.clone()) };
+                                                            v2230
                                                         }
                                                     };
-                                                    let v2230: Rc<str> = v2229;
-                                                    v2216(v2230)
+                                                    let v2233: Rc<str> = v2232;
+                                                    v2219(v2233)
                                                 }
                                             } else {
-                                                let v2233: Box<dyn Fn(&std::panic::PanicHookInfo) + Sync + Send> = std::panic::take_hook();
-                                                let v2234: Box<dyn Fn(&std::panic::PanicHookInfo) + Sync + Send> = Box::new(|_| ());
-                                                std::panic::set_hook(v2234);
-                                                let v2235: Rc<dyn Fn() -> US10> = closure75(v2214, v2215);
-                                                let mut v2236: std::thread::Result<US10> = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (v2235)()));
-                                                let v2237: bool = v2236.is_ok();
-                                                let v2249: US10 = if v2237 {
-                                                    let v2238: US10 = v2236.unwrap();
-                                                    v2238
+                                                let v2236: Box<dyn Fn(&std::panic::PanicHookInfo) + Sync + Send> = std::panic::take_hook();
+                                                let v2237: Box<dyn Fn(&std::panic::PanicHookInfo) + Sync + Send> = Box::new(|_| ());
+                                                std::panic::set_hook(v2237);
+                                                let v2238: Rc<dyn Fn() -> US10> = closure75(v2217, v2218);
+                                                let mut v2239: std::thread::Result<US10> = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (v2238)()));
+                                                let v2240: bool = v2239.is_ok();
+                                                let v2252: US10 = if v2240 {
+                                                    let v2241: US10 = v2239.unwrap();
+                                                    v2241
                                                 } else {
-                                                    let mut v2239: Box<dyn std::any::Any + Send> = v2236.err().unwrap();
-                                                    let v2240: bool = v2239.downcast_ref::<String>().is_some();
-                                                    let v2246: Rc<str> = if v2240 {
-                                                        let v2241: Rc<str> = Rc::<str>::from(v2239.downcast_ref::<String>().unwrap().as_str());
-                                                        v2241
+                                                    let mut v2242: Box<dyn std::any::Any + Send> = v2239.err().unwrap();
+                                                    let v2243: bool = v2242.downcast_ref::<String>().is_some();
+                                                    let v2249: Rc<str> = if v2243 {
+                                                        let v2244: Rc<str> = Rc::<str>::from(v2242.downcast_ref::<String>().unwrap().as_str());
+                                                        v2244
                                                     } else {
-                                                        let v2242: bool = v2239.downcast_ref::<&str>().is_some();
-                                                        if v2242 {
-                                                            let v2243: Rc<str> = Rc::<str>::from(*v2239.downcast_ref::<&str>().unwrap());
-                                                            v2243
+                                                        let v2245: bool = v2242.downcast_ref::<&str>().is_some();
+                                                        if v2245 {
+                                                            let v2246: Rc<str> = Rc::<str>::from(*v2242.downcast_ref::<&str>().unwrap());
+                                                            v2246
                                                         } else {
-                                                            let v2244: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("panic"); } LIT.with(|lit| lit.clone()) };
-                                                            v2244
+                                                            let v2247: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("panic"); } LIT.with(|lit| lit.clone()) };
+                                                            v2247
                                                         }
                                                     };
-                                                    let v2247: Rc<str> = v2246;
-                                                    v2216(v2247)
+                                                    let v2250: Rc<str> = v2249;
+                                                    v2219(v2250)
                                                 };
-                                                std::panic::set_hook(v2233);
-                                                v2249
+                                                std::panic::set_hook(v2236);
+                                                v2252
                                             };
-                                            let v2255: Option<Rc<str>> = match v2250 {
+                                            let v2258: Option<Rc<str>> = match v2253 {
                                                 US10::US10_None => {
-                                                    let v2253: Option<Rc<str>> = None;
-                                                    v2253
+                                                    let v2256: Option<Rc<str>> = None;
+                                                    v2256
                                                 }
-                                                US10::US10_Some(v2251) => {
-                                                    let v2251: Rc<str> = v2251;
-                                                    let v2252: Option<Rc<str>> = Some(v2251.clone());
-                                                    v2252
+                                                US10::US10_Some(v2254) => {
+                                                    let v2254: Rc<str> = v2254;
+                                                    let v2255: Option<Rc<str>> = Some(v2254.clone());
+                                                    v2255
                                                 }
                                             };
-                                            let v2257: Rc<str> = v2255.unwrap();
-                                            let v2258: US10 = US10::US10_Some(v1881);
-                                            let v2259: US10 = US10::US10_Some(v2079);
-                                            let v2260: US10 = US10::US10_Some(v1883.clone());
-                                            let v2261: US10 = US10::US10_Some(v2257);
-                                            let v2262: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                                            (v2258, v2259, v2260, v2261, v2262)
+                                            let v2260: Rc<str> = v2258.unwrap();
+                                            let v2261: US10 = US10::US10_Some(v1884);
+                                            let v2262: US10 = US10::US10_Some(v2082);
+                                            let v2263: US10 = US10::US10_Some(v1886.clone());
+                                            let v2264: US10 = US10::US10_Some(v2260);
+                                            let v2265: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                                            (v2261, v2262, v2263, v2264, v2265)
                                         }
                                     } else {
-                                        let v2268: Rc<str> = Rc::<str>::from(format!("target/spiral/{}/target/wasm32-unknown-unknown/release/spiral_{}.wasm", v1689, v1684));
-                                        let v2275: Rc<str> = match &v1666 {
-                                            US46::US46_Some(v2269) => {
-                                                let v2269: US47 = v2269.clone();
-                                                match v2269 {
-                                                    US47::US47_Contract(v2271) => {
-                                                        let v2271: Rc<str> = v2271;
-                                                        v2271
+                                        let v2271: Rc<str> = Rc::<str>::from(format!("target/spiral/{}/target/wasm32-unknown-unknown/release/spiral_{}.wasm", v1692, v1687));
+                                        let v2278: Rc<str> = match &v1669 {
+                                            US46::US46_Some(v2272) => {
+                                                let v2272: US47 = v2272.clone();
+                                                match v2272 {
+                                                    US47::US47_Contract(v2274) => {
+                                                        let v2274: Rc<str> = v2274;
+                                                        v2274
                                                     }
-                                                    US47::US47_Wasm(v2270) => {
-                                                        let v2270: Rc<str> = v2270;
-                                                        v2270
+                                                    US47::US47_Wasm(v2273) => {
+                                                        let v2273: Rc<str> = v2273;
+                                                        v2273
                                                     }
                                                 }
                                             }
                                             _ => {
-                                                let v2274: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                                                v2274
+                                                let v2277: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                                                v2277
                                             }
                                         };
-                                        let v2276: Rc<str> = Rc::<str>::from(format!("workspace/target/release/spiral_wasm -w {} -t debug {}", v2268, v2275));
-                                        let v2277: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("AUTOMATION"); } LIT.with(|lit| lit.clone()) };
-                                        let v2278: Rc<str> = get_environment_variable_1(v2277);
-                                        let v2279: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("scripts/invoke-block.ps1"); } LIT.with(|lit| lit.clone()) };
-                                        let v2280: Rc<str> = Rc::<str>::from(format!("pwsh -c \"pwsh {} $env:SPIRAL_WASM_COMMAND -Linux -EnvironmentVariables AUTOMATION={}`nNEAR_RPC_TIMEOUT_SECS=100\"", v2279, v2278));
-                                        let v2281: bool = v2113 == 0i32;
-                                        if v2281 {
-                                            let v2282: Option<std::sync::Arc<std::sync::atomic::AtomicBool>> = None;
-                                            let v2284: Option<Rc<dyn Fn(i32, Rc<str>, bool) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>>> = None;
-                                            let v2285: Option<Rc<dyn Fn(std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>) -> ()>> = None;
-                                            let v2286: Option<Rc<str>> = None;
-                                            let v2287: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_WASM_COMMAND"); } LIT.with(|lit| lit.clone()) };
-                                            let v2288: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v2287, v2276)]));
-                                            let v2289: Option<Rc<str>> = Some(v1759.clone());
-                                            let v2290: bool = true;
-                                            let v2291: bool = true;
-                                            let (mut v2292, mut v2293): (i32, Rc<str>) = execute_with_options_75(v2280, v2282, v2288, v2284, v2285, v2290, v2289, v2291);
-                                            let v2294: bool = v2292 == 0i32;
-                                            if v2294 {
-                                                let v2295: US10 = US10::US10_Some(v1881);
-                                                let v2296: US10 = US10::US10_Some(v2079);
-                                                let v2297: US10 = US10::US10_Some(v1883.clone());
-                                                let v2298: US10 = US10::US10_Some(v2293);
-                                                let v2299: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                                                (v2295, v2296, v2297, v2298, v2299)
+                                        let v2279: Rc<str> = Rc::<str>::from(format!("workspace/target/release/spiral_wasm -w {} -t debug {}", v2271, v2278));
+                                        let v2280: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("AUTOMATION"); } LIT.with(|lit| lit.clone()) };
+                                        let v2281: Rc<str> = get_environment_variable_1(v2280);
+                                        let v2282: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("scripts/invoke-block.ps1"); } LIT.with(|lit| lit.clone()) };
+                                        let v2283: Rc<str> = Rc::<str>::from(format!("pwsh -c \"pwsh {} $env:SPIRAL_WASM_COMMAND -Linux -EnvironmentVariables AUTOMATION={}`nNEAR_RPC_TIMEOUT_SECS=100\"", v2282, v2281));
+                                        let v2284: bool = v2116 == 0i32;
+                                        if v2284 {
+                                            let v2285: Option<std::sync::Arc<std::sync::atomic::AtomicBool>> = None;
+                                            let v2287: Option<Rc<dyn Fn(i32, Rc<str>, bool) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>>> = None;
+                                            let v2288: Option<Rc<dyn Fn(std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>) -> ()>> = None;
+                                            let v2289: Option<Rc<str>> = None;
+                                            let v2290: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_WASM_COMMAND"); } LIT.with(|lit| lit.clone()) };
+                                            let v2291: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v2290, v2279)]));
+                                            let v2292: Option<Rc<str>> = Some(v1762.clone());
+                                            let v2293: bool = true;
+                                            let v2294: bool = true;
+                                            let (mut v2295, mut v2296): (i32, Rc<str>) = execute_with_options_75(v2283, v2285, v2291, v2287, v2288, v2293, v2292, v2294);
+                                            let v2297: bool = v2295 == 0i32;
+                                            if v2297 {
+                                                let v2298: US10 = US10::US10_Some(v1884);
+                                                let v2299: US10 = US10::US10_Some(v2082);
+                                                let v2300: US10 = US10::US10_Some(v1886.clone());
+                                                let v2301: US10 = US10::US10_Some(v2296);
+                                                let v2302: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                                                (v2298, v2299, v2300, v2301, v2302)
                                             } else {
-                                                let v2301: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c3();
-                                                { let _ = spiral_trace_hold(&v2301); };
-                                                let v2303: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c4();
-                                                let (mut v2304, mut v2305, mut v2306, mut v2307, mut v2308, mut v2309): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2303);
-                                                let v2310: US0 = v2308.borrow().l0.clone();
-                                                let v2315: i32 = match v2310 {
+                                                let v2304: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c3();
+                                                { let _ = spiral_trace_hold(&v2304); };
+                                                let v2306: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c4();
+                                                let (mut v2307, mut v2308, mut v2309, mut v2310, mut v2311, mut v2312): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2306);
+                                                let v2313: US0 = v2311.borrow().l0.clone();
+                                                let v2318: i32 = match v2313 {
                                                     US0::US0_Critical => {
                                                         50i32
                                                     }
@@ -20725,88 +20731,88 @@ main()", v499));
                                                         40i32
                                                     }
                                                 };
-                                                let v2316: bool = v2306.borrow().l0;
-                                                let v2317: bool = v2316 == false;
-                                                let v2319: bool = if v2317 {
+                                                let v2319: bool = v2309.borrow().l0;
+                                                let v2320: bool = v2319 == false;
+                                                let v2322: bool = if v2320 {
                                                     false
                                                 } else {
-                                                    let v2318: bool = 50i32 >= v2315;
-                                                    v2318
+                                                    let v2321: bool = 50i32 >= v2318;
+                                                    v2321
                                                 };
-                                                let v2320: bool = v2319 == false;
-                                                let v2366: US2 = if v2320 {
+                                                let v2323: bool = v2322 == false;
+                                                let v2369: US2 = if v2323 {
                                                     US2::US2_None
                                                 } else {
-                                                    { let _ = spiral_trace_hold(&v2301); };
-                                                    let (mut v2324, mut v2325, mut v2326, mut v2327, mut v2328, mut v2329): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2303);
-                                                    let v2330: Rc<str> = Rc::<str>::from(format!("\n{}", v2293));
-                                                    let v2331: Rc<str> = method207(&v2324, &v2325, &v2326, &v2327, &v2328, v2329.clone(), &v2324, &v2325, &v2326, &v2327, &v2328, v2329.clone(), v2292, v1883.clone(), v2114, v1621, v2330);
-                                                    { let _ = spiral_trace_hold(&v2301); };
-                                                    let (mut v2334, mut v2335, mut v2336, mut v2337, mut v2338, mut v2339): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2303);
-                                                    let v2340: i64 = v2334.borrow().l0;
-                                                    let v2341: i64 = v2340.wrapping_add(1i64);
-                                                    v2334.borrow_mut().l0 = v2341;
-                                                    let v2342: Rc<dyn Fn(Rc<str>) -> ()> = closure6();
-                                                    let v2343: bool = cfg!(target_arch = "wasm32");
-                                                    if v2343 {
-                                                        let v2344: Rc<str> = v2337.borrow().l0.clone();
-                                                        let v2345: bool = &*v2344 == "";
-                                                        let v2352: Rc<str> = if v2345 {
-                                                            v2331.clone()
+                                                    { let _ = spiral_trace_hold(&v2304); };
+                                                    let (mut v2327, mut v2328, mut v2329, mut v2330, mut v2331, mut v2332): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2306);
+                                                    let v2333: Rc<str> = Rc::<str>::from(format!("\n{}", v2296));
+                                                    let v2334: Rc<str> = method207(&v2327, &v2328, &v2329, &v2330, &v2331, v2332.clone(), &v2327, &v2328, &v2329, &v2330, &v2331, v2332.clone(), v2295, v1886.clone(), v2117, v1624, v2333);
+                                                    { let _ = spiral_trace_hold(&v2304); };
+                                                    let (mut v2337, mut v2338, mut v2339, mut v2340, mut v2341, mut v2342): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2306);
+                                                    let v2343: i64 = v2337.borrow().l0;
+                                                    let v2344: i64 = v2343.wrapping_add(1i64);
+                                                    v2337.borrow_mut().l0 = v2344;
+                                                    let v2345: Rc<dyn Fn(Rc<str>) -> ()> = closure6();
+                                                    let v2346: bool = cfg!(target_arch = "wasm32");
+                                                    if v2346 {
+                                                        let v2347: Rc<str> = v2340.borrow().l0.clone();
+                                                        let v2348: bool = &*v2347 == "";
+                                                        let v2355: Rc<str> = if v2348 {
+                                                            v2334.clone()
                                                         } else {
-                                                            let v2346: bool = &*v2331 == "";
-                                                            if v2346 {
-                                                                let v2347: Rc<str> = v2337.borrow().l0.clone();
-                                                                v2347
-                                                            } else {
-                                                                let v2348: Rc<str> = v2337.borrow().l0.clone();
-                                                                let v2350: Rc<str> = string_concat(&[&*v2348, "\n", &*v2331]);
+                                                            let v2349: bool = &*v2334 == "";
+                                                            if v2349 {
+                                                                let v2350: Rc<str> = v2340.borrow().l0.clone();
                                                                 v2350
+                                                            } else {
+                                                                let v2351: Rc<str> = v2340.borrow().l0.clone();
+                                                                let v2353: Rc<str> = string_concat(&[&*v2351, "\n", &*v2334]);
+                                                                v2353
                                                             }
                                                         };
-                                                        let v2354: usize = v2352.len();
-                                                        let v2355: i32 = ((v2354) as i32);
-                                                        let v2356: i32 = v2355.wrapping_add(14999i32);
-                                                        let v2357: i32 = v2356.wrapping_div(15000i32);
-                                                        let v2358: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                                                        let v2359: bool = v2331 != v2358 ;
-                                                        let v2361: bool = if v2359 {
-                                                            let v2360: bool = v2357 <= 1i32;
-                                                            v2360
+                                                        let v2357: usize = v2355.len();
+                                                        let v2358: i32 = ((v2357) as i32);
+                                                        let v2359: i32 = v2358.wrapping_add(14999i32);
+                                                        let v2360: i32 = v2359.wrapping_div(15000i32);
+                                                        let v2361: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                                                        let v2362: bool = v2334 != v2361 ;
+                                                        let v2364: bool = if v2362 {
+                                                            let v2363: bool = v2360 <= 1i32;
+                                                            v2363
                                                         } else {
                                                             false
                                                         };
-                                                        if v2361 {
-                                                            v2337.borrow_mut().l0 = v2352;
+                                                        if v2364 {
+                                                            v2340.borrow_mut().l0 = v2355;
                                                             ()
                                                         } else {
-                                                            v2337.borrow_mut().l0 = v2358;
-                                                            { #[cfg(target_arch = "wasm32")] spiral_trace_near_log(&v2352); };
+                                                            v2340.borrow_mut().l0 = v2361;
+                                                            { #[cfg(target_arch = "wasm32")] spiral_trace_near_log(&v2355); };
                                                             ()
                                                         }
                                                     } else {
-                                                        println!("{}", v2331);
+                                                        println!("{}", v2334);
                                                         ()
                                                     };
-                                                    let mut v2364: Rc<dyn Fn(Rc<str>) -> ()> = v2335.borrow().l0.clone();
-                                                    v2364(v2331);
-                                                    US2::US2_Some(v2334, v2335, v2336, v2337, v2338, v2339)
+                                                    let mut v2367: Rc<dyn Fn(Rc<str>) -> ()> = v2338.borrow().l0.clone();
+                                                    v2367(v2334);
+                                                    US2::US2_Some(v2337, v2338, v2339, v2340, v2341, v2342)
                                                 };
-                                                let v2367: Rc<str> = format_real_74(v2292);
-                                                let v2375: Rc<str> = string_concat(&["spiral.process_rust / wasm error / { exit_code = ", &*v2367, "; new_code_path = ", &*v1883, " }\n", &*v2293]);
-                                                let v2376: US10 = US10::US10_Some(v1881);
-                                                let v2377: US10 = US10::US10_None;
-                                                let v2378: US10 = US10::US10_None;
-                                                let v2379: US10 = US10::US10_None;
-                                                (v2376, v2377, v2378, v2379, v2375)
+                                                let v2370: Rc<str> = format_real_74(v2295);
+                                                let v2378: Rc<str> = string_concat(&["spiral.process_rust / wasm error / { exit_code = ", &*v2370, "; new_code_path = ", &*v1886, " }\n", &*v2296]);
+                                                let v2379: US10 = US10::US10_Some(v1884);
+                                                let v2380: US10 = US10::US10_None;
+                                                let v2381: US10 = US10::US10_None;
+                                                let v2382: US10 = US10::US10_None;
+                                                (v2379, v2380, v2381, v2382, v2378)
                                             }
                                         } else {
-                                            let v2386: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c3();
-                                            { let _ = spiral_trace_hold(&v2386); };
-                                            let v2388: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c4();
-                                            let (mut v2389, mut v2390, mut v2391, mut v2392, mut v2393, mut v2394): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2388);
-                                            let v2395: US0 = v2393.borrow().l0.clone();
-                                            let v2400: i32 = match v2395 {
+                                            let v2389: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c3();
+                                            { let _ = spiral_trace_hold(&v2389); };
+                                            let v2391: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c4();
+                                            let (mut v2392, mut v2393, mut v2394, mut v2395, mut v2396, mut v2397): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2391);
+                                            let v2398: US0 = v2396.borrow().l0.clone();
+                                            let v2403: i32 = match v2398 {
                                                 US0::US0_Critical => {
                                                     50i32
                                                 }
@@ -20823,94 +20829,94 @@ main()", v499));
                                                     40i32
                                                 }
                                             };
-                                            let v2401: bool = v2391.borrow().l0;
-                                            let v2402: bool = v2401 == false;
-                                            let v2404: bool = if v2402 {
+                                            let v2404: bool = v2394.borrow().l0;
+                                            let v2405: bool = v2404 == false;
+                                            let v2407: bool = if v2405 {
                                                 false
                                             } else {
-                                                let v2403: bool = 50i32 >= v2400;
-                                                v2403
+                                                let v2406: bool = 50i32 >= v2403;
+                                                v2406
                                             };
-                                            let v2405: bool = v2404 == false;
-                                            let v2451: US2 = if v2405 {
+                                            let v2408: bool = v2407 == false;
+                                            let v2454: US2 = if v2408 {
                                                 US2::US2_None
                                             } else {
-                                                { let _ = spiral_trace_hold(&v2386); };
-                                                let (mut v2409, mut v2410, mut v2411, mut v2412, mut v2413, mut v2414): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2388);
-                                                let v2415: Rc<str> = Rc::<str>::from(format!("\n{}", v2114));
-                                                let v2416: Rc<str> = method208(&v2409, &v2410, &v2411, &v2412, &v2413, v2414.clone(), &v2409, &v2410, &v2411, &v2412, &v2413, v2414.clone(), v2113, v1883.clone(), v2268, v2280, v1621, v2415);
-                                                { let _ = spiral_trace_hold(&v2386); };
-                                                let (mut v2419, mut v2420, mut v2421, mut v2422, mut v2423, mut v2424): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2388);
-                                                let v2425: i64 = v2419.borrow().l0;
-                                                let v2426: i64 = v2425.wrapping_add(1i64);
-                                                v2419.borrow_mut().l0 = v2426;
-                                                let v2427: Rc<dyn Fn(Rc<str>) -> ()> = closure6();
-                                                let v2428: bool = cfg!(target_arch = "wasm32");
-                                                if v2428 {
-                                                    let v2429: Rc<str> = v2422.borrow().l0.clone();
-                                                    let v2430: bool = &*v2429 == "";
-                                                    let v2437: Rc<str> = if v2430 {
-                                                        v2416.clone()
+                                                { let _ = spiral_trace_hold(&v2389); };
+                                                let (mut v2412, mut v2413, mut v2414, mut v2415, mut v2416, mut v2417): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2391);
+                                                let v2418: Rc<str> = Rc::<str>::from(format!("\n{}", v2117));
+                                                let v2419: Rc<str> = method208(&v2412, &v2413, &v2414, &v2415, &v2416, v2417.clone(), &v2412, &v2413, &v2414, &v2415, &v2416, v2417.clone(), v2116, v1886.clone(), v2271, v2283, v1624, v2418);
+                                                { let _ = spiral_trace_hold(&v2389); };
+                                                let (mut v2422, mut v2423, mut v2424, mut v2425, mut v2426, mut v2427): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2391);
+                                                let v2428: i64 = v2422.borrow().l0;
+                                                let v2429: i64 = v2428.wrapping_add(1i64);
+                                                v2422.borrow_mut().l0 = v2429;
+                                                let v2430: Rc<dyn Fn(Rc<str>) -> ()> = closure6();
+                                                let v2431: bool = cfg!(target_arch = "wasm32");
+                                                if v2431 {
+                                                    let v2432: Rc<str> = v2425.borrow().l0.clone();
+                                                    let v2433: bool = &*v2432 == "";
+                                                    let v2440: Rc<str> = if v2433 {
+                                                        v2419.clone()
                                                     } else {
-                                                        let v2431: bool = &*v2416 == "";
-                                                        if v2431 {
-                                                            let v2432: Rc<str> = v2422.borrow().l0.clone();
-                                                            v2432
-                                                        } else {
-                                                            let v2433: Rc<str> = v2422.borrow().l0.clone();
-                                                            let v2435: Rc<str> = string_concat(&[&*v2433, "\n", &*v2416]);
+                                                        let v2434: bool = &*v2419 == "";
+                                                        if v2434 {
+                                                            let v2435: Rc<str> = v2425.borrow().l0.clone();
                                                             v2435
+                                                        } else {
+                                                            let v2436: Rc<str> = v2425.borrow().l0.clone();
+                                                            let v2438: Rc<str> = string_concat(&[&*v2436, "\n", &*v2419]);
+                                                            v2438
                                                         }
                                                     };
-                                                    let v2439: usize = v2437.len();
-                                                    let v2440: i32 = ((v2439) as i32);
-                                                    let v2441: i32 = v2440.wrapping_add(14999i32);
-                                                    let v2442: i32 = v2441.wrapping_div(15000i32);
-                                                    let v2443: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                                                    let v2444: bool = v2416 != v2443 ;
-                                                    let v2446: bool = if v2444 {
-                                                        let v2445: bool = v2442 <= 1i32;
-                                                        v2445
+                                                    let v2442: usize = v2440.len();
+                                                    let v2443: i32 = ((v2442) as i32);
+                                                    let v2444: i32 = v2443.wrapping_add(14999i32);
+                                                    let v2445: i32 = v2444.wrapping_div(15000i32);
+                                                    let v2446: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                                                    let v2447: bool = v2419 != v2446 ;
+                                                    let v2449: bool = if v2447 {
+                                                        let v2448: bool = v2445 <= 1i32;
+                                                        v2448
                                                     } else {
                                                         false
                                                     };
-                                                    if v2446 {
-                                                        v2422.borrow_mut().l0 = v2437;
+                                                    if v2449 {
+                                                        v2425.borrow_mut().l0 = v2440;
                                                         ()
                                                     } else {
-                                                        v2422.borrow_mut().l0 = v2443;
-                                                        { #[cfg(target_arch = "wasm32")] spiral_trace_near_log(&v2437); };
+                                                        v2425.borrow_mut().l0 = v2446;
+                                                        { #[cfg(target_arch = "wasm32")] spiral_trace_near_log(&v2440); };
                                                         ()
                                                     }
                                                 } else {
-                                                    println!("{}", v2416);
+                                                    println!("{}", v2419);
                                                     ()
                                                 };
-                                                let mut v2449: Rc<dyn Fn(Rc<str>) -> ()> = v2420.borrow().l0.clone();
-                                                v2449(v2416);
-                                                US2::US2_Some(v2419, v2420, v2421, v2422, v2423, v2424)
+                                                let mut v2452: Rc<dyn Fn(Rc<str>) -> ()> = v2423.borrow().l0.clone();
+                                                v2452(v2419);
+                                                US2::US2_Some(v2422, v2423, v2424, v2425, v2426, v2427)
                                             };
-                                            let v2452: Rc<str> = format_real_74(v2113);
-                                            let v2460: Rc<str> = string_concat(&["spiral.process_rust / cargo error / { exit_code = ", &*v2452, "; new_code_path = ", &*v1883, " }\n", &*v2114]);
-                                            let v2461: US10 = US10::US10_Some(v1881);
-                                            let v2462: US10 = US10::US10_None;
-                                            let v2463: US10 = US10::US10_None;
-                                            let v2464: US10 = US10::US10_None;
-                                            (v2461, v2462, v2463, v2464, v2460)
+                                            let v2455: Rc<str> = format_real_74(v2116);
+                                            let v2463: Rc<str> = string_concat(&["spiral.process_rust / cargo error / { exit_code = ", &*v2455, "; new_code_path = ", &*v1886, " }\n", &*v2117]);
+                                            let v2464: US10 = US10::US10_Some(v1884);
+                                            let v2465: US10 = US10::US10_None;
+                                            let v2466: US10 = US10::US10_None;
+                                            let v2467: US10 = US10::US10_None;
+                                            (v2464, v2465, v2466, v2467, v2463)
                                         }
                                     };
-                                    let v2475: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("CI"); } LIT.with(|lit| lit.clone()) };
-                                    let v2476: Rc<str> = get_environment_variable_1(v2475);
-                                    let v2478: bool = if v1621 {
+                                    let v2478: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("CI"); } LIT.with(|lit| lit.clone()) };
+                                    let v2479: Rc<str> = get_environment_variable_1(v2478);
+                                    let v2481: bool = if v1624 {
                                         true
                                     } else {
-                                        let v2477: bool = &*v2476 != "";
-                                        v2477
+                                        let v2480: bool = &*v2479 != "";
+                                        v2480
                                     };
-                                    if v2478 {
-                                        let v2479: bool = true;
-                                        directory_delete_55(v2479, v1763);
-                                        let v2480: bool = match v1666 {
+                                    if v2481 {
+                                        let v2482: bool = true;
+                                        directory_delete_55(v2482, v1766);
+                                        let v2483: bool = match v1669 {
                                             US46::US46_None => {
                                                 true
                                             }
@@ -20918,44 +20924,44 @@ main()", v499));
                                                 false
                                             }
                                         };
-                                        let v2481: bool = v2480 != true;
-                                        let v2484: Rc<str> = if v2481 {
-                                            let v2482: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("wasm32-unknown-unknown/release"); } LIT.with(|lit| lit.clone()) };
-                                            v2482
+                                        let v2484: bool = v2483 != true;
+                                        let v2487: Rc<str> = if v2484 {
+                                            let v2485: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("wasm32-unknown-unknown/release"); } LIT.with(|lit| lit.clone()) };
+                                            v2485
                                         } else {
-                                            let v2483: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("debug"); } LIT.with(|lit| lit.clone()) };
-                                            v2483
+                                            let v2486: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("debug"); } LIT.with(|lit| lit.clone()) };
+                                            v2486
                                         };
-                                        let v2485: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                                        let v2486: Rc<str> = Rc::<str>::from(format!("target/{}/spiral_{}{}", v2484, v1684, v2485));
-                                        let v2487: Rc<str> = method40(v1766.clone(), v2486);
-                                        let v2488: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(".wasm"); } LIT.with(|lit| lit.clone()) };
-                                        let v2489: Rc<str> = Rc::<str>::from(format!("target/{}/spiral_{}{}", v2484, v1684, v2488));
-                                        let v2490: Rc<str> = method40(v1766.clone(), v2489);
-                                        let v2491: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(".pdb"); } LIT.with(|lit| lit.clone()) };
-                                        let v2492: Rc<str> = Rc::<str>::from(format!("target/{}/spiral_{}{}", v2484, v1684, v2491));
-                                        let v2493: Rc<str> = method40(v1766.clone(), v2492);
-                                        let v2494: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(".exe"); } LIT.with(|lit| lit.clone()) };
-                                        let v2495: Rc<str> = Rc::<str>::from(format!("target/{}/spiral_{}{}", v2484, v1684, v2494));
-                                        let v2496: Rc<str> = method40(v1766.clone(), v2495);
-                                        let v2497: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(".d"); } LIT.with(|lit| lit.clone()) };
-                                        let v2498: Rc<str> = Rc::<str>::from(format!("target/{}/spiral_{}{}", v2484, v1684, v2497));
-                                        let v2499: Rc<str> = method40(v1766, v2498);
-                                        let v2500: bool = file_exists_47(v2487.clone());
-                                        let v2501: bool = file_exists_47(v2490.clone());
-                                        let v2502: bool = file_exists_47(v2493.clone());
-                                        let v2503: bool = file_exists_47(v2496.clone());
-                                        let v2504: bool = file_exists_47(v2499.clone());
-                                        let v2505: bool = matches!(option_env!("SPIRAL_TRACE_FLOOR"), Some("Debug" | "Info" | "Warning" | "Critical"));
-                                        let v2527: bool = if v2505 {
+                                        let v2488: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                                        let v2489: Rc<str> = Rc::<str>::from(format!("target/{}/spiral_{}{}", v2487, v1687, v2488));
+                                        let v2490: Rc<str> = method40(v1769.clone(), v2489);
+                                        let v2491: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(".wasm"); } LIT.with(|lit| lit.clone()) };
+                                        let v2492: Rc<str> = Rc::<str>::from(format!("target/{}/spiral_{}{}", v2487, v1687, v2491));
+                                        let v2493: Rc<str> = method40(v1769.clone(), v2492);
+                                        let v2494: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(".pdb"); } LIT.with(|lit| lit.clone()) };
+                                        let v2495: Rc<str> = Rc::<str>::from(format!("target/{}/spiral_{}{}", v2487, v1687, v2494));
+                                        let v2496: Rc<str> = method40(v1769.clone(), v2495);
+                                        let v2497: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(".exe"); } LIT.with(|lit| lit.clone()) };
+                                        let v2498: Rc<str> = Rc::<str>::from(format!("target/{}/spiral_{}{}", v2487, v1687, v2497));
+                                        let v2499: Rc<str> = method40(v1769.clone(), v2498);
+                                        let v2500: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(".d"); } LIT.with(|lit| lit.clone()) };
+                                        let v2501: Rc<str> = Rc::<str>::from(format!("target/{}/spiral_{}{}", v2487, v1687, v2500));
+                                        let v2502: Rc<str> = method40(v1769, v2501);
+                                        let v2503: bool = file_exists_47(v2490.clone());
+                                        let v2504: bool = file_exists_47(v2493.clone());
+                                        let v2505: bool = file_exists_47(v2496.clone());
+                                        let v2506: bool = file_exists_47(v2499.clone());
+                                        let v2507: bool = file_exists_47(v2502.clone());
+                                        let v2508: bool = matches!(option_env!("SPIRAL_TRACE_FLOOR"), Some("Debug" | "Info" | "Warning" | "Critical"));
+                                        let v2530: bool = if v2508 {
                                             true
                                         } else {
-                                            let v2507: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c3();
-                                            { let _ = spiral_trace_hold(&v2507); };
-                                            let v2509: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c4();
-                                            let (mut v2510, mut v2511, mut v2512, mut v2513, mut v2514, mut v2515): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2509);
-                                            let v2516: US0 = v2514.borrow().l0.clone();
-                                            let v2521: i32 = match v2516 {
+                                            let v2510: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c3();
+                                            { let _ = spiral_trace_hold(&v2510); };
+                                            let v2512: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c4();
+                                            let (mut v2513, mut v2514, mut v2515, mut v2516, mut v2517, mut v2518): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2512);
+                                            let v2519: US0 = v2517.borrow().l0.clone();
+                                            let v2524: i32 = match v2519 {
                                                 US0::US0_Critical => {
                                                     50i32
                                                 }
@@ -20972,120 +20978,120 @@ main()", v499));
                                                     40i32
                                                 }
                                             };
-                                            let v2522: bool = v2512.borrow().l0;
-                                            let v2523: bool = v2522 == false;
-                                            let v2525: bool = if v2523 {
+                                            let v2525: bool = v2515.borrow().l0;
+                                            let v2526: bool = v2525 == false;
+                                            let v2528: bool = if v2526 {
                                                 false
                                             } else {
-                                                let v2524: bool = 10i32 >= v2521;
-                                                v2524
+                                                let v2527: bool = 10i32 >= v2524;
+                                                v2527
                                             };
-                                            let v2526: bool = v2525 == false;
-                                            v2526
+                                            let v2529: bool = v2528 == false;
+                                            v2529
                                         };
-                                        let v2573: US2 = if v2527 {
+                                        let v2576: US2 = if v2530 {
                                             US2::US2_None
                                         } else {
-                                            let v2530: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c3();
-                                            { let _ = spiral_trace_hold(&v2530); };
-                                            let v2532: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c4();
-                                            let (mut v2533, mut v2534, mut v2535, mut v2536, mut v2537, mut v2538): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2532);
-                                            let v2539: Rc<str> = method209(&v2533, &v2534, &v2535, &v2536, &v2537, v2538.clone(), &v2533, &v2534, &v2535, &v2536, &v2537, v2538.clone(), v1883, v2499.clone(), v2504, v2496.clone(), v2503, v2493.clone(), v2502, v2490.clone(), v2501, v2487.clone(), v2500);
-                                            { let _ = spiral_trace_hold(&v2530); };
-                                            let (mut v2542, mut v2543, mut v2544, mut v2545, mut v2546, mut v2547): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2532);
-                                            let v2548: i64 = v2542.borrow().l0;
-                                            let v2549: i64 = v2548.wrapping_add(1i64);
-                                            v2542.borrow_mut().l0 = v2549;
-                                            let v2550: Rc<dyn Fn(Rc<str>) -> ()> = closure6();
-                                            let v2551: bool = cfg!(target_arch = "wasm32");
-                                            if v2551 {
-                                                let v2552: Rc<str> = v2545.borrow().l0.clone();
-                                                let v2553: bool = &*v2552 == "";
-                                                let v2560: Rc<str> = if v2553 {
-                                                    v2539.clone()
+                                            let v2533: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c3();
+                                            { let _ = spiral_trace_hold(&v2533); };
+                                            let v2535: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c4();
+                                            let (mut v2536, mut v2537, mut v2538, mut v2539, mut v2540, mut v2541): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2535);
+                                            let v2542: Rc<str> = method209(&v2536, &v2537, &v2538, &v2539, &v2540, v2541.clone(), &v2536, &v2537, &v2538, &v2539, &v2540, v2541.clone(), v1886, v2502.clone(), v2507, v2499.clone(), v2506, v2496.clone(), v2505, v2493.clone(), v2504, v2490.clone(), v2503);
+                                            { let _ = spiral_trace_hold(&v2533); };
+                                            let (mut v2545, mut v2546, mut v2547, mut v2548, mut v2549, mut v2550): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2535);
+                                            let v2551: i64 = v2545.borrow().l0;
+                                            let v2552: i64 = v2551.wrapping_add(1i64);
+                                            v2545.borrow_mut().l0 = v2552;
+                                            let v2553: Rc<dyn Fn(Rc<str>) -> ()> = closure6();
+                                            let v2554: bool = cfg!(target_arch = "wasm32");
+                                            if v2554 {
+                                                let v2555: Rc<str> = v2548.borrow().l0.clone();
+                                                let v2556: bool = &*v2555 == "";
+                                                let v2563: Rc<str> = if v2556 {
+                                                    v2542.clone()
                                                 } else {
-                                                    let v2554: bool = &*v2539 == "";
-                                                    if v2554 {
-                                                        let v2555: Rc<str> = v2545.borrow().l0.clone();
-                                                        v2555
-                                                    } else {
-                                                        let v2556: Rc<str> = v2545.borrow().l0.clone();
-                                                        let v2558: Rc<str> = string_concat(&[&*v2556, "\n", &*v2539]);
+                                                    let v2557: bool = &*v2542 == "";
+                                                    if v2557 {
+                                                        let v2558: Rc<str> = v2548.borrow().l0.clone();
                                                         v2558
+                                                    } else {
+                                                        let v2559: Rc<str> = v2548.borrow().l0.clone();
+                                                        let v2561: Rc<str> = string_concat(&[&*v2559, "\n", &*v2542]);
+                                                        v2561
                                                     }
                                                 };
-                                                let v2562: usize = v2560.len();
-                                                let v2563: i32 = ((v2562) as i32);
-                                                let v2564: i32 = v2563.wrapping_add(14999i32);
-                                                let v2565: i32 = v2564.wrapping_div(15000i32);
-                                                let v2566: bool = v2539 != v2485 ;
-                                                let v2568: bool = if v2566 {
-                                                    let v2567: bool = v2565 <= 1i32;
-                                                    v2567
+                                                let v2565: usize = v2563.len();
+                                                let v2566: i32 = ((v2565) as i32);
+                                                let v2567: i32 = v2566.wrapping_add(14999i32);
+                                                let v2568: i32 = v2567.wrapping_div(15000i32);
+                                                let v2569: bool = v2542 != v2488 ;
+                                                let v2571: bool = if v2569 {
+                                                    let v2570: bool = v2568 <= 1i32;
+                                                    v2570
                                                 } else {
                                                     false
                                                 };
-                                                if v2568 {
-                                                    v2545.borrow_mut().l0 = v2560;
+                                                if v2571 {
+                                                    v2548.borrow_mut().l0 = v2563;
                                                     ()
                                                 } else {
-                                                    v2545.borrow_mut().l0 = v2485;
-                                                    { #[cfg(target_arch = "wasm32")] spiral_trace_near_log(&v2560); };
+                                                    v2548.borrow_mut().l0 = v2488;
+                                                    { #[cfg(target_arch = "wasm32")] spiral_trace_near_log(&v2563); };
                                                     ()
                                                 }
                                             } else {
-                                                println!("{}", v2539);
+                                                println!("{}", v2542);
                                                 ()
                                             };
-                                            let mut v2571: Rc<dyn Fn(Rc<str>) -> ()> = v2543.borrow().l0.clone();
-                                            v2571(v2539);
-                                            US2::US2_Some(v2542, v2543, v2544, v2545, v2546, v2547)
+                                            let mut v2574: Rc<dyn Fn(Rc<str>) -> ()> = v2546.borrow().l0.clone();
+                                            v2574(v2542);
+                                            US2::US2_Some(v2545, v2546, v2547, v2548, v2549, v2550)
                                         };
-                                        let v2577: Rc<UH10> = if v2500 {
-                                            let v2574: Rc<UH10> = { thread_local!{ static CASE: Rc<UH10> = Rc::new(UH10::UH10_Nil); } CASE.with(|case| case.clone()) };
-                                            Rc::new(UH10::UH10_Cons(v2487, v2500, v2574))
+                                        let v2580: Rc<UH10> = if v2503 {
+                                            let v2577: Rc<UH10> = { thread_local!{ static CASE: Rc<UH10> = Rc::new(UH10::UH10_Nil); } CASE.with(|case| case.clone()) };
+                                            Rc::new(UH10::UH10_Cons(v2490, v2503, v2577))
                                         } else {
                                             { thread_local!{ static CASE: Rc<UH10> = Rc::new(UH10::UH10_Nil); } CASE.with(|case| case.clone()) }
                                         };
-                                        let v2579: Rc<UH10> = if v2501 {
-                                            Rc::new(UH10::UH10_Cons(v2490, v2501, v2577))
+                                        let v2582: Rc<UH10> = if v2504 {
+                                            Rc::new(UH10::UH10_Cons(v2493, v2504, v2580))
                                         } else {
-                                            v2577
+                                            v2580
                                         };
-                                        let v2581: Rc<UH10> = if v2502 {
-                                            Rc::new(UH10::UH10_Cons(v2493, v2502, v2579))
+                                        let v2584: Rc<UH10> = if v2505 {
+                                            Rc::new(UH10::UH10_Cons(v2496, v2505, v2582))
                                         } else {
-                                            v2579
+                                            v2582
                                         };
-                                        let v2583: Rc<UH10> = if v2503 {
-                                            Rc::new(UH10::UH10_Cons(v2496, v2503, v2581))
+                                        let v2586: Rc<UH10> = if v2506 {
+                                            Rc::new(UH10::UH10_Cons(v2499, v2506, v2584))
                                         } else {
-                                            v2581
+                                            v2584
                                         };
-                                        let v2585: Rc<UH10> = if v2504 {
-                                            Rc::new(UH10::UH10_Cons(v2499, v2504, v2583))
+                                        let v2588: Rc<UH10> = if v2507 {
+                                            Rc::new(UH10::UH10_Cons(v2502, v2507, v2586))
                                         } else {
-                                            v2583
+                                            v2586
                                         };
-                                        method216(v2585)
+                                        method216(v2588)
                                     };
-                                    let v2586: bool = &*v2474 != "";
-                                    if v2586 {
-                                        { eprintln!("{}", v2474); std::process::exit(1) };
+                                    let v2589: bool = &*v2477 != "";
+                                    if v2589 {
+                                        { eprintln!("{}", v2477); std::process::exit(1) };
                                         ()
                                     };
-                                    (v2470, v2471, v2472, v2473)
+                                    (v2473, v2474, v2475, v2476)
                                 } else {
-                                    let v2587: bool = matches!(option_env!("SPIRAL_TRACE_FLOOR"), Some("Info" | "Warning" | "Critical"));
-                                    let v2609: bool = if v2587 {
+                                    let v2590: bool = matches!(option_env!("SPIRAL_TRACE_FLOOR"), Some("Info" | "Warning" | "Critical"));
+                                    let v2612: bool = if v2590 {
                                         true
                                     } else {
-                                        let v2589: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c3();
-                                        { let _ = spiral_trace_hold(&v2589); };
-                                        let v2591: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c4();
-                                        let (mut v2592, mut v2593, mut v2594, mut v2595, mut v2596, mut v2597): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2591);
-                                        let v2598: US0 = v2596.borrow().l0.clone();
-                                        let v2603: i32 = match v2598 {
+                                        let v2592: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c3();
+                                        { let _ = spiral_trace_hold(&v2592); };
+                                        let v2594: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c4();
+                                        let (mut v2595, mut v2596, mut v2597, mut v2598, mut v2599, mut v2600): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2594);
+                                        let v2601: US0 = v2599.borrow().l0.clone();
+                                        let v2606: i32 = match v2601 {
                                             US0::US0_Critical => {
                                                 50i32
                                             }
@@ -21102,128 +21108,128 @@ main()", v499));
                                                 40i32
                                             }
                                         };
-                                        let v2604: bool = v2594.borrow().l0;
-                                        let v2605: bool = v2604 == false;
-                                        let v2607: bool = if v2605 {
+                                        let v2607: bool = v2597.borrow().l0;
+                                        let v2608: bool = v2607 == false;
+                                        let v2610: bool = if v2608 {
                                             false
                                         } else {
-                                            let v2606: bool = 20i32 >= v2603;
-                                            v2606
+                                            let v2609: bool = 20i32 >= v2606;
+                                            v2609
                                         };
-                                        let v2608: bool = v2607 == false;
-                                        v2608
+                                        let v2611: bool = v2610 == false;
+                                        v2611
                                     };
-                                    let v2656: US2 = if v2609 {
+                                    let v2659: US2 = if v2612 {
                                         US2::US2_None
                                     } else {
-                                        let v2612: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c3();
-                                        { let _ = spiral_trace_hold(&v2612); };
-                                        let v2614: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c4();
-                                        let (mut v2615, mut v2616, mut v2617, mut v2618, mut v2619, mut v2620): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2614);
-                                        let v2621: Rc<str> = method219(&v2615, &v2616, &v2617, &v2618, &v2619, v2620.clone(), &v2615, &v2616, &v2617, &v2618, &v2619, v2620.clone(), v18, v19);
-                                        { let _ = spiral_trace_hold(&v2612); };
-                                        let (mut v2624, mut v2625, mut v2626, mut v2627, mut v2628, mut v2629): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2614);
-                                        let v2630: i64 = v2624.borrow().l0;
-                                        let v2631: i64 = v2630.wrapping_add(1i64);
-                                        v2624.borrow_mut().l0 = v2631;
-                                        let v2632: Rc<dyn Fn(Rc<str>) -> ()> = closure6();
-                                        let v2633: bool = cfg!(target_arch = "wasm32");
-                                        if v2633 {
-                                            let v2634: Rc<str> = v2627.borrow().l0.clone();
-                                            let v2635: bool = &*v2634 == "";
-                                            let v2642: Rc<str> = if v2635 {
-                                                v2621.clone()
+                                        let v2615: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c3();
+                                        { let _ = spiral_trace_hold(&v2615); };
+                                        let v2617: Rc<dyn Fn() -> (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>)> = fresh_c4();
+                                        let (mut v2618, mut v2619, mut v2620, mut v2621, mut v2622, mut v2623): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2617);
+                                        let v2624: Rc<str> = method219(&v2618, &v2619, &v2620, &v2621, &v2622, v2623.clone(), &v2618, &v2619, &v2620, &v2621, &v2622, v2623.clone(), v18, v19);
+                                        { let _ = spiral_trace_hold(&v2615); };
+                                        let (mut v2627, mut v2628, mut v2629, mut v2630, mut v2631, mut v2632): (Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>) = spiral_trace_hold(&v2617);
+                                        let v2633: i64 = v2627.borrow().l0;
+                                        let v2634: i64 = v2633.wrapping_add(1i64);
+                                        v2627.borrow_mut().l0 = v2634;
+                                        let v2635: Rc<dyn Fn(Rc<str>) -> ()> = closure6();
+                                        let v2636: bool = cfg!(target_arch = "wasm32");
+                                        if v2636 {
+                                            let v2637: Rc<str> = v2630.borrow().l0.clone();
+                                            let v2638: bool = &*v2637 == "";
+                                            let v2645: Rc<str> = if v2638 {
+                                                v2624.clone()
                                             } else {
-                                                let v2636: bool = &*v2621 == "";
-                                                if v2636 {
-                                                    let v2637: Rc<str> = v2627.borrow().l0.clone();
-                                                    v2637
-                                                } else {
-                                                    let v2638: Rc<str> = v2627.borrow().l0.clone();
-                                                    let v2640: Rc<str> = string_concat(&[&*v2638, "\n", &*v2621]);
+                                                let v2639: bool = &*v2624 == "";
+                                                if v2639 {
+                                                    let v2640: Rc<str> = v2630.borrow().l0.clone();
                                                     v2640
+                                                } else {
+                                                    let v2641: Rc<str> = v2630.borrow().l0.clone();
+                                                    let v2643: Rc<str> = string_concat(&[&*v2641, "\n", &*v2624]);
+                                                    v2643
                                                 }
                                             };
-                                            let v2644: usize = v2642.len();
-                                            let v2645: i32 = ((v2644) as i32);
-                                            let v2646: i32 = v2645.wrapping_add(14999i32);
-                                            let v2647: i32 = v2646.wrapping_div(15000i32);
-                                            let v2648: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                                            let v2649: bool = v2621 != v2648 ;
-                                            let v2651: bool = if v2649 {
-                                                let v2650: bool = v2647 <= 1i32;
-                                                v2650
+                                            let v2647: usize = v2645.len();
+                                            let v2648: i32 = ((v2647) as i32);
+                                            let v2649: i32 = v2648.wrapping_add(14999i32);
+                                            let v2650: i32 = v2649.wrapping_div(15000i32);
+                                            let v2651: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                                            let v2652: bool = v2624 != v2651 ;
+                                            let v2654: bool = if v2652 {
+                                                let v2653: bool = v2650 <= 1i32;
+                                                v2653
                                             } else {
                                                 false
                                             };
-                                            if v2651 {
-                                                v2627.borrow_mut().l0 = v2642;
+                                            if v2654 {
+                                                v2630.borrow_mut().l0 = v2645;
                                                 ()
                                             } else {
-                                                v2627.borrow_mut().l0 = v2648;
-                                                { #[cfg(target_arch = "wasm32")] spiral_trace_near_log(&v2642); };
+                                                v2630.borrow_mut().l0 = v2651;
+                                                { #[cfg(target_arch = "wasm32")] spiral_trace_near_log(&v2645); };
                                                 ()
                                             }
                                         } else {
-                                            println!("{}", v2621);
+                                            println!("{}", v2624);
                                             ()
                                         };
-                                        let mut v2654: Rc<dyn Fn(Rc<str>) -> ()> = v2625.borrow().l0.clone();
-                                        v2654(v2621);
-                                        US2::US2_Some(v2624, v2625, v2626, v2627, v2628, v2629)
+                                        let mut v2657: Rc<dyn Fn(Rc<str>) -> ()> = v2628.borrow().l0.clone();
+                                        v2657(v2624);
+                                        US2::US2_Some(v2627, v2628, v2629, v2630, v2631, v2632)
                                     };
-                                    let v2657: US10 = US10::US10_None;
-                                    let v2658: US10 = US10::US10_None;
-                                    let v2659: US10 = US10::US10_None;
                                     let v2660: US10 = US10::US10_None;
-                                    (v2657, v2658, v2659, v2660)
+                                    let v2661: US10 = US10::US10_None;
+                                    let v2662: US10 = US10::US10_None;
+                                    let v2663: US10 = US10::US10_None;
+                                    (v2660, v2661, v2662, v2663)
                                 };
-                                let v2668: Rc<str> = match v2661 {
+                                let v2671: Rc<str> = match v2664 {
                                     US10::US10_None => {
-                                        let v2666: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                                        v2666
+                                        let v2669: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                                        v2669
                                     }
-                                    US10::US10_Some(v2665) => {
-                                        let v2665: Rc<str> = v2665;
-                                        v2665
+                                    US10::US10_Some(v2668) => {
+                                        let v2668: Rc<str> = v2668;
+                                        v2668
                                     }
                                 };
-                                let v2669: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("extension"); } LIT.with(|lit| lit.clone()) };
-                                let v2673: Rc<str> = match v2662 {
+                                let v2672: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("extension"); } LIT.with(|lit| lit.clone()) };
+                                let v2676: Rc<str> = match v2665 {
                                     US10::US10_None => {
-                                        let v2671: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                                        v2671
+                                        let v2674: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                                        v2674
                                     }
-                                    US10::US10_Some(v2670) => {
-                                        let v2670: Rc<str> = v2670;
-                                        v2670
+                                    US10::US10_Some(v2673) => {
+                                        let v2673: Rc<str> = v2673;
+                                        v2673
                                     }
                                 };
-                                let v2674: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("code"); } LIT.with(|lit| lit.clone()) };
-                                let v2678: Rc<str> = match v2663 {
+                                let v2677: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("code"); } LIT.with(|lit| lit.clone()) };
+                                let v2681: Rc<str> = match v2666 {
                                     US10::US10_None => {
-                                        let v2676: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                                        v2676
+                                        let v2679: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                                        v2679
                                     }
-                                    US10::US10_Some(v2675) => {
-                                        let v2675: Rc<str> = v2675;
-                                        v2675
+                                    US10::US10_Some(v2678) => {
+                                        let v2678: Rc<str> = v2678;
+                                        v2678
                                     }
                                 };
-                                let v2679: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("code_path"); } LIT.with(|lit| lit.clone()) };
-                                let v2683: Rc<str> = match v2664 {
+                                let v2682: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("code_path"); } LIT.with(|lit| lit.clone()) };
+                                let v2686: Rc<str> = match v2667 {
                                     US10::US10_None => {
-                                        let v2681: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-                                        v2681
+                                        let v2684: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+                                        v2684
                                     }
-                                    US10::US10_Some(v2680) => {
-                                        let v2680: Rc<str> = v2680;
-                                        v2680
+                                    US10::US10_Some(v2683) => {
+                                        let v2683: Rc<str> = v2683;
+                                        v2683
                                     }
                                 };
-                                let v2684: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("output"); } LIT.with(|lit| lit.clone()) };
-                                let v2685: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v2669, v2668), (v2674, v2673), (v2679, v2678), (v2684, v2683)]));
-                                v2685
+                                let v2687: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("output"); } LIT.with(|lit| lit.clone()) };
+                                let v2688: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v2672, v2671), (v2677, v2676), (v2682, v2681), (v2687, v2686)]));
+                                v2688
                             }
                         }
                     }
@@ -21231,31 +21237,31 @@ main()", v499));
             }
         }
         _ => {
-            let v2691: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("extension"); } LIT.with(|lit| lit.clone()) };
-            let v2692: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-            let v2693: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("code"); } LIT.with(|lit| lit.clone()) };
-            let v2694: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("code_path"); } LIT.with(|lit| lit.clone()) };
-            let v2695: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("output"); } LIT.with(|lit| lit.clone()) };
-            let v2696: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v2691, v2692.clone()), (v2693, v2692.clone()), (v2694, v2692.clone()), (v2695, v2692.clone())]));
-            v2696
+            let v2694: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("extension"); } LIT.with(|lit| lit.clone()) };
+            let v2695: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+            let v2696: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("code"); } LIT.with(|lit| lit.clone()) };
+            let v2697: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("code_path"); } LIT.with(|lit| lit.clone()) };
+            let v2698: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("output"); } LIT.with(|lit| lit.clone()) };
+            let v2699: Rc<RefCell<Vec<(Rc<str>, Rc<str>)>>> = Rc::new(RefCell::new(vec![(v2694, v2695.clone()), (v2696, v2695.clone()), (v2697, v2695.clone()), (v2698, v2695.clone())]));
+            v2699
         }
     };
-    let v2698: Vec<(Rc<str>, Rc<str>)> = (v2697).borrow().clone();
-    let mut v2700: Rc<dyn Fn(((Rc<str>, Rc<str>))) -> (std::string::String, std::string::String)> = closure113();
-    let v2701: Vec<(std::string::String, std::string::String)> = v2698.iter().map(|x| v2700(x.clone())).collect::<Vec<_>>();
-    let v2703: std::collections::BTreeMap<std::string::String, std::string::String> = std::collections::BTreeMap::from_iter(v2701.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())));
-    let mut v2705: Result<std::string::String, serde_json::Error> = serde_json::to_string(&v2703);
-    let mut v2706: Rc<dyn Fn(serde_json::Error) -> Rc<str>> = method220();
-    let v2708: Result<std::string::String, Rc<str>> = v2705.map_err(|x| v2706(x));
-    let v2710: bool = true; let _result_map_ = v2708.map(|x| { //;
-    let v2712: std::string::String = x;
-    let v2714: Rc<str> = Rc::<str>::from(String::as_str(&v2712));
-    let v2716: bool = true; v2714 });
-    let v2718: Result<Rc<str>, Rc<str>> = _result_map_;
-    let v2719: bool = true; (v2718) }); //;
-    let v2721: _ = __future_init;
-    let v2723: std::pin::Pin<Box<dyn std::future::Future<Output = Result<Rc<str>, Rc<str>>>>> = v2721;
-    v2723
+    let v2701: Vec<(Rc<str>, Rc<str>)> = (v2700).borrow().clone();
+    let mut v2703: Rc<dyn Fn(((Rc<str>, Rc<str>))) -> (std::string::String, std::string::String)> = closure113();
+    let v2704: Vec<(std::string::String, std::string::String)> = v2701.iter().map(|x| v2703(x.clone())).collect::<Vec<_>>();
+    let v2706: std::collections::BTreeMap<std::string::String, std::string::String> = std::collections::BTreeMap::from_iter(v2704.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())));
+    let mut v2708: Result<std::string::String, serde_json::Error> = serde_json::to_string(&v2706);
+    let mut v2709: Rc<dyn Fn(serde_json::Error) -> Rc<str>> = method220();
+    let v2711: Result<std::string::String, Rc<str>> = v2708.map_err(|x| v2709(x));
+    let v2713: bool = true; let _result_map_ = v2711.map(|x| { //;
+    let v2715: std::string::String = x;
+    let v2717: Rc<str> = Rc::<str>::from(String::as_str(&v2715));
+    let v2719: bool = true; v2717 });
+    let v2721: Result<Rc<str>, Rc<str>> = _result_map_;
+    let v2722: bool = true; (v2721) }); //;
+    let v2724: _ = __future_init;
+    let v2726: std::pin::Pin<Box<dyn std::future::Future<Output = Result<Rc<str>, Rc<str>>>>> = v2724;
+    v2726
 }
 fn spiral_main() -> i32 {
     let mut v0: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(std::env::args().skip(1).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()));

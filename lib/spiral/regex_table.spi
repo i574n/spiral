@@ -1,0 +1,147 @@
+///- --package .
+:< regex_charset
+:< regex_syntax
+:< regex_derivative
+:< regex_dfa
+:< regex_minimal
+:< regex_certificate
+
+:# regex_table static =
+    :< testing
+
+:== table =
+    {
+        width : i32
+        dead : i32
+        start : i32
+        lows : array_base u32
+        next : array_base i32
+        accepting : array_base bool
+    }
+
+:= index_of_target (t : target) (dead : i32) : i32 =
+    ?= t ?|
+    | Dead => dead
+    | To s => state_index s
+
+:~ ^ count_classes (classes : list code_range) (n : i32) : i32 =
+    ?= classes ?|
+    | _ :: rest => count_classes rest (n + 1i32)
+    | [] => n
+
+:~ ^ fill_lows (lows : array_base u32) (classes : list code_range) (i : i32) : () =
+    ?= classes ?|
+    | c :: rest =>
+        am'::set_base lows i c::low
+        fill_lows lows rest (i + 1i32)
+    | [] => ()
+
+:~ ^ fill_targets (next : array_base i32) (at : i32) (targets : list target) (dead : i32) : () =
+    ?= targets ?|
+    | t :: rest =>
+        am'::set_base next at (index_of_target t dead)
+        fill_targets next (at + 1i32) rest dead
+    | [] => ()
+
+:~ ^ fill_rows (t : table) (rows : list row) (s : i32) : () =
+    ?= rows ?|
+    | r :: rest =>
+        fill_targets t::next (s * t::width) r::next t::dead
+        am'::set_base t::accepting s (r::accepting = Accepted)
+        fill_rows t rest (s + 1i32)
+    | [] => ()
+
+:~ ^ fill_dead (t : table) (j : i32) : () =
+    ? j >= t::width
+    ?> ()
+    |:
+        am'::set_base t::next (t::dead * t::width + j) t::dead
+        fill_dead t (j + 1i32)
+
+:~ next_base (n : i32) (k : i32) : array_base i32 = am'::create_base ((n + 1i32) * k)
+
+:~ empty_table (n : i32) (k : i32) (start : i32) : table =
+    {
+        width = k
+        dead = n
+        start = start
+        lows = am'::create_base k
+        next = next_base n k
+        accepting = am'::create_base (n + 1i32)
+    }
+
+:~ fill_table (t : table) (d : dfa) : () =
+    fill_lows t::lows d::classes 0i32
+    fill_rows t d::rows 0i32
+    fill_dead t 0i32
+    am'::set_base t::accepting t::dead !-
+
+:~ table_of (a : automaton certified_phase) : table =
+    := d = automaton_dfa a
+    := n = state_count d
+    := t = empty_table n (count_classes d::classes 0i32) (index_of_target d::start n)
+    fill_table t d
+    t
+
+:~ ^ class_search (lows : array_base u32) (c : u32) (lo : i32) (hi : i32) : i32 =
+    ? lo >= hi
+    ?> lo
+    |:
+        := mid = (lo + hi + 1i32) / 2i32
+        ? am'::index_base mid lows <= c ?> class_search lows c mid hi |: class_search lows c lo (mid - 1i32)
+
+:~ step_code (t : table) (s : i32) (c : u32) : i32 =
+    am'::index_base (s * t::width + class_search t::lows c 0i32 (t::width - 1i32)) t::next
+
+:~ ^ run_codes (t : table) (codes : array_base u32) (i : i32) (n : i32) (s : i32) : bool =
+    ? i >= n
+    ?> am'::index_base s t::accepting
+    |? s = t::dead
+    ?> !-
+    |: run_codes t codes (i + 1i32) n (step_code t s (am'::index_base i codes))
+
+:~ table_run (t : table) (codes : array_base u32) : verdict =
+    verdict_of (run_codes t codes 0i32 (am'::length_base codes) t::start)
+
+:~ ^ count_codes (codes : list u32) (n : i32) : i32 =
+    ?= codes ?|
+    | _ :: rest => count_codes rest (n + 1i32)
+    | [] => n
+
+:~ ^ fill_codes (a : array_base u32) (codes : list u32) (i : i32) : () =
+    ?= codes ?|
+    | c :: rest =>
+        am'::set_base a i c
+        fill_codes a rest (i + 1i32)
+    | [] => ()
+
+:~ array_of_codes (codes : list u32) : array_base u32 =
+    := a : array_base u32 = am'::create_base (count_codes codes 0i32)
+    fill_codes a codes 0i32
+    a
+
+:= minimal_table (r : re) : table = table_of (certified_of r)
+
+:= table_answer (r : re) (w : list u32) : verdict = table_run (minimal_table r) (array_of_codes w)
+
+:= both_answers (r : re) (w : list u32) : verdict * verdict = table_answer r w, matches r w
+
+:= hit_word () : list u32 = [ 49u32; 48u32; 49u32; 49u32 ]
+
+:= miss_word () : list u32 = [ 49u32; 48u32; 48u32; 49u32; 48u32 ]
+
+///> c
+///> rust
+///> gleam
+:# the_array_table_answers_like_the_derivatives_on_the_fourth_symbol_from_the_end =
+    := ~r = fourth_from_end ()
+    (both_answers r (hit_word ()), both_answers r (miss_word ()))
+    |> _assert_eq ((Accepted, Accepted), (Rejected, Rejected))
+
+///> c
+///> rust
+///> gleam
+:# a_symbol_outside_the_alphabet_falls_into_the_dead_row =
+    := ~r = ends_in_zero ()
+    (table_answer r [ 48u32; 120u32; 48u32 ], table_answer r [ 49u32; 48u32 ], table_answer r [])
+    |> _assert_eq (Rejected, Accepted, Rejected)
