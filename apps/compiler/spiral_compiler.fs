@@ -14643,6 +14643,33 @@ module spiral_compiler =
                     | TyLayoutIndexAll v | TyLayoutIndexByKey(v,_) -> Some (vars [v])
                     | _ -> None
                 | _ -> None
+            let opaque_reads = 1 <<< 20
+            let rec scope_reads (j : int) (block : TypedBind []) = block |> Array.sumBy (bind_reads j)
+            and data_reads (j : int) (d : Data) = data_free_vars d |> Array.sumBy (fun (L(i,_)) -> if i = j then 1 else 0)
+            and var_reads (j : int) (vs : TyV seq) = vs |> Seq.sumBy (fun (L(i,_)) -> if i = j then 1 else 0)
+            and bind_reads (j : int) (b : TypedBind) =
+                match b with
+                | TyLet(_,_,o) -> op_reads j o
+                | TyLocalReturnOp(_,o,d) -> op_reads j o + data_reads j d
+                | TyLocalReturnData(d,_) -> data_reads j d
+            and op_reads (j : int) (o : TypedOp) =
+                match o with
+                | TyMacro parts -> parts |> List.sumBy (function CMTerm(d,_) -> data_reads j d | _ -> 0)
+                | TyOp(_, args) | TyArrayLiteral(_, args) -> args |> List.sumBy (data_reads j)
+                | TyUnionBox(_, d, _) | TyToLayout(d, _) | TyFailwith(_, d) | TyConv(_, d)
+                | TyArrayCreate(_, d) | TyArrayLength(_, d) | TyStringLength(_, d) -> data_reads j d
+                | TyUnionUnbox(vs, _, on_succs, on_fail) ->
+                    let arms = on_succs |> Map.fold (fun total _ (bound, block) -> total + (bound |> Seq.sumBy (data_reads j)) + scope_reads j block) 0
+                    var_reads j vs + arms + (match on_fail with Some block -> scope_reads j block | None -> 0)
+                | TyIntSwitch(v, cases, on_fail) -> var_reads j [v] + (cases |> Array.sumBy (scope_reads j)) + scope_reads j on_fail
+                | TyLayoutIndexAll v | TyLayoutIndexByKey(v, _) -> var_reads j [v]
+                | TyLayoutMutableSet(v, _, d) | TyApply(v, d) -> var_reads j [v] + data_reads j d
+                | TyIf(cond, tr, fl) -> data_reads j cond + scope_reads j tr + scope_reads j fl
+                | TyWhile((_, args), block) -> var_reads j args + scope_reads j block
+                | TyDo block | TyIndent block -> scope_reads j block
+                | TyJoinPoint(_, args) -> var_reads j args
+                | TySizeOf _ | TyBackend _ -> 0
+                | _ -> opaque_reads
             for m in 0 .. x.Length - 1 do
                 match x.[m] with
                 | TyLet(d,_,(TyOp(StaticStringConcat,([_;_] as l)) as o)) ->
@@ -14656,7 +14683,8 @@ module spiral_compiler =
                             let once = reads |> List.filter ((=) j) |> List.length = 1
                             let dead_after = match live_after.TryGetValue x.[m] with | true, f -> not (f j) | _ -> false
                             let untouched = seq { k + 1 .. m - 1 } |> Seq.forall (fun t -> match x.[t] with TyLet(_,_,TyOp(StaticStringConcat,l')) -> not (List.contains j (concat_reads l')) | _ -> match plain_reads t with Some vs -> vs |> List.forall (fun v -> v <> j && not (Set.contains v inner)) | None -> false)
-                            if once && dead_after && untouched then
+                            let sole_reader = scope_reads j x.[k + 1 ..] = 1
+                            if once && dead_after && untouched && sole_reader then
                                 fused.Add k |> ignore
                                 absorbed.[j] <- k
                                 chain <- Set.union (Set.remove j chain) inner

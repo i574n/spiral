@@ -1,0 +1,8 @@
+:~ paths (cache : string) (stem : string) : string * string =
+    := package = !!!!StaticStringConcat(!!!!StaticStringConcat(cache, "/pkgs/"), stem)
+    := file = !!!!StaticStringConcat(!!!!StaticStringConcat(package, "/"), stem)
+    !!!!StaticStringConcat(file, ".spi"), !!!!StaticStringConcat(file, ".rs")
+
+:= main () : i32 =
+    := source, rust = paths "cache" "unit"
+    !!!!Add((sm::length source : i32), (sm::length rust : i32))
