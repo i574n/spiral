@@ -7,7 +7,12 @@ param(
     [string] $AvoidJobPattern = 'train'
 )
 $ErrorActionPreference = 'Stop'
-$kit = Join-Path $env:LOCALAPPDATA 'kit\bin\kit.exe'
+$kit = @(
+    (Join-Path $HOME 'rigbin\rig.exe'),
+    (Get-Command rig -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty Source),
+    (Join-Path $env:LOCALAPPDATA 'kit\bin\kit.exe')
+) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+if (-not $kit) { throw 'neither rig nor kit is installed' }
 $install = Join-Path $PSScriptRoot 'install-pack.ps1'
 $CoreAppliers = @($CoreAppliers | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $HostAppliers = @($HostAppliers | ForEach-Object { $_ -split ',' } | Where-Object { $_ })

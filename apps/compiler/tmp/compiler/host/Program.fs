@@ -144,20 +144,23 @@ module Program =
                 |> String.concat "\n"
             message + "\ntrace (innermost first):\n" + frames
 
+    let private shown (errors : RString list) =
+        errors |> List.map (fun ((a : VSCPos, b : VSCPos), message) -> ({|line = a.line; character = a.character|}, {|line = b.line; character = b.character|}), message)
+
     let private diagnosticFor uri = function
         | TypeErrors x when sameUri x.uri uri && not (List.isEmpty x.errors) ->
-            Some $"TypeErrors: %A{x.errors}"
+            Some $"TypeErrors: %A{shown x.errors}"
         | TokenizerErrors x when sameUri x.uri uri && not (List.isEmpty x.errors) ->
-            Some $"TokenizerErrors: %A{x.errors}"
+            Some $"TokenizerErrors: %A{shown x.errors}"
         | PackageErrors x when not (List.isEmpty x.errors) ->
-            Some $"PackageErrors ({x.uri}): %A{x.errors}"
+            Some $"PackageErrors ({x.uri}): %A{shown x.errors}"
         | TracedError x -> Some (renderTracedError x.message x.trace)
         | _ -> None
 
     let private diagnosticForOther = function
-        | TypeErrors x when not (List.isEmpty x.errors) -> Some $"TypeErrors ({x.uri}): %A{x.errors}"
-        | ParserErrors x when not (List.isEmpty x.errors) -> Some $"ParserErrors ({x.uri}): %A{x.errors}"
-        | TokenizerErrors x when not (List.isEmpty x.errors) -> Some $"TokenizerErrors ({x.uri}): %A{x.errors}"
+        | TypeErrors x when not (List.isEmpty x.errors) -> Some $"TypeErrors ({x.uri}): %A{shown x.errors}"
+        | ParserErrors x when not (List.isEmpty x.errors) -> Some $"ParserErrors ({x.uri}): %A{shown x.errors}"
+        | TokenizerErrors x when not (List.isEmpty x.errors) -> Some $"TokenizerErrors ({x.uri}): %A{shown x.errors}"
         | _ -> None
 
     let private diagnosticUri = function
@@ -854,6 +857,7 @@ module Program =
             try if File.Exists path then File.Delete path with _ -> ()
 
     let private runCheck inputPath =
+        check_lean <- true
         try
             let inputPath = inputPath |> Path.GetFullPath |> SpiralFileSystem.standardize_path
             if not (File.Exists inputPath) then failwith $"Missing check input: {inputPath}"
