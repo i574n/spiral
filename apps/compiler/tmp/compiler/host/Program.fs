@@ -858,6 +858,7 @@ module Program =
 
     let private runCheck inputPath =
         check_lean <- true
+        check_stream <- Environment.GetEnvironmentVariable "SPIRAL_CHECK_STREAM" <> "0"
         try
             let inputPath = inputPath |> Path.GetFullPath |> SpiralFileSystem.standardize_path
             if not (File.Exists inputPath) then failwith $"Missing check input: {inputPath}"
@@ -910,7 +911,7 @@ module Program =
                     | Nil -> acc
                 else acc
             let located (path : string) (error : RString) =
-                let (a, _), message = error
+                let (struct (a, _)), message = error
                 $"{path}:{a.line + 1}:{a.character + 1}: {message}"
             let parseErrors =
                 (try
@@ -941,6 +942,44 @@ module Program =
         thread.IsBackground <- true
         thread.Start()
         completion.Task
+
+    let private checkParentVariable = "SPIRAL_CHECK_PARENT_PID"
+
+    let private watchCheckParent () =
+        match Environment.GetEnvironmentVariable checkParentVariable with
+        | null | "" -> ()
+        | text ->
+            match Int32.TryParse text with
+            | true, pid ->
+                let parent = try Some (Diagnostics.Process.GetProcessById pid) with _ -> None
+                let watch () =
+                    match parent with
+                    | Some p -> p.WaitForExit(); exit 6
+                    | None -> exit 6
+                let watcher = Threading.Thread(Threading.ThreadStart watch)
+                watcher.IsBackground <- true
+                watcher.Start()
+            | _ -> ()
+
+    let private lowMemoryCheck () : int option =
+        let opted = Environment.GetEnvironmentVariable "SPIRAL_CHECK_GC" <> "0"
+        let child = not (String.IsNullOrEmpty (Environment.GetEnvironmentVariable checkParentVariable))
+        if not opted || child || not Runtime.GCSettings.IsServerGC then None
+        else
+            let host = Environment.ProcessPath
+            let args = Environment.GetCommandLineArgs()
+            let args = if Path.GetFileNameWithoutExtension host = "dotnet" then args else args.[1..]
+            let start = Diagnostics.ProcessStartInfo(host)
+            for a in args do start.ArgumentList.Add a
+            start.UseShellExecute <- false
+            start.Environment.[checkParentVariable] <- string Environment.ProcessId
+            if not (start.Environment.ContainsKey "DOTNET_GCHeapCount") then start.Environment.["DOTNET_GCHeapCount"] <- "1"
+            if not (start.Environment.ContainsKey "DOTNET_GCConserveMemory") then start.Environment.["DOTNET_GCConserveMemory"] <- "9"
+            try
+                use p = Diagnostics.Process.Start start
+                p.WaitForExit()
+                Some p.ExitCode
+            with _ -> None
 
     let private runAttestationBounded timeoutMs work =
         let mutable result = 5
@@ -1482,7 +1521,11 @@ module Program =
                 eprintfn "--timeout-ms must be a positive 32-bit integer"
                 2
             else
-                exit (runAttestationBounded timeoutMs (fun () -> runCheck argv.[argv.Length - 1]))
+                match lowMemoryCheck () with
+                | Some code -> exit code
+                | None ->
+                    watchCheckParent ()
+                    exit (runAttestationBounded timeoutMs (fun () -> runCheck argv.[argv.Length - 1]))
         elif (argv.Length = 3 || (argv.Length = 5 && argv.[1] = "--timeout-ms")) && argv.[0] = "--plan-ir" then
             let inputIndex = if argv.Length = 5 then 3 else 1
             let outputIndex = if argv.Length = 5 then 4 else 2

@@ -848,7 +848,10 @@ module spiral_compiler =
         vscpos line a.character
 
     /// ### VSCRange
-    type VSCRange = VSCPos * VSCPos
+    type VSCRange = (struct (VSCPos * VSCPos))
+    let range_start (struct (a, _) : VSCRange) = a
+    let range_end (struct (_, b) : VSCRange) = b
+    let range_of (a : VSCPos) (b : VSCPos) : VSCRange = struct (a, b)
 
     /// ### RString
     type RString = VSCRange * string
@@ -2109,7 +2112,7 @@ module spiral_compiler =
         | RawTFilledNominal of VSCRange * GlobalId // Filled in by the inferencer.
 
     /// ### (+.)
-    let (+.) (a,_) (_,b) = a,b
+    let (+.) (struct (a,_) : VSCRange) (struct (_,b) : VSCRange) : VSCRange = struct (a,b)
 
     /// ### range_of_hovar
     let range_of_hovar ((r,_) : HoVar) = r
@@ -2272,7 +2275,7 @@ module spiral_compiler =
     let col (d : BlockParsingEnv) = let i = d.Index in if i < d.tokens.Length then d.layout_columns.[i] else -1
 
     /// ### lineBlockParsing
-    let lineBlockParsing d = line_template d (fun (r,_) -> r.line)
+    let lineBlockParsing d = line_template d (fun (struct (r,_) : VSCRange) -> r.line)
 
     /// ### skip'
     let skip' (d : BlockParsingEnv) i = d.i.Value <- d.i.contents+i
@@ -2638,7 +2641,7 @@ module spiral_compiler =
         | RawForall(r,a,b) -> RawForall(r,a,adjust_join_point is_let name b)
         | RawFun(r,[a,b]) -> RawFun(r,[dyn_if_let a, adjust_join_point is_let name b])
         | RawFun(r,l) ->
-            let empty = fst r, fst r
+            let empty = range_of (range_start r) (range_start r)
             let n = unintern " arg"
             let a = PatVar(empty,n) |> dyn_if_let
             let b = RawMatch(empty,rawv(empty,n),l)
@@ -3038,7 +3041,7 @@ module spiral_compiler =
     let inline expr_tight next (d: BlockParsingEnv) =
         let i = blockParsingIndex d
         if 0 < i && i < d.tokens.Length then
-            let r,r' = snd (fst d.tokens.[i-1]), fst (fst d.tokens.[i])
+            let r,r' = range_end (fst d.tokens.[i-1]), range_start (fst d.tokens.[i])
             if r.line = r'.line && r.character = r'.character then next d else Error []
         else Error []
 
@@ -3120,7 +3123,7 @@ module spiral_compiler =
     and pat_array s = (skip_unary_op ";" >>. blockParsingRange (squares (sepBy root_pattern_type (skip_op ";"))) |>> fun (r,x) -> PatArray(r,x)) s
     and pat_list s =
         (blockParsingRange (squares (sepBy root_pattern_type (skip_op ";")))
-        |>> fun ((r,_),x) -> let r = r,r in List.foldBack (pat_list_pair r) x (PatUnbox(r,"Nil",PatB r))) s
+        |>> fun ((struct (r,_) : VSCRange),x) -> let r = range_of r r in List.foldBack (pat_list_pair r) x (PatUnbox(r,"Nil",PatB r))) s
     and pat_exists s = (blockParsingRange (pat_exists' .>>. root_pattern) |>> fun (r,(l,b)) -> PatExists(r,l,b)) s
     and root_pattern s =
         let body s =
@@ -3209,9 +3212,9 @@ module spiral_compiler =
                 let i = min d.Index (d.tokens.Length - 1)
                 if i < 0 then col d
                 else
-                    let row = (fst (fst d.tokens.[i])).line
+                    let row = (range_start (fst d.tokens.[i])).line
                     let mutable first = i
-                    while first > 0 && (fst (fst d.tokens.[first - 1])).line = row do first <- first - 1
+                    while first > 0 && (range_start (fst d.tokens.[first - 1])).line = row do first <- first - 1
                     min (col d) d.layout_columns.[first]
             pipe2 apply_tight (many (blockParsingIndent line_start_column (<) apply_tight)) fold_applies d
 
@@ -3360,7 +3363,7 @@ module spiral_compiler =
             let case_symbol = read_symbol |>> RawSymbol
             let case_list = blockParsingRange (squares sequence_body) >>= fun (r,l) d ->
                 if d.is_top_down then
-                    let r = fst r, fst r
+                    let r = range_of (range_start r) (range_start r)
                     List.foldBack (fun a b ->
                         RawApply(r,rawv(r,unintern "Cons"),RawPair(r,a,b))
                         ) l (rawv(r,unintern "Nil")) |> Ok
@@ -3714,10 +3717,10 @@ module spiral_compiler =
                 let headerLength = s.tokens_cords |> Array.filter (fun c -> c.row = headerRow) |> Array.length
                 let isStatic = s.tokens |> Array.take headerLength |> Array.exists (function (_, TokVar ("static", _)) -> true | _ -> false)
                 if isStatic && s.default_env.test_entry.IsSome && headerLength < s.tokens.Length then
-                    let bodyColumn = (fst (fst s.tokens.[headerLength])).character
+                    let bodyColumn = (range_start (fst s.tokens.[headerLength])).character
                     let starts =
                         [ for i in headerLength .. s.tokens.Length - 1 do
-                            if i = headerLength || (s.tokens_cords.[i].row <> s.tokens_cords.[i - 1].row && (fst (fst s.tokens.[i])).character = bodyColumn) then yield i ]
+                            if i = headerLength || (s.tokens_cords.[i].row <> s.tokens_cords.[i - 1].row && (range_start (fst s.tokens.[i])).character = bodyColumn) then yield i ]
                     let bounds = List.zip starts ((List.tail starts) @ [ s.tokens.Length ])
                     let statements =
                         bounds |> List.map (fun (a, b) ->
@@ -4002,8 +4005,8 @@ module spiral_compiler =
 
     /// ### add_offset
     let add_offset offset (range : VSCRange) : VSCRange =
-        let a,b = range
-        vscpos_with_line (offset + a.line) a, vscpos_with_line (offset + b.line) b
+        let struct (a,b) = range
+        struct (vscpos_with_line (offset + a.line) a, vscpos_with_line (offset + b.line) b)
 
     /// ### add_offset_hovar
     let add_offset_hovar offset (a,b) = add_offset offset a, b
@@ -4156,8 +4159,8 @@ module spiral_compiler =
         | {block=TopInl _ | TopPrototype _ | TopNominal _ | TopType _ | TopInstance _ | TopOpen _} :: _ -> failwith "Compiler error: Regular top level statements should be singleton bundles."
 
     /// ### add_line_to_range
-    let add_line_to_range line ((a,b) : VSCRange) =
-        vscpos_with_line (line + a.line) a, vscpos_with_line (line + b.line) b
+    let add_line_to_range line (struct (a,b) : VSCRange) : VSCRange =
+        struct (vscpos_with_line (line + a.line) a, vscpos_with_line (line + b.line) b)
 
     /// ### process_error
     let process_error v =
@@ -4187,7 +4190,7 @@ module spiral_compiler =
         }
 
     /// ### BlockBundleValue
-    type BlockBundleValue = {bundle : Bundle option; errors : RString list}
+    type BlockBundleValue = {mutable bundle : Bundle option; errors : RString list}
 
     /// ### BlockBundleState
     type BlockBundleState = (TopStatement Block list * BlockBundleValue) Stream
@@ -4243,6 +4246,21 @@ module spiral_compiler =
                 countAtExit.Force ()
                 FeatureCensus.flushAtExit.Force ()
                 pending.[path] <- bundler
+        let streamed (path : string) (bundler : BlockBundleState) : BlockBundleState =
+            if System.String.IsNullOrEmpty (FeatureCensus.output ()) then bundler
+            else
+                FeatureCensus.flushAtExit.Force ()
+                let counts = System.Collections.Generic.Dictionary<string, int>()
+                let rec go (s : BlockBundleState) : BlockBundleState =
+                    s >>=* function
+                    | Cons((blocks, value : BlockBundleValue), rest) ->
+                        FeatureCensus.active.Value <- counts
+                        (try value.bundle |> Option.iter count finally FeatureCensus.active.Value <- null)
+                        Job.result (Cons((blocks, value), go rest))
+                    | Nil ->
+                        for KeyValue(key, n) in counts do FeatureCensus.rows.Enqueue $"{path}\t{key}\t{n}"
+                        Job.result Nil
+                go bundler
 
     /// ### TypesOut
     module TypesOut =
@@ -4434,6 +4452,10 @@ module spiral_compiler =
 
     /// ### check_lean
     let mutable check_lean = System.Environment.GetEnvironmentVariable "SPIRAL_CHECK_LEAN" = "1"
+
+    /// ### check_stream
+    let mutable check_stream = false
+    let check_release () = check_stream && System.String.IsNullOrEmpty (TypesOut.output ())
 
     /// ### wdiff_block_bundle_init
     let wdiff_block_bundle_init : BlockBundleState = Promise.Now.never()
@@ -5623,15 +5645,33 @@ module spiral_compiler =
         | ValueNone -> ValueNone
 
     let markAmbiguousUnionCases (top_env : TopEnv) (opened : Map<TermNameId, T>) =
+        let caseNames = System.Collections.Generic.Dictionary(HashIdentity.Structural)
+        let owner (name : string) (t : T) =
+            match unionCaseResultNominal t with
+            | ValueSome i ->
+                let names =
+                    match caseNames.TryGetValue i with
+                    | true, names -> names
+                    | _ ->
+                        let names =
+                            match Map.tryFind i top_env.nominals with
+                            | Some n ->
+                                match n.body with
+                                | TyUnion (cases, _) -> System.Collections.Generic.HashSet<string>(cases |> Map.toSeq |> Seq.map (fun ((_, name'), _) -> name'))
+                                | _ -> System.Collections.Generic.HashSet<string>()
+                            | None -> System.Collections.Generic.HashSet<string>()
+                        caseNames.[i] <- names
+                        names
+                if names.Contains name then ValueSome i else ValueNone
+            | ValueNone -> ValueNone
         opened |> Map.map (fun key t ->
             let name = TermNameIdOps.text key
-            match unionCaseOwner top_env name t, Map.tryFind key top_env.term with
+            match owner name t, Map.tryFind key top_env.term with
             | ValueSome i, Some existing ->
-                match unionCaseOwner top_env name existing with
+                match owner name existing with
                 | ValueSome j when j <> i -> TySymbol (ambiguousUnionCasePrefix + name + ">")
                 | _ -> t
             | _ -> t)
-    
 
     let literal_suffix_warn = System.Environment.GetEnvironmentVariable "SPIRAL_WARN_LITERAL_SUFFIX" <> "0"
 
@@ -5649,7 +5689,7 @@ module spiral_compiler =
     /// ### InferResult
     type [<ReferenceEquality>] InferResult = {
         filled_top : FilledTop Hopac.Promise
-        top_env_additions : TopEnv AdditionType
+        mutable top_env_additions : TopEnv AdditionType
         offset : int
         hovers : RString []
         errors : RString list
@@ -6472,7 +6512,7 @@ module spiral_compiler =
                                 m
                                 |> Map.tryPick (fun (_, k) v -> if k = x.symbol then Some v else None)
                                 |> Option.iter (fun before ->
-                                    let position : VSCPos = fst x.range
+                                    let position : VSCPos = range_start x.range
                                     let after = x.var
                                     census_rows.Add(fun () ->
                                         let a, b = show_t top_env before, show_t top_env after
@@ -7299,7 +7339,7 @@ module spiral_compiler =
             {
             filled_top = filled_top
             top_env_additions = top_env_additions
-            offset = bundle_range expr |> fst |> fun x -> x.line
+            offset = bundle_range expr |> range_start |> fun x -> x.line
             // ws: SPIRAL_HOVERS=0 (set by the CLI host, which never serves hovers) skips rendering every hover type to text.
             hovers = if System.Environment.GetEnvironmentVariable "SPIRAL_HOVERS" = "0" then [||] else hover_types.ToArray() |> HopacExtensions.A.map (fun ((a:VSCRange),(b,(com : string))) -> a, let b = show_t top_env b in if com <> "" then sprintf "%s\n---\n%s" b com else b)
             errors = errors |> Seq.toList |> List.map (fun (a,b) -> a, $"{type_error_report (show_type_error top_env b) (box b)} In the definition: {bundle_binding_names expr}.")
@@ -8049,7 +8089,7 @@ module spiral_compiler =
     let autoExportPids = System.Collections.Concurrent.ConcurrentDictionary<int, bool>()
     // A `link:` unit as its importer sees it: its name and, once the unit is built, the unions its exports reach, keyed by
     // (source name, concrete shape) and mapped to the name the unit exports them under. None: no graph, the package owns all.
-    type LinkedUnit = {unit : string; exported : Map<string * string, string> option; calls : Map<string * string, string>; wraps : Map<string * string, string>; shapes : Set<string>}
+    type LinkedUnit = {unit : string; order : int; exported : Map<string * string, string> option; calls : Map<string * string, string>; wraps : Map<string * string, string>; shapes : Set<string>}
     let unionOwnerUnit (linked : Map<int, LinkedUnit>) (node : obj) =
         match unionSourcePackages.TryGetValue node with
         | true, owner -> Map.tryFind owner.Value linked
@@ -10508,7 +10548,7 @@ module spiral_compiler =
             if validating.Value = 0 then
                 let frames =
                     trace
-                    |> List.map (fun (r : Range) -> $"{System.IO.Path.GetFileName r.path}:{(fst r.range).line + 1}")
+                    |> List.map (fun (r : Range) -> $"{System.IO.Path.GetFileName r.path}:{(range_start r.range).line + 1}")
                     |> List.filter (fun f -> not (f.StartsWith "backend.spi"))
                     |> List.truncate 8
                     |> String.concat " < "
@@ -10522,7 +10562,7 @@ module spiral_compiler =
             if validating.Value = 0 then
                 let frames =
                     trace
-                    |> List.map (fun (r : Range) -> $"{System.IO.Path.GetFileName r.path}:{(fst r.range).line + 1}")
+                    |> List.map (fun (r : Range) -> $"{System.IO.Path.GetFileName r.path}:{(range_start r.range).line + 1}")
                     |> List.filter (fun f -> not (f.StartsWith "backend.spi"))
                     |> List.truncate 8
                     |> String.concat " < "
@@ -10861,7 +10901,7 @@ module spiral_compiler =
                         let v = Option.defaultValue (fst v) (snd v) // If the union case is generalized, use the specialized destructor instead of the constructor to evaluate the type.
                         let depth = UnionNesting.depth.Value + 1
                         if depth > UnionNesting.limit then
-                            let frames = s.trace |> List.map (fun (r: Range) -> r.path, (fst r.range).line, (fst r.range).character)
+                            let frames = s.trace |> List.map (fun (r: Range) -> r.path, (range_start r.range).line, (range_start r.range).character)
                             raise_type_error { s with trace = [] } (RunawayUnrollDiagnostic.render "EJP0041" (UnionNesting.headline (string k) UnionNesting.limit) frames (UnionNesting.hint UnionNesting.limit))
                         UnionNesting.depth.Value <- depth
                         let laid = try ty s v finally UnionNesting.depth.Value <- depth - 1
@@ -11030,7 +11070,7 @@ module spiral_compiler =
                         push_typedop_no_rewrite s (TyMacro text) range_ty
                      | Some linked, annot ->
                         let resolve t = try nominal_type_apply s t with _ -> t
-                        let where = match s.trace with r :: _ -> $"{r.path}:{(fst r.range).line + 1}:{(fst r.range).character + 1}: " | [] -> ""
+                        let where = match s.trace with r :: _ -> $"{r.path}:{(range_start r.range).line + 1}:{(range_start r.range).character + 1}: " | [] -> ""
                         let reason =
                             match annot with
                             | Some (TFun(_, range, _)) -> ExternCalls.refusal linked.struct_records linked.flat_records linked.multi_ranges resolve (data_to_ty s b) (ty s range)
@@ -11038,13 +11078,13 @@ module spiral_compiler =
                         ExternCalls.warn where linked.call reason
                         term s body
                      | None, _ when (ExternCalls.lookup_curried body).IsSome ->
-                        let where = match s.trace with r :: _ -> $"{r.path}:{(fst r.range).line + 1}:{(fst r.range).character + 1}: " | [] -> ""
+                        let where = match s.trace with r :: _ -> $"{r.path}:{(range_start r.range).line + 1}:{(range_start r.range).character + 1}: " | [] -> ""
                         ExternCalls.warn where (ExternCalls.lookup_curried body).Value.call "its definition is curried, so the call has no single argument to pass (take one argument, a tuple for several)"
                         term s body
                      | _ ->
                         match ExternCalls.lookup_wrapped body with
                         | Some (name, export) ->
-                            let where = match s.trace with r :: _ -> $"{r.path}:{(fst r.range).line + 1}:{(fst r.range).character + 1}: " | [] -> ""
+                            let where = match s.trace with r :: _ -> $"{r.path}:{(range_start r.range).line + 1}:{(range_start r.range).character + 1}: " | [] -> ""
                             if ExternCalls.warned.Value.Add ("wrapped " + export) then
                                 eprintfn "warning: %sthe call to %s inlines its body here instead of linking: the linked unit exports it only through the lambda %s. Export the definition itself (export \"...\" %s) so direct calls become cross-unit calls." where name export name
                         | None -> ()
@@ -11078,7 +11118,7 @@ module spiral_compiler =
             let within_dynamic_if s (f : unit -> 'a) : 'a =
                 let depth = DynamicIfNesting.depth.Value + 1
                 if depth > DynamicIfNesting.limit then
-                    let frames = s.trace |> List.map (fun (r: Range) -> r.path, (fst r.range).line, (fst r.range).character)
+                    let frames = s.trace |> List.map (fun (r: Range) -> r.path, (range_start r.range).line, (range_start r.range).character)
                     let report =
                         RunawayUnrollDiagnostic.render
                             "EJP0040"
@@ -11327,7 +11367,7 @@ module spiral_compiler =
                             else t)
                 let env_global_term = Array.map (v s) scope.term.free_vars
                 if UnionNesting.tooDeep env_global_type then
-                    let frames = s.trace |> List.map (fun (r: Range) -> r.path, (fst r.range).line, (fst r.range).character)
+                    let frames = s.trace |> List.map (fun (r: Range) -> r.path, (range_start r.range).line, (range_start r.range).character)
                     raise_type_error { s with trace = [] } (RunawayUnrollDiagnostic.render "EJP0041" (UnionNesting.indexHeadline UnionNesting.limit) frames (UnionNesting.hint UnionNesting.limit))
 
                 let backend' = match backend with None -> s.backend | Some (_,backend) -> backend_strings.Add (backend_key_canonical backend)
@@ -29942,7 +29982,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
     let process_errors line (ers : LineTokenErrors list) : RString list =
         ers |> List.mapi (fun i l ->
             let i = line + i
-            l |> List.map (fun (r,x) -> x, (struct {|line=i; character=r.from|}, struct {|line=i; character=r.nearTo|}))
+            l |> List.map (fun (r,x) -> x, struct (struct {|line=i; character=r.from|}, struct {|line=i; character=r.nearTo|}))
             )
         |> List.concat
         |> List.groupBy snd
@@ -30112,10 +30152,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         let mutable row = -1
         let mutable shift = 0
         let dedent opener closer =
-            let open_row = (fst (fst tokens.[opener])).line
-            let close_row = (fst (fst tokens.[closer])).line
+            let open_row = (range_start (fst tokens.[opener])).line
+            let close_row = (range_start (fst tokens.[closer])).line
             let indent =
-                if (fst (fst tokens.[closer])).character = 0 then Some 0
+                if (range_start (fst tokens.[closer])).character = 0 then Some 0
                 else
                     match tokens.[closer - 1] with
                     | (a, _), TokText x when a.line = close_row && a.character = 0 && x.Trim(' ') = "" -> Some x.Length
@@ -30144,17 +30184,17 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             | _ -> ()
         let mutable row_start = 0
         for i in 0 .. tokens.Length - 1 do
-            let (a, _), t = tokens.[i]
+            let (struct (a, _)), t = tokens.[i]
             if a.line <> row then
                 row <- a.line
                 row_start <- i
                 shift <- 0
             let close_spanning_lines () =
                 let opener = opens.Pop()
-                let (open_from, open_to), _ = tokens.[opener]
+                let (struct (open_from, open_to)), _ = tokens.[opener]
                 if open_from.line <> a.line then
                     shift <- layout.[opener] + 1
-                    for j in row_start .. i - 1 do layout.[j] <- (fst (fst tokens.[j])).character + shift
+                    for j in row_start .. i - 1 do layout.[j] <- (range_start (fst tokens.[j])).character + shift
                     Some (opener, 3 <= open_to.character - open_from.character)
                 else None
             match t with
@@ -30182,7 +30222,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 let tokens = Array.init len (fun i ->
                     let r, t = x.[i]
                     {|row=line; col=i|},
-                    ((struct {| line=line; character=r.from |}, struct {| line=line; character=r.nearTo |}), t))
+                    (struct (struct {| line=line; character=r.from |}, struct {| line=line; character=r.nearTo |}), t))
                 comment, tokens
                 )
             |> Array.unzip
@@ -30212,7 +30252,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         // Offset should be ignored when memoizing the results of parsing.
         List.iter (fun (a,b) -> dict.TryAdd(a,b.block) |> ignore) state.blocks
         let blocks = unparsed_blocks |> List.map (fun x ->
-            (if check_lean then PersistentVector.empty else x.block), {block=memoize dict (fun a -> Promise.Now.withValue ((parse_block default_env state.is_top_down) a)) x.block; offset=x.offset}
+            (if check_lean then PersistentVector.empty else x.block), {block=memoize dict (fun a -> if check_stream then Hopac.Hopac.memo (Hopac.Job.thunk (fun () -> parse_block default_env state.is_top_down a)) else Promise.Now.withValue ((parse_block default_env state.is_top_down) a)) x.block; offset=x.offset}
             )
         {state with blocks = blocks }
     
@@ -30244,6 +30284,92 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
 
     /// ### wdiff_module_init_all
     let wdiff_module_init_all default_env is_top_down x = wdiff_module_all default_env (wdiff_module_init is_top_down) x
+
+    /// ### stream_module_bundler
+    let stream_module_bundler default_env is_top_down (text : string) : BlockBundleState =
+        let starts = ResizeArray<int>()
+        let lengths = ResizeArray<int>()
+        let mutable i = 0
+        let mutable start = 0
+        while i < text.Length do
+            match text.[i] with
+            | '\r' ->
+                starts.Add start; lengths.Add (i - start)
+                i <- if i + 1 < text.Length && text.[i + 1] = '\n' then i + 2 else i + 1
+                start <- i
+            | '\n' ->
+                starts.Add start; lengths.Add (i - start)
+                i <- i + 1
+                start <- i
+            | _ -> i <- i + 1
+        starts.Add start; lengths.Add (text.Length - start)
+        let count = starts.Count
+        let line k = text.Substring(starts.[k], lengths.[k])
+        let lexes = Array.zeroCreate<LexState> count
+        let kept : LineToken PersistentVector [] = if count <= 50000 then Array.zeroCreate count else null
+        let heads = Array.zeroCreate<int> count
+        let balances = Array.zeroCreate<int> count
+        let mutable lex = lex_state_init
+        for k in 0 .. count - 1 do
+            lexes.[k] <- lex
+            let toks, _, next = tokenize_line lex (line k)
+            if not (isNull kept) then kept.[k] <- toks
+            lex <- next
+            heads.[k] <-
+                if toks.Length = 0 then 0
+                else
+                    let r, t = toks.[0]
+                    if r.from <> 0 then 1 else match t with TokComment _ -> 2 | _ -> 3
+            balances.[k] <- toks |> PersistentVector.fold (fun acc (_, tok) -> match tok with TokStringOpen -> acc + 1 | TokStringClose -> acc - 1 | _ -> acc) 0
+        let spans = ResizeArray<struct (int * int)>()
+        let mutable k = 0
+        while k < count do
+            let first = k
+            while k < count && heads.[k] <> 3 do k <- k + 1
+            if k < count then
+                k <- k + 1
+                while k < count && heads.[k] < 2 do k <- k + 1
+            spans.Add (struct (first, k - first))
+        let merged = ResizeArray<struct (int * int)>()
+        let mutable pending = ValueNone
+        let mutable pendingBalance = 0
+        for struct (o, n) in spans do
+            let mutable balance = 0
+            for j in o .. o + n - 1 do balance <- balance + balances.[j]
+            match pending with
+            | ValueNone ->
+                if balance = 0 then merged.Add (struct (o, n))
+                else
+                    pending <- ValueSome (struct (o, n))
+                    pendingBalance <- balance
+            | ValueSome (struct (po, pn)) ->
+                let total = pendingBalance + balance
+                if total = 0 then
+                    merged.Add (struct (po, pn + n))
+                    pending <- ValueNone
+                    pendingBalance <- 0
+                else
+                    pending <- ValueSome (struct (po, pn + n))
+                    pendingBalance <- total
+        match pending with ValueSome span -> merged.Add span | ValueNone -> ()
+        let parsed (struct (o, n)) =
+            let tokens () =
+                let mutable lex = lexes.[o]
+                let mutable lines = PersistentVector.empty
+                for j in o .. o + n - 1 do
+                    let toks =
+                        if isNull kept then
+                            let toks, _, next = tokenize_line lex (line j)
+                            lex <- next
+                            toks
+                        else
+                            let toks = kept.[j]
+                            kept.[j] <- Unchecked.defaultof<_>
+                            toks
+                    lines <- PersistentVector.conj toks lines
+                lines
+            PersistentVector.empty, {block = Hopac.Hopac.memo (Hopac.Job.thunk (fun () -> parse_block default_env is_top_down (tokens ()))); offset = o}
+        wdiff_block_bundle wdiff_block_bundle_init {is_top_down = is_top_down; blocks = merged |> Seq.map parsed |> List.ofSeq}
     
 
     /// ### FileState<'input,'result,'state>
@@ -30337,7 +30463,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             {
                 filled_top = Promise.Now.withValue (FRecInl [])
                 top_env_additions = AInclude inferTop_env_empty
-                offset = bundle_range bundle |> fst |> fun x -> x.line
+                offset = bundle_range bundle |> range_start |> fun x -> x.line
                 hovers = hovers
                 errors = []
                 warnings = []
@@ -30347,11 +30473,33 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
 
     /// ### keep_checked
     let check_lean_filled : FilledTop Hopac.Promise = Promise.Now.withValue (FRecInl [])
-    let keep_checked ((_, x : InferResult, _ : TopEnv) as value) =
-        if check_lean then None, {x with hovers = [||]; filled_top = check_lean_filled}, inferTop_env_empty else value
+    let check_released_additions : TopEnv AdditionType = AInclude inferTop_env_empty
+    let check_released_result (additions : TopEnv AdditionType) : InferResult =
+        {
+            filled_top = check_lean_filled
+            top_env_additions = additions
+            offset = 0
+            hovers = [||]
+            errors = []
+            warnings = []
+            self_unbound = false
+            unbound_only = []
+        }
+    let check_released_ok : Bundle option * InferResult * TopEnv = None, check_released_result check_released_additions, inferTop_env_empty
+    let keep_checked_into (summary : TopEnv ref option) ((_, x : InferResult, _ : TopEnv) as value) =
+        match summary with
+        | Some local ->
+            match x.top_env_additions with
+            | AOpen _ -> ()
+            | AInclude small | AIncludePrivate (small, _) -> local.Value <- inferUnion small local.Value
+            if List.isEmpty x.errors then check_released_ok
+            else None, {check_released_result check_released_additions with errors = x.errors; offset = x.offset}, inferTop_env_empty
+        | None ->
+            if check_lean then None, {x with hovers = [||]; filled_top = check_lean_filled; warnings = []; unbound_only = []}, inferTop_env_empty else value
+    let keep_checked value = keep_checked_into None value
 
     /// ### typecheck
-    let rec typecheck (package_id,module_id,env : TopEnv) x = x >>=* function
+    let rec typecheck_into (summary : TopEnv ref option) (package_id,module_id,env : TopEnv) x = x >>=* function
         | Cons((_,b : BlockBundleValue), ls) ->
             match b.bundle with
             | Some bundle ->
@@ -30361,6 +30509,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | BundleInl(com, r, w, body, true) when x.self_unbound && not (upstreamDialectPids.ContainsKey package_id) ->
                         infer package_id module_id env (BundleRecInl([ com, r, w, body ], true))
                     | _ -> x
+                if check_release () then b.bundle <- None
                 let single () =
                     let adds = match x.top_env_additions with AOpen x | AInclude x | AIncludePrivate (_, x) -> x
                     let env = inferUnion adds env
@@ -30369,9 +30518,9 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         let x2 = infer package_id module_id env extra
                         let adds2 = match x2.top_env_additions with AOpen x | AInclude x | AIncludePrivate (_, x) -> x
                         let env2 = inferUnion adds2 env
-                        Job.result (Cons(keep_checked (b.bundle,x,env), Promise.Now.withValue (Cons(keep_checked (Some extra,x2,env2), typecheck (package_id,module_id,env2) ls))))
+                        Job.result (Cons(keep_checked_into summary (b.bundle,x,env), Promise.Now.withValue (Cons(keep_checked_into summary (Some extra,x2,env2), typecheck_into summary (package_id,module_id,env2) ls))))
                     | None ->
-                        Job.result (Cons(keep_checked (b.bundle,x,env),typecheck (package_id,module_id,env) ls))
+                        Job.result (Cons(keep_checked_into summary (b.bundle,x,env),typecheck_into summary (package_id,module_id,env) ls))
                 let needed =
                     match bundle with
                     | BundleInl(_, _, (_, own), _, true) when not (List.isEmpty x.errors) && not (upstreamDialectPids.ContainsKey package_id) && not (autoExportPids.ContainsKey package_id) ->
@@ -30391,17 +30540,22 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             let adds = match grouped.top_env_additions with AOpen x | AInclude x | AIncludePrivate (_, x) -> x
                             let env = inferUnion adds env
                             let rest = members |> List.last |> snd
-                            let tail = typecheck (package_id,module_id,env) rest
-                            let consumed = List.foldBack (fun (v : BlockBundleValue, _) acc -> Promise.Now.withValue (Cons(keep_checked (v.bundle, MutualGroups.placeholder (Option.get v.bundle) grouped.hovers, env), acc))) members tail
-                            Job.result (Cons(keep_checked (Some (BundleRecInl(group, true)),grouped,env), consumed))
+                            let tail = typecheck_into summary (package_id,module_id,env) rest
+                            let consumed = List.foldBack (fun (v : BlockBundleValue, _) acc -> Promise.Now.withValue (Cons(keep_checked_into summary (v.bundle, MutualGroups.placeholder (Option.get v.bundle) grouped.hovers, env), acc))) members tail
+                            if check_release () then for (v : BlockBundleValue, _) in members do v.bundle <- None
+                            Job.result (Cons(keep_checked_into summary (Some (BundleRecInl(group, true)),grouped,env), consumed))
                         | _ -> single ()
                     | None -> single ()
             | None ->
-                typecheck (package_id,module_id,env) ls :> _ Job
+                typecheck_into summary (package_id,module_id,env) ls :> _ Job
         | Nil ->
             if TypeArithReserved.isReserved package_id module_id then
                 TypeArithReserved.offer package_id module_id (env.nominals |> Map.toList |> List.choose (fun (id, n) -> env.nominals_aux |> Map.tryFind id |> Option.map (fun aux -> id, NominalNameIdOps.text aux.name, List.length n.vars)))
-            Job.result Nil
+            match summary with
+            | Some local -> Job.result (Cons((None, check_released_result (AInclude local.Value), inferTop_env_empty), Promise.Now.withValue Nil))
+            | None -> Job.result Nil
+
+    let typecheck key x = typecheck_into None key x
     
 
     /// ### diff
@@ -30419,7 +30573,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
     let funs_file_tc = {new FileFuns<PackageId * ModuleId * BlockBundleState, TypecheckerStateValue Stream, TypecheckerStatePropagated> with
         member _.eval(state,(pid,mid,x)) =
             state >>=* fun (_,env) ->
-            typecheck (pid,mid,env) x
+            typecheck_into (if check_release () then Some (ref inferTop_env_empty) else None) (pid,mid,env) x
         member _.diff(state,b,(pid,mid,a)) =
             state >>=* fun (_,env) -> diff (pid,mid,env) (b,a)
         member _.init x = {
@@ -30536,8 +30690,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
     /// ### typechecker_results_summary
     let typechecker_results_summary l =
         Stream.foldFun (fun (has_error,big) (_,x : InferResult,_) ->
+            let additions = x.top_env_additions
+            if check_release () && not (obj.ReferenceEquals (additions, check_released_additions)) then x.top_env_additions <- check_released_additions
             has_error || List.isEmpty x.errors = false,
-            match x.top_env_additions with
+            match additions with
             | AOpen _ -> big
             | AInclude small | AIncludePrivate (small, _) -> inferUnion small big
             ) (false,inferTop_env_empty) l
@@ -36282,7 +36438,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         let import (linked : Map<int, LinkedUnit>) (code : string) =
             if linked.IsEmpty then code
             else
-                let owners = linked |> Map.toList |> List.collect (fun (_, l) -> l.shapes |> Set.toList |> List.map (fun h -> h, l.unit)) |> List.distinctBy fst |> Map.ofList
+                let owners = linked |> Map.toList |> List.sortBy (fun (_, l) -> l.order) |> List.collect (fun (_, l) -> l.shapes |> Set.toList |> List.map (fun h -> h, l.unit)) |> List.distinctBy fst |> Map.ofList
                 let candidates = shapes code |> Seq.choose (fun kv -> owners |> Map.tryFind kv.Value |> Option.map (fun unit -> kv.Key, kv.Value, unit)) |> Array.ofSeq
                 let fieldsOf = decl.Matches code |> Seq.map (fun m -> m.Groups.[1].Value, m.Groups.[2].Value) |> Seq.distinctBy fst |> dict
                 let localTypes = System.Text.RegularExpressions.Regex(@"(?m)^(?:pub )?(?:enum|struct|type|union) (\w+)").Matches code |> Seq.map (fun m -> m.Groups.[1].Value) |> Set.ofSeq
@@ -36341,7 +36497,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         let import (linked : Map<int, LinkedUnit>) (code : string) =
             if linked.IsEmpty then code
             else
-                let owner (name : string) = linked |> Map.toList |> List.tryPick (fun (_, l) -> if l.shapes.Contains ("gleam:" + name) then Some l.unit else None)
+                let owner (name : string) = linked |> Map.toList |> List.sortBy (fun (_, l) -> l.order) |> List.tryPick (fun (_, l) -> if l.shapes.Contains ("gleam:" + name) then Some l.unit else None)
                 let taken = preludes |> List.choose (fun (name, store) -> if declares code name then owner name |> Option.map (fun unit -> unit, name, store) else None)
                 if taken.IsEmpty then code
                 else
@@ -36605,7 +36761,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             schema.schema.packages |> List.filter (fun p -> let dir = snd p.dir in not (explicit.Contains dir) && unitDeclaresExports dir)
                         else []
                     schema.schema.link @ derived
-                    |> List.choose (fun l -> let dir = snd l.dir in Map.tryFind dir package_ids |> Option.map (fun id -> id, {unit = System.IO.Path.GetFileName(dir.TrimEnd('/', '\\')); exported = readUnitGraph dir; calls = readUnitCalls dir; wraps = readUnitWraps dir; shapes = Set.union (RustLinkedShapes.read dir) (GleamLinkedPrelude.read dir)}))
+                    |> List.mapi (fun order l -> order, l)
+                    |> List.choose (fun (order, l) -> let dir = snd l.dir in Map.tryFind dir package_ids |> Option.map (fun id -> id, {unit = System.IO.Path.GetFileName(dir.TrimEnd('/', '\\')); order = order; exported = readUnitGraph dir; calls = readUnitCalls dir; wraps = readUnitWraps dir; shapes = Set.union (RustLinkedShapes.read dir) (GleamLinkedPrelude.read dir)}))
                     |> Map.ofList
                 | None -> owner (System.IO.Path.GetDirectoryName dir)
         owner (System.IO.Path.GetDirectoryName file)
@@ -36841,17 +36998,29 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 task {
                     if File.Exists path then
                         try let! x = File.ReadAllTextAsync(path)
-                            let parsed = ref Unchecked.defaultof<_>
-                            let failure : exn ref = ref null
                             let env = file_default_env default_env packages path
                             test_entry_parsed.[path] <- env.test_entry
-                            let parser = System.Threading.Thread((fun () -> try parsed.Value <- wdiff_module_init_all env (is_top_down path) x with error -> failure.Value <- error), 512 <<< 20)
-                            parser.Start ()
-                            parser.Join ()
-                            if not (isNull failure.Value) then raise failure.Value
-                            FeatureCensusBundles.countLater path parsed.Value.bundler
-                            TypesOut.collect path parsed.Value.bundler
-                            return LoadModule(path,parsed.Value |> Some)
+                            let parse (text : string) =
+                                let parsed = ref Unchecked.defaultof<_>
+                                let failure : exn ref = ref null
+                                let parser = System.Threading.Thread((fun () -> try parsed.Value <- wdiff_module_init_all env (is_top_down path) text with error -> failure.Value <- error), 512 <<< 20)
+                                parser.Start ()
+                                parser.Join ()
+                                if not (isNull failure.Value) then raise failure.Value
+                                parsed.Value
+                            let parsed =
+                                if check_stream then
+                                    let length, digest = x.Length, x.GetHashCode()
+                                    let reread () =
+                                        let text = File.ReadAllText path
+                                        if text.Length <> length || text.GetHashCode() <> digest then failwith $"{path} changed while the check was running; run the check again"
+                                        text
+                                    let bundler : BlockBundleState = Hopac.Hopac.memo (Hopac.Job.delay (fun () -> (stream_module_bundler env (is_top_down path) (reread ())) :> Hopac.Job<_>))
+                                    {wdiff_module_init (is_top_down path) with bundler = FeatureCensusBundles.streamed path bundler}
+                                else parse x
+                            if not check_stream then FeatureCensusBundles.countLater path parsed.bundler
+                            TypesOut.collect path parsed.bundler
+                            return LoadModule(path,parsed |> Some)
                         with _ -> return LoadModule(path,None)
                     else return LoadModule(path,None) // Note: We need this case otherwise 'con' might cause the file read to deadlock. https://superuser.com/questions/86999/why-cant-i-name-a-folder-or-file-con-in-windows
                 } |> queue.Enqueue
@@ -37242,8 +37411,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
 
     /// ### show_position
     let show_position (s : SupervisorState) (x : Range) =
-        let line = (fst x.range).line
-        let col = (fst x.range).character
+        let line = (range_start x.range).line
+        let col = (range_start x.range).character
         let er_code = s.modules.[x.path].tokenizer.lines_text.[line]
         StringBuilder()
             .AppendLine(sprintf "Error trace on line: %i, column: %i in module: %s ." (line+1) (col+1) x.path)
@@ -37257,7 +37426,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         let rec loop (l : Trace) = function
             | (x : Range) :: xs ->
                 match l with
-                | x' :: _ when x.path = x'.path && fst x.range = fst x'.range -> loop l xs
+                | x' :: _ when x.path = x'.path && range_start x.range = range_start x'.range -> loop l xs
                 | _ -> loop (x :: l) xs
             | _ -> l
         List.map (show_position s) (loop [] x), msg
