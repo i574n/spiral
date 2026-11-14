@@ -3130,7 +3130,7 @@ module spiral_compiler =
             let pat_value = (read_value |>> PatValue) <|> (read_default_value PatDefaultValue PatValue)
             let pat_string = read_string |>> (fun (a,x,b) -> PatValue(a +. b,LitString x))
             let pat_symbol = read_symbol |>> PatSymbol
-            let (+) = alt (blockParsingIndex s)
+            let inline (+) a b env = alt (blockParsingIndex env) a b env
             (root_pattern_rounds + root_pattern_var_nominal_union + root_pattern_wildcard + root_pattern_dyn + pat_value + pat_string
             + root_pattern_record + pat_symbol + pat_array + pat_list + pat_exists) s
         let pat_and =
@@ -3151,7 +3151,7 @@ module spiral_compiler =
         pat_pair s
     and root_pattern_when d = (root_pattern .>>. (opt (skip_keyword SpecWhen >>. root_term)) |>> function a, Some b -> PatWhen(range_of_pattern a +. range_of_expr b,a,b) | a, None -> a) d
     and root_pattern_var d =
-        let (+) = alt (blockParsingIndex d)
+        let inline (+) a b env = alt (blockParsingIndex env) a b env
         (pat_var + root_pattern_wildcard + root_pattern_dyn + root_pattern_rounds + root_pattern_record + pat_array + pat_list + pat_exists) d
     and root_pattern_pair d = pat_pair root_pattern_var d
     and root_type_annot d = root_type {root_type_defaults with allow_term=d.is_top_down=false; allow_wildcard=d.is_top_down} d
@@ -3202,7 +3202,7 @@ module spiral_compiler =
                 pipe3 skip_macro_open body skip_macro_close (fun a l b -> RawTMacro(a +. b, l))
             let exists = blockParsingRange (exists .>>. root_type flags) |>> fun (r,(l,b)) -> RawTExists(r,l,b)
             let foralls = blockParsingRange (forall .>>. root_type flags) |>> (fun (r,(l,b)) -> List.foldBack (fun a b -> RawTForall(range_of_typevar a +. range_of_texpr b,a,b)) l b)
-            let (+) = alt (blockParsingIndex d)
+            let inline (+) a b env = alt (blockParsingIndex env) a b env
             (rounds + lit + lit_default + wildcard + term + metavar + var + record + symbol + macro + exists + foralls) d
 
         let fold_applies a b = List.fold (fun a b -> RawTApply(range_of_texpr a +. range_of_texpr b,a,b)) a b
@@ -3381,7 +3381,7 @@ module spiral_compiler =
                 let body = many ((read_text true |>> RawMacroText) <|> read_macro_var <|> read_macro_expression)
                 pipe3 skip_macro_open body skip_macro_close (fun a l b -> RawMacro(a +. b, l))
 
-            let (+) = alt (blockParsingIndex d)
+            let inline (+) a b env = alt (blockParsingIndex env) a b env
 
             (case_value + case_default_value + case_var + case_join_point + case_join_point_backend + case_real + case_symbol
             + case_typecase + case_match + case_typecase + case_rounds + case_list + case_record
@@ -3505,7 +3505,7 @@ module spiral_compiler =
                         |> function [] -> Ok(fun on_succ -> RawRecBlock(r, List.map snd l, on_succ)) | er -> Error er
             let module_open = blockParsingModule_open |>> fun (r,(name,acs)) on_succ -> RawOpen(r,name,acs,on_succ)
             let statement_parsers d =
-                let (+) = alt (blockParsingIndex d)
+                let inline (+) a b env = alt (blockParsingIndex env) a b env
                 (inl_or_let + module_open) d
 
             let i = col d
@@ -3652,7 +3652,7 @@ module spiral_compiler =
 
     /// ### top_statement
     let top_statement s =
-        let (+) = alt (blockParsingIndex s)
+        let inline (+) a b env = alt (blockParsingIndex env) a b env
         (top_inl_or_let + top_union + top_nominal + top_prototype + top_type + top_instance + top_and_inl_or_let + top_and_union + top_open) s
 
     /// ### ParserErrorsList
@@ -5706,30 +5706,46 @@ module spiral_compiler =
     /// ### assert_foralls_used'
     let assert_foralls_used' (errors : (VSCRange * TypeError) ResizeArray) outside_foralls r x =
         let h = HashSet()
+        let free = HashSet()
+        let binders = Dictionary<string, ResizeArray<bool ref>>()
+        let bind (name : string) =
+            let cell = ref false
+            match binders.TryGetValue name with
+            | true, stack -> stack.Add cell
+            | _ -> binders.[name] <- ResizeArray [cell]
+            cell
+        let unbind (name : string) =
+            let stack = binders.[name]
+            stack.RemoveAt(stack.Count - 1)
         let rec f x =
             match visit_t x with
-            | TyVar (v,_) -> Set.singleton v.name
+            | TyVar (v,_) ->
+                match binders.TryGetValue v.name with
+                | true, stack when stack.Count > 0 -> stack.[stack.Count - 1].Value <- true
+                | _ -> free.Add v.name |> ignore
             | TyExists(v,a) ->
-                List.fold (fun a v ->
-                    if Set.contains v.name a = false then h.Add(v.name) |> ignore; a
-                    else Set.remove v.name a
-                    ) (f a) v
+                let cells = v |> List.map (fun v -> v.name, bind v.name)
+                f a
+                for name, cell in List.rev cells do
+                    unbind name
+                    if cell.Value = false then h.Add(name) |> ignore
             | TyForall(v,a) ->
-                let a = f a
-                if Set.contains v.name a = false then h.Add(v.name) |> ignore; a
-                else Set.remove v.name a
-            | TyUnion _ | TyModule _ | TyMetavar _ | TyNominal _ | TyB | TyLit _ | TyPrim _ | TySymbol _ -> Set.empty
-            | TyPair(a,b) | TyApply(a,b,_) | TyFun(a,b,_) -> f a + f b
-            | TyRecord a -> Map.fold (fun s _ x -> Set.union s (f x)) Set.empty a
+                let cell = bind v.name
+                f a
+                unbind v.name
+                if cell.Value = false then h.Add(v.name) |> ignore
+            | TyUnion _ | TyModule _ | TyMetavar _ | TyNominal _ | TyB | TyLit _ | TyPrim _ | TySymbol _ -> ()
+            | TyPair(a,b) | TyApply(a,b,_) | TyFun(a,b,_) -> f a; f b
+            | TyRecord a -> Map.iter (fun _ x -> f x) a
             | TyComment(_,a) | TyLayout(a,_) | TyInl(_,a) | TyArray a -> f a
             | TyMacro a ->
-                List.fold (fun s x ->
+                for x in a do
                     match x with
                     | TMLitVar a | TMVar a -> f a
-                    | TMText _ -> Set.empty
-                    ) Set.empty a
-        let used_vars = f x
-        Seq.iter (h.Add >> ignore) (outside_foralls - used_vars)
+                    | TMText _ -> ()
+        f x
+        for name in outside_foralls do
+            if free.Contains name = false then h.Add(name) |> ignore
         if 0 < h.Count then
             let vars = h |> Seq.toList |> List.sort
             errors.Add(r, UnusedTypeVariable (vars |> List.map TypeNameIdOps.create))

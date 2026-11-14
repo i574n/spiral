@@ -127,6 +127,11 @@ module Program =
         | true, value when value >= 0 -> value
         | _ -> 750
 
+    let private fatalAfterTypeErrorsMs =
+        match Int32.TryParse(Environment.GetEnvironmentVariable "SPIRAL_HOST_FATAL_AFTER_TYPE_ERRORS_MS") with
+        | true, value when value >= 0 -> value
+        | _ -> 5000
+
     let private normalizeUri (uri : string) =
         Uri.UnescapeDataString(uri).Replace('\\', '/').TrimEnd('/')
 
@@ -275,7 +280,7 @@ module Program =
                         match diagnosticFor uri message with
                         | Some diagnostic when (match message with TypeErrors _ -> true | _ -> false) ->
                             entryTypeErrors <- Some diagnostic
-                            Threading.Tasks.Task.Delay(1000).ContinueWith(fun (_ : Threading.Tasks.Task) ->
+                            Threading.Tasks.Task.Delay(fatalAfterTypeErrorsMs).ContinueWith(fun (_ : Threading.Tasks.Task) ->
                                 let parseDetail = lock gate (fun () -> match related with Some text when text.StartsWith "ParserErrors" -> $"\n{text}" | _ -> "")
                                 waiter.TrySetResult(diagnostic + parseDetail) |> ignore)
                             |> ignore
@@ -856,9 +861,11 @@ module Program =
         for path in [ outputPath; outputPath + ".spiral-entry" ] do
             try if File.Exists path then File.Delete path with _ -> ()
 
-    let private runCheck inputPath =
-        check_lean <- true
-        check_stream <- Environment.GetEnvironmentVariable "SPIRAL_CHECK_STREAM" <> "0"
+    let mutable private checkSessionState : SupervisorState option = None
+
+    let private runCheckWith (full : bool) inputPath =
+        check_lean <- not full
+        check_stream <- not full && Environment.GetEnvironmentVariable "SPIRAL_CHECK_STREAM" <> "0"
         try
             let inputPath = inputPath |> Path.GetFullPath |> SpiralFileSystem.standardize_path
             if not (File.Exists inputPath) then failwith $"Missing check input: {inputPath}"
@@ -872,7 +879,11 @@ module Program =
                   packages_infer = {ok = Map.empty; error = Map.empty}
                   packages_prepass = {ok = Map.empty; error = Map.empty}
                   graph = mirrored_graph_empty; package_ids = Map.empty, Map.empty }
-            let _, state = proj_open (startupParse [|"--port"; "0"|]) emptyState (packageDir, None)
+            let state =
+                match checkSessionState with
+                | Some kept when Environment.GetEnvironmentVariable "CHECK_REPEAT_REOPEN" <> "1" -> kept
+                | _ -> snd (proj_open (startupParse [|"--port"; "0"|]) (defaultArg checkSessionState emptyState) (packageDir, None))
+            checkSessionState <- Some state
             let packageReasons =
                 state.packages |> Map.toList |> List.collect (fun (dir, v) -> List.concat [v.errors_parse; v.errors_modules; v.errors_packages] |> List.map (fun (_, message) -> $"{dir}: {message}"))
             let reasonText = match packageReasons with [] -> "" | xs -> " Reasons: " + String.concat " | " xs
@@ -936,12 +947,40 @@ module Program =
             eprintfn "%s" error.Message
             5
 
+    let private runCheck inputPath = runCheckWith (Environment.GetEnvironmentVariable "CHECK_REPEAT_FULL" = "1") inputPath
+
+    let private applyCheckEdit (edited : string) =
+        match checkSessionState with
+        | None -> ()
+        | Some s ->
+            let file = edited |> Path.GetFullPath |> SpiralFileSystem.standardize_path
+            let defaultEnv = startupParse [|"--port"; "0"|]
+            let env = file_default_env defaultEnv s.packages file
+            let text = File.ReadAllText file
+            let v =
+                match Map.tryFind file s.modules with
+                | Some m -> wdiff_module_all env m text
+                | None -> wdiff_module_init_all env (is_top_down file) text
+            let _, revalidated = proj_revalidate_owner defaultEnv {s with modules = Map.add file v s.modules} file
+            checkSessionState <- Some revalidated
+
     let private startOnCompileStack (work : unit -> 'T) : Threading.Tasks.Task<'T> =
         let completion = Threading.Tasks.TaskCompletionSource<'T>()
         let thread = Threading.Thread((fun () -> try completion.SetResult(work ()) with error -> completion.SetException error), 1 <<< 30)
         thread.IsBackground <- true
         thread.Start()
         completion.Task
+
+    let private sessionCheck (input : string) (edited : string []) =
+        let watch = Diagnostics.Stopwatch.StartNew()
+        let captured = new StringWriter()
+        let previous = Console.Error
+        Console.SetError captured
+        let code =
+            try (startOnCompileStack (fun () -> (for path in edited do applyCheckEdit path); runCheckWith true input)).Result
+            finally Console.SetError previous
+        let lines = captured.ToString().Split([|'\n'|], StringSplitOptions.RemoveEmptyEntries) |> Array.map (fun line -> line.TrimEnd '\r')
+        lines, code, watch.ElapsedMilliseconds
 
     let private checkParentVariable = "SPIRAL_CHECK_PARENT_PID"
 
@@ -1211,6 +1250,13 @@ module Program =
                 if fields.Length = 1 && fields.[0] = "quit" then
                     writer.WriteLine($"spiral-session\tquit\t{Environment.ProcessId}")
                     running <- false
+                elif fields.Length >= 2 && fields.[0] = "check" then
+                    match fields.[1 ..] |> Array.tryFind (File.Exists >> not) with
+                    | Some missing -> writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\tno such file {cleanProtocolText missing}")
+                    | None ->
+                        let lines, code, ms = sessionCheck fields.[1] fields.[2 ..]
+                        lines |> Array.iter (cleanProtocolText >> writer.WriteLine)
+                        writer.WriteLine($"spiral-session\tcheck\t{Environment.ProcessId}\t{code}\t{ms}\t{lines.Length}")
                 elif fields.Length = 2 && fields.[0] = "test-blocks" then
                     if File.Exists fields.[1] then
                         let rows, tokenizerErrors = testBlockRows (File.ReadAllText fields.[1])
@@ -1515,6 +1561,23 @@ module Program =
                     0
         elif argv.Length >= 3 && argv.[0] = "--source-blocks" then
             runSourceBlocks argv.[1] argv.[2..]
+        elif argv.Length >= 2 && argv.[0] = "--check-repeat" then
+            let input = argv.[argv.Length - 1]
+            let edits = argv.[1 .. argv.Length - 2]
+            exit (runAttestationBounded 3600000 (fun () ->
+                let watch = Diagnostics.Stopwatch.StartNew()
+                let first = runCheck input
+                eprintfn "check-repeat cold ms=%d exit=%d" watch.ElapsedMilliseconds first
+                watch.Restart()
+                let second = runCheck input
+                eprintfn "check-repeat warm ms=%d exit=%d" watch.ElapsedMilliseconds second
+                for edited in edits do
+                    File.AppendAllText(edited, (match Environment.GetEnvironmentVariable "CHECK_REPEAT_TEXT" with null | "" -> "\n" | t -> t.Replace("\\n", "\n")))
+                    watch.Restart()
+                    applyCheckEdit edited
+                    let after = runCheck input
+                    eprintfn "check-repeat after-edit %s ms=%d exit=%d" (Path.GetFileName edited) watch.ElapsedMilliseconds after
+                max first second))
         elif (argv.Length = 2 || (argv.Length = 4 && argv.[1] = "--timeout-ms")) && argv.[0] = "--check" then
             let parsed, timeoutMs = if argv.Length = 4 then Int32.TryParse argv.[2] else true, 30000
             if not parsed || timeoutMs <= 0 then
