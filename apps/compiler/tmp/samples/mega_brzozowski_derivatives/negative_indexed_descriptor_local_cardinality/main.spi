@@ -1,6 +1,0 @@
-:< main
-
-:= main () : indexed_finite_alphabet_descriptor bit_alphabet =
-    indexed_finite_alphabet_descriptor (\? (
-        bit_finite_symbol_vector (),
-        AlphabetCardinalitySucc (AlphabetCardinalitySucc AlphabetCardinalityZero)))

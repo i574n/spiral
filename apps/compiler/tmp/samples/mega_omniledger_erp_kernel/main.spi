@@ -10844,13 +10844,13 @@ inl emit_erp_p2p_lengths () = !!!!Global("""
         runtime_money_nat (nat_succ fence) ->
         erp_p2p_fence_history (nat_succ fence)
 
-:= ^ erp_p2p_fence_history_value \* fence.
+:= erp_p2p_fence_history_value \* fence.
     (history : erp_p2p_fence_history fence) : runtime_money_nat fence =
     ?= history ?|
     | ErpP2PFenceGenesis (_, value) => value
     | ErpP2PFenceTakeover (_, _, value) => value
 
-:= ^ erp_p2p_fence_history_owner \* fence.
+:= erp_p2p_fence_history_owner \* fence.
     (history : erp_p2p_fence_history fence) : string =
     ?= history ?|
     | ErpP2PFenceGenesis (owner, _) => owner
@@ -11229,7 +11229,7 @@ inl emit_erp_p2p_lengths () = !!!!Global("""
             erp_p2p_physical_owner_lineage_history (\? (
                 erp_p2p_fence_history_takeover previous_history owner))
 
-:= ^ erp_p2p_physical_owner_lineage_current_owner
+:= erp_p2p_physical_owner_lineage_current_owner
     (physical_lineage : erp_p2p_physical_owner_lineage) : string =
     ?= physical_lineage ?|
     | ErpP2PPhysicalOwnerLineageGenesis owner => owner
@@ -12078,3 +12078,556 @@ inl emit_erp_p2p_lengths () = !!!!Global("""
 
 := main () : string =
     typed_fx_active_safe_surface_terminal ()
+///> c
+:# closed_fact_input_wrong_history_is_refused fails "Got: typed_fx_hashed_statement_closed_history" =
+    := impossible_closed_fact_input_wrong_history () :
+        typed_fx_hashed_statement_closed_fact_input
+            typed_fx_hashed_statement_history_empty
+            typed_fx_statement_stream_position_zero =
+        := _, recorded_history =
+            typed_fx_hashed_statement_closed_history_values ()
+        TypedFxHashedStatementClosedFactInput (
+            recorded_history,
+            TypedFxHashedStatementClosedFactPosition
+                (TypedFxHashedStatementClosedPositionFactEmptyAtZero (
+                    TypedFxStatementExpectedStreamPosition (
+                        TypedFxStatementStreamPositionZeroValue,
+                        "the-empty-position-proof-cannot-pair-with-a-recorded-history"))))
+    impossible_closed_fact_input_wrong_history ()
+
+///> c
+:# competing_successor_fence_wrong_after_is_refused fails "Got: erp_p2p_competing_successor_fence_receipt (nat_succ" =
+    := impossible_competing_successor_fence_wrong_after () :
+        erp_p2p_competing_successor_fence_receipt nat_one nat_three =
+        erp_p2p_competing_successor_fence_from_existing_cas ()
+    impossible_competing_successor_fence_wrong_after ()
+
+///> c
+:# cross_process_fence_restart_wrong_after_is_refused fails "Got: erp_p2p_cross_process_fence_restart_receipt" =
+    := impossible_cross_process_fence_restart_wrong_after () :
+        erp_p2p_cross_process_fence_restart_receipt nat_two nat_four =
+        erp_p2p_cross_process_fence_restart_from_history
+            (erp_p2p_fence_history_two ())
+            "owner-c"
+    impossible_cross_process_fence_restart_wrong_after ()
+
+///> c
+:# direct_marker_sync_is_refused fails "Got: typed_fx_statement_durable_commit" =
+    := impossible_direct_marker_sync
+        (schedule : typed_fx_statement_recursive_writer_raw_cas_schedule)
+        : typed_fx_statement_durable_commit typed_fx_statement_durable_marker_synced =
+        TypedFxStatementDurableMarkerSyncedCommit (
+            schedule,
+            "a-marker-synced-commit-cannot-skip-the-prepared-and-data-synced-chain")
+    impossible_direct_marker_sync
+        (typed_fx_statement_recursive_writer_raw_cas_schedule_value ())
+
+///> c
+:# equal_hash_collision_is_refused fails "Got: typed_fx_statement_payload_hash_not_equal" =
+    := impossible_equal_hash_collision
+        (proof :
+            typed_fx_statement_payload_hash_not_equal
+                typed_fx_statement_payload_hash_primary typed_fx_statement_payload_hash_primary)
+        =
+        proof
+    impossible_equal_hash_collision
+        (TypedFxStatementPayloadHashPrimaryChanged
+            "an-exact-payload-hash-cannot-be-reclassified-as-an-identity-collision")
+
+///> c
+:# erp_step_detached_result_is_refused fails "Got: erp_op requisition_drafted budget_reserved _ Expected: " =
+    := impossible_erp_step_detached_result () :
+        erp_plan requisition_drafted budget_reserved =
+        := requisition_value : requisition company_a usd widget_a =
+            requisition (
+                company_a "company-a",
+                usd "USD",
+                widget_a "widget-a",
+                "detached-result-requisition")
+        := budget_value : budget_token company_a usd =
+            budget_token (
+                company_a "company-a",
+                usd "USD",
+                1000i64,
+                "detached-result-budget")
+        ErpStep (\? (
+            ReserveBudget (requisition_value, budget_value),
+            (requisition_value, budget_value)))
+    impossible_erp_step_detached_result ()
+
+///> c
+:# event_payload_codec_cross_family_is_refused fails "Got: erp_plan approvals_collected purchase_order_issued" =
+    := impossible_erp_event_payload_codec_cross_family () : string =
+        erp_collect_approvals_payload_frame (erp_p2p_issue_purchase_order_plan ())
+    impossible_erp_event_payload_codec_cross_family ()
+
+///> c
+:# external_crash_recovery_receipt_version_mismatch_is_refused fails "Got: erp_p2p_event_commit_tree (nat_succ" =
+    := impossible_external_crash_recovery_receipt_version_mismatch
+        ()
+        : erp_p2p_external_crash_recovery_receipt nat_four requisition_drafted goods_partially_received
+        =
+        := four_tree = erp_p2p_four_event_commit_tree ()
+        := reserve_commit = ErpP2PEventCommitTreeOne (erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ()))
+        := approvals_commit = ErpP2PEventCommitTreeOne (erp_p2p_unit_event_from_op (erp_p2p_collect_approvals_op ()))
+        := purchase_commit = ErpP2PEventCommitTreeOne (erp_p2p_unit_event_from_op (erp_p2p_issue_purchase_order_op ()))
+        := first_two : erp_p2p_event_commit_tree nat_two requisition_drafted approvals_collected =
+            ErpP2PEventCommitTreeThen (\? (reserve_commit, approvals_commit, v65_add_one_one_two ()))
+        := three_tree : erp_p2p_event_commit_tree nat_three requisition_drafted purchase_order_issued =
+            ErpP2PEventCommitTreeThen (\? (first_two, purchase_commit, v65_add_two_one_three ()))
+        erp_p2p_external_crash_recovery_receipt (
+            erp_p2p_event_commit_tree_version four_tree,
+            erp_p2p_event_commit_tree_authority three_tree,
+            4i64,
+            "forged-external-cross-version-recovery-receipt"
+        )
+    impossible_external_crash_recovery_receipt_version_mismatch ()
+
+///> c
+:# fact_derived_observation_cross_outcome_is_refused fails "Got: typed_fx_hashed_statement_identity_collision" =
+    := impossible_fact_derived_observation_cross_outcome () : typed_fx_hashed_statement_closed_decision =
+        := _, recorded_history = typed_fx_hashed_statement_closed_history_values ()
+        ?= recorded_history ?|
+        | TypedFxHashedStatementClosedHistoryRecorded (recorded, _) =>
+            := collision =
+                typed_fx_hashed_statement_top_collision_from_recorded_log
+                    recorded
+                    (
+                        TypedFxStatementPayloadHashPrimaryChanged
+                            "the-negative-collision-proof-cannot-inhabit-the-duplicate-observation"
+                    )
+            TypedFxHashedStatementClosedDuplicateExact (
+                TypedFxHashedStatementEventStoreIdentityCollision (
+                    collision,
+                    recorded,
+                    "the-negative-collision-proof-is-indexed-by-the-recorded-primary-history"))
+    impossible_fact_derived_observation_cross_outcome ()
+
+///> c
+:# four_owner_lineage_cannot_force_nat_two_is_refused fails "Got: erp_p2p_fence_history (nat_succ (nat_succ" =
+    := impossible_four_owner_lineage_cannot_force_nat_two () : erp_p2p_fence_history nat_two =
+        := physical_lineage =
+            ErpP2PPhysicalOwnerLineageTakeover (
+                ErpP2PPhysicalOwnerLineageTakeover (
+                    ErpP2PPhysicalOwnerLineageTakeover (ErpP2PPhysicalOwnerLineageGenesis "owner-a", "owner-b"),
+                    "owner-c"
+                ),
+                "owner-d"
+            )
+        ?= erp_p2p_physical_owner_lineage_history_make physical_lineage ?|
+        | erp_p2p_physical_owner_lineage_history payload =>
+            := \? fence. history = payload
+            history
+    impossible_four_owner_lineage_cannot_force_nat_two ()
+
+///> c
+:# multiprocess_fenced_commit_wrong_endpoint_is_refused fails "Got: erp_p2p_multiprocess_fenced_commit_receipt" =
+    := impossible_multiprocess_fenced_commit_wrong_endpoint () :
+        erp_p2p_multiprocess_fenced_commit_receipt
+            nat_one nat_three nat_four requisition_drafted goods_partially_received =
+        erp_p2p_multiprocess_fenced_commit_from_program
+            (erp_p2p_fence_history_one ())
+            (erp_p2p_three_takeover_program ())
+            (erp_p2p_four_event_commit_tree ())
+    impossible_multiprocess_fenced_commit_wrong_endpoint ()
+
+///> c
+:# multiprocess_fenced_physical_append_wrong_endpoint_is_refused fails "Got:" =
+    := impossible_multiprocess_fenced_physical_append_wrong_endpoint () :
+        erp_p2p_multiprocess_fenced_physical_append_receipt
+            nat_one nat_three nat_four requisition_drafted goods_partially_received =
+        erp_p2p_multiprocess_fenced_physical_append_from_program
+            (erp_p2p_fence_history_one ())
+            (erp_p2p_three_takeover_program ())
+            (erp_p2p_four_event_commit_tree ())
+    impossible_multiprocess_fenced_physical_append_wrong_endpoint ()
+
+///> c
+:# net_intercompany_detached_mirrors_is_refused fails "Got: opposed_mirror_pair company_a 'a usd po_1001 Expected: " =
+    := impossible_net_intercompany_detached_mirrors () =
+        := invoice_value :
+            invoice_match company_a usd widget_a warehouse_north tax_brazil po_1001 =
+            invoice_match (
+                company_a "company-a",
+                usd "USD",
+                widget_a "widget-a",
+                warehouse_north "warehouse-north",
+                tax_brazil "BR",
+                po_1001 "po-1001",
+                "invoice-match-1001")
+        := left_mirror : mirror_entry company_a company_b usd po_1001 =
+            mirror_entry (company_a "company-a", company_b "company-b", usd "USD", po_1001 "po-1001", 830i64, "left")
+        := right_mirror : mirror_entry company_b company_a usd po_1001 =
+            mirror_entry (
+                company_b "company-b",
+                company_a "company-a",
+                usd "USD",
+                po_1001 "po-1001",
+                830i64,
+                "forged-plus-plus"
+            )
+        NetIntercompany (invoice_value, left_mirror, right_mirror)
+
+///> c
+:# p2p_commit_tree_skipped_middle_is_refused fails "Got: erp_p2p_unit_event budget_reserved purchase_order_issued" =
+    := impossible_p2p_commit_tree_skipped_middle () :
+        erp_p2p_event_commit_tree nat_two requisition_drafted purchase_order_issued =
+        := reserve_event =
+            erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ())
+        := purchase_order_event =
+            erp_p2p_unit_event_from_op (erp_p2p_issue_purchase_order_op ())
+        ErpP2PEventCommitTreeThen (\? (
+            ErpP2PEventCommitTreeOne reserve_event,
+            ErpP2PEventCommitTreeOne purchase_order_event,
+            v65_add_one_one_two ()))
+    impossible_p2p_commit_tree_skipped_middle ()
+
+///> c
+:# p2p_four_event_wrong_version_is_refused fails "Got: erp_p2p_event_store (nat_succ (nat_succ (nat_succ" =
+    := impossible_erp_p2p_four_event_wrong_version () :
+        erp_p2p_event_store nat_three requisition_drafted goods_partially_received =
+        := store, _ = erp_p2p_four_event_commit ()
+        store
+    impossible_erp_p2p_four_event_wrong_version ()
+
+///> c
+:# p2p_outbox_detached_message_is_refused fails "Got: erp_p2p_unit_event requisition_drafted budget_reserved" =
+    := impossible_erp_p2p_outbox_detached_message
+        ()
+        : erp_p2p_event_outbox nat_one requisition_drafted budget_reserved
+        =
+        := event = erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ())
+        ErpP2PEventOutboxOne (event, "forged-outbox-message")
+    impossible_erp_p2p_outbox_detached_message ()
+
+///> c
+:# p2p_three_event_skipped_middle_is_refused fails "Got: erp_p2p_event_store (nat_succ nat_zero) budget_reserved" =
+    := impossible_erp_p2p_three_event_skipped_middle
+        ()
+        : erp_p2p_event_store nat_two requisition_drafted purchase_order_issued
+        =
+        := reserve_event = erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ())
+        := purchase_order_event = erp_p2p_unit_event_from_op (erp_p2p_issue_purchase_order_op ())
+        := reserve_store, _ = erp_p2p_event_commit_one reserve_event
+        := purchase_order_store, _ = erp_p2p_event_commit_one purchase_order_event
+        erp_p2p_event_store_then reserve_store purchase_order_store (v65_add_one_one_two ())
+    impossible_erp_p2p_three_event_skipped_middle ()
+
+///> c
+:# p2p_three_event_wrong_version_is_refused fails "Got: nat_add (nat_succ (nat_succ nat_zero)) (nat_succ nat_zero)" =
+    := impossible_erp_p2p_three_event_wrong_version
+        ()
+        : erp_p2p_event_store nat_two requisition_drafted purchase_order_issued
+        =
+        := reserve_event = erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ())
+        := approvals_event = erp_p2p_unit_event_from_op (erp_p2p_collect_approvals_op ())
+        := purchase_order_event = erp_p2p_unit_event_from_op (erp_p2p_issue_purchase_order_op ())
+        := first_store, _ = erp_p2p_event_commit_then reserve_event approvals_event
+        := final_store, _ = erp_p2p_event_commit_one purchase_order_event
+        erp_p2p_event_store_then first_store final_store (v65_add_two_one_three ())
+    impossible_erp_p2p_three_event_wrong_version ()
+
+///> c
+:# p2p_three_event_wrong_version_sum_is_refused fails "Got: nat_add (nat_succ nat_zero) (nat_succ nat_zero)" =
+    := impossible_erp_p2p_three_event_wrong_version_sum
+        ()
+        : erp_p2p_event_store nat_three requisition_drafted purchase_order_issued
+        =
+        := reserve_event = erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ())
+        := approvals_event = erp_p2p_unit_event_from_op (erp_p2p_collect_approvals_op ())
+        := purchase_order_event = erp_p2p_unit_event_from_op (erp_p2p_issue_purchase_order_op ())
+        := first_store, _ = erp_p2p_event_commit_then reserve_event approvals_event
+        := final_store, _ = erp_p2p_event_commit_one purchase_order_event
+        erp_p2p_event_store_then first_store final_store (v65_add_one_one_two ())
+    impossible_erp_p2p_three_event_wrong_version_sum ()
+
+///> c
+:# p2p_two_event_wrong_final_stage_is_refused fails "Got: erp_p2p_unit_event budget_reserved budget_reserved" =
+    := impossible_erp_p2p_two_event_wrong_final_stage
+        ()
+        : erp_p2p_event_store nat_two requisition_drafted budget_reserved *
+        erp_p2p_event_outbox nat_two requisition_drafted budget_reserved
+        =
+        := reserve_event = erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ())
+        := approvals_event = erp_p2p_unit_event_from_op (erp_p2p_collect_approvals_op ())
+        erp_p2p_event_commit_then reserve_event approvals_event
+    impossible_erp_p2p_two_event_wrong_final_stage ()
+
+///> c
+:# p2p_unit_commit_cross_stage_is_refused fails "Got: erp_p2p_unit_event requisition_drafted requisition_drafted" =
+    := impossible_erp_p2p_unit_commit_cross_stage
+        ()
+        : erp_p2p_unit_store requisition_drafted requisition_drafted *
+        erp_p2p_unit_outbox requisition_drafted requisition_drafted
+        =
+        := event = erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ())
+        erp_p2p_unit_commit_project event
+    impossible_erp_p2p_unit_commit_cross_stage ()
+
+///> c
+:# p2p_unit_outbox_detached_message_is_refused fails "Got: erp_p2p_unit_event requisition_drafted budget_reserved" =
+    := impossible_erp_p2p_unit_outbox_detached_message () : erp_p2p_unit_outbox requisition_drafted budget_reserved =
+        := event = erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ())
+        ErpP2PUnitOutbox (event, "forged-unit-outbox-message")
+    impossible_erp_p2p_unit_outbox_detached_message ()
+
+///> c
+:# physical_lineage_existential_wrong_fixed_depth_is_refused fails "Got: erp_p2p_fence_history (nat_succ (nat_succ" =
+    := impossible_physical_lineage_existential_wrong_fixed_depth () : erp_p2p_fence_history nat_three =
+        := physical_lineage =
+            ErpP2PPhysicalOwnerLineageTakeover (
+                ErpP2PPhysicalOwnerLineageTakeover (
+                    ErpP2PPhysicalOwnerLineageTakeover (ErpP2PPhysicalOwnerLineageGenesis "owner-a", "owner-b"),
+                    "owner-c"
+                ),
+                "owner-d"
+            )
+        ?= erp_p2p_physical_owner_lineage_history_make physical_lineage ?|
+        | erp_p2p_physical_owner_lineage_history payload =>
+            := \? fence. history = payload
+            history
+    impossible_physical_lineage_existential_wrong_fixed_depth ()
+
+///> c
+:# physical_owner_payload_not_fence_scalar_is_refused fails "Got: i64 Expected: " =
+    := impossible_physical_owner_payload_not_fence_scalar () : i64 =
+        := _, _, _, _, _, _, _, _, _, _, physical_owner_sequence =
+            erp_p2p_recoverable_fenced_lock_runtime ()
+        physical_owner_sequence
+
+///> c
+:# physical_selection_cannot_force_fixed_depth_is_refused fails "Got: erp_p2p_fence_history (nat_succ (nat_succ" =
+    := impossible_physical_selection_cannot_force_fixed_depth () : erp_p2p_fence_history nat_two =
+        := selection =
+            erp_p2p_physical_fence_history_selection_from_lineage
+                2i64
+                (ErpP2PPhysicalOwnerLineageTakeover (ErpP2PPhysicalOwnerLineageGenesis "owner-a", "owner-b"))
+        ?= selection ?|
+        | erp_p2p_physical_fence_history_selection payload =>
+            := \? fence. _, history, _ = payload
+            history
+    impossible_physical_selection_cannot_force_fixed_depth ()
+
+///> c
+:# reapply_is_refused fails "Got: typed_fx_statement_command typed_fx_statement_command_fresh Expected: " =
+    := impossible_reapply
+        (applied : typed_fx_statement_command typed_fx_statement_command_applied)
+        : typed_fx_statement_command_transition
+            typed_fx_statement_command_fresh
+            typed_fx_statement_command_applied =
+        TypedFxStatementCommandApply (
+            applied,
+            "an-applied-command-cannot-enter-the-only-fresh-to-applied-transition")
+
+///> c
+:# recorded_hash_changed_caller_collision_is_refused fails "Got: typed_fx_statement_payload_hash_not_equal" =
+    := impossible_recorded_hash_changed_caller_collision
+        (collision :
+            typed_fx_hashed_statement_identity_collision
+                typed_fx_statement_command_identity_primary
+                typed_fx_statement_payload_hash_changed
+                typed_fx_hashed_primary_history)
+        : typed_fx_hashed_statement_closed_recorded_hash_fact =
+        TypedFxHashedStatementClosedRecordedHashChanged collision
+    impossible_recorded_hash_changed_caller_collision
+
+///> c
+:# recoverable_fenced_lock_receipt_owner_mismatch_is_refused fails "Got: erp_p2p_fence_owner (nat_succ (nat_succ" =
+    := impossible_recoverable_fenced_lock_receipt_owner_mismatch
+        ()
+        : erp_p2p_recoverable_fenced_lock_receipt nat_two nat_four requisition_drafted goods_partially_received
+        =
+        := store, outbox = erp_p2p_four_event_commit ()
+        := stale_owner : erp_p2p_fence_owner nat_one = erp_p2p_fence_owner "owner-a"
+        erp_p2p_recoverable_fenced_lock_receipt
+            (stale_owner, store, outbox, "forged-stale-owner-receipt")
+    impossible_recoverable_fenced_lock_receipt_owner_mismatch ()
+
+///> c
+:# recursive_payload_outbox_version_mismatch_is_refused fails "Expected: erp_p2p_event_outbox (nat_succ (nat_succ" =
+    := impossible_recursive_payload_outbox_version_mismatch () =
+        := four_store, _ = erp_p2p_four_event_commit ()
+        := reserve_event = erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ())
+        := approvals_event = erp_p2p_unit_event_from_op (erp_p2p_collect_approvals_op ())
+        := purchase_event = erp_p2p_unit_event_from_op (erp_p2p_issue_purchase_order_op ())
+        := _, first_outbox = erp_p2p_event_commit_then reserve_event approvals_event
+        := _, third_outbox = erp_p2p_event_commit_one purchase_event
+        := three_outbox =
+            erp_p2p_event_outbox_then first_outbox third_outbox (v65_add_two_one_three ())
+        erp_p2p_recursive_atomic_payload_outbox_commit four_store three_outbox
+    impossible_recursive_payload_outbox_version_mismatch ()
+
+///> c
+:# recursive_recovery_receipt_version_mismatch_is_refused fails "Got: erp_p2p_reopened_recovery_authority (nat_succ" =
+    := impossible_recursive_recovery_receipt_version_mismatch
+        ()
+        : erp_p2p_recursive_recovery_receipt nat_four requisition_drafted goods_partially_received
+        =
+        := four_tree = erp_p2p_four_event_commit_tree ()
+        := reserve_commit = ErpP2PEventCommitTreeOne (erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ()))
+        := approvals_commit = ErpP2PEventCommitTreeOne (erp_p2p_unit_event_from_op (erp_p2p_collect_approvals_op ()))
+        := purchase_commit = ErpP2PEventCommitTreeOne (erp_p2p_unit_event_from_op (erp_p2p_issue_purchase_order_op ()))
+        := first_two : erp_p2p_event_commit_tree nat_two requisition_drafted approvals_collected =
+            ErpP2PEventCommitTreeThen (\? (reserve_commit, approvals_commit, v65_add_one_one_two ()))
+        := three_tree : erp_p2p_event_commit_tree nat_three requisition_drafted purchase_order_issued =
+            ErpP2PEventCommitTreeThen (\? (first_two, purchase_commit, v65_add_two_one_three ()))
+        erp_p2p_recursive_recovery_receipt (
+            erp_p2p_event_commit_tree_version four_tree,
+            erp_p2p_reopened_recovery_authority_from_validated_physical three_tree 1i64 3i64,
+            "forged-cross-version-recovery-receipt"
+        )
+    impossible_recursive_recovery_receipt_version_mismatch ()
+
+///> c
+:# recursive_takeover_program_wrong_endpoint_is_refused fails "Got: erp_p2p_fence_takeover_program (nat_succ" =
+    := impossible_recursive_takeover_program_wrong_endpoint () :
+        erp_p2p_fence_takeover_program nat_one nat_three =
+        erp_p2p_three_takeover_program ()
+    impossible_recursive_takeover_program_wrong_endpoint ()
+
+///> c
+:# recursive_wal_recovery_receipt_version_mismatch_is_refused fails "Got: erp_p2p_event_commit_tree (nat_succ" =
+    := impossible_recursive_wal_recovery_receipt_version_mismatch
+        ()
+        :
+            erp_p2p_recursive_wal_recovery_receipt nat_four requisition_drafted goods_partially_received
+        =
+        := four_tree = erp_p2p_four_event_commit_tree ()
+        := other_tree = erp_p2p_five_event_commit_tree ()
+        erp_p2p_recursive_wal_recovery_receipt (
+            erp_p2p_event_commit_tree_version four_tree,
+            erp_p2p_event_commit_tree_authority other_tree,
+            4i64,
+            "forged-cross-version-WAL-recovery-receipt"
+        )
+    impossible_recursive_wal_recovery_receipt_version_mismatch ()
+
+///> c
+:# specialized_observation_wrong_history_is_refused fails "Got: typed_fx_hashed_statement_closed_position_fact" =
+    := impossible_specialized_observation_wrong_history () =
+        := empty_history, recorded_history = typed_fx_hashed_statement_closed_history_values ()
+        decide_typed_fx_hashed_statement_closed_fact_observation
+            recorded_history
+            (TypedFxHashedStatementClosedFactPosition
+                (TypedFxHashedStatementClosedPositionFactEmptyAtZero (
+                    TypedFxStatementExpectedStreamPosition (
+                        TypedFxStatementStreamPositionZeroValue,
+                        "the-empty-at-zero-observation-cannot-decide-the-recorded-history"))))
+    impossible_specialized_observation_wrong_history ()
+
+///> c
+:# three_owner_fenced_lock_receipt_fence_mismatch_is_refused fails "Got: erp_p2p_fence_history (nat_succ (nat_succ" =
+    := impossible_three_owner_fenced_lock_receipt_fence_mismatch
+        ()
+        : erp_p2p_multiprocess_fenced_commit_receipt nat_one nat_three nat_four requisition_drafted
+            goods_partially_received
+        =
+        := store, outbox = erp_p2p_four_event_commit ()
+        := stale_one_three : erp_p2p_stale_fence nat_one nat_three = ErpP2PStaleLift ErpP2PStaleImmediate
+        := takeover : erp_p2p_fence_takeover_execution nat_one nat_three =
+            ErpP2PFenceTakeoverExecution (erp_p2p_fence_history_two (), stale_one_three)
+        := execution = ErpP2PCrossProcessTakeoverExecution (takeover, "forged-fence-two-as-fence-three")
+        ErpP2PMultiprocessFencedCommit
+            (execution, store, outbox, "forged-fence-two-as-fence-three")
+    impossible_three_owner_fenced_lock_receipt_fence_mismatch ()
+
+///> c
+:# three_owner_fenced_lock_receipt_stale_b_source_mismatch_is_refused fails "Got: erp_p2p_stale_fence (nat_succ" =
+    := impossible_three_owner_fenced_lock_receipt_stale_b_source_mismatch
+        ()
+        : erp_p2p_cross_process_fence_restart_receipt nat_two nat_three
+        =
+        := restart = erp_p2p_persisted_fence_restart_from_history (erp_p2p_fence_history_two ()) "owner-c"
+        := stale_b : erp_p2p_stale_fence nat_one nat_three = ErpP2PStaleLift ErpP2PStaleImmediate
+        ErpP2PCrossProcessFenceRestart
+            (restart, stale_b, "forged-stale-b-witness-starts-at-fence-one-instead-of-fence-two")
+    impossible_three_owner_fenced_lock_receipt_stale_b_source_mismatch ()
+
+///> c
+:# three_owner_lineage_cannot_force_nat_four_is_refused fails "Got: erp_p2p_fence_history (nat_succ (nat_succ" =
+    := impossible_three_owner_lineage_cannot_force_nat_four () : erp_p2p_fence_history nat_four =
+        := physical_lineage =
+            ErpP2PPhysicalOwnerLineageTakeover (
+                ErpP2PPhysicalOwnerLineageTakeover (ErpP2PPhysicalOwnerLineageGenesis "owner-a", "owner-b"),
+                "owner-c"
+            )
+        ?= erp_p2p_physical_owner_lineage_history_make physical_lineage ?|
+        | erp_p2p_physical_owner_lineage_history payload =>
+            := \? fence. history = payload
+            history
+    impossible_three_owner_lineage_cannot_force_nat_four ()
+
+///> c
+:# top_collision_wrong_identity_is_refused fails "Got: typed_fx_hashed_statement_identity_collision" =
+    := impossible_top_collision_wrong_identity
+        (recorded :
+            typed_fx_hashed_statement_event_log
+                typed_fx_hashed_secondary_position
+                typed_fx_hashed_secondary_history)
+        (difference :
+            typed_fx_statement_payload_hash_not_equal
+                typed_fx_statement_payload_hash_changed
+                typed_fx_statement_payload_hash_primary)
+        : typed_fx_hashed_statement_identity_collision
+            typed_fx_statement_command_identity_primary
+            typed_fx_statement_payload_hash_changed
+            typed_fx_hashed_secondary_history =
+        typed_fx_hashed_statement_top_collision_from_recorded_log recorded difference
+    impossible_top_collision_wrong_identity
+
+///> c
+:# top_membership_wrong_identity_is_refused fails "Got: typed_fx_hashed_statement_history_contains" =
+    := impossible_top_membership_wrong_identity
+        (recorded :
+            typed_fx_hashed_statement_event_log
+                typed_fx_hashed_secondary_position
+                typed_fx_hashed_secondary_history)
+        : typed_fx_hashed_statement_history_contains
+            typed_fx_statement_command_identity_primary
+            typed_fx_statement_aggregate_identity_primary
+            typed_fx_statement_payload_hash_primary
+            typed_fx_hashed_secondary_history =
+        typed_fx_hashed_statement_top_membership_from_recorded_log recorded
+    impossible_top_membership_wrong_identity
+
+///> c
+:# two_owner_lineage_cannot_force_nat_three_is_refused fails "Got: erp_p2p_fence_history (nat_succ (nat_succ" =
+    := impossible_two_owner_lineage_cannot_force_nat_three () : erp_p2p_fence_history nat_three =
+        := physical_lineage =
+            ErpP2PPhysicalOwnerLineageTakeover (ErpP2PPhysicalOwnerLineageGenesis "owner-a", "owner-b")
+        ?= erp_p2p_physical_owner_lineage_history_make physical_lineage ?|
+        | erp_p2p_physical_owner_lineage_history payload =>
+            := \? fence. history = payload
+            history
+    impossible_two_owner_lineage_cannot_force_nat_three ()
+
+///> c
+:# two_takeover_program_wrong_endpoint_is_refused fails "Got: erp_p2p_fence_takeover_program (nat_succ (nat_succ" =
+    := impossible_two_takeover_program_wrong_endpoint () : erp_p2p_fence_takeover_program nat_one nat_four =
+        ErpP2PFenceTakeoverProgramThen
+            (\?
+                (ErpP2PFenceTakeoverProgramOne "owner-b",
+                    ErpP2PFenceTakeoverProgramOne "owner-c"))
+    impossible_two_takeover_program_wrong_endpoint ()
+
+///> c
+:# unified_evidence_observation_wrong_history_is_refused fails "Got:" =
+    := impossible_unified_evidence_observation_wrong_history () :
+        typed_fx_hashed_statement_closed_decision =
+        := empty_history, _ =
+            typed_fx_hashed_statement_closed_history_values ()
+        decide_typed_fx_hashed_statement_closed_fact_observation
+            empty_history
+            (TypedFxHashedStatementClosedFactRecordedHashAtHead
+                TypedFxHashedStatementClosedRecordedHashPrimary)
+    impossible_unified_evidence_observation_wrong_history ()
+
+///> c
+:# unit_event_multistep_plan_is_refused fails "Got: erp_plan approvals_collected approvals_collected Expected: " =
+    := impossible_unit_event_multistep_plan () :
+        erp_p2p_unit_event requisition_drafted approvals_collected =
+        ErpP2PUnitEvent (\? (
+            ErpThen (\? (
+                erp_p2p_reserve_budget_plan (),
+                erp_p2p_collect_approvals_plan ()))))
+    impossible_unit_event_multistep_plan ()

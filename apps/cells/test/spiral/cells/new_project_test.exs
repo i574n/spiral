@@ -6,9 +6,9 @@ defmodule Spiral.Cells.NewProjectTest do
     dir = Path.join(Spiral.Cells.TestHelpers.tmp_dir!("new_project"), "ledger")
 
     assert {:ok, files} = NewProject.create(dir, "ledger")
-    assert files == [".editorconfig", ".gitattributes", ".gitignore", "scripts/gate.ps1", "scripts/probe.ps1", "src/ledger.spi", "src/package.spiproj"]
+    assert files == [".editorconfig", ".gitattributes", ".gitignore", "scripts/gate.ps1", "scripts/trial.ps1", "src/ledger.spi", "src/package.spiproj"]
     assert File.read!(Path.join(dir, "scripts/gate.ps1")) =~ "spiral.notebook"
-    assert File.read!(Path.join(dir, "scripts/probe.ps1")) =~ "--probe"
+    assert File.read!(Path.join(dir, "scripts/trial.ps1")) =~ "--trial"
     assert File.read!(Path.join(dir, "src/package.spiproj")) == "packages: |core-\nmodules:\n    ledger\n"
     assert File.read!(Path.join(dir, "src/ledger.spi")) =~ "test ledger static ="
     refute File.read!(Path.join(dir, "src/ledger.spi")) =~ "PROJECT_NAME"

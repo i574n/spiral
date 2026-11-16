@@ -4,6 +4,10 @@
 := route \* t. (path : string) (_ : t) : string =
     ~> routes_real::route path `t
 
+:= matched \* t. (path_route : string) (path : string) : option t =
+    := checked = ~> routes_real::route path_route `t
+    ? route_path::fits checked path ?> Some (~> routes_real::params checked path `t) |: None
+
 :== comment_params = { slug : string; id : i32 }
 
 ///> c
@@ -11,3 +15,25 @@
 :# route_names_exactly_the_handler_fields =
     route "/articles/:slug/comments/:id" ({ slug = ""; id = 0i32 } : comment_params)
     |> _assert_eq "/articles/:slug/comments/:id"
+
+///> rust
+///> gleam
+:# matched_reads_the_param_record_from_the_path =
+    := ~path = "/articles/hi/comments/7"
+    (matched "/articles/:slug/comments/:id" path : option comment_params)
+    |> _assert_eq (Some { slug = "hi"; id = 7i32 })
+
+:== name_params = { name : string }
+
+///> rust
+///> gleam
+:# matched_is_none_for_another_route =
+    := ~path = "/articles/hi"
+    (matched "/profiles/:name" path : option name_params) |> _assert_eq None
+
+///> rust
+///> gleam
+:# a_non_number_id_reads_as_minus_one =
+    := ~path = "/articles/hi/comments/x"
+    (matched "/articles/:slug/comments/:id" path : option comment_params)
+    |> _assert_eq (Some { slug = "hi"; id = -1i32 })

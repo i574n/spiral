@@ -118,28 +118,24 @@ defmodule Spiral.Cells.Targets do
   end
 
   @doc false
-  def zig_run_args(path, opts) do
+  def zig_run_args(path, opts), do: zig_args("", path, opts)
+
+  defp zig_args(release_exe, path, opts) do
+    arch = to_string(:erlang.system_info(:system_architecture))
     global_cache = Path.join(Toolchain.cache_dir(opts), "cells-zig-cache")
     local_cache = Path.join(Path.dirname(path), ".zig-cache")
-    backend = if zig_self_hosted?(), do: ["-fno-llvm"], else: []
-    ["run"] ++ backend ++ ["--global-cache-dir", global_cache, "--cache-dir", local_cache, path]
+    llvm = System.get_env("SPIRAL_CELLS_ZIG_LLVM") || ""
+    String.split(Spiral.Cells.Domain.zig_args(release_exe, arch, llvm, global_cache, local_cache, path), "\n")
   end
 
   defp run_zig_release(path, opts, timeout, deadline) do
     exe = Path.join(Path.dirname(path), exe_name())
-    global_cache = Path.join(Toolchain.cache_dir(opts), "cells-zig-cache")
-    local_cache = Path.join(Path.dirname(path), ".zig-cache")
-    args = ["build-exe", "-O", "ReleaseFast", "--global-cache-dir", global_cache, "--cache-dir", local_cache, "-femit-bin=" <> exe, path]
+    args = zig_args(exe, path, opts)
 
     with {:ok, _built} <- Spiral.Cells.timed(:target_build_ms, fn -> run_program(Toolchain.zig(opts), "zig build-exe", args, opts, timeout, deadline, false) end),
          {:ok, ran} <- Spiral.Cells.timed(:target_run_ms, fn -> run_status(exe, exe_name(), [], opts, timeout, deadline, false) end) do
       {:ok, cell_exit(ran)}
     end
-  end
-
-  defp zig_self_hosted? do
-    System.get_env("SPIRAL_CELLS_ZIG_LLVM") != "1" and
-      Regex.match?(~r/x86_64|amd64|win32/i, to_string(:erlang.system_info(:system_architecture)))
   end
 
   @spiral_rust_wait_ms 3_600_000
@@ -259,9 +255,7 @@ defmodule Spiral.Cells.Targets do
     end
   end
 
-  defp cpp_exe(path) do
-    path <> ".out" <> if(match?({:win32, _}, :os.type()), do: ".exe", else: "")
-  end
+  defp cpp_exe(path), do: Spiral.Cells.Domain.c_exe_path(path, match?({:win32, _}, :os.type()))
 
   defp run_fsi(path, opts, timeout, deadline) do
     dotnet = Toolchain.dotnet(opts)
@@ -332,9 +326,9 @@ defmodule Spiral.Cells.Targets do
 
   defp run_pascal(compiler, shown, args, path, opts, timeout, deadline) do
     with {:ok, compiled} <- run_program(compiler, shown, args, opts, timeout, deadline, false) do
-      exe = Path.join(Path.dirname(path), Path.basename(path, Path.extname(path)) <> ".exe")
+      exe = Enum.find(for(s <- [".exe", ""], do: Path.join(Path.dirname(path), Path.basename(path, Path.extname(path)) <> s)), &File.regular?/1)
 
-      if File.regular?(exe) do
+      if exe do
         case run_status(exe, Path.basename(exe), [], opts, timeout, deadline, false) do
           {:ok, ran} -> {:ok, cell_exit(ran)}
           error -> error
@@ -610,7 +604,7 @@ defmodule Spiral.Cells.Targets do
   defp normalize({:ok, %{exit_status: status, output: output}}, _present?) do
     {:error,
      %ProcessError{
-       message: "builder failed (exit #{status})\n\n#{output}",
+       message: Spiral.Cells.Domain.builder_failed_text(Integer.to_string(status), output),
        exit_status: status,
        output: output
      }}
@@ -627,8 +621,6 @@ defmodule Spiral.Cells.Targets do
   end
 
   defp present(output), do: Spiral.Cells.Domain.builder_present(output)
-
-  @cupy_missing_cuda_path_warning "ignore:CUDA path could not be detected:UserWarning"
 
   defp tool_env(opts, false), do: System.get_env() |> Enum.to_list() |> with_test_name(opts) |> without_cupy_cuda_path_warning()
 
@@ -651,13 +643,13 @@ defmodule Spiral.Cells.Targets do
 
   @doc false
   def without_cupy_cuda_path_warning(env) do
-    filters =
+    existing =
       case List.keyfind(env, "PYTHONWARNINGS", 0) do
-        {_, existing} when existing not in [nil, ""] -> existing <> "," <> @cupy_missing_cuda_path_warning
-        _ -> @cupy_missing_cuda_path_warning
+        {_, value} when is_binary(value) -> value
+        _ -> ""
       end
 
-    List.keystore(env, "PYTHONWARNINGS", 0, {"PYTHONWARNINGS", filters})
+    List.keystore(env, "PYTHONWARNINGS", 0, {"PYTHONWARNINGS", Spiral.Cells.Domain.python_warnings(existing)})
   end
 
   defp work_dir([], exe), do: Path.dirname(exe)
@@ -682,25 +674,13 @@ defmodule Spiral.Cells.Targets do
   defp invoke(nil, _ctx, default), do: default.()
   defp invoke(fun, ctx, _default) when is_function(fun, 1), do: fun.(ctx)
 
-  @c_flags ["-std=c11", "-O2", "-w", "-fwrapv"]
-
   @spec c_args(String.t(), String.t(), String.t(), String.t() | nil) :: [String.t()]
   def c_args(cc, source, exe, notebook_dir) do
-    if cl?(cc) do
-      ["/nologo", "/O2", "/Fe:#{exe}", source]
-    else
-      @c_flags ++ c_shim(notebook_dir) ++ ["-o", exe, source, "-lm"]
-    end
+    String.split(Spiral.Cells.Domain.c_args(Path.basename(cc), exe, source, c_shim(notebook_dir)), "\n")
   end
 
-  defp c_shim(nil), do: []
-
-  defp c_shim(dir) do
-    shim = Path.join(dir, "c-shim.h")
-    if File.regular?(shim), do: ["-include", shim], else: []
-  end
-
-  defp cl?(path), do: Spiral.Cells.Domain.is_cl_compiler(Path.basename(path)) == "true"
+  defp c_shim(nil), do: ""
+  defp c_shim(dir), do: if(File.regular?(shim = Path.join(dir, "c-shim.h")), do: shim, else: "")
 
   defp host_extension(language), do: Spiral.Cells.Domain.host_extension(language)
 
@@ -734,15 +714,12 @@ defmodule Spiral.Cells.Targets do
     end
   end
 
-  defp timeout_error(%{output: output}, timeout) do
-    %TimeoutError{
-      message: "Spiral cell timed out after #{format_ms(timeout)}#{Spiral.Cells.Directives.scale_note()}; the process tree was killed.",
-      timeout: timeout,
-      output: output
-    }
+  @doc false
+  def timeout_error(%{output: output}, timeout) do
+    message = Spiral.Cells.Domain.cell_timeout_text("Spiral", budget_ms(timeout), Spiral.Cells.Directives.scale_note(), "")
+    %TimeoutError{message: message, timeout: timeout, output: output}
   end
 
-  defp format_ms(:infinity), do: "infinity"
-  defp format_ms(ms) when is_integer(ms) and rem(ms, 1000) == 0, do: "#{div(ms, 1000)}s"
-  defp format_ms(ms), do: "#{ms}ms"
+  @doc false
+  def budget_ms(timeout), do: if(timeout == :infinity, do: -1, else: timeout)
 end

@@ -9,11 +9,11 @@
     ?> digits_end s (i + 1i32)
     |: i
 
-:= numbered_gutter (line : string) : bool =
+:~ numbered_gutter (line : string) : bool =
     := k = digits_end line 0i32
     k > 0i32 && text::starts_at line k " │"
 
-:= warning_line (line : string) : bool =
+:~ warning_line (line : string) : bool =
     := lead = [ "\t"; " "; "Hint:"; "│"; "┌" ]
     line = "" || listm::fold (\ hit p => hit || text::starts_with line p) !- lead || numbered_gutter line
 
@@ -27,12 +27,12 @@
         |: kept_lines rest !- (line :: acc)
     | [] => listm::rev acc
 
-:= strip_warnings (text_in : string) : string =
+:~ strip_warnings (text_in : string) : string =
     sm'::concat_list "\n" (kept_lines (sm'::split_list "\n" (text::replace text_in "\r\n" "\n")) !- [])
 
 :== gleam_dep = { name : string; version : option string }
 
-:= default_deps () : list (string * string) =
+:~ default_deps () : list (string * string) =
     [
         ("gleam_stdlib", ">=1.0.5 and <2.0.0")
         ("gleam_time", ">=1.0.0 and <2.0.0")
@@ -43,7 +43,7 @@
         ("gtempo", ">=7.4.0 and <8.0.0")
     ]
 
-:= is_default (name : string) : bool = listm::fold (\ hit (n, v) => hit || (n = name && v = v)) !- (default_deps ())
+:~ is_default (name : string) : bool = listm::fold (\ hit (n, v) => hit || (n = name && v = v)) !- (default_deps ())
 
 :~ ^ quotes_start (s : string) (i : i32) : i32 =
     ? i < text::length s && text::byte_at s i = 34i32
@@ -55,17 +55,17 @@
     ?> quotes_end s (i - 1i32) floor
     |: i
 
-:= trim_quotes (s : string) : string =
+:~ trim_quotes (s : string) : string =
     := a = quotes_start s 0i32
     text::slice_len s a (quotes_end s (text::length s) a - a)
 
-:= cleaned (version : option string) : string =
+:~ cleaned (version : option string) : string =
     := v = ?= version ?| Some x => x | None => "*"
     trim_quotes (text::replace v "\\" "")
 
-:= dep_line (name : string) (version : string) : string = name ++ " = " ++ builders::inspect version
+:~ dep_line (name : string) (version : string) : string = name ++ " = " ++ builders::inspect version
 
-:= manifest (main : string) (target : string) (deps : list gleam_dep) : string =
+:~ manifest (main : string) (target : string) (deps : list gleam_dep) : string =
     := fixed = listm::map (\ (n, v) => dep_line n v) (default_deps ())
     := extra =
         listm::fold
@@ -90,7 +90,7 @@
         deps_of rest ({ name = name; version = v } :: acc)
     | _ => listm::rev acc
 
-:= next_line (s : string) (i : i32) : i32 =
+:~ next_line (s : string) (i : i32) : i32 =
     := n = text::find_from s "\n" i
     ? n < 0i32 ?> -1i32 |: n + 1i32
 
@@ -112,14 +112,14 @@
         Some (text::slice_len s start (stop - start))
     |: line_value_from s (next_line s i) prefix
 
-:= option_text (o : option string) : string = ?= o ?| Some v => v | None => ""
+:~ option_text (o : option string) : string = ?= o ?| Some v => v | None => ""
 
-:= manifest_facts (manifest : string) : string =
+:~ manifest_facts (manifest : string) : string =
     := name = option_text (quoted_value_from manifest 0i32 "name = \"")
     := target = line_value_from manifest 0i32 "target = "
     name ++ (? target = None ?> "\t0\t" |: "\t1\t" ++ option_text target)
 
-:= manifest_wire (wire : string) : string =
+:~ manifest_wire (wire : string) : string =
     ?= fields_from wire 0i32 [] ?|
     | main :: target :: rest => manifest main target (deps_of rest [])
     | _ => ""

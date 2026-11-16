@@ -1,0 +1,75 @@
+:| dual_j = DualJ
+
+:| right_j = RightJ
+
+:== forms4 = { isol : i32; init : i32; medi : i32; fina : i32 }
+
+:== forms2 = { isol : i32; fina : i32 }
+
+:| arabic j =
+    | Dual :: forms4 -> arabic dual_j
+    | Right :: forms2 -> arabic right_j
+
+:= ar_isolated \* j. (a : arabic j) : i32 =
+    ?= a ?|
+    | Dual f => f::isol
+    | Right f => f::isol
+
+:= ar_final \* j. (a : arabic j) : i32 =
+    ?= a ?|
+    | Dual f => f::fina
+    | Right f => f::fina
+
+:= ar_initial (a : arabic dual_j) : i32 =
+    ?= a ?|
+    | Dual f => f::init
+
+:= ar_medial (a : arabic dual_j) : i32 =
+    ?= a ?|
+    | Dual f => f::medi
+
+:| cons_c = ConsC
+
+:| indvow_c = IndVowC
+
+:| matra_c = MatraC
+
+:| matra_pos = MPre | MPost | MAbove | MBelow
+
+:| deva c =
+    | DevaCons :: i32 -> deva cons_c
+    | DevaVow :: i32 -> deva indvow_c
+    | DevaMatra :: { glyph : i32; pos : matra_pos } -> deva matra_c
+
+:= deva_glyph \* c. (d : deva c) : i32 =
+    ?= d ?|
+    | DevaCons o => o
+    | DevaVow o => o
+    | DevaMatra m => m::glyph
+
+:= deva_base (d : deva cons_c) : i32 =
+    ?= d ?|
+    | DevaCons o => o
+
+:= matra_position (m : deva matra_c) : matra_pos =
+    ?= m ?|
+    | DevaMatra r => r::pos
+
+:= beh (s : i32) : arabic dual_j = Dual { isol = s +. 1i32; init = s +. 2i32; medi = s +. 3i32; fina = s +. 4i32 }
+
+:= alef (s : i32) : arabic right_j = Right { isol = s +. 10i32; fina = s +. 11i32 }
+
+:= ka (s : i32) : deva cons_c = DevaCons (s +. 20i32)
+
+:= a_vow (s : i32) : deva indvow_c = DevaVow (s +. 30i32)
+
+:= aa (s : i32) : deva matra_c = DevaMatra { glyph = s +. 40i32; pos = MPost }
+
+:= main () : i32 =
+    := ~s = 0i32
+    := b = beh s
+    := a = alef s
+    := arabic = ar_isolated b +. ar_initial b +. ar_medial b +. ar_final b +. ar_isolated a +. ar_final a
+    := deva = deva_glyph (ka s) +. deva_base (ka s) +. deva_glyph (a_vow s) +. deva_glyph (aa s)
+    := post = ?= matra_position (aa s) ?| | MPost => 1i32 | _ => 0i32
+    arabic +. deva +. post

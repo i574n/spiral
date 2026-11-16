@@ -344,6 +344,7 @@ defmodule Spiral.Cells.Memo do
   end
 
   defp package_prints(steps, bounds) do
+    for {:spiral_cells_package_index, _} = key <- Process.get_keys(), do: Process.delete(key)
     steps
     |> Enum.flat_map(&package_paths(&1.program))
     |> Enum.uniq()
@@ -353,8 +354,11 @@ defmodule Spiral.Cells.Memo do
   defp package_index(dir, :unavailable), do: tree_print(dir, :unavailable)
 
   defp package_index(dir, bounds) do
-    dir = Path.expand(dir)
+    key = {:spiral_cells_package_index, Path.expand(dir)}
+    Process.get(key) || tap(build_package_index(Path.expand(dir), bounds), &Process.put(key, &1))
+  end
 
+  defp build_package_index(dir, bounds) do
     case Spiral.Cells.Manifest.read(dir) do
       {:ok, project} ->
         modules =
@@ -528,35 +532,13 @@ defmodule Spiral.Cells.Memo do
   def module_files(dir, project), do: dir |> module_entries(project) |> Enum.map(&elem(&1, 0))
 
   defp module_entries(dir, project) do
-    project
-    |> section("modules")
-    |> Enum.reduce({[], []}, fn {indent, entry}, {files, folders} ->
-      folders = Enum.drop_while(folders, fn {level, _name} -> level >= indent end)
-      path = folders |> Enum.reverse() |> Enum.map(&elem(&1, 1))
-
-      if String.ends_with?(entry, "/") do
-        {files, [{indent, String.trim_trailing(entry, "/")} | folders]}
-      else
-        name = entry |> String.trim_trailing("-") |> String.trim_trailing("*")
-        opened = String.ends_with?(entry, "-") or String.ends_with?(entry, "*")
-        {files ++ Enum.map(candidates(dir, Path.join(path ++ [name])), &{&1, opened}), folders}
-      end
-    end)
-    |> elem(0)
+    for line <- project |> Spiral.Cells.Domain.module_entries() |> String.split("\n", trim: true),
+        [opened, name] = String.split(line, "\t", parts: 2),
+        file <- candidates(dir, name),
+        do: {file, opened == "1"}
   end
   defp candidates(dir, name) do
     [".spi", ".spir"] |> Enum.map(&Path.join(dir, name <> &1)) |> Enum.filter(&File.regular?/1)
-  end
-
-  defp section(project, name) do
-    project
-    |> String.replace("\r\n", "\n")
-    |> String.split("\n")
-    |> Enum.drop_while(&(String.trim(&1) != name <> ":"))
-    |> Enum.drop(1)
-    |> Enum.take_while(&(&1 == "" or String.starts_with?(&1, " ")))
-    |> Enum.reject(&(String.trim(&1) == ""))
-    |> Enum.map(&{String.length(&1) - String.length(String.trim_leading(&1)), String.trim(&1)})
   end
 
   defp content_print(path, :unavailable) do

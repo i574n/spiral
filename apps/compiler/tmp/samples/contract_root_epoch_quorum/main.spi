@@ -2,7 +2,7 @@
 :! signer_b = ()
 :! key_a = ()
 :! key_b = ()
-:! root_digest = ()
+:! root_fingerprint = ()
 :! epoch1 = ()
 :! verified = ()
 
@@ -20,6 +20,6 @@
     ?= first, second, proof ?| | RootVote _, RootVote _, SignerAB => RootQuorum "root-epoch-quorum-formed"
 
 := main () : string =
-    := first : root_vote signer_a key_a root_digest epoch1 verified = RootVote "a"
-    := second : root_vote signer_b key_b root_digest epoch1 verified = RootVote "b"
+    := first : root_vote signer_a key_a root_fingerprint epoch1 verified = RootVote "a"
+    := second : root_vote signer_b key_b root_fingerprint epoch1 verified = RootVote "b"
     ?= form first second SignerAB ?| | RootQuorum label => label

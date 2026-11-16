@@ -1,6 +1,6 @@
-:== tally = { report : string; failures : string; count : i32 }
+:== run_report = { report : string; failures : string; count : i32 }
 
-:~ ^ run (n : i32) (t : tally) : tally =
+:~ ^ run (n : i32) (t : run_report) : run_report =
     ? n <= 0i32 ?> t
     |: run (n -. 1i32) { report = t::failures; failures = "y"; count = t::count +. 1i32 }
 

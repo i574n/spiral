@@ -35,22 +35,35 @@
 
 :~ brace_depth (depth : i32) (c : char) : i32 = ? c = '{' ?> depth + 1i32 |? c = '}' ?> depth - 1i32 |: depth
 
+:~ json_space_code (code : u32) : bool = code = 32u32 || code = 10u32 || code = 13u32 || code = 9u32
+
+:~ json_space (c : char) : bool = json_space_code (sm'::char_code c)
+
+:~ ^ skip_spaces (s : string) (at : i32) : i32 =
+    ? at >= 0i32 && at < sm::length s && json_space (sm::index s at)
+    ?> skip_spaces s (at + 1i32)
+    |: at
+
 :== top_query = { s : string; needle : string; n : i32; m : i32 }
 
+:~ colon_at (q : top_query) (at : i32) : i32 =
+    := after = skip_spaces q::s (at + q::m)
+    ? after < q::n && sm::index q::s after = ':' ?> after |: -1i32
+
 :~ key_hit (q : top_query) (at : i32) (depth : i32) : bool =
-    depth = 1i32 && sm::index q::s at = '"' && matches_at q::s q::needle at 0i32 q::m
+    depth = 1i32 && sm::index q::s at = '"' && matches_at q::s q::needle at 0i32 q::m && colon_at q at >= 0i32
 
 :~ ^ find_top (q : top_query) (at : i32) (depth : i32) : i32 =
     ? at + q::m > q::n
     ?> -1i32
     |? key_hit q at depth
-    ?> at + q::m
+    ?> skip_spaces q::s (colon_at q at + 1i32)
     |:
         := c = sm::index q::s at
         find_top q (next_token q::s at q::n c) (bracket_depth depth c)
 
 :~ value_at (s : string) (key : string) : i32 =
-    := needle = "\"" ++# key ++# "\":"
+    := needle = "\"" ++# key ++# "\""
     find_top { s = s; needle = needle; n = sm::length s; m = sm::length needle } 0i32 0i32
 
 :~ high_digit (c : char) : i32 =
@@ -215,26 +228,32 @@
         ?> k
         |: item_starts q (item_next q at c) (bracket_depth depth c) (counted q at depth k c)
 
-:~ ^ skip_spaces (s : string) (at : i32) : i32 = ? sm::index s at = ' ' ?> skip_spaces s (at + 1i32) |: at
-
 :~ absent (s : string) (at : i32) : bool = at < 0i32 || sm::index s (skip_spaces s at) = 'n'
 
 :~ number_char (c : char) : bool = digit_of c >= 0i32 || c = '-' || c = '+' || c = '.' || c = 'e' || c = 'E'
 
-:~ ^ number_end (s : string) (at : i32) (n : i32) : i32 = ? at < n && number_char (sm::index s at) ?> number_end s (at + 1i32) n |: at
+:~ ^ number_end (s : string) (at : i32) (n : i32) : i32 =
+    ? at < n && number_char (sm::index s at)
+    ?> number_end s (at + 1i32) n
+    |: at
 
 :~ parse_f64 (s : string) (at : i32) : f64 =
     := at = ? at < 0i32 ?> at |: skip_spaces s at
-    ? at < 0i32 ?> 0.0
+    ? at < 0i32
+    ?> 0.0
     |: ?= convert::parse_f64 (text_between s at (number_end s at (sm::length s))) ?| | Some f => f | None => 0.0
 
 :~ ^ digits64 (s : string) (at : i32) (n : i32) (acc : i64) : i64 =
-    ? at >= n ?> acc
+    ? at >= n
+    ?> acc
     |:
         := d = digit_of (sm::index s at)
         ? d >= 0i32 ?> digits64 s (at + 1i32) n (acc * 10i64 + (conv d : i64)) |: acc
 
-:~ parse_u32 (s : string) (at : i32) : u32 = ? at < 0i32 ?> 0u32 |: (conv (digits64 s (skip_spaces s at) (sm::length s) 0i64) : u32)
+:~ parse_u32 (s : string) (at : i32) : u32 =
+    ? at < 0i32
+    ?> 0u32
+    |: conv (digits64 s (skip_spaces s at) (sm::length s) 0i64) : u32
 
 
 :~ has_items (s : string) (at : i32) : bool =
@@ -288,7 +307,8 @@
 
 :~ payload_after_key (s : string) (at : i32) : i32 =
     := key_at = skip_spaces s (at + 1i32)
-    skip_spaces s (closing_quote s (key_at + 1i32) (sm::length s) + 2i32)
+    := colon = skip_spaces s (closing_quote s (key_at + 1i32) (sm::length s) + 1i32)
+    skip_spaces s (colon + 1i32)
 
 :~ union_payload_at (s : string) (at : i32) : i32 =
     ? at < 0i32
@@ -318,4 +338,5 @@
 
 ///> rust
 :# numbers_parse_as_f64_and_u32_up_to_their_span =
-    (parse_f64 "{\"a\":1.5e-3,\"b\":7}" 5i32, parse_u32 "[4000000000]" 1i32, number_end "-2.5]" 0i32 5i32) |> _assert_eq (0.0015, 4000000000u32, 4i32)
+    (parse_f64 "{\"a\":1.5e-3,\"b\":7}" 5i32, parse_u32 "[4000000000]" 1i32, number_end "-2.5]" 0i32 5i32)
+    |> _assert_eq (0.0015, 4000000000u32, 4i32)

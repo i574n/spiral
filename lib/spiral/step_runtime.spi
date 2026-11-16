@@ -6,8 +6,18 @@
 :| step s =
     | Continue : s
     | Stop
+    | Fail : string
 
 :== actor s m = { init : () -> s; handle : s -> m -> step s }
+
+:| restart_policy =
+    | RestartAlways
+    | RestartOnCrash
+    | RestartNever
+
+:| exit_reason =
+    | Normal
+    | Abnormal : string
 
 :== step_handle s m =
     {
@@ -15,22 +25,59 @@
         mailbox : mut (list m)
         draining : mut bool
         handle : s -> m -> step s
+        init : () -> s
+        policy : restart_policy
+        budget : mut i32
+        gave_up : mut bool
     }
 
 :== reply_cell t = mut (option t)
 
-:= spawn \* s m. (spec : actor s m) : step_handle s m =
-    { state = mut (Some (spec::init ())); mailbox = mut []; draining = mut !-; handle = spec::handle }
+:= supervise \* s m. (policy : restart_policy) (intensity : i32) (spec : actor s m) : step_handle s m =
+    {
+        state = mut (Some (spec::init ()))
+        mailbox = mut []
+        draining = mut !-
+        handle = spec::handle
+        init = spec::init
+        policy = policy
+        budget = mut intensity
+        gave_up = mut !-
+    }
 
-:= settle \* s. (state : mut (option s)) (outcome : step s) : () =
+:= spawn \* s m. (spec : actor s m) : step_handle s m = supervise RestartNever 0i32 spec
+
+:= restarts (policy : restart_policy) (reason : exit_reason) : bool =
+    ?= policy ?|
+    | RestartAlways => !+
+    | RestartOnCrash => ?= reason ?| Abnormal _ => !+ | Normal => !-
+    | RestartNever => !-
+
+:= exited \* s m. (target : step_handle s m) (reason : exit_reason) : () =
+    := state = target::state
+    := budget = target::budget
+    := gave_up = target::gave_up
+    ? restarts target::policy reason |> not
+    ?> state <- None
+    |? *budget > 0i32
+    ?>
+        budget <- *budget - 1i32
+        state <- Some (target::init ())
+    |:
+        state <- None
+        gave_up <- !+
+
+:= settle \* s m. (target : step_handle s m) (outcome : step s) : () =
+    := state = target::state
     ?= outcome ?|
     | Continue next => state <- Some next
-    | Stop => state <- None
+    | Stop => exited target Normal
+    | Fail why => exited target (Abnormal why)
 
 := deliver \* s m. (target : step_handle s m) (message : m) : () =
     := state = target::state
     ?= *state ?|
-    | Some current => settle state (target::handle current message)
+    | Some current => settle target (target::handle current message)
     | None => ()
 
 := drain_mailbox \* m. (mailbox : mut (list m)) (handle : m -> ()) : () =
@@ -94,6 +141,7 @@
     ?= spec::handle state message ?|
     | Continue next => otp_actor::continue next
     | Stop => otp_actor::stop ()
+    | Fail why => otp_actor::stop_abnormal why
 
 := started_inbox \* m. (started : option (erlang_process::subject m)) : erlang_process::subject m =
     ?= started ?|
@@ -164,3 +212,48 @@
     := last = mut (-1i64)
     feed_sink last
     *last |> _assert_eq 7i64
+
+:| fragile_message =
+    | Bump
+    | Boom
+    | Quit
+    | Peek : reply_cell i32
+
+:= fragile_step (total : i32) (message : fragile_message) : step i32 =
+    ?= message ?|
+    | Bump => Continue (total + 1i32)
+    | Boom => Fail "boom on request"
+    | Quit => Stop
+    | Peek cell =>
+        reply cell total
+        Continue total
+
+:= fragile () : actor i32 fragile_message = { init = \ () => 0i32; handle = fragile_step }
+
+:= crashed_and_restarted (child : step_handle i32 fragile_message) : i32 * i32 =
+    send child Bump
+    send child Bump
+    := before = call child Peek
+    send child Boom
+    before, call child Peek
+
+///> rust
+///> c
+:# a_crashed_child_restarts_with_fresh_state_until_its_intensity_runs_out =
+    := child = supervise RestartOnCrash 1i32 (fragile ())
+    := before, after = crashed_and_restarted child
+    send child Boom
+    := state = child::state
+    := gave_up = child::gave_up
+    (before, after, *state, *gave_up) |> _assert_eq (2i32, 0i32, None, !+)
+
+///> rust
+///> c
+:# a_crash_only_child_stays_down_after_a_normal_stop =
+    := child = supervise RestartOnCrash 3i32 (fragile ())
+    send child Bump
+    send child Quit
+    := state = child::state
+    := budget = child::budget
+    := gave_up = child::gave_up
+    (*state, *budget, *gave_up) |> _assert_eq (None, 3i32, !-)

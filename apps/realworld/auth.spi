@@ -14,9 +14,14 @@
 
 :== auth_crypto = { mac : string -> string -> string; same : string -> string -> bool }
 
+:| refusal =
+    | MissingToken
+    | MalformedToken
+    | BadToken
+
 :| auth_result =
     | Admitted :: request authenticated -> auth_result
-    | Unauthorized :: string -> auth_result
+    | Unauthorized :: refusal -> auth_result
 
 := token_for (c : auth_crypto) (secret : string) (user_id : i32) : string =
     := payload = sm'::show user_id
@@ -25,7 +30,9 @@
 := header_for (c : auth_crypto) (secret : string) (user_id : i32) : string = "Token " ++# token_for c secret user_id
 
 := token_of (header : string) : option string =
-    ? sm'::length header >= 6i32 && sm'::starts_with "Token " header ?> Some (sm'::substring 6i32 (sm'::length header - 6i32) header) |: None
+    ? sm'::length header >= 6i32 && sm'::starts_with "Token " header
+    ?> Some (sm'::substring 6i32 (sm'::length header - 6i32) header)
+    |: None
 
 := split_token (token : string) : option (string * string) =
     := dot = sm'::last_index_of "." token
@@ -36,23 +43,21 @@
 := verified (c : auth_crypto) (secret : string) (payload : string) (given : string) =
     ?= (convert::try_convert payload : option i32) ?|
     | Some id ?& c::same (c::mac secret payload) given => Admitted (Authenticated id)
-    | _ => Unauthorized "bad token"
+    | _ => Unauthorized BadToken
 
 := checked (c : auth_crypto) (secret : string) (token : string) : auth_result =
     ?= split_token token ?|
     | Some (payload, given) => verified c secret payload given
-    | None => Unauthorized "malformed token"
+    | None => Unauthorized MalformedToken
 
 := authenticate (c : auth_crypto) (secret : string) (header : string) : auth_result =
     ?= token_of header ?|
     | Some token => checked c secret token
-    | None => Unauthorized "missing token"
+    | None => Unauthorized MissingToken
 
 := user_of (r : request authenticated) : i32 =
     ?= r ?|
     | Authenticated user_id => user_id
-
-:= unauthorized_body (reason : string) : string = "{\"errors\":{\"body\":[\"" ++# reason ++# "\"]}}"
 
 := toy_crypto () : auth_crypto =
     := mac = \ (secret : string) (payload : string) => sm'::show (sm'::length secret * 31i32 + sm'::length payload)
@@ -63,7 +68,9 @@
 := stored_hash (salt : string) (password : string) (rounds : u32) : string =
     "pbkdf2-sha256:" ++# sm'::show rounds ++# ":" ++# salt ++# ":" ++# crypto::pbkdf2_sha256_hex password salt rounds
 
-:= register (s : realworld_model::store) (u : realworld_model::user) (password : string) (salt : string) (rounds : u32) =
+:= register
+    (s : realworld_model::store) (u : realworld_model::user) (password : string) (salt : string) (rounds : u32)
+    =
     realworld_model::create_user s { u with password_hash = stored_hash salt password rounds }
 
 := rehashed (password : string) (rounds : string) (salt : string) (hex : string) : bool =
@@ -78,9 +85,7 @@
 
 :| login_result =
     | LoggedIn : string
-    | LoginRefused : string
-
-:= login_refusal () : string = "email or password is invalid"
+    | LoginRefused
 
 :== user_row = realworld_model::id realworld_model::user * realworld_model::user
 
@@ -98,7 +103,7 @@
 := login (s : rw_store) (secret : string) (email : string) (password : string) : login_result =
     ?= user_with s email ?|
     | Some (uid, u) ?& password_matches u::password_hash password => logged_in secret uid
-    | _ => LoginRefused (login_refusal ())
+    | _ => LoginRefused
 
 := admitted_user (r : auth_result) : i32 =
     ?= r ?|
@@ -113,48 +118,44 @@
 ///> rust
 :# a_token_signed_with_another_secret_is_a_bad_token =
     := c = toy_crypto ()
-    authenticate c "other" (header_for c "s3cret" 42i32) |> _assert_eq (Unauthorized "bad token")
+    authenticate c "other" (header_for c "s3cret" 42i32) |> _assert_eq (Unauthorized BadToken)
 
 ///> rust
 :# a_wrong_scheme_is_missing_and_a_token_without_a_mac_is_malformed =
     := c = toy_crypto ()
     (authenticate c "s3cret" "Bearer x", authenticate c "s3cret" "Token abc")
-    |> _assert_eq (Unauthorized "missing token", Unauthorized "malformed token")
+    |> _assert_eq (Unauthorized MissingToken, Unauthorized MalformedToken)
 
-///> rust
-:# a_refusal_carries_the_spec_401_body =
-    unauthorized_body "bad token" |> _assert_eq "{\"errors\":{\"body\":[\"bad token\"]}}"
-
-///> rust -d sha2 hmac subtle
+///> rust -d sha2=0.10 hmac=0.12 subtle=2
 :# an_hmac_sha256_token_admits_the_user_it_was_issued_for =
     := c = real_crypto ()
     admitted_user (authenticate c "s3cret" (header_for c "s3cret" 7i32)) |> _assert_eq 7i32
 
-///> rust -d sha2 hmac subtle
+///> rust -d sha2=0.10 hmac=0.12 subtle=2
 :# an_hmac_sha256_token_under_another_secret_is_a_bad_token =
     := c = real_crypto ()
-    authenticate c "other" (header_for c "s3cret" 7i32) |> _assert_eq (Unauthorized "bad token")
+    authenticate c "other" (header_for c "s3cret" 7i32) |> _assert_eq (Unauthorized BadToken)
 
 := jake_registered () : realworld_model::store =
     register (realworld_model::empty_store ()) (realworld_model::sample_user ()) "hunter2" "salt-1" 2u32
 
 := login_user (header : string) : i32 = admitted_user (authenticate (real_crypto ()) "s3cret" header)
 
-///> rust -d sha2 hmac pbkdf2 subtle
+///> rust -d sha2=0.10 hmac=0.12 pbkdf2=0.12 subtle=2
 :# a_registered_user_logs_in_as_itself =
     ?= login (jake_registered ()) "s3cret" "jake@jake.jake" "hunter2" ?|
     | LoggedIn header => login_user header |> _assert_eq 1i32
-    | LoginRefused why => failwith why
+    | LoginRefused => failwith "refused"
 
-///> rust -d sha2 hmac pbkdf2 subtle
+///> rust -d sha2=0.10 hmac=0.12 pbkdf2=0.12 subtle=2
 :# a_wrong_password_is_refused =
-    login (jake_registered ()) "s3cret" "jake@jake.jake" "wrong" |> _assert_eq (LoginRefused (login_refusal ()))
+    login (jake_registered ()) "s3cret" "jake@jake.jake" "wrong" |> _assert_eq LoginRefused
 
-///> rust -d sha2 hmac pbkdf2 subtle
+///> rust -d sha2=0.10 hmac=0.12 pbkdf2=0.12 subtle=2
 :# an_unknown_email_gets_the_same_refusal_as_a_wrong_password =
-    login (jake_registered ()) "s3cret" "nobody@x.y" "hunter2" |> _assert_eq (LoginRefused (login_refusal ()))
+    login (jake_registered ()) "s3cret" "nobody@x.y" "hunter2" |> _assert_eq LoginRefused
 
-///> rust -d sha2 pbkdf2
+///> rust -d sha2=0.10 pbkdf2=0.12
 :# the_stored_hash_names_its_scheme_and_never_holds_the_password =
     := stored = stored_hash "salt-1" "hunter2" 2u32
     (sm'::starts_with "pbkdf2-sha256:2:salt-1:" stored, sm'::contains "hunter2" stored) |> _assert_eq (!+, !-)

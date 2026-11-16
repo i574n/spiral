@@ -1,5 +1,5 @@
 :! artifact_a = ()
-:! payload_digest_a = ()
+:! payload_fingerprint_a = ()
 :! transfer_a = ()
 :! sender_a = ()
 :! receiver_a = ()
@@ -11,9 +11,9 @@
 :! chunk_0 = ()
 :! chunk_1 = ()
 :! chunk_2 = ()
-:! digest_0 = ()
-:! digest_1 = ()
-:! digest_2 = ()
+:! fingerprint_0 = ()
+:! fingerprint_1 = ()
+:! fingerprint_2 = ()
 
 :! source_ready = ()
 :! manifest_ready = ()
@@ -27,21 +27,21 @@
 :! idempotent = ()
 :! non_idempotent = ()
 
-:| artifact artifact_id digest state =
-    | Artifact :: \* artifact_id digest state. string -> artifact artifact_id digest state
+:| artifact artifact_id fingerprint state =
+    | Artifact :: \* artifact_id fingerprint state. string -> artifact artifact_id fingerprint state
 
-:| transfer_manifest transfer artifact_id digest sender receiver route manifest state =
-    | TransferManifest :: \* transfer artifact_id digest sender receiver route manifest state.
-        string -> transfer_manifest transfer artifact_id digest sender receiver route manifest state
+:| transfer_manifest transfer artifact_id fingerprint sender receiver route manifest state =
+    | TransferManifest :: \* transfer artifact_id fingerprint sender receiver route manifest state.
+        string -> transfer_manifest transfer artifact_id fingerprint sender receiver route manifest state
 
-:| chunk_spec transfer manifest chunk digest state =
-    | ChunkSpec :: \* transfer manifest chunk digest state.
+:| chunk_spec transfer manifest chunk fingerprint state =
+    | ChunkSpec :: \* transfer manifest chunk fingerprint state.
         string ->
-        chunk_spec transfer manifest chunk digest state
+        chunk_spec transfer manifest chunk fingerprint state
 
-:| chunk_receipt transfer manifest chunk digest receiver journal state =
-    | ChunkReceipt :: \* transfer manifest chunk digest receiver journal state.
-        string -> chunk_receipt transfer manifest chunk digest receiver journal state
+:| chunk_receipt transfer manifest chunk fingerprint receiver journal state =
+    | ChunkReceipt :: \* transfer manifest chunk fingerprint receiver journal state.
+        string -> chunk_receipt transfer manifest chunk fingerprint receiver journal state
 
 :| distinct_chunks left middle right state =
     | DistinctChunks :: \* left middle right state. string -> distinct_chunks left middle right state
@@ -50,28 +50,30 @@
     | PartialJournal :: \* transfer manifest receiver journal last_chunk state.
         string -> partial_journal transfer manifest receiver journal last_chunk state
 
-:| assembly_receipt transfer manifest artifact_id digest receiver output state =
-    | AssemblyReceipt :: \* transfer manifest artifact_id digest receiver output state.
-        string -> assembly_receipt transfer manifest artifact_id digest receiver output state
+:| assembly_receipt transfer manifest artifact_id fingerprint receiver output state =
+    | AssemblyReceipt :: \* transfer manifest artifact_id fingerprint receiver output state.
+        string -> assembly_receipt transfer manifest artifact_id fingerprint receiver output state
 
-:| atomic_commit transfer manifest receiver output digest state =
-    | AtomicCommit :: \* transfer manifest receiver output digest state.
-        string -> atomic_commit transfer manifest receiver output digest state
+:| atomic_commit transfer manifest receiver output fingerprint state =
+    | AtomicCommit :: \* transfer manifest receiver output fingerprint state.
+        string -> atomic_commit transfer manifest receiver output fingerprint state
 
-:| end_to_end_verification transfer artifact_id manifest output digest state =
-    | EndToEndVerification :: \* transfer artifact_id manifest output digest state.
-        string -> end_to_end_verification transfer artifact_id manifest output digest state
+:| end_to_end_verification transfer artifact_id manifest output fingerprint state =
+    | EndToEndVerification :: \* transfer artifact_id manifest output fingerprint state.
+        string -> end_to_end_verification transfer artifact_id manifest output fingerprint state
 
-:| transfer_op transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
+:| transfer_op transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
     effect =
-    | PrepareManifest :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1
+    | PrepareManifest :: \* transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0
+        d1
         d2.
-        artifact artifact_id digest source_ready *
-        transfer_manifest transfer artifact_id digest sender receiver route manifest manifest_ready ->
+        artifact artifact_id fingerprint source_ready *
+        transfer_manifest transfer artifact_id fingerprint sender receiver route manifest manifest_ready ->
         transfer_op
-            transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 source_ready
+            transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
+            source_ready
             manifest_ready idempotent
-    | AcceptBoundedWindow :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2
+    | AcceptBoundedWindow :: \* transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2
         d0 d1 d2.
         chunk_spec transfer manifest c0 d0 manifest_ready *
         chunk_spec transfer manifest c1 d1 manifest_ready *
@@ -79,95 +81,102 @@
         chunk_receipt transfer manifest c1 d1 receiver journal accepted *
         partial_journal transfer manifest receiver journal c1 interrupted ->
         transfer_op
-            transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 manifest_ready
+            transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
+            manifest_ready
             interrupted non_idempotent
-    | ResumeFromJournal :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0
+    | ResumeFromJournal :: \* transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0
         d1 d2.
         partial_journal transfer manifest receiver journal c1 interrupted *
         chunk_spec transfer manifest c2 d2 manifest_ready *
         chunk_receipt transfer manifest c2 d2 receiver journal accepted *
         distinct_chunks c0 c1 c2 distinct ->
         transfer_op
-            transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 interrupted
+            transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 interrupted
             resumed idempotent
-    | AssembleExactPayload :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2
+    | AssembleExactPayload :: \* transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2
         d0 d1 d2.
-        transfer_manifest transfer artifact_id digest sender receiver route manifest manifest_ready *
+        transfer_manifest transfer artifact_id fingerprint sender receiver route manifest manifest_ready *
         chunk_receipt transfer manifest c0 d0 receiver journal accepted *
         chunk_receipt transfer manifest c1 d1 receiver journal accepted *
         chunk_receipt transfer manifest c2 d2 receiver journal accepted *
         distinct_chunks c0 c1 c2 distinct *
-        assembly_receipt transfer manifest artifact_id digest receiver output assembled ->
+        assembly_receipt transfer manifest artifact_id fingerprint receiver output assembled ->
         transfer_op
-            transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 resumed
+            transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 resumed
             assembled idempotent
-    | CommitAtomically :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0
+    | CommitAtomically :: \* transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0
         d1 d2.
-        assembly_receipt transfer manifest artifact_id digest receiver output assembled *
-        atomic_commit transfer manifest receiver output digest committed ->
+        assembly_receipt transfer manifest artifact_id fingerprint receiver output assembled *
+        atomic_commit transfer manifest receiver output fingerprint committed ->
         transfer_op
-            transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 assembled
+            transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 assembled
             committed non_idempotent
-    | VerifyEndToEnd :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1
+    | VerifyEndToEnd :: \* transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1
         d2.
-        transfer_manifest transfer artifact_id digest sender receiver route manifest manifest_ready *
-        atomic_commit transfer manifest receiver output digest committed *
-        end_to_end_verification transfer artifact_id manifest output digest verified ->
+        transfer_manifest transfer artifact_id fingerprint sender receiver route manifest manifest_ready *
+        atomic_commit transfer manifest receiver output fingerprint committed *
+        end_to_end_verification transfer artifact_id manifest output fingerprint verified ->
         transfer_op
-            transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 committed
+            transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 committed
             verified idempotent
 
 :| transfer_row transfer manifest from to effect =
     | TransferRow :: \* transfer manifest from to effect. string -> transfer_row transfer manifest from to effect
 
-:| transfer_node transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
+:| transfer_node transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from
+    to
     =
-    | TransferNode :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
+    | TransferNode :: \* transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1
+        d2
         from to.
         (\? effect.
             transfer_op
-                transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
+                transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from
+                to
                 effect *
             transfer_row transfer manifest from to effect) ->
         transfer_node
-            transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
+            transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
 
-:| ^ transfer_plan transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from
+:| ^ transfer_plan transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from
     to =
-    | TransferLeaf :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
+    | TransferLeaf :: \* transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1
+        d2
         from to.
         transfer_node
-            transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to ->
+            transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to ->
         transfer_plan
-            transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
-    | TransferThen :: \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
+            transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
+    | TransferThen :: \* transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1
+        d2
         from to.
         (\? middle.
             transfer_plan
-                transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from
+                transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from
                 middle *
             transfer_node
-                transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 middle
+                transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
+                middle
                 to) ->
         transfer_plan
-            transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
+            transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to
 
-:| packed_transfer transfer artifact_id digest =
-    | PackedTransfer :: \* transfer artifact_id digest.
+:| packed_transfer transfer artifact_id fingerprint =
+    | PackedTransfer :: \* transfer artifact_id fingerprint.
         (\? sender receiver route manifest journal output c0 c1 c2 d0 d1 d2.
             transfer_plan
-                transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
+                transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
                 source_ready verified) ->
-        packed_transfer transfer artifact_id digest
+        packed_transfer transfer artifact_id fingerprint
 
-:= with_packed_transfer \* transfer artifact_id digest result.
+:= with_packed_transfer \* transfer artifact_id fingerprint result.
     (visit :
         \* sender receiver route manifest journal output c0 c1 c2 d0 d1 d2.
             transfer_plan
-                transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
+                transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
                 source_ready verified ->
             result)
-    (packed : packed_transfer transfer artifact_id digest)
+    (packed : packed_transfer transfer artifact_id fingerprint)
     : result
     =
     ?= packed ?|
@@ -175,11 +184,11 @@
         := \? sender receiver route manifest journal output c0 c1 c2 d0 d1 d2. plan = payload
         visit plan
 
-:= node_label \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from
+:= node_label \* transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from
     to.
     (node :
         transfer_node
-            transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to)
+            transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to)
     : string
     =
     ?= node ?|
@@ -187,11 +196,11 @@
         := \? effect. _, TransferRow label = payload
         label
 
-:= terminal_label \* transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1
+:= terminal_label \* transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1
     d2 from to.
     (plan :
         transfer_plan
-            transfer artifact_id digest sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to)
+            transfer artifact_id fingerprint sender receiver route manifest journal output c0 c1 c2 d0 d1 d2 from to)
     : string
     =
     ?= plan ?|
@@ -202,21 +211,23 @@
 
 := manifest
     ()
-    : transfer_manifest transfer_a artifact_a payload_digest_a sender_a receiver_a route_a manifest_v2 manifest_ready
+    : transfer_manifest transfer_a artifact_a payload_fingerprint_a sender_a receiver_a route_a manifest_v2
+        manifest_ready
     =
     TransferManifest "manifest-v2"
 
-:= receipt0 () : chunk_receipt transfer_a manifest_v2 chunk_0 digest_0 receiver_a journal_a accepted =
+:= receipt0 () : chunk_receipt transfer_a manifest_v2 chunk_0 fingerprint_0 receiver_a journal_a accepted =
     ChunkReceipt "chunk-0"
-:= receipt1 () : chunk_receipt transfer_a manifest_v2 chunk_1 digest_1 receiver_a journal_a accepted =
+:= receipt1 () : chunk_receipt transfer_a manifest_v2 chunk_1 fingerprint_1 receiver_a journal_a accepted =
     ChunkReceipt "chunk-1"
-:= receipt2 () : chunk_receipt transfer_a manifest_v1 chunk_2 digest_2 receiver_a journal_a accepted =
+:= receipt2 () : chunk_receipt transfer_a manifest_v1 chunk_2 fingerprint_2 receiver_a journal_a accepted =
     ChunkReceipt "chunk-2-from-stale-manifest"
 
 := prepare_node
     ()
-    : transfer_node transfer_a artifact_a payload_digest_a sender_a receiver_a route_a manifest_v2 journal_a output_a
-        chunk_0 chunk_1 chunk_2 digest_0 digest_1 digest_2 source_ready manifest_ready
+    : transfer_node transfer_a artifact_a payload_fingerprint_a sender_a receiver_a route_a manifest_v2 journal_a
+        output_a
+        chunk_0 chunk_1 chunk_2 fingerprint_0 fingerprint_1 fingerprint_2 source_ready manifest_ready
     =
     TransferNode (\? (
         PrepareManifest (Artifact "payload", manifest ()),
@@ -225,8 +236,9 @@
 
 := partial_node
     ()
-    : transfer_node transfer_a artifact_a payload_digest_a sender_a receiver_a route_a manifest_v2 journal_a output_a
-        chunk_0 chunk_1 chunk_2 digest_0 digest_1 digest_2 manifest_ready interrupted
+    : transfer_node transfer_a artifact_a payload_fingerprint_a sender_a receiver_a route_a manifest_v2 journal_a
+        output_a
+        chunk_0 chunk_1 chunk_2 fingerprint_0 fingerprint_1 fingerprint_2 manifest_ready interrupted
     =
     TransferNode (
         \? (
@@ -243,8 +255,9 @@
 
 := resume_node
     ()
-    : transfer_node transfer_a artifact_a payload_digest_a sender_a receiver_a route_a manifest_v2 journal_a output_a
-        chunk_0 chunk_1 chunk_2 digest_0 digest_1 digest_2 interrupted resumed
+    : transfer_node transfer_a artifact_a payload_fingerprint_a sender_a receiver_a route_a manifest_v2 journal_a
+        output_a
+        chunk_0 chunk_1 chunk_2 fingerprint_0 fingerprint_1 fingerprint_2 interrupted resumed
     =
     TransferNode (
         \? (
@@ -260,8 +273,9 @@
 
 := assemble_node
     ()
-    : transfer_node transfer_a artifact_a payload_digest_a sender_a receiver_a route_a manifest_v2 journal_a output_a
-        chunk_0 chunk_1 chunk_2 digest_0 digest_1 digest_2 resumed assembled
+    : transfer_node transfer_a artifact_a payload_fingerprint_a sender_a receiver_a route_a manifest_v2 journal_a
+        output_a
+        chunk_0 chunk_1 chunk_2 fingerprint_0 fingerprint_1 fingerprint_2 resumed assembled
     =
     TransferNode (
         \? (
@@ -279,8 +293,9 @@
 
 := commit_node
     ()
-    : transfer_node transfer_a artifact_a payload_digest_a sender_a receiver_a route_a manifest_v2 journal_a output_a
-        chunk_0 chunk_1 chunk_2 digest_0 digest_1 digest_2 assembled committed
+    : transfer_node transfer_a artifact_a payload_fingerprint_a sender_a receiver_a route_a manifest_v2 journal_a
+        output_a
+        chunk_0 chunk_1 chunk_2 fingerprint_0 fingerprint_1 fingerprint_2 assembled committed
     =
     TransferNode (\? (
         CommitAtomically (AssemblyReceipt "sha256-exact", AtomicCommit "rename-after-fsync"),
@@ -289,8 +304,9 @@
 
 := verify_node
     ()
-    : transfer_node transfer_a artifact_a payload_digest_a sender_a receiver_a route_a manifest_v2 journal_a output_a
-        chunk_0 chunk_1 chunk_2 digest_0 digest_1 digest_2 committed verified
+    : transfer_node transfer_a artifact_a payload_fingerprint_a sender_a receiver_a route_a manifest_v2 journal_a
+        output_a
+        chunk_0 chunk_1 chunk_2 fingerprint_0 fingerprint_1 fingerprint_2 committed verified
     =
     TransferNode (\? (
         VerifyEndToEnd (manifest (), AtomicCommit "rename-after-fsync", EndToEndVerification "manifest-equals-output"),
@@ -299,8 +315,9 @@
 
 := plan
     ()
-    : transfer_plan transfer_a artifact_a payload_digest_a sender_a receiver_a route_a manifest_v2 journal_a output_a
-        chunk_0 chunk_1 chunk_2 digest_0 digest_1 digest_2 source_ready verified
+    : transfer_plan transfer_a artifact_a payload_fingerprint_a sender_a receiver_a route_a manifest_v2 journal_a
+        output_a
+        chunk_0 chunk_1 chunk_2 fingerprint_0 fingerprint_1 fingerprint_2 source_ready verified
     =
     TransferThen (\? (
         TransferThen (\? (
@@ -322,12 +339,12 @@
 := inspect \* sender receiver route manifest journal output c0 c1 c2 d0 d1 d2.
     (plan :
         transfer_plan
-            transfer_a artifact_a payload_digest_a sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
+            transfer_a artifact_a payload_fingerprint_a sender receiver route manifest journal output c0 c1 c2 d0 d1 d2
             source_ready verified)
     : string
     =
     terminal_label plan
 
 := main () : string =
-    := packed : packed_transfer transfer_a artifact_a payload_digest_a = PackedTransfer (\? (plan ()))
+    := packed : packed_transfer transfer_a artifact_a payload_fingerprint_a = PackedTransfer (\? (plan ()))
     with_packed_transfer `$inspect packed

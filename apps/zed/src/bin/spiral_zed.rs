@@ -15,8 +15,8 @@ struct Options {
 
 enum Launch {
     Serve(Options),
-    Probe(Options, PathBuf),
-    FormatProbe(Options, PathBuf),
+    Trial(Options, PathBuf),
+    FormatTrial(Options, PathBuf),
 }
 
 struct Doc {
@@ -34,8 +34,8 @@ fn main() {
     };
     match launch {
         Launch::Serve(options) => serve(options),
-        Launch::Probe(options, path) => std::process::exit(probe(&options, &path)),
-        Launch::FormatProbe(options, path) => std::process::exit(format_probe(&options, &path)),
+        Launch::Trial(options, path) => std::process::exit(trial(&options, &path)),
+        Launch::FormatTrial(options, path) => std::process::exit(format_trial(&options, &path)),
     }
 }
 
@@ -64,7 +64,7 @@ fn serve(options: Options) {
 }
 
 fn usage() -> &'static str {
-    "usage: spiral-zed --dotnet DOTNET --compiler DLL [--backend Rust] [--probe FILE.spi | --format FILE.spi]"
+    "usage: spiral-zed --dotnet DOTNET --compiler DLL [--backend Rust] [--trial FILE.spi | --format FILE.spi]"
 }
 
 impl Launch {
@@ -73,7 +73,7 @@ impl Launch {
         let mut dotnet = None;
         let mut compiler = None;
         let mut backend = "Rust".to_string();
-        let mut probe = None;
+        let mut trial = None;
         let mut format = None;
         while let Some(arg) = args.next() {
             match arg.as_str() {
@@ -82,7 +82,7 @@ impl Launch {
                 "--backend" => {
                     backend = args.next().unwrap_or_else(|| "Rust".to_string());
                 }
-                "--probe" => probe = Some(PathBuf::from(args.next().ok_or("--probe needs a .spi path")?)),
+                "--trial" => trial = Some(PathBuf::from(args.next().ok_or("--trial needs a .spi path")?)),
                 "--format" => format = Some(PathBuf::from(args.next().ok_or("--format needs a .spi path")?)),
                 "--help" | "-h" => return Err(usage().to_string()),
                 other => return Err(format!("unknown argument {other}\n{}", usage())),
@@ -93,17 +93,17 @@ impl Launch {
             compiler: compiler.ok_or_else(|| format!("--compiler is required\n{}", usage()))?,
             backend,
         };
-        Ok(match (probe, format) {
-            (Some(path), _) => Launch::Probe(options, path),
-            (None, Some(path)) => Launch::FormatProbe(options, path),
+        Ok(match (trial, format) {
+            (Some(path), _) => Launch::Trial(options, path),
+            (None, Some(path)) => Launch::FormatTrial(options, path),
             (None, None) => Launch::Serve(options),
         })
     }
 }
 
-fn probe(options: &Options, path: &Path) -> i32 {
+fn trial(options: &Options, path: &Path) -> i32 {
     eprintln!(
-        "spiral-zed: probe\n  dotnet: {}\n  compiler: {}\n  backend: {}\n  file: {}",
+        "spiral-zed: trial\n  dotnet: {}\n  compiler: {}\n  backend: {}\n  file: {}",
         options.dotnet,
         options.compiler,
         options.backend,
@@ -221,7 +221,7 @@ fn apply_edit(text: &str, edit: &Value) -> String {
     format!("{}{new_text}{}", &text[..offset("start")], &text[offset("end")..])
 }
 
-fn format_probe(options: &Options, path: &Path) -> i32 {
+fn format_trial(options: &Options, path: &Path) -> i32 {
     let text = match std::fs::read_to_string(path) {
         Ok(text) => text,
         Err(error) => {

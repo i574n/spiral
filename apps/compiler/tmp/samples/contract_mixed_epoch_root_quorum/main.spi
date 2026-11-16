@@ -2,7 +2,7 @@
 :! signer_b = ()
 :! key_a = ()
 :! key_b = ()
-:! root_digest = ()
+:! root_fingerprint = ()
 :! epoch0 = ()
 :! epoch1 = ()
 :! verified = ()
@@ -18,6 +18,6 @@
     =
     RootQuorum "quorum"
 := main () =
-    := first : root_vote signer_a key_a root_digest epoch1 verified = RootVote "a"
-    := stale : root_vote signer_b key_b root_digest epoch0 verified = RootVote "b"
+    := first : root_vote signer_a key_a root_fingerprint epoch1 verified = RootVote "a"
+    := stale : root_vote signer_b key_b root_fingerprint epoch0 verified = RootVote "b"
     form first stale SignerAB

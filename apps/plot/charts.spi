@@ -1,0 +1,26 @@
+:# charts static =
+    :< testing
+
+:< chart
+
+///> zig
+:# init_series =
+    := x = am'::init_series -3f64 3 0.01
+    := y = x |> am'::map_base math::square
+    ("square", "x", "y", ;[ "square", x, y ]) |> show_chart
+
+///> zig
+:# init_series_2 =
+    := x = am'::init_series -10f64 10 0.1
+    := y_sin = x |> am'::map_base sin
+    := y_cos = x |> am'::map_base cos
+    ("sin cos", "x", "y", ;[ "sin", x, y_sin; "cos", x, y_cos ]) |> show_chart
+
+///> zig
+:# init_series_3 =
+    := y_pos y0 vy0 ay t =
+        y0 + vy0 * t + ay * (t |> math::square) / 2
+
+    := x = am'::init_series 0f64 5 0.01
+    := y = x |> am'::map_base (y_pos 0 20 -9.8)
+    ("projectile motion", "time (s)", "", ;[ "height of projectile (m)", x, y ]) |> show_chart

@@ -228,88 +228,15 @@ defmodule Spiral.Cells do
     end
   end
 
-  @number ~r/(?<![\w.])[+-]?\d+(?:\.\d*(?!\.))?(?:[eE][+-]?\d+)?(?:un|uy|us|ul|UL|L|l|y|s|u|n|f|m)?(?![\w])/
-  @union_name "U[SsHh]\\d+_?([A-Z]\\w*)"
+  @doc false
+  def shown(chunk), do: Spiral.Cells.Domain.shown_text(chunk.stdout)
 
   @doc false
-  def shown(chunk) do
-    chunk.stdout
-    |> String.replace("\r\n", "\n")
-    |> String.split("\n")
-    |> Enum.map(&(&1 |> String.replace(~r/\e\[[0-9;]*m/, "") |> String.trim() |> unwrap_string()))
-    |> Enum.reject(&(&1 == "" or trace_line?(&1)))
-    |> drop_trailing_status()
-    |> Enum.map(&(&1 |> String.replace("\\\"", "") |> String.replace("\"", "")))
-    |> Enum.map(&(&1 |> canonical_unions() |> canonical_collections()))
-    |> Enum.map(&Regex.replace(@number, &1, fn number -> same_number(number) end))
-    |> Enum.map(&String.replace(&1, ~r/\s+/, " "))
-    |> Enum.join("\n")
-  end
+  def canonical_unions(line), do: Spiral.Cells.Domain.canonical_unions(line)
 
   @doc false
-  def canonical_unions(line) do
-    line
-    |> then(&Regex.replace(~r/(?<=\(|, |,)v\d+=/, &1, ""))
-    |> then(&Regex.replace(~r/(?<=\(|, |,)'([^']*)'/, &1, "\\1"))
-    |> then(&Regex.replace(Regex.compile!("\\b" <> @union_name <> "\\(\\)"), &1, "\\1"))
-    |> then(&Regex.replace(Regex.compile!("\\b" <> @union_name <> " \\("), &1, "\\1("))
-    |> then(&Regex.replace(Regex.compile!("\\b" <> @union_name <> " ([^\\s(),{}]+)"), &1, "\\1(\\2)"))
-    |> then(&Regex.replace(Regex.compile!("\\b" <> @union_name), &1, "\\1"))
-    |> then(&Regex.replace(~r/\b([A-Z]\w*)\(\)/, &1, "\\1"))
-  end
+  def canonical_collections(line), do: Spiral.Cells.Domain.canonical_collections(line)
 
-  @doc false
-  def canonical_collections(line) do
-    line
-    |> then(&Regex.replace(~r/\bstruct \(|#\(/, &1, "("))
-    |> then(&Regex.replace(~r/\[\|\s*\|\]/, &1, "[]"))
-    |> then(&Regex.replace(~r/\[\|(.*?)\|\]/, &1, fn _, inner -> "[" <> semicolon_items(inner) <> "]" end))
-    |> then(&Regex.replace(~r/\[([^\[\],();|]*)\]/, &1, fn _, inner -> "[" <> numpy_items(inner) <> "]" end))
-  end
-
-  defp semicolon_items(inner), do: inner |> String.split(";") |> Enum.map_join(", ", &String.trim/1)
-
-  defp numpy_items(inner) do
-    if String.contains?(inner, ",") do
-      inner |> String.split(",") |> Enum.map_join(", ", &String.trim/1)
-    else
-      inner |> String.split(~r/\s+/, trim: true) |> Enum.join(", ")
-    end
-  end
-
-  defp trace_line?(line) do
-    Regex.match?(~r/^\d{2}:\d{2}:\d{2} \d+[a-zA-Z] /, line) or String.starts_with?(line, "at ") or
-      Regex.match?(~r/\.fsx?\(\d+,\d+\): warning FS\d+:/, line)
-  end
-
-  defp unwrap_string(line) do
-    case Regex.run(~r/\AString\("(.*)"\)\z/, line) do
-      [_, inner] -> inner |> String.replace("\\\"", "\"") |> String.replace("\\\\", "\\")
-      _ -> line
-    end
-  end
-
-  defp drop_trailing_status(lines) do
-    if List.last(lines) == "0", do: Enum.drop(lines, -1), else: lines
-  end
-
-  @f64_exact_integer_limit 9_007_199_254_740_992
-
-  defp same_number(number) do
-    digits = String.replace(number, ~r/[a-zA-Z]+\z/, "")
-
-    case Integer.parse(digits) do
-      {value, ""} when abs(value) > @f64_exact_integer_limit ->
-        Integer.to_string(value)
-
-      _ ->
-        case Float.parse(digits) do
-          {value, _} when abs(value) > @f64_exact_integer_limit -> Integer.to_string(trunc(value))
-          {value, _} -> :erlang.float_to_binary(value, [{:decimals, 6}, :compact])
-          :error -> number
-        end
-    end
-  end
   @doc false
   def target_output(dir, %{tool: :gleam} = builder) do
     source_dir = Path.join([dir, "gleam", "src"])
@@ -646,12 +573,8 @@ defmodule Spiral.Cells do
 
   @doc false
   def own_main(%{generated_main: false, code: code} = prepared) do
-    case Regex.run(~r/^(?:let|inl|:=|:~) main \(\) =[ \t]*$/m, code, return: :index)
-         |> last_main(code) do
-      nil ->
-        prepared
-
-      {at, len} ->
+    case code |> Spiral.Cells.Domain.main_span() |> String.split("\t") |> Enum.map(&Integer.parse/1) do
+      [{at, ""}, {len, ""}] ->
         renamed =
           binary_part(code, 0, at) <>
             "inl spiral_cells_main () =" <> binary_part(code, at + len, byte_size(code) - at - len)
@@ -663,68 +586,16 @@ defmodule Spiral.Cells do
             generated_main: true,
             no_value: false
         }
+
+      _ ->
+        prepared
     end
   end
 
   def own_main(prepared), do: prepared
 
-  defp last_main(nil, _code), do: nil
-
-  defp last_main(_first, code) do
-    [{at, len} | _] =
-      ~r/^(?:let|inl|:=|:~) main \(\) =[ \t]*$/m |> Regex.scan(code, return: :index) |> List.last()
-
-    rest = binary_part(code, at + len, byte_size(code) - at - len)
-
-    if rest |> String.split("\n") |> Enum.all?(&(&1 == "" or String.starts_with?(&1, " "))),
-      do: {at, len},
-      else: nil
-  end
-
   @doc false
-  def value_result?(output, code) do
-    case :binary.matches(code, @main_head) do
-      [] ->
-        false
-
-      matches ->
-        {at, _} = List.last(matches)
-
-        head = code |> binary_part(0, at) |> String.split("\n") |> length()
-        last = code |> String.trim_trailing() |> String.split("\n") |> length()
-
-        case Regex.scan(~r/main\.spi:(\d+):(\d+): (?:E[A-Z]{2,4}(?:\d{4}|-[A-Za-z]+): )?(Unification failure\.)?/, output) do
-          [[_, line, column, "Unification failure."]] ->
-            line = String.to_integer(line)
-
-            line > head and (column == "5" or line == last) and
-              (output =~ ~r/Got:\s*i32\b|Expected:\s*i32\b/ or i32_stage?(output))
-
-          _ ->
-            false
-        end
-    end
-  end
-
-  defp i32_stage?(output) do
-    case Regex.run(~r/Got:\s*(.*?)\s*Expected:\s*([^\n]*)/s, output) do
-      [_, got, expected] ->
-        same_stage?(String.trim(got), String.trim(expected)) or
-          same_stage?(String.trim(expected), String.trim(got))
-
-      _ ->
-        false
-    end
-  end
-
-  defp same_stage?(i32_side, other) do
-    if String.ends_with?(i32_side, " -> i32") do
-      prefix = String.replace_suffix(i32_side, " -> i32", " -> ")
-      String.starts_with?(other, prefix) and other != i32_side
-    else
-      false
-    end
-  end
+  def value_result?(output, code), do: Spiral.Cells.Domain.value_result(output, code)
 
   @doc false
   def show_value_main(code) do
@@ -774,7 +645,7 @@ defmodule Spiral.Cells do
     end
 
     if Directives.per_test_compile?() and is_binary(opts[:test_name]) and is_binary(source) and
-         String.ends_with?(source, ".spi") and opts[:real] in [nil, ""] do
+         String.ends_with?(source, ".spi") and opts[:real] in [nil, ""] and not Spiral.Cells.Domain.static_opens_sibling(File.read!(source), source |> Path.expand() |> Path.dirname() |> Path.join("*.spi") |> Path.wildcard() |> Enum.map_join("\n", &Path.basename(&1, ".spi"))) do
       req |> Map.merge(%{spi: Path.expand(source), mtime: source_mtime(Path.expand(source), opts)}) |> Map.put(:test, opts[:test_name])
     else
       req
@@ -796,7 +667,7 @@ defmodule Spiral.Cells do
 
       {:error, :timeout} ->
         charge_queue()
-        {:error, timeout_error(%{output: ""}, timeout)}
+        {:error, Targets.timeout_error(%{output: ""}, timeout)}
 
       {:error, %ProcessError{} = error} ->
         charge_queue()
@@ -837,7 +708,7 @@ defmodule Spiral.Cells do
         {:error, text}
 
       {:error, {:timeout, info}} ->
-        {:error, timeout_error(info, timeout)}
+        {:error, Targets.timeout_error(info, timeout)}
 
       {:error, reason} ->
         {:error,
@@ -849,14 +720,8 @@ defmodule Spiral.Cells do
     dirs =
       case Spiral.Cells.Manifest.read(Path.dirname(spi)) do
         {:ok, text} ->
-          case Regex.run(~r/^packageDir:\s*(.+)$/m, text) do
-            [_, dir] ->
-              dir = String.trim(dir)
-              if Path.type(dir) == :absolute, do: [dir], else: []
-
-            _ ->
-              []
-          end
+          dir = Spiral.Cells.Domain.package_dir_of(text)
+          if dir != "" and Path.type(dir) == :absolute, do: [dir], else: []
 
         _ ->
           []
@@ -887,7 +752,7 @@ defmodule Spiral.Cells do
            ) do
         {:ok, %{exit_status: 0}} -> :ok
         {:ok, %{output: output}} -> {:error, output}
-        {:error, {:timeout, info}} -> {:error, timeout_error(info, timeout)}
+        {:error, {:timeout, info}} -> {:error, Targets.timeout_error(info, timeout)}
         {:error, reason} -> {:error, "could not start rustc: #{inspect(reason)}"}
       end
     end
@@ -987,7 +852,7 @@ defmodule Spiral.Cells do
         {:ok, ran}
 
       {:error, {:timeout, info}} ->
-        {:error, timeout_error(info, timeout)}
+        {:error, Targets.timeout_error(info, timeout)}
 
       {:error, %TimeoutError{} = error} ->
         {:error, error}
@@ -1045,31 +910,9 @@ defmodule Spiral.Cells do
     end
   end
 
-  defp timeout_error(%{output: output}, timeout) do
-    %TimeoutError{
-      message: "Spiral cell timed out after #{format_ms(timeout)}#{Directives.scale_note()}; the process tree was killed.",
-      timeout: timeout,
-      output: output
-    }
-  end
+  defp restore_type_lines(output), do: Spiral.Cells.Domain.type_lines(output)
 
-  defp restore_type_lines(output) do
-    String.replace(output, ~r/(Got:[^\n]*) Expected:/, "\\1\nExpected:")
-  end
-
-  defp clean(output, dir) do
-    prefix =
-      dir
-      |> Path.expand()
-      |> String.replace("\\", "/")
-      |> String.trim_trailing("/")
-      |> String.split("/")
-      |> Enum.map_join("[\\\\/]", &Regex.escape/1)
-
-    output
-    |> String.replace(Regex.compile!("(?:file:///)?" <> prefix <> "[\\\\/]?", "i"), "")
-    |> String.trim()
-  end
+  defp clean(output, dir), do: Spiral.Cells.Domain.clean_paths(output, dir |> Path.expand() |> String.replace("\\", "/") |> String.trim_trailing("/"))
 
   @doc false
   def notebook_package_text(names, imports, package_dir) do
@@ -1097,7 +940,7 @@ defmodule Spiral.Cells do
         text
       else
         File.write!(Path.join(dir, "main_real.spir"), String.trim_trailing(real) <> "\n")
-        String.replace(text, ~r/^    main$/m, "    main_real*-\n    main", global: false)
+        Spiral.Cells.Domain.with_real_main(text)
       end
 
     File.write!(Path.join(dir, "package.spiproj"), text)
@@ -1187,8 +1030,4 @@ defmodule Spiral.Cells do
     raise ArgumentError,
           "expected :timeout to be a positive integer (ms) or :infinity, got: #{inspect(other)}"
   end
-
-  defp format_ms(:infinity), do: "infinity"
-  defp format_ms(ms) when rem(ms, 1000) == 0, do: "#{div(ms, 1000)}s"
-  defp format_ms(ms), do: "#{ms}ms"
 end

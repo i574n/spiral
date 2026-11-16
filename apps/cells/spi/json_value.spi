@@ -12,34 +12,34 @@
     | JArr : list json
     | JObj : list (string * json)
 
-:= at (s : string) (i : i32) : i32 = ? i >= 0i32 && i < text::length s ?> text::byte_at s i |: -1i32
+:~ at (s : string) (i : i32) : i32 = ? i >= 0i32 && i < text::length s ?> text::byte_at s i |: -1i32
 
-:= ws_byte (b : i32) : bool = b = 32i32 || b = 9i32 || b = 10i32 || b = 13i32
+:~ ws_byte (b : i32) : bool = b = 32i32 || b = 9i32 || b = 10i32 || b = 13i32
 
 :~ ^ skip_ws (s : string) (i : i32) : i32 = ? ws_byte (at s i) ?> skip_ws s (i + 1i32) |: i
 
-:= is_digit (b : i32) : bool = b >= 48i32 && b <= 57i32
+:~ is_digit (b : i32) : bool = b >= 48i32 && b <= 57i32
 
 :~ ^ digits_end (s : string) (i : i32) : i32 = ? is_digit (at s i) ?> digits_end s (i + 1i32) |: i
 
-:= some_digits_end (s : string) (i : i32) : i32 =
+:~ some_digits_end (s : string) (i : i32) : i32 =
     := j = digits_end s i
     ? j = i ?> -1i32 |: j
 
-:= int_end (s : string) (i : i32) : i32 = ? at s i = 48i32 ?> i + 1i32 |: some_digits_end s i
+:~ int_end (s : string) (i : i32) : i32 = ? at s i = 48i32 ?> i + 1i32 |: some_digits_end s i
 
-:= frac_end (s : string) (i : i32) : i32 = ? i >= 0i32 && at s i = 46i32 ?> some_digits_end s (i + 1i32) |: i
+:~ frac_end (s : string) (i : i32) : i32 = ? i >= 0i32 && at s i = 46i32 ?> some_digits_end s (i + 1i32) |: i
 
-:= exp_end (s : string) (i : i32) : i32 =
+:~ exp_end (s : string) (i : i32) : i32 =
     := e = at s i
     ? i >= 0i32 && (e = 101i32 || e = 69i32) ?>
         := sign = at s (i + 1i32)
         some_digits_end s (? sign = 43i32 || sign = 45i32 ?> i + 2i32 |: i + 1i32)
     |: i
 
-:= number_end (s : string) (i : i32) : i32 = exp_end s (frac_end s (int_end s (? at s i = 45i32 ?> i + 1i32 |: i)))
+:~ number_end (s : string) (i : i32) : i32 = exp_end s (frac_end s (int_end s (? at s i = 45i32 ?> i + 1i32 |: i)))
 
-:= hex_val (b : i32) : i32 =
+:~ hex_val (b : i32) : i32 =
     ? is_digit b
     ?> b - 48i32
     |? b >= 65i32 && b <= 70i32
@@ -48,14 +48,14 @@
     ?> b - 87i32
     |: -1i32
 
-:= hex4 (s : string) (i : i32) : i32 =
+:~ hex4 (s : string) (i : i32) : i32 =
     := a = hex_val (at s i)
     := b = hex_val (at s (i + 1i32))
     := c = hex_val (at s (i + 2i32))
     := d = hex_val (at s (i + 3i32))
     ? a < 0i32 || b < 0i32 || c < 0i32 || d < 0i32 ?> -1i32 |: ((a * 16i32 + b) * 16i32 + c) * 16i32 + d
 
-:= simple_escape (e : i32) : string =
+:~ simple_escape (e : i32) : string =
     ? e = 34i32
     ?> "\""
     |? e = 92i32
@@ -74,23 +74,23 @@
     ?> "\t"
     |: ""
 
-:= is_high (code : i32) : bool = code >= 55296i32 && code <= 56319i32
+:~ is_high (code : i32) : bool = code >= 55296i32 && code <= 56319i32
 
-:= is_low (code : i32) : bool = code >= 56320i32 && code <= 57343i32
+:~ is_low (code : i32) : bool = code >= 56320i32 && code <= 57343i32
 
-:= low_after (s : string) (i : i32) : i32 = ? at s i = 92i32 && at s (i + 1i32) = 117i32 ?> hex4 s (i + 2i32) |: -1i32
+:~ low_after (s : string) (i : i32) : i32 = ? at s i = 92i32 && at s (i + 1i32) = 117i32 ?> hex4 s (i + 2i32) |: -1i32
 
-:= paired (high : i32) (low : i32) : string =
+:~ paired (high : i32) (low : i32) : string =
     unicode::char_of (65536i32 + (high - 55296i32) * 1024i32 + (low - 56320i32))
 
-:= within (s : string) (i : i32) (lo : i32) (hi : i32) : bool =
+:~ within (s : string) (i : i32) (lo : i32) (hi : i32) : bool =
     := b = at s i
     b >= lo && b <= hi
 
-:= tail_ok (s : string) (i : i32) (n : i32) : bool =
+:~ tail_ok (s : string) (i : i32) (n : i32) : bool =
     within s i 128i32 191i32 && (n < 2i32 || within s (i + 1i32) 128i32 191i32)
 
-:= utf8_width_at (s : string) (i : i32) : i32 =
+:~ utf8_width_at (s : string) (i : i32) : i32 =
     := b = at s i
     ? b >= 194i32 && b <= 223i32
     ?> ? within s (i + 1i32) 128i32 191i32 ?> 2i32 |: 0i32
@@ -141,12 +141,12 @@
     ?> None
     |: string_from s (slash + 6i32) (slash + 6i32) (acc ++ unicode::char_of code)
 
-:= string_at (s : string) (q_at : i32) : option (string * i32) = string_from s (q_at + 1i32) (q_at + 1i32) ""
+:~ string_at (s : string) (q_at : i32) : option (string * i32) = string_from s (q_at + 1i32) (q_at + 1i32) ""
 
-:= word (s : string) (i : i32) (w : string) (v : json) : option (json * i32) =
+:~ word (s : string) (i : i32) (w : string) (v : json) : option (json * i32) =
     ? text::starts_at s i w ?> Some (v, i + text::length w) |: None
 
-:= number_at (s : string) (i : i32) : option (json * i32) =
+:~ number_at (s : string) (i : i32) : option (json * i32) =
     := stop = number_end s i
     ? stop <= i ?> None |: Some (JNum (text::slice_len s i (stop - i)), stop)
 
@@ -226,7 +226,7 @@
     | (name, v) :: rest => ? name = key ?> Some v |: member key rest
     | [] => None
 
-:= field (key : string) (v : json) : option json =
+:~ field (key : string) (v : json) : option json =
     ?= v ?|
     | JObj members => member key members
     | _ => None
@@ -245,7 +245,7 @@
             (acc ++ chunk ++ "\\u00" ++ text::hex_digit (c / 16i32) ++ text::hex_digit (c % 16i32))
     |: quoted_from s (i + 1i32) start acc
 
-:= quoted (s : string) : string = "\"" ++ quoted_from s 0i32 0i32 "" ++ "\""
+:~ quoted (s : string) : string = "\"" ++ quoted_from s 0i32 0i32 "" ++ "\""
 
 :~ ^ render (v : json) : string =
     ?= v ?|
@@ -271,3 +271,8 @@
     canonical "\"\\ud83d\\ude00\"" |> _assert_eq ("\"" ++ unicode::char_of 128512i32 ++ "\"")
     canonical "[] x" |> _assert_eq ""
     canonical "" |> _assert_eq ""
+
+///> gleam
+:# canonical_json_keeps_the_old_json_decode_answers_on_the_edges =
+    := ins = [ "{\"a\":1,\"a\":2}"; "\"\\ud800\""; "\"\\udc00x\""; "\"𐀀\""; "\"\\ud800A\""; "\"é\\/\\b\\f\\n\\r\\t\\\"\\\\\""; "\"\\u0000\""; "\"\\x\""; "\"\\u12zz\""; "\"a\tb\""; "\"café 😀\""; "[1,]"; "{\"a\":1,}"; "{\"a\"}"; "{a:1}"; "{\"a\":1 \"b\":2}"; "[1 2]"; "01"; "-01"; "1."; ".5"; "-"; "+1"; "1e"; "1e+"; "1e5"; "1E-3"; "-0"; "-0.0"; "1.5E+3"; "[] x"; "[]]"; "nul"; "truex"; "True"; ""; "   "; "  \r\n\t[]\r\n"; "[ ]"; "{\"a\" : [ true , false , null ] }"; "{\"output\":\"hi\",\"command_result\":\"{\\\"output\\\":\\\"inner\\\"}\"}"; "[[[[[[[[[[[]]]]]]]]]]]"; "[[[[[[[[[[[]]]]]]]]]]"; "{\"\":{\"\":\"\"}}" ]
+    listm::map canonical ins |> _assert_eq [ "{\"a\":1,\"a\":2}"; ""; ""; "\"𐀀\""; ""; "\"é/\\u0008\\u000c\\u000a\\u000d\\u0009\\\"\\\\\""; "\"\\u0000\""; ""; ""; ""; "\"café 😀\""; ""; ""; ""; ""; ""; ""; ""; ""; ""; ""; ""; ""; ""; ""; "1e5"; "1E-3"; "-0"; "-0.0"; "1.5E+3"; ""; ""; ""; ""; ""; ""; ""; "[]"; ""; "{\"a\":[true,false,null]}"; "{\"output\":\"hi\",\"command_result\":\"{\\\"output\\\":\\\"inner\\\"}\"}"; "[[[[[[[[[[[]]]]]]]]]]]"; ""; "{\"\":{\"\":\"\"}}" ]

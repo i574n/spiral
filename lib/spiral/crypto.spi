@@ -281,7 +281,7 @@
             $'bit_array.base64_encode(spiral_crypto_mac(atom.create("hmac"), atom.create("sha"), !key, !text), True)'
             : string
         Rust = \ () =>
-            := mac = $'<hmac::Hmac<sha1::Sha1> as hmac::KeyInit>::new_from_slice(!key.as_bytes()).unwrap()' : hmac_sha1
+            := mac = $'<hmac::Hmac<sha1::Sha1> as hmac::digest::KeyInit>::new_from_slice(!key.as_bytes()).unwrap()' : hmac_sha1
             mac |> rust::to_mut
             $'hmac::Mac::update(&mut !mac, !text.as_bytes())' : ()
             := tag = $'hmac::Mac::finalize(!mac).into_bytes()' : hmac_sha1_tag
@@ -369,7 +369,7 @@
 :! hmac_sha256_tag = $'hmac::digest::Output<hmac::Hmac<sha2::Sha256>>'
 
 := rust_hmac_sha256_new (key : string) : hmac_sha256 =
-    $'<hmac::Hmac<sha2::Sha256> as hmac::KeyInit>::new_from_slice(!key.as_bytes()).unwrap()' : hmac_sha256
+    $'<hmac::Hmac<sha2::Sha256> as hmac::digest::KeyInit>::new_from_slice(!key.as_bytes()).unwrap()' : hmac_sha256
 
 := rust_tag_bytes (tag : hmac_sha256_tag) : array_base u8 = $'Rc::new(RefCell::new(!tag.to_vec()))' : array_base u8
 
@@ -418,25 +418,25 @@
         Rust = \ () => rust_constant_time_equal a b
     }
 
-///> rust -d sha2 hmac
+///> rust -d sha2=0.10 hmac=0.12
 ///> gleam
 :# hmac_sha256_matches_rfc4231_test_case_2 =
     hmac_sha256_hex "Jefe" "what do ya want for nothing?"
     |> _assert_eq "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
 
-///> rust -d sha2 pbkdf2
+///> rust -d sha2=0.10 pbkdf2=0.12
 ///> gleam
 :# pbkdf2_sha256_matches_the_published_one_round_vector =
     pbkdf2_sha256_hex "password" "salt" 1u32
     |> _assert_eq "120fb6cffcf8b32c43e7225256c4f837a86548c92ccc35480805987cb70be17b"
 
-///> rust -d sha2 pbkdf2
+///> rust -d sha2=0.10 pbkdf2=0.12
 ///> gleam
 :# pbkdf2_sha256_matches_the_published_two_round_vector =
     pbkdf2_sha256_hex "password" "salt" 2u32
     |> _assert_eq "ae4d0c95af6b46d32d0adff928f06dd02a303f8ef3c251dfd6e2d85a95474c43"
 
-///> rust -d sha2 pbkdf2
+///> rust -d sha2=0.10 pbkdf2=0.12
 ///> gleam
 :# pbkdf2_sha256_at_4096_rounds_matches_the_published_vector =
     pbkdf2_sha256_hex "password" "salt" 4096u32
@@ -465,6 +465,41 @@
     |> hash_text
     |> hash_to_port
     |> _assert_eq 19273
+
+:= utf8_bytes (text : string) : array_base u8 =
+    backend_switch {
+        Rust = \ () => $'Rc::new(RefCell::new((!text).as_bytes().to_vec()))' : array_base u8
+    }
+
+:= sha256_hex_bytes (data : array_base u8) : string =
+    backend_switch {
+        Rust = \ () =>
+            $'Rc::<str>::from(<sha2::Sha256 as sha2::Digest>::digest(&*(!data).borrow()).iter().map(|b| \
+                format\!("{:02x}", b)).collect::<String>())' : string
+    }
+
+:= rust_hmac_sha256_bytes (key : array_base u8) (text : string) : array_base u8 =
+    := mac =
+        $'<hmac::Hmac<sha2::Sha256> as hmac::digest::KeyInit>::new_from_slice(&*(!key).borrow()) \
+            .unwrap()' : hmac_sha256
+    mac |> rust::to_mut
+    $'hmac::Mac::update(&mut !mac, !text.as_bytes())' : ()
+    rust_tag_bytes ($'hmac::Mac::finalize(!mac).into_bytes()' : hmac_sha256_tag)
+
+:= hmac_sha256_bytes (key : array_base u8) (text : string) : array_base u8 =
+    backend_switch {
+        Rust = \ () => rust_hmac_sha256_bytes key text
+    }
+
+///> rust -d sha2=0.10 hmac=0.12
+:# byte_key_hmac_and_sha256_match_published_vectors =
+    := abc = sha256_hex_bytes (utf8_bytes "abc")
+    := rfc4231 = hmac_sha256_bytes (utf8_bytes "Jefe") "what do ya want for nothing?" |> hex_of_bytes
+    (abc, rfc4231)
+    |> _assert_eq (
+        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
+    )
 
 ///> fsharp
 

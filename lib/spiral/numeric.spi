@@ -1,0 +1,108 @@
+:# numeric static =
+    :< testing
+
+:== derivative = (f64 -> f64) -> f64 -> f64
+
+:= derivative dt : derivative =
+    \ x t =>
+        (x (t + dt / 2) - x (t - dt / 2)) / dt
+
+///> zig
+:# derivative =
+    derivative 1 (\ x => x ** 4 / 4) 1 - 1
+    |> _assert_approx_eq None 0.25
+
+    derivative 0.001 (\ x => x ** 4 / 4) 1 - 1
+    |> _assert_approx_eq None 0.0000002499998827953931
+
+///> zig
+:# derivative_small_steps =
+    derivative 0.000001 (\ x => x ** 4 / 4) 1 - 1
+    |> _assert_approx_eq None 0.000000000001000088900582341
+
+    derivative 0.000000001 (\ x => x ** 4 / 4) 1 - 1
+    |> _assert_approx_eq None 0.00000008274037099909037
+
+///> zig
+:# derivative_tiny_steps =
+    derivative 0.000000000001 (\ x => x ** 4 / 4) 1 - 1
+    |> _assert_approx_eq None 0.00008890058234101161
+
+    derivative 0.000000000000001 (\ x => x ** 4 / 4) 1 - 1
+    |> _assert_approx_eq None -0.0007992778373592246
+
+///> zig
+:# derivative_round_off =
+    derivative 0.000000000000000001 (\ x => x ** 4 / 4) 1 - 1
+    |> _assert_approx_eq None -1
+
+:== integration = (f64 -> f64) -> f64 -> f64 -> f64
+
+:= integral dt : integration =
+    \ f a b =>
+        := ^ 루프 t y =
+            ? t < b
+            ?> 루프 (t + dt) (y + f t * dt)
+            |: t, y
+        루프 (a + dt / 2) 0
+        |> snd
+
+///> zig
+:# integration =
+    integral 0.01 math::square 0 1
+    |> _assert_approx_eq None 0.33332500000000004
+
+:= integral' dt : integration =
+    \ f a b =>
+        listm'::init_series (a + dt / 2) (b - dt / 2) dt
+        |> listm::map (f >> (*) dt)
+        |> listm'::sum
+
+///> zig
+:# integration_2 =
+    integral' 0.1 math::square 0 1
+    |> _assert_approx_eq None (integral 0.1 math::square 0 1)
+
+:= integral'' dt : integration =
+    \ f x y =>
+        am'::init_series (x + dt / 2) (y - dt / 2) dt
+        |> \ x => array x : array _
+        |> arraym::map (f >> (*) dt)
+        |> am'::sum
+
+///> zig
+:# integration_3 =
+    integral'' 0.01 math::square 0 1
+    |> _assert_approx_eq None (integral 0.01 math::square 0 1)
+
+:= anti_derivative dt v0 a t =
+    v0 + integral' dt a 0 t
+
+:== update_function s = s -> s
+
+:== differential_equation s ds = s -> ds
+
+:== numerical_method s ds = differential_equation s ds -> update_function s
+
+:= solver method =
+    method >> seq::iterate
+
+:= solver' method =
+    method >> seq::iterate'
+
+:= solver_ method =
+    method >> seq::iterate_
+
+:? (+++) ds : ds -> ds -> ds
+:? scale ds : f64 -> ds -> ds
+:? shift s : \* ds. f64 -> ds -> s -> s
+
+:= euler dt deriv st0 =
+    shift dt (deriv st0) st0
+
+:= runge_kutta_4 dt deriv st0 =
+    := m0 = deriv st0
+    := m1 = deriv (shift (dt / 2) m0 st0)
+    := m2 = deriv (shift (dt / 2) m1 st0)
+    := m3 = deriv (shift dt m2 st0)
+    shift (dt / 6) (m0 +++ m1 +++ m1 +++ m2 +++ m2 +++ m3) st0

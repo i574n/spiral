@@ -7,20 +7,20 @@ defmodule Mix.Tasks.Compile.SpiralDomain do
     spi = Path.join(root, "spi")
     out = Path.join(root, "src/spiral_cells/domain.gleam")
     stamp = Path.join(root, "build/spiral_domain.inputs")
-    digest = inputs_digest(spi)
+    fingerprint = inputs_fingerprint(spi)
     File.mkdir_p!(Path.dirname(out))
 
-    unless File.regular?(out) and File.read(stamp) == {:ok, digest} do
+    unless File.regular?(out) and File.read(stamp) == {:ok, fingerprint} do
       compile_spiral(Path.join(spi, "main.spi"), out, root)
       File.mkdir_p!(Path.dirname(stamp))
-      File.write!(stamp, digest)
+      File.write!(stamp, fingerprint)
     end
 
     if gleam_stale?(root), do: gleam_build(root)
     {:ok, []}
   end
 
-  defp inputs_digest(spi) do
+  defp inputs_fingerprint(spi) do
     sources = Enum.sort(Path.wildcard(Path.join(spi, "*.spi"))) ++ [Path.join(spi, "package.spiproj")]
     own = Enum.map(sources, &[Path.basename(&1), 0, File.read!(&1), 0])
     packages = Enum.map(package_sources(spi), &[&1, 0, File.read!(&1), 0])

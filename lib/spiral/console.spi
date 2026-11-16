@@ -104,7 +104,7 @@
 
 ///> rust
 :# write_error_line_writes_without_failing =
-    write_error_line "console.write_error_line probe"
+    write_error_line "console.write_error_line trial"
 
 :! stdin_handle = $'std::io::Stdin'
 

@@ -148,7 +148,7 @@
     ?> reserved_by_cc (query CcMajor)
     |: v
 
-:= probed (ordinal : i32) : option device =
+:= gauged (ordinal : i32) : option device =
     := q = cuda_query ordinal
     ? q Sms > 0 ?> Some (device_from (filled q)) |: None
 
@@ -239,15 +239,15 @@
 
 ///> c
 ///> rust
-:# a_probed_device_is_built_from_its_attribute_answers =
+:# a_gauged_device_is_built_from_its_attribute_answers =
     := d = device_from rtx4060_answers
     (d = rtx4060 (), described (launch d { threads = 128; regs = 42; smem = 0 }))
     |> _assert_eq (!+, "blocks/sm 10, grid 240, occupancy 83%")
 
 ///> c
-:# a_probe_finds_no_device_without_a_driver_and_whole_sms_with_one =
+:# a_gauge_finds_no_device_without_a_driver_and_whole_sms_with_one =
     := ok =
-        ?= probed 0 ?|
+        ?= gauged 0 ?|
         | None => !+
         | Some d => d::sms > 0 && d::per_sm::threads >= 32 && d::per_sm::regs > 0
     ok |> _assert_eq !+

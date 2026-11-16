@@ -1,0 +1,43 @@
+:# chart static =
+    :< testing
+
+:~ ^ numbers_from (xs : array_base f64) (i : i32) : list string =
+    ? i >= am'::length_base xs ?> [] |: sm'::format_debug (am'::index_base i xs) :: numbers_from xs (i + 1i32)
+
+:= numbers_json (xs : array_base f64) : string =
+    sm'::concat_list "" [ "["; numbers_from xs 0i32 |> sm'::concat_list ", "; "]" ]
+
+:= series_json ((label, xs, ys) : string * array_base f64 * array_base f64) : string =
+    sm'::concat_list "" [ "["; json::quote label; ", "; numbers_json xs; ", "; numbers_json ys; "]" ]
+
+:== chart = string * string * string * array (string * array_base f64 * array_base f64)
+
+:= chart_json ((caption, x, y, series) : chart) : string =
+    sm'::concat_list "" [
+        "["; json::quote caption; ", "; json::quote x; ", "; json::quote y; ", ["
+        series |> am'::map' series_json |> sm'::join' ", "
+        "]]"
+    ]
+
+:= show_chart chart : () =
+    console::write_line (
+        sm'::concat_list "" [
+            "SPIRAL_CELLS_DISPLAY_BEGIN\napplication/vnd.spiral.plot+json\n"
+            chart_json chart
+            "\nSPIRAL_CELLS_DISPLAY_END"
+        ]
+    )
+
+:~ ^ charts_from (cs : array_base chart) (i : i32)
+    : list string
+    =
+    ? i >= am'::length_base cs ?> [] |: chart_json (am'::index_base i cs) :: charts_from cs (i + 1i32)
+
+:= show_frames (charts : array_base chart) : () =
+    console::write_line (
+        sm'::concat_list "" [
+            "SPIRAL_CELLS_DISPLAY_BEGIN\napplication/vnd.spiral.plot-frames+json\n["
+            charts_from charts 0i32 |> sm'::concat_list ", "
+            "]\nSPIRAL_CELLS_DISPLAY_END"
+        ]
+    )

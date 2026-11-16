@@ -3,6 +3,7 @@ packages = ['|core-', 'spiral-']
 modules = '''
 realworld_api
 realworld_model
+conduit_error
 auth
 server
 serve

@@ -1,0 +1,5 @@
+:= f (x : i32) : i32 =
+    := open = x + 1i32
+    open
+
+:= main () : i32 = f 41i32

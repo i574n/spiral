@@ -20,7 +20,7 @@ defmodule Spiral.Cells.NotebookCli do
     metrics: :string,
     livemd: :boolean,
     patch: :keep,
-    probe: :string,
+    trial: :string,
     target: :keep,
     build_only: :boolean,
     compiler_pin: :string
@@ -37,12 +37,12 @@ defmodule Spiral.Cells.NotebookCli do
   end
 
   defp execute_parsed(opts) do
-    paths = Keyword.get_values(opts, :path) ++ probe_paths(opts)
+    paths = Keyword.get_values(opts, :path) ++ trial_paths(opts)
     tests = test_names(opts)
 
     cond do
       paths == [] ->
-        {{:error, "missing --path or --probe"}, []}
+        {{:error, "missing --path or --trial"}, []}
 
       length(paths) > 1 and Enum.any?(@single_path_options, &opts[&1]) ->
         {{:error, "--output-path, --spi-path, --spir-path, --fs-path and --livemd-path take a single --path"}, []}
@@ -65,8 +65,8 @@ defmodule Spiral.Cells.NotebookCli do
   end
 
   @doc false
-  def probe_paths(opts) do
-    case opts[:probe] do
+  def trial_paths(opts) do
+    case opts[:trial] do
       nil ->
         []
 
@@ -75,18 +75,18 @@ defmodule Spiral.Cells.NotebookCli do
         source = File.read!(main)
         package = Path.dirname(main)
         header = if Spiral.Cells.Manifest.exists?(package), do: "///- --package #{package}\n\n", else: ""
-        dir = Path.join(System.tmp_dir!(), "spiral-probe-#{:erlang.phash2({main, source})}")
+        dir = Path.join(System.tmp_dir!(), "spiral-trial-#{:erlang.phash2({main, source})}")
         File.mkdir_p!(dir)
-        path = Path.join(dir, "probe.spi")
-        File.write!(path, header <> probe_notebook(source, Keyword.get_values(opts, :target)))
+        path = Path.join(dir, "trial.spi")
+        File.write!(path, header <> trial_notebook(source, Keyword.get_values(opts, :target)))
         [path]
     end
   end
 
   @doc false
-  def probe_notebook(main_text, targets) do
+  def trial_notebook(main_text, targets) do
     directives = Enum.map_join(targets, "", &"///> #{String.downcase(&1)}\n")
-    String.trim_trailing(main_text, "\n") <> "\n\n" <> directives <> "test probe =\n    main ()\n"
+    String.trim_trailing(main_text, "\n") <> "\n\n" <> directives <> "test trial =\n    main ()\n"
   end
 
   defp test_names(opts) do
@@ -174,9 +174,8 @@ defmodule Spiral.Cells.NotebookCli do
   @doc false
   def cell_budget_lines(paths, opts) do
     for path <- paths,
-        opts[:cell_budget] == true or Spiral.Cells.CellBudget.i574n_dialect?(path),
-        finding <- path |> File.read!() |> Spiral.Cells.CellBudget.rewrites(Spiral.Cells.CellBudget.default_profile()),
-        do: "cell-budget " <> Spiral.Cells.CellBudget.format(Path.expand(path), finding)
+        line <- String.split(Spiral.Cells.Domain.cell_budget_lines(opts[:cell_budget] == true, path), "\n", trim: true),
+        do: line
   end
 
   @doc false

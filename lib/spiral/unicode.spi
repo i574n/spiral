@@ -246,3 +246,161 @@
 :# a_pad_counts_code_points_not_bytes =
     (pad_points_right 4i32 "ab", pad_points_right 3i32 "é", pad_points_right 1i32 "abc")
     |> _assert_eq ("ab  ", "é  ", "abc")
+
+/// ## byte-level text
+:= unicode_byte_ffi () : () =
+    global """
+        @external(erlang, "erlang", "byte_size")
+        fn spiral_unicode_byte_count(text: String) -> Int
+        """
+    global """
+        @external(erlang, "binary", "part")
+        fn spiral_unicode_byte_part(text: String, at: Int, len: Int) -> String
+        """
+    global """
+        @external(erlang, "binary", "at")
+        fn spiral_unicode_byte_at(text: String, at: Int) -> Int
+        """
+    global """
+        @external(erlang, "binary", "split")
+        fn spiral_unicode_byte_split(text: String, pat: String) -> List(String)
+        """
+    global """
+        fn spiral_unicode_byte_find(text: String, pat: String) -> Int {
+          case spiral_unicode_byte_split(text, pat) {
+            [before, _] -> spiral_unicode_byte_count(before)
+            _ -> -1
+          }
+        }
+        """
+
+:= byte_count (s : string) : i32 =
+    backend_switch {
+        Gleam = \ () =>
+            unicode_byte_ffi ()
+            $'spiral_unicode_byte_count(!s)' : i32
+        Rust = \ () => $'!s.len() as i32' : i32
+    }
+
+:= raw_byte_part (s : string) (at : i32) (n : i32) : string =
+    backend_switch {
+        Gleam = \ () =>
+            unicode_byte_ffi ()
+            $'spiral_unicode_byte_part(!s, !at, !n)' : string
+        Rust = \ () => $'Rc::<str>::from(String::from_utf8_lossy(&!s.as_bytes()[(!at as usize)..((!at + !n) as usize)]).as_ref())' : string
+    }
+
+:= byte_part (s : string) (at : i32) (n : i32) : string =
+    := size = byte_count s
+    ? at < 0i32 || n <= 0i32 || at >= size ?> "" |: raw_byte_part s at (? at + n > size ?> size - at |: n)
+
+:= raw_byte_at (s : string) (i : i32) : i32 =
+    backend_switch {
+        Gleam = \ () =>
+            unicode_byte_ffi ()
+            $'spiral_unicode_byte_at(!s, !i)' : i32
+        Rust = \ () => $'!s.as_bytes()[!i as usize] as i32' : i32
+    }
+
+:= byte_at (s : string) (i : i32) : i32 = ? i < 0i32 || i >= byte_count s ?> -1i32 |: raw_byte_at s i
+
+:= raw_byte_find (pat : string) (s : string) : i32 =
+    backend_switch {
+        Gleam = \ () =>
+            unicode_byte_ffi ()
+            $'spiral_unicode_byte_find(!s, !pat)' : i32
+        Rust = \ () => $'!s.as_bytes().windows(!pat.len()).position(|w| w == !pat.as_bytes()).map(|i| i as i32).unwrap_or(-1)' : i32
+    }
+
+:= byte_find (pat : string) (s : string) (from : i32) : i32 =
+    := at = ? from < 0i32 ?> 0i32 |: from
+    := size = byte_count s
+    ? byte_count pat = 0i32 ?> at
+    |? at + byte_count pat > size ?> -1i32
+    |:
+        := found = raw_byte_find pat (byte_part s at (size - at))
+        ? found < 0i32 ?> -1i32 |: at + found
+
+///> rust
+///> gleam
+:# byte_text_counts_and_cuts_utf8_bytes =
+    := ~s = "a" ++# char_of 233i32 ++# "b"
+    (byte_count s, byte_at s 1i32, byte_at s 3i32, byte_at s 4i32, byte_part s 3i32 5i32, byte_part s 0i32 1i32, byte_part s 9i32 1i32)
+    |> _assert_eq (4i32, 195i32, 98i32, -1i32, "b", "a", "")
+
+///> rust
+///> gleam
+:# byte_find_returns_byte_offsets_past_multibyte_text =
+    := ~s = char_of 233i32 ++# "x=" ++# char_of 233i32 ++# "x="
+    (byte_find "x=" s 0i32, byte_find "x=" s 3i32, byte_find "zz" s 0i32, byte_find "x=" s 7i32, byte_find "" s 5i32)
+    |> _assert_eq (2i32, 6i32, -1i32, -1i32, 5i32)
+
+/// ## grapheme stepping
+:= grapheme_ffi () : () =
+    unicode_types ()
+    global """
+        fn spiral_unicode_first_grapheme(text: String) -> String {
+          case string.pop_grapheme(text) {
+            Ok(#(first, _)) -> first
+            Error(_) -> ""
+          }
+        }
+        """
+    global """
+        fn spiral_unicode_rest_graphemes(text: String) -> String {
+          case string.pop_grapheme(text) {
+            Ok(#(_, rest)) -> rest
+            Error(_) -> ""
+          }
+        }
+        """
+
+:= grapheme_count (s : string) : i32 =
+    backend_switch {
+        Gleam = \ () =>
+            grapheme_ffi ()
+            $'string.length(!s)' : i32
+        Rust = \ () => $'unicode_segmentation::UnicodeSegmentation::graphemes(&*!s, true).count() as i32' : i32
+    }
+
+:= first_grapheme (s : string) : string =
+    backend_switch {
+        Gleam = \ () =>
+            grapheme_ffi ()
+            $'spiral_unicode_first_grapheme(!s)' : string
+        Rust = \ () => $'Rc::<str>::from(unicode_segmentation::UnicodeSegmentation::graphemes(&*!s, true).next().unwrap_or(""))' : string
+    }
+
+:= rest_graphemes (s : string) : string =
+    backend_switch {
+        Gleam = \ () =>
+            grapheme_ffi ()
+            $'spiral_unicode_rest_graphemes(!s)' : string
+        Rust = \ () => $'Rc::<str>::from(unicode_segmentation::UnicodeSegmentation::graphemes(&*!s, true).skip(1).collect::<String>().as_str())' : string
+    }
+
+:= raw_grapheme_slice (s : string) (at : i32) (n : i32) : string =
+    backend_switch {
+        Gleam = \ () =>
+            grapheme_ffi ()
+            $'string.slice(!s, !at, !n)' : string
+        Rust = \ () => $'Rc::<str>::from(unicode_segmentation::UnicodeSegmentation::graphemes(&*!s, true).skip(!at as usize).take(!n as usize).collect::<String>().as_str())' : string
+    }
+
+:= grapheme_slice (s : string) (at : i32) (n : i32) : string = ? at < 0i32 || n <= 0i32 ?> "" |: raw_grapheme_slice s at n
+
+///> rust -d unicode-segmentation
+///> gleam
+:# grapheme_stepping_keeps_clusters_whole =
+    := ~s = unicode_decomposed_e () ++# "b" ++# unicode_thumb_with_tone ()
+    (
+        grapheme_count s,
+        first_grapheme s = unicode_decomposed_e (),
+        rest_graphemes s = "b" ++# unicode_thumb_with_tone (),
+        grapheme_slice s 1i32 1i32,
+        grapheme_slice s 2i32 5i32 = unicode_thumb_with_tone (),
+        first_grapheme "",
+        rest_graphemes "",
+        grapheme_slice s (-1i32) 1i32
+    )
+    |> _assert_eq (3i32, !+, !+, "b", !+, "", "", "")

@@ -62,21 +62,15 @@ defmodule Spiral.Cells.Mounts do
   def share_mounted_deps?(target, sibling_names) do
     text = Spiral.Cells.Manifest.read!(target)
 
-    case Regex.run(~r/^packageDir:\s*(.+)$/m, text) do
-      [_, _dir] ->
-        deps = local_package_names(text) |> Enum.map(&mount_name/1)
-        deps != [] and Enum.all?(deps, &(&1 in sibling_names))
-
-      _ ->
-        false
-    end
+    deps = local_package_names(text) |> Enum.map(&mount_name/1)
+    Spiral.Cells.Domain.package_dir_value(text) != "" and deps != [] and Enum.all?(deps, &(&1 in sibling_names))
   end
 
   @spec escapes_through_link?(String.t()) :: boolean()
   def escapes_through_link?(target) do
-    case Regex.run(~r/^packageDir:\s*(.+?)\s*$/m, Spiral.Cells.Manifest.read!(target)) do
-      [_, dir] -> Path.type(dir) == :relative and (dir |> String.replace("\\", "/") |> String.trim_trailing("/")) not in [".", ".."]
-      _ -> false
+    case Spiral.Cells.Domain.package_dir_value(Spiral.Cells.Manifest.read!(target)) do
+      "" -> false
+      dir -> Path.type(dir) == :relative and (dir |> String.replace("\\", "/") |> String.trim_trailing("/")) not in [".", ".."]
     end
   end
 
@@ -120,8 +114,8 @@ defmodule Spiral.Cells.Mounts do
       |> Enum.map_join("\n", fn entry ->
         stamp =
           case entry.kind do
-            :shadow -> "\t#{sources_digest(entry.target)}"
-            :patched -> "\t#{sources_digest(entry.target)}\t#{patches_digest({entry.package_dir, entry.patches})}"
+            :shadow -> "\t#{sources_fingerprint(entry.target)}"
+            :patched -> "\t#{sources_fingerprint(entry.target)}\t#{patches_fingerprint({entry.package_dir, entry.patches})}"
             :link -> ""
           end
 
@@ -132,7 +126,7 @@ defmodule Spiral.Cells.Mounts do
     :crypto.hash(:sha256, payload) |> Base.encode16(case: :lower) |> binary_part(0, 16)
   end
 
-  defp sources_digest(dir) do
+  defp sources_fingerprint(dir) do
     stats = source_stats(dir, dir, []) |> Enum.sort()
     :crypto.hash(:sha256, :erlang.term_to_binary(stats)) |> Base.encode16(case: :lower) |> binary_part(0, 16)
   end
@@ -162,7 +156,7 @@ defmodule Spiral.Cells.Mounts do
     end
   end
 
-  defp patches_digest(patches) do
+  defp patches_fingerprint(patches) do
     :crypto.hash(:sha256, :erlang.term_to_binary(patches)) |> Base.encode16(case: :lower) |> binary_part(0, 16)
   end
 
@@ -355,8 +349,7 @@ defmodule Spiral.Cells.Mounts do
 
   @spec mount_name(String.t()) :: String.t()
   def mount_name(target) do
-    name = target |> Path.basename() |> String.downcase() |> String.replace(~r/[^a-z0-9_]/, "_")
-    if name =~ ~r/^[0-9]/, do: "_" <> name, else: name
+    target |> Path.basename() |> String.downcase() |> Spiral.Cells.Domain.mount_name_of()
   end
 
   @spec dependency_closure([{String.t(), String.t()}]) :: [{String.t(), String.t()}]
@@ -396,15 +389,15 @@ defmodule Spiral.Cells.Mounts do
   defp relative_entry?(item), do: String.starts_with?(item, ["./", "../", ".\\", "..\\"])
 
   defp package_base(dir, text) do
-    case Regex.run(~r/^packageDir:\s*(.+?)\s*$/m, text) do
-      [_, packages] -> Path.expand(packages, dir)
-      _ -> Path.expand("..", dir)
+    case Spiral.Cells.Domain.package_dir_value(text) do
+      "" -> Path.expand("..", dir)
+      packages -> Path.expand(packages, dir)
     end
   end
 
   defp package_entries(text) do
     {entries, _mode} =
-      Enum.reduce(String.split(text, ~r/\r?\n/), {[], :out}, fn line, {entries, mode} ->
+      Enum.reduce(text |> String.replace("\r\n", "\n") |> String.split("\n"), {[], :out}, fn line, {entries, mode} ->
         cond do
           String.starts_with?(line, "packages:") ->
             {entries, :in}

@@ -1,0 +1,52 @@
+:# route_path static =
+    :< testing
+
+:< sm'_operators
+
+:== parts = array_base string
+
+:= part (i : i32) (ps : parts) : string = am'::index_base i ps
+
+:= count (ps : parts) : i32 = am'::length_base ps
+
+:= part_fits (r : string) (p : string) : bool = ? sm'::starts_with ":" r ?> p <> "" |: r = p
+
+:~ ^ fits_from (rs : parts) (ps : parts) (i : i32) : bool =
+    ? i >= count rs ?> !+ |? part_fits (part i rs) (part i ps) ?> fits_from rs ps (i + 1i32) |: !-
+
+:= fits (route : string) (path : string) : bool =
+    := rs = sm'::split "/" route
+    := ps = sm'::split "/" path
+    count rs = count ps && fits_from rs ps 0i32
+
+:~ ^ named_from (rs : parts) (ps : parts) (needle : string) (i : i32) : string =
+    ? i >= count rs ?> "" |? part i rs = needle ?> part i ps |: named_from rs ps needle (i + 1i32)
+
+:= segment (route : string) (path : string) (name : string) : string =
+    named_from (sm'::split "/" route) (sm'::split "/" path) (":" ++# name) 0i32
+
+:= i32_of (text : string) : i32 =
+    ?= (convert::try_convert text : option i32) ?|
+    | Some n => n
+    | None => -1i32
+
+///> rust
+///> gleam
+:# a_path_fits_when_literals_agree_and_params_are_filled =
+    (fits "/api/profiles/:name" "/api/profiles/jake", fits "/api/profiles/:name" "/api/profiles/")
+    |> _assert_eq (!+, !-)
+
+///> rust
+///> gleam
+:# a_path_with_another_literal_or_length_does_not_fit =
+    (fits "/api/profiles/:name/follow" "/api/articles/x/follow", fits "/api/tags" "/api/tags/x") |> _assert_eq (!-, !-)
+
+///> rust
+///> gleam
+:# a_segment_is_read_by_its_param_name =
+    (segment "/a/:slug/c/:id" "/a/hi/c/7" "slug", segment "/a/:slug/c/:id" "/a/hi/c/7" "id") |> _assert_eq ("hi", "7")
+
+///> rust
+///> gleam
+:# a_number_segment_reads_as_i32_and_anything_else_as_minus_one =
+    (i32_of "42", i32_of "x") |> _assert_eq (42i32, -1i32)

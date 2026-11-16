@@ -50,17 +50,6 @@ defmodule Spiral.Cells.DisplayTest do
     assert [%{mime: "text/plain", data: "plot frames not rendered: no frames"}] = Display.render_values([empty], [])
   end
 
-  test "Rust Debug values parse into terms" do
-    assert {:ok, {:tuple, ["a\"b\n", 1, -2.5, [1.0e-7, 150.0]]}} =
-             Display.parse_debug(~S|("a\"b\n", 1, -2.5, [1e-7, 1.5e2])|)
-
-    assert {:ok, [{:tuple, ["é"]}]} = Display.parse_debug(~S|RefCell { value: [("\u{e9}",)] }|)
-    assert {:ok, {:variant, "Some", [3]}} = Display.parse_debug("Some(3)")
-    assert {:ok, [:nan, :infinity, :neg_infinity]} = Display.parse_debug("[NaN, inf, -inf]")
-    assert :error = Display.parse_debug("(1, 2")
-    assert :error = Display.parse_debug("[1] trailing")
-  end
-
   test "a line plot value becomes an svg display; other values stay values" do
     assert {nil, [%{mime: "image/svg+xml", data: svg}]} =
              Display.from_value(@plot, render_plot: &fake_svg/1)

@@ -78,11 +78,11 @@ defmodule Spiral.Cells.CompilerPoolTest do
     assert refused > 0
   end
 
-  test "a slow memory probe does not hold up compiles on the compilers the pool has" do
+  test "a slow memory gauge does not hold up compiles on the compilers the pool has" do
     {:ok, log} = Agent.start_link(fn -> [] end)
     {:ok, first} = SlowWorker.start_link(log)
-    slow_probe = fn -> Process.sleep(1_000) && 100 end
-    {:ok, pool} = CompilerPool.start_link(first: first, max_workers: 3, start_worker: fn -> SlowWorker.start_link(log) end, free_mb: slow_probe)
+    slow_gauge = fn -> Process.sleep(1_000) && 100 end
+    {:ok, pool} = CompilerPool.start_link(first: first, max_workers: 3, start_worker: fn -> SlowWorker.start_link(log) end, free_mb: slow_gauge)
     started = System.monotonic_time(:millisecond)
     Task.await_many(for i <- 1..3, do: submit(pool, "e#{i}", "e#{i}", 30))
     assert System.monotonic_time(:millisecond) - started < 500

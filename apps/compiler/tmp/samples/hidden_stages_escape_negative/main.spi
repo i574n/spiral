@@ -1,0 +1,14 @@
+:< sm'_operators
+
+:| policy =
+    | Policy :: (\? s. s * (s -> i32 -> s * i32)) -> policy
+
+:= cap_step (spent : i32) (amount : i32) : i32 * i32 = ? spent + amount > 120i32 ?> spent, 0i32 |: spent + amount, amount
+
+:= leak (p : policy) : i32 =
+    ?= p ?|
+    | Policy payload =>
+        := \? s. state, _ = payload
+        state
+
+:= main () : i32 = leak (Policy (\? (0i32, cap_step)))

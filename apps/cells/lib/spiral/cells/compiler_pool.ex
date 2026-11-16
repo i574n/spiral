@@ -60,7 +60,7 @@ defmodule Spiral.Cells.CompilerPool do
        served: 0,
        peak_workers: 1,
        free_reading: :none,
-       probing: false,
+       gauging: false,
        refused_growth: 0
      }}
   end
@@ -85,7 +85,7 @@ defmodule Spiral.Cells.CompilerPool do
   end
 
   def handle_info({:free_mb, mb}, state) do
-    {:noreply, dispatch(%{state | free_reading: {System.monotonic_time(:millisecond), mb}, probing: false})}
+    {:noreply, dispatch(%{state | free_reading: {System.monotonic_time(:millisecond), mb}, gauging: false})}
   end
 
   def handle_info({:EXIT, pid, _reason}, state) do
@@ -166,7 +166,7 @@ defmodule Spiral.Cells.CompilerPool do
     state =
       case state.free_reading do
         {at, _} when now - at < @free_reading_ttl_ms -> state
-        _ -> probe_free_mb(state)
+        _ -> gauge_free_mb(state)
       end
 
     case state.free_reading do
@@ -176,16 +176,16 @@ defmodule Spiral.Cells.CompilerPool do
     end
   end
 
-  defp probe_free_mb(%{probing: true} = state), do: state
+  defp gauge_free_mb(%{gauging: true} = state), do: state
 
-  defp probe_free_mb(state) do
+  defp gauge_free_mb(state) do
     pool = self()
-    probe = state.free_mb
+    gauge = state.free_mb
 
     Task.start(fn ->
       mb =
         try do
-          probe.()
+          gauge.()
         rescue
           _ -> nil
         catch
@@ -195,7 +195,7 @@ defmodule Spiral.Cells.CompilerPool do
       send(pool, {:free_mb, mb})
     end)
 
-    %{state | probing: true}
+    %{state | gauging: true}
   end
 
   defp last_free_mb({_, mb}), do: mb
@@ -229,9 +229,9 @@ defmodule Spiral.Cells.CompilerPool do
       _ ->
         case File.read("/proc/meminfo") do
           {:ok, text} ->
-            case Regex.run(~r/MemAvailable:\s+(\d+) kB/, text) do
-              [_, kb] -> div(String.to_integer(kb), 1024)
-              _ -> nil
+            case Spiral.Cells.Domain.mem_available_mb(text) do
+              -1 -> nil
+              mb -> mb
             end
 
           _ ->

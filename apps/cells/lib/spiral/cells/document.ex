@@ -31,14 +31,31 @@ defmodule Spiral.Cells.Document do
 
   @spec parse_livemd(String.t()) :: %{cells: [map()]}
   def parse_livemd(text) when is_binary(text) do
-    text = String.replace(text, "\r\n", "\n")
-
-    cells =
-      Regex.split(~r/(^<!-- livebook:\{"spiral_code":"[^"]+"\} -->\n\n```[^\n]*\n.*?^```[ \t]*(?:\n|\z)|^```(?:elixir|fsharp|spiral)\n.*?^```[ \t]*(?:\n|\z))/sm, text, include_captures: true)
-      |> Enum.flat_map(&livemd_part/1)
-
-    %{cells: cells}
+    %{cells: text |> Spiral.Cells.Domain.livemd_cells() |> livemd_rows() |> Enum.flat_map(&livemd_cell/1)}
   end
+
+  defp livemd_rows(""), do: []
+
+  defp livemd_rows(wire) do
+    {kind, rest} = livemd_field(wire)
+    {language, rest} = livemd_field(rest)
+    {source, rest} = livemd_field(rest)
+    [{kind, language, source} | livemd_rows(rest)]
+  end
+
+  defp livemd_field(wire) do
+    [n, rest] = String.split(wire, ":", parts: 2)
+    size = String.to_integer(n)
+    <<field::binary-size(^size), rest::binary>> = rest
+    {field, rest}
+  end
+
+  defp livemd_cell({"code", language, source}), do: [%{kind: :code, language: language, source: source}]
+  defp livemd_cell({"elixir", part, body}), do: if(source = eval_source(body), do: [%{kind: :spiral, source: source}], else: livemd_markdown(part))
+  defp livemd_cell({"import", _, source}), do: [%{kind: :import, source: source}]
+  defp livemd_cell({kind, _, source}) when kind in ["fsharp", "spiral", "markdown"], do: [%{kind: String.to_atom(kind), source: source}]
+
+  defp livemd_markdown(part), do: part |> Spiral.Cells.Domain.livemd_markdown() |> livemd_rows() |> Enum.flat_map(&livemd_cell/1)
 
   @spec to_livemd(%{cells: [map()]}) :: String.t()
   def to_livemd(%{cells: cells}) do
@@ -110,57 +127,7 @@ defmodule Spiral.Cells.Document do
     |> Enum.sort_by(& &1.index)
   end
 
-  defp livemd_part(part) do
-    cond do
-      match?([_, _], Regex.run(~r/\A<!-- livebook:\{"spiral_code":"([^"]+)"\} -->/, part)) ->
-        [_, language] = Regex.run(~r/\A<!-- livebook:\{"spiral_code":"([^"]+)"\} -->/, part)
-        body = part |> String.replace(~r/\A<!-- livebook:[^\n]*\n\n/, "") |> fence_body()
-        [%{kind: :code, language: language, source: body}]
-
-      String.starts_with?(part, "```elixir") ->
-        case eval_source(part) do
-          nil -> markdown_part(part)
-          source -> [%{kind: :spiral, source: source}]
-        end
-
-      String.starts_with?(part, "```fsharp") ->
-        [%{kind: :fsharp, source: fence_body(part)}]
-
-      String.starts_with?(part, "```spiral") ->
-        [%{kind: :spiral, source: fence_body(part)}]
-
-      true ->
-        markdown_part(part)
-    end
-  end
-
-  defp markdown_part(part) do
-    part
-    |> String.split(@break_markdown)
-    |> Enum.flat_map(fn chunk ->
-      source =
-        chunk
-        |> String.replace(~r/<!-- livebook:.*?-->\n?/s, "")
-        |> String.trim()
-
-      case Regex.run(~r/\A`#!import ([^`\n]+)`\z/, source) do
-        [_, path] -> [%{kind: :import, source: path}]
-        nil when source == "" -> []
-        nil -> [%{kind: :markdown, source: source}]
-      end
-    end)
-  end
-
-  defp fence_body(part) do
-    part
-    |> String.replace(~r/\A```[a-z]+\n/, "")
-    |> String.replace(~r/```\n?\z/, "")
-    |> String.trim_trailing("\n")
-  end
-
-  defp eval_source(part) do
-    code = fence_body(part)
-
+  defp eval_source(code) do
     with {:ok, ast} <- Code.string_to_quoted(code),
          {{:., _, [{:__aliases__, _, [:Spiral, :Cells]}, :eval!]}, _, [sigil | _]} <- ast,
          {source, _} when is_binary(source) <- Code.eval_quoted(sigil) do

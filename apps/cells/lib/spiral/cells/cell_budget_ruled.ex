@@ -180,7 +180,7 @@ defmodule Spiral.Cells.CellBudgetRuled do
 
   defp flat_switch(_), do: :error
 
-  @run_target_arm ~r/^\| [A-Za-z_][\w']* => \\ [^=]+ => (?<call>\S.*)$/
+  @run_target_arm ~r/^\| [A-Za-z_][\w']*(?: [A-Za-z_][\w']*)* => \\ [^=]+ => (?<call>\S.*)$/
 
   defp flat_run_target([head | rest]) do
     trimmed = String.trim(head)

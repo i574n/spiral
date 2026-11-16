@@ -1,0 +1,60 @@
+///- --package .
+:# arg_grammar static =
+    :< testing
+
+:< sm'_operators
+:< parsing
+
+:= escape_chars () : list char = [ '\\'; '`' ]
+
+:= quote_chars () : list char = [ '"' ]
+
+:= special_chars () : list char = escape_chars () ++ quote_chars ()
+
+:= escaped_pair (p : parser _) : parser string = \ t, i, s =>
+    ?= p (t, i, s) ?|
+    | Ok (_, i', s') => Ok (t |> slice i i', i', s')
+    | Error e => Error e
+
+:= escaped_char c = p_char c >>. any_char () |> escaped_pair
+
+:= word () = special_chars () |> none_of |>> \ c => \ () => c () |> sm'::obj_to_string
+
+:= plain () = special_chars () ++ [ ' ' ] |> many1_none_of
+
+:= escaped () = escape_chars () |> listm::map escaped_char |> choice
+
+:= chunk () = special_chars () |> many1_none_of
+
+:= quoted () = (chunk () <|> escaped ()) |> many_strings
+
+:= quoted_all () = quoted () |> between (p_char '"') (p_char '"')
+
+:= escape_root () = escaped () >>% "" >>. word () |> many |>> \ s => \ () => s () |> sm'::concat_list ""
+
+:= escaped_quote_delimiter () = escape_chars () |> listm::map (\ c => p_char c >>. p_char '"' >>% '"') |> choice
+
+:= escaped_char_unquoted c = p_char c >>. none_of [ '"' ] |> escaped_pair
+
+:= escaped_unquoted () = escape_chars () |> listm::map escaped_char_unquoted |> choice
+
+:= quoted_escaped () = (chunk () <|> escaped_unquoted ()) |> many_strings
+
+:= quoted_all_escaped () = quoted_escaped () |> between (escaped_quote_delimiter ()) (escaped_quote_delimiter ())
+
+:= progressing p : parser _ = \ input, i, s =>
+    ?= p (input, i, s) ?|
+    | Ok (r, i', s') ?& i' = i => fail (\ _ => "process.split_args / segment zero-length success") i s
+    | other => other
+
+:= segment () = progressing (quoted_all_escaped () <|> quoted_all () <|> plain () <|> escape_root ())
+
+:= content () = segment () |> many1_strings
+
+:= arguments () = spaces1 () |> sep_by (content ())
+
+:~ split_args (args : string) : result (array_base string) _ =
+    args
+    |> run_parser (arguments ())
+    |> resultm::map (fst >> listm'::box >> listm'::to_array')
+    |> resultm::map_error eval

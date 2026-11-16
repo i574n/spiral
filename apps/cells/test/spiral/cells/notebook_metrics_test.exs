@@ -11,12 +11,11 @@ defmodule Spiral.Cells.NotebookMetricsTest do
     ]
   }
 
-  test "metrics rows list every target of every test-mode block, keyed by the file stem" do
-    assert Notebook.metrics_rows([{"C:/src/hunt_sim.spi", @report}]) == [
-             ["hunt_sim", "golden_seed", "rust", "passed", 812, "hit"],
-             ["hunt_sim", "golden_seed", "c", "failed", 95, "hit"],
-             ["hunt_sim", "fresh", "zig", "passed", nil, ""]
-           ]
+  @tag :tmp_dir
+  test "metrics rows list every target of every test-mode block, keyed by the file stem", %{tmp_dir: dir} do
+    Notebook.write_metrics(dir, [{"C:/src/hunt_sim.spi", @report}])
+    assert File.read!(Path.join(dir, "tests.tsv")) |> String.split("\n") |> Enum.drop(1) |> Enum.take(3) ==
+             ["hunt_sim\tgolden_seed\trust\tpassed\t812\thit", "hunt_sim\tgolden_seed\tc\tfailed\t95\thit", "hunt_sim\tfresh\tzig\tpassed\t\t"]
   end
 
   @tag :tmp_dir

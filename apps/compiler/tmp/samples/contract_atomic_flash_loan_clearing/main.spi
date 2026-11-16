@@ -50,11 +50,11 @@
 
 :+ assess adversarial_policy = \ (adversarial_policy op) =>
     ?= op ?|
-    | Borrow _ => "probe-liquidity"
-    | Route _ => "probe-price-impact"
-    | Arbitrage _ => "probe-slippage"
-    | Repay _ => "probe-repayment"
-    | Settle _ => "probe-residual-debt"
+    | Borrow _ => "preflight-liquidity"
+    | Route _ => "preflight-price-impact"
+    | Arbitrage _ => "preflight-slippage"
+    | Repay _ => "preflight-repayment"
+    | Settle _ => "preflight-residual-debt"
 
 :+ execute ledger_interpreter = \ (ledger_interpreter op) =>
     ?= op ?|
@@ -143,9 +143,9 @@
 
 := main () : string =
     := plan = build_plan ()
-    := borrow_probe : flash_op idle borrowed (debt_note pool_alpha borrower_7 usdc block_19000000) =
+    := borrow_trial : flash_op idle borrowed (debt_note pool_alpha borrower_7 usdc block_19000000) =
         Borrow "pool-alpha"
-    := debt_probe : debt_note pool_alpha borrower_7 usdc block_19000000 =
+    := debt_trial : debt_note pool_alpha borrower_7 usdc block_19000000 =
         debt_note (
             pool_alpha "alpha",
             borrower_7 "borrower-7",
@@ -153,11 +153,11 @@
             block_19000000 19000000,
             "debt-alpha-7-usdc"
         )
-    := profit_probe : profit_receipt pool_alpha borrower_7 usdc block_19000000 =
+    := profit_trial : profit_receipt pool_alpha borrower_7 usdc block_19000000 =
         profit_receipt (pool_alpha "alpha", borrower_7 "borrower-7", usdc "usdc", block_19000000 19000000, "profit-173")
-    := repay_probe : flash_op arbitraged repaid (repayment_receipt pool_alpha borrower_7 usdc block_19000000) =
-        Repay (debt_probe, profit_probe)
-    := repaid_probe : repayment_receipt pool_alpha borrower_7 usdc block_19000000 =
+    := repay_trial : flash_op arbitraged repaid (repayment_receipt pool_alpha borrower_7 usdc block_19000000) =
+        Repay (debt_trial, profit_trial)
+    := repaid_trial : repayment_receipt pool_alpha borrower_7 usdc block_19000000 =
         repayment_receipt (
             pool_alpha "alpha",
             borrower_7 "borrower-7",
@@ -165,10 +165,10 @@
             block_19000000 19000000,
             "repaid-alpha"
         )
-    := settle_probe : flash_op repaid settled (settlement_receipt pool_alpha borrower_7 usdc block_19000000) =
-        Settle repaid_probe
-    := risk = assess (conservative_policy borrow_probe)
-    := probe = assess (adversarial_policy repay_probe)
-    := effect = execute (ledger_interpreter settle_probe)
+    := settle_trial : flash_op repaid settled (settlement_receipt pool_alpha borrower_7 usdc block_19000000) =
+        Settle repaid_trial
+    := risk = assess (conservative_policy borrow_trial)
+    := trial = assess (adversarial_policy repay_trial)
+    := effect = execute (ledger_interpreter settle_trial)
     := packed = packed_flash (terminal plan)
-    serialize_authority risk probe effect (inspect_packed packed)
+    serialize_authority risk trial effect (inspect_packed packed)

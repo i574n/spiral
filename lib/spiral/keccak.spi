@@ -329,7 +329,7 @@
     (
         keccak256 abc |> digest_bytes |> bytes::hex,
         sha3_256 abc |> digest_bytes |> bytes::hex,
-        sha3_512 abc |> digest_bytes |> bytes::hex |> sm'.slice 0i32 31i32,
+        sha3_512 abc |> digest_bytes |> bytes::hex |> sm'::slice 0i32 31i32,
         keccak256 (bytes::counting edge) |> digest_bytes |> bytes::hex,
         sha3_256 (bytes::counting (edge - 1)) |> digest_bytes |> bytes::hex
     )

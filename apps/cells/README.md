@@ -133,6 +133,7 @@ Resolved in this order for each setting: the `run/2` option, then the environmen
 | Package fallback root (a cell's `--package` path not found beside the notebook) | `:workspace_root` | `SPIRAL_CELLS_WORKSPACE_ROOT`, or `config :spiral_cells, workspace_root: ...` | this `spiral` checkout |
 | Compiler daemon port | - | `SPIRAL_CELLS_COMPILER_PORT` | `13905` |
 | Compiler server memory cap (MB; 0: none) | - | `SPIRAL_CELLS_DAEMON_MAX_MB` | `2500` |
+| Cells VM memory guard: halts with exit 137 past this many MB (0: off) | - | `SPIRAL_CELLS_MAX_MB` | the larger of `2048` and 3/4 of `/proc/meminfo` MemAvailable at start; `2048` without `/proc` |
 | Compiles per compiler server (0: no limit) | - | `SPIRAL_CELLS_DAEMON_MAX_COMPILES` | `0` |
 | Compiler servers per daemon (`off`, `N`, `auto` = 3) | - | `SPIRAL_CELLS_DAEMON_POOL` | `auto` |
 | Free memory one more compiler server needs (MB) | - | `SPIRAL_CELLS_DAEMON_SERVER_MB` + `SPIRAL_CELLS_DAEMON_RESERVE_MB` | `1000` + `1500` |
@@ -252,8 +253,8 @@ this machine (`` `lua` was not found``, `gleam`, `gcc`, ...; a missing compiler,
 A native target (`///> c`, `cpp`, `pascal`) passes only when its program exits 0: the exit code is no value channel,
 so an assertion that exits 1 fails the test. `///> c` is built like the compiler matrix builds its C rows:
 `gcc -std=c11 -O2 -w -fwrapv [-include <notebook dir>/c-shim.h] -o cell main.c -lm` (`cl /O2` with MSVC). The Rust host
-is built like the matrix's Rust rows too: `rustc +1.99.0 -C opt-level=2 -A warnings --edition 2024`
-(`+1.99.0` only when `rustc` is rustup's proxy). `///> pascal` (`///> delphi` is an alias) uses `dcc32` (`SPIRAL_DCC`)
+is built like the matrix's Rust rows too: `rustc +<channel> -C opt-level=2 -A warnings --edition 2024`, where the
+channel is the repo root `rust-toolchain.toml`'s (`+<channel>` only when `rustc` is rustup's proxy). `///> pascal` (`///> delphi` is an alias) uses `dcc32` (`SPIRAL_DCC`)
 when present, else Free Pascal
 the way the matrix builds its Pascal rows: `fpc -Px86_64 -O2 -Mdelphi`
 (`SPIRAL_FPC`, `fpc` on PATH, or scoop's freepascal).
@@ -399,11 +400,14 @@ Every top-level definition is a cell, and a cell has a budget: 280 weighted char
 `cell-budget <file>:<line>:<col>: <kind>: <text> (<hint>)` line per thing a renderer would rewrite: `#` before a letter
 (hashtag), `@` before a name (mention), `$` before letters (cashtag) and text that looks like
 a domain (`cell.ai`; member access spelled `::` never does). These are warnings: the run's result does not change.
+The run-time checker is Spiral: `spi/cell_budget.spi` (weights, rewrites, the 280 limit, IANA TLDs through lib
+`tlds`) and `spi/cell_budget_ruled.spi` (the GRANULAR ruled budget and the kinds line); Cells calls it through
+`Spiral.Cells.Domain.cell_budget_lines`.
+
 `mix spiral.cell_budget <file or dir>...` is the CI report over `.spi`, `.spir` and `.livemd` files: every finding,
-every
-definition over budget (`over_budget`) and a summary line. With `--check` it exits 1 when a definition is over budget.
-It skips `target`, `deps`, `_build` and similar folders. The checker is `Spiral.Cells.CellBudget` (IANA TLD list in
-`data/tlds.txt`); the 280 limit is one constant there.
+every definition over budget (`over_budget`) and a summary line. With `--check` it exits 1 when a definition is over
+budget. It skips `target`, `deps`, `_build` and similar folders. The task still runs on `Spiral.Cells.CellBudget`
+(IANA TLD list in `data/tlds.txt`) until the Spiral checker exports `over_budget`.
 
 ### Target audit
 

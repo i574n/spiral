@@ -13,5 +13,6 @@ One directory per fixture, each with `package.spiproj` and `main.spi` (top-down)
 `core/` is the small portable `core-` package the fixtures share (`packages: core-`); the full standard
 library (`packages: |core-`) is The-Spiral-Language's core, reached through the repo's
 `deps/The-Spiral-Language` clone. Expected results live in the cache (`baseline/EXPECTED.tsv`).
-C shims for native builds: `../tests/native-shims/`; per-fixture C flags: `../tests/matrix.psd1` (`CFlags`). Never compile in place: the
+C shims for native builds: `../tests/native-shims/`; per-fixture C flags: `../tests/matrix.psd1` (`CFlags`). Never
+compile in place: the
 compiler writes residuals beside its input, so the matrix stages a copy in the cache.

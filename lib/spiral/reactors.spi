@@ -228,13 +228,13 @@
 := sampling_tens () : reactor i64 i64 (signal i64) =
     { init = 0i64; react = \ count now _ => count + 1i64, Present (now::time * 10i64) }
 
-:= tally_step (state : i64 * i64) (_ : tag) (x : signal i64) : (i64 * i64) * signal i64 =
+:= count_step (state : i64 * i64) (_ : tag) (x : signal i64) : (i64 * i64) * signal i64 =
     := sum, violations = state
     ?= x ?|
     | Present v => ? v < 0i64 ?> (sum, violations + 1i64), x |: (sum + v, violations), x
     | Absent => (sum, violations), x
 
-:= violation_tally () : reactor (i64 * i64) (signal i64) (signal i64) = { init = (0i64, 0i64); react = tally_step }
+:= violation_counts () : reactor (i64 * i64) (signal i64) (signal i64) = { init = (0i64, 0i64); react = count_step }
 
 := lag_pattern (now : tag) : i64 = ? now::time % 4i64 = 3i64 ?> 9i64 |: now::time % 3i64
 
@@ -242,7 +242,7 @@
 ///> rust
 :# deadlines_run_the_violation_handler =
     := guarded = with_deadline 5i64 (sampling_tens ()) \ count _ => count, Present -1i64
-    := _, result = run_ticks (chain guarded (violation_tally ())) lag_pattern 12i64
+    := _, result = run_ticks (chain guarded (violation_counts ())) lag_pattern 12i64
     result |> _assert_eq (450i64, 3i64)
 
 := bump_member (states : array i64) (i : i32) (input : i64) : i64 =
@@ -326,3 +326,195 @@
     := first = physical_micros ()
     := second = physical_micros ()
     (first > 1700000000000000i64 && second >= first) |> _assert_eq !+
+
+:== action_reactor s i a o = { init : s; react : s -> tag -> i -> signal a -> s * signal o * list (i64 * a) }
+
+:== pending a = { at : tag; payload : a; seq : i64 }
+
+:= tag_before (x : tag) (y : tag) : bool = x::time < y::time || (x::time = y::time && x::micro < y::micro)
+
+:= same_tag (x : tag) (y : tag) : bool = x::time = y::time && x::micro = y::micro
+
+:~ ^ queued \* a. (event : pending a) (queue : list (pending a)) : list (pending a) =
+    ?= queue ?|
+    | head :: rest => ? tag_before event::at head::at ?> event :: queue |: head :: queued event rest
+    | [] => [ event ]
+
+:= scheduled_at (now : tag) (delay : i64) : tag =
+    ? delay > 0i64 ?> { time = now::time + delay; micro = 0i32 } |: { time = now::time; micro = now::micro + 1i32 }
+
+:~ ^ schedule_all \* a. (now : tag) (requests : list (i64 * a)) (seq : i64) (queue : list (pending a))
+    : list (pending a) * i64
+    =
+    ?= requests ?|
+    | (delay, payload) :: rest =>
+        schedule_all now rest (seq + 1i64) (queued { at = scheduled_at now delay; payload = payload; seq = seq } queue)
+    | [] => queue, seq
+
+:~ ^ take_at \* a. (now : tag) (queue : list (pending a)) (found : signal a) : signal a * list (pending a) =
+    ?= queue ?|
+    | head :: rest => ? same_tag head::at now ?> take_at now rest (Present head::payload) |: found, queue
+    | [] => found, []
+
+:= has_at \* a. (now : tag) (queue : list (pending a)) : bool =
+    ?= queue ?|
+    | head :: _ => same_tag head::at now
+    | [] => !-
+
+:== action_run s a o = { state : s; queue : list (pending a); seq : i64; trace : list (tag * o) }
+
+:~ ^ microsteps \* s i a o.
+    (program : action_reactor s i a o) (input : tag -> i) (now : tag) (run : action_run s a o)
+    : action_run s a o
+    =
+    := triggered, queue = take_at now run::queue Absent
+    := state, out, requests = program::react run::state now (input now) triggered
+    := queue, seq = schedule_all now requests run::seq queue
+    := trace = ?= out ?| Present y => (now, y) :: run::trace | Absent => run::trace
+    := run = { state = state; queue = queue; seq = seq; trace = trace }
+    := next = { time = now::time; micro = now::micro + 1i32 }
+    ? has_at next queue ?> microsteps program input next run |: run
+
+:~ ^ action_ticks \* s i a o.
+    (program : action_reactor s i a o) (input : tag -> i) (time : i64) (ticks : i64) (run : action_run s a o)
+    : action_run s a o
+    =
+    ? time >= ticks
+    ?> run
+    |: action_ticks program input (time + 1i64) ticks (microsteps program input { time = time; micro = 0i32 } run)
+
+:= run_actions \* s i a o. (program : action_reactor s i a o) (input : tag -> i) (ticks : i64) : list (tag * o) =
+    := start = { state = program::init; queue = []; seq = 0i64; trace = [] }
+    := finished = action_ticks program input 0i64 ticks start
+    listm::rev finished::trace
+
+:= echo_react (count : i32) (now : tag) (x : signal i64) (fired : signal i64) : i32 * signal i64 * list (i64 * i64) =
+    ?= fired ?|
+    | Present v => count + 1i32, Present v, (? v < 9i64 ?> [ 0i64, v + 1i64 ] |: [])
+    | Absent =>
+        ?= x ?|
+        | Present v => count, Absent, [ 3i64, v ]
+        | Absent => count, Absent, []
+
+:= echo () : action_reactor i32 (signal i64) i64 i64 = { init = 0i32; react = echo_react }
+
+:= input_at_zero (now : tag) : signal i64 = ? now::time = 0i64 && now::micro = 0i32 ?> Present 7i64 |: Absent
+
+:= trace_stamps (trace : list (tag * i64)) : list (i64 * i32 * i64) =
+    trace |> listm::map (\ ((now, v) : tag * i64) => now::time, now::micro, v)
+
+///> c
+///> rust
+:# a_logical_action_lands_at_its_delay_and_a_zero_delay_one_at_the_next_microstep =
+    run_actions (echo ()) input_at_zero 6i64 |> trace_stamps
+    |> _assert_eq [ 3i64, 0i32, 7i64; 3i64, 1i32, 8i64; 3i64, 2i32, 9i64 ]
+
+:= twice_react (count : i32) (now : tag) (x : signal i64) (fired : signal i64) : i32 * signal i64 * list (i64 * i64) =
+    ?= fired ?|
+    | Present v => count + 1i32, Present v, []
+    | Absent =>
+        ?= x ?|
+        | Present _ => count, Absent, [ 2i64, 1i64; 2i64, 2i64; 1i64, 5i64 ]
+        | Absent => count, Absent, []
+
+:= twice () : action_reactor i32 (signal i64) i64 i64 = { init = 0i32; react = twice_react }
+
+///> c
+///> rust
+:# events_replay_in_tag_order_and_the_latest_schedule_at_a_tag_wins =
+    run_actions (twice ()) input_at_zero 5i64 |> trace_stamps
+    |> _assert_eq [ 1i64, 0i32, 5i64; 2i64, 0i32, 2i64 ]
+
+:| edge_delay =
+    | Immediate
+    | Delayed : i64
+
+:== port_ref = { port : string; delay : edge_delay }
+
+:== declared_reaction = { name : string; triggers : list string; effects : list port_ref }
+
+:= immediate (port : string) : port_ref = { port = port; delay = Immediate }
+
+:= delayed (port : string) (by : i64) : port_ref = { port = port; delay = Delayed by }
+
+:= is_immediate (p : port_ref) : bool = ?= p::delay ?| Immediate => !+ | Delayed _ => !-
+
+:= feeds (from : declared_reaction) (into : declared_reaction) : bool =
+    from::effects |> listm::fold (\ (hit : bool) (p : port_ref) =>
+        hit || (is_immediate p && listm::fold (\ (h : bool) (t : string) => h || t = p::port) !- into::triggers)) !-
+
+:~ ^ listed (name : string) (names : list string) : bool =
+    ?= names ?|
+    | n :: rest => n = name || listed name rest
+    | [] => !-
+
+:~ ^ reaches (reactions : list declared_reaction) (path : list string) (current : declared_reaction)
+    : option (list string)
+    =
+    reactions |> listm::fold (\ (found : option (list string)) (next : declared_reaction) =>
+        ?= found ?|
+        | Some _ => found
+        | None =>
+            ? not (feeds current next)
+            ?> None
+            |? listed next::name path
+            ?> Some (listm::rev (next::name :: path))
+            |: reaches reactions (next::name :: path) next) None
+
+:= causality_cycle (reactions : list declared_reaction) : option (list string) =
+    reactions |> listm::fold (\ (found : option (list string)) (start : declared_reaction) =>
+        ?= found ?|
+        | Some _ => found
+        | None => reaches reactions [ start::name ] start) None
+
+:= ping_pong (back : port_ref) : list declared_reaction =
+    [
+        { name = "ping"; triggers = [ "start"; "pong_out" ]; effects = [ immediate "ping_out" ] }
+        { name = "pong"; triggers = [ "ping_out" ]; effects = [ back ] }
+    ]
+
+///> rust
+///> gleam
+:# a_zero_delay_loop_is_a_causality_cycle_and_a_delayed_action_breaks_it =
+    (causality_cycle (ping_pong (immediate "pong_out")), causality_cycle (ping_pong (delayed "pong_out" 1i64)))
+    |> _assert_eq (Some [ "ping"; "pong"; "ping" ], None)
+
+:= arrival_tag (last : option tag) (time : i64) : tag =
+    ?= last ?|
+    | Some previous =>
+        ? previous::time = time ?> { time = time; micro = previous::micro + 1i32 } |: { time = time; micro = 0i32 }
+    | None => { time = time; micro = 0i32 }
+
+:~ ^ physical_queue \* a. (arrivals : list (i64 * a)) (last : option tag) (seq : i64) (queue : list (pending a))
+    : list (pending a)
+    =
+    ?= arrivals ?|
+    | (time, payload) :: rest =>
+        := at = arrival_tag last time
+        physical_queue rest (Some at) (seq + 1i64) (queued { at = at; payload = payload; seq = seq } queue)
+    | [] => queue
+
+:= run_physical \* s i a o.
+    (program : action_reactor s i a o) (input : tag -> i) (arrivals : list (i64 * a)) (ticks : i64)
+    : list (tag * o)
+    =
+    := queue = physical_queue arrivals None 0i64 []
+    := count : i32 = listm::length arrivals
+    := start = { state = program::init; queue = queue; seq = conv count; trace = [] }
+    := finished = action_ticks program input 0i64 ticks start
+    listm::rev finished::trace
+
+:= relay_react (count : i32) (now : tag) (x : signal i64) (fired : signal i64) : i32 * signal i64 * list (i64 * i64) =
+    ?= fired ?|
+    | Present v => count + 1i32, Present v, []
+    | Absent => count, Absent, []
+
+:= relay () : action_reactor i32 (signal i64) i64 i64 = { init = 0i32; react = relay_react }
+
+:= nothing_in (now : tag) : signal i64 = Absent
+
+///> c
+///> rust
+:# physical_arrivals_take_their_time_as_tag_and_share_a_time_by_microstep =
+    run_physical (relay ()) nothing_in [ 5i64, 10i64; 5i64, 11i64; 9i64, 12i64 ] 12i64 |> trace_stamps
+    |> _assert_eq [ 5i64, 0i32, 10i64; 5i64, 1i32, 11i64; 9i64, 0i32, 12i64 ]

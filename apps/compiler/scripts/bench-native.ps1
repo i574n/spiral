@@ -2,8 +2,8 @@ param(
     [string[]] $Samples = @(
         'mega_brzozowski_derivatives/runtime_bench', 'mega_brzozowski_derivatives/indexed_dfa_state_cardinality',
         'mega_brzozowski_derivatives/inventory_closed_dfa_runtime', 'mega_brzozowski_derivatives/runtime_native',
-        'mega_lean_cic_bottom_up_kernel/runtime_native', 'mega_omniledger_erp_kernel/runtime_native',
-        'mega_spiral_proves_spiral_relative_consistency/runtime_native', 'mega_zeta_structural_laboratory/runtime_native',
+        'mega_omniledger_erp_kernel/runtime_native',
+        'mega_zeta_structural_laboratory/runtime_native',
         'native_cube_direct'),
     [string] $Mode = 'single-flight',
     [int] $Runs = 7,

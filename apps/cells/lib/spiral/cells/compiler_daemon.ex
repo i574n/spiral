@@ -1,5 +1,6 @@
 defmodule Spiral.Cells.CompilerDaemon do
   use GenServer
+  require Logger
 
   alias Spiral.Cells.{Runner, Toolchain}
 
@@ -11,19 +12,13 @@ defmodule Spiral.Cells.CompilerDaemon do
   @default_retire_free_mb 4096
 
   defp idle_ms do
-    case Integer.parse(System.get_env("SPIRAL_CELLS_COMPILER_IDLE_MIN") || "") do
-      {0, ""} -> nil
-      {min, ""} when min > 0 -> min * 60_000
-      _ -> @default_idle_min * 60_000
+    case Spiral.Cells.Domain.idle_window(System.get_env("SPIRAL_CELLS_COMPILER_IDLE_MIN") || "", @default_idle_min) do
+      "" -> nil
+      ms -> String.to_integer(ms)
     end
   end
 
-  defp retire_free_mb do
-    case Integer.parse(System.get_env("SPIRAL_CELLS_COMPILER_RETIRE_FREE_MB") || "") do
-      {mb, ""} when mb >= 0 -> mb
-      _ -> @default_retire_free_mb
-    end
-  end
+  defp retire_free_mb, do: env_count("SPIRAL_CELLS_COMPILER_RETIRE_FREE_MB", @default_retire_free_mb)
 
   @memory_reading_timeout_ms 2_000
 
@@ -48,19 +43,9 @@ defmodule Spiral.Cells.CompilerDaemon do
     _, _ -> nil
   end
 
-  defp pressure_idle_ms do
-    case Integer.parse(System.get_env("SPIRAL_CELLS_COMPILER_PRESSURE_IDLE_MIN") || "") do
-      {min, ""} when min >= 0 -> min * 60_000
-      _ -> 5 * 60_000
-    end
-  end
+  defp pressure_idle_ms, do: Spiral.Cells.Domain.pressure_window(System.get_env("SPIRAL_CELLS_COMPILER_PRESSURE_IDLE_MIN") || "")
 
-  defp memory_pressed? do
-    case free_memory_mb() do
-      nil -> false
-      mb -> mb < retire_free_mb()
-    end
-  end
+  defp memory_pressed?, do: Spiral.Cells.Domain.memory_pressed(to_string(free_memory_mb() || ""), retire_free_mb())
 
   @spec port() :: 1..65535
   def port do
@@ -127,7 +112,7 @@ defmodule Spiral.Cells.CompilerDaemon do
   def code_stamp, do: boot_stamp()
 
   @spec banner() :: String.t()
-  def banner, do: "spiral-cells\t#{@version}\t#{System.pid()}\t#{boot_stamp()}\t#{served_dll_tag()}"
+  def banner, do: Spiral.Cells.Domain.banner_text(@version, System.pid(), Integer.to_string(boot_stamp()), served_dll_tag())
 
   @doc false
   def served_dll_tag, do: served_compiler_tag() <> "~" <> tool_tag(Toolchain.bun([]))
@@ -137,20 +122,19 @@ defmodule Spiral.Cells.CompilerDaemon do
 
   @doc false
   def tool_tag(nil), do: "none"
-  def tool_tag(path) do
-    spelled = String.replace(path, "\\", "/")
-    spelled = if match?({:win32, _}, :os.type()), do: String.downcase(spelled), else: spelled
-    spelled |> :erlang.phash2() |> Integer.to_string(16)
-  end
+  def tool_tag(path), do: path |> Spiral.Cells.Domain.tool_spelling(match?({:win32, _}, :os.type())) |> :erlang.phash2() |> Integer.to_string(16)
 
   @doc false
   def dll_tag(dll) do
     case File.stat(dll, time: :posix) do
       {:ok, %{mtime: mtime, size: size}} ->
-        case File.stat(Path.join(Path.dirname(dll), "SpiralCompilerCore.dll"), time: :posix) do
-          {:ok, %{mtime: core_mtime, size: core_size}} -> "#{mtime}-#{size}-#{core_mtime}-#{core_size}"
-          _ -> "#{mtime}-#{size}"
-        end
+        {core_mtime, core_size} =
+          case File.stat(Path.join(Path.dirname(dll), "SpiralCompilerCore.dll"), time: :posix) do
+            {:ok, %{mtime: core_mtime, size: core_size}} -> {core_mtime, core_size}
+            _ -> {-1, -1}
+          end
+
+        Spiral.Cells.Domain.dll_stamp_text(mtime, size, core_mtime, core_size)
 
       _ ->
         "none"
@@ -158,12 +142,9 @@ defmodule Spiral.Cells.CompilerDaemon do
   end
 
   @doc false
-  def slot_port(first, n) do
-    k = rem(div(first - @default_port, @build_stride) + n, @build_slots)
-    @default_port + @build_stride * k
-  end
+  def slot_port(first, n), do: Spiral.Cells.Domain.slot_of(first, n, @default_port, @build_stride, @build_slots)
 
-  defp owner, do: (System.get_env("SPIRAL_CELLS_DAEMON_OWNER") || "unrecorded") |> String.replace(["\t", "\r", "\n"], " ")
+  defp owner, do: Spiral.Cells.Domain.owner_text(System.get_env("SPIRAL_CELLS_DAEMON_OWNER") || "unrecorded")
 
   defp boot_stamp do
     case :persistent_term.get({__MODULE__, :boot_stamp}, :unset) do
@@ -365,19 +346,13 @@ defmodule Spiral.Cells.CompilerDaemon do
     }
   end
 
-  defp env_count(name, default) do
-    case Integer.parse(System.get_env(name) || "") do
-      {n, ""} when n >= 0 -> n
-      _ -> default
-    end
-  end
+  defp env_count(name, default), do: Spiral.Cells.Domain.count_or(System.get_env(name) || "", default)
 
   @doc false
   def recycle_reason(compiles, mb, %{max_mb: max_mb, max_compiles: max_compiles}) do
-    cond do
-      max_compiles > 0 and compiles >= max_compiles -> "#{compiles} compiles"
-      max_mb > 0 and is_integer(mb) and mb >= max_mb -> "reaching #{mb} MB"
-      true -> nil
+    case Spiral.Cells.Domain.recycle_why(compiles, if(is_integer(mb), do: Integer.to_string(mb), else: ""), max_mb, max_compiles) do
+      "" -> nil
+      reason -> reason
     end
   end
 
@@ -412,37 +387,20 @@ defmodule Spiral.Cells.CompilerDaemon do
 
   @doc false
   def working_set_mb(os_pid) when is_integer(os_pid) do
-    case :os.type() do
-      {:win32, _} ->
+    kb =
+      if match?({:win32, _}, :os.type()) do
         case System.cmd("tasklist", ["/FI", "PID eq #{os_pid}", "/FO", "CSV", "/NH"], stderr_to_stdout: true) do
-          {out, 0} ->
-            case Regex.run(~r/"#{os_pid}".*,"([^"]+)"\s*$/m, out) do
-              [_, memory] ->
-                case Integer.parse(String.replace(memory, ~r/\D/, "")) do
-                  {kb, ""} -> div(kb, 1024)
-                  _ -> nil
-                end
-
-              _ ->
-                nil
-            end
-
-          _ ->
-            nil
+          {out, 0} -> Spiral.Cells.Domain.tasklist_kb(out, Integer.to_string(os_pid))
+          _ -> -1
         end
-
-      _ ->
+      else
         case File.read("/proc/#{os_pid}/status") do
-          {:ok, status} ->
-            case Regex.run(~r/^VmRSS:\s+(\d+)\s+kB/m, status) do
-              [_, kb] -> div(String.to_integer(kb), 1024)
-              _ -> nil
-            end
-
-          _ ->
-            nil
+          {:ok, status} -> Spiral.Cells.Domain.vm_rss_kb(status)
+          _ -> -1
         end
-    end
+      end
+
+    if kb < 0, do: nil, else: div(kb, 1024)
   rescue
     _ -> nil
   end
@@ -660,7 +618,7 @@ defmodule Spiral.Cells.CompilerDaemon do
         :hide,
         :stderr_to_stdout,
         args: args,
-        cd: Toolchain.workspace(state.toolchain),
+        cd: spawn_dir(Toolchain.workspace(state.toolchain)),
         env: port_env(state.toolchain, dotnet)
       ])
 
@@ -721,9 +679,22 @@ defmodule Spiral.Cells.CompilerDaemon do
 
   defp shadow_root, do: Path.join(System.tmp_dir!(), "spiral-cells-compiler")
 
-  defp gate_pin_root, do: Path.join(System.tmp_dir!(), "spiral-cells-gate-pins")
+  # A missing working directory makes the spawn exit before the compiler opens its socket (':exited'); a gate that
+  # ships only apps/compiler/scripts has no SPIRAL_WORKSPACE_ROOT dir, so fall back to the current one.
+  @doc false
+  def spawn_dir(dir) when is_binary(dir) do
+    if File.dir?(dir) do
+      dir
+    else
+      cwd = File.cwd!()
+      Logger.warning("Spiral.Cells.CompilerDaemon: workspace #{dir} does not exist; spawning the compiler in #{cwd}")
+      cwd
+    end
+  end
 
-  @gate_pin_max_age_s 86_400
+  def spawn_dir(_dir), do: File.cwd!()
+
+  defp gate_pin_root, do: Path.join(System.tmp_dir!(), "spiral-cells-gate-pins")
 
   @doc false
   def gate_pin(dll, root \\ gate_pin_root(), now \\ System.os_time(:second)) do
@@ -732,7 +703,7 @@ defmodule Spiral.Cells.CompilerDaemon do
         nil
 
       {mtime, size} ->
-        dir = Path.join(root, "#{mtime}-#{size}")
+        dir = Path.join(root, Spiral.Cells.Domain.dll_stamp_text(mtime, size, -1, -1))
         target = Path.join(dir, Path.basename(dll))
         unless File.regular?(Path.join(dir, ".complete")), do: copy_shadow(dll, root, dir, {mtime, size})
 
@@ -748,9 +719,8 @@ defmodule Spiral.Cells.CompilerDaemon do
 
   defp prune_gate_pins(root, keep, now) do
     for old <- Path.wildcard(Path.join(String.replace(root, "\\", "/"), "*")),
-        Path.basename(old) != Path.basename(keep),
-        Regex.match?(~r/^\d+-\d+$/, Path.basename(old)),
-        stale_pin?(old, now) do
+        Spiral.Cells.Domain.prunable(Path.basename(keep), Path.basename(old)),
+        Spiral.Cells.Domain.pin_stale(now, complete_mtime(old)) do
       trash = old <> ".trash#{System.unique_integer([:positive])}"
       if File.rename(old, trash) == :ok, do: File.rm_rf(trash)
     end
@@ -758,10 +728,10 @@ defmodule Spiral.Cells.CompilerDaemon do
     :ok
   end
 
-  defp stale_pin?(dir, now) do
+  defp complete_mtime(dir) do
     case File.stat(Path.join(dir, ".complete"), time: :posix) do
-      {:ok, %{mtime: mtime}} -> now - mtime > @gate_pin_max_age_s
-      _ -> true
+      {:ok, %{mtime: mtime}} -> mtime
+      _ -> -1
     end
   end
 
@@ -772,7 +742,7 @@ defmodule Spiral.Cells.CompilerDaemon do
         dll
 
       {mtime, size} ->
-        dir = Path.join(root, "#{mtime}-#{size}")
+        dir = Path.join(root, Spiral.Cells.Domain.dll_stamp_text(mtime, size, -1, -1))
         target = Path.join(dir, Path.basename(dll))
 
         unless File.regular?(Path.join(dir, ".complete")) do
@@ -808,8 +778,7 @@ defmodule Spiral.Cells.CompilerDaemon do
 
   defp prune_shadows(root, keep) do
     for old <- Path.wildcard(Path.join(String.replace(root, "\\", "/"), "*")),
-        Path.basename(old) != Path.basename(keep),
-        Regex.match?(~r/^\d+-\d+$/, Path.basename(old)) do
+        Spiral.Cells.Domain.prunable(Path.basename(keep), Path.basename(old)) do
       trash = old <> ".trash#{System.unique_integer([:positive])}"
       if File.rename(old, trash) == :ok, do: File.rm_rf(trash)
     end
@@ -824,42 +793,26 @@ defmodule Spiral.Cells.CompilerDaemon do
     timeout = if req.timeout == :infinity, do: :infinity, else: max(req.timeout, 0)
     timeout = if cold and timeout != :infinity, do: max(timeout, @cold_compile_ms), else: timeout
 
-    case :gen_tcp.connect({127, 0, 0, 1}, state.compiler.compiler_port, socket_opts(), 5_000) do
-      {:ok, sock} ->
-        test = if is_binary(Map.get(req, :test)), do: "\ttest\t#{req.test}", else: ""
-        :gen_tcp.send(sock, "compile\t#{req.backend}\t#{req.input}\t#{req.output}#{test}\n")
+    test = if is_binary(Map.get(req, :test)), do: req.test, else: ""
+    wait = if timeout == :infinity, do: -1, else: min(timeout, 2_000_000_000)
 
-        result =
-          case :gen_tcp.recv(sock, 0, timeout) do
-            {:ok, line} ->
-              parse_session(line)
-
-            {:error, :timeout} ->
-              {:error, :timeout}
-
-            {:error, reason} ->
-              IO.puts("compiler connection closed: #{inspect(reason)}")
-              {:error, "compiler socket failed: #{inspect(reason)}"}
-          end
-
-        :gen_tcp.close(sock)
-        result
-
-      {:error, reason} ->
-        {:error, "compiler socket failed: #{inspect(reason)}"}
-    end
-  end
-
-  defp parse_session(line) do
-    case String.split(String.trim(line), "\t") do
-      ["spiral-session", "ok", _pid, _bytes, _binding, revision | _] ->
+    case Spiral.Cells.Domain.compiler_session(state.compiler.compiler_port, wait, req.backend, req.input, req.output, test)
+         |> String.split("\t", parts: 2) do
+      ["ok", revision] ->
         {:ok, revision}
 
-      ["spiral-session", "error", _pid | rest] ->
-        {:error, Enum.join(rest, " ")}
+      ["error", message] ->
+        {:error, message}
 
-      parts ->
-        {:error, Enum.join(parts, " ")}
+      ["timeout"] ->
+        {:error, :timeout}
+
+      ["closed", why] ->
+        IO.puts("compiler connection closed: #{why}")
+        {:error, "compiler socket failed: #{why}"}
+
+      ["refused", why] ->
+        {:error, "compiler socket failed: #{why}"}
     end
   end
 
@@ -886,8 +839,8 @@ defmodule Spiral.Cells.CompilerDaemon do
   defp kill_pidfile(path) do
     case File.read(path) do
       {:ok, text} ->
-        case Integer.parse(String.trim(text)) do
-          {pid, ""} -> Runner.kill_tree(pid)
+        case Spiral.Cells.Domain.file_number(text) do
+          pid when pid > 0 -> Runner.kill_tree(pid)
           _ -> :ok
         end
 
@@ -901,8 +854,8 @@ defmodule Spiral.Cells.CompilerDaemon do
       File.regular?(port_file) ->
         case File.read(port_file) do
           {:ok, text} ->
-            case Integer.parse(String.trim(String.trim_leading(text, "\uFEFF"))) do
-              {number, ""} ->
+            case Spiral.Cells.Domain.file_number(text) do
+              number when number >= 0 ->
                 {:ok, number}
 
               _ when left <= 0 ->
@@ -995,7 +948,8 @@ defmodule Spiral.Cells.CompilerDaemon do
 
           "status" ->
             %{idle_min: idle_min, queued: queued, retiring: retiring} = GenServer.call(server, :status, 5_000)
-            :gen_tcp.send(sock, "status\t#{System.pid()}\t#{boot_stamp()}\t#{idle_min}\t#{queued}\t#{retiring}\t#{owner()}\n")
+            [pid, stamp, idle, queue, since] = Enum.map([System.pid(), boot_stamp(), idle_min, queued, retiring], &to_string/1)
+            :gen_tcp.send(sock, Spiral.Cells.Domain.status_wire(pid, stamp, idle, queue, since, owner()) <> "\n")
             handle(sock, server, listen)
 
           "notebook\t" <> request ->
@@ -1055,11 +1009,11 @@ defmodule Spiral.Cells.CompilerDaemon do
   defp pool_line(server) do
     case :persistent_term.get({__MODULE__, :pool, server}, nil) do
       nil ->
-        "pool\t0\t0\t1\t-"
+        Spiral.Cells.Domain.pool_wire(0, 0, 1, -1)
 
       pool ->
         stats = Spiral.Cells.CompilerPool.stats(pool)
-        "pool\t#{stats.served}\t#{Map.get(stats, :refused_growth, 0)}\t#{stats.peak_workers}\t#{Map.get(stats, :last_free_mb) || "-"}"
+        Spiral.Cells.Domain.pool_wire(stats.served, Map.get(stats, :refused_growth, 0), stats.peak_workers, Map.get(stats, :last_free_mb) || -1)
     end
   end
 
@@ -1122,10 +1076,7 @@ defmodule Spiral.Cells.CompilerDaemon do
     end
   end
 
-  defp cells_module?(module) do
-    name = Atom.to_string(module)
-    String.starts_with?(name, "Elixir.Spiral.Cells") or String.starts_with?(name, "spiral_cells@")
-  end
+  defp cells_module?(module), do: Spiral.Cells.Domain.cells_module(Atom.to_string(module))
 
   @doc false
   def notebook_reply(request) do
@@ -1149,10 +1100,7 @@ defmodule Spiral.Cells.CompilerDaemon do
   def other_bun?(bun) when is_binary(bun), do: tool_tag(if(bun == "", do: nil, else: bun)) != tool_tag(Toolchain.bun([]))
   def other_bun?(_), do: false
 
-  defp same_root(path) do
-    expanded = path |> Path.expand() |> String.trim_trailing("/")
-    if match?({:win32, _}, :os.type()), do: String.downcase(expanded), else: expanded
-  end
+  defp same_root(path), do: Spiral.Cells.Domain.root_key(Path.expand(path), match?({:win32, _}, :os.type()))
 
   defp run_notebook(args) do
     Spiral.Cells.Domain.ensure!()
@@ -1169,48 +1117,34 @@ defmodule Spiral.Cells.CompilerDaemon do
   end
 
   defp parse_request(rest) do
-    [backend, input, output, timeout, mtime | extra] = String.split(String.trim(rest), "\t")
-
-    %{
-      backend: backend,
-      input: input,
-      output: output,
-      timeout: parse_timeout(timeout),
-      mtime: String.to_integer(mtime),
-      client: Enum.at(extra, 0) || "anonymous",
-      pin: if(Enum.at(extra, 1) in [nil, "", "test"], do: nil, else: Enum.at(extra, 1)),
-      test: case Enum.drop_while(extra, &(&1 != "test")) do ["test", name | _] -> name; _ -> nil end
-    }
+    [backend, input, output, timeout, mtime, client, pin, test] = rest |> Spiral.Cells.Domain.compile_request() |> String.split("\t")
+    %{backend: backend, input: input, output: output, timeout: parse_timeout(timeout), mtime: String.to_integer(mtime), client: client, pin: blank_nil(pin), test: blank_nil(test)}
   end
+
+  defp blank_nil(""), do: nil
+  defp blank_nil(text), do: text
 
   defp parse_timeout("-1"), do: :infinity
   defp parse_timeout(text), do: String.to_integer(text)
 
-  defp encode({:ok, revision}, nil), do: "ok\t#{revision}"
-  defp encode({:ok, revision}, queue), do: "ok\t#{revision}\t#{queue}"
-  defp encode({:error, :timeout}, nil), do: "error\ttimeout"
-  defp encode({:error, :timeout}, queue), do: "error\ttimeout\t#{queue}"
-
-  defp encode({:error, message}, queue) when is_binary(message) do
-    message = String.replace(message, ~r/[\r\n\t]+/, " ")
-    if queue, do: "error\t#{queue}\t" <> message, else: "error\t" <> message
-  end
+  defp encode({:ok, revision}, queue), do: Spiral.Cells.Domain.compile_reply_line("ok", to_string(revision), queue_text(queue))
+  defp encode({:error, :timeout}, queue), do: Spiral.Cells.Domain.compile_reply_line("timeout", "", queue_text(queue))
+  defp encode({:error, message}, queue) when is_binary(message), do: Spiral.Cells.Domain.compile_reply_line("error", message, queue_text(queue))
 
   defp encode(other, queue),
     do: encode({:error, "unexpected compile result: #{inspect(other)}"}, queue)
 
-  defp session_lost?(message) do
-    String.contains?(message, "compiler socket") or String.contains?(message, "closed the socket") or
-      String.contains?(message, "compiler stalled")
-  end
+  defp queue_text(nil), do: ""
+  defp queue_text(ms), do: Integer.to_string(ms)
+
+  defp session_lost?(message), do: Spiral.Cells.Domain.session_lost(message)
 
   @default_stall_seconds 120
 
   @doc false
   def stall_seconds, do: env_count("SPIRAL_CELLS_COMPILER_STALL_S", @default_stall_seconds)
 
-  defp compiler_log(%{log: ""}), do: ""
-  defp compiler_log(%{log: log}), do: "\n" <> String.trim(log)
+  defp compiler_log(%{log: log}), do: Spiral.Cells.Domain.log_tail(log)
 
   defp log_compile(req, ms, result) do
     outcome =
@@ -1224,17 +1158,13 @@ defmodule Spiral.Cells.CompilerDaemon do
   end
 
   defp clock do
-    {{_, _, _}, {h, m, s}} = :calendar.local_time()
-    :io_lib.format("~2..0B:~2..0B:~2..0B", [h, m, s]) |> IO.iodata_to_binary()
+    {_, {h, m, s}} = :calendar.local_time()
+    Spiral.Cells.Domain.clock_text(h, m, s)
   end
 
   defp socket_path do
     path = Path.expand(Path.join(System.tmp_dir!(), "spiral-cells-#{System.pid()}-#{System.unique_integer([:positive])}.sock"))
-
-    case :os.type() do
-      {:win32, _} -> String.replace(path, "/", "\\")
-      _ -> path
-    end
+    Spiral.Cells.Domain.native_path(path, match?({:win32, _}, :os.type()))
   end
 
 
@@ -1265,9 +1195,5 @@ defmodule Spiral.Cells.CompilerDaemon do
       backlog: 128,
       packet_size: 8_000_000
     ]
-  end
-
-  defp socket_opts do
-    [:binary, packet: :line, active: false, packet_size: 8_000_000]
   end
 end

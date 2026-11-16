@@ -1,0 +1,71 @@
+:! issued = ()
+:! authorized = ()
+:! rejected = ()
+:! cancelled = ()
+
+:! nfe = i32
+:! cfdi = i32
+:! ubl = i32
+
+:! event_code = i32
+:! access_key = i32
+:! protocol_id = i32
+
+:? cancellation_event r : r -> event_code
+:? correction_event r : r -> event_code
+
+:+ cancellation_event nfe = \ _ => event_code 11i32
+:+ correction_event nfe = \ _ => event_code 10i32
+:+ cancellation_event cfdi = \ _ => event_code 21i32
+
+:= event_text ((event_code code) : event_code) : i32 = code
+
+:= key_text ((access_key k) : access_key) : i32 = k
+
+:| document r s =
+    | Issued :: \* r. r * access_key -> document r issued
+    | Authorized :: \* r. { regime : r; key : access_key; protocol : protocol_id; corrections : i32; last : event_code } -> document r authorized
+    | Rejected :: \* r. r * access_key * i32 -> document r rejected
+    | Cancelled :: \* r. { regime : r; key : access_key; protocol : protocol_id; event : event_code; event_protocol : protocol_id } -> document r cancelled
+
+:~ key_of \* r s. (doc : document r s) : access_key =
+    ?= doc ?|
+    | Issued (_, key) => key
+    | Authorized a => a::key
+    | Rejected (_, key, _) => key
+    | Cancelled c => c::key
+
+:= issue \* r. (regime : r) (key : access_key) : document r issued = Issued (regime, key)
+
+:= authorize \* r. (doc : document r issued) (protocol : protocol_id) : document r authorized =
+    ?= doc ?|
+    | Issued (regime, key) => Authorized { regime = regime; key = key; protocol = protocol; corrections = 0; last = event_code 0 }
+
+:= reject \* r. (doc : document r issued) (reason : i32) : document r rejected =
+    ?= doc ?|
+    | Issued (regime, key) => Rejected (regime, key, reason)
+
+:= correct \* r {correction_event}. (doc : document r authorized) (letter : i32) : document r authorized =
+    ?= doc ?|
+    | Authorized a => Authorized { a ?| corrections = a::corrections +. letter; last = correction_event a::regime }
+
+:= corrections_of \* r. (doc : document r authorized) : i32 =
+    ?= doc ?|
+    | Authorized a => a::corrections
+
+:= cancel \* r {cancellation_event}. (doc : document r authorized) (event_protocol : protocol_id) : document r cancelled =
+    ?= doc ?|
+    | Authorized a =>
+        Cancelled { regime = a::regime; key = a::key; protocol = a::protocol; event = cancellation_event a::regime; event_protocol = event_protocol }
+
+:= event_of \* r. (doc : document r cancelled) : event_code =
+    ?= doc ?|
+    | Cancelled c => c::event
+
+:= reason_of \* r. (doc : document r rejected) : i32 =
+    ?= doc ?|
+    | Rejected (_, _, reason) => reason
+
+:= main () : i32 =
+    := ~s = 0i32
+    corrections_of (correct (authorize (issue (cfdi 2) (access_key (s +. 9))) (protocol_id 100)) 1)

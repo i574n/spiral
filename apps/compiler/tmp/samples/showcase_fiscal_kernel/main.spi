@@ -1,0 +1,80 @@
+///- --package .
+:# showcase_fiscal_kernel static =
+    :< testing
+    :< rustc_verdict
+
+:! money = i32
+
+:! rate = i32
+
+:| ^ rule t =
+    | Base :: rule money
+    | Const :: \* t. t -> rule t
+    | RateBp :: i32 -> rule rate
+    | Apply :: rule money * rule rate -> rule money
+    | Above :: rule money * rule money -> rule bool
+    | When :: \* t. rule bool * rule t * rule t -> rule t
+
+:== item = { base : money }
+
+:= ^ eval \* t. (it : item) (r : rule t) : t =
+    ?= r ?|
+    | Base => it.base
+    | Const x => x
+    | RateBp b => rate b
+    | Apply (m, rr) =>
+        := (money a) = eval it m
+        := (rate b) = eval it rr
+        money (a * b / 10000)
+    | Above (a, b) =>
+        := (money x) = eval it a
+        := (money y) = eval it b
+        x > y
+    | When (c, a, b) => ? eval it c ?> eval it a |: eval it b
+
+:= cbs_rule () : rule money = When (Above (Base, Const (money 10000)), Apply (Base, RateBp 90), Apply (Base, RateBp 36))
+
+:= main () : i32 =
+    := base : i32 = $"20000"
+    := (money v) = eval { base = money base } (cbs_rule ())
+    v
+
+///> rust
+:# spiral_evaluates_the_rule_above_the_threshold =
+    := ~amount = 20000i32
+    := (money v) = eval { base = money amount } (cbs_rule ())
+    v |> _assert_eq 180i32
+
+///> rust -d chrono encoding_rs encoding_rs_io regex sha2
+:# rust_rejects_the_index_refining_arm =
+    := source = """
+struct Money(i32);
+struct Rate(i32);
+
+enum Rule<T> {
+    Base,
+    Const(T),
+    RateBp(i32),
+    Apply(Box<Rule<Money>>, Box<Rule<Rate>>),
+    Above(Box<Rule<Money>>, Box<Rule<Money>>),
+    When(Box<Rule<bool>>, Box<Rule<T>>, Box<Rule<T>>),
+}
+
+struct Item {
+    base: Money,
+}
+
+fn eval<T>(it: &Item, r: &Rule<T>) -> T {
+    match r {
+        Rule::Base => Money(it.base.0),
+        _ => todo!(),
+    }
+}
+
+fn main() {
+    let it = Item { base: Money(20000) };
+    let _ = eval(&it, &Rule::<Money>::Base);
+}
+"""
+    attempt "showcase-fiscal-kernel" source
+    |> _assert_eq (Rejected [ MismatchedTypes ("T", "Money") ])

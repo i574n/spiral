@@ -4,35 +4,36 @@
 
 := (++) (left : string) (right : string) : string = left ^^ right
 
-:== tally = { status : string; hit : bool; reason : string }
+:== verdict_row = { status : string; hit : bool; reason : string }
 
-:= tally_of (line : string) : tally =
+:~ verdict_row_of (line : string) : verdict_row =
     ?= sm'::split_list "\t" line ?|
     | status :: memo :: reason :: _ => { status; hit = memo = "hit"; reason }
     | status :: memo :: [] => { status; hit = memo = "hit"; reason = "" }
     | status :: [] => { status; hit = !-; reason = "" }
     | [] => { status = ""; hit = !-; reason = "" }
 
-:= tallies_of (rows : string) : list tally = ? rows = "" ?> [] |: listm::map tally_of (sm'::split_list "\n" rows)
+:~ verdict_rows_of (rows : string) : list verdict_row =
+    ? rows = "" ?> [] |: listm::map verdict_row_of (sm'::split_list "\n" rows)
 
-:= count_status (ts : list tally) (s : string) : i32 =
-    listm::fold (\ n (t : tally) => ? t::status = s ?> n + 1i32 |: n) 0i32 ts
+:~ count_status (ts : list verdict_row) (s : string) : i32 =
+    listm::fold (\ n (t : verdict_row) => ? t::status = s ?> n + 1i32 |: n) 0i32 ts
 
-:= count_line (key : string) (n : i32) : string = key ++ "\t" ++ text::show_i32 n
+:~ count_line (key : string) (n : i32) : string = key ++ "\t" ++ text::show_i32 n
 
 :~ ^ bump (reason : string) (seen : list (string * i32)) : list (string * i32) =
     ?= seen ?|
     | [] => [ (reason, 1i32) ]
     | (r, n) :: rest => ? r = reason ?> (r, n + 1i32) :: rest |: (r, n) :: bump reason rest
 
-:= reasons_of (ts : list tally) : list (string * i32) =
-    listm::fold (\ acc (t : tally) => ? t::reason = "" ?> acc |: bump t::reason acc) [] ts
+:~ reasons_of (ts : list verdict_row) : list (string * i32) =
+    listm::fold (\ acc (t : verdict_row) => ? t::reason = "" ?> acc |: bump t::reason acc) [] ts
 
-:= counts_wire (rows : string) : string =
-    := ts = tallies_of rows
+:~ counts_wire (rows : string) : string =
+    := ts = verdict_rows_of rows
     := c = count_status ts
     := executed = c "passed" + c "failed" + c "accepted" + c "built"
-    := hits = listm::fold (\ n (t : tally) => ? t::hit ?> n + 1i32 |: n) 0i32 ts
+    := hits = listm::fold (\ n (t : verdict_row) => ? t::hit ?> n + 1i32 |: n) 0i32 ts
     := fixed =
         [
             count_line "discovered" (listm::length ts - c "prelude")
@@ -53,15 +54,15 @@
     := reasons = listm::map (\ (r, n) => "no_agree\t" ++ r ++ "\t" ++ text::show_i32 n) (reasons_of ts)
     sm'::concat_list "\n" (listm::append fixed reasons)
 
-:= timed_entry (line : string) : string =
+:~ timed_entry (line : string) : string =
     ?= sm'::split_list "\t" line ?|
     | name :: "timed_out" :: ms :: _ ?& ms <> "" => name ++ " at " ++ ms ++ " ms"
     | name :: "timed_out" :: _ => name
     | _ => ""
 
-:= joined (sep : string) (acc : string) (e : string) : string = ? e = "" ?> acc |: ? acc = "" ?> e |: acc ++ sep ++ e
+:~ joined (sep : string) (acc : string) (e : string) : string = ? e = "" ?> acc |: ? acc = "" ?> e |: acc ++ sep ++ e
 
-:= void_text (path : string) (count : i32) (rows : string) (load : string) : string =
+:~ void_text (path : string) (count : i32) (rows : string) (load : string) : string =
     := named = ? rows = "" ?> [] |: sm'::split_list "\n" rows |> listm::map timed_entry
     := shown = joined "; " (listm::fold (joined ", ") "" named) load
     := detail = ? shown = "" ?> "" |: " (" ++ shown ++ ")"

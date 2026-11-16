@@ -1,0 +1,66 @@
+:# primes static =
+    :< testing
+
+:~ ^ smallest_factor_from (n : u64) (d : u64) : u64 =
+    ? d * d > n ?> n |? n % d = 0u64 ?> d |: smallest_factor_from n (d + 1u64)
+
+:~ smallest_factor (n : u64) : u64 = ? n < 2u64 ?> n |: smallest_factor_from n 2u64
+
+:~ is_prime (n : u64) : bool = n >= 2u64 && smallest_factor n = n
+
+:~ ^ prime_factors_from (n : u64) (acc : list u64) : list u64 =
+    ? n < 2u64
+    ?> listm::rev acc
+    |:
+        := p = smallest_factor n
+        prime_factors_from (n / p) (p :: acc)
+
+:~ prime_factors (n : u64) : list u64 = prime_factors_from n []
+
+:~ ^ count_primes_from (n : u64) (k : u64) (count : i32) : i32 =
+    ? k > n ?> count |: count_primes_from n (k + 1u64) (? is_prime k ?> count + 1i32 |: count)
+
+:~ prime_count (n : u64) : i32 = count_primes_from n 2u64 0i32
+
+:~ ^ squarefree_sign (factors : list u64) (previous : u64) (sign : i32) : i32 =
+    ?= factors ?|
+    | p :: rest => ? p = previous ?> 0i32 |: squarefree_sign rest p (0i32 - sign)
+    | [] => sign
+
+:~ mobius (n : u64) : i32 = ? n = 1u64 ?> 1i32 |: squarefree_sign (prime_factors n) 0u64 1i32
+
+:~ ^ all_equal (factors : list u64) (p : u64) : bool =
+    ?= factors ?|
+    | q :: rest => q = p && all_equal rest p
+    | [] => !+
+
+:~ mangoldt (n : u64) : f64 =
+    ?= prime_factors n ?|
+    | p :: rest => ? all_equal rest p ?> log (conv p) |: 0.0
+    | [] => 0.0
+
+:~ ^ chebyshev_from (x : u64) (k : u64) (acc : f64) : f64 =
+    ? k > x ?> acc |: chebyshev_from x (k + 1u64) (acc + mangoldt k)
+
+:~ chebyshev_psi (x : u64) : f64 = chebyshev_from x 2u64 0.0
+
+:~ ^ mertens_from (x : u64) (k : u64) (acc : i32) : i32 = ? k > x ?> acc |: mertens_from x (k + 1u64) (acc + mobius k)
+
+:~ mertens (x : u64) : i32 = mertens_from x 1u64 0i32
+
+:~ gap (a : f64) (b : f64) : f64 = ? a > b ?> a - b |: b - a
+
+///> rust
+///> gleam
+:# primes_factorizations_and_counts_match_the_tables =
+    (prime_count 100u64, prime_count 1000u64, prime_factors 360u64, is_prime 7919u64, is_prime 7917u64)
+    |> _assert_eq (25i32, 168i32, [ 2u64; 2; 2; 3; 3; 5 ], !+, !-)
+
+///> rust
+///> gleam
+:# mobius_mertens_and_von_mangoldt_take_their_known_values =
+    := tiny = 0.000000000001
+    := lambdas = (gap (mangoldt 8u64) (log 2.0) < tiny, mangoldt 6u64 = 0.0, gap (mangoldt 7u64) (log 7.0) < tiny)
+    := psi_ok = gap (chebyshev_psi 100u64) 94.0453112293 < 0.000001
+    (mobius 30u64, mobius 12u64, mobius 1u64, mertens 100u64, lambdas, psi_ok)
+    |> _assert_eq (0i32 - 1i32, 0i32, 1i32, 1i32, (!+, !+, !+), !+)

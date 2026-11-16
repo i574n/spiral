@@ -1,0 +1,95 @@
+:< sm'_operators
+
+:# otp_upgrade static =
+    :< testing
+
+:= otp_upgrade_imports () =
+    global "import gleam/dynamic"
+    global "import gleam/erlang/atom"
+    global (
+        "@external(erlang, \"erlang\", \"fun_info\") fn otp_upgrade_fun_info(f: fn(a, b, c) -> d, item: atom.Atom) "
+        ^^ "-> #(atom.Atom, atom.Atom)"
+    )
+    global (
+        "@external(erlang, \"gen_server\", \"start\") fn otp_upgrade_gen_start(module: atom.Atom, args: a, "
+        ^^ "options: List(b)) -> #(atom.Atom, dynamic.Dynamic)"
+    )
+    global
+        "@external(erlang, \"gen_server\", \"call\") fn otp_upgrade_gen_call(server: dynamic.Dynamic, request: a) -> b"
+    global "@external(erlang, \"sys\", \"suspend\") fn otp_upgrade_sys_suspend(server: dynamic.Dynamic) -> atom.Atom"
+    global "@external(erlang, \"sys\", \"resume\") fn otp_upgrade_sys_resume(server: dynamic.Dynamic) -> atom.Atom"
+    global (
+        "@external(erlang, \"sys\", \"change_code\") fn otp_upgrade_sys_change_code(server: dynamic.Dynamic, "
+        ^^ "module: atom.Atom, old: a, extra: b) -> atom.Atom"
+    )
+    global "pub fn otp_upgrade_triple(a, b, c) { #(a, b, c) }"
+    global "pub fn init(state) { #(atom.create(\"ok\"), state) }"
+    global (
+        "pub fn handle_call(request, _from, state) { let #(reply_of, next_of, user) = state  "
+        ^^ "#(atom.create(\"reply\"), reply_of(user, request), #(reply_of, next_of, next_of(user, request))) }"
+    )
+    global "pub fn handle_cast(_request, state) { #(atom.create(\"noreply\"), state) }"
+    global (
+        "pub fn code_change(_old, state, extra) { let #(_, _, user) = state  let #(reply_of, next_of, migrate) = extra  "
+        ^^ "#(atom.create(\"ok\"), #(reply_of, next_of, migrate(user))) }"
+    )
+    global "pub fn otp_upgrade_module() -> atom.Atom { otp_upgrade_fun_info(code_change, atom.create(\"module\")).1 }"
+    global (
+        "pub fn otp_upgrade_swap(server: dynamic.Dynamic, extra) -> Nil { let _ = otp_upgrade_sys_suspend(server)  "
+        ^^ "let _ = otp_upgrade_sys_change_code(server, otp_upgrade_module(), atom.create(\"v1\"), extra)  let _ = "
+        ^^ "otp_upgrade_sys_resume(server)  Nil }"
+    )
+
+:! server s m r = $'dynamic.Dynamic'
+
+:== handler s m r = s -> m -> r * s
+
+:= reply_of \* s m r. (step : handler s m r) (u : s) (q : m) : r = fst (step u q)
+
+:= next_of \* s m r. (step : handler s m r) (u : s) (q : m) : s = snd (step u q)
+
+:= start \* s m r. (state : s) (step : handler s m r) : server s m r =
+    otp_upgrade_imports ()
+    := r = reply_of step
+    := n = next_of step
+    $'otp_upgrade_gen_start(otp_upgrade_module(), otp_upgrade_triple(fn(u, q) { !r(u)(q) }, fn(u, q) { !n(u)(q) }, !state), []).1'
+
+:= call \* s m r. (to : server s m r) (request : m) : r =
+    otp_upgrade_imports ()
+    $'otp_upgrade_gen_call(!to, !request)'
+
+:= upgrade \* a b m r. (from : server a m r) (migrate : a -> b) (step : handler b m r) : server b m r =
+    otp_upgrade_imports ()
+    := r = reply_of step
+    := n = next_of step
+    $'otp_upgrade_swap(!from, otp_upgrade_triple(fn(u, q) { !r(u)(q) }, fn(u, q) { !n(u)(q) }, fn(u) { !migrate(u) }))' : ()
+    $'!from'
+
+:== counter_v1 = { total : i32 }
+
+:== counter_v2 = { total : i32; calls : i32 }
+
+:| counter_request =
+    | Add : i32
+    | Read
+
+:= step_v1 (s : counter_v1) (q : counter_request) : i32 * counter_v1 =
+    ?= q ?|
+    | Add n => (s::total + n, { total = s::total + n })
+    | Read => (s::total, s)
+
+:= migrate_v1 (s : counter_v1) : counter_v2 = { total = s::total; calls = 0i32 }
+
+:= step_v2 (s : counter_v2) (q : counter_request) : i32 * counter_v2 =
+    ?= q ?|
+    | Add n => (s::total + n, { total = s::total + n; calls = s::calls + 1i32 })
+    | Read => (s::total * 1000i32 + s::calls, s)
+
+///> gleam
+:# an_upgraded_server_keeps_its_state_and_serves_the_new_handler =
+    := v1 = start ({ total = 0i32 } : counter_v1) step_v1
+    call v1 (Add 3i32) |> ignore
+    call v1 (Add 4i32) |> ignore
+    := v2 = upgrade v1 migrate_v1 step_v2
+    call v2 (Add 1i32) |> ignore
+    call v2 Read |> _assert_eq 8001i32

@@ -19,6 +19,15 @@ defmodule Spiral.Cells.CompilerDaemonTest do
     assert CompilerDaemon.build_port(dll, Path.join(dir, "mirror-1")) == CompilerDaemon.build_port(dll, Path.join(dir, "mirror-1"))
   end
 
+  @tag :tmp_dir
+  test "the compiler is spawned in the workspace dir only when it exists, else in the current dir", %{tmp_dir: dir} do
+    assert CompilerDaemon.spawn_dir(dir) == dir
+    missing = Path.join(dir, "missing/apps/compiler/tmp")
+    log = ExUnit.CaptureLog.capture_log(fn -> assert CompilerDaemon.spawn_dir(missing) == File.cwd!() end)
+    assert log =~ "workspace #{missing} does not exist"
+    assert CompilerDaemon.spawn_dir(nil) == File.cwd!()
+  end
+
   test "a client whose compiler differs from the daemon on its slot moves to the next slot instead of replacing it" do
     first = 13905 + 8 * 3
     next = CompilerDaemon.slot_port(first, 1)
@@ -644,7 +653,7 @@ defmodule Spiral.Cells.CompilerDaemonTest do
       end
     end
 
-    test "a failed capabilities probe is retried, not remembered for the life of the process" do
+    test "a failed capabilities ping is retried, not remembered for the life of the process" do
       dir = Path.join(System.tmp_dir!(), "kcap#{System.unique_integer([:positive])}")
       File.mkdir_p!(dir)
       ready = Path.join(dir, "ready")

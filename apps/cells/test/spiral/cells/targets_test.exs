@@ -121,7 +121,7 @@ defmodule Spiral.Cells.TargetsTest do
       source_dir = Path.join([cell, "gleam", "src"])
       File.mkdir_p!(root)
       File.mkdir_p!(source_dir)
-      File.write!(Path.join(root, "probe.txt"), "in-root")
+      File.write!(Path.join(root, "trial.txt"), "in-root")
       path = Path.join(source_dir, "main.gleam")
 
       File.write!(path, """
@@ -133,7 +133,7 @@ defmodule Spiral.Cells.TargetsTest do
       fn read_file(path: String) -> Result(BitArray, Dynamic)
 
       pub fn main() {
-        case read_file("probe.txt") {
+        case read_file("trial.txt") {
           Ok(bytes) ->
             case bit_array.to_string(bytes) {
               Ok(text) -> io.println(text)

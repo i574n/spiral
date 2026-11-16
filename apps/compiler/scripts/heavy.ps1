@@ -121,9 +121,9 @@ function Wait-HeavySlot($slots, [string] $ticket) {
 function Wait-WslReady {
     if (-not $IsWindows) { return }
     for ($try = 1; $try -le 6; $try++) {
-        $probe = wsl -e true 2>&1 | Out-String
+        $ping = wsl -e true 2>&1 | Out-String
         if ($LASTEXITCODE -eq 0) { break }
-        Write-Host "Invoke-Heavy: WSL not ready (try $try/6): $($probe.Trim() -replace '\0', '')"
+        Write-Host "Invoke-Heavy: WSL not ready (try $try/6): $($ping.Trim() -replace '\0', '')"
         [System.Threading.Thread]::Sleep(5000)
     }
 }

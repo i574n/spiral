@@ -459,8 +459,8 @@
 :! replica_host_c = ()
 :! registry_epoch_old = ()
 :! registry_epoch_new = ()
-:! registry_digest_old = ()
-:! registry_digest_new = ()
+:! registry_fingerprint_old = ()
+:! registry_fingerprint_new = ()
 :! replay_batch_a = ()
 :! recovery_wave_1 = ()
 :! lane_inventory = ()
@@ -489,15 +489,15 @@
 :! mh_idempotent = ()
 :! mh_non_idempotent = ()
 
-:| replica_snapshot host registry_epoch registry_digest batch state =
-    | ReplicaSnapshot :: \* host registry_epoch registry_digest batch state.
+:| replica_snapshot host registry_epoch registry_fingerprint batch state =
+    | ReplicaSnapshot :: \* host registry_epoch registry_fingerprint batch state.
         string ->
-        replica_snapshot host registry_epoch registry_digest batch state
+        replica_snapshot host registry_epoch registry_fingerprint batch state
 
-:| registry_successor old_epoch old_digest new_epoch new_digest state =
-    | RegistrySuccessor :: \* old_epoch old_digest new_epoch new_digest state.
+:| registry_successor old_epoch old_fingerprint new_epoch new_fingerprint state =
+    | RegistrySuccessor :: \* old_epoch old_fingerprint new_epoch new_fingerprint state.
         string ->
-        registry_successor old_epoch old_digest new_epoch new_digest state
+        registry_successor old_epoch old_fingerprint new_epoch new_fingerprint state
 
 :| partition_witness left_host right_host batch state =
     | PartitionWitness :: \* left_host right_host batch state.
@@ -507,10 +507,10 @@
 :| distinct_replica_hosts first second third state =
     | DistinctReplicaHosts :: \* first second third state. string -> distinct_replica_hosts first second third state
 
-:| replay_merge_receipt left_host right_host coordinator batch registry_epoch registry_digest state =
-    | ReplayMergeReceipt :: \* left_host right_host coordinator batch registry_epoch registry_digest state.
+:| replay_merge_receipt left_host right_host coordinator batch registry_epoch registry_fingerprint state =
+    | ReplayMergeReceipt :: \* left_host right_host coordinator batch registry_epoch registry_fingerprint state.
         string ->
-        replay_merge_receipt left_host right_host coordinator batch registry_epoch registry_digest state
+        replay_merge_receipt left_host right_host coordinator batch registry_epoch registry_fingerprint state
 
 :| mh_lane_receipt lane batch wave state =
     | MhLaneReceipt :: \* lane batch wave state. string -> mh_lane_receipt lane batch wave state
@@ -553,54 +553,64 @@
         := \? first_lane second_lane. first_failure, second_failure, order = payload
         visit first_failure second_failure order
 
-:| multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+:| multihost_recovery_op old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
     observer_left observer_right observer_third from to effect =
-    | CapturePartition :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+    | CapturePartition :: \* old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host
+        coordinator
         observer_left observer_right observer_third.
-        replica_snapshot left_host old_epoch old_digest batch mh_available *
-        replica_snapshot right_host old_epoch old_digest batch mh_available *
+        replica_snapshot left_host old_epoch old_fingerprint batch mh_available *
+        replica_snapshot right_host old_epoch old_fingerprint batch mh_available *
         partition_witness left_host right_host batch mh_partitioned ->
         multihost_recovery_op
-            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+            observer_left
             observer_right observer_third mh_available mh_partitioned mh_idempotent
-    | AlignRegistry :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+    | AlignRegistry :: \* old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host
+        coordinator
         observer_left observer_right observer_third.
-        registry_successor old_epoch old_digest new_epoch new_digest mh_fresh ->
+        registry_successor old_epoch old_fingerprint new_epoch new_fingerprint mh_fresh ->
         multihost_recovery_op
-            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+            observer_left
             observer_right observer_third mh_partitioned mh_registry_aligned mh_idempotent
-    | ObserveConcurrentLanes :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+    | ObserveConcurrentLanes :: \* old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host
         coordinator observer_left observer_right observer_third.
         mh_lane_receipt lane_inventory batch wave mh_succeeded *
         mh_lane_failure lane_payment batch wave mh_failed *
         mh_lane_failure lane_shipping batch wave mh_failed *
         mh_lane_receipt lane_risk batch wave mh_succeeded ->
         multihost_recovery_op
-            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+            observer_left
             observer_right observer_third mh_registry_aligned mh_lanes_observed mh_non_idempotent
-    | ResolveShippingCancellation :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+    | ResolveShippingCancellation :: \* old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host
+        right_host
         coordinator observer_left observer_right observer_third.
         mh_lane_failure lane_shipping batch wave mh_failed *
         mh_cancel_token lane_shipping batch wave cancellation_epoch_a mh_cancelled ->
         multihost_recovery_op
-            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+            observer_left
             observer_right observer_third mh_lanes_observed mh_shipping_cancelled mh_non_idempotent
-    | CompensateShippingFirst :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+    | CompensateShippingFirst :: \* old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host
         coordinator observer_left observer_right observer_third.
         mh_lane_failure lane_shipping batch wave mh_failed *
         mh_compensation lane_shipping batch wave mh_compensated ->
         multihost_recovery_op
-            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+            observer_left
             observer_right observer_third mh_shipping_cancelled mh_shipping_compensated mh_non_idempotent
-    | CompensateBankAfterShipping :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+    | CompensateBankAfterShipping :: \* old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host
+        right_host
         coordinator observer_left observer_right observer_third.
         mh_lane_failure lane_payment batch wave mh_failed *
         mh_compensation lane_payment batch wave mh_compensated *
         compensation_order lane_shipping lane_payment batch wave mh_distinct ->
         multihost_recovery_op
-            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+            observer_left
             observer_right observer_third mh_shipping_compensated mh_bank_compensated mh_non_idempotent
-    | FormTimedReplicaQuorum :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+    | FormTimedReplicaQuorum :: \* old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host
         coordinator observer_left observer_right observer_third.
         timeout_witness batch wave timeout_deadline_a mh_fresh *
         distinct_replica_hosts left_host right_host coordinator mh_distinct *
@@ -608,22 +618,27 @@
         observer_checkpoint registry_root_a observer_right observed *
         observer_checkpoint registry_root_a observer_third observed ->
         multihost_recovery_op
-            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+            observer_left
             observer_right observer_third mh_bank_compensated mh_quorum_ready mh_idempotent
-    | HealReplayReplica :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+    | HealReplayReplica :: \* old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host
+        coordinator
         observer_left observer_right observer_third.
-        replay_merge_receipt left_host right_host coordinator batch new_epoch new_digest mh_healed ->
+        replay_merge_receipt left_host right_host coordinator batch new_epoch new_fingerprint mh_healed ->
         multihost_recovery_op
-            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+            observer_left
             observer_right observer_third mh_quorum_ready mh_healed mh_non_idempotent
-    | PublishHealedAudit :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+    | PublishHealedAudit :: \* old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host
+        coordinator
         observer_left observer_right observer_third.
         registry_pin registry_root_a available *
         distinct_observers observer_left observer_right distinct *
         observer_checkpoint registry_root_a observer_left observed *
         observer_checkpoint registry_root_a observer_right observed ->
         multihost_recovery_op
-            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+            observer_left
             observer_right observer_third mh_healed mh_published mh_idempotent
 
 :| multihost_recovery_row batch wave from to effect =
@@ -631,47 +646,58 @@
         string ->
         multihost_recovery_row batch wave from to effect
 
-:| multihost_recovery_node old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+:| multihost_recovery_node old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host
+    coordinator
     observer_left observer_right observer_third from to =
-    | MultihostRecoveryNode :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+    | MultihostRecoveryNode :: \* old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host
         coordinator observer_left observer_right observer_third from to.
         (\? effect.
             multihost_recovery_op
-                old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+                old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+                observer_left
                 observer_right observer_third from to effect *
             multihost_recovery_row batch wave from to effect) ->
         multihost_recovery_node
-            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+            observer_left
             observer_right observer_third from to
 
-:| ^ multihost_recovery_plan old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+:| ^ multihost_recovery_plan old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host
+    coordinator
     observer_left observer_right observer_third from to =
-    | MultihostRecoveryLeaf :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+    | MultihostRecoveryLeaf :: \* old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host
         coordinator observer_left observer_right observer_third from to.
         multihost_recovery_node
-            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+            observer_left
             observer_right observer_third from to ->
         multihost_recovery_plan
-            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+            observer_left
             observer_right observer_third from to
-    | MultihostRecoveryThen :: \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+    | MultihostRecoveryThen :: \* old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host
         coordinator observer_left observer_right observer_third from to.
         (\? middle.
             multihost_recovery_plan
-                old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+                old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+                observer_left
                 observer_right observer_third from middle *
             multihost_recovery_node
-                old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+                old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+                observer_left
                 observer_right observer_third middle to) ->
         multihost_recovery_plan
-            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+            observer_left
             observer_right observer_third from to
 
-:= multihost_node_label \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+:= multihost_node_label \* old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host
+    coordinator
     observer_left observer_right observer_third from to.
     (node :
         multihost_recovery_node
-            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+            observer_left
             observer_right observer_third from to)
     : string
     =
@@ -680,11 +706,12 @@
         := \? effect. _, MultihostRecoveryRow label = payload
         label
 
-:= multihost_terminal \* old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+:= multihost_terminal \* old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
     observer_left observer_right observer_third from to.
     (plan :
         multihost_recovery_plan
-            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            old_epoch old_fingerprint new_epoch new_fingerprint batch wave left_host right_host coordinator
+            observer_left
             observer_right observer_third from to)
     : string
     =
@@ -696,7 +723,7 @@
 
 := partition_node
     ()
-    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+    : multihost_recovery_node registry_epoch_old registry_fingerprint_old registry_epoch_new registry_fingerprint_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_available mh_partitioned
     =
@@ -707,7 +734,7 @@
 
 := registry_node
     ()
-    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+    : multihost_recovery_node registry_epoch_old registry_fingerprint_old registry_epoch_new registry_fingerprint_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_partitioned mh_registry_aligned
     =
@@ -718,7 +745,7 @@
 
 := lanes_node
     ()
-    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+    : multihost_recovery_node registry_epoch_old registry_fingerprint_old registry_epoch_new registry_fingerprint_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_registry_aligned mh_lanes_observed
     =
@@ -736,7 +763,7 @@
 
 := cancel_node
     ()
-    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+    : multihost_recovery_node registry_epoch_old registry_fingerprint_old registry_epoch_new registry_fingerprint_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_lanes_observed mh_shipping_cancelled
     =
@@ -747,7 +774,7 @@
 
 := shipping_compensation_node
     ()
-    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+    : multihost_recovery_node registry_epoch_old registry_fingerprint_old registry_epoch_new registry_fingerprint_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_shipping_cancelled mh_shipping_compensated
     =
@@ -758,7 +785,7 @@
 
 := bank_compensation_node
     ()
-    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+    : multihost_recovery_node registry_epoch_old registry_fingerprint_old registry_epoch_new registry_fingerprint_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_shipping_compensated mh_bank_compensated
     =
@@ -771,7 +798,7 @@
 
 := quorum_node
     ()
-    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+    : multihost_recovery_node registry_epoch_old registry_fingerprint_old registry_epoch_new registry_fingerprint_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_bank_compensated mh_quorum_ready
     =
@@ -790,7 +817,7 @@
 
 := heal_node
     ()
-    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+    : multihost_recovery_node registry_epoch_old registry_fingerprint_old registry_epoch_new registry_fingerprint_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_quorum_ready mh_healed
     =
@@ -801,7 +828,7 @@
 
 := publish_healed_node
     ()
-    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+    : multihost_recovery_node registry_epoch_old registry_fingerprint_old registry_epoch_new registry_fingerprint_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_healed mh_published
     =
@@ -819,7 +846,7 @@
 
 := multihost_plan
     ()
-    : multihost_recovery_plan registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+    : multihost_recovery_plan registry_epoch_old registry_fingerprint_old registry_epoch_new registry_fingerprint_new
         replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
         mh_available mh_published
     =

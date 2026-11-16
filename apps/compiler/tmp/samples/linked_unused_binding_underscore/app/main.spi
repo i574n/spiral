@@ -1,0 +1,6 @@
+:= take (x : i32) : i32 = x
+
+:= main () : i32 =
+    := kept = take 24
+    := _dropped = take 1
+    kept

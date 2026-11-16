@@ -1,0 +1,16 @@
+:= gpu_carry_in \* s. (x : s) : s = !!!!GpuCarryIn(x)
+:= gpu_carry_out \* s. (x : s) : s = !!!!GpuCarryOut(x)
+:= gpu_stage_boundary \* s. (x : s) : s = !!!!GpuStageBoundary(x)
+
+:= carried \* s. (init : s) (next : s -> s) : s = gpu_carry_out (next (gpu_carry_in init))
+
+:== counter = { count : i32; total : i32; done : bool }
+
+:= step (c : counter) : counter =
+    := c = gpu_stage_boundary { c ?| count = c::count +. 1i32 }
+    { c ?| total = c::total +. c::count; done = c::count >= 3i32 }
+
+:= main () : i32 =
+    := ~start = { count = 0i32; total = 0i32; done = !- }
+    := c = carried start step
+    ? c::count >= 1i32 && c::total =. (c::count *. (c::count +. 1i32)) /. 2i32 && c::done =. (c::count >= 3i32) ?> 0i32 |: 1i32

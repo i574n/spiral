@@ -4,19 +4,19 @@
 
 := (++) (left : string) (right : string) : string = left ^^ right
 
-:= patch_first (body : string) (old : string) (new : string) : string =
+:~ patch_first (body : string) (old : string) (new : string) : string =
     := at = text::find_from body old 0i32
     ? at < 0i32 ?> "E" |: "K" ++ text::take body at ++ new ++ text::drop body (at + text::length old)
 
-:= separator (ch : string) : bool = ch = "/" || ch = "\\"
+:~ separator (ch : string) : bool = ch = "/" || ch = "\\"
 
 :~ ^ has_separator (s : string) (i : i32) : bool =
     ? i >= text::length s ?> !- |? separator (text::slice_len s i 1i32) ?> !+ |: has_separator s (i + 1i32)
 
-:= without_dot_slash (name : string) : string =
+:~ without_dot_slash (name : string) : string =
     ? text::starts_with name "./" || text::starts_with name ".\\" ?> text::drop name 2i32 |: name
 
-:= nested (name : string) : bool = has_separator (without_dot_slash name) 0i32
+:~ nested (name : string) : bool = has_separator (without_dot_slash name) 0i32
 
 :~ ^ first_nested (names : list string) : string =
     ?= names ?|
@@ -29,9 +29,9 @@
     ?> listm::rev (text::drop src i :: acc)
     |: lines_of src (nl + 1i32) (text::slice_len src i (nl - i) :: acc)
 
-:= nested_name (names : string) : string = first_nested (? names = "" ?> [] |: lines_of names 0i32 [])
+:~ nested_name (names : string) : string = first_nested (? names = "" ?> [] |: lines_of names 0i32 [])
 
-:= blank_char (ch : string) : bool = ch = " " || ch = "\t" || ch = "\r" || ch = "\n"
+:~ blank_char (ch : string) : bool = ch = " " || ch = "\t" || ch = "\r" || ch = "\n"
 
 :~ ^ lead_blank (s : string) (i : i32) : i32 =
     ? i < text::length s && blank_char (text::slice_len s i 1i32)
@@ -43,7 +43,7 @@
     ?> trail_blank s (n - 1i32)
     |: n
 
-:= package_dir_line (line : string) : bool =
+:~ package_dir_line (line : string) : bool =
     := prefix = "packageDir:"
     := rest = text::drop line (text::length prefix)
     text::starts_with line prefix && trail_blank rest (text::length rest) > lead_blank rest 0i32
@@ -53,9 +53,9 @@
     ?> trimmed_end (text::take s (text::length s - text::length suffix)) suffix
     |: s
 
-:= entry_item (declared : string) : string = trimmed_end (trimmed_end declared "-") "*"
+:~ entry_item (declared : string) : string = trimmed_end (trimmed_end declared "-") "*"
 
-:= relative_item (item : string) : bool =
+:~ relative_item (item : string) : bool =
     text::starts_with item "./"
     || text::starts_with item "../"
     || text::starts_with item ".\\"
@@ -69,13 +69,13 @@
     ?> without_trailing_separators (text::take s (text::length s - 1i32))
     |: s
 
-:= basename (path : string) : string =
+:~ basename (path : string) : string =
     := p = without_trailing_separators path
     text::drop p (last_separator p (text::length p - 1i32) + 1i32)
 
-:= starts_blank (line : string) : bool = text::starts_with line " " || text::starts_with line "\t"
+:~ starts_blank (line : string) : bool = text::starts_with line " " || text::starts_with line "\t"
 
-:= declared_of (line : string) : string =
+:~ declared_of (line : string) : string =
     := a = lead_blank line 0i32
     text::slice_len line a (trail_blank line (text::length line) - a)
 
@@ -94,22 +94,41 @@
         ?> package_lines rest inside (declared_of line :: acc)
         |: package_lines rest inside acc
 
-:= sibling_line (declared : string) (line : string) : string =
+:~ sibling_line (declared : string) (line : string) : string =
     := item = entry_item declared
     := a = lead_blank line 0i32
     ? starts_blank line && relative_item item && declared_of line = declared
     ?> text::take line a ++ basename item ++ text::drop declared (text::length item)
     |: line
 
-:= rewrite_line (declareds : list string) (line : string) : string =
+:~ rewrite_line (declareds : list string) (line : string) : string =
     := dir = ? package_dir_line line ?> "packageDir: .." |: line
     listm::fold (\ acc declared => sibling_line declared acc) dir declareds
 
-:= join_lines (lines : list string) : string = sm'::concat_list "\n" lines
+:~ join_lines (lines : list string) : string = sm'::concat_list "\n" lines
 
-:= rewrite_dir_only (line : string) : string = ? package_dir_line line ?> "packageDir: .." |: line
+:~ rewrite_dir_only (line : string) : string = ? package_dir_line line ?> "packageDir: .." |: line
 
-:= sibling_project (src : string) : string =
+:~ ^ first_dir (lines : list string) : string =
+    ?= lines ?|
+    | [] => ""
+    | line :: rest =>
+        := value = text::drop line 11i32
+        := a = lead_blank value 0i32
+        ? package_dir_line line ?> text::slice_len value a (trail_blank value (text::length value) - a) |: first_dir rest
+
+:~ package_dir_value (src : string) : string = first_dir (lines_of src 0i32 [])
+
+:~ name_byte (b : i32) : bool = (b >= 97i32 && b <= 122i32) || (b >= 48i32 && b <= 57i32) || b = 95i32
+
+:~ ^ named_from (s : string) (i : i32) (acc : string) : string =
+    ? i >= text::length s ?> acc |: named_from s (i + 1i32) (acc ++ (? name_byte (text::byte_at s i) ?> text::slice_len s i 1i32 |: "_"))
+
+:~ mount_name_of (lowered : string) : string =
+    := name = named_from lowered 0i32 ""
+    ? name <> "" && text::byte_at name 0i32 >= 48i32 && text::byte_at name 0i32 <= 57i32 ?> "_" ++ name |: name
+
+:~ sibling_project (src : string) : string =
     := lines = lines_of src 0i32 []
     := declareds = package_lines (listm::map rewrite_dir_only lines) !- []
     join_lines (listm::map (rewrite_line declareds) lines)
@@ -127,3 +146,23 @@
     := src = "packageDir: ../../lib\npackages:\n    |core-\n    ../client-\n    spiral-\nmodules:\n    main"
     sibling_project src
     |> _assert_eq "packageDir: ..\npackages:\n    |core-\n    client-\n    spiral-\nmodules:\n    main"
+
+///> gleam
+:# package_dir_values_and_mount_names_follow_the_old_regexes =
+    := ~manifest = "packages:\n    |core-\npackageDir:   ../../lib  \r\nmodules:\n    main\n"
+    (package_dir_value manifest, package_dir_value "a\npackageDir: x", package_dir_value "modules:\n    a") |> _assert_eq ("../../lib", "x", "")
+    := ~base = "my-app.v2"
+    (mount_name_of base, mount_name_of "2fast", mount_name_of "", mount_name_of "ok_name9") |> _assert_eq ("my_app_v2", "_2fast", "", "ok_name9")
+
+///> gleam
+:# sibling_projects_keep_the_old_elixir_rewrites_on_crlf_repeats_and_windows_entries =
+    (sibling_project "packageDir: ../lib\r\npackages:\r\n    ../a-\r\n    ./b*-\r\nmodules:\r\n    main\r\n", sibling_project "packages:\n    ../x/y/\n    |core-\n    ../x/y/\nmodules:\n    ../x/y/\n    main\n")
+    |> _assert_eq ("packageDir: ..\npackages:\r\n    a-\n    b*-\nmodules:\r\n    main\r\n", "packages:\n    y\n    |core-\n    y\nmodules:\n    y\n    main\n")
+    (sibling_project "packageDir:   ../../far  \npackages:\n\t..\\win\\pkg-\nmodules:\n    main\n", sibling_project "packages:\n    ../x/y/\n", sibling_project "packages:\n\t..\\win\\pkg-\n")
+    |> _assert_eq ("packageDir: ..\npackages:\n\tpkg-\nmodules:\n    main\n", "packages:\n    y\n", "packages:\n\tpkg-\n")
+
+///> gleam
+:# nested_names_and_first_patches_keep_the_old_elixir_answers =
+    (nested_name "a.spi\n./b.spi\nsub/c.spi", nested_name "x\\y.spi", nested_name "c.spi\nd/e.spi\nf/g.spi", nested_name "a.spi", nested_name "")
+    |> _assert_eq ("sub/c.spi", "x\\y.spi", "d/e.spi", "", "")
+    (patch_first "a b a" "a" "x", patch_first "abc" "z" "y", patch_first "" "" "n", patch_first "aaa" "aa" "b") |> _assert_eq ("Kx b a", "E", "Kn", "Kba")

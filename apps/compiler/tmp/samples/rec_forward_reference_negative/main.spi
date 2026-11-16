@@ -1,0 +1,5 @@
+:= twice_plus (n : i32) : i32 = plus_one (n * 2)
+
+:= plus_one (n : i32) : i32 = n + 1
+
+:= main () : i32 = twice_plus 20

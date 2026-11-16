@@ -3578,3 +3578,91 @@
 
 := main () : string =
     "brzozowski-kernel-ready"
+
+///> c
+:# alphabet_mix_is_refused fails "Got: (tri_alphabet : *) Expected: (bit_alphabet : *)" =
+
+    accepts (ends_with_zero ()) (InputCons (tri_a (), InputEmpty))
+
+///> c
+:# finite_index_out_of_range_is_refused fails "Got: finite_symbol_index finite_length_zero Expected:" =
+
+    := impossible : finite_symbol_index bit_finite_length =
+        FiniteSymbolIndexSucc (FiniteSymbolIndexSucc FiniteSymbolIndexZero)
+    finite_symbol_vector_lookup impossible (bit_finite_symbol_vector ())
+
+///> c
+:# hkt_batch_predicate_specific_is_refused fails "Got: forall alphabet. matcher_program alphabet -> bool Expected:" =
+    := bit_only_program_predicate (program : matcher_program bit_alphabet) : bool =
+        matcher_program_passes program
+    := batch : matcher_batch matcher_program (bit_alphabet * tri_alphabet) =
+        MatchBatchPair (
+            MatchBatchSingle (capture_acceptance_program (ends_with_zero ()) (input_110 ()) !+),
+            MatchBatchSingle (capture_acceptance_program (tri_a_star ()) (input_aab ()) !-)
+        )
+    matcher_batch_forall `$bit_only_program_predicate batch
+
+///> c
+:# hkt_requires_capability_capture_is_refused fails "Got: forall alphabet. matcher_case alphabet" =
+    := constrained_acceptance_transform \* alphabet {symbol_compare}.
+        (item : matcher_case alphabet)
+        : matcher_check alphabet
+        =
+        ?= item ?|
+        | matcher_case (value, input) => matcher_check (accepts value input)
+    := batch : matcher_batch matcher_case (bit_alphabet * tri_alphabet) =
+        MatchBatchPair (
+            MatchBatchSingle (matcher_case (ends_with_zero (), input_110 ())),
+            MatchBatchSingle (matcher_case (tri_a_star (), input_aaa ()))
+        )
+    matcher_batch_map `$constrained_acceptance_transform batch
+
+///> c
+:# indexed_descriptor_local_cardinality_is_refused fails "Got: finite_symbol_vector bit_alphabet _ Expected:" =
+
+    := negative_main () : indexed_finite_alphabet_descriptor bit_alphabet =
+        indexed_finite_alphabet_descriptor (\? (
+            bit_finite_symbol_vector (),
+            AlphabetCardinalitySucc (AlphabetCardinalitySucc AlphabetCardinalityZero)))
+    negative_main ()
+
+///> c
+:# indexed_row_length_is_refused fails "Got: indexed_dfa_transition_vector bit_alphabet (finite_length_succ" =
+    := malformed_row () : indexed_dfa_transition_vector bit_alphabet bit_finite_length =
+        IndexedDfaTransitionVectorCons (
+            dfa_transition (RegexEpsilon, zero (), RegexEmpty),
+            IndexedDfaTransitionVectorNil)
+    := negative_main () : string =
+        := _ = malformed_row ()
+        "must-not-typecheck"
+    negative_main ()
+
+///> c
+:# phase_use_is_refused fails "Got: bit_matcher_state matcher_decided Expected: bit_matcher_state matcher_raw" =
+    := decided_only (state : bit_matcher_state matcher_decided) : bool =
+        bit_match_value state
+    := raw : bit_matcher_state matcher_raw = BitMatcherRaw (ends_with_zero (), input_110 ())
+    decided_only raw
+
+///> c
+:# raw_generic_state_seal_is_refused fails "Got: matcher_state bit_alphabet matcher_decided Expected: matcher_state" =
+
+    := raw : matcher_state bit_alphabet matcher_raw =
+        MatcherRaw (ends_with_zero (), input_110 ())
+    := forged : decided_matcher bit_alphabet = decided_matcher raw
+    seal_decided_matcher forged
+
+///> c
+:# raw_inventory_bypass_is_refused fails "Got: certified_alphabet_inventory bit_alphabet Expected: symbol_list" =
+
+    := raw_inventory : symbol_list bit_alphabet = finite_alphabet_symbols (finite_alphabet ())
+    dfa_run_certified (ends_with_zero ()) raw_inventory (input_110 ())
+
+///> c
+:# truncated_canonical_vector_is_refused fails "Unification failure. Got: finite_symbol_vector bit_alphabet" =
+    := truncated_bit_vector () : finite_symbol_vector bit_alphabet bit_finite_length =
+        FiniteSymbolVectorCons (zero (), FiniteSymbolVectorNil)
+    := negative_main () : string =
+        := _ = truncated_bit_vector ()
+        "must-not-typecheck"
+    negative_main ()

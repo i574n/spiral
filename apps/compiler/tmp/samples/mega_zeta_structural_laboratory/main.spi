@@ -1836,7 +1836,7 @@
                 less,
                 rest)))
 
-:= ^ certified_interval_positive_positional_prime_multiplicity_normal_form_prepend_equal \* head next.
+:= certified_interval_positive_positional_prime_multiplicity_normal_form_prepend_equal \* head next.
     (head_cell : certified_interval_positive_positional_indexed_prime_cell head)
     (head_to_next : positive_positional_equal head next)
     (normal : certified_interval_positive_positional_prime_multiplicity_normal_form_from next)
@@ -3443,7 +3443,7 @@
             positive_positional_transitive_predecessor_path middle output) ->
         positive_positional_strict_predecessor_path input output
 
-:= ^ certified_interval_positive_positional_factor_membership_to_strict_path
+:= certified_interval_positive_positional_factor_membership_to_strict_path
     \* candidate start length.
     (membership : certified_interval_positive_positional_factor_membership candidate start length)
     : positive_positional_strict_predecessor_path start candidate =
@@ -5600,7 +5600,7 @@
         := \? previous_product. previous_run, _ = payload
         certified_interval_positive_positional_product_multiplicity_run_prime previous_run
 
-:= ^ certified_interval_positive_positional_product_multiplicity_run_product_value \* factor count product.
+:= certified_interval_positive_positional_product_multiplicity_run_product_value \* factor count product.
     (run : certified_interval_positive_positional_product_multiplicity_run factor count product) :
     positive_positional_nat product =
     ?= run ?|
@@ -7595,3 +7595,669 @@
         ^^ "thout-importing-factorization-tree-shapes"
 
 := main () : string = zeta_root_contract ()
+///> c
+:# accessible_child_one_mismatch_is_refused fails "Got: positive_positional_predecessor_accessibility" =
+    := impossible_accessible_child_one_mismatch () =
+        certified_interval_positive_positional_accessible_child_completion
+            (positive_positional_two_value ())
+            (PositivePositionalPredecessorAccessibilityOne
+                "forged-one-accessibility-for-two")
+    impossible_accessible_child_one_mismatch ()
+
+///> c
+:# accessible_child_step_prime_predecessor_mismatch_is_refused fails "Got: positive_positional_predecessor" =
+    := impossible_accessible_child_step_prime_predecessor_mismatch () =
+        := three_value = positive_positional_three_value ()
+        certified_interval_positive_positional_accessible_child_completion
+            three_value
+            (PositivePositionalPredecessorAccessibilityStep (\? (
+                PositivePositionalPredecessorTwo,
+                PositivePositionalPredecessorAccessibilityOne
+                    "forged-one-tail-accessibility",
+                "forged-two-to-one-step-for-general-prime-three")))
+    impossible_accessible_child_step_prime_predecessor_mismatch ()
+
+///> c
+:# accessible_child_unit_direct_wrong_root_is_refused fails "Got: positive_positional_nat (positional_one_bit" =
+    := impossible_accessible_child_unit_direct_wrong_root () =
+        certified_interval_positive_positional_accessible_child_unit_complete_tree
+            (positive_positional_three_value ())
+            (derive_positive_positional_predecessor_accessibility
+                (positive_positional_three_value ()))
+    impossible_accessible_child_unit_direct_wrong_root ()
+
+///> c
+:# accessible_composite_completion_wrong_root_is_refused fails "Got:" =
+    := impossible_accessible_composite_completion_wrong_root () :
+        certified_interval_positive_positional_complete_factorization_tree
+            (positional_one_bit (positional_one_bit positional_one)) =
+        := six_value :
+            positive_positional_nat
+                (positional_zero_bit (positional_one_bit positional_one)) =
+            PositivePositionalZeroBit (positive_positional_three_value ())
+        certified_interval_positive_positional_accessible_child_completion
+            six_value
+            (derive_positive_positional_predecessor_accessibility six_value)
+    impossible_accessible_composite_completion_wrong_root ()
+
+///> c
+:# accessible_step_prime_predecessor_mismatch_is_refused fails "Got: positive_positional_predecessor" =
+    := impossible_accessible_step_prime_predecessor_mismatch () =
+        := three_value = positive_positional_three_value ()
+        ?= classify_certified_interval_positive_positional_sealed_factor three_value ?|
+        | CertifiedIntervalPositivePositionalSealedPrimeClass prime_payload =>
+            := \? length. prime_material, prime_nonunit, rejected, prime_note = prime_payload
+            CertifiedIntervalPositivePositionalAccessibleStepPrimeDerivation (\? (
+                prime_material,
+                prime_nonunit,
+                rejected,
+                PositivePositionalPredecessorTwo,
+                PositivePositionalLessOneZeroBit PositivePositionalOne,
+                PositivePositionalPredecessorAccessibilityOne
+                    "forged-one-tail-accessibility",
+                prime_note,
+                "forged-two-to-one-step-for-prime-three"))
+        | _ =>
+            $"mega_runtime_fail \"three-was-unexpectedly-not-classified-as-prime\""
+    impossible_accessible_step_prime_predecessor_mismatch ()
+
+///> c
+:# accessible_step_prime_tree_wrong_root_is_refused fails "Got: positive_positional_nat (positional_zero_bit" =
+    := impossible_accessible_step_prime_tree_wrong_root () :
+        certified_interval_positive_positional_complete_factorization_tree
+            (positional_zero_bit (positional_zero_bit positional_one)) =
+        := three_value = positive_positional_three_value ()
+        ?=
+            classify_certified_interval_positive_positional_sealed_factor three_value,
+            derive_positive_positional_predecessor_accessibility three_value
+        ?|
+        | CertifiedIntervalPositivePositionalSealedPrimeClass prime_payload,
+            PositivePositionalPredecessorAccessibilityStep step_payload
+            =>
+                := \? length. prime_material, prime_nonunit, rejected, prime_note = prime_payload
+                := \? predecessor. predecessor_proof, predecessor_accessibility, step_note = step_payload
+                certified_interval_positive_positional_accessible_step_prime_complete_tree
+                    (CertifiedIntervalPositivePositionalAccessibleStepPrimeDerivation (\? (
+                        prime_material,
+                        prime_nonunit,
+                        rejected,
+                        predecessor_proof,
+                        positive_positional_predecessor_implies_less predecessor_proof,
+                        predecessor_accessibility,
+                        prime_note,
+                        step_note)))
+        | _, _ =>
+            $"mega_runtime_fail \"three-was-unexpectedly-not-a-Step-certified-prime\""
+    impossible_accessible_step_prime_tree_wrong_root ()
+
+///> c
+:# child_recursion_authority_child_accessibility_mismatch_is_refused fails "Got: positive_positional_nat" =
+    := impossible_child_recursion_authority_child_accessibility_mismatch () :
+        certified_interval_positive_positional_child_recursion_authority
+            (positional_zero_bit positional_one)
+            (positional_one_bit positional_one)
+            (z_nat_succ z_nat_zero) =
+        := membership :
+            certified_interval_positive_positional_factor_membership
+                (positional_zero_bit positional_one)
+                (positional_one_bit positional_one)
+                (z_nat_succ z_nat_zero) =
+            CertifiedIntervalPositivePositionalFactorMembershipHere (
+                positive_positional_two_value (),
+                PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+                PositivePositionalPredecessorOneBit PositivePositionalOne,
+                "two-is-a-candidate-below-three")
+        := descent =
+            derive_certified_interval_positive_positional_membership_recursive_descent
+                (positive_positional_three_value ())
+                membership
+        CertifiedIntervalPositivePositionalChildRecursionAuthority (
+            membership,
+            positive_positional_two_value (),
+            descent,
+            derive_positive_positional_predecessor_accessibility
+                (positive_positional_three_value ()),
+            derive_positive_positional_predecessor_accessibility
+                (positive_positional_three_value ()),
+            "the-child-accessibility-is-deliberately-rooted-at-three-instead-of-two")
+    impossible_child_recursion_authority_child_accessibility_mismatch ()
+
+///> c
+:# child_recursion_authority_wrong_root_is_refused fails "Got:" =
+    := impossible_child_recursion_authority_wrong_root () :
+        certified_interval_positive_positional_child_recursion_authority
+            (positional_zero_bit positional_one)
+            (positional_zero_bit (positional_zero_bit positional_one))
+            (z_nat_succ z_nat_zero) =
+        := membership :
+            certified_interval_positive_positional_factor_membership
+                (positional_zero_bit positional_one)
+                (positional_one_bit positional_one)
+                (z_nat_succ z_nat_zero) =
+            CertifiedIntervalPositivePositionalFactorMembershipHere (
+                positive_positional_two_value (),
+                PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+                PositivePositionalPredecessorOneBit PositivePositionalOne,
+                "the-child-authority-membership-is-rooted-at-three-not-four")
+        := descent =
+            derive_certified_interval_positive_positional_membership_recursive_descent
+                (positive_positional_three_value ())
+                membership
+        derive_certified_interval_positive_positional_child_recursion_authority
+            membership
+            descent
+            (derive_positive_positional_predecessor_accessibility
+                (positive_positional_three_value ()))
+    impossible_child_recursion_authority_wrong_root ()
+
+///> c
+:# complete_descent_fold_missing_division_is_refused fails "Got:" =
+    := impossible_complete_descent_fold_missing_division
+        ()
+        : certified_interval_positive_positional_complete_factorization_tree
+            (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+        =
+        := root_value = positive_positional_twelve_value ()
+        ?= classify_certified_interval_positive_positional_sealed_factor root_value ?|
+        | CertifiedIntervalPositivePositionalSealedCompositeClass payload =>
+            := \? length divisor quotient. natural_value, divisor_value, quotient_value, membership, division, note =
+                payload
+            := children
+                : certified_interval_positive_positional_sealed_composite_children
+                    (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) divisor quotient
+                =
+                CertifiedIntervalPositivePositionalSealedCompositeChildren (
+                    \? (natural_value, divisor_value, quotient_value, membership, division, note)
+                )
+            CertifiedIntervalPositivePositionalCompleteSplit (
+                \? (
+                    natural_value,
+                    divisor_value,
+                    quotient_value,
+                    membership,
+                    derive_certified_interval_positive_positional_membership_recursive_descent root_value membership,
+                    derive_certified_interval_positive_positional_quotient_recursive_descent_from_children children,
+                    certified_interval_positive_positional_accessible_child_completion divisor_value (
+                        derive_positive_positional_predecessor_accessibility divisor_value
+                    ),
+                    certified_interval_positive_positional_accessible_child_completion quotient_value (
+                        derive_positive_positional_predecessor_accessibility quotient_value
+                    ),
+                    "a-split-fold-must-carry-the-structural-division-equation"
+                )
+            )
+        | _ => mega_runtime_fail "twelve-must-classify-as-composite-before-the-negative-boundary"
+    := _ = impossible_complete_descent_fold_missing_division ()
+    ()
+
+///> c
+:# complete_reconstruction_prime_four_is_refused fails "Got: exists length. positive_positional_nat" =
+    := impossible_complete_reconstruction_prime_four () :
+        certified_interval_positive_positional_complete_reconstruction
+            (positional_zero_bit (positional_zero_bit positional_one)) =
+        CertifiedIntervalPositivePositionalCompleteReconstructionPrime (
+            positive_positional_four_value (),
+            PositivePositionalFactorCandidateNonunitZeroBit
+                (positive_positional_two_value ()),
+            "complete-reconstruction-prime-four-must-carry-complete-rejection-evidence")
+
+///> c
+:# composite_recursion_authority_wrong_root_is_refused fails "Got:" =
+    := impossible_composite_recursion_authority_wrong_root
+        ()
+        : (
+            \? length divisor quotient. certified_interval_positive_positional_composite_recursion_authority
+                (positional_zero_bit (positional_zero_bit positional_one)) length divisor quotient
+        )
+        =
+        := root_value = positive_positional_twelve_value ()
+        ?= classify_certified_interval_positive_positional_sealed_factor root_value ?|
+        | CertifiedIntervalPositivePositionalSealedCompositeClass payload =>
+            := \? length divisor quotient. natural_value, divisor_value, quotient_value, membership, division, note =
+                payload
+            := children
+                : certified_interval_positive_positional_sealed_composite_children
+                    (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) divisor quotient
+                =
+                CertifiedIntervalPositivePositionalSealedCompositeChildren (
+                    \? (natural_value, divisor_value, quotient_value, membership, division, note)
+                )
+            \? (
+                CertifiedIntervalPositivePositionalCompositeRecursionAuthority (
+                    membership,
+                    division,
+                    quotient_value,
+                    derive_certified_interval_positive_positional_membership_recursive_descent root_value membership,
+                    derive_certified_interval_positive_positional_quotient_recursive_descent_from_children children,
+                    derive_positive_positional_predecessor_accessibility root_value,
+                    "the-composite-authority-is-rooted-at-twelve-not-four"))
+        | _ => mega_runtime_fail "twelve-must-classify-as-composite-before-the-negative-boundary"
+    := _ = impossible_composite_recursion_authority_wrong_root ()
+    ()
+
+///> c
+:# descent_unavailable_divisor_blocked_equal_root_is_refused fails "Got: positive_positional_equal" =
+    := impossible_descent_unavailable_divisor_blocked_equal_root () =
+        := root_value = positive_positional_twelve_value ()
+        ?= classify_certified_interval_positive_positional_sealed_factor root_value ?|
+        | CertifiedIntervalPositivePositionalSealedCompositeClass composite_payload =>
+            := \? divisor quotient. children =
+                certified_interval_positive_positional_sealed_composite_children_from_witness
+                    (CertifiedIntervalPositivePositionalSealedCompositeWitness composite_payload)
+            := blocked
+                : certified_interval_positive_positional_recursive_descent_blocked
+                    (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) divisor
+                =
+                CertifiedIntervalPositivePositionalRecursiveDescentBlockedEqual
+                    (positive_positional_equal_reflexive root_value)
+            ()
+        | _ => mega_runtime_fail "twelve-must-classify-as-composite-before-the-negative-boundary"
+    impossible_descent_unavailable_divisor_blocked_equal_root ()
+
+///> c
+:# forged_interval_is_refused fails "Got: certified_positive_positional_candidate_interval positional_one" =
+    := impossible_interval_for_four () :
+        certified_positive_positional_candidate_interval
+            (positional_zero_bit (positional_zero_bit positional_one))
+            z_nat_zero =
+        CertifiedPositivePositionalCandidateIntervalOne
+            "the-one-only-base-cannot-certify-four"
+
+///> c
+:# intrinsic_prime_four_is_refused fails "Got: certified_interval_positive_positional_all_rejected _" =
+    := impossible_intrinsic_prime_four () :
+        certified_interval_positive_positional_sealed_factor_class
+            (positional_zero_bit (positional_zero_bit positional_one)) =
+        CertifiedIntervalPositivePositionalSealedPrimeClass (\? (
+            positive_positional_four_value (),
+            PositivePositionalFactorCandidateNonunitZeroBit (positive_positional_two_value ()),
+            CertifiedIntervalPositivePositionalAllRejectedTwo
+                "four-cannot-reuse-the-two-candidate-base-as-a-complete-rejection",
+            "sealed-prime-four-must-be-uninhabitable"))
+
+///> c
+:# intrinsic_prime_one_is_refused fails "Got: positive_positional_factor_candidate_nonunit (positional_zero_bit" =
+    := impossible_intrinsic_prime_one () :
+        certified_interval_positive_positional_sealed_factor_class positional_one =
+        CertifiedIntervalPositivePositionalSealedPrimeClass (\? (
+            PositivePositionalOne,
+            PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+            CertifiedIntervalPositivePositionalAllRejectedOne
+                "one-has-no-nonunit-factor-candidate",
+            "sealed-prime-one-must-be-uninhabitable"))
+
+///> c
+:# membership_accessibility_authority_candidate_mismatch_is_refused fails "Got:" =
+    := impossible_membership_accessibility_authority_candidate_mismatch () :
+        certified_interval_positive_positional_membership_accessibility_authority
+            positional_one
+            (positional_one_bit positional_one)
+            (z_nat_succ z_nat_zero) =
+        := membership :
+            certified_interval_positive_positional_factor_membership
+                (positional_zero_bit positional_one)
+                (positional_one_bit positional_one)
+                (z_nat_succ z_nat_zero) =
+            CertifiedIntervalPositivePositionalFactorMembershipHere (
+                positive_positional_two_value (),
+                PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+                PositivePositionalPredecessorOneBit PositivePositionalOne,
+                "the-membership-is-rooted-at-three-and-indexed-by-factor-two")
+        derive_certified_interval_positive_positional_membership_accessibility_authority
+            membership
+    impossible_membership_accessibility_authority_candidate_mismatch ()
+
+///> c
+:# membership_accessibility_candidate_mismatch_is_refused fails "Got:" =
+    := impossible_factor_membership_accessibility_candidate_mismatch () :
+        positive_positional_nat positional_one *
+        positive_positional_predecessor_accessibility positional_one =
+        := membership :
+            certified_interval_positive_positional_factor_membership
+                (positional_zero_bit positional_one)
+                (positional_one_bit positional_one)
+                (z_nat_succ z_nat_zero) =
+            CertifiedIntervalPositivePositionalFactorMembershipHere (
+                positive_positional_two_value (),
+                PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+                PositivePositionalPredecessorOneBit PositivePositionalOne,
+                "the-membership-is-rooted-at-three-and-indexed-by-factor-two")
+        derive_certified_interval_positive_positional_factor_membership_accessibility
+            membership
+    impossible_factor_membership_accessibility_candidate_mismatch ()
+
+///> c
+:# membership_accessible_child_mismatch_is_refused fails "Got: positive_positional_nat (positional_one_bit" =
+    := impossible_membership_accessible_child_mismatch () =
+        certified_interval_positive_positional_accessible_child_completion
+            (positive_positional_two_value ())
+            (derive_positive_positional_predecessor_accessibility
+                (positive_positional_three_value ()))
+    impossible_membership_accessible_child_mismatch ()
+
+///> c
+:# membership_candidate_value_mismatch_is_refused fails "Got: positive_positional_nat (positional_one_bit" =
+    := impossible_factor_membership_candidate_value_mismatch () :
+        certified_interval_positive_positional_factor_membership
+            (positional_zero_bit positional_one)
+            (positional_one_bit positional_one)
+            (z_nat_succ z_nat_zero) =
+        CertifiedIntervalPositivePositionalFactorMembershipHere (
+            positive_positional_three_value (),
+            PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+            PositivePositionalPredecessorOneBit PositivePositionalOne,
+            "a-membership-for-factor-two-cannot-store-three-as-the-indexed-candidate-value")
+
+///> c
+:# membership_descent_wrong_root_is_refused fails "Got: positive_positional_predecessor (positional_one_bit" =
+    := impossible_factor_membership_descent_wrong_root () =
+        derive_certified_interval_positive_positional_membership_recursive_descent
+            (positive_positional_four_value ())
+            (CertifiedIntervalPositivePositionalFactorMembershipHere (
+                positive_positional_two_value (),
+                PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+                PositivePositionalPredecessorOneBit PositivePositionalOne,
+                "a-membership-rooted-at-three-cannot-derive-descent-from-four"))
+
+///> c
+:# membership_recursion_authority_wrong_root_is_refused fails "Got:" =
+    := impossible_membership_recursion_authority_wrong_root () :
+        certified_interval_positive_positional_membership_recursion_authority
+            (positional_zero_bit positional_one)
+            (positional_zero_bit (positional_zero_bit positional_one))
+            (z_nat_succ z_nat_zero) =
+        := membership :
+            certified_interval_positive_positional_factor_membership
+                (positional_zero_bit positional_one)
+                (positional_one_bit positional_one)
+                (z_nat_succ z_nat_zero) =
+            CertifiedIntervalPositivePositionalFactorMembershipHere (
+                positive_positional_two_value (),
+                PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+                PositivePositionalPredecessorOneBit PositivePositionalOne,
+                "the-membership-is-rooted-at-three-not-four")
+        derive_certified_interval_positive_positional_membership_recursion_authority
+            membership
+    impossible_membership_recursion_authority_wrong_root ()
+
+///> c
+:# membership_strict_path_identity_is_refused fails "Got: certified_interval_positive_positional_factor_membership" =
+    := impossible_membership_strict_path_identity () =
+        := twelve =
+            classify_certified_interval_positive_positional_sealed_factor
+                (positive_positional_twelve_value ())
+        ?= twelve ?|
+        | CertifiedIntervalPositivePositionalSealedCompositeClass payload =>
+            := \? length divisor quotient. _, _, _, membership, _, _ = payload
+            := impossible
+                : positive_positional_strict_predecessor_path
+                    (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+                    (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+                =
+                certified_interval_positive_positional_factor_membership_to_strict_path
+                    membership
+            ()
+        | _ =>
+            mega_runtime_fail "twelve-must-be-composite-for-the-negative-boundary"
+    impossible_membership_strict_path_identity ()
+
+///> c
+:# mixed_second_prime_strict_separation_cannot_reverse_is_refused fails "Got: positive_positional_less" =
+    := impossible_mixed_second_prime_strict_separation_cannot_reverse \* root.
+        (authority :
+            certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility root)
+        : ()
+        =
+        ?= authority ?|
+        | certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility packed =>
+            := \?
+                singleton_factor singleton_count second_factor second_count second_product. _, _, strict, _, _, _, _
+                =
+                packed
+            := reversed : positive_positional_less second_factor singleton_factor = strict
+            ()
+
+///> c
+:# mixed_singleton_prime_power_wrong_root_is_refused fails "Got: certified_arithmetic_prime_power _ _" =
+    := impossible_mixed_singleton_prime_power_wrong_root \* root.
+        (mixed : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_obstruction root)
+        : \? factor count. certified_arithmetic_prime_power factor count positional_one * string
+        =
+        ?=
+            certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility_make
+                mixed
+        ?|
+        | certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility packed =>
+            := \?
+                singleton_factor singleton_count second_factor second_count second_product. singleton_power, _, _, _, _,
+                _,
+                note
+                =
+                packed
+            \? (singleton_power, note)
+
+///> c
+:# mixed_strict_separation_not_divisibility_obligation_is_refused fails "Got:" =
+    := impossible_mixed_strict_separation_not_divisibility_obligation \* root.
+        (authority :
+            certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility root)
+        : ()
+        =
+        ?= authority ?|
+        | certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility packed =>
+            := \?
+                singleton_factor singleton_count second_factor second_count second_product. _, _, strict, _, _,
+                divisibility
+                , _
+                =
+                packed
+            := obligation : positive_positional_exact_factor_decision root second_factor = strict
+            ()
+
+///> c
+:# multi_prime_nf_not_prime_power_is_refused fails "Got: exists factor count product." =
+    := impossible_multi_prime_decision_relabels_as_prime_power \* root.
+        (decision : certified_arithmetic_rooted_prime_power_decision root) :
+        certified_arithmetic_rooted_prime_power_decision root =
+        ?= decision ?|
+        | CertifiedArithmeticRootedPrimePowerDecisionPrimePower payload =>
+            CertifiedArithmeticRootedPrimePowerDecisionPrimePower payload
+        | CertifiedArithmeticRootedPrimePowerDecisionMultiplePrimes obstruction =>
+            CertifiedArithmeticRootedPrimePowerDecisionPrimePower obstruction
+
+///> c
+:# positive_exponent_equality_wrong_length_is_refused fails "Got: certified_arithmetic_positive_exponent_equal" =
+    := impossible_positive_exponent_equality_wrong_length () :
+        certified_arithmetic_positive_exponent_equal
+            (z_nat_succ z_nat_zero)
+            (z_nat_succ (z_nat_succ z_nat_zero)) =
+        CertifiedArithmeticPositiveExponentEqualOne
+    impossible_positive_exponent_equality_wrong_length ()
+
+///> c
+:# predecessor_accessibility_parallel_less_is_refused fails "Got: positive_positional_less positional_one" =
+    := impossible_predecessor_accessibility_parallel_less () :
+        positive_positional_predecessor_accessibility
+            (positional_zero_bit positional_one) =
+        PositivePositionalPredecessorAccessibilityStep (\? (
+            PositivePositionalPredecessorTwo,
+            PositivePositionalLessOneZeroBit PositivePositionalOne,
+            PositivePositionalPredecessorAccessibilityOne
+                "one-closes-the-forged-chain",
+            "the-less-proof-is-deliberately-supplied-in-parallel-with-the-predecessor-proof"))
+    impossible_predecessor_accessibility_parallel_less ()
+
+///> c
+:# predecessor_accessibility_parallel_value_is_refused fails "Got: positive_positional_predecessor" =
+    := impossible_predecessor_accessibility_parallel_value () :
+        positive_positional_predecessor_accessibility
+            (positional_zero_bit positional_one) =
+        PositivePositionalPredecessorAccessibilityStep (\? (
+            PositivePositionalOne,
+            PositivePositionalPredecessorTwo,
+            PositivePositionalLessOneZeroBit PositivePositionalOne,
+            PositivePositionalPredecessorAccessibilityOne
+                "one-closes-the-forged-chain",
+            "the-value-is-deliberately-supplied-in-parallel-with-the-predecessor-proof"))
+    impossible_predecessor_accessibility_parallel_value ()
+
+///> c
+:# prime_power_leaf_nonfactor_not_product_nonfactor_is_refused fails "Got:" =
+    := impossible_prime_power_leaf_nonfactor_chain_is_product_nonfactor \* factor count product external.
+        (chain : certified_arithmetic_prime_power_leaf_nonfactor_chain factor count product external) :
+        positive_positional_nonfactor_certificate product external =
+        chain
+
+///> c
+:# prime_product_split_found_not_rejection_is_refused fails "Got: positive_positional_nonfactor_certificate product" =
+    := impossible_prime_product_split_found_is_product_rejection \* factor previous_count product external.
+        (descent :
+            certified_arithmetic_prime_power_external_factor_descent
+                factor
+                (z_nat_succ previous_count)
+                product external)
+        : positive_positional_nonfactor_certificate product external
+        =
+        ?= descent ?|
+        | CertifiedArithmeticPrimePowerExternalFactorPrimeProductSplitObstruction payload =>
+            := \? previous_product. _, _, product_found, _, _ = payload
+            product_found
+        | _ =>
+            mega_runtime_fail "only-the-prime-product-split-obstruction-branch-is-relevant"
+
+///> c
+:# prime_product_split_previous_nonfactor_not_base_nonfactor_is_refused fails "Got:" =
+    := impossible_prime_product_split_previous_nonfactor_is_base_nonfactor \* factor previous_count product external.
+        (descent :
+            certified_arithmetic_prime_power_external_factor_descent
+                factor
+                (z_nat_succ previous_count)
+                product external)
+        : positive_positional_nonfactor_certificate factor external
+        =
+        ?= descent ?|
+        | CertifiedArithmeticPrimePowerExternalFactorPrimeProductSplitObstruction payload =>
+            := \? previous_product. _, _, _, _, previous_nonfactor = payload
+            previous_nonfactor
+        | _ =>
+            mega_runtime_fail "only-the-prime-product-split-obstruction-branch-is-relevant"
+
+///> c
+:# quotient_accessible_parent_root_mismatch_is_refused fails "Got:" =
+    := impossible_quotient_accessible_parent_root_mismatch
+        ()
+        : certified_interval_positive_positional_complete_factorization_tree (positional_zero_bit positional_one)
+        =
+        := three = positive_positional_three_value ()
+        certified_interval_positive_positional_accessible_child_completion three (
+            derive_positive_positional_predecessor_accessibility three
+        )
+    := _ = impossible_quotient_accessible_parent_root_mismatch ()
+    ()
+
+///> c
+:# quotient_recursion_authority_wrong_root_is_refused fails "Got: value_synthesized_structural_division" =
+    := impossible_quotient_recursion_authority_wrong_root
+        ()
+        : (
+            \? divisor quotient. certified_interval_positive_positional_quotient_recursion_authority
+                (positional_zero_bit (positional_zero_bit positional_one)) divisor quotient
+        )
+        =
+        := root_value = positive_positional_twelve_value ()
+        ?= classify_certified_interval_positive_positional_sealed_factor root_value ?|
+        | CertifiedIntervalPositivePositionalSealedCompositeClass payload =>
+            := \? length divisor quotient. natural_value, divisor_value, quotient_value, membership, division, note =
+                payload
+            := children
+                : certified_interval_positive_positional_sealed_composite_children
+                    (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) divisor quotient
+                =
+                CertifiedIntervalPositivePositionalSealedCompositeChildren (
+                    \? (natural_value, divisor_value, quotient_value, membership, division, note)
+                )
+            \? (
+                CertifiedIntervalPositivePositionalQuotientRecursionAuthority (
+                    division,
+                    quotient_value,
+                    derive_certified_interval_positive_positional_quotient_recursive_descent_from_children children,
+                    derive_positive_positional_predecessor_accessibility root_value,
+                    derive_positive_positional_predecessor_accessibility quotient_value,
+                    "the-authority-is-rooted-at-twelve-not-four"))
+        | _ => mega_runtime_fail "twelve-must-classify-as-composite-before-the-negative-boundary"
+    := _ = impossible_quotient_recursion_authority_wrong_root ()
+    ()
+
+///> c
+:# sealed_composite_children_direct_forged_divisor_is_refused fails "Got:" =
+    := impossible_sealed_composite_children_direct_forged_divisor \* length.
+        (membership :
+            certified_interval_positive_positional_factor_membership
+                (positional_zero_bit (positional_one_bit positional_one))
+                (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+                length)
+        (division :
+            value_synthesized_structural_division
+                (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+                (positional_zero_bit (positional_one_bit positional_one))
+                (positional_zero_bit positional_one)
+                positional_zero)
+        : certified_interval_positive_positional_sealed_composite_children
+            (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+            (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+            (positional_zero_bit positional_one) =
+        CertifiedIntervalPositivePositionalSealedCompositeChildren (\? (
+            positive_positional_twelve_value (),
+            positive_positional_twelve_value (),
+            positive_positional_two_value (),
+            membership,
+            division,
+            "the-public-constructor-must-not-accept-root-as-divisor-when-the-evidence-proves-six-divides-twelve"))
+    impossible_sealed_composite_children_direct_forged_divisor
+
+///> c
+:# sealed_composite_children_wrong_divisor_is_refused fails "Got:" =
+    := impossible_sealed_composite_children_wrong_divisor
+        (children :
+            certified_interval_positive_positional_sealed_composite_children
+                (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+                (positional_zero_bit (positional_one_bit positional_one))
+                (positional_zero_bit positional_one))
+        : certified_interval_positive_positional_sealed_composite_children
+            (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+            (positional_one_bit (positional_zero_bit (positional_zero_bit positional_one)))
+            (positional_zero_bit positional_one) =
+        children
+    impossible_sealed_composite_children_wrong_divisor
+
+///> c
+:# sealed_composite_children_wrong_root_is_refused fails "Got:" =
+    := impossible_sealed_composite_children_wrong_root
+        (children :
+            certified_interval_positive_positional_sealed_composite_children
+                (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+                (positional_zero_bit (positional_one_bit positional_one))
+                (positional_zero_bit positional_one))
+        : certified_interval_positive_positional_sealed_composite_children
+            (positional_zero_bit (positional_one_bit (positional_zero_bit (positional_zero_bit positional_one))))
+            (positional_zero_bit (positional_one_bit positional_one))
+            (positional_zero_bit positional_one) =
+        children
+    impossible_sealed_composite_children_wrong_root
+
+///> c
+:# structural_division_quotient_projection_mismatch_is_refused fails "Got: value_synthesized_structural_division" =
+    := impossible_structural_division_quotient_projection_mismatch () :
+        nonnegative_positional_nat (positional_zero_bit positional_one) =
+        value_synthesized_structural_division_quotient_value
+            (ValueSynthesizedStructuralDivisionEqual (
+                PositivePositionalEqualZeroBit PositivePositionalEqualOne))
+    impossible_structural_division_quotient_projection_mismatch ()
+
+///> c
+:# zero_remainder_is_refused fails "Got: positive_positional_nat positional_zero Expected: " =
+    := impossible_zero_remainder
+        (zero : nonnegative_positional_nat positional_zero)
+        : positive_positional_nat positional_zero =
+        zero
+    impossible_zero_remainder NonnegativePositionalZero

@@ -1,0 +1,129 @@
+:< sm'_operators
+
+:| load_verdict =
+    | LoadOk
+    | HostBuildFail
+    | BpfBuildFail
+    | VerifierReject
+    | RunFail
+    | NoBss
+    | NoExitSymbol
+    | LoopCapped
+    | Differs : i32 * i32
+
+:= verdict_text (v : load_verdict) : string =
+    ?= v ?|
+    | LoadOk => "ok"
+    | HostBuildFail => "host-build-fail"
+    | BpfBuildFail => "bpf-build-fail"
+    | VerifierReject => "verifier-reject"
+    | RunFail => "run-fail"
+    | NoBss => "no-bss"
+    | NoExitSymbol => "no-exit-symbol"
+    | LoopCapped => "loop-capped"
+    | Differs (host, kernel) => "differs host=" ++# sm'::show host ++# " kernel=" ++# sm'::show kernel
+
+:= is_ok (v : load_verdict) : bool = ?= v ?| | LoadOk => !+ | _ => !-
+
+:= first_or (fallback : string) (xs : list string) : string = ?= xs ?| | x :: _ => x | [] => fallback
+
+:= kept (keep : string -> bool) (xs : list string) : list string =
+    xs |> listm::fold (\ (acc : list string) (x : string) => ? keep x ?> x :: acc |: acc) [] |> listm::rev
+
+:= run (program : string) (args : list string) : process::captured = process::captured_by program args !+
+
+:= ok (program : string) (args : list string) : bool = process::succeeded (run program args)
+
+:= sudo (args : list string) : process::captured = run "sudo" args
+
+:= exit_symbol (dump : string) : option i32 =
+    := key = "\"spiral_exit_code\":"
+    := at = (sm'::index_of key dump : i32)
+    ? at < 0 ?> None
+    |:
+        := from = at +. (sm'::length key : i32)
+        := left = (sm'::length dump : i32) -. from
+        := rest = sm'::trim (sm'::substring from (? left < 24 ?> left |: 24) dump)
+        := number = rest |> sm'::split_list "," |> first_or "" |> sm'::split_list "}" |> first_or "" |> sm'::trim
+        (convert::try_convert number : option i32)
+
+:= sample_id (samples : string) (path : string) : string =
+    := from = (sm'::length samples : i32) +. 1
+    := relative = sm'::substring from ((sm'::length path : i32) -. from) path
+    sm'::replace "/main.ebpf" "" relative
+
+:= safe_name (id : string) : string =
+    "spiral_" ++# (id |> sm'::replace "/" "_" |> sm'::replace "-" "_" |> sm'::replace "." "_")
+
+:= kernel_verdict (host_exit : i32) (dump : string) : load_verdict =
+    ?= exit_symbol dump ?|
+    | None => NoExitSymbol
+    | Some kernel ?& kernel = -2147483647 => LoopCapped
+    | Some kernel ?& (kernel &&& 255) <> host_exit => Differs (host_exit, kernel)
+    | Some _ => LoadOk
+
+:= bss_verdict (host_exit : i32) (maps : string) : load_verdict =
+    := listing = (sudo [ "ls"; maps ]).stdout |> sm'::split_list "\n" |> kept (sm'::contains "bss")
+    ?= listing ?|
+    | [] => NoBss
+    | bss :: _ =>
+        := dump = (sudo [ "bpftool"; "map"; "dump"; "pinned"; maps ++# "/" ++# sm'::trim bss; "-j" ]).stdout
+        kernel_verdict host_exit dump
+
+:= pinned_verdict (host_exit : i32) (packet : string) (pin : string) (maps : string) : load_verdict =
+    := ran = process::succeeded (sudo [ "bpftool"; "prog"; "run"; "pinned"; pin; "data_in"; packet; "repeat"; "1" ])
+    := verdict = ? ran ?> bss_verdict host_exit maps |: RunFail
+    sudo [ "rm"; "-rf"; pin; maps ] |> ignore
+    verdict
+
+:= loaded (work : string) (packet : string) (source : string) (name : string) : load_verdict =
+    := object = work ++# "/" ++# name ++# ".o"
+    := host = work ++# "/" ++# name ++# ".host"
+    := pin = "/sys/fs/bpf/" ++# name
+    := maps = "/sys/fs/bpf/" ++# name ++# "_maps"
+    ? not (ok "gcc" [ "-std=c11"; "-O2"; "-w"; "-x"; "c"; source; "-o"; host ]) ?> HostBuildFail
+    |:
+        := host_exit = (run host []).code
+        ? not (ok "clang" [ "-O2"; "-g"; "-target"; "bpf"; "-x"; "c"; "-c"; source; "-o"; object ]) ?> BpfBuildFail
+        |? not (process::succeeded (sudo [ "bpftool"; "prog"; "load"; object; pin; "type"; "socket"; "pinmaps"; maps ]))
+        ?> VerifierReject
+        |: pinned_verdict host_exit packet pin maps
+
+:= joined (sep : string) (xs : list string) : string =
+    xs |> listm::fold (\ (acc : string) (s : string) => ? acc = "" ?> s |: acc ++# sep ++# s) ""
+
+:= main () : i32 =
+    := samples = env::try_get_environment_variable "SPIRAL_EBPF_SAMPLES" |> optionm'::default_value "apps/compiler/tmp/samples"
+    := work = sm'::trim (run "mktemp" [ "-d" ]).stdout
+    := packet = work ++# "/packet.bin"
+    run "sh" [ "-c"; "head -c 64 /dev/zero > " ++# packet ] |> ignore
+    := first_line = \ (cmd : string) => (run "sh" [ "-c"; cmd ]).stdout |> sm'::split_list "\n" |> first_or ""
+    := tools = [ "uname -r"; "clang --version"; "sudo bpftool version"; "gcc --version" ]
+    console::write_line ("kernel " ++# (tools |> listm::map first_line |> joined "; "))
+    := sources = (run "find" [ samples; "-name"; "main.ebpf" ]).stdout |> sm'::split_list "\n" |> kept ((<>) "")
+    := row = \ (source : string) =>
+        := id = sample_id samples source
+        id, loaded work packet source (safe_name id)
+    := rows = sources |> listm::map row
+    rows |> listm::iter (\ ((id, v) : string * load_verdict) => console::write_line (id ++# "  " ++# verdict_text v))
+    := failed = rows |> listm::fold (\ (n : i32) ((_, v) : string * load_verdict) => ? is_ok v ?> n |: n +. 1) 0
+    := total = (listm::length rows : i32)
+    console::write_line ("ok: " ++# sm'::show (total -. failed) ++# " not-ok: " ++# sm'::show failed)
+    ? failed = 0 ?> 0 |: 1
+
+///> rust
+:# the_exit_symbol_is_read_from_a_bpftool_json_dump =
+    := dump = "[{\"value\":[],\"formatted\":{\"value\":{\"spiral_exit_code\": 42,\"other\": 1}}}]"
+    (exit_symbol dump, exit_symbol "[]", exit_symbol "{\"spiral_exit_code\": -3}") |> _assert_eq (Some 42i32, None, Some -3i32)
+
+///> rust
+:# a_kernel_value_is_judged_against_the_host_exit_low_byte =
+    := dump = \ (n : i32) => "{\"spiral_exit_code\": " ++# sm'::show n ++# "}"
+    (kernel_verdict 42i32 (dump 42i32), kernel_verdict 1i32 (dump 257i32), kernel_verdict 0i32 (dump 7i32))
+    |> _assert_eq (LoadOk, LoadOk, Differs (0i32, 7i32))
+    (kernel_verdict 0i32 (dump -2147483647i32), kernel_verdict 0i32 "[]") |> _assert_eq (LoopCapped, NoExitSymbol)
+
+///> rust
+:# a_sample_path_becomes_its_id_and_a_pin_safe_name =
+    (sample_id "s" "s/ebpf_key/main.ebpf", safe_name "ebpf_key", safe_name "a-b/c")
+    |> _assert_eq ("ebpf_key", "spiral_ebpf_key", "spiral_a_b_c")

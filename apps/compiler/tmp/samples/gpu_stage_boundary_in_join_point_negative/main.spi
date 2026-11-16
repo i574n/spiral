@@ -1,0 +1,8 @@
+:= gpu_stage_boundary \* s. (x : s) : s = !!!!GpuStageBoundary(x)
+
+:~ ^ step (n : i32) (x : i32) : i32 =
+    ? n <= 0i32 ?> x |: step (n -. 1i32) (gpu_stage_boundary (x +. 1i32))
+
+:= main () : i32 =
+    := ~n = 3i32
+    ? step n 0i32 =. 3i32 ?> 0i32 |: 1i32

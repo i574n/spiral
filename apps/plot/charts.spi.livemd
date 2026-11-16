@@ -1,0 +1,79 @@
+#### charts (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test static --symbol\n\n:< testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test static --symbol
+
+  :< testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":":< chart","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  :< chart
+  """,
+  timeout: 300_000
+)
+```
+
+#### init_series (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> zig\n\n:= x = am'::init_series -3f64 3 0.01\n:= y = x |> am'::map_base math::square\n(\"square\", \"x\", \"y\", ;[ \"square\", x, y ]) |> show_chart","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> zig
+
+  := x = am'::init_series -3f64 3 0.01
+  := y = x |> am'::map_base math::square
+  ("square", "x", "y", ;[ "square", x, y ]) |> show_chart
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> zig\n\n:= x = am'::init_series -10f64 10 0.1\n:= y_sin = x |> am'::map_base sin\n:= y_cos = x |> am'::map_base cos\n(\"sin cos\", \"x\", \"y\", ;[ \"sin\", x, y_sin; \"cos\", x, y_cos ]) |> show_chart","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> zig
+
+  := x = am'::init_series -10f64 10 0.1
+  := y_sin = x |> am'::map_base sin
+  := y_cos = x |> am'::map_base cos
+  ("sin cos", "x", "y", ;[ "sin", x, y_sin; "cos", x, y_cos ]) |> show_chart
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Cells.SmartCell","attrs":{"timeout":300,"source":"///- --test --symbol\n///> zig\n\n:= y_pos y0 vy0 ay t =\n    y0 + vy0 * t + ay * (t |> math::square) / 2\n\n:= x = am'::init_series 0f64 5 0.01\n:= y = x |> am'::map_base (y_pos 0 20 -9.8)\n(\"projectile motion\", \"time (s)\", \"\", ;[ \"height of projectile (m)\", x, y ]) |> show_chart","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Cells.eval!(
+  ~S"""
+  ///- --test --symbol
+  ///> zig
+
+  := y_pos y0 vy0 ay t =
+      y0 + vy0 * t + ay * (t |> math::square) / 2
+
+  := x = am'::init_series 0f64 5 0.01
+  := y = x |> am'::map_base (y_pos 0 20 -9.8)
+  ("projectile motion", "time (s)", "", ;[ "height of projectile (m)", x, y ]) |> show_chart
+  """,
+  timeout: 300_000
+)
+```

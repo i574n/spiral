@@ -484,7 +484,7 @@ module Program =
                 let env = Hopac.run (prepass_results_summary prepassState.result)
                 let compileTerm termName =
                     let term =
-                        Map.tryFind termName env.term
+                        Map.tryFind (spiral_compiler.TermNameIdOps.create termName) env.term
                         |> Option.defaultWith (fun () -> failwith $"Cannot find `{termName}` in file {Path.GetFileNameWithoutExtension inputPath}.")
                     let prototypes_instances = Dictionary(env.prototypes_instances)
                     let nominals =
@@ -607,14 +607,51 @@ module Program =
             |> Array.choose id
             |> String.concat "\n"
 
-    let private multiFileSuffixes = function
-        | "Cpp + Cuda" -> Some [ ".corelib.hpp"; ".hpp"; ".cpp"; ".cu" ]
-        | "Python + Cuda" -> Some [ "_auto.py"; ".py" ]
-        | _ -> None
+    let private multiFileSuffixes (backend : string) =
+        match spiral_compiler.Backend.parse backend with
+        | Some spiral_compiler.CppCudaBackend -> Some [ ".corelib.hpp"; ".hpp"; ".cpp"; ".cu" ]
+        | Some spiral_compiler.PythonCudaBackend -> Some [ "_auto.py"; ".py" ]
+        | Some spiral_compiler.GleamBackend
+        | Some spiral_compiler.LuaBackend
+        | Some spiral_compiler.FsharpBackend
+        | Some spiral_compiler.RustBackend
+        | Some spiral_compiler.PascalBackend
+        | Some spiral_compiler.ZigBackend
+        | Some spiral_compiler.WasmBackend
+        | Some spiral_compiler.WgslBackend
+        | Some spiral_compiler.CalyxBackend
+        | Some spiral_compiler.KotlinBackend
+        | Some spiral_compiler.SwiftBackend
+        | Some spiral_compiler.OpenQasmBackend
+        | Some spiral_compiler.EbpfBackend
+        | Some spiral_compiler.LeanBackend
+        | Some spiral_compiler.BendBackend
+        | Some spiral_compiler.TypeScriptBackend
+        | Some spiral_compiler.CBackend
+        | None -> None
 
-    let private optionalSiblingSuffixes = function
-        | "Gleam" -> [ "_ffi.erl"; "_ffi.mjs" ]
-        | _ -> []
+    let private optionalSiblingSuffixes (backend : string) =
+        match spiral_compiler.Backend.parse backend with
+        | Some spiral_compiler.GleamBackend -> [ "_ffi.erl"; "_ffi.mjs" ]
+        | Some spiral_compiler.LuaBackend
+        | Some spiral_compiler.FsharpBackend
+        | Some spiral_compiler.RustBackend
+        | Some spiral_compiler.PascalBackend
+        | Some spiral_compiler.ZigBackend
+        | Some spiral_compiler.WasmBackend
+        | Some spiral_compiler.WgslBackend
+        | Some spiral_compiler.CalyxBackend
+        | Some spiral_compiler.KotlinBackend
+        | Some spiral_compiler.SwiftBackend
+        | Some spiral_compiler.OpenQasmBackend
+        | Some spiral_compiler.EbpfBackend
+        | Some spiral_compiler.LeanBackend
+        | Some spiral_compiler.BendBackend
+        | Some spiral_compiler.TypeScriptBackend
+        | Some spiral_compiler.CBackend
+        | Some spiral_compiler.PythonCudaBackend
+        | Some spiral_compiler.CppCudaBackend
+        | None -> []
 
     let private promotedTestEntry : (string * string) option ref = ref None
 
@@ -731,7 +768,7 @@ module Program =
                         else Error $"BuildFile returned no code and no diagnostic arrived ({router.Explain()})"
                     else
                         let coreWrites = cached.IsNone
-                        let generated = if coreWrites && backend = "Rust" then rewriteRustEmitExpr generated else generated
+                        let generated = if coreWrites && spiral_compiler.Backend.parse backend = Some spiral_compiler.RustBackend then rewriteRustEmitExpr generated else generated
                         let parent = Path.GetDirectoryName outputPath
                         if not (String.IsNullOrWhiteSpace parent) then Directory.CreateDirectory parent |> ignore
                         let coreFile = Path.ChangeExtension(inputPath, Path.GetExtension outputPath)
@@ -741,7 +778,7 @@ module Program =
                             if multiFile.IsNone && coreWrites && File.Exists manifest && File.GetLastWriteTimeUtc manifest >= started.AddSeconds -2.0 then
                                 Some ((".rs" :: (File.ReadAllLines manifest |> Array.filter (String.IsNullOrWhiteSpace >> not) |> List.ofArray)) @ [ ".spiral-parts" ])
                             else None
-                        if multiFile.IsNone && splitParts.IsNone && coreWrites && backend = "Rust" then
+                        if multiFile.IsNone && splitParts.IsNone && coreWrites && spiral_compiler.Backend.parse backend = Some spiral_compiler.RustBackend then
                             let outStem = Path.Combine(Path.GetDirectoryName outputPath, Path.GetFileNameWithoutExtension outputPath)
                             for stem in List.distinct [ Path.ChangeExtension(inputPath, null); outStem ] do
                                 let manifest = manifestOf stem
@@ -760,9 +797,14 @@ module Program =
                             while not (suffixes |> List.forall landed) && DateTime.UtcNow < deadline do
                                 Threading.Thread.Sleep 20
                             if not (String.Equals(Path.GetFullPath coreBase, Path.GetFullPath outBase, StringComparison.OrdinalIgnoreCase)) then
+                                let coreInclude = $"#include \"{Path.GetFileName coreBase}."
+                                let outInclude = $"#include \"{Path.GetFileName outBase}."
                                 for suffix in suffixes do
                                     let source = coreBase + suffix
-                                    if File.Exists source then File.Copy(source, outBase + suffix, true)
+                                    if File.Exists source then
+                                        if suffix = ".hpp" || suffix = ".cpp" || suffix = ".cu" then
+                                            File.WriteAllText(outBase + suffix, File.ReadAllText(source).Replace(coreInclude, outInclude))
+                                        else File.Copy(source, outBase + suffix, true)
                         | None ->
                             let generated =
                                 if coreWrites && not (List.isEmpty (optionalSiblingSuffixes backend)) then
@@ -1281,6 +1323,7 @@ module Program =
                         let previousError = Console.Error
                         if wantWarnings then Console.SetError(TextWriter.Synchronized captured)
                         let result =
+                            BuildPhaseTiming.reset ()
                             try compileOneTest server.supervisor router revisions cache server.job_val backend input output testEntry
                             finally if wantWarnings then Console.SetError previousError
                         if wantWarnings then
@@ -1289,7 +1332,7 @@ module Program =
                                 if text.StartsWith "warning:" then writer.WriteLine($"spiral-session\twarning\t{cleanProtocolText text}")
                         match result with
                         | Ok (bytes, binding, revisionMode) ->
-                            writer.WriteLine($"spiral-session\tok\t{Environment.ProcessId}\t{bytes}\t{binding}\t{revisionMode}\t{backend}")
+                            writer.WriteLine($"spiral-session\tok\t{Environment.ProcessId}\t{bytes}\t{binding}\t{revisionMode}\t{backend}\t{BuildPhaseTiming.peval_ms.Value}\t{BuildPhaseTiming.codegen_ms.Value}")
                         | Error message ->
                             writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\t{cleanProtocolText message}"))
                 else
@@ -1607,6 +1650,8 @@ module Program =
             Spiral.spiral_compiler.TokensCli.run (List.ofArray argv.[1..])
         elif argv.Length >= 1 && argv.[0] = "split-units" then
             Spiral.spiral_compiler.SplitUnitsCli.run (List.ofArray argv.[1..])
+        elif argv.Length >= 1 && argv.[0] = "partition-rust" then
+            Spiral.spiral_compiler.RustPartitionCli.run (List.ofArray argv.[1..])
         elif argv.Length >= 1 && argv.[0] = "format-corpus" then
             Spiral.spiral_compiler.FormatterCli.corpus (List.ofArray argv.[1..])
         elif argv.Length >= 1 && (argv.[0] = "build-file" || argv.[0] = "--build-file" || argv.[0] = "fsharp") then
@@ -1629,7 +1674,7 @@ module Program =
             let cache = CompilationCache(false)
             startDiagnosticPump server.errors router
             let compileResult =
-                if backend = "Fsharp" && String.Equals(Environment.GetEnvironmentVariable "SPIRAL_DIRECT_PROJECT_BUILD", "1", StringComparison.Ordinal) then
+                if spiral_compiler.Backend.parse backend = Some spiral_compiler.FsharpBackend && String.Equals(Environment.GetEnvironmentVariable "SPIRAL_DIRECT_PROJECT_BUILD", "1", StringComparison.Ordinal) then
                     directProjectCompileFsharp input output
                 else
                     let result = ref (Error "compile thread did not finish")

@@ -1,0 +1,23 @@
+:! consonantal = ()
+:! vocalic = ()
+
+:| segment k =
+    | Consonant :: i32 -> segment consonantal
+    | Vowel :: i32 -> segment vocalic
+
+:== holder =
+    {
+        vowel : segment vocalic
+        vowels : list (segment vocalic)
+    }
+
+:= main () : i32 =
+    := ~a : segment vocalic = Vowel 1
+    := ~b : segment vocalic = Vowel 1
+    := ~c : segment vocalic = Vowel 2
+    := ~x : holder = { vowel = a; vowels = [ a; c ] }
+    := ~y : holder = { vowel = b; vowels = [ b; c ] }
+    := ~z : holder = { vowel = c; vowels = [ a ] }
+    ? a = b && (a = c) = false && x = y && (x = z) = false
+    ?> 0
+    |: 1

@@ -1,0 +1,118 @@
+///- --package .
+:# livemd static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:~ len (s : string) : i32 = text::length s
+
+:~ byte (s : string) (i : i32) : i32 = ? i >= 0i32 && i < len s ?> text::byte_at s i |: -1i32
+
+:~ line_end (s : string) (at : i32) : i32 =
+    := nl = text::find_from s "\n" at
+    ? nl < 0i32 ?> len s |: nl
+
+:~ ^ blanks_to (s : string) (i : i32) : i32 = ? byte s i = 32i32 || byte s i = 9i32 ?> blanks_to s (i + 1i32) |: i
+
+:~ closing_at (s : string) (i : i32) : i32 =
+    := b = blanks_to s (i + 3i32)
+    ? text::starts_at s i "```" && (b = len s || byte s b = 10i32) ?> (? b = len s ?> b |: b + 1i32) |: -1i32
+
+:~ ^ close_from (s : string) (i : i32) : i32 =
+    := e = closing_at s i
+    := nl = text::find_from s "\n" i
+    ? i > len s ?> -1i32 |? e >= 0i32 ?> e |? nl < 0i32 ?> -1i32 |: close_from s (nl + 1i32)
+
+:~ code_head_end (s : string) (i : i32) : i32 =
+    := p = "<!-- livebook:{\"spiral_code\":\""
+    := q = ? text::starts_at s i p ?> text::find_from s "\"" (i + len p) |: -1i32
+    := fence = q + 8i32
+    ? q > i + len p && text::starts_at s (q + 1i32) "} -->\n\n" && text::starts_at s fence "```" && line_end s fence < len s ?> line_end s fence + 1i32 |: -1i32
+
+:~ plain_head_end (s : string) (i : i32) : i32 =
+    ? text::starts_at s i "```elixir\n" || text::starts_at s i "```fsharp\n" || text::starts_at s i "```spiral\n" ?> i + 10i32 |: -1i32
+
+:~ match_at (s : string) (i : i32) : i32 =
+    := h1 = code_head_end s i
+    := e1 = ? h1 >= 0i32 ?> close_from s h1 |: -1i32
+    := h2 = plain_head_end s i
+    := e2 = ? h2 >= 0i32 ?> close_from s h2 |: -1i32
+    ? e1 >= 0i32 ?> e1 |: e2
+
+:~ ^ split_from (s : string) (start : i32) (i : i32) (acc : list string) : list string =
+    := e = ? i <= len s ?> match_at s i |: -1i32
+    := nl = text::find_from s "\n" i
+    ? i > len s
+    ?> listm::rev (text::drop s start :: acc)
+    |? e >= 0i32
+    ?> (? e = i ?> split_from s start (nl + 1i32) acc |: split_from s e e (text::slice_len s i (e - i) :: text::slice_len s start (i - start) :: acc))
+    |? nl < 0i32
+    ?> listm::rev (text::drop s start :: acc)
+    |: split_from s start (nl + 1i32) acc
+
+:~ parts (text_in : string) : list string = split_from (text::replace text_in "\r\n" "\n") 0i32 0i32 []
+
+:~ ^ lower_to (s : string) (i : i32) : i32 = ? byte s i >= 97i32 && byte s i <= 122i32 ?> lower_to s (i + 1i32) |: i
+
+:~ ^ trailing_newlines (s : string) : string = ? len s > 0i32 && byte s (len s - 1i32) = 10i32 ?> trailing_newlines (text::take s (len s - 1i32)) |: s
+
+:~ fence_body (part : string) : string =
+    := l = lower_to part 3i32
+    := a = ? text::starts_with part "```" && l > 3i32 && byte part l = 10i32 ?> text::drop part (l + 1i32) |: part
+    := n = len a
+    := b = ? n >= 4i32 && text::starts_at a (n - 4i32) "```\n" ?> text::take a (n - 4i32) |? n >= 3i32 && text::starts_at a (n - 3i32) "```" ?> text::take a (n - 3i32) |: a
+    trailing_newlines b
+
+:~ ^ without_comments (s : string) (i : i32) (acc : string) : string =
+    := k = text::find_from s "<!-- livebook:" i
+    := e = ? k >= 0i32 ?> text::find_from s "-->" (k + 14i32) |: -1i32
+    := stop = ? byte s (e + 3i32) = 10i32 ?> e + 4i32 |: e + 3i32
+    ? k < 0i32 || e < 0i32 ?> acc ++ text::drop s i |: without_comments s stop (acc ++ text::slice_len s i (k - i))
+
+:~ field (s : string) : string = text::show_i32 (len s) ++ ":" ++ s
+
+:~ cell (kind : string) (language : string) (source : string) : string = field kind ++ field language ++ field source
+
+:~ break_text () : string = "<!-- livebook:{\"break_markdown\":true} -->"
+
+:~ markdown_chunk (chunk : string) : string =
+    := source = text::utrim (without_comments chunk 0i32 "")
+    := n = len source
+    := path = ? n > 11i32 && text::starts_with source "`#!import " && byte source (n - 1i32) = 96i32 ?> text::slice_len source 10i32 (n - 11i32) |: ""
+    ? path <> "" && text::find_from path "`" 0i32 < 0i32 && text::find_from path "\n" 0i32 < 0i32
+    ?> cell "import" "" path
+    |? source = ""
+    ?> ""
+    |: cell "markdown" "" source
+
+:~ markdown (part : string) : string = sm'::concat_list "" (listm::map markdown_chunk (sm'::split_list (break_text ()) part))
+
+:~ part_cells (part : string) : string =
+    := p = "<!-- livebook:{\"spiral_code\":\""
+    := q = ? text::starts_with part p ?> text::find_from part "\"" (len p) |: -1i32
+    := lang = ? q > len p && text::starts_at part (q + 1i32) "} -->" ?> text::slice_len part (len p) (q - len p) |: ""
+    := first_nl = text::find_from part "\n" 0i32
+    := after_head = ? first_nl >= 0i32 && byte part (first_nl + 1i32) = 10i32 ?> text::drop part (first_nl + 2i32) |: part
+    ? lang <> ""
+    ?> cell "code" lang (fence_body after_head)
+    |? text::starts_with part "```elixir"
+    ?> cell "elixir" part (fence_body part)
+    |? text::starts_with part "```fsharp"
+    ?> cell "fsharp" "" (fence_body part)
+    |? text::starts_with part "```spiral"
+    ?> cell "spiral" "" (fence_body part)
+    |: markdown part
+
+:~ cells (text_in : string) : string = sm'::concat_list "" (listm::map part_cells (parts text_in))
+
+///> gleam
+:# livemd_parts_split_on_code_fences_like_the_old_regex =
+    := ~doc = "# T\n\n<!-- livebook:{\"spiral_code\":\"python\"} -->\n\n```python\nprint(1)\n```\n\nmid\n```fsharp\nlet x = 1\n```  \n```elixir\nx\n```"
+    parts doc |> _assert_eq [ "# T\n\n"; "<!-- livebook:{\"spiral_code\":\"python\"} -->\n\n```python\nprint(1)\n```\n"; "\nmid\n"; "```fsharp\nlet x = 1\n```  \n"; ""; "```elixir\nx\n```"; "" ]
+    (parts "no fences", parts "```elixir\nnever closed", parts "x```spiral\n1\n```\n") |> _assert_eq ([ "no fences" ], [ "```elixir\nnever closed" ], [ "x```spiral\n1\n```\n" ])
+
+///> gleam
+:# livemd_cells_carry_kind_language_and_body =
+    := ~doc = "<!-- livebook:{\"spiral_code\":\"python\"} -->\n\n```python\nprint(1)\n```\n\n`#!import a/b.spi`\n\n<!-- livebook:{\"break_markdown\":true} -->\n\ntext <!-- livebook:{\"x\":1} -->\nmore\n```fsharp\nlet x = 1\n\n```\n"
+    cells doc |> _assert_eq (cell "code" "python" "print(1)" ++ cell "import" "" "a/b.spi" ++ cell "markdown" "" "text more" ++ cell "fsharp" "" "let x = 1")
+    (fence_body "```spiral\n1\n```", fence_body "```py3\n1\n```\n", fence_body "x\n\n") |> _assert_eq ("1", "```py3\n1", "x")

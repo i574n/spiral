@@ -1,4 +1,45 @@
-:< main
+:| symbol_ordering =
+    | SymbolLess
+    | SymbolSame
+    | SymbolGreater
+
+:? symbol_compare alphabet : alphabet -> alphabet -> symbol_ordering
+
+:| ^ regex alphabet =
+    | RegexEmpty
+    | RegexEpsilon
+    | RegexChar : alphabet
+    | RegexAlt : regex alphabet * regex alphabet
+    | RegexCat : regex alphabet * regex alphabet
+    | RegexStar : regex alphabet
+
+:| ^ regex_list alphabet =
+    | RegexListNil
+    | RegexListCons : regex alphabet * regex_list alphabet
+
+:| ^ symbol_list alphabet =
+    | SymbolListNil
+    | SymbolListCons : alphabet * symbol_list alphabet
+
+:| ^ linear_input alphabet =
+    | InputEmpty
+    | InputCons : alphabet * linear_input alphabet
+
+:? finite_alphabet alphabet : () -> symbol_list alphabet
+
+:| dfa_run_result =
+    | DfaRunAccepted
+    | DfaRunRejected
+
+:= dfa_run_with_inventory \* alphabet {symbol_compare; finite_alphabet}.
+    (start : regex alphabet)
+    (descriptor : symbol_list alphabet)
+    (input : linear_input alphabet)
+    : dfa_run_result =
+    := symbols : symbol_list alphabet = finite_alphabet ()
+    ?= symbols ?|
+    | SymbolListNil => DfaRunRejected
+    | SymbolListCons _ => DfaRunAccepted
 
 :| paired_symbol =
     | PairedLeft

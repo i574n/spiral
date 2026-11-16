@@ -41,8 +41,8 @@ defmodule Spiral.CellBudgetRuledTest do
   end
 
   test "rule 1: a flat run_target_args dispatch over 10 targets counts its head line plus its heaviest arm" do
-    targets = ~w(Rust Gleam Python Lua Zig C Lean Wasm Kotlin Swift)
-    arms = Enum.map(targets, &"        | #{&1} => \\ var => get_env_#{String.downcase(&1)} var")
+    targets = [{"Rust", "rust"}, {"Gleam _", "gleam"}, {"Python", "python"}, {"Lua", "lua"}, {"Zig", "zig"}, {"C", "c"}, {"Lean", "lean"}, {"Wasm", "wasm"}, {"Kotlin", "kotlin"}, {"Cuda _", "cuda"}]
+    arms = Enum.map(targets, fn {pattern, name} -> "        | #{pattern} => \\ var => get_env_#{name} var" end)
     body = Enum.join(["    run_target_args (\\ () => var) \\|" | arms], "\n")
     heaviest = arms |> Enum.map(&String.trim/1) |> Enum.max_by(&w/1)
 

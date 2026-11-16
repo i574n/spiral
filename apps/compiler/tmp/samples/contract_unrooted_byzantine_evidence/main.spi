@@ -2,10 +2,10 @@
 :! manifest_a = ()
 :! round_29 = ()
 :! epoch_3 = ()
-:! registry_digest_29 = ()
+:! registry_fingerprint_29 = ()
 :! evidence_root_29 = ()
-:! snapshot_digest_30 = ()
-:! snapshot_digest_fork = ()
+:! snapshot_fingerprint_30 = ()
+:! snapshot_fingerprint_fork = ()
 :! merkle_root_30 = ()
 :! leaf_0 = ()
 :! durable = ()
@@ -56,28 +56,28 @@
         := \? round epoch registry evidence leaf snapshot root. authority = payload
         visit authority
 
-:= registry () : public_registry round_29 epoch_3 registry_digest_29 authenticated =
-    PublicRegistry "registry-digest-verified"
+:= registry () : public_registry round_29 epoch_3 registry_fingerprint_29 authenticated =
+    PublicRegistry "registry-fingerprint-verified"
 
 := evidence () : equivocation_evidence round_29 epoch_3 evidence_root_29 authenticated =
     EquivocationEvidence "two-equivocation-files-verified"
 
 := commit
     ()
-    : public_byzantine_commit transfer_a manifest_a round_29 epoch_3 registry_digest_29 evidence_root_29 committed
+    : public_byzantine_commit transfer_a manifest_a round_29 epoch_3 registry_fingerprint_29 evidence_root_29 committed
     =
     PublicByzantineCommit (registry (), evidence (), "public-quorum-commit")
 
-:= leaf () : transparency_leaf epoch_3 snapshot_digest_30 registry_digest_29 evidence_root_29 authenticated =
+:= leaf () : transparency_leaf epoch_3 snapshot_fingerprint_30 registry_fingerprint_29 evidence_root_29 authenticated =
     TransparencyLeaf "registry-membership-commit-and-evidence-content-bound"
 
-:= proof () : inclusion_proof leaf_0 snapshot_digest_fork merkle_root_30 authenticated =
+:= proof () : inclusion_proof leaf_0 snapshot_fingerprint_fork merkle_root_30 authenticated =
     InclusionProof "proof-for-a-different-snapshot"
 
 := rooted
     ()
-    : rooted_byzantine_authority transfer_a manifest_a round_29 epoch_3 registry_digest_29 evidence_root_29 leaf_0
-        snapshot_digest_30 merkle_root_30 durable
+    : rooted_byzantine_authority transfer_a manifest_a round_29 epoch_3 registry_fingerprint_29 evidence_root_29 leaf_0
+        snapshot_fingerprint_30 merkle_root_30 durable
     =
     RootedByzantineAuthority (commit (), leaf (), proof (), "transparent-byzantine-authority")
 

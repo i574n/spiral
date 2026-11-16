@@ -8,12 +8,22 @@
 
 :== over = { line : i32; weight : cell_weight; limit : cell_weight }
 
+:| mark =
+    | Hashtag
+    | Mention
+    | Cashtag
+    | Autolink
+
+:== rewrite = { mark : mark; line : i32; column : i32; text : string }
+
 :| finding =
     | OverBudget : over
+    | OverRuled : over
+    | Rewritten : rewrite
 
-:= weight_value ((cell_weight w) : cell_weight) : i32 = w
+:~ weight_value ((cell_weight w) : cell_weight) : i32 = w
 
-:= code_weight (c : i32) : i32 =
+:~ code_weight (c : i32) : i32 =
     ? c <= 4351i32 || (c >= 8192i32 && c <= 8205i32) ?> 1i32
     |? (c >= 8208i32 && c <= 8223i32) || (c >= 8242i32 && c <= 8247i32) ?> 1i32
     |: 2i32
@@ -23,35 +33,27 @@
     | [] => n
     | c :: rest => points_weight rest (n + code_weight c)
 
-:! tld_list = list string
+:| tld_list =
+    | Listed : list string
+    | Iana
 
-:= no_tlds () : tld_list = tld_list []
+:~ no_tlds () : tld_list = Listed []
 
-:== tally = { links : i32; points : i32 }
+:== link_totals = { links : i32; points : i32; found : list (i32 * string) }
 
 :== split_run = { run : list i32; after : list i32 }
 
-:= ascii_letter (c : i32) : bool = (c >= 65i32 && c <= 90i32) || (c >= 97i32 && c <= 122i32)
+:~ ascii_letter (c : i32) : bool = (c >= 65i32 && c <= 90i32) || (c >= 97i32 && c <= 122i32)
 
-:= ascii_alnum (c : i32) : bool = ascii_letter c || (c >= 48i32 && c <= 57i32)
+:~ ascii_alnum (c : i32) : bool = ascii_letter c || (c >= 48i32 && c <= 57i32)
 
-:= wide_word (c : i32) : bool = c >= 128i32 && (c < 8192i32 || c > 8303i32) && (c < 12288i32 || c > 12351i32)
+:~ wide_word (c : i32) : bool = c >= 128i32 && (c < 8192i32 || c > 8303i32) && (c < 12288i32 || c > 12351i32)
 
-:= run_point (c : i32) : bool = ascii_alnum c || c = 45i32 || c = 95i32 || c = 46i32
+:~ run_point (c : i32) : bool = ascii_alnum c || c = 45i32 || c = 95i32 || c = 46i32
 
-:= blocks_link (prev : i32) : bool = wide_word prev || prev = 64i32 || prev = 47i32
+:~ blocks_link (prev : i32) : bool = wide_word prev || prev = 64i32 || prev = 47i32
 
-:= lower (c : i32) : i32 = ? c >= 65i32 && c <= 90i32 ?> c + 32i32 |: c
-
-:~ ^ run_and_rest (cps : list i32) (acc : list i32) : split_run =
-    ?= cps ?|
-    | [] => { run = listm::rev acc; after = [] }
-    | c :: rest => ? run_point c ?> run_and_rest rest (c :: acc) |: { run = listm::rev acc; after = cps }
-
-:~ ^ dot_parts (cps : list i32) (cur : list i32) (acc : list (list i32)) : list (list i32) =
-    ?= cps ?|
-    | [] => listm::rev (listm::rev cur :: acc)
-    | c :: rest => ? c = 46i32 ?> dot_parts rest [] (listm::rev cur :: acc) |: dot_parts rest (c :: cur) acc
+:~ lower (c : i32) : i32 = ? c >= 65i32 && c <= 90i32 ?> c + 32i32 |: c
 
 :~ ^ last_point (p : list i32) (d : i32) : i32 =
     ?= p ?|
@@ -63,6 +65,87 @@
     ?= p ?|
     | [] => 0i32 - 1i32
     | x :: _ => x
+
+:~ ^ run_while (f : i32 -> bool) (cps : list i32) (acc : list i32) : split_run =
+    ?= cps ?|
+    | [] => { run = listm::rev acc; after = [] }
+    | c :: rest => ? f c ?> run_while f rest (c :: acc) |: { run = listm::rev acc; after = cps }
+
+:~ word_point (c : i32) : bool = ascii_alnum c || c = 95i32 || wide_word c
+
+:~ letter_point (c : i32) : bool = ascii_letter c || wide_word c
+
+:~ handle_point (c : i32) : bool = ascii_alnum c || c = 95i32
+
+:~ hash_sign (c : i32) : bool = c = 35i32 || c = 65283i32
+
+:~ at_sign (c : i32) : bool = c = 64i32 || c = 65312i32
+
+:~ blocks_hashtag (prev : i32) : bool = word_point prev || prev = 38i32 || hash_sign prev
+
+:~ blocks_mention (prev : i32) : bool =
+    word_point prev || at_sign prev || prev = 33i32 || prev = 35i32 || prev = 36i32 || prev = 37i32 || prev = 38i32 || prev = 42i32
+
+:~ blocks_cashtag (prev : i32) : bool = word_point prev || prev = 36i32
+
+:~ has_letter (cps : list i32) : bool = listm::fold (\ hit c => hit || letter_point c) !- cps
+
+:~ hashtag_body (s : i32) (rest : list i32) : option split_run =
+    := r = run_while word_point rest []
+    ? has_letter r::run ?> Some { run = s :: r::run; after = r::after } |: None
+
+:~ hashtag_at (prev : i32) (cps : list i32) : option split_run =
+    ?= cps ?|
+    | s :: rest => ? hash_sign s && blocks_hashtag prev = !- ?> hashtag_body s rest |: None
+    | [] => None
+
+:~ handle_ends (next : i32) : bool = handle_point next = !- && at_sign next = !-
+
+:~ mention_body (s : i32) (rest : list i32) : option split_run =
+    := r = run_while handle_point rest []
+    := n = listm::length r::run
+    ? n >= 1i32 && n <= 15i32 && handle_ends (first_point r::after) ?> Some { run = s :: r::run; after = r::after } |: None
+
+:~ mention_at (prev : i32) (cps : list i32) : option split_run =
+    ?= cps ?|
+    | s :: rest => ? at_sign s && blocks_mention prev = !- ?> mention_body s rest |: None
+    | [] => None
+
+:~ suffix_fits (d : i32) (g : split_run) : bool =
+    := m = listm::length g::run
+    (d = 46i32 || d = 95i32) && m >= 1i32 && m <= 2i32 && word_point (first_point g::after) = !-
+
+:~ cashtag_end (head : list i32) (after : list i32) : option split_run =
+    ?= after ?|
+    | [] => Some { run = head; after = [] }
+    | d :: more =>
+        := g = run_while ascii_letter more []
+        ? suffix_fits d g ?> Some { run = listm::append head (d :: g::run); after = g::after }
+        |? word_point d ?> None
+        |: Some { run = head; after = after }
+
+:~ cashtag_body (s : i32) (rest : list i32) : option split_run =
+    := r = run_while ascii_letter rest []
+    := n = listm::length r::run
+    ? n >= 1i32 && n <= 6i32 ?> cashtag_end (s :: r::run) r::after |: None
+
+:~ cashtag_at (prev : i32) (cps : list i32) : option split_run =
+    ?= cps ?|
+    | s :: rest => ? s = 36i32 && blocks_cashtag prev = !- ?> cashtag_body s rest |: None
+    | [] => None
+
+:~ first_mark (prev : i32) (cps : list i32) : option (mark * split_run) =
+    ?= hashtag_at prev cps, mention_at prev cps, cashtag_at prev cps ?|
+    | Some h, _, _ => Some (Hashtag, h)
+    | None, Some m, _ => Some (Mention, m)
+    | None, None, Some c => Some (Cashtag, c)
+    | None, None, None => None
+
+:~ ^ dot_parts (cps : list i32) (cur : list i32) (acc : list (list i32)) : list (list i32) =
+    ?= cps ?|
+    | [] => listm::rev (listm::rev cur :: acc)
+    | c :: rest => ? c = 46i32 ?> dot_parts rest [] (listm::rev cur :: acc) |: dot_parts rest (c :: cur) acc
+
 
 :~ all_points (f : i32 -> bool) (p : list i32) : bool = listm::fold (\ ok c => ok && f c) !+ p
 
@@ -96,14 +179,21 @@
 
 :~ text_of (p : list i32) : string = listm::fold (\ s c => s ++# unicode::char_of (lower c)) "" p
 
+:~ written_of (p : list i32) : string = listm::fold (\ s c => s ++# unicode::char_of c) "" p
+
+:~ written_dotted (ps : list (list i32)) : string =
+    listm::fold (\ s p => ? s = "" ?> written_of p |: s ++# "." ++# written_of p) "" ps
+
 :~ dotted (ps : list (list i32)) : string =
     listm::fold (\ s p => ? s = "" ?> text_of p |: s ++# "." ++# text_of p) "" ps
 
 :~ span (ps : list (list i32)) : i32 = listm::fold (\ n p => n + listm::length p) (listm::length ps - 1i32) ps
 
-:~ known ((tld_list ts) : tld_list) (p : list i32) : bool =
+:~ known (set : tld_list) (p : list i32) : bool =
     := t = text_of p
-    listm::fold (\ hit x => hit || x = t) !- ts
+    ?= set ?|
+    | Listed ts => listm::fold (\ hit x => hit || x = t) !- ts
+    | Iana => tlds::is_tld t
 
 :~ accepted (tlds : tld_list) (link : list (list i32)) (j : i32) : bool =
     := last = nth (j - 1i32) link
@@ -116,34 +206,90 @@
     := l = leading_labels parts 0i32
     ? blocks_link prev ?> 0i32 |: link_end parts k (? l + 1i32 < k ?> l + 1i32 |: k) next
 
-:~ counted (t : tally) (link : list (list i32)) : tally = { links = t::links + 1i32; points = t::points + span link }
+:~ counted (n : link_totals) (at : i32) (link : list (list i32)) : link_totals =
+    { links = n::links + 1i32; points = n::points + span link; found = (at, written_dotted link) :: n::found }
 
-:~ link_count (tlds : tld_list) (prev : i32) (run : list i32) (next : i32) (t : tally) : tally =
+:~ link_count (tlds : tld_list) (prev : i32) (at : i32) (run : list i32) (next : i32) (n : link_totals) : link_totals =
     := parts = dot_parts run [] []
     := j = link_of prev parts next
-    ? j >= 2i32 && accepted tlds (taken j parts) j ?> counted t (taken j parts) |: t
+    ? j >= 2i32 && accepted tlds (taken j parts) j ?> counted n at (taken j parts) |: n
 
-:== cursor = { prev : i32; rest : list i32; t : tally }
+:== cursor = { prev : i32; at : i32; rest : list i32; counts : link_totals }
 
 :~ through_run (tlds : tld_list) (c : cursor) : cursor =
-    := s = run_and_rest c::rest []
-    { prev = 46i32; rest = s::after; t = link_count tlds c::prev s::run (first_point s::after) c::t }
+    := s = run_while run_point c::rest []
+    := counts = link_count tlds c::prev c::at s::run (first_point s::after) c::counts
+    { prev = 46i32; at = c::at + listm::length s::run; rest = s::after; counts = counts }
 
 :~ stepped (tlds : tld_list) (c : cursor) (x : i32) (more : list i32) : cursor =
-    ? run_point x ?> through_run tlds c |: { prev = x; rest = more; t = c::t }
+    ? run_point x ?> through_run tlds c |: { prev = x; at = c::at + 1i32; rest = more; counts = c::counts }
 
-:~ ^ link_tally (tlds : tld_list) (c : cursor) : tally =
+:~ ^ link_totals_of (tlds : tld_list) (c : cursor) : link_totals =
     ?= c::rest ?|
-    | [] => c::t
-    | x :: more => link_tally tlds (stepped tlds c x more)
+    | [] => c::counts
+    | x :: more => link_totals_of tlds (stepped tlds c x more)
+
+:~ links_in (tlds : tld_list) (cps : list i32) : link_totals =
+    link_totals_of tlds { prev = 0i32 - 1i32; at = 0i32; rest = cps; counts = { links = 0i32; points = 0i32; found = [] } }
+
+:~ link_weight () : i32 = 23i32
 
 :~ text_weight (tlds : tld_list) (s : string) : cell_weight =
     := cps = unicode::code_points s
-    := t = link_tally tlds { prev = 0i32 - 1i32; rest = cps; t = { links = 0i32; points = 0i32 } }
-    cell_weight (points_weight cps 0i32 - t::points + 23i32 * t::links)
+    := n = links_in tlds cps
+    cell_weight (points_weight cps 0i32 - n::points + link_weight () * n::links)
 
-:= weight_wire (tlds : string) (s : string) : i32 =
-    weight_value (text_weight (tld_list (? tlds = "" ?> [] |: sm'::split_list "\n" tlds)) s)
+:~ marked (row : i32) (at : i32) (m : mark) (cps : list i32) : rewrite =
+    { mark = m; line = row; column = at + 1i32; text = written_of cps }
+
+:~ ^ scan_marks (row : i32) (prev : i32) (at : i32) (cps : list i32) (acc : list rewrite) : list rewrite =
+    ?= cps ?|
+    | [] => acc
+    | c :: rest =>
+        ?= first_mark prev cps ?|
+        | Some (m, s) => scan_marks row (last_point s::run c) (at + listm::length s::run) s::after (marked row at m s::run :: acc)
+        | None => scan_marks row c (at + 1i32) rest acc
+
+:~ link_rewrite (row : i32) ((at, text) : i32 * string) : rewrite = { mark = Autolink; line = row; column = at + 1i32; text = text }
+
+:~ line_rewrites (tlds : tld_list) (row : i32) (line : string) : list rewrite =
+    := cps = unicode::code_points line
+    := marks = scan_marks row (0i32 - 1i32) 0i32 cps [] |> listm::rev
+    := links = (links_in tlds cps)::found |> listm::rev |> listm::map (link_rewrite row)
+    list_sort::sorted_by (\ (a : rewrite) (b : rewrite) => a::column < b::column) (listm::append marks links)
+
+:~ mark_name (m : mark) : string = sm'::to_lower (reflection::union_to_string m)
+
+:~ mark_hint (m : mark) : string =
+    ?= m ?|
+    | Hashtag => "a renderer turns '#' before a letter into a hashtag link"
+    | Mention => "a renderer turns '@' before a name into a mention"
+    | Cashtag => "a renderer turns '$' before letters into a cashtag link"
+    | Autolink => "a renderer shortens what looks like a domain to a " ++# sm'::show (link_weight ()) ++# "-character link"
+
+:~ budget_hint () : string =
+    "a cell holds 280 weighted characters (CJK and emoji weigh 2, links " ++# sm'::show (link_weight ())
+    ++# "), less the cell header; split this definition"
+
+:~ ruled_hint () : string =
+    "measured with the GRANULAR rules (a one-line-arm match counts its longest arm, the header is excluded, a "
+    ++# "literal-only template counts its heaviest piece, type declarations and pure literals weigh 0, declared "
+    ++# ":! nominals count as constructors); split this body"
+
+:~ located (path : string) (line : i32) (column : i32) : string = path ++# ":" ++# sm'::show line ++# ":" ++# sm'::show column
+
+:~ over_line (path : string) (o : over) (hint : string) : string =
+    := weights = "weight " ++# sm'::show (weight_value o::weight) ++# " > " ++# sm'::show (weight_value o::limit)
+    located path o::line 1i32 ++# ": over_budget: " ++# weights ++# " (" ++# hint ++# ")"
+
+:~ finding_line (path : string) (f : finding) : string =
+    ?= f ?|
+    | Rewritten r => located path r::line r::column ++# ": " ++# mark_name r::mark ++# ": " ++# r::text ++# " (" ++# mark_hint r::mark ++# ")"
+    | OverBudget o => over_line path o (budget_hint ())
+    | OverRuled o => over_line path o (ruled_hint ())
+
+:~ weight_wire (tlds : string) (s : string) : i32 =
+    weight_value (text_weight (Listed (? tlds = "" ?> [] |: sm'::split_list "\n" tlds)) s)
 
 :~ header_text (k : i32) : string = "c" ++# sm'::show k ++# " 1/1\n"
 
@@ -208,7 +354,48 @@
 
 :~ over_budget (tlds : tld_list) (source : string) : list finding = over_from tlds (blocks source) 1i32 []
 
-:= some_tlds () : tld_list = tld_list [ "rs"; "app"; "co"; "com" ]
+:~ ^ rewrites_from (tlds : tld_list) (row : i32) (lines : list string) (acc : list rewrite) : list rewrite =
+    ?= lines ?|
+    | [] => listm::rev acc
+    | l :: rest => rewrites_from tlds (row + 1i32) rest (listm::append (listm::rev (line_rewrites tlds row l)) acc)
+
+:~ rewrites (tlds : tld_list) (source : string) : list finding =
+    rewrites_from tlds 1i32 (source_lines source) [] |> listm::map Rewritten
+
+:~ ^ nearest_manifest (dir : string) : option string =
+    ?= manifest::manifest_path dir ?|
+    | Some found => Some found
+    | None =>
+        := up = erlang_file::dir_name dir
+        ? up = dir ?> None |: nearest_manifest up
+
+:~ i574n_path (path : string) : bool =
+    ?= nearest_manifest (erlang_file::dir_name (erlang_file::absolute_path path)) ?|
+    | Some found => manifest::i574n_dialect (erlang_file::file_text found)
+    | None => !-
+
+:~ report_lines (forced : bool) (path : string) : string =
+    := shown = erlang_file::absolute_path path
+    ? forced || i574n_path path
+    ?> rewrites Iana (erlang_file::file_text path) |> listm::map (\ (f : finding) => "cell-budget " ++# finding_line shown f) |> sm'::concat_list "\n"
+    |: ""
+
+:~ over_text (shown : string) (source : string) : string =
+    over_budget Iana source |> listm::map (\ (f : finding) => "cell-budget " ++# finding_line shown f) |> sm'::concat_list "\n"
+
+:~ over_lines (path : string) : string = over_text (erlang_file::absolute_path path) (erlang_file::file_text path)
+
+///> rust
+///> gleam
+:# over_text_names_only_the_cells_past_their_limit =
+    := suffix = env::get_environment_variable "CELLS_CELL_BUDGET_UNSET_SUFFIX"
+    := short = "inl a () = 1" ++# suffix
+    := long = "inl b () =\n    \"" ++# sm'::replicate 300i32 "x" ++# "\""
+    := text = over_text "p.spi" (short ++# "\n\n" ++# long)
+    (sm'::starts_with "cell-budget p.spi:3:1: over_budget: weight " text, sm'::contains "\n" text, over_text "p.spi" short)
+    |> _assert_eq (!+, !-, "")
+
+:~ some_tlds () : tld_list = Listed [ "rs"; "app"; "co"; "com" ]
 
 :~ plain (s : string) : i32 = weight_value (text_weight (no_tlds ()) s)
 
@@ -241,3 +428,64 @@
 :# the_weight_wire_reads_newline_joined_tlds_like_the_typed_list =
     := text = "see name" ++# ".rs and x.rs and foo" ++# ".app"
     (weight_wire "rs\napp\nco\ncom" text, weight_wire "" text, weight_wire "rs\napp\nco\ncom" "plain") |> _assert_eq (64i32, 32i32, 5i32)
+
+:~ mark_tlds () : tld_list = Listed [ "io"; "ai" ]
+
+:~ rewrite_row (f : finding) : string * i32 * i32 * string =
+    ?= f ?|
+    | Rewritten r => mark_name r::mark, r::line, r::column, r::text
+    | OverBudget o => "over_budget", o::line, 1i32, ""
+    | OverRuled o => "over_ruled", o::line, 1i32, ""
+
+:~ rewrite_rows (source : string) : list (string * i32 * i32 * string) =
+    rewrites (mark_tlds ()) source |> listm::map rewrite_row
+
+///> rust
+///> gleam
+:# rewrites_name_hashtags_mentions_and_cashtags_with_line_and_column =
+    rewrite_rows ("inl a = 1\ninl b = x" ++# ".io + #tag @someone $abc\n")
+    |> _assert_eq [ ("hashtag", 2i32, 16i32, "#tag"); ("mention", 2i32, 21i32, "@someone"); ("cashtag", 2i32, 30i32, "$abc") ]
+
+///> rust
+///> gleam
+:# a_known_domain_is_an_autolink_rewrite =
+    rewrite_rows ("inl c = cell" ++# ".ai") |> _assert_eq [ ("autolink", 1i32, 9i32, "cell" ++# ".ai") ]
+
+///> rust
+///> gleam
+:# long_handles_glued_signs_and_long_cashtags_are_not_rewritten =
+    rewrite_rows "@abcdefghijklmnop a#b $abc.de $abcdefg $ab_c #123 #1a"
+    |> _assert_eq [ ("cashtag", 1i32, 23i32, "$abc.de"); ("cashtag", 1i32, 40i32, "$ab_c"); ("hashtag", 1i32, 51i32, "#1a") ]
+
+///> rust
+///> gleam
+:# finding_lines_read_like_the_reference_report =
+    := hashtag = Rewritten { mark = Hashtag; line = 1i32; column = 9i32; text = "#tag" }
+    := over = OverBudget { line = 7i32; weight = cell_weight 293i32; limit = cell_weight 273i32 }
+    (finding_line "a.spi" hashtag, finding_line "x.spi" over)
+    |> _assert_eq ("a.spi:1:9: hashtag: #tag (" ++# mark_hint Hashtag ++# ")", "x.spi:7:1: over_budget: weight 293 > 273 (" ++# budget_hint () ++# ")")
+
+///> rust
+///> gleam
+:# rewrites_of_run_time_text_match_the_literal_case =
+    := suffix = env::get_environment_variable "CELLS_CELL_BUDGET_UNSET_SUFFIX"
+    rewrite_rows ("x #tag @me" ++# suffix) |> _assert_eq [ ("hashtag", 1i32, 3i32, "#tag"); ("mention", 1i32, 8i32, "@me") ]
+
+:~ written_in (dir : string) (name : string) (text : string) : () =
+    erlang_term::apply "filelib" "ensure_path" [ erlang_term::charlist dir ] |> ignore
+    erlang_file::file_written (erlang_file::joined_path dir name) text |> ignore
+
+:~ dialect_dir () : string = erlang_file::joined_path (erlang_file::test_cache_directory ()) "cell_budget_dialect"
+
+:~ upstream_post () : string =
+    := nested = erlang_file::joined_path (dialect_dir ()) "sub"
+    written_in nested "post.spi" "inl tag = #trending\n"
+    written_in (dialect_dir ()) "package.spiproj" "dialect: upstream\npackages: |core-\nmodules:\n    post\n"
+    erlang_file::joined_path nested "post.spi"
+
+///> gleam
+:# the_nearest_manifest_decides_the_report_and_only_upstream_opts_out =
+    := post = upstream_post ()
+    := upstream = i574n_path post, report_lines !- post, sm'::contains "post.spi:1:11: hashtag: #trending" (report_lines !+ post)
+    written_in (dialect_dir ()) "package.spiproj" "packages: |core-\nmodules:\n    post\n"
+    (upstream, i574n_path post) |> _assert_eq ((!-, "", !+), !+)

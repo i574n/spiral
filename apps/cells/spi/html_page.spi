@@ -1,0 +1,170 @@
+///- --package .
+:# html_page static =
+    :< testing
+
+:= (++) (left : string) (right : string) : string = left ^^ right
+
+:= html_escape (s : string) : string =
+    text::replace (text::replace (text::replace (text::replace s "&" "&amp;") "<" "&lt;") ">" "&gt;") "\"" "&quot;"
+
+:~ palette () : list (string * string) =
+    [
+        ("comment", "#6a9955")
+        ("escaped_char", "#d7ba7d")
+        ("escaped_var", "#d7ba7d")
+        ("keyword", "#c586c0")
+        ("number", "#b5cea8")
+        ("number_suffix", "#b5cea8")
+        ("operator", "#d4d4d4")
+        ("parenthesis", "#ffd700")
+        ("string", "#ce9178")
+        ("symbol", "#4fc1ff")
+        ("type_variable", "#4ec9b0")
+        ("unary_operator", "#d4d4d4")
+        ("unescaped_char", "#ce9178")
+        ("variable", "#9cdcfe")
+    ]
+
+:~ token_css () : string =
+    sm'::concat_list "\n" (listm::map (\ (name : string), (color : string) => ".tok-" ++ name ++ " { color: " ++ color ++ "; }") (palette ()))
+
+:= html_head (title : string) : string =
+    sm'::concat_list "\n" [
+        "<!DOCTYPE html>"
+        "<html lang=\"en\">"
+        "<head>"
+        "<meta charset=\"UTF-8\">"
+        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+        "<title>" ++ html_escape title ++ "</title>"
+        "<style>"
+        "html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }"
+        "body { background-color: #1e1e1e; color: #d4d4d4; margin: 0; font: 15px/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }"
+        "main { max-width: 960px; margin: 0 auto; padding: 12px; }"
+        "pre { background-color: #252526; padding: 10px; border-radius: 4px; overflow-x: auto; font: 13px/1.5 ui-monospace, Consolas, monospace; }"
+        "pre.output { background-color: #181818; color: #bbb; border-left: 3px solid #444; }"
+        "pre.output.error { color: #f0a0a0; border-left-color: #a33; }"
+        ".meta { font-size: 12px; color: #888; margin: 0 0 4px; }"
+        ".plot { background-color: #fff; margin: 6px 0; } .plot svg { max-width: 100%; height: auto; display: block; }"
+        ".badge { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 3px; margin-bottom: 4px; }"
+        ".badge.passed { background-color: #23452a; color: #9fdc9f; }"
+        ".badge.failed { background-color: #4a2323; color: #f0a0a0; }"
+        ".badge.other { background-color: #333; color: #bbb; }"
+        "a { color: #4fc1ff; }"
+        token_css ()
+        "@media (max-width: 600px) { main { padding: 6px; } pre { font-size: 12px; } }"
+        "</style>"
+        "</head>"
+        "<body>"
+        "<main>"
+        ""
+    ]
+
+:== token = { line : i32; from : i32; near_to : i32; kind : string }
+
+:~ token_of (row : string) : option token =
+    ?= sm'::split_list "\t" row ?|
+    | [ line; from; near_to; kind ] => Some { line = text::parse_i32 line; from = text::parse_i32 from; near_to = text::parse_i32 near_to; kind = kind }
+    | _ => None
+
+:~ ^ tokens_from (rows : list string) (acc : list token) : list token =
+    ?= rows ?|
+    | [] => listm::rev acc
+    | r :: rest => (?= token_of r ?| Some t => tokens_from rest (t :: acc) | None => tokens_from rest acc)
+
+:~ ^ inserted (t : token) (sorted : list token) : list token =
+    ?= sorted ?|
+    | [] => [ t ]
+    | x :: rest => ? t.from < x.from ?> t :: sorted |: x :: inserted t rest
+
+:~ by_start (ts : list token) : list token = listm::fold (\ (acc : list token) (t : token) => inserted t acc) [] ts
+
+:~ utf16 (line : string) : erlang_term::term =
+    erlang_term::apply "unicode" "characters_to_binary" [ erlang_term::of line; erlang_term::atom "utf8"; erlang_term::atom "utf16" ]
+
+:~ units_length (units : erlang_term::term) : i32 = (erlang_term::apply "erlang" "byte_size" [ units ] |> erlang_term::cast) / 2i32
+
+:~ unit_slice (units : erlang_term::term) (from : i32) (near_to : i32) : string =
+    := part = erlang_term::apply "erlang" "binary_part" [ units; erlang_term::of (from * 2i32); erlang_term::of ((near_to - from) * 2i32) ]
+    := back = erlang_term::apply "unicode" "characters_to_binary" [ part; erlang_term::atom "utf16"; erlang_term::atom "utf8" ]
+    := ok : bool = erlang_term::apply "erlang" "is_binary" [ back ] |> erlang_term::cast
+    ? ok ?> erlang_term::cast back |: ""
+
+:~ ^ painted (units : erlang_term::term) (size : i32) (ts : list token) (at : i32) (acc : string) : string =
+    ?= ts ?|
+    | [] => acc ++ html_escape (unit_slice units at size)
+    | t :: rest =>
+        ? t.from < at || t.near_to > size || t.near_to < t.from
+        ?> painted units size rest at acc
+        |:
+            := gap = html_escape (unit_slice units at t.from)
+            := word = html_escape (unit_slice units t.from t.near_to)
+            painted units size rest t.near_to (acc ++ gap ++ "<span class=\"tok-" ++ t.kind ++ "\">" ++ word ++ "</span>")
+
+:~ highlighted_line (line : string) (ts : list token) : string =
+    := units = utf16 line
+    painted units (units_length units) (by_start ts) 0i32 ""
+
+:~ ^ lines_from (lines : list string) (index : i32) (ts : list token) (acc : list string) : list string =
+    ?= lines ?|
+    | [] => listm::rev acc
+    | l :: rest =>
+        := mine = listm::fold (\ (k : list token) (t : token) => ? t.line = index ?> t :: k |: k) [] ts |> listm::rev
+        lines_from rest (index + 1i32) ts (highlighted_line l mine :: acc)
+
+:= highlighted (source : string) (tokens : string) : string =
+    := ts = tokens_from (sm'::split_list "\n" tokens) []
+    sm'::concat_list "\n" (lines_from (sm'::split_list "\n" source) 0i32 ts [])
+
+///> gleam
+:# code_is_colored_by_utf16_token_ranges_and_escaped =
+    highlighted "inl x = 1 < 2" "0\t0\t3\tkeyword\n0\t4\t5\tvariable\n0\t8\t9\tnumber\n0\t10\t11\toperator\n0\t12\t13\tnumber"
+    |> _assert_eq "<span class=\"tok-keyword\">inl</span> <span class=\"tok-variable\">x</span> = <span class=\"tok-number\">1</span> <span class=\"tok-operator\">&lt;</span> <span class=\"tok-number\">2</span>"
+    highlighted "\"é\" x \"😀\" y" "0\t0\t3\tstring\n0\t4\t5\tvariable\n0\t6\t10\tstring\n0\t11\t12\tvariable"
+    |> _assert_eq "<span class=\"tok-string\">&quot;é&quot;</span> <span class=\"tok-variable\">x</span> <span class=\"tok-string\">&quot;😀&quot;</span> <span class=\"tok-variable\">y</span>"
+    highlighted "ab\ncd" "0\t0\t1\tkeyword\n0\t0\t2\tvariable\n1\t0\t99\tstring" |> _assert_eq "<span class=\"tok-keyword\">a</span>b\ncd"
+
+///> gleam
+:# the_page_head_escapes_its_title_and_lists_every_token_class =
+    := head = html_head "a<b"
+    (text::find_from head "<title>a&lt;b</title>" 0i32 >= 0i32, text::find_from head ".tok-variable { color: #9cdcfe; }" 0i32 >= 0i32, text::find_from head "</head>\n<body>\n<main>\n" 0i32 >= 0i32)
+    |> _assert_eq (!+, !+, !+)
+
+///> gleam
+:# highlight_escape_and_head_keep_the_old_elixir_answers_on_the_edges =
+    highlighted "a😀b" "0\t1\t2\tstring"
+    |> _assert_eq "a<span class=\"tok-string\"></span>"
+    highlighted "a😀b" "0\t1\t3\tstring\n0\t3\t4\tkeyword"
+    |> _assert_eq "a<span class=\"tok-string\">😀</span><span class=\"tok-keyword\">b</span>"
+    highlighted "x = 1" "0\t-1\t1\tkeyword\n0\t4\t9\tnumber"
+    |> _assert_eq "x = 1"
+    highlighted "x = 1" "0\t2\t2\toperator\n0\t3\t2\tnumber"
+    |> _assert_eq "x <span class=\"tok-operator\"></span>= 1"
+    highlighted "ab\r\ncd" "0\t0\t3\tkeyword\n1\t0\t2\tvariable"
+    |> _assert_eq "<span class=\"tok-keyword\">ab\r</span>\n<span class=\"tok-variable\">cd</span>"
+    highlighted "a\tb & c" "0\t0\t1\tx<y\n0\t2\t3\ta\"b"
+    |> _assert_eq "<span class=\"tok-x<y\">a</span>\t<span class=\"tok-a\"b\">b</span> &amp; c"
+    highlighted "one\ntwo" "1\t0\t3\tkeyword\n0\t0\t3\tstring\n5\t0\t1\tnumber"
+    |> _assert_eq "<span class=\"tok-string\">one</span>\n<span class=\"tok-keyword\">two</span>"
+    highlighted "abcdef" "0\t0\t4\tkeyword\n0\t2\t6\tstring"
+    |> _assert_eq "<span class=\"tok-keyword\">abcd</span>ef"
+    highlighted "abcdef" "0\t2\t6\tstring\n0\t0\t4\tkeyword"
+    |> _assert_eq "<span class=\"tok-keyword\">abcd</span>ef"
+    highlighted "日本 x" "0\t0\t2\tstring\n0\t3\t4\tvariable"
+    |> _assert_eq "<span class=\"tok-string\">日本</span> <span class=\"tok-variable\">x</span>"
+    highlighted "" "0\t0\t1\tkeyword"
+    |> _assert_eq ""
+    highlighted "\n\n" "1\t0\t0\tkeyword\n2\t0\t1\tstring"
+    |> _assert_eq "\n<span class=\"tok-keyword\"></span>\n"
+    highlighted "&amp; <" "0\t0\t5\tstring\n0\t6\t7\toperator"
+    |> _assert_eq "<span class=\"tok-string\">&amp;amp;</span> <span class=\"tok-operator\">&lt;</span>"
+    html_escape "a & b" |> _assert_eq "a &amp; b"
+    html_escape "\"q\" 'x'" |> _assert_eq "&quot;q&quot; 'x'"
+    html_escape "<script>" |> _assert_eq "&lt;script&gt;"
+    html_escape "" |> _assert_eq ""
+    html_escape "é 😀 \t" |> _assert_eq "é 😀 \t"
+    (text::find_from (html_head "a & b") "<title>a &amp; b</title>" 0i32 >= 0i32) |> _assert_eq !+
+    html_head "a & b" |> text::length |> _assert_eq 1779i32
+    (text::find_from (html_head "<x>") "<title>&lt;x&gt;</title>" 0i32 >= 0i32) |> _assert_eq !+
+    html_head "<x>" |> text::length |> _assert_eq 1779i32
+    (text::find_from (html_head "\"\"") "<title>&quot;&quot;</title>" 0i32 >= 0i32) |> _assert_eq !+
+    html_head "\"\"" |> text::length |> _assert_eq 1782i32

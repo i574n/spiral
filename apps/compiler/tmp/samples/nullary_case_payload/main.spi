@@ -1,0 +1,16 @@
+:| j =
+    | JNull
+    | JBool : bool
+
+:| opt a =
+    | Present : a
+    | Absent
+
+:~ truthy (v : opt j) : bool =
+    ?= v ?|
+    | Present JNull => !-
+    | Present (JBool b) => b
+    | Present _ => !+
+    | Absent => !-
+
+:= main () : i32 = ? truthy (Present (JBool !+)) ?> 7i32 |: 0i32

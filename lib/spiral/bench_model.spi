@@ -111,6 +111,40 @@
 
 :~ aa_ratio (p : plan) (base : summary) (twin : summary) : aa_verdict = aa_of p (twin::ci::middle / base::ci::middle)
 
+:| pair_verdict =
+    | Resolved : f64
+    | Flips : f64
+    | WithinNoise : f64
+
+:~ ^ first_count (a : list f64) (b : list f64) (acc : i32) : i32 =
+    ?= a ?|
+    | x :: xs =>
+        ?= b ?|
+        | y :: ys => first_count xs ys (? x < y ?> acc + 1i32 |: acc)
+        | [] => acc
+    | [] => acc
+
+:~ pair_of (min_ratio : f64) (a : list f64) (b : list f64) : pair_verdict =
+    := ma = median a
+    := mb = median b
+    := ratio = ? ma > mb ?> ma / mb |: mb / ma
+    := runs_a : i32 = listm::length a
+    := runs_b : i32 = listm::length b
+    := runs = ? runs_a < runs_b ?> runs_a |: runs_b
+    := first = first_count a b 0i32
+    := held = ? first > runs - first ?> first |: runs - first
+    ? ratio < min_ratio
+    ?> WithinNoise ratio
+    |? held * 9i32 >= runs * 8i32
+    ?> Resolved ratio
+    |: Flips ratio
+
+:= verdict_kind (v : pair_verdict) : string =
+    ?= v ?|
+    | Resolved _ => "resolved"
+    | Flips _ => "flips"
+    | WithinNoise _ => "within noise"
+
 := default_plan () : plan =
     { rounds = 15i32; passes = 25i32; warmup_passes = 3i32; quiet_cores = 2.0; aa_low = 0.95; aa_high = 1.05; outliers = MadCutoff 3.0 }
 
@@ -194,3 +228,21 @@
 :# a_slow_twin_voids_the_table =
     := base, slow = arm_summary "a" [ 100u64; 101u64; 99u64 ], arm_summary "aa" [ 120u64; 121u64; 119u64 ]
     aa_ratio (default_plan ()) base slow |> _assert_eq (Void 1.2)
+
+///> rust
+:# a_wide_gap_that_keeps_its_order_is_resolved =
+    := ~fast = [ 10.0; 11.0; 12.0; 10.0; 11.0; 12.0; 10.0; 11.0; 12.0 ]
+    := ~slow = [ 20.0; 21.0; 22.0; 20.0; 21.0; 22.0; 20.0; 21.0; 22.0 ]
+    verdict_kind (pair_of 1.5 fast slow) |> _assert_eq "resolved"
+
+///> rust
+:# a_close_pair_is_within_noise_whatever_its_order =
+    := ~a = [ 10.0; 12.0; 10.0; 12.0; 10.0 ]
+    := ~b = [ 11.0; 11.0; 11.0; 11.0; 11.0 ]
+    verdict_kind (pair_of 1.5 a b) |> _assert_eq "within noise"
+
+///> rust
+:# a_wide_pair_that_swaps_order_flips =
+    := ~a = [ 1.0; 100.0; 1.0; 100.0; 1.0; 100.0; 1.0; 100.0; 1.0 ]
+    := ~b = [ 50.0; 50.0; 50.0; 50.0; 50.0; 50.0; 50.0; 50.0; 50.0 ]
+    verdict_kind (pair_of 1.5 a b) |> _assert_eq "flips"

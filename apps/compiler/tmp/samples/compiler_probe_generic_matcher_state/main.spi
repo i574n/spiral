@@ -1,0 +1,175 @@
+:| bit_symbol =
+    | BitZero
+    | BitOne
+
+:! bit_alphabet = bit_symbol
+
+:| tri_symbol =
+    | TriA
+    | TriB
+    | TriC
+
+:! tri_alphabet = tri_symbol
+
+:| symbol_ordering =
+    | SymbolLess
+    | SymbolSame
+    | SymbolGreater
+
+:? symbol_compare alphabet : alphabet -> alphabet -> symbol_ordering
+
+:= symbol_equal \* alphabet {symbol_compare}. (left : alphabet) (right : alphabet) : bool =
+    ?= symbol_compare left right ?|
+    | SymbolSame => !+
+    | _ => !-
+
+:+ symbol_compare bit_alphabet = \ (bit_alphabet left) (bit_alphabet right) =>
+    ?= left, right ?|
+    | BitZero, BitZero => SymbolSame
+    | BitZero, BitOne => SymbolLess
+    | BitOne, BitZero => SymbolGreater
+    | BitOne, BitOne => SymbolSame
+
+:+ symbol_compare tri_alphabet = \ (tri_alphabet left) (tri_alphabet right) =>
+    ?= left, right ?|
+    | TriA, TriA => SymbolSame
+    | TriA, _ => SymbolLess
+    | _, TriA => SymbolGreater
+    | TriB, TriB => SymbolSame
+    | TriB, TriC => SymbolLess
+    | TriC, TriB => SymbolGreater
+    | TriC, TriC => SymbolSame
+
+:| ^ regex alphabet =
+    | RegexEmpty
+    | RegexEpsilon
+    | RegexChar : alphabet
+    | RegexAlt : regex alphabet * regex alphabet
+    | RegexCat : regex alphabet * regex alphabet
+    | RegexStar : regex alphabet
+
+:| ^ linear_input alphabet =
+    | InputEmpty
+    | InputCons : alphabet * linear_input alphabet
+
+:~ ^ nullable \* alphabet. (value : regex alphabet) : bool =
+    ?= value ?|
+    | RegexEmpty => !-
+    | RegexEpsilon => !+
+    | RegexChar _ => !-
+    | RegexAlt (left, right) => nullable left || nullable right
+    | RegexCat (left, right) => nullable left && nullable right
+    | RegexStar _ => !+
+
+:~ ^ derivative \* alphabet {symbol_compare}. (value : regex alphabet) (symbol : alphabet) : regex alphabet =
+    ?= value ?|
+    | RegexEmpty => RegexEmpty
+    | RegexEpsilon => RegexEmpty
+    | RegexChar expected => ? symbol_equal expected symbol ?> RegexEpsilon |: RegexEmpty
+    | RegexAlt (left, right) => RegexAlt (derivative left symbol, derivative right symbol)
+    | RegexCat (left, right) =>
+        ? nullable left
+        ?> RegexAlt (RegexCat (derivative left symbol, right), derivative right symbol)
+        |: RegexCat (derivative left symbol, right)
+    | RegexStar inner => RegexCat (derivative inner symbol, RegexStar inner)
+
+:~ ^ accepts \* alphabet {symbol_compare}. (value : regex alphabet) (input : linear_input alphabet) : bool =
+    ?= input ?|
+    | InputEmpty => nullable value
+    | InputCons (symbol, rest) => accepts (derivative value symbol) rest
+
+:== singleton t = t
+
+:| ^ matcher_batch (f : * -> *) t =
+    | MatchBatchSingle :: \* (f : * -> *) t. f t -> matcher_batch f (singleton t)
+    | MatchBatchPair :: \* (f : * -> *) a b. matcher_batch f a * matcher_batch f b -> matcher_batch f (a * b)
+
+:= ^ matcher_batch_forall \* (f : * -> *) t.
+    (predicate : \* alphabet. f alphabet -> bool)
+    (value : matcher_batch f t)
+    : bool =
+    ?= value ?|
+    | MatchBatchSingle item => predicate item
+    | MatchBatchPair (left, right) =>
+        ? matcher_batch_forall `$predicate left ?> matcher_batch_forall `$predicate right |: !-
+
+:! matcher_raw = ()
+
+:! matcher_decided = ()
+
+:! generic_matcher_decision_capability alphabet = regex alphabet -> linear_input alphabet -> bool
+
+:| generic_matcher_state alphabet phase =
+    | GenericMatcherRaw :: \* alphabet.
+        regex alphabet * linear_input alphabet ->
+        generic_matcher_state alphabet matcher_raw
+    | GenericMatcherDecided :: \* alphabet.
+        regex alphabet * linear_input alphabet * bool ->
+        generic_matcher_state alphabet matcher_decided
+
+:= generic_matcher_decision_capability_default \* alphabet {symbol_compare}.
+    : generic_matcher_decision_capability alphabet =
+    generic_matcher_decision_capability (\ value input => accepts value input)
+
+:= decide_generic_match \* alphabet.
+    (capability : generic_matcher_decision_capability alphabet)
+    (state : generic_matcher_state alphabet matcher_raw)
+    : generic_matcher_state alphabet matcher_decided =
+    ?= capability, state ?|
+    | generic_matcher_decision_capability decide, GenericMatcherRaw (value, input) =>
+        GenericMatcherDecided (value, input, decide value input)
+
+:! generic_decided_match alphabet = generic_matcher_state alphabet matcher_decided
+
+:= generic_decided_match_value \* alphabet.
+    (state : generic_decided_match alphabet) : bool =
+    ?= state ?|
+    | generic_decided_match (GenericMatcherDecided (_, _, accepted)) => accepted
+
+:| sealed_generic_decided_match =
+    | SealedGenericDecidedMatch : (\? alphabet. generic_decided_match alphabet)
+
+:= seal_generic_decided_match \* alphabet.
+    (state : generic_decided_match alphabet) : sealed_generic_decided_match =
+    SealedGenericDecidedMatch (\? state)
+
+:= sealed_generic_decided_match_value (state : sealed_generic_decided_match) : bool =
+    ?= state ?|
+    | SealedGenericDecidedMatch payload =>
+        := \? alphabet. decided = payload
+        generic_decided_match_value decided
+
+:= zero () : bit_alphabet = bit_alphabet BitZero
+:= one () : bit_alphabet = bit_alphabet BitOne
+:= tri_a () : tri_alphabet = tri_alphabet TriA
+
+:= ends_with_zero () : regex bit_alphabet =
+    RegexCat (RegexStar (RegexAlt (RegexChar (zero ()), RegexChar (one ()))), RegexChar (zero ()))
+
+:= input_110 () : linear_input bit_alphabet =
+    InputCons (one (), InputCons (one (), InputCons (zero (), InputEmpty)))
+
+:= tri_a_star () : regex tri_alphabet = RegexStar (RegexChar (tri_a ()))
+
+:= input_aaa () : linear_input tri_alphabet =
+    InputCons (tri_a (), InputCons (tri_a (), InputCons (tri_a (), InputEmpty)))
+
+:= main () : bool =
+    := bit_decided : generic_decided_match bit_alphabet =
+        generic_decided_match (
+            decide_generic_match
+                (generic_matcher_decision_capability_default)
+                (GenericMatcherRaw (ends_with_zero (), input_110 ()))
+        )
+    := tri_decided : generic_decided_match tri_alphabet =
+        generic_decided_match (
+            decide_generic_match
+                (generic_matcher_decision_capability_default)
+                (GenericMatcherRaw (tri_a_star (), input_aaa ()))
+        )
+    := batch : matcher_batch generic_decided_match (bit_alphabet * tri_alphabet) =
+        MatchBatchPair (MatchBatchSingle bit_decided, MatchBatchSingle tri_decided)
+    := batch_ok = matcher_batch_forall `$generic_decided_match_value batch
+    := sealed_bit = seal_generic_decided_match bit_decided
+    := sealed_tri = seal_generic_decided_match tri_decided
+    batch_ok && sealed_generic_decided_match_value sealed_bit && sealed_generic_decided_match_value sealed_tri

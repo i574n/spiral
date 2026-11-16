@@ -36,3 +36,12 @@
     ? all_present && fields = colon_count path 0i32 n 0i32
     ?> path
     |: error_type ("the route " ++ path ++ " does not name exactly the handler's parameter fields")
+
+:= param_of \* v. (text : string) : v =
+    ?: v ?|
+    | string => text
+    | i32 => route_path::i32_of text
+    | _ => error_type "a route parameter is a string or an i32"
+
+:= params route path = \* t. =>
+    record_type_map (\ key => \* v. => param_of `v (route_path::segment route path !!!!SymbolToString(key))) `t

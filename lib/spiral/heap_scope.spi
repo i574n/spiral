@@ -8,18 +8,30 @@
 := mark () : heap_mark =
     run_target \|
         | Wgsl => \ () => heap_mark ($'spiral_heap_top' : u32)
+        | Cuda => \ () => heap_mark ($'spiral_arena_mark()' : u32)
         | _ => \ () => heap_mark 0u32
 
 := release ((heap_mark top) : heap_mark) : () =
     run_target \|
         | Wgsl => \ () => $'spiral_heap_top = !top' : ()
+        | Cuda => \ () => $'spiral_arena_release(!top)' : ()
         | _ => \ () => ()
+
+:= framed \* a. (body : () -> a) : a =
+    :~ own_frame () : a = body ()
+    own_frame ()
+
+:= in_scope \* a. (body : () -> a) : a =
+    run_target \|
+        | Cuda => \ () => framed body
+        | Cpp => \ () => framed body
+        | _ => \ () => body ()
 
 := scoped \* a. (body : () -> a) : a =
     := scalar : bool = ~> real_core::prim_type_is `a
     ? scalar ?>
         := m = mark ()
-        := r = body ()
+        := r = in_scope body
         release m
         r
     |: error_type "scoped: the result must be a primitive"

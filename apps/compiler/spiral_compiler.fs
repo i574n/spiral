@@ -9,16 +9,92 @@ namespace Spiral
 module spiral_compiler =
 
     /// ## IdentityAdapter
-    type TermNameId = string
+    [<Struct>]
+    type TermNameId = TermNameId of string
     type TypeNameId = string
     type ConstraintNameId = string
     type NominalNameId = string
     type PrototypeNameId = string
     type ModuleMemberNameId = string
     type RecordFieldNameId = string
+    /// ### Backend
+    type Backend =
+        | GleamBackend | LuaBackend | FsharpBackend | RustBackend | PascalBackend | ZigBackend | WasmBackend | WgslBackend
+        | CalyxBackend | KotlinBackend | SwiftBackend | OpenQasmBackend | EbpfBackend | LeanBackend | BendBackend
+        | TypeScriptBackend | CBackend | PythonCudaBackend | CppCudaBackend
+    module Backend =
+        let parse (name : string) : Backend option =
+            match name with
+            | "Gleam" -> Some GleamBackend | "Lua" -> Some LuaBackend | "Fsharp" -> Some FsharpBackend | "Rust" -> Some RustBackend
+            | "Pascal" | "Delphi" -> Some PascalBackend | "Zig" -> Some ZigBackend | "Wasm" -> Some WasmBackend
+            | "Wgsl" -> Some WgslBackend | "Calyx" -> Some CalyxBackend | "Kotlin" -> Some KotlinBackend | "Swift" -> Some SwiftBackend
+            | "OpenQasm" -> Some OpenQasmBackend | "Ebpf" -> Some EbpfBackend | "Lean" -> Some LeanBackend | "Bend" -> Some BendBackend
+            | "TypeScript" -> Some TypeScriptBackend | "C" -> Some CBackend | "Python + Cuda" -> Some PythonCudaBackend
+            | "Cpp + Cuda" -> Some CppCudaBackend
+            | _ -> None
+    /// ### WarningCode
+    [<RequireQualifiedAccess>]
+    type WarningCode =
+        | UnneededRecMarker
+        | RedundantLiteralSuffix
+        | UnusedBinding
+        | UnreachableArm
+        | UnusedOpen
+        | GpuRecursion
+        | WideGpuState
+    module WarningCodeOps =
+        let name = function
+            | WarningCode.UnneededRecMarker -> nameof WarningCode.UnneededRecMarker
+            | WarningCode.RedundantLiteralSuffix -> nameof WarningCode.RedundantLiteralSuffix
+            | WarningCode.UnusedBinding -> nameof WarningCode.UnusedBinding
+            | WarningCode.UnreachableArm -> nameof WarningCode.UnreachableArm
+            | WarningCode.UnusedOpen -> nameof WarningCode.UnusedOpen
+            | WarningCode.GpuRecursion -> nameof WarningCode.GpuRecursion
+            | WarningCode.WideGpuState -> nameof WarningCode.WideGpuState
+        let message (code : WarningCode) (text : string) = $"WTY-{name code}: {text}"
+        let code_text (code : WarningCode) = $"WTY-{name code}"
+        let wide_gpu_state_params = 50
+        let wide_gpu_state (fn : string) (count : int) =
+            message WarningCode.WideGpuState $"{fn} takes {count} parameters on the GPU; box the wide records it carries as heap layouts so the call passes one reference"
+    /// ### CompilerFlag
+    [<RequireQualifiedAccess>]
+    type CompilerFlag =
+        | AttentionServer
+        | AutoExportTrace
+        | DerivedLinks
+        | FormatFullSecondPass
+        | HopacsotaForceConflict
+        | HopacsotaStats
+        | Hovers
+        | RustGapTrace
+        | SharedTestEntries
+        | WarnLiteralSuffix
+        | WarnUnusedBindings
+        | ZigFast
+    module CompilerFlagOps =
+        let variable = function
+            | CompilerFlag.AttentionServer -> "SPIRAL_ATTENTION_SERVER"
+            | CompilerFlag.AutoExportTrace -> "SPIRAL_AUTO_EXPORT_TRACE"
+            | CompilerFlag.DerivedLinks -> "SPIRAL_DERIVED_LINKS"
+            | CompilerFlag.FormatFullSecondPass -> "SPIRAL_FORMAT_FULL_SECOND_PASS"
+            | CompilerFlag.HopacsotaForceConflict -> "SPIRAL_HOPACSOTA_FORCE_CONFLICT"
+            | CompilerFlag.HopacsotaStats -> "SPIRAL_HOPACSOTA_STATS"
+            | CompilerFlag.Hovers -> "SPIRAL_HOVERS"
+            | CompilerFlag.RustGapTrace -> "SPIRAL_RUST_GAP_TRACE"
+            | CompilerFlag.SharedTestEntries -> "SPIRAL_SHARED_TEST_ENTRIES"
+            | CompilerFlag.WarnLiteralSuffix -> "SPIRAL_WARN_LITERAL_SUFFIX"
+            | CompilerFlag.WarnUnusedBindings -> "SPIRAL_WARN_UNUSED_BINDINGS"
+            | CompilerFlag.ZigFast -> "SPIRAL_ZIG_FAST"
+        let onByDefault = function
+            | CompilerFlag.AttentionServer | CompilerFlag.Hovers | CompilerFlag.WarnLiteralSuffix -> true
+            | CompilerFlag.AutoExportTrace | CompilerFlag.DerivedLinks | CompilerFlag.FormatFullSecondPass | CompilerFlag.HopacsotaForceConflict
+            | CompilerFlag.HopacsotaStats | CompilerFlag.RustGapTrace | CompilerFlag.SharedTestEntries | CompilerFlag.WarnUnusedBindings | CompilerFlag.ZigFast -> false
+        let enabled (flag : CompilerFlag) =
+            let value = System.Environment.GetEnvironmentVariable (variable flag)
+            if onByDefault flag then value <> "0" else value = "1"
     module TermNameIdOps =
-        let create (value : string) : TermNameId = value
-        let text (value : TermNameId) : string = value
+        let create (value : string) : TermNameId = TermNameId value
+        let text (TermNameId value) : string = value
     module TypeNameIdOps =
         let create (value : string) : TypeNameId = value
         let text (value : TypeNameId) : string = value
@@ -272,6 +348,13 @@ module spiral_compiler =
         }
 
     let test_entry_parsed = System.Collections.Concurrent.ConcurrentDictionary<string, string option>()
+
+    let test_entry_parse_key (text : string) (test_entry : string option) =
+        match test_entry with
+        | Some wanted when CompilerFlagOps.enabled CompilerFlag.SharedTestEntries ->
+            let header = System.Text.RegularExpressions.Regex($@"(?m)^:#\s+{System.Text.RegularExpressions.Regex.Escape wanted}\s[^=\n]*\bfails\b")
+            Some (if header.IsMatch text then "\u0001shared:" + wanted else "\u0001shared")
+        | other -> other
 
     let mutable test_entry_selection : (string * string) option = None
 
@@ -1836,6 +1919,10 @@ module spiral_compiler =
         | ArrayLength
         | ArrayIndex
         | ArrayIndexSet
+        | ArrayAtomicAdd
+        | GpuStageBoundary
+        | GpuCarryIn
+        | GpuCarryOut
 
         // Record
         | RecordMap
@@ -3071,7 +3158,10 @@ module spiral_compiler =
     let rec root_pattern_var_nominal_union s =
         (read_var' >>= fun (r,a,re) s ->
             if Char.IsUpper(a,0) then
-                (opt root_pattern_var |>> fun b ->
+                // A payload that is itself a payload-less case needs no parentheses (`| Some JNull =>`), as the nominal
+                // branch below already allows (`| wrapped Zero =>`); without this the arm failed to parse and the
+                // whole definition vanished, leaving only an unbound name at its first caller.
+                (opt (root_pattern_var <|> (read_big_var |>> fun (r',a') -> PatUnbox(r',a',PatE r'))) |>> fun b ->
                     re SemanticTokenLegend.symbol
                     let b = match b with Some b -> b | None -> PatE r
                     PatUnbox(r,a,b)
@@ -3705,7 +3795,7 @@ module spiral_compiler =
             let header = s.tokens |> Array.indexed |> Array.filter (fun (i, _) -> s.tokens_cords.[i].row = headerRow) |> Array.map (snd >> snd)
             let isStatic = header |> Array.exists (function TokVar ("static", _) -> true | _ -> false)
             match snd s.tokens.[1] with
-            | TokVar (name, _) when name = wanted && not isStatic && header.Length < s.tokens.Length -> Some header.Length
+            | TokVar (name, _) when not isStatic && header.Length < s.tokens.Length && (name = wanted || (CompilerFlagOps.enabled CompilerFlag.SharedTestEntries && not (header |> Array.exists (function TokVar ("fails", _) -> true | _ -> false)))) -> Some header.Length
             | _ -> None
         | _ -> None
 
@@ -4156,6 +4246,7 @@ module spiral_compiler =
         | [{offset=i; block=TopType(r,a,b,c)}] -> BundleType(add_offset i r, add_offset_hovar i a, add_offset_hovar_list i b, fold_offset_ty i c) |> Some
         | [{offset=i; block=TopInstance(r,a,b,c,d)}] -> BundleInstance(add_offset i r, add_offset_hovar i a, add_offset_hovar i b, add_offset_typevar_list i c, fold_offset_term i d) |> Some
         | [{offset=i; block=TopOpen(r,a,b)}] -> BundleOpen(add_offset i r, add_offset_hovar i a, add_offset_hovar_list i b) |> Some
+        | {block=TopStatic _} :: _ -> failwith "Compiler error: Static blocks should be split into their statements during block bundling."
         | {block=TopInl _ | TopPrototype _ | TopNominal _ | TopType _ | TopInstance _ | TopOpen _} :: _ -> failwith "Compiler error: Regular top level statements should be singleton bundles."
 
     /// ### add_line_to_range
@@ -4516,7 +4607,7 @@ module spiral_compiler =
         | Printf | Add | Sub | Mult | Div | Mod | Pow | LT | LTE | EQ | NEQ | GT | GTE
         | BitwiseAnd | BitwiseOr | BitwiseXor | BitwiseComplement | ShiftLeft | ShiftRight
         | Neg | Log | Exp | Tanh | Sqrt | Sin | Cos | NanIs | Conv
-        | StringLength | StringIndex | StringSlice | ArrayCreate | ArrayIndex | ArrayIndexSet | ArrayLength | MonotonicDelayMs | Export | Assign -> true
+        | StringLength | StringIndex | StringSlice | ArrayCreate | ArrayIndex | ArrayIndexSet | ArrayAtomicAdd | GpuStageBoundary | GpuCarryIn | GpuCarryOut | ArrayLength | MonotonicDelayMs | Export | Assign -> true
         | _ -> false
 
     /// ### semantic_tokens
@@ -5673,7 +5764,7 @@ module spiral_compiler =
                 | _ -> t
             | _ -> t)
 
-    let literal_suffix_warn = System.Environment.GetEnvironmentVariable "SPIRAL_WARN_LITERAL_SUFFIX" <> "0"
+    let literal_suffix_warn = CompilerFlagOps.enabled CompilerFlag.WarnLiteralSuffix
 
     let upstreamDialectPids = System.Collections.Concurrent.ConcurrentDictionary<int, bool>()
 
@@ -5696,6 +5787,7 @@ module spiral_compiler =
         warnings : RString list
         self_unbound : bool
         unbound_only : string list
+        open_names : (VSCRange * string * string list) list
         }
     
 
@@ -5837,6 +5929,7 @@ module spiral_compiler =
         let mutable top_env = top_env' // Is mutated only in two places at the top level. During actual inference can otherwise be thought of as immutable.
         let errors = ResizeArray()
         let warnings = ResizeArray<RString>()
+        let open_names = ResizeArray<VSCRange * string * string list>()
         let deferredArith = ResizeArray<VSCRange * T * T>()
         let top_down_bundle = match expr with BundleInl(_,_,_,_,td) | BundleRecInl(_,td) -> td | _ -> false
         match expr with
@@ -5844,7 +5937,7 @@ module spiral_compiler =
             let env = loc_env top_env'
             let refs = validate_bound_vars env env.constraints Set.empty Set.empty (Choice1Of2 body)
             if not (refs |> Seq.exists (fun (_, e) -> match e with UnboundVariable (UnboundTermName n) -> TermNameIdOps.text n = own | _ -> false)) then
-                warnings.Add(r, $"WTY-UnneededRecMarker: {own} never refers to itself, so its ^ is not needed; drop the ^")
+                warnings.Add(r, WarningCodeOps.message WarningCode.UnneededRecMarker $"{own} never refers to itself, so its ^ is not needed; drop the ^")
         | _ -> ()
         let census_rows = ResizeArray<unit -> string>()
         let generalized_statements = Dictionary(HashIdentity.Reference)
@@ -6385,7 +6478,9 @@ module spiral_compiler =
                 if literal_suffix_warn && top_down_bundle then
                     match literal_suffix_suggestion a, visit_t s, lit a with
                     | Some text, TyPrim p, TyPrim q when p = q ->
-                        warnings.Add(r, $"WTY-RedundantLiteralSuffix: the context already gives this literal the type {show_primt p}, so its suffix is redundant; write {text}")
+                        let struct (start, digits_end) = r
+                        let with_suffix = struct (start, struct {| line = digits_end.line; character = digits_end.character + (show_primt p).Length |})
+                        warnings.Add(with_suffix, WarningCodeOps.message WarningCode.RedundantLiteralSuffix $"the context already gives this literal the type {show_primt p}, so its suffix is redundant; write {text}")
                     | _ -> ()
                 unify r s (lit a)
             | RawSymbol(r,x) -> unify r s (TySymbol x)
@@ -6665,7 +6760,16 @@ module spiral_compiler =
                 List.iter (match_clause (q,w)) l
             | RawForall _ -> failwith "Compiler error: Should be handled in let statements."
             | RawMatch(_,(RawForall _ | RawFun _) & body,[PatVar(r,name), on_succ]) -> term scope (inl scope env ((r, name), body)) s on_succ
-            | RawRecBlock(_,l',on_succ) -> term scope (rec_block scope env l') s on_succ
+            | RawRecBlock(_,l',on_succ) ->
+                match l' with
+                | [ ((nr, name), body) ] when not (upstreamDialectPids.ContainsKey package_id) ->
+                    let others = Map.fold (fun s k _ -> Set.add (TermNameIdOps.text k) s) Set.empty env.term |> Set.remove name
+                    let types = Map.fold (fun s k _ -> Set.add (TypeNameIdOps.text k) s) Set.empty env.ty
+                    let refs = validate_bound_vars (loc_env top_env) env.constraints others types (Choice1Of2 body)
+                    if not (refs |> Seq.exists (fun (_, e) -> match e with UnboundVariable (UnboundTermName n) -> TermNameIdOps.text n = name | _ -> false)) then
+                        warnings.Add(nr, WarningCodeOps.message WarningCode.UnneededRecMarker $"{name} never refers to itself, so its ^ is not needed; drop the ^")
+                | _ -> ()
+                term scope (rec_block scope env l') s on_succ
             | RawMatch(r,body,[]) ->
                 annotations.Add(x,(r,s))
                 let body_var = fresh_var scope
@@ -6698,6 +6802,33 @@ module spiral_compiler =
             | RawMatch(_,body,l) ->
                 let body_var = fresh_var scope
                 f body_var body
+                if CompilerFlagOps.enabled CompilerFlag.WarnUnusedBindings && not (upstreamDialectPids.ContainsKey package_id) then
+                    match l with
+                    | [ PatVar(pr, name), on_succ ] when not (name.StartsWith "_") ->
+                        let others = Map.fold (fun s k _ -> Set.add (TermNameIdOps.text k) s) Set.empty env.term |> Set.remove name
+                        let types = Map.fold (fun s k _ -> Set.add (TypeNameIdOps.text k) s) Set.empty env.ty
+                        let refs = validate_bound_vars (loc_env top_env) env.constraints others types (Choice1Of2 on_succ)
+                        if not (refs |> Seq.exists (fun (_, e) -> match e with UnboundVariable (UnboundTermName n) -> TermNameIdOps.text n = name | _ -> false)) then
+                            warnings.Add(pr, WarningCodeOps.message WarningCode.UnusedBinding $"{name} is never read after this binding; drop it or name it _{name}")
+                    | _ -> ()
+                if not (upstreamDialectPids.ContainsKey package_id) then
+                    let rec covers earlier later =
+                        match earlier, later with
+                        | (PatE _ | PatVar _), _ -> true
+                        | PatB _, PatB _ -> true
+                        | PatUnbox(_,c1,p1), PatUnbox(_,c2,p2) -> c1 = c2 && covers p1 p2
+                        | PatPair(_,a1,b1), PatPair(_,a2,b2) -> covers a1 a2 && covers b1 b2
+                        | PatSymbol(_,a), PatSymbol(_,b) -> a = b
+                        | PatValue(_,a), PatValue(_,b) -> a = b
+                        | PatWhen _, _ -> false
+                        | PatOr(_,a,b), _ -> covers a later || covers b later
+                        | _, PatOr(_,a,b) -> covers earlier a && covers earlier b
+                        | PatAnd(_,a,b), _ -> covers a later && covers b later
+                        | _, PatWhen(_,p,_) -> covers earlier p
+                        | _ -> false
+                    l |> List.iteri (fun i (later, _) ->
+                        if l |> List.take i |> List.exists (fun (earlier, _) -> covers earlier later) then
+                            warnings.Add(range_of_pattern later, WarningCodeOps.message WarningCode.UnreachableArm "an earlier arm already matches everything this arm matches, so it never runs; remove it or move it above the arm that covers it"))
                 List.iter (match_clause (body_var,s)) l
             | RawMissingBody r -> errors.Add(r,MissingBody)
             | RawMacro(r,a) ->
@@ -7338,7 +7469,13 @@ module spiral_compiler =
             | Some(M _) -> errors.Add(fst prot, ExpectedPrototypeInsteadOfModule); check_ins fake
         | BundleOpen(q,(r,a),b) ->
             match inferModule_open (Some hover_types) (loc_env top_env) Map.empty r a b with
-            | Ok x -> psucc (fun () -> FOpen(q,(r,a),b)), AOpen {inferTop_env_empty with term=markAmbiguousUnionCases top_env x.term; ty=x.ty; constraints=x.constraints}
+            | Ok x ->
+                let supplied =
+                    [ for k in x.term.Keys -> TermNameIdOps.text k ]
+                    @ [ for k in x.ty.Keys -> TypeNameIdOps.text k ]
+                    @ [ for k in x.constraints.Keys -> ConstraintNameIdOps.text k ]
+                open_names.Add((q, a, supplied))
+                psucc (fun () -> FOpen(q,(r,a),b)), AOpen {inferTop_env_empty with term=markAmbiguousUnionCases top_env x.term; ty=x.ty; constraints=x.constraints}
             | Error er -> errors.Add(er); pfail, AOpen inferTop_env_empty
         |> fun (filled_top, top_env_additions) ->
             if 0 = errors.Count then
@@ -7357,9 +7494,10 @@ module spiral_compiler =
             top_env_additions = top_env_additions
             offset = bundle_range expr |> range_start |> fun x -> x.line
             // ws: SPIRAL_HOVERS=0 (set by the CLI host, which never serves hovers) skips rendering every hover type to text.
-            hovers = if System.Environment.GetEnvironmentVariable "SPIRAL_HOVERS" = "0" then [||] else hover_types.ToArray() |> HopacExtensions.A.map (fun ((a:VSCRange),(b,(com : string))) -> a, let b = show_t top_env b in if com <> "" then sprintf "%s\n---\n%s" b com else b)
+            hovers = if not (CompilerFlagOps.enabled CompilerFlag.Hovers) then [||] else hover_types.ToArray() |> HopacExtensions.A.map (fun ((a:VSCRange),(b,(com : string))) -> a, let b = show_t top_env b in if com <> "" then sprintf "%s\n---\n%s" b com else b)
             errors = errors |> Seq.toList |> List.map (fun (a,b) -> a, $"{type_error_report (show_type_error top_env b) (box b)} In the definition: {bundle_binding_names expr}.")
             warnings = if 0 = errors.Count then Seq.toList warnings else []
+            open_names = if 0 = errors.Count then Seq.toList open_names else []
             self_unbound =
                 match expr with
                 | BundleInl(_,_,(_,own),_,true) -> errors |> Seq.exists (fun (_, e) -> match e with UnboundVariable (UnboundTermName n) -> TermNameIdOps.text n = own | _ -> false)
@@ -8114,6 +8252,8 @@ module spiral_compiler =
         match unionSourceNames.TryGetValue node with
         | true, _ -> ()
         | _ -> noteUnionSourceName node (name ())
+    let binderNames = System.Runtime.CompilerServices.ConditionalWeakTable<E, string>()
+    let noteBinderName (e : E) (name : string) = binderNames.TryAdd(e, name) |> ignore; e
     let definitionSources = System.Runtime.CompilerServices.ConditionalWeakTable<E, string * string>()
     let curriedDefinitionSources = System.Runtime.CompilerServices.ConditionalWeakTable<E, string * string>()
     module CurriedWrappers =
@@ -8291,11 +8431,13 @@ module spiral_compiler =
             | EPrototypeApply(r,a,b) -> EPrototypeApply(r,a,g env b)
             | EPatternMemo x -> Utils.memoize dict f x
             // Regular pattern matching
-            | ELet(r,pat,body,on_succ) ->
+            | ELet(r,pat,body,on_succ) as node ->
                 let body = term env_rec env body
                 let pat,env = adj_term env pat
                 let on_succ = term env_rec env on_succ
-                ELet(r,pat,body,on_succ)
+                match binderNames.TryGetValue node with
+                | true, name -> noteBinderName (ELet(r,pat,body,on_succ)) name
+                | _ -> ELet(r,pat,body,on_succ)
             | EUnbox(r,q,pat,body,on_succ,on_fail) ->
                 let body = term env_rec env body
                 let on_fail = term env_rec env on_fail
@@ -8521,6 +8663,13 @@ module spiral_compiler =
             | EModule _ -> ()
             | _ -> if enabled && (not bound_in_env || fst (definitions.TryGetValue e)) then used path range name e
 
+    /// ### PragmaUnrollOps
+    module PragmaUnrollOps =
+        let honoured (backend : string) =
+            match backend with
+            | "C" | "Cpp" | "CppHost" | "Cuda" | "CudaHost" | "CudaDevice" -> true
+            | _ -> false
+
     /// ### prepassPrepass
     let prepassPrepass package_id module_id path (top_env : PrepassTopEnv) =
         let p r = {path=path; range=r}
@@ -8568,7 +8717,7 @@ module spiral_compiler =
                     | PatDefaultValue _ -> failwith "Compiler error: The default value should be filled."
                     | PatE _ -> on_succ
                     | PatB r -> EUnitTest(p r,id,on_succ,on_fail)
-                    | PatVar(r,a) -> ELet(p r,v a,EV id,on_succ)
+                    | PatVar(r,a) -> noteBinderName (ELet(p r,v a,EV id,on_succ)) a
                     | PatAnnot(r,a,b) -> EAnnotTest(p r,pat_ref_ty b,id,cp id a on_succ on_fail,on_fail)
                     | PatPair(r,a,b) ->
                         // Evaling the b then a causes the call args to be rotated in join points during peval.
@@ -8644,7 +8793,7 @@ module spiral_compiler =
                     | EAnnot(_, e, _) | EJoinPoint(_, e, _, _, _) | EJoinPoint'(_, _, e, _, _, _) -> namesFunction e
                     | _ -> false
                 if namesFunction body then noteClosureName body x
-                ELet(r,id,body,term env on_succ)
+                noteBinderName (ELet(r,id,body,term env on_succ)) x
             | _ ->
                 let id,env = fresh_term_var env
                 ELet(r,id,body,compile_pattern id env clauses)
@@ -8922,6 +9071,7 @@ module spiral_compiler =
                     ) (Map.empty, Map.empty, Map.empty, top_env.nominals_next_tag) l
             match x with
             | x when PrepassAdapter.isErrorBind x -> AInclude prepassTop_env_empty
+            | FError _ -> AInclude prepassTop_env_empty
             | FType(_,(_,name),l,body) -> AInclude {prepassTop_env_empty with ty = Map.add (TypeNameIdOps.create name) (eval_type' env l (fun env -> ty env body)) Map.empty}
             | FNominal(r,a,b,c) ->
                 let term,ty,nominals,i = nominal_rec [r,a,b,c]
@@ -8996,8 +9146,8 @@ module spiral_compiler =
                 match System.Int32.TryParse text with
                 | true, count when count > 0 -> count
                 | _ -> failwithf "SPIRAL_HOPACSOTA_WORKERS must be a positive integer, got %s" text
-        let evaluating_threads = if System.Environment.GetEnvironmentVariable "SPIRAL_RUST_GAP_TRACE" = "1" then 1 else workers
-        let stats_enabled = System.Environment.GetEnvironmentVariable "SPIRAL_HOPACSOTA_STATS" = "1"
+        let evaluating_threads = if CompilerFlagOps.enabled CompilerFlag.RustGapTrace then 1 else workers
+        let stats_enabled = CompilerFlagOps.enabled CompilerFlag.HopacsotaStats
         let body_stack_bytes = 1536 <<< 20
         exception HopacsotaConflict of string
         type Marks(prefix : string) =
@@ -9389,7 +9539,7 @@ module spiral_compiler =
                 contexts |> Seq.collect (fun ctx -> ctx.Crashes) |> Seq.tryHead |> Option.iter raise
             member _.Check() =
                 let conflicts, _, cycles = counts ()
-                if conflicts + cycles > 0 || System.Environment.GetEnvironmentVariable "SPIRAL_HOPACSOTA_FORCE_CONFLICT" = "1" then raise (HopacsotaConflict (sprintf "hopacsota parallel conflict: %d foreign claims of abandoned keys, %d wait-for cycles" conflicts cycles))
+                if conflicts + cycles > 0 || CompilerFlagOps.enabled CompilerFlag.HopacsotaForceConflict then raise (HopacsotaConflict (sprintf "hopacsota parallel conflict: %d foreign claims of abandoned keys, %d wait-for cycles" conflicts cycles))
             member _.Close() =
                 let conflicts, abandoned, cycles = counts ()
                 bridge (Ch.give work Stop)
@@ -9846,6 +9996,7 @@ module spiral_compiler =
         cse : Dictionary<TypedOp, Data> list
         unions : Map<TyV, UnionRewrite>
         i : int ref
+        var_names : Dictionary<int, string>
         env_global_type : Ty []
         env_global_term : Data []
         env_stack_type : Ty []
@@ -10079,6 +10230,12 @@ module spiral_compiler =
         | _ -> false
 
     /// ### seq_apply
+    let bodyVarNames = System.Runtime.CompilerServices.ConditionalWeakTable<TypedBind [], Dictionary<int, string>>()
+    let nameBoundVars (d : LangEnv) (node : E) (bound : Data) =
+        match binderNames.TryGetValue node with
+        | true, name -> data_free_vars bound |> Array.iter (fun (L(i, _)) -> d.var_names.TryAdd(i, name) |> ignore)
+        | _ -> ()
+
     let seq_apply (d: LangEnv) end_dat =
         let inline end_ () = d.seq.Add(TyLocalReturnData(end_dat,d.trace))
         if d.seq.Count > 0 then
@@ -10086,7 +10243,9 @@ module spiral_compiler =
             | TyLet(end_dat',a,b) when Object.ReferenceEquals(end_dat,end_dat') && is_tco_compatible b -> d.seq.[d.seq.Count-1] <- TyLocalReturnOp(a,b,end_dat')
             | _ -> end_()
         else end_()
-        d.seq.ToArray()
+        let body = d.seq.ToArray()
+        bodyVarNames.AddOrUpdate(body, d.var_names)
+        body
 
     /// ### cse_tryfind
     let cse_tryfind (d: LangEnv) key =
@@ -10291,7 +10450,8 @@ module spiral_compiler =
     /// one of them with a plain argument (no string or function inside) becomes a typed call into the unit instead of an
     /// inlined body. Set per build, and empty outside Rust.
     module ExternCalls =
-        type Call = {call : string; import_text : string option; borrow_strings : bool; unit_path : string; struct_records : bool; flat_records : bool; multi_ranges : bool; copy_tuples : bool; pascal_records : bool}
+        type NamedRecords = NotCrossing | AsStruct | AsPascalConstructor
+        type Call = {call : string; import_text : string option; borrow_strings : bool; unit_path : string; named_records : NamedRecords; flat_records : bool; multi_ranges : bool; copy_tuples : bool}
         let pascal (name : string) =
             name.Split '_' |> Array.filter (fun w -> w <> "") |> Array.map (fun w -> string (System.Char.ToUpperInvariant w.[0]) + w.Substring 1) |> String.concat ""
         let current = new System.Threading.ThreadLocal<Map<string * string, Call>>(fun () -> Map.empty)
@@ -10552,8 +10712,13 @@ module spiral_compiler =
     /// SPIRAL_RUST_GAP_TRACE=1: when a macro carries lib/spiral's Rust or TypeScript gap marker (backend.spi's
     /// `compile_error!("... no Rust arm ...")`/`no TypeScript arm` fallbacks), print the Spiral call chain once to
     /// stderr, so one compile names every lib function that still needs an arm for that backend.
+    module BuildPhaseTiming =
+        let peval_ms = ref (-1L)
+        let codegen_ms = ref (-1L)
+        let reset () = peval_ms.Value <- -1L; codegen_ms.Value <- -1L
+
     module RustGapTrace =
-        let enabled = System.Environment.GetEnvironmentVariable "SPIRAL_RUST_GAP_TRACE" = "1"
+        let enabled = CompilerFlagOps.enabled CompilerFlag.RustGapTrace
         /// BackendSwitch evaluates the other backends' branches only to check their types (into a throwaway seq):
         /// gaps reached there never reach the output.
         let validating = new System.Threading.ThreadLocal<int>(fun () -> 0)
@@ -10642,6 +10807,7 @@ module spiral_compiler =
             cse = [Dictionary(HashIdentity.Structural)]
             unions = Map.empty
             i = ref 0
+            var_names = Dictionary()
             env_global_type = gl_ty
             env_global_term = gl_term
             env_stack_type = Array.zeroCreate<_> sz_ty
@@ -10825,10 +10991,18 @@ module spiral_compiler =
             | _ -> "t"
         and phantom_index s t =
             let unit_nominal t = try nominal_type_apply s t = YB with PartEvalTypeError _ -> false
+            let reduct_is_index t =
+                try
+                    match nominal_type_apply s t with
+                    | YB -> true
+                    | r when r = PhantomIndex.mark -> true
+                    | (YNominal _ | YApply _) as r -> phantom_index s r
+                    | _ -> false
+                with PartEvalTypeError _ -> false
             match t with
             | YSymbol _ -> t = PhantomIndex.mark
             | YNominal _ -> unit_nominal t
-            | YApply(_, a) -> phantom_index s a && unit_nominal t
+            | YApply(_, a) -> phantom_index s a && reduct_is_index t
             | _ -> false
         and phantom_erase s t =
             match t with
@@ -10884,6 +11058,7 @@ module spiral_compiler =
                         cse = [Dictionary(HashIdentity.Structural)]
                         unions = Map.empty
                         i = ref 0
+                        var_names = Dictionary()
                         env_global_type = env_global_type
                         env_global_term = env_global_term
                         env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
@@ -11045,7 +11220,7 @@ module spiral_compiler =
                             }
                     s.env_stack_term.[0] <- b
                     (match ExternCalls.lookup body, annot with
-                     | Some linked, Some (TFun(_, range, _)) when (let resolve t = try nominal_type_apply s t with _ -> t in ExternCalls.callable linked.struct_records linked.flat_records linked.multi_ranges resolve (data_to_ty s b) (ty s range)) ->
+                     | Some linked, Some (TFun(_, range, _)) when (let resolve t = try nominal_type_apply s t with _ -> t in ExternCalls.callable (linked.named_records <> ExternCalls.NotCrossing) linked.flat_records linked.multi_ranges resolve (data_to_ty s b) (ty s range)) ->
                         let resolve t = try nominal_type_apply s t with _ -> t
                         let b = dyn false s b
                         linked.import_text |> Option.iter (fun text -> global' text; push_op_no_rewrite s Global (DLit (LitString text)) YB |> ignore)
@@ -11060,20 +11235,20 @@ module spiral_compiler =
                                 | WLit l -> separator @ [CMTerm(DLit l, true)])
                             |> List.concat
                         let args =
-                            match ExternCalls.struct_fields linked.struct_records resolve (data_to_ty s b), b with
+                            match ExternCalls.struct_fields (linked.named_records <> ExternCalls.NotCrossing) resolve (data_to_ty s b), b with
                             | Some (name, _), (DNominal(DRecord m, _) | DRecord m) ->
                                 let fields = m |> Map.toList |> List.mapi (fun j ((_, k), v) -> (if j > 0 then [CMText ", "] else []) @ [CMText $"{k}: "] @ pieces v) |> List.concat
-                                if linked.pascal_records then [CMText $"{linked.unit_path}{ExternCalls.pascal name}("] @ fields @ [CMText ")"]
+                                if linked.named_records = ExternCalls.AsPascalConstructor then [CMText $"{linked.unit_path}{ExternCalls.pascal name}("] @ fields @ [CMText ")"]
                                 else [CMText $"{linked.unit_path}{name} {{ "] @ fields @ [CMText " }"]
                             | _ -> pieces b
                         let range_ty = ty s range
                         let call = [CMText (linked.call + "(")] @ args @ [CMText ")"]
                         let width = ty_to_data {s with i = ref 0} range_ty |> data_free_vars |> Array.length
                         let text =
-                            match ExternCalls.struct_fields linked.struct_records resolve range_ty with
+                            match ExternCalls.struct_fields (linked.named_records <> ExternCalls.NotCrossing) resolve range_ty with
                             | Some (_, fields) ->
                                 let parts = fields |> Map.toList |> List.map (fun ((_, k), _) -> $"r.{k}")
-                                if linked.pascal_records then
+                                if linked.named_records = ExternCalls.AsPascalConstructor then
                                     let read = match parts with [one] -> one | many -> many |> String.concat ", " |> sprintf "#(%s)"
                                     [CMText "{ let r = "] @ call @ [CMText $" {read} }}"]
                                 else
@@ -11089,7 +11264,7 @@ module spiral_compiler =
                         let where = match s.trace with r :: _ -> $"{r.path}:{(range_start r.range).line + 1}:{(range_start r.range).character + 1}: " | [] -> ""
                         let reason =
                             match annot with
-                            | Some (TFun(_, range, _)) -> ExternCalls.refusal linked.struct_records linked.flat_records linked.multi_ranges resolve (data_to_ty s b) (ty s range)
+                            | Some (TFun(_, range, _)) -> ExternCalls.refusal (linked.named_records <> ExternCalls.NotCrossing) linked.flat_records linked.multi_ranges resolve (data_to_ty s b) (ty s range)
                             | _ -> "its definition is curried or has no annotated signature, so the call has no single argument to pass (take one argument, a tuple for several)"
                         ExternCalls.warn where linked.call reason
                         term s body
@@ -11403,6 +11578,7 @@ module spiral_compiler =
                             cse = [Dictionary(HashIdentity.Structural)]
                             unions = Map.empty
                             i = ref 0
+                            var_names = Dictionary()
                             env_global_type = env_global_type
                             env_global_term = env_global_term
                             env_stack_type = Array.zeroCreate<_> scope.ty.stack_size
@@ -11495,7 +11671,7 @@ module spiral_compiler =
                     | a -> raise_type_error s <| sprintf "Expected a record.\nGot: %s" (show_data a)
                 | [] -> map Map.empty |> DRecord
             | EPatternMemo _ | EReal _ -> failwith "Compiler error: Should have been eliminated during the prepass."
-            | EModule a -> DRecord(a |> Seq.map (fun (KeyValue (k, v)) -> (a.Count, k), (v |> term s)) |> Map.ofSeq)
+            | EModule a -> DRecord(a |> Seq.map (fun (KeyValue (k, v)) -> (a.Count, TermNameIdOps.text k), (v |> term s)) |> Map.ofSeq)
             | EPair(r,a,b) -> DPair(term s a, term s b)
             | ESeq(r,a,b) ->
                 let s = add_trace s r
@@ -11745,7 +11921,12 @@ module spiral_compiler =
                     | DLit(LitInt32 i) -> lit i
                     | a -> raise_type_error s <| sprintf "Expected an i32.\nGot: %s" (show_data a)
                 | _ -> raise_type_error s <| sprintf "Expected an union type.\nGot: %s" (show_ty t)
-            | ELet(r,i,a,b) -> let s = add_trace s r in store_term s i (term s a); term s b
+            | ELet(r,i,a,b) as node ->
+                let s = add_trace s r
+                let bound = term s a
+                nameBoundVars s node bound
+                store_term s i bound
+                term s b
             | EPairTest(r,bind,p1,p2,on_succ,on_fail) ->
                 let s = add_trace s r
                 match v s bind with
@@ -11820,8 +12001,10 @@ module spiral_compiler =
                 | a -> raise_type_error s <| sprintf "Expected a function.\nGot: %s" (show_data a)
             | EOp(_,PragmaUnrollPush,[a]) ->
                 match term s a with
+                | DLit (LitInt32 _) when not (PragmaUnrollOps.honoured s.backend.node) -> DB
                 | DLit (LitInt32 _) as x -> push_op_no_rewrite s PragmaUnrollPush x YB
                 | a -> raise_type_error s <| sprintf "Expected an i32 literal.\nGot: %s" (show_data a)
+            | EOp(_,PragmaUnrollPop,[]) when not (PragmaUnrollOps.honoured s.backend.node) -> DB
             | EOp(_,PragmaUnrollPop,[]) ->
                 push_op_no_rewrite' s PragmaUnrollPop [] YB
             | EOp(_,BackendSwitch,[a]) ->
@@ -12074,6 +12257,31 @@ module spiral_compiler =
                         if ty' = ty then push_triop_no_rewrite s ArrayIndexSet (a,b,c) YB
                         else raise_type_error s <| sprintf "The array and the value being set do not have the same type.\nGot: %s\nExpected: %s" (show_ty ty') (show_ty ty)
                     | b -> raise_type_error s <| sprintf "Expected an int as the index argumet.\nGot: %s" (show_ty b)
+                | a -> raise_type_error s <| sprintf "Expected an array_base.\nGot: %s" (show_data a)
+            | EOp(_,GpuStageBoundary,[a]) ->
+                let a = term s a
+                if s.backend.node = "Wgsl" then push_op_no_rewrite' s GpuStageBoundary [] YB |> ignore
+                a
+            | EOp(_,(GpuCarryIn | GpuCarryOut as carry),[a]) ->
+                let a = term s a
+                if s.backend.node = "Wgsl" then push_op_no_rewrite' s carry [a] (data_to_ty s a) else a
+            | EOp(_,ArrayAtomicAdd,[a;b;c]) ->
+                match s.backend.node with
+                | "Fsharp" | "C" | "Cpp" | "CppHost" | "Cuda" | "CudaHost" | "CudaDevice" | "Rust" -> ()
+                | other -> raise_type_error s $"ArrayAtomicAdd is not supported on the {other} backend yet; it is on Fsharp, C, Cpp/Cuda and Rust."
+                match term s a with
+                | DV(L(_,YArray ty)) & a ->
+                    match ty with
+                    | YPrim (Int32T | UInt32T | Int64T | UInt64T) -> ()
+                    | _ -> raise_type_error s $"ArrayAtomicAdd needs an array of i32, u32, i64 or u64.\nGot: {show_ty ty}"
+                    let b = term s b
+                    match data_to_ty s b with
+                    | bt when is_any_int bt ->
+                        let c = term s c |> dyn false s
+                        let ty' = data_to_ty s c
+                        if ty' = ty then push_triop_no_rewrite s ArrayAtomicAdd (a,b,c) ty
+                        else raise_type_error s <| sprintf "The array and the value being added do not have the same type.\nGot: %s\nExpected: %s" (show_ty ty') (show_ty ty)
+                    | b -> raise_type_error s <| sprintf "Expected an int as the index argument.\nGot: %s" (show_ty b)
                 | a -> raise_type_error s <| sprintf "Expected an array_base.\nGot: %s" (show_data a)
             | EOp(_,RecordMap,[a;b]) ->
                 match term2 s a b with
@@ -13034,6 +13242,7 @@ module spiral_compiler =
             cse = []
             unions = Map.empty
             i = ref 0
+            var_names = Dictionary()
             env_global_type = [||]
             env_global_term = [||]
             env_stack_type = [||]
@@ -13650,13 +13859,28 @@ module spiral_compiler =
     type RefcDecrTable = Dictionary<TypedBind, TyV Set>
     let refcDecrTable () : RefcDecrTable = Dictionary(HashIdentity.Reference)
     let refcDecrAdd (table : RefcDecrTable) key value = table.Add(key, value)
+    let keepVarNames (body : TypedBind []) (elided : TypedBind []) =
+        match bodyVarNames.TryGetValue body with
+        | true, names -> bodyVarNames.AddOrUpdate(elided, names)
+        | _ -> ()
+        elided
+    let localVarName (names : Dictionary<int, string>) (i : int) =
+        match names with
+        | null -> $"v{i}"
+        | names ->
+            match names.TryGetValue i with
+            | true, name ->
+                let safe = name |> String.map (fun c -> if System.Char.IsAsciiLetterOrDigit c || c = '_' then c else '_')
+                let stem = if safe.Length = 0 || System.Char.IsAsciiDigit safe.[0] then "_" + safe else safe
+                $"{stem}_v{i}"
+            | _ -> $"v{i}"
     let codegenMethodBody (env : PartEvalResult) (_ : string) jp_body key =
         match (fst env.join_point_method.[jp_body]).[key] with
-        | Some body, Some range, name -> DeadPureLetElision.block body, range, name
+        | Some body, Some range, name -> keepVarNames body (DeadPureLetElision.block body), range, name
         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
     let codegenClosureBody (env : PartEvalResult) (_ : string) jp_body key =
         match (fst env.join_point_closure.[jp_body]).[key] with
-        | Some(domain_args, body) -> domain_args, DeadPureLetElision.block body, closureSourceName (snd jp_body)
+        | Some(domain_args, body) -> domain_args, keepVarNames body (DeadPureLetElision.block body), closureSourceName (snd jp_body)
         | _ -> raise_codegen_error "Compiler error: The closure dictionary is malformed"
     let codegenOwnerBackendName (jp_body : string ConsedNode * E) = (fst jp_body).node
     let codegenFsharpMethodBody (env : PartEvalResult) jp_body key (_ : int) =
@@ -13805,9 +14029,20 @@ module spiral_compiler =
                 if dirty then print true show r
                 r
 
-        let union show =
+        let union_names = Dictionary<UnionRecFsharp, string>(HashIdentity.Reference)
+        let union prefix show =
             let dict = Dictionary(HashIdentity.Reference)
-            let f (a : Map<int * string,Ty>) : UnionRecFsharp = {free_vars=a |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=dict.Count}
+            let used = HashSet<string>()
+            let f (a : Union) : UnionRecFsharp =
+                let r : UnionRecFsharp = {free_vars=a.Item.cases |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=dict.Count}
+                union_names.[r] <-
+                    match unionSourceNames.TryGetValue(box a) with
+                    | true, source ->
+                        let clean = source |> String.map (fun c -> if System.Char.IsAsciiLetterOrDigit c then c else '_')
+                        let named = $"{prefix}_{clean}"
+                        if used.Add named then named elif used.Add $"{named}_{r.tag}" then $"{named}_{r.tag}" else $"{prefix}{r.tag}"
+                    | _ -> $"{prefix}{r.tag}"
+                r
             fun x ->
                 let mutable dirty = false
                 let r = memoize dict (fun x -> dirty <- true; f x) x
@@ -13823,8 +14058,24 @@ module spiral_compiler =
                 if dirty then print false show r
                 r
 
-        let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
-        let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litFsharp a
+        let mutable var_names : Dictionary<int, string> = null
+        let with_names (body : TypedBind []) (emit : unit -> unit) =
+            let outer = var_names
+            var_names <- (match bodyVarNames.TryGetValue body with | true, names -> names | _ -> null)
+            emit ()
+            var_names <- outer
+        let binder_ident (name : string) =
+            let safe = name |> String.map (fun c -> if System.Char.IsAsciiLetterOrDigit c || c = '_' then c else '_')
+            if safe.Length = 0 || System.Char.IsAsciiDigit safe.[0] then "_" + safe else safe
+        let var_name (i : int) =
+            match var_names with
+            | null -> $"v{i}"
+            | names ->
+                match names.TryGetValue i with
+                | true, name -> $"{binder_ident name}_v{i}"
+                | _ -> $"v{i}"
+        let args x = x |> Array.map (fun (L(i,_)) -> var_name i) |> String.concat ", "
+        let show_w = function WV (L(i,_)) -> var_name i | WLit a -> litFsharp a
         let args' x = x |> data_term_vars |> Array.map show_w |> String.concat ", "
 
         let global' =
@@ -13862,10 +14113,9 @@ module spiral_compiler =
         let rec tyv x =
             match x with
             | YUnion a ->
-                let a = a.Item
-                match a.layout with
-                | UHeap -> sprintf "UH%i" (uheap a.cases).tag
-                | UStack -> sprintf "US%i" (ustack a.cases).tag
+                match a.Item.layout with
+                | UHeap -> union_names.[uheap a]
+                | UStack -> union_names.[ustack a]
             | YLayout(_,lay) as a ->
                 match lay with
                 | Heap -> sprintf "Heap%i" (heap a).tag
@@ -13883,7 +14133,7 @@ module spiral_compiler =
             | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
             | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
             | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
-        and args_tys x = x |> Array.map (fun (L(i,t)) -> sprintf "v%i : %s" i (tup_ty t)) |> String.concat ", "
+        and args_tys x = x |> Array.map (fun (L(i,t)) -> sprintf "%s : %s" (var_name i) (tup_ty t)) |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
             Array.iter (function
                 | TyLet(DV(L(i,_)),_,TyJoinPoint(JPClosure(a,c),[||])) as b when export_only_closures.Contains b -> closure_of_var.[i] <- (closure (a,c)).tag
@@ -13908,7 +14158,7 @@ module spiral_compiler =
                 | JPMethod(a,b) -> sprintf "%s(%s)" method_names.[(method (a,b)).tag] args
                 | JPClosure(a,b) -> sprintf "%s(%s)" closure_names.[(closure (a,b)).tag] args
             let free_vars do_annot x =
-                let f (L(i,t)) = if do_annot then sprintf "v%i : %s" i (tyv t) else sprintf "v%i" i
+                let f (L(i,t)) = if do_annot then sprintf "%s : %s" (var_name i) (tyv t) else var_name i
                 match data_free_vars x with
                 | [||] -> "()"
                 | [|x|] -> f x
@@ -13929,11 +14179,11 @@ module spiral_compiler =
             let layout_vars a =
                 let f i x =
                     match x with
-                    | WV(L(i',_)) -> sprintf "l%i = v%i" i i'
+                    | WV(L(i',_)) -> sprintf "l%i = %s" i (var_name i')
                     | WLit x -> sprintf "l%i = %s" i (litFsharp x)
                 a |> data_term_vars |> Array.mapi f |> String.concat "; "
             let layout_index i x =
-                x |> Array.map (fun (L(i',_)) -> sprintf "v%i.l%i" i i')
+                x |> Array.map (fun (L(i',_)) -> sprintf "%s.l%i" (var_name i) i')
                 |> String.concat ", "
                 |> function "" -> () | x -> simple x
             let length_of_text a text =
@@ -13984,7 +14234,7 @@ module spiral_compiler =
                 binds (indent s) a
             | TyIntSwitch(L(i,_),on_succ,on_fail) ->
                 complex <| fun s ->
-                line s (sprintf "match v%i with" i)
+                line s (sprintf "match %s with" (var_name i))
                 Array.iteri (fun i x ->
                     line s (sprintf "| %i ->" i)
                     binds (indent s) x
@@ -13993,12 +14243,10 @@ module spiral_compiler =
                 binds (indent s) on_fail
             | TyUnionUnbox(is,x,on_succs,on_fail) ->
                 complex <| fun s ->
-                line s (sprintf "match %s with" (is |> List.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "))
+                line s (sprintf "match %s with" (is |> List.map (fun (L(i,_)) -> var_name i) |> String.concat ", "))
                 let union_rec, prefix =
-                    let x = x.Item
-                    match x.layout with
-                    | UHeap -> let u = uheap x.cases in u, sprintf "UH%i" u.tag
-                    | UStack -> let u = ustack x.cases in u, sprintf "US%i" u.tag
+                    let u = match x.Item.layout with UHeap -> uheap x | UStack -> ustack x
+                    u, union_names.[u]
                 let case_index k =
                     union_rec.free_vars
                     |> Seq.map (fun (KeyValue ((_,k'),_)) -> k')
@@ -14022,11 +14270,11 @@ module spiral_compiler =
                     binds (indent s) b
                     )
             | TyUnionBox(a,b,c) ->
+                let union_node = c
                 let c = c.Item
                 let union_rec, prefix =
-                    match c.layout with
-                    | UHeap -> let u = uheap c.cases in u, sprintf "UH%i" u.tag
-                    | UStack -> let u = ustack c.cases in u, sprintf "US%i" u.tag
+                    let u = match c.layout with UHeap -> uheap union_node | UStack -> ustack union_node
+                    u, union_names.[u]
                 let i =
                     union_rec.free_vars
                     |> Seq.map (fun (KeyValue ((_,k),_)) -> k)
@@ -14072,7 +14320,7 @@ module spiral_compiler =
                     | DRecord l -> l |> Map.pick (fun (_,k') v -> if LayoutFieldNameIdOps.matchesText k k' then Some v else None)
                     | _ -> raise_codegen_error "Compiler error: Expected a record.") (mut t).data b
                 Array.iter2 (fun (L(i',_)) b ->
-                    line s (sprintf "v%i.l%i <- %s" i i' (show_w b))
+                    line s (sprintf "%s.l%i <- %s" (var_name i) i' (show_w b))
                     ) (data_free_vars a) (data_term_vars c)
             | TyArrayLiteral(a,b) -> simple <| sprintf "[|%s|]" (List.map tup b |> String.concat "; ")
             | TyArrayCreate(a,b) ->
@@ -14097,7 +14345,7 @@ module spiral_compiler =
                 | YPrim Float64T -> $"float {b}"
                 | _ -> raise_codegen_error $"Compiler error: Unexpected type in Conv. Got: {show_ty a}"
                 |> simple
-            | TyApply(L(i,_),b) -> sprintf "v%i %s" i (tup b) |> simple
+            | TyApply(L(i,_),b) -> sprintf "%s %s" (var_name i) (tup b) |> simple
             | TyOp(Global, [DLit (LitString x)]) -> global' x
             | TyOp(Export, [DLit (LitString name); DV(L(i,YFun(domain,range,_)))]) ->
                 if not (export_names.Add name) then raise_codegen_error $"Duplicate export: {name}."
@@ -14107,12 +14355,12 @@ module spiral_compiler =
                     | _ -> raise_codegen_error $"Compiler error: the exported function {name} is not a closure without captures."
                 let parameters = env.ty_to_data domain |> data_free_vars
                 let decl =
-                    match parameters |> Array.map (fun (L(k,t)) -> $"v{k} : {tyv t}") with
+                    match parameters |> Array.map (fun (L(k,t)) -> $"{var_name k} : {tyv t}") with
                     | [||] -> "()"
                     | [|x|] -> $"({x})"
                     | x -> String.concat ", " x |> sprintf "(%s)"
                 let call =
-                    match parameters |> Array.map (fun (L(k,_)) -> $"v{k}") with
+                    match parameters |> Array.map (fun (L(k,_)) -> var_name k) with
                     | [||] -> "()"
                     | [|x|] -> x
                     | x -> String.concat ", " x |> sprintf "(struct (%s))"
@@ -14130,6 +14378,7 @@ module spiral_compiler =
                 | StaticStringConcat, [a;b] -> sprintf "(%s + %s)" (tup a) (tup b)
                 | ArrayIndex, [a;b] -> sprintf "%s.[int %s]" (tup a) (tup b)
                 | ArrayIndexSet, [a;b;c] -> sprintf "%s.[int %s] <- %s" (tup a) (tup b) (tup c)
+                | ArrayAtomicAdd, [a;b;c] -> sprintf "(System.Threading.Interlocked.Add(&%s.[int %s], %s) - %s)" (tup a) (tup b) (tup c) (tup c)
 
                 // Math
                 | Add, [a;b] -> sprintf "%s + %s" (tup a) (tup b)
@@ -14171,11 +14420,11 @@ module spiral_compiler =
                     | DLit(LitFloat64 _) | DV(L(_,YPrim Float64T)) -> sprintf "System.Double.IsNaN(%s)" (tup x)
                     | _ -> raise_codegen_error "Compiler error: Invalid type in NanIs."
                 | UnionTag, [DV(L(i,YUnion h))] ->
+                    let union_node = h
                     let h = h.Item
                     let union_rec, prefix =
-                        match h.layout with
-                        | UHeap -> let u = uheap h.cases in u, sprintf "UH%i" u.tag
-                        | UStack -> let u = ustack h.cases in u, sprintf "US%i" u.tag
+                        let u = match h.layout with UHeap -> uheap union_node | UStack -> ustack union_node
+                        u, union_names.[u]
                     let arms =
                         union_rec.free_vars
                         |> Seq.mapi (fun position (KeyValue ((tag, _), fields)) ->
@@ -14185,7 +14434,7 @@ module spiral_compiler =
                             | _ -> $"| {pattern} _ -> {tag}"
                         )
                         |> String.concat " "
-                    $"(match v{i} with {arms})"
+                    $"(match {var_name i} with {arms})"
                 | Printf, [DLit (LitString fmt); b] ->
                     match printf_pieces fmt (data_term_vars b) with
                     | [] -> "()"
@@ -14207,19 +14456,21 @@ module spiral_compiler =
             if b = "" then line s (sprintf "Mut%i() = class end" x.tag)
             else line s (sprintf "Mut%i = {%s}" x.tag b)
             )
-        and uheap : _ -> UnionRecFsharp = union (fun s x ->
-            line s (if x.free_vars.Count = 0 then sprintf "UH%i = class end" x.tag else sprintf "UH%i =" x.tag)
+        and uheap : Union -> UnionRecFsharp = union "UH" (fun s x ->
+            let name = union_names.[x]
+            line s (if x.free_vars.Count = 0 then sprintf "%s = class end" name else sprintf "%s =" name)
             x.free_vars |> Seq.iteri (fun position (KeyValue(_, a)) ->
-                let case_name = generatedCaseName (sprintf "UH%i" x.tag) x.free_vars position
+                let case_name = generatedCaseName name x.free_vars position
                 match a with
                 | [||] -> line (indent s) (sprintf "| %s" case_name)
                 | a -> line (indent s) (sprintf "| %s of %s" case_name (a |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat " * "))
                 )
             )
-        and ustack : _ -> UnionRecFsharp = union (fun s x ->
-            line s (if x.free_vars.Count = 0 then sprintf "US%i = struct end" x.tag else sprintf "[<Struct>] US%i =" x.tag)
+        and ustack : Union -> UnionRecFsharp = union "US" (fun s x ->
+            let name = union_names.[x]
+            line s (if x.free_vars.Count = 0 then sprintf "%s = struct end" name else sprintf "[<Struct>] %s =" name)
             x.free_vars |> Seq.iteri (fun position (KeyValue(_, a)) ->
-                let case_name = generatedCaseName (sprintf "US%i" x.tag) x.free_vars position
+                let case_name = generatedCaseName name x.free_vars position
                 match a with
                 | [||] -> line (indent s) (sprintf "| %s" case_name)
                 | a -> line (indent s) (sprintf "| %s of %s" case_name (a |> Array.mapi (fun i' (L(_,t)) -> sprintf "f%i_%i : %s" position i' (tyv t)) |> String.concat " * "))
@@ -14231,8 +14482,9 @@ module spiral_compiler =
                 method_names.[i] <- generatedMethodName sourceName i
                 {tag=i; free_vars=rdata_free_vars (codegenMethodKeyArgs key); range=range; body=a}
                 ) (fun s x ->
-                line s (sprintf "%s (%s) : %s =" method_names.[x.tag] (args_tys x.free_vars) (tup_ty x.range))
-                with_macro_assigned x.body (fun () -> binds (indent s) x.body)
+                with_names x.body (fun () ->
+                    line s (sprintf "%s (%s) : %s =" method_names.[x.tag] (args_tys x.free_vars) (tup_ty x.range))
+                    with_macro_assigned x.body (fun () -> binds (indent s) x.body))
                 )
         and closure : _ -> ClosureRecFsharp =
             jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
@@ -14244,17 +14496,18 @@ module spiral_compiler =
                 | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
                 | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
                 ) (fun s x ->
-                let domain =
-                    match x.domain_args |> Array.map (fun (L(i,t)) -> sprintf "v%i : %s" i (tyv t)) with
-                    | [||] -> "()"
-                    | [|x|] -> sprintf "(%s)" x
-                    | x -> String.concat ", " x |> sprintf "struct (%s)"
-                line s (sprintf "%s (%s) %s : %s =" closure_names.[x.tag] (args_tys x.free_vars) domain (tup_ty x.range))
-                with_macro_assigned x.body (fun () -> binds (indent s) x.body)
+                with_names x.body (fun () ->
+                    let domain =
+                        match x.domain_args |> Array.map (fun (L(i,t)) -> sprintf "%s : %s" (var_name i) (tyv t)) with
+                        | [||] -> "()"
+                        | [|x|] -> sprintf "(%s)" x
+                        | x -> String.concat ", " x |> sprintf "struct (%s)"
+                    line s (sprintf "%s (%s) %s : %s =" closure_names.[x.tag] (args_tys x.free_vars) domain (tup_ty x.range))
+                    with_macro_assigned x.body (fun () -> binds (indent s) x.body))
                 )
 
         let main = StringBuilder()
-        with_macro_assigned x (fun () -> binds {text=main; indent=0} x)
+        with_names x (fun () -> with_macro_assigned x (fun () -> binds {text=main; indent=0} x))
 
         let program = StringBuilder()
         env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
@@ -14352,7 +14605,7 @@ module spiral_compiler =
     let translateFsharpInterpolations (generated : string) =
         if not (generated.Contains("= $\"", System.StringComparison.Ordinal)) then generated
         else
-            let pattern = System.Text.RegularExpressions.Regex(@"(?m)^(?<prefix>[ \t]*let mut v[0-9]+: Rc<str> = )\$""(?<body>(?:[^""\\]|\\.)*)"";[ \t]*\r?$")
+            let pattern = System.Text.RegularExpressions.Regex(@"(?m)^(?<prefix>[ \t]*let mut (?:[A-Za-z_]\w*_)?v[0-9]+: Rc<str> = )\$""(?<body>(?:[^""\\]|\\.)*)"";[ \t]*\r?$")
             let translate (body : string) =
                 let fmt = StringBuilder()
                 let args = ResizeArray<string>()
@@ -14377,7 +14630,7 @@ module spiral_compiler =
                     elif c = '{' then
                         let close = body.IndexOf('}', i)
                         let hole = if close < 0 then "" else body.Substring(i + 1, close - i - 1)
-                        if System.Text.RegularExpressions.Regex.IsMatch(hole, @"^(v[0-9]+|-?[0-9]+(?:[iu](?:8|16|32|64|size))?)$") then
+                        if System.Text.RegularExpressions.Regex.IsMatch(hole, @"^((?:[A-Za-z_]\w*_)?v[0-9]+|-?[0-9]+(?:[iu](?:8|16|32|64|size))?)$") then
                             fmt.Append("{}") |> ignore
                             args.Add hole
                             i <- close + 1
@@ -14397,8 +14650,8 @@ module spiral_compiler =
     /// ### foldStringBindings
     let foldStringBindings (generated : string) =
         let rx (p : string) = System.Text.RegularExpressions.Regex p
-        let binding = rx @"^(?<ind>[ \t]*)let mut (?<v>v[0-9]+): Rc<str> = (?<rhs>.*?);[ \t]*\r?$"
-        let assignment = rx @"^[ \t]*(?<v>v[0-9]+) = "
+        let binding = rx @"^(?<ind>[ \t]*)let mut (?<v>(?:[A-Za-z_]\w*_)?v[0-9]+): Rc<str> = (?<rhs>.*?);[ \t]*\r?$"
+        let assignment = rx @"^[ \t]*(?<v>(?:[A-Za-z_]\w*_)?v[0-9]+) = "
         let literal = rx @"^""(?<b>(?:[^""\\]|\\.)*)""$"
         let fsLiteral = rx @"^\$""(?<b>(?:[^""\\{}]|\\.)*)""$"
         let fromLiteral = rx @"^Rc::<str>::from\(""(?<b>(?:[^""\\]|\\.)*)""\)$"
@@ -14464,7 +14717,7 @@ module spiral_compiler =
                         else s.Append f.[i] |> ignore; i <- i + 1
                     if ok then Some (s.ToString()) else None
                 else None
-            elif System.Text.RegularExpressions.Regex.IsMatch(e, @"^v[0-9]+$") then
+            elif System.Text.RegularExpressions.Regex.IsMatch(e, @"^(?:[A-Za-z_]\w*_)?v[0-9]+$") then
                 match known.TryGetValue e with true, v -> Some v | _ -> None
             else
                 match splitPlus e with
@@ -14491,7 +14744,7 @@ module spiral_compiler =
                     | None ->
                         known.Remove v |> ignore
                         match splitPlus m.Groups.["rhs"].Value with
-                        | _ :: _ :: _ as parts when parts |> List.forall (fun p -> System.Text.RegularExpressions.Regex.IsMatch(p, @"^((?:string )?v[0-9]+|""(?:[^""\\]|\\.)*""|\$""(?:[^""\\{}]|\\.)*"")$")) ->
+                        | _ :: _ :: _ as parts when parts |> List.forall (fun p -> System.Text.RegularExpressions.Regex.IsMatch(p, @"^((?:string )?(?:[A-Za-z_]\w*_)?v[0-9]+|""(?:[^""\\]|\\.)*""|\$""(?:[^""\\{}]|\\.)*"")$")) ->
                             let fmt = StringBuilder()
                             let args = ResizeArray<string>()
                             for p in parts do
@@ -14544,12 +14797,12 @@ module spiral_compiler =
     let immutableRustLets (generated : string) =
         if not (generated.Contains("let mut v", System.StringComparison.Ordinal)) then generated
         else
-            let binding = System.Text.RegularExpressions.Regex(@"\blet mut (v[0-9]+)\b")
-            let target = @"(v[0-9]+)(?:\s*(?:\.\s*\w+|\[[^\]\n]*\]))*"
+            let binding = System.Text.RegularExpressions.Regex(@"\blet mut ((?:[A-Za-z_]\w*_)?v[0-9]+)\b")
+            let target = @"((?:[A-Za-z_]\w*_)?v[0-9]+)(?:\s*(?:\.\s*\w+|\[[^\]\n]*\]))*"
             let assignment = System.Text.RegularExpressions.Regex(@"(?<![\w.])" + target + @"\s*(?:=(?![=>])|\+=|-=|\*=|/=|%=|<<=|>>=|&=|\|=|\^=)")
-            let mutableBorrow = System.Text.RegularExpressions.Regex(@"&\s*mut\s+(v[0-9]+)\b")
-            let directCall = System.Text.RegularExpressions.Regex(@"(?<![\w.])(v[0-9]+)\s*\(")
-            let methodCall = System.Text.RegularExpressions.Regex(@"(?<![\w.])(v[0-9]+)(?:\s*\.\s*\w+)*?\s*\.\s*(\w+)\s*(?:::<[^>]*>)?\s*\(")
+            let mutableBorrow = System.Text.RegularExpressions.Regex(@"&\s*mut\s+((?:[A-Za-z_]\w*_)?v[0-9]+)\b")
+            let directCall = System.Text.RegularExpressions.Regex(@"(?<![\w.])((?:[A-Za-z_]\w*_)?v[0-9]+)\s*\(")
+            let methodCall = System.Text.RegularExpressions.Regex(@"(?<![\w.])((?:[A-Za-z_]\w*_)?v[0-9]+)(?:\s*\.\s*\w+)*?\s*\.\s*(\w+)\s*(?:::<[^>]*>)?\s*\(")
             let readOnly =
                 HashSet<string>(
                     [ "clone"; "borrow"; "len"; "is_empty"; "as_str"; "as_ref"; "as_ptr"; "chars"; "bytes"; "get"; "iter"; "contains"; "starts_with"; "ends_with"
@@ -14574,10 +14827,10 @@ module spiral_compiler =
         if not (generated.Contains(".clone()", System.StringComparison.Ordinal)) then generated
         else
             let lines = generated.Replace("\r\n", "\n").Split('\n')
-            let word = System.Text.RegularExpressions.Regex(@"(?<![\w.])(v[0-9]+)\b")
+            let word = System.Text.RegularExpressions.Regex(@"(?<![\w.])((?:[A-Za-z_]\w*_)?v[0-9]+)\b")
             let fnHead = System.Text.RegularExpressions.Regex(@"^(?:pub )?fn \w+")
-            let selfRebind = System.Text.RegularExpressions.Regex(@"^\s*let (?:mut )?(v[0-9]+): [^=]+ = \1\.clone\(\);\s*$")
-            let borrowedParam = System.Text.RegularExpressions.Regex(@"\b(v[0-9]+): &")
+            let selfRebind = System.Text.RegularExpressions.Regex(@"^\s*let (?:mut )?((?:[A-Za-z_]\w*_)?v[0-9]+): [^=]+ = \1\.clone\(\);\s*$")
+            let borrowedParam = System.Text.RegularExpressions.Regex(@"\b((?:[A-Za-z_]\w*_)?v[0-9]+): &")
             let spans = ResizeArray<int * int>()
             let mutable start = -1
             for i = 0 to lines.Length - 1 do
@@ -14621,9 +14874,9 @@ module spiral_compiler =
         if not (rustEmitMarkers |> List.exists (fun (m : string) -> generated.Contains(m, System.StringComparison.Ordinal))) then generated
         else
             let lines = generated.Split([|"\r\n"; "\n"|], System.StringSplitOptions.None)
-            let bindingPattern = System.Text.RegularExpressions.Regex(@"^\s*let mut (v[0-9]+): Rc<str> = (?:Rc::<str>::from\()?(""(?:\\.|[^""\\])*"")\)?;\s*$")
+            let bindingPattern = System.Text.RegularExpressions.Regex(@"^\s*let mut ((?:[A-Za-z_]\w*_)?v[0-9]+): Rc<str> = (?:Rc::<str>::from\()?(""(?:\\.|[^""\\])*"")\)?;\s*$")
             let emitPattern =
-                System.Text.RegularExpressions.Regex(@"^(?<prefix>\s*(?:let .+? = )?)__spiral_emit_rust (?<args>.*?) (?<code>v[0-9]+) ;\s*$")
+                System.Text.RegularExpressions.Regex(@"^(?<prefix>\s*(?:let .+? = )?)__spiral_emit_rust (?<args>.*?) (?<code>(?:[A-Za-z_]\w*_)?v[0-9]+) ;\s*$")
             let unescape (literal : string) =
                 let body = literal.Substring(1, literal.Length - 2)
                 let text = StringBuilder()
@@ -14662,7 +14915,7 @@ module spiral_compiler =
                     parts.Add(body.Substring(start).Trim())
                     parts |> Seq.filter (fun part -> part <> "") |> Seq.toList
             let borrow (argument : string) =
-                if System.Text.RegularExpressions.Regex.IsMatch(argument, @"^v[0-9]+\.clone\(\)$") then argument.Substring(0, argument.Length - ".clone()".Length) else argument
+                if System.Text.RegularExpressions.Regex.IsMatch(argument, @"^(?:[A-Za-z_]\w*_)?v[0-9]+\.clone\(\)$") then argument.Substring(0, argument.Length - ".clone()".Length) else argument
             let snippets = Dictionary<string, string>(System.StringComparer.Ordinal)
             let bindingLine = Dictionary<string, int>(System.StringComparer.Ordinal)
             let drop = HashSet<int>()
@@ -14786,18 +15039,20 @@ module spiral_compiler =
         binds body
         escaped, demoted
 
-    let paramEscape (tracked : TyV -> bool) (env : PartEvalResult) (main : TypedBind []) : JoinPointKey -> int -> bool =
+    let paramEscape (tracked : TyV -> bool) (closureCapturesBorrowed : bool) (env : PartEvalResult) (main : TypedBind []) : JoinPointKey -> int -> bool =
         let methods = ResizeArray<JoinPointKey * TyV [] * TypedBind []>()
         for kv in env.join_point_method do
             for m in fst kv.Value do
                 match m.Value with
                 | Some body, _, _ -> methods.Add((JPMethod(kv.Key, m.Key), rdata_free_vars (codegenMethodKeyArgs m.Key), DeadPureLetElision.block body))
                 | _ -> ()
-        let closures = ResizeArray<TypedBind []>()
+        let closures = ResizeArray<TyV Set * TypedBind []>()
         for kv in env.join_point_closure do
             for c in fst kv.Value do
                 match c.Value with
-                | Some(_, body) -> closures.Add(DeadPureLetElision.block body)
+                | Some(_, body) ->
+                    let captures = if closureCapturesBorrowed then (match c.Key with C(args,_,_) -> rdata_free_vars args |> Array.filter tracked |> Set) else Set.empty
+                    closures.Add((captures, DeadPureLetElision.block body))
                 | None -> ()
         let uses = Dictionary<JoinPointKey, ParamUse []>(HashIdentity.Structural)
         for key, ps, _ in methods do uses.[key] <- ps |> Array.map (fun p -> if tracked p then Borrowed else Escapes)
@@ -14818,7 +15073,7 @@ module spiral_compiler =
                 let borrowed = ps |> Array.indexed |> Array.choose (fun (i, p) -> if u.[i] = Borrowed then Some p else None) |> Set
                 let escaped = scan (Some key) borrowed body
                 ps |> Array.iteri (fun i p -> if escaped.Contains p then demote key i)
-            for body in closures do scan None Set.empty body |> ignore
+            for captures, body in closures do scan None captures body |> ignore
             scan None Set.empty main |> ignore
         fun key i ->
             match uses.TryGetValue key with
@@ -14892,7 +15147,7 @@ module spiral_compiler =
         let mutable self_loop : (int * L<Tag,Ty> []) option = None
         let mutable group_loop : (string * HashSet<int>) option = None
         let rust_tracked (L(_,t) : TyV) = match t with YArray _ | YPrim StringT | YLayout(_, (Heap | HeapMutable)) -> true | YUnion u -> u.Item.layout = UHeap | _ -> false
-        let borrowed_param = paramEscape rust_tracked env x
+        let borrowed_param = paramEscape rust_tracked false env x
         let method_borrowed = Dictionary<int, Set<int>>()
         let group_sizes = Dictionary<int, int>()
         let mutable current_borrowed : Set<int> = Set.empty
@@ -14940,10 +15195,17 @@ module spiral_compiler =
             | [|WLit l|] -> (match lit_to_primitive_type l with Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T -> true | _ -> false)
             | _ -> false
         let rust_receiver (x : string) = if System.Text.RegularExpressions.Regex.IsMatch(x, @"^[A-Za-z_0-9]+$") then x else $"({x})"
-        let macro_var = function WV (L(i,_)) -> $"v{i}" | WLit a -> litRust a
+        let mutable var_names : Dictionary<int, string> = null
+        let enter_names (body : TypedBind []) =
+            let outer = var_names
+            var_names <- (match bodyVarNames.TryGetValue body with | true, names -> names | _ -> null)
+            outer
+        let var_name (i : int) = localVarName var_names i
+        let macro_var = function WV (L(i,_)) -> $"{var_name i}" | WLit a -> litRust a
         let macro_args x = x |> data_term_vars |> Array.map macro_var |> String.concat ", "
         let live_after = Dictionary<TypedBind, int -> bool>(HashIdentity.Reference)
         let unbox_arm_uses = Dictionary<TypedOp, Set<int>>(HashIdentity.Reference)
+        let unbox_body_uses = Dictionary<TypedBind[], Set<int>>(HashIdentity.Reference)
         let current_live = ref (fun (_ : int) -> false)
         let tags_of_data (d : Data) = data_free_vars d |> Array.fold (fun s (L(i,_)) -> Set.add i s) Set.empty
         let tags_of_vars (x : TyV seq) = x |> Seq.fold (fun s (L(i,_)) -> Set.add i s) Set.empty
@@ -14952,9 +15214,9 @@ module spiral_compiler =
         let current_counts = ref (Dictionary<int, int>())
         let mutable allow_moves = true
         let var (L(i,t)) =
-            if is_copy t || moves t then $"v{i}"
-            elif allow_moves && current_known.Value && not (current_live.Value i) && not (current_borrowed.Contains i) && (match current_counts.Value.TryGetValue i with | true, n -> n = 1 | _ -> false) then $"v{i}"
-            else $"v{i}.clone()"
+            if is_copy t || moves t then $"{var_name i}"
+            elif allow_moves && current_known.Value && not (current_live.Value i) && not (current_borrowed.Contains i) && (match current_counts.Value.TryGetValue i with | true, n -> n = 1 | _ -> false) then $"{var_name i}"
+            else $"{var_name i}.clone()"
         let args x = x |> Array.map var |> String.concat ", "
         let show_w = function WV x -> var x | WLit a -> litRust a
         let direct_counts (b : TypedBind) =
@@ -15073,7 +15335,7 @@ module spiral_compiler =
             | TyBackend _ | TySizeOf _ -> Set.empty
             | TyIf(cond,tr,fl) -> tags_of_data cond + live_binds after tr + live_binds after fl
             | TyUnionUnbox(vs,_,on_succs,on_fail) ->
-                let arms = on_succs |> Map.fold (fun s _ (_,b) -> s + live_binds after b) (match on_fail with Some b -> live_binds after b | None -> Set.empty)
+                let arms = on_succs |> Map.fold (fun s _ (_,b) -> let uses = live_binds after b in unbox_body_uses.[b] <- uses; s + uses) (match on_fail with Some b -> live_binds after b | None -> Set.empty)
                 unbox_arm_uses.[o] <- arms
                 tags_of_vars vs + arms
             | TyIntSwitch(L(i,_),on_succ,on_fail) -> on_succ |> Array.fold (fun s b -> s + live_binds after b) (Set.add i (live_binds after on_fail))
@@ -15157,7 +15419,7 @@ module spiral_compiler =
             live_binds outer x |> ignore
             if opens_closure x && not (freeze_regions x) then freeze x
         let splice_live (again : bool) = function WV (L(i,t)) -> not (is_copy t) && not (moves t) && (again || current_live.Value i) | WLit _ -> false
-        let clone_or_name again w = match w with WV (L(i,_)) when splice_live again w -> $"v{i}.clone()" | _ -> macro_var w
+        let clone_or_name again w = match w with WV (L(i,_)) when splice_live again w -> $"{var_name i}.clone()" | _ -> macro_var w
         let emit_args (again : int -> bool) x =
             let arg w = match w with WV (L(i,_)) -> clone_or_name (again i) w | WLit _ -> macro_var w
             match data_term_vars x with
@@ -15286,14 +15548,14 @@ module spiral_compiler =
             | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
             | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
         and params_ty x = env.ty_to_data x |> data_free_vars |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", "
-        and param_list x = x |> Array.map (fun (L(i,t)) -> $"mut v{i}: {tyv t}") |> String.concat ", "
+        and param_list x = x |> Array.map (fun (L(i,t)) -> $"mut {var_name i}: {tyv t}") |> String.concat ", "
         and rust_borrowed (tag : int) (index : int) =
             (match method_borrowed.TryGetValue tag with | true, s -> s.Contains index | _ -> false)
             && (match group_sizes.TryGetValue tag with
                 | true, n -> n
                 | _ -> let n = (tail_group tag).Length in group_sizes.[tag] <- n; n) <= 1
-        and method_param_list (tag : int) (x : TyV []) = x |> Array.mapi (fun n (L(i,t)) -> if rust_borrowed tag n then $"mut v{i}: &{tyv t}" else $"mut v{i}: {tyv t}") |> String.concat ", "
-        and method_args (tag : int) (x : TyV []) = x |> Array.mapi (fun n (L(i,_) as v) -> if rust_borrowed tag n then (if current_borrowed.Contains i then $"v{i}" else $"&v{i}") else var v) |> String.concat ", "
+        and method_param_list (tag : int) (x : TyV []) = x |> Array.mapi (fun n (L(i,t)) -> if rust_borrowed tag n then $"mut {var_name i}: &{tyv t}" else $"mut {var_name i}: {tyv t}") |> String.concat ", "
+        and method_args (tag : int) (x : TyV []) = x |> Array.mapi (fun n (L(i,_) as v) -> if rust_borrowed tag n then (if current_borrowed.Contains i then $"{var_name i}" else $"&{var_name i}") else var v) |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
             let fused = concat_fusions x
             x |> Array.iteri (fun k b ->
@@ -15334,9 +15596,9 @@ module spiral_compiler =
             let binding d =
                 match data_free_vars d with
                 | [||] -> None
-                | [|L(i,t)|] -> Some $"let mut v{i}: {annot t} ="
+                | [|L(i,t)|] -> Some $"let mut {var_name i}: {annot t} ="
                 | x ->
-                    let names = x |> Array.map (fun (L(i,_)) -> $"mut v{i}") |> String.concat ", "
+                    let names = x |> Array.map (fun (L(i,_)) -> $"mut {var_name i}") |> String.concat ", "
                     let tys = x |> Array.map (fun (L(_,t)) -> annot t) |> String.concat ", "
                     Some $"let ({names}): ({tys}) ="
             let simple x =
@@ -15352,7 +15614,7 @@ module spiral_compiler =
                     | None -> line s head; without_self_loop (fun () -> f s); line s "};"
             let block s (x : TypedBind []) = binds (indent s) x
             let layout_index i (lay : Layout) x =
-                let field = match lay with HeapMutable -> $"v{i}.borrow()" | _ -> $"v{i}"
+                let field = match lay with HeapMutable -> $"{var_name i}.borrow()" | _ -> $"{var_name i}"
                 x |> Array.map (fun (L(i',t')) -> if is_copy t' then $"{field}.l{i'}" else $"{field}.l{i'}.clone()")
                 |> function
                     | [||] -> ()
@@ -15405,13 +15667,13 @@ module spiral_compiler =
                 line s "continue;"
             | TyJoinPoint(JPMethod(a,c),args) when d.IsNone && (match self_loop with Some (tag, _) -> (method (a,c)).tag = tag | None -> false) ->
                 let loop_tag = fst self_loop.Value
-                let slot_value (n : int) (L(j,_) as a) = if rust_borrowed loop_tag n then $"v{j}" else var a
+                let slot_value (n : int) (L(j,_) as a) = if rust_borrowed loop_tag n then $"{var_name j}" else var a
                 let changed = Array.zip (snd self_loop.Value) args |> Array.indexed |> Array.filter (fun (_, (L(i,_), L(j,_))) -> i <> j)
                 match changed with
                 | [||] -> ()
-                | [|n, (L(i,_), a)|] -> line s $"v{i} = {slot_value n a};"
+                | [|n, (L(i,_), a)|] -> line s $"{var_name i} = {slot_value n a};"
                 | _ ->
-                    let names = changed |> Array.map (fun (_, (L(i,_), _)) -> $"v{i}") |> String.concat ", "
+                    let names = changed |> Array.map (fun (_, (L(i,_), _)) -> $"{var_name i}") |> String.concat ", "
                     let values = changed |> Array.map (fun (n, (_, a)) -> slot_value n a) |> String.concat ", "
                     line s $"({names}) = ({values});"
                 line s "continue;"
@@ -15430,7 +15692,7 @@ module spiral_compiler =
                 complex $"while {cond} {{" <| fun s' -> without_self_loop (fun () -> block s' b)
             | TyDo a | TyIndent a -> complex "{" <| fun s' -> block s' a
             | TyIntSwitch(L(i,_),on_succ,on_fail) ->
-                complex $"match v{i} {{" <| fun s' ->
+                complex $"match {var_name i} {{" <| fun s' ->
                     let s'' = indent s'
                     Array.iteri (fun i x -> line s'' $"{i} => {{"; block s'' x; line s'' "}") on_succ
                     line s'' "_ => {"; block s'' on_fail; line s'' "}"
@@ -15447,12 +15709,12 @@ module spiral_compiler =
                     && (match unbox_arm_uses.TryGetValue a with | true, arms -> not (arms.Contains i) | _ -> false)
                 let heap_value = x'.layout = UHeap && not moving && List.forall dead is
                 let by_value = heap_value || (x'.layout = UStack && (moving || List.forall dead is))
-                let scrutinee (L(i,_)) = match x'.layout with UHeap when heap_value -> $"Rc::unwrap_or_clone(v{i})" | UHeap when current_borrowed.Contains i -> $"&**v{i}" | UHeap -> $"&*v{i}" | UStack when by_value -> $"v{i}" | UStack -> $"&v{i}"
+                let scrutinee (L(i,_)) = match x'.layout with UHeap when heap_value -> $"Rc::unwrap_or_clone({var_name i})" | UHeap when current_borrowed.Contains i -> $"&**{var_name i}" | UHeap -> $"&*{var_name i}" | UStack when by_value -> $"{var_name i}" | UStack -> $"&{var_name i}"
                 let bind_field (L(v,t)) =
-                    if by_value then $"let mut v{v}: {tyv t} = v{v};"
-                    elif is_copy t then $"let mut v{v}: {tyv t} = *v{v};"
-                    elif not (moves t) then $"let mut v{v}: {tyv t} = v{v}.clone();"
-                    else match x'.layout with UStack -> $"let mut v{v}: {tyv t} = v{v};" | UHeap -> $"let mut v{v} = v{v};"
+                    if by_value then $"let mut {var_name v}: {tyv t} = {var_name v};"
+                    elif is_copy t then $"let mut {var_name v}: {tyv t} = *{var_name v};"
+                    elif not (moves t) then $"let mut {var_name v}: {tyv t} = {var_name v}.clone();"
+                    else match x'.layout with UStack -> $"let mut {var_name v}: {tyv t} = {var_name v};" | UHeap -> $"let mut {var_name v} = {var_name v};"
                 let case_tag k =
                     union_rec.free_vars
                     |> Seq.tryPick (function KeyValue ((tag, name), _) when name = UnionTagIdOps.text k -> Some tag | _ -> None)
@@ -15464,14 +15726,15 @@ module spiral_compiler =
                     Map.iter (fun k (a,b) ->
                         let i = case_tag k
                         let fields = a |> List.map data_free_vars
+                        let read (L(v,_)) = match unbox_body_uses.TryGetValue b with | true, uses -> uses.Contains v | _ -> true
                         let patterns =
                             fields |> List.map (fun vars ->
                                 match vars with
                                 | [||] -> union_case_name prefix union_rec i
-                                | vars -> vars |> Array.map (fun (L(v,_)) -> $"v{v}") |> String.concat ", " |> sprintf "%s(%s)" (union_case_name prefix union_rec i))
+                                | vars -> vars |> Array.map (fun (L(v,_) as x) -> if read x then $"{var_name v}" else "_") |> String.concat ", " |> sprintf "%s(%s)" (union_case_name prefix union_rec i))
                         let pattern = match patterns with [x] -> x | x -> String.concat ", " x |> sprintf "(%s)"
                         line s'' $"{pattern} => {{"
-                        fields |> List.iter (Array.iter (fun x -> line (indent s'') (bind_field x)))
+                        fields |> List.iter (Array.iter (fun x -> if read x then line (indent s'') (bind_field x)))
                         block s'' b
                         line s'' "}"
                         ) on_succs
@@ -15530,7 +15793,7 @@ module spiral_compiler =
                     match s with
                     | DRecord l -> l |> Map.pick (fun (_,k') v -> if LayoutFieldNameIdOps.matchesText k k' then Some v else None)
                     | _ -> raise_codegen_error "Compiler error: Expected a record.") (mut t).data b
-                Array.iter2 (fun (L(i',_)) b -> line s $"v{i}.borrow_mut().l{i'} = {show_w b};") (data_free_vars a) (data_term_vars c)
+                Array.iter2 (fun (L(i',_)) b -> line s $"{var_name i}.borrow_mut().l{i'} = {show_w b};") (data_free_vars a) (data_term_vars c)
                 if d.IsNone then line s "()"
             | TyArrayLiteral(a,b) -> simple $"""Rc::new(RefCell::new(vec![{List.map tup b |> String.concat ", "}]))"""
             | TyArrayCreate(a,b) ->
@@ -15556,7 +15819,7 @@ module spiral_compiler =
                 match a with
                 | YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T | Float32T | Float64T) -> simple $"({tup b} as {tyv a})"
                 | _ -> raise_codegen_error $"Compiler error: Unexpected type in Conv. Got: {show_ty a}"
-            | TyApply(L(i,_),b) -> simple $"""v{i}({data_term_vars b |> Array.map show_w |> String.concat ", "})"""
+            | TyApply(L(i,_),b) -> simple $"""{var_name i}({data_term_vars b |> Array.map show_w |> String.concat ", "})"""
             | TyOp(Global, [DLit (LitString x)]) -> global' x
             | TyOp(Export, [DLit (LitString name); DV(L(i,YFun(domain,range,_)))]) ->
                 if not (export_names.Add name) then raise_codegen_error $"Duplicate export: {name}."
@@ -15582,8 +15845,8 @@ module spiral_compiler =
                         $"v: {record_name}", (fields |> Map.toArray |> Array.map (fun ((_,k),_) -> $"v.{k}") |> String.concat ", ")
                     | None ->
                         let shares_rc = rc_str_exports.Contains name
-                        parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> (if shares_rc then $"v{k}: &Rc<str>" else $"v{k}: &str") | t -> $"v{k}: {tyv t}") |> String.concat ", ",
-                        parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> (if shares_rc then $"Rc::clone(v{k})" else $"Rc::<str>::from(v{k})") | _ -> $"v{k}") |> String.concat ", "
+                        parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> (if shares_rc then $"{var_name k}: &Rc<str>" else $"{var_name k}: &str") | t -> $"{var_name k}: {tyv t}") |> String.concat ", ",
+                        parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> (if shares_rc then $"Rc::clone({var_name k})" else $"Rc::<str>::from({var_name k})") | _ -> $"{var_name k}") |> String.concat ", "
                 let returned_record =
                     match range with
                     | YNominal n ->
@@ -15623,17 +15886,20 @@ module spiral_compiler =
                             | [|WLit (LitString text)|], None -> parts, Some text
                             | terms, _ ->
                                 let parts = match pending with Some text -> literal text :: parts | None -> parts
-                                let part = match terms with [|WV(L(i,_))|] -> $"&*v{i}" | _ -> $"&*{tup d}"
+                                let part = match terms with [|WV(L(i,_))|] -> $"&*{var_name i}" | _ -> $"&*{tup d}"
                                 part :: parts, None)
                     let parts = match pending with Some text -> literal text :: parts | None -> parts
                     $"""string_concat(&[{parts |> List.rev |> String.concat ", "}])"""
                 | ArrayIndex, [a;b] ->
-                    let handle, element = match data_term_vars a with [|WV(L(i,YArray t))|] -> $"v{i}", Some t | _ -> tup a, None
+                    let handle, element = match data_term_vars a with [|WV(L(i,YArray t))|] -> $"{var_name i}", Some t | _ -> tup a, None
                     let read = $"{handle}.borrow()[{tup b} as usize]"
                     match element with Some t when is_copy t -> read | _ -> read + ".clone()"
                 | ArrayIndexSet, [a;b;c] ->
-                    let handle = match data_term_vars a with [|WV(L(i,_))|] -> $"v{i}" | _ -> tup a
+                    let handle = match data_term_vars a with [|WV(L(i,_))|] -> $"{var_name i}" | _ -> tup a
                     $"{handle}.borrow_mut()[{tup b} as usize] = {tup c}"
+                | ArrayAtomicAdd, [a;b;c] ->
+                    let handle = match data_term_vars a with [|WV(L(i,_))|] -> $"{var_name i}" | _ -> tup a
+                    $"{{ let mut spiral_cell = {handle}.borrow_mut(); let spiral_old = spiral_cell[{tup b} as usize]; spiral_cell[{tup b} as usize] = spiral_old.wrapping_add({tup c}); spiral_old }}"
 
                 | (Add | Sub | Mult | Div | Mod | ShiftLeft | ShiftRight), [a;b] when rust_int a ->
                     let m = match op with Add -> "wrapping_add" | Sub -> "wrapping_sub" | Mult -> "wrapping_mul" | Div -> "wrapping_div" | Mod -> "wrapping_rem" | ShiftLeft -> "wrapping_shl" | _ -> "wrapping_shr"
@@ -15649,7 +15915,7 @@ module spiral_compiler =
                 | (EQ | NEQ | LT | LTE | GT | GTE), [a;b] when (match data_term_vars a with [|WV(L(_,YPrim StringT))|] | [|WLit (LitString _)|] -> true | _ -> false) ->
                     let borrowed_str (d : Data) =
                         match data_term_vars d with
-                        | [|WV(L(i,_))|] -> $"&*v{i}"
+                        | [|WV(L(i,_))|] -> $"&*{var_name i}"
                         | [|WLit (LitString _ as l)|] ->
                             let owned = litRust l
                             if owned.StartsWith "Rc::<str>::from(" && owned.EndsWith ")" then owned.Substring(16, owned.Length - 17) else owned
@@ -15699,7 +15965,7 @@ module spiral_compiler =
                 | UnionTag, [DV(L(i,YUnion u))] ->
                     let ty = match d with Some (DV(L(_,t))) -> tyv t | _ -> "i32"
                     union_tags_used.Add(union_name u.Item) |> ignore
-                    $"(v{i}.tag() as {ty})"
+                    $"({var_name i}.tag() as {ty})"
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported in the Rust backend" op l.Length
                 |> simple
         and rust_emit_default (s : CodegenEnv) (name : string) (body : string) =
@@ -15770,7 +16036,7 @@ module spiral_compiler =
                     match go_ty (depth + 1) range with
                     | None -> None
                     | Some ret ->
-                        let args = env.ty_to_data domain |> data_free_vars |> Array.map (fun (L(i, pt)) -> $"mut v{i}: {tyv pt}") |> String.concat ", "
+                        let args = env.ty_to_data domain |> data_free_vars |> Array.map (fun (L(i, pt)) -> $"mut {var_name i}: {tyv pt}") |> String.concat ", "
                         Some $"{{ let f: {tyv t} = Rc::new(|{args}| -> {tup_ty range} {{ {ret} }}); f }}"
                 | YMacro [Text "backend_switch "; Type (YRecord r)] ->
                     match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameRust then Some v else None) with
@@ -15848,7 +16114,7 @@ module spiral_compiler =
                 let args = codegenMethodKeyArgs key
                 match codegenMethodBody env "Rust" jp_body key with
                 | a, range, name ->
-                    let a = fuseConcat a
+                    let a = keepVarNames a (fuseConcat a)
                     method_names.[i] <- generatedMethodName name i
                     method_borrowed.[i] <- rdata_free_vars args |> Array.indexed |> Array.choose (fun (n, _) -> if borrowed_param (JPMethod(jp_body, key)) n then Some n else None) |> Set.ofArray
                     let record = {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
@@ -15860,9 +16126,10 @@ module spiral_compiler =
                 let saved_borrowed = current_borrowed
                 current_borrowed <- x.free_vars |> Array.indexed |> Array.choose (fun (n, L(i,_)) -> if rust_borrowed x.tag n then Some i else None) |> Set.ofArray
                 group_loop <- None
+                let outer_names = enter_names x.body
                 line s $"fn {method_names.[x.tag]}({method_param_list x.tag x.free_vars}) -> {tup_ty x.range} {{"
                 if group.Length > 1 then
-                    let values = x.free_vars |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+                    let values = x.free_vars |> Array.map (fun (L(i,_)) -> $"{var_name i}") |> String.concat ", "
                     let variant = if values = "" then $"Group{group.Head}::M{x.tag}" else $"Group{group.Head}::M{x.tag}({values})"
                     line (indent s) $"group_{group.Head}({variant})"
                     if emitted_groups.Add group.Head then emit_group group x.range
@@ -15882,6 +16149,7 @@ module spiral_compiler =
                         binds (indent s) x.body
                     self_loop <- saved
                 line s "}"
+                var_names <- outer_names
                 current_borrowed <- saved_borrowed
                 group_loop <- saved_group
                 )
@@ -15925,7 +16193,8 @@ module spiral_compiler =
             group_loop <- Some (name, HashSet<int>(group))
             for t in group do
                 let r = method_records.[t]
-                let names = r.free_vars |> Array.map (fun (L(i,_)) -> $"mut v{i}") |> String.concat ", "
+                let outer_names = enter_names r.body
+                let names = r.free_vars |> Array.map (fun (L(i,_)) -> $"mut {var_name i}") |> String.concat ", "
                 let arm = indent (indent (indent g))
                 line arm (if names = "" then $"{name}::M{t} => {{" else $"{name}::M{t}({names}) => {{")
                 live_root outer_none r.body
@@ -15933,6 +16202,7 @@ module spiral_compiler =
                 binds (indent arm) r.body
                 if tup_ty range = "()" then line (indent arm) "return ();"
                 line arm "}"
+                var_names <- outer_names
             self_loop <- saved_self
             group_loop <- saved_group
             line (indent (indent g)) "}"
@@ -15996,6 +16266,7 @@ module spiral_compiler =
                 let range = tup_ty x.range
                 let saved_borrowed = current_borrowed
                 current_borrowed <- Set.empty
+                let outer_names = enter_names x.body
                 line s $"fn {closure_names.[x.tag]}({param_list x.free_vars}) -> Rc<dyn Fn({domain_tys}) -> {range}> {{"
                 let captured = tags_of_vars x.free_vars
                 live_root (fun i -> captured.Contains i) x.body
@@ -16008,12 +16279,14 @@ module spiral_compiler =
                     without_self_loop (fun () -> binds (indent (indent s)) x.body)
                     line (indent s) "})"
                 line s "}"
+                var_names <- outer_names
                 current_borrowed <- saved_borrowed
                 )
 
         let main = StringBuilder()
-        let x = fuseConcat x
+        let x = keepVarNames x (fuseConcat x)
         live_root outer_none x
+        enter_names x |> ignore
         binds {text=main; indent=4} x
 
         let program = StringBuilder()
@@ -16170,7 +16443,7 @@ module spiral_compiler =
             if x = infinity then "Infinity"
             elif x = -infinity then "(-Infinity)"
             elif Double.IsNaN x then "NaN"
-            else x.ToString("R") |> add_dec_point |> fun x -> if x.StartsWith "-" then $"({x})" else x
+            else x.ToString("R") |> add_dec_point |> fun x -> $"Double({x})"
         | LitString x ->
             if x = "" then "''" else
             let strb = StringBuilder()
@@ -16558,7 +16831,7 @@ module spiral_compiler =
                 return' tmp
             | TyArrayLength(a,b) -> return' $"{tyv a}(Length({tup b}{arrayItems b}))"
             | TyStringLength(a,b) -> return' $"{tyv a}(Length({tup b}))"
-            | TyFailwith(a,b) -> line s $"begin WriteLn(StdErr, {tup b}); Halt(1); end;"
+            | TyFailwith(a,b) -> line s $"begin Flush(Output); WriteLn(StdErr, {tup b}); Halt(1); end;"
             | TyConv(a,b) ->
                 match a, prim_of b with
                 | YPrim (Float32T | Float64T), _ -> return' (tup b)
@@ -16771,7 +17044,7 @@ module spiral_compiler =
         let program = StringBuilder()
         let is_uses (x : string) = x.StartsWith("uses ", System.StringComparison.Ordinal)
         let units = env.globals |> Seq.filter is_uses |> Seq.map (fun x -> x.Substring(5).Trim().TrimEnd(';').Trim()) |> Seq.filter (fun x -> x <> "") |> Seq.distinct |> Seq.filter (fun x -> x <> "SysUtils" && x <> "Math") |> List.ofSeq
-        program.AppendLine("program SpiralGenerated;").AppendLine("{$mode delphi}{$H+}").AppendLine("{$IFDEF CPUX86_64}{$OPTIMIZATION NOREGVAR}{$ENDIF}").AppendLine("{$MAXSTACKSIZE $10000000}").AppendLine("uses " + String.concat ", " ("SysUtils" :: "Math" :: units) + ";") |> ignore
+        program.AppendLine("program SpiralGenerated;").AppendLine("{$mode delphi}{$H+}").AppendLine("{$IFDEF CPUX86_64}{$OPTIMIZATION NOREGVAR}{$ENDIF}").AppendLine("{$IFDEF WINDOWS}{$MAXSTACKSIZE $10000000}{$ENDIF}").AppendLine("uses {$IFDEF UNIX}cthreads, {$ENDIF}" + String.concat ", " ("SysUtils" :: "Math" :: units) + ";") |> ignore
         if forwards.Count > 0 || types.Count > 0 then
             program.AppendLine("type") |> ignore
             if forwards.Count > 0 then program.AppendLine("  TSpiralRc = class refc: LongInt; procedure DropFields; virtual; end;") |> ignore
@@ -16787,10 +17060,20 @@ module spiral_compiler =
                 .AppendLine("function SpiralKeep(o: TSpiralRc): TSpiralRc;\nbegin\n  SpiralRetain(o); Result := o;\nend;") |> ignore
         headers |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
         bodies |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
-        let exitLines =
-            if sharedSingletons.Count = 0 then "  Halt(SpiralMain);"
-            else "  SpiralExitCode := SpiralMain;\n" + (sharedSingletons |> Seq.map (fun x -> $"  if {x} <> nil then {x}.Free;\n") |> String.concat "") + "  Halt(SpiralExitCode);"
-        program.AppendLine("var SpiralOutputBuffer: array[0..65535] of Char;" + (if sharedSingletons.Count = 0 then "" else "\nvar SpiralExitCode: LongInt;")).AppendLine("begin").AppendLine("  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));").AppendLine("  SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);").AppendLine(exitLines).AppendLine("end.").ToString()
+        let freeSingletons = sharedSingletons |> Seq.map (fun x -> $"  if {x} <> nil then {x}.Free;\n") |> String.concat ""
+        program
+            .AppendLine("var SpiralOutputBuffer: array[0..65535] of Char;\nvar SpiralExitCode: LongInt;")
+            .AppendLine("procedure SpiralRun;\nbegin")
+            .AppendLine("  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));")
+            .AppendLine("  SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]);")
+            .Append("  SpiralExitCode := SpiralMain;\n" + freeSingletons)
+            .AppendLine("  Flush(Output);\nend;")
+            .AppendLine("{$IFNDEF WINDOWS}\nfunction SpiralThreadMain(p: Pointer): PtrInt;\nbegin\n  SpiralRun;\n  Result := 0;\nend;\nvar SpiralThread, SpiralThreadId: TThreadID;\n{$ENDIF}")
+            .AppendLine("begin")
+            .AppendLine("  {$IFDEF WINDOWS}\n  SpiralRun;\n  Halt(SpiralExitCode);\n  {$ELSE}")
+            .AppendLine("  SpiralThread := BeginThread(@SpiralThreadMain, nil, SpiralThreadId, 268435456);")
+            .AppendLine("  WaitForThreadTerminate(SpiralThread, 0);\n  Halt(SpiralExitCode and 255);\n  {$ENDIF}")
+            .AppendLine("end.").ToString()
 
     /// ## CodegenZig
 
@@ -17059,7 +17342,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
             output.ToString()
 
     let codegenZig (linked_units : Map<int, LinkedUnit>) (env : PartEvalResult) (x : TypedBind []) =
-        let zig_fast = System.Environment.GetEnvironmentVariable "SPIRAL_ZIG_FAST" = "1"
+        let zig_fast = CompilerFlagOps.enabled CompilerFlag.ZigFast
         let method_names = Dictionary<int, string>()
         let closure_names = Dictionary<int, string>()
         let types = ResizeArray()
@@ -17102,8 +17385,14 @@ fn spiralCreate(comptime T: type, v: T) *T {
         let is_int d = match prim_of d with Some (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T) -> true | _ -> false
         let is_float d = match prim_of d with Some (Float32T | Float64T) -> true | _ -> false
         let is_string d = match prim_of d with Some StringT -> true | _ -> false
-        let show_w = function WV (L(i,_)) -> $"v{i}" | WLit a -> litZig a
-        let args (x : TyV []) = x |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+        let mutable var_names : Dictionary<int, string> = null
+        let enter_names (body : TypedBind []) =
+            let outer = var_names
+            var_names <- (match bodyVarNames.TryGetValue body with | true, names -> names | _ -> null)
+            outer
+        let var_name (i : int) = localVarName var_names i
+        let show_w = function WV (L(i,_)) -> $"{var_name i}" | WLit a -> litZig a
+        let args (x : TyV []) = x |> Array.map (fun (L(i,_)) -> $"{var_name i}") |> String.concat ", "
         let args' x = data_term_vars x |> Array.map show_w |> String.concat ", "
 
         let layout_tags = Dictionary<Ty, ZigLayoutRec>(HashIdentity.Structural)
@@ -17150,6 +17439,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 $"Tuple{tag}{{ {fields} }}"
         and param_list (x : TyV []) = x |> Array.map (fun (L(i,t)) -> $"p{i}: {tyv t}") |> String.concat ", "
         and emit_function (name : string) (self_tag : int option) (parameters : TyV []) (extra : string) (range : Ty) (body : TypedBind []) (tail : string) =
+            let outer_names = enter_names body
             let range' = tup_ty range
             let locals = new_locals parameters
             let s = {text=StringBuilder(); indent=4}
@@ -17166,12 +17456,13 @@ fn spiralCreate(comptime T: type, v: T) *T {
             self_loop.Value <- saved
             if tail <> "" then line s tail
             let ps = match extra, param_list parameters with "", p -> p | e, "" -> e | e, p -> $"{e}, {p}"
-            let copies = parameters |> Array.map (fun (L(i,t)) -> $"    var v{i}: {tyv t} = p{i}; _ = &v{i};\n") |> String.concat ""
+            let copies = parameters |> Array.map (fun (L(i,t)) -> $"    var {var_name i}: {tyv t} = p{i}; _ = &{var_name i};\n") |> String.concat ""
             let decls = snd locals |> Seq.map (sprintf "    %s\n") |> String.concat ""
             let float_mode = if zig_fast then "    @setFloatMode(.optimized);\n" else ""
             bodies.Add($"fn {name}({ps}) {range'} {{\n{float_mode}{copies}{decls}{text s}}}\n")
+            var_names <- outer_names
         and declare (names : HashSet<int>, decls : ResizeArray<string>) (L(i,t)) =
-            if names.Add i then decls.Add($"var v{i}: {tyv t} = undefined; _ = &v{i};")
+            if names.Add i then decls.Add($"var {var_name i}: {tyv t} = undefined; _ = &{var_name i};")
         and temp (_ : HashSet<int>, decls : ResizeArray<string>) (ty : string) =
             let name = $"tmp{decls.Count}"
             decls.Add($"var {name}: {ty} = undefined; _ = &{name};")
@@ -17186,7 +17477,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | TyLocalReturnOp(trace,a,_) -> try op locals s ret a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
                 | TyLocalReturnData(d,trace) ->
                     try match ret with
-                        | ZLocal l -> Array.iter2 (fun (L(i,_)) b -> line s $"v{i} = {show_w b};") l (data_term_vars d)
+                        | ZLocal l -> Array.iter2 (fun (L(i,_)) b -> line s $"{var_name i} = {show_w b};") l (data_term_vars d)
                         | ZTail range ->
                             match tup_as range d with
                             | "" -> if self_loop.Value.IsSome then line s "return;"
@@ -17198,11 +17489,11 @@ fn spiralCreate(comptime T: type, v: T) *T {
             let return' (x : string) =
                 match ret with
                 | ZLocal [||] -> if x.Trim() <> "" then line s $"_ = {x};"
-                | ZLocal [|L(i,_)|] -> line s $"v{i} = {x};"
+                | ZLocal [|L(i,_)|] -> line s $"{var_name i} = {x};"
                 | ZLocal l ->
                     let tmp = temp locals (tuple_type (l |> Array.map (fun (L(_,t)) -> tyv t)) |> sprintf "Tuple%i")
                     line s $"{tmp} = {x};"
-                    l |> Array.iteri (fun k (L(i,_)) -> line s $"v{i} = {tmp}.f{k};")
+                    l |> Array.iteri (fun k (L(i,_)) -> line s $"{var_name i} = {tmp}.f{k};")
                 | ZTail range ->
                     if tup_ty range = "void" then
                         if x.Trim() <> "" then line s $"_ = {x};"
@@ -17210,7 +17501,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     else line s $"return {x};"
             let layout_index (i : int) (fields : TyV []) =
                 match ret with
-                | ZLocal l -> Array.iter2 (fun (L(t,_)) (L(f,_)) -> line s $"v{t} = v{i}.l{f};") l fields
+                | ZLocal l -> Array.iter2 (fun (L(t,_)) (L(f,_)) -> line s $"{var_name t} = {var_name i}.l{f};") l fields
                 | ZTail _ -> raise_codegen_error "Compiler error: Layout index should never come in end position."
             let jp (a, b) =
                 match a with
@@ -17240,11 +17531,11 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 let temps = System.Collections.Generic.Dictionary<int, string> ()
                 for step in parallelMoves (Array.map2 (fun (L(target,_)) (L(source,_)) -> target, source) parameters b) do
                     match step with
-                    | MoveVar (target, source) -> line s $"v{target} = v{source};"
+                    | MoveVar (target, source) -> line s $"{var_name target} = {var_name source};"
                     | SaveTemp (slot, source) ->
                         temps.[slot] <- temp locals (tyv types.[source])
-                        line s $"{temps.[slot]} = v{source};"
-                    | MoveTemp (target, slot) -> line s $"v{target} = {temps.[slot]};"
+                        line s $"{temps.[slot]} = {var_name source};"
+                    | MoveTemp (target, slot) -> line s $"{var_name target} = {temps.[slot]};"
                 line s "continue;"
             | TyJoinPoint(a,args) ->
                 match a, ret with
@@ -17258,7 +17549,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 line s "}"
             | TyDo a | TyIndent a -> binds s ret a
             | TyIntSwitch(L(i,_),on_succ,on_fail) ->
-                line s $"switch (v{i}) {{"
+                line s $"switch ({var_name i}) {{"
                 on_succ |> Array.iteri (fun k b -> line (indent s) $"{k} => {{"; binds (indent (indent s)) ret b; line (indent s) "},")
                 line (indent s) "else => {"; binds (indent (indent s)) ret on_fail; line (indent s) "},"
                 line s "}"
@@ -17270,11 +17561,11 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text k}.")
                 let head =
                     match is with
-                    | [L(i,_)] -> $"v{i}.tag"
+                    | [L(i,_)] -> $"{var_name i}.tag"
                     | L(i,_) :: _ ->
                         let tmp = temp locals "i32"
-                        let same = is |> List.pairwise |> List.map (fun (L(a,_), L(b,_)) -> $"(v{a}.tag == v{b}.tag)") |> String.concat " and "
-                        line s $"{tmp} = if ({same}) v{i}.tag else -1;"
+                        let same = is |> List.pairwise |> List.map (fun (L(a,_), L(b,_)) -> $"({var_name a}.tag == {var_name b}.tag)") |> String.concat " and "
+                        line s $"{tmp} = if ({same}) {var_name i}.tag else -1;"
                         tmp
                     | [] -> raise_codegen_error "Compiler error: Union unbox without a scrutinee."
                 line s $"switch ({head}) {{"
@@ -17284,7 +17575,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     List.iter2 (fun (L(v,_)) a ->
                         data_free_vars a |> Array.iteri (fun f (L(i,_) as field) ->
                             declare locals field
-                            line (indent (indent s)) $"v{i} = v{v}.c{c}_{f};")) is a
+                            line (indent (indent s)) $"{var_name i} = {var_name v}.c{c}_{f};")) is a
                     binds (indent (indent s)) ret b
                     line (indent s) "},")
                 match on_fail with
@@ -17325,7 +17616,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     match s with
                     | DRecord l -> l |> Map.pick (fun (_,k') v -> if LayoutFieldNameIdOps.matchesText k k' then Some v else None)
                     | _ -> raise_codegen_error "Compiler error: Expected a record.") (mut t).data b
-                Array.iter2 (fun (L(i',_)) b -> line s $"v{i}.l{i'} = {show_w b};") (data_free_vars a) (data_term_vars c)
+                Array.iter2 (fun (L(i',_)) b -> line s $"{var_name i}.l{i'} = {show_w b};") (data_free_vars a) (data_term_vars c)
             | TyArrayLiteral(a,b) ->
                 let el = tup_ty' a
                 let tmp = temp locals $"[]{el}"
@@ -17342,7 +17633,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 match a with
                 | YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T | Float32T | Float64T) -> return' $"spiralConv({tyv a}, {tup b})"
                 | _ -> raise_codegen_error $"Compiler error: Unexpected type in Conv. Got: {show_ty a}"
-            | TyApply(L(i,_),b) -> return' (match args' b with "" -> $"v{i}.call(v{i}.ctx)" | x -> $"v{i}.call(v{i}.ctx, {x})")
+            | TyApply(L(i,_),b) -> return' (match args' b with "" -> $"{var_name i}.call({var_name i}.ctx)" | x -> $"{var_name i}.call({var_name i}.ctx, {x})")
             | TyOp(Global, [DLit (LitString x)]) -> global' x
             | TyOp(Export, [DLit (LitString name); DV(L(i,YFun(domain,range,_)))]) ->
                 if not (export_names.Add name) then raise_codegen_error $"Duplicate export: {name}."
@@ -17351,8 +17642,8 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     | true, tag -> tag
                     | _ -> raise_codegen_error $"Compiler error: the exported function {name} is not a closure without captures."
                 let parameters = env.ty_to_data domain |> data_free_vars
-                let decl = parameters |> Array.map (fun (L(k,t)) -> $"v{k}: {tyv t}") |> String.concat ", "
-                let call = parameters |> Array.map (fun (L(k,_)) -> $", v{k}") |> String.concat ""
+                let decl = parameters |> Array.map (fun (L(k,t)) -> $"{var_name k}: {tyv t}") |> String.concat ", "
+                let call = parameters |> Array.map (fun (L(k,_)) -> $", {var_name k}") |> String.concat ""
                 types.Add($"var spiral_export_env{tag}: ClosureEnv{tag} = .{{}};")
                 bodies.Add($"pub fn {name}({decl}) {tup_ty range} {{\n    return {closure_names.[tag]}(@ptrCast(&spiral_export_env{tag}){call});\n}}\n")
                 match ret with
@@ -17421,10 +17712,10 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | UnionTag, [DV(L(i,YUnion u))] ->
                     let declared = u.Item.cases |> Map.toArray |> Array.map (fun ((d,_),_) -> d)
                     let tag =
-                        if declared |> Array.mapi (fun c d -> c = d) |> Array.forall id then $"v{i}.tag"
+                        if declared |> Array.mapi (fun c d -> c = d) |> Array.forall id then $"{var_name i}.tag"
                         else
                             let arms = declared |> Array.mapi (fun c d -> $"{c} => {d}") |> String.concat ", "
-                            $"@as(i32, switch (v{i}.tag) {{ {arms}, else => unreachable }})"
+                            $"@as(i32, switch ({var_name i}.tag) {{ {arms}, else => unreachable }})"
                     match ret with
                     | ZLocal [|L(_,t)|] -> $"spiralConv({tyv t}, {tag})"
                     | _ -> tag
@@ -17499,7 +17790,9 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     let parent = fun_type (domain, range)
                     let fields = free_vars |> Array.map (fun (L(i,t)) -> $"v{i}: {tyv t}, ") |> String.concat ""
                     types.Add($"const ClosureEnv{tag} = struct {{ {fields}pad: u8 = 0 }};")
-                    let loads = free_vars |> Array.map (fun (L(i,t)) -> $"    var v{i}: {tyv t} = env.v{i}; _ = &v{i};") |> String.concat "\n"
+                    let outer_names = enter_names body
+                    let loads = free_vars |> Array.map (fun (L(i,t)) -> $"    var {var_name i}: {tyv t} = env.v{i}; _ = &{var_name i};") |> String.concat "\n"
+                    var_names <- outer_names
                     let prologue = $"    const env: *ClosureEnv{tag} = @ptrCast(@alignCast(ctx)); _ = &env;\n{loads}"
                     emit_function closure_names.[tag] None domain_args "ctx: *anyopaque" range body ""
                     let head = $"fn {closure_names.[tag]}("
@@ -17810,6 +18103,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
             | YUnion a -> $"U{union_tag a.Item.cases}"
             | YLayout(_,Heap) as a -> $"H{(layout a).tag}"
             | YLayout(_,HeapMutable) as a -> $"(IO.Ref M{(layout a).tag})"
+            | YLayout(_, StackMutable) -> unsupported "stack mutable layout types"
             | YLayout _ -> unsupported "stack layout types"
             | YArray a -> $"(IO.Ref (Array {tup_ty a}))"
             | YFun(a,b,_) ->
@@ -17987,6 +18281,9 @@ fn spiralCreate(comptime T: type, v: T) *T {
             | TyOp(ArrayIndexSet, [a;b;c]) ->
                 line s $"{tup a}.modify (fun xs => xs.set! (spiralIdx {tup b}) {tup c})"
                 match ret with ZTail _ -> line s "return ()" | _ -> ()
+            | TyOp(Assign, [a;b]) ->
+                line s $"{tup a} := {tup b}"
+                match ret with ZTail _ -> line s "return ()" | _ -> ()
             | TyOp(Global, [DLit (LitString x)]) -> global' x
             | TyOp(Printf, [DLit (LitString fmt); b]) ->
                 printf_pieces fmt (data_term_vars b) |> List.iter (function
@@ -18051,10 +18348,11 @@ fn spiralCreate(comptime T: type, v: T) *T {
                         line (indent s) (if boxed_fields.Contains((tag, c, j)) then $"v{i} := spiralUnbox f{i}" else $"v{i} := f{i}")))
                     binds (indent s) ret b)
                 let wildcard = "| " + (is |> List.map (fun _ -> "_") |> String.concat ", ") + " =>"
+                let wildcard_reachable = on_succs.Count < x'.cases.Count || (is.Length > 1 && x'.cases.Count > 1)
                 match on_fail with
+                | _ when not wildcard_reachable -> ()
                 | Some b -> line s wildcard; binds (indent s) ret b
-                | None when is.Length > 1 || on_succs.Count < x'.cases.Count -> line s wildcard; line (indent s) "spiralFail \"union unbox: unreachable case\""
-                | None -> ()
+                | None -> line s wildcard; line (indent s) "spiralFail \"union unbox: unreachable case\""
             | TyUnionBox(a,b,c) ->
                 let c = c.Item
                 let tag = union_tag c.cases
@@ -19501,7 +19799,7 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                     members |> List.sort |> List.map (fun v -> let d = linearize (snd parsed.[v]) in if cyclic || dupNeedsUnsafe d then d else d.Substring("@unsafe\n".Length)))
                 |> Array.ofSeq
         ordered_defs |> Seq.iter (fun x -> program.Append(x).Append('\n') |> ignore)
-        let body = program.Append(if unitMain then "def main() -> IO(Unit):\n  do IO<Unit>:\n    spiral_main()\n    return Unit{}\n" else "def main() -> IO(Unit):\n  do IO<Unit>:\n    +code : U32 <- spiral_main()\n    IO.die(Unit, code, \"\")\n").ToString()
+        let body = program.Append(if unitMain then "def main() -> IO(Unit):\n  do IO<Unit>:\n    spiral_main()\n    return Unit{}\n" else "def main() -> IO(Unit):\n  do IO<Unit>:\n    +code : U32 <- spiral_main()\n    IO.die(Unit, U32.and(code, 255), \"\")\n").ToString()
         let body = bendPruneIfParameters body
         bendUsedPrelude body + body
     /// ## CodegenGleam
@@ -20924,9 +21222,15 @@ end
                 if dirty then print false show r
                 r
 
-        let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
+        let mutable var_names : Dictionary<int, string> = null
+        let enter_names (body : TypedBind []) =
+            let outer = var_names
+            var_names <- (match bodyVarNames.TryGetValue body with | true, names -> names | _ -> null)
+            outer
+        let var_name (i : int) = localVarName var_names i
+        let args x = x |> Array.map (fun (L(i,_)) -> var_name i) |> String.concat ", "
         let show_w = function
-            | WV (L(i,_)) -> sprintf "v%i" i
+            | WV (L(i,_)) -> var_name i
             | WLit (LitInt64 x) when x >= 9007199254740992L || x < -9007199254740992L -> let u = uint64 x in sprintf "{ %d, %d }" (u >>> 32) (u &&& 0xFFFFFFFFUL)
             | WLit (LitUInt64 x) when x >= 9007199254740992UL -> sprintf "{ %d, %d }" (x >>> 32) (x &&& 0xFFFFFFFFUL)
             | WLit a -> litLua a
@@ -20963,7 +21267,7 @@ end
             | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
             | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
             | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
-        and args_tys x = x |> Array.map (fun (L(i,t)) -> sprintf "v%i" i) |> String.concat ", "
+        and args_tys x = x |> Array.map (fun (L(i,t)) -> var_name i) |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
             let discard = discard_tail
             discard_tail <- false
@@ -21010,7 +21314,7 @@ end
                         | xs -> sprintf "{ %s }" xs
                     sprintf "%s(%s)" name fv
             let free_vars do_annot x =
-                let f (L(i,t)) = if do_annot then sprintf "v%i" i else sprintf "v%i" i
+                let f (L(i,t)) = if do_annot then var_name i else var_name i
                 match data_free_vars x with
                 | [||] -> "nil"
                 | [|x|] -> f x
@@ -21049,11 +21353,11 @@ end
             let layout_vars a =
                 let f i x =
                     match x with
-                    | WV(L(i',_)) -> sprintf "l%i = v%i" i i'
+                    | WV(L(i',_)) -> sprintf "l%i = %s" i (var_name i')
                     | WLit _ as w -> sprintf "l%i = %s" i (show_w w)
                 a |> data_term_vars |> Array.mapi f |> String.concat ", "
             let layout_index i x =
-                let fields = x |> Array.map (fun (L(i',_)) -> $"v{i} ~= nil and v{i}.l{i'}")
+                let fields = x |> Array.map (fun (L(i',_)) -> $"{var_name i} ~= nil and {var_name i}.l{i'}")
                 match fields, d with
                 | [||], _ -> ()
                 | fields, Some d when fields.Length > 1 && (data_free_vars d).Length = fields.Length ->
@@ -21101,7 +21405,7 @@ end
                 binds (indent s) a
             | TyIntSwitch(L(i,_),on_succ,on_fail) ->
                 complex <| fun s ->
-                line s (sprintf "local __switch = v%i" i)
+                line s (sprintf "local __switch = %s" (var_name i))
                 Array.iteri (fun i x ->
                     if i = 0 then
                         line s (sprintf "if __switch == %i then" i)
@@ -21117,11 +21421,11 @@ end
                 let case_tags = x.Item.tags
                 let vs =
                     is
-                    |> List.map (fun (L(i,_)) -> sprintf "v%i" i)
+                    |> List.map (fun (L(i,_)) -> var_name i)
                     |> String.concat ", "
                 let scrutinee (idx : int) =
                     match is with
-                    | [L(i,_)] -> sprintf "v%i" i
+                    | [L(i,_)] -> var_name i
                     | _ -> sprintf "__v[%i]" (idx + 1)
                 match is with
                 | [_] -> ()
@@ -21165,7 +21469,7 @@ end
                     if payloadArity > 0 then
                         a |> List.iteri (fun idx pat ->
                             data_free_vars pat |> Array.iteri (fun k (L(j,_)) ->
-                                line body (sprintf "local v%i = %s._%i" j (scrutinee idx) (k + 1))))
+                                line body (sprintf "local %s = %s._%i" (var_name j) (scrutinee idx) (k + 1))))
 
                     binds body bnds
 
@@ -21228,7 +21532,7 @@ end
                     | _ -> raise_codegen_error "Compiler error: Expected a record.") (mut t).data b
                 let a_vars = data_free_vars a
                 Array.iter2 (fun (L(i',_)) b ->
-                    line s (sprintf "v%i.l%i = %s" i i' (show_w b))
+                    line s (sprintf "%s.l%i = %s" (var_name i) i' (show_w b))
                     ) a_vars (data_term_vars c)
             | TyArrayLiteral(a,b) ->
                 (List.map tup b |> String.concat ", " |> sprintf "{ %s }")
@@ -21274,12 +21578,12 @@ end
                   | YFun (domain, _, FT_Vanilla) ->
                       let domain_is_nil = env.ty_to_data domain |> data_free_vars |> Array.isEmpty
                       if arg_code |> SpiralSm.trim = "nil" then
-                        if domain_is_nil then sprintf "v%i(nil)" i else sprintf "v%i" i
+                        if domain_is_nil then sprintf "%s(nil)" (var_name i) else var_name i
                       else
-                        if domain_is_nil then sprintf "v%i((%s)(nil))" i arg_code
-                        else sprintf "v%i(%s)" i arg_code
+                        if domain_is_nil then sprintf "%s((%s)(nil))" (var_name i) arg_code
+                        else sprintf "%s(%s)" (var_name i) arg_code
                   | _ ->
-                      sprintf "v%i(%s)" i arg_code
+                      sprintf "%s(%s)" (var_name i) arg_code
                 call |> simple
             | TyOp(Global, [DLit (LitString x)]) -> global' x
             | TyOp(op,l) ->
@@ -21440,9 +21744,11 @@ end
                     method_names.[i] <- generatedMethodName name i
                     {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 ) (fun s x ->
+                let outer = enter_names x.body
                 line s (sprintf "function %s(%s)" method_names.[x.tag] (args_tys x.free_vars))
                 binds (indent s) x.body
                 line s "end"
+                var_names <- outer
                 )
         and closure : _ -> ClosureRecLua =
             jp
@@ -21462,29 +21768,33 @@ end
                 | _ ->
                     raise_codegen_error "Compiler error: Unexpected type in the closure join point.")
                 (fun s x ->
+                let outer = enter_names x.body
                 let fv_bind =
                     match x.free_vars with
                     | [||] -> "local __capt = nil"
                     | arr ->
-                        let names = arr |> Array.mapi (fun _ (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
-                        sprintf "local %s = capt[1], %s" (arr |> Array.mapi (fun _ (L(i,_)) -> sprintf "v%i" i) |> Array.head) (names |> SpiralSm.replace (arr |> Array.mapi (fun _ (L(i,_)) -> sprintf "v%i" i) |> Array.head) "" |> SpiralSm.trim)
+                        let names = arr |> Array.mapi (fun _ (L(i,_)) -> var_name i) |> String.concat ", "
+                        sprintf "local %s = capt[1], %s" (arr |> Array.mapi (fun _ (L(i,_)) -> var_name i) |> Array.head) (names |> SpiralSm.replace (arr |> Array.mapi (fun _ (L(i,_)) -> var_name i) |> Array.head) "" |> SpiralSm.trim)
                 line s (sprintf "function %s(capt)" closure_names.[x.tag])
-                if x.free_vars.Length > 0 then line (indent s) (sprintf "local %s = (table.unpack or unpack)(capt)" (x.free_vars |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "))
+                if x.free_vars.Length > 0 then line (indent s) (sprintf "local %s = (table.unpack or unpack)(capt)" (x.free_vars |> Array.map (fun (L(i,_)) -> var_name i) |> String.concat ", "))
                 match x.domain_args with
                 | [||] ->
                     line (indent s) "return function(dom)"
                 | [| L(i, _) |] ->
-                    line (indent s) (sprintf "return function(v%i)" i)
+                    line (indent s) (sprintf "return function(%s)" (var_name i))
                 | many ->
                     line (indent s) "return function(dom)"
-                    line (indent (indent s)) (sprintf "local %s = (table.unpack or unpack)(dom)" (many |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "))
+                    line (indent (indent s)) (sprintf "local %s = (table.unpack or unpack)(dom)" (many |> Array.map (fun (L(i,_)) -> var_name i) |> String.concat ", "))
                 binds (indent (indent s)) x.body
                 line (indent s) "end"
                 line s "end"
+                var_names <- outer
             )
 
         let main = StringBuilder()
+        let outer = enter_names x
         binds {text=main; indent=0} x
+        var_names <- outer
 
         let program = StringBuilder()
 
@@ -22273,6 +22583,7 @@ end
                     let element = match a with DV(L(_,YArray el)) -> tup_tys el | _ -> raise_codegen_error "Compiler error: Expected an array."
                     let address = array_element (tup a) (index32 b) element.Length
                     data_term_vars c |> Array.mapi (fun k w -> slot_store element.[k] address k (show_w w)) |> String.concat " "
+                | Assign, [DV(L(i,_)); b] -> $"(local.set $v{i} {tup b})"
                 | Add, _ -> arith "add"
                 | Sub, _ -> arith "sub"
                 | Mult, _ -> arith "mul"
@@ -22556,8 +22867,123 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
 }
 """
 
-    /// ### codegenWgsl
-    let codegenWgsl (env : PartEvalResult) (x : TypedBind []) =
+    /// ### WgslSelfCallShape
+    module WgslSelfCallShape =
+        type Shape = { case : string; pre : TypedBind []; result : Data; args : TyV []; post : TypedBind []; live : TyV Set }
+        let private fv (d : Data) = data_free_vars d |> Set
+        let rec usedBy (binds : TypedBind []) : TyV Set =
+            Array.foldBack (fun k vs ->
+                match k with
+                | TyLet(d,_,o) -> vs + usedOp o - fv d
+                | TyLocalReturnOp(_,o,_) -> vs + usedOp o
+                | TyLocalReturnData(d,_) -> vs + fv d) binds Set.empty
+        and usedOp (x : TypedOp) : TyV Set =
+            match x with
+            | TySizeOf _ | TyBackend _ -> Set.empty
+            | TyMacro l -> List.fold (fun s -> function CMTerm (d,_) -> s + fv d | _ -> s) Set.empty l
+            | TyArrayLiteral(_,l) | TyOp(_,l) -> List.fold (fun s x -> s + fv x) Set.empty l
+            | TyToLayout(x,_) | TyUnionBox(_,x,_) | TyFailwith(_,x) | TyConv(_,x) | TyArrayCreate(_,x) | TyArrayLength(_,x)
+            | TyStringLength(_,x) -> fv x
+            | TyWhile(cond,body) -> Set (snd cond) + usedBy body
+            | TyDo body | TyIndent body -> usedBy body
+            | TyLayoutIndexAll(i) | TyLayoutIndexByKey(i,_) -> Set.singleton i
+            | TyApply(i,d) | TyLayoutMutableSet(i,_,d) -> Set.singleton i + fv d
+            | TyJoinPoint x -> Set (snd x)
+            | TyIf(cond,t,f) -> fv cond + usedBy t + usedBy f
+            | TyUnionUnbox(vs,_,arms,fail) ->
+                let failed = match fail with Some x -> usedBy x | None -> Set.empty
+                Map.fold (fun s _ (lets,body) -> s + (usedBy body - List.fold (fun s x -> s + fv x) Set.empty lets)) (Set vs + failed) arms
+            | TyIntSwitch(tag,arms,fail) -> Array.fold (fun s body -> s + usedBy body) (Set.singleton tag + usedBy fail) arms
+        let rec calls (isSelf : JoinPointCall -> bool) (binds : TypedBind []) : int =
+            binds |> Array.sumBy (fun b ->
+                match b with
+                | TyLet(_,_,op) | TyLocalReturnOp(_,op,_) -> callsOp isSelf op
+                | TyLocalReturnData _ -> 0)
+        and callsOp isSelf (op : TypedOp) : int =
+            match op with
+            | TyJoinPoint jp when isSelf jp -> 1
+            | TyUnionUnbox(_,_,arms,fail) ->
+                (arms |> Map.toSeq |> Seq.sumBy (fun (_,(_,b)) -> calls isSelf b)) + (fail |> Option.map (calls isSelf) |> Option.defaultValue 0)
+            | TyIf(_,t,f) -> calls isSelf t + calls isSelf f
+            | TyWhile(_,b) | TyDo b | TyIndent b -> calls isSelf b
+            | TyIntSwitch(_,arms,fail) -> (arms |> Array.sumBy (calls isSelf)) + calls isSelf fail
+            | _ -> 0
+        let straight (binds : TypedBind []) =
+            binds |> Array.forall (function
+                | TyLet(_,_,(TyUnionUnbox _ | TyIf _ | TyWhile _ | TyJoinPoint _ | TyIntSwitch _))
+                | TyLocalReturnOp(_,(TyUnionUnbox _ | TyIf _ | TyWhile _ | TyJoinPoint _ | TyIntSwitch _),_) -> false
+                | _ -> true)
+        let split isSelf (binds : TypedBind []) =
+            match binds |> Array.tryFindIndex (function TyLet(_,_,TyJoinPoint jp) when isSelf jp -> true | _ -> false) with
+            | Some i when calls isSelf binds.[.. i - 1] = 0 && straight binds.[i + 1 ..] ->
+                match binds.[i] with
+                | TyLet(result,_,TyJoinPoint(_, args)) ->
+                    let post = binds.[i + 1 ..]
+                    Some (binds.[.. i - 1], result, args, post, usedBy post - fv result)
+                | _ -> None
+            | _ -> None
+        let find (isSelf : JoinPointCall -> bool) (body : TypedBind []) : Shape option =
+            match Array.tryLast body with
+            | Some (TyLocalReturnOp(_, TyUnionUnbox(_,_,arms,fail), _)) when calls isSelf body.[.. body.Length - 2] = 0 ->
+                let recursive = arms |> Map.toList |> List.filter (fun (_,(_,b)) -> calls isSelf b > 0)
+                let failCalls = fail |> Option.map (calls isSelf) |> Option.defaultValue 0
+                match recursive with
+                | [ (case, (_, b)) ] when failCalls = 0 && calls isSelf b = 1 ->
+                    split isSelf b |> Option.map (fun (pre, result, args, post, live) ->
+                        { case = case; pre = pre; result = result; args = args; post = post; live = live })
+                | _ -> None
+            | _ -> None
+
+    /// ### wgsl_typed_bind_uses
+    let rec wgsl_typed_bind_uses (body : TypedBind []) (acc : HashSet<int>) =
+        for b in body do
+            match b with
+            | TyLet(_, _, a) | TyLocalReturnOp(_, a, _) -> wgsl_typed_op_uses a acc
+            | TyLocalReturnData(d, _) -> wgsl_data_uses d acc
+    and wgsl_data_uses (d : Data) (acc : HashSet<int>) = data_free_vars d |> Array.iter (fun (L(i,_)) -> acc.Add i |> ignore)
+    and wgsl_var_uses (vs : TyV seq) (acc : HashSet<int>) = vs |> Seq.iter (fun (L(i,_)) -> acc.Add i |> ignore)
+    and wgsl_typed_op_uses (a : TypedOp) (acc : HashSet<int>) =
+        match a with
+        | TyMacro l -> l |> List.iter (function CMTerm(d, _) -> wgsl_data_uses d acc | _ -> ())
+        | TyOp(_, l) | TyArrayLiteral(_, l) -> l |> List.iter (fun d -> wgsl_data_uses d acc)
+        | TyUnionBox(_, d, _) | TyToLayout(d, _) | TyFailwith(_, d) | TyConv(_, d)
+        | TyArrayCreate(_, d) | TyArrayLength(_, d) | TyStringLength(_, d) -> wgsl_data_uses d acc
+        | TyUnionUnbox(vs, _, cases, def) ->
+            wgsl_var_uses vs acc
+            cases |> Map.iter (fun _ (_, case_body) -> wgsl_typed_bind_uses case_body acc)
+            def |> Option.iter (fun default_body -> wgsl_typed_bind_uses default_body acc)
+        | TyIntSwitch(v, arms, def) ->
+            wgsl_var_uses [v] acc
+            arms |> Array.iter (fun arm -> wgsl_typed_bind_uses arm acc)
+            wgsl_typed_bind_uses def acc
+        | TyLayoutIndexAll v | TyLayoutIndexByKey(v, _) -> wgsl_var_uses [v] acc
+        | TyLayoutMutableSet(v, _, d) | TyApply(v, d) -> wgsl_var_uses [v] acc; wgsl_data_uses d acc
+        | TySizeOf _ -> ()
+        | TyIf(c, tr, fl) -> wgsl_data_uses c acc; wgsl_typed_bind_uses tr acc; wgsl_typed_bind_uses fl acc
+        | TyWhile((_, args), loop_body) -> wgsl_var_uses args acc; wgsl_typed_bind_uses loop_body acc
+        | TyDo inner | TyIndent inner -> wgsl_typed_bind_uses inner acc
+        | TyJoinPoint(_, args) -> wgsl_var_uses args acc
+        | TyBackend(_, closure, _) -> wgsl_var_uses (rdata_free_vars (fst closure.node)) acc
+
+    /// ### wgslStageFields
+    let wgslStageFields (env : PartEvalResult) (h : Union) =
+        let payloads = h.Item.tag_cases |> Array.map (fun case -> match box case with null -> YB | _ -> snd case)
+        if payloads |> Array.forall (function YB -> true | _ -> false) || h.Item.layout = UHeap then None
+        else Some (payloads |> Array.mapi (fun c payload -> env.ty_to_data payload |> data_free_vars |> Array.mapi (fun f (L(_, t)) -> c, f, t)) |> Array.concat)
+
+    /// ### wgslStageWidth
+    let rec wgslStageWidth (env : PartEvalResult) (t : Ty) : int =
+        match t with
+        | YPrim (Int64T | UInt64T) -> 2
+        | YUnion h ->
+            match wgslStageFields env h with
+            | Some fields -> 1 + (fields |> Array.sumBy (fun (_, _, t) -> wgslStageWidth env t))
+            | None -> 1
+        | YNominal _ | YApply _ -> wgslStageWidth env (env.nominal_apply t)
+        | _ -> 1
+
+    /// ### codegenWgslModule
+    let codegenWgslModule (env : PartEvalResult) (x : TypedBind []) (stage : (int * int * int * TyV [] * TyV [] * Trace) option) (carry : (int * int * Ty []) option) =
         let functions = ResizeArray<string>()
         let tuple_bodies = ResizeArray<string>()
         let tuple_names = Dictionary<string, string>()
@@ -22569,10 +22995,14 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         let is_unit_ty = function YB -> true | _ -> false
         let case_payloads (h : Union) = h.Item.tag_cases |> Array.map (fun case -> match box case with null -> YB | _ -> snd case)
         let is_tag_only_union (h : Union) = case_payloads h |> Array.forall is_unit_ty
+        let is_heap_union (h : Union) = h.Item.layout = UHeap && not (is_tag_only_union h)
+        let heap_case_tys (h : Union) case = (case_payloads h).[case] |> env.ty_to_data |> data_free_vars |> Array.map (fun (L(_,t)) -> t)
         let union_layouts = Dictionary<obj, string * string [] []>(HashIdentity.Reference)
         let unions_being_laid_out = HashSet<obj>(HashIdentity.Reference)
         let uses_heap = ref false
         let uses_w64 = ref false
+        let wgsl_globals = ResizeArray<string>()
+        let fail_sites = ResizeArray<string>()
         let rec tyv = function
             | YPrim Int32T | YPrim CharT -> "i32"
             | YPrim UInt32T -> "u32"
@@ -22584,8 +23014,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             | YPrim (Int64T | UInt64T) -> uses_w64.Value <- true; "vec2<u32>"
             | YPrim t -> unsupported $"the primitive {t}"
             | YUnion h when is_tag_only_union h -> "u32"
+            | YUnion h when is_heap_union h -> uses_heap.Value <- true; "u32"
             | YUnion h -> fst (union_layout h)
             | YArray _ -> "u32"
+            | YLayout(_, (Heap | HeapMutable)) -> uses_heap.Value <- true; "u32"
             | YNominal _ | YApply _ as t -> tyv (env.nominal_apply t)
             | t -> unsupported $"""the type {show_ty t} ({(sprintf "%A" t).Split([|' '; '('|]).[0]})"""
         and union_layout (h : Union) : string * string [] [] =
@@ -22609,6 +23041,43 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             | "vec2<u32>" -> "vec2<u32>(0u, 0u)"
             | other when other.StartsWith "Spiral" -> $"{other}()"
             | other -> unsupported $"a zero value of {other}"
+        let rec stage_load_ty (word : int -> string) (t : Ty) at =
+            match t with
+            | YNominal _ | YApply _ -> stage_load_ty word (env.nominal_apply t) at
+            | YUnion h when (wgslStageFields env h).IsSome ->
+                let fields, _ = (wgslStageFields env h).Value |> Array.mapFold (fun at (_, _, ft) -> stage_load_ty word ft at, at + wgslStageWidth env ft) (at + 1)
+                $"""{tyv t}({String.concat ", " (Array.append [| word at |] fields)})"""
+            | _ ->
+            match tyv t with
+            | "i32" -> $"bitcast<i32>({word at})"
+            | "u32" -> word at
+            | "f32" -> $"bitcast<f32>({word at})"
+            | "bool" -> $"({word at} != 0u)"
+            | "vec2<u32>" -> $"vec2<u32>({word at}, {word (at + 1)})"
+            | other -> unsupported $"a {other} value live across a gpu stage"
+        let rec stage_store_ty (word : int -> string) (t : Ty) at (value : string) : string list =
+            match t with
+            | YNominal _ | YApply _ -> stage_store_ty word (env.nominal_apply t) at value
+            | YUnion h when (wgslStageFields env h).IsSome ->
+                let lines, _ = (wgslStageFields env h).Value |> Array.mapFold (fun at (c, f, ft) -> stage_store_ty word ft at $"({value}).c{c}f{f}", at + wgslStageWidth env ft) (at + 1)
+                $"  {word at} = ({value}).tag;" :: List.concat lines
+            | _ ->
+            match tyv t with
+            | "i32" | "f32" -> [ $"  {word at} = bitcast<u32>({value});" ]
+            | "u32" -> [ $"  {word at} = {value};" ]
+            | "bool" -> [ $"  {word at} = select(0u, 1u, {value});" ]
+            | "vec2<u32>" -> [ $"  {word at} = ({value}).x;"; $"  {word (at + 1)} = ({value}).y;" ]
+            | other -> unsupported $"a {other} value live across a gpu stage"
+        let carry_word at =
+            match carry with
+            | Some (stride, carry_base, _) -> $"spiral_stage[spiral_lane * {stride}u + {carry_base + at}u]"
+            | None -> raise_codegen_error "GpuCarryIn and GpuCarryOut must sit at main's top level (call `carried` from main, inlined); this one was reached inside a function body."
+        let carry_slots (value_tys : Ty []) =
+            match carry with
+            | Some (_, _, tys) when value_tys = tys ->
+                value_tys |> Array.mapFold (fun at t -> at, at + wgslStageWidth env t) 1 |> fst
+            | Some _ -> raise_codegen_error "Compiler error: a GpuCarryIn or GpuCarryOut carries a different shape than the program's carried state."
+            | None -> carry_word 0 |> ignore; [||]
         let array_element_tys = function
             | YArray element -> env.ty_to_data element |> data_free_vars |> Array.map (fun (L(_, t)) -> t)
             | _ -> raise_codegen_error "Compiler error: Expected an array type."
@@ -22634,7 +23103,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             | other -> unsupported $"array elements of type {other}"
         let rec element_words (t : Ty) : (string * string) list =
             match t with
-            | YUnion h when not (is_tag_only_union h) ->
+            | YUnion h when not (is_tag_only_union h) && not (is_heap_union h) ->
                 let _, case_fields = union_layout h
                 let field_tys = case_payloads h |> Array.map (fun payload -> env.ty_to_data payload |> data_free_vars |> Array.map (fun (L(_,t)) -> t))
                 ("tag", "u32") :: [ for case in 0 .. case_fields.Length - 1 do
@@ -22646,7 +23115,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             | t -> [("", tyv t)]
         let rec element_value (t : Ty) (word_at : int -> string) (offset : int) : string * int =
             match t with
-            | YUnion h when not (is_tag_only_union h) ->
+            | YUnion h when not (is_tag_only_union h) && not (is_heap_union h) ->
                 let name, _ = union_layout h
                 let field_tys = case_payloads h |> Array.map (fun payload -> env.ty_to_data payload |> data_free_vars |> Array.map (fun (L(_,t)) -> t))
                 let next = ref (offset + 1)
@@ -22659,7 +23128,9 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             | YNominal _ | YApply _ -> element_value (env.nominal_apply t) word_at offset
             | YPrim (Int64T | UInt64T) -> uses_w64.Value <- true; $"vec2<u32>({word_at offset}, {word_at (offset + 1)})", offset + 2
             | t -> from_heap_word (tyv t) (word_at offset), offset + 1
-        let heap_word_at array index stride k = $"spiral_heap[{array} + 1u + bitcast<u32>({index}) * {stride}u + {k}u]"
+        let heap_word_at array index stride k =
+            uses_heap.Value <- true
+            $"spiral_heap[{array} + 1u + bitcast<u32>({index}) * {stride}u + {k}u]"
         let element_stride (tys : Ty []) = tys |> Array.sumBy (fun t -> (element_words t).Length)
         let element_reads (tys : Ty []) (word_at : int -> string) =
             let next = ref 0
@@ -22676,6 +23147,42 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     next.Value <- k + 1
                     $"{word_at k} = {to_heap_word scalar field}")) tys values
             |> List.concat |> String.concat "; "
+        let layouts = Dictionary<string, Data * TyV []>()
+        let layout_of (layout_ty : Ty) =
+            match layout_ty with
+            | YLayout(inner, (Heap | HeapMutable)) ->
+                let key = show_ty layout_ty
+                match layouts.TryGetValue key with
+                | true, found -> found
+                | _ ->
+                    let data = env.ty_to_data inner
+                    let free_vars =
+                        match data with
+                        | DRecord fields -> fields |> Map.toArray |> Array.collect (fun (_, field) -> data_free_vars field)
+                        | _ -> data_free_vars data
+                    layouts.[key] <- (data, free_vars)
+                    data, free_vars
+            | YLayout _ -> unsupported "stack or ref layouts (a WGSL layout lives in the lane heap)"
+            | _ -> raise_codegen_error "Compiler error: Expected a layout type."
+        let layout_field_tys (fields : TyV []) = fields |> Array.map (fun (L(_, t)) -> t)
+        let layout_offset (all : TyV []) (fields : TyV []) =
+            match fields with
+            | [||] -> 0
+            | _ ->
+                let (L(first, _)) = fields.[0]
+                let position = all |> Array.findIndex (fun (L(j, _)) -> j = first)
+                element_stride (layout_field_tys all.[.. position - 1])
+        let layout_word block offset k =
+            uses_heap.Value <- true
+            $"spiral_heap[{block} + 1u + {offset + k}u]"
+        let layout_field (data : Data) (keys : _ list) =
+            List.fold (fun current key ->
+                match current with
+                | DRecord fields ->
+                    match fields |> Map.tryPick (fun (_, k) field -> if LayoutFieldNameIdOps.matchesText key k then Some field else None) with
+                    | Some field -> field
+                    | None -> raise_codegen_error "Compiler error: A layout has no such field."
+                | _ -> raise_codegen_error "Compiler error: Expected a record layout.") data keys
         let lit = function
             | LitInt32 x when x = Int32.MinValue -> "bitcast<i32>(0x80000000u)"
             | LitInt32 x -> $"{x}i"
@@ -22738,11 +23245,99 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             | [||] -> ""
             | [|t|] -> t
             | tys -> tuple_name tys
+        let zero_result range =
+            match flatten_ty range |> Array.map tyv with
+            | [||] -> ""
+            | [|t|] -> zero t
+            | tys -> $"""{tuple_name tys}({tys |> Array.map zero |> String.concat ", "})"""
+        let rec assigned_ids (body : TypedBind []) (acc : HashSet<int>) =
+            for b in body do
+                match b with
+                | TyLet(d, _, a) ->
+                    (match a with
+                     | TyIf _ | TyUnionUnbox _ | TyIntSwitch _ -> data_free_vars d |> Array.iter (fun (L(i,_)) -> acc.Add i |> ignore)
+                     | _ -> ())
+                    assigned_op a acc
+                | TyLocalReturnOp(_, a, _) -> assigned_op a acc
+                | TyLocalReturnData _ -> ()
+        and assigned_op (a : TypedOp) (acc : HashSet<int>) =
+            match a with
+            | TyOp(Assign, [DV(L(i,_)); _]) -> acc.Add i |> ignore
+            | TyIf(_, x, y) -> assigned_ids x acc; assigned_ids y acc
+            | TyUnionUnbox(_, _, cases, d) ->
+                cases |> Map.iter (fun _ (_, b) -> assigned_ids b acc)
+                d |> Option.iter (fun b -> assigned_ids b acc)
+            | TyIntSwitch(_, arms, d) -> arms |> Array.iter (fun b -> assigned_ids b acc); assigned_ids d acc
+            | TyWhile(_, b) | TyDo b | TyIndent b -> assigned_ids b acc
+            | _ -> ()
+        let rec branch_leaves (body : TypedBind []) =
+            if body.Length = 0 then [None]
+            else
+                match body.[body.Length - 1] with
+                | TyLocalReturnData(d, _) -> [Some (data_term_vars d)]
+                | TyLocalReturnOp(_, a, _) -> op_leaves a
+                | TyLet _ -> [None]
+        and op_leaves (a : TypedOp) =
+            match a with
+            | TyIf(_, x, y) -> branch_leaves x @ branch_leaves y
+            | TyUnionUnbox(_, _, cases, d) ->
+                (cases |> Map.toList |> List.collect (fun (_, (_, b)) -> branch_leaves b)) @ (d |> Option.map branch_leaves |> Option.defaultValue [])
+            | TyIntSwitch(_, arms, d) -> (arms |> Array.toList |> List.collect branch_leaves) @ branch_leaves d
+            | TyDo b | TyIndent b -> branch_leaves b
+            | TyFailwith _ -> []
+            | _ -> [None]
+        let rec bound_ids (body : TypedBind []) (acc : HashSet<int>) =
+            for b in body do
+                match b with
+                | TyLet(d, _, a) ->
+                    data_free_vars d |> Array.iter (fun (L(i,_)) -> acc.Add i |> ignore)
+                    bound_op a acc
+                | TyLocalReturnOp(_, a, _) -> bound_op a acc
+                | TyLocalReturnData _ -> ()
+        and bound_op (a : TypedOp) (acc : HashSet<int>) =
+            match a with
+            | TyIf(_, x, y) -> bound_ids x acc; bound_ids y acc
+            | TyUnionUnbox(_, _, cases, d) ->
+                cases |> Map.iter (fun _ (vars, b) ->
+                    vars |> List.iter (fun v -> data_free_vars v |> Array.iter (fun (L(i,_)) -> acc.Add i |> ignore))
+                    bound_ids b acc)
+                d |> Option.iter (fun b -> bound_ids b acc)
+            | TyIntSwitch(_, arms, d) -> arms |> Array.iter (fun b -> bound_ids b acc); bound_ids d acc
+            | TyWhile(_, b) | TyDo b | TyIndent b -> bound_ids b acc
+            | _ -> ()
+        let reassigned : HashSet<int> ref = ref (HashSet<int>())
+        let hoisted_targets = HashSet<int>()
+        let hoisted_sources (vs : TyV []) (a : TypedOp) : int option [] =
+            let none = Array.create vs.Length None
+            match a with
+            | TyIf _ | TyUnionUnbox _ | TyIntSwitch _ when vs.Length > 1 ->
+                match op_leaves a with
+                | [] -> none
+                | leaves when leaves |> List.exists Option.isNone -> none
+                | leaves ->
+                    let leaves = leaves |> List.map Option.get
+                    if leaves |> List.exists (fun l -> Array.length l <> vs.Length) then none
+                    else
+                        let inside = HashSet<int>()
+                        bound_op a inside
+                        Array.init vs.Length (fun k ->
+                            match leaves.Head.[k] with
+                            | WV (L(j,_)) when not (reassigned.Value.Contains j) && not (inside.Contains j)
+                                               && leaves |> List.forall (fun l -> match l.[k] with WV (L(j',_)) -> j' = j | _ -> false) -> Some j
+                            | _ -> None)
+            | _ -> none
         let self_loop : (int * TyV []) option ref = ref None
         let rec emit_function (name : string) (tag : int option) (parameters : TyV []) (range : Ty) (body : TypedBind []) =
             let saved = self_loop.Value
             let tail = match tag with Some t when self_tail t body -> true | _ -> false
             if tail then self_loop.Value <- Some (tag.Value, parameters)
+            let saved_reassigned = reassigned.Value
+            let fresh = HashSet<int>()
+            assigned_ids body fresh
+            if tail then parameters |> Array.iter (fun (L(i,_)) -> fresh.Add i |> ignore)
+            reassigned.Value <- fresh
+            if parameters.Length > WarningCodeOps.wide_gpu_state_params then
+                eprintfn "warning: %s" (WarningCodeOps.wide_gpu_state name parameters.Length)
             try
                 let text = StringBuilder()
                 let formals = parameters |> Array.map (fun (L(i,t)) -> $"p{i}: {tyv t}") |> String.concat ", "
@@ -22770,6 +23365,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 functions.Add(text.ToString())
             finally
                 self_loop.Value <- saved
+                reassigned.Value <- saved_reassigned
         and returned_call_as_tail (body : TypedBind []) =
             let n = body.Length
             if n < 2 then body else
@@ -22797,7 +23393,13 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 | TyLet(d,trace,a) ->
                     try
                         let vs = data_free_vars d
-                        vs |> Array.iter (fun (L(i,t)) -> line s $"var v{i}: {tyv t} = {zero (tyv t)};")
+                        let sources = hoisted_sources vs a
+                        Array.iter2 (fun (L(i,t)) source ->
+                            match source with
+                            | Some j ->
+                                hoisted_targets.Add i |> ignore
+                                line s $"var v{i}: {tyv t} = v{j};"
+                            | None -> line s $"var v{i}: {tyv t} = {zero (tyv t)};") vs sources
                         op s (WgslLocal vs) a
                     with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
                 | TyLocalReturnOp(trace,a,_) ->
@@ -22809,7 +23411,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         | WgslLocal targets ->
                             let values = data_term_vars d
                             if targets.Length <> values.Length then raise_codegen_error "Compiler error: A binding has the wrong number of values."
-                            Array.iter2 (fun (L(i,_)) w -> line s $"v{i} = {show_w w};") targets values
+                            Array.iter2 (fun (L(i,_)) w -> if not (hoisted_targets.Contains i) then line s $"v{i} = {show_w w};") targets values
                         | WgslTail range ->
                             match data_term_vars d with
                             | [||] -> if self_loop.Value.IsSome then line s "return;"
@@ -22832,11 +23434,24 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     if x <> "" then line s $"{x};"
                     if self_loop.Value.IsSome then line s "return;"
                 | WgslTail _ -> line s $"return {x};"
+            let layout_reads (values : string []) =
+                match ret with
+                | WgslLocal [||] -> ()
+                | WgslLocal targets when targets.Length = values.Length ->
+                    Array.iter2 (fun (L(t, _)) value -> line s $"v{t} = {value};") targets values
+                | WgslLocal _ -> raise_codegen_error "Compiler error: A layout read has the wrong number of values."
+                | WgslTail range ->
+                    match values with
+                    | [||] -> return' ""
+                    | [|value|] -> line s $"return {value};"
+                    | many -> line s $"""return {ret_ty range}({String.concat ", " many});"""
             let jp_text (jp, args) =
                 match jp with
                 | JPMethod(a,c) ->
                     let tag = (method (a,c)).tag
-                    if methods_being_emitted.Contains tag then unsupported "recursion that is not a self-tail call (WGSL has no call stack)"
+                    if methods_being_emitted.Contains tag then
+                        let callee = match method_names.TryGetValue tag with | true, n -> n | _ -> $"method {tag}"
+                        unsupported $"recursion that is not a self-tail call: {callee} is called again while it is still being emitted, outside tail position (WGSL has no call stack; turn it into a tail loop or an accumulator)"
                     let name = method_names.[tag]
                     let arguments = args |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
                     $"{name}({arguments})"
@@ -22881,6 +23496,18 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 | _ -> ()
             | TyDo body | TyIndent body -> binds s ret body
             | TyUnionBox(tag_id, _, h) when is_tag_only_union h -> return' $"{h.Item.tags.[tag_id]}u"
+            | TyUnionBox(tag_id, payload, h) when is_heap_union h ->
+                let case = h.Item.tags.[tag_id]
+                let tys = heap_case_tys h case
+                let values = data_term_vars payload |> Array.map show_w
+                if values.Length <> tys.Length then raise_codegen_error "Compiler error: A recursive union payload has the wrong number of values."
+                uses_heap.Value <- true
+                let block = $"spiral_t{fresh_id ()}"
+                line s $"let {block} = spiral_array_create(1i, {1 + element_stride tys}u);"
+                line s $"{layout_word block 0 0} = {case}u;"
+                let writes = element_writes tys values (layout_word block 1)
+                if writes <> "" then line s $"{writes};"
+                return' block
             | TyUnionBox(tag_id, payload, h) ->
                 let name, case_fields = union_layout h
                 let case = h.Item.tags.[tag_id]
@@ -22890,9 +23517,15 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 return' $"""{name}({String.concat ", " (Array.append [|$"{case}u"|] fields)})"""
             | TyUnionUnbox(scrutinees, h, on_succs, on_fail) when not scrutinees.IsEmpty ->
                 let tag_only = is_tag_only_union h
-                let tag_of (L(i,_)) = if tag_only then $"v{i}" else $"v{i}.tag"
+                let heap = is_heap_union h
+                let tag_of (L(i,_)) = if tag_only then $"v{i}" elif heap then layout_word $"v{i}" 0 0 else $"v{i}.tag"
                 let arm s' (case, payloads, body) =
-                    if not tag_only then
+                    if heap then
+                        List.iter2 (fun (L(i,_)) payload ->
+                            let fields = data_free_vars payload
+                            let reads = element_reads (fields |> Array.map (fun (L(_,t)) -> t)) (layout_word $"v{i}" 1)
+                            Array.iter2 (fun (L(vi, t)) value -> line s' $"var v{vi}: {tyv t} = {value};") fields reads) scrutinees payloads
+                    elif not tag_only then
                         List.iter2 (fun (L(i,_)) payload ->
                             data_free_vars payload |> Array.iteri (fun field (L(vi, t)) -> line s' $"var v{vi}: {tyv t} = v{i}.c{case}f{field};")) scrutinees payloads
                     binds s' ret body
@@ -22948,7 +23581,14 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         | Some (Int32T | CharT), BoolT -> $"({text} != 0i)"
                         | _ -> unsupported "this conversion"
                 return' converted
-            | TyFailwith _ -> unsupported "failwith"
+            | TyFailwith(_, message) ->
+                let text = match message with DLit(LitString x) -> x | _ -> "a failwith whose message is only known at run time"
+                fail_sites.Add(text.Replace("\\", "\\\\").Replace("\r", "\\r").Replace("\n", "\\n"))
+                line s $"atomicMax(&spiral_io.fail_site, {fail_sites.Count}u);"
+                match ret with
+                | WgslLocal targets -> targets |> Array.iter (fun (L(i,t)) -> line s $"v{i} = {zero (tyv t)};")
+                | WgslTail range when is_unit_ty range -> line s "return;"
+                | WgslTail range -> line s $"return {zero_result range};"
             | TyMacro parts ->
                 let piece = function
                     | CMText x -> x
@@ -22957,7 +23597,34 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | CMType x -> tyv x
                     | CMTypeLit _ -> unsupported "a macro type literal"
                 return' (parts |> List.map piece |> String.concat "")
-            | TyOp(Global, _) -> unsupported "globals"
+            | TyOp(Global, [DLit (LitString x)]) ->
+                if not (wgsl_globals.Contains x) then wgsl_globals.Add x
+                return' ""
+            | TyOp(Global, _) -> unsupported "a global that is not a string literal"
+            | TyOp((GpuCarryIn | GpuCarryOut) as carry_op, [a]) ->
+                let terms = data_term_vars a
+                let values = terms |> Array.map show_w
+                let slots = terms |> Array.map (function WV(L(_, t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) |> carry_slots
+                let tys = match carry with Some (_, _, tys) -> tys | None -> [||]
+                let store_all (sources : string []) =
+                    Array.iteri (fun k at -> stage_store_ty carry_word tys.[k] at sources.[k] |> List.iter (fun l -> line s (l.TrimStart()))) slots
+                    line s $"{carry_word 0} = 1u;"
+                match carry_op, ret with
+                | GpuCarryIn, WgslLocal targets when targets.Length = values.Length ->
+                    Array.iter2 (fun (L(i,_)) value -> line s $"v{i} = {value};") targets values
+                    line s $"if ({carry_word 0} != 0u) {{"
+                    Array.iteri (fun k (L(i,_)) -> line (indent s) $"v{i} = {stage_load_ty carry_word tys.[k] slots.[k]};") targets
+                    line s "}"
+                | GpuCarryOut, WgslLocal targets when targets.Length = values.Length ->
+                    Array.iter2 (fun (L(i,_)) value -> line s $"v{i} = {value};") targets values
+                    store_all (targets |> Array.map (fun (L(i,_)) -> $"v{i}"))
+                | GpuCarryOut, WgslTail range ->
+                    store_all values
+                    match values with
+                    | [||] -> return' ""
+                    | [|value|] -> line s $"return {value};"
+                    | many -> line s $"""return {ret_ty range}({String.concat ", " many});"""
+                | _ -> raise_codegen_error "GpuCarryIn must bind its value (`:= s = carried ...` then use s); it cannot end a function."
             | TyOp(ArrayIndex, [a;b]) when (array_element_tys (array_ty_of a)).Length > 1 ->
                 let tys = array_element_tys (array_ty_of a)
                 let values = element_reads tys (heap_word_at (tup a) (tup b) (element_stride tys))
@@ -22995,6 +23662,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         | NEQ -> $"any({tup a} != {tup b})"
                         | ShiftLeft -> $"spiral_w64_shl({tup a}, {wide_count b})"
                         | _ -> if signed then $"spiral_i64_shr({tup a}, {wide_count b})" else $"spiral_u64_shr({tup a}, {wide_count b})"
+                    | GpuStageBoundary, [] -> raise_codegen_error "GpuStageBoundary splits a WGSL program only at main's top level, but this one was reached inside a function body (a join point or method); inline (:~, no ^) every function between main and the boundary."
                     | Neg, [a] when (wide_of a).IsSome -> $"spiral_w64_neg({tup a})"
                     | (Add | Sub | Mult | Div | ShiftLeft), [a;b] when (subword_of a).IsSome ->
                         let wide = match operation with Add -> binary "+" a b | Sub -> binary "-" a b | Mult -> binary "*" a b | Div -> binary "/" a b | _ -> shift "<<" a b
@@ -23034,13 +23702,55 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         let values = data_term_vars c |> Array.map show_w
                         if values.Length <> tys.Length then raise_codegen_error "Compiler error: An array element has the wrong number of values."
                         element_writes tys values (heap_word_at (tup a) (tup b) (element_stride tys))
+                    | UnionTag, [DV(L(i,YUnion h))] -> if is_tag_only_union h then $"i32(v{i})" elif is_heap_union h then "i32(" + layout_word $"v{i}" 0 0 + ")" else $"i32(v{i}.tag)"
                     | _ -> unsupported $"the operation %A{operation}"
                 return' expr
             | TyArrayCreate(element, size) ->
                 let stride = element_stride (array_element_tys (YArray element))
                 uses_heap.Value <- true
                 return' $"spiral_array_create({tup size}, {stride}u)"
-            | TyArrayLength(_, a) -> return' $"bitcast<i32>(spiral_heap[{tup a}])"
+            | TyArrayLiteral(element, items) ->
+                let tys = array_element_tys (YArray element)
+                let stride = element_stride tys
+                uses_heap.Value <- true
+                let block = $"spiral_t{fresh_id ()}"
+                line s $"let {block} = spiral_array_create({items.Length}i, {stride}u);"
+                items |> List.iteri (fun index item ->
+                    let values = data_term_vars item |> Array.map show_w
+                    if values.Length <> tys.Length then raise_codegen_error "Compiler error: An array literal element has the wrong number of values."
+                    let writes = element_writes tys values (heap_word_at block $"{index}i" stride)
+                    if writes <> "" then line s $"{writes};")
+                return' block
+            | TyArrayLength(_, a) -> uses_heap.Value <- true; return' $"bitcast<i32>(spiral_heap[{tup a}])"
+            | TyToLayout(payload, layout_ty) ->
+                let _, fields = layout_of layout_ty
+                let tys = layout_field_tys fields
+                let values = data_term_vars payload |> Array.map show_w
+                if values.Length <> tys.Length then raise_codegen_error "Compiler error: A layout is built from the wrong number of values."
+                uses_heap.Value <- true
+                let block = $"spiral_t{fresh_id ()}"
+                line s $"let {block} = spiral_array_create(1i, {element_stride tys}u);"
+                let writes = element_writes tys values (layout_word block 0)
+                if writes <> "" then line s $"{writes};"
+                return' block
+            | TyLayoutIndexAll(L(i, layout_ty)) ->
+                let _, fields = layout_of layout_ty
+                layout_reads (element_reads (layout_field_tys fields) (layout_word $"v{i}" 0))
+            | TyLayoutIndexByKey(L(i, layout_ty), key) ->
+                let data, all = layout_of layout_ty
+                let fields = data_free_vars (layout_field data [key])
+                layout_reads (element_reads (layout_field_tys fields) (layout_word $"v{i}" (layout_offset all fields)))
+            | TyLayoutMutableSet(L(i, layout_ty), keys, value) ->
+                match layout_ty with
+                | YLayout(_, HeapMutable) -> ()
+                | _ -> unsupported "setting a field of an immutable layout"
+                let data, all = layout_of layout_ty
+                let fields = data_free_vars (layout_field data keys)
+                let values = data_term_vars value |> Array.map show_w
+                if values.Length <> fields.Length then raise_codegen_error "Compiler error: A layout set has the wrong number of values."
+                let writes = element_writes (layout_field_tys fields) values (layout_word $"v{i}" (layout_offset all fields))
+                if writes <> "" then line s $"{writes};"
+                return' ""
             | other ->
                 let construct = (sprintf "%A" other).Split('(').[0]
                 unsupported construct
@@ -23062,7 +23772,13 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     tag)
         and method (a, b) : {| tag : int |} = {| tag = method_memo.Force() (a, b) |}
 
+        let stage_index, stage_words, live_in, live_out, cut_trace =
+            match stage with
+            | Some (k, _, w, li, lo, t) -> k, w, li, lo, t
+            | None -> 0, 0, [||], [||], []
+        let is_last_stage = match stage with Some (k, n, _, _, _, _) -> k = n - 1 | None -> true
         let unit_main =
+            if not is_last_stage then false else
             match Array.tryLast x with
             | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
                 match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
@@ -23070,17 +23786,32 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 | [|YPrim Int32T|] -> false
                 | _ -> raise_codegen_error "The return type of main in the WGSL backend should be a 32-bit int (or unit)."
             | _ -> true
-        emit_function "spiral_main" None [||] (if unit_main then YB else YPrim Int32T) x
+        if is_last_stage then emit_function "spiral_main" None live_in (if unit_main then YB else YPrim Int32T) x
+        else
+            let out_range =
+                match live_out with
+                | [||] -> YB
+                | [|L(_,t)|] -> t
+                | vs -> vs |> Array.map (fun (L(_,t)) -> t) |> Array.reduceBack (fun a b -> YPair(a, b))
+            let out_data =
+                match live_out with
+                | [||] -> DB
+                | [|v|] -> DV v
+                | vs -> vs |> Array.map DV |> Array.reduceBack (fun a b -> DPair(a, b))
+            emit_function "spiral_main" None live_in out_range (Array.append x [| TyLocalReturnData(out_data, cut_trace) |])
         let program = StringBuilder()
+        fail_sites |> Seq.iteri (fun site text -> program.AppendLine($"// spiral-failwith {site + 1}: {text}") |> ignore)
         program.AppendLine("struct SpiralIo {") |> ignore
         program.AppendLine("  code: i32,") |> ignore
         program.AppendLine("  lanes: u32,") |> ignore
         program.AppendLine("  heap_words_per_lane: u32,") |> ignore
         program.AppendLine("  lane_base: u32,") |> ignore
         program.AppendLine("  heap_overflow: atomic<u32>,") |> ignore
+        if fail_sites.Count > 0 then program.AppendLine("  fail_site: atomic<u32>,") |> ignore
         program.AppendLine("}") |> ignore
         program.AppendLine("@group(0) @binding(0) var<storage, read_write> spiral_io: SpiralIo;") |> ignore
         program.AppendLine("@group(0) @binding(2) var<storage, read_write> spiral_results: array<i32>;") |> ignore
+        if stage.IsSome then program.AppendLine("@group(0) @binding(4) var<storage, read_write> spiral_stage: array<u32>;") |> ignore
         program.AppendLine("var<private> spiral_lane: u32 = 0u;") |> ignore
         if uses_heap.Value then
             program.AppendLine("@group(0) @binding(1) var<storage, read_write> spiral_heap: array<u32>;") |> ignore
@@ -23095,6 +23826,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             program.AppendLine("  return base;") |> ignore
             program.AppendLine("}") |> ignore
         if uses_w64.Value then program.Append(spiralWgslW64Helpers) |> ignore
+        wgsl_globals |> Seq.iter (fun text -> program.AppendLine(text) |> ignore)
         tuple_bodies |> Seq.iter (fun text -> program.Append(text) |> ignore)
         functions |> Seq.iter (fun fn -> program.Append(fn) |> ignore)
         program.AppendLine("@compute @workgroup_size(64)") |> ignore
@@ -23103,19 +23835,86 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         program.AppendLine("  let lane = spiral_io.lane_base + invocation.x;") |> ignore
         program.AppendLine("  if (lane >= lane_count) { return; }") |> ignore
         program.AppendLine("  spiral_lane = lane;") |> ignore
+        if stage.IsSome then program.AppendLine($"  let stage_base = lane * {stage_words}u;") |> ignore
         if uses_heap.Value then
             program.AppendLine("  let heap_words = select(arrayLength(&spiral_heap) / lane_count, spiral_io.heap_words_per_lane, spiral_io.heap_words_per_lane > 0u);") |> ignore
-            program.AppendLine("  spiral_heap_top = invocation.x * heap_words;") |> ignore
-            program.AppendLine("  spiral_heap_end = spiral_heap_top + heap_words;") |> ignore
-        if unit_main then
-            program.AppendLine("  spiral_main();") |> ignore
-            program.AppendLine("  let result = 0i;") |> ignore
+            if stage_index > 0 then program.AppendLine("  spiral_heap_top = spiral_stage[stage_base];") |> ignore
+            else program.AppendLine("  spiral_heap_top = invocation.x * heap_words;") |> ignore
+            program.AppendLine("  spiral_heap_end = invocation.x * heap_words + heap_words;") |> ignore
+        let slots (vs : TyV []) =
+            vs |> Array.mapFold (fun at (L(_,t) as v) -> (v, at), at + wgslStageWidth env t) 1 |> fst
+        let word at = $"spiral_stage[stage_base + {at}u]"
+        let load (L(_,t)) at = stage_load_ty word t at
+        let store (L(_,t)) at (value : string) = stage_store_ty word t at value
+        let args = slots live_in |> Array.map (fun (v, at) -> load v at) |> String.concat ", "
+        if not is_last_stage && live_out.Length = 0 then
+            program.AppendLine($"  spiral_main({args});") |> ignore
+            if uses_heap.Value then program.AppendLine("  spiral_stage[stage_base] = spiral_heap_top;") |> ignore
+        elif not is_last_stage then
+            program.AppendLine($"  let staged = spiral_main({args});") |> ignore
+            slots live_out |> Array.iteri (fun j (v, at) ->
+                let value = if live_out.Length = 1 then "staged" else $"staged.v{j}"
+                store v at value |> List.iter (fun l -> program.AppendLine(l) |> ignore))
+            if uses_heap.Value then program.AppendLine("  spiral_stage[stage_base] = spiral_heap_top;") |> ignore
         else
-            program.AppendLine("  let result = spiral_main();") |> ignore
-        program.AppendLine("  spiral_results[spiral_lane] = result;") |> ignore
-        program.AppendLine("  if (spiral_lane == 0u) { spiral_io.code = result; }") |> ignore
+            if unit_main then
+                program.AppendLine($"  spiral_main({args});") |> ignore
+                program.AppendLine("  let result = 0i;") |> ignore
+            else
+                program.AppendLine($"  let result = spiral_main({args});") |> ignore
+            program.AppendLine("  spiral_results[spiral_lane] = result;") |> ignore
+            program.AppendLine("  if (spiral_lane == 0u) { spiral_io.code = result; }") |> ignore
         program.AppendLine("}") |> ignore
         program.ToString()
+
+    /// ### codegenWgsl
+    let codegenWgsl (env : PartEvalResult) (x : TypedBind []) =
+        let is_cut = function TyLet(_, _, TyOp(GpuStageBoundary, [])) -> true | _ -> false
+        let term_tys (a : Data) = data_term_vars a |> Array.map (function WV(L(_, t)) -> t | WLit l -> YPrim (lit_to_primitive_type l))
+        let rec heap_bound (t : Ty) =
+            match t with
+            | YNominal _ | YApply _ -> heap_bound (env.nominal_apply t)
+            | YArray _ | YLayout(_, (Heap | HeapMutable)) | YPrim StringT -> true
+            | YUnion h when h.Item.layout = UHeap -> true
+            | YUnion h -> (wgslStageFields env h |> Option.defaultValue [||]) |> Array.exists (fun (_, _, ft) -> heap_bound ft)
+            | _ -> false
+        let carry_tys =
+            match x |> Array.choose (function TyLet(_, _, TyOp((GpuCarryIn | GpuCarryOut), [a])) | TyLocalReturnOp(_, TyOp(GpuCarryOut, [a]), _) -> Some (term_tys a) | _ -> None) |> Array.distinct with
+            | [||] -> None
+            | [|tys|] when Array.exists heap_bound tys -> raise_codegen_error "A carried GPU state cannot hold heap values (arrays, strings, heap layouts or heap unions): every pass starts its heap afresh. Carry plain values, records and stack unions."
+            | [|tys|] -> Some tys
+            | _ -> raise_codegen_error "GpuCarryIn and GpuCarryOut carry states of different types; `carried init next` needs next : s -> s with the same dynamic shape."
+        if not (Array.exists is_cut x) && carry_tys.IsNone then codegenWgslModule env x None None
+        else
+            let segments = ResizeArray<TypedBind []>()
+            let traces = ResizeArray<Trace>()
+            let current = ResizeArray<TypedBind>()
+            for b in x do
+                match b with
+                | TyLet(_, trace, TyOp(GpuStageBoundary, [])) ->
+                    segments.Add(current.ToArray()); traces.Add trace; current.Clear()
+                | _ -> current.Add b
+            segments.Add(current.ToArray())
+            let n = segments.Count
+            let defined (seg : TypedBind []) = seg |> Array.collect (function TyLet(d, _, _) -> data_free_vars d | _ -> [||])
+            let id_of (L(i, _)) = i
+            let live_out = Array.zeroCreate<TyV []> n
+            for k in 0 .. n - 2 do
+                let later = HashSet<int>()
+                for j in k + 1 .. n - 1 do wgsl_typed_bind_uses segments.[j] later
+                let carried = if k = 0 then [||] else live_out.[k - 1]
+                live_out.[k] <- Array.append carried (defined segments.[k]) |> Array.distinctBy id_of |> Array.filter (fun v -> later.Contains (id_of v))
+            live_out.[n - 1] <- [||]
+            let words_of (vs : TyV []) = 1 + (vs |> Array.sumBy (fun (L(_, t)) -> wgslStageWidth env t))
+            let words = live_out |> Array.map words_of |> Array.max
+            let stride = words + (carry_tys |> Option.map (fun tys -> 1 + Array.sumBy (wgslStageWidth env) tys) |> Option.defaultValue 0)
+            let carry = carry_tys |> Option.map (fun tys -> stride, words, tys)
+            [| for k in 0 .. n - 1 ->
+                let live_in = if k = 0 then [||] else live_out.[k - 1]
+                let trace = if k < n - 1 then traces.[k] else []
+                let text = codegenWgslModule env segments.[k] (Some (k, n, stride, live_in, live_out.[k], trace)) carry
+                $"// spiral-module {k + 1} of {n} stage-words {stride}\n{text}" |]
+            |> String.concat ""
 
     // Calyx has no recursion. Self-tail calls become a while on a go register.
     // The integer subset lowers to one register per local and one group per assignment.
@@ -23877,7 +24676,6 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 let rec_f : UnionRecFsharp = { tag = tag; free_vars = key.cases |> Map.map (fun _ -> env.ty_to_data >> data_free_vars) }
                 union_recs.[key] <- rec_f
                 let cases = rec_f.free_vars |> Map.toArray
-                if cases.Length = 0 then unsupported "an empty union"
                 cases |> Array.iter (fun (_, fields) -> fields |> Array.iter (fun (L(_, t)) -> tyv t |> ignore))
                 let text = StringBuilder()
                 text.Append($"sealed interface {name} {{ val tag: Int }}").Append('\n') |> ignore
@@ -23888,17 +24686,20 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | _ ->
                         let formals = fields |> Array.mapi (fun f (L(_, t)) -> $"val f{f}: {tyv t}") |> String.concat ", "
                         text.Append($"data class {case_name}({formals}) : {name} {{ override val tag: Int = {i} }}").Append('\n') |> ignore)
-                let (i0, _), fields0 = cases.[0]
-                let case0 = $"{name}_{unionCaseSuffix rec_f i0}"
                 let first =
-                    match fields0 with
-                    | [||] -> case0
-                    | _ ->
-                        let args = fields0 |> Array.map (fun (L(_, t)) -> zero (tyv t)) |> String.concat ", "
-                        $"{case0}({args})"
+                    if cases.Length = 0 then sentinel
+                    else
+                        let (i0, _), fields0 = cases.[0]
+                        let case0 = $"{name}_{unionCaseSuffix rec_f i0}"
+                        match fields0 with
+                        | [||] -> case0
+                        | _ ->
+                            let args = fields0 |> Array.map (fun (L(_, t)) -> zero (tyv t)) |> String.concat ", "
+                            $"{case0}({args})"
                 union_zeros.[name] <- first
                 union_zero_pending.Remove name |> ignore
-                if union_zero_sentinels.Contains name then text.Append($"object {sentinel} : {name} {{ override val tag: Int = -1 }}").Append('\n') |> ignore
+                if cases.Length = 0 || union_zero_sentinels.Contains name then
+                    text.Append($"object {sentinel} : {name} {{ override val tag: Int = -1 }}").Append('\n') |> ignore
                 union_types.Add(text.ToString())
                 name
         and zero = function
@@ -24271,6 +25072,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                 let args = many |> Array.map show_w |> String.concat ", "
                                 $"{element}({args})"
                         $"{tup a}[{index}] = {value}"
+                    | Assign, [a;b] -> $"{tup a} = {tup b}"
                     | (Sqrt | Log | Exp | Tanh | Sin | Cos), [a] when (match prim_of a with Some (Float32T | Float64T) -> true | _ -> false) ->
                         let name = match operation with Sqrt -> "sqrt" | Log -> "ln" | Exp -> "exp" | Tanh -> "tanh" | Sin -> "sin" | _ -> "cos"
                         $"kotlin.math.{name}({tup a})"
@@ -24299,6 +25101,17 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         $"{tuple_name many}({zeros})"
                 let n = match kotlin_of b with "Int" -> tup b | _ -> unsupported "an array length that is not an i32"
                 return' $"Array({n}) {{ {element_zero} }}"
+            | TyArrayLiteral(a, items) ->
+                let element =
+                    match env.ty_to_data a |> data_free_vars |> Array.map (fun (L(_, t)) -> tyv t) with
+                    | [|t|] -> t
+                    | [||] -> unsupported "an array of unit elements"
+                    | many -> tuple_name many
+                let value (item : Data) =
+                    match data_term_vars item with
+                    | [|w|] -> show_w w
+                    | many -> element + "(" + (many |> Array.map show_w |> String.concat ", ") + ")"
+                return' ("arrayOf<" + element + ">(" + (items |> List.map value |> String.concat ", ") + ")")
             | TyArrayLength(t, b) ->
                 match t with
                 | YPrim (Int32T | CharT) -> return' $"{tup b}.size"
@@ -24994,7 +25807,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | Mult, [a;b] -> arith "*" "&*" a b
                     | Div, [a;b] -> binary "/" a b
                     | Mod, [a;b] ->
-                        if floated a b then unsupported "float remainder" else binary "%" a b
+                        if floated a b then $"({tup a}).truncatingRemainder(dividingBy: {tup b})" else binary "%" a b
                     | LT, [a;b] -> binary "<" a b
                     | LTE, [a;b] -> binary "<=" a b
                     | GT, [a;b] -> binary ">" a b
@@ -25037,6 +25850,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                 let items = many |> Array.map show_w |> String.concat ", "
                                 $"({items})"
                         $"{tup a}.items[Int({index})] = {value}"
+                    | Assign, [a;b] -> $"{tup a} = {tup b}"
                     | (Sqrt | Log | Exp | Tanh | Sin | Cos), [a] when floated a a ->
                         let name = match operation with Sqrt -> "sqrt" | Log -> "log" | Exp -> "exp" | Tanh -> "tanh" | Sin -> "sin" | _ -> "cos"
                         let suffix = match prim_of a with Some Float32T -> "f" | _ -> ""
@@ -25068,6 +25882,17 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         $"({types})", $"({zeros})"
                 let n = match swift_of b with "Int32" -> tup b | _ -> unsupported "an array length that is not an i32"
                 return' $"SpiralArray<{element}>(Array(repeating: {element_zero}, count: Int({n})))"
+            | TyArrayLiteral(a, items) ->
+                let element =
+                    match env.ty_to_data a |> data_free_vars |> Array.map (fun (L(_, t)) -> tyv t) with
+                    | [|t|] -> t
+                    | [||] -> unsupported "an array of unit elements"
+                    | many -> "(" + String.concat ", " many + ")"
+                let value (item : Data) =
+                    match data_term_vars item with
+                    | [|w|] -> show_w w
+                    | many -> "(" + (many |> Array.map show_w |> String.concat ", ") + ")"
+                return' ("SpiralArray<" + element + ">([" + (items |> List.map value |> String.concat ", ") + "])")
             | TyArrayLength(t, b) ->
                 match t with
                 | YPrim (Int32T | CharT) -> return' $"Int32({tup b}.items.count)"
@@ -25217,16 +26042,20 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             | _ -> true
         emit_function "spiral_main" None [||] (if unit_main then YB else YPrim Int32T) x
         let program = StringBuilder()
-        program.AppendLine("import CRT").AppendLine("import WinSDK") |> ignore
+        program.AppendLine("#if os(Windows)").AppendLine("import CRT").AppendLine("import WinSDK").AppendLine("#else").AppendLine("import Glibc").AppendLine("#endif") |> ignore
         globals |> Seq.iter (fun text -> program.AppendLine(text) |> ignore)
         layout_types |> Seq.iter (fun text -> program.Append(text) |> ignore)
         union_types |> Seq.iter (fun text -> program.Append(text) |> ignore)
         helpers |> Seq.iter (fun text -> program.Append(text) |> ignore)
         functions |> Seq.iter (fun fn -> program.Append(fn) |> ignore)
-        program.AppendLine("nonisolated(unsafe) var spiral_exit_code: Int32 = 0") |> ignore
+        program.AppendLine("nonisolated(unsafe) var spiral_exit_code: Int32 = 0").AppendLine("#if os(Windows)") |> ignore
         if unit_main then program.AppendLine("let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)") |> ignore
         else program.AppendLine("let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)") |> ignore
-        program.AppendLine("WaitForSingleObject(spiral_thread, INFINITE)").AppendLine("exit(spiral_exit_code)") |> ignore
+        program.AppendLine("WaitForSingleObject(spiral_thread, INFINITE)").AppendLine("#else") |> ignore
+        program.AppendLine("var spiral_attr = pthread_attr_t()").AppendLine("_ = pthread_attr_init(&spiral_attr)").AppendLine("_ = pthread_attr_setstacksize(&spiral_attr, 1 << 30)").AppendLine("var spiral_tid = pthread_t()") |> ignore
+        if unit_main then program.AppendLine("_ = pthread_create(&spiral_tid, &spiral_attr, { _ in spiral_main(); return nil }, nil)") |> ignore
+        else program.AppendLine("_ = pthread_create(&spiral_tid, &spiral_attr, { _ in spiral_exit_code = spiral_main(); return nil }, nil)") |> ignore
+        program.AppendLine("_ = pthread_join(spiral_tid, nil)").AppendLine("#endif").AppendLine("exit(spiral_exit_code)") |> ignore
         program.ToString() |> valAtAssignment "let"
 
     // OpenQASM 3 classical subset. Fixed-width arithmetic wraps in the simulator.
@@ -26080,9 +26909,20 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 if dirty then print true show r
                 r
 
-        let union show =
+        let union_names = Dictionary<UnionRecFsharp, string>(HashIdentity.Reference)
+        let union prefix show =
             let dict = codegenMemoTable HashIdentity.Reference
-            let f (a : Map<int * string,Ty>) : UnionRecFsharp = {free_vars=a |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=dict.Count}
+            let used = HashSet<string>()
+            let f (a : Union) : UnionRecFsharp =
+                let r : UnionRecFsharp = {free_vars=a.Item.cases |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=dict.Count}
+                union_names.[r] <-
+                    match unionSourceNames.TryGetValue(box a) with
+                    | true, source ->
+                        let clean = source |> String.map (fun c -> if System.Char.IsAsciiLetterOrDigit c then c else '_')
+                        let named = $"{prefix}_{clean}"
+                        if used.Add named then named elif used.Add $"{named}_{r.tag}" then $"{named}_{r.tag}" else $"{prefix}{r.tag}"
+                    | _ -> $"{prefix}{r.tag}"
+                r
             fun x ->
                 let mutable dirty = false
                 let r = memoize dict (fun x -> dirty <- true; f x) x
@@ -26100,10 +26940,16 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
 
         let mutable self_loop : (int * TyV []) option = None
 
-        let show_w = function WV (L(i,_)) -> $"v{i}" | WLit a -> litTypeScript a
-        let args (x : TyV []) = x |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+        let mutable var_names : Dictionary<int, string> = null
+        let enter_names (body : TypedBind []) =
+            let outer = var_names
+            var_names <- (match bodyVarNames.TryGetValue body with | true, names -> names | _ -> null)
+            outer
+        let var_name (i : int) = localVarName var_names i
+        let show_w = function WV (L(i,_)) -> $"{var_name i}" | WLit a -> litTypeScript a
+        let args (x : TyV []) = x |> Array.map (fun (L(i,_)) -> $"{var_name i}") |> String.concat ", "
         let args' x = x |> data_term_vars |> Array.map show_w |> String.concat ", "
-        let names (l : TyV []) = l |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+        let names (l : TyV []) = l |> Array.map (fun (L(i,_)) -> $"{var_name i}") |> String.concat ", "
         let prim_of = function
             | DV(L(_,YPrim t)) -> Some t
             | DLit x -> Some (lit_to_primitive_type x)
@@ -26131,10 +26977,9 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         let rec tyv x =
             match x with
             | YUnion a ->
-                let a = a.Item
-                match a.layout with
-                | UHeap -> sprintf "UH%i" (uheap a.cases).tag
-                | UStack -> sprintf "US%i" (ustack a.cases).tag
+                match a.Item.layout with
+                | UHeap -> union_names.[uheap a]
+                | UStack -> union_names.[ustack a]
             | YLayout(_,lay) as a ->
                 match lay with
                 | Heap -> sprintf "Heap%i" (heap a).tag
@@ -26160,7 +27005,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             | [|x|] -> x
             | x -> String.concat ", " x |> sprintf "[%s]"
         and tup_ty x = tyvs_ty (tyvs x)
-        and param_list (x : TyV []) = x |> Array.map (fun (L(i,t)) -> $"v{i}: {tyv t}") |> String.concat ", "
+        and param_list (x : TyV []) = x |> Array.map (fun (L(i,t)) -> $"{var_name i}: {tyv t}") |> String.concat ", "
         and tup x =
             match data_term_vars x with
             | [||] -> "undefined"
@@ -26174,7 +27019,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             | YPrim _ -> "0"
             | t -> $"undefined as unknown as {tyv t}"
         and declare (s : CodegenEnv) (vars : TyV []) =
-            vars |> Array.iter (fun (L(i,t)) -> line s $"let v{i}: {tyv t};")
+            vars |> Array.iter (fun (L(i,t)) -> line s $"let {var_name i}: {tyv t};")
         and binds (s : CodegenEnv) (ret : BindsReturnTypeScript) (stmts : TypedBind []) =
             stmts |> Array.iter (function
                 | TyLet(d,trace,a) ->
@@ -26194,8 +27039,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
                 | TyLocalReturnData(d,trace) ->
                     try match ret with
-                        | TsAssign l -> Array.iter2 (fun (L(i,_)) b -> line s $"v{i} = {show_w b};") l (data_term_vars d)
-                        | TsDeclare l -> Array.iter2 (fun (L(i,t)) b -> line s $"let v{i}: {tyv t} = {show_w b};") l (data_term_vars d)
+                        | TsAssign l -> Array.iter2 (fun (L(i,_)) b -> line s $"{var_name i} = {show_w b};") l (data_term_vars d)
+                        | TsDeclare l -> Array.iter2 (fun (L(i,t)) b -> line s $"let {var_name i}: {tyv t} = {show_w b};") l (data_term_vars d)
                         | TsReturn | TsReturnVoid ->
                             match data_term_vars d with
                             | [||] -> if self_loop.IsSome then line s "return;"
@@ -26207,8 +27052,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             let return' (x : string) =
                 match ret with
                 | TsDeclare [||] | TsAssign [||] -> line s $"{x};"
-                | TsDeclare [|L(i,t)|] -> line s $"let v{i}: {tyv t} = {x};"
-                | TsAssign [|L(i,_)|] -> line s $"v{i} = {x};"
+                | TsDeclare [|L(i,t)|] -> line s $"let {var_name i}: {tyv t} = {x};"
+                | TsAssign [|L(i,_)|] -> line s $"{var_name i} = {x};"
                 | TsDeclare l -> line s $"let [{names l}]: {tyvs_ty l} = {x};"
                 | TsAssign l -> line s $"[{names l}] = {x};"
                 | TsReturn -> line s $"return {x};"
@@ -26223,10 +27068,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 | JPClosure(a,c) -> $"{closure_names.[(closure (a,c)).tag]}({args b})"
             let layout_index (i : int) (fields : TyV []) =
                 match ret with
-                | TsDeclare l -> Array.iter2 (fun (L(t,ty)) (L(f,_)) -> line s $"let v{t}: {tyv ty} = v{i}.l{f};") l fields
-                | TsAssign l -> Array.iter2 (fun (L(t,_)) (L(f,_)) -> line s $"v{t} = v{i}.l{f};") l fields
+                | TsDeclare l -> Array.iter2 (fun (L(t,ty)) (L(f,_)) -> line s $"let {var_name t}: {tyv ty} = {var_name i}.l{f};") l fields
+                | TsAssign l -> Array.iter2 (fun (L(t,_)) (L(f,_)) -> line s $"{var_name t} = {var_name i}.l{f};") l fields
                 | TsReturn | TsReturnVoid ->
-                    match fields |> Array.map (fun (L(f,_)) -> $"v{i}.l{f}") with
+                    match fields |> Array.map (fun (L(f,_)) -> $"{var_name i}.l{f}") with
                     | [||] -> unit_done ()
                     | [|x|] -> return' x
                     | x -> String.concat ", " x |> sprintf "[%s]" |> return'
@@ -26336,9 +27181,9 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 let s' = if cyclic then (line s "{"; indent s) else s
                 for step in steps do
                     match step with
-                    | MoveVar (target, source) -> line s' $"v{target} = v{source};"
-                    | SaveTemp (slot, source) -> line s' $"const t{slot} = v{source};"
-                    | MoveTemp (target, slot) -> line s' $"v{target} = t{slot};"
+                    | MoveVar (target, source) -> line s' $"{var_name target} = {var_name source};"
+                    | SaveTemp (slot, source) -> line s' $"const t{slot} = {var_name source};"
+                    | MoveTemp (target, slot) -> line s' $"{var_name target} = t{slot};"
                 if cyclic then line s "}"
                 line s "continue tail;"
             | TyJoinPoint(JPClosure(a,c) as a',args) ->
@@ -26361,7 +27206,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             | TyIntSwitch(L(i,t),on_succ,on_fail) ->
                 let suffix = match t with YPrim (Int64T | UInt64T) -> "n" | _ -> ""
                 let s' = indent s
-                line s $"switch (v{i}) {{"
+                line s $"switch ({var_name i}) {{"
                 on_succ |> Array.iteri (fun k b ->
                     line s' $"case {k}{suffix}: {{"
                     block s' ret b
@@ -26373,21 +27218,21 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 line s "}"
             | TyUnionUnbox(is,x,on_succs,on_fail) ->
                 let x' = x.Item
-                let union_rec, prefix =
+                let union_rec =
                     match x'.layout with
-                    | UHeap -> uheap x'.cases, "UH"
-                    | UStack -> ustack x'.cases, "US"
-                let name = $"{prefix}{union_rec.tag}"
+                    | UHeap -> uheap x
+                    | UStack -> ustack x
+                let name = union_names.[union_rec]
                 let case_tag k =
                     union_rec.free_vars
                     |> Seq.tryPick (function KeyValue ((tag, name), _) when name = UnionTagIdOps.text k -> Some tag | _ -> None)
                     |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text k}.")
                 let head =
                     match is with
-                    | [L(i,_)] -> $"v{i}.tag"
+                    | [L(i,_)] -> $"{var_name i}.tag"
                     | L(i,_) :: _ ->
-                        let same = is |> List.pairwise |> List.map (fun (L(a,_), L(b,_)) -> $"v{a}.tag === v{b}.tag") |> String.concat " && "
-                        $"{same} ? v{i}.tag : -1"
+                        let same = is |> List.pairwise |> List.map (fun (L(a,_), L(b,_)) -> $"{var_name a}.tag === {var_name b}.tag") |> String.concat " && "
+                        $"{same} ? {var_name i}.tag : -1"
                     | [] -> raise_codegen_error "Compiler error: Union unbox without a scrutinee."
                 let s' = indent s
                 let s'' = indent s'
@@ -26396,8 +27241,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     let c = case_tag k
                     line s' $"case {c}: {{"
                     List.iter2 (fun (L(v,_)) a ->
-                        let source = if List.length is = 1 then $"v{v}" else $"(v{v} as {name}_{unionCaseSuffix union_rec c})"
-                        data_free_vars a |> Array.iteri (fun f (L(i,t)) -> line s'' $"let v{i}: {tyv t} = {source}.f{f};")
+                        let source = if List.length is = 1 then $"{var_name v}" else $"({var_name v} as {name}_{unionCaseSuffix union_rec c})"
+                        data_free_vars a |> Array.iteri (fun f (L(i,t)) -> line s'' $"let {var_name i}: {tyv t} = {source}.f{f};")
                         ) is a
                     binds s'' ret b
                     if falls_through s'' then line s'' "break;"
@@ -26410,16 +27255,17 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 | None -> line s' "default: throw new Error(\"Compiler error: unreachable union case.\");"
                 line s "}"
             | TyUnionBox(a,b,c) ->
+                let union_node = c
                 let c = c.Item
-                let union_rec, prefix =
+                let union_rec =
                     match c.layout with
-                    | UHeap -> uheap c.cases, "UH"
-                    | UStack -> ustack c.cases, "US"
+                    | UHeap -> uheap union_node
+                    | UStack -> ustack union_node
                 let i =
                     union_rec.free_vars
                     |> Seq.tryPick (function KeyValue ((tag, name), _) when name = UnionTagIdOps.text a -> Some tag | _ -> None)
                     |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text a}.")
-                return' $"{prefix}{union_rec.tag}_{unionCaseSuffix union_rec i}({args' b})"
+                return' $"{union_names.[union_rec]}_{unionCaseSuffix union_rec i}({args' b})"
             | TyToLayout(a,b) ->
                 match b with
                 | YLayout(_,Heap) -> heap b |> ignore
@@ -26452,7 +27298,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     match s with
                     | DRecord l -> l |> Map.pick (fun (_,k') v -> if LayoutFieldNameIdOps.matchesText k k' then Some v else None)
                     | _ -> raise_codegen_error "Compiler error: Expected a record.") (mut t).data b
-                Array.iter2 (fun (L(i',_)) b -> line s $"v{i}.l{i'} = {show_w b};") (data_free_vars a) (data_term_vars c)
+                Array.iter2 (fun (L(i',_)) b -> line s $"{var_name i}.l{i'} = {show_w b};") (data_free_vars a) (data_term_vars c)
                 unit_done ()
             | TyArrayLiteral(_,b) -> b |> List.map tup |> String.concat ", " |> sprintf "[%s]" |> return'
             | TyArrayCreate(a,b) ->
@@ -26467,7 +27313,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             | TyStringLength(a,b) -> string_helpers (); return' (length_as a $"spiral_string_length({tup b})")
             | TyFailwith(_,b) -> line s $"throw new Error({tup b});"
             | TyConv(a,b) -> return' (conv a b)
-            | TyApply(L(i,_),b) -> return' $"v{i}({args' b})"
+            | TyApply(L(i,_),b) -> return' $"{var_name i}({args' b})"
             | TyOp(Global, [DLit (LitString x)]) -> global' x; unit_done ()
             | TyOp(Export, [DLit (LitString name); DV(L(i,YFun(domain,range,_)))]) ->
                 if not (export_names.Add name) then raise_codegen_error $"Duplicate export: {name}."
@@ -26479,6 +27325,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 exports.Add($"export function {name}({param_list parameters}): {tup_ty range} {{\n    return {closure_names.[tag]}()({args parameters});\n}}\n")
                 unit_done ()
             | TyOp(ArrayIndexSet, [a;b;c]) -> array_helpers (); return' $"spiral_array_set({tup a}, {number_index b}, {tup c})"
+            | TyOp(Assign, [a;b]) -> return' $"({tup a} = {tup b}, undefined)"
             | TyOp(op,l) ->
                 match op, l with
                 | Dyn,[a] -> tup a
@@ -26535,8 +27382,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         |> String.concat " + " |> sprintf "process.stdout.write(%s)"
                 | UnionTag, [DV(L(i,YUnion _))] ->
                     match ret with
-                    | TsDeclare [|L(_,YPrim (Int64T | UInt64T))|] | TsAssign [|L(_,YPrim (Int64T | UInt64T))|] -> $"BigInt(v{i}.tag)"
-                    | _ -> $"v{i}.tag"
+                    | TsDeclare [|L(_,YPrim (Int64T | UInt64T))|] | TsAssign [|L(_,YPrim (Int64T | UInt64T))|] -> $"BigInt({var_name i}.tag)"
+                    | _ -> $"{var_name i}.tag"
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported in the TypeScript backend" op l.Length
                 |> return'
         and heap : _ -> LayoutRecFsharp = layout (fun s x ->
@@ -26547,8 +27394,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             let fields = x.free_vars |> Array.map (fun (L(i,t)) -> $"l{i}: {tyv t}") |> String.concat ", "
             line s (if fields = "" then $"type Mut{x.tag} = {{}};" else $"type Mut{x.tag} = {{ {fields} }};")
             )
-        and union_type prefix (s : CodegenEnv) (x : UnionRecFsharp) =
-            let name = $"{prefix}{x.tag}"
+        and union_type (s : CodegenEnv) (x : UnionRecFsharp) =
+            let name = union_names.[x]
             let cases = x.free_vars |> Map.toArray
             cases |> Array.iter (fun ((i,k),a) ->
                 let fields = a |> Array.mapi (fun f (L(_,t)) -> $", readonly f{f}: {tyv t}") |> String.concat ""
@@ -26561,8 +27408,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 let fields = a |> Array.mapi (fun f _ -> $", f{f}: f{f}") |> String.concat ""
                 if a.Length = 0 then line s $"const {name}_{unionCaseSuffix x i}_shared: {name} = {{ tag: {i} }}; function {name}_{unionCaseSuffix x i}(): {name} {{ return {name}_{unionCaseSuffix x i}_shared; }}"
                 else line s $"function {name}_{unionCaseSuffix x i}({parameters}): {name} {{ return {{ tag: {i}{fields} }}; }}")
-        and uheap : _ -> UnionRecFsharp = union (union_type "UH")
-        and ustack : _ -> UnionRecFsharp = union (union_type "US")
+        and uheap : Union -> UnionRecFsharp = union "UH" union_type
+        and ustack : Union -> UnionRecFsharp = union "US" union_type
         and method : _ -> MethodRecFsharp =
             jp (fun ((jp_body,key),i) ->
                 let args = codegenMethodKeyArgs key
@@ -26571,6 +27418,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     method_names.[i] <- generatedMethodName name i
                     {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 ) (fun s x ->
+                let outer = enter_names x.body
                 line s $"function {method_names.[x.tag]}({param_list x.free_vars}): {tup_ty x.range} {{"
                 let saved = self_loop
                 if self_tail x.tag x.body then
@@ -26583,6 +27431,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     binds (indent s) TsReturn x.body
                 self_loop <- saved
                 line s "}"
+                var_names <- outer
                 )
         and self_tail tag (body : TypedBind []) =
             body.Length > 0 &&
@@ -26603,6 +27452,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                 | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
                 ) (fun s x ->
+                let outer = enter_names x.body
                 let range = tup_ty x.range
                 let domain = x.domain_args |> Array.mapi (fun k (L(_,t)) -> $"a{k}: {tyv t}") |> String.concat ", "
                 line s $"function {closure_names.[x.tag]}({param_list x.free_vars}): (({domain}) => {range}) {{"
@@ -26613,6 +27463,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 self_loop <- saved
                 line (indent s) "};"
                 line s "}"
+                var_names <- outer
                 )
 
         let main_tys =
@@ -26626,7 +27477,9 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             | [|t|] -> t
             | ts -> String.concat ", " ts |> sprintf "[%s]"
         let main = StringBuilder()
+        let outer = enter_names x
         binds {text=main; indent=4} TsReturn x
+        var_names <- outer
 
         let program = StringBuilder()
         env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
@@ -26718,15 +27571,16 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         g_bind
 
     /// ### RefcVars
-    type RefcVars = {g_incr : Dictionary<TypedBind,TyV Set>; g_decr : RefcDecrTable; g_op : Dictionary<TypedBind,Map<TyV, int>>; g_op_decr : Dictionary<TypedBind,TyV Set>}
+    type RefcVars = {g_incr : Dictionary<TypedBind,TyV Set>; g_decr : RefcDecrTable; g_op : Dictionary<TypedBind,Map<TyV, int>>; g_op_decr : Dictionary<TypedBind,TyV Set>; g_after : Dictionary<TypedOp,TyV>}
 
     /// ### refc_prepass
-    let refc_prepass' (borrowed : JoinPointKey -> int -> bool) (new_vars : TyV Set) (increfed_vars : TyV Set) (x : TypedBind []) =
+    let refc_prepass' (borrowed : JoinPointKey -> int -> bool) (apply_borrows_closure : bool) (new_vars : TyV Set) (increfed_vars : TyV Set) (x : TypedBind []) =
         let used_vars = refc_used_vars x
         let g_incr : Dictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
         let g_decr : RefcDecrTable = refcDecrTable ()
         let g_op : Dictionary<TypedBind, _> = Dictionary(HashIdentity.Reference)
         let g_op_decr : Dictionary<TypedBind, TyV Set> = Dictionary(HashIdentity.Reference)
+        let g_after : Dictionary<TypedOp, TyV> = Dictionary(HashIdentity.Reference)
 
         let add (d : Dictionary<TypedBind, TyV Set>) k x = if Set.isEmpty x then () else d.Add(k,x)
         let add_cd (d : RefcDecrTable) k x = if Set.isEmpty x then () else refcDecrAdd d k x
@@ -26760,6 +27614,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         and op k increfed_vars (x : TypedOp) : unit =
             let fun_call q = add' g_op k q; add g_op_decr k increfed_vars
             match x with
+            | TyApply(a,b) when apply_borrows_closure ->
+                add' g_op k (varc_data b)
+                add g_op_decr k (Set.remove a increfed_vars)
+                if Set.contains a increfed_vars then g_after.[x] <- a
             | TyApply(a,b) -> varc_add a 1 (varc_data b) |> fun_call
             | TyJoinPoint(key,x) ->
                 x |> Array.indexed |> Array.fold (fun s (i, x) -> if borrowed key i then s else varc_add x 1 s) Map.empty |> fun_call
@@ -26780,9 +27638,9 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 binds Set.empty increfed_vars on_fail'
         binds new_vars increfed_vars x
 
-        {g_incr=g_incr; g_op=g_op; g_decr=g_decr; g_op_decr=g_op_decr}
+        {g_incr=g_incr; g_op=g_op; g_decr=g_decr; g_op_decr=g_op_decr; g_after=g_after}
 
-    let refc_prepass (new_vars : TyV Set) (increfed_vars : TyV Set) (x : TypedBind []) = refc_prepass' (fun _ _ -> false) new_vars increfed_vars x
+    let refc_prepass (new_vars : TyV Set) (increfed_vars : TyV Set) (x : TypedBind []) = refc_prepass' (fun _ _ -> false) false new_vars increfed_vars x
 
     /// ## CodegenC
     module CodegenC =
@@ -26817,7 +27675,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         let term_vars_to_tysC x = x |> Array.map (function WV(L(_,t)) -> t | WLit x -> YPrim (lit_to_primitive_type x))
         let binds_last_dataC x = x |> Array.last |> function TyLocalReturnData(x,_) | TyLocalReturnOp(_,_,x) -> x | TyLet _ -> raise_codegen_error "Compiler error: Cannot find the return data of the last bind."
 
-        type UnionRecC = {tag : int; free_vars : Map<int * string, TyV[]>}
+        type UnionRecC = {tag : int; free_vars : Map<int * string, TyV[]>; name : string}
         type LayoutRecC = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
         type MethodRecC = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]; name : string option}
         type ClosureRecC = {tag : int; free_vars : L<Tag,Ty>[]; domain : Ty; domain_args : TyV[]; range : Ty; body : TypedBind[]; name : string option}
@@ -26869,7 +27727,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 if loops.Contains raw && mentions = 2 && not prototype then "static inline " + m.Groups.["sig"].Value + "{" else m.Value))
 
         let fuseCDeclarations (generated : string) =
-            let declaration = System.Text.RegularExpressions.Regex(@"^(?<indent>[ \t]+)(?<type>[A-Za-z_][\w \*]*?[\w\*])\s+(?<name>v[0-9]+);$")
+            let declaration = System.Text.RegularExpressions.Regex(@"^(?<indent>[ \t]+)(?<type>[A-Za-z_][\w \*]*?[\w\*])\s+(?<name>(?:[A-Za-z_]\w*_)?v[0-9]+);$")
             let storage = System.Text.RegularExpressions.Regex(@"\b(static|extern|typedef|return|goto|register)\b")
             let lines = generated.Replace("\r\n", "\n").Split('\n')
             let fused = StringBuilder(generated.Length)
@@ -26967,17 +27825,42 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     if dirty then print show r
                     r
 
-            let union show =
+            let union prefix show =
                 let dict = codegenMemoTable HashIdentity.Reference
+                let used = HashSet<string>()
                 let f (a : Union) : UnionRecC =
                     let free_vars = a.Item.cases |> Map.map (fun _ -> env.ty_to_data >> data_free_vars)
-                    {free_vars=free_vars; tag=dict.Count}
+                    let tag = dict.Count
+                    let name =
+                        match unionSourceNames.TryGetValue(box a) with
+                        | true, source ->
+                            let clean = source |> String.map (fun c -> if System.Char.IsAsciiLetterOrDigit c then c else '_')
+                            let named = $"{prefix}_{clean}"
+                            if used.Add named then named elif used.Add $"{named}_{tag}" then $"{named}_{tag}" else $"{prefix}{tag}"
+                        | _ -> $"{prefix}{tag}"
+                    {free_vars=free_vars; tag=tag; name=name}
                 fun x ->
                     let mutable dirty = false
                     let r = memoize dict (fun x -> dirty <- true; f x) x
                     if dirty then print show r
                     r
 
+            let cIdent (name : string) =
+                let plain (c : char) = System.Char.IsAsciiLetterOrDigit c || c = '_'
+                if name |> Seq.forall plain then name
+                else
+                    let token (c : char) =
+                        match int c with
+                        | 92 -> "bslash"
+                        | 39 -> "prime"
+                        | _ ->
+                            match c with
+                            | '<' -> "lt" | '>' -> "gt" | '/' -> "slash" | '+' -> "plus" | '-' -> "minus" | '*' -> "star"
+                            | '=' -> "eq" | '|' -> "bar" | '&' -> "amp" | '!' -> "bang" | '.' -> "dot" | '%' -> "pct"
+                            | '^' -> "caret" | '~' -> "tilde" | '@' -> "at" | '$' -> "dollar" | '?' -> "q" | ':' -> "colon" | '#' -> "hash"
+                            | c -> $"u{int c:x}"
+                    if name |> Seq.exists plain then name |> Seq.map (fun c -> if plain c then string c else $"_{token c}") |> String.concat ""
+                    else "op_" + (name |> Seq.map token |> String.concat "_")
             let jp f show =
                 let dict = codegenMemoTable HashIdentity.Structural
                 let f x = f (x, dict.Count)
@@ -27056,7 +27939,13 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     if dirty then print show r
                     r
 
-            let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
+            let mutable var_names : Dictionary<int, string> = null
+            let enter_names (body : TypedBind []) =
+                let outer = var_names
+                var_names <- (match bodyVarNames.TryGetValue body with | true, names -> names | _ -> null)
+                outer
+            let var_name (i : int) = localVarName var_names i
+            let args x = x |> Array.map (fun (L(i,_)) -> var_name i) |> String.concat ", "
 
             let tmp =
                 let mutable i = 0u
@@ -27075,14 +27964,15 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             let self_continue_release : (CodegenEnv -> unit) ref = ref ignore
             let self_let_tail_target : (TyV [] * (CodegenEnv -> unit)) option ref = ref None
             let method_key_of_tag = Dictionary<int, obj>()
-            let borrowed_param = paramEscape paramEscapeTracked env x
-            let rec binds_start (args : TyV []) (s : CodegenEnv) (x : TypedBind []) = binds (refc_prepass' borrowed_param Set.empty (Set args) x) s BindsTailEnd x
+            let borrowed_param = paramEscape paramEscapeTracked true env x
+            let c_unroll = System.Collections.Generic.Stack<int>()
+            let rec binds_start (args : TyV []) (s : CodegenEnv) (x : TypedBind []) = binds (refc_prepass' borrowed_param true Set.empty (Set args) x) s BindsTailEnd x
             and self_continue (s : CodegenEnv) (parameters : TyV []) (args : TyV []) =
                 if parameters.Length > 0 then
                     line s "{"
-                    let temps = Array.map2 (fun (L(_,t)) (L(j,_)) -> let k = tmp() in line (indent s) $"{tyv t} tmp{k} = v{j};"; k) parameters args
+                    let temps = Array.map2 (fun (L(_,t)) (L(j,_)) -> let k = tmp() in line (indent s) $"{tyv t} tmp{k} = {var_name j};"; k) parameters args
                     self_continue_release.Value (indent s)
-                    Array.iteri (fun position k -> line (indent s) $"v{position} = tmp{k};") temps
+                    Array.iteri (fun position k -> line (indent s) $"{var_name position} = tmp{k};") temps
                     line s "}"
                 else
                     self_continue_release.Value s
@@ -27090,17 +27980,17 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             and return_local s ret (x : string) =
                 match ret with
                 | [||] -> line s $"{x};"
-                | [|L(i,_)|] -> line s $"v{i} = {x};"
+                | [|L(i,_)|] -> line s $"{var_name i} = {x};"
                 | ret ->
                     let tmp_i = tmp()
                     line s $"{tup_ty_tyvs ret} tmp{tmp_i} = {x};"
-                    Array.mapi (fun i (L(i',_)) -> $"v{i'} = tmp{tmp_i}.v{i};") ret |> line' s
+                    Array.mapi (fun i (L(i',_)) -> $"{var_name i'} = tmp{tmp_i}.v{i};") ret |> line' s
             and binds (vars : RefcVars) (s : CodegenEnv) (ret : BindsReturnC) (stmts : TypedBind []) =
                 let tup_destruct (a,b) =
                     Array.map2 (fun (L(i,_)) b ->
                         match b with
-                        | WLit b -> $"v{i} = {lit b};"
-                        | WV (L(i',_)) -> $"v{i} = v{i'};"
+                        | WLit b -> $"{var_name i} = {lit b};"
+                        | WV (L(i',_)) -> $"{var_name i} = {var_name i'};"
                         ) a b
                 let heap_free (vars : TyV seq) = not (is_heap (env.ty_to_data >> data_free_vars) (Seq.toArray vars))
                 let outer_tail_release =
@@ -27157,7 +28047,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         self_continue_release.Value <- saved_release
                     | TyLet(d,trace,a) ->
                         try let d = data_free_vars d
-                            let decl_vars = Array.map (fun (L(i,t)) -> $"{tyv t} v{i};") d
+                            let decl_vars = Array.map (fun (L(i,t)) -> $"{tyv t} {var_name i};") d
                             match a with
                             | TyMacro a ->
                                 let m = a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup_data x) | CMType x -> tup_ty x | CMTypeLit x -> type_lit x) |> String.concat ""
@@ -27205,10 +28095,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     match t.Item.layout with
                     | UStack when ((ustack t : UnionRecC).free_vars : Map<int * string, TyV[]>) |> Map.forall (fun _ (fields : TyV[]) -> fields |> Array.forall (fun field -> Option.isNone (refc_change'' f 1 field))) -> None
                     | UStack ->
-                        if count = -1 then Some $"USDecref{(ustack t).tag}(&({f v}));"
-                        elif 0 < count then Some (String.replicate count $"USIncref{(ustack t).tag}(&({f v}));")
+                        if count = -1 then Some $"{(ustack t).name}_decref(&({f v}));"
+                        elif 0 < count then Some (String.replicate count $"{(ustack t).name}_incref(&({f v}));")
                         else raise_codegen_error $"Compiler error: Invalid count in refc_change''. UStack case. Got: {count}"
-                    | UHeap -> g (fun () -> $"UHDecref{(uheap t).tag}({f v});")
+                    | UHeap -> g (fun () -> $"{(uheap t).name}_decref({f v});")
                 | YArray t -> g (fun () -> $"ArrayDecref{(carray t).tag}({f v});")
                 | YFun(a,b,FT_Vanilla) -> g (fun () ->  $"({f v})->decref_fptr({f v});")
                 | YPrim StringT -> g (fun () ->  $"StringDecref({f v});" )
@@ -27219,11 +28109,11 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             and refc_change f c x = refc_change' (fun (i,t) -> f i) c x
             and refc_varc x =
                 let ar = ResizeArray(Map.count x)
-                Map.iter (fun k v -> refc_change'' (fun (i,_) -> $"v{i}") v k |> Option.iter ar.Add) x
+                Map.iter (fun k v -> refc_change'' (fun (i,_) -> var_name i) v k |> Option.iter ar.Add) x
                 ar
             //and refc_incr x : string [] = refc_change (fun i -> $"v{i}") 1 x
             //and refc_decr x : string [] = refc_change (fun i -> $"v{i}") -1 x
-            and show_w = function WV(L(i,_)) -> sprintf "v%i" i | WLit a -> lit a
+            and show_w = function WV(L(i,_)) -> var_name i | WLit a -> lit a
             and args' b = data_term_vars b |> Array.map show_w |> String.concat ", "
             and tup_term_vars x =
                 let args = Array.map show_w x |> String.concat ", "
@@ -27239,8 +28129,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 match x with
                 | YUnion a ->
                     match a.Item.layout with
-                    | UStack -> sprintf "US%i" (ustack a).tag
-                    | UHeap -> sprintf "UH%i *" (uheap a).tag
+                    | UStack -> (ustack a).name
+                    | UHeap -> (uheap a).name + " *"
                 | YLayout(_,lay) as a ->
                     match lay with
                     | Heap -> sprintf "Heap%i *" (heap a).tag
@@ -27322,7 +28212,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | BindsTailEnd -> line s $"return {x};"
                 let layout_index (x'_i : int) (x' : TyV []) =
                     match ret with
-                    | BindsLocal x -> Array.map2 (fun (L(i,_)) (L(i',_)) -> $"v{i} = v{x'_i}->v{i'};") x x' |> line' s
+                    | BindsLocal x -> Array.map2 (fun (L(i,_)) (L(i',_)) -> $"{var_name i} = {var_name x'_i}->v{i'};") x x' |> line' s
                     | BindsTailEnd -> raise_codegen_error "Compiler error: Layout index should never come in end position."
                 let jp (a,b') =
                     let args = args b'
@@ -27366,13 +28256,18 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             fn_fwd $"method_while{x.tag}" true (fun () -> method_sig "method_while" x)
                             sprintf "method_while%i(%s)" x.tag (args b')
                         | _ -> raise_codegen_error "Expected a regular method rather than closure create in the while conditional."
+                    if c_unroll.Count > 0 then
+                        match c_unroll.Peek() with
+                        | 0 -> line s "#pragma GCC unroll 65534"
+                        | n when n > 0 -> line s $"#pragma GCC unroll {n}"
+                        | _ -> ()
                     line s (sprintf "while (%s){" cond)
                     binds (indent s) (BindsLocal [||]) b
                     line s "}"
                 | TyDo a | TyIndent a ->
                     binds s ret a
                 | TyIntSwitch(L(v_i,_),on_succ,on_fail) ->
-                    line s (sprintf "switch (v%i) {" v_i)
+                    line s (sprintf "switch (%s) {" (var_name v_i))
                     let _ =
                         let s = indent s
                         Array.iteri (fun i x ->
@@ -27388,9 +28283,9 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 | TyUnionUnbox(is,x,on_succs,on_fail) ->
                     let case_tags = x.Item.tags
                     let acs = match x.Item.layout with UHeap -> "->" | UStack -> "."
-                    let head = List.head is |> fun (L(i,_)) -> $"v{i}{acs}tag"
+                    let head = List.head is |> fun (L(i,_)) -> $"{var_name i}{acs}tag"
                     List.pairwise is
-                    |> List.map (fun (L(i,_), L(i',_)) -> $"v{i}{acs}tag == v{i'}{acs}tag")
+                    |> List.map (fun (L(i,_), L(i',_)) -> $"{var_name i}{acs}tag == {var_name i'}{acs}tag")
                     |> String.concat " && "
                     |> function "" -> head | x -> $"{x} ? {head} : -1"
                     |> sprintf "switch (%s) {" |> line s
@@ -27409,7 +28304,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                 let a, s = data_free_vars a, indent s
                                 let qs = ResizeArray(a.Length)
                                 Array.iteri (fun field_i (L(v_i,t) as v) ->
-                                    if Set.contains v decr = false then qs.Add $"{tyv t} v{v_i} = v{data_i}{acs}case{union_i}.v{field_i};"
+                                    if Set.contains v decr = false then qs.Add $"{tyv t} {var_name v_i} = {var_name data_i}{acs}case{union_i}.v{field_i};"
                                     ) a
                                 line' s qs
                                 ) is a
@@ -27428,8 +28323,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     let i = c.tags.[a]
                     let vars = args' b
                     match c.layout with
-                    | UHeap -> let u = uheap c' in sprintf "%s(%s)" (generatedCaseNameOfTag (sprintf "UH%i" u.tag) u.free_vars i) vars
-                    | UStack -> let u = ustack c' in sprintf "%s(%s)" (generatedCaseNameOfTag (sprintf "US%i" u.tag) u.free_vars i) vars
+                    | UHeap -> let u = uheap c' in sprintf "%s(%s)" (generatedCaseNameOfTag u.name u.free_vars i) vars
+                    | UStack -> let u = ustack c' in sprintf "%s(%s)" (generatedCaseNameOfTag u.name u.free_vars i) vars
                     |> return'
                 | TyToLayout(a,b) ->
                     match b with
@@ -27465,7 +28360,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         match s with
                         | DRecord l -> l |> Map.pick (fun (_,k') v -> if LayoutFieldNameIdOps.matchesText k k' then Some v else None)
                         | _ -> raise_codegen_error "Compiler error: Expected a record.") q.data b
-                    Array.map2 (fun (L(i',_)) b -> $"&(v{i}->v{i'}), {show_w b}") (data_free_vars a) (data_term_vars c) |> String.concat ", "
+                    Array.map2 (fun (L(i',_)) b -> $"&({var_name i}->v{i'}), {show_w b}") (data_free_vars a) (data_term_vars c) |> String.concat ", "
                     |> sprintf "AssignMut%i(%s)" (assign_mut (tyvs_to_tys q.free_vars)).tag |> return'
                 | TyArrayLiteral(a,b') ->
                     let b = List.map tup_data b' |> String.concat "," |> sprintf "{%s}"
@@ -27478,14 +28373,33 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     line s $"fprintf(stderr, \"{fmt}\", {string_in_op b});"
                     line s "exit(EXIT_FAILURE);" // TODO: Print out the error traces as well.
                 | TyConv(a,b) -> return' $"({tyv a}){tup_data b}"
-                | TyApply(L(i,_),b) ->
-                    match args' b with
-                    | "" -> $"v{i}->fptr(v{i})"
-                    | b -> $"v{i}->fptr(v{i}, {b})"
-                    |> return'
+                | TyApply(L(i,t),b) ->
+                    let call =
+                        match args' b with
+                        | "" -> $"{var_name i}->fptr({var_name i})"
+                        | b -> $"{var_name i}->fptr({var_name i}, {b})"
+                    match vars.g_after.TryGetValue a with
+                    | true, f ->
+                        let release = refc_change var_name -1 [|f|]
+                        match ret with
+                        | BindsLocal l -> return_local s l call; line' s release
+                        | BindsTailEnd ->
+                            match t with
+                            | YFun(_,range,_) when tup_ty range <> "void" ->
+                                let k = tmp()
+                                line s $"{tup_ty range} tmp{k} = {call};"
+                                line' s release
+                                line s $"return tmp{k};"
+                            | _ ->
+                                line s $"{call};"
+                                line' s release
+                                line s "return;"
+                    | _ -> return' call
                 | TyArrayLength(_,b) -> return' $"{tup_data b}->len"
                 | TyStringLength(_,b) -> return' $"{tup_data b}->len-1"
                 | TyOp(Global,[DLit (LitString x)]) -> global' x
+                | TyOp(PragmaUnrollPush,[DLit (LitInt32 x)]) -> c_unroll.Push x
+                | TyOp(PragmaUnrollPop,[]) -> if c_unroll.Count > 0 then c_unroll.Pop() |> ignore
                 | TyOp(op,l) ->
                     let float_suffix = function
                         | DV(L(_,YPrim Float32T)) | DLit(LitFloat32 _) -> "f"
@@ -27495,7 +28409,12 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
                     | StringIndex, [a;b] -> sprintf "%s->ptr[%s]" (tup_data a) (tup_data b)
                     | StringSlice, [a;b;c] -> cstring(); cstring_slice(); sprintf "StringSlice(%s, %s, %s)" (tup_data a) (tup_data b) (tup_data c)
-                    | StaticStringConcat, [a;b] -> cstring(); cstring_concat(); sprintf "StringConcat(%s, %s)" (tup_data a) (tup_data b)
+                    | StaticStringConcat, [a;b] ->
+                        cstring(); cstring_concat()
+                        let operand = function
+                            | DLit (LitString x) -> $"{lit_stringC x}, {System.Text.Encoding.UTF8.GetByteCount x}"
+                            | x -> let v = tup_data x in $"{v}->ptr, {v}->len - 1"
+                        $"StringConcat({operand a}, {operand b})"
                     | PrimToString, [a] ->
                         cstring()
                         let ty =
@@ -27518,6 +28437,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         match c' with
                         | "" -> "/* void array set */"
                         | _ -> $"AssignArray{(assign_array (tyvs_to_tys (carray t).tyvs)).tag}(&({a'}->ptr[{b'}]), {c'})"
+                    | ArrayAtomicAdd, [a;b;c] -> $"__atomic_fetch_add(&({tup_data a}->ptr[{tup_data b}]), {tup_data c}, __ATOMIC_SEQ_CST)"
                     // Math
                     | Add, [a;b] -> sprintf "%s + %s" (tup_data a) (tup_data b)
                     | Sub, [a;b] -> sprintf "%s - %s" (tup_data a) (tup_data b)
@@ -27585,7 +28505,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         match l.Item.layout with
                         | UHeap -> "->tag"
                         | UStack -> ".tag"
-                        |> sprintf "v%i%s" i
+                        |> sprintf "%s%s" (var_name i)
                     | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
                     |> return'
             and print_ordered_args s v = // Unlike C# for example, C keeps the struct fields in input order. To reduce padding, it is best to order the fields from largest to smallest.
@@ -27598,8 +28518,9 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     let args = codegenMethodKeyArgs key
                     method_key_of_tag.[i] <- box (jp_body, key)
                     match codegenMethodBody env "C" jp_body key with
-                    | a, range, name -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a; name=name}
+                    | a, range, name -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a; name=Option.map cIdent name}
                     ) (fun _ s_typ s_fun x ->
+                    let outer_names = enter_names x.body
                     let fun_name = Option.defaultValue fun_name x.name
                     let borrowed_loop = not is_while && self_tail x.tag x.body && (owned_params x).Length < x.free_vars.Length
                     if borrowed_loop then borrowed_loops.Add $"{fun_name}{x.tag}" |> ignore
@@ -27623,6 +28544,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     self_let_tail_target.Value <- saved_target
                     fns_printing.RemoveAt(fns_printing.Count - 1)
                     line s_fun "}"
+                    var_names <- outer_names
                     )
             and self_tail tag (body : TypedBind []) =
                 body.Length > 0 &&
@@ -27655,7 +28577,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 sprintf "%s %s%i(%s)" ret_ty fun_name x.tag args
             and closure_create_sig (x : ClosureRecC) =
                 let fun_tag = (cfun (x.domain,x.range)).tag
-                let free_vars = x.free_vars |> Array.map (fun (L(i,t)) -> $"{tyv t} v{i}")
+                let free_vars = x.free_vars |> Array.map (fun (L(i,t)) -> $"{tyv t} {var_name i}")
                 sprintf "Fun%i * ClosureCreate%i(%s)" fun_tag x.tag (String.concat ", " free_vars)
             and method_while : _ -> MethodRecC = method_templ true "method_while"
             and method : _ -> MethodRecC = method_templ false "method"
@@ -27664,10 +28586,11 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     match fun_ty with
                     | YFun(domain,range,FT_Vanilla) ->
                         match codegenClosureBody env "C" jp_body key with
-                        | domain_args, body, name -> {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body; name=name}
+                        | domain_args, body, name -> {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body; name=Option.map cIdent name}
                     | YFun(_,_,_)-> raise_codegen_error "Non-standard functions are not supported in the C backend."
                     | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
                     ) (fun _ s_typ s_fun x ->
+                    let outer_names = enter_names x.body
                     let i, range, cname = x.tag, tup_ty x.range, generatedClosureName x.name x.tag
                     let fun_tag = (cfun (x.domain,x.range)).tag
                     fns_printing.Add $"ClosureCreate{i}"
@@ -27694,25 +28617,20 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         line s_fun (sprintf "if (x != NULL && %s) { ClosureDecrefBody%i(x); %s(x); }" (refc_drop "x->base.refc") i free)
                     line s_fun "}"
 
-                    match x.domain_args |> Array.map (fun (L(i,t)) -> $"{tyv t} v{i}") |> String.concat ", " with
+                    match x.domain_args |> Array.map (fun (L(i,t)) -> $"{tyv t} {var_name i}") |> String.concat ", " with
                     | "" -> sprintf "%s %s(Fun%i * self){" range cname fun_tag
                     | domain_args -> sprintf "%s %s(Fun%i * self, %s){" range cname fun_tag domain_args
                     |> line s_fun
                     let _ =
                         let s_fun = indent s_fun
                         if x.free_vars.Length > 0 then line s_fun $"Closure{i} * x = (Closure{i} *) self;"
-                        x.free_vars |> Array.map (fun (L(i,t)) -> $"{tyv t} v{i} = x->v{i};") |> line' s_fun
-                        // A call consumes a reference to the closure, so ClosureDecref can free it here, and with
-                        // it the captured values: take a reference to each first and let the body own them
-                        // (released at their last use). Without it, `f` capturing an array and called through
-                        // its last reference read the freed array (native_closure_array_capture: 40, not 42).
-                        x.free_vars |> refc_change (fun i -> $"v{i}") 1 |> line' s_fun
-                        line s_fun $"ClosureDecref{i}(self);"
-                        // -Wunused-parameter: a domain argument the body never reads still has to be in the
-                        // signature, so void-cast exactly those arguments
+                        x.free_vars |> Array.map (fun (L(i,t)) -> $"{tyv t} {var_name i} = x->v{i};") |> line' s_fun
+                        // A call borrows the closure: the caller keeps its reference until the call returns, so the
+                        // captured values stay alive and the body borrows them too (no refcount traffic per call,
+                        // which a parallel loop pays on every chunk from every thread).
                         let used = refc_used_vars x.body |> Seq.map (fun kv -> kv.Value) |> Set.unionMany |> Set.map (fun (L(tag,_)) -> tag)
-                        x.domain_args |> Array.iter (fun (L(tag,_)) -> if not (used.Contains tag) then line s_fun $"(void)v{tag};")
-                        binds_start (Array.append x.free_vars x.domain_args) s_fun x.body
+                        Array.append x.free_vars x.domain_args |> Array.iter (fun (L(tag,_)) -> if not (used.Contains tag) then line s_fun $"(void){var_name tag};")
+                        binds_start x.domain_args s_fun x.body
                     line s_fun "}"
 
                     line s_fun (closure_create_sig x + "{")
@@ -27722,10 +28640,11 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         line s_fun "x->base.refc = 1;"
                         line s_fun $"x->base.decref_fptr = ClosureDecref{i};"
                         line s_fun $"x->base.fptr = {cname};"
-                        x.free_vars |> Array.map (fun (L(i,_)) -> $"x->v{i} = v{i};")  |> line' s_fun
+                        x.free_vars |> Array.map (fun (L(i,_)) -> $"x->v{i} = {var_name i};")  |> line' s_fun
                         line s_fun "return &x->base;"
                     line s_fun "}"
                     fns_printing.RemoveAt(fns_printing.Count - 1)
+                    var_names <- outer_names
                     )
             and cfun : _ -> CFunRecC =
                 cfun' (fun _ s_typ s_fun x ->
@@ -27833,13 +28752,14 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             and mut : _ -> LayoutRecC = layout_tmpl "Mut"
             and union_tmpl is_stack : Union -> UnionRecC =
                 let inline map_iteri f x = Map.iter (fun ((tag : int, _) as k) v -> f tag k v) x
-                union (fun s_fwd s_typ s_fun x ->
+                union (if is_stack then "US" else "UH") (fun s_fwd s_typ s_fun x ->
                     let i = x.tag
+                    let uname = x.name
                     match is_stack with
                     | true  -> line s_typ "typedef struct {"
                     | false ->
-                        line s_fwd (sprintf "typedef struct UH%i UH%i;" i i)
-                        line s_typ (sprintf "struct UH%i {" i)
+                        line s_fwd $"typedef struct {uname} {uname};"
+                        line s_typ $"struct {uname} {{"
                     let _ =
                         let s_typ = indent s_typ
                         match is_stack with
@@ -27857,7 +28777,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                 ) x.free_vars
                         line s_typ "};"
                     match is_stack with
-                    | true  -> line s_typ (sprintf "} US%i;" i)
+                    | true  -> line s_typ $"}} {uname};"
                     | false -> line s_typ "};"
 
                     let print_refc name typ q =
@@ -27881,25 +28801,25 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
 
                     match is_stack with
                     | true  ->
-                        print_refc $"USIncrefBody{i}" $"US{i}" 1
-                        print_refc $"USDecrefBody{i}" $"US{i}" -1
-                    | false -> print_refc $"UHDecrefBody{i}" $"UH{i}" -1
+                        print_refc $"{uname}_incref_body" uname 1
+                        print_refc $"{uname}_decref_body" uname -1
+                    | false -> print_refc $"{uname}_decref_body" uname -1
 
                     match is_stack with
                     | true  ->
-                        line s_fun (sprintf "void USIncref%i(US%i * x){ USIncrefBody%i(x); }" i i i)
-                        line s_fun (sprintf "void USDecref%i(US%i * x){ USDecrefBody%i(x); }" i i i)
+                        line s_fun $"void {uname}_incref({uname} * x){{ {uname}_incref_body(x); }}"
+                        line s_fun $"void {uname}_decref({uname} * x){{ {uname}_decref_body(x); }}"
                     | false ->
-                        line s_fwd (sprintf "void UHDecref%i(UH%i * x);" i i)
+                        line s_fwd $"void {uname}_decref({uname} * x);"
                         let is_same_union (L(_,t)) = match t with YUnion u -> u.Item.layout = UHeap && (uheap u).tag = i | _ -> false
                         if x.free_vars |> Map.exists (fun _ v -> Array.exists is_same_union v) then
-                            line s_fun (sprintf "void UHDecref%i(UH%i * x){" i i)
+                            line s_fun $"void {uname}_decref({uname} * x){{"
                             let _ =
                                 let s_fun = indent s_fun
                                 line s_fun (sprintf "while (x != NULL && %s) {" (refc_drop "x->refc"))
                                 let _ =
                                     let s_fun = indent s_fun
-                                    line s_fun (sprintf "UH%i * next = NULL;" i)
+                                    line s_fun $"{uname} * next = NULL;"
                                     line s_fun "switch (x->tag) {"
                                     map_iteri (fun tag k v ->
                                         let s_fun = indent s_fun
@@ -27921,29 +28841,29 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                 line s_fun "}"
                             line s_fun "}"
                         else
-                            print_decref s_fun $"UHDecref{i}" $"UH{i}" $"UHDecrefBody{i}"
+                            print_decref s_fun $"{uname}_decref" uname $"{uname}_decref_body"
 
                     map_iteri (fun tag (_, k) v ->
                         let args = v |> Array.map (fun (L(i,t)) -> $"{tyv t} v{i}") |> String.concat ", "
                         if is_stack then
-                            line s_fun (sprintf "US%i %s(%s) { // %s" i (generatedCaseNameOfTag (sprintf "US%i" i) x.free_vars tag) args k)
+                            line s_fun (sprintf "%s %s(%s) { // %s" uname (generatedCaseNameOfTag uname x.free_vars tag) args k)
                             let _ =
                                 let s_fun = indent s_fun
-                                line s_fun $"US{i} x;"
+                                line s_fun $"{uname} x;"
                                 line s_fun $"x.tag = {tag};"
                                 if v.Length <> 0 then
                                     v |> Array.map (fun (L(i,t)) -> $"x.case{tag}.v{i} = v{i};") |> line' s_fun
                                 line s_fun "return x;"
                             line s_fun "}"
                         else
-                            line s_fun (sprintf "UH%i * %s(%s) { // %s" i (generatedCaseNameOfTag (sprintf "UH%i" i) x.free_vars tag) args k)
+                            line s_fun (sprintf "%s * %s(%s) { // %s" uname (generatedCaseNameOfTag uname x.free_vars tag) args k)
                             if v.Length = 0 then
                                 let s_fun = indent s_fun
-                                line s_fun $"static UH{i} x = {{ .refc = {System.Int32.MaxValue / 2}, .tag = {tag} }};"
+                                line s_fun $"static {uname} x = {{ .refc = {System.Int32.MaxValue / 2}, .tag = {tag} }};"
                                 line s_fun "return &x;"
                             else
                                 let s_fun = indent s_fun
-                                line s_fun $"UH{i} * x = {malloc}(sizeof(UH{i}));"
+                                line s_fun $"{uname} * x = {malloc}(sizeof({uname}));"
                                 line s_fun $"x->tag = {tag};"
                                 line s_fun "x->refc = 1;"
                                 if v.Length <> 0 then
@@ -28044,13 +28964,13 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             and cstring_concat : unit -> unit =
                 cstring_concat' (fun _ _ s_fun () ->
                     let tag = (carray (YPrim CharT)).tag
-                    line s_fun "static inline String * StringConcat(String * left, String * right){"
+                    let ptr_t = tyv (YPrim CharT)
+                    line s_fun $"static inline String * StringConcat(const {ptr_t} * left, uint32_t left_len, const {ptr_t} * right, uint32_t right_len){{"
                     let s_concat = indent s_fun
-                    line s_concat "uint32_t left_len = left->len - 1;"
-                    line s_concat "uint32_t right_len = right->len - 1;"
                     line s_concat $"String * result = ArrayCreate{tag}(left_len + right_len + 1, false);"
-                    line s_concat "memcpy(result->ptr, left->ptr, left_len);"
-                    line s_concat "memcpy(result->ptr + left_len, right->ptr, right_len + 1);"
+                    line s_concat "memcpy(result->ptr, left, left_len);"
+                    line s_concat "memcpy(result->ptr + left_len, right, right_len);"
+                    line s_concat "result->ptr[left_len + right_len] = '\\0';"
                     line s_concat "return result;"
                     line s_fun "}"
                     )
@@ -28107,7 +29027,9 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 import "string.h" // for memcpy
 
                 line main_defs (sprintf "%s main(){" (prim Int32T))
+                let outer_names = enter_names x
                 binds_start [||] (indent main_defs) x
+                var_names <- outer_names
                 line main_defs "}"
 
                 let program = StringBuilder()
@@ -28128,7 +29050,9 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 import "string.h" // for memcpy
 
                 line main_defs "static void spiral_unit_main(void){"
+                let outer_names = enter_names x
                 binds_start [||] (indent main_defs) x
+                var_names <- outer_names
                 line main_defs "}"
                 line main_defs (sprintf "%s main(){" (prim Int32T))
                 line (indent main_defs) "spiral_unit_main();"
@@ -28367,7 +29291,177 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
 
             let tyvs_to_tys (x : TyV []) = Array.map (fun (L(i,t)) -> t) x
 
+            let self_loop : (int * TyV []) option ref = ref None
+            let cpp_host_runtime =
+                String.concat "\n" [
+                    "#include <cstdio>"
+                    "#include <cstdlib>"
+                    "inline void * spiral_host_alloc(unsigned long long bytes) {"
+                    "    void * p = calloc(1, bytes == 0 ? 1 : bytes);"
+                    "    if (p == nullptr) { fprintf(stderr, \"spiral: out of memory (%llu bytes)\\n\", bytes); abort(); }"
+                    "    return p;"
+                    "}"
+                ]
+            let cuda_device_runtime =
+                String.concat "\n" [
+                    "#include <cstdio>"
+                    "#include <cstdlib>"
+                    "#include <cstring>"
+                    "#ifndef SPIRAL_ARENA_THREADS"
+                    "#define SPIRAL_ARENA_THREADS 65536"
+                    "#endif"
+                    "#ifndef SPIRAL_ARENA_CHUNK"
+                    "#define SPIRAL_ARENA_CHUNK (2ull << 20)"
+                    "#endif"
+                    "#define SPIRAL_ARENA_CHUNK_MAX (16ull << 20)"
+                    "struct SpiralChunk { SpiralChunk * next; unsigned long long cap; unsigned long long pad; };"
+                    "struct SpiralArena { SpiralChunk * first; SpiralChunk * current; unsigned int ordinal; unsigned long long base; unsigned long long top; unsigned long long high; };"
+                    "__device__ SpiralArena spiral_arenas[SPIRAL_ARENA_THREADS];"
+                    "__device__ char * spiral_arena_pool = nullptr;"
+                    "__device__ unsigned long long spiral_arena_pool_bytes = 0;"
+                    "__device__ unsigned long long spiral_arena_pool_top = 0;"
+                    "__device__ inline void spiral_device_fail(const char * what, unsigned long long n) {"
+                    "    printf(\"spiral: %s (%llu); raise the pool, SPIRAL_ARENA_CHUNK or SPIRAL_ARENA_THREADS, or cudaLimitMallocHeapSize\\n\", what, n);"
+                    "#ifdef __CUDA_ARCH__"
+                    "    __trap();"
+                    "#else"
+                    "    abort();"
+                    "#endif"
+                    "}"
+                    "__device__ inline unsigned long long spiral_pool_take(unsigned long long bytes) {"
+                    "#ifdef __CUDA_ARCH__"
+                    "    return atomicAdd(&spiral_arena_pool_top, bytes);"
+                    "#else"
+                    "    unsigned long long at = spiral_arena_pool_top; spiral_arena_pool_top += bytes; return at;"
+                    "#endif"
+                    "}"
+                    "__device__ inline SpiralChunk * spiral_chunk_new(unsigned long long need) {"
+                    "    unsigned long long cap = need > SPIRAL_ARENA_CHUNK ? need : SPIRAL_ARENA_CHUNK;"
+                    "    cap = (cap + 15ull) & ~15ull;"
+                    "    if (cap > SPIRAL_ARENA_CHUNK_MAX) spiral_device_fail(\"one allocation is larger than the 16 MiB chunk limit at bytes\", need);"
+                    "    unsigned long long size = cap + sizeof(SpiralChunk);"
+                    "    char * p;"
+                    "    if (spiral_arena_pool != nullptr) {"
+                    "        unsigned long long at = spiral_pool_take(size);"
+                    "        if (at + size > spiral_arena_pool_bytes) spiral_device_fail(\"the arena pool is exhausted at bytes\", at + size);"
+                    "        p = spiral_arena_pool + at;"
+                    "    } else {"
+                    "        p = (char *)malloc(size);"
+                    "        if (p == nullptr) spiral_device_fail(\"the device heap cannot hold one arena chunk of bytes\", size);"
+                    "    }"
+                    "    SpiralChunk * c = (SpiralChunk *)p;"
+                    "    c->next = nullptr; c->cap = cap; c->pad = 0;"
+                    "    return c;"
+                    "}"
+                    "__device__ inline char * spiral_chunk_data(SpiralChunk * c) { return (char *)c + sizeof(SpiralChunk); }"
+                    "__device__ inline unsigned long long spiral_thread_id() {"
+                    "    unsigned long long block = ((unsigned long long)blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;"
+                    "    return block * blockDim.x * blockDim.y * blockDim.z + ((unsigned long long)threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x + threadIdx.x;"
+                    "}"
+                    "__device__ inline SpiralArena * spiral_arena() {"
+                    "    unsigned long long id = spiral_thread_id();"
+                    "    if (id >= SPIRAL_ARENA_THREADS) spiral_device_fail(\"thread id past SPIRAL_ARENA_THREADS\", id);"
+                    "    SpiralArena * a = &spiral_arenas[id];"
+                    "    if (a->first == nullptr) { a->first = a->current = spiral_chunk_new(0); a->ordinal = 0; a->base = 0; a->top = 0; }"
+                    "    return a;"
+                    "}"
+                    "__device__ inline void spiral_arena_enter() {"
+                    "    unsigned long long id = spiral_thread_id();"
+                    "    if (id < SPIRAL_ARENA_THREADS) { SpiralArena * a = &spiral_arenas[id]; a->current = a->first; a->ordinal = 0; a->base = 0; a->top = 0; a->high = 0; }"
+                    "}"
+                    "__device__ inline void * spiral_device_alloc(unsigned long long bytes) {"
+                    "    SpiralArena * a = spiral_arena();"
+                    "    unsigned long long at = (a->top + 15ull) & ~15ull;"
+                    "    if (at + bytes > a->current->cap) {"
+                    "        SpiralChunk * next = a->current->next;"
+                    "        if (next == nullptr || next->cap < bytes) { SpiralChunk * fresh = spiral_chunk_new(bytes); fresh->next = next; a->current->next = fresh; next = fresh; }"
+                    "        a->base += a->current->cap; a->current = next; a->ordinal += 1; at = 0;"
+                    "    }"
+                    "    a->top = at + bytes;"
+                    "    if (a->base + a->top > a->high) a->high = a->base + a->top;"
+                    "    void * p = spiral_chunk_data(a->current) + at;"
+                    "    memset(p, 0, bytes);"
+                    "    return p;"
+                    "}"
+                    "__device__ inline unsigned int spiral_arena_mark() { SpiralArena * a = spiral_arena(); return (a->ordinal << 24) | (unsigned int)a->top; }"
+                    "__device__ inline void spiral_arena_release(unsigned int mark) {"
+                    "    SpiralArena * a = spiral_arena();"
+                    "    unsigned int ordinal = mark >> 24;"
+                    "    SpiralChunk * c = a->first; unsigned long long base = 0;"
+                    "    for (unsigned int i = 0; i < ordinal; ++i) { base += c->cap; c = c->next; }"
+                    "    a->current = c; a->ordinal = ordinal; a->base = base; a->top = mark & 0xFFFFFFu;"
+                    "}"
+                    "__device__ inline unsigned long long spiral_arena_high_water() { return spiral_arena()->high; }"
+                ]
+            let array_alloc () =
+                match backend() with
+                | backend_cpp.CudaDevice -> global' cuda_device_runtime |> ignore; "spiral_device_alloc"
+                | backend_cpp.CppHost | backend_cpp.CudaHost -> global' cpp_host_runtime |> ignore; "spiral_host_alloc"
+            let wide_device_method (x : MethodRec) = x.backend = backend_cpp.CudaDevice && x.free_vars.Length > WarningCodeOps.wide_gpu_state_params
+            let cuda_noinline_limit =
+                match System.Int32.TryParse(System.Environment.GetEnvironmentVariable "SPIRAL_CUDA_NOINLINE_BINDS") with
+                | true, n when n > 0 -> n
+                | _ -> 150
+            let rec cpp_binds_size (body : TypedBind []) =
+                body |> Array.sumBy (function
+                    | TyLet(_,_,op) | TyLocalReturnOp(_,op,_) -> 1 + cpp_op_size op
+                    | _ -> 1)
+            and cpp_op_size (op : TypedOp) =
+                match op with
+                | TyIf(_,tr,fl) -> cpp_binds_size tr + cpp_binds_size fl
+                | TyUnionUnbox(_,_,on_succs,on_fail) -> (on_succs |> Map.fold (fun s _ (_,b) -> s + cpp_binds_size b) 0) + (on_fail |> Option.map cpp_binds_size |> Option.defaultValue 0)
+                | TyIntSwitch(_,on_succ,on_fail) -> (on_succ |> Array.sumBy cpp_binds_size) + cpp_binds_size on_fail
+                | TyDo b | TyIndent b -> cpp_binds_size b
+                | TyWhile(_,b) -> cpp_binds_size b
+                | _ -> 0
             let rec binds_start (s : string_builder_env) (x : TypedBind []) = binds (Stack()) s BindsTailEnd x
+            and cpp_self_tail tag (body : TypedBind []) =
+                body.Length > 0 &&
+                match Array.last body with
+                | TyLocalReturnOp(_, a, _) -> cpp_op_self_tail tag a
+                | _ -> false
+            and cpp_normalize_self_tail tag (body : TypedBind []) =
+                let n = body.Length
+                let same (a : Data) (b : Data) =
+                    let x, y = data_free_vars a, data_free_vars b
+                    x.Length = y.Length && Array.forall2 (fun (L(i,_)) (L(j,_)) -> i = j) x y
+                let last_if (body : TypedBind []) =
+                    match Array.tryLast body with
+                    | Some (TyLocalReturnOp(t, TyIf(c, tr, fl), d)) ->
+                        Array.append body.[0 .. body.Length - 2] [| TyLocalReturnOp(t, TyIf(c, cpp_normalize_self_tail tag tr, cpp_normalize_self_tail tag fl), d) |]
+                    | _ -> body
+                if n >= 2 then
+                    match body.[n - 2], body.[n - 1] with
+                    | TyLet(d, t, (TyJoinPoint(JPMethod(x,c),_) as call)), TyLocalReturnData(d', _) when (method (x,c)).tag = tag && same d d' ->
+                        Array.append body.[0 .. n - 3] [| TyLocalReturnOp(t, call, d) |]
+                    | TyLet(d, t, TyIf(c, tr, fl)), TyLocalReturnData(d', _) when same d d' ->
+                        Array.append body.[0 .. n - 3] [| TyLocalReturnOp(t, TyIf(c, cpp_normalize_self_tail tag tr, cpp_normalize_self_tail tag fl), d) |]
+                    | _ -> last_if body
+                else last_if body
+            and cpp_calls_self_off_tail tag (tail : bool) (body : TypedBind []) =
+                body
+                |> Array.mapi (fun i b ->
+                    let here = tail && i = body.Length - 1
+                    match b with
+                    | TyLet(_,_,op) -> cpp_op_calls_self tag false op
+                    | TyLocalReturnOp(_,op,_) -> cpp_op_calls_self tag here op
+                    | _ -> false)
+                |> Array.exists id
+            and cpp_op_calls_self tag (tail : bool) (op : TypedOp) =
+                match op with
+                | TyJoinPoint(JPMethod(x,c),_) -> not tail && (method (x,c)).tag = tag
+                | TyIf(_,tr,fl) -> cpp_calls_self_off_tail tag tail tr || cpp_calls_self_off_tail tag tail fl
+                | TyWhile(_, block) | TyDo block | TyIndent block -> cpp_calls_self_off_tail tag false block
+                | TyUnionUnbox(_,_,on_succs,on_fail) ->
+                    (on_succs |> Map.exists (fun _ (_, block) -> cpp_calls_self_off_tail tag tail block))
+                    || (match on_fail with Some block -> cpp_calls_self_off_tail tag tail block | None -> false)
+                | TyIntSwitch(_,cases,on_fail) -> (cases |> Array.exists (cpp_calls_self_off_tail tag tail)) || cpp_calls_self_off_tail tag tail on_fail
+                | _ -> false
+            and cpp_op_self_tail tag (a : TypedOp) =
+                match a with
+                | TyJoinPoint(JPMethod(x,c),_) -> (method (x,c)).tag = tag
+                | TyIf(_,tr,fl) -> cpp_self_tail tag tr || cpp_self_tail tag fl
+                | _ -> false
             and return_local s ret (x : string) =
                 match ret with
                 | [||] -> line s $"{x};"
@@ -28455,11 +29549,11 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                         else
                                             raise_codegen_error "The special \\v macro requires the same number of free vars in its binding as there are \\v in the code."
                             | TyArrayLiteral(a,b') ->
-                                let inits = List.map tup_data b' |> String.concat ","
                                 match d with
-                                | [|L(i,YArray t)|] -> // For the regular arrays.
-                                    line s $"%s{tup_ty t} v{i}_items[] = {{%s{inits}}};"
-                                    line s $"%s{tyv (YArray t)} v{i} = {{v{i}_items, {b'.Length}u}};"
+                                | [|L(i,YArray t)|] ->
+                                    let alloc = array_alloc ()
+                                    line s $"%s{tyv (YArray t)} v{i} = {{(%s{tup_ty t} *){alloc}(sizeof(%s{tup_ty t}) * {b'.Length}ull), {b'.Length}u}};"
+                                    b' |> List.iteri (fun k x -> line s $"v{i}.ptr[{k}] = {tup_data x};")
                                     true
                                 | _ ->
                                     raise_codegen_error "Compiler error: Expected a single variable on the left side of an array literal op."
@@ -28469,13 +29563,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                     match tup_ty t with
                                     | "void" -> line s "/* void array create */"
                                     | t' ->
-                                        match b with
-                                        | DLit _ ->
-                                            line s $"{t'} v{i}_items[{tup_data b}];"
-                                            line s $"{tyv (YArray t)} v{i} = {{v{i}_items, (unsigned int)({tup_data b})}};"
-                                        | _ ->
-                                            global' "#if defined(_MSC_VER)\n#include <malloc.h>\n#define alloca _alloca\n#else\n#include <alloca.h>\n#endif"
-                                            line s $"{tyv (YArray t)} v{i} = {{({t'} *)alloca(sizeof({t'}) * (size_t)({tup_data b})), (unsigned int)({tup_data b})}};"
+                                        let alloc = array_alloc ()
+                                        line s $"{tyv (YArray t)} v{i} = {{({t'} *){alloc}(sizeof({t'}) * (unsigned long long)({tup_data b})), (unsigned int)({tup_data b})}};"
                                     true
                                 | _ -> raise_codegen_error "Compiler error: Expected a single variable on the left side of an array create op."
                             | TyJoinPoint(JPClosure(a,b),b') ->
@@ -28608,7 +29697,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | JPMethod(a,b) ->
                         let x = method (a,b)
                         let method_name = Option.defaultValue "method_" x.name
-                        $"{method_name}{x.tag}({args})"
+                        if wide_device_method x then $"{method_name}{x.tag}(SpiralArgs{x.tag}{{{args}}})"
+                        else $"{method_name}{x.tag}({args})"
                     | JPClosure(a,b) ->
                         let x = closure (a,b)
                         match x.funtype with
@@ -28623,6 +29713,13 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     line s "} else {"
                     binds (indent s) ret fl
                     line s "}"
+                | TyJoinPoint(JPMethod(x,c),b') when (match ret, self_loop.Value with | BindsTailEnd, Some (tag, _) -> (method (x,c)).tag = tag | _ -> false) ->
+                    let parameters = match self_loop.Value with Some (_, p) -> p | None -> [||]
+                    line s "{"
+                    let temps = Array.map2 (fun (L(_,t)) (L(j,_)) -> let k = tmp() in line (indent s) $"{tyv t} tmp{k} = v{j};"; k) parameters b'
+                    Array.iteri (fun position k -> line (indent s) $"v{position} = tmp{k};") temps
+                    line s "}"
+                    line s "continue;"
                 | TyJoinPoint(a,args) -> return' (jp (a, args))
                 | TyBackend(a,b,c) -> line s $"auto kernel = {backend_handler (a,b,c) (backend())};"
                 | TyWhile(a,b) ->
@@ -28777,6 +29874,12 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         match c' with
                         | "" -> "/* void array set */"
                         | _ -> $"{a'}.ptr[{b'}] = {c'}"
+                    | ArrayAtomicAdd, [DV(L(_,YArray t)) as a;b;c] ->
+                        let place = $"{tup_data a}.ptr[{tup_data b}]"
+                        match backend(), t with
+                        | backend_cpp.CudaDevice, YPrim Int64T -> $"(long long)atomicAdd((unsigned long long *)&{place}, (unsigned long long){tup_data c})"
+                        | backend_cpp.CudaDevice, _ -> $"atomicAdd(&{place}, {tup_data c})"
+                        | _ -> $"__atomic_fetch_add(&{place}, {tup_data c}, __ATOMIC_SEQ_CST)"
                     // Math
                     | Add, [a;b] -> sprintf "%s + %s" (tup_data a) (tup_data b)
                     | Sub, [a;b] -> sprintf "%s - %s" (tup_data a) (tup_data b)
@@ -28835,6 +29938,14 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     let ret_ty = tup_ty x.range
                     let fun_name = Option.defaultValue (if is_while then "while_method_" else "method_") x.name
                     let args = x.free_vars |> Array.mapi (fun i (L(_,x)) -> $"{tyv x} v{i}") |> String.concat ", "
+                    let wide_args = not is_while && wide_device_method x
+                    let args =
+                        if wide_args then
+                            line s.fwd_types $"struct SpiralArgs{x.tag};"
+                            let fields = x.free_vars |> Array.mapi (fun i (L(_,t)) -> $"    {tyv t} v{i};") |> String.concat "\n"
+                            line s.types $"struct SpiralArgs{x.tag} {{\n{fields}\n}};"
+                            $"SpiralArgs{x.tag} && spiral_args"
+                        else args
                     let __device__ =
                         match x.backend with
                         | backend_cpp.CppHost | backend_cpp.CudaHost -> ""
@@ -28847,9 +29958,29 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             "inline "
                         else
                             line s.fwd_methods $"{__device__}{ret_ty} {fun_name}{x.tag}({args});"
-                            if fun_name.StartsWith "noinline" then "__noinline__ " else ""
+                            if fun_name.StartsWith "noinline" || (x.backend = backend_cpp.CudaDevice && cpp_binds_size x.body > cuda_noinline_limit) then "__noinline__ " else ""
                     line s.functions $"{__device__}{inline_}{ret_ty} {fun_name}{x.tag}({args}){{"
-                    binds_start (indent s.functions) x.body
+                    if wide_args then
+                        x.free_vars |> Array.iteri (fun i (L(_,t)) -> line (indent s.functions) $"{tyv t} & v{i} = spiral_args.v{i};")
+                    let body =
+                        if is_while then x.body
+                        else
+                            let normal = cpp_normalize_self_tail x.tag x.body
+                            if cpp_self_tail x.tag normal then normal else x.body
+                    if x.backend = backend_cpp.CudaDevice && x.free_vars.Length > WarningCodeOps.wide_gpu_state_params then
+                        eprintfn "warning: %s" (WarningCodeOps.wide_gpu_state $"{fun_name}{x.tag}" x.free_vars.Length)
+                    if x.backend = backend_cpp.CudaDevice && cpp_calls_self_off_tail x.tag true body then
+                        eprintfn "warning: %s" (WarningCodeOps.message WarningCode.GpuRecursion $"{fun_name}{x.tag} calls itself outside tail position; on the GPU every level adds a whole device frame, so write it as a tail loop or a fold")
+                    let saved = self_loop.Value
+                    if not is_while && cpp_self_tail x.tag body then
+                        self_loop.Value <- Some (x.tag, x.free_vars)
+                        line (indent s.functions) "while (1) {"
+                        binds_start (indent (indent s.functions)) body
+                        line (indent s.functions) "}"
+                    else
+                        self_loop.Value <- None
+                        binds_start (indent s.functions) body
+                    self_loop.Value <- saved
                     line s.functions "}"
                     )
             and method : _ -> MethodRec = method_template false
@@ -29155,6 +30286,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     code_env.main_defs.Add(s.text.ToString())
             | ArgsCudaDevice(vs,x,backend_entry_name) ->
                 substitute_backend_with backend_cpp.CudaDevice <| fun () ->
+                    global' cuda_device_runtime |> ignore
                     let ret_ty =
                         let er() = raise_codegen_error "The return type of the __global__ kernel in the Cuda backend should be a void type or a record of type {cluster_dims : {x : int; y : int; z : int}}."
                         match binds_last_data x with
@@ -29173,6 +30305,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     let code_env = code_env (backend())
                     code_env.fwd_dcls_main_defs.Add($"extern \"C\" __global__ {ret_ty} {backend_entry_name}(%s{args});\n")
                     line s $"extern \"C\" __global__ {ret_ty} {backend_entry_name}(%s{args}) {{"
+                    line (indent s) "spiral_arena_enter();"
                     binds_start (indent s) x
                     line s "}"
                     code_env.main_defs.Add(s.text.ToString())
@@ -29734,6 +30867,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         match tup_data' c with
                         | "" -> "pass # void array set"
                         | c -> sprintf "%s[%s] = %s" (tup_data a) (tup_data b) c
+                    | Assign, [a;b] -> sprintf "%s = %s" (tup_data a) (tup_data b)
                     // Math
                     | Add, [a;b] -> pythonWrapped a (sprintf "%s + %s" (tup_data a) (tup_data b))
                     | Sub, [a;b] -> pythonWrapped a (sprintf "%s - %s" (tup_data a) (tup_data b))
@@ -30413,7 +31547,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
 
     /// ### AutoExportCurried
     module AutoExportCurried =
-        let trace = System.Environment.GetEnvironmentVariable "SPIRAL_AUTO_EXPORT_TRACE" = "1"
+        let trace = CompilerFlagOps.enabled CompilerFlag.AutoExportTrace
         let synthesize bundle =
             match bundle with
             | BundleInl(com, r, (rn, name), term, td) ->
@@ -30485,6 +31619,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 warnings = []
                 self_unbound = false
                 unbound_only = []
+                open_names = []
             }
 
     /// ### keep_checked
@@ -30500,6 +31635,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             warnings = []
             self_unbound = false
             unbound_only = []
+            open_names = []
         }
     let check_released_ok : Bundle option * InferResult * TopEnv = None, check_released_result check_released_additions, inferTop_env_empty
     let keep_checked_into (summary : TopEnv ref option) ((_, x : InferResult, _ : TopEnv) as value) =
@@ -30564,6 +31700,13 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     | None -> single ()
             | None ->
                 typecheck_into summary (package_id,module_id,env) ls :> _ Job
+        | Nil when autoExportPids.ContainsKey package_id && not (env.term |> Map.containsKey (TermNameIdOps.create "main")) ->
+            let r : VSCRange = struct (struct {|line = 0; character = 0|}, struct {|line = 0; character = 0|})
+            let main = BundleInl("", r, (r, "main"), RawFun(r, [ PatB r, RawAnnot(r, RawLit(r, LitInt32 0), RawTPrim(r, Int32T)) ]), true)
+            let x = infer package_id module_id env main
+            let adds = match x.top_env_additions with AOpen x | AInclude x | AIncludePrivate (_, x) -> x
+            let env = inferUnion adds env
+            Job.result (Cons(keep_checked_into summary (Some main, x, env), typecheck_into summary (package_id,module_id,env) (Promise.Now.withValue Nil)))
         | Nil ->
             if TypeArithReserved.isReserved package_id module_id then
                 TypeArithReserved.offer package_id module_id (env.nominals |> Map.toList |> List.choose (fun (id, n) -> env.nominals_aux |> Map.tryFind id |> Option.map (fun aux -> id, NominalNameIdOps.text aux.name, List.length n.vars)))
@@ -35012,13 +36155,13 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 pending |> Option.iter keepOrJoin
                 String.concat "\n" output + (if text.EndsWith "\n" then "\n" else "")
 
-        type LayoutTally() =
+        type LayoutTotals() =
             member val VerbatimBlocks = 0 with get, set
             member val VerbatimLines = 0 with get, set
             member val GuardedBlocks = 0 with get, set
             member val Kept = ResizeArray<string * string> ()
 
-        let layoutTally = LayoutTally ()
+        let layoutTotals = LayoutTotals ()
 
         let rewrapComments (lines : string list) =
             let mutable fenced = false
@@ -35244,12 +36387,12 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                     | None ->
                                         match retried () with
                                         | Some laid ->
-                                            layoutTally.Kept.Add ("parse-guard-partial", head ())
+                                            layoutTotals.Kept.Add ("parse-guard-partial", head ())
                                             let split = laid |> List.collect splitMacroLine
                                             if split = laid || sameParse split then split else laid
                                         | None ->
-                                            layoutTally.GuardedBlocks <- layoutTally.GuardedBlocks + 1
-                                            layoutTally.Kept.Add ("parse-guard", head ())
+                                            layoutTotals.GuardedBlocks <- layoutTotals.GuardedBlocks + 1
+                                            layoutTotals.Kept.Add ("parse-guard", head ())
                                             match Environment.GetEnvironmentVariable "SPIRAL_FORMAT_GUARD_DUMP" with
                                             | null | "" -> ()
                                             | directory ->
@@ -35261,14 +36404,14 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                             kept ()
                                 | refusal ->
                                     let lines = kept ()
-                                    layoutTally.VerbatimBlocks <- layoutTally.VerbatimBlocks + 1
-                                    layoutTally.VerbatimLines <- layoutTally.VerbatimLines + lines.Length
+                                    layoutTotals.VerbatimBlocks <- layoutTotals.VerbatimBlocks + 1
+                                    layoutTotals.VerbatimLines <- layoutTotals.VerbatimLines + lines.Length
                                     let reason =
                                         match refusal with
                                         | CommentsInline count -> sprintf "comments-inline %d" count
                                         | CommentsMisplaced (expected, placed) -> sprintf "comments-misplaced %d/%d" placed expected
                                         | NotOneCodeLine | LaidOut _ | AsWritten -> "not-one-code-line"
-                                    layoutTally.Kept.Add (reason, head ())
+                                    layoutTotals.Kept.Add (reason, head ())
                                     lines)
                     | Refused (_, _, original) -> original
                 let lines = lines |> List.filter (fun line -> let trimmed = line.Trim () in trimmed <> segmentHead && trimmed <> segmentTail)
@@ -35330,32 +36473,32 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
 
         let readText (entry : Entry) = File.ReadAllText(entry.Path).Replace ("\r\n", "\n")
 
-        type Tally() =
-            let counts = Collections.Generic.SortedDictionary<string, int> (StringComparer.Ordinal)
+        type Counts() =
+            let byKey = Collections.Generic.SortedDictionary<string, int> (StringComparer.Ordinal)
             member _.Add (key : string) (amount : int) =
-                counts.[key] <- (match counts.TryGetValue key with | true, current -> current + amount | _ -> amount)
-            member _.Get (key : string) = match counts.TryGetValue key with | true, current -> current | _ -> 0
-            member _.Rows = counts |> Seq.map (fun pair -> pair.Key, pair.Value) |> List.ofSeq
+                byKey.[key] <- (match byKey.TryGetValue key with | true, current -> current + amount | _ -> amount)
+            member _.Get (key : string) = match byKey.TryGetValue key with | true, current -> current | _ -> 0
+            member _.Rows = byKey |> Seq.map (fun pair -> pair.Key, pair.Value) |> List.ofSeq
 
-        let printTally (title : string) (tally : Tally) =
+        let printTotals (title : string) (counts : Counts) =
             printfn "%s" title
-            for key, value in tally.Rows do
+            for key, value in counts.Rows do
                 printfn "  %s\t%d" key value
 
         let corpora (entries : Entry list) = entries |> List.map (fun entry -> entry.Corpus) |> List.distinct
 
         let runCheck (entries : Entry list) (listing : TextWriter) =
-            let tally = Tally ()
+            let counts = Counts ()
             for entry in entries do
                 let source = lexText entry.Path entry.Edition (readText entry)
-                tally.Add (entry.Corpus + "\tlines") source.SourceLines.Length
+                counts.Add (entry.Corpus + "\tlines") source.SourceLines.Length
                 for overflow in overflows source do
                     let name = constructName overflow.Construct
-                    tally.Add (entry.Corpus + "\tover120") 1
-                    tally.Add (entry.Corpus + "\tover120\t" + name) 1
+                    counts.Add (entry.Corpus + "\tover120") 1
+                    counts.Add (entry.Corpus + "\tover120\t" + name) 1
                     listing.WriteLine (sprintf "%s:%d\t%d\t%s" entry.Rel overflow.Line overflow.Width name)
-            printTally "check" tally
-            tally
+            printTotals "check" counts
+            counts
 
         let changeName change =
             match change with
@@ -35372,35 +36515,35 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 | Remark _ | Blank -> [||])
 
         let runSpace (entries : Entry list) (outDir : string option) (listing : TextWriter) (verifyParse : bool) =
-            let tally = Tally ()
+            let counts = Counts ()
             for entry in entries do
                 let text = readText entry
                 let source = lexText entry.Path entry.Edition text
                 let spaced, changes = respace source
                 let output = joinLines (renderAll spaced)
                 let changedLines = changes |> Array.filter (fun (_, lineChanges, _) -> not (List.isEmpty lineChanges))
-                tally.Add (entry.Corpus + "\tfiles") 1
-                tally.Add (entry.Corpus + "\tlines") source.SourceLines.Length
-                tally.Add (entry.Corpus + "\tlines-changed") (changedLines |> Array.filter (fun (_, c, _) -> c <> [ GuardKept ]) |> Array.length)
-                if output <> text then tally.Add (entry.Corpus + "\tfiles-changed") 1
+                counts.Add (entry.Corpus + "\tfiles") 1
+                counts.Add (entry.Corpus + "\tlines") source.SourceLines.Length
+                counts.Add (entry.Corpus + "\tlines-changed") (changedLines |> Array.filter (fun (_, c, _) -> c <> [ GuardKept ]) |> Array.length)
+                if output <> text then counts.Add (entry.Corpus + "\tfiles-changed") 1
                 for number, lineChanges, guard in changedLines do
                     for change in List.distinct lineChanges do
-                        tally.Add (entry.Corpus + "\trule\t" + changeName change) 1
+                        counts.Add (entry.Corpus + "\trule\t" + changeName change) 1
                     let names = lineChanges |> List.map changeName |> List.distinct |> String.concat ","
                     listing.WriteLine (sprintf "%s:%d\t%s%s" entry.Rel number names (match guard with Some rejected -> "\t" + rejected | None -> ""))
                 let again, _ = respace (lexText entry.Path entry.Edition output)
                 if joinLines (renderAll again) <> output then
-                    tally.Add (entry.Corpus + "\tG1-not-idempotent") 1
+                    counts.Add (entry.Corpus + "\tG1-not-idempotent") 1
                     listing.WriteLine (sprintf "%s\tG1-not-idempotent" entry.Rel)
                 if tokenStream source <> tokenStream spaced then
-                    tally.Add (entry.Corpus + "\tF6-token-drift") 1
+                    counts.Add (entry.Corpus + "\tF6-token-drift") 1
                     listing.WriteLine (sprintf "%s\tF6-token-drift" entry.Rel)
                 if verifyParse && output <> text then
                     match compareParses entry.Edition spaced.FileUnit text output with
-                    | SameParse -> tally.Add (entry.Corpus + "\tparse-same") 1
-                    | OriginalHasErrors -> tally.Add (entry.Corpus + "\tparse-original-has-errors") 1
+                    | SameParse -> counts.Add (entry.Corpus + "\tparse-same") 1
+                    | OriginalHasErrors -> counts.Add (entry.Corpus + "\tparse-original-has-errors") 1
                     | ParseDiffers line ->
-                        tally.Add (entry.Corpus + "\tparse-differs") 1
+                        counts.Add (entry.Corpus + "\tparse-differs") 1
                         listing.WriteLine (sprintf "%s:%d\tparse-differs" entry.Rel line)
                 match outDir with
                 | Some dir ->
@@ -35408,35 +36551,48 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     Directory.CreateDirectory (Path.GetDirectoryName target) |> ignore
                     File.WriteAllText (target, output)
                 | None -> ()
-            printTally "space" tally
-            tally
+            printTotals "space" counts
+            counts
 
-        let runConvert (entries : Entry list) (outDir : string option) (listing : TextWriter) (verifyParse : bool) =
-            let tally = Tally ()
+        let runConvert (entries : Entry list) (outDir : string option) (roundTripDir : string option) (listing : TextWriter) (verifyParse : bool) =
+            let counts = Counts ()
             for entry in entries do
                 let text = readText entry
                 let source = lexText entry.Path entry.Edition text
                 let original = joinLines (renderAll source)
                 let symbols, converted, rejected = convert Symbols source
                 let symbolText = joinLines symbols
-                let words, _, rejectedBack = convert Words (lexText entry.Path Edition3 symbolText)
-                let roundTrip = joinLines words
-                tally.Add (entry.Corpus + "\tfiles") 1
-                tally.Add (entry.Corpus + "\tlines-converted") converted
-                tally.Add (entry.Corpus + "\tlines-rejected") rejected.Length
-                tally.Add (entry.Corpus + "\tlines-rejected-back") rejectedBack.Length
+                let roundTrip, rejectedBack =
+                    match entry.Edition with
+                    | Edition3 ->
+                        let words, _, back = convert Words source
+                        let again, _, _ = convert Symbols (lexText entry.Path Edition2 (joinLines words))
+                        joinLines again, back
+                    | Edition2 ->
+                        let words, _, back = convert Words (lexText entry.Path Edition3 symbolText)
+                        joinLines words, back
+                counts.Add (entry.Corpus + "\tfiles") 1
+                counts.Add (entry.Corpus + "\tlines-converted") converted
+                counts.Add (entry.Corpus + "\tlines-rejected") rejected.Length
+                counts.Add (entry.Corpus + "\tlines-rejected-back") rejectedBack.Length
                 for number, attempted in rejected do
                     listing.WriteLine (sprintf "%s:%d\trejected\t%s" entry.Rel number attempted)
-                if roundTrip = original then tally.Add (entry.Corpus + "\tround-trip-identical") 1
+                if roundTrip = original then counts.Add (entry.Corpus + "\tround-trip-identical") 1
                 else
-                    tally.Add (entry.Corpus + "\tround-trip-differs") 1
+                    counts.Add (entry.Corpus + "\tround-trip-differs") 1
                     listing.WriteLine (sprintf "%s\tround-trip-differs" entry.Rel)
+                    match roundTripDir with
+                    | Some dir ->
+                        let target = Path.Combine (dir, entry.Corpus, entry.Rel.Replace ('/', Path.DirectorySeparatorChar))
+                        Directory.CreateDirectory (Path.GetDirectoryName target) |> ignore
+                        File.WriteAllText (target, roundTrip)
+                    | None -> ()
                 if verifyParse && converted > 0 then
                     match compareParses entry.Edition source.FileUnit original symbolText with
-                    | SameParse -> tally.Add (entry.Corpus + "\tparse-same") 1
-                    | OriginalHasErrors -> tally.Add (entry.Corpus + "\tparse-original-has-errors") 1
+                    | SameParse -> counts.Add (entry.Corpus + "\tparse-same") 1
+                    | OriginalHasErrors -> counts.Add (entry.Corpus + "\tparse-original-has-errors") 1
                     | ParseDiffers line ->
-                        tally.Add (entry.Corpus + "\tparse-differs") 1
+                        counts.Add (entry.Corpus + "\tparse-differs") 1
                         listing.WriteLine (sprintf "%s:%d\tparse-differs" entry.Rel line)
                 match outDir with
                 | Some dir ->
@@ -35444,36 +36600,36 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     Directory.CreateDirectory (Path.GetDirectoryName target) |> ignore
                     File.WriteAllText (target, symbolText)
                 | None -> ()
-            printTally "convert" tally
-            tally
+            printTotals "convert" counts
+            counts
 
         let runFlatten (entries : Entry list) (outDir : string option) (listing : TextWriter) =
-            let tally = Tally ()
+            let counts = Counts ()
             for entry in entries do
                 let text = readText entry
                 let source = lexText entry.Path entry.Edition text
                 let lines, blocks = flatten source
                 let flatText = joinLines (Array.ofList lines)
-                tally.Add (entry.Corpus + "\tfiles") 1
-                tally.Add (entry.Corpus + "\tlines-in") source.SourceLines.Length
-                tally.Add (entry.Corpus + "\tlines-out") lines.Length
+                counts.Add (entry.Corpus + "\tfiles") 1
+                counts.Add (entry.Corpus + "\tlines-in") source.SourceLines.Length
+                counts.Add (entry.Corpus + "\tlines-out") lines.Length
                 for block in blocks do
                     match block with
-                    | Flattened _ -> tally.Add (entry.Corpus + "\tblocks-flattened") 1
+                    | Flattened _ -> counts.Add (entry.Corpus + "\tblocks-flattened") 1
                     | Refused (reason, line, _) ->
-                        tally.Add (entry.Corpus + "\tblocks-refused\t" + (sprintf "%A" reason)) 1
+                        counts.Add (entry.Corpus + "\tblocks-refused\t" + (sprintf "%A" reason)) 1
                         listing.WriteLine (sprintf "%s:%d\trefused\t%A" entry.Rel line reason)
                 let relexed = lexText entry.Path entry.Edition flatText
                 let opaque = relexed.SourceLines |> Array.filter (fun line -> match line.Shape with Opaque _ -> true | _ -> false) |> Array.length
                 let opaqueBefore = source.SourceLines |> Array.filter (fun line -> match line.Shape with Opaque _ -> true | _ -> false) |> Array.length
                 if opaque > opaqueBefore then
-                    tally.Add (entry.Corpus + "\tG7-1-lex-errors") 1
+                    counts.Add (entry.Corpus + "\tG7-1-lex-errors") 1
                     listing.WriteLine (sprintf "%s\tG7-1-lex-errors\t%d" entry.Rel (opaque - opaqueBefore))
                 match compareParses entry.Edition source.FileUnit text flatText with
-                | SameParse -> tally.Add (entry.Corpus + "\tG7-parse-same") 1
-                | OriginalHasErrors -> tally.Add (entry.Corpus + "\tG7-original-has-errors") 1
+                | SameParse -> counts.Add (entry.Corpus + "\tG7-parse-same") 1
+                | OriginalHasErrors -> counts.Add (entry.Corpus + "\tG7-original-has-errors") 1
                 | ParseDiffers line ->
-                    tally.Add (entry.Corpus + "\tG7-parse-differs") 1
+                    counts.Add (entry.Corpus + "\tG7-parse-differs") 1
                     listing.WriteLine (sprintf "%s:%d\tG7-parse-differs" entry.Rel line)
                 match outDir with
                 | Some dir ->
@@ -35481,13 +36637,13 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     Directory.CreateDirectory (Path.GetDirectoryName target) |> ignore
                     File.WriteAllText (target, flatText)
                 | None -> ()
-            printTally "flatten" tally
-            tally
+            printTotals "flatten" counts
+            counts
 
         let formatText (path : string) (edition : Edition) (text : string) =
             let prespaced = let spaced, _ = respace (lexText path edition (joinMacroContinuations text)) in joinLines (renderAll spaced)
             let laid = joinLines (Array.ofList (layout (lexText path edition prespaced)))
-            if laid = prespaced && Environment.GetEnvironmentVariable "SPIRAL_FORMAT_FULL_SECOND_PASS" <> "1" then prespaced
+            if laid = prespaced && not (CompilerFlagOps.enabled CompilerFlag.FormatFullSecondPass) then prespaced
             else
                 let spaced, _ = respace (lexText path edition laid)
                 joinLines (renderAll spaced)
@@ -35509,30 +36665,30 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 | Blank -> [||])
 
         let runFormat (entries : Entry list) (outDir : string option) (listing : TextWriter) =
-            let tally = Tally ()
+            let counts = Counts ()
             for entry in entries do
                 let text = readText entry
                 let original = joinLines (renderAll (lexText entry.Path entry.Edition text))
-                let guardedBefore = layoutTally.GuardedBlocks
-                let blocksBefore = layoutTally.VerbatimBlocks
-                let linesBefore = layoutTally.VerbatimLines
-                let keptBefore = layoutTally.Kept.Count
+                let guardedBefore = layoutTotals.GuardedBlocks
+                let blocksBefore = layoutTotals.VerbatimBlocks
+                let linesBefore = layoutTotals.VerbatimLines
+                let keptBefore = layoutTotals.Kept.Count
                 let formatted = formatText entry.Path entry.Edition text
-                for index in keptBefore .. layoutTally.Kept.Count - 1 do
-                    let reason, head = layoutTally.Kept.[index]
+                for index in keptBefore .. layoutTotals.Kept.Count - 1 do
+                    let reason, head = layoutTotals.Kept.[index]
                     listing.WriteLine (sprintf "%s\tkept-verbatim\t%s\t%s" entry.Rel reason (head.Trim ()))
-                tally.Add (entry.Corpus + "\tverbatim-comment-blocks") (layoutTally.VerbatimBlocks - blocksBefore)
-                tally.Add (entry.Corpus + "\tverbatim-parse-guard-blocks") (layoutTally.GuardedBlocks - guardedBefore)
-                tally.Add (entry.Corpus + "\tverbatim-comment-block-lines") (layoutTally.VerbatimLines - linesBefore)
+                counts.Add (entry.Corpus + "\tverbatim-comment-blocks") (layoutTotals.VerbatimBlocks - blocksBefore)
+                counts.Add (entry.Corpus + "\tverbatim-parse-guard-blocks") (layoutTotals.GuardedBlocks - guardedBefore)
+                counts.Add (entry.Corpus + "\tverbatim-comment-block-lines") (layoutTotals.VerbatimLines - linesBefore)
                 let originalLines = splitLines original |> Array.filter (fun line -> line.Trim().Length > 0)
                 let formattedLines = splitLines formatted |> Array.filter (fun line -> line.Trim().Length > 0)
                 let originalSet = System.Collections.Generic.HashSet<string> (originalLines |> Array.map (fun l -> l.TrimEnd ()))
                 let kept = formattedLines |> Array.filter (fun line -> originalSet.Contains line) |> Array.length
-                tally.Add (entry.Corpus + "\tfiles") 1
-                tally.Add (entry.Corpus + "\tlines-in-nonblank") originalLines.Length
-                tally.Add (entry.Corpus + "\tlines-out-nonblank") formattedLines.Length
-                tally.Add (entry.Corpus + "\tlines-out-found-in-input") kept
-                tally.Add (entry.Corpus + "\tover120-out") (formattedLines |> Array.filter (fun l -> displayWidth l > 120) |> Array.length)
+                counts.Add (entry.Corpus + "\tfiles") 1
+                counts.Add (entry.Corpus + "\tlines-in-nonblank") originalLines.Length
+                counts.Add (entry.Corpus + "\tlines-out-nonblank") formattedLines.Length
+                counts.Add (entry.Corpus + "\tlines-out-found-in-input") kept
+                counts.Add (entry.Corpus + "\tover120-out") (formattedLines |> Array.filter (fun l -> displayWidth l > 120) |> Array.length)
                 let insideFences =
                     formattedLines
                     |> Array.fold (fun (fenced : bool, marks : bool list) line ->
@@ -35544,14 +36700,14 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     |> List.rev
                     |> Array.ofList
                 let outsideFences = Array.zip formattedLines insideFences |> Array.filter (fun (line, fenced) -> displayWidth line > 120 && not fenced) |> Array.map fst
-                tally.Add (entry.Corpus + "\tover120-out-outside-fences") outsideFences.Length
+                counts.Add (entry.Corpus + "\tover120-out-outside-fences") outsideFences.Length
                 for line in outsideFences do listing.WriteLine (sprintf "%s\tover120-left\t%d\t%s" entry.Rel (displayWidth line) (line.Trim().Substring (0, min 60 (line.Trim().Length))))
                 let formattedSource = lexText entry.Path entry.Edition formatted
                 let inputSource = lexText entry.Path entry.Edition text
                 let layoutOverflows (source : Source<'p>) =
                     overflows source |> Array.filter (fun overflow -> match overflow.Construct with LiteralTooWide _ | CommentTail | OpaqueText -> false | _ -> true)
-                tally.Add (entry.Corpus + "\tover120-layout-in") (layoutOverflows inputSource).Length
-                tally.Add (entry.Corpus + "\tover120-layout-out") (layoutOverflows formattedSource).Length
+                counts.Add (entry.Corpus + "\tover120-layout-in") (layoutOverflows inputSource).Length
+                counts.Add (entry.Corpus + "\tover120-layout-out") (layoutOverflows formattedSource).Length
                 let inputTrimmed = System.Collections.Generic.HashSet<string> (originalLines |> Array.map (fun l -> l.Trim ()))
                 let created = layoutOverflows formattedSource |> Array.filter (fun overflow -> not (inputTrimmed.Contains ((splitLines formatted).[overflow.Line - 1].Trim ())))
                 let fencedLineNumbers =
@@ -35617,29 +36773,29 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             | _, None when unparsable -> "unparsable"
                             | _, None -> constructName overflow.Construct
                         listing.WriteLine (sprintf "%s\tallow\t%s\t%s\t%d" entry.Rel kind (sha256 key) overflow.Width)
-                tally.Add (entry.Corpus + "\tover120-layout-created") created.Length
+                counts.Add (entry.Corpus + "\tover120-layout-created") created.Length
                 for overflow in created do listing.WriteLine (sprintf "%s:%d\tover120-created\t%s" entry.Rel overflow.Line (constructName overflow.Construct))
                 let before = commentWords inputSource |> Array.sort
                 let after = commentWords formattedSource |> Array.sort
                 if before <> after then
-                    tally.Add (entry.Corpus + "\tcomments-differ") 1
+                    counts.Add (entry.Corpus + "\tcomments-differ") 1
                     listing.WriteLine (sprintf "%s\tcomments-differ\t%d\t%d" entry.Rel before.Length after.Length)
-                else tally.Add (entry.Corpus + "\tcomments-same") 1
-                if formatted = original then tally.Add (entry.Corpus + "\tfiles-unchanged") 1
+                else counts.Add (entry.Corpus + "\tcomments-same") 1
+                if formatted = original then counts.Add (entry.Corpus + "\tfiles-unchanged") 1
                 let again = formatText entry.Path entry.Edition formatted
                 if again <> formatted then
-                    tally.Add (entry.Corpus + "\tG1-not-idempotent") 1
+                    counts.Add (entry.Corpus + "\tG1-not-idempotent") 1
                     listing.WriteLine (sprintf "%s\tG1-not-idempotent" entry.Rel)
                 let flatText = let lines, _ = flatten (lexText entry.Path entry.Edition (joinMacroContinuations text)) in joinLines (Array.ofList lines)
                 if formatText entry.Path entry.Edition flatText <> formatted then
-                    tally.Add (entry.Corpus + "\tG7-2-format-of-flat-differs") 1
+                    counts.Add (entry.Corpus + "\tG7-2-format-of-flat-differs") 1
                     listing.WriteLine (sprintf "%s\tG7-2-format-of-flat-differs" entry.Rel)
-                else tally.Add (entry.Corpus + "\tG7-2-same") 1
+                else counts.Add (entry.Corpus + "\tG7-2-same") 1
                 match compareParses entry.Edition (lexText entry.Path entry.Edition text).FileUnit text formatted with
-                | SameParse -> tally.Add (entry.Corpus + "\tparse-same") 1
-                | OriginalHasErrors -> tally.Add (entry.Corpus + "\tparse-original-has-errors") 1
+                | SameParse -> counts.Add (entry.Corpus + "\tparse-same") 1
+                | OriginalHasErrors -> counts.Add (entry.Corpus + "\tparse-original-has-errors") 1
                 | ParseDiffers line ->
-                    tally.Add (entry.Corpus + "\tparse-differs") 1
+                    counts.Add (entry.Corpus + "\tparse-differs") 1
                     listing.WriteLine (sprintf "%s:%d\tparse-differs" entry.Rel line)
                 match outDir with
                 | Some dir ->
@@ -35647,8 +36803,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     Directory.CreateDirectory (Path.GetDirectoryName target) |> ignore
                     File.WriteAllText (target, formatted)
                 | None -> ()
-            printTally "format" tally
-            tally
+            printTotals "format" counts
+            counts
 
     module TokensCli =
         let render (text : string) =
@@ -35754,6 +36910,323 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 | _ -> eprintfn "split-units: the cut must be between 1 and %d" (all.Length - 1); 2
             | _ -> eprintfn "usage: SpiralCompiler split-units <file.spi> --list | split-units <file.spi> --cut <k> --out <dir> [--source a,b]   (blocks [0,k) become package model with !!!!Export of every function the rest uses; [k,n) become app linking model)"; 2
 
+    /// ### RustPartition
+    // Splits one generated Rust file into a <stem>_parts workspace of crates under a line limit (GEN-UNIT-PARTITIONER).
+    module RustPartition =
+
+        open System
+        open System.Collections.Generic
+        open System.Text.RegularExpressions
+
+        type ItemKind = Header | TypeItem | ImplItem | ValueItem | FnItem | MainItem
+
+        type Item = { index : int; kind : ItemKind; names : string []; owner : string; text : string; lines : int }
+
+        let private fnName = Regex(@"^(?:pub(?:\([^)]*\))? )?(?:(?:const|unsafe|async|extern ""C"") )*fn (\w+)", RegexOptions.Compiled)
+        let private typeName = Regex(@"^(?:pub(?:\([^)]*\))? )?(?:enum|struct|union|trait|type) (\w+)", RegexOptions.Compiled)
+        let private implTarget = Regex(@"^(?:unsafe )?impl(?:<[^{]*?>)? (?:[^{]*? for )?(\w+)", RegexOptions.Compiled)
+        let private valueName = Regex(@"^(?:pub(?:\([^)]*\))? )?(?:static|const) (?:mut )?(\w+)", RegexOptions.Compiled)
+        let private threadLocalNames = Regex(@"static (\w+)\s*:", RegexOptions.Compiled)
+        let private macroName = Regex(@"^macro_rules! (\w+)", RegexOptions.Compiled)
+        let private ident = Regex(@"\b[A-Za-z_]\w*\b", RegexOptions.Compiled)
+        let private useCrate = Regex(@"^use (?:::)?(\w+)::", RegexOptions.Compiled)
+
+        let private isStart (line : string) =
+            line.Length > 0 && not (Char.IsWhiteSpace line.[0]) && line.[0] <> '}' && line.[0] <> ')' && line.[0] <> ']'
+
+        /// For each line, whether it begins inside a string, raw string or block comment (so it cannot start an item).
+        let private continuesLiteral (lines : string []) : bool [] =
+            let result = Array.zeroCreate lines.Length
+            let mutable inString = false
+            let mutable rawHashes = -1
+            let mutable commentDepth = 0
+            for k in 0 .. lines.Length - 1 do
+                result.[k] <- inString || rawHashes >= 0 || commentDepth > 0
+                let line = lines.[k]
+                let mutable i = 0
+                let mutable lineComment = false
+                while i < line.Length && not lineComment do
+                    let c = line.[i]
+                    if commentDepth > 0 then
+                        if c = '*' && i + 1 < line.Length && line.[i + 1] = '/' then commentDepth <- commentDepth - 1; i <- i + 1
+                        elif c = '/' && i + 1 < line.Length && line.[i + 1] = '*' then commentDepth <- commentDepth + 1; i <- i + 1
+                    elif rawHashes >= 0 then
+                        if c = '"' && i + rawHashes < line.Length && line.Substring(i + 1, rawHashes) = System.String('#', rawHashes) then i <- i + rawHashes; rawHashes <- -1
+                    elif inString then
+                        if c = '\\' then i <- i + 1
+                        elif c = '"' then inString <- false
+                    else
+                        if c = '/' && i + 1 < line.Length && line.[i + 1] = '/' then lineComment <- true
+                        elif c = '/' && i + 1 < line.Length && line.[i + 1] = '*' then commentDepth <- 1; i <- i + 1
+                        elif c = '"' then inString <- true
+                        elif c = 'r' && (i = 0 || not (Char.IsLetterOrDigit line.[i - 1] || line.[i - 1] = '_')) && i + 1 < line.Length && (line.[i + 1] = '"' || line.[i + 1] = '#') then
+                            let mutable j = i + 1
+                            while j < line.Length && line.[j] = '#' do j <- j + 1
+                            if j < line.Length && line.[j] = '"' then rawHashes <- j - i - 1; i <- j
+                        elif c = '\'' then
+                            if i + 2 < line.Length && line.[i + 1] = '\\' then
+                                let close = line.IndexOf('\'', i + 2)
+                                if close > 0 then i <- close
+                            elif i + 2 < line.Length && line.[i + 2] = '\'' then i <- i + 2
+                    i <- i + 1
+            result
+
+        /// Splits generated Rust into its column-0 items; attributes stay with the item they precede.
+        let items (code : string) : Item [] =
+            let lines = code.Replace("\r\n", "\n").Split '\n'
+            let inside = continuesLiteral lines
+            let groups = ResizeArray<ResizeArray<string>>()
+            let mutable pendingAttr = false
+            for k in 0 .. lines.Length - 1 do
+                let line = lines.[k]
+                let starts = isStart line && not inside.[k]
+                if starts && not pendingAttr then groups.Add(ResizeArray [ line ])
+                elif groups.Count = 0 then groups.Add(ResizeArray [ line ])
+                else groups.[groups.Count - 1].Add line
+                if starts then pendingAttr <- line.StartsWith "#[" && not (line.StartsWith "#![")
+            groups
+            |> Seq.mapi (fun i g ->
+                let head = g |> Seq.find (fun l -> not (l.StartsWith "#[")) |> fun l -> l
+                let text = String.Join("\n", g).TrimEnd('\n')
+                let lineCount = text.Split('\n').Length
+                let kind, names, owner =
+                    if head.StartsWith "#!" || head.StartsWith "use " || head.StartsWith "pub use " || head.StartsWith "extern crate " then Header, [||], ""
+                    elif (let m = fnName.Match head in m.Success && m.Groups.[1].Value = "main") then MainItem, [| "main" |], ""
+                    elif fnName.IsMatch head then FnItem, [| (fnName.Match head).Groups.[1].Value |], ""
+                    elif typeName.IsMatch head then TypeItem, [| (typeName.Match head).Groups.[1].Value |], ""
+                    elif implTarget.IsMatch head then ImplItem, [||], (implTarget.Match head).Groups.[1].Value
+                    elif head.StartsWith "thread_local!" then ValueItem, (threadLocalNames.Matches text |> Seq.map (fun m -> m.Groups.[1].Value) |> Array.ofSeq), ""
+                    elif valueName.IsMatch head then ValueItem, [| (valueName.Match head).Groups.[1].Value |], ""
+                    elif macroName.IsMatch head then ValueItem, [| (macroName.Match head).Groups.[1].Value |], ""
+                    elif String.IsNullOrWhiteSpace head then Header, [||], ""
+                    else ValueItem, [||], ""
+                { index = i; kind = kind; names = names; owner = owner; text = text; lines = lineCount })
+            |> Seq.filter (fun it -> not (String.IsNullOrWhiteSpace it.text))
+            |> Array.ofSeq
+            |> Array.mapi (fun i it -> { it with index = i })
+
+        /// Tarjan's strongly connected components; returns components in reverse topological order (dependencies first).
+        let private scc (n : int) (edges : int -> int seq) : int list list =
+            let index = Array.create n -1
+            let low = Array.zeroCreate n
+            let onStack = Array.zeroCreate n
+            let stack = Stack<int>()
+            let result = ResizeArray<int list>()
+            let mutable counter = 0
+            let rec visit v =
+                index.[v] <- counter; low.[v] <- counter; counter <- counter + 1
+                stack.Push v; onStack.[v] <- true
+                for w in edges v do
+                    if index.[w] < 0 then visit w; low.[v] <- min low.[v] low.[w]
+                    elif onStack.[w] then low.[v] <- min low.[v] index.[w]
+                if low.[v] = index.[v] then
+                    let mutable comp = []
+                    let mutable go = true
+                    while go do
+                        let w = stack.Pop()
+                        onStack.[w] <- false
+                        comp <- w :: comp
+                        if w = v then go <- false
+                    result.Add comp
+            for v in 0 .. n - 1 do if index.[v] < 0 then visit v
+            List.ofSeq result
+
+        type Plan = { header : Item []; crates : Item [] []; main : Item [] }
+
+        /// Assigns every item but the header and main to a crate. All items form one reference graph: items sharing a
+        /// name (one definition per #[cfg] arm) and an impl and its type are glued together, so each such group lands in
+        /// one crate (the orphan rule keeps a std-trait impl beside its type). Groups are layered by longest dependency
+        /// path and consecutive layers are packed into crates of at most `limit` lines; a layer larger than the limit
+        /// splits into independent bins.
+        let plan (limit : int) (all : Item []) : Plan =
+            let byName = Dictionary<string, ResizeArray<int>>()
+            for it in all do
+                for n in it.names do
+                    match byName.TryGetValue n with
+                    | true, l -> l.Add it.index
+                    | _ -> byName.[n] <- ResizeArray [ it.index ]
+            let impls = Dictionary<int, ResizeArray<int>>()
+            for it in all do
+                if it.kind = ImplItem then
+                    match byName.TryGetValue it.owner with
+                    | true, owners ->
+                        for o in owners do
+                            match impls.TryGetValue o with
+                            | true, l -> l.Add it.index
+                            | _ -> impls.[o] <- ResizeArray [ it.index ]
+                    | _ -> ()
+            let refs =
+                all |> Array.map (fun it ->
+                    ident.Matches it.text
+                    |> Seq.collect (fun m -> match byName.TryGetValue m.Value with | true, l -> l :> seq<int> | _ -> Seq.empty)
+                    |> Seq.append (it.names |> Seq.collect (fun n -> byName.[n]))
+                    |> Seq.append (if it.kind = ImplItem then (match byName.TryGetValue it.owner with | true, l -> l :> seq<int> | _ -> Seq.empty) else Seq.empty)
+                    |> Seq.append (match impls.TryGetValue it.index with | true, l -> l :> seq<int> | _ -> Seq.empty)
+                    |> Seq.filter (fun j -> j <> it.index && all.[j].kind <> Header && all.[j].kind <> MainItem)
+                    |> Seq.distinct |> Array.ofSeq)
+            let nodes = all |> Array.filter (fun it -> it.kind <> Header && it.kind <> MainItem) |> Array.map (fun it -> it.index)
+            let local = Dictionary<int, int>()
+            nodes |> Array.iteri (fun k i -> local.[i] <- k)
+            let comps = scc nodes.Length (fun k -> refs.[nodes.[k]] |> Seq.choose (fun j -> match local.TryGetValue j with | true, l -> Some l | _ -> None)) |> Array.ofList
+            let compOf = Array.zeroCreate nodes.Length
+            comps |> Array.iteri (fun c members -> for m in members do compOf.[m] <- c)
+            let layer = Array.zeroCreate comps.Length
+            comps |> Array.iteri (fun c members ->
+                let deps = members |> Seq.collect (fun m -> refs.[nodes.[m]]) |> Seq.choose (fun j -> match local.TryGetValue j with | true, l when compOf.[l] <> c -> Some layer.[compOf.[l]] | _ -> None)
+                layer.[c] <- 1 + (if Seq.isEmpty deps then 0 else Seq.max deps))
+            let limit = limit - (all |> Array.filter (fun it -> it.kind = Header) |> Array.sumBy (fun it -> it.lines)) - 24
+            let compLines c = comps.[c] |> List.sumBy (fun m -> let it = all.[nodes.[m]] in it.lines + (if it.kind = FnItem && it.lines <= 12 then 1 else 0))
+            let layers = comps |> Array.mapi (fun c _ -> c) |> Array.groupBy (fun c -> layer.[c]) |> Array.sortBy fst |> Array.map snd
+            let crates = ResizeArray<ResizeArray<int>>()
+            let mutable current = ResizeArray<int>()
+            let mutable currentLines = 0
+            let close () = if current.Count > 0 then crates.Add current; current <- ResizeArray<int>(); currentLines <- 0
+            for cs in layers do
+                let total = cs |> Array.sumBy compLines
+                if total > limit then
+                    close ()
+                    let bins = ResizeArray<ResizeArray<int> * int ref>()
+                    for c in cs |> Array.sortByDescending compLines do
+                        let lines = compLines c
+                        match bins |> Seq.tryFind (fun (_, used) -> used.Value + lines <= limit) with
+                        | Some (bin, used) -> bin.AddRange(comps.[c] |> List.map (fun m -> nodes.[m])); used.Value <- used.Value + lines
+                        | None -> bins.Add((ResizeArray(comps.[c] |> List.map (fun m -> nodes.[m])), ref lines))
+                    for bin, _ in bins do crates.Add bin
+                else
+                    if currentLines + total > limit then close ()
+                    for c in cs do current.AddRange(comps.[c] |> List.map (fun m -> nodes.[m]))
+                    currentLines <- currentLines + total
+            close ()
+            let order (ids : seq<int>) = ids |> Seq.sort |> Seq.map (fun i -> all.[i]) |> Array.ofSeq
+            { header = all |> Array.filter (fun it -> it.kind = Header)
+              crates = crates |> Seq.filter (fun c -> c.Count > 0) |> Seq.map order |> Array.ofSeq
+              main = all |> Array.filter (fun it -> it.kind = MainItem) }
+
+        let private pubField = Regex(@"(?<=[{,(]\s*)(?!pub\b)(l\d+|f\d+)(?=\s*:)", RegexOptions.Compiled)
+        let private tupleField = Regex(@"(?<=^(?:pub )?struct \w+(?:<[^>]*>)?\()([^)]*)(?=\))", RegexOptions.Compiled)
+
+        /// Makes an item visible across crates: `pub` on its declaration, on struct fields and on inherent-impl methods.
+        let publish (it : Item) : string =
+            let lines = it.text.Split '\n'
+            let isInherent = it.kind = ImplItem && not (lines |> Array.exists (fun l -> not (l.StartsWith "#[") && l.Contains " for "))
+            lines |> Array.mapi (fun k line ->
+                if line.StartsWith "#[" || line.StartsWith "pub " then line
+                elif k = (lines |> Array.findIndex (fun l -> not (l.StartsWith "#["))) then
+                    match it.kind with
+                    | FnItem | TypeItem | ValueItem when not (line.StartsWith "thread_local!") && not (line.StartsWith "macro_rules!") ->
+                        let line = "pub " + line
+                        if line.StartsWith "pub struct " then pubField.Replace(tupleField.Replace(line, fun m -> m.Value.Split(',') |> Array.map (fun f -> if f.Trim() = "" || f.TrimStart().StartsWith "pub " then f else " pub " + f.TrimStart()) |> String.concat "," |> fun s -> s.TrimStart()), "pub $1")
+                        else line
+                    | ValueItem when line.StartsWith "thread_local!" -> line.Replace("static ", "pub static ")
+                    | _ -> line
+                elif it.kind = TypeItem && line.StartsWith "    " && not (line.TrimStart().StartsWith "pub ") && Regex.IsMatch(line, @"^    \w+\s*:") then "    pub " + line.TrimStart()
+                elif isInherent && Regex.IsMatch(line, @"^    (?:const |unsafe )*fn ") then "    pub " + line.TrimStart()
+                else line)
+            |> String.concat "\n"
+
+        type Manifest = { edition : string; workspace : string option; deps : (string * string) list }
+
+        /// Reads the edition, the `workspace = "<path>"` key and every [dependencies] line of the crate the file belongs to.
+        let manifest (cargoToml : string) : Manifest =
+            let mutable section = ""
+            let mutable edition = "2024"
+            let mutable workspace = None
+            let deps = ResizeArray<string * string>()
+            for raw in cargoToml.Replace("\r\n", "\n").Split '\n' do
+                let line = raw.Trim()
+                if line.StartsWith "[" then section <- line
+                elif section = "[package]" && line.StartsWith "edition" && line.Contains "\"" then edition <- line.Split('"').[1]
+                elif section = "[package]" && line.StartsWith "workspace" && line.Contains "\"" then workspace <- Some (line.Split('"').[1].Replace('\\', '/'))
+                elif section = "[dependencies]" && line.Length > 0 && not (line.StartsWith "#") then
+                    let name = line.Split([| '='; '.'; ' ' |], StringSplitOptions.RemoveEmptyEntries).[0]
+                    deps.Add((name.Replace('-', '_'), line))
+            { edition = edition; workspace = workspace; deps = List.ofSeq deps }
+
+        /// Replaces `x = { workspace = true }` / `x.workspace = true` lines with the workspace's own spec for `x`, so the
+        /// parts are plain path crates that need no workspace membership.
+        let resolveWorkspaceDeps (m : Manifest) (workspaceToml : string) : Manifest =
+            let mutable section = ""
+            let specs = Dictionary<string, string>()
+            for raw in workspaceToml.Replace("\r\n", "\n").Split '\n' do
+                let line = raw.Trim()
+                if line.StartsWith "[" then section <- line
+                elif section = "[workspace.dependencies]" && line.Contains "=" && not (line.StartsWith "#") then
+                    specs.[line.Split([| '='; '.'; ' ' |], StringSplitOptions.RemoveEmptyEntries).[0].Replace('-', '_')] <- line
+            let inherits (line : string) = Regex.IsMatch(line, @"workspace\s*=\s*true")
+            { m with
+                workspace = None
+                deps = m.deps |> List.map (fun (ident, line) -> match specs.TryGetValue ident with | true, spec when inherits line -> ident, spec | _ -> ident, line) }
+
+        /// Renders a plan as the files of a `<stem>_parts` directory (an aggregator crate re-exporting every part) plus
+        /// the new main file. Each part takes the main crate's dependency lines for the crates its code names.
+        let render (stem : string) (m : Manifest) (p : Plan) : (string * string) list * string =
+            let header = p.header |> Array.map (fun it -> it.text) |> String.concat "\n"
+            let deps =
+                if not m.deps.IsEmpty then m.deps
+                else p.header |> Array.choose (fun it -> let u = useCrate.Match it.text in if u.Success && u.Groups.[1].Value <> "std" && u.Groups.[1].Value <> "core" && u.Groups.[1].Value <> "alloc" then Some (u.Groups.[1].Value, $"{u.Groups.[1].Value} = {{ workspace = true }}") else None) |> Array.distinct |> List.ofArray
+            let workspaceKey (up : string) = match m.workspace with Some w -> $"workspace = \"{up}{w}\"\n" | None -> ""
+            let partWorkspace, aggregatorWorkspace = workspaceKey "../../", workspaceKey "../"
+            let partName k = $"{stem}_p{k}"
+            let names = p.crates |> Array.mapi (fun k _ -> partName k)
+            let files = ResizeArray<string * string>()
+            p.crates |> Array.iteri (fun k items ->
+                let uses = [ for j in 0 .. k - 1 -> $"#[allow(unused_imports)] use {partName j}::*;" ] |> String.concat "\n"
+                let body = items |> Array.map (fun it -> if it.kind = FnItem && it.lines <= 12 then "#[inline]\n" + publish it else publish it) |> String.concat "\n"
+                let text = String.concat "\n" [ header; uses; body ] + "\n"
+                files.Add($"_parts/p{k}/lib.rs", text)
+                let used = deps |> List.filter (fun (ident, _) -> Regex.IsMatch(text, $@"\b{Regex.Escape ident}::|\buse {Regex.Escape ident}\b")) |> List.map snd
+                let depLines = [ for j in 0 .. k - 1 -> $"{partName j} = {{ path = \"../p{j}\" }}" ] @ used |> String.concat "\n"
+                files.Add($"_parts/p{k}/Cargo.toml", $"[package]\nname = \"{partName k}\"\nversion = \"0.0.0\"\nedition = \"{m.edition}\"\n{partWorkspace}publish = false\n\n[lib]\npath = \"lib.rs\"\n\n[dependencies]\n{depLines}\n"))
+            let reexports = names |> Array.map (fun n -> $"pub use {n}::*;") |> String.concat "\n"
+            files.Add("_parts/lib.rs", "#![allow(unused_imports, ambiguous_glob_reexports)]\n" + reexports + "\n")
+            let aggregatorDeps = names |> Array.mapi (fun k n -> $"{n} = {{ path = \"p{k}\" }}") |> String.concat "\n"
+            files.Add("_parts/Cargo.toml", $"[package]\nname = \"{stem}_parts\"\nversion = \"0.0.0\"\nedition = \"{m.edition}\"\n{aggregatorWorkspace}publish = false\n\n[lib]\npath = \"lib.rs\"\n\n[dependencies]\n{aggregatorDeps}\n")
+            let mainText = String.concat "\n" [ header; $"#[allow(unused_imports)] pub use {stem}_parts::*;"; p.main |> Array.map (fun it -> it.text) |> String.concat "\n" ] + "\n"
+            List.ofSeq files, mainText
+
+    module RustPartitionCli =
+        let run (args : string list) =
+            let rec opts (limit, cargo, files) = function
+                | "--limit" :: n :: rest -> opts (int n, cargo, files) rest
+                | "--cargo" :: c :: rest -> opts (limit, Some c, files) rest
+                | f :: rest -> opts (limit, cargo, f :: files) rest
+                | [] -> limit, cargo, List.rev files
+            match opts (1000, None, []) args with
+            | _, _, [] -> eprintfn "usage: SpiralCompiler partition-rust <file.rs>... [--limit 1000] [--cargo <Cargo.toml>]   (writes <stem>_parts/ beside each file and rewrites the file to its main; dependencies come from --cargo or the Cargo.toml beside the file)"; 2
+            | limit, cargo, files ->
+                let mutable code = 0
+                for file in files do
+                    let all = RustPartition.items (System.IO.File.ReadAllText file)
+                    if not (all |> Array.exists (fun it -> it.kind = RustPartition.FnItem)) then printfn "partition-rust: %s has no functions outside main; left as is" file
+                    else
+                        let p = RustPartition.plan limit all
+                        let stem = System.IO.Path.GetFileNameWithoutExtension file
+                        let dir = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath file)
+                        let cargoToml = cargo |> Option.defaultValue (System.IO.Path.Combine(dir, "Cargo.toml"))
+                        let m = if System.IO.File.Exists cargoToml then RustPartition.manifest (System.IO.File.ReadAllText cargoToml) else { edition = "2024"; workspace = None; deps = [] } : RustPartition.Manifest
+                        let m =
+                            match m.workspace with
+                            | Some w when System.IO.File.Exists(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath cargoToml), w, "Cargo.toml")) ->
+                                RustPartition.resolveWorkspaceDeps m (System.IO.File.ReadAllText(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath cargoToml), w, "Cargo.toml")))
+                            | _ -> m
+                        let files, mainText = RustPartition.render stem m p
+                        for (suffix, text) in files do
+                            let path = System.IO.Path.Combine(dir, stem + suffix)
+                            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName path) |> ignore
+                            if not (System.IO.File.Exists path && System.IO.File.ReadAllText path = text) then System.IO.File.WriteAllText(path, text)
+                        let partsDir = System.IO.Path.Combine(dir, stem + "_parts")
+                        for stale in System.IO.Directory.GetDirectories(partsDir, "p*") do
+                            match System.Int32.TryParse(System.IO.Path.GetFileName(stale).Substring 1) with
+                            | true, k when k >= p.crates.Length ->
+                                let generated = System.IO.Directory.GetFiles stale |> Array.forall (fun f -> let n = System.IO.Path.GetFileName f in n = "lib.rs" || n = "Cargo.toml")
+                                if generated && System.IO.Directory.GetDirectories(stale).Length = 0 then System.IO.Directory.Delete(stale, true)
+                            | _ -> ()
+                        System.IO.File.WriteAllText(file, mainText)
+                        let sizes = p.crates |> Array.map (fun c -> c |> Array.sumBy (fun it -> it.lines))
+                        printfn "partition-rust: %s -> %d crates (%s lines), main %d lines" file p.crates.Length (sizes |> Array.map string |> String.concat " ") (mainText.Split('\n').Length)
+                        if sizes |> Array.exists (fun n -> n > limit) then code <- 1
+                code
+
     module FormatterCli =
         open System
         open System.IO
@@ -35796,13 +37269,13 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         let corpusOnThisStack (arguments : string list) : int =
             match arguments with
             | "check" :: rest ->
-                let tally = withListing (option "--list" rest) (runCheck (readEntries (positional rest)))
-                if corpora (readEntries (positional rest)) |> List.exists (fun name -> tally.Get (name + "\tover120") > 0) then 1 else 0
+                let counts = withListing (option "--list" rest) (runCheck (readEntries (positional rest)))
+                if corpora (readEntries (positional rest)) |> List.exists (fun name -> counts.Get (name + "\tover120") > 0) then 1 else 0
             | "space" :: rest ->
                 withListing (option "--list" rest) (fun writer -> runSpace (readEntries (positional rest)) (option "--out" rest) writer (not (List.contains "--no-parse" rest))) |> ignore
                 0
             | "convert" :: rest ->
-                withListing (option "--list" rest) (fun writer -> runConvert (readEntries (positional rest)) (option "--out" rest) writer (not (List.contains "--no-parse" rest))) |> ignore
+                withListing (option "--list" rest) (fun writer -> runConvert (readEntries (positional rest)) (option "--out" rest) (option "--round-trip-out" rest) writer (not (List.contains "--no-parse" rest))) |> ignore
                 0
             | "flatten" :: rest ->
                 withListing (option "--list" rest) (fun writer -> runFlatten (readEntries (positional rest)) (option "--out" rest) writer) |> ignore
@@ -36410,17 +37883,19 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
 
     /// ### LinkAutoExport
     module LinkAutoExport =
-        let trace = System.Environment.GetEnvironmentVariable "SPIRAL_AUTO_EXPORT_TRACE" = "1"
+        let trace = CompilerFlagOps.enabled CompilerFlag.AutoExportTrace
         let rec candidate (annotated : bool) (e : E) =
             match e with
             | EAnnot(_, a, _) -> candidate true a
             | EFun'(_, _, _, body, t) -> (annotated || t.IsSome) && (match body with EFun' _ | EForall' _ -> false | _ -> true)
             | _ -> false
         let shape (e : E) = match e with EAnnot(_, EFun' _, _) -> "annot-fun" | EFun' _ -> "fun" | EAnnot _ -> "annot-other" | _ -> "other"
-        let main (unit : string) (own : Map<string, E>) (main : E) =
-            let exports = own |> Map.toList |> List.filter (fun (name, e) -> name <> "main" && candidate false e)
+        let main (unit : string) (own : Map<TermNameId, E>) (main : E) =
+            let exports =
+                own |> Map.toList |> List.map (fun (name, e) -> TermNameIdOps.text name, e)
+                |> List.filter (fun (name, e) -> name <> "main" && candidate false e)
             if trace then
-                let shapes = own |> Map.toList |> List.map (fun (name, e) -> $"{name}:{shape e}") |> String.concat " "
+                let shapes = own |> Map.toList |> List.map (fun (name, e) -> $"{TermNameIdOps.text name}:{shape e}") |> String.concat " "
                 eprintfn "auto-export: unit %s own %d [%s] candidates [%s] main %s" unit own.Count shapes (exports |> List.map fst |> String.concat " ") (shape main)
             let inject (r : Range) (body : E) = List.foldBack (fun (name, e) acc -> ESeq(r, EOp(r, Export, [ELit(r, LitString $"{unit}_{name}"); e]), acc)) exports body
             match main with
@@ -36700,7 +38175,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             | _ -> false
         let run (backend : string) (env : PartEvalResult) (main : TypedBind []) : TypedBind [] =
             let n = limit ()
-            if n = 0 || not (backend = "C" || backend = "Zig") then main
+            let outlines = match Backend.parse backend with Some (CBackend | ZigBackend) -> true | Some (GleamBackend | LuaBackend | FsharpBackend | RustBackend | PascalBackend | WasmBackend | WgslBackend | CalyxBackend | KotlinBackend | SwiftBackend | OpenQasmBackend | EbpfBackend | LeanBackend | BendBackend | TypeScriptBackend | PythonCudaBackend | CppCudaBackend) | None -> false
+            if n = 0 || not outlines then main
             else
                 let counter = ref 0
                 let pending = ResizeArray()
@@ -36772,9 +38248,20 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 match SchemaEnv.tryFindText (SpiralFileSystem.standardize_path dir) packages with
                 | Some schema ->
                     let derived =
-                        if System.Environment.GetEnvironmentVariable "SPIRAL_DERIVED_LINKS" = "1" then
+                        if CompilerFlagOps.enabled CompilerFlag.DerivedLinks then
                             let explicit = schema.schema.link |> List.map (fun l -> snd l.dir) |> Set.ofList
-                            schema.schema.packages |> List.filter (fun p -> let dir = snd p.dir in not (explicit.Contains dir) && unitDeclaresExports dir)
+                            let importer = SpiralFileSystem.standardize_path dir
+                            let linksBack (dependency : string) =
+                                match SchemaEnv.tryFindText dependency packages with
+                                | Some s -> s.schema.link |> List.exists (fun l -> SpiralFileSystem.standardize_path (snd l.dir) = importer)
+                                | None -> false
+                            schema.schema.packages |> List.filter (fun p ->
+                                let dep = snd p.dir
+                                if explicit.Contains dep || not (unitDeclaresExports dep) then false
+                                elif linksBack dep then
+                                    eprintfn "warning: %s: no derived link to %s, which already links this package back; a derived link would close a cycle" importer dep
+                                    false
+                                else true)
                         else []
                     schema.schema.link @ derived
                     |> List.mapi (fun order l -> order, l)
@@ -37015,7 +38502,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     if File.Exists path then
                         try let! x = File.ReadAllTextAsync(path)
                             let env = file_default_env default_env packages path
-                            test_entry_parsed.[path] <- env.test_entry
+                            test_entry_parsed.[path] <- test_entry_parse_key x env.test_entry
                             let parse (text : string) =
                                 let parsed = ref Unchecked.defaultof<_>
                                 let failure : exn ref = ref null
@@ -37499,9 +38986,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 // trace Verbose (fun () -> $"Supervisor.supervisor_server.loop.FileOpen / x: %A{x} / file: {file}") _locals
                 let env = file_default_env default_env s.packages file
                 let parsed_with = match test_entry_parsed.TryGetValue file with | true, v -> v | _ -> None
+                let key = test_entry_parse_key x.spiText env.test_entry
                 match Map.tryFind file s.modules with
-                | Some m when parsed_with = env.test_entry -> wdiff_module_all env m x.spiText
-                | _ -> test_entry_parsed.[file] <- env.test_entry; wdiff_module_init_all env (is_top_down file) x.spiText
+                | Some m when parsed_with = key -> wdiff_module_all env m x.spiText
+                | _ -> test_entry_parsed.[file] <- key; wdiff_module_init_all env (is_top_down file) x.spiText
                 |> fun v -> FeatureCensusBundles.countLater file v.bundler; TypesOut.collect file v.bundler; proj_revalidate_owner default_env {s with modules = Map.add file v s.modules} file
                 |> handle_file_packages file
             | SupervisorReq.FileChange x ->
@@ -37741,8 +39229,21 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             let _,_,entry_bundles = a.input
                             let entry_tokenizer_errors = match Map.tryFind file s.modules with Some m -> m.tokenizer.errors | None -> []
                             Stream.foldFun (fun errors (_,bundle : BlockBundleValue) -> errors @ bundle.errors) entry_tokenizer_errors entry_bundles
-                            >>= fun parse_errors ->
-                                let parse_errors = parse_errors |> List.map (fun ((p,_),message) -> $"{file}:{p.line + 1}:{p.character + 1}: {message}")
+                            >>= fun raw_parse_errors ->
+                                let parse_errors = raw_parse_errors |> List.map (fun ((p,_),message) -> $"{file}:{p.line + 1}:{p.character + 1}: {message}")
+                                // The name each dropped block defined: the nearest top-level definition line at or above
+                                // its parse error, so a caller's 'Unbound term variable' can name the real cause.
+                                let dropped_names =
+                                    try
+                                        let lines = System.IO.File.ReadAllLines file
+                                        let head = System.Text.RegularExpressions.Regex(@"^:[=~&]\s+(?:\^\s*)?([A-Za-z_][A-Za-z0-9_']*)")
+                                        let rec up i = if i < 0 then None else (let m = head.Match lines.[i] in if m.Success then Some (m.Groups.[1].Value, i) else up (i - 1))
+                                        raw_parse_errors
+                                        |> List.choose (fun ((p,_),message) ->
+                                            up (min p.line (lines.Length - 1))
+                                            |> Option.map (fun (name, i) -> name, $"{file}:{i + 1}, but that block failed to parse ({message}) and was left out of the module"))
+                                        |> Map.ofList
+                                    with _ -> Map.empty
                                 // The other files' (the entry's package and its dependencies) dropped blocks too: a lib
                                 // function that fails to parse surfaces only as its callers' 'Unbound variable' otherwise.
                                 let other_parse_errors =
@@ -37766,7 +39267,15 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                             | ProjFilesTree.Directory(_,_,l) -> List.foldBack (other_files tc') l acc
                                         states |> List.collect (fun state -> List.foldBack (other_files state) state.files.files.tree [])
                                     with _ -> []
-                                let errors = parse_errors :: other_parse_errors :: errors
+                                let unbound = System.Text.RegularExpressions.Regex(@"Unbound term variable: ([A-Za-z_][A-Za-z0-9_']*)\.")
+                                let explain (line : string) =
+                                    let m = unbound.Match line
+                                    if not m.Success then line
+                                    else
+                                        match Map.tryFind m.Groups.[1].Value dropped_names with
+                                        | Some why -> $"{line} {m.Groups.[1].Value} is defined at {why}."
+                                        | None -> line
+                                let errors = parse_errors :: other_parse_errors :: (errors |> List.map (List.map explain))
                                 let details = errors |> Seq.concat |> String.concat "\n"
                                 let details = if details = "" then "" else $"\n{details}"
                                 fatal $"File {Path.GetFileNameWithoutExtension file} has a type error somewhere in its path.{details}"
@@ -37777,7 +39286,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         // `main` into scope too (a sub-package whose module `main` opens its dependency's module `main`).
                         Stream.foldFun (fun (own_main,own_terms,_) ((_,adds,env) : PrepassStateValue) ->
                             let own_terms = match adds with AInclude small | AIncludePrivate (small, _) -> Map.foldBack Map.add small.term own_terms | AOpen _ -> own_terms
-                            own_main || (match adds with AInclude small | AIncludePrivate (small, _) -> Map.containsKey "main" small.term | AOpen _ -> false), own_terms, env
+                            own_main || (match adds with AInclude small | AIncludePrivate (small, _) -> Map.containsKey (TermNameIdOps.create "main") small.term | AOpen _ -> false), own_terms, env
                             ) (false,Map.empty,prepassTop_env_empty) x.result >>=* fun (own_main,own_terms,env) ->
                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.prepass_ready / terms: {env.term.Count} / own_main: {own_main}") _locals
                         // A block that fails to tokenize or parse is left out of its module and the build goes on, so its
@@ -37859,14 +39368,70 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                         else (available [] (fst slot).result |> List.map (fun w -> path, w)) @ acc
                                     | ProjFilesTree.Directory(_,_,l) -> List.foldBack own_files l acc
                                 let found = List.foldBack own_files tc.files.files.tree [] |> List.distinct
-                                found |> List.truncate 50 |> List.iter (fun (path,((p,_),message)) -> eprintfn "warning: %s:%i:%i: %s" path (p.line + 1) (p.character + 1) message)
-                                if found.Length > 50 then eprintfn "warning: %d more WTY-RedundantLiteralSuffix warnings in this package (SPIRAL_WARN_LITERAL_SUFFIX=0 turns them off)" (found.Length - 50)
+                                let warnings_out = System.Environment.GetEnvironmentVariable "SPIRAL_WARNINGS_OUT"
+                                let code_of (message : string) = match message.IndexOf ':' with | -1 -> "WTY-Unknown" | i -> message.Substring(0, i)
+                                let fix_of (message : string) =
+                                    let after (marker : string) = match message.LastIndexOf marker with | -1 -> "" | i -> message.Substring(i + marker.Length).Trim()
+                                    match code_of message with
+                                    | c when c = WarningCodeOps.code_text WarningCode.RedundantLiteralSuffix -> after "; write "
+                                    | c when c = WarningCodeOps.code_text WarningCode.UnusedBinding -> after "; drop it or name it "
+                                    | _ -> ""
+                                let source_lines = Dictionary<string, string[] option>()
+                                let line_of (path : string) (line : int) =
+                                    let lines =
+                                        match source_lines.TryGetValue path with
+                                        | true, known -> known
+                                        | _ ->
+                                            let read = try (if System.IO.File.Exists path then Some (System.IO.File.ReadAllLines path) else None) with _ -> None
+                                            source_lines.[path] <- read
+                                            read
+                                    lines |> Option.bind (fun l -> if line >= 1 && line <= l.Length then Some l.[line - 1] else None)
+                                let byte_column (path : string) ((line, column) : int * int) =
+                                    line_of path line |> Option.map (fun text -> System.Text.Encoding.UTF8.GetByteCount(text.Substring(0, min (column - 1) text.Length)) + 1)
+                                let write_row (path : string) (start : int * int) (stop : int * int) (message : string) =
+                                    if not (System.String.IsNullOrEmpty warnings_out) then
+                                        let flat = message.Replace(string (char 9), " ").Replace(string (char 10), " ")
+                                        let start_column, stop_column, unit =
+                                            match byte_column path start, byte_column path stop with
+                                            | Some a, Some b -> a, b, "utf8"
+                                            | _ -> snd start, snd stop, "utf16"
+                                        let cells = [ code_of message; path; string (fst start); string start_column; flat; string (fst stop); string stop_column; fix_of message; unit ]
+                                        System.IO.File.AppendAllLines(warnings_out, [ String.concat (string (char 9)) cells ])
+                                found |> List.iter (fun (path,((p,q),message)) -> write_row path (p.line + 1, p.character + 1) (q.line + 1, q.character + 1) message)
+                                found |> List.groupBy (fun (_,(_,message)) -> code_of message) |> List.iter (fun (code, rows) ->
+                                    rows |> List.truncate 50 |> List.iter (fun (path,((p,_),message)) -> eprintfn "warning: %s:%i:%i: %s" path (p.line + 1) (p.character + 1) message)
+                                    if rows.Length > 50 then eprintfn "warning: %d more %s warnings in this package (SPIRAL_WARNINGS_OUT=<file> lists every one)" (rows.Length - 50) code)
+                                let rec opens acc (stream : Stream<_>) =
+                                    if Promise.Now.isFulfilled stream then
+                                        match Promise.Now.get stream with
+                                        | Hopac.Stream.Cons((_, x : InferResult, _), next) -> opens (acc @ x.open_names) next
+                                        | Hopac.Stream.Nil -> acc
+                                    else acc
+                                let rec own_opens x acc =
+                                    match x with
+                                    | ProjFilesTree.File(mid,path,_) ->
+                                        let slot = if mid < tc.files.uids_file.Length then tc.files.uids_file.[mid] else Unchecked.defaultof<_>
+                                        if isNull (box slot) || isNull (box (fst slot)) then acc
+                                        else (path, opens [] (fst slot).result) :: acc
+                                    | ProjFilesTree.Directory(_,_,l) -> List.foldBack own_opens l acc
+                                let token = System.Text.RegularExpressions.Regex(@"[A-Za-z_][A-Za-z0-9_']*|[!#$%&*+./<=>?@^|~:\-]+")
+                                for path, file_opens in List.foldBack own_opens tc.files.files.tree [] do
+                                    if not (List.isEmpty file_opens) && System.IO.File.Exists path then
+                                        let lines = System.IO.File.ReadAllLines path
+                                        for ((p,_), name, supplied) in file_opens do
+                                            let used = HashSet<string>()
+                                            lines |> Array.iteri (fun i line -> if i <> p.line then for m in token.Matches line do used.Add m.Value |> ignore)
+                                            if not (List.isEmpty supplied) && not (supplied |> List.exists used.Contains) then
+                                                let message = WarningCodeOps.message WarningCode.UnusedOpen $"nothing that {name} supplies is used in this file; drop the open"
+                                                eprintfn "warning: %s:%i:%i: %s" path (p.line + 1) (p.character + 1) message
+                                                write_row path (p.line + 1, p.character + 1) (p.line + 1, p.character + 1) message
                             with _ -> ()
-                        if List.isEmpty entry_errors then (dependency_warnings (); literal_warnings ())
+                        if List.isEmpty entry_errors then dependency_warnings ()
+                        literal_warnings ()
                         let body() =
                             let test_entry = (file_default_env default_env s.packages file).test_entry
-                            match backend, Map.tryFind (match test_entry with Some name -> blockParsingTestEntryName name | None -> "main") env.term with
-                            | "Check", _ -> BuildSkip
+                            match backend, Map.tryFind (TermNameIdOps.create (match test_entry with Some name -> blockParsingTestEntryName name | None -> "main")) env.term with
+                            | "Check", _ -> BuildOk []
                             | _, _ when not (List.isEmpty entry_errors) ->
                                 let details = entry_errors |> List.map (fun (path,((a,_),message)) -> $"\n{path}:{a.line + 1}:{a.character + 1}: {message}") |> String.concat ""
                                 BuildFatalError $"The package of {Path.GetFileNameWithoutExtension file} has blocks that fail to tokenize or parse (such a block is left out of its module: its definitions would be missing without a word).{details}"
@@ -37902,27 +39467,37 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                     let inline build_many codegen backend =
                                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.peval_start / backend: {backend}") _locals
                                         RustGapTrace.clear_missing_arm ()
+                                        let peval_watch = System.Diagnostics.Stopwatch.StartNew()
                                         packageDirsById.Value <- fst s.package_ids |> Map.toSeq |> Seq.map (fun (dir, id) -> id, dir) |> Map.ofSeq
                                         ExternCalls.warned.Value.Clear()
                                         ExternCalls.wrapped.Value <-
-                                            if backend = "Rust" || backend = "Gleam" || backend = "Zig" then
+                                            match Backend.parse backend with
+                                            | Some (RustBackend | GleamBackend | ZigBackend) ->
                                                 file_linked_units s.packages (fst s.package_ids) file
                                                 |> Map.fold (fun m _ (l : LinkedUnit) -> l.wraps |> Map.fold (fun m k e -> Map.add k $"{l.unit}.{e}" m) m) Map.empty
-                                            else Map.empty
+                                            | Some (FsharpBackend | LuaBackend | PascalBackend | WasmBackend | WgslBackend | CalyxBackend | KotlinBackend | SwiftBackend | OpenQasmBackend | EbpfBackend | LeanBackend | BendBackend | TypeScriptBackend | CBackend | PythonCudaBackend | CppCudaBackend) | None -> Map.empty
                                         ExternCalls.current.Value <-
                                             let calls (call : LinkedUnit -> string -> ExternCalls.Call) =
                                                 file_linked_units s.packages (fst s.package_ids) file
                                                 |> Map.fold (fun m _ (l : LinkedUnit) -> l.calls |> Map.fold (fun m k e -> Map.add k (call l e) m) m) Map.empty
-                                            if backend = "Rust" then calls (fun l e -> {call = $"{l.unit}::{e}"; import_text = None; borrow_strings = true; unit_path = $"{l.unit}::"; struct_records = true; flat_records = false; multi_ranges = true; copy_tuples = false; pascal_records = false})
-                                            elif backend = "Gleam" then calls (fun l e -> {call = $"{l.unit}.{e}"; import_text = Some $"import {l.unit}"; borrow_strings = false; unit_path = $"{l.unit}."; struct_records = true; flat_records = true; multi_ranges = true; copy_tuples = false; pascal_records = true})
-                                            elif backend = "Zig" then calls (fun l e -> {call = $"{l.unit}.{e}"; import_text = Some $"const {l.unit} = @import(\"{l.unit}.zig\");"; borrow_strings = false; unit_path = $"{l.unit}."; struct_records = false; flat_records = true; multi_ranges = true; copy_tuples = true; pascal_records = false})
-                                            else Map.empty
+                                            match Backend.parse backend with
+                                            | Some RustBackend -> calls (fun l e -> {call = $"{l.unit}::{e}"; import_text = None; borrow_strings = true; unit_path = $"{l.unit}::"; named_records = ExternCalls.AsStruct; flat_records = false; multi_ranges = true; copy_tuples = false})
+                                            | Some GleamBackend -> calls (fun l e -> {call = $"{l.unit}.{e}"; import_text = Some $"import {l.unit}"; borrow_strings = false; unit_path = $"{l.unit}."; named_records = ExternCalls.AsPascalConstructor; flat_records = true; multi_ranges = true; copy_tuples = false})
+                                            | Some ZigBackend -> calls (fun l e -> {call = $"{l.unit}.{e}"; import_text = Some $"const {l.unit} = @import(\"{l.unit}.zig\");"; borrow_strings = false; unit_path = $"{l.unit}."; named_records = ExternCalls.NotCrossing; flat_records = true; multi_ranges = true; copy_tuples = true})
+                                            | Some FsharpBackend ->
+                                                calls (fun l e ->
+                                                    let m = string (System.Char.ToUpperInvariant l.unit.[0]) + l.unit.Substring 1
+                                                    {call = $"{m}.{e}"; import_text = None; borrow_strings = false; unit_path = $"{m}."; named_records = ExternCalls.NotCrossing; flat_records = false; multi_ranges = true; copy_tuples = false})
+                                            | Some (LuaBackend | PascalBackend | WasmBackend | WgslBackend | CalyxBackend | KotlinBackend | SwiftBackend | OpenQasmBackend | EbpfBackend | LeanBackend | BendBackend | TypeScriptBackend | CBackend | PythonCudaBackend | CppCudaBackend) | None -> Map.empty
                                         let (a,_),b = PartEvalSeams.with_conflict_restart (fun inline_restart -> peval {prototypes_instances=prototypes_instances; nominals=nominals; backend=backend; inline_restart=inline_restart} main)
                                         let a = OutlineArms.run backend b a
+                                        BuildPhaseTiming.peval_ms.Value <- peval_watch.ElapsedMilliseconds
                                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.peval_ready / backend: {backend}") _locals
                                         // LF on every OS: backends that build with StringBuilder.AppendLine (TypeScript, Python, Gleam, C++, ...) get the platform
                                         // newline from .NET, CRLF on Windows.
+                                        let codegen_watch = System.Diagnostics.Stopwatch.StartNew()
                                         let generated = codegen file b a |> List.map (fun (f : GeneratedFile) -> {| f with code = f.code.Replace("\r\n", "\n") |})
+                                        BuildPhaseTiming.codegen_ms.Value <- codegen_watch.ElapsedMilliseconds
                                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.codegen_ready / backend: {backend} / files: {List.length generated}") _locals
                                         match generated |> List.tryFind (fun f -> RustGapTrace.missing_arm.IsMatch f.code) with
                                         | Some f -> BuildFatalError (RustGapTrace.missing_arm_error backend f.code)
@@ -37931,8 +39506,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                         build_many (fun file b a ->
                                             let code = codegen b (DeadPureLetElision.block a) |> UnusedGlobals.prune b.globals
                                             [generated_file code file_extension]) backend
-                                    match backend with
-                                    | "Gleam" ->
+                                    match Backend.parse backend with
+                                    | Some GleamBackend ->
                                         build_many (fun file b a ->
                                             let ffi_module = System.IO.Path.GetFileNameWithoutExtension file + "_ffi"
                                             let linked, a = file_linked_units s.packages (fst s.package_ids) file, DeadPureLetElision.block a
@@ -37944,16 +39519,21 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                             :: match ffi with
                                                | NoGleamFfi -> []
                                                | GleamStorageFfi(arrays, refs, catches) -> [generated_file (gleamStorageFfiErlang ffi_module arrays refs catches) "_ffi.erl"; generated_file (gleamStorageFfiJavaScript arrays refs) "_ffi.mjs"]) "Gleam"
-                                    | "Lua" -> build codegenLua "Lua" ".lua"
-                                    | "Fsharp" -> build codegenFsharp "Fsharp" ".fsx"
-                                    | "Rust" ->
+                                    | Some LuaBackend -> build codegenLua "Lua" ".lua"
+                                    | Some FsharpBackend ->
+                                        build_many (fun file b a ->
+                                            let linked, a = file_linked_units s.packages (fst s.package_ids) file, DeadPureLetElision.block a
+                                            writeUnitGraph (file_package_dir s.packages file) file linked b a
+                                            let code = codegenFsharp b a |> UnusedGlobals.prune b.globals
+                                            [generated_file code ".fsx"]) "Fsharp"
+                                    | Some RustBackend ->
                                         build_many (fun file b a ->
                                             let linked, a = file_linked_units s.packages (fst s.package_ids) file, DeadPureLetElision.block a
                                             writeUnitGraph (file_package_dir s.packages file) file linked b a
                                             let code, hashes = codegenRust (file_rust_extern s.packages file) linked b a |> UnusedGlobals.prune b.globals |> RustLinkedShapes.import linked |> RustLinkedShapes.export
                                             RustLinkedShapes.write (file_package_dir s.packages file) file hashes
                                             [generated_file code ".rs"]) "Rust"
-                                    | "Pascal" | "Delphi" ->
+                                    | Some PascalBackend ->
                                         let refc (parameters : TyV []) (body : TypedBind []) =
                                             let vars = refc_prepass Set.empty (Set parameters) body
                                             fun stmt ->
@@ -37963,31 +39543,33 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                                 let op_decr = match vars.g_op_decr.TryGetValue stmt with | true, v -> varc_set v -1 | _ -> Map.empty
                                                 incr |> varc_union decr |> varc_union op |> varc_union op_decr
                                         build (codegenPascal refc) "Pascal" ".pas"
-                                    | "Zig" ->
+                                    | Some ZigBackend ->
                                         build_many (fun file b a ->
                                             let linked, a = file_linked_units s.packages (fst s.package_ids) file, DeadPureLetElision.block a
                                             writeUnitGraph (file_package_dir s.packages file) file linked b a
                                             [generated_file (codegenZig linked b a |> UnusedGlobals.prune b.globals) ".zig"]) "Zig"
-                                    | "Wasm" -> build codegenWasm "Wasm" ".wat"
-                                    | "Wgsl" -> build codegenWgsl "Wgsl" ".wgsl"
-                                    | "Calyx" -> build codegenCalyx "Calyx" ".futil"
-                                    | "Kotlin" -> build codegenKotlin "Kotlin" ".kt"
-                                    | "Swift" -> build codegenSwift "Swift" ".swift"
-                                    | "OpenQasm" -> build codegenOpenQasm "OpenQasm" ".qasm"
-                                    | "Ebpf" -> build codegenEbpf "Ebpf" ".ebpf"
-                                    | "Lean" -> build codegenLean "Lean" ".lean"
-                                    | "Bend" -> build codegenBend "Bend" ".bend"
-                                    | "TypeScript" -> build codegenTypeScript "TypeScript" ".ts"
-                                    | "C" -> build CodegenC.codegenC "C" ".c"
-                                    | "Python + Cuda" -> build_many (CodegenPython.codegen default_env) "Python"
-                                    | "Cpp + Cuda" -> build_many (CodegenCpp.codegen default_env) "CppHost"
+                                    | Some WasmBackend -> build codegenWasm "Wasm" ".wat"
+                                    | Some WgslBackend -> build codegenWgsl "Wgsl" ".wgsl"
+                                    | Some CalyxBackend -> build codegenCalyx "Calyx" ".futil"
+                                    | Some KotlinBackend -> build codegenKotlin "Kotlin" ".kt"
+                                    | Some SwiftBackend -> build codegenSwift "Swift" ".swift"
+                                    | Some OpenQasmBackend -> build codegenOpenQasm "OpenQasm" ".qasm"
+                                    | Some EbpfBackend -> build codegenEbpf "Ebpf" ".ebpf"
+                                    | Some LeanBackend -> build codegenLean "Lean" ".lean"
+                                    | Some BendBackend -> build codegenBend "Bend" ".bend"
+                                    | Some TypeScriptBackend -> build codegenTypeScript "TypeScript" ".ts"
+                                    | Some CBackend -> build CodegenC.codegenC "C" ".c"
+                                    | Some PythonCudaBackend -> build_many (CodegenPython.codegen default_env) "Python"
+                                    | Some CppCudaBackend -> build_many (CodegenCpp.codegen default_env) "CppHost"
 
-                                    | "Cuda C++" -> BuildFatalError "The host C++ backend originally made for FPGAs, and then ported to Cuda has been removed in v2.10.0 of Spiral. Please use an earlier version to access it." // Date: 5/8/2024
-                                    | "Python" -> BuildFatalError "The prototype Python backend has been replaced by the Python + Cuda one in v2.5.0 of Spiral. Please use an earlier version to access it." // Date: 11/3/2023
-                                    | "UPMEM: Python + C" -> BuildFatalError "The UPMEM Python + C backend has been replaced by the Python + Cuda one in v2.5.0 of Spiral. Please use an earlier version to access it." // Date: 11/3/2023
-                                    | "HLS C++" -> BuildFatalError "The HLS C++ backend has been replaced by the Cuda one in v2.5.0 of Spiral. Please use an earlier version to access it." // Date: 10/17/2023
-                                    | "Cython*" | "Cython" -> BuildFatalError "The Cython backend has been replaced by the Python one in v2.3.1 of Spiral. Please use an earlier version to access it." // Date: 12/27/2022
-                                    | _ -> BuildFatalError $"Cannot recognize the backend: {backend}"
+                                    | None ->
+                                        match backend with
+                                        | "Cuda C++" -> BuildFatalError "The host C++ backend originally made for FPGAs, and then ported to Cuda has been removed in v2.10.0 of Spiral. Please use an earlier version to access it." // Date: 5/8/2024
+                                        | "Python" -> BuildFatalError "The prototype Python backend has been replaced by the Python + Cuda one in v2.5.0 of Spiral. Please use an earlier version to access it." // Date: 11/3/2023
+                                        | "UPMEM: Python + C" -> BuildFatalError "The UPMEM Python + C backend has been replaced by the Python + Cuda one in v2.5.0 of Spiral. Please use an earlier version to access it." // Date: 11/3/2023
+                                        | "HLS C++" -> BuildFatalError "The HLS C++ backend has been replaced by the Cuda one in v2.5.0 of Spiral. Please use an earlier version to access it." // Date: 10/17/2023
+                                        | "Cython*" | "Cython" -> BuildFatalError "The Cython backend has been replaced by the Python one in v2.3.1 of Spiral. Please use an earlier version to access it." // Date: 12/27/2022
+                                        | _ -> BuildFatalError $"Cannot recognize the backend: {backend}"
                                 with
                                     | :? PartEvalTypeError as e -> BuildErrorTrace(show_trace s e.Data0 e.Data1)
                                     | :? CodegenError as e -> BuildFatalError(e.Data1)
@@ -38200,7 +39782,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         let atten = Ch()
     
 
-        if System.Environment.GetEnvironmentVariable "SPIRAL_ATTENTION_SERVER" = "0" then
+        if not (CompilerFlagOps.enabled CompilerFlag.AttentionServer) then
             HopacExtensions.server (Job.forever (Ch.take atten |> Job.Ignore))
         else
             HopacExtensions.server (attention_server errors atten)

@@ -1,0 +1,45 @@
+:# reactors_typed static =
+    :< testing
+    :< reactors
+
+:! port l el = string
+
+:= port_at \* l el. (name : string) : port l el = port name
+
+:= port_name \* l el. ((port s) : port l el) : string = s
+
+:| edge el =
+    | ImmediateEdge : string * string
+    | DelayedEdge : i64 * string * string
+
+:= immediate \* a b el. (from : port a el) (into : port b el) : edge el =
+    := la : i32 = ~> real_core::type_lit_to_lit `a
+    := lb : i32 = ~> real_core::type_lit_to_lit `b
+    ? la < lb
+    ?> ImmediateEdge (port_name from, port_name into)
+    |: error_type "typed causality: an immediate edge needs level from < level into"
+
+:= delayed \* a b el. (by : i64) (from : port a el) (into : port b el) : edge el =
+    DelayedEdge (by, port_name from, port_name into)
+
+:= edge_delay \* el. (e : edge el) : i64 = ?= e ?| | ImmediateEdge _ => 0i64 | DelayedEdge (by, _, _) => by
+
+:= ping_out_p () : port 1 i64 = port_at "ping_out"
+
+:= pong_out_p () : port 2 i64 = port_at "pong_out"
+
+///> rust
+:# a_delayed_back_edge_type_checks =
+    := _forward = immediate (ping_out_p ()) (pong_out_p ())
+    := back = delayed 1i64 (pong_out_p ()) (ping_out_p ())
+    edge_delay back |> _assert_eq 1i64
+
+///> rust
+:# payload_typed_ports_keep_their_element_type =
+    port_name (ping_out_p ()) |> _assert_eq "ping_out"
+
+///> rust
+:# a_zero_delay_cycle_fails_to_type_check fails "typed causality: an immediate edge needs level from < level into" =
+    := _forward = immediate (ping_out_p ()) (pong_out_p ())
+    := back = immediate (pong_out_p ()) (ping_out_p ())
+    edge_delay back |> _assert_eq 0i64

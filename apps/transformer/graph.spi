@@ -1,0 +1,179 @@
+///- --package .
+:# graph static =
+    :< testing
+
+:< sm'_operators
+:< f32_kernels
+
+:| stage =
+    | NormQkv : i32
+    | Attend : i32
+    | WoResidual : i32
+    | NormSwiglu : i32
+    | W2Residual : i32
+    | FinalLogits
+
+:~ ^ layer_stages (l : i32) (acc : list stage) : list stage =
+    ? l < 0
+    ?> acc
+    |: layer_stages (l - 1) (NormQkv l :: Attend l :: WoResidual l :: NormSwiglu l :: W2Residual l :: acc)
+
+:= schedule (layers : i32) : list stage = layer_stages (layers - 1) [ FinalLogits ]
+
+:= norm_qkv \* d h c v.
+    ((kd, _, _, kv) : f32_shaped::len d * f32_shaped::len h * f32_shaped::len c * f32_shaped::len v)
+    (m : transformer::model) (b : transformer::buffers) (layer : i32)
+    : ()
+    =
+    := a = m::l::att
+    := dim, kvw = f32_shaped::width kd, f32_shaped::width kv
+    transformer::normed m b a::rms layer
+    := gq : f32_shaped::rows_group = { o = b::q; off = transformer::layer_at a::wq layer (dim * dim); d = dim }
+    := gk : f32_shaped::rows_group = { o = b::k; off = transformer::layer_at a::wk layer (dim * kvw); d = kvw }
+    := gv : f32_shaped::rows_group = { o = b::v; off = transformer::layer_at a::wv layer (dim * kvw); d = kvw }
+    f32_shaped::rows_par_fused kd b::xb m::w gq gk gv
+
+:= norm_swiglu \* d h c v.
+    ((kd, kh, _, _) : f32_shaped::len d * f32_shaped::len h * f32_shaped::len c * f32_shaped::len v)
+    (m : transformer::model) (b : transformer::buffers) (layer : i32)
+    : ()
+    =
+    := f = m::l::ffn
+    := dim, hid = f32_shaped::width kd, f32_shaped::width kh
+    transformer::normed m b f::rms layer
+    := g1 : f32_shaped::rows_group = { o = b::hb; off = transformer::layer_at f::w1 layer (dim * hid); d = hid }
+    := g3 : f32_shaped::rows_group = { o = b::hb2; off = transformer::layer_at f::w3 layer (dim * hid); d = hid }
+    := none : f32_shaped::rows_group = { o = b::hb2; off = 0; d = 0 }
+    f32_shaped::rows_par_fused kd b::xb m::w g1 g3 none
+    transformer::swiglu_from b::hb b::hb2 hid 0
+
+:= run_stage \* d h c v.
+    ((kd, kh, kc, kv) : f32_shaped::len d * f32_shaped::len h * f32_shaped::len c * f32_shaped::len v)
+    (m : transformer::model) (b : transformer::buffers) (s : transformer::caches) (pos : i32) (st : stage)
+    : ()
+    =
+    := dims = kd, kh, kc, kv
+    := dim, hid = f32_shaped::width kd, f32_shaped::width kh
+    ?= st ?|
+    | NormQkv layer => norm_qkv dims m b layer
+    | Attend layer =>
+        transformer::cache_kv m::c b s layer pos
+        transformer::attend_heads m::c b s layer pos
+    | WoResidual layer =>
+        f32_shaped::rows_par kd kd b::xb2 b::xb m::w (transformer::layer_at m::l::att::wo layer (dim * dim))
+        add_into b::x b::xb2 dim 0
+    | NormSwiglu layer => norm_swiglu dims m b layer
+    | W2Residual layer =>
+        f32_shaped::rows_par kh kd b::xb b::hb m::w (transformer::layer_at m::l::ffn::w2 layer (hid * dim))
+        add_into b::x b::xb dim 0
+    | FinalLogits =>
+        rmsnorm b::x b::x m::w m::l::final::at dim
+        f32_shaped::rows_par kd kc s::logits b::x m::w m::l::cls::at
+
+:~ ^ run_all \* d h c v.
+    (dims : f32_shaped::len d * f32_shaped::len h * f32_shaped::len c * f32_shaped::len v)
+    (m : transformer::model) (b : transformer::buffers) (s : transformer::caches) (pos : i32) (stages : list stage)
+    : ()
+    =
+    ?= stages ?|
+    | st :: rest =>
+        run_stage dims m b s pos st
+        run_all dims m b s pos rest
+    | [] => ()
+
+:= forward_shaped \* d h c v.
+    (dims : f32_shaped::len d * f32_shaped::len h * f32_shaped::len c * f32_shaped::len v)
+    (m : transformer::model) (b : transformer::buffers) (s : transformer::caches) (token : i32) (pos : i32)
+    : ()
+    =
+    transformer::embed m b::x token
+    run_all dims m b s pos (schedule m::c::layers)
+
+:= forward (m : transformer::model) (b : transformer::buffers) (s : transformer::caches) (token : i32) (pos : i32) : () =
+    ?= m::q8 ?|
+    | Some _ => transformer::forward m b s token pos
+    | None =>
+        ?= m::k ?|
+        | transformer::Stories15M => forward_shaped (transformer::dims_15m ()) m b s token pos
+        | transformer::Stories42M => forward_shaped (transformer::dims_42m ()) m b s token pos
+        | transformer::Stories110M => forward_shaped (transformer::dims_110m ()) m b s token pos
+        | transformer::Stories260K => forward_shaped (transformer::dims_260k ()) m b s token pos
+        | transformer::Unknown => transformer::forward m b s token pos
+
+:~ ^ greedy_from (graph : bool) (m : transformer::model) (b : transformer::buffers) (s : transformer::caches) (token : i32) (pos : i32) (n : i32) (acc : list i32) : list i32 =
+    ? pos >= n
+    ?> listm::rev acc
+    |:
+        ? graph ?> forward m b s token pos |: transformer::forward m b s token pos
+        := next = transformer::argmax s::logits
+        greedy_from graph m b s next (pos + 1) n (next :: acc)
+
+:= greedy (graph : bool) (m : transformer::model) (n : i32) : list i32 =
+    greedy_from graph m (transformer::buffers_of m::c) (transformer::caches_of m::c) 1 0 n []
+
+:= stage_text (st : stage) : string =
+    ?= st ?|
+    | NormQkv l => "norm_qkv " ++#? l
+    | Attend l => "attend " ++#? l
+    | WoResidual l => "wo_residual " ++#? l
+    | NormSwiglu l => "norm_swiglu " ++#? l
+    | W2Residual l => "w2_residual " ++#? l
+    | FinalLogits => "final_logits"
+
+:= schedule_text (stages : list stage) : string =
+    stages |> listm::map stage_text |> listm::fold (\ (t : string) (s : string) => ? t = "" ?> s |: t ++# ";" ++# s) ""
+
+:~ ^ max_abs_diff (a : floats) (b : floats) (i : i32) (n : i32) (m : f32) : f32 =
+    ? i >= n
+    ?> m
+    |:
+        := d = index a i - index b i
+        := e = ? d < 0.0f32 ?> 0.0f32 - d |: d
+        max_abs_diff a b (i + 1) n (? e > m ?> e |: m)
+
+:~ ^ generate (r : transformer::run) (token : i32) (pos : i32) (out : string) : string =
+    ? pos >= r::steps
+    ?> out
+    |:
+        forward r::m r::b r::s token pos
+        := next = transformer::argmax r::s::logits
+        ? next = 1 ?> out |: generate r next (pos + 1) (out ++# transformer::piece_text token (index r::pieces next))
+
+:= main () : i32 =
+    := m = transformer::model_at (env::get_environment_variable "TRANSFORMER_CHECKPOINT")
+    := t = transformer::file_bytes "TRANSFORMER_TOKENIZER"
+    := r = transformer::run_of m (transformer::vocab_of t m::c::vocab) 256
+    console::write_line (generate r 1 0 "")
+    0
+
+:= step0_logit_gap (m : transformer::model) : f32 =
+    := bg, sg = transformer::buffers_of m::c, transformer::caches_of m::c
+    := bp, sp = transformer::buffers_of m::c, transformer::caches_of m::c
+    forward m bg sg 1 0
+    transformer::forward m bp sp 1 0
+    max_abs_diff sg::logits sp::logits 0 m::c::vocab 0.0f32
+
+///> rust
+:# the_graph_differs_only_in_its_shape_types =
+    := ~layers = 2
+    := d15, _, _, _ = transformer::dims_15m ()
+    := d110, _, _, _ = transformer::dims_110m ()
+    (schedule_text (schedule layers), f32_shaped::width d15, f32_shaped::width d110)
+    |> _assert_eq ("norm_qkv 0;attend 0;wo_residual 0;norm_swiglu 0;w2_residual 0;norm_qkv 1;attend 1;wo_residual 1;norm_swiglu 1;w2_residual 1;final_logits", 288i32, 768i32)
+
+///> rust
+:# the_schedule_has_five_stages_per_layer_then_the_logits =
+    := ~layers = 6
+    (listm::length (schedule layers) : i32) |> _assert_eq 31i32
+
+///> rust
+:# graph_step0_logits_are_bit_identical_to_the_kernel_forward_on_stories260k =
+    := o = oracle::stories260k ()
+    := m = transformer::model_at (oracle::model_path o::checkpoint)
+    step0_logit_gap m |> _assert_eq 0.0f32
+
+///> rust
+:# graph_greedy_tokens_equal_the_kernel_forward_on_stories260k =
+    := o = oracle::stories260k ()
+    := m = transformer::model_at (oracle::model_path o::checkpoint)
+    greedy !+ m 64 |> _assert_eq (greedy !- m 64)

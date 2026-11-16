@@ -1,0 +1,93 @@
+:# url_query static =
+    :< testing
+
+:< sm'_operators
+
+:| url_unit =
+    | Byte : i32
+    | Point : i32
+
+:= hex_value (c : i32) : i32 =
+    ? c >= 48i32 && c <= 57i32
+    ?> c - 48i32
+    |? c >= 97i32 && c <= 102i32
+    ?> c - 87i32
+    |? c >= 65i32 && c <= 70i32
+    ?> c - 55i32
+    |: -1i32
+
+:= is_escape (c : i32) (high : i32) (low : i32) : bool = c = 37i32 && hex_value high >= 0i32 && hex_value low >= 0i32
+
+:~ ^ url_units (cps : list i32) (acc : list url_unit) : list url_unit =
+    ?= cps ?|
+    | c :: rest ?& c = 43i32 => url_units rest (Point 32i32 :: acc)
+    | c :: high :: low :: rest ?& is_escape c high low =>
+        url_units rest (Byte (hex_value high * 16i32 + hex_value low) :: acc)
+    | c :: rest => url_units rest (Point c :: acc)
+    | [] => listm::rev acc
+
+:= continuation (u : url_unit) : i32 = ?= u ?| Byte b ?& b >= 128i32 && b < 192i32 => b % 64i32 | _ => -1i32
+
+:= two_byte (b : i32) (c : i32) : i32 = (b % 32i32) * 64i32 + c
+
+:= three_byte (b : i32) (c : i32) (d : i32) : i32 = (b % 16i32) * 4096i32 + c * 64i32 + d
+
+:= four_byte (b : i32) (c : i32) (d : i32) (e : i32) : i32 = (b % 8i32) * 262144i32 + c * 4096i32 + d * 64i32 + e
+
+:~ ^ points_of (units : list url_unit) (acc : list i32) : list i32 =
+    ?= units ?|
+    | Point p :: rest => points_of rest (p :: acc)
+    | Byte b :: rest ?& b < 128i32 => points_of rest (b :: acc)
+    | Byte b :: u1 :: rest ?& b >= 192i32 && b < 224i32 && continuation u1 >= 0i32 =>
+        points_of rest (two_byte b (continuation u1) :: acc)
+    | Byte b :: u1 :: u2 :: rest ?& b >= 224i32 && b < 240i32 && continuation u1 >= 0i32 && continuation u2 >= 0i32 =>
+        points_of rest (three_byte b (continuation u1) (continuation u2) :: acc)
+    | Byte b :: u1 :: u2 :: u3 :: rest ?&
+        b >= 240i32
+        && continuation u1 >= 0i32
+        && continuation u2 >= 0i32
+        && continuation u3 >= 0i32
+        => points_of rest (four_byte b (continuation u1) (continuation u2) (continuation u3) :: acc)
+    | Byte _ :: rest => points_of rest (65533i32 :: acc)
+    | [] => listm::rev acc
+
+:= url_decoded (s : string) : string =
+    points_of (url_units (unicode::code_points s) []) [] |> listm::map unicode::char_of |> sm'::concat_list ""
+
+:= key_and_value (item : string) : string * string =
+    := at = sm'::index_of "=" item
+    ? at < 0i32
+    ?> item, ""
+    |: sm'::substring 0i32 at item, sm'::substring (at + 1i32) (sm'::length item - at - 1i32) item
+
+:= query_items (query : string) : list string = ? query = "" ?> [] |: sm'::split_list "&" query
+
+:= pair_value (name : string) (item : string) : option string =
+    := k, v = key_and_value item
+    ? v <> "" && url_decoded k = name ?> Some (url_decoded v) |: None
+
+:~ ^ first_value (name : string) (items : list string) : string =
+    ?= items ?|
+    | item :: rest => ?= pair_value name item ?| Some v => v | None => first_value name rest
+    | [] => ""
+
+:= query_value (name : string) (query : string) : string = first_value name (query_items query)
+
+///> rust
+///> gleam
+:# percent_escapes_and_plus_decode_to_utf8_text =
+    := ~raw = "caf%C3%A9+%E2%82%AC%41%zz%2"
+    url_decoded raw |> _assert_eq ("caf" ++# unicode::char_of 233i32 ++# " " ++# unicode::char_of 8364i32 ++# "A%zz%2")
+
+///> rust
+///> gleam
+:# a_stray_continuation_byte_becomes_the_replacement_character =
+    := ~raw = "a%80b"
+    url_decoded raw |> _assert_eq ("a" ++# unicode::char_of 65533i32 ++# "b")
+
+///> rust
+///> gleam
+:# a_query_value_is_found_by_its_decoded_name =
+    := ~query = "limit=1&author=page%5F7&tag=a+b"
+    (query_value "author" query, query_value "tag" query, query_value "offset" query)
+    |> _assert_eq ("page_7", "a b", "")

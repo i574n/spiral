@@ -1,6 +1,0 @@
-:< main
-
-:= main () =
-    := impossible : finite_symbol_index bit_finite_length =
-        FiniteSymbolIndexSucc (FiniteSymbolIndexSucc FiniteSymbolIndexZero)
-    finite_symbol_vector_lookup impossible (bit_finite_symbol_vector ())

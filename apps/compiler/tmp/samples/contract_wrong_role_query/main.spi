@@ -10,7 +10,7 @@
     | V5Document :: string -> document schema_v5
 
 :| query role schema result =
-    | DigestQuery :: query auditor schema_v5 string
+    | FingerprintQuery :: query auditor schema_v5 string
 
 := run_query \* role schema result.
     (capability : capability role)
@@ -18,7 +18,7 @@
     (document : document schema)
     : result =
     ?= capability, query, document ?|
-    | AuditorCapability, DigestQuery, V5Document digest => digest
+    | AuditorCapability, FingerprintQuery, V5Document fingerprint => fingerprint
 
 := main () : string =
-    run_query OperatorCapability DigestQuery (V5Document "sha256")
+    run_query OperatorCapability FingerprintQuery (V5Document "sha256")

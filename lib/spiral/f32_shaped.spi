@@ -1,0 +1,75 @@
+:# f32_shaped static =
+    :< testing
+
+:< sm'_operators
+:< f32_kernels
+
+:! len n = i32
+
+:= width \* n. (_ : len n) : i32 = ~> real_core::type_lit_to_lit `n
+
+:~ ^ dot_l \* n. (k : len n) (a : floats) (ao : i32) (b : floats) (j : i32) (acc : f32) : f32 =
+    ? j >= width k ?> acc |: dot_l k a ao b (j + 1) (acc + index a (ao + j) * index b j)
+
+:~ ^ rows_l \* n d.
+    (kn : len n) (kd : len d) (o : floats) (x : floats) (w : floats) (off : i32) (i : i32) (end : i32)
+    : ()
+    =
+    ? i < end ?>
+        set o i (dot_l kn w (off + i * width kn) x 0 0.0f32)
+        rows_l kn kd o x w off (i + 1) end
+
+:= row_chunk (rows : i32) : i32 =
+    := parts = 4 * parallel::workers ()
+    max 1 ((rows + parts - 1) / parts)
+
+:= rows_par \* n d. (kn : len n) (kd : len d) (o : floats) (x : floats) (w : floats) (off : i32) : () =
+    := rows = width kd
+    := chunk = row_chunk rows
+    parallel::for_index ((rows + chunk - 1) / chunk) \ c =>
+        rows_l kn kd o x w off (c * chunk) (min rows ((c + 1) * chunk))
+
+:== rows_group = { o : floats; off : i32; d : i32 }
+
+:= row_l_into \* n. (kn : len n) (x : floats) (w : floats) (g : rows_group) (i : i32) : () =
+    set g::o i (dot_l kn w (g::off + i * width kn) x 0 0.0f32)
+
+:~ ^ rows_l_fused \* n.
+    (kn : len n) (x : floats) (w : floats) (a : rows_group) (b : rows_group) (c : rows_group) (r : i32) (end : i32)
+    : ()
+    =
+    ? r < end ?>
+        ? r < a::d
+        ?> row_l_into kn x w a r
+        |? r < a::d + b::d
+        ?> row_l_into kn x w b (r - a::d)
+        |: row_l_into kn x w c (r - a::d - b::d)
+        rows_l_fused kn x w a b c (r + 1) end
+
+:= rows_par_fused \* n. (kn : len n) (x : floats) (w : floats) (a : rows_group) (b : rows_group) (c : rows_group) : () =
+    := rows = a::d + b::d + c::d
+    := chunk = row_chunk rows
+    parallel::for_index ((rows + chunk - 1) / chunk) \ k =>
+        rows_l_fused kn x w a b c (k * chunk) (min rows ((k + 1) * chunk))
+
+///> rust
+:# rows_par_equals_the_plain_matmul =
+    := ~two = 2.0f32
+    := x = floats_of [ 1.0f32; two ]
+    := w = floats_of [ 1.0f32; 0.0f32; 3.0f32; 4.0f32; 0.5f32; 0.25f32 ]
+    := o : floats = create 3
+    := p : floats = create 3
+    rows_par (len 0 : len 2) (len 0 : len 3) o x w 0
+    matmul p x w 0 2 3
+    (index o 0, index o 1, index o 2) |> _assert_eq (index p 0, index p 1, index p 2)
+
+///> rust
+:# rows_par_fused_splits_rows_across_the_groups =
+    := ~two = 2.0f32
+    := x = floats_of [ 1.0f32; two ]
+    := w = floats_of [ 1.0f32; 0.0f32; 3.0f32; 4.0f32; 0.5f32; 0.25f32 ]
+    := a : floats = create 1
+    := b : floats = create 2
+    := none : floats = create 0
+    rows_par_fused (len 0 : len 2) x w { o = a; off = 0; d = 1 } { o = b; off = 2; d = 2 } { o = none; off = 0; d = 0 }
+    (index a 0, index b 0, index b 1) |> _assert_eq (1.0f32, 11.0f32, 1.0f32)

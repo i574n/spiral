@@ -1,6 +1,6 @@
 :< main
 
-:~ ^ antimirov_insert_unique \* alphabet {symbol_compare}.
+:~ antimirov_insert_unique \* alphabet {symbol_compare}.
     (value : regex alphabet)
     (values : regex_list alphabet)
     : regex_list alphabet =
