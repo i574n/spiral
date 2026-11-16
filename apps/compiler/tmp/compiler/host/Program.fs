@@ -866,6 +866,7 @@ module Program =
     let private runCheckWith (full : bool) inputPath =
         check_lean <- not full
         check_stream <- not full && Environment.GetEnvironmentVariable "SPIRAL_CHECK_STREAM" <> "0"
+        incremental_cutoff <- full && Environment.GetEnvironmentVariable "SPIRAL_CHECK_CUTOFF" <> "0"
         try
             let inputPath = inputPath |> Path.GetFullPath |> SpiralFileSystem.standardize_path
             if not (File.Exists inputPath) then failwith $"Missing check input: {inputPath}"
@@ -944,7 +945,13 @@ module Program =
             printfn "checked package %s (parse and type inference only: partial evaluation and test blocks did not run, so a --backend build can still fail)" packageDir
             0
         with error ->
-            eprintfn "%s" error.Message
+            let rec innermost (e : exn) =
+                match e with
+                | :? AggregateException as a when a.InnerExceptions.Count = 1 -> innermost a.InnerExceptions.[0]
+                | e when not (isNull e.InnerException) -> innermost e.InnerException
+                | e -> e
+            let cause = innermost error
+            eprintfn "%s" (if obj.ReferenceEquals(cause, error) then error.Message else $"{error.Message}: {cause.Message}")
             5
 
     let private runCheck inputPath = runCheckWith (Environment.GetEnvironmentVariable "CHECK_REPEAT_FULL" = "1") inputPath

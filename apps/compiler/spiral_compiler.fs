@@ -4452,6 +4452,7 @@ module spiral_compiler =
 
     /// ### check_lean
     let mutable check_lean = System.Environment.GetEnvironmentVariable "SPIRAL_CHECK_LEAN" = "1"
+    let mutable incremental_cutoff = false
 
     /// ### check_stream
     let mutable check_stream = false
@@ -30632,7 +30633,8 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         abstract member in_module : string * 'state -> 'state
         abstract member default' : DefaultEnv -> 'state
         abstract member empty : 'state
-    
+        abstract member same : 'state * 'state -> bool
+
 
     /// ### ProjFilesState<'a,'state>
     type [<ReferenceEquality>] ProjFilesState<'a,'state> = {
@@ -30664,13 +30666,22 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
     
 
     /// ### proj_files
-    let proj_files (funs : ProjFileFuns<'a,'state>) uids_file uids_directory uids s l =
+    let proj_files (funs : ProjFileFuns<'a,'state>) (previous : ('a * 'state) []) uids_file uids_directory uids s l =
         let memo (uids : _ []) uid f =
             let x = uids.[uid]
             if isNull (box x) then let x = f() in uids.[uid] <- x; x
             else x
+        let mutable clean = true
+        let file mid name state () =
+            let old = if mid < previous.Length then previous.[mid] else Unchecked.defaultof<_>
+            let held = not (isNull (box old))
+            if clean && held && Array.get uids mid = fst old then old
+            else
+                let (x, env) as fresh = funs.file(name,state,Array.get uids mid)
+                if clean && held && funs.same(snd old, env) then x, snd old
+                else clean <- false; fresh
         let rec loop state = function
-            | File(mid,_,name) -> memo uids_file mid (fun () -> funs.file(name,state,Array.get uids mid)) |> snd
+            | File(mid,_,name) -> memo uids_file mid (file mid name state) |> snd
             | Directory(uid,name,l) -> memo uids_directory uid (fun () -> funs.in_module(name,list state l))
         and list s l =
             List.fold (fun (empty,big) x ->
@@ -30683,7 +30694,9 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
     /// ### wdiff_proj_files_update_files
     let wdiff_proj_files_update_files (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (uids,files : ProjFiles) =
         match proj_files_diff (state.uids_file,state.uids_directory,state.files) (uids,files) with
-        | Some (uids_file, uids_directory) -> {state with files=files; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids state.init files}
+        | Some (uids_file, uids_directory) ->
+            let previous = if incremental_cutoff && state.files = files then state.uids_file else [||]
+            {state with files=files; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs previous uids_file uids_directory uids state.init files}
         | None -> state
     
 
@@ -30692,7 +30705,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         if state.init = init then state else
         let uids_file, uids_directory = Array.zeroCreate state.uids_file.Length, Array.zeroCreate state.uids_directory.Length
         let uids = HopacExtensions.S.map fst state.uids_file
-        {state with init=init; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids init state.files}
+        {state with init=init; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs [||] uids_file uids_directory uids init state.files}
     
 
     /// ### wdiff_proj_files
@@ -30700,7 +30713,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         if state.init = init then wdiff_proj_files_update_files funs state (uids,files)
         else
             let uids_file, uids_directory = Array.zeroCreate files.num_files, Array.zeroCreate files.num_dirs
-            {files=files; init=init; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids init files}
+            {files=files; init=init; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs [||] uids_file uids_directory uids init files}
     
 
     /// ### typechecker_results_summary
@@ -30715,6 +30728,70 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             ) (false,inferTop_env_empty) l
     
 
+    let map_alpha_equal (f : 'v -> 'v -> bool) (a : Map<'k,'v>) (b : Map<'k,'v>) =
+        a.Count = b.Count && Seq.forall2 (fun (KeyValue(ka : 'k, va)) (KeyValue(kb, vb)) -> ka = kb && f va vb) a b
+
+    let top_env_alpha_equal (a : TopEnv) (b : TopEnv) =
+        let vars = System.Collections.Generic.Dictionary<Var,Var>(HashIdentity.Reference)
+        let vars_back = System.Collections.Generic.Dictionary<Var,Var>(HashIdentity.Reference)
+        let mvars = System.Collections.Generic.Dictionary<MVar,MVar>(HashIdentity.Reference)
+        let mvars_back = System.Collections.Generic.Dictionary<MVar,MVar>(HashIdentity.Reference)
+        let pair (forth : System.Collections.Generic.Dictionary<'x,'x>) (back : System.Collections.Generic.Dictionary<'x,'x>) (x : 'x) (y : 'x) =
+            match forth.TryGetValue x, back.TryGetValue y with
+            | (true, y'), (true, x') -> obj.ReferenceEquals(y', y) && obj.ReferenceEquals(x', x)
+            | (false, _), (false, _) -> forth.[x] <- y; back.[y] <- x; true
+            | _ -> false
+        let rec tt a b =
+            match visit_tt a, visit_tt b with
+            | TT.KindType, TT.KindType -> true
+            | TT.KindFun(a1,a2), TT.KindFun(b1,b2) -> tt a1 b1 && tt a2 b2
+            | TT.KindMetavar a, TT.KindMetavar b -> obj.ReferenceEquals(a, b)
+            | _ -> false
+        let var (x : Var) (y : Var) = pair vars vars_back x y && x.scope = y.scope && x.name = y.name && x.constraints = y.constraints && tt x.kind y.kind
+        let rec resolve x =
+            match x with
+            | T.TyComment(_,x) -> resolve x
+            | T.TyMetavar(_,{contents=Some x}) -> resolve x
+            | T.TyVar(_,{contents=Some x}) -> resolve x
+            | x -> x
+        let rec t a b =
+            match resolve a, resolve b with
+            | T.TyB, T.TyB -> true
+            | T.TyLit a, T.TyLit b -> a = b
+            | T.TyPrim a, T.TyPrim b -> a = b
+            | T.TySymbol a, T.TySymbol b -> a = b
+            | T.TyPair(a1,a2), T.TyPair(b1,b2) -> t a1 b1 && t a2 b2
+            | T.TyRecord a, T.TyRecord b -> map_alpha_equal t a b
+            | T.TyModule a, T.TyModule b -> map_alpha_equal t a b
+            | T.TyFun(a1,a2,af), T.TyFun(b1,b2,bf) -> af = bf && t a1 b1 && t a2 b2
+            | T.TyArray a, T.TyArray b -> t a b
+            | T.TyNominal a, T.TyNominal b -> a = b
+            | T.TyUnion(a,al), T.TyUnion(b,bl) -> al = bl && map_alpha_equal (fun (g1, x) (g2, y) -> g1 = g2 && t x y) a b
+            | T.TyApply(a1,a2,ak), T.TyApply(b1,b2,bk) -> t a1 b1 && t a2 b2 && tt ak bk
+            | T.TyInl(av,a), T.TyInl(bv,b) -> var av bv && t a b
+            | T.TyForall(av,a), T.TyForall(bv,b) -> var av bv && t a b
+            | T.TyExists(avs,a), T.TyExists(bvs,b) -> List.length avs = List.length bvs && List.forall2 var avs bvs && t a b
+            | T.TyMetavar(am,_), T.TyMetavar(bm,_) -> pair mvars mvars_back am bm && am.scope = bm.scope && am.constraints = bm.constraints && tt am.kind bm.kind
+            | T.TyVar(av,_), T.TyVar(bv,_) -> var av bv
+            | T.TyMacro a, T.TyMacro b -> List.length a = List.length b && List.forall2 tm a b
+            | T.TyLayout(a,al), T.TyLayout(b,bl) -> al = bl && t a b
+            | _ -> false
+        and tm a b =
+            match a, b with
+            | TM.TMText a, TM.TMText b -> a = b
+            | TM.TMVar a, TM.TMVar b -> t a b
+            | TM.TMLitVar a, TM.TMLitVar b -> t a b
+            | _ -> false
+        a.nominals_next_tag = b.nominals_next_tag
+        && a.prototypes_next_tag = b.prototypes_next_tag
+        && (a.nominals_aux, b.nominals_aux) ||> map_alpha_equal (fun x y -> x.name = y.name && tt x.kind y.kind)
+        && (a.nominals, b.nominals) ||> map_alpha_equal (fun x y -> List.length x.vars = List.length y.vars && List.forall2 var x.vars y.vars && t x.body y.body)
+        && a.prototypes_instances = b.prototypes_instances
+        && (a.prototypes, b.prototypes) ||> map_alpha_equal (fun x y -> x.name = y.name && t x.signature y.signature && tt x.kind y.kind)
+        && map_alpha_equal t a.ty b.ty
+        && map_alpha_equal t a.term b.term
+        && a.constraints = b.constraints
+
     /// ### funs_proj_file_tc
     let funs_proj_file_tc = {new ProjFileFuns<TypecheckerState,TypecheckerStatePropagated> with
         member _.file(name,state,x) =
@@ -30727,8 +30804,14 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         member _.in_module(name,small) = small >>-* fun (has_error,env) -> has_error, inferIn_module name env
         member _.default' default_env = Promise.Now.withValue (false,inferTop_env_default default_env)
         member _.empty = Promise.Now.withValue (false,inferTop_env_empty)
+        member _.same(old, fresh) =
+            obj.ReferenceEquals(old, fresh)
+            || (incremental_cutoff
+                && (let old_error, old_env = Hopac.run old
+                    let fresh_error, fresh_env = Hopac.run fresh
+                    old_error = fresh_error && top_env_alpha_equal old_env fresh_env))
         }
-    
+
 
     /// ### PackageEnv
     type PackageEnv = {
@@ -31010,6 +31093,7 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         member _.in_module(name,small) = small >>-* in_modulePrepass name
         member _.default' default_env = Promise.Now.withValue (prepassTop_env_default default_env)
         member _.empty = Promise.Now.withValue prepassTop_env_empty
+        member _.same(_, _) = false
         }
     
 
